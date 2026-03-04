@@ -529,12 +529,9 @@ function render() {
             // walls
             const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
             const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
-            const isF=obj.type==='wall_front';
+            const isF=obj.type==='wall_front', bx=isF?px+TILE_W/2:px-TILE_W/2, dir=isF?-1:1;
             ctx.fillStyle=`rgb(${(isF?10:15)*amb},${((isF?15:20)*amb)+(160*glo)},${((isF?20:40)*amb)+(40*glo)})`;
-            ctx.beginPath();
-            if(isF){ ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H); ctx.lineTo(px+TILE_W,py+TILE_H-obj.h); ctx.lineTo(px,py-obj.h); }
-            else   { ctx.moveTo(px,py); ctx.lineTo(px-TILE_W,py+TILE_H); ctx.lineTo(px-TILE_W,py+TILE_H-obj.h); ctx.lineTo(px,py-obj.h); }
-            ctx.fill();
+            ctx.beginPath(); ctx.moveTo(bx,py+TILE_H); ctx.lineTo(bx+(34*dir),py+15); ctx.lineTo(bx+(34*dir),py+15-obj.h); ctx.lineTo(bx,py-obj.h); ctx.fill();
         }
     });
 
