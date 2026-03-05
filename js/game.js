@@ -526,12 +526,44 @@ function render() {
             }
         }
         else {
-            // walls
-            const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
-            const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
-            const isF=obj.type==='wall_front', bx=isF?px+TILE_W/2:px-TILE_W/2, dir=isF?-1:1;
-            ctx.fillStyle=`rgb(${(isF?10:15)*amb},${((isF?15:20)*amb)+(160*glo)},${((isF?20:40)*amb)+(40*glo)})`;
-            ctx.beginPath(); ctx.moveTo(bx,py+TILE_H); ctx.lineTo(bx+(34*dir),py+15); ctx.lineTo(bx+(34*dir),py+15-obj.h); ctx.lineTo(bx,py-obj.h); ctx.fill();
+            // wall lighting based on distance
+const dist = Math.sqrt(
+    (obj.x - player.visualX) ** 2 +
+    (obj.y - player.visualY) ** 2
+);
+
+const amb = Math.max(0.1, 0.8 - dist / RENDER_DIST);
+const glo = Math.max(0, 1.0 - dist / 5);
+
+// check wall type
+const isFront = obj.type === TILE.WALL_FRONT;
+
+// choose wall direction
+let bx;
+let dir;
+
+if (isFront) {
+    bx = px + TILE_W / 2;
+    dir = -1;
+} else {
+    bx = px - TILE_W / 2;
+    dir = 1;
+}
+
+// wall color
+const r = (isFront ? 10 : 15) * amb;
+const g = ((isFront ? 15 : 20) * amb) + (160 * glo);
+const b = ((isFront ? 20 : 40) * amb) + (40 * glo);
+
+ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+
+// draw wall shape
+ctx.beginPath();
+ctx.moveTo(bx, py + TILE_H);
+ctx.lineTo(bx + (34 * dir), py + 15);
+ctx.lineTo(bx + (34 * dir), py + 15 - obj.h);
+ctx.lineTo(bx, py - obj.h);
+ctx.fill();
         }
     });
 
