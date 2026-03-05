@@ -531,7 +531,40 @@ function render() {
             const dist = Math.sqrt((obj.x-player.visualX)**2 + (obj.y-player.visualY)**2);
             const amb  = Math.max(0.1, 0.8 - dist/RENDER_DIST);
             const glo  = Math.max(0, 1.0 - dist/5);
-            const WH   = TILE_W; // wall height in pixels (= 60)
+            const WH   = 110; // wall height in pixels
+
+            // Vent helper — draws a small parallelogram opening + glow + smoke on the face
+            // cx/cy = vent centre, faceDir = (dx,dy) unit along face horizontal
+            function drawVent(cx, cy, fdx, fdy, xSeed) {
+                const vw = 9, vh = 10;
+                // parallelogram following face slope
+                ctx.fillStyle = "#010e08";
+                ctx.beginPath();
+                ctx.moveTo(cx - fdx*vw, cy - fdy*vw);
+                ctx.lineTo(cx + fdx*vw, cy + fdy*vw);
+                ctx.lineTo(cx + fdx*vw, cy + fdy*vw - vh);
+                ctx.lineTo(cx - fdx*vw, cy - fdy*vw - vh);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(0,200,110,0.45)";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(cx - fdx*vw, cy - fdy*vw);
+                ctx.lineTo(cx + fdx*vw, cy + fdy*vw);
+                ctx.lineTo(cx + fdx*vw, cy + fdy*vw - vh);
+                ctx.lineTo(cx - fdx*vw, cy - fdy*vw - vh);
+                ctx.closePath();
+                ctx.stroke();
+                // emit smoke in staggered bursts
+                if (frame % 28 === Math.abs(xSeed) % 28) {
+                    smoke.push({
+                        x: cx + (Math.random()-0.5)*3,
+                        y: cy - vh,
+                        vx: (Math.random()-0.5)*0.25,
+                        vy: -0.45 - Math.random()*0.3,
+                        life: 0.75, size: 3 + Math.random()*4
+                    });
+                }
+            }
 
             if (obj.type === 'wall_back') {
                 // Top face — W→N→E→S diamond shifted up by WH (visible from above)
@@ -550,6 +583,14 @@ function render() {
                 ctx.lineTo(px,          py + 2*TILE_H - WH);
                 ctx.lineTo(px - TILE_W, py + TILE_H - WH);
                 ctx.fill();
+                // Vent every 4 tiles, slightly above mid (62% up)
+                if (Math.abs(Math.floor(obj.x)) % 4 === 0) {
+                    // face direction: (W→S) = (TILE_W, TILE_H), normalised
+                    const flen = Math.hypot(TILE_W, TILE_H);
+                    const ventCX = (px - TILE_W) + 0.5 * TILE_W;
+                    const ventCY = (py + TILE_H)  + 0.5 * TILE_H - WH * 0.62;
+                    drawVent(ventCX, ventCY, TILE_W/flen, TILE_H/flen, Math.floor(obj.x)*13);
+                }
             } else {
                 // wall_front — North-East face only (base aligns with NE edge of y=4 tile)
                 ctx.fillStyle = `rgb(${10*amb},${(14*amb)+(158*glo)},${(20*amb)+(38*glo)})`;
@@ -559,6 +600,13 @@ function render() {
                 ctx.lineTo(px + TILE_W, py + TILE_H - WH);
                 ctx.lineTo(px,          py - WH);
                 ctx.fill();
+                // Vent every 4 tiles, offset by 2 from back wall
+                if (Math.abs(Math.floor(obj.x)) % 4 === 2) {
+                    const flen = Math.hypot(TILE_W, TILE_H);
+                    const ventCX = px + 0.5 * TILE_W;
+                    const ventCY = py + 0.5 * TILE_H - WH * 0.62;
+                    drawVent(ventCX, ventCY, TILE_W/flen, TILE_H/flen, Math.floor(obj.x)*17);
+                }
             }
         }
     });
