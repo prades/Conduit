@@ -536,7 +536,8 @@ const amb = Math.max(0.1, 0.8 - dist / RENDER_DIST);
 const glo = Math.max(0, 1.0 - dist / 5);
 
 // check wall type
-const isFront = obj.type === TILE.WALL_FRONT;
+const isFront = obj.type === 'wall_front';
+
 
 // choose wall direction
 let bx;
