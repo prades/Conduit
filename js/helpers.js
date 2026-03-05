@@ -48,6 +48,7 @@ function applyDamage(target, amount, source=null, element=null) {
     if (source) target.lastAttacker = source;
     if (typeof target.hitFlash !== "undefined") target.hitFlash = 6;
     if (typeof target.hitStun  !== "undefined") target.hitStun  = 6;
+    if (typeof target.onHit    === "function")  target.onHit(source);
     if (target.health <= 0) { target.health = 0; target.dead = true; }
 }
 

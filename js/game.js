@@ -758,7 +758,10 @@ function render() {
         let hit = false;
         actors.forEach(a => {
             if (hit || a.dead) return;
-            if (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) {
+            const isTarget = p.targetsGreen
+                ? a.team === "green"
+                : (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone));
+            if (isTarget) {
                 const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
                 if (Math.hypot(dx,dy) < 30) {
                     applyDamage(a, p.damage, p.source);
@@ -767,6 +770,16 @@ function render() {
                 }
             }
         });
+        // Predator abdomen shots can also hit the player directly
+        if (!hit && p.targetsGreen) {
+            const dx=(p.x-player.x)*TILE_W, dy=(p.y-player.y)*TILE_H;
+            if (Math.hypot(dx,dy) < 30) {
+                health = Math.max(0, health - p.damage);
+                shake  = Math.max(shake, 5);
+                if (p.onHit) p.onHit(null);
+                hit = true;
+            }
+        }
         return !hit && p.life > 0;
     });
 

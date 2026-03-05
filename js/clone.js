@@ -337,12 +337,16 @@ function spawnPredatorForZone(zoneIndex) {
     const classDef    = speciesDef[className];
 
     const def = {
-        width:     classDef.width,
-        height:    classDef.height,
-        moveSpeed: classDef.moveSpeed,
-        health:    classDef.health,
-        power:     classDef.power,
-        color:     speciesDef.color
+        width:           classDef.width,
+        height:          classDef.height,
+        moveSpeed:       classDef.moveSpeed,
+        health:          classDef.health,
+        power:           classDef.power,
+        color:           speciesDef.color,
+        reactionSpeed:   classDef.reactionSpeed  ?? 15,
+        abdomenAttack:   classDef.abdomenAttack  ?? false,
+        rangeDamage:     classDef.rangeDamage     ?? 0,
+        abdomenCooldown: classDef.abdomenCooldown ?? 90
     };
 
     const spawnX = zoneIndex * ZONE_LENGTH + Math.random() * ZONE_LENGTH;

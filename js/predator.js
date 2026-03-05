@@ -58,6 +58,53 @@ class Predator {
         this.animationPhase=Math.random()*Math.PI*2;
         this.wanderTarget=null;
         this.wanderTimer=0;
+        // Hit-reaction & ranged attack stats (copied from species def on spawn)
+        this.reactionSpeed   = def.reactionSpeed   ?? 15;
+        this.abdomenAttack   = def.abdomenAttack    ?? false;
+        this.rangeDamage     = def.rangeDamage      ?? 0;
+        this.abdomenCooldown = def.abdomenCooldown  ?? 90;
+        this.abdomenTimer    = 0;
+        // Runtime charge state — populated externally when predator is enhanced
+        this.charged         = false;
+        this.chargeElement   = null;
+        this.chargeColor     = null;
+        this.lastAttacker    = null;
+        this.provoked        = false;
+        this.team            = "red";
+        this.isClone         = false;
+    }
+
+    // Called by applyDamage whenever this predator takes a hit.
+    // Determines whether to turn and retaliate or — for abdomenAttack predators
+    // hit from behind — stay oriented and keep their weapon aimed at the threat.
+    onHit(source) {
+        if (!source || this.dead) return;
+
+        const dx = source.x - this.x;
+        const dy = source.y - this.y;
+        const toAttackerAngle = Math.atan2(dy, dx);
+        const bodyAngle       = Math.atan2(this.dirY, this.dirX);
+        let   diff            = toAttackerAngle - bodyAngle;
+        if (diff >  Math.PI) diff -= Math.PI * 2;
+        if (diff < -Math.PI) diff += Math.PI * 2;
+        const fromBehind = Math.abs(diff) > Math.PI * 0.75; // >135° counts as "from behind"
+
+        this.lastAttacker  = source;
+        this.currentTarget = source;
+        this.provoked      = true;
+
+        if (this.abdomenAttack && fromBehind) {
+            // Rear is the weapon — don't rotate; keep butt aimed at the attacker.
+            // Accelerate next abdomen shot if the timer is already close.
+            if (this.abdomenTimer > this.abdomenCooldown * 0.5) {
+                this.abdomenTimer = Math.floor(this.abdomenCooldown * 0.5);
+            }
+            return;
+        }
+
+        // Normal reaction: turn toward attacker and enter attack state immediately
+        this.state        = "attack";
+        this.reactionDelay = this.reactionSpeed;
     }
 
     loadPreset(data) {
@@ -96,7 +143,7 @@ class Predator {
         if (this.lastAttacker&&!this.lastAttacker.dead) {
             const dx=this.lastAttacker.x-this.x, dy=this.lastAttacker.y-this.y;
             const d=Math.sqrt(dx*dx+dy*dy);
-            if (d<3) { threat=this.lastAttacker; bestDist=d; }
+            if (d<6) { threat=this.lastAttacker; bestDist=d; } // extended from 3→6 for ranged hit-back
         }
         if (!threat) {
             actors.forEach(a => {
@@ -107,7 +154,7 @@ class Predator {
             });
         }
         if (threat) {
-            if (this.reactionDelay<=0) { this.state="attack"; this.currentTarget=threat; this.reactionDelay=20; }
+            if (this.reactionDelay<=0) { this.state="attack"; this.currentTarget=threat; this.reactionDelay=this.reactionSpeed; }
             else this.reactionDelay--;
         }
 
@@ -269,5 +316,55 @@ class Predator {
 
         if (this.state==="hunt"||this.state==="wander") this.walkCycle+=this.moveSpeed*40;
         this.lastX=this.x; this.lastY=this.y;
+
+        // ── ABDOMEN RANGED ATTACK ──
+        if (this.abdomenAttack && !this.dead) {
+            this.abdomenTimer++;
+            if (this.abdomenTimer >= this.abdomenCooldown) {
+                // Find the best target in the rear arc (>90° from facing)
+                const bodyAngle = Math.atan2(this.dirY, this.dirX);
+                let rearTarget = null, bestRearDist = Infinity;
+                actors.forEach(a => {
+                    if (a.dead || a.team !== "green") return;
+                    const dx = a.x - this.x, dy = a.y - this.y;
+                    const d  = Math.hypot(dx, dy);
+                    let   diff = Math.atan2(dy, dx) - bodyAngle;
+                    if (diff >  Math.PI) diff -= Math.PI * 2;
+                    if (diff < -Math.PI) diff += Math.PI * 2;
+                    if (Math.abs(diff) > Math.PI * 0.5 && d < 6 && d < bestRearDist) {
+                        bestRearDist = d; rearTarget = a;
+                    }
+                });
+                // Fall back to lastAttacker if they're not in rear arc but they just hit us
+                if (!rearTarget && this.lastAttacker && !this.lastAttacker.dead) {
+                    const d = Math.hypot(this.lastAttacker.x - this.x, this.lastAttacker.y - this.y);
+                    if (d < 6) rearTarget = this.lastAttacker;
+                }
+
+                if (rearTarget) {
+                    const abX = this.x - this.dirX * 0.4;
+                    const abY = this.y - this.dirY * 0.4;
+                    const isCharged = this.charged && this.chargeElement;
+                    const shotColor  = isCharged ? (this.chargeColor || "#ffcc00") : (this.color || "#88ff44");
+                    const shotDamage = isCharged ? Math.round(this.rangeDamage * 1.8) : this.rangeDamage;
+                    const shotRadius = isCharged ? 7 : 4;
+                    const chargeElem = isCharged ? this.chargeElement : null;
+
+                    spawnFollowerProjectile(
+                        { x: abX, y: abY, stats: { specialAttack: shotDamage } },
+                        rearTarget,
+                        shotColor, shotDamage, shotRadius,
+                        chargeElem ? (hit) => { if (hit) applyElementalDamage(hit, shotDamage * 0.5, this, chargeElem); } : null
+                    );
+                    // Tag projectile so it hits green team (predator shots target player's side)
+                    if (followerProjectiles.length > 0) {
+                        followerProjectiles[followerProjectiles.length - 1].targetsGreen = true;
+                    }
+
+                    if (isCharged) { this.charged = false; this.chargeElement = null; this.chargeColor = null; }
+                    this.abdomenTimer = 0;
+                }
+            }
+        }
     }
 }
