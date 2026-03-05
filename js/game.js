@@ -526,12 +526,40 @@ function render() {
             }
         }
         else {
-            // walls
-            const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
-            const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
-            const isF=obj.type==='wall_front', bx=isF?px+TILE_W/2:px-TILE_W/2, dir=isF?-1:1;
-            ctx.fillStyle=`rgb(${(isF?10:15)*amb},${((isF?15:20)*amb)+(160*glo)},${((isF?20:40)*amb)+(40*glo)})`;
-            ctx.beginPath(); ctx.moveTo(bx,py+TILE_H); ctx.lineTo(bx+(34*dir),py+15); ctx.lineTo(bx+(34*dir),py+15-obj.h); ctx.lineTo(bx,py-obj.h); ctx.fill();
+            // WALLS — isometric faces aligned to tile grid
+            // TILE_W=60, TILE_H=30. Diamond vertices: N=(px,py) E=(px+60,py+30) S=(px,py+60) W=(px-60,py+30)
+            const dist = Math.sqrt((obj.x-player.visualX)**2 + (obj.y-player.visualY)**2);
+            const amb  = Math.max(0.1, 0.8 - dist/RENDER_DIST);
+            const glo  = Math.max(0, 1.0 - dist/5);
+            const WH   = TILE_W; // wall height in pixels (= 60)
+
+            if (obj.type === 'wall_back') {
+                // Top face — W→N→E→S diamond shifted up by WH (visible from above)
+                ctx.fillStyle = `rgb(${20*amb},${(28*amb)+(110*glo)},${(48*amb)+(28*glo)})`;
+                ctx.beginPath();
+                ctx.moveTo(px,          py - WH);
+                ctx.lineTo(px + TILE_W, py + TILE_H - WH);
+                ctx.lineTo(px,          py + 2*TILE_H - WH);
+                ctx.lineTo(px - TILE_W, py + TILE_H - WH);
+                ctx.fill();
+                // South face — from W→S base up by WH; seam aligns with NE edge of y=-1 tile
+                ctx.fillStyle = `rgb(${13*amb},${(19*amb)+(145*glo)},${(32*amb)+(48*glo)})`;
+                ctx.beginPath();
+                ctx.moveTo(px - TILE_W, py + TILE_H);
+                ctx.lineTo(px,          py + 2*TILE_H);
+                ctx.lineTo(px,          py + 2*TILE_H - WH);
+                ctx.lineTo(px - TILE_W, py + TILE_H - WH);
+                ctx.fill();
+            } else {
+                // wall_front — North-East face only (base aligns with NE edge of y=4 tile)
+                ctx.fillStyle = `rgb(${10*amb},${(14*amb)+(158*glo)},${(20*amb)+(38*glo)})`;
+                ctx.beginPath();
+                ctx.moveTo(px,          py);
+                ctx.lineTo(px + TILE_W, py + TILE_H);
+                ctx.lineTo(px + TILE_W, py + TILE_H - WH);
+                ctx.lineTo(px,          py - WH);
+                ctx.fill();
+            }
         }
     });
 

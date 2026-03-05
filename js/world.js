@@ -6,7 +6,6 @@ function generateSegment(startX) {
         let type = (y===-2)?'wall_back':(y===5)?'wall_front':'floor';
         const tile = {
             x:startX, y, type,
-            h:(type==='wall_back')?34:45,//come here
             pillar:(type==='floor'&&y>=3&&Math.random()<cfg.pillarSpawnRate),
             pillarTeam: Math.random()>0.6?"green":"red",
             pillarCol:null,
