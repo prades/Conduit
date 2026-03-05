@@ -4,21 +4,16 @@
 function generateSegment(startX) {
     for (let y=-2; y<=5; y++) {
         let type = (y===-2)?'wall_back':(y===5)?'wall_front':'floor';
-        // Wall height in screen pixels — 2×TILE_H gives one isometric unit of height
-        const wallH = (type === 'wall_back') ? TILE_H * 3 : TILE_H * 3;
         const tile = {
             x:startX, y, type,
-            h: (type === 'floor') ? 0 : wallH,
-            // floor props
+            h:(type==='wall_back')?34:45,//come here
             pillar:(type==='floor'&&y>=3&&Math.random()<cfg.pillarSpawnRate),
             pillarTeam: Math.random()>0.6?"green":"red",
             pillarCol:null,
             destroyed:false, health:20, maxHealth:20,
             converting:false, pendingDestroy:false,
             upgraded:false, pulseTimer:0,
-            reconstructing:false, reconstructProgress:0, workers:[],
-            // wall props — hazard slot for spikes, fire jets, etc.
-            wallProps: (type !== 'floor') ? { hazard:null, hazardType:null, hazardColor:null, hazardTimer:0 } : null
+            reconstructing:false, reconstructProgress:0, workers:[]
         };
         if (tile.pillarTeam==="green") tile.pillarCol="#0f8"; else tile.pillarCol="#f22";
         world.push(tile);

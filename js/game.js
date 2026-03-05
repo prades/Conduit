@@ -526,47 +526,12 @@ function render() {
             }
         }
         else {
-            // walls — parallelogram faces anchored to tile diamond edges
+            // walls
             const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
             const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
-            const wallH = obj.h || 60;
-            if (obj.type === 'wall_back') {
-                // south face: base = bottom-left→bottom corners of diamond
-                // (px-TILE_W, py+TILE_H) → (px, py+2*TILE_H), rise straight up by wallH
-                ctx.fillStyle=`rgb(${15*amb},${(20*amb)+(160*glo)},${(40*amb)+(40*glo)})`;
-                ctx.beginPath();
-                ctx.moveTo(px-TILE_W, py+TILE_H);
-                ctx.lineTo(px,        py+2*TILE_H);
-                ctx.lineTo(px,        py+2*TILE_H - wallH);
-                ctx.lineTo(px-TILE_W, py+TILE_H   - wallH);
-                ctx.fill();
-                // top cap — the tile's top→left face edge, so you see the wall top
-                ctx.fillStyle=`rgb(${20*amb},${(30*amb)+(180*glo)},${(50*amb)+(50*glo)})`;
-                ctx.beginPath();
-                ctx.moveTo(px,        py);
-                ctx.lineTo(px-TILE_W, py+TILE_H);
-                ctx.lineTo(px-TILE_W, py+TILE_H - wallH);
-                ctx.lineTo(px,        py          - wallH);
-                ctx.fill();
-            } else {
-                // wall_front south face: base = top→right corners of diamond
-                // (px, py) → (px+TILE_W, py+TILE_H), rise straight up by wallH
-                ctx.fillStyle=`rgb(${10*amb},${(15*amb)+(140*glo)},${(20*amb)+(30*glo)})`;
-                ctx.beginPath();
-                ctx.moveTo(px,        py);
-                ctx.lineTo(px+TILE_W, py+TILE_H);
-                ctx.lineTo(px+TILE_W, py+TILE_H - wallH);
-                ctx.lineTo(px,        py          - wallH);
-                ctx.fill();
-                // hazard indicator — slot on wall face if tile has a hazard
-                if (obj.wallProps && obj.wallProps.hazard) {
-                    const hcol = obj.wallProps.hazardColor || '#f22';
-                    ctx.fillStyle = hcol;
-                    ctx.globalAlpha = 0.5 + 0.5*Math.sin(frame*0.15);
-                    ctx.fillRect(px - 4, py - wallH*0.5, 8, wallH*0.25);
-                    ctx.globalAlpha = 1;
-                }
-            }
+            const isF=obj.type==='wall_front', bx=isF?px+TILE_W/2:px-TILE_W/2, dir=isF?-1:1;
+            ctx.fillStyle=`rgb(${(isF?10:15)*amb},${((isF?15:20)*amb)+(160*glo)},${((isF?20:40)*amb)+(40*glo)})`;
+            ctx.beginPath(); ctx.moveTo(bx,py+TILE_H); ctx.lineTo(bx+(34*dir),py+15); ctx.lineTo(bx+(34*dir),py+15-obj.h); ctx.lineTo(bx,py-obj.h); ctx.fill();
         }
     });
 
