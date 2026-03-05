@@ -460,33 +460,9 @@ function drawHazards() {
         py: (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height/2
     });
 
+    // Acid pools are drawn inside the depth-sorted tile loop in game.js
+    // so they correctly appear behind pylons.
     environmentalHazards.forEach(h => {
-        if (h.type === "acid") {
-            h.tiles.forEach(([tx, ty]) => {
-                const {px, py} = toScreen(tx, ty);
-                const bubble = 0.5 + 0.5 * Math.sin(frame * 0.12 + tx + ty);
-                ctx.save();
-                ctx.globalAlpha = 0.75 + bubble * 0.2;
-                // Isometric diamond flush with the floor tile
-                ctx.fillStyle = "#00ff44";
-                ctx.beginPath();
-                ctx.moveTo(px,          py);             // N vertex
-                ctx.lineTo(px + TILE_W, py + TILE_H);   // E vertex
-                ctx.lineTo(px,          py + 2*TILE_H); // S vertex
-                ctx.lineTo(px - TILE_W, py + TILE_H);   // W vertex
-                ctx.closePath();
-                ctx.fill();
-                // Bubbles sitting on the pool surface (centre of tile = py + TILE_H)
-                ctx.fillStyle = "#aaffcc";
-                for (let b = 0; b < 4; b++) {
-                    const bx = px + Math.sin(frame * 0.1 + b * 1.6) * 14;
-                    const by = py + TILE_H + Math.cos(frame * 0.13 + b * 2.1) * 5;
-                    ctx.beginPath(); ctx.arc(bx, by, 3 + bubble * 2, 0, Math.PI * 2); ctx.fill();
-                }
-                ctx.restore();
-            });
-        }
-
         if (h.type === "vent") {
             const {px, py} = toScreen(h.x, h.y);
             ctx.save();

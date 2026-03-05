@@ -375,6 +375,12 @@ function render() {
     checkWaveClear();
 
     // ── BUILD DRAW LIST ──
+    // Pre-build acid tile lookup so acid pools sort with the depth pass (behind pylons)
+    const acidTiles = new Map(); // "x,y" → {h, bubble seed}
+    environmentalHazards.forEach(h => {
+        if (h.type === 'acid') h.tiles.forEach(([tx,ty]) => acidTiles.set(`${tx},${ty}`, h));
+    });
+
     let drawList=world.filter(t=>Math.abs(t.x-player.visualX)<RENDER_DIST);
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     shards.forEach(s=>drawList.push({type:'shard',x:s.x,y:s.y,shard:s}));
@@ -427,6 +433,29 @@ function render() {
             const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
             ctx.fillStyle=`rgb(${15*amb},${(20*amb)+(120*glo)},${(30*amb)+(60*glo)})`;
             ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H); ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H); ctx.fill();
+
+            // Acid pool — drawn here so it sits on the floor but under pylons
+            const acidH = acidTiles.get(`${Math.round(obj.x)},${Math.round(obj.y)}`);
+            if (acidH) {
+                const bubble = 0.5 + 0.5 * Math.sin(frame * 0.12 + obj.x + obj.y);
+                ctx.save();
+                ctx.globalAlpha = (0.75 + bubble * 0.2) * (acidH.alpha ?? 1);
+                ctx.fillStyle = "#00ff44";
+                ctx.beginPath();
+                ctx.moveTo(px,          py);
+                ctx.lineTo(px + TILE_W, py + TILE_H);
+                ctx.lineTo(px,          py + 2*TILE_H);
+                ctx.lineTo(px - TILE_W, py + TILE_H);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = "#aaffcc";
+                for (let b = 0; b < 4; b++) {
+                    const bx = px + Math.sin(frame * 0.1 + b * 1.6) * 14;
+                    const by = py + TILE_H + Math.cos(frame * 0.13 + b * 2.1) * 5;
+                    ctx.beginPath(); ctx.arc(bx, by, 3 + bubble * 2, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.restore();
+            }
 
             // Command tile highlight
             if (commandMode&&commandTarget===obj) {
@@ -550,12 +579,19 @@ function render() {
                 ctx.lineTo(px,          py + 2*TILE_H - WH);
                 ctx.lineTo(px - TILE_W, py + TILE_H - WH);
                 ctx.fill();
-                // Exhaust vent — uncommon, minimum gap of 7 enforced by neighbourhood check
-                const xi = Math.floor(obj.x);
-                const ventHash = x => Math.abs(Math.sin(x * 73.1 + 5.3));
-                const ventHere = ventHash(xi) > 0.88 &&
-                    [1,2,3,4,5,6].every(d => ventHash(xi-d) <= 0.88 && ventHash(xi+d) <= 0.88);
-                if (ventHere) {
+                // Exhaust vent — gap-sequence placement: gaps of 7–18 tiles, avg ~12
+                // isVentX walks the deterministic chain from x=0, O(|x|/7) iterations
+                const xi = Math.abs(Math.floor(obj.x));
+                const isVentX = (target) => {
+                    let pos = 0;
+                    while (pos <= target) {
+                        if (pos === target) return true;
+                        const gap = 7 + ((Math.abs(Math.sin(pos * 127.1 + 7.3)) * 10000 | 0) % 12);
+                        pos += gap;
+                    }
+                    return false;
+                };
+                if (isVentX(xi)) {
                     const flen = Math.hypot(TILE_W, TILE_H);
                     const fdx = TILE_W / flen, fdy = TILE_H / flen;
                     const vw = 9, vh = 10;
