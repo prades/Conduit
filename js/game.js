@@ -550,9 +550,12 @@ function render() {
                 ctx.lineTo(px,          py + 2*TILE_H - WH);
                 ctx.lineTo(px - TILE_W, py + TILE_H - WH);
                 ctx.fill();
-                // Exhaust vent — irregular placement using sin hash (gaps of ~4-7)
+                // Exhaust vent — uncommon, minimum gap of 7 enforced by neighbourhood check
                 const xi = Math.floor(obj.x);
-                if (Math.abs(Math.sin(xi * 73.1)) > 0.83) {
+                const ventHash = x => Math.abs(Math.sin(x * 73.1 + 5.3));
+                const ventHere = ventHash(xi) > 0.88 &&
+                    [1,2,3,4,5,6].every(d => ventHash(xi-d) <= 0.88 && ventHash(xi+d) <= 0.88);
+                if (ventHere) {
                     const flen = Math.hypot(TILE_W, TILE_H);
                     const fdx = TILE_W / flen, fdy = TILE_H / flen;
                     const vw = 9, vh = 10;
@@ -590,16 +593,8 @@ function render() {
                         });
                     }
                 }
-            } else {
-                // wall_front — North-East face only (base aligns with NE edge of y=4 tile)
-                ctx.fillStyle = `rgb(${10*amb},${(14*amb)+(158*glo)},${(20*amb)+(38*glo)})`;
-                ctx.beginPath();
-                ctx.moveTo(px,          py);
-                ctx.lineTo(px + TILE_W, py + TILE_H);
-                ctx.lineTo(px + TILE_W, py + TILE_H - WH);
-                ctx.lineTo(px,          py - WH);
-                ctx.fill();
             }
+            // wall_front not rendered — it hides the action
         }
     });
 

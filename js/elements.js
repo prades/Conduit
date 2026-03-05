@@ -321,10 +321,10 @@ const HAZARD_FADE_FRAMES = 45; // 0.75s fade-in before activating
 
 function spawnHazardsForDay() {
     environmentalHazards = [];
-    // Every active zone gets 2-3 hazards including zone 0 so player sees them immediately
+    // Each zone has a ~50% chance of one hazard; zone 0 always gets one so player sees them
     const zoneCount = Math.min(activeDayZones, 5);
     for (let z = 0; z < zoneCount; z++) {
-        const count = 2 + Math.floor(Math.random() * 2);
+        const count = z === 0 ? 1 : (Math.random() < 0.5 ? 1 : 0);
         for (let i = 0; i < count; i++) {
             const type = HAZARD_TYPES[Math.floor(Math.random() * HAZARD_TYPES.length)];
             const hx = z * ZONE_LENGTH + 2 + Math.floor(Math.random() * (ZONE_LENGTH - 4));
@@ -467,20 +467,20 @@ function drawHazards() {
                 const bubble = 0.5 + 0.5 * Math.sin(frame * 0.12 + tx + ty);
                 ctx.save();
                 ctx.globalAlpha = 0.75 + bubble * 0.2;
-                // Big bright green diamond filling the tile
+                // Isometric diamond flush with the floor tile
                 ctx.fillStyle = "#00ff44";
                 ctx.beginPath();
-                ctx.moveTo(px, py - TILE_H);
-                ctx.lineTo(px + TILE_W * 0.5, py);
-                ctx.lineTo(px, py + TILE_H);
-                ctx.lineTo(px - TILE_W * 0.5, py);
+                ctx.moveTo(px,          py);             // N vertex
+                ctx.lineTo(px + TILE_W, py + TILE_H);   // E vertex
+                ctx.lineTo(px,          py + 2*TILE_H); // S vertex
+                ctx.lineTo(px - TILE_W, py + TILE_H);   // W vertex
                 ctx.closePath();
                 ctx.fill();
-                // Bubbles
+                // Bubbles sitting on the pool surface (centre of tile = py + TILE_H)
                 ctx.fillStyle = "#aaffcc";
                 for (let b = 0; b < 4; b++) {
-                    const bx = px + Math.sin(frame * 0.1 + b * 1.6) * 10;
-                    const by = py - 10 + Math.cos(frame * 0.13 + b * 2.1) * 6;
+                    const bx = px + Math.sin(frame * 0.1 + b * 1.6) * 14;
+                    const by = py + TILE_H + Math.cos(frame * 0.13 + b * 2.1) * 5;
                     ctx.beginPath(); ctx.arc(bx, by, 3 + bubble * 2, 0, Math.PI * 2); ctx.fill();
                 }
                 ctx.restore();
