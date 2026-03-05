@@ -35,8 +35,6 @@ function drawRadialMenu() {
     drawRadialButton(commandX, commandY-RADIAL_RADIUS, "JOB", jHov);
     if (jHov) selectedRadialAction="job";
 
-clearFollowers();
-
     // LEFT = context-sensitive pylon actions or RECON
     const rHov=dist>RADIAL_RADIUS*0.4&&Math.abs(angle)>Math.PI*3/4;
     const isPylonTarget = commandTarget&&commandTarget.pillar&&!commandTarget.destroyed;
