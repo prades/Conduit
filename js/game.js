@@ -533,41 +533,8 @@ function render() {
             const glo  = Math.max(0, 1.0 - dist/5);
             const WH   = 110; // wall height in pixels
 
-            // Vent helper — draws a small parallelogram opening + glow + smoke on the face
-            // cx/cy = vent centre, faceDir = (dx,dy) unit along face horizontal
-            function drawVent(cx, cy, fdx, fdy, xSeed) {
-                const vw = 9, vh = 10;
-                // parallelogram following face slope
-                ctx.fillStyle = "#010e08";
-                ctx.beginPath();
-                ctx.moveTo(cx - fdx*vw, cy - fdy*vw);
-                ctx.lineTo(cx + fdx*vw, cy + fdy*vw);
-                ctx.lineTo(cx + fdx*vw, cy + fdy*vw - vh);
-                ctx.lineTo(cx - fdx*vw, cy - fdy*vw - vh);
-                ctx.fill();
-                ctx.strokeStyle = "rgba(0,200,110,0.45)";
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(cx - fdx*vw, cy - fdy*vw);
-                ctx.lineTo(cx + fdx*vw, cy + fdy*vw);
-                ctx.lineTo(cx + fdx*vw, cy + fdy*vw - vh);
-                ctx.lineTo(cx - fdx*vw, cy - fdy*vw - vh);
-                ctx.closePath();
-                ctx.stroke();
-                // emit smoke in staggered bursts
-                if (frame % 28 === Math.abs(xSeed) % 28) {
-                    smoke.push({
-                        x: cx + (Math.random()-0.5)*3,
-                        y: cy - vh,
-                        vx: (Math.random()-0.5)*0.25,
-                        vy: -0.45 - Math.random()*0.3,
-                        life: 0.75, size: 3 + Math.random()*4
-                    });
-                }
-            }
-
             if (obj.type === 'wall_back') {
-                // Top face — W→N→E→S diamond shifted up by WH (visible from above)
+                // Top face
                 ctx.fillStyle = `rgb(${20*amb},${(28*amb)+(110*glo)},${(48*amb)+(28*glo)})`;
                 ctx.beginPath();
                 ctx.moveTo(px,          py - WH);
@@ -575,7 +542,7 @@ function render() {
                 ctx.lineTo(px,          py + 2*TILE_H - WH);
                 ctx.lineTo(px - TILE_W, py + TILE_H - WH);
                 ctx.fill();
-                // South face — from W→S base up by WH; seam aligns with NE edge of y=-1 tile
+                // South face — from W→S base up by WH
                 ctx.fillStyle = `rgb(${13*amb},${(19*amb)+(145*glo)},${(32*amb)+(48*glo)})`;
                 ctx.beginPath();
                 ctx.moveTo(px - TILE_W, py + TILE_H);
@@ -583,13 +550,45 @@ function render() {
                 ctx.lineTo(px,          py + 2*TILE_H - WH);
                 ctx.lineTo(px - TILE_W, py + TILE_H - WH);
                 ctx.fill();
-                // Vent every 4 tiles, slightly above mid (62% up)
-                if (Math.abs(Math.floor(obj.x)) % 4 === 0) {
-                    // face direction: (W→S) = (TILE_W, TILE_H), normalised
+                // Exhaust vent — irregular placement using sin hash (gaps of ~4-7)
+                const xi = Math.floor(obj.x);
+                if (Math.abs(Math.sin(xi * 73.1)) > 0.83) {
                     const flen = Math.hypot(TILE_W, TILE_H);
-                    const ventCX = (px - TILE_W) + 0.5 * TILE_W;
-                    const ventCY = (py + TILE_H)  + 0.5 * TILE_H - WH * 0.62;
-                    drawVent(ventCX, ventCY, TILE_W/flen, TILE_H/flen, Math.floor(obj.x)*13);
+                    const fdx = TILE_W / flen, fdy = TILE_H / flen;
+                    const vw = 9, vh = 10;
+                    // Vent centre on south face, 62% up the wall
+                    // Screen offset from tile (px,py): centre of face = (-30, +45), then up by 62% of WH
+                    const vcx = px - 30;
+                    const vcy = py + 45 - WH * 0.62;
+                    ctx.fillStyle = "#010e08";
+                    ctx.beginPath();
+                    ctx.moveTo(vcx - fdx*vw, vcy - fdy*vw);
+                    ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw);
+                    ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw - vh);
+                    ctx.lineTo(vcx - fdx*vw, vcy - fdy*vw - vh);
+                    ctx.fill();
+                    ctx.strokeStyle = "rgba(0,200,110,0.45)";
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(vcx - fdx*vw, vcy - fdy*vw);
+                    ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw);
+                    ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw - vh);
+                    ctx.lineTo(vcx - fdx*vw, vcy - fdy*vw - vh);
+                    ctx.closePath();
+                    ctx.stroke();
+                    // Emit smoke anchored to world tile coords so it doesn't move with camera
+                    if (frame % 28 === Math.abs(xi * 13) % 28) {
+                        smoke.push({
+                            // world anchor — recomputed each frame in the render loop
+                            wx: obj.x, wy: obj.y,
+                            // screen offset from tile's (px,py)
+                            ox: -30 + (Math.random()-0.5)*3,
+                            oy: 45 - WH*0.62 - vh,
+                            vox: (Math.random()-0.5)*0.3,
+                            voy: -0.5 - Math.random()*0.3,
+                            life: 0.75, size: 3 + Math.random()*4
+                        });
+                    }
                 }
             } else {
                 // wall_front — North-East face only (base aligns with NE edge of y=4 tile)
@@ -600,13 +599,6 @@ function render() {
                 ctx.lineTo(px + TILE_W, py + TILE_H - WH);
                 ctx.lineTo(px,          py - WH);
                 ctx.fill();
-                // Vent every 4 tiles, offset by 2 from back wall
-                if (Math.abs(Math.floor(obj.x)) % 4 === 2) {
-                    const flen = Math.hypot(TILE_W, TILE_H);
-                    const ventCX = px + 0.5 * TILE_W;
-                    const ventCY = py + 0.5 * TILE_H - WH * 0.62;
-                    drawVent(ventCX, ventCY, TILE_W/flen, TILE_H/flen, Math.floor(obj.x)*17);
-                }
             }
         }
     });
@@ -627,11 +619,15 @@ function render() {
     ctx.restore();
 
     // ── SMOKE ──
+    // Smoke is stored as world anchor (wx,wy) + screen offset (ox,oy) so particles
+    // stay fixed to their vent position regardless of camera movement.
     smoke.forEach((sm,i)=>{
-        sm.x+=sm.vx; sm.y+=sm.vy; sm.life-=0.025; sm.size+=0.25;
+        sm.ox+=sm.vox; sm.oy+=sm.voy; sm.life-=0.025; sm.size+=0.25;
         if(sm.life<=0){smoke.splice(i,1);return;}
+        const bpx=(sm.wx-player.visualX-(sm.wy-player.visualY))*TILE_W+canvas.width/2;
+        const bpy=(sm.wx-player.visualX+(sm.wy-player.visualY))*TILE_H+canvas.height/2;
         ctx.save(); ctx.globalAlpha=sm.life; ctx.fillStyle=cfg.smokeColor;
-        ctx.beginPath(); ctx.ellipse(sm.x,sm.y,sm.size,sm.size*0.5,0,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(bpx+sm.ox,bpy+sm.oy,sm.size,sm.size*0.5,0,0,Math.PI*2); ctx.fill();
         ctx.restore();
     });
 
