@@ -95,19 +95,43 @@
 <canvas id="cavernCanvas"></canvas>
 
 <script>
-// ── GLOBAL ERROR DISPLAY ──────────────────────────────────
-window.onerror = function(msg, src, line, col, err) {
+// ── GLOBAL ERROR DISPLAY (catches sync + async + promise errors) ──
+function _showError(msg) {
     const e = document.createElement("div");
     Object.assign(e.style, {
-        position:"fixed", top:"0", left:"0", right:"0",
-        background:"rgba(0,0,0,0.9)", color:"#ff5555",
-        font:"12px monospace", padding:"10px",
-        zIndex:"99999", whiteSpace:"pre-wrap"
+        position:"fixed", top:"0", left:"0", right:"0", bottom:"0",
+        background:"rgba(0,0,0,0.95)", color:"#ff5555",
+        font:"13px monospace", padding:"14px", overflow:"auto",
+        zIndex:"99999", whiteSpace:"pre-wrap", touchAction:"auto"
     });
-    e.textContent = "CRASH\n\n" + msg + "\nLine:" + line +
-        (err && err.stack ? "\n\n" + err.stack : "");
+    e.textContent = msg;
     document.body.appendChild(e);
+}
+window.onerror = function(msg, src, line, col, err) {
+    _showError("CRASH\n\n" + msg + "\nLine:" + line +
+        (err && err.stack ? "\n\n" + err.stack : ""));
 };
+window.addEventListener('unhandledrejection', function(e) {
+    const r = e.reason;
+    _showError("ASYNC CRASH\n\n" +
+        (r && r.message ? r.message : String(r)) +
+        (r && r.stack ? "\n\n" + r.stack : ""));
+});
+
+// ── roundRect polyfill for older iOS Safari ──
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        if (typeof r === 'object') r = r[0];
+        r = Math.min(r || 0, w / 2, h / 2);
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y,     x + w, y + h, r);
+        this.arcTo(x + w, y + h, x,     y + h, r);
+        this.arcTo(x,     y + h, x,     y,     r);
+        this.arcTo(x,     y,     x + w, y,     r);
+        this.closePath();
+    };
+}
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
