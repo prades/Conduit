@@ -544,40 +544,35 @@ function _drawVirus(actor, px, py, drawCtx) {
     const bodyY = py - 40;
 
     // ── LEGS — drawn behind body ──
-    // 3 pairs × 2 segments (coxa→knee, tibia→foot), tripod alternating gait
+    // 3 legs — tripod alternating gait (left-front, right-mid, left-rear)
     const legCol = flash ? "#ccc" : `rgb(${Math.floor(er*br*0.65)},${Math.floor(eg*br*0.65)},${Math.floor(eb*br*0.65)})`;
     drawCtx.save();
     drawCtx.strokeStyle = legCol;
     drawCtx.lineCap = "round";
     drawCtx.lineWidth = 1.5;
 
-    const legRows = [
-        { oy:4,  phase:0       },   // front pair
-        { oy:13, phase:Math.PI },   // mid pair  (opposite phase)
-        { oy:22, phase:0       },   // rear pair
+    const legs = [
+        { oy:4,  side:-1, phase:0       },   // left-front
+        { oy:13, side: 1, phase:Math.PI },   // right-mid
+        { oy:22, side:-1, phase:0       },   // left-rear
     ];
     const wc = actor.walkCycle || 0;
-    legRows.forEach(({ oy, phase }) => {
-        [-1, 1].forEach(side => {
-            const gait   = Math.sin(wc + phase + side * 0.3);
-            const isSwing = gait > 0;
-            const lift   = isSwing ? gait * 5 : 0;
-            const stride = gait * 4;
-            // Hip — body edge
-            const hx = px + perpX * 4 * side;
-            const hy = bodyY + oy;
-            // Knee — extends outward with stride sweep
-            const kx = hx + perpX * side * 9 + fwdX * stride;
-            const ky = hy + perpY * side * 9 + fwdY * stride + 6 - lift;
-            // Foot — further out, drops to ground
-            const fx = kx + perpX * side * 5 + fwdX * stride * 0.5;
-            const fy = ky + 10 - lift * 0.4;
-            drawCtx.beginPath();
-            drawCtx.moveTo(hx, hy);
-            drawCtx.lineTo(kx, ky);
-            drawCtx.lineTo(fx, fy);
-            drawCtx.stroke();
-        });
+    legs.forEach(({ oy, side, phase }) => {
+        const gait    = Math.sin(wc + phase);
+        const isSwing = gait > 0;
+        const lift    = isSwing ? gait * 5 : 0;
+        const stride  = gait * 4;
+        const hx = px + perpX * 4 * side;
+        const hy = bodyY + oy;
+        const kx = hx + perpX * side * 9 + fwdX * stride;
+        const ky = hy + perpY * side * 9 + fwdY * stride + 6 - lift;
+        const fx = kx + perpX * side * 5 + fwdX * stride * 0.5;
+        const fy = ky + 10 - lift * 0.4;
+        drawCtx.beginPath();
+        drawCtx.moveTo(hx, hy);
+        drawCtx.lineTo(kx, ky);
+        drawCtx.lineTo(fx, fy);
+        drawCtx.stroke();
     });
     drawCtx.restore();
 

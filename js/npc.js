@@ -167,6 +167,15 @@ function updateRTSNPC(actor) {
         }
     }
 
+    // ── WALK CYCLE + DIRECTION (before role returns) ──
+    const dxM=actor.x-(actor.lastX||actor.x), dyM=actor.y-(actor.lastY||actor.y);
+    if (Math.abs(dxM)>0.001||Math.abs(dyM)>0.001) {
+        actor.walkCycle+=0.25;
+        const dlen=Math.hypot(dxM,dyM);
+        actor.dirX=dxM/dlen; actor.dirY=dyM/dlen;
+    }
+    actor.lastX=actor.x; actor.lastY=actor.y;
+
     // ── ROLE-DRIVEN MOVEMENT ──────────────────────────────
     if (actor.team==="green" && (actor.stance||"follow")==="follow") {
 
@@ -279,15 +288,6 @@ function updateRTSNPC(actor) {
         if (dist>FOLLOW_STOP) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
         return;
     }
-
-    // walk cycle + direction tracking
-    const dxM=actor.x-(actor.lastX||actor.x), dyM=actor.y-(actor.lastY||actor.y);
-    if (Math.abs(dxM)>0.001||Math.abs(dyM)>0.001) {
-        actor.walkCycle+=0.25;
-        const dlen=Math.hypot(dxM,dyM);
-        actor.dirX=dxM/dlen; actor.dirY=dyM/dlen;
-    }
-    actor.lastX=actor.x; actor.lastY=actor.y;
 
     // idle wander
     if (actor.moveCooldown>0) { actor.moveCooldown--; return; }
