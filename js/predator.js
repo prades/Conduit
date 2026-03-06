@@ -213,14 +213,26 @@ class Predator {
             }
         }
 
-        // ── HUNT (→ crystal) ──
+        // ── HUNT (→ crystal, with organic lateral weaving) ──
         if (this.state==="hunt") {
             const dx=crystal.x-this.x, dy=crystal.y-this.y;
             const dist=Math.sqrt(dx*dx+dy*dy);
             if (dist>0.8) {
-                this.x+=(dx/dist)*this.moveSpeed;
-                this.y+=(dy/dist)*this.moveSpeed;
-                this.dirX=dx/dist; this.dirY=dy/dist;
+                const crystalAngle = Math.atan2(dy, dx);
+                // Wobble frequency varies per-predator via animationPhase and moveSpeed
+                // so scouts dart faster/wider than tanks
+                const wobbleFreq = 0.005 + this.moveSpeed * 0.25;
+                const wobbleAmt  = Math.sin(this.animationPhase + frame * wobbleFreq) * 0.7;
+                const wobbleFade = Math.min(1, dist / 4); // reduce wobble when nearly at crystal
+                const moveAngle  = crystalAngle + wobbleAmt * wobbleFade;
+                // Smooth steering — avoids snapping, feels like a creature making decisions
+                const desiredX = Math.cos(moveAngle), desiredY = Math.sin(moveAngle);
+                this.dirX += (desiredX - this.dirX) * 0.07;
+                this.dirY += (desiredY - this.dirY) * 0.07;
+                const len = Math.hypot(this.dirX, this.dirY) || 1;
+                this.dirX /= len; this.dirY /= len;
+                this.x += this.dirX * this.moveSpeed;
+                this.y += this.dirY * this.moveSpeed;
             } else {
                 // ── ATTACK CRYSTAL ──
                 if (!this.attackCooldown) this.attackCooldown=0;

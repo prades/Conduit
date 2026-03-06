@@ -2,8 +2,11 @@
 //  WORLD GENERATION
 // ─────────────────────────────────────────────────────────
 function generateSegment(startX) {
+    const zoneIndex = Math.floor(startX / ZONE_LENGTH);
+    const zoneCenter = zoneIndex * ZONE_LENGTH + Math.floor(ZONE_LENGTH / 2);
     for (let y=-2; y<=5; y++) {
         let type = (y===-2)?'wall_back':(y===5)?'wall_front':'floor';
+        const isNest = type === 'floor' && y === 2 && startX === zoneCenter;
         const tile = {
             x:startX, y, type,
             pillar:(type==='floor'&&y>=3&&Math.random()<cfg.pillarSpawnRate),
@@ -12,7 +15,10 @@ function generateSegment(startX) {
             destroyed:false, health:20, maxHealth:20,
             converting:false, pendingDestroy:false,
             upgraded:false, pulseTimer:0,
-            reconstructing:false, reconstructProgress:0, workers:[]
+            reconstructing:false, reconstructProgress:0, workers:[],
+            // Spawn nest — honeycomb hive structure at zone centre, y=2
+            nest: isNest, nestHealth: isNest ? 200 : 0, nestMaxHealth: 200,
+            nestZone: isNest ? zoneIndex : -1, nestPulse: 0
         };
         if (tile.pillarTeam==="green") tile.pillarCol="#0f8"; else tile.pillarCol="#f22";
         world.push(tile);

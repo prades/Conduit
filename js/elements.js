@@ -316,7 +316,7 @@ let elementEffects = [];
 // ─────────────────────────────────────────────────────────
 let DEBUG_PREDATOR = false;
 let environmentalHazards = []; // { type, x, y, state, timer, alpha, dir, ventDir }
-const HAZARD_TYPES = ["acid", "vent", "cable"];
+const HAZARD_TYPES = ["acid", "cable"]; // "vent" moved to wall tiles (wall_back fire blasts)
 const HAZARD_FADE_FRAMES = 45; // 0.75s fade-in before activating
 
 function spawnHazardsForDay() {
@@ -337,15 +337,6 @@ function spawnHazardsForDay() {
             };
             if (type === "acid") {
                 hazard.tiles = [[hx,hy],[hx+1,hy],[hx,hy+1]].slice(0, 2+Math.floor(Math.random()*2));
-            }
-            if (type === "vent") {
-                const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-                hazard.ventDir = dirs[Math.floor(Math.random()*dirs.length)];
-                hazard.ventState = "idle";
-                hazard.ventTimer = 0;
-                hazard.IDLE_DUR   = 180 + Math.floor(Math.random()*120);
-                hazard.SHIMMER_DUR = 60;
-                hazard.BLAST_DUR   = 25;
             }
             if (type === "cable") {
                 hazard.x2 = hx + 3 + Math.floor(Math.random()*3);
@@ -386,34 +377,6 @@ function updateHazards() {
                         health = Math.max(0, health-4);
                     }
                 });
-            }
-        }
-
-        if (h.type === "vent") {
-            h.ventTimer++;
-            if (h.ventState === "idle" && h.ventTimer >= h.IDLE_DUR) {
-                h.ventState = "shimmer"; h.ventTimer = 0;
-            } else if (h.ventState === "shimmer" && h.ventTimer >= h.SHIMMER_DUR) {
-                h.ventState = "blast"; h.ventTimer = 0;
-                // Deal damage along blast line
-                for (let step = 1; step <= 3; step++) {
-                    const bx = h.x + h.ventDir[0]*step;
-                    const by = h.y + h.ventDir[1]*step;
-                    actors.forEach(a => {
-                        if (!a.dead && Math.abs(a.x-bx)<1.0 && Math.abs(a.y-by)<1.0) {
-                            applyDamage(a, 8, null, "fire");
-                            floatingTexts.push({x:a.x,y:a.y,text:"BLAST",color:"#ff6600",life:35,vy:-0.05});
-                        }
-                    });
-                    if (Math.abs(player.x-bx)<1.0 && Math.abs(player.y-by)<1.0) {
-                        health = Math.max(0, health-10);
-                        shake = Math.max(shake, 6);
-                    }
-                    // Spawn fire effect
-                    elementEffects.push({type:"impact",x:bx,y:by,color:"#ff6600",radius:0.8,life:20,element:"fire"});
-                }
-            } else if (h.ventState === "blast" && h.ventTimer >= h.BLAST_DUR) {
-                h.ventState = "idle"; h.ventTimer = 0;
             }
         }
 
@@ -460,48 +423,9 @@ function drawHazards() {
         py: (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height/2
     });
 
-    // Acid pools are drawn inside the depth-sorted tile loop in game.js
-    // so they correctly appear behind pylons.
+    // Acid pools drawn inside depth-sorted tile loop in game.js (behind pylons).
+    // Wall vents drawn + updated in game.js wall_back section (state lives on tile objects).
     environmentalHazards.forEach(h => {
-        if (h.type === "vent") {
-            const {px, py} = toScreen(h.x, h.y);
-            ctx.save();
-            // Vent grate — always visible
-            ctx.fillStyle = "#555";
-            ctx.fillRect(px - 12, py - 10, 24, 16);
-            ctx.strokeStyle = "#888"; ctx.lineWidth = 2;
-            for (let g = 0; g < 3; g++) {
-                ctx.beginPath();
-                ctx.moveTo(px - 10, py - 6 + g * 5);
-                ctx.lineTo(px + 10, py - 6 + g * 5);
-                ctx.stroke();
-            }
-            // Shimmer — heat wave lines
-            if (h.ventState === "shimmer") {
-                const t = h.ventTimer / h.SHIMMER_DUR;
-                ctx.globalAlpha = t;
-                ctx.strokeStyle = "#ffaa44"; ctx.lineWidth = 1.5;
-                for (let w = 0; w < 5; w++) {
-                    ctx.beginPath();
-                    ctx.moveTo(px - 10 + w * 5, py - 12);
-                    for (let s = 0; s < 6; s++) {
-                        ctx.lineTo(px - 10 + w * 5 + Math.sin(frame * 0.25 + s + w) * 4, py - 12 - s * 8);
-                    }
-                    ctx.stroke();
-                }
-            }
-            // Blast — bright orange fire
-            if (h.ventState === "blast") {
-                for (let step = 1; step <= 3; step++) {
-                    const {px: bpx, py: bpy} = toScreen(h.x + h.ventDir[0] * step, h.y + h.ventDir[1] * step);
-                    ctx.globalAlpha = 1 - (h.ventTimer / h.BLAST_DUR) * 0.5;
-                    ctx.fillStyle = `rgb(255,${80 + Math.floor(Math.random()*100)},0)`;
-                    ctx.beginPath(); ctx.arc(bpx, bpy - 20, 22 - step * 3, 0, Math.PI * 2); ctx.fill();
-                }
-            }
-            ctx.restore();
-        }
-
         if (h.type === "cable") {
             const {px: px1, py: py1} = toScreen(h.x, h.y);
             const {px: px2, py: py2} = toScreen(h.x2, h.y2);

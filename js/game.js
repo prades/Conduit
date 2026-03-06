@@ -83,13 +83,16 @@ function render() {
         for (let z = 1; z <= hostileZoneCount; z++) {
             const existing = zonePredators[z];
             if (!existing || existing.dead) {
-                // Start or tick respawn timer
+                // Don't spawn if the zone's nest has been destroyed
+                const nest = world.find(t => t.nest && t.nestZone === z);
+                if (nest && nest.nestHealth <= 0) continue;
+
                 if (!zoneRespawnTimers[z]) zoneRespawnTimers[z] = 0;
                 if (zoneRespawnTimers[z] > 0) {
                     zoneRespawnTimers[z]--;
                 } else {
                     spawnPredatorForZone(z);
-                    zoneRespawnTimers[z] = 180; // 3 sec respawn delay
+                    zoneRespawnTimers[z] = 180;
                 }
             }
         }
@@ -457,6 +460,58 @@ function render() {
                 ctx.restore();
             }
 
+            // ── SPAWN NEST (honeycomb hive) ──
+            if (obj.nest && obj.nestHealth > 0) {
+                obj.nestPulse = (obj.nestPulse || 0) + 1;
+                const hr      = obj.nestHealth / obj.nestMaxHealth;
+                const pulse   = 0.5 + 0.5 * Math.sin(obj.nestPulse * 0.06);
+                const baseY   = py - 10; // raised above floor centre
+
+                // Dark structural column
+                ctx.fillStyle = "#160900";
+                ctx.fillRect(px - 16, baseY - 55, 32, 65);
+
+                // Honeycomb cells — 7 flat-top hexagons centred on column
+                const cellR = 8;
+                const hexGrid = [
+                    [0, 0],
+                    [cellR * 1.5, -cellR * 0.87], [cellR * 1.5,  cellR * 0.87],
+                    [-cellR * 1.5, -cellR * 0.87], [-cellR * 1.5,  cellR * 0.87],
+                    [0, -cellR * 1.73], [0, cellR * 1.73]
+                ];
+                hexGrid.forEach(([hox, hoy], idx) => {
+                    const hcx = px  + hox * 0.55; // slight isometric squish
+                    const hcy = baseY - 30 + hoy * 0.55;
+                    const filled = hr > 0.3 || idx === 0;
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const a = i * Math.PI / 3;
+                        const hx2 = hcx + cellR * Math.cos(a);
+                        const hy2 = hcy + cellR * 0.58 * Math.sin(a); // flatten for iso
+                        i === 0 ? ctx.moveTo(hx2, hy2) : ctx.lineTo(hx2, hy2);
+                    }
+                    ctx.closePath();
+                    const bright = (180 * hr * (filled ? 1 : 0.1)) | 0;
+                    ctx.fillStyle = filled ? `rgba(${bright},${(bright*0.45)|0},0,${0.7 + pulse*0.2})` : "#090400";
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(255,${(140*hr)|0},0,0.45)`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                });
+
+                // Amber glow
+                ctx.save();
+                ctx.globalAlpha = (0.08 + pulse * 0.12) * hr;
+                ctx.shadowColor = "#ff8800"; ctx.shadowBlur = 18;
+                ctx.fillStyle = "#ff6600";
+                ctx.beginPath();
+                ctx.ellipse(px, baseY - 30, 22, 12, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                drawHealthBar(px - 22, baseY - 62, 44, 5, obj.nestHealth, obj.nestMaxHealth);
+            }
+
             // Command tile highlight
             if (commandMode&&commandTarget===obj) {
                 ctx.save();
@@ -595,32 +650,92 @@ function render() {
                     const flen = Math.hypot(TILE_W, TILE_H);
                     const fdx = TILE_W / flen, fdy = TILE_H / flen;
                     const vw = 9, vh = 10;
-                    // Vent centre on south face, 62% up the wall
-                    // Screen offset from tile (px,py): centre of face = (-30, +45), then up by 62% of WH
                     const vcx = px - 30;
                     const vcy = py + 45 - WH * 0.62;
-                    ctx.fillStyle = "#010e08";
+
+                    // ── VENT STATE MACHINE (stored on tile object, lazy init) ──
+                    if (!obj.ventState) {
+                        obj.ventState   = 'idle';
+                        obj.ventTimer   = 0;
+                        obj.ventIdleDur = 200 + ((Math.abs(Math.sin(xi * 37.1)) * 10000 | 0) % 220);
+                    }
+                    obj.ventTimer++;
+                    if (obj.ventState === 'idle' && obj.ventTimer >= obj.ventIdleDur) {
+                        obj.ventState = 'shimmer'; obj.ventTimer = 0;
+                    } else if (obj.ventState === 'shimmer' && obj.ventTimer >= 50) {
+                        obj.ventState = 'blast'; obj.ventTimer = 0;
+                        // Fire hits 3 tiles into the corridor (+y from wall at y=-2)
+                        for (let step = 1; step <= 3; step++) {
+                            const bwx = obj.x, bwy = obj.y + step;
+                            actors.forEach(a => {
+                                if (!a.dead && Math.abs(a.x-bwx)<1.0 && Math.abs(a.y-bwy)<1.0) {
+                                    applyDamage(a, 8, null, "fire");
+                                    floatingTexts.push({x:a.x,y:a.y,text:"BLAST",color:"#ff6600",life:35,vy:-0.05});
+                                }
+                            });
+                            if (Math.abs(player.x-bwx)<1.0 && Math.abs(player.y-bwy)<1.0) {
+                                health = Math.max(0, health-10); shake = Math.max(shake, 6);
+                            }
+                        }
+                    } else if (obj.ventState === 'blast' && obj.ventTimer >= 30) {
+                        obj.ventState = 'idle'; obj.ventTimer = 0;
+                        obj.ventIdleDur = 200 + ((Math.abs(Math.sin(xi * 53.7 + frame)) * 10000 | 0) % 220);
+                    }
+
+                    // ── DRAW VENT OPENING ──
+                    const glowCol = obj.ventState === 'idle'    ? "rgba(0,200,110,0.45)"
+                                  : obj.ventState === 'shimmer' ? `rgba(255,140,0,${0.4 + obj.ventTimer/50*0.5})`
+                                  :                               "rgba(255,60,0,0.9)";
+                    // Shimmer — orange heat glow building up
+                    if (obj.ventState === 'shimmer') {
+                        const t = obj.ventTimer / 50;
+                        ctx.save();
+                        ctx.globalAlpha = t * 0.55;
+                        ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 14;
+                        ctx.fillStyle = "#ff6600";
+                        ctx.beginPath();
+                        ctx.moveTo(vcx - fdx*vw*1.5, vcy - fdy*vw*1.5);
+                        ctx.lineTo(vcx + fdx*vw*1.5, vcy + fdy*vw*1.5);
+                        ctx.lineTo(vcx + fdx*vw*1.5, vcy + fdy*vw*1.5 - vh*1.6);
+                        ctx.lineTo(vcx - fdx*vw*1.5, vcy - fdy*vw*1.5 - vh*1.6);
+                        ctx.fill(); ctx.restore();
+                    }
+                    // Dark opening
+                    ctx.fillStyle = obj.ventState === 'idle' ? "#010e08" : "#1a0400";
                     ctx.beginPath();
                     ctx.moveTo(vcx - fdx*vw, vcy - fdy*vw);
                     ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw);
                     ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw - vh);
                     ctx.lineTo(vcx - fdx*vw, vcy - fdy*vw - vh);
                     ctx.fill();
-                    ctx.strokeStyle = "rgba(0,200,110,0.45)";
-                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = glowCol; ctx.lineWidth = 1;
                     ctx.beginPath();
                     ctx.moveTo(vcx - fdx*vw, vcy - fdy*vw);
                     ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw);
                     ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw - vh);
                     ctx.lineTo(vcx - fdx*vw, vcy - fdy*vw - vh);
-                    ctx.closePath();
-                    ctx.stroke();
-                    // Emit smoke anchored to world tile coords so it doesn't move with camera
-                    if (frame % 28 === Math.abs(xi * 13) % 28) {
+                    ctx.closePath(); ctx.stroke();
+
+                    // Blast fire plume along the 3 corridor tiles
+                    if (obj.ventState === 'blast') {
+                        const fade = 1 - obj.ventTimer / 30;
+                        for (let step = 1; step <= 3; step++) {
+                            const bpx2 = px - step * TILE_W;
+                            const bpy2 = py + step * TILE_H;
+                            ctx.save();
+                            ctx.globalAlpha = fade * Math.max(0, 1 - step * 0.25);
+                            ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 22;
+                            ctx.fillStyle = `rgb(255,${(110 - step*25 + Math.random()*40)|0},0)`;
+                            ctx.beginPath();
+                            ctx.arc(bpx2, bpy2 - 18, 20 - step * 3, 0, Math.PI * 2);
+                            ctx.fill(); ctx.restore();
+                        }
+                    }
+
+                    // Idle smoke
+                    if (obj.ventState === 'idle' && frame % 28 === Math.abs(xi * 13) % 28) {
                         smoke.push({
-                            // world anchor — recomputed each frame in the render loop
                             wx: obj.x, wy: obj.y,
-                            // screen offset from tile's (px,py)
                             ox: -30 + (Math.random()-0.5)*3,
                             oy: 45 - WH*0.62 - vh,
                             vox: (Math.random()-0.5)*0.3,
@@ -669,6 +784,10 @@ function render() {
         const sy=(p.x-player.visualX+(p.y-player.visualY))*TILE_H+canvas.height/2;
         ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(sx,sy-40,5,0,7); ctx.fill();
         let t=getTile(Math.round(p.x),Math.round(p.y));
+        if(t&&t.nest&&t.nestHealth>0){
+            t.nestHealth=Math.max(0,t.nestHealth-8);
+            projectiles.splice(i,1); return;
+        }
         if(t&&t.pillar&&!t.destroyed){
             if(!t.upgraded&&t.health<=0) t.destroyed=true;
             for(let k=0;k<6;k++) shards.push({x:t.x,y:t.y,z:1+Math.random(),vz:-0.05-Math.random()*0.05,color:t.pillarCol});
