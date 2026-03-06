@@ -552,9 +552,9 @@ function _drawVirus(actor, px, py, drawCtx) {
     drawCtx.lineWidth = 1.5;
 
     const legs = [
-        { oy:4,  side:-1, phase:0       },   // left-front
-        { oy:13, side: 1, phase:Math.PI },   // right-mid
-        { oy:22, side:-1, phase:0       },   // left-rear
+        { oy:4,  side:-1, phase:0             },   // left-front
+        { oy:13, side: 1, phase:Math.PI*2/3   },   // right-mid
+        { oy:22, side: 1, phase:Math.PI*4/3   },   // right-rear (opposite side, own phase)
     ];
     const wc = actor.walkCycle || 0;
     legs.forEach(({ oy, side, phase }) => {
