@@ -24,7 +24,6 @@ function generateSegment(startX) {
         world.push(tile);
 
         // NPC spawns
-        const zoneIndex=Math.floor(startX/ZONE_LENGTH);
         if (zoneIndex<activeDayZones && type==='floor' && y===3 && Math.random()<cfg.npcSpawnRate) {
             const typeKeys=["virus","lobster","turtle"];
             const npcType=typeKeys[Math.floor(Math.random()*typeKeys.length)];
