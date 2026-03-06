@@ -523,34 +523,85 @@ function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData,
 
 function _drawVirus(actor, px, py, drawCtx) {
     drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
-    const bodyY=py-40;
-    drawCtx.fillStyle="#222"; drawCtx.fillRect(px-4,bodyY+10,8,12);
 
-    const elementDef=ELEMENTS.find(e=>e.id===actor.element);
-    const elementColor=actor.isNeutralRecruit?"#aaaaaa":(elementDef?elementDef.color:"#777");
-    const hr=actor.maxHealth>0?actor.health/actor.maxHealth:0;
-    const br=0.25+hr*0.75;
-    const r=parseInt(elementColor.substring(1,3),16);
-    const g=parseInt(elementColor.substring(3,5),16);
-    const b=parseInt(elementColor.substring(5,7),16);
-    const headColor=`rgb(${Math.floor(r*br)},${Math.floor(g*br)},${Math.floor(b*br)})`;
+    const elementDef   = ELEMENTS.find(e => e.id === actor.element);
+    const elementColor = actor.isNeutralRecruit ? "#aaaaaa" : (elementDef ? elementDef.color : "#777");
+    const hr = actor.maxHealth > 0 ? actor.health / actor.maxHealth : 0;
+    const br = 0.25 + hr * 0.75;
+    const er = parseInt(elementColor.substring(1,3),16);
+    const eg = parseInt(elementColor.substring(3,5),16);
+    const eb = parseInt(elementColor.substring(5,7),16);
+    const headColor = `rgb(${Math.floor(er*br)},${Math.floor(eg*br)},${Math.floor(eb*br)})`;
+    const flash = actor.hitFlash > 0 && actor.state !== "retreat";
 
-    drawCtx.fillStyle=actor.hitFlash>0&&actor.state!=="retreat"?"#fff":headColor;
-    drawCtx.beginPath(); drawCtx.moveTo(px,bodyY-8); drawCtx.lineTo(px+10,bodyY+2);
-    drawCtx.lineTo(px,bodyY+12); drawCtx.lineTo(px-10,bodyY+2); drawCtx.closePath(); drawCtx.fill();
-    drawCtx.fillStyle="rgba(255,255,255,0.2)";
-    drawCtx.beginPath(); drawCtx.moveTo(px,bodyY-8); drawCtx.lineTo(px+5,bodyY+2); drawCtx.lineTo(px,bodyY+6); drawCtx.closePath(); drawCtx.fill();
+    // Screen-space forward + perpendicular from world-space movement direction
+    const wdx = actor.dirX || 1, wdy = actor.dirY || 0;
+    const sdx = wdx - wdy, sdy = (wdx + wdy) * 0.5; // isometric projection
+    const slen = Math.hypot(sdx, sdy) || 1;
+    const fwdX = sdx / slen,  fwdY = sdy / slen;  // screen forward
+    const perpX = -fwdY,      perpY =  fwdX;       // screen perpendicular (lateral)
 
-    // 3 mechanical legs (FIX: drawLeg is local, no collision)
-    drawCtx.strokeStyle="#111"; drawCtx.lineWidth=3;
-    const legSpread=14, step=Math.sin(actor.walkCycle*0.12+actor.x)*4;
-    function drawVirusLeg(offsetX) {
-        const hipX=px+offsetX, hipY=bodyY+20;
-        const kneeX=hipX+offsetX*0.4, kneeY=hipY+10+step;
-        const footX=kneeX+offsetX*0.4, footY=kneeY+12;
-        drawCtx.beginPath(); drawCtx.moveTo(hipX,hipY); drawCtx.lineTo(kneeX,kneeY); drawCtx.lineTo(footX,footY); drawCtx.stroke();
-    }
-    drawVirusLeg(-legSpread); drawVirusLeg(legSpread); drawVirusLeg(0);
+    const bodyY = py - 40;
+
+    // ── LEGS — drawn behind body ──
+    // 3 pairs × 2 segments (coxa→knee, tibia→foot), tripod alternating gait
+    const legCol = flash ? "#ccc" : `rgb(${Math.floor(er*br*0.65)},${Math.floor(eg*br*0.65)},${Math.floor(eb*br*0.65)})`;
+    drawCtx.save();
+    drawCtx.strokeStyle = legCol;
+    drawCtx.lineCap = "round";
+    drawCtx.lineWidth = 1.5;
+
+    const legRows = [
+        { oy:4,  phase:0       },   // front pair
+        { oy:13, phase:Math.PI },   // mid pair  (opposite phase)
+        { oy:22, phase:0       },   // rear pair
+    ];
+    const wc = actor.walkCycle || 0;
+    legRows.forEach(({ oy, phase }) => {
+        [-1, 1].forEach(side => {
+            const gait   = Math.sin(wc + phase + side * 0.3);
+            const isSwing = gait > 0;
+            const lift   = isSwing ? gait * 5 : 0;
+            const stride = gait * 4;
+            // Hip — body edge
+            const hx = px + perpX * 4 * side;
+            const hy = bodyY + oy;
+            // Knee — extends outward with stride sweep
+            const kx = hx + perpX * side * 9 + fwdX * stride;
+            const ky = hy + perpY * side * 9 + fwdY * stride + 6 - lift;
+            // Foot — further out, drops to ground
+            const fx = kx + perpX * side * 5 + fwdX * stride * 0.5;
+            const fy = ky + 10 - lift * 0.4;
+            drawCtx.beginPath();
+            drawCtx.moveTo(hx, hy);
+            drawCtx.lineTo(kx, ky);
+            drawCtx.lineTo(fx, fy);
+            drawCtx.stroke();
+        });
+    });
+    drawCtx.restore();
+
+    // ── BODY — thorax over legs ──
+    drawCtx.fillStyle = flash ? "#fff" : "#12121e";
+    drawCtx.fillRect(px-5, bodyY+5, 10, 18);
+
+    // ── HEAD — element-colored diamond ──
+    drawCtx.fillStyle = flash ? "#fff" : headColor;
+    drawCtx.beginPath();
+    drawCtx.moveTo(px,      bodyY - 8);
+    drawCtx.lineTo(px + 10, bodyY + 2);
+    drawCtx.lineTo(px,      bodyY + 12);
+    drawCtx.lineTo(px - 10, bodyY + 2);
+    drawCtx.closePath();
+    drawCtx.fill();
+    // Highlight sliver
+    drawCtx.fillStyle = "rgba(255,255,255,0.2)";
+    drawCtx.beginPath();
+    drawCtx.moveTo(px,     bodyY - 8);
+    drawCtx.lineTo(px + 5, bodyY + 2);
+    drawCtx.lineTo(px,     bodyY + 6);
+    drawCtx.closePath();
+    drawCtx.fill();
 }
 
 // ─────────────────────────────────────────────────────────
