@@ -228,7 +228,7 @@ function updateRTSNPC(actor) {
                         const dmg   = (actor.stats?.specialAttack||10) * 0.5;
                         spawnFollowerProjectile(actor, nearestEnemy, col, dmg, 5, null);
                         actor.attackCooldown = 55;
-                        if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - 1);
+                        if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
                     } else {
                         actor.attackCooldown--;
                     }

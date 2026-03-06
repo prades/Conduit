@@ -246,15 +246,15 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.mandibles.enabled = false;
         predator.appendages.antennae.enabled  = false;
         predator.appendages.chelicerae.enabled = true;
-        predator.appendages.chelicerae.length  = 11;
-        predator.appendages.chelicerae.fangCurve = 0.7;
-        predator.appendages.chelicerae.thickness = 3;
+        predator.appendages.chelicerae.length  = 7;
+        predator.appendages.chelicerae.fangCurve = 0.5;
+        predator.appendages.chelicerae.thickness = 1.5;
         predator.appendages.pedipalps.enabled = true;
-        predator.appendages.pedipalps.length  = 9;
+        predator.appendages.pedipalps.length  = 6;
         predator.appendages.spinnerets.enabled = true;
         predator.appendages.eyes.count = 8;
-        predator.appendages.eyes.size  = 2.5;
-        predator.appendages.eyes.glow  = 0.8;
+        predator.appendages.eyes.size  = 1.0;
+        predator.appendages.eyes.glow  = 0.2;
         // Tall body — cephalothorax raised high, small compact abdomen that protrudes as a round globe
         predator.body.head.size    = 0.0;   // fused into cephalothorax
         predator.body.thorax.size  = 1.1;   // tall raised cephalothorax

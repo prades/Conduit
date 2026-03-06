@@ -294,7 +294,7 @@ function render() {
 
     // ── CONTESTED SIPHON CONVERSION ──
     if(latchedPillar&&latchedPillar.pillarTeam==="red"&&latchedPillar.converting) {
-        actors.forEach(a=>{ if(a.team!=="red")return; const dx=a.x-latchedPillar.x,dy=a.y-latchedPillar.y; if(Math.sqrt(dx*dx+dy*dy)<1.2) convertNPC(a,"green"); });
+        actors.forEach(a=>{ if(a.team!=="red"||a instanceof Predator)return; const dx=a.x-latchedPillar.x,dy=a.y-latchedPillar.y; if(Math.sqrt(dx*dx+dy*dy)<1.2) convertNPC(a,"green"); });
     }
 
     updateShards();
@@ -565,10 +565,14 @@ function render() {
                     ctx.fillStyle=wcol; ctx.globalAlpha=0.7+wpulse*0.3;
                     ctx.beginPath(); ctx.arc(px,py-110,9,0,Math.PI*2); ctx.fill();
                     ctx.restore();
-                    // Element label
+                    // Element label + effect description
+                    const PYLON_FX={fire:"burns enemies",ice:"slows enemies",electric:"charges allies",core:"shields allies",flux:"pulls enemies",toxic:"corrodes enemies"};
+                    const el0=obj.attackModeElement||"";
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                    ctx.fillStyle=wcol; ctx.font="9px monospace"; ctx.textAlign="center";
-                    ctx.fillText((obj.attackModeElement||"").toUpperCase(),px,py-122);
+                    ctx.fillStyle=wcol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
+                    ctx.fillText(el0.toUpperCase(),px,py-124);
+                    ctx.font="7px monospace"; ctx.globalAlpha=0.7;
+                    ctx.fillText(PYLON_FX[el0]||"",px,py-114);
                     ctx.restore();
                 } else if (obj.attackMode) {
                     // ── ATTACK MODE — angular armed pylon ──
@@ -594,6 +598,16 @@ function render() {
                     ctx.fillStyle=acol; ctx.globalAlpha=0.4;
                     ctx.fillRect(px-3,py-90,6,80);
                     ctx.globalAlpha=1;
+                    // Element + effect label
+                    if (obj.attackModeElement) {
+                        const PYLON_FX2={fire:"burns enemies",ice:"slows enemies",electric:"charges allies",core:"shields allies",flux:"pulls enemies",toxic:"corrodes enemies"};
+                        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                        ctx.fillStyle=acol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
+                        ctx.fillText(obj.attackModeElement.toUpperCase(),px,py-108);
+                        ctx.font="7px monospace"; ctx.globalAlpha=0.7;
+                        ctx.fillText(PYLON_FX2[obj.attackModeElement]||"",px,py-98);
+                        ctx.restore();
+                    }
                 } else if(obj.upgraded){
                     ctx.save(); ctx.globalAlpha=0.2; ctx.fillStyle="#0f8";
                     ctx.beginPath(); ctx.arc(px,py-85,20,0,Math.PI*2); ctx.fill(); ctx.restore();

@@ -50,7 +50,7 @@ const SHOP_ITEMS = [
     { id:"crystal_repair",label:"Repair Crystal",cost:15,
       apply() { crystal.health = Math.min(crystal.maxHealth, crystal.health + 80); } },
     { id:"spawn_follower",label:"+1 Follower",   cost:10,
-      apply() { spawnFollowerAtCrystal("fire"); } },
+      apply() { const pool=[...unlockedElements]; spawnFollowerAtCrystal(pool[Math.floor(Math.random()*pool.length)]||"fire"); } },
     { id:"more_zones",    label:"+1 Zone",       cost:20,
       apply() { activeDayZones++; } }
 ];

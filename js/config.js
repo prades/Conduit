@@ -18,7 +18,7 @@ window.onerror = function(msg, src, line, col, err) {
 
 // ── ELEMENTS ─────────────────────────────────────────────
 const ELEMENTS = [
-    { id:"fire",     label:"FIRE",     color:"#ff5533" },
+    { id:"fire",     label:"FIRE",     color:"#ff3300" },
     { id:"electric", label:"ELECTRIC", color:"#ffee33" },
     { id:"ice",      label:"ICE",      color:"#99ddff" },
     { id:"flux",     label:"FLUX",     color:"#9933ff" },

@@ -42,7 +42,7 @@ const ELEMENT_PROC_CHANCE = {
 
 const WILL_COST_PHYSICAL = 1;
 const WILL_COST_SPECIAL  = 4;
-const WILL_REGEN_RATE    = 0.02; // per frame passive
+const WILL_REGEN_RATE    = 0.005; // per frame passive (~0.3/sec; meaningful cost)
 
 const ELEMENT_ATTACKS = {
 
@@ -53,7 +53,7 @@ const ELEMENT_ATTACKS = {
             spawnElementEffect({
                 type: "ring",
                 x: actor.x, y: actor.y,
-                color: "#ff5533",
+                color: "#ff3300",
                 radius: 1.5,
                 life: 30,
                 element: "fire"
@@ -83,7 +83,7 @@ const ELEMENT_ATTACKS = {
             spawnElementEffect({
                 type: "meteor",
                 x: target.x, y: target.y,
-                color: "#ff5533",
+                color: "#ff3300",
                 radius: 2.0,
                 life: 45,
                 element: "fire"

@@ -70,40 +70,40 @@ const SPECIES = {
     ant: {
         rank: 1,
         color: "#aa55ff",
-        nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:6,  dnaDrops:1, shardDrop:2,  reactionSpeed:15 },
-        scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:12, dnaDrops:1, shardDrop:3,  reactionSpeed:5  },
-        striker: { width:28, height:12, moveSpeed:0.018, health:100, power:18, dnaDrops:1, shardDrop:5,  reactionSpeed:10 },
-        tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:25, dnaDrops:2, shardDrop:8,  reactionSpeed:22 },
-        boss:    { width:52, height:24, moveSpeed:0.008, health:500, power:40, dnaDrops:4, shardDrop:20, reactionSpeed:8  }
+        nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:9,  dnaDrops:1, shardDrop:2,  reactionSpeed:15 },
+        scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:18, dnaDrops:1, shardDrop:3,  reactionSpeed:5  },
+        striker: { width:28, height:12, moveSpeed:0.018, health:100, power:27, dnaDrops:1, shardDrop:5,  reactionSpeed:10 },
+        tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:38, dnaDrops:2, shardDrop:8,  reactionSpeed:22 },
+        boss:    { width:52, height:24, moveSpeed:0.008, health:500, power:60, dnaDrops:4, shardDrop:20, reactionSpeed:8  }
     },
     beetle: {
         rank: 2,
         color: "#cc44ff",
-        nymph:   { width:16, height:8,  moveSpeed:0.028, health:45,  power:8,  dnaDrops:1, shardDrop:4,  reactionSpeed:15 },
-        scout:   { width:26, height:12, moveSpeed:0.020, health:100, power:18, dnaDrops:1, shardDrop:6,  reactionSpeed:5  },
-        striker: { width:32, height:14, moveSpeed:0.016, health:160, power:26, dnaDrops:2, shardDrop:9,  reactionSpeed:10 },
-        tank:    { width:42, height:18, moveSpeed:0.010, health:280, power:35, dnaDrops:2, shardDrop:14, reactionSpeed:22 },
-        boss:    { width:62, height:28, moveSpeed:0.007, health:800, power:60, dnaDrops:5, shardDrop:30, reactionSpeed:8  }
+        nymph:   { width:16, height:8,  moveSpeed:0.028, health:45,  power:12, dnaDrops:1, shardDrop:4,  reactionSpeed:15 },
+        scout:   { width:26, height:12, moveSpeed:0.020, health:100, power:27, dnaDrops:1, shardDrop:6,  reactionSpeed:5  },
+        striker: { width:32, height:14, moveSpeed:0.016, health:160, power:39, dnaDrops:2, shardDrop:9,  reactionSpeed:10 },
+        tank:    { width:42, height:18, moveSpeed:0.010, health:280, power:53, dnaDrops:2, shardDrop:14, reactionSpeed:22 },
+        boss:    { width:62, height:28, moveSpeed:0.007, health:800, power:90, dnaDrops:5, shardDrop:30, reactionSpeed:8  }
     },
     scorpion: {
         rank: 3,
         color: "#8844ff",
-        nymph:   { width:18, height:9,  moveSpeed:0.026, health:65,  power:12, dnaDrops:2, shardDrop:6,  reactionSpeed:15 },
-        scout:   { width:30, height:13, moveSpeed:0.019, health:150, power:25, dnaDrops:2, shardDrop:10, reactionSpeed:5  },
+        nymph:   { width:18, height:9,  moveSpeed:0.026, health:65,  power:18, dnaDrops:2, shardDrop:6,  reactionSpeed:15 },
+        scout:   { width:30, height:13, moveSpeed:0.019, health:150, power:38, dnaDrops:2, shardDrop:10, reactionSpeed:5  },
         // striker/tank/boss: stinger tail — abdomen ranged attacker
-        striker: { width:36, height:15, moveSpeed:0.015, health:240, power:36, dnaDrops:3, shardDrop:15, reactionSpeed:10, abdomenAttack:true, rangeDamage:20, abdomenCooldown:90 },
-        tank:    { width:48, height:20, moveSpeed:0.009, health:400, power:50, dnaDrops:3, shardDrop:22, reactionSpeed:22, abdomenAttack:true, rangeDamage:35, abdomenCooldown:75 },
-        boss:    { width:70, height:32, moveSpeed:0.006, health:1200, power:80, dnaDrops:6, shardDrop:45, reactionSpeed:8,  abdomenAttack:true, rangeDamage:55, abdomenCooldown:60 }
+        striker: { width:36, height:15, moveSpeed:0.015, health:240, power:54, dnaDrops:3, shardDrop:15, reactionSpeed:10, abdomenAttack:true, rangeDamage:30, abdomenCooldown:90 },
+        tank:    { width:48, height:20, moveSpeed:0.009, health:400, power:75, dnaDrops:3, shardDrop:22, reactionSpeed:22, abdomenAttack:true, rangeDamage:53, abdomenCooldown:75 },
+        boss:    { width:70, height:32, moveSpeed:0.006, health:1200, power:120, dnaDrops:6, shardDrop:45, reactionSpeed:8,  abdomenAttack:true, rangeDamage:83, abdomenCooldown:60 }
     },
     spider: {
         rank: 4,
         color: "#cc2244",
-        nymph:   { width:20, height:10, moveSpeed:0.032, health:80,  power:15, dnaDrops:2, shardDrop:8,  reactionSpeed:15 },
-        scout:   { width:34, height:15, moveSpeed:0.024, health:200, power:32, dnaDrops:3, shardDrop:14, reactionSpeed:5  },
+        nymph:   { width:20, height:10, moveSpeed:0.032, health:80,  power:23, dnaDrops:2, shardDrop:8,  reactionSpeed:15 },
+        scout:   { width:34, height:15, moveSpeed:0.024, health:200, power:48, dnaDrops:3, shardDrop:14, reactionSpeed:5  },
         // striker/tank/boss: spinneret venom — abdomen ranged attacker
-        striker: { width:40, height:18, moveSpeed:0.020, health:300, power:48, dnaDrops:3, shardDrop:20, reactionSpeed:10, abdomenAttack:true, rangeDamage:18, abdomenCooldown:85 },
-        tank:    { width:52, height:22, moveSpeed:0.014, health:520, power:62, dnaDrops:4, shardDrop:28, reactionSpeed:22, abdomenAttack:true, rangeDamage:30, abdomenCooldown:75 },
-        boss:    { width:80, height:36, moveSpeed:0.008, health:1800, power:100, dnaDrops:8, shardDrop:60, reactionSpeed:8,  abdomenAttack:true, rangeDamage:48, abdomenCooldown:65 }
+        striker: { width:40, height:18, moveSpeed:0.020, health:300, power:72, dnaDrops:3, shardDrop:20, reactionSpeed:10, abdomenAttack:true, rangeDamage:27, abdomenCooldown:85 },
+        tank:    { width:52, height:22, moveSpeed:0.014, health:520, power:93, dnaDrops:4, shardDrop:28, reactionSpeed:22, abdomenAttack:true, rangeDamage:45, abdomenCooldown:75 },
+        boss:    { width:80, height:36, moveSpeed:0.008, health:1800, power:150, dnaDrops:8, shardDrop:60, reactionSpeed:8,  abdomenAttack:true, rangeDamage:72, abdomenCooldown:65 }
     }
 };
 
@@ -114,11 +114,11 @@ const PREDATOR_POOLS = {
     3: ["scout","striker","tank"]
 };
 const PREDATOR_TYPES = {
-    nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:6,  color:"#aa55ff", reactionSpeed:15 },
-    scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:12, color:"#aa55ff", reactionSpeed:5  },
-    striker: { width:28, height:12, moveSpeed:0.018, health:100, power:18, color:"#cc44ff", reactionSpeed:10 },
-    tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:25, color:"#8844ff", reactionSpeed:22 },
-    boss:    { width:52, height:24, moveSpeed:0.008, health:500, power:40, color:"#8844ff", reactionSpeed:8  }
+    nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:9,  color:"#aa55ff", reactionSpeed:15 },
+    scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:18, color:"#aa55ff", reactionSpeed:5  },
+    striker: { width:28, height:12, moveSpeed:0.018, health:100, power:27, color:"#cc44ff", reactionSpeed:10 },
+    tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:38, color:"#8844ff", reactionSpeed:22 },
+    boss:    { width:52, height:24, moveSpeed:0.008, health:500, power:60, color:"#8844ff", reactionSpeed:8  }
     // Spider uses SPECIES lookup directly — no legacy entry needed
 };
 
