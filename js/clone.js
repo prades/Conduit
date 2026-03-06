@@ -349,12 +349,13 @@ function spawnPredatorForZone(zoneIndex) {
         abdomenCooldown: classDef.abdomenCooldown ?? 90
     };
 
-    const spawnX = zoneIndex * ZONE_LENGTH + Math.random() * ZONE_LENGTH;
-    const wallY  = Math.random() > 0.5 ? -1 : 5;
+    // Spawn at the zone's nest if it's alive, otherwise fall back to zone centre
+    const nest   = world.find(t => t.nest && t.nestZone === zoneIndex && t.nestHealth > 0);
+    const spawnX = nest ? nest.x : zoneIndex * ZONE_LENGTH + Math.floor(ZONE_LENGTH / 2);
+    const spawnY = nest ? nest.y : 2;
 
-    const predator = new Predator(className, def, spawnX, wallY);
-    predator.state        = "crawl_in";
-    predator.entryTargetY = 3;
+    const predator = new Predator(className, def, spawnX, spawnY);
+    predator.state        = "hunt"; // emerges from nest directly into hunt
     predator.speciesName  = speciesName;
     predator.className    = className;
     predator.dnaDrops     = classDef.dnaDrops;

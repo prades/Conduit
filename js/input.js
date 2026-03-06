@@ -7,12 +7,6 @@ const handleInput=(ex,ey)=>{
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
 
-    // Tap near a follower — no longer needed, selection is via element UI
-    if (t&&t.pillar&&t.destroyed) {
-        player.angryTimer=30;
-        projectiles.push({x:player.x,y:player.y,vx:(gx-player.x)*0.2,vy:(gy-player.y)*0.2,life:15});
-        return;
-    }
     if (t&&!t.type.includes('wall')) { player.targetX=gx; player.targetY=gy; }
     // Deselect follower when tapping empty ground
     player.selectedFollower=null;

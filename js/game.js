@@ -777,26 +777,6 @@ function render() {
         ctx.restore();
     });
 
-    // ── PROJECTILES ──
-    projectiles.forEach((p,i)=>{
-        p.x+=p.vx; p.y+=p.vy;
-        const sx=(p.x-player.visualX-(p.y-player.visualY))*TILE_W+canvas.width/2;
-        const sy=(p.x-player.visualX+(p.y-player.visualY))*TILE_H+canvas.height/2;
-        ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(sx,sy-40,5,0,7); ctx.fill();
-        let t=getTile(Math.round(p.x),Math.round(p.y));
-        if(t&&t.nest&&t.nestHealth>0){
-            t.nestHealth=Math.max(0,t.nestHealth-8);
-            projectiles.splice(i,1); return;
-        }
-        if(t&&t.pillar&&!t.destroyed){
-            if(!t.upgraded&&t.health<=0) t.destroyed=true;
-            for(let k=0;k<6;k++) shards.push({x:t.x,y:t.y,z:1+Math.random(),vz:-0.05-Math.random()*0.05,color:t.pillarCol});
-            projectiles.splice(i,1); shake=8;
-            for(let j=0;j<6;j++) fragments.push({x:sx,y:sy-40,vx:(Math.random()-0.5)*10,vy:-Math.random()*10,life:1,col:t.pillarCol});
-        }
-        if(p.life--<0) projectiles.splice(i,1);
-    });
-
     // ── FRAGMENTS ──
     fragments.forEach((f,i)=>{
         f.x+=f.vx; f.y+=f.vy; f.vy+=0.5; f.life-=0.02;

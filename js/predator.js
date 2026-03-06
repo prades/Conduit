@@ -326,6 +326,10 @@ class Predator {
             }
         }
 
+        // ── CORRIDOR BOUNDS — clamp to walkable floor (y 0–4, x ≥ 0) ──
+        this.y = Math.max(0, Math.min(4, this.y));
+        this.x = Math.max(0, this.x);
+
         if (this.state==="hunt"||this.state==="wander") this.walkCycle+=this.moveSpeed*40;
         this.lastX=this.x; this.lastY=this.y;
 
