@@ -488,6 +488,44 @@ function render() {
                 }
                 ctx.closePath();
                 ctx.fill();
+                // Bubbles — drawn per-tile, rise then pop
+                if (acidH.bubbles) {
+                    acidH.bubbles.forEach(b => {
+                        if (b.tx !== Math.round(obj.x) || b.ty !== Math.round(obj.y)) return;
+                        const t   = b.life / b.maxLife; // 1→0 as life runs down
+                        const bpx = cx + b.ox * TILE_W * 0.38;
+                        const bpy = cy + b.oy * TILE_H * 0.38;
+                        const riseY = (1 - t) * 14; // rises 14px over lifetime
+                        ctx.save();
+                        if (t > 0.18) {
+                            // Rising bubble — small outlined circle
+                            const r = 1.5 + (1 - t) * 2.5;
+                            ctx.globalAlpha = Math.min(1, t * 4) * (acidH.alpha ?? 1);
+                            ctx.strokeStyle = "#99ffbb";
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.arc(bpx, bpy - riseY, r, 0, Math.PI * 2);
+                            ctx.stroke();
+                            // tiny specular glint
+                            ctx.globalAlpha *= 0.6;
+                            ctx.fillStyle = "#ccffdd";
+                            ctx.beginPath();
+                            ctx.arc(bpx - r * 0.3, bpy - riseY - r * 0.3, r * 0.28, 0, Math.PI * 2);
+                            ctx.fill();
+                        } else {
+                            // Popping — expanding ring that fades
+                            const popT = t / 0.18; // 1→0 during pop
+                            const r    = 2 + (1 - popT) * 10;
+                            ctx.globalAlpha = popT * 0.75 * (acidH.alpha ?? 1);
+                            ctx.strokeStyle = "#ccffdd";
+                            ctx.lineWidth = 1.2;
+                            ctx.beginPath();
+                            ctx.arc(bpx, bpy - 14, r, 0, Math.PI * 2);
+                            ctx.stroke();
+                        }
+                        ctx.restore();
+                    });
+                }
                 ctx.restore();
             }
 

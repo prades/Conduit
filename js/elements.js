@@ -363,6 +363,21 @@ function updateHazards() {
         }
 
         if (h.type === "acid") {
+            // Spawn bubbles — staggered by hazard position so pools don't sync
+            if (!h.bubbles) h.bubbles = [];
+            if (frame % 18 === Math.abs(Math.floor(h.x * 3 + h.y * 7)) % 18) {
+                const tile = h.tiles[Math.floor(Math.random() * h.tiles.length)];
+                const maxLife = 55 + Math.floor(Math.random() * 35);
+                h.bubbles.push({
+                    tx: tile[0], ty: tile[1],
+                    ox: (Math.random() - 0.5) * 1.0,
+                    oy: (Math.random() - 0.5) * 0.7,
+                    life: maxLife, maxLife
+                });
+            }
+            h.bubbles.forEach(b => b.life--);
+            h.bubbles = h.bubbles.filter(b => b.life > 0);
+
             // Continuous damage every 45 frames to anyone on acid tiles
             if (frame % 45 === 0) {
                 h.tiles.forEach(([tx,ty]) => {
@@ -427,34 +442,109 @@ function drawHazards() {
     // Wall vents drawn + updated in game.js wall_back section (state lives on tile objects).
     environmentalHazards.forEach(h => {
         if (h.type === "cable") {
-            const {px: px1, py: py1} = toScreen(h.x, h.y);
-            const {px: px2, py: py2} = toScreen(h.x2, h.y2);
+            const s1 = toScreen(h.x,  h.y);
+            const s2 = toScreen(h.x2, h.y2);
+            // Floor-surface level for isometric tiles
+            const fy1 = s1.py + TILE_H * 0.55;
+            const fy2 = s2.py + TILE_H * 0.55;
+            const px1 = s1.px, px2 = s2.px;
+            const live = h.arcState === "on";
+
+            // Deterministic pseudo-random from position seed
+            const seed = h.x * 37.1 + h.y * 19.7;
+            const sr   = n => (Math.sin(seed * (n + 1) * 113.7) * 43758.5453) % 1;
+            const srAbs = n => Math.abs(sr(n));
+
             ctx.save();
-            // Cable — always visible dashed line
-            ctx.strokeStyle = "#888"; ctx.lineWidth = 3; ctx.setLineDash([5, 4]);
-            ctx.beginPath(); ctx.moveTo(px1, py1 - 20); ctx.lineTo(px2, py2 - 20); ctx.stroke();
-            ctx.setLineDash([]);
-            // Anchor bolts
-            ctx.fillStyle = "#aaa";
-            ctx.beginPath(); ctx.arc(px1, py1 - 20, 6, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(px2, py2 - 20, 6, 0, Math.PI * 2); ctx.fill();
-            // Arc when live
-            if (h.arcState === "on") {
-                ctx.save();
-                ctx.shadowColor = "#88bbff"; ctx.shadowBlur = 16;
-                ctx.strokeStyle = `rgba(160,200,255,${0.8 + Math.random() * 0.2})`;
-                ctx.lineWidth = 2.5;
-                ctx.beginPath(); ctx.moveTo(px1, py1 - 20);
-                for (let s = 1; s < 9; s++) {
-                    const t = s / 9;
-                    ctx.lineTo(
-                        px1 + (px2 - px1) * t + (Math.random() - 0.5) * 20,
-                        py1 - 20 + (py2 - py1) * t + (Math.random() - 0.5) * 14
-                    );
+
+            // ── 3 sprawled cable strands with sag/loop bezier curves ──
+            const strands = [
+                { dxOff:  0, sag: 12 + srAbs(0) * 10, wid: 2.5, col: "#3a3a3a" },
+                { dxOff:  5, sag: 20 + srAbs(1) * 12, wid: 2.0, col: "#2e2e2e" },
+                { dxOff: -4, sag:  6 + srAbs(2) *  8, wid: 1.5, col: "#444"    }
+            ];
+
+            strands.forEach((st, si) => {
+                const ox = st.dxOff;
+                // Two bezier control points that deviate off the straight line for a droopy look
+                const cp1x = px1 + (px2 - px1) * 0.28 + (sr(si*4)   - 0.5) * 30 + ox;
+                const cp1y = fy1 + (fy2 - fy1) * 0.28 + st.sag + (sr(si*4+1) - 0.5) * 8;
+                const cp2x = px1 + (px2 - px1) * 0.72 + (sr(si*4+2) - 0.5) * 30 + ox;
+                const cp2y = fy1 + (fy2 - fy1) * 0.72 + st.sag * 0.6 + (sr(si*4+3) - 0.5) * 8;
+
+                if (live) {
+                    // Outer glow halo
+                    ctx.strokeStyle = "rgba(100,160,255,0.25)";
+                    ctx.lineWidth   = st.wid + 8;
+                    ctx.shadowColor = "#88aaff";
+                    ctx.shadowBlur  = 18;
+                    ctx.beginPath();
+                    ctx.moveTo(px1 + ox, fy1);
+                    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, px2 + ox, fy2);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = "#aaccff";
+                } else {
+                    ctx.shadowBlur  = 0;
+                    ctx.strokeStyle = st.col;
                 }
-                ctx.lineTo(px2, py2 - 20); ctx.stroke();
-                ctx.restore();
+                ctx.lineWidth = st.wid;
+                ctx.beginPath();
+                ctx.moveTo(px1 + ox, fy1);
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, px2 + ox, fy2);
+                ctx.stroke();
+            });
+
+            // ── Anchor connectors at each end ──
+            [[px1, fy1], [px2, fy2]].forEach(([ex, ey]) => {
+                ctx.shadowColor = live ? "#88aaff" : "transparent";
+                ctx.shadowBlur  = live ? 10 : 0;
+                ctx.fillStyle   = live ? "#99bbff" : "#666";
+                ctx.beginPath(); ctx.arc(ex, ey, 5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#999";
+                ctx.beginPath(); ctx.arc(ex, ey, 2.5, 0, Math.PI * 2); ctx.fill();
+                // Sparks radiating from endpoints when live
+                if (live) {
+                    ctx.strokeStyle = "#fff";
+                    ctx.lineWidth = 1;
+                    ctx.shadowColor = "#aaccff"; ctx.shadowBlur = 6;
+                    for (let i = 0; i < 5; i++) {
+                        const ang = (frame * 0.25 + i * 1.257) + srAbs(i + 10) * 2;
+                        const len = 4 + srAbs(i + 20) * 7;
+                        ctx.beginPath();
+                        ctx.moveTo(ex, ey);
+                        ctx.lineTo(ex + Math.cos(ang) * len, ey + Math.sin(ang) * len);
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            // ── Electric arc jumping between cable endpoints when live ──
+            if (live) {
+                for (let arc = 0; arc < 2; arc++) {
+                    ctx.save();
+                    ctx.shadowColor = "#88bbff";
+                    ctx.shadowBlur  = arc === 0 ? 14 : 6;
+                    ctx.strokeStyle = arc === 0
+                        ? `rgba(180,210,255,${0.7 + Math.random() * 0.3})`
+                        : `rgba(220,235,255,${0.4 + Math.random() * 0.3})`;
+                    ctx.lineWidth   = arc === 0 ? 2 : 1;
+                    ctx.beginPath();
+                    ctx.moveTo(px1, fy1);
+                    const segs = 11;
+                    for (let s = 1; s < segs; s++) {
+                        const t = s / segs;
+                        ctx.lineTo(
+                            px1 + (px2 - px1) * t + (Math.random() - 0.5) * 22,
+                            fy1 + (fy2 - fy1) * t + (Math.random() - 0.5) * 14
+                        );
+                    }
+                    ctx.lineTo(px2, fy2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
             }
+
             ctx.restore();
         }
     });
