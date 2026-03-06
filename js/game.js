@@ -175,21 +175,15 @@ function render() {
                         break;
                     case "flux":
                         if (isEnemy) {
+                            // Paired: pull toward midpoint at 2× solo strength
                             const dx=midX-a.x, dy=midY-a.y, d=Math.hypot(dx,dy)||1;
-                            a.x+=dx/d*0.04; a.y+=dy/d*0.04;
+                            a.x+=dx/d*0.10; a.y+=dy/d*0.10;
                         }
                         break;
                     case "toxic":
                         if (isEnemy && frame%40===0) {
                             applyDamage(a, 1.5, null, "toxic");
                             if (Math.random()<0.3) { a.defenseShredded=90; a.defenseShredFactor=0.6; }
-                        }
-                        break;
-                    case "void":
-                        if (isEnemy) {
-                            // Paired void: stronger pull toward midpoint between the two pylons
-                            const dx=midX-a.x, dy=midY-a.y, d=Math.hypot(dx,dy)||1;
-                            a.x+=dx/d*0.10; a.y+=dy/d*0.10;
                         }
                         break;
                 }
@@ -227,10 +221,10 @@ function render() {
         });
     }
 
-    // ── VOID SOLO — pulls enemies toward the pylon itself with no partner required ──
+    // ── FLUX SOLO — pulls enemies toward itself with no partner required ──
     wavePylons.forEach(pv=>{
-        if (pv.attackModeElement!=="void") return;
-        const hasPartner = wavePylons.some(q=>q!==pv&&q.attackModeElement==="void"&&Math.hypot(pv.x-q.x,pv.y-q.y)<=WAVE_CONNECT_RANGE);
+        if (pv.attackModeElement!=="flux") return;
+        const hasPartner = wavePylons.some(q=>q!==pv&&q.attackModeElement==="flux"&&Math.hypot(pv.x-q.x,pv.y-q.y)<=WAVE_CONNECT_RANGE);
         if (hasPartner) return;
         actors.forEach(a=>{
             if (!a||a.dead) return;
@@ -704,8 +698,8 @@ function render() {
                         ctx.lineTo(pbpx,y2); ctx.stroke();
                         ctx.shadowBlur=0;
 
-                    } else if (el==="void") {
-                        // Void — dark ribbon + orbiting particles converging on midpoint
+                    } else if (el==="flux") {
+                        // Flux paired — ribbon + orbiting particles converging on midpoint
                         const midx=(px+pbpx)/2, midy=(y1+y2)/2;
                         ctx.globalAlpha=0.28+pulse2*0.18;
                         ctx.strokeStyle="#6600cc"; ctx.lineWidth=4+pulse2*2;
@@ -717,27 +711,6 @@ function render() {
                             ctx.globalAlpha=0.55+pulse2*0.3;
                             ctx.fillStyle="#9922ff"; ctx.shadowBlur=7;
                             ctx.beginPath(); ctx.arc(midx+Math.cos(phase)*r,midy+Math.sin(phase)*r*0.5,2.5,0,Math.PI*2); ctx.fill();
-                        }
-                        ctx.shadowBlur=0;
-
-                    } else if (el==="flux") {
-                        // Flux — swirling ribbons pulling toward midpoint
-                        ctx.globalAlpha=0.22+pulse2*0.15;
-                        ctx.strokeStyle="#9933ff"; ctx.lineWidth=8;
-                        ctx.shadowColor="#7700cc"; ctx.shadowBlur=10;
-                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                        ctx.shadowBlur=0;
-                        const midx2=(px+pbpx)/2, midy2=(y1+y2)/2;
-                        for (let s=0;s<5;s++) {
-                            const phase=frame*0.09+s*(Math.PI*2/5);
-                            const r=7+Math.sin(phase*1.5)*3;
-                            ctx.globalAlpha=0.45+pulse2*0.25;
-                            ctx.strokeStyle="#bb44ff"; ctx.lineWidth=1.5;
-                            ctx.shadowColor="#9933ff"; ctx.shadowBlur=5;
-                            ctx.beginPath();
-                            ctx.moveTo(midx2+Math.cos(phase)*r*2,midy2+Math.sin(phase)*r);
-                            ctx.lineTo(midx2+Math.cos(phase+0.6)*r*0.5,midy2+Math.sin(phase+0.6)*r*0.3);
-                            ctx.stroke();
                         }
                         ctx.shadowBlur=0;
 
@@ -789,8 +762,8 @@ function render() {
                     ctx.restore();
                 });
 
-                // Solo void pylon — inward-pulling glow ring
-                if (el==="void") {
+                // Solo flux pylon — inward-pulling glow ring
+                if (el==="flux") {
                     const hasPartner=wavePylonsLocal.some(q=>q!==obj&&Math.hypot(obj.x-q.x,obj.y-q.y)<=WCR);
                     if (!hasPartner) {
                         const r=22+pulse2*8;
@@ -832,7 +805,7 @@ function render() {
                     ctx.beginPath(); ctx.arc(px,py-110,9,0,Math.PI*2); ctx.fill();
                     ctx.restore();
                     // Element label + effect description
-                    const PYLON_FX={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity pull",toxic:"corrodes enemies",void:"gravity well"};
+                    const PYLON_FX={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity well",toxic:"corrodes enemies"};
                     const el0=obj.attackModeElement||"";
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                     ctx.fillStyle=wcol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
@@ -866,7 +839,7 @@ function render() {
                     ctx.globalAlpha=1;
                     // Element + effect label
                     if (obj.attackModeElement) {
-                        const PYLON_FX2={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity pull",toxic:"corrodes enemies",void:"gravity well"};
+                        const PYLON_FX2={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity well",toxic:"corrodes enemies"};
                         ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                         ctx.fillStyle=acol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
                         ctx.fillText(obj.attackModeElement.toUpperCase(),px,py-108);
