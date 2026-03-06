@@ -305,7 +305,7 @@ function updateNPC(actor) {
         const _prevX = actor.x, _prevY = actor.y;
         updateRTSNPC(actor);
         // Clamp all NPC actors to floor bounds regardless of role
-        actor.y = Math.max(-1, Math.min(4, actor.y));
+        actor.y = Math.max(-0.5, Math.min(4, actor.y));
         // Tick walk cycle for clones based on actual movement
         if (actor.isClone) {
             const _moved = Math.hypot(actor.x - _prevX, actor.y - _prevY);
