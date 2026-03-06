@@ -63,7 +63,7 @@ function render() {
     // ── CAMERA FOLLOW ──
     player.x+=(player.targetX-player.x)*cfg.playerSpeed;
     player.y+=(player.targetY-player.y)*cfg.playerSpeed;
-    player.y = Math.max(-1, Math.min(4, player.y));
+    player.y = Math.max(-0.5, Math.min(4, player.y));
     player.visualX+=(player.x-player.visualX)*0.15;
     player.visualY+=(player.y-player.visualY)*0.15;
 
