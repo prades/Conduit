@@ -632,19 +632,19 @@ function render() {
                     ctx.save();
 
                     if (el==="fire") {
-                        // Fire wall — barrier glow + animated flame tongues
-                        ctx.globalAlpha=0.18+pulse2*0.1;
-                        ctx.strokeStyle="#ff3300"; ctx.lineWidth=18;
-                        ctx.shadowColor="#ff2200"; ctx.shadowBlur=20;
-                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                        // Fire wall — rises from pylon bases, ~half pylon height, semi-translucent
+                        ctx.globalAlpha=0.15+pulse2*0.08;
+                        ctx.strokeStyle="#ff3300"; ctx.lineWidth=12;
+                        ctx.shadowColor="#ff2200"; ctx.shadowBlur=16;
+                        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(pbpx,pbpy); ctx.stroke();
                         ctx.shadowBlur=0;
                         const segs=14;
                         for (let s=0;s<=segs;s++) {
                             const t=s/segs;
-                            const fx=px+(pbpx-px)*t, fy=y1+(y2-y1)*t;
+                            const fx=px+(pbpx-px)*t, fy=py+(pbpy-py)*t; // ground-level base
                             const flk=Math.sin(frame*0.18+s*1.5)*0.5+0.5;
-                            const h=10+flk*18;
-                            ctx.globalAlpha=(0.5+flk*0.4)*(0.5+pulse2*0.3);
+                            const h=12+flk*18; // max ~30px = half pylon height
+                            ctx.globalAlpha=(0.3+flk*0.25)*(0.45+pulse2*0.25); // translucent
                             ctx.fillStyle=s%2===0?"#ff6600":"#ff3300";
                             ctx.shadowColor="#ff4400"; ctx.shadowBlur=8;
                             ctx.beginPath();
