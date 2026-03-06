@@ -444,105 +444,102 @@ function drawHazards() {
         if (h.type === "cable") {
             const s1 = toScreen(h.x,  h.y);
             const s2 = toScreen(h.x2, h.y2);
-            // Floor-surface level for isometric tiles
             const fy1 = s1.py + TILE_H * 0.55;
             const fy2 = s2.py + TILE_H * 0.55;
             const px1 = s1.px, px2 = s2.px;
             const live = h.arcState === "on";
 
-            // Deterministic pseudo-random from position seed
-            const seed = h.x * 37.1 + h.y * 19.7;
-            const sr   = n => (Math.sin(seed * (n + 1) * 113.7) * 43758.5453) % 1;
-            const srAbs = n => Math.abs(sr(n));
+            // Midpoint — the cut gap where electricity arcs across
+            const gapX = (px1 + px2) / 2;
+            const gapY = (fy1 + fy2) / 2;
+            const GAP  = 18; // half-gap size in px
+            // Direction vector toward gap from each end
+            const dx = px2 - px1, dy = fy2 - fy1;
+            const len = Math.hypot(dx, dy) || 1;
+            const nx = dx / len, ny = dy / len; // unit vector along cable
+
+            // Cut ends: stop GAP px short of midpoint on each side
+            const cut1x = gapX - nx * GAP, cut1y = gapY - ny * GAP; // end of left cable
+            const cut2x = gapX + nx * GAP, cut2y = gapY + ny * GAP; // end of right cable
 
             ctx.save();
 
-            // ── 3 sprawled cable strands with sag/loop bezier curves ──
-            const strands = [
-                { dxOff:  0, sag: 12 + srAbs(0) * 10, wid: 2.5, col: "#3a3a3a" },
-                { dxOff:  5, sag: 20 + srAbs(1) * 12, wid: 2.0, col: "#2e2e2e" },
-                { dxOff: -4, sag:  6 + srAbs(2) *  8, wid: 1.5, col: "#444"    }
-            ];
+            // ── Draw each cable half as 2 dark lines lying on the floor ──
+            // A thick dark core and a slightly lighter highlight line beside it
+            const drawCableHalf = (ax, ay, bx, by) => {
+                ctx.lineCap = "round";
+                // Dark rubber jacket
+                ctx.strokeStyle = "#1a1a1a";
+                ctx.lineWidth = 5;
+                ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+                // Subtle sheen
+                ctx.strokeStyle = "#444";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(ax - ny * 1.5, ay + nx * 1.5);
+                                 ctx.lineTo(bx - ny * 1.5, by + nx * 1.5); ctx.stroke();
+            };
 
-            strands.forEach((st, si) => {
-                const ox = st.dxOff;
-                // Two bezier control points that deviate off the straight line for a droopy look
-                const cp1x = px1 + (px2 - px1) * 0.28 + (sr(si*4)   - 0.5) * 30 + ox;
-                const cp1y = fy1 + (fy2 - fy1) * 0.28 + st.sag + (sr(si*4+1) - 0.5) * 8;
-                const cp2x = px1 + (px2 - px1) * 0.72 + (sr(si*4+2) - 0.5) * 30 + ox;
-                const cp2y = fy1 + (fy2 - fy1) * 0.72 + st.sag * 0.6 + (sr(si*4+3) - 0.5) * 8;
+            drawCableHalf(px1, fy1, cut1x, cut1y);
+            drawCableHalf(px2, fy2, cut2x, cut2y);
 
-                if (live) {
-                    // Outer glow halo
-                    ctx.strokeStyle = "rgba(100,160,255,0.25)";
-                    ctx.lineWidth   = st.wid + 8;
-                    ctx.shadowColor = "#88aaff";
-                    ctx.shadowBlur  = 18;
+            // ── Frayed cut ends — short splayed wire strands ──
+            const drawCutEnd = (ex, ey, dirX, dirY) => {
+                const frays = 4;
+                for (let i = 0; i < frays; i++) {
+                    const spread = (i / (frays - 1) - 0.5) * 10;
+                    const wobble = Math.sin(frame * 0.1 + i * 1.9) * (live ? 2 : 0.5);
+                    ctx.strokeStyle = live ? "#ffdd88" : "#888";
+                    ctx.lineWidth   = 1;
+                    ctx.shadowColor = live ? "#ffaa00" : "none";
+                    ctx.shadowBlur  = live ? 6 : 0;
                     ctx.beginPath();
-                    ctx.moveTo(px1 + ox, fy1);
-                    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, px2 + ox, fy2);
+                    ctx.moveTo(ex, ey);
+                    ctx.lineTo(
+                        ex + dirX * 7 + (-ny) * spread + wobble,
+                        ey + dirY * 7 + ( nx) * spread + wobble
+                    );
                     ctx.stroke();
-                    ctx.shadowBlur = 0;
-                    ctx.strokeStyle = "#aaccff";
-                } else {
-                    ctx.shadowBlur  = 0;
-                    ctx.strokeStyle = st.col;
                 }
-                ctx.lineWidth = st.wid;
-                ctx.beginPath();
-                ctx.moveTo(px1 + ox, fy1);
-                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, px2 + ox, fy2);
-                ctx.stroke();
-            });
+            };
 
-            // ── Anchor connectors at each end ──
-            [[px1, fy1], [px2, fy2]].forEach(([ex, ey]) => {
-                ctx.shadowColor = live ? "#88aaff" : "transparent";
-                ctx.shadowBlur  = live ? 10 : 0;
-                ctx.fillStyle   = live ? "#99bbff" : "#666";
-                ctx.beginPath(); ctx.arc(ex, ey, 5, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#999";
-                ctx.beginPath(); ctx.arc(ex, ey, 2.5, 0, Math.PI * 2); ctx.fill();
-                // Sparks radiating from endpoints when live
-                if (live) {
-                    ctx.strokeStyle = "#fff";
-                    ctx.lineWidth = 1;
-                    ctx.shadowColor = "#aaccff"; ctx.shadowBlur = 6;
-                    for (let i = 0; i < 5; i++) {
-                        const ang = (frame * 0.25 + i * 1.257) + srAbs(i + 10) * 2;
-                        const len = 4 + srAbs(i + 20) * 7;
-                        ctx.beginPath();
-                        ctx.moveTo(ex, ey);
-                        ctx.lineTo(ex + Math.cos(ang) * len, ey + Math.sin(ang) * len);
-                        ctx.stroke();
-                    }
-                }
-            });
+            ctx.shadowBlur = 0;
+            drawCutEnd(cut1x, cut1y,  nx,  ny); // left end faces right (toward gap)
+            drawCutEnd(cut2x, cut2y, -nx, -ny); // right end faces left (toward gap)
 
-            // ── Electric arc jumping between cable endpoints when live ──
+            // ── Electric arc across the gap when live ──
             if (live) {
-                for (let arc = 0; arc < 2; arc++) {
+                for (let arc = 0; arc < 3; arc++) {
                     ctx.save();
                     ctx.shadowColor = "#88bbff";
-                    ctx.shadowBlur  = arc === 0 ? 14 : 6;
+                    ctx.shadowBlur  = arc === 0 ? 18 : 8;
                     ctx.strokeStyle = arc === 0
-                        ? `rgba(180,210,255,${0.7 + Math.random() * 0.3})`
-                        : `rgba(220,235,255,${0.4 + Math.random() * 0.3})`;
-                    ctx.lineWidth   = arc === 0 ? 2 : 1;
+                        ? `rgba(200,220,255,${0.85 + Math.random() * 0.15})`
+                        : `rgba(160,200,255,${0.3 + Math.random() * 0.3})`;
+                    ctx.lineWidth = arc === 0 ? 2.5 : 1;
+                    ctx.lineCap   = "round";
                     ctx.beginPath();
-                    ctx.moveTo(px1, fy1);
-                    const segs = 11;
-                    for (let s = 1; s < segs; s++) {
-                        const t = s / segs;
+                    ctx.moveTo(cut1x, cut1y);
+                    // 4-5 jagged mid-points across the gap
+                    const steps = 5;
+                    for (let s = 1; s < steps; s++) {
+                        const t = s / steps;
                         ctx.lineTo(
-                            px1 + (px2 - px1) * t + (Math.random() - 0.5) * 22,
-                            fy1 + (fy2 - fy1) * t + (Math.random() - 0.5) * 14
+                            cut1x + (cut2x - cut1x) * t + (Math.random() - 0.5) * 16,
+                            cut1y + (cut2y - cut1y) * t + (Math.random() - 0.5) * 12
                         );
                     }
-                    ctx.lineTo(px2, fy2);
+                    ctx.lineTo(cut2x, cut2y);
                     ctx.stroke();
                     ctx.restore();
                 }
+                // Glow blobs at cut ends
+                [{ x: cut1x, y: cut1y }, { x: cut2x, y: cut2y }].forEach(pt => {
+                    const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 10);
+                    grad.addColorStop(0, "rgba(180,210,255,0.8)");
+                    grad.addColorStop(1, "rgba(80,130,255,0)");
+                    ctx.fillStyle = grad;
+                    ctx.beginPath(); ctx.arc(pt.x, pt.y, 10, 0, Math.PI * 2); ctx.fill();
+                });
             }
 
             ctx.restore();
