@@ -63,6 +63,7 @@ function render() {
     // ── CAMERA FOLLOW ──
     player.x+=(player.targetX-player.x)*cfg.playerSpeed;
     player.y+=(player.targetY-player.y)*cfg.playerSpeed;
+    player.y = Math.max(-1, Math.min(4, player.y));
     player.visualX+=(player.x-player.visualX)*0.15;
     player.visualY+=(player.y-player.visualY)*0.15;
 
@@ -456,75 +457,82 @@ function render() {
             const acidH = acidTiles.get(`${Math.round(obj.x)},${Math.round(obj.y)}`);
             if (acidH) {
                 const bubble = 0.5 + 0.5 * Math.sin(frame * 0.12 + obj.x + obj.y);
+                const seed   = obj.x * 13.7 + obj.y * 7.3;
                 ctx.save();
-                ctx.globalAlpha = (0.75 + bubble * 0.2) * (acidH.alpha ?? 1);
+                ctx.globalAlpha = (0.72 + bubble * 0.18) * (acidH.alpha ?? 1);
                 ctx.fillStyle = "#00ff44";
+                // Irregular organic puddle — sin-wave distorted oval
+                const cx = px, cy = py + TILE_H;
+                const N  = 24;
                 ctx.beginPath();
-                ctx.moveTo(px,          py);
-                ctx.lineTo(px + TILE_W, py + TILE_H);
-                ctx.lineTo(px,          py + 2*TILE_H);
-                ctx.lineTo(px - TILE_W, py + TILE_H);
+                for (let i = 0; i <= N; i++) {
+                    const t     = (i / N) * Math.PI * 2;
+                    const noise = 1 + 0.18 * Math.sin(t * 3 + seed)
+                                    + 0.10 * Math.sin(t * 5 + seed * 1.7)
+                                    + 0.05 * Math.sin(t * 7 + seed * 0.9);
+                    const x = cx + TILE_W * 0.6 * noise * Math.cos(t);
+                    const y = cy + TILE_H * 0.65 * noise * Math.sin(t);
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
                 ctx.closePath();
                 ctx.fill();
+                // Inner ripple highlight
+                ctx.globalAlpha *= 0.45;
                 ctx.fillStyle = "#aaffcc";
-                for (let b = 0; b < 4; b++) {
-                    const bx = px + Math.sin(frame * 0.1 + b * 1.6) * 14;
-                    const by = py + TILE_H + Math.cos(frame * 0.13 + b * 2.1) * 5;
-                    ctx.beginPath(); ctx.arc(bx, by, 3 + bubble * 2, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath();
+                for (let i = 0; i <= N; i++) {
+                    const t     = (i / N) * Math.PI * 2;
+                    const noise = 1 + 0.12 * Math.sin(t * 3 + seed + frame * 0.015);
+                    ctx.lineTo(cx + TILE_W * 0.3 * noise * Math.cos(t),
+                               cy + TILE_H * 0.32 * noise * Math.sin(t));
                 }
+                ctx.closePath();
+                ctx.fill();
                 ctx.restore();
             }
 
-            // ── SPAWN NEST (honeycomb hive) ──
+            // ── SPAWN NEST — 4 honeycomb cells embedded in wall face ──
             if (obj.nest && obj.nestHealth > 0) {
                 obj.nestPulse = (obj.nestPulse || 0) + 1;
-                const hr      = obj.nestHealth / obj.nestMaxHealth;
-                const pulse   = 0.5 + 0.5 * Math.sin(obj.nestPulse * 0.06);
-                const baseY   = py - 10; // raised above floor centre
+                const hr    = obj.nestHealth / obj.nestMaxHealth;
+                const pulse = 0.5 + 0.5 * Math.sin(obj.nestPulse * 0.06);
 
-                // Dark structural column
-                ctx.fillStyle = "#160900";
-                ctx.fillRect(px - 16, baseY - 55, 32, 65);
+                // 4 cells in a row sitting in the wall face area above the tile
+                const cellR       = 11;
+                const cellOffsets = [-28.5, -9.5, 9.5, 28.5];
+                const cellBaseY   = py - 34;
 
-                // Honeycomb cells — 7 flat-top hexagons centred on column
-                const cellR = 8;
-                const hexGrid = [
-                    [0, 0],
-                    [cellR * 1.5, -cellR * 0.87], [cellR * 1.5,  cellR * 0.87],
-                    [-cellR * 1.5, -cellR * 0.87], [-cellR * 1.5,  cellR * 0.87],
-                    [0, -cellR * 1.73], [0, cellR * 1.73]
-                ];
-                hexGrid.forEach(([hox, hoy], idx) => {
-                    const hcx = px  + hox * 0.55; // slight isometric squish
-                    const hcy = baseY - 30 + hoy * 0.55;
-                    const filled = hr > 0.3 || idx === 0;
+                ctx.save();
+                cellOffsets.forEach(cox => {
+                    const ccx   = px + cox * 0.75;
+                    const ccy   = cellBaseY + Math.abs(cox) * 0.08;
+                    const bright = (180 * hr) | 0;
                     ctx.beginPath();
                     for (let i = 0; i < 6; i++) {
-                        const a = i * Math.PI / 3;
-                        const hx2 = hcx + cellR * Math.cos(a);
-                        const hy2 = hcy + cellR * 0.58 * Math.sin(a); // flatten for iso
+                        const a   = i * Math.PI / 3;
+                        const hx2 = ccx + cellR * Math.cos(a);
+                        const hy2 = ccy + cellR * 0.55 * Math.sin(a);
                         i === 0 ? ctx.moveTo(hx2, hy2) : ctx.lineTo(hx2, hy2);
                     }
                     ctx.closePath();
-                    const bright = (180 * hr * (filled ? 1 : 0.1)) | 0;
-                    ctx.fillStyle = filled ? `rgba(${bright},${(bright*0.45)|0},0,${0.7 + pulse*0.2})` : "#090400";
+                    ctx.fillStyle = `rgba(${bright},${(bright * 0.45) | 0},0,${0.75 + pulse * 0.2})`;
                     ctx.fill();
-                    ctx.strokeStyle = `rgba(255,${(140*hr)|0},0,0.45)`;
-                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = `rgba(255,${(140 * hr) | 0},0,0.65)`;
+                    ctx.lineWidth = 1.5;
                     ctx.stroke();
                 });
 
-                // Amber glow
-                ctx.save();
-                ctx.globalAlpha = (0.08 + pulse * 0.12) * hr;
-                ctx.shadowColor = "#ff8800"; ctx.shadowBlur = 18;
-                ctx.fillStyle = "#ff6600";
+                // Amber glow spanning all 4 cells
+                ctx.globalAlpha = (0.1 + pulse * 0.15) * hr;
+                ctx.shadowColor = "#ff8800";
+                ctx.shadowBlur  = 22;
+                ctx.fillStyle   = "#ff6600";
                 ctx.beginPath();
-                ctx.ellipse(px, baseY - 30, 22, 12, 0, 0, Math.PI * 2);
+                ctx.ellipse(px, cellBaseY, 36, 9, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
 
-                drawHealthBar(px - 22, baseY - 62, 44, 5, obj.nestHealth, obj.nestMaxHealth);
+                drawHealthBar(px - 24, cellBaseY - 18, 48, 5, obj.nestHealth, obj.nestMaxHealth);
             }
 
             // Command tile highlight

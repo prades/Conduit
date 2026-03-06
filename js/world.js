@@ -6,7 +6,7 @@ function generateSegment(startX) {
     const zoneCenter = zoneIndex * ZONE_LENGTH + Math.floor(ZONE_LENGTH / 2);
     for (let y=-2; y<=5; y++) {
         let type = (y===-2)?'wall_back':(y===5)?'wall_front':'floor';
-        const isNest = type === 'floor' && y === 2 && startX === zoneCenter;
+        const isNest = type === 'floor' && y === -1 && startX === zoneCenter;
         const tile = {
             x:startX, y, type,
             pillar:(type==='floor'&&y>=3&&Math.random()<cfg.pillarSpawnRate),
