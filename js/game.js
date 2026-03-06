@@ -631,6 +631,35 @@ function render() {
                     const y1=py-60, y2=pbpy-60;
                     ctx.save();
 
+                    // ── PHYSICAL CABLE LAYER — drawn first, element effects render on top ──
+                    {
+                        const cDist=Math.hypot(pbpx-px,pbpy-py);
+                        const sag=Math.min(55,cDist*0.22);
+                        const midX=(px+pbpx)/2, midY=(py+pbpy)/2+sag;
+                        const elCol=obj.attackModeColor||"#0f8";
+                        const bundles=[
+                            {ox:-3,oy:-2,w:2.5,alpha:0.85},
+                            {ox: 0,oy: 2,w:3.0,alpha:0.90},
+                            {ox: 4,oy:-1,w:2.0,alpha:0.75},
+                        ];
+                        ctx.shadowBlur=0;
+                        bundles.forEach(b=>{
+                            const sx=px+b.ox, sy=py+b.oy;
+                            const ex=pbpx+b.ox, ey=pbpy+b.oy;
+                            const cy1=midY+b.oy, cy2=midY+b.oy;
+                            ctx.globalAlpha=b.alpha*0.9;
+                            ctx.strokeStyle="#111418"; ctx.lineWidth=b.w+1.5;
+                            ctx.beginPath(); ctx.moveTo(sx,sy);
+                            ctx.bezierCurveTo(midX+b.ox,cy1,midX+b.ox,cy2,ex,ey);
+                            ctx.stroke();
+                            ctx.strokeStyle=elCol; ctx.lineWidth=0.8; ctx.globalAlpha=0.18;
+                            ctx.beginPath(); ctx.moveTo(sx,sy);
+                            ctx.bezierCurveTo(midX+b.ox,cy1,midX+b.ox,cy2,ex,ey);
+                            ctx.stroke();
+                        });
+                        ctx.globalAlpha=1;
+                    }
+
                     if (el==="fire") {
                         // Fire wall — rises from pylon bases, ~half pylon height, semi-translucent
                         ctx.globalAlpha=0.15+pulse2*0.08;
@@ -887,9 +916,85 @@ function render() {
                 ctx.lineTo(px,          py + 2*TILE_H - WH);
                 ctx.lineTo(px - TILE_W, py + TILE_H - WH);
                 ctx.fill();
+
+                // ── WALL ATMOSPHERE DECORATIONS ─────────────────────────────
+                const xi = Math.abs(Math.floor(obj.x));
+
+                // 1. Conduit pipe along wall base (every tile)
+                ctx.save();
+                ctx.globalAlpha=0.45*amb; ctx.strokeStyle="#0a1a14"; ctx.lineWidth=3;
+                ctx.beginPath(); ctx.moveTo(px-TILE_W,py+TILE_H-3); ctx.lineTo(px,py+2*TILE_H-3); ctx.stroke();
+                ctx.strokeStyle="#1a3a28"; ctx.lineWidth=1; ctx.globalAlpha=0.25*amb;
+                ctx.stroke(); ctx.restore();
+
+                // 2. Crevasses — jagged fracture on wall face
+                if (Math.sin(xi*43.7+11.3)>0.62) {
+                    const seed2=xi*17.3;
+                    let crx=px-38+(Math.sin(seed2)*12|0), cry=py+TILE_H-WH*0.85;
+                    const crLen=5+(Math.abs(Math.sin(seed2*2.7))*4|0);
+                    ctx.save();
+                    ctx.globalAlpha=0.38*amb; ctx.strokeStyle="#000508"; ctx.lineWidth=1.5;
+                    ctx.beginPath(); ctx.moveTo(crx,cry);
+                    for (let s=0;s<crLen;s++) {
+                        crx+=(Math.sin(seed2+s*7.1)*5)|0;
+                        cry+=7+(Math.abs(Math.sin(seed2+s*3.3))*5|0);
+                        ctx.lineTo(crx,cry);
+                    }
+                    ctx.stroke();
+                    ctx.strokeStyle="#1a4030"; ctx.lineWidth=0.5; ctx.globalAlpha=0.12*amb;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // 3. Server rack panels — every 9 tiles (offset from vents)
+                const isRackX=(xi%9===4);
+                if (isRackX) {
+                    const rcx=px-30, rcy=py+TILE_H-WH*0.52, rw=22, rh=46;
+                    ctx.save();
+                    ctx.globalAlpha=0.7*amb; ctx.fillStyle="#0a0d10";
+                    ctx.fillRect(rcx-rw/2,rcy-rh/2,rw,rh);
+                    ctx.strokeStyle=`rgba(0,180,100,${0.4*amb})`; ctx.lineWidth=1;
+                    ctx.strokeRect(rcx-rw/2,rcy-rh/2,rw,rh);
+                    ctx.fillStyle=`rgba(0,40,20,${0.8*amb})`;
+                    for (let row=0;row<4;row++) ctx.fillRect(rcx-rw/2+2,rcy-rh/2+6+row*9,rw-4,3);
+                    // status LEDs
+                    const ledCols=["#00ff88","#ffaa00","#ff3333"];
+                    ledCols.forEach((lc,i)=>{
+                        const blink=(i===1)?(Math.sin(frame*0.04+xi)>0?1:0.2):1;
+                        ctx.globalAlpha=0.9*amb*blink;
+                        ctx.fillStyle=lc; ctx.shadowColor=lc; ctx.shadowBlur=4;
+                        ctx.beginPath(); ctx.arc(rcx-6+i*6,rcy+rh/2-6,1.5,0,Math.PI*2); ctx.fill();
+                    });
+                    ctx.shadowBlur=0; ctx.restore();
+                }
+
+                // 4. LED indicator strips — every 5 tiles (not on racks)
+                if (xi%5===2 && !isRackX) {
+                    const ledY=py+TILE_H-WH*0.28, ledX=px-38;
+                    ctx.save();
+                    for (let i=0;i<5;i++) {
+                        const on=Math.sin(frame*0.08+xi*3.1+i*1.7)>0.2;
+                        ctx.globalAlpha=(on?0.85:0.15)*amb;
+                        ctx.fillStyle=on?"#00ffaa":"#003322";
+                        ctx.shadowColor="#00ff88"; ctx.shadowBlur=on?5:0;
+                        ctx.beginPath(); ctx.arc(ledX+i*5,ledY,1.8,0,Math.PI*2); ctx.fill();
+                    }
+                    ctx.shadowBlur=0; ctx.restore();
+                }
+
+                // 5. Condensation drips — every 6th tile
+                if (xi%6===1) {
+                    if (!obj.drip) obj.drip={y:py+TILE_H-WH*0.7,speed:0.4+Math.sin(xi*5.3)*0.15};
+                    obj.drip.y+=obj.drip.speed;
+                    if (obj.drip.y>py+TILE_H*1.5) obj.drip.y=py+TILE_H-WH*0.7;
+                    ctx.save();
+                    ctx.globalAlpha=0.28*amb; ctx.fillStyle="#003322";
+                    ctx.beginPath(); ctx.ellipse(px-33,obj.drip.y,1.2,2.2,0,0,Math.PI*2); ctx.fill();
+                    ctx.restore();
+                }
+
                 // Exhaust vent — gap-sequence placement: gaps of 7–18 tiles, avg ~12
                 // isVentX walks the deterministic chain from x=0, O(|x|/7) iterations
-                const xi = Math.abs(Math.floor(obj.x));
                 const isVentX = (target) => {
                     let pos = 0;
                     while (pos <= target) {
