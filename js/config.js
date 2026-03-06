@@ -23,7 +23,8 @@ const ELEMENTS = [
     { id:"ice",      label:"ICE",      color:"#99ddff" },
     { id:"flux",     label:"FLUX",     color:"#9933ff" },
     { id:"core",     label:"CORE",     color:"#00ccaa" },
-    { id:"toxic",    label:"TOXIC",    color:"#66ff66" }
+    { id:"toxic",    label:"TOXIC",    color:"#66ff66" },
+    { id:"void",     label:"VOID",     color:"#8800ff" }
 ];
 let unlockedElements = new Set(["fire", "electric"]);
 

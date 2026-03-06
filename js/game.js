@@ -175,7 +175,6 @@ function render() {
                         break;
                     case "flux":
                         if (isEnemy) {
-                            // Pull toward midpoint of connection
                             const dx=midX-a.x, dy=midY-a.y, d=Math.hypot(dx,dy)||1;
                             a.x+=dx/d*0.04; a.y+=dy/d*0.04;
                         }
@@ -186,6 +185,25 @@ function render() {
                             if (Math.random()<0.3) { a.defenseShredded=90; a.defenseShredFactor=0.6; }
                         }
                         break;
+                    case "void":
+                        if (isEnemy) {
+                            // Paired void: stronger pull toward midpoint between the two pylons
+                            const dx=midX-a.x, dy=midY-a.y, d=Math.hypot(dx,dy)||1;
+                            a.x+=dx/d*0.10; a.y+=dy/d*0.10;
+                        }
+                        break;
+                }
+                // Predator pylon aggro — track how long a predator has been cooked by pylons
+                if (isEnemy && a instanceof Predator) {
+                    a.pylonExposureFrames = (a.pylonExposureFrames||0) + 1;
+                    if (a.pylonExposureFrames > 300 && !a.pylonAggro) {
+                        let nearestPylon=null, bestPD=Infinity;
+                        wavePylons.forEach(wp=>{ const d=Math.hypot(wp.x-a.x,wp.y-a.y); if(d<bestPD){bestPD=d;nearestPylon=wp;} });
+                        if (nearestPylon) a.pylonAggro = nearestPylon;
+                    }
+                } else if (!isEnemy) {
+                    // Cool down exposure when no longer in zone
+                    if (a.pylonExposureFrames) a.pylonExposureFrames = Math.max(0, a.pylonExposureFrames - 2);
                 }
             });
         });
@@ -208,6 +226,24 @@ function render() {
             }
         });
     }
+
+    // ── VOID SOLO — pulls enemies toward the pylon itself with no partner required ──
+    wavePylons.forEach(pv=>{
+        if (pv.attackModeElement!=="void") return;
+        const hasPartner = wavePylons.some(q=>q!==pv&&q.attackModeElement==="void"&&Math.hypot(pv.x-q.x,pv.y-q.y)<=WAVE_CONNECT_RANGE);
+        if (hasPartner) return;
+        actors.forEach(a=>{
+            if (!a||a.dead) return;
+            const isEnemy=(a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone));
+            if (!isEnemy) return;
+            const dx=a.x-pv.x, dy=a.y-pv.y, d=Math.hypot(dx,dy);
+            if (d>3||d<0.01) return;
+            a.x-=dx/d*0.05; a.y-=dy/d*0.05;
+            // Also track exposure
+            a.pylonExposureFrames=(a.pylonExposureFrames||0)+1;
+            if (a.pylonExposureFrames>300&&!a.pylonAggro) a.pylonAggro=pv;
+        });
+    });
 
     // ── ATTACK MODE PYLON — fire missiles at nearby enemies ──
     world.forEach(t=>{
@@ -585,25 +621,194 @@ function render() {
                 ctx.restore();
             }
 
-            // Wave function pylon connection lines
+            // Wave function pylon connection — element-specific visual field
             if (obj.pillar&&!obj.destroyed&&obj.waveMode&&obj.attackModeElement) {
                 const wavePylonsLocal = world.filter(t=>t.pillar&&!t.destroyed&&t.waveMode&&t.attackModeElement);
                 const WCR = 5.0;
+                const el = obj.attackModeElement;
                 const col2 = obj.attackModeColor||"#0f8";
                 wavePylonsLocal.forEach(pb=>{
                     if (pb===obj||pb.attackModeElement!==obj.attackModeElement) return;
                     if (Math.hypot(obj.x-pb.x,obj.y-pb.y)>WCR) return;
-                    // Only draw once per pair
                     if (pb.x+pb.y*1000 < obj.x+obj.y*1000) return;
                     const pbpx=(pb.x-player.visualX-(pb.y-player.visualY))*TILE_W+canvas.width/2;
                     const pbpy=(pb.x-player.visualX+(pb.y-player.visualY))*TILE_H+canvas.height/2;
                     const pulse2=0.4+0.4*Math.sin(frame*0.1);
-                    ctx.save(); ctx.globalAlpha=0.5+pulse2*0.3;
-                    ctx.strokeStyle=col2; ctx.lineWidth=2+pulse2*2; ctx.setLineDash([6,4]);
-                    ctx.beginPath(); ctx.moveTo(px,py-60); ctx.lineTo(pbpx,pbpy-60); ctx.stroke();
-                    ctx.setLineDash([]);
+                    const y1=py-60, y2=pbpy-60;
+                    ctx.save();
+
+                    if (el==="fire") {
+                        // Fire wall — barrier glow + animated flame tongues
+                        ctx.globalAlpha=0.18+pulse2*0.1;
+                        ctx.strokeStyle="#ff3300"; ctx.lineWidth=18;
+                        ctx.shadowColor="#ff2200"; ctx.shadowBlur=20;
+                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                        ctx.shadowBlur=0;
+                        const segs=14;
+                        for (let s=0;s<=segs;s++) {
+                            const t=s/segs;
+                            const fx=px+(pbpx-px)*t, fy=y1+(y2-y1)*t;
+                            const flk=Math.sin(frame*0.18+s*1.5)*0.5+0.5;
+                            const h=10+flk*18;
+                            ctx.globalAlpha=(0.5+flk*0.4)*(0.5+pulse2*0.3);
+                            ctx.fillStyle=s%2===0?"#ff6600":"#ff3300";
+                            ctx.shadowColor="#ff4400"; ctx.shadowBlur=8;
+                            ctx.beginPath();
+                            ctx.moveTo(fx-3,fy);
+                            ctx.quadraticCurveTo(fx+2,fy-h*0.55,fx,fy-h);
+                            ctx.quadraticCurveTo(fx-2,fy-h*0.55,fx+3,fy);
+                            ctx.fill();
+                        }
+
+                    } else if (el==="ice") {
+                        // Ice field — frost band + crystal chevrons
+                        ctx.globalAlpha=0.18+pulse2*0.12;
+                        ctx.strokeStyle="#aaddff"; ctx.lineWidth=14;
+                        ctx.shadowColor="#88ccff"; ctx.shadowBlur=14;
+                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                        ctx.shadowBlur=0;
+                        const crysts=9;
+                        for (let s=1;s<crysts;s++) {
+                            const t=s/crysts;
+                            const cx2=px+(pbpx-px)*t, cy2=y1+(y2-y1)*t;
+                            const sz=4+Math.sin(frame*0.05+s*1.2)*1.5;
+                            ctx.globalAlpha=0.55+pulse2*0.3;
+                            ctx.strokeStyle="#cceeFF"; ctx.lineWidth=1;
+                            ctx.shadowColor="#88ccff"; ctx.shadowBlur=5;
+                            ctx.beginPath();
+                            ctx.moveTo(cx2-sz,cy2); ctx.lineTo(cx2+sz,cy2);
+                            ctx.moveTo(cx2,cy2-sz); ctx.lineTo(cx2,cy2+sz);
+                            ctx.moveTo(cx2-sz*0.7,cy2-sz*0.7); ctx.lineTo(cx2+sz*0.7,cy2+sz*0.7);
+                            ctx.moveTo(cx2+sz*0.7,cy2-sz*0.7); ctx.lineTo(cx2-sz*0.7,cy2+sz*0.7);
+                            ctx.stroke();
+                        }
+
+                    } else if (el==="electric") {
+                        // Electric arc — jagged lightning bolt
+                        ctx.shadowColor="#88aaff"; ctx.shadowBlur=16;
+                        ctx.strokeStyle=`rgba(180,210,255,${0.7+pulse2*0.3})`;
+                        ctx.lineWidth=2.5; ctx.lineCap="round";
+                        ctx.beginPath(); ctx.moveTo(px,y1);
+                        for (let s=1;s<10;s++) {
+                            const t=s/10;
+                            ctx.lineTo(px+(pbpx-px)*t+(Math.random()-0.5)*14,y1+(y2-y1)*t+(Math.random()-0.5)*10);
+                        }
+                        ctx.lineTo(pbpx,y2); ctx.stroke();
+                        // Thinner secondary arc
+                        ctx.shadowBlur=6; ctx.strokeStyle=`rgba(200,220,255,${0.3+pulse2*0.2})`; ctx.lineWidth=1;
+                        ctx.beginPath(); ctx.moveTo(px,y1);
+                        for (let s=1;s<10;s++) {
+                            const t=s/10;
+                            ctx.lineTo(px+(pbpx-px)*t+(Math.random()-0.5)*18,y1+(y2-y1)*t+(Math.random()-0.5)*12);
+                        }
+                        ctx.lineTo(pbpx,y2); ctx.stroke();
+                        ctx.shadowBlur=0;
+
+                    } else if (el==="void") {
+                        // Void — dark ribbon + orbiting particles converging on midpoint
+                        const midx=(px+pbpx)/2, midy=(y1+y2)/2;
+                        ctx.globalAlpha=0.28+pulse2*0.18;
+                        ctx.strokeStyle="#6600cc"; ctx.lineWidth=4+pulse2*2;
+                        ctx.shadowColor="#4400aa"; ctx.shadowBlur=12;
+                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                        for (let s=0;s<7;s++) {
+                            const phase=frame*0.07+s*(Math.PI*2/7);
+                            const r=10+Math.sin(phase*2)*4;
+                            ctx.globalAlpha=0.55+pulse2*0.3;
+                            ctx.fillStyle="#9922ff"; ctx.shadowBlur=7;
+                            ctx.beginPath(); ctx.arc(midx+Math.cos(phase)*r,midy+Math.sin(phase)*r*0.5,2.5,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.shadowBlur=0;
+
+                    } else if (el==="flux") {
+                        // Flux — swirling ribbons pulling toward midpoint
+                        ctx.globalAlpha=0.22+pulse2*0.15;
+                        ctx.strokeStyle="#9933ff"; ctx.lineWidth=8;
+                        ctx.shadowColor="#7700cc"; ctx.shadowBlur=10;
+                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                        ctx.shadowBlur=0;
+                        const midx2=(px+pbpx)/2, midy2=(y1+y2)/2;
+                        for (let s=0;s<5;s++) {
+                            const phase=frame*0.09+s*(Math.PI*2/5);
+                            const r=7+Math.sin(phase*1.5)*3;
+                            ctx.globalAlpha=0.45+pulse2*0.25;
+                            ctx.strokeStyle="#bb44ff"; ctx.lineWidth=1.5;
+                            ctx.shadowColor="#9933ff"; ctx.shadowBlur=5;
+                            ctx.beginPath();
+                            ctx.moveTo(midx2+Math.cos(phase)*r*2,midy2+Math.sin(phase)*r);
+                            ctx.lineTo(midx2+Math.cos(phase+0.6)*r*0.5,midy2+Math.sin(phase+0.6)*r*0.3);
+                            ctx.stroke();
+                        }
+                        ctx.shadowBlur=0;
+
+                    } else if (el==="toxic") {
+                        // Toxic — sickly green fog band
+                        ctx.globalAlpha=0.2+pulse2*0.12;
+                        ctx.strokeStyle="#44cc44"; ctx.lineWidth=16;
+                        ctx.shadowColor="#22aa22"; ctx.shadowBlur=10;
+                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                        ctx.shadowBlur=0;
+                        const blobs=8;
+                        for (let s=0;s<blobs;s++) {
+                            const t=(s+Math.sin(frame*0.04+s)*0.3)/blobs;
+                            const bx=px+(pbpx-px)*t, by=y1+(y2-y1)*t;
+                            const br=4+Math.sin(frame*0.08+s*0.9)*2;
+                            ctx.globalAlpha=(0.3+pulse2*0.2);
+                            const grad=ctx.createRadialGradient(bx,by,0,bx,by,br*3);
+                            grad.addColorStop(0,"rgba(80,200,80,0.5)"); grad.addColorStop(1,"rgba(40,120,40,0)");
+                            ctx.fillStyle=grad;
+                            ctx.beginPath(); ctx.arc(bx,by,br*3,0,Math.PI*2); ctx.fill();
+                        }
+
+                    } else if (el==="core") {
+                        // Core — solid energy barrier with shield ripples
+                        ctx.globalAlpha=0.25+pulse2*0.15;
+                        ctx.strokeStyle="#00ccaa"; ctx.lineWidth=12;
+                        ctx.shadowColor="#00aa88"; ctx.shadowBlur=14;
+                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                        ctx.shadowBlur=0;
+                        const ripples=5;
+                        for (let s=1;s<=ripples;s++) {
+                            const t=((s/ripples)+frame*0.01)%1;
+                            const rx=px+(pbpx-px)*t, ry=y1+(y2-y1)*t;
+                            ctx.globalAlpha=(1-t)*0.5*pulse2;
+                            ctx.strokeStyle="#00ffcc"; ctx.lineWidth=2;
+                            ctx.shadowColor="#00ccaa"; ctx.shadowBlur=6;
+                            ctx.beginPath(); ctx.arc(rx,ry,5+t*12,0,Math.PI*2); ctx.stroke();
+                        }
+                        ctx.shadowBlur=0;
+
+                    } else {
+                        // Fallback dashed line
+                        ctx.globalAlpha=0.5+pulse2*0.3;
+                        ctx.strokeStyle=col2; ctx.lineWidth=2+pulse2*2; ctx.setLineDash([6,4]);
+                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+
                     ctx.restore();
                 });
+
+                // Solo void pylon — inward-pulling glow ring
+                if (el==="void") {
+                    const hasPartner=wavePylonsLocal.some(q=>q!==obj&&Math.hypot(obj.x-q.x,obj.y-q.y)<=WCR);
+                    if (!hasPartner) {
+                        const r=22+pulse2*8;
+                        ctx.save();
+                        ctx.globalAlpha=0.12+pulse2*0.08; ctx.fillStyle="#6600cc";
+                        ctx.shadowColor="#4400aa"; ctx.shadowBlur=18;
+                        ctx.beginPath(); ctx.arc(px,py-60,r,0,Math.PI*2); ctx.fill();
+                        ctx.shadowBlur=0;
+                        for (let s=0;s<5;s++) {
+                            const phase=frame*0.07+s*(Math.PI*2/5);
+                            const sr=14+Math.sin(phase)*5;
+                            ctx.globalAlpha=0.45+pulse2*0.2; ctx.fillStyle="#8800ff"; ctx.shadowBlur=5;
+                            ctx.beginPath(); ctx.arc(px+Math.cos(phase)*sr,py-60+Math.sin(phase)*sr*0.5,2,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.shadowBlur=0;
+                        ctx.restore();
+                    }
+                }
             }
 
             // Pillar
@@ -627,7 +832,7 @@ function render() {
                     ctx.beginPath(); ctx.arc(px,py-110,9,0,Math.PI*2); ctx.fill();
                     ctx.restore();
                     // Element label + effect description
-                    const PYLON_FX={fire:"burns enemies",ice:"slows enemies",electric:"charges allies",core:"shields allies",flux:"pulls enemies",toxic:"corrodes enemies"};
+                    const PYLON_FX={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity pull",toxic:"corrodes enemies",void:"gravity well"};
                     const el0=obj.attackModeElement||"";
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                     ctx.fillStyle=wcol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
@@ -661,7 +866,7 @@ function render() {
                     ctx.globalAlpha=1;
                     // Element + effect label
                     if (obj.attackModeElement) {
-                        const PYLON_FX2={fire:"burns enemies",ice:"slows enemies",electric:"charges allies",core:"shields allies",flux:"pulls enemies",toxic:"corrodes enemies"};
+                        const PYLON_FX2={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity pull",toxic:"corrodes enemies",void:"gravity well"};
                         ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                         ctx.fillStyle=acol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
                         ctx.fillText(obj.attackModeElement.toUpperCase(),px,py-108);

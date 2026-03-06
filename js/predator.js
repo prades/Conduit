@@ -173,6 +173,30 @@ class Predator {
             this.state=bestState;
         }
 
+        // ── PYLON AGGRO — overrides normal state when a predator has been fried long enough ──
+        if (this.pylonAggro) {
+            if (this.pylonAggro.destroyed) { this.pylonAggro=null; this.pylonExposureFrames=0; }
+            else if (gameState.phase!=="day") {
+                const dx=this.pylonAggro.x-this.x, dy=this.pylonAggro.y-this.y;
+                const dist=Math.hypot(dx,dy);
+                if (dist>0.9) {
+                    this.x+=(dx/dist)*this.moveSpeed*1.15;
+                    this.y+=(dy/dist)*this.moveSpeed*1.15;
+                } else {
+                    if (!this.pylonAttackCooldown) this.pylonAttackCooldown=0;
+                    this.pylonAttackCooldown--;
+                    if (this.pylonAttackCooldown<=0) {
+                        this.pylonAggro.health=Math.max(0,(this.pylonAggro.health||0)-this.power*2);
+                        if (typeof shake!=="undefined") shake=Math.max(shake,3);
+                        floatingTexts.push({x:this.pylonAggro.x,y:this.pylonAggro.y-1,text:"BASH!",color:"#ff8800",life:30,vy:-0.05});
+                        if (this.pylonAggro.health<=0) { this.pylonAggro.pendingDestroy=true; this.pylonAggro=null; this.pylonExposureFrames=0; }
+                        this.pylonAttackCooldown=45;
+                    }
+                }
+                return;
+            }
+        }
+
         // ── CRAWL IN ──
         if (this.state==="crawl_in") {
             if (this.entryDelay>0) { this.entryDelay--; return; }

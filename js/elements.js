@@ -30,7 +30,8 @@ const ELEMENT_PROC_CHANCE = {
     ice:      0.08,   // rare but powerful
     flux:     0.15,
     core:     0.30,
-    toxic:    0.50    // high but softer effect
+    toxic:    0.50,   // high but softer effect
+    void:     0.35
 };
 
 // ─────────────────────────────────────────────────────────
@@ -266,6 +267,35 @@ const ELEMENT_ATTACKS = {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
                     if (Math.sqrt(dx*dx+dy*dy) <= 3.0) {
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.4, actor, "core");
+                    }
+                }
+            });
+            return { hit: true };
+        }
+    },
+
+    // ── VOID ──────────────────────────────────────────────
+    void: {
+        physical(actor, target) {
+            if (!target) return { hit: false };
+            // Gravity crush — pulls target toward actor then deals burst damage
+            const dx=actor.x-target.x, dy=actor.y-target.y, dist=Math.sqrt(dx*dx+dy*dy)||1;
+            target.x+=dx/dist*0.6; target.y+=dy/dist*0.6;
+            applyElementalDamage(target, (actor.stats?.attack||10)*0.5, actor, "void");
+            spawnElementEffect({ type:"impact", x:target.x, y:target.y, color:"#8800ff", radius:0.7, life:20, element:"void" });
+            if (Math.random()<0.35) { target.disoriented=60; }
+            return { hit: true };
+        },
+        special(actor, target) {
+            // Singularity — massive pull radius, heavier damage
+            spawnElementEffect({ type:"singularity", x:actor.x, y:actor.y, color:"#8800ff", radius:3.5, life:60, element:"void" });
+            actors.forEach(a => {
+                if ((a.team==="red"||(a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.dead) {
+                    const dx=actor.x-a.x, dy=actor.y-a.y, d=Math.sqrt(dx*dx+dy*dy);
+                    if (d<3.5 && d>0.01) {
+                        a.x+=dx/d*1.2; a.y+=dy/d*1.2;
+                        applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.6, actor, "void");
+                        if (Math.random()<0.4) a.disoriented=120;
                     }
                 }
             });
