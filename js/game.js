@@ -72,6 +72,21 @@ function render() {
     // ── UPDATE ACTORS ──
     actors.forEach(a=>updateNPC(a));
 
+    // ── FOLLOWER SEPARATION — push overlapping followers apart ──
+    const _fl = actors.filter(a => !a.dead && a.isFollower);
+    for (let _i = 0; _i < _fl.length; _i++) {
+        for (let _j = _i+1; _j < _fl.length; _j++) {
+            const _a = _fl[_i], _b = _fl[_j];
+            const _dx = _b.x - _a.x, _dy = _b.y - _a.y;
+            const _d = Math.sqrt(_dx*_dx + _dy*_dy);
+            if (_d < 0.55 && _d > 0.001) {
+                const _p = (_d > 0 ? 1/_d : 0) * (0.55 - _d) * 0.5;
+                _a.x -= _dx*_p; _a.y -= _dy*_p;
+                _b.x += _dx*_p; _b.y += _dy*_p;
+            }
+        }
+    }
+
     // ── RED HEALTH DECAY ──
     actors.forEach(a=>{ if(a.team==="red"){a.health-=0.01; if(a.health<=0){a.health=0;a.dead=true;}} });
 

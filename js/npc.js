@@ -182,18 +182,22 @@ function updateRTSNPC(actor) {
             }
         });
 
-        // ── BRAWLER: chase nearest enemy aggressively ──
+        // ── BRAWLER: chase nearest enemy aggressively, circle when in range ──
         if (role === "brawler") {
             if (nearestEnemy && nearestEnemyDist < 6) {
-                // Close in on enemy
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy);
-                if (dist > 0.8) {
+                if (dist > 1.4) {
+                    // Approach
                     actor.x+=(dx/dist)*actor.moveSpeed;
                     actor.y+=(dy/dist)*actor.moveSpeed;
-                }
-                // Auto attack when in range
-                if (dist <= 0.8) {
+                } else {
+                    // In strike range — orbit the target while attacking
+                    if (!actor.orbitDir) actor.orbitDir = Math.random() < 0.5 ? 1 : -1;
+                    const tangX = (-dy/dist) * actor.orbitDir;
+                    const tangY = ( dx/dist) * actor.orbitDir;
+                    actor.x += tangX * actor.moveSpeed * 0.8;
+                    actor.y += tangY * actor.moveSpeed * 0.8;
                     followerAttack(actor, nearestEnemy);
                 }
             } else {

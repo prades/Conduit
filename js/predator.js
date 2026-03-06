@@ -268,7 +268,12 @@ class Predator {
             if (!this.attackCooldown) this.attackCooldown=0;
             this.attackCooldown--;
             if (this.attackCooldown<=0) {
-                applyDamage(target, this.power, this);
+                // AoE melee — hits ALL green-team actors within strike range
+                actors.forEach(a => {
+                    if (a.dead || a.team !== "green") return;
+                    const adx = a.x - this.x, ady = a.y - this.y;
+                    if (Math.sqrt(adx*adx + ady*ady) <= 1.5) applyDamage(a, this.power, this);
+                });
                 this.attackCooldown=45;
             }
             return;
