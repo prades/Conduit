@@ -534,40 +534,33 @@ function _drawVirus(actor, px, py, drawCtx) {
     const headColor = `rgb(${Math.floor(er*br)},${Math.floor(eg*br)},${Math.floor(eb*br)})`;
     const flash = actor.hitFlash > 0 && actor.state !== "retreat";
 
-    // Screen-space forward + perpendicular from world-space movement direction
-    const wdx = actor.dirX || 1, wdy = actor.dirY || 0;
-    const sdx = wdx - wdy, sdy = (wdx + wdy) * 0.5; // isometric projection
-    const slen = Math.hypot(sdx, sdy) || 1;
-    const fwdX = sdx / slen,  fwdY = sdy / slen;  // screen forward
-    const perpX = -fwdY,      perpY =  fwdX;       // screen perpendicular (lateral)
-
     const bodyY = py - 40;
 
-    // ── LEGS — drawn behind body ──
-    // 3 legs — tripod alternating gait (left-front, right-mid, left-rear)
+    // ── LEGS — fixed screen-space angles, always distinct from isometric view ──
+    // Hip attachment points on thorax edges; angle drives knee direction
+    // 3 legs at ~120° apart: lower-left, lower-right, straight down
     const legCol = flash ? "#ccc" : `rgb(${Math.floor(er*br*0.65)},${Math.floor(eg*br*0.65)},${Math.floor(eb*br*0.65)})`;
     drawCtx.save();
     drawCtx.strokeStyle = legCol;
     drawCtx.lineCap = "round";
-    drawCtx.lineWidth = 1.5;
+    drawCtx.lineWidth = 1.8;
 
+    // hx/hy = hip screen offset from px/bodyY; a1 = knee angle; a2 = foot angle
     const legs = [
-        { oy:4,  side:-1, phase:0             },   // left-front
-        { oy:13, side: 1, phase:Math.PI*2/3   },   // right-mid
-        { oy:22, side: 1, phase:Math.PI*4/3   },   // right-rear (opposite side, own phase)
+        { hx:-5, hy:10, a1:Math.PI*0.72, a2:Math.PI*0.82, phase:0           }, // left
+        { hx: 5, hy:10, a1:Math.PI*0.28, a2:Math.PI*0.18, phase:Math.PI*2/3 }, // right
+        { hx: 0, hy:20, a1:Math.PI*0.5,  a2:Math.PI*0.5,  phase:Math.PI*4/3 }, // rear-center
     ];
     const wc = actor.walkCycle || 0;
-    legs.forEach(({ oy, side, phase }) => {
-        const gait    = Math.sin(wc + phase);
-        const isSwing = gait > 0;
-        const lift    = isSwing ? gait * 5 : 0;
-        const stride  = gait * 4;
-        const hx = px + perpX * 4 * side;
-        const hy = bodyY + oy;
-        const kx = hx + perpX * side * 9 + fwdX * stride;
-        const ky = hy + perpY * side * 9 + fwdY * stride + 6 - lift;
-        const fx = kx + perpX * side * 5 + fwdX * stride * 0.5;
-        const fy = ky + 10 - lift * 0.4;
+    legs.forEach(({ hx: lhx, hy: lhy, a1, a2, phase }) => {
+        const gait  = Math.sin(wc + phase);
+        const lift  = gait > 0 ? gait * 6 : 0;
+        const swing = gait * 0.18; // angle sway during stride
+        const hx = px + lhx, hy = bodyY + lhy;
+        const kx = hx + Math.cos(a1 + swing) * 11;
+        const ky = hy + Math.sin(a1 + swing) * 11 - lift;
+        const fx = kx + Math.cos(a2 + swing * 0.5) * 9;
+        const fy = ky + Math.sin(a2 + swing * 0.5) * 9 - lift * 0.3;
         drawCtx.beginPath();
         drawCtx.moveTo(hx, hy);
         drawCtx.lineTo(kx, ky);
