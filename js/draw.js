@@ -545,11 +545,12 @@ function _drawVirus(actor, px, py, drawCtx) {
     drawCtx.lineCap = "round";
     drawCtx.lineWidth = 1.8;
 
-    // hx/hy = hip screen offset from px/bodyY; a1 = knee angle; a2 = foot angle
+    // hx/hy = hip screen offset from px/bodyY; a1 = thigh angle; a2 = shin angle
+    // Thigh goes wide/horizontal out, shin drops steeply down → clear insect knee bend
     const legs = [
-        { hx:-5, hy:10, a1:Math.PI*0.72, a2:Math.PI*0.82, phase:0           }, // left
-        { hx: 5, hy:10, a1:Math.PI*0.28, a2:Math.PI*0.18, phase:Math.PI*2/3 }, // right
-        { hx: 0, hy:20, a1:Math.PI*0.5,  a2:Math.PI*0.5,  phase:Math.PI*4/3 }, // rear-center
+        { hx:-5, hy:8,  a1:Math.PI*0.88, a2:Math.PI*0.58, phase:0           }, // left  158°→104°
+        { hx: 5, hy:8,  a1:Math.PI*0.12, a2:Math.PI*0.42, phase:Math.PI*2/3 }, // right  22°→76°
+        { hx: 0, hy:16, a1:Math.PI*0.65, a2:Math.PI*0.50, phase:Math.PI*4/3 }, // rear  117°→90°
     ];
     const wc = actor.walkCycle || 0;
     legs.forEach(({ hx: lhx, hy: lhy, a1, a2, phase }) => {
@@ -557,10 +558,10 @@ function _drawVirus(actor, px, py, drawCtx) {
         const lift  = gait > 0 ? gait * 6 : 0;
         const swing = gait * 0.18; // angle sway during stride
         const hx = px + lhx, hy = bodyY + lhy;
-        const kx = hx + Math.cos(a1 + swing) * 11;
-        const ky = hy + Math.sin(a1 + swing) * 11 - lift;
-        const fx = kx + Math.cos(a2 + swing * 0.5) * 9;
-        const fy = ky + Math.sin(a2 + swing * 0.5) * 9 - lift * 0.3;
+        const kx = hx + Math.cos(a1 + swing) * 13;
+        const ky = hy + Math.sin(a1 + swing) * 13 - lift;
+        const fx = kx + Math.cos(a2 + swing * 0.5) * 11;
+        const fy = ky + Math.sin(a2 + swing * 0.5) * 11 - lift * 0.3;
         drawCtx.beginPath();
         drawCtx.moveTo(hx, hy);
         drawCtx.lineTo(kx, ky);
