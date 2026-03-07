@@ -187,7 +187,7 @@ function updateRTSNPC(actor) {
     }
 
     // ── WALK CYCLE + DIRECTION (before role returns) ──
-    const dxM=actor.x-(actor.lastX||actor.x), dyM=actor.y-(actor.lastY||actor.y);
+    const dxM=actor.x-(actor.lastX??actor.x), dyM=actor.y-(actor.lastY??actor.y);
     if (Math.abs(dxM)>0.001||Math.abs(dyM)>0.001) {
         actor.walkCycle+=0.25;
         const dlen=Math.hypot(dxM,dyM);
