@@ -8,6 +8,11 @@ const getTile = (gx, gy) => world.find(t => t.x === gx && t.y === gy);
 
 function applyDamage(target, amount, source=null, element=null) {
     if (!target || target.dead) return;
+    // Ghostphage ghost — immune to hazards; instantly killed by any direct attack
+    if (target.ghostphageLife) {
+        if (source && source.team) { target.health=0; target.dead=true; }
+        return; // hazard (null source) — immune
+    }
     if (target.spawnProtection && target.spawnProtection > 0) return;
     // Clones cannot damage red predators
     if (source && source.isClone && target instanceof Predator && target.team !== "green") return;

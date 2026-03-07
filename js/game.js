@@ -282,7 +282,11 @@ function render() {
     actors.forEach(a=>{
         if (a.dead&&a.team==="green"&&!a.queuedForRespawn&&!a.sacrificed) {
             a.queuedForRespawn=true;
-            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:180, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className });
+            const oldHp = a.stats?.hp||1;
+            const newHp = oldHp - 1;
+            const isGhostSave = (newHp<=0) && activeCrystalBuild==="ghostphage" && !a.ghostphageLife;
+            if (newHp<=0 && !isGhostSave) return; // permanent death — don't queue
+            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:180, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), ghostphageLife:isGhostSave });
         }
         // track kills for wave clear — count dead enemies not clones
         if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.killCounted) {
@@ -1191,14 +1195,16 @@ function render() {
                 applySpeciesBody(clone, entry.speciesName);
                 actors.push(clone);
             } else {
-                // Respawn as regular follower
+                // Respawn as regular follower — apply HP stat degradation
                 const def         = NPC_TYPES["virus"];
                 const personality = entry.personality || PERSONALITY_KEYS[Math.floor(Math.random()*PERSONALITY_KEYS.length)];
                 const stats       = applyPersonality(personality);
+                if (entry.hpStat!==undefined) stats.hp = entry.hpStat;
                 const role        = assignRole(stats);
+                const hp          = entry.ghostphageLife ? 1 : stats.hp;
                 const npc = {
                     type:"virus", element:entry.element, x:crystal.x, y:crystal.y, team:"green",
-                    health: stats.hp, maxHealth: stats.hp,
+                    health: hp, maxHealth: hp,
                     moveSpeed: def.moveSpeed + (stats.speed - 10) * 0.001,
                     power: stats.attack,
                     stats, personality, role,
@@ -1206,7 +1212,8 @@ function render() {
                     currentWill: stats.will,
                     walkCycle:0, moveCooldown:0, stance:"follow", isFollower:true, isHealing:false,
                     hitFlash:0, dead:false,
-                    combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk
+                    combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk,
+                    ghostphageLife: entry.ghostphageLife||false
                 };
                 actors.push(npc); followers.push(npc);
                 if(!followerByElement[entry.element]) followerByElement[entry.element]=[];
@@ -1267,8 +1274,10 @@ function render() {
     // ── OVERLAYS ──
     drawElementEffects();
     drawFloatingTexts();
+    drawClonesBlob();
     drawCloneMenu();
     drawRadialMenu();
+    drawCrystalMenu();
     drawHoldLine();
     drawGestureFeedback();
     drawFollowerElementUI();

@@ -534,6 +534,35 @@ function _drawVirus(actor, px, py, drawCtx) {
     const headColor = `rgb(${Math.floor(er*br)},${Math.floor(eg*br)},${Math.floor(eb*br)})`;
     const flash = actor.hitFlash > 0 && actor.state !== "retreat";
 
+    // ── GHOSTPHAGE GHOST — translucent white wraith, no element color ──
+    if (actor.ghostphageLife) {
+        const bodyY2 = py - 40;
+        const pulse = 0.38 + 0.14 * Math.sin((frame||0) * 0.1);
+        drawCtx.save();
+        drawCtx.globalAlpha = pulse;
+        // Wispy legs
+        drawCtx.strokeStyle = "#aacccc"; drawCtx.lineWidth = 1.2; drawCtx.lineCap = "round";
+        [[px-6,bodyY2+22,Math.PI*0.83,Math.PI*0.56],[px+6,bodyY2+22,Math.PI*0.17,Math.PI*0.44],[px,bodyY2+20,Math.PI*0.55,Math.PI*0.38]].forEach(([hx,hy,a1,a2])=>{
+            const kx=hx+Math.cos(a1)*13, ky=hy+Math.sin(a1)*13;
+            const fx=kx+Math.cos(a2)*11, fy=ky+Math.sin(a2)*11;
+            drawCtx.beginPath(); drawCtx.moveTo(hx,hy); drawCtx.lineTo(kx,ky); drawCtx.lineTo(fx,fy); drawCtx.stroke();
+        });
+        // Ghost body — hollow white column with glow
+        drawCtx.shadowColor = "#aaffff"; drawCtx.shadowBlur = 12;
+        drawCtx.strokeStyle = "#ddeeff"; drawCtx.lineWidth = 1.2;
+        drawCtx.strokeRect(px-5, bodyY2+5, 10, 18);
+        // Head diamond — white outline
+        drawCtx.beginPath();
+        drawCtx.moveTo(px, bodyY2-8); drawCtx.lineTo(px+10, bodyY2+2);
+        drawCtx.lineTo(px, bodyY2+12); drawCtx.lineTo(px-10, bodyY2+2); drawCtx.closePath();
+        drawCtx.strokeStyle = "#ffffff"; drawCtx.lineWidth = 1.5;
+        drawCtx.stroke();
+        drawCtx.shadowBlur = 0;
+        drawCtx.restore();
+        drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
+        return;
+    }
+
     const bodyY = py - 40;
 
     // ── LEGS — fixed screen-space angles, always distinct from isometric view ──

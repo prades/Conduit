@@ -52,6 +52,9 @@ const SHOP_ITEMS = [
     { id:"spawn_follower",label:"+1 Follower",   cost:10,
       apply() { const pool=[...unlockedElements]; spawnFollowerAtCrystal(pool[Math.floor(Math.random()*pool.length)]||"fire"); } },
     { id:"more_zones",    label:"+1 Zone",       cost:20,
-      apply() { activeDayZones++; } }
+      apply() { activeDayZones++; } },
+    // ── CRYSTAL BUILDS ───────────────────────────────────
+    { id:"ghostphage",    label:"◈ Ghostphage  [Crystal Build]",  cost:80,
+      apply() { activeCrystalBuild="ghostphage"; } }
 ];
 let boughtItems = new Set();

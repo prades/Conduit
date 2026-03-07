@@ -2,13 +2,15 @@
 //  INPUT
 // ─────────────────────────────────────────────────────────
 const handleInput=(ex,ey)=>{
+    // Short tap near crystal → open crystal menu
+    if (isTapNearCrystal(ex,ey)) {
+        crystalMenuOpen=true; crystalMenuRot=0; crystalMenuSub=null; return;
+    }
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
-
     if (t&&!t.type.includes('wall')) { player.targetX=gx; player.targetY=gy; }
-    // Deselect follower when tapping empty ground
     player.selectedFollower=null;
 };
 
@@ -19,20 +21,7 @@ function isTapNearCrystal(ex, ey) {
 }
 
 function handleLongHold(ex,ey) {
-    // Long press near crystal — open clone menu
-    if (isTapNearCrystal(ex, ey)) {
-        // If crystal is under attack — open radial instead of clone menu
-        const crystalUnderAttack = actors.some(a =>
-            a instanceof Predator && !a.dead && a.team !== "green" &&
-            (a.state === "attack" || a.state === "hunt") &&
-            Math.hypot(a.x - crystal.x, a.y - crystal.y) < 3
-        );
-        if (!crystalUnderAttack) {
-            cloneMenuOpen = true;
-            return;
-        }
-        // Fall through to radial menu
-    }
+    // Long press near crystal — radial command (crystal menu now opened by short tap)
     commandMode=true; commandX=ex; commandY=ey;
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
@@ -48,6 +37,10 @@ canvas.addEventListener('pointerdown', e=>{
     gesturePoints=[]; isPressing=true; longHoldFired=false; touchMoved=false;
     pressX=e.clientX; pressY=e.clientY; pressStartTime=performance.now();
     commandTarget=null;
+
+    // Crystal menu drag start
+    if (crystalMenuOpen) { crystalMenuDrag=true; crystalMenuDragX=e.clientX; return; }
+
     const dx=pressX-canvas.width/2, dy=pressY-canvas.height/2;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
@@ -58,12 +51,36 @@ canvas.addEventListener('pointerdown', e=>{
 canvas.addEventListener('pointermove', e=>{
     if (!isPressing) return;
     pointerX=e.clientX; pointerY=e.clientY;
+
+    // Crystal menu — drag to rotate
+    if (crystalMenuOpen && crystalMenuDrag) {
+        crystalMenuRot -= (e.clientX - crystalMenuDragX) * 0.012;
+        crystalMenuDragX = e.clientX;
+        touchMoved=true;
+        return;
+    }
+
     dragDX=pointerX-commandX; dragDY=pointerY-commandY;
     gesturePoints.push({x:pointerX,y:pointerY});
     if (Math.sqrt((pointerX-pressX)**2+(pointerY-pressY)**2)>12) touchMoved=true;
 });
 
 canvas.addEventListener('pointerup', e=>{
+    // Crystal menu — tap selects front face
+    if (crystalMenuOpen) {
+        crystalMenuDrag=false;
+        if (!touchMoved) handleCrystalMenuTap(e.clientX, e.clientY);
+        isPressing=false; return;
+    }
+
+    // Blob button — tap opens clone menu
+    if (!touchMoved) {
+        const b=_BLOB;
+        if (b && Math.hypot(e.clientX-b.x, e.clientY-b.y)<b.r+8) {
+            cloneMenuOpen=true; isPressing=false; return;
+        }
+    }
+
     if (handleCloneMenuTap(e.clientX, e.clientY)) { isPressing=false; return; }
     if (handleFollowerUIClick(e.clientX, e.clientY)) { isPressing=false; return; }
 
@@ -85,7 +102,7 @@ canvas.addEventListener('pointerup', e=>{
             if (enclosed.length>0) {
                 issueAttackOnEnemies(enclosed);
             } else if (holdLineX!==null) {
-                holdLineX=null; // clear hold line with empty circle
+                holdLineX=null;
             } else {
                 recallFollowers();
             }

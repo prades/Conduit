@@ -133,6 +133,14 @@ let holdLineX    = null;       // world X boundary; null = cleared
 let uiTab        = "elements"; // "elements" | "units"
 let selectedRole = null;       // "brawler"|"sniper"|"camper"|null
 
+// ── CRYSTAL MENU / BUILDS ─────────────────────────────────
+let crystalMenuOpen = false;
+let crystalMenuRot  = 0;       // current rotation angle (radians)
+let crystalMenuSub  = null;    // null | "builds" | "status"
+let crystalMenuDrag = false;
+let crystalMenuDragX = 0;
+let activeCrystalBuild = null; // null | "ghostphage"
+
 function toggleSquad() {
     squadMode = (squadMode === "selected") ? "all" : "selected";
     const btn = document.getElementById("btnSquad");
