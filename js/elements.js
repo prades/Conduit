@@ -339,12 +339,12 @@ function spawnHazardsForDay() {
                 hazard.tiles = [[hx,hy],[hx+1,hy],[hx,hy+1]].slice(0, 2+Math.floor(Math.random()*2));
             }
             if (type === "cable") {
-                // Generate snake knots that extend well off-screen on both sides
+                // Snake knots: extend off-screen on both sides, gentle single-wave meander
                 const seed = hx * 7.3 + hy * 3.1;
                 const knots = [];
-                for (let d = -14; d <= 14; d++) {
-                    const yoff = Math.sin(d * 0.5 + seed) * 1.6
-                               + Math.sin(d * 0.19 + seed * 1.3) * 0.85;
+                for (let d = -10; d <= 10; d++) {
+                    // Single long-period sin: amplitude 0.45 tiles so cable never loops back
+                    const yoff = Math.sin(d * 0.45 + seed) * 0.45;
                     knots.push({ x: hx + d, y: hy + yoff });
                 }
                 hazard.knots   = knots;

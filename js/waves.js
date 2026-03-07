@@ -228,6 +228,7 @@ function restartGame() {
     gameState={ phase:"day", nightNumber:1, totalWavesSurvived:0, running:true };
     dayStats={ redSpawned:0, redConverted:0 };
     nightKillCount=0; nightEnemiesTarget=0; nightPredatorsRemaining=0;
+    for (let i=-6;i<0;i++) generateSegment(i);
     for (let i=0;i<20;i++) generateSegment(i);
     // No free spawns — player earns followers and encounters predators naturally
     spawnHazardsForDay();
