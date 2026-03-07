@@ -339,16 +339,17 @@ function spawnHazardsForDay() {
                 hazard.tiles = [[hx,hy],[hx+1,hy],[hx,hy+1]].slice(0, 2+Math.floor(Math.random()*2));
             }
             if (type === "cable") {
-                // Snake knots: extend off-screen on both sides, gentle single-wave meander
-                const seed = hx * 7.3 + hy * 3.1;
-                const knots = [];
-                for (let d = -10; d <= 10; d++) {
-                    // Single long-period sin: amplitude 0.45 tiles so cable never loops back
-                    const yoff = Math.sin(d * 0.45 + seed) * 0.45;
-                    knots.push({ x: hx + d, y: hy + yoff });
-                }
-                hazard.knots   = knots;
-                hazard.gapIdx  = Math.floor(knots.length / 2); // gap at centre
+                // Two cables emerge from wall crevasses (wy=0) at different heights,
+                // droop to the floor and meet at an arc gap a few tiles in
+                const cx1 = hx;
+                const cx2 = hx + 2 + Math.floor(Math.random() * 2); // 2-3 tiles along wall
+                hazard.cx1  = cx1;
+                hazard.cx2  = cx2;
+                hazard.wy   = 0;
+                hazard.hA   = 0.55 + Math.random() * 0.20; // 55–75% up wall (mid-to-3/4)
+                hazard.hB   = 0.15 + Math.random() * 0.12; // 15–27% up wall (nearly on floor)
+                hazard.gapWX = (cx1 + cx2) / 2;
+                hazard.gapWY = 1.1 + Math.random() * 0.4;  // arc gap on floor, near wall
                 hazard.arcState = "off";
                 hazard.arcTimer = 0;
                 hazard.ON_DUR  = 40;
@@ -411,28 +412,20 @@ function updateHazards() {
                 h.arcState = "off"; h.arcTimer = 0;
                 h.OFF_DUR = 90 + Math.floor(Math.random()*90); // randomize next gap
             }
-            // Damage while arc is on
+            // Damage while arc is on — check proximity to the floor gap
             if (h.arcState === "on" && frame % 15 === 0) {
-                const knots = h.knots || [];
-                const nearCable = (ax, ay) => {
-                    for (let i = 0; i < knots.length - 1; i++) {
-                        const k1 = knots[i], k2 = knots[i+1];
-                        const lx = k2.x-k1.x, ly = k2.y-k1.y, len2 = lx*lx+ly*ly;
-                        let t = len2 > 0 ? ((ax-k1.x)*lx+(ay-k1.y)*ly)/len2 : 0;
-                        t = Math.max(0, Math.min(1, t));
-                        if (Math.hypot(ax-(k1.x+t*lx), ay-(k1.y+t*ly)) < 0.9) return true;
-                    }
-                    return false;
-                };
+                const gx = h.gapWX, gy = h.gapWY;
                 actors.forEach(a => {
                     if (a.dead) return;
-                    if (nearCable(a.x, a.y)) {
+                    if (Math.hypot(a.x - gx, a.y - gy) < 1.1) {
                         applyDamage(a, 5, null, "electric");
                         a.hitStun = Math.max(a.hitStun||0, 20);
                         floatingTexts.push({x:a.x,y:a.y,text:"ZAP",color:"#88aaff",life:25,vy:-0.04});
                     }
                 });
-                if (nearCable(player.x, player.y)) { health=Math.max(0,health-6); shake=Math.max(shake,4); }
+                if (Math.hypot(player.x - gx, player.y - gy) < 1.1) {
+                    health = Math.max(0, health - 6); shake = Math.max(shake, 4);
+                }
             }
         }
     });
@@ -451,62 +444,93 @@ function drawHazards() {
     // Wall vents drawn + updated in game.js wall_back section (state lives on tile objects).
     environmentalHazards.forEach(h => {
         if (h.type === "cable") {
-            const knots = h.knots;
-            if (!knots || knots.length < 2) return;
+            const WH   = 110; // wall face height in px (matches game.js wall_back)
+            const GAP  = 12;  // half-gap at arc point, px
+            const live = h.arcState === "on";
 
-            // Project every knot to screen, sitting on the floor (y + TILE_H*0.55)
-            const sKnots = knots.map(k => {
-                const s = toScreen(k.x, k.y);
-                return { px: s.px, py: s.py + TILE_H * 0.55 };
-            });
+            // ── Screen positions ──────────────────────────────────────────────────
+            // Wall tile bases for each crevasse (world wy=0)
+            const sW1 = toScreen(h.cx1, h.wy);
+            const sW2 = toScreen(h.cx2, h.wy);
 
-            const gapIdx = h.gapIdx ?? Math.floor(sKnots.length / 2);
-            const live   = h.arcState === "on";
-
-            // Gap direction vector computed from knots on either side of gapIdx
-            const gkPrev = sKnots[Math.max(0, gapIdx - 1)];
-            const gkNext = sKnots[Math.min(sKnots.length - 1, gapIdx + 1)];
-            const gdx = gkNext.px - gkPrev.px, gdy = gkNext.py - gkPrev.py;
-            const glen = Math.hypot(gdx, gdy) || 1;
-            const gnx = gdx / glen, gny = gdy / glen; // tangent along cable at gap
-
-            const GAP  = 16; // half-gap in px
-            const gK   = sKnots[gapIdx];
-            const cut1 = { px: gK.px - gnx * GAP, py: gK.py - gny * GAP };
-            const cut2 = { px: gK.px + gnx * GAP, py: gK.py + gny * GAP };
-
-            // Draw a quadratic bezier spline through an array of screen points
-            const drawSpline = (pts) => {
-                if (pts.length < 2) return;
-                ctx.beginPath();
-                ctx.moveTo(pts[0].px, pts[0].py);
-                for (let i = 1; i < pts.length - 1; i++) {
-                    const mx = (pts[i].px + pts[i+1].px) / 2;
-                    const my = (pts[i].py + pts[i+1].py) / 2;
-                    ctx.quadraticCurveTo(pts[i].px, pts[i].py, mx, my);
-                }
-                ctx.lineTo(pts[pts.length-1].px, pts[pts.length-1].py);
-                ctx.stroke();
+            // Crevasse attachment points on the wall face south side.
+            // Wall face right edge bottom = (sW.px, sW.py + 2*TILE_H).
+            // At height fraction h.hA from the bottom: y = sW.py + 2*TILE_H - hA*WH.
+            // Use mid-wall x (px - TILE_W/2) so cable appears to emerge from the crack.
+            const attachA = {
+                px: sW1.px - TILE_W * 0.5,
+                py: sW1.py + 2 * TILE_H - h.hA * WH
+            };
+            const attachB = {
+                px: sW2.px - TILE_W * 0.5,
+                py: sW2.py + 2 * TILE_H - h.hB * WH
             };
 
-            const drawCableHalf = (pts) => {
+            // Floor landing points — where each cable touches down
+            const sFlA = toScreen(h.cx1, 1.1);
+            const floorA = { px: sFlA.px, py: sFlA.py + TILE_H * 0.55 };
+
+            const sFlB = toScreen(h.cx2, 0.75);
+            const floorB = { px: sFlB.px, py: sFlB.py + TILE_H * 0.55 };
+
+            // Arc gap on the floor between the two cable ends
+            const sGap   = toScreen(h.gapWX, h.gapWY);
+            const gapFlr = { px: sGap.px, py: sGap.py + TILE_H * 0.55 };
+
+            // Gap direction: from cable-A floor end toward cable-B floor end
+            const gdx = floorB.px - floorA.px, gdy = floorB.py - floorA.py;
+            const glen = Math.hypot(gdx, gdy) || 1;
+            const gnx = gdx / glen, gny = gdy / glen;
+            const perpX = -gny, perpY = gnx;
+
+            const cut1 = { px: gapFlr.px - gnx * GAP, py: gapFlr.py - gny * GAP };
+            const cut2 = { px: gapFlr.px + gnx * GAP, py: gapFlr.py + gny * GAP };
+
+            // ── Draw helper ───────────────────────────────────────────────────────
+            // Draws the path fn twice: thick dark jacket + thin sheen
+            const drawCable = (pathFn) => {
                 ctx.lineCap = "round"; ctx.lineJoin = "round";
-                // Dark rubber jacket
                 ctx.strokeStyle = "#1a1a1a"; ctx.lineWidth = 5;
-                drawSpline(pts);
-                // Subtle sheen
-                ctx.strokeStyle = "#444"; ctx.lineWidth = 1.5;
-                drawSpline(pts);
+                pathFn(); ctx.stroke();
+                ctx.strokeStyle = "#555"; ctx.lineWidth = 1.5;
+                pathFn(); ctx.stroke();
             };
 
             ctx.save();
 
-            // Left half: knots[0..gapIdx-1] + cut1
-            drawCableHalf([...sKnots.slice(0, gapIdx), cut1]);
-            // Right half: cut2 + knots[gapIdx+1..end]
-            drawCableHalf([cut2, ...sKnots.slice(gapIdx + 1)]);
+            // ── Cable A: crevasse (mid-high) → catenary droop → floor → slack → cut1 ──
+            {
+                // Catenary: cubic bezier. CP1 pulled straight down (gravity), CP2 levels off
+                const sagA  = Math.max(attachA.py, floorA.py) + 28;
+                const cp1Ax = attachA.px, cp1Ay = sagA;
+                const cp2Ax = floorA.px  + 12,  cp2Ay = floorA.py + 4;
+                // Floor slack: quadratic bezier with slight downward belly
+                const slkAx = (floorA.px + cut1.px) / 2;
+                const slkAy = (floorA.py + cut1.py) / 2 + 9;
+                drawCable(() => {
+                    ctx.beginPath();
+                    ctx.moveTo(attachA.px, attachA.py);
+                    ctx.bezierCurveTo(cp1Ax, cp1Ay, cp2Ax, cp2Ay, floorA.px, floorA.py);
+                    ctx.quadraticCurveTo(slkAx, slkAy, cut1.px, cut1.py);
+                });
+            }
 
-            // ── Frayed cut ends ──
+            // ── Cable B: crevasse (low) → short droop → floor → slack → cut2 ──
+            {
+                const sagB  = Math.max(attachB.py, floorB.py) + 14;
+                const cp1Bx = attachB.px, cp1By = sagB;
+                const cp2Bx = floorB.px  + 6,  cp2By = floorB.py + 2;
+                const slkBx = (floorB.px + cut2.px) / 2;
+                const slkBy = (floorB.py + cut2.py) / 2 + 6;
+                drawCable(() => {
+                    ctx.beginPath();
+                    ctx.moveTo(attachB.px, attachB.py);
+                    ctx.bezierCurveTo(cp1Bx, cp1By, cp2Bx, cp2By, floorB.px, floorB.py);
+                    ctx.quadraticCurveTo(slkBx, slkBy, cut2.px, cut2.py);
+                });
+            }
+
+            // ── Frayed cut ends ───────────────────────────────────────────────────
             const drawCutEnd = (ex, ey, dirX, dirY) => {
                 for (let i = 0; i < 4; i++) {
                     const spread = (i / 3 - 0.5) * 10;
@@ -518,18 +542,17 @@ function drawHazards() {
                     ctx.beginPath();
                     ctx.moveTo(ex, ey);
                     ctx.lineTo(
-                        ex + dirX * 7 + (-gny) * spread + wobble,
-                        ey + dirY * 7 + ( gnx) * spread + wobble
+                        ex + dirX * 7 + perpX * spread + wobble,
+                        ey + dirY * 7 + perpY * spread + wobble
                     );
                     ctx.stroke();
                 }
             };
-
             ctx.shadowBlur = 0;
             drawCutEnd(cut1.px, cut1.py,  gnx,  gny);
             drawCutEnd(cut2.px, cut2.py, -gnx, -gny);
 
-            // ── Electric arc across the gap when live ──
+            // ── Electric arc across the gap when live ─────────────────────────────
             if (live) {
                 for (let arc = 0; arc < 3; arc++) {
                     ctx.save();
@@ -537,7 +560,7 @@ function drawHazards() {
                     ctx.shadowBlur  = arc === 0 ? 18 : 8;
                     ctx.strokeStyle = arc === 0
                         ? `rgba(200,220,255,${0.85 + Math.random() * 0.15})`
-                        : `rgba(160,200,255,${0.3 + Math.random() * 0.3})`;
+                        : `rgba(160,200,255,${0.3  + Math.random() * 0.3})`;
                     ctx.lineWidth = arc === 0 ? 2.5 : 1;
                     ctx.lineCap   = "round";
                     ctx.beginPath();
@@ -545,8 +568,8 @@ function drawHazards() {
                     for (let s = 1; s < 5; s++) {
                         const t = s / 5;
                         ctx.lineTo(
-                            cut1.px + (cut2.px - cut1.px) * t + (Math.random() - 0.5) * 16,
-                            cut1.py + (cut2.py - cut1.py) * t + (Math.random() - 0.5) * 12
+                            cut1.px + (cut2.px - cut1.px) * t + (Math.random() - 0.5) * 14,
+                            cut1.py + (cut2.py - cut1.py) * t + (Math.random() - 0.5) * 10
                         );
                     }
                     ctx.lineTo(cut2.px, cut2.py);
