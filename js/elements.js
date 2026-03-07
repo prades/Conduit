@@ -339,17 +339,16 @@ function spawnHazardsForDay() {
                 hazard.tiles = [[hx,hy],[hx+1,hy],[hx,hy+1]].slice(0, 2+Math.floor(Math.random()*2));
             }
             if (type === "cable") {
-                // Two cables emerge from wall crevasses (wy=0) at different heights,
-                // droop to the floor and meet at an arc gap a few tiles in
+                // Two cables emerge from wall crevasses — wall_back tiles are at wy=-2
                 const cx1 = hx;
                 const cx2 = hx + 2 + Math.floor(Math.random() * 2); // 2-3 tiles along wall
                 hazard.cx1  = cx1;
                 hazard.cx2  = cx2;
-                hazard.wy   = 0;
-                hazard.hA   = 0.55 + Math.random() * 0.20; // 55–75% up wall (mid-to-3/4)
-                hazard.hB   = 0.15 + Math.random() * 0.12; // 15–27% up wall (nearly on floor)
+                hazard.wy   = -2;                            // wall_back row
+                hazard.hA   = 0.55 + Math.random() * 0.20;  // 55–75% up wall (mid-to-3/4)
+                hazard.hB   = 0.15 + Math.random() * 0.12;  // 15–27% up wall (nearly on floor)
                 hazard.gapWX = (cx1 + cx2) / 2;
-                hazard.gapWY = 1.1 + Math.random() * 0.4;  // arc gap on floor, near wall
+                hazard.gapWY = -1.1 + Math.random() * 0.4;  // arc gap on floor just in front of wall
                 hazard.arcState = "off";
                 hazard.arcTimer = 0;
                 hazard.ON_DUR  = 40;
@@ -445,7 +444,7 @@ function drawHazards() {
     environmentalHazards.forEach(h => {
         if (h.type === "cable") {
             const WH   = 110; // wall face height in px (matches game.js wall_back)
-            const GAP  = 12;  // half-gap at arc point, px
+            const GAP  = 28;  // half-gap at arc point, px
             const live = h.arcState === "on";
 
             // ── Screen positions ──────────────────────────────────────────────────
@@ -466,11 +465,12 @@ function drawHazards() {
                 py: sW2.py + 2 * TILE_H - h.hB * WH
             };
 
-            // Floor landing points — where each cable touches down
-            const sFlA = toScreen(h.cx1, 1.1);
+            // Floor landing points — where each cable touches down.
+            // Floor tiles start at wy=-1 (immediately in front of wall_back at wy=-2).
+            const sFlA = toScreen(h.cx1, -1.0);
             const floorA = { px: sFlA.px, py: sFlA.py + TILE_H * 0.55 };
 
-            const sFlB = toScreen(h.cx2, 0.75);
+            const sFlB = toScreen(h.cx2, -1.4);
             const floorB = { px: sFlB.px, py: sFlB.py + TILE_H * 0.55 };
 
             // Arc gap on the floor between the two cable ends
