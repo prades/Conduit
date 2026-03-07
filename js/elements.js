@@ -496,6 +496,80 @@ function drawHazards() {
                 pathFn(); ctx.stroke();
             };
 
+            // ── Honeycomb spawn holes: 4-tile wall face ──────────────────────────
+            {
+                const numTiles = 4;
+                // Parallelogram corners of the 4-tile wall face in screen space
+                const wfBL = { x: sW1.px - TILE_W,              y: sW1.py + TILE_H              };
+                const wfBR = { x: sW1.px + (numTiles-1)*TILE_W, y: sW1.py + (numTiles+1)*TILE_H };
+                const wfTR = { x: wfBR.x,                        y: wfBR.y - WH                  };
+                const wfTL = { x: wfBL.x,                        y: wfBL.y - WH                  };
+
+                ctx.save();
+                // Clip drawing to the wall face parallelogram
+                ctx.beginPath();
+                ctx.moveTo(wfBL.x, wfBL.y); ctx.lineTo(wfBR.x, wfBR.y);
+                ctx.lineTo(wfTR.x, wfTR.y); ctx.lineTo(wfTL.x, wfTL.y);
+                ctx.closePath();
+                ctx.clip();
+
+                const hexR  = 12;
+                const hexWd = hexR * Math.sqrt(3); // pointy-top hex width ≈ 20.8 px
+                const hexRH = hexR * 1.5;           // row pitch ≈ 18 px
+
+                // Grid origin: start one hex outside top-left of face
+                const gridLeft = wfTL.x - hexWd;
+                const gridTop  = wfTL.y - hexR;
+                const nRows = Math.ceil((WH + hexR * 4) / hexRH) + 1;
+                const nCols = Math.ceil((wfBR.x - wfBL.x + hexWd * 2) / hexWd) + 1;
+
+                for (let row = 0; row < nRows; row++) {
+                    for (let col = 0; col < nCols; col++) {
+                        const hcx = gridLeft + col * hexWd + (row % 2 === 0 ? 0 : hexWd * 0.5);
+                        const hcy = gridTop + hexR + row * hexRH;
+
+                        // Pointy-top hexagon path
+                        ctx.beginPath();
+                        for (let vi = 0; vi < 6; vi++) {
+                            const ang = Math.PI/6 + vi * Math.PI/3;
+                            const vx = hcx + hexR * Math.cos(ang);
+                            const vy = hcy + hexR * Math.sin(ang);
+                            vi === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
+                        }
+                        ctx.closePath();
+
+                        // Deep hollow interior — radial gradient biased down to fake tunnel depth
+                        const grd = ctx.createRadialGradient(hcx, hcy + hexR*0.25, 0,
+                                                              hcx, hcy + hexR*0.25, hexR);
+                        grd.addColorStop(0,   "rgba(1,5,1,1)");
+                        grd.addColorStop(0.6, "rgba(5,12,5,1)");
+                        grd.addColorStop(1,   "rgba(16,26,16,0.95)");
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+
+                        // Cell wall border
+                        ctx.strokeStyle = "#1d2d1d";
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+
+                        // Inner bevel ring for extra perceived depth
+                        ctx.strokeStyle = "rgba(50,80,50,0.4)";
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        for (let vi = 0; vi < 6; vi++) {
+                            const ang = Math.PI/6 + vi * Math.PI/3;
+                            const ir = hexR - 3;
+                            const vx = hcx + ir * Math.cos(ang);
+                            const vy = hcy + ir * Math.sin(ang);
+                            vi === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
+                        }
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+                }
+                ctx.restore();
+            }
+
             ctx.save();
 
             // ── Cable A: crevasse (mid-high) → catenary droop → floor → slack → cut1 ──
