@@ -545,12 +545,12 @@ function _drawVirus(actor, px, py, drawCtx) {
     drawCtx.lineCap = "round";
     drawCtx.lineWidth = 1.8;
 
-    // hx/hy = hip screen offset from px/bodyY; a1 = thigh angle; a2 = shin angle
-    // Thigh goes wide/horizontal out, shin drops steeply down → clear insect knee bend
+    // hx/hy = hip offset from (px, bodyY); hips anchored at body BASE (bodyY+22)
+    // Thigh sweeps out wide, shin drops to near ground (py) — feet ≈ py
     const legs = [
-        { hx:-5, hy:8,  a1:Math.PI*0.88, a2:Math.PI*0.58, phase:0           }, // left  158°→104°
-        { hx: 5, hy:8,  a1:Math.PI*0.12, a2:Math.PI*0.42, phase:Math.PI*2/3 }, // right  22°→76°
-        { hx: 0, hy:16, a1:Math.PI*0.65, a2:Math.PI*0.50, phase:Math.PI*4/3 }, // rear  117°→90°
+        { hx:-6, hy:22, a1:Math.PI*0.83, a2:Math.PI*0.56, phase:0           }, // left  150°→101°
+        { hx: 6, hy:22, a1:Math.PI*0.17, a2:Math.PI*0.44, phase:Math.PI*2/3 }, // right  31°→79°
+        { hx: 0, hy:20, a1:Math.PI*0.55, a2:Math.PI*0.38, phase:Math.PI*4/3 }, // rear   99°→68°
     ];
     const wc = actor.walkCycle || 0;
     legs.forEach(({ hx: lhx, hy: lhy, a1, a2, phase }) => {
