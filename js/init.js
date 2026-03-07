@@ -13,6 +13,7 @@ async function loadConfig() {
         if (res.ok) { const data = await res.json(); cfg = {...cfg, ...data}; }
     } catch(e) { console.log("Using default config"); }
 
+    for (let i = -6; i < 0; i++) generateSegment(i);
     for (let i = 0; i < 80; i++) generateSegment(i);
     shardCount = getShards();
     unlockedElements = new Set(getUnlocks());
