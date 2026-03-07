@@ -65,8 +65,34 @@ canvas.addEventListener('pointermove', e=>{
 
 canvas.addEventListener('pointerup', e=>{
     if (handleCloneMenuTap(e.clientX, e.clientY)) { isPressing=false; return; }
-    if (handleFollowerUIClick(e.clientX,e.clientY)) { isPressing=false; return; }
-    if (detectCircleGesture()) { recallFollowers(); gesturePoints=[]; isPressing=false; commandMode=false; return; }
+    if (handleFollowerUIClick(e.clientX, e.clientY)) { isPressing=false; return; }
+
+    if (touchMoved && gesturePoints.length>=5) {
+        // 1. Follower → enemy targeting line
+        const ftoe=detectFollowerToEnemyGesture(pressX,pressY,e.clientX,e.clientY);
+        if (ftoe) {
+            ftoe.follower.job={type:"attack",target:ftoe.enemy};
+            gesturePoints=[]; isPressing=false; commandMode=false; return;
+        }
+        // 2. Vertical hold line
+        if (detectVerticalLineGesture()) {
+            applyHoldLine();
+            gesturePoints=[]; isPressing=false; commandMode=false; return;
+        }
+        // 3. Circle gesture — attack enclosed enemies OR recall / clear hold line
+        if (detectCircleGesture()) {
+            const enclosed=detectEnemiesInCircle();
+            if (enclosed.length>0) {
+                issueAttackOnEnemies(enclosed);
+            } else if (holdLineX!==null) {
+                holdLineX=null; // clear hold line with empty circle
+            } else {
+                recallFollowers();
+            }
+            gesturePoints=[]; isPressing=false; commandMode=false; return;
+        }
+    }
+
     if (commandMode) { executeCommand(); commandTarget=null; }
     else if (!longHoldFired&&!touchMoved) handleInput(pressX,pressY);
     isPressing=false;

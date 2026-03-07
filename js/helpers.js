@@ -166,6 +166,84 @@ function spawnFollowerAtCrystal(element) {
     followerByElement[element].push(npc);
 }
 
+// ─────────────────────────────────────────────────────────
+//  SQUAD COMMAND POOL
+// ─────────────────────────────────────────────────────────
+function getCommandPool() {
+    if (squadMode === "all") return followers.filter(a => !a.dead);
+    if (selectedRole)        return followers.filter(a => !a.dead && a.role === selectedRole);
+    return (followerByElement[player.selectedElement] || []).filter(a => !a.dead);
+}
+
+// ─────────────────────────────────────────────────────────
+//  GESTURE HELPERS
+// ─────────────────────────────────────────────────────────
+function detectVerticalLineGesture() {
+    if (gesturePoints.length < 12) return false;
+    const xs = gesturePoints.map(p => p.x);
+    const ys = gesturePoints.map(p => p.y);
+    const xRange = Math.max(...xs) - Math.min(...xs);
+    const yRange = Math.max(...ys) - Math.min(...ys);
+    return yRange > 60 && xRange < yRange * 0.32;
+}
+
+function applyHoldLine() {
+    const avgX = gesturePoints.reduce((s,p) => s+p.x, 0) / gesturePoints.length;
+    holdLineX = Math.round((avgX - canvas.width/2) / TILE_W + player.visualX);
+    getCommandPool().forEach(f => {
+        if (f.dead) return;
+        const ty = Math.round(f.y);
+        const t = getTile(holdLineX, ty) || getTile(holdLineX, Math.round(player.y));
+        if (t && !t.type.includes("wall")) { f.job = { type:"move", target:t }; f.stance = "hold"; }
+    });
+}
+
+function detectEnemiesInCircle() {
+    if (gesturePoints.length < 15) return [];
+    const xs = gesturePoints.map(p => p.x), ys = gesturePoints.map(p => p.y);
+    const cx = (Math.min(...xs)+Math.max(...xs))/2, cy = (Math.min(...ys)+Math.max(...ys))/2;
+    const r  = (Math.max(...xs)-Math.min(...xs)+Math.max(...ys)-Math.min(...ys))/4+30;
+    const enclosed = [];
+    actors.forEach(a => {
+        if (!(a instanceof Predator) && a.team!=="red") return;
+        if (a.dead) return;
+        const epx=(a.x-player.visualX-(a.y-player.visualY))*TILE_W+canvas.width/2;
+        const epy=(a.x-player.visualX+(a.y-player.visualY))*TILE_H+canvas.height/2;
+        if (Math.hypot(epx-cx,epy-cy)<r) enclosed.push(a);
+    });
+    return enclosed;
+}
+
+function issueAttackOnEnemies(enemies) {
+    const pool = getCommandPool().filter(a => !a.job);
+    enemies.forEach((enemy, i) => {
+        pool.slice(i*4, i*4+4).forEach(a => { a.job = { type:"attack", target:enemy }; });
+    });
+}
+
+function detectFollowerToEnemyGesture(sx, sy, ex, ey) {
+    // Gesture must travel significant distance
+    if (Math.hypot(ex-sx, ey-sy) < 60) return null;
+    let srcFollower = null;
+    for (const f of followers) {
+        if (f.dead) continue;
+        const fpx=(f.x-player.visualX-(f.y-player.visualY))*TILE_W+canvas.width/2;
+        const fpy=(f.x-player.visualX+(f.y-player.visualY))*TILE_H+canvas.height/2;
+        if (Math.hypot(sx-fpx,sy-fpy)<48) { srcFollower=f; break; }
+    }
+    if (!srcFollower) return null;
+    let tgtEnemy = null;
+    for (const a of actors) {
+        if (!(a instanceof Predator) && a.team!=="red") continue;
+        if (a.dead) continue;
+        const epx=(a.x-player.visualX-(a.y-player.visualY))*TILE_W+canvas.width/2;
+        const epy=(a.x-player.visualX+(a.y-player.visualY))*TILE_H+canvas.height/2;
+        if (Math.hypot(ex-epx,ey-epy)<52) { tgtEnemy=a; break; }
+    }
+    if (!tgtEnemy) return null;
+    return { follower:srcFollower, enemy:tgtEnemy };
+}
+
 function rebuildFollowerTable() {
     ELEMENTS.forEach(el => {
         if (!followerByElement[el.id]) followerByElement[el.id]=[];

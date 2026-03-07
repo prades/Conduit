@@ -10,13 +10,12 @@ function performElementJob(actor, tile) {
 }
 
 function issueJobCommand(tile) {
-    const pool=(followerByElement[player.selectedElement]||[]).filter(a=>!a.job).slice(0,3);
+    const pool=getCommandPool().filter(a=>!a.job).slice(0,3);
     pool.forEach(a => { a.job={ type:"elementJob", target:tile, executed:false, timer:0 }; });
 }
 
 function issueMoveCommand(tile) {
-    const pool=followerByElement[player.selectedElement]||[];
-    pool.forEach(a => { a.job={ type:"move", target:tile }; a.stance="hold"; });
+    getCommandPool().forEach(a => { a.job={ type:"move", target:tile }; a.stance="hold"; });
 }
 
 function issueReconstruct(pylon) {
@@ -91,18 +90,31 @@ function executeCommand() {
                 });
             }
             if (!enemy) break;
-            const pool=(followerByElement[player.selectedElement]||[]).filter(a=>!a.job).slice(0,5);
+            const pool=getCommandPool().filter(a=>!a.job).slice(0,5);
             pool.forEach(a => { a.job={ type:"attack", target:enemy }; });
             break;
         }
         case "move":  issueMoveCommand(commandTarget); break;
         case "build":
             if (shardCount>=10&&commandTarget&&!commandTarget.pillar) {
-                shardCount-=10;
+                shardCount-=10; saveShards();
                 commandTarget.pillar=true; commandTarget.pillarTeam="green";
-                commandTarget.pillarCol="#0f8"; commandTarget.health=20;
-                commandTarget.maxHealth=20; commandTarget.upgraded=false;
-                commandTarget.destroyed=false;
+                commandTarget.pillarCol="#0f8"; commandTarget.maxHealth=20;
+                commandTarget.upgraded=false; commandTarget.destroyed=false;
+                if (buildMode) {
+                    // Construction mode — assign a follower to build it (30s / instant for core)
+                    commandTarget.constructing=true; commandTarget.constructProgress=0;
+                    commandTarget.health=0;
+                    let builder=getCommandPool().find(a=>!a.dead&&!a.job);
+                    if (!builder) builder=followers.find(a=>!a.dead&&!a.job);
+                    if (builder) {
+                        const buildTime=(builder.element==="core")?60:1800;
+                        builder.job={type:"build_pylon",target:commandTarget,buildTime};
+                    }
+                } else {
+                    commandTarget.health=20;
+                    commandTarget.constructing=false; commandTarget.constructProgress=1;
+                }
             }
             break;
     }

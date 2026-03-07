@@ -813,6 +813,28 @@ function render() {
                 }
             }
 
+            // Pylon under construction (build mode)
+            if (obj.pillar&&obj.constructing&&obj.constructProgress<1) {
+                const prog=obj.constructProgress||0;
+                const scaffH=80*prog;
+                ctx.save();
+                // Scaffold outline — grows upward as progress increases
+                ctx.globalAlpha=0.55; ctx.strokeStyle="#0f8"; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+                ctx.strokeRect(px-8,py-scaffH,16,scaffH);
+                ctx.setLineDash([]);
+                // Progress fill
+                ctx.globalAlpha=0.22; ctx.fillStyle="#0f8";
+                ctx.fillRect(px-8,py-scaffH,16,scaffH);
+                ctx.globalAlpha=1;
+                // Progress bar
+                drawHealthBar(px-16,py-scaffH-10,32,5,prog,1);
+                // Timer label
+                const secsLeft=Math.ceil((1-prog)*30);
+                ctx.fillStyle="#0f8"; ctx.font="9px monospace"; ctx.textAlign="center"; ctx.setTransform(1,0,0,1,0,0);
+                ctx.fillText(secsLeft+"s",px,py-scaffH-14);
+                ctx.restore();
+            }
+
             // Pillar
             if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
                 if(obj.converting){ctx.fillStyle="#ff0";}
@@ -1247,6 +1269,8 @@ function render() {
     drawFloatingTexts();
     drawCloneMenu();
     drawRadialMenu();
+    drawHoldLine();
+    drawGestureFeedback();
     drawFollowerElementUI();
     updatePreview();
 

@@ -125,3 +125,25 @@ let PREDATOR_PRESETS = {};
 
 // ── FOLLOWER UI LAYOUT ────────────────────────────────────
 const FOLLOWER_UI = { x:20, yOffset:20, width:160, rowHeight:32, padding:6 };
+
+// ── SQUAD / BUILD / GESTURE STATE ─────────────────────────
+let squadMode    = "selected"; // "all" | "selected"
+let buildMode    = false;
+let holdLineX    = null;       // world X boundary; null = cleared
+let uiTab        = "elements"; // "elements" | "units"
+let selectedRole = null;       // "brawler"|"sniper"|"camper"|null
+
+function toggleSquad() {
+    squadMode = (squadMode === "selected") ? "all" : "selected";
+    const btn = document.getElementById("btnSquad");
+    if (btn) { btn.textContent="SQUAD: "+(squadMode==="all"?"ALL":"SEL"); btn.classList.toggle("active",squadMode==="all"); }
+}
+function toggleBuild() {
+    buildMode = !buildMode;
+    const btn = document.getElementById("btnBuild");
+    if (btn) { btn.textContent="BUILD: "+(buildMode?"ON":"OFF"); btn.classList.toggle("active",buildMode); }
+}
+function toggleControlsMenu() {
+    const m = document.getElementById("controlsMenu");
+    if (m) m.style.display = (m.style.display==="none"||!m.style.display) ? "block" : "none";
+}

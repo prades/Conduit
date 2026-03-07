@@ -67,6 +67,37 @@
     .shop-item:hover { background: #0f8; color: #000; }
     .shop-item .cost { color: #ff0; font-size: 0.8rem; }
     .shop-item.bought { opacity: 0.4; pointer-events: none; }
+
+    /* ── TOP COMMAND TOGGLES ── */
+    #topToggles {
+        position: absolute; top: 44px; left: 50%;
+        transform: translateX(-50%);
+        display: flex; gap: 6px; z-index: 20;
+    }
+    .top-btn {
+        background: rgba(0,0,0,0.78); border: 1px solid #0f8;
+        color: #0f8; font-family: monospace; font-size: 11px;
+        padding: 4px 10px; border-radius: 3px; cursor: pointer;
+        letter-spacing: 1px; touch-action: manipulation;
+    }
+    .top-btn.active { background: rgba(0,255,136,0.18); border-color: #0ff; color: #0ff; }
+
+    /* ── CONTROLS / INFO MENU ── */
+    #controlsMenu {
+        display: none; position: fixed; top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0,8,4,0.97); border: 2px solid #0f8;
+        border-radius: 8px; padding: 16px 20px;
+        font-family: monospace; color: #0f8;
+        z-index: 2000; min-width: 290px; max-width: 92vw;
+    }
+    .ctrl-title { color: #0ff; font-size: 0.82rem; letter-spacing: 2px; margin: 8px 0 5px; }
+    .ctrl-row { font-size: 0.76rem; margin: 4px 0; display: flex; align-items: center; gap: 8px; color: #aad; }
+    .ctrl-key { color: #ff0; font-size: 1rem; min-width: 20px; text-align: center; flex-shrink: 0; }
+    .ctrl-badge { padding: 1px 5px; border-radius: 3px; font-weight: bold; font-size: 0.72rem; flex-shrink: 0; }
+    .ctrl-badge.brawler { background: rgba(255,136,136,0.25); color: #f88; border: 1px solid #f88; }
+    .ctrl-badge.sniper  { background: rgba(136,136,255,0.25); color: #88f; border: 1px solid #88f; }
+    .ctrl-badge.camper  { background: rgba(136,255,136,0.25); color: #8f8; border: 1px solid #8f8; }
 </style>
 
 </head>
@@ -79,6 +110,31 @@
 <div id="waveInfo">Night 1</div>
 <div id="zoneInfo" style="position:absolute;top:12px;right:10px;color:#0f8;font-size:13px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;z-index:10;">Zone: Home</div>
 <div id="dnaHud" style="position:absolute;top:42px;left:10px;color:#0f8;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;z-index:10;">DNA: none</div>
+
+<!-- TOP COMMAND TOGGLES -->
+<div id="topToggles">
+    <button id="btnSquad" class="top-btn" onclick="toggleSquad()">SQUAD: SEL</button>
+    <button id="btnBuild" class="top-btn" onclick="toggleBuild()">BUILD: OFF</button>
+    <button id="btnCtrl"  class="top-btn" onclick="toggleControlsMenu()">?</button>
+</div>
+
+<!-- CONTROLS / INFO MENU -->
+<div id="controlsMenu">
+    <div class="ctrl-title">GESTURES</div>
+    <div class="ctrl-row"><span class="ctrl-key">○</span> Circle enemies → Squad attacks</div>
+    <div class="ctrl-row"><span class="ctrl-key">○</span> Circle (no enemies) → Recall all</div>
+    <div class="ctrl-row"><span class="ctrl-key">│</span> Vertical line → Hold line (followers stop)</div>
+    <div class="ctrl-row"><span class="ctrl-key">→</span> Drag follower → enemy → That follower attacks</div>
+    <div class="ctrl-row"><span class="ctrl-key">⌀</span> Long press tile → Radial command menu</div>
+    <div class="ctrl-title">ROLES</div>
+    <div class="ctrl-row"><span class="ctrl-badge brawler">B</span> Brawler — Melee, aggressive chaser</div>
+    <div class="ctrl-row"><span class="ctrl-badge sniper">S</span> Sniper — Ranged, keeps optimal distance</div>
+    <div class="ctrl-row"><span class="ctrl-badge camper">C</span> Camper — Defends pylons, short range</div>
+    <div class="ctrl-title">BUILD MODE</div>
+    <div class="ctrl-row" style="color:#ff0">Pylons cost 10 shards · 30s to construct</div>
+    <div class="ctrl-row" style="color:#00ccaa">CORE followers build instantly</div>
+    <button class="ovr-btn" style="margin-top:12px;padding:5px 16px;font-size:0.78rem" onclick="toggleControlsMenu()">CLOSE</button>
+</div>
 
 <!-- OVERLAY (game-over / wave-clear / shop) -->
 

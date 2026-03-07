@@ -117,6 +117,25 @@ function updateRTSNPC(actor) {
         return;
     }
 
+    // build new pylon (build mode)
+    if (actor.job&&actor.job.type==="build_pylon") {
+        const p=actor.job.target;
+        if (!p||p.dead) { actor.job=null; return; }
+        const dx=p.x-actor.x, dy=p.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
+        if (dist>0.5) {
+            actor.x+=dx*actor.moveSpeed*2; actor.y+=dy*actor.moveSpeed*2;
+            actor.walkCycle+=actor.moveSpeed*40;
+        } else {
+            p.constructProgress=(p.constructProgress||0)+1/actor.job.buildTime;
+            if (p.constructProgress>=1) {
+                p.constructing=false; p.constructProgress=1;
+                p.health=p.maxHealth;
+                actor.job=null;
+            }
+        }
+        return;
+    }
+
     // reconstruct
     if (actor.job&&actor.job.type==="reconstruct") {
         const p=actor.job.target;
