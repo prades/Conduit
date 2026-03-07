@@ -453,18 +453,103 @@ function render() {
             drawNPC(obj.actor,px,py);
         }
         else if (obj.type==='crystal') {
-            // Crystal glow pulse
-            const pulse=0.7+0.3*Math.sin(frame*0.05);
-            const hpR=crystal.health/crystal.maxHealth;
-            const crystalCol=hpR>0.5?"#44f":hpR>0.2?"#f80":"#f22";
-            ctx.shadowColor=crystalCol; ctx.shadowBlur=20*pulse;
-            ctx.fillStyle=crystalCol;
-            ctx.beginPath(); ctx.arc(px,py-60,28,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle="#aaf";
-            ctx.beginPath(); ctx.arc(px,py-60,16,0,Math.PI*2); ctx.fill();
-            ctx.shadowBlur=0;
-            drawHealthBar(px-25,py-90,50,7,crystal.health,crystal.maxHealth);
-            // Low health warning flash
+            const hpR   = crystal.health / crystal.maxHealth;
+            const pulse  = 0.7 + 0.3 * Math.sin(frame * 0.05);
+            const crystalCol = hpR > 0.5 ? "#44f" : hpR > 0.2 ? "#f80" : "#f22";
+            const baseRGB    = hpR > 0.5 ? [60,80,255] : hpR > 0.2 ? [255,130,0] : [255,40,40];
+
+            // ── 3-D rotating diamond (square bipyramid / octahedron) ─────────
+            const rot   = frame * 0.022;                     // spin angle
+            const bob   = Math.sin(frame * 0.04) * 4;       // gentle hover
+            const scale = 30;
+            const cx    = px, cy = py - 66 + bob;
+
+            //   Vertices: top, 4 equatorial, bottom
+            //   Diamond proportions: crown taller than pavilion
+            const V = [
+                [ 0,  1.15,  0 ],   // 0 top
+                [ 1,  0.08,  0 ],   // 1 eq +x
+                [ 0,  0.08,  1 ],   // 2 eq +z
+                [-1,  0.08,  0 ],   // 3 eq -x
+                [ 0,  0.08, -1 ],   // 4 eq -z
+                [ 0, -0.85,  0 ],   // 5 bottom
+            ];
+            // 8 triangular faces (CCW winding when viewed from outside)
+            const FACES = [
+                [0,2,1],[0,3,2],[0,4,3],[0,1,4],  // upper crown
+                [5,1,2],[5,2,3],[5,3,4],[5,4,1],  // lower pavilion
+            ];
+
+            const cosR = Math.cos(rot), sinR = Math.sin(rot);
+            // Rotate around Y axis, then apply a slight forward tilt
+            const tiltC = Math.cos(0.38), tiltS = Math.sin(0.38);
+            const rv = V.map(([x,y,z]) => {
+                const rx = x*cosR + z*sinR, ry = y, rz = -x*sinR + z*cosR;
+                // tilt so we see both crown and pavilion
+                const ty = ry*tiltC - rz*tiltS, tz = ry*tiltS + rz*tiltC;
+                return [rx, ty, tz];
+            });
+
+            // Orthographic projection to screen
+            const sc = rv.map(([x,y,z]) => [cx + x*scale, cy - y*scale, z]);
+
+            // Light direction (upper-left-front), normalised
+            const LD = [0.45, 0.75, 0.55];
+            const ll  = Math.hypot(...LD); const lx=LD[0]/ll, ly=LD[1]/ll, lz=LD[2]/ll;
+
+            // Sort faces back→front (painter's algorithm)
+            const sorted = FACES.map(f => {
+                const zAvg = (rv[f[0]][2] + rv[f[1]][2] + rv[f[2]][2]) / 3;
+                return { f, zAvg };
+            }).sort((a,b) => a.zAvg - b.zAvg);
+
+            ctx.save();
+
+            // Outer glow halo
+            ctx.shadowColor = crystalCol; ctx.shadowBlur = 24 * pulse;
+            ctx.globalAlpha = 0.18 * pulse;
+            ctx.fillStyle   = crystalCol;
+            ctx.beginPath(); ctx.arc(cx, cy, 34, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+            sorted.forEach(({ f }) => {
+                const [i0,i1,i2] = f;
+                const [r0,r1,r2] = [rv[i0],rv[i1],rv[i2]];
+
+                // Face normal (cross product)
+                const ax=r1[0]-r0[0], ay=r1[1]-r0[1], az=r1[2]-r0[2];
+                const bx=r2[0]-r0[0], by=r2[1]-r0[1], bz=r2[2]-r0[2];
+                const nx=ay*bz-az*by, ny=az*bx-ax*bz, nz=ax*by-ay*bx;
+                const nl=Math.hypot(nx,ny,nz)||1;
+
+                if (nz/nl < 0) return;  // back-face cull (viewer at +z)
+
+                const diff = Math.max(0, (nx/nl)*lx + (ny/nl)*ly + (nz/nl)*lz);
+                const spec = Math.pow(diff, 18) * 0.7;         // specular glint
+                const amb  = 0.18;
+                const bright = amb + (1-amb)*diff;
+
+                const [p0,p1,p2] = [sc[i0],sc[i1],sc[i2]];
+                ctx.beginPath();
+                ctx.moveTo(p0[0],p0[1]); ctx.lineTo(p1[0],p1[1]); ctx.lineTo(p2[0],p2[1]);
+                ctx.closePath();
+
+                const r = Math.min(255, (baseRGB[0]*bright + 255*spec) | 0);
+                const g = Math.min(255, (baseRGB[1]*bright + 255*spec) | 0);
+                const b = Math.min(255, (baseRGB[2]*bright + 255*spec) | 0);
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                ctx.fill();
+
+                // Facet edge
+                ctx.strokeStyle = `rgba(160,200,255,${0.25 + bright*0.45})`;
+                ctx.lineWidth   = 0.8;
+                ctx.stroke();
+            });
+
+            ctx.restore();
+            // ─────────────────────────────────────────────────────────────────
+
+            drawHealthBar(px-25, py-96+bob, 50, 7, crystal.health, crystal.maxHealth);
             if (hpR<0.3&&frame%30<15) {
                 ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                 ctx.fillStyle="rgba(255,0,0,0.08)"; ctx.fillRect(0,0,canvas.width,canvas.height);
