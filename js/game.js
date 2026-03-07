@@ -563,48 +563,102 @@ function render() {
                 ctx.restore();
             }
 
-            // ── SPAWN NEST — 4 honeycomb cells embedded in wall face ──
+            // ── SPAWN NEST — honeycomb hex holes filling 4-tile wall face ──
             if (obj.nest && obj.nestHealth > 0) {
                 obj.nestPulse = (obj.nestPulse || 0) + 1;
                 const hr    = obj.nestHealth / obj.nestMaxHealth;
                 const pulse = 0.5 + 0.5 * Math.sin(obj.nestPulse * 0.06);
+                const WH    = 110;
 
-                // 4 cells in a row sitting in the wall face area above the tile
-                const cellR       = 11;
-                const cellOffsets = [-28.5, -9.5, 9.5, 28.5];
-                const cellBaseY   = py - 34;
+                // Wall face: 4 tiles from (obj.x-1, -2) to (obj.x+2, -2).
+                // sW1 = toScreen(obj.x-1, -2) relative to nest tile (px, py) at (obj.x, -1):
+                //   Δwx=−1, Δwy=−1 → Δspx=(−1−(−1))×60=0, Δspy=(−1+(−1))×30=−60
+                const sW1x = px,  sW1y = py - 60;
+                const numT = 4;
+                const wfBL = { x: sW1x - TILE_W,           y: sW1y + TILE_H          };
+                const wfBR = { x: sW1x + (numT-1)*TILE_W,  y: sW1y + (numT+1)*TILE_H };
+                const wfTR = { x: wfBR.x,                   y: wfBR.y - WH            };
+                const wfTL = { x: wfBL.x,                   y: wfBL.y - WH            };
 
                 ctx.save();
-                cellOffsets.forEach(cox => {
-                    const ccx   = px + cox * 0.75;
-                    const ccy   = cellBaseY + Math.abs(cox) * 0.08;
-                    const bright = (180 * hr) | 0;
-                    ctx.beginPath();
-                    for (let i = 0; i < 6; i++) {
-                        const a   = i * Math.PI / 3;
-                        const hx2 = ccx + cellR * Math.cos(a);
-                        const hy2 = ccy + cellR * 0.55 * Math.sin(a);
-                        i === 0 ? ctx.moveTo(hx2, hy2) : ctx.lineTo(hx2, hy2);
-                    }
-                    ctx.closePath();
-                    ctx.fillStyle = `rgba(${bright},${(bright * 0.45) | 0},0,${0.75 + pulse * 0.2})`;
-                    ctx.fill();
-                    ctx.strokeStyle = `rgba(255,${(140 * hr) | 0},0,0.65)`;
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                });
-
-                // Amber glow spanning all 4 cells
-                ctx.globalAlpha = (0.1 + pulse * 0.15) * hr;
-                ctx.shadowColor = "#ff8800";
-                ctx.shadowBlur  = 22;
-                ctx.fillStyle   = "#ff6600";
+                // Clip to parallelogram so hexes only appear on the wall face
                 ctx.beginPath();
-                ctx.ellipse(px, cellBaseY, 36, 9, 0, 0, Math.PI * 2);
+                ctx.moveTo(wfBL.x, wfBL.y); ctx.lineTo(wfBR.x, wfBR.y);
+                ctx.lineTo(wfTR.x, wfTR.y); ctx.lineTo(wfTL.x, wfTL.y);
+                ctx.closePath();
+                ctx.clip();
+
+                // Honeycomb hex grid (pointy-top)
+                const hexR  = 12;
+                const hexWd = hexR * Math.sqrt(3);
+                const hexRH = hexR * 1.5;
+                const gridLeft = wfTL.x - hexWd;
+                const gridTop  = wfTL.y - hexR;
+                const nRows = Math.ceil((WH + hexR * 4) / hexRH) + 1;
+                const nCols = Math.ceil((wfBR.x - wfBL.x + hexWd * 2) / hexWd) + 1;
+
+                const rc = (190 * hr) | 0;  // amber red channel, dims with damage
+                const gc = (75  * hr) | 0;  // amber green channel
+
+                for (let row = 0; row < nRows; row++) {
+                    for (let col = 0; col < nCols; col++) {
+                        const hcx = gridLeft + col * hexWd + (row % 2 === 0 ? 0 : hexWd * 0.5);
+                        const hcy = gridTop + hexR + row * hexRH;
+
+                        ctx.beginPath();
+                        for (let vi = 0; vi < 6; vi++) {
+                            const ang = Math.PI/6 + vi * Math.PI/3;
+                            const vx = hcx + hexR * Math.cos(ang);
+                            const vy = hcy + hexR * Math.sin(ang);
+                            vi === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
+                        }
+                        ctx.closePath();
+
+                        // Hollow interior: dark centre → glowing amber rim
+                        const grd = ctx.createRadialGradient(hcx, hcy + hexR*0.3, 0,
+                                                              hcx, hcy + hexR*0.3, hexR);
+                        grd.addColorStop(0,   `rgba(${rc*0.08|0},${gc*0.06|0},0,1)`);
+                        grd.addColorStop(0.55,`rgba(${rc*0.3|0},${gc*0.25|0},0,1)`);
+                        grd.addColorStop(1,   `rgba(${rc},${gc},0,${0.88 + pulse*0.1})`);
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+
+                        // Amber cell border
+                        ctx.strokeStyle = `rgba(${Math.min(255,(rc*1.4)|0)},${(gc*1.3)|0},0,0.8)`;
+                        ctx.lineWidth = 1.8;
+                        ctx.stroke();
+
+                        // Inner bevel for tunnel depth
+                        ctx.strokeStyle = `rgba(${rc*0.45|0},${gc*0.4|0},0,0.35)`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        for (let vi = 0; vi < 6; vi++) {
+                            const ang = Math.PI/6 + vi * Math.PI/3;
+                            const ir  = hexR - 3;
+                            const vx  = hcx + ir * Math.cos(ang);
+                            const vy  = hcy + ir * Math.sin(ang);
+                            vi === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
+                        }
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+                }
+
+                // Pulsing amber bloom over the whole face
+                ctx.globalAlpha = (0.07 + pulse * 0.11) * hr;
+                ctx.shadowColor = "#ff8800";
+                ctx.shadowBlur  = 28;
+                ctx.fillStyle   = "#ff5500";
+                ctx.beginPath();
+                ctx.moveTo(wfBL.x, wfBL.y); ctx.lineTo(wfBR.x, wfBR.y);
+                ctx.lineTo(wfTR.x, wfTR.y); ctx.lineTo(wfTL.x, wfTL.y);
+                ctx.closePath();
                 ctx.fill();
                 ctx.restore();
 
-                drawHealthBar(px - 24, cellBaseY - 18, 48, 5, obj.nestHealth, obj.nestMaxHealth);
+                // Health bar centred on the top edge of the face
+                const barCx = (wfTL.x + wfTR.x) / 2;
+                drawHealthBar(barCx - 40, wfTL.y - 10, 80, 5, obj.nestHealth, obj.nestMaxHealth);
             }
 
             // Command tile highlight
