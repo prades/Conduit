@@ -522,12 +522,14 @@ function render() {
 
             ctx.save();
 
-            // Outer glow halo
-            ctx.shadowColor = crystalCol; ctx.shadowBlur = 24 * pulse;
-            ctx.globalAlpha = 0.18 * pulse;
-            ctx.fillStyle   = crystalCol;
-            ctx.beginPath(); ctx.arc(cx, cy, 34, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+            // Outer glow halo — radial gradient, no shadowBlur
+            const haloGrd = ctx.createRadialGradient(cx, cy, 8, cx, cy, 52);
+            haloGrd.addColorStop(0, crystalCol + "55");
+            haloGrd.addColorStop(1, crystalCol + "00");
+            ctx.globalAlpha = pulse;
+            ctx.fillStyle   = haloGrd;
+            ctx.beginPath(); ctx.arc(cx, cy, 52, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 1;
 
             sorted.forEach(({ f }) => {
                 const [i0,i1,i2] = f;
@@ -699,8 +701,20 @@ function render() {
                 const nRows = Math.ceil((WH + hexR * 4) / hexRH) + 1;
                 const nCols = Math.ceil((wfBR.x - wfBL.x + hexWd * 2) / hexWd) + 1;
 
-                const rc = (190 * hr) | 0;  // amber red channel, dims with damage
-                const gc = (75  * hr) | 0;  // amber green channel
+                const rc = (190 * hr) | 0;
+                const gc = (75  * hr) | 0;
+
+                // Pre-compute hex vertex offsets once — avoids 900+ trig calls/frame
+                const hexCos = [], hexSin = [];
+                for (let vi = 0; vi < 6; vi++) {
+                    const ang = Math.PI/6 + vi * Math.PI/3;
+                    hexCos.push(Math.cos(ang)); hexSin.push(Math.sin(ang));
+                }
+
+                // Flat colours computed once outside the loop (no per-cell gradient)
+                const fillCol   = `rgba(${rc*0.22|0},${gc*0.18|0},0,0.93)`;
+                const strokeCol = `rgba(${Math.min(255,(rc*1.5)|0)},${(gc*1.4)|0},0,0.75)`;
+                ctx.lineWidth = 1.5;
 
                 for (let row = 0; row < nRows; row++) {
                     for (let col = 0; col < nCols; col++) {
@@ -708,49 +722,35 @@ function render() {
                         const hcy = gridTop + hexR + row * hexRH;
 
                         ctx.beginPath();
-                        for (let vi = 0; vi < 6; vi++) {
-                            const ang = Math.PI/6 + vi * Math.PI/3;
-                            const vx = hcx + hexR * Math.cos(ang);
-                            const vy = hcy + hexR * Math.sin(ang);
-                            vi === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
-                        }
+                        ctx.moveTo(hcx + hexR * hexCos[0], hcy + hexR * hexSin[0]);
+                        for (let vi = 1; vi < 6; vi++) ctx.lineTo(hcx + hexR * hexCos[vi], hcy + hexR * hexSin[vi]);
                         ctx.closePath();
-
-                        // Hollow interior: dark centre → glowing amber rim
-                        const grd = ctx.createRadialGradient(hcx, hcy + hexR*0.3, 0,
-                                                              hcx, hcy + hexR*0.3, hexR);
-                        grd.addColorStop(0,   `rgba(${rc*0.08|0},${gc*0.06|0},0,1)`);
-                        grd.addColorStop(0.55,`rgba(${rc*0.3|0},${gc*0.25|0},0,1)`);
-                        grd.addColorStop(1,   `rgba(${rc},${gc},0,${0.88 + pulse*0.1})`);
-                        ctx.fillStyle = grd;
+                        ctx.fillStyle   = fillCol;
                         ctx.fill();
-
-                        // Amber cell border
-                        ctx.strokeStyle = `rgba(${Math.min(255,(rc*1.4)|0)},${(gc*1.3)|0},0,0.8)`;
-                        ctx.lineWidth = 1.8;
-                        ctx.stroke();
-
-                        // Inner bevel for tunnel depth
-                        ctx.strokeStyle = `rgba(${rc*0.45|0},${gc*0.4|0},0,0.35)`;
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        for (let vi = 0; vi < 6; vi++) {
-                            const ang = Math.PI/6 + vi * Math.PI/3;
-                            const ir  = hexR - 3;
-                            const vx  = hcx + ir * Math.cos(ang);
-                            const vy  = hcy + ir * Math.sin(ang);
-                            vi === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
-                        }
-                        ctx.closePath();
+                        ctx.strokeStyle = strokeCol;
                         ctx.stroke();
                     }
                 }
 
-                // Pulsing amber bloom over the whole face
-                ctx.globalAlpha = (0.07 + pulse * 0.11) * hr;
-                ctx.shadowColor = "#ff8800";
-                ctx.shadowBlur  = 28;
-                ctx.fillStyle   = "#ff5500";
+                // Depth overlay — single linear gradient over whole face (no per-cell cost)
+                const depthGrd = ctx.createLinearGradient(wfTL.x, wfTL.y, wfBL.x, wfBL.y);
+                depthGrd.addColorStop(0, 'rgba(0,0,0,0.55)');
+                depthGrd.addColorStop(0.45, 'rgba(0,0,0,0.05)');
+                depthGrd.addColorStop(1, 'rgba(0,0,0,0.38)');
+                ctx.fillStyle = depthGrd;
+                ctx.beginPath();
+                ctx.moveTo(wfBL.x, wfBL.y); ctx.lineTo(wfBR.x, wfBR.y);
+                ctx.lineTo(wfTR.x, wfTR.y); ctx.lineTo(wfTL.x, wfTL.y);
+                ctx.closePath();
+                ctx.fill();
+
+                // Pulsing amber bloom — radial gradient, NO shadowBlur
+                const bloomA = (0.10 + pulse * 0.14) * hr;
+                const bloomX = (wfBL.x + wfBR.x) * 0.5, bloomY = (wfTL.y + wfBL.y) * 0.5;
+                const bloomGrd = ctx.createRadialGradient(bloomX, bloomY, 0, bloomX, bloomY, 150);
+                bloomGrd.addColorStop(0, `rgba(255,110,0,${bloomA})`);
+                bloomGrd.addColorStop(1, 'rgba(255,60,0,0)');
+                ctx.fillStyle = bloomGrd;
                 ctx.beginPath();
                 ctx.moveTo(wfBL.x, wfBL.y); ctx.lineTo(wfBR.x, wfBR.y);
                 ctx.lineTo(wfTR.x, wfTR.y); ctx.lineTo(wfTL.x, wfTL.y);
