@@ -458,6 +458,29 @@ function render() {
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
     drawList.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
 
+    // ── GHOST FLOOR — dim fill for all floor positions so trimmed areas aren't black ──
+    {
+        const vx = player.visualX, vy = player.visualY;
+        ctx.fillStyle = '#080c14';
+        for (let tx = Math.floor(vx - RENDER_DIST); tx <= Math.ceil(vx + RENDER_DIST); tx++) {
+            for (let ty = -1; ty <= 4; ty++) {
+                const bpx = (tx - vx - (ty - vy)) * TILE_W + canvas.width/2;
+                const bpy = (tx - vx + (ty - vy)) * TILE_H + canvas.height/2;
+                ctx.beginPath();
+                ctx.moveTo(bpx,bpy); ctx.lineTo(bpx+TILE_W,bpy+TILE_H);
+                ctx.lineTo(bpx,bpy+TILE_W); ctx.lineTo(bpx-TILE_W,bpy+TILE_H);
+                ctx.fill();
+            }
+            // wall_back ghost
+            { const ty=-2, WH=110;
+              const bpx=(tx-vx-(ty-vy))*TILE_W+canvas.width/2, bpy=(tx-vx+(ty-vy))*TILE_H+canvas.height/2;
+              ctx.fillStyle='#060a10';
+              ctx.beginPath(); ctx.moveTo(bpx,bpy-WH); ctx.lineTo(bpx+TILE_W,bpy+TILE_H-WH); ctx.lineTo(bpx,bpy+2*TILE_H-WH); ctx.lineTo(bpx-TILE_W,bpy+TILE_H-WH); ctx.fill();
+              ctx.beginPath(); ctx.moveTo(bpx-TILE_W,bpy+TILE_H); ctx.lineTo(bpx,bpy+2*TILE_H); ctx.lineTo(bpx,bpy+2*TILE_H-WH); ctx.lineTo(bpx-TILE_W,bpy+TILE_H-WH); ctx.fill();
+              ctx.fillStyle='#080c14'; }
+        }
+    }
+
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
         const px=(obj.x-player.visualX-(obj.y-player.visualY))*TILE_W+canvas.width/2;
@@ -589,7 +612,7 @@ function render() {
         else if (obj.type==='floor') {
             const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
             const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
-            ctx.fillStyle=`rgb(${15*amb},${(20*amb)+(120*glo)},${(30*amb)+(60*glo)})`;
+            ctx.fillStyle=`rgb(${10*amb+(8*glo)},${15*amb+(20*glo)},${20*amb+(45*glo)})`;
             ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H); ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H); ctx.fill();
 
             // Acid pool — drawn here so it sits on the floor but under pylons
@@ -1084,7 +1107,7 @@ function render() {
 
             if (obj.type === 'wall_back') {
                 // Top face
-                ctx.fillStyle = `rgb(${20*amb},${(28*amb)+(110*glo)},${(48*amb)+(28*glo)})`;
+                ctx.fillStyle = `rgb(${14*amb+(6*glo)},${18*amb+(16*glo)},${28*amb+(38*glo)})`;
                 ctx.beginPath();
                 ctx.moveTo(px,          py - WH);
                 ctx.lineTo(px + TILE_W, py + TILE_H - WH);
@@ -1092,7 +1115,7 @@ function render() {
                 ctx.lineTo(px - TILE_W, py + TILE_H - WH);
                 ctx.fill();
                 // South face — from W→S base up by WH
-                ctx.fillStyle = `rgb(${13*amb},${(19*amb)+(145*glo)},${(32*amb)+(48*glo)})`;
+                ctx.fillStyle = `rgb(${9*amb+(4*glo)},${12*amb+(12*glo)},${19*amb+(30*glo)})`;
                 ctx.beginPath();
                 ctx.moveTo(px - TILE_W, py + TILE_H);
                 ctx.lineTo(px,          py + 2*TILE_H);
