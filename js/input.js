@@ -10,7 +10,8 @@ const handleInput=(ex,ey)=>{
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
-    if (t&&!t.type.includes('wall')) { player.targetX=gx; player.targetY=gy; }
+    const passable = t ? !t.type.includes('wall') : (gy>=-1&&gy<=4);
+    if (passable) { player.targetX=gx; player.targetY=gy; }
     player.selectedFollower=null;
 };
 
