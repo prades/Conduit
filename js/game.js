@@ -523,9 +523,10 @@ function render() {
             ctx.save();
 
             // Outer glow halo — radial gradient, no shadowBlur
+            const haloBase = hpR > 0.5 ? "rgba(68,68,255," : hpR > 0.2 ? "rgba(255,136,0," : "rgba(255,34,34,";
             const haloGrd = ctx.createRadialGradient(cx, cy, 8, cx, cy, 52);
-            haloGrd.addColorStop(0, crystalCol + "55");
-            haloGrd.addColorStop(1, crystalCol + "00");
+            haloGrd.addColorStop(0, haloBase + "0.35)");
+            haloGrd.addColorStop(1, haloBase + "0)");
             ctx.globalAlpha = pulse;
             ctx.fillStyle   = haloGrd;
             ctx.beginPath(); ctx.arc(cx, cy, 52, 0, Math.PI*2); ctx.fill();
