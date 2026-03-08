@@ -76,6 +76,14 @@ let followers  = [];
 let followerByElement = {};
 ELEMENTS.forEach(el => { followerByElement[el.id] = []; });
 
+// ── WORLD SUBSET CACHES (refreshed every 60 frames) ──────
+let _wPylons    = [];  // wave-mode pylons
+let _aPylons    = [];  // attack-mode pylons
+let _uPylons    = [];  // upgraded pylons
+let _nestCache  = [];  // nest tiles
+let _pillarCache= [];  // all live pillars
+let _cacheAge   = -999;
+
 let projectiles = [], fragments = [], smoke = [], shards = [];
 let followerProjectiles = []; // ranged attacks from snipers/specials
 let pendingPillarDestruction = [];

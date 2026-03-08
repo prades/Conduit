@@ -33,6 +33,22 @@ function render() {
     // ── WORLD GEN ──
     if (player.x>lastGenX-10) generateSegment(lastGenX+1);
 
+    // ── WORLD CACHE — rebuild pylon/nest subsets every 60 frames ──────────
+    if (frame - _cacheAge >= 60) {
+        _cacheAge    = frame;
+        _pillarCache = world.filter(t => t.pillar && !t.destroyed);
+        _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement);
+        _aPylons     = _pillarCache.filter(t => t.attackMode);
+        _uPylons     = _pillarCache.filter(t => t.upgraded);
+        _nestCache   = world.filter(t => t.nest);
+    }
+
+    // ── WORLD TRIM — drop tiles far behind the player (keeps crystal area) ──
+    if (frame % 300 === 1 && player.x > 45) {
+        const trimX = player.x - 35;
+        world = world.filter(t => t.x >= trimX || t.pillar || t.nest || t.x <= crystal.x + 4);
+    }
+
     // ── DAY→NIGHT transition ──
     if (gameState.phase==="day") {
         dayTimer++;
@@ -100,7 +116,7 @@ function render() {
             const existing = zonePredators[z];
             if (!existing || existing.dead) {
                 // Don't spawn if the zone's nest has been destroyed
-                const nest = world.find(t => t.nest && t.nestZone === z);
+                const nest = _nestCache.find(t => t.nestZone === z);
                 if (nest && nest.nestHealth <= 0) continue;
 
                 if (!zoneRespawnTimers[z]) zoneRespawnTimers[z] = 0;
@@ -116,7 +132,7 @@ function render() {
 
     // ── WAVE FUNCTION PYLONS — connect same-element pylons within 5 tiles, apply zone effects ──
     const WAVE_CONNECT_RANGE = 5.0;
-    const wavePylons = world.filter(t=>t.pillar&&!t.destroyed&&t.waveMode&&t.attackModeElement);
+    const wavePylons = _wPylons;
 
     // Draw connections and apply effects between pairs
     const processed = new Set();
@@ -141,7 +157,8 @@ function render() {
                 elementEffects.push({type:"impact",x:ex,y:ey,color:col,radius:0.3,life:25,element:el});
             }
 
-            // Apply zone effects to actors in the connection corridor (within 1.5 tiles of line)
+            // Apply zone effects every 2 frames — visual / cooldown guards inside handle timing
+            if (frame % 2 !== 0) return;
             actors.forEach(a=>{
                 if (!a||a.dead) return;
                 // Distance from point to line segment pa→pb
@@ -240,8 +257,7 @@ function render() {
     });
 
     // ── ATTACK MODE PYLON — fire missiles at nearby enemies ──
-    world.forEach(t=>{
-        if (!t.pillar||t.destroyed||!t.attackMode) return;
+    _aPylons.forEach(t=>{
         t.attackFireTimer = (t.attackFireTimer||0) + 1;
         if (t.attackFireTimer < 90) return; // fire every 1.5s
         t.attackFireTimer = 0;
@@ -314,8 +330,9 @@ function render() {
         }
     });
     actors=actors.filter(a=>!a.dead);
+    const _prevFL=followers.length;
     followers=followers.filter(a=>!a.dead&&a.team==="green");
-    rebuildFollowerTable();
+    if (followers.length!==_prevFL) rebuildFollowerTable();
 
     // ── PENDING PILLAR DESTRUCTION ──
     pendingPillarDestruction.forEach(p=>{
@@ -326,21 +343,21 @@ function render() {
     world.forEach(obj=>{ if(obj.pendingDestroy){pendingPillarDestruction.push(obj);obj.pendingDestroy=false;} });
 
     // ── UPGRADED PYLON PULSE ──
-    world.forEach(t=>{
-        if(!t.pillar||!t.upgraded||t.destroyed)return;
+    _uPylons.forEach(t=>{
         t.pulseTimer++;
         if(t.pulseTimer>120){ t.pulseTimer=0; actors.forEach(a=>{ if(a.team==="green"){const dx=a.x-t.x,dy=a.y-t.y,dist=Math.sqrt(dx*dx+dy*dy); if(dist<3.5) a.health=Math.min(a.maxHealth,a.health+2);} }); }
     });
 
-    // ── PILLAR HEALING ──
-    actors.forEach(actor=>{
-        world.forEach(t=>{
-            if(!t.pillar||t.destroyed)return;
-            if((actor.team==="green"&&t.pillarCol!=="#0f8")||(actor.team==="red"&&t.pillarCol!=="#f22"))return;
-            const dx=t.x-actor.x,dy=t.y-actor.y,dist=Math.sqrt(dx*dx+dy*dy);
-            if(dist<1.2) actor.health=Math.min(actor.maxHealth,actor.health+0.05);
+    // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
+    if (frame % 3 === 0) {
+        actors.forEach(actor=>{
+            _pillarCache.forEach(t=>{
+                if((actor.team==="green"&&t.pillarCol!=="#0f8")||(actor.team==="red"&&t.pillarCol!=="#f22")) return;
+                const dx=t.x-actor.x, dy=t.y-actor.y;
+                if(dx*dx+dy*dy < 1.44) actor.health=Math.min(actor.maxHealth, actor.health+0.15);
+            });
         });
-    });
+    }
 
     // ── CONTESTED SIPHON CONVERSION ──
     if(latchedPillar&&latchedPillar.pillarTeam==="red"&&latchedPillar.converting) {
@@ -355,7 +372,7 @@ function render() {
     // ── SIPHON SYSTEM ──
     if (!latchedPillar) {
         let best=null,bd=Infinity;
-        world.forEach(obj=>{ if(!obj.pillar||obj.destroyed)return; const dx=obj.x-player.x,dy=obj.y-player.y,d=Math.sqrt(dx*dx+dy*dy); if(d<1.6&&d<bd){bd=d;best=obj;} });
+        _pillarCache.forEach(obj=>{ const dx=obj.x-player.x,dy=obj.y-player.y,d=Math.sqrt(dx*dx+dy*dy); if(d<1.6&&d<bd){bd=d;best=obj;} });
         latchedPillar=best;
     }
     if (latchedPillar) {
@@ -760,7 +777,7 @@ function render() {
 
             // Wave function pylon connection — element-specific visual field
             if (obj.pillar&&!obj.destroyed&&obj.waveMode&&obj.attackModeElement) {
-                const wavePylonsLocal = world.filter(t=>t.pillar&&!t.destroyed&&t.waveMode&&t.attackModeElement);
+                const wavePylonsLocal = _wPylons;
                 const WCR = 5.0;
                 const el = obj.attackModeElement;
                 const col2 = obj.attackModeColor||"#0f8";

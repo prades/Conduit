@@ -87,8 +87,7 @@ function frenzyEnemiesAt(x, y) {
 
 function findNearestFriendlyPillar(actor) {
     let best=null, bestDist=Infinity;
-    world.forEach(t => {
-        if (!t.pillar||t.destroyed) return;
+    _pillarCache.forEach(t => {
         if ((actor.team==="green"&&t.pillarCol!=="#0f8")||(actor.team==="red"&&t.pillarCol!=="#f22")) return;
         const dx=t.x-actor.x, dy=t.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
         if (d<bestDist) { bestDist=d; best=t; }

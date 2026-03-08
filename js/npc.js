@@ -200,15 +200,22 @@ function updateRTSNPC(actor) {
 
         const role = actor.role || "brawler";
 
-        // Find nearest enemy for role decisions
-        let nearestEnemy = null;
-        let nearestEnemyDist = Infinity;
-        actors.forEach(a => {
-            if ((a.team==="red" || (a instanceof Predator && a.team !== "green" && !a.isClone)) && !a.dead) {
-                const dx=a.x-actor.x, dy=a.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
-                if (d < nearestEnemyDist) { nearestEnemyDist=d; nearestEnemy=a; }
-            }
-        });
+        // Find nearest enemy — cache result for 8 frames to avoid per-frame full scan
+        if (!actor._enemyCacheFrame || frame - actor._enemyCacheFrame >= 8 ||
+            actor._nearestEnemy?.dead) {
+            actor._nearestEnemy = null;
+            let nearestEnemyDist = Infinity;
+            actors.forEach(a => {
+                if ((a.team==="red" || (a instanceof Predator && a.team !== "green" && !a.isClone)) && !a.dead) {
+                    const dx=a.x-actor.x, dy=a.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
+                    if (d < nearestEnemyDist) { nearestEnemyDist=d; actor._nearestEnemy=a; }
+                }
+            });
+            actor._enemyCacheFrame = frame;
+        }
+        const nearestEnemy = actor._nearestEnemy;
+        const nearestEnemyDist = nearestEnemy
+            ? Math.hypot(nearestEnemy.x - actor.x, nearestEnemy.y - actor.y) : Infinity;
 
         // ── BRAWLER: chase nearest enemy aggressively, circle when in range ──
         if (role === "brawler") {
