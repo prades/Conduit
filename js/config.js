@@ -53,7 +53,7 @@ let cfg = {
 cfg.npcSpawnRate = 0.22;
 
 // ── CONSTANTS ─────────────────────────────────────────────
-const TILE_W = 60, TILE_H = 30, RENDER_DIST = 14;
+const TILE_W = 60, TILE_H = 30, RENDER_DIST = 22;
 const ZONE_LENGTH  = 15;
 const LONG_HOLD_MS = 500;
 const RADIAL_RADIUS = 60;

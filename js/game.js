@@ -43,11 +43,6 @@ function render() {
         _nestCache   = world.filter(t => t.nest);
     }
 
-    // ── WORLD TRIM — drop tiles far behind the player (keeps crystal area) ──
-    if (frame % 300 === 1 && player.x > 45) {
-        const trimX = player.x - 45;
-        world = world.filter(t => t.x >= trimX || t.pillar || t.nest || t.x <= crystal.x + 4);
-    }
 
     // ── DAY→NIGHT transition ──
     if (gameState.phase==="day") {
