@@ -36,7 +36,7 @@ function render() {
     // ── WORLD CACHE — rebuild pylon/nest subsets every 60 frames ──────────
     if (frame - _cacheAge >= 60) {
         _cacheAge    = frame;
-        _pillarCache = world.filter(t => t.pillar && !t.destroyed);
+        _pillarCache = world.filter(t => t.pillar && !t.destroyed && t.health > 0);
         _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement);
         _aPylons     = _pillarCache.filter(t => t.attackMode);
         _uPylons     = _pillarCache.filter(t => t.upgraded);
