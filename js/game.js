@@ -45,7 +45,7 @@ function render() {
 
     // ── WORLD TRIM — drop tiles far behind the player (keeps crystal area) ──
     if (frame % 300 === 1 && player.x > 45) {
-        const trimX = player.x - 35;
+        const trimX = player.x - 45;
         world = world.filter(t => t.x >= trimX || t.pillar || t.nest || t.x <= crystal.x + 4);
     }
 
@@ -457,29 +457,6 @@ function render() {
     actors.forEach(a=>drawList.push({type:'npc',x:a.x,y:a.y,actor:a}));
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
     drawList.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
-
-    // ── GHOST FLOOR — dim fill for all floor positions so trimmed areas aren't black ──
-    {
-        const vx = player.visualX, vy = player.visualY;
-        ctx.fillStyle = '#080c14';
-        for (let tx = Math.floor(vx - RENDER_DIST); tx <= Math.ceil(vx + RENDER_DIST); tx++) {
-            for (let ty = -1; ty <= 4; ty++) {
-                const bpx = (tx - vx - (ty - vy)) * TILE_W + canvas.width/2;
-                const bpy = (tx - vx + (ty - vy)) * TILE_H + canvas.height/2;
-                ctx.beginPath();
-                ctx.moveTo(bpx,bpy); ctx.lineTo(bpx+TILE_W,bpy+TILE_H);
-                ctx.lineTo(bpx,bpy+TILE_W); ctx.lineTo(bpx-TILE_W,bpy+TILE_H);
-                ctx.fill();
-            }
-            // wall_back ghost
-            { const ty=-2, WH=110;
-              const bpx=(tx-vx-(ty-vy))*TILE_W+canvas.width/2, bpy=(tx-vx+(ty-vy))*TILE_H+canvas.height/2;
-              ctx.fillStyle='#060a10';
-              ctx.beginPath(); ctx.moveTo(bpx,bpy-WH); ctx.lineTo(bpx+TILE_W,bpy+TILE_H-WH); ctx.lineTo(bpx,bpy+2*TILE_H-WH); ctx.lineTo(bpx-TILE_W,bpy+TILE_H-WH); ctx.fill();
-              ctx.beginPath(); ctx.moveTo(bpx-TILE_W,bpy+TILE_H); ctx.lineTo(bpx,bpy+2*TILE_H); ctx.lineTo(bpx,bpy+2*TILE_H-WH); ctx.lineTo(bpx-TILE_W,bpy+TILE_H-WH); ctx.fill();
-              ctx.fillStyle='#080c14'; }
-        }
-    }
 
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
