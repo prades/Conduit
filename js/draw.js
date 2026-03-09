@@ -143,7 +143,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         const seg=segments[i];
         drawCtx.save(); drawCtx.translate(seg.cx,seg.cy); drawCtx.rotate(seg.rotation);
         // Red team: black body
-        const baseCol = (actor.hitFlash>0 && actor.state!=="retreat") ? "#fff" : (isRedTeam ? "#111" : actor.color);
+        const baseCol = isRedTeam ? "#111" : actor.color;
         drawCtx.fillStyle = baseCol;
         const cr = actor.segmentCornerRadius !== undefined ? actor.segmentCornerRadius : 6;
         // Spider abdomen — draw as a protruding globe (ellipse) instead of roundRect
@@ -164,7 +164,7 @@ function _drawPredator(actor, px, py, drawCtx) {
             drawCtx.beginPath(); drawCtx.roundRect(-seg.width*0.5,-seg.length*0.5,seg.width,seg.length,cr); drawCtx.fill();
         }
         // Red team accent stripe on each segment
-        if (isRedTeam && actor.hitFlash<=0) {
+        if (isRedTeam) {
             drawCtx.fillStyle = "#cc1111";
             const sw = seg.width*0.25, sh = seg.length*0.18;
             // Center stripe
@@ -213,7 +213,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         });
     } else if (legData && legData.count===8) {
         // Spider: 4 pairs, tightly clustered on cephalothorax, legs arc out wide and tall
-        drawCtx.strokeStyle=isRedTeam?"#550011":"#1a1a1a"; drawCtx.lineWidth=2.5;
+        drawCtx.strokeStyle=isRedTeam?"#550011":"#1a1a1a"; drawCtx.lineWidth=1.2;
         const positions=[-1.2,-0.4,0.4,1.2];
         positions.forEach((pos,index)=>{
             const long=-pos*(dim.width*0.22);
@@ -412,7 +412,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         const shellBackX  = abdomen.cx - dirX * abdomen.length * 0.5;
         const shellBackY  = abdomen.cy - dirY * abdomen.length * 0.5;
         const shellLen    = Math.hypot(shellBackX - shellFrontX, shellBackY - shellFrontY);
-        const halfW       = dim.width * 0.55; // how far each half dome extends sideways
+        const halfW       = dim.width * 0.80; // how far each half dome extends sideways
 
         // Isometric compression
         const isoY = 0.5;
@@ -483,20 +483,15 @@ function _drawPredator(actor, px, py, drawCtx) {
         drawCtx.restore();
     }
 
-    // Shield indicator ring around shielded units
-    if (actor.shielded && actor.shieldAmount > 0) {
-        drawCtx.save();
-        drawCtx.strokeStyle = "#aaddff";
-        drawCtx.lineWidth = 2;
-        drawCtx.globalAlpha = 0.7 + 0.3 * Math.sin(frame * 0.15);
-        drawCtx.beginPath();
-        drawCtx.arc(px, bodyBaseY, dim.width * 0.7, 0, Math.PI*2);
-        drawCtx.stroke();
-        drawCtx.restore();
-    }
-
     if (actor.isNymph) drawCtx.globalAlpha = 1; // restore after nymph transparency
     drawHealthBar(px-18, py-85, 36, 5, actor.health, actor.maxHealth, drawCtx);
+    // Shield bar — blue, drawn above HP bar; drains on damage, no passive regen
+    if (actor.shielded && actor.shieldAmount > 0) {
+        actor._shieldMax = Math.max(actor._shieldMax || 0, actor.shieldAmount);
+        const shPct = Math.max(0, Math.min(1, actor.shieldAmount / actor._shieldMax));
+        drawCtx.fillStyle = "#000"; drawCtx.fillRect(px-18, py-93, 36, 4);
+        drawCtx.fillStyle = "#3af"; drawCtx.fillRect(px-18, py-93, Math.round(36 * shPct), 4);
+    }
     drawPredatorDebug(actor, px, py);
 }
 

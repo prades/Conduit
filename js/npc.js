@@ -198,6 +198,19 @@ function updateRTSNPC(actor) {
     // ── ROLE-DRIVEN MOVEMENT ──────────────────────────────
     if (actor.team==="green" && (actor.stance||"follow")==="follow") {
 
+        // Acid avoidance — applied before role movement so it always wins
+        for (const h of environmentalHazards) {
+            if (h.type !== "acid" || !h.active) continue;
+            for (const [tx, ty] of (h.tiles || [])) {
+                const adx = actor.x - tx, ady = actor.y - ty;
+                if (Math.abs(adx) < 1.0 && Math.abs(ady) < 1.0) {
+                    const alen = Math.hypot(adx, ady) || 1;
+                    actor.x += (adx / alen) * actor.moveSpeed * 5;
+                    actor.y += (ady / alen) * actor.moveSpeed * 5;
+                }
+            }
+        }
+
         const role = actor.role || "brawler";
 
         // Find nearest enemy — cache result for 8 frames to avoid per-frame full scan
@@ -206,7 +219,7 @@ function updateRTSNPC(actor) {
             actor._nearestEnemy = null;
             let nearestEnemyDist = Infinity;
             actors.forEach(a => {
-                if ((a.team==="red" || (a instanceof Predator && a.team !== "green" && !a.isClone)) && !a.dead) {
+                if (a instanceof Predator && a.team !== "green" && !a.isClone && !a.dead) {
                     const dx=a.x-actor.x, dy=a.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
                     if (d < nearestEnemyDist) { nearestEnemyDist=d; actor._nearestEnemy=a; }
                 }

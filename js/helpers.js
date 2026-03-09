@@ -31,7 +31,7 @@ function applyDamage(target, amount, source=null, element=null) {
             target.shieldAmount -= amount * 2;
             if (target.shieldAmount <= 0) {
                 const overflow = Math.abs(target.shieldAmount);
-                target.shielded = false; target.shieldAmount = 0;
+                target.shielded = false; target.shieldAmount = 0; target._shieldMax = 0;
                 amount = overflow;
             } else { if (target.hitFlash !== undefined) target.hitFlash = 6; return; }
         } else if (element === 'flux') {
@@ -39,7 +39,7 @@ function applyDamage(target, amount, source=null, element=null) {
             return;
         } else {
             target.shieldAmount -= amount;
-            if (target.shieldAmount <= 0) { target.shielded = false; target.shieldAmount = 0; }
+            if (target.shieldAmount <= 0) { target.shielded = false; target.shieldAmount = 0; target._shieldMax = 0; }
             return;
         }
     }
