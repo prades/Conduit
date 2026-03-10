@@ -604,7 +604,7 @@ function drawCrystalMenu() {
         } else {
             ownedModulators.forEach((mod, i) => {
                 const el = ELEMENTS.find(e => e.id === mod.element);
-                const pair = MODULATOR_PAIRS[mod.element] || [mod.element];
+                const pair = mod.pair || MODULATOR_PAIRS[mod.element] || [mod.element];
                 const col = el ? el.color : "#aaddff";
                 const ry = py2 + headerH + i * rowH;
                 const isActive = activeCrystalModulation && activeCrystalModulation.element === mod.element;
@@ -658,12 +658,8 @@ function handleCrystalMenuTap(ex, ey) {
                         // Deactivate
                         activeCrystalModulation = null;
                     } else {
-                        // Activate — immediately reassign all followers to one of the pair elements
-                        const pair = MODULATOR_PAIRS[mod.element] || [mod.element];
-                        activeCrystalModulation = { element: mod.element, pair };
-                        followers.forEach(f => {
-                            if (!f.dead) f.element = pair[Math.floor(Math.random()*pair.length)];
-                        });
+                        // Activate — only future inductees / respawns use the modulated pair
+                        activeCrystalModulation = { element: mod.element, pair: mod.pair };
                     }
                     return true;
                 }

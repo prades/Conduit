@@ -20,7 +20,7 @@ function generateSegment(startX) {
             nest: isNest, nestHealth: isNest ? 200 : 0, nestMaxHealth: 200,
             nestZone: isNest ? zoneIndex : -1, nestPulse: 0
         };
-        if (tile.pillarTeam==="green") tile.pillarCol="#1a4a8a"; else tile.pillarCol="#6a1a1a";
+        if (tile.pillarTeam==="green") tile.pillarCol="#0f8"; else tile.pillarCol="#e02020";
         world.push(tile);
 
         // NPC spawns

@@ -394,7 +394,7 @@ function render() {
     groundItems=groundItems.filter(item=>{
         if (Math.abs(player.x-item.x)<0.9 && Math.abs(player.y-item.y)<0.9) {
             if (item.type==="crystalModulator") {
-                ownedModulators.push({ element: item.element });
+                ownedModulators.push({ element: item.element, pair: item.pair || MODULATOR_PAIRS[item.element] || [item.element] });
                 const el=ELEMENTS.find(e=>e.id===item.element);
                 floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-60,
                     text:`◈ ${(el?.label||item.element).toUpperCase()} MODULATOR ACQUIRED`,
@@ -1098,15 +1098,19 @@ function render() {
                 } else if(obj.upgraded){
                     ctx.save(); ctx.globalAlpha=0.2; ctx.fillStyle="#0f8";
                     ctx.beginPath(); ctx.arc(px,py-85,20,0,Math.PI*2); ctx.fill(); ctx.restore();
-                    ctx.fillStyle="#055"; ctx.fillRect(px-18,py-100,36,130);
+                    ctx.fillStyle="#0d1220"; ctx.fillRect(px-18,py-100,36,130);
                     ctx.fillStyle="#0f8"; ctx.beginPath(); ctx.arc(px,py-100,6,0,Math.PI*2); ctx.fill();
                 } else {
                     const dist2=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
-                    const amb2=Math.max(0.1,0.8-dist2/RENDER_DIST), glo2=Math.max(0,1.0-dist2/5);
-                    ctx.fillStyle=`rgb(${25*amb2},${(35*amb2)+(120*glo2)},${60*amb2})`;
+                    const amb2=Math.max(0.1,0.8-dist2/RENDER_DIST);
+                    // Body — dark map-matching stone (no green tint)
+                    ctx.fillStyle=`rgb(${Math.floor(14*amb2)},${Math.floor(18*amb2)},${Math.floor(30*amb2)})`;
                     ctx.fillRect(px-14,py-85,28,115);
+                    // Light orb — stays team color (green friendly, red hostile)
                     ctx.fillStyle=obj.pillarCol;
+                    ctx.shadowColor=obj.pillarCol; ctx.shadowBlur=8;
                     ctx.beginPath(); ctx.arc(px,py-85,4,0,7); ctx.fill();
+                    ctx.shadowBlur=0;
                 }
             }
         }

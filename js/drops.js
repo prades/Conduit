@@ -33,12 +33,22 @@ function onPredatorDeath(predator) {
 
     // Boss kill → drop a Crystal Modulator on the ground
     if (predator.isBoss && predator.element) {
+        const basePair = MODULATOR_PAIRS[predator.element] || [predator.element];
+        // 20% chance: triple (full element triangle instead of a pair)
+        const FULL_TRIANGLES = {
+            fire:"toxic", flux:"fire", toxic:"flux",
+            electric:"ice", core:"electric", ice:"core"
+        };
+        const isTriple = Math.random() < 0.2;
+        const pair = isTriple
+            ? [...basePair, FULL_TRIANGLES[predator.element]].filter(Boolean)
+            : basePair;
         groundItems.push({ type:"crystalModulator", element: predator.element,
-                           x: predator.x, y: predator.y });
+                           pair, x: predator.x, y: predator.y });
         floatingTexts.push({
             x: px, y: py - 80,
-            text: "◈ CRYSTAL MODULATOR", color: "#aaddff",
-            life: 150, vy: -0.4
+            text: `◈ ${isTriple ? "TRIPLE" : ""} CRYSTAL MODULATOR`.trim(),
+            color: "#aaddff", life: 150, vy: -0.4
         });
     }
 }
