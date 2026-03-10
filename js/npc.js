@@ -29,8 +29,13 @@ function updateRTSNPC(actor) {
                 actor.moveSpeed   = NPC_TYPES["virus"].moveSpeed + (actor.stats.speed-10)*0.001;
             }
             if (!actor.element) {
-                const pool = [...unlockedElements];
-                actor.element = pool[Math.floor(Math.random()*pool.length)] || "fire";
+                if (activeCrystalModulation) {
+                    const pair = activeCrystalModulation.pair;
+                    actor.element = pair[Math.floor(Math.random()*pair.length)];
+                } else {
+                    const pool = [...unlockedElements];
+                    actor.element = pool[Math.floor(Math.random()*pool.length)] || "fire";
+                }
             }
             if (!actor.combatTrait)  actor.combatTrait  = Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)];
             if (!actor.naturalTrait) actor.naturalTrait = Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)];

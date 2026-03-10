@@ -416,10 +416,11 @@ function drawClonesBlob() {
 //  ROTATING CRYSTAL MENU  (tap crystal to open)
 // ─────────────────────────────────────────────────────────
 const CRYSTAL_FACES = [
-    { label:"CLONE BAY",     sub:"Deploy combat clones",   action:"clones", color:"#00ccaa" },
-    { label:"CRYSTAL BUILD", sub:"Passive colony upgrades", action:"builds", color:"#bb55ff" },
-    { label:"STATUS",        sub:"Colony overview",         action:"status", color:"#4499ff" },
-    { label:"CLOSE",         sub:"Return to game",          action:"close",  color:"#554466" },
+    { label:"CLONE BAY",      sub:"Deploy combat clones",    action:"clones",      color:"#00ccaa" },
+    { label:"CRYSTAL BUILD",  sub:"Passive colony upgrades", action:"builds",      color:"#bb55ff" },
+    { label:"MODULATION",     sub:"Crystal element control", action:"modulation",  color:"#aaddff" },
+    { label:"STATUS",         sub:"Colony overview",         action:"status",      color:"#4499ff" },
+    { label:"CLOSE",          sub:"Return to game",          action:"close",       color:"#554466" },
 ];
 
 function _crystalFrontIndex() {
@@ -586,6 +587,43 @@ function drawCrystalMenu() {
         ctx.restore();
     }
 
+    // ── MODULATION sub-panel ──────────────────────────────
+    if (crystalMenuSub === "modulation") {
+        const rowH = 34, headerH = 30;
+        const rows = ownedModulators.length;
+        const ph = headerH + Math.max(1, rows) * rowH + 14;
+        const pw = 280, px2 = cx - pw/2, py2 = cy + 195;
+        ctx.save();
+        ctx.fillStyle="rgba(4,8,24,0.97)"; ctx.strokeStyle="#aaddff"; ctx.lineWidth=2;
+        ctx.fillRect(px2, py2, pw, ph); ctx.strokeRect(px2, py2, pw, ph);
+        ctx.fillStyle="#aaddff"; ctx.font="bold 11px monospace"; ctx.textAlign="center";
+        ctx.fillText("CRYSTAL MODULATION", cx, py2 + 18);
+        if (rows === 0) {
+            ctx.fillStyle="#555"; ctx.font="10px monospace";
+            ctx.fillText("No modulators — kill a boss to obtain one", cx, py2 + headerH + 14);
+        } else {
+            ownedModulators.forEach((mod, i) => {
+                const el = ELEMENTS.find(e => e.id === mod.element);
+                const pair = MODULATOR_PAIRS[mod.element] || [mod.element];
+                const col = el ? el.color : "#aaddff";
+                const ry = py2 + headerH + i * rowH;
+                const isActive = activeCrystalModulation && activeCrystalModulation.element === mod.element;
+                ctx.fillStyle = isActive ? `${col}22` : "rgba(0,0,0,0)";
+                ctx.fillRect(px2 + 6, ry, pw - 12, rowH - 4);
+                ctx.strokeStyle = isActive ? col : "#334";
+                ctx.lineWidth = 1; ctx.strokeRect(px2 + 6, ry, pw - 12, rowH - 4);
+                ctx.fillStyle = col; ctx.font = "bold 11px monospace"; ctx.textAlign = "left";
+                ctx.fillText(`◈ ${(el?.label||mod.element).toUpperCase()} MODULATOR`, px2 + 14, ry + 14);
+                ctx.fillStyle = "#888"; ctx.font = "9px monospace";
+                ctx.fillText(`Pair: ${pair.join(" + ")}`, px2 + 14, ry + 26);
+                ctx.fillStyle = isActive ? col : "#aaddff"; ctx.textAlign = "right";
+                ctx.fillText(isActive ? "ACTIVE" : "ACTIVATE", px2 + pw - 10, ry + 20);
+            });
+        }
+        ctx.restore();
+        window._crystalModPanel = { x:px2, y:py2, w:pw, rows:ownedModulators.length, rowH, headerH };
+    }
+
     ctx.restore();
 }
 
@@ -607,6 +645,33 @@ function handleCrystalMenuTap(ex, ey) {
         }
     }
 
+    // Handle modulation sub-panel clicks
+    if (crystalMenuSub==="modulation") {
+        const p=window._crystalModPanel;
+        if (p && ex>=p.x&&ex<=p.x+p.w&&ey>=p.y&&ey<=p.y+p.w) {
+            for (let i=0; i<p.rows; i++) {
+                const ry = p.y + p.headerH + i * p.rowH;
+                if (ey>=ry && ey<=ry+p.rowH-4) {
+                    const mod = ownedModulators[i];
+                    if (!mod) break;
+                    if (activeCrystalModulation && activeCrystalModulation.element===mod.element) {
+                        // Deactivate
+                        activeCrystalModulation = null;
+                    } else {
+                        // Activate — immediately reassign all followers to one of the pair elements
+                        const pair = MODULATOR_PAIRS[mod.element] || [mod.element];
+                        activeCrystalModulation = { element: mod.element, pair };
+                        followers.forEach(f => {
+                            if (!f.dead) f.element = pair[Math.floor(Math.random()*pair.length)];
+                        });
+                    }
+                    return true;
+                }
+            }
+            return true;
+        }
+    }
+
     // Tap front face action
     const front=window._crystalFront;
     if (!front) return true;
@@ -614,5 +679,6 @@ function handleCrystalMenuTap(ex, ey) {
     else if (front.action==="clones") { crystalMenuOpen=false; crystalMenuSub=null; cloneMenuOpen=true; }
     else if (front.action==="builds") { crystalMenuSub=(crystalMenuSub==="builds")?null:"builds"; }
     else if (front.action==="status") { crystalMenuSub=(crystalMenuSub==="status")?null:"status"; }
+    else if (front.action==="modulation") { crystalMenuSub=(crystalMenuSub==="modulation")?null:"modulation"; }
     return true;
 }

@@ -144,10 +144,24 @@ let selectedRole = null;       // "brawler"|"sniper"|"camper"|null
 // ── CRYSTAL MENU / BUILDS ─────────────────────────────────
 let crystalMenuOpen = false;
 let crystalMenuRot  = 0;       // current rotation angle (radians)
-let crystalMenuSub  = null;    // null | "builds" | "status"
+let crystalMenuSub  = null;    // null | "builds" | "status" | "modulation"
 let crystalMenuDrag = false;
 let crystalMenuDragX = 0;
 let activeCrystalBuild = null; // null | "ghostphage"
+
+// ── CRYSTAL MODULATION ────────────────────────────────────
+// Pair map: each modulator element unlocks a two-element pair
+const MODULATOR_PAIRS = {
+    fire:     ["fire",     "flux"],
+    flux:     ["flux",     "toxic"],
+    toxic:    ["toxic",    "fire"],
+    electric: ["electric", "core"],
+    core:     ["core",     "ice"],
+    ice:      ["ice",      "electric"]
+};
+let ownedModulators    = [];   // [{ element }]  — collected from boss drops
+let activeCrystalModulation = null; // null | { element, pair:[e1,e2] }
+let groundItems        = [];   // [{ type, element, x, y }]  — world pickups
 
 function toggleSquad() {
     squadMode = (squadMode === "selected") ? "all" : "selected";

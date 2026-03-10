@@ -347,7 +347,7 @@ function render() {
     if (frame % 3 === 0) {
         actors.forEach(actor=>{
             _pillarCache.forEach(t=>{
-                if((actor.team==="green"&&t.pillarCol!=="#0f8")||(actor.team==="red"&&t.pillarCol!=="#f22")) return;
+                if((actor.team==="green"&&t.pillarTeam!=="green")||(actor.team==="red"&&t.pillarTeam!=="red")) return;
                 const dx=t.x-actor.x, dy=t.y-actor.y;
                 if(dx*dx+dy*dy < 1.44) actor.health=Math.min(actor.maxHealth, actor.health+0.15);
             });
@@ -389,6 +389,21 @@ function render() {
 
     // ── FIRE WALL LIFETIME ──
     world=world.filter(obj=>{ if(obj.type==="fireWall"){obj.life--;return obj.life>0;} return true; });
+
+    // ── GROUND ITEM PICKUP ──
+    groundItems=groundItems.filter(item=>{
+        if (Math.abs(player.x-item.x)<0.9 && Math.abs(player.y-item.y)<0.9) {
+            if (item.type==="crystalModulator") {
+                ownedModulators.push({ element: item.element });
+                const el=ELEMENTS.find(e=>e.id===item.element);
+                floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-60,
+                    text:`◈ ${(el?.label||item.element).toUpperCase()} MODULATOR ACQUIRED`,
+                    color:"#aaddff", life:180, vy:-0.25 });
+            }
+            return false; // remove
+        }
+        return true;
+    });
 
     // ── TANK SHIELD PULSE — tanks pulse 1 shield to nearby allies every 3s ──
     // ── BOSS SHIELD AURA — bosses continuously shield all nearby allies ──
@@ -450,6 +465,7 @@ function render() {
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     shards.forEach(s=>drawList.push({type:'shard',x:s.x,y:s.y,shard:s}));
     actors.forEach(a=>drawList.push({type:'npc',x:a.x,y:a.y,actor:a}));
+    groundItems.forEach(g=>drawList.push({type:'groundItem',x:g.x,y:g.y,item:g}));
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
     drawList.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
 
@@ -463,6 +479,31 @@ function render() {
         }
         else if (obj.type==='npc') {
             drawNPC(obj.actor,px,py);
+        }
+        else if (obj.type==='groundItem') {
+            const gi=obj.item;
+            const el=ELEMENTS.find(e=>e.id===gi.element);
+            const col=el?el.color:"#aaddff";
+            const bob=Math.sin(frame*0.06+gi.x*1.3)*4;
+            ctx.save();
+            ctx.globalAlpha=0.85+0.15*Math.sin(frame*0.08);
+            ctx.shadowColor=col; ctx.shadowBlur=14;
+            ctx.fillStyle=col;
+            ctx.beginPath();
+            ctx.moveTo(px,       py-18+bob);
+            ctx.lineTo(px+9,     py-10+bob);
+            ctx.lineTo(px,       py-2+bob);
+            ctx.lineTo(px-9,     py-10+bob);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle="#fff"; ctx.globalAlpha=0.35;
+            ctx.beginPath();
+            ctx.moveTo(px,     py-18+bob);
+            ctx.lineTo(px+4,   py-12+bob);
+            ctx.lineTo(px,     py-10+bob);
+            ctx.closePath(); ctx.fill();
+            ctx.shadowBlur=0; ctx.restore();
+            ctx.fillStyle=col; ctx.font="8px monospace"; ctx.textAlign="center";
+            ctx.fillText("◈ MOD", px, py-24+bob);
         }
         else if (obj.type==='crystal') {
             const hpR   = crystal.health / crystal.maxHealth;
@@ -1125,23 +1166,29 @@ function render() {
                 }
 
                 // 3. Server rack panels — every 9 tiles (offset from vents)
+                // Drawn with isometric shear (transform b=0.5) so they lie on the south wall face.
                 const isRackX=(xi%9===4);
                 if (isRackX) {
-                    const rcx=px-30, rcy=py+TILE_H-WH*0.52, rw=22, rh=46;
+                    // South face center: x = px-TILE_W/2, y = py+TILE_H/2-WH*0.5 (mid-wall)
+                    const rcx = px - TILE_W*0.5;
+                    const rcy = py + TILE_H*0.5 - WH*0.42;
+                    const rw=20, rh=42;
                     ctx.save();
-                    ctx.globalAlpha=0.7*amb; ctx.fillStyle="#0a0d10";
-                    ctx.fillRect(rcx-rw/2,rcy-rh/2,rw,rh);
-                    ctx.strokeStyle=`rgba(0,180,100,${0.4*amb})`; ctx.lineWidth=1;
-                    ctx.strokeRect(rcx-rw/2,rcy-rh/2,rw,rh);
+                    // Isometric shear to sit on wall face (slope = TILE_H/TILE_W = 0.5)
+                    ctx.transform(1, 0.5, 0, 1, rcx, rcy);
+                    ctx.globalAlpha=0.75*amb; ctx.fillStyle="#0a0d10";
+                    ctx.fillRect(-rw/2,-rh/2,rw,rh);
+                    ctx.strokeStyle=`rgba(0,180,100,${0.45*amb})`; ctx.lineWidth=1;
+                    ctx.strokeRect(-rw/2,-rh/2,rw,rh);
                     ctx.fillStyle=`rgba(0,40,20,${0.8*amb})`;
-                    for (let row=0;row<4;row++) ctx.fillRect(rcx-rw/2+2,rcy-rh/2+6+row*9,rw-4,3);
+                    for (let row=0;row<4;row++) ctx.fillRect(-rw/2+2,-rh/2+5+row*8,rw-4,3);
                     // status LEDs
                     const ledCols=["#00ff88","#ffaa00","#ff3333"];
                     ledCols.forEach((lc,i)=>{
                         const blink=(i===1)?(Math.sin(frame*0.04+xi)>0?1:0.2):1;
                         ctx.globalAlpha=0.9*amb*blink;
                         ctx.fillStyle=lc; ctx.shadowColor=lc; ctx.shadowBlur=4;
-                        ctx.beginPath(); ctx.arc(rcx-6+i*6,rcy+rh/2-6,1.5,0,Math.PI*2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(-6+i*6, rh/2-6, 1.5, 0, Math.PI*2); ctx.fill();
                     });
                     ctx.shadowBlur=0; ctx.restore();
                 }

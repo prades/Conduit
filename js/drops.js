@@ -30,6 +30,17 @@ function onPredatorDeath(predator) {
         color: "#0f8",
         life: 90, vy: -0.6
     });
+
+    // Boss kill → drop a Crystal Modulator on the ground
+    if (predator.isBoss && predator.element) {
+        groundItems.push({ type:"crystalModulator", element: predator.element,
+                           x: predator.x, y: predator.y });
+        floatingTexts.push({
+            x: px, y: py - 80,
+            text: "◈ CRYSTAL MODULATOR", color: "#aaddff",
+            life: 150, vy: -0.4
+        });
+    }
 }
 
 // ─────────────────────────────────────────────────────────

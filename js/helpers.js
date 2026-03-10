@@ -88,7 +88,7 @@ function frenzyEnemiesAt(x, y) {
 function findNearestFriendlyPillar(actor) {
     let best=null, bestDist=Infinity;
     _pillarCache.forEach(t => {
-        if ((actor.team==="green"&&t.pillarCol!=="#0f8")||(actor.team==="red"&&t.pillarCol!=="#f22")) return;
+        if ((actor.team==="green"&&t.pillarTeam!=="green")||(actor.team==="red"&&t.pillarTeam!=="red")) return;
         const dx=t.x-actor.x, dy=t.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
         if (d<bestDist) { bestDist=d; best=t; }
     });
@@ -144,6 +144,15 @@ function recallFollowers() {
 }
 
 function spawnFollowerAtCrystal(element) {
+    if (!element) {
+        if (activeCrystalModulation) {
+            const pair = activeCrystalModulation.pair;
+            element = pair[Math.floor(Math.random()*pair.length)];
+        } else {
+            const pool = [...unlockedElements];
+            element = pool[Math.floor(Math.random()*pool.length)] || "fire";
+        }
+    }
     const def         = NPC_TYPES["virus"];
     const personality = PERSONALITY_KEYS[Math.floor(Math.random() * PERSONALITY_KEYS.length)];
     const stats       = applyPersonality(personality);

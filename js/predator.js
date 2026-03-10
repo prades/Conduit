@@ -210,7 +210,7 @@ class Predator {
         if (this.state==="wander") {
             if (!this.wanderTarget||this.wanderTimer<=0) {
                 const angle=Math.random()*Math.PI*2, radius=3+Math.random()*5;
-                this.wanderTarget={ x:this.x+Math.cos(angle)*radius, y:this.y+Math.sin(angle)*radius };
+                this.wanderTarget={ x:this.x+Math.cos(angle)*radius, y:Math.max(0,Math.min(3,this.y+Math.sin(angle)*radius)) };
                 this.wanderTimer=90+Math.random()*120;
             }
             const dx=this.wanderTarget.x-this.x, dy=this.wanderTarget.y-this.y;
@@ -355,8 +355,8 @@ class Predator {
             }
         }
 
-        // ── CORRIDOR BOUNDS — clamp to walkable floor (y -1–4, x ≥ 0) ──
-        this.y = Math.max(-1, Math.min(4, this.y));
+        // ── CORRIDOR BOUNDS — clamp to walkable floor interior (y 0–3, x ≥ 0) ──
+        this.y = Math.max(0, Math.min(3, this.y));
         this.x = Math.max(0, this.x);
 
         if (this.state==="hunt"||this.state==="wander") this.walkCycle+=this.moveSpeed*40;
