@@ -118,6 +118,10 @@ let pointerX = 0, pointerY = 0;
 let dragDX = 0, dragDY = 0;
 let gesturePoints = [];
 
+// ── ULTIMATE DOUBLE-TAP STATE ─────────────────────────────
+let _ultimateLastTapActor = null;   // follower actor tapped last
+let _ultimateLastTapTime  = 0;      // performance.now() of last tap
+
 // ── COMMAND / RADIAL STATE ────────────────────────────────
 let commandMode = false;
 let commandX = 0, commandY = 0;

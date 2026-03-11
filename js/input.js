@@ -84,6 +84,39 @@ canvas.addEventListener('pointerup', e=>{
     if (handleCloneMenuTap(e.clientX, e.clientY)) { isPressing=false; return; }
     if (handleFollowerUIClick(e.clientX, e.clientY)) { isPressing=false; return; }
 
+    // ── ULTIMATE DOUBLE-TAP DETECTION ────────────────────
+    if (!touchMoved) {
+        let _tappedFollower = null;
+        for (const f of followers) {
+            if (f.dead) continue;
+            const _fpx = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
+            const _fpy = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2;
+            if (Math.hypot(e.clientX - _fpx, e.clientY - (_fpy - 55)) < 40) {
+                _tappedFollower = f;
+                break;
+            }
+        }
+        if (_tappedFollower !== null) {
+            const _now = performance.now();
+            if (_tappedFollower === _ultimateLastTapActor && (_now - _ultimateLastTapTime) < 400) {
+                // Double-tap confirmed — fire ultimate if charged
+                if (typeof _tappedFollower.ultimateCharge === "number" && _tappedFollower.ultimateCharge >= 100) {
+                    const _ult = FOLLOWER_ULTIMATES[_tappedFollower.element];
+                    if (_ult) _ult.execute(_tappedFollower);
+                }
+                _ultimateLastTapActor = null;
+                _ultimateLastTapTime  = 0;
+                isPressing = false;
+                return;
+            } else {
+                // First tap — record it, fall through to normal input
+                _ultimateLastTapActor = _tappedFollower;
+                _ultimateLastTapTime  = _now;
+            }
+        }
+    }
+    // ── END ULTIMATE DOUBLE-TAP DETECTION ────────────────
+
     if (touchMoved && gesturePoints.length>=5) {
         // 1. Follower → enemy targeting line
         const ftoe=detectFollowerToEnemyGesture(pressX,pressY,e.clientX,e.clientY);

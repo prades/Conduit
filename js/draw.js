@@ -519,6 +519,35 @@ function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData,
 function _drawVirus(actor, px, py, drawCtx) {
     drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
 
+    // ── ULTIMATE CHARGE BAR ───────────────────────────────
+    if (actor.isFollower && typeof actor.ultimateCharge === "number") {
+        const _uc = Math.max(0, Math.min(100, actor.ultimateCharge));
+        const _ucFull = _uc >= 100;
+        const _elDef = ELEMENTS.find(e => e.id === actor.element);
+        const _elCol = _elDef ? _elDef.color : "#aaa";
+        // Background track
+        drawCtx.fillStyle = "#111";
+        drawCtx.fillRect(px - 14, py - 82, 28, 3);
+        // Filled portion — pulses white when full
+        if (_ucFull) {
+            const _pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.18);
+            drawCtx.fillStyle = _pulse > 0.5 ? "#ffffff" : _elCol;
+        } else {
+            drawCtx.fillStyle = _elCol;
+        }
+        drawCtx.fillRect(px - 13, py - 81, Math.floor(26 * (_uc / 100)), 1);
+        // "▲" ready indicator
+        if (_ucFull) {
+            drawCtx.save();
+            drawCtx.setTransform(1, 0, 0, 1, 0, 0);
+            drawCtx.font = "bold 8px monospace";
+            drawCtx.textAlign = "center";
+            drawCtx.fillStyle = _elCol;
+            drawCtx.fillText("▲", px, py - 85);
+            drawCtx.restore();
+        }
+    }
+
     const elementDef   = ELEMENTS.find(e => e.id === actor.element);
     const elementColor = actor.isNeutralRecruit ? "#aaaaaa" : (elementDef ? elementDef.color : "#777");
     const hr = actor.maxHealth > 0 ? actor.health / actor.maxHealth : 0;

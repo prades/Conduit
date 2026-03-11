@@ -307,6 +307,193 @@ const ELEMENT_ATTACKS = {
 };
 
 // ─────────────────────────────────────────────────────────
+//  FOLLOWER ULTIMATE ABILITIES
+//  Triggered by double-tap when ultimateCharge === 100
+// ─────────────────────────────────────────────────────────
+const FOLLOWER_ULTIMATES = {
+
+    // ── FIRE: Nova Flare ──────────────────────────────────
+    fire: {
+        name: "Nova Flare",
+        execute(actor) {
+            if (actor.dead) return;
+            actor.ultimateCharge = 0;
+            shake = Math.max(shake, 10);
+            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
+            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
+            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! NOVA FLARE", color: "#ff6600", life: 90, vy: -0.9 });
+            spawnElementEffect({ type: "ring",   x: actor.x, y: actor.y, color: "#ff3300", radius: 5.0, life: 60, element: "fire" });
+            spawnElementEffect({ type: "meteor", x: actor.x, y: actor.y, color: "#ffaa00", radius: 5.0, life: 45, element: "fire" });
+            const dmg = (actor.stats?.specialAttack || 10) * 2.0;
+            actors.forEach(a => {
+                if (!((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)) return;
+                const dx=a.x-actor.x, dy=a.y-actor.y;
+                if (Math.sqrt(dx*dx+dy*dy) <= 5.0) {
+                    applyElementalDamage(a, dmg, actor, "fire");
+                    a.burning = 240;
+                    a.burnDamage = dmg * 0.05;
+                }
+            });
+        }
+    },
+
+    // ── ELECTRIC: Overload ────────────────────────────────
+    electric: {
+        name: "Overload",
+        execute(actor) {
+            if (actor.dead) return;
+            actor.ultimateCharge = 0;
+            shake = Math.max(shake, 10);
+            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
+            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
+            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! OVERLOAD", color: "#ffee33", life: 90, vy: -0.9 });
+            spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, color: "#ffee33", radius: 6.0, life: 55, element: "electric" });
+            const dmg = (actor.stats?.specialAttack || 10) * 1.5;
+            const chained = [];
+            actors.forEach(a => {
+                if (!((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)) return;
+                const dx=a.x-actor.x, dy=a.y-actor.y;
+                if (Math.sqrt(dx*dx+dy*dy) <= 6.0) {
+                    applyElementalDamage(a, dmg, actor, "electric");
+                    a.disoriented = 120;
+                    a.chainArcFlash = 30;
+                    chained.push(a);
+                }
+            });
+            if (chained.length > 0) {
+                spawnElementEffect({ type: "chain", x: actor.x, y: actor.y, targets: chained, color: "#ffffff", life: 25, element: "electric" });
+            }
+        }
+    },
+
+    // ── ICE: Deep Freeze ──────────────────────────────────
+    ice: {
+        name: "Deep Freeze",
+        execute(actor) {
+            if (actor.dead) return;
+            actor.ultimateCharge = 0;
+            shake = Math.max(shake, 8);
+            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
+            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
+            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! DEEP FREEZE", color: "#99ddff", life: 90, vy: -0.9 });
+            spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, color: "#99ddff", radius: 8.0, life: 70, element: "ice" });
+            const dmg = (actor.stats?.specialAttack || 10) * 0.8;
+            actors.forEach(a => {
+                if (!((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)) return;
+                const dx=a.x-actor.x, dy=a.y-actor.y;
+                if (Math.sqrt(dx*dx+dy*dy) <= 8.0) {
+                    // Temporarily clear frozen so applyDamage isn't blocked
+                    const wasFrozen = a.frozen;
+                    a.frozen = false;
+                    applyElementalDamage(a, dmg, actor, "ice");
+                    a.frozen = true;
+                    a.frozenEscapeChance = 0.001;
+                }
+            });
+        }
+    },
+
+    // ── FLUX: Dimension Rift ──────────────────────────────
+    flux: {
+        name: "Dimension Rift",
+        execute(actor) {
+            if (actor.dead) return;
+            actor.ultimateCharge = 0;
+            shake = Math.max(shake, 12);
+            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
+            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
+            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! DIMENSION RIFT", color: "#cc66ff", life: 90, vy: -0.9 });
+            spawnElementEffect({ type: "singularity", x: actor.x, y: actor.y, color: "#9933ff", radius: 4.0, life: 70, element: "flux" });
+            const dmg = (actor.stats?.specialAttack || 10) * 1.2;
+            actors.forEach(a => {
+                if (!((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)) return;
+                const dx=actor.x-a.x, dy=actor.y-a.y;
+                const dist = Math.sqrt(dx*dx+dy*dy);
+                if (dist <= 5.0 && dist > 0.01) {
+                    // Pull toward actor
+                    a.x += (dx/dist) * Math.min(dist, 1.5);
+                    a.y += (dy/dist) * Math.min(dist, 1.5);
+                    applyElementalDamage(a, dmg, actor, "flux");
+                    // Push back out
+                    const pushDX = -dx/dist, pushDY = -dy/dist;
+                    a.x += pushDX * 2.0;
+                    a.y += pushDY * 2.0;
+                    a.y = Math.max(-0.5, Math.min(4, a.y));
+                    a.disoriented = 150;
+                    a.disorientDX = pushDX * 0.5;
+                    a.disorientDY = pushDY * 0.5;
+                }
+            });
+            spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, color: "#ff99ff", radius: 4.5, life: 35, element: "flux" });
+        }
+    },
+
+    // ── CORE: Bulwark ─────────────────────────────────────
+    core: {
+        name: "Bulwark",
+        execute(actor) {
+            if (actor.dead) return;
+            actor.ultimateCharge = 0;
+            shake = Math.max(shake, 8);
+            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
+            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
+            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! BULWARK", color: "#00ffcc", life: 90, vy: -0.9 });
+            spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, color: "#00ccaa", radius: 6.0, life: 60, element: "core" });
+            const shieldVal = (actor.stats?.specialAttack || 10) * 3.0;
+            followers.forEach(f => {
+                if (f.dead) return;
+                f.shielded     = true;
+                f.shieldAmount = shieldVal;
+                f._shieldMax   = shieldVal;
+                f.invulnerable = Math.max(f.invulnerable || 0, 180);
+                spawnElementEffect({ type: "impact", x: f.x, y: f.y, color: "#00ccaa", radius: 1.0, life: 30, element: "core" });
+            });
+            const dmg = (actor.stats?.specialAttack || 10) * 1.0;
+            actors.forEach(a => {
+                if (!((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)) return;
+                const dx=a.x-actor.x, dy=a.y-actor.y;
+                if (Math.sqrt(dx*dx+dy*dy) <= 5.0) {
+                    applyElementalDamage(a, dmg, actor, "core");
+                    const dist = Math.hypot(dx, dy) || 1;
+                    a.x += (dx/dist) * 2.5;
+                    a.y += (dy/dist) * 2.5;
+                }
+            });
+        }
+    },
+
+    // ── TOXIC: Plague Bloom ───────────────────────────────
+    toxic: {
+        name: "Plague Bloom",
+        execute(actor) {
+            if (actor.dead) return;
+            actor.ultimateCharge = 0;
+            shake = Math.max(shake, 6);
+            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
+            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
+            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! PLAGUE BLOOM", color: "#66ff66", life: 90, vy: -0.9 });
+            const enemies = actors.filter(a =>
+                (a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone)) && !a.dead
+            );
+            const picks = enemies.sort(() => Math.random()-0.5).slice(0, 4);
+            if (picks.length === 0) {
+                [[-2,0],[2,0],[0,-1],[0,1]].forEach(([ox,oy]) => {
+                    spawnElementEffect({ type:"toxicCloud", x:actor.x+ox, y:actor.y+oy, color:"#66ff66", radius:2.5, life:400, element:"toxic", tickDamage:(actor.stats?.specialAttack||10)*0.12 });
+                });
+            } else {
+                picks.forEach(enemy => {
+                    spawnElementEffect({ type:"toxicCloud", x:enemy.x, y:enemy.y, color:"#66ff66", radius:2.5, life:400, element:"toxic", tickDamage:(actor.stats?.specialAttack||10)*0.12 });
+                    applyElementalDamage(enemy, (actor.stats?.specialAttack||10)*0.5, actor, "toxic");
+                    enemy.defenseShredded = 300;
+                    enemy.defenseShredFactor = 0.4;
+                });
+            }
+        }
+    }
+
+}; // end FOLLOWER_ULTIMATES
+
+// ─────────────────────────────────────────────────────────
 //  ELEMENT EFFECTS POOL (visual + lingering)
 // ─────────────────────────────────────────────────────────
 let elementEffects = [];

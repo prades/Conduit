@@ -54,7 +54,19 @@ function applyDamage(target, amount, source=null, element=null) {
     if (typeof target.hitFlash !== "undefined") target.hitFlash = 6;
     if (typeof target.hitStun  !== "undefined") target.hitStun  = 6;
     if (typeof target.onHit    === "function")  target.onHit(source);
-    if (target.health <= 0) { target.health = 0; target.dead = true; }
+    if (target.health <= 0) {
+        target.health = 0; target.dead = true;
+        // ── ULTIMATE KILL BONUS ───────────────────────────────
+        if (source && source.isFollower && source.team === "green") {
+            if (typeof source.ultimateCharge !== "number") source.ultimateCharge = 0;
+            source.ultimateCharge = Math.min(100, source.ultimateCharge + 20);
+        }
+    }
+    // ── ULTIMATE CHARGE GAIN ──────────────────────────────
+    if (source && source.isFollower && source.team === "green" && !target.dead) {
+        if (typeof source.ultimateCharge !== "number") source.ultimateCharge = 0;
+        source.ultimateCharge = Math.min(100, source.ultimateCharge + 3);
+    }
 }
 
 function applyElementalDamage(target, amount, source, element) {
@@ -166,6 +178,7 @@ function spawnFollowerAtCrystal(element) {
         stats, personality, role,
         currentResonance: 0,
         currentWill: stats.will,
+        ultimateCharge: 0,
         walkCycle:0, moveCooldown:0,
         stance:"follow", isFollower:true, isHealing:false,
         hitFlash:0, dead:false,
