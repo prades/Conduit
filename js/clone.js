@@ -488,7 +488,7 @@ function _sortedCloneOptions(opts, mode) {
 
 // ── Animated crystal HUD button (top-center) ──────────────
 function drawCrystalButton() {
-    const bx = Math.round(canvas.width / 2) - 60, by = 26;
+    const bx = Math.round(canvas.width * 0.72), by = 52;
     _CRYSBTN.x = bx; _CRYSBTN.y = by;
     const t = (frame||0) * 0.022;
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
