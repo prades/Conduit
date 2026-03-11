@@ -35,13 +35,16 @@ function drawRadialMenu() {
     drawRadialButton(commandX, commandY-RADIAL_RADIUS, "JOB", jHov);
     if (jHov) selectedRadialAction="job";
 
-    // LEFT = context-sensitive pylon actions or RECON
+    // LEFT = context-sensitive pylon actions, RECON, or CONNECT (broken nest)
     const rHov=dist>RADIAL_RADIUS*0.4&&Math.abs(angle)>Math.PI*3/4;
     const isPylonTarget = commandTarget&&commandTarget.pillar&&!commandTarget.destroyed;
     const isUpgradedPylon = isPylonTarget&&(commandTarget.attackMode||commandTarget.waveMode);
+    const isBrokenNest = !!commandNestTarget;
     let leftLabel, leftAction;
-    if (isUpgradedPylon) {
-        // Already upgraded — switch mode
+    if (isBrokenNest) {
+        leftLabel = "CONNECT";
+        leftAction = "connect_nest";
+    } else if (isUpgradedPylon) {
         leftLabel = commandTarget.waveMode ? "ATTACK" : "WAVE";
         leftAction = commandTarget.waveMode ? "set_attack_mode" : "set_wave_mode";
     } else if (isPylonTarget) {
@@ -54,11 +57,13 @@ function drawRadialMenu() {
     drawRadialButton(commandX-RADIAL_RADIUS, commandY, leftLabel, rHov);
     if (rHov) selectedRadialAction = leftAction;
 
-    // DOWN = MOVE / ATTACK
+    // DOWN = MOVE / ATTACK (also ATTACK for broken nest)
     const enemy=getEnemyAtTile(commandTarget);
     const dHov=dist>RADIAL_RADIUS*0.4&&angle>Math.PI/4&&angle<3*Math.PI/4;
-    drawRadialButton(commandX, commandY+RADIAL_RADIUS, enemy?"ATTACK":"MOVE", dHov);
-    if (dHov) selectedRadialAction=enemy?"attack":"move";
+    const downLabel = isBrokenNest ? "ATTACK" : (enemy ? "ATTACK" : "MOVE");
+    const downAction = isBrokenNest ? "attack_nest" : (enemy ? "attack" : "move");
+    drawRadialButton(commandX, commandY+RADIAL_RADIUS, downLabel, dHov);
+    if (dHov) selectedRadialAction = downAction;
 
     ctx.restore();
 }

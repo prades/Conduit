@@ -21,13 +21,19 @@ function isTapNearCrystal(ex, ey) {
 }
 
 function handleLongHold(ex,ey) {
-    // Long press near crystal — radial command (crystal menu now opened by short tap)
     commandMode=true; commandX=ex; commandY=ey;
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
     commandTarget=(t&&!t.type.includes("wall"))?t:null;
+    // Check if a broken nest pod is near this tile (within 2 tiles)
+    commandNestTarget=null;
+    world.forEach(obj=>{
+        if (obj.nest && obj.nestHealth<=0 && Math.hypot(obj.x-gx,obj.y-gy)<2.5) {
+            commandNestTarget=obj;
+        }
+    });
     dragDX=0; dragDY=0;
 }
 
@@ -106,13 +112,13 @@ canvas.addEventListener('pointerup', e=>{
                 }
                 _ultimateLastTapActor = null;
                 _ultimateLastTapTime  = 0;
-                isPressing = false;
-                return;
             } else {
-                // First tap — record it, fall through to normal input
+                // First tap — record it, do NOT move player
                 _ultimateLastTapActor = _tappedFollower;
                 _ultimateLastTapTime  = _now;
             }
+            isPressing = false;
+            return;
         }
     }
     // ── END ULTIMATE DOUBLE-TAP DETECTION ────────────────

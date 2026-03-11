@@ -149,7 +149,7 @@ function nextWave() {
     saveGameState();
 
     // ── Wipe everything, start clean ──
-    actors=[]; followers=[]; respawnQueue=[];
+    actors=[]; followers=[]; respawnQueue=[]; pendingPillarDestruction=[];
     ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
     activePredator=null; predatorRespawnTimer=0;
     zonePredators={}; zoneRespawnTimers={};

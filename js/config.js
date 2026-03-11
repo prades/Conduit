@@ -126,6 +126,7 @@ let _ultimateLastTapTime  = 0;      // performance.now() of last tap
 let commandMode = false;
 let commandX = 0, commandY = 0;
 let commandTarget = null;
+let commandNestTarget = null;  // broken nest pod near long-press point
 let selectedRadialAction = null;
 
 // ── DEV / PREVIEW ─────────────────────────────────────────

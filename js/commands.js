@@ -10,7 +10,7 @@ function performElementJob(actor, tile) {
 }
 
 function issueJobCommand(tile) {
-    const pool=getCommandPool().filter(a=>!a.job).slice(0,3);
+    const pool=getCommandPool().filter(a=>!a.job).slice(0,4);
     pool.forEach(a => { a.job={ type:"elementJob", target:tile, executed:false, timer:0 }; });
 }
 
@@ -22,7 +22,7 @@ function issueReconstruct(pylon) {
     if (!pylon||!followers||followers.length===0) return;
     if (!pylon.reconstructing) { pylon.reconstructing=false; pylon.reconstructProgress=0; pylon.workers=[]; }
     if (pylon.reconstructing) return;
-    const pool=(followerByElement[player.selectedElement]||[]).filter(a=>!a.job).slice(0,3);
+    const pool=(followerByElement[player.selectedElement]||[]).filter(a=>!a.job).slice(0,4);
     if (pool.length===0) return;
     pylon.reconstructing=true; pylon.reconstructProgress=0; pylon.workers=pool;
     pool.forEach(a => { a.job={ type:"reconstruct", target:pylon }; });
@@ -94,23 +94,60 @@ function executeCommand() {
             pool.forEach(a => { a.job={ type:"attack", target:enemy }; });
             break;
         }
+        case "connect_nest": {
+            // Mark nearest green pylon as connected to this broken nest pod
+            if (commandNestTarget) {
+                const nest = commandNestTarget;
+                let bestP=null, bestD=Infinity;
+                world.forEach(t=>{
+                    if(t.pillar&&!t.destroyed&&t.pillarTeam==="green"&&t.health>0){
+                        const d=Math.hypot(t.x-nest.x,t.y-nest.y);
+                        if(d<bestD){bestD=d;bestP=t;}
+                    }
+                });
+                if (bestP) {
+                    bestP.nestConnection = nest;
+                    nest.connectedPylon  = bestP;
+                    floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80,
+                        text:"NEST LINKED — bonus charge active", color:"#ff4444", life:120, vy:-0.3 });
+                }
+            }
+            break;
+        }
+        case "attack_nest": {
+            // Send followers to attack the broken nest pod location
+            if (commandNestTarget) {
+                const pool=getCommandPool().filter(a=>!a.job).slice(0,5);
+                pool.forEach(a => { a.job={ type:"move", target:commandNestTarget }; a.stance="hold"; });
+            }
+            break;
+        }
         case "move":  issueMoveCommand(commandTarget); break;
         case "build":
-            if (shardCount>=10&&commandTarget&&!commandTarget.pillar) {
+            if (shardCount>=10&&commandTarget&&(!commandTarget.pillar||commandTarget.destroyed)) {
                 shardCount-=10; saveShards();
+                // Reset all pylon state (covers rebuilding on destroyed pylon tiles)
                 commandTarget.pillar=true; commandTarget.pillarTeam="green";
                 commandTarget.pillarCol="#0f8"; commandTarget.maxHealth=20;
                 commandTarget.upgraded=false; commandTarget.destroyed=false;
+                commandTarget.attackMode=false; commandTarget.waveMode=false;
+                commandTarget.attackModeElement=null; commandTarget.attackModeColor=null;
+                commandTarget.reconstructing=false; commandTarget.workers=[];
                 if (buildMode) {
-                    // Construction mode — assign a follower to build it (30s / instant for core)
+                    // Construction mode — up to 4 builders, each reduces build time
                     commandTarget.constructing=true; commandTarget.constructProgress=0;
                     commandTarget.health=0;
-                    let builder=getCommandPool().find(a=>!a.dead&&!a.job);
-                    if (!builder) builder=followers.find(a=>!a.dead&&!a.job);
-                    if (builder) {
-                        const buildTime=(builder.element==="core")?60:1800;
+                    const builderPool = [
+                        ...getCommandPool().filter(a=>!a.dead&&!a.job),
+                        ...followers.filter(a=>!a.dead&&!a.job)
+                    ].filter((a,i,arr)=>arr.indexOf(a)===i).slice(0,4);
+                    builderPool.forEach(builder => {
+                        // Each additional builder reduces time: 1→base, 2→×0.6, 3→×0.45, 4→×0.35
+                        const speedMult = [1, 0.6, 0.45, 0.35][Math.min(builderPool.length-1,3)];
+                        const baseBuildTime = (builder.element==="core") ? 60 : 1800;
+                        const buildTime = Math.max(30, Math.round(baseBuildTime * speedMult));
                         builder.job={type:"build_pylon",target:commandTarget,buildTime};
-                    }
+                    });
                 } else {
                     commandTarget.health=20;
                     commandTarget.constructing=false; commandTarget.constructProgress=1;
@@ -118,5 +155,5 @@ function executeCommand() {
             }
             break;
     }
-    commandMode=false; commandTarget=null;
+    commandMode=false; commandTarget=null; commandNestTarget=null;
 }

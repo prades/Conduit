@@ -387,6 +387,38 @@ function render() {
         }
     }
 
+    // ── CRYSTAL ULTIMATE CHARGE RESTORE ──────────────────────────────────
+    // Runs every 60 frames. Rate scales with max pylon zone depth and nest pod links.
+    if (frame % 60 === 0 && followers.length > 0) {
+        // Base charge per tick at crystal proximity
+        const crystalDist = Math.hypot(player.x - crystal.x, player.y - crystal.y);
+        const nearCrystal = crystalDist < 3.0;
+
+        // Find deepest zone index of any living green pylon
+        const greenPylons = world.filter(t => t.pillar && !t.destroyed && t.pillarTeam === "green" && t.health > 0);
+        let maxPylonZone = 0;
+        greenPylons.forEach(t => { const z = getZoneIndex(t.x); if (z > maxPylonZone) maxPylonZone = z; });
+
+        // Bonus charge if any green pylon is connected to a destroyed nest pod
+        const brokenNests = world.filter(t => t.nest && t.nestHealth <= 0);
+        let nestBonus = 0;
+        brokenNests.forEach(nest => {
+            greenPylons.forEach(p => {
+                if (Math.hypot(p.x - nest.x, p.y - nest.y) < 5.0) nestBonus = Math.max(nestBonus, 3);
+            });
+        });
+
+        // Base rate: 1/tick always (very slow), +1 per zone depth, +nestBonus, doubled near crystal
+        const baseRate = 1 + maxPylonZone + nestBonus;
+        const chargeGain = nearCrystal ? baseRate * 2 : baseRate;
+
+        followers.forEach(f => {
+            if (f.dead) return;
+            if (typeof f.ultimateCharge !== "number") f.ultimateCharge = 0;
+            f.ultimateCharge = Math.min(100, f.ultimateCharge + chargeGain);
+        });
+    }
+
     // ── FIRE WALL LIFETIME ──
     world=world.filter(obj=>{ if(obj.type==="fireWall"){obj.life--;return obj.life>0;} return true; });
 
@@ -701,6 +733,45 @@ function render() {
                         ctx.restore();
                     });
                 }
+                ctx.restore();
+            }
+
+            // ── BROKEN NEST POD — charred gray husk with teal accent ──
+            if (obj.nest && obj.nestHealth <= 0) {
+                const sW1x=px, sW1y=py-60, numT=4, WH=110;
+                const wfBL={x:sW1x-TILE_W,y:sW1y+TILE_H};
+                const wfBR={x:sW1x+(numT-1)*TILE_W,y:sW1y+(numT+1)*TILE_H};
+                const wfTR={x:wfBR.x,y:wfBR.y-WH};
+                const wfTL={x:wfBL.x,y:wfBL.y-WH};
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(wfBL.x,wfBL.y); ctx.lineTo(wfBR.x,wfBR.y);
+                ctx.lineTo(wfTR.x,wfTR.y); ctx.lineTo(wfTL.x,wfTL.y);
+                ctx.closePath();
+                // Charred dark fill
+                ctx.fillStyle="rgba(18,10,8,0.92)"; ctx.fill();
+                // Cracked hex outlines — gray/teal
+                ctx.strokeStyle=obj.connectedPylon?"rgba(0,255,200,0.45)":"rgba(55,45,40,0.7)";
+                ctx.lineWidth=1; ctx.clip();
+                const hexR=12, hexWd=hexR*Math.sqrt(3), hexRH=hexR*1.5;
+                const gridLeft=wfTL.x-hexWd, gridTop=wfTL.y-hexR;
+                const nRows=Math.ceil((WH+hexR*4)/hexRH)+1;
+                const nCols=Math.ceil((wfBR.x-wfBL.x+hexWd*2)/hexWd)+1;
+                const hexCos=[], hexSin=[];
+                for(let vi=0;vi<6;vi++){const a=Math.PI/6+vi*Math.PI/3;hexCos.push(Math.cos(a));hexSin.push(Math.sin(a));}
+                for(let row=0;row<nRows;row++) for(let col=0;col<nCols;col++){
+                    const hcx=gridLeft+col*hexWd+(row%2===0?0:hexWd*0.5), hcy=gridTop+hexR+row*hexRH;
+                    ctx.beginPath();
+                    ctx.moveTo(hcx+hexR*hexCos[0],hcy+hexR*hexSin[0]);
+                    for(let vi=1;vi<6;vi++) ctx.lineTo(hcx+hexR*hexCos[vi],hcy+hexR*hexSin[vi]);
+                    ctx.closePath(); ctx.stroke();
+                }
+                // "BROKEN" label
+                ctx.setTransform(1,0,0,1,0,0);
+                const _bCx=(wfTL.x+wfTR.x)/2;
+                ctx.fillStyle=obj.connectedPylon?"#00ffcc":"#664433";
+                ctx.font="bold 9px monospace"; ctx.textAlign="center";
+                ctx.fillText(obj.connectedPylon?"◈ NEST LINKED":"✕ NEST BROKEN",_bCx,wfTL.y-12);
                 ctx.restore();
             }
 
@@ -1029,6 +1100,19 @@ function render() {
                 const secsLeft=Math.ceil((1-prog)*30);
                 ctx.fillStyle="#0f8"; ctx.font="9px monospace"; ctx.textAlign="center"; ctx.setTransform(1,0,0,1,0,0);
                 ctx.fillText(secsLeft+"s",px,py-scaffH-14);
+                ctx.restore();
+            }
+
+            // ── PYLON ELEMENT GLOW — radiates element light when part of green network ──
+            if (obj.pillar&&!obj.destroyed&&obj.pillarTeam==="green"&&obj.health>0&&obj.attackModeElement) {
+                const _gelDef = ELEMENTS.find(e=>e.id===obj.attackModeElement);
+                const _gCol = _gelDef ? _gelDef.color : "#0f8";
+                const _gpulse = 0.5+0.5*Math.sin((frame||0)*0.07+obj.x*0.8+obj.y*0.5);
+                ctx.save();
+                const _grd = ctx.createRadialGradient(px,py-60,0,px,py-60,55);
+                _grd.addColorStop(0, _gCol+(Math.floor((0.18+_gpulse*0.12)*255).toString(16).padStart(2,"0")));
+                _grd.addColorStop(1, _gCol+"00");
+                ctx.fillStyle=_grd; ctx.beginPath(); ctx.arc(px,py-60,55,0,Math.PI*2); ctx.fill();
                 ctx.restore();
             }
 

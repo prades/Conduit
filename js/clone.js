@@ -420,6 +420,7 @@ const CRYSTAL_FACES = [
     { label:"CRYSTAL BUILD",  sub:"Passive colony upgrades", action:"builds",      color:"#bb55ff" },
     { label:"MODULATION",     sub:"Crystal element control", action:"modulation",  color:"#aaddff" },
     { label:"STATUS",         sub:"Colony overview",         action:"status",      color:"#4499ff" },
+    { label:"INFO",           sub:"Abilities & pylon guide", action:"info",        color:"#ffcc44" },
     { label:"CLOSE",          sub:"Return to game",          action:"close",       color:"#554466" },
 ];
 
@@ -624,6 +625,54 @@ function drawCrystalMenu() {
         window._crystalModPanel = { x:px2, y:py2, w:pw, rows:ownedModulators.length, rowH, headerH };
     }
 
+    // ── INFO sub-panel ────────────────────────────────────
+    if (crystalMenuSub === "info") {
+        const pw=300, px2=cx-pw/2, py2=cy+180;
+        const ultimateRows = [
+            { el:"fire",     name:"Nova Flare",  desc:"Ring of fire — burns all in 5 tiles" },
+            { el:"electric", name:"Overload",    desc:"Chain stun — 2s paralysis in 6 tiles" },
+            { el:"ice",      name:"Deep Freeze", desc:"Force-freeze — huge 8-tile radius" },
+            { el:"flux",     name:"Dim. Rift",   desc:"Pull + push + disorient in 5 tiles" },
+            { el:"core",     name:"Bulwark",     desc:"Shield ALL followers + knockback ring" },
+            { el:"toxic",    name:"Plague Bloom",desc:"4 toxic clouds target random enemies" },
+        ];
+        const pylonRows = [
+            { col:"#0f8",    text:"BUILD (10 shards) — place on any floor tile" },
+            { col:"#ffcc44", text:"UPGRADE — merge a follower into the pylon" },
+            { col:"#88aaff", text:"WAVE/ATTACK — toggle pylon firing mode" },
+            { col:"#ff8844", text:"RECON — send squad to reconstruct a pylon" },
+            { col:"#cc66ff", text:"Crystal slowly refills all follower ultimates" },
+            { col:"#00ffcc", text:"Deeper zone pylons = faster charge rate" },
+            { col:"#ff4444", text:"Nest pod link grants extra ultimate charge" },
+        ];
+        const ph = 26 + ultimateRows.length * 16 + 14 + 14 + pylonRows.length * 14 + 10;
+        ctx.save();
+        ctx.fillStyle="rgba(6,4,0,0.97)"; ctx.strokeStyle="#ffcc44"; ctx.lineWidth=2;
+        ctx.fillRect(px2, py2, pw, ph); ctx.strokeRect(px2, py2, pw, ph);
+        ctx.fillStyle="#ffcc44"; ctx.font="bold 11px monospace"; ctx.textAlign="center";
+        ctx.fillText("ULTIMATES  (double-tap follower when full)", cx, py2+16);
+        ultimateRows.forEach((r, i) => {
+            const ry = py2 + 28 + i * 16;
+            const elDef = ELEMENTS.find(e => e.id === r.el);
+            const col = elDef ? elDef.color : "#fff";
+            ctx.fillStyle = col; ctx.font = "bold 9px monospace"; ctx.textAlign = "left";
+            ctx.fillText(r.name.padEnd(12), px2 + 10, ry);
+            ctx.fillStyle = "#aaa"; ctx.font = "9px monospace";
+            ctx.fillText(r.desc, px2 + 108, ry);
+        });
+        const sep = py2 + 28 + ultimateRows.length * 16 + 6;
+        ctx.strokeStyle = "#443300"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(px2+8, sep); ctx.lineTo(px2+pw-8, sep); ctx.stroke();
+        ctx.fillStyle = "#ffaa44"; ctx.font = "bold 10px monospace"; ctx.textAlign = "center";
+        ctx.fillText("PYLON GUIDE", cx, sep + 12);
+        pylonRows.forEach((r, i) => {
+            const ry = sep + 20 + i * 14;
+            ctx.fillStyle = r.col; ctx.font = "9px monospace"; ctx.textAlign = "left";
+            ctx.fillText("▸ " + r.text, px2 + 10, ry);
+        });
+        ctx.restore();
+    }
+
     ctx.restore();
 }
 
@@ -676,5 +725,6 @@ function handleCrystalMenuTap(ex, ey) {
     else if (front.action==="builds") { crystalMenuSub=(crystalMenuSub==="builds")?null:"builds"; }
     else if (front.action==="status") { crystalMenuSub=(crystalMenuSub==="status")?null:"status"; }
     else if (front.action==="modulation") { crystalMenuSub=(crystalMenuSub==="modulation")?null:"modulation"; }
+    else if (front.action==="info") { crystalMenuSub=(crystalMenuSub==="info")?null:"info"; }
     return true;
 }
