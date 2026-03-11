@@ -129,6 +129,32 @@ function _drawPredator(actor, px, py, drawCtx) {
         segments[i].cx=prevX; segments[i].cy=prevY;
     }
 
+    // ── LEGS drawn first so body renders over them ──
+    const isRedTeam = (actor.team !== "green" && !actor.isClone);
+    const perpX=-dirY, perpY=dirX;
+    const thoraxCX=segments[0].cx+dirX*actor.joints.legRoot.forward;
+    const thoraxCY=segments[0].cy+actor.joints.legRoot.vertical;
+    const legData=actor.appendages.legs;
+    if (legData && legData.count===6) {
+        drawCtx.strokeStyle=isRedTeam?"#331111":"#111"; drawCtx.lineWidth=2;
+        const positions=[-1,0,1];
+        positions.forEach((pos,index)=>{
+            const long=-pos*(dim.width*0.35);
+            const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
+            _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
+            _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
+        });
+    } else if (legData && legData.count===8) {
+        drawCtx.strokeStyle=isRedTeam?"#550011":"#1a1a1a"; drawCtx.lineWidth=1.2;
+        const positions=[-1.2,-0.4,0.4,1.2];
+        positions.forEach((pos,index)=>{
+            const long=-pos*(dim.width*0.22);
+            const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
+            _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
+            _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
+        });
+    }
+
     // Nymph: draw translucent
     if (actor.isNymph) drawCtx.globalAlpha = 0.38;
     // Boss aura ring
@@ -146,8 +172,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         drawCtx.restore();
     }
 
-    // Draw segments back-to-front
-    const isRedTeam = (actor.team !== "green" && !actor.isClone);
+    // Draw segments back-to-front (legs already drawn behind)
     for (let i=segments.length-1;i>=0;i--) {
         const seg=segments[i];
         drawCtx.save(); drawCtx.translate(seg.cx,seg.cy); drawCtx.rotate(seg.rotation);
@@ -203,33 +228,6 @@ function _drawPredator(actor, px, py, drawCtx) {
         );
         drawCtx.stroke();
         drawCtx.restore();
-    }
-
-    const perpX=-dirY, perpY=dirX;
-    const thoraxCX=segments[0].cx+dirX*actor.joints.legRoot.forward;
-    const thoraxCY=segments[0].cy+actor.joints.legRoot.vertical;
-
-    // Legs
-    const legData=actor.appendages.legs;
-    if (legData && legData.count===6) {
-        drawCtx.strokeStyle=isRedTeam?"#331111":"#111"; drawCtx.lineWidth=2;
-        const positions=[-1,0,1];
-        positions.forEach((pos,index)=>{
-            const long=-pos*(dim.width*0.35);
-            const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
-            _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
-            _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
-        });
-    } else if (legData && legData.count===8) {
-        // Spider: 4 pairs, tightly clustered on cephalothorax, legs arc out wide and tall
-        drawCtx.strokeStyle=isRedTeam?"#550011":"#1a1a1a"; drawCtx.lineWidth=1.2;
-        const positions=[-1.2,-0.4,0.4,1.2];
-        positions.forEach((pos,index)=>{
-            const long=-pos*(dim.width*0.22);
-            const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
-            _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
-            _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
-        });
     }
 
     // Mandibles — fixed diagonal inward V-shape, each side gyrates independently like chomping incisors

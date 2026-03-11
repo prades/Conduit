@@ -99,22 +99,12 @@ function executeCommand() {
             break;
         }
         case "connect_nest": {
-            // Mark nearest green pylon as connected to this broken nest pod
-            if (commandNestTarget) {
-                const nest = commandNestTarget;
-                let bestP=null, bestD=Infinity;
-                world.forEach(t=>{
-                    if(t.pillar&&!t.destroyed&&t.pillarTeam==="green"&&t.health>0){
-                        const d=Math.hypot(t.x-nest.x,t.y-nest.y);
-                        if(d<bestD){bestD=d;bestP=t;}
-                    }
-                });
-                if (bestP) {
-                    bestP.nestConnection = nest;
-                    nest.connectedPylon  = bestP;
-                    floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80,
-                        text:"NEST LINKED — bonus charge active", color:"#ff4444", life:120, vy:-0.3 });
-                }
+            // Enter pylon-select mode: player taps a blinking pylon to link it
+            if (commandNestTarget && commandNestTarget.nestHealth <= 0) {
+                nestConnectMode  = true;
+                pendingConnectNest = commandNestTarget;
+                floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80,
+                    text:"TAP AN UPGRADED PYLON TO LINK", color:"#00ffcc", life:180, vy:-0.15 });
             }
             break;
         }

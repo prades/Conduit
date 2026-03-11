@@ -126,7 +126,9 @@ let _ultimateLastTapTime  = 0;      // performance.now() of last tap
 let commandMode = false;
 let commandX = 0, commandY = 0;
 let commandTarget = null;
-let commandNestTarget = null;  // broken nest pod near long-press point
+let commandNestTarget = null;   // broken nest pod near long-press point
+let nestConnectMode   = false;  // true while waiting for player to tap a pylon
+let pendingConnectNest = null;  // nest tile being connected
 let selectedRadialAction = null;
 
 // ── DEV / PREVIEW ─────────────────────────────────────────

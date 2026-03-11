@@ -36,15 +36,18 @@ function buildSliders(section) {
             sliderContainer.appendChild(cs("Width",2,30,1,previewPredator.appendages.wings.width,v=>previewPredator.appendages.wings.width=v));
             sliderContainer.appendChild(cs("Flare",0,20,1,previewPredator.appendages.wings.angleOffset,v=>previewPredator.appendages.wings.angleOffset=v));
             break;
-        case"visual":
-            sliderContainer.appendChild(cs("Top Light",0,1,0.05,previewPredator.visual.topLight,v=>previewPredator.visual.topLight=v));
-            sliderContainer.appendChild(cs("Wing Alpha",0.05,1,0.05,previewPredator.visual.wingAlpha,v=>previewPredator.visual.wingAlpha=v));
+        case"mandibles":
+            sliderContainer.appendChild(cs("Enabled",0,1,1,previewPredator.appendages.mandibles.enabled?1:0,v=>{previewPredator.appendages.mandibles.enabled=v>0.5;}));
+            sliderContainer.appendChild(cs("Length",2,24,0.5,previewPredator.appendages.mandibles.length,v=>previewPredator.appendages.mandibles.length=v));
+            sliderContainer.appendChild(cs("Spread",0.1,1.8,0.05,previewPredator.appendages.mandibles.spread,v=>previewPredator.appendages.mandibles.spread=v));
+            sliderContainer.appendChild(cs("Thickness",1,7,0.5,previewPredator.appendages.mandibles.thickness,v=>previewPredator.appendages.mandibles.thickness=v));
             break;
-        case"sockets":
-            sliderContainer.appendChild(cs("Leg Root Fwd",-40,40,1,previewPredator.joints.legRoot.forward,v=>previewPredator.joints.legRoot.forward=v));
-            sliderContainer.appendChild(cs("Leg Root V",-40,40,1,previewPredator.joints.legRoot.vertical,v=>previewPredator.joints.legRoot.vertical=v));
-            sliderContainer.appendChild(cs("Wing Root Fwd",-40,40,1,previewPredator.joints.wingRoot.forward,v=>previewPredator.joints.wingRoot.forward=v));
-            sliderContainer.appendChild(cs("Wing Root V",-40,40,1,previewPredator.joints.wingRoot.vertical,v=>previewPredator.joints.wingRoot.vertical=v));
+        case"eyes":
+            sliderContainer.appendChild(cs("Count(2=insect 8=spider)",2,8,6,previewPredator.appendages.eyes.count,v=>previewPredator.appendages.eyes.count=Math.round(v)));
+            sliderContainer.appendChild(cs("Size",1,7,0.25,previewPredator.appendages.eyes.size,v=>previewPredator.appendages.eyes.size=v));
+            sliderContainer.appendChild(cs("Glow",0,1,0.05,previewPredator.appendages.eyes.glow,v=>previewPredator.appendages.eyes.glow=v));
+            sliderContainer.appendChild(cs("Leg Count(6=insect 8=spider)",6,8,2,previewPredator.appendages.legs.count,v=>previewPredator.appendages.legs.count=Math.round(v)));
+            sliderContainer.appendChild(cs("Leg Spread",4,18,1,previewPredator.appendages.legs.spread,v=>previewPredator.appendages.legs.spread=v));
             break;
     }
 }
@@ -77,12 +80,12 @@ function _setPreviewAngle(angle) {
 
 function initPreview() {
     previewCanvas=document.createElement("canvas");
-    const vs=Math.min(window.innerWidth*0.8,300);
+    const vs=Math.min(window.innerWidth*0.88,420);
     previewCanvas.style.width=vs+"px"; previewCanvas.style.height=vs+"px";
     previewCanvas.width=vs; previewCanvas.height=vs;
     Object.assign(previewCanvas.style,{position:"fixed",left:"50%",top:"40%",transform:"translate(-50%,-50%)",
-        background:"#111",border:"2px solid #0f8",borderRadius:"12px",zIndex:"9999",
-        boxShadow:"0 0 25px rgba(0,255,136,0.4)",display:"none",touchAction:"none"});
+        background:"#020d06",border:"2px solid #0f8",borderRadius:"12px",zIndex:"9999",
+        boxShadow:"0 0 30px rgba(0,255,136,0.5)",display:"none",touchAction:"none"});
     document.body.appendChild(previewCanvas);
 
     // ── Drag-to-orient on preview canvas ──
@@ -135,7 +138,7 @@ function initPreview() {
     document.body.appendChild(panel);
 
     const select=document.createElement("select");
-    ["Head","Thorax","Abdomen","Legs","Wings","Sockets","Visual"].forEach(l=>{
+    ["Head","Thorax","Abdomen","Legs","Wings","Mandibles","Eyes"].forEach(l=>{
         const o=document.createElement("option"); o.value=l.toLowerCase(); o.textContent=l; select.appendChild(o);
     });
     select.onchange=()=>buildSliders(select.value);
@@ -270,15 +273,18 @@ function updatePreview() {
     if(!devMode||!previewPredator||!previewCtx)return;
     previewCtx.clearRect(0,0,previewCanvas.width,previewCanvas.height);
     previewPredator.walkCycle+=0.2;
-    const px=previewCanvas.width*0.5, py=previewCanvas.height*0.55;
-    // grid
-    previewCtx.strokeStyle="rgba(255,255,255,0.05)"; previewCtx.lineWidth=1;
-    for(let i=0;i<previewCanvas.width;i+=20){previewCtx.beginPath();previewCtx.moveTo(i,0);previewCtx.lineTo(i,previewCanvas.height);previewCtx.stroke();}
-    for(let j=0;j<previewCanvas.height;j+=20){previewCtx.beginPath();previewCtx.moveTo(0,j);previewCtx.lineTo(previewCanvas.width,j);previewCtx.stroke();}
-    previewCtx.save();
-    previewCtx.translate(px,py); previewCtx.scale(1.2,1.1); previewCtx.translate(-px,-py);
+    const px=previewCanvas.width*0.5, py=previewCanvas.height*0.58;
+    // Subtle dot-grid
+    previewCtx.fillStyle="rgba(0,255,136,0.07)";
+    for(let i=20;i<previewCanvas.width;i+=24) for(let j=20;j<previewCanvas.height;j+=24)
+        { previewCtx.beginPath(); previewCtx.arc(i,j,1,0,Math.PI*2); previewCtx.fill(); }
+    // Floor shadow line
+    const floorY=py+4;
+    const grad=previewCtx.createLinearGradient(px-80,floorY,px+80,floorY);
+    grad.addColorStop(0,"rgba(0,255,136,0)"); grad.addColorStop(0.5,"rgba(0,255,136,0.18)"); grad.addColorStop(1,"rgba(0,255,136,0)");
+    previewCtx.strokeStyle=grad; previewCtx.lineWidth=1;
+    previewCtx.beginPath(); previewCtx.moveTo(px-80,floorY); previewCtx.lineTo(px+80,floorY); previewCtx.stroke();
     drawNPC(previewPredator,px,py,previewCtx);
-    previewCtx.restore();
 }
 
 function toggleDevPreview() {

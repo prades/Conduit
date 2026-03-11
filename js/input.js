@@ -2,6 +2,26 @@
 //  INPUT
 // ─────────────────────────────────────────────────────────
 const handleInput=(ex,ey)=>{
+    // Pylon-select mode for nest connection
+    if (nestConnectMode) {
+        const _dx=ex-canvas.width/2, _dy=ey-canvas.height/2;
+        const _gx=Math.round((_dy/TILE_H+_dx/TILE_W)/2+player.visualX);
+        const _gy=Math.round((_dy/TILE_H-_dx/TILE_W)/2+player.visualY);
+        let tapped=null;
+        world.forEach(t=>{
+            if(t.pillar&&!t.destroyed&&t.pillarTeam==="green"&&t.health>0
+               &&(t.attackMode||t.waveMode)
+               &&Math.hypot(t.x-_gx,t.y-_gy)<2.5) tapped=t;
+        });
+        if(tapped&&pendingConnectNest){
+            tapped.nestConnection=pendingConnectNest;
+            pendingConnectNest.connectedPylon=tapped;
+            floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
+                text:"NEST LINKED — bonus charge active",color:"#ff4444",life:120,vy:-0.3});
+        }
+        nestConnectMode=false; pendingConnectNest=null;
+        return;
+    }
     // Short tap near crystal → open crystal panel
     if (isTapNearCrystal(ex,ey)) { crystalMenuOpen=true; return; }
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2;

@@ -773,6 +773,32 @@ function render() {
                 ctx.font="bold 9px monospace"; ctx.textAlign="center";
                 ctx.fillText(obj.connectedPylon?"◈ NEST LINKED":"✕ NEST BROKEN",_bCx,wfTL.y-12);
                 ctx.restore();
+
+                // ── PERMANENT ENERGY LINK to connected pylon ──
+                if (obj.connectedPylon) {
+                    const _cp=obj.connectedPylon;
+                    const _cpx=(_cp.x-player.visualX-(_cp.y-player.visualY))*TILE_W+canvas.width/2;
+                    const _cpy=(_cp.x-player.visualX+(_cp.y-player.visualY))*TILE_H+canvas.height/2;
+                    // Nest anchor — center-top of broken nest face
+                    const _nSx=(wfTL.x+wfTR.x)/2, _nSy=wfTL.y+30;
+                    const _pulse=0.5+0.5*Math.sin((frame||0)*0.07);
+                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                    // Beam
+                    ctx.strokeStyle=`rgba(0,255,200,${0.3+_pulse*0.4})`;
+                    ctx.lineWidth=1.5+_pulse; ctx.shadowColor="#00ffcc"; ctx.shadowBlur=8+_pulse*8;
+                    ctx.setLineDash([8,5]);
+                    ctx.beginPath(); ctx.moveTo(_nSx,_nSy); ctx.lineTo(_cpx,_cpy-60); ctx.stroke();
+                    ctx.setLineDash([]);
+                    // Travelling energy nodes
+                    for(let _i=0;_i<4;_i++){
+                        const _t=((frame||0)*0.018+_i*0.25)%1;
+                        const _ex=_nSx+(_cpx-_nSx)*_t, _ey=_nSy+(_cpy-60-_nSy)*_t;
+                        ctx.fillStyle="#00ffcc"; ctx.globalAlpha=0.65+_pulse*0.35;
+                        ctx.shadowBlur=5;
+                        ctx.beginPath(); ctx.arc(_ex,_ey,2.5,0,Math.PI*2); ctx.fill();
+                    }
+                    ctx.restore();
+                }
             }
 
             // ── SPAWN NEST — honeycomb hex holes filling 4-tile wall face ──
@@ -1100,6 +1126,28 @@ function render() {
                 const secsLeft=Math.ceil((1-prog)*30);
                 ctx.fillStyle="#0f8"; ctx.font="9px monospace"; ctx.textAlign="center"; ctx.setTransform(1,0,0,1,0,0);
                 ctx.fillText(secsLeft+"s",px,py-scaffH-14);
+                ctx.restore();
+            }
+
+            // ── PYLON SELECT HIGHLIGHT (nest connect mode) ──
+            if (nestConnectMode && obj.pillar&&!obj.destroyed&&obj.pillarTeam==="green"&&obj.health>0&&(obj.attackMode||obj.waveMode)) {
+                const _blink=Math.floor((frame||0)/10)%2===0;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(px,py-TILE_H); ctx.lineTo(px+TILE_W,py);
+                ctx.lineTo(px,py+TILE_H); ctx.lineTo(px-TILE_W,py);
+                ctx.closePath();
+                ctx.globalAlpha=_blink?0.92:0.28;
+                ctx.strokeStyle="#00ffcc"; ctx.lineWidth=3;
+                ctx.shadowColor="#00ffcc"; ctx.shadowBlur=_blink?20:6;
+                ctx.stroke();
+                ctx.globalAlpha=_blink?0.14:0.04;
+                ctx.fillStyle="#00ffcc"; ctx.fill();
+                // "LINK" label
+                ctx.globalAlpha=_blink?1:0.4;
+                ctx.fillStyle="#00ffcc"; ctx.font="bold 9px monospace"; ctx.textAlign="center";
+                ctx.shadowBlur=0; ctx.setTransform(1,0,0,1,0,0);
+                ctx.fillText("LINK",px,py-TILE_H-6);
                 ctx.restore();
             }
 
