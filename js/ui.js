@@ -54,7 +54,7 @@ function drawFollowerElementUI() {
                 ctx.font="13px monospace";
             }
         });
-    } else {
+    } else if (uiTab==="units") {
         // ── UNITS TAB — Brawlers / Snipers / Campers ──────
         const roles=[
             {id:"brawler",label:"BRAWLERS",color:"#f88",badge:"B"},
