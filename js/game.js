@@ -1317,7 +1317,7 @@ function render() {
                     }
                     return false;
                 };
-                if (isVentX(xi)) {
+                if (xi >= ZONE_LENGTH && isVentX(xi)) {
                     const flen = Math.hypot(TILE_W, TILE_H);
                     const fdx = TILE_W / flen, fdy = TILE_H / flen;
                     const vw = 9, vh = 10;

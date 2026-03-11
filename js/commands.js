@@ -31,7 +31,11 @@ function issueReconstruct(pylon) {
 function executeCommand() {
     if (!selectedRadialAction) { commandMode=false; return; }
     if (!commandMode) return;
-    if (!commandTarget) { commandMode=false; selectedRadialAction=null; return; }
+    // Nest commands don't require a floor commandTarget — allow them through
+    const isNestCmd = selectedRadialAction==="destroy_nest"||selectedRadialAction==="connect_nest"||selectedRadialAction==="attack_nest";
+    if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
+    // Fallback: use nest tile as commandTarget so other guards don't trip
+    if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;
     switch(selectedRadialAction) {
         case "job":        issueJobCommand(commandTarget); break;
         case "reconstruct":

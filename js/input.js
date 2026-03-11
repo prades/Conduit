@@ -28,7 +28,7 @@ function handleLongHold(ex,ey) {
     // Check if any nest pod (live or broken) is near this tile (within 2.5 tiles)
     commandNestTarget=null;
     world.forEach(obj=>{
-        if (obj.nest && Math.hypot(obj.x-gx,obj.y-gy)<2.5) {
+        if (obj.nest && Math.hypot(obj.x-gx,obj.y-gy)<4.0) {
             commandNestTarget=obj;
         }
     });
