@@ -239,6 +239,16 @@ class Predator {
 
         // ── HUNT (→ crystal, with organic lateral weaving) ──
         if (this.state==="hunt") {
+            // During night, aggro on any nearby green pylon to bash it on the way to crystal
+            if (gameState.phase !== "day" && !this.pylonAggro && frame % 30 === 0) {
+                let nearestPylon=null, bestPD=Infinity;
+                _pillarCache.forEach(p => {
+                    if (p.pillarTeam !== "green") return;
+                    const d = Math.hypot(p.x-this.x, p.y-this.y);
+                    if (d < 4.0 && d < bestPD) { bestPD=d; nearestPylon=p; }
+                });
+                if (nearestPylon) this.pylonAggro = nearestPylon;
+            }
             const dx=crystal.x-this.x, dy=crystal.y-this.y;
             const dist=Math.sqrt(dx*dx+dy*dy);
             if (dist>0.8) {

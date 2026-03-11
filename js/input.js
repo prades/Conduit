@@ -25,10 +25,10 @@ function handleLongHold(ex,ey) {
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
     commandTarget=(t&&!t.type.includes("wall"))?t:null;
-    // Check if a broken nest pod is near this tile (within 2 tiles)
+    // Check if any nest pod (live or broken) is near this tile (within 2.5 tiles)
     commandNestTarget=null;
     world.forEach(obj=>{
-        if (obj.nest && obj.nestHealth<=0 && Math.hypot(obj.x-gx,obj.y-gy)<2.5) {
+        if (obj.nest && Math.hypot(obj.x-gx,obj.y-gy)<2.5) {
             commandNestTarget=obj;
         }
     });

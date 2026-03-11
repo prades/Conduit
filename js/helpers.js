@@ -14,8 +14,6 @@ function applyDamage(target, amount, source=null, element=null) {
         return; // hazard (null source) — immune
     }
     if (target.spawnProtection && target.spawnProtection > 0) return;
-    // Clones cannot damage red predators
-    if (source && source.isClone && target instanceof Predator && target.team !== "green") return;
     // Provoke predators hit during day
     if (target instanceof Predator && target.team !== "green" && gameState.phase === "day") {
         target.provoked = true; target.state = "hunt";
@@ -196,6 +194,7 @@ function spawnFollowerAtCrystal(element) {
 //  SQUAD COMMAND POOL
 // ─────────────────────────────────────────────────────────
 function getCommandPool() {
+    if (uiTab === "clones") return actors.filter(a => a.isClone && !a.dead);
     if (squadMode === "all") return followers.filter(a => !a.dead);
     if (selectedRole)        return followers.filter(a => !a.dead && a.role === selectedRole);
     return (followerByElement[player.selectedElement] || []).filter(a => !a.dead);

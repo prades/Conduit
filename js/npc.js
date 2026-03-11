@@ -161,6 +161,31 @@ function updateRTSNPC(actor) {
         }
     }
 
+    // destroy nest job — walk to live nest pod and bash it
+    if (actor.job&&actor.job.type==="destroy_nest") {
+        const nest=actor.job.target;
+        if (!nest||nest.nestHealth<=0) { actor.job=null; return; }
+        const dx=nest.x-actor.x, dy=(nest.y+0.5)-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
+        if (dist>1.0) {
+            actor.x+=(dx/dist)*actor.moveSpeed;
+            actor.y+=(dy/dist)*actor.moveSpeed;
+        } else {
+            if (!actor.attackCooldown) actor.attackCooldown=0;
+            actor.attackCooldown--;
+            if (actor.attackCooldown<=0) {
+                const dmg=(actor.power||5)*0.5;
+                nest.nestHealth=Math.max(0,nest.nestHealth-dmg);
+                floatingTexts.push({x:nest.x,y:nest.y-0.5,text:"-"+Math.round(dmg),color:"#ff4400",life:25,vy:-0.05});
+                actor.attackCooldown=45;
+                if (nest.nestHealth<=0) {
+                    floatingTexts.push({x:nest.x,y:nest.y-1,text:"NEST DESTROYED!",color:"#ff0000",life:60,vy:-0.1});
+                    actor.job=null;
+                }
+            }
+        }
+        return;
+    }
+
     // attack job
     if (actor.job&&actor.job.type==="attack") {
         const enemy=actor.job.target;

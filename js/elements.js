@@ -75,6 +75,15 @@ const ELEMENT_ATTACKS = {
                     }
                 }
             });
+            // Fire bonus damage to nearby live nest pods (2× multiplier)
+            world.forEach(t => {
+                if (!t.nest || t.nestHealth <= 0) return;
+                if (Math.hypot(t.x-actor.x, t.y-actor.y) <= 2.5) {
+                    const nestDmg = (actor.stats?.attack||10) * 0.8;
+                    t.nestHealth = Math.max(0, t.nestHealth - nestDmg);
+                    floatingTexts.push({x:t.x,y:t.y-0.5,text:"FIRE! -"+Math.round(nestDmg),color:"#ff3300",life:30,vy:-0.06});
+                }
+            });
             return { hit: hits > 0 };
         },
         special(actor, target) {
@@ -99,6 +108,15 @@ const ELEMENT_ATTACKS = {
                             a.burnDamage = dmg * 0.1;
                         }
                     }
+                }
+            });
+            // Meteor bonus damage to nest pods within blast radius (2× multiplier)
+            world.forEach(t => {
+                if (!t.nest || t.nestHealth <= 0) return;
+                if (Math.hypot(t.x-target.x, t.y-target.y) <= 3.0) {
+                    const nestDmg = (actor.stats?.specialAttack||10) * 1.8;
+                    t.nestHealth = Math.max(0, t.nestHealth - nestDmg);
+                    floatingTexts.push({x:t.x,y:t.y-0.5,text:"METEOR! -"+Math.round(nestDmg),color:"#ff3300",life:45,vy:-0.08});
                 }
             });
             return { hit: true };
@@ -510,8 +528,8 @@ function spawnHazardsForDay() {
     environmentalHazards = [];
     // Each zone has a ~50% chance of one hazard; zone 0 always gets one so player sees them
     const zoneCount = Math.min(activeDayZones, 5);
-    for (let z = 0; z < zoneCount; z++) {
-        const count = z === 0 ? 1 : (Math.random() < 0.5 ? 1 : 0);
+    for (let z = 1; z < zoneCount; z++) {
+        const count = Math.random() < 0.5 ? 1 : 0;
         for (let i = 0; i < count; i++) {
             const type = HAZARD_TYPES[Math.floor(Math.random() * HAZARD_TYPES.length)];
             const hx = z * ZONE_LENGTH + 2 + Math.floor(Math.random() * (ZONE_LENGTH - 4));

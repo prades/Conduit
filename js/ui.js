@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────
-//  FOLLOWER ELEMENT / UNITS UI  (two-tab panel)
+//  FOLLOWER ELEMENT / UNITS / CLONES UI  (three-tab panel)
 // ─────────────────────────────────────────────────────────
 const _UI_X=20, _UI_W=180, _UI_TAB_H=22, _UI_ROW_H=28;
 // Total height constant — panel always same size regardless of tab
@@ -16,14 +16,15 @@ function drawFollowerElementUI() {
     ctx.textBaseline="middle";
 
     // ── TAB ROW ──────────────────────────────────────────
-    const tabW=w/2;
-    [["ELEM","elements"],["UNITS","units"]].forEach(([label,id],i)=>{
+    const tabW=Math.floor(w/3);
+    [["ELEM","elements"],["UNITS","units"],["CLONES","clones"]].forEach(([label,id],i)=>{
         const active=uiTab===id;
+        const hasClones = id==="clones" && actors.some(a=>a.isClone&&!a.dead);
         ctx.fillStyle=active?"rgba(0,255,136,0.18)":"rgba(0,0,0,0.65)";
         ctx.fillRect(x+i*tabW,py0,tabW,th);
-        ctx.strokeStyle=active?"#0f8":"#333"; ctx.lineWidth=active?2:1;
+        ctx.strokeStyle=active?"#0f8":(hasClones?"#0a6":"#333"); ctx.lineWidth=active?2:1;
         ctx.strokeRect(x+i*tabW,py0,tabW,th);
-        ctx.fillStyle=active?"#0f8":"#555"; ctx.font="11px monospace"; ctx.textAlign="center";
+        ctx.fillStyle=active?"#0f8":(hasClones?"#0a6":"#555"); ctx.font="11px monospace"; ctx.textAlign="center";
         ctx.fillText(label,x+i*tabW+tabW/2,py0+th/2);
     });
 
@@ -101,6 +102,37 @@ function drawFollowerElementUI() {
                 ctx.fillText("none",x+27,dotY);
             }
         });
+    } else {
+        // ── CLONES TAB — list active insect clones ────────
+        const clones=actors.filter(a=>a.isClone&&!a.dead);
+        if (clones.length===0) {
+            ctx.fillStyle="#444"; ctx.font="10px monospace"; ctx.textAlign="center";
+            ctx.fillText("No clones active",x+w/2,cy0+_UI_CONTENT_H/2);
+        } else {
+            const cloneRH=Math.floor(_UI_CONTENT_H/Math.min(clones.length,6));
+            clones.slice(0,6).forEach((c,i)=>{
+                const yy=cy0+i*cloneRH;
+                ctx.fillStyle="rgba(0,0,0,0.65)";
+                ctx.fillRect(x,yy,w,cloneRH);
+                ctx.strokeStyle="#0f8"; ctx.lineWidth=1;
+                ctx.strokeRect(x,yy,w,cloneRH);
+                // Species label
+                ctx.fillStyle="#0f8"; ctx.font="10px monospace"; ctx.textAlign="left";
+                const label=((c.speciesName||"clone").toUpperCase()+" ["+(c.className||"").toUpperCase()+"]");
+                ctx.fillText(label,x+6,yy+cloneRH/2-4);
+                // Health bar
+                const barX=x+6, barY=yy+cloneRH/2+4, barW=w-12, barH=4;
+                ctx.fillStyle="#222"; ctx.fillRect(barX,barY,barW,barH);
+                const hp=Math.max(0,c.health/c.maxHealth);
+                ctx.fillStyle=hp>0.5?"#0f8":hp>0.25?"#ff0":"#f22";
+                ctx.fillRect(barX,barY,barW*hp,barH);
+            });
+            // "COMMANDING CLONES" indicator when this tab is active
+            ctx.fillStyle="rgba(0,255,136,0.12)";
+            ctx.fillRect(x,cy0,w,_UI_CONTENT_H);
+            ctx.fillStyle="#0f8"; ctx.font="bold 9px monospace"; ctx.textAlign="center";
+            ctx.fillText("▶ COMMANDS TARGET CLONES ◀",x+w/2,cy0+_UI_CONTENT_H-8);
+        }
     }
 
     ctx.restore();
@@ -149,9 +181,11 @@ function handleFollowerUIClick(x,y) {
     const py0=_panelY();
     if (x<_UI_X||x>_UI_X+_UI_W||y<py0||y>py0+_UI_TOTAL_H) return false;
 
-    // Tab row
+    // Tab row — three tabs each 1/3 width
     if (y<py0+_UI_TAB_H) {
-        uiTab=(x<_UI_X+_UI_W/2)?"elements":"units";
+        const tabW=Math.floor(_UI_W/3);
+        const ti=Math.floor((x-_UI_X)/tabW);
+        uiTab=["elements","units","clones"][Math.min(ti,2)]||"elements";
         return true;
     }
 
@@ -160,7 +194,7 @@ function handleFollowerUIClick(x,y) {
         const element=ELEMENTS[index];
         if (!element||!unlockedElements.has(element.id)) return false;
         player.selectedElement=element.id; selectedRole=null; return true;
-    } else {
+    } else if (uiTab==="units") {
         const unitRH=Math.floor(_UI_CONTENT_H/3);
         const roleIndex=Math.floor((y-py0-_UI_TAB_H)/unitRH);
         const roles=["brawler","sniper","camper"];
@@ -168,6 +202,9 @@ function handleFollowerUIClick(x,y) {
             selectedRole=(selectedRole===roles[roleIndex])?null:roles[roleIndex];
             return true;
         }
+    } else if (uiTab==="clones") {
+        // Clicking in clones tab selects/deselects clones for commanding — handled via getCommandPool
+        return true;
     }
     return false;
 }

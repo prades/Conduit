@@ -115,10 +115,18 @@ function executeCommand() {
             break;
         }
         case "attack_nest": {
-            // Send followers to attack the broken nest pod location
+            // Send followers to the nest pod location
             if (commandNestTarget) {
                 const pool=getCommandPool().filter(a=>!a.job).slice(0,5);
                 pool.forEach(a => { a.job={ type:"move", target:commandNestTarget }; a.stance="hold"; });
+            }
+            break;
+        }
+        case "destroy_nest": {
+            // Send followers to attack and destroy a live nest pod
+            if (commandNestTarget && commandNestTarget.nestHealth > 0) {
+                const pool=getCommandPool().filter(a=>!a.job).slice(0,5);
+                pool.forEach(a => { a.job={ type:"destroy_nest", target:commandNestTarget }; });
             }
             break;
         }

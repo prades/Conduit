@@ -219,6 +219,7 @@ function restartGame() {
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
     unlockedElements=new Set(["fire","electric"]);
     latchedPillar=null;activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};
+    _cacheAge=-999; _pillarCache=[]; _wPylons=[]; _aPylons=[]; _uPylons=[];
     activeDayZones=3;exploredZones=new Set();
     boughtItems.clear();
     crystal={ x:0,y:2,health:300,maxHealth:300,radius:0.8 };

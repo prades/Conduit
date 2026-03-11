@@ -39,9 +39,13 @@ function drawRadialMenu() {
     const rHov=dist>RADIAL_RADIUS*0.4&&Math.abs(angle)>Math.PI*3/4;
     const isPylonTarget = commandTarget&&commandTarget.pillar&&!commandTarget.destroyed;
     const isUpgradedPylon = isPylonTarget&&(commandTarget.attackMode||commandTarget.waveMode);
-    const isBrokenNest = !!commandNestTarget;
+    const isLiveNest   = commandNestTarget && commandNestTarget.nestHealth > 0;
+    const isBrokenNest = commandNestTarget && commandNestTarget.nestHealth <= 0;
     let leftLabel, leftAction;
-    if (isBrokenNest) {
+    if (isLiveNest) {
+        leftLabel = "DESTROY";
+        leftAction = "destroy_nest";
+    } else if (isBrokenNest) {
         leftLabel = "CONNECT";
         leftAction = "connect_nest";
     } else if (isUpgradedPylon) {
@@ -60,8 +64,8 @@ function drawRadialMenu() {
     // DOWN = MOVE / ATTACK (also ATTACK for broken nest)
     const enemy=getEnemyAtTile(commandTarget);
     const dHov=dist>RADIAL_RADIUS*0.4&&angle>Math.PI/4&&angle<3*Math.PI/4;
-    const downLabel = isBrokenNest ? "ATTACK" : (enemy ? "ATTACK" : "MOVE");
-    const downAction = isBrokenNest ? "attack_nest" : (enemy ? "attack" : "move");
+    const downLabel = (isLiveNest||isBrokenNest) ? "ATTACK" : (enemy ? "ATTACK" : "MOVE");
+    const downAction = (isLiveNest||isBrokenNest) ? "attack_nest" : (enemy ? "attack" : "move");
     drawRadialButton(commandX, commandY+RADIAL_RADIUS, downLabel, dHov);
     if (dHov) selectedRadialAction = downAction;
 
