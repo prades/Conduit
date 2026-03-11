@@ -2,10 +2,8 @@
 //  INPUT
 // ─────────────────────────────────────────────────────────
 const handleInput=(ex,ey)=>{
-    // Short tap near crystal → open crystal menu
-    if (isTapNearCrystal(ex,ey)) {
-        crystalMenuOpen=true; crystalMenuRot=0; crystalMenuSub=null; return;
-    }
+    // Short tap near crystal → open crystal panel
+    if (isTapNearCrystal(ex,ey)) { crystalMenuOpen=true; return; }
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
@@ -44,8 +42,10 @@ canvas.addEventListener('pointerdown', e=>{
     pressX=e.clientX; pressY=e.clientY; pressStartTime=performance.now();
     commandTarget=null;
 
-    // Crystal menu drag start
-    if (crystalMenuOpen) { crystalMenuDrag=true; crystalMenuDragX=e.clientX; return; }
+    // Crystal panel — forward pointerdown (for slider drag init) and block game input
+    if (crystalMenuOpen) { handleCrystalPanelInput(e.clientX, e.clientY, true); return; }
+    // Crystal button tap — toggle panel
+    if (Math.hypot(pressX-_CRYSBTN.x, pressY-_CRYSBTN.y) < _CRYSBTN.r+6) { return; }
 
     const dx=pressX-canvas.width/2, dy=pressY-canvas.height/2;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
@@ -58,12 +58,10 @@ canvas.addEventListener('pointermove', e=>{
     if (!isPressing) return;
     pointerX=e.clientX; pointerY=e.clientY;
 
-    // Crystal menu — drag to rotate
-    if (crystalMenuOpen && crystalMenuDrag) {
-        crystalMenuRot -= (e.clientX - crystalMenuDragX) * 0.012;
-        crystalMenuDragX = e.clientX;
-        touchMoved=true;
-        return;
+    // Crystal panel slider drag
+    if (crystalMenuOpen && _crystalSliderDrag) {
+        handleCrystalPanelInput(e.clientX, e.clientY, true);
+        touchMoved=true; return;
     }
 
     dragDX=pointerX-commandX; dragDY=pointerY-commandY;
@@ -72,10 +70,13 @@ canvas.addEventListener('pointermove', e=>{
 });
 
 canvas.addEventListener('pointerup', e=>{
-    // Crystal menu — tap selects front face
+    // Crystal button tap — toggle panel open/close
+    if (!touchMoved && Math.hypot(e.clientX-_CRYSBTN.x, e.clientY-_CRYSBTN.y) < _CRYSBTN.r+8) {
+        crystalMenuOpen=!crystalMenuOpen; isPressing=false; return;
+    }
+    // Crystal panel tap/release
     if (crystalMenuOpen) {
-        crystalMenuDrag=false;
-        if (!touchMoved) handleCrystalMenuTap(e.clientX, e.clientY);
+        handleCrystalPanelInput(e.clientX, e.clientY, false);
         isPressing=false; return;
     }
 

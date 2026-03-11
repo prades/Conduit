@@ -1561,10 +1561,11 @@ function render() {
     // ── OVERLAYS ──
     drawElementEffects();
     drawFloatingTexts();
+    drawCrystalButton();
     drawClonesBlob();
     drawCloneMenu();
     drawRadialMenu();
-    drawCrystalMenu();
+    drawCrystalPanel();
     drawHoldLine();
     drawGestureFeedback();
     drawFollowerElementUI();

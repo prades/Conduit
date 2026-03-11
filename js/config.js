@@ -147,12 +147,11 @@ let uiTab        = "elements"; // "elements" | "units"
 let selectedRole = null;       // "brawler"|"sniper"|"camper"|null
 
 // ── CRYSTAL MENU / BUILDS ─────────────────────────────────
-let crystalMenuOpen = false;
-let crystalMenuRot  = 0;       // current rotation angle (radians)
-let crystalMenuSub  = null;    // null | "builds" | "status" | "modulation"
-let crystalMenuDrag = false;
-let crystalMenuDragX = 0;
-let activeCrystalBuild = null; // null | "ghostphage"
+let crystalMenuOpen  = false;
+let crystalMenuTab   = "clones";   // "clones"|"builds"|"modulation"|"status"|"info"
+let crystalCloneSort = "species";  // "species"|"combat"|"defense"|"hp"|"specials"
+let crystalModSlider = 0;          // 0.0 = all elements  →  1.0 = mono
+let activeCrystalBuild = null;     // null | "ghostphage"
 
 // ── CRYSTAL MODULATION ────────────────────────────────────
 // Pair map: each modulator element unlocks a two-element pair
