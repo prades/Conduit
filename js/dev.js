@@ -49,21 +49,89 @@ function buildSliders(section) {
     }
 }
 
+// ── 4 iso view angles (SE=front, NE=right, NW=back, SW=left) ──
+const _VIEW_ANGLES = [
+    { angle: Math.PI*0.25,  label: "FRONT" },   // SE
+    { angle: -Math.PI*0.25, label: "RIGHT" },    // NE
+    { angle: -Math.PI*0.75, label: "BACK"  },    // NW
+    { angle: Math.PI*0.75,  label: "LEFT"  },    // SW
+];
+let _previewViewLabel = null;  // DOM element for view label
+
+function _setPreviewAngle(angle) {
+    if (!previewPredator) return;
+    previewPredator.dirX = Math.cos(angle);
+    previewPredator.dirY = Math.sin(angle);
+    previewPredator.headAngle = angle;
+    previewPredator.facing   = angle;
+    if (_previewViewLabel) {
+        // find nearest named view
+        let best = _VIEW_ANGLES[0], bestDiff = Infinity;
+        _VIEW_ANGLES.forEach(v => {
+            const diff = Math.abs(((angle - v.angle) % (Math.PI*2) + Math.PI*3) % (Math.PI*2) - Math.PI);
+            if (diff < bestDiff) { bestDiff = diff; best = v; }
+        });
+        _previewViewLabel.textContent = "◀ drag to rotate  |  " + best.label + " ▶";
+    }
+}
+
 function initPreview() {
     previewCanvas=document.createElement("canvas");
     const vs=Math.min(window.innerWidth*0.8,300);
     previewCanvas.style.width=vs+"px"; previewCanvas.style.height=vs+"px";
     previewCanvas.width=vs; previewCanvas.height=vs;
-    Object.assign(previewCanvas.style,{position:"fixed",left:"50%",top:"50%",transform:"translate(-50%,-50%)",
+    Object.assign(previewCanvas.style,{position:"fixed",left:"50%",top:"40%",transform:"translate(-50%,-50%)",
         background:"#111",border:"2px solid #0f8",borderRadius:"12px",zIndex:"9999",
-        boxShadow:"0 0 25px rgba(0,255,136,0.4)",display:"none"});
+        boxShadow:"0 0 25px rgba(0,255,136,0.4)",display:"none",touchAction:"none"});
     document.body.appendChild(previewCanvas);
+
+    // ── Drag-to-orient on preview canvas ──
+    let _dragActive = false, _dragLastX = 0, _dragLastY = 0;
+    let _currentAngle = Math.PI * 0.25; // start at FRONT
+
+    previewCanvas.addEventListener('pointerdown', e => {
+        _dragActive = true;
+        _dragLastX = e.clientX; _dragLastY = e.clientY;
+        previewCanvas.setPointerCapture(e.pointerId);
+        e.stopPropagation();
+    });
+    previewCanvas.addEventListener('pointermove', e => {
+        if (!_dragActive || !previewPredator) return;
+        const dx = e.clientX - _dragLastX;
+        const dy = e.clientY - _dragLastY;
+        // Map horizontal drag → yaw (rotation around vertical axis in iso)
+        // and vertical drag → pitch (front/back flip)
+        _currentAngle += dx * 0.025 + dy * 0.015;
+        _dragLastX = e.clientX; _dragLastY = e.clientY;
+        // Snap to nearest of 4 iso angles when close
+        let snapBest = null, snapDiff = Infinity;
+        _VIEW_ANGLES.forEach(v => {
+            const diff = Math.abs((((_currentAngle - v.angle) % (Math.PI*2)) + Math.PI*3) % (Math.PI*2) - Math.PI);
+            if (diff < 0.35 && diff < snapDiff) { snapDiff = diff; snapBest = v.angle; }
+        });
+        _setPreviewAngle(snapBest !== null ? snapBest : _currentAngle);
+        e.stopPropagation();
+    });
+    previewCanvas.addEventListener('pointerup', () => { _dragActive = false; });
+    previewCanvas.addEventListener('pointercancel', () => { _dragActive = false; });
+
+    // ── View label under canvas ──
+    _previewViewLabel = document.createElement("div");
+    Object.assign(_previewViewLabel.style, {
+        position:"fixed", left:"50%", top:"calc(40% + "+(vs*0.5+8)+"px)",
+        transform:"translateX(-50%)",
+        color:"#0f8", fontFamily:"monospace", fontSize:"11px",
+        background:"rgba(0,0,0,0.7)", padding:"3px 10px", borderRadius:"4px",
+        zIndex:"9999", display:"none", pointerEvents:"none"
+    });
+    _previewViewLabel.textContent = "◀ drag to rotate  |  FRONT ▶";
+    document.body.appendChild(_previewViewLabel);
 
     const panel=document.createElement("div");
     panel.id="forgePanel";
     Object.assign(panel.style,{position:"fixed",bottom:"20px",left:"50%",transform:"translateX(-50%)",
         width:"320px",background:"#0e1418",border:"2px solid #0f8",borderRadius:"10px",padding:"12px",
-        fontFamily:"monospace",color:"#0f8",zIndex:"9999",display:"none"});
+        fontFamily:"monospace",color:"#0f8",zIndex:"9999",display:"none",maxHeight:"55vh",overflowY:"auto"});
     document.body.appendChild(panel);
 
     const select=document.createElement("select");
@@ -86,12 +154,116 @@ function initPreview() {
     panel.appendChild(sliderContainer);
     buildSliders("head");
 
+    // ── CREATE PREDATOR section ──
+    const sep=document.createElement("div");
+    sep.style.cssText="border-top:1px solid #0a4a2a;margin:12px 0 10px;padding-top:10px;font-size:11px;letter-spacing:2px;color:#0a8";
+    sep.textContent="── CREATE PREDATOR ──";
+    panel.appendChild(sep);
+
+    // Name input
+    const nameRow=document.createElement("div"); nameRow.style.marginBottom="8px";
+    const nameLbl=document.createElement("div"); nameLbl.textContent="NAME"; nameLbl.style.cssText="font-size:10px;color:#0a8;margin-bottom:3px;";
+    const nameInput=document.createElement("input");
+    nameInput.type="text"; nameInput.placeholder="e.g. Stalker";
+    nameInput.style.cssText="width:100%;box-sizing:border-box;background:#0a1a10;border:1px solid #0f8;color:#0f8;font-family:monospace;font-size:12px;padding:5px 7px;border-radius:4px;";
+    nameRow.appendChild(nameLbl); nameRow.appendChild(nameInput);
+    panel.appendChild(nameRow);
+
+    // Team toggle
+    const teamRow=document.createElement("div"); teamRow.style.cssText="display:flex;gap:8px;margin-bottom:10px;";
+    const teamLbl=document.createElement("div"); teamLbl.textContent="TEAM"; teamLbl.style.cssText="font-size:10px;color:#0a8;margin-bottom:0;line-height:28px;min-width:40px;";
+    let _selectedTeam="ally";
+    const btnAlly=document.createElement("button");
+    btnAlly.textContent="ALLY";
+    btnAlly.style.cssText="flex:1;background:rgba(0,255,136,0.18);border:2px solid #0f8;color:#0f8;font-family:monospace;font-size:11px;padding:5px;border-radius:4px;cursor:pointer;";
+    const btnEnemy=document.createElement("button");
+    btnEnemy.textContent="ENEMY";
+    btnEnemy.style.cssText="flex:1;background:#0e1418;border:1px solid #444;color:#555;font-family:monospace;font-size:11px;padding:5px;border-radius:4px;cursor:pointer;";
+    const setTeam=(t)=>{
+        _selectedTeam=t;
+        btnAlly.style.background  = t==="ally"  ? "rgba(0,255,136,0.18)" : "#0e1418";
+        btnAlly.style.borderColor = t==="ally"  ? "#0f8" : "#444";
+        btnAlly.style.color       = t==="ally"  ? "#0f8" : "#555";
+        btnAlly.style.borderWidth = t==="ally"  ? "2px"  : "1px";
+        btnEnemy.style.background  = t==="enemy" ? "rgba(204,17,17,0.18)" : "#0e1418";
+        btnEnemy.style.borderColor = t==="enemy" ? "#c11" : "#444";
+        btnEnemy.style.color       = t==="enemy" ? "#f55" : "#555";
+        btnEnemy.style.borderWidth = t==="enemy" ? "2px"  : "1px";
+        // Recolor preview to show team color
+        if (previewPredator) previewPredator.color = t==="ally" ? "#00ff88" : "#cc1111";
+    };
+    btnAlly.onclick  = ()=>setTeam("ally");
+    btnEnemy.onclick = ()=>setTeam("enemy");
+    teamRow.appendChild(teamLbl); teamRow.appendChild(btnAlly); teamRow.appendChild(btnEnemy);
+    panel.appendChild(teamRow);
+
+    // Cost note
+    const costNote=document.createElement("div");
+    costNote.style.cssText="font-size:10px;color:#ff0;margin-bottom:8px;text-align:center;";
+    costNote.textContent="Cost: 100 shards";
+    panel.appendChild(costNote);
+
+    // Spawn button
+    const spawnBtn=document.createElement("button");
+    spawnBtn.textContent="SPAWN INTO WORLD";
+    spawnBtn.style.cssText="width:100%;padding:8px;background:#0a1f14;border:2px solid #0f8;color:#0f8;font-family:monospace;font-size:12px;letter-spacing:1px;border-radius:5px;cursor:pointer;";
+    spawnBtn.onpointerdown=e=>e.stopPropagation();
+    spawnBtn.onclick=()=>{
+        const name=(nameInput.value||"").trim()||"CUSTOM";
+        if (typeof shardCount!=="undefined" && shardCount<100) {
+            spawnBtn.textContent="NEED 100 SHARDS";
+            spawnBtn.style.color="#f44";
+            setTimeout(()=>{ spawnBtn.textContent="SPAWN INTO WORLD"; spawnBtn.style.color="#0f8"; },1500);
+            return;
+        }
+        _spawnDesignedPredator(name.toUpperCase(), _selectedTeam);
+        spawnBtn.textContent="SPAWNED: "+name.toUpperCase()+" ✓";
+        setTimeout(()=>{ spawnBtn.textContent="SPAWN INTO WORLD"; },1800);
+    };
+    panel.appendChild(spawnBtn);
+
     previewCtx=previewCanvas.getContext("2d");
     previewPredator=new Predator("scout",PREDATOR_TYPES["scout"],0,0);
     previewPredator.state="wander";
-    const pl=0.7,pyDir=0.4,len=Math.hypot(pl,pyDir);
-    previewPredator.dirX=pl/len; previewPredator.dirY=pyDir/len;
-    previewPredator.headAngle=Math.atan2(previewPredator.dirY,previewPredator.dirX);
+    _setPreviewAngle(Math.PI * 0.25); // start facing FRONT
+}
+
+function _spawnDesignedPredator(name, team) {
+    if (typeof shardCount!=="undefined") {
+        shardCount=Math.max(0,shardCount-100);
+        saveShards();
+    }
+    const isAlly = team==="ally";
+    const def = {
+        health: 80, moveSpeed: 0.04, power: 7,
+        width:  previewPredator.dimensions.width,
+        height: previewPredator.dimensions.height,
+        color:  isAlly ? "#00ff88" : "#cc1111",
+        reactionSpeed: 15, abdomenAttack: false,
+        rangeDamage: 0, abdomenCooldown: 90
+    };
+    const p = new Predator("custom", def, (player ? player.x+2 : 2), (player ? player.y : 0));
+    // Copy designer body
+    p.body          = JSON.parse(JSON.stringify(previewPredator.body));
+    p.appendages    = JSON.parse(JSON.stringify(previewPredator.appendages));
+    p.joints        = JSON.parse(JSON.stringify(previewPredator.joints));
+    p.visual        = JSON.parse(JSON.stringify(previewPredator.visual));
+    p.dimensions    = { ...previewPredator.dimensions };
+    p.segmentOrder  = [...previewPredator.segmentOrder];
+    p.segmentSpacing= previewPredator.segmentSpacing;
+    p.color         = isAlly ? "#00ff88" : "#cc1111";
+    p.speciesName   = name.toLowerCase();
+    p.className     = "custom";
+    p.team          = isAlly ? "green" : "red";
+    p.isClone       = false;
+    p.state         = isAlly ? "wander" : "hunt";
+    if (isAlly) {
+        p.target = player; // ally follows/guards player area
+    }
+    actors.push(p);
+    if (typeof floatingTexts!=="undefined") {
+        floatingTexts.push({x:p.x,y:p.y-1,text:name+" CREATED!",color:isAlly?"#00ff88":"#f44",life:90,vy:-0.05});
+    }
 }
 
 function updatePreview() {
@@ -113,6 +285,7 @@ function toggleDevPreview() {
     devMode=!devMode;
     if(!previewCanvas)return;
     previewCanvas.style.display=devMode?"block":"none";
+    if (_previewViewLabel) _previewViewLabel.style.display=devMode?"block":"none";
     const panel=document.getElementById("forgePanel");
     if(panel) panel.style.display=devMode?"block":"none";
 }

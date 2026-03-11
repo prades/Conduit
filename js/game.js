@@ -1103,16 +1103,30 @@ function render() {
                 ctx.restore();
             }
 
-            // ── PYLON ELEMENT GLOW — radiates element light when part of green network ──
+            // ── NETWORK NODE TILE HIGHLIGHT ──
             if (obj.pillar&&!obj.destroyed&&obj.pillarTeam==="green"&&obj.health>0&&obj.attackModeElement) {
                 const _gelDef = ELEMENTS.find(e=>e.id===obj.attackModeElement);
                 const _gCol = _gelDef ? _gelDef.color : "#0f8";
                 const _gpulse = 0.5+0.5*Math.sin((frame||0)*0.07+obj.x*0.8+obj.y*0.5);
                 ctx.save();
-                const _grd = ctx.createRadialGradient(px,py-60,0,px,py-60,55);
-                _grd.addColorStop(0, _gCol+(Math.floor((0.18+_gpulse*0.12)*255).toString(16).padStart(2,"0")));
-                _grd.addColorStop(1, _gCol+"00");
-                ctx.fillStyle=_grd; ctx.beginPath(); ctx.arc(px,py-60,55,0,Math.PI*2); ctx.fill();
+                // Tile diamond outline
+                ctx.beginPath();
+                ctx.moveTo(px,          py - TILE_H);
+                ctx.lineTo(px + TILE_W, py);
+                ctx.lineTo(px,          py + TILE_H);
+                ctx.lineTo(px - TILE_W, py);
+                ctx.closePath();
+                // Subtle fill
+                ctx.globalAlpha = 0.05 + _gpulse * 0.07;
+                ctx.fillStyle = _gCol;
+                ctx.fill();
+                // Accentuated border
+                ctx.globalAlpha = 0.3 + _gpulse * 0.4;
+                ctx.strokeStyle = _gCol;
+                ctx.lineWidth = 2;
+                ctx.shadowColor = _gCol;
+                ctx.shadowBlur = 8 + _gpulse * 6;
+                ctx.stroke();
                 ctx.restore();
             }
 
