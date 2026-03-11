@@ -488,7 +488,7 @@ function _sortedCloneOptions(opts, mode) {
 
 // ── Animated crystal HUD button (top-center) ──────────────
 function drawCrystalButton() {
-    const bx = Math.round(canvas.width / 2), by = 26;
+    const bx = Math.round(canvas.width / 2) - 60, by = 26;
     _CRYSBTN.x = bx; _CRYSBTN.y = by;
     const t = (frame||0) * 0.022;
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
@@ -569,7 +569,7 @@ function drawCrystalPanel() {
 
     const PW  = Math.min(430, canvas.width - 12);
     const PX  = Math.round((canvas.width - PW) / 2);
-    const PY  = 46;
+    const PY  = 110;
     const tabH = 36;
     const closeW = 34;
     const tabAreaW = PW - closeW;
@@ -586,9 +586,9 @@ function drawCrystalPanel() {
 
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
 
-    // Full-screen overlay
-    ctx.fillStyle = "rgba(1,0,7,0.95)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Semi-transparent overlay below top HUD
+    ctx.fillStyle = "rgba(1,0,7,0.92)";
+    ctx.fillRect(0, PY - 4, canvas.width, canvas.height - (PY - 4));
 
     // ── Tab bar ───────────────────────────────────────────
     CTABS.forEach((tab, i) => {
@@ -775,8 +775,6 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
         scheme.colors.forEach((col, i) => {
             const sx = PX+10 + i*(sw+4);
             const sy = crystY+crystR+40;
-            const isHot = scheme.colors[cycleIdx] === col;
-            // cycleIdx closure — re-derive here
             const _ci = Math.floor(_crystalModPhase / Math.max(5,34-scheme.size*5)) % scheme.colors.length;
             const isHot2 = i === _ci;
             ctx.fillStyle = isHot2 ? col : col+"44";
