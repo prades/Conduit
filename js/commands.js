@@ -42,11 +42,11 @@ function closeElementPicker() {
 }
 
 function _executeBuild(el) {
-    if (!_epTarget || shardCount < 10) {
+    if (!elementPickerTarget || shardCount < 10) {
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 10 SHARDS",color:"#f44",life:90,vy:-0.2});
         return;
     }
-    const t = _epTarget;
+    const t = elementPickerTarget;
     shardCount -= 10; saveShards();
     t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=20;
     t.upgraded=false; t.destroyed=false;
@@ -73,7 +73,7 @@ function _executeBuild(el) {
 }
 
 function _executeUpgrade(el) {
-    const pylon = _epTarget;
+    const pylon = elementPickerTarget;
     if (!pylon || !pylon.pillar || pylon.destroyed) return;
     if (pylon.attackMode || pylon.waveMode) {
         // Already upgraded — just swap element directly
