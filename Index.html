@@ -98,6 +98,49 @@
     .ctrl-badge.brawler { background: rgba(255,136,136,0.25); color: #f88; border: 1px solid #f88; }
     .ctrl-badge.sniper  { background: rgba(136,136,255,0.25); color: #88f; border: 1px solid #88f; }
     .ctrl-badge.camper  { background: rgba(136,255,136,0.25); color: #8f8; border: 1px solid #8f8; }
+
+    /* ── ELEMENT PICKER ── */
+    #elementPicker {
+        display:none; position:fixed; left:50%; bottom:90px;
+        transform:translateX(-50%);
+        background:#080f0c; border:2px solid #0f8; border-radius:10px;
+        padding:14px 16px; font-family:monospace; color:#0f8;
+        z-index:5000; min-width:300px; max-width:94vw;
+        box-shadow:0 0 24px rgba(0,255,136,0.3);
+    }
+    #elementPicker .ep-title { font-size:11px; letter-spacing:2px; color:#0a8; margin-bottom:10px; text-align:center; }
+    #elementPicker .ep-sub   { font-size:10px; color:#ff0; margin-bottom:10px; text-align:center; }
+    #elementPicker .ep-grid  { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:10px; }
+    .ep-btn {
+        display:flex; flex-direction:column; align-items:center; gap:4px;
+        background:#0a1a10; border:1px solid #0f8; border-radius:6px;
+        padding:8px 10px; cursor:pointer; min-width:58px; touch-action:manipulation;
+    }
+    .ep-btn:active { background:#0f8; color:#000; }
+    .ep-dot  { width:14px; height:14px; border-radius:50%; }
+    .ep-lbl  { font-size:10px; color:#0f8; letter-spacing:1px; }
+    #epCancel { width:100%; padding:7px; background:#0a0f0a; border:1px solid #444;
+        color:#555; font-family:monospace; font-size:11px; border-radius:4px; cursor:pointer; }
+
+    /* ── INFO PANEL ── */
+    #infoPanel {
+        display:none; position:fixed; left:50%; top:50%;
+        transform:translate(-50%,-50%);
+        background:#060d08; border:2px solid #0f8; border-radius:10px;
+        padding:16px 18px; font-family:monospace; color:#0f8;
+        z-index:5000; min-width:260px; max-width:88vw;
+        box-shadow:0 0 28px rgba(0,255,136,0.35);
+    }
+    #infoPanel .ip-title  { font-size:13px; letter-spacing:2px; color:#0ff; margin-bottom:12px; text-align:center; }
+    #infoPanel .ip-row    { display:flex; justify-content:space-between; font-size:11px;
+        padding:3px 0; border-bottom:1px solid #0a2a18; color:#aad; }
+    #infoPanel .ip-row span:first-child { color:#0a8; min-width:90px; }
+    #infoPanel .ip-sep    { border-top:1px solid #0a4; margin:8px 0 6px; }
+    #infoPanel .ip-badge  { display:inline-block; padding:2px 8px; border-radius:3px;
+        font-size:10px; font-weight:bold; margin-bottom:8px; }
+    #ipClose { width:100%; margin-top:12px; padding:7px; background:#0a1a10;
+        border:2px solid #0f8; color:#0f8; font-family:monospace;
+        font-size:11px; border-radius:4px; cursor:pointer; letter-spacing:1px; }
 </style>
 
 </head>
@@ -146,6 +189,21 @@
     <p>Waves survived: <span class="stat" id="ovr-waves">0</span></p>
     <div id="shopGrid"></div>
     <button class="ovr-btn" id="ovr-btn">RESTART</button>
+</div>
+
+<!-- ELEMENT PICKER (BUILD / UPGRADE) -->
+<div id="elementPicker">
+    <div class="ep-title" id="epTitle">SELECT ELEMENT</div>
+    <div class="ep-sub"  id="epSub"></div>
+    <div class="ep-grid" id="epGrid"></div>
+    <button id="epCancel" onclick="closeElementPicker()">CANCEL</button>
+</div>
+
+<!-- INFO PANEL -->
+<div id="infoPanel">
+    <div class="ip-title" id="ipTitle">UNIT INFO</div>
+    <div id="ipBody"></div>
+    <button id="ipClose" onclick="closeInfoPanel()">CLOSE</button>
 </div>
 
 <canvas id="cavernCanvas"></canvas>

@@ -99,8 +99,10 @@ function updateRTSNPC(actor) {
         } else {
             // Arrived — merge: absorb follower into pylon
             p.attackMode = true;
-            p.attackModeElement = actor.element || "core";
-            p.attackModeColor = actor.color || "#0f8";
+            p.attackModeElement = p.chosenElement || actor.element || "core";
+            const _chEl = ELEMENTS.find(e=>e.id===p.attackModeElement);
+            p.attackModeColor = p.chosenColor || (_chEl ? _chEl.color : actor.color) || "#0f8";
+            p.chosenElement = null; p.chosenColor = null;
             p.attackFireTimer = 0;
             p.attackRange = 2.5;
             p.attackPower = (actor.stats?.specialAttack||10) * 1.2;
