@@ -27,7 +27,8 @@ function drawRadialMenu() {
 
     const isPylonTarget   = commandTarget&&commandTarget.pillar&&!commandTarget.destroyed&&commandTarget.health>0;
     const isLiveNest      = commandNestTarget&&commandNestTarget.nestHealth>0;
-    const isBrokenNest    = commandNestTarget&&commandNestTarget.nestHealth<=0;
+    const nestAlreadyLinked = commandNestTarget&&commandNestTarget.connectedPylon&&!commandNestTarget.connectedPylon.destroyed;
+    const isBrokenNest    = commandNestTarget&&commandNestTarget.nestHealth<=0&&!nestAlreadyLinked;
 
     // ── TOP = BUILD (empty) / UPGRADE (pylon) ─────────────
     const tHov=dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;

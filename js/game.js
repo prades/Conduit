@@ -333,6 +333,9 @@ function render() {
     pendingPillarDestruction.forEach(p=>{
         if(p.destroyed)return; p.destroyed=true;
         for(let i=0;i<6;i++) shards.push({x:p.x,y:p.y,z:1+Math.random(),vz:-0.05-Math.random()*0.05,color:p.pillarCol});
+        // Clear any nest link pointing to this pylon
+        world.forEach(obj=>{ if(obj.connectedPylon===p){ obj.connectedPylon=null; } });
+        if(p.nestConnection){ p.nestConnection.connectedPylon=null; p.nestConnection=null; }
     });
     pendingPillarDestruction.length=0;
     world.forEach(obj=>{ if(obj.pendingDestroy){pendingPillarDestruction.push(obj);obj.pendingDestroy=false;} });
@@ -915,13 +918,13 @@ function render() {
                 const WCR = 5.0;
                 const el = obj.attackModeElement;
                 const col2 = obj.attackModeColor||"#0f8";
+                const pulse2=0.4+0.4*Math.sin(frame*0.1); // hoisted — used in forEach AND solo-flux block
                 wavePylonsLocal.forEach(pb=>{
                     if (pb===obj||pb.attackModeElement!==obj.attackModeElement) return;
                     if (Math.hypot(obj.x-pb.x,obj.y-pb.y)>WCR) return;
                     if (pb.x+pb.y*1000 < obj.x+obj.y*1000) return;
                     const pbpx=(pb.x-player.visualX-(pb.y-player.visualY))*TILE_W+canvas.width/2;
                     const pbpy=(pb.x-player.visualX+(pb.y-player.visualY))*TILE_H+canvas.height/2;
-                    const pulse2=0.4+0.4*Math.sin(frame*0.1);
                     const y1=py-60, y2=pbpy-60;
                     ctx.save();
 
@@ -1159,10 +1162,10 @@ function render() {
                 ctx.save();
                 // Tile diamond outline
                 ctx.beginPath();
-                ctx.moveTo(px,          py - TILE_H);
-                ctx.lineTo(px + TILE_W, py);
-                ctx.lineTo(px,          py + TILE_H);
-                ctx.lineTo(px - TILE_W, py);
+                ctx.moveTo(px,          py);
+                ctx.lineTo(px + TILE_W, py + TILE_H);
+                ctx.lineTo(px,          py + TILE_W);
+                ctx.lineTo(px - TILE_W, py + TILE_H);
                 ctx.closePath();
                 // Subtle fill
                 ctx.globalAlpha = 0.05 + _gpulse * 0.07;

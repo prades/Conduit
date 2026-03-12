@@ -47,7 +47,7 @@ function _executeBuild(el, t) {
         return;
     }
     shardCount -= 10; saveShards();
-    t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=20;
+    t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=80;
     t.upgraded=false; t.destroyed=false;
     t.attackMode=false; t.waveMode=false;
     t.attackModeElement=null; t.attackModeColor=null;
@@ -116,8 +116,9 @@ function closeInfoPanel() {
 
 // ── COMMAND EXECUTION ─────────────────────────────────────
 function executeCommand() {
-    if (!selectedRadialAction) { commandMode=false; return; }
-    if (!commandMode) return;
+    commandMode=false; commandPendingTap=false;
+    if (!selectedRadialAction) return;
+    if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
     const isNestCmd = selectedRadialAction==="destroy_nest"||selectedRadialAction==="connect_nest"||selectedRadialAction==="attack_nest";
     if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
     if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;

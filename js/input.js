@@ -60,10 +60,14 @@ canvas.addEventListener('pointerdown', e=>{
     e.preventDefault(); canvas.setPointerCapture(e.pointerId);
     gesturePoints=[]; isPressing=true; longHoldFired=false; touchMoved=false;
     pressX=e.clientX; pressY=e.clientY; pressStartTime=performance.now();
-    commandTarget=null;
 
     // Canvas overlay panels — absorb pointerdown so no game action triggers
     if (elementPickerOpen || infoPanelOpen) return;
+
+    // If the radial menu is waiting for a tap, preserve commandTarget from long-press
+    if (commandPendingTap) return;
+
+    commandTarget=null;
 
     // Crystal panel — forward pointerdown (for slider drag init) and block game input
     if (crystalMenuOpen) { handleCrystalPanelInput(e.clientX, e.clientY, true); return; }
@@ -182,15 +186,23 @@ canvas.addEventListener('pointerup', e=>{
             const relAngle = Math.atan2(relY, relX);
             if (relDist > 18) {
                 const isLiveNest   = commandNestTarget && commandNestTarget.nestHealth > 0;
-                const isBrokenNest = commandNestTarget && commandNestTarget.nestHealth <= 0;
+                const nestLinked   = commandNestTarget && commandNestTarget.connectedPylon && !commandNestTarget.connectedPylon.destroyed;
+                const isBrokenNest = commandNestTarget && commandNestTarget.nestHealth <= 0 && !nestLinked;
                 if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4) selectedRadialAction = "build_upgrade";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4) selectedRadialAction = "position";
                 else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4)   selectedRadialAction = "info";
                 else if (isLiveNest)   selectedRadialAction = "destroy_nest";
                 else if (isBrokenNest) selectedRadialAction = "connect_nest";
                 else                   selectedRadialAction = "switch_context";
+            } else if (longHoldFired && !commandPendingTap) {
+                // User released right on the long-hold spot — menu just appeared.
+                // Keep it open so they can tap a button next.
+                commandPendingTap = true;
+                isPressing = false;
+                return;
             }
         }
+        commandPendingTap = false;
         executeCommand(); commandTarget=null;
     }
     else if (!longHoldFired&&!touchMoved) handleInput(pressX,pressY);

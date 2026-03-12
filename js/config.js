@@ -130,6 +130,7 @@ let commandNestTarget = null;   // broken nest pod near long-press point
 let nestConnectMode   = false;  // true while waiting for player to tap a pylon
 let pendingConnectNest = null;  // nest tile being connected
 let selectedRadialAction = null;
+let commandPendingTap    = false;  // true = menu open, waiting for button tap
 
 // ── ELEMENT PICKER (canvas-drawn) ─────────────────────────
 let elementPickerOpen   = false;
