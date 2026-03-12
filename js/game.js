@@ -1631,6 +1631,8 @@ function render() {
     drawHoldLine();
     drawGestureFeedback();
     drawFollowerElementUI();
+    drawElementPicker();
+    drawInfoPanel();
     updatePreview();
 
     requestAnimationFrame(render);

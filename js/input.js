@@ -62,6 +62,9 @@ canvas.addEventListener('pointerdown', e=>{
     pressX=e.clientX; pressY=e.clientY; pressStartTime=performance.now();
     commandTarget=null;
 
+    // Canvas overlay panels — absorb pointerdown so no game action triggers
+    if (elementPickerOpen || infoPanelOpen) return;
+
     // Crystal panel — forward pointerdown (for slider drag init) and block game input
     if (crystalMenuOpen) { handleCrystalPanelInput(e.clientX, e.clientY, true); return; }
     // Crystal button tap — toggle panel
@@ -108,6 +111,7 @@ canvas.addEventListener('pointerup', e=>{
         }
     }
 
+    if (handleOverlayPanelTap(e.clientX, e.clientY)) { isPressing=false; return; }
     if (handleCloneMenuTap(e.clientX, e.clientY)) { isPressing=false; return; }
     if (handleFollowerUIClick(e.clientX, e.clientY)) { isPressing=false; return; }
 

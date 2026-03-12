@@ -139,6 +139,266 @@ function drawFollowerElementUI() {
 }
 
 // ─────────────────────────────────────────────────────────
+//  ELEMENT PICKER  (canvas-drawn)
+// ─────────────────────────────────────────────────────────
+const _EP_W = 310, _EP_ROW_H = 44, _EP_COLS = 3;
+const _EP_ROWS = Math.ceil(ELEMENTS.length / _EP_COLS);
+const _EP_GRID_H = _EP_ROWS * _EP_ROW_H;
+const _EP_HEADER_H = 64, _EP_CANCEL_H = 38;
+const _EP_TOTAL_H = _EP_HEADER_H + _EP_GRID_H + _EP_CANCEL_H;
+
+function drawElementPicker() {
+    if (!elementPickerOpen) return;
+    const pw = _EP_W, ph = _EP_TOTAL_H;
+    const px = Math.round((canvas.width  - pw) / 2);
+    const py = Math.round((canvas.height - ph) / 2);
+
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+
+    // Background + border
+    ctx.fillStyle   = "rgba(4,16,10,0.97)";
+    ctx.strokeStyle = "#0f8";
+    ctx.lineWidth   = 2;
+    _epRoundRect(px, py, pw, ph, 10);
+    ctx.fill(); ctx.stroke();
+
+    // Title
+    ctx.fillStyle = "#0ff"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center";
+    const titleText = elementPickerMode === "upgrade" ? "UPGRADE PYLON — SELECT ELEMENT" : "BUILD PYLON — SELECT ELEMENT";
+    ctx.fillText(titleText, px + pw/2, py + 22);
+
+    // Sub-label
+    ctx.fillStyle = "#ff0"; ctx.font = "10px monospace";
+    const subText = elementPickerMode === "build" ? "Cost: 10 shards" :
+        (elementPickerTarget && (elementPickerTarget.attackMode || elementPickerTarget.waveMode) ? "Element change — free" : "Requires a follower sacrifice");
+    ctx.fillText(subText, px + pw/2, py + 44);
+
+    // Element grid
+    const cellW = Math.floor(pw / _EP_COLS);
+    ELEMENTS.forEach((el, i) => {
+        const col = i % _EP_COLS, row = Math.floor(i / _EP_COLS);
+        const cx = px + col * cellW, cy = py + _EP_HEADER_H + row * _EP_ROW_H;
+        const unlocked = unlockedElements.has(el.id);
+        const alpha = unlocked ? 1.0 : 0.35;
+
+        ctx.globalAlpha = alpha;
+        // Cell background
+        ctx.fillStyle = "rgba(10,26,16,0.9)";
+        ctx.strokeStyle = el.color; ctx.lineWidth = 1;
+        _epRoundRect(cx + 4, cy + 4, cellW - 8, _EP_ROW_H - 8, 6);
+        ctx.fill(); ctx.stroke();
+
+        // Color dot
+        ctx.fillStyle = el.color;
+        ctx.shadowColor = el.color; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.arc(cx + 20, cy + _EP_ROW_H/2, 7, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Label
+        ctx.fillStyle = "#fff"; ctx.font = "10px monospace"; ctx.textAlign = "left";
+        ctx.fillText(el.label.toUpperCase(), cx + 33, cy + _EP_ROW_H/2 + 1);
+        ctx.globalAlpha = 1;
+    });
+
+    // Cancel button
+    const cancelY = py + _EP_HEADER_H + _EP_GRID_H + 6;
+    ctx.fillStyle = "rgba(10,15,10,0.9)";
+    ctx.strokeStyle = "#444"; ctx.lineWidth = 1;
+    _epRoundRect(px + 10, cancelY, pw - 20, _EP_CANCEL_H - 12, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#555"; ctx.font = "11px monospace"; ctx.textAlign = "center";
+    ctx.fillText("CANCEL", px + pw/2, cancelY + (_EP_CANCEL_H - 12)/2 + 1);
+
+    ctx.restore();
+}
+
+function _epRoundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+    ctx.arcTo(x+w, y, x+w, y+r, r); ctx.lineTo(x+w, y+h-r);
+    ctx.arcTo(x+w, y+h, x+w-r, y+h, r); ctx.lineTo(x+r, y+h);
+    ctx.arcTo(x, y+h, x, y+h-r, r); ctx.lineTo(x, y+r);
+    ctx.arcTo(x, y, x+r, y, r);
+    ctx.closePath();
+}
+
+function _handleElementPickerTap(tx, ty) {
+    if (!elementPickerOpen) return false;
+    const pw = _EP_W, ph = _EP_TOTAL_H;
+    const px = Math.round((canvas.width  - pw) / 2);
+    const py = Math.round((canvas.height - ph) / 2);
+    if (tx < px || tx > px+pw || ty < py || ty > py+ph) {
+        // Tap outside = cancel
+        elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;
+        return true;
+    }
+    const cellW = Math.floor(pw / _EP_COLS);
+    const gridY0 = py + _EP_HEADER_H, gridY1 = gridY0 + _EP_GRID_H;
+    if (ty >= gridY0 && ty < gridY1) {
+        const col = Math.floor((tx - px) / cellW);
+        const row = Math.floor((ty - gridY0) / _EP_ROW_H);
+        const idx  = row * _EP_COLS + col;
+        const el   = ELEMENTS[idx];
+        if (el && unlockedElements.has(el.id)) {
+            const mode = elementPickerMode, target = elementPickerTarget;
+            elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;
+            if (mode === "build")   _executeBuild(el);
+            else if (mode === "upgrade") _executeUpgrade(el);
+        }
+        return true;
+    }
+    // Cancel button zone
+    const cancelY = py + _EP_HEADER_H + _EP_GRID_H + 6;
+    if (ty >= cancelY && ty < cancelY + _EP_CANCEL_H - 12) {
+        elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;
+        return true;
+    }
+    return true; // absorb all taps while open
+}
+
+// ─────────────────────────────────────────────────────────
+//  INFO PANEL  (canvas-drawn)
+// ─────────────────────────────────────────────────────────
+const _IP_W = 280, _IP_ROW_H = 20, _IP_PAD = 14;
+
+function drawInfoPanel() {
+    if (!infoPanelOpen) return;
+    const rows = _buildInfoRows(infoPanelTarget);
+    const contentH = rows.length * _IP_ROW_H;
+    const ph = _IP_PAD*2 + 28 + contentH + 38; // title + content + close btn
+    const pw = _IP_W;
+    const px = Math.round((canvas.width  - pw) / 2);
+    const py = Math.round((canvas.height - ph) / 2);
+
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+
+    // Background + border
+    ctx.fillStyle   = "rgba(6,13,8,0.97)";
+    ctx.strokeStyle = "#0f8"; ctx.lineWidth = 2;
+    _epRoundRect(px, py, pw, ph, 10);
+    ctx.fill(); ctx.stroke();
+
+    // Title
+    const titleObj = _buildInfoTitle(infoPanelTarget);
+    ctx.fillStyle = "#0ff"; ctx.font = "bold 12px monospace"; ctx.textAlign = "center";
+    ctx.fillText(titleObj, px + pw/2, py + 20);
+
+    // Divider
+    ctx.strokeStyle = "#0a4"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px+10, py+30); ctx.lineTo(px+pw-10, py+30); ctx.stroke();
+
+    // Rows
+    const ryBase = py + 30 + _IP_ROW_H/2 + 2;
+    rows.forEach((r, i) => {
+        const ry = ryBase + i * _IP_ROW_H;
+        if (r === null) {
+            ctx.strokeStyle = "#0a3"; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(px+10, ry); ctx.lineTo(px+pw-10, ry); ctx.stroke();
+            return;
+        }
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#0a8"; ctx.font = "10px monospace"; ctx.textAlign = "left";
+        ctx.fillText(r[0], px + 12, ry);
+        // Value — may contain color annotation
+        ctx.fillStyle = r[2] || "#aad"; ctx.textAlign = "right";
+        ctx.fillText(r[1], px + pw - 12, ry);
+    });
+
+    // Close button
+    const closeY = py + ph - 34;
+    ctx.fillStyle = "rgba(10,26,16,0.9)";
+    ctx.strokeStyle = "#0f8"; ctx.lineWidth = 2;
+    _epRoundRect(px + 10, closeY, pw - 20, 28, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#0f8"; ctx.font = "11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("CLOSE", px + pw/2, closeY + 14);
+
+    ctx.restore();
+}
+
+function _buildInfoTitle(targetTile) {
+    if (!targetTile) return "NO TARGET";
+    let subject = null;
+    const candidates = [...followers, ...actors.filter(a=>a.isClone)]
+        .filter(a=>!a.dead && Math.hypot(a.x - targetTile.x, a.y - targetTile.y) < 3);
+    subject = candidates[0] || null;
+    if (subject) return (subject.role||"UNIT").toUpperCase() + " — " + (subject.speciesName||subject.type||"UNIT").toUpperCase();
+    if (targetTile.pillar && !targetTile.destroyed) return "PYLON";
+    return "NO TARGET";
+}
+
+function _buildInfoRows(targetTile) {
+    if (!targetTile) return [["STATUS","No target nearby","#555"]];
+    let subject = null;
+    const candidates = [...followers, ...actors.filter(a=>a.isClone)]
+        .filter(a=>!a.dead && Math.hypot(a.x - targetTile.x, a.y - targetTile.y) < 3);
+    subject = candidates[0] || null;
+
+    if (subject) {
+        const el = ELEMENTS.find(e=>e.id===subject.element);
+        const elColor = el ? el.color : "#0f8";
+        const rows = [
+            ["ELEMENT",    (el ? el.label : subject.element||"?").toUpperCase(), elColor],
+            ["PERSONALITY",(subject.personality||"—").toUpperCase(), "#aad"],
+            ["HP",         Math.ceil(subject.health)+" / "+subject.maxHealth, "#0f8"],
+            ["POWER",      (subject.power||0).toFixed(1), "#ff0"],
+            ["SPEED",      ((subject.moveSpeed||0)*1000).toFixed(1)+"‰", "#aad"],
+        ];
+        if (subject.stats) {
+            rows.push(["WILL",  (subject.stats.will||0).toFixed(0), "#aad"]);
+            rows.push(["ATK",   (subject.stats.attack||0).toFixed(0), "#f88"]);
+        }
+        rows.push(null); // separator
+        const ctName = subject.combatTrait  ? (COMBAT_TRAITS[subject.combatTrait]?.name  || subject.combatTrait)  : "—";
+        const ntName = subject.naturalTrait ? (NATURAL_TRAITS[subject.naturalTrait]?.name || subject.naturalTrait) : "—";
+        const pkName = subject.perk         ? (PERKS[subject.perk]?.name                 || subject.perk)         : "—";
+        rows.push(["COMBAT",  ctName, "#f88"]);
+        rows.push(["NATURAL", ntName, "#8f8"]);
+        rows.push(["PERK",    pkName, "#88f"]);
+        return rows;
+    }
+
+    if (targetTile.pillar && !targetTile.destroyed) {
+        const el = ELEMENTS.find(e=>e.id===targetTile.attackModeElement);
+        const mode = targetTile.attackMode?"ATTACK":targetTile.waveMode?"WAVE":"DORMANT";
+        const team = targetTile.pillarTeam==="green"?"ALLY":"ENEMY";
+        const teamCol = targetTile.pillarTeam==="green"?"#0f8":"#f44";
+        return [
+            ["TEAM",    team,                              teamCol],
+            ["ELEMENT", el ? el.label.toUpperCase():"NONE", el?el.color:"#555"],
+            ["MODE",    mode,                              "#ff0"],
+            ["HP",      Math.ceil(targetTile.health)+" / "+targetTile.maxHealth, "#0f8"],
+            ["STATUS",  targetTile.constructing?"BUILDING":targetTile.reconstructing?"REPAIRING":"ACTIVE", "#aad"],
+        ];
+    }
+    return [["STATUS","No unit or pylon nearby","#555"]];
+}
+
+function _handleInfoPanelTap(tx, ty) {
+    if (!infoPanelOpen) return false;
+    const rows = _buildInfoRows(infoPanelTarget);
+    const contentH = rows.length * _IP_ROW_H;
+    const ph = _IP_PAD*2 + 28 + contentH + 38;
+    const pw = _IP_W;
+    const px = Math.round((canvas.width  - pw) / 2);
+    const py = Math.round((canvas.height - ph) / 2);
+    if (tx < px || tx > px+pw || ty < py || ty > py+ph) {
+        infoPanelOpen = false; infoPanelTarget = null;
+        return true;
+    }
+    const closeY = py + ph - 34;
+    if (ty >= closeY) { infoPanelOpen = false; infoPanelTarget = null; }
+    return true;
+}
+
+// Central overlay tap dispatcher — call from pointerup handler
+function handleOverlayPanelTap(tx, ty) {
+    if (elementPickerOpen) return _handleElementPickerTap(tx, ty);
+    if (infoPanelOpen)     return _handleInfoPanelTap(tx, ty);
+    return false;
+}
+
+// ─────────────────────────────────────────────────────────
 //  HOLD LINE (world-space boundary line drawn on canvas)
 // ─────────────────────────────────────────────────────────
 function drawHoldLine() {

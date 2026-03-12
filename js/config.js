@@ -131,6 +131,15 @@ let nestConnectMode   = false;  // true while waiting for player to tap a pylon
 let pendingConnectNest = null;  // nest tile being connected
 let selectedRadialAction = null;
 
+// ── ELEMENT PICKER (canvas-drawn) ─────────────────────────
+let elementPickerOpen   = false;
+let elementPickerMode   = null;   // "build" | "upgrade"
+let elementPickerTarget = null;
+
+// ── INFO PANEL (canvas-drawn) ─────────────────────────────
+let infoPanelOpen   = false;
+let infoPanelTarget = null;
+
 // ── DEV / PREVIEW ─────────────────────────────────────────
 let devMode = false;
 let previewCanvas, previewCtx, previewPredator, sliderContainer;
