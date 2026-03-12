@@ -188,7 +188,8 @@ canvas.addEventListener('pointerup', e=>{
                 const isLiveNest   = commandNestTarget && commandNestTarget.nestHealth > 0;
                 const nestLinked   = commandNestTarget && commandNestTarget.connectedPylon && !commandNestTarget.connectedPylon.destroyed;
                 const isBrokenNest = commandNestTarget && commandNestTarget.nestHealth <= 0 && !nestLinked;
-                if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4) selectedRadialAction = "build_upgrade";
+                const _isPyCmd = commandTarget && commandTarget.pillar && !commandTarget.destroyed;
+                if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && (_isPyCmd || buildMode)) selectedRadialAction = "build_upgrade";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4) selectedRadialAction = "position";
                 else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4)   selectedRadialAction = "info";
                 else if (isLiveNest)   selectedRadialAction = "destroy_nest";

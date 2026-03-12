@@ -151,14 +151,29 @@ function updateRTSNPC(actor) {
         return;
     }
 
-    // move / hold
+    // move / hold — guard position, attack nearby enemies
     if (actor.job&&actor.job.type==="move") {
         if (actor.health<actor.maxHealth*0.5) { actor.job=null; }
         else {
             const t=actor.job.target;
             if (!t) { actor.job=null; return; }
-            const dx=t.x-actor.x, dy=t.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-            if (dist>0.6) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+            // Refresh nearby-enemy cache every 10 frames
+            if (!actor._guardCacheFrame || frame-actor._guardCacheFrame>=10 || actor._guardEnemy?.dead) {
+                actor._guardEnemy=null; let bd=Infinity;
+                actors.forEach(a=>{ if(a.team!=="green"&&!a.dead){const d=Math.hypot(a.x-actor.x,a.y-actor.y);if(d<4.5&&d<bd){bd=d;actor._guardEnemy=a;}} });
+                actor._guardCacheFrame=frame;
+            }
+            const enemy=actor._guardEnemy&&!actor._guardEnemy.dead?actor._guardEnemy:null;
+            if (enemy) {
+                // Engage enemy — move toward it and attack
+                const ed=Math.hypot(enemy.x-actor.x,enemy.y-actor.y);
+                if (ed>0.8) { actor.x+=(enemy.x-actor.x)/ed*actor.moveSpeed; actor.y+=(enemy.y-actor.y)/ed*actor.moveSpeed; }
+                followerAttack(actor,enemy);
+            } else {
+                // No threat — hold position
+                const dx=t.x-actor.x, dy=t.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
+                if (dist>0.6) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+            }
             return;
         }
     }

@@ -30,10 +30,13 @@ function drawRadialMenu() {
     const nestAlreadyLinked = commandNestTarget&&commandNestTarget.connectedPylon&&!commandNestTarget.connectedPylon.destroyed;
     const isBrokenNest    = commandNestTarget&&commandNestTarget.nestHealth<=0&&!nestAlreadyLinked;
 
-    // ── TOP = BUILD (empty) / UPGRADE (pylon) ─────────────
-    const tHov=dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
-    drawRadialButton(commandX, commandY-RADIAL_RADIUS, isPylonTarget?"UPGRADE":"BUILD", tHov);
-    if (tHov) selectedRadialAction="build_upgrade";
+    // ── TOP = UPGRADE (pylon) / BUILD (only when buildMode ON) ──
+    const showTopBtn = isPylonTarget || buildMode;
+    const tHov = showTopBtn && dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
+    if (showTopBtn) {
+        drawRadialButton(commandX, commandY-RADIAL_RADIUS, isPylonTarget?"UPGRADE":"BUILD", tHov);
+        if (tHov) selectedRadialAction="build_upgrade";
+    }
 
     // ── DOWN = POSITION ────────────────────────────────────
     const dHov=dist>RADIAL_RADIUS*0.25&&angle>Math.PI/4&&angle<3*Math.PI/4;

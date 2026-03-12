@@ -1137,8 +1137,8 @@ function render() {
                 const _blink=Math.floor((frame||0)/10)%2===0;
                 ctx.save();
                 ctx.beginPath();
-                ctx.moveTo(px,py-TILE_H); ctx.lineTo(px+TILE_W,py);
-                ctx.lineTo(px,py+TILE_H); ctx.lineTo(px-TILE_W,py);
+                ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H);
+                ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H);
                 ctx.closePath();
                 ctx.globalAlpha=_blink?0.92:0.28;
                 ctx.strokeStyle="#00ffcc"; ctx.lineWidth=3;
@@ -1146,11 +1146,11 @@ function render() {
                 ctx.stroke();
                 ctx.globalAlpha=_blink?0.14:0.04;
                 ctx.fillStyle="#00ffcc"; ctx.fill();
-                // "LINK" label
+                // "LINK" label — above tile top corner
                 ctx.globalAlpha=_blink?1:0.4;
                 ctx.fillStyle="#00ffcc"; ctx.font="bold 9px monospace"; ctx.textAlign="center";
                 ctx.shadowBlur=0; ctx.setTransform(1,0,0,1,0,0);
-                ctx.fillText("LINK",px,py-TILE_H-6);
+                ctx.fillText("LINK",px,py-8);
                 ctx.restore();
             }
 

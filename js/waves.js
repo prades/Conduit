@@ -148,6 +148,14 @@ function nextWave() {
     // Save gameState
     saveGameState();
 
+    // ── Restore surviving green pylons to full health ──
+    world.forEach(obj=>{
+        if (obj.pillar && !obj.destroyed && obj.pillarTeam==="green" && obj.health>0) {
+            obj.health = obj.maxHealth;
+            obj.pendingDestroy = false;
+        }
+    });
+
     // ── Wipe everything, start clean ──
     actors=[]; followers=[]; respawnQueue=[]; pendingPillarDestruction=[];
     ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
