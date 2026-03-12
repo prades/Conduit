@@ -242,8 +242,8 @@ function _handleElementPickerTap(tx, ty) {
         if (el && unlockedElements.has(el.id)) {
             const mode = elementPickerMode, target = elementPickerTarget;
             elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;
-            if (mode === "build")   _executeBuild(el);
-            else if (mode === "upgrade") _executeUpgrade(el);
+            if (mode === "build")   _executeBuild(el, target);
+            else if (mode === "upgrade") _executeUpgrade(el, target);
         }
         return true;
     }

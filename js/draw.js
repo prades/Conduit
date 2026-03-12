@@ -30,22 +30,22 @@ function drawRadialMenu() {
     const isBrokenNest    = commandNestTarget&&commandNestTarget.nestHealth<=0;
 
     // ── TOP = BUILD (empty) / UPGRADE (pylon) ─────────────
-    const tHov=dist>RADIAL_RADIUS*0.4&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
+    const tHov=dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
     drawRadialButton(commandX, commandY-RADIAL_RADIUS, isPylonTarget?"UPGRADE":"BUILD", tHov);
     if (tHov) selectedRadialAction="build_upgrade";
 
     // ── DOWN = POSITION ────────────────────────────────────
-    const dHov=dist>RADIAL_RADIUS*0.4&&angle>Math.PI/4&&angle<3*Math.PI/4;
+    const dHov=dist>RADIAL_RADIUS*0.25&&angle>Math.PI/4&&angle<3*Math.PI/4;
     drawRadialButton(commandX, commandY+RADIAL_RADIUS, "POSITION", dHov);
     if (dHov) selectedRadialAction="position";
 
     // ── RIGHT = INFO ───────────────────────────────────────
-    const rHov=dist>RADIAL_RADIUS*0.4&&angle>-Math.PI/4&&angle<Math.PI/4;
+    const rHov=dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
     drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", rHov);
     if (rHov) selectedRadialAction="info";
 
     // ── LEFT = SWITCH / DESTROY / CONNECT (context) ───────
-    const lHov=dist>RADIAL_RADIUS*0.4&&Math.abs(angle)>Math.PI*3/4;
+    const lHov=dist>RADIAL_RADIUS*0.25&&Math.abs(angle)>Math.PI*3/4;
     let leftLabel="SWITCH", leftAction="switch_context";
     if (isLiveNest)        { leftLabel="DESTROY"; leftAction="destroy_nest"; }
     else if (isBrokenNest) { leftLabel="CONNECT"; leftAction="connect_nest"; }

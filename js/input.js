@@ -89,7 +89,7 @@ canvas.addEventListener('pointermove', e=>{
 
     dragDX=pointerX-commandX; dragDY=pointerY-commandY;
     gesturePoints.push({x:pointerX,y:pointerY});
-    if (Math.sqrt((pointerX-pressX)**2+(pointerY-pressY)**2)>12) touchMoved=true;
+    if (Math.sqrt((pointerX-pressX)**2+(pointerY-pressY)**2)>22) touchMoved=true;
 });
 
 canvas.addEventListener('pointerup', e=>{
@@ -174,7 +174,25 @@ canvas.addEventListener('pointerup', e=>{
         }
     }
 
-    if (commandMode) { executeCommand(); commandTarget=null; }
+    if (commandMode) {
+        // If drag didn't hover a button, try treating release point as a tap on a button
+        if (!selectedRadialAction) {
+            const relX = e.clientX - commandX, relY = e.clientY - commandY;
+            const relDist = Math.hypot(relX, relY);
+            const relAngle = Math.atan2(relY, relX);
+            if (relDist > 18) {
+                const isLiveNest   = commandNestTarget && commandNestTarget.nestHealth > 0;
+                const isBrokenNest = commandNestTarget && commandNestTarget.nestHealth <= 0;
+                if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4) selectedRadialAction = "build_upgrade";
+                else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4) selectedRadialAction = "position";
+                else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4)   selectedRadialAction = "info";
+                else if (isLiveNest)   selectedRadialAction = "destroy_nest";
+                else if (isBrokenNest) selectedRadialAction = "connect_nest";
+                else                   selectedRadialAction = "switch_context";
+            }
+        }
+        executeCommand(); commandTarget=null;
+    }
     else if (!longHoldFired&&!touchMoved) handleInput(pressX,pressY);
     isPressing=false;
 });

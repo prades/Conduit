@@ -41,12 +41,11 @@ function closeElementPicker() {
     elementPickerTarget = null;
 }
 
-function _executeBuild(el) {
-    if (!elementPickerTarget || shardCount < 10) {
+function _executeBuild(el, t) {
+    if (!t || shardCount < 10) {
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 10 SHARDS",color:"#f44",life:90,vy:-0.2});
         return;
     }
-    const t = elementPickerTarget;
     shardCount -= 10; saveShards();
     t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=20;
     t.upgraded=false; t.destroyed=false;
@@ -72,8 +71,7 @@ function _executeBuild(el) {
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:"#0f8",life:100,vy:-0.2});
 }
 
-function _executeUpgrade(el) {
-    const pylon = elementPickerTarget;
+function _executeUpgrade(el, pylon) {
     if (!pylon || !pylon.pillar || pylon.destroyed) return;
     if (pylon.attackMode || pylon.waveMode) {
         // Already upgraded — just swap element directly
