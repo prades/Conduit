@@ -328,184 +328,158 @@ const ELEMENT_ATTACKS = {
 //  FOLLOWER ULTIMATE ABILITIES
 //  Triggered by double-tap when ultimateCharge === 100
 // ─────────────────────────────────────────────────────────
+let activeMeteorCast = null; // { caster, target, frames, maxFrames }
+
 const FOLLOWER_ULTIMATES = {
 
-    // ── FIRE: Nova Flare ──────────────────────────────────
+    // ── FIRE: Meteor Burst ────────────────────────────────
+    // 2-second cast — map darkens, reticle locks the strongest enemy,
+    // then a meteor strikes for massive damage and leaves a flaming crater.
     fire: {
-        name: "Nova Flare",
+        name: "Meteor Burst",
         execute(actor) {
-            if (actor.dead) return;
-            actor.ultimateCharge = 0;
-            shake = Math.max(shake, 10);
-            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
-            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
-            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! NOVA FLARE", color: "#ff6600", life: 90, vy: -0.9 });
-            spawnElementEffect({ type: "ring",   x: actor.x, y: actor.y, color: "#ff3300", radius: 5.0, life: 60, element: "fire" });
-            spawnElementEffect({ type: "meteor", x: actor.x, y: actor.y, color: "#ffaa00", radius: 5.0, life: 45, element: "fire" });
-            const dmg = (actor.stats?.specialAttack || 10) * 2.0;
+            if (actor.dead || activeMeteorCast) return;
+            const actorZone = getZoneIndex(Math.floor(actor.x));
+            let target = null, bestHP = -1;
             actors.forEach(a => {
-                if (!((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)) return;
-                const dx=a.x-actor.x, dy=a.y-actor.y;
-                if (Math.sqrt(dx*dx+dy*dy) <= 5.0) {
-                    applyElementalDamage(a, dmg, actor, "fire");
-                    a.burning = 240;
-                    a.burnDamage = dmg * 0.05;
+                if ((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead) {
+                    if (getZoneIndex(Math.floor(a.x))===actorZone && a.health>bestHP) { bestHP=a.health; target=a; }
                 }
             });
+            if (!target) return; // no enemies — don't consume charge
+            actor.ultimateCharge = 0;
+            shake = Math.max(shake, 4);
+            activeMeteorCast = { caster:actor, target, frames:0, maxFrames:120 };
+            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
+            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
+            floatingTexts.push({x:_px,y:_py-80,text:"☄ METEOR BURST",color:"#ff6600",life:120,vy:-0.5});
         }
     },
 
-    // ── ELECTRIC: Overload ────────────────────────────────
+    // ── ELECTRIC: EMP ─────────────────────────────────────
+    // Instantly destroys all enemy shields in the zone and
+    // surges nearby followers with resonance and speed.
     electric: {
-        name: "Overload",
-        execute(actor) {
-            if (actor.dead) return;
-            actor.ultimateCharge = 0;
-            shake = Math.max(shake, 10);
-            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
-            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
-            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! OVERLOAD", color: "#ffee33", life: 90, vy: -0.9 });
-            spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, color: "#ffee33", radius: 6.0, life: 55, element: "electric" });
-            const dmg = (actor.stats?.specialAttack || 10) * 1.5;
-            const chained = [];
-            actors.forEach(a => {
-                if (!((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)) return;
-                const dx=a.x-actor.x, dy=a.y-actor.y;
-                if (Math.sqrt(dx*dx+dy*dy) <= 6.0) {
-                    applyElementalDamage(a, dmg, actor, "electric");
-                    a.disoriented = 120;
-                    a.chainArcFlash = 30;
-                    chained.push(a);
-                }
-            });
-            if (chained.length > 0) {
-                spawnElementEffect({ type: "chain", x: actor.x, y: actor.y, targets: chained, color: "#ffffff", life: 25, element: "electric" });
-            }
-        }
-    },
-
-    // ── ICE: Deep Freeze ──────────────────────────────────
-    ice: {
-        name: "Deep Freeze",
+        name: "EMP",
         execute(actor) {
             if (actor.dead) return;
             actor.ultimateCharge = 0;
             shake = Math.max(shake, 8);
-            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
-            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
-            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! DEEP FREEZE", color: "#99ddff", life: 90, vy: -0.9 });
-            spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, color: "#99ddff", radius: 8.0, life: 70, element: "ice" });
-            const dmg = (actor.stats?.specialAttack || 10) * 0.8;
+            const actorZone = getZoneIndex(Math.floor(actor.x));
+            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
+            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
+            floatingTexts.push({x:_px,y:_py-80,text:"⚡ EMP",color:"#ffffaa",life:90,vy:-0.9});
+            // Strip all enemy shields in zone
             actors.forEach(a => {
-                if (!((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)) return;
-                const dx=a.x-actor.x, dy=a.y-actor.y;
-                if (Math.sqrt(dx*dx+dy*dy) <= 8.0) {
-                    // Temporarily clear frozen so applyDamage isn't blocked
-                    const wasFrozen = a.frozen;
-                    a.frozen = false;
-                    applyElementalDamage(a, dmg, actor, "ice");
-                    a.frozen = true;
-                    a.frozenEscapeChance = 0.001;
+                if ((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead) {
+                    if (getZoneIndex(Math.floor(a.x))===actorZone && a.shielded) {
+                        a.shielded=false; a.shieldAmount=0; a._shieldMax=0;
+                        spawnElementEffect({type:"impact",x:a.x,y:a.y,color:"#ffee33",radius:1.2,life:25,element:"electric"});
+                    }
                 }
             });
-        }
-    },
-
-    // ── FLUX: Dimension Rift ──────────────────────────────
-    flux: {
-        name: "Dimension Rift",
-        execute(actor) {
-            if (actor.dead) return;
-            actor.ultimateCharge = 0;
-            shake = Math.max(shake, 12);
-            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
-            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
-            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! DIMENSION RIFT", color: "#cc66ff", life: 90, vy: -0.9 });
-            spawnElementEffect({ type: "singularity", x: actor.x, y: actor.y, color: "#9933ff", radius: 4.0, life: 70, element: "flux" });
-            const dmg = (actor.stats?.specialAttack || 10) * 1.2;
-            actors.forEach(a => {
-                if (!((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)) return;
-                const dx=actor.x-a.x, dy=actor.y-a.y;
-                const dist = Math.sqrt(dx*dx+dy*dy);
-                if (dist <= 5.0 && dist > 0.01) {
-                    // Pull toward actor
-                    a.x += (dx/dist) * Math.min(dist, 1.5);
-                    a.y += (dy/dist) * Math.min(dist, 1.5);
-                    applyElementalDamage(a, dmg, actor, "flux");
-                    // Push back out
-                    const pushDX = -dx/dist, pushDY = -dy/dist;
-                    a.x += pushDX * 2.0;
-                    a.y += pushDY * 2.0;
-                    a.y = Math.max(-0.5, Math.min(4, a.y));
-                    a.disoriented = 150;
-                    a.disorientDX = pushDX * 0.5;
-                    a.disorientDY = pushDY * 0.5;
-                }
-            });
-            spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, color: "#ff99ff", radius: 4.5, life: 35, element: "flux" });
-        }
-    },
-
-    // ── CORE: Bulwark ─────────────────────────────────────
-    core: {
-        name: "Bulwark",
-        execute(actor) {
-            if (actor.dead) return;
-            actor.ultimateCharge = 0;
-            shake = Math.max(shake, 8);
-            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
-            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
-            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! BULWARK", color: "#00ffcc", life: 90, vy: -0.9 });
-            spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, color: "#00ccaa", radius: 6.0, life: 60, element: "core" });
-            const shieldVal = (actor.stats?.specialAttack || 10) * 3.0;
+            // Buff followers in zone: +30 resonance + 1.5× speed for 5 seconds
             followers.forEach(f => {
-                if (f.dead) return;
-                f.shielded     = true;
-                f.shieldAmount = shieldVal;
-                f._shieldMax   = shieldVal;
-                f.invulnerable = Math.max(f.invulnerable || 0, 180);
-                spawnElementEffect({ type: "impact", x: f.x, y: f.y, color: "#00ccaa", radius: 1.0, life: 30, element: "core" });
-            });
-            const dmg = (actor.stats?.specialAttack || 10) * 1.0;
-            actors.forEach(a => {
-                if (!((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)) return;
-                const dx=a.x-actor.x, dy=a.y-actor.y;
-                if (Math.sqrt(dx*dx+dy*dy) <= 5.0) {
-                    applyElementalDamage(a, dmg, actor, "core");
-                    const dist = Math.hypot(dx, dy) || 1;
-                    a.x += (dx/dist) * 2.5;
-                    a.y += (dy/dist) * 2.5;
+                if (f.dead || getZoneIndex(Math.floor(f.x))!==actorZone) return;
+                f.currentResonance = Math.min(100, (f.currentResonance||0)+30);
+                if (!f._empBoostTimer || f._empBoostTimer<=0) {
+                    f._empBaseSpeed = f.moveSpeed;
+                    f.moveSpeed = f._empBaseSpeed * 1.5;
                 }
+                f._empBoostTimer = 300;
+                spawnElementEffect({type:"impact",x:f.x,y:f.y,color:"#ffee33",radius:0.8,life:20,element:"electric"});
             });
+            spawnElementEffect({type:"ring",x:actor.x,y:actor.y,color:"#ffee33",radius:8.0,life:55,element:"electric"});
         }
     },
 
-    // ── TOXIC: Plague Bloom ───────────────────────────────
-    toxic: {
-        name: "Plague Bloom",
+    // ── ICE: Blizzard ─────────────────────────────────────
+    // Zone-wide blizzard field — enemies have a high chance to
+    // freeze every 30 frames for the field's duration.
+    ice: {
+        name: "Blizzard",
         execute(actor) {
             if (actor.dead) return;
             actor.ultimateCharge = 0;
             shake = Math.max(shake, 6);
-            const _px = (actor.x - player.visualX - (actor.y - player.visualY)) * TILE_W + canvas.width/2;
-            const _py = (actor.x - player.visualX + (actor.y - player.visualY)) * TILE_H + canvas.height/2;
-            floatingTexts.push({ x: _px, y: _py - 80, text: "ULTIMATE! PLAGUE BLOOM", color: "#66ff66", life: 90, vy: -0.9 });
-            const enemies = actors.filter(a =>
-                (a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone)) && !a.dead
-            );
-            const picks = enemies.sort(() => Math.random()-0.5).slice(0, 4);
-            if (picks.length === 0) {
-                [[-2,0],[2,0],[0,-1],[0,1]].forEach(([ox,oy]) => {
-                    spawnElementEffect({ type:"toxicCloud", x:actor.x+ox, y:actor.y+oy, color:"#66ff66", radius:2.5, life:400, element:"toxic", tickDamage:(actor.stats?.specialAttack||10)*0.12 });
-                });
-            } else {
-                picks.forEach(enemy => {
-                    spawnElementEffect({ type:"toxicCloud", x:enemy.x, y:enemy.y, color:"#66ff66", radius:2.5, life:400, element:"toxic", tickDamage:(actor.stats?.specialAttack||10)*0.12 });
-                    applyElementalDamage(enemy, (actor.stats?.specialAttack||10)*0.5, actor, "toxic");
-                    enemy.defenseShredded = 300;
-                    enemy.defenseShredFactor = 0.4;
-                });
-            }
+            const actorZone = getZoneIndex(Math.floor(actor.x));
+            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
+            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
+            floatingTexts.push({x:_px,y:_py-80,text:"❄ BLIZZARD",color:"#aaddff",life:90,vy:-0.9});
+            spawnElementEffect({type:"blizzardField",x:actor.x,y:actor.y,zone:actorZone,color:"#99ddff",life:360,maxLife:360,element:"ice"});
+            spawnElementEffect({type:"ring",x:actor.x,y:actor.y,color:"#99ddff",radius:8.0,life:60,element:"ice"});
+        }
+    },
+
+    // ── FLUX: Disorient ───────────────────────────────────
+    // All predators in the zone turn on each other — they attack
+    // allied predators for 4 seconds with half attack power.
+    flux: {
+        name: "Disorient",
+        execute(actor) {
+            if (actor.dead) return;
+            actor.ultimateCharge = 0;
+            shake = Math.max(shake, 10);
+            const actorZone = getZoneIndex(Math.floor(actor.x));
+            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
+            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
+            floatingTexts.push({x:_px,y:_py-80,text:"⟳ DISORIENT",color:"#cc66ff",life:90,vy:-0.9});
+            actors.forEach(a => {
+                if (!(a instanceof Predator)||a.team==="green"||a.isClone||a.dead) return;
+                if (getZoneIndex(Math.floor(a.x))===actorZone) {
+                    a.disorientFF = 240;          // friendly-fire mode for 4 s
+                    a.disorientPowerFactor = 0.5; // attacks at half power
+                    a.disoriented = 240;
+                    spawnElementEffect({type:"impact",x:a.x,y:a.y,color:"#cc66ff",radius:0.8,life:25,element:"flux"});
+                }
+            });
+            spawnElementEffect({type:"singularity",x:actor.x,y:actor.y,color:"#9933ff",radius:5.0,life:60,element:"flux"});
+        }
+    },
+
+    // ── CORE: Shield Grant ────────────────────────────────
+    // All followers receive a 10 HP shield that blocks 100% damage.
+    // A nearby core wave-pylon can slowly recharge it as long as it
+    // hasn't been fully broken.
+    core: {
+        name: "Shield Grant",
+        execute(actor) {
+            if (actor.dead) return;
+            actor.ultimateCharge = 0;
+            shake = Math.max(shake, 8);
+            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
+            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
+            floatingTexts.push({x:_px,y:_py-80,text:"⬡ SHIELD GRANT",color:"#00ffcc",life:90,vy:-0.9});
+            spawnElementEffect({type:"ring",x:actor.x,y:actor.y,color:"#00ccaa",radius:6.0,life:60,element:"core"});
+            followers.forEach(f => {
+                if (f.dead) return;
+                f.shielded     = true;
+                f.shieldAmount = 10;
+                f._shieldMax   = 10;
+                spawnElementEffect({type:"impact",x:f.x,y:f.y,color:"#00ffcc",radius:1.0,life:30,element:"core"});
+            });
+        }
+    },
+
+    // ── TOXIC: Smoke Screen ───────────────────────────────
+    // A thick smoke cloud fills the entire zone — all enemies
+    // within it have their attack accuracy halved for 8 seconds.
+    toxic: {
+        name: "Smoke Screen",
+        execute(actor) {
+            if (actor.dead) return;
+            actor.ultimateCharge = 0;
+            shake = Math.max(shake, 5);
+            const actorZone = getZoneIndex(Math.floor(actor.x));
+            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
+            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
+            floatingTexts.push({x:_px,y:_py-80,text:"◎ SMOKE SCREEN",color:"#aabb99",life:90,vy:-0.9});
+            actors.forEach(a => {
+                if ((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead) {
+                    if (getZoneIndex(Math.floor(a.x))===actorZone) a.smokeDebuff = 480;
+                }
+            });
+            spawnElementEffect({type:"smokeScreen",x:actor.x,y:actor.y,zone:actorZone,color:"#aabb88",life:480,maxLife:480,element:"toxic"});
         }
     }
 
@@ -802,6 +776,47 @@ function spawnElementEffect(effect) {
 }
 
 function updateElementEffects() {
+
+    // ── METEOR BURST CAST TICK ──────────────────────────────
+    if (activeMeteorCast) {
+        activeMeteorCast.frames++;
+        // Re-acquire target if original died during the 2 s cast
+        if (!activeMeteorCast.target || activeMeteorCast.target.dead) {
+            const actorZone = getZoneIndex(Math.floor(activeMeteorCast.caster.x));
+            let best=null, bestHP=-1;
+            actors.forEach(a=>{
+                if((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead){
+                    if(getZoneIndex(Math.floor(a.x))===actorZone&&a.health>bestHP){bestHP=a.health;best=a;}
+                }
+            });
+            activeMeteorCast.target = best;
+        }
+        if (activeMeteorCast.frames >= activeMeteorCast.maxFrames) {
+            const {caster, target} = activeMeteorCast;
+            activeMeteorCast = null;
+            if (target && !target.dead) {
+                const tx=target.x, ty=target.y;
+                const dmg = (caster.stats?.specialAttack||10) * 3.0;
+                shake = Math.max(shake, 18);
+                actors.forEach(a=>{
+                    if((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead){
+                        const d=Math.hypot(a.x-tx, a.y-ty);
+                        if(d<=5.0){
+                            applyElementalDamage(a, dmg*(1-d*0.12), caster, "fire");
+                            a.burning=360; a.burnDamage=dmg*0.04;
+                        }
+                    }
+                });
+                spawnElementEffect({type:"meteor",   x:tx,y:ty,color:"#ffaa00",radius:5.0,life:45,element:"fire"});
+                spawnElementEffect({type:"ring",     x:tx,y:ty,color:"#ff3300",radius:6.0,life:70,element:"fire"});
+                spawnElementEffect({type:"flameCrater",x:tx,y:ty,radius:2.5,color:"#ff4400",life:600,maxLife:600,element:"fire",tickDamage:dmg*0.08});
+                const _tpx=(tx-player.visualX-(ty-player.visualY))*TILE_W+canvas.width/2;
+                const _tpy=(tx-player.visualX+(ty-player.visualY))*TILE_H+canvas.height/2;
+                floatingTexts.push({x:_tpx,y:_tpy-60,text:"IMPACT!",color:"#ff2200",life:60,vy:-0.8});
+            }
+        }
+    }
+
     elementEffects = elementEffects.filter(e => {
         e.life--;
 
@@ -817,11 +832,69 @@ function updateElementEffects() {
             });
         }
 
+        // Flame crater — fire DoT to enemies standing inside
+        if (e.type === "flameCrater" && e.life % 30 === 0) {
+            actors.forEach(a=>{
+                if((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead){
+                    if(Math.hypot(a.x-e.x,a.y-e.y)<=e.radius) applyDamage(a,e.tickDamage||3,null,"fire");
+                }
+            });
+        }
+
+        // Blizzard field — 60 % freeze chance every 30 frames for all enemies in zone
+        if (e.type === "blizzardField" && e.life % 30 === 0) {
+            actors.forEach(a=>{
+                if((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead&&!a.frozen){
+                    if(getZoneIndex(Math.floor(a.x))===e.zone && Math.random()<0.60){
+                        a.frozen=true; a.frozenEscapeChance=0.006; // ~2.8 s average
+                        spawnElementEffect({type:"impact",x:a.x,y:a.y,color:"#99ddff",radius:0.5,life:15,element:"ice"});
+                    }
+                }
+            });
+        }
+
         return e.life > 0;
     });
 }
 
 function drawElementEffects() {
+
+    // ── METEOR BURST CAST SHADOW + RETICLE ──────────────────
+    if (activeMeteorCast) {
+        const castPct = activeMeteorCast.frames / activeMeteorCast.maxFrames;
+        ctx.save();
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.fillStyle = `rgba(20,5,0,${castPct * 0.55})`;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        if (activeMeteorCast.target && !activeMeteorCast.target.dead) {
+            const t = activeMeteorCast.target;
+            const tpx=(t.x-player.visualX-(t.y-player.visualY))*TILE_W+canvas.width/2;
+            const tpy=(t.x-player.visualX+(t.y-player.visualY))*TILE_H+canvas.height/2;
+            const blink = Math.floor(activeMeteorCast.frames/8)%2===0;
+            ctx.strokeStyle = blink ? "#ff6600" : "#ff2200";
+            ctx.lineWidth = 2 + castPct * 3;
+            ctx.globalAlpha = 0.45 + 0.55*castPct;
+            ctx.shadowColor="#ff4400"; ctx.shadowBlur=14;
+            // Expanding reticle ring
+            ctx.beginPath();
+            ctx.arc(tpx, tpy-30, 32 + castPct*20, 0, Math.PI*2);
+            ctx.stroke();
+            // Crosshairs
+            const ch = 50 + castPct*20;
+            ctx.beginPath();
+            ctx.moveTo(tpx-ch, tpy-30); ctx.lineTo(tpx+ch, tpy-30);
+            ctx.moveTo(tpx,    tpy-30-ch); ctx.lineTo(tpx, tpy-30+ch);
+            ctx.stroke();
+            // Impact radius preview
+            ctx.globalAlpha = 0.07 * castPct;
+            ctx.fillStyle = "#ff2200";
+            ctx.beginPath();
+            ctx.arc(tpx, tpy-30, 5.0*TILE_W*0.5, 0, Math.PI*2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
     elementEffects.forEach(e => {
         const px = (e.x - player.visualX - (e.y - player.visualY)) * TILE_W + canvas.width/2;
         const py = (e.x - player.visualX + (e.y - player.visualY)) * TILE_H + canvas.height/2;
@@ -887,6 +960,62 @@ function drawElementEffects() {
                 ctx.beginPath();
                 ctx.arc(px, py-30, r, 0, Math.PI*2);
                 ctx.fill();
+                break;
+            }
+            // ── NEW EFFECT TYPES ──────────────────────────────────
+            case "flameCrater": {
+                // Glowing, flickering fire hole on the floor
+                const fadeIn  = Math.min(1, (e.maxLife - e.life) / 30);
+                const fadeOut = Math.min(1, e.life / 30);
+                const factor  = Math.min(fadeIn, fadeOut);
+                const flicker = 0.55 + 0.45*Math.sin(frame*0.28 + e.x*1.7);
+                const r = e.radius * TILE_W;
+                ctx.shadowColor="#ff4400"; ctx.shadowBlur=18;
+                const grad = ctx.createRadialGradient(px,py-15,0,px,py-15,r);
+                grad.addColorStop(0,"#ff660099");
+                grad.addColorStop(0.45,"#cc220066");
+                grad.addColorStop(1,"#88110000");
+                ctx.fillStyle = grad;
+                ctx.globalAlpha = factor * 0.65 * flicker;
+                ctx.beginPath();
+                ctx.arc(px, py-15, r, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle="#ff4400"; ctx.lineWidth=2;
+                ctx.globalAlpha = factor * 0.45 * flicker;
+                ctx.stroke();
+                break;
+            }
+            case "blizzardField": {
+                // Full-screen ice tint with swirling sparkles
+                const fadeIn  = Math.min(1, (e.maxLife - e.life) / 60);
+                const fadeOut = Math.min(1, e.life / 60);
+                const factor  = Math.min(fadeIn, fadeOut);
+                ctx.setTransform(1,0,0,1,0,0);
+                ctx.globalAlpha = factor * 0.22;
+                ctx.fillStyle = "#8cc8ff";
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                // Sparkles
+                ctx.globalAlpha = factor * 0.55;
+                ctx.fillStyle = "#ddeeff";
+                for (let i=0;i<4;i++) {
+                    const sx=Math.abs(Math.sin(frame*0.07+i*2.1+e.life*0.01))*canvas.width;
+                    const sy=Math.abs(Math.cos(frame*0.09+i*1.7+e.life*0.013))*canvas.height;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, 1+Math.abs(Math.sin(frame*0.15+i))*2, 0, Math.PI*2);
+                    ctx.fill();
+                }
+                break;
+            }
+            case "smokeScreen": {
+                // Full-screen grey-green fog — fades in and out
+                const fadeIn  = Math.min(1, (e.maxLife - e.life) / 90);
+                const fadeOut = Math.min(1, e.life / 90);
+                const factor  = Math.min(fadeIn, fadeOut);
+                const drift   = Math.sin(frame*0.015 + e.zone*0.4) * 0.03;
+                ctx.setTransform(1,0,0,1,0,0);
+                ctx.globalAlpha = (factor + drift) * 0.36;
+                ctx.fillStyle = "#5a6950";
+                ctx.fillRect(0,0,canvas.width,canvas.height);
                 break;
             }
         }

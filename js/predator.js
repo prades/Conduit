@@ -138,6 +138,10 @@ class Predator {
     update() {
         if (this.dead) return;
 
+        // ── STATUS TIMERS ──
+        if (this.smokeDebuff  > 0) this.smokeDebuff--;
+        if (this.disorientFF  > 0) this.disorientFF--;
+
         // ── THREAT SCAN ──
         let threat=null, bestDist=Infinity;
         if (this.lastAttacker&&!this.lastAttacker.dead) {
@@ -239,6 +243,16 @@ class Predator {
 
         // ── HUNT (→ crystal, with organic lateral weaving) ──
         if (this.state==="hunt") {
+            // ── DISORIENT: attack nearest red ally instead of crystal ──
+            if (this.disorientFF > 0) {
+                let nearRed=null, bd=Infinity;
+                actors.forEach(a=>{
+                    if(a===this||a.dead||a.team!=="red"||a.isClone) return;
+                    const d=Math.hypot(a.x-this.x,a.y-this.y);
+                    if(d<bd){bd=d;nearRed=a;}
+                });
+                if (nearRed) { this.currentTarget=nearRed; this.state="attack"; return; }
+            }
             // During night, aggro on any nearby green pylon to bash it on the way to crystal
             if (gameState.phase !== "day" && !this.pylonAggro && frame % 30 === 0) {
                 let nearestPylon=null, bestPD=Infinity;
@@ -302,12 +316,25 @@ class Predator {
             if (!this.attackCooldown) this.attackCooldown=0;
             this.attackCooldown--;
             if (this.attackCooldown<=0) {
-                // AoE melee — hits ALL green-team actors within strike range
-                actors.forEach(a => {
-                    if (a.dead || a.team !== "green") return;
-                    const adx = a.x - this.x, ady = a.y - this.y;
-                    if (Math.sqrt(adx*adx + ady*ady) <= 1.5) applyDamage(a, this.power, this);
-                });
+                const pwr = this.power * (this.disorientPowerFactor || 1.0);
+                if (this.disorientFF > 0) {
+                    // ── FRIENDLY FIRE — attack other red predators ──
+                    actors.forEach(a => {
+                        if (a===this||a.dead||a.team!=="red"||a.isClone) return;
+                        const adx=a.x-this.x, ady=a.y-this.y;
+                        if (Math.sqrt(adx*adx+ady*ady)<=1.5) applyDamage(a, pwr, this);
+                    });
+                } else {
+                    // ── NORMAL — hit green actors; smoke halves accuracy ──
+                    actors.forEach(a => {
+                        if (a.dead || a.team !== "green") return;
+                        const adx=a.x-this.x, ady=a.y-this.y;
+                        if (Math.sqrt(adx*adx+ady*ady)<=1.5) {
+                            if (this.smokeDebuff > 0 && Math.random() < 0.5) return; // miss
+                            applyDamage(a, pwr, this);
+                        }
+                    });
+                }
                 this.attackCooldown=45;
             }
             return;

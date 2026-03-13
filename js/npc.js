@@ -10,6 +10,15 @@ function updateRTSNPC(actor) {
     if (actor.combatTrait) { const t=COMBAT_TRAITS[actor.combatTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
     if (actor.naturalTrait){ const t=NATURAL_TRAITS[actor.naturalTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
 
+    // ── EMP SPEED BOOST TIMER ──
+    if ((actor._empBoostTimer||0) > 0) {
+        actor._empBoostTimer--;
+        if (actor._empBoostTimer === 0 && actor._empBaseSpeed != null) {
+            actor.moveSpeed = actor._empBaseSpeed;
+            actor._empBaseSpeed = null;
+        }
+    }
+
     // return to crystal
     if (!actor.dead&&actor.team==="green"&&actor.returningToCrystal) {
         const dx=crystal.x-actor.x, dy=crystal.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);

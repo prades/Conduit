@@ -226,9 +226,10 @@ function render() {
             if (!a||a.dead) return;
             if (Math.hypot(a.x-cx,a.y-cy) > radius*1.2) return;
             const isFriend = (a.team==="green"||a.isClone||a.isFollower);
-            if (isFriend && frame%60===0) {
-                a.shielded=true;
-                a.shieldAmount=Math.min(30,(a.shieldAmount||0)+5);
+            // Only recharge a shield that exists and hasn't been fully broken
+            if (isFriend && frame%60===0 && a.shielded && a.shieldAmount > 0) {
+                const cap = a._shieldMax || 30;
+                a.shieldAmount = Math.min(cap, a.shieldAmount + 3);
             }
         });
     }
