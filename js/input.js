@@ -45,6 +45,12 @@ function handleLongHold(ex,ey) {
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
     commandTarget=(t&&!t.type.includes("wall"))?t:null;
+    // Snap to nearest pylon within 2 tiles — ensures pylons are reliably targeted
+    // even when the press lands on an adjacent floor tile
+    if (!commandTarget?.pillar) {
+        const _snap=world.find(obj=>obj.pillar&&!obj.destroyed&&obj.health>0&&Math.hypot(obj.x-gx,obj.y-gy)<2.0);
+        if (_snap) commandTarget=_snap;
+    }
     // Check if any nest pod (live or broken) is near this tile (within 2.5 tiles)
     commandNestTarget=null;
     world.forEach(obj=>{
@@ -79,6 +85,11 @@ canvas.addEventListener('pointerdown', e=>{
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
     if (t&&!t.type.includes("wall")) commandTarget=t;
+    // Snap to nearby pylon on initial press too
+    if (!commandTarget?.pillar) {
+        const _snap=world.find(obj=>obj.pillar&&!obj.destroyed&&obj.health>0&&Math.hypot(obj.x-gx,obj.y-gy)<2.0);
+        if (_snap) commandTarget=_snap;
+    }
 });
 
 canvas.addEventListener('pointermove', e=>{
@@ -191,7 +202,7 @@ canvas.addEventListener('pointerup', e=>{
                 const _isPyCmd = commandTarget && commandTarget.pillar && !commandTarget.destroyed;
                 if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && (_isPyCmd || buildMode)) selectedRadialAction = "build_upgrade";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4) selectedRadialAction = "position";
-                else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4)   selectedRadialAction = "info";
+                else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4 && !_isPyCmd) selectedRadialAction = "info";
                 else if (isLiveNest)   selectedRadialAction = "destroy_nest";
                 else if (isBrokenNest) selectedRadialAction = "connect_nest";
                 else                   selectedRadialAction = "switch_context";

@@ -43,10 +43,12 @@ function drawRadialMenu() {
     drawRadialButton(commandX, commandY+RADIAL_RADIUS, "POSITION", dHov);
     if (dHov) selectedRadialAction="position";
 
-    // ── RIGHT = INFO ───────────────────────────────────────
-    const rHov=dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
-    drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", rHov);
-    if (rHov) selectedRadialAction="info";
+    // ── RIGHT = INFO — hidden when a pylon is targeted (UPGRADE/SWITCH take priority) ──
+    if (!isPylonTarget) {
+        const rHov=dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
+        drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", rHov);
+        if (rHov) selectedRadialAction="info";
+    }
 
     // ── LEFT = SWITCH / DESTROY / CONNECT (context) ───────
     const lHov=dist>RADIAL_RADIUS*0.25&&Math.abs(angle)>Math.PI*3/4;
@@ -98,21 +100,26 @@ function _drawPredator(actor, px, py, drawCtx) {
     // Build segments
     const segments=[];
     const baseLength=dim.height*0.9;
-    segments.push({ length:baseLength*actor.body.thorax.size,  width:dim.width*actor.body.thorax.size,  rotation:angle });
-    segments.push({ length:baseLength*actor.body.head.size,    width:dim.width*actor.body.head.size,    rotation:actor.headAngle||angle });
+    // Thorax — optional yOffset lifts/lowers it relative to body centre (mantis raised prothorax)
+    segments.push({ length:baseLength*actor.body.thorax.size, width:dim.width*actor.body.thorax.size, rotation:angle, yOffset:actor.body.thorax.yOffset||0 });
+    segments.push({ length:baseLength*actor.body.head.size,   width:dim.width*actor.body.head.size,   rotation:actor.headAngle||angle });
+    // Abdomen — optional angleOffset lets the chain grow in a different direction than the thorax
+    const abdAngle = angle + (actor.body.abdomen.angleOffset || 0);
+    const abdDirX  = Math.cos(abdAngle), abdDirY = Math.sin(abdAngle);
     let abdLen=baseLength*actor.body.abdomen.size;
     for (let i=0;i<actor.body.abdomen.segments;i++) {
-        segments.push({ length:abdLen, width:dim.width*actor.body.abdomen.size, rotation:angle });
+        segments.push({ length:abdLen, width:dim.width*actor.body.abdomen.size, rotation:abdAngle });
         abdLen*=actor.body.abdomen.taper;
     }
 
     // Position segments
-    segments[0].cx=px; segments[0].cy=bodyBaseY;
+    segments[0].cx=px; segments[0].cy=bodyBaseY+(segments[0].yOffset||0);
     segments[1].cx=segments[0].cx+dirX*(segments[0].length*0.5+segments[1].length*0.5);
     segments[1].cy=segments[0].cy+dirY*(segments[0].length*0.5+segments[1].length*0.5);
     let prevX=segments[0].cx, prevY=segments[0].cy;
     for (let i=2;i<segments.length;i++) {
-        prevX-=dirX*segments[i].length; prevY-=dirY*segments[i].length;
+        // Use the abdomen's own direction so the chain follows the offset angle
+        prevX-=abdDirX*segments[i].length; prevY-=abdDirY*segments[i].length;
         segments[i].cx=prevX; segments[i].cy=prevY;
     }
 

@@ -19,11 +19,13 @@ function buildSliders(section) {
             break;
         case"thorax":
             sliderContainer.appendChild(cs("Size",0.4,2.0,0.05,previewPredator.body.thorax.size,v=>previewPredator.body.thorax.size=v));
+            sliderContainer.appendChild(cs("Tilt (Y)",-25,25,1,previewPredator.body.thorax.yOffset||0,v=>previewPredator.body.thorax.yOffset=v));
             break;
         case"abdomen":
             sliderContainer.appendChild(cs("Size",0.3,2.0,0.05,previewPredator.body.abdomen.size,v=>previewPredator.body.abdomen.size=v));
             sliderContainer.appendChild(cs("Segments",1,8,1,previewPredator.body.abdomen.segments,v=>previewPredator.body.abdomen.segments=v));
             sliderContainer.appendChild(cs("Taper",0.5,1.0,0.05,previewPredator.body.abdomen.taper,v=>previewPredator.body.abdomen.taper=v));
+            sliderContainer.appendChild(cs("Angle Offset",-1.5,1.5,0.05,previewPredator.body.abdomen.angleOffset||0,v=>previewPredator.body.abdomen.angleOffset=v));
             break;
         case"legs":
             sliderContainer.appendChild(cs("Coxa",2,20,1,previewPredator.appendages.legs.coxa,v=>previewPredator.appendages.legs.coxa=v));
@@ -156,6 +158,38 @@ function initPreview() {
     sliderContainer=document.createElement("div");
     panel.appendChild(sliderContainer);
     buildSliders("head");
+
+    // ── SPECIES PRESETS ──
+    const presetSep=document.createElement("div");
+    presetSep.style.cssText="border-top:1px solid #0a4a2a;margin:10px 0 8px;padding-top:8px;font-size:10px;letter-spacing:2px;color:#0a8;";
+    presetSep.textContent="── LOAD PRESET ──";
+    panel.appendChild(presetSep);
+    const presetRow=document.createElement("div");
+    presetRow.style.cssText="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;";
+    ["ant","beetle","scorpion","spider","mantis"].forEach(name=>{
+        const btn=document.createElement("button");
+        btn.textContent=name.toUpperCase();
+        btn.style.cssText="flex:1;min-width:56px;padding:4px 2px;background:#0a1a10;border:1px solid #0a8;color:#0a8;font-family:monospace;font-size:10px;border-radius:3px;cursor:pointer;letter-spacing:1px;";
+        btn.onpointerdown=e=>e.stopPropagation();
+        btn.onclick=()=>{
+            if (!previewPredator) return;
+            // Reset body to defaults then apply the species
+            previewPredator.body.head.size=0.45; previewPredator.body.thorax.size=0.9; previewPredator.body.thorax.yOffset=0;
+            previewPredator.body.abdomen.size=0.75; previewPredator.body.abdomen.segments=1; previewPredator.body.abdomen.taper=0.9; previewPredator.body.abdomen.angleOffset=0;
+            previewPredator.body.abdomen.round=false; previewPredator.isSpider=false; previewPredator.isMantis=false;
+            previewPredator.hasStinger=false; previewPredator.armorPlated=false;
+            previewPredator.appendages.antennae.enabled=false; previewPredator.appendages.wings.enabled=true;
+            previewPredator.appendages.mandibles.enabled=true; previewPredator.appendages.mandibles.length=5; previewPredator.appendages.mandibles.spread=0.9;
+            previewPredator.appendages.legs.count=6; previewPredator.appendages.legs.coxa=6; previewPredator.appendages.legs.femur=10; previewPredator.appendages.legs.tibia=14;
+            previewPredator.segmentCornerRadius=6; previewPredator.segmentSpacing=10; previewPredator.heightBoost=1;
+            previewPredator.speciesName=name;
+            previewPredator.className="scout";
+            applySpeciesBody(previewPredator, name);
+            buildSliders(select.value); // refresh sliders to show new values
+        };
+        presetRow.appendChild(btn);
+    });
+    panel.appendChild(presetRow);
 
     // ── CREATE PREDATOR section ──
     const sep=document.createElement("div");

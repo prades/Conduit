@@ -169,7 +169,7 @@ function render() {
 
                 switch(el) {
                     case "fire":
-                        if (isEnemy && frame%30===0) applyDamage(a, 2, null, "fire");
+                        if (isEnemy && frame%30===0) applyDamage(a, 6, null, "fire");
                         break;
                     case "ice":
                         if (isEnemy) { a.slowed=40; a.slowFactor=0.35; }
@@ -194,7 +194,7 @@ function render() {
                         break;
                     case "toxic":
                         if (isEnemy && frame%40===0) {
-                            applyDamage(a, 1.5, null, "toxic");
+                            applyDamage(a, 5, null, "toxic");
                             if (Math.random()<0.3) { a.defenseShredded=90; a.defenseShredFactor=0.6; }
                         }
                         break;
