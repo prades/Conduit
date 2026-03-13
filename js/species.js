@@ -191,5 +191,6 @@ const CLONE_COSTS = {
     ant:      { base:1, tankExtra:1, bossExtra:4, splicesNeeded:3  },
     beetle:   { base:2, tankExtra:1, bossExtra:5, splicesNeeded:5  },
     scorpion: { base:3, tankExtra:1, bossExtra:6, splicesNeeded:8  },
-    spider:   { base:4, tankExtra:2, bossExtra:8, splicesNeeded:10 }
+    spider:   { base:4, tankExtra:2, bossExtra:8, splicesNeeded:10 },
+    mantis:   { base:3, tankExtra:1, bossExtra:6, splicesNeeded:8  }
 };
