@@ -323,7 +323,6 @@ function applySpeciesBody(predator, speciesName) {
         predator.body.abdomen.segments      = 3;
         predator.body.abdomen.taper         = 0.82;
         predator.body.abdomen.absoluteAngle  =  Math.PI / 2; // abdomen always points screen-upward (foreshortens when facing away)
-        predator.joints.waist.vertical      = 16;  // counteracts thorax yOffset so abdomen anchors at visual rear, not raised center
         predator.segmentSpacing             = 5;
         predator.appendages.antennae.enabled  = true;
         predator.appendages.antennae.length   = 12;
