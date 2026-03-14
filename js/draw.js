@@ -119,19 +119,15 @@ function _drawPredator(actor, px, py, drawCtx) {
     segments[0].cx=px; segments[0].cy=bodyBaseY+(segments[0].yOffset||0);
     segments[1].cx=segments[0].cx+dirX*(segments[0].length*0.5+segments[1].length*0.5);
     segments[1].cy=segments[0].cy+dirY*(segments[0].length*0.5+segments[1].length*0.5);
-    // For absoluteAngle, anchor at the edge of the thorax in the abdomen's own
-    // direction — not the body direction — so it stays centred regardless of rotation
-    let prevX, prevY;
-    if (actor.body.abdomen.absoluteAngle !== undefined) {
-        prevX = segments[0].cx - abdDirX * segments[0].length * 0.5;
-        prevY = segments[0].cy - abdDirY * segments[0].length * 0.5;
-    } else {
-        prevX = segments[0].cx; prevY = segments[0].cy;
-    }
+    // Abdomen chain starts at thorax rear (body direction); each segment's near
+    // edge touches the anchor so the chain is always connected to the thorax
+    let anchorX = segments[0].cx - dirX * segments[0].length * 0.5;
+    let anchorY = segments[0].cy - dirY * segments[0].length * 0.5;
     for (let i=2;i<segments.length;i++) {
-        // Use the abdomen's own direction so the chain follows the offset angle
-        prevX-=abdDirX*segments[i].length; prevY-=abdDirY*segments[i].length;
-        segments[i].cx=prevX; segments[i].cy=prevY;
+        segments[i].cx = anchorX - abdDirX * segments[i].length * 0.5;
+        segments[i].cy = anchorY - abdDirY * segments[i].length * 0.5;
+        anchorX -= abdDirX * segments[i].length;
+        anchorY -= abdDirY * segments[i].length;
     }
 
     // ── LEGS drawn first so body renders over them ──
