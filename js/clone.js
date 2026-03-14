@@ -319,9 +319,9 @@ function applySpeciesBody(predator, speciesName) {
         predator.body.head.size             = 0.38;
         predator.body.thorax.size           = 0.90;
         predator.body.thorax.yOffset        = -16;  // raised prothorax
-        predator.body.abdomen.size          = 0.60;
-        predator.body.abdomen.segments      = 1;
-        predator.body.abdomen.taper         = 0.90;
+        predator.body.abdomen.size          = 0.72;
+        predator.body.abdomen.segments      = 3;
+        predator.body.abdomen.taper         = 0.82;
         predator.body.abdomen.absoluteAngle  =  Math.PI / 2; // abdomen always points screen-upward (foreshortens when facing away)
         predator.segmentSpacing             = 5;
         predator.appendages.antennae.enabled  = true;
