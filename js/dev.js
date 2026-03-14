@@ -25,7 +25,9 @@ function buildSliders(section) {
             sliderContainer.appendChild(cs("Size",0.3,2.0,0.05,previewPredator.body.abdomen.size,v=>previewPredator.body.abdomen.size=v));
             sliderContainer.appendChild(cs("Segments",1,8,1,previewPredator.body.abdomen.segments,v=>previewPredator.body.abdomen.segments=v));
             sliderContainer.appendChild(cs("Taper",0.5,1.0,0.05,previewPredator.body.abdomen.taper,v=>previewPredator.body.abdomen.taper=v));
-            sliderContainer.appendChild(cs("Angle Offset",-1.5,1.5,0.05,previewPredator.body.abdomen.angleOffset||0,v=>previewPredator.body.abdomen.angleOffset=v));
+            sliderContainer.appendChild(cs("Angle Offset",-1.6,1.6,0.05,
+                previewPredator.body.abdomen.absoluteAngle !== undefined ? previewPredator.body.abdomen.absoluteAngle : (previewPredator.body.abdomen.angleOffset||0),
+                v => { if (previewPredator.body.abdomen.absoluteAngle !== undefined) previewPredator.body.abdomen.absoluteAngle=v; else previewPredator.body.abdomen.angleOffset=v; }));
             break;
         case"legs":
             sliderContainer.appendChild(cs("Coxa",2,20,1,previewPredator.appendages.legs.coxa,v=>previewPredator.appendages.legs.coxa=v));

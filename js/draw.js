@@ -103,8 +103,11 @@ function _drawPredator(actor, px, py, drawCtx) {
     // Thorax — optional yOffset lifts/lowers it relative to body centre (mantis raised prothorax)
     segments.push({ length:baseLength*actor.body.thorax.size, width:dim.width*actor.body.thorax.size, rotation:angle, yOffset:actor.body.thorax.yOffset||0 });
     segments.push({ length:baseLength*actor.body.head.size,   width:dim.width*actor.body.head.size,   rotation:actor.headAngle||angle });
-    // Abdomen — optional angleOffset lets the chain grow in a different direction than the thorax
-    const abdAngle = angle + (actor.body.abdomen.angleOffset || 0);
+    // Abdomen — absoluteAngle fixes it to a screen-space direction (e.g. mantis always-up);
+    // angleOffset rotates it relative to the facing direction
+    const abdAngle = actor.body.abdomen.absoluteAngle !== undefined
+        ? actor.body.abdomen.absoluteAngle
+        : angle + (actor.body.abdomen.angleOffset || 0);
     const abdDirX  = Math.cos(abdAngle), abdDirY = Math.sin(abdAngle);
     let abdLen=baseLength*actor.body.abdomen.size;
     for (let i=0;i<actor.body.abdomen.segments;i++) {
