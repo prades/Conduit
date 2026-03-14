@@ -540,21 +540,31 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
     [-1, 1].forEach(side => {
         const baseX = attachX + perpX * side * ra.spread;
         const baseY = attachY + perpY * side * ra.spread;
-        // COXA: short base segment, angles outward and upward from body
-        const coxaAngle = ha + side * 0.8 + upTilt + sway * side;
+        let coxaAngle, femurAngle, tibiaAngle;
+        if (ra.prayerPose) {
+            // Prayer pose: coxa angles forward, femur lifts straight up,
+            // tibia folds back down (the classic praying-mantis silhouette)
+            coxaAngle = ha + side * 0.25 + sway * side;
+            const femurRest   = ha - Math.PI * 0.52 + side * 0.1;  // nearly straight up
+            const femurStrike = ha + side * 0.2;                     // sweeps forward on strike
+            femurAngle = femurRest + (femurStrike - femurRest) * strike;
+            const tibiaRest   = femurAngle + Math.PI * 0.92;         // folds back down
+            const tibiaStrike = ha + side * (-0.15);
+            tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
+        } else {
+            // Default forward-attack pose
+            coxaAngle = ha + side * 0.8 + upTilt + sway * side;
+            const femurRest   = ha + side * 0.45 + upTilt + sway * side;
+            const femurStrike = ha + side * 0.15;
+            femurAngle = femurRest + (femurStrike - femurRest) * strike;
+            const tibiaRest   = femurAngle + Math.PI - side * 0.25;
+            const tibiaStrike = ha + side * (-0.15);
+            tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
+        }
         const coxaX = baseX + Math.cos(coxaAngle) * ra.coxaLen;
         const coxaY = baseY + Math.sin(coxaAngle) * ra.coxaLen;
-        // FEMUR: main weapon arm, elevated upward-forward — sweeps toward prey on strike
-        const femurRest   = ha + side * 0.45 + upTilt + sway * side;
-        const femurStrike = ha + side * 0.15;
-        const femurAngle  = femurRest + (femurStrike - femurRest) * strike;
         const femurX = coxaX + Math.cos(femurAngle) * ra.femurLen;
         const femurY = coxaY + Math.sin(femurAngle) * ra.femurLen;
-        // TIBIA: folds back tight against femur at rest (prayer pose)
-        // On strike snaps forward+inward — the jackknife snap that traps prey
-        const tibiaRest   = femurAngle + Math.PI - side * 0.25;  // anti-parallel, tight fold
-        const tibiaStrike = ha + side * (-0.15);                  // snapped forward across prey
-        const tibiaAngle  = tibiaRest + (tibiaStrike - tibiaRest) * strike;
         const tibiaX = femurX + Math.cos(tibiaAngle) * ra.tibiaLen;
         const tibiaY = femurY + Math.sin(tibiaAngle) * ra.tibiaLen;
         // TARSUS: single inward hook at tibia tip (not a pincer — mantis, not scorpion)
