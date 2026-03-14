@@ -322,7 +322,7 @@ function applySpeciesBody(predator, speciesName) {
         predator.body.abdomen.size          = 0.60;
         predator.body.abdomen.segments      = 1;
         predator.body.abdomen.taper         = 0.90;
-        predator.body.abdomen.absoluteAngle = Math.PI / 2; // abdomen always angles upward on screen
+        predator.body.abdomen.angleOffset   =  Math.PI / 2; // abdomen curls upward relative to body
         predator.segmentSpacing             = 5;
         predator.appendages.antennae.enabled  = true;
         predator.appendages.antennae.length   = 12;
