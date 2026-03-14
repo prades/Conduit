@@ -327,14 +327,15 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.legs.femur        = 15;
         predator.appendages.legs.tibia        = 22;
         predator.appendages.raptorialArms = {
-            enabled:    true,
-            coxaLen:    6,
-            femurLen:   20,
-            tibiaLen:   17,
-            tarLen:     6,
-            spread:     9,
-            thickness:  4.5,
-            upTilt:    -0.45
+            enabled:      true,
+            pincerPose:   true,    // Y-spread arms ending in giant pincers
+            coxaLen:      6,
+            femurLen:     22,
+            tibiaLen:     18,
+            tarLen:       12,      // long pincer fingers
+            pincerSpread: 0.6,
+            spread:       9,
+            thickness:    4.5
         };
     } else if (speciesName === "mantis") {
         predator.segmentCornerRadius = 3;
@@ -353,15 +354,14 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.legs.femur = 19;
         predator.appendages.legs.tibia = 27;
         predator.appendages.raptorialArms = {
-            enabled:    true,
-            prayerPose: true,  // femur lifts upward, tibia folds back down
-            coxaLen:    5,
-            femurLen:   18,
-            tibiaLen:   15,
-            tarLen:     5,
-            spread:     8,
-            thickness:  4.0,
-            upTilt:     0
+            enabled:  true,
+            yPose:    true,    // arms spread outward like a Y
+            coxaLen:  5,
+            femurLen: 18,
+            tibiaLen: 15,
+            tarLen:   5,
+            spread:   8,
+            thickness:4.0
         };
     }
 }

@@ -541,7 +541,26 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
         const baseX = attachX + perpX * side * ra.spread;
         const baseY = attachY + perpY * side * ra.spread;
         let coxaAngle, femurAngle, tibiaAngle;
-        if (ra.prayerPose) {
+        if (ra.yPose) {
+            // Y-spread: coxa goes straight forward, femur branches wide outward,
+            // tibia continues outward — forms a Y silhouette from above
+            coxaAngle = ha + side * 0.1 + sway * side;
+            const femurRest   = ha + side * 1.25 + sway * side * 0.5;
+            const femurStrike = ha + side * 0.25;
+            femurAngle = femurRest + (femurStrike - femurRest) * strike;
+            const tibiaRest   = ha + side * 1.55;
+            const tibiaStrike = ha + side * 0.05;
+            tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
+        } else if (ra.pincerPose) {
+            // Y-spread base (same as yPose) leading into giant pincers at the tip
+            coxaAngle = ha + side * 0.1 + sway * side;
+            const femurRest   = ha + side * 1.1 + sway * side * 0.3;
+            const femurStrike = ha + side * 0.3;
+            femurAngle = femurRest + (femurStrike - femurRest) * strike;
+            const tibiaRest   = ha + side * 1.45;
+            const tibiaStrike = ha + side * 0.1;
+            tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
+        } else if (ra.prayerPose) {
             // Prayer pose: coxa angles forward, femur lifts straight up,
             // tibia folds back down (the classic praying-mantis silhouette)
             coxaAngle = ha + side * 0.25 + sway * side;
@@ -567,10 +586,6 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
         const femurY = coxaY + Math.sin(femurAngle) * ra.femurLen;
         const tibiaX = femurX + Math.cos(tibiaAngle) * ra.tibiaLen;
         const tibiaY = femurY + Math.sin(tibiaAngle) * ra.tibiaLen;
-        // TARSUS: single inward hook at tibia tip (not a pincer — mantis, not scorpion)
-        const hookAngle = tibiaAngle + side * 0.8;
-        const hTipX = tibiaX + Math.cos(hookAngle) * ra.tarLen;
-        const hTipY = tibiaY + Math.sin(hookAngle) * ra.tarLen;
         // Draw coxa (thin)
         drawCtx.strokeStyle = bodyCol; drawCtx.lineWidth = ra.thickness * 0.6;
         drawCtx.beginPath(); drawCtx.moveTo(baseX, baseY); drawCtx.lineTo(coxaX, coxaY); drawCtx.stroke();
@@ -580,11 +595,33 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
         // Draw tibia (slightly thinner)
         drawCtx.lineWidth = ra.thickness * 0.75;
         drawCtx.beginPath(); drawCtx.moveTo(femurX, femurY); drawCtx.lineTo(tibiaX, tibiaY); drawCtx.stroke();
-        // Draw tarsus hook
-        drawCtx.strokeStyle = hookCol; drawCtx.lineWidth = ra.thickness * 0.5;
-        drawCtx.beginPath(); drawCtx.moveTo(tibiaX, tibiaY); drawCtx.lineTo(hTipX, hTipY); drawCtx.stroke();
-        drawCtx.fillStyle = hookCol;
-        drawCtx.beginPath(); drawCtx.arc(hTipX, hTipY, 1.5, 0, Math.PI * 2); drawCtx.fill();
+        // Tarsus: pincer (two fingers) for pincerPose, single hook otherwise
+        drawCtx.strokeStyle = hookCol;
+        if (ra.pincerPose) {
+            const pSpread  = ra.pincerSpread || 0.55;
+            const fingerLen = ra.tarLen;
+            // Outer finger sweeps more outward, inner finger hooks back inward
+            const f1Angle = tibiaAngle - side * pSpread;
+            const f2Angle = tibiaAngle + side * pSpread * 0.85;
+            const f1TipX = tibiaX + Math.cos(f1Angle) * fingerLen;
+            const f1TipY = tibiaY + Math.sin(f1Angle) * fingerLen;
+            const f2TipX = tibiaX + Math.cos(f2Angle) * fingerLen;
+            const f2TipY = tibiaY + Math.sin(f2Angle) * fingerLen;
+            drawCtx.lineWidth = ra.thickness * 0.7;
+            drawCtx.beginPath(); drawCtx.moveTo(tibiaX, tibiaY); drawCtx.lineTo(f1TipX, f1TipY); drawCtx.stroke();
+            drawCtx.beginPath(); drawCtx.moveTo(tibiaX, tibiaY); drawCtx.lineTo(f2TipX, f2TipY); drawCtx.stroke();
+            drawCtx.fillStyle = hookCol;
+            drawCtx.beginPath(); drawCtx.arc(f1TipX, f1TipY, 2, 0, Math.PI * 2); drawCtx.fill();
+            drawCtx.beginPath(); drawCtx.arc(f2TipX, f2TipY, 2, 0, Math.PI * 2); drawCtx.fill();
+        } else {
+            const hookAngle = tibiaAngle + side * 0.8;
+            const hTipX = tibiaX + Math.cos(hookAngle) * ra.tarLen;
+            const hTipY = tibiaY + Math.sin(hookAngle) * ra.tarLen;
+            drawCtx.lineWidth = ra.thickness * 0.5;
+            drawCtx.beginPath(); drawCtx.moveTo(tibiaX, tibiaY); drawCtx.lineTo(hTipX, hTipY); drawCtx.stroke();
+            drawCtx.fillStyle = hookCol;
+            drawCtx.beginPath(); drawCtx.arc(hTipX, hTipY, 1.5, 0, Math.PI * 2); drawCtx.fill();
+        }
     });
     drawCtx.restore();
 }
