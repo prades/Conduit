@@ -338,11 +338,21 @@ function applySpeciesBody(predator, speciesName) {
         };
     } else if (speciesName === "mantis") {
         predator.hasStinger  = true;
-        predator.body.abdomen.segments = 3;
-        predator.body.abdomen.taper = 0.75;
+        predator.segmentCornerRadius = 3;
+        predator.body.head.size             = 0.42;
+        predator.body.head.shape            = "triangle";   // inverted-raindrop triangular head
+        predator.body.thorax.size           = 1.12;         // elongated thorax
+        predator.body.thorax.yOffset        = -10;          // vertical lift, elevates head
+        predator.body.thorax.angleOffset    = -0.22;        // slight forward tilt toward head
+        predator.body.abdomen.size          = 1.05;         // more girth
+        predator.body.abdomen.segments      = 3;
+        predator.body.abdomen.taper         = 0.75;
+        predator.body.abdomen.absoluteAngle = Math.PI / 2;  // locked screen-upward, no sway
         predator.appendages.wings.enabled = false;
         predator.appendages.mandibles.length = 7;
         predator.appendages.mandibles.spread = 0.6;
+        predator.appendages.legs.femur = 19;
+        predator.appendages.legs.tibia = 27;
     }
 }
 

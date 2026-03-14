@@ -198,6 +198,14 @@ function _drawPredator(actor, px, py, drawCtx) {
             drawCtx.beginPath();
             drawCtx.ellipse(-rx*0.22, -ry*0.22, rx*0.35, ry*0.3, -0.4, 0, Math.PI*2);
             drawCtx.fill();
+        } else if (i === 1 && actor.body.head.shape === "triangle") {
+            // Inverted-raindrop / triangular head: apex pointing forward, wide at rear
+            drawCtx.beginPath();
+            drawCtx.moveTo( seg.length * 0.50,  0);                           // front apex
+            drawCtx.lineTo(-seg.length * 0.42, -seg.width * 0.54);            // rear-left
+            drawCtx.lineTo(-seg.length * 0.42,  seg.width * 0.54);            // rear-right
+            drawCtx.closePath();
+            drawCtx.fill();
         } else {
             drawCtx.beginPath(); drawCtx.roundRect(-seg.width*0.5,-seg.length*0.5,seg.width,seg.length,cr); drawCtx.fill();
         }
