@@ -334,7 +334,7 @@ function applySpeciesBody(predator, speciesName) {
             tibiaLen:     18,
             tarLen:       12,      // long pincer fingers
             pincerSpread: 0.6,
-            spread:       9,
+            spread:       5,       // pulled in halfway from original 9
             thickness:    4.5
         };
     } else if (speciesName === "mantis") {
@@ -360,7 +360,7 @@ function applySpeciesBody(predator, speciesName) {
             femurLen: 18,
             tibiaLen: 15,
             tarLen:   5,
-            spread:   8,
+            spread:   3,       // tight, close to body centerline
             thickness:4.0
         };
     }

@@ -96,9 +96,11 @@ function initPreview() {
     let _dragActive = false, _dragLastX = 0, _dragLastY = 0;
     let _currentAngle = Math.PI * 0.25; // start at FRONT
 
+    let _tapStartX = 0, _tapStartY = 0;
     previewCanvas.addEventListener('pointerdown', e => {
         _dragActive = true;
         _dragLastX = e.clientX; _dragLastY = e.clientY;
+        _tapStartX = e.clientX; _tapStartY = e.clientY;
         previewCanvas.setPointerCapture(e.pointerId);
         e.stopPropagation();
     });
@@ -119,7 +121,14 @@ function initPreview() {
         _setPreviewAngle(snapBest !== null ? snapBest : _currentAngle);
         e.stopPropagation();
     });
-    previewCanvas.addEventListener('pointerup', () => { _dragActive = false; });
+    previewCanvas.addEventListener('pointerup', e => {
+        _dragActive = false;
+        const moved = Math.hypot(e.clientX - _tapStartX, e.clientY - _tapStartY);
+        if (moved < 8 && previewPredator && previewPredator.state !== "attack") {
+            previewPredator.state = "attack";
+            previewPredator.attackAnim = 0;
+        }
+    });
     previewCanvas.addEventListener('pointercancel', () => { _dragActive = false; });
 
     // ── View label under canvas ──
@@ -315,6 +324,13 @@ function updatePreview() {
     if(!devMode||!previewPredator||!previewCtx)return;
     previewCtx.clearRect(0,0,previewCanvas.width,previewCanvas.height);
     previewPredator.walkCycle+=0.2;
+    if (previewPredator.state==="attack") {
+        previewPredator.attackAnim += 0.18;
+        if (previewPredator.attackAnim >= Math.PI) {
+            previewPredator.attackAnim = 0;
+            previewPredator.state = "wander";
+        }
+    }
     const px=previewCanvas.width*0.5, py=previewCanvas.height*0.58;
     // Subtle dot-grid
     previewCtx.fillStyle="rgba(0,255,136,0.07)";
