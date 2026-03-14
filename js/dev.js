@@ -175,14 +175,20 @@ function initPreview() {
         btn.onpointerdown=e=>e.stopPropagation();
         btn.onclick=()=>{
             if (!previewPredator) return;
-            // Reset body to defaults then apply the species
-            previewPredator.body.head.size=0.45; previewPredator.body.thorax.size=0.9; previewPredator.body.thorax.yOffset=0;
-            previewPredator.body.abdomen.size=0.75; previewPredator.body.abdomen.segments=1; previewPredator.body.abdomen.taper=0.9; previewPredator.body.abdomen.angleOffset=0;
-            previewPredator.body.abdomen.round=false; previewPredator.isSpider=false; previewPredator.isMantis=false;
-            previewPredator.hasStinger=false; previewPredator.armorPlated=false;
-            previewPredator.appendages.antennae.enabled=false; previewPredator.appendages.wings.enabled=true;
-            previewPredator.appendages.mandibles.enabled=true; previewPredator.appendages.mandibles.length=5; previewPredator.appendages.mandibles.spread=0.9;
-            previewPredator.appendages.legs.count=6; previewPredator.appendages.legs.coxa=6; previewPredator.appendages.legs.femur=10; previewPredator.appendages.legs.tibia=14;
+            // Full reset to constructor defaults before applying species
+            previewPredator.body.head.size=0.45; previewPredator.body.head.shape="oval";
+            previewPredator.body.thorax.size=0.9; previewPredator.body.thorax.yOffset=0; previewPredator.body.thorax.angleOffset=0;
+            previewPredator.body.abdomen.size=0.75; previewPredator.body.abdomen.segments=1; previewPredator.body.abdomen.taper=0.9;
+            previewPredator.body.abdomen.angleOffset=0; delete previewPredator.body.abdomen.absoluteAngle;
+            previewPredator.body.abdomen.round=false;
+            previewPredator.isSpider=false; previewPredator.isMantis=false; previewPredator.hasStinger=false; previewPredator.armorPlated=false;
+            previewPredator.appendages.antennae.enabled=false;
+            previewPredator.appendages.wings.enabled=true;
+            previewPredator.appendages.mandibles.enabled=true; previewPredator.appendages.mandibles.length=5; previewPredator.appendages.mandibles.spread=0.4; previewPredator.appendages.mandibles.thickness=2;
+            previewPredator.appendages.legs.count=6; previewPredator.appendages.legs.spread=10; previewPredator.appendages.legs.swingSpeed=0.25; previewPredator.appendages.legs.coxa=6; previewPredator.appendages.legs.femur=9; previewPredator.appendages.legs.tibia=11;
+            previewPredator.appendages.chelicerae.enabled=false; previewPredator.appendages.pedipalps.enabled=false; previewPredator.appendages.spinnerets.enabled=false;
+            previewPredator.appendages.eyes.count=2; previewPredator.appendages.eyes.size=2; previewPredator.appendages.eyes.glow=0;
+            previewPredator.appendages.raptorialArms={enabled:false};
             previewPredator.segmentCornerRadius=6; previewPredator.segmentSpacing=10; previewPredator.heightBoost=1;
             previewPredator.speciesName=name;
             previewPredator.className="scout";
