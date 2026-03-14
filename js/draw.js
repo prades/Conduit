@@ -119,12 +119,12 @@ function _drawPredator(actor, px, py, drawCtx) {
     segments[0].cx=px; segments[0].cy=bodyBaseY+(segments[0].yOffset||0);
     segments[1].cx=segments[0].cx+dirX*(segments[0].length*0.5+segments[1].length*0.5);
     segments[1].cy=segments[0].cy+dirY*(segments[0].length*0.5+segments[1].length*0.5);
-    // For absoluteAngle, anchor at the thorax rear so the abdomen stays
-    // connected and moves with the body as it rotates
+    // For absoluteAngle, anchor at the edge of the thorax in the abdomen's own
+    // direction — not the body direction — so it stays centred regardless of rotation
     let prevX, prevY;
     if (actor.body.abdomen.absoluteAngle !== undefined) {
-        prevX = segments[0].cx - dirX * segments[0].length * 0.5;
-        prevY = segments[0].cy - dirY * segments[0].length * 0.5;
+        prevX = segments[0].cx - abdDirX * segments[0].length * 0.5;
+        prevY = segments[0].cy - abdDirY * segments[0].length * 0.5;
     } else {
         prevX = segments[0].cx; prevY = segments[0].cy;
     }
