@@ -320,7 +320,12 @@ function updatePreview() {
     grad.addColorStop(0,"rgba(0,255,136,0)"); grad.addColorStop(0.5,"rgba(0,255,136,0.18)"); grad.addColorStop(1,"rgba(0,255,136,0)");
     previewCtx.strokeStyle=grad; previewCtx.lineWidth=1;
     previewCtx.beginPath(); previewCtx.moveTo(px-80,floorY); previewCtx.lineTo(px+80,floorY); previewCtx.stroke();
+    previewCtx.save();
+    previewCtx.translate(px, py);
+    previewCtx.scale(2.2, 2.2);
+    previewCtx.translate(-px, -py);
     drawNPC(previewPredator,px,py,previewCtx);
+    previewCtx.restore();
 }
 
 function toggleDevPreview() {
