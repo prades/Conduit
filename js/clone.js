@@ -335,10 +335,11 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.legs.tibia        = 22;
         predator.appendages.raptorialArms = {
             enabled:    true,
-            femurLen:   20,   // thick upper-arm
-            tibiaLen:   18,   // forearm that folds back in prayer pose
-            incisorLen: 8,    // each claw prong
-            spread:     9,    // lateral offset from body centre
+            coxaLen:    6,    // short base segment connecting to body
+            femurLen:   20,   // main weapon arm, held elevated
+            tibiaLen:   17,   // folds back in prayer, snaps forward on strike
+            tarLen:     6,    // single inward hook (tarsus) at tibia tip
+            spread:     7,    // lateral offset from body centre
             thickness:  4.5   // base line-width for femur
         };
     }

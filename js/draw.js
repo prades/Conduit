@@ -506,7 +506,7 @@ function _drawPredator(actor, px, py, drawCtx) {
     drawPredatorDebug(actor, px, py);
 }
 
-// Mantis raptorial foreleg helper — large weapon arms with folded prayer pose and pincer incisors
+// Mantis raptorial foreleg helper — 3-segment: coxa → femur (elevated) → tibia (prayer-folded)
 function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, perpY, isRedTeam) {
     const ra = actor.appendages.raptorialArms;
     if (!ra || !ra.enabled) return;
@@ -514,50 +514,52 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
     // Attach at front-quarter of thorax
     const attachX = thorax.cx + dirX * thorax.length * 0.35;
     const attachY = thorax.cy + dirY * thorax.length * 0.35;
-    // 0 = resting, 1 = full strike extension
+    // 0 = resting prayer pose, 1 = full strike
     const strike  = actor.state === "attack" ? Math.max(0, Math.sin(actor.attackAnim || 0)) : 0;
-    // Gentle idle sway so the arms look alive
-    const sway    = Math.sin((actor.walkCycle || 0) * 0.05) * 0.08;
+    const sway    = Math.sin((actor.walkCycle || 0) * 0.05) * 0.06;
     const ha      = actor.headAngle;
-    const bodyCol    = isRedTeam ? "#331111" : "#2a3a20";
-    const incisorCol = isRedTeam ? "#661111" : "#1a3010";
+    const bodyCol = isRedTeam ? "#331111" : "#2a3a20";
+    const hookCol = isRedTeam ? "#551111" : "#1a3010";
     drawCtx.save();
     drawCtx.lineCap = "round"; drawCtx.lineJoin = "round";
     [-1, 1].forEach(side => {
         const baseX = attachX + perpX * side * ra.spread;
         const baseY = attachY + perpY * side * ra.spread;
-        // Femur: sweeps from wide-outward (rest) to nearly-forward (strike)
-        const femurAngle = (ha + side * 0.85 + sway * side) + ((ha + side * 0.20) - (ha + side * 0.85 + sway * side)) * strike;
-        const elbowX = baseX + Math.cos(femurAngle) * ra.femurLen;
-        const elbowY = baseY + Math.sin(femurAngle) * ra.femurLen;
-        // Tibia: prayer-folded back at rest, sweeps forward to reach prey on strike
-        const tibiaRest   = femurAngle + Math.PI - side * 0.3;
-        const tibiaStrike = ha + side * 0.10;
+        // COXA: short base segment, angles outward from body
+        const coxaAngle = ha + side * 0.8 + sway * side;
+        const coxaX = baseX + Math.cos(coxaAngle) * ra.coxaLen;
+        const coxaY = baseY + Math.sin(coxaAngle) * ra.coxaLen;
+        // FEMUR: main weapon arm, held elevated forward — sweeps toward prey on strike
+        const femurRest   = ha + side * 0.45 + sway * side;
+        const femurStrike = ha + side * 0.15;
+        const femurAngle  = femurRest + (femurStrike - femurRest) * strike;
+        const femurX = coxaX + Math.cos(femurAngle) * ra.femurLen;
+        const femurY = coxaY + Math.sin(femurAngle) * ra.femurLen;
+        // TIBIA: folds back tight against femur at rest (prayer pose)
+        // On strike snaps forward+inward — the jackknife snap that traps prey
+        const tibiaRest   = femurAngle + Math.PI - side * 0.25;  // anti-parallel, tight fold
+        const tibiaStrike = ha + side * (-0.15);                  // snapped forward across prey
         const tibiaAngle  = tibiaRest + (tibiaStrike - tibiaRest) * strike;
-        const tipX = elbowX + Math.cos(tibiaAngle) * ra.tibiaLen;
-        const tipY = elbowY + Math.sin(tibiaAngle) * ra.tibiaLen;
-        // Femur (thick)
-        drawCtx.strokeStyle = bodyCol; drawCtx.lineWidth = ra.thickness;
-        drawCtx.beginPath(); drawCtx.moveTo(baseX, baseY); drawCtx.lineTo(elbowX, elbowY); drawCtx.stroke();
-        // Tibia (thinner)
+        const tibiaX = femurX + Math.cos(tibiaAngle) * ra.tibiaLen;
+        const tibiaY = femurY + Math.sin(tibiaAngle) * ra.tibiaLen;
+        // TARSUS: single inward hook at tibia tip (not a pincer — mantis, not scorpion)
+        const hookAngle = tibiaAngle + side * 0.8;
+        const hTipX = tibiaX + Math.cos(hookAngle) * ra.tarLen;
+        const hTipY = tibiaY + Math.sin(hookAngle) * ra.tarLen;
+        // Draw coxa (thin)
+        drawCtx.strokeStyle = bodyCol; drawCtx.lineWidth = ra.thickness * 0.6;
+        drawCtx.beginPath(); drawCtx.moveTo(baseX, baseY); drawCtx.lineTo(coxaX, coxaY); drawCtx.stroke();
+        // Draw femur (thick — the main arm)
+        drawCtx.lineWidth = ra.thickness;
+        drawCtx.beginPath(); drawCtx.moveTo(coxaX, coxaY); drawCtx.lineTo(femurX, femurY); drawCtx.stroke();
+        // Draw tibia (slightly thinner)
         drawCtx.lineWidth = ra.thickness * 0.75;
-        drawCtx.beginPath(); drawCtx.moveTo(elbowX, elbowY); drawCtx.lineTo(tipX, tipY); drawCtx.stroke();
-        // Incisors — two hooked prongs forming a pincer at the tibia tip
-        drawCtx.strokeStyle = incisorCol; drawCtx.lineWidth = ra.thickness * 0.45;
-        // Outer prong curves away from centreline
-        const outerA = tibiaAngle - side * 0.55;
-        const oTipX = tipX + Math.cos(outerA) * ra.incisorLen;
-        const oTipY = tipY + Math.sin(outerA) * ra.incisorLen;
-        drawCtx.beginPath(); drawCtx.moveTo(tipX, tipY); drawCtx.lineTo(oTipX, oTipY); drawCtx.stroke();
-        // Inner prong hooks inward toward prey (characteristic mantis claw)
-        const innerA = tibiaAngle + side * 0.35;
-        const iTipX = tipX + Math.cos(innerA) * ra.incisorLen * 0.8;
-        const iTipY = tipY + Math.sin(innerA) * ra.incisorLen * 0.8;
-        drawCtx.beginPath(); drawCtx.moveTo(tipX, tipY); drawCtx.lineTo(iTipX, iTipY); drawCtx.stroke();
-        // Sharp tip dots
-        drawCtx.fillStyle = incisorCol;
-        drawCtx.beginPath(); drawCtx.arc(oTipX, oTipY, 1.5, 0, Math.PI * 2); drawCtx.fill();
-        drawCtx.beginPath(); drawCtx.arc(iTipX, iTipY, 1.5, 0, Math.PI * 2); drawCtx.fill();
+        drawCtx.beginPath(); drawCtx.moveTo(femurX, femurY); drawCtx.lineTo(tibiaX, tibiaY); drawCtx.stroke();
+        // Draw tarsus hook
+        drawCtx.strokeStyle = hookCol; drawCtx.lineWidth = ra.thickness * 0.5;
+        drawCtx.beginPath(); drawCtx.moveTo(tibiaX, tibiaY); drawCtx.lineTo(hTipX, hTipY); drawCtx.stroke();
+        drawCtx.fillStyle = hookCol;
+        drawCtx.beginPath(); drawCtx.arc(hTipX, hTipY, 1.5, 0, Math.PI * 2); drawCtx.fill();
     });
     drawCtx.restore();
 }
