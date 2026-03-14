@@ -100,8 +100,11 @@ function _drawPredator(actor, px, py, drawCtx) {
     // Build segments
     const segments=[];
     const baseLength=dim.height*0.9;
-    // Thorax — optional yOffset lifts/lowers it relative to body centre (mantis raised prothorax)
-    segments.push({ length:baseLength*actor.body.thorax.size, width:dim.width*actor.body.thorax.size, rotation:angle, yOffset:actor.body.thorax.yOffset||0 });
+    // Thorax — angleOffset tilts it relative to facing (mantis raised prothorax angled upward);
+    // yOffset lifts/lowers it relative to body centre
+    const thoraxAngle = angle + (actor.body.thorax.angleOffset || 0);
+    const thoraxDirX  = Math.cos(thoraxAngle), thoraxDirY = Math.sin(thoraxAngle);
+    segments.push({ length:baseLength*actor.body.thorax.size, width:dim.width*actor.body.thorax.size, rotation:thoraxAngle, yOffset:actor.body.thorax.yOffset||0 });
     segments.push({ length:baseLength*actor.body.head.size,   width:dim.width*actor.body.head.size,   rotation:actor.headAngle||angle });
     // Abdomen — absoluteAngle fixes it to a screen-space direction (e.g. mantis always-up);
     // angleOffset rotates it relative to the facing direction
@@ -117,12 +120,12 @@ function _drawPredator(actor, px, py, drawCtx) {
 
     // Position segments
     segments[0].cx=px; segments[0].cy=bodyBaseY+(segments[0].yOffset||0);
-    segments[1].cx=segments[0].cx+dirX*(segments[0].length*0.5+segments[1].length*0.5);
-    segments[1].cy=segments[0].cy+dirY*(segments[0].length*0.5+segments[1].length*0.5);
-    // Abdomen chain starts at thorax rear (body direction); each segment's near
-    // edge touches the anchor so the chain is always connected to the thorax
-    let anchorX = segments[0].cx - dirX * segments[0].length * 0.5;
-    let anchorY = segments[0].cy - dirY * segments[0].length * 0.5;
+    // Head attaches at the front tip of the (potentially angled) thorax
+    segments[1].cx=segments[0].cx+thoraxDirX*(segments[0].length*0.5+segments[1].length*0.5);
+    segments[1].cy=segments[0].cy+thoraxDirY*(segments[0].length*0.5+segments[1].length*0.5);
+    // Abdomen chain starts at thorax rear — follows thorax angle so it's always connected
+    let anchorX = segments[0].cx - thoraxDirX * segments[0].length * 0.5;
+    let anchorY = segments[0].cy - thoraxDirY * segments[0].length * 0.5;
     for (let i=2;i<segments.length;i++) {
         segments[i].cx = anchorX - abdDirX * segments[i].length * 0.5;
         segments[i].cy = anchorY - abdDirY * segments[i].length * 0.5;
@@ -511,13 +514,17 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
     const ra = actor.appendages.raptorialArms;
     if (!ra || !ra.enabled) return;
     const thorax  = segments[0];
-    // Attach at front-quarter of thorax
-    const attachX = thorax.cx + dirX * thorax.length * 0.35;
-    const attachY = thorax.cy + dirY * thorax.length * 0.35;
+    // Use the thorax's own angle direction for attachment so arms sit flush on the angled prothorax
+    const bodyAngle   = Math.atan2(dirY, dirX);
+    const thoraxAngle = bodyAngle + (actor.body.thorax.angleOffset || 0);
+    const thDirX = Math.cos(thoraxAngle), thDirY = Math.sin(thoraxAngle);
+    const attachX = thorax.cx + thDirX * thorax.length * 0.35;
+    const attachY = thorax.cy + thDirY * thorax.length * 0.35;
     // 0 = resting prayer pose, 1 = full strike
     const strike  = actor.state === "attack" ? Math.max(0, Math.sin(actor.attackAnim || 0)) : 0;
     const sway    = Math.sin((actor.walkCycle || 0) * 0.05) * 0.06;
     const ha      = actor.headAngle;
+    const upTilt  = ra.upTilt || 0;   // negative = arms angle upward in screen space
     const bodyCol = isRedTeam ? "#331111" : "#2a3a20";
     const hookCol = isRedTeam ? "#551111" : "#1a3010";
     drawCtx.save();
@@ -525,12 +532,12 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
     [-1, 1].forEach(side => {
         const baseX = attachX + perpX * side * ra.spread;
         const baseY = attachY + perpY * side * ra.spread;
-        // COXA: short base segment, angles outward from body
-        const coxaAngle = ha + side * 0.8 + sway * side;
+        // COXA: short base segment, angles outward and upward from body
+        const coxaAngle = ha + side * 0.8 + upTilt + sway * side;
         const coxaX = baseX + Math.cos(coxaAngle) * ra.coxaLen;
         const coxaY = baseY + Math.sin(coxaAngle) * ra.coxaLen;
-        // FEMUR: main weapon arm, held elevated forward — sweeps toward prey on strike
-        const femurRest   = ha + side * 0.45 + sway * side;
+        // FEMUR: main weapon arm, elevated upward-forward — sweeps toward prey on strike
+        const femurRest   = ha + side * 0.45 + upTilt + sway * side;
         const femurStrike = ha + side * 0.15;
         const femurAngle  = femurRest + (femurStrike - femurRest) * strike;
         const femurX = coxaX + Math.cos(femurAngle) * ra.femurLen;
