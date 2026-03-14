@@ -542,23 +542,23 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
         const baseY = attachY + perpY * side * ra.spread;
         let coxaAngle, femurAngle, tibiaAngle;
         if (ra.yPose) {
-            // Y-spread: coxa goes straight forward, femur branches wide outward,
-            // tibia continues outward — forms a Y silhouette from above
-            coxaAngle = ha + side * 0.1 + sway * side;
-            const femurRest   = ha + side * 1.25 + sway * side * 0.5;
-            const femurStrike = ha + side * 0.25;
+            // Y-spread: angles anchored near ha + side*PI/2 (true outward perpendicular)
+            // so arms never fold inward when the creature turns around
+            coxaAngle = ha + side * 1.2 + sway * side;
+            const femurRest   = ha + side * 1.57 + sway * side * 0.5;  // straight outward
+            const femurStrike = ha + side * 0.5;
             femurAngle = femurRest + (femurStrike - femurRest) * strike;
-            const tibiaRest   = ha + side * 1.55;
-            const tibiaStrike = ha + side * 0.05;
+            const tibiaRest   = ha + side * 1.75;   // slightly past perpendicular
+            const tibiaStrike = ha + side * 0.15;
             tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
         } else if (ra.pincerPose) {
-            // Y-spread base (same as yPose) leading into giant pincers at the tip
-            coxaAngle = ha + side * 0.1 + sway * side;
-            const femurRest   = ha + side * 1.1 + sway * side * 0.3;
-            const femurStrike = ha + side * 0.3;
+            // Y-spread base leading into giant pincers — same outward anchoring
+            coxaAngle = ha + side * 1.2 + sway * side;
+            const femurRest   = ha + side * 1.57 + sway * side * 0.3;
+            const femurStrike = ha + side * 0.5;
             femurAngle = femurRest + (femurStrike - femurRest) * strike;
-            const tibiaRest   = ha + side * 1.45;
-            const tibiaStrike = ha + side * 0.1;
+            const tibiaRest   = ha + side * 1.75;
+            const tibiaStrike = ha + side * 0.15;
             tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
         } else if (ra.prayerPose) {
             // Prayer pose: coxa angles forward, femur lifts straight up,
