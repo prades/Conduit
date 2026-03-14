@@ -177,8 +177,8 @@ function _drawPredator(actor, px, py, drawCtx) {
         drawCtx.restore();
     }
 
-    // Draw segments back-to-front (legs already drawn behind)
-    for (let i=segments.length-1;i>=0;i--) {
+    // Draw segments front-to-back then abdomen on top: thorax→head→abdomen
+    for (let i=0;i<segments.length;i++) {
         const seg=segments[i];
         drawCtx.save(); drawCtx.translate(seg.cx,seg.cy); drawCtx.rotate(seg.rotation);
         // Red team: black body

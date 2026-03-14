@@ -88,7 +88,7 @@ function initPreview() {
     previewCanvas.style.width=vs+"px"; previewCanvas.style.height=vs+"px";
     previewCanvas.width=vs; previewCanvas.height=vs;
     Object.assign(previewCanvas.style,{position:"fixed",left:"50%",top:"40%",transform:"translate(-50%,-50%)",
-        background:"#020d06",border:"2px solid #0f8",borderRadius:"12px",zIndex:"9999",
+        background:"#0d2b14",border:"2px solid #0f8",borderRadius:"12px",zIndex:"9999",
         boxShadow:"0 0 30px rgba(0,255,136,0.5)",display:"none",touchAction:"none"});
     document.body.appendChild(previewCanvas);
 
