@@ -333,6 +333,14 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.legs.coxa         = 7;
         predator.appendages.legs.femur        = 15;
         predator.appendages.legs.tibia        = 22;
+        predator.appendages.raptorialArms = {
+            enabled:    true,
+            femurLen:   20,   // thick upper-arm
+            tibiaLen:   18,   // forearm that folds back in prayer pose
+            incisorLen: 8,    // each claw prong
+            spread:     9,    // lateral offset from body centre
+            thickness:  4.5   // base line-width for femur
+        };
     }
 }
 
