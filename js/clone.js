@@ -307,23 +307,15 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.wings.enabled = false;
         predator.appendages.mandibles.length = 4;
     } else if (speciesName === "scorpion") {
-        predator.hasStinger  = true;
-        predator.body.abdomen.segments = 3;
-        predator.body.abdomen.taper = 0.75;
-        predator.appendages.wings.enabled = false;
-        predator.appendages.mandibles.length = 7;
-        predator.appendages.mandibles.spread = 0.6;
-    } else if (speciesName === "mantis") {
-        predator.isMantis = true;
         predator.segmentCornerRadius = 3;
         predator.body.head.size             = 0.38;
         predator.body.thorax.size           = 1.20;  // wide prothorax
         predator.body.thorax.yOffset        = -16;   // raised prothorax
-        predator.body.thorax.angleOffset    = -0.40; // tilt thorax upward-forward (opposite abdomen)
+        predator.body.thorax.angleOffset    = -0.40; // tilt thorax upward-forward
         predator.body.abdomen.size          = 0.72;
         predator.body.abdomen.segments      = 3;
         predator.body.abdomen.taper         = 0.82;
-        predator.body.abdomen.absoluteAngle  =  Math.PI / 2; // abdomen always points screen-upward
+        predator.body.abdomen.absoluteAngle = Math.PI / 2; // abdomen always points screen-upward
         predator.segmentSpacing             = 5;
         predator.appendages.antennae.enabled  = true;
         predator.appendages.antennae.length   = 12;
@@ -331,19 +323,26 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.mandibles.length  = 8;
         predator.appendages.mandibles.spread  = 0.5;
         predator.appendages.wings.enabled     = false;
-        predator.appendages.legs.coxa         = 13;  // wider horizontal leg spread
+        predator.appendages.legs.coxa         = 13;
         predator.appendages.legs.femur        = 15;
         predator.appendages.legs.tibia        = 22;
         predator.appendages.raptorialArms = {
             enabled:    true,
-            coxaLen:    6,     // short base segment connecting to body
-            femurLen:   20,    // main weapon arm, held elevated
-            tibiaLen:   17,    // folds back in prayer, snaps forward on strike
-            tarLen:     6,     // single inward hook (tarsus) at tibia tip
-            spread:     9,     // lateral offset from body centre
-            thickness:  4.5,   // base line-width for femur
-            upTilt:    -0.45   // arms angled upward matching raised prothorax
+            coxaLen:    6,
+            femurLen:   20,
+            tibiaLen:   17,
+            tarLen:     6,
+            spread:     9,
+            thickness:  4.5,
+            upTilt:    -0.45
         };
+    } else if (speciesName === "mantis") {
+        predator.hasStinger  = true;
+        predator.body.abdomen.segments = 3;
+        predator.body.abdomen.taper = 0.75;
+        predator.appendages.wings.enabled = false;
+        predator.appendages.mandibles.length = 7;
+        predator.appendages.mandibles.spread = 0.6;
     }
 }
 

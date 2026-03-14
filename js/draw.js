@@ -234,8 +234,8 @@ function _drawPredator(actor, px, py, drawCtx) {
         drawCtx.restore();
     }
 
-    // Raptorial forelegs — mantis weapon arms (prayer pose → strike)
-    if (actor.isMantis) _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, perpY, isRedTeam);
+    // Raptorial forelegs — prayer pose → strike (any species with raptorialArms enabled)
+    if (actor.appendages.raptorialArms?.enabled) _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, perpY, isRedTeam);
 
     // Mandibles — fixed diagonal inward V-shape, each side gyrates independently like chomping incisors
     const mandData=actor.appendages.mandibles;
