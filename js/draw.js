@@ -119,10 +119,11 @@ function _drawPredator(actor, px, py, drawCtx) {
     segments[0].cx=px; segments[0].cy=bodyBaseY+(segments[0].yOffset||0);
     segments[1].cx=segments[0].cx+dirX*(segments[0].length*0.5+segments[1].length*0.5);
     segments[1].cy=segments[0].cy+dirY*(segments[0].length*0.5+segments[1].length*0.5);
-    // Abdomen chain starts at thorax rear (body direction); each segment's near
-    // edge touches the anchor so the chain is always connected to the thorax
-    let anchorX = segments[0].cx - dirX * segments[0].length * 0.5;
-    let anchorY = segments[0].cy - dirY * segments[0].length * 0.5;
+    // Abdomen chain starts at thorax rear; joints.waist offsets let species
+    // correct for yOffset or other positional quirks (forward=along body axis, vertical=screen Y)
+    const waistJ = actor.joints.waist || {};
+    let anchorX = segments[0].cx - dirX * (segments[0].length * 0.5 - (waistJ.forward || 0));
+    let anchorY = segments[0].cy - dirY * (segments[0].length * 0.5 - (waistJ.forward || 0)) + (waistJ.vertical || 0);
     for (let i=2;i<segments.length;i++) {
         segments[i].cx = anchorX - abdDirX * segments[i].length * 0.5;
         segments[i].cy = anchorY - abdDirY * segments[i].length * 0.5;
