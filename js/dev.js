@@ -277,9 +277,7 @@ function initPreview() {
     panel.appendChild(spawnBtn);
 
     previewCtx=previewCanvas.getContext("2d");
-    previewPredator=new Predator("scout",PREDATOR_TYPES["scout"],0,0);
-    previewPredator.state="wander";
-    _setPreviewAngle(Math.PI * 0.25); // start facing FRONT
+    // previewPredator is created lazily on first open — don't load NPC model at startup
 }
 
 function _spawnDesignedPredator(name, team) {
@@ -353,6 +351,13 @@ function updatePreview() {
 function toggleDevPreview() {
     devMode=!devMode;
     if(!previewCanvas)return;
+    // Lazy-init the preview predator only on first open
+    if(devMode && !previewPredator) {
+        previewPredator=new Predator("scout",PREDATOR_TYPES["scout"],0,0);
+        previewPredator.state="wander";
+        _setPreviewAngle(Math.PI * 0.25);
+        buildSliders("head");
+    }
     previewCanvas.style.display=devMode?"block":"none";
     if (_previewViewLabel) _previewViewLabel.style.display=devMode?"block":"none";
     const panel=document.getElementById("forgePanel");
