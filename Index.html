@@ -193,28 +193,19 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 }
 </script>
 
-<!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js"></script>
-<script src="js/traits.js"></script>
-<script src="js/elements.js"></script>
-<script src="js/combat.js"></script>
-<script src="js/species.js"></script>
-<script src="js/save.js"></script>
-<script src="js/wavedata.js"></script>
-<script src="js/helpers.js"></script>
-<script src="js/predator.js"></script>
-<script src="js/world.js"></script>
-<script src="js/commands.js"></script>
-<script src="js/npc.js"></script>
-<script src="js/draw.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/waves.js"></script>
-<script src="js/drops.js"></script>
-<script src="js/clone.js"></script>
-<script src="js/input.js"></script>
-<script src="js/game.js"></script>
-<script src="js/dev.js"></script>
-<script src="js/init.js"></script>
+<!-- Game scripts — loaded dynamically with cache-bust timestamp so dev changes are always visible -->
+<script>
+(function(){
+    var v="?v="+Date.now();
+    ["js/config.js","js/traits.js","js/elements.js","js/combat.js","js/species.js",
+     "js/save.js","js/wavedata.js","js/helpers.js","js/predator.js","js/world.js",
+     "js/commands.js","js/npc.js","js/draw.js","js/ui.js","js/waves.js","js/drops.js",
+     "js/clone.js","js/input.js","js/game.js","js/dev.js","js/init.js"
+    ].forEach(function(src){
+        document.write('<script src="'+src+v+'"><\/script>');
+    });
+})();
+</script>
 
 </body>
 </html>
