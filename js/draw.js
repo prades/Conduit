@@ -560,15 +560,20 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
             const tibiaStrike = ha + side * 0.1;
             tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
         } else if (ra.prayerPose) {
-            // Prayer pose: arms extend FORWARD from thorax sides, tibia folds back (prayer fold).
-            // Must use ha - side*angle (not a fixed screen-space offset) so arms rotate with the
-            // mantis and stay symmetric — the - sign makes each arm converge toward the center-forward.
-            coxaAngle = ha - side * 0.15 + sway * side;
-            const femurRest   = ha - side * 0.4;    // forward, slight inward convergence
-            const femurStrike = ha - side * 0.1;    // sweeps more forward on strike
+            // Prayer pose: femur points PERPENDICULAR to body axis (arms raised "upward"
+            // relative to the mantis), tibia folds forward creating the classic prayer Z-shape.
+            // Formula: ha - PI/2 + side*spread
+            //   - subtracting PI/2 rotates 90° CCW from facing = "body-upward" direction
+            //   - this rotates correctly with ha (no screen-space bias)
+            //   - side*0.35 gives clear visible spread between both arms (not 0.1 which was ~6°)
+            // Result: when facing right → arms raised UP, folded forward. When facing up →
+            // arms spread LEFT/RIGHT (which IS perpendicular-up for an upward-facing mantis).
+            coxaAngle = ha + side * 0.2 + sway * side;
+            const femurRest   = ha - Math.PI * 0.5 + side * 0.35;   // perpendicular = arms raised
+            const femurStrike = ha + side * 0.3;                      // sweeps forward on strike
             femurAngle = femurRest + (femurStrike - femurRest) * strike;
-            const tibiaRest   = femurAngle + Math.PI * 0.88;  // folds back (prayer fold)
-            const tibiaStrike = ha - side * 0.3;
+            const tibiaRest   = femurAngle + Math.PI * 0.75;          // folds forward (prayer Z-shape)
+            const tibiaStrike = ha + side * (-0.1);
             tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
         } else {
             // Default forward-attack pose
