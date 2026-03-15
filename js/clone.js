@@ -354,8 +354,8 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.legs.femur = 19;
         predator.appendages.legs.tibia = 27;
         predator.appendages.raptorialArms = {
-            enabled:  true,
-            yPose:    true,    // arms spread outward like a Y
+            enabled:    true,
+            prayerPose: true,  // classic praying-mantis: femur up, tibia folded back
             coxaLen:  5,
             femurLen: 18,
             tibiaLen: 15,
