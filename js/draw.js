@@ -560,14 +560,15 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
             const tibiaStrike = ha + side * 0.1;
             tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
         } else if (ra.prayerPose) {
-            // Prayer pose: coxa angles forward, femur lifts straight up,
-            // tibia folds back down (the classic praying-mantis silhouette)
-            coxaAngle = ha + side * 0.25 + sway * side;
-            const femurRest   = ha - Math.PI * 0.52 + side * 0.1;  // nearly straight up
-            const femurStrike = ha + side * 0.2;                     // sweeps forward on strike
+            // Prayer pose: arms extend FORWARD from thorax sides, tibia folds back (prayer fold).
+            // Must use ha - side*angle (not a fixed screen-space offset) so arms rotate with the
+            // mantis and stay symmetric — the - sign makes each arm converge toward the center-forward.
+            coxaAngle = ha - side * 0.15 + sway * side;
+            const femurRest   = ha - side * 0.4;    // forward, slight inward convergence
+            const femurStrike = ha - side * 0.1;    // sweeps more forward on strike
             femurAngle = femurRest + (femurStrike - femurRest) * strike;
-            const tibiaRest   = femurAngle + Math.PI * 0.92;         // folds back down
-            const tibiaStrike = ha + side * (-0.15);
+            const tibiaRest   = femurAngle + Math.PI * 0.88;  // folds back (prayer fold)
+            const tibiaStrike = ha - side * 0.3;
             tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
         } else {
             // Default forward-attack pose
