@@ -560,19 +560,16 @@ function _drawMantisRaptorialArms(drawCtx, actor, segments, dirX, dirY, perpX, p
             const tibiaStrike = ha + side * 0.1;
             tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
         } else if (ra.prayerPose) {
-            // Prayer pose: femur points PERPENDICULAR to body axis (arms raised "upward"
-            // relative to the mantis), tibia folds forward creating the classic prayer Z-shape.
-            // Formula: ha - PI/2 + side*spread
-            //   - subtracting PI/2 rotates 90° CCW from facing = "body-upward" direction
-            //   - this rotates correctly with ha (no screen-space bias)
-            //   - side*0.35 gives clear visible spread between both arms (not 0.1 which was ~6°)
-            // Result: when facing right → arms raised UP, folded forward. When facing up →
-            // arms spread LEFT/RIGHT (which IS perpendicular-up for an upward-facing mantis).
+            // Prayer pose: femur always points toward screen-up (negative Y), regardless of
+            // facing direction.  Pick whichever 90° perpendicular has the more negative Y
+            // component so the arms don't flip when the mantis faces left/back.
+            const femurBase   = Math.cos(ha) >= 0 ? ha - Math.PI * 0.5 : ha + Math.PI * 0.5;
             coxaAngle = ha + side * 0.2 + sway * side;
-            const femurRest   = ha - Math.PI * 0.5 + side * 0.35;   // perpendicular = arms raised
-            const femurStrike = ha + side * 0.3;                      // sweeps forward on strike
+            const femurRest   = femurBase + side * 0.35;
+            const femurStrike = ha + side * 0.3;
             femurAngle = femurRest + (femurStrike - femurRest) * strike;
-            const tibiaRest   = femurAngle + Math.PI * 0.75;          // folds forward (prayer Z-shape)
+            // Tibia fold direction mirrors per side so both arms form a symmetrical prayer Z
+            const tibiaRest   = femurAngle + side * Math.PI * 0.75;
             const tibiaStrike = ha + side * (-0.1);
             tibiaAngle = tibiaRest + (tibiaStrike - tibiaRest) * strike;
         } else {
