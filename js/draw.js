@@ -91,7 +91,7 @@ function _drawPredator(actor, px, py, drawCtx) {
     const dim=actor.dimensions;
     let bodyBaseY=py-(dim.height*2) - (actor.heightBoost ? dim.height*(actor.heightBoost-1) : 0);
     let rearOffset=0;
-    if (actor.state==="attack") { const t=actor.attackAnim/Math.PI; rearOffset=Math.sin(t*Math.PI)*4; }
+    if (actor.state==="attack" && !actor.isMantis) { const t=actor.attackAnim/Math.PI; rearOffset=Math.sin(t*Math.PI)*4; }
     bodyBaseY-=rearOffset;
 
     const angle=Math.atan2(actor.dirY,actor.dirX);
@@ -159,26 +159,41 @@ function _drawPredator(actor, px, py, drawCtx) {
         });
     }
 
-    // ── Mantis raptorial praying forelegs — upside-down V forearms ──
+    // ── Mantis raptorial praying forelegs — prayer pose with strike extension ──
     if (actor.isMantis) {
         const frontAttachX = thoraxCX + dirX*(dim.width*0.35);
         const frontAttachY = thoraxCY + dirY*(dim.width*0.35);
         const armCol = isRedTeam ? "#441111" : "#1a3322";
         const femurLen = legData.femur * 0.7;
         const tibiaLen = legData.tibia * 0.9;
+        // Strike progress 0→1→0 over the attack anim (no bounce, just smooth extend & retract)
+        const strike = (actor.state === "attack") ? Math.sin(actor.attackAnim) : 0;
         drawCtx.save();
         drawCtx.strokeStyle = armCol; drawCtx.lineWidth = 2.5; drawCtx.lineCap = "round";
         [-1, 1].forEach(side => {
-            // Shoulder: inward spread from attachment point
+            // Shoulder: fixed attachment on prothorax front
             const sx = frontAttachX + perpX*side*legData.coxa*0.45;
             const sy = frontAttachY + perpY*side*legData.coxa*0.45;
-            // Elbow: moves outward and downward in screen (upper arm angles down+out)
-            const ex = sx + perpX*side*femurLen*0.5;
-            const ey = sy + perpY*side*femurLen*0.5 + femurLen*0.75;
-            // Forearm: tilts inward at the tip (natural praying-mantis tuck) and leans
-            // slightly forward along the body axis for a more dynamic pose.
-            const tx = ex - perpX*side*tibiaLen*0.28 + dirX*tibiaLen*0.15;
-            const ty = ey - tibiaLen                  + dirY*tibiaLen*0.15;
+
+            // ── Prayer pose (strike=0): arms fold in classic upside-down V ──
+            const prayElbX = sx + perpX*side*femurLen*0.5;
+            const prayElbY = sy + perpY*side*femurLen*0.5 + femurLen*0.75; // gravity drop
+            const prayTipX = prayElbX - perpX*side*tibiaLen*0.28 + dirX*tibiaLen*0.15;
+            const prayTipY = prayElbY - tibiaLen                  + dirY*tibiaLen*0.15;
+
+            // ── Strike pose (strike=1): arms extend forward to grab/slash ──
+            // Uses dir/perp vectors so the motion is correct at every facing angle.
+            const strikeElbX = sx + dirX*femurLen*0.55 + perpX*side*femurLen*0.30;
+            const strikeElbY = sy + dirY*femurLen*0.55 + perpY*side*femurLen*0.30;
+            const strikeTipX = strikeElbX + dirX*tibiaLen*0.75 - perpX*side*tibiaLen*0.18;
+            const strikeTipY = strikeElbY + dirY*tibiaLen*0.75 - perpY*side*tibiaLen*0.18;
+
+            // Interpolate between prayer and strike
+            const ex = prayElbX + (strikeElbX - prayElbX)*strike;
+            const ey = prayElbY + (strikeElbY - prayElbY)*strike;
+            const tx = prayTipX + (strikeTipX - prayTipX)*strike;
+            const ty = prayTipY + (strikeTipY - prayTipY)*strike;
+
             drawCtx.beginPath();
             drawCtx.moveTo(sx, sy);
             drawCtx.lineTo(ex, ey);
