@@ -120,9 +120,13 @@ function _drawPredator(actor, px, py, drawCtx) {
             : angle + (actor.body.abdomen.angleOffset || 0) + abdWalkSway;
     }
     const abdDirX  = Math.cos(abdAngle), abdDirY = Math.sin(abdAngle);
+    // Compress abdomen width based on depth: how much the abdomen points into/out of screen.
+    // Camera depth axis is roughly SE (π*0.25). When abdomen aligns with it, foreshorten.
+    const _abdDepth = Math.abs(Math.cos(abdAngle - Math.PI * 0.25));
+    const abdCompress = 1.0 - _abdDepth * 0.55;
     let abdLen=baseLength*actor.body.abdomen.size;
     for (let i=0;i<actor.body.abdomen.segments;i++) {
-        segments.push({ length:abdLen, width:dim.width*actor.body.abdomen.size, rotation:abdAngle });
+        segments.push({ length:abdLen, width:dim.width*actor.body.abdomen.size*abdCompress, rotation:abdAngle });
         abdLen*=actor.body.abdomen.taper;
     }
 
