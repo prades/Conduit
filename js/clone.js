@@ -322,7 +322,7 @@ function applySpeciesBody(predator, speciesName) {
         predator.body.abdomen.size          = 0.60;
         predator.body.abdomen.segments      = 1;
         predator.body.abdomen.taper         = 0.90;
-        // abdomen angle is computed dynamically in draw.js (always perpendicular-upward from thorax)
+        predator.body.abdomen.absoluteAngle = Math.PI * 0.38;
         predator.segmentSpacing             = 5;
         predator.appendages.antennae.enabled  = true;
         predator.appendages.antennae.length   = 12;

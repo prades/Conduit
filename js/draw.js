@@ -109,10 +109,7 @@ function _drawPredator(actor, px, py, drawCtx) {
     const abdWalkSway = Math.sin((actor.walkCycle || 0) * 0.015) * 0.13;
     let abdAngle;
     if (actor.isMantis) {
-        // Mantis abdomen: slightly raised behind the thorax (~68° from horizontal).
-        // Close enough to PI/2 that the X component is tiny (cos68°≈0.37),
-        // keeping lateral drift minimal across all facing angles.
-        abdAngle = Math.PI * 0.38;
+        abdAngle = actor.body.abdomen.absoluteAngle !== undefined ? actor.body.abdomen.absoluteAngle : Math.PI * 0.38;
     } else {
         abdAngle = actor.body.abdomen.absoluteAngle !== undefined
             ? actor.body.abdomen.absoluteAngle
