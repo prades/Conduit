@@ -42,9 +42,7 @@ class Predator {
             // Spider-specific
             pedipalps:   { enabled:false, length:8, thickness:2 },
             chelicerae:  { enabled:false, length:10, fangCurve:0.6, thickness:3 },
-            spinnerets:  { enabled:false, count:2, size:3 },
-            // Mantis-specific
-            forelegs:    { enabled:false, coxa:5, femur:16, tibia:13, thickness:2.5 }
+            spinnerets:  { enabled:false, count:2, size:3 }
         };
         this.armor = { plates:0, ridge:false };
         this.visual = {

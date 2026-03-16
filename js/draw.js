@@ -210,65 +210,6 @@ function _drawPredator(actor, px, py, drawCtx) {
         }
         drawCtx.restore();
     }
-    // Mantis raptorial forelegs — raised "praying" arms, drawn on top of body
-    const flData = actor.appendages.forelegs;
-    if (flData && flData.enabled) {
-        const thorax   = segments[0];
-        // Anchor at the front edge of the thorax (toward the head)
-        const anchorX  = thorax.cx + dirX * thorax.length * 0.42;
-        const anchorY  = thorax.cy + dirY * thorax.length * 0.42;
-
-        const isAttack = actor.state === "attack";
-        const strikeT  = isAttack ? Math.max(0, Math.sin(actor.attackAnim)) : 0;
-
-        const flCol = isRedTeam ? "#2a0a0a" : "#1a2a1a";
-        drawCtx.save();
-        drawCtx.strokeStyle = flCol;
-        drawCtx.lineWidth   = flData.thickness;
-        drawCtx.lineCap     = "round";
-        drawCtx.lineJoin    = "round";
-
-        [-1, 1].forEach(side => {
-            // Coxa — short shoulder joint, splays to the side
-            const coxaX = anchorX + perpX * side * flData.coxa;
-            const coxaY = anchorY + perpY * side * flData.coxa;
-
-            // Femur — extends forward+outward at rest; sweeps inward during strike
-            const restSpread   = 0.55;   // sideways spread at rest
-            const strikeSpread = 0.10;   // tighter during strike
-            const spread = restSpread + (strikeSpread - restSpread) * strikeT;
-            const femurEndX = coxaX + dirX * flData.femur * 0.75 + perpX * side * flData.femur * spread;
-            const femurEndY = coxaY + dirY * flData.femur * 0.75 + perpY * side * flData.femur * spread;
-
-            // Tibia — folds back toward body at rest ("praying" fold); snaps forward on strike
-            const tibiaEndX = femurEndX
-                + dirX  * (flData.tibia *  strikeT - flData.tibia * 0.55 * (1 - strikeT))
-                + perpX * side * flData.tibia * 0.18 * (1 - strikeT);
-            const tibiaEndY = femurEndY
-                + dirY  * (flData.tibia *  strikeT - flData.tibia * 0.55 * (1 - strikeT))
-                + perpY * side * flData.tibia * 0.18 * (1 - strikeT);
-
-            drawCtx.beginPath();
-            drawCtx.moveTo(anchorX, anchorY);
-            drawCtx.lineTo(coxaX, coxaY);
-            drawCtx.lineTo(femurEndX, femurEndY);
-            drawCtx.stroke();
-
-            drawCtx.beginPath();
-            drawCtx.moveTo(femurEndX, femurEndY);
-            drawCtx.lineTo(tibiaEndX, tibiaEndY);
-            drawCtx.stroke();
-
-            // Claw tip dot
-            drawCtx.fillStyle = flCol;
-            drawCtx.beginPath();
-            drawCtx.arc(tibiaEndX, tibiaEndY, flData.thickness * 0.65, 0, Math.PI * 2);
-            drawCtx.fill();
-        });
-
-        drawCtx.restore();
-    }
-
     // Stinger tail for scorpions
     if (isRedTeam && actor.hasStinger && segments.length > 2) {
         const tail = segments[segments.length-1];
