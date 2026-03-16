@@ -397,8 +397,12 @@ function updateNPC(actor) {
     } else {
         const _prevX = actor.x, _prevY = actor.y;
         updateRTSNPC(actor);
-        // Clamp all NPC actors to floor bounds regardless of role
-        actor.y = Math.max(-0.5, Math.min(4, actor.y));
+        // Clamp all NPC actors to floor bounds regardless of role.
+        // Relax lower bound when a job targets a back-wall tile (y < 0) so
+        // followers can reach y=-1 floor tiles without getting stuck at y=-0.5.
+        const _jobTargetY = actor.job?.target?.y;
+        const _minY = (typeof _jobTargetY === 'number' && _jobTargetY < 0) ? -1.5 : -0.5;
+        actor.y = Math.max(_minY, Math.min(4, actor.y));
         // Tick walk cycle for clones based on actual movement
         if (actor.isClone) {
             const _moved = Math.hypot(actor.x - _prevX, actor.y - _prevY);
