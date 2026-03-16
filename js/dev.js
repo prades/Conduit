@@ -84,7 +84,7 @@ function _setPreviewAngle(angle) {
 
 function initPreview() {
     previewCanvas=document.createElement("canvas");
-    const vs=Math.min(window.innerWidth*0.88,420);
+    const vs=Math.min(window.innerWidth*0.94,560);
     previewCanvas.style.width=vs+"px"; previewCanvas.style.height=vs+"px";
     previewCanvas.width=vs; previewCanvas.height=vs;
     Object.assign(previewCanvas.style,{position:"fixed",left:"50%",top:"40%",transform:"translate(-50%,-50%)",

@@ -140,6 +140,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         drawCtx.strokeStyle=isRedTeam?"#331111":"#111"; drawCtx.lineWidth=2;
         const positions=[-1,0,1];
         positions.forEach((pos,index)=>{
+            if (actor.isMantis && pos===-1) return; // front pair replaced by raptorial praying arms
             const long=-pos*(dim.width*0.35);
             const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
             _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
@@ -154,6 +155,37 @@ function _drawPredator(actor, px, py, drawCtx) {
             _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
             _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
         });
+    }
+
+    // ── Mantis raptorial praying forelegs — upside-down V forearms ──
+    if (actor.isMantis) {
+        const frontAttachX = thoraxCX + dirX*(dim.width*0.35);
+        const frontAttachY = thoraxCY + dirY*(dim.width*0.35);
+        const armCol = isRedTeam ? "#441111" : "#1a3322";
+        const femurLen = legData.femur * 0.7;
+        const tibiaLen = legData.tibia * 0.9;
+        drawCtx.save();
+        drawCtx.strokeStyle = armCol; drawCtx.lineWidth = 2.5; drawCtx.lineCap = "round";
+        [-1, 1].forEach(side => {
+            // Shoulder: inward spread from attachment point
+            const sx = frontAttachX + perpX*side*legData.coxa*0.45;
+            const sy = frontAttachY + perpY*side*legData.coxa*0.45;
+            // Elbow: moves outward and downward in screen (upper arm angles down+out)
+            const ex = sx + perpX*side*femurLen*0.5;
+            const ey = sy + perpY*side*femurLen*0.5 + femurLen*0.75;
+            // Forearm: straight up in screen space (vertical praying pose)
+            const tx = ex;
+            const ty = ey - tibiaLen;
+            drawCtx.beginPath();
+            drawCtx.moveTo(sx, sy);
+            drawCtx.lineTo(ex, ey);
+            drawCtx.lineTo(tx, ty);
+            drawCtx.stroke();
+            // Claw tip
+            drawCtx.fillStyle = armCol;
+            drawCtx.beginPath(); drawCtx.arc(tx, ty, 2.5, 0, Math.PI*2); drawCtx.fill();
+        });
+        drawCtx.restore();
     }
 
     // Nymph: draw translucent
