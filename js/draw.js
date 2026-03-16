@@ -104,10 +104,12 @@ function _drawPredator(actor, px, py, drawCtx) {
     segments.push({ length:baseLength*actor.body.thorax.size, width:dim.width*actor.body.thorax.size, rotation:angle, yOffset:actor.body.thorax.yOffset||0 });
     segments.push({ length:baseLength*actor.body.head.size,   width:dim.width*actor.body.head.size,   rotation:actor.headAngle||angle });
     // Abdomen — absoluteAngle fixes it to a screen-space direction (e.g. mantis always-up);
-    // angleOffset rotates it relative to the facing direction
+    // angleOffset rotates it relative to the facing direction.
+    // abdWalkSway adds a gentle side-to-side tilt driven by the walk cycle.
+    const abdWalkSway = Math.sin((actor.walkCycle || 0) * 0.015) * 0.13;
     const abdAngle = actor.body.abdomen.absoluteAngle !== undefined
         ? actor.body.abdomen.absoluteAngle
-        : angle + (actor.body.abdomen.angleOffset || 0);
+        : angle + (actor.body.abdomen.angleOffset || 0) + abdWalkSway;
     const abdDirX  = Math.cos(abdAngle), abdDirY = Math.sin(abdAngle);
     let abdLen=baseLength*actor.body.abdomen.size;
     for (let i=0;i<actor.body.abdomen.segments;i++) {
@@ -173,9 +175,10 @@ function _drawPredator(actor, px, py, drawCtx) {
             // Elbow: moves outward and downward in screen (upper arm angles down+out)
             const ex = sx + perpX*side*femurLen*0.5;
             const ey = sy + perpY*side*femurLen*0.5 + femurLen*0.75;
-            // Forearm: straight up in screen space (vertical praying pose)
-            const tx = ex;
-            const ty = ey - tibiaLen;
+            // Forearm: tilts inward at the tip (natural praying-mantis tuck) and leans
+            // slightly forward along the body axis for a more dynamic pose.
+            const tx = ex - perpX*side*tibiaLen*0.28 + dirX*tibiaLen*0.15;
+            const ty = ey - tibiaLen                  + dirY*tibiaLen*0.15;
             drawCtx.beginPath();
             drawCtx.moveTo(sx, sy);
             drawCtx.lineTo(ex, ey);
