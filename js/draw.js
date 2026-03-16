@@ -576,7 +576,7 @@ function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData,
         const strike=Math.sin(actor.attackAnim);
         if (strike>0) { j2x+=dirX*strike*-0.5; j2y+=dirY*strike*-0.5; }
     }
-    const gtX=j2x+dirX*stride, gtY=j2y+10-lift;
+    const gtX=hx+outX*(coxaLen+femurLen*0.5)+dirX*stride, gtY=hy+10-lift;
     const dx=gtX-j2x, dy=gtY-j2y, len=Math.hypot(dx,dy)||1;
     const footX=j2x+(dx/len)*tibiaLen, footY=j2y+(dy/len)*tibiaLen;
     drawCtx.beginPath(); drawCtx.moveTo(hx,hy); drawCtx.lineTo(j1x,j1y); drawCtx.lineTo(j2x,j2y); drawCtx.lineTo(footX,footY); drawCtx.stroke();
