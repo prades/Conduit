@@ -135,7 +135,7 @@ function _drawPredator(actor, px, py, drawCtx) {
     segments[1].cy=segments[0].cy+dirY*(segments[0].length*0.5+segments[1].length*0.5);
     // Abdomen anchor at thorax rear for all creatures.
     let anchorX = segments[0].cx - dirX * segments[0].length * 0.5;
-    let anchorY = segments[0].cy - dirY * segments[0].length * 0.5;
+    let anchorY = segments[0].cy - dirY * segments[0].length * 0.5 + (actor.body.abdomen.yOffset || 0);
     for (let i=2;i<segments.length;i++) {
         segments[i].cx = anchorX - abdDirX * segments[i].length * 0.5;
         segments[i].cy = anchorY - abdDirY * segments[i].length * 0.5;

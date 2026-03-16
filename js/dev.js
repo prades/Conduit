@@ -25,6 +25,7 @@ function buildSliders(section) {
             sliderContainer.appendChild(cs("Size",0.3,2.0,0.05,previewPredator.body.abdomen.size,v=>previewPredator.body.abdomen.size=v));
             sliderContainer.appendChild(cs("Segments",1,8,1,previewPredator.body.abdomen.segments,v=>previewPredator.body.abdomen.segments=v));
             sliderContainer.appendChild(cs("Taper",0.5,1.0,0.05,previewPredator.body.abdomen.taper,v=>previewPredator.body.abdomen.taper=v));
+            sliderContainer.appendChild(cs("Y Offset",-25,25,1,previewPredator.body.abdomen.yOffset||0,v=>previewPredator.body.abdomen.yOffset=v));
             sliderContainer.appendChild(cs("Angle Offset",-1.6,1.6,0.05,
                 previewPredator.body.abdomen.absoluteAngle !== undefined ? previewPredator.body.abdomen.absoluteAngle : (previewPredator.body.abdomen.angleOffset||0),
                 v => { if (previewPredator.body.abdomen.absoluteAngle !== undefined) previewPredator.body.abdomen.absoluteAngle=v; else previewPredator.body.abdomen.angleOffset=v; }));
@@ -194,7 +195,7 @@ function initPreview() {
             if (!previewPredator) return;
             // Reset body to defaults then apply the species
             previewPredator.body.head.size=0.45; previewPredator.body.thorax.size=0.9; previewPredator.body.thorax.yOffset=0;
-            previewPredator.body.abdomen.size=0.75; previewPredator.body.abdomen.segments=1; previewPredator.body.abdomen.taper=0.9; previewPredator.body.abdomen.angleOffset=0;
+            previewPredator.body.abdomen.size=0.75; previewPredator.body.abdomen.segments=1; previewPredator.body.abdomen.taper=0.9; previewPredator.body.abdomen.angleOffset=0; previewPredator.body.abdomen.yOffset=0;
             previewPredator.body.abdomen.round=false; previewPredator.isSpider=false; previewPredator.isMantis=false;
             previewPredator.hasStinger=false; previewPredator.armorPlated=false;
             previewPredator.appendages.antennae.enabled=false; previewPredator.appendages.wings.enabled=true;

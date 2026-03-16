@@ -23,7 +23,7 @@ class Predator {
         this.body = {
             head:    { size:0.45, widthScale:1, heightScale:1 },
             thorax:  { size:0.9,  widthScale:1, heightScale:1, yOffset:0 },
-            abdomen: { size:0.75, widthScale:1, heightScale:1, segments:1, taper:0.9, angleOffset:0 }
+            abdomen: { size:0.75, widthScale:1, heightScale:1, segments:1, taper:0.9, angleOffset:0, yOffset:0 }
         };
         this.segmentOrder=["head","thorax","abdomen"];
         this.segmentSpacing=10;
