@@ -135,28 +135,6 @@ function initPreview() {
     _previewViewLabel.textContent = "◀ drag to rotate  |  FRONT ▶";
     document.body.appendChild(_previewViewLabel);
 
-    // ── Attack-animation toggle button ──
-    _attackBtn = document.createElement("button");
-    _attackBtn.textContent = "[ ATTACK ]";
-    Object.assign(_attackBtn.style, {
-        position:"fixed", left:"50%", top:"calc(40% + "+(vs*0.5+32)+"px)",
-        transform:"translateX(-50%)",
-        color:"#0a8", fontFamily:"monospace", fontSize:"11px",
-        background:"rgba(0,0,0,0.7)", padding:"3px 12px", borderRadius:"4px",
-        border:"1px solid #0a8", zIndex:"9999", display:"none", cursor:"pointer"
-    });
-    _attackBtn.onpointerdown = e => e.stopPropagation();
-    _attackBtn.onclick = () => {
-        if (!previewPredator) return;
-        previewPredator._attackPreview = !previewPredator._attackPreview;
-        const on = previewPredator._attackPreview;
-        _attackBtn.style.background  = on ? "rgba(0,255,136,0.18)" : "rgba(0,0,0,0.7)";
-        _attackBtn.style.color       = on ? "#0f8" : "#0a8";
-        _attackBtn.style.borderColor = on ? "#0f8" : "#0a8";
-        if (!on) { previewPredator.state = "wander"; previewPredator.attackAnim = 0; }
-    };
-    document.body.appendChild(_attackBtn);
-
     const panel=document.createElement("div");
     panel.id="forgePanel";
     Object.assign(panel.style,{position:"fixed",bottom:"20px",left:"50%",transform:"translateX(-50%)",
@@ -169,8 +147,24 @@ function initPreview() {
         const o=document.createElement("option"); o.value=l.toLowerCase(); o.textContent=l; select.appendChild(o);
     });
     select.onchange=()=>buildSliders(select.value);
-    select.style.cssText="width:100%;margin-bottom:10px;";
+    select.style.cssText="width:100%;margin-bottom:6px;";
     panel.appendChild(select);
+
+    // ── Attack-animation toggle button ──
+    _attackBtn = document.createElement("button");
+    _attackBtn.textContent = "[ ATTACK ]";
+    _attackBtn.style.cssText = "width:100%;margin-bottom:10px;padding:4px;background:rgba(0,0,0,0.7);border:1px solid #0a8;color:#0a8;font-family:monospace;font-size:11px;border-radius:4px;cursor:pointer;letter-spacing:1px;";
+    _attackBtn.onpointerdown = e => e.stopPropagation();
+    _attackBtn.onclick = () => {
+        if (!previewPredator) return;
+        previewPredator._attackPreview = !previewPredator._attackPreview;
+        const on = previewPredator._attackPreview;
+        _attackBtn.style.background  = on ? "rgba(0,255,136,0.18)" : "rgba(0,0,0,0.7)";
+        _attackBtn.style.color       = on ? "#0f8" : "#0a8";
+        _attackBtn.style.borderColor = on ? "#0f8" : "#0a8";
+        if (!on) { previewPredator.state = "wander"; previewPredator.attackAnim = 0; }
+    };
+    panel.appendChild(_attackBtn);
 
     // DEV Toggle button
     const devBtn=document.createElement("button");
@@ -364,7 +358,6 @@ function toggleDevPreview() {
     if(!previewCanvas)return;
     previewCanvas.style.display=devMode?"block":"none";
     if (_previewViewLabel) _previewViewLabel.style.display=devMode?"block":"none";
-    if (_attackBtn)        _attackBtn.style.display       =devMode?"block":"none";
     const panel=document.getElementById("forgePanel");
     if(panel) panel.style.display=devMode?"block":"none";
 }
