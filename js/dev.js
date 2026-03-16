@@ -346,14 +346,9 @@ function updatePreview() {
     previewCtx.strokeStyle=grad; previewCtx.lineWidth=1;
     previewCtx.beginPath(); previewCtx.moveTo(px-80,floorY); previewCtx.lineTo(px+80,floorY); previewCtx.stroke();
     const zoom = 2.2;
-    // Isometric compression: squish width when creature faces toward/away from camera.
-    // Camera looks roughly SE (π*0.25). Depth dot = 1 when facing directly into screen.
-    const _camFwd = Math.PI * 0.25;
-    const _depth  = Math.cos((previewPredator.facing || 0) - _camFwd);
-    const _compress = 1.0 - Math.abs(_depth) * 0.45;
     previewCtx.save();
     previewCtx.translate(px, py);
-    previewCtx.scale(zoom * _compress, zoom);
+    previewCtx.scale(zoom, zoom);
     drawNPC(previewPredator, 0, 0, previewCtx);
     previewCtx.restore();
 }
