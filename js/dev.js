@@ -84,7 +84,7 @@ function _setPreviewAngle(angle) {
 
 function initPreview() {
     previewCanvas=document.createElement("canvas");
-    const vs=Math.min(window.innerWidth*0.94,560);
+    const vs=Math.min(window.innerWidth*0.88,420);
     previewCanvas.style.width=vs+"px"; previewCanvas.style.height=vs+"px";
     previewCanvas.width=vs; previewCanvas.height=vs;
     Object.assign(previewCanvas.style,{position:"fixed",left:"50%",top:"40%",transform:"translate(-50%,-50%)",
@@ -320,7 +320,12 @@ function updatePreview() {
     grad.addColorStop(0,"rgba(0,255,136,0)"); grad.addColorStop(0.5,"rgba(0,255,136,0.18)"); grad.addColorStop(1,"rgba(0,255,136,0)");
     previewCtx.strokeStyle=grad; previewCtx.lineWidth=1;
     previewCtx.beginPath(); previewCtx.moveTo(px-80,floorY); previewCtx.lineTo(px+80,floorY); previewCtx.stroke();
-    drawNPC(previewPredator,px,py,previewCtx);
+    const zoom = 2.2;
+    previewCtx.save();
+    previewCtx.translate(px, py);
+    previewCtx.scale(zoom, zoom);
+    drawNPC(previewPredator, 0, 0, previewCtx);
+    previewCtx.restore();
 }
 
 function toggleDevPreview() {
