@@ -64,6 +64,7 @@ const _VIEW_ANGLES = [
     { angle: Math.PI*0.75,  label: "LEFT"  },    // SW
 ];
 let _previewViewLabel = null;  // DOM element for view label
+let _attackBtn        = null;  // DOM element for attack-preview toggle
 
 function _setPreviewAngle(angle) {
     if (!previewPredator) return;
@@ -133,6 +134,28 @@ function initPreview() {
     });
     _previewViewLabel.textContent = "◀ drag to rotate  |  FRONT ▶";
     document.body.appendChild(_previewViewLabel);
+
+    // ── Attack-animation toggle button ──
+    _attackBtn = document.createElement("button");
+    _attackBtn.textContent = "[ ATTACK ]";
+    Object.assign(_attackBtn.style, {
+        position:"fixed", left:"50%", top:"calc(40% + "+(vs*0.5+32)+"px)",
+        transform:"translateX(-50%)",
+        color:"#0a8", fontFamily:"monospace", fontSize:"11px",
+        background:"rgba(0,0,0,0.7)", padding:"3px 12px", borderRadius:"4px",
+        border:"1px solid #0a8", zIndex:"9999", display:"none", cursor:"pointer"
+    });
+    _attackBtn.onpointerdown = e => e.stopPropagation();
+    _attackBtn.onclick = () => {
+        if (!previewPredator) return;
+        previewPredator._attackPreview = !previewPredator._attackPreview;
+        const on = previewPredator._attackPreview;
+        _attackBtn.style.background  = on ? "rgba(0,255,136,0.18)" : "rgba(0,0,0,0.7)";
+        _attackBtn.style.color       = on ? "#0f8" : "#0a8";
+        _attackBtn.style.borderColor = on ? "#0f8" : "#0a8";
+        if (!on) { previewPredator.state = "wander"; previewPredator.attackAnim = 0; }
+    };
+    document.body.appendChild(_attackBtn);
 
     const panel=document.createElement("div");
     panel.id="forgePanel";
@@ -308,7 +331,15 @@ function _spawnDesignedPredator(name, team) {
 function updatePreview() {
     if(!devMode||!previewPredator||!previewCtx)return;
     previewCtx.clearRect(0,0,previewCanvas.width,previewCanvas.height);
-    previewPredator.walkCycle+=0.2;
+    previewPredator.walkCycle += 0.2;
+    if (previewPredator._attackPreview) {
+        previewPredator.state = "attack";
+        previewPredator.attackAnim += 0.18;
+        if (previewPredator.attackAnim >= Math.PI) previewPredator.attackAnim = 0;
+    } else if (previewPredator.state === "attack") {
+        previewPredator.state = "wander";
+        previewPredator.attackAnim = 0;
+    }
     const px=previewCanvas.width*0.5, py=previewCanvas.height*0.58;
     // Subtle dot-grid
     previewCtx.fillStyle="rgba(0,255,136,0.07)";
@@ -333,6 +364,7 @@ function toggleDevPreview() {
     if(!previewCanvas)return;
     previewCanvas.style.display=devMode?"block":"none";
     if (_previewViewLabel) _previewViewLabel.style.display=devMode?"block":"none";
+    if (_attackBtn)        _attackBtn.style.display       =devMode?"block":"none";
     const panel=document.getElementById("forgePanel");
     if(panel) panel.style.display=devMode?"block":"none";
 }
