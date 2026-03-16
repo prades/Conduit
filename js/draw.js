@@ -109,9 +109,10 @@ function _drawPredator(actor, px, py, drawCtx) {
     const abdWalkSway = Math.sin((actor.walkCycle || 0) * 0.015) * 0.13;
     let abdAngle;
     if (actor.isMantis) {
-        // Mantis abdomen: always rises straight up on screen (screen-space +Y axis).
-        // abdDirY = sin(PI/2) = 1 → segments extend in -Y = upward. No left/right drift.
-        abdAngle = Math.PI / 2;
+        // Mantis abdomen: slightly raised behind the thorax (~68° from horizontal).
+        // Close enough to PI/2 that the X component is tiny (cos68°≈0.37),
+        // keeping lateral drift minimal across all facing angles.
+        abdAngle = Math.PI * 0.38;
     } else {
         abdAngle = actor.body.abdomen.absoluteAngle !== undefined
             ? actor.body.abdomen.absoluteAngle
@@ -132,16 +133,9 @@ function _drawPredator(actor, px, py, drawCtx) {
     segments[0].cx=px; segments[0].cy=bodyBaseY+(segments[0].yOffset||0);
     segments[1].cx=segments[0].cx+dirX*(segments[0].length*0.5+segments[1].length*0.5);
     segments[1].cy=segments[0].cy+dirY*(segments[0].length*0.5+segments[1].length*0.5);
-    // Abdomen anchor: mantis uses thorax CENTER so the abdomen stays visually centered
-    // regardless of facing direction. Other creatures use the thorax rear.
-    let anchorX, anchorY;
-    if (actor.isMantis) {
-        anchorX = segments[0].cx;
-        anchorY = segments[0].cy;
-    } else {
-        anchorX = segments[0].cx - dirX * segments[0].length * 0.5;
-        anchorY = segments[0].cy - dirY * segments[0].length * 0.5;
-    }
+    // Abdomen anchor at thorax rear for all creatures.
+    let anchorX = segments[0].cx - dirX * segments[0].length * 0.5;
+    let anchorY = segments[0].cy - dirY * segments[0].length * 0.5;
     for (let i=2;i<segments.length;i++) {
         segments[i].cx = anchorX - abdDirX * segments[i].length * 0.5;
         segments[i].cy = anchorY - abdDirY * segments[i].length * 0.5;
