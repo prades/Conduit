@@ -107,9 +107,18 @@ function _drawPredator(actor, px, py, drawCtx) {
     // angleOffset rotates it relative to the facing direction.
     // abdWalkSway adds a gentle side-to-side tilt driven by the walk cycle.
     const abdWalkSway = Math.sin((actor.walkCycle || 0) * 0.015) * 0.13;
-    const abdAngle = actor.body.abdomen.absoluteAngle !== undefined
-        ? actor.body.abdomen.absoluteAngle
-        : angle + (actor.body.abdomen.angleOffset || 0) + abdWalkSway;
+    let abdAngle;
+    if (actor.isMantis) {
+        // Mantis abdomen: always rises upward from the thorax rear like an erect appendage.
+        // Use whichever body-perpendicular points most toward screen-up (negative Y).
+        // cos(angle) >= 0 → facing rightward hemisphere → left-perp (angle - PI/2) is upward.
+        // cos(angle) < 0  → facing leftward  hemisphere → right-perp (angle + PI/2) is upward.
+        abdAngle = Math.cos(angle) >= 0 ? angle - Math.PI / 2 : angle + Math.PI / 2;
+    } else {
+        abdAngle = actor.body.abdomen.absoluteAngle !== undefined
+            ? actor.body.abdomen.absoluteAngle
+            : angle + (actor.body.abdomen.angleOffset || 0) + abdWalkSway;
+    }
     const abdDirX  = Math.cos(abdAngle), abdDirY = Math.sin(abdAngle);
     let abdLen=baseLength*actor.body.abdomen.size;
     for (let i=0;i<actor.body.abdomen.segments;i++) {
