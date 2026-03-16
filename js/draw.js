@@ -109,11 +109,22 @@ function _drawPredator(actor, px, py, drawCtx) {
     const abdWalkSway = Math.sin((actor.walkCycle || 0) * 0.015) * 0.13;
     let abdAngle;
     if (actor.isMantis) {
-        // Mantis abdomen: always rises upward from the thorax rear like an erect appendage.
-        // Use whichever body-perpendicular points most toward screen-up (negative Y).
-        // cos(angle) >= 0 → facing rightward hemisphere → left-perp (angle - PI/2) is upward.
-        // cos(angle) < 0  → facing leftward  hemisphere → right-perp (angle + PI/2) is upward.
-        abdAngle = Math.cos(angle) >= 0 ? angle - Math.PI / 2 : angle + Math.PI / 2;
+        // Mantis abdomen: always perpendicular to body, preferring upward.
+        // Track the previous angle and always pick the closer perpendicular to avoid
+        // the π-jump that occurs when cos(angle) crosses zero.
+        const p1 = angle - Math.PI / 2;
+        const p2 = angle + Math.PI / 2;
+        if (actor._abdAngle === undefined) {
+            // Bootstrap: pick whichever perpendicular points most upward (sin < 0)
+            actor._abdAngle = Math.sin(p1) <= Math.sin(p2) ? p1 : p2;
+        } else {
+            const d1 = Math.abs(((p1 - actor._abdAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+            const d2 = Math.abs(((p2 - actor._abdAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+            const target = d1 <= d2 ? p1 : p2;
+            const d = ((target - actor._abdAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+            actor._abdAngle += d * 0.22;
+        }
+        abdAngle = actor._abdAngle;
     } else {
         abdAngle = actor.body.abdomen.absoluteAngle !== undefined
             ? actor.body.abdomen.absoluteAngle
