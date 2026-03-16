@@ -333,6 +333,11 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.legs.coxa         = 7;
         predator.appendages.legs.femur        = 15;
         predator.appendages.legs.tibia        = 22;
+        predator.appendages.forelegs.enabled   = true;
+        predator.appendages.forelegs.coxa      = 5;
+        predator.appendages.forelegs.femur     = 16;
+        predator.appendages.forelegs.tibia     = 13;
+        predator.appendages.forelegs.thickness = 2.5;
     }
 }
 
