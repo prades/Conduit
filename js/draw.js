@@ -156,7 +156,7 @@ function _drawPredator(actor, px, py, drawCtx) {
             positions.forEach((pos,index)=>{
                 if (actor.isMantis && pos===-1) return; // front pair replaced by raptorial praying arms
                 const long=-pos*(dim.width*0.35);
-                const hx=thoraxCX+dirX*long, hy=thoraxCY+Math.max(0,dirY)*long;
+                const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
                 if (farOnly ? _legDepth >= 0 : _legDepth < 0)
                     _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
                 if (farOnly ? _legDepth <= 0 : _legDepth > 0)
@@ -167,7 +167,7 @@ function _drawPredator(actor, px, py, drawCtx) {
             const positions=[-1.2,-0.4,0.4,1.2];
             positions.forEach((pos,index)=>{
                 const long=-pos*(dim.width*0.22);
-                const hx=thoraxCX+dirX*long, hy=thoraxCY+Math.max(0,dirY)*long;
+                const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
                 if (farOnly ? _legDepth >= 0 : _legDepth < 0)
                     _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
                 if (farOnly ? _legDepth <= 0 : _legDepth > 0)
