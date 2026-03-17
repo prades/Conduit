@@ -659,7 +659,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     const TORSO_BOT = BASE_Y - 2;
     const TORSO_TOP = TORSO_BOT - 17;
     const COLLAR_Y  = TORSO_TOP;
-    const DOME_CY   = COLLAR_Y  - 10; // dome sphere centre
+    const DOME_CY   = COLLAR_Y;        // half-capsule base (flat bottom at collar)
     const DOME_R    = 10;
 
     // ── 3 MECHANICAL LEGS — drawn first (behind body) ────────────────────────
@@ -696,9 +696,6 @@ function _drawVirus(actor, px, py, drawCtx) {
         // Lower leg — thinner
         drawCtx.strokeStyle = steelDark; drawCtx.lineWidth = 2;
         drawCtx.beginPath(); drawCtx.moveTo(kx, ky); drawCtx.lineTo(fx, fy); drawCtx.stroke();
-        // Knee joint disc
-        drawCtx.fillStyle = steelLight;
-        drawCtx.beginPath(); drawCtx.arc(kx, ky, 2.8, 0, Math.PI*2); drawCtx.fill();
         // Foot pad — flat disc
         drawCtx.fillStyle = steelDark;
         drawCtx.beginPath(); drawCtx.ellipse(fx, fy, 3.5, 2, 0, 0, Math.PI*2); drawCtx.fill();
@@ -780,11 +777,11 @@ function _drawVirus(actor, px, py, drawCtx) {
     liqGrad.addColorStop(0, `rgba(${Math.min(255,er+60)},${Math.min(255,eg+60)},${Math.min(255,eb+60)},0.55)`);
     liqGrad.addColorStop(1, `rgba(${er},${eg},${eb},0.25)`);
     drawCtx.fillStyle = liqGrad;
-    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R - 1, 0, Math.PI*2);
-    drawCtx.fill();
+    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R - 1, Math.PI, 0, false);
+    drawCtx.closePath(); drawCtx.fill();
 
     // ── Crystal inside dome — multi-facet diamond shape ──
-    const cCY  = DOME_CY + 1;
+    const cCY  = DOME_CY - DOME_R * 0.45;
     const cR   = 4.5;
     const cBright = `rgb(${Math.min(255,er+100)},${Math.min(255,eg+100)},${Math.min(255,eb+100)})`;
     const cMid    = `rgb(${Math.min(255,er+40)},${Math.min(255,eg+40)},${Math.min(255,eb+40)})`;
@@ -819,11 +816,13 @@ function _drawVirus(actor, px, py, drawCtx) {
     // ── Glass dome shell — clear sphere with reflections ──
     // Very faint tinted fill
     drawCtx.fillStyle = `rgba(${er},${eg},${eb},0.06)`;
-    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R, 0, Math.PI*2); drawCtx.fill();
-    // Dome outline
+    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R, Math.PI, 0, false);
+    drawCtx.closePath(); drawCtx.fill();
+    // Dome outline (half capsule: semicircle + flat base)
     drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.85)" : "rgba(180,220,255,0.65)";
     drawCtx.lineWidth = 1.5;
-    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R, 0, Math.PI*2); drawCtx.stroke();
+    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R, Math.PI, 0, false);
+    drawCtx.closePath(); drawCtx.stroke();
     // Main specular arc (top-left dome shine)
     drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.7)" : "rgba(220,240,255,0.55)";
     drawCtx.lineWidth = 2.5;
