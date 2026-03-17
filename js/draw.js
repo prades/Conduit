@@ -585,13 +585,19 @@ function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData,
     const stride = Math.sin(actor.walkCycle * legData.swingSpeed + phaseOffset) * 5;
 
     // ── CREST (knee) — apex at full coxa+femur reach, barely strides ──
+    // In 3/4 view the perpendicular vector can point upward in screen space (outY < 0) for
+    // the far side of the body. Two corrections keep legs grounded:
+    //   1. Far-side knees (outY < 0): dampen the upward rise to ~20% so they barely clear the hip.
+    //   2. Lateral legs (outY ≈ 0, creature facing up/down): add a gravity pull (½ × lateral
+    //      spread) so knees angle toward the ground plane rather than staying horizontal.
+    const effectiveOutY = outY > 0 ? outY : outY * 0.2;
+    const gravityPull   = Math.abs(outX) * 0.5;
     const crestX = hx + outX * (legData.coxa + legData.femur) + dirX * stride * 0.2;
-    const crestY = hy + outY * (legData.coxa + legData.femur) - lift;
+    const crestY = hy + (effectiveOutY + gravityPull) * (legData.coxa + legData.femur) - lift;
 
     // ── FOOT — tibia pulls inward + forward from knee for acute knee angle ──
-    // (-out * 0.4) brings foot closer to body than knee; (+dir * 0.8) extends it forward
-    // Use Math.abs(dirY) so feet always hang downward in screen space; when the creature
-    // faces away from camera (dirY < 0), dirY * tibia would lift feet above the body.
+    // (-out * 0.4) brings foot closer to body than knee; (+dir * 0.8) extends it forward.
+    // Math.abs(dirY) ensures feet hang downward even when dirY is negative (facing away).
     const footX = crestX - outX * legData.tibia * 0.4 + dirX * (legData.tibia * 0.8 + stride * 0.8);
     const footY = crestY - outY * legData.tibia * 0.4 + Math.abs(dirY) * legData.tibia * 0.8 - lift * 0.3;
 
