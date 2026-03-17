@@ -140,32 +140,42 @@ function _drawPredator(actor, px, py, drawCtx) {
         anchorY -= abdDirY * segments[i].length;
     }
 
-    // ── LEGS drawn first so body renders over them ──
+    // ── Legs split by isometric depth: far side behind body, near side in front ──
+    // In iso projection depth = world(x+y). Legs at side s have depth offset s*(perpX+perpY).
+    // perpX+perpY = dirX-dirY: positive → side+1 is far; negative → side-1 is far.
     const isRedTeam = (actor.team !== "green" && !actor.isClone);
     const perpX=-dirY, perpY=dirX;
+    const _legDepth = perpX + perpY; // dirX - dirY
     const thoraxCX=segments[0].cx+dirX*actor.joints.legRoot.forward;
     const thoraxCY=segments[0].cy+actor.joints.legRoot.vertical;
     const legData=actor.appendages.legs;
-    if (legData && legData.count===6) {
-        drawCtx.strokeStyle=isRedTeam?"#331111":"#111"; drawCtx.lineWidth=2;
-        const positions=[-1,0,1];
-        positions.forEach((pos,index)=>{
-            if (actor.isMantis && pos===-1) return; // front pair replaced by raptorial praying arms
-            const long=-pos*(dim.width*0.35);
-            const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
-            _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
-            _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
-        });
-    } else if (legData && legData.count===8) {
-        drawCtx.strokeStyle=isRedTeam?"#550011":"#1a1a1a"; drawCtx.lineWidth=1.2;
-        const positions=[-1.2,-0.4,0.4,1.2];
-        positions.forEach((pos,index)=>{
-            const long=-pos*(dim.width*0.22);
-            const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
-            _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
-            _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
-        });
+    function _drawLegsPass(farOnly) {
+        if (legData && legData.count===6) {
+            drawCtx.strokeStyle=isRedTeam?"#331111":"#111"; drawCtx.lineWidth=2;
+            const positions=[-1,0,1];
+            positions.forEach((pos,index)=>{
+                if (actor.isMantis && pos===-1) return; // front pair replaced by raptorial praying arms
+                const long=-pos*(dim.width*0.35);
+                const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
+                if (farOnly ? _legDepth >= 0 : _legDepth < 0)
+                    _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
+                if (farOnly ? _legDepth <= 0 : _legDepth > 0)
+                    _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
+            });
+        } else if (legData && legData.count===8) {
+            drawCtx.strokeStyle=isRedTeam?"#550011":"#1a1a1a"; drawCtx.lineWidth=1.2;
+            const positions=[-1.2,-0.4,0.4,1.2];
+            positions.forEach((pos,index)=>{
+                const long=-pos*(dim.width*0.22);
+                const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
+                if (farOnly ? _legDepth >= 0 : _legDepth < 0)
+                    _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
+                if (farOnly ? _legDepth <= 0 : _legDepth > 0)
+                    _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
+            });
+        }
     }
+    _drawLegsPass(true); // far legs drawn behind body
 
     // ── Mantis raptorial praying forelegs — prayer pose with strike extension ──
     if (actor.isMantis) {
@@ -268,6 +278,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         }
         drawCtx.restore();
     }
+    _drawLegsPass(false); // near legs drawn over body
     // Stinger tail for scorpions
     if (isRedTeam && actor.hasStinger && segments.length > 2) {
         const tail = segments[segments.length-1];

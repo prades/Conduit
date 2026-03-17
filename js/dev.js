@@ -352,6 +352,24 @@ function updatePreview() {
     previewCtx.scale(zoom, zoom);
     drawNPC(previewPredator, 0, 0, previewCtx);
     previewCtx.restore();
+
+    // ── Angle label at top of viewer ──
+    const _a = Math.atan2(previewPredator.dirY, previewPredator.dirX);
+    const _deg = Math.round(_a * 180 / Math.PI);
+    let _dirLabel = _VIEW_ANGLES[0].label, _bestDiff = Infinity;
+    _VIEW_ANGLES.forEach(v => {
+        const d = Math.abs(((_a - v.angle) % (Math.PI*2) + Math.PI*3) % (Math.PI*2) - Math.PI);
+        if (d < _bestDiff) { _bestDiff = d; _dirLabel = v.label; }
+    });
+    previewCtx.save();
+    previewCtx.setTransform(1,0,0,1,0,0);
+    previewCtx.fillStyle = "rgba(0,0,0,0.6)";
+    previewCtx.fillRect(previewCanvas.width*0.5 - 62, 8, 124, 20);
+    previewCtx.font = "bold 11px monospace";
+    previewCtx.textAlign = "center";
+    previewCtx.fillStyle = "#0f8";
+    previewCtx.fillText(_dirLabel + "  " + _deg + "\u00b0", previewCanvas.width*0.5, 22);
+    previewCtx.restore();
 }
 
 function toggleDevPreview() {
