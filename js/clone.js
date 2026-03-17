@@ -296,6 +296,7 @@ function applySpeciesBody(predator, speciesName) {
         predator.segmentSpacing    = 6;
         predator.appendages.antennae.enabled = true;
         predator.appendages.antennae.length  = 10;
+        predator.appendages.legs.crouchRise  = 10;
     } else if (speciesName === "beetle") {
         predator.armorPlated = true;
         predator.segmentCornerRadius = 12;
@@ -306,6 +307,7 @@ function applySpeciesBody(predator, speciesName) {
         predator.body.abdomen.taper = 0.95;
         predator.appendages.wings.enabled = false;
         predator.appendages.mandibles.length = 4;
+        predator.appendages.legs.crouchRise  = 10;
     } else if (speciesName === "scorpion") {
         predator.hasStinger  = true;
         predator.body.abdomen.segments = 3;
@@ -313,6 +315,7 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.wings.enabled = false;
         predator.appendages.mandibles.length = 7;
         predator.appendages.mandibles.spread = 0.6;
+        predator.appendages.legs.crouchRise  = 10;
     } else if (speciesName === "mantis") {
         predator.isMantis = true;
         predator.segmentCornerRadius = 3;
