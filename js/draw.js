@@ -150,6 +150,10 @@ function _drawPredator(actor, px, py, drawCtx) {
     const thoraxCY=segments[0].cy+actor.joints.legRoot.vertical;
     const legData=actor.appendages.legs;
     function _drawLegsPass(farOnly) {
+        // _legDepth = perpX+perpY. In iso (depth = x+y), larger depth = closer to viewer.
+        // side+1 legs are offset by +perp, so their depth delta = _legDepth.
+        // side+1 is FAR (behind body) when _legDepth <= 0; NEAR (in front) when _legDepth > 0.
+        // side-1 is FAR when _legDepth >= 0; NEAR when _legDepth < 0.
         if (legData && legData.count===6) {
             drawCtx.strokeStyle=isRedTeam?"#331111":"#111"; drawCtx.lineWidth=2;
             const positions=[-1,0,1];
@@ -157,9 +161,9 @@ function _drawPredator(actor, px, py, drawCtx) {
                 if (actor.isMantis && pos===-1) return; // front pair replaced by raptorial praying arms
                 const long=-pos*(dim.width*0.35);
                 const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
-                if (farOnly ? _legDepth >= 0 : _legDepth < 0)
-                    _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
                 if (farOnly ? _legDepth <= 0 : _legDepth > 0)
+                    _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
+                if (farOnly ? _legDepth >= 0 : _legDepth < 0)
                     _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
             });
         } else if (legData && legData.count===8) {
@@ -168,61 +172,54 @@ function _drawPredator(actor, px, py, drawCtx) {
             positions.forEach((pos,index)=>{
                 const long=-pos*(dim.width*0.22);
                 const hx=thoraxCX+dirX*long, hy=thoraxCY+dirY*long;
-                if (farOnly ? _legDepth >= 0 : _legDepth < 0)
-                    _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
                 if (farOnly ? _legDepth <= 0 : _legDepth > 0)
+                    _drawInsectLeg(drawCtx,hx,hy, 1,(index+1)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
+                if (farOnly ? _legDepth >= 0 : _legDepth < 0)
                     _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
             });
         }
+        // ── Mantis raptorial praying forelegs — split by depth same as regular legs ──
+        if (actor.isMantis && legData) {
+            const frontAttachX = thoraxCX + dirX*(dim.width*0.35);
+            const frontAttachY = thoraxCY + dirY*(dim.width*0.35);
+            const armCol = isRedTeam ? "#441111" : "#1a3322";
+            const femurLen = legData.femur * 0.7;
+            const tibiaLen = legData.tibia * 0.9;
+            const strike = (actor.state === "attack") ? Math.sin(actor.attackAnim) : 0;
+            drawCtx.save();
+            drawCtx.strokeStyle = armCol; drawCtx.lineWidth = 2.5; drawCtx.lineCap = "round";
+            [-1, 1].forEach(side => {
+                // side s is FAR when s * _legDepth >= 0 (opposite sign convention to regular legs
+                // because the foreleg shoulder is at +perp*side, so depth delta = side*_legDepth;
+                // FAR = smaller depth = side*_legDepth <= 0).
+                const isFar = side * _legDepth <= 0;
+                if (farOnly !== isFar) return;
+                const sx = frontAttachX + perpX*side*legData.coxa*0.45;
+                const sy = frontAttachY + perpY*side*legData.coxa*0.45;
+                const prayElbX = sx + perpX*side*femurLen*0.5;
+                const prayElbY = sy + perpY*side*femurLen*0.5 + femurLen*0.75;
+                const prayTipX = prayElbX - perpX*side*tibiaLen*0.28 + dirX*tibiaLen*0.15;
+                const prayTipY = prayElbY - tibiaLen                  + dirY*tibiaLen*0.15;
+                const strikeElbX = sx + dirX*femurLen*0.55 + perpX*side*femurLen*0.30;
+                const strikeElbY = sy + dirY*femurLen*0.55 + perpY*side*femurLen*0.30;
+                const strikeTipX = strikeElbX + dirX*tibiaLen*0.75 - perpX*side*tibiaLen*0.18;
+                const strikeTipY = strikeElbY + dirY*tibiaLen*0.75 - perpY*side*tibiaLen*0.18;
+                const ex = prayElbX + (strikeElbX - prayElbX)*strike;
+                const ey = prayElbY + (strikeElbY - prayElbY)*strike;
+                const tx = prayTipX + (strikeTipX - prayTipX)*strike;
+                const ty = prayTipY + (strikeTipY - prayTipY)*strike;
+                drawCtx.beginPath();
+                drawCtx.moveTo(sx, sy);
+                drawCtx.lineTo(ex, ey);
+                drawCtx.lineTo(tx, ty);
+                drawCtx.stroke();
+                drawCtx.fillStyle = armCol;
+                drawCtx.beginPath(); drawCtx.arc(tx, ty, 2.5, 0, Math.PI*2); drawCtx.fill();
+            });
+            drawCtx.restore();
+        }
     }
     _drawLegsPass(true); // far legs drawn behind body
-
-    // ── Mantis raptorial praying forelegs — prayer pose with strike extension ──
-    if (actor.isMantis) {
-        const frontAttachX = thoraxCX + dirX*(dim.width*0.35);
-        const frontAttachY = thoraxCY + dirY*(dim.width*0.35);
-        const armCol = isRedTeam ? "#441111" : "#1a3322";
-        const femurLen = legData.femur * 0.7;
-        const tibiaLen = legData.tibia * 0.9;
-        // Strike progress 0→1→0 over the attack anim (no bounce, just smooth extend & retract)
-        const strike = (actor.state === "attack") ? Math.sin(actor.attackAnim) : 0;
-        drawCtx.save();
-        drawCtx.strokeStyle = armCol; drawCtx.lineWidth = 2.5; drawCtx.lineCap = "round";
-        [-1, 1].forEach(side => {
-            // Shoulder: fixed attachment on prothorax front
-            const sx = frontAttachX + perpX*side*legData.coxa*0.45;
-            const sy = frontAttachY + perpY*side*legData.coxa*0.45;
-
-            // ── Prayer pose (strike=0): arms fold in classic upside-down V ──
-            const prayElbX = sx + perpX*side*femurLen*0.5;
-            const prayElbY = sy + perpY*side*femurLen*0.5 + femurLen*0.75; // gravity drop
-            const prayTipX = prayElbX - perpX*side*tibiaLen*0.28 + dirX*tibiaLen*0.15;
-            const prayTipY = prayElbY - tibiaLen                  + dirY*tibiaLen*0.15;
-
-            // ── Strike pose (strike=1): arms extend forward to grab/slash ──
-            // Uses dir/perp vectors so the motion is correct at every facing angle.
-            const strikeElbX = sx + dirX*femurLen*0.55 + perpX*side*femurLen*0.30;
-            const strikeElbY = sy + dirY*femurLen*0.55 + perpY*side*femurLen*0.30;
-            const strikeTipX = strikeElbX + dirX*tibiaLen*0.75 - perpX*side*tibiaLen*0.18;
-            const strikeTipY = strikeElbY + dirY*tibiaLen*0.75 - perpY*side*tibiaLen*0.18;
-
-            // Interpolate between prayer and strike
-            const ex = prayElbX + (strikeElbX - prayElbX)*strike;
-            const ey = prayElbY + (strikeElbY - prayElbY)*strike;
-            const tx = prayTipX + (strikeTipX - prayTipX)*strike;
-            const ty = prayTipY + (strikeTipY - prayTipY)*strike;
-
-            drawCtx.beginPath();
-            drawCtx.moveTo(sx, sy);
-            drawCtx.lineTo(ex, ey);
-            drawCtx.lineTo(tx, ty);
-            drawCtx.stroke();
-            // Claw tip
-            drawCtx.fillStyle = armCol;
-            drawCtx.beginPath(); drawCtx.arc(tx, ty, 2.5, 0, Math.PI*2); drawCtx.fill();
-        });
-        drawCtx.restore();
-    }
 
     // Nymph: draw translucent
     if (actor.isNymph) drawCtx.globalAlpha = 0.38;
