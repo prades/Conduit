@@ -662,18 +662,16 @@ function _drawVirus(actor, px, py, drawCtx) {
     const DOME_CY   = COLLAR_Y;        // half-capsule base (flat bottom at collar)
     const DOME_R    = 10;
 
-    // ── 3 MECHANICAL LEGS — drawn first (behind body) ────────────────────────
-    // Hips sit on the base ring perimeter; legs angle out then down in 120° steps.
-    // Screen-space leg layout: left-front, right-front, rear (pointing toward viewer)
+    // ── 3 CRYSTAL LEGS — drawn first (behind body) ───────────────────────────
     const legDefs = [
         { hOX:-7, hOY:1, femA: Math.PI*0.80, tibA: Math.PI*0.62, ph: 0            },
         { hOX: 7, hOY:1, femA: Math.PI*0.20, tibA: Math.PI*0.38, ph: Math.PI*2/3  },
         { hOX: 0, hOY:-1, femA: Math.PI*0.50, tibA: Math.PI*0.55, ph: Math.PI*4/3 },
     ];
     const FEM_LEN = 15, TIB_LEN = 13;
-    const steelDark  = flash ? "#ccd" : "#3a4a5c";
-    const steelMid   = flash ? "#dde" : "#4e6070";
-    const steelLight = flash ? "#eef" : "#7a9aac";
+    // Black crystal: nearly-black facet with a faint iridescent edge
+    const crystCore  = flash ? "#dde" : "#07070d";
+    const crystEdge  = flash ? "#fff" : "#3030aa";
 
     drawCtx.save();
     drawCtx.lineCap = "round";
@@ -690,151 +688,92 @@ function _drawVirus(actor, px, py, drawCtx) {
         const fx = kx + Math.cos(tibA + swing * 0.5) * TIB_LEN;
         const fy = ky + Math.sin(tibA + swing * 0.5) * TIB_LEN - lift * 0.25;
 
-        // Upper leg — thicker steel strut
-        drawCtx.strokeStyle = steelMid; drawCtx.lineWidth = 3;
+        // Upper crystal strut — thick dark core + thin bright facet edge
+        drawCtx.strokeStyle = crystCore; drawCtx.lineWidth = 4;
         drawCtx.beginPath(); drawCtx.moveTo(hx, hy); drawCtx.lineTo(kx, ky); drawCtx.stroke();
-        // Lower leg — thinner
-        drawCtx.strokeStyle = steelDark; drawCtx.lineWidth = 2;
+        drawCtx.strokeStyle = crystEdge; drawCtx.lineWidth = 1;
+        drawCtx.beginPath(); drawCtx.moveTo(hx, hy); drawCtx.lineTo(kx, ky); drawCtx.stroke();
+        // Lower crystal strut
+        drawCtx.strokeStyle = crystCore; drawCtx.lineWidth = 3;
         drawCtx.beginPath(); drawCtx.moveTo(kx, ky); drawCtx.lineTo(fx, fy); drawCtx.stroke();
-        // Foot pad — flat disc
-        drawCtx.fillStyle = steelDark;
-        drawCtx.beginPath(); drawCtx.ellipse(fx, fy, 3.5, 2, 0, 0, Math.PI*2); drawCtx.fill();
+        drawCtx.strokeStyle = crystEdge; drawCtx.lineWidth = 0.8;
+        drawCtx.beginPath(); drawCtx.moveTo(kx, ky); drawCtx.lineTo(fx, fy); drawCtx.stroke();
+        // Foot — small dark crystal shard
+        drawCtx.fillStyle = crystCore; drawCtx.strokeStyle = crystEdge; drawCtx.lineWidth = 0.8;
+        drawCtx.beginPath(); drawCtx.ellipse(fx, fy, 3.5, 2, 0, 0, Math.PI*2);
+        drawCtx.fill(); drawCtx.stroke();
     });
     drawCtx.restore();
 
-    // ── RADIAL BASE PLATE ────────────────────────────────────────────────────
-    drawCtx.save();
-    // Shadow ring
-    drawCtx.fillStyle = "rgba(0,0,0,0.35)";
-    drawCtx.beginPath(); drawCtx.ellipse(px, BASE_Y + 3, 11, 4.5, 0, 0, Math.PI*2); drawCtx.fill();
-    // Base plate body (isometric ellipse)
-    const bGrad = drawCtx.createRadialGradient(px-2, BASE_Y-1, 1, px, BASE_Y, 11);
-    bGrad.addColorStop(0, flash ? "#99aabb" : "#556677");
-    bGrad.addColorStop(1, flash ? "#445566" : "#2a3440");
-    drawCtx.fillStyle = bGrad;
-    drawCtx.strokeStyle = flash ? "#aabbcc" : "#6a8899";
-    drawCtx.lineWidth = 1.2;
-    drawCtx.beginPath(); drawCtx.ellipse(px, BASE_Y, 10, 4.5, 0, 0, Math.PI*2);
-    drawCtx.fill(); drawCtx.stroke();
-    // Plate highlight arc (top-left shine)
-    drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.6)" : "rgba(160,210,240,0.45)";
-    drawCtx.lineWidth = 1.5;
-    drawCtx.beginPath(); drawCtx.ellipse(px - 1.5, BASE_Y - 0.5, 7, 2.8, -0.2, Math.PI*1.1, Math.PI*1.9);
-    drawCtx.stroke();
-    drawCtx.restore();
-
-    // ── STEEL CYLINDER TORSO ────────────────────────────────────────────────
-    const TW = 10; // torso half-width
+    // ── BLACK GLASS BODY — extends from dome top all the way down to BASE_Y ──
     drawCtx.save();
 
-    // Main body — dark steel rectangle
-    drawCtx.fillStyle = flash ? "#bbc" : "#1e2a38";
-    drawCtx.fillRect(px - TW, TORSO_TOP, TW*2, 17);
+    const glassTop = DOME_CY;   // flat base of dome arc
+    const glassBot = BASE_Y;    // where legs attach
+    const glassH   = glassBot - glassTop;
 
-    // Left face highlight (catches ambient light)
-    drawCtx.fillStyle = flash ? "rgba(255,255,255,0.25)" : "rgba(80,120,160,0.35)";
-    drawCtx.fillRect(px - TW, TORSO_TOP, 3, 17);
-    // Right face shadow
-    drawCtx.fillStyle = "rgba(0,0,0,0.35)";
-    drawCtx.fillRect(px + TW - 3, TORSO_TOP, 3, 17);
+    // Main black glass fill (rectangular body)
+    drawCtx.fillStyle = flash ? "rgba(180,190,210,0.92)" : "rgba(5,5,10,0.93)";
+    drawCtx.fillRect(px - DOME_R, glassTop, DOME_R * 2, glassH);
 
-    // Horizontal panel seam lines
-    drawCtx.strokeStyle = flash ? "rgba(200,220,240,0.4)" : "rgba(70,110,150,0.55)";
-    drawCtx.lineWidth = 0.8;
-    for (let pi = 1; pi <= 3; pi++) {
-        const ly = TORSO_TOP + Math.round(17 / 4 * pi);
-        drawCtx.beginPath(); drawCtx.moveTo(px - TW + 1, ly); drawCtx.lineTo(px + TW - 1, ly); drawCtx.stroke();
-    }
+    // Left-edge reflection stripe
+    drawCtx.fillStyle = flash ? "rgba(255,255,255,0.35)" : "rgba(70,70,140,0.45)";
+    drawCtx.fillRect(px - DOME_R, glassTop, 2, glassH);
+    // Right-edge subtle highlight
+    drawCtx.fillStyle = flash ? "rgba(255,255,255,0.15)" : "rgba(40,40,80,0.3)";
+    drawCtx.fillRect(px + DOME_R - 2, glassTop, 2, glassH);
 
-    // Element-colored accent stripe — glowing band mid-torso
-    const stripeAlpha = flash ? 0.9 : 0.7;
-    drawCtx.fillStyle = `rgba(${er},${eg},${eb},${stripeAlpha})`;
-    drawCtx.fillRect(px - TW + 1, TORSO_TOP + 7, TW*2 - 2, 3);
-    // Stripe specular
-    drawCtx.fillStyle = "rgba(255,255,255,0.3)";
-    drawCtx.fillRect(px - TW + 1, TORSO_TOP + 7, TW*2 - 2, 1);
-
-    // Torso top cap (isometric ellipse)
-    drawCtx.fillStyle = flash ? "#99aabb" : "#2e4055";
-    drawCtx.strokeStyle = flash ? "#bbccdd" : "#4a6070";
-    drawCtx.lineWidth = 1;
-    drawCtx.beginPath(); drawCtx.ellipse(px, TORSO_TOP, TW + 1, 4, 0, 0, Math.PI*2);
-    drawCtx.fill(); drawCtx.stroke();
-    drawCtx.restore();
-
-    // ── GLASS DOME HEAD ──────────────────────────────────────────────────────
-    drawCtx.save();
-
-    // Collar ring at dome base (connects torso to dome)
-    drawCtx.fillStyle = flash ? "#778899" : "#344a58";
-    drawCtx.strokeStyle = flash ? "#99aabb" : "#5a7888";
-    drawCtx.lineWidth = 1.2;
-    drawCtx.beginPath(); drawCtx.ellipse(px, COLLAR_Y, 8, 3.5, 0, 0, Math.PI*2);
-    drawCtx.fill(); drawCtx.stroke();
-
-    // ── Liquid fill (element-colored, inside dome) ──
-    const liqGrad = drawCtx.createRadialGradient(px - 2, DOME_CY - 1, 1, px, DOME_CY, DOME_R - 1);
-    liqGrad.addColorStop(0, `rgba(${Math.min(255,er+60)},${Math.min(255,eg+60)},${Math.min(255,eb+60)},0.55)`);
-    liqGrad.addColorStop(1, `rgba(${er},${eg},${eb},0.25)`);
-    drawCtx.fillStyle = liqGrad;
-    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R - 1, Math.PI, 0, false);
+    // ── Dome cap (semicircle on top) ─────────────────────────────────────────
+    drawCtx.fillStyle = flash ? "rgba(180,190,210,0.92)" : "rgba(5,5,10,0.93)";
+    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R, Math.PI, 0, false);
     drawCtx.closePath(); drawCtx.fill();
 
-    // ── Crystal inside dome — multi-facet diamond shape ──
+    // ── Crystal inside dome — floating diamond ────────────────────────────────
     const cCY  = DOME_CY - DOME_R * 0.45;
     const cR   = 4.5;
-    const cBright = `rgb(${Math.min(255,er+100)},${Math.min(255,eg+100)},${Math.min(255,eb+100)})`;
-    const cMid    = `rgb(${Math.min(255,er+40)},${Math.min(255,eg+40)},${Math.min(255,eb+40)})`;
     const crystalPulse = 0.85 + 0.15 * Math.sin((frame||0) * 0.12 + (actor.x||0));
-
     drawCtx.save();
     drawCtx.globalAlpha = flash ? 1 : crystalPulse;
-    // Outer gem shape (4-point diamond)
-    drawCtx.fillStyle = cMid;
+    // Outer gem (4-point diamond) — dark with iridescent tint
+    drawCtx.fillStyle = flash ? "#99aacc" : "#10103a";
     drawCtx.beginPath();
-    drawCtx.moveTo(px,        cCY - cR);       // top
-    drawCtx.lineTo(px + cR*0.7, cCY);          // right
-    drawCtx.lineTo(px,        cCY + cR*0.65);  // bottom
-    drawCtx.lineTo(px - cR*0.7, cCY);          // left
+    drawCtx.moveTo(px,           cCY - cR);
+    drawCtx.lineTo(px + cR*0.7,  cCY);
+    drawCtx.lineTo(px,           cCY + cR*0.65);
+    drawCtx.lineTo(px - cR*0.7,  cCY);
     drawCtx.closePath(); drawCtx.fill();
-    // Left upper facet
-    drawCtx.fillStyle = cBright;
+    // Bright upper facet
+    drawCtx.fillStyle = flash ? "#ddeeff" : "#4444cc";
     drawCtx.beginPath();
-    drawCtx.moveTo(px,        cCY - cR);
-    drawCtx.lineTo(px + cR*0.7, cCY);
-    drawCtx.lineTo(px,        cCY - cR*0.15);
+    drawCtx.moveTo(px,           cCY - cR);
+    drawCtx.lineTo(px + cR*0.7,  cCY);
+    drawCtx.lineTo(px,           cCY - cR*0.15);
     drawCtx.closePath(); drawCtx.fill();
     // Specular tip
-    drawCtx.fillStyle = flash ? "#fff" : "rgba(255,255,255,0.8)";
+    drawCtx.fillStyle = flash ? "#fff" : "rgba(200,200,255,0.85)";
     drawCtx.beginPath();
-    drawCtx.moveTo(px,          cCY - cR);
-    drawCtx.lineTo(px + cR*0.3, cCY - cR*0.5);
-    drawCtx.lineTo(px,          cCY - cR*0.65);
+    drawCtx.moveTo(px,           cCY - cR);
+    drawCtx.lineTo(px + cR*0.3,  cCY - cR*0.5);
+    drawCtx.lineTo(px,           cCY - cR*0.65);
     drawCtx.closePath(); drawCtx.fill();
     drawCtx.restore();
 
-    // ── Glass dome shell — clear sphere with reflections ──
-    // Very faint tinted fill
-    drawCtx.fillStyle = `rgba(${er},${eg},${eb},0.06)`;
-    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R, Math.PI, 0, false);
-    drawCtx.closePath(); drawCtx.fill();
-    // Dome outline (half capsule: semicircle + flat base)
-    drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.85)" : "rgba(180,220,255,0.65)";
+    // ── Glass outline — full silhouette: dome arc + straight sides ────────────
+    drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.9)" : "rgba(90,90,180,0.75)";
     drawCtx.lineWidth = 1.5;
-    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R, Math.PI, 0, false);
-    drawCtx.closePath(); drawCtx.stroke();
-    // Main specular arc (top-left dome shine)
-    drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.7)" : "rgba(220,240,255,0.55)";
-    drawCtx.lineWidth = 2.5;
+    drawCtx.beginPath();
+    drawCtx.arc(px, DOME_CY, DOME_R, Math.PI, 0, false);  // dome top
+    drawCtx.lineTo(px + DOME_R, glassBot);                 // right side
+    drawCtx.lineTo(px - DOME_R, glassBot);                 // base
+    drawCtx.closePath();
+    drawCtx.stroke();
+
+    // Dome specular arc (top-left shine)
+    drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.7)" : "rgba(160,160,255,0.45)";
+    drawCtx.lineWidth = 2;
     drawCtx.lineCap = "round";
     drawCtx.beginPath();
     drawCtx.arc(px - DOME_R*0.28, DOME_CY - DOME_R*0.28, DOME_R*0.45, Math.PI*1.05, Math.PI*1.7);
-    drawCtx.stroke();
-    // Secondary softer reflection
-    drawCtx.strokeStyle = "rgba(200,230,255,0.25)";
-    drawCtx.lineWidth = 1.2;
-    drawCtx.beginPath();
-    drawCtx.arc(px - DOME_R*0.1, DOME_CY - DOME_R*0.05, DOME_R*0.65, Math.PI*1.1, Math.PI*1.55);
     drawCtx.stroke();
 
     drawCtx.restore();
