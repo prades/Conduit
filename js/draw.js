@@ -573,15 +573,14 @@ function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData,
     const lift   = swing ? gait * 7 : 0;
     const stride = Math.sin(actor.walkCycle * legData.swingSpeed + phaseOffset) * 5;
 
-    // ── CREST (knee) — arc peak, fixed outward reach, lifts during swing ──
-    const crestReach = legData.coxa + legData.femur * 0.5;
-    const crestX = hx + outX * crestReach + dirX * stride * 0.35;
-    const crestY = hy + outY * crestReach - lift;
+    // ── CREST (knee) — apex at full coxa+femur reach, barely strides ──
+    const crestX = hx + outX * (legData.coxa + legData.femur) + dirX * stride * 0.2;
+    const crestY = hy + outY * (legData.coxa + legData.femur) - lift;
 
-    // ── FOOT — fixed outward reach, strides fore/aft, barely leaves ground ──
-    const footReach = legData.coxa + legData.femur + legData.tibia * 0.5;
-    const footX = hx + outX * footReach + dirX * stride;
-    const footY = hy + outY * footReach - lift * 0.3;
+    // ── FOOT — tibia pulls inward + forward from knee for acute knee angle ──
+    // (-out * 0.4) brings foot closer to body than knee; (+dir * 0.8) extends it forward
+    const footX = crestX - outX * legData.tibia * 0.4 + dirX * (legData.tibia * 0.8 + stride * 0.8);
+    const footY = crestY - outY * legData.tibia * 0.4 + dirY * legData.tibia * 0.8 - lift * 0.3;
 
     drawCtx.beginPath(); drawCtx.moveTo(hx, hy); drawCtx.lineTo(crestX, crestY); drawCtx.lineTo(footX, footY); drawCtx.stroke();
 }
