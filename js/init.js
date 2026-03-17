@@ -27,7 +27,6 @@ async function loadConfig() {
     if (savedF.length > 0) {
         savedF.forEach(entry => spawnFollowerFromSave(entry));
     }
-    initCircuitLayer();
     render();
 }
 

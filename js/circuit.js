@@ -320,11 +320,11 @@ function initCircuitLayer() {
 }
 
 function drawCircuitLayer() {
-    if (!_circuitOffscreen) return;
-
-    // Lazily rebuild if the viewport was resized
-    if (_circuitSize.w !== canvas.width || _circuitSize.h !== canvas.height) {
-        initCircuitLayer();
+    // Lazy init and rebuild on resize — no external initCircuitLayer() call needed
+    if (!_circuitOffscreen || _circuitSize.w !== canvas.width || _circuitSize.h !== canvas.height) {
+        _circuitOffscreen = _buildCircuit(canvas.width, canvas.height);
+        _circuitSize.w    = canvas.width;
+        _circuitSize.h    = canvas.height;
     }
 
     ctx.save();
