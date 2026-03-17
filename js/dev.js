@@ -85,14 +85,31 @@ function _setPreviewAngle(angle) {
 }
 
 function initPreview() {
+    const vs = Math.min(window.innerWidth * 0.44, 320);
+
+    // ── Outer container: flex row, centered on screen ──
+    const devContainer = document.createElement("div");
+    devContainer.id = "devContainer";
+    Object.assign(devContainer.style, {
+        position:"fixed", left:"50%", top:"50%", transform:"translate(-50%,-50%)",
+        display:"none", flexDirection:"row", gap:"12px", alignItems:"flex-start",
+        zIndex:"9999"
+    });
+    document.body.appendChild(devContainer);
+
+    // ── Left column: canvas + view label ──
+    const leftCol = document.createElement("div");
+    Object.assign(leftCol.style, { display:"flex", flexDirection:"column", alignItems:"center" });
+    devContainer.appendChild(leftCol);
+
     previewCanvas=document.createElement("canvas");
-    const vs=Math.min(window.innerWidth*0.88,420);
     previewCanvas.style.width=vs+"px"; previewCanvas.style.height=vs+"px";
     previewCanvas.width=vs; previewCanvas.height=vs;
-    Object.assign(previewCanvas.style,{position:"fixed",left:"50%",top:"40%",transform:"translate(-50%,-50%)",
-        background:"#0d2b14",border:"2px solid #0f8",borderRadius:"12px",zIndex:"9999",
-        boxShadow:"0 0 30px rgba(0,255,136,0.5)",display:"none",touchAction:"none"});
-    document.body.appendChild(previewCanvas);
+    Object.assign(previewCanvas.style,{
+        background:"#0d2b14",border:"2px solid #0f8",borderRadius:"12px",
+        boxShadow:"0 0 30px rgba(0,255,136,0.5)",touchAction:"none",display:"block"
+    });
+    leftCol.appendChild(previewCanvas);
 
     // ── Drag-to-orient on preview canvas ──
     let _dragActive = false, _dragLastX = 0, _dragLastY = 0;
@@ -127,21 +144,23 @@ function initPreview() {
     // ── View label under canvas ──
     _previewViewLabel = document.createElement("div");
     Object.assign(_previewViewLabel.style, {
-        position:"fixed", left:"50%", top:"calc(40% + "+(vs*0.5+8)+"px)",
-        transform:"translateX(-50%)",
         color:"#0f8", fontFamily:"monospace", fontSize:"11px",
         background:"rgba(0,0,0,0.7)", padding:"3px 10px", borderRadius:"4px",
-        zIndex:"9999", display:"none", pointerEvents:"none"
+        marginTop:"6px", pointerEvents:"none", textAlign:"center"
     });
     _previewViewLabel.textContent = "◀ drag to rotate  |  FRONT ▶";
-    document.body.appendChild(_previewViewLabel);
+    leftCol.appendChild(_previewViewLabel);
 
+    // ── Right column: forge panel ──
     const panel=document.createElement("div");
     panel.id="forgePanel";
-    Object.assign(panel.style,{position:"fixed",bottom:"20px",left:"50%",transform:"translateX(-50%)",
-        width:"320px",background:"#0e1418",border:"2px solid #0f8",borderRadius:"10px",padding:"12px",
-        fontFamily:"monospace",color:"#0f8",zIndex:"9999",display:"none",maxHeight:"55vh",overflowY:"auto"});
-    document.body.appendChild(panel);
+    Object.assign(panel.style,{
+        width:"280px", background:"#0e1418", border:"2px solid #0f8",
+        borderRadius:"10px", padding:"12px",
+        fontFamily:"monospace", color:"#0f8",
+        maxHeight:vs+"px", overflowY:"auto"
+    });
+    devContainer.appendChild(panel);
 
     const select=document.createElement("select");
     ["Head","Thorax","Abdomen","Legs","Wings","Mandibles","Eyes"].forEach(l=>{
@@ -374,11 +393,8 @@ function updatePreview() {
 
 function toggleDevPreview() {
     devMode=!devMode;
-    if(!previewCanvas)return;
-    previewCanvas.style.display=devMode?"block":"none";
-    if (_previewViewLabel) _previewViewLabel.style.display=devMode?"block":"none";
-    const panel=document.getElementById("forgePanel");
-    if(panel) panel.style.display=devMode?"block":"none";
+    const container=document.getElementById("devContainer");
+    if(container) container.style.display=devMode?"flex":"none";
 }
 
 function rebuildPresetDropdown() {
