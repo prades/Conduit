@@ -687,11 +687,6 @@ function render() {
             ctx.beginPath(); ctx.moveTo(px-TILE_W+1,py+TILE_H); ctx.lineTo(px,py+TILE_W-1); ctx.stroke();
             // Bottom-right edge shadow
             ctx.beginPath(); ctx.moveTo(px+TILE_W-1,py+TILE_H); ctx.lineTo(px,py+TILE_W-1); ctx.stroke();
-            // Center panel dot (rivet) — subtle tech detail every other tile
-            if (((Math.round(obj.x)+Math.round(obj.y))&1)===0 && glo > 0.15) {
-                ctx.fillStyle = isNight ? `rgba(90,50,35,${0.6*amb})` : `rgba(90,150,200,${0.6*amb})`;
-                ctx.beginPath(); ctx.arc(px, py+TILE_H, 1.5, 0, Math.PI*2); ctx.fill();
-            }
 
             // ── NETWORK FLOOR INTERCONNECT — PCB traces that appear when player extends the network ──
             // Tiles within range of any live pylon reveal circuit trace lines on the floor
@@ -723,12 +718,6 @@ function render() {
                     ctx.moveTo(cx + 30, cy - 15);
                     ctx.lineTo(cx - 30, cy + 15);
                     ctx.stroke();
-                    // Via node dot at trace intersection center — every 2nd tile
-                    if ((txi + tyi) % 2 === 0 && nearDist < REACH * 0.75) {
-                        ctx.globalAlpha = 0.28 * amb * fade;
-                        ctx.fillStyle = isNight ? "#ff6644" : "#00ffaa";
-                        ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, Math.PI * 2); ctx.fill();
-                    }
                     ctx.restore();
                 }
             }
@@ -1369,8 +1358,12 @@ function render() {
                 ctx.strokeStyle="#1a3a28"; ctx.lineWidth=1; ctx.globalAlpha=0.25*amb;
                 ctx.stroke(); ctx.restore();
 
+                // 3. Server rack panels — every 9 tiles (offset from vents)
+                const isRackX=(xi%9===4);
+
                 // 1b. Circuit board traces — horizontal PCB interconnects across wall south face
-                {
+                // Skip on rack panel tiles to avoid traces bleeding through semi-transparent panel.
+                if (!isRackX) {
                     // South face parallelogram: W=(px-TILE_W, py+TILE_H), S=(px, py+2*TILE_H)
                     // Horizontal trace at height h: from (wx, wy-h) to (sx, sy-h)
                     const wx = px - TILE_W, wy = py + TILE_H;
@@ -1465,9 +1458,7 @@ function render() {
                     ctx.restore();
                 }
 
-                // 3. Server rack panels — every 9 tiles (offset from vents)
                 // Drawn with isometric shear (transform b=0.5) so they lie on the south wall face.
-                const isRackX=(xi%9===4);
                 if (isRackX) {
                     // South face center: x = px-TILE_W/2, y = py+TILE_H/2-WH*0.5 (mid-wall)
                     const rcx = px - TILE_W*0.5;
@@ -1494,15 +1485,18 @@ function render() {
                 }
 
                 // 4. LED indicator strips — every 5 tiles (not on racks)
+                // Apply isometric shear so the 4 lights lie on the south wall face.
                 if (xi%5===2 && !isRackX) {
-                    const ledY=py+TILE_H-WH*0.28, ledX=px-38;
+                    const lcx = px - TILE_W * 0.5;
+                    const lcy = py + TILE_H * 0.5 - WH * 0.28;
                     ctx.save();
-                    for (let i=0;i<5;i++) {
+                    ctx.transform(1, 0.5, 0, 1, lcx, lcy);
+                    for (let i=0;i<4;i++) {
                         const on=Math.sin(frame*0.08+xi*3.1+i*1.7)>0.2;
                         ctx.globalAlpha=(on?0.85:0.15)*amb;
                         ctx.fillStyle=on?"#00ffaa":"#003322";
                         ctx.shadowColor="#00ff88"; ctx.shadowBlur=on?5:0;
-                        ctx.beginPath(); ctx.arc(ledX+i*5,ledY,1.8,0,Math.PI*2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(-6+i*4, 0, 1.8, 0, Math.PI*2); ctx.fill();
                     }
                     ctx.shadowBlur=0; ctx.restore();
                 }
