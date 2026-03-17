@@ -716,9 +716,9 @@ function _drawVirus(actor, px, py, drawCtx) {
     drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R - 1, Math.PI, 0, false);
     drawCtx.closePath(); drawCtx.fill();
 
-    // Crystal inside dome — element-colored diamond
-    const cCY  = DOME_CY - DOME_R * 0.45;
-    const cR   = 4.5;
+    // Crystal — centred in the full glass, element-colored diamond
+    const cCY  = (DOME_CY - DOME_R + glassBot) * 0.5; // vertical mid of entire glass
+    const cR   = 7.5;
     const cBright = `rgb(${Math.min(255,er+100)},${Math.min(255,eg+100)},${Math.min(255,eb+100)})`;
     const cMid    = `rgb(${Math.min(255,er+40)},${Math.min(255,eg+40)},${Math.min(255,eb+40)})`;
     const crystalPulse = 0.85 + 0.15 * Math.sin((frame||0) * 0.12 + (actor.x||0));
@@ -743,6 +743,35 @@ function _drawVirus(actor, px, py, drawCtx) {
     drawCtx.lineTo(px + cR*0.3,  cCY - cR*0.5);
     drawCtx.lineTo(px,           cCY - cR*0.65);
     drawCtx.closePath(); drawCtx.fill();
+    drawCtx.restore();
+
+    // ── AERATION BUBBLES — each has unique speed, size and phase ──
+    const bSeed = ((actor.x||0) * 7 + (actor.y||0) * 13) | 0;
+    const bubbleDefs = [
+        { xOff: -3, period: 55, phase: (bSeed * 3)        % 55, r: 1.2 },
+        { xOff:  4, period: 38, phase: (bSeed * 7  + 15)  % 38, r: 0.9 },
+        { xOff: -1, period: 70, phase: (bSeed * 5  + 30)  % 70, r: 1.5 },
+        { xOff:  2, period: 47, phase: (bSeed * 11 +  8)  % 47, r: 0.7 },
+        { xOff: -5, period: 62, phase: (bSeed * 2  + 22)  % 62, r: 1.0 },
+    ];
+    drawCtx.save();
+    // Clip to glass interior so bubbles don't bleed outside the walls
+    drawCtx.beginPath();
+    drawCtx.rect(px - DOME_R + 2, DOME_CY - DOME_R, (DOME_R - 2) * 2, glassH + DOME_R);
+    drawCtx.clip();
+    const riseRange = glassH + DOME_R - 4;
+    for (const b of bubbleDefs) {
+        const t   = ((frame + b.phase) % b.period) / b.period; // 0..1 progress bottom→top
+        const bY  = glassBot - 2 - t * riseRange;
+        const bX  = px + b.xOff + Math.sin(t * Math.PI * 3 + b.phase) * 1.5;
+        const alpha = t < 0.1 ? t * 10 : (t > 0.85 ? (1 - t) / 0.15 : 1);
+        drawCtx.globalAlpha = (flash ? 0.9 : 0.5) * alpha;
+        drawCtx.strokeStyle = `rgba(${Math.min(255,er+80)},${Math.min(255,eg+80)},${Math.min(255,eb+80)},1)`;
+        drawCtx.lineWidth = 0.7;
+        drawCtx.beginPath();
+        drawCtx.arc(bX, bY, b.r, 0, Math.PI * 2);
+        drawCtx.stroke();
+    }
     drawCtx.restore();
 
     // Glass walls — barely-there tint so glass reads as solid
