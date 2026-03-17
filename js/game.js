@@ -68,6 +68,8 @@ function render() {
 
     // ── CLEAR SCREEN ──
     ctx.fillStyle="#000"; ctx.fillRect(0,0,canvas.width,canvas.height);
+    // ── CIRCUIT BOARD BACKGROUND ──
+    drawCircuitLayer();
     ctx.save();
     if (shake>0) { ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake); shake*=0.9; }
 
