@@ -693,6 +693,46 @@ function render() {
                 ctx.beginPath(); ctx.arc(px, py+TILE_H, 1.5, 0, Math.PI*2); ctx.fill();
             }
 
+            // ── NETWORK FLOOR INTERCONNECT — PCB traces that appear when player extends the network ──
+            // Tiles within range of any live pylon reveal circuit trace lines on the floor
+            if (_pillarCache.length > 0) {
+                let nearDist = Infinity;
+                for (const _p of _pillarCache) {
+                    const _d = Math.hypot(_p.x - obj.x, _p.y - obj.y);
+                    if (_d < nearDist) nearDist = _d;
+                }
+                const REACH = 4.0;
+                if (nearDist < REACH) {
+                    const fade = Math.pow(1 - nearDist / REACH, 1.4);
+                    // Tile world coords and screen center
+                    const txi = Math.round(obj.x), tyi = Math.round(obj.y);
+                    const cx = px, cy = py + TILE_H; // screen center of tile
+                    ctx.save();
+                    ctx.lineWidth = 0.85;
+                    // NW→SE trace segment (follows world x-axis): from (-30,-15) to (+30,+15) rel to center
+                    ctx.globalAlpha = 0.16 * amb * fade;
+                    ctx.strokeStyle = isNight ? "#cc6633" : "#00bb88";
+                    ctx.beginPath();
+                    ctx.moveTo(cx - 30, cy - 15);
+                    ctx.lineTo(cx + 30, cy + 15);
+                    ctx.stroke();
+                    // NE→SW trace segment (follows world y-axis): from (+30,-15) to (-30,+15) rel to center
+                    ctx.globalAlpha = 0.13 * amb * fade;
+                    ctx.strokeStyle = isNight ? "#aa4422" : "#0099cc";
+                    ctx.beginPath();
+                    ctx.moveTo(cx + 30, cy - 15);
+                    ctx.lineTo(cx - 30, cy + 15);
+                    ctx.stroke();
+                    // Via node dot at trace intersection center — every 2nd tile
+                    if ((txi + tyi) % 2 === 0 && nearDist < REACH * 0.75) {
+                        ctx.globalAlpha = 0.28 * amb * fade;
+                        ctx.fillStyle = isNight ? "#ff6644" : "#00ffaa";
+                        ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, Math.PI * 2); ctx.fill();
+                    }
+                    ctx.restore();
+                }
+            }
+
             // Acid pool — drawn here so it sits on the floor but under pylons
             const acidH = acidTiles.get(`${Math.round(obj.x)},${Math.round(obj.y)}`);
             if (acidH) {
@@ -1328,6 +1368,83 @@ function render() {
                 ctx.beginPath(); ctx.moveTo(px-TILE_W,py+TILE_H-3); ctx.lineTo(px,py+2*TILE_H-3); ctx.stroke();
                 ctx.strokeStyle="#1a3a28"; ctx.lineWidth=1; ctx.globalAlpha=0.25*amb;
                 ctx.stroke(); ctx.restore();
+
+                // 1b. Circuit board traces — horizontal PCB interconnects across wall south face
+                {
+                    // South face parallelogram: W=(px-TILE_W, py+TILE_H), S=(px, py+2*TILE_H)
+                    // Horizontal trace at height h: from (wx, wy-h) to (sx, sy-h)
+                    const wx = px - TILE_W, wy = py + TILE_H;
+                    const sx = px,          sy = py + 2 * TILE_H;
+                    const trH = [WH * 0.20, WH * 0.45, WH * 0.70]; // three trace heights
+                    ctx.save();
+                    ctx.lineWidth = 0.8;
+                    // Main horizontal traces — full tile width, teal-green
+                    trH.forEach(h => {
+                        ctx.globalAlpha = 0.18 * amb;
+                        ctx.strokeStyle = "#00bb88";
+                        ctx.beginPath();
+                        ctx.moveTo(wx, wy - h);
+                        ctx.lineTo(sx, sy - h);
+                        ctx.stroke();
+                    });
+                    // Vertical jog A — connects trace[0] to trace[1] at deterministic position
+                    const sA = Math.sin(xi * 41.73 + 3.17);
+                    if (sA > 0.12) {
+                        const t = 0.20 + Math.abs(Math.sin(xi * 19.3 + 1.1)) * 0.60;
+                        const jx = wx + t * (sx - wx);
+                        const jy = wy + t * (sy - wy);
+                        ctx.globalAlpha = 0.14 * amb;
+                        ctx.strokeStyle = "#00ffaa";
+                        ctx.beginPath();
+                        ctx.moveTo(jx, jy - trH[0]);
+                        ctx.lineTo(jx, jy - trH[1]);
+                        ctx.stroke();
+                        // Via pad
+                        ctx.globalAlpha = 0.24 * amb;
+                        ctx.fillStyle = "#00cc88";
+                        ctx.beginPath(); ctx.arc(jx, jy - trH[1], 1.3, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(jx, jy - trH[0], 1.3, 0, Math.PI * 2); ctx.fill();
+                    }
+                    // Vertical jog B — connects trace[1] to trace[2]
+                    const sB = Math.sin(xi * 23.91 + 7.83);
+                    if (sB > 0.18) {
+                        const t2 = 0.08 + Math.abs(Math.sin(xi * 31.17 + 5.5)) * 0.80;
+                        const jx2 = wx + t2 * (sx - wx);
+                        const jy2 = wy + t2 * (sy - wy);
+                        ctx.globalAlpha = 0.12 * amb;
+                        ctx.strokeStyle = "#0099dd";
+                        ctx.beginPath();
+                        ctx.moveTo(jx2, jy2 - trH[1]);
+                        ctx.lineTo(jx2, jy2 - trH[2]);
+                        ctx.stroke();
+                        // Via pad
+                        ctx.globalAlpha = 0.20 * amb;
+                        ctx.fillStyle = "#0099cc";
+                        ctx.beginPath(); ctx.arc(jx2, jy2 - trH[2], 1.1, 0, Math.PI * 2); ctx.fill();
+                    }
+                    // Top face chip traces — clipped diagonal lines across diamond
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(px, py - WH);
+                    ctx.lineTo(px + TILE_W, py + TILE_H - WH);
+                    ctx.lineTo(px, py + 2 * TILE_H - WH);
+                    ctx.lineTo(px - TILE_W, py + TILE_H - WH);
+                    ctx.closePath(); ctx.clip();
+                    ctx.globalAlpha = 0.13 * amb;
+                    ctx.strokeStyle = "#00aacc";
+                    ctx.lineWidth = 0.7;
+                    // Two horizontal passes across the diamond top
+                    for (let tr = 1; tr <= 2; tr++) {
+                        const f = tr / 3;
+                        const ly = (py - WH) + f * 2 * TILE_H;
+                        ctx.beginPath();
+                        ctx.moveTo(px - TILE_W * 2, ly);
+                        ctx.lineTo(px + TILE_W * 2, ly);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                    ctx.restore();
+                }
 
                 // 2. Crevasses — jagged fracture on wall face
                 if (Math.sin(xi*43.7+11.3)>0.62) {
