@@ -661,8 +661,37 @@ function render() {
         else if (obj.type==='floor') {
             const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
             const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
-            ctx.fillStyle=`rgb(${10*amb+(8*glo)},${15*amb+(20*glo)},${20*amb+(45*glo)})`;
-            ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H); ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H); ctx.fill();
+            const isNight = gameState.phase === "night";
+            // Day: Dexter's Lab steel-blue/teal panels. Night: Dark steel with warm red-orange ambience.
+            let tR, tG, tB;
+            if (isNight) {
+                tR = (22*amb + 38*glo)|0;
+                tG = (14*amb + 10*glo)|0;
+                tB = (16*amb +  6*glo)|0;
+            } else {
+                tR = (16*amb +  8*glo)|0;
+                tG = (26*amb + 20*glo)|0;
+                tB = (42*amb + 52*glo)|0;
+            }
+            ctx.fillStyle=`rgb(${tR},${tG},${tB})`;
+            ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H); ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H); ctx.closePath(); ctx.fill();
+            // ── Steel panel bevel — highlight top two edges, shadow bottom two ──
+            // Top-left edge highlight
+            ctx.strokeStyle = isNight ? `rgba(80,45,30,${0.5*amb})` : `rgba(80,130,180,${0.55*amb})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(px,py+1); ctx.lineTo(px-TILE_W+1,py+TILE_H); ctx.stroke();
+            // Top-right edge highlight
+            ctx.beginPath(); ctx.moveTo(px,py+1); ctx.lineTo(px+TILE_W-1,py+TILE_H); ctx.stroke();
+            // Bottom-left edge shadow
+            ctx.strokeStyle = `rgba(0,0,0,${0.35*amb})`;
+            ctx.beginPath(); ctx.moveTo(px-TILE_W+1,py+TILE_H); ctx.lineTo(px,py+TILE_W-1); ctx.stroke();
+            // Bottom-right edge shadow
+            ctx.beginPath(); ctx.moveTo(px+TILE_W-1,py+TILE_H); ctx.lineTo(px,py+TILE_W-1); ctx.stroke();
+            // Center panel dot (rivet) — subtle tech detail every other tile
+            if (((Math.round(obj.x)+Math.round(obj.y))&1)===0 && glo > 0.15) {
+                ctx.fillStyle = isNight ? `rgba(90,50,35,${0.6*amb})` : `rgba(90,150,200,${0.6*amb})`;
+                ctx.beginPath(); ctx.arc(px, py+TILE_H, 1.5, 0, Math.PI*2); ctx.fill();
+            }
 
             // Acid pool — drawn here so it sits on the floor but under pylons
             const acidH = acidTiles.get(`${Math.round(obj.x)},${Math.round(obj.y)}`);

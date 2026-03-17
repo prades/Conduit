@@ -617,11 +617,9 @@ function _drawVirus(actor, px, py, drawCtx) {
     const elementDef   = ELEMENTS.find(e => e.id === actor.element);
     const elementColor = actor.isNeutralRecruit ? "#aaaaaa" : (elementDef ? elementDef.color : "#777");
     const hr = actor.maxHealth > 0 ? actor.health / actor.maxHealth : 0;
-    const br = 0.25 + hr * 0.75;
     const er = parseInt(elementColor.substring(1,3),16);
     const eg = parseInt(elementColor.substring(3,5),16);
     const eb = parseInt(elementColor.substring(5,7),16);
-    const headColor = `rgb(${Math.floor(er*br)},${Math.floor(eg*br)},${Math.floor(eb*br)})`;
     const flash = actor.hitFlash > 0 && actor.state !== "retreat";
 
     // ── GHOSTPHAGE GHOST — translucent white wraith, no element color ──
@@ -653,63 +651,194 @@ function _drawVirus(actor, px, py, drawCtx) {
         return;
     }
 
-    const bodyY = py - 40;
-
-    // ── LEGS — fixed screen-space angles, always distinct from isometric view ──
-    // Hip attachment points on thorax edges; angle drives knee direction
-    // 3 legs at ~120° apart: lower-left, lower-right, straight down
-    const legCol = flash ? "#ccc" : `rgb(${Math.floor(er*br*0.65)},${Math.floor(eg*br*0.65)},${Math.floor(eb*br*0.65)})`;
-    drawCtx.save();
-    drawCtx.strokeStyle = legCol;
-    drawCtx.lineCap = "round";
-    drawCtx.lineWidth = 1.8;
-
-    // hx/hy = hip offset from (px, bodyY); hips anchored at body BASE (bodyY+22)
-    // Thigh sweeps out wide, shin drops to near ground (py) — feet ≈ py
-    const legs = [
-        { hx:-6, hy:22, a1:Math.PI*0.83, a2:Math.PI*0.56, phase:0           }, // left  150°→101°
-        { hx: 6, hy:22, a1:Math.PI*0.17, a2:Math.PI*0.44, phase:Math.PI*2/3 }, // right  31°→79°
-        { hx: 0, hy:20, a1:Math.PI*0.55, a2:Math.PI*0.38, phase:Math.PI*4/3 }, // rear   99°→68°
-    ];
     const wc = actor.walkCycle || 0;
-    legs.forEach(({ hx: lhx, hy: lhy, a1, a2, phase }) => {
-        const gait  = Math.sin(wc + phase);
-        const lift  = gait > 0 ? gait * 6 : 0;
-        const swing = gait * 0.18; // angle sway during stride
-        const hx = px + lhx, hy = bodyY + lhy;
-        const kx = hx + Math.cos(a1 + swing) * 13;
-        const ky = hy + Math.sin(a1 + swing) * 13 - lift;
-        const fx = kx + Math.cos(a2 + swing * 0.5) * 11;
-        const fy = ky + Math.sin(a2 + swing * 0.5) * 11 - lift * 0.3;
-        drawCtx.beginPath();
-        drawCtx.moveTo(hx, hy);
-        drawCtx.lineTo(kx, ky);
-        drawCtx.lineTo(fx, fy);
-        drawCtx.stroke();
+
+    // ── Layout constants ──────────────────────────────────────────────────────
+    // (all y values relative to py = isometric ground point)
+    const BASE_Y    = py - 28;   // base plate centre
+    const TORSO_BOT = BASE_Y - 2;
+    const TORSO_TOP = TORSO_BOT - 17;
+    const COLLAR_Y  = TORSO_TOP;
+    const DOME_CY   = COLLAR_Y  - 10; // dome sphere centre
+    const DOME_R    = 10;
+
+    // ── 3 MECHANICAL LEGS — drawn first (behind body) ────────────────────────
+    // Hips sit on the base ring perimeter; legs angle out then down in 120° steps.
+    // Screen-space leg layout: left-front, right-front, rear (pointing toward viewer)
+    const legDefs = [
+        { hOX:-7, hOY:1, femA: Math.PI*0.80, tibA: Math.PI*0.62, ph: 0            },
+        { hOX: 7, hOY:1, femA: Math.PI*0.20, tibA: Math.PI*0.38, ph: Math.PI*2/3  },
+        { hOX: 0, hOY:-1, femA: Math.PI*0.50, tibA: Math.PI*0.55, ph: Math.PI*4/3 },
+    ];
+    const FEM_LEN = 15, TIB_LEN = 13;
+    const steelDark  = flash ? "#ccd" : "#3a4a5c";
+    const steelMid   = flash ? "#dde" : "#4e6070";
+    const steelLight = flash ? "#eef" : "#7a9aac";
+
+    drawCtx.save();
+    drawCtx.lineCap = "round";
+    legDefs.forEach(({ hOX, hOY, femA, tibA, ph }) => {
+        const gait  = Math.sin(wc + ph);
+        const lift  = gait > 0 ? gait * 5 : 0;
+        const swing = gait * 0.12;
+        const hx = px + hOX, hy = BASE_Y + hOY;
+
+        // Femur: hip → knee
+        const kx = hx + Math.cos(femA + swing) * FEM_LEN;
+        const ky = hy + Math.sin(femA + swing) * FEM_LEN - lift;
+        // Tibia: knee → foot
+        const fx = kx + Math.cos(tibA + swing * 0.5) * TIB_LEN;
+        const fy = ky + Math.sin(tibA + swing * 0.5) * TIB_LEN - lift * 0.25;
+
+        // Upper leg — thicker steel strut
+        drawCtx.strokeStyle = steelMid; drawCtx.lineWidth = 3;
+        drawCtx.beginPath(); drawCtx.moveTo(hx, hy); drawCtx.lineTo(kx, ky); drawCtx.stroke();
+        // Lower leg — thinner
+        drawCtx.strokeStyle = steelDark; drawCtx.lineWidth = 2;
+        drawCtx.beginPath(); drawCtx.moveTo(kx, ky); drawCtx.lineTo(fx, fy); drawCtx.stroke();
+        // Knee joint disc
+        drawCtx.fillStyle = steelLight;
+        drawCtx.beginPath(); drawCtx.arc(kx, ky, 2.8, 0, Math.PI*2); drawCtx.fill();
+        // Foot pad — flat disc
+        drawCtx.fillStyle = steelDark;
+        drawCtx.beginPath(); drawCtx.ellipse(fx, fy, 3.5, 2, 0, 0, Math.PI*2); drawCtx.fill();
     });
     drawCtx.restore();
 
-    // ── BODY — thorax over legs ──
-    drawCtx.fillStyle = flash ? "#fff" : "#12121e";
-    drawCtx.fillRect(px-5, bodyY+5, 10, 18);
+    // ── RADIAL BASE PLATE ────────────────────────────────────────────────────
+    drawCtx.save();
+    // Shadow ring
+    drawCtx.fillStyle = "rgba(0,0,0,0.35)";
+    drawCtx.beginPath(); drawCtx.ellipse(px, BASE_Y + 3, 11, 4.5, 0, 0, Math.PI*2); drawCtx.fill();
+    // Base plate body (isometric ellipse)
+    const bGrad = drawCtx.createRadialGradient(px-2, BASE_Y-1, 1, px, BASE_Y, 11);
+    bGrad.addColorStop(0, flash ? "#99aabb" : "#556677");
+    bGrad.addColorStop(1, flash ? "#445566" : "#2a3440");
+    drawCtx.fillStyle = bGrad;
+    drawCtx.strokeStyle = flash ? "#aabbcc" : "#6a8899";
+    drawCtx.lineWidth = 1.2;
+    drawCtx.beginPath(); drawCtx.ellipse(px, BASE_Y, 10, 4.5, 0, 0, Math.PI*2);
+    drawCtx.fill(); drawCtx.stroke();
+    // Plate highlight arc (top-left shine)
+    drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.6)" : "rgba(160,210,240,0.45)";
+    drawCtx.lineWidth = 1.5;
+    drawCtx.beginPath(); drawCtx.ellipse(px - 1.5, BASE_Y - 0.5, 7, 2.8, -0.2, Math.PI*1.1, Math.PI*1.9);
+    drawCtx.stroke();
+    drawCtx.restore();
 
-    // ── HEAD — element-colored diamond ──
-    drawCtx.fillStyle = flash ? "#fff" : headColor;
-    drawCtx.beginPath();
-    drawCtx.moveTo(px,      bodyY - 8);
-    drawCtx.lineTo(px + 10, bodyY + 2);
-    drawCtx.lineTo(px,      bodyY + 12);
-    drawCtx.lineTo(px - 10, bodyY + 2);
-    drawCtx.closePath();
+    // ── STEEL CYLINDER TORSO ────────────────────────────────────────────────
+    const TW = 10; // torso half-width
+    drawCtx.save();
+
+    // Main body — dark steel rectangle
+    drawCtx.fillStyle = flash ? "#bbc" : "#1e2a38";
+    drawCtx.fillRect(px - TW, TORSO_TOP, TW*2, 17);
+
+    // Left face highlight (catches ambient light)
+    drawCtx.fillStyle = flash ? "rgba(255,255,255,0.25)" : "rgba(80,120,160,0.35)";
+    drawCtx.fillRect(px - TW, TORSO_TOP, 3, 17);
+    // Right face shadow
+    drawCtx.fillStyle = "rgba(0,0,0,0.35)";
+    drawCtx.fillRect(px + TW - 3, TORSO_TOP, 3, 17);
+
+    // Horizontal panel seam lines
+    drawCtx.strokeStyle = flash ? "rgba(200,220,240,0.4)" : "rgba(70,110,150,0.55)";
+    drawCtx.lineWidth = 0.8;
+    for (let pi = 1; pi <= 3; pi++) {
+        const ly = TORSO_TOP + Math.round(17 / 4 * pi);
+        drawCtx.beginPath(); drawCtx.moveTo(px - TW + 1, ly); drawCtx.lineTo(px + TW - 1, ly); drawCtx.stroke();
+    }
+
+    // Element-colored accent stripe — glowing band mid-torso
+    const stripeAlpha = flash ? 0.9 : 0.7;
+    drawCtx.fillStyle = `rgba(${er},${eg},${eb},${stripeAlpha})`;
+    drawCtx.fillRect(px - TW + 1, TORSO_TOP + 7, TW*2 - 2, 3);
+    // Stripe specular
+    drawCtx.fillStyle = "rgba(255,255,255,0.3)";
+    drawCtx.fillRect(px - TW + 1, TORSO_TOP + 7, TW*2 - 2, 1);
+
+    // Torso top cap (isometric ellipse)
+    drawCtx.fillStyle = flash ? "#99aabb" : "#2e4055";
+    drawCtx.strokeStyle = flash ? "#bbccdd" : "#4a6070";
+    drawCtx.lineWidth = 1;
+    drawCtx.beginPath(); drawCtx.ellipse(px, TORSO_TOP, TW + 1, 4, 0, 0, Math.PI*2);
+    drawCtx.fill(); drawCtx.stroke();
+    drawCtx.restore();
+
+    // ── GLASS DOME HEAD ──────────────────────────────────────────────────────
+    drawCtx.save();
+
+    // Collar ring at dome base (connects torso to dome)
+    drawCtx.fillStyle = flash ? "#778899" : "#344a58";
+    drawCtx.strokeStyle = flash ? "#99aabb" : "#5a7888";
+    drawCtx.lineWidth = 1.2;
+    drawCtx.beginPath(); drawCtx.ellipse(px, COLLAR_Y, 8, 3.5, 0, 0, Math.PI*2);
+    drawCtx.fill(); drawCtx.stroke();
+
+    // ── Liquid fill (element-colored, inside dome) ──
+    const liqGrad = drawCtx.createRadialGradient(px - 2, DOME_CY - 1, 1, px, DOME_CY, DOME_R - 1);
+    liqGrad.addColorStop(0, `rgba(${Math.min(255,er+60)},${Math.min(255,eg+60)},${Math.min(255,eb+60)},0.55)`);
+    liqGrad.addColorStop(1, `rgba(${er},${eg},${eb},0.25)`);
+    drawCtx.fillStyle = liqGrad;
+    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R - 1, 0, Math.PI*2);
     drawCtx.fill();
-    // Highlight sliver
-    drawCtx.fillStyle = "rgba(255,255,255,0.2)";
+
+    // ── Crystal inside dome — multi-facet diamond shape ──
+    const cCY  = DOME_CY + 1;
+    const cR   = 4.5;
+    const cBright = `rgb(${Math.min(255,er+100)},${Math.min(255,eg+100)},${Math.min(255,eb+100)})`;
+    const cMid    = `rgb(${Math.min(255,er+40)},${Math.min(255,eg+40)},${Math.min(255,eb+40)})`;
+    const crystalPulse = 0.85 + 0.15 * Math.sin((frame||0) * 0.12 + (actor.x||0));
+
+    drawCtx.save();
+    drawCtx.globalAlpha = flash ? 1 : crystalPulse;
+    // Outer gem shape (4-point diamond)
+    drawCtx.fillStyle = cMid;
     drawCtx.beginPath();
-    drawCtx.moveTo(px,     bodyY - 8);
-    drawCtx.lineTo(px + 5, bodyY + 2);
-    drawCtx.lineTo(px,     bodyY + 6);
-    drawCtx.closePath();
-    drawCtx.fill();
+    drawCtx.moveTo(px,        cCY - cR);       // top
+    drawCtx.lineTo(px + cR*0.7, cCY);          // right
+    drawCtx.lineTo(px,        cCY + cR*0.65);  // bottom
+    drawCtx.lineTo(px - cR*0.7, cCY);          // left
+    drawCtx.closePath(); drawCtx.fill();
+    // Left upper facet
+    drawCtx.fillStyle = cBright;
+    drawCtx.beginPath();
+    drawCtx.moveTo(px,        cCY - cR);
+    drawCtx.lineTo(px + cR*0.7, cCY);
+    drawCtx.lineTo(px,        cCY - cR*0.15);
+    drawCtx.closePath(); drawCtx.fill();
+    // Specular tip
+    drawCtx.fillStyle = flash ? "#fff" : "rgba(255,255,255,0.8)";
+    drawCtx.beginPath();
+    drawCtx.moveTo(px,          cCY - cR);
+    drawCtx.lineTo(px + cR*0.3, cCY - cR*0.5);
+    drawCtx.lineTo(px,          cCY - cR*0.65);
+    drawCtx.closePath(); drawCtx.fill();
+    drawCtx.restore();
+
+    // ── Glass dome shell — clear sphere with reflections ──
+    // Very faint tinted fill
+    drawCtx.fillStyle = `rgba(${er},${eg},${eb},0.06)`;
+    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R, 0, Math.PI*2); drawCtx.fill();
+    // Dome outline
+    drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.85)" : "rgba(180,220,255,0.65)";
+    drawCtx.lineWidth = 1.5;
+    drawCtx.beginPath(); drawCtx.arc(px, DOME_CY, DOME_R, 0, Math.PI*2); drawCtx.stroke();
+    // Main specular arc (top-left dome shine)
+    drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.7)" : "rgba(220,240,255,0.55)";
+    drawCtx.lineWidth = 2.5;
+    drawCtx.lineCap = "round";
+    drawCtx.beginPath();
+    drawCtx.arc(px - DOME_R*0.28, DOME_CY - DOME_R*0.28, DOME_R*0.45, Math.PI*1.05, Math.PI*1.7);
+    drawCtx.stroke();
+    // Secondary softer reflection
+    drawCtx.strokeStyle = "rgba(200,230,255,0.25)";
+    drawCtx.lineWidth = 1.2;
+    drawCtx.beginPath();
+    drawCtx.arc(px - DOME_R*0.1, DOME_CY - DOME_R*0.05, DOME_R*0.65, Math.PI*1.1, Math.PI*1.55);
+    drawCtx.stroke();
+
+    drawCtx.restore();
 }
 
 // ─────────────────────────────────────────────────────────
