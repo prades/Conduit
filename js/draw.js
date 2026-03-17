@@ -762,22 +762,24 @@ function _drawVirus(actor, px, py, drawCtx) {
     drawCtx.lineTo(px - DOME_R, glassBot);
     drawCtx.closePath(); drawCtx.stroke();
 
-    // ── HALF-RADIAL ACCENT — small element-colored semicircle on torso front ──
-    const accentCY = TORSO_BOT - 7;
+    // ── BLACK BASE — flat platform at the bottom of the glass ──
+    const baseH = 4;
+    drawCtx.fillStyle = "#000";
+    drawCtx.fillRect(px - DOME_R, glassBot, DOME_R * 2, baseH);
+
+    // ── HALF-RADIAL ACCENT — flipped black button on the base ──
+    const accentCY = glassBot + baseH * 0.5;
     const accentR  = 4;
     drawCtx.save();
     drawCtx.globalAlpha = flash ? 1 : 0.85;
-    // Filled half-circle (bottom half, like a button face-up)
-    const accentGrad = drawCtx.createRadialGradient(px, accentCY - 1, 0.5, px, accentCY, accentR);
-    accentGrad.addColorStop(0, `rgba(${Math.min(255,er+120)},${Math.min(255,eg+120)},${Math.min(255,eb+120)},0.95)`);
-    accentGrad.addColorStop(1, `rgba(${er},${eg},${eb},0.7)`);
-    drawCtx.fillStyle = accentGrad;
+    // Filled half-circle (top half, dome-up — flipped from original)
+    drawCtx.fillStyle = "#111";
     drawCtx.beginPath();
-    drawCtx.arc(px, accentCY, accentR, 0, Math.PI, false); // top half arc
+    drawCtx.arc(px, accentCY, accentR, Math.PI, 0, false); // top half arc (flipped)
     drawCtx.closePath();
     drawCtx.fill();
     // Crisp edge
-    drawCtx.strokeStyle = flash ? "#fff" : `rgba(${Math.min(255,er+60)},${Math.min(255,eg+60)},${Math.min(255,eb+60)},0.9)`;
+    drawCtx.strokeStyle = flash ? "#fff" : "rgba(80,80,80,0.9)";
     drawCtx.lineWidth = 0.8;
     drawCtx.stroke();
     // Small specular dot
