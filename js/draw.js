@@ -590,8 +590,10 @@ function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData,
 
     // ── FOOT — tibia pulls inward + forward from knee for acute knee angle ──
     // (-out * 0.4) brings foot closer to body than knee; (+dir * 0.8) extends it forward
+    // Use Math.abs(dirY) so feet always hang downward in screen space; when the creature
+    // faces away from camera (dirY < 0), dirY * tibia would lift feet above the body.
     const footX = crestX - outX * legData.tibia * 0.4 + dirX * (legData.tibia * 0.8 + stride * 0.8);
-    const footY = crestY - outY * legData.tibia * 0.4 + dirY * legData.tibia * 0.8 - lift * 0.3;
+    const footY = crestY - outY * legData.tibia * 0.4 + Math.abs(dirY) * legData.tibia * 0.8 - lift * 0.3;
 
     drawCtx.beginPath(); drawCtx.moveTo(hx, hy); drawCtx.lineTo(crestX, crestY); drawCtx.lineTo(footX, footY); drawCtx.stroke();
 }
