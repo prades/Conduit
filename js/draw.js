@@ -693,12 +693,7 @@ function _drawVirus(actor, px, py, drawCtx) {
         drawCtx.beginPath(); drawCtx.moveTo(kx, ky); drawCtx.lineTo(fx, fy); drawCtx.stroke();
         drawCtx.strokeStyle = flash ? "#fff" : "rgba(255,255,255,0.45)"; drawCtx.lineWidth = 0.8;
         drawCtx.beginPath(); drawCtx.moveTo(kx, ky); drawCtx.lineTo(fx, fy); drawCtx.stroke();
-        // Foot pad — black with white gloss rim
-        drawCtx.fillStyle = flash ? "#ccd" : "#080808";
-        drawCtx.strokeStyle = flash ? "#fff" : "rgba(255,255,255,0.5)";
-        drawCtx.lineWidth = 0.8;
-        drawCtx.beginPath(); drawCtx.ellipse(fx, fy, 3.5, 2, 0, 0, Math.PI*2);
-        drawCtx.fill(); drawCtx.stroke();
+        // Foot tip — just a sharp point, no round pad
     });
     drawCtx.restore();
 
@@ -766,6 +761,31 @@ function _drawVirus(actor, px, py, drawCtx) {
     drawCtx.lineTo(px + DOME_R, glassBot);
     drawCtx.lineTo(px - DOME_R, glassBot);
     drawCtx.closePath(); drawCtx.stroke();
+
+    // ── HALF-RADIAL ACCENT — small element-colored semicircle on torso front ──
+    const accentCY = TORSO_BOT - 7;
+    const accentR  = 4;
+    drawCtx.save();
+    drawCtx.globalAlpha = flash ? 1 : 0.85;
+    // Filled half-circle (bottom half, like a button face-up)
+    const accentGrad = drawCtx.createRadialGradient(px, accentCY - 1, 0.5, px, accentCY, accentR);
+    accentGrad.addColorStop(0, `rgba(${Math.min(255,er+120)},${Math.min(255,eg+120)},${Math.min(255,eb+120)},0.95)`);
+    accentGrad.addColorStop(1, `rgba(${er},${eg},${eb},0.7)`);
+    drawCtx.fillStyle = accentGrad;
+    drawCtx.beginPath();
+    drawCtx.arc(px, accentCY, accentR, 0, Math.PI, false); // top half arc
+    drawCtx.closePath();
+    drawCtx.fill();
+    // Crisp edge
+    drawCtx.strokeStyle = flash ? "#fff" : `rgba(${Math.min(255,er+60)},${Math.min(255,eg+60)},${Math.min(255,eb+60)},0.9)`;
+    drawCtx.lineWidth = 0.8;
+    drawCtx.stroke();
+    // Small specular dot
+    drawCtx.fillStyle = "rgba(255,255,255,0.6)";
+    drawCtx.beginPath();
+    drawCtx.arc(px - 1, accentCY - 1.5, 1, 0, Math.PI * 2);
+    drawCtx.fill();
+    drawCtx.restore();
 
     // Dome specular arc (top-left shine)
     drawCtx.strokeStyle = flash ? "rgba(255,255,255,0.8)" : "rgba(230,245,255,0.65)";
