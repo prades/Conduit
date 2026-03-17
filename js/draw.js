@@ -129,15 +129,15 @@ function _drawPredator(actor, px, py, drawCtx) {
     // Position segments
     segments[0].cx=px; segments[0].cy=bodyBaseY+(segments[0].yOffset||0);
     segments[1].cx=segments[0].cx+dirX*(segments[0].length*0.5+segments[1].length*0.5);
-    segments[1].cy=segments[0].cy+dirY*(segments[0].length*0.5+segments[1].length*0.5);
+    segments[1].cy=segments[0].cy+Math.max(0,dirY)*(segments[0].length*0.5+segments[1].length*0.5);
     // Abdomen anchor at thorax rear for all creatures.
     let anchorX = segments[0].cx - dirX * segments[0].length * 0.5;
-    let anchorY = segments[0].cy - dirY * segments[0].length * 0.5 + (actor.body.abdomen.yOffset || 0);
+    let anchorY = segments[0].cy - Math.max(0,dirY) * segments[0].length * 0.5 + (actor.body.abdomen.yOffset || 0);
     for (let i=2;i<segments.length;i++) {
         segments[i].cx = anchorX - abdDirX * segments[i].length * 0.5;
-        segments[i].cy = anchorY - abdDirY * segments[i].length * 0.5;
+        segments[i].cy = anchorY - Math.max(0,abdDirY) * segments[i].length * 0.5;
         anchorX -= abdDirX * segments[i].length;
-        anchorY -= abdDirY * segments[i].length;
+        anchorY -= Math.max(0,abdDirY) * segments[i].length;
     }
 
     // ── Legs split by isometric depth: far side behind body, near side in front ──
