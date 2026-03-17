@@ -561,32 +561,29 @@ function _drawPredator(actor, px, py, drawCtx) {
     drawPredatorDebug(actor, px, py);
 }
 
-// Insect leg helper — standalone, no name collision
+// Insect leg helper — tracks two points: crest (knee arc) and foot (ground grip)
 function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData, dirX, dirY, perpX, perpY) {
-    const coxaLen=legData.coxa, femurLen=legData.femur, tibiaLen=legData.tibia;
-    const outX=perpX*side;
-    // outY is always positive (downward in screen space) regardless of facing direction.
-    // When perpY*side is negative the coxa would extend upward, hiding the leg behind the
-    // body in back-view. Taking abs() keeps all leg segments visible below the body.
-    const outY=Math.abs(perpY*side);
-    let gait=actor.state!=="attack"?Math.sin(actor.walkCycle+phaseOffset):0;
-    const isSwing=gait>0;
-    let stride=isSwing?gait*4:0, lift=isSwing?gait*4:0;
-    const j1x=hx+outX*coxaLen, j1y=hy+outY*coxaLen+2-lift*0.5;
-    const sweep=Math.sin(actor.walkCycle*legData.swingSpeed+phaseOffset)*4;
-    let j2x=j1x+(-dirX)*femurLen*0.6+outX*(femurLen*0.4+sweep);
-    // Negate outY in the femur Y term: the abs() above always pulls j1 downward, so we
-    // subtract here to keep the knee at a moderate depth (same partial-cancellation the
-    // original sign relationship provided, now applied symmetrically for all orientations).
-    let j2y=j1y+(-dirY)*femurLen*0.6-outY*(femurLen*0.4+sweep)-lift*0.5;
-    if (actor.state==="attack"&&pos===-1) {
-        const strike=Math.sin(actor.attackAnim);
-        if (strike>0) { j2x+=dirX*strike*-0.5; j2y+=dirY*strike*-0.5; }
-    }
-    const gtX=hx+outX*(coxaLen+femurLen*0.5)+dirX*stride, gtY=hy+10-lift;
-    const dx=gtX-j2x, dy=gtY-j2y, len=Math.hypot(dx,dy)||1;
-    const footX=j2x+(dx/len)*tibiaLen, footY=j2y+(dy/len)*tibiaLen;
-    drawCtx.beginPath(); drawCtx.moveTo(hx,hy); drawCtx.lineTo(j1x,j1y); drawCtx.lineTo(j2x,j2y); drawCtx.lineTo(footX,footY); drawCtx.stroke();
+    // True outward direction — perpendicular to body, both sides spread correctly
+    const outX = perpX * side;
+    const outY = perpY * side;
+
+    // Gyrations: walk cycle drives lift (crest rises) and stride (foot steps fore/aft)
+    const gait   = actor.state !== "attack" ? Math.sin(actor.walkCycle + phaseOffset) : 0;
+    const swing  = gait > 0;
+    const lift   = swing ? gait * 7 : 0;
+    const stride = Math.sin(actor.walkCycle * legData.swingSpeed + phaseOffset) * 5;
+
+    // ── CREST (knee) — arc peak, fixed outward reach, lifts during swing ──
+    const crestReach = legData.coxa + legData.femur * 0.5;
+    const crestX = hx + outX * crestReach + dirX * stride * 0.35;
+    const crestY = hy + outY * crestReach - lift;
+
+    // ── FOOT — fixed outward reach, strides fore/aft, barely leaves ground ──
+    const footReach = legData.coxa + legData.femur + legData.tibia * 0.5;
+    const footX = hx + outX * footReach + dirX * stride;
+    const footY = hy + outY * footReach - lift * 0.3;
+
+    drawCtx.beginPath(); drawCtx.moveTo(hx, hy); drawCtx.lineTo(crestX, crestY); drawCtx.lineTo(footX, footY); drawCtx.stroke();
 }
 
 function _drawVirus(actor, px, py, drawCtx) {
