@@ -595,11 +595,12 @@ function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData,
     const crestX = hx + outX * (legData.coxa + legData.femur) + dirX * stride * 0.2;
     const crestY = hy + (effectiveOutY + gravityPull) * (legData.coxa + legData.femur) - lift;
 
-    // ── FOOT — tibia pulls inward + forward from knee for acute knee angle ──
-    // (-out * 0.4) brings foot closer to body than knee; (+dir * 0.8) extends it forward.
-    // Math.abs(dirY) ensures feet hang downward even when dirY is negative (facing away).
-    const footX = crestX - outX * legData.tibia * 0.4 + dirX * (legData.tibia * 0.8 + stride * 0.8);
-    const footY = crestY - outY * legData.tibia * 0.4 + Math.abs(dirY) * legData.tibia * 0.8 - lift * 0.3;
+    // ── FOOT — tibia pulls inward + downward from knee ──
+    // (-out * 0.4) brings foot closer to body than knee.
+    // (Math.abs(dirX) + Math.abs(dirY)) adds downward gravity regardless of facing direction —
+    // at 0°/180° dirX drives the pull; at 90°/270° dirY drives it. Stride only animates, no constant forward lean.
+    const footX = crestX - outX * legData.tibia * 0.4 + dirX * stride * 0.8;
+    const footY = crestY - outY * legData.tibia * 0.4 + (Math.abs(dirX) + Math.abs(dirY)) * legData.tibia * 0.8 - lift * 0.3;
 
     drawCtx.beginPath(); drawCtx.moveTo(hx, hy); drawCtx.lineTo(crestX, crestY); drawCtx.lineTo(footX, footY); drawCtx.stroke();
 }
