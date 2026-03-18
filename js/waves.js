@@ -158,6 +158,8 @@ function nextWave() {
         }
     });
 
+    savePylons();
+
     // ── Wipe everything, start clean ──
     actors=[]; followers=[]; respawnQueue=[]; pendingPillarDestruction=[];
     ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
@@ -225,7 +227,7 @@ function restartGame() {
     ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
     projectiles=[];fragments=[];smoke=[];shards=[];elementEffects=[];floatingTexts=[];followerProjectiles=[];clearDNA();
     pendingPillarDestruction=[];respawnQueue=[];
-    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();
+    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
     unlockedElements=new Set(["fire","electric"]);
     latchedPillar=null;activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};

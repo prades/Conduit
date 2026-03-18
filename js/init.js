@@ -23,6 +23,25 @@ async function loadConfig() {
         gameState.totalWavesSurvived = gs.totalWavesSurvived || 0;
         activeDayZones               = gs.activeDayZones     || 3;
     }
+    const savedPylons = loadPylons();
+    if (savedPylons) {
+        savedPylons.forEach(saved => {
+            const tile = world.find(t => t.x === saved.x && t.y === saved.y);
+            if (!tile) return;
+            tile.pillar            = true;
+            tile.pillarTeam        = saved.pillarTeam;
+            tile.pillarCol         = saved.pillarCol;
+            tile.health            = saved.health;
+            tile.maxHealth         = saved.maxHealth;
+            tile.destroyed         = saved.destroyed;
+            tile.attackMode        = saved.attackMode;
+            tile.waveMode          = saved.waveMode;
+            tile.attackModeElement = saved.attackModeElement;
+            tile.attackModeColor   = saved.attackModeColor;
+            tile.seasoned          = saved.seasoned;
+            tile.upgraded          = saved.upgraded;
+        });
+    }
     const savedF = loadFollowers();
     if (savedF.length > 0) {
         savedF.forEach(entry => spawnFollowerFromSave(entry));
