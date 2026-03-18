@@ -1364,59 +1364,110 @@ function render() {
                 const isRackX=(xi%9===4);
 
                 // 1b. Circuit board traces — horizontal PCB interconnects across wall south face
+                // Traces cluster in tight bundles every ~8 tiles; sparse bus-only elsewhere.
                 // Skip on rack panel tiles to avoid traces bleeding through semi-transparent panel.
                 if (!isRackX) {
                     // South face parallelogram: W=(px-TILE_W, py+TILE_H), S=(px, py+2*TILE_H)
-                    // Horizontal trace at height h: from (wx, wy-h) to (sx, sy-h)
                     const wx = px - TILE_W, wy = py + TILE_H;
                     const sx = px,          sy = py + 2 * TILE_H;
-                    const trH = [WH * 0.20, WH * 0.45, WH * 0.70]; // three trace heights
+                    const trH = [WH * 0.20, WH * 0.45, WH * 0.70];
                     ctx.save();
-                    ctx.lineWidth = 0.8;
-                    // Main horizontal traces — full tile width, teal-green
+
+                    // Determine cluster membership — clusters every 8 tiles, span 3 tiles wide
+                    const CPER = 8;
+                    const posInC = ((xi % CPER) + CPER) % CPER; // 0..7
+                    // Cluster centre at posInC === 1, spans posInC 0,1,2
+                    const distC = Math.min(posInC, Math.abs(posInC - 1), Math.abs(posInC - 2));
+                    const inCluster = posInC <= 2;
+                    const isCenter  = posInC === 1;
+                    // Vary cluster position across world so they don't line up perfectly
+                    const clusterIdx = Math.floor(xi / CPER);
+                    const centerShift = Math.sin(clusterIdx * 17.31 + 2.9) * 0.15; // ±0.15 t-shift
+
+                    // Main horizontal bus traces (always present)
                     trH.forEach(h => {
-                        ctx.globalAlpha = 0.18 * amb;
+                        ctx.globalAlpha = (inCluster ? 0.30 : 0.14) * amb;
                         ctx.strokeStyle = "#00bb88";
+                        ctx.lineWidth   = inCluster ? 1.1 : 0.7;
                         ctx.beginPath();
                         ctx.moveTo(wx, wy - h);
                         ctx.lineTo(sx, sy - h);
                         ctx.stroke();
                     });
-                    // Vertical jog A — connects trace[0] to trace[1] at deterministic position
-                    const sA = Math.sin(xi * 41.73 + 3.17);
-                    if (sA > 0.12) {
-                        const t = 0.20 + Math.abs(Math.sin(xi * 19.3 + 1.1)) * 0.60;
-                        const jx = wx + t * (sx - wx);
-                        const jy = wy + t * (sy - wy);
-                        ctx.globalAlpha = 0.14 * amb;
-                        ctx.strokeStyle = "#00ffaa";
-                        ctx.beginPath();
-                        ctx.moveTo(jx, jy - trH[0]);
-                        ctx.lineTo(jx, jy - trH[1]);
-                        ctx.stroke();
-                        // Via pad
-                        ctx.globalAlpha = 0.24 * amb;
-                        ctx.fillStyle = "#00cc88";
-                        ctx.beginPath(); ctx.arc(jx, jy - trH[1], 1.3, 0, Math.PI * 2); ctx.fill();
-                        ctx.beginPath(); ctx.arc(jx, jy - trH[0], 1.3, 0, Math.PI * 2); ctx.fill();
+                    ctx.lineWidth = 0.8;
+
+                    if (inCluster) {
+                        // ── CLUSTER ZONE: tight bundle of vertical jogs ──
+                        // All jogs packed into a narrow band around the cluster centre fraction.
+                        const baseFrac = 0.50 + centerShift + (posInC - 1) * 0.08;
+                        const numJogs  = isCenter ? 9 : 5;
+                        const spread   = 0.16; // total horizontal spread of the bundle (in t-space)
+
+                        for (let j = 0; j < numJogs; j++) {
+                            const seed = clusterIdx * 97 + j * 13.7 + posInC * 3.1;
+                            // Evenly space jogs within the spread, with tiny seeded dither
+                            const tOff = (j / (numJogs - 1) - 0.5) * spread
+                                       + Math.sin(seed * 5.3) * (spread / numJogs) * 0.4;
+                            const t  = baseFrac + tOff;
+                            const jx = wx + t * (sx - wx);
+                            const jy = wy + t * (sy - wy);
+
+                            // Each jog connects two of the three bus traces
+                            const top = (j % 3 === 2) ? 0 : (j % 2 === 0 ? 0 : 1);
+                            const bot = (j % 3 === 2) ? 2 : (j % 2 === 0 ? 1 : 2);
+                            const jogColors = ["#00ffaa", "#0099dd", "#00ccbb"];
+                            ctx.globalAlpha = (0.20 + Math.abs(Math.sin(seed)) * 0.14) * amb;
+                            ctx.strokeStyle = jogColors[j % 3];
+                            ctx.beginPath();
+                            ctx.moveTo(jx, jy - trH[top]);
+                            ctx.lineTo(jx, jy - trH[bot]);
+                            ctx.stroke();
+
+                            // Via pads at jog endpoints
+                            ctx.globalAlpha = 0.35 * amb;
+                            ctx.fillStyle   = j % 2 === 0 ? "#00cc88" : "#0099cc";
+                            ctx.beginPath(); ctx.arc(jx, jy - trH[top], 1.5, 0, Math.PI * 2); ctx.fill();
+                            ctx.beginPath(); ctx.arc(jx, jy - trH[bot], 1.5, 0, Math.PI * 2); ctx.fill();
+                            // Middle via for full-span jogs
+                            if (top === 0 && bot === 2) {
+                                ctx.globalAlpha = 0.28 * amb;
+                                ctx.beginPath(); ctx.arc(jx, jy - trH[1], 1.2, 0, Math.PI * 2); ctx.fill();
+                            }
+                        }
+
+                        // Short horizontal stub fanning out from centre cluster
+                        if (isCenter) {
+                            const bx  = wx + baseFrac * (sx - wx);
+                            const by  = wy + baseFrac * (sy - wy);
+                            const bx2 = wx + (baseFrac + 0.22) * (sx - wx);
+                            const by2 = wy + (baseFrac + 0.22) * (sy - wy);
+                            ctx.globalAlpha = 0.18 * amb;
+                            ctx.strokeStyle = "#00eeaa";
+                            ctx.lineWidth   = 0.7;
+                            ctx.beginPath();
+                            ctx.moveTo(bx, by - trH[1]);
+                            ctx.lineTo(bx2, by2 - trH[1]);
+                            ctx.stroke();
+                        }
+                    } else {
+                        // ── SPARSE ZONE: at most one isolated jog ──
+                        const sA = Math.sin(xi * 41.73 + 3.17);
+                        if (sA > 0.42) { // higher threshold → fewer jogs between clusters
+                            const t  = 0.20 + Math.abs(Math.sin(xi * 19.3 + 1.1)) * 0.60;
+                            const jx = wx + t * (sx - wx);
+                            const jy = wy + t * (sy - wy);
+                            ctx.globalAlpha = 0.09 * amb;
+                            ctx.strokeStyle = "#00ffaa";
+                            ctx.beginPath();
+                            ctx.moveTo(jx, jy - trH[0]);
+                            ctx.lineTo(jx, jy - trH[1]);
+                            ctx.stroke();
+                            ctx.globalAlpha = 0.16 * amb;
+                            ctx.fillStyle   = "#00cc88";
+                            ctx.beginPath(); ctx.arc(jx, jy - trH[1], 1.0, 0, Math.PI * 2); ctx.fill();
+                        }
                     }
-                    // Vertical jog B — connects trace[1] to trace[2]
-                    const sB = Math.sin(xi * 23.91 + 7.83);
-                    if (sB > 0.18) {
-                        const t2 = 0.08 + Math.abs(Math.sin(xi * 31.17 + 5.5)) * 0.80;
-                        const jx2 = wx + t2 * (sx - wx);
-                        const jy2 = wy + t2 * (sy - wy);
-                        ctx.globalAlpha = 0.12 * amb;
-                        ctx.strokeStyle = "#0099dd";
-                        ctx.beginPath();
-                        ctx.moveTo(jx2, jy2 - trH[1]);
-                        ctx.lineTo(jx2, jy2 - trH[2]);
-                        ctx.stroke();
-                        // Via pad
-                        ctx.globalAlpha = 0.20 * amb;
-                        ctx.fillStyle = "#0099cc";
-                        ctx.beginPath(); ctx.arc(jx2, jy2 - trH[2], 1.1, 0, Math.PI * 2); ctx.fill();
-                    }
+
                     // Top face chip traces — clipped diagonal lines across diamond
                     ctx.save();
                     ctx.beginPath();
@@ -1427,10 +1478,9 @@ function render() {
                     ctx.closePath(); ctx.clip();
                     ctx.globalAlpha = 0.13 * amb;
                     ctx.strokeStyle = "#00aacc";
-                    ctx.lineWidth = 0.7;
-                    // Two horizontal passes across the diamond top
+                    ctx.lineWidth   = 0.7;
                     for (let tr = 1; tr <= 2; tr++) {
-                        const f = tr / 3;
+                        const f  = tr / 3;
                         const ly = (py - WH) + f * 2 * TILE_H;
                         ctx.beginPath();
                         ctx.moveTo(px - TILE_W * 2, ly);
