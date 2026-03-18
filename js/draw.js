@@ -694,9 +694,13 @@ function _drawVirus(actor, px, py, drawCtx) {
     ];
     const FEM_LEN = 15, TIB_LEN = 13;
 
-    // Pre-compute saw size so leg loop can use it
-    const _sawSt   = (actor.isFollower && !actor.ghostphageLife) ? (actor.stats || {}) : null;
-    const _sawSize = _sawSt ? Math.max(0, ((_sawSt.attack || 10) - 10) * 0.35) : 0;
+    // Pre-compute saw size and claw size so leg loop can use them
+    const _sawSt    = (actor.isFollower && !actor.ghostphageLife) ? (actor.stats || {}) : null;
+    const _sawSize  = _sawSt ? Math.max(0, ((_sawSt.attack || 10) - 10) * 0.35) : 0;
+    const _clawSt   = _sawSt;
+    const _clawSize = _clawSt ? Math.max(0, (Math.max(_clawSt.specialAttack || 0, _clawSt.accuracy || 0) - 10) * 0.45) : 0;
+    const _elDef2   = _clawSt ? ELEMENTS.find(e => e.id === actor.element) : null;
+    const _elCol2   = _elDef2 ? _elDef2.color : "#aaa";
 
     drawCtx.save();
     drawCtx.lineCap = "round";
@@ -752,79 +756,56 @@ function _drawVirus(actor, px, py, drawCtx) {
             drawCtx.closePath();
             drawCtx.fill();
         }
+
+        // ── KNEE CLAW (sniper) — 'c'-shaped talon at each knee joint ──
+        if (_clawSize > 0.3) {
+            const isMiddle = (hOX === 0);
+            const clawLen  = 3 + _clawSize * 0.9;
+            const snapOut  = actor.state === "attack" ? Math.sin(actor.attackAnim || 0) * 4 : 0;
+
+            // "out" = perpendicular to femur, pointing away from body centre
+            const femDX = kx - hx, femDY = ky - hy;
+            const femMag = Math.sqrt(femDX * femDX + femDY * femDY);
+            const fux = femDX / femMag, fuy = femDY / femMag;
+            const kDot = (kx - px) * (-fuy) + (ky - BASE_Y) * fux;
+            const outX = kDot >= 0 ? -fuy :  fuy;
+            const outY = kDot >= 0 ?  fux : -fux;
+
+            // "up" = along femur back toward hip (the 'c' tip points this way)
+            const upX = -fux, upY = -fuy;
+
+            const cH  = clawLen * 1.5;
+            // Middle leg is foreshortened — compress the width so it reads as the same shape seen straight-on
+            const cBW = (clawLen * 0.8 + snapOut * 0.25) * (isMiddle ? 0.55 : 1.0);
+
+            const botOuterX = kx + outX * cBW;
+            const botOuterY = ky + outY * cBW;
+
+            const tipX = kx + outX * cBW * 0.08 + upX * cH;
+            const tipY = ky + outY * cBW * 0.08 + upY * cH;
+
+            const ctrlOutX = kx + outX * cBW * 1.18 + upX * cH * 0.40;
+            const ctrlOutY = ky + outY * cBW * 1.18 + upY * cH * 0.40;
+
+            const ctrlInX = kx + outX * cBW * 0.16 + upX * cH * 0.64;
+            const ctrlInY = ky + outY * cBW * 0.16 + upY * cH * 0.64;
+
+            drawCtx.save();
+            drawCtx.fillStyle = flash ? "#fff" : _elCol2;
+            drawCtx.beginPath();
+            drawCtx.moveTo(botOuterX, botOuterY);
+            drawCtx.quadraticCurveTo(ctrlOutX, ctrlOutY, tipX, tipY);
+            drawCtx.quadraticCurveTo(ctrlInX, ctrlInY, kx, ky);
+            drawCtx.closePath();
+            drawCtx.fill();
+
+            // Knee joint dot
+            drawCtx.fillStyle = flash ? "#fff" : "#333";
+            drawCtx.beginPath(); drawCtx.arc(kx, ky, 1.8, 0, Math.PI * 2); drawCtx.fill();
+            drawCtx.restore();
+        }
     });
     drawCtx.restore();
-
-    // ── STAT-DRIVEN ARMS — elbow claws (sniper/specialAttack) ──
-    if (actor.isFollower && !actor.ghostphageLife) {
-        const _st    = actor.stats || {};
-        const clawSize = Math.max(0, (Math.max(_st.specialAttack || 0, _st.accuracy || 0) - 10) * 0.45);
-        const _elDef2  = ELEMENTS.find(e => e.id === actor.element);
-        const _elCol2  = _elDef2 ? _elDef2.color : "#aaa";
-        const _atk = actor.attackAnim || 0;
-        const ARM_ATTACH_Y = BASE_Y - 8;
-        const ATTACH_X_OFF = DOME_R;   // sides of glass body
-
-        // ── ELBOW-CLAW ARMS (sniper) ──
-        if (clawSize > 0.3) {
-            const armLen  = 6 + clawSize;
-            const clawLen = 3 + clawSize * 0.9;
-            const snapOut = actor.state === "attack" ? Math.sin(_atk) * 4 : 0;
-
-            [-1, 1].forEach(side => {
-                const ax = px + side * ATTACH_X_OFF;
-                const ay = ARM_ATTACH_Y;
-                // Elbow: outward and slightly upward, snaps out during attack
-                const elbX = ax + side * (armLen * 0.9 + snapOut);
-                const elbY = ay - armLen * 0.35;
-
-                // Upper arm — thin stroke
-                drawCtx.save();
-                drawCtx.strokeStyle = flash ? "#bbb" : "#222";
-                drawCtx.lineWidth = 1.8;
-                drawCtx.lineCap = "round";
-                drawCtx.beginPath(); drawCtx.moveTo(ax, ay); drawCtx.lineTo(elbX, elbY); drawCtx.stroke();
-                drawCtx.restore();
-
-                // Singular 'c'-shaped claw on top of elbow
-                // Large rounded bottom, sharp tip pointing upward, opening faces outward
-                const cH  = clawLen * 1.5;                    // height (upward)
-                const cBW = clawLen * 0.8 + snapOut * 0.25;  // bottom width (large bottom of 'c')
-
-                // Base points (bottom of 'c') — outer edge and inner edge at elbow
-                const botOuterX = elbX + side * cBW;
-                const botOuterY = elbY;
-                const botInnerX = elbX;
-                const botInnerY = elbY;
-
-                // Sharp tip (top of 'c') — upward with slight outward lean
-                const tipX = elbX + side * cBW * 0.08;
-                const tipY = elbY - cH;
-
-                // Outer control: sweeps far outward → creates large rounded bottom curve
-                const ctrlOutX = elbX + side * cBW * 1.18;
-                const ctrlOutY = elbY - cH * 0.40;
-
-                // Inner control: tighter concave edge of 'c'
-                const ctrlInX = elbX + side * cBW * 0.16;
-                const ctrlInY = elbY - cH * 0.64;
-
-                drawCtx.save();
-                drawCtx.fillStyle = flash ? "#fff" : _elCol2;
-                drawCtx.beginPath();
-                drawCtx.moveTo(botOuterX, botOuterY);
-                drawCtx.quadraticCurveTo(ctrlOutX, ctrlOutY, tipX, tipY);
-                drawCtx.quadraticCurveTo(ctrlInX, ctrlInY, botInnerX, botInnerY);
-                drawCtx.closePath();
-                drawCtx.fill();
-
-                // Elbow joint dot
-                drawCtx.fillStyle = flash ? "#fff" : "#333";
-                drawCtx.beginPath(); drawCtx.arc(elbX, elbY, 1.8, 0, Math.PI * 2); drawCtx.fill();
-                drawCtx.restore();
-            });
-        }
-    }
 
     // ── CLEAR GLASS — element color visible inside, transparent walls ─────────
     drawCtx.save();
