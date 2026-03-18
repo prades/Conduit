@@ -106,6 +106,7 @@ function followerAttack(actor, target) {
     }
 
     // Execute attack
+    actor.state = "attack"; actor.attackAnim = 0;
     if (attackTier === "normal") {
         // Plain hit — no aura, no element
         const baseDmg = (actor.stats?.attack||5) * 0.25;

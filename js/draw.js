@@ -721,6 +721,115 @@ function _drawVirus(actor, px, py, drawCtx) {
     });
     drawCtx.restore();
 
+    // ── STAT-DRIVEN ARMS — saw crests (attack) + elbow claws (specialAttack) ──
+    if (actor.isFollower && !actor.ghostphageLife) {
+        const _st    = actor.stats || {};
+        const sawSize  = Math.max(0, ((_st.attack || 10) - 10) * 0.35);
+        const clawSize = Math.max(0, (Math.max(_st.specialAttack || 0, _st.accuracy || 0) - 10) * 0.45);
+        const _elDef2  = ELEMENTS.find(e => e.id === actor.element);
+        const _elCol2  = _elDef2 ? _elDef2.color : "#aaa";
+        const _atk = actor.attackAnim || 0;
+        const ARM_ATTACH_Y = BASE_Y - 8;
+        const ATTACH_X_OFF = DOME_R;   // sides of glass body
+
+        // ── SAW-CREST ARMS ──
+        if (sawSize > 0.3) {
+            const armLen   = 8 + sawSize * 1.5;
+            const discR    = 4 + sawSize;
+            const sawSpin  = actor.state === "attack" ? _atk * 3 : 0;
+            const TEETH    = 7;
+
+            [-1, 1].forEach(side => {
+                const ax = px + side * ATTACH_X_OFF;
+                const ay = ARM_ATTACH_Y;
+                // Arm direction: outward and slightly downward
+                const armEndX = ax + side * armLen * 0.85;
+                const armEndY = ay + armLen * 0.52;
+
+                // Upper arm — thick dark stroke
+                drawCtx.save();
+                drawCtx.strokeStyle = flash ? "#bbb" : "#1a1a1a";
+                drawCtx.lineWidth = 3.5;
+                drawCtx.lineCap = "round";
+                drawCtx.beginPath(); drawCtx.moveTo(ax, ay); drawCtx.lineTo(armEndX, armEndY); drawCtx.stroke();
+                drawCtx.restore();
+
+                // Saw disc
+                drawCtx.save();
+                drawCtx.translate(armEndX, armEndY);
+                drawCtx.rotate(sawSpin + side * 0.3);
+
+                // Disc body (dark fill)
+                drawCtx.beginPath(); drawCtx.arc(0, 0, discR - 1.5, 0, Math.PI * 2); drawCtx.closePath();
+                drawCtx.fillStyle = flash ? "#888" : "#141414";
+                drawCtx.fill();
+
+                // Teeth — triangular spikes around disc
+                drawCtx.fillStyle = flash ? "#fff" : _elCol2;
+                drawCtx.beginPath();
+                for (let t = 0; t < TEETH; t++) {
+                    const baseAng = (t / TEETH) * Math.PI * 2;
+                    const nextAng = ((t + 1) / TEETH) * Math.PI * 2;
+                    const midAng  = (baseAng + nextAng) * 0.5;
+                    const inner = discR - 1.5;
+                    const outer = discR + sawSize * 0.55;
+                    drawCtx.moveTo(Math.cos(baseAng) * inner, Math.sin(baseAng) * inner);
+                    drawCtx.lineTo(Math.cos(midAng)  * outer, Math.sin(midAng)  * outer);
+                    drawCtx.lineTo(Math.cos(nextAng) * inner, Math.sin(nextAng) * inner);
+                }
+                drawCtx.closePath(); drawCtx.fill();
+
+                // Disc rim
+                drawCtx.strokeStyle = flash ? "#eee" : "rgba(255,255,255,0.35)";
+                drawCtx.lineWidth = 0.8;
+                drawCtx.beginPath(); drawCtx.arc(0, 0, discR - 1, 0, Math.PI * 2); drawCtx.stroke();
+                drawCtx.restore();
+            });
+        }
+
+        // ── ELBOW-CLAW ARMS ──
+        if (clawSize > 0.3) {
+            const armLen   = 6 + clawSize;
+            const clawLen  = 3 + clawSize * 0.8;
+            const snapOut  = actor.state === "attack" ? Math.sin(_atk) * 4 : 0;
+            const splayExt = actor.state === "attack" ? Math.sin(_atk) * 0.3 : 0;
+            const SPREAD   = 0.61 + splayExt; // ~35° base spread + dynamic
+
+            [-1, 1].forEach(side => {
+                const ax = px + side * ATTACH_X_OFF;
+                const ay = ARM_ATTACH_Y;
+                // Elbow position: outward and slightly upward; shifts out during attack
+                const elbX = ax + side * (armLen * 0.9 + snapOut);
+                const elbY = ay - armLen * 0.35;
+
+                // Upper arm — thin stroke
+                drawCtx.save();
+                drawCtx.strokeStyle = flash ? "#bbb" : "#222";
+                drawCtx.lineWidth = 1.8;
+                drawCtx.lineCap = "round";
+                drawCtx.beginPath(); drawCtx.moveTo(ax, ay); drawCtx.lineTo(elbX, elbY); drawCtx.stroke();
+                drawCtx.restore();
+
+                // Claw prongs (two lines from elbow in a V)
+                const baseAng = Math.atan2(elbY - ay, elbX - ax); // arm direction
+                drawCtx.save();
+                drawCtx.strokeStyle = flash ? "#fff" : _elCol2;
+                drawCtx.lineWidth = 1.4;
+                drawCtx.lineCap = "round";
+                [-1, 1].forEach(prong => {
+                    const pAng  = baseAng + prong * SPREAD;
+                    const tipX  = elbX + Math.cos(pAng) * clawLen;
+                    const tipY  = elbY + Math.sin(pAng) * clawLen;
+                    drawCtx.beginPath(); drawCtx.moveTo(elbX, elbY); drawCtx.lineTo(tipX, tipY); drawCtx.stroke();
+                });
+                // Elbow joint dot
+                drawCtx.fillStyle = flash ? "#fff" : "#333";
+                drawCtx.beginPath(); drawCtx.arc(elbX, elbY, 1.5, 0, Math.PI * 2); drawCtx.fill();
+                drawCtx.restore();
+            });
+        }
+    }
+
     // ── CLEAR GLASS — element color visible inside, transparent walls ─────────
     drawCtx.save();
 

@@ -1756,7 +1756,7 @@ function render() {
                     currentResonance: 0,
                     currentWill: stats.will,
                     walkCycle:0, moveCooldown:0, stance:"follow", isFollower:true, isHealing:false,
-                    hitFlash:0, dead:false,
+                    hitFlash:0, dead:false, attackAnim:0, state:"idle",
                     combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk,
                     ghostphageLife: entry.ghostphageLife||false
                 };

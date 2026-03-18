@@ -6,6 +6,10 @@ function updateRTSNPC(actor) {
     if (actor.dead) return;
     if (actor.spawnProtection>0) { actor.spawnProtection--; }
     if (actor.hitFlash>0) actor.hitFlash--;
+    if (actor.isFollower && actor.state === "attack") {
+        actor.attackAnim = (actor.attackAnim||0) + 0.18;
+        if (actor.attackAnim >= Math.PI) { actor.attackAnim = 0; actor.state = "idle"; }
+    }
 
     if (actor.combatTrait) { const t=COMBAT_TRAITS[actor.combatTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
     if (actor.naturalTrait){ const t=NATURAL_TRAITS[actor.naturalTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
