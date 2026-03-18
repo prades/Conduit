@@ -6,7 +6,7 @@ const getTile = (gx, gy) => world.find(t => t.x === gx && t.y === gy);
 
 
 
-function applyDamage(target, amount, source=null, element=null) {
+function applyDamage(target, amount, source=null, element=null, isReflected=false) {
     if (!target || target.dead) return;
     // Ghostphage ghost — immune to hazards; instantly killed by any direct attack
     if (target.ghostphageLife) {
@@ -52,6 +52,11 @@ function applyDamage(target, amount, source=null, element=null) {
     if (typeof target.hitFlash !== "undefined") target.hitFlash = 6;
     if (typeof target.hitStun  !== "undefined") target.hitStun  = 6;
     if (typeof target.onHit    === "function")  target.onHit(source);
+    // ── BEETLE REFLECT — returns the same damage to attacker, no amplification ──
+    if (target.reflectDamage && source && !source.dead && !isReflected) {
+        applyDamage(source, dmg, target, null, true);
+        floatingTexts.push({ x:target.x, y:target.y-1, text:"REFLECT", color:"#cc88ff", life:35, vy:-0.05 });
+    }
     if (target.health <= 0) {
         target.health = 0; target.dead = true;
         // ── ULTIMATE KILL BONUS ───────────────────────────────

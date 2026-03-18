@@ -431,12 +431,27 @@ class Predator {
                     const shotDamage = isCharged ? Math.round(this.rangeDamage * 1.8) : this.rangeDamage;
                     const shotRadius = isCharged ? 7 : 4;
                     const chargeElem = isCharged ? this.chargeElement : null;
+                    const isWebShot   = this.speciesName === "spider";
+                    const isMantisAmbush = this.speciesName === "mantis";
+                    // Mantis ambush — announce visually so the player can read the attack
+                    if (isMantisAmbush) {
+                        floatingTexts.push({ x:this.x, y:this.y-1.2, text:"AMBUSH!", color:"#44dd55", life:40, vy:-0.06 });
+                    }
 
                     spawnFollowerProjectile(
                         { x: abX, y: abY, stats: { specialAttack: shotDamage } },
                         rearTarget,
-                        shotColor, shotDamage, shotRadius,
-                        chargeElem ? (hit) => { if (hit) applyElementalDamage(hit, shotDamage * 0.5, this, chargeElem); } : null
+                        isWebShot ? "#cceeaa" : shotColor, shotDamage, shotRadius,
+                        (hit) => {
+                            if (!hit) return;
+                            // Web Shot — heavy slow (spider spinneret)
+                            if (isWebShot) {
+                                hit.slowed = 300;      // 5 seconds
+                                hit.slowFactor = 0.20; // 80% speed reduction — very heavy
+                                floatingTexts.push({ x:hit.x, y:hit.y-1, text:"WEB!", color:"#cceeaa", life:35, vy:-0.05 });
+                            }
+                            if (chargeElem) applyElementalDamage(hit, shotDamage * 0.5, this, chargeElem);
+                        }
                     );
                     // Tag projectile so it hits green team (predator shots target player's side)
                     if (followerProjectiles.length > 0) {

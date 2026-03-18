@@ -8,8 +8,11 @@ function openCloneMenu() {
     drawCloneMenu();
 }
 
+const MAX_CLONES = 4; // summon cap — no more than 4 clones active at once
+
 function getCloneOptions() {
     const options = [];
+    const liveClones = actors.filter(a => a.isClone && !a.dead).length;
     Object.keys(SPECIES).forEach(speciesName => {
         ["scout","striker","tank"].forEach(className => {
             const key = speciesName + "_" + className;
@@ -24,7 +27,7 @@ function getCloneOptions() {
                 key, speciesName, className,
                 have, needed,
                 followerCost,
-                ready: have >= needed && followers.length >= followerCost
+                ready: have >= needed && followers.length >= followerCost && liveClones < MAX_CLONES
             });
         });
     });
@@ -34,6 +37,7 @@ function getCloneOptions() {
 
 function executeClone(option) {
     if (!option.ready) return;
+    if (actors.filter(a => a.isClone && !a.dead).length >= MAX_CLONES) return;
 
     // Deduct splices
     deductDNA(option.key, option.needed);
@@ -299,6 +303,7 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.legs.crouchRise  = 10;
     } else if (speciesName === "beetle") {
         predator.armorPlated = true;
+        predator.reflectDamage = true;  // reflects incoming damage 1:1 back to attacker
         predator.segmentCornerRadius = 12;
         predator.body.head.size    = 0.5;
         predator.body.thorax.size  = 1.1;
@@ -672,14 +677,22 @@ function _drawClonesTab(PX, PY, PW, PH) {
         ctx.fillText(s.label, tx+sortW/2, ty+sortH/2);
     });
 
-    const listY = PY + sortH;
-    const listH = PH - sortH;
+    // Clone cap indicator
+    const liveClones = actors.filter(a => a.isClone && !a.dead).length;
+    const capY = PY + sortH + 4;
+    const capAtMax = liveClones >= MAX_CLONES;
+    ctx.fillStyle = capAtMax ? "#ff4444" : "#3a5040";
+    ctx.font = "bold 9px monospace"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
+    ctx.fillText(`CLONES: ${liveClones}/${MAX_CLONES}`, PX+PW-8, capY+10);
+
+    const listY = PY + sortH + 18;
+    const listH = PH - sortH - 18;
     const opts  = _sortedCloneOptions(getCloneOptions(), crystalCloneSort);
     const rowH  = 54;
 
     if (opts.length === 0) {
         ctx.fillStyle="#3a4055"; ctx.font="11px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
-        const msg = crystalCloneSort==="specials" ? "No clones with special attacks" : "No DNA splices available";
+        const msg = capAtMax ? `Clone cap reached (${MAX_CLONES}/${MAX_CLONES})` : crystalCloneSort==="specials" ? "No clones with special attacks" : "No DNA splices available";
         ctx.fillText(msg, PX+PW/2, listY+listH/2);
         return;
     }
@@ -707,7 +720,11 @@ function _drawClonesTab(PX, PY, PW, PH) {
         if (cl) {
             ctx.fillStyle="#3a4a50"; ctx.font="9px monospace";
             const parts=[`PWR:${cl.power||"?"}`, `HP:${cl.health||"?"}`];
-            if (cl.abdomenAttack||(cl.rangeDamage&&cl.rangeDamage>0)) parts.push("◈ SPECIAL");
+            if (cl.abdomenAttack||(cl.rangeDamage&&cl.rangeDamage>0)) {
+                if (opt.speciesName === "spider")  parts.push("◈ WEB SHOT");
+                else if (opt.speciesName === "mantis") parts.push("◈ AMBUSH");
+                else parts.push("◈ SPECIAL");
+            }
             ctx.fillText(parts.join("  "), PX+32, rowY+30);
         }
 
