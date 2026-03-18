@@ -84,6 +84,14 @@ let _nestCache  = [];  // nest tiles
 let _pillarCache= [];  // all live pillars
 let _cacheAge   = -999;
 
+// ── NETWORK RESONANCE STATE ─────────────────────────────────────────
+// networkStrength[el]  : tier 0-3 based on largest connected same-element group
+// networkIntegrity[el] : 0-100, accumulates while the network is active; resets on collapse
+// _prevNetworkTiers[el]: used to detect tier-ups for notification
+let networkStrength   = {};
+let networkIntegrity  = {};
+let _prevNetworkTiers = {};
+
 let projectiles = [], fragments = [], smoke = [], shards = [];
 let followerProjectiles = []; // ranged attacks from snipers/specials
 let pendingPillarDestruction = [];

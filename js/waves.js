@@ -148,11 +148,13 @@ function nextWave() {
     // Save gameState
     saveGameState();
 
-    // ── Restore surviving green pylons to full health ──
+    // ── Restore surviving green pylons to full health + earn seasoned bonus ──
     world.forEach(obj=>{
         if (obj.pillar && !obj.destroyed && obj.pillarTeam==="green" && obj.health>0) {
             obj.health = obj.maxHealth;
             obj.pendingDestroy = false;
+            // Upkeep reward: each night survived adds one seasoned level (max 3)
+            obj.seasoned = Math.min(3, (obj.seasoned||0) + 1);
         }
     });
 
@@ -228,6 +230,7 @@ function restartGame() {
     unlockedElements=new Set(["fire","electric"]);
     latchedPillar=null;activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};
     _cacheAge=-999; _pillarCache=[]; _wPylons=[]; _aPylons=[]; _uPylons=[];
+    ELEMENTS.forEach(e=>{ networkStrength[e.id]=0; networkIntegrity[e.id]=0; _prevNetworkTiers[e.id]=0; });
     activeDayZones=3;exploredZones=new Set();
     boughtItems.clear();
     crystal={ x:0,y:2,health:300,maxHealth:300,radius:0.8 };

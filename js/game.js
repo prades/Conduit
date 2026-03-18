@@ -41,6 +41,45 @@ function render() {
         _aPylons     = _pillarCache.filter(t => t.attackMode);
         _uPylons     = _pillarCache.filter(t => t.upgraded);
         _nestCache   = world.filter(t => t.nest);
+
+        // ── NETWORK RESONANCE — compute largest connected pylon group per element ──
+        ELEMENTS.forEach(elDef => {
+            const el = elDef.id;
+            const elPylons = _wPylons.filter(p => p.attackModeElement === el);
+            let maxGroupSize = 0;
+            const visited = new Set();
+            elPylons.forEach(start => {
+                if (visited.has(start)) return;
+                let groupSize = 0;
+                const q = [start];
+                while (q.length) {
+                    const cur = q.pop();
+                    if (visited.has(cur)) continue;
+                    visited.add(cur); groupSize++;
+                    elPylons.forEach(other => {
+                        if (!visited.has(other) && Math.hypot(cur.x-other.x, cur.y-other.y) <= 5.0)
+                            q.push(other);
+                    });
+                }
+                maxGroupSize = Math.max(maxGroupSize, groupSize);
+            });
+            const newTier = maxGroupSize >= 6 ? 3 : maxGroupSize >= 4 ? 2 : maxGroupSize >= 2 ? 1 : 0;
+            const prevTier = _prevNetworkTiers[el] || 0;
+            if (newTier > prevTier && newTier > 0) {
+                const tierLabel = ["", "I", "II", "III"][newTier];
+                floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80,
+                    text:`◈ ${elDef.label} NETWORK ${tierLabel}`, color:elDef.color, life:240, vy:-0.22, size:14 });
+                // Pulse burst from each pylon of this element
+                elPylons.forEach(p => {
+                    for (let _i=0;_i<6;_i++) elementEffects.push({type:"impact",x:p.x,y:p.y,color:elDef.color,radius:0.6,life:40,element:el});
+                });
+            }
+            _prevNetworkTiers[el] = newTier;
+            networkStrength[el]   = newTier;
+            // Integrity builds while connected, decays when no pylons active
+            if (newTier > 0) networkIntegrity[el] = Math.min(100, (networkIntegrity[el]||0) + newTier * 0.5);
+            else             networkIntegrity[el] = Math.max(0,   (networkIntegrity[el]||0) - 2);
+        });
     }
 
 
@@ -169,37 +208,108 @@ function render() {
                 const isEnemy = (a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone));
                 const isFriend = (a.team==="green"||a.isClone||a.isFollower);
 
+                // Network tier for this element (0-3); seasoned bonus (+25%) if avg seasoned level > 0
+                const _nTier = networkStrength[el] || 1;
+                const _elPylonsSeasoned = _wPylons.filter(p=>p.attackModeElement===el&&p.seasoned>0);
+                const _seasonBonus = _elPylonsSeasoned.length > 0 ? 1.25 : 1.0;
                 switch(el) {
-                    case "fire":
-                        if (isEnemy && frame%30===0) applyDamage(a, 6, null, "fire");
-                        break;
-                    case "ice":
-                        if (isEnemy) { a.slowed=40; a.slowFactor=0.35; }
-                        break;
-                    case "electric":
-                        if (isFriend && frame%10===0) {
-                            a.currentResonance = Math.min(100,(a.currentResonance||0)+2);
-                        }
-                        break;
-                    case "core":
-                        if (isFriend && frame%60===0) {
-                            a.shielded=true;
-                            a.shieldAmount=Math.min(20,(a.shieldAmount||0)+3);
-                        }
-                        break;
-                    case "flux":
+                    case "fire": {
                         if (isEnemy) {
-                            // Paired: pull toward midpoint at 2× solo strength
+                            const dmg  = Math.round((_nTier >= 3 ? 15 : _nTier >= 2 ? 10 : 6) * _seasonBonus);
+                            const intv = _nTier >= 3 ? 18 : _nTier >= 2 ? 24 : 30;
+                            if (frame % intv === 0) {
+                                applyDamage(a, dmg, null, "fire");
+                                // Tier 3: ignite — spread fire to enemies within 1.5 tiles
+                                if (_nTier >= 3 && Math.random() < 0.35) {
+                                    actors.forEach(other => {
+                                        if (other===a||other.dead||other.team!=="red") return;
+                                        if (Math.hypot(other.x-a.x,other.y-a.y) < 1.5) applyDamage(other, 4, null, "fire");
+                                    });
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    case "ice": {
+                        if (isEnemy) {
+                            if (_nTier >= 3) {
+                                // Deep freeze — near-zero speed, periodic ice damage
+                                a.slowed = 60; a.slowFactor = 0.08;
+                                if (frame % 60 === 0) applyDamage(a, Math.round(4 * _seasonBonus), null, "ice");
+                            } else if (_nTier >= 2) {
+                                a.slowed = 50; a.slowFactor = 0.20;
+                                // Random chance to freeze solid for 60 frames
+                                if (Math.random() < 0.015) { a.slowed = 90; a.slowFactor = 0.0; }
+                            } else {
+                                a.slowed = 40; a.slowFactor = 0.35;
+                            }
+                        }
+                        break;
+                    }
+                    case "electric": {
+                        if (isFriend && frame % 10 === 0) {
+                            const gain = Math.round((_nTier >= 3 ? 6 : _nTier >= 2 ? 4 : 2) * _seasonBonus);
+                            a.currentResonance = Math.min(100, (a.currentResonance||0) + gain);
+                            // Tier 2+: also accelerate ultimate charge for all network allies
+                            if (_nTier >= 2 && typeof a.ultimateCharge === "number") {
+                                a.ultimateCharge = Math.min(100, a.ultimateCharge + (_nTier >= 3 ? 2 : 1));
+                            }
+                        }
+                        break;
+                    }
+                    case "core": {
+                        const coreIntv = _nTier >= 3 ? 30 : _nTier >= 2 ? 40 : 60;
+                        if (isFriend && frame % coreIntv === 0) {
+                            const shGain = Math.round((_nTier >= 3 ? 8 : _nTier >= 2 ? 5 : 3) * _seasonBonus);
+                            const shCap  = _nTier >= 3 ? 50 : _nTier >= 2 ? 35 : 20;
+                            a.shielded = true;
+                            a.shieldAmount = Math.min(shCap, (a.shieldAmount||0) + shGain);
+                            a._shieldMax = shCap;
+                            // Tier 3: auto-repair broken shields (restore up to cap over time)
+                            if (_nTier >= 3 && a.shieldAmount > 0 && a.shieldAmount < shCap) {
+                                a.shieldAmount = Math.min(shCap, a.shieldAmount + 2);
+                            }
+                        }
+                        break;
+                    }
+                    case "flux": {
+                        if (isEnemy) {
+                            const pullSpd = (_nTier >= 3 ? 0.20 : _nTier >= 2 ? 0.15 : 0.10) * _seasonBonus;
                             const dx=midX-a.x, dy=midY-a.y, d=Math.hypot(dx,dy)||1;
-                            a.x+=dx/d*0.10; a.y+=dy/d*0.10;
+                            a.x+=dx/d*pullSpd; a.y+=dy/d*pullSpd;
+                            // Tier 3: vortex — pulled enemies take continuous damage
+                            if (_nTier >= 3 && frame % 30 === 0) applyDamage(a, Math.round(3*_seasonBonus), null, "flux");
+                            // Tier 2+: chain — pulled actors drag nearby enemies along
+                            if (_nTier >= 2 && frame % 20 === 0) {
+                                actors.forEach(other => {
+                                    if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
+                                    const od = Math.hypot(other.x-a.x, other.y-a.y);
+                                    if (od < 1.2 && od > 0.01) { other.x+=dx/d*0.05; other.y+=dy/d*0.05; }
+                                });
+                            }
                         }
                         break;
-                    case "toxic":
-                        if (isEnemy && frame%40===0) {
-                            applyDamage(a, 5, null, "toxic");
-                            if (Math.random()<0.3) { a.defenseShredded=90; a.defenseShredFactor=0.6; }
+                    }
+                    case "toxic": {
+                        const toxIntv = _nTier >= 3 ? 20 : _nTier >= 2 ? 28 : 40;
+                        if (isEnemy && frame % toxIntv === 0) {
+                            const tdmg = Math.round((_nTier >= 3 ? 12 : _nTier >= 2 ? 8 : 5) * _seasonBonus);
+                            applyDamage(a, tdmg, null, "toxic");
+                            const shredChance  = _nTier >= 3 ? 0.6 : _nTier >= 2 ? 0.5 : 0.3;
+                            const shredFactor  = _nTier >= 3 ? 0.35 : _nTier >= 2 ? 0.5 : 0.6;
+                            if (Math.random() < shredChance) { a.defenseShredded = 90; a.defenseShredFactor = shredFactor; }
+                            // Tier 3: cloud spreads poison debuff to nearby enemies
+                            if (_nTier >= 3) {
+                                actors.forEach(other => {
+                                    if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
+                                    if (Math.hypot(other.x-a.x, other.y-a.y) < 1.5) {
+                                        other.defenseShredded = 60; other.defenseShredFactor = 0.55;
+                                    }
+                                });
+                            }
                         }
                         break;
+                    }
                 }
                 // Predator pylon aggro — track how long a predator has been cooked by pylons
                 if (isEnemy && a instanceof Predator) {
@@ -980,6 +1090,9 @@ function render() {
                 const el = obj.attackModeElement;
                 const col2 = obj.attackModeColor||"#0f8";
                 const pulse2=0.4+0.4*Math.sin(frame*0.1); // hoisted — used in forEach AND solo-flux block
+                // Connection visual intensity scales with network tier
+                const _connTier = networkStrength[el] || 0;
+                const _connBoost = 1 + _connTier * 0.35; // 1.0 / 1.35 / 1.7 / 2.05
                 wavePylonsLocal.forEach(pb=>{
                     if (pb===obj||pb.attackModeElement!==obj.attackModeElement) return;
                     if (Math.hypot(obj.x-pb.x,obj.y-pb.y)>WCR) return;
@@ -1019,21 +1132,21 @@ function render() {
                     }
 
                     if (el==="fire") {
-                        // Fire wall — rises from pylon bases, ~half pylon height, semi-translucent
-                        ctx.globalAlpha=0.15+pulse2*0.08;
-                        ctx.strokeStyle="#ff3300"; ctx.lineWidth=12;
-                        ctx.shadowColor="#ff2200"; ctx.shadowBlur=16;
+                        // Fire wall — taller/more intense at higher tiers
+                        ctx.globalAlpha=Math.min(0.85,(0.15+pulse2*0.08)*_connBoost);
+                        ctx.strokeStyle="#ff3300"; ctx.lineWidth=10+_connTier*3;
+                        ctx.shadowColor="#ff2200"; ctx.shadowBlur=16+_connTier*8;
                         ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(pbpx,pbpy); ctx.stroke();
                         ctx.shadowBlur=0;
-                        const segs=14;
+                        const segs=14+_connTier*4;
                         for (let s=0;s<=segs;s++) {
                             const t=s/segs;
-                            const fx=px+(pbpx-px)*t, fy=py+(pbpy-py)*t; // ground-level base
+                            const fx=px+(pbpx-px)*t, fy=py+(pbpy-py)*t;
                             const flk=Math.sin(frame*0.18+s*1.5)*0.5+0.5;
-                            const h=12+flk*18; // max ~30px = half pylon height
-                            ctx.globalAlpha=(0.3+flk*0.25)*(0.45+pulse2*0.25); // translucent
+                            const h=(12+flk*18)*(1+_connTier*0.4); // taller at higher tiers
+                            ctx.globalAlpha=Math.min(0.85,(0.3+flk*0.25)*(0.45+pulse2*0.25)*_connBoost);
                             ctx.fillStyle=s%2===0?"#ff6600":"#ff3300";
-                            ctx.shadowColor="#ff4400"; ctx.shadowBlur=8;
+                            ctx.shadowColor="#ff4400"; ctx.shadowBlur=8+_connTier*4;
                             ctx.beginPath();
                             ctx.moveTo(fx-3,fy);
                             ctx.quadraticCurveTo(fx+2,fy-h*0.55,fx,fy-h);
@@ -1042,20 +1155,20 @@ function render() {
                         }
 
                     } else if (el==="ice") {
-                        // Ice field — frost band + crystal chevrons
-                        ctx.globalAlpha=0.18+pulse2*0.12;
-                        ctx.strokeStyle="#aaddff"; ctx.lineWidth=14;
-                        ctx.shadowColor="#88ccff"; ctx.shadowBlur=14;
+                        // Ice field — denser crystals + deeper blue at higher tiers
+                        ctx.globalAlpha=Math.min(0.85,(0.18+pulse2*0.12)*_connBoost);
+                        ctx.strokeStyle="#aaddff"; ctx.lineWidth=12+_connTier*4;
+                        ctx.shadowColor="#88ccff"; ctx.shadowBlur=14+_connTier*6;
                         ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
                         ctx.shadowBlur=0;
-                        const crysts=9;
+                        const crysts=9+_connTier*3;
                         for (let s=1;s<crysts;s++) {
                             const t=s/crysts;
                             const cx2=px+(pbpx-px)*t, cy2=y1+(y2-y1)*t;
-                            const sz=4+Math.sin(frame*0.05+s*1.2)*1.5;
-                            ctx.globalAlpha=0.55+pulse2*0.3;
-                            ctx.strokeStyle="#cceeFF"; ctx.lineWidth=1;
-                            ctx.shadowColor="#88ccff"; ctx.shadowBlur=5;
+                            const sz=(4+Math.sin(frame*0.05+s*1.2)*1.5)*(1+_connTier*0.25);
+                            ctx.globalAlpha=Math.min(0.9,(0.55+pulse2*0.3)*_connBoost);
+                            ctx.strokeStyle="#cceeFF"; ctx.lineWidth=1+_connTier*0.3;
+                            ctx.shadowColor="#88ccff"; ctx.shadowBlur=5+_connTier*3;
                             ctx.beginPath();
                             ctx.moveTo(cx2-sz,cy2); ctx.lineTo(cx2+sz,cy2);
                             ctx.moveTo(cx2,cy2-sz); ctx.lineTo(cx2,cy2+sz);
@@ -1065,16 +1178,19 @@ function render() {
                         }
 
                     } else if (el==="electric") {
-                        // Electric arc — jagged lightning bolt
-                        ctx.shadowColor="#88aaff"; ctx.shadowBlur=16;
-                        ctx.strokeStyle=`rgba(180,210,255,${0.7+pulse2*0.3})`;
-                        ctx.lineWidth=2.5; ctx.lineCap="round";
-                        ctx.beginPath(); ctx.moveTo(px,y1);
-                        for (let s=1;s<10;s++) {
-                            const t=s/10;
-                            ctx.lineTo(px+(pbpx-px)*t+(Math.random()-0.5)*14,y1+(y2-y1)*t+(Math.random()-0.5)*10);
+                        // Electric arc — more arcs + brighter at higher tiers
+                        const _arcCount = 1 + _connTier; // 1 / 2 / 3 / 4 arcs
+                        ctx.shadowColor="#88aaff"; ctx.shadowBlur=16+_connTier*8;
+                        ctx.strokeStyle=`rgba(180,210,255,${Math.min(1,0.7+pulse2*0.3)})`;
+                        ctx.lineWidth=1.5+_connTier*0.8; ctx.lineCap="round";
+                        for (let _ai=0;_ai<_arcCount;_ai++) {
+                            ctx.beginPath(); ctx.moveTo(px,y1);
+                            for (let s=1;s<10;s++) {
+                                const t=s/10;
+                                ctx.lineTo(px+(pbpx-px)*t+(Math.random()-0.5)*(14+_ai*5),y1+(y2-y1)*t+(Math.random()-0.5)*(10+_ai*3));
+                            }
+                            ctx.lineTo(pbpx,y2); ctx.stroke();
                         }
-                        ctx.lineTo(pbpx,y2); ctx.stroke();
                         // Thinner secondary arc
                         ctx.shadowBlur=6; ctx.strokeStyle=`rgba(200,220,255,${0.3+pulse2*0.2})`; ctx.lineWidth=1;
                         ctx.beginPath(); ctx.moveTo(px,y1);
@@ -1086,34 +1202,36 @@ function render() {
                         ctx.shadowBlur=0;
 
                     } else if (el==="flux") {
-                        // Flux paired — ribbon + orbiting particles converging on midpoint
+                        // Flux paired — ribbon + more orbiting particles at higher tiers
                         const midx=(px+pbpx)/2, midy=(y1+y2)/2;
-                        ctx.globalAlpha=0.28+pulse2*0.18;
-                        ctx.strokeStyle="#6600cc"; ctx.lineWidth=4+pulse2*2;
-                        ctx.shadowColor="#4400aa"; ctx.shadowBlur=12;
+                        ctx.globalAlpha=Math.min(0.85,(0.28+pulse2*0.18)*_connBoost);
+                        ctx.strokeStyle="#6600cc"; ctx.lineWidth=(4+pulse2*2)*(1+_connTier*0.3);
+                        ctx.shadowColor="#4400aa"; ctx.shadowBlur=12+_connTier*6;
                         ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                        for (let s=0;s<7;s++) {
-                            const phase=frame*0.07+s*(Math.PI*2/7);
-                            const r=10+Math.sin(phase*2)*4;
-                            ctx.globalAlpha=0.55+pulse2*0.3;
-                            ctx.fillStyle="#9922ff"; ctx.shadowBlur=7;
-                            ctx.beginPath(); ctx.arc(midx+Math.cos(phase)*r,midy+Math.sin(phase)*r*0.5,2.5,0,Math.PI*2); ctx.fill();
+                        // Flux particles — more orbiting dots at higher tiers
+                        const _fluxParts = 7 + _connTier * 3;
+                        for (let s=0;s<_fluxParts;s++) {
+                            const phase=frame*0.07+s*(Math.PI*2/_fluxParts);
+                            const r=(10+Math.sin(phase*2)*4)*(1+_connTier*0.2);
+                            ctx.globalAlpha=Math.min(0.9,(0.55+pulse2*0.3)*_connBoost);
+                            ctx.fillStyle="#9922ff"; ctx.shadowBlur=7+_connTier*3;
+                            ctx.beginPath(); ctx.arc(midx+Math.cos(phase)*r,midy+Math.sin(phase)*r*0.5,2.5+_connTier*0.5,0,Math.PI*2); ctx.fill();
                         }
                         ctx.shadowBlur=0;
 
                     } else if (el==="toxic") {
-                        // Toxic — sickly green fog band
-                        ctx.globalAlpha=0.2+pulse2*0.12;
-                        ctx.strokeStyle="#44cc44"; ctx.lineWidth=16;
-                        ctx.shadowColor="#22aa22"; ctx.shadowBlur=10;
+                        // Toxic — denser, larger fog cloud at higher tiers
+                        ctx.globalAlpha=Math.min(0.85,(0.2+pulse2*0.12)*_connBoost);
+                        ctx.strokeStyle="#44cc44"; ctx.lineWidth=14+_connTier*4;
+                        ctx.shadowColor="#22aa22"; ctx.shadowBlur=10+_connTier*5;
                         ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
                         ctx.shadowBlur=0;
-                        const blobs=8;
+                        const blobs=8+_connTier*3;
                         for (let s=0;s<blobs;s++) {
                             const t=(s+Math.sin(frame*0.04+s)*0.3)/blobs;
                             const bx=px+(pbpx-px)*t, by=y1+(y2-y1)*t;
-                            const br=4+Math.sin(frame*0.08+s*0.9)*2;
-                            ctx.globalAlpha=(0.3+pulse2*0.2);
+                            const br=(4+Math.sin(frame*0.08+s*0.9)*2)*(1+_connTier*0.3);
+                            ctx.globalAlpha=Math.min(0.85,(0.3+pulse2*0.2)*_connBoost);
                             const grad=ctx.createRadialGradient(bx,by,0,bx,by,br*3);
                             grad.addColorStop(0,"rgba(80,200,80,0.5)"); grad.addColorStop(1,"rgba(40,120,40,0)");
                             ctx.fillStyle=grad;
@@ -1121,20 +1239,20 @@ function render() {
                         }
 
                     } else if (el==="core") {
-                        // Core — solid energy barrier with shield ripples
-                        ctx.globalAlpha=0.25+pulse2*0.15;
-                        ctx.strokeStyle="#00ccaa"; ctx.lineWidth=12;
-                        ctx.shadowColor="#00aa88"; ctx.shadowBlur=14;
+                        // Core — shield barrier with more ripples at higher tiers
+                        ctx.globalAlpha=Math.min(0.85,(0.25+pulse2*0.15)*_connBoost);
+                        ctx.strokeStyle="#00ccaa"; ctx.lineWidth=10+_connTier*3;
+                        ctx.shadowColor="#00aa88"; ctx.shadowBlur=14+_connTier*6;
                         ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
                         ctx.shadowBlur=0;
-                        const ripples=5;
+                        const ripples=5+_connTier*2;
                         for (let s=1;s<=ripples;s++) {
                             const t=((s/ripples)+frame*0.01)%1;
                             const rx=px+(pbpx-px)*t, ry=y1+(y2-y1)*t;
-                            ctx.globalAlpha=(1-t)*0.5*pulse2;
-                            ctx.strokeStyle="#00ffcc"; ctx.lineWidth=2;
-                            ctx.shadowColor="#00ccaa"; ctx.shadowBlur=6;
-                            ctx.beginPath(); ctx.arc(rx,ry,5+t*12,0,Math.PI*2); ctx.stroke();
+                            ctx.globalAlpha=Math.min(0.9,(1-t)*0.5*pulse2*_connBoost);
+                            ctx.strokeStyle="#00ffcc"; ctx.lineWidth=1.5+_connTier*0.5;
+                            ctx.shadowColor="#00ccaa"; ctx.shadowBlur=6+_connTier*3;
+                            ctx.beginPath(); ctx.arc(rx,ry,(5+t*12)*(1+_connTier*0.15),0,Math.PI*2); ctx.stroke();
                         }
                         ctx.shadowBlur=0;
 
@@ -1251,25 +1369,62 @@ function render() {
                     const wcol = obj.attackModeColor||"#0f8";
                     const wpulse = 0.5+0.5*Math.sin(frame*0.08+(obj.pulseTimer||0)*0.05);
                     obj.pulseTimer=(obj.pulseTimer||0)+1;
-                    // Soft glow ring
-                    ctx.save(); ctx.globalAlpha=0.12+wpulse*0.1; ctx.fillStyle=wcol;
-                    ctx.beginPath(); ctx.arc(px,py-60,28+wpulse*6,0,Math.PI*2); ctx.fill(); ctx.restore();
+                    // Network tier boosts visual intensity
+                    const _wTier = networkStrength[obj.attackModeElement] || 0;
+                    const _tierMult = 1 + _wTier * 0.4; // 1.0 / 1.4 / 1.8 / 2.2
+                    const _wGlowR = (28 + wpulse*6) * Math.min(1.5, _tierMult);
+                    const _wGlowA = Math.min(0.55, (0.12 + wpulse*0.1) * _tierMult);
+                    // Soft glow ring — scales with tier
+                    ctx.save(); ctx.globalAlpha=_wGlowA; ctx.fillStyle=wcol;
+                    ctx.shadowColor=wcol; ctx.shadowBlur=_wTier > 1 ? 18*_tierMult : 0;
+                    ctx.beginPath(); ctx.arc(px,py-60,_wGlowR,0,Math.PI*2); ctx.fill();
+                    ctx.shadowBlur=0; ctx.restore();
+                    // Tier 2+: secondary outer ring pulses in sync
+                    if (_wTier >= 2) {
+                        ctx.save(); ctx.globalAlpha=(0.07+wpulse*0.07)*_tierMult;
+                        ctx.strokeStyle=wcol; ctx.lineWidth=2; ctx.shadowColor=wcol; ctx.shadowBlur=10;
+                        ctx.beginPath(); ctx.arc(px,py-60,_wGlowR+12+wpulse*8,0,Math.PI*2); ctx.stroke();
+                        ctx.shadowBlur=0; ctx.restore();
+                    }
                     // Slender column
                     ctx.fillStyle="#0a0a1a";
                     ctx.fillRect(px-10,py-110,20,140);
-                    // Glowing orb at top
-                    ctx.save(); ctx.shadowColor=wcol; ctx.shadowBlur=14+wpulse*10;
+                    // Seasoned gold band around column base
+                    if ((obj.seasoned||0) > 0) {
+                        const sLevel = Math.min(3, obj.seasoned);
+                        ctx.save();
+                        ctx.strokeStyle="#ffd700"; ctx.lineWidth=1+sLevel*0.5;
+                        ctx.globalAlpha=0.55+wpulse*0.25;
+                        ctx.shadowColor="#ffd700"; ctx.shadowBlur=4+sLevel*3;
+                        for (let _si=0;_si<sLevel;_si++) {
+                            ctx.beginPath(); ctx.rect(px-10-_si,py-20-_si*6,20+_si*2,3); ctx.stroke();
+                        }
+                        ctx.shadowBlur=0; ctx.restore();
+                    }
+                    // Glowing orb at top — size + blur scale with tier
+                    const _orbR = 9 + _wTier*2;
+                    const _orbBlur = (14+wpulse*10) * Math.min(2, _tierMult);
+                    ctx.save(); ctx.shadowColor=wcol; ctx.shadowBlur=_orbBlur;
                     ctx.fillStyle=wcol; ctx.globalAlpha=0.7+wpulse*0.3;
-                    ctx.beginPath(); ctx.arc(px,py-110,9,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(px,py-110,_orbR,0,Math.PI*2); ctx.fill();
                     ctx.restore();
-                    // Element label + effect description
-                    const PYLON_FX={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity well",toxic:"corrodes enemies"};
+                    // Element label + effect description (tier-aware)
+                    const PYLON_FX_TIER = {
+                        fire:     ["fire wall","heavy burn","ignite spread"],
+                        ice:      ["ice field","chill zone","deep freeze"],
+                        electric: ["arc chain","arc boost","max arc"],
+                        core:     ["shield barrier","fast shields","regen shields"],
+                        flux:     ["gravity well","chain pull","vortex"],
+                        toxic:    ["corrodes enemies","shred+plague","plague cloud"]
+                    };
                     const el0=obj.attackModeElement||"";
+                    const _tierDesc = _wTier > 0 ? (PYLON_FX_TIER[el0]?.[_wTier-1] || "") : (PYLON_FX_TIER[el0]?.[0] || "");
+                    const _tierBadge = _wTier > 0 ? [" T-I"," T-II"," T-III"][_wTier-1] : "";
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                     ctx.fillStyle=wcol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
-                    ctx.fillText(el0.toUpperCase(),px,py-124);
+                    ctx.fillText(el0.toUpperCase()+_tierBadge,px,py-124);
                     ctx.font="7px monospace"; ctx.globalAlpha=0.7;
-                    ctx.fillText(PYLON_FX[el0]||"",px,py-114);
+                    ctx.fillText(_tierDesc,px,py-114);
                     ctx.restore();
                 } else if (obj.attackMode) {
                     // ── ATTACK MODE — angular armed pylon ──
@@ -1693,6 +1848,9 @@ function render() {
     }
     ctx.restore();
 
+    // ── NETWORK STATUS HUD ──
+    drawNetworkStatusHUD();
+
     // ── SMOKE ──
     // Smoke is stored as world anchor (wx,wy) + screen offset (ox,oy) so particles
     // stay fixed to their vent position regardless of camera movement.
@@ -1833,3 +1991,100 @@ function render() {
 
     requestAnimationFrame(render);
 }
+
+// ─────────────────────────────────────────────────────────
+//  NETWORK STATUS HUD
+//  Shows active element networks, their tier, and integrity
+// ─────────────────────────────────────────────────────────
+function drawNetworkStatusHUD() {
+    const activeEls = ELEMENTS.filter(e => (networkStrength[e.id]||0) > 0);
+    if (activeEls.length === 0) return;
+
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+
+    const ROW_H   = 24;
+    const PAD     = 8;
+    const W       = 148;
+    const HEADER  = 16;
+    const H       = HEADER + activeEls.length * ROW_H + PAD;
+    const X       = canvas.width - W - 8;
+    const Y       = 75;
+
+    // Panel background
+    ctx.fillStyle   = "rgba(0,0,8,0.72)";
+    ctx.strokeStyle = "rgba(0,255,136,0.22)";
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(X, Y, W, H, 4);
+    else               ctx.rect(X, Y, W, H);
+    ctx.fill(); ctx.stroke();
+
+    // Header
+    ctx.fillStyle = "#0f8"; ctx.font = "bold 9px monospace"; ctx.textAlign = "left";
+    ctx.fillText("◈ NETWORK RESONANCE", X + PAD, Y + 11);
+
+    // Tier label lookup
+    const TIER_LABEL  = ["", "I", "II", "III"];
+    const TIER_COLOR  = ["", "#888888", "#aaddff", "#ffd700"];
+
+    // Per-element rows
+    activeEls.forEach((elDef, i) => {
+        const el        = elDef.id;
+        const tier      = networkStrength[el] || 0;
+        const integrity = networkIntegrity[el] || 0;
+        const ry        = Y + HEADER + i * ROW_H;
+
+        // Element glow dot
+        ctx.shadowColor = elDef.color; ctx.shadowBlur = 8;
+        ctx.fillStyle   = elDef.color;
+        ctx.beginPath(); ctx.arc(X + PAD + 4, ry + 8, 4, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur  = 0;
+
+        // Element name
+        ctx.fillStyle = elDef.color; ctx.font = "bold 9px monospace"; ctx.textAlign = "left";
+        ctx.fillText(elDef.label, X + PAD + 14, ry + 12);
+
+        // Effect description per tier
+        const EFFECT_DESC = {
+            fire:     ["","burn","heavy burn","ignite spread"],
+            electric: ["","resonance+","res+ult boost","max resonance"],
+            ice:      ["","slow","heavy slow","deep freeze"],
+            flux:     ["","pull","chain pull","vortex dmg"],
+            core:     ["","shield","fast shield","regen shield"],
+            toxic:    ["","corrode","shred+","plague cloud"]
+        };
+        const desc = EFFECT_DESC[el]?.[tier] || "";
+        ctx.fillStyle = "#888"; ctx.font = "7px monospace";
+        ctx.fillText(desc, X + PAD + 14, ry + 21);
+
+        // Tier badge
+        ctx.fillStyle = TIER_COLOR[tier] || "#888"; ctx.font = "bold 10px monospace"; ctx.textAlign = "right";
+        ctx.fillText("T" + TIER_LABEL[tier], X + W - PAD, ry + 12);
+
+        // Seasoned indicator (star per level)
+        const pylSeasoned = _wPylons.filter(p => p.attackModeElement===el && p.seasoned>0);
+        if (pylSeasoned.length > 0) {
+            const maxS = Math.max(...pylSeasoned.map(p=>p.seasoned||0));
+            ctx.fillStyle = "#ffd700"; ctx.font = "8px monospace";
+            ctx.fillText("★".repeat(Math.min(maxS,3)), X + W - PAD, ry + 22);
+        }
+
+        // Integrity bar (full row width)
+        const bX = X + PAD, bY = ry + ROW_H - 5, bW = W - PAD*2, bH = 2;
+        ctx.fillStyle = "rgba(255,255,255,0.08)"; ctx.fillRect(bX, bY, bW, bH);
+        ctx.fillStyle = elDef.color; ctx.globalAlpha = 0.6;
+        ctx.fillRect(bX, bY, bW * (integrity/100), bH);
+        ctx.globalAlpha = 1;
+    });
+
+    // Hint when any tier < 3 (nudge player to extend)
+    const maxTier = Math.max(0, ...activeEls.map(e => networkStrength[e.id]||0));
+    if (maxTier < 3) {
+        const needed = maxTier === 0 ? 2 : maxTier === 1 ? 4 : 6;
+        ctx.fillStyle = "rgba(160,160,160,0.5)"; ctx.font = "7px monospace"; ctx.textAlign = "center";
+        ctx.fillText(`Add pylons → Tier ${maxTier+1} (need ${needed})`, X + W/2, Y + H - 3);
+    }
+
+    ctx.restore();
+}
+
