@@ -53,8 +53,11 @@ function drawRadialMenu() {
     // ── LEFT = SWITCH / DESTROY / CONNECT (context) ───────
     const lHov=dist>RADIAL_RADIUS*0.25&&Math.abs(angle)>Math.PI*3/4;
     let leftLabel="SWITCH", leftAction="switch_context";
-    if (isLiveNest)        { leftLabel="DESTROY"; leftAction="destroy_nest"; }
-    else if (isBrokenNest) { leftLabel="CONNECT"; leftAction="connect_nest"; }
+    const isPylonSwitchable = isPylonTarget && (commandTarget.attackMode || commandTarget.waveMode);
+    if (!isPylonSwitchable) {
+        if (isLiveNest && !buildMode) { leftLabel="DESTROY"; leftAction="destroy_nest"; }
+        else if (isBrokenNest)        { leftLabel="CONNECT"; leftAction="connect_nest"; }
+    }
     drawRadialButton(commandX-RADIAL_RADIUS, commandY, leftLabel, lHov);
     if (lHov) selectedRadialAction=leftAction;
 
