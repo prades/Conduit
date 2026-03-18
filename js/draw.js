@@ -770,7 +770,6 @@ function _drawVirus(actor, px, py, drawCtx) {
             const armLen  = 6 + clawSize;
             const clawLen = 3 + clawSize * 0.9;
             const snapOut = actor.state === "attack" ? Math.sin(_atk) * 4 : 0;
-            const gripExt = actor.state === "attack" ? Math.sin(_atk) * 0.25 : 0; // claw opens on attack
 
             [-1, 1].forEach(side => {
                 const ax = px + side * ATTACH_X_OFF;
@@ -787,28 +786,38 @@ function _drawVirus(actor, px, py, drawCtx) {
                 drawCtx.beginPath(); drawCtx.moveTo(ax, ay); drawCtx.lineTo(elbX, elbY); drawCtx.stroke();
                 drawCtx.restore();
 
-                // Single grip claw at the elbow — two curved hooks facing forward
-                const armAng = Math.atan2(elbY - ay, elbX - ax);
-                // Grip hooks open slightly forward perpendicular to the arm
-                const GRIP_BASE = 0.35 + gripExt; // half-angle between the two hooks
+                // Singular 'c'-shaped claw on top of elbow
+                // Large rounded bottom, sharp tip pointing upward, opening faces outward
+                const cH  = clawLen * 1.5;                    // height (upward)
+                const cBW = clawLen * 0.8 + snapOut * 0.25;  // bottom width (large bottom of 'c')
+
+                // Base points (bottom of 'c') — outer edge and inner edge at elbow
+                const botOuterX = elbX + side * cBW;
+                const botOuterY = elbY;
+                const botInnerX = elbX;
+                const botInnerY = elbY;
+
+                // Sharp tip (top of 'c') — upward with slight outward lean
+                const tipX = elbX + side * cBW * 0.08;
+                const tipY = elbY - cH;
+
+                // Outer control: sweeps far outward → creates large rounded bottom curve
+                const ctrlOutX = elbX + side * cBW * 1.18;
+                const ctrlOutY = elbY - cH * 0.40;
+
+                // Inner control: tighter concave edge of 'c'
+                const ctrlInX = elbX + side * cBW * 0.16;
+                const ctrlInY = elbY - cH * 0.64;
+
                 drawCtx.save();
-                drawCtx.strokeStyle = flash ? "#fff" : _elCol2;
-                drawCtx.lineWidth = 1.5;
-                drawCtx.lineCap  = "round";
-                [-1, 1].forEach(hook => {
-                    // Each hook curves from the elbow outward then hooks back
-                    const hookAng = armAng + Math.PI * 0.5 * hook + GRIP_BASE * hook;
-                    const midX = elbX + Math.cos(hookAng) * clawLen * 0.6;
-                    const midY = elbY + Math.sin(hookAng) * clawLen * 0.6;
-                    // Tip curves back inward (toward center of claw)
-                    const tipAng = hookAng - hook * 0.9;
-                    const tipX  = midX + Math.cos(tipAng) * clawLen * 0.55;
-                    const tipY  = midY + Math.sin(tipAng) * clawLen * 0.55;
-                    drawCtx.beginPath();
-                    drawCtx.moveTo(elbX, elbY);
-                    drawCtx.quadraticCurveTo(midX, midY, tipX, tipY);
-                    drawCtx.stroke();
-                });
+                drawCtx.fillStyle = flash ? "#fff" : _elCol2;
+                drawCtx.beginPath();
+                drawCtx.moveTo(botOuterX, botOuterY);
+                drawCtx.quadraticCurveTo(ctrlOutX, ctrlOutY, tipX, tipY);
+                drawCtx.quadraticCurveTo(ctrlInX, ctrlInY, botInnerX, botInnerY);
+                drawCtx.closePath();
+                drawCtx.fill();
+
                 // Elbow joint dot
                 drawCtx.fillStyle = flash ? "#fff" : "#333";
                 drawCtx.beginPath(); drawCtx.arc(elbX, elbY, 1.8, 0, Math.PI * 2); drawCtx.fill();
