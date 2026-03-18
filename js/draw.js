@@ -734,71 +734,71 @@ function _drawVirus(actor, px, py, drawCtx) {
 
         // ── SAW-CREST ARMS ──
         if (sawSize > 0.3) {
-            const armLen   = 8 + sawSize * 1.5;
-            const discR    = 4 + sawSize;
-            const sawSpin  = actor.state === "attack" ? _atk * 3 : 0;
-            const TEETH    = 7;
+            const armLen  = 8 + sawSize * 1.5;
+            const TEETH   = Math.round(4 + sawSize * 1.2);
+            const toothH  = 1.8 + sawSize * 0.5;  // tooth height perpendicular to arm
+            const armW    = 2.5 + sawSize * 0.4;  // arm thickness
 
             [-1, 1].forEach(side => {
                 const ax = px + side * ATTACH_X_OFF;
                 const ay = ARM_ATTACH_Y;
-                // Arm direction: outward and slightly downward
-                const armEndX = ax + side * armLen * 0.85;
-                const armEndY = ay + armLen * 0.52;
+                // Arm runs outward and downward along the leg
+                const armEndX = ax + side * armLen * 0.75;
+                const armEndY = ay + armLen * 0.88;
 
-                // Upper arm — thick dark stroke
+                const dx = armEndX - ax;
+                const dy = armEndY - ay;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                const ux = dx / len;  // unit along arm
+                const uy = dy / len;
+                // Perpendicular (points away from body on the outer side)
+                const px2 = -uy * side;
+                const py2 =  ux * side;
+
                 drawCtx.save();
+
+                // Arm body — dark thick bar
                 drawCtx.strokeStyle = flash ? "#bbb" : "#1a1a1a";
-                drawCtx.lineWidth = 3.5;
+                drawCtx.lineWidth = armW;
                 drawCtx.lineCap = "round";
                 drawCtx.beginPath(); drawCtx.moveTo(ax, ay); drawCtx.lineTo(armEndX, armEndY); drawCtx.stroke();
-                drawCtx.restore();
 
-                // Saw disc
-                drawCtx.save();
-                drawCtx.translate(armEndX, armEndY);
-                drawCtx.rotate(sawSpin + side * 0.3);
-
-                // Disc body (dark fill)
-                drawCtx.beginPath(); drawCtx.arc(0, 0, discR - 1.5, 0, Math.PI * 2); drawCtx.closePath();
-                drawCtx.fillStyle = flash ? "#888" : "#141414";
-                drawCtx.fill();
-
-                // Teeth — triangular spikes around disc
+                // Serrated teeth running along the outer edge of the arm
                 drawCtx.fillStyle = flash ? "#fff" : _elCol2;
                 drawCtx.beginPath();
                 for (let t = 0; t < TEETH; t++) {
-                    const baseAng = (t / TEETH) * Math.PI * 2;
-                    const nextAng = ((t + 1) / TEETH) * Math.PI * 2;
-                    const midAng  = (baseAng + nextAng) * 0.5;
-                    const inner = discR - 1.5;
-                    const outer = discR + sawSize * 0.55;
-                    drawCtx.moveTo(Math.cos(baseAng) * inner, Math.sin(baseAng) * inner);
-                    drawCtx.lineTo(Math.cos(midAng)  * outer, Math.sin(midAng)  * outer);
-                    drawCtx.lineTo(Math.cos(nextAng) * inner, Math.sin(nextAng) * inner);
+                    const t0 = (t     / TEETH);
+                    const t1 = ((t + 1) / TEETH);
+                    const tm = (t0 + t1) * 0.5;
+                    // Base edge of arm at t0 and t1
+                    const b0x = ax + ux * len * t0 + px2 * (armW * 0.5);
+                    const b0y = ay + uy * len * t0 + py2 * (armW * 0.5);
+                    const b1x = ax + ux * len * t1 + px2 * (armW * 0.5);
+                    const b1y = ay + uy * len * t1 + py2 * (armW * 0.5);
+                    // Tooth tip midway along segment, sticking out perpendicularly
+                    const tipX = ax + ux * len * tm + px2 * (armW * 0.5 + toothH);
+                    const tipY = ay + uy * len * tm + py2 * (armW * 0.5 + toothH);
+                    drawCtx.moveTo(b0x, b0y);
+                    drawCtx.lineTo(tipX, tipY);
+                    drawCtx.lineTo(b1x, b1y);
                 }
                 drawCtx.closePath(); drawCtx.fill();
 
-                // Disc rim
-                drawCtx.strokeStyle = flash ? "#eee" : "rgba(255,255,255,0.35)";
-                drawCtx.lineWidth = 0.8;
-                drawCtx.beginPath(); drawCtx.arc(0, 0, discR - 1, 0, Math.PI * 2); drawCtx.stroke();
                 drawCtx.restore();
             });
         }
 
-        // ── ELBOW-CLAW ARMS ──
+        // ── ELBOW-CLAW ARMS (sniper) ──
         if (clawSize > 0.3) {
-            const armLen   = 6 + clawSize;
-            const clawLen  = 3 + clawSize * 0.8;
-            const snapOut  = actor.state === "attack" ? Math.sin(_atk) * 4 : 0;
-            const splayExt = actor.state === "attack" ? Math.sin(_atk) * 0.3 : 0;
-            const SPREAD   = 0.61 + splayExt; // ~35° base spread + dynamic
+            const armLen  = 6 + clawSize;
+            const clawLen = 3 + clawSize * 0.9;
+            const snapOut = actor.state === "attack" ? Math.sin(_atk) * 4 : 0;
+            const gripExt = actor.state === "attack" ? Math.sin(_atk) * 0.25 : 0; // claw opens on attack
 
             [-1, 1].forEach(side => {
                 const ax = px + side * ATTACH_X_OFF;
                 const ay = ARM_ATTACH_Y;
-                // Elbow position: outward and slightly upward; shifts out during attack
+                // Elbow: outward and slightly upward, snaps out during attack
                 const elbX = ax + side * (armLen * 0.9 + snapOut);
                 const elbY = ay - armLen * 0.35;
 
@@ -810,21 +810,31 @@ function _drawVirus(actor, px, py, drawCtx) {
                 drawCtx.beginPath(); drawCtx.moveTo(ax, ay); drawCtx.lineTo(elbX, elbY); drawCtx.stroke();
                 drawCtx.restore();
 
-                // Claw prongs (two lines from elbow in a V)
-                const baseAng = Math.atan2(elbY - ay, elbX - ax); // arm direction
+                // Single grip claw at the elbow — two curved hooks facing forward
+                const armAng = Math.atan2(elbY - ay, elbX - ax);
+                // Grip hooks open slightly forward perpendicular to the arm
+                const GRIP_BASE = 0.35 + gripExt; // half-angle between the two hooks
                 drawCtx.save();
                 drawCtx.strokeStyle = flash ? "#fff" : _elCol2;
-                drawCtx.lineWidth = 1.4;
-                drawCtx.lineCap = "round";
-                [-1, 1].forEach(prong => {
-                    const pAng  = baseAng + prong * SPREAD;
-                    const tipX  = elbX + Math.cos(pAng) * clawLen;
-                    const tipY  = elbY + Math.sin(pAng) * clawLen;
-                    drawCtx.beginPath(); drawCtx.moveTo(elbX, elbY); drawCtx.lineTo(tipX, tipY); drawCtx.stroke();
+                drawCtx.lineWidth = 1.5;
+                drawCtx.lineCap  = "round";
+                [-1, 1].forEach(hook => {
+                    // Each hook curves from the elbow outward then hooks back
+                    const hookAng = armAng + Math.PI * 0.5 * hook + GRIP_BASE * hook;
+                    const midX = elbX + Math.cos(hookAng) * clawLen * 0.6;
+                    const midY = elbY + Math.sin(hookAng) * clawLen * 0.6;
+                    // Tip curves back inward (toward center of claw)
+                    const tipAng = hookAng - hook * 0.9;
+                    const tipX  = midX + Math.cos(tipAng) * clawLen * 0.55;
+                    const tipY  = midY + Math.sin(tipAng) * clawLen * 0.55;
+                    drawCtx.beginPath();
+                    drawCtx.moveTo(elbX, elbY);
+                    drawCtx.quadraticCurveTo(midX, midY, tipX, tipY);
+                    drawCtx.stroke();
                 });
                 // Elbow joint dot
                 drawCtx.fillStyle = flash ? "#fff" : "#333";
-                drawCtx.beginPath(); drawCtx.arc(elbX, elbY, 1.5, 0, Math.PI * 2); drawCtx.fill();
+                drawCtx.beginPath(); drawCtx.arc(elbX, elbY, 1.8, 0, Math.PI * 2); drawCtx.fill();
                 drawCtx.restore();
             });
         }
