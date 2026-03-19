@@ -83,6 +83,8 @@ let _uPylons    = [];  // upgraded pylons
 let _nestCache  = [];  // nest tiles
 let _pillarCache= [];  // all live pillars
 let _cacheAge   = -999;
+let _wPylonPairs     = [];  // pre-computed connected pylon pairs (rebuilt with _wPylons)
+let _seasonBonusCache= {};  // seasoned-bonus multiplier per element (1.0 or 1.25)
 
 // ── NETWORK RESONANCE STATE ─────────────────────────────────────────
 // networkStrength[el]  : tier 0-3 based on largest connected same-element group

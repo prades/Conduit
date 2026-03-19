@@ -80,6 +80,25 @@ function render() {
             if (newTier > 0) networkIntegrity[el] = Math.min(100, (networkIntegrity[el]||0) + newTier * 0.5);
             else             networkIntegrity[el] = Math.max(0,   (networkIntegrity[el]||0) - 2);
         });
+
+        // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
+        _wPylonPairs = [];
+        for (let _pi = 0; _pi < _wPylons.length; _pi++) {
+            const pa = _wPylons[_pi];
+            for (let _pj = _pi + 1; _pj < _wPylons.length; _pj++) {
+                const pb = _wPylons[_pj];
+                if (pa.attackModeElement !== pb.attackModeElement) continue;
+                if ((pa.x-pb.x)*(pa.x-pb.x)+(pa.y-pb.y)*(pa.y-pb.y) > 25.0) continue; // 5.0²
+                _wPylonPairs.push({ pa, pb,
+                    el: pa.attackModeElement,
+                    col: pa.attackModeColor || "#0f8",
+                    midX: (pa.x+pb.x)*0.5, midY: (pa.y+pb.y)*0.5 });
+            }
+        }
+        ELEMENTS.forEach(elDef => {
+            const el = elDef.id;
+            _seasonBonusCache[el] = _wPylons.some(p => p.attackModeElement === el && p.seasoned > 0) ? 1.25 : 1.0;
+        });
     }
 
 
@@ -167,24 +186,12 @@ function render() {
     }
 
     // ── WAVE FUNCTION PYLONS — connect same-element pylons within 5 tiles, apply zone effects ──
-    const WAVE_CONNECT_RANGE = 5.0;
+    // _wPylonPairs is pre-computed every 60 frames in the cache section above
     const wavePylons = _wPylons;
 
-    // Draw connections and apply effects between pairs
-    const processed = new Set();
-    wavePylons.forEach(pa=>{
-        wavePylons.forEach(pb=>{
-            if (pa===pb) return;
-            const key = [pa,pb].map(p=>p.x+","+p.y).sort().join("|");
-            if (processed.has(key)) return;
-            if (pa.attackModeElement !== pb.attackModeElement) return;
-            const dist = Math.hypot(pa.x-pb.x, pa.y-pb.y);
-            if (dist > WAVE_CONNECT_RANGE) return;
-            processed.add(key);
-
-            const el = pa.attackModeElement;
-            const col = pa.attackModeColor || "#0f8";
-            const midX = (pa.x+pb.x)*0.5, midY = (pa.y+pb.y)*0.5;
+    // Apply effects for each pre-computed connected pair
+    _wPylonPairs.forEach(pair=>{
+        const {pa, pb, el, col, midX, midY} = pair;
 
             // Spawn periodic zone effect particles
             if (frame % 20 === 0) {
@@ -195,10 +202,15 @@ function render() {
 
             // Apply zone effects every 2 frames — visual / cooldown guards inside handle timing
             if (frame % 2 !== 0) return;
+
+            // Compute per-element constants once per pair (not once per actor)
+            const _nTier = networkStrength[el] || 1;
+            const _seasonBonus = _seasonBonusCache[el] || 1.0;
+
+            const lx=pb.x-pa.x, ly=pb.y-pa.y, len2=lx*lx+ly*ly;
             actors.forEach(a=>{
                 if (!a||a.dead) return;
                 // Distance from point to line segment pa→pb
-                const lx=pb.x-pa.x, ly=pb.y-pa.y, len2=lx*lx+ly*ly;
                 let t2 = len2>0 ? ((a.x-pa.x)*lx+(a.y-pa.y)*ly)/len2 : 0;
                 t2=Math.max(0,Math.min(1,t2));
                 const cx2=pa.x+t2*lx, cy2=pa.y+t2*ly;
@@ -208,10 +220,6 @@ function render() {
                 const isEnemy = (a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone));
                 const isFriend = (a.team==="green"||a.isClone||a.isFollower);
 
-                // Network tier for this element (0-3); seasoned bonus (+25%) if avg seasoned level > 0
-                const _nTier = networkStrength[el] || 1;
-                const _elPylonsSeasoned = _wPylons.filter(p=>p.attackModeElement===el&&p.seasoned>0);
-                const _seasonBonus = _elPylonsSeasoned.length > 0 ? 1.25 : 1.0;
                 switch(el) {
                     case "fire": {
                         if (isEnemy) {
@@ -324,7 +332,6 @@ function render() {
                     if (a.pylonExposureFrames) a.pylonExposureFrames = Math.max(0, a.pylonExposureFrames - 2);
                 }
             });
-        });
     });
 
     // Core triangle/square zone — needs 3+ pylons to form enclosed zone
@@ -347,6 +354,7 @@ function render() {
     }
 
     // ── FLUX SOLO — pulls enemies toward itself with no partner required ──
+    const WAVE_CONNECT_RANGE = 5.0;
     wavePylons.forEach(pv=>{
         if (pv.attackModeElement!=="flux") return;
         const hasPartner = wavePylons.some(q=>q!==pv&&q.attackModeElement==="flux"&&Math.hypot(pv.x-q.x,pv.y-q.y)<=WAVE_CONNECT_RANGE);
