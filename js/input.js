@@ -165,7 +165,7 @@ canvas.addEventListener('pointerup', e=>{
     }
     // ── END ULTIMATE DOUBLE-TAP DETECTION ────────────────
 
-    if (touchMoved && gesturePoints.length>=5) {
+    if (touchMoved && gesturePoints.length>=5 && !commandMode) {
         // 1. Follower → enemy targeting line
         const ftoe=detectFollowerToEnemyGesture(pressX,pressY,e.clientX,e.clientY);
         if (ftoe) {
