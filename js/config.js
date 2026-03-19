@@ -176,6 +176,11 @@ let crystalCloneSort = "species";  // "species"|"combat"|"defense"|"hp"|"special
 let crystalModSlider = 0;          // 0.0 = all elements  →  1.0 = mono
 let activeCrystalBuild = null;     // null | "ghostphage"
 
+// ── PYLON BUILD CONFIRMATION ───────────────────────────────
+let pylonConfirmOpen   = false;
+let pylonConfirmEl     = null;    // element object to confirm
+let pylonConfirmTarget = null;    // tile to build on
+
 // ── CRYSTAL MODULATION ────────────────────────────────────
 // Pair map: each modulator element unlocks a two-element pair
 const MODULATOR_PAIRS = {

@@ -169,7 +169,7 @@ function drawElementPicker() {
 
     // Sub-label
     ctx.fillStyle = "#ff0"; ctx.font = "10px monospace";
-    const subText = elementPickerMode === "build" ? "Cost: 10 shards" :
+    const subText = elementPickerMode === "build" ? "Cost: 40 shards" :
         (elementPickerTarget && (elementPickerTarget.attackMode || elementPickerTarget.waveMode) ? "Element change — free" : "Requires a follower sacrifice");
     ctx.fillText(subText, px + pw/2, py + 44);
 
@@ -242,8 +242,12 @@ function _handleElementPickerTap(tx, ty) {
         if (el && unlockedElements.has(el.id)) {
             const mode = elementPickerMode, target = elementPickerTarget;
             elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;
-            if (mode === "build")   _executeBuild(el, target);
-            else if (mode === "upgrade") _executeUpgrade(el, target);
+            if (mode === "build") {
+                // Show confirmation dialog before building
+                pylonConfirmOpen = true; pylonConfirmEl = el; pylonConfirmTarget = target;
+            } else if (mode === "upgrade") {
+                _executeUpgrade(el, target);
+            }
         }
         return true;
     }
@@ -391,8 +395,103 @@ function _handleInfoPanelTap(tx, ty) {
     return true;
 }
 
+// ─────────────────────────────────────────────────────────
+//  PYLON BUILD CONFIRMATION DIALOG
+// ─────────────────────────────────────────────────────────
+const _PC_W = 280, _PC_H = 180;
+
+function drawPylonConfirm() {
+    if (!pylonConfirmOpen || !pylonConfirmEl) return;
+    const el = pylonConfirmEl;
+    const canAfford = shardCount >= 40;
+    const pw = _PC_W, ph = _PC_H;
+    const px = Math.round((canvas.width  - pw) / 2);
+    const py = Math.round((canvas.height - ph) / 2);
+
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+
+    // Background + border
+    ctx.fillStyle   = "rgba(4,16,10,0.97)";
+    ctx.strokeStyle = "#0f8"; ctx.lineWidth = 2;
+    _epRoundRect(px, py, pw, ph, 10);
+    ctx.fill(); ctx.stroke();
+
+    // Title
+    ctx.fillStyle = "#0ff"; ctx.font = "bold 12px monospace"; ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("BUILD PYLON?", px + pw/2, py + 22);
+
+    // Divider
+    ctx.strokeStyle = "#0a4"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px+10, py+36); ctx.lineTo(px+pw-10, py+36); ctx.stroke();
+
+    // Element row
+    ctx.fillStyle = el.color;
+    ctx.shadowColor = el.color; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.arc(px + 36, py + 62, 8, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#fff"; ctx.font = "13px monospace"; ctx.textAlign = "left";
+    ctx.fillText(el.label.toUpperCase(), px + 52, py + 62);
+
+    // Cost row
+    ctx.fillStyle = canAfford ? "#ff0" : "#f44"; ctx.font = "11px monospace"; ctx.textAlign = "center";
+    ctx.fillText("Cost: 40 shards  (have: "+shardCount+")", px + pw/2, py + 92);
+
+    // SUBMIT button
+    const submitY = py + 112;
+    ctx.fillStyle = canAfford ? "rgba(0,60,20,0.95)" : "rgba(20,20,20,0.9)";
+    ctx.strokeStyle = canAfford ? "#0f8" : "#444"; ctx.lineWidth = 2;
+    _epRoundRect(px + 14, submitY, pw - 28, 28, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = canAfford ? "#0f8" : "#555"; ctx.font = "bold 12px monospace"; ctx.textAlign = "center";
+    ctx.fillText("SUBMIT", px + pw/2, submitY + 14);
+
+    // CANCEL button
+    const cancelY = py + 146;
+    ctx.fillStyle = "rgba(10,10,10,0.9)";
+    ctx.strokeStyle = "#444"; ctx.lineWidth = 1;
+    _epRoundRect(px + 14, cancelY, pw - 28, 24, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#666"; ctx.font = "11px monospace";
+    ctx.fillText("CANCEL", px + pw/2, cancelY + 12);
+
+    ctx.restore();
+}
+
+function _handlePylonConfirmTap(tx, ty) {
+    if (!pylonConfirmOpen) return false;
+    const pw = _PC_W, ph = _PC_H;
+    const px = Math.round((canvas.width  - pw) / 2);
+    const py = Math.round((canvas.height - ph) / 2);
+
+    // Tap outside → cancel
+    if (tx < px || tx > px+pw || ty < py || ty > py+ph) {
+        pylonConfirmOpen = false; pylonConfirmEl = null; pylonConfirmTarget = null;
+        return true;
+    }
+
+    const submitY = py + 112, cancelY = py + 146;
+
+    if (ty >= submitY && ty < submitY + 28) {
+        if (shardCount >= 40) {
+            const el = pylonConfirmEl, t = pylonConfirmTarget;
+            pylonConfirmOpen = false; pylonConfirmEl = null; pylonConfirmTarget = null;
+            _executeBuildInstant(el, t);
+        } else {
+            floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 40 SHARDS",color:"#f44",life:90,vy:-0.2});
+        }
+        return true;
+    }
+    if (ty >= cancelY && ty < cancelY + 24) {
+        pylonConfirmOpen = false; pylonConfirmEl = null; pylonConfirmTarget = null;
+        return true;
+    }
+    return true; // absorb all taps while open
+}
+
 // Central overlay tap dispatcher — call from pointerup handler
 function handleOverlayPanelTap(tx, ty) {
+    if (pylonConfirmOpen)  return _handlePylonConfirmTap(tx, ty);
     if (elementPickerOpen) return _handleElementPickerTap(tx, ty);
     if (infoPanelOpen)     return _handleInfoPanelTap(tx, ty);
     return false;

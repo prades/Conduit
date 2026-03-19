@@ -78,6 +78,26 @@ function _executeBuild(el, t) {
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:"#0f8",life:100,vy:-0.2});
 }
 
+function _executeBuildInstant(el, t) {
+    if (!t || shardCount < 40) {
+        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 40 SHARDS",color:"#f44",life:90,vy:-0.2});
+        return;
+    }
+    shardCount -= 40; saveShards();
+    t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=80;
+    t.upgraded=false; t.destroyed=false;
+    t.reconstructing=false; t.workers=[];
+    t.constructing=false; t.constructProgress=1; t.health=t.maxHealth;
+    // Auto-activate with the chosen element (no follower merge needed)
+    if (unlockedElements.has(el.id)) {
+        t.attackMode=true; t.waveMode=false;
+        t.attackModeElement=el.id; t.attackModeColor=el.color;
+        t.attackPower=15; t.attackRange=2.5;
+        t.chosenElement=el.id; t.chosenColor=el.color;
+    }
+    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
+}
+
 function _executeUpgrade(el, pylon) {
     if (!pylon || !pylon.pillar || pylon.destroyed) return;
     if (pylon.attackMode || pylon.waveMode) {
@@ -141,10 +161,10 @@ function executeCommand() {
             if (pylon && pylon.pillar && !pylon.destroyed) {
                 openElementPicker("upgrade", pylon);
             } else if (commandTarget) {
-                if (shardCount >= 10) {
+                if (shardCount >= 40) {
                     openElementPicker("build", commandTarget);
                 } else {
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 10 SHARDS TO BUILD",color:"#f44",life:90,vy:-0.2});
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 40 SHARDS TO BUILD",color:"#f44",life:90,vy:-0.2});
                 }
             }
             break;

@@ -457,6 +457,7 @@ const CTABS = [
     { id:"modulation", label:"MODULATION", color:"#aaddff" },
     { id:"status",     label:"STATUS",     color:"#4499ff" },
     { id:"info",       label:"INFO",       color:"#ffcc44" },
+    { id:"recruit",    label:"RECRUIT",    color:"#0f8"    },
 ];
 const CSORTS = [
     { id:"species",  label:"SPECIES"  },
@@ -653,6 +654,7 @@ function drawCrystalPanel() {
         case "modulation": _drawModTab(PX, contentY, PW, contentH, scheme, cycleColor); break;
         case "status":     _drawStatusTab(PX, contentY, PW, contentH); break;
         case "info":       _drawInfoTab(PX, contentY, PW, contentH); break;
+        case "recruit":    _drawRecruitTab(PX, contentY, PW, contentH); break;
     }
     ctx.restore();
     ctx.restore();
@@ -958,6 +960,32 @@ function _drawInfoTab(PX, PY, PW, PH) {
     });
 }
 
+// ── Tab: Recruit ──────────────────────────────────────────
+function _drawRecruitTab(PX, PY, PW, PH) {
+    const canAfford = shardCount >= 30;
+    ctx.textBaseline = "middle";
+
+    // Header
+    ctx.fillStyle = "#0f8"; ctx.font = "bold 12px monospace"; ctx.textAlign = "center";
+    ctx.fillText("RECRUIT FOLLOWER", PX + PW/2, PY + 22);
+
+    ctx.fillStyle = "#777"; ctx.font = "10px monospace";
+    ctx.fillText("Spawns a follower of a random unlocked element", PX + PW/2, PY + 44);
+
+    // Shard display
+    ctx.fillStyle = canAfford ? "#ff0" : "#f44"; ctx.font = "11px monospace";
+    ctx.fillText("Shards: " + shardCount + " / 30 needed", PX + PW/2, PY + 68);
+
+    // Button
+    const btnY = PY + 88, btnH = 36;
+    window._recruitBtnBounds = { x: PX + 20, y: btnY, w: PW - 40, h: btnH };
+    ctx.fillStyle = canAfford ? "rgba(0,60,20,0.95)" : "rgba(20,20,20,0.9)";
+    ctx.strokeStyle = canAfford ? "#0f8" : "#444"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(PX + 20, btnY, PW - 40, btnH, 6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = canAfford ? "#0f8" : "#555"; ctx.font = "bold 13px monospace"; ctx.textAlign = "center";
+    ctx.fillText("SPAWN FOLLOWER — 30 SHARDS", PX + PW/2, btnY + btnH/2);
+}
+
 // ── Panel input handler ───────────────────────────────────
 function handleCrystalPanelInput(ex, ey, isDown) {
     if (!crystalMenuOpen) return false;
@@ -1027,6 +1055,22 @@ function handleCrystalPanelInput(ex, ey, isDown) {
             if (ex>=b2._bx&&ex<=b2._bx+b2._bw&&ey>=b2._by&&ey<=b2._by+b2._bh) {
                 activeCrystalBuild=(activeCrystalBuild===b2.id)?null:b2.id; return true;
             }
+        }
+    }
+
+    if (crystalMenuTab==="recruit" && !isDown) {
+        const rb = window._recruitBtnBounds;
+        if (rb && ex>=rb.x && ex<=rb.x+rb.w && ey>=rb.y && ey<=rb.y+rb.h) {
+            if (shardCount >= 30) {
+                shardCount -= 30; saveShards();
+                const pool = [...unlockedElements];
+                const el = pool[Math.floor(Math.random()*pool.length)] || "fire";
+                spawnFollowerAtCrystal(el);
+                floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"FOLLOWER RECRUITED!",color:"#0f8",life:100,vy:-0.2});
+            } else {
+                floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 30 SHARDS",color:"#f44",life:90,vy:-0.2});
+            }
+            return true;
         }
     }
 

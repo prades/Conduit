@@ -1975,6 +1975,7 @@ function render() {
     drawGestureFeedback();
     drawFollowerElementUI();
     drawElementPicker();
+    drawPylonConfirm();
     drawInfoPanel();
     updatePreview();
 
