@@ -38,10 +38,12 @@ function drawRadialMenu() {
         if (tHov) selectedRadialAction="build_upgrade";
     }
 
-    // ── DOWN = POSITION ────────────────────────────────────
-    const dHov=dist>RADIAL_RADIUS*0.25&&angle>Math.PI/4&&angle<3*Math.PI/4;
-    drawRadialButton(commandX, commandY+RADIAL_RADIUS, "POSITION", dHov);
-    if (dHov) selectedRadialAction="position";
+    // ── DOWN = POSITION — hidden in build mode ─────────────
+    if (!buildMode) {
+        const dHov=dist>RADIAL_RADIUS*0.25&&angle>Math.PI/4&&angle<3*Math.PI/4;
+        drawRadialButton(commandX, commandY+RADIAL_RADIUS, "POSITION", dHov);
+        if (dHov) selectedRadialAction="position";
+    }
 
     // ── RIGHT = INFO — hidden when a pylon is targeted (UPGRADE/SWITCH take priority) ──
     if (!isPylonTarget) {

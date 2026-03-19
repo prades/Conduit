@@ -53,13 +53,13 @@ function _executeBuild(el, t) {
     t.attackModeElement=null; t.attackModeColor=null;
     t.reconstructing=false; t.workers=[];
     if (buildMode) {
-        const builderPool=[...getCommandPool().filter(a=>!a.dead&&!a.job),...followers.filter(a=>!a.dead&&!a.job)]
+        const builderPool=[...getCommandPool().filter(a=>!a.dead&&(!a.job||a.job.type!=="attack")),...followers.filter(a=>!a.dead&&(!a.job||a.job.type!=="attack"))]
             .filter((a,i,arr)=>arr.indexOf(a)===i).slice(0,4);
         if (builderPool.length === 0) {
-            // No idle followers available — abort and refund
+            // No available followers — abort and refund
             shardCount += 10; saveShards();
             t.pillar=false; t.constructing=false;
-            floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NO IDLE FOLLOWERS TO BUILD",color:"#f44",life:90,vy:-0.2});
+            floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NO FOLLOWERS AVAILABLE TO BUILD",color:"#f44",life:90,vy:-0.2});
             return;
         }
         t.constructing=true; t.constructProgress=0; t.health=0;
