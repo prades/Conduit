@@ -205,4 +205,5 @@ function toggleControlsMenu() {
     if (!m) return;
     const isHidden = !m.style.display || m.style.display === "none";
     m.style.display = isHidden ? "flex" : "none";
+    m.style.flexDirection = "column";
 }

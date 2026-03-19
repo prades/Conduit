@@ -86,10 +86,11 @@
     #controlsMenu {
         display: none; position: fixed; top: 50%; left: 50%;
         transform: translate(-50%, -50%);
+        flex-direction: column;
         background: rgba(0,8,4,0.97); border: 2px solid #0f8;
         border-radius: 8px; padding: 16px 20px;
         font-family: monospace; color: #0f8;
-        z-index: 2000; min-width: 290px; max-width: 92vw;
+        z-index: 2000; width: min(560px, 94vw);
     }
     .ctrl-title { color: #0ff; font-size: 0.82rem; letter-spacing: 2px; margin: 8px 0 5px; }
     .ctrl-row { font-size: 0.76rem; margin: 4px 0; display: flex; align-items: center; gap: 8px; color: #aad; }
@@ -102,10 +103,6 @@
     /* Element picker and info panel are canvas-drawn — no HTML overlay needed */
 
     /* ── CONTROLS MENU TABS ── */
-    #controlsMenu {
-        min-width: 320px; max-width: 94vw;
-        flex-direction: column;
-    }
     .cm-tabs {
         display: flex; gap: 2px; margin-bottom: 10px;
         border-bottom: 1px solid #0f8; padding-bottom: 4px;
