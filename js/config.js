@@ -83,7 +83,8 @@ let _uPylons    = [];  // upgraded pylons
 let _nestCache  = [];  // nest tiles
 let _pillarCache= [];  // all live pillars
 let _cacheAge   = -999;
-let _wPylonPairs     = [];  // pre-computed connected pylon pairs (rebuilt with _wPylons)
+let _wPylonPairs       = [];       // pre-computed connected pylon pairs (rebuilt with _wPylons)
+let _pylonsWithPartner = new Set(); // pylons that have ≥1 connected partner (rebuilt with _wPylonPairs)
 let _seasonBonusCache= {};  // seasoned-bonus multiplier per element (1.0 or 1.25)
 
 // ── NETWORK RESONANCE STATE ─────────────────────────────────────────

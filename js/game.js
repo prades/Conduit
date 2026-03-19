@@ -95,6 +95,10 @@ function render() {
                     midX: (pa.x+pb.x)*0.5, midY: (pa.y+pb.y)*0.5 });
             }
         }
+        // O(1) partner lookup used by solo-flux ring and future checks
+        _pylonsWithPartner = new Set();
+        _wPylonPairs.forEach(({pa, pb}) => { _pylonsWithPartner.add(pa); _pylonsWithPartner.add(pb); });
+
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
             _seasonBonusCache[el] = _wPylons.some(p => p.attackModeElement === el && p.seasoned > 0) ? 1.25 : 1.0;
@@ -1091,209 +1095,25 @@ function render() {
                 ctx.restore();
             }
 
-            // Wave function pylon connection — element-specific visual field
-            if (obj.pillar&&!obj.destroyed&&obj.waveMode&&obj.attackModeElement) {
-                const wavePylonsLocal = _wPylons;
-                const WCR = 5.0;
-                const el = obj.attackModeElement;
-                const col2 = obj.attackModeColor||"#0f8";
-                const pulse2=0.4+0.4*Math.sin(frame*0.1); // hoisted — used in forEach AND solo-flux block
-                // Connection visual intensity scales with network tier
-                const _connTier = networkStrength[el] || 0;
-                const _connBoost = 1 + _connTier * 0.35; // 1.0 / 1.35 / 1.7 / 2.05
-                wavePylonsLocal.forEach(pb=>{
-                    if (pb===obj||pb.attackModeElement!==obj.attackModeElement) return;
-                    if (Math.hypot(obj.x-pb.x,obj.y-pb.y)>WCR) return;
-                    if (pb.x+pb.y*1000 < obj.x+obj.y*1000) return;
-                    const pbpx=(pb.x-player.visualX-(pb.y-player.visualY))*TILE_W+canvas.width/2;
-                    const pbpy=(pb.x-player.visualX+(pb.y-player.visualY))*TILE_H+canvas.height/2;
-                    const y1=py-60, y2=pbpy-60;
+            // Solo flux pylon — inward-pulling glow ring (only when unpaired)
+            // Connection rendering moved to post-draw _wPylonPairs pass (eliminates O(N²) scan)
+            if (obj.pillar&&!obj.destroyed&&obj.waveMode&&obj.attackModeElement==="flux") {
+                if (!_pylonsWithPartner.has(obj)) {
+                    const pulse2=0.4+0.4*Math.sin(frame*0.1);
+                    const r=22+pulse2*8;
                     ctx.save();
-
-                    // ── PHYSICAL CABLE LAYER — drawn first, element effects render on top ──
-                    {
-                        const cDist=Math.hypot(pbpx-px,pbpy-py);
-                        const sag=Math.min(55,cDist*0.22);
-                        const midX=(px+pbpx)/2, midY=(py+pbpy)/2+sag;
-                        const elCol=obj.attackModeColor||"#0f8";
-                        const bundles=[
-                            {ox:-3,oy:-2,w:2.5,alpha:0.85},
-                            {ox: 0,oy: 2,w:3.0,alpha:0.90},
-                            {ox: 4,oy:-1,w:2.0,alpha:0.75},
-                        ];
-                        ctx.shadowBlur=0;
-                        bundles.forEach(b=>{
-                            const sx=px+b.ox, sy=py+b.oy;
-                            const ex=pbpx+b.ox, ey=pbpy+b.oy;
-                            const cy1=midY+b.oy, cy2=midY+b.oy;
-                            ctx.globalAlpha=b.alpha*0.9;
-                            ctx.strokeStyle="#111418"; ctx.lineWidth=b.w+1.5;
-                            ctx.beginPath(); ctx.moveTo(sx,sy);
-                            ctx.bezierCurveTo(midX+b.ox,cy1,midX+b.ox,cy2,ex,ey);
-                            ctx.stroke();
-                            ctx.strokeStyle=elCol; ctx.lineWidth=0.8; ctx.globalAlpha=0.18;
-                            ctx.beginPath(); ctx.moveTo(sx,sy);
-                            ctx.bezierCurveTo(midX+b.ox,cy1,midX+b.ox,cy2,ex,ey);
-                            ctx.stroke();
-                        });
-                        ctx.globalAlpha=1;
+                    ctx.globalAlpha=0.12+pulse2*0.08; ctx.fillStyle="#6600cc";
+                    ctx.shadowColor="#4400aa"; ctx.shadowBlur=18;
+                    ctx.beginPath(); ctx.arc(px,py-60,r,0,Math.PI*2); ctx.fill();
+                    ctx.shadowBlur=0;
+                    for (let s=0;s<5;s++) {
+                        const phase=frame*0.07+s*(Math.PI*2/5);
+                        const sr=14+Math.sin(phase)*5;
+                        ctx.globalAlpha=0.45+pulse2*0.2; ctx.fillStyle="#8800ff"; ctx.shadowBlur=5;
+                        ctx.beginPath(); ctx.arc(px+Math.cos(phase)*sr,py-60+Math.sin(phase)*sr*0.5,2,0,Math.PI*2); ctx.fill();
                     }
-
-                    if (el==="fire") {
-                        // Fire wall — taller/more intense at higher tiers
-                        ctx.globalAlpha=Math.min(0.85,(0.15+pulse2*0.08)*_connBoost);
-                        ctx.strokeStyle="#ff3300"; ctx.lineWidth=10+_connTier*3;
-                        ctx.shadowColor="#ff2200"; ctx.shadowBlur=16+_connTier*8;
-                        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(pbpx,pbpy); ctx.stroke();
-                        ctx.shadowBlur=0;
-                        const segs=14+_connTier*4;
-                        for (let s=0;s<=segs;s++) {
-                            const t=s/segs;
-                            const fx=px+(pbpx-px)*t, fy=py+(pbpy-py)*t;
-                            const flk=Math.sin(frame*0.18+s*1.5)*0.5+0.5;
-                            const h=(12+flk*18)*(1+_connTier*0.4); // taller at higher tiers
-                            ctx.globalAlpha=Math.min(0.85,(0.3+flk*0.25)*(0.45+pulse2*0.25)*_connBoost);
-                            ctx.fillStyle=s%2===0?"#ff6600":"#ff3300";
-                            ctx.shadowColor="#ff4400"; ctx.shadowBlur=8+_connTier*4;
-                            ctx.beginPath();
-                            ctx.moveTo(fx-3,fy);
-                            ctx.quadraticCurveTo(fx+2,fy-h*0.55,fx,fy-h);
-                            ctx.quadraticCurveTo(fx-2,fy-h*0.55,fx+3,fy);
-                            ctx.fill();
-                        }
-
-                    } else if (el==="ice") {
-                        // Ice field — denser crystals + deeper blue at higher tiers
-                        ctx.globalAlpha=Math.min(0.85,(0.18+pulse2*0.12)*_connBoost);
-                        ctx.strokeStyle="#aaddff"; ctx.lineWidth=12+_connTier*4;
-                        ctx.shadowColor="#88ccff"; ctx.shadowBlur=14+_connTier*6;
-                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                        ctx.shadowBlur=0;
-                        const crysts=9+_connTier*3;
-                        for (let s=1;s<crysts;s++) {
-                            const t=s/crysts;
-                            const cx2=px+(pbpx-px)*t, cy2=y1+(y2-y1)*t;
-                            const sz=(4+Math.sin(frame*0.05+s*1.2)*1.5)*(1+_connTier*0.25);
-                            ctx.globalAlpha=Math.min(0.9,(0.55+pulse2*0.3)*_connBoost);
-                            ctx.strokeStyle="#cceeFF"; ctx.lineWidth=1+_connTier*0.3;
-                            ctx.shadowColor="#88ccff"; ctx.shadowBlur=5+_connTier*3;
-                            ctx.beginPath();
-                            ctx.moveTo(cx2-sz,cy2); ctx.lineTo(cx2+sz,cy2);
-                            ctx.moveTo(cx2,cy2-sz); ctx.lineTo(cx2,cy2+sz);
-                            ctx.moveTo(cx2-sz*0.7,cy2-sz*0.7); ctx.lineTo(cx2+sz*0.7,cy2+sz*0.7);
-                            ctx.moveTo(cx2+sz*0.7,cy2-sz*0.7); ctx.lineTo(cx2-sz*0.7,cy2+sz*0.7);
-                            ctx.stroke();
-                        }
-
-                    } else if (el==="electric") {
-                        // Electric arc — more arcs + brighter at higher tiers
-                        const _arcCount = 1 + _connTier; // 1 / 2 / 3 / 4 arcs
-                        ctx.shadowColor="#88aaff"; ctx.shadowBlur=16+_connTier*8;
-                        ctx.strokeStyle=`rgba(180,210,255,${Math.min(1,0.7+pulse2*0.3)})`;
-                        ctx.lineWidth=1.5+_connTier*0.8; ctx.lineCap="round";
-                        for (let _ai=0;_ai<_arcCount;_ai++) {
-                            ctx.beginPath(); ctx.moveTo(px,y1);
-                            for (let s=1;s<10;s++) {
-                                const t=s/10;
-                                ctx.lineTo(px+(pbpx-px)*t+(Math.random()-0.5)*(14+_ai*5),y1+(y2-y1)*t+(Math.random()-0.5)*(10+_ai*3));
-                            }
-                            ctx.lineTo(pbpx,y2); ctx.stroke();
-                        }
-                        // Thinner secondary arc
-                        ctx.shadowBlur=6; ctx.strokeStyle=`rgba(200,220,255,${0.3+pulse2*0.2})`; ctx.lineWidth=1;
-                        ctx.beginPath(); ctx.moveTo(px,y1);
-                        for (let s=1;s<10;s++) {
-                            const t=s/10;
-                            ctx.lineTo(px+(pbpx-px)*t+(Math.random()-0.5)*18,y1+(y2-y1)*t+(Math.random()-0.5)*12);
-                        }
-                        ctx.lineTo(pbpx,y2); ctx.stroke();
-                        ctx.shadowBlur=0;
-
-                    } else if (el==="flux") {
-                        // Flux paired — ribbon + more orbiting particles at higher tiers
-                        const midx=(px+pbpx)/2, midy=(y1+y2)/2;
-                        ctx.globalAlpha=Math.min(0.85,(0.28+pulse2*0.18)*_connBoost);
-                        ctx.strokeStyle="#6600cc"; ctx.lineWidth=(4+pulse2*2)*(1+_connTier*0.3);
-                        ctx.shadowColor="#4400aa"; ctx.shadowBlur=12+_connTier*6;
-                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                        // Flux particles — more orbiting dots at higher tiers
-                        const _fluxParts = 7 + _connTier * 3;
-                        for (let s=0;s<_fluxParts;s++) {
-                            const phase=frame*0.07+s*(Math.PI*2/_fluxParts);
-                            const r=(10+Math.sin(phase*2)*4)*(1+_connTier*0.2);
-                            ctx.globalAlpha=Math.min(0.9,(0.55+pulse2*0.3)*_connBoost);
-                            ctx.fillStyle="#9922ff"; ctx.shadowBlur=7+_connTier*3;
-                            ctx.beginPath(); ctx.arc(midx+Math.cos(phase)*r,midy+Math.sin(phase)*r*0.5,2.5+_connTier*0.5,0,Math.PI*2); ctx.fill();
-                        }
-                        ctx.shadowBlur=0;
-
-                    } else if (el==="toxic") {
-                        // Toxic — denser, larger fog cloud at higher tiers
-                        ctx.globalAlpha=Math.min(0.85,(0.2+pulse2*0.12)*_connBoost);
-                        ctx.strokeStyle="#44cc44"; ctx.lineWidth=14+_connTier*4;
-                        ctx.shadowColor="#22aa22"; ctx.shadowBlur=10+_connTier*5;
-                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                        ctx.shadowBlur=0;
-                        const blobs=8+_connTier*3;
-                        for (let s=0;s<blobs;s++) {
-                            const t=(s+Math.sin(frame*0.04+s)*0.3)/blobs;
-                            const bx=px+(pbpx-px)*t, by=y1+(y2-y1)*t;
-                            const br=(4+Math.sin(frame*0.08+s*0.9)*2)*(1+_connTier*0.3);
-                            ctx.globalAlpha=Math.min(0.85,(0.3+pulse2*0.2)*_connBoost);
-                            const grad=ctx.createRadialGradient(bx,by,0,bx,by,br*3);
-                            grad.addColorStop(0,"rgba(80,200,80,0.5)"); grad.addColorStop(1,"rgba(40,120,40,0)");
-                            ctx.fillStyle=grad;
-                            ctx.beginPath(); ctx.arc(bx,by,br*3,0,Math.PI*2); ctx.fill();
-                        }
-
-                    } else if (el==="core") {
-                        // Core — shield barrier with more ripples at higher tiers
-                        ctx.globalAlpha=Math.min(0.85,(0.25+pulse2*0.15)*_connBoost);
-                        ctx.strokeStyle="#00ccaa"; ctx.lineWidth=10+_connTier*3;
-                        ctx.shadowColor="#00aa88"; ctx.shadowBlur=14+_connTier*6;
-                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                        ctx.shadowBlur=0;
-                        const ripples=5+_connTier*2;
-                        for (let s=1;s<=ripples;s++) {
-                            const t=((s/ripples)+frame*0.01)%1;
-                            const rx=px+(pbpx-px)*t, ry=y1+(y2-y1)*t;
-                            ctx.globalAlpha=Math.min(0.9,(1-t)*0.5*pulse2*_connBoost);
-                            ctx.strokeStyle="#00ffcc"; ctx.lineWidth=1.5+_connTier*0.5;
-                            ctx.shadowColor="#00ccaa"; ctx.shadowBlur=6+_connTier*3;
-                            ctx.beginPath(); ctx.arc(rx,ry,(5+t*12)*(1+_connTier*0.15),0,Math.PI*2); ctx.stroke();
-                        }
-                        ctx.shadowBlur=0;
-
-                    } else {
-                        // Fallback dashed line
-                        ctx.globalAlpha=0.5+pulse2*0.3;
-                        ctx.strokeStyle=col2; ctx.lineWidth=2+pulse2*2; ctx.setLineDash([6,4]);
-                        ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                        ctx.setLineDash([]);
-                    }
-
+                    ctx.shadowBlur=0;
                     ctx.restore();
-                });
-
-                // Solo flux pylon — inward-pulling glow ring
-                if (el==="flux") {
-                    const hasPartner=wavePylonsLocal.some(q=>q!==obj&&Math.hypot(obj.x-q.x,obj.y-q.y)<=WCR);
-                    if (!hasPartner) {
-                        const r=22+pulse2*8;
-                        ctx.save();
-                        ctx.globalAlpha=0.12+pulse2*0.08; ctx.fillStyle="#6600cc";
-                        ctx.shadowColor="#4400aa"; ctx.shadowBlur=18;
-                        ctx.beginPath(); ctx.arc(px,py-60,r,0,Math.PI*2); ctx.fill();
-                        ctx.shadowBlur=0;
-                        for (let s=0;s<5;s++) {
-                            const phase=frame*0.07+s*(Math.PI*2/5);
-                            const sr=14+Math.sin(phase)*5;
-                            ctx.globalAlpha=0.45+pulse2*0.2; ctx.fillStyle="#8800ff"; ctx.shadowBlur=5;
-                            ctx.beginPath(); ctx.arc(px+Math.cos(phase)*sr,py-60+Math.sin(phase)*sr*0.5,2,0,Math.PI*2); ctx.fill();
-                        }
-                        ctx.shadowBlur=0;
-                        ctx.restore();
-                    }
                 }
             }
 
@@ -1840,6 +1660,166 @@ function render() {
             // wall_front not rendered — it hides the action
         }
     });
+
+    // ── PYLON NETWORK CONNECTION RENDERING ──
+    // Single O(P) pass over pre-computed pairs — replaces the previous O(N²) per-pylon scan.
+    if (_wPylonPairs.length > 0) {
+        const _ncPulse = 0.4 + 0.4 * Math.sin(frame * 0.1);
+        _wPylonPairs.forEach(({pa, pb, el, col}) => {
+            const px   = (pa.x - player.visualX - (pa.y - player.visualY)) * TILE_W + canvas.width/2;
+            const py   = (pa.x - player.visualX + (pa.y - player.visualY)) * TILE_H + canvas.height/2;
+            const pbpx = (pb.x - player.visualX - (pb.y - player.visualY)) * TILE_W + canvas.width/2;
+            const pbpy = (pb.x - player.visualX + (pb.y - player.visualY)) * TILE_H + canvas.height/2;
+            const y1 = py - 60, y2 = pbpy - 60;
+            const _connTier  = networkStrength[el] || 0;
+            const _connBoost = 1 + _connTier * 0.35;
+            ctx.save();
+
+            // ── PHYSICAL CABLE LAYER ──
+            {
+                const cDist = Math.hypot(pbpx - px, pbpy - py);
+                const sag   = Math.min(55, cDist * 0.22);
+                const midX  = (px + pbpx) / 2, midY = (py + pbpy) / 2 + sag;
+                ctx.shadowBlur = 0;
+                const bundles = [{ox:-3,oy:-2,w:2.5,alpha:0.85},{ox:0,oy:2,w:3.0,alpha:0.90},{ox:4,oy:-1,w:2.0,alpha:0.75}];
+                bundles.forEach(b => {
+                    const sx = px+b.ox, sy = py+b.oy, ex = pbpx+b.ox, ey = pbpy+b.oy;
+                    const cmy = midY + b.oy;
+                    ctx.globalAlpha = b.alpha * 0.9;
+                    ctx.strokeStyle = "#111418"; ctx.lineWidth = b.w + 1.5;
+                    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.bezierCurveTo(midX+b.ox,cmy,midX+b.ox,cmy,ex,ey); ctx.stroke();
+                    ctx.strokeStyle = col; ctx.lineWidth = 0.8; ctx.globalAlpha = 0.18;
+                    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.bezierCurveTo(midX+b.ox,cmy,midX+b.ox,cmy,ex,ey); ctx.stroke();
+                });
+                ctx.globalAlpha = 1;
+            }
+
+            if (el === "fire") {
+                ctx.globalAlpha = Math.min(0.85, (0.15 + _ncPulse*0.08) * _connBoost);
+                ctx.strokeStyle = "#ff3300"; ctx.lineWidth = 10 + _connTier*3;
+                ctx.shadowColor = "#ff2200"; ctx.shadowBlur = 16 + _connTier*8;
+                ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(pbpx,pbpy); ctx.stroke();
+                ctx.shadowBlur = 0;
+                const segs = 14 + _connTier*4;
+                // Hoist constant shadow state outside flame loop
+                ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 8 + _connTier*4;
+                for (let s = 0; s <= segs; s++) {
+                    const t = s/segs;
+                    const fx = px+(pbpx-px)*t, fy = py+(pbpy-py)*t;
+                    const flk = Math.sin(frame*0.18+s*1.5)*0.5+0.5;
+                    const h = (12+flk*18)*(1+_connTier*0.4);
+                    ctx.globalAlpha = Math.min(0.85,(0.3+flk*0.25)*(0.45+_ncPulse*0.25)*_connBoost);
+                    ctx.fillStyle = s%2===0?"#ff6600":"#ff3300";
+                    ctx.beginPath(); ctx.moveTo(fx-3,fy); ctx.quadraticCurveTo(fx+2,fy-h*0.55,fx,fy-h); ctx.quadraticCurveTo(fx-2,fy-h*0.55,fx+3,fy); ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+
+            } else if (el === "ice") {
+                ctx.globalAlpha = Math.min(0.85,(0.18+_ncPulse*0.12)*_connBoost);
+                ctx.strokeStyle = "#aaddff"; ctx.lineWidth = 12+_connTier*4;
+                ctx.shadowColor = "#88ccff"; ctx.shadowBlur = 14+_connTier*6;
+                ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                // Hoist crystal shadow state outside crystal loop
+                ctx.shadowColor = "#88ccff"; ctx.shadowBlur = 5+_connTier*3;
+                ctx.strokeStyle = "#cceeFF"; ctx.lineWidth = 1+_connTier*0.3;
+                ctx.globalAlpha = Math.min(0.9,(0.55+_ncPulse*0.3)*_connBoost);
+                const crysts = 9+_connTier*3;
+                for (let s = 1; s < crysts; s++) {
+                    const t = s/crysts;
+                    const cx2 = px+(pbpx-px)*t, cy2 = y1+(y2-y1)*t;
+                    const sz = (4+Math.sin(frame*0.05+s*1.2)*1.5)*(1+_connTier*0.25);
+                    ctx.beginPath();
+                    ctx.moveTo(cx2-sz,cy2); ctx.lineTo(cx2+sz,cy2);
+                    ctx.moveTo(cx2,cy2-sz); ctx.lineTo(cx2,cy2+sz);
+                    ctx.moveTo(cx2-sz*0.7,cy2-sz*0.7); ctx.lineTo(cx2+sz*0.7,cy2+sz*0.7);
+                    ctx.moveTo(cx2+sz*0.7,cy2-sz*0.7); ctx.lineTo(cx2-sz*0.7,cy2+sz*0.7);
+                    ctx.stroke();
+                }
+                ctx.shadowBlur = 0;
+
+            } else if (el === "electric") {
+                const _arcCount = 1 + _connTier;
+                ctx.shadowColor = "#88aaff"; ctx.shadowBlur = 16+_connTier*8;
+                ctx.strokeStyle = `rgba(180,210,255,${Math.min(1,0.7+_ncPulse*0.3)})`;
+                ctx.lineWidth = 1.5+_connTier*0.8; ctx.lineCap = "round";
+                for (let _ai = 0; _ai < _arcCount; _ai++) {
+                    ctx.beginPath(); ctx.moveTo(px,y1);
+                    for (let s = 1; s < 10; s++) {
+                        const t = s/10;
+                        ctx.lineTo(px+(pbpx-px)*t+(Math.random()-0.5)*(14+_ai*5), y1+(y2-y1)*t+(Math.random()-0.5)*(10+_ai*3));
+                    }
+                    ctx.lineTo(pbpx,y2); ctx.stroke();
+                }
+                ctx.shadowBlur = 6; ctx.strokeStyle = `rgba(200,220,255,${0.3+_ncPulse*0.2})`; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(px,y1);
+                for (let s = 1; s < 10; s++) {
+                    const t = s/10;
+                    ctx.lineTo(px+(pbpx-px)*t+(Math.random()-0.5)*18, y1+(y2-y1)*t+(Math.random()-0.5)*12);
+                }
+                ctx.lineTo(pbpx,y2); ctx.stroke();
+                ctx.shadowBlur = 0;
+
+            } else if (el === "flux") {
+                const midx = (px+pbpx)/2, midy = (y1+y2)/2;
+                ctx.globalAlpha = Math.min(0.85,(0.28+_ncPulse*0.18)*_connBoost);
+                ctx.strokeStyle = "#6600cc"; ctx.lineWidth = (4+_ncPulse*2)*(1+_connTier*0.3);
+                ctx.shadowColor = "#4400aa"; ctx.shadowBlur = 12+_connTier*6;
+                ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                const _fluxParts = 7 + _connTier*3;
+                ctx.fillStyle = "#9922ff"; ctx.shadowBlur = 7+_connTier*3;
+                for (let s = 0; s < _fluxParts; s++) {
+                    const phase = frame*0.07+s*(Math.PI*2/_fluxParts);
+                    const r = (10+Math.sin(phase*2)*4)*(1+_connTier*0.2);
+                    ctx.globalAlpha = Math.min(0.9,(0.55+_ncPulse*0.3)*_connBoost);
+                    ctx.beginPath(); ctx.arc(midx+Math.cos(phase)*r, midy+Math.sin(phase)*r*0.5, 2.5+_connTier*0.5, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+
+            } else if (el === "toxic") {
+                ctx.globalAlpha = Math.min(0.85,(0.2+_ncPulse*0.12)*_connBoost);
+                ctx.strokeStyle = "#44cc44"; ctx.lineWidth = 14+_connTier*4;
+                ctx.shadowColor = "#22aa22"; ctx.shadowBlur = 10+_connTier*5;
+                ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                ctx.shadowBlur = 0;
+                const blobs = 8+_connTier*3;
+                for (let s = 0; s < blobs; s++) {
+                    const t = (s+Math.sin(frame*0.04+s)*0.3)/blobs;
+                    const bx = px+(pbpx-px)*t, by = y1+(y2-y1)*t;
+                    const br = (4+Math.sin(frame*0.08+s*0.9)*2)*(1+_connTier*0.3);
+                    ctx.globalAlpha = Math.min(0.85,(0.3+_ncPulse*0.2)*_connBoost);
+                    const grad = ctx.createRadialGradient(bx,by,0,bx,by,br*3);
+                    grad.addColorStop(0,"rgba(80,200,80,0.5)"); grad.addColorStop(1,"rgba(40,120,40,0)");
+                    ctx.fillStyle = grad;
+                    ctx.beginPath(); ctx.arc(bx,by,br*3,0,Math.PI*2); ctx.fill();
+                }
+
+            } else if (el === "core") {
+                ctx.globalAlpha = Math.min(0.85,(0.25+_ncPulse*0.15)*_connBoost);
+                ctx.strokeStyle = "#00ccaa"; ctx.lineWidth = 10+_connTier*3;
+                ctx.shadowColor = "#00aa88"; ctx.shadowBlur = 14+_connTier*6;
+                ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                ctx.shadowBlur = 0;
+                const ripples = 5+_connTier*2;
+                for (let s = 1; s <= ripples; s++) {
+                    const t = ((s/ripples)+frame*0.01)%1;
+                    const rx = px+(pbpx-px)*t, ry = y1+(y2-y1)*t;
+                    ctx.globalAlpha = Math.min(0.9,(1-t)*0.5*_ncPulse*_connBoost);
+                    ctx.strokeStyle = "#00ffcc"; ctx.lineWidth = 1.5+_connTier*0.5;
+                    ctx.shadowColor = "#00ccaa"; ctx.shadowBlur = 6+_connTier*3;
+                    ctx.beginPath(); ctx.arc(rx,ry,(5+t*12)*(1+_connTier*0.15),0,Math.PI*2); ctx.stroke();
+                }
+                ctx.shadowBlur = 0;
+
+            } else {
+                ctx.globalAlpha = 0.5+_ncPulse*0.3;
+                ctx.strokeStyle = col; ctx.lineWidth = 2+_ncPulse*2; ctx.setLineDash([6,4]);
+                ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            ctx.restore();
+        });
+    }
 
     // ── ENVIRONMENTAL HAZARDS ──
     if (environmentalHazards.length === 0 && gameState.running) spawnHazardsForDay();
