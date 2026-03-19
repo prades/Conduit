@@ -1120,22 +1120,23 @@ function render() {
             // Pylon under construction (build mode)
             if (obj.pillar&&obj.constructing&&obj.constructProgress<1) {
                 const prog=obj.constructProgress||0;
-                const scaffH=80*prog;
+                const baseY=py+TILE_H; // anchor to tile diamond center, not north vertex
+                const scaffH=75*prog;
                 ctx.save();
                 // Scaffold outline — grows upward as progress increases
                 ctx.globalAlpha=0.55; ctx.strokeStyle="#0f8"; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
-                ctx.strokeRect(px-8,py-scaffH,16,scaffH);
+                ctx.strokeRect(px-6,baseY-scaffH,12,scaffH);
                 ctx.setLineDash([]);
                 // Progress fill
                 ctx.globalAlpha=0.22; ctx.fillStyle="#0f8";
-                ctx.fillRect(px-8,py-scaffH,16,scaffH);
+                ctx.fillRect(px-6,baseY-scaffH,12,scaffH);
                 ctx.globalAlpha=1;
                 // Progress bar
-                drawHealthBar(px-16,py-scaffH-10,32,5,prog,1);
+                drawHealthBar(px-14,baseY-scaffH-10,28,5,prog,1);
                 // Timer label
                 const secsLeft=Math.ceil((1-prog)*30);
                 ctx.fillStyle="#0f8"; ctx.font="9px monospace"; ctx.textAlign="center"; ctx.setTransform(1,0,0,1,0,0);
-                ctx.fillText(secsLeft+"s",px,py-scaffH-14);
+                ctx.fillText(secsLeft+"s",px,baseY-scaffH-14);
                 ctx.restore();
             }
 
@@ -1191,7 +1192,7 @@ function render() {
             // Pillar
             if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
                 if(obj.converting){ctx.fillStyle="#ff0";}
-                drawHealthBar(px-14,py-95,28,4,obj.health,obj.maxHealth);
+                drawHealthBar(px-10,py-80,20,4,obj.health,obj.maxHealth);
                 if (obj.waveMode) {
                     // ── WAVE FUNCTION MODE — glowing resonance tower ──
                     const wcol = obj.attackModeColor||"#0f8";
@@ -1205,18 +1206,18 @@ function render() {
                     // Soft glow ring — scales with tier
                     ctx.save(); ctx.globalAlpha=_wGlowA; ctx.fillStyle=wcol;
                     ctx.shadowColor=wcol; ctx.shadowBlur=_wTier > 1 ? 18*_tierMult : 0;
-                    ctx.beginPath(); ctx.arc(px,py-60,_wGlowR,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(px,py-45,_wGlowR,0,Math.PI*2); ctx.fill();
                     ctx.shadowBlur=0; ctx.restore();
                     // Tier 2+: secondary outer ring pulses in sync
                     if (_wTier >= 2) {
                         ctx.save(); ctx.globalAlpha=(0.07+wpulse*0.07)*_tierMult;
                         ctx.strokeStyle=wcol; ctx.lineWidth=2; ctx.shadowColor=wcol; ctx.shadowBlur=10;
-                        ctx.beginPath(); ctx.arc(px,py-60,_wGlowR+12+wpulse*8,0,Math.PI*2); ctx.stroke();
+                        ctx.beginPath(); ctx.arc(px,py-45,_wGlowR+12+wpulse*8,0,Math.PI*2); ctx.stroke();
                         ctx.shadowBlur=0; ctx.restore();
                     }
-                    // Slender column
+                    // Slender column — smaller and thinner
                     ctx.fillStyle="#0a0a1a";
-                    ctx.fillRect(px-10,py-110,20,140);
+                    ctx.fillRect(px-5,py-75,10,105);
                     // Seasoned gold band around column base
                     if ((obj.seasoned||0) > 0) {
                         const sLevel = Math.min(3, obj.seasoned);
@@ -1225,16 +1226,16 @@ function render() {
                         ctx.globalAlpha=0.55+wpulse*0.25;
                         ctx.shadowColor="#ffd700"; ctx.shadowBlur=4+sLevel*3;
                         for (let _si=0;_si<sLevel;_si++) {
-                            ctx.beginPath(); ctx.rect(px-10-_si,py-20-_si*6,20+_si*2,3); ctx.stroke();
+                            ctx.beginPath(); ctx.rect(px-5-_si,py-20-_si*5,10+_si*2,2); ctx.stroke();
                         }
                         ctx.shadowBlur=0; ctx.restore();
                     }
                     // Glowing orb at top — size + blur scale with tier
-                    const _orbR = 9 + _wTier*2;
-                    const _orbBlur = (14+wpulse*10) * Math.min(2, _tierMult);
+                    const _orbR = 6 + _wTier*1;
+                    const _orbBlur = (10+wpulse*8) * Math.min(2, _tierMult);
                     ctx.save(); ctx.shadowColor=wcol; ctx.shadowBlur=_orbBlur;
                     ctx.fillStyle=wcol; ctx.globalAlpha=0.7+wpulse*0.3;
-                    ctx.beginPath(); ctx.arc(px,py-110,_orbR,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(px,py-75,_orbR,0,Math.PI*2); ctx.fill();
                     ctx.restore();
                     // Element label + effect description (tier-aware)
                     const PYLON_FX_TIER = {
@@ -1250,9 +1251,9 @@ function render() {
                     const _tierBadge = _wTier > 0 ? [" T-I"," T-II"," T-III"][_wTier-1] : "";
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                     ctx.fillStyle=wcol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
-                    ctx.fillText(el0.toUpperCase()+_tierBadge,px,py-124);
+                    ctx.fillText(el0.toUpperCase()+_tierBadge,px,py-88);
                     ctx.font="7px monospace"; ctx.globalAlpha=0.7;
-                    ctx.fillText(_tierDesc,px,py-114);
+                    ctx.fillText(_tierDesc,px,py-78);
                     ctx.restore();
                 } else if (obj.attackMode) {
                     // ── ATTACK MODE — angular armed pylon ──
@@ -1262,47 +1263,47 @@ function render() {
                     // Glowing range ring
                     ctx.save(); ctx.globalAlpha=0.08+pulse*0.08; ctx.strokeStyle=acol; ctx.lineWidth=2;
                     ctx.beginPath(); ctx.arc(px,py-40,obj.attackRange*TILE_W*0.5,0,Math.PI*2); ctx.stroke(); ctx.restore();
-                    // Body — dark armored column
+                    // Body — dark armored column (slimmer)
                     ctx.fillStyle="#111";
-                    ctx.fillRect(px-16,py-95,32,125);
+                    ctx.fillRect(px-7,py-75,14,105);
                     // Armor panels
                     ctx.fillStyle="#222";
-                    ctx.fillRect(px-18,py-95,4,125);
-                    ctx.fillRect(px+14,py-95,4,125);
+                    ctx.fillRect(px-9,py-75,3,105);
+                    ctx.fillRect(px+6,py-75,3,105);
                     // Glowing barrel nub at top
                     ctx.save(); ctx.shadowColor=acol; ctx.shadowBlur=8+pulse*6;
                     ctx.fillStyle=acol;
-                    ctx.beginPath(); ctx.arc(px,py-95,7,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(px,py-75,5,0,Math.PI*2); ctx.fill();
                     ctx.restore();
                     // Element color stripe
                     ctx.fillStyle=acol; ctx.globalAlpha=0.4;
-                    ctx.fillRect(px-3,py-90,6,80);
+                    ctx.fillRect(px-2,py-70,4,60);
                     ctx.globalAlpha=1;
                     // Element + effect label
                     if (obj.attackModeElement) {
                         const PYLON_FX2={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity well",toxic:"corrodes enemies"};
                         ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                         ctx.fillStyle=acol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
-                        ctx.fillText(obj.attackModeElement.toUpperCase(),px,py-108);
+                        ctx.fillText(obj.attackModeElement.toUpperCase(),px,py-88);
                         ctx.font="7px monospace"; ctx.globalAlpha=0.7;
-                        ctx.fillText(PYLON_FX2[obj.attackModeElement]||"",px,py-98);
+                        ctx.fillText(PYLON_FX2[obj.attackModeElement]||"",px,py-78);
                         ctx.restore();
                     }
                 } else if(obj.upgraded){
                     ctx.save(); ctx.globalAlpha=0.2; ctx.fillStyle="#0f8";
-                    ctx.beginPath(); ctx.arc(px,py-85,20,0,Math.PI*2); ctx.fill(); ctx.restore();
-                    ctx.fillStyle="#0d1220"; ctx.fillRect(px-18,py-100,36,130);
-                    ctx.fillStyle="#0f8"; ctx.beginPath(); ctx.arc(px,py-100,6,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(px,py-65,12,0,Math.PI*2); ctx.fill(); ctx.restore();
+                    ctx.fillStyle="#0d1220"; ctx.fillRect(px-8,py-75,16,105);
+                    ctx.fillStyle="#0f8"; ctx.beginPath(); ctx.arc(px,py-75,4,0,Math.PI*2); ctx.fill();
                 } else {
                     const dist2=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
                     const amb2=Math.max(0.1,0.8-dist2/RENDER_DIST);
-                    // Body — dark map-matching stone (no green tint)
+                    // Body — dark map-matching stone (no green tint), slimmer
                     ctx.fillStyle=`rgb(${Math.floor(14*amb2)},${Math.floor(18*amb2)},${Math.floor(30*amb2)})`;
-                    ctx.fillRect(px-14,py-85,28,115);
+                    ctx.fillRect(px-6,py-65,12,95);
                     // Light orb — stays team color (green friendly, red hostile)
                     ctx.fillStyle=obj.pillarCol;
                     ctx.shadowColor=obj.pillarCol; ctx.shadowBlur=8;
-                    ctx.beginPath(); ctx.arc(px,py-85,4,0,7); ctx.fill();
+                    ctx.beginPath(); ctx.arc(px,py-65,3,0,7); ctx.fill();
                     ctx.shadowBlur=0;
                 }
             }
