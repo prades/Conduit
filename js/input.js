@@ -46,8 +46,9 @@ function handleLongHold(ex,ey) {
     const t=getTile(gx,gy);
     commandTarget=(t&&!t.type.includes("wall"))?t:null;
     // Snap to nearest pylon within 2 tiles — ensures pylons are reliably targeted
-    // even when the press lands on an adjacent floor tile
-    if (!commandTarget?.pillar) {
+    // even when the press lands on an adjacent floor tile.
+    // Skip snap in buildMode so the player can target empty tiles for new pylons.
+    if (!commandTarget?.pillar && !buildMode) {
         const _snap=world.find(obj=>obj.pillar&&!obj.destroyed&&obj.health>0&&Math.hypot(obj.x-gx,obj.y-gy)<2.0);
         if (_snap) commandTarget=_snap;
     }
@@ -85,8 +86,9 @@ canvas.addEventListener('pointerdown', e=>{
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
     if (t&&!t.type.includes("wall")) commandTarget=t;
-    // Snap to nearby pylon on initial press too
-    if (!commandTarget?.pillar) {
+    // Snap to nearby pylon on initial press too.
+    // Skip snap in buildMode so the player can target empty tiles for new pylons.
+    if (!commandTarget?.pillar && !buildMode) {
         const _snap=world.find(obj=>obj.pillar&&!obj.destroyed&&obj.health>0&&Math.hypot(obj.x-gx,obj.y-gy)<2.0);
         if (_snap) commandTarget=_snap;
     }
