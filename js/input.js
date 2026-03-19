@@ -16,7 +16,7 @@ function toCanvas(cx, cy) {
 const handleInput=(ex,ey)=>{
     // Pylon-select mode for nest connection
     if (nestConnectMode) {
-        const _dx=ex-canvas.width/2, _dy=ey-canvas.height/2;
+        const _dx=ex-canvas.width/2, _dy=ey-canvas.height/2-TILE_H;
         const _gx=Math.round((_dy/TILE_H+_dx/TILE_W)/2+player.visualX);
         const _gy=Math.round((_dy/TILE_H-_dx/TILE_W)/2+player.visualY);
         let tapped=null;
@@ -36,7 +36,7 @@ const handleInput=(ex,ey)=>{
     }
     // Short tap near crystal → open crystal panel
     if (isTapNearCrystal(ex,ey)) { crystalMenuOpen=true; return; }
-    const dx=ex-canvas.width/2, dy=ey-canvas.height/2;
+    const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
@@ -46,13 +46,13 @@ const handleInput=(ex,ey)=>{
 
 function isTapNearCrystal(ex, ey) {
     const px = (crystal.x - player.visualX - (crystal.y - player.visualY)) * TILE_W + canvas.width/2;
-    const py = (crystal.x - player.visualX + (crystal.y - player.visualY)) * TILE_H + canvas.height/2;
+    const py = (crystal.x - player.visualX + (crystal.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
     return Math.hypot(ex - px, ey - py) < 60;
 }
 
 function handleLongHold(ex,ey) {
     commandMode=true; commandX=ex; commandY=ey;
-    const dx=ex-canvas.width/2, dy=ey-canvas.height/2;
+    const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
@@ -93,7 +93,7 @@ canvas.addEventListener('pointerdown', e=>{
     // Crystal button tap — toggle panel
     if (Math.hypot(pressX-_CRYSBTN.x, pressY-_CRYSBTN.y) < _CRYSBTN.r+6) { return; }
 
-    const dx=pressX-canvas.width/2, dy=pressY-canvas.height/2;
+    const dx=pressX-canvas.width/2, dy=pressY-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
