@@ -53,9 +53,16 @@ function _executeBuild(el, t) {
     t.attackModeElement=null; t.attackModeColor=null;
     t.reconstructing=false; t.workers=[];
     if (buildMode) {
-        t.constructing=true; t.constructProgress=0; t.health=0;
         const builderPool=[...getCommandPool().filter(a=>!a.dead&&!a.job),...followers.filter(a=>!a.dead&&!a.job)]
             .filter((a,i,arr)=>arr.indexOf(a)===i).slice(0,4);
+        if (builderPool.length === 0) {
+            // No idle followers available — abort and refund
+            shardCount += 10; saveShards();
+            t.pillar=false; t.constructing=false;
+            floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NO IDLE FOLLOWERS TO BUILD",color:"#f44",life:90,vy:-0.2});
+            return;
+        }
+        t.constructing=true; t.constructProgress=0; t.health=0;
         builderPool.forEach(builder=>{
             const speedMult=[1,0.6,0.45,0.35][Math.min(builderPool.length-1,3)];
             const baseBuildTime=(builder.element==="core")?60:1800;
@@ -127,6 +134,10 @@ function executeCommand() {
         // ── TOP: BUILD / UPGRADE ──────────────────────────
         case "build_upgrade": {
             const pylon = commandTarget;
+            // A constructing pylon with no health is stuck (builder died or none assigned) — reset it so the player can rebuild
+            if (pylon && pylon.pillar && pylon.constructing && pylon.health === 0) {
+                pylon.pillar=false; pylon.constructing=false; pylon.constructProgress=0;
+            }
             if (pylon && pylon.pillar && !pylon.destroyed) {
                 openElementPicker("upgrade", pylon);
             } else if (commandTarget) {

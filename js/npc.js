@@ -138,7 +138,7 @@ function updateRTSNPC(actor) {
     // build new pylon (build mode)
     if (actor.job&&actor.job.type==="build_pylon") {
         const p=actor.job.target;
-        if (!p||p.dead) { actor.job=null; return; }
+        if (!p||p.dead||!p.constructing) { actor.job=null; return; }
         const dx=p.x-actor.x, dy=p.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
         if (dist>0.5) {
             actor.x+=dx*actor.moveSpeed*2; actor.y+=dy*actor.moveSpeed*2;
