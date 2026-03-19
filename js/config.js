@@ -202,5 +202,7 @@ function toggleBuild() {
 }
 function toggleControlsMenu() {
     const m = document.getElementById("controlsMenu");
-    if (m) m.style.display = (m.style.display==="none"||!m.style.display) ? "block" : "none";
+    if (!m) return;
+    const isHidden = !m.style.display || m.style.display === "none";
+    m.style.display = isHidden ? "flex" : "none";
 }
