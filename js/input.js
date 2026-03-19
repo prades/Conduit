@@ -1,6 +1,18 @@
 // ─────────────────────────────────────────────────────────
 //  INPUT
 // ─────────────────────────────────────────────────────────
+
+// Convert a pointer event's clientX/clientY to canvas pixel coordinates.
+// This accounts for any CSS scaling between the canvas's displayed size
+// (e.g. 100vw×100vh) and its internal pixel resolution (window.innerWidth×innerHeight).
+function toCanvas(cx, cy) {
+    const r = canvas.getBoundingClientRect();
+    return [
+        (cx - r.left) * canvas.width  / r.width,
+        (cy - r.top)  * canvas.height / r.height
+    ];
+}
+
 const handleInput=(ex,ey)=>{
     // Pylon-select mode for nest connection
     if (nestConnectMode) {
@@ -66,7 +78,7 @@ canvas.addEventListener('pointerdown', e=>{
     if (!gameState.running) return;
     e.preventDefault(); canvas.setPointerCapture(e.pointerId);
     gesturePoints=[]; isPressing=true; longHoldFired=false; touchMoved=false;
-    pressX=e.clientX; pressY=e.clientY; pressStartTime=performance.now();
+    [pressX,pressY]=toCanvas(e.clientX,e.clientY); pressStartTime=performance.now();
 
     // Canvas overlay panels — absorb pointerdown so no game action triggers
     if (elementPickerOpen || infoPanelOpen) return;
@@ -77,7 +89,7 @@ canvas.addEventListener('pointerdown', e=>{
     commandTarget=null;
 
     // Crystal panel — forward pointerdown (for slider drag init) and block game input
-    if (crystalMenuOpen) { handleCrystalPanelInput(e.clientX, e.clientY, true); return; }
+    if (crystalMenuOpen) { handleCrystalPanelInput(pressX, pressY, true); return; }
     // Crystal button tap — toggle panel
     if (Math.hypot(pressX-_CRYSBTN.x, pressY-_CRYSBTN.y) < _CRYSBTN.r+6) { return; }
 
@@ -96,11 +108,11 @@ canvas.addEventListener('pointerdown', e=>{
 
 canvas.addEventListener('pointermove', e=>{
     if (!isPressing) return;
-    pointerX=e.clientX; pointerY=e.clientY;
+    [pointerX,pointerY]=toCanvas(e.clientX,e.clientY);
 
     // Crystal panel slider drag
     if (crystalMenuOpen && _crystalSliderDrag) {
-        handleCrystalPanelInput(e.clientX, e.clientY, true);
+        handleCrystalPanelInput(pointerX, pointerY, true);
         touchMoved=true; return;
     }
 
@@ -110,27 +122,28 @@ canvas.addEventListener('pointermove', e=>{
 });
 
 canvas.addEventListener('pointerup', e=>{
+    const [upX,upY]=toCanvas(e.clientX,e.clientY);
     // Crystal button tap — toggle panel open/close
-    if (!touchMoved && Math.hypot(e.clientX-_CRYSBTN.x, e.clientY-_CRYSBTN.y) < _CRYSBTN.r+8) {
+    if (!touchMoved && Math.hypot(upX-_CRYSBTN.x, upY-_CRYSBTN.y) < _CRYSBTN.r+8) {
         crystalMenuOpen=!crystalMenuOpen; isPressing=false; return;
     }
     // Crystal panel tap/release
     if (crystalMenuOpen) {
-        handleCrystalPanelInput(e.clientX, e.clientY, false);
+        handleCrystalPanelInput(upX, upY, false);
         isPressing=false; return;
     }
 
     // Blob button — tap opens clone menu
     if (!touchMoved) {
         const b=_BLOB;
-        if (b && Math.hypot(e.clientX-b.x, e.clientY-b.y)<b.r+8) {
+        if (b && Math.hypot(upX-b.x, upY-b.y)<b.r+8) {
             cloneMenuOpen=true; isPressing=false; return;
         }
     }
 
-    if (handleOverlayPanelTap(e.clientX, e.clientY)) { isPressing=false; return; }
-    if (handleCloneMenuTap(e.clientX, e.clientY)) { isPressing=false; return; }
-    if (handleFollowerUIClick(e.clientX, e.clientY)) { isPressing=false; return; }
+    if (handleOverlayPanelTap(upX, upY)) { isPressing=false; return; }
+    if (handleCloneMenuTap(upX, upY)) { isPressing=false; return; }
+    if (handleFollowerUIClick(upX, upY)) { isPressing=false; return; }
 
     // ── ULTIMATE DOUBLE-TAP DETECTION ────────────────────
     if (!touchMoved) {
@@ -139,7 +152,7 @@ canvas.addEventListener('pointerup', e=>{
             if (f.dead) continue;
             const _fpx = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
             const _fpy = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2;
-            if (Math.hypot(e.clientX - _fpx, e.clientY - (_fpy - 55)) < 40) {
+            if (Math.hypot(upX - _fpx, upY - (_fpy - 55)) < 40) {
                 _tappedFollower = f;
                 break;
             }
@@ -167,7 +180,7 @@ canvas.addEventListener('pointerup', e=>{
 
     if (touchMoved && gesturePoints.length>=5 && !commandMode) {
         // 1. Follower → enemy targeting line
-        const ftoe=detectFollowerToEnemyGesture(pressX,pressY,e.clientX,e.clientY);
+        const ftoe=detectFollowerToEnemyGesture(pressX,pressY,upX,upY);
         if (ftoe) {
             ftoe.follower.job={type:"attack",target:ftoe.enemy};
             gesturePoints=[]; isPressing=false; commandMode=false; return;
@@ -194,7 +207,7 @@ canvas.addEventListener('pointerup', e=>{
     if (commandMode) {
         // If drag didn't hover a button, try treating release point as a tap on a button
         if (!selectedRadialAction) {
-            const relX = e.clientX - commandX, relY = e.clientY - commandY;
+            const relX = upX - commandX, relY = upY - commandY;
             const relDist = Math.hypot(relX, relY);
             const relAngle = Math.atan2(relY, relX);
             if (relDist > 18) {
