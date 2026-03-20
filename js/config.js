@@ -95,6 +95,13 @@ let networkStrength   = {};
 let networkIntegrity  = {};
 let _prevNetworkTiers = {};
 
+// ── INTRUDER ALERT STATE ──────────────────────────────────
+let alertActive = false;   // true while alarm is sounding
+let alertTimer  = 0;       // frames remaining in current alarm
+let alertType   = null;    // null | "proximity" | "zone" | "facility"
+let alertSource = null;    // { x, y } where alarm was triggered
+const ALERT_DURATION = 600; // 10 seconds at 60fps
+
 // ── TERRITORY / CIRCUIT HARVESTING ────────────────────────
 let capturedNodes = []; // { type, x, y, benefit }
 let signalTowers  = []; // tile refs: { x, y, active, zoneIndex } — enemy antenna structures

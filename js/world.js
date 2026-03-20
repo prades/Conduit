@@ -59,6 +59,19 @@ function generateSegment(startX) {
     }
     lastGenX=startX;
 
+    // ── WALL PANELS — 1-2 per forward zone on back-row floor tiles (y=0) ──
+    // Panels are interactive terminals: real ones give shards, decoys trigger alarms.
+    const PANEL_ALARM_TYPES = ["proximity", "zone", "facility"];
+    if (zoneIndex >= 1 && type === 'floor' && y === 0 && Math.random() < 0.18) {
+        tile.nodeType    = 'wall_panel';
+        tile.capturable  = false;        // not a normal capture node
+        tile.panelActivated = false;
+        tile.isDecoy     = Math.random() < 0.40; // 40% chance of decoy
+        tile.shardReward = 5 + Math.floor(Math.random() * 11); // 5–15 shards
+        tile.alarmType   = PANEL_ALARM_TYPES[Math.floor(Math.random() * PANEL_ALARM_TYPES.length)];
+        tile.panelFlicker = Math.random() * Math.PI * 2; // phase offset for LED animation
+    }
+
     // ── CAPACITOR NODE — 1 per forward zone, at zone x-offset 3, y=2 ──
     const capNodeX = zoneIndex * ZONE_LENGTH + 3;
     if (zoneIndex >= 1 && startX === capNodeX) {

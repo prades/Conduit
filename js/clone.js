@@ -383,7 +383,7 @@ function spawnPredatorForZone(zoneIndex) {
     const spawnY = nest ? nest.y : 2;
 
     const predator = new Predator(className, def, spawnX, spawnY);
-    predator.state        = "hunt"; // emerges from nest directly into hunt
+    predator.state        = alertActive ? "hunt" : "wander"; // hunt only when alarm is active
     predator.speciesName  = speciesName;
     predator.className    = className;
     predator.dnaDrops     = classDef.dnaDrops;

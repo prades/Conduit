@@ -1,25 +1,64 @@
 // ─────────────────────────────────────────────────────────
-//  WAVE / PHASE MANAGEMENT
+//  WAVE / PHASE MANAGEMENT  (Intruder Alert system)
 // ─────────────────────────────────────────────────────────
-let dayTimer = 0;           // frames elapsed since day started
-const DAY_MIN_FRAMES = 1800; // minimum 30 seconds of day (at 60fps)
 
-function startNight() {
-    gameState.phase="night";
-    dayTimer=0;
-    nightKillCount=0;
-    nightEnemiesTarget=enemiesThisWave();
-    nightPredatorsRemaining=predatorsThisWave();
-    zonePredators={};
-    zoneRespawnTimers={};
-    waveUI.textContent="Night "+gameState.nightNumber+" — Kill "+nightEnemiesTarget;
+// ── TRIGGER ALARM — called when a decoy panel is activated ──
+// type: "proximity" | "zone" | "facility"
+// sx, sy: world-space source of the triggered panel
+function triggerAlarm(type, sx, sy) {
+    alertActive = true;
+    alertTimer  = ALERT_DURATION;
+    alertType   = type;
+    alertSource = { x: sx, y: sy };
+
+    // If not already in night/alert phase, initialise kill quota
+    if (gameState.phase !== "night") {
+        gameState.phase = "night";
+        nightKillCount = 0;
+        nightEnemiesTarget    = enemiesThisWave();
+        nightPredatorsRemaining = predatorsThisWave();
+    }
+
+    // Announce alarm type
+    const labels = { proximity:"PROXIMITY ALARM", zone:"ZONE ALARM", facility:"FACILITY BREACH" };
+    const label  = labels[type] || "INTRUDER ALERT";
+    floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80,
+        text:"⚠ " + label + " ⚠", color:"#ff2200", life:180, vy:-0.25, size:16 });
+
+    // Make affected predators hostile immediately
+    const srcZone = getZoneIndex(Math.floor(sx));
+    actors.forEach(a => {
+        if (!(a instanceof Predator) || a.dead || a.team === "green") return;
+        const inRange =
+            type === "facility"  ? true :
+            type === "zone"      ? getZoneIndex(Math.floor(a.x)) === srcZone :
+            /* proximity */        Math.hypot(a.x - sx, a.y - sy) < 6;
+        if (inRange) { a.state = "hunt"; a.provoked = true; }
+    });
+
+    waveUI.textContent = "⚠ " + label + " — Kill " + nightEnemiesTarget;
+}
+
+// ── CLEAR ALARM — called when alert timer expires ──
+function clearAlarm() {
+    alertActive = false;
+    alertType   = null;
+    alertSource = null;
+    // Predators that haven't been provoked by a direct hit revert to grazing
+    actors.forEach(a => {
+        if (!(a instanceof Predator) || a.dead || a.team === "green") return;
+        if (!a.lastAttacker) { a.provoked = false; a.state = "wander"; }
+    });
+    if (gameState.phase === "night" && nightKillCount < nightEnemiesTarget) {
+        gameState.phase = "day";
+        waveUI.textContent = "Wave " + gameState.nightNumber + " — clear panels for shards";
+    }
 }
 
 function checkWaveClear() {
-    if (gameState.phase!=="night") return;
-    // Night ends when kill target is reached
+    if (gameState.phase !== "night") return;
     if (nightKillCount >= nightEnemiesTarget) {
-        gameState.phase="waveComplete";
+        gameState.phase = "waveComplete";
         gameState.totalWavesSurvived++;
         showWaveClear();
     }
@@ -244,9 +283,17 @@ function nextWave() {
     // Camp building effects on wave start
     applyPowerConduit();
     applyRepairStation();
+
+    // Reset alert state
+    alertActive = false; alertTimer = 0; alertType = null; alertSource = null;
+    nightKillCount = 0;
+    nightEnemiesTarget    = enemiesThisWave();
+    nightPredatorsRemaining = predatorsThisWave();
+
     document.getElementById("overlay").classList.remove("active");
-    gameState.running=true;
-    startNight();
+    gameState.phase   = "day";
+    gameState.running = true;
+    waveUI.textContent = "Wave " + gameState.nightNumber + " — clear panels for shards";
 }
 
 function restartGame() {
@@ -272,10 +319,12 @@ function restartGame() {
     gameState={ phase:"day", nightNumber:1, totalWavesSurvived:0, running:true };
     dayStats={ redSpawned:0, redConverted:0 };
     nightKillCount=0; nightEnemiesTarget=0; nightPredatorsRemaining=0;
+    alertActive=false; alertTimer=0; alertType=null; alertSource=null;
     for (let i=-6;i<0;i++) generateSegment(i);
     for (let i=0;i<20;i++) generateSegment(i);
     // No free spawns — player earns followers and encounters predators naturally
     spawnHazardsForDay();
     document.getElementById("overlay").classList.remove("active");
+    waveUI.textContent = "Wave 1 — clear panels for shards";
     requestAnimationFrame(render);
 }

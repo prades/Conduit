@@ -1362,6 +1362,75 @@ function drawCapturableNode(tile, px, py) {
 
         ctx.shadowBlur = 0;
         ctx.restore();
+
+    } else if (tile.nodeType === 'wall_panel') {
+        // Wall-mounted control terminal.
+        // Decoy status is hidden until activated.
+        const activated = tile.panelActivated;
+        const flicker = tile.panelFlicker || 0;
+        const _blink = Math.sin(frame * 0.12 + flicker);
+        const ledCol = activated ? '#444' : (_blink > 0.6 ? '#00ff88' : '#00cc66');
+        const screenCol = activated ? '#111' : '#001a0a';
+        const rimCol = activated ? '#333' : '#0f8';
+
+        ctx.save();
+        ctx.shadowColor = activated ? 'transparent' : '#00ff88';
+        ctx.shadowBlur = activated ? 0 : 8 + _blink * 5;
+
+        // Panel body (flat-panel against back wall)
+        ctx.fillStyle = activated ? '#1a1a1a' : '#0a1a10';
+        ctx.fillRect(cx - 10, cy - 32, 20, 18);
+
+        // Rim highlight
+        ctx.strokeStyle = rimCol;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx - 10, cy - 32, 20, 18);
+
+        // Screen area
+        ctx.fillStyle = screenCol;
+        ctx.fillRect(cx - 8, cy - 30, 16, 10);
+
+        if (!activated) {
+            // Scrolling scan-line effect on screen
+            const lineY = cy - 30 + ((frame * 0.6 + flicker * 5) % 10);
+            ctx.globalAlpha = 0.35;
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(cx - 8, lineY, 16, 1);
+            ctx.globalAlpha = 1;
+
+            // Blinking LED indicator (top-right corner of panel)
+            ctx.fillStyle = ledCol;
+            ctx.beginPath();
+            ctx.arc(cx + 7, cy - 29, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Proximity hint — glow ring when player is within 2 tiles
+            const pDist = Math.hypot(player.x - tile.x, player.y - tile.y);
+            if (pDist < 2.0) {
+                const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
+                ctx.globalAlpha = hint;
+                ctx.strokeStyle = '#00ff88';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.ellipse(cx, cy - 23, 14, 6, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+                // "PANEL" label
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
+                ctx.fillStyle = '#00ff88';
+                ctx.fillText('PANEL', cx, cy - 38);
+            }
+        } else {
+            // Activated — dim "DONE" marker
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.font = '7px monospace'; ctx.textAlign = 'center';
+            ctx.fillStyle = '#334433';
+            ctx.fillText('USED', cx, cy - 38);
+        }
+
+        ctx.shadowBlur = 0;
+        ctx.restore();
     }
 }
 

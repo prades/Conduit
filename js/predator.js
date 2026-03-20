@@ -180,7 +180,7 @@ class Predator {
         // ── PYLON AGGRO — overrides normal state when a predator has been fried long enough ──
         if (this.pylonAggro) {
             if (this.pylonAggro.destroyed) { this.pylonAggro=null; this.pylonExposureFrames=0; }
-            else if (gameState.phase!=="day") {
+            else if (alertActive || gameState.phase === "night") {
                 const dx=this.pylonAggro.x-this.x, dy=this.pylonAggro.y-this.y;
                 const dist=Math.hypot(dx,dy);
                 if (dist>0.9) {
@@ -230,10 +230,9 @@ class Predator {
             this.wanderTimer--;
         }
 
-        // ── DAY: stay docile unless provoked ──
-        if (gameState.phase === "day" && this.team !== "green") {
+        // ── CALM (no alarm): graze unless provoked by a direct hit ──
+        if (!alertActive && this.team !== "green") {
             if (this.state === "hunt" || this.state === "attack") {
-                // Only revert to wander if not provoked
                 if (!this.provoked) {
                     this.state = "wander";
                     this.moveSpeed = (PREDATOR_TYPES[this.predatorType] || this.def || {moveSpeed:0.02}).moveSpeed || 0.02;
@@ -253,8 +252,8 @@ class Predator {
                 });
                 if (nearRed) { this.currentTarget=nearRed; this.state="attack"; return; }
             }
-            // During night, aggro on any nearby green pylon to bash it on the way to crystal
-            if (gameState.phase !== "day" && !this.pylonAggro && frame % 30 === 0) {
+            // When alarmed, aggro on any nearby green pylon to bash it on the way to crystal
+            if ((alertActive || gameState.phase === "night") && !this.pylonAggro && frame % 30 === 0) {
                 let nearestPylon=null, bestPD=Infinity;
                 _pillarCache.forEach(p => {
                     if (p.pillarTeam !== "green") return;

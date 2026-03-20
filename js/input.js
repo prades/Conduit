@@ -124,6 +124,7 @@ canvas.addEventListener('pointermove', e=>{
 });
 
 canvas.addEventListener('pointerup', e=>{
+    if (!gameState.running) { isPressing=false; return; } // block canvas input during buy screen
     const [upX,upY]=toCanvas(e.clientX,e.clientY);
     // Crystal button tap — toggle panel open/close
     if (!touchMoved && Math.hypot(upX-_CRYSBTN.x, upY-_CRYSBTN.y) < _CRYSBTN.r+8) {

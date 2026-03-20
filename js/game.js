@@ -110,24 +110,34 @@ function render() {
     }
 
 
-    // ── DAY→NIGHT transition ──
-    if (gameState.phase==="day") {
-        dayTimer++;
-        // All hostile zones must be cleared AND minimum day time elapsed
-        let redsInAnyZone = 0;
-        actors.forEach(a => {
-            if (a.team==="red" && !a.isNeutralRecruit) {
-                const z = getZoneIndex(Math.floor(a.x));
-                if (z >= 1 && z < activeDayZones) redsInAnyZone++;
-            }
-        });
-        // Show countdown when zones are clear but timer not done
-        if (redsInAnyZone === 0 && dayTimer < DAY_MIN_FRAMES) {
-            const secsLeft = Math.ceil((DAY_MIN_FRAMES - dayTimer) / 60);
-            waveUI.textContent = "Night approaches in " + secsLeft + "s…";
-        }
-        if (redsInAnyZone === 0 && dayTimer >= DAY_MIN_FRAMES) startNight();
+    // ── INTRUDER ALERT TIMER ──
+    // Alarm expires after ALERT_DURATION frames; predators return to grazing.
+    if (alertActive) {
+        alertTimer--;
+        if (alertTimer <= 0) clearAlarm();
     }
+
+    // ── WALL PANEL ACTIVATION ──
+    // Player or any follower within 1 tile of an unactivated panel activates it.
+    world.forEach(t => {
+        if (t.nodeType !== 'wall_panel' || t.panelActivated) return;
+        const playerClose = Math.hypot(player.x - t.x, player.y - t.y) < 1.0;
+        let followerClose = false;
+        for (const f of followers) {
+            if (!f.dead && Math.hypot(f.x - t.x, f.y - t.y) < 0.8) { followerClose = true; break; }
+        }
+        if (!playerClose && !followerClose) return;
+        t.panelActivated = true;
+        if (t.isDecoy) {
+            triggerAlarm(t.alarmType, t.x, t.y);
+        } else {
+            shardCount += t.shardReward;
+            saveShards();
+            shardUI.textContent = "Shards: " + shardCount;
+            floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-60,
+                text:"+"+t.shardReward+" SHARDS (Panel)", color:"#ff8800", life:120, vy:-0.2 });
+        }
+    });
 
     // ── EXPLORED ZONES ──
     exploredZones.add(getZoneIndex(Math.floor(player.x)));
@@ -170,24 +180,20 @@ function render() {
     // ── RED HEALTH DECAY ──
     actors.forEach(a=>{ if(a.team==="red"){a.health-=0.01; if(a.health<=0){a.health=0;a.dead=true;}} });
 
-    // ── PREDATOR SPAWNING (night) — 1 per hostile zone ──
-    if (gameState.phase==="night") {
-        // Hostile zones = zones 1 through activeDayZones-1 (zone 0 is home)
-        // Cap at 5 hostile zones
+    // ── PREDATOR SPAWNING — always present (graze by default, hunt when alarm is active) ──
+    if (gameState.phase === "day" || gameState.phase === "night") {
         const hostileZoneCount = Math.min(gameState.nightNumber, 5);
         for (let z = 1; z <= hostileZoneCount; z++) {
             const existing = zonePredators[z];
             if (!existing || existing.dead) {
-                // Don't spawn if the zone's nest has been destroyed
                 const nest = _nestCache.find(t => t.nestZone === z);
                 if (nest && nest.nestHealth <= 0) continue;
-
                 if (!zoneRespawnTimers[z]) zoneRespawnTimers[z] = 0;
                 if (zoneRespawnTimers[z] > 0) {
                     zoneRespawnTimers[z]--;
                 } else {
                     spawnPredatorForZone(z);
-                    zoneRespawnTimers[z] = 180;
+                    zoneRespawnTimers[z] = 240; // slightly longer respawn in calm phase
                 }
             }
         }
@@ -432,7 +438,7 @@ function render() {
         if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.killCounted) {
             a.killCounted = true;
             nightKillCount++;
-            waveUI.textContent = "Night "+gameState.nightNumber+" — Kill "+nightKillCount+"/"+nightEnemiesTarget;
+            waveUI.textContent = "⚠ Wave "+gameState.nightNumber+" — Kill "+nightKillCount+"/"+nightEnemiesTarget;
         }
     });
 
@@ -1854,11 +1860,22 @@ function render() {
     // ── HUD TEXT ──
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
     ctx.fillStyle="#fff"; ctx.font="13px monospace";
-    ctx.fillText("Phase: "+gameState.phase, 230, 58);
-    ctx.fillText("Reds: "+redsRemainingInExploredZones(), 230, 74);
-    if (gameState.phase==="night") {
-        ctx.fillStyle="#f22";
-        ctx.fillText("Predators left: "+nightPredatorsRemaining, 230, 90);
+    if (alertActive) {
+        // Flashing alert banner
+        const _af = 0.6 + 0.4 * Math.sin(frame * 0.3);
+        ctx.globalAlpha = _af;
+        ctx.fillStyle = "#ff2200";
+        ctx.font = "bold 13px monospace";
+        const _label = alertType === "proximity" ? "PROXIMITY ALARM" :
+                       alertType === "zone"      ? "ZONE ALARM"      : "FACILITY BREACH";
+        ctx.fillText("⚠ " + _label + " — " + Math.ceil(alertTimer/60) + "s", 230, 58);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#f84";
+        ctx.font = "13px monospace";
+        ctx.fillText("Kills: "+nightKillCount+"/"+nightEnemiesTarget, 230, 74);
+    } else {
+        ctx.fillStyle = "#0f8";
+        ctx.fillText("Status: CLEAR", 230, 58);
     }
     ctx.restore();
 
