@@ -45,11 +45,15 @@ function drawRadialMenu() {
         if (dHov) selectedRadialAction="position";
     }
 
-    // ── RIGHT = INFO — hidden when a pylon is targeted or build mode is active ──
+    // ── RIGHT = INFO (normal) / TRAP (build mode on empty tile) ──
     if (!isPylonTarget && !buildMode) {
         const rHov=dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
         drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", rHov);
         if (rHov) selectedRadialAction="info";
+    } else if (buildMode && !isPylonTarget) {
+        const rHov=dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
+        drawRadialButton(commandX+RADIAL_RADIUS, commandY, "TRAP", rHov);
+        if (rHov) selectedRadialAction="place_trap";
     }
 
     // ── LEFT = SWITCH / DESTROY / CONNECT (context) ───────

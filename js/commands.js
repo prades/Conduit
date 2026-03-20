@@ -199,6 +199,11 @@ function executeCommand() {
             }
             break;
         }
+        // ── PLACE TRAP ───────────────────────────────────
+        case "place_trap": {
+            if (commandTarget) openTrapPicker(commandTarget);
+            break;
+        }
         // ── LEGACY NEST COMMANDS ──────────────────────────
         case "connect_nest": {
             if (commandNestTarget && commandNestTarget.nestHealth <= 0) {

@@ -216,6 +216,9 @@ function nextWave() {
         activeDayZones++;
         for (let i=lastGenX+1;i<=lastGenX+ZONE_LENGTH;i++) generateSegment(i);
     }
+    // Camp building effects on wave start
+    applyPowerConduit();
+    applyRepairStation();
     document.getElementById("overlay").classList.remove("active");
     gameState.running=true;
     startNight();
@@ -235,6 +238,8 @@ function restartGame() {
     ELEMENTS.forEach(e=>{ networkStrength[e.id]=0; networkIntegrity[e.id]=0; _prevNetworkTiers[e.id]=0; });
     activeDayZones=3;exploredZones=new Set();
     boughtItems.clear();
+    clearCampBuildings();
+    traps=[];
     crystal={ x:0,y:2,health:300,maxHealth:300,radius:0.8 };
     player={ x:2,y:1,visualX:2,visualY:1,targetX:2,targetY:1,
              rotY:Math.PI*0.75, baseRot:Math.PI*0.75, angryTimer:0,

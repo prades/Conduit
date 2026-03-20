@@ -20,7 +20,8 @@ function onPredatorDeath(predator) {
     const speciesName = predator.speciesName || "ant";
     const className   = predator.className   || "scout";
     const dnaKey      = speciesName + "_" + className;
-    const drops       = predator.dnaDrops || 1;
+    const baseDrops   = predator.dnaDrops || 1;
+    const drops       = isCampBuilt("dna_sequencer") ? Math.ceil(baseDrops * 1.5) : baseDrops;
 
     addDNA(dnaKey, drops);
 

@@ -57,7 +57,7 @@ function render() {
                     if (visited.has(cur)) continue;
                     visited.add(cur); groupSize++;
                     elPylons.forEach(other => {
-                        if (!visited.has(other) && Math.hypot(cur.x-other.x, cur.y-other.y) <= 5.0)
+                        if (!visited.has(other) && Math.hypot(cur.x-other.x, cur.y-other.y) <= getPylonRange())
                             q.push(other);
                     });
                 }
@@ -88,7 +88,7 @@ function render() {
             for (let _pj = _pi + 1; _pj < _wPylons.length; _pj++) {
                 const pb = _wPylons[_pj];
                 if (pa.attackModeElement !== pb.attackModeElement) continue;
-                if ((pa.x-pb.x)*(pa.x-pb.x)+(pa.y-pb.y)*(pa.y-pb.y) > 25.0) continue; // 5.0²
+                const _pr = getPylonRange(); if ((pa.x-pb.x)*(pa.x-pb.x)+(pa.y-pb.y)*(pa.y-pb.y) > _pr*_pr) continue;
                 _wPylonPairs.push({ pa, pb,
                     el: pa.attackModeElement,
                     col: pa.attackModeColor || "#0f8",
@@ -491,6 +491,7 @@ function render() {
     updateStatusEffects();
     updateElementEffects();
     updateFloatingTexts();
+    updateTraps();
 
     // ── SIPHON SYSTEM ──
     if (!latchedPillar) {
@@ -785,6 +786,8 @@ function render() {
         else if (obj.type==='floor') {
             const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
             const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
+            // Home camp area — circuit board PCB style (x < 0 is behind the Crystal)
+            if (obj.x < 0) { drawCampFloor(obj, px, py, amb); return; }
             const isNight = gameState.phase === "night";
             // Day: Dexter's Lab steel-blue/teal panels. Night: Dark steel with warm red-orange ambience.
             let tR, tG, tB;
@@ -1977,6 +1980,10 @@ function render() {
     drawElementPicker();
     drawPylonConfirm();
     drawInfoPanel();
+    drawTraps();
+    drawCampButton();
+    drawCampMenu();
+    drawTrapPicker();
     updatePreview();
 
     requestAnimationFrame(render);

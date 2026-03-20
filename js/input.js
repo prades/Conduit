@@ -81,7 +81,7 @@ canvas.addEventListener('pointerdown', e=>{
     [pressX,pressY]=toCanvas(e.clientX,e.clientY); pressStartTime=performance.now();
 
     // Canvas overlay panels — absorb pointerdown so no game action triggers
-    if (elementPickerOpen || infoPanelOpen) return;
+    if (elementPickerOpen || infoPanelOpen || campMenuOpen || trapPickerOpen) return;
 
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
     if (commandPendingTap) return;
@@ -143,7 +143,13 @@ canvas.addEventListener('pointerup', e=>{
 
     if (handleOverlayPanelTap(upX, upY)) { isPressing=false; return; }
     if (handleCloneMenuTap(upX, upY)) { isPressing=false; return; }
+    if (handleTrapPickerTap(upX, upY)) { isPressing=false; return; }
+    if (handleCampMenuTap(upX, upY)) { isPressing=false; return; }
     if (handleFollowerUIClick(upX, upY)) { isPressing=false; return; }
+    // CAMP button tap
+    if (!touchMoved && Math.hypot(upX-_CAMPBTN.x, upY-_CAMPBTN.y) < _CAMPBTN.r+8) {
+        campMenuOpen=!campMenuOpen; isPressing=false; return;
+    }
 
     // ── ULTIMATE DOUBLE-TAP DETECTION ────────────────────
     if (!touchMoved) {
@@ -217,6 +223,7 @@ canvas.addEventListener('pointerup', e=>{
                 const _isPyCmd = commandTarget && commandTarget.pillar && !commandTarget.destroyed;
                 if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && (_isPyCmd || buildMode)) selectedRadialAction = "build_upgrade";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode) selectedRadialAction = "position";
+                else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4 && buildMode && !_isPyCmd) selectedRadialAction = "place_trap";
                 else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4 && !_isPyCmd) selectedRadialAction = "info";
                 else if (isLiveNest)   selectedRadialAction = "destroy_nest";
                 else if (isBrokenNest) selectedRadialAction = "connect_nest";

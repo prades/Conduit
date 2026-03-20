@@ -14,6 +14,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
         return; // hazard (null source) — immune
     }
     if (target.spawnProtection && target.spawnProtection > 0) return;
+    // Command Node — 10% ATK bonus for followers dealing damage
+    if (source && source.isFollower && source.team === "green") amount *= getFollowerAttackMult();
     // Provoke predators hit during day
     if (target instanceof Predator && target.team !== "green" && gameState.phase === "day") {
         target.provoked = true; target.state = "hunt";
@@ -42,6 +44,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
         }
     }
     if (target.defenseShredded > 0) amount *= 1 / (target.defenseShredFactor||0.5);
+    // Command Node — 10% incoming damage reduction for followers
+    if (target && target.isFollower && target.team === "green") amount *= getFollowerDefMult();
     let dmg = amount;
     if (target.perk) {
         const pk = PERKS[target.perk];
