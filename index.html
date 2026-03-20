@@ -3,17 +3,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tube Crawler: Peak AI Data-Driven</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
-        canvas { display: block; width: 100vw; height: 100vh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+        canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 
     #ui {
-        position: absolute; top: 20px; left: 230px;
-        width: 200px; height: 28px;
+        position: absolute; top: 20px; left: 230px; right: 80px;
+        max-width: 200px; height: 28px;
         background: rgba(0,0,0,0.6);
         border: 1px solid #333; border-radius: 4px; overflow: hidden;
+    }
+    @media (max-width: 480px) {
+        #ui { left: 130px; right: 60px; max-width: none; }
+        #shards { font-size: 12px; }
     }
     #hp { height: 100%; background: #0f8; width: 100%; box-shadow: 0 0 10px #0f8; transition: background 0.3s; }
 
@@ -97,13 +101,19 @@
     #topToggles {
         position: absolute; top: 44px; left: 50%;
         transform: translateX(-50%);
-        display: flex; gap: 6px; z-index: 20;
+        display: flex; gap: 4px; z-index: 20;
+        max-width: calc(100vw - 20px); flex-wrap: nowrap;
     }
     .top-btn {
         background: rgba(0,0,0,0.78); border: 1px solid #0f8;
         color: #0f8; font-family: monospace; font-size: 11px;
-        padding: 4px 10px; border-radius: 3px; cursor: pointer;
+        padding: 4px 8px; border-radius: 3px; cursor: pointer;
         letter-spacing: 1px; touch-action: manipulation;
+        white-space: nowrap;
+    }
+    @media (max-width: 360px) {
+        .top-btn { font-size: 9px; padding: 3px 5px; }
+        #topToggles { gap: 3px; }
     }
     .top-btn.active { background: rgba(0,255,136,0.18); border-color: #0ff; color: #0ff; }
 
@@ -116,7 +126,29 @@
         border-radius: 8px; padding: 16px 20px;
         font-family: monospace; color: #0f8;
         z-index: 2000; width: min(560px, 94vw);
+        max-height: 90dvh; max-height: 90vh;
     }
+    #controlsMenu.minimized {
+        top: auto; bottom: 8px; transform: translateX(-50%);
+        padding: 0; width: min(320px, 94vw);
+    }
+    #controlsMenu.minimized .cm-tabs,
+    #controlsMenu.minimized .cm-body,
+    #controlsMenu.minimized .ovr-btn { display: none !important; }
+    #cm-titlebar {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 10px; min-height: 28px;
+    }
+    #controlsMenu.minimized #cm-titlebar { margin-bottom: 0; padding: 8px 12px; }
+    #cm-title { color: #0ff; font-size: 0.82rem; letter-spacing: 2px; flex: 1; }
+    #cm-minimize {
+        background: rgba(0,0,0,0.5); border: 1px solid #0f8;
+        color: #0f8; font-family: monospace; font-size: 14px;
+        width: 28px; height: 24px; border-radius: 3px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        touch-action: manipulation; flex-shrink: 0;
+    }
+    #cm-minimize:hover { background: rgba(0,255,136,0.15); }
     .ctrl-title { color: #0ff; font-size: 0.82rem; letter-spacing: 2px; margin: 8px 0 5px; }
     .ctrl-row { font-size: 0.76rem; margin: 4px 0; display: flex; align-items: center; gap: 8px; color: #aad; }
     .ctrl-key { color: #ff0; font-size: 1rem; min-width: 20px; text-align: center; flex-shrink: 0; }
@@ -146,7 +178,7 @@
     }
     .cm-tab:hover:not(.active) { color: #0f8; border-color: #0f8; }
     .cm-body {
-        max-height: 68vh; overflow-y: auto; overflow-x: hidden;
+        max-height: min(68vh, 68dvh); overflow-y: auto; overflow-x: hidden;
         padding-right: 4px;
     }
     .cm-body::-webkit-scrollbar { width: 4px; }
@@ -359,6 +391,12 @@
 
 <!-- CONTROLS / INFO MENU — 5-tab reference panel -->
 <div id="controlsMenu">
+
+  <!-- Title bar with minimize button -->
+  <div id="cm-titlebar">
+    <span id="cm-title">▣ GAME INDEX</span>
+    <button id="cm-minimize" onclick="minimizeControlsMenu()" title="Minimize">─</button>
+  </div>
 
   <!-- Tab bar -->
   <div class="cm-tabs">

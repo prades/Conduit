@@ -6,7 +6,7 @@ const _UI_X=20, _UI_W=180, _UI_TAB_H=22, _UI_ROW_H=28;
 const _UI_CONTENT_H = ELEMENTS.length * _UI_ROW_H; // 168px
 const _UI_TOTAL_H   = _UI_TAB_H + _UI_CONTENT_H;
 
-function _panelY() { return canvas.height - 20 - _UI_TOTAL_H; }
+function _panelY() { return canvas.height - 20 - _UI_TOTAL_H - (SAFE_BOTTOM || 0); }
 
 function drawFollowerElementUI() {
     const x=_UI_X, w=_UI_W, th=_UI_TAB_H, rh=_UI_ROW_H;

@@ -52,7 +52,7 @@ function drawRadialMenu() {
     }
 
     // ── RIGHT = INFO (normal) / TRAP (build mode on empty tile) ──
-    if (!isPylonTarget && !buildMode) {
+    if (!buildMode) {
         const rHov=dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
         drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", rHov);
         if (rHov) selectedRadialAction="info";

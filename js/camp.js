@@ -236,7 +236,7 @@ function handleCampMenuTap(tx, ty) {
 const _CAMPBTN = { x: 22, y: 0, r: 20 };
 
 function drawCampButton() {
-    _CAMPBTN.y = canvas.height - 58;
+    _CAMPBTN.y = canvas.height - 58 - (SAFE_BOTTOM || 0);
     const { x, y, r } = _CAMPBTN;
     const pulse = 0.65 + 0.35 * Math.sin((frame || 0) * 0.05);
 

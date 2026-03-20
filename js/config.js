@@ -34,8 +34,24 @@ const hpBar   = document.getElementById('hp');
 const shardUI = document.getElementById('shards');
 const waveUI  = document.getElementById('waveInfo');
 
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+// Safe area inset at the bottom (for notch/home-bar devices)
+let SAFE_BOTTOM = 0;
+function resize() {
+    // Use visualViewport dimensions when available (better mobile support)
+    const vv = window.visualViewport;
+    canvas.width  = vv ? Math.round(vv.width)  : window.innerWidth;
+    canvas.height = vv ? Math.round(vv.height) : window.innerHeight;
+    // Detect bottom safe-area via a temporary DOM element
+    try {
+        const _tmp = document.createElement('div');
+        _tmp.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);width:1px;pointer-events:none;opacity:0';
+        document.body.appendChild(_tmp);
+        SAFE_BOTTOM = Math.max(0, parseInt(getComputedStyle(_tmp).height) || 0);
+        document.body.removeChild(_tmp);
+    } catch(e) { SAFE_BOTTOM = 0; }
+}
 window.addEventListener('resize', resize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
 resize();
 
 // ── CONFIG ────────────────────────────────────────────────
@@ -221,6 +237,28 @@ function toggleControlsMenu() {
     const m = document.getElementById("controlsMenu");
     if (!m) return;
     const isHidden = !m.style.display || m.style.display === "none";
-    m.style.display = isHidden ? "flex" : "none";
-    m.style.flexDirection = "column";
+    if (isHidden) {
+        m.style.display = "flex";
+        m.style.flexDirection = "column";
+        m.classList.remove("minimized");
+        const minBtn = document.getElementById("cm-minimize");
+        if (minBtn) minBtn.textContent = "─";
+    } else {
+        m.style.display = "none";
+    }
+}
+function minimizeControlsMenu() {
+    const m = document.getElementById("controlsMenu");
+    if (!m) return;
+    const minBtn = document.getElementById("cm-minimize");
+    if (m.classList.contains("minimized")) {
+        m.classList.remove("minimized");
+        m.style.top = "50%";
+        m.style.bottom = "";
+        m.style.transform = "translate(-50%, -50%)";
+        if (minBtn) minBtn.textContent = "─";
+    } else {
+        m.classList.add("minimized");
+        if (minBtn) minBtn.textContent = "▣";
+    }
 }
