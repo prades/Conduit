@@ -117,7 +117,7 @@ function updateRTSNPC(actor) {
             p.attackModeColor = p.chosenColor || (_chEl ? _chEl.color : actor.color) || "#0f8";
             p.chosenElement = null; p.chosenColor = null;
             p.attackFireTimer = 0;
-            p.attackRange = 2.5;
+            p.attackRange = 2.5 + (pylonRangeBonus||0);
             p.attackPower = (actor.stats?.specialAttack||10) * 1.2;
             p.pendingUpgrade = false;
             p.upgradeFollower = null;

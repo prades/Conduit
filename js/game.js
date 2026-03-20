@@ -389,7 +389,7 @@ function render() {
     // ── ATTACK MODE PYLON — fire missiles at nearby enemies ──
     _aPylons.forEach(t=>{
         t.attackFireTimer = (t.attackFireTimer||0) + 1;
-        if (t.attackFireTimer < 90) return; // fire every 1.5s
+        if (t.attackFireTimer < 90 - (pylonFireRateBonus||0)) return; // fire every 1.5s (reduced by Overclock)
         t.attackFireTimer = 0;
         // Find nearest enemy within range
         let nearest=null, bd=t.attackRange;

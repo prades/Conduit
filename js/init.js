@@ -23,6 +23,15 @@ async function loadConfig() {
         gameState.totalWavesSurvived = gs.totalWavesSurvived || 0;
         activeDayZones               = gs.activeDayZones     || 3;
     }
+    const pu = loadPermUpgrades();
+    if (pu) {
+        if (Array.isArray(pu.ids)) permUpgrades = new Set(pu.ids);
+        pylonMaxHPBonus        = pu.pylonMaxHPBonus        || 0;
+        pylonRangeBonus        = pu.pylonRangeBonus        || 0;
+        pylonFireRateBonus     = pu.pylonFireRateBonus     || 0;
+        followerPermPowerBonus = pu.followerPermPowerBonus || 0;
+        followerPermHPBonus    = pu.followerPermHPBonus    || 0;
+    }
     const savedPylons = loadPylons();
     if (savedPylons) {
         savedPylons.forEach(saved => {

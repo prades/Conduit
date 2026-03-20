@@ -77,6 +77,7 @@ function showWaveClear() {
     document.getElementById("ovr-btn").textContent="NEXT WAVE";
     document.getElementById("ovr-btn").onclick=nextWave;
     buildShopGrid();
+    if (typeof switchShopTab === "function") switchShopTab("Supply");
     overlay.classList.add("active");
 }
 
@@ -92,42 +93,57 @@ function showGameOver() {
     document.getElementById("ovr-waves").textContent=gameState.totalWavesSurvived;
     document.getElementById("ovr-btn").textContent="RESTART";
     document.getElementById("ovr-btn").onclick=restartGame;
-    document.getElementById("shopGrid").innerHTML="";
+    ["shopGridSupply","shopGridPylons","shopGridArmaments"].forEach(id => {
+        const el = document.getElementById(id); if (el) el.innerHTML = "";
+    });
     overlay.classList.add("active");
 }
 
 function buildShopGrid() {
-    const grid=document.getElementById("shopGrid");
-    grid.innerHTML="";
-    SHOP_ITEMS.forEach(item=>{
-        if (item.element&&unlockedElements.has(item.element)) return; // already unlocked
-        const div=document.createElement("div");
-        div.className="shop-item"+(boughtItems.has(item.id)?" bought":"");
-        div.innerHTML=`<div>${item.label}</div><div class="cost">${item.cost} shards</div>`;
-        div.onclick=()=>{
-            if (shardCount<item.cost||boughtItems.has(item.id)) return;
-            shardCount-=item.cost;
+    _fillShopPane("shopGridSupply",    SHOP_ITEMS,        false);
+    _fillShopPane("shopGridPylons",    PYLON_SHOP_ITEMS,  false);
+    _fillShopPane("shopGridArmaments", ARMAMENT_ITEMS,    true);
+}
+
+function _fillShopPane(paneId, items, checkTerritory) {
+    const grid = document.getElementById(paneId);
+    if (!grid) return;
+    grid.innerHTML = "";
+    const zones = getControlledZones();
+    items.forEach(item => {
+        if (item.element && unlockedElements.has(item.element)) return;
+        const isPermBought = item.oneTimeGame && permUpgrades.has(item.id);
+        const isWaveBought = !item.oneTimeGame && boughtItems.has(item.id);
+        const isBought = isPermBought || isWaveBought;
+        const isLocked = !!(item.reqZones && zones < item.reqZones);
+        const div = document.createElement("div");
+        div.className = "shop-item" + (isBought ? " bought" : "") + (isLocked ? " locked" : "");
+        div.innerHTML = `<div>${item.label}</div><div class="cost">${item.cost} shards</div>` +
+            (item.desc ? `<div class="desc">${item.desc}</div>` : "") +
+            (item.reqZones ? `<div class="req">Req: ${item.reqZones} zones</div>` : "");
+        div.onclick = () => {
+            if (shardCount < item.cost || isBought || isLocked) return;
+            shardCount -= item.cost;
             saveShards();
             item.apply();
-            boughtItems.add(item.id);
+            if (item.oneTimeGame) { permUpgrades.add(item.id); savePermUpgrades(); }
+            else boughtItems.add(item.id);
             div.classList.add("bought");
-            document.getElementById("ovr-shards").textContent=shardCount;
-            shardUI.textContent="Shards: "+shardCount;
-    // Zone indicator
-    const _zoneEl = document.getElementById("zoneInfo");
-    if (_zoneEl) {
-        const _pz = getZoneIndex(Math.floor(player.x));
-        _zoneEl.textContent = _pz === 0 ? "Zone: Home" : "Zone: " + _pz;
-    }
-    // Update DNA HUD
-    const _dna = getDNA();
-    const dnaEntries = Object.entries(_dna).filter(([k,v])=>v>0);
-    const dnaEl = document.getElementById("dnaHud");
-    if (dnaEl) {
-        dnaEl.textContent = dnaEntries.length === 0
-            ? "DNA: none"
-            : "DNA: " + dnaEntries.map(([k,v])=>k.replace("_"," ")+"x"+v).join(" | ");
-    }
+            document.getElementById("ovr-shards").textContent = shardCount;
+            shardUI.textContent = "Shards: " + shardCount;
+            const _zoneEl = document.getElementById("zoneInfo");
+            if (_zoneEl) {
+                const _pz = getZoneIndex(Math.floor(player.x));
+                _zoneEl.textContent = _pz === 0 ? "Zone: Home" : "Zone: " + _pz;
+            }
+            const _dna = getDNA();
+            const dnaEntries = Object.entries(_dna).filter(([k,v]) => v > 0);
+            const dnaEl = document.getElementById("dnaHud");
+            if (dnaEl) {
+                dnaEl.textContent = dnaEntries.length === 0
+                    ? "DNA: none"
+                    : "DNA: " + dnaEntries.map(([k,v]) => k.replace("_"," ") + "x" + v).join(" | ");
+            }
         };
         grid.appendChild(div);
     });
@@ -142,9 +158,10 @@ function spawnFollowerFromSave(entry) {
         x:crystal.x+(Math.random()-0.5)*2,
         y:crystal.y+(Math.random()-0.5)*2,
         team:"green",
-        health:stats.hp, maxHealth:stats.hp,
+        health:(stats.hp||10) + (followerPermHPBonus||0),
+        maxHealth:(stats.hp||10) + (followerPermHPBonus||0),
         moveSpeed: NPC_TYPES["virus"].moveSpeed + ((stats.speed||10)-10)*0.001,
-        power: stats.attack||5,
+        power: (stats.attack||5) + (followerPermPowerBonus||0),
         stats, personality, role,
         currentResonance:0, currentWill:stats.will||20,
         walkCycle:0, moveCooldown:0, stance:"follow", isFollower:true, isHealing:false,
@@ -302,7 +319,9 @@ function restartGame() {
     ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
     projectiles=[];fragments=[];smoke=[];shards=[];elementEffects=[];floatingTexts=[];followerProjectiles=[];clearDNA();
     pendingPillarDestruction=[];respawnQueue=[];
-    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();
+    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();clearPermUpgrades();
+    permUpgrades=new Set(); pylonMaxHPBonus=0; pylonRangeBonus=0; pylonFireRateBonus=0;
+    followerPermPowerBonus=0; followerPermHPBonus=0;
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
     unlockedElements=new Set(["fire","electric"]);
     latchedPillar=null;activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};

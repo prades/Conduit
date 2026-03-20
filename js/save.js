@@ -16,6 +16,21 @@ function clearGameState() {
     try { localStorage.removeItem("tubecrawler_gamestate"); } catch(e) {}
 }
 
+function savePermUpgrades() {
+    try { localStorage.setItem("tubecrawler_permupgrades", JSON.stringify({
+        ids: [...permUpgrades],
+        pylonMaxHPBonus, pylonRangeBonus, pylonFireRateBonus,
+        followerPermPowerBonus, followerPermHPBonus
+    })); } catch(e) {}
+}
+function loadPermUpgrades() {
+    try { return JSON.parse(localStorage.getItem("tubecrawler_permupgrades") || "null"); }
+    catch(e) { return null; }
+}
+function clearPermUpgrades() {
+    try { localStorage.removeItem("tubecrawler_permupgrades"); } catch(e) {}
+}
+
 function savePylons() {
     const data = world
         .filter(t => t.pillar)

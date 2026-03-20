@@ -67,6 +67,31 @@
     .shop-item:hover { background: #0f8; color: #000; }
     .shop-item .cost { color: #ff0; font-size: 0.8rem; }
     .shop-item.bought { opacity: 0.4; pointer-events: none; }
+    .shop-item.locked { opacity: 0.38; pointer-events: none; border-color: #444; color: #667; }
+    .shop-item .desc  { color: #8fa; font-size: 0.72rem; margin-top: 3px; line-height: 1.3; }
+    .shop-item .req   { color: #f84; font-size: 0.7rem; margin-top: 2px; }
+
+    /* ── SHOP TAB PANEL ── */
+    #shopPanel { width: min(560px, 96vw); }
+    .shop-tabs {
+        display: flex; gap: 3px; margin-top: 14px; margin-bottom: 0;
+        border-bottom: 1px solid #0f8; padding-bottom: 3px; flex-wrap: wrap;
+    }
+    .shop-tab {
+        background: rgba(0,0,0,0.5); border: 1px solid #1a4a2a;
+        color: #4a8a6a; font-family: monospace; font-size: 11px;
+        padding: 6px 16px; border-radius: 3px 3px 0 0; cursor: pointer;
+        letter-spacing: 1px; touch-action: manipulation;
+        transition: color 0.12s, border-color 0.12s;
+    }
+    .shop-tab.active { color: #0ff; border-color: #0ff; background: rgba(0,255,255,0.08); border-bottom-color: transparent; }
+    .shop-tab:hover:not(.active) { color: #0f8; border-color: #0f8; }
+    .shop-pane { display: none; flex-wrap: wrap; gap: 10px; justify-content: center;
+        max-width: 560px; max-height: 46vh; overflow-y: auto; padding: 10px 2px 2px; }
+    .shop-pane.active { display: flex; }
+    .shop-pane::-webkit-scrollbar { width: 4px; }
+    .shop-pane::-webkit-scrollbar-track { background: #001008; }
+    .shop-pane::-webkit-scrollbar-thumb { background: #0f8; border-radius: 2px; }
 
     /* ── TOP COMMAND TOGGLES ── */
     #topToggles {
@@ -344,6 +369,7 @@
     <button class="cm-tab" onclick="switchCMTab('cmAbilities')">ABILITIES</button>
     <button class="cm-tab" onclick="switchCMTab('cmPerks')">PERKS</button>
     <button class="cm-tab" onclick="switchCMTab('cmPylons')">PYLONS</button>
+    <button class="cm-tab" onclick="switchCMTab('cmZones')">ZONES</button>
     <button class="cm-tab" onclick="switchCMTab('cmCrystal')">CRYSTAL</button>
     <button class="cm-tab" onclick="switchCMTab('cmPredators')">PREDATORS</button>
   </div>
@@ -820,6 +846,52 @@
       <div class="cm-tip"><strong>Priority:</strong> Destroying or linking front-zone nests dramatically reduces incoming pressure. Fire meteor special deals 2× damage to nests.</div>
     </div>
 
+    <!-- ── ZONES ── -->
+    <div id="cmZones" class="cm-section">
+      <div class="ctrl-title">ZONE OVERVIEW</div>
+      <div class="ctrl-row cm-dim">The world is divided into zones (15 tiles wide each). Zone 0 is your Home base. Zones 1+ are hostile forward zones with escalating enemies. Control more zones to unlock powerful Armament purchases.</div>
+
+      <div class="ctrl-title">ZONE OBJECTS</div>
+
+      <div class="cm-elem-head" style="color:#f55">▣ NEST</div>
+      <div class="ctrl-row cm-dim">Enemy spawn structure at the center of each forward zone (y=2). <span class="cm-stat">200 HP</span>. Spawns waves of enemies each night.</div>
+      <div class="ctrl-row cm-dim"><span style="color:#ff0">Destroy</span> — Use the LEFT radial command to assign followers to attack it. Eliminating a nest stops spawns from that zone.</div>
+      <div class="ctrl-row cm-dim"><span style="color:#0ff">Link to Pylon</span> — Use the RIGHT radial on an adjacent pylon, then select the nest. Enemies from that nest are routed through your pylon network. Fire meteor deals <span class="cm-stat">2× damage</span> to nests.</div>
+
+      <div class="cm-elem-head" style="color:#fa0">▦ WALL PANEL</div>
+      <div class="ctrl-row cm-dim">Appear on back walls in forward zones (~18% chance per wall tile). Interact to activate.</div>
+      <div class="ctrl-row cm-dim"><span style="color:#0f8">Reward Panel (60%)</span> — Awards <span class="cm-stat">5–15 shards</span> on activation.</div>
+      <div class="ctrl-row cm-dim"><span style="color:#f44">Decoy Panel (40%)</span> — Triggers an alarm that makes nearby enemies immediately hostile. Three alarm types:</div>
+      <div class="ctrl-row cm-dim" style="padding-left:16px">• <span class="cm-stat">Proximity</span> — Enemies within 6 tiles become hostile</div>
+      <div class="ctrl-row cm-dim" style="padding-left:16px">• <span class="cm-stat">Zone</span> — All enemies in the same zone become hostile</div>
+      <div class="ctrl-row cm-dim" style="padding-left:16px">• <span class="cm-stat">Facility</span> — All enemies on the map become hostile</div>
+
+      <div class="cm-elem-head" style="color:#0f8">◉ CAPACITOR NODE</div>
+      <div class="ctrl-row cm-dim">One per forward zone, positioned near the front (zone start + 3 tiles). <span style="color:#0ff">Capturable</span> by assigning followers with the RIGHT radial command.</div>
+      <div class="ctrl-row cm-dim">Capture grants <span class="cm-stat">player territory</span> in that zone and awards <span class="cm-stat">+5 shards</span> each wave while held. Counts toward zone control for Armament unlocks.</div>
+      <div class="ctrl-row cm-dim">Capture is interrupted if an enemy enters within 1.5 tiles.</div>
+
+      <div class="cm-elem-head" style="color:#fa0">◈ SIGNAL TOWER</div>
+      <div class="ctrl-row cm-dim">Spawns in zones 4 and beyond (zone center, y=1). While uncaptured, grants the enemy <span style="color:#f44">enemy territory</span> — increasing enemy push strength in that zone.</div>
+      <div class="ctrl-row cm-dim"><span style="color:#0ff">Capturing</span> a Signal Tower converts it to player territory and removes the enemy spawn advantage. Counts toward zone control.</div>
+
+      <div class="cm-elem-head" style="color:#88f">◧ MEMORY BANK</div>
+      <div class="ctrl-row cm-dim">A hacked nest node — found in some zones. Capturing it marks the nest zone as player-controlled, enabling you to use it as a <span class="cm-stat">forward spawn point</span> for the next wave.</div>
+
+      <div class="ctrl-title">TERRITORY CONTROL</div>
+      <div class="ctrl-row cm-dim">Territory is recalculated every second based on proximity to control points.</div>
+      <div class="cm-build-row"><span class="cm-build-label" style="background:rgba(0,120,255,0.2);color:#44f">Player (blue)</span>Within 3 tiles of a green pylon or captured node</div>
+      <div class="cm-build-row"><span class="cm-build-label" style="background:rgba(255,40,40,0.2);color:#f44">Enemy (red)</span>Within 4 tiles of an active nest or uncaptured signal tower</div>
+      <div class="cm-build-row"><span class="cm-build-label" style="background:rgba(200,200,0,0.2);color:#aa0">Contested</span>Overlapping player and enemy territory — priority combat zone</div>
+
+      <div class="ctrl-title">ZONE CONTROL COUNT</div>
+      <div class="ctrl-row cm-dim">The Armament shop tracks zones controlled: <span class="cm-stat">Home (1)</span> + each captured Capacitor Node or Signal Tower. Reach higher counts to unlock powerful elite units:</div>
+      <div class="ctrl-row cm-dim" style="padding-left:10px">• <span class="cm-stat">2 zones</span> — Power Boost, Armor Plating</div>
+      <div class="ctrl-row cm-dim" style="padding-left:10px">• <span class="cm-stat">3 zones</span> — Elite Vanguard (3 elite followers)</div>
+      <div class="ctrl-row cm-dim" style="padding-left:10px">• <span class="cm-stat">4 zones</span> — Strike Force (5 hardened fighters)</div>
+      <div class="ctrl-row cm-dim" style="padding-left:10px">• <span class="cm-stat">5 zones</span> — Apex Unit (1 supreme commander)</div>
+    </div>
+
     <!-- ── CRYSTAL ── -->
     <div id="cmCrystal" class="cm-section">
 
@@ -844,17 +916,41 @@
       </div>
       <div class="ctrl-row cm-dim">A <strong>Crystal Modulator</strong> (dropped by bosses) lets you set an active element pair — all newly recruited followers draw from that element pool instead of random.</div>
 
-      <div class="ctrl-title">SHOP (between waves)</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:5px">After each night a shop appears. Items purchased with shards. Some items are one-time only.</div>
+      <div class="ctrl-title">SHOP (between waves) — 3 Tabs</div>
+      <div class="ctrl-row cm-dim" style="margin-bottom:5px">After each night a tabbed shop opens. Items purchased with shards. <span style="color:#0ff">★ = one-time per game.</span></div>
+
+      <div class="ctrl-title" style="font-size:0.72rem;color:#0f8;margin-top:6px">▶ SUPPLY TAB</div>
       <div class="cm-shop-grid">
-        <div class="cm-shop-item"><span class="label">Unlock ICE</span><br><span class="cost">20 shards</span></div>
-        <div class="cm-shop-item"><span class="label">Unlock FLUX</span><br><span class="cost">25 shards</span></div>
-        <div class="cm-shop-item"><span class="label">Unlock CORE</span><br><span class="cost">30 shards</span></div>
-        <div class="cm-shop-item"><span class="label">Unlock TOXIC</span><br><span class="cost">35 shards</span></div>
+        <div class="cm-shop-item"><span class="label">Unlock ICE ★</span><br><span class="cost">20 shards</span></div>
+        <div class="cm-shop-item"><span class="label">Unlock FLUX ★</span><br><span class="cost">25 shards</span></div>
+        <div class="cm-shop-item"><span class="label">Unlock CORE ★</span><br><span class="cost">30 shards</span></div>
+        <div class="cm-shop-item"><span class="label">Unlock TOXIC ★</span><br><span class="cost">35 shards</span></div>
         <div class="cm-shop-item"><span class="label">Repair Crystal</span><br><span class="cost">15 shards → +80 HP</span></div>
         <div class="cm-shop-item"><span class="label">+1 Follower</span><br><span class="cost">10 shards</span></div>
         <div class="cm-shop-item"><span class="label">+1 Zone</span><br><span class="cost">20 shards</span></div>
-        <div class="cm-shop-item"><span class="label">◈ Ghostphage</span><br><span class="cost">80 shards (Crystal Build)</span></div>
+        <div class="cm-shop-item"><span class="label">◈ Ghostphage ★</span><br><span class="cost">80 shards (Crystal Build)</span></div>
+      </div>
+
+      <div class="ctrl-title" style="font-size:0.72rem;color:#0f8;margin-top:6px">▶ PYLONS TAB</div>
+      <div class="cm-shop-grid">
+        <div class="cm-shop-item"><span class="label">Fortify Grid ★</span><br><span class="cost">30 shards — +40 max HP to all pylons</span></div>
+        <div class="cm-shop-item"><span class="label">Emergency Repair</span><br><span class="cost">18 shards — full HP restore</span></div>
+        <div class="cm-shop-item"><span class="label">Season Pylons</span><br><span class="cost">25 shards — +1 season to all (+25% power)</span></div>
+        <div class="cm-shop-item"><span class="label">Extended Reach ★</span><br><span class="cost">35 shards — +1 attack range</span></div>
+        <div class="cm-shop-item"><span class="label">Overclock ★</span><br><span class="cost">45 shards — pylons fire 35% faster</span></div>
+        <div class="cm-shop-item"><span class="label">Upgrade All</span><br><span class="cost">55 shards — stop all energy decay</span></div>
+      </div>
+
+      <div class="ctrl-title" style="font-size:0.72rem;color:#0f8;margin-top:6px">▶ ARMAMENTS TAB</div>
+      <div class="ctrl-row cm-dim" style="margin-bottom:3px">Some items require zone control. See ZONES tab for details.</div>
+      <div class="cm-shop-grid">
+        <div class="cm-shop-item"><span class="label">Field Medic</span><br><span class="cost">15 shards — heal all 35% HP</span></div>
+        <div class="cm-shop-item"><span class="label">Recon Buff</span><br><span class="cost">30 shards — +30% spd/+40% pwr this wave</span></div>
+        <div class="cm-shop-item"><span class="label">Power Boost ★</span><br><span class="cost">50 shards — +6 pwr perm (req 2 zones)</span></div>
+        <div class="cm-shop-item"><span class="label">Armor Plating ★</span><br><span class="cost">40 shards — +15 HP perm (req 2 zones)</span></div>
+        <div class="cm-shop-item"><span class="label">Elite Vanguard</span><br><span class="cost">75 shards — 3 elite 2× followers (req 3 zones)</span></div>
+        <div class="cm-shop-item"><span class="label">Strike Force</span><br><span class="cost">130 shards — 5 fighters 2.5× (req 4 zones)</span></div>
+        <div class="cm-shop-item"><span class="label">Apex Unit</span><br><span class="cost">200 shards — 1 commander 4× (req 5 zones)</span></div>
       </div>
 
       <div class="ctrl-title">CLONE SUMMONING</div>
@@ -882,8 +978,16 @@
 </div>
 
 <script>
+function switchShopTab(tab) {
+    ['Supply','Pylons','Armaments'].forEach(function(t) {
+        var pane = document.getElementById('shopGrid' + t);
+        var btn  = document.getElementById('shopTab'  + t);
+        if (pane) pane.classList.toggle('active', t === tab);
+        if (btn)  btn.classList.toggle('active',  t === tab);
+    });
+}
 function switchCMTab(id) {
-    var ids = ['cmControls','cmElements','cmFollowers','cmPersonalities','cmAbilities','cmPerks','cmPylons','cmCrystal','cmPredators'];
+    var ids = ['cmControls','cmElements','cmFollowers','cmPersonalities','cmAbilities','cmPerks','cmPylons','cmZones','cmCrystal','cmPredators'];
     document.querySelectorAll('#controlsMenu .cm-tab').forEach(function(btn, i) {
         btn.classList.toggle('active', ids[i] === id);
     });
@@ -903,7 +1007,16 @@ function switchCMTab(id) {
     <p>Shards collected: <span class="stat" id="ovr-shards">0</span></p>
     <p>Enemies converted: <span class="stat" id="ovr-conv">0</span></p>
     <p>Waves survived: <span class="stat" id="ovr-waves">0</span></p>
-    <div id="shopGrid"></div>
+    <div id="shopPanel">
+        <div class="shop-tabs">
+            <button class="shop-tab active" id="shopTabSupply"     onclick="switchShopTab('Supply')">SUPPLY</button>
+            <button class="shop-tab"        id="shopTabPylons"     onclick="switchShopTab('Pylons')">PYLONS</button>
+            <button class="shop-tab"        id="shopTabArmaments"  onclick="switchShopTab('Armaments')">ARMAMENTS</button>
+        </div>
+        <div id="shopGridSupply"    class="shop-pane active"></div>
+        <div id="shopGridPylons"    class="shop-pane"></div>
+        <div id="shopGridArmaments" class="shop-pane"></div>
+    </div>
     <button class="ovr-btn" id="ovr-btn">RESTART</button>
 </div>
 

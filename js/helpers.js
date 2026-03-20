@@ -179,9 +179,10 @@ function spawnFollowerAtCrystal(element) {
     const npc = {
         type:"virus", element, x:crystal.x, y:crystal.y,
         team:"green",
-        health: stats.hp, maxHealth: stats.hp,
+        health: stats.hp + (followerPermHPBonus||0),
+        maxHealth: stats.hp + (followerPermHPBonus||0),
         moveSpeed: def.moveSpeed + (stats.speed - 10) * 0.001,
-        power: stats.attack,
+        power: stats.attack + (followerPermPowerBonus||0),
         stats, personality, role,
         currentResonance: 0,
         currentWill: stats.will,
@@ -196,6 +197,47 @@ function spawnFollowerAtCrystal(element) {
     actors.push(npc);
     followers.push(npc);
     followerByElement[element] = followerByElement[element]||[];
+    followerByElement[element].push(npc);
+}
+
+// ─────────────────────────────────────────────────────────
+//  ELITE FOLLOWER SPAWN  (armament shop)
+// ─────────────────────────────────────────────────────────
+function spawnEliteFollowerAtCrystal(element, powerMult, hpMult) {
+    if (!element) {
+        const pool = [...unlockedElements];
+        element = pool[Math.floor(Math.random() * pool.length)] || "fire";
+    }
+    const def         = NPC_TYPES["virus"];
+    const personality = PERSONALITY_KEYS[Math.floor(Math.random() * PERSONALITY_KEYS.length)];
+    const base        = applyPersonality(personality);
+    const boostedHP   = Math.round(base.hp     * hpMult)    + (followerPermHPBonus||0);
+    const boostedATK  = Math.round(base.attack * powerMult) + (followerPermPowerBonus||0);
+    const boostedSPD  = base.speed * 1.15;
+    const stats       = { ...base, hp: boostedHP, attack: boostedATK, speed: Math.round(boostedSPD) };
+    const role        = assignRole(stats);
+    const npc = {
+        type:"virus", element,
+        x: crystal.x + (Math.random() - 0.5),
+        y: crystal.y + (Math.random() - 0.5),
+        team:"green",
+        health: boostedHP, maxHealth: boostedHP,
+        moveSpeed: def.moveSpeed + (stats.speed - 10) * 0.001,
+        power: boostedATK,
+        stats, personality, role,
+        currentResonance: 0,
+        currentWill: base.will,
+        ultimateCharge: 0,
+        walkCycle: 0, moveCooldown: 0,
+        stance:"follow", isFollower:true, isElite:true, isHealing:false,
+        hitFlash: 0, dead: false,
+        combatTrait:  Object.keys(COMBAT_TRAITS)[Math.floor(Math.random() * 2)],
+        naturalTrait: Object.keys(NATURAL_TRAITS)[Math.floor(Math.random() * 2)],
+        perk:         Object.keys(PERKS)[Math.floor(Math.random() * 2)]
+    };
+    actors.push(npc);
+    followers.push(npc);
+    followerByElement[element] = followerByElement[element] || [];
     followerByElement[element].push(npc);
 }
 

@@ -47,7 +47,8 @@ function _executeBuild(el, t) {
         return;
     }
     shardCount -= 10; saveShards();
-    t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=80;
+    const _baseHP = 80 + (pylonMaxHPBonus||0);
+    t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=_baseHP;
     t.upgraded=false; t.destroyed=false;
     t.attackMode=false; t.waveMode=false;
     t.attackModeElement=null; t.attackModeColor=null;
@@ -84,7 +85,8 @@ function _executeBuildInstant(el, t) {
         return;
     }
     shardCount -= 40; saveShards();
-    t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=80;
+    const _iHP = 80 + (pylonMaxHPBonus||0);
+    t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=_iHP;
     t.upgraded=false; t.destroyed=false;
     t.reconstructing=false; t.workers=[];
     t.constructing=false; t.constructProgress=1; t.health=t.maxHealth;
@@ -92,7 +94,7 @@ function _executeBuildInstant(el, t) {
     if (unlockedElements.has(el.id)) {
         t.attackMode=true; t.waveMode=false;
         t.attackModeElement=el.id; t.attackModeColor=el.color;
-        t.attackPower=15; t.attackRange=2.5;
+        t.attackPower=15; t.attackRange=2.5 + (pylonRangeBonus||0);
         t.chosenElement=el.id; t.chosenColor=el.color;
     }
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
