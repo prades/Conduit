@@ -177,6 +177,34 @@ function nextWave() {
     gameState.nightNumber++;
     boughtItems.clear();
     dayStats.redSpawned=0; dayStats.redConverted=0;
+
+    // ── Close all canvas menus and reset UI/input state ──
+    campMenuOpen      = false;
+    cloneMenuOpen     = false;
+    crystalMenuOpen   = false;
+    trapPickerOpen    = false; trapPickerTarget = null;
+    pylonConfirmOpen  = false; pylonConfirmEl   = null; pylonConfirmTarget = null;
+    elementPickerOpen = false; elementPickerTarget = null;
+    infoPanelOpen     = false; infoPanelTarget = null;
+    commandMode       = false; commandPendingTap = false;
+    commandTarget     = null; selectedRadialAction = null;
+    nestConnectMode   = false; pendingConnectNest = null;
+    buildMode         = false;
+    const _bBtn = document.getElementById("btnBuild");
+    if (_bBtn) { _bBtn.textContent="BUILD: OFF"; _bBtn.classList.remove("active"); }
+    holdLineX         = null;
+    isPressing        = false; longHoldFired = false; touchMoved = false; gesturePoints = [];
+    latchedPillar     = null;
+    shake             = 0;
+
+    // ── Clear leftover game objects from previous wave ──
+    projectiles=[]; fragments=[]; smoke=[]; followerProjectiles=[];
+    elementEffects=[]; floatingTexts=[]; groundItems=[]; traps=[];
+    shards=[];
+
+    // ── Reset player health ──
+    health = 100;
+
     spawnHazardsForDay();
 
     // ── Collect every follower in the army right now ──
