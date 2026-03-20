@@ -303,7 +303,8 @@ function nextWave() {
         // expand world — zone cap at 5
         if (activeDayZones < 5) {
             activeDayZones++;
-            for (let i=lastGenX+1;i<=lastGenX+ZONE_LENGTH;i++) generateSegment(i);
+            const baseX = lastGenX;
+            for (let i = 1; i <= ZONE_LENGTH; i++) generateSegment(baseX + i);
         }
 
         // ── CAPTURED NODE BENEFITS ──
