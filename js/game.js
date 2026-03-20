@@ -1224,121 +1224,196 @@ function render() {
                 ctx.restore();
             }
 
-            // Pillar
+            // Pillar — 6 unique style-based designs
             if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
                 if(obj.converting){ctx.fillStyle="#ff0";}
-                drawHealthBar(px-10,py-80,20,4,obj.health,obj.maxHealth);
+                drawHealthBar(px-10,py-65,20,4,obj.health,obj.maxHealth);
+                const _style=obj.pylonStyle||"sentinel";
+                const _pulse=0.5+0.5*Math.sin((frame+(obj.pulseTimer||0))*0.08);
+                obj.pulseTimer=(obj.pulseTimer||0)+1;
+                const _acol=obj.attackModeColor||"#0f8";
+                const _isActive=!!(obj.attackMode||obj.waveMode);
+                const _wTier=obj.waveMode?(networkStrength[obj.attackModeElement]||0):0;
+                const _tierMult=1+_wTier*0.4;
+
+                // ── WAVE MODE — background glow ring ──
                 if (obj.waveMode) {
-                    // ── WAVE FUNCTION MODE — glowing resonance tower ──
-                    const wcol = obj.attackModeColor||"#0f8";
-                    const wpulse = 0.5+0.5*Math.sin(frame*0.08+(obj.pulseTimer||0)*0.05);
-                    obj.pulseTimer=(obj.pulseTimer||0)+1;
-                    // Network tier boosts visual intensity
-                    const _wTier = networkStrength[obj.attackModeElement] || 0;
-                    const _tierMult = 1 + _wTier * 0.4; // 1.0 / 1.4 / 1.8 / 2.2
-                    const _wGlowR = (28 + wpulse*6) * Math.min(1.5, _tierMult);
-                    const _wGlowA = Math.min(0.55, (0.12 + wpulse*0.1) * _tierMult);
-                    // Soft glow ring — scales with tier
-                    ctx.save(); ctx.globalAlpha=_wGlowA; ctx.fillStyle=wcol;
-                    ctx.shadowColor=wcol; ctx.shadowBlur=_wTier > 1 ? 18*_tierMult : 0;
-                    ctx.beginPath(); ctx.arc(px,py-45,_wGlowR,0,Math.PI*2); ctx.fill();
+                    const _wGlowR=(20+_pulse*5)*Math.min(1.5,_tierMult);
+                    const _wGlowA=Math.min(0.5,(0.12+_pulse*0.1)*_tierMult);
+                    ctx.save(); ctx.globalAlpha=_wGlowA; ctx.fillStyle=_acol;
+                    ctx.shadowColor=_acol; ctx.shadowBlur=_wTier>1?16*_tierMult:0;
+                    ctx.beginPath(); ctx.arc(px,py-36,_wGlowR,0,Math.PI*2); ctx.fill();
                     ctx.shadowBlur=0; ctx.restore();
-                    // Tier 2+: secondary outer ring pulses in sync
-                    if (_wTier >= 2) {
-                        ctx.save(); ctx.globalAlpha=(0.07+wpulse*0.07)*_tierMult;
-                        ctx.strokeStyle=wcol; ctx.lineWidth=2; ctx.shadowColor=wcol; ctx.shadowBlur=10;
-                        ctx.beginPath(); ctx.arc(px,py-45,_wGlowR+12+wpulse*8,0,Math.PI*2); ctx.stroke();
+                    if (_wTier>=2) {
+                        ctx.save(); ctx.globalAlpha=(0.07+_pulse*0.07)*_tierMult;
+                        ctx.strokeStyle=_acol; ctx.lineWidth=2; ctx.shadowColor=_acol; ctx.shadowBlur=8;
+                        ctx.beginPath(); ctx.arc(px,py-36,_wGlowR+10+_pulse*6,0,Math.PI*2); ctx.stroke();
                         ctx.shadowBlur=0; ctx.restore();
                     }
-                    // Slender column — smaller and thinner
-                    ctx.fillStyle="#0a0a1a";
-                    ctx.fillRect(px-5,py-75,10,105);
-                    // Seasoned gold band around column base
-                    if ((obj.seasoned||0) > 0) {
-                        const sLevel = Math.min(3, obj.seasoned);
-                        ctx.save();
-                        ctx.strokeStyle="#ffd700"; ctx.lineWidth=1+sLevel*0.5;
-                        ctx.globalAlpha=0.55+wpulse*0.25;
-                        ctx.shadowColor="#ffd700"; ctx.shadowBlur=4+sLevel*3;
-                        for (let _si=0;_si<sLevel;_si++) {
-                            ctx.beginPath(); ctx.rect(px-5-_si,py-20-_si*5,10+_si*2,2); ctx.stroke();
-                        }
-                        ctx.shadowBlur=0; ctx.restore();
-                    }
-                    // Glowing orb at top — size + blur scale with tier
-                    const _orbR = 6 + _wTier*1;
-                    const _orbBlur = (10+wpulse*8) * Math.min(2, _tierMult);
-                    ctx.save(); ctx.shadowColor=wcol; ctx.shadowBlur=_orbBlur;
-                    ctx.fillStyle=wcol; ctx.globalAlpha=0.7+wpulse*0.3;
-                    ctx.beginPath(); ctx.arc(px,py-75,_orbR,0,Math.PI*2); ctx.fill();
+                }
+                // ── ATTACK MODE — range ring ──
+                if (obj.attackMode) {
+                    ctx.save(); ctx.globalAlpha=0.08+_pulse*0.08; ctx.strokeStyle=_acol; ctx.lineWidth=2;
+                    ctx.beginPath(); ctx.arc(px,py-20,obj.attackRange*TILE_W*0.5,0,Math.PI*2); ctx.stroke();
                     ctx.restore();
-                    // Element label + effect description (tier-aware)
-                    const PYLON_FX_TIER = {
-                        fire:     ["fire wall","heavy burn","ignite spread"],
-                        ice:      ["ice field","chill zone","deep freeze"],
-                        electric: ["arc chain","arc boost","max arc"],
-                        core:     ["shield barrier","fast shields","regen shields"],
-                        flux:     ["gravity well","chain pull","vortex"],
-                        toxic:    ["corrodes enemies","shred+plague","plague cloud"]
-                    };
+                }
+
+                // ── STYLE-SPECIFIC BODY STRUCTURE ──
+                ctx.save();
+                switch(_style) {
+                    case "sentinel": {
+                        // Squat guard tower with battlements
+                        ctx.fillStyle=_isActive?"#1a2030":obj.upgraded?"#0d1825":"#252830";
+                        ctx.fillRect(px-8,py-35,16,35);
+                        ctx.fillRect(px-6,py-48,12,13);
+                        ctx.fillStyle=_isActive?"#2a3040":"#303540";
+                        ctx.fillRect(px-7,py-52,4,4); ctx.fillRect(px+3,py-52,4,4);
+                        ctx.fillStyle="#050508"; ctx.fillRect(px-2,py-52,4,3);
+                        break;
+                    }
+                    case "spire": {
+                        // Crystal diamond spike
+                        ctx.fillStyle=_isActive?"#1a1040":obj.upgraded?"#130d30":"#1e1a38";
+                        ctx.beginPath();
+                        ctx.moveTo(px,py-55); ctx.lineTo(px+9,py-25); ctx.lineTo(px+4,py); ctx.lineTo(px-4,py); ctx.lineTo(px-9,py-25);
+                        ctx.closePath(); ctx.fill();
+                        ctx.strokeStyle=_isActive?"#6644cc":"#3a3060"; ctx.lineWidth=1; ctx.globalAlpha=0.5;
+                        ctx.beginPath(); ctx.moveTo(px,py-55); ctx.lineTo(px+9,py-25); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px,py-55); ctx.lineTo(px-9,py-25); ctx.stroke();
+                        break;
+                    }
+                    case "monolith": {
+                        // Wide ancient slab with incised runes
+                        ctx.fillStyle=_isActive?"#0a1a10":obj.upgraded?"#081510":"#111a12";
+                        ctx.fillRect(px-11,py-40,22,40);
+                        ctx.strokeStyle=_isActive?"#2a5535":"#1a2a1a"; ctx.lineWidth=1;
+                        ctx.beginPath(); ctx.moveTo(px-7,py-30); ctx.lineTo(px+7,py-30); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px,py-38); ctx.lineTo(px,py-14); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px-5,py-22); ctx.lineTo(px+5,py-22); ctx.stroke();
+                        break;
+                    }
+                    case "antenna": {
+                        // Thin broadcasting tower with crossbars
+                        ctx.fillStyle=_isActive?"#202535":obj.upgraded?"#181e2e":"#252a38";
+                        ctx.fillRect(px-2,py-55,4,55);
+                        ctx.fillRect(px-9,py-44,18,2); ctx.fillRect(px-7,py-30,14,2); ctx.fillRect(px-5,py-16,10,2);
+                        ctx.beginPath(); ctx.arc(px,py-55,4,Math.PI,0); ctx.fill();
+                        break;
+                    }
+                    case "shrine": {
+                        // Stepped base with floating gem
+                        const _gemFloat=_pulse*3;
+                        ctx.fillStyle=_isActive?"#1a1020":obj.upgraded?"#130c1a":"#1e1428";
+                        ctx.fillRect(px-10,py-18,20,18); ctx.fillRect(px-7,py-26,14,8);
+                        ctx.beginPath();
+                        ctx.moveTo(px,py-40-_gemFloat); ctx.lineTo(px+6,py-33-_gemFloat);
+                        ctx.lineTo(px,py-27-_gemFloat); ctx.lineTo(px-6,py-33-_gemFloat);
+                        ctx.closePath(); ctx.fill();
+                        break;
+                    }
+                    case "conduit": {
+                        // Industrial pipe cluster
+                        ctx.fillStyle=_isActive?"#101820":obj.upgraded?"#0c1418":"#151e24";
+                        ctx.fillRect(px-9,py-45,6,45);
+                        ctx.fillRect(px+3,py-35,6,35);
+                        ctx.fillRect(px-2,py-25,5,25);
+                        ctx.fillStyle=_isActive?"#1a2830":"#202830";
+                        ctx.fillRect(px-9,py-22,18,3);
+                        break;
+                    }
+                }
+                ctx.restore();
+
+                // ── TOP EFFECTS: glows, orbs, labels ──
+                // Orb position varies by style
+                let _orbY;
+                if (_style==="sentinel") _orbY=py-54;
+                else if (_style==="spire") _orbY=py-57;
+                else if (_style==="monolith") _orbY=py-42;
+                else if (_style==="antenna") _orbY=py-57;
+                else if (_style==="shrine") _orbY=py-42-_pulse*3;
+                else _orbY=py-47; // conduit
+
+                if (_isActive) {
+                    // Glowing orb at structure top
+                    const _orbR=obj.waveMode?6+_wTier:5;
+                    ctx.save(); ctx.shadowColor=_acol; ctx.shadowBlur=(obj.waveMode?14:8)+_pulse*6;
+                    ctx.fillStyle=_acol; ctx.globalAlpha=0.7+_pulse*0.3;
+                    ctx.beginPath(); ctx.arc(px,_orbY,_orbR,0,Math.PI*2); ctx.fill();
+                    ctx.restore();
+                    // Element + tier label
+                    const PYLON_FX_TIER={fire:["fire wall","heavy burn","ignite spread"],ice:["ice field","chill zone","deep freeze"],electric:["arc chain","arc boost","max arc"],core:["shield barrier","fast shields","regen shields"],flux:["gravity well","chain pull","vortex"],toxic:["corrodes enemies","shred+plague","plague cloud"]};
+                    const PYLON_FX2={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity well",toxic:"corrodes enemies"};
                     const el0=obj.attackModeElement||"";
-                    const _tierDesc = _wTier > 0 ? (PYLON_FX_TIER[el0]?.[_wTier-1] || "") : (PYLON_FX_TIER[el0]?.[0] || "");
-                    const _tierBadge = _wTier > 0 ? [" T-I"," T-II"," T-III"][_wTier-1] : "";
-                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                    ctx.fillStyle=wcol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
-                    ctx.fillText(el0.toUpperCase()+_tierBadge,px,py-88);
+                    const _wTierBadge=obj.waveMode&&_wTier>0?[" T-I"," T-II"," T-III"][_wTier-1]:"";
+                    const _tierDesc=obj.waveMode?(_wTier>0?(PYLON_FX_TIER[el0]?.[_wTier-1]||""):(PYLON_FX_TIER[el0]?.[0]||"")):(PYLON_FX2[el0]||"");
+                    ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle=_acol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
+                    ctx.fillText(el0.toUpperCase()+_wTierBadge,px,_orbY-12);
                     ctx.font="7px monospace"; ctx.globalAlpha=0.7;
-                    ctx.fillText(_tierDesc,px,py-78);
+                    ctx.fillText(_tierDesc,px,_orbY-3);
                     ctx.restore();
-                } else if (obj.attackMode) {
-                    // ── ATTACK MODE — angular armed pylon ──
-                    const acol = obj.attackModeColor || "#0f8";
-                    const pulse = 0.5+0.5*Math.sin((frame+(obj.pulseTimer||0))*0.12);
-                    obj.pulseTimer = (obj.pulseTimer||0)+1;
-                    // Glowing range ring
-                    ctx.save(); ctx.globalAlpha=0.08+pulse*0.08; ctx.strokeStyle=acol; ctx.lineWidth=2;
-                    ctx.beginPath(); ctx.arc(px,py-40,obj.attackRange*TILE_W*0.5,0,Math.PI*2); ctx.stroke(); ctx.restore();
-                    // Body — dark armored column (slimmer)
-                    ctx.fillStyle="#111";
-                    ctx.fillRect(px-7,py-75,14,105);
-                    // Armor panels
-                    ctx.fillStyle="#222";
-                    ctx.fillRect(px-9,py-75,3,105);
-                    ctx.fillRect(px+6,py-75,3,105);
-                    // Glowing barrel nub at top
-                    ctx.save(); ctx.shadowColor=acol; ctx.shadowBlur=8+pulse*6;
-                    ctx.fillStyle=acol;
-                    ctx.beginPath(); ctx.arc(px,py-75,5,0,Math.PI*2); ctx.fill();
+                    // Seasoned gold bands at base
+                    if ((obj.seasoned||0)>0) {
+                        const sLevel=Math.min(3,obj.seasoned);
+                        ctx.save(); ctx.strokeStyle="#ffd700"; ctx.lineWidth=1+sLevel*0.5;
+                        ctx.globalAlpha=0.55+_pulse*0.25; ctx.shadowColor="#ffd700"; ctx.shadowBlur=4+sLevel*3;
+                        for (let _si=0;_si<sLevel;_si++) { ctx.beginPath(); ctx.rect(px-8-_si,py-12-_si*4,16+_si*2,2); ctx.stroke(); }
+                        ctx.shadowBlur=0; ctx.restore();
+                    }
+                } else if (obj.upgraded) {
+                    // Dormant upgraded state — style-specific cyan aura
+                    ctx.save(); ctx.globalAlpha=0.2+_pulse*0.12; ctx.fillStyle="#0ff";
+                    ctx.shadowColor="#0ff"; ctx.shadowBlur=14;
+                    ctx.beginPath(); ctx.arc(px,_orbY,10,0,Math.PI*2); ctx.fill();
+                    ctx.globalAlpha=0.8; ctx.beginPath(); ctx.arc(px,_orbY,3,0,Math.PI*2); ctx.fill();
                     ctx.restore();
-                    // Element color stripe
-                    ctx.fillStyle=acol; ctx.globalAlpha=0.4;
-                    ctx.fillRect(px-2,py-70,4,60);
-                    ctx.globalAlpha=1;
-                    // Element + effect label
-                    if (obj.attackModeElement) {
-                        const PYLON_FX2={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity well",toxic:"corrodes enemies"};
-                        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                        ctx.fillStyle=acol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
-                        ctx.fillText(obj.attackModeElement.toUpperCase(),px,py-88);
-                        ctx.font="7px monospace"; ctx.globalAlpha=0.7;
-                        ctx.fillText(PYLON_FX2[obj.attackModeElement]||"",px,py-78);
+                    // Style-specific upgraded detail
+                    if (_style==="monolith") {
+                        // Glowing runes
+                        ctx.save(); ctx.strokeStyle="#0ff"; ctx.lineWidth=1;
+                        ctx.globalAlpha=0.4+_pulse*0.3; ctx.shadowColor="#0ff"; ctx.shadowBlur=5;
+                        ctx.beginPath(); ctx.moveTo(px-7,py-30); ctx.lineTo(px+7,py-30); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px,py-38); ctx.lineTo(px,py-14); ctx.stroke();
+                        ctx.restore();
+                    } else if (_style==="spire") {
+                        // Inner crystal glow
+                        ctx.save(); ctx.globalAlpha=0.15+_pulse*0.1; ctx.fillStyle="#88aaff";
+                        ctx.shadowColor="#88aaff"; ctx.shadowBlur=8;
+                        ctx.beginPath(); ctx.moveTo(px,py-55); ctx.lineTo(px+9,py-25); ctx.lineTo(px-9,py-25); ctx.closePath(); ctx.fill();
+                        ctx.restore();
+                    } else if (_style==="shrine") {
+                        // Orbiting spark around gem
+                        const _angle=frame*0.05;
+                        ctx.save(); ctx.globalAlpha=0.7; ctx.fillStyle="#0ff";
+                        ctx.shadowColor="#0ff"; ctx.shadowBlur=6;
+                        ctx.beginPath(); ctx.arc(px+Math.cos(_angle)*9,_orbY+Math.sin(_angle)*5,2,0,Math.PI*2); ctx.fill();
+                        ctx.restore();
+                    } else if (_style==="conduit") {
+                        // Energy flowing through left pipe
+                        ctx.save(); ctx.strokeStyle="#0ff"; ctx.lineWidth=2;
+                        ctx.globalAlpha=0.3+_pulse*0.3; ctx.shadowColor="#0ff"; ctx.shadowBlur=4;
+                        ctx.beginPath(); ctx.moveTo(px-6,py-40); ctx.lineTo(px-6,py-5); ctx.stroke();
+                        ctx.restore();
+                    } else if (_style==="sentinel") {
+                        // Battlements light up
+                        ctx.save(); ctx.strokeStyle="#0ff"; ctx.lineWidth=1;
+                        ctx.globalAlpha=0.5+_pulse*0.3; ctx.shadowColor="#0ff"; ctx.shadowBlur=5;
+                        ctx.strokeRect(px-7,py-52,4,4); ctx.strokeRect(px+3,py-52,4,4);
+                        ctx.restore();
+                    } else if (_style==="antenna") {
+                        // Dish emits spinning energy ring
+                        ctx.save(); ctx.strokeStyle="#0ff"; ctx.lineWidth=1.5;
+                        ctx.globalAlpha=0.3+_pulse*0.3; ctx.shadowColor="#0ff"; ctx.shadowBlur=6;
+                        ctx.beginPath(); ctx.arc(px,py-55,8+_pulse*4,0,Math.PI*2); ctx.stroke();
                         ctx.restore();
                     }
-                } else if(obj.upgraded){
-                    ctx.save(); ctx.globalAlpha=0.2; ctx.fillStyle="#0f8";
-                    ctx.beginPath(); ctx.arc(px,py-65,12,0,Math.PI*2); ctx.fill(); ctx.restore();
-                    ctx.fillStyle="#0d1220"; ctx.fillRect(px-8,py-75,16,105);
-                    ctx.fillStyle="#0f8"; ctx.beginPath(); ctx.arc(px,py-75,4,0,Math.PI*2); ctx.fill();
                 } else {
+                    // Base state — team color orb indicator
                     const dist2=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
                     const amb2=Math.max(0.1,0.8-dist2/RENDER_DIST);
-                    // Body — dark map-matching stone (no green tint), slimmer
-                    ctx.fillStyle=`rgb(${Math.floor(14*amb2)},${Math.floor(18*amb2)},${Math.floor(30*amb2)})`;
-                    ctx.fillRect(px-6,py-65,12,95);
-                    // Light orb — stays team color (green friendly, red hostile)
                     ctx.fillStyle=obj.pillarCol;
-                    ctx.shadowColor=obj.pillarCol; ctx.shadowBlur=8;
-                    ctx.beginPath(); ctx.arc(px,py-65,3,0,7); ctx.fill();
+                    ctx.shadowColor=obj.pillarCol; ctx.shadowBlur=8*amb2;
+                    ctx.beginPath(); ctx.arc(px,_orbY,3,0,Math.PI*2); ctx.fill();
                     ctx.shadowBlur=0;
                 }
             }

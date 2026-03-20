@@ -48,7 +48,9 @@ function _executeBuild(el, t) {
     }
     shardCount -= 10; saveShards();
     const _baseHP = 80 + (pylonMaxHPBonus||0);
+    const _PYLON_STYLES=["sentinel","spire","monolith","antenna","shrine","conduit"];
     t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=_baseHP;
+    t.pylonStyle=t.pylonStyle||_PYLON_STYLES[Math.floor(Math.random()*_PYLON_STYLES.length)];
     t.upgraded=false; t.destroyed=false;
     t.attackMode=false; t.waveMode=false;
     t.attackModeElement=null; t.attackModeColor=null;
@@ -86,7 +88,9 @@ function _executeBuildInstant(el, t) {
     }
     shardCount -= 40; saveShards();
     const _iHP = 80 + (pylonMaxHPBonus||0);
+    const _IPYLON_STYLES=["sentinel","spire","monolith","antenna","shrine","conduit"];
     t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=_iHP;
+    t.pylonStyle=t.pylonStyle||_IPYLON_STYLES[Math.floor(Math.random()*_IPYLON_STYLES.length)];
     t.upgraded=false; t.destroyed=false;
     t.reconstructing=false; t.workers=[];
     t.constructing=false; t.constructProgress=1; t.health=t.maxHealth;

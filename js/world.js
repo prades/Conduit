@@ -14,6 +14,7 @@ function generateSegment(startX) {
             pillarCol:null,
             destroyed:false, health:20, maxHealth:20,
             converting:false, pendingDestroy:false,
+            pylonStyle:["sentinel","spire","monolith","antenna","shrine","conduit"][Math.floor(Math.random()*6)],
             upgraded:false, pulseTimer:0,
             reconstructing:false, reconstructProgress:0, workers:[],
             // Spawn nest — honeycomb hive structure at zone centre, y=2
