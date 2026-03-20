@@ -151,6 +151,15 @@ canvas.addEventListener('pointerup', e=>{
         campMenuOpen=!campMenuOpen; isPressing=false; return;
     }
 
+    // Home node tap — opens camp building menu
+    if (!touchMoved) {
+        const _hnx = (HOME_NODE_TILE.x - player.visualX - (HOME_NODE_TILE.y - player.visualY)) * TILE_W + canvas.width/2;
+        const _hny = (HOME_NODE_TILE.x - player.visualX + (HOME_NODE_TILE.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
+        if (Math.hypot(upX - _hnx, upY - (_hny - 40)) < 40) {
+            campMenuOpen = true; isPressing = false; return;
+        }
+    }
+
     // ── ULTIMATE DOUBLE-TAP DETECTION ────────────────────
     if (!touchMoved) {
         let _tappedFollower = null;

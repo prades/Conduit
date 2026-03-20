@@ -267,6 +267,83 @@ function drawCampButton() {
     ctx.restore();
 }
 
+// ── HOME NODE — central camp hub structure ─────────────────
+// Drawn over tile x=-1, y=2 (between crystal and camp buildings).
+// Tapping it opens the camp building menu.
+const HOME_NODE_TILE = { x: -1, y: 2 };
+
+function drawHomeNode(tcx, tcy, amb) {
+    const pulse = 0.6 + 0.4 * Math.sin((frame || 0) * 0.06);
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // ── Base platform ──
+    const bw = 20, bh = 5;
+    ctx.fillStyle   = `rgba(0,${(50*amb)|0},${(22*amb)|0},0.95)`;
+    ctx.strokeStyle = `rgba(0,${(200*amb)|0},${(90*amb)|0},0.8)`;
+    ctx.lineWidth   = 1.2;
+    ctx.fillRect(tcx - bw, tcy - bh, bw * 2, bh);
+    ctx.strokeRect(tcx - bw, tcy - bh, bw * 2, bh);
+
+    // Base corner vias
+    [[tcx - bw + 4, tcy - bh + 2], [tcx + bw - 4, tcy - bh + 2]].forEach(([vx, vy]) => {
+        ctx.fillStyle   = `rgba(200,140,30,${0.7 * amb})`;
+        ctx.beginPath(); ctx.arc(vx, vy, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = `rgba(0,200,80,${0.5 * amb})`;
+        ctx.lineWidth   = 0.7;
+        ctx.beginPath(); ctx.arc(vx, vy, 3.5, 0, Math.PI * 2); ctx.stroke();
+    });
+
+    // ── Column body ──
+    const colW = 14, colH = 42;
+    const colTop = tcy - bh - colH;
+    ctx.fillStyle   = `rgba(2,${(20*amb)|0},${(10*amb)|0},0.97)`;
+    ctx.strokeStyle = `rgba(0,${(160*amb)|0},${(65*amb)|0},0.7)`;
+    ctx.lineWidth   = 1;
+    ctx.fillRect(tcx - colW / 2, colTop, colW, colH);
+    ctx.strokeRect(tcx - colW / 2, colTop, colW, colH);
+
+    // PCB traces on column
+    ctx.strokeStyle = `rgba(0,${(180*amb)|0},${(70*amb)|0},0.35)`;
+    ctx.lineWidth   = 0.7;
+    [10, 22, 33].forEach(yOff => {
+        ctx.beginPath();
+        ctx.moveTo(tcx - colW / 2 + 2, colTop + yOff);
+        ctx.lineTo(tcx + colW / 2 - 2, colTop + yOff);
+        ctx.stroke();
+    });
+    // Vertical centre trace
+    ctx.beginPath();
+    ctx.moveTo(tcx, colTop + 4);
+    ctx.lineTo(tcx, colTop + colH - 6);
+    ctx.stroke();
+
+    // ── Glowing orb at top ──
+    ctx.shadowColor = "#00ff80";
+    ctx.shadowBlur  = (10 + 8 * pulse) * amb;
+    ctx.fillStyle   = `rgba(0,${(255*amb*pulse)|0},${(128*amb*pulse)|0},0.9)`;
+    ctx.beginPath(); ctx.arc(tcx, colTop, 5 + pulse, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur  = 0;
+
+    // Orb ring
+    ctx.strokeStyle = `rgba(0,255,128,${0.5 * amb * pulse})`;
+    ctx.lineWidth   = 0.8;
+    ctx.beginPath(); ctx.arc(tcx, colTop, 9, 0, Math.PI * 2); ctx.stroke();
+
+    // ── Labels ──
+    ctx.fillStyle = `rgba(0,255,128,${0.9 * amb * pulse})`;
+    ctx.font      = "bold 8px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("HOME", tcx, colTop - 12);
+
+    ctx.fillStyle = `rgba(0,180,80,${0.45 * amb})`;
+    ctx.font      = "7px monospace";
+    ctx.fillText("[ tap ]", tcx, colTop - 3);
+
+    ctx.restore();
+}
+
 // ── CAMP FLOOR DRAWING (circuit-board PCB style) ──────────
 // Called instead of the regular floor draw for tiles with x < 0.
 function drawCampFloor(obj, px, py, amb) {
@@ -332,6 +409,11 @@ function drawCampFloor(obj, px, py, amb) {
 
     // ── Camp building pad on this tile ──
     _drawCampBuildingPad(txi, tyi, tcx, tcy, amb);
+
+    // ── Home node structure ──
+    if (txi === HOME_NODE_TILE.x && tyi === HOME_NODE_TILE.y) {
+        drawHomeNode(tcx, tcy, amb);
+    }
 }
 
 function _drawCampBuildingPad(txi, tyi, tcx, tcy, amb) {
