@@ -1263,63 +1263,208 @@ function render() {
                 ctx.save();
                 switch(_style) {
                     case "sentinel": {
-                        // Squat guard tower with battlements
-                        ctx.fillStyle=_isActive?"#1a2030":obj.upgraded?"#0d1825":"#252830";
-                        ctx.fillRect(px-8,_base-35,16,35);
-                        ctx.fillRect(px-6,_base-48,12,13);
-                        ctx.fillStyle=_isActive?"#2a3040":"#303540";
-                        ctx.fillRect(px-7,_base-52,4,4); ctx.fillRect(px+3,_base-52,4,4);
-                        ctx.fillStyle="#050508"; ctx.fillRect(px-2,_base-52,4,3);
+                        // Isometric fortress tower — 3 visible faces per block
+                        const sD=6; // iso depth
+                        const sFront=_isActive?"#1a2030":obj.upgraded?"#0d1825":"#252830";
+                        const sRight=_isActive?"#0d1520":obj.upgraded?"#081018":"#181b20";
+                        const sTop=_isActive?"#2a3545":obj.upgraded?"#1a2535":"#343840";
+                        // Main tower right face
+                        ctx.fillStyle=sRight; ctx.beginPath();
+                        ctx.moveTo(px+8,_base); ctx.lineTo(px+8+sD,_base+sD/2);
+                        ctx.lineTo(px+8+sD,_base-35+sD/2); ctx.lineTo(px+8,_base-35); ctx.closePath(); ctx.fill();
+                        // Main tower front face
+                        ctx.fillStyle=sFront; ctx.fillRect(px-8,_base-35,16,35);
+                        // Main tower top face
+                        ctx.fillStyle=sTop; ctx.beginPath();
+                        ctx.moveTo(px-8,_base-35); ctx.lineTo(px+8,_base-35);
+                        ctx.lineTo(px+8+sD,_base-35+sD/2); ctx.lineTo(px-8+sD,_base-35+sD/2); ctx.closePath(); ctx.fill();
+                        // Upper parapet right face
+                        ctx.fillStyle=sRight; ctx.beginPath();
+                        ctx.moveTo(px+6,_base-35); ctx.lineTo(px+6+sD,_base-35+sD/2);
+                        ctx.lineTo(px+6+sD,_base-48+sD/2); ctx.lineTo(px+6,_base-48); ctx.closePath(); ctx.fill();
+                        // Upper parapet front face
+                        ctx.fillStyle=sFront; ctx.fillRect(px-6,_base-48,12,13);
+                        // Upper parapet top face
+                        ctx.fillStyle=sTop; ctx.beginPath();
+                        ctx.moveTo(px-6,_base-48); ctx.lineTo(px+6,_base-48);
+                        ctx.lineTo(px+6+sD,_base-48+sD/2); ctx.lineTo(px-6+sD,_base-48+sD/2); ctx.closePath(); ctx.fill();
+                        // Battlements (2 merlons)
+                        const _merls=[{x:px-3.5,w:3.5},{x:px+3.5,w:3.5}];
+                        for (const m of _merls) {
+                            ctx.fillStyle=sRight; ctx.beginPath();
+                            ctx.moveTo(m.x+m.w,_base-48); ctx.lineTo(m.x+m.w+sD*0.5,_base-48+sD*0.25);
+                            ctx.lineTo(m.x+m.w+sD*0.5,_base-52+sD*0.25); ctx.lineTo(m.x+m.w,_base-52); ctx.closePath(); ctx.fill();
+                            ctx.fillStyle=_isActive?"#2a3040":"#303540";
+                            ctx.fillRect(m.x-m.w,_base-52,m.w*2,4);
+                            ctx.fillStyle=sTop; ctx.beginPath();
+                            ctx.moveTo(m.x-m.w,_base-52); ctx.lineTo(m.x+m.w,_base-52);
+                            ctx.lineTo(m.x+m.w+sD*0.5,_base-52+sD*0.25); ctx.lineTo(m.x-m.w+sD*0.5,_base-52+sD*0.25); ctx.closePath(); ctx.fill();
+                        }
+                        // Arrow slit
+                        ctx.fillStyle="#050508"; ctx.fillRect(px-1.5,_base-43,3,10); ctx.fillRect(px-4,_base-40,8,3);
                         break;
                     }
                     case "spire": {
-                        // Crystal diamond spike
-                        ctx.fillStyle=_isActive?"#1a1040":obj.upgraded?"#130d30":"#1e1a38";
-                        ctx.beginPath();
+                        // Faceted crystal with 3 colour planes
+                        const spD=5;
+                        const spFront=_isActive?"#1a1040":obj.upgraded?"#130d30":"#1e1a38";
+                        const spRight=_isActive?"#0e0820":obj.upgraded?"#0a0618":"#120c22";
+                        const spLeft=_isActive?"#2a1860":obj.upgraded?"#1f1248":"#251e4a";
+                        // Right dark facet (back-most, draw first)
+                        ctx.fillStyle=spRight;
+                        ctx.beginPath(); ctx.moveTo(px,_base-55); ctx.lineTo(px+spD,_base-55+spD/2);
+                        ctx.lineTo(px+9+spD,_base-25+spD/2); ctx.lineTo(px+4+spD,_base+spD/2);
+                        ctx.lineTo(px+4,_base); ctx.lineTo(px+9,_base-25); ctx.closePath(); ctx.fill();
+                        // Lower right body
+                        ctx.fillStyle=spRight; ctx.beginPath();
+                        ctx.moveTo(px+4,_base); ctx.lineTo(px+4+spD,_base+spD/2);
+                        ctx.lineTo(px-4+spD,_base+spD/2); ctx.lineTo(px-4,_base); ctx.closePath(); ctx.fill();
+                        // Main front face
+                        ctx.fillStyle=spFront; ctx.beginPath();
                         ctx.moveTo(px,_base-55); ctx.lineTo(px+9,_base-25); ctx.lineTo(px+4,_base); ctx.lineTo(px-4,_base); ctx.lineTo(px-9,_base-25);
                         ctx.closePath(); ctx.fill();
+                        // Left lighter facet
+                        ctx.fillStyle=spLeft; ctx.globalAlpha=0.65; ctx.beginPath();
+                        ctx.moveTo(px,_base-55); ctx.lineTo(px-9,_base-25); ctx.lineTo(px-4,_base-15); ctx.lineTo(px,_base-15);
+                        ctx.closePath(); ctx.fill(); ctx.globalAlpha=1;
+                        // Ridge highlights
+                        ctx.strokeStyle=_isActive?"#8866ee":"#5a4a88"; ctx.lineWidth=1.5; ctx.globalAlpha=0.7;
+                        ctx.beginPath(); ctx.moveTo(px,_base-55); ctx.lineTo(px-9,_base-25); ctx.stroke();
                         ctx.strokeStyle=_isActive?"#6644cc":"#3a3060"; ctx.lineWidth=1; ctx.globalAlpha=0.5;
                         ctx.beginPath(); ctx.moveTo(px,_base-55); ctx.lineTo(px+9,_base-25); ctx.stroke();
-                        ctx.beginPath(); ctx.moveTo(px,_base-55); ctx.lineTo(px-9,_base-25); ctx.stroke();
+                        ctx.globalAlpha=1;
+                        // Interior shimmer band
+                        ctx.globalAlpha=0.1+_pulse*0.15; ctx.fillStyle=_isActive?"#aa88ff":"#6655aa";
+                        ctx.beginPath(); ctx.moveTo(px-3,_base-48); ctx.lineTo(px+4,_base-38); ctx.lineTo(px+1,_base-30); ctx.lineTo(px-4,_base-40); ctx.closePath(); ctx.fill();
+                        ctx.globalAlpha=1;
                         break;
                     }
                     case "monolith": {
-                        // Wide ancient slab with incised runes
-                        ctx.fillStyle=_isActive?"#0a1a10":obj.upgraded?"#081510":"#111a12";
-                        ctx.fillRect(px-11,_base-40,22,40);
+                        // Thick ancient stone slab — isometric block with rune faces
+                        const mD=8;
+                        const mFront=_isActive?"#0a1a10":obj.upgraded?"#081510":"#111a12";
+                        const mRight=_isActive?"#051008":obj.upgraded?"#030a06":"#090e09";
+                        const mTop=_isActive?"#142a1a":obj.upgraded?"#101f14":"#182418";
+                        const mw=11,mh=40;
+                        // Right face
+                        ctx.fillStyle=mRight; ctx.beginPath();
+                        ctx.moveTo(px+mw,_base); ctx.lineTo(px+mw+mD,_base+mD/2);
+                        ctx.lineTo(px+mw+mD,_base-mh+mD/2); ctx.lineTo(px+mw,_base-mh); ctx.closePath(); ctx.fill();
+                        // Front face
+                        ctx.fillStyle=mFront; ctx.fillRect(px-mw,_base-mh,mw*2,mh);
+                        // Top face
+                        ctx.fillStyle=mTop; ctx.beginPath();
+                        ctx.moveTo(px-mw,_base-mh); ctx.lineTo(px+mw,_base-mh);
+                        ctx.lineTo(px+mw+mD,_base-mh+mD/2); ctx.lineTo(px-mw+mD,_base-mh+mD/2); ctx.closePath(); ctx.fill();
+                        // Front face rune engravings
                         ctx.strokeStyle=_isActive?"#2a5535":"#1a2a1a"; ctx.lineWidth=1;
                         ctx.beginPath(); ctx.moveTo(px-7,_base-30); ctx.lineTo(px+7,_base-30); ctx.stroke();
                         ctx.beginPath(); ctx.moveTo(px,_base-38); ctx.lineTo(px,_base-14); ctx.stroke();
                         ctx.beginPath(); ctx.moveTo(px-5,_base-22); ctx.lineTo(px+5,_base-22); ctx.stroke();
+                        // Side face rune on right
+                        ctx.strokeStyle=_isActive?"#1a3520":"#111a11"; ctx.lineWidth=0.8; ctx.globalAlpha=0.55;
+                        ctx.beginPath(); ctx.moveTo(px+mw+2,_base-28); ctx.lineTo(px+mw+mD-2,_base-28+mD*0.3); ctx.stroke();
+                        ctx.globalAlpha=1;
                         break;
                     }
                     case "antenna": {
-                        // Thin broadcasting tower with crossbars
-                        ctx.fillStyle=_isActive?"#202535":obj.upgraded?"#181e2e":"#252a38";
-                        ctx.fillRect(px-2,_base-55,4,55);
-                        ctx.fillRect(px-9,_base-44,18,2); ctx.fillRect(px-7,_base-30,14,2); ctx.fillRect(px-5,_base-16,10,2);
-                        ctx.beginPath(); ctx.arc(px,_base-55,4,Math.PI,0); ctx.fill();
+                        // Broadcasting mast — thin isometric column, tiered crossbars, dome cap
+                        const aD=4;
+                        const aFront=_isActive?"#202535":obj.upgraded?"#181e2e":"#252a38";
+                        const aRight=_isActive?"#101520":obj.upgraded?"#0c1018":"#151820";
+                        const aTop=_isActive?"#2e3548":obj.upgraded?"#232a3e":"#303548";
+                        // Mast right face
+                        ctx.fillStyle=aRight; ctx.beginPath();
+                        ctx.moveTo(px+2,_base); ctx.lineTo(px+2+aD,_base+aD/2);
+                        ctx.lineTo(px+2+aD,_base-55+aD/2); ctx.lineTo(px+2,_base-55); ctx.closePath(); ctx.fill();
+                        // Mast front face
+                        ctx.fillStyle=aFront; ctx.fillRect(px-2,_base-55,4,55);
+                        // Dome cap right
+                        ctx.fillStyle=aRight; ctx.beginPath(); ctx.ellipse(px+aD/2,_base-55+aD/4,4,2,0,0,Math.PI*2); ctx.fill();
+                        // Dome cap front
+                        ctx.fillStyle=aFront; ctx.beginPath(); ctx.arc(px,_base-55,4,Math.PI,0); ctx.fill();
+                        // Three crossbars (bottom to top) each with 3 faces
+                        const _cbars=[{y:_base-16,hw:5},{y:_base-30,hw:7},{y:_base-44,hw:9}];
+                        for (const cb of _cbars) {
+                            ctx.fillStyle=aRight; ctx.beginPath();
+                            ctx.moveTo(px+cb.hw,cb.y); ctx.lineTo(px+cb.hw+aD*0.7,cb.y+aD*0.35);
+                            ctx.lineTo(px+cb.hw+aD*0.7,cb.y-2+aD*0.35); ctx.lineTo(px+cb.hw,cb.y-2); ctx.closePath(); ctx.fill();
+                            ctx.fillStyle=aFront; ctx.fillRect(px-cb.hw,cb.y-2,cb.hw*2,2);
+                            ctx.fillStyle=aTop; ctx.beginPath();
+                            ctx.moveTo(px-cb.hw,cb.y-2); ctx.lineTo(px+cb.hw,cb.y-2);
+                            ctx.lineTo(px+cb.hw+aD*0.7,cb.y-2+aD*0.35); ctx.lineTo(px-cb.hw+aD*0.7,cb.y-2+aD*0.35); ctx.closePath(); ctx.fill();
+                        }
                         break;
                     }
                     case "shrine": {
-                        // Stepped base with floating gem
+                        // Stepped isometric pyramid with faceted floating gem
+                        const shD=6;
+                        const shFront=_isActive?"#1a1020":obj.upgraded?"#130c1a":"#1e1428";
+                        const shRight=_isActive?"#0e0814":obj.upgraded?"#0a060e":"#130d1a";
+                        const shTop=_isActive?"#261828":obj.upgraded?"#1c1222":"#2a1e34";
                         const _gemFloat=_pulse*3;
-                        ctx.fillStyle=_isActive?"#1a1020":obj.upgraded?"#130c1a":"#1e1428";
-                        ctx.fillRect(px-10,_base-18,20,18); ctx.fillRect(px-7,_base-26,14,8);
-                        ctx.beginPath();
-                        ctx.moveTo(px,_base-40-_gemFloat); ctx.lineTo(px+6,_base-33-_gemFloat);
-                        ctx.lineTo(px,_base-27-_gemFloat); ctx.lineTo(px-6,_base-33-_gemFloat);
-                        ctx.closePath(); ctx.fill();
+                        // Step 1 (base, wide)
+                        ctx.fillStyle=shRight; ctx.beginPath();
+                        ctx.moveTo(px+10,_base); ctx.lineTo(px+10+shD,_base+shD/2);
+                        ctx.lineTo(px+10+shD,_base-18+shD/2); ctx.lineTo(px+10,_base-18); ctx.closePath(); ctx.fill();
+                        ctx.fillStyle=shFront; ctx.fillRect(px-10,_base-18,20,18);
+                        ctx.fillStyle=shTop; ctx.beginPath();
+                        ctx.moveTo(px-10,_base-18); ctx.lineTo(px+10,_base-18);
+                        ctx.lineTo(px+10+shD,_base-18+shD/2); ctx.lineTo(px-10+shD,_base-18+shD/2); ctx.closePath(); ctx.fill();
+                        // Step 2 (mid, narrow)
+                        ctx.fillStyle=shRight; ctx.beginPath();
+                        ctx.moveTo(px+7,_base-18); ctx.lineTo(px+7+shD,_base-18+shD/2);
+                        ctx.lineTo(px+7+shD,_base-26+shD/2); ctx.lineTo(px+7,_base-26); ctx.closePath(); ctx.fill();
+                        ctx.fillStyle=shFront; ctx.fillRect(px-7,_base-26,14,8);
+                        ctx.fillStyle=shTop; ctx.beginPath();
+                        ctx.moveTo(px-7,_base-26); ctx.lineTo(px+7,_base-26);
+                        ctx.lineTo(px+7+shD,_base-26+shD/2); ctx.lineTo(px-7+shD,_base-26+shD/2); ctx.closePath(); ctx.fill();
+                        // Floating gem — faceted octahedron projection
+                        const gy=_base-36-_gemFloat;
+                        const gr=6;
+                        const gFront=_isActive?"#2a183a":obj.upgraded?"#1e1028":"#281835";
+                        const gRight=_isActive?"#180c20":obj.upgraded?"#100818":"#180e28";
+                        const gLeft=_isActive?"#3a2050":obj.upgraded?"#2a1838":"#382248";
+                        // Right facet
+                        ctx.fillStyle=gRight; ctx.beginPath();
+                        ctx.moveTo(px,gy-gr); ctx.lineTo(px+gr,gy); ctx.lineTo(px+gr+2,gy+1); ctx.lineTo(px+2,gy-gr+1); ctx.closePath(); ctx.fill();
+                        // Front face
+                        ctx.fillStyle=gFront; ctx.beginPath();
+                        ctx.moveTo(px,gy-gr); ctx.lineTo(px+gr,gy); ctx.lineTo(px,gy+gr); ctx.lineTo(px-gr,gy); ctx.closePath(); ctx.fill();
+                        // Left highlight facet
+                        ctx.fillStyle=gLeft; ctx.globalAlpha=0.65; ctx.beginPath();
+                        ctx.moveTo(px,gy-gr); ctx.lineTo(px-gr,gy); ctx.lineTo(px-gr/2,gy-gr*0.25); ctx.lineTo(px-gr*0.25,gy-gr*0.7); ctx.closePath(); ctx.fill();
+                        ctx.globalAlpha=1;
                         break;
                     }
                     case "conduit": {
-                        // Industrial pipe cluster
-                        ctx.fillStyle=_isActive?"#101820":obj.upgraded?"#0c1418":"#151e24";
-                        ctx.fillRect(px-9,_base-45,6,45);
-                        ctx.fillRect(px+3,_base-35,6,35);
-                        ctx.fillRect(px-2,_base-25,5,25);
-                        ctx.fillStyle=_isActive?"#1a2830":"#202830";
-                        ctx.fillRect(px-9,_base-22,18,3);
+                        // Industrial pipe cluster — ellipse caps + iso side faces
+                        const cD=5;
+                        const cFront=_isActive?"#101820":obj.upgraded?"#0c1418":"#151e24";
+                        const cRight=_isActive?"#080e14":obj.upgraded?"#060a0e":"#0c1318";
+                        const cTop=_isActive?"#1c2a38":obj.upgraded?"#162030":"#202d38";
+                        const cJoint=_isActive?"#1a2830":"#202830";
+                        // Helper: draw one isometric pipe
+                        const _drawPipe=(cx,pw,ph)=>{
+                            ctx.fillStyle=cRight; ctx.beginPath();
+                            ctx.moveTo(cx+pw,_base); ctx.lineTo(cx+pw+cD,_base+cD/2);
+                            ctx.lineTo(cx+pw+cD,_base-ph+cD/2); ctx.lineTo(cx+pw,_base-ph); ctx.closePath(); ctx.fill();
+                            ctx.fillStyle=cFront; ctx.fillRect(cx-pw,_base-ph,pw*2,ph);
+                            ctx.fillStyle=cTop; ctx.beginPath(); ctx.ellipse(cx+cD/2,_base-ph+cD/4,pw,pw*0.55,0,0,Math.PI*2); ctx.fill();
+                            // Front lip ellipse cap
+                            ctx.fillStyle=cFront; ctx.beginPath(); ctx.ellipse(cx,_base-ph,pw,pw*0.45,0,0,Math.PI*2); ctx.fill();
+                        };
+                        _drawPipe(px-6,3,45);  // tall left pipe
+                        _drawPipe(px+6,3,35);  // medium right pipe
+                        _drawPipe(px,2.5,25);  // short centre pipe
+                        // Horizontal connector band
+                        ctx.fillStyle=cRight; ctx.beginPath();
+                        ctx.moveTo(px+9,_base-22); ctx.lineTo(px+9+cD*0.6,_base-22+cD*0.3);
+                        ctx.lineTo(px+9+cD*0.6,_base-19+cD*0.3); ctx.lineTo(px+9,_base-19); ctx.closePath(); ctx.fill();
+                        ctx.fillStyle=cJoint; ctx.fillRect(px-9,_base-22,18,3);
+                        ctx.fillStyle=cTop; ctx.beginPath();
+                        ctx.moveTo(px-9,_base-22); ctx.lineTo(px+9,_base-22);
+                        ctx.lineTo(px+9+cD*0.6,_base-22+cD*0.3); ctx.lineTo(px-9+cD*0.6,_base-22+cD*0.3); ctx.closePath(); ctx.fill();
                         break;
                     }
                 }
