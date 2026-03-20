@@ -49,9 +49,9 @@ function clearAlarm() {
         if (!(a instanceof Predator) || a.dead || a.team === "green") return;
         if (!a.lastAttacker) { a.provoked = false; a.state = "wander"; }
     });
+    // Keep phase as "night" so kills can still complete the wave after alarm expires
     if (gameState.phase === "night" && nightKillCount < nightEnemiesTarget) {
-        gameState.phase = "day";
-        waveUI.textContent = "Wave " + gameState.nightNumber + " — clear panels for shards";
+        waveUI.textContent = "Wave " + gameState.nightNumber + " — Kill " + nightKillCount + "/" + nightEnemiesTarget;
     }
 }
 
