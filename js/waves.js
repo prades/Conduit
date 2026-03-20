@@ -36,7 +36,7 @@ function triggerAlarm(type, sx, sy) {
         if (inRange) { a.state = "hunt"; a.provoked = true; }
     });
 
-    waveUI.textContent = "⚠ " + label + " — Kill " + nightEnemiesTarget;
+    waveUI.textContent = "WAVE " + gameState.nightNumber + " ⚠ " + label + " — Kill " + nightEnemiesTarget;
 }
 
 // ── CLEAR ALARM — called when alert timer expires ──
@@ -51,7 +51,7 @@ function clearAlarm() {
     });
     // Keep phase as "night" so kills can still complete the wave after alarm expires
     if (gameState.phase === "night" && nightKillCount < nightEnemiesTarget) {
-        waveUI.textContent = "Wave " + gameState.nightNumber + " — Kill " + nightKillCount + "/" + nightEnemiesTarget;
+        waveUI.textContent = "WAVE " + gameState.nightNumber + " — Kill " + nightKillCount + "/" + nightEnemiesTarget;
     }
 }
 
@@ -197,18 +197,7 @@ function nextWave() {
     latchedPillar     = null;
     shake             = 0;
 
-    // ── Clear leftover game objects from previous wave ──
-    projectiles=[]; fragments=[]; smoke=[]; followerProjectiles=[];
-    elementEffects=[]; floatingTexts=[]; groundItems=[]; traps=[];
-    shards=[];
-
-    // ── Reset player health ──
-    health = 100;
-
-    spawnHazardsForDay();
-
-    // ── Collect every follower in the army right now ──
-    // alive followers + still-walking-to-crystal + queued-for-respawn
+    // ── Snapshot army before wiping — done synchronously while data is live ──
     const armyNow = [
         ...followers.filter(a=>!a.dead&&!a.sacrificed&&a.isFollower&&a.personality),
         ...actors.filter(a=>a.team==="green"&&a.returningToCrystal&&!a.dead&&!a.sacrificed&&a.personality),
@@ -218,8 +207,6 @@ function nextWave() {
         ...actors.filter(a=>a.isClone&&a.team==="green"&&!a.dead&&!a.sacrificed),
         ...respawnQueue.filter(e=>e.isClone)
     ];
-
-    // Save full follower roster to localStorage
     const rosterToSave = armyNow.map(a=>({
         element:     a.element     || "fire",
         personality: a.personality,
@@ -229,116 +216,126 @@ function nextWave() {
         stats:       a.stats,
         role:        a.role
     }));
-    try { localStorage.setItem("tubecrawler_followers", JSON.stringify(rosterToSave)); } catch(e) {}
 
-    // Save gameState
-    saveGameState();
-
-    // ── Restore surviving green pylons to full health + earn seasoned bonus ──
-    // ── Also restore nest health so predators can respawn next wave ──
-    world.forEach(obj=>{
-        if (obj.pillar && !obj.destroyed && obj.pillarTeam==="green" && obj.health>0) {
-            obj.health = obj.maxHealth;
-            obj.pendingDestroy = false;
-            // Upkeep reward: each night survived adds one seasoned level (max 3)
-            obj.seasoned = Math.min(3, (obj.seasoned||0) + 1);
-        }
-        if (obj.nest) obj.nestHealth = obj.nestMaxHealth || 200;
-    });
-
-    savePylons();
-
-    // ── Wipe everything, start clean ──
-    actors=[]; followers=[]; respawnQueue=[]; pendingPillarDestruction=[];
-    ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
-    activePredator=null; predatorRespawnTimer=0;
-    zonePredators={}; zoneRespawnTimers={};
-
-    // ── Restore saved followers at crystal ──
-    const saved = loadFollowers();
-    saved.forEach(entry => spawnFollowerFromSave(entry));
-
-    // ── Restore clones at crystal ──
-    cloneArmy.forEach(a => {
-        if (a instanceof Predator) {
-            a.x = crystal.x + (Math.random()-0.5)*2;
-            a.y = crystal.y + (Math.random()-0.5)*2;
-            a.job = null; a.state = "wander";
-            actors.push(a);
-        } else {
-            // was queued clone entry
-            const speciesDef = SPECIES[a.speciesName];
-            if (!speciesDef) return;
-            const classDef = speciesDef[a.className];
-            if (!classDef) return;
-            const def = { width:classDef.width, height:classDef.height, moveSpeed:classDef.moveSpeed, health:classDef.health, power:classDef.power, color:speciesDef.color };
-            const clone = new Predator(a.className, def, crystal.x+(Math.random()-0.5)*2, crystal.y+(Math.random()-0.5)*2);
-            clone.state="wander"; clone.team="green"; clone.isClone=true;
-            clone.speciesName=a.speciesName; clone.className=a.className;
-            applySpeciesBody(clone, a.speciesName);
-            actors.push(clone);
-        }
-    });
-
-    // ── Spawn neutral recruits in zones — gray, convertible ──
-    const hostileZones = Math.min(activeDayZones - 1, 5);
-    for (let z = 1; z <= hostileZones; z++) {
-        const count = 1 + Math.floor(Math.random() * 2);
-        for (let i = 0; i < count; i++) {
-            const spawnX = z * ZONE_LENGTH + 2 + Math.floor(Math.random() * (ZONE_LENGTH - 4));
-            const spawnY = 2 + Math.floor(Math.random() * 2);
-            actors.push({
-                type:"virus", element:null, x:spawnX, y:spawnY,
-                team:"red", isNeutralRecruit:true,
-                health:15, maxHealth:15, moveSpeed:0.018, power:2,
-                stats:null, personality:null, role:null,
-                currentResonance:0, currentWill:0,
-                walkCycle:0, moveCooldown:0,
-                stance:"wander", isFollower:false, isHealing:false,
-                hitFlash:0, spawnProtection:120, dead:false, convertFlash:0
-            });
-        }
-    }
-    // expand world
-    // Zone cap at 5 — after that species rank up instead
-    if (activeDayZones < 5) {
-        activeDayZones++;
-        for (let i=lastGenX+1;i<=lastGenX+ZONE_LENGTH;i++) generateSegment(i);
-    }
-    // ── CAPTURED NODE BENEFITS ──────────────────────────────
-    // Capacitor Nodes: award shards per captured node at wave end
-    capturedNodes.forEach(n => {
-        if (n.type === 'capacitor_node') {
-            shardCount += 5;
-            floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 60,
-                text: '+5 SHARDS (Capacitor Node)', color: '#ff8800', life: 120, vy: -0.2 });
-        }
-    });
-    if (capturedNodes.some(n => n.type === 'capacitor_node')) saveShards();
-
-    // Memory Bank (hacked nest): enable forward spawn — mark captured nest zones
-    capturedNodes.forEach(n => {
-        if (n.type === 'memory_bank') {
-            // Allow forward spawn: let players use this nest zone as a safe spawn point
-            const nestTile = world.find(t => t.nest && Math.hypot(t.x - n.x, t.y - n.y) < 2);
-            if (nestTile) nestTile.playerControlled = true;
-        }
-    });
-
-    // Camp building effects on wave start
-    applyPowerConduit();
-    applyRepairStation();
-
-    // Reset alert state
-    alertActive = false; alertTimer = 0; alertType = null; alertSource = null;
-    nightKillCount = 0;
-    nightEnemiesTarget    = enemiesThisWave();
-    nightPredatorsRemaining = predatorsThisWave();
-
+    // ── Close overlay immediately so the browser can repaint ──
     document.getElementById("overlay").classList.remove("active");
-    gameState.phase   = "day";
-    gameState.running = true;
-    waveUI.textContent = "Wave " + gameState.nightNumber + " — clear panels for shards";
+    waveUI.textContent = "Wave " + gameState.nightNumber + " — loading…";
+
+    // ── Defer all heavy world work so the browser gets a frame to breathe ──
+    setTimeout(() => {
+        // ── Clear leftover game objects from previous wave ──
+        projectiles=[]; fragments=[]; smoke=[]; followerProjectiles=[];
+        elementEffects=[]; floatingTexts=[]; groundItems=[]; traps=[];
+        shards=[];
+
+        // ── Reset player health ──
+        health = 100;
+
+        spawnHazardsForDay();
+
+        // Save follower roster + game state
+        try { localStorage.setItem("tubecrawler_followers", JSON.stringify(rosterToSave)); } catch(e) {}
+        saveGameState();
+
+        // ── Restore surviving green pylons to full health + earn seasoned bonus ──
+        // ── Also restore nest health so predators can respawn next wave ──
+        world.forEach(obj=>{
+            if (obj.pillar && !obj.destroyed && obj.pillarTeam==="green" && obj.health>0) {
+                obj.health = obj.maxHealth;
+                obj.pendingDestroy = false;
+                obj.seasoned = Math.min(3, (obj.seasoned||0) + 1);
+            }
+            if (obj.nest) obj.nestHealth = obj.nestMaxHealth || 200;
+        });
+
+        savePylons();
+
+        // ── Wipe everything, start clean ──
+        actors=[]; followers=[]; respawnQueue=[]; pendingPillarDestruction=[];
+        ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
+        activePredator=null; predatorRespawnTimer=0;
+        zonePredators={}; zoneRespawnTimers={};
+
+        // ── Restore saved followers at crystal ──
+        const saved = loadFollowers();
+        saved.forEach(entry => spawnFollowerFromSave(entry));
+
+        // ── Restore clones at crystal ──
+        cloneArmy.forEach(a => {
+            if (a instanceof Predator) {
+                a.x = crystal.x + (Math.random()-0.5)*2;
+                a.y = crystal.y + (Math.random()-0.5)*2;
+                a.job = null; a.state = "wander";
+                actors.push(a);
+            } else {
+                const speciesDef = SPECIES[a.speciesName];
+                if (!speciesDef) return;
+                const classDef = speciesDef[a.className];
+                if (!classDef) return;
+                const def = { width:classDef.width, height:classDef.height, moveSpeed:classDef.moveSpeed, health:classDef.health, power:classDef.power, color:speciesDef.color };
+                const clone = new Predator(a.className, def, crystal.x+(Math.random()-0.5)*2, crystal.y+(Math.random()-0.5)*2);
+                clone.state="wander"; clone.team="green"; clone.isClone=true;
+                clone.speciesName=a.speciesName; clone.className=a.className;
+                applySpeciesBody(clone, a.speciesName);
+                actors.push(clone);
+            }
+        });
+
+        // ── Spawn neutral recruits in zones — gray, convertible ──
+        const hostileZones = Math.min(activeDayZones - 1, 5);
+        for (let z = 1; z <= hostileZones; z++) {
+            const count = 1 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < count; i++) {
+                const spawnX = z * ZONE_LENGTH + 2 + Math.floor(Math.random() * (ZONE_LENGTH - 4));
+                const spawnY = 2 + Math.floor(Math.random() * 2);
+                actors.push({
+                    type:"virus", element:null, x:spawnX, y:spawnY,
+                    team:"red", isNeutralRecruit:true,
+                    health:15, maxHealth:15, moveSpeed:0.018, power:2,
+                    stats:null, personality:null, role:null,
+                    currentResonance:0, currentWill:0,
+                    walkCycle:0, moveCooldown:0,
+                    stance:"wander", isFollower:false, isHealing:false,
+                    hitFlash:0, spawnProtection:120, dead:false, convertFlash:0
+                });
+            }
+        }
+        // expand world — zone cap at 5
+        if (activeDayZones < 5) {
+            activeDayZones++;
+            for (let i=lastGenX+1;i<=lastGenX+ZONE_LENGTH;i++) generateSegment(i);
+        }
+
+        // ── CAPTURED NODE BENEFITS ──
+        capturedNodes.forEach(n => {
+            if (n.type === 'capacitor_node') {
+                shardCount += 5;
+                floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 60,
+                    text: '+5 SHARDS (Capacitor Node)', color: '#ff8800', life: 120, vy: -0.2 });
+            }
+        });
+        if (capturedNodes.some(n => n.type === 'capacitor_node')) saveShards();
+
+        capturedNodes.forEach(n => {
+            if (n.type === 'memory_bank') {
+                const nestTile = world.find(t => t.nest && Math.hypot(t.x - n.x, t.y - n.y) < 2);
+                if (nestTile) nestTile.playerControlled = true;
+            }
+        });
+
+        applyPowerConduit();
+        applyRepairStation();
+
+        // Reset alert state
+        alertActive = false; alertTimer = 0; alertType = null; alertSource = null;
+        nightKillCount = 0;
+        nightEnemiesTarget    = enemiesThisWave();
+        nightPredatorsRemaining = predatorsThisWave();
+
+        gameState.phase   = "day";
+        gameState.running = true;
+        waveUI.textContent = "WAVE " + gameState.nightNumber + " — clear panels for shards";
+    }, 0);
 }
 
 function restartGame() {
@@ -372,6 +369,6 @@ function restartGame() {
     // No free spawns — player earns followers and encounters predators naturally
     spawnHazardsForDay();
     document.getElementById("overlay").classList.remove("active");
-    waveUI.textContent = "Wave 1 — clear panels for shards";
+    waveUI.textContent = "WAVE 1 — clear panels for shards";
     requestAnimationFrame(render);
 }
