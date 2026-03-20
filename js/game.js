@@ -1227,7 +1227,8 @@ function render() {
             // Pillar — 6 unique style-based designs
             if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
                 if(obj.converting){ctx.fillStyle="#ff0";}
-                drawHealthBar(px-10,py-65,20,4,obj.health,obj.maxHealth);
+                const _base=py+TILE_H; // anchor to tile center, not north vertex
+                drawHealthBar(px-10,_base-75,20,4,obj.health,obj.maxHealth);
                 const _style=obj.pylonStyle||"sentinel";
                 const _pulse=0.5+0.5*Math.sin((frame+(obj.pulseTimer||0))*0.08);
                 obj.pulseTimer=(obj.pulseTimer||0)+1;
@@ -1242,19 +1243,19 @@ function render() {
                     const _wGlowA=Math.min(0.5,(0.12+_pulse*0.1)*_tierMult);
                     ctx.save(); ctx.globalAlpha=_wGlowA; ctx.fillStyle=_acol;
                     ctx.shadowColor=_acol; ctx.shadowBlur=_wTier>1?16*_tierMult:0;
-                    ctx.beginPath(); ctx.arc(px,py-36,_wGlowR,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(px,_base-36,_wGlowR,0,Math.PI*2); ctx.fill();
                     ctx.shadowBlur=0; ctx.restore();
                     if (_wTier>=2) {
                         ctx.save(); ctx.globalAlpha=(0.07+_pulse*0.07)*_tierMult;
                         ctx.strokeStyle=_acol; ctx.lineWidth=2; ctx.shadowColor=_acol; ctx.shadowBlur=8;
-                        ctx.beginPath(); ctx.arc(px,py-36,_wGlowR+10+_pulse*6,0,Math.PI*2); ctx.stroke();
+                        ctx.beginPath(); ctx.arc(px,_base-36,_wGlowR+10+_pulse*6,0,Math.PI*2); ctx.stroke();
                         ctx.shadowBlur=0; ctx.restore();
                     }
                 }
                 // ── ATTACK MODE — range ring ──
                 if (obj.attackMode) {
                     ctx.save(); ctx.globalAlpha=0.08+_pulse*0.08; ctx.strokeStyle=_acol; ctx.lineWidth=2;
-                    ctx.beginPath(); ctx.arc(px,py-20,obj.attackRange*TILE_W*0.5,0,Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(px,_base-20,obj.attackRange*TILE_W*0.5,0,Math.PI*2); ctx.stroke();
                     ctx.restore();
                 }
 
@@ -1264,61 +1265,61 @@ function render() {
                     case "sentinel": {
                         // Squat guard tower with battlements
                         ctx.fillStyle=_isActive?"#1a2030":obj.upgraded?"#0d1825":"#252830";
-                        ctx.fillRect(px-8,py-35,16,35);
-                        ctx.fillRect(px-6,py-48,12,13);
+                        ctx.fillRect(px-8,_base-35,16,35);
+                        ctx.fillRect(px-6,_base-48,12,13);
                         ctx.fillStyle=_isActive?"#2a3040":"#303540";
-                        ctx.fillRect(px-7,py-52,4,4); ctx.fillRect(px+3,py-52,4,4);
-                        ctx.fillStyle="#050508"; ctx.fillRect(px-2,py-52,4,3);
+                        ctx.fillRect(px-7,_base-52,4,4); ctx.fillRect(px+3,_base-52,4,4);
+                        ctx.fillStyle="#050508"; ctx.fillRect(px-2,_base-52,4,3);
                         break;
                     }
                     case "spire": {
                         // Crystal diamond spike
                         ctx.fillStyle=_isActive?"#1a1040":obj.upgraded?"#130d30":"#1e1a38";
                         ctx.beginPath();
-                        ctx.moveTo(px,py-55); ctx.lineTo(px+9,py-25); ctx.lineTo(px+4,py); ctx.lineTo(px-4,py); ctx.lineTo(px-9,py-25);
+                        ctx.moveTo(px,_base-55); ctx.lineTo(px+9,_base-25); ctx.lineTo(px+4,_base); ctx.lineTo(px-4,_base); ctx.lineTo(px-9,_base-25);
                         ctx.closePath(); ctx.fill();
                         ctx.strokeStyle=_isActive?"#6644cc":"#3a3060"; ctx.lineWidth=1; ctx.globalAlpha=0.5;
-                        ctx.beginPath(); ctx.moveTo(px,py-55); ctx.lineTo(px+9,py-25); ctx.stroke();
-                        ctx.beginPath(); ctx.moveTo(px,py-55); ctx.lineTo(px-9,py-25); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px,_base-55); ctx.lineTo(px+9,_base-25); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px,_base-55); ctx.lineTo(px-9,_base-25); ctx.stroke();
                         break;
                     }
                     case "monolith": {
                         // Wide ancient slab with incised runes
                         ctx.fillStyle=_isActive?"#0a1a10":obj.upgraded?"#081510":"#111a12";
-                        ctx.fillRect(px-11,py-40,22,40);
+                        ctx.fillRect(px-11,_base-40,22,40);
                         ctx.strokeStyle=_isActive?"#2a5535":"#1a2a1a"; ctx.lineWidth=1;
-                        ctx.beginPath(); ctx.moveTo(px-7,py-30); ctx.lineTo(px+7,py-30); ctx.stroke();
-                        ctx.beginPath(); ctx.moveTo(px,py-38); ctx.lineTo(px,py-14); ctx.stroke();
-                        ctx.beginPath(); ctx.moveTo(px-5,py-22); ctx.lineTo(px+5,py-22); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px-7,_base-30); ctx.lineTo(px+7,_base-30); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px,_base-38); ctx.lineTo(px,_base-14); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px-5,_base-22); ctx.lineTo(px+5,_base-22); ctx.stroke();
                         break;
                     }
                     case "antenna": {
                         // Thin broadcasting tower with crossbars
                         ctx.fillStyle=_isActive?"#202535":obj.upgraded?"#181e2e":"#252a38";
-                        ctx.fillRect(px-2,py-55,4,55);
-                        ctx.fillRect(px-9,py-44,18,2); ctx.fillRect(px-7,py-30,14,2); ctx.fillRect(px-5,py-16,10,2);
-                        ctx.beginPath(); ctx.arc(px,py-55,4,Math.PI,0); ctx.fill();
+                        ctx.fillRect(px-2,_base-55,4,55);
+                        ctx.fillRect(px-9,_base-44,18,2); ctx.fillRect(px-7,_base-30,14,2); ctx.fillRect(px-5,_base-16,10,2);
+                        ctx.beginPath(); ctx.arc(px,_base-55,4,Math.PI,0); ctx.fill();
                         break;
                     }
                     case "shrine": {
                         // Stepped base with floating gem
                         const _gemFloat=_pulse*3;
                         ctx.fillStyle=_isActive?"#1a1020":obj.upgraded?"#130c1a":"#1e1428";
-                        ctx.fillRect(px-10,py-18,20,18); ctx.fillRect(px-7,py-26,14,8);
+                        ctx.fillRect(px-10,_base-18,20,18); ctx.fillRect(px-7,_base-26,14,8);
                         ctx.beginPath();
-                        ctx.moveTo(px,py-40-_gemFloat); ctx.lineTo(px+6,py-33-_gemFloat);
-                        ctx.lineTo(px,py-27-_gemFloat); ctx.lineTo(px-6,py-33-_gemFloat);
+                        ctx.moveTo(px,_base-40-_gemFloat); ctx.lineTo(px+6,_base-33-_gemFloat);
+                        ctx.lineTo(px,_base-27-_gemFloat); ctx.lineTo(px-6,_base-33-_gemFloat);
                         ctx.closePath(); ctx.fill();
                         break;
                     }
                     case "conduit": {
                         // Industrial pipe cluster
                         ctx.fillStyle=_isActive?"#101820":obj.upgraded?"#0c1418":"#151e24";
-                        ctx.fillRect(px-9,py-45,6,45);
-                        ctx.fillRect(px+3,py-35,6,35);
-                        ctx.fillRect(px-2,py-25,5,25);
+                        ctx.fillRect(px-9,_base-45,6,45);
+                        ctx.fillRect(px+3,_base-35,6,35);
+                        ctx.fillRect(px-2,_base-25,5,25);
                         ctx.fillStyle=_isActive?"#1a2830":"#202830";
-                        ctx.fillRect(px-9,py-22,18,3);
+                        ctx.fillRect(px-9,_base-22,18,3);
                         break;
                     }
                 }
@@ -1327,12 +1328,12 @@ function render() {
                 // ── TOP EFFECTS: glows, orbs, labels ──
                 // Orb position varies by style
                 let _orbY;
-                if (_style==="sentinel") _orbY=py-54;
-                else if (_style==="spire") _orbY=py-57;
-                else if (_style==="monolith") _orbY=py-42;
-                else if (_style==="antenna") _orbY=py-57;
-                else if (_style==="shrine") _orbY=py-42-_pulse*3;
-                else _orbY=py-47; // conduit
+                if (_style==="sentinel") _orbY=_base-54;
+                else if (_style==="spire") _orbY=_base-57;
+                else if (_style==="monolith") _orbY=_base-42;
+                else if (_style==="antenna") _orbY=_base-57;
+                else if (_style==="shrine") _orbY=_base-42-_pulse*3;
+                else _orbY=_base-47; // conduit
 
                 if (_isActive) {
                     // Glowing orb at structure top
@@ -1357,7 +1358,7 @@ function render() {
                         const sLevel=Math.min(3,obj.seasoned);
                         ctx.save(); ctx.strokeStyle="#ffd700"; ctx.lineWidth=1+sLevel*0.5;
                         ctx.globalAlpha=0.55+_pulse*0.25; ctx.shadowColor="#ffd700"; ctx.shadowBlur=4+sLevel*3;
-                        for (let _si=0;_si<sLevel;_si++) { ctx.beginPath(); ctx.rect(px-8-_si,py-12-_si*4,16+_si*2,2); ctx.stroke(); }
+                        for (let _si=0;_si<sLevel;_si++) { ctx.beginPath(); ctx.rect(px-8-_si,_base-12-_si*4,16+_si*2,2); ctx.stroke(); }
                         ctx.shadowBlur=0; ctx.restore();
                     }
                 } else if (obj.upgraded) {
@@ -1372,14 +1373,14 @@ function render() {
                         // Glowing runes
                         ctx.save(); ctx.strokeStyle="#0ff"; ctx.lineWidth=1;
                         ctx.globalAlpha=0.4+_pulse*0.3; ctx.shadowColor="#0ff"; ctx.shadowBlur=5;
-                        ctx.beginPath(); ctx.moveTo(px-7,py-30); ctx.lineTo(px+7,py-30); ctx.stroke();
-                        ctx.beginPath(); ctx.moveTo(px,py-38); ctx.lineTo(px,py-14); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px-7,_base-30); ctx.lineTo(px+7,_base-30); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px,_base-38); ctx.lineTo(px,_base-14); ctx.stroke();
                         ctx.restore();
                     } else if (_style==="spire") {
                         // Inner crystal glow
                         ctx.save(); ctx.globalAlpha=0.15+_pulse*0.1; ctx.fillStyle="#88aaff";
                         ctx.shadowColor="#88aaff"; ctx.shadowBlur=8;
-                        ctx.beginPath(); ctx.moveTo(px,py-55); ctx.lineTo(px+9,py-25); ctx.lineTo(px-9,py-25); ctx.closePath(); ctx.fill();
+                        ctx.beginPath(); ctx.moveTo(px,_base-55); ctx.lineTo(px+9,_base-25); ctx.lineTo(px-9,_base-25); ctx.closePath(); ctx.fill();
                         ctx.restore();
                     } else if (_style==="shrine") {
                         // Orbiting spark around gem
@@ -1392,19 +1393,19 @@ function render() {
                         // Energy flowing through left pipe
                         ctx.save(); ctx.strokeStyle="#0ff"; ctx.lineWidth=2;
                         ctx.globalAlpha=0.3+_pulse*0.3; ctx.shadowColor="#0ff"; ctx.shadowBlur=4;
-                        ctx.beginPath(); ctx.moveTo(px-6,py-40); ctx.lineTo(px-6,py-5); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(px-6,_base-40); ctx.lineTo(px-6,_base-5); ctx.stroke();
                         ctx.restore();
                     } else if (_style==="sentinel") {
                         // Battlements light up
                         ctx.save(); ctx.strokeStyle="#0ff"; ctx.lineWidth=1;
                         ctx.globalAlpha=0.5+_pulse*0.3; ctx.shadowColor="#0ff"; ctx.shadowBlur=5;
-                        ctx.strokeRect(px-7,py-52,4,4); ctx.strokeRect(px+3,py-52,4,4);
+                        ctx.strokeRect(px-7,_base-52,4,4); ctx.strokeRect(px+3,_base-52,4,4);
                         ctx.restore();
                     } else if (_style==="antenna") {
                         // Dish emits spinning energy ring
                         ctx.save(); ctx.strokeStyle="#0ff"; ctx.lineWidth=1.5;
                         ctx.globalAlpha=0.3+_pulse*0.3; ctx.shadowColor="#0ff"; ctx.shadowBlur=6;
-                        ctx.beginPath(); ctx.arc(px,py-55,8+_pulse*4,0,Math.PI*2); ctx.stroke();
+                        ctx.beginPath(); ctx.arc(px,_base-55,8+_pulse*4,0,Math.PI*2); ctx.stroke();
                         ctx.restore();
                     }
                 } else {
