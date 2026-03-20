@@ -1892,7 +1892,9 @@ function render() {
             if (entry.isClone && entry.speciesName) {
                 // Respawn as clone
                 const speciesDef = SPECIES[entry.speciesName];
+                if (!speciesDef) { respawnQueue.splice(i,1); continue; }
                 const classDef   = speciesDef[entry.className];
+                if (!classDef) { respawnQueue.splice(i,1); continue; }
                 const def = {
                     width:     classDef.width,
                     height:    classDef.height,

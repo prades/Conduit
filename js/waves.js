@@ -26,6 +26,8 @@ function checkWaveClear() {
 }
 
 function showWaveClear() {
+    gameState.running=false;
+    crystalMenuOpen=false;
     const overlay=document.getElementById("overlay");
     document.getElementById("ovr-title").textContent="WAVE "+gameState.nightNumber+" CLEARED";
     document.getElementById("ovr-title").style.color="#0f8";
@@ -182,6 +184,7 @@ function nextWave() {
             const speciesDef = SPECIES[a.speciesName];
             if (!speciesDef) return;
             const classDef = speciesDef[a.className];
+            if (!classDef) return;
             const def = { width:classDef.width, height:classDef.height, moveSpeed:classDef.moveSpeed, health:classDef.health, power:classDef.power, color:speciesDef.color };
             const clone = new Predator(a.className, def, crystal.x+(Math.random()-0.5)*2, crystal.y+(Math.random()-0.5)*2);
             clone.state="wander"; clone.team="green"; clone.isClone=true;
@@ -242,6 +245,7 @@ function nextWave() {
     document.getElementById("overlay").classList.remove("active");
     gameState.running=true;
     startNight();
+    requestAnimationFrame(render);
 }
 
 function restartGame() {
