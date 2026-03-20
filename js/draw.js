@@ -38,11 +38,17 @@ function drawRadialMenu() {
         if (tHov) selectedRadialAction="build_upgrade";
     }
 
-    // ── DOWN = POSITION — hidden in build mode ─────────────
+    // ── DOWN = POSITION (or CAPTURE on capturable tiles) — hidden in build mode ──
     if (!buildMode) {
         const dHov=dist>RADIAL_RADIUS*0.25&&angle>Math.PI/4&&angle<3*Math.PI/4;
-        drawRadialButton(commandX, commandY+RADIAL_RADIUS, "POSITION", dHov);
-        if (dHov) selectedRadialAction="position";
+        const isCapturableTarget = commandTarget && commandTarget.capturable && !commandTarget.captured;
+        if (isCapturableTarget) {
+            drawRadialButton(commandX, commandY+RADIAL_RADIUS, "CAPTURE", dHov);
+            if (dHov) selectedRadialAction="capture";
+        } else {
+            drawRadialButton(commandX, commandY+RADIAL_RADIUS, "POSITION", dHov);
+            if (dHov) selectedRadialAction="position";
+        }
     }
 
     // ── RIGHT = INFO (normal) / TRAP (build mode on empty tile) ──
@@ -1228,6 +1234,135 @@ function _buildCircuit(W, H) {
     }
 
     return oc;
+}
+
+// ─────────────────────────────────────────────────────────
+//  CAPTURABLE NODE DRAWING
+//  Call from floor tile draw pass when tile.nodeType is set.
+// ─────────────────────────────────────────────────────────
+function drawCapturableNode(tile, px, py) {
+    const captured = tile.captured;
+    const progress = tile.captureProgress || 0;
+    const cx = px, cy = py + TILE_H;
+
+    if (tile.nodeType === 'capacitor_node') {
+        // Glowing orange cylindrical capacitor cap — cyan when captured
+        const col = captured ? '#00ccff' : '#ff8800';
+        const darkCol = captured ? '#003355' : '#221100';
+        ctx.save();
+        ctx.shadowColor = col;
+        ctx.shadowBlur = captured ? 18 : 12;
+
+        // Body cylinder
+        ctx.fillStyle = darkCol;
+        ctx.fillRect(cx - 7, cy - 28, 14, 20);
+
+        // Lead stripes
+        ctx.fillStyle = col;
+        ctx.globalAlpha = 0.4;
+        ctx.fillRect(cx - 7, cy - 24, 14, 3);
+        ctx.fillRect(cx - 7, cy - 18, 14, 3);
+        ctx.globalAlpha = 1;
+
+        // Top cap (ellipse)
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - 28, 8, 3.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bottom ring
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - 8, 8, 3.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Glow pulse ring
+        const _pulse = 0.5 + 0.5 * Math.sin(frame * 0.1 + tile.x * 0.7);
+        ctx.globalAlpha = 0.2 + _pulse * 0.25;
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2 + _pulse * 2;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - 8, 14 + _pulse * 4, 6 + _pulse * 2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Capture progress bar
+        if (!captured && progress > 0) {
+            ctx.fillStyle = '#000'; ctx.fillRect(cx - 12, cy - 40, 24, 4);
+            ctx.fillStyle = '#0df'; ctx.fillRect(cx - 12, cy - 40, Math.round(24 * (progress / 100)), 4);
+        }
+        // "CAPTURED" label
+        if (captured) {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+            ctx.fillStyle = '#00ccff';
+            ctx.fillText('◈ NODE', cx, cy - 42);
+        }
+
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+    } else if (tile.nodeType === 'signal_tower') {
+        // Tall antenna with pulsing ring — red (enemy) or cyan (captured)
+        const col = captured ? '#00ccff' : '#cc2222';
+        const _pulse = 0.5 + 0.5 * Math.sin(frame * 0.07 + tile.x * 0.5);
+        ctx.save();
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 10 + _pulse * 8;
+
+        // Base platform
+        ctx.fillStyle = captured ? '#002233' : '#1a0000';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - 4, 12, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tower pole
+        ctx.strokeStyle = captured ? '#336677' : '#441111';
+        ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(cx, cy - 4); ctx.lineTo(cx, cy - 55); ctx.stroke();
+
+        // Diagonal antenna arms
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.5;
+        [[-14, -20], [-9, -35], [9, -35], [14, -20]].forEach(([dx, dy]) => {
+            ctx.beginPath();
+            ctx.moveTo(cx, cy + dy * 0.5 - 30);
+            ctx.lineTo(cx + dx, cy + dy - 10);
+            ctx.stroke();
+        });
+
+        // Beacon tip
+        ctx.fillStyle = col;
+        ctx.globalAlpha = 0.7 + _pulse * 0.3;
+        ctx.beginPath(); ctx.arc(cx, cy - 55, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Pulsing ground ring
+        ctx.globalAlpha = 0.25 + _pulse * 0.35;
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.5 + _pulse * 2;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - 4, 20 + _pulse * 10, 8 + _pulse * 4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Capture progress bar
+        if (!captured && progress > 0) {
+            ctx.fillStyle = '#000'; ctx.fillRect(cx - 12, cy - 68, 24, 4);
+            ctx.fillStyle = '#0df'; ctx.fillRect(cx - 12, cy - 68, Math.round(24 * (progress / 100)), 4);
+        }
+        // "CAPTURED" label
+        if (captured) {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+            ctx.fillStyle = '#00ccff';
+            ctx.fillText('◈ TOWER', cx, cy - 72);
+        }
+
+        ctx.shadowBlur = 0;
+        ctx.restore();
+    }
 }
 
 function drawCircuitLayer() {

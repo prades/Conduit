@@ -174,6 +174,22 @@ function executeCommand() {
             if (commandTarget) issueMoveCommand(commandTarget);
             break;
         }
+        // ── DOWN (capturable tile): CAPTURE ───────────────
+        case "capture": {
+            const capTile = commandTarget;
+            if (!capTile || !capTile.capturable || capTile.captured) break;
+            // Assign up to 4 idle followers to capture this node
+            const pool = getCommandPool().filter(a => !a.dead && !a.job).slice(0, 4);
+            if (pool.length === 0) {
+                floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
+                    text: "NO FOLLOWERS AVAILABLE", color: "#f44", life: 90, vy: -0.2 });
+                break;
+            }
+            pool.forEach(a => { a.job = { type: "capture_node", target: capTile }; });
+            floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
+                text: "CAPTURING NODE…", color: "#0df", life: 90, vy: -0.2 });
+            break;
+        }
         // ── RIGHT: INFO ───────────────────────────────────
         case "info": {
             openInfoPanel(commandTarget);

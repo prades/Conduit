@@ -42,6 +42,9 @@ function render() {
         _uPylons     = _pillarCache.filter(t => t.upgraded);
         _nestCache   = world.filter(t => t.nest);
 
+        // ── TERRITORY — recalculate every 60 frames ──
+        updateTerritory();
+
         // ── NETWORK RESONANCE — compute largest connected pylon group per element ──
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
@@ -488,6 +491,8 @@ function render() {
     }
 
     updateShards();
+    updateCaptureProgress();
+    applySignalTowerBuff();
     updateStatusEffects();
     updateElementEffects();
     updateFloatingTexts();
@@ -802,6 +807,19 @@ function render() {
             }
             ctx.fillStyle=`rgb(${tR},${tG},${tB})`;
             ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H); ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H); ctx.closePath(); ctx.fill();
+            // ── TERRITORY TINT — color overlay for player/enemy/contested zones ──
+            if (obj.territory) {
+                ctx.save();
+                if (obj.territory === 'player')    ctx.fillStyle = 'rgba(0,120,255,0.15)';
+                else if (obj.territory === 'enemy') ctx.fillStyle = 'rgba(255,40,40,0.12)';
+                else                               ctx.fillStyle = 'rgba(200,200,0,0.1)';
+                ctx.beginPath();
+                ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H);
+                ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H);
+                ctx.closePath(); ctx.fill();
+                ctx.restore();
+            }
+
             // ── Steel panel bevel — highlight top two edges, shadow bottom two ──
             // Top-left edge highlight
             ctx.strokeStyle = isNight ? `rgba(80,45,30,${0.5*amb})` : `rgba(80,130,180,${0.55*amb})`;
@@ -924,6 +942,9 @@ function render() {
                 }
                 ctx.restore();
             }
+
+            // ── CAPTURABLE NODES (capacitor / signal tower) ──
+            if (obj.nodeType) drawCapturableNode(obj, px, py);
 
             // ── BROKEN NEST POD — charred gray husk with teal accent ──
             if (obj.nest && obj.nestHealth <= 0) {
@@ -1987,6 +2008,116 @@ function render() {
     updatePreview();
 
     requestAnimationFrame(render);
+}
+
+// ─────────────────────────────────────────────────────────
+//  TERRITORY / CAPTURE SYSTEM
+// ─────────────────────────────────────────────────────────
+
+// Recalculates tile.territory for all floor tiles.
+// Player territory = within 3 tiles of green pylon OR captured node.
+// Enemy territory  = within 4 tiles of active nest OR uncaptured signal tower.
+// Contested        = overlap of both.
+function updateTerritory() {
+    // Reset
+    world.forEach(t => { if (t.type === 'floor') t.territory = null; });
+
+    const greenPylons = _pillarCache.filter(t => t.pillarTeam === 'green');
+    const activeNests = _nestCache.filter(t => t.nestHealth > 0);
+
+    world.forEach(t => {
+        if (t.type !== 'floor') return;
+        let isPlayer = false, isEnemy = false;
+
+        // Player territory: green pylon within 3 tiles
+        for (const p of greenPylons) {
+            if (Math.hypot(p.x - t.x, p.y - t.y) <= 3) { isPlayer = true; break; }
+        }
+        // Player territory: captured node within 3 tiles
+        if (!isPlayer) {
+            for (const n of capturedNodes) {
+                if (Math.hypot(n.x - t.x, n.y - t.y) <= 3) { isPlayer = true; break; }
+            }
+        }
+
+        // Enemy territory: active nest within 4 tiles
+        for (const n of activeNests) {
+            if (Math.hypot(n.x - t.x, n.y - t.y) <= 4) { isEnemy = true; break; }
+        }
+        // Enemy territory: uncaptured signal tower within 4 tiles
+        if (!isEnemy) {
+            for (const st of signalTowers) {
+                if (!st.captured && Math.hypot(st.x - t.x, st.y - t.y) <= 4) { isEnemy = true; break; }
+            }
+        }
+
+        if (isPlayer && isEnemy)  t.territory = 'contested';
+        else if (isPlayer)         t.territory = 'player';
+        else if (isEnemy)          t.territory = 'enemy';
+        else                       t.territory = null;
+    });
+}
+
+// Increments capture progress when followers stand on a capturable tile.
+// Progress halts while an enemy is adjacent (within 1.5 tiles).
+function updateCaptureProgress() {
+    world.forEach(t => {
+        if (!t.capturable || t.captured) return;
+        // Gather followers assigned to capture this node
+        const onTile = followers.filter(f =>
+            !f.dead && f.job && f.job.type === 'capture_node' && f.job.target === t &&
+            Math.hypot(f.x - t.x, f.y - t.y) < 1.2
+        );
+        t.capturingFollowers = onTile;
+
+        // Halt if an enemy is within 1.5 tiles
+        const interrupted = actors.some(a =>
+            !a.dead &&
+            (a.team === 'red' || (a instanceof Predator && a.team !== 'green' && !a.isClone)) &&
+            Math.hypot(a.x - t.x, a.y - t.y) < 1.5
+        );
+
+        if (onTile.length > 0 && !interrupted) {
+            t.captureProgress = Math.min(100, t.captureProgress + 0.4 * onTile.length);
+        }
+
+        if (t.captureProgress >= 100 && !t.captured) {
+            t.captured = true;
+            t.captureProgress = 100;
+            capturedNodes.push({ type: t.nodeType, x: t.x, y: t.y });
+            // Clear capture jobs
+            followers.forEach(f => { if (f.job && f.job.type === 'capture_node' && f.job.target === t) f.job = null; });
+            floatingTexts.push({
+                x: canvas.width / 2, y: canvas.height / 2 - 80,
+                text: t.nodeType === 'signal_tower' ? '◈ TOWER HACKED' : '◈ NODE CAPTURED',
+                color: '#00ccff', life: 200, vy: -0.3
+            });
+        }
+    });
+}
+
+// Grants +25% ATK to enemy predators within 4 tiles of an uncaptured signal tower.
+// Resets the boost each frame before re-applying so it doesn't stack.
+function applySignalTowerBuff() {
+    // First: restore base power for all predators previously buffed
+    actors.forEach(a => {
+        if (a instanceof Predator && !a.dead && a.team !== 'green' && a._signalBuffed) {
+            a.power = a._baseSignalPower || a.power;
+            a._signalBuffed = false;
+        }
+    });
+    // Then: apply buff for predators in range of uncaptured towers
+    signalTowers.forEach(st => {
+        if (st.captured) return;
+        actors.forEach(a => {
+            if (!(a instanceof Predator) || a.dead || a.team === 'green' || a.isClone) return;
+            if (Math.hypot(a.x - st.x, a.y - st.y) <= 4 && !a._signalBuffed) {
+                a._baseSignalPower = a.power;
+                a.power = a.power * 1.25;
+                a._signalBuffed = true;
+            }
+        });
+    });
 }
 
 // ─────────────────────────────────────────────────────────

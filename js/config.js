@@ -95,6 +95,10 @@ let networkStrength   = {};
 let networkIntegrity  = {};
 let _prevNetworkTiers = {};
 
+// ── TERRITORY / CIRCUIT HARVESTING ────────────────────────
+let capturedNodes = []; // { type, x, y, benefit }
+let signalTowers  = []; // tile refs: { x, y, active, zoneIndex } — enemy antenna structures
+
 let projectiles = [], fragments = [], smoke = [], shards = [];
 let followerProjectiles = []; // ranged attacks from snipers/specials
 let pendingPillarDestruction = [];

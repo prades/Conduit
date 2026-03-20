@@ -18,7 +18,10 @@ function generateSegment(startX) {
             reconstructing:false, reconstructProgress:0, workers:[],
             // Spawn nest — honeycomb hive structure at zone centre, y=2
             nest: isNest, nestHealth: isNest ? 200 : 0, nestMaxHealth: 200,
-            nestZone: isNest ? zoneIndex : -1, nestPulse: 0
+            nestZone: isNest ? zoneIndex : -1, nestPulse: 0,
+            // Capturable node fields
+            nodeType: null, capturable: false, captureProgress: 0,
+            capturingFollowers: [], captured: false, territory: null
         };
         if (tile.pillarTeam==="green") tile.pillarCol="#0f8"; else tile.pillarCol="#e02020";
         world.push(tile);
@@ -55,4 +58,24 @@ function generateSegment(startX) {
         }
     }
     lastGenX=startX;
+
+    // ── CAPACITOR NODE — 1 per forward zone, at zone x-offset 3, y=2 ──
+    const capNodeX = zoneIndex * ZONE_LENGTH + 3;
+    if (zoneIndex >= 1 && startX === capNodeX) {
+        const nodeTile = world.find(t => t.x === startX && t.y === 2 && t.type === 'floor' && !t.nest && !t.nodeType);
+        if (nodeTile) {
+            nodeTile.nodeType = 'capacitor_node';
+            nodeTile.capturable = true;
+        }
+    }
+
+    // ── SIGNAL TOWER — zones 4+, placed at zone centre, y=1 ──
+    if (zoneIndex >= 4 && startX === zoneCenter) {
+        const stTile = world.find(t => t.x === startX && t.y === 1 && t.type === 'floor' && !t.nest && !t.nodeType);
+        if (stTile) {
+            stTile.nodeType = 'signal_tower';
+            stTile.capturable = true;
+            signalTowers.push(stTile);
+        }
+    }
 }

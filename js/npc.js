@@ -191,6 +191,18 @@ function updateRTSNPC(actor) {
         }
     }
 
+    // capture node job — walk to capturable tile and hold position to fill progress
+    if (actor.job&&actor.job.type==="capture_node") {
+        const node=actor.job.target;
+        if (!node||node.captured) { actor.job=null; return; }
+        const dx=node.x-actor.x, dy=node.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
+        if (dist>0.7) {
+            actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed;
+        }
+        // Stay at node — job remains active until captured (updateCaptureProgress clears it)
+        return;
+    }
+
     // destroy nest job — walk to live nest pod and bash it
     if (actor.job&&actor.job.type==="destroy_nest") {
         const nest=actor.job.target;

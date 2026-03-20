@@ -216,6 +216,26 @@ function nextWave() {
         activeDayZones++;
         for (let i=lastGenX+1;i<=lastGenX+ZONE_LENGTH;i++) generateSegment(i);
     }
+    // ── CAPTURED NODE BENEFITS ──────────────────────────────
+    // Capacitor Nodes: award shards per captured node at wave end
+    capturedNodes.forEach(n => {
+        if (n.type === 'capacitor_node') {
+            shardCount += 5;
+            floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 60,
+                text: '+5 SHARDS (Capacitor Node)', color: '#ff8800', life: 120, vy: -0.2 });
+        }
+    });
+    if (capturedNodes.some(n => n.type === 'capacitor_node')) saveShards();
+
+    // Memory Bank (hacked nest): enable forward spawn — mark captured nest zones
+    capturedNodes.forEach(n => {
+        if (n.type === 'memory_bank') {
+            // Allow forward spawn: let players use this nest zone as a safe spawn point
+            const nestTile = world.find(t => t.nest && Math.hypot(t.x - n.x, t.y - n.y) < 2);
+            if (nestTile) nestTile.playerControlled = true;
+        }
+    });
+
     // Camp building effects on wave start
     applyPowerConduit();
     applyRepairStation();
@@ -226,7 +246,7 @@ function nextWave() {
 
 function restartGame() {
     // Full reset
-    world=[];actors=[];followers=[];
+    world=[];actors=[];followers=[];capturedNodes=[];signalTowers=[];
     ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
     projectiles=[];fragments=[];smoke=[];shards=[];elementEffects=[];floatingTexts=[];followerProjectiles=[];clearDNA();
     pendingPillarDestruction=[];respawnQueue=[];

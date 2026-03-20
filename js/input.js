@@ -230,7 +230,9 @@ canvas.addEventListener('pointerup', e=>{
                 const nestLinked   = commandNestTarget && commandNestTarget.connectedPylon && !commandNestTarget.connectedPylon.destroyed;
                 const isBrokenNest = commandNestTarget && commandNestTarget.nestHealth <= 0 && !nestLinked;
                 const _isPyCmd = commandTarget && commandTarget.pillar && !commandTarget.destroyed;
+                const _isCapturableCmd = commandTarget && commandTarget.capturable && !commandTarget.captured;
                 if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && (_isPyCmd || buildMode)) selectedRadialAction = "build_upgrade";
+                else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode && _isCapturableCmd) selectedRadialAction = "capture";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode) selectedRadialAction = "position";
                 else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4 && buildMode && !_isPyCmd) selectedRadialAction = "place_trap";
                 else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4 && !_isPyCmd) selectedRadialAction = "info";
