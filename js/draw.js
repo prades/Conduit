@@ -158,7 +158,6 @@ function _drawPredator(actor, px, py, drawCtx) {
     // ── Legs split by isometric depth: far side behind body, near side in front ──
     // In iso projection depth = world(x+y). Legs at side s have depth offset s*(perpX+perpY).
     // perpX+perpY = dirX-dirY: positive → side+1 is far; negative → side-1 is far.
-    const isRedTeam = (actor.team !== "green" && !actor.isClone);
     const perpX=-dirY, perpY=dirX;
     const _legDepth = perpX + perpY; // dirX - dirY
     const thoraxCX=segments[0].cx+dirX*actor.joints.legRoot.forward;
@@ -170,7 +169,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         // side+1 is FAR (behind body) when _legDepth <= 0; NEAR (in front) when _legDepth > 0.
         // side-1 is FAR when _legDepth >= 0; NEAR when _legDepth < 0.
         if (legData && legData.count===6) {
-            drawCtx.strokeStyle=isRedTeam?"#331111":"#111"; drawCtx.lineWidth=2;
+            drawCtx.strokeStyle="#111"; drawCtx.lineWidth=2;
             const positions=[-1,0,1];
             positions.forEach((pos,index)=>{
                 if (actor.isMantis && pos===-1) return; // front pair replaced by raptorial praying arms
@@ -182,7 +181,7 @@ function _drawPredator(actor, px, py, drawCtx) {
                     _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
             });
         } else if (legData && legData.count===8) {
-            drawCtx.strokeStyle=isRedTeam?"#550011":"#1a1a1a"; drawCtx.lineWidth=1.2;
+            drawCtx.strokeStyle="#111"; drawCtx.lineWidth=1.2;
             const positions=[-1.2,-0.4,0.4,1.2];
             positions.forEach((pos,index)=>{
                 const long=-pos*(dim.width*0.22);
@@ -197,7 +196,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         if (actor.isMantis && legData) {
             const frontAttachX = thoraxCX + dirX*(dim.width*0.35);
             const frontAttachY = thoraxCY + dirY*(dim.width*0.35);
-            const armCol = isRedTeam ? "#441111" : "#1a3322";
+            const armCol = "#111";
             const femurLen = legData.femur * 0.7;
             const tibiaLen = legData.tibia * 0.9;
             const strike = (actor.state === "attack") ? Math.sin(actor.attackAnim) : 0;
@@ -253,53 +252,116 @@ function _drawPredator(actor, px, py, drawCtx) {
         drawCtx.restore();
     }
 
-    // Draw segments front-to-back then abdomen on top: thorax→head→abdomen
+    // Draw segments — all predators/clones jet black with grey accent lines
     for (let i=0;i<segments.length;i++) {
         const seg=segments[i];
         drawCtx.save(); drawCtx.translate(seg.cx,seg.cy); drawCtx.rotate(seg.rotation);
-        // Red team: black body
-        const baseCol = isRedTeam ? "#111" : actor.color;
-        drawCtx.fillStyle = baseCol;
-        const cr = actor.segmentCornerRadius !== undefined ? actor.segmentCornerRadius : 6;
-        // Spider abdomen — draw as a protruding globe (ellipse) instead of roundRect
-        const isAbdomen = i >= 2; // segments 0=thorax, 1=head, 2+=abdomen
+        const isHead    = i === 1;
+        const isAbdomen = i >= 2;
+
+        // Jet black body for all predators/clones
+        drawCtx.fillStyle = "#090909";
+
         if (actor.body.abdomen.round && isAbdomen) {
-            const rx = seg.width * 0.52;
-            const ry = seg.length * 0.58;
+            // Spider: round globe abdomen
+            const rx = seg.width * 0.52, ry = seg.length * 0.58;
             drawCtx.beginPath();
             drawCtx.ellipse(0, 0, rx, ry, 0, 0, Math.PI*2);
             drawCtx.fill();
-            // Specular highlight — top-left dome shine
-            const shimCol = isRedTeam ? "rgba(200,40,60,0.3)" : "rgba(180,180,220,0.3)";
-            drawCtx.fillStyle = shimCol;
+            // Single grey ridge highlight
+            drawCtx.strokeStyle = "rgba(75,75,75,0.75)";
+            drawCtx.lineWidth = 1.2;
             drawCtx.beginPath();
-            drawCtx.ellipse(-rx*0.22, -ry*0.22, rx*0.35, ry*0.3, -0.4, 0, Math.PI*2);
-            drawCtx.fill();
+            drawCtx.ellipse(-rx*0.2, -ry*0.18, rx*0.3, ry*0.24, -0.4, Math.PI*0.85, Math.PI*1.65);
+            drawCtx.stroke();
+        } else if (isHead) {
+            // Angular head: wedge shape — wide flared cheeks, pointed forward snout
+            // In rotated context: +X = forward (face), ±Y = sides (cheeks/neck)
+            const hw = seg.width * 0.5, ht = seg.length * 0.5;
+            const sp = actor.speciesName || "";
+            if (sp === "beetle") {
+                // Beetle: wide flat armored faceplate
+                drawCtx.beginPath();
+                drawCtx.moveTo(-hw,        -ht * 0.5 );
+                drawCtx.lineTo( hw * 0.55, -ht * 1.3 );
+                drawCtx.lineTo( hw * 1.05, -ht * 0.45);
+                drawCtx.lineTo( hw * 1.05,  ht * 0.45);
+                drawCtx.lineTo( hw * 0.55,  ht * 1.3 );
+                drawCtx.lineTo(-hw,         ht * 0.5 );
+                drawCtx.closePath(); drawCtx.fill();
+            } else if (sp === "scorpion") {
+                // Scorpion: wide angular crest head
+                drawCtx.beginPath();
+                drawCtx.moveTo(-hw * 0.7,  -ht * 0.5 );
+                drawCtx.lineTo( hw * 0.3,  -ht * 1.25);
+                drawCtx.lineTo( hw,        -ht * 0.7 );
+                drawCtx.lineTo( hw * 1.1,   0        );
+                drawCtx.lineTo( hw,         ht * 0.7 );
+                drawCtx.lineTo( hw * 0.3,   ht * 1.25);
+                drawCtx.lineTo(-hw * 0.7,   ht * 0.5 );
+                drawCtx.closePath(); drawCtx.fill();
+            } else if (sp === "mantis") {
+                // Mantis: long triangular blade head
+                drawCtx.beginPath();
+                drawCtx.moveTo(-hw,         -ht * 0.35);
+                drawCtx.lineTo( hw * 0.6,   -ht * 0.85);
+                drawCtx.lineTo( hw * 1.2,    0        );
+                drawCtx.lineTo( hw * 0.6,    ht * 0.85);
+                drawCtx.lineTo(-hw,          ht * 0.35);
+                drawCtx.closePath(); drawCtx.fill();
+            } else {
+                // Ant + default: aggressive wedge with cheek flare
+                drawCtx.beginPath();
+                drawCtx.moveTo(-hw,         -ht * 0.55);
+                drawCtx.lineTo( hw * 0.45,  -ht * 1.15);
+                drawCtx.lineTo( hw,          0        );
+                drawCtx.lineTo( hw * 0.45,   ht * 1.15);
+                drawCtx.lineTo(-hw,          ht * 0.55);
+                drawCtx.closePath(); drawCtx.fill();
+            }
+            // Grey brow/jaw accent lines
+            drawCtx.strokeStyle = "rgba(80,80,80,0.75)";
+            drawCtx.lineWidth = 0.8;
+            drawCtx.beginPath();
+            drawCtx.moveTo(hw * 0.1, -ht * 0.5); drawCtx.lineTo(hw * 0.65, 0);
+            drawCtx.moveTo(hw * 0.1,  ht * 0.5); drawCtx.lineTo(hw * 0.65, 0);
+            drawCtx.stroke();
         } else {
+            // Sharp-edged thorax/abdomen (corner radius near-zero)
+            const cr = actor.segmentCornerRadius !== undefined ? Math.min(actor.segmentCornerRadius, 2) : 1;
             drawCtx.beginPath(); drawCtx.roundRect(-seg.width*0.5,-seg.length*0.5,seg.width,seg.length,cr); drawCtx.fill();
         }
-        // Red team accent stripe on each segment
-        if (isRedTeam) {
-            drawCtx.fillStyle = "#cc1111";
-            const sw = seg.width*0.25, sh = seg.length*0.18;
-            // Center stripe
-            drawCtx.fillRect(-sw*0.5, -seg.length*0.25, sw, sh);
-            // Two side dots
-            drawCtx.beginPath(); drawCtx.arc(-seg.width*0.28, 0, seg.width*0.07, 0, Math.PI*2); drawCtx.fill();
-            drawCtx.beginPath(); drawCtx.arc( seg.width*0.28, 0, seg.width*0.07, 0, Math.PI*2); drawCtx.fill();
+
+        // Grey accent lines on all segments (not round abdomen or head — head has its own)
+        if (!(actor.body.abdomen.round && isAbdomen) && !isHead) {
+            drawCtx.strokeStyle = "rgba(65,65,65,0.7)";
+            drawCtx.lineWidth = 0.8;
+            // Central spine
+            drawCtx.beginPath();
+            drawCtx.moveTo(0, -seg.length * 0.3);
+            drawCtx.lineTo(0,  seg.length * 0.3);
+            drawCtx.stroke();
+            // Side edge lines
+            [-1, 1].forEach(s => {
+                drawCtx.beginPath();
+                drawCtx.moveTo(seg.width * 0.31 * s, -seg.length * 0.25);
+                drawCtx.lineTo(seg.width * 0.31 * s,  seg.length * 0.25);
+                drawCtx.stroke();
+            });
         }
+
         drawCtx.restore();
     }
     _drawLegsPass(false); // near legs drawn over body
     // Stinger tail for scorpions
-    if (isRedTeam && actor.hasStinger && segments.length > 2) {
+    if (actor.hasStinger && segments.length > 2) {
         const tail = segments[segments.length-1];
         const tailAngle = angle + Math.PI + Math.sin(frame*0.05)*0.3;
         const stingLen = 14;
         const sx = tail.cx - dirX*tail.length*0.5;
         const sy = tail.cy - dirY*tail.length*0.5;
         drawCtx.save();
-        drawCtx.strokeStyle="#cc1111"; drawCtx.lineWidth=3; drawCtx.lineCap="round";
+        drawCtx.strokeStyle="#555"; drawCtx.lineWidth=3; drawCtx.lineCap="round";
         drawCtx.beginPath();
         drawCtx.moveTo(sx, sy);
         drawCtx.quadraticCurveTo(
@@ -312,62 +374,136 @@ function _drawPredator(actor, px, py, drawCtx) {
         drawCtx.restore();
     }
 
-    // Mandibles — fixed diagonal inward V-shape, each side gyrates independently like chomping incisors
-    const mandData=actor.appendages.mandibles;
-    if (mandData&&mandData.enabled) {
-        const headSeg=segments[1];
-        const ha=actor.headAngle;
-        const fwdX=Math.cos(ha), fwdY=Math.sin(ha);
-        const sideX=-fwdY, sideY=fwdX;
-        const baseX=headSeg.cx+fwdX*5, baseY=headSeg.cy+fwdY*5;
+    // Mouth designs — species-specific, work at all angles via headAngle
+    {
+        const headSeg = segments[1] || segments[0];
+        const ha = actor.headAngle;
+        const fwdX = Math.cos(ha), fwdY = Math.sin(ha);
+        const sideX = -fwdY, sideY = fwdX;
+        const sp = actor.speciesName || "";
+        const wc = actor.walkCycle || 0;
+        const isAttacking = actor.state === "attack";
+        // Face tip — forward edge of head
+        const headHW = (segments[1] ? segments[1].width : segments[0].width) * 0.5;
+        const faceX = headSeg.cx + fwdX * headHW;
+        const faceY = headSeg.cy + fwdY * headHW;
 
-        // Each mandible gyrates on its own phase — offset by PI so they alternate
-        const chompSpeed = actor.state==="attack" ? 0.35 : 0.10;
-        const leftGyrate  = Math.sin((actor.walkCycle||0) * chompSpeed) * 0.4;
-        const rightGyrate = Math.sin((actor.walkCycle||0) * chompSpeed + Math.PI) * 0.4;
-
-        const mandCol = isRedTeam ? "#550000" : "#1a1a1a";
         drawCtx.save();
-        drawCtx.strokeStyle = mandCol;
-        drawCtx.lineWidth = mandData.thickness;
         drawCtx.lineCap = "round";
 
-        [-1, 1].forEach((side, si) => {
-            const gyrate = side === -1 ? leftGyrate : rightGyrate;
-            // Base attachment — spread outward from head center
-            const bx = baseX + sideX * side * 3.5;
-            const by = baseY + sideY * side * 3.5;
+        if (sp === "ant") {
+            // Ant: wide-swept razor mandibles — long angular blades, alternate chomp
+            const mLen = (actor.appendages.mandibles?.length || 5) * 1.4;
+            const chompSpd = isAttacking ? 0.4 : 0.1;
+            const chL = Math.sin(wc * chompSpd) * 0.55;
+            const chR = Math.sin(wc * chompSpd + Math.PI) * 0.55;
+            drawCtx.strokeStyle = "#222"; drawCtx.lineWidth = actor.appendages.mandibles?.thickness || 2;
+            [-1, 1].forEach(side => {
+                const ch = side === -1 ? chL : chR;
+                const bx = faceX + sideX * side * 3.2, by = faceY + sideY * side * 3.2;
+                // Two-segment angular blade: sweeps outward then snaps inward
+                const a1 = ha + side * (-0.9 + ch * 0.6);
+                const ex = bx + Math.cos(a1) * mLen * 0.52, ey = by + Math.sin(a1) * mLen * 0.52;
+                const a2 = a1 - side * 0.55;
+                const tx = ex + Math.cos(a2) * mLen * 0.55, ty = ey + Math.sin(a2) * mLen * 0.55;
+                drawCtx.beginPath(); drawCtx.moveTo(bx,by); drawCtx.lineTo(ex,ey); drawCtx.stroke();
+                drawCtx.beginPath(); drawCtx.moveTo(ex,ey); drawCtx.lineTo(tx,ty); drawCtx.stroke();
+                drawCtx.fillStyle = "#333";
+                drawCtx.beginPath(); drawCtx.arc(tx,ty,1.8,0,Math.PI*2); drawCtx.fill();
+            });
 
-            // Fixed diagonal inward angle — points toward center-forward like a V
-            // Base angle: 35° inward from forward axis, then gyrate on top
-            const diagAngle = ha + side * (-0.6) + gyrate;
-            const tipX = bx + Math.cos(diagAngle) * mandData.length;
-            const tipY = by + Math.sin(diagAngle) * mandData.length;
-
-            // Elbow joint — mandible has two segments for incisor look
-            const elbowX = bx + Math.cos(diagAngle) * mandData.length * 0.55;
-            const elbowY = by + Math.sin(diagAngle) * mandData.length * 0.55;
-            // Second segment angles further inward
-            const seg2Angle = diagAngle - side * 0.45;
-            const tip2X = elbowX + Math.cos(seg2Angle) * mandData.length * 0.5;
-            const tip2Y = elbowY + Math.sin(seg2Angle) * mandData.length * 0.5;
-
+        } else if (sp === "beetle") {
+            // Beetle: heavy crushing horn-plates — two thick blade fins + central horn
+            const bLen = (actor.appendages.mandibles?.length || 4) * 1.8;
+            const hornPulse = isAttacking ? Math.sin(actor.attackAnim || 0) * 2 : 0;
+            drawCtx.fillStyle = "#151515"; drawCtx.strokeStyle = "#555"; drawCtx.lineWidth = 0.8;
+            [-1, 1].forEach(side => {
+                const bx = faceX + sideX * side * 4, by = faceY + sideY * side * 4;
+                const backX = bx - sideX * side * 3.5, backY = by - sideY * side * 3.5;
+                const tipX  = bx + fwdX * (bLen + hornPulse), tipY = by + fwdY * (bLen + hornPulse);
+                drawCtx.beginPath();
+                drawCtx.moveTo(backX, backY); drawCtx.lineTo(bx, by);
+                drawCtx.lineTo(tipX, tipY); drawCtx.closePath();
+                drawCtx.fill(); drawCtx.stroke();
+            });
+            // Central horn protrusion
+            drawCtx.fillStyle = "#1a1a1a";
+            const hornTX = faceX + fwdX * bLen * 0.7 + hornPulse * fwdX;
+            const hornTY = faceY + fwdY * bLen * 0.7 + hornPulse * fwdY;
             drawCtx.beginPath();
-            drawCtx.moveTo(bx, by);
-            drawCtx.lineTo(elbowX, elbowY);
-            drawCtx.stroke();
-            drawCtx.beginPath();
-            drawCtx.moveTo(elbowX, elbowY);
-            drawCtx.lineTo(tip2X, tip2Y);
-            drawCtx.stroke();
+            drawCtx.moveTo(faceX + sideX * 2.5, faceY + sideY * 2.5);
+            drawCtx.lineTo(faceX - sideX * 2.5, faceY - sideY * 2.5);
+            drawCtx.lineTo(hornTX, hornTY);
+            drawCtx.closePath(); drawCtx.fill();
 
-            // Sharp tip dot
-            drawCtx.fillStyle = mandCol;
-            drawCtx.beginPath();
-            drawCtx.arc(tip2X, tip2Y, mandData.thickness * 0.6, 0, Math.PI*2);
-            drawCtx.fill();
-        });
+        } else if (sp === "scorpion") {
+            // Scorpion: forward-curved chelae (pincers) — claw hooks that snap
+            const cLen = (actor.appendages.mandibles?.length || 7) * 1.1;
+            const snapSpd = isAttacking ? 0.35 : 0.08;
+            const snap = Math.sin(wc * snapSpd) * 0.4;
+            drawCtx.strokeStyle = "#333"; drawCtx.lineWidth = 2.5;
+            [-1, 1].forEach(side => {
+                const bx = faceX + sideX * side * 4.5, by = faceY + sideY * side * 4.5;
+                const midX = bx + fwdX * cLen * 0.55 + sideX * side * cLen * 0.22;
+                const midY = by + fwdY * cLen * 0.55 + sideY * side * cLen * 0.22;
+                // Upper claw arm
+                const upA = ha + side * (0.35 - snap * 0.7);
+                const upTX = midX + Math.cos(upA) * cLen * 0.42, upTY = midY + Math.sin(upA) * cLen * 0.42;
+                // Lower claw arm (snaps toward upper)
+                const loA = ha + side * (0.7 - snap * 0.4);
+                const loTX = midX + Math.cos(loA) * cLen * 0.35, loTY = midY + Math.sin(loA) * cLen * 0.35;
+                drawCtx.beginPath(); drawCtx.moveTo(bx,by); drawCtx.quadraticCurveTo(midX,midY,upTX,upTY); drawCtx.stroke();
+                drawCtx.beginPath(); drawCtx.moveTo(midX,midY); drawCtx.lineTo(loTX,loTY); drawCtx.stroke();
+                drawCtx.fillStyle = "#444";
+                drawCtx.beginPath(); drawCtx.arc(upTX,upTY,1.8,0,Math.PI*2); drawCtx.fill();
+                drawCtx.beginPath(); drawCtx.arc(loTX,loTY,1.4,0,Math.PI*2); drawCtx.fill();
+            });
 
+        } else if (sp === "mantis") {
+            // Mantis: sharp serrated beak — narrow pointed labrum with saw edge
+            const bLen = (actor.appendages.mandibles?.length || 8) * 0.55;
+            const beakTX = faceX + fwdX * bLen, beakTY = faceY + fwdY * bLen;
+            drawCtx.fillStyle = "#1a1a1a"; drawCtx.strokeStyle = "#666"; drawCtx.lineWidth = 0.7;
+            // Upper beak half
+            drawCtx.beginPath();
+            drawCtx.moveTo(faceX + sideX * 3.5,  faceY + sideY * 3.5);
+            drawCtx.lineTo(faceX - sideX * 0.5, faceY - sideY * 0.5);
+            drawCtx.lineTo(beakTX, beakTY);
+            drawCtx.closePath(); drawCtx.fill(); drawCtx.stroke();
+            // Lower beak half
+            drawCtx.fillStyle = "#131313";
+            drawCtx.beginPath();
+            drawCtx.moveTo(faceX - sideX * 3.5,  faceY - sideY * 3.5);
+            drawCtx.lineTo(faceX + sideX * 0.5,  faceY + sideY * 0.5);
+            drawCtx.lineTo(beakTX, beakTY);
+            drawCtx.closePath(); drawCtx.fill(); drawCtx.stroke();
+            // Tip spike
+            drawCtx.fillStyle = "#555";
+            drawCtx.beginPath(); drawCtx.arc(beakTX, beakTY, 1.5, 0, Math.PI*2); drawCtx.fill();
+
+        } else {
+            // Generic / nymph fallback: simple V-mandibles
+            const mandData = actor.appendages.mandibles;
+            if (mandData && mandData.enabled) {
+                const mLen = mandData.length;
+                const chompSpd = isAttacking ? 0.35 : 0.10;
+                const chL = Math.sin(wc * chompSpd) * 0.4;
+                const chR = Math.sin(wc * chompSpd + Math.PI) * 0.4;
+                drawCtx.strokeStyle = "#222"; drawCtx.lineWidth = mandData.thickness;
+                [-1, 1].forEach(side => {
+                    const ch = side === -1 ? chL : chR;
+                    const bx = faceX + sideX * side * 3.5, by = faceY + sideY * side * 3.5;
+                    const a1 = ha + side * (-0.6) + ch;
+                    const ex = bx + Math.cos(a1) * mLen * 0.55, ey = by + Math.sin(a1) * mLen * 0.55;
+                    const a2 = a1 - side * 0.45;
+                    const tx = ex + Math.cos(a2) * mLen * 0.5, ty = ey + Math.sin(a2) * mLen * 0.5;
+                    drawCtx.beginPath(); drawCtx.moveTo(bx,by); drawCtx.lineTo(ex,ey); drawCtx.stroke();
+                    drawCtx.beginPath(); drawCtx.moveTo(ex,ey); drawCtx.lineTo(tx,ty); drawCtx.stroke();
+                    drawCtx.fillStyle = "#333";
+                    drawCtx.beginPath(); drawCtx.arc(tx,ty,mandData.thickness*0.6,0,Math.PI*2); drawCtx.fill();
+                });
+            }
+        }
         drawCtx.restore();
     }
 
@@ -379,7 +515,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         const fwdX=Math.cos(ha), fwdY=Math.sin(ha);
         const sideX=-fwdY, sideY=fwdX;
         const baseX=headSeg.cx+fwdX*5, baseY=headSeg.cy+fwdY*5;
-        const fangCol = isRedTeam ? "#880011" : "#1a0a00";
+        const fangCol = "#222";
         drawCtx.save();
         drawCtx.strokeStyle=fangCol; drawCtx.lineWidth=chelData.thickness; drawCtx.lineCap="round";
         [-1,1].forEach(side => {
@@ -395,7 +531,7 @@ function _drawPredator(actor, px, py, drawCtx) {
             drawCtx.quadraticCurveTo(mid1X, mid1Y, tipX, tipY);
             drawCtx.stroke();
             // Fang tip dot
-            drawCtx.fillStyle = isRedTeam ? "#cc1122" : "#333";
+            drawCtx.fillStyle = "#444";
             drawCtx.beginPath(); drawCtx.arc(tipX, tipY, chelData.thickness*0.7, 0, Math.PI*2); drawCtx.fill();
         });
         drawCtx.restore();
@@ -410,7 +546,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         const sideX=-fwdY, sideY=fwdX;
         const baseX=headSeg.cx+fwdX*3, baseY=headSeg.cy+fwdY*3;
         drawCtx.save();
-        drawCtx.strokeStyle=isRedTeam?"#550011":"#333"; drawCtx.lineWidth=pedData.thickness; drawCtx.lineCap="round";
+        drawCtx.strokeStyle="#333"; drawCtx.lineWidth=pedData.thickness; drawCtx.lineCap="round";
         [-1,1].forEach(side => {
             const ox=sideX*6*side, oy=sideY*6*side;
             // Two segments — elbow out then tip bulb
@@ -421,7 +557,7 @@ function _drawPredator(actor, px, py, drawCtx) {
             drawCtx.beginPath(); drawCtx.moveTo(baseX+ox,baseY+oy); drawCtx.lineTo(j1x,j1y); drawCtx.stroke();
             drawCtx.beginPath(); drawCtx.moveTo(j1x,j1y); drawCtx.lineTo(tipX,tipY); drawCtx.stroke();
             // Bulb tip
-            drawCtx.fillStyle=isRedTeam?"#330011":"#444";
+            drawCtx.fillStyle="#444";
             drawCtx.beginPath(); drawCtx.arc(tipX,tipY,pedData.thickness*1.2,0,Math.PI*2); drawCtx.fill();
         });
         drawCtx.restore();
@@ -434,7 +570,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         const tailX = abdSeg.cx - dirX*abdSeg.length*0.55;
         const tailY = abdSeg.cy - dirY*abdSeg.length*0.55;
         drawCtx.save();
-        drawCtx.fillStyle = isRedTeam ? "#330011" : "#2a2a2a";
+        drawCtx.fillStyle = "#1a1a1a";
         [-1,1].forEach(side => {
             const ox=perpX*side*abdSeg.width*0.2, oy=perpY*side*abdSeg.width*0.2;
             drawCtx.beginPath();
@@ -461,8 +597,9 @@ function _drawPredator(actor, px, py, drawCtx) {
                     const ex = eyeBaseX + sideX*col*eyeSize*2*side - fwdX*row*eyeSize*2.5;
                     const ey = eyeBaseY + sideY*col*eyeSize*2*side - fwdY*row*eyeSize*2.5;
                     drawCtx.save();
-                    if (eyeGlow > 0) { drawCtx.shadowColor=isRedTeam?"#ff2244":"#ffffff"; drawCtx.shadowBlur=eyeSize*eyeGlow*3; }
-                    drawCtx.fillStyle = isRedTeam ? "#ff2244" : "#eeeeff";
+                    const _isAllyEye = actor.team === "green" || actor.isClone;
+                    if (eyeGlow > 0) { drawCtx.shadowColor=_isAllyEye?"#00ee88":"#aaaacc"; drawCtx.shadowBlur=eyeSize*eyeGlow*3; }
+                    drawCtx.fillStyle = _isAllyEye ? "#00cc77" : "#9999bb";
                     drawCtx.beginPath(); drawCtx.arc(ex, ey, eyeSize, 0, Math.PI*2); drawCtx.fill();
                     // Pupil
                     drawCtx.shadowBlur=0;
@@ -522,7 +659,7 @@ function _drawPredator(actor, px, py, drawCtx) {
             const outerMidY = shellFrontY + (shellBackY - shellFrontY) * 0.5 + outY;
 
             // Base shell fill — dark chitin
-            const shellBaseColor = isRedTeam ? "#1a0000" : "#1a1a2e";
+            const shellBaseColor = "#0d0d0d";
             drawCtx.fillStyle = shellBaseColor;
             drawCtx.beginPath();
             drawCtx.moveTo(tipFX, tipFY);
@@ -536,7 +673,7 @@ function _drawPredator(actor, px, py, drawCtx) {
             drawCtx.fill();
 
             // Highlight ridge — top curve of the dome
-            const ridgeColor = isRedTeam ? "#330000" : "#2a2a4a";
+            const ridgeColor = "#252525";
             drawCtx.strokeStyle = ridgeColor;
             drawCtx.lineWidth = 2.5;
             drawCtx.beginPath();
@@ -549,7 +686,7 @@ function _drawPredator(actor, px, py, drawCtx) {
             const shineY = shellFrontY + (shellBackY - shellFrontY) * 0.3 + outY * 0.45;
             const shine2X = shellFrontX + (shellBackX - shellFrontX) * 0.65 + outX * 0.4;
             const shine2Y = shellFrontY + (shellBackY - shellFrontY) * 0.65 + outY * 0.4;
-            const shineCol = isRedTeam ? "rgba(180,30,30,0.35)" : "rgba(100,120,200,0.35)";
+            const shineCol = "rgba(80,80,80,0.35)";
             drawCtx.strokeStyle = shineCol;
             drawCtx.lineWidth = 3;
             drawCtx.lineCap = "round";
@@ -560,7 +697,7 @@ function _drawPredator(actor, px, py, drawCtx) {
         });
 
         // Center seam line
-        drawCtx.strokeStyle = isRedTeam ? "#440000" : "#0a0a1a";
+        drawCtx.strokeStyle = "#1a1a1a";
         drawCtx.lineWidth = 1.5;
         drawCtx.setLineDash([3, 4]);
         drawCtx.beginPath();
@@ -573,7 +710,20 @@ function _drawPredator(actor, px, py, drawCtx) {
     }
 
     if (actor.isNymph) drawCtx.globalAlpha = 1; // restore after nymph transparency
+    const _isAllyPred = actor.team === "green" || actor.isClone;
     drawHealthBar(px-18, py-85, 36, 5, actor.health, actor.maxHealth, drawCtx);
+    // Clone/ally: green bracket frame + diamond marker for identification
+    if (_isAllyPred) {
+        drawCtx.strokeStyle = "#0f8"; drawCtx.lineWidth = 1;
+        drawCtx.strokeRect(px - 20, py - 87, 40, 9);
+        drawCtx.save();
+        drawCtx.setTransform(1, 0, 0, 1, 0, 0);
+        drawCtx.fillStyle = "#0f8";
+        drawCtx.font = "bold 7px monospace";
+        drawCtx.textAlign = "center";
+        drawCtx.fillText("◆", px, py - 88);
+        drawCtx.restore();
+    }
     // Shield bar — blue, drawn above HP bar; drains on damage, no passive regen
     if (actor.shielded && actor.shieldAmount > 0) {
         actor._shieldMax = Math.max(actor._shieldMax || 0, actor.shieldAmount);
