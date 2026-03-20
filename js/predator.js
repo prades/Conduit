@@ -72,6 +72,7 @@ class Predator {
         this.provoked        = false;
         this.team            = "red";
         this.isClone         = false;
+        this.nodeReconvertTarget = null;
     }
 
     // Called by applyDamage whenever this predator takes a hit.
@@ -175,6 +176,35 @@ class Predator {
         if (this.state!==bestState) {
             if (this.state==="attack") this.moveSpeed=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
             this.state=bestState;
+        }
+
+        // ── NODE RECONVERT — high-priority: reclaim any player-captured node nearby ──
+        if (this.nodeReconvertTarget && !this.nodeReconvertTarget.captured) {
+            this.nodeReconvertTarget = null; // node was lost or already uncaptured
+        }
+        if (!this.nodeReconvertTarget && frame % 30 === Math.abs(Math.floor(this.animationPhase * 5)) % 30) {
+            let nearestNode = null, bestND = Infinity;
+            world.forEach(t => {
+                if (!t.capturable || !t.captured) return;
+                const d = Math.hypot(t.x - this.x, t.y - this.y);
+                if (d < 8.0 && d < bestND) { bestND = d; nearestNode = t; }
+            });
+            if (nearestNode) this.nodeReconvertTarget = nearestNode;
+        }
+        if (this.nodeReconvertTarget) {
+            const dx = this.nodeReconvertTarget.x - this.x;
+            const dy = this.nodeReconvertTarget.y - this.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 0.9) {
+                this.x += (dx / dist) * this.moveSpeed * 1.2;
+                this.y += (dy / dist) * this.moveSpeed * 1.2;
+                const bodyAngle = Math.atan2(dy, dx);
+                this.dirX += (Math.cos(bodyAngle) - this.dirX) * 0.1;
+                this.dirY += (Math.sin(bodyAngle) - this.dirY) * 0.1;
+            }
+            this.walkCycle += this.moveSpeed * 40;
+            this.lastX = this.x; this.lastY = this.y;
+            return;
         }
 
         // ── PYLON AGGRO — overrides normal state when a predator has been fried long enough ──

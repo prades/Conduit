@@ -96,10 +96,14 @@ function render() {
                 const pb = _wPylons[_pj];
                 if (pa.attackModeElement !== pb.attackModeElement) continue;
                 const _pr = getPylonRange(); if ((pa.x-pb.x)*(pa.x-pb.x)+(pa.y-pb.y)*(pa.y-pb.y) > _pr*_pr) continue;
+                const _plx = pb.x-pa.x, _ply = pb.y-pa.y;
                 _wPylonPairs.push({ pa, pb,
                     el: pa.attackModeElement,
                     col: pa.attackModeColor || "#0f8",
-                    midX: (pa.x+pb.x)*0.5, midY: (pa.y+pb.y)*0.5 });
+                    midX: (pa.x+pb.x)*0.5, midY: (pa.y+pb.y)*0.5,
+                    lx: _plx, ly: _ply, len2: _plx*_plx+_ply*_ply,
+                    bMinX: Math.min(pa.x,pb.x)-1.5, bMaxX: Math.max(pa.x,pb.x)+1.5,
+                    bMinY: Math.min(pa.y,pb.y)-1.5, bMaxY: Math.max(pa.y,pb.y)+1.5 });
             }
         }
         // O(1) partner lookup used by solo-flux ring and future checks
@@ -224,9 +228,11 @@ function render() {
             const _nTier = networkStrength[el] || 1;
             const _seasonBonus = _seasonBonusCache[el] || 1.0;
 
-            const lx=pb.x-pa.x, ly=pb.y-pa.y, len2=lx*lx+ly*ly;
+            const {lx, ly, len2, bMinX, bMaxX, bMinY, bMaxY} = pair;
             actors.forEach(a=>{
                 if (!a||a.dead) return;
+                // Bounding box early-exit (avoids sqrt for distant actors)
+                if (a.x < bMinX || a.x > bMaxX || a.y < bMinY || a.y > bMaxY) return;
                 // Distance from point to line segment pa→pb
                 let t2 = len2>0 ? ((a.x-pa.x)*lx+(a.y-pa.y)*ly)/len2 : 0;
                 t2=Math.max(0,Math.min(1,t2));
@@ -2285,6 +2291,7 @@ function render() {
     drawPylonConfirm();
     drawInfoPanel();
     drawTraps();
+    drawShopButton();
     drawCampButton();
     drawCampMenu();
     drawTrapPicker();
@@ -2373,6 +2380,28 @@ function updateCaptureProgress() {
                 text: t.nodeType === 'signal_tower' ? '◈ TOWER HACKED' : '◈ NODE CAPTURED',
                 color: '#00ccff', life: 200, vy: -0.3
             });
+        }
+
+        // Reverse capture: predators near a player-controlled node reclaim it
+        if (t.captured) {
+            let nearPredCount = 0;
+            actors.forEach(a => {
+                if (!a.dead && a instanceof Predator && a.team !== 'green' && !a.isClone &&
+                    Math.hypot(a.x - t.x, a.y - t.y) < 1.2) nearPredCount++;
+            });
+            if (nearPredCount > 0) {
+                t.captureProgress = Math.max(0, t.captureProgress - 0.5 * nearPredCount);
+                if (t.captureProgress <= 0) {
+                    t.captured = false;
+                    const idx = capturedNodes.findIndex(n => n.x === t.x && n.y === t.y);
+                    if (idx >= 0) capturedNodes.splice(idx, 1);
+                    floatingTexts.push({
+                        x: canvas.width / 2, y: canvas.height / 2 - 80,
+                        text: t.nodeType === 'signal_tower' ? '◈ TOWER RECLAIMED' : '◈ NODE RECLAIMED',
+                        color: '#ff4422', life: 200, vy: -0.3
+                    });
+                }
+            }
         }
     });
 }

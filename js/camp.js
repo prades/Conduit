@@ -232,6 +232,40 @@ function handleCampMenuTap(tx, ty) {
     return true;
 }
 
+// ── SHOP BUTTON (canvas-drawn, bottom-left above camp) ────
+const _SHOPBTN = { x: 22, y: 0, r: 20 };
+
+function drawShopButton() {
+    if (alertActive || gameState.phase === "night" || gameState.phase === "waveComplete" || gameState.phase === "gameOver") return;
+    _SHOPBTN.y = canvas.height - 104 - (SAFE_BOTTOM || 0);
+    const { x, y, r } = _SHOPBTN;
+    const pulse = 0.65 + 0.35 * Math.sin((frame || 0) * 0.07);
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    ctx.fillStyle   = "rgba(0,12,30,0.88)";
+    ctx.strokeStyle = `rgba(80,180,255,${0.4 + 0.2 * pulse})`;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Shard icon — diamond shape
+    ctx.strokeStyle = `rgba(80,180,255,${0.6 * pulse})`;
+    ctx.lineWidth   = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 8); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 8); ctx.lineTo(x - 6, y);
+    ctx.closePath(); ctx.stroke();
+
+    ctx.fillStyle  = `rgba(100,200,255,${0.75 * pulse})`;
+    ctx.font       = "bold 8px monospace";
+    ctx.textAlign  = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("SHOP", x, y + r + 10);
+    ctx.textBaseline = "alphabetic";
+
+    ctx.restore();
+}
+
 // ── CAMP BUTTON (canvas-drawn, bottom-left) ───────────────
 const _CAMPBTN = { x: 22, y: 0, r: 20 };
 

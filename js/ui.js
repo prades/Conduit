@@ -6,7 +6,12 @@ const _UI_X=20, _UI_W=180, _UI_TAB_H=22, _UI_ROW_H=28;
 const _UI_CONTENT_H = ELEMENTS.length * _UI_ROW_H; // 168px
 const _UI_TOTAL_H   = _UI_TAB_H + _UI_CONTENT_H;
 
-function _panelY() { return canvas.height - 20 - _UI_TOTAL_H - (SAFE_BOTTOM || 0); }
+function _panelY() {
+    const contentH = followerPoolMinimized ? 0 : _UI_CONTENT_H;
+    return canvas.height - 20 - _UI_TAB_H - contentH - (SAFE_BOTTOM || 0);
+}
+
+const _UI_MINIMIZE_BTN_W = 22;
 
 function drawFollowerElementUI() {
     const x=_UI_X, w=_UI_W, th=_UI_TAB_H, rh=_UI_ROW_H;
@@ -16,7 +21,9 @@ function drawFollowerElementUI() {
     ctx.textBaseline="middle";
 
     // ── TAB ROW ──────────────────────────────────────────
-    const tabW=Math.floor(w/3);
+    // Leave room for minimize button on the right of the tab row
+    const tabAreaW = w - _UI_MINIMIZE_BTN_W;
+    const tabW=Math.floor(tabAreaW/3);
     [["ELEM","elements"],["UNITS","units"],["CLONES","clones"]].forEach(([label,id],i)=>{
         const active=uiTab===id;
         const hasClones = id==="clones" && actors.some(a=>a.isClone&&!a.dead);
@@ -28,7 +35,17 @@ function drawFollowerElementUI() {
         ctx.fillText(label,x+i*tabW+tabW/2,py0+th/2);
     });
 
+    // ── MINIMIZE / EXPAND BUTTON ──────────────────────────
+    const btnX = x + tabAreaW;
+    ctx.fillStyle = "rgba(0,0,0,0.65)";
+    ctx.fillRect(btnX, py0, _UI_MINIMIZE_BTN_W, th);
+    ctx.strokeStyle = "#444"; ctx.lineWidth = 1;
+    ctx.strokeRect(btnX, py0, _UI_MINIMIZE_BTN_W, th);
+    ctx.fillStyle = "#888"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center";
+    ctx.fillText(followerPoolMinimized ? "▲" : "▼", btnX + _UI_MINIMIZE_BTN_W/2, py0 + th/2);
+
     // ── CONTENT ───────────────────────────────────────────
+    if (followerPoolMinimized) { ctx.restore(); return; }
     if (uiTab==="elements") {
         ctx.font="13px monospace";
         ELEMENTS.forEach((el,i)=>{
@@ -545,13 +562,22 @@ function drawGestureFeedback() {
 // ─────────────────────────────────────────────────────────
 function handleFollowerUIClick(x,y) {
     const py0=_panelY();
-    if (x<_UI_X||x>_UI_X+_UI_W||y<py0||y>py0+_UI_TOTAL_H) return false;
+    const panelH = followerPoolMinimized ? _UI_TAB_H : _UI_TOTAL_H;
+    if (x<_UI_X||x>_UI_X+_UI_W||y<py0||y>py0+panelH) return false;
 
-    // Tab row — three tabs each 1/3 width
+    // Tab row — three tabs + minimize button
     if (y<py0+_UI_TAB_H) {
-        const tabW=Math.floor(_UI_W/3);
+        const tabAreaW = _UI_W - _UI_MINIMIZE_BTN_W;
+        // Minimize/expand button on the right
+        if (x >= _UI_X + tabAreaW) {
+            followerPoolMinimized = !followerPoolMinimized;
+            return true;
+        }
+        const tabW=Math.floor(tabAreaW/3);
         const ti=Math.floor((x-_UI_X)/tabW);
         uiTab=["elements","units","clones"][Math.min(ti,2)]||"elements";
+        // Expand if minimized when a tab is tapped
+        if (followerPoolMinimized) followerPoolMinimized = false;
         return true;
     }
 

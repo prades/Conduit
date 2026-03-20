@@ -79,6 +79,7 @@ function generateSegment(startX) {
         if (nodeTile) {
             nodeTile.nodeType = 'capacitor_node';
             nodeTile.capturable = true;
+            nodeTile.predatorOwned = true; // starts under predator control
         }
     }
 
@@ -88,6 +89,7 @@ function generateSegment(startX) {
         if (stTile) {
             stTile.nodeType = 'signal_tower';
             stTile.capturable = true;
+            stTile.predatorOwned = true; // starts under predator control
             signalTowers.push(stTile);
         }
     }

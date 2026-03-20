@@ -99,6 +99,30 @@ function showGameOver() {
     overlay.classList.add("active");
 }
 
+// ── MID-GAME SHOP — accessible during day when alarm is inactive ──
+function openMidGameShop() {
+    if (alertActive || gameState.phase === "night" || gameState.phase === "waveComplete" || gameState.phase === "gameOver") return;
+    gameState.running = false;
+    crystalMenuOpen = false;
+    const overlay = document.getElementById("overlay");
+    document.getElementById("ovr-title").textContent = "SUPPLY CACHE";
+    document.getElementById("ovr-title").style.color = "#4bc8ff";
+    document.getElementById("ovr-sub").textContent = "Browse upgrades — game paused";
+    document.getElementById("ovr-shards").textContent = shardCount;
+    document.getElementById("ovr-conv").textContent = dayStats.redConverted;
+    document.getElementById("ovr-waves").textContent = gameState.totalWavesSurvived;
+    document.getElementById("ovr-btn").textContent = "CLOSE";
+    document.getElementById("ovr-btn").onclick = closeMidGameShop;
+    buildShopGrid();
+    if (typeof switchShopTab === "function") switchShopTab("Supply");
+    overlay.classList.add("active");
+}
+
+function closeMidGameShop() {
+    document.getElementById("overlay").classList.remove("active");
+    gameState.running = true;
+}
+
 function buildShopGrid() {
     _fillShopPane("shopGridSupply",    SHOP_ITEMS,        false);
     _fillShopPane("shopGridPylons",    PYLON_SHOP_ITEMS,  false);

@@ -149,6 +149,11 @@ canvas.addEventListener('pointerup', e=>{
     if (handleTrapPickerTap(upX, upY)) { isPressing=false; return; }
     if (handleCampMenuTap(upX, upY)) { isPressing=false; return; }
     if (handleFollowerUIClick(upX, upY)) { isPressing=false; return; }
+    // SHOP button tap
+    if (!touchMoved && !alertActive && gameState.phase !== "night" && gameState.phase !== "waveComplete" && gameState.phase !== "gameOver"
+        && Math.hypot(upX-_SHOPBTN.x, upY-_SHOPBTN.y) < _SHOPBTN.r+8) {
+        openMidGameShop(); isPressing=false; return;
+    }
     // CAMP button tap
     if (!touchMoved && Math.hypot(upX-_CAMPBTN.x, upY-_CAMPBTN.y) < _CAMPBTN.r+8) {
         campMenuOpen=!campMenuOpen; isPressing=false; return;

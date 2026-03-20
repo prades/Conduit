@@ -196,6 +196,7 @@ let buildMode    = false;
 let holdLineX    = null;       // world X boundary; null = cleared
 let uiTab        = "elements"; // "elements" | "units"
 let selectedRole = null;       // "brawler"|"sniper"|"camper"|null
+let followerPoolMinimized = false; // whether the follower pool panel is collapsed
 
 // ── CRYSTAL MENU / BUILDS ─────────────────────────────────
 let crystalMenuOpen  = false;
