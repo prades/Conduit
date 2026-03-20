@@ -42,6 +42,9 @@ function render() {
         _aPylons     = _pillarCache.filter(t => t.attackMode);
         _uPylons     = _pillarCache.filter(t => t.upgraded);
         _nestCache   = world.filter(t => t.nest);
+        // ── WALL PANEL MAP — for wall-face panel rendering ──
+        _wallPanelMap = new Map();
+        world.forEach(t => { if (t.nodeType === 'wall_panel') _wallPanelMap.set(Math.round(t.x), t); });
 
         // ── TERRITORY — recalculate every 60 frames ──
         updateTerritory();
@@ -951,7 +954,8 @@ function render() {
             }
 
             // ── CAPTURABLE NODES (capacitor / signal tower) ──
-            if (obj.nodeType) drawCapturableNode(obj, px, py);
+            // wall_panel is drawn on the wall face in the wall_back pass — skip it here.
+            if (obj.nodeType && obj.nodeType !== 'wall_panel') drawCapturableNode(obj, px, py);
 
             // ── BROKEN NEST POD — charred gray husk with teal accent ──
             if (obj.nest && obj.nestHealth <= 0) {
@@ -1378,131 +1382,104 @@ function render() {
                 // 3. Server rack panels — every 9 tiles (offset from vents)
                 const isRackX=(xi%9===4);
 
-                // 1b. Circuit board traces — horizontal PCB interconnects across wall south face
-                // Traces cluster in tight bundles every ~8 tiles; sparse bus-only elsewhere.
-                // Skip on rack panel tiles to avoid traces bleeding through semi-transparent panel.
+                // 1b. Wall circuit interconnect — background-style PCB traces on the south wall face.
+                // Uses isometric shear so traces lie naturally on the wall plane.
+                // Skip on rack tiles to avoid bleed through the semi-transparent panel.
                 if (!isRackX) {
-                    // South face parallelogram: W=(px-TILE_W, py+TILE_H), S=(px, py+2*TILE_H)
-                    const wx = px - TILE_W, wy = py + TILE_H;
-                    const sx = px,          sy = py + 2 * TILE_H;
-                    const trH = [WH * 0.20, WH * 0.45, WH * 0.70];
+                    // W corner of south face — origin of the wall-space coordinate system.
+                    // Wall-space: x ∈ [0..TILE_W], y ∈ [0..WH] (y=0 at base, y=WH at top).
+                    // Transform: screen_x = x + WX,  screen_y = 0.5*x − y + WY
+                    const WX = px - TILE_W, WY = py + TILE_H;
+                    // Seeded deterministic RNG per tile — same pattern every frame, different per column.
+                    const rng = _mkCircuitRng(((Math.abs(Math.floor(obj.x)) * 0xDEAD + 0xBEEF) >>> 0));
+                    const WPAL = ['#0f8','#0df','#0fa','#3fc','#0cf','#2fd','#1ee'];
+
                     ctx.save();
+                    ctx.transform(1, 0.5, 0, -1, WX, WY); // isometric shear onto wall face
+                    ctx.lineCap = 'square'; ctx.lineJoin = 'miter';
 
-                    // Determine cluster membership — clusters every 8 tiles, span 3 tiles wide
-                    const CPER = 8;
-                    const posInC = ((xi % CPER) + CPER) % CPER; // 0..7
-                    // Cluster centre at posInC === 1, spans posInC 0,1,2
-                    const distC = Math.min(posInC, Math.abs(posInC - 1), Math.abs(posInC - 2));
-                    const inCluster = posInC <= 2;
-                    const isCenter  = posInC === 1;
-                    // Vary cluster position across world so they don't line up perfectly
-                    const clusterIdx = Math.floor(xi / CPER);
-                    const centerShift = Math.sin(clusterIdx * 17.31 + 2.9) * 0.15; // ±0.15 t-shift
-
-                    // Main horizontal bus traces (always present)
-                    trH.forEach(h => {
-                        ctx.globalAlpha = (inCluster ? 0.30 : 0.14) * amb;
-                        ctx.strokeStyle = "#00bb88";
-                        ctx.lineWidth   = inCluster ? 1.1 : 0.7;
+                    // ── Main horizontal bus lines — fixed heights, continuous across tiles ──
+                    const busY = [WH*0.18, WH*0.40, WH*0.65, WH*0.86];
+                    const busC = ['#0f8', '#0df', '#0fa', '#2fd'];
+                    for (let bi = 0; bi < busY.length; bi++) {
+                        ctx.globalAlpha = 0.20 * amb;
+                        ctx.strokeStyle = busC[bi];
+                        ctx.lineWidth   = 1.1;
                         ctx.beginPath();
-                        ctx.moveTo(wx, wy - h);
-                        ctx.lineTo(sx, sy - h);
+                        ctx.moveTo(-2, busY[bi]);   // extend 2px past tile edge for seamless joins
+                        ctx.lineTo(62, busY[bi]);
                         ctx.stroke();
-                    });
-                    ctx.lineWidth = 0.8;
+                    }
 
-                    if (inCluster) {
-                        // ── CLUSTER ZONE: tight bundle of vertical jogs ──
-                        // All jogs packed into a narrow band around the cluster centre fraction.
-                        const baseFrac = 0.50 + centerShift + (posInC - 1) * 0.08;
-                        const numJogs  = isCenter ? 9 : 5;
-                        const spread   = 0.16; // total horizontal spread of the bundle (in t-space)
+                    // ── Tile-local jog / zigzag traces (seeded, deterministic) ──
+                    const numJogs = 1 + (rng() * 3 | 0);
+                    for (let j = 0; j < numJogs; j++) {
+                        const jx  = 6 + rng() * 48;
+                        const bi0 = rng() * busY.length | 0;
+                        const bi1 = ((bi0 + 1 + (rng() * (busY.length - 1) | 0)) % busY.length);
+                        const y0  = busY[bi0], y1 = busY[bi1];
+                        const col = WPAL[rng() * WPAL.length | 0];
+                        const hasZig = rng() > 0.45;
+                        ctx.globalAlpha = (0.14 + rng() * 0.13) * amb;
+                        ctx.strokeStyle = col; ctx.lineWidth = 0.9;
+                        ctx.beginPath(); ctx.moveTo(jx, y0);
+                        if (hasZig) {
+                            const midY = y0 + (y1 - y0) * (0.35 + rng() * 0.30);
+                            const xOff = (rng() - 0.5) * 18;
+                            ctx.lineTo(jx, midY); ctx.lineTo(jx + xOff, midY); ctx.lineTo(jx + xOff, y1);
+                        } else { ctx.lineTo(jx, y1); }
+                        ctx.stroke();
+                        // Via pads at endpoints
+                        ctx.globalAlpha = 0.36 * amb; ctx.fillStyle = col;
+                        ctx.beginPath(); ctx.arc(jx, y0, 2.2, 0, Math.PI*2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(hasZig ? jx+(rng()-0.5)*18 : jx, y1, 2.2, 0, Math.PI*2); ctx.fill();
+                        ctx.globalAlpha = 0.18 * amb; ctx.lineWidth = 0.5;
+                        ctx.beginPath(); ctx.arc(jx, y0, 4.2, 0, Math.PI*2); ctx.stroke();
+                    }
 
-                        for (let j = 0; j < numJogs; j++) {
-                            const seed = clusterIdx * 97 + j * 13.7 + posInC * 3.1;
-                            // Evenly space jogs within the spread, with tiny seeded dither
-                            const tOff = (j / (numJogs - 1) - 0.5) * spread
-                                       + Math.sin(seed * 5.3) * (spread / numJogs) * 0.4;
-                            const t  = baseFrac + tOff;
-                            const jx = wx + t * (sx - wx);
-                            const jy = wy + t * (sy - wy);
-
-                            // Each jog connects two of the three bus traces
-                            const top = (j % 3 === 2) ? 0 : (j % 2 === 0 ? 0 : 1);
-                            const bot = (j % 3 === 2) ? 2 : (j % 2 === 0 ? 1 : 2);
-                            const jogColors = ["#00ffaa", "#0099dd", "#00ccbb"];
-                            ctx.globalAlpha = (0.20 + Math.abs(Math.sin(seed)) * 0.14) * amb;
-                            ctx.strokeStyle = jogColors[j % 3];
-                            ctx.beginPath();
-                            ctx.moveTo(jx, jy - trH[top]);
-                            ctx.lineTo(jx, jy - trH[bot]);
-                            ctx.stroke();
-
-                            // Via pads at jog endpoints
-                            ctx.globalAlpha = 0.35 * amb;
-                            ctx.fillStyle   = j % 2 === 0 ? "#00cc88" : "#0099cc";
-                            ctx.beginPath(); ctx.arc(jx, jy - trH[top], 1.5, 0, Math.PI * 2); ctx.fill();
-                            ctx.beginPath(); ctx.arc(jx, jy - trH[bot], 1.5, 0, Math.PI * 2); ctx.fill();
-                            // Middle via for full-span jogs
-                            if (top === 0 && bot === 2) {
-                                ctx.globalAlpha = 0.28 * amb;
-                                ctx.beginPath(); ctx.arc(jx, jy - trH[1], 1.2, 0, Math.PI * 2); ctx.fill();
-                            }
+                    // ── Cluster / radial node — one every ~7 tiles ──
+                    const rng2 = _mkCircuitRng(((Math.abs(Math.floor(obj.x)) * 0xF00BA5 + 0x1EAF) >>> 0));
+                    if ((Math.abs(Math.floor(obj.x)) % 7) < 1 || rng2() > 0.82) {
+                        const cx2 = 14 + rng2() * 32, cy2 = 32 + rng2() * 52;
+                        const rad = 7 + rng2() * 10, col2 = WPAL[rng2() * WPAL.length | 0];
+                        const arms = 4 + (rng2() * 4 | 0);
+                        ctx.strokeStyle = col2; ctx.fillStyle = col2;
+                        for (let a = 0; a < arms; a++) {
+                            const ang = (a / arms) * Math.PI * 2 + rng2() * 0.5;
+                            const nx = cx2 + Math.cos(ang) * rad * (0.5 + rng2() * 0.5);
+                            const ny = cy2 + Math.sin(ang) * rad * (0.5 + rng2() * 0.5);
+                            ctx.lineWidth = 0.8; ctx.globalAlpha = 0.16 * amb;
+                            ctx.beginPath(); ctx.moveTo(cx2, cy2); ctx.lineTo(nx, cy2); ctx.lineTo(nx, ny); ctx.stroke();
+                            ctx.globalAlpha = 0.20 * amb;
+                            ctx.beginPath(); ctx.arc(nx, ny, 1.4, 0, Math.PI*2); ctx.fill();
                         }
+                        ctx.globalAlpha = 0.26 * amb;
+                        ctx.beginPath(); ctx.arc(cx2, cy2, 2.8, 0, Math.PI*2); ctx.fill();
+                        ctx.lineWidth = 0.5; ctx.globalAlpha = 0.16 * amb;
+                        ctx.beginPath(); ctx.arc(cx2, cy2, 5.0, 0, Math.PI*2); ctx.stroke();
+                    }
 
-                        // Short horizontal stub fanning out from centre cluster
-                        if (isCenter) {
-                            const bx  = wx + baseFrac * (sx - wx);
-                            const by  = wy + baseFrac * (sy - wy);
-                            const bx2 = wx + (baseFrac + 0.22) * (sx - wx);
-                            const by2 = wy + (baseFrac + 0.22) * (sy - wy);
-                            ctx.globalAlpha = 0.18 * amb;
-                            ctx.strokeStyle = "#00eeaa";
-                            ctx.lineWidth   = 0.7;
+                    // ── Pulsing tracers — bright packets flowing along bus lines ──
+                    // Each of 4 tracers has a unique speed; global frame gives cross-tile continuity.
+                    for (let ti = 0; ti < 4; ti++) {
+                        const speed    = 0.45 + ti * 0.30;
+                        const tGlobalX = (frame * speed + ti * 1317.5) % (300 * 60); // wrap at 300 tiles wide
+                        const tLocalX  = tGlobalX - Math.abs(Math.floor(obj.x)) * 60;
+                        if (tLocalX > -18 && tLocalX < 78) {
+                            const bi  = ti % busY.length;
+                            const col = busC[bi];
+                            const fade = Math.max(0, 1 - Math.abs(tLocalX - 30) / 48);
+                            ctx.globalAlpha = 0.72 * amb * fade;
+                            ctx.shadowColor = col; ctx.shadowBlur = 7;
+                            ctx.strokeStyle = col; ctx.lineWidth = 2.0;
                             ctx.beginPath();
-                            ctx.moveTo(bx, by - trH[1]);
-                            ctx.lineTo(bx2, by2 - trH[1]);
+                            ctx.moveTo(tLocalX - 10, busY[bi]);
+                            ctx.lineTo(tLocalX + 3,  busY[bi]);
                             ctx.stroke();
-                        }
-                    } else {
-                        // ── SPARSE ZONE: at most one isolated jog ──
-                        const sA = Math.sin(xi * 41.73 + 3.17);
-                        if (sA > 0.42) { // higher threshold → fewer jogs between clusters
-                            const t  = 0.20 + Math.abs(Math.sin(xi * 19.3 + 1.1)) * 0.60;
-                            const jx = wx + t * (sx - wx);
-                            const jy = wy + t * (sy - wy);
-                            ctx.globalAlpha = 0.09 * amb;
-                            ctx.strokeStyle = "#00ffaa";
-                            ctx.beginPath();
-                            ctx.moveTo(jx, jy - trH[0]);
-                            ctx.lineTo(jx, jy - trH[1]);
-                            ctx.stroke();
-                            ctx.globalAlpha = 0.16 * amb;
-                            ctx.fillStyle   = "#00cc88";
-                            ctx.beginPath(); ctx.arc(jx, jy - trH[1], 1.0, 0, Math.PI * 2); ctx.fill();
+                            ctx.shadowBlur = 0;
                         }
                     }
 
-                    // Top face chip traces — clipped diagonal lines across diamond
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.moveTo(px, py - WH);
-                    ctx.lineTo(px + TILE_W, py + TILE_H - WH);
-                    ctx.lineTo(px, py + 2 * TILE_H - WH);
-                    ctx.lineTo(px - TILE_W, py + TILE_H - WH);
-                    ctx.closePath(); ctx.clip();
-                    ctx.globalAlpha = 0.13 * amb;
-                    ctx.strokeStyle = "#00aacc";
-                    ctx.lineWidth   = 0.7;
-                    for (let tr = 1; tr <= 2; tr++) {
-                        const f  = tr / 3;
-                        const ly = (py - WH) + f * 2 * TILE_H;
-                        ctx.beginPath();
-                        ctx.moveTo(px - TILE_W * 2, ly);
-                        ctx.lineTo(px + TILE_W * 2, ly);
-                        ctx.stroke();
-                    }
-                    ctx.restore();
                     ctx.restore();
                 }
 
@@ -1577,6 +1554,71 @@ function render() {
                     ctx.globalAlpha=0.28*amb; ctx.fillStyle="#003322";
                     ctx.beginPath(); ctx.ellipse(px-33,obj.drip.y,1.2,2.2,0,0,Math.PI*2); ctx.fill();
                     ctx.restore();
+                }
+
+                // ── SHARD PANEL — mounted on south wall face, covers interconnect partially ──
+                if (!isRackX && _wallPanelMap) {
+                    const _panel = _wallPanelMap.get(Math.round(obj.x));
+                    if (_panel) {
+                        const activated = _panel.panelActivated;
+                        const _blink    = Math.sin(frame * 0.12 + xi * 1.7);
+                        const rimCol    = activated ? '#334' : '#0f8';
+                        const screenCol = activated ? '#111' : '#001a0a';
+                        const ledCol    = activated ? '#444' : (_blink > 0.6 ? '#00ff88' : '#00cc66');
+                        // Wall-space origin (same as circuit section)
+                        const WX = px - TILE_W, WY = py + TILE_H;
+                        // Panel center in wall-space: x=30 (center), y=WH*0.52 (mid-height)
+                        const pcx = 30, pcy = WH * 0.52, pw = 24, ph = 36;
+
+                        ctx.save();
+                        ctx.transform(1, 0.5, 0, -1, WX, WY);
+                        ctx.globalAlpha = 0.92 * amb;
+                        ctx.shadowColor = activated ? 'transparent' : '#00ff88';
+                        ctx.shadowBlur  = activated ? 0 : 6 + _blink * 5;
+
+                        // Body
+                        ctx.fillStyle = activated ? '#181f1a' : '#0a1a10';
+                        ctx.fillRect(pcx - pw/2, pcy - ph/2, pw, ph);
+                        // Rim
+                        ctx.strokeStyle = rimCol; ctx.lineWidth = 1;
+                        ctx.strokeRect(pcx - pw/2, pcy - ph/2, pw, ph);
+                        // Screen area
+                        ctx.fillStyle = screenCol;
+                        ctx.fillRect(pcx - pw/2 + 2, pcy - ph/2 + 3, pw - 4, 13);
+
+                        if (!activated) {
+                            // Scrolling scan line
+                            const lineY = pcy - ph/2 + 3 + ((frame * 0.6 + xi * 5) % 13);
+                            ctx.globalAlpha = 0.35;
+                            ctx.fillStyle = '#00ff88';
+                            ctx.fillRect(pcx - pw/2 + 2, lineY, pw - 4, 1);
+                            ctx.globalAlpha = 0.92 * amb;
+                            // LED
+                            ctx.fillStyle = ledCol;
+                            ctx.shadowColor = ledCol; ctx.shadowBlur = 4;
+                            ctx.beginPath(); ctx.arc(pcx + pw/2 - 4, pcy - ph/2 + 5, 2, 0, Math.PI*2); ctx.fill();
+                            ctx.shadowBlur = 0;
+                        }
+                        ctx.restore();
+
+                        // Proximity hint — screen-space glow ring + label
+                        const pDist = Math.hypot(player.x - _panel.x, player.y - _panel.y);
+                        if (!activated && pDist < 2.5) {
+                            // Compute screen-space center of panel from wall-space (pcx, pcy)
+                            const spx = pcx + WX;
+                            const spy = 0.5 * pcx - pcy + WY;
+                            const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
+                            ctx.save();
+                            ctx.globalAlpha = hint;
+                            ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.5;
+                            ctx.beginPath(); ctx.ellipse(spx, spy, 16, 7, 0, 0, Math.PI * 2); ctx.stroke();
+                            ctx.setTransform(1, 0, 0, 1, 0, 0);
+                            ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
+                            ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
+                            ctx.fillText('PANEL', spx, spy - 20);
+                            ctx.restore();
+                        }
+                    }
                 }
 
                 // Exhaust vent — gap-sequence placement: gaps of 7–18 tiles, avg ~12
