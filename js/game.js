@@ -2,7 +2,8 @@
 //  MAIN RENDER / GAME LOOP
 // ─────────────────────────────────────────────────────────
 function render() {
-    if (!gameState.running) { return; } // loop stopped — restartGame() will restart it
+    requestAnimationFrame(render); // schedule next frame first so the loop never stops
+    if (!gameState.running) { return; } // skip all logic while paused (buy screen, game over)
 
     frame++;
 
@@ -2008,8 +2009,6 @@ function render() {
     drawCampMenu();
     drawTrapPicker();
     updatePreview();
-
-    requestAnimationFrame(render);
 }
 
 // ─────────────────────────────────────────────────────────

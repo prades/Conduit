@@ -151,6 +151,7 @@ function nextWave() {
     saveGameState();
 
     // ── Restore surviving green pylons to full health + earn seasoned bonus ──
+    // ── Also restore nest health so predators can respawn next wave ──
     world.forEach(obj=>{
         if (obj.pillar && !obj.destroyed && obj.pillarTeam==="green" && obj.health>0) {
             obj.health = obj.maxHealth;
@@ -158,6 +159,7 @@ function nextWave() {
             // Upkeep reward: each night survived adds one seasoned level (max 3)
             obj.seasoned = Math.min(3, (obj.seasoned||0) + 1);
         }
+        if (obj.nest) obj.nestHealth = obj.nestMaxHealth || 200;
     });
 
     savePylons();
@@ -245,7 +247,6 @@ function nextWave() {
     document.getElementById("overlay").classList.remove("active");
     gameState.running=true;
     startNight();
-    requestAnimationFrame(render);
 }
 
 function restartGame() {
