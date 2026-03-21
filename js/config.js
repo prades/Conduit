@@ -138,7 +138,6 @@ let respawnQueue = [];
 let frame = 0, shake = 0;
 let lastGenX  = 0;
 let shardCount = 0; // loaded from localStorage on init
-let latchedPillar = null;
 let activePredator = null;
 let predatorRespawnTimer = 0;
 let activeDayZones = 3;

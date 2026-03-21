@@ -1131,19 +1131,9 @@ function drawPlayer(p) {
     ctx.lineWidth=5; ctx.strokeStyle="#050505";
     for (let t=0;t<4;t++) {
         let sock=proj(t%2===0?-11:11,t<2?-7:7,d);
-        if (t===3&&latchedPillar&&latchedPillar.health>0) {
-            const tx=(latchedPillar.x-player.visualX-(latchedPillar.y-player.visualY))*TILE_W+canvas.width/2;
-            const ty=(latchedPillar.x-player.visualX+(latchedPillar.y-player.visualY))*TILE_H+canvas.height/2-85;
-            ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-            ctx.beginPath(); ctx.moveTo(p.x+sock.x,p.y+bob-45+sock.y); ctx.quadraticCurveTo(p.x+sock.x,p.y+bob+5,tx,ty);
-            ctx.strokeStyle="#050505"; ctx.lineWidth=7; ctx.stroke();
-            ctx.strokeStyle="#0f8"; ctx.lineWidth=2; ctx.setLineDash([4,12]); ctx.lineDashOffset=-frame*3; ctx.stroke();
-            ctx.restore();
-        } else {
-            ctx.beginPath(); ctx.moveTo(sock.x,sock.y);
+        ctx.beginPath(); ctx.moveTo(sock.x,sock.y);
             for (let i=0;i<50;i+=10) ctx.lineTo(sock.x+Math.sin(frame*0.06+t)*5, sock.y+i);
             ctx.stroke();
-        }
     }
     const drawF=(pts,col)=>{ ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); pts.forEach(pt=>ctx.lineTo(pt.x,pt.y)); ctx.fill(); };
     drawF([v[4],v[5],v[6],v[7]],"#020202"); drawF([v[0],v[3],v[7],v[4]],"#0a0a0a");
@@ -1556,6 +1546,7 @@ function drawCapturableNode(tile, px, py) {
 
             // Proximity hint — glow ring when player is within 2 tiles
             const pDist = Math.hypot(player.x - tile.x, player.y - tile.y);
+            const siphonProg = tile.siphonProgress || 0;
             if (pDist < 2.0) {
                 const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
                 ctx.globalAlpha = hint;
@@ -1565,11 +1556,24 @@ function drawCapturableNode(tile, px, py) {
                 ctx.ellipse(cx, cy - 23, 14, 6, 0, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.globalAlpha = 1;
-                // "PANEL" label
+                // "PANEL" label or siphon progress bar
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
-                ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
-                ctx.fillStyle = '#00ff88';
-                ctx.fillText('PANEL', cx, cy - 38);
+                if (siphonProg > 0) {
+                    // Progress bar while siphoning
+                    const barW = 20, barH = 3;
+                    const fill = Math.min(1, siphonProg / 150) * barW;
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(cx - barW / 2, cy - 41, barW, barH);
+                    ctx.fillStyle = '#00ff88';
+                    ctx.fillRect(cx - barW / 2, cy - 41, fill, barH);
+                    ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
+                    ctx.fillStyle = '#00ff88';
+                    ctx.fillText('SIPHON', cx, cy - 44);
+                } else {
+                    ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
+                    ctx.fillStyle = '#00ff88';
+                    ctx.fillText('PANEL', cx, cy - 38);
+                }
             }
         } else {
             // Activated — dim "DONE" marker

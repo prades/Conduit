@@ -220,7 +220,6 @@ function nextWave() {
     if (_bBtn) { _bBtn.textContent="BUILD: OFF"; _bBtn.classList.remove("active"); }
     holdLineX         = null;
     isPressing        = false; longHoldFired = false; touchMoved = false; gesturePoints = [];
-    latchedPillar     = null;
     shake             = 0;
 
     // ── Snapshot army before wiping — done synchronously while data is live ──
@@ -376,7 +375,7 @@ function restartGame() {
     followerPermPowerBonus=0; followerPermHPBonus=0;
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
     unlockedElements=new Set(["fire","electric"]);
-    latchedPillar=null;activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};
+    activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};
     _cacheAge=-999; _pillarCache=[]; _wPylons=[]; _aPylons=[]; _uPylons=[]; _wPylonPairs=[]; _pylonsWithPartner=new Set(); _capturableNodeCache=[];
     ELEMENTS.forEach(e=>{ networkStrength[e.id]=0; networkIntegrity[e.id]=0; _prevNetworkTiers[e.id]=0; });
     activeDayZones=3;exploredZones=new Set();

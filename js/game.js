@@ -147,29 +147,32 @@ function render() {
         }
     }
 
-    // ── WALL PANEL ACTIVATION ──
-    // Player or any follower within 1 tile of an unactivated panel activates it.
+    // ── WALL PANEL SIPHON ──
+    // Player must stay near a panel for a few seconds to siphon shards from it.
     // Uses _wallPanelCache to avoid scanning the entire world array every frame.
+    const SIPHON_FRAMES = 150; // ~2.5 seconds at 60fps
     for (let _wpi = _wallPanelCache.length - 1; _wpi >= 0; _wpi--) {
         const t = _wallPanelCache[_wpi];
         if (t.panelActivated) { _wallPanelCache.splice(_wpi, 1); continue; }
         const _pdx=player.x-t.x, _pdy=player.y-t.y;
         const playerClose = _pdx*_pdx+_pdy*_pdy < 1.0; // 1.0²=1.0
-        let followerClose = false;
-        for (const f of followers) {
-            if (!f.dead) { const _fdx=f.x-t.x,_fdy=f.y-t.y; if(_fdx*_fdx+_fdy*_fdy<0.64){followerClose=true;break;} } // 0.8²=0.64
-        }
-        if (!playerClose && !followerClose) continue;
-        t.panelActivated = true;
-        _wallPanelCache.splice(_wpi, 1);
-        if (t.isDecoy) {
-            triggerAlarm(t.alarmType, t.x, t.y);
+        if (playerClose) {
+            t.siphonProgress = (t.siphonProgress || 0) + 1;
+            if (t.siphonProgress >= SIPHON_FRAMES) {
+                t.panelActivated = true;
+                _wallPanelCache.splice(_wpi, 1);
+                if (t.isDecoy) {
+                    triggerAlarm(t.alarmType, t.x, t.y);
+                } else {
+                    shardCount += t.shardReward;
+                    saveShards();
+                    shardUI.textContent = "Shards: " + shardCount;
+                    floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-60,
+                        text:"+"+t.shardReward+" SHARDS (Panel)", color:"#ff8800", life:120, vy:-0.2 });
+                }
+            }
         } else {
-            shardCount += t.shardReward;
-            saveShards();
-            shardUI.textContent = "Shards: " + shardCount;
-            floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-60,
-                text:"+"+t.shardReward+" SHARDS (Panel)", color:"#ff8800", life:120, vy:-0.2 });
+            if (t.siphonProgress) t.siphonProgress = 0;
         }
     }
 
@@ -544,11 +547,6 @@ function render() {
         });
     }
 
-    // ── CONTESTED SIPHON CONVERSION ──
-    if(latchedPillar&&latchedPillar.pillarTeam==="red"&&latchedPillar.converting) {
-        actors.forEach(a=>{ if(a.team!=="red"||a instanceof Predator)return; const dx=a.x-latchedPillar.x,dy=a.y-latchedPillar.y; if(Math.sqrt(dx*dx+dy*dy)<1.2) convertNPC(a,"green"); });
-    }
-
     // ── PROXIMITY CONVERSION — virus NPCs join team when player walks close ──
     actors.forEach(a => {
         if (a.dead || !a.isNeutralRecruit || a.team !== "red" || a instanceof Predator) return;
@@ -563,29 +561,6 @@ function render() {
     updateElementEffects();
     updateFloatingTexts();
     updateTraps();
-
-    // ── SIPHON SYSTEM ──
-    if (!latchedPillar) {
-        let best=null,bd2=Infinity;
-        _pillarCache.forEach(obj=>{ const dx=obj.x-player.x,dy=obj.y-player.y,d2=dx*dx+dy*dy; if(d2<2.56&&d2<bd2){bd2=d2;best=obj;} }); // 1.6²=2.56
-        latchedPillar=best;
-    }
-    if (latchedPillar) {
-        const pillar=latchedPillar;
-        const dx=pillar.x-player.x,dy=pillar.y-player.y,dist=Math.sqrt(dx*dx+dy*dy);
-        if(dist>1.8){pillar.converting=false;latchedPillar=null;}
-        else {
-            if(pillar.pillarTeam==="green"){
-                health=Math.min(100,health+0.18);
-                if(!pillar.upgraded) pillar.health-=0.015;
-                if(pillar.health<=0&&!pillar.destroyed){if(!pillar.upgraded)pillar.pendingDestroy=true;latchedPillar=null;}
-            }
-            if(pillar.pillarTeam==="red"){
-                pillar.converting=true; pillar.health-=0.15;
-                if(pillar.health<=0){pillar.pillarTeam="green";pillar.pillarCol="#0f8";pillar.health=pillar.maxHealth;pillar.converting=false;latchedPillar=null;}
-            }
-        }
-    }
 
     // ── CRYSTAL ULTIMATE CHARGE RESTORE ──────────────────────────────────
     // Runs every 60 frames. Rate scales with max pylon zone depth and nest pod links.
