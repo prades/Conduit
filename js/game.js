@@ -106,32 +106,48 @@ function render() {
         });
 
         // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
-        // Each pylon gets at most ONE connection — first valid neighbour wins.
-        // This prevents cross-connected meshes and keeps fence lines clean.
+        // Build a spanning forest per element using union-find: pylons can have
+        // multiple connections (chains are fine) but a connection is skipped when
+        // the two pylons are already reachable through the graph, preventing
+        // cross-connecting meshes and redundant triangle shortcuts.
         _wPylonPairs = [];
-        _pylonsWithPartner = new Set();
+        const _ufParent = new Map();
+        const _ufFind = p => { let r = p; while (_ufParent.get(r) !== r) r = _ufParent.get(r); while (_ufParent.get(p) !== r) { const n = _ufParent.get(p); _ufParent.set(p, r); p = n; } return r; };
+        const _ufUnion = (a, b) => { _ufParent.set(_ufFind(a), _ufFind(b)); };
+        _wPylons.forEach(p => _ufParent.set(p, p));
+
+        // Collect all candidate pairs sorted closest-first so natural neighbours
+        // are preferred over long-range shortcuts.
+        const _pr = getPylonRange(), _pr2 = _pr * _pr;
+        const _candidates = [];
         for (let _pi = 0; _pi < _wPylons.length; _pi++) {
             const pa = _wPylons[_pi];
-            if (_pylonsWithPartner.has(pa)) continue; // already linked, skip
             for (let _pj = _pi + 1; _pj < _wPylons.length; _pj++) {
                 const pb = _wPylons[_pj];
-                if (_pylonsWithPartner.has(pb)) continue; // pb already linked, skip
                 if (pa.attackModeElement !== pb.attackModeElement) continue;
-                const _pr = getPylonRange(); if ((pa.x-pb.x)*(pa.x-pb.x)+(pa.y-pb.y)*(pa.y-pb.y) > _pr*_pr) continue;
-                const _plx = pb.x-pa.x, _ply = pb.y-pa.y;
-                _wPylonPairs.push({ pa, pb,
-                    el: pa.attackModeElement,
-                    col: pa.attackModeColor || "#0f8",
-                    midX: (pa.x+pb.x)*0.5, midY: (pa.y+pb.y)*0.5,
-                    lx: _plx, ly: _ply, len2: _plx*_plx+_ply*_ply,
-                    bMinX: Math.min(pa.x,pb.x)-1.5, bMaxX: Math.max(pa.x,pb.x)+1.5,
-                    bMinY: Math.min(pa.y,pb.y)-1.5, bMaxY: Math.max(pa.y,pb.y)+1.5 });
-                // Mark both pylons as paired so neither forms another connection
-                _pylonsWithPartner.add(pa);
-                _pylonsWithPartner.add(pb);
-                break; // pa is now paired — move on to next pa
+                const dx = pa.x-pb.x, dy = pa.y-pb.y, d2 = dx*dx+dy*dy;
+                if (d2 > _pr2) continue;
+                _candidates.push({ pa, pb, d2 });
             }
         }
+        _candidates.sort((a, b) => a.d2 - b.d2);
+
+        for (const { pa, pb } of _candidates) {
+            // Skip if already connected through the graph (would create a cycle/mesh)
+            if (_ufFind(pa) === _ufFind(pb)) continue;
+            _ufUnion(pa, pb);
+            const _plx = pb.x-pa.x, _ply = pb.y-pa.y;
+            _wPylonPairs.push({ pa, pb,
+                el: pa.attackModeElement,
+                col: pa.attackModeColor || "#0f8",
+                midX: (pa.x+pb.x)*0.5, midY: (pa.y+pb.y)*0.5,
+                lx: _plx, ly: _ply, len2: _plx*_plx+_ply*_ply,
+                bMinX: Math.min(pa.x,pb.x)-1.5, bMaxX: Math.max(pa.x,pb.x)+1.5,
+                bMinY: Math.min(pa.y,pb.y)-1.5, bMaxY: Math.max(pa.y,pb.y)+1.5 });
+        }
+        // O(1) partner lookup used by solo-flux ring and future checks
+        _pylonsWithPartner = new Set();
+        _wPylonPairs.forEach(({pa, pb}) => { _pylonsWithPartner.add(pa); _pylonsWithPartner.add(pb); });
 
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
