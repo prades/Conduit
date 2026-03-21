@@ -92,7 +92,7 @@ function disruptEnemiesAt(x, y) {
     actors.forEach(a => {
         if (a.team==="red") {
             const dx=a.x-x, dy=a.y-y;
-            if (Math.sqrt(dx*dx+dy*dy)<1.5) a.disrupted=30;
+            if (dx*dx+dy*dy < 2.25) a.disrupted=30; // 1.5² = 2.25
         }
     });
 }
@@ -100,16 +100,16 @@ function disruptEnemiesAt(x, y) {
 function frenzyEnemiesAt(x, y) {
     actors.forEach(a => {
         const dx=a.x-x, dy=a.y-y;
-        if (Math.sqrt(dx*dx+dy*dy)<1.5) a.frenzied=120;
+        if (dx*dx+dy*dy < 2.25) a.frenzied=120; // 1.5² = 2.25
     });
 }
 
 function findNearestFriendlyPillar(actor) {
-    let best=null, bestDist=Infinity;
+    let best=null, bestDist2=Infinity;
     _pillarCache.forEach(t => {
         if ((actor.team==="green"&&t.pillarTeam!=="green")||(actor.team==="red"&&t.pillarTeam!=="red")) return;
-        const dx=t.x-actor.x, dy=t.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
-        if (d<bestDist) { bestDist=d; best=t; }
+        const dx=t.x-actor.x, dy=t.y-actor.y, d2=dx*dx+dy*dy;
+        if (d2<bestDist2) { bestDist2=d2; best=t; }
     });
     return best;
 }
@@ -128,19 +128,19 @@ function convertNPC(actor, newTeam) {
 function redsRemainingInExploredZones() {
     let count=0;
     actors.forEach(a => {
-        if (a.team==="red"&&exploredZones.has(getZoneIndex(Math.floor(a.x)))) count++;
+        if (!a.dead&&a.team==="red"&&exploredZones.has(getZoneIndex(Math.floor(a.x)))) count++;
     });
     return count;
 }
 
 function getEnemyAtTile(tile) {
     if (!tile) return null;
-    let best=null, bestDist=Infinity;
+    let best=null, bestDist2=Infinity;
     actors.forEach(a => {
         const isHostile = (a instanceof Predator)||(a.team==="red");
         if (!isHostile) return;
-        const dx=a.x-tile.x, dy=a.y-tile.y, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist<1.5&&dist<bestDist) { bestDist=dist; best=a; }
+        const dx=a.x-tile.x, dy=a.y-tile.y, d2=dx*dx+dy*dy;
+        if (d2<2.25&&d2<bestDist2) { bestDist2=d2; best=a; } // 1.5² = 2.25
     });
     return best;
 }
@@ -256,10 +256,13 @@ function getCommandPool() {
 // ─────────────────────────────────────────────────────────
 function detectVerticalLineGesture() {
     if (gesturePoints.length < 12) return false;
-    const xs = gesturePoints.map(p => p.x);
-    const ys = gesturePoints.map(p => p.y);
-    const xRange = Math.max(...xs) - Math.min(...xs);
-    const yRange = Math.max(...ys) - Math.min(...ys);
+    let xMin=Infinity, xMax=-Infinity, yMin=Infinity, yMax=-Infinity;
+    for (let i=0; i<gesturePoints.length; i++) {
+        const p = gesturePoints[i];
+        if (p.x < xMin) xMin = p.x; if (p.x > xMax) xMax = p.x;
+        if (p.y < yMin) yMin = p.y; if (p.y > yMax) yMax = p.y;
+    }
+    const xRange = xMax - xMin, yRange = yMax - yMin;
     return yRange > 60 && xRange < yRange * 0.32;
 }
 
@@ -276,9 +279,14 @@ function applyHoldLine() {
 
 function detectEnemiesInCircle() {
     if (gesturePoints.length < 15) return [];
-    const xs = gesturePoints.map(p => p.x), ys = gesturePoints.map(p => p.y);
-    const cx = (Math.min(...xs)+Math.max(...xs))/2, cy = (Math.min(...ys)+Math.max(...ys))/2;
-    const r  = (Math.max(...xs)-Math.min(...xs)+Math.max(...ys)-Math.min(...ys))/4+30;
+    let xMin=Infinity, xMax=-Infinity, yMin=Infinity, yMax=-Infinity;
+    for (let i=0; i<gesturePoints.length; i++) {
+        const p = gesturePoints[i];
+        if (p.x < xMin) xMin = p.x; if (p.x > xMax) xMax = p.x;
+        if (p.y < yMin) yMin = p.y; if (p.y > yMax) yMax = p.y;
+    }
+    const cx = (xMin+xMax)/2, cy = (yMin+yMax)/2;
+    const r  = (xMax-xMin+yMax-yMin)/4+30;
     const enclosed = [];
     actors.forEach(a => {
         if (!(a instanceof Predator) && a.team!=="red") return;

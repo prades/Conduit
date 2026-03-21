@@ -155,10 +155,12 @@ function _fillShopPane(paneId, items, checkTerritory) {
             div.classList.add("bought");
             document.getElementById("ovr-shards").textContent = shardCount;
             shardUI.textContent = "Shards: " + shardCount;
-            const _zoneEl = document.getElementById("zoneInfo");
+            _lastShardCount = shardCount; // keep HUD change-detection in sync
+            if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo");
             if (_zoneEl) {
                 const _pz = getZoneIndex(Math.floor(player.x));
                 _zoneEl.textContent = _pz === 0 ? "Zone: Home" : "Zone: " + _pz;
+                _lastZoneIndex = _pz; // keep HUD change-detection in sync
             }
             const _dna = getDNA();
             const dnaEntries = Object.entries(_dna).filter(([k,v]) => v > 0);

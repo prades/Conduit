@@ -17,14 +17,23 @@ function render() {
     // ── PLAYER HEALTH DECAY ──
     health=Math.max(0,health-cfg.healthDecay);
     const hpPct=health/100;
-    hpBar.style.width=health+"%";
-    hpBar.style.background=hpPct>0.6?"#0f8":hpPct>0.3?"#ff0":"#f22";
-    shardUI.textContent="Shards: "+shardCount;
-    // Zone indicator
-    const _zoneEl = document.getElementById("zoneInfo");
-    if (_zoneEl) {
-        const _pz = getZoneIndex(Math.floor(player.x));
-        _zoneEl.textContent = _pz === 0 ? "Zone: Home" : "Zone: " + _pz;
+    // ── HUD updates — only write DOM when values actually change (avoids layout thrashing) ──
+    const _hpInt = Math.round(health);
+    if (_hpInt !== _lastHpInt) {
+        _lastHpInt = _hpInt;
+        hpBar.style.width = health + "%";
+        hpBar.style.background = hpPct > 0.6 ? "#0f8" : hpPct > 0.3 ? "#ff0" : "#f22";
+    }
+    if (shardCount !== _lastShardCount) {
+        _lastShardCount = shardCount;
+        shardUI.textContent = "Shards: " + shardCount;
+    }
+    // Zone indicator — cached element, update only on zone change
+    const _pz = getZoneIndex(Math.floor(player.x));
+    if (_pz !== _lastZoneIndex) {
+        _lastZoneIndex = _pz;
+        if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo");
+        if (_zoneEl) _zoneEl.textContent = _pz === 0 ? "Zone: Home" : "Zone: " + _pz;
     }
 
 
@@ -144,10 +153,11 @@ function render() {
     for (let _wpi = _wallPanelCache.length - 1; _wpi >= 0; _wpi--) {
         const t = _wallPanelCache[_wpi];
         if (t.panelActivated) { _wallPanelCache.splice(_wpi, 1); continue; }
-        const playerClose = Math.hypot(player.x - t.x, player.y - t.y) < 1.0;
+        const _pdx=player.x-t.x, _pdy=player.y-t.y;
+        const playerClose = _pdx*_pdx+_pdy*_pdy < 1.0; // 1.0²=1.0
         let followerClose = false;
         for (const f of followers) {
-            if (!f.dead && Math.hypot(f.x - t.x, f.y - t.y) < 0.8) { followerClose = true; break; }
+            if (!f.dead) { const _fdx=f.x-t.x,_fdy=f.y-t.y; if(_fdx*_fdx+_fdy*_fdy<0.64){followerClose=true;break;} } // 0.8²=0.64
         }
         if (!playerClose && !followerClose) continue;
         t.panelActivated = true;
@@ -187,17 +197,19 @@ function render() {
     actors.forEach(a=>updateNPC(a));
 
     // ── FOLLOWER SEPARATION — push overlapping followers apart ──
-    const _fl = actors.filter(a => !a.dead && a.isFollower);
+    // Uses `followers` (already filtered live followers) instead of actors.filter every frame.
+    // Squared-distance early exit avoids sqrt for non-overlapping pairs (the common case).
+    const _fl = followers; // followers[] is already dead-filtered each frame
     for (let _i = 0; _i < _fl.length; _i++) {
         for (let _j = _i+1; _j < _fl.length; _j++) {
             const _a = _fl[_i], _b = _fl[_j];
             const _dx = _b.x - _a.x, _dy = _b.y - _a.y;
-            const _d = Math.sqrt(_dx*_dx + _dy*_dy);
-            if (_d < 0.55 && _d > 0.001) {
-                const _p = (_d > 0 ? 1/_d : 0) * (0.55 - _d) * 0.5;
-                _a.x -= _dx*_p; _a.y -= _dy*_p;
-                _b.x += _dx*_p; _b.y += _dy*_p;
-            }
+            const _d2 = _dx*_dx + _dy*_dy;
+            if (_d2 >= 0.3025 || _d2 < 0.000001) continue; // 0.55² = 0.3025
+            const _d = Math.sqrt(_d2);
+            const _p = (1/_d) * (0.55 - _d) * 0.5;
+            _a.x -= _dx*_p; _a.y -= _dy*_p;
+            _b.x += _dx*_p; _b.y += _dy*_p;
         }
     }
 
@@ -269,10 +281,12 @@ function render() {
                                 applyDamage(a, dmg, null, "fire");
                                 // Tier 3: ignite — spread fire to enemies within 1.5 tiles
                                 if (_nTier >= 3 && Math.random() < 0.35) {
+                                    const _ax=a.x, _ay=a.y;
                                     actors.forEach(other => {
                                         if (other===a||other.dead||other.team!=="red") return;
-                                        if (Math.abs(other.x-a.x)>1.5||Math.abs(other.y-a.y)>1.5) return;
-                                        if (Math.hypot(other.x-a.x,other.y-a.y) < 1.5) applyDamage(other, 4, null, "fire");
+                                        const _odx=other.x-_ax, _ody=other.y-_ay;
+                                        if (Math.abs(_odx)>1.5||Math.abs(_ody)>1.5) return;
+                                        if (_odx*_odx+_ody*_ody < 2.25) applyDamage(other, 4, null, "fire"); // 1.5²=2.25
                                     });
                                 }
                             }
@@ -330,11 +344,13 @@ function render() {
                             if (_nTier >= 3 && frame % 30 === 0) applyDamage(a, Math.round(3*_seasonBonus), null, "flux");
                             // Tier 2+: chain — pulled actors drag nearby enemies along
                             if (_nTier >= 2 && frame % 20 === 0) {
+                                const _ax=a.x, _ay=a.y;
                                 actors.forEach(other => {
                                     if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
-                                    if (Math.abs(other.x-a.x)>1.2||Math.abs(other.y-a.y)>1.2) return;
-                                    const od = Math.hypot(other.x-a.x, other.y-a.y);
-                                    if (od < 1.2 && od > 0.01) { other.x+=dx/d*0.05; other.y+=dy/d*0.05; }
+                                    const _odx=other.x-_ax, _ody=other.y-_ay;
+                                    if (Math.abs(_odx)>1.2||Math.abs(_ody)>1.2) return;
+                                    const od2 = _odx*_odx+_ody*_ody;
+                                    if (od2 < 1.44 && od2 > 0.0001) { other.x+=dx/d*0.05; other.y+=dy/d*0.05; } // 1.2²=1.44
                                 });
                             }
                         }
@@ -350,10 +366,12 @@ function render() {
                             if (Math.random() < shredChance) { a.defenseShredded = 90; a.defenseShredFactor = shredFactor; }
                             // Tier 3: cloud spreads poison debuff to nearby enemies
                             if (_nTier >= 3) {
+                                const _ax=a.x, _ay=a.y;
                                 actors.forEach(other => {
                                     if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
-                                    if (Math.abs(other.x-a.x)>1.5||Math.abs(other.y-a.y)>1.5) return;
-                                    if (Math.hypot(other.x-a.x, other.y-a.y) < 1.5) {
+                                    const _odx=other.x-_ax, _ody=other.y-_ay;
+                                    if (Math.abs(_odx)>1.5||Math.abs(_ody)>1.5) return;
+                                    if (_odx*_odx+_ody*_ody < 2.25) { // 1.5²=2.25
                                         other.defenseShredded = 60; other.defenseShredFactor = 0.55;
                                     }
                                 });
@@ -401,11 +419,10 @@ function render() {
     }
 
     // ── FLUX SOLO — pulls enemies toward itself with no partner required ──
-    const WAVE_CONNECT_RANGE = 5.0;
+    // _pylonsWithPartner was pre-computed in the 60-frame cache block — O(1) lookup.
     wavePylons.forEach(pv=>{
         if (pv.attackModeElement!=="flux") return;
-        const hasPartner = wavePylons.some(q=>q!==pv&&q.attackModeElement==="flux"&&Math.hypot(pv.x-q.x,pv.y-q.y)<=WAVE_CONNECT_RANGE);
-        if (hasPartner) return;
+        if (_pylonsWithPartner.has(pv)) return; // already handled by pair logic
         actors.forEach(a=>{
             if (!a||a.dead) return;
             const isEnemy=(a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone));
@@ -424,12 +441,12 @@ function render() {
         t.attackFireTimer = (t.attackFireTimer||0) + 1;
         if (t.attackFireTimer < 90 - (pylonFireRateBonus||0)) return; // fire every 1.5s (reduced by Overclock)
         t.attackFireTimer = 0;
-        // Find nearest enemy within range
-        let nearest=null, bd=t.attackRange;
+        // Find nearest enemy within range — squared distance avoids sqrt for non-targets
+        let nearest=null, bd2=t.attackRange*t.attackRange;
         actors.forEach(a=>{
             if ((a.team==="red"||(a instanceof Predator&&a.team!=="green"))&&!a.dead) {
-                const dx=a.x-t.x, dy=a.y-t.y, d=Math.sqrt(dx*dx+dy*dy);
-                if (d<bd) { bd=d; nearest=a; }
+                const dx=a.x-t.x, dy=a.y-t.y, d2=dx*dx+dy*dy;
+                if (d2<bd2) { bd2=d2; nearest=a; }
             }
         });
         if (!nearest) return;
@@ -549,8 +566,8 @@ function render() {
 
     // ── SIPHON SYSTEM ──
     if (!latchedPillar) {
-        let best=null,bd=Infinity;
-        _pillarCache.forEach(obj=>{ const dx=obj.x-player.x,dy=obj.y-player.y,d=Math.sqrt(dx*dx+dy*dy); if(d<1.6&&d<bd){bd=d;best=obj;} });
+        let best=null,bd2=Infinity;
+        _pillarCache.forEach(obj=>{ const dx=obj.x-player.x,dy=obj.y-player.y,d2=dx*dx+dy*dy; if(d2<2.56&&d2<bd2){bd2=d2;best=obj;} }); // 1.6²=2.56
         latchedPillar=best;
     }
     if (latchedPillar) {
@@ -577,19 +594,22 @@ function render() {
         const crystalDist = Math.hypot(player.x - crystal.x, player.y - crystal.y);
         const nearCrystal = crystalDist < 3.0;
 
-        // Find deepest zone index of any living green pylon
-        const greenPylons = world.filter(t => t.pillar && !t.destroyed && t.pillarTeam === "green" && t.health > 0);
+        // Find deepest zone index of any living green pylon — reuse _pillarCache (already filtered)
+        const greenPylons = _pillarCache.filter(t => t.pillarTeam === "green");
         let maxPylonZone = 0;
         greenPylons.forEach(t => { const z = getZoneIndex(t.x); if (z > maxPylonZone) maxPylonZone = z; });
 
         // Bonus charge if any green pylon is connected to a destroyed nest pod
-        const brokenNests = world.filter(t => t.nest && t.nestHealth <= 0);
+        const brokenNests = _nestCache.filter(t => t.nestHealth <= 0);
         let nestBonus = 0;
-        brokenNests.forEach(nest => {
-            greenPylons.forEach(p => {
-                if (Math.hypot(p.x - nest.x, p.y - nest.y) < 5.0) nestBonus = Math.max(nestBonus, 3);
+        if (brokenNests.length > 0) {
+            brokenNests.forEach(nest => {
+                greenPylons.forEach(p => {
+                    const dx=p.x-nest.x, dy=p.y-nest.y;
+                    if (dx*dx+dy*dy < 25) nestBonus = Math.max(nestBonus, 3); // 5²=25
+                });
             });
-        });
+        }
 
         // Base rate: 1/tick always (very slow), +1 per zone depth, +nestBonus, doubled near crystal
         const baseRate = 1 + maxPylonZone + nestBonus;
@@ -2186,22 +2206,26 @@ function render() {
     // ── SMOKE ──
     // Smoke is stored as world anchor (wx,wy) + screen offset (ox,oy) so particles
     // stay fixed to their vent position regardless of camera movement.
-    smoke.forEach((sm,i)=>{
+    // Iterate backwards so splice doesn't skip elements.
+    for (let i=smoke.length-1; i>=0; i--) {
+        const sm=smoke[i];
         sm.ox+=sm.vox; sm.oy+=sm.voy; sm.life-=0.025; sm.size+=0.25;
-        if(sm.life<=0){smoke.splice(i,1);return;}
+        if(sm.life<=0){smoke.splice(i,1);continue;}
         const bpx=(sm.wx-player.visualX-(sm.wy-player.visualY))*TILE_W+canvas.width/2;
         const bpy=(sm.wx-player.visualX+(sm.wy-player.visualY))*TILE_H+canvas.height/2;
         ctx.save(); ctx.globalAlpha=sm.life; ctx.fillStyle=cfg.smokeColor;
         ctx.beginPath(); ctx.ellipse(bpx+sm.ox,bpy+sm.oy,sm.size,sm.size*0.5,0,0,Math.PI*2); ctx.fill();
         ctx.restore();
-    });
+    }
 
     // ── FRAGMENTS ──
-    fragments.forEach((f,i)=>{
+    // Iterate backwards so splice doesn't skip elements.
+    for (let i=fragments.length-1; i>=0; i--) {
+        const f=fragments[i];
         f.x+=f.vx; f.y+=f.vy; f.vy+=0.5; f.life-=0.02;
         ctx.fillStyle=f.col; ctx.globalAlpha=f.life; ctx.fillRect(f.x,f.y,6,6);
         if(f.life<=0) fragments.splice(i,1);
-    });
+    }
     ctx.globalAlpha=1;
 
     // ── RESPAWN QUEUE ──

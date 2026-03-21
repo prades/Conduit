@@ -106,6 +106,12 @@ let _wallPanelCache    = [];       // unactivated wall_panel tiles (rebuilt ever
 let _capturableNodeCache = [];     // all capturable world tiles (rebuilt every 60 frames)
 let _seasonBonusCache= {};  // seasoned-bonus multiplier per element (1.0 or 1.25)
 
+// ── HUD CHANGE-DETECTION CACHE (avoids DOM style writes every frame) ──────────
+let _lastHpInt      = -1;    // last integer hp written to hpBar
+let _lastShardCount = -1;    // last shard count written to shardUI
+let _lastZoneIndex  = -999;  // last zone index written to zoneInfo
+let _zoneEl         = null;  // cached zoneInfo element (fetched once on first use)
+
 // ── NETWORK RESONANCE STATE ─────────────────────────────────────────
 // networkStrength[el]  : tier 0-3 based on largest connected same-element group
 // networkIntegrity[el] : 0-100, accumulates while the network is active; resets on collapse

@@ -5,8 +5,14 @@
 // Convert a pointer event's clientX/clientY to canvas pixel coordinates.
 // This accounts for any CSS scaling between the canvas's displayed size
 // (e.g. 100vw×100vh) and its internal pixel resolution (window.innerWidth×innerHeight).
+// Cache getBoundingClientRect — it forces a layout reflow and is called on every pointermove.
+let _cachedRect = null;
+window.addEventListener('resize', () => { _cachedRect = null; }, { passive: true });
+if (window.visualViewport) window.visualViewport.addEventListener('resize', () => { _cachedRect = null; }, { passive: true });
+
 function toCanvas(cx, cy) {
-    const r = canvas.getBoundingClientRect();
+    if (!_cachedRect) _cachedRect = canvas.getBoundingClientRect();
+    const r = _cachedRect;
     return [
         (cx - r.left) * canvas.width  / r.width,
         (cy - r.top)  * canvas.height / r.height

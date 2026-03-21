@@ -274,21 +274,21 @@ class Predator {
         if (this.state==="hunt") {
             // ── DISORIENT: attack nearest red ally instead of crystal ──
             if (this.disorientFF > 0) {
-                let nearRed=null, bd=Infinity;
+                let nearRed=null, bd2=Infinity;
                 actors.forEach(a=>{
                     if(a===this||a.dead||a.team!=="red"||a.isClone) return;
-                    const d=Math.hypot(a.x-this.x,a.y-this.y);
-                    if(d<bd){bd=d;nearRed=a;}
+                    const dx=a.x-this.x,dy=a.y-this.y,d2=dx*dx+dy*dy;
+                    if(d2<bd2){bd2=d2;nearRed=a;}
                 });
                 if (nearRed) { this.currentTarget=nearRed; this.state="attack"; return; }
             }
             // When alarmed, aggro on any nearby green pylon to bash it on the way to crystal
             if ((alertActive || gameState.phase === "night") && !this.pylonAggro && frame % 30 === 0) {
-                let nearestPylon=null, bestPD=Infinity;
+                let nearestPylon=null, bestPD2=16; // 4.0²=16
                 _pillarCache.forEach(p => {
                     if (p.pillarTeam !== "green") return;
-                    const d = Math.hypot(p.x-this.x, p.y-this.y);
-                    if (d < 4.0 && d < bestPD) { bestPD=d; nearestPylon=p; }
+                    const dx=p.x-this.x,dy=p.y-this.y,d2=dx*dx+dy*dy;
+                    if (d2 < bestPD2) { bestPD2=d2; nearestPylon=p; }
                 });
                 if (nearestPylon) this.pylonAggro = nearestPylon;
             }
@@ -351,14 +351,14 @@ class Predator {
                     actors.forEach(a => {
                         if (a===this||a.dead||a.team!=="red"||a.isClone) return;
                         const adx=a.x-this.x, ady=a.y-this.y;
-                        if (Math.sqrt(adx*adx+ady*ady)<=1.5) applyDamage(a, pwr, this);
+                        if (adx*adx+ady*ady<=2.25) applyDamage(a, pwr, this); // 1.5²=2.25
                     });
                 } else {
                     // ── NORMAL — hit green actors; smoke halves accuracy ──
                     actors.forEach(a => {
                         if (a.dead || a.team !== "green") return;
                         const adx=a.x-this.x, ady=a.y-this.y;
-                        if (Math.sqrt(adx*adx+ady*ady)<=1.5) {
+                        if (adx*adx+ady*ady<=2.25) { // 1.5²=2.25
                             if (this.smokeDebuff > 0 && Math.random() < 0.5) return; // miss
                             applyDamage(a, pwr, this);
                         }

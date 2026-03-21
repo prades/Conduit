@@ -63,7 +63,7 @@ const ELEMENT_ATTACKS = {
             actors.forEach(a => {
                 if ((a.team==="red"||(a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.dead) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
-                    if (Math.sqrt(dx*dx+dy*dy) <= 1.5) {
+                    if (dx*dx+dy*dy <= 2.25) { // 1.5²=2.25, no sqrt needed
                         const dmg = (actor.stats?.attack||10) * 0.4;
                         applyElementalDamage(a, dmg, actor, "fire");
                         hits++;
@@ -78,7 +78,8 @@ const ELEMENT_ATTACKS = {
             // Fire bonus damage to nearby live nest pods (2× multiplier)
             world.forEach(t => {
                 if (!t.nest || t.nestHealth <= 0) return;
-                if (Math.hypot(t.x-actor.x, t.y-actor.y) <= 2.5) {
+                const _ntdx=t.x-actor.x, _ntdy=t.y-actor.y;
+                if (_ntdx*_ntdx+_ntdy*_ntdy <= 6.25) { // 2.5²=6.25
                     const nestDmg = (actor.stats?.attack||10) * 0.8;
                     t.nestHealth = Math.max(0, t.nestHealth - nestDmg);
                     floatingTexts.push({x:t.x,y:t.y-0.5,text:"FIRE! -"+Math.round(nestDmg),color:"#ff3300",life:30,vy:-0.06});
@@ -100,7 +101,7 @@ const ELEMENT_ATTACKS = {
             actors.forEach(a => {
                 if ((a.team==="red"||(a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.dead) {
                     const dx=a.x-target.x, dy=a.y-target.y;
-                    if (Math.sqrt(dx*dx+dy*dy) <= 2.0) {
+                    if (dx*dx+dy*dy <= 4.0) { // 2.0²=4.0, no sqrt needed
                         const dmg = (actor.stats?.specialAttack||10) * 0.9;
                         applyElementalDamage(a, dmg, actor, "fire");
                         if (Math.random() < ELEMENT_PROC_CHANCE.fire) {
@@ -113,7 +114,8 @@ const ELEMENT_ATTACKS = {
             // Meteor bonus damage to nest pods within blast radius (2× multiplier)
             world.forEach(t => {
                 if (!t.nest || t.nestHealth <= 0) return;
-                if (Math.hypot(t.x-target.x, t.y-target.y) <= 3.0) {
+                const _ntdx=t.x-target.x, _ntdy=t.y-target.y;
+                if (_ntdx*_ntdx+_ntdy*_ntdy <= 9.0) { // 3.0²=9.0
                     const nestDmg = (actor.stats?.specialAttack||10) * 1.8;
                     t.nestHealth = Math.max(0, t.nestHealth - nestDmg);
                     floatingTexts.push({x:t.x,y:t.y-0.5,text:"METEOR! -"+Math.round(nestDmg),color:"#ff3300",life:45,vy:-0.08});
@@ -138,12 +140,12 @@ const ELEMENT_ATTACKS = {
                 if (Math.random() < ELEMENT_PROC_CHANCE.electric) {
                     current.chainArcFlash = 12;
                 }
-                // Find next nearest unchained enemy
-                let next = null, bd = Infinity;
+                // Find next nearest unchained enemy (squared distance — no sqrt)
+                let next = null, bd2 = 9; // 3²=9
                 actors.forEach(a => {
                     if ((a.team==="red"||(a instanceof Predator)) && !a.dead && !chainTargets.includes(a)) {
-                        const dx=a.x-current.x, dy=a.y-current.y, d=Math.sqrt(dx*dx+dy*dy);
-                        if (d < 3 && d < bd) { bd=d; next=a; }
+                        const dx=a.x-current.x, dy=a.y-current.y, d2=dx*dx+dy*dy;
+                        if (d2 < bd2) { bd2=d2; next=a; }
                     }
                 });
                 current = next;
@@ -171,7 +173,7 @@ const ELEMENT_ATTACKS = {
             actors.forEach(a => {
                 if ((a.team==="red"||(a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.dead) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
-                    if (Math.sqrt(dx*dx+dy*dy) <= 3.0) {
+                    if (dx*dx+dy*dy <= 9.0) { // 3.0²=9.0, no sqrt needed
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.7, actor, "electric");
                         if (Math.random() < ELEMENT_PROC_CHANCE.electric) {
                             a.chainArcFlash = 20;
@@ -205,7 +207,7 @@ const ELEMENT_ATTACKS = {
             actors.forEach(a => {
                 if ((a.team==="red"||(a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.dead) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
-                    if (Math.sqrt(dx*dx+dy*dy) <= 2.5) {
+                    if (dx*dx+dy*dy <= 6.25) { // 2.5²=6.25, no sqrt needed
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.6, actor, "ice");
                         // Slow and freeze blocked by shields
                         if (!(a.shielded && a.shieldAmount > 0)) { a.slowed = 180; a.slowFactor = 0.4; }
@@ -233,8 +235,9 @@ const ELEMENT_ATTACKS = {
             // Pull phase — move enemies toward point
             actors.forEach(a => {
                 if ((a.team==="red"||(a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.dead) {
-                    const dx=target.x-a.x, dy=target.y-a.y, dist=Math.sqrt(dx*dx+dy*dy);
-                    if (dist < 3 && dist > 0.01) {
+                    const dx=target.x-a.x, dy=target.y-a.y, d2=dx*dx+dy*dy;
+                    if (d2 < 9 && d2 > 0.0001) { // 3²=9, avoid sqrt until we need direction
+                        const dist=Math.sqrt(d2);
                         a.x += (dx/dist) * 0.8;
                         a.y += (dy/dist) * 0.8;
                         // Pull and disorient pierce shields
@@ -273,7 +276,7 @@ const ELEMENT_ATTACKS = {
             followers.forEach(a => {
                 if (a === actor || a.dead) return;
                 const dx=a.x-actor.x, dy=a.y-actor.y;
-                if (Math.sqrt(dx*dx+dy*dy) <= 3.0) {
+                if (dx*dx+dy*dy <= 9.0) { // 3.0²=9.0, no sqrt needed
                     a.shielded = true;
                     a.shieldAmount = (actor.stats?.specialAttack||10) * 1.5;
                 }
@@ -282,7 +285,7 @@ const ELEMENT_ATTACKS = {
             actors.forEach(a => {
                 if ((a.team==="red"||(a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.dead) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
-                    if (Math.sqrt(dx*dx+dy*dy) <= 3.0) {
+                    if (dx*dx+dy*dy <= 9.0) { // 3.0²=9.0, no sqrt needed
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.4, actor, "core");
                     }
                 }
@@ -595,13 +598,15 @@ function updateHazards() {
                 const gx = h.gapWX, gy = h.gapWY;
                 actors.forEach(a => {
                     if (a.dead) return;
-                    if (Math.hypot(a.x - gx, a.y - gy) < 1.1) {
+                    const _zdx=a.x-gx, _zdy=a.y-gy;
+                    if (_zdx*_zdx+_zdy*_zdy < 1.21) { // 1.1²=1.21
                         applyDamage(a, 5, null, "electric");
                         a.hitStun = Math.max(a.hitStun||0, 20);
                         floatingTexts.push({x:a.x,y:a.y,text:"ZAP",color:"#88aaff",life:25,vy:-0.04});
                     }
                 });
-                if (Math.hypot(player.x - gx, player.y - gy) < 1.1) {
+                const _pzdx=player.x-gx, _pzdy=player.y-gy;
+                if (_pzdx*_pzdx+_pzdy*_pzdy < 1.21) { // 1.1²=1.21
                     health = Math.max(0, health - 6); shake = Math.max(shake, 4);
                 }
             }
@@ -822,10 +827,11 @@ function updateElementEffects() {
 
         // Toxic cloud deals tick damage
         if (e.type === "toxicCloud" && e.life % 20 === 0) {
+            const _er2 = e.radius * e.radius;
             actors.forEach(a => {
                 if ((a.team==="red"||(a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.dead) {
                     const dx=a.x-e.x, dy=a.y-e.y;
-                    if (Math.sqrt(dx*dx+dy*dy) <= e.radius) {
+                    if (dx*dx+dy*dy <= _er2) {
                         applyDamage(a, e.tickDamage || 1, null);
                     }
                 }
@@ -834,9 +840,11 @@ function updateElementEffects() {
 
         // Flame crater — fire DoT to enemies standing inside
         if (e.type === "flameCrater" && e.life % 30 === 0) {
+            const _er2 = e.radius * e.radius;
             actors.forEach(a=>{
                 if((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead){
-                    if(Math.hypot(a.x-e.x,a.y-e.y)<=e.radius) applyDamage(a,e.tickDamage||3,null,"fire");
+                    const dx=a.x-e.x,dy=a.y-e.y;
+                    if(dx*dx+dy*dy<=_er2) applyDamage(a,e.tickDamage||3,null,"fire");
                 }
             });
         }

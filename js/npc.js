@@ -172,8 +172,8 @@ function updateRTSNPC(actor) {
             if (!t) { actor.job=null; return; }
             // Refresh nearby-enemy cache every 10 frames
             if (!actor._guardCacheFrame || frame-actor._guardCacheFrame>=10 || actor._guardEnemy?.dead) {
-                actor._guardEnemy=null; let bd=Infinity;
-                actors.forEach(a=>{ if(a.team!=="green"&&!a.dead){const d=Math.hypot(a.x-actor.x,a.y-actor.y);if(d<4.5&&d<bd){bd=d;actor._guardEnemy=a;}} });
+                actor._guardEnemy=null; let bd2=20.25; // 4.5²=20.25
+                actors.forEach(a=>{ if(a.team!=="green"&&!a.dead){const dx=a.x-actor.x,dy=a.y-actor.y,d2=dx*dx+dy*dy;if(d2<bd2){bd2=d2;actor._guardEnemy=a;}} });
                 actor._guardCacheFrame=frame;
             }
             const enemy=actor._guardEnemy&&!actor._guardEnemy.dead?actor._guardEnemy:null;
