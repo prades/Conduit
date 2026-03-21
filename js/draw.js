@@ -1546,7 +1546,6 @@ function drawCapturableNode(tile, px, py) {
 
             // Proximity hint — glow ring when player is within 2 tiles
             const pDist = Math.hypot(player.x - tile.x, player.y - tile.y);
-            const siphonProg = tile.siphonProgress || 0;
             if (pDist < 2.0) {
                 const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
                 ctx.globalAlpha = hint;
@@ -1556,24 +1555,11 @@ function drawCapturableNode(tile, px, py) {
                 ctx.ellipse(cx, cy - 23, 14, 6, 0, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.globalAlpha = 1;
-                // "PANEL" label or siphon progress bar
+                // "PANEL" label
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
-                if (siphonProg > 0) {
-                    // Progress bar while siphoning
-                    const barW = 20, barH = 3;
-                    const fill = Math.min(1, siphonProg / 150) * barW;
-                    ctx.fillStyle = '#111';
-                    ctx.fillRect(cx - barW / 2, cy - 41, barW, barH);
-                    ctx.fillStyle = '#00ff88';
-                    ctx.fillRect(cx - barW / 2, cy - 41, fill, barH);
-                    ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
-                    ctx.fillStyle = '#00ff88';
-                    ctx.fillText('SIPHON', cx, cy - 44);
-                } else {
-                    ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
-                    ctx.fillStyle = '#00ff88';
-                    ctx.fillText('PANEL', cx, cy - 38);
-                }
+                ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
+                ctx.fillStyle = '#00ff88';
+                ctx.fillText('PANEL', cx, cy - 38);
             }
         } else {
             // Activated — dim "DONE" marker

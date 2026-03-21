@@ -155,7 +155,7 @@ function render() {
         const t = _wallPanelCache[_wpi];
         if (t.panelActivated) { _wallPanelCache.splice(_wpi, 1); continue; }
         const _pdx=player.x-t.x, _pdy=player.y-t.y;
-        const playerClose = _pdx*_pdx+_pdy*_pdy < 1.0; // 1.0²=1.0
+        const playerClose = _pdx*_pdx+_pdy*_pdy < 2.25; // 1.5² — player standing at y=1 in front of y=0 panel
         if (playerClose) {
             t.siphonProgress = (t.siphonProgress || 0) + 1;
             if (t.siphonProgress >= SIPHON_FRAMES) {
@@ -1855,13 +1855,14 @@ function render() {
                         }
                         ctx.restore();
 
-                        // Proximity hint — screen-space glow ring + label
+                        // Proximity hint — screen-space glow ring + label / siphon progress
                         const pDist = Math.hypot(player.x - _panel.x, player.y - _panel.y);
                         if (!activated && pDist < 2.5) {
                             // Compute screen-space center of panel from wall-space (pcx, pcy)
                             const spx = pcx + WX;
                             const spy = 0.5 * pcx - pcy + WY;
                             const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
+                            const siphonProg = _panel.siphonProgress || 0;
                             ctx.save();
                             ctx.globalAlpha = hint;
                             ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.5;
@@ -1869,7 +1870,18 @@ function render() {
                             ctx.setTransform(1, 0, 0, 1, 0, 0);
                             ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
                             ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
-                            ctx.fillText('PANEL', spx, spy - 20);
+                            if (siphonProg > 0) {
+                                const barW = 28, barH = 3;
+                                const fill = Math.min(1, siphonProg / 150) * barW;
+                                ctx.fillStyle = '#111'; ctx.globalAlpha = 0.8;
+                                ctx.fillRect(spx - barW / 2, spy - 26, barW, barH);
+                                ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
+                                ctx.fillRect(spx - barW / 2, spy - 26, fill, barH);
+                                ctx.fillStyle = '#00ff88';
+                                ctx.fillText('SIPHON', spx, spy - 30);
+                            } else {
+                                ctx.fillText('PANEL', spx, spy - 20);
+                            }
                             ctx.restore();
                         }
                     }
