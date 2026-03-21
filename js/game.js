@@ -106,11 +106,16 @@ function render() {
         });
 
         // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
+        // Each pylon gets at most ONE connection — first valid neighbour wins.
+        // This prevents cross-connected meshes and keeps fence lines clean.
         _wPylonPairs = [];
+        _pylonsWithPartner = new Set();
         for (let _pi = 0; _pi < _wPylons.length; _pi++) {
             const pa = _wPylons[_pi];
+            if (_pylonsWithPartner.has(pa)) continue; // already linked, skip
             for (let _pj = _pi + 1; _pj < _wPylons.length; _pj++) {
                 const pb = _wPylons[_pj];
+                if (_pylonsWithPartner.has(pb)) continue; // pb already linked, skip
                 if (pa.attackModeElement !== pb.attackModeElement) continue;
                 const _pr = getPylonRange(); if ((pa.x-pb.x)*(pa.x-pb.x)+(pa.y-pb.y)*(pa.y-pb.y) > _pr*_pr) continue;
                 const _plx = pb.x-pa.x, _ply = pb.y-pa.y;
@@ -121,11 +126,12 @@ function render() {
                     lx: _plx, ly: _ply, len2: _plx*_plx+_ply*_ply,
                     bMinX: Math.min(pa.x,pb.x)-1.5, bMaxX: Math.max(pa.x,pb.x)+1.5,
                     bMinY: Math.min(pa.y,pb.y)-1.5, bMaxY: Math.max(pa.y,pb.y)+1.5 });
+                // Mark both pylons as paired so neither forms another connection
+                _pylonsWithPartner.add(pa);
+                _pylonsWithPartner.add(pb);
+                break; // pa is now paired — move on to next pa
             }
         }
-        // O(1) partner lookup used by solo-flux ring and future checks
-        _pylonsWithPartner = new Set();
-        _wPylonPairs.forEach(({pa, pb}) => { _pylonsWithPartner.add(pa); _pylonsWithPartner.add(pb); });
 
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
