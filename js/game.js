@@ -44,7 +44,12 @@ function render() {
         _nestCache   = world.filter(t => t.nest);
         // ── WALL PANEL MAP — for wall-face panel rendering ──
         _wallPanelMap = new Map();
-        world.forEach(t => { if (t.nodeType === 'wall_panel') _wallPanelMap.set(Math.round(t.x), t); });
+        _wallPanelCache = [];
+        world.forEach(t => {
+            if (t.nodeType !== 'wall_panel') return;
+            _wallPanelMap.set(Math.round(t.x), t);
+            if (!t.panelActivated) _wallPanelCache.push(t);
+        });
 
         // ── TERRITORY — recalculate every 60 frames ──
         updateTerritory();
@@ -126,15 +131,18 @@ function render() {
 
     // ── WALL PANEL ACTIVATION ──
     // Player or any follower within 1 tile of an unactivated panel activates it.
-    world.forEach(t => {
-        if (t.nodeType !== 'wall_panel' || t.panelActivated) return;
+    // Uses _wallPanelCache to avoid scanning the entire world array every frame.
+    for (let _wpi = _wallPanelCache.length - 1; _wpi >= 0; _wpi--) {
+        const t = _wallPanelCache[_wpi];
+        if (t.panelActivated) { _wallPanelCache.splice(_wpi, 1); continue; }
         const playerClose = Math.hypot(player.x - t.x, player.y - t.y) < 1.0;
         let followerClose = false;
         for (const f of followers) {
             if (!f.dead && Math.hypot(f.x - t.x, f.y - t.y) < 0.8) { followerClose = true; break; }
         }
-        if (!playerClose && !followerClose) return;
+        if (!playerClose && !followerClose) continue;
         t.panelActivated = true;
+        _wallPanelCache.splice(_wpi, 1);
         if (t.isDecoy) {
             triggerAlarm(t.alarmType, t.x, t.y);
         } else {
@@ -144,7 +152,7 @@ function render() {
             floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-60,
                 text:"+"+t.shardReward+" SHARDS (Panel)", color:"#ff8800", life:120, vy:-0.2 });
         }
-    });
+    }
 
     // ── EXPLORED ZONES ──
     exploredZones.add(getZoneIndex(Math.floor(player.x)));
@@ -342,13 +350,17 @@ function render() {
                         break;
                     }
                 }
-                // Predator pylon aggro — track how long a predator has been cooked by pylons
+                // Predator pylon aggro — track how long a predator has been cooked by pylons.
+                // Guard with _lastExposureFrame so multi-pair actors only count once per frame.
                 if (isEnemy && a instanceof Predator) {
-                    a.pylonExposureFrames = (a.pylonExposureFrames||0) + 1;
-                    if (a.pylonExposureFrames > 300 && !a.pylonAggro) {
-                        let nearestPylon=null, bestPD=Infinity;
-                        wavePylons.forEach(wp=>{ const d=Math.hypot(wp.x-a.x,wp.y-a.y); if(d<bestPD){bestPD=d;nearestPylon=wp;} });
-                        if (nearestPylon) a.pylonAggro = nearestPylon;
+                    if (a._lastExposureFrame !== frame) {
+                        a._lastExposureFrame = frame;
+                        a.pylonExposureFrames = (a.pylonExposureFrames||0) + 1;
+                        if (a.pylonExposureFrames > 300 && !a.pylonAggro) {
+                            let nearestPylon=null, bestPD=Infinity;
+                            wavePylons.forEach(wp=>{ const d=Math.hypot(wp.x-a.x,wp.y-a.y); if(d<bestPD){bestPD=d;nearestPylon=wp;} });
+                            if (nearestPylon) a.pylonAggro = nearestPylon;
+                        }
                     }
                 } else if (!isEnemy) {
                     // Cool down exposure when no longer in zone
