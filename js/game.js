@@ -1857,32 +1857,134 @@ function render() {
 
                         // Proximity hint — screen-space glow ring + label / siphon progress
                         const pDist = Math.hypot(player.x - _panel.x, player.y - _panel.y);
-                        if (!activated && pDist < 2.5) {
+                        if (!activated) {
                             // Compute screen-space center of panel from wall-space (pcx, pcy)
                             const spx = pcx + WX;
                             const spy = 0.5 * pcx - pcy + WY;
+                            // Panel bottom-center in screen space (bottom edge of panel body)
+                            const wbotY = pcy + ph / 2;
+                            const wireSx = spx;
+                            const wireSy = 0.5 * pcx - wbotY + WY;
+
+                            // ── PHYSICAL CONNECTOR WIRE — dangling cable from panel ──
+                            const _wPulse = 0.4 + 0.4 * Math.sin(frame * 0.14);
+                            // Stub endpoint: short droop below panel bottom
+                            const stubEndX = wireSx + 5;
+                            const stubEndY = wireSy + 20;
+                            const stubCpY  = wireSy + 10;
+
+                            ctx.save();
+                            ctx.setTransform(1, 0, 0, 1, 0, 0);
+                            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+                            // Dark cable outer body
+                            ctx.strokeStyle = '#0d1410';
+                            ctx.lineWidth = 3.8;
+                            ctx.globalAlpha = 0.9;
+                            ctx.shadowBlur = 0;
+                            ctx.beginPath();
+                            ctx.moveTo(wireSx, wireSy);
+                            ctx.quadraticCurveTo(wireSx + 2, stubCpY, stubEndX, stubEndY);
+                            ctx.stroke();
+                            // Green glow overlay on stub
+                            ctx.strokeStyle = '#00ff88';
+                            ctx.lineWidth = 1.0;
+                            ctx.globalAlpha = 0.28 + _wPulse * 0.22;
+                            ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 5;
+                            ctx.beginPath();
+                            ctx.moveTo(wireSx, wireSy);
+                            ctx.quadraticCurveTo(wireSx + 2, stubCpY, stubEndX, stubEndY);
+                            ctx.stroke();
+                            // Connector tip cap — bright nub at wire end
+                            ctx.fillStyle = '#00ff88';
+                            ctx.globalAlpha = 0.75 + _wPulse * 0.25;
+                            ctx.shadowBlur = 7;
+                            ctx.beginPath(); ctx.arc(stubEndX, stubEndY, 2.8, 0, Math.PI * 2); ctx.fill();
+                            ctx.fillStyle = '#ccffee';
+                            ctx.globalAlpha = 0.5 + _wPulse * 0.5;
+                            ctx.beginPath(); ctx.arc(stubEndX, stubEndY, 1.2, 0, Math.PI * 2); ctx.fill();
+
+                            if (pDist < 2.5) {
+                                // Extend wire all the way to the player (always screen-center)
+                                const plx = canvas.width / 2;
+                                const ply = canvas.height / 2 - 18;
+                                const cDist = Math.hypot(plx - stubEndX, ply - stubEndY);
+                                const sag   = Math.min(38, cDist * 0.16);
+                                const midX  = (stubEndX + plx) / 2;
+                                const midY  = (stubEndY + ply) / 2 + sag;
+
+                                // Two cable bundles for physical thickness
+                                const bundles = [
+                                    {ox: -2, oy: -1, w: 2.8, alpha: 0.88},
+                                    {ox:  2, oy:  1, w: 1.8, alpha: 0.70}
+                                ];
+                                bundles.forEach(b => {
+                                    const sx = stubEndX + b.ox, sy = stubEndY + b.oy;
+                                    const ex = plx + b.ox,      ey = ply + b.oy;
+                                    const cmy = midY + b.oy;
+                                    // Dark cable core
+                                    ctx.strokeStyle = '#0d1410'; ctx.lineWidth = b.w + 1.4;
+                                    ctx.globalAlpha = b.alpha; ctx.shadowBlur = 0;
+                                    ctx.beginPath();
+                                    ctx.moveTo(sx, sy);
+                                    ctx.bezierCurveTo(midX + b.ox, cmy, midX + b.ox, cmy, ex, ey);
+                                    ctx.stroke();
+                                    // Coloured glow sheath
+                                    ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 0.85;
+                                    ctx.globalAlpha = 0.20 + _wPulse * 0.18;
+                                    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 5;
+                                    ctx.beginPath();
+                                    ctx.moveTo(sx, sy);
+                                    ctx.bezierCurveTo(midX + b.ox, cmy, midX + b.ox, cmy, ex, ey);
+                                    ctx.stroke();
+                                });
+
+                                // Animated energy packets travelling from panel → player
+                                for (let _i = 0; _i < 5; _i++) {
+                                    const _t  = ((frame * 0.022 + _i * 0.2) % 1);
+                                    const _t1 = 1 - _t, _t2 = _t;
+                                    // Cubic bezier interpolation along the main cable path
+                                    const _bx = _t1*_t1*_t1*stubEndX + 3*_t1*_t1*_t2*midX + 3*_t1*_t2*_t2*midX + _t2*_t2*_t2*plx;
+                                    const _by = _t1*_t1*_t1*stubEndY + 3*_t1*_t1*_t2*midY + 3*_t1*_t2*_t2*midY + _t2*_t2*_t2*ply;
+                                    ctx.fillStyle = '#00ff88';
+                                    ctx.globalAlpha = 0.65 + _wPulse * 0.35;
+                                    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 8;
+                                    ctx.beginPath(); ctx.arc(_bx, _by, 2.2, 0, Math.PI * 2); ctx.fill();
+                                }
+                                // Socket ring at player end
+                                ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.2;
+                                ctx.globalAlpha = 0.55 + _wPulse * 0.35;
+                                ctx.shadowBlur = 6;
+                                ctx.beginPath(); ctx.arc(plx, ply, 5, 0, Math.PI * 2); ctx.stroke();
+                            }
+
+                            ctx.shadowBlur = 0;
+                            ctx.restore();
+
                             const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
                             const siphonProg = _panel.siphonProgress || 0;
-                            ctx.save();
-                            ctx.globalAlpha = hint;
-                            ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.5;
-                            ctx.beginPath(); ctx.ellipse(spx, spy, 16, 7, 0, 0, Math.PI * 2); ctx.stroke();
-                            ctx.setTransform(1, 0, 0, 1, 0, 0);
-                            ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
-                            ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
-                            if (siphonProg > 0) {
-                                const barW = 28, barH = 3;
-                                const fill = Math.min(1, siphonProg / 150) * barW;
-                                ctx.fillStyle = '#111'; ctx.globalAlpha = 0.8;
-                                ctx.fillRect(spx - barW / 2, spy - 26, barW, barH);
+                            if (pDist < 2.5) {
+                                ctx.save();
+                                ctx.globalAlpha = hint;
+                                ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.5;
+                                ctx.beginPath(); ctx.ellipse(spx, spy, 16, 7, 0, 0, Math.PI * 2); ctx.stroke();
+                                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                                ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
                                 ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
-                                ctx.fillRect(spx - barW / 2, spy - 26, fill, barH);
-                                ctx.fillStyle = '#00ff88';
-                                ctx.fillText('SIPHON', spx, spy - 30);
-                            } else {
-                                ctx.fillText('PANEL', spx, spy - 20);
+                                if (siphonProg > 0) {
+                                    const barW = 28, barH = 3;
+                                    const fill = Math.min(1, siphonProg / 150) * barW;
+                                    ctx.fillStyle = '#111'; ctx.globalAlpha = 0.8;
+                                    ctx.fillRect(spx - barW / 2, spy - 26, barW, barH);
+                                    ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
+                                    ctx.fillRect(spx - barW / 2, spy - 26, fill, barH);
+                                    ctx.fillStyle = '#00ff88';
+                                    ctx.fillText('SIPHON', spx, spy - 30);
+                                } else {
+                                    ctx.fillText('PANEL', spx, spy - 20);
+                                }
+                                ctx.restore();
                             }
-                            ctx.restore();
                         }
                     }
                 }
