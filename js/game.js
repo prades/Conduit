@@ -511,7 +511,7 @@ function render() {
     // ── UPGRADED PYLON PULSE ──
     _uPylons.forEach(t=>{
         t.pulseTimer++;
-        if(t.pulseTimer>120){ t.pulseTimer=0; actors.forEach(a=>{ if(a.team==="green"){const dx=a.x-t.x,dy=a.y-t.y,dist=Math.sqrt(dx*dx+dy*dy); if(dist<3.5) a.health=Math.min(a.maxHealth,a.health+2);} }); }
+        if(t.pulseTimer>120){ t.pulseTimer=0; actors.forEach(a=>{ if(a.team==="green"){const dx=a.x-t.x,dy=a.y-t.y; if(Math.abs(dx)>3.5||Math.abs(dy)>3.5) return; if(dx*dx+dy*dy<12.25) a.health=Math.min(a.maxHealth,a.health+2);} }); }
     });
 
     // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
@@ -1269,8 +1269,7 @@ function render() {
                 const _base=py+TILE_H; // anchor to tile center, not north vertex
                 drawHealthBar(px-10,_base-75,20,4,obj.health,obj.maxHealth);
                 const _style=obj.pylonStyle||"sentinel";
-                const _pulse=0.5+0.5*Math.sin((frame+(obj.pulseTimer||0))*0.08);
-                obj.pulseTimer=(obj.pulseTimer||0)+1;
+                const _pulse=0.5+0.5*Math.sin(frame*0.08+(obj.x*0.97+obj.y*1.31));
                 const _acol=obj.attackModeColor||"#0f8";
                 const _isActive=!!(obj.attackMode||obj.waveMode);
                 const _wTier=obj.waveMode?(networkStrength[obj.attackModeElement]||0):0;
