@@ -133,32 +133,12 @@ const PREDATOR_TYPES = {
     // Spider uses SPECIES lookup directly — no legacy entry needed
 };
 
-// Get species for a given zone on a given night
+// Get species for a given zone — purely zone-based, independent of night number.
+// Zone 1 = ant, zone 2 = beetle, zone 3 = scorpion/mantis, zone 4+ = spider.
+// This means replaying zone 1 always sends ants; deeper zones unlock harder species.
 function getZoneSpecies(zoneIndex, nightNumber) {
     const speciesOrder = ["ant","beetle","scorpion","spider"];
-    const frontZone = activeDayZones - 1; // max index = 4
-
-    let rank = 1;
-    if (nightNumber > 5) {
-        // Each night after 5 upgrades one more zone to beetle, front-first
-        const upgradeNights = Math.min(nightNumber - 5, frontZone); // clamp so threshold never goes below 1
-        const upgradeThreshold = Math.max(1, frontZone - upgradeNights + 1);
-        if (zoneIndex >= upgradeThreshold) rank = 2;
-    }
-    if (nightNumber > 10) {
-        const scorpionNights = Math.min(nightNumber - 10, frontZone);
-        const scorpionThreshold = Math.max(1, frontZone - scorpionNights + 1);
-        if (zoneIndex >= scorpionThreshold) rank = 3;
-    }
-    if (nightNumber > 15) {
-        // Spider tier: front zone first, cascades back each night
-        const spiderNights = Math.min(nightNumber - 15, frontZone);
-        const spiderThreshold = Math.max(1, frontZone - spiderNights + 1);
-        if (zoneIndex >= spiderThreshold) rank = 4;
-    }
-
-    // Clamp rank to valid index
-    rank = Math.max(1, Math.min(rank, speciesOrder.length));
+    const rank = Math.max(1, Math.min(zoneIndex, speciesOrder.length));
     const baseSpecies = speciesOrder[rank - 1];
 
     // 15% chance to spawn one tier lower (never below ant)
@@ -168,21 +148,45 @@ function getZoneSpecies(zoneIndex, nightNumber) {
     return baseSpecies;
 }
 
-// Get class for a zone based on night (harder zones get strikers/tanks sooner)
+// Get class for a zone — scales with nightNumber so individual predators
+// grow stronger over time even when the player re-farms the same zone.
+// Night tier 0 (N1-5): nymphs/scouts dominant.
+// Night tier 1 (N6-10): scouts/strikers dominant.
+// Night tier 2 (N11-15): strikers/tanks dominant.
+// Night tier 3 (N16+): mostly tanks, rarer nymphs.
 function getZoneClass(zoneIndex) {
+    const n    = gameState.nightNumber;
     const roll = Math.random();
-    if (zoneIndex >= activeDayZones - 1) {
-        // Front zone: full class range + rare boss
+    const isFront = zoneIndex >= activeDayZones - 1;
+    const tier = Math.min(3, Math.floor((n - 1) / 5)); // 0→1→2→3
+
+    // Probability ceilings [nymph, scout, striker] per tier
+    // Front zone gets harder classes and rare boss
+    const frontT = [
+        [0.20, 0.46, 0.73], // tier 0
+        [0.12, 0.38, 0.70], // tier 1
+        [0.05, 0.26, 0.64], // tier 2
+        [0.02, 0.16, 0.56], // tier 3
+    ];
+    const backT = [
+        [0.15, 0.55, 0.85], // tier 0
+        [0.08, 0.40, 0.78], // tier 1
+        [0.03, 0.26, 0.70], // tier 2
+        [0.01, 0.14, 0.60], // tier 3
+    ];
+
+    if (isFront) {
         if (roll < 0.08) return "boss";
-        if (roll < 0.20) return "nymph";
-        if (roll < 0.46) return "scout";
-        if (roll < 0.73) return "striker";
+        const t = frontT[tier];
+        if (roll < t[0]) return "nymph";
+        if (roll < t[1]) return "scout";
+        if (roll < t[2]) return "striker";
         return "tank";
     }
-    // Back zones: mostly scouts and nymphs
-    if (roll < 0.15) return "nymph";
-    if (roll < 0.55) return "scout";
-    if (roll < 0.85) return "striker";
+    const t = backT[tier];
+    if (roll < t[0]) return "nymph";
+    if (roll < t[1]) return "scout";
+    if (roll < t[2]) return "striker";
     return "tank";
 }
 

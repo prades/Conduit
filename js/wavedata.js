@@ -17,13 +17,23 @@ const WAVE_CONFIG = {
     predatorExtraPerWave: 1  // extra predators per wave
 };
 
-// kills needed to clear the night — scales each wave
+// kills needed to clear the night — based on alarm zone, not wave count
+// Zone 1 = short waves (3 kills), deeper zones = more kills
+// Gentle +1 per 5 nights so zone-1 farming eventually gets slightly harder
 function enemiesThisWave() {
-    // Night 1: kill 3, Night 2: kill 5, Night 3: kill 7 etc
-    return WAVE_CONFIG.baseEnemies + (gameState.nightNumber - 1) * WAVE_CONFIG.enemiesPerWave;
+    const alarmZone = (alertSource && typeof getZoneIndex === "function")
+        ? getZoneIndex(Math.floor(alertSource.x))
+        : 1;
+    const zoneBase   = 2 + Math.max(1, alarmZone);          // zone1=3, z2=4, z3=5, z4=6
+    const nightBonus = Math.floor((gameState.nightNumber - 1) / 5); // +1 per 5 nights
+    return zoneBase + nightBonus;
 }
 function predatorsThisWave() {
-    return WAVE_CONFIG.predatorsPerWave + Math.floor((gameState.nightNumber - 1) * WAVE_CONFIG.predatorExtraPerWave);
+    // Zone-based count: emphasis on strength (via class), not raw numbers
+    const alarmZone = (alertSource && typeof getZoneIndex === "function")
+        ? getZoneIndex(Math.floor(alertSource.x))
+        : 1;
+    return 1 + Math.floor(alarmZone / 3); // zone1-2=1, zone3-4=2
 }
 
 let nightKillCount    = 0;

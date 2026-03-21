@@ -39,6 +39,31 @@ function triggerAlarm(type, sx, sy) {
     waveUI.textContent = "WAVE " + gameState.nightNumber + " ⚠ " + label + " — Kill " + nightEnemiesTarget;
 }
 
+// ── RESET PANELS — deactivate all panels, diminish shard rewards, reshuffle decoy ──
+// Called after every alarm/wave-clear so the player can re-farm the same zones.
+function resetPanels() {
+    const allPanels = world.filter(t => t.nodeType === 'wall_panel');
+    if (allPanels.length === 0) return;
+
+    allPanels.forEach(t => {
+        if (t.panelActivated) {
+            // Track how many times this panel has been fully activated
+            t.panelTimesActivated = (t.panelTimesActivated || 0) + 1;
+            // Diminishing shard returns: halved each time, floor at 1
+            t.shardReward = Math.max(1, Math.floor((t.shardReward || 5) * 0.5));
+        }
+        t.panelActivated  = false;
+        t.siphonProgress  = 0;
+        t.isDecoy         = false;
+    });
+
+    // Assign one new random decoy
+    allPanels[Math.floor(Math.random() * allPanels.length)].isDecoy = true;
+
+    // Force the world-cache to rebuild so _wallPanelCache picks up the reset panels
+    _cacheAge = -999;
+}
+
 // ── CLEAR ALARM — called when alert timer expires ──
 function clearAlarm() {
     alertActive = false;
@@ -49,6 +74,10 @@ function clearAlarm() {
         if (!(a instanceof Predator) || a.dead || a.team === "green") return;
         if (!a.lastAttacker) { a.provoked = false; a.state = "wander"; }
     });
+
+    // Reactivate all panels so the player can replay the same zones
+    resetPanels();
+
     // Keep phase as "night" so kills can still complete the wave after alarm expires
     if (gameState.phase === "night" && nightKillCount < nightEnemiesTarget) {
         waveUI.textContent = "WAVE " + gameState.nightNumber + " — Kill " + nightKillCount + "/" + nightEnemiesTarget;
@@ -60,6 +89,8 @@ function checkWaveClear() {
     if (nightKillCount >= nightEnemiesTarget) {
         gameState.phase = "waveComplete";
         gameState.totalWavesSurvived++;
+        // Reset panels immediately on wave clear — player re-enters day with fresh panels
+        resetPanels();
         showWaveClear();
     }
 }
