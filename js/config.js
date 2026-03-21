@@ -103,6 +103,7 @@ let _wPylonPairs       = [];       // pre-computed connected pylon pairs (rebuil
 let _pylonsWithPartner = new Set(); // pylons that have ≥1 connected partner (rebuilt with _wPylonPairs)
 let _wallPanelMap      = null;     // worldX → wall_panel tile (rebuilt with _pillarCache)
 let _wallPanelCache    = [];       // unactivated wall_panel tiles (rebuilt every 60 frames, spliced on activation)
+let _capturableNodeCache = [];     // all capturable world tiles (rebuilt every 60 frames)
 let _seasonBonusCache= {};  // seasoned-bonus multiplier per element (1.0 or 1.25)
 
 // ── NETWORK RESONANCE STATE ─────────────────────────────────────────

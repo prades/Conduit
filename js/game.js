@@ -45,10 +45,13 @@ function render() {
         // ── WALL PANEL MAP — for wall-face panel rendering ──
         _wallPanelMap = new Map();
         _wallPanelCache = [];
+        _capturableNodeCache = [];
         world.forEach(t => {
-            if (t.nodeType !== 'wall_panel') return;
-            _wallPanelMap.set(Math.round(t.x), t);
-            if (!t.panelActivated) _wallPanelCache.push(t);
+            if (t.nodeType === 'wall_panel') {
+                _wallPanelMap.set(Math.round(t.x), t);
+                if (!t.panelActivated) _wallPanelCache.push(t);
+            }
+            if (t.capturable) _capturableNodeCache.push(t);
         });
 
         // ── TERRITORY — recalculate every 60 frames ──
@@ -123,10 +126,16 @@ function render() {
 
 
     // ── INTRUDER ALERT TIMER ──
-    // Alarm expires after ALERT_DURATION frames; predators return to grazing.
+    // Alarm persists until the kill quota is met; only then do predators stand down.
     if (alertActive) {
         alertTimer--;
-        if (alertTimer <= 0) clearAlarm();
+        if (alertTimer <= 0) {
+            if (nightKillCount >= nightEnemiesTarget) {
+                clearAlarm();
+            } else {
+                alertTimer = ALERT_DURATION; // reload — keep alarm blaring until quota met
+            }
+        }
     }
 
     // ── WALL PANEL ACTIVATION ──
@@ -517,6 +526,13 @@ function render() {
     if(latchedPillar&&latchedPillar.pillarTeam==="red"&&latchedPillar.converting) {
         actors.forEach(a=>{ if(a.team!=="red"||a instanceof Predator)return; const dx=a.x-latchedPillar.x,dy=a.y-latchedPillar.y; if(Math.sqrt(dx*dx+dy*dy)<1.2) convertNPC(a,"green"); });
     }
+
+    // ── PROXIMITY CONVERSION — virus NPCs join team when player walks close ──
+    actors.forEach(a => {
+        if (a.dead || !a.isNeutralRecruit || a.team !== "red" || a instanceof Predator) return;
+        if (a.spawnProtection > 0) return;
+        if (Math.hypot(player.x - a.x, player.y - a.y) < 1.5) convertNPC(a, "green");
+    });
 
     updateShards();
     updateCaptureProgress();
@@ -2361,8 +2377,30 @@ function updateTerritory() {
 // Increments capture progress when followers stand on a capturable tile.
 // Progress halts while an enemy is adjacent (within 1.5 tiles).
 function updateCaptureProgress() {
-    world.forEach(t => {
-        if (!t.capturable || t.captured) return;
+    _capturableNodeCache.forEach(t => {
+        if (t.captured) {
+            // Reverse capture: predators near a player-controlled node reclaim it
+            let nearPredCount = 0;
+            actors.forEach(a => {
+                if (!a.dead && a instanceof Predator && a.team !== 'green' && !a.isClone &&
+                    Math.hypot(a.x - t.x, a.y - t.y) < 1.2) nearPredCount++;
+            });
+            if (nearPredCount > 0) {
+                t.captureProgress = Math.max(0, t.captureProgress - 0.5 * nearPredCount);
+                if (t.captureProgress <= 0) {
+                    t.captured = false;
+                    const idx = capturedNodes.findIndex(n => n.x === t.x && n.y === t.y);
+                    if (idx >= 0) capturedNodes.splice(idx, 1);
+                    floatingTexts.push({
+                        x: canvas.width / 2, y: canvas.height / 2 - 80,
+                        text: t.nodeType === 'signal_tower' ? '◈ TOWER RECLAIMED' : '◈ NODE RECLAIMED',
+                        color: '#ff4422', life: 200, vy: -0.3
+                    });
+                }
+            }
+            return;
+        }
+
         // Gather followers assigned to capture this node
         const onTile = followers.filter(f =>
             !f.dead && f.job && f.job.type === 'capture_node' && f.job.target === t &&
@@ -2392,28 +2430,6 @@ function updateCaptureProgress() {
                 text: t.nodeType === 'signal_tower' ? '◈ TOWER HACKED' : '◈ NODE CAPTURED',
                 color: '#00ccff', life: 200, vy: -0.3
             });
-        }
-
-        // Reverse capture: predators near a player-controlled node reclaim it
-        if (t.captured) {
-            let nearPredCount = 0;
-            actors.forEach(a => {
-                if (!a.dead && a instanceof Predator && a.team !== 'green' && !a.isClone &&
-                    Math.hypot(a.x - t.x, a.y - t.y) < 1.2) nearPredCount++;
-            });
-            if (nearPredCount > 0) {
-                t.captureProgress = Math.max(0, t.captureProgress - 0.5 * nearPredCount);
-                if (t.captureProgress <= 0) {
-                    t.captured = false;
-                    const idx = capturedNodes.findIndex(n => n.x === t.x && n.y === t.y);
-                    if (idx >= 0) capturedNodes.splice(idx, 1);
-                    floatingTexts.push({
-                        x: canvas.width / 2, y: canvas.height / 2 - 80,
-                        text: t.nodeType === 'signal_tower' ? '◈ TOWER RECLAIMED' : '◈ NODE RECLAIMED',
-                        color: '#ff4422', life: 200, vy: -0.3
-                    });
-                }
-            }
         }
     });
 }
