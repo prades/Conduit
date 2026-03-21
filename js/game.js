@@ -2278,7 +2278,7 @@ function render() {
         ctx.font = "bold 13px monospace";
         const _label = alertType === "proximity" ? "PROXIMITY ALARM" :
                        alertType === "zone"      ? "ZONE ALARM"      : "FACILITY BREACH";
-        ctx.fillText("⚠ " + _label + " — " + Math.ceil(alertTimer/60) + "s", 230, 58);
+        ctx.fillText("⚠ " + _label, 230, 58);
         ctx.globalAlpha = 1;
         ctx.fillStyle = "#f84";
         ctx.font = "13px monospace";
