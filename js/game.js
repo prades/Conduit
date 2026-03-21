@@ -1032,34 +1032,34 @@ function render() {
                         const seed     = obj.x * 17.3 + obj.y * 11.7;
                         ctx.save();
 
-                        // Left face — shadow side (NW wall)
+                        // Left face — shadow side (NW wall) — pale violet mist
                         ctx.beginPath();
                         ctx.moveTo(px,          py          - sh);
                         ctx.lineTo(px - TILE_W, py + TILE_H - sh);
                         ctx.lineTo(px - TILE_W, py + TILE_H);
                         ctx.lineTo(px,          py);
                         ctx.closePath();
-                        ctx.fillStyle = `rgba(45, 58, 38, ${0.60 * factor})`;
+                        ctx.fillStyle = `rgba(55, 45, 90, ${0.32 * factor})`;
                         ctx.fill();
 
-                        // Right face — lit side (NE wall)
+                        // Right face — lit side (NE wall) — soft blue-lavender
                         ctx.beginPath();
                         ctx.moveTo(px,          py          - sh);
                         ctx.lineTo(px + TILE_W, py + TILE_H - sh);
                         ctx.lineTo(px + TILE_W, py + TILE_H);
                         ctx.lineTo(px,          py);
                         ctx.closePath();
-                        ctx.fillStyle = `rgba(70, 88, 55, ${0.50 * factor})`;
+                        ctx.fillStyle = `rgba(100, 85, 160, ${0.25 * factor})`;
                         ctx.fill();
 
-                        // Top face — muted olive/green-grey diamond
+                        // Top face — ghostly silver-lavender diamond
                         ctx.beginPath();
                         ctx.moveTo(px,          py          - sh);
                         ctx.lineTo(px + TILE_W, py + TILE_H - sh);
                         ctx.lineTo(px,          py + TILE_W - sh);
                         ctx.lineTo(px - TILE_W, py + TILE_H - sh);
                         ctx.closePath();
-                        ctx.fillStyle = `rgba(88, 108, 68, ${0.45 * factor})`;
+                        ctx.fillStyle = `rgba(190, 175, 230, ${0.18 * factor})`;
                         ctx.fill();
 
                         // Smoke wisps — 3 puffs cycling upward from the tile surface
@@ -1068,15 +1068,15 @@ function render() {
                             const wSeed  = seed + i * 5.1;
                             const cycle  = ((frame * 0.8 + i * 40 + seed * 3) % 60) / 60;
                             const wOx    = Math.sin(wSeed + frame * 0.011) * TILE_W * 0.35;
-                            const wR     = (7 + i * 3.5) * Math.min(1, factor * 2);
-                            const wAlpha = (0.22 - i * 0.04) * factor * (1 - cycle * 0.65);
-                            const wPy    = baseY - 4 - cycle * 28;
+                            const wR     = (9 + i * 4.5) * Math.min(1, factor * 2);
+                            const wAlpha = (0.28 - i * 0.05) * factor * (1 - cycle * 0.70);
+                            const wPy    = baseY - 4 - cycle * 32;
                             const wPx    = px + wOx;
                             ctx.globalAlpha = wAlpha;
                             const grad = ctx.createRadialGradient(wPx, wPy, 0, wPx, wPy, wR);
-                            grad.addColorStop(0,   "rgba(150, 175, 110, 1)");
-                            grad.addColorStop(0.5, "rgba(100, 128,  72, 0.6)");
-                            grad.addColorStop(1,   "rgba( 60,  80,  45, 0)");
+                            grad.addColorStop(0,   "rgba(235, 225, 255, 1)");
+                            grad.addColorStop(0.45, "rgba(175, 155, 220, 0.55)");
+                            grad.addColorStop(1,   "rgba(110,  90, 180, 0)");
                             ctx.fillStyle = grad;
                             ctx.beginPath();
                             ctx.arc(wPx, wPy, wR, 0, Math.PI * 2);
