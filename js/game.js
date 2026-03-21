@@ -238,8 +238,8 @@ function render() {
                 elementEffects.push({type:"impact",x:ex,y:ey,color:col,radius:0.3,life:25,element:el});
             }
 
-            // Apply zone effects every 2 frames — visual / cooldown guards inside handle timing
-            if (frame % 2 !== 0) return;
+            // Apply zone effects every 3 frames — visual / cooldown guards inside handle timing
+            if (frame % 3 !== 0) return;
 
             // Compute per-element constants once per pair (not once per actor)
             const _nTier = networkStrength[el] || 1;
@@ -271,6 +271,7 @@ function render() {
                                 if (_nTier >= 3 && Math.random() < 0.35) {
                                     actors.forEach(other => {
                                         if (other===a||other.dead||other.team!=="red") return;
+                                        if (Math.abs(other.x-a.x)>1.5||Math.abs(other.y-a.y)>1.5) return;
                                         if (Math.hypot(other.x-a.x,other.y-a.y) < 1.5) applyDamage(other, 4, null, "fire");
                                     });
                                 }
@@ -331,6 +332,7 @@ function render() {
                             if (_nTier >= 2 && frame % 20 === 0) {
                                 actors.forEach(other => {
                                     if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
+                                    if (Math.abs(other.x-a.x)>1.2||Math.abs(other.y-a.y)>1.2) return;
                                     const od = Math.hypot(other.x-a.x, other.y-a.y);
                                     if (od < 1.2 && od > 0.01) { other.x+=dx/d*0.05; other.y+=dy/d*0.05; }
                                 });
@@ -350,6 +352,7 @@ function render() {
                             if (_nTier >= 3) {
                                 actors.forEach(other => {
                                     if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
+                                    if (Math.abs(other.x-a.x)>1.5||Math.abs(other.y-a.y)>1.5) return;
                                     if (Math.hypot(other.x-a.x, other.y-a.y) < 1.5) {
                                         other.defenseShredded = 60; other.defenseShredFactor = 0.55;
                                     }
@@ -515,6 +518,8 @@ function render() {
     if (frame % 3 === 0) {
         actors.forEach(actor=>{
             _pillarCache.forEach(t=>{
+                // Cheap bbox reject before team check and sqrt
+                if(Math.abs(t.x-actor.x)>1.2||Math.abs(t.y-actor.y)>1.2) return;
                 if((actor.team==="green"&&t.pillarTeam!=="green")||(actor.team==="red"&&t.pillarTeam!=="red")) return;
                 const dx=t.x-actor.x, dy=t.y-actor.y;
                 if(dx*dx+dy*dy < 1.44) actor.health=Math.min(actor.maxHealth, actor.health+0.15);
@@ -536,7 +541,7 @@ function render() {
 
     updateShards();
     updateCaptureProgress();
-    applySignalTowerBuff();
+    if (frame % 6 === 0) applySignalTowerBuff();
     updateStatusEffects();
     updateElementEffects();
     updateFloatingTexts();
