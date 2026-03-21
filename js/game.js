@@ -696,6 +696,9 @@ function render() {
     environmentalHazards.forEach(h => {
         if (h.type === 'acid') h.tiles.forEach(([tx,ty]) => acidTiles.set(`${tx},${ty}`, h));
     });
+    // Pre-build smoke zone lookup for 3D per-tile creeping smoke
+    const smokeTileZones = new Map(); // zone → smokeEffect obj
+    elementEffects.forEach(e => { if (e.type === "smokeScreen") smokeTileZones.set(e.zone, e); });
 
     let drawList=world.filter(t=>Math.abs(t.x-player.visualX)<RENDER_DIST);
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
@@ -1011,6 +1014,78 @@ function render() {
                     });
                 }
                 ctx.restore();
+            }
+
+            // ── 3D SMOKE TILES — toxic ultimate: creeping raised slabs + rising wisps ──
+            if (smokeTileZones.size > 0) {
+                const tileZone = getZoneIndex(Math.round(obj.x));
+                const sE = smokeTileZones.get(tileZone);
+                if (sE) {
+                    const elapsed        = sE.maxLife - sE.life;
+                    const distFromCaster = Math.hypot(obj.x - sE.x, obj.y - sE.y);
+                    const spreadRadius   = elapsed / 5; // ~1 tile per 5 frames
+                    if (distFromCaster < spreadRadius) {
+                        const arrivalT = Math.min(1, (spreadRadius - distFromCaster) / 4);
+                        const fadeOut  = Math.min(1, sE.life / 90);
+                        const factor   = arrivalT * fadeOut;
+                        const sh       = Math.round(10 * factor); // max raised height in px
+                        const seed     = obj.x * 17.3 + obj.y * 11.7;
+                        ctx.save();
+
+                        // Left face — shadow side (NW wall)
+                        ctx.beginPath();
+                        ctx.moveTo(px,          py          - sh);
+                        ctx.lineTo(px - TILE_W, py + TILE_H - sh);
+                        ctx.lineTo(px - TILE_W, py + TILE_H);
+                        ctx.lineTo(px,          py);
+                        ctx.closePath();
+                        ctx.fillStyle = `rgba(45, 58, 38, ${0.60 * factor})`;
+                        ctx.fill();
+
+                        // Right face — lit side (NE wall)
+                        ctx.beginPath();
+                        ctx.moveTo(px,          py          - sh);
+                        ctx.lineTo(px + TILE_W, py + TILE_H - sh);
+                        ctx.lineTo(px + TILE_W, py + TILE_H);
+                        ctx.lineTo(px,          py);
+                        ctx.closePath();
+                        ctx.fillStyle = `rgba(70, 88, 55, ${0.50 * factor})`;
+                        ctx.fill();
+
+                        // Top face — muted olive/green-grey diamond
+                        ctx.beginPath();
+                        ctx.moveTo(px,          py          - sh);
+                        ctx.lineTo(px + TILE_W, py + TILE_H - sh);
+                        ctx.lineTo(px,          py + TILE_W - sh);
+                        ctx.lineTo(px - TILE_W, py + TILE_H - sh);
+                        ctx.closePath();
+                        ctx.fillStyle = `rgba(88, 108, 68, ${0.45 * factor})`;
+                        ctx.fill();
+
+                        // Smoke wisps — 3 puffs cycling upward from the tile surface
+                        const baseY = py + TILE_H - sh;
+                        for (let i = 0; i < 3; i++) {
+                            const wSeed  = seed + i * 5.1;
+                            const cycle  = ((frame * 0.8 + i * 40 + seed * 3) % 60) / 60;
+                            const wOx    = Math.sin(wSeed + frame * 0.011) * TILE_W * 0.35;
+                            const wR     = (7 + i * 3.5) * Math.min(1, factor * 2);
+                            const wAlpha = (0.22 - i * 0.04) * factor * (1 - cycle * 0.65);
+                            const wPy    = baseY - 4 - cycle * 28;
+                            const wPx    = px + wOx;
+                            ctx.globalAlpha = wAlpha;
+                            const grad = ctx.createRadialGradient(wPx, wPy, 0, wPx, wPy, wR);
+                            grad.addColorStop(0,   "rgba(150, 175, 110, 1)");
+                            grad.addColorStop(0.5, "rgba(100, 128,  72, 0.6)");
+                            grad.addColorStop(1,   "rgba( 60,  80,  45, 0)");
+                            ctx.fillStyle = grad;
+                            ctx.beginPath();
+                            ctx.arc(wPx, wPy, wR, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+
+                        ctx.restore();
+                    }
+                }
             }
 
             // ── CAPTURABLE NODES (capacitor / signal tower) ──

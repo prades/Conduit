@@ -1015,15 +1015,20 @@ function drawElementEffects() {
                 break;
             }
             case "smokeScreen": {
-                // Full-screen grey-green fog — fades in and out
-                const fadeIn  = Math.min(1, (e.maxLife - e.life) / 90);
-                const fadeOut = Math.min(1, e.life / 90);
-                const factor  = Math.min(fadeIn, fadeOut);
-                const drift   = Math.sin(frame*0.015 + e.zone*0.4) * 0.03;
-                ctx.setTransform(1,0,0,1,0,0);
-                ctx.globalAlpha = (factor + drift) * 0.36;
-                ctx.fillStyle = "#5a6950";
-                ctx.fillRect(0,0,canvas.width,canvas.height);
+                // 3D visuals handled per-tile in the depth-sorted draw pass (game.js).
+                // Only render an initial cast pulse ring here.
+                const fadeIn = Math.min(1, (e.maxLife - e.life) / 30);
+                if (fadeIn < 0.3) {
+                    const prog = 1 - fadeIn / 0.3;
+                    const r = prog * 4.0 * TILE_W;
+                    ctx.strokeStyle = "#8aaa66";
+                    ctx.lineWidth = 2;
+                    ctx.shadowColor = "#8aaa66"; ctx.shadowBlur = 8;
+                    ctx.globalAlpha = (1 - prog) * 0.55;
+                    ctx.beginPath();
+                    ctx.arc(px, py - 15, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
                 break;
             }
         }
