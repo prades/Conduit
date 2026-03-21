@@ -1016,7 +1016,7 @@ function render() {
                 ctx.restore();
             }
 
-            // ── 3D SMOKE TILES — toxic ultimate: creeping raised slabs + rising wisps ──
+            // ── 3D SMOKE TILES — toxic ultimate: creeping raised slabs + single wisp ──
             if (smokeTileZones.size > 0) {
                 const tileZone = getZoneIndex(Math.round(obj.x));
                 const sE = smokeTileZones.get(tileZone);
@@ -1062,26 +1062,16 @@ function render() {
                         ctx.fillStyle = `rgba(190, 175, 230, ${0.18 * factor})`;
                         ctx.fill();
 
-                        // Smoke wisps — 3 puffs cycling upward from the tile surface
-                        const baseY = py + TILE_H - sh;
-                        for (let i = 0; i < 3; i++) {
-                            const wSeed  = seed + i * 5.1;
-                            const cycle  = ((frame * 0.8 + i * 40 + seed * 3) % 60) / 60;
-                            const wOx    = Math.sin(wSeed + frame * 0.011) * TILE_W * 0.35;
-                            const wR     = (9 + i * 4.5) * Math.min(1, factor * 2);
-                            const wAlpha = (0.28 - i * 0.05) * factor * (1 - cycle * 0.70);
-                            const wPy    = baseY - 4 - cycle * 32;
-                            const wPx    = px + wOx;
-                            ctx.globalAlpha = wAlpha;
-                            const grad = ctx.createRadialGradient(wPx, wPy, 0, wPx, wPy, wR);
-                            grad.addColorStop(0,   "rgba(235, 225, 255, 1)");
-                            grad.addColorStop(0.45, "rgba(175, 155, 220, 0.55)");
-                            grad.addColorStop(1,   "rgba(110,  90, 180, 0)");
-                            ctx.fillStyle = grad;
-                            ctx.beginPath();
-                            ctx.arc(wPx, wPy, wR, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
+                        // Single rising wisp — cheap flat fill, no gradient
+                        const cycle  = ((frame * 0.8 + seed * 3) % 60) / 60;
+                        const wOx    = Math.sin(seed + frame * 0.011) * TILE_W * 0.3;
+                        const wR     = 11 * Math.min(1, factor * 2);
+                        const wAlpha = 0.22 * factor * (1 - cycle * 0.7);
+                        ctx.globalAlpha = wAlpha;
+                        ctx.fillStyle   = "rgba(200, 185, 240, 1)";
+                        ctx.beginPath();
+                        ctx.arc(px + wOx, py + TILE_H - sh - 4 - cycle * 30, wR, 0, Math.PI * 2);
+                        ctx.fill();
 
                         ctx.restore();
                     }
