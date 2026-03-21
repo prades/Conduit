@@ -21,6 +21,7 @@ async function loadConfig() {
     if (gs) {
         gameState.nightNumber        = gs.nightNumber        || 1;
         gameState.totalWavesSurvived = gs.totalWavesSurvived || 0;
+        gameState.highestZoneCleared = gs.highestZoneCleared || 0;
         activeDayZones               = gs.activeDayZones     || 3;
     }
     const pu = loadPermUpgrades();

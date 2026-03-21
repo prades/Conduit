@@ -80,6 +80,7 @@ let gameState = {
     phase: "day",       // "day" | "night" | "waveComplete" | "gameOver" | "shop"
     nightNumber: 1,
     totalWavesSurvived: 0,
+    highestZoneCleared: 0,  // highest zone index the player has cleared a wave in
     running: true
 };
 

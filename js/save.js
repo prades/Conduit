@@ -5,6 +5,7 @@ function saveGameState() {
     try { localStorage.setItem("tubecrawler_gamestate", JSON.stringify({
         nightNumber: gameState.nightNumber,
         totalWavesSurvived: gameState.totalWavesSurvived,
+        highestZoneCleared: gameState.highestZoneCleared,
         activeDayZones: activeDayZones
     })); } catch(e) {}
 }

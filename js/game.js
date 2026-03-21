@@ -517,7 +517,8 @@ function render() {
         if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.killCounted) {
             a.killCounted = true;
             nightKillCount++;
-            waveUI.textContent = "⚠ Wave "+gameState.nightNumber+" — Kill "+nightKillCount+"/"+nightEnemiesTarget;
+            const _kz = alertSource ? getZoneIndex(Math.floor(alertSource.x)) : 1;
+            waveUI.textContent = "⚠ Zone "+_kz+" — Kill "+nightKillCount+"/"+nightEnemiesTarget;
         }
     });
 
@@ -2342,10 +2343,10 @@ function render() {
         ctx.globalAlpha = 1;
         ctx.fillStyle = "#f84";
         ctx.font = "13px monospace";
-        ctx.fillText("Kills: "+nightKillCount+"/"+nightEnemiesTarget, 230, 74);
+        ctx.fillText("Kill "+nightKillCount+"/"+nightEnemiesTarget, 230, 74);
     } else {
         ctx.fillStyle = "#0f8";
-        ctx.fillText("Status: CLEAR", 230, 58);
+        ctx.fillText("Best Zone: "+gameState.highestZoneCleared, 230, 58);
     }
     ctx.restore();
 

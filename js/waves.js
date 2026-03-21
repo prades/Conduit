@@ -36,7 +36,8 @@ function triggerAlarm(type, sx, sy) {
         if (inRange) { a.state = "hunt"; a.provoked = true; }
     });
 
-    waveUI.textContent = "WAVE " + gameState.nightNumber + " ⚠ " + label + " — Kill " + nightEnemiesTarget;
+    const _alarmZone = getZoneIndex(Math.floor(sx));
+    waveUI.textContent = "⚠ ZONE " + _alarmZone + " " + label + " — Kill 0/" + nightEnemiesTarget;
 }
 
 // ── RESET PANELS — deactivate all panels, diminish shard rewards, reshuffle decoy ──
@@ -80,7 +81,9 @@ function clearAlarm() {
 
     // Keep phase as "night" so kills can still complete the wave after alarm expires
     if (gameState.phase === "night" && nightKillCount < nightEnemiesTarget) {
-        waveUI.textContent = "WAVE " + gameState.nightNumber + " — Kill " + nightKillCount + "/" + nightEnemiesTarget;
+        waveUI.textContent = "Best Zone: " + gameState.highestZoneCleared + " — Kill " + nightKillCount + "/" + nightEnemiesTarget;
+    } else {
+        waveUI.textContent = "Best Zone: " + gameState.highestZoneCleared;
     }
 }
 
@@ -89,6 +92,14 @@ function checkWaveClear() {
     if (nightKillCount >= nightEnemiesTarget) {
         gameState.phase = "waveComplete";
         gameState.totalWavesSurvived++;
+        // Record highest zone cleared
+        if (alertSource) {
+            const clearedZone = getZoneIndex(Math.floor(alertSource.x));
+            if (clearedZone > gameState.highestZoneCleared) {
+                gameState.highestZoneCleared = clearedZone;
+                saveGameState();
+            }
+        }
         // Reset panels immediately on wave clear — player re-enters day with fresh panels
         resetPanels();
         showWaveClear();
@@ -99,12 +110,13 @@ function showWaveClear() {
     gameState.running=false;
     crystalMenuOpen=false;
     const overlay=document.getElementById("overlay");
-    document.getElementById("ovr-title").textContent="WAVE "+gameState.nightNumber+" CLEARED";
+    const _clearedZone = alertSource ? getZoneIndex(Math.floor(alertSource.x)) : 0;
+    document.getElementById("ovr-title").textContent="ZONE " + _clearedZone + " CLEARED";
     document.getElementById("ovr-title").style.color="#0f8";
     document.getElementById("ovr-sub").textContent="Opening Supply Cache…";
     document.getElementById("ovr-shards").textContent=shardCount;
     document.getElementById("ovr-conv").textContent=dayStats.redConverted;
-    document.getElementById("ovr-waves").textContent=gameState.totalWavesSurvived;
+    document.getElementById("ovr-waves").textContent=gameState.highestZoneCleared;
     document.getElementById("ovr-btn").textContent="NEXT WAVE";
     document.getElementById("ovr-btn").onclick=nextWave;
     buildShopGrid();
@@ -121,7 +133,7 @@ function showGameOver() {
     document.getElementById("ovr-sub").textContent="The network has collapsed.";
     document.getElementById("ovr-shards").textContent=shardCount;
     document.getElementById("ovr-conv").textContent=dayStats.redConverted;
-    document.getElementById("ovr-waves").textContent=gameState.totalWavesSurvived;
+    document.getElementById("ovr-waves").textContent=gameState.highestZoneCleared;
     document.getElementById("ovr-btn").textContent="RESTART";
     document.getElementById("ovr-btn").onclick=restartGame;
     ["shopGridSupply","shopGridPylons","shopGridArmaments"].forEach(id => {
@@ -141,7 +153,7 @@ function openMidGameShop() {
     document.getElementById("ovr-sub").textContent = "Browse upgrades — game paused";
     document.getElementById("ovr-shards").textContent = shardCount;
     document.getElementById("ovr-conv").textContent = dayStats.redConverted;
-    document.getElementById("ovr-waves").textContent = gameState.totalWavesSurvived;
+    document.getElementById("ovr-waves").textContent = gameState.highestZoneCleared;
     document.getElementById("ovr-btn").textContent = "CLOSE";
     document.getElementById("ovr-btn").onclick = closeMidGameShop;
     buildShopGrid();
@@ -275,7 +287,7 @@ function nextWave() {
 
     // ── Close overlay immediately so the browser can repaint ──
     document.getElementById("overlay").classList.remove("active");
-    waveUI.textContent = "Wave " + gameState.nightNumber + " — loading…";
+    waveUI.textContent = "Best Zone: " + gameState.highestZoneCleared + " — loading…";
 
     // ── Defer all heavy world work so the browser gets a frame to breathe ──
     setTimeout(() => {
@@ -391,7 +403,7 @@ function nextWave() {
 
         gameState.phase   = "day";
         gameState.running = true;
-        waveUI.textContent = "WAVE " + gameState.nightNumber + " — clear panels for shards";
+        waveUI.textContent = "Best Zone: " + gameState.highestZoneCleared + " — explore panels";
     }, 0);
 }
 
@@ -417,7 +429,7 @@ function restartGame() {
     player={ x:2,y:1,visualX:2,visualY:1,targetX:2,targetY:1,
              rotY:Math.PI*0.75, baseRot:Math.PI*0.75, angryTimer:0,
              selectedElement:"fire", siphonHold:0 };
-    gameState={ phase:"day", nightNumber:1, totalWavesSurvived:0, running:true };
+    gameState={ phase:"day", nightNumber:1, totalWavesSurvived:0, highestZoneCleared:0, running:true };
     dayStats={ redSpawned:0, redConverted:0 };
     nightKillCount=0; nightEnemiesTarget=0; nightPredatorsRemaining=0;
     alertActive=false; alertTimer=0; alertType=null; alertSource=null;
@@ -426,6 +438,6 @@ function restartGame() {
     // No free spawns — player earns followers and encounters predators naturally
     spawnHazardsForDay();
     document.getElementById("overlay").classList.remove("active");
-    waveUI.textContent = "WAVE 1 — clear panels for shards";
+    waveUI.textContent = "Best Zone: 0 — explore panels";
     requestAnimationFrame(render);
 }
