@@ -1892,45 +1892,16 @@ function render() {
                             const wireSx = spx;
                             const wireSy = 0.5 * pcx - wbotY + WY;
 
-                            // ── PHYSICAL CONNECTOR WIRE — dangling cable from panel ──
-                            const _wPulse = 0.4 + 0.4 * Math.sin(frame * 0.14);
-                            // Stub endpoint: short droop below panel bottom
-                            const stubEndX = wireSx + 5;
-                            const stubEndY = wireSy + 20;
-                            const stubCpY  = wireSy + 10;
-
-                            ctx.save();
-                            ctx.setTransform(1, 0, 0, 1, 0, 0);
-                            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-
-                            // Dark cable outer body
-                            ctx.strokeStyle = '#0d1410';
-                            ctx.lineWidth = 3.8;
-                            ctx.globalAlpha = 0.9;
-                            ctx.shadowBlur = 0;
-                            ctx.beginPath();
-                            ctx.moveTo(wireSx, wireSy);
-                            ctx.quadraticCurveTo(wireSx + 2, stubCpY, stubEndX, stubEndY);
-                            ctx.stroke();
-                            // Green glow overlay on stub
-                            ctx.strokeStyle = '#00ff88';
-                            ctx.lineWidth = 1.0;
-                            ctx.globalAlpha = 0.28 + _wPulse * 0.22;
-                            ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 5;
-                            ctx.beginPath();
-                            ctx.moveTo(wireSx, wireSy);
-                            ctx.quadraticCurveTo(wireSx + 2, stubCpY, stubEndX, stubEndY);
-                            ctx.stroke();
-                            // Connector tip cap — bright nub at wire end
-                            ctx.fillStyle = '#00ff88';
-                            ctx.globalAlpha = 0.75 + _wPulse * 0.25;
-                            ctx.shadowBlur = 7;
-                            ctx.beginPath(); ctx.arc(stubEndX, stubEndY, 2.8, 0, Math.PI * 2); ctx.fill();
-                            ctx.fillStyle = '#ccffee';
-                            ctx.globalAlpha = 0.5 + _wPulse * 0.5;
-                            ctx.beginPath(); ctx.arc(stubEndX, stubEndY, 1.2, 0, Math.PI * 2); ctx.fill();
-
                             if (pDist < 2.5) {
+                                const _wPulse = 0.4 + 0.4 * Math.sin(frame * 0.14);
+                                // Stub endpoint: short droop below panel bottom
+                                const stubEndX = wireSx + 5;
+                                const stubEndY = wireSy + 20;
+
+                                ctx.save();
+                                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                                ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
                                 // Extend wire all the way to the player (always screen-center)
                                 const plx = canvas.width / 2;
                                 const ply = canvas.height / 2 - 18;
@@ -1982,14 +1953,12 @@ function render() {
                                 ctx.globalAlpha = 0.55 + _wPulse * 0.35;
                                 ctx.shadowBlur = 6;
                                 ctx.beginPath(); ctx.arc(plx, ply, 5, 0, Math.PI * 2); ctx.stroke();
-                            }
 
-                            ctx.shadowBlur = 0;
-                            ctx.restore();
+                                ctx.shadowBlur = 0;
+                                ctx.restore();
 
-                            const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
-                            const siphonProg = _panel.siphonProgress || 0;
-                            if (pDist < 2.5) {
+                                const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
+                                const siphonProg = _panel.siphonProgress || 0;
                                 ctx.save();
                                 ctx.globalAlpha = hint;
                                 ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.5;
