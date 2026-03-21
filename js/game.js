@@ -171,14 +171,18 @@ function render() {
 
     // ── WALL PANEL SIPHON ──
     // Player must stay near a panel for a few seconds to siphon shards from it.
+    // Only one panel can be siphoned at a time — if the player is close to
+    // multiple panels, only the first (closest) one progresses; others reset.
     // Uses _wallPanelCache to avoid scanning the entire world array every frame.
     const SIPHON_FRAMES = 150; // ~2.5 seconds at 60fps
+    let _siphonActive = false; // tracks whether a panel is already being siphoned this frame
     for (let _wpi = _wallPanelCache.length - 1; _wpi >= 0; _wpi--) {
         const t = _wallPanelCache[_wpi];
         if (t.panelActivated) { _wallPanelCache.splice(_wpi, 1); continue; }
         const _pdx=player.x-t.x, _pdy=player.y-t.y;
         const playerClose = _pdx*_pdx+_pdy*_pdy < 2.25; // 1.5² — player standing at y=1 in front of y=0 panel
-        if (playerClose) {
+        if (playerClose && !_siphonActive) {
+            _siphonActive = true;
             t.siphonProgress = (t.siphonProgress || 0) + 1;
             if (t.siphonProgress >= SIPHON_FRAMES) {
                 t.panelActivated = true;

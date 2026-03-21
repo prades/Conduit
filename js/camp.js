@@ -75,7 +75,7 @@ function purchaseCampBuilding(id) {
 
 // Signal Relay — returns pylon connection range (tiles)
 function getPylonRange() {
-    return isCampBuilt("signal_relay") ? 7.0 : 5.0;
+    return isCampBuilt("signal_relay") ? 3.5 : 2.5;
 }
 
 // Command Node — follower damage/defense multipliers
