@@ -85,6 +85,8 @@ const ELEMENT_ATTACKS = {
                     floatingTexts.push({x:t.x,y:t.y-0.5,text:"FIRE! -"+Math.round(nestDmg),color:"#ff3300",life:30,vy:-0.06});
                 }
             });
+            // Fire orbit visual — 3 fireballs orbit the follower
+            actor.fireOrbitTimer = 50;
             return { hit: hits > 0 };
         },
         special(actor, target) {
@@ -158,6 +160,9 @@ const ELEMENT_ATTACKS = {
                 life: 15,
                 element: "electric"
             });
+            // Electric surround visual — sparks ring + arc lightning to chain targets
+            actor.sparkSurround = 22;
+            actor._electricChainTargets = chainTargets.slice();
             return { hit: true };
         },
         special(actor, target) {
@@ -199,6 +204,8 @@ const ELEMENT_ATTACKS = {
                 target.frozen = true;
                 target.frozenEscapeChance = 0.01;
             }
+            // Icicle visual — giant icicles project toward target
+            actor.icicleAttack = { tx: target.x, ty: target.y, timer: 28 };
             return { hit: true };
         },
         special(actor, target) {
@@ -226,6 +233,8 @@ const ELEMENT_ATTACKS = {
             if (Math.random() < ELEMENT_PROC_CHANCE.flux) target.disoriented = 120;
             applyElementalDamage(target, (actor.stats?.attack||10)*0.6, actor, "flux");
             spawnElementEffect({ type:"impact", x:target.x, y:target.y, color:"#9933ff", radius:0.8, life:25, element:"flux" });
+            // Flux aura visual — opaque element-color aura around follower
+            actor.fluxAura = 50;
             return { hit: true };
         },
         special(actor, target) {
@@ -259,6 +268,8 @@ const ELEMENT_ATTACKS = {
             spawnElementEffect({ type:"impact", x:target.x, y:target.y, color:"#00ccaa", radius:0.7, life:20, element:"core" });
             // Self defense boost
             actor.defenseBoost = 90;
+            // Core pulse visual — pulsating rings emanate from follower
+            actor.corePulse = 55;
             // Knockback proc
             if (Math.random() < ELEMENT_PROC_CHANCE.core) {
                 const dx=target.x-actor.x, dy=target.y-actor.y;

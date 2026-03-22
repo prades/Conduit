@@ -842,6 +842,13 @@ function _drawVirus(actor, px, py, drawCtx) {
 
     const wc = actor.walkCycle || 0;
 
+    // ── TOXIC SMOKE FORM — make follower body transparent ────────────────────
+    const _hasSmokeForm = actor.smokeForm > 0;
+    if (_hasSmokeForm) {
+        drawCtx.save();
+        drawCtx.globalAlpha = 0.14 + 0.07 * Math.sin((frame||0) * 0.38);
+    }
+
     // ── Layout constants ──────────────────────────────────────────────────────
     // (all y values relative to py = isometric ground point)
     const BASE_Y    = py - 28;   // base plate centre
@@ -1108,7 +1115,168 @@ function _drawVirus(actor, px, py, drawCtx) {
     drawCtx.lineTo(px - DOME_R + 2, glassBot - 3);
     drawCtx.stroke();
 
-    drawCtx.restore();
+    drawCtx.restore(); // end glass body save
+
+    // ── TOXIC TRANSPARENCY WRAPPER — end ─────────────────────────────────────
+    if (_hasSmokeForm) drawCtx.restore();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  PHYSICAL ATTACK VISUAL EFFECTS  (drawn at full alpha, on top of body)
+    // ─────────────────────────────────────────────────────────────────────────
+    const _attBodyY = (DOME_CY + glassBot) * 0.5; // vertical centre of entire glass body
+
+    // ── FLUX — OPAQUE ELEMENT-COLOR AURA ────────────────────────────────────
+    if (actor.fluxAura > 0) {
+        const _fa  = Math.min(1, actor.fluxAura / 10) * 0.88;
+        const _aR  = DOME_R * 2.6;
+        drawCtx.save();
+        drawCtx.globalAlpha = _fa;
+        const _fxGrad = drawCtx.createRadialGradient(px, _attBodyY, 2, px, _attBodyY, _aR);
+        _fxGrad.addColorStop(0,    `rgba(${er},${eg},${eb},0.95)`);
+        _fxGrad.addColorStop(0.40, `rgba(${er},${eg},${eb},0.65)`);
+        _fxGrad.addColorStop(1,    `rgba(${er},${eg},${eb},0)`);
+        drawCtx.fillStyle  = _fxGrad;
+        drawCtx.shadowColor = elementColor;
+        drawCtx.shadowBlur  = 22;
+        drawCtx.beginPath();
+        drawCtx.ellipse(px, _attBodyY, _aR, _aR * 1.3, 0, 0, Math.PI * 2);
+        drawCtx.fill();
+        drawCtx.restore();
+    }
+
+    // ── FIRE — 3 ORBITING FIREBALLS ─────────────────────────────────────────
+    if (actor.fireOrbitTimer > 0) {
+        const _foAlpha = Math.min(1, actor.fireOrbitTimer / 8);
+        const _orbitR  = 22;
+        const _oAngle  = (frame||0) * 0.09;
+        drawCtx.save();
+        for (let _i = 0; _i < 3; _i++) {
+            const _a  = _oAngle + _i * (Math.PI * 2 / 3);
+            const _fx = px          + Math.cos(_a)        * _orbitR;
+            const _fy = _attBodyY   + Math.sin(_a)        * _orbitR * 0.5;
+            const _fr = 4.5 + Math.sin((frame||0) * 0.22 + _i * 2.1) * 1.2;
+            drawCtx.globalAlpha = _foAlpha;
+            drawCtx.shadowColor = "#ff4400"; drawCtx.shadowBlur = 14;
+            const _fbG = drawCtx.createRadialGradient(_fx, _fy, 0, _fx, _fy, _fr);
+            _fbG.addColorStop(0,   "#ffffff");
+            _fbG.addColorStop(0.3, "#ffdd00");
+            _fbG.addColorStop(1,   "#ff2200");
+            drawCtx.fillStyle = _fbG;
+            drawCtx.beginPath(); drawCtx.arc(_fx, _fy, _fr, 0, Math.PI * 2); drawCtx.fill();
+        }
+        drawCtx.restore();
+    }
+
+    // ── ELECTRIC — SPARK RING + CHAIN ARC LIGHTNING ─────────────────────────
+    if (actor.sparkSurround > 0) {
+        const _sAlpha = Math.min(1, actor.sparkSurround / 5);
+        drawCtx.save();
+        drawCtx.shadowColor = "#ffee33"; drawCtx.shadowBlur = 10;
+        // Radial zigzag sparks
+        const _NS = 10;
+        drawCtx.lineWidth = 1.5;
+        for (let _si = 0; _si < _NS; _si++) {
+            const _baseA = (_si / _NS) * Math.PI * 2 + (frame||0) * 0.08;
+            const _jig   = Math.sin((frame||0) * 0.25 + _si * 1.3) * 0.35;
+            const _r0 = 13;
+            const _r1 = 20 + Math.abs(Math.sin((frame||0) * 0.18 + _si)) * 6;
+            const _midA  = _baseA + _jig;
+            const _sx0   = px          + Math.cos(_baseA) * _r0;
+            const _sy0   = _attBodyY   + Math.sin(_baseA) * _r0 * 0.56;
+            const _smx   = px          + Math.cos(_midA)  * (_r0 + _r1) * 0.5;
+            const _smy   = _attBodyY   + Math.sin(_midA)  * (_r0 + _r1) * 0.5 * 0.56;
+            const _sx1   = px          + Math.cos(_baseA) * _r1;
+            const _sy1   = _attBodyY   + Math.sin(_baseA) * _r1 * 0.56;
+            drawCtx.globalAlpha  = _sAlpha;
+            drawCtx.strokeStyle  = _si % 2 === 0 ? "#ffee33" : "#ffffff";
+            drawCtx.beginPath(); drawCtx.moveTo(_sx0,_sy0); drawCtx.lineTo(_smx,_smy); drawCtx.lineTo(_sx1,_sy1); drawCtx.stroke();
+        }
+        // Arc lightning beams to each chain target
+        if (actor._electricChainTargets) {
+            drawCtx.strokeStyle = "#aaffff"; drawCtx.lineWidth = 1.2;
+            actor._electricChainTargets.forEach(t => {
+                if (!t || t.dead) return;
+                const _tx = (t.x - player.visualX - (t.y - player.visualY)) * TILE_W + canvas.width  / 2;
+                const _ty = (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + canvas.height / 2 - 30;
+                drawCtx.globalAlpha = _sAlpha * 0.85;
+                drawCtx.beginPath(); drawCtx.moveTo(px, _attBodyY);
+                const _arcSegs = 5;
+                for (let _s = 1; _s < _arcSegs; _s++) {
+                    const _t2 = _s / _arcSegs;
+                    const _jx = (Math.random() - 0.5) * 14;
+                    const _jy = (Math.random() - 0.5) * 14;
+                    drawCtx.lineTo(px + (_tx - px) * _t2 + _jx, _attBodyY + (_ty - _attBodyY) * _t2 + _jy);
+                }
+                drawCtx.lineTo(_tx, _ty); drawCtx.stroke();
+            });
+        }
+        drawCtx.restore();
+    }
+
+    // ── ICE — GIANT ICICLES PROJECTING TOWARD TARGET ────────────────────────
+    if (actor.icicleAttack && actor.icicleAttack.timer > 0) {
+        const _it       = actor.icicleAttack;
+        const _tpx      = (_it.tx - player.visualX - (_it.ty - player.visualY)) * TILE_W + canvas.width  / 2;
+        const _tpy      = (_it.tx - player.visualX + (_it.ty - player.visualY)) * TILE_H + canvas.height / 2 - 30;
+        const _ddx      = _tpx - px, _ddy = _tpy - _attBodyY;
+        const _dMag     = Math.hypot(_ddx, _ddy) || 1;
+        const _ux       = _ddx / _dMag, _uy = _ddy / _dMag;
+        const _iProg    = 1 - _it.timer / 28;
+        const _iAlpha   = Math.min(1, _it.timer / 6);
+        drawCtx.save();
+        drawCtx.globalAlpha = _iAlpha;
+        drawCtx.shadowColor = "#99ddff"; drawCtx.shadowBlur = 16;
+        for (let _ii = 0; _ii < 3; _ii++) {
+            const _sp = (_ii - 1) * 0.28;
+            const _ca = Math.cos(_sp), _sa = Math.sin(_sp);
+            const _dxS = _ux * _ca - _uy * _sa;
+            const _dyS = _ux * _sa + _uy * _ca;
+            const _ilen  = 24 + _ii * 4 + _iProg * 14;
+            const _iBase = 12 + _iProg * 16;
+            const _ix0   = px          + _dxS * _iBase;
+            const _iy0   = _attBodyY   + _dyS * _iBase;
+            const _ix1   = px          + _dxS * (_iBase + _ilen);
+            const _iy1   = _attBodyY   + _dyS * (_iBase + _ilen);
+            const _pw    = 4.5 - _ii * 0.5;
+            const _pxV   = -_dyS * _pw, _pyV = _dxS * _pw;
+            // Icicle body
+            drawCtx.beginPath();
+            drawCtx.moveTo(_ix1, _iy1);
+            drawCtx.lineTo(_ix0 + _pxV, _iy0 + _pyV);
+            drawCtx.lineTo(_ix0 - _pxV, _iy0 - _pyV);
+            drawCtx.closePath();
+            drawCtx.fillStyle   = "#d6f0ff";
+            drawCtx.fill();
+            drawCtx.strokeStyle = "#99ddff"; drawCtx.lineWidth = 1;
+            drawCtx.stroke();
+            // Specular highlight along icicle
+            drawCtx.strokeStyle = "rgba(255,255,255,0.6)"; drawCtx.lineWidth = 0.8;
+            drawCtx.beginPath();
+            drawCtx.moveTo(_ix0 + _pxV * 0.35, _iy0 + _pyV * 0.35);
+            drawCtx.lineTo(_ix1 - _dxS * 3,    _iy1 - _dyS * 3);
+            drawCtx.stroke();
+        }
+        drawCtx.restore();
+    }
+
+    // ── CORE — PULSATING RINGS EMANATING FROM THE CRYSTAL ───────────────────
+    if (actor.corePulse > 0) {
+        const _cpAlpha = Math.min(1, actor.corePulse / 10) * 0.75;
+        drawCtx.save();
+        drawCtx.strokeStyle = "#00ccaa";
+        drawCtx.shadowColor = "#00ccaa"; drawCtx.shadowBlur = 18;
+        for (let _ri = 0; _ri < 3; _ri++) {
+            const _phase = ((frame||0) * 0.16 + _ri * (Math.PI * 0.67)) % (Math.PI * 2);
+            const _prog  = _phase / (Math.PI * 2);
+            const _rR    = DOME_R * (0.65 + _prog * 2.2);
+            drawCtx.lineWidth   = 2.5 - _prog * 1.8;
+            drawCtx.globalAlpha = _cpAlpha * (1 - _prog) * 0.95;
+            drawCtx.beginPath();
+            drawCtx.arc(px, _attBodyY, _rR, 0, Math.PI * 2);
+            drawCtx.stroke();
+        }
+        drawCtx.restore();
+    }
 }
 
 // ─────────────────────────────────────────────────────────

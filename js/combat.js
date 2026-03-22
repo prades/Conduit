@@ -52,6 +52,13 @@ function updateStatusEffects() {
         // ── SHIELD ──
         if (actor.shielded && actor.shieldAmount <= 0) actor.shielded = false;
 
+        // ── PHYSICAL ATTACK VISUAL TIMERS (follower) ──
+        if (actor.fireOrbitTimer  > 0) actor.fireOrbitTimer--;
+        if (actor.sparkSurround   > 0) { actor.sparkSurround--; if (actor.sparkSurround <= 0) actor._electricChainTargets = null; }
+        if (actor.icicleAttack)        { if (--actor.icicleAttack.timer <= 0) actor.icicleAttack = null; }
+        if (actor.fluxAura        > 0) actor.fluxAura--;
+        if (actor.corePulse       > 0) actor.corePulse--;
+
         // ── WILL REGEN ──
         if (typeof actor.currentWill === "number" && actor.stats) {
             if (actor.currentWill < actor.stats.will) {
