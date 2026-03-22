@@ -1,4 +1,203 @@
 // ─────────────────────────────────────────────────────────
+//  FOLLOWER PROJECTILE RENDERING (element-specific visuals)
+// ─────────────────────────────────────────────────────────
+function _drawFollowerProjectile(ctx, p, sx, sy) {
+    const r = p.radius || 4;
+    const el = p.element;
+    const f  = p.frame || 0;
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    if (el === 'fire') {
+        // Fireball — flickering orange/red core with white-hot centre
+        const flicker = 1 + Math.sin(f * 0.45) * 0.14;
+        const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2.6 * flicker);
+        grad.addColorStop(0,   '#ffffff');
+        grad.addColorStop(0.18,'#ffee44');
+        grad.addColorStop(0.45,'#ff6600');
+        grad.addColorStop(0.75,'#cc2200');
+        grad.addColorStop(1,   'rgba(160,0,0,0)');
+        ctx.shadowColor = '#ff5500';
+        ctx.shadowBlur  = 20;
+        ctx.fillStyle   = grad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 2.6 * flicker, 0, Math.PI * 2);
+        ctx.fill();
+        // bright inner core
+        ctx.shadowBlur  = 6;
+        ctx.fillStyle   = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+
+    } else if (el === 'electric') {
+        // Electric orb — yellow-green with radiating arc spikes
+        const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2.2);
+        grad.addColorStop(0,   '#ffffff');
+        grad.addColorStop(0.25,'#eeff44');
+        grad.addColorStop(0.65,'#aacc00');
+        grad.addColorStop(1,   'rgba(100,200,0,0)');
+        ctx.shadowColor = '#ffff00';
+        ctx.shadowBlur  = 16;
+        ctx.fillStyle   = grad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        // arc spikes
+        ctx.shadowBlur  = 8;
+        ctx.strokeStyle = 'rgba(255,255,180,0.9)';
+        ctx.lineWidth   = 1.5;
+        for (let i = 0; i < 5; i++) {
+            const ang = f * 0.18 + i * (Math.PI * 2 / 5);
+            const len = r * (1.8 + Math.sin(f * 0.35 + i * 1.3) * 0.6);
+            ctx.beginPath();
+            ctx.moveTo(sx + Math.cos(ang) * r * 0.6, sy + Math.sin(ang) * r * 0.6);
+            ctx.lineTo(sx + Math.cos(ang) * len * 2,  sy + Math.sin(ang) * len * 2);
+            ctx.stroke();
+        }
+
+    } else if (el === 'ice') {
+        // Ice crystal — six-pointed frost shard
+        ctx.shadowColor = '#aaeeff';
+        ctx.shadowBlur  = 14;
+        ctx.fillStyle   = 'rgba(180,230,255,0.85)';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth   = 1;
+        const spikes = 6;
+        for (let i = 0; i < spikes; i++) {
+            const ang  = (i / spikes) * Math.PI * 2 + f * 0.025;
+            const tip  = r * 2.4;
+            const base = r * 0.75;
+            const bAng = Math.PI / spikes;
+            ctx.beginPath();
+            ctx.moveTo(sx + Math.cos(ang) * tip,            sy + Math.sin(ang) * tip);
+            ctx.lineTo(sx + Math.cos(ang + bAng) * base,    sy + Math.sin(ang + bAng) * base);
+            ctx.lineTo(sx + Math.cos(ang - bAng) * base,    sy + Math.sin(ang - bAng) * base);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+        // core
+        const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 1.1);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.5, '#99ddff');
+        grad.addColorStop(1,   '#2288bb');
+        ctx.shadowBlur  = 8;
+        ctx.fillStyle   = grad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 1.1, 0, Math.PI * 2);
+        ctx.fill();
+
+    } else if (el === 'flux') {
+        // Black hole — void centre, bright purple event horizon, rotating distortion arcs
+        const grad = ctx.createRadialGradient(sx, sy, r * 0.4, sx, sy, r * 3.2);
+        grad.addColorStop(0,   '#000000');
+        grad.addColorStop(0.35,'#330066');
+        grad.addColorStop(0.6, '#7722cc');
+        grad.addColorStop(0.85,'#9933ff');
+        grad.addColorStop(1,   'rgba(80,0,180,0)');
+        ctx.shadowColor = '#aa44ff';
+        ctx.shadowBlur  = 22;
+        ctx.fillStyle   = grad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        // event horizon ring
+        ctx.shadowBlur  = 10;
+        ctx.strokeStyle = '#dd88ff';
+        ctx.lineWidth   = 2;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 1.7, 0, Math.PI * 2);
+        ctx.stroke();
+        // rotating distortion arcs
+        for (let i = 0; i < 3; i++) {
+            const ang = f * 0.09 + i * (Math.PI * 2 / 3);
+            ctx.strokeStyle = `rgba(200,100,255,${0.35 + i * 0.12})`;
+            ctx.lineWidth   = 1;
+            ctx.shadowBlur  = 4;
+            ctx.beginPath();
+            ctx.arc(sx, sy, r * (2.1 + i * 0.35), ang, ang + Math.PI * 1.1);
+            ctx.stroke();
+        }
+        // pure black void centre
+        ctx.shadowBlur  = 0;
+        ctx.fillStyle   = '#000000';
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 0.75, 0, Math.PI * 2);
+        ctx.fill();
+
+    } else if (el === 'core') {
+        // Energy orb — teal with rotating hexagon shield ring
+        const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2.2);
+        grad.addColorStop(0,   '#ffffff');
+        grad.addColorStop(0.28,'#44ffdd');
+        grad.addColorStop(0.65,'#00aaaa');
+        grad.addColorStop(1,   'rgba(0,140,120,0)');
+        ctx.shadowColor = '#00ffcc';
+        ctx.shadowBlur  = 18;
+        ctx.fillStyle   = grad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        // rotating hexagon ring
+        ctx.shadowBlur  = 6;
+        ctx.strokeStyle = 'rgba(180,255,240,0.9)';
+        ctx.lineWidth   = 1.5;
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(f * 0.06);
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const ang = (i / 6) * Math.PI * 2;
+            i === 0
+                ? ctx.moveTo(Math.cos(ang) * r * 1.9, Math.sin(ang) * r * 1.9)
+                : ctx.lineTo(Math.cos(ang) * r * 1.9, Math.sin(ang) * r * 1.9);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+
+    } else if (el === 'toxic') {
+        // Toxic bubble — wobbly translucent green sphere with highlight
+        const wobble = 1 + Math.sin(f * 0.28) * 0.11;
+        const grad = ctx.createRadialGradient(
+            sx - r * 0.3, sy - r * 0.3, 0,
+            sx, sy, r * 2.3 * wobble
+        );
+        grad.addColorStop(0,    '#ddffdd');
+        grad.addColorStop(0.28, '#66ff44');
+        grad.addColorStop(0.6,  '#22aa00');
+        grad.addColorStop(0.85, '#115500');
+        grad.addColorStop(1,    'rgba(0,50,0,0)');
+        ctx.shadowColor = '#44ff00';
+        ctx.shadowBlur  = 15;
+        ctx.fillStyle   = grad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 2.3 * wobble, 0, Math.PI * 2);
+        ctx.fill();
+        // specular highlight
+        ctx.shadowBlur  = 0;
+        ctx.fillStyle   = 'rgba(200,255,200,0.35)';
+        ctx.beginPath();
+        ctx.arc(sx - r * 0.55, sy - r * 0.55, r * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+
+    } else {
+        // Fallback — plain glowing circle (predator shots, unknown element)
+        ctx.fillStyle  = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur  = 10;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────
 //  MAIN RENDER / GAME LOOP
 // ─────────────────────────────────────────────────────────
 function render() {
@@ -2437,20 +2636,12 @@ function render() {
     // ── FOLLOWER PROJECTILES ──
     followerProjectiles = followerProjectiles.filter(p => {
         p.x += p.vx; p.y += p.vy; p.life--;
+        p.frame = (p.frame || 0) + 1;
         // Screen coords
         const sx=(p.x-player.visualX-(p.y-player.visualY))*TILE_W+canvas.width/2;
         const sy=(p.x-player.visualX+(p.y-player.visualY))*TILE_H+canvas.height/2 - 40;
-        // Draw
-        ctx.save();
-        ctx.setTransform(1,0,0,1,0,0);
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.arc(sx, sy, p.radius||4, 0, Math.PI*2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.restore();
+        // Draw element-specific projectile
+        _drawFollowerProjectile(ctx, p, sx, sy);
         // Hit detection
         let hit = false;
         actors.forEach(a => {

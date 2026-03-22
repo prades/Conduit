@@ -354,7 +354,9 @@ function spawnFollowerProjectile(actor, target, color, damage, radius, onHit) {
         vx: (dx/dist)*speed, vy: (dy/dist)*speed,
         color, damage, radius: radius||4,
         life: Math.ceil(dist/speed) + 10,
-        source: actor, onHit
+        source: actor, onHit,
+        element: actor.element || null,
+        frame: 0
     });
 }
 
