@@ -342,17 +342,20 @@ const ELEMENT_ATTACKS = {
 //  FOLLOWER ULTIMATE ABILITIES
 //  Triggered by double-tap when ultimateCharge === 100
 // ─────────────────────────────────────────────────────────
-let activeMeteorCast = null; // { caster, target, frames, maxFrames }
+// activeFireEruption: { caster, target, tx, ty, frames, maxFrames, crackDirs[] }
+let activeFireEruption = null;
 
 const FOLLOWER_ULTIMATES = {
 
-    // ── FIRE: Meteor Burst ────────────────────────────────
-    // 2-second cast — map darkens, reticle locks the strongest enemy,
-    // then a meteor strikes for massive damage and leaves a flaming crater.
+    // ── FIRE: Volcanic Eruption ───────────────────────────
+    // 3-phase 3D eruption — ground cracks and glows (charge),
+    // an isometric fire column erupts and rises (eruption),
+    // a crown burst explodes at the apex (crown), then
+    // the ground detonates with a massive shockwave + crater.
     fire: {
-        name: "Meteor Burst",
+        name: "Volcanic Eruption",
         execute(actor) {
-            if (actor.dead || activeMeteorCast) return;
+            if (actor.dead || activeFireEruption) return;
             const actorZone = getZoneIndex(Math.floor(actor.x));
             let target = null, bestHP = -1;
             actors.forEach(a => {
@@ -360,13 +363,26 @@ const FOLLOWER_ULTIMATES = {
                     if (getZoneIndex(Math.floor(a.x))===actorZone && a.health>bestHP) { bestHP=a.health; target=a; }
                 }
             });
-            if (!target) return; // no enemies — don't consume charge
+            if (!target) return;
             actor.ultimateCharge = 0;
-            shake = Math.max(shake, 4);
-            activeMeteorCast = { caster:actor, target, frames:0, maxFrames:120 };
+            shake = Math.max(shake, 3);
+            // Pre-compute deterministic crack directions from target position
+            const seed = (Math.floor(target.x)*7 + Math.floor(target.y)*13) | 0;
+            const crackDirs = [];
+            for (let _i = 0; _i < 7; _i++) {
+                const base  = (_i / 7) * Math.PI * 2;
+                const jit   = (((seed * (_i+1) * 0x9e37) & 0xffff) / 0xffff) * 0.45 - 0.22;
+                crackDirs.push({ a: base + jit });
+            }
+            activeFireEruption = {
+                caster: actor, target,
+                tx: target.x, ty: target.y,
+                frames: 0, maxFrames: 138,
+                crackDirs
+            };
             const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
             const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
-            floatingTexts.push({x:_px,y:_py-80,text:"☄ METEOR BURST",color:"#ff6600",life:120,vy:-0.5});
+            floatingTexts.push({x:_px,y:_py-80,text:"VOLCANIC ERUPTION",color:"#ff4400",life:138,vy:-0.45});
         }
     },
 
@@ -793,43 +809,48 @@ function spawnElementEffect(effect) {
 
 function updateElementEffects() {
 
-    // ── METEOR BURST CAST TICK ──────────────────────────────
-    if (activeMeteorCast) {
-        activeMeteorCast.frames++;
-        // Re-acquire target if original died during the 2 s cast
-        if (!activeMeteorCast.target || activeMeteorCast.target.dead) {
-            const actorZone = getZoneIndex(Math.floor(activeMeteorCast.caster.x));
-            let best=null, bestHP=-1;
+    // ── VOLCANIC ERUPTION TICK ──────────────────────────────
+    if (activeFireEruption) {
+        const afe = activeFireEruption;
+        afe.frames++;
+        // During charge phase track live target so position locks at eruption start
+        if (afe.frames < 50) {
+            if (!afe.target || afe.target.dead) {
+                const actorZone = getZoneIndex(Math.floor(afe.caster.x));
+                let best=null, bestHP=-1;
+                actors.forEach(a=>{
+                    if((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead)
+                        if(getZoneIndex(Math.floor(a.x))===actorZone&&a.health>bestHP){bestHP=a.health;best=a;}
+                });
+                afe.target = best;
+            }
+            if (afe.target && !afe.target.dead) { afe.tx=afe.target.x; afe.ty=afe.target.y; }
+        }
+        // Progressive rumble as column rises
+        if (afe.frames >= 44 && afe.frames < 56) shake = Math.max(shake, 4 + (afe.frames-44));
+        if (afe.frames >= 56 && afe.frames < 110) shake = Math.max(shake, 2);
+        // Detonate on final frame
+        if (afe.frames >= afe.maxFrames) {
+            const {caster, target, tx, ty} = afe;
+            activeFireEruption = null;
+            const dmg = (caster.stats?.specialAttack||10) * 3.5;
+            shake = Math.max(shake, 24);
             actors.forEach(a=>{
                 if((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead){
-                    if(getZoneIndex(Math.floor(a.x))===actorZone&&a.health>bestHP){bestHP=a.health;best=a;}
+                    const d=Math.hypot(a.x-tx, a.y-ty);
+                    if(d<=5.5){
+                        applyElementalDamage(a, dmg*(1-d*0.1), caster, "fire");
+                        a.burning=400; a.burnDamage=dmg*0.04;
+                    }
                 }
             });
-            activeMeteorCast.target = best;
-        }
-        if (activeMeteorCast.frames >= activeMeteorCast.maxFrames) {
-            const {caster, target} = activeMeteorCast;
-            activeMeteorCast = null;
-            if (target && !target.dead) {
-                const tx=target.x, ty=target.y;
-                const dmg = (caster.stats?.specialAttack||10) * 3.0;
-                shake = Math.max(shake, 18);
-                actors.forEach(a=>{
-                    if((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead){
-                        const d=Math.hypot(a.x-tx, a.y-ty);
-                        if(d<=5.0){
-                            applyElementalDamage(a, dmg*(1-d*0.12), caster, "fire");
-                            a.burning=360; a.burnDamage=dmg*0.04;
-                        }
-                    }
-                });
-                spawnElementEffect({type:"meteor",   x:tx,y:ty,color:"#ffaa00",radius:5.0,life:45,element:"fire"});
-                spawnElementEffect({type:"ring",     x:tx,y:ty,color:"#ff3300",radius:6.0,life:70,element:"fire"});
-                spawnElementEffect({type:"flameCrater",x:tx,y:ty,radius:2.5,color:"#ff4400",life:600,maxLife:600,element:"fire",tickDamage:dmg*0.08});
-                const _tpx=(tx-player.visualX-(ty-player.visualY))*TILE_W+canvas.width/2;
-                const _tpy=(tx-player.visualX+(ty-player.visualY))*TILE_H+canvas.height/2;
-                floatingTexts.push({x:_tpx,y:_tpy-60,text:"IMPACT!",color:"#ff2200",life:60,vy:-0.8});
-            }
+            // 3D ground shockwave rings
+            spawnElementEffect({type:"fireShockwave", x:tx,y:ty, life:38, maxLife:38, radius:6.5, element:"fire"});
+            spawnElementEffect({type:"fireShockwave", x:tx,y:ty, life:55, maxLife:55, radius:10.0, element:"fire"});
+            spawnElementEffect({type:"flameCrater",   x:tx,y:ty, radius:3.0, color:"#ff4400", life:660, maxLife:660, element:"fire", tickDamage:dmg*0.06});
+            const _tpx=(tx-player.visualX-(ty-player.visualY))*TILE_W+canvas.width/2;
+            const _tpy=(tx-player.visualX+(ty-player.visualY))*TILE_H+canvas.height/2;
+            floatingTexts.push({x:_tpx,y:_tpy-60,text:"ERUPTION!",color:"#ff2200",life:65,vy:-0.9});
         }
     }
 
@@ -878,39 +899,224 @@ function updateElementEffects() {
 
 function drawElementEffects() {
 
-    // ── METEOR BURST CAST SHADOW + RETICLE ──────────────────
-    if (activeMeteorCast) {
-        const castPct = activeMeteorCast.frames / activeMeteorCast.maxFrames;
+    // ── VOLCANIC ERUPTION — 3D DRAW ─────────────────────────
+    if (activeFireEruption) {
+        const afe = activeFireEruption;
+        const { frames, maxFrames, tx, ty } = afe;
+        // World → screen for target
+        const tpx = (tx - player.visualX - (ty - player.visualY)) * TILE_W + canvas.width  / 2;
+        const tpy = (tx - player.visualX + (ty - player.visualY)) * TILE_H + canvas.height / 2;
+
+        // ── PHASE CONSTANTS ──────────────────────────────────
+        const chargeEnd  = 50;   // 0–50  : ground charge
+        const eruptStart = 50;   // 50–108: column rises
+        const eruptEnd   = 108;
+        const crownStart = 108;  // 108–130: crown / max height
+        const collapseStart = 120; // column starts collapsing
+
+        // ── FULL-SCREEN VIGNETTE ─────────────────────────────
+        {
+            const vigA = frames < chargeEnd
+                ? (frames / chargeEnd) * 0.42
+                : 0.42 - ((frames - chargeEnd) / (maxFrames - chargeEnd)) * 0.42;
+            ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+            ctx.fillStyle = `rgba(55,4,0,${vigA})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+
         ctx.save();
-        ctx.setTransform(1,0,0,1,0,0);
-        ctx.fillStyle = `rgba(20,5,0,${castPct * 0.55})`;
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        if (activeMeteorCast.target && !activeMeteorCast.target.dead) {
-            const t = activeMeteorCast.target;
-            const tpx=(t.x-player.visualX-(t.y-player.visualY))*TILE_W+canvas.width/2;
-            const tpy=(t.x-player.visualX+(t.y-player.visualY))*TILE_H+canvas.height/2;
-            const blink = Math.floor(activeMeteorCast.frames/8)%2===0;
-            ctx.strokeStyle = blink ? "#ff6600" : "#ff2200";
-            ctx.lineWidth = 2 + castPct * 3;
-            ctx.globalAlpha = 0.45 + 0.55*castPct;
-            ctx.shadowColor="#ff4400"; ctx.shadowBlur=14;
-            // Expanding reticle ring
+        ctx.shadowBlur = 0;
+
+        // ── GROUND GLOW (iso ellipse, ground plane) ──────────
+        {
+            const glowProg = frames < chargeEnd ? frames / chargeEnd : 1;
+            const gR = (0.6 + glowProg * 2.8) * TILE_W;
+            const gA = glowProg * 0.8;
+            const gGrad = ctx.createRadialGradient(tpx, tpy, 0, tpx, tpy, gR);
+            gGrad.addColorStop(0,   `rgba(255,170,20,${gA})`);
+            gGrad.addColorStop(0.45,`rgba(220,50,0,${gA*0.5})`);
+            gGrad.addColorStop(1,   `rgba(100,8,0,0)`);
+            ctx.fillStyle = gGrad;
+            ctx.globalAlpha = 1;
             ctx.beginPath();
-            ctx.arc(tpx, tpy-30, 32 + castPct*20, 0, Math.PI*2);
-            ctx.stroke();
-            // Crosshairs
-            const ch = 50 + castPct*20;
-            ctx.beginPath();
-            ctx.moveTo(tpx-ch, tpy-30); ctx.lineTo(tpx+ch, tpy-30);
-            ctx.moveTo(tpx,    tpy-30-ch); ctx.lineTo(tpx, tpy-30+ch);
-            ctx.stroke();
-            // Impact radius preview
-            ctx.globalAlpha = 0.07 * castPct;
-            ctx.fillStyle = "#ff2200";
-            ctx.beginPath();
-            ctx.arc(tpx, tpy-30, 5.0*TILE_W*0.5, 0, Math.PI*2);
+            ctx.ellipse(tpx, tpy, gR, gR * 0.5, 0, 0, Math.PI * 2);
             ctx.fill();
         }
+
+        // ── GROUND CRACKS (iso floor lines) ─────────────────
+        if (frames < eruptEnd && afe.crackDirs) {
+            const crackProg = Math.min(1, frames / 44);
+            const fadeOut   = frames > 80 ? Math.max(0, 1 - (frames - 80) / 28) : 1;
+            const maxCrackR = 4.2 * TILE_W;
+            ctx.lineWidth = 1.8; ctx.shadowBlur = 5;
+            afe.crackDirs.forEach(c => {
+                // World-space direction → iso screen offset
+                const cDX = (Math.cos(c.a) - Math.sin(c.a)) * TILE_W;
+                const cDY = (Math.cos(c.a) + Math.sin(c.a)) * TILE_H;
+                const len  = crackProg * maxCrackR;
+                ctx.globalAlpha  = crackProg * fadeOut * 0.75;
+                ctx.strokeStyle  = "#ff5500";
+                ctx.shadowColor  = "#ff2200";
+                ctx.beginPath();
+                ctx.moveTo(tpx, tpy);
+                ctx.lineTo(tpx + cDX * len / maxCrackR, tpy + cDY * len / maxCrackR);
+                ctx.stroke();
+                // Side branch at 60 % of crack length
+                if (crackProg > 0.45) {
+                    const bProg = (crackProg - 0.45) / 0.55;
+                    ctx.globalAlpha = bProg * fadeOut * 0.42;
+                    const bScale = 0.42;
+                    const bOX = (cDX * 0.7 + cDY * 0.35) * bScale;
+                    const bOY = (cDY * 0.7 - cDX * 0.35) * bScale;
+                    ctx.beginPath();
+                    ctx.moveTo(tpx + cDX * 0.60, tpy + cDY * 0.60);
+                    ctx.lineTo(tpx + cDX * 0.60 + bOX * len / maxCrackR,
+                               tpy + cDY * 0.60 + bOY * len / maxCrackR);
+                    ctx.stroke();
+                }
+            });
+            ctx.shadowBlur = 0;
+        }
+
+        // ── FIRE COLUMN (isometric 3D slices) ────────────────
+        if (frames >= eruptStart - 5) {
+            const maxColH = 210; // screen pixels tall
+            const baseRW  = 1.6 * TILE_W * 0.5; // base ellipse semi-width
+            const growT   = Math.min(1, (frames - (eruptStart-5)) / 62);
+            const shrinkT = frames > collapseStart
+                ? Math.max(0, 1 - (frames - collapseStart) / 18)
+                : 1;
+            const colH    = maxColH * growT * shrinkT;
+
+            if (colH > 3) {
+                const NUM_SLICES = 22;
+                // Draw top-to-bottom so lower slices paint over upper (painter's algo → 3D look)
+                for (let s = 0; s <= NUM_SLICES; s++) {
+                    const t      = s / NUM_SLICES;      // 0 = top, 1 = base
+                    const sliceY = tpy - (1 - t) * colH;
+                    const taper  = 0.10 + t * 0.90;
+                    const rw     = baseRW * taper;
+                    const rh     = rw * 0.45;            // iso floor compression
+                    // Heat map: yellow-white at top → orange → deep red at base
+                    const hue   = Math.round(12 + (1 - t) * 44);  // 12 deep-orange → 56 yellow
+                    const light = Math.round(42 + (1 - t) * 44);  // 42% base → 86% top
+                    const flk   = Math.sin(frame * 0.28 + t * 4.2 + s * 0.7) * 3;
+                    ctx.globalAlpha = 0.60 + (1 - t) * 0.36;
+                    ctx.fillStyle   = `hsl(${hue + flk},100%,${light}%)`;
+                    ctx.shadowColor = `hsl(${hue + flk},100%,${light + 10}%)`;
+                    ctx.shadowBlur  = 6 + (1 - t) * 14;
+                    ctx.beginPath();
+                    ctx.ellipse(tpx, sliceY, rw, rh, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+
+                // Bright vertical core — tapered trapezoid
+                const coreGrad = ctx.createLinearGradient(tpx, tpy, tpx, tpy - colH);
+                coreGrad.addColorStop(0,    "rgba(160,20,0,0.85)");
+                coreGrad.addColorStop(0.30, "rgba(255,90,0,0.70)");
+                coreGrad.addColorStop(0.65, "rgba(255,190,60,0.75)");
+                coreGrad.addColorStop(1,    "rgba(255,255,200,0.92)");
+                const cW = baseRW * 0.22;
+                ctx.globalAlpha = 0.65;
+                ctx.fillStyle   = coreGrad;
+                ctx.beginPath();
+                ctx.moveTo(tpx - cW,        tpy);
+                ctx.lineTo(tpx + cW,        tpy);
+                ctx.lineTo(tpx + cW * 0.06, tpy - colH);
+                ctx.lineTo(tpx - cW * 0.06, tpy - colH);
+                ctx.closePath();
+                ctx.fill();
+
+                // Animated heat rings spiraling up the column
+                const NUM_RINGS = 5;
+                for (let r = 0; r < NUM_RINGS; r++) {
+                    const rPhase = ((frame * 0.11 + r * (1 / NUM_RINGS)) % 1.0);
+                    const rH     = rPhase * colH;
+                    const rY     = tpy - rH;
+                    const rTaper = 0.10 + (1 - rPhase) * 0.90;
+                    const rW2    = baseRW * rTaper * 1.06;
+                    const rH2    = rW2 * 0.48;
+                    const rAlpha = Math.sin(rPhase * Math.PI) * 0.7; // fade at top/bottom
+                    if (rAlpha > 0.05) {
+                        ctx.globalAlpha = rAlpha;
+                        ctx.strokeStyle = `hsl(${50 - rPhase * 20},100%,80%)`;
+                        ctx.lineWidth   = 2.5 - rPhase * 1.5;
+                        ctx.shadowColor = "#ffcc44"; ctx.shadowBlur = 10;
+                        ctx.beginPath();
+                        ctx.ellipse(tpx, rY, rW2, rH2, 0, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    }
+                }
+
+                // Crown burst at column apex (visible when column is >70% grown)
+                if (growT > 0.68) {
+                    const crownFade = Math.min(1, (growT - 0.68) / 0.32) * shrinkT;
+                    const crownPulse = 0.78 + 0.22 * Math.sin(frame * 0.22);
+                    const crownRW    = baseRW * (2.0 + growT * 0.6) * crownPulse;
+                    const crownGrad  = ctx.createRadialGradient(
+                        tpx, tpy - colH, 0,
+                        tpx, tpy - colH, crownRW);
+                    crownGrad.addColorStop(0,    "rgba(255,255,220,0.95)");
+                    crownGrad.addColorStop(0.35, "rgba(255,160,10,0.70)");
+                    crownGrad.addColorStop(1,    "rgba(255,40,0,0)");
+                    ctx.globalAlpha = crownFade;
+                    ctx.fillStyle   = crownGrad;
+                    ctx.shadowColor = "#ffdd00"; ctx.shadowBlur = 35;
+                    ctx.beginPath();
+                    ctx.ellipse(tpx, tpy - colH, crownRW, crownRW * 0.38, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    // Crown spike rays
+                    const NUM_RAYS = 8;
+                    ctx.lineWidth = 2;
+                    for (let ri = 0; ri < NUM_RAYS; ri++) {
+                        const rayA  = (ri / NUM_RAYS) * Math.PI * 2 + frame * 0.06;
+                        const rayR0 = crownRW * 0.55;
+                        const rayR1 = crownRW * (1.0 + Math.sin(frame * 0.18 + ri) * 0.25);
+                        ctx.globalAlpha = crownFade * (0.4 + Math.sin(frame * 0.2 + ri * 1.3) * 0.3);
+                        ctx.strokeStyle = `hsl(${40 + ri * 5},100%,75%)`;
+                        ctx.shadowColor = "#ffcc00"; ctx.shadowBlur = 8;
+                        ctx.beginPath();
+                        ctx.moveTo(tpx + Math.cos(rayA) * rayR0,
+                                   tpy - colH + Math.sin(rayA) * rayR0 * 0.38);
+                        ctx.lineTo(tpx + Math.cos(rayA) * rayR1,
+                                   tpy - colH + Math.sin(rayA) * rayR1 * 0.38);
+                        ctx.stroke();
+                    }
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            // Procedural ember particles (screen-space, computed from frame seed)
+            if (colH > 20) {
+                const EMBERS = 14;
+                for (let ei = 0; ei < EMBERS; ei++) {
+                    const seed2 = ei * 0x9e37;
+                    const worldA = (ei / EMBERS) * Math.PI * 2 + frame * 0.045;
+                    const spd    = 0.9 + ((seed2 >> 3) & 7) * 0.22;
+                    const cyLen  = 28 + (seed2 & 15);
+                    const cyT    = ((frame + (seed2 & 31)) % cyLen) / cyLen;  // 0→1
+                    const ewx    = tx + Math.cos(worldA) * spd * cyT * 3.8;
+                    const ewy    = ty + Math.sin(worldA) * spd * cyT * 3.8;
+                    const eScrZ  = Math.sin(cyT * Math.PI) * (50 + spd * 70);  // screen-px height
+                    const epx2   = (ewx - player.visualX - (ewy - player.visualY)) * TILE_W + canvas.width  / 2;
+                    const epy2   = (ewx - player.visualX + (ewy - player.visualY)) * TILE_H + canvas.height / 2;
+                    const eSize  = 1.8 + ((seed2 >> 9) & 3) * 0.6;
+                    const eBr    = 60 + ((seed2 >> 13) & 3) * 9;
+                    ctx.globalAlpha = (1 - cyT) * 0.88 * growT;
+                    ctx.fillStyle   = `hsl(${18 + cyT * 32},100%,${eBr}%)`;
+                    ctx.shadowColor = "#ff5500"; ctx.shadowBlur = 7;
+                    ctx.beginPath();
+                    ctx.arc(epx2, epy2 - eScrZ, eSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+            }
+        }
+
         ctx.restore();
     }
 
@@ -1040,6 +1246,33 @@ function drawElementEffects() {
                     ctx.arc(px, py - 15, r, 0, Math.PI * 2);
                     ctx.stroke();
                 }
+                break;
+            }
+            case "fireShockwave": {
+                // Expanding isometric ground-plane ellipse — sits flat on the floor
+                const prog  = 1 - e.life / e.maxLife;       // 0 → 1 as ring expands
+                const rw    = prog * e.radius * TILE_W;
+                const rh    = rw * 0.5;                      // iso floor compression
+                const sAlpha = (1 - prog) * 0.85;
+                // Outer stroke ring
+                ctx.strokeStyle = `hsl(${18 + prog*20},100%,55%)`;
+                ctx.lineWidth   = 3.5 - prog * 2.5;
+                ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 16;
+                ctx.globalAlpha = sAlpha;
+                ctx.beginPath();
+                ctx.ellipse(px, py - 10, rw, rh, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                // Radial fill gradient (lava-glow wash)
+                const sfGrad = ctx.createRadialGradient(px, py - 10, 0, px, py - 10, rw);
+                sfGrad.addColorStop(0,   `rgba(255,180,10,${sAlpha * 0.40})`);
+                sfGrad.addColorStop(0.55,`rgba(220,50,0,${sAlpha * 0.18})`);
+                sfGrad.addColorStop(1,   "rgba(160,15,0,0)");
+                ctx.fillStyle   = sfGrad;
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.ellipse(px, py - 10, rw, rh, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
                 break;
             }
         }

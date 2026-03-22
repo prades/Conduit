@@ -294,6 +294,7 @@ function nextWave() {
         // ── Clear leftover game objects from previous wave ──
         projectiles=[]; fragments=[]; smoke=[]; followerProjectiles=[];
         elementEffects=[]; floatingTexts=[]; groundItems=[]; traps=[];
+        if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
         shards=[];
 
         // ── Reset player health ──
@@ -412,6 +413,7 @@ function restartGame() {
     world=[];actors=[];followers=[];capturedNodes=[];signalTowers=[];
     ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
     projectiles=[];fragments=[];smoke=[];shards=[];elementEffects=[];floatingTexts=[];followerProjectiles=[];clearDNA();
+    if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     pendingPillarDestruction=[];respawnQueue=[];
     frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();clearPermUpgrades();
     permUpgrades=new Set(); pylonMaxHPBonus=0; pylonRangeBonus=0; pylonFireRateBonus=0;
