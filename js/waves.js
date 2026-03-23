@@ -463,5 +463,4 @@ function restartGame() {
     spawnHazardsForDay();
     document.getElementById("overlay").classList.remove("active");
     waveUI.textContent = "Best Zone: 0 — explore panels";
-    requestAnimationFrame(render);
 }
