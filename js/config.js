@@ -214,6 +214,10 @@ let crystalCloneSort = "species";  // "species"|"combat"|"defense"|"hp"|"special
 let crystalModSlider = 0;          // 0.0 = all elements  →  1.0 = mono
 let activeCrystalBuild = null;     // null | "ghostphage"
 
+// ── SETTINGS PANEL (canvas-drawn) ─────────────────────────
+let settingsPanelOpen    = false;
+let settingsResetConfirm = false;   // true = showing "ARE YOU SURE?" step
+
 // ── PYLON BUILD CONFIRMATION ───────────────────────────────
 let pylonConfirmOpen   = false;
 let pylonConfirmEl     = null;    // element object to confirm

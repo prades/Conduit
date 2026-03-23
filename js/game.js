@@ -2692,6 +2692,8 @@ function render() {
     drawTraps();
     drawShopButton();
     drawCampButton();
+    drawSettingsButton();
+    drawSettingsPanel();
     drawCampMenu();
     drawTrapPicker();
     updatePreview();

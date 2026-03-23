@@ -88,7 +88,7 @@ canvas.addEventListener('pointerdown', e=>{
     [pressX,pressY]=toCanvas(e.clientX,e.clientY); pressStartTime=performance.now();
 
     // Canvas overlay panels — absorb pointerdown so no game action triggers
-    if (elementPickerOpen || infoPanelOpen || campMenuOpen || trapPickerOpen) return;
+    if (elementPickerOpen || infoPanelOpen || campMenuOpen || trapPickerOpen || settingsPanelOpen) return;
 
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
     if (commandPendingTap) return;
@@ -163,6 +163,10 @@ canvas.addEventListener('pointerup', e=>{
     // CAMP button tap
     if (!touchMoved && Math.hypot(upX-_CAMPBTN.x, upY-_CAMPBTN.y) < _CAMPBTN.r+8) {
         campMenuOpen=!campMenuOpen; isPressing=false; return;
+    }
+    // SETTINGS button tap
+    if (!touchMoved && Math.hypot(upX-_SETTINGSBTN.x, upY-_SETTINGSBTN.y) < _SETTINGSBTN.r+8) {
+        settingsPanelOpen=!settingsPanelOpen; settingsResetConfirm=false; isPressing=false; return;
     }
 
     // Home node tap — opens camp building menu

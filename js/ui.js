@@ -518,7 +518,131 @@ function handleOverlayPanelTap(tx, ty) {
     if (pylonConfirmOpen)  return _handlePylonConfirmTap(tx, ty);
     if (elementPickerOpen) return _handleElementPickerTap(tx, ty);
     if (infoPanelOpen)     return _handleInfoPanelTap(tx, ty);
+    if (settingsPanelOpen) return _handleSettingsPanelTap(tx, ty);
     return false;
+}
+
+// ─────────────────────────────────────────────────────────
+//  SETTINGS PANEL  (canvas-drawn)
+// ─────────────────────────────────────────────────────────
+const _SP_W = 260, _SP_H = 200;
+
+function drawSettingsPanel() {
+    if (!settingsPanelOpen) return;
+    const pw = _SP_W, ph = _SP_H;
+    const px = Math.round((canvas.width  - pw) / 2);
+    const py = Math.round((canvas.height - ph) / 2);
+
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Backdrop blur overlay
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Panel background + border
+    ctx.fillStyle   = "rgba(4,14,10,0.97)";
+    ctx.strokeStyle = "#555"; ctx.lineWidth = 2;
+    _epRoundRect(px, py, pw, ph, 10);
+    ctx.fill(); ctx.stroke();
+
+    // Gear icon row
+    ctx.fillStyle = "#888"; ctx.font = "18px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("⚙", px + pw/2, py + 28);
+
+    // Title
+    ctx.fillStyle = "#aaa"; ctx.font = "bold 12px monospace";
+    ctx.fillText("SETTINGS", px + pw/2, py + 52);
+
+    // Divider
+    ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px + 16, py + 66); ctx.lineTo(px + pw - 16, py + 66); ctx.stroke();
+
+    if (!settingsResetConfirm) {
+        // ── RESET GAME button ──
+        const btnY = py + 82;
+        ctx.fillStyle = "rgba(30,8,8,0.9)";
+        ctx.strokeStyle = "#622"; ctx.lineWidth = 1.5;
+        _epRoundRect(px + 20, btnY, pw - 40, 36, 6);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#c44"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("RESET GAME", px + pw/2, btnY + 18);
+        ctx.fillStyle = "#633"; ctx.font = "9px monospace";
+        ctx.fillText("clears all progress", px + pw/2, btnY + 30);
+
+        // ── CLOSE button ──
+        const closeY = py + 148;
+        ctx.fillStyle = "rgba(10,20,14,0.9)";
+        ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
+        _epRoundRect(px + 20, closeY, pw - 40, 30, 6);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#555"; ctx.font = "11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("CLOSE", px + pw/2, closeY + 15);
+    } else {
+        // ── CONFIRMATION step ──
+        ctx.fillStyle = "#f44"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("RESET ALL PROGRESS?", px + pw/2, py + 86);
+        ctx.fillStyle = "#744"; ctx.font = "9px monospace";
+        ctx.fillText("This cannot be undone.", px + pw/2, py + 102);
+
+        // YES button
+        const yesY = py + 116;
+        ctx.fillStyle = "rgba(50,0,0,0.95)";
+        ctx.strokeStyle = "#f44"; ctx.lineWidth = 2;
+        _epRoundRect(px + 20, yesY, pw - 40, 30, 6);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#f44"; ctx.font = "bold 12px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("YES — RESET", px + pw/2, yesY + 15);
+
+        // CANCEL button
+        const cancelY = py + 154;
+        ctx.fillStyle = "rgba(10,20,14,0.9)";
+        ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
+        _epRoundRect(px + 20, cancelY, pw - 40, 28, 6);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#555"; ctx.font = "11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("CANCEL", px + pw/2, cancelY + 14);
+    }
+
+    ctx.restore();
+}
+
+function _handleSettingsPanelTap(tx, ty) {
+    if (!settingsPanelOpen) return false;
+    const pw = _SP_W, ph = _SP_H;
+    const px = Math.round((canvas.width  - pw) / 2);
+    const py = Math.round((canvas.height - ph) / 2);
+
+    // Tap outside = close
+    if (tx < px || tx > px + pw || ty < py || ty > py + ph) {
+        settingsPanelOpen = false; settingsResetConfirm = false;
+        return true;
+    }
+
+    if (!settingsResetConfirm) {
+        const btnY  = py + 82;
+        const closeY = py + 148;
+        if (ty >= btnY && ty < btnY + 36) {
+            settingsResetConfirm = true;
+            return true;
+        }
+        if (ty >= closeY && ty < closeY + 30) {
+            settingsPanelOpen = false; settingsResetConfirm = false;
+            return true;
+        }
+    } else {
+        const yesY    = py + 116;
+        const cancelY = py + 154;
+        if (ty >= yesY && ty < yesY + 30) {
+            settingsPanelOpen = false; settingsResetConfirm = false;
+            restartGame();
+            return true;
+        }
+        if (ty >= cancelY && ty < cancelY + 28) {
+            settingsResetConfirm = false;
+            return true;
+        }
+    }
+    return true; // absorb all taps while open
 }
 
 // ─────────────────────────────────────────────────────────

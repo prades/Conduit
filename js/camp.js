@@ -301,6 +301,38 @@ function drawCampButton() {
     ctx.restore();
 }
 
+// ── SETTINGS BUTTON (canvas-drawn, bottom-left above shop) ──
+const _SETTINGSBTN = { x: 22, y: 0, r: 20 };
+
+function drawSettingsButton() {
+    _SETTINGSBTN.y = canvas.height - 150 - (SAFE_BOTTOM || 0);
+    const { x, y, r } = _SETTINGSBTN;
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    ctx.fillStyle   = settingsPanelOpen ? "rgba(80,80,80,0.25)" : "rgba(15,15,15,0.88)";
+    ctx.strokeStyle = settingsPanelOpen ? "#aaa" : "rgba(100,100,100,0.5)";
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Gear icon
+    ctx.fillStyle    = settingsPanelOpen ? "#ccc" : "rgba(140,140,140,0.8)";
+    ctx.font         = "14px monospace";
+    ctx.textAlign    = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("⚙", x, y);
+
+    // Label
+    ctx.fillStyle    = settingsPanelOpen ? "#ccc" : "rgba(120,120,120,0.7)";
+    ctx.font         = "bold 8px monospace";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("SET", x, y + r + 10);
+    ctx.textBaseline = "alphabetic";
+
+    ctx.restore();
+}
+
 // ── HOME NODE — central camp hub structure ─────────────────
 // Drawn over tile x=-1, y=2 (between crystal and camp buildings).
 // Tapping it opens the camp building menu.
