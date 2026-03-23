@@ -12,6 +12,10 @@ function triggerAlarm(type, sx, sy) {
     alertSource = { x: sx, y: sy };
     alertZone   = getZoneIndex(Math.floor(sx));
 
+    // Each alarm increases the wave number (escalating difficulty)
+    gameState.nightNumber++;
+    saveGameState();
+
     // If not already in night/alert phase, initialise kill quota
     if (gameState.phase !== "night") {
         gameState.phase = "night";
@@ -23,8 +27,9 @@ function triggerAlarm(type, sx, sy) {
     // Announce alarm type
     const labels = { proximity:"PROXIMITY ALARM", zone:"ZONE ALARM", facility:"FACILITY BREACH" };
     const label  = labels[type] || "INTRUDER ALERT";
+    const _floatZone = getZoneIndex(Math.floor(sx));
     floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80,
-        text:"⚠ " + label + " ⚠", color:"#ff2200", life:180, vy:-0.25, size:16 });
+        text:"⚠ ZONE " + _floatZone + " " + label + " ⚠", color:"#ff2200", life:180, vy:-0.25, size:16 });
 
     // Make affected predators hostile immediately
     // Predators from zones HIGHER than the alarm zone are never turned hostile — they remain wanderers.
@@ -49,7 +54,7 @@ function triggerAlarm(type, sx, sy) {
     });
 
     const _alarmZone = getZoneIndex(Math.floor(sx));
-    waveUI.textContent = "⚠ ZONE " + _alarmZone + " " + label + " — Kill 0/" + nightEnemiesTarget;
+    waveUI.textContent = "⚠ ZONE " + _alarmZone + " " + label + " [Wave " + gameState.nightNumber + "] — Kill " + nightKillCount + "/" + nightEnemiesTarget;
 }
 
 // ── RESET PANELS — deactivate all panels, diminish shard rewards, reshuffle decoy ──

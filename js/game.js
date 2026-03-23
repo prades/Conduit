@@ -535,8 +535,9 @@ function render() {
                     zoneRespawnTimers[z]--;
                 } else {
                     spawnPredatorForZone(z);
-                    // Alarm zone: stagger spawns; wanderer zones: slow respawn
-                    zoneRespawnTimers[z] = isAlarmZone ? 90 : 240;
+                    // Alarm zone: stagger spawns scaled by wave number (higher wave = faster spawns); wanderer zones: slow respawn
+                    const _spawnDelay = isAlarmZone ? Math.max(15, 90 - (gameState.nightNumber - 1) * 5) : 240;
+                    zoneRespawnTimers[z] = _spawnDelay;
                 }
             }
         }
