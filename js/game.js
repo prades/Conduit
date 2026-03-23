@@ -448,6 +448,8 @@ function render() {
     if (gameState.phase === "day" || gameState.phase === "night") {
         const hostileZoneCount = Math.min(gameState.nightNumber, 5);
         for (let z = 1; z <= hostileZoneCount; z++) {
+            // During an alarm, only spawn new predators from the triggered zone (facility alarms affect all zones)
+            if (alertActive && alertType !== "facility" && z !== alertZone) continue;
             const existing = zonePredators[z];
             if (!existing || existing.dead) {
                 const nest = _nestCache.find(t => t.nestZone === z);
