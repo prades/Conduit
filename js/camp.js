@@ -569,13 +569,13 @@ function _drawCampBuilding3D(bldg, tcx, tcy, amb) {
 
     // Label above structure
     ctx.fillStyle = built
-        ? `rgba(0,255,128,${0.95*amb})`
-        : `rgba(0,180,80,${0.65*amb})`;
+        ? `rgba(220,170,40,${0.95*amb})`
+        : `rgba(140,115,50,${0.65*amb})`;
     ctx.font      = 'bold 7px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(bldg.label.split(' ')[0].toUpperCase(), tcx, tcy - 48);
     if (!built) {
-        ctx.fillStyle = `rgba(0,140,60,${0.55*amb})`;
+        ctx.fillStyle = `rgba(110,95,42,${0.55*amb})`;
         ctx.font      = '7px monospace';
         ctx.fillText(bldg.cost + 'S', tcx, tcy - 39);
     }
@@ -609,262 +609,314 @@ function _cBox(cx, cy, hw, h, cTop, cLeft, cRight, cEdge) {
     if (cEdge) { ctx.strokeStyle = cEdge; ctx.stroke(); }
 }
 
-// ── Command Node: neural server rack ──────────────────────────
-// a = effective ambiance (amb for built, amb*0.55 for ghost); pulse for glow only
+// ── Shared gunmetal palette ──────────────────────────────────
+// All buildings use the same dark gunmetal colour set; only glow accents differ.
+function _gmTop(a)  { return `rgb(${(42*a)|0},${(44*a)|0},${(51*a)|0})`; }
+function _gmLeft(a) { return `rgb(${(34*a)|0},${(36*a)|0},${(42*a)|0})`; }
+function _gmRight(a){ return `rgb(${(26*a)|0},${(28*a)|0},${(33*a)|0})`; }
+function _gmEdge(a) { return `rgba(${(58*a)|0},${(62*a)|0},${(72*a)|0},0.7)`; }
+// Shared rivet helper
+function _rivet(x, y, a) {
+    ctx.fillStyle = `rgba(${(78*a)|0},${(73*a)|0},${(58*a)|0},0.95)`;
+    ctx.beginPath(); ctx.arc(x, y, 1.7, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = `rgba(${(50*a)|0},${(46*a)|0},${(35*a)|0},0.8)`;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(x-1.3,y); ctx.lineTo(x+1.3,y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x,y-1.3); ctx.lineTo(x,y+1.3); ctx.stroke();
+}
+// Hazard stripe clip helper — fills diagonal stripes inside the current path
+function _hazardStripes(a) {
+    ctx.lineWidth = 3.2;
+    for (let i = -4; i <= 8; i++) {
+        ctx.strokeStyle = (i%2===0)
+            ? `rgba(${(178*a)|0},${(134*a)|0},0,0.32)`
+            : `rgba(8,8,8,0.26)`;
+        ctx.beginPath(); ctx.moveTo(-30+i*6, 40); ctx.lineTo(40+i*6, -40); ctx.stroke();
+    }
+}
+
+// ── Command Node: salvaged comms terminal ─────────────────────
 function _campCmdNode(cx, cy, a, pulse, built) {
+    const f = frame || 0;
     // Base slab
-    _cBox(cx, cy, 10, 4,
-        `rgb(${(4*a)|0},${(42*a)|0},${(18*a)|0})`,
-        `rgb(${(2*a)|0},${(25*a)|0},${(10*a)|0})`,
-        `rgb(${(3*a)|0},${(34*a)|0},${(14*a)|0})`,
-        `rgba(0,${(200*a)|0},${(90*a)|0},0.9)`);
+    _cBox(cx, cy, 11, 4, _gmTop(a), _gmLeft(a), _gmRight(a), _gmEdge(a));
     // Cabinet body
-    _cBox(cx, cy - 4, 8, 26,
-        `rgb(${(5*a)|0},${(90*a)|0},${(40*a)|0})`,
-        `rgb(${(3*a)|0},${(55*a)|0},${(24*a)|0})`,
-        `rgb(${(4*a)|0},${(72*a)|0},${(32*a)|0})`,
-        `rgba(0,${(220*a)|0},${(100*a)|0},0.95)`);
-    // Screen rows
+    _cBox(cx, cy-4, 9, 28, _gmTop(a), _gmLeft(a), _gmRight(a), _gmEdge(a));
+    // Hazard stripes on right face (bottom band)
+    ctx.save();
+    ctx.translate(cx, cy-4);
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(9,-4.5); ctx.lineTo(9,-4.5-10); ctx.lineTo(0,-10); ctx.closePath(); ctx.clip();
+    _hazardStripes(a); ctx.restore();
+    // Rivets on cabinet right face corners
+    _rivet(cx+2,cy-6,a); _rivet(cx+2,cy-30,a); _rivet(cx+8,cy-8,a); _rivet(cx+8,cy-28,a);
+    // Screen panel: 4 scan-line rows
     for (let i = 0; i < 4; i++) {
-        const sy = cy - 10 - i * 5;
-        ctx.fillStyle = built
-            ? `rgba(0,${(180 + 75*Math.sin((frame||0)*0.12+i))|0},${(80*a)|0},0.95)`
-            : `rgb(${(2*a)|0},${(48*a)|0},${(22*a)|0})`;
-        ctx.fillRect(cx - 5, sy, 10, 2);
+        const sy = cy - 14 - i*4;
+        const lit = built && Math.sin(f*0.13+i*1.4) > -0.3;
+        ctx.fillStyle = lit
+            ? `rgba(${(18*a)|0},${(170+60*Math.sin(f*0.13+i))|0},${(255*a)|0},0.9)`
+            : `rgba(${(12*a)|0},${(15*a)|0},${(22*a)|0},0.85)`;
+        ctx.fillRect(cx+1, sy, 7, 2);
     }
-    // Antenna
-    ctx.strokeStyle = `rgba(0,${(200*a)|0},${(90*a)|0},0.9)`;
-    ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(cx, cy - 30); ctx.lineTo(cx, cy - 44); ctx.stroke();
-    if (built) {
-        ctx.shadowColor = '#00ff80'; ctx.shadowBlur = 7 * pulse;
-        ctx.fillStyle = `rgba(0,255,128,${0.95*pulse})`;
-        ctx.beginPath(); ctx.arc(cx, cy - 44, 2.5 + pulse * 0.5, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
-    } else {
-        ctx.fillStyle = `rgb(0,${(90*a)|0},${(40*a)|0})`;
-        ctx.beginPath(); ctx.arc(cx, cy - 44, 2, 0, Math.PI*2); ctx.fill();
-    }
-    // Copper corner vias
-    [cx - 8, cx + 8].forEach(vx => {
-        ctx.fillStyle = `rgba(${(200*a)|0},${(150*a)|0},${(40*a)|0},0.95)`;
-        ctx.beginPath(); ctx.arc(vx, cy - 2, 1.8, 0, Math.PI*2); ctx.fill();
-    });
+    ctx.strokeStyle=`rgba(${(65*a)|0},${(70*a)|0},${(88*a)|0},0.65)`; ctx.lineWidth=0.6;
+    ctx.strokeRect(cx+1,cy-30,7,18);
+    // Antenna mast (slightly off-centre)
+    ctx.strokeStyle=`rgba(${(68*a)|0},${(68*a)|0},${(78*a)|0},0.9)`; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(cx-1,cy-32); ctx.lineTo(cx+1,cy-46); ctx.stroke();
+    ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.moveTo(cx-5,cy-38); ctx.lineTo(cx+4,cy-40); ctx.stroke(); // cross-strut
+    // Antenna tip light
+    if (built) { ctx.shadowColor='#ffaa22'; ctx.shadowBlur=7*pulse; }
+    ctx.fillStyle = built
+        ? `rgba(${(255*pulse)|0},${(148*a*pulse)|0},${(18*a*pulse)|0},0.95)`
+        : `rgba(${(52*a)|0},${(36*a)|0},${(10*a)|0},0.8)`;
+    ctx.beginPath(); ctx.arc(cx+1,cy-46,2.2+pulse*0.4,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    // Status LEDs on left face
+    const l1=Math.sin(f*0.10)>0, l2=Math.sin(f*0.17+1.5)>0.2;
+    ctx.fillStyle=l1&&built?`rgba(255,${(138*pulse)|0},0,0.95)`:`rgba(${(40*a)|0},${(20*a)|0},0,0.7)`;
+    ctx.beginPath(); ctx.arc(cx-5,cy-12,1.8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=l2&&built?`rgba(0,${(195*pulse)|0},${(255*pulse)|0},0.95)`:`rgba(0,${(18*a)|0},${(30*a)|0},0.7)`;
+    ctx.beginPath(); ctx.arc(cx-5,cy-19,1.8,0,Math.PI*2); ctx.fill();
+    // Dangling cable off top-left
+    ctx.strokeStyle=`rgba(0,${(175*a)|0},${(255*a)|0},0.52)`; ctx.lineWidth=0.9;
+    ctx.beginPath(); ctx.moveTo(cx-8,cy-32); ctx.bezierCurveTo(cx-13,cy-24,cx-14,cy-13,cx-11,cy-7); ctx.stroke();
 }
 
-// ── DNA Sequencer: spiral helix tube ────────────────────────
+// ── DNA Sequencer: bio-extraction vat ───────────────────────
 function _campDnaSeq(cx, cy, a, pulse, built) {
-    _cBox(cx, cy, 9, 3,
-        `rgb(${(4*a)|0},${(44*a)|0},${(20*a)|0})`,
-        `rgb(${(2*a)|0},${(26*a)|0},${(11*a)|0})`,
-        `rgb(${(3*a)|0},${(35*a)|0},${(15*a)|0})`,
-        `rgba(0,${(180*a)|0},${(80*a)|0},0.9)`);
-    // Cylinder body
-    ctx.fillStyle = `rgb(${(3*a)|0},${(60*a)|0},${(27*a)|0})`;
-    ctx.fillRect(cx - 7, cy - 3 - 26, 14, 26);
-    // Side outlines
-    ctx.strokeStyle = `rgba(0,${(170*a)|0},${(75*a)|0},0.9)`;
-    ctx.lineWidth = 0.9;
-    ctx.beginPath(); ctx.moveTo(cx - 7, cy - 3); ctx.lineTo(cx - 7, cy - 29); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx + 7, cy - 3); ctx.lineTo(cx + 7, cy - 29); ctx.stroke();
-    // Bottom ellipse rim
-    ctx.fillStyle = `rgb(${(2*a)|0},${(45*a)|0},${(20*a)|0})`;
-    ctx.beginPath(); ctx.ellipse(cx, cy - 3, 7, 3, 0, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = `rgba(0,${(160*a)|0},${(70*a)|0},0.85)`;
-    ctx.lineWidth = 0.7; ctx.stroke();
-    // Helix strands
-    for (let i = 0; i < 4; i++) {
-        const t2 = ((frame||0) * 0.04 + i * 0.75) % (Math.PI * 2);
-        const fy = cy - 8 - i * 5;
-        const x1 = cx + Math.cos(t2) * 5.5;
-        const x2 = cx + Math.cos(t2 + Math.PI) * 5.5;
-        ctx.strokeStyle = `rgba(0,${(210*a)|0},${(100*a)|0},0.9)`;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath(); ctx.moveTo(cx - 5.5, fy);
-        ctx.bezierCurveTo(x1, fy - 2, x2, fy - 3, cx + 5.5, fy - 5); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx + 5.5, fy);
-        ctx.bezierCurveTo(x2, fy - 2, x1, fy - 3, cx - 5.5, fy - 5); ctx.stroke();
-    }
-    // Top cap
-    if (built) { ctx.shadowColor = '#00ff80'; ctx.shadowBlur = 8 * pulse; }
-    ctx.fillStyle = built
-        ? `rgba(0,${(255*pulse)|0},${(120*pulse)|0},0.97)`
-        : `rgb(0,${(110*a)|0},${(50*a)|0})`;
-    ctx.beginPath(); ctx.ellipse(cx, cy - 29, 7, 3, 0, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = `rgba(0,${(180*a)|0},${(80*a)|0},0.9)`;
-    ctx.lineWidth = 0.8; ctx.stroke();
-    ctx.shadowBlur = 0;
-}
-
-// ── Fabricator: workbench with articulated arm ───────────────
-function _campFabricator(cx, cy, a, pulse, built) {
-    // Wide base
-    _cBox(cx, cy, 13, 5,
-        `rgb(${(3*a)|0},${(38*a)|0},${(16*a)|0})`,
-        `rgb(${(2*a)|0},${(22*a)|0},${(9*a)|0})`,
-        `rgb(${(2*a)|0},${(30*a)|0},${(13*a)|0})`,
-        `rgba(0,${(170*a)|0},${(75*a)|0},0.9)`);
-    // Work surface
-    _cBox(cx, cy - 5, 11, 8,
-        `rgb(${(4*a)|0},${(72*a)|0},${(32*a)|0})`,
-        `rgb(${(2*a)|0},${(44*a)|0},${(19*a)|0})`,
-        `rgb(${(3*a)|0},${(58*a)|0},${(26*a)|0})`,
-        `rgba(0,${(190*a)|0},${(85*a)|0},0.9)`);
-    // Arm vertical post
-    ctx.strokeStyle = `rgba(0,${(190*a)|0},${(85*a)|0},0.95)`;
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cx + 5, cy - 13); ctx.lineTo(cx + 5, cy - 34); ctx.stroke();
-    // Horizontal beam
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(cx + 5, cy - 34); ctx.lineTo(cx - 5, cy - 34); ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(cx - 5, cy - 34); ctx.lineTo(cx - 5, cy - 27); ctx.stroke();
-    // Tool head copper
-    ctx.fillStyle = `rgba(${(210*a)|0},${(155*a)|0},${(40*a)|0},0.97)`;
-    ctx.beginPath(); ctx.arc(cx - 5, cy - 25, 3.5, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = `rgba(0,${(180*a)|0},${(80*a)|0},0.7)`;
-    ctx.lineWidth = 0.8; ctx.stroke();
-    // Elemental crystal (built only)
-    if (built) {
-        ctx.shadowColor = '#00ccff'; ctx.shadowBlur = 6 * pulse;
-        ctx.fillStyle = `rgba(0,${(200*pulse)|0},${(255*pulse)|0},0.97)`;
-        ctx.beginPath();
-        ctx.moveTo(cx - 3, cy - 13); ctx.lineTo(cx, cy - 18);
-        ctx.lineTo(cx + 3, cy - 13); ctx.lineTo(cx, cy - 8);
-        ctx.closePath(); ctx.fill();
-        ctx.shadowBlur = 0;
-    }
-}
-
-// ── Power Conduit: capacitor fin tower ──────────────────────
-function _campPowerCon(cx, cy, a, pulse, built) {
-    _cBox(cx, cy, 7, 4,
-        `rgb(${(4*a)|0},${(42*a)|0},${(18*a)|0})`,
-        `rgb(${(2*a)|0},${(25*a)|0},${(11*a)|0})`,
-        `rgb(${(3*a)|0},${(34*a)|0},${(15*a)|0})`,
-        `rgba(0,${(200*a)|0},${(88*a)|0},0.9)`);
-    // Core column
-    _cBox(cx, cy - 4, 4, 28,
-        `rgb(${(5*a)|0},${(110*a)|0},${(50*a)|0})`,
-        `rgb(${(3*a)|0},${(68*a)|0},${(30*a)|0})`,
-        `rgb(${(4*a)|0},${(88*a)|0},${(40*a)|0})`,
-        `rgba(0,${(230*a)|0},${(100*a)|0},0.95)`);
-    // Capacitor fins (3 pairs)
-    [[cy - 10, 10], [cy - 18, 12], [cy - 26, 9]].forEach(([fy, fw]) => {
-        ctx.fillStyle = `rgb(${(3*a)|0},${(68*a)|0},${(30*a)|0})`;
-        ctx.strokeStyle = `rgba(0,${(175*a)|0},${(78*a)|0},0.9)`;
-        ctx.lineWidth = 0.9;
-        ctx.beginPath();
-        ctx.moveTo(cx - 4, fy);      ctx.lineTo(cx - 4 - fw, fy - fw * 0.35);
-        ctx.lineTo(cx - 4 - fw, fy - 4 - fw * 0.35); ctx.lineTo(cx - 4, fy - 4);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(cx + 4, fy);      ctx.lineTo(cx + 4 + fw, fy - fw * 0.35);
-        ctx.lineTo(cx + 4 + fw, fy - 4 - fw * 0.35); ctx.lineTo(cx + 4, fy - 4);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
+    const f = frame || 0;
+    // Flanged base
+    _cBox(cx, cy, 10, 3, _gmTop(a), _gmLeft(a), _gmRight(a), _gmEdge(a));
+    // Cylinder body (rect + ellipse caps)
+    ctx.fillStyle=_gmRight(a);
+    ctx.fillRect(cx-7,cy-3-26,14,26);
+    ctx.strokeStyle=_gmEdge(a); ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.moveTo(cx-7,cy-3); ctx.lineTo(cx-7,cy-29); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+7,cy-3); ctx.lineTo(cx+7,cy-29); ctx.stroke();
+    // Strap bands (3 horizontal rings)
+    [cy-10, cy-17, cy-24].forEach(by => {
+        ctx.fillStyle=`rgba(${(55*a)|0},${(52*a)|0},${(40*a)|0},0.9)`;
+        ctx.fillRect(cx-7,by,14,2);
+        ctx.strokeStyle=`rgba(${(80*a)|0},${(76*a)|0},${(58*a)|0},0.8)`; ctx.lineWidth=0.6;
+        ctx.strokeRect(cx-7,by,14,2);
     });
-    // Energy core
+    // Bottom ellipse rim
+    ctx.fillStyle=`rgb(${(36*a)|0},${(38*a)|0},${(45*a)|0})`;
+    ctx.beginPath(); ctx.ellipse(cx,cy-3,7,3,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=_gmEdge(a); ctx.lineWidth=0.7; ctx.stroke();
+    // Pressure gauge on front
+    ctx.fillStyle=`rgba(${(16*a)|0},${(16*a)|0},${(20*a)|0},0.9)`;
+    ctx.strokeStyle=`rgba(${(62*a)|0},${(66*a)|0},${(80*a)|0},0.8)`; ctx.lineWidth=0.7;
+    ctx.beginPath(); ctx.arc(cx,cy-15,4,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    const needle = built ? -Math.PI*0.5+pulse*0.85 : -Math.PI*0.8;
+    ctx.strokeStyle=built?`rgba(${(255*a*pulse)|0},${(155*a*pulse)|0},0,0.9)`:`rgba(${(58*a)|0},${(56*a)|0},${(42*a)|0},0.7)`;
+    ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.moveTo(cx,cy-15); ctx.lineTo(cx+Math.cos(needle)*3.2,cy-15+Math.sin(needle)*3.2); ctx.stroke();
+    // Vent pipes (asymmetric: left short elbow, right tall)
+    ctx.strokeStyle=`rgba(${(55*a)|0},${(52*a)|0},${(40*a)|0},0.9)`; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(cx-9,cy-8); ctx.lineTo(cx-12,cy-8); ctx.lineTo(cx-12,cy-18); ctx.stroke();
+    ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(cx+9,cy-10); ctx.lineTo(cx+13,cy-10); ctx.lineTo(cx+13,cy-26); ctx.stroke();
+    ctx.fillStyle=`rgb(${(44*a)|0},${(42*a)|0},${(32*a)|0})`;
+    ctx.fillRect(cx-14,cy-20,4,2); ctx.fillRect(cx+11,cy-28,5,2);
+    // Top cap with glow
+    if (built) { ctx.shadowColor='#cc44ff'; ctx.shadowBlur=8*pulse; }
+    ctx.fillStyle = built
+        ? `rgba(${(175*pulse)|0},${(55*a*pulse)|0},${(255*pulse)|0},0.95)`
+        : `rgb(${(34*a)|0},${(36*a)|0},${(44*a)|0})`;
+    ctx.beginPath(); ctx.ellipse(cx,cy-29,7,3,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=_gmEdge(a); ctx.lineWidth=0.8; ctx.stroke();
+    ctx.shadowBlur=0;
+    // Vent tip glow (built)
     if (built) {
-        ctx.shadowColor = '#ffee00'; ctx.shadowBlur = 10 * pulse;
-        ctx.fillStyle = `rgba(255,${(205*pulse)|0},0,0.97)`;
-        ctx.beginPath(); ctx.arc(cx, cy - 32, 3 + pulse * 0.8, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = `rgba(255,${(220*pulse)|0},0,${0.6*pulse})`;
-        ctx.lineWidth = 0.9;
-        [-1, 1].forEach(side => {
-            ctx.beginPath();
-            ctx.moveTo(cx, cy - 32);
-            ctx.lineTo(cx + side * 5, cy - 25);
-            ctx.lineTo(cx + side * 11, cy - 16);
-            ctx.stroke();
-        });
-    } else {
-        ctx.fillStyle = `rgb(${(80*a)|0},${(60*a)|0},0)`;
-        ctx.beginPath(); ctx.arc(cx, cy - 32, 2.5, 0, Math.PI*2); ctx.fill();
+        ctx.shadowColor='#cc44ff'; ctx.shadowBlur=4*pulse;
+        ctx.fillStyle=`rgba(${(145*pulse)|0},${(38*pulse)|0},${(215*pulse)|0},0.7)`;
+        ctx.beginPath(); ctx.arc(cx+13,cy-27,1.5,0,Math.PI*2); ctx.fill();
+        ctx.shadowBlur=0;
     }
 }
 
-// ── Signal Relay: dish antenna on mast ──────────────────────
-function _campSigRelay(cx, cy, a, pulse, built) {
-    _cBox(cx, cy, 7, 4,
-        `rgb(${(4*a)|0},${(40*a)|0},${(20*a)|0})`,
-        `rgb(${(2*a)|0},${(24*a)|0},${(12*a)|0})`,
-        `rgb(${(3*a)|0},${(32*a)|0},${(16*a)|0})`,
-        `rgba(0,${(175*a)|0},${(88*a)|0},0.9)`);
-    // Mast
-    ctx.strokeStyle = `rgba(0,${(180*a)|0},${(80*a)|0},0.95)`;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(cx, cy - 4); ctx.lineTo(cx, cy - 28); ctx.stroke();
-    // Dish body
-    ctx.fillStyle = `rgb(${(4*a)|0},${(62*a)|0},${(28*a)|0})`;
-    ctx.strokeStyle = `rgba(0,${(210*a)|0},${(95*a)|0},0.9)`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(cx, cy - 28, 12, Math.PI * 0.1, Math.PI * 0.9, false);
-    ctx.lineTo(cx, cy - 28);
-    ctx.closePath(); ctx.fill(); ctx.stroke();
-    // Dish inner face
-    ctx.fillStyle = `rgb(${(5*a)|0},${(85*a)|0},${(38*a)|0})`;
-    ctx.beginPath();
-    ctx.arc(cx, cy - 28, 9, Math.PI * 0.15, Math.PI * 0.85, false);
-    ctx.lineTo(cx, cy - 28);
-    ctx.closePath(); ctx.fill();
-    // Focal point
-    ctx.fillStyle = built
-        ? `rgba(0,255,128,${0.97*pulse})`
-        : `rgb(0,${(130*a)|0},${(58*a)|0})`;
-    if (built) { ctx.shadowColor = '#00ff80'; ctx.shadowBlur = 5 * pulse; }
-    ctx.beginPath(); ctx.arc(cx, cy - 28, 2.5, 0, Math.PI*2); ctx.fill();
-    ctx.shadowBlur = 0;
-    // Signal rings (built only)
+// ── Fabricator: salvage fabrication station ──────────────────
+function _campFabricator(cx, cy, a, pulse, built) {
+    const f = frame || 0;
+    // Wide base
+    _cBox(cx, cy, 13, 4, _gmTop(a), _gmLeft(a), _gmRight(a), _gmEdge(a));
+    // Workbench surface (slightly warm-tinted top)
+    _cBox(cx, cy-4, 11, 6,
+        `rgb(${(46*a)|0},${(43*a)|0},${(38*a)|0})`,
+        _gmLeft(a), _gmRight(a), _gmEdge(a));
+    // Hazard stripes on bench top face
+    ctx.save();
+    ctx.translate(cx, cy-10);
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(11,-5.5); ctx.lineTo(0,-11); ctx.lineTo(-11,-5.5); ctx.closePath(); ctx.clip();
+    _hazardStripes(a); ctx.restore();
+    // Parts bin on left side of surface
+    ctx.fillStyle=_gmRight(a); ctx.strokeStyle=_gmEdge(a); ctx.lineWidth=0.6;
+    ctx.fillRect(cx-10,cy-12,5,4); ctx.strokeRect(cx-10,cy-12,5,4);
+    // Crane arm — vertical post (right, welded pipe look)
+    ctx.strokeStyle=`rgba(${(62*a)|0},${(62*a)|0},${(74*a)|0},0.9)`; ctx.lineWidth=2.2;
+    ctx.beginPath(); ctx.moveTo(cx+7,cy-10); ctx.lineTo(cx+7,cy-34); ctx.stroke();
+    // Elbow joint knuckle
+    ctx.fillStyle=`rgba(${(56*a)|0},${(53*a)|0},${(40*a)|0},0.95)`;
+    ctx.beginPath(); ctx.arc(cx+7,cy-34,2.6,0,Math.PI*2); ctx.fill();
+    // Horizontal beam (slightly angled — janky)
+    ctx.strokeStyle=`rgba(${(60*a)|0},${(60*a)|0},${(72*a)|0},0.9)`; ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.moveTo(cx+7,cy-34); ctx.lineTo(cx-6,cy-32); ctx.stroke();
+    // End-effector (tool head)
+    ctx.fillStyle=`rgba(${(70*a)|0},${(66*a)|0},${(52*a)|0},0.97)`;
+    ctx.strokeStyle=`rgba(${(92*a)|0},${(86*a)|0},${(65*a)|0},0.8)`; ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.arc(cx-6,cy-32,3.5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    // Arc sparks (built)
     if (built) {
-        for (let r = 1; r <= 3; r++) {
-            const rp = (((frame||0) * 0.025 + r * 0.38) % 1.0);
-            ctx.save();
-            ctx.globalAlpha = (1 - rp) * 0.5 * pulse;
-            ctx.strokeStyle = '#00ff80';
-            ctx.lineWidth = 0.9;
-            ctx.beginPath(); ctx.arc(cx, cy - 28, r * 7 * rp + 3, 0, Math.PI*2); ctx.stroke();
+        ctx.shadowColor='#00ccff'; ctx.shadowBlur=9*pulse;
+        ctx.strokeStyle=`rgba(0,${(195*pulse)|0},${(255*pulse)|0},0.9)`; ctx.lineWidth=0.9;
+        const sp=f*0.2;
+        ctx.beginPath(); ctx.moveTo(cx-6,cy-32); ctx.lineTo(cx-6+Math.cos(sp)*5.5,cy-32+Math.sin(sp)*3.5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx-6,cy-32); ctx.lineTo(cx-6+Math.cos(sp+2.2)*4.5,cy-32+Math.sin(sp+2.2)*3); ctx.stroke();
+        ctx.shadowBlur=0;
+    }
+    // Two power cables off the back-right
+    ctx.strokeStyle=`rgba(${(255*a)|0},${(118*a)|0},0,0.48)`; ctx.lineWidth=0.9;
+    ctx.beginPath(); ctx.moveTo(cx+6,cy-10); ctx.bezierCurveTo(cx+10,cy-4,cx+12,cy,cx+10,cy+3); ctx.stroke();
+    ctx.strokeStyle=`rgba(0,${(175*a)|0},${(255*a)|0},0.48)`; ctx.lineWidth=0.9;
+    ctx.beginPath(); ctx.moveTo(cx+8,cy-10); ctx.bezierCurveTo(cx+13,cy-5,cx+14,cy,cx+12,cy+3); ctx.stroke();
+    _rivet(cx+2,cy-6,a); _rivet(cx-2,cy-8,a);
+}
+
+// ── Power Conduit: jury-rigged converter tower ───────────────
+function _campPowerCon(cx, cy, a, pulse, built) {
+    const f = frame || 0;
+    // Base
+    _cBox(cx, cy, 8, 4, _gmTop(a), _gmLeft(a), _gmRight(a), _gmEdge(a));
+    // Converter body (squat box)
+    _cBox(cx, cy-4, 6, 16, _gmTop(a), _gmLeft(a), _gmRight(a), _gmEdge(a));
+    // Hazard stripes on right face
+    ctx.save();
+    ctx.translate(cx, cy-4);
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(6,-3); ctx.lineTo(6,-3-16); ctx.lineTo(0,-16); ctx.closePath(); ctx.clip();
+    _hazardStripes(a); ctx.restore();
+    // Three output tubes (different heights — janky salvage)
+    [[-5,22],[-1,28],[4,18]].forEach(([ox,th]) => {
+        ctx.strokeStyle=_gmEdge(a); ctx.lineWidth=2.3;
+        ctx.beginPath(); ctx.moveTo(cx+ox,cy-20); ctx.lineTo(cx+ox,cy-20-th); ctx.stroke();
+        // Ring collar
+        ctx.strokeStyle=`rgba(${(78*a)|0},${(74*a)|0},${(56*a)|0},0.8)`; ctx.lineWidth=1.2;
+        ctx.beginPath(); ctx.moveTo(cx+ox-2,cy-20-th+4); ctx.lineTo(cx+ox+2,cy-20-th+4); ctx.stroke();
+        // Tube cap plate
+        ctx.fillStyle=`rgb(${(44*a)|0},${(42*a)|0},${(32*a)|0})`;
+        ctx.fillRect(cx+ox-2,cy-20-th-1,4,2);
+        if (built) {
+            ctx.shadowColor='#ffdd00'; ctx.shadowBlur=5*pulse;
+            ctx.fillStyle=`rgba(${(255*pulse)|0},${(212*pulse)|0},0,0.85)`;
+            ctx.beginPath(); ctx.arc(cx+ox,cy-20-th-1,1.6+pulse*0.5,0,Math.PI*2); ctx.fill();
+            ctx.shadowBlur=0;
+        }
+    });
+    // Voltage arc between tallest tubes (built)
+    if (built) {
+        const arc1=Math.sin(f*0.24)*3.5, arc2=Math.cos(f*0.24)*2;
+        ctx.shadowColor='#ffdd00'; ctx.shadowBlur=6*pulse;
+        ctx.strokeStyle=`rgba(${(255*pulse)|0},${(218*pulse)|0},${(28*pulse)|0},0.88)`; ctx.lineWidth=0.85;
+        ctx.beginPath(); ctx.moveTo(cx-1,cy-48); ctx.lineTo(cx-1+arc1,cy-42); ctx.lineTo(cx+4,cy-38); ctx.stroke();
+        ctx.shadowBlur=0;
+    }
+    // Thick cable bundle off base-right
+    ctx.strokeStyle=`rgba(${(76*a)|0},${(72*a)|0},${(56*a)|0},0.8)`; ctx.lineWidth=3.2;
+    ctx.beginPath(); ctx.moveTo(cx+5,cy-5); ctx.bezierCurveTo(cx+9,cy,cx+10,cy+3,cx+8,cy+4); ctx.stroke();
+    _rivet(cx-3,cy-8,a); _rivet(cx-3,cy-16,a);
+}
+
+// ── Signal Relay: makeshift dish antenna ─────────────────────
+function _campSigRelay(cx, cy, a, pulse, built) {
+    const f = frame || 0;
+    // Base
+    _cBox(cx, cy, 7, 4, _gmTop(a), _gmLeft(a), _gmRight(a), _gmEdge(a));
+    // Mast — two mismatched sections (thicker at bottom)
+    ctx.strokeStyle=_gmEdge(a); ctx.lineWidth=2.2;
+    ctx.beginPath(); ctx.moveTo(cx,cy-4); ctx.lineTo(cx,cy-18); ctx.stroke();
+    ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(cx,cy-18); ctx.lineTo(cx-1,cy-30); ctx.stroke();
+    // Collar joint
+    ctx.fillStyle=`rgb(${(50*a)|0},${(48*a)|0},${(38*a)|0})`;
+    ctx.strokeStyle=`rgba(${(75*a)|0},${(72*a)|0},${(55*a)|0},0.8)`; ctx.lineWidth=0.6;
+    ctx.fillRect(cx-2,cy-20,4,3); ctx.strokeRect(cx-2,cy-20,4,3);
+    // Dish body (slightly asymmetric — dented one side)
+    ctx.fillStyle=_gmRight(a);
+    ctx.strokeStyle=`rgba(${(60*a)|0},${(64*a)|0},${(75*a)|0},0.8)`; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(cx-1,cy-30,12,Math.PI*0.08,Math.PI*0.92,false); ctx.lineTo(cx-1,cy-30); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Dish inner face
+    ctx.fillStyle=_gmLeft(a);
+    ctx.beginPath(); ctx.arc(cx-1,cy-30,9,Math.PI*0.13,Math.PI*0.87,false); ctx.lineTo(cx-1,cy-30); ctx.closePath(); ctx.fill();
+    // Dent scratch marks
+    ctx.strokeStyle=`rgba(${(52*a)|0},${(56*a)|0},${(68*a)|0},0.65)`; ctx.lineWidth=0.6;
+    ctx.beginPath(); ctx.moveTo(cx+4,cy-22); ctx.lineTo(cx+8,cy-26); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+6,cy-24); ctx.lineTo(cx+10,cy-28); ctx.stroke();
+    // Focal receiver stub
+    if (built) { ctx.shadowColor='#00ff88'; ctx.shadowBlur=5*pulse; }
+    ctx.fillStyle = built
+        ? `rgba(0,${(238*pulse)|0},${(125*pulse)|0},0.95)`
+        : `rgb(${(46*a)|0},${(44*a)|0},${(34*a)|0})`;
+    ctx.beginPath(); ctx.arc(cx-1,cy-30,2.6+pulse*0.4,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    // Signal rings (built)
+    if (built) {
+        for (let r=1; r<=3; r++) {
+            const rp=(((f)*0.025+r*0.38)%1.0);
+            ctx.save(); ctx.globalAlpha=(1-rp)*0.45*pulse;
+            ctx.strokeStyle='#00ff88'; ctx.lineWidth=0.9;
+            ctx.beginPath(); ctx.arc(cx-1,cy-30,r*7*rp+3,0,Math.PI*2); ctx.stroke();
             ctx.restore();
         }
     }
+    // Guy-wires (tension cables to base)
+    ctx.strokeStyle=`rgba(${(54*a)|0},${(52*a)|0},${(40*a)|0},0.65)`; ctx.lineWidth=0.7;
+    ctx.beginPath(); ctx.moveTo(cx-1,cy-20); ctx.lineTo(cx-8,cy-7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx-1,cy-20); ctx.lineTo(cx+7,cy-7); ctx.stroke();
 }
 
-// ── Repair Station: medical pod ──────────────────────────────
+// ── Repair Station: field first-aid cabinet ──────────────────
 function _campRepair(cx, cy, a, pulse, built) {
-    _cBox(cx, cy, 10, 4,
-        `rgb(${(4*a)|0},${(40*a)|0},${(22*a)|0})`,
-        `rgb(${(2*a)|0},${(24*a)|0},${(13*a)|0})`,
-        `rgb(${(3*a)|0},${(32*a)|0},${(18*a)|0})`,
-        `rgba(0,${(175*a)|0},${(100*a)|0},0.9)`);
-    // Pod body
-    _cBox(cx, cy - 4, 9, 22,
-        `rgb(${(4*a)|0},${(68*a)|0},${(38*a)|0})`,
-        `rgb(${(2*a)|0},${(42*a)|0},${(23*a)|0})`,
-        `rgb(${(3*a)|0},${(55*a)|0},${(30*a)|0})`,
-        `rgba(0,${(195*a)|0},${(110*a)|0},0.95)`);
-    // Dome top cap
-    ctx.fillStyle = `rgb(${(5*a)|0},${(88*a)|0},${(50*a)|0})`;
-    ctx.strokeStyle = `rgba(0,${(210*a)|0},${(120*a)|0},0.9)`;
-    ctx.lineWidth = 0.9;
-    ctx.beginPath(); ctx.ellipse(cx, cy - 26, 9, 4, 0, 0, Math.PI*2);
-    ctx.fill(); ctx.stroke();
-    // Medical cross
-    if (built) { ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 7 * pulse; }
-    ctx.fillStyle = built
-        ? `rgba(0,255,140,${0.97*pulse})`
-        : `rgb(0,${(140*a)|0},${(78*a)|0})`;
-    ctx.fillRect(cx - 2, cy - 22, 4, 10);
-    ctx.fillRect(cx - 5, cy - 19, 10, 4);
-    ctx.shadowBlur = 0;
-    // Healing beam (built only)
+    const f = frame || 0;
+    // Base
+    _cBox(cx, cy, 10, 4, _gmTop(a), _gmLeft(a), _gmRight(a), _gmEdge(a));
+    // Cabinet body
+    _cBox(cx, cy-4, 9, 24, _gmTop(a), _gmLeft(a), _gmRight(a), _gmEdge(a));
+    // Door panel inset (right face centre)
+    ctx.fillStyle=`rgba(${(30*a)|0},${(32*a)|0},${(40*a)|0},0.95)`;
+    ctx.strokeStyle=`rgba(${(62*a)|0},${(66*a)|0},${(80*a)|0},0.7)`; ctx.lineWidth=0.7;
+    ctx.fillRect(cx+1,cy-8,7,16); ctx.strokeRect(cx+1,cy-8,7,16);
+    // Red cross on door
+    if (built) { ctx.shadowColor='#ff4444'; ctx.shadowBlur=6*pulse; }
+    ctx.strokeStyle = built
+        ? `rgba(${(205*pulse)|0},${(38*a)|0},${(38*a)|0},${0.9*pulse})`
+        : `rgba(${(80*a)|0},${(22*a)|0},${(22*a)|0},0.7)`;
+    ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.moveTo(cx+4.5,cy-6); ctx.lineTo(cx+4.5,cy+4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+1.5,cy-1); ctx.lineTo(cx+7.5,cy-1); ctx.stroke();
+    ctx.shadowBlur=0;
+    // Cabinet rivets
+    _rivet(cx+2,cy-6,a); _rivet(cx+2,cy+6,a); _rivet(cx+8,cy-6,a); _rivet(cx+8,cy+6,a);
+    // Wall-mount brackets on top (two tabs)
+    ctx.fillStyle=`rgb(${(50*a)|0},${(48*a)|0},${(38*a)|0})`;
+    ctx.strokeStyle=`rgba(${(74*a)|0},${(70*a)|0},${(54*a)|0},0.8)`; ctx.lineWidth=0.6;
+    ctx.fillRect(cx-8,cy-28,6,3); ctx.strokeRect(cx-8,cy-28,6,3);
+    ctx.fillRect(cx+2,cy-28,6,3); ctx.strokeRect(cx+2,cy-28,6,3);
+    // Power cable down left side
+    ctx.strokeStyle=`rgba(${(255*a)|0},${(112*a)|0},0,0.48)`; ctx.lineWidth=0.9;
+    ctx.beginPath(); ctx.moveTo(cx-8,cy-10); ctx.bezierCurveTo(cx-12,cy-5,cx-13,cy,cx-11,cy+3); ctx.stroke();
+    // Healing beam (built)
     if (built) {
-        ctx.strokeStyle = `rgba(0,255,160,${0.45*pulse})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(cx, cy - 30); ctx.lineTo(cx, cy - 44); ctx.stroke();
-        ctx.shadowColor = '#00ffaa'; ctx.shadowBlur = 8 * pulse;
-        ctx.fillStyle = `rgba(0,255,160,${0.9*pulse})`;
-        ctx.beginPath(); ctx.arc(cx, cy - 44, 2.5 + pulse * 0.5, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.strokeStyle=`rgba(${(255*pulse)|0},${(175*pulse)|0},${(55*pulse)|0},${0.38*pulse})`; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(cx,cy-28); ctx.lineTo(cx,cy-43); ctx.stroke();
+        ctx.shadowColor='#ffcc44'; ctx.shadowBlur=8*pulse;
+        ctx.fillStyle=`rgba(${(255*pulse)|0},${(195*pulse)|0},${(75*pulse)|0},0.9)`;
+        ctx.beginPath(); ctx.arc(cx,cy-43,2.2+pulse*0.5,0,Math.PI*2); ctx.fill();
+        ctx.shadowBlur=0;
     }
+    // Status light (amber blink)
+    const lOn=Math.sin(f*0.11)>0;
+    ctx.fillStyle=lOn&&built?`rgba(${(255*pulse)|0},${(138*pulse)|0},0,0.95)`:`rgba(${(40*a)|0},${(20*a)|0},0,0.7)`;
+    ctx.beginPath(); ctx.arc(cx-6,cy-17,1.8,0,Math.PI*2); ctx.fill();
 }
+
