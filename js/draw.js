@@ -13,8 +13,10 @@ function drawRadialButton(x, y, label, active) {
     ctx.fillStyle=active?"#0f8":"#055";
     ctx.beginPath(); ctx.arc(x,y,10,0,Math.PI*2); ctx.fill();
     ctx.fillStyle=active?"#fff":"#0f8";
-    ctx.font="12px monospace"; ctx.textAlign="center";
+    ctx.font="12px monospace"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
+    ctx.shadowColor="#000"; ctx.shadowBlur=4;
     ctx.fillText(label,x,y-14);
+    ctx.shadowBlur=0;
 }
 
 function drawRadialMenu() {
