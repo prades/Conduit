@@ -407,6 +407,7 @@ function render() {
     const NEST_HACK_FRAMES = 180; // ~3 seconds at 60fps
     if (!alertActive) {
         for (const nest of _nestCache) {
+            if (nest.nestZone === 0) { nest.nestHackProgress = 0; continue; } // zone 0 is safe — no alarms
             if (nest.nestHealth <= 0) { nest.nestHackProgress = 0; continue; }
             const _nhdx = player.x - nest.x, _nhdy = player.y - (nest.y + 1);
             const playerNearNest = _nhdx*_nhdx + _nhdy*_nhdy < 2.25; // 1.5 tiles
