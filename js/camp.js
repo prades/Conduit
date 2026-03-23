@@ -339,73 +339,154 @@ function drawSettingsButton() {
 const HOME_NODE_TILE = { x: -1, y: 2 };
 
 function drawHomeNode(tcx, tcy, amb) {
-    const pulse = 0.6 + 0.4 * Math.sin((frame || 0) * 0.06);
+    const f       = frame || 0;
+    const pulse   = 0.6 + 0.4 * Math.sin(f * 0.06);
+    // Janky flicker — occasional stutter/glitch
+    const flicker = (Math.sin(f * 0.31) > 0.82) ? 0.35 + 0.65 * Math.abs(Math.sin(f * 1.7)) : 1.0;
 
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-    // ── Base platform ──
-    const bw = 20, bh = 5;
-    ctx.fillStyle   = `rgba(0,${(50*amb)|0},${(22*amb)|0},0.95)`;
-    ctx.strokeStyle = `rgba(0,${(200*amb)|0},${(90*amb)|0},0.8)`;
+    // ── Base slab (wide, asymmetric — like salvaged deck plating) ──
+    ctx.fillStyle   = `rgba(${(30*amb)|0},${(28*amb)|0},${(26*amb)|0},0.97)`;
+    ctx.strokeStyle = `rgba(${(90*amb)|0},${(75*amb)|0},${(50*amb)|0},0.7)`;
     ctx.lineWidth   = 1.2;
-    ctx.fillRect(tcx - bw, tcy - bh, bw * 2, bh);
-    ctx.strokeRect(tcx - bw, tcy - bh, bw * 2, bh);
-
-    // Base corner vias
-    [[tcx - bw + 4, tcy - bh + 2], [tcx + bw - 4, tcy - bh + 2]].forEach(([vx, vy]) => {
-        ctx.fillStyle   = `rgba(200,140,30,${0.7 * amb})`;
-        ctx.beginPath(); ctx.arc(vx, vy, 2, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = `rgba(0,200,80,${0.5 * amb})`;
-        ctx.lineWidth   = 0.7;
-        ctx.beginPath(); ctx.arc(vx, vy, 3.5, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillRect(tcx - 22, tcy - 5, 44, 5);
+    ctx.strokeRect(tcx - 22, tcy - 5, 44, 5);
+    // Bolt detail — left & right
+    [[tcx - 19, tcy - 2.5], [tcx + 19, tcy - 2.5]].forEach(([bx, by]) => {
+        ctx.fillStyle = `rgba(${(100*amb)|0},${(85*amb)|0},${(55*amb)|0},0.9)`;
+        ctx.beginPath(); ctx.arc(bx, by, 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = `rgba(${(55*amb)|0},${(45*amb)|0},${(25*amb)|0},0.8)`;
+        ctx.lineWidth = 0.5;
+        // Cross-slot on bolt head
+        ctx.beginPath(); ctx.moveTo(bx - 1.2, by); ctx.lineTo(bx + 1.2, by); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(bx, by - 1.2); ctx.lineTo(bx, by + 1.2); ctx.stroke();
     });
+    // Off-center patch panel (welded on, right side)
+    ctx.fillStyle   = `rgba(${(55*amb)|0},${(35*amb)|0},${(18*amb)|0},0.85)`;
+    ctx.strokeStyle = `rgba(${(85*amb)|0},${(55*amb)|0},${(25*amb)|0},0.6)`;
+    ctx.lineWidth   = 0.7;
+    ctx.fillRect(tcx + 10, tcy - 4, 8, 4);
+    ctx.strokeRect(tcx + 10, tcy - 4, 8, 4);
 
-    // ── Column body ──
-    const colW = 14, colH = 42;
-    const colTop = tcy - bh - colH;
-    ctx.fillStyle   = `rgba(2,${(20*amb)|0},${(10*amb)|0},0.97)`;
-    ctx.strokeStyle = `rgba(0,${(160*amb)|0},${(65*amb)|0},0.7)`;
+    // ── Main column (dark gunmetal, rough) ──
+    const colW   = 14, colH = 44;
+    const colTop = tcy - 5 - colH;
+    ctx.fillStyle   = `rgba(${(24*amb)|0},${(26*amb)|0},${(30*amb)|0},0.97)`;
+    ctx.strokeStyle = `rgba(${(55*amb)|0},${(60*amb)|0},${(70*amb)|0},0.55)`;
     ctx.lineWidth   = 1;
     ctx.fillRect(tcx - colW / 2, colTop, colW, colH);
     ctx.strokeRect(tcx - colW / 2, colTop, colW, colH);
 
-    // PCB traces on column
-    ctx.strokeStyle = `rgba(0,${(180*amb)|0},${(70*amb)|0},0.35)`;
-    ctx.lineWidth   = 0.7;
-    [10, 22, 33].forEach(yOff => {
+    // ── Left salvage panel (oxidized rust) ──
+    ctx.fillStyle   = `rgba(${(60*amb)|0},${(28*amb)|0},${(10*amb)|0},0.9)`;
+    ctx.strokeStyle = `rgba(${(95*amb)|0},${(48*amb)|0},${(18*amb)|0},0.65)`;
+    ctx.lineWidth   = 0.6;
+    ctx.fillRect(tcx - colW / 2, colTop + 6, 5, 20);
+    ctx.strokeRect(tcx - colW / 2, colTop + 6, 5, 20);
+
+    // ── Right grey panel (mismatched) ──
+    ctx.fillStyle   = `rgba(${(38*amb)|0},${(40*amb)|0},${(46*amb)|0},0.95)`;
+    ctx.strokeStyle = `rgba(${(65*amb)|0},${(70*amb)|0},${(80*amb)|0},0.5)`;
+    ctx.lineWidth   = 0.6;
+    ctx.fillRect(tcx + 2, colTop + 14, 5, 24);
+    ctx.strokeRect(tcx + 2, colTop + 14, 5, 24);
+
+    // ── Warning hazard stripes (diagonal yellow/black band) ──
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(tcx - colW / 2, colTop + 26, colW, 14);
+    ctx.clip();
+    ctx.lineWidth = 2.8;
+    for (let i = -3; i <= 6; i++) {
+        ctx.strokeStyle = (i % 2 === 0)
+            ? `rgba(${(195*amb)|0},${(145*amb)|0},0,0.38)`
+            : `rgba(${(10*amb)|0},${(10*amb)|0},${(10*amb)|0},0.35)`;
         ctx.beginPath();
-        ctx.moveTo(tcx - colW / 2 + 2, colTop + yOff);
-        ctx.lineTo(tcx + colW / 2 - 2, colTop + yOff);
+        ctx.moveTo(tcx - colW / 2 + i * 4,     colTop + 26);
+        ctx.lineTo(tcx - colW / 2 + i * 4 + 14, colTop + 40);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Vent slots at top of column ──
+    [colTop + 4, colTop + 8].forEach(vy => {
+        ctx.fillStyle   = `rgba(0,0,0,0.75)`;
+        ctx.strokeStyle = `rgba(${(65*amb)|0},${(65*amb)|0},${(65*amb)|0},0.45)`;
+        ctx.lineWidth   = 0.5;
+        ctx.fillRect(tcx - 5, vy, 10, 2);
+        ctx.strokeRect(tcx - 5, vy, 10, 2);
+    });
+
+    // ── Exposed wire bundle (right side, sagging) ──
+    [
+        [`rgba(0,${(195*amb)|0},${(255*amb)|0},0.65)`, 0,   0],
+        [`rgba(${(255*amb)|0},${(120*amb)|0},0,0.6)`,  0.8, 1.5],
+        [`rgba(${(215*amb)|0},0,${(215*amb)|0},0.5)`, -0.5, 3],
+    ].forEach(([wc, ox, dx]) => {
+        ctx.strokeStyle = wc;
+        ctx.lineWidth   = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(tcx + colW / 2 + ox, colTop + 3);
+        ctx.bezierCurveTo(
+            tcx + colW / 2 + dx + 4, colTop + 14,
+            tcx + colW / 2 + dx + 2, colTop + 28,
+            tcx + colW / 2 + dx + 5, colTop + 42
+        );
         ctx.stroke();
     });
-    // Vertical centre trace
-    ctx.beginPath();
-    ctx.moveTo(tcx, colTop + 4);
-    ctx.lineTo(tcx, colTop + colH - 6);
-    ctx.stroke();
 
-    // ── Glowing orb at top ──
-    ctx.shadowColor = "#00ff80";
-    ctx.shadowBlur  = (10 + 8 * pulse) * amb;
-    ctx.fillStyle   = `rgba(0,${(255*amb*pulse)|0},${(128*amb*pulse)|0},0.9)`;
-    ctx.beginPath(); ctx.arc(tcx, colTop, 5 + pulse, 0, Math.PI * 2); ctx.fill();
+    // ── Status lights (blinking, amber + red) ──
+    const l1 = Math.sin(f * 0.09) > 0;
+    const l2 = Math.sin(f * 0.14 + 1.8) > 0.25;
+    ctx.shadowColor = l1 ? '#ff8800' : 'transparent';
+    ctx.shadowBlur  = l1 ? 5 * amb : 0;
+    ctx.fillStyle   = l1
+        ? `rgba(${(255*amb)|0},${(140*amb)|0},0,${0.95*amb})`
+        : `rgba(${(55*amb)|0},${(28*amb)|0},0,0.8)`;
+    ctx.beginPath(); ctx.arc(tcx - 5, colTop + 33, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.shadowColor = l2 ? '#ff2200' : 'transparent';
+    ctx.shadowBlur  = l2 ? 5 * amb : 0;
+    ctx.fillStyle   = l2
+        ? `rgba(${(255*amb)|0},${(38*amb)|0},${(18*amb)|0},${0.95*amb})`
+        : `rgba(${(52*amb)|0},${(10*amb)|0},${(8*amb)|0},0.8)`;
+    ctx.beginPath(); ctx.arc(tcx - 5, colTop + 39, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // ── Makeshift mounting bracket (asymmetric, crooked) ──
+    ctx.strokeStyle = `rgba(${(75*amb)|0},${(78*amb)|0},${(85*amb)|0},0.85)`;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath(); ctx.moveTo(tcx - 2, colTop); ctx.lineTo(tcx - 2, colTop - 8); ctx.stroke();
+    ctx.lineWidth   = 1.2;
+    ctx.beginPath(); ctx.moveTo(tcx + 3, colTop); ctx.lineTo(tcx + 2, colTop - 11); ctx.stroke();
+    ctx.lineWidth   = 1.0;
+    ctx.beginPath(); ctx.moveTo(tcx - 2, colTop - 8); ctx.lineTo(tcx + 2, colTop - 11); ctx.stroke();
+
+    // ── Energy emitter — janky off-centre orb (amber, flickering) ──
+    const ex = tcx + 2, ey = colTop - 13;
+    ctx.shadowColor = '#ffaa22';
+    ctx.shadowBlur  = (9 + 7 * pulse) * amb * flicker;
+    ctx.fillStyle   = `rgba(${(255 * amb * pulse * flicker)|0},${(135 * amb * pulse * flicker)|0},${(18 * amb * pulse * flicker)|0},0.95)`;
+    ctx.beginPath(); ctx.arc(ex, ey, 4.5 + pulse * 0.7, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur  = 0;
 
-    // Orb ring
-    ctx.strokeStyle = `rgba(0,255,128,${0.5 * amb * pulse})`;
-    ctx.lineWidth   = 0.8;
-    ctx.beginPath(); ctx.arc(tcx, colTop, 9, 0, Math.PI * 2); ctx.stroke();
+    // Outer ring (slightly elliptical — imperfect mount)
+    ctx.strokeStyle = `rgba(${(255 * amb * pulse)|0},${(115 * amb * pulse)|0},0,${0.4 * pulse})`;
+    ctx.lineWidth   = 0.9;
+    ctx.beginPath(); ctx.ellipse(ex, ey, 9, 8, 0.15, 0, Math.PI * 2); ctx.stroke();
 
-    // ── Labels ──
-    ctx.fillStyle = `rgba(0,255,128,${0.9 * amb * pulse})`;
+    // ── Stenciled label (rough, amber-tinted) ──
+    ctx.fillStyle = `rgba(${(215 * amb * pulse * flicker)|0},${(145 * amb * pulse * flicker)|0},${(18 * amb * pulse * flicker)|0},0.88)`;
     ctx.font      = "bold 8px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("HOME", tcx, colTop - 12);
+    ctx.fillText("HOME", tcx, ey - 11);
 
-    ctx.fillStyle = `rgba(0,180,80,${0.45 * amb})`;
+    ctx.fillStyle = `rgba(${(115*amb)|0},${(95*amb)|0},${(45*amb)|0},0.5)`;
     ctx.font      = "7px monospace";
-    ctx.fillText("[ tap ]", tcx, colTop - 3);
+    ctx.fillText("[ tap ]", tcx, ey - 2);
 
     ctx.restore();
 }
@@ -418,11 +499,22 @@ function drawCampFloor(obj, px, py, amb) {
     const tcx = px;          // isometric tile top-vertex x
     const tcy = py + TILE_H; // tile center y (middle of diamond)
 
-    // ── Board fill — deep PCB green-black ──
-    const bR = (5  * amb) | 0;
-    const bG = (16 * amb) | 0;
-    const bB = (9  * amb) | 0;
-    ctx.fillStyle = `rgb(${bR},${bG},${bB})`;
+    const isNight = gameState && gameState.phase === "night";
+    const pdist   = Math.sqrt((obj.x - player.visualX) ** 2 + (obj.y - player.visualY) ** 2);
+    const glo     = Math.max(0, 1.0 - pdist / 5);
+
+    // ── Tile fill — same steel-blue/teal geometry as regular floor ──
+    let tR, tG, tB;
+    if (isNight) {
+        tR = (22 * amb + 38 * glo) | 0;
+        tG = (14 * amb + 10 * glo) | 0;
+        tB = (16 * amb +  6 * glo) | 0;
+    } else {
+        tR = (16 * amb +  8 * glo) | 0;
+        tG = (26 * amb + 20 * glo) | 0;
+        tB = (42 * amb + 52 * glo) | 0;
+    }
+    ctx.fillStyle = `rgb(${tR},${tG},${tB})`;
     ctx.beginPath();
     ctx.moveTo(px,          py);
     ctx.lineTo(px + TILE_W, py + TILE_H);
@@ -431,47 +523,14 @@ function drawCampFloor(obj, px, py, amb) {
     ctx.closePath();
     ctx.fill();
 
-    // ── Bevel (darker green edges) ──
-    ctx.strokeStyle = `rgba(0,50,20,${0.6 * amb})`;
-    ctx.lineWidth   = 1;
+    // ── Steel panel bevel — matching regular floor edges ──
+    ctx.strokeStyle = isNight ? `rgba(80,45,30,${0.5 * amb})` : `rgba(80,130,180,${0.55 * amb})`;
+    ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(px, py + 1); ctx.lineTo(px - TILE_W + 1, py + TILE_H); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(px, py + 1); ctx.lineTo(px + TILE_W - 1, py + TILE_H); ctx.stroke();
-    ctx.strokeStyle = `rgba(0,0,0,${0.4 * amb})`;
+    ctx.strokeStyle = `rgba(0,0,0,${0.35 * amb})`;
     ctx.beginPath(); ctx.moveTo(px - TILE_W + 1, py + TILE_H); ctx.lineTo(px, py + TILE_W - 1); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(px + TILE_W - 1, py + TILE_H); ctx.lineTo(px, py + TILE_W - 1); ctx.stroke();
-
-    ctx.save();
-
-    // ── Green trace lines ──
-    ctx.lineWidth = 0.8;
-    // NW→SE trace (world x-axis)
-    ctx.globalAlpha = 0.30 * amb;
-    ctx.strokeStyle = "#00dc50";
-    ctx.beginPath(); ctx.moveTo(tcx - 30, tcy - 15); ctx.lineTo(tcx + 30, tcy + 15); ctx.stroke();
-    // NE→SW trace (world y-axis)
-    ctx.globalAlpha = 0.25 * amb;
-    ctx.strokeStyle = "#00a040";
-    ctx.beginPath(); ctx.moveTo(tcx + 30, tcy - 15); ctx.lineTo(tcx - 30, tcy + 15); ctx.stroke();
-
-    // Junction stub (horizontal T-off at center)
-    ctx.globalAlpha = 0.18 * amb;
-    ctx.strokeStyle = "#00cc44";
-    ctx.lineWidth   = 0.6;
-    ctx.beginPath(); ctx.moveTo(tcx, tcy - 8); ctx.lineTo(tcx, tcy + 8); ctx.stroke();
-
-    // ── Copper via pad at center ──
-    const viaPhase = 0.5 + 0.5 * Math.sin((frame || 0) * 0.04 + txi * 1.7 + tyi * 0.9);
-    ctx.globalAlpha = 0.4 * amb * viaPhase;
-    ctx.fillStyle   = "#c88c1e";
-    ctx.beginPath(); ctx.arc(tcx, tcy, 2.8, 0, Math.PI * 2); ctx.fill();
-
-    // Via ring glow
-    ctx.globalAlpha = 0.22 * amb * viaPhase;
-    ctx.strokeStyle = "#00ff50";
-    ctx.lineWidth   = 0.7;
-    ctx.beginPath(); ctx.arc(tcx, tcy, 5.5, 0, Math.PI * 2); ctx.stroke();
-
-    ctx.restore();
 
     // ── Camp building 3D asset on this tile ──
     const _campBldgHere = CAMP_BUILDINGS.find(b => {
