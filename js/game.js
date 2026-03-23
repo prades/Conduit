@@ -448,9 +448,6 @@ function render() {
     if (gameState.phase === "day" || gameState.phase === "night") {
         const hostileZoneCount = Math.min(gameState.nightNumber, 5);
         for (let z = 1; z <= hostileZoneCount; z++) {
-            // When alarm is active, only spawn predators from the alarm zone
-            // (facility alarms affect the whole world, so all zones may spawn)
-            if (alertActive && alertType !== "facility" && z !== alertZone) continue;
             const existing = zonePredators[z];
             if (!existing || existing.dead) {
                 const nest = _nestCache.find(t => t.nestZone === z);
@@ -460,7 +457,9 @@ function render() {
                     zoneRespawnTimers[z]--;
                 } else {
                     spawnPredatorForZone(z);
-                    zoneRespawnTimers[z] = 240; // slightly longer respawn in calm phase
+                    // Alarm zone spawns back-to-back (short delay); other zones use normal respawn
+                    const isAlarmZone = alertActive && (alertType === "facility" || z === alertZone);
+                    zoneRespawnTimers[z] = isAlarmZone ? 60 : 240;
                 }
             }
         }
@@ -715,8 +714,8 @@ function render() {
             if (newHp<=0 && !isGhostSave) return; // permanent death — don't queue
             respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:180, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), ghostphageLife:isGhostSave });
         }
-        // track kills for wave clear — count dead enemies not clones
-        if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.killCounted) {
+        // track kills for wave clear — count dead enemies not clones, wanderers don't count
+        if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.killCounted && !a.isWanderer) {
             a.killCounted = true;
             nightKillCount++;
             const _kz = alertSource ? getZoneIndex(Math.floor(alertSource.x)) : 1;

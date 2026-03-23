@@ -34,7 +34,7 @@ function generateSegment(startX) {
             tile.capturable  = false;
             tile.panelActivated = false;
             tile.isDecoy     = Math.random() < 0.40;
-            tile.shardReward = 5 + Math.floor(Math.random() * 11);
+            tile.shardReward = 10 + Math.floor(Math.random() * 21);
             tile.alarmType   = PANEL_ALARM_TYPES[Math.floor(Math.random() * PANEL_ALARM_TYPES.length)];
             tile.panelFlicker = Math.random() * Math.PI * 2;
         }

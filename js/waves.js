@@ -34,7 +34,11 @@ function triggerAlarm(type, sx, sy) {
             type === "facility"  ? true :
             type === "zone"      ? getZoneIndex(Math.floor(a.x)) === srcZone :
             /* proximity */        Math.hypot(a.x - sx, a.y - sy) < 6;
-        if (inRange) { a.state = "hunt"; a.provoked = true; }
+        if (inRange) {
+            a.state = "hunt"; a.provoked = true;
+            // Predators outside the alarm zone become hostile but don't count toward the kill quota
+            if (getZoneIndex(Math.floor(a.x)) !== srcZone) a.isWanderer = true;
+        }
     });
 
     const _alarmZone = getZoneIndex(Math.floor(sx));
@@ -52,7 +56,7 @@ function resetPanels() {
             // Track how many times this panel has been fully activated
             t.panelTimesActivated = (t.panelTimesActivated || 0) + 1;
             // Diminishing shard returns: halved each time, floor at 1
-            t.shardReward = Math.max(1, Math.floor((t.shardReward || 5) * 0.5));
+            t.shardReward = Math.max(1, Math.floor((t.shardReward || 10) * 0.5));
         }
         t.panelActivated  = false;
         t.siphonProgress  = 0;

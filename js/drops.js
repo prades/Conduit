@@ -2,19 +2,21 @@
 //  PREDATOR DEATH DROPS
 // ─────────────────────────────────────────────────────────
 function onPredatorDeath(predator) {
-    const shardsGained = predator.shardDrop || 5;
-    shardCount += shardsGained;
-    saveShards();
-
-    // Floating shard text
     const px = (predator.x - player.visualX - (predator.y - player.visualY)) * TILE_W + canvas.width/2;
     const py = (predator.x - player.visualX + (predator.y - player.visualY)) * TILE_H + canvas.height/2;
-    floatingTexts.push({
-        x: px, y: py - 60,
-        text: "+" + shardsGained + " SHARDS",
-        color: "#ff0",
-        life: 90, vy: -0.8
-    });
+
+    // Only bosses drop shards
+    if (predator.isBoss) {
+        const shardsGained = predator.shardDrop || 5;
+        shardCount += shardsGained;
+        saveShards();
+        floatingTexts.push({
+            x: px, y: py - 60,
+            text: "+" + shardsGained + " SHARDS",
+            color: "#ff0",
+            life: 90, vy: -0.8
+        });
+    }
 
     // DNA splice drop
     const speciesName = predator.speciesName || "ant";
