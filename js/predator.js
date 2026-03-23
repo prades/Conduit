@@ -426,6 +426,23 @@ class Predator {
         this.x = Math.max(0, this.x);
 
         if (this.state==="hunt"||this.state==="wander") this.walkCycle+=this.moveSpeed*40;
+
+        // ── PREDATOR SEPARATION — push away from overlapping allies so they don't stack ──
+        actors.forEach(other => {
+            if (other === this || !(other instanceof Predator) || other.dead) return;
+            const sdx = this.x - other.x, sdy = this.y - other.y;
+            const sd2 = sdx * sdx + sdy * sdy;
+            const minDist = 0.9; // personal-space radius
+            if (sd2 < minDist * minDist && sd2 > 0.0001) {
+                const sd = Math.sqrt(sd2);
+                const push = (minDist - sd) * 0.3;
+                this.x += (sdx / sd) * push;
+                this.y += (sdy / sd) * push;
+            }
+        });
+        this.y = Math.max(0, Math.min(3, this.y));
+        this.x = Math.max(0, this.x);
+
         this.lastX=this.x; this.lastY=this.y;
 
         // ── ABDOMEN RANGED ATTACK ──

@@ -247,8 +247,9 @@ const ELEMENT_ATTACKS = {
                     const dx=target.x-a.x, dy=target.y-a.y, d2=dx*dx+dy*dy;
                     if (d2 < 9 && d2 > 0.0001) { // 3²=9, avoid sqrt until we need direction
                         const dist=Math.sqrt(d2);
-                        a.x += (dx/dist) * 0.8;
-                        a.y += (dy/dist) * 0.8;
+                        // Velocity-based pull so the motion animates over several frames
+                        a.kbVX = (dx/dist) * 0.12;
+                        a.kbVY = (dy/dist) * 0.12;
                         // Pull and disorient pierce shields
                         if (Math.random() < ELEMENT_PROC_CHANCE.flux) a.disoriented = 90;
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.5, actor, "flux");
@@ -270,12 +271,14 @@ const ELEMENT_ATTACKS = {
             actor.defenseBoost = 90;
             // Core pulse visual — pulsating rings emanate from follower
             actor.corePulse = 55;
-            // Knockback proc
+            // Knockback proc — velocity-based so the push animates over ~10 frames
             if (Math.random() < ELEMENT_PROC_CHANCE.core) {
                 const dx=target.x-actor.x, dy=target.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy)||1;
-                target.x += (dx/dist) * 1.5;
-                target.y += (dy/dist) * 1.5;
+                target.kbVX = (dx/dist) * 0.22;
+                target.kbVY = (dy/dist) * 0.22;
+                floatingTexts.push({ x:target.x, y:target.y-1, text:"BASH!", color:"#00ffcc", life:30, vy:-0.06 });
+                spawnElementEffect({ type:"ring", x:target.x, y:target.y, color:"#00ccaa", radius:0.8, life:18, element:"core" });
             }
             return { hit: true };
         },

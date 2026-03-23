@@ -52,6 +52,19 @@ function updateStatusEffects() {
         // ── SHIELD ──
         if (actor.shielded && actor.shieldAmount <= 0) actor.shielded = false;
 
+        // ── KNOCKBACK VELOCITY — decays each frame, gives smooth animated push ──
+        if (actor.kbVX || actor.kbVY) {
+            actor.x += actor.kbVX || 0;
+            actor.y += actor.kbVY || 0;
+            actor.kbVX = (actor.kbVX || 0) * 0.72;
+            actor.kbVY = (actor.kbVY || 0) * 0.72;
+            if (Math.abs(actor.kbVX) < 0.001) actor.kbVX = 0;
+            if (Math.abs(actor.kbVY) < 0.001) actor.kbVY = 0;
+            // Keep within corridor bounds
+            actor.y = Math.max(0, Math.min(3, actor.y));
+            actor.x = Math.max(0, actor.x);
+        }
+
         // ── PHYSICAL ATTACK VISUAL TIMERS (follower) ──
         if (actor.fireOrbitTimer  > 0) actor.fireOrbitTimer--;
         if (actor.sparkSurround   > 0) { actor.sparkSurround--; if (actor.sparkSurround <= 0) actor._electricChainTargets = null; }

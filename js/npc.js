@@ -283,13 +283,16 @@ function updateRTSNPC(actor) {
 
         const role = actor.role || "brawler";
 
-        // Find nearest enemy — cache result for 8 frames to avoid per-frame full scan
+        // Find nearest enemy — cache result for 8 frames to avoid per-frame full scan.
+        // Followers ignore wandering (un-provoked) predators; only engage hostile ones.
         if (!actor._enemyCacheFrame || frame - actor._enemyCacheFrame >= 8 ||
             actor._nearestEnemy?.dead) {
             actor._nearestEnemy = null;
             let nearestEnemyDist = Infinity;
             actors.forEach(a => {
                 if (a instanceof Predator && a.team !== "green" && !a.isClone && !a.dead) {
+                    // Skip predators that are wandering and haven't been provoked
+                    if (a.state === "wander" && !a.provoked) return;
                     const dx=a.x-actor.x, dy=a.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
                     if (d < nearestEnemyDist) { nearestEnemyDist=d; actor._nearestEnemy=a; }
                 }
