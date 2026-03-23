@@ -138,6 +138,7 @@ let followerProjectiles = []; // ranged attacks from snipers/specials
 let pendingPillarDestruction = [];
 let respawnQueue = [];
 let frame = 0, shake = 0;
+let activeEmpEffect = null; // { timer, maxTimer, zone } — EMP screen-darkening flash
 let lastGenX  = 0;
 let shardCount = 0; // loaded from localStorage on init
 let activePredator = null;

@@ -65,6 +65,12 @@ function updateStatusEffects() {
             actor.x = Math.max(0, actor.x);
         }
 
+        // ── EMP GLOW (electric ultimate hit marker) ──
+        if (actor.empGlow > 0) actor.empGlow--;
+
+        // ── TOXIC WEAKENED (smoke bomb power debuff) ──
+        if (actor.toxicWeakened > 0) actor.toxicWeakened--;
+
         // ── PHYSICAL ATTACK VISUAL TIMERS (follower) ──
         if (actor.fireOrbitTimer  > 0) actor.fireOrbitTimer--;
         if (actor.sparkSurround   > 0) { actor.sparkSurround--; if (actor.sparkSurround <= 0) actor._electricChainTargets = null; }

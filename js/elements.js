@@ -326,15 +326,45 @@ const ELEMENT_ATTACKS = {
         },
         special(actor, target) {
             if (!target) return { hit: false };
-            // Toxic cloud — lingering ground damage
-            spawnElementEffect({
-                type: "toxicCloud",
-                x: target.x, y: target.y,
-                color: "#66ff66",
-                radius: 1.8,
-                life: 300,  // long lasting
+            // Smoke bomb — arc projectile that lands and weakens + debuffs enemies
+            const lx = target.x, ly = target.y;
+            const dist = Math.hypot(lx - actor.x, ly - actor.y);
+            const totalFrames = Math.max(18, Math.round(dist * 7));
+            const vx = (lx - actor.x) / totalFrames;
+            const vy = (ly - actor.y) / totalFrames;
+            const dmg = (actor.stats?.specialAttack||10) * 0.12;
+            const caster = actor;
+            spawnElementEffect({ type:"smoke", x:actor.x, y:actor.y, color:"#66ff66", radius:0.5, life:20, element:"toxic" });
+            followerProjectiles.push({
+                x: actor.x, y: actor.y,
+                vx, vy,
+                life: totalFrames,
                 element: "toxic",
-                tickDamage: (actor.stats?.specialAttack||10) * 0.08
+                radius: 5,
+                damage: 0,
+                source: actor,
+                isBomb: true,
+                noHitDetect: true,
+                arcData: { totalFrames, peakHeight: 60 },
+                onLand() {
+                    // Spawn lingering cloud (less damage, shorter duration than before)
+                    spawnElementEffect({ type:"toxicCloud", x:lx, y:ly, color:"#66ff66", radius:1.8, life:240, element:"toxic", tickDamage: dmg * 0.3 });
+                    spawnElementEffect({ type:"impact", x:lx, y:ly, color:"#88ff44", radius:2.0, life:30, element:"toxic" });
+                    const r2 = 2.25; // 1.5 tile radius
+                    actors.forEach(a => {
+                        if ((a.team==="red"||(a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.dead) {
+                            const ddx=a.x-lx, ddy=a.y-ly;
+                            if (ddx*ddx+ddy*ddy <= r2) {
+                                applyDamage(a, dmg, caster, "toxic");
+                                a.toxicWeakened = 240; // 4s: reduces attack power
+                                a.smokeDebuff = Math.max(a.smokeDebuff||0, 180); // 3s: reduces accuracy
+                                const _tpx=(a.x-player.visualX-(a.y-player.visualY))*TILE_W+canvas.width/2;
+                                const _tpy=(a.x-player.visualX+(a.y-player.visualY))*TILE_H+canvas.height/2;
+                                floatingTexts.push({x:_tpx,y:_tpy-35,text:"WEAKENED",color:"#88ff44",life:55,vy:-0.65});
+                            }
+                        }
+                    });
+                }
             });
             return { hit: true };
         }
@@ -402,15 +432,20 @@ const FOLLOWER_ULTIMATES = {
             const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
             const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
             floatingTexts.push({x:_px,y:_py-80,text:"⚡ EMP",color:"#ffffaa",life:90,vy:-0.9});
-            // Strip all enemy shields in zone
+            // Strip shields + mark all enemies in zone for EMP glow highlight
             actors.forEach(a => {
                 if ((a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone))&&!a.dead) {
-                    if (getZoneIndex(Math.floor(a.x))===actorZone && a.shielded) {
-                        a.shielded=false; a.shieldAmount=0; a._shieldMax=0;
-                        spawnElementEffect({type:"impact",x:a.x,y:a.y,color:"#ffee33",radius:1.2,life:25,element:"electric"});
+                    if (getZoneIndex(Math.floor(a.x))===actorZone) {
+                        if (a.shielded) {
+                            a.shielded=false; a.shieldAmount=0; a._shieldMax=0;
+                            spawnElementEffect({type:"impact",x:a.x,y:a.y,color:"#ffee33",radius:1.2,life:25,element:"electric"});
+                        }
+                        a.empGlow = 80; // electric highlight for screen-dark effect
                     }
                 }
             });
+            // Activate screen-darkening EMP flash
+            activeEmpEffect = { timer: 90, maxTimer: 90, zone: actorZone };
             // Buff followers in zone: +30 resonance + 1.5× speed for 5 seconds
             followers.forEach(f => {
                 if (f.dead || getZoneIndex(Math.floor(f.x))!==actorZone) return;
@@ -898,9 +933,50 @@ function updateElementEffects() {
 
         return e.life > 0;
     });
+
+    // Tick EMP screen-darkening flash
+    if (activeEmpEffect) {
+        activeEmpEffect.timer--;
+        if (activeEmpEffect.timer <= 0) activeEmpEffect = null;
+    }
 }
 
 function drawElementEffects() {
+
+    // ── EMP BLACKOUT + PREDATOR HIGHLIGHT ────────────────────
+    if (activeEmpEffect && activeEmpEffect.timer > 0) {
+        const t = activeEmpEffect.timer / activeEmpEffect.maxTimer;
+        // Alpha curve: snap dark fast, hold, then fade out slowly
+        const darkAlpha = t > 0.85
+            ? ((1 - t) / 0.15) * 0.82
+            : t > 0.35 ? 0.82
+            : (t / 0.35) * 0.82;
+        // Dark screen overlay
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.fillStyle = `rgba(0,0,14,${darkAlpha})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+        // Electric glow around each EMP-hit predator
+        actors.forEach(a => {
+            if (!a.empGlow || a.empGlow <= 0 || a.dead) return;
+            const epx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width  / 2;
+            const epy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2;
+            const gf  = (a.empGlow / 80) * darkAlpha;
+            ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+            const grad = ctx.createRadialGradient(epx, epy - 22, 0, epx, epy - 22, 38);
+            grad.addColorStop(0,    `rgba(255,255,130,${gf * 0.95})`);
+            grad.addColorStop(0.45, `rgba(255,210,0,${gf  * 0.55})`);
+            grad.addColorStop(1,    `rgba(160,110,0,0)`);
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(epx, epy - 22, 38, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = `rgba(255,255,160,${gf * 0.9})`;
+            ctx.lineWidth = 1.8;
+            ctx.shadowColor = '#ffff44'; ctx.shadowBlur = 16;
+            ctx.beginPath(); ctx.arc(epx, epy - 22, 20, 0, Math.PI * 2); ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        });
+    }
 
     // ── VOLCANIC ERUPTION — 3D DRAW ─────────────────────────
     if (activeFireEruption) {

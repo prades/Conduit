@@ -72,14 +72,14 @@ function updateFloatingTexts() {
 function drawFloatingTexts() {
     ctx.save();
     ctx.setTransform(1,0,0,1,0,0);
-    ctx.font = "bold 13px monospace";
     ctx.textAlign = "center";
     floatingTexts.forEach(t => {
         const alpha = Math.min(1, t.life / 30);
         ctx.globalAlpha = alpha;
+        ctx.font = t.size ? `bold ${t.size}px monospace` : "bold 13px monospace";
         // Shadow
         ctx.fillStyle = "#000";
-        ctx.fillText(t.text, t.x+1, t.y+1);
+        ctx.fillText(t.text, t.x + 1, t.y + 1);
         // Text
         ctx.fillStyle = t.color;
         ctx.fillText(t.text, t.x, t.y);

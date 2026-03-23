@@ -6,6 +6,11 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     const el = p.element;
     const f  = p.frame || 0;
 
+    // Apply parabolic arc height for bomb-style projectiles
+    if (p.arcData && p.arcData.screenOffset) {
+        sy -= p.arcData.screenOffset;
+    }
+
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -159,6 +164,44 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         ctx.restore();
 
     } else if (el === 'toxic') {
+        if (p.isBomb) {
+            // Smoke grenade — dark canister tumbling through the air with a smoke trail
+            ctx.shadowColor = '#55ff22';
+            ctx.shadowBlur  = 10;
+            // Canister body (rotates as it flies)
+            const angle = f * 0.22;
+            ctx.save();
+            ctx.translate(sx, sy);
+            ctx.rotate(angle);
+            ctx.fillStyle = '#2a5c18';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 1.1, r * 1.7, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Dark band across middle
+            ctx.fillStyle = '#1a3c0e';
+            ctx.fillRect(-r * 1.1, -r * 0.28, r * 2.2, r * 0.56);
+            ctx.restore();
+            // Fuse spark
+            ctx.fillStyle = '#ffee44';
+            ctx.shadowColor = '#ffaa00';
+            ctx.shadowBlur  = 8;
+            ctx.beginPath();
+            ctx.arc(sx, sy - r * 1.6, r * 0.45, 0, Math.PI * 2);
+            ctx.fill();
+            // Smoke trail puffs behind it
+            ctx.shadowBlur = 0;
+            for (let i = 0; i < 3; i++) {
+                const pT  = ((f + i * 9) % 27) / 27;
+                const pSx = sx + Math.sin(f * 0.2 + i * 1.2) * 5;
+                const pSy = sy + pT * 22;
+                ctx.globalAlpha = (1 - pT) * 0.38;
+                ctx.fillStyle   = '#99cc77';
+                ctx.beginPath();
+                ctx.arc(pSx, pSy, r * (0.5 + pT * 0.9), 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        } else {
         // Toxic bubble — wobbly translucent green sphere with highlight
         const wobble = 1 + Math.sin(f * 0.28) * 0.11;
         const grad = ctx.createRadialGradient(
@@ -182,6 +225,7 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         ctx.beginPath();
         ctx.arc(sx - r * 0.55, sy - r * 0.55, r * 0.55, 0, Math.PI * 2);
         ctx.fill();
+        }
 
     } else {
         // Fallback — plain glowing circle (predator shots, unknown element)
@@ -2761,35 +2805,44 @@ function render() {
     followerProjectiles = followerProjectiles.filter(p => {
         p.x += p.vx; p.y += p.vy; p.life--;
         p.frame = (p.frame || 0) + 1;
+        // Arc height for parabolic bombs (screen-space offset only)
+        if (p.arcData) {
+            const arcT = Math.max(0, 1 - p.life / p.arcData.totalFrames);
+            p.arcData.screenOffset = p.arcData.peakHeight * Math.sin(arcT * Math.PI);
+        }
         // Screen coords
         const sx=(p.x-player.visualX-(p.y-player.visualY))*TILE_W+canvas.width/2;
         const sy=(p.x-player.visualX+(p.y-player.visualY))*TILE_H+canvas.height/2 - 40;
         // Draw element-specific projectile
         _drawFollowerProjectile(ctx, p, sx, sy);
-        // Hit detection
+        // Landing callback for arc bombs when they expire
+        if (p.life <= 0 && p.onLand) p.onLand();
+        // Hit detection (skipped for bombs that trigger onLand instead)
         let hit = false;
-        actors.forEach(a => {
-            if (hit || a.dead) return;
-            const isTarget = p.targetsGreen
-                ? a.team === "green"
-                : (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone));
-            if (isTarget) {
-                const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
+        if (!p.noHitDetect) {
+            actors.forEach(a => {
+                if (hit || a.dead) return;
+                const isTarget = p.targetsGreen
+                    ? a.team === "green"
+                    : (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone));
+                if (isTarget) {
+                    const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
+                    if (Math.hypot(dx,dy) < 30) {
+                        applyDamage(a, p.damage, p.source);
+                        if (p.onHit) p.onHit(a);
+                        hit = true;
+                    }
+                }
+            });
+            // Predator abdomen shots can also hit the player directly
+            if (!hit && p.targetsGreen) {
+                const dx=(p.x-player.x)*TILE_W, dy=(p.y-player.y)*TILE_H;
                 if (Math.hypot(dx,dy) < 30) {
-                    applyDamage(a, p.damage, p.source);
-                    if (p.onHit) p.onHit(a);
+                    health = Math.max(0, health - p.damage);
+                    shake  = Math.max(shake, 5);
+                    if (p.onHit) p.onHit(null);
                     hit = true;
                 }
-            }
-        });
-        // Predator abdomen shots can also hit the player directly
-        if (!hit && p.targetsGreen) {
-            const dx=(p.x-player.x)*TILE_W, dy=(p.y-player.y)*TILE_H;
-            if (Math.hypot(dx,dy) < 30) {
-                health = Math.max(0, health - p.damage);
-                shake  = Math.max(shake, 5);
-                if (p.onHit) p.onHit(null);
-                hit = true;
             }
         }
         return !hit && p.life > 0;

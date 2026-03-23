@@ -55,6 +55,28 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (source) target.lastAttacker = source;
     if (typeof target.hitFlash !== "undefined") target.hitFlash = 6;
     if (typeof target.hitStun  !== "undefined") target.hitStun  = 6;
+    // ── DAMAGE TICKER ─────────────────────────────────────────
+    if (source && !isReflected && dmg >= 1 &&
+        (target.team === "red" || (target instanceof Predator && target.team !== "green" && !target.isClone))) {
+        const _dtpx = (target.x - player.visualX - (target.y - player.visualY)) * TILE_W + canvas.width  / 2;
+        const _dtpy = (target.x - player.visualX + (target.y - player.visualY)) * TILE_H + canvas.height / 2;
+        const _dcol = element === "fire"     ? "#ff8844"
+                    : element === "electric" ? "#ffff55"
+                    : element === "ice"      ? "#aaeeff"
+                    : element === "flux"     ? "#dd88ff"
+                    : element === "core"     ? "#44ffcc"
+                    : element === "toxic"    ? "#88ff44"
+                    : "#ffcc88";
+        floatingTexts.push({
+            x: _dtpx + (Math.random() - 0.5) * 24,
+            y: _dtpy - 28 + (Math.random() - 0.5) * 12,
+            text: Math.round(dmg).toString(),
+            color: _dcol,
+            size: 14,
+            life: 36,
+            vy: -0.88 - Math.random() * 0.38
+        });
+    }
     if (typeof target.onHit    === "function")  target.onHit(source);
     // ── BEETLE REFLECT — returns the same damage to attacker, no amplification ──
     if (target.reflectDamage && source && !source.dead && !isReflected) {

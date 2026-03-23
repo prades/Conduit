@@ -345,7 +345,7 @@ class Predator {
             if (!this.attackCooldown) this.attackCooldown=0;
             this.attackCooldown--;
             if (this.attackCooldown<=0) {
-                const pwr = this.power * (this.disorientPowerFactor || 1.0);
+                const pwr = this.power * (this.disorientPowerFactor || 1.0) * (this.toxicWeakened > 0 ? 0.6 : 1.0);
                 if (this.disorientFF > 0) {
                     // ── FRIENDLY FIRE — attack other red predators ──
                     actors.forEach(a => {
