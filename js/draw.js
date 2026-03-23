@@ -12,7 +12,7 @@ function drawHealthBar(x, y, width, height, health, maxHealth, drawCtx=ctx) {
 function drawRadialButton(x, y, label, active) {
     ctx.fillStyle=active?"#0f8":"#055";
     ctx.beginPath(); ctx.arc(x,y,10,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle=active?"#000":"#0f8";
+    ctx.fillStyle=active?"#fff":"#0f8";
     ctx.font="12px monospace"; ctx.textAlign="center";
     ctx.fillText(label,x,y-14);
 }
