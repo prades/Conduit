@@ -1086,7 +1086,7 @@ function handleCrystalPanelInput(ex, ey, isDown) {
         }
     }
 
-    if (crystalMenuTab==="recruit" && !isDown) {
+    if (crystalMenuTab==="recruit" && isDown) {
         const rb = window._recruitBtnBounds;
         if (rb && ex>=rb.x && ex<=rb.x+rb.w && ey>=rb.y && ey<=rb.y+rb.h) {
             if (shardCount >= 30) {
