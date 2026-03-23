@@ -45,7 +45,15 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     }
     if (target.defenseShredded > 0) amount *= 1 / (target.defenseShredFactor||0.5);
     // Command Node — 10% incoming damage reduction for followers
-    if (target && target.isFollower && target.team === "green") amount *= getFollowerDefMult();
+    if (target && target.isFollower && target.team === "green") {
+        amount *= getFollowerDefMult();
+        // Defense stat mitigation — higher DEF = more damage absorbed
+        if (target.stats && target.stats.defense) {
+            amount *= 10 / (10 + target.stats.defense * 0.6);
+        }
+        // Hard cap: no single hit can remove more than 45% of max HP
+        amount = Math.min(amount, (target.maxHealth || 20) * 0.45);
+    }
     let dmg = amount;
     if (target.perk) {
         const pk = PERKS[target.perk];

@@ -151,11 +151,12 @@ class Predator {
             if (d<6) { threat=this.lastAttacker; bestDist=d; } // extended from 3→6 for ranged hit-back
         }
         if (!threat) {
+            const scanTeam = this.isClone ? "red" : "green";
             actors.forEach(a => {
-                if (a.team==="green"&&!a.dead&&(!a.spawnProtection||a.spawnProtection<=0)) {
-                    const dx=a.x-this.x, dy=a.y-this.y, d=Math.sqrt(dx*dx+dy*dy);
-                    if (d<1.2&&d<bestDist) { bestDist=d; threat=a; }
-                }
+                if (a.team!==scanTeam||a.dead) return;
+                if (!this.isClone && (a.spawnProtection||0)>0) return;
+                const dx=a.x-this.x, dy=a.y-this.y, d=Math.sqrt(dx*dx+dy*dy);
+                if (d<1.2&&d<bestDist) { bestDist=d; threat=a; }
             });
         }
         if (threat) {
@@ -272,6 +273,34 @@ class Predator {
 
         // ── HUNT (→ crystal, with organic lateral weaving) ──
         if (this.state==="hunt") {
+            // ── CLONE HUNT: chase nearest red enemy ──
+            if (this.isClone) {
+                let nearestRed=null, bestRD=Infinity;
+                actors.forEach(a => {
+                    if (a.dead||a.team!=="red") return;
+                    const d=Math.hypot(a.x-this.x, a.y-this.y);
+                    if (d<bestRD) { bestRD=d; nearestRed=a; }
+                });
+                if (nearestRed) {
+                    const dx=nearestRed.x-this.x, dy=nearestRed.y-this.y;
+                    const dist=Math.hypot(dx,dy);
+                    if (dist>1.0) {
+                        this.dirX+=(dx/dist-this.dirX)*0.1;
+                        this.dirY+=(dy/dist-this.dirY)*0.1;
+                        const len=Math.hypot(this.dirX,this.dirY)||1;
+                        this.dirX/=len; this.dirY/=len;
+                        this.x+=this.dirX*this.moveSpeed;
+                        this.y+=this.dirY*this.moveSpeed;
+                    } else {
+                        this.state="attack"; this.currentTarget=nearestRed;
+                    }
+                } else {
+                    this.state="wander"; // no enemies left — patrol
+                }
+                this.walkCycle+=this.moveSpeed*40;
+                this.lastX=this.x; this.lastY=this.y;
+                return;
+            }
             // ── DISORIENT: attack nearest red ally instead of crystal ──
             if (this.disorientFF > 0) {
                 let nearRed=null, bd2=Infinity;
@@ -354,12 +383,13 @@ class Predator {
                         if (adx*adx+ady*ady<=2.25) applyDamage(a, pwr, this); // 1.5²=2.25
                     });
                 } else {
-                    // ── NORMAL — hit green actors; smoke halves accuracy ──
+                    // ── NORMAL — clones hit red; enemies hit green; smoke halves enemy accuracy ──
+                    const hitTeam = this.isClone ? "red" : "green";
                     actors.forEach(a => {
-                        if (a.dead || a.team !== "green") return;
+                        if (a.dead || a.team !== hitTeam) return;
                         const adx=a.x-this.x, ady=a.y-this.y;
                         if (adx*adx+ady*ady<=2.25) { // 1.5²=2.25
-                            if (this.smokeDebuff > 0 && Math.random() < 0.5) return; // miss
+                            if (!this.isClone && this.smokeDebuff > 0 && Math.random() < 0.5) return; // miss
                             applyDamage(a, pwr, this);
                         }
                     });
@@ -452,8 +482,9 @@ class Predator {
                 // Find the best target in the rear arc (>90° from facing)
                 const bodyAngle = Math.atan2(this.dirY, this.dirX);
                 let rearTarget = null, bestRearDist = Infinity;
+                const abdomenHitTeam = this.isClone ? "red" : "green";
                 actors.forEach(a => {
-                    if (a.dead || a.team !== "green") return;
+                    if (a.dead || a.team !== abdomenHitTeam) return;
                     const dx = a.x - this.x, dy = a.y - this.y;
                     const d  = Math.hypot(dx, dy);
                     let   diff = Math.atan2(dy, dx) - bodyAngle;

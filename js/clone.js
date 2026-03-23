@@ -67,10 +67,11 @@ function executeClone(option) {
     };
 
     const clone = new Predator(option.className, def, crystal.x, crystal.y);
-    clone.state       = "wander";
+    clone.state       = "hunt";
     clone.wanderTimer = 0;
     clone.team        = "green";
     clone.isClone     = true;
+    clone.power       = Math.round(clone.power * 3);   // clones hit hard
     clone.speciesName = option.speciesName;
     clone.className   = option.className;
     applySpeciesBody(clone, option.speciesName);
