@@ -205,7 +205,7 @@ function initPreview() {
     panel.appendChild(presetSep);
     const presetRow=document.createElement("div");
     presetRow.style.cssText="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;";
-    ["ant","beetle","scorpion","spider","mantis"].forEach(name=>{
+    ["ant","beetle","scorpion","mantis","moth","spider"].forEach(name=>{
         const btn=document.createElement("button");
         btn.textContent=name.toUpperCase();
         btn.style.cssText="flex:1;min-width:56px;padding:4px 2px;background:#0a1a10;border:1px solid #0a8;color:#0a8;font-family:monospace;font-size:10px;border-radius:3px;cursor:pointer;letter-spacing:1px;";

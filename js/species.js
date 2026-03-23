@@ -107,7 +107,7 @@ const SPECIES = {
     },
     // ── Mantis — raised prothorax, angled abdomen, raptorial forelegs ──────
     mantis: {
-        rank: 3,
+        rank: 4,
         color: "#44dd55",
         nymph:   { width:14, height:8,  moveSpeed:0.032, health:40,  power:12,  dnaDrops:1, shardDrop:4,  reactionSpeed:10 },
         scout:   { width:20, height:10, moveSpeed:0.026, health:110, power:34,  dnaDrops:2, shardDrop:9,  reactionSpeed:4  },
@@ -115,6 +115,17 @@ const SPECIES = {
         striker: { width:26, height:12, moveSpeed:0.022, health:180, power:52,  dnaDrops:3, shardDrop:14, reactionSpeed:8,  abdomenAttack:true, rangeDamage:28, abdomenCooldown:80 },
         tank:    { width:34, height:15, moveSpeed:0.014, health:320, power:70,  dnaDrops:3, shardDrop:20, reactionSpeed:18, abdomenAttack:true, rangeDamage:48, abdomenCooldown:70 },
         boss:    { width:30, height:14, moveSpeed:0.009, health:1100, power:110, dnaDrops:6, shardDrop:40, reactionSpeed:7,  abdomenAttack:true, rangeDamage:80, abdomenCooldown:55 }
+    },
+    // ── Moth — vertical stance, compound rounded-triangular wings, wing-dust ranged ──
+    moth: {
+        rank: 5,
+        color: "#dd8822",
+        nymph:   { width:12, height:9,  moveSpeed:0.031, health:85,  power:25,  dnaDrops:2, shardDrop:8,  reactionSpeed:12 },
+        scout:   { width:22, height:13, moveSpeed:0.023, health:220, power:55,  dnaDrops:3, shardDrop:16, reactionSpeed:5  },
+        // striker+ fire wing-dust powder as ranged abdomen attack
+        striker: { width:30, height:16, moveSpeed:0.018, health:340, power:80,  dnaDrops:4, shardDrop:22, reactionSpeed:9,  abdomenAttack:true, rangeDamage:32, abdomenCooldown:78 },
+        tank:    { width:40, height:20, moveSpeed:0.011, health:560, power:102, dnaDrops:4, shardDrop:30, reactionSpeed:20, abdomenAttack:true, rangeDamage:55, abdomenCooldown:66 },
+        boss:    { width:46, height:22, moveSpeed:0.007, health:2000, power:162, dnaDrops:9, shardDrop:65, reactionSpeed:7,  abdomenAttack:true, rangeDamage:92, abdomenCooldown:52 }
     }
 };
 
@@ -134,10 +145,10 @@ const PREDATOR_TYPES = {
 };
 
 // Get species for a given zone — purely zone-based, independent of night number.
-// Zone 1 = ant, zone 2 = beetle, zone 3 = scorpion/mantis, zone 4+ = spider.
+// Zone 1 = ant, zone 2 = beetle, zone 3 = scorpion, zone 4 = mantis, zone 5 = moth, zone 6+ = spider.
 // This means replaying zone 1 always sends ants; deeper zones unlock harder species.
 function getZoneSpecies(zoneIndex, nightNumber) {
-    const speciesOrder = ["ant","beetle","scorpion","spider"];
+    const speciesOrder = ["ant","beetle","scorpion","mantis","moth","spider"];
     const rank = Math.max(1, Math.min(zoneIndex, speciesOrder.length));
     const baseSpecies = speciesOrder[rank - 1];
 
@@ -196,5 +207,6 @@ const CLONE_COSTS = {
     beetle:   { base:2, tankExtra:1, bossExtra:5, splicesNeeded:5  },
     scorpion: { base:3, tankExtra:1, bossExtra:6, splicesNeeded:8  },
     spider:   { base:4, tankExtra:2, bossExtra:8, splicesNeeded:10 },
-    mantis:   { base:3, tankExtra:1, bossExtra:6, splicesNeeded:8  }
+    mantis:   { base:3, tankExtra:1, bossExtra:6, splicesNeeded:8  },
+    moth:     { base:4, tankExtra:2, bossExtra:7, splicesNeeded:12 }
 };

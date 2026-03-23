@@ -235,6 +235,75 @@ function _drawPredator(actor, px, py, drawCtx) {
     }
     _drawLegsPass(true); // far legs drawn behind body
 
+    // ── Moth wings — compound rounded-triangular, drawn behind body ──────────
+    if (actor.isMoth && segments[0]) {
+        const th  = segments[0];
+        const wc  = actor.walkCycle || 0;
+        // Flap: wing tips oscillate up/down on screen
+        const flapLift = Math.sin(wc * 0.12) * dim.height * 0.60;
+        const spread   = dim.width  * 1.55;  // lateral reach from body
+        const chord    = dim.height * 0.52;  // fore-aft wing depth
+        drawCtx.save();
+        [-1, 1].forEach(side => {
+            // ForEwing tip — outer tip of the larger upper wing triangle
+            const fwX = th.cx + perpX * side * spread;
+            const fwY = th.cy + perpY * side * spread - flapLift;
+            // HindWing tip — slightly inward and aft, smaller lower triangle
+            const hwX = th.cx + perpX * side * spread * 0.62 - dirX * chord * 0.90;
+            const hwY = th.cy + perpY * side * spread * 0.62 - dirY * chord * 0.90 - flapLift * 0.52;
+            // Shared trailing attachment point along the body rear
+            const trX = th.cx - dirX * chord * 1.10;
+            const trY = th.cy - dirY * chord * 1.10;
+
+            // ── ForEwing (larger rounded triangle) ──────────────────────────
+            drawCtx.fillStyle = "rgba(20, 14, 6, 0.90)";
+            drawCtx.beginPath();
+            drawCtx.moveTo(th.cx, th.cy);
+            // Leading edge: gently bowed curve toward tip
+            drawCtx.quadraticCurveTo(
+                th.cx + perpX * side * spread * 0.52 + dirX * dim.width * 0.22,
+                th.cy + perpY * side * spread * 0.52 + dirY * dim.width * 0.22 - flapLift * 0.52,
+                fwX, fwY
+            );
+            // Trailing edge: sweep back from tip to the trailing root
+            drawCtx.quadraticCurveTo(
+                fwX - dirX * chord * 0.80,
+                fwY - dirY * chord * 0.80,
+                trX, trY
+            );
+            drawCtx.closePath();
+            drawCtx.fill();
+
+            // ── HindWing (smaller rounded triangle, overlaps foreWing base) ─
+            drawCtx.fillStyle = "rgba(14, 9, 4, 0.82)";
+            drawCtx.beginPath();
+            drawCtx.moveTo(th.cx, th.cy);
+            // Leading edge toward hindwing tip
+            drawCtx.quadraticCurveTo(
+                th.cx + perpX * side * spread * 0.38 - dirX * chord * 0.38,
+                th.cy + perpY * side * spread * 0.38 - dirY * chord * 0.38 - flapLift * 0.32,
+                hwX, hwY
+            );
+            // Trailing edge back to trailing root
+            drawCtx.quadraticCurveTo(
+                hwX - dirX * chord * 0.48,
+                hwY - dirY * chord * 0.48,
+                trX, trY
+            );
+            drawCtx.closePath();
+            drawCtx.fill();
+
+            // Wing vein accents
+            drawCtx.strokeStyle = "rgba(48, 34, 14, 0.42)";
+            drawCtx.lineWidth = 0.70;
+            drawCtx.beginPath();
+            drawCtx.moveTo(th.cx, th.cy);  drawCtx.lineTo(fwX, fwY);
+            drawCtx.moveTo(trX, trY);       drawCtx.lineTo(hwX, hwY);
+            drawCtx.stroke();
+        });
+        drawCtx.restore();
+    }
+
     // Nymph: draw translucent
     if (actor.isNymph) drawCtx.globalAlpha = 0.38;
     // Boss aura ring
@@ -309,6 +378,12 @@ function _drawPredator(actor, px, py, drawCtx) {
                 drawCtx.lineTo( hw * 0.6,    ht * 0.85);
                 drawCtx.lineTo(-hw,          ht * 0.35);
                 drawCtx.closePath(); drawCtx.fill();
+            } else if (sp === "moth") {
+                // Moth: round compact head
+                const r = Math.min(hw, ht) * 0.90;
+                drawCtx.beginPath();
+                drawCtx.arc(hw * 0.25, 0, r, 0, Math.PI * 2);
+                drawCtx.fill();
             } else {
                 // Ant + default: aggressive wedge with cheek flare
                 drawCtx.beginPath();

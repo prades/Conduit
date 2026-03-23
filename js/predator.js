@@ -477,11 +477,16 @@ class Predator {
                     const shotDamage = isCharged ? Math.round(this.rangeDamage * 1.8) : this.rangeDamage;
                     const shotRadius = isCharged ? 7 : 4;
                     const chargeElem = isCharged ? this.chargeElement : null;
-                    const isWebShot   = this.speciesName === "spider";
+                    const isWebShot      = this.speciesName === "spider";
                     const isMantisAmbush = this.speciesName === "mantis";
+                    const isMothDust     = this.speciesName === "moth";
                     // Mantis ambush — announce visually so the player can read the attack
                     if (isMantisAmbush) {
                         floatingTexts.push({ x:this.x, y:this.y-1.2, text:"AMBUSH!", color:"#44dd55", life:40, vy:-0.06 });
+                    }
+                    // Moth dust — announce wing-dust powder burst
+                    if (isMothDust) {
+                        floatingTexts.push({ x:this.x, y:this.y-1.2, text:"DUST!", color:"#dd8822", life:36, vy:-0.06 });
                     }
 
                     spawnFollowerProjectile(

@@ -341,6 +341,26 @@ function applySpeciesBody(predator, speciesName) {
         predator.appendages.legs.coxa         = 7;
         predator.appendages.legs.femur        = 15;
         predator.appendages.legs.tibia        = 22;
+    } else if (speciesName === "moth") {
+        predator.isMoth = true;
+        predator.segmentCornerRadius = 6;
+        predator.body.head.size             = 0.30;
+        predator.body.thorax.size           = 1.00;
+        predator.body.thorax.yOffset        = -22;   // raised high — vertical stance
+        predator.body.abdomen.size          = 0.65;
+        predator.body.abdomen.segments      = 2;
+        predator.body.abdomen.taper         = 0.80;
+        predator.body.abdomen.absoluteAngle = -Math.PI * 0.5; // abdomen hangs straight down
+        predator.segmentSpacing             = 4;
+        predator.heightBoost                = 1.5;
+        predator.appendages.antennae.enabled  = true;
+        predator.appendages.antennae.length   = 14;
+        predator.appendages.mandibles.enabled = false;
+        predator.appendages.wings.enabled     = false; // wings drawn manually in draw.js
+        predator.appendages.legs.coxa         = 5;
+        predator.appendages.legs.femur        = 8;
+        predator.appendages.legs.tibia        = 10;
+        predator.joints.wingRoot.vertical     = -6;
     }
 }
 
@@ -732,6 +752,7 @@ function _drawClonesTab(PX, PY, PW, PH) {
             if (cl.abdomenAttack||(cl.rangeDamage&&cl.rangeDamage>0)) {
                 if (opt.speciesName === "spider")  parts.push("◈ WEB SHOT");
                 else if (opt.speciesName === "mantis") parts.push("◈ AMBUSH");
+                else if (opt.speciesName === "moth")   parts.push("◈ DUST");
                 else parts.push("◈ SPECIAL");
             }
             ctx.fillText(parts.join("  "), PX+32, rowY+30);
