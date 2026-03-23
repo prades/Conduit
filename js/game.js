@@ -2210,7 +2210,8 @@ function render() {
                         }
                         ctx.restore();
 
-                        // Proximity hint — screen-space glow ring + label / siphon progress
+                        // Siphon progress wire + label — only shown while player is actively siphoning
+                        const siphonProg0 = _panel.siphonProgress || 0;
                         const pDist = Math.hypot(player.x - _panel.x, player.y - _panel.y);
                         if (!activated) {
                             // Compute screen-space center of panel from wall-space (pcx, pcy)
@@ -2221,7 +2222,8 @@ function render() {
                             const wireSx = spx;
                             const wireSy = 0.5 * pcx - wbotY + WY;
 
-                            if (pDist < 2.5) {
+                            // Only draw the cable/animation when siphon is actively in progress
+                            if (siphonProg0 > 0 && pDist < 2.5) {
                                 const _wPulse = 0.4 + 0.4 * Math.sin(frame * 0.14);
                                 // Stub endpoint: short droop below panel bottom
                                 const stubEndX = wireSx + 5;
@@ -2287,7 +2289,8 @@ function render() {
                                 ctx.restore();
 
                                 const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
-                                const siphonProg = _panel.siphonProgress || 0;
+                                const barW = 28, barH = 3;
+                                const fill = Math.min(1, siphonProg0 / 150) * barW;
                                 ctx.save();
                                 ctx.globalAlpha = hint;
                                 ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.5;
@@ -2295,18 +2298,12 @@ function render() {
                                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                                 ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
                                 ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
-                                if (siphonProg > 0) {
-                                    const barW = 28, barH = 3;
-                                    const fill = Math.min(1, siphonProg / 150) * barW;
-                                    ctx.fillStyle = '#111'; ctx.globalAlpha = 0.8;
-                                    ctx.fillRect(spx - barW / 2, spy - 26, barW, barH);
-                                    ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
-                                    ctx.fillRect(spx - barW / 2, spy - 26, fill, barH);
-                                    ctx.fillStyle = '#00ff88';
-                                    ctx.fillText('SIPHON', spx, spy - 30);
-                                } else {
-                                    ctx.fillText('PANEL', spx, spy - 20);
-                                }
+                                ctx.fillStyle = '#111'; ctx.globalAlpha = 0.8;
+                                ctx.fillRect(spx - barW / 2, spy - 26, barW, barH);
+                                ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
+                                ctx.fillRect(spx - barW / 2, spy - 26, fill, barH);
+                                ctx.fillStyle = '#00ff88';
+                                ctx.fillText('SIPHON', spx, spy - 30);
                                 ctx.restore();
                             }
                         }
