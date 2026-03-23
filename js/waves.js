@@ -93,7 +93,7 @@ function clearAlarm() {
     actors.forEach(a => {
         if (!(a instanceof Predator) || a.dead || a.team === "green") return;
         a.isWanderer = false; // reset — next alarm will re-evaluate per zone
-        if (!a.lastAttacker) { a.provoked = false; a.state = "wander"; }
+        a.provoked = false; a.lastAttacker = null; a.state = "wander";
     });
 
     // Reactivate all panels so the player can replay the same zones
