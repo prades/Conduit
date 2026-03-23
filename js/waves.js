@@ -49,7 +49,8 @@ function triggerAlarm(type, sx, sy) {
         if (inRange) {
             a.state = "hunt"; a.provoked = true;
             // Predators outside the alarm zone (but not higher) can still be aggroed but don't count toward kills
-            if (predZone !== srcZone) a.isWanderer = true;
+            // Always reset isWanderer here — a predator may carry a stale true from a previous wave
+            a.isWanderer = (predZone !== srcZone);
         }
     });
 
@@ -91,6 +92,7 @@ function clearAlarm() {
     // Predators that haven't been provoked by a direct hit revert to grazing
     actors.forEach(a => {
         if (!(a instanceof Predator) || a.dead || a.team === "green") return;
+        a.isWanderer = false; // reset — next alarm will re-evaluate per zone
         if (!a.lastAttacker) { a.provoked = false; a.state = "wander"; }
     });
 
