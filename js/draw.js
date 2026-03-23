@@ -241,8 +241,8 @@ function _drawPredator(actor, px, py, drawCtx) {
         const wc  = actor.walkCycle || 0;
         // Flap: wing tips oscillate up/down on screen
         const flapLift = Math.sin(wc * 0.12) * dim.height * 0.60;
-        const spread   = dim.width  * 1.55;  // lateral reach from body
-        const chord    = dim.height * 0.52;  // fore-aft wing depth
+        const spread   = dim.width  * 1.70;  // lateral reach from body
+        const chord    = dim.height * 1.60;  // fore-aft wing depth (tall enough for full moth wing)
         drawCtx.save();
         [-1, 1].forEach(side => {
             // ForEwing tip — outer tip of the larger upper wing triangle
