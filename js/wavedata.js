@@ -40,8 +40,8 @@ let nightKillCount    = 0;
 let nightPredatorsRemaining = 0;
 let nightEnemiesTarget = 0;
 
-// Per-zone predator tracking — one predator slot per hostile zone
-// zonePredators[zoneIndex] = predator actor or null
+// Per-zone predator tracking — array of predator actors per zone
+// zonePredators[zoneIndex] = [ predator, ... ]
 let zonePredators = {};
 let zoneRespawnTimers = {}; // zoneIndex -> frames until respawn
 

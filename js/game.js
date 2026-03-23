@@ -401,6 +401,31 @@ function render() {
         }
     }
 
+    // ── NEST HACK SIPHON ──
+    // Player stands near a live nest to hack it — triggers a zone alarm for that nest's zone.
+    // Cannot hack during an active alarm (one wave at a time).
+    const NEST_HACK_FRAMES = 180; // ~3 seconds at 60fps
+    if (!alertActive) {
+        for (const nest of _nestCache) {
+            if (nest.nestHealth <= 0) { nest.nestHackProgress = 0; continue; }
+            const _nhdx = player.x - nest.x, _nhdy = player.y - (nest.y + 1);
+            const playerNearNest = _nhdx*_nhdx + _nhdy*_nhdy < 2.25; // 1.5 tiles
+            if (playerNearNest && !_siphonActive) {
+                _siphonActive = true; // block panel siphons while hacking a nest
+                nest.nestHackProgress = (nest.nestHackProgress || 0) + 1;
+                if (nest.nestHackProgress >= NEST_HACK_FRAMES) {
+                    nest.nestHackProgress = 0;
+                    triggerAlarm("zone", nest.x, nest.y);
+                }
+            } else {
+                nest.nestHackProgress = 0;
+            }
+        }
+    } else {
+        // Clear any in-progress hack when alarm fires
+        for (const nest of _nestCache) nest.nestHackProgress = 0;
+    }
+
     // ── EXPLORED ZONES ──
     exploredZones.add(getZoneIndex(Math.floor(player.x)));
 
@@ -448,20 +473,25 @@ function render() {
     if (gameState.phase === "day" || gameState.phase === "night") {
         const hostileZoneCount = Math.min(gameState.nightNumber, 5);
         for (let z = 1; z <= hostileZoneCount; z++) {
-            // During an alarm, only spawn new predators from the triggered zone (facility alarms affect all zones)
-            if (alertActive && alertType !== "facility" && z !== alertZone) continue;
-            const existing = zonePredators[z];
-            if (!existing || existing.dead) {
-                const nest = _nestCache.find(t => t.nestZone === z);
-                if (nest && nest.nestHealth <= 0) continue;
+            const nest = _nestCache.find(t => t.nestZone === z);
+            if (nest && nest.nestHealth <= 0) continue;
+            if (!zonePredators[z]) zonePredators[z] = [];
+            const alivePredators = zonePredators[z].filter(p => !p.dead);
+            zonePredators[z] = alivePredators;
+            const isAlarmZone = alertActive && (alertType === "facility" || z === alertZone);
+            // Higher zones (above alarm zone) keep exactly 1 wanderer — they are never hunters
+            const isHigherZone = alertActive && alertZone !== null && z > alertZone;
+            // During alarm: spawn up to (zone depth + 2) predators in the alarm zone;
+            // higher zones maintain 1 wanderer; non-alarm day keeps 1 wanderer per zone.
+            const maxPredators = isAlarmZone ? (2 + z) : 1;
+            if (alivePredators.length < maxPredators) {
                 if (!zoneRespawnTimers[z]) zoneRespawnTimers[z] = 0;
                 if (zoneRespawnTimers[z] > 0) {
                     zoneRespawnTimers[z]--;
                 } else {
                     spawnPredatorForZone(z);
-                    // Alarm zone spawns back-to-back (short delay); other zones use normal respawn
-                    const isAlarmZone = alertActive && (alertType === "facility" || z === alertZone);
-                    zoneRespawnTimers[z] = isAlarmZone ? 60 : 240;
+                    // Alarm zone: stagger spawns; wanderer zones: slow respawn
+                    zoneRespawnTimers[z] = isAlarmZone ? 90 : 240;
                 }
             }
         }
@@ -730,10 +760,13 @@ function render() {
         if (a instanceof Predator && a.dead && !a.deathProcessed && a.team !== "green") {
             a.deathProcessed = true;
             onPredatorDeath(a);
-            // Clear from zone slot so it can respawn
-            if (a.homeZone !== undefined && zonePredators[a.homeZone] === a) {
-                zonePredators[a.homeZone] = null;
-                zoneRespawnTimers[a.homeZone] = 180;
+            // Remove from zone array so slot opens for respawn
+            if (a.homeZone !== undefined && zonePredators[a.homeZone]) {
+                zonePredators[a.homeZone] = zonePredators[a.homeZone].filter(p => p !== a);
+                // Only reset timer when the last predator in that zone dies
+                if (zonePredators[a.homeZone].length === 0) {
+                    zoneRespawnTimers[a.homeZone] = 180;
+                }
             }
             // Legacy activePredator cleanup
             if (a === activePredator) {
@@ -1445,6 +1478,32 @@ function render() {
                 // Health bar centred on the top edge of the face
                 const barCx = (wfTL.x + wfTR.x) / 2;
                 drawHealthBar(barCx - 40, wfTL.y - 10, 80, 5, obj.nestHealth, obj.nestMaxHealth);
+
+                // Hack progress bar — shown when player is hacking this nest
+                const _hackProg = obj.nestHackProgress || 0;
+                if (_hackProg > 0) {
+                    const _hp = _hackProg / 180;
+                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                    ctx.fillStyle = "rgba(0,0,0,0.55)";
+                    ctx.fillRect(barCx - 40, wfTL.y - 22, 80, 7);
+                    ctx.fillStyle = `rgba(0,255,136,${0.7 + 0.3 * Math.sin(frame * 0.3)})`;
+                    ctx.fillRect(barCx - 40, wfTL.y - 22, 80 * _hp, 7);
+                    ctx.strokeStyle = "#0f8"; ctx.lineWidth = 1;
+                    ctx.strokeRect(barCx - 40, wfTL.y - 22, 80, 7);
+                    ctx.font = "9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#0f8";
+                    ctx.fillText("HACKING NEST...", barCx, wfTL.y - 26);
+                    ctx.restore();
+                } else if (!alertActive) {
+                    // Hint label when player is not currently hacking
+                    const _dxH = player.x - obj.x, _dyH = player.y - (obj.y + 1);
+                    if (_dxH*_dxH + _dyH*_dyH < 9) { // within 3 tiles — show hint
+                        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                        ctx.font = "9px monospace"; ctx.textAlign = "center";
+                        ctx.fillStyle = "rgba(0,255,136,0.7)";
+                        ctx.fillText("[ HOLD to HACK NEST ]", barCx, wfTL.y - 26);
+                        ctx.restore();
+                    }
+                }
             }
 
             // Command tile highlight

@@ -27,17 +27,24 @@ function triggerAlarm(type, sx, sy) {
         text:"⚠ " + label + " ⚠", color:"#ff2200", life:180, vy:-0.25, size:16 });
 
     // Make affected predators hostile immediately
+    // Predators from zones HIGHER than the alarm zone are never turned hostile — they remain wanderers.
     const srcZone = getZoneIndex(Math.floor(sx));
     actors.forEach(a => {
         if (!(a instanceof Predator) || a.dead || a.team === "green") return;
+        const predZone = getZoneIndex(Math.floor(a.x));
+        // Higher-zone predators are never aggroed by an alarm — they are ambient wanderers only
+        if (predZone > srcZone) {
+            a.state = "wander"; a.isWanderer = true;
+            return;
+        }
         const inRange =
             type === "facility"  ? true :
-            type === "zone"      ? getZoneIndex(Math.floor(a.x)) === srcZone :
+            type === "zone"      ? predZone === srcZone :
             /* proximity */        Math.hypot(a.x - sx, a.y - sy) < 6;
         if (inRange) {
             a.state = "hunt"; a.provoked = true;
-            // Predators outside the alarm zone become hostile but don't count toward the kill quota
-            if (getZoneIndex(Math.floor(a.x)) !== srcZone) a.isWanderer = true;
+            // Predators outside the alarm zone (but not higher) can still be aggroed but don't count toward kills
+            if (predZone !== srcZone) a.isWanderer = true;
         }
     });
 

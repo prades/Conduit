@@ -386,9 +386,10 @@ function spawnPredatorForZone(zoneIndex) {
 
     const predator = new Predator(className, def, spawnX, spawnY);
     const isAlarmZone = alertActive && (alertType === "facility" || zoneIndex === alertZone);
-    predator.state        = isAlarmZone ? "hunt" : "wander"; // hunt only when this zone's alarm is active
-    // Predators spawned outside the alarm zone during an alarm are wanderers — don't count toward kills
-    predator.isWanderer   = alertActive && !isAlarmZone;
+    // Predators from zones higher than the alarm zone are always wanderers — they don't aggro on alarm
+    const isHigherZone = alertActive && alertZone !== null && zoneIndex > alertZone;
+    predator.state        = (isAlarmZone && !isHigherZone) ? "hunt" : "wander";
+    predator.isWanderer   = alertActive && (!isAlarmZone || isHigherZone);
     predator.speciesName  = speciesName;
     predator.className    = className;
     predator.dnaDrops     = classDef.dnaDrops;
@@ -398,7 +399,8 @@ function spawnPredatorForZone(zoneIndex) {
     applySpeciesBody(predator, speciesName);
 
     actors.push(predator);
-    zonePredators[zoneIndex] = predator;
+    if (!zonePredators[zoneIndex]) zonePredators[zoneIndex] = [];
+    zonePredators[zoneIndex].push(predator);
     return predator;
 }
 
