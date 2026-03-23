@@ -446,7 +446,7 @@ class Predator {
         this.lastX=this.x; this.lastY=this.y;
 
         // ── ABDOMEN RANGED ATTACK ──
-        if (this.abdomenAttack && !this.dead) {
+        if (this.abdomenAttack && !this.dead && (this.state !== "wander" || this.provoked)) {
             this.abdomenTimer++;
             if (this.abdomenTimer >= this.abdomenCooldown) {
                 // Find the best target in the rear arc (>90° from facing)
