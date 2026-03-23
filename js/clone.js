@@ -222,6 +222,12 @@ function handleCloneMenuTap(ex, ey) {
 }
 
 function applySpeciesBody(predator, speciesName) {
+    // Synthetic species — delegate visual body to the base template they were modded from
+    if (SYNTHETIC_SPECIES && SYNTHETIC_SPECIES[speciesName]) {
+        applySpeciesBody(predator, SYNTHETIC_SPECIES[speciesName].bodyStyle);
+        return;
+    }
+
     // Nymph — tiny, translucent, soft rounded
     if (predator.className === "nymph") {
         predator.isNymph = true;
@@ -384,7 +390,8 @@ function spawnFollowerProjectile(actor, target, color, damage, radius, onHit) {
 function spawnPredatorForZone(zoneIndex) {
     const speciesName = getZoneSpecies(zoneIndex, gameState.nightNumber);
     const className   = getZoneClass(zoneIndex);
-    const speciesDef  = SPECIES[speciesName];
+    // Natural species live in SPECIES; synthetic deep-zone constructs live in SYNTHETIC_SPECIES
+    const speciesDef  = SPECIES[speciesName] || SYNTHETIC_SPECIES[speciesName];
     const classDef    = speciesDef[className];
 
     const def = {

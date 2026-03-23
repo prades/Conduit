@@ -516,7 +516,10 @@ function render() {
 
     // ── PREDATOR SPAWNING — always present (graze by default, hunt when alarm is active) ──
     if (gameState.phase === "day" || gameState.phase === "night") {
-        const hostileZoneCount = Math.min(gameState.nightNumber, 5);
+        // Zone cap scales with night number: natural species fill zones 1-6, then
+        // synthetic deep-zone constructs (XV-09 … QX-z1) fill zones 7-12.
+        // Cap at 12 to populate infinite zones without unbounded actor counts.
+        const hostileZoneCount = Math.min(gameState.nightNumber, 12);
         for (let z = 1; z <= hostileZoneCount; z++) {
             const nest = _nestCache.find(t => t.nestZone === z);
             if (nest && nest.nestHealth <= 0) continue;

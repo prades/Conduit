@@ -145,18 +145,19 @@ const PREDATOR_TYPES = {
 };
 
 // Get species for a given zone — purely zone-based, independent of night number.
-// Zone 1 = ant, zone 2 = beetle, zone 3 = scorpion, zone 4 = mantis, zone 5 = moth, zone 6+ = spider.
-// This means replaying zone 1 always sends ants; deeper zones unlock harder species.
+// Zone 1–6: natural species (ant→beetle→scorpion→mantis→moth→spider).
+// Zone 7+:  synthetic deep-zone constructs from predator_randomizer.js.
 function getZoneSpecies(zoneIndex, nightNumber) {
     const speciesOrder = ["ant","beetle","scorpion","mantis","moth","spider"];
-    const rank = Math.max(1, Math.min(zoneIndex, speciesOrder.length));
-    const baseSpecies = speciesOrder[rank - 1];
-
-    // 15% chance to spawn one tier lower (never below ant)
-    if (rank > 1 && Math.random() < 0.15) {
-        return speciesOrder[rank - 2];
+    if (zoneIndex <= speciesOrder.length) {
+        const rank = Math.max(1, Math.min(zoneIndex, speciesOrder.length));
+        const baseSpecies = speciesOrder[rank - 1];
+        // 15% chance to spawn one tier lower (never below ant)
+        if (rank > 1 && Math.random() < 0.15) return speciesOrder[rank - 2];
+        return baseSpecies;
     }
-    return baseSpecies;
+    // Zones 7+ use synthetic chimera species defined in predator_randomizer.js
+    return getSyntheticZoneSpecies(zoneIndex);
 }
 
 // Get class for a zone — scales with nightNumber so individual predators
@@ -203,10 +204,18 @@ function getZoneClass(zoneIndex) {
 
 // Clone cost table
 const CLONE_COSTS = {
-    ant:      { base:1, tankExtra:1, bossExtra:4, splicesNeeded:3  },
-    beetle:   { base:2, tankExtra:1, bossExtra:5, splicesNeeded:5  },
-    scorpion: { base:3, tankExtra:1, bossExtra:6, splicesNeeded:8  },
-    spider:   { base:4, tankExtra:2, bossExtra:8, splicesNeeded:10 },
-    mantis:   { base:3, tankExtra:1, bossExtra:6, splicesNeeded:8  },
-    moth:     { base:4, tankExtra:2, bossExtra:7, splicesNeeded:12 }
+    ant:      { base:1, tankExtra:1, bossExtra:4,  splicesNeeded:3  },
+    beetle:   { base:2, tankExtra:1, bossExtra:5,  splicesNeeded:5  },
+    scorpion: { base:3, tankExtra:1, bossExtra:6,  splicesNeeded:8  },
+    spider:   { base:4, tankExtra:2, bossExtra:8,  splicesNeeded:10 },
+    mantis:   { base:3, tankExtra:1, bossExtra:6,  splicesNeeded:8  },
+    moth:     { base:4, tankExtra:2, bossExtra:7,  splicesNeeded:12 },
+    // Synthetic deep-zone constructs — cloning not normally available but
+    // entries prevent crashes if DNA of an unknown species is ever queried
+    "XV-09":  { base:5, tankExtra:2, bossExtra:10, splicesNeeded:20 },
+    "RS-a4":  { base:6, tankExtra:3, bossExtra:12, splicesNeeded:25 },
+    "HG-b2":  { base:7, tankExtra:3, bossExtra:14, splicesNeeded:30 },
+    "NX-w7":  { base:8, tankExtra:4, bossExtra:16, splicesNeeded:36 },
+    "AB-p3":  { base:9, tankExtra:4, bossExtra:18, splicesNeeded:42 },
+    "QX-z1":  { base:10,tankExtra:5, bossExtra:20, splicesNeeded:50 }
 };
