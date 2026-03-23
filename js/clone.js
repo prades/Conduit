@@ -385,7 +385,8 @@ function spawnPredatorForZone(zoneIndex) {
     const spawnY = nest ? nest.y : 2;
 
     const predator = new Predator(className, def, spawnX, spawnY);
-    predator.state        = alertActive ? "hunt" : "wander"; // hunt only when alarm is active
+    const isAlarmZone = alertActive && (alertType === "facility" || zoneIndex === alertZone);
+    predator.state        = isAlarmZone ? "hunt" : "wander"; // hunt only when this zone's alarm is active
     predator.speciesName  = speciesName;
     predator.className    = className;
     predator.dnaDrops     = classDef.dnaDrops;

@@ -126,6 +126,7 @@ let alertActive = false;   // true while alarm is sounding
 let alertTimer  = 0;       // frames remaining in current alarm
 let alertType   = null;    // null | "proximity" | "zone" | "facility"
 let alertSource = null;    // { x, y } where alarm was triggered
+let alertZone   = null;    // zone index where the alarm was triggered
 const ALERT_DURATION = 600; // 10 seconds at 60fps
 
 // ── TERRITORY / CIRCUIT HARVESTING ────────────────────────

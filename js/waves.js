@@ -10,6 +10,7 @@ function triggerAlarm(type, sx, sy) {
     alertTimer  = ALERT_DURATION;
     alertType   = type;
     alertSource = { x: sx, y: sy };
+    alertZone   = getZoneIndex(Math.floor(sx));
 
     // If not already in night/alert phase, initialise kill quota
     if (gameState.phase !== "night") {
@@ -70,6 +71,7 @@ function clearAlarm() {
     alertActive = false;
     alertType   = null;
     alertSource = null;
+    alertZone   = null;
     // Predators that haven't been provoked by a direct hit revert to grazing
     actors.forEach(a => {
         if (!(a instanceof Predator) || a.dead || a.team === "green") return;
@@ -397,7 +399,7 @@ function nextWave() {
         applyRepairStation();
 
         // Reset alert state
-        alertActive = false; alertTimer = 0; alertType = null; alertSource = null;
+        alertActive = false; alertTimer = 0; alertType = null; alertSource = null; alertZone = null;
         nightKillCount = 0;
         nightEnemiesTarget    = enemiesThisWave();
         nightPredatorsRemaining = predatorsThisWave();
@@ -434,7 +436,7 @@ function restartGame() {
     gameState={ phase:"day", nightNumber:1, totalWavesSurvived:0, highestZoneCleared:0, running:true };
     dayStats={ redSpawned:0, redConverted:0 };
     nightKillCount=0; nightEnemiesTarget=0; nightPredatorsRemaining=0;
-    alertActive=false; alertTimer=0; alertType=null; alertSource=null;
+    alertActive=false; alertTimer=0; alertType=null; alertSource=null; alertZone=null;
     for (let i=-6;i<0;i++) generateSegment(i);
     for (let i=0;i<20;i++) generateSegment(i);
     // No free spawns — player earns followers and encounters predators naturally
