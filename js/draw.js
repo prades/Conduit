@@ -306,8 +306,22 @@ function _drawPredator(actor, px, py, drawCtx) {
 
     // Nymph: draw translucent
     if (actor.isNymph) drawCtx.globalAlpha = 0.38;
-    // Boss aura ring
-    if (actor.isBoss && (actor.team !== "green" || actor.isClone)) {
+    // Elite glow ring — pulsing colored outline for randomized mutant predators
+    if (actor.isElite && !actor.isNymph) {
+        const eliteR = actor.dimensions.width * 0.85;
+        const pulse  = 0.5 + 0.5 * Math.sin((actor.animationPhase||0) + (frame||0) * 0.07);
+        drawCtx.save();
+        drawCtx.globalAlpha = 0.18 + pulse * 0.20;
+        drawCtx.strokeStyle = actor.color || "#ff8800";
+        drawCtx.lineWidth   = 2.5;
+        drawCtx.beginPath();
+        drawCtx.ellipse(px, bodyBaseY, eliteR * 0.9, eliteR * 0.55, 0, 0, Math.PI*2);
+        drawCtx.stroke();
+        drawCtx.globalAlpha = 1;
+        drawCtx.restore();
+    }
+    // Boss / shielded aura ring
+    if ((actor.isBoss || actor.shieldAura) && (actor.team !== "green" || actor.isClone)) {
         const auraR = (actor.shieldAuraRadius||5) * TILE_W * 0.5;
         const pulse = 0.5 + 0.5 * Math.sin((actor.shieldAuraPulse||0) * 0.1);
         drawCtx.save();

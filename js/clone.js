@@ -400,6 +400,9 @@ function spawnPredatorForZone(zoneIndex) {
         abdomenCooldown: classDef.abdomenCooldown ?? 90
     };
 
+    // Elite randomization: later zones spawn increasingly powerful mutant variants
+    const _eliteInstMuts = maybeApplyEliteDef(def, zoneIndex);
+
     // Spawn at the zone's nest if it's alive, otherwise fall back to zone centre
     const nest   = world.find(t => t.nest && t.nestZone === zoneIndex && t.nestHealth > 0);
     const spawnX = nest ? nest.x : zoneIndex * ZONE_LENGTH + Math.floor(ZONE_LENGTH / 2);
@@ -418,6 +421,8 @@ function spawnPredatorForZone(zoneIndex) {
     predator.homeZone     = zoneIndex;
     // Apply species-specific body shaping
     applySpeciesBody(predator, speciesName);
+    // Finalize elite mutations (must run after applySpeciesBody)
+    if (_eliteInstMuts !== null) applyEliteInstance(predator, _eliteInstMuts, def);
 
     actors.push(predator);
     if (!zonePredators[zoneIndex]) zonePredators[zoneIndex] = [];
