@@ -983,106 +983,169 @@ function render() {
             ctx.fillText("◈ MOD", px, py-24+bob);
         }
         else if (obj.type==='crystal') {
-            const hpR   = crystal.health / crystal.maxHealth;
-            const pulse  = 0.7 + 0.3 * Math.sin(frame * 0.05);
-            const crystalCol = hpR > 0.5 ? "#44f" : hpR > 0.2 ? "#f80" : "#f22";
-            const baseRGB    = hpR > 0.5 ? [60,80,255] : hpR > 0.2 ? [255,130,0] : [255,40,40];
+            const hpR  = crystal.health / crystal.maxHealth;
+            const pulse = 0.7 + 0.3 * Math.sin(frame * 0.05);
+            // Flicker worsens with damage
+            const jFlicker = hpR < 0.5
+                ? ((Math.sin(frame * 0.35) > 0.72) ? 0.3 + 0.7 * Math.abs(Math.sin(frame * 2.3)) : 1.0)
+                : 1.0;
+            // HP colour state: healthy=cyan-blue, damaged=orange, critical=red
+            const coreRGB = hpR > 0.5 ? [20,160,255] : hpR > 0.2 ? [255,130,0] : [255,40,40];
+            const coreHex = hpR > 0.5 ? '#14a0ff'    : hpR > 0.2 ? '#ff8200'   : '#ff2828';
 
-            // ── 3-D rotating diamond (square bipyramid / octahedron) ─────────
-            const rot   = frame * 0.022;                     // spin angle
-            const bob   = Math.sin(frame * 0.04) * 4;       // gentle hover
-            const scale = 30;
-            const cx    = px, cy = py - 66 + bob;
+            const bob = Math.sin(frame * 0.04) * 3;
+            // Isometric box: base-center at (bcx, bcy), hw=half-width, h=height, t=iso-tilt
+            const bcx = px, bcy = py - 28 + bob;
+            const hw = 24, h = 40, t = hw * 0.5;
 
-            //   Vertices: top, 4 equatorial, bottom
-            //   Diamond proportions: crown taller than pavilion
-            const V = [
-                [ 0,  1.15,  0 ],   // 0 top
-                [ 1,  0.08,  0 ],   // 1 eq +x
-                [ 0,  0.08,  1 ],   // 2 eq +z
-                [-1,  0.08,  0 ],   // 3 eq -x
-                [ 0,  0.08, -1 ],   // 4 eq -z
-                [ 0, -0.85,  0 ],   // 5 bottom
-            ];
-            // 8 triangular faces (CCW winding when viewed from outside)
-            const FACES = [
-                [0,2,1],[0,3,2],[0,4,3],[0,1,4],  // upper crown
-                [5,1,2],[5,2,3],[5,3,4],[5,4,1],  // lower pavilion
-            ];
-
-            const cosR = Math.cos(rot), sinR = Math.sin(rot);
-            // Rotate around Y axis, then apply a slight forward tilt
-            const tiltC = Math.cos(0.38), tiltS = Math.sin(0.38);
-            const rv = V.map(([x,y,z]) => {
-                const rx = x*cosR + z*sinR, ry = y, rz = -x*sinR + z*cosR;
-                // tilt so we see both crown and pavilion
-                const ty = ry*tiltC - rz*tiltS, tz = ry*tiltS + rz*tiltC;
-                return [rx, ty, tz];
-            });
-
-            // Orthographic projection to screen
-            const sc = rv.map(([x,y,z]) => [cx + x*scale, cy - y*scale, z]);
-
-            // Light direction (upper-left-front), normalised
-            const LD = [0.45, 0.75, 0.55];
-            const ll  = Math.hypot(...LD); const lx=LD[0]/ll, ly=LD[1]/ll, lz=LD[2]/ll;
-
-            // Sort faces back→front (painter's algorithm)
-            const sorted = FACES.map(f => {
-                const zAvg = (rv[f[0]][2] + rv[f[1]][2] + rv[f[2]][2]) / 3;
-                return { f, zAvg };
-            }).sort((a,b) => a.zAvg - b.zAvg);
+            // Face point arrays for clipping / drawing
+            const rfPts = [[bcx,bcy],[bcx+hw,bcy-t],[bcx+hw,bcy-t-h],[bcx,bcy-h]];
+            const lfPts = [[bcx,bcy],[bcx-hw,bcy-t],[bcx-hw,bcy-t-h],[bcx,bcy-h]];
+            const tpPts = [[bcx,bcy-h],[bcx+hw,bcy-h-t],[bcx,bcy-h-hw],[bcx-hw,bcy-h-t]];
+            const _facePath = pts => {
+                ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+                for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+                ctx.closePath();
+            };
 
             ctx.save();
 
-            // Outer glow halo — radial gradient, no shadowBlur
-            const haloBase = hpR > 0.5 ? "rgba(68,68,255," : hpR > 0.2 ? "rgba(255,136,0," : "rgba(255,34,34,";
-            const haloGrd = ctx.createRadialGradient(cx, cy, 8, cx, cy, 52);
-            haloGrd.addColorStop(0, haloBase + "0.35)");
-            haloGrd.addColorStop(1, haloBase + "0)");
-            ctx.globalAlpha = pulse;
-            ctx.fillStyle   = haloGrd;
-            ctx.beginPath(); ctx.arc(cx, cy, 52, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1;
+            // ── Outer glow halo ──
+            const haloBase = hpR>0.5 ? 'rgba(18,70,200,' : hpR>0.2 ? 'rgba(200,90,0,' : 'rgba(200,18,18,';
+            const haloGrd  = ctx.createRadialGradient(bcx, bcy-h*0.5, 5, bcx, bcy-h*0.5, 52);
+            haloGrd.addColorStop(0, haloBase+'0.25)'); haloGrd.addColorStop(1, haloBase+'0)');
+            ctx.save(); ctx.globalAlpha = pulse * jFlicker;
+            ctx.fillStyle = haloGrd;
+            ctx.beginPath(); ctx.arc(bcx, bcy-h*0.5, 52, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
 
-            sorted.forEach(({ f }) => {
-                const [i0,i1,i2] = f;
-                const [r0,r1,r2] = [rv[i0],rv[i1],rv[i2]];
+            // ── Right face — dark gunmetal ──
+            _facePath(rfPts); ctx.fillStyle='rgb(26,28,33)'; ctx.fill();
+            ctx.strokeStyle='rgba(58,62,72,0.7)'; ctx.lineWidth=0.8; ctx.stroke();
 
-                // Face normal (cross product)
-                const ax=r1[0]-r0[0], ay=r1[1]-r0[1], az=r1[2]-r0[2];
-                const bx=r2[0]-r0[0], by=r2[1]-r0[1], bz=r2[2]-r0[2];
-                const nx=ay*bz-az*by, ny=az*bx-ax*bz, nz=ax*by-ay*bx;
-                const nl=Math.hypot(nx,ny,nz)||1;
+            // ── Warning stripes on right face ──
+            ctx.save(); _facePath(rfPts); ctx.clip(); ctx.lineWidth=4.5;
+            for (let i=-5;i<=10;i++) {
+                ctx.strokeStyle = (i%2===0) ? 'rgba(180,136,0,0.28)' : 'rgba(8,8,8,0.24)';
+                ctx.beginPath(); ctx.moveTo(bcx+i*6-5, bcy+5); ctx.lineTo(bcx+hw+i*6+5, bcy-t-h-5); ctx.stroke();
+            }
+            ctx.restore();
 
-                if (nz/nl < 0) return;  // back-face cull (viewer at +z)
+            // ── Left face — slightly lighter gunmetal ──
+            _facePath(lfPts); ctx.fillStyle='rgb(34,36,42)'; ctx.fill();
+            ctx.strokeStyle='rgba(58,62,72,0.7)'; ctx.lineWidth=0.8; ctx.stroke();
 
-                const diff = Math.max(0, (nx/nl)*lx + (ny/nl)*ly + (nz/nl)*lz);
-                const spec = Math.pow(diff, 18) * 0.7;         // specular glint
-                const amb  = 0.18;
-                const bright = amb + (1-amb)*diff;
+            // ── Top face ──
+            _facePath(tpPts); ctx.fillStyle='rgb(42,44,51)'; ctx.fill();
+            ctx.strokeStyle='rgba(68,72,84,0.8)'; ctx.lineWidth=0.8; ctx.stroke();
 
-                const [p0,p1,p2] = [sc[i0],sc[i1],sc[i2]];
-                ctx.beginPath();
-                ctx.moveTo(p0[0],p0[1]); ctx.lineTo(p1[0],p1[1]); ctx.lineTo(p2[0],p2[1]);
-                ctx.closePath();
+            // ── Top glow overlay ──
+            ctx.save(); _facePath(tpPts); ctx.clip();
+            ctx.fillStyle=`rgba(${(coreRGB[0]*0.12*pulse*jFlicker)|0},${(coreRGB[1]*0.12*pulse*jFlicker)|0},${(coreRGB[2]*0.12*pulse*jFlicker)|0},0.45)`;
+            ctx.fill(); ctx.restore();
 
-                const r = Math.min(255, (baseRGB[0]*bright + 255*spec) | 0);
-                const g = Math.min(255, (baseRGB[1]*bright + 255*spec) | 0);
-                const b = Math.min(255, (baseRGB[2]*bright + 255*spec) | 0);
-                ctx.fillStyle = `rgb(${r},${g},${b})`;
-                ctx.fill();
-
-                // Facet edge
-                ctx.strokeStyle = `rgba(160,200,255,${0.25 + bright*0.45})`;
-                ctx.lineWidth   = 0.8;
-                ctx.stroke();
+            // ── Rivets — right face ──
+            [[bcx+hw*0.22,bcy-t*0.22-5],[bcx+hw*0.22,bcy-t*0.22-h+6],
+             [bcx+hw*0.78,bcy-t*0.78-5],[bcx+hw*0.78,bcy-t*0.78-h+6]].forEach(([rx,ry]) => {
+                ctx.fillStyle='rgba(78,73,58,0.95)';
+                ctx.beginPath(); ctx.arc(rx,ry,1.9,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle='rgba(52,48,36,0.8)'; ctx.lineWidth=0.5;
+                ctx.beginPath(); ctx.moveTo(rx-1.4,ry); ctx.lineTo(rx+1.4,ry); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rx,ry-1.4); ctx.lineTo(rx,ry+1.4); ctx.stroke();
+            });
+            // ── Rivets — left face ──
+            [[bcx-hw*0.22,bcy-t*0.22-5],[bcx-hw*0.22,bcy-t*0.22-h+6],
+             [bcx-hw*0.78,bcy-t*0.78-5],[bcx-hw*0.78,bcy-t*0.78-h+6]].forEach(([rx,ry]) => {
+                ctx.fillStyle='rgba(68,64,51,0.95)';
+                ctx.beginPath(); ctx.arc(rx,ry,1.9,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle='rgba(44,40,30,0.8)'; ctx.lineWidth=0.5;
+                ctx.beginPath(); ctx.moveTo(rx-1.4,ry); ctx.lineTo(rx+1.4,ry); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rx,ry-1.4); ctx.lineTo(rx,ry+1.4); ctx.stroke();
             });
 
-            ctx.restore();
-            // ─────────────────────────────────────────────────────────────────
+            // ── Energy core window (right face, center) ──
+            const winX = bcx+hw*0.42, winY = bcy-t*0.42-h*0.52;
+            ctx.fillStyle='rgba(4,4,7,0.97)'; ctx.strokeStyle='rgba(52,56,66,0.9)'; ctx.lineWidth=0.9;
+            ctx.fillRect(winX-7,winY-9,14,18); ctx.strokeRect(winX-7,winY-9,14,18);
+            // Glowing inner orb
+            ctx.shadowColor=coreHex; ctx.shadowBlur=(9+5*pulse)*jFlicker;
+            ctx.fillStyle=`rgba(${(coreRGB[0]*pulse*jFlicker)|0},${(coreRGB[1]*pulse*jFlicker)|0},${(coreRGB[2]*pulse*jFlicker)|0},0.92)`;
+            ctx.beginPath(); ctx.arc(winX,winY,4.5+pulse*1.1,0,Math.PI*2); ctx.fill();
+            ctx.shadowBlur=0;
+            // Glare strip on window
+            ctx.fillStyle='rgba(255,255,255,0.07)'; ctx.fillRect(winX-6,winY-8,7,7);
 
-            drawHealthBar(px-25, py-96+bob, 50, 7, crystal.health, crystal.maxHealth);
+            // ── Vent slots on right face top ──
+            [bcy-t*0.04-h+8, bcy-t*0.04-h+13].forEach(vy => {
+                ctx.fillStyle='rgba(0,0,0,0.84)'; ctx.strokeStyle='rgba(55,58,66,0.5)'; ctx.lineWidth=0.5;
+                ctx.fillRect(bcx+2,vy,15,2); ctx.strokeRect(bcx+2,vy,15,2);
+            });
+
+            // ── Conduit pipe + coil rings on top-right ──
+            const coilX=bcx+hw*0.55, coilBaseY=bcy-t*0.55-h;
+            ctx.strokeStyle='rgba(72,68,52,0.95)'; ctx.lineWidth=2.8;
+            ctx.beginPath(); ctx.moveTo(coilX,coilBaseY); ctx.lineTo(coilX,coilBaseY-22); ctx.stroke();
+            for (let i=0;i<5;i++) {
+                const ky=coilBaseY-3-i*4;
+                ctx.strokeStyle=`rgba(${(88+i*9)|0},${(83+i*7)|0},${(60+i*4)|0},0.82)`;
+                ctx.lineWidth=1.3; ctx.beginPath(); ctx.ellipse(coilX,ky,5.2,2.1,0,0,Math.PI*2); ctx.stroke();
+            }
+            ctx.fillStyle='rgba(48,45,36,0.97)'; ctx.strokeStyle='rgba(80,75,58,0.85)'; ctx.lineWidth=0.8;
+            ctx.beginPath(); ctx.ellipse(coilX,coilBaseY-22,5.2,2.2,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+            // Vent tip glow
+            ctx.shadowColor=coreHex; ctx.shadowBlur=5*pulse*jFlicker;
+            ctx.fillStyle=`rgba(${(coreRGB[0]*0.55*pulse)|0},${(coreRGB[1]*0.55*pulse)|0},${(coreRGB[2]*0.55*pulse)|0},0.65)`;
+            ctx.beginPath(); ctx.ellipse(coilX,coilBaseY-22,2.5,1.1,0,0,Math.PI*2); ctx.fill();
+            ctx.shadowBlur=0;
+
+            // ── Status lights on left face ──
+            const l1On=Math.sin(frame*0.09)>0, l2On=Math.sin(frame*0.16+2.3)>0.28;
+            const l3On=hpR<0.5&&Math.sin(frame*0.23+0.9)>0;
+            const llx=bcx-hw*0.55;
+            ctx.shadowColor=l1On?'#ffaa00':'transparent'; ctx.shadowBlur=l1On?6:0;
+            ctx.fillStyle=l1On?`rgba(255,${(148*pulse)|0},0,0.95)`:'rgba(46,24,0,0.8)';
+            ctx.beginPath(); ctx.arc(llx,bcy-t*0.55-h*0.28,2.3,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+
+            ctx.shadowColor=l2On?'#00ccff':'transparent'; ctx.shadowBlur=l2On?5:0;
+            ctx.fillStyle=l2On?`rgba(0,${(190*pulse)|0},${(255*pulse)|0},0.95)`:'rgba(0,26,36,0.8)';
+            ctx.beginPath(); ctx.arc(llx,bcy-t*0.55-h*0.54,2.3,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+
+            if (hpR<0.5) {
+                ctx.shadowColor=l3On?'#ff2200':'transparent'; ctx.shadowBlur=l3On?7:0;
+                ctx.fillStyle=l3On?`rgba(255,${(28*pulse)|0},${(12*pulse)|0},0.95)`:'rgba(44,6,4,0.8)';
+                ctx.beginPath(); ctx.arc(llx,bcy-t*0.55-h*0.76,2.3,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+            }
+
+            // ── Dangling wires off left-top corner ──
+            const wbx=bcx-hw*0.68, wby=bcy-t*0.68-h;
+            [['rgba(0,185,255,0.58)',0,0],['rgba(255,112,0,0.52)',1.5,2.5]].forEach(([wc,ox,dx]) => {
+                ctx.strokeStyle=wc; ctx.lineWidth=0.95;
+                ctx.beginPath(); ctx.moveTo(wbx+ox,wby);
+                ctx.bezierCurveTo(wbx+dx-5,wby+10,wbx+dx-9,wby+21,wbx+dx-7,wby+33); ctx.stroke();
+            });
+
+            // ── Damage cracks ──
+            if (hpR<0.5) {
+                const ca=Math.min(1,(0.5-hpR)*2.2);
+                ctx.strokeStyle=`rgba(255,${(65*ca)|0},0,${ca*0.65})`; ctx.lineWidth=0.85;
+                ctx.beginPath();
+                ctx.moveTo(bcx+hw*0.3,bcy-t*0.3-8); ctx.lineTo(bcx+hw*0.17,bcy-t*0.17-24);
+                ctx.lineTo(bcx+hw*0.26,bcy-t*0.26-34); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(bcx+hw*0.17,bcy-t*0.17-24); ctx.lineTo(bcx+hw*0.06,bcy-t*0.06-29); ctx.stroke();
+            }
+
+            // ── "CORE UNIT" stencil label on left face ──
+            ctx.font='bold 7px monospace'; ctx.textAlign='center';
+            ctx.fillStyle=`rgba(148,124,40,${0.6*pulse})`;
+            ctx.fillText('CORE', bcx-hw*0.38, bcy-t*0.38-h*0.52);
+            ctx.fillStyle=`rgba(100,85,28,${0.4*pulse})`;
+            ctx.font='6px monospace';
+            ctx.fillText('UNIT-01', bcx-hw*0.38, bcy-t*0.38-h*0.52+8);
+
+            ctx.restore();
+
+            drawHealthBar(px-25, py-118+bob, 50, 7, crystal.health, crystal.maxHealth);
             if (hpR<0.3&&frame%30<15) {
                 ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                 ctx.fillStyle="rgba(255,0,0,0.08)"; ctx.fillRect(0,0,canvas.width,canvas.height);
