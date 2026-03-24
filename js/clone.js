@@ -498,6 +498,7 @@ const CTABS = [
     { id:"status",     label:"STATUS",     color:"#4499ff" },
     { id:"info",       label:"INFO",       color:"#ffcc44" },
     { id:"recruit",    label:"RECRUIT",    color:"#0f8"    },
+    { id:"craft",      label:"CRAFT",      color:"#ff9944" },
 ];
 const CSORTS = [
     { id:"species",  label:"SPECIES"  },
@@ -695,6 +696,7 @@ function drawCrystalPanel() {
         case "status":     _drawStatusTab(PX, contentY, PW, contentH); break;
         case "info":       _drawInfoTab(PX, contentY, PW, contentH); break;
         case "recruit":    _drawRecruitTab(PX, contentY, PW, contentH); break;
+        case "craft":      _drawCraftTab(PX, contentY, PW, contentH); break;
     }
     ctx.restore();
     ctx.restore();
@@ -1115,5 +1117,125 @@ function handleCrystalPanelInput(ex, ey, isDown) {
         }
     }
 
+    if (crystalMenuTab==="craft" && isDown) {
+        const cb = window._craftBtnBounds;
+        if (cb) {
+            if (cb.craft && ex>=cb.craft.x && ex<=cb.craft.x+cb.craft.w && ey>=cb.craft.y && ey<=cb.craft.y+cb.craft.h) {
+                if (shardCount >= HEALTH_PAD_CRAFT_COST) {
+                    shardCount -= HEALTH_PAD_CRAFT_COST; saveShards();
+                    healthPads.push({ charges: HEALTH_PAD_MAX_CHARGES });
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"HEALTH PAD CRAFTED",color:"#ff9944",life:100,vy:-0.2});
+                } else {
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:`NEED ${HEALTH_PAD_CRAFT_COST} SHARDS`,color:"#f44",life:90,vy:-0.2});
+                }
+                return true;
+            }
+            if (cb.use && ex>=cb.use.x && ex<=cb.use.x+cb.use.w && ey>=cb.use.y && ey<=cb.use.y+cb.use.h) {
+                if (healthPads.length > 0 && health < 100) {
+                    const pad = healthPads[0];
+                    health = Math.min(100, health + HEALTH_PAD_HEAL);
+                    pad.charges--;
+                    if (pad.charges <= 0) healthPads.shift();
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:`+${HEALTH_PAD_HEAL} HP`,color:"#ff9944",life:100,vy:-0.2});
+                } else if (health >= 100) {
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"HP IS FULL",color:"#888",life:60,vy:-0.2});
+                } else {
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NO HEALTH PADS",color:"#f44",life:90,vy:-0.2});
+                }
+                return true;
+            }
+        }
+    }
+
     return true;
+}
+
+// ── Tab: Craft ─────────────────────────────────────────────
+function _drawCraftTab(PX, PY, PW, PH) {
+    const pad  = 14;
+    let   cy   = PY + pad;
+    const col  = "#ff9944";
+
+    ctx.font = "bold 12px monospace"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+
+    // ── Section: Health Pad ───────────────────────────────
+    ctx.fillStyle = col;
+    ctx.fillText("◈  HEALTH PAD", PX + pad, cy + 14);
+    cy += 24;
+
+    // Recipe info box
+    ctx.fillStyle = "rgba(255,153,68,0.07)";
+    ctx.fillRect(PX+pad, cy, PW-pad*2, 54);
+    ctx.strokeStyle = "rgba(255,153,68,0.25)"; ctx.lineWidth = 1;
+    ctx.strokeRect(PX+pad, cy, PW-pad*2, 54);
+
+    ctx.fillStyle = "#ccc"; ctx.font = "11px monospace";
+    ctx.fillText(`Recipe:  ${HEALTH_PAD_CRAFT_COST} Shards`, PX + pad + 8, cy + 16);
+    ctx.fillText(`Output:  1 pad  (${HEALTH_PAD_MAX_CHARGES} charges)`, PX + pad + 8, cy + 32);
+    ctx.fillText(`Effect:  +${HEALTH_PAD_HEAL} HP per charge`, PX + pad + 8, cy + 48);
+    cy += 62;
+
+    // Inventory display
+    ctx.fillStyle = "#aaa"; ctx.font = "11px monospace";
+    const totalCharges = healthPads.reduce((s,p) => s+p.charges, 0);
+    ctx.fillText(`Inventory: ${healthPads.length} pad${healthPads.length!==1?"s":""} — ${totalCharges} charge${totalCharges!==1?"s":""} remaining`, PX+pad, cy+13);
+    cy += 22;
+
+    // Individual pad charge bars
+    if (healthPads.length > 0) {
+        const barW = Math.floor((PW - pad*2 - (healthPads.length-1)*4) / Math.min(healthPads.length, 8));
+        healthPads.slice(0, 8).forEach((p, i) => {
+            const bx = PX + pad + i * (barW + 4);
+            const by = cy + 2;
+            const bh = 16;
+            const fill = p.charges / HEALTH_PAD_MAX_CHARGES;
+            ctx.fillStyle = "rgba(255,153,68,0.15)";
+            ctx.fillRect(bx, by, barW, bh);
+            ctx.fillStyle = fill > 0.66 ? "#ff9944" : fill > 0.33 ? "#ffcc44" : "#ff4444";
+            ctx.fillRect(bx, by, Math.round(barW * fill), bh);
+            ctx.strokeStyle = "rgba(255,153,68,0.4)"; ctx.lineWidth = 1;
+            ctx.strokeRect(bx, by, barW, bh);
+            ctx.fillStyle = "#fff"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+            ctx.fillText(p.charges, bx + barW/2, by + bh - 3);
+            ctx.textAlign = "left";
+        });
+        if (healthPads.length > 8) {
+            ctx.fillStyle="#888"; ctx.font="10px monospace"; ctx.textAlign="center";
+            ctx.fillText(`+${healthPads.length-8} more`, PX+PW/2, cy+28);
+            ctx.textAlign="left";
+        }
+        cy += 28;
+    }
+    cy += 14;
+
+    // ── Buttons ───────────────────────────────────────────
+    const btnH = 36, btnW = Math.floor((PW - pad*2 - 8) / 2);
+    const canCraft = shardCount >= HEALTH_PAD_CRAFT_COST;
+    const canUse   = healthPads.length > 0 && health < 100;
+
+    // CRAFT button
+    const craftX = PX + pad, craftY = cy;
+    ctx.fillStyle = canCraft ? "rgba(255,153,68,0.22)" : "rgba(60,40,20,0.5)";
+    ctx.fillRect(craftX, craftY, btnW, btnH);
+    ctx.strokeStyle = canCraft ? col : "#442200"; ctx.lineWidth = canCraft ? 2 : 1;
+    ctx.strokeRect(craftX, craftY, btnW, btnH);
+    ctx.fillStyle = canCraft ? col : "#664422";
+    ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(`CRAFT  (${HEALTH_PAD_CRAFT_COST}◈)`, craftX + btnW/2, craftY + btnH/2);
+
+    // USE button
+    const useX = PX + pad + btnW + 8, useY = cy;
+    ctx.fillStyle = canUse ? "rgba(68,255,136,0.15)" : "rgba(20,40,20,0.5)";
+    ctx.fillRect(useX, useY, btnW, btnH);
+    ctx.strokeStyle = canUse ? "#0f8" : "#133"; ctx.lineWidth = canUse ? 2 : 1;
+    ctx.strokeRect(useX, useY, btnW, btnH);
+    ctx.fillStyle = canUse ? "#0f8" : "#2a5530";
+    ctx.fillText("USE PAD", useX + btnW/2, useY + btnH/2);
+
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+
+    window._craftBtnBounds = {
+        craft: { x:craftX, y:craftY, w:btnW, h:btnH },
+        use:   { x:useX,   y:useY,   w:btnW, h:btnH }
+    };
 }

@@ -262,8 +262,7 @@ function render() {
         }
     }
 
-    // ── PLAYER HEALTH DECAY ──
-    if (!player.stunned) health=Math.max(0,health-cfg.healthDecay);
+    // Health no longer decays naturally — use health pads to restore HP
     const hpPct=health/100;
     // ── HUD updates — only write DOM when values actually change (avoids layout thrashing) ──
     const _hpInt = Math.round(health);
@@ -298,6 +297,23 @@ function render() {
         _lastZoneIndex = _pz;
         if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo");
         if (_zoneEl) _zoneEl.textContent = _pz === 0 ? "Zone: Home" : "Zone: " + _pz;
+    }
+    // Health pad HUD — show pad count and total charges
+    {
+        const _padKey = healthPads.length + ":" + healthPads.reduce((s,p)=>s+p.charges,0);
+        if (_padKey !== _lastPadHudKey) {
+            _lastPadHudKey = _padKey;
+            if (!_padHudEl) _padHudEl = document.getElementById("padHud");
+            if (_padHudEl) {
+                if (healthPads.length > 0) {
+                    const tc = healthPads.reduce((s,p)=>s+p.charges,0);
+                    _padHudEl.textContent = `PAD: ${healthPads.length} (${tc}c)`;
+                    _padHudEl.style.display = "block";
+                } else {
+                    _padHudEl.style.display = "none";
+                }
+            }
+        }
     }
 
 

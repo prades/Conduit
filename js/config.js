@@ -112,6 +112,8 @@ let _lastHpInt      = -1;    // last integer hp written to hpBar
 let _lastShardCount = -1;    // last shard count written to shardUI
 let _lastZoneIndex  = -999;  // last zone index written to zoneInfo
 let _zoneEl         = null;  // cached zoneInfo element (fetched once on first use)
+let _lastPadHudKey  = null;  // last value written to padHud (avoids DOM writes every frame)
+let _padHudEl       = null;  // cached padHud element
 
 // ── NETWORK RESONANCE STATE ─────────────────────────────────────────
 // networkStrength[el]  : tier 0-3 based on largest connected same-element group
@@ -239,6 +241,14 @@ const MODULATOR_PAIRS = {
 let ownedModulators    = [];   // [{ element }]  — collected from boss drops
 let activeCrystalModulation = null; // null | { element, pair:[e1,e2] }
 let groundItems        = [];   // [{ type, element, x, y }]  — world pickups
+
+// ── HEALTH PADS ───────────────────────────────────────────
+// Each pad: { charges: N }  — crafted via crystal menu, max 3 charges per pad
+// Using a pad heals 30 HP and costs 1 charge; pad is removed when charges reach 0
+const HEALTH_PAD_MAX_CHARGES = 3;
+const HEALTH_PAD_HEAL        = 30;   // HP restored per charge
+const HEALTH_PAD_CRAFT_COST  = 8;    // shards to craft one pad
+let healthPads = [];   // [{ charges: N }]
 
 function toggleSquad() {
     squadMode = (squadMode === "selected") ? "all" : "selected";
