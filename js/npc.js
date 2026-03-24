@@ -148,6 +148,16 @@ function updateRTSNPC(actor) {
             if (p.constructProgress>=1) {
                 p.constructing=false; p.constructProgress=1;
                 p.health=p.maxHealth;
+                // Activate the pylon with its chosen element now that construction is done
+                if (p.chosenElement) {
+                    p.attackMode=true; p.waveMode=false;
+                    p.attackModeElement=p.chosenElement;
+                    const _chEl=ELEMENTS.find(e=>e.id===p.chosenElement);
+                    p.attackModeColor=p.chosenColor||(_chEl?_chEl.color:"#0f8");
+                    p.attackPower=15; p.attackRange=2.5+(pylonRangeBonus||0);
+                    p.attackFireTimer=0; p.pulseTimer=0;
+                    p.chosenElement=null; p.chosenColor=null;
+                }
                 actor.job=null;
             }
         }
