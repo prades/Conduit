@@ -42,6 +42,29 @@ const handleInput=(ex,ey)=>{
     }
     // Short tap near crystal → open crystal panel
     if (isTapNearCrystal(ex,ey)) { crystalMenuOpen=true; return; }
+
+    // ── PLAYER ATTACK — tap on a visible enemy to fire a shot ──
+    if (!player.stunned && player.attackCooldown <= 0) {
+        for (const a of actors) {
+            if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
+            const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
+            const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
+            if (Math.hypot(ex - apx, ey - (apy - 55)) < 45) {
+                const elDef = ELEMENTS.find(e => e.id === player.selectedElement);
+                spawnFollowerProjectile(
+                    { x: player.x, y: player.y, element: player.selectedElement },
+                    a,
+                    elDef ? elDef.color : "#ffffff",
+                    10, 5,
+                    null
+                );
+                player.attackCooldown = 45;
+                return;
+            }
+        }
+    }
+
+    if (player.stunned) return; // can't move while stunned
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);

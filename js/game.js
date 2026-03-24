@@ -263,7 +263,7 @@ function render() {
     }
 
     // ── PLAYER HEALTH DECAY ──
-    health=Math.max(0,health-cfg.healthDecay);
+    if (!player.stunned) health=Math.max(0,health-cfg.healthDecay);
     const hpPct=health/100;
     // ── HUD updates — only write DOM when values actually change (avoids layout thrashing) ──
     const _hpInt = Math.round(health);
@@ -272,6 +272,22 @@ function render() {
         hpBar.style.width = health + "%";
         hpBar.style.background = hpPct > 0.6 ? "#0f8" : hpPct > 0.3 ? "#ff0" : "#f22";
     }
+
+    // ── PLAYER STUN / DEATH ──
+    if (player.stunned > 0) {
+        player.stunned--;
+    } else if (health <= 0) {
+        player.stunned = 180; // 3 second stun
+        health = 40;          // partial restore on respawn
+        player.x = crystal.x + 2; player.y = crystal.y;
+        player.targetX = player.x; player.targetY = player.y;
+        player.visualX  = player.x; player.visualY  = player.y;
+        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-60, text:"◈ STUNNED!", color:"#ff4444", life:120, vy:-0.25, size:14});
+        shake = Math.max(shake, 8);
+    }
+
+    // ── PLAYER ATTACK COOLDOWN ──
+    if (player.attackCooldown > 0) player.attackCooldown--;
     if (shardCount !== _lastShardCount) {
         _lastShardCount = shardCount;
         shardUI.textContent = "Shards: " + shardCount;
@@ -2870,6 +2886,19 @@ function render() {
     // ── OVERLAYS ──
     drawElementEffects();
     drawFloatingTexts();
+    // ── PLAYER STUN FLASH — red vignette while stunned ──
+    if (player.stunned > 0) {
+        const stunAlpha = Math.min(0.35, (player.stunned / 180) * 0.35) * (0.5 + 0.5 * Math.sin(frame * 0.25));
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = `rgba(220,30,30,${stunAlpha})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#ff4444";
+        ctx.font = "bold 14px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("◈ STUNNED", canvas.width/2, canvas.height/2 - 40);
+        ctx.restore();
+    }
     drawCrystalButton();
     drawClonesBlob();
     drawCloneMenu();

@@ -407,6 +407,14 @@ class Predator {
                             applyDamage(a, pwr, this);
                         }
                     });
+                    // ── PLAYER HIT — hostile melee predators can swipe the player ──
+                    if (!this.isClone && !player.stunned) {
+                        const pdx=player.x-this.x, pdy=player.y-this.y;
+                        if (pdx*pdx+pdy*pdy<=2.25) {
+                            health = Math.max(0, health - pwr * 0.35);
+                            shake  = Math.max(shake, 4);
+                        }
+                    }
                 }
                 this.attackCooldown=45;
             }

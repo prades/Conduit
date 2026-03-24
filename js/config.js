@@ -154,7 +154,9 @@ let player = {
     x:2, y:1, visualX:2, visualY:1, targetX:2, targetY:1,
     rotY: Math.PI * 0.75, baseRot: Math.PI * 0.75,
     angryTimer: 0, selectedElement: "fire",
-    siphonHold: 0
+    siphonHold: 0,
+    attackCooldown: 0,   // frames until next player shot
+    stunned: 0           // stun timer — movement + attack locked when > 0
 };
 
 // ── INPUT STATE ───────────────────────────────────────────
