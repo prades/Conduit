@@ -88,6 +88,7 @@ let dayStats = { redSpawned: 0, redConverted: 0 };
 
 // ── WORLD / ACTOR LISTS ───────────────────────────────────
 let world      = [];
+let worldTileMap = new Map(); // spatial hash: "x,y" → tile (O(1) lookup)
 let actors     = [];
 let followers  = [];
 let followerByElement = {};

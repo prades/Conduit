@@ -36,7 +36,7 @@ async function loadConfig() {
     const savedPylons = loadPylons();
     if (savedPylons) {
         savedPylons.forEach(saved => {
-            const tile = world.find(t => t.x === saved.x && t.y === saved.y);
+            const tile = worldTileMap.get(`${saved.x},${saved.y}`);
             if (!tile) return;
             tile.pillar            = true;
             tile.pillarTeam        = saved.pillarTeam;

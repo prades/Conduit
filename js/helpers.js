@@ -2,7 +2,7 @@
 //  HELPER FUNCTIONS
 // ─────────────────────────────────────────────────────────
 function getZoneIndex(x) { return Math.floor(x / ZONE_LENGTH); }
-const getTile = (gx, gy) => world.find(t => t.x === gx && t.y === gy);
+const getTile = (gx, gy) => worldTileMap.get(`${gx},${gy}`);
 
 
 

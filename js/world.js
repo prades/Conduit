@@ -26,6 +26,7 @@ function generateSegment(startX) {
         };
         if (tile.pillarTeam==="green") tile.pillarCol="#0f8"; else tile.pillarCol="#e02020";
         world.push(tile);
+        worldTileMap.set(`${tile.x},${tile.y}`, tile);
 
         // ── WALL PANELS — back-row floor tiles (y=0) in forward zones ──
         const PANEL_ALARM_TYPES = ["proximity", "zone", "facility"];

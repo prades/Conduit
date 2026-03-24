@@ -448,7 +448,7 @@ function nextWave() {
 
 function restartGame() {
     // Full reset
-    world=[];actors=[];followers=[];capturedNodes=[];signalTowers=[];
+    world=[];worldTileMap=new Map();actors=[];followers=[];capturedNodes=[];signalTowers=[];
     ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
     projectiles=[];fragments=[];smoke=[];shards=[];elementEffects=[];floatingTexts=[];followerProjectiles=[];clearDNA();
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
