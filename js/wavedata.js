@@ -63,9 +63,6 @@ const SHOP_ITEMS = [
       apply() { const pool=[...unlockedElements]; spawnFollowerAtCrystal(pool[Math.floor(Math.random()*pool.length)]||"fire"); } },
     { id:"more_zones",    label:"+1 Zone",       cost:20,
       apply() { activeDayZones++; } },
-    // ── CRYSTAL BUILDS ───────────────────────────────────
-    { id:"ghostphage",    label:"◈ Ghostphage  [Crystal Build]",  cost:80,
-      apply() { activeCrystalBuild="ghostphage"; } }
 ];
 let boughtItems = new Set();
 
@@ -171,6 +168,10 @@ const CRYSTAL_BUILD_ITEMS = [
       apply() { activeCrystalBuild="flux_resonance"; }
     },
     // ── TIER II — Tactical Field Builds (80–110 shards) ─────────────────
+    { id:"ghostphage",    label:"Ghostphage",    cost:80, tier:"II",
+      desc:"Dead followers return as ghosts immune to all hazards. Ghosts vanish on direct attack",
+      apply() { activeCrystalBuild="ghostphage"; }
+    },
     { id:"shard_harvest", label:"Shard Harvest", cost:85, tier:"II",
       desc:"+1 shard per enemy kill. Pylon-assisted kills yield an extra shard on top",
       apply() { activeCrystalBuild="shard_harvest"; }
