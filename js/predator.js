@@ -172,6 +172,9 @@ class Predator {
         const utils=this.evaluateUtility();
         let bestState=this.state, bestScore=utils[this.state]||0;
         for (const k in utils) {
+            // Wanderers (higher-zone predators unaffected by the current alarm) must never
+            // be promoted to "hunt" by the utility AI — they should stay ambient.
+            if (this.isWanderer && k==="hunt") continue;
             if (utils[k]>bestScore+0.15) { bestState=k; bestScore=utils[k]; }
         }
         if (this.state!==bestState) {
