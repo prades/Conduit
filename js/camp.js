@@ -232,11 +232,12 @@ function handleCampMenuTap(tx, ty) {
     return true;
 }
 
-// ── SHOP BUTTON (canvas-drawn, bottom-left above camp) ────
-const _SHOPBTN = { x: 22, y: 0, r: 20 };
+// ── SHOP BUTTON (canvas-drawn, bottom-right above camp) ────
+const _SHOPBTN = { x: 0, y: 0, r: 20 };
 
 function drawShopButton() {
     if (alertActive || gameState.phase === "night" || gameState.phase === "waveComplete" || gameState.phase === "gameOver") return;
+    _SHOPBTN.x = canvas.width - 22;
     _SHOPBTN.y = canvas.height - 104 - (SAFE_BOTTOM || 0);
     const { x, y, r } = _SHOPBTN;
     const pulse = 0.65 + 0.35 * Math.sin((frame || 0) * 0.07);
@@ -266,10 +267,11 @@ function drawShopButton() {
     ctx.restore();
 }
 
-// ── CAMP BUTTON (canvas-drawn, bottom-left) ───────────────
-const _CAMPBTN = { x: 22, y: 0, r: 20 };
+// ── CAMP BUTTON (canvas-drawn, bottom-right) ───────────────
+const _CAMPBTN = { x: 0, y: 0, r: 20 };
 
 function drawCampButton() {
+    _CAMPBTN.x = canvas.width - 22;
     _CAMPBTN.y = canvas.height - 58 - (SAFE_BOTTOM || 0);
     const { x, y, r } = _CAMPBTN;
     const pulse = 0.65 + 0.35 * Math.sin((frame || 0) * 0.05);
@@ -301,10 +303,11 @@ function drawCampButton() {
     ctx.restore();
 }
 
-// ── SETTINGS BUTTON (canvas-drawn, bottom-left above shop) ──
-const _SETTINGSBTN = { x: 22, y: 0, r: 20 };
+// ── SETTINGS BUTTON (canvas-drawn, bottom-right above shop) ──
+const _SETTINGSBTN = { x: 0, y: 0, r: 20 };
 
 function drawSettingsButton() {
+    _SETTINGSBTN.x = canvas.width - 22;
     _SETTINGSBTN.y = canvas.height - 150 - (SAFE_BOTTOM || 0);
     const { x, y, r } = _SETTINGSBTN;
 
