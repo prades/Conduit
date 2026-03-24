@@ -32,8 +32,8 @@ function drawRadialMenu() {
     const nestAlreadyLinked = commandNestTarget&&commandNestTarget.connectedPylon&&!commandNestTarget.connectedPylon.destroyed;
     const isBrokenNest    = commandNestTarget&&commandNestTarget.nestHealth<=0&&!nestAlreadyLinked;
 
-    // ── TOP = UPGRADE (pylon) / BUILD (only when buildMode ON, not on pylon tile) ──
-    const showTopBtn = buildMode ? !isPylonTarget : isPylonTarget;
+    // ── TOP = UPGRADE (pylon) / BUILD (empty tile) — only when buildMode ON ──
+    const showTopBtn = buildMode;
     const tHov = showTopBtn && dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
     if (showTopBtn) {
         drawRadialButton(commandX, commandY-RADIAL_RADIUS, isPylonTarget?"UPGRADE":"BUILD", tHov);
