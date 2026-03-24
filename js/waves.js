@@ -156,7 +156,7 @@ function showGameOver() {
     document.getElementById("ovr-waves").textContent=gameState.highestZoneCleared;
     document.getElementById("ovr-btn").textContent="RESTART";
     document.getElementById("ovr-btn").onclick=restartGame;
-    ["shopGridSupply","shopGridPylons","shopGridArmaments"].forEach(id => {
+    ["shopGridSupply","shopGridPylons","shopGridArmaments","shopGridBuilds"].forEach(id => {
         const el = document.getElementById(id); if (el) el.innerHTML = "";
     });
     overlay.classList.add("active");
@@ -187,12 +187,13 @@ function closeMidGameShop() {
 }
 
 function buildShopGrid() {
-    _fillShopPane("shopGridSupply",    SHOP_ITEMS,        false);
-    _fillShopPane("shopGridPylons",    PYLON_SHOP_ITEMS,  false);
-    _fillShopPane("shopGridArmaments", ARMAMENT_ITEMS,    true);
+    _fillShopPane("shopGridSupply",    SHOP_ITEMS,           false, false);
+    _fillShopPane("shopGridPylons",    PYLON_SHOP_ITEMS,     false, false);
+    _fillShopPane("shopGridArmaments", ARMAMENT_ITEMS,       true,  false);
+    _fillShopPane("shopGridBuilds",    CRYSTAL_BUILD_ITEMS,  false, true);
 }
 
-function _fillShopPane(paneId, items, checkTerritory) {
+function _fillShopPane(paneId, items, checkTerritory, isBuildPane) {
     const grid = document.getElementById(paneId);
     if (!grid) return;
     grid.innerHTML = "";
@@ -203,13 +204,27 @@ function _fillShopPane(paneId, items, checkTerritory) {
         const isWaveBought = !item.oneTimeGame && boughtItems.has(item.id);
         const isBought = isPermBought || isWaveBought;
         const isLocked = !!(item.reqZones && zones < item.reqZones);
+        const isActiveBuild = isBuildPane && activeCrystalBuild === item.id;
+        const tierClass = item.tier ? " tier-" + item.tier : " tier-I";
+        const tierBadge = item.tier ? `<span class="item-tier-badge tier-badge-${item.tier}">T${item.tier}</span>` : "";
         const div = document.createElement("div");
-        div.className = "shop-item" + (isBought ? " bought" : "") + (isLocked ? " locked" : "");
-        div.innerHTML = `<div>${item.label}</div><div class="cost">${item.cost} shards</div>` +
-            (item.desc ? `<div class="desc">${item.desc}</div>` : "") +
-            (item.reqZones ? `<div class="req">Req: ${item.reqZones} zones</div>` : "");
+        let cls = "shop-item" + tierClass;
+        if (isActiveBuild) cls += " build-active";
+        else if (isBought) cls += " bought";
+        if (isLocked) cls += " locked";
+        div.className = cls;
+        const activeBadge = isActiveBuild ? `<div class="item-active-badge">◈ ACTIVE</div>` : "";
+        div.innerHTML =
+            `<div class="item-header">
+                <span class="item-label">${item.label}</span>
+                ${tierBadge}
+            </div>
+            <div class="item-cost"><span class="item-cost-shard">◈</span> ${item.cost} shards</div>` +
+            (item.desc ? `<div class="item-desc">${item.desc}</div>` : "") +
+            (item.reqZones ? `<div class="item-req">⚠ Requires ${item.reqZones} zones</div>` : "") +
+            activeBadge;
         div.onclick = () => {
-            if (shardCount < item.cost || isBought || isLocked) return;
+            if (shardCount < item.cost || isBought || isLocked || isActiveBuild) return;
             shardCount -= item.cost;
             saveShards();
             item.apply();
@@ -233,6 +248,8 @@ function _fillShopPane(paneId, items, checkTerritory) {
                     ? "DNA: none"
                     : "DNA: " + dnaEntries.map(([k,v]) => k.replace("_"," ") + "x" + v).join(" | ");
             }
+            // For build pane, refresh to update ACTIVE badges
+            if (isBuildPane) _fillShopPane(paneId, items, checkTerritory, true);
         };
         grid.appendChild(div);
     });

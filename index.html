@@ -65,39 +65,146 @@
         justify-content: center; margin-top: 16px;
         max-width: 480px;
     }
-    .shop-item {
-        background: #0e1418; border: 1px solid #0f8;
-        border-radius: 8px; padding: 10px 14px;
-        min-width: 120px; cursor: pointer; text-align: center;
+
+    /* ── SHOP OVERLAY STATS BAR ── */
+    #ovr-statsbar {
+        display: flex; gap: 18px; align-items: center; justify-content: center;
+        background: rgba(0,0,0,0.55); border: 1px solid #1a4a2a;
+        border-radius: 5px; padding: 6px 18px; margin: 4px 0 0;
+        flex-wrap: wrap;
     }
-    .shop-item:hover { background: #0f8; color: #000; }
-    .shop-item .cost { color: #ff0; font-size: 0.8rem; }
-    .shop-item.bought { opacity: 0.4; pointer-events: none; }
-    .shop-item.locked { opacity: 0.38; pointer-events: none; border-color: #444; color: #667; }
-    .shop-item .desc  { color: #8fa; font-size: 0.72rem; margin-top: 3px; line-height: 1.3; }
-    .shop-item .req   { color: #f84; font-size: 0.7rem; margin-top: 2px; }
+    .ovr-stat-cell { text-align: center; min-width: 60px; }
+    .ovr-stat-label { color: #4a8a6a; font-size: 0.65rem; letter-spacing: 1px; display: block; }
+    .ovr-stat-val   { color: #ff0; font-size: 1.05rem; font-weight: bold; }
+    .ovr-stat-val.cyan  { color: #0ff; }
+    .ovr-stat-val.green { color: #0f8; }
+
+    /* ── SHOP ITEM CARDS ── */
+    .shop-item {
+        background: linear-gradient(160deg, #0b1612 0%, #070e0b 100%);
+        border: 1px solid #1a6a3a;
+        border-radius: 7px; padding: 9px 11px;
+        min-width: 155px; max-width: 195px;
+        cursor: pointer; text-align: left;
+        position: relative; overflow: hidden;
+        transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+        flex: 1 1 155px;
+    }
+    .shop-item::before {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(135deg, rgba(0,255,136,0.03) 0%, transparent 60%);
+        pointer-events: none;
+    }
+    .shop-item:hover {
+        border-color: #0f8; background: linear-gradient(160deg, #0d2018 0%, #091410 100%);
+        box-shadow: 0 0 12px rgba(0,255,136,0.18), inset 0 0 8px rgba(0,255,136,0.04);
+    }
+    .shop-item:hover .item-label { color: #0f8; }
+    .shop-item:hover .item-cost  { color: #fff; }
+    .shop-item.bought {
+        opacity: 0.35; pointer-events: none;
+        border-color: #1a2a20; background: #060b08;
+    }
+    .shop-item.build-active {
+        border-color: #c84fff !important; background: linear-gradient(160deg, #130820 0%, #0d0518 100%) !important;
+        box-shadow: 0 0 14px rgba(200,79,255,0.22), inset 0 0 8px rgba(200,79,255,0.06) !important;
+        pointer-events: none;
+    }
+    .shop-item.locked {
+        opacity: 0.32; pointer-events: none; border-color: #222; filter: grayscale(0.5);
+    }
+
+    /* Tier-specific accent colors */
+    .shop-item.tier-I   { border-color: #1a6a3a; }
+    .shop-item.tier-I:hover   { border-color: #0f8; }
+    .shop-item.tier-II  { border-color: #1a4a6a; }
+    .shop-item.tier-II:hover  { border-color: #4bc8ff; box-shadow: 0 0 12px rgba(75,200,255,0.18); }
+    .shop-item.tier-II:hover .item-label { color: #4bc8ff; }
+    .shop-item.tier-III { border-color: #4a3a00; }
+    .shop-item.tier-III:hover { border-color: #ffd700; box-shadow: 0 0 12px rgba(255,215,0,0.18); }
+    .shop-item.tier-III:hover .item-label { color: #ffd700; }
+    .shop-item.tier-IV  { border-color: #3a0a5a; }
+    .shop-item.tier-IV:hover  { border-color: #c84fff; box-shadow: 0 0 12px rgba(200,79,255,0.22); }
+    .shop-item.tier-IV:hover .item-label { color: #c84fff; }
+
+    /* Card content */
+    .item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
+    .item-label  { color: #cee; font-size: 0.78rem; font-weight: bold; line-height: 1.3; flex: 1; }
+    .item-tier-badge {
+        font-size: 0.6rem; font-weight: bold; padding: 1px 5px;
+        border-radius: 3px; flex-shrink: 0; margin-top: 1px;
+        font-family: monospace; letter-spacing: 0.5px;
+    }
+    .tier-badge-I   { background: rgba(0,255,136,0.12);  color: #0f8;    border: 1px solid #0f8; }
+    .tier-badge-II  { background: rgba(75,200,255,0.12); color: #4bc8ff; border: 1px solid #4bc; }
+    .tier-badge-III { background: rgba(255,215,0,0.12);  color: #ffd700; border: 1px solid #aa8800; }
+    .tier-badge-IV  { background: rgba(200,79,255,0.12); color: #c84fff; border: 1px solid #884acc; }
+    .item-cost {
+        color: #ffd700; font-size: 0.75rem; font-weight: bold;
+        display: flex; align-items: center; gap: 3px; margin-bottom: 4px;
+    }
+    .item-cost-shard { color: #ff0; font-size: 0.8rem; }
+    .item-desc {
+        color: #7aaa8a; font-size: 0.69rem; line-height: 1.35;
+        border-top: 1px solid #0f830e; padding-top: 4px; margin-top: 2px;
+    }
+    .item-req   { color: #f84; font-size: 0.67rem; margin-top: 3px; display: flex; align-items: center; gap: 3px; }
+    .item-active-badge {
+        display: inline-block; background: rgba(200,79,255,0.2);
+        color: #c84fff; border: 1px solid #c84fff; font-size: 0.6rem;
+        font-weight: bold; padding: 1px 5px; border-radius: 3px; margin-top: 3px;
+        letter-spacing: 1px;
+    }
+    .shop-item.bought .item-label::after { content: ' ✓'; color: #444; }
 
     /* ── SHOP TAB PANEL ── */
-    #shopPanel { width: min(560px, 96vw); }
+    #shopPanel { width: min(700px, 96vw); }
+    #shopPanel h1, #overlay h1 { font-size: 1.8rem; margin: 0 0 4px; letter-spacing: 3px; }
     .shop-tabs {
-        display: flex; gap: 3px; margin-top: 14px; margin-bottom: 0;
-        border-bottom: 1px solid #0f8; padding-bottom: 3px; flex-wrap: wrap;
+        display: flex; gap: 2px; margin-top: 12px; margin-bottom: 0;
+        border-bottom: 1px solid #1a4a2a; padding-bottom: 0; flex-wrap: wrap;
     }
     .shop-tab {
-        background: rgba(0,0,0,0.5); border: 1px solid #1a4a2a;
-        color: #4a8a6a; font-family: monospace; font-size: 11px;
-        padding: 6px 16px; border-radius: 3px 3px 0 0; cursor: pointer;
-        letter-spacing: 1px; touch-action: manipulation;
-        transition: color 0.12s, border-color 0.12s;
+        background: rgba(0,0,0,0.5); border: 1px solid #1a3a2a;
+        border-bottom: none;
+        color: #3a7a5a; font-family: monospace; font-size: 10px;
+        padding: 7px 14px; border-radius: 4px 4px 0 0; cursor: pointer;
+        letter-spacing: 1.5px; touch-action: manipulation;
+        transition: color 0.12s, border-color 0.12s, background 0.12s;
+        position: relative; top: 1px;
     }
-    .shop-tab.active { color: #0ff; border-color: #0ff; background: rgba(0,255,255,0.08); border-bottom-color: transparent; }
+    .shop-tab.active {
+        color: #0f8; border-color: #0f8; background: rgba(0,255,136,0.07);
+        border-bottom-color: #050f08;
+        box-shadow: 0 -3px 8px rgba(0,255,136,0.08);
+    }
     .shop-tab:hover:not(.active) { color: #0f8; border-color: #0f8; }
-    .shop-pane { display: none; flex-wrap: wrap; gap: 10px; justify-content: center;
-        max-width: 560px; max-height: 46vh; overflow-y: auto; padding: 10px 2px 2px; }
+    .shop-tab[data-tab="Pylons"].active   { color: #4bc8ff; border-color: #4bc8ff; background: rgba(75,200,255,0.06); border-bottom-color: #050f08; }
+    .shop-tab[data-tab="Pylons"]:hover:not(.active) { color: #4bc8ff; border-color: #4bc; }
+    .shop-tab[data-tab="Armaments"].active { color: #ff6644; border-color: #ff6644; background: rgba(255,100,68,0.06); border-bottom-color: #050f08; }
+    .shop-tab[data-tab="Armaments"]:hover:not(.active) { color: #ff6644; border-color: #f64; }
+    .shop-tab[data-tab="Builds"].active   { color: #c84fff; border-color: #c84fff; background: rgba(200,79,255,0.06); border-bottom-color: #050f08; }
+    .shop-tab[data-tab="Builds"]:hover:not(.active) { color: #c84fff; border-color: #c84f; }
+
+    /* Pane wrapper */
+    .shop-pane-wrap { border: 1px solid #1a4a2a; border-top: none; border-radius: 0 0 6px 6px; background: rgba(0,0,0,0.3); }
+    .shop-pane-header {
+        display: none; padding: 6px 12px 4px;
+        font-size: 0.65rem; letter-spacing: 2px; color: #4a8a5a;
+        border-bottom: 1px solid #0a2518;
+    }
+    .shop-pane { display: none; flex-wrap: wrap; gap: 8px; justify-content: flex-start;
+        max-width: 700px; max-height: 44vh; overflow-y: auto;
+        padding: 10px 10px 8px; }
     .shop-pane.active { display: flex; }
+    .shop-pane.active + .shop-pane-header, .shop-pane-header.active { display: block; }
     .shop-pane::-webkit-scrollbar { width: 4px; }
-    .shop-pane::-webkit-scrollbar-track { background: #001008; }
+    .shop-pane::-webkit-scrollbar-track { background: #020d06; }
     .shop-pane::-webkit-scrollbar-thumb { background: #0f8; border-radius: 2px; }
+
+    /* Build pane two-column grid */
+    #shopGridBuilds { gap: 8px; }
+    #shopGridBuilds .shop-item { min-width: 200px; max-width: 230px; flex: 1 1 200px; }
 
     /* ── TOP COMMAND TOGGLES ── */
     #topToggles {
@@ -1028,7 +1135,7 @@
 
 <script>
 function switchShopTab(tab) {
-    ['Supply','Pylons','Armaments'].forEach(function(t) {
+    ['Supply','Pylons','Armaments','Builds'].forEach(function(t) {
         var pane = document.getElementById('shopGrid' + t);
         var btn  = document.getElementById('shopTab'  + t);
         if (pane) pane.classList.toggle('active', t === tab);
@@ -1051,22 +1158,37 @@ function switchCMTab(id) {
 <!-- OVERLAY (game-over / wave-clear / shop) -->
 
 <div id="overlay">
-    <h1 id="ovr-title">GAME OVER</h1>
-    <p id="ovr-sub"></p>
-    <p>Shards collected: <span class="stat" id="ovr-shards">0</span></p>
-    <p>Enemies converted: <span class="stat" id="ovr-conv">0</span></p>
-    <p>Highest zone: <span class="stat" id="ovr-waves">0</span></p>
+    <h1 id="ovr-title" style="font-size:1.6rem;margin:0 0 5px;letter-spacing:3px">GAME OVER</h1>
+    <p id="ovr-sub" style="color:#668;font-size:0.78rem;margin:0 0 6px;letter-spacing:1px"></p>
+    <div id="ovr-statsbar">
+        <div class="ovr-stat-cell">
+            <span class="ovr-stat-label">◈ SHARDS</span>
+            <span class="ovr-stat-val" id="ovr-shards">0</span>
+        </div>
+        <div class="ovr-stat-cell">
+            <span class="ovr-stat-label">⟳ CONVERTED</span>
+            <span class="ovr-stat-val cyan" id="ovr-conv">0</span>
+        </div>
+        <div class="ovr-stat-cell">
+            <span class="ovr-stat-label">⬡ ZONE DEPTH</span>
+            <span class="ovr-stat-val green" id="ovr-waves">0</span>
+        </div>
+    </div>
     <div id="shopPanel">
         <div class="shop-tabs">
-            <button class="shop-tab active" id="shopTabSupply"     onclick="switchShopTab('Supply')">SUPPLY</button>
-            <button class="shop-tab"        id="shopTabPylons"     onclick="switchShopTab('Pylons')">PYLONS</button>
-            <button class="shop-tab"        id="shopTabArmaments"  onclick="switchShopTab('Armaments')">ARMAMENTS</button>
+            <button class="shop-tab active" id="shopTabSupply"    data-tab="Supply"    onclick="switchShopTab('Supply')">▸ SUPPLY</button>
+            <button class="shop-tab"        id="shopTabPylons"    data-tab="Pylons"    onclick="switchShopTab('Pylons')">⬡ PYLONS</button>
+            <button class="shop-tab"        id="shopTabArmaments" data-tab="Armaments" onclick="switchShopTab('Armaments')">⚔ ARMAMENTS</button>
+            <button class="shop-tab"        id="shopTabBuilds"    data-tab="Builds"    onclick="switchShopTab('Builds')">◈ BUILDS</button>
         </div>
-        <div id="shopGridSupply"    class="shop-pane active"></div>
-        <div id="shopGridPylons"    class="shop-pane"></div>
-        <div id="shopGridArmaments" class="shop-pane"></div>
+        <div class="shop-pane-wrap">
+            <div id="shopGridSupply"    class="shop-pane active"></div>
+            <div id="shopGridPylons"    class="shop-pane"></div>
+            <div id="shopGridArmaments" class="shop-pane"></div>
+            <div id="shopGridBuilds"    class="shop-pane"></div>
+        </div>
     </div>
-    <button class="ovr-btn" id="ovr-btn">RESTART</button>
+    <button class="ovr-btn" id="ovr-btn" style="margin-top:10px">RESTART</button>
 </div>
 
 

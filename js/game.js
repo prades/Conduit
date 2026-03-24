@@ -250,6 +250,11 @@ function render() {
 
     frame++;
 
+    // ── BASTION FORM — crystal passive regen every ~10 sec (600 frames) ──
+    if (activeCrystalBuild==="bastion_form" && frame % 600 === 0 && crystal && crystal.health > 0 && crystal.health < crystal.maxHealth) {
+        crystal.health = Math.min(crystal.maxHealth, crystal.health + 3);
+    }
+
     // ── LONG HOLD DETECT ──
     if (isPressing&&!longHoldFired&&!touchMoved) {
         if (performance.now()-pressStartTime>LONG_HOLD_MS) {
@@ -791,9 +796,11 @@ function render() {
             a.queuedForRespawn=true;
             const oldHp = a.stats?.hp||1;
             const newHp = oldHp - 1;
-            const isGhostSave = (newHp<=0) && activeCrystalBuild==="ghostphage" && !a.ghostphageLife;
-            if (newHp<=0 && !isGhostSave) return; // permanent death — don't queue
-            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:180, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), ghostphageLife:isGhostSave });
+            const isGhostSave = (newHp<=0) && (activeCrystalBuild==="ghostphage"||activeCrystalBuild==="ghostphage_ii") && !a.ghostphageLife;
+            const isWardenSave = (newHp<=0) && activeCrystalBuild==="warden_pact";
+            if (newHp<=0 && !isGhostSave && !isWardenSave) return; // permanent death — don't queue
+            const respawnTimer = isWardenSave ? 480 : 180; // warden pact: longer 8s delay
+            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:respawnTimer, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), ghostphageLife:isGhostSave });
         }
         // track kills for wave clear — count dead enemies not clones, wanderers don't count
         if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.killCounted && !a.isWanderer) {
@@ -801,6 +808,10 @@ function render() {
             nightKillCount++;
             const _kz = alertSource ? getZoneIndex(Math.floor(alertSource.x)) : 1;
             waveUI.textContent = "⚠ Zone "+_kz+" — Kill "+nightKillCount+"/"+nightEnemiesTarget;
+            // Shard Harvest — +1 shard per kill
+            if (activeCrystalBuild==="shard_harvest") { shardCount++; saveShards(); shardUI.textContent="Shards: "+shardCount; }
+            // Void Rift — +50% shard yield in cleared zones (approximated as +1 extra per kill in alert zone)
+            if (activeCrystalBuild==="void_rift" && _kz > 0 && gameState.highestZoneCleared >= _kz) { shardCount++; saveShards(); shardUI.textContent="Shards: "+shardCount; }
         }
     });
 
@@ -2783,7 +2794,9 @@ function render() {
                 const stats       = applyPersonality(personality);
                 if (entry.hpStat!==undefined) stats.hp = entry.hpStat;
                 const role        = assignRole(stats);
-                const hp          = entry.ghostphageLife ? 1 : stats.hp;
+                const hp          = entry.ghostphageLife ? 1
+                                  : activeCrystalBuild==="echo_shell" ? Math.max(1, Math.ceil(stats.hp * 0.5))
+                                  : stats.hp;
                 const npc = {
                     type:"virus", element:entry.element, x:crystal.x, y:crystal.y, team:"green",
                     health: hp, maxHealth: hp,

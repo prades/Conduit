@@ -146,6 +146,98 @@ const PYLON_SHOP_ITEMS = [
 ];
 
 // ─────────────────────────────────────────────────────────
+//  CRYSTAL BUILD ITEMS  (activate by buying; one active at a time)
+// ─────────────────────────────────────────────────────────
+const CRYSTAL_BUILD_ITEMS = [
+    // ── TIER I — Elemental Resonance Builds (60–75 shards) ──────────────
+    { id:"ember_core",    label:"Ember Core",    cost:60, tier:"I",
+      desc:"Fire followers +20% ATK. Crystal radiates heat: enemies within 2 tiles take 2 fire dmg/s",
+      apply() { activeCrystalBuild="ember_core"; }
+    },
+    { id:"frost_lattice", label:"Frost Lattice", cost:65, tier:"I",
+      desc:"Ice freeze proc chance ×2. Slowed enemies take +15% damage from all sources",
+      apply() { activeCrystalBuild="frost_lattice"; }
+    },
+    { id:"voltage_surge", label:"Voltage Surge", cost:70, tier:"I",
+      desc:"Chain Lightning hits 2 extra targets. Arc Flash stun proc rate +10%",
+      apply() { activeCrystalBuild="voltage_surge"; }
+    },
+    { id:"toxic_bloom",   label:"Toxic Bloom",   cost:65, tier:"I",
+      desc:"Toxic DoT damage ×1.5. Enemies killed under Toxic proc burst a poison cloud (2-tile radius)",
+      apply() { activeCrystalBuild="toxic_bloom"; }
+    },
+    { id:"flux_resonance",label:"Flux Resonance",cost:70, tier:"I",
+      desc:"Flux procs drain 10% of enemy max HP on hit. Resonance charge fills 25% faster",
+      apply() { activeCrystalBuild="flux_resonance"; }
+    },
+    // ── TIER II — Tactical Field Builds (80–110 shards) ─────────────────
+    { id:"shard_harvest", label:"Shard Harvest", cost:85, tier:"II",
+      desc:"+1 shard per enemy kill. Pylon-assisted kills yield an extra shard on top",
+      apply() { activeCrystalBuild="shard_harvest"; }
+    },
+    { id:"bastion_form",  label:"Bastion Form",  cost:90, tier:"II",
+      desc:"Crystal +150 max HP immediately. Passive regen: crystal heals 3 HP every 10 sec",
+      apply() { activeCrystalBuild="bastion_form"; crystal.maxHealth+=150; crystal.health=Math.min(crystal.health+150,crystal.maxHealth); }
+    },
+    { id:"warden_pact",   label:"Warden Pact",   cost:95, tier:"II",
+      desc:"Followers never permanently die — always queue for respawn regardless of HP stat",
+      apply() { activeCrystalBuild="warden_pact"; }
+    },
+    { id:"echo_shell",    label:"Echo Shell",    cost:100, tier:"II",
+      desc:"Respawning followers return at 50% max HP instead of base 1. Resilient revival",
+      apply() { activeCrystalBuild="echo_shell"; }
+    },
+    { id:"predator_mark", label:"Predator Mark", cost:110, tier:"II",
+      desc:"All enemies in your zone are marked on entry: receive +20% damage from all sources",
+      apply() { activeCrystalBuild="predator_mark"; }
+    },
+    // ── TIER III — Advanced Warfare Builds (120–155 shards) ─────────────
+    { id:"spectral_veil", label:"Spectral Veil", cost:120, tier:"III",
+      desc:"All followers: 15% dodge chance. A successful dodge grants +5 resonance charge",
+      apply() { activeCrystalBuild="spectral_veil"; }
+    },
+    { id:"neural_web",    label:"Neural Web",    cost:130, tier:"III",
+      desc:"20% of any HP heal received by a follower spreads to all nearby followers (3-tile radius)",
+      apply() { activeCrystalBuild="neural_web"; }
+    },
+    { id:"siege_engine",  label:"Siege Engine",  cost:140, tier:"III",
+      desc:"Pylon shots deal 0.5× bonus splash to adjacent tiles. Pylons gain +1 max range",
+      apply() { activeCrystalBuild="siege_engine";
+          world.forEach(t => { if (t.pillar && !t.destroyed && t.attackMode) t.attackRange=(t.attackRange||2.5)+1; });
+      }
+    },
+    { id:"void_rift",     label:"Void Rift",     cost:130, tier:"III",
+      desc:"Cleared zones emit a rift: all enemy kills in that zone yield +50% shard value",
+      apply() { activeCrystalBuild="void_rift"; }
+    },
+    { id:"twin_souls",    label:"Twin Souls",    cost:150, tier:"III",
+      desc:"Each follower spawned from the crystal also spawns a spectral clone at 60% stats",
+      apply() { activeCrystalBuild="twin_souls"; }
+    },
+    // ── TIER IV — Apex Ascendancy Builds (160–220 shards) ───────────────
+    { id:"bloodthorn",    label:"Bloodthorn",    cost:160, tier:"IV",
+      desc:"Followers deal bonus damage equal to 8% of current HP per hit. Risk & reward",
+      apply() { activeCrystalBuild="bloodthorn"; }
+    },
+    { id:"overcharge",    label:"Overcharge",    cost:175, tier:"IV",
+      desc:"Pylons store up to 3 idle charges. Each stored charge adds +40% bonus to the next shot",
+      apply() { activeCrystalBuild="overcharge"; }
+    },
+    { id:"crystal_mind",  label:"Crystal Mind",  cost:180, tier:"IV",
+      desc:"Followers charge ultimates 2× faster. All ultimates deal +25% damage globally",
+      apply() { activeCrystalBuild="crystal_mind"; }
+    },
+    { id:"nova_burst",    label:"Nova Burst",    cost:200, tier:"IV",
+      desc:"Crystal unleashes a 25-dmg nova in 6-tile radius when struck for 20%+ max HP in one hit",
+      apply() { activeCrystalBuild="nova_burst"; }
+    },
+    { id:"ghostphage_ii", label:"Ghostphage II", cost:220, tier:"IV",
+      desc:"Upgraded Ghostphage: ghosts return as half-strength fighters, immune to ALL hazards and slow",
+      apply() { activeCrystalBuild="ghostphage_ii"; }
+    }
+];
+
+// ─────────────────────────────────────────────────────────
 //  ARMAMENT ITEMS
 // ─────────────────────────────────────────────────────────
 const ARMAMENT_ITEMS = [

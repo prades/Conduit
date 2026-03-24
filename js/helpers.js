@@ -10,12 +10,23 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (!target || target.dead) return;
     // Ghostphage ghost — immune to hazards; instantly killed by any direct attack
     if (target.ghostphageLife) {
+        if (activeCrystalBuild==="ghostphage_ii") {
+            // Upgraded: immune to hazards AND slow; direct attacks deal half damage
+            if (!source || !source.team) return; // immune to hazards
+            target.health -= amount * 0.5;
+            if (target.health <= 0) { target.health=0; target.dead=true; }
+            return;
+        }
         if (source && source.team) { target.health=0; target.dead=true; }
         return; // hazard (null source) — immune
     }
     if (target.spawnProtection && target.spawnProtection > 0) return;
     // Command Node — 10% ATK bonus for followers dealing damage
     if (source && source.isFollower && source.team === "green") amount *= getFollowerAttackMult();
+    // Predator Mark — enemies take +20% damage from all sources
+    if (activeCrystalBuild === "predator_mark" && source &&
+        (target.team === "red" || (target instanceof Predator && target.team !== "green")))
+        amount *= 1.2;
     // Provoke predators hit during day
     if (target instanceof Predator && target.team !== "green" && gameState.phase === "day") {
         target.provoked = true; target.state = "hunt";
@@ -23,6 +34,14 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (target.frozen) return;
     if (target.invulnerable && target.invulnerable > 0) return;
     if (target.smokeForm > 0 && Math.random() < (target.smokeEvasion||0.75)) return;
+    // Spectral Veil — followers have 15% dodge chance; dodge grants resonance
+    if (activeCrystalBuild === "spectral_veil" && target.isFollower && target.team === "green" && source && source.team !== "green") {
+        if (Math.random() < 0.15) {
+            target.currentResonance = Math.min((target.currentResonance||0) + 5, 100);
+            if (typeof target.hitFlash !== "undefined") target.hitFlash = 3;
+            return;
+        }
+    }
     if (target.shielded && target.shieldAmount > 0) {
         if (element === 'toxic') {
             // toxic: bypasses shield, hits HP directly
@@ -96,13 +115,15 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
         // ── ULTIMATE KILL BONUS ───────────────────────────────
         if (source && source.isFollower && source.team === "green") {
             if (typeof source.ultimateCharge !== "number") source.ultimateCharge = 0;
-            source.ultimateCharge = Math.min(100, source.ultimateCharge + 20);
+            const _killUltGain = activeCrystalBuild==="crystal_mind" ? 40 : 20;
+            source.ultimateCharge = Math.min(100, source.ultimateCharge + _killUltGain);
         }
     }
     // ── ULTIMATE CHARGE GAIN ──────────────────────────────
     if (source && source.isFollower && source.team === "green" && !target.dead) {
         if (typeof source.ultimateCharge !== "number") source.ultimateCharge = 0;
-        source.ultimateCharge = Math.min(100, source.ultimateCharge + 3);
+        const _hitUltGain = activeCrystalBuild==="crystal_mind" ? 6 : 3;
+        source.ultimateCharge = Math.min(100, source.ultimateCharge + _hitUltGain);
     }
 }
 
