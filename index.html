@@ -1,1265 +1,395 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Tube Crawler: Peak AI Data-Driven</title>
-    <style>
-        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
-        canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragonlord — Home</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    #ui {
-        position: absolute; top: 20px; left: 230px; right: 80px;
-        max-width: 200px; height: 28px;
-        background: rgba(0,0,0,0.6);
-        border: 1px solid #333; border-radius: 4px; overflow: hidden;
-    }
-    @media (max-width: 480px) {
-        #ui { left: 130px; right: 60px; max-width: none; }
-        #shards { font-size: 12px; }
-    }
-    #hp { height: 100%; background: #0f8; width: 100%; box-shadow: 0 0 10px #0f8; transition: background 0.3s; }
-
-    #shards {
-        position: absolute; top: 12px; left: 10px;
-        color: #ff0; font-size: 14px; font-weight: bold;
-        background: rgba(0,0,0,0.8); padding: 2px 6px;
-        border-radius: 4px; z-index: 10;
-    }
-    #waveInfo {
-        position: absolute; top: 10px; left: 50%;
-        transform: translateX(-50%);
-        color: #0f8; font-size: 17px; font-weight: bold;
-        background: rgba(0,0,0,0.85); padding: 4px 14px;
-        border-radius: 5px; z-index: 10; pointer-events: none;
-        letter-spacing: 0.5px;
-    }
-    /* ── OVERLAY (game-over / wave-clear / shop) ── */
-    #overlay {
-        display: none;
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,0.82);
-        z-index: 10000;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        font-family: monospace;
-        color: #0f8;
-    }
-    #overlay.active { display: flex; }
-    #overlay h1 { font-size: 2.2rem; margin: 0 0 8px; letter-spacing: 4px; }
-    #overlay p  { color: #aaa; margin: 4px 0; font-size: 0.9rem; }
-    #overlay .stat { color: #ff0; }
-    .ovr-btn {
-        margin-top: 18px; padding: 10px 28px;
-        background: #0a1f14; border: 2px solid #0f8;
-        color: #0f8; font-family: monospace; font-size: 1rem;
-        border-radius: 6px; cursor: pointer; letter-spacing: 2px;
-        touch-action: manipulation;
-    }
-    .ovr-btn:hover { background: #0f8; color: #000; }
-    /* ── SHOP ── */
-    #shopGrid {
-        display: flex; gap: 12px; flex-wrap: wrap;
-        justify-content: center; margin-top: 16px;
-        max-width: 480px;
+    body {
+      background: #040810;
+      color: #c8d8f0;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    /* ── SHOP OVERLAY STATS BAR ── */
-    #ovr-statsbar {
-        display: flex; gap: 18px; align-items: center; justify-content: center;
-        background: rgba(0,0,0,0.55); border: 1px solid #1a4a2a;
-        border-radius: 5px; padding: 6px 18px; margin: 4px 0 0;
-        flex-wrap: wrap;
-    }
-    .ovr-stat-cell { text-align: center; min-width: 60px; }
-    .ovr-stat-label { color: #4a8a6a; font-size: 0.65rem; letter-spacing: 1px; display: block; }
-    .ovr-stat-val   { color: #ff0; font-size: 1.05rem; font-weight: bold; }
-    .ovr-stat-val.cyan  { color: #0ff; }
-    .ovr-stat-val.green { color: #0f8; }
-
-    /* ── SHOP ITEM CARDS ── */
-    .shop-item {
-        background: linear-gradient(160deg, #0b1612 0%, #070e0b 100%);
-        border: 1px solid #1a6a3a;
-        border-radius: 7px; padding: 9px 11px;
-        min-width: 155px; max-width: 195px;
-        cursor: pointer; text-align: left;
-        position: relative; overflow: hidden;
-        transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
-        flex: 1 1 155px;
-    }
-    .shop-item::before {
-        content: ''; position: absolute; inset: 0;
-        background: linear-gradient(135deg, rgba(0,255,136,0.03) 0%, transparent 60%);
-        pointer-events: none;
-    }
-    .shop-item:hover {
-        border-color: #0f8; background: linear-gradient(160deg, #0d2018 0%, #091410 100%);
-        box-shadow: 0 0 12px rgba(0,255,136,0.18), inset 0 0 8px rgba(0,255,136,0.04);
-    }
-    .shop-item:hover .item-label { color: #0f8; }
-    .shop-item:hover .item-cost  { color: #fff; }
-    .shop-item.bought {
-        opacity: 0.35; pointer-events: none;
-        border-color: #1a2a20; background: #060b08;
-    }
-    .shop-item.build-active {
-        border-color: #c84fff !important; background: linear-gradient(160deg, #130820 0%, #0d0518 100%) !important;
-        box-shadow: 0 0 14px rgba(200,79,255,0.22), inset 0 0 8px rgba(200,79,255,0.06) !important;
-        pointer-events: none;
-    }
-    .shop-item.locked {
-        opacity: 0.32; pointer-events: none; border-color: #222; filter: grayscale(0.5);
+    /* Three.js canvas fills the hero */
+    #bg-canvas {
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none;
     }
 
-    /* Tier-specific accent colors */
-    .shop-item.tier-I   { border-color: #1a6a3a; }
-    .shop-item.tier-I:hover   { border-color: #0f8; }
-    .shop-item.tier-II  { border-color: #1a4a6a; }
-    .shop-item.tier-II:hover  { border-color: #4bc8ff; box-shadow: 0 0 12px rgba(75,200,255,0.18); }
-    .shop-item.tier-II:hover .item-label { color: #4bc8ff; }
-    .shop-item.tier-III { border-color: #4a3a00; }
-    .shop-item.tier-III:hover { border-color: #ffd700; box-shadow: 0 0 12px rgba(255,215,0,0.18); }
-    .shop-item.tier-III:hover .item-label { color: #ffd700; }
-    .shop-item.tier-IV  { border-color: #3a0a5a; }
-    .shop-item.tier-IV:hover  { border-color: #c84fff; box-shadow: 0 0 12px rgba(200,79,255,0.22); }
-    .shop-item.tier-IV:hover .item-label { color: #c84fff; }
+    .content { position: relative; z-index: 1; }
 
-    /* Card content */
-    .item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
-    .item-label  { color: #cee; font-size: 0.78rem; font-weight: bold; line-height: 1.3; flex: 1; }
-    .item-tier-badge {
-        font-size: 0.6rem; font-weight: bold; padding: 1px 5px;
-        border-radius: 3px; flex-shrink: 0; margin-top: 1px;
-        font-family: monospace; letter-spacing: 0.5px;
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 40px 20px;
     }
-    .tier-badge-I   { background: rgba(0,255,136,0.12);  color: #0f8;    border: 1px solid #0f8; }
-    .tier-badge-II  { background: rgba(75,200,255,0.12); color: #4bc8ff; border: 1px solid #4bc; }
-    .tier-badge-III { background: rgba(255,215,0,0.12);  color: #ffd700; border: 1px solid #aa8800; }
-    .tier-badge-IV  { background: rgba(200,79,255,0.12); color: #c84fff; border: 1px solid #884acc; }
-    .item-cost {
-        color: #ffd700; font-size: 0.75rem; font-weight: bold;
-        display: flex; align-items: center; gap: 3px; margin-bottom: 4px;
-    }
-    .item-cost-shard { color: #ff0; font-size: 0.8rem; }
-    .item-desc {
-        color: #7aaa8a; font-size: 0.69rem; line-height: 1.35;
-        border-top: 1px solid #0f830e; padding-top: 4px; margin-top: 2px;
-    }
-    .item-req   { color: #f84; font-size: 0.67rem; margin-top: 3px; display: flex; align-items: center; gap: 3px; }
-    .item-active-badge {
-        display: inline-block; background: rgba(200,79,255,0.2);
-        color: #c84fff; border: 1px solid #c84fff; font-size: 0.6rem;
-        font-weight: bold; padding: 1px 5px; border-radius: 3px; margin-top: 3px;
-        letter-spacing: 1px;
-    }
-    .shop-item.bought .item-label::after { content: ' ✓'; color: #444; }
 
-    /* ── SHOP TAB PANEL ── */
-    #shopPanel { width: min(700px, 96vw); }
-    #shopPanel h1, #overlay h1 { font-size: 1.8rem; margin: 0 0 4px; letter-spacing: 3px; }
-    .shop-tabs {
-        display: flex; gap: 2px; margin-top: 12px; margin-bottom: 0;
-        border-bottom: 1px solid #1a4a2a; padding-bottom: 0; flex-wrap: wrap;
+    .dragon-icon {
+      font-size: 64px; margin-bottom: 20px;
+      filter: drop-shadow(0 0 24px #ff6600);
+      animation: floatIcon 3.5s ease-in-out infinite;
     }
-    .shop-tab {
-        background: rgba(0,0,0,0.5); border: 1px solid #1a3a2a;
-        border-bottom: none;
-        color: #3a7a5a; font-family: monospace; font-size: 10px;
-        padding: 7px 14px; border-radius: 4px 4px 0 0; cursor: pointer;
-        letter-spacing: 1.5px; touch-action: manipulation;
-        transition: color 0.12s, border-color 0.12s, background 0.12s;
-        position: relative; top: 1px;
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-12px); }
     }
-    .shop-tab.active {
-        color: #0f8; border-color: #0f8; background: rgba(0,255,136,0.07);
-        border-bottom-color: #050f08;
-        box-shadow: 0 -3px 8px rgba(0,255,136,0.08);
-    }
-    .shop-tab:hover:not(.active) { color: #0f8; border-color: #0f8; }
-    .shop-tab[data-tab="Pylons"].active   { color: #4bc8ff; border-color: #4bc8ff; background: rgba(75,200,255,0.06); border-bottom-color: #050f08; }
-    .shop-tab[data-tab="Pylons"]:hover:not(.active) { color: #4bc8ff; border-color: #4bc; }
-    .shop-tab[data-tab="Armaments"].active { color: #ff6644; border-color: #ff6644; background: rgba(255,100,68,0.06); border-bottom-color: #050f08; }
-    .shop-tab[data-tab="Armaments"]:hover:not(.active) { color: #ff6644; border-color: #f64; }
-    .shop-tab[data-tab="Builds"].active   { color: #c84fff; border-color: #c84fff; background: rgba(200,79,255,0.06); border-bottom-color: #050f08; }
-    .shop-tab[data-tab="Builds"]:hover:not(.active) { color: #c84fff; border-color: #c84f; }
 
-    /* Pane wrapper */
-    .shop-pane-wrap { border: 1px solid #1a4a2a; border-top: none; border-radius: 0 0 6px 6px; background: rgba(0,0,0,0.3); }
-    .shop-pane-header {
-        display: none; padding: 6px 12px 4px;
-        font-size: 0.65rem; letter-spacing: 2px; color: #4a8a5a;
-        border-bottom: 1px solid #0a2518;
+    .hero h1 {
+      font-size: clamp(2.6rem, 7vw, 5rem);
+      font-weight: 900;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ff6600, #ffcc00, #ff3300);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      filter: drop-shadow(0 0 18px rgba(255,100,0,0.5));
+      margin-bottom: 14px;
     }
-    .shop-pane { display: none; flex-wrap: wrap; gap: 8px; justify-content: flex-start;
-        max-width: 700px; max-height: 44vh; overflow-y: auto;
-        padding: 10px 10px 8px; }
-    .shop-pane.active { display: flex; }
-    .shop-pane.active + .shop-pane-header, .shop-pane-header.active { display: block; }
-    .shop-pane::-webkit-scrollbar { width: 4px; }
-    .shop-pane::-webkit-scrollbar-track { background: #020d06; }
-    .shop-pane::-webkit-scrollbar-thumb { background: #0f8; border-radius: 2px; }
 
-    /* Build pane two-column grid */
-    #shopGridBuilds { gap: 8px; }
-    #shopGridBuilds .shop-item { min-width: 200px; max-width: 230px; flex: 1 1 200px; }
+    .hero .tagline {
+      font-size: clamp(0.85rem, 2vw, 1.1rem);
+      color: #7bb8e8;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      opacity: 0.85;
+    }
 
-    /* ── TOP COMMAND TOGGLES ── */
-    #topToggles {
-        position: absolute; top: 44px; left: 50%;
-        transform: translateX(-50%);
-        display: flex; gap: 4px; z-index: 20;
-        max-width: calc(100vw - 20px); flex-wrap: nowrap;
+    .hero .bio {
+      max-width: 560px;
+      font-size: 1rem;
+      line-height: 1.8;
+      color: #a0bcd8;
+      margin-bottom: 40px;
     }
-    .top-btn {
-        background: rgba(0,0,0,0.78); border: 1px solid #0f8;
-        color: #0f8; font-family: monospace; font-size: 11px;
-        padding: 4px 8px; border-radius: 3px; cursor: pointer;
-        letter-spacing: 1px; touch-action: manipulation;
-        white-space: nowrap;
-    }
-    @media (max-width: 360px) {
-        .top-btn { font-size: 9px; padding: 3px 5px; }
-        #topToggles { gap: 3px; }
-    }
-    .top-btn.active { background: rgba(0,255,136,0.18); border-color: #0ff; color: #0ff; }
 
-    /* ── CONTROLS / INFO MENU ── */
-    #controlsMenu {
-        display: none; position: fixed; top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        flex-direction: column;
-        background: rgba(0,8,4,0.97); border: 2px solid #0f8;
-        border-radius: 8px; padding: 16px 20px;
-        font-family: monospace; color: #0f8;
-        z-index: 2000; width: min(560px, 94vw);
-        max-height: 90dvh; max-height: 90vh;
+    .scroll-hint {
+      color: #4a7a9e; font-size: 12px; letter-spacing: 2px;
+      animation: pulse 2s ease-in-out infinite;
     }
-    #controlsMenu.minimized {
-        top: auto; bottom: 8px; transform: translateX(-50%);
-        padding: 0; width: min(320px, 94vw);
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 1; }
     }
-    #controlsMenu.minimized .cm-tabs,
-    #controlsMenu.minimized .cm-body,
-    #controlsMenu.minimized .ovr-btn { display: none !important; }
-    #cm-titlebar {
-        display: flex; align-items: center; justify-content: space-between;
-        margin-bottom: 10px; min-height: 28px;
-    }
-    #controlsMenu.minimized #cm-titlebar { margin-bottom: 0; padding: 8px 12px; }
-    #cm-title { color: #0ff; font-size: 0.82rem; letter-spacing: 2px; flex: 1; }
-    #cm-minimize {
-        background: rgba(0,0,0,0.5); border: 1px solid #0f8;
-        color: #0f8; font-family: monospace; font-size: 14px;
-        width: 28px; height: 24px; border-radius: 3px; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        touch-action: manipulation; flex-shrink: 0;
-    }
-    #cm-minimize:hover { background: rgba(0,255,136,0.15); }
-    #cm-close {
-        background: rgba(0,0,0,0.5); border: 1px solid #f84;
-        color: #f84; font-family: monospace; font-size: 14px;
-        width: 28px; height: 24px; border-radius: 3px; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        touch-action: manipulation; flex-shrink: 0; margin-left: 4px;
-    }
-    #cm-close:hover { background: rgba(255,136,50,0.2); }
-    .ctrl-title { color: #0ff; font-size: 0.82rem; letter-spacing: 2px; margin: 8px 0 5px; }
-    .ctrl-row { font-size: 0.76rem; margin: 4px 0; display: flex; align-items: center; gap: 8px; color: #aad; }
-    .ctrl-key { color: #ff0; font-size: 1rem; min-width: 20px; text-align: center; flex-shrink: 0; }
-    .ctrl-badge { padding: 1px 5px; border-radius: 3px; font-weight: bold; font-size: 0.72rem; flex-shrink: 0; }
-    .ctrl-badge.brawler { background: rgba(255,136,136,0.25); color: #f88; border: 1px solid #f88; }
-    .ctrl-badge.sniper  { background: rgba(136,136,255,0.25); color: #88f; border: 1px solid #88f; }
-    .ctrl-badge.camper  { background: rgba(136,255,136,0.25); color: #8f8; border: 1px solid #8f8; }
 
-    /* Element picker and info panel are canvas-drawn — no HTML overlay needed */
+    /* ── Section ── */
+    .section {
+      max-width: 960px; margin: 0 auto; padding: 80px 24px;
+    }
 
-    /* ── CONTROLS MENU TABS ── */
-    .cm-tabs {
-        display: flex; gap: 2px; margin-bottom: 10px;
-        border-bottom: 1px solid #0f8; padding-bottom: 4px;
-        flex-wrap: wrap;
+    .section-title {
+      font-size: 1rem; letter-spacing: 4px; text-transform: uppercase;
+      color: #ff6600; margin-bottom: 48px; text-align: center;
+      position: relative;
     }
-    .cm-tab {
-        background: rgba(0,0,0,0.4); border: 1px solid #1a4a2a;
-        color: #4a8a6a; font-family: monospace; font-size: 10px;
-        padding: 6px 9px; border-radius: 3px 3px 0 0; cursor: pointer;
-        letter-spacing: 1px; min-height: 28px; touch-action: manipulation;
-        transition: color 0.15s, border-color 0.15s;
+    .section-title::after {
+      content: ''; display: block; width: 60px; height: 2px;
+      background: linear-gradient(to right, #ff6600, #ffcc00);
+      margin: 12px auto 0;
     }
-    .cm-tab.active {
-        color: #0ff; border-color: #0ff; background: rgba(0,255,255,0.08);
-        border-bottom-color: transparent;
-    }
-    .cm-tab:hover:not(.active) { color: #0f8; border-color: #0f8; }
-    .cm-body {
-        max-height: min(68vh, 68dvh); overflow-y: auto; overflow-x: hidden;
-        padding-right: 4px;
-    }
-    .cm-body::-webkit-scrollbar { width: 4px; }
-    .cm-body::-webkit-scrollbar-track { background: #001008; }
-    .cm-body::-webkit-scrollbar-thumb { background: #0f8; border-radius: 2px; }
-    .cm-section { display: none; }
-    .cm-section.active { display: block; }
-    .cm-elem-dot {
-        display: inline-block; width: 9px; height: 9px;
-        border-radius: 50%; flex-shrink: 0; margin-right: 4px;
-        vertical-align: middle;
-    }
-    .cm-elem-head {
-        font-size: 0.82rem; font-weight: bold; letter-spacing: 1px;
-        margin: 10px 0 4px; display: flex; align-items: center; gap: 5px;
-    }
-    .cm-stat { color: #ff0; }
-    .cm-dim { color: #668; font-size: 0.72rem; }
-    .cm-indent { padding-left: 14px; }
-    .cm-rank {
-        font-size: 0.65rem; padding: 1px 5px; border-radius: 3px;
-        font-weight: bold; border: 1px solid; margin-left: 4px;
-        vertical-align: middle;
-    }
-    .cm-ability {
-        background: rgba(255,255,136,0.06); border-left: 2px solid #ff0;
-        padding: 3px 6px; margin: 3px 0; border-radius: 0 3px 3px 0;
-        font-size: 0.74rem; color: #ccb;
-    }
-    .cm-ult {
-        background: rgba(0,255,136,0.07); border-left: 2px solid #0f8;
-        padding: 3px 6px; margin: 3px 0; border-radius: 0 3px 3px 0;
-        font-size: 0.74rem; color: #afa;
-    }
-    .cm-proc {
-        background: rgba(0,180,255,0.06); border-left: 2px solid #0af;
-        padding: 3px 6px; margin: 3px 0 6px; border-radius: 0 3px 3px 0;
-        font-size: 0.72rem; color: #8cf;
-    }
-    .cm-hr { border: none; border-top: 1px solid #1a4a2a; margin: 8px 0; }
-    .cm-perk-row {
-        display: flex; align-items: flex-start; gap: 6px;
-        font-size: 0.76rem; margin: 4px 0; color: #aad;
-    }
-    .cm-perk-name { color: #0ff; min-width: 88px; flex-shrink: 0; }
-    .cm-species-head {
-        display: flex; align-items: center; gap: 6px;
-        margin: 10px 0 3px; font-size: 0.82rem; font-weight: bold;
-    }
-    .cm-class-bar {
-        display: flex; gap: 3px; flex-wrap: wrap;
-        margin: 3px 0 3px 0; font-size: 0.68rem;
-    }
-    .cm-class-pill {
-        padding: 1px 6px; border-radius: 10px; border: 1px solid #2a5a3a;
-        color: #7ab; background: rgba(0,80,40,0.3);
-    }
-    .cm-class-pill.boss { border-color: #ff4; color: #ff4; background: rgba(80,60,0,0.3); }
-    .cm-night-tag {
-        font-size: 0.68rem; color: #668; margin-left: auto; flex-shrink: 0;
-    }
-    .cm-build-row {
-        display: flex; align-items: flex-start; gap: 8px;
-        font-size: 0.76rem; margin: 5px 0; color: #aad;
-    }
-    .cm-build-label { color: #0ff; min-width: 108px; flex-shrink: 0; }
-    .cm-tier {
-        display: flex; align-items: center; gap: 5px;
-        font-size: 0.75rem; margin: 3px 0 3px 8px; color: #aad;
-    }
-    .cm-tier-badge {
-        background: rgba(0,255,136,0.12); border: 1px solid #0f8;
-        color: #0f8; font-size: 0.7rem; padding: 0 5px;
-        border-radius: 3px; font-weight: bold; min-width: 20px;
-        text-align: center;
-    }
-    .cm-intro-box {
-        background: rgba(0,255,136,0.05); border: 1px solid #1a5a3a;
-        border-radius: 5px; padding: 7px 10px; margin-bottom: 10px;
-        font-size: 0.75rem; color: #9cb; line-height: 1.5;
-    }
-    .cm-intro-box strong { color: #0ff; }
-    .cm-stat-row {
-        display: flex; align-items: flex-start; gap: 6px;
-        font-size: 0.75rem; margin: 5px 0; color: #bbd;
-        border-left: 2px solid #0f8; padding-left: 7px;
-    }
-    .cm-stat-name { color: #ff0; font-weight: bold; min-width: 72px; flex-shrink: 0; }
-    .cm-stat-abbr { color: #0ff; font-size: 0.68rem; min-width: 40px; flex-shrink: 0; }
-    .cm-tip {
-        background: rgba(255,180,0,0.06); border-left: 2px solid #fa0;
-        padding: 3px 6px; margin: 3px 0; border-radius: 0 3px 3px 0;
-        font-size: 0.73rem; color: #dca;
-    }
-    .cm-tip strong { color: #fa0; }
-    .cm-elem-tri {
-        display: grid; grid-template-columns: 1fr 1fr;
-        gap: 4px; margin: 6px 0;
-    }
-    .cm-tri-group {
-        background: rgba(255,255,0,0.04); border: 1px solid #2a4a1a;
-        border-radius: 4px; padding: 5px 8px; font-size: 0.72rem;
-    }
-    .cm-tri-group strong { color: #ff0; font-size: 0.7rem; display: block; margin-bottom: 2px; }
-    .cm-proc-rate { color: #fa0; font-weight: bold; }
-    .cm-personality-table { width: 100%; border-collapse: collapse; font-size: 0.68rem; margin: 6px 0; }
-    .cm-personality-table th { color: #0ff; font-size: 0.65rem; padding: 3px 4px; text-align: left; border-bottom: 1px solid #1a4a2a; }
-    .cm-personality-table td { padding: 3px 4px; color: #aab; border-bottom: 1px solid #0a2a18; }
-    .cm-personality-table tr:last-child td { border-bottom: none; }
-    .cm-up { color: #4f8; }
-    .cm-down { color: #f84; }
-    .cm-neutral { color: #668; }
-    .cm-clone-table { width: 100%; border-collapse: collapse; font-size: 0.69rem; margin: 5px 0; }
-    .cm-clone-table th { color: #0ff; padding: 3px 5px; text-align: left; border-bottom: 1px solid #1a4a2a; font-size: 0.66rem; }
-    .cm-clone-table td { padding: 3px 5px; color: #aab; border-bottom: 1px solid #0a2a18; }
-    .cm-clone-table tr:last-child td { border-bottom: none; }
-    .cm-section-note {
-        background: rgba(0,200,255,0.05); border: 1px solid #1a3a4a;
-        border-radius: 4px; padding: 5px 8px; margin: 6px 0;
-        font-size: 0.72rem; color: #8bc; line-height: 1.4;
-    }
-    .cm-section-note strong { color: #0ff; }
-    .cm-counter { background: rgba(255,60,60,0.06); border-left: 2px solid #f55;
-        padding: 3px 6px; margin: 2px 0; border-radius: 0 3px 3px 0;
-        font-size: 0.72rem; color: #daa; }
-    .cm-counter strong { color: #f88; }
-    .cm-day-night {
-        display: flex; gap: 6px; margin: 5px 0;
-    }
-    .cm-phase {
-        flex: 1; border-radius: 4px; padding: 5px 8px;
-        font-size: 0.72rem; line-height: 1.4;
-    }
-    .cm-phase.day { background: rgba(255,220,0,0.07); border: 1px solid #554400; }
-    .cm-phase.night { background: rgba(0,80,200,0.07); border: 1px solid #003366; }
-    .cm-phase strong { display: block; font-size: 0.78rem; margin-bottom: 2px; }
-    .cm-phase.day strong { color: #ffd; }
-    .cm-phase.night strong { color: #88f; }
-    /* ── GUIDE ADDITIONS ── */
-    .cm-species-table { width:100%; border-collapse:collapse; font-size:0.67rem; margin:5px 0; }
-    .cm-species-table th { color:#0ff; padding:2px 5px; text-align:left; border-bottom:1px solid #1a4a2a; font-size:0.64rem; }
-    .cm-species-table td { padding:2px 5px; color:#aab; border-bottom:1px solid #0a2a18; }
-    .cm-species-table tr:last-child td { border-bottom:none; }
-    .cm-species-table .td-boss { color:#ff4; }
-    .cm-elem-matchup { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin:6px 0; }
-    .cm-matchup-box { border-radius:4px; padding:5px 8px; font-size:0.71rem; line-height:1.5; }
-    .cm-matchup-box strong { display:block; font-size:0.74rem; margin-bottom:2px; }
-    .cm-matchup-volatile { background:rgba(255,80,0,0.07); border:1px solid #663300; }
-    .cm-matchup-volatile strong { color:#ff6633; }
-    .cm-matchup-arcane { background:rgba(80,80,255,0.07); border:1px solid #223366; }
-    .cm-matchup-arcane strong { color:#88aaff; }
-    .cm-formula { background:rgba(255,255,80,0.05); border-left:2px solid #ff0; padding:3px 7px; margin:2px 0; border-radius:0 3px 3px 0; font-size:0.72rem; color:#ccc; }
-    .cm-formula .val { color:#ff0; font-weight:bold; }
-    .cm-formula .dim { color:#668; }
-    .cm-hazard { background:rgba(255,60,0,0.06); border-left:2px solid #f64; padding:3px 7px; margin:3px 0; border-radius:0 3px 3px 0; font-size:0.73rem; color:#dba; }
-    .cm-crystal-box { background:rgba(0,255,136,0.06); border:1px solid #1a5a3a; border-radius:5px; padding:7px 10px; margin:6px 0; font-size:0.75rem; color:#9cb; line-height:1.5; }
-    .cm-crystal-box strong { color:#0ff; }
-    .cm-shop-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin:5px 0; }
-    .cm-shop-item { background:rgba(0,0,0,0.3); border:1px solid #1a4a2a; border-radius:3px; padding:4px 7px; font-size:0.71rem; }
-    .cm-shop-item .label { color:#0f8; }
-    .cm-shop-item .cost { color:#ff0; font-size:0.67rem; }
-    .cm-clone-costs { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; margin:5px 0; font-size:0.69rem; }
-    .cm-clone-cell { background:rgba(0,0,0,0.3); border:1px solid #1a3a2a; border-radius:3px; padding:3px 5px; }
-    .cm-clone-cell .sp { color:#0ff; font-size:0.67rem; font-weight:bold; display:block; }
-    .cm-clone-cell .info { color:#aab; }
-    .cm-perk-block { background:rgba(0,200,255,0.05); border:1px solid #1a3a4a; border-radius:4px; padding:5px 9px; margin:5px 0; }
-    .cm-perk-block .perk-title { color:#0ff; font-size:0.78rem; font-weight:bold; margin-bottom:3px; }
-    .cm-perk-block .perk-desc { color:#aac; font-size:0.73rem; line-height:1.4; }
-    .cm-perk-block .perk-val { color:#0f8; font-weight:bold; }
-    .cm-ult-block { background:rgba(0,255,136,0.07); border-left:3px solid #0f8; padding:5px 8px; margin:6px 0; border-radius:0 4px 4px 0; }
-    .cm-ult-block .ult-name { color:#0f8; font-size:0.78rem; font-weight:bold; }
-    .cm-ult-block .ult-elem { font-size:0.67rem; margin-left:6px; opacity:0.7; }
-    .cm-ult-block .ult-body { color:#afa; font-size:0.72rem; margin-top:2px; line-height:1.4; }
-    .cm-follower-role { display:flex; align-items:flex-start; gap:8px; margin:5px 0; padding:5px 8px; border-radius:4px; }
-    .cm-follower-role.brawler { background:rgba(255,100,100,0.07); border:1px solid #882222; }
-    .cm-follower-role.sniper  { background:rgba(100,100,255,0.07); border:1px solid #224488; }
-    .cm-follower-role.camper  { background:rgba(100,255,100,0.07); border:1px solid #226622; }
-    .cm-follower-role.hybrid  { background:rgba(255,220,80,0.07);  border:1px solid #665500; }
-    .cm-follower-role .role-badge { min-width:22px; text-align:center; padding:1px 5px; border-radius:3px; font-weight:bold; font-size:0.72rem; flex-shrink:0; margin-top:1px; }
-    .brawler .role-badge { background:rgba(255,136,136,0.25); color:#f88; border:1px solid #f88; }
-    .sniper  .role-badge { background:rgba(136,136,255,0.25); color:#88f; border:1px solid #88f; }
-    .camper  .role-badge { background:rgba(136,255,136,0.25); color:#8f8; border:1px solid #8f8; }
-    .hybrid  .role-badge { background:rgba(255,220,100,0.20); color:#ffd; border:1px solid #ffd; }
-    .cm-follower-role .role-body { font-size:0.73rem; line-height:1.45; color:#bbd; }
-    .cm-follower-role .role-body strong { font-size:0.76rem; }
-    .brawler .role-body strong { color:#f88; }
-    .sniper  .role-body strong { color:#88f; }
-    .camper  .role-body strong { color:#8f8; }
-    .hybrid  .role-body strong { color:#ffd; }
-    .cm-follower-role .role-req { color:#668; font-size:0.68rem; margin-top:1px; display:block; }
-</style>
 
+    /* ── Project Grid ── */
+    .projects { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+
+    .project-card {
+      position: relative; overflow: hidden;
+      border: 1px solid rgba(255,100,0,0.2);
+      border-radius: 12px;
+      background: rgba(10,20,40,0.7);
+      padding: 28px 24px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+      backdrop-filter: blur(6px);
+    }
+    .project-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(255,150,0,0.55);
+      box-shadow: 0 12px 40px rgba(255,100,0,0.18);
+    }
+    .project-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,100,0,0.06), transparent 60%);
+      pointer-events: none;
+    }
+
+    .card-badge {
+      display: inline-block; font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; padding: 3px 9px; border-radius: 20px;
+      margin-bottom: 14px; font-weight: bold;
+    }
+    .badge-new    { background: rgba(255,200,0,0.15); color: #ffcc00; border: 1px solid #ffcc0044; }
+    .badge-game   { background: rgba(0,200,120,0.12); color: #00e676; border: 1px solid #00e67644; }
+    .badge-active { background: rgba(100,160,255,0.12); color: #7cb8ff; border: 1px solid #7cb8ff44; }
+
+    .project-card h3 {
+      font-size: 1.3rem; letter-spacing: 1px; margin-bottom: 10px;
+      color: #e8f0ff;
+    }
+    .project-card p {
+      font-size: 0.875rem; line-height: 1.7; color: #7a99bc; margin-bottom: 18px;
+    }
+    .card-tech {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 3px;
+      background: rgba(255,255,255,0.05); color: #6a8fb0;
+      border: 1px solid rgba(255,255,255,0.08); letter-spacing: 1px;
+    }
+    .card-arrow {
+      position: absolute; top: 24px; right: 24px;
+      color: rgba(255,150,0,0.4); font-size: 18px;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .project-card:hover .card-arrow {
+      color: #ff9900; transform: translate(3px, -3px);
+    }
+
+    /* ── Featured project glow ── */
+    .project-card.featured {
+      border-color: rgba(255,200,0,0.35);
+      box-shadow: 0 0 30px rgba(255,180,0,0.1);
+    }
+
+    /* ── About strip ── */
+    .about-strip {
+      background: rgba(10,25,50,0.6);
+      border-top: 1px solid rgba(255,100,0,0.12);
+      border-bottom: 1px solid rgba(255,100,0,0.12);
+      padding: 60px 24px;
+      text-align: center;
+    }
+    .about-strip p {
+      max-width: 620px; margin: 0 auto;
+      line-height: 1.9; color: #8aafc8; font-size: 0.95rem;
+    }
+    .about-strip strong { color: #ffcc00; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding: 40px 20px;
+      color: #2a4060; font-size: 12px; letter-spacing: 2px;
+    }
+    footer a { color: #3a6080; text-decoration: none; }
+    footer a:hover { color: #7cb8ff; }
+
+    /* ── Divider ── */
+    .divider {
+      border: none; height: 1px;
+      background: linear-gradient(to right, transparent, rgba(255,100,0,0.18), transparent);
+      margin: 0;
+    }
+  </style>
 </head>
 <body>
 
-<!-- HUD -->
+<canvas id="bg-canvas"></canvas>
 
-<div id="shards">Shards: 0</div>
-<div id="ui"><div id="hp"></div></div>
-<div id="padHud" style="display:none;position:absolute;top:22px;right:10px;color:#ff9944;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;z-index:10;"></div>
-<div id="waveInfo">WAVE 1 — clear panels for shards</div>
-<div id="zoneInfo" style="position:absolute;top:44px;right:10px;color:#0f8;font-size:13px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;z-index:10;">Zone: Home</div>
-<div id="dnaHud" style="display:none;position:absolute;top:42px;left:10px;color:#0f8;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;z-index:10;">DNA: none</div>
+<div class="content">
 
-<!-- TOP COMMAND TOGGLES -->
-<div id="topToggles">
-    <button id="btnSquad" class="top-btn" onclick="toggleSquad()">SQUAD: SEL</button>
-    <button id="btnBuild" class="top-btn" onclick="toggleBuild()">BUILD: OFF</button>
-    <button id="btnCtrl"  class="top-btn" onclick="toggleControlsMenu()">?</button>
-</div>
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="dragon-icon">🐉</div>
+    <h1>Dragonlord</h1>
+    <p class="tagline">Game Developer &amp; Digital Architect</p>
+    <p class="bio">
+      I build worlds from code. Browser games, 3D environments, and interactive
+      experiences crafted from the ground up — no engines, just raw creativity
+      and JavaScript.
+    </p>
+    <p class="scroll-hint">▼ &nbsp; explore projects &nbsp; ▼</p>
+  </section>
 
-<!-- CONTROLS / INFO MENU — 5-tab reference panel -->
-<div id="controlsMenu">
+  <hr class="divider">
 
-  <!-- Title bar with minimize button -->
-  <div id="cm-titlebar">
-    <span id="cm-title">▣ GAME INDEX</span>
-    <button id="cm-minimize" onclick="minimizeControlsMenu()" title="Minimize">─</button>
-    <button id="cm-close" onclick="toggleControlsMenu()" title="Close">✕</button>
+  <!-- ── Projects ── -->
+  <section class="section">
+    <h2 class="section-title">Public Projects</h2>
+    <div class="projects">
+
+      <!-- Paradise -->
+      <a class="project-card featured" href="paradise/index.html">
+        <span class="card-arrow">↗</span>
+        <span class="card-badge badge-new">New</span>
+        <h3>Paradise</h3>
+        <p>
+          An immersive 3D open-world experience — explore a lush island paradise
+          with dynamic terrain, forests, and a living sky. Built entirely in Three.js.
+        </p>
+        <div class="card-tech">
+          <span class="tag">Three.js</span>
+          <span class="tag">WebGL</span>
+          <span class="tag">3D</span>
+          <span class="tag">Open World</span>
+        </div>
+      </a>
+
+      <!-- Conduit -->
+      <a class="project-card" href="game.html">
+        <span class="card-arrow">↗</span>
+        <span class="card-badge badge-game">Game</span>
+        <h3>Conduit</h3>
+        <p>
+          A fast-paced top-down tube crawler with wave-based combat, elemental
+          powers, crafting, and AI-driven enemies. Pure canvas, zero dependencies.
+        </p>
+        <div class="card-tech">
+          <span class="tag">Canvas 2D</span>
+          <span class="tag">Vanilla JS</span>
+          <span class="tag">Wave Defense</span>
+          <span class="tag">RPG</span>
+        </div>
+      </a>
+
+      <!-- Loresmith -->
+      <a class="project-card" href="https://github.com/prades" target="_blank" rel="noopener">
+        <span class="card-arrow">↗</span>
+        <span class="card-badge badge-active">Active</span>
+        <h3>Loresmith</h3>
+        <p>
+          A procedural lore and world-building toolkit — generate kingdoms, factions,
+          mythologies, and histories with a single click. For writers and worldbuilders.
+        </p>
+        <div class="card-tech">
+          <span class="tag">Procedural Gen</span>
+          <span class="tag">JavaScript</span>
+          <span class="tag">World Building</span>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── About ── -->
+  <div class="about-strip">
+    <p>
+      I go by <strong>Dragonlord</strong> online. I'm passionate about pushing
+      what the browser can do — from real-time 3D with <strong>Three.js</strong>
+      to complex game systems built on raw Canvas APIs. Everything you see here
+      runs natively in your browser, no plugins required.
+    </p>
   </div>
 
-  <!-- Tab bar -->
-  <div class="cm-tabs">
-    <button class="cm-tab active" onclick="switchCMTab('cmControls')">CONTROLS</button>
-    <button class="cm-tab" onclick="switchCMTab('cmElements')">ELEMENTS</button>
-    <button class="cm-tab" onclick="switchCMTab('cmFollowers')">FOLLOWERS</button>
-    <button class="cm-tab" onclick="switchCMTab('cmPersonalities')">PERSONALITIES</button>
-    <button class="cm-tab" onclick="switchCMTab('cmAbilities')">ABILITIES</button>
-    <button class="cm-tab" onclick="switchCMTab('cmPerks')">PERKS</button>
-    <button class="cm-tab" onclick="switchCMTab('cmPylons')">PYLONS</button>
-    <button class="cm-tab" onclick="switchCMTab('cmZones')">ZONES</button>
-    <button class="cm-tab" onclick="switchCMTab('cmCrystal')">CRYSTAL</button>
-    <button class="cm-tab" onclick="switchCMTab('cmPredators')">PREDATORS</button>
-  </div>
+  <hr class="divider">
 
-  <!-- Scrollable body -->
-  <div class="cm-body">
+  <!-- ── Footer ── -->
+  <footer>
+    <p>© Dragonlord &nbsp;·&nbsp; <a href="https://github.com/prades" target="_blank" rel="noopener">GitHub</a></p>
+  </footer>
 
-    <!-- ── CONTROLS ── -->
-    <div id="cmControls" class="cm-section active">
-      <div class="ctrl-title">GESTURES</div>
-      <div class="ctrl-row"><span class="ctrl-key">○</span> Circle enemies → Squad attacks target area</div>
-      <div class="ctrl-row"><span class="ctrl-key">○</span> Circle (no enemies) → Recall all followers</div>
-      <div class="ctrl-row"><span class="ctrl-key">│</span> Vertical line → Hold line — followers stop advancing</div>
-      <div class="ctrl-row"><span class="ctrl-key">→</span> Drag follower → enemy → That follower attacks target</div>
-      <div class="ctrl-row"><span class="ctrl-key">⌀</span> Long press tile → Open radial command menu</div>
-      <div class="ctrl-row"><span class="ctrl-key">✦✦</span> Double-tap follower → Fire ultimate (when charged)</div>
-
-      <div class="ctrl-title">RADIAL MENU</div>
-      <div class="ctrl-row"><span class="ctrl-key">↑</span> TOP — Build pylon / Upgrade existing pylon</div>
-      <div class="ctrl-row"><span class="ctrl-key">↓</span> BOTTOM — Position / Move command</div>
-      <div class="ctrl-row"><span class="ctrl-key">→</span> RIGHT — Info panel for unit or tile</div>
-      <div class="ctrl-row"><span class="ctrl-key">←</span> LEFT — Switch role / Destroy nest / Connect pylon</div>
-
-      <div class="ctrl-title">BUTTONS</div>
-      <div class="ctrl-row"><span class="ctrl-key">SQUAD</span> Toggle SEL (selected followers) / ALL (every follower)</div>
-      <div class="ctrl-row"><span class="ctrl-key">BUILD</span> Toggle build mode ON/OFF — tap tile to place pylon</div>
-      <div class="ctrl-row"><span class="ctrl-key">?</span> Open / close this reference panel</div>
-
-      <div class="ctrl-title">ULTIMATE CHARGE</div>
-      <div class="ctrl-row cm-dim">The thin bar below a follower's health bar shows ultimate charge.</div>
-      <div class="ctrl-row cm-dim">Fills from kills (<span class="cm-stat">+20</span>) and damage dealt (<span class="cm-stat">+3/hit</span>). Max: <span class="cm-stat">100</span>.</div>
-      <div class="ctrl-row cm-dim">A <span class="cm-stat">▲</span> symbol appears when fully charged. Double-tap to fire.</div>
-
-      <div class="ctrl-title">ENVIRONMENTAL HAZARDS</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:4px">Hazards appear on floor tiles in zones beyond home. Watch your step.</div>
-      <div class="cm-hazard"><strong>Acid Pool</strong> — Glowing green puddles. Deals <span class="cm-stat">3 dmg</span> every 0.75s to any actor standing on it. Player takes <span class="cm-stat">4 dmg</span>. Covers 2–3 tiles.</div>
-      <div class="cm-hazard"><strong>Live Cable</strong> — Frayed wires stretching from wall cracks to the floor. Arc cycles: ON for ~0.7s then OFF for 1.5–3s. While live, deals <span class="cm-stat">5 dmg</span> every 0.25s to nearby actors, <span class="cm-stat">6 dmg</span> to player. Watch the sparks.</div>
-    </div>
-
-    <!-- ── ELEMENTS ── -->
-    <div id="cmElements" class="cm-section">
-
-      <div class="cm-intro-box">
-        <strong>Element Triangles</strong> — two rock-paper-scissors loops. Strong = <span style="color:#4f8">1.3×</span> dmg, Weak = <span style="color:#f84">0.7×</span> dmg. Ice vs Core = <span style="color:#f55">0×</span> (completely blocked).
-      </div>
-      <div class="cm-elem-matchup">
-        <div class="cm-matchup-box cm-matchup-volatile">
-          <strong>⬡ VOLATILE</strong>
-          <span style="color:#ff6633">Fire</span> &gt; <span style="color:#cc44ff">Flux</span> &gt; <span style="color:#88ff44">Toxic</span> &gt; Fire
-        </div>
-        <div class="cm-matchup-box cm-matchup-arcane">
-          <strong>⬡ ARCANE</strong>
-          <span style="color:#ffdd44">Electric</span> &gt; <span style="color:#44ff88">Core</span> &gt; <span style="color:#44ddff">Ice</span> &gt; Electric
-        </div>
-      </div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:8px">Fire &amp; Electric start <span class="cm-stat">unlocked</span>. Others purchased in the shop between waves.</div>
-
-      <!-- FIRE -->
-      <div class="cm-elem-head">
-        <span class="cm-elem-dot" style="background:#ff6644;box-shadow:0 0 5px #ff6644"></span>
-        <span style="color:#ff6644">FIRE</span>
-        <span class="cm-dim" style="margin-left:auto;font-size:0.68rem">Proc: <span class="cm-proc-rate">30%</span> · Unlocked by default</span>
-      </div>
-      <div class="cm-ability"><strong>Physical — Ring of Fire:</strong> <span class="cm-stat">0.4× ATK</span> dmg to all enemies within <span class="cm-stat">1.5 tiles</span>. Also hits nearby nests for <span class="cm-stat">2× bonus</span> damage.</div>
-      <div class="cm-ability"><strong>Special — Meteor:</strong> <span class="cm-stat">0.9× SP.ATK</span> dmg in <span class="cm-stat">2.0-tile</span> radius at target. Deals <span class="cm-stat">2×</span> damage to nest pods within 3.0 tiles.</div>
-      <div class="cm-ult"><strong>Ultimate — Meteor Burst:</strong> 2s cast. Map darkens, reticle locks the highest-HP enemy. On impact: <span class="cm-stat">3.0× SP.ATK</span> dmg in <span class="cm-stat">5.0-tile</span> radius (falls off with distance). Leaves a <strong>flame crater</strong> that deals lingering fire DoT for ~10s.</div>
-      <div class="cm-proc"><strong>Burn proc (30%):</strong> DoT for ~2s on physical hits, ~3s on special hits. Extended burn applied by ultimates.</div>
-
-      <hr class="cm-hr">
-      <!-- ELECTRIC -->
-      <div class="cm-elem-head">
-        <span class="cm-elem-dot" style="background:#ffdd44;box-shadow:0 0 5px #ffdd44"></span>
-        <span style="color:#ffdd44">ELECTRIC</span>
-        <span class="cm-dim" style="margin-left:auto;font-size:0.68rem">Proc: <span class="cm-proc-rate">40%</span> · Unlocked by default</span>
-      </div>
-      <div class="cm-ability"><strong>Physical — Chain Lightning:</strong> <span class="cm-stat">0.35× ATK</span> primary hit, chains to up to <span class="cm-stat">3 targets</span> within <span class="cm-stat">3 tiles</span>. Each jump loses <span class="cm-stat">20%</span> power.</div>
-      <div class="cm-ability"><strong>Special — Static Field:</strong> <span class="cm-stat">0.7× SP.ATK</span> to all enemies in <span class="cm-stat">3.0-tile</span> radius. High stun proc rate.</div>
-      <div class="cm-ult"><strong>Ultimate — EMP:</strong> Instantly destroys all enemy shields in zone. Grants all zone followers <span class="cm-stat">+30 resonance</span> and <span class="cm-stat">1.5× speed</span> for 5 seconds.</div>
-      <div class="cm-proc"><strong>Arc Flash proc (40%):</strong> Stuns target briefly. Highest proc rate of all elements.</div>
-
-      <hr class="cm-hr">
-      <!-- ICE -->
-      <div class="cm-elem-head">
-        <span class="cm-elem-dot" style="background:#44ddff;box-shadow:0 0 5px #44ddff"></span>
-        <span style="color:#44ddff">ICE</span>
-        <span class="cm-dim" style="margin-left:auto;font-size:0.68rem">Proc: <span class="cm-proc-rate">8%</span> · Shop: <span class="cm-stat">20 shards</span></span>
-      </div>
-      <div class="cm-ability"><strong>Physical — Frost Lance:</strong> <span class="cm-stat">0.55× ATK</span> single-target. Hit chance = <span class="cm-stat">60% + ACC/50</span> (max 98%). Proc blocked by active shields.</div>
-      <div class="cm-ability"><strong>Special — Ice Burst:</strong> <span class="cm-stat">0.6× SP.ATK</span> in <span class="cm-stat">2.5-tile</span> radius. Applies <span class="cm-stat">slow (40% speed)</span> for 3s. Freeze/slow blocked by shields.</div>
-      <div class="cm-ult"><strong>Ultimate — Blizzard:</strong> 8s zone-wide freeze field. Every 0.5s: <span class="cm-stat">60% freeze chance</span> on each enemy in zone. Frozen enemies can escape each frame (very slowly).</div>
-      <div class="cm-proc"><strong>Hard Freeze proc (8%):</strong> Rare but powerful — target fully stops. Cannot freeze shielded enemies.</div>
-
-      <hr class="cm-hr">
-      <!-- FLUX -->
-      <div class="cm-elem-head">
-        <span class="cm-elem-dot" style="background:#cc44ff;box-shadow:0 0 5px #cc44ff"></span>
-        <span style="color:#cc44ff">FLUX</span>
-        <span class="cm-dim" style="margin-left:auto;font-size:0.68rem">Proc: <span class="cm-proc-rate">15%</span> · Shop: <span class="cm-stat">25 shards</span></span>
-      </div>
-      <div class="cm-ability"><strong>Physical — Volatility Aura:</strong> <span class="cm-stat">0.6× ATK</span> + disorient proc. Pierces shields — disorient always applies regardless of shield status.</div>
-      <div class="cm-ability"><strong>Special — Singularity:</strong> Creates a gravity well at target. Pulls enemies within <span class="cm-stat">3 tiles</span> inward (<span class="cm-stat">0.8-tile</span> yank). Deals <span class="cm-stat">0.5× SP.ATK</span> and applies disorient. Pierces shields.</div>
-      <div class="cm-ult"><strong>Ultimate — Disorient:</strong> All predators in zone enter <strong>friendly-fire mode</strong> for 4s — they attack each other at <span class="cm-stat">0.5× power</span>.</div>
-      <div class="cm-proc"><strong>Disorient proc (15%):</strong> Target attacks randomly (including allies) for 2s. Bypasses shields.</div>
-
-      <hr class="cm-hr">
-      <!-- CORE -->
-      <div class="cm-elem-head">
-        <span class="cm-elem-dot" style="background:#44ff88;box-shadow:0 0 5px #44ff88"></span>
-        <span style="color:#44ff88">CORE</span>
-        <span class="cm-dim" style="margin-left:auto;font-size:0.68rem">Proc: <span class="cm-proc-rate">30%</span> · Shop: <span class="cm-stat">30 shards</span></span>
-      </div>
-      <div class="cm-ability"><strong>Physical — Shield Bash:</strong> <span class="cm-stat">0.45× ATK</span> + grants caster a <span class="cm-stat">defense boost</span> for 1.5s. Proc knocks target <span class="cm-stat">1.5 tiles</span> back.</div>
-      <div class="cm-ability"><strong>Special — Radiant Pulse:</strong> Caster becomes <span class="cm-stat">invulnerable for 1s</span>. Shields all allies within <span class="cm-stat">3.0 tiles</span> (shield HP = <span class="cm-stat">1.5× SP.ATK</span>). Also deals <span class="cm-stat">0.4× SP.ATK</span> to enemies in range.</div>
-      <div class="cm-ult"><strong>Ultimate — Shield Grant:</strong> Every follower on the entire map instantly receives a <span class="cm-stat">10 HP shield</span>.</div>
-      <div class="cm-proc"><strong>Knockback proc (30%):</strong> Physically launches target 1.5 tiles away from attacker.</div>
-      <div class="cm-tip"><strong>CORE bonus:</strong> CORE followers build pylons <strong>instantly</strong> — no 30s construction delay.</div>
-
-      <hr class="cm-hr">
-      <!-- TOXIC -->
-      <div class="cm-elem-head">
-        <span class="cm-elem-dot" style="background:#88ff44;box-shadow:0 0 5px #88ff44"></span>
-        <span style="color:#88ff44">TOXIC</span>
-        <span class="cm-dim" style="margin-left:auto;font-size:0.68rem">Proc: <span class="cm-proc-rate">50%</span> · Shop: <span class="cm-stat">35 shards</span></span>
-      </div>
-      <div class="cm-ability"><strong>Physical — Smoke Form:</strong> Caster enters <span class="cm-stat">75% evasion</span> for ~0.75s while striking for <span class="cm-stat">0.4× ATK</span>. High proc rate shreds target defense.</div>
-      <div class="cm-ability"><strong>Special — Toxic Cloud:</strong> Drops a <span class="cm-stat">1.8-tile</span> lingering cloud at target. Deals tick damage every 0.33s for ~5s. Persists on the ground.</div>
-      <div class="cm-ult"><strong>Ultimate — Smoke Screen:</strong> 8s zone-wide fog. All enemies in zone suffer <span class="cm-stat">−50% accuracy</span> for the duration.</div>
-      <div class="cm-proc"><strong>Defense Shred proc (50%):</strong> Cuts target's defense by 50% for 2s. Highest proc rate of all elements.</div>
-    </div>
-
-    <!-- ── FOLLOWERS ── -->
-    <div id="cmFollowers" class="cm-section">
-
-      <div class="cm-intro-box">
-        <strong>Recruitment:</strong> When an enemy reaches your Crystal it converts into a follower — randomly assigned a personality, element, role, combat trait, natural trait, and perk. Followers carry their element into battle.
-      </div>
-
-      <div class="ctrl-title">ROLES</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:5px">Role is auto-assigned from the follower's dominant stats at recruitment time.</div>
-
-      <div class="cm-follower-role brawler">
-        <span class="role-badge">B</span>
-        <div class="role-body">
-          <strong>Brawler</strong> — Aggressive melee fighter. Chases enemies directly, closes distance fast.<br>
-          <span class="role-req">Requires: ATK ≥ 14 (and SP.ATK &lt; 12)</span>
-          <span class="role-req">Best with: Aggressive or Wild personality · Berserker combat trait</span>
-        </div>
-      </div>
-
-      <div class="cm-follower-role sniper">
-        <span class="role-badge">S</span>
-        <div class="role-body">
-          <strong>Sniper</strong> — Ranged attacker. Keeps optimal distance from targets, fires special attacks.<br>
-          <span class="role-req">Requires: SP.ATK ≥ 12  OR  ACC ≥ 12</span>
-          <span class="role-req">Best with: Cunning personality · Opportunistic combat trait</span>
-        </div>
-      </div>
-
-      <div class="cm-follower-role camper">
-        <span class="role-badge">C</span>
-        <div class="role-body">
-          <strong>Camper</strong> — Holds position, defends pylons and chokepoints. Doesn't advance far.<br>
-          <span class="role-req">Requires: DEF ≥ 14  OR  WILL ≥ 24</span>
-          <span class="role-req">Best with: Cautious or Stoic personality · Iron Will perk</span>
-        </div>
-      </div>
-
-      <div class="cm-follower-role hybrid">
-        <span class="role-badge">H</span>
-        <div class="role-body">
-          <strong>Hybrid</strong> — Flexible offense. Uses both physical and special attacks fluidly.<br>
-          <span class="role-req">Requires: ATK ≥ 14  AND  SP.ATK ≥ 12</span>
-          <span class="role-req">Rarest role. Cunning personality can naturally produce Hybrids.</span>
-        </div>
-      </div>
-
-      <div class="ctrl-title">BASE STATS</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:4px">All followers start from these values, then multiplied by their personality.</div>
-      <div class="cm-stat-row"><span class="cm-stat-name">HP</span><span class="cm-stat-abbr">HP</span>20 — total health pool</div>
-      <div class="cm-stat-row"><span class="cm-stat-name">Defense</span><span class="cm-stat-abbr">DEF</span>10 — reduces incoming damage</div>
-      <div class="cm-stat-row"><span class="cm-stat-name">Attack</span><span class="cm-stat-abbr">ATK</span>10 — physical damage multiplier</div>
-      <div class="cm-stat-row"><span class="cm-stat-name">Speed</span><span class="cm-stat-abbr">SPD</span>10 — movement rate</div>
-      <div class="cm-stat-row"><span class="cm-stat-name">Sp. Attack</span><span class="cm-stat-abbr">SP.ATK</span>10 — special ability damage</div>
-      <div class="cm-stat-row"><span class="cm-stat-name">Accuracy</span><span class="cm-stat-abbr">ACC</span>10 — hit chance modifier (especially Ice)</div>
-      <div class="cm-stat-row"><span class="cm-stat-name">Will</span><span class="cm-stat-abbr">WILL</span>20 — fuels attacks (Phys costs 1, Special costs 4). Regens ~0.3/sec.</div>
-      <div class="cm-stat-row"><span class="cm-stat-name">Resonance</span><span class="cm-stat-abbr">RES</span>0 → 100 — builds from damage dealt (+3/hit, +20/kill). Triggers network buffs at max.</div>
-
-      <div class="ctrl-title">COMMANDING FOLLOWERS</div>
-      <div class="ctrl-row cm-dim"><span class="cm-stat">SQUAD: SEL</span> — commands apply to selected followers only</div>
-      <div class="ctrl-row cm-dim"><span class="cm-stat">SQUAD: ALL</span> — commands apply to every follower</div>
-      <div class="ctrl-row cm-dim">Circle gesture → send squad to attack area or recall if no enemies present</div>
-      <div class="ctrl-row cm-dim">Drag follower → enemy → that single follower attacks that specific target</div>
-    </div>
-
-    <!-- ── PERSONALITIES ── -->
-    <div id="cmPersonalities" class="cm-section">
-      <div class="cm-intro-box">
-        Each follower rolls one of 5 personalities on recruitment. Personalities multiply base stats. Base stats: HP 20, DEF 10, ATK 10, SPD 10, SP.ATK 10, ACC 10, WILL 20.
-      </div>
-      <table class="cm-personality-table">
-        <tr>
-          <th>Personality</th><th>ATK</th><th>DEF</th><th>SPD</th><th>SP.ATK</th><th>ACC</th><th>WILL</th><th>HP</th><th>RES</th>
-        </tr>
-        <tr>
-          <td style="color:#f88">Aggressive</td>
-          <td class="cm-up">2.0×</td><td class="cm-down">0.5×</td><td class="cm-up">1.2×</td><td class="cm-neutral">1.0×</td><td class="cm-down">0.8×</td><td class="cm-neutral">1.0×</td><td class="cm-neutral">1.0×</td><td class="cm-neutral">1.0×</td>
-        </tr>
-        <tr>
-          <td style="color:#88f">Cautious</td>
-          <td class="cm-down">0.8×</td><td class="cm-up">2.0×</td><td class="cm-down">0.7×</td><td class="cm-down">0.8×</td><td class="cm-up">1.2×</td><td class="cm-up">1.2×</td><td class="cm-up">1.5×</td><td class="cm-down">0.8×</td>
-        </tr>
-        <tr>
-          <td style="color:#af8">Cunning</td>
-          <td class="cm-neutral">1.0×</td><td class="cm-down">0.8×</td><td class="cm-up">1.5×</td><td class="cm-up">1.5×</td><td class="cm-up">1.5×</td><td class="cm-down">0.8×</td><td class="cm-down">0.8×</td><td class="cm-up">1.2×</td>
-        </tr>
-        <tr>
-          <td style="color:#aaa">Stoic</td>
-          <td class="cm-neutral">1.0×</td><td class="cm-up">1.5×</td><td class="cm-down">0.8×</td><td class="cm-down">0.8×</td><td class="cm-neutral">1.0×</td><td class="cm-up">1.5×</td><td class="cm-up">1.5×</td><td class="cm-down">0.5×</td>
-        </tr>
-        <tr>
-          <td style="color:#fa8">Wild</td>
-          <td class="cm-up">1.8×</td><td class="cm-down">0.6×</td><td class="cm-up">1.8×</td><td class="cm-down">0.6×</td><td class="cm-down">0.6×</td><td class="cm-down">0.6×</td><td class="cm-down">0.8×</td><td class="cm-up">1.5×</td>
-        </tr>
-      </table>
-      <div class="ctrl-title">RESULTING STATS (base × multiplier)</div>
-      <table class="cm-personality-table">
-        <tr><th>Personality</th><th>HP</th><th>DEF</th><th>ATK</th><th>SP.ATK</th><th>WILL</th><th>Best Role</th></tr>
-        <tr><td style="color:#f88">Aggressive</td><td>20</td><td class="cm-down">5</td><td class="cm-up">20</td><td>10</td><td>20</td><td style="color:#f88">Brawler</td></tr>
-        <tr><td style="color:#88f">Cautious</td><td class="cm-up">30</td><td class="cm-up">20</td><td>8</td><td>8</td><td class="cm-up">24</td><td style="color:#8f8">Camper</td></tr>
-        <tr><td style="color:#af8">Cunning</td><td class="cm-down">16</td><td>8</td><td>10</td><td class="cm-up">15</td><td>16</td><td style="color:#88f">Sniper/Hybrid</td></tr>
-        <tr><td style="color:#aaa">Stoic</td><td class="cm-up">30</td><td class="cm-up">15</td><td>10</td><td>8</td><td class="cm-up">30</td><td style="color:#8f8">Camper</td></tr>
-        <tr><td style="color:#fa8">Wild</td><td class="cm-down">16</td><td class="cm-down">6</td><td class="cm-up">18</td><td>6</td><td class="cm-down">12</td><td style="color:#f88">Brawler</td></tr>
-      </table>
-      <div class="cm-tip"><strong>Tip:</strong> Cunning is the only personality that can reach both ATK and SP.ATK thresholds needed for Hybrid role. Wild produces aggressive brawlers with very low survivability.</div>
-    </div>
-
-    <!-- ── ABILITIES ── -->
-    <div id="cmAbilities" class="cm-section">
-
-      <div class="cm-intro-box">
-        Follower attacks cost <strong>WILL</strong>. Physical = <span style="color:#ff0">1 WILL</span>, Special = <span style="color:#ff0">4 WILL</span>. WILL regens passively at ~0.3/sec. When WILL is empty, follower uses a weak normal strike (0.25× ATK, no element).
-      </div>
-
-      <div class="ctrl-title">PHYSICAL ATTACKS (1 WILL)</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#ff6644;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#ff6633">Fire</b> — Ring of Fire: <span class="val">0.4× ATK</span> to all in <span class="val">1.5-tile</span> radius</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#ffdd44;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#ffdd44">Electric</b> — Chain Lightning: <span class="val">0.35× ATK</span>, jumps 3 targets (-20% per jump)</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#44ddff;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#44ddff">Ice</b> — Frost Lance: <span class="val">0.55× ATK</span> single-target, <span class="dim">hit% = 60 + ACC/50</span></div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#cc44ff;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#cc44ff">Flux</b> — Volatility Aura: <span class="val">0.6× ATK</span> + disorient (pierces shields)</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#44ff88;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#44ff88">Core</b> — Shield Bash: <span class="val">0.45× ATK</span> + self defense boost 1.5s + knockback proc</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#88ff44;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#88ff44">Toxic</b> — Smoke Form: <span class="val">0.4× ATK</span> + <span class="val">75% evasion</span> for 0.75s</div>
-
-      <div class="ctrl-title">SPECIAL ATTACKS (4 WILL)</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#ff6644;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#ff6633">Fire</b> — Meteor: <span class="val">0.9× SP.ATK</span> in <span class="val">2.0-tile</span> radius, <span class="val">2×</span> to nests within 3 tiles</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#ffdd44;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#ffdd44">Electric</b> — Static Field: <span class="val">0.7× SP.ATK</span> to all in <span class="val">3.0-tile</span> radius</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#44ddff;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#44ddff">Ice</b> — Ice Burst: <span class="val">0.6× SP.ATK</span> in <span class="val">2.5-tile</span> radius + 40% slow for 3s</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#cc44ff;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#cc44ff">Flux</b> — Singularity: pulls enemies 0.8 tiles inward, <span class="val">0.5× SP.ATK</span> in <span class="val">3-tile</span> range</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#44ff88;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#44ff88">Core</b> — Radiant Pulse: caster invulnerable 1s, <span class="val">shields allies</span> (1.5× SP.ATK HP) in 3-tile range</div>
-      <div class="cm-formula"><span class="cm-elem-dot" style="background:#88ff44;display:inline-block;width:8px;height:8px;border-radius:50%"></span> <b style="color:#88ff44">Toxic</b> — Toxic Cloud: <span class="val">1.8-tile</span> lingering DoT cloud (~5s), ticks every 0.33s</div>
-
-      <div class="ctrl-title">ULTIMATE ABILITIES (100 charge)</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:5px">Charge fills from kills (<span class="cm-stat">+20</span>) and damage dealt (<span class="cm-stat">+3/hit</span>). Double-tap follower to fire. ▲ appears when ready.</div>
-
-      <div class="cm-ult-block">
-        <span class="ult-name">☄ METEOR BURST</span><span class="ult-elem" style="color:#ff6633">FIRE</span>
-        <div class="ult-body">2s cast — map darkens, reticle locks highest-HP enemy in zone. On impact: <span style="color:#ff0">3.0× SP.ATK</span> in <span style="color:#ff0">5.0-tile</span> radius (drops off with distance). Leaves a <strong>flame crater</strong> with ongoing fire DoT for ~10 seconds.</div>
-      </div>
-      <div class="cm-ult-block">
-        <span class="ult-name">⚡ EMP</span><span class="ult-elem" style="color:#ffdd44">ELECTRIC</span>
-        <div class="ult-body">Instantly destroys all enemy shields in zone. All zone followers gain <span style="color:#ff0">+30 resonance</span> and <span style="color:#ff0">1.5× speed</span> for 5 seconds.</div>
-      </div>
-      <div class="cm-ult-block">
-        <span class="ult-name">❄ BLIZZARD</span><span class="ult-elem" style="color:#44ddff">ICE</span>
-        <div class="ult-body">8-second zone-wide freeze field. Every 0.5s: <span style="color:#ff0">60% freeze chance</span> on every unfrozen enemy in zone. Frozen enemies escape very slowly.</div>
-      </div>
-      <div class="cm-ult-block">
-        <span class="ult-name">⟳ DISORIENT</span><span class="ult-elem" style="color:#cc44ff">FLUX</span>
-        <div class="ult-body">All predators in zone enter <strong>friendly-fire mode</strong> for 4 seconds — they attack each other at <span style="color:#ff0">0.5× power</span>. Pure chaos.</div>
-      </div>
-      <div class="cm-ult-block">
-        <span class="ult-name">⬡ SHIELD GRANT</span><span class="ult-elem" style="color:#44ff88">CORE</span>
-        <div class="ult-body">Every follower on the <strong>entire map</strong> immediately receives a <span style="color:#ff0">10 HP shield</span>. Shields block 100% of incoming damage until depleted.</div>
-      </div>
-      <div class="cm-ult-block">
-        <span class="ult-name">◎ SMOKE SCREEN</span><span class="ult-elem" style="color:#88ff44">TOXIC</span>
-        <div class="ult-body">8-second zone-wide smoke blanket. All enemies in zone have their <span style="color:#ff0">accuracy halved (−50%)</span> for the duration.</div>
-      </div>
-    </div>
-
-    <!-- ── PERKS ── -->
-    <div id="cmPerks" class="cm-section">
-      <div class="cm-intro-box">
-        Each follower rolls one <strong>perk</strong>, one <strong>combat trait</strong>, and one <strong>natural trait</strong> at recruitment. These are permanent and cannot be changed.
-      </div>
-
-      <div class="ctrl-title">PERKS (passive stat modifiers)</div>
-      <div class="cm-perk-block">
-        <div class="perk-title">Iron Will</div>
-        <div class="perk-desc">All incoming damage is reduced by <span class="perk-val">25%</span> (multiplied by 0.75 before applying). Best on frontline Brawlers and Campers who take constant hits.</div>
-      </div>
-      <div class="cm-perk-block">
-        <div class="perk-title">Siphon</div>
-        <div class="perk-desc">Heals for <span class="perk-val">10%</span> of every point of damage dealt. Self-sustaining on high-damage followers. Pairs extremely well with Berserker combat trait — dealing more damage heals more.</div>
-      </div>
-
-      <div class="ctrl-title">COMBAT TRAITS (active behavior)</div>
-      <div class="cm-perk-block">
-        <div class="perk-title">Berserker</div>
-        <div class="perk-desc">When the follower's HP drops below <span class="perk-val">30%</span> of max, all damage output multiplied by <span class="perk-val">1.5×</span>. Dangerous but volatile — low-HP followers die fast without support. Best with Siphon perk or Aggressive personality.</div>
-      </div>
-      <div class="cm-perk-block">
-        <div class="perk-title">Opportunistic</div>
-        <div class="perk-desc">Automatically re-targets the <span class="perk-val">lowest-health enemy</span> rather than the nearest. Excellent for finishing off wounded enemies and snowballing kills. Pairs well with Snipers who have the range to pick targets.</div>
-      </div>
-
-      <div class="ctrl-title">NATURAL TRAITS (idle behavior)</div>
-      <div class="cm-perk-block">
-        <div class="perk-title">Empathetic</div>
-        <div class="perk-desc">Prefers staying near other allied followers when idle. Creates natural clustering — good for coordinated pushes and mutual defense. Empathetic followers are easier to keep together.</div>
-      </div>
-      <div class="cm-perk-block">
-        <div class="perk-title">Lone Wolf</div>
-        <div class="perk-desc">When idle (no combat orders), wanders up to <span class="perk-val">4 tiles</span> away from the player on its own. Can patrol or scout but may stray into danger. Harder to keep in formation.</div>
-      </div>
-
-      <div class="ctrl-title">RESONANCE SYSTEM</div>
-      <div class="ctrl-row cm-dim">RESONANCE (0–100) builds during combat: <span class="cm-stat">+3 per hit</span>, <span class="cm-stat">+20 per kill</span>.</div>
-      <div class="ctrl-row cm-dim">At 100, triggers network buffs and resets. Wild personality starts with <span class="cm-stat">1.5×</span> resonance multiplier — fills fastest.</div>
-      <div class="ctrl-row cm-dim">Electric ultimate grants <span class="cm-stat">+30 resonance</span> instantly to all followers in zone.</div>
-    </div>
-
-    <!-- ── PREDATORS (old cmEnemies) ── -->
-    <div id="cmPredators" class="cm-section">
-      <div class="cm-intro-box">
-        5 species across 4 ranks. Each zone spawns a species based on night number — front zones escalate first. Every enemy killed drops <strong>shards</strong> and <strong>DNA splices</strong>. Bosses drop Crystal Modulators.
-      </div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:6px"><span class="cm-stat">15%</span> chance each spawn to be one tier lower than the zone's current rank. Front zone: 8% boss chance. Nymphs only spawn in early/back zones.</div>
-
-      <!-- ANT -->
-      <div class="cm-species-head">
-        <span class="cm-elem-dot" style="background:#aa55ff;box-shadow:0 0 4px #aa55ff"></span>
-        <span style="color:#aa55ff">ANT</span>
-        <span class="cm-rank" style="border-color:#aa55ff;color:#aa55ff">RANK 1</span>
-        <span class="cm-night-tag">Nights 1–5</span>
-      </div>
-      <div class="cm-section-note">No special abilities. Entry-level threat. All classes can be converted to followers on reaching the Crystal.</div>
-      <table class="cm-species-table">
-        <tr><th>Class</th><th>HP</th><th>Power</th><th>Speed</th><th>DNA</th><th>Shards</th></tr>
-        <tr><td>Nymph</td><td>30</td><td>9</td><td>0.030</td><td>1</td><td>2</td></tr>
-        <tr><td>Scout</td><td>60</td><td>18</td><td>0.022</td><td>1</td><td>3</td></tr>
-        <tr><td>Striker</td><td>100</td><td>27</td><td>0.018</td><td>1</td><td>5</td></tr>
-        <tr><td>Tank</td><td>180</td><td>38</td><td>0.012</td><td>2</td><td>8</td></tr>
-        <tr><td class="td-boss">Boss ★</td><td class="td-boss">500</td><td class="td-boss">60</td><td class="td-boss">0.008</td><td class="td-boss">4</td><td class="td-boss">20</td></tr>
-      </table>
-
-      <hr class="cm-hr">
-      <!-- BEETLE -->
-      <div class="cm-species-head">
-        <span class="cm-elem-dot" style="background:#cc44ff;box-shadow:0 0 4px #cc44ff"></span>
-        <span style="color:#cc44ff">BEETLE</span>
-        <span class="cm-rank" style="border-color:#cc44ff;color:#cc44ff">RANK 2</span>
-        <span class="cm-night-tag">Night 6+ (front zones first)</span>
-      </div>
-      <div class="cm-ability"><strong>Armor Plating:</strong> Striker class and above carry hardened elytra shells providing damage reduction. Prioritize Fire or Flux elements against them.</div>
-      <table class="cm-species-table">
-        <tr><th>Class</th><th>HP</th><th>Power</th><th>Speed</th><th>DNA</th><th>Shards</th></tr>
-        <tr><td>Nymph</td><td>45</td><td>12</td><td>0.028</td><td>1</td><td>4</td></tr>
-        <tr><td>Scout</td><td>100</td><td>27</td><td>0.020</td><td>1</td><td>6</td></tr>
-        <tr><td>Striker</td><td>160</td><td>39</td><td>0.016</td><td>2</td><td>9</td></tr>
-        <tr><td>Tank</td><td>280</td><td>53</td><td>0.010</td><td>2</td><td>14</td></tr>
-        <tr><td class="td-boss">Boss ★</td><td class="td-boss">800</td><td class="td-boss">90</td><td class="td-boss">0.007</td><td class="td-boss">5</td><td class="td-boss">30</td></tr>
-      </table>
-
-      <hr class="cm-hr">
-      <!-- SCORPION -->
-      <div class="cm-species-head">
-        <span class="cm-elem-dot" style="background:#8844ff;box-shadow:0 0 4px #8844ff"></span>
-        <span style="color:#8844ff">SCORPION</span>
-        <span class="cm-rank" style="border-color:#8844ff;color:#8844ff">RANK 3</span>
-        <span class="cm-night-tag">Night 11+ (front zones first)</span>
-      </div>
-      <div class="cm-ability"><strong>Ranged Stinger (Striker+):</strong> Abdomen fires ranged tail attacks from a safe distance. Does not turn to face attacker when hit from behind while stinging. Cooldown: 1.0–1.5s depending on class.</div>
-      <table class="cm-species-table">
-        <tr><th>Class</th><th>HP</th><th>Power</th><th>Stinger</th><th>DNA</th><th>Shards</th></tr>
-        <tr><td>Nymph</td><td>65</td><td>18</td><td>—</td><td>2</td><td>6</td></tr>
-        <tr><td>Scout</td><td>150</td><td>38</td><td>—</td><td>2</td><td>10</td></tr>
-        <tr><td>Striker</td><td>240</td><td>54</td><td>30 dmg / 1.5s</td><td>3</td><td>15</td></tr>
-        <tr><td>Tank</td><td>400</td><td>75</td><td>53 dmg / 1.25s</td><td>3</td><td>22</td></tr>
-        <tr><td class="td-boss">Boss ★</td><td class="td-boss">1200</td><td class="td-boss">120</td><td class="td-boss">83 dmg / 1.0s</td><td class="td-boss">6</td><td class="td-boss">45</td></tr>
-      </table>
-
-      <hr class="cm-hr">
-      <!-- SPIDER -->
-      <div class="cm-species-head">
-        <span class="cm-elem-dot" style="background:#cc2244;box-shadow:0 0 4px #cc2244"></span>
-        <span style="color:#cc2244">SPIDER</span>
-        <span class="cm-rank" style="border-color:#cc2244;color:#cc2244">RANK 4</span>
-        <span class="cm-night-tag">Night 16+ (front zones first)</span>
-      </div>
-      <div class="cm-ability"><strong>Spinneret Venom (Striker+):</strong> Ranged abdomen shot from spinneret. Inflicts <strong>poison DoT</strong> on hit in addition to direct damage. Fastest and most dangerous class at high tiers.</div>
-      <table class="cm-species-table">
-        <tr><th>Class</th><th>HP</th><th>Power</th><th>Venom Shot</th><th>DNA</th><th>Shards</th></tr>
-        <tr><td>Nymph</td><td>80</td><td>23</td><td>—</td><td>2</td><td>8</td></tr>
-        <tr><td>Scout</td><td>200</td><td>48</td><td>—</td><td>3</td><td>14</td></tr>
-        <tr><td>Striker</td><td>300</td><td>72</td><td>27 dmg + poison / 1.4s</td><td>3</td><td>20</td></tr>
-        <tr><td>Tank</td><td>520</td><td>93</td><td>45 dmg + poison / 1.25s</td><td>4</td><td>28</td></tr>
-        <tr><td class="td-boss">Boss ★</td><td class="td-boss">1800</td><td class="td-boss">150</td><td class="td-boss">72 dmg + poison / 1.1s</td><td class="td-boss">8</td><td class="td-boss">60</td></tr>
-      </table>
-
-      <hr class="cm-hr">
-      <!-- MANTIS -->
-      <div class="cm-species-head">
-        <span class="cm-elem-dot" style="background:#44dd55;box-shadow:0 0 4px #44dd55"></span>
-        <span style="color:#44dd55">MANTIS</span>
-        <span class="cm-rank" style="border-color:#44dd55;color:#44dd55">RANK 3</span>
-        <span class="cm-night-tag">Mixed waves (alongside other Rank 3)</span>
-      </div>
-      <div class="cm-ability"><strong>Raptorial Foreleg Strike (Striker+):</strong> Extended-range foreleg lunge attack. Faster reaction speed than other Rank 3 enemies — they retaliate almost instantly when hit. Most agile of the mid-tier threats.</div>
-      <table class="cm-species-table">
-        <tr><th>Class</th><th>HP</th><th>Power</th><th>Foreleg</th><th>DNA</th><th>Shards</th></tr>
-        <tr><td>Nymph</td><td>40</td><td>12</td><td>—</td><td>1</td><td>4</td></tr>
-        <tr><td>Scout</td><td>110</td><td>34</td><td>—</td><td>2</td><td>9</td></tr>
-        <tr><td>Striker</td><td>180</td><td>52</td><td>28 dmg / 1.33s</td><td>3</td><td>14</td></tr>
-        <tr><td>Tank</td><td>320</td><td>70</td><td>48 dmg / 1.17s</td><td>3</td><td>20</td></tr>
-        <tr><td class="td-boss">Boss ★</td><td class="td-boss">1100</td><td class="td-boss">110</td><td class="td-boss">80 dmg / 0.92s</td><td class="td-boss">6</td><td class="td-boss">40</td></tr>
-      </table>
-
-      <div class="ctrl-title">SPAWN ESCALATION</div>
-      <div class="ctrl-row cm-dim">Rank upgrades cascade from the <span class="cm-stat">front zone backward</span>, one zone per night threshold.</div>
-      <div class="ctrl-row cm-dim">Night 6+: front zones become Beetle. Night 11+: Scorpion. Night 16+: Spider.</div>
-      <div class="ctrl-row cm-dim">Each night beyond the threshold converts one more zone to the new rank.</div>
-      <div class="ctrl-row cm-dim">Enemies to kill: <span class="cm-stat">3 + (Night−1) × 2</span> per night (Night 1: 3 kills, Night 5: 11 kills, Night 10: 21 kills).</div>
-    </div>
-
-    <!-- ── PYLONS ── -->
-    <div id="cmPylons" class="cm-section">
-
-      <div class="cm-intro-box">
-        Pylons are your primary defensive structures. Build them during the day, defend them at night. Their power multiplies when grouped into <strong>networks</strong> of the same element.
-      </div>
-
-      <div class="ctrl-title">BUILDING</div>
-      <div class="cm-build-row"><span class="cm-build-label">Cost</span><span class="cm-stat">10 shards</span> + <span class="cm-stat">30 seconds</span> construction time</div>
-      <div class="cm-build-row"><span class="cm-build-label">CORE followers</span>Skip the 30s delay — build <span class="cm-stat">instantly</span></div>
-      <div class="cm-build-row"><span class="cm-build-label">How to place</span>Toggle BUILD ON → tap any valid floor tile</div>
-      <div class="cm-build-row"><span class="cm-build-label">Set element</span>Long-press pylon → radial LEFT → choose element</div>
-      <div class="cm-build-row"><span class="cm-build-label">Upgrade</span>Long-press pylon → radial UP → upgrade existing pylon</div>
-
-      <div class="ctrl-title">PYLON MODES</div>
-      <div class="cm-ability"><strong>Attack Mode:</strong> A pylon with an assigned element acts as a defensive tower. Automatically fires at enemies within its detection range (~2.5 tiles). Each element fires its own attack type.</div>
-      <div class="cm-ability"><strong>Wave Mode:</strong> Place <strong>2 adjacent pylons</strong> of the <em>same element</em> — they pair up automatically and project a zone-effect corridor between them. The zone type matches the element.</div>
-      <div class="cm-tip"><strong>Tip:</strong> CORE pylons forming an <strong>enclosed triangle</strong> create a protected zone. Flux solo pylons emit an inward-pulling glow ring around them.</div>
-
-      <div class="ctrl-title">NETWORK STRENGTH</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:5px">Same-element pylons within <span class="cm-stat">5 tiles</span> auto-connect. The largest connected group determines your network tier.</div>
-      <div class="cm-tier"><span class="cm-tier-badge">T1</span> <span style="color:#aad">2+ pylons — basic network bonus active</span></div>
-      <div class="cm-tier"><span class="cm-tier-badge">T2</span> <span style="color:#aad">4+ pylons — enhanced zone effects + ultimate charge <span style="color:#0f8">+15%</span> faster</span></div>
-      <div class="cm-tier"><span class="cm-tier-badge">T3</span> <span style="color:#aad">6+ pylons — maximum network power, strongest zone projection</span></div>
-      <div class="ctrl-row cm-dim" style="margin-top:4px">Tier-ups trigger a <strong>pulse flash</strong> on all connected pylons in the network.</div>
-
-      <div class="ctrl-title">NETWORK INTEGRITY</div>
-      <div class="cm-build-row"><span class="cm-build-label">Range</span>0 – 100. Shown as a percentage per element.</div>
-      <div class="cm-build-row"><span class="cm-build-label">Builds</span>+Tier × 0.5 per frame while network is intact and connected</div>
-      <div class="cm-build-row"><span class="cm-build-label">Decays</span>−2 per frame when connections break or pylons are destroyed</div>
-      <div class="cm-build-row"><span class="cm-build-label">Effect</span>Higher integrity <span class="cm-stat">amplifies zone effects</span>. Keep networks connected!</div>
-      <div class="cm-build-row"><span class="cm-build-label">Near Crystal</span>Network integrity builds <span class="cm-stat">faster</span> when player is near the Crystal</div>
-
-      <div class="ctrl-title">SEASONED BONUS</div>
-      <div class="cm-ability"><strong>+25% power</strong> permanently awarded to any pylon that survives an entire night without being destroyed. Shown visually on the pylon. Carries across all future nights.</div>
-
-      <div class="ctrl-title">NESTS</div>
-      <div class="cm-build-row"><span class="cm-build-label">What they are</span>Enemy spawn points scattered through zones. Continuous threat.</div>
-      <div class="cm-build-row"><span class="cm-build-label">Destroy</span>Long-press nest → radial LEFT → permanently removes the spawn point</div>
-      <div class="cm-build-row"><span class="cm-build-label">Link</span>Connect a pylon to a nearby nest to redirect enemy spawns through your network — funneling enemies into your kill zone</div>
-      <div class="cm-tip"><strong>Priority:</strong> Destroying or linking front-zone nests dramatically reduces incoming pressure. Fire meteor special deals 2× damage to nests.</div>
-    </div>
-
-    <!-- ── ZONES ── -->
-    <div id="cmZones" class="cm-section">
-      <div class="ctrl-title">ZONE OVERVIEW</div>
-      <div class="ctrl-row cm-dim">The world is divided into zones (15 tiles wide each). Zone 0 is your Home base. Zones 1+ are hostile forward zones with escalating enemies. Control more zones to unlock powerful Armament purchases.</div>
-
-      <div class="ctrl-title">ZONE OBJECTS</div>
-
-      <div class="cm-elem-head" style="color:#f55">▣ NEST</div>
-      <div class="ctrl-row cm-dim">Enemy spawn structure at the center of each forward zone (y=2). <span class="cm-stat">200 HP</span>. Spawns waves of enemies each night.</div>
-      <div class="ctrl-row cm-dim"><span style="color:#ff0">Destroy</span> — Use the LEFT radial command to assign followers to attack it. Eliminating a nest stops spawns from that zone.</div>
-      <div class="ctrl-row cm-dim"><span style="color:#0ff">Link to Pylon</span> — Use the RIGHT radial on an adjacent pylon, then select the nest. Enemies from that nest are routed through your pylon network. Fire meteor deals <span class="cm-stat">2× damage</span> to nests.</div>
-
-      <div class="cm-elem-head" style="color:#fa0">▦ WALL PANEL</div>
-      <div class="ctrl-row cm-dim">Appear on back walls in forward zones (~18% chance per wall tile). Interact to activate.</div>
-      <div class="ctrl-row cm-dim"><span style="color:#0f8">Reward Panel (60%)</span> — Awards <span class="cm-stat">5–15 shards</span> on activation.</div>
-      <div class="ctrl-row cm-dim"><span style="color:#f44">Decoy Panel (40%)</span> — Triggers an alarm that makes nearby enemies immediately hostile. Three alarm types:</div>
-      <div class="ctrl-row cm-dim" style="padding-left:16px">• <span class="cm-stat">Proximity</span> — Enemies within 6 tiles become hostile</div>
-      <div class="ctrl-row cm-dim" style="padding-left:16px">• <span class="cm-stat">Zone</span> — All enemies in the same zone become hostile</div>
-      <div class="ctrl-row cm-dim" style="padding-left:16px">• <span class="cm-stat">Facility</span> — All enemies on the map become hostile</div>
-
-      <div class="cm-elem-head" style="color:#0f8">◉ CAPACITOR NODE</div>
-      <div class="ctrl-row cm-dim">One per forward zone, positioned near the front (zone start + 3 tiles). <span style="color:#0ff">Capturable</span> by assigning followers with the RIGHT radial command.</div>
-      <div class="ctrl-row cm-dim">Capture grants <span class="cm-stat">player territory</span> in that zone and awards <span class="cm-stat">+5 shards</span> each wave while held. Counts toward zone control for Armament unlocks.</div>
-      <div class="ctrl-row cm-dim">Capture is interrupted if an enemy enters within 1.5 tiles.</div>
-
-      <div class="cm-elem-head" style="color:#fa0">◈ SIGNAL TOWER</div>
-      <div class="ctrl-row cm-dim">Spawns in zones 4 and beyond (zone center, y=1). While uncaptured, grants the enemy <span style="color:#f44">enemy territory</span> — increasing enemy push strength in that zone.</div>
-      <div class="ctrl-row cm-dim"><span style="color:#0ff">Capturing</span> a Signal Tower converts it to player territory and removes the enemy spawn advantage. Counts toward zone control.</div>
-
-      <div class="cm-elem-head" style="color:#88f">◧ MEMORY BANK</div>
-      <div class="ctrl-row cm-dim">A hacked nest node — found in some zones. Capturing it marks the nest zone as player-controlled, enabling you to use it as a <span class="cm-stat">forward spawn point</span> for the next wave.</div>
-
-      <div class="ctrl-title">TERRITORY CONTROL</div>
-      <div class="ctrl-row cm-dim">Territory is recalculated every second based on proximity to control points.</div>
-      <div class="cm-build-row"><span class="cm-build-label" style="background:rgba(0,120,255,0.2);color:#44f">Player (blue)</span>Within 3 tiles of a green pylon or captured node</div>
-      <div class="cm-build-row"><span class="cm-build-label" style="background:rgba(255,40,40,0.2);color:#f44">Enemy (red)</span>Within 4 tiles of an active nest or uncaptured signal tower</div>
-      <div class="cm-build-row"><span class="cm-build-label" style="background:rgba(200,200,0,0.2);color:#aa0">Contested</span>Overlapping player and enemy territory — priority combat zone</div>
-
-      <div class="ctrl-title">ZONE CONTROL COUNT</div>
-      <div class="ctrl-row cm-dim">The Armament shop tracks zones controlled: <span class="cm-stat">Home (1)</span> + each captured Capacitor Node or Signal Tower. Reach higher counts to unlock powerful elite units:</div>
-      <div class="ctrl-row cm-dim" style="padding-left:10px">• <span class="cm-stat">2 zones</span> — Power Boost, Armor Plating</div>
-      <div class="ctrl-row cm-dim" style="padding-left:10px">• <span class="cm-stat">3 zones</span> — Elite Vanguard (3 elite followers)</div>
-      <div class="ctrl-row cm-dim" style="padding-left:10px">• <span class="cm-stat">4 zones</span> — Strike Force (5 hardened fighters)</div>
-      <div class="ctrl-row cm-dim" style="padding-left:10px">• <span class="cm-stat">5 zones</span> — Apex Unit (1 supreme commander)</div>
-    </div>
-
-    <!-- ── CRYSTAL ── -->
-    <div id="cmCrystal" class="cm-section">
-
-      <div class="cm-crystal-box">
-        <strong>The Crystal</strong> is your base of operations. It sits at the heart of your home zone. If the Crystal's HP reaches zero — <strong>Game Over</strong>. Protect it at all costs.
-      </div>
-
-      <div class="ctrl-title">CRYSTAL STATS</div>
-      <div class="cm-build-row"><span class="cm-build-label">Max HP</span><span class="cm-stat">300 HP</span></div>
-      <div class="cm-build-row"><span class="cm-build-label">Repair</span>Purchase in shop for <span class="cm-stat">15 shards → +80 HP</span> (up to max)</div>
-      <div class="cm-build-row"><span class="cm-build-label">Network boost</span>Network integrity builds faster when you stay near the Crystal</div>
-
-      <div class="ctrl-title">RECRUITMENT</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:5px">When an enemy reaches the Crystal and doesn't immediately attack, it converts into a follower. The conversion assigns:</div>
-      <div class="cm-section-note">
-        <strong>Random personality</strong> (Aggressive / Cautious / Cunning / Stoic / Wild)<br>
-        <strong>Random element</strong> from the unlocked element pool<br>
-        <strong>Auto-assigned role</strong> (Brawler / Sniper / Camper / Hybrid) based on stats<br>
-        <strong>Random combat trait</strong> (Berserker or Opportunistic)<br>
-        <strong>Random natural trait</strong> (Empathetic or Lone Wolf)<br>
-        <strong>Random perk</strong> (Iron Will or Siphon)
-      </div>
-      <div class="ctrl-row cm-dim">A <strong>Crystal Modulator</strong> (dropped by bosses) lets you set an active element pair — all newly recruited followers draw from that element pool instead of random.</div>
-
-      <div class="ctrl-title">SHOP (between waves) — 3 Tabs</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:5px">After each night a tabbed shop opens. Items purchased with shards. <span style="color:#0ff">★ = one-time per game.</span></div>
-
-      <div class="ctrl-title" style="font-size:0.72rem;color:#0f8;margin-top:6px">▶ SUPPLY TAB</div>
-      <div class="cm-shop-grid">
-        <div class="cm-shop-item"><span class="label">Unlock ICE ★</span><br><span class="cost">20 shards</span></div>
-        <div class="cm-shop-item"><span class="label">Unlock FLUX ★</span><br><span class="cost">25 shards</span></div>
-        <div class="cm-shop-item"><span class="label">Unlock CORE ★</span><br><span class="cost">30 shards</span></div>
-        <div class="cm-shop-item"><span class="label">Unlock TOXIC ★</span><br><span class="cost">35 shards</span></div>
-        <div class="cm-shop-item"><span class="label">Repair Crystal</span><br><span class="cost">15 shards → +80 HP</span></div>
-        <div class="cm-shop-item"><span class="label">+1 Follower</span><br><span class="cost">10 shards</span></div>
-        <div class="cm-shop-item"><span class="label">+1 Zone</span><br><span class="cost">20 shards</span></div>
-        <div class="cm-shop-item"><span class="label">◈ Ghostphage ★</span><br><span class="cost">80 shards (Crystal Build)</span></div>
-      </div>
-
-      <div class="ctrl-title" style="font-size:0.72rem;color:#0f8;margin-top:6px">▶ PYLONS TAB</div>
-      <div class="cm-shop-grid">
-        <div class="cm-shop-item"><span class="label">Fortify Grid ★</span><br><span class="cost">30 shards — +40 max HP to all pylons</span></div>
-        <div class="cm-shop-item"><span class="label">Emergency Repair</span><br><span class="cost">18 shards — full HP restore</span></div>
-        <div class="cm-shop-item"><span class="label">Season Pylons</span><br><span class="cost">25 shards — +1 season to all (+25% power)</span></div>
-        <div class="cm-shop-item"><span class="label">Extended Reach ★</span><br><span class="cost">35 shards — +1 attack range</span></div>
-        <div class="cm-shop-item"><span class="label">Overclock ★</span><br><span class="cost">45 shards — pylons fire 35% faster</span></div>
-        <div class="cm-shop-item"><span class="label">Upgrade All</span><br><span class="cost">55 shards — stop all energy decay</span></div>
-      </div>
-
-      <div class="ctrl-title" style="font-size:0.72rem;color:#0f8;margin-top:6px">▶ ARMAMENTS TAB</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:3px">Some items require zone control. See ZONES tab for details.</div>
-      <div class="cm-shop-grid">
-        <div class="cm-shop-item"><span class="label">Field Medic</span><br><span class="cost">15 shards — heal all 35% HP</span></div>
-        <div class="cm-shop-item"><span class="label">Recon Buff</span><br><span class="cost">30 shards — +30% spd/+40% pwr this wave</span></div>
-        <div class="cm-shop-item"><span class="label">Power Boost ★</span><br><span class="cost">50 shards — +6 pwr perm (req 2 zones)</span></div>
-        <div class="cm-shop-item"><span class="label">Armor Plating ★</span><br><span class="cost">40 shards — +15 HP perm (req 2 zones)</span></div>
-        <div class="cm-shop-item"><span class="label">Elite Vanguard</span><br><span class="cost">75 shards — 3 elite 2× followers (req 3 zones)</span></div>
-        <div class="cm-shop-item"><span class="label">Strike Force</span><br><span class="cost">130 shards — 5 fighters 2.5× (req 4 zones)</span></div>
-        <div class="cm-shop-item"><span class="label">Apex Unit</span><br><span class="cost">200 shards — 1 commander 4× (req 5 zones)</span></div>
-      </div>
-
-      <div class="ctrl-title">CLONE SUMMONING</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:5px">Spend <strong>DNA splices</strong> (dropped by enemies) and sacrifice followers to summon enemy species as your allies. Max <span class="cm-stat">4 active clones</span> at once.</div>
-      <table class="cm-clone-table">
-        <tr><th>Species</th><th>DNA needed</th><th>Scout cost</th><th>Tank cost (extra)</th></tr>
-        <tr><td style="color:#aa55ff">Ant</td><td>3 splices</td><td>1 follower</td><td>+1 follower</td></tr>
-        <tr><td style="color:#cc44ff">Beetle</td><td>5 splices</td><td>2 followers</td><td>+1 follower</td></tr>
-        <tr><td style="color:#8844ff">Scorpion</td><td>8 splices</td><td>3 followers</td><td>+1 follower</td></tr>
-        <tr><td style="color:#cc2244">Spider</td><td>10 splices</td><td>4 followers</td><td>+2 followers</td></tr>
-        <tr><td style="color:#44dd55">Mantis</td><td>8 splices</td><td>3 followers</td><td>+1 follower</td></tr>
-      </table>
-      <div class="ctrl-row cm-dim">Clones appear in the CLONES tab of the bottom-left panel. Command them like followers via the gesture system.</div>
-
-      <div class="ctrl-title">CRYSTAL BUILDS</div>
-      <div class="cm-crystal-box">
-        <strong>◈ Ghostphage</strong> — <span style="color:#ff0">80 shards</span><br>
-        A permanent Crystal enhancement. Activates a special phage mode that interacts with recruited enemies and the overall crystal defense system. The most expensive single purchase in the game.
-      </div>
-    </div>
-
-  </div><!-- .cm-body -->
-
-  <button class="ovr-btn" style="margin-top:12px;padding:5px 16px;font-size:0.78rem;width:100%" onclick="toggleControlsMenu()">CLOSE</button>
 </div>
 
-<script>
-function switchShopTab(tab) {
-    ['Supply','Pylons','Armaments','Builds'].forEach(function(t) {
-        var pane = document.getElementById('shopGrid' + t);
-        var btn  = document.getElementById('shopTab'  + t);
-        if (pane) pane.classList.toggle('active', t === tab);
-        if (btn)  btn.classList.toggle('active',  t === tab);
-    });
-}
-function switchCMTab(id) {
-    var ids = ['cmControls','cmElements','cmFollowers','cmPersonalities','cmAbilities','cmPerks','cmPylons','cmZones','cmCrystal','cmPredators'];
-    document.querySelectorAll('#controlsMenu .cm-tab').forEach(function(btn, i) {
-        btn.classList.toggle('active', ids[i] === id);
-    });
-    document.querySelectorAll('#controlsMenu .cm-section').forEach(function(sec) {
-        sec.classList.toggle('active', sec.id === id);
-    });
-    var body = document.querySelector('#controlsMenu .cm-body');
-    if (body) body.scrollTop = 0;
+<!-- ── Three.js Background ── -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"
+  }
 }
 </script>
 
-<!-- OVERLAY (game-over / wave-clear / shop) -->
+<script type="module">
+import * as THREE from 'three';
 
-<div id="overlay">
-    <h1 id="ovr-title" style="font-size:1.6rem;margin:0 0 5px;letter-spacing:3px">GAME OVER</h1>
-    <p id="ovr-sub" style="color:#668;font-size:0.78rem;margin:0 0 6px;letter-spacing:1px"></p>
-    <div id="ovr-statsbar">
-        <div class="ovr-stat-cell">
-            <span class="ovr-stat-label">◈ SHARDS</span>
-            <span class="ovr-stat-val" id="ovr-shards">0</span>
-        </div>
-        <div class="ovr-stat-cell">
-            <span class="ovr-stat-label">⟳ CONVERTED</span>
-            <span class="ovr-stat-val cyan" id="ovr-conv">0</span>
-        </div>
-        <div class="ovr-stat-cell">
-            <span class="ovr-stat-label">⬡ ZONE DEPTH</span>
-            <span class="ovr-stat-val green" id="ovr-waves">0</span>
-        </div>
-    </div>
-    <div id="shopPanel">
-        <div class="shop-tabs">
-            <button class="shop-tab active" id="shopTabSupply"    data-tab="Supply"    onclick="switchShopTab('Supply')">▸ SUPPLY</button>
-            <button class="shop-tab"        id="shopTabPylons"    data-tab="Pylons"    onclick="switchShopTab('Pylons')">⬡ PYLONS</button>
-            <button class="shop-tab"        id="shopTabArmaments" data-tab="Armaments" onclick="switchShopTab('Armaments')">⚔ ARMAMENTS</button>
-            <button class="shop-tab"        id="shopTabBuilds"    data-tab="Builds"    onclick="switchShopTab('Builds')">◈ BUILDS</button>
-        </div>
-        <div class="shop-pane-wrap">
-            <div id="shopGridSupply"    class="shop-pane active"></div>
-            <div id="shopGridPylons"    class="shop-pane"></div>
-            <div id="shopGridArmaments" class="shop-pane"></div>
-            <div id="shopGridBuilds"    class="shop-pane"></div>
-        </div>
-    </div>
-    <button class="ovr-btn" id="ovr-btn" style="margin-top:10px">RESTART</button>
-</div>
+const canvas  = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setSize(innerWidth, innerHeight);
 
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 200);
+camera.position.z = 30;
 
-<canvas id="cavernCanvas"></canvas>
+// Particle field — floating embers / stars
+const COUNT = 800;
+const geo   = new THREE.BufferGeometry();
+const positions = new Float32Array(COUNT * 3);
+const colors    = new Float32Array(COUNT * 3);
+const speeds    = new Float32Array(COUNT);
 
-<script>
-// ── GLOBAL ERROR DISPLAY (catches sync + async + promise errors) ──
-function _showError(msg) {
-    const e = document.createElement("div");
-    Object.assign(e.style, {
-        position:"fixed", top:"0", left:"0", right:"0", bottom:"0",
-        background:"rgba(0,0,0,0.95)", color:"#ff5555",
-        font:"13px monospace", padding:"14px", overflow:"auto",
-        zIndex:"99999", whiteSpace:"pre-wrap", touchAction:"auto"
-    });
-    e.textContent = msg;
-    document.body.appendChild(e);
+for (let i = 0; i < COUNT; i++) {
+  positions[i * 3]     = (Math.random() - 0.5) * 120;
+  positions[i * 3 + 1] = (Math.random() - 0.5) * 80;
+  positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+
+  // Orange-to-gold ember colours
+  const t = Math.random();
+  colors[i * 3]     = 0.8 + t * 0.2;
+  colors[i * 3 + 1] = 0.2 + t * 0.55;
+  colors[i * 3 + 2] = 0.0 + t * 0.05;
+
+  speeds[i] = 0.3 + Math.random() * 0.9;
 }
-window.onerror = function(msg, src, line, col, err) {
-    _showError("CRASH\n\n" + msg + "\nLine:" + line +
-        (err && err.stack ? "\n\n" + err.stack : ""));
-};
-window.addEventListener('unhandledrejection', function(e) {
-    const r = e.reason;
-    _showError("ASYNC CRASH\n\n" +
-        (r && r.message ? r.message : String(r)) +
-        (r && r.stack ? "\n\n" + r.stack : ""));
+
+geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+geo.setAttribute('color',    new THREE.BufferAttribute(colors,    3));
+
+const mat = new THREE.PointsMaterial({
+  size: 0.4, vertexColors: true,
+  transparent: true, opacity: 0.55,
+  sizeAttenuation: true,
+});
+const particles = new THREE.Points(geo, mat);
+scene.add(particles);
+
+// Subtle rotating dragon-scale mesh in background
+const ringGeo = new THREE.TorusGeometry(14, 0.12, 6, 80);
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.06 });
+const ring1   = new THREE.Mesh(ringGeo, ringMat);
+const ring2   = new THREE.Mesh(new THREE.TorusGeometry(20, 0.08, 6, 80), new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.04 }));
+scene.add(ring1, ring2);
+
+let mouseX = 0, mouseY = 0;
+document.addEventListener('mousemove', e => {
+  mouseX = (e.clientX / innerWidth  - 0.5) * 2;
+  mouseY = (e.clientY / innerHeight - 0.5) * 2;
 });
 
-// ── roundRect polyfill for older iOS Safari ──
-if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
-        if (typeof r === 'object') r = r[0];
-        r = Math.min(r || 0, w / 2, h / 2);
-        this.beginPath();
-        this.moveTo(x + r, y);
-        this.arcTo(x + w, y,     x + w, y + h, r);
-        this.arcTo(x + w, y + h, x,     y + h, r);
-        this.arcTo(x,     y + h, x,     y,     r);
-        this.arcTo(x,     y,     x + w, y,     r);
-        this.closePath();
-    };
-}
-</script>
+const clock = new THREE.Clock();
 
-<!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js"></script>
-<script src="js/traits.js"></script>
-<script src="js/elements.js"></script>
-<script src="js/combat.js"></script>
-<script src="js/species.js"></script>
-<script src="js/predator_randomizer.js"></script>
-<script src="js/save.js"></script>
-<script src="js/camp.js"></script>
-<script src="js/traps.js"></script>
-<script src="js/wavedata.js"></script>
-<script src="js/helpers.js"></script>
-<script src="js/predator.js"></script>
-<script src="js/world.js"></script>
-<script src="js/commands.js"></script>
-<script src="js/npc.js"></script>
-<script src="js/draw.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/waves.js"></script>
-<script src="js/drops.js"></script>
-<script src="js/clone.js"></script>
-<script src="js/input.js"></script>
-<script src="js/game.js"></script>
-<script src="js/dev.js"></script>
-<script src="js/init.js"></script>
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  // Drift particles upward slowly
+  for (let i = 0; i < COUNT; i++) {
+    positions[i * 3 + 1] += speeds[i] * 0.008;
+    if (positions[i * 3 + 1] > 40) positions[i * 3 + 1] = -40;
+  }
+  geo.attributes.position.needsUpdate = true;
+
+  // Rotate rings
+  ring1.rotation.x = t * 0.08;
+  ring1.rotation.y = t * 0.05;
+  ring2.rotation.x = -t * 0.04;
+  ring2.rotation.z = t * 0.03;
+
+  // Subtle camera parallax
+  camera.position.x += (mouseX * 2  - camera.position.x) * 0.02;
+  camera.position.y += (-mouseY * 1.5 - camera.position.y) * 0.02;
+  camera.lookAt(scene.position);
+
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
 
 </body>
 </html>
