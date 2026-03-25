@@ -44,6 +44,26 @@
     #loading h1 { color: #ffe066; font-size: 3em; letter-spacing: 6px; margin-bottom: 12px; text-shadow: 0 0 30px #ffaa00; }
     #loading p  { color: #c8eef8; font-size: 14px; letter-spacing: 3px; }
     #loading.hidden { opacity: 0; pointer-events: none; }
+
+    #begin-btn {
+      margin-top: 32px; padding: 12px 36px;
+      background: transparent; border: 2px solid #ffe066;
+      color: #ffe066; font-family: 'Courier New', monospace;
+      font-size: 15px; letter-spacing: 3px; cursor: pointer;
+      border-radius: 4px; transition: background 0.2s;
+    }
+    #begin-btn:hover, #begin-btn:active { background: rgba(255,224,102,0.15); }
+
+    #flick-msg {
+      position: fixed; top: 38%; left: 50%; transform: translateX(-50%);
+      color: #ffe066; font-size: 15px; text-align: center;
+      background: rgba(10,20,30,0.65); border: 1px solid rgba(255,224,102,0.35);
+      border-radius: 8px; padding: 10px 24px;
+      opacity: 0; transition: opacity 0.4s;
+      pointer-events: none; z-index: 10;
+      letter-spacing: 1px; white-space: nowrap;
+    }
+    #flick-msg.visible { opacity: 1; }
   </style>
 </head>
 <body>
@@ -51,11 +71,13 @@
 <div id="loading">
   <h1>PARADISE</h1>
   <p>a place to breathe</p>
+  <button id="begin-btn">Begin</button>
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
 <div id="rune-display"></div>
-<div id="controls">WASD — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Shift — Run</div>
+<div id="flick-msg"></div>
+<div id="controls"></div>
 
 <script type="importmap">
 {
@@ -457,14 +479,136 @@ document.addEventListener('keydown', e => keys[e.code] = true);
 document.addEventListener('keyup',   e => keys[e.code] = false);
 
 let yaw = 0, pitch = 0;
-// Normalised mouse position: -1 (left/top) to +1 (right/bottom)
-let mouseNX = 0, mouseNY = 0;
 
+// ── Desktop: mouse-position look ─────────────────────────────────────────────
+let mouseNX = 0, mouseNY = 0;
 document.addEventListener('mousemove', e => {
-  mouseNX = (e.clientX / innerWidth)  * 2 - 1;  // -1 left … +1 right
-  mouseNY = (e.clientY / innerHeight) * 2 - 1;  // -1 top  … +1 bottom
+  mouseNX = (e.clientX / innerWidth)  * 2 - 1;
+  mouseNY = (e.clientY / innerHeight) * 2 - 1;
 });
 window.addEventListener('resize', () => { mouseNX = 0; mouseNY = 0; });
+
+// ── Mobile: device orientation + motion ──────────────────────────────────────
+let usingGyro    = false;
+let orientRef    = null;   // calibration snapshot {alpha, beta}
+let tiltMove     = 0;      // -1..1 derived from beta deviation
+let flickCooldown = 0;     // frames remaining before next flick registers
+
+const controlsEl = document.getElementById('controls');
+const flickEl    = document.getElementById('flick-msg');
+let flickTimer   = 0;
+
+function showFlick(msg) {
+  flickEl.textContent = msg;
+  flickEl.classList.add('visible');
+  flickTimer = 180;
+}
+function tickFlick() {
+  if (flickTimer > 0 && --flickTimer === 0) flickEl.classList.remove('visible');
+}
+
+// Flick actions
+function flickScareCreabs() {
+  crabs.forEach(c => { c.state = 'flee'; c.angle = Math.random() * Math.PI * 2; });
+  showFlick('The crabs scatter!');
+}
+function flickScatterBirds() {
+  birds.forEach(b => { b.userData.speed = Math.min(b.userData.speed * 4, 4); });
+  showFlick('The birds take flight!');
+  setTimeout(() => birds.forEach(b => { b.userData.speed = 0.25 + Math.random() * 0.3; }), 3000);
+}
+function flickActivateMonolith() {
+  let nearest = null, nearestD = Infinity;
+  monoliths.forEach(m => {
+    const dx = playerPos.x - m.x, dz = playerPos.z - m.z;
+    const d  = Math.sqrt(dx*dx + dz*dz);
+    if (d < nearestD) { nearestD = d; nearest = m; }
+  });
+  if (nearest && nearestD < 14) {
+    showRune(nearest.msg);
+    nearest.runeMat.opacity = 1.0;
+    showFlick('The runes glow...');
+  } else {
+    showFlick('Nothing nearby stirs.');
+  }
+}
+
+function onOrientation(e) {
+  const a = e.alpha ?? 0;
+  const b = e.beta  ?? 0;
+
+  if (!orientRef) {
+    // First reading — calibrate
+    orientRef = { alpha: a, beta: b };
+    usingGyro = true;
+    controlsEl.textContent = 'Tilt forward — Move  |  Tilt to look  |  Flick phone — Interact';
+    return;
+  }
+
+  // Yaw: how far alpha has rotated from the calibrated starting direction
+  let da = a - orientRef.alpha;
+  if (da > 180)  da -= 360;
+  if (da < -180) da += 360;
+  yaw = -da * (Math.PI / 180);
+
+  // Beta deviation from rest posture
+  const db = b - orientRef.beta;
+
+  // Pitch: looking up/down from small beta changes (±20°)
+  pitch = THREE.MathUtils.clamp(-db * 0.022, -1.1, 0.55);
+
+  // Tilt to move: beyond ±18° from rest beta drives movement
+  const MOVE_DEAD = 18, MOVE_MAX = 45;
+  if (db > MOVE_DEAD)       tiltMove =  Math.min((db - MOVE_DEAD) / MOVE_MAX, 1.0);
+  else if (db < -MOVE_DEAD) tiltMove = -Math.min((-db - MOVE_DEAD) / MOVE_MAX, 1.0);
+  else                      tiltMove = 0;
+}
+
+function onMotion(e) {
+  if (flickCooldown > 0) { flickCooldown--; return; }
+  const acc = e.acceleration;
+  if (!acc) return;
+  const ax = acc.x ?? 0, ay = acc.y ?? 0, az = acc.z ?? 0;
+  const mag = Math.sqrt(ax*ax + ay*ay + az*az);
+  if (mag < 18) return;          // below flick threshold (~1.8 G)
+
+  flickCooldown = 90;            // ~1.5 s cooldown at 60 fps
+  // Dominant axis determines gesture type
+  if (Math.abs(ay) >= Math.abs(ax) && Math.abs(ay) >= Math.abs(az)) {
+    // Flick up/down (y-axis) → scatter birds
+    flickScatterBirds();
+  } else if (Math.abs(az) >= Math.abs(ax)) {
+    // Flick toward/away from face (z-axis) → activate monolith
+    flickActivateMonolith();
+  } else {
+    // Flick sideways (x-axis) → scare crabs
+    flickScareCreabs();
+  }
+}
+
+// Begin button — requests iOS permission then starts listeners
+document.getElementById('begin-btn').addEventListener('click', async () => {
+  const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  if (isMobile && typeof DeviceOrientationEvent?.requestPermission === 'function') {
+    try {
+      const state = await DeviceOrientationEvent.requestPermission();
+      if (state !== 'granted') return;
+    } catch { return; }
+  }
+
+  if (isMobile) {
+    window.addEventListener('deviceorientation', onOrientation, true);
+    window.addEventListener('devicemotion',      onMotion,      true);
+  } else {
+    controlsEl.textContent = 'WASD — Move  |  Mouse — Look  |  Shift — Run';
+  }
+
+  // Dismiss loading screen
+  const l = document.getElementById('loading');
+  l.classList.add('hidden');
+  setTimeout(() => l.remove(), 1300);
+});
 
 const playerPos = new THREE.Vector3(0, 2.5, 6);
 const moveDir   = new THREE.Vector3();
@@ -487,30 +631,24 @@ function tickRune() {
 
 // ─── Animation loop ───────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
-
-setTimeout(() => {
-  const l = document.getElementById('loading');
-  l.classList.add('hidden');
-  setTimeout(() => l.remove(), 1300);
-}, 700);
-
-// Mouse-position look — speed scales with how far from centre
-const MAX_YAW_SPEED   = 1.6;  // radians/sec at screen edge
-const MAX_PITCH_SPEED = 0.9;
+const MAX_YAW_SPEED = 1.6, MAX_PITCH_SPEED = 0.9;
 
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
   const t  = clock.elapsedTime;
 
-  // ── Mouse look ────────────────────────────────────────────────────────────
-  // Dead zone in the middle (±0.15) so the camera is still when centred
-  const deadzone = 0.15;
-  const ax = Math.abs(mouseNX) > deadzone ? mouseNX - Math.sign(mouseNX) * deadzone : 0;
-  const ay = Math.abs(mouseNY) > deadzone ? mouseNY - Math.sign(mouseNY) * deadzone : 0;
-  yaw   -= ax * MAX_YAW_SPEED   * dt;
-  pitch -= ay * MAX_PITCH_SPEED * dt;
-  pitch  = Math.max(-1.1, Math.min(0.55, pitch));
+  // ── Look control (mouse on desktop, gyro on mobile) ───────────────────────
+  if (!usingGyro) {
+    const dead = 0.15;
+    const mx = Math.abs(mouseNX) > dead ? mouseNX - Math.sign(mouseNX) * dead : 0;
+    const my = Math.abs(mouseNY) > dead ? mouseNY - Math.sign(mouseNY) * dead : 0;
+    yaw   -= mx * MAX_YAW_SPEED   * dt;
+    pitch -= my * MAX_PITCH_SPEED * dt;
+    pitch  = Math.max(-1.1, Math.min(0.55, pitch));
+  }
+
+  tickFlick();
 
   // ── Ocean waves ──────────────────────────────────────────────────────────
   const oPos = ocean.geometry.attributes.position;
@@ -594,8 +732,12 @@ function animate() {
   if (keys['KeyA'] || keys['ArrowLeft'])  moveDir.x -= 1;
   if (keys['KeyD'] || keys['ArrowRight']) moveDir.x += 1;
 
+  // Tilt-to-move (gyro): tiltMove is -1..1, forward = negative Z
+  if (usingGyro && tiltMove !== 0) moveDir.z -= tiltMove;
+
   if (moveDir.length() > 0) {
-    moveDir.normalize().multiplyScalar(pSpeed * dt);
+    const spd = usingGyro ? Math.abs(tiltMove) * 5.5 + 0.5 : pSpeed;
+    moveDir.normalize().multiplyScalar(spd * dt);
     moveDir.applyEuler(new THREE.Euler(0, yaw, 0));
     playerPos.add(moveDir);
     const pr = Math.sqrt(playerPos.x*playerPos.x + playerPos.z*playerPos.z);
