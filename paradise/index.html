@@ -6,40 +6,43 @@
   <title>Paradise — Dragonlord</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
+    body { overflow: hidden; background: #1a88c4; font-family: 'Courier New', monospace; }
     canvas { display: block; }
-
-    #hud {
-      position: fixed; top: 0; left: 0; right: 0;
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 24px; pointer-events: none; z-index: 10;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
-    }
-    #hud .title { color: #ffe066; font-size: 22px; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 12px #ffaa00; }
-    #hud .credits { color: #adf; font-size: 13px; opacity: 0.8; }
-
-    #controls {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      color: rgba(200,230,255,0.55); font-size: 12px; pointer-events: none; z-index: 10;
-      text-align: center; letter-spacing: 1px;
-    }
 
     #home-link {
       position: fixed; top: 16px; right: 24px; z-index: 20;
       color: #ffe066; font-size: 13px; text-decoration: none;
       border: 1px solid #ffe06655; border-radius: 4px; padding: 4px 12px;
-      background: rgba(0,0,0,0.5); pointer-events: all;
+      background: rgba(0,0,0,0.4); pointer-events: all;
       transition: background 0.2s;
     }
     #home-link:hover { background: rgba(255,220,80,0.15); }
 
+    #rune-display {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      color: #e8d5a3; font-size: 16px; text-align: center;
+      background: rgba(10,20,30,0.6); border: 1px solid rgba(140,255,200,0.3);
+      border-radius: 8px; padding: 12px 28px;
+      opacity: 0; transition: opacity 0.6s;
+      pointer-events: none; z-index: 10;
+      letter-spacing: 1px; max-width: 420px;
+      text-shadow: 0 0 10px rgba(140,255,200,0.5);
+    }
+    #rune-display.visible { opacity: 1; }
+
+    #controls {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      color: rgba(200,230,255,0.45); font-size: 11px; pointer-events: none; z-index: 10;
+      text-align: center; letter-spacing: 1px;
+    }
+
     #loading {
-      position: fixed; inset: 0; background: #000;
+      position: fixed; inset: 0; background: #1a6b8a;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 100; transition: opacity 1s;
+      z-index: 100; transition: opacity 1.2s;
     }
     #loading h1 { color: #ffe066; font-size: 3em; letter-spacing: 6px; margin-bottom: 12px; text-shadow: 0 0 30px #ffaa00; }
-    #loading p  { color: #adf; font-size: 14px; letter-spacing: 2px; }
+    #loading p  { color: #c8eef8; font-size: 14px; letter-spacing: 3px; }
     #loading.hidden { opacity: 0; pointer-events: none; }
   </style>
 </head>
@@ -47,17 +50,12 @@
 
 <div id="loading">
   <h1>PARADISE</h1>
-  <p>Loading world...</p>
-</div>
-
-<div id="hud">
-  <div class="title">PARADISE</div>
-  <div class="credits">by Dragonlord</div>
+  <p>a place to breathe</p>
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
-
-<div id="controls">WASD / Arrow Keys — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Click to lock cursor</div>
+<div id="rune-display"></div>
+<div id="controls">WASD — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Click to lock cursor &nbsp;|&nbsp; Shift — Run</div>
 
 <script type="importmap">
 {
@@ -71,229 +69,512 @@
 <script type="module">
 import * as THREE from 'three';
 
-// ─── Setup ───────────────────────────────────────────────────────────────────
-const W = window.innerWidth, H = window.innerHeight;
+// ─── Renderer ────────────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(W, H);
+renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMapping = THREE.NoToneMapping;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x87ceeb, 0.012);
+scene.background = new THREE.Color(0x7ecef4);
+scene.fog = new THREE.Fog(0x7ecef4, 70, 140);
 
-const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 500);
-camera.position.set(0, 2.5, 8);
+const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(0, 2.5, 6);
 
-// ─── Sky & Lighting ──────────────────────────────────────────────────────────
-scene.background = new THREE.Color(0x87ceeb);
+// ─── Toon shading ─────────────────────────────────────────────────────────────
+function makeToonGradient() {
+  const size = 256;
+  const data = new Uint8Array(size * 4);
+  for (let i = 0; i < size; i++) {
+    const t = i / (size - 1);
+    const level = t < 0.25 ? 0.12 : t < 0.55 ? 0.50 : t < 0.80 ? 0.78 : 1.0;
+    const v = Math.round(level * 255);
+    data[i*4] = v; data[i*4+1] = v; data[i*4+2] = v; data[i*4+3] = 255;
+  }
+  const tex = new THREE.DataTexture(data, size, 1);
+  tex.needsUpdate = true;
+  return tex;
+}
+const gradMap = makeToonGradient();
 
-const sun = new THREE.DirectionalLight(0xfff4d0, 2.2);
-sun.position.set(60, 80, 40);
+function toon(color, opts = {}) {
+  return new THREE.MeshToonMaterial({ color, gradientMap: gradMap, ...opts });
+}
+
+function outline(mesh, scale = 1.05, color = 0x111111) {
+  const mat = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide });
+  const o = new THREE.Mesh(mesh.geometry, mat);
+  o.scale.setScalar(scale);
+  mesh.add(o);
+}
+
+// ─── Lighting ─────────────────────────────────────────────────────────────────
+const sun = new THREE.DirectionalLight(0xffe4a0, 2.8);
+sun.position.set(50, 70, 30);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.near = 1;
-sun.shadow.camera.far = 250;
-sun.shadow.camera.left = sun.shadow.camera.bottom = -80;
-sun.shadow.camera.right = sun.shadow.camera.top = 80;
+sun.shadow.camera.far = 200;
+sun.shadow.camera.left = sun.shadow.camera.bottom = -70;
+sun.shadow.camera.right = sun.shadow.camera.top = 70;
 scene.add(sun);
-scene.add(new THREE.AmbientLight(0xb0d8ff, 0.7));
-scene.add(new THREE.HemisphereLight(0x87ceeb, 0x5a9a30, 0.5));
+scene.add(new THREE.AmbientLight(0xb8d8ff, 1.1));
+scene.add(new THREE.HemisphereLight(0x87ceeb, 0x6db56d, 0.6));
 
-// ─── Terrain ─────────────────────────────────────────────────────────────────
-const TILE = 120;
-const terrainGeo = new THREE.PlaneGeometry(TILE, TILE, 60, 60);
-terrainGeo.rotateX(-Math.PI / 2);
+// ─── Island height ────────────────────────────────────────────────────────────
+const ISLAND_R = 30;
 
-// Bump the terrain up with a simple noise function
-const pos = terrainGeo.attributes.position;
-for (let i = 0; i < pos.count; i++) {
-  const x = pos.getX(i), z = pos.getZ(i);
-  const r = Math.sqrt(x * x + z * z) / 40;
-  const h = Math.max(0,
-    Math.sin(x * 0.15) * Math.cos(z * 0.15) * 2.2 +
-    Math.sin(x * 0.05 + 1) * Math.cos(z * 0.07) * 3.5 -
-    r * 1.2
-  );
-  pos.setY(i, h);
+function islandH(x, z) {
+  const r = Math.sqrt(x*x + z*z);
+  if (r > ISLAND_R) return -3;
+  const t = r / ISLAND_R;
+  const base = Math.cos(t * Math.PI * 0.5) * 6.0;
+  const bumps = Math.sin(x*0.28) * Math.cos(z*0.22) * 0.9
+              + Math.sin(x*0.65 + 1.1) * Math.cos(z*0.48) * 0.5
+              + Math.sin(x*0.12 - 0.5) * Math.cos(z*0.18) * 1.2;
+  return Math.max(-0.6, base + bumps);
 }
-pos.needsUpdate = true;
-terrainGeo.computeVertexNormals();
 
-const terrainMat = new THREE.MeshLambertMaterial({ color: 0x4caf50 });
-const terrain = new THREE.Mesh(terrainGeo, terrainMat);
-terrain.receiveShadow = true;
-scene.add(terrain);
+// ─── Island mesh ──────────────────────────────────────────────────────────────
+const SEGS = 90;
+const islandGeo = new THREE.PlaneGeometry(ISLAND_R * 2.5, ISLAND_R * 2.5, SEGS, SEGS);
+islandGeo.rotateX(-Math.PI / 2);
 
-// ─── Water ───────────────────────────────────────────────────────────────────
-const waterGeo = new THREE.PlaneGeometry(TILE * 2, TILE * 2);
-waterGeo.rotateX(-Math.PI / 2);
-const waterMat = new THREE.MeshPhongMaterial({
-  color: 0x006994, transparent: true, opacity: 0.82,
-  shininess: 120, specular: 0x88ddff
+const iPos = islandGeo.attributes.position;
+const colors = new Float32Array(iPos.count * 3);
+const SAND  = new THREE.Color(0xeec76a);
+const GRASS = new THREE.Color(0x5ec050);
+const ROCK  = new THREE.Color(0x9c8878);
+const DROCK = new THREE.Color(0x7a6a60);
+
+for (let i = 0; i < iPos.count; i++) {
+  const x = iPos.getX(i), z = iPos.getZ(i);
+  const h = islandH(x, z);
+  iPos.setY(i, h);
+  const r = Math.sqrt(x*x + z*z);
+  const t = r / ISLAND_R;
+  let c;
+  if (h > 4.2)       c = DROCK;
+  else if (h > 2.8)  c = ROCK;
+  else if (t > 0.72) c = SAND;
+  else               c = GRASS;
+  colors[i*3]   = c.r;
+  colors[i*3+1] = c.g;
+  colors[i*3+2] = c.b;
+}
+iPos.needsUpdate = true;
+islandGeo.computeVertexNormals();
+islandGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+const islandMesh = new THREE.Mesh(
+  islandGeo,
+  new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradMap })
+);
+islandMesh.receiveShadow = true;
+scene.add(islandMesh);
+
+// ─── Ocean ────────────────────────────────────────────────────────────────────
+const OCEAN_SEGS = 100;
+const oceanGeo = new THREE.PlaneGeometry(400, 400, OCEAN_SEGS, OCEAN_SEGS);
+oceanGeo.rotateX(-Math.PI / 2);
+// Store base positions for wave animation
+const oBaseX = new Float32Array(oceanGeo.attributes.position.count);
+const oBaseZ = new Float32Array(oceanGeo.attributes.position.count);
+{
+  const p = oceanGeo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    oBaseX[i] = p.getX(i);
+    oBaseZ[i] = p.getZ(i);
+  }
+}
+const oceanMat = new THREE.MeshToonMaterial({
+  color: 0x1a88c4, gradientMap: gradMap, transparent: true, opacity: 0.90
 });
-const water = new THREE.Mesh(waterGeo, waterMat);
-water.position.y = 0.05;
-scene.add(water);
+const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+ocean.position.y = -0.05;
+scene.add(ocean);
 
-// ─── Trees ───────────────────────────────────────────────────────────────────
-function makeTree(x, z) {
+// Shallow water tint near shore
+const shallowGeo = new THREE.RingGeometry(ISLAND_R * 0.85, ISLAND_R + 4, 80);
+shallowGeo.rotateX(-Math.PI / 2);
+const shallowMat = new THREE.MeshBasicMaterial({
+  color: 0x3aade0, transparent: true, opacity: 0.45, side: THREE.DoubleSide
+});
+const shallow = new THREE.Mesh(shallowGeo, shallowMat);
+shallow.position.y = 0.04;
+scene.add(shallow);
+
+// Foam ring
+const foamGeo = new THREE.RingGeometry(ISLAND_R - 1, ISLAND_R + 1.5, 80);
+foamGeo.rotateX(-Math.PI / 2);
+const foamMat = new THREE.MeshBasicMaterial({
+  color: 0xeef8ff, transparent: true, opacity: 0.55, side: THREE.DoubleSide
+});
+const foam = new THREE.Mesh(foamGeo, foamMat);
+foam.position.y = 0.10;
+scene.add(foam);
+
+// ─── Trees ────────────────────────────────────────────────────────────────────
+const LEAF_COLORS = [0x4ab340, 0x3da032, 0x56c44e, 0x2f9628];
+
+function makeTree(x, z, s = 1) {
   const g = new THREE.Group();
+
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.15, 0.22, 1.4, 7),
-    new THREE.MeshLambertMaterial({ color: 0x5c3d1e })
+    new THREE.CylinderGeometry(0.22*s, 0.30*s, 2.0*s, 7),
+    toon(0x7a4f2e)
   );
-  trunk.position.y = 0.7;
+  trunk.position.y = 1.0*s;
   trunk.castShadow = true;
+  outline(trunk, 1.06);
   g.add(trunk);
 
-  const layers = [
-    { r: 1.3, h: 1.5, y: 1.5 },
-    { r: 1.0, h: 1.3, y: 2.4 },
-    { r: 0.65, h: 1.1, y: 3.1 },
-  ];
-  const leafColors = [0x2e7d32, 0x388e3c, 0x43a047, 0x1b5e20];
-  layers.forEach((l, i) => {
-    const leaf = new THREE.Mesh(
-      new THREE.ConeGeometry(l.r, l.h, 8),
-      new THREE.MeshLambertMaterial({ color: leafColors[i % leafColors.length] })
-    );
-    leaf.position.y = l.y;
-    leaf.castShadow = true;
-    g.add(leaf);
-  });
+  // Round Wind Waker canopy
+  const lc = toon(LEAF_COLORS[Math.floor(Math.random() * LEAF_COLORS.length)]);
+  const ball1 = new THREE.Mesh(new THREE.SphereGeometry(1.2*s, 8, 6), lc);
+  ball1.position.y = 2.7*s;
+  ball1.castShadow = true;
+  outline(ball1, 1.04);
+  g.add(ball1);
 
-  g.position.set(x, 0, z);
-  // Snap to terrain height
-  const sy = sampleTerrain(x, z);
-  g.position.y = Math.max(0, sy);
+  const ball2 = new THREE.Mesh(new THREE.SphereGeometry(0.85*s, 7, 5), lc);
+  ball2.position.set(0.55*s, 3.35*s, 0.15*s);
+  ball2.castShadow = true;
+  outline(ball2, 1.04);
+  g.add(ball2);
+
+  const ball3 = new THREE.Mesh(new THREE.SphereGeometry(0.65*s, 7, 5), lc);
+  ball3.position.set(-0.4*s, 3.2*s, 0.3*s);
+  ball3.castShadow = true;
+  outline(ball3, 1.04);
+  g.add(ball3);
+
+  const h = islandH(x, z);
+  g.position.set(x, Math.max(0, h), z);
   scene.add(g);
 }
 
-function sampleTerrain(x, z) {
-  const r = Math.sqrt(x * x + z * z) / 40;
-  return Math.max(0,
-    Math.sin(x * 0.15) * Math.cos(z * 0.15) * 2.2 +
-    Math.sin(x * 0.05 + 1) * Math.cos(z * 0.07) * 3.5 -
-    r * 1.2
-  );
-}
+[
+  [-6,-8], [8,-9], [-11,5], [9,7], [-4,13], [13,-4],
+  [3,-14], [-13,-2], [11,11], [-7,-13], [-10,10], [6,14],
+  [-15,5], [13,-11], [7,13], [-12,-9], [15,3], [-5,-11],
+  [10,-5], [-14,7], [4,-8], [-9,4], [16,-7], [-16,2],
+].forEach(([x,z]) => {
+  const r = Math.sqrt(x*x+z*z);
+  if (r < ISLAND_R * 0.86) makeTree(x, z, 0.75 + Math.random() * 0.45);
+});
 
-const treePositions = [
-  [-8,  -6], [ 6, -10], [-12,  4], [ 9,  5], [-4, 12], [14, -3],
-  [ 3, -15], [-15, -1], [ 11, 13], [-7, -14], [16, 8], [-10, 10],
-  [ 5,  18], [-18,  6], [13, -12], [-3, -18], [ 8, 16], [-14, -8],
-  [20, -5], [-20, 2],  [0, -20], [18, 12], [-16, 14], [22, 0],
-];
-treePositions.forEach(([x, z]) => makeTree(x, z));
-
-// ─── Rocks ───────────────────────────────────────────────────────────────────
-const rockMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
-for (let i = 0; i < 18; i++) {
-  const a = (i / 18) * Math.PI * 2;
-  const d = 5 + Math.random() * 14;
+// ─── Rocks ────────────────────────────────────────────────────────────────────
+const rockMat = toon(0x8a7a70);
+for (let i = 0; i < 22; i++) {
+  const a = (i / 22) * Math.PI * 2 + Math.random() * 0.4;
+  const d = 3 + Math.random() * 22;
   const x = Math.cos(a) * d, z = Math.sin(a) * d;
-  const s = 0.25 + Math.random() * 0.6;
+  if (Math.sqrt(x*x+z*z) > ISLAND_R * 0.88) continue;
+  const s = 0.18 + Math.random() * 0.55;
   const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), rockMat);
-  rock.position.set(x, sampleTerrain(x, z) + s * 0.4, z);
-  rock.rotation.y = Math.random() * Math.PI;
+  rock.position.set(x, islandH(x, z) + s * 0.35, z);
+  rock.rotation.set(Math.random(), Math.random() * Math.PI, Math.random() * 0.5);
   rock.castShadow = true;
+  outline(rock, 1.07);
   scene.add(rock);
 }
 
-// ─── Flowers ─────────────────────────────────────────────────────────────────
-const flowerColors = [0xff4081, 0xffeb3b, 0xff6d00, 0xe040fb, 0x00e5ff];
-for (let i = 0; i < 40; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const dist = 2 + Math.random() * 20;
-  const x = Math.cos(angle) * dist, z = Math.sin(angle) * dist;
-  const y = sampleTerrain(x, z);
-  if (y < 0.2) continue;
-  const stem = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.03, 0.03, 0.4, 4),
-    new THREE.MeshLambertMaterial({ color: 0x558b2f })
-  );
-  stem.position.set(x, y + 0.2, z);
-  scene.add(stem);
-  const petal = new THREE.Mesh(
-    new THREE.SphereGeometry(0.12, 6, 4),
-    new THREE.MeshLambertMaterial({ color: flowerColors[i % flowerColors.length] })
-  );
-  petal.position.set(x, y + 0.45, z);
-  scene.add(petal);
+// ─── Runic Monoliths ──────────────────────────────────────────────────────────
+const RUNE_INSCRIPTIONS = [
+  "The sea remembers what the land forgets.",
+  "Breathe. You are here.",
+  "Between waves, there is silence.",
+  "The wind carries no burdens.",
+  "This moment is complete.",
+  "Let the horizon be enough.",
+  "Stone endures. So shall you.",
+];
+
+const MONOLITH_SPOTS = [
+  [0, -4],
+  [-9, -5],
+  [11, 2],
+  [-2, 13],
+  [8, -12],
+  [-13, 3],
+  [3, -9],
+];
+
+const monoliths = [];
+
+MONOLITH_SPOTS.forEach(([x, z], i) => {
+  const g = new THREE.Group();
+  const h = 3.0 + Math.random() * 1.6;
+  const w = 0.65 + Math.random() * 0.45;
+  const tilt = (Math.random() - 0.5) * 0.12;
+
+  // Base stone
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.38), toon(0xa09080));
+  slab.position.y = h / 2;
+  slab.rotation.y = Math.random() * Math.PI * 2;
+  slab.rotation.z = tilt;
+  slab.castShadow = true;
+  outline(slab, 1.05);
+  g.add(slab);
+
+  // Small base stones around it
+  for (let j = 0; j < 2; j++) {
+    const bs = 0.2 + Math.random() * 0.25;
+    const bx = (Math.random() - 0.5) * 0.9;
+    const bz2 = (Math.random() - 0.5) * 0.9;
+    const base = new THREE.Mesh(new THREE.BoxGeometry(bs, bs * 0.6, bs), toon(0x8a7a70));
+    base.position.set(bx, bs * 0.3, bz2);
+    base.rotation.y = Math.random() * Math.PI;
+    scene.add(base); // added directly to scene but positioned relative — actually add to group
+    g.add(base);
+  }
+
+  // Rune glow plane (emissive)
+  const runeMat = new THREE.MeshBasicMaterial({
+    color: 0x88ffcc, transparent: true, opacity: 0.0
+  });
+  const runeQuad = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.68, h * 0.55), runeMat);
+  runeQuad.position.set(0, h / 2, 0.21);
+  g.add(runeQuad);
+
+  const iy = islandH(x, z);
+  g.position.set(x, Math.max(0, iy), z);
+  scene.add(g);
+
+  monoliths.push({ group: g, x, z, msg: RUNE_INSCRIPTIONS[i], runeMat });
+});
+
+// ─── Crabs ────────────────────────────────────────────────────────────────────
+function makeCrab(cx, cz) {
+  const g = new THREE.Group();
+  const bodyMat = toon(0xd9561a);
+  const clawMat = toon(0xbf4010);
+
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.17, 6, 4), bodyMat);
+  body.scale.set(1.5, 0.65, 1.05);
+  body.position.y = 0.12;
+  outline(body, 1.07);
+  g.add(body);
+
+  [-1, 1].forEach(side => {
+    const claw = new THREE.Mesh(new THREE.SphereGeometry(0.1, 5, 3), clawMat);
+    claw.position.set(side * 0.38, 0.10, -0.08);
+    claw.scale.set(1.3, 0.75, 0.85);
+    outline(claw, 1.06);
+    g.add(claw);
+  });
+
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  [-0.07, 0.07].forEach(ex => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 4, 3), eyeMat);
+    eye.position.set(ex, 0.21, -0.14);
+    g.add(eye);
+  });
+
+  const legMat = toon(0xc04818);
+  for (let i = 0; i < 4; i++) {
+    [-1, 1].forEach(side => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.24, 4), legMat);
+      leg.rotation.z = side * (0.85 + i * 0.13);
+      leg.position.set(side * (0.20 + i * 0.04), 0.08, -0.04 + i * 0.06);
+      g.add(leg);
+    });
+  }
+
+  g.position.set(cx, islandH(cx, cz) + 0.05, cz);
+  scene.add(g);
+  return g;
 }
 
-// ─── Sun Sphere ──────────────────────────────────────────────────────────────
-const sunSphere = new THREE.Mesh(
-  new THREE.SphereGeometry(3, 16, 16),
-  new THREE.MeshBasicMaterial({ color: 0xfffde7 })
-);
-sunSphere.position.set(120, 150, -80);
-scene.add(sunSphere);
+const crabs = Array.from({ length: 9 }, () => {
+  const a = Math.random() * Math.PI * 2;
+  const r = ISLAND_R * 0.70 + Math.random() * (ISLAND_R * 0.18);
+  const cx = Math.cos(a) * r, cz = Math.sin(a) * r;
+  return {
+    group: makeCrab(cx, cz),
+    x: cx, z: cz,
+    angle: Math.random() * Math.PI * 2,
+    state: 'wander',
+    wanderTimer: Math.random() * 100,
+    phase: Math.random() * Math.PI * 2,
+  };
+});
 
-// ─── Clouds ──────────────────────────────────────────────────────────────────
-const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.88 });
+// ─── Clouds ───────────────────────────────────────────────────────────────────
 const clouds = [];
 for (let i = 0; i < 14; i++) {
   const g = new THREE.Group();
-  for (let j = 0; j < 5 + Math.floor(Math.random() * 4); j++) {
-    const puff = new THREE.Mesh(new THREE.SphereGeometry(1.5 + Math.random(), 7, 5), cloudMat);
-    puff.position.set((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 3);
+  const n = 4 + Math.floor(Math.random() * 5);
+  for (let j = 0; j < n; j++) {
+    const puff = new THREE.Mesh(
+      new THREE.SphereGeometry(2.2 + Math.random() * 1.8, 7, 5),
+      toon(0xfafcff)
+    );
+    puff.position.set(
+      (Math.random() - 0.5) * 8,
+      (Math.random() - 0.5) * 2.2,
+      (Math.random() - 0.5) * 4.5
+    );
     g.add(puff);
   }
-  g.position.set((Math.random() - 0.5) * 160, 18 + Math.random() * 12, (Math.random() - 0.5) * 160);
-  g.userData.speed = 0.5 + Math.random() * 1.0;
+  g.position.set(
+    (Math.random() - 0.5) * 220,
+    20 + Math.random() * 18,
+    (Math.random() - 0.5) * 220
+  );
+  g.userData.speed = 0.25 + Math.random() * 0.5;
   scene.add(g);
   clouds.push(g);
 }
 
-// ─── Player / Camera Controls ────────────────────────────────────────────────
+// ─── Seagulls ─────────────────────────────────────────────────────────────────
+const birds = [];
+for (let i = 0; i < 7; i++) {
+  const g = new THREE.Group();
+  const bm = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+  [-1, 1].forEach(side => {
+    const wing = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.22), bm);
+    wing.rotation.z = side * 0.22;
+    wing.position.x = side * 0.45;
+    g.add(wing);
+  });
+  const a0 = Math.random() * Math.PI * 2;
+  const rad = 18 + Math.random() * 28;
+  g.position.set(Math.cos(a0) * rad, 10 + Math.random() * 8, Math.sin(a0) * rad);
+  g.userData = { angle: a0, radius: rad, speed: 0.25 + Math.random() * 0.3, baseY: g.position.y, phase: Math.random() * Math.PI * 2 };
+  scene.add(g);
+  birds.push(g);
+}
+
+// ─── Player controls ──────────────────────────────────────────────────────────
 const keys = {};
 document.addEventListener('keydown', e => keys[e.code] = true);
 document.addEventListener('keyup',   e => keys[e.code] = false);
 
 let yaw = 0, pitch = 0, locked = false;
-document.addEventListener('click', () => { if (!locked) renderer.domElement.requestPointerLock(); });
+renderer.domElement.addEventListener('click', () => { if (!locked) renderer.domElement.requestPointerLock(); });
 document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === renderer.domElement; });
 document.addEventListener('mousemove', e => {
   if (!locked) return;
   yaw   -= e.movementX * 0.002;
   pitch -= e.movementY * 0.002;
-  pitch  = Math.max(-1.2, Math.min(0.6, pitch));
+  pitch  = Math.max(-1.1, Math.min(0.55, pitch));
 });
 
-const playerPos = new THREE.Vector3(0, 2.5, 8);
-const moveDir = new THREE.Vector3();
+const playerPos = new THREE.Vector3(0, 2.5, 6);
+const moveDir   = new THREE.Vector3();
 
-// ─── Animation Loop ──────────────────────────────────────────────────────────
+// ─── Rune HUD ─────────────────────────────────────────────────────────────────
+const runeEl = document.getElementById('rune-display');
+let shownMsg = null, runeFadeTimer = 0;
+
+function showRune(msg) {
+  runeFadeTimer = 260;
+  if (shownMsg === msg) return;
+  shownMsg = msg;
+  runeEl.textContent = msg;
+  runeEl.classList.add('visible');
+}
+function tickRune() {
+  if (runeFadeTimer > 0) { runeFadeTimer--; return; }
+  if (shownMsg) { shownMsg = null; runeEl.classList.remove('visible'); }
+}
+
+// ─── Animation loop ───────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
 
-// Hide loading screen after init
 setTimeout(() => {
   const l = document.getElementById('loading');
   l.classList.add('hidden');
-  setTimeout(() => l.remove(), 1100);
-}, 600);
+  setTimeout(() => l.remove(), 1300);
+}, 700);
 
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
   const t  = clock.elapsedTime;
 
-  // Water animation
-  waterMat.color.setHSL(0.55 + Math.sin(t * 0.3) * 0.02, 0.7, 0.33);
+  // ── Ocean waves ──────────────────────────────────────────────────────────
+  const oPos = ocean.geometry.attributes.position;
+  for (let i = 0; i < oPos.count; i++) {
+    const ox = oBaseX[i], oz = oBaseZ[i];
+    const dist = Math.sqrt(ox*ox + oz*oz);
+    // Radial waves rolling toward island
+    const wave = Math.sin(dist * 0.14 - t * 2.0) * 0.40
+               + Math.sin(dist * 0.07 - t * 1.3) * 0.25
+               + Math.sin(ox  * 0.09 + t * 0.8)  * 0.12;
+    oPos.setY(i, wave);
+  }
+  oPos.needsUpdate = true;
+  ocean.geometry.computeVertexNormals();
 
-  // Cloud drift
+  // Foam shimmer
+  foamMat.opacity = 0.38 + Math.sin(t * 2.8) * 0.22;
+
+  // ── Clouds ───────────────────────────────────────────────────────────────
   clouds.forEach(c => {
     c.position.x += c.userData.speed * dt;
-    if (c.position.x > 90) c.position.x = -90;
+    if (c.position.x > 115) c.position.x = -115;
   });
 
-  // Player movement
-  const speed = keys['ShiftLeft'] ? 9 : 5;
+  // ── Birds ────────────────────────────────────────────────────────────────
+  birds.forEach(b => {
+    const ud = b.userData;
+    ud.angle += ud.speed * dt;
+    b.position.x = Math.cos(ud.angle) * ud.radius;
+    b.position.z = Math.sin(ud.angle) * ud.radius;
+    b.position.y = ud.baseY + Math.sin(t * 0.7 + ud.phase) * 0.8;
+    b.rotation.y = -ud.angle + Math.PI / 2;
+    const flap = Math.sin(t * 3.5 + ud.phase);
+    b.children[0].rotation.z =  0.22 + flap * 0.25;
+    b.children[1].rotation.z = -0.22 - flap * 0.25;
+  });
+
+  // ── Crabs ────────────────────────────────────────────────────────────────
+  crabs.forEach(c => {
+    const dx = playerPos.x - c.x;
+    const dz = playerPos.z - c.z;
+    const d  = Math.sqrt(dx*dx + dz*dz);
+
+    if (d < 4.2) c.state = 'flee';
+    else if (d > 7.5 && c.state === 'flee') c.state = 'wander';
+
+    let spd = 0;
+    if (c.state === 'flee') {
+      c.angle = Math.atan2(c.z - playerPos.z, c.x - playerPos.x);
+      spd = 4.0;
+    } else {
+      c.wanderTimer--;
+      if (c.wanderTimer <= 0) {
+        c.angle += (Math.random() - 0.5) * 1.4;
+        c.wanderTimer = 60 + Math.random() * 130;
+      }
+      spd = 0.45;
+    }
+
+    const nx = c.x + Math.cos(c.angle) * spd * dt;
+    const nz = c.z + Math.sin(c.angle) * spd * dt;
+    const nr = Math.sqrt(nx*nx + nz*nz);
+
+    if (nr < ISLAND_R * 0.93 && nr > 2.5) {
+      c.x = nx; c.z = nz;
+    } else {
+      c.angle += Math.PI + (Math.random() - 0.5) * 0.8;
+    }
+
+    const cy = islandH(c.x, c.z);
+    c.phase += spd * dt * 9;
+    c.group.position.set(c.x, cy + 0.05 + Math.abs(Math.sin(c.phase)) * 0.025, c.z);
+    c.group.rotation.y = c.angle + Math.PI;
+  });
+
+  // ── Player movement ───────────────────────────────────────────────────────
+  const pSpeed = keys['ShiftLeft'] || keys['ShiftRight'] ? 8 : 4.5;
   moveDir.set(0, 0, 0);
   if (keys['KeyW'] || keys['ArrowUp'])    moveDir.z -= 1;
   if (keys['KeyS'] || keys['ArrowDown'])  moveDir.z += 1;
@@ -301,25 +582,41 @@ function animate() {
   if (keys['KeyD'] || keys['ArrowRight']) moveDir.x += 1;
 
   if (moveDir.length() > 0) {
-    moveDir.normalize().multiplyScalar(speed * dt);
+    moveDir.normalize().multiplyScalar(pSpeed * dt);
     moveDir.applyEuler(new THREE.Euler(0, yaw, 0));
     playerPos.add(moveDir);
-    // Clamp to world
-    playerPos.x = Math.max(-55, Math.min(55, playerPos.x));
-    playerPos.z = Math.max(-55, Math.min(55, playerPos.z));
+    const pr = Math.sqrt(playerPos.x*playerPos.x + playerPos.z*playerPos.z);
+    if (pr > ISLAND_R * 0.94) {
+      playerPos.x *= (ISLAND_R * 0.94) / pr;
+      playerPos.z *= (ISLAND_R * 0.94) / pr;
+    }
   }
 
-  // Stick player to terrain
-  const gh = sampleTerrain(playerPos.x, playerPos.z);
-  playerPos.y += ((Math.max(gh, 0) + 1.6) - playerPos.y) * 0.15;
+  const gh = islandH(playerPos.x, playerPos.z);
+  playerPos.y += ((Math.max(gh, 0) + 1.7) - playerPos.y) * 0.15;
 
   camera.position.copy(playerPos);
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
 
+  // ── Monolith proximity & glow ─────────────────────────────────────────────
+  let nearMsg = null, nearDist = 5.5;
+  monoliths.forEach(m => {
+    const dx = playerPos.x - m.x;
+    const dz = playerPos.z - m.z;
+    const d  = Math.sqrt(dx*dx + dz*dz);
+    const glow = Math.max(0, 1 - d / 7);
+    m.runeMat.opacity = glow * (0.45 + Math.sin(t * 2.2) * 0.3);
+    if (d < nearDist) { nearDist = d; nearMsg = m.msg; }
+  });
+
+  if (nearMsg) showRune(nearMsg);
+  tickRune();
+
   renderer.render(scene, camera);
 }
+
 animate();
 
 window.addEventListener('resize', () => {
