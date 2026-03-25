@@ -55,7 +55,7 @@
 
 <a id="home-link" href="../index.html">← Home</a>
 <div id="rune-display"></div>
-<div id="controls">WASD — Move &nbsp;|&nbsp; Click &amp; Drag — Look &nbsp;|&nbsp; Click to lock cursor &nbsp;|&nbsp; Shift — Run</div>
+<div id="controls">WASD — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Shift — Run</div>
 
 <script type="importmap">
 {
@@ -456,33 +456,15 @@ const keys = {};
 document.addEventListener('keydown', e => keys[e.code] = true);
 document.addEventListener('keyup',   e => keys[e.code] = false);
 
-let yaw = 0, pitch = 0, locked = false;
-let dragging = false, lastMX = 0, lastMY = 0;
-
-// Pointer lock (click to capture)
-renderer.domElement.addEventListener('click', () => {
-  if (!locked) renderer.domElement.requestPointerLock?.();
-});
-document.addEventListener('pointerlockchange', () => {
-  locked = document.pointerLockElement === renderer.domElement;
-});
-
-// Drag fallback (hold + move anywhere on canvas)
-renderer.domElement.addEventListener('mousedown', e => { dragging = true; lastMX = e.clientX; lastMY = e.clientY; });
-document.addEventListener('mouseup', () => { dragging = false; });
+let yaw = 0, pitch = 0;
+// Normalised mouse position: -1 (left/top) to +1 (right/bottom)
+let mouseNX = 0, mouseNY = 0;
 
 document.addEventListener('mousemove', e => {
-  let dx, dy;
-  if (locked) {
-    dx = e.movementX; dy = e.movementY;
-  } else if (dragging) {
-    dx = e.clientX - lastMX; dy = e.clientY - lastMY;
-    lastMX = e.clientX; lastMY = e.clientY;
-  } else return;
-  yaw   -= dx * 0.003;
-  pitch -= dy * 0.003;
-  pitch  = Math.max(-1.1, Math.min(0.55, pitch));
+  mouseNX = (e.clientX / innerWidth)  * 2 - 1;  // -1 left … +1 right
+  mouseNY = (e.clientY / innerHeight) * 2 - 1;  // -1 top  … +1 bottom
 });
+window.addEventListener('resize', () => { mouseNX = 0; mouseNY = 0; });
 
 const playerPos = new THREE.Vector3(0, 2.5, 6);
 const moveDir   = new THREE.Vector3();
@@ -512,10 +494,23 @@ setTimeout(() => {
   setTimeout(() => l.remove(), 1300);
 }, 700);
 
+// Mouse-position look — speed scales with how far from centre
+const MAX_YAW_SPEED   = 1.6;  // radians/sec at screen edge
+const MAX_PITCH_SPEED = 0.9;
+
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
   const t  = clock.elapsedTime;
+
+  // ── Mouse look ────────────────────────────────────────────────────────────
+  // Dead zone in the middle (±0.15) so the camera is still when centred
+  const deadzone = 0.15;
+  const ax = Math.abs(mouseNX) > deadzone ? mouseNX - Math.sign(mouseNX) * deadzone : 0;
+  const ay = Math.abs(mouseNY) > deadzone ? mouseNY - Math.sign(mouseNY) * deadzone : 0;
+  yaw   -= ax * MAX_YAW_SPEED   * dt;
+  pitch -= ay * MAX_PITCH_SPEED * dt;
+  pitch  = Math.max(-1.1, Math.min(0.55, pitch));
 
   // ── Ocean waves ──────────────────────────────────────────────────────────
   const oPos = ocean.geometry.attributes.position;
