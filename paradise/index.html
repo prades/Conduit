@@ -55,7 +55,7 @@
 
 <a id="home-link" href="../index.html">← Home</a>
 <div id="rune-display"></div>
-<div id="controls">WASD — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Click to lock cursor &nbsp;|&nbsp; Shift — Run</div>
+<div id="controls">WASD — Move &nbsp;|&nbsp; Click &amp; Drag — Look &nbsp;|&nbsp; Click to lock cursor &nbsp;|&nbsp; Shift — Run</div>
 
 <script type="importmap">
 {
@@ -457,12 +457,30 @@ document.addEventListener('keydown', e => keys[e.code] = true);
 document.addEventListener('keyup',   e => keys[e.code] = false);
 
 let yaw = 0, pitch = 0, locked = false;
-renderer.domElement.addEventListener('click', () => { if (!locked) renderer.domElement.requestPointerLock(); });
-document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === renderer.domElement; });
+let dragging = false, lastMX = 0, lastMY = 0;
+
+// Pointer lock (click to capture)
+renderer.domElement.addEventListener('click', () => {
+  if (!locked) renderer.domElement.requestPointerLock?.();
+});
+document.addEventListener('pointerlockchange', () => {
+  locked = document.pointerLockElement === renderer.domElement;
+});
+
+// Drag fallback (hold + move anywhere on canvas)
+renderer.domElement.addEventListener('mousedown', e => { dragging = true; lastMX = e.clientX; lastMY = e.clientY; });
+document.addEventListener('mouseup', () => { dragging = false; });
+
 document.addEventListener('mousemove', e => {
-  if (!locked) return;
-  yaw   -= e.movementX * 0.002;
-  pitch -= e.movementY * 0.002;
+  let dx, dy;
+  if (locked) {
+    dx = e.movementX; dy = e.movementY;
+  } else if (dragging) {
+    dx = e.clientX - lastMX; dy = e.clientY - lastMY;
+    lastMX = e.clientX; lastMY = e.clientY;
+  } else return;
+  yaw   -= dx * 0.003;
+  pitch -= dy * 0.003;
   pitch  = Math.max(-1.1, Math.min(0.55, pitch));
 });
 
