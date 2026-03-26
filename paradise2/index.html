@@ -165,7 +165,7 @@ scene.background = new THREE.Color(0x4a7fa5);
 scene.fog = new THREE.FogExp2(0x4a7fa5, 0.022);
 
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 300);
-camera.position.set(0, 2.6, 8);
+camera.position.set(0, 4.2, 8);
 
 // ─── Lighting ─────────────────────────────────────────────────────────────────
 const ambient = new THREE.AmbientLight(0xb0c8e8, 0.7);
@@ -313,6 +313,7 @@ function makeIsland() {
   return group;
 }
 const island = makeIsland();
+island.position.y = -1.5; // lower into the water so only the top third shows
 scene.add(island);
 
 // ─── Room / Shelter ───────────────────────────────────────────────────────────
@@ -383,8 +384,11 @@ function makeRoom() {
   return group;
 }
 
+// Island top surface is at 4.0 (local) - 1.5 (group offset) = 2.5 world Y
+const ISLAND_SURFACE = 2.5;
 const room = makeRoom();
-room.position.set(-0.5, 4.0 + 1.2, 0.5); // sitting on top of island
+// Room H=2.4, so group center sits H/2 above the surface
+room.position.set(-0.5, ISLAND_SURFACE + 1.2, 0.5);
 scene.add(room);
 
 // ─── Computer desk + monitor ──────────────────────────────────────────────────
@@ -446,8 +450,9 @@ function makeComputer() {
 }
 
 const computer = makeComputer();
-// Place inside room, against back wall, on the desk height
-computer.position.set(-0.5, 4.0 + 1.2 + 0.38, -0.8); // room center + room floor y + desk height offset
+// Room floor top ≈ ISLAND_SURFACE + 0.12. Desk legs are 0.7 tall centred at y=-0.39, bottom at -0.74.
+// So group Y = floor_top + 0.74 = 2.5 + 0.12 + 0.74 = 3.36
+computer.position.set(-0.5, 3.36, -0.9);
 scene.add(computer);
 
 // ─── Distant rocky outcrops ───────────────────────────────────────────────────
@@ -508,7 +513,7 @@ const GRAVITY = -18;
 let onGround = false;
 const keys = {};
 
-const ISLAND_TOP_Y = 4.04;
+const ISLAND_TOP_Y = 2.5;
 const PLAYER_HEIGHT = 1.65;
 
 // Keyboard
@@ -654,10 +659,11 @@ function animate() {
   const t  = clock.elapsedTime;
 
   // Ocean wave animation
+  // PlaneGeometry is in local XY; after rotation.x=-PI/2 world-Y comes from local-Z
   for (let i = 0; i < oceanPos.count; i++) {
-    const x = oceanBase[i*3];
-    const z = oceanBase[i*3+2];
-    oceanPos.setY(i, Math.sin(x*0.15 + t*0.8) * 0.22 + Math.sin(z*0.12 + t*0.65 + 1.1) * 0.18);
+    const lx = oceanBase[i*3];
+    const ly = oceanBase[i*3+1];
+    oceanPos.setZ(i, Math.sin(lx*0.15 + t*0.8) * 0.32 + Math.sin(ly*0.12 + t*0.65 + 1.1) * 0.24);
   }
   oceanPos.needsUpdate = true;
   oceanGeo.computeVertexNormals();
