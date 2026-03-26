@@ -69,6 +69,37 @@
     #loading h1 { color: #ffe066; font-size: 3em; letter-spacing: 6px; margin-bottom: 12px; text-shadow: 0 0 30px #ffaa00; }
     #loading p  { color: #c8eef8; font-size: 14px; letter-spacing: 3px; }
     #loading.hidden { opacity: 0; pointer-events: none; }
+
+    /* ── Touch controls ── */
+    #joystick-zone {
+      position: fixed; left: 24px; bottom: 24px;
+      width: 120px; height: 120px; z-index: 15; touch-action: none;
+    }
+    #joystick-base {
+      width: 120px; height: 120px; border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(255,255,255,0.18);
+      position: absolute; top: 0; left: 0;
+    }
+    #joystick-knob {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,255,255,0.28);
+      border: 2px solid rgba(255,255,255,0.5);
+      position: absolute;
+      top: 38px; left: 38px;
+      pointer-events: none;
+      transition: none;
+    }
+    #use-btn {
+      position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+      z-index: 20; padding: 14px 32px;
+      background: rgba(10,20,30,0.75); border: 1px solid rgba(140,200,255,0.4);
+      color: #e8d5a3; font-family: 'Courier New', monospace; font-size: 15px;
+      border-radius: 8px; letter-spacing: 2px; cursor: pointer;
+      opacity: 0; pointer-events: none; transition: opacity 0.4s;
+      touch-action: manipulation;
+    }
+    #use-btn.visible { opacity: 1; pointer-events: all; }
   </style>
 </head>
 <body>
@@ -80,7 +111,16 @@
 
 <a id="home-link" href="../index.html">← Home</a>
 <div id="prompt"></div>
-<div id="controls">WASD — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Click to lock cursor &nbsp;|&nbsp; Shift — Run &nbsp;|&nbsp; E — Interact</div>
+<div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
+
+<!-- Touch joystick -->
+<div id="joystick-zone">
+  <div id="joystick-base"></div>
+  <div id="joystick-knob"></div>
+</div>
+
+<!-- Touch interact button -->
+<button id="use-btn">[ USE COMPUTER ]</button>
 
 <div id="computer-screen">
   <div id="computer-inner">
@@ -461,27 +501,24 @@ for (let i = 0; i < 6; i++) {
   birds.push(bird);
 }
 
-// ─── Pointer lock / player controller ────────────────────────────────────────
+// ─── Input state ─────────────────────────────────────────────────────────────
 let yaw = 0, pitch = 0;
 let vx = 0, vy = 0, vz = 0;
 const GRAVITY = -18;
-const JUMP_V = 7;
 let onGround = false;
 const keys = {};
 
-// Island top surface Y (approx)
 const ISLAND_TOP_Y = 4.04;
 const PLAYER_HEIGHT = 1.65;
 
+// Keyboard
 document.addEventListener('keydown', e => { keys[e.code] = true; });
 document.addEventListener('keyup',   e => { keys[e.code] = false; });
 
+// Mouse pointer-lock look
 renderer.domElement.addEventListener('click', () => {
   if (!computerScreenEl.classList.contains('visible'))
     renderer.domElement.requestPointerLock();
-});
-document.addEventListener('pointerlockchange', () => {
-  if (!document.pointerLockElement) {/* unlocked */}
 });
 document.addEventListener('mousemove', e => {
   if (document.pointerLockElement === renderer.domElement) {
@@ -491,18 +528,101 @@ document.addEventListener('mousemove', e => {
   }
 });
 
+// ─── Touch joystick (left side — movement) ────────────────────────────────────
+const joystickZone  = document.getElementById('joystick-zone');
+const joystickKnob  = document.getElementById('joystick-knob');
+const JOY_R = 38; // max knob travel radius
+let joyInput = { x: 0, y: 0 };
+let joyTouchId = null;
+let joyOrigin  = { x: 0, y: 0 };
+
+joystickZone.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  joyTouchId = t.identifier;
+  const rect = joystickZone.getBoundingClientRect();
+  joyOrigin.x = rect.left + rect.width  / 2;
+  joyOrigin.y = rect.top  + rect.height / 2;
+  updateJoy(t);
+}, { passive: false });
+
+joystickZone.addEventListener('touchmove', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === joyTouchId) updateJoy(t);
+  }
+}, { passive: false });
+
+joystickZone.addEventListener('touchend', e => {
+  for (const t of e.changedTouches) {
+    if (t.identifier === joyTouchId) {
+      joyTouchId = null;
+      joyInput.x = 0; joyInput.y = 0;
+      joystickKnob.style.transform = '';
+    }
+  }
+}, { passive: false });
+
+function updateJoy(touch) {
+  let dx = touch.clientX - joyOrigin.x;
+  let dy = touch.clientY - joyOrigin.y;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  if (len > JOY_R) { dx = dx/len*JOY_R; dy = dy/len*JOY_R; }
+  joyInput.x = dx / JOY_R;
+  joyInput.y = dy / JOY_R;
+  joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+}
+
+// ─── Touch look (right side — camera) ────────────────────────────────────────
+const LOOK_SENS = 0.006;
+let lookTouchId = null, lookLastX = 0, lookLastY = 0;
+
+renderer.domElement.addEventListener('touchstart', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    // Only claim touches that start on the right half and aren't the joystick
+    if (t.identifier !== joyTouchId && t.clientX > innerWidth * 0.35) {
+      lookTouchId = t.identifier;
+      lookLastX = t.clientX;
+      lookLastY = t.clientY;
+    }
+  }
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchmove', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === lookTouchId) {
+      yaw   -= (t.clientX - lookLastX) * LOOK_SENS;
+      pitch -= (t.clientY - lookLastY) * LOOK_SENS;
+      pitch  = Math.max(-1.3, Math.min(1.3, pitch));
+      lookLastX = t.clientX;
+      lookLastY = t.clientY;
+    }
+  }
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchend', e => {
+  for (const t of e.changedTouches) {
+    if (t.identifier === lookTouchId) lookTouchId = null;
+  }
+}, { passive: false });
+
+// ─── Computer UI ──────────────────────────────────────────────────────────────
 const computerScreenEl = document.getElementById('computer-screen');
 document.getElementById('close-computer').addEventListener('click', () => {
   computerScreenEl.classList.remove('visible');
-  renderer.domElement.requestPointerLock();
+});
+
+const useBtnEl = document.getElementById('use-btn');
+useBtnEl.addEventListener('click', () => {
+  computerScreenEl.classList.add('visible');
 });
 
 const promptEl = document.getElementById('prompt');
-let promptTimer = null;
 function showPrompt(msg) {
   promptEl.textContent = msg;
   promptEl.classList.add('visible');
-  clearTimeout(promptTimer);
 }
 function hidePrompt() {
   promptEl.classList.remove('visible');
@@ -574,6 +694,12 @@ function animate() {
     if (keys['KeyA'] || keys['ArrowLeft'])  move.addScaledVector(right,   -1);
     if (keys['KeyD'] || keys['ArrowRight']) move.addScaledVector(right,    1);
 
+    // Joystick input
+    if (Math.abs(joyInput.x) > 0.08 || Math.abs(joyInput.y) > 0.08) {
+      move.addScaledVector(forward, -joyInput.y);
+      move.addScaledVector(right,    joyInput.x);
+    }
+
     if (move.lengthSq() > 0) move.normalize();
 
     vx = move.x * speed;
@@ -581,13 +707,12 @@ function animate() {
 
     // Gravity
     vy += GRAVITY * dt;
-    if (keys['Space'] && onGround) { vy = JUMP_V; onGround = false; }
 
     let nx = camera.position.x + vx * dt;
     let nz = camera.position.z + vz * dt;
     let ny = camera.position.y + vy * dt;
 
-    // Restrict player to island (gentle push-back at edges)
+    // Restrict player to island
     const distFromCenter = Math.sqrt(nx*nx + nz*nz);
     if (distFromCenter > 4.8) {
       const pushAngle = Math.atan2(nz, nx);
@@ -608,11 +733,12 @@ function animate() {
 
     // Interact with computer
     const playerFlat = new THREE.Vector3(camera.position.x, 0, camera.position.z);
-    const compFlat = new THREE.Vector3(COMPUTER_POS.x, 0, COMPUTER_POS.z);
+    const compFlat   = new THREE.Vector3(COMPUTER_POS.x, 0, COMPUTER_POS.z);
     const distToComp = playerFlat.distanceTo(compFlat);
 
     if (distToComp < 1.8) {
       showPrompt('[ E ] Use computer');
+      useBtnEl.classList.add('visible');
       if (keys['KeyE']) {
         computerScreenEl.classList.add('visible');
         document.exitPointerLock();
@@ -620,6 +746,7 @@ function animate() {
       }
     } else {
       hidePrompt();
+      useBtnEl.classList.remove('visible');
     }
   }
 
