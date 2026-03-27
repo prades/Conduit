@@ -515,6 +515,7 @@ function _handlePylonConfirmTap(tx, ty) {
 
 // Central overlay tap dispatcher — call from pointerup handler
 function handleOverlayPanelTap(tx, ty) {
+    if (hackPanelOpen)     return handleHackPanelTap(tx, ty);
     if (pylonConfirmOpen)  return _handlePylonConfirmTap(tx, ty);
     if (elementPickerOpen) return _handleElementPickerTap(tx, ty);
     if (infoPanelOpen)     return _handleInfoPanelTap(tx, ty);
@@ -723,4 +724,274 @@ function handleFollowerUIClick(x,y) {
         return true;
     }
     return false;
+}
+
+// ─────────────────────────────────────────────────────────
+//  HACK PANEL  — math-based terminal bypass minigame
+//  Player taps a wall panel while close → matrix appears.
+//  Correct answer → shards collected.
+//  Wrong  answer  → alarm triggered.
+// ─────────────────────────────────────────────────────────
+let hackPanelOpen      = false;
+let hackPanelTile      = null;
+let hackPanelMatrix    = [];              // 2-D array [row][col]
+let hackPanelHighlight = { type: 'row', index: 0 };
+let hackPanelSeries    = [];              // null = the missing slot
+let hackPanelAnswers   = [];             // 4 numeric choices
+let hackPanelCorrect   = 0;              // index of the correct answer
+let hackPanelQuestion  = '';
+
+const _HP_ROWS = 3, _HP_COLS = 4;
+const _HP_W = 284, _HP_H = 340;
+const _HP_ANS_W = 104, _HP_ANS_H = 38, _HP_ANS_GAP = 10;
+
+function _generateHackChallenge() {
+    // Build a fresh random matrix
+    hackPanelMatrix = [];
+    for (let r = 0; r < _HP_ROWS; r++) {
+        hackPanelMatrix[r] = [];
+        for (let c = 0; c < _HP_COLS; c++) {
+            hackPanelMatrix[r][c] = Math.floor(Math.random() * 9) + 1;
+        }
+    }
+
+    const useRow = Math.random() < 0.5;
+    let answer;
+
+    if (useRow) {
+        const ri = Math.floor(Math.random() * _HP_ROWS);
+        hackPanelHighlight = { type: 'row', index: ri };
+        const sums = hackPanelMatrix.map(row => row.reduce((a, b) => a + b, 0));
+        hackPanelSeries   = sums.map((s, i) => (i === ri ? null : s));
+        answer = sums[ri];
+        hackPanelQuestion = 'FIND THE MISSING ROW SUM';
+    } else {
+        const ci = Math.floor(Math.random() * _HP_COLS);
+        hackPanelHighlight = { type: 'col', index: ci };
+        const sums = [];
+        for (let c = 0; c < _HP_COLS; c++) {
+            sums.push(hackPanelMatrix.reduce((a, row) => a + row[c], 0));
+        }
+        hackPanelSeries   = sums.map((s, i) => (i === ci ? null : s));
+        answer = sums[ci];
+        hackPanelQuestion = 'FIND THE MISSING COLUMN SUM';
+    }
+
+    // Generate 3 distinct wrong answers close to the correct value
+    const pool = new Set([answer]);
+    let attempts = 0;
+    while (pool.size < 4 && attempts < 60) {
+        attempts++;
+        const delta = Math.floor(Math.random() * 12) - 6;
+        if (delta !== 0) pool.add(Math.max(1, answer + delta));
+    }
+    hackPanelAnswers = [...pool].sort(() => Math.random() - 0.5);
+    hackPanelCorrect = hackPanelAnswers.indexOf(answer);
+}
+
+function openHackPanel(tile) {
+    hackPanelTile = tile;
+    _generateHackChallenge();
+    hackPanelOpen = true;
+}
+
+function closeHackPanel() {
+    hackPanelOpen = false;
+    hackPanelTile = null;
+}
+
+function _hackPanelOrigin() {
+    return {
+        px: Math.round((canvas.width  - _HP_W) / 2),
+        py: Math.round((canvas.height - _HP_H) / 2)
+    };
+}
+
+// Returns screen rects for the 4 answer buttons (2 × 2 grid)
+function _hackAnswerRects() {
+    const { px, py } = _hackPanelOrigin();
+    const totalW  = 2 * _HP_ANS_W + _HP_ANS_GAP;
+    const startX  = px + (_HP_W - totalW) / 2;
+    const row0Y   = py + _HP_H - 98;
+    const rects   = [];
+    for (let i = 0; i < 4; i++) {
+        const col = i % 2, row = Math.floor(i / 2);
+        rects.push({
+            x: startX + col * (_HP_ANS_W + _HP_ANS_GAP),
+            y: row0Y + row * (_HP_ANS_H + _HP_ANS_GAP),
+            w: _HP_ANS_W,
+            h: _HP_ANS_H
+        });
+    }
+    return rects;
+}
+
+function drawHackPanel() {
+    if (!hackPanelOpen) return;
+    const { px, py } = _hackPanelOrigin();
+    const pw = _HP_W, ph = _HP_H;
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Dim backdrop
+    ctx.fillStyle = 'rgba(0,0,0,0.68)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Panel body
+    ctx.fillStyle   = 'rgba(2,12,8,0.97)';
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth   = 1.5;
+    _epRoundRect(px, py, pw, ph, 10);
+    ctx.fill();
+    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 12;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Inner glow border
+    ctx.strokeStyle = 'rgba(0,255,136,0.18)'; ctx.lineWidth = 6;
+    _epRoundRect(px + 1, py + 1, pw - 2, ph - 2, 10);
+    ctx.stroke();
+
+    // Title bar
+    ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#00ff88';
+    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 8;
+    ctx.fillText('◈  NEURAL BYPASS  ◈', px + pw / 2, py + 20);
+    ctx.shadowBlur = 0;
+
+    // Divider
+    ctx.strokeStyle = '#0a3018'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(px + 14, py + 33); ctx.lineTo(px + pw - 14, py + 33);
+    ctx.stroke();
+
+    // Question line
+    ctx.font = 'bold 8px monospace'; ctx.fillStyle = '#44ee88'; ctx.textAlign = 'center';
+    ctx.fillText(hackPanelQuestion, px + pw / 2, py + 46);
+
+    // ── MATRIX GRID ──
+    const CELL_W = 30, CELL_H = 24;
+    const gridW  = _HP_COLS * CELL_W;
+    const gridH  = _HP_ROWS * CELL_H;
+    const gridX  = px + Math.round((pw - gridW) / 2);
+    const gridY  = py + 58;
+
+    for (let r = 0; r < _HP_ROWS; r++) {
+        for (let c = 0; c < _HP_COLS; c++) {
+            const cx = gridX + c * CELL_W;
+            const cy = gridY + r * CELL_H;
+            const isHL = (hackPanelHighlight.type === 'row' && r === hackPanelHighlight.index)
+                      || (hackPanelHighlight.type === 'col' && c === hackPanelHighlight.index);
+
+            ctx.fillStyle   = isHL ? 'rgba(0,255,136,0.13)' : 'rgba(0,18,8,0.85)';
+            ctx.fillRect(cx + 1, cy + 1, CELL_W - 2, CELL_H - 2);
+            ctx.strokeStyle = isHL ? '#00ff88' : '#0b3018';
+            ctx.lineWidth   = isHL ? 1.2 : 0.7;
+            ctx.strokeRect(cx + 0.5, cy + 0.5, CELL_W - 1, CELL_H - 1);
+
+            ctx.font          = (isHL ? 'bold ' : '') + '11px monospace';
+            ctx.textAlign     = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle     = isHL ? '#00ffaa' : '#3d9960';
+            if (isHL) { ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 6; }
+            ctx.fillText(hackPanelMatrix[r][c], cx + CELL_W / 2, cy + CELL_H / 2);
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    // ── SEQUENCE ROW ──
+    const seqY   = gridY + gridH + 22;
+    const sLen   = hackPanelSeries.length;
+    const BOX_W  = 30, BOX_H = 22, BOX_GAP = 6;
+    const totalSW = sLen * (BOX_W + BOX_GAP) - BOX_GAP;
+    const sStartX = px + Math.round((pw - totalSW) / 2);
+
+    ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#2d6644';
+    ctx.fillText('SEQUENCE', px + pw / 2, seqY - 13);
+
+    for (let i = 0; i < sLen; i++) {
+        const bx      = sStartX + i * (BOX_W + BOX_GAP);
+        const isMissing = hackPanelSeries[i] === null;
+        ctx.fillStyle   = isMissing ? 'rgba(0,255,136,0.15)' : 'rgba(0,20,10,0.9)';
+        ctx.strokeStyle = isMissing ? '#00ff88' : '#0c3520';
+        ctx.lineWidth   = isMissing ? 1.5 : 0.8;
+        ctx.fillRect(bx, seqY - BOX_H / 2, BOX_W, BOX_H);
+        ctx.strokeRect(bx + 0.5, seqY - BOX_H / 2 + 0.5, BOX_W - 1, BOX_H - 1);
+
+        ctx.font          = (isMissing ? 'bold ' : '') + '10px monospace';
+        ctx.textAlign     = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle     = isMissing ? '#00ffcc' : '#3d9960';
+        if (isMissing) { ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 6; }
+        ctx.fillText(isMissing ? '?' : hackPanelSeries[i], bx + BOX_W / 2, seqY);
+        ctx.shadowBlur = 0;
+    }
+
+    // Prompt arrow
+    ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#1d4430';
+    ctx.fillText('▼  SELECT ANSWER  ▼', px + pw / 2, seqY + BOX_H / 2 + 14);
+
+    // ── ANSWER BUTTONS ──
+    const rects = _hackAnswerRects();
+    rects.forEach((r, i) => {
+        ctx.fillStyle   = 'rgba(0,28,14,0.95)';
+        ctx.strokeStyle = '#00cc55'; ctx.lineWidth = 1;
+        _epRoundRect(r.x, r.y, r.w, r.h, 6);
+        ctx.fill(); ctx.stroke();
+
+        ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#00ff88';
+        ctx.shadowColor = '#00ff44'; ctx.shadowBlur = 4;
+        ctx.fillText(hackPanelAnswers[i], r.x + r.w / 2, r.y + r.h / 2);
+        ctx.shadowBlur = 0;
+    });
+
+    // Abort hint
+    ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#2a4030';
+    ctx.fillText('[ TAP OUTSIDE TO ABORT ]', px + pw / 2, py + ph - 10);
+
+    ctx.restore();
+}
+
+function handleHackPanelTap(tx, ty) {
+    if (!hackPanelOpen) return false;
+    const { px, py } = _hackPanelOrigin();
+
+    // Tap outside the panel = abort (no penalty)
+    if (tx < px || tx > px + _HP_W || ty < py || ty > py + _HP_H) {
+        closeHackPanel();
+        return true;
+    }
+
+    // Check answer buttons
+    const rects = _hackAnswerRects();
+    for (let i = 0; i < rects.length; i++) {
+        const r = rects[i];
+        if (tx >= r.x && tx <= r.x + r.w && ty >= r.y && ty <= r.y + r.h) {
+            const tile = hackPanelTile;
+            closeHackPanel();
+            tile.panelActivated = true;
+            // Remove from siphon cache so it's not processed again
+            const ci = _wallPanelCache ? _wallPanelCache.indexOf(tile) : -1;
+            if (ci !== -1) _wallPanelCache.splice(ci, 1);
+
+            if (i === hackPanelCorrect) {
+                const reward = tile.shardReward || 15;
+                shardCount += reward;
+                saveShards();
+                shardUI.textContent = 'Shards: ' + shardCount;
+                floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 60,
+                    text: '+' + reward + ' SHARDS  ◈  BYPASS OK', color: '#00ff88', life: 150, vy: -0.25 });
+            } else {
+                triggerAlarm(tile.alarmType || 'proximity', tile.x, tile.y);
+                floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 60,
+                    text: '⚠  WRONG CODE — ALARM TRIGGERED', color: '#ff2200', life: 160, vy: -0.22 });
+            }
+            return true;
+        }
+    }
+
+    return true; // absorb other taps within panel
 }

@@ -449,37 +449,13 @@ function render() {
         }
     }
 
-    // ── WALL PANEL SIPHON ──
-    // Player must stay near a panel for a few seconds to siphon shards from it.
-    // Only one panel can be siphoned at a time — if the player is close to
-    // multiple panels, only the first (closest) one progresses; others reset.
-    // Uses _wallPanelCache to avoid scanning the entire world array every frame.
-    const SIPHON_FRAMES = 150; // ~2.5 seconds at 60fps
-    let _siphonActive = false; // tracks whether a panel is already being siphoned this frame
+    // ── WALL PANEL — purge activated panels from cache ──
+    // Panels are now bypassed via the math minigame (tap while close).
+    // This loop only removes panels that have been activated.
+    let _siphonActive = false; // kept for nest-hack compatibility below
     for (let _wpi = _wallPanelCache.length - 1; _wpi >= 0; _wpi--) {
         const t = _wallPanelCache[_wpi];
-        if (t.panelActivated) { _wallPanelCache.splice(_wpi, 1); continue; }
-        const _pdx=player.x-t.x, _pdy=player.y-t.y;
-        const playerClose = _pdx*_pdx+_pdy*_pdy < 2.25; // 1.5² — player standing at y=1 in front of y=0 panel
-        if (playerClose && !_siphonActive) {
-            _siphonActive = true;
-            t.siphonProgress = (t.siphonProgress || 0) + 1;
-            if (t.siphonProgress >= SIPHON_FRAMES) {
-                t.panelActivated = true;
-                _wallPanelCache.splice(_wpi, 1);
-                if (t.isDecoy) {
-                    triggerAlarm(t.alarmType, t.x, t.y);
-                } else {
-                    shardCount += t.shardReward;
-                    saveShards();
-                    shardUI.textContent = "Shards: " + shardCount;
-                    floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-60,
-                        text:"+"+t.shardReward+" SHARDS (Panel)", color:"#ff8800", life:120, vy:-0.2 });
-                }
-            }
-        } else {
-            if (t.siphonProgress) t.siphonProgress = 0;
-        }
+        if (t.panelActivated) { _wallPanelCache.splice(_wpi, 1); }
     }
 
     // ── NEST HACK SIPHON ──
@@ -2926,6 +2902,7 @@ function render() {
     drawElementPicker();
     drawPylonConfirm();
     drawInfoPanel();
+    drawHackPanel();
     drawTraps();
     drawShopButton();
     drawCampButton();

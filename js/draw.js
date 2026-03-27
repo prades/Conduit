@@ -1814,11 +1814,11 @@ function drawCapturableNode(tile, px, py) {
                 ctx.ellipse(cx, cy - 23, 14, 6, 0, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.globalAlpha = 1;
-                // "PANEL" label
+                // "TAP TO HACK" label
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
                 ctx.fillStyle = '#00ff88';
-                ctx.fillText('PANEL', cx, cy - 38);
+                ctx.fillText('TAP TO HACK', cx, cy - 38);
             }
         } else {
             // Activated — dim "DONE" marker
