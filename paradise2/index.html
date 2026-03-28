@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paradise 2 — Dragonlord</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #1a3a5c; font-family: 'Courier New', monospace; }
+    canvas { display: block; }
+
+    #home-link {
+      position: fixed; top: 16px; right: 24px; z-index: 20;
+      color: #ffe066; font-size: 13px; text-decoration: none;
+      border: 1px solid #ffe06655; border-radius: 4px; padding: 4px 12px;
+      background: rgba(0,0,0,0.4); pointer-events: all;
+      transition: background 0.2s;
+    }
+    #home-link:hover { background: rgba(255,220,80,0.15); }
+
+    #controls {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      color: rgba(200,230,255,0.45); font-size: 11px; pointer-events: none; z-index: 10;
+      text-align: center; letter-spacing: 1px;
+    }
+
+    #prompt {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      color: #e8d5a3; font-size: 15px; text-align: center;
+      background: rgba(10,20,30,0.7); border: 1px solid rgba(140,200,255,0.3);
+      border-radius: 8px; padding: 10px 24px;
+      opacity: 0; transition: opacity 0.5s;
+      pointer-events: none; z-index: 10;
+      letter-spacing: 1px;
+    }
+    #prompt.visible { opacity: 1; }
+
+    #computer-screen {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.85);
+      z-index: 50; opacity: 0; pointer-events: none;
+      transition: opacity 0.4s;
+    }
+    #computer-screen.visible { opacity: 1; pointer-events: all; }
+    #computer-inner {
+      background: #0a1a0a; border: 2px solid #00ff88;
+      border-radius: 4px; padding: 32px 40px; max-width: 520px; width: 90%;
+      color: #00ff88; font-family: 'Courier New', monospace;
+      box-shadow: 0 0 40px #00ff8844;
+    }
+    #computer-inner h2 { font-size: 18px; margin-bottom: 20px; letter-spacing: 3px; border-bottom: 1px solid #00ff8844; padding-bottom: 12px; }
+    #computer-inner p { font-size: 13px; line-height: 1.9; opacity: 0.85; margin-bottom: 10px; }
+    #computer-inner .blink { animation: blink 1s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    #close-computer {
+      margin-top: 24px; background: none; border: 1px solid #00ff8866;
+      color: #00ff88; font-family: 'Courier New', monospace; font-size: 13px;
+      padding: 8px 20px; cursor: pointer; letter-spacing: 2px;
+      transition: background 0.2s;
+    }
+    #close-computer:hover { background: rgba(0,255,136,0.1); }
+
+    #loading {
+      position: fixed; inset: 0; background: #0d1f33;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 100; transition: opacity 1s;
+    }
+    #loading h1 { color: #ffe066; font-size: 3em; letter-spacing: 6px; margin-bottom: 12px; text-shadow: 0 0 30px #ffaa00; }
+    #loading p  { color: #c8eef8; font-size: 14px; letter-spacing: 3px; }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+
+    /* ── Touch controls ── */
+    #joystick-zone {
+      position: fixed; left: 24px; bottom: 24px;
+      width: 120px; height: 120px; z-index: 15; touch-action: none;
+    }
+    #joystick-base {
+      width: 120px; height: 120px; border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(255,255,255,0.18);
+      position: absolute; top: 0; left: 0;
+    }
+    #joystick-knob {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,255,255,0.28);
+      border: 2px solid rgba(255,255,255,0.5);
+      position: absolute;
+      top: 38px; left: 38px;
+      pointer-events: none;
+      transition: none;
+    }
+    #use-btn {
+      position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+      z-index: 20; padding: 14px 32px;
+      background: rgba(10,20,30,0.75); border: 1px solid rgba(140,200,255,0.4);
+      color: #e8d5a3; font-family: 'Courier New', monospace; font-size: 15px;
+      border-radius: 8px; letter-spacing: 2px; cursor: pointer;
+      opacity: 0; pointer-events: none; transition: opacity 0.4s;
+      touch-action: manipulation;
+    }
+    #use-btn.visible { opacity: 1; pointer-events: all; }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <h1>PARADISE 2</h1>
+  <p>somewhere remote</p>
+</div>
+
+<a id="home-link" href="../index.html">← Home</a>
+<div id="prompt"></div>
+<div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
+
+<!-- Touch joystick -->
+<div id="joystick-zone">
+  <div id="joystick-base"></div>
+  <div id="joystick-knob"></div>
+</div>
+
+<!-- Touch interact button -->
+<button id="use-btn">[ USE COMPUTER ]</button>
+
+<div id="computer-screen">
+  <div id="computer-inner">
+    <h2>// TERMINAL v1.0</h2>
+    <p>> CONNECTION ESTABLISHED</p>
+    <p>> REMOTE NODE: ISLAND-07</p>
+    <p>> STATUS: ISOLATED</p>
+    <p>> UPTIME: 847 days</p>
+    <p>&nbsp;</p>
+    <p>> Last entry: "The supply boat stopped coming.</p>
+    <p>&nbsp;&nbsp;The radio is dead. The rocks are</p>
+    <p>&nbsp;&nbsp;all I have now. At least the machine</p>
+    <p>&nbsp;&nbsp;still works."</p>
+    <p>&nbsp;</p>
+    <p>> <span class="blink">_</span></p>
+    <button id="close-computer">[ DISCONNECT ]</button>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ─── Renderer ────────────────────────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x4a7fa5);
+scene.fog = new THREE.FogExp2(0x4a7fa5, 0.022);
+
+const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 300);
+camera.position.set(0, 4.2, 8);
+
+// ─── Lighting ─────────────────────────────────────────────────────────────────
+const ambient = new THREE.AmbientLight(0xb0c8e8, 0.7);
+scene.add(ambient);
+
+const sun = new THREE.DirectionalLight(0xfff0cc, 1.4);
+sun.position.set(40, 60, 30);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 200;
+sun.shadow.camera.left = -40;
+sun.shadow.camera.right = 40;
+sun.shadow.camera.top = 40;
+sun.shadow.camera.bottom = -40;
+sun.shadow.bias = -0.001;
+scene.add(sun);
+
+const fill = new THREE.DirectionalLight(0x88aacc, 0.3);
+fill.position.set(-20, 10, -20);
+scene.add(fill);
+
+// ─── Ocean ────────────────────────────────────────────────────────────────────
+const oceanGeo = new THREE.PlaneGeometry(600, 600, 80, 80);
+const oceanMat = new THREE.MeshStandardMaterial({
+  color: 0x1a6080,
+  roughness: 0.1,
+  metalness: 0.3,
+  transparent: true,
+  opacity: 0.88,
+});
+const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+ocean.rotation.x = -Math.PI / 2;
+ocean.position.y = 0;
+scene.add(ocean);
+
+// Animate ocean verts
+const oceanPos = oceanGeo.attributes.position;
+const oceanBase = new Float32Array(oceanPos.array);
+
+// ─── Island ───────────────────────────────────────────────────────────────────
+function makeIsland() {
+  const group = new THREE.Group();
+
+  // Rocky base — irregular layered slabs
+  const rockMat = new THREE.MeshStandardMaterial({ color: 0x5a5248, roughness: 0.95, metalness: 0.0 });
+  const rockMat2 = new THREE.MeshStandardMaterial({ color: 0x6b6058, roughness: 0.9, metalness: 0.0 });
+  const rockMat3 = new THREE.MeshStandardMaterial({ color: 0x4a4440, roughness: 1.0, metalness: 0.0 });
+
+  // Main rock body
+  const baseGeo = new THREE.CylinderGeometry(7, 9, 2.5, 10, 1);
+  const baseMesh = new THREE.Mesh(baseGeo, rockMat);
+  baseMesh.position.y = 0.8;
+  baseMesh.rotation.y = 0.3;
+  baseMesh.castShadow = true;
+  baseMesh.receiveShadow = true;
+  group.add(baseMesh);
+
+  // Deform base verts for jaggedness
+  const bPos = baseGeo.attributes.position;
+  for (let i = 0; i < bPos.count; i++) {
+    const x = bPos.getX(i), z = bPos.getZ(i);
+    const angle = Math.atan2(z, x);
+    const r = Math.sqrt(x*x + z*z);
+    const noise = Math.sin(angle * 5.3) * 0.6 + Math.sin(angle * 3.1 + 1.2) * 0.4;
+    if (r > 0.1) {
+      bPos.setX(i, x + Math.cos(angle) * noise);
+      bPos.setZ(i, z + Math.sin(angle) * noise);
+    }
+    // Rough top surface
+    const y = bPos.getY(i);
+    if (y > 1.0) bPos.setY(i, y + (Math.random() - 0.5) * 0.3);
+  }
+  baseGeo.computeVertexNormals();
+
+  // Upper rock shelf
+  const shelfGeo = new THREE.CylinderGeometry(5.5, 7.2, 1.5, 9, 1);
+  const shelf = new THREE.Mesh(shelfGeo, rockMat2);
+  shelf.position.y = 2.5;
+  shelf.rotation.y = 0.7;
+  shelf.castShadow = true;
+  shelf.receiveShadow = true;
+  group.add(shelf);
+
+  const sPos = shelfGeo.attributes.position;
+  for (let i = 0; i < sPos.count; i++) {
+    const x = sPos.getX(i), z = sPos.getZ(i);
+    const angle = Math.atan2(z, x);
+    const noise = Math.sin(angle * 4.7 + 0.5) * 0.5 + Math.cos(angle * 7) * 0.3;
+    const r = Math.sqrt(x*x + z*z);
+    if (r > 0.1) {
+      sPos.setX(i, x + Math.cos(angle) * noise);
+      sPos.setZ(i, z + Math.sin(angle) * noise);
+    }
+    const y = sPos.getY(i);
+    if (y > 1.0) sPos.setY(i, y + (Math.random() - 0.5) * 0.25);
+  }
+  shelfGeo.computeVertexNormals();
+
+  // Top flat walkable surface
+  const topGeo = new THREE.CylinderGeometry(4.5, 5.8, 0.8, 10, 1);
+  const top = new THREE.Mesh(topGeo, rockMat2);
+  top.position.y = 3.6;
+  top.rotation.y = 0.2;
+  top.castShadow = true;
+  top.receiveShadow = true;
+  group.add(top);
+
+  const tPos = topGeo.attributes.position;
+  for (let i = 0; i < tPos.count; i++) {
+    const y = tPos.getY(i);
+    if (y > 0) tPos.setY(i, y + (Math.random() - 0.5) * 0.15);
+  }
+  topGeo.computeVertexNormals();
+
+  // A few jutting rocks on the sides
+  const juts = [
+    { x: 5, z: 2, ry: 0.4, sx: 1.2, sy: 2.2, sz: 0.9 },
+    { x: -4.5, z: -3, ry: 1.1, sx: 0.9, sy: 1.8, sz: 1.1 },
+    { x: 3, z: -5, ry: -0.6, sx: 1.4, sy: 1.5, sz: 0.8 },
+    { x: -6, z: 1, ry: 0.8, sx: 0.8, sy: 2.5, sz: 1.0 },
+  ];
+  juts.forEach(j => {
+    const jGeo = new THREE.BoxGeometry(j.sx, j.sy, j.sz);
+    const jMesh = new THREE.Mesh(jGeo, rockMat3);
+    jMesh.position.set(j.x, 1.2, j.z);
+    jMesh.rotation.y = j.ry;
+    jMesh.rotation.z = (Math.random() - 0.5) * 0.3;
+    jMesh.castShadow = true;
+    group.add(jMesh);
+  });
+
+  // Small pebbles scattered around
+  for (let i = 0; i < 18; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const r = 1.5 + Math.random() * 3.5;
+    const pGeo = new THREE.SphereGeometry(0.08 + Math.random() * 0.18, 5, 4);
+    const pMesh = new THREE.Mesh(pGeo, rockMat3);
+    pMesh.position.set(Math.cos(angle)*r, 4.05, Math.sin(angle)*r);
+    pMesh.rotation.set(Math.random(), Math.random(), Math.random());
+    pMesh.castShadow = true;
+    group.add(pMesh);
+  }
+
+  return group;
+}
+const island = makeIsland();
+island.position.y = -1.5; // lower into the water so only the top third shows
+scene.add(island);
+
+// ─── Room / Shelter ───────────────────────────────────────────────────────────
+function makeRoom() {
+  const group = new THREE.Group();
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x7a7060, roughness: 0.9 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0x554e44, roughness: 0.95 });
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x6b6050, roughness: 1.0 });
+
+  const W = 4.2, H = 2.4, D = 3.6;
+
+  // Floor
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(W, 0.12, D), floorMat);
+  floor.position.y = -H/2 + 0.06;
+  floor.receiveShadow = true;
+  group.add(floor);
+
+  // Back wall
+  const back = new THREE.Mesh(new THREE.BoxGeometry(W, H, 0.15), wallMat);
+  back.position.set(0, 0, -D/2 + 0.075);
+  back.castShadow = true; back.receiveShadow = true;
+  group.add(back);
+
+  // Left wall
+  const left = new THREE.Mesh(new THREE.BoxGeometry(0.15, H, D), wallMat);
+  left.position.set(-W/2 + 0.075, 0, 0);
+  left.castShadow = true; left.receiveShadow = true;
+  group.add(left);
+
+  // Right wall
+  const right = new THREE.Mesh(new THREE.BoxGeometry(0.15, H, D), wallMat);
+  right.position.set(W/2 - 0.075, 0, 0);
+  right.castShadow = true; right.receiveShadow = true;
+  group.add(right);
+
+  // Front wall — two pieces with door gap
+  const doorW = 1.0, doorH = 1.9;
+  const sideW = (W - doorW) / 2;
+  const frontL = new THREE.Mesh(new THREE.BoxGeometry(sideW, H, 0.15), wallMat);
+  frontL.position.set(-W/2 + sideW/2, 0, D/2 - 0.075);
+  frontL.castShadow = true; frontL.receiveShadow = true;
+  group.add(frontL);
+
+  const frontR = new THREE.Mesh(new THREE.BoxGeometry(sideW, H, 0.15), wallMat);
+  frontR.position.set(W/2 - sideW/2, 0, D/2 - 0.075);
+  frontR.castShadow = true; frontR.receiveShadow = true;
+  group.add(frontR);
+
+  // Door top bar
+  const topBar = new THREE.Mesh(new THREE.BoxGeometry(doorW, H - doorH, 0.15), wallMat);
+  topBar.position.set(0, -H/2 + doorH + (H - doorH)/2, D/2 - 0.075);
+  topBar.castShadow = true; topBar.receiveShadow = true;
+  group.add(topBar);
+
+  // Roof (slightly pitched)
+  const roofGeo = new THREE.BoxGeometry(W + 0.3, 0.18, D + 0.3);
+  const roof = new THREE.Mesh(roofGeo, roofMat);
+  roof.position.y = H/2 + 0.09;
+  roof.castShadow = true;
+  group.add(roof);
+
+  // Ridge
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(W + 0.4, 0.25, 0.25), roofMat);
+  ridge.position.y = H/2 + 0.22;
+  ridge.castShadow = true;
+  group.add(ridge);
+
+  return group;
+}
+
+// Island top surface is at 4.0 (local) - 1.5 (group offset) = 2.5 world Y
+const ISLAND_SURFACE = 2.5;
+const room = makeRoom();
+// Room H=2.4, so group center sits H/2 above the surface
+room.position.set(-0.5, ISLAND_SURFACE + 1.2, 0.5);
+scene.add(room);
+
+// ─── Computer desk + monitor ──────────────────────────────────────────────────
+function makeComputer() {
+  const group = new THREE.Group();
+
+  // Desk
+  const deskMat = new THREE.MeshStandardMaterial({ color: 0x3a2e20, roughness: 0.85 });
+  const desk = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.7), deskMat);
+  desk.castShadow = true; desk.receiveShadow = true;
+  group.add(desk);
+
+  // Legs
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x2a2218, roughness: 0.9 });
+  [[-0.6, -0.3], [0.6, -0.3], [-0.6, 0.3], [0.6, 0.3]].forEach(([x, z]) => {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 0.06), legMat);
+    leg.position.set(x, -0.39, z);
+    leg.castShadow = true;
+    group.add(leg);
+  });
+
+  // Monitor stand
+  const standMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 });
+  const stand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.28, 0.08), standMat);
+  stand.position.set(0, 0.18, -0.1);
+  group.add(stand);
+
+  // Monitor body
+  const monMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.6 });
+  const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.5, 0.06), monMat);
+  monitor.position.set(0, 0.53, -0.1);
+  monitor.castShadow = true;
+  group.add(monitor);
+
+  // Screen glow
+  const screenMat = new THREE.MeshStandardMaterial({
+    color: 0x00ff88,
+    emissive: 0x00ff88,
+    emissiveIntensity: 0.6,
+    roughness: 0.2,
+  });
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.40), screenMat);
+  screen.position.set(0, 0.53, -0.065);
+  group.add(screen);
+
+  // Screen point light
+  const screenLight = new THREE.PointLight(0x00ff88, 0.8, 2.5);
+  screenLight.position.set(0, 0.53, 0.2);
+  group.add(screenLight);
+
+  // Keyboard
+  const kbMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+  const kb = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.025, 0.22), kbMat);
+  kb.position.set(0, 0.055, 0.15);
+  kb.castShadow = true;
+  group.add(kb);
+
+  return group;
+}
+
+const computer = makeComputer();
+// Room floor top ≈ ISLAND_SURFACE + 0.12. Desk legs are 0.7 tall centred at y=-0.39, bottom at -0.74.
+// So group Y = floor_top + 0.74 = 2.5 + 0.12 + 0.74 = 3.36
+computer.position.set(-0.5, 3.36, -0.9);
+scene.add(computer);
+
+// ─── Distant rocky outcrops ───────────────────────────────────────────────────
+const smallRockMat = new THREE.MeshStandardMaterial({ color: 0x4a4440, roughness: 0.98 });
+[[28, 0.3, 15], [-35, 0.2, -20], [18, 0.15, -40], [-22, 0.25, 30]].forEach(([x, y, z]) => {
+  const rGeo = new THREE.CylinderGeometry(1.2 + Math.random(), 2 + Math.random(), 1.5 + Math.random() * 2, 7);
+  const r = new THREE.Mesh(rGeo, smallRockMat);
+  r.position.set(x, y, z);
+  r.rotation.y = Math.random() * Math.PI;
+  r.castShadow = true;
+  scene.add(r);
+});
+
+// ─── Clouds ───────────────────────────────────────────────────────────────────
+const cloudMat = new THREE.MeshStandardMaterial({ color: 0xf0f4ff, transparent: true, opacity: 0.88, roughness: 1 });
+function makeCloud(x, y, z) {
+  const g = new THREE.Group();
+  [[0,0,0,1.4,0.7,1.2],[1.2,0.1,0,1.0,0.6,0.9],[-1.1,0,0.2,1.0,0.55,0.8],[0.4,0.4,0.3,0.8,0.5,0.7]].forEach(([cx,cy,cz,sx,sy,sz]) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(1,7,5), cloudMat);
+    m.scale.set(sx,sy,sz);
+    m.position.set(cx,cy,cz);
+    g.add(m);
+  });
+  g.position.set(x,y,z);
+  return g;
+}
+const clouds = [];
+[[-20,28,10],[15,32,-18],[30,26,25],[-40,30,-8],[5,35,40],[-10,29,-35]].forEach(([x,y,z]) => {
+  const c = makeCloud(x,y,z);
+  scene.add(c);
+  clouds.push(c);
+});
+
+// ─── Seagulls (simple V shapes) ──────────────────────────────────────────────
+const birdMat = new THREE.LineBasicMaterial({ color: 0x222222 });
+const birds = [];
+for (let i = 0; i < 6; i++) {
+  const pts = [
+    new THREE.Vector3(-0.4, 0.15, 0),
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0.4, 0.15, 0),
+  ];
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const bird = new THREE.Line(geo, birdMat);
+  bird.position.set((Math.random()-0.5)*40, 18+Math.random()*10, (Math.random()-0.5)*40);
+  bird.userData.speed = 1.5 + Math.random()*1.5;
+  bird.userData.angle = Math.random()*Math.PI*2;
+  bird.userData.radius = 10 + Math.random()*20;
+  bird.userData.bob = Math.random()*Math.PI*2;
+  scene.add(bird);
+  birds.push(bird);
+}
+
+// ─── Input state ─────────────────────────────────────────────────────────────
+let yaw = 0, pitch = 0;
+let vx = 0, vy = 0, vz = 0;
+const GRAVITY = -18;
+let onGround = false;
+const keys = {};
+
+const ISLAND_TOP_Y = 2.5;
+const PLAYER_HEIGHT = 1.65;
+
+// Keyboard
+document.addEventListener('keydown', e => { keys[e.code] = true; });
+document.addEventListener('keyup',   e => { keys[e.code] = false; });
+
+// Mouse pointer-lock look
+renderer.domElement.addEventListener('click', () => {
+  if (!computerScreenEl.classList.contains('visible'))
+    renderer.domElement.requestPointerLock();
+});
+document.addEventListener('mousemove', e => {
+  if (document.pointerLockElement === renderer.domElement) {
+    yaw   -= e.movementX * 0.0022;
+    pitch -= e.movementY * 0.0022;
+    pitch  = Math.max(-1.3, Math.min(1.3, pitch));
+  }
+});
+
+// ─── Touch joystick (left side — movement) ────────────────────────────────────
+const joystickZone  = document.getElementById('joystick-zone');
+const joystickKnob  = document.getElementById('joystick-knob');
+const JOY_R = 38; // max knob travel radius
+let joyInput = { x: 0, y: 0 };
+let joyTouchId = null;
+let joyOrigin  = { x: 0, y: 0 };
+
+joystickZone.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  joyTouchId = t.identifier;
+  const rect = joystickZone.getBoundingClientRect();
+  joyOrigin.x = rect.left + rect.width  / 2;
+  joyOrigin.y = rect.top  + rect.height / 2;
+  updateJoy(t);
+}, { passive: false });
+
+joystickZone.addEventListener('touchmove', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === joyTouchId) updateJoy(t);
+  }
+}, { passive: false });
+
+joystickZone.addEventListener('touchend', e => {
+  for (const t of e.changedTouches) {
+    if (t.identifier === joyTouchId) {
+      joyTouchId = null;
+      joyInput.x = 0; joyInput.y = 0;
+      joystickKnob.style.transform = '';
+    }
+  }
+}, { passive: false });
+
+function updateJoy(touch) {
+  let dx = touch.clientX - joyOrigin.x;
+  let dy = touch.clientY - joyOrigin.y;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  if (len > JOY_R) { dx = dx/len*JOY_R; dy = dy/len*JOY_R; }
+  joyInput.x = dx / JOY_R;
+  joyInput.y = dy / JOY_R;
+  joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+}
+
+// ─── Touch look (right side — camera) ────────────────────────────────────────
+const LOOK_SENS = 0.006;
+let lookTouchId = null, lookLastX = 0, lookLastY = 0;
+
+renderer.domElement.addEventListener('touchstart', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    // Only claim touches that start on the right half and aren't the joystick
+    if (t.identifier !== joyTouchId && t.clientX > innerWidth * 0.35) {
+      lookTouchId = t.identifier;
+      lookLastX = t.clientX;
+      lookLastY = t.clientY;
+    }
+  }
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchmove', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === lookTouchId) {
+      yaw   -= (t.clientX - lookLastX) * LOOK_SENS;
+      pitch -= (t.clientY - lookLastY) * LOOK_SENS;
+      pitch  = Math.max(-1.3, Math.min(1.3, pitch));
+      lookLastX = t.clientX;
+      lookLastY = t.clientY;
+    }
+  }
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchend', e => {
+  for (const t of e.changedTouches) {
+    if (t.identifier === lookTouchId) lookTouchId = null;
+  }
+}, { passive: false });
+
+// ─── Computer UI ──────────────────────────────────────────────────────────────
+const computerScreenEl = document.getElementById('computer-screen');
+document.getElementById('close-computer').addEventListener('click', () => {
+  computerScreenEl.classList.remove('visible');
+});
+
+const useBtnEl = document.getElementById('use-btn');
+useBtnEl.addEventListener('click', () => {
+  computerScreenEl.classList.add('visible');
+});
+
+const promptEl = document.getElementById('prompt');
+function showPrompt(msg) {
+  promptEl.textContent = msg;
+  promptEl.classList.add('visible');
+}
+function hidePrompt() {
+  promptEl.classList.remove('visible');
+}
+
+// ─── Collision / grounding ────────────────────────────────────────────────────
+function getGroundY(px, pz) {
+  // Island surface approximation
+  const dist = Math.sqrt(px*px + pz*pz);
+  if (dist < 4.8) return ISLAND_TOP_Y;
+  if (dist < 7.0) return ISLAND_TOP_Y - (dist - 4.8) * 1.4;
+  return 0.05; // ocean level (water surface — can't walk there)
+}
+
+function isOnIsland(px, pz) {
+  return Math.sqrt(px*px + pz*pz) < 5.2;
+}
+
+// Computer interaction zone
+const COMPUTER_POS = new THREE.Vector3(-0.5, 0, -0.8);
+
+// ─── Main loop ────────────────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+let loaded = false;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t  = clock.elapsedTime;
+
+  // Ocean wave animation
+  // PlaneGeometry is in local XY; after rotation.x=-PI/2 world-Y comes from local-Z
+  for (let i = 0; i < oceanPos.count; i++) {
+    const lx = oceanBase[i*3];
+    const ly = oceanBase[i*3+1];
+    oceanPos.setZ(i, Math.sin(lx*0.15 + t*0.8) * 0.32 + Math.sin(ly*0.12 + t*0.65 + 1.1) * 0.24);
+  }
+  oceanPos.needsUpdate = true;
+  oceanGeo.computeVertexNormals();
+
+  // Cloud drift
+  clouds.forEach((c, i) => {
+    c.position.x += dt * (0.8 + i*0.1);
+    if (c.position.x > 60) c.position.x = -60;
+  });
+
+  // Birds
+  birds.forEach(b => {
+    b.userData.angle += dt * b.userData.speed * 0.4;
+    b.position.x = Math.cos(b.userData.angle) * b.userData.radius;
+    b.position.z = Math.sin(b.userData.angle) * b.userData.radius;
+    b.userData.bob += dt * 1.8;
+    b.position.y = 20 + Math.sin(b.userData.bob) * 1.2;
+    b.rotation.y = -b.userData.angle - Math.PI/2;
+  });
+
+  // Screen flicker
+  const screenLight = computer.children.find(c => c.isPointLight);
+  if (screenLight) screenLight.intensity = 0.7 + Math.sin(t * 12.3) * 0.05 + Math.sin(t * 37) * 0.03;
+
+  // ── Player movement ──
+  if (!computerScreenEl.classList.contains('visible')) {
+    const speed = keys['ShiftLeft'] || keys['ShiftRight'] ? 7.5 : 4.0;
+    const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+    const right   = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+    const move    = new THREE.Vector3();
+
+    if (keys['KeyW'] || keys['ArrowUp'])    move.addScaledVector(forward,  1);
+    if (keys['KeyS'] || keys['ArrowDown'])  move.addScaledVector(forward, -1);
+    if (keys['KeyA'] || keys['ArrowLeft'])  move.addScaledVector(right,   -1);
+    if (keys['KeyD'] || keys['ArrowRight']) move.addScaledVector(right,    1);
+
+    // Joystick input
+    if (Math.abs(joyInput.x) > 0.08 || Math.abs(joyInput.y) > 0.08) {
+      move.addScaledVector(forward, -joyInput.y);
+      move.addScaledVector(right,    joyInput.x);
+    }
+
+    if (move.lengthSq() > 0) move.normalize();
+
+    vx = move.x * speed;
+    vz = move.z * speed;
+
+    // Gravity
+    vy += GRAVITY * dt;
+
+    let nx = camera.position.x + vx * dt;
+    let nz = camera.position.z + vz * dt;
+    let ny = camera.position.y + vy * dt;
+
+    // Restrict player to island
+    const distFromCenter = Math.sqrt(nx*nx + nz*nz);
+    if (distFromCenter > 4.8) {
+      const pushAngle = Math.atan2(nz, nx);
+      nx = Math.cos(pushAngle) * 4.8;
+      nz = Math.sin(pushAngle) * 4.8;
+    }
+
+    const groundY = getGroundY(nx, nz) + PLAYER_HEIGHT;
+    if (ny <= groundY) {
+      ny = groundY;
+      vy = 0;
+      onGround = true;
+    } else {
+      onGround = false;
+    }
+
+    camera.position.set(nx, ny, nz);
+
+    // Interact with computer
+    const playerFlat = new THREE.Vector3(camera.position.x, 0, camera.position.z);
+    const compFlat   = new THREE.Vector3(COMPUTER_POS.x, 0, COMPUTER_POS.z);
+    const distToComp = playerFlat.distanceTo(compFlat);
+
+    if (distToComp < 1.8) {
+      showPrompt('[ E ] Use computer');
+      useBtnEl.classList.add('visible');
+      if (keys['KeyE']) {
+        computerScreenEl.classList.add('visible');
+        document.exitPointerLock();
+        keys['KeyE'] = false;
+      }
+    } else {
+      hidePrompt();
+      useBtnEl.classList.remove('visible');
+    }
+  }
+
+  // Camera orientation
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = yaw;
+  camera.rotation.x = pitch;
+
+  // Show scene after first frame
+  if (!loaded) {
+    loaded = true;
+    setTimeout(() => {
+      const loadEl = document.getElementById('loading');
+      loadEl.classList.add('hidden');
+      setTimeout(() => loadEl.style.display = 'none', 1200);
+    }, 600);
+  }
+
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+
+</body>
+</html>
