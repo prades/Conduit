@@ -218,6 +218,16 @@ scene.add(ocean);
 const oceanPos = oceanGeo.attributes.position;
 const oceanBase = new Float32Array(oceanPos.array);
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+const ISLAND_TOP_Y  = 2.5;
+const ISLAND_RADIUS = 46;
+const PLAYER_HEIGHT = 1.65;
+const GREENS = [
+  { x:  30, z:   5, r: 9  },
+  { x: -22, z: -18, r: 8  },
+  { x:   8, z:  28, r: 10 },
+];
+
 // ─── Island ───────────────────────────────────────────────────────────────────
 function makeIsland() {
   const group = new THREE.Group();
@@ -660,15 +670,6 @@ let vy = 0;
 const GRAVITY = -18;
 let onGround = false;
 const keys = {};
-
-const ISLAND_TOP_Y  = 2.5;
-const ISLAND_RADIUS = 46;
-const PLAYER_HEIGHT = 1.65;
-const GREENS = [
-  { x:  30, z:   5, r: 9  },
-  { x: -22, z: -18, r: 8  },
-  { x:   8, z:  28, r: 10 },
-];
 
 // Keyboard
 document.addEventListener('keydown', e => { keys[e.code] = true; });
