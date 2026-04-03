@@ -158,7 +158,7 @@
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
-<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 6</div>
+<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 7</div>
 <div id="prompt"></div>
 <div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
 
@@ -930,6 +930,7 @@ function startGolf(idx) {
   GOLF.strokes[idx] = 0;
   GOLF.ballPos.copy(golfBalls[idx].mesh.position);
   golfBalls[idx].mesh.visible = true;
+  golfBalls[idx].mesh.scale.setScalar(1);
   useBtnEl.classList.remove('visible');
   hidePrompt();
   document.exitPointerLock?.();
@@ -1118,12 +1119,15 @@ function animate() {
           GOLF.ballVel.set(0, 0, 0);
           GOLF.state = 'addressing';
           arcDots.forEach(d => d.visible = false);
+          golfBalls[GOLF.holeIdx].mesh.scale.setScalar(1); // reset ball size
         }
       }
 
       // Update ball mesh
       const activeBall = golfBalls[GOLF.holeIdx];
       activeBall.mesh.position.copy(GOLF.ballPos);
+      // Scale ball up so it's visible in flight
+      activeBall.mesh.scale.setScalar(GOLF.state === 'flight' ? 3 : 1.5);
 
       // Check if holed
       const g = GREENS[GOLF.holeIdx];
@@ -1137,14 +1141,16 @@ function animate() {
         setTimeout(() => { exitGolf(); hidePrompt(); }, 3500);
       }
 
-      // Gallery camera: stay at tee-side position and track the ball in flight/rolling
+      // Chase camera: stay 5 units behind ball along its travel direction
       {
-        const tee = TEES[GOLF.holeIdx];
-        const gx = tee.x + Math.sin(GOLF.aimAngle) * 9;
-        const gy2 = tee.y + 4.0;
-        const gz = tee.z + Math.cos(GOLF.aimAngle) * 9;
-        camera.position.set(gx, gy2, gz);
-        const dx = GOLF.ballPos.x - gx, dy = GOLF.ballPos.y - gy2, dz = GOLF.ballPos.z - gz;
+        const hspd = Math.sqrt(GOLF.ballVel.x**2 + GOLF.ballVel.z**2);
+        const bx = hspd > 0.3 ? GOLF.ballVel.x / hspd : -Math.sin(GOLF.aimAngle);
+        const bz = hspd > 0.3 ? GOLF.ballVel.z / hspd : -Math.cos(GOLF.aimAngle);
+        const camX = GOLF.ballPos.x - bx * 5;
+        const camY = GOLF.ballPos.y + 3;
+        const camZ = GOLF.ballPos.z - bz * 5;
+        camera.position.set(camX, camY, camZ);
+        const dx = GOLF.ballPos.x - camX, dy = GOLF.ballPos.y - camY, dz = GOLF.ballPos.z - camZ;
         camera.rotation.order = 'YXZ';
         camera.rotation.y = Math.atan2(-dx, -dz);
         camera.rotation.x = Math.atan2(dy, Math.sqrt(dx*dx + dz*dz));
