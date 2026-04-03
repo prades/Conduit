@@ -158,7 +158,7 @@
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
-<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 11</div>
+<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 12</div>
 <div id="prompt"></div>
 <div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
 
@@ -1176,8 +1176,7 @@ function animate() {
       }
     }
 
-    return; // skip walk/cart while in golf mode
-  }
+  } else { // ── Cart / Walk mode (skipped during golf) ──
 
   // ── Cart mode ──
   if (CART.occupied) {
@@ -1294,6 +1293,8 @@ function animate() {
     camera.rotation.x = pitch;
   }
 
+  } // end else (cart/walk)
+
   // Show scene after first frame
   if (!loaded) {
     loaded = true;
@@ -1308,7 +1309,7 @@ function animate() {
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
       ? `B8 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 11';
+      : 'BUILD 12';
 
   renderer.render(scene, camera);
 }
