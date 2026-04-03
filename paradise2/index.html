@@ -158,7 +158,7 @@
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
-<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 4</div>
+<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 5</div>
 <div id="prompt"></div>
 <div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
 
@@ -946,6 +946,7 @@ function shootBall() {
      Math.sin(LAUNCH_ANGLE) * spd,
     -Math.cos(GOLF.aimAngle) * Math.cos(LAUNCH_ANGLE) * spd
   );
+  GOLF.ballPos.y += 0.3; // lift off ground so first physics frame doesn't immediately ground the ball
   GOLF.strokes[GOLF.holeIdx]++;
   golfInfoEl.textContent = golfInfoText();
   GOLF.power = 0;
@@ -1107,8 +1108,8 @@ function animate() {
       }
 
       if (GOLF.state === 'rolling') {
-        GOLF.ballVel.x *= Math.pow(0.90, dt * 60);
-        GOLF.ballVel.z *= Math.pow(0.90, dt * 60);
+        GOLF.ballVel.x *= Math.pow(0.985, dt * 60);
+        GOLF.ballVel.z *= Math.pow(0.985, dt * 60);
         const flatSpd = Math.sqrt(GOLF.ballVel.x**2 + GOLF.ballVel.z**2);
         if (flatSpd < 0.15 && Math.abs(GOLF.ballVel.y) < 0.2) {
           GOLF.ballVel.set(0, 0, 0);
