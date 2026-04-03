@@ -158,7 +158,7 @@
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
-<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 9</div>
+<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 10</div>
 <div id="prompt"></div>
 <div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
 
@@ -1132,7 +1132,7 @@ function animate() {
       const activeBall = golfBalls[GOLF.holeIdx];
       activeBall.mesh.position.copy(GOLF.ballPos);
       // Scale ball up so it's visible in flight
-      activeBall.mesh.scale.setScalar(GOLF.state === 'flight' ? 3 : 1.5);
+      activeBall.mesh.scale.setScalar(GOLF.state === 'flight' ? 6 : 3);
 
       // Check if holed
       const g = GREENS[GOLF.holeIdx];
@@ -1146,12 +1146,13 @@ function animate() {
         setTimeout(() => { exitGolf(); hidePrompt(); }, 3500);
       }
 
-      // Gallery camera: stays at the tee-side, rotates to track ball in flight/rolling
+      // Side-view camera: perpendicular to shot, follows ball so arc is visible
       {
-        const tee = TEES[GOLF.holeIdx];
-        const camX = tee.x - Math.sin(GOLF.aimAngle) * camDist;
-        const camY = tee.y + 2.8;
-        const camZ = tee.z - Math.cos(GOLF.aimAngle) * camDist;
+        const perpX = -Math.cos(GOLF.aimAngle);
+        const perpZ =  Math.sin(GOLF.aimAngle);
+        const camX = GOLF.ballPos.x + perpX * 14;
+        const camY = GOLF.ballPos.y + 5;
+        const camZ = GOLF.ballPos.z + perpZ * 14;
         camera.position.set(camX, camY, camZ);
         const dx = GOLF.ballPos.x - camX, dy = GOLF.ballPos.y - camY, dz = GOLF.ballPos.z - camZ;
         camera.rotation.order = 'YXZ';
@@ -1292,7 +1293,7 @@ function animate() {
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
       ? `B8 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 9';
+      : 'BUILD 10';
 
   renderer.render(scene, camera);
 }
