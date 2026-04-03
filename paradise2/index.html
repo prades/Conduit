@@ -285,10 +285,10 @@ function makeIsland() {
   }
   shelfGeo.computeVertexNormals();
 
-  // Top walkable surface
+  // Top ring (rocky cliff band, no visible cap — ground disc covers it)
   const topGeo = new THREE.CylinderGeometry(47, 58, 2, 18, 1);
   const top = new THREE.Mesh(topGeo, rockMat2);
-  top.position.y = 3.6;
+  top.position.y = 3.0;  // top face now at local 4.0 = world 2.5 (ISLAND_TOP_Y)
   top.rotation.y = 0.2;
   top.castShadow = true;
   top.receiveShadow = true;
@@ -297,27 +297,35 @@ function makeIsland() {
   const tPos = topGeo.attributes.position;
   for (let i = 0; i < tPos.count; i++) {
     const y = tPos.getY(i);
-    if (y > 0) tPos.setY(i, y + (Math.random() - 0.5) * 0.4);
+    if (y > 0) tPos.setY(i, y + (Math.random() - 0.5) * 0.3);
   }
   topGeo.computeVertexNormals();
 
-  // Golf greens — smooth bright discs
+  // Ground surface — sandy/gravelly disc that covers the island top
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x8a7a62, roughness: 0.98 });
+  const groundDisc = new THREE.Mesh(new THREE.CircleGeometry(46, 48), groundMat);
+  groundDisc.rotation.x = -Math.PI / 2;
+  groundDisc.position.y = 4.02;  // world 2.52 — just above cylinder top
+  groundDisc.receiveShadow = true;
+  group.add(groundDisc);
+
+  // Golf greens — sit above the ground disc
   const greenMat = new THREE.MeshStandardMaterial({ color: 0x2d8b3a, roughness: 0.85 });
   GREENS.forEach(g => {
-    const gd = new THREE.CylinderGeometry(g.r, g.r + 0.5, 0.3, 24);
+    const gd = new THREE.CylinderGeometry(g.r, g.r + 0.5, 0.25, 24);
     const gm = new THREE.Mesh(gd, greenMat);
-    gm.position.set(g.x, 4.02, g.z);
+    gm.position.set(g.x, 4.12, g.z);  // world 2.62 — clearly above ground disc
     gm.receiveShadow = true;
     group.add(gm);
   });
 
-  // Pebbles scattered across full island surface
+  // Pebbles scattered across surface (above ground disc)
   for (let i = 0; i < 120; i++) {
     const angle = Math.random() * Math.PI * 2;
     const r = 3 + Math.random() * 42;
     const pGeo = new THREE.SphereGeometry(0.1 + Math.random() * 0.5, 5, 4);
     const pMesh = new THREE.Mesh(pGeo, rockMat3);
-    pMesh.position.set(Math.cos(angle)*r, 4.05, Math.sin(angle)*r);
+    pMesh.position.set(Math.cos(angle)*r, 4.14, Math.sin(angle)*r);  // world 2.64
     pMesh.rotation.set(Math.random(), Math.random(), Math.random());
     pMesh.castShadow = true;
     group.add(pMesh);
@@ -607,7 +615,7 @@ GREENS.forEach((g, i) => {
   // Hole cup
   const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.12, 16),
     new THREE.MeshStandardMaterial({ color: 0x111111 }));
-  cup.position.set(g.x, ISLAND_TOP_Y - 0.14, g.z);
+  cup.position.set(g.x, ISLAND_TOP_Y + 0.18, g.z);
   scene.add(cup);
   // Pole
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3.5, 8), poleMat);
@@ -818,7 +826,7 @@ function hidePrompt() {
 // ─── Collision / grounding ────────────────────────────────────────────────────
 function getGroundY(px, pz) {
   for (const g of GREENS) {
-    if (Math.sqrt((px-g.x)**2 + (pz-g.z)**2) < g.r) return ISLAND_TOP_Y - 0.2;
+    if (Math.sqrt((px-g.x)**2 + (pz-g.z)**2) < g.r) return ISLAND_TOP_Y;
   }
   const dist = Math.sqrt(px*px + pz*pz);
   if (dist < ISLAND_RADIUS)     return ISLAND_TOP_Y;
