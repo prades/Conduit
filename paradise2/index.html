@@ -111,6 +111,43 @@
       touch-action: manipulation;
     }
     #exit-cart-btn.visible { opacity: 1; pointer-events: all; }
+
+    /* ── Golf HUD ── */
+    #golf-hud {
+      position: fixed; bottom: 170px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      z-index: 20; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    #golf-hud.visible { opacity: 1; pointer-events: all; }
+    #golf-info { color: #ffe066; font-size: 13px; letter-spacing: 2px; text-align: center; }
+    #power-wrap {
+      width: 220px; height: 14px;
+      background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 7px; overflow: hidden;
+    }
+    #power-bar {
+      width: 0%; height: 100%;
+      background: linear-gradient(90deg, #44ff44 0%, #ffcc00 60%, #ff3322 100%);
+    }
+    #swing-btn {
+      padding: 13px 40px;
+      background: rgba(255,200,50,0.15); border: 2px solid rgba(255,200,50,0.45);
+      color: #ffe066; font-family: 'Courier New', monospace; font-size: 14px;
+      letter-spacing: 3px; border-radius: 8px; cursor: pointer; touch-action: manipulation;
+      user-select: none;
+    }
+    #golf-aim-hint {
+      color: rgba(200,220,255,0.5); font-size: 11px; letter-spacing: 1px;
+    }
+    #exit-golf-btn {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 20; padding: 10px 24px;
+      background: rgba(30,30,30,0.8); border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(200,220,255,0.6); font-family: 'Courier New', monospace; font-size: 12px;
+      border-radius: 8px; letter-spacing: 2px; cursor: pointer;
+      opacity: 0; pointer-events: none; touch-action: manipulation;
+    }
+    #exit-golf-btn.visible { opacity: 1; pointer-events: all; }
   </style>
 </head>
 <body>
@@ -133,6 +170,14 @@
 <!-- Touch interact button -->
 <button id="use-btn">[ USE COMPUTER ]</button>
 <button id="exit-cart-btn">[ EXIT CART ]</button>
+<button id="exit-golf-btn">[ QUIT HOLE ]</button>
+
+<div id="golf-hud">
+  <div id="golf-info"></div>
+  <div id="power-wrap"><div id="power-bar"></div></div>
+  <button id="swing-btn">⬇ HOLD TO SWING ⬇</button>
+  <div id="golf-aim-hint">A / D  or  drag left · right  to aim</div>
+</div>
 
 <div id="computer-screen">
   <div id="computer-inner">
@@ -632,6 +677,30 @@ GREENS.forEach((g, i) => {
   flagMeshes.push(flag);
 });
 
+// ─── Golf balls + tees ───────────────────────────────────────────────────────
+const TEES = [
+  new THREE.Vector3(22,  ISLAND_TOP_Y + 0.12, -5),
+  new THREE.Vector3(-15, ISLAND_TOP_Y + 0.12, -8),
+  new THREE.Vector3(5,   ISLAND_TOP_Y + 0.12, 16),
+];
+const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35 });
+const golfBalls = TEES.map(tee => {
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 7), ballMat);
+  b.position.copy(tee);
+  b.castShadow = true;
+  scene.add(b);
+  return { mesh: b, tee: tee.clone(), active: true };
+});
+
+// Arc preview dots
+const arcDotMat = new THREE.MeshBasicMaterial({ color: 0xffff44, transparent: true, opacity: 0.75 });
+const arcDots = Array.from({ length: 28 }, () => {
+  const d = new THREE.Mesh(new THREE.SphereGeometry(0.07, 5, 4), arcDotMat);
+  d.visible = false;
+  scene.add(d);
+  return d;
+});
+
 // ─── Clouds ───────────────────────────────────────────────────────────────────
 const cloudMat = new THREE.MeshStandardMaterial({ color: 0xf0f4ff, transparent: true, opacity: 0.88, roughness: 1 });
 function makeCloud(x, y, z) {
@@ -761,9 +830,15 @@ renderer.domElement.addEventListener('touchmove', e => {
   e.preventDefault();
   for (const t of e.changedTouches) {
     if (t.identifier === lookTouchId) {
-      yaw   -= (t.clientX - lookLastX) * LOOK_SENS;
-      pitch -= (t.clientY - lookLastY) * LOOK_SENS;
-      pitch  = Math.max(-1.3, Math.min(1.3, pitch));
+      const dx = t.clientX - lookLastX;
+      const dy = t.clientY - lookLastY;
+      if (GOLF.state === 'addressing' || GOLF.state === 'swinging') {
+        GOLF.aimAngle -= dx * LOOK_SENS * 0.8;
+      } else {
+        yaw   -= dx * LOOK_SENS;
+        pitch -= dy * LOOK_SENS;
+        pitch  = Math.max(-1.3, Math.min(1.3, pitch));
+      }
       lookLastX = t.clientX;
       lookLastY = t.clientY;
     }
@@ -813,6 +888,96 @@ useBtnEl.addEventListener('click', () => {
   else if (distToComp < 2.5) computerScreenEl.classList.add('visible');
 });
 exitCartBtnEl.addEventListener('click', exitCart);
+
+// ─── Golf state ───────────────────────────────────────────────────────────────
+const GOLF = {
+  state: 'idle',   // idle | addressing | swinging | flight | rolling
+  holeIdx: -1,
+  aimAngle: 0,
+  power: 0,
+  ballPos: new THREE.Vector3(),
+  ballVel: new THREE.Vector3(),
+  strokes: [0, 0, 0],
+};
+const LAUNCH_ANGLE = Math.PI / 5.5;  // ~33°
+const MAX_BALL_SPEED = 38;
+
+const golfHudEl    = document.getElementById('golf-hud');
+const golfInfoEl   = document.getElementById('golf-info');
+const powerBarEl   = document.getElementById('power-bar');
+const swingBtnEl   = document.getElementById('swing-btn');
+const exitGolfBtnEl = document.getElementById('exit-golf-btn');
+
+function golfInfoText() {
+  const h = GOLF.holeIdx;
+  return `HOLE ${h+1}  ·  STROKES: ${GOLF.strokes[h]}`;
+}
+
+function startGolf(idx) {
+  GOLF.state = 'addressing';
+  GOLF.holeIdx = idx;
+  GOLF.aimAngle = Math.atan2(
+    GREENS[idx].x - TEES[idx].x,
+    GREENS[idx].z - TEES[idx].z
+  ) + Math.PI;
+  GOLF.power = 0;
+  GOLF.strokes[idx] = 0;
+  GOLF.ballPos.copy(golfBalls[idx].mesh.position);
+  golfBalls[idx].mesh.visible = true;
+  useBtnEl.classList.remove('visible');
+  hidePrompt();
+  document.exitPointerLock();
+  golfHudEl.classList.add('visible');
+  exitGolfBtnEl.classList.add('visible');
+  golfInfoEl.textContent = golfInfoText();
+}
+
+function shootBall() {
+  if (GOLF.state !== 'swinging') return;
+  const spd = GOLF.power * MAX_BALL_SPEED;
+  GOLF.ballVel.set(
+    -Math.sin(GOLF.aimAngle) * Math.cos(LAUNCH_ANGLE) * spd,
+     Math.sin(LAUNCH_ANGLE) * spd,
+    -Math.cos(GOLF.aimAngle) * Math.cos(LAUNCH_ANGLE) * spd
+  );
+  GOLF.strokes[GOLF.holeIdx]++;
+  golfInfoEl.textContent = golfInfoText();
+  GOLF.power = 0;
+  powerBarEl.style.width = '0%';
+  arcDots.forEach(d => d.visible = false);
+  GOLF.state = 'flight';
+}
+
+function exitGolf() {
+  GOLF.state = 'idle';
+  GOLF.power = 0;
+  powerBarEl.style.width = '0%';
+  arcDots.forEach(d => d.visible = false);
+  golfHudEl.classList.remove('visible');
+  exitGolfBtnEl.classList.remove('visible');
+  // Return player camera near where ball ended up
+  camera.position.set(
+    GOLF.ballPos.x + Math.sin(GOLF.aimAngle) * 4,
+    GOLF.ballPos.y + PLAYER_HEIGHT,
+    GOLF.ballPos.z + Math.cos(GOLF.aimAngle) * 4
+  );
+  yaw = GOLF.aimAngle + Math.PI;
+}
+
+// Swing button — hold to charge, release to shoot
+swingBtnEl.addEventListener('mousedown', () => { if (GOLF.state === 'addressing') GOLF.state = 'swinging'; });
+swingBtnEl.addEventListener('mouseup',   () => { if (GOLF.state === 'swinging') shootBall(); });
+swingBtnEl.addEventListener('touchstart', e => { e.preventDefault(); if (GOLF.state === 'addressing') GOLF.state = 'swinging'; }, { passive: false });
+swingBtnEl.addEventListener('touchend',   e => { e.preventDefault(); if (GOLF.state === 'swinging') shootBall(); }, { passive: false });
+exitGolfBtnEl.addEventListener('click', exitGolf);
+
+// Space key: hold to charge, release to shoot
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && GOLF.state === 'addressing') { e.preventDefault(); GOLF.state = 'swinging'; }
+});
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space' && GOLF.state === 'swinging') shootBall();
+});
 
 const promptEl = document.getElementById('prompt');
 function showPrompt(msg) {
@@ -880,6 +1045,115 @@ function animate() {
   flagMeshes.forEach(f => {
     f.position.x = f.userData.baseX + Math.sin(t * 2.5 + f.userData.gi) * 0.14;
   });
+
+  // ── Golf mode ──
+  if (GOLF.state !== 'idle') {
+
+    // Keyboard aim (A/D) and power charge (Space handled via keydown/keyup)
+    if (GOLF.state === 'addressing' || GOLF.state === 'swinging') {
+      if (keys['KeyA'] || keys['ArrowLeft'])  GOLF.aimAngle += 1.4 * dt;
+      if (keys['KeyD'] || keys['ArrowRight']) GOLF.aimAngle -= 1.4 * dt;
+
+      if (GOLF.state === 'swinging') {
+        GOLF.power = Math.min(1, GOLF.power + dt / 2.0);
+        powerBarEl.style.width = (GOLF.power * 100) + '%';
+      }
+
+      // Third-person camera behind ball looking toward aim direction
+      const camDist = 7;
+      camera.position.set(
+        GOLF.ballPos.x + Math.sin(GOLF.aimAngle) * camDist,
+        GOLF.ballPos.y + 2.8,
+        GOLF.ballPos.z + Math.cos(GOLF.aimAngle) * camDist
+      );
+      camera.lookAt(GOLF.ballPos.x, GOLF.ballPos.y + 0.12, GOLF.ballPos.z);
+
+      // Update arc preview dots
+      const spd = Math.max(GOLF.power, 0.15) * MAX_BALL_SPEED;
+      const vx0 = -Math.sin(GOLF.aimAngle) * Math.cos(LAUNCH_ANGLE) * spd;
+      const vy0 =  Math.sin(LAUNCH_ANGLE) * spd;
+      const vz0 = -Math.cos(GOLF.aimAngle) * Math.cos(LAUNCH_ANGLE) * spd;
+      arcDots.forEach((dot, i) => {
+        const ti = (i + 1) * 0.09;
+        const px = GOLF.ballPos.x + vx0 * ti;
+        const py = GOLF.ballPos.y + vy0 * ti + 0.5 * GRAVITY * ti * ti;
+        const pz = GOLF.ballPos.z + vz0 * ti;
+        const gy = getGroundY(px, pz) + 0.07;
+        dot.visible = py >= gy - 0.15 && i % 2 === 0; // every other dot for spacing
+        if (dot.visible) dot.position.set(px, Math.max(py, gy), pz);
+        // fade dots out along arc
+        dot.material.opacity = 0.75 - i * 0.022;
+      });
+    }
+
+    // Ball in flight / rolling
+    if (GOLF.state === 'flight' || GOLF.state === 'rolling') {
+      GOLF.ballVel.y += GRAVITY * dt;
+      GOLF.ballPos.x += GOLF.ballVel.x * dt;
+      GOLF.ballPos.y += GOLF.ballVel.y * dt;
+      GOLF.ballPos.z += GOLF.ballVel.z * dt;
+
+      const gy = getGroundY(GOLF.ballPos.x, GOLF.ballPos.z) + 0.12;
+      if (GOLF.ballPos.y <= gy) {
+        GOLF.ballPos.y = gy;
+        GOLF.ballVel.y *= -0.32;
+        GOLF.ballVel.x *= 0.72;
+        GOLF.ballVel.z *= 0.72;
+        GOLF.state = 'rolling';
+      }
+
+      if (GOLF.state === 'rolling') {
+        GOLF.ballVel.x *= Math.pow(0.90, dt * 60);
+        GOLF.ballVel.z *= Math.pow(0.90, dt * 60);
+        const flatSpd = Math.sqrt(GOLF.ballVel.x**2 + GOLF.ballVel.z**2);
+        if (flatSpd < 0.15 && Math.abs(GOLF.ballVel.y) < 0.2) {
+          GOLF.ballVel.set(0, 0, 0);
+          GOLF.state = 'addressing';
+          arcDots.forEach(d => d.visible = false);
+        }
+      }
+
+      // Update ball mesh
+      const activeBall = golfBalls[GOLF.holeIdx];
+      activeBall.mesh.position.copy(GOLF.ballPos);
+
+      // Check if holed
+      const g = GREENS[GOLF.holeIdx];
+      const distToHole = Math.sqrt((GOLF.ballPos.x-g.x)**2 + (GOLF.ballPos.z-g.z)**2);
+      if (distToHole < 0.5 && GOLF.ballVel.length() < 6) {
+        showPrompt(`⛳ HOLE ${GOLF.holeIdx+1} — ${GOLF.strokes[GOLF.holeIdx]} stroke${GOLF.strokes[GOLF.holeIdx]>1?'s':''}!`);
+        activeBall.mesh.visible = false;
+        activeBall.active = false;
+        arcDots.forEach(d => d.visible = false);
+        GOLF.state = 'idle';
+        setTimeout(() => { exitGolf(); hidePrompt(); }, 3500);
+      }
+
+      // Flight camera: behind ball along velocity
+      if (GOLF.state === 'flight') {
+        const spd = GOLF.ballVel.length();
+        if (spd > 0.5) {
+          camera.position.set(
+            GOLF.ballPos.x - (GOLF.ballVel.x / spd) * 9,
+            GOLF.ballPos.y + 4.5,
+            GOLF.ballPos.z - (GOLF.ballVel.z / spd) * 9
+          );
+          camera.lookAt(GOLF.ballPos.x, GOLF.ballPos.y, GOLF.ballPos.z);
+        }
+      }
+      // Rolling camera: stay back from ball on ground
+      if (GOLF.state === 'rolling') {
+        camera.position.set(
+          GOLF.ballPos.x + Math.sin(GOLF.aimAngle) * 6,
+          GOLF.ballPos.y + 3.0,
+          GOLF.ballPos.z + Math.cos(GOLF.aimAngle) * 6
+        );
+        camera.lookAt(GOLF.ballPos.x, GOLF.ballPos.y, GOLF.ballPos.z);
+      }
+    }
+
+    return; // skip walk/cart while in golf mode
+  }
 
   // ── Cart mode ──
   if (CART.occupied) {
@@ -960,7 +1234,17 @@ function animate() {
       const distToComp = flatCam.distanceTo(new THREE.Vector3(COMPUTER_POS.x, 0, COMPUTER_POS.z));
       const distToCart = camera.position.distanceTo(CART.pos);
 
-      if (distToCart < 5) {
+      let nearBallIdx = -1;
+      golfBalls.forEach((b, i) => {
+        if (b.active && camera.position.distanceTo(b.mesh.position) < 2.5) nearBallIdx = i;
+      });
+
+      if (nearBallIdx >= 0) {
+        showPrompt('[ E ] Golf');
+        useBtnEl.textContent = '[ GOLF ]';
+        useBtnEl.classList.add('visible');
+        if (keys['KeyE']) { keys['KeyE'] = false; startGolf(nearBallIdx); }
+      } else if (distToCart < 5) {
         showPrompt('[ E ] Enter cart');
         useBtnEl.textContent = '[ ENTER CART ]';
         useBtnEl.classList.add('visible');
