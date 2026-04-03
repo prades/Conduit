@@ -158,7 +158,7 @@
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
-<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 14</div>
+<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 15</div>
 <div id="prompt"></div>
 <div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
 
@@ -284,7 +284,7 @@ function makeIsland() {
   const rockMat3 = new THREE.MeshStandardMaterial({ color: 0x4a4440, roughness: 1.0, metalness: 0.0 });
 
   // Main rock body (10× wider than original)
-  const baseGeo = new THREE.CylinderGeometry(70, 90, 5, 20, 1);
+  const baseGeo = new THREE.CylinderGeometry(70, 90, 5, 20, 1, true); // openEnded — no caps
   const baseMesh = new THREE.Mesh(baseGeo, rockMat);
   baseMesh.position.y = 0.8;
   baseMesh.rotation.y = 0.3;
@@ -308,7 +308,7 @@ function makeIsland() {
   baseGeo.computeVertexNormals();
 
   // Upper rock shelf
-  const shelfGeo = new THREE.CylinderGeometry(56, 72, 3, 18, 1);
+  const shelfGeo = new THREE.CylinderGeometry(56, 72, 3, 18, 1, true);
   const shelf = new THREE.Mesh(shelfGeo, rockMat2);
   shelf.position.y = 2.5;
   shelf.rotation.y = 0.7;
@@ -332,7 +332,7 @@ function makeIsland() {
   shelfGeo.computeVertexNormals();
 
   // Top ring (rocky cliff band, no visible cap — ground disc covers it)
-  const topGeo = new THREE.CylinderGeometry(47, 58, 2, 18, 1);
+  const topGeo = new THREE.CylinderGeometry(47, 58, 2, 18, 1, true);
   const top = new THREE.Mesh(topGeo, rockMat2);
   top.position.y = 3.0;  // top face now at local 4.0 = world 2.5 (ISLAND_TOP_Y)
   top.rotation.y = 0.2;
@@ -355,12 +355,13 @@ function makeIsland() {
   groundDisc.receiveShadow = true;
   group.add(groundDisc);
 
-  // Golf greens — sit above the ground disc
+  // Golf greens — flat discs, no thickness, just above ground disc
   const greenMat = new THREE.MeshStandardMaterial({ color: 0x2d8b3a, roughness: 0.85 });
   GREENS.forEach(g => {
-    const gd = new THREE.CylinderGeometry(g.r, g.r + 0.5, 0.25, 24);
+    const gd = new THREE.CircleGeometry(g.r, 32);
     const gm = new THREE.Mesh(gd, greenMat);
-    gm.position.set(g.x, 4.12, g.z);  // world 2.62 — clearly above ground disc
+    gm.rotation.x = -Math.PI / 2;
+    gm.position.set(g.x, 4.04, g.z);  // world 2.54 — 0.02 above ground disc
     gm.receiveShadow = true;
     group.add(gm);
   });
@@ -1017,13 +1018,13 @@ function hidePrompt() {
 
 // ─── Collision / grounding ────────────────────────────────────────────────────
 function getGroundY(px, pz) {
-  for (const g of GREENS) {
-    if (Math.sqrt((px-g.x)**2 + (pz-g.z)**2) < g.r) return ISLAND_TOP_Y;
-  }
   const dist = Math.sqrt(px*px + pz*pz);
-  if (dist < ISLAND_RADIUS)     return ISLAND_TOP_Y;
-  if (dist < ISLAND_RADIUS + 8) return ISLAND_TOP_Y - (dist - ISLAND_RADIUS) * 0.55;
-  return 0.05;
+  if (dist >= ISLAND_RADIUS + 8) return 0.05;
+  if (dist >= ISLAND_RADIUS) return (ISLAND_TOP_Y + 0.02) - (dist - ISLAND_RADIUS) * 0.55;
+  for (const g of GREENS) {
+    if (Math.sqrt((px-g.x)**2 + (pz-g.z)**2) < g.r) return ISLAND_TOP_Y + 0.04; // green surface
+  }
+  return ISLAND_TOP_Y + 0.02; // ground disc surface
 }
 
 // Computer interaction zone
@@ -1132,7 +1133,7 @@ function animate() {
         GOLF.ballVel.z *= -0.3;
       }
 
-      const gy = getGroundY(GOLF.ballPos.x, GOLF.ballPos.z) + 0.16;
+      const gy = getGroundY(GOLF.ballPos.x, GOLF.ballPos.z) + 0.12; // 0.12 = ball radius
       if (GOLF.ballPos.y <= gy) {
         GOLF.ballPos.y = gy;
         GOLF.ballVel.y *= -0.32;
@@ -1317,7 +1318,7 @@ function animate() {
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
       ? `B8 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 14';
+      : 'BUILD 15';
 
   renderer.render(scene, camera);
 }
