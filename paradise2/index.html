@@ -865,7 +865,7 @@ function enterCart() {
   keys['KeyE'] = false;
   exitCartBtnEl.classList.add('visible');
   useBtnEl.classList.remove('visible');
-  document.exitPointerLock();
+  document.exitPointerLock?.();
 }
 function exitCart() {
   CART.occupied = false;
@@ -881,6 +881,11 @@ function exitCart() {
 }
 
 useBtnEl.addEventListener('click', () => {
+  let nearBallIdx = -1;
+  golfBalls.forEach((b, i) => {
+    if (b.active && camera.position.distanceTo(b.mesh.position) < 2.5) nearBallIdx = i;
+  });
+  if (nearBallIdx >= 0) { startGolf(nearBallIdx); return; }
   const distToCart = camera.position.distanceTo(CART.pos);
   const distToComp = new THREE.Vector3(camera.position.x, 0, camera.position.z)
     .distanceTo(new THREE.Vector3(COMPUTER_POS.x, 0, COMPUTER_POS.z));
@@ -926,7 +931,7 @@ function startGolf(idx) {
   golfBalls[idx].mesh.visible = true;
   useBtnEl.classList.remove('visible');
   hidePrompt();
-  document.exitPointerLock();
+  document.exitPointerLock?.();
   golfHudEl.classList.add('visible');
   exitGolfBtnEl.classList.add('visible');
   golfInfoEl.textContent = golfInfoText();
@@ -1255,7 +1260,7 @@ function animate() {
         useBtnEl.classList.add('visible');
         if (keys['KeyE']) {
           computerScreenEl.classList.add('visible');
-          document.exitPointerLock();
+          document.exitPointerLock?.();
           keys['KeyE'] = false;
         }
       } else {
