@@ -158,7 +158,7 @@
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
-<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 8</div>
+<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 9</div>
 <div id="prompt"></div>
 <div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
 
@@ -922,13 +922,16 @@ function golfInfoText() {
 function startGolf(idx) {
   GOLF.state = 'addressing';
   GOLF.holeIdx = idx;
+  // Aim TOWARD the green (not away — remove the + Math.PI)
   GOLF.aimAngle = Math.atan2(
     GREENS[idx].x - TEES[idx].x,
     GREENS[idx].z - TEES[idx].z
-  ) + Math.PI;
+  );
   GOLF.power = 0;
   GOLF.strokes[idx] = 0;
-  GOLF.ballPos.copy(golfBalls[idx].mesh.position);
+  // Always reset ball to tee so it's never stuck in the ocean from a prior shot
+  GOLF.ballPos.set(TEES[idx].x, TEES[idx].y, TEES[idx].z);
+  golfBalls[idx].mesh.position.copy(GOLF.ballPos);
   golfBalls[idx].mesh.visible = true;
   golfBalls[idx].mesh.scale.setScalar(1);
   useBtnEl.classList.remove('visible');
@@ -963,10 +966,12 @@ function exitGolf() {
   arcDots.forEach(d => d.visible = false);
   golfHudEl.classList.remove('visible');
   exitGolfBtnEl.classList.remove('visible');
-  // Return player to the tee they started from
+  // Return player to where the gallery camera was (behind the tee, facing the green)
   const tee = TEES[GOLF.holeIdx] || TEES[0];
-  camera.position.set(tee.x, tee.y + PLAYER_HEIGHT - 0.12, tee.z);
-  yaw = GOLF.aimAngle + Math.PI;
+  const ex = tee.x - Math.sin(GOLF.aimAngle) * 7;
+  const ez = tee.z - Math.cos(GOLF.aimAngle) * 7;
+  camera.position.set(ex, getGroundY(ex, ez) + PLAYER_HEIGHT, ez);
+  yaw = GOLF.aimAngle; // already facing the green
   pitch = 0;
 }
 
@@ -1055,6 +1060,7 @@ function animate() {
 
   // ── Golf mode ──
   if (GOLF.state !== 'idle') {
+    const camDist = 7; // shared camera distance for addressing + gallery
 
     // Keyboard aim (A/D) and power charge (Space handled via keydown/keyup)
     if (GOLF.state === 'addressing' || GOLF.state === 'swinging') {
@@ -1066,13 +1072,11 @@ function animate() {
         powerBarEl.style.width = (GOLF.power * 100) + '%';
       }
 
-      // Third-person camera behind ball looking toward aim direction
-      const camDist = 7;
-      const gcx = GOLF.ballPos.x + Math.sin(GOLF.aimAngle) * camDist;
+      // Camera BEHIND ball (opposite of aim direction), looking toward the green
+      const gcx = GOLF.ballPos.x - Math.sin(GOLF.aimAngle) * camDist;
       const gcy = GOLF.ballPos.y + 2.8;
-      const gcz = GOLF.ballPos.z + Math.cos(GOLF.aimAngle) * camDist;
+      const gcz = GOLF.ballPos.z - Math.cos(GOLF.aimAngle) * camDist;
       camera.position.set(gcx, gcy, gcz);
-      // Manual yaw/pitch toward ball (lookAt doesn't work reliably with rotation.order=YXZ)
       { const dx = GOLF.ballPos.x - gcx, dy = (GOLF.ballPos.y + 0.12) - gcy, dz = GOLF.ballPos.z - gcz;
         camera.rotation.order = 'YXZ';
         camera.rotation.y = Math.atan2(-dx, -dz);
@@ -1142,16 +1146,17 @@ function animate() {
         setTimeout(() => { exitGolf(); hidePrompt(); }, 3500);
       }
 
-      // Overhead follow camera so ball arc is obvious
+      // Gallery camera: stays at the tee-side, rotates to track ball in flight/rolling
       {
-        const camX = GOLF.ballPos.x;
-        const camY = GOLF.ballPos.y + 22;
-        const camZ = GOLF.ballPos.z + 6;
+        const tee = TEES[GOLF.holeIdx];
+        const camX = tee.x - Math.sin(GOLF.aimAngle) * camDist;
+        const camY = tee.y + 2.8;
+        const camZ = tee.z - Math.cos(GOLF.aimAngle) * camDist;
         camera.position.set(camX, camY, camZ);
-        const dx = 0, dy = GOLF.ballPos.y - camY, dz = GOLF.ballPos.z - camZ;
+        const dx = GOLF.ballPos.x - camX, dy = GOLF.ballPos.y - camY, dz = GOLF.ballPos.z - camZ;
         camera.rotation.order = 'YXZ';
-        camera.rotation.y = 0;
-        camera.rotation.x = Math.atan2(dy, Math.sqrt(dz*dz));
+        camera.rotation.y = Math.atan2(-dx, -dz);
+        camera.rotation.x = Math.atan2(dy, Math.sqrt(dx*dx + dz*dz));
       }
     }
 
@@ -1287,7 +1292,7 @@ function animate() {
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
       ? `B8 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 8';
+      : 'BUILD 9';
 
   renderer.render(scene, camera);
 }
