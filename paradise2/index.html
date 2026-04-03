@@ -158,7 +158,7 @@
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
-<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 7</div>
+<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 8</div>
 <div id="prompt"></div>
 <div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
 
@@ -974,7 +974,8 @@ function exitGolf() {
 swingBtnEl.addEventListener('mousedown', () => { if (GOLF.state === 'addressing') GOLF.state = 'swinging'; });
 swingBtnEl.addEventListener('mouseup',   () => { if (GOLF.state === 'swinging') shootBall(); });
 swingBtnEl.addEventListener('touchstart', e => { e.preventDefault(); if (GOLF.state === 'addressing') GOLF.state = 'swinging'; }, { passive: false });
-swingBtnEl.addEventListener('touchend',   e => { e.preventDefault(); if (GOLF.state === 'swinging') shootBall(); }, { passive: false });
+// Use document touchend so releasing finger anywhere still fires the shot
+document.addEventListener('touchend', e => { if (GOLF.state === 'swinging') { e.preventDefault(); shootBall(); } }, { passive: false });
 exitGolfBtnEl.addEventListener('click', exitGolf);
 
 // Space key: hold to charge, release to shoot
@@ -1141,19 +1142,16 @@ function animate() {
         setTimeout(() => { exitGolf(); hidePrompt(); }, 3500);
       }
 
-      // Chase camera: stay 5 units behind ball along its travel direction
+      // Overhead follow camera so ball arc is obvious
       {
-        const hspd = Math.sqrt(GOLF.ballVel.x**2 + GOLF.ballVel.z**2);
-        const bx = hspd > 0.3 ? GOLF.ballVel.x / hspd : -Math.sin(GOLF.aimAngle);
-        const bz = hspd > 0.3 ? GOLF.ballVel.z / hspd : -Math.cos(GOLF.aimAngle);
-        const camX = GOLF.ballPos.x - bx * 5;
-        const camY = GOLF.ballPos.y + 3;
-        const camZ = GOLF.ballPos.z - bz * 5;
+        const camX = GOLF.ballPos.x;
+        const camY = GOLF.ballPos.y + 22;
+        const camZ = GOLF.ballPos.z + 6;
         camera.position.set(camX, camY, camZ);
-        const dx = GOLF.ballPos.x - camX, dy = GOLF.ballPos.y - camY, dz = GOLF.ballPos.z - camZ;
+        const dx = 0, dy = GOLF.ballPos.y - camY, dz = GOLF.ballPos.z - camZ;
         camera.rotation.order = 'YXZ';
-        camera.rotation.y = Math.atan2(-dx, -dz);
-        camera.rotation.x = Math.atan2(dy, Math.sqrt(dx*dx + dz*dz));
+        camera.rotation.y = 0;
+        camera.rotation.x = Math.atan2(dy, Math.sqrt(dz*dz));
       }
     }
 
@@ -1284,6 +1282,12 @@ function animate() {
       setTimeout(() => loadEl.style.display = 'none', 1200);
     }, 600);
   }
+
+  // Live state debug in build label
+  document.getElementById('build').textContent =
+    GOLF.state !== 'idle'
+      ? `B8 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
+      : 'BUILD 8';
 
   renderer.render(scene, camera);
 }
