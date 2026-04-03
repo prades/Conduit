@@ -939,7 +939,7 @@ function startGolf(idx) {
 
 function shootBall() {
   if (GOLF.state !== 'swinging') return;
-  const spd = GOLF.power * MAX_BALL_SPEED;
+  const spd = Math.max(GOLF.power, 0.15) * MAX_BALL_SPEED;
   GOLF.ballVel.set(
     -Math.sin(GOLF.aimAngle) * Math.cos(LAUNCH_ANGLE) * spd,
      Math.sin(LAUNCH_ANGLE) * spd,
@@ -960,13 +960,11 @@ function exitGolf() {
   arcDots.forEach(d => d.visible = false);
   golfHudEl.classList.remove('visible');
   exitGolfBtnEl.classList.remove('visible');
-  // Return player camera near where ball ended up
-  camera.position.set(
-    GOLF.ballPos.x + Math.sin(GOLF.aimAngle) * 4,
-    GOLF.ballPos.y + PLAYER_HEIGHT,
-    GOLF.ballPos.z + Math.cos(GOLF.aimAngle) * 4
-  );
+  // Return player to the tee they started from
+  const tee = TEES[GOLF.holeIdx] || TEES[0];
+  camera.position.set(tee.x, tee.y + PLAYER_HEIGHT - 0.12, tee.z);
   yaw = GOLF.aimAngle + Math.PI;
+  pitch = 0;
 }
 
 // Swing button — hold to charge, release to shoot
