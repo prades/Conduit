@@ -158,7 +158,7 @@
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
-<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 10</div>
+<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 11</div>
 <div id="prompt"></div>
 <div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
 
@@ -976,11 +976,26 @@ function exitGolf() {
 }
 
 // Swing button — hold to charge, release to shoot
+// Track the specific touch ID so only the swing finger releases the shot
+let swingTouchId = null;
 swingBtnEl.addEventListener('mousedown', () => { if (GOLF.state === 'addressing') GOLF.state = 'swinging'; });
 swingBtnEl.addEventListener('mouseup',   () => { if (GOLF.state === 'swinging') shootBall(); });
-swingBtnEl.addEventListener('touchstart', e => { e.preventDefault(); if (GOLF.state === 'addressing') GOLF.state = 'swinging'; }, { passive: false });
-// Use document touchend so releasing finger anywhere still fires the shot
-document.addEventListener('touchend', e => { if (GOLF.state === 'swinging') { e.preventDefault(); shootBall(); } }, { passive: false });
+swingBtnEl.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (GOLF.state === 'addressing') {
+    GOLF.state = 'swinging';
+    swingTouchId = e.changedTouches[0].identifier;
+  }
+}, { passive: false });
+document.addEventListener('touchend', e => {
+  for (const t of e.changedTouches) {
+    if (t.identifier === swingTouchId && GOLF.state === 'swinging') {
+      e.preventDefault();
+      shootBall();
+      swingTouchId = null;
+    }
+  }
+}, { passive: false });
 exitGolfBtnEl.addEventListener('click', exitGolf);
 
 // Space key: hold to charge, release to shoot
@@ -1293,7 +1308,7 @@ function animate() {
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
       ? `B8 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 10';
+      : 'BUILD 11';
 
   renderer.render(scene, camera);
 }
