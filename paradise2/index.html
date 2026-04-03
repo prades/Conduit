@@ -158,7 +158,7 @@
 </div>
 
 <a id="home-link" href="../index.html">← Home</a>
-<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 13</div>
+<div id="build" style="position:fixed;top:8px;right:10px;color:rgba(255,255,255,0.35);font-family:monospace;font-size:10px;pointer-events:none;z-index:99;">BUILD 14</div>
 <div id="prompt"></div>
 <div id="controls">WASD / Joystick — Move &nbsp;|&nbsp; Drag right — Look &nbsp;|&nbsp; E / Use button — Interact</div>
 
@@ -1122,7 +1122,17 @@ function animate() {
       GOLF.ballPos.y += GOLF.ballVel.y * dt;
       GOLF.ballPos.z += GOLF.ballVel.z * dt;
 
-      const gy = getGroundY(GOLF.ballPos.x, GOLF.ballPos.z) + 0.12;
+      // Keep ball on island — stop it at the edge
+      const ballDist = Math.sqrt(GOLF.ballPos.x**2 + GOLF.ballPos.z**2);
+      if (ballDist > ISLAND_RADIUS - 1) {
+        const ang = Math.atan2(GOLF.ballPos.z, GOLF.ballPos.x);
+        GOLF.ballPos.x = Math.cos(ang) * (ISLAND_RADIUS - 1);
+        GOLF.ballPos.z = Math.sin(ang) * (ISLAND_RADIUS - 1);
+        GOLF.ballVel.x *= -0.3;
+        GOLF.ballVel.z *= -0.3;
+      }
+
+      const gy = getGroundY(GOLF.ballPos.x, GOLF.ballPos.z) + 0.16;
       if (GOLF.ballPos.y <= gy) {
         GOLF.ballPos.y = gy;
         GOLF.ballVel.y *= -0.32;
@@ -1307,7 +1317,7 @@ function animate() {
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
       ? `B8 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 13';
+      : 'BUILD 14';
 
   renderer.render(scene, camera);
 }
