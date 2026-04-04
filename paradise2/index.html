@@ -890,14 +890,176 @@ GREENS.forEach((g, i) => {
 
 // ─── Golf course features — fairways, hills and bunkers ──────────────────────
 
-// Polygon offset ensures these layers always render over the ground disc and hills
+// Bunker definitions shared between bowl rendering and hill vertex deformation
+// [cx, cz, wx, wz]  (oval half-radii in world units)
+const BUNKER_DEFS = [
+  [25,  1,  3.2, 5.2],  // H1 left green
+  [36,  3,  2.6, 4.2],  // H1 right green
+  [28, -5,  3.8, 2.6],  // H1 front
+  [-28,-13, 3.0, 4.8],  // H2 left green
+  [-16,-24, 3.2, 4.2],  // H2 right green
+  [-26,-24, 2.4, 3.0],  // H2 back
+  [ 1,  26, 3.0, 4.8],  // H3 left green
+  [15,  28, 2.6, 4.2],  // H3 right green
+  [ 8,  36, 3.4, 2.4],  // H3 back
+];
+const BUNKER_RIM_Y    = ISLAND_TOP_Y + 0.22; // world Y where bunker rim sits
+const BUNKER_BOWL_D   = 0.18;                // depth from rim to bowl center (world units)
+
+// Materials
 const fairwayMat = new THREE.MeshStandardMaterial({
   color: 0x5a9030, roughness: 0.91,
   polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4
 });
-const hillMat = new THREE.MeshStandardMaterial({
-  color: 0x527828, roughness: 0.88,
-  polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2
+const hillMat = new THREE.MeshStandardMaterial({ color: 0x527828, roughness: 0.88 });
+const bunkerSandMat = new THREE.MeshStandardMaterial({
+  color: 0xd8be8a, roughness: 0.97,
+  polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -10
+});
+const bunkerRimMat = new THREE.MeshStandardMaterial({
+  color: 0x4a6a22, roughness: 0.94,
+  polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -6
+});
+
+// Build a shallow parabolic bowl in the XY plane with Z as the depth axis.
+// After mesh.rotation.x = -PI/2, local Z maps to world +Y,
+// so Z = -depth at center sinks the bowl BUNKER_BOWL_D below the rim.
+function createBowlGeo(numRings, numSegs) {
+  const verts = [], idx = [];
+  // Center vertex — deepest point
+  verts.push(0, 0, -1); // Z will be scaled to BUNKER_BOWL_D via group
+  // Concentric rings from center outward
+  for (let r = 1; r <= numRings; r++) {
+    const t = r / numRings;                       // 0 = center, 1 = rim
+    const z = -(1 - t * t);                       // parabolic: -1 at center, 0 at rim
+    for (let s = 0; s < numSegs; s++) {
+      const a = (s / numSegs) * Math.PI * 2;
+      verts.push(Math.cos(a) * t, Math.sin(a) * t, z);
+    }
+  }
+  // Center fan → first ring
+  for (let s = 0; s < numSegs; s++)
+    idx.push(0, 1 + s, 1 + (s + 1) % numSegs);
+  // Ring-to-ring quad strips
+  for (let r = 1; r < numRings; r++) {
+    const rs = 1 + (r - 1) * numSegs, ns = 1 + r * numSegs;
+    for (let s = 0; s < numSegs; s++) {
+      const sn = (s + 1) % numSegs;
+      idx.push(rs+s, ns+s, rs+sn,  rs+sn, ns+s, ns+sn);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// Fairway strip — oriented oval from tee to green
+function makeFairway(tx, tz, gx, gz, hw) {
+  const halfLen = Math.sqrt((gx-tx)**2 + (gz-tz)**2) / 2 + 3;
+  const mesh = new THREE.Mesh(new THREE.CircleGeometry(1, 32), fairwayMat);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.scale.set(hw, halfLen, 1);
+  mesh.receiveShadow = true;
+  const grp = new THREE.Group();
+  grp.add(mesh);
+  grp.rotation.y = Math.atan2(tx - gx, tz - gz);
+  grp.position.set((tx+gx)/2, ISLAND_TOP_Y + 0.025, (tz+gz)/2);
+  scene.add(grp);
+}
+
+// Organic grass hill — upper hemisphere only, bunker depressions baked into vertices.
+// No random rotation.y so world-XZ computation is accurate for bunker matching.
+function makeHill(cx, cz, rx, rz, height) {
+  // SphereGeometry top hemisphere: y=0 at equator/base, y=1 at apex
+  const geo = new THREE.SphereGeometry(1, 36, 22, 0, Math.PI * 2, 0, Math.PI / 2);
+  const pos = geo.attributes.position;
+  const seed = cx * 7.31 + cz * 11.73; // unique organic noise per hill
+
+  // Target local-Y at the bunker rim (so hill surface meets bunker edge cleanly)
+  const rimLocalY = (BUNKER_RIM_Y - (ISLAND_TOP_Y - 0.1)) / height; // ≈ 0.32/height
+
+  for (let i = 0; i < pos.count; i++) {
+    let lx = pos.getX(i), ly = pos.getY(i), lz = pos.getZ(i);
+
+    // Organic surface noise — zero at equator (ly=0), max at apex (ly=1)
+    lx += Math.sin(lz * 3.9 + ly * 5.1 + seed)        * 0.13 * ly;
+    lz += Math.sin(lx * 6.2 + ly * 4.8 + seed * 0.7)  * 0.13 * ly;
+    ly += Math.sin(lx * 4.3 + lz * 3.7 + seed * 0.4)  * 0.08 * ly;
+
+    // World XZ of this vertex (scale applied, no rotation)
+    const wx = cx + lx * rx, wz = cz + lz * rz;
+
+    // Bunker depression — deform hill surface down toward rim level at each bunker
+    for (const [bx, bz, bwx, bwz] of BUNKER_DEFS) {
+      const nd = Math.sqrt(((wx - bx) / (bwx * 1.15)) ** 2 + ((wz - bz) / (bwz * 1.15)) ** 2);
+      if (nd < 1.0) {
+        const t = 1.0 - nd;            // 0 at edge, 1 at center
+        const excess = ly - rimLocalY; // how much higher than rim level this vertex is
+        if (excess > 0) ly -= t * t * excess; // smoothly pull down to rim level
+      }
+    }
+
+    pos.setXYZ(i, lx, Math.max(0.001, ly), lz);
+  }
+  geo.computeVertexNormals();
+
+  const mesh = new THREE.Mesh(geo, hillMat);
+  mesh.scale.set(rx, height, rz);
+  // Base ring buried 0.1 below ground so hill emerges seamlessly from terrain
+  mesh.position.set(cx, ISLAND_TOP_Y - 0.1, cz);
+  mesh.receiveShadow = true;
+  mesh.castShadow = true;
+  scene.add(mesh);
+}
+
+// Sand bunker — actual 3D bowl mesh with grass rim ring
+function makeBunker(cx, cz, wx, wz, angle) {
+  const a = angle || 0;
+  const bowlGeo = createBowlGeo(14, 40);
+
+  // Bowl: rim sits at BUNKER_RIM_Y, center sinks BUNKER_BOWL_D below that
+  // scale.z = BUNKER_BOWL_D so local Z=-1 maps to world-Y offset of -BUNKER_BOWL_D
+  const bowl = new THREE.Mesh(bowlGeo, bunkerSandMat);
+  bowl.rotation.x = -Math.PI / 2;
+  bowl.scale.set(wx, wz, BUNKER_BOWL_D);
+  bowl.receiveShadow = true;
+  const bowlGrp = new THREE.Group();
+  bowlGrp.add(bowl);
+  bowlGrp.rotation.y = a;
+  bowlGrp.position.set(cx, BUNKER_RIM_Y, cz);
+  scene.add(bowlGrp);
+
+  // Grass rim ring — raised collar around the bowl edge
+  const rim = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.55, 40), bunkerRimMat);
+  rim.rotation.x = -Math.PI / 2;
+  rim.scale.set(wx + 0.2, wz + 0.2, 1);
+  rim.receiveShadow = true;
+  const rimGrp = new THREE.Group();
+  rimGrp.add(rim);
+  rimGrp.rotation.y = a;
+  rimGrp.position.set(cx, BUNKER_RIM_Y + 0.01, cz);
+  scene.add(rimGrp);
+}
+
+// ── Fairways ──────────────────────────────────────────────────────────────────
+makeFairway(22, -5,  30,  5, 7);
+makeFairway(-15, -8, -22, -18, 7);
+makeFairway(5,  16,   8,  28, 7);
+
+// ── Hills (bunker-aware — depressions baked in) ───────────────────────────────
+makeHill(16, -2,  8.0, 5.5, 2.2);
+makeHill(27, -10, 5.5, 8.5, 1.8);
+makeHill(-9, -14, 8.5, 6.0, 2.0);
+makeHill(-21, -5, 6.0, 8.2, 1.8);
+makeHill( 0,  22, 7.5, 5.5, 1.9);
+makeHill(13,  24, 5.8, 8.5, 1.7);
+
+// ── Bunkers (3D bowl geometry) ────────────────────────────────────────────────
+BUNKER_DEFS.forEach(([cx, cz, wx, wz], i) => {
+  const angles = [0.5, 0.8, 0.0, 0.4, 1.0, 0.2, 0.3, 1.1, 0.0];
+  makeBunker(cx, cz, wx, wz, angles[i]);
 });
 
 // Fairway strip — oriented oval mown corridor from tee to green
@@ -1661,8 +1823,8 @@ function animate() {
   // Live state debug in build label
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
-      ? `B19 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 19';
+      ? `B20 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
+      : 'BUILD 20';
 
   renderer.render(scene, camera);
 }
