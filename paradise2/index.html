@@ -347,35 +347,43 @@ function makeIsland() {
   }
   topGeo.computeVertexNormals();
 
-  // Ground surface — sandy/gravelly disc that covers the island top
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0x8a7a62, roughness: 0.98 });
+  // Ground surface — rough grass covering the island top
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x3a5818, roughness: 0.97 });
   const groundDisc = new THREE.Mesh(new THREE.CircleGeometry(46, 48), groundMat);
   groundDisc.rotation.x = -Math.PI / 2;
   groundDisc.position.y = 4.02;  // world 2.52 — just above cylinder top
   groundDisc.receiveShadow = true;
   group.add(groundDisc);
 
-  // Golf greens — flat discs, no thickness, just above ground disc
-  const greenMat = new THREE.MeshStandardMaterial({ color: 0x2d8b3a, roughness: 0.85 });
+  // Fringe rings around each green — mown collar between rough and green
+  const fringeMat = new THREE.MeshStandardMaterial({ color: 0x4a7828, roughness: 0.92 });
+  GREENS.forEach(g => {
+    const fr = new THREE.Mesh(new THREE.CircleGeometry(g.r + 2.2, 32), fringeMat);
+    fr.rotation.x = -Math.PI / 2;
+    fr.position.set(g.x, 4.03, g.z);
+    group.add(fr);
+  });
+
+  // Golf greens — tight-cut bright putting surface
+  const greenMat = new THREE.MeshStandardMaterial({ color: 0x2e9040, roughness: 0.82 });
   GREENS.forEach(g => {
     const gd = new THREE.CircleGeometry(g.r, 32);
     const gm = new THREE.Mesh(gd, greenMat);
     gm.rotation.x = -Math.PI / 2;
-    gm.position.set(g.x, 4.04, g.z);  // world 2.54 — 0.02 above ground disc
+    gm.position.set(g.x, 4.04, g.z);  // world 2.54
     gm.receiveShadow = true;
     group.add(gm);
   });
 
-  // Pebbles scattered across surface — excluded from greens and bunker zones
+  // Pebbles scattered in rough only — excluded from greens and fringe
   for (let i = 0; i < 120; i++) {
     const angle = Math.random() * Math.PI * 2;
     const r = 3 + Math.random() * 42;
     const px = Math.cos(angle) * r, pz = Math.sin(angle) * r;
-    // Skip positions that land on a green (XZ world coords match local island coords)
-    if (GREENS.some(g => Math.sqrt((px - g.x) ** 2 + (pz - g.z) ** 2) < g.r + 1.0)) continue;
+    if (GREENS.some(g => Math.sqrt((px - g.x) ** 2 + (pz - g.z) ** 2) < g.r + 3.0)) continue;
     const pGeo = new THREE.SphereGeometry(0.1 + Math.random() * 0.5, 5, 4);
     const pMesh = new THREE.Mesh(pGeo, rockMat3);
-    pMesh.position.set(px, 4.14, pz);  // world 2.64
+    pMesh.position.set(px, 4.14, pz);
     pMesh.rotation.set(Math.random(), Math.random(), Math.random());
     pMesh.castShadow = true;
     group.add(pMesh);
@@ -880,52 +888,115 @@ GREENS.forEach((g, i) => {
   flagMeshes.push(flag);
 });
 
-// ─── Golf course features — hills and bunkers ─────────────────────────────────
-const hillMat   = new THREE.MeshStandardMaterial({ color: 0x6a9040, roughness: 0.92 });
-const bunkerMat = new THREE.MeshStandardMaterial({ color: 0xd8be8a, roughness: 0.98 });
+// ─── Golf course features — fairways, hills and bunkers ──────────────────────
+const fairwayMat = new THREE.MeshStandardMaterial({ color: 0x5a9030, roughness: 0.91 });
+const hillMat    = new THREE.MeshStandardMaterial({ color: 0x527828, roughness: 0.90 });
+const bunkerMat  = new THREE.MeshStandardMaterial({ color: 0xd8be8a, roughness: 0.98 });
 
-// Smooth fairway mound: flattened sphere centered at ISLAND_TOP_Y blends naturally
-function makeHill(cx, cz, radius, height) {
-  const geo = new THREE.SphereGeometry(radius, 22, 12);
+// Fairway strip — oriented oval mown corridor from tee to green
+// angle = atan2(tx-gx, tz-gz) orients the group so the oval length runs tee→green
+function makeFairway(tx, tz, gx, gz, halfWidth) {
+  const dx = gx - tx, dz = gz - tz;
+  const halfLen = Math.sqrt(dx * dx + dz * dz) / 2 + 3;
+  const cx = (tx + gx) / 2, cz = (tz + gz) / 2;
+  const geo = new THREE.CircleGeometry(1, 32);
+  const mesh = new THREE.Mesh(geo, fairwayMat);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.scale.set(halfWidth, halfLen, 1);
+  mesh.receiveShadow = true;
+  const grp = new THREE.Group();
+  grp.add(mesh);
+  grp.rotation.y = Math.atan2(tx - gx, tz - gz);
+  grp.position.set(cx, ISLAND_TOP_Y + 0.018, cz);
+  scene.add(grp);
+}
+
+// Organic grass hill — IcosahedronGeometry with gentle surface noise, non-uniform scale
+// rx/rz = X and Z radii (asymmetric for natural form), height = peak above ground
+function makeHill(cx, cz, rx, rz, height) {
+  const geo = new THREE.IcosahedronGeometry(1, 4);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const t = Math.max(0, y); // only ripple the upper dome
+    pos.setXYZ(i,
+      x + Math.sin(z * 4.8 + y * 3.2) * 0.052 * t,
+      y + Math.sin(x * 3.6 + z * 4.1) * 0.042 * t,
+      z + Math.sin(x * 5.1 + y * 2.9) * 0.052 * t
+    );
+  }
+  geo.computeVertexNormals();
   const mesh = new THREE.Mesh(geo, hillMat);
+  mesh.scale.set(rx, height, rz);
+  mesh.rotation.y = Math.random() * Math.PI * 2;
+  mesh.rotation.x = (Math.random() - 0.5) * 0.12; // subtle organic tilt
+  mesh.rotation.z = (Math.random() - 0.5) * 0.10;
+  // Center at ground level so bottom half is buried — top dome emerges naturally
   mesh.position.set(cx, ISLAND_TOP_Y, cz);
-  mesh.scale.y = height / (2 * radius);
   mesh.receiveShadow = true;
   mesh.castShadow = true;
   scene.add(mesh);
 }
 
-// Sand bunker: oval sandy patch just above the ground disc
-function makeBunker(cx, cz, wx, wz) {
-  const geo = new THREE.CircleGeometry(1, 20);
-  const mesh = new THREE.Mesh(geo, bunkerMat);
-  mesh.rotation.x = -Math.PI / 2;
-  mesh.scale.set(wx, wz, 1);
-  mesh.position.set(cx, ISLAND_TOP_Y + 0.025, cz);
-  mesh.receiveShadow = true;
-  scene.add(mesh);
+// Sand bunker — oval sandy patch with slight rim
+function makeBunker(cx, cz, wx, wz, angle) {
+  // Rim (slightly larger, slightly raised)
+  const rimGeo = new THREE.CircleGeometry(1, 22);
+  const rim = new THREE.Mesh(rimGeo, new THREE.MeshStandardMaterial({ color: 0xb8a070, roughness: 0.98 }));
+  rim.rotation.x = -Math.PI / 2;
+  rim.scale.set(wx + 0.5, wz + 0.5, 1);
+  rim.receiveShadow = true;
+  const rimGrp = new THREE.Group();
+  rimGrp.add(rim);
+  rimGrp.rotation.y = angle || 0;
+  rimGrp.position.set(cx, ISLAND_TOP_Y + 0.022, cz);
+  scene.add(rimGrp);
+  // Sand fill
+  const sandGeo = new THREE.CircleGeometry(1, 22);
+  const sand = new THREE.Mesh(sandGeo, bunkerMat);
+  sand.rotation.x = -Math.PI / 2;
+  sand.scale.set(wx, wz, 1);
+  sand.receiveShadow = true;
+  const sandGrp = new THREE.Group();
+  sandGrp.add(sand);
+  sandGrp.rotation.y = angle || 0;
+  sandGrp.position.set(cx, ISLAND_TOP_Y + 0.026, cz);
+  scene.add(sandGrp);
 }
 
-// Hole 1: green (30,5) tee (22,-5) — approach from SW
-makeHill(17, -1, 3.8, 0.55);    // mound left of fairway
-makeHill(26, -9, 3.2, 0.48);    // mound right of fairway
-makeBunker(25,  0, 2.8, 4.5);   // left greenside bunker
-makeBunker(35,  3, 2.2, 3.8);   // right greenside bunker
-makeBunker(29, -4, 3.2, 2.2);   // front bunker
+// ── Fairway strips (mown corridors) ──────────────────────────────────────────
+makeFairway(22, -5,  30,  5, 7);   // Hole 1
+makeFairway(-15, -8, -22, -18, 7); // Hole 2
+makeFairway(5,  16,   8,  28, 7);  // Hole 3
 
-// Hole 2: green (-22,-18) tee (-15,-8) — approach from SE
-makeHill(-10, -13, 3.5, 0.52);  // mound right of fairway
-makeHill(-20,  -6, 3.0, 0.46);  // mound left near tee
-makeBunker(-27, -14, 2.5, 4.0); // left greenside bunker
-makeBunker(-17, -23, 2.8, 3.5); // right greenside bunker
-makeBunker(-25, -23, 2.0, 2.5); // back bunker
+// ── Fairway mounds — wide organic grass hills flanking each approach ──────────
+// Hole 1: green (30,5) tee (22,-5)
+makeHill(16, -2,  9.5, 7.0, 0.88);  // sweeping mound left of fairway
+makeHill(27, -10, 8.0, 10.5, 0.82); // elongated mound right of fairway
 
-// Hole 3: green (8,28) tee (5,16) — approach from S
-makeHill( 1, 21, 3.5, 0.50);    // mound left of fairway
-makeHill(12, 23, 3.0, 0.44);    // mound right of fairway
-makeBunker( 2, 25, 2.5, 4.2);   // left greenside bunker
-makeBunker(15, 27, 2.2, 3.5);   // right greenside bunker
-makeBunker( 8, 35, 3.0, 2.0);   // back bunker
+// Hole 2: green (-22,-18) tee (-15,-8)
+makeHill(-9, -14,  10.0, 7.5, 0.84);
+makeHill(-21, -5,   8.5, 9.8, 0.78);
+
+// Hole 3: green (8,28) tee (5,16)
+makeHill( 0, 22,   9.0, 6.5, 0.80);
+makeHill(13, 24,   7.5, 10.0, 0.75);
+
+// ── Bunkers — flanking each green with visible sand lips ─────────────────────
+// Hole 1
+makeBunker(25,  1, 3.0, 4.8, 0.5);   // left greenside
+makeBunker(36,  3, 2.4, 4.0, 0.8);   // right greenside
+makeBunker(28, -5, 3.5, 2.4, 0.0);   // front
+
+// Hole 2
+makeBunker(-28, -13, 2.8, 4.5, 0.4);
+makeBunker(-16, -24, 3.0, 4.0, 1.0);
+makeBunker(-26, -24, 2.2, 2.8, 0.2);
+
+// Hole 3
+makeBunker( 1, 26, 2.8, 4.5, 0.3);
+makeBunker(15, 28, 2.4, 4.0, 1.1);
+makeBunker( 8, 36, 3.2, 2.2, 0.0);
 
 // ─── Golf balls + tees ───────────────────────────────────────────────────────
 const TEES = [
@@ -1585,8 +1656,8 @@ function animate() {
   // Live state debug in build label
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
-      ? `B17 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 17';
+      ? `B18 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
+      : 'BUILD 18';
 
   renderer.render(scene, camera);
 }
