@@ -273,6 +273,7 @@ const GREENS = [
   { x: -22, z: -18, r: 8  },
   { x:   8, z:  28, r: 10 },
 ];
+const PARS = [3, 3, 3]; // all par-3s on this executive course
 
 // ─── Island ───────────────────────────────────────────────────────────────────
 function makeIsland() {
@@ -988,8 +989,13 @@ const BUNKER_RIM_Y    = ISLAND_TOP_Y + 0.22; // world Y where bunker rim sits
 const BUNKER_BOWL_D   = 0.18;                // depth from rim to bowl center (world units)
 
 // Materials
-const fairwayMat = new THREE.MeshStandardMaterial({
+// Two alternating fairway tones — simulates cross-cut mowing stripes
+const fw1Mat = new THREE.MeshStandardMaterial({
   color: 0x5a9030, roughness: 0.91,
+  polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4
+});
+const fw2Mat = new THREE.MeshStandardMaterial({
+  color: 0x4d8028, roughness: 0.92,
   polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4
 });
 const hillMat = new THREE.MeshStandardMaterial({ color: 0x527828, roughness: 0.88 });
@@ -1036,17 +1042,137 @@ function createBowlGeo(numRings, numSegs) {
   return geo;
 }
 
-// Fairway strip — oriented oval from tee to green
-function makeFairway(tx, tz, gx, gz, hw) {
+// ── Fairway (PGA cross-cut mowing stripes) ────────────────────────────────────
+// Alternating 2 m wide strips shaped to the oval corridor between tee and green.
+function makeFairwayStriped(tx, tz, gx, gz, hw) {
   const halfLen = Math.sqrt((gx-tx)**2 + (gz-tz)**2) / 2 + 3;
-  const mesh = new THREE.Mesh(new THREE.CircleGeometry(1, 32), fairwayMat);
+  const sw = 2.0; // stripe width (world units)
+  const num = Math.ceil(halfLen * 2 / sw) + 2;
+  const grp = new THREE.Group();
+  grp.rotation.y = Math.atan2(tx - gx, tz - gz);
+  grp.position.set((tx+gx)/2, ISLAND_TOP_Y + 0.025, (tz+gz)/2);
+  for (let i = 0; i < num; i++) {
+    const lz = -halfLen + i * sw;
+    const t  = lz / halfLen;
+    if (t * t >= 1.0) continue;
+    const stripeHW = hw * Math.sqrt(1.0 - t * t);
+    if (stripeHW < 0.25) continue;
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(stripeHW * 2, sw * 0.99),
+      i % 2 === 0 ? fw1Mat : fw2Mat
+    );
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(0, 0, lz);
+    mesh.receiveShadow = true;
+    grp.add(mesh);
+  }
+  scene.add(grp);
+}
+
+// ── Tee box ───────────────────────────────────────────────────────────────────
+// Raised rectangular grass pad with championship (white) and forward (yellow) markers.
+function makeTeeBox(tx, tz, gx, gz) {
+  const ang = Math.atan2(gx - tx, gz - tz);
+  const teeGrassMat = new THREE.MeshStandardMaterial({ color: 0x4a8822, roughness: 0.87 });
+  const box = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.22, 3.5), teeGrassMat);
+  box.rotation.y = ang;
+  box.position.set(tx, ISLAND_TOP_Y + 0.11, tz);
+  box.receiveShadow = true;
+  scene.add(box);
+  const markerGeo = new THREE.SphereGeometry(0.18, 8, 6);
+  const wMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.3 });
+  const yMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.3 });
+  const rightX = Math.cos(ang), rightZ = -Math.sin(ang);
+  const fwdX   = Math.sin(ang), fwdZ  =  Math.cos(ang);
+  [[-1.6, wMat], [1.6, yMat]].forEach(([side, mat]) => {
+    const m = new THREE.Mesh(markerGeo, mat);
+    m.position.set(
+      tx + rightX * side + fwdX * 1.3,
+      ISLAND_TOP_Y + 0.31,
+      tz + rightZ * side + fwdZ * 1.3
+    );
+    m.castShadow = true;
+    scene.add(m);
+  });
+}
+
+// ── Cart path ─────────────────────────────────────────────────────────────────
+// Narrow concrete-coloured strip running beside each fairway.
+function makeCartPath(tx, tz, gx, gz) {
+  const pathMat = new THREE.MeshStandardMaterial({
+    color: 0xb0a890, roughness: 0.97,
+    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2
+  });
+  const ang = Math.atan2(tx - gx, tz - gz);
+  const len = Math.sqrt((gx-tx)**2 + (gz-tz)**2) + 5;
+  // Offset 10 units to the right of the fairway centre-line
+  const offX = Math.cos(ang) * 10;
+  const offZ = -Math.sin(ang) * 10;
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, len), pathMat);
   mesh.rotation.x = -Math.PI / 2;
-  mesh.scale.set(hw, halfLen, 1);
   mesh.receiveShadow = true;
   const grp = new THREE.Group();
   grp.add(mesh);
-  grp.rotation.y = Math.atan2(tx - gx, tz - gz);
-  grp.position.set((tx+gx)/2, ISLAND_TOP_Y + 0.025, (tz+gz)/2);
+  grp.rotation.y = ang;
+  grp.position.set((tx+gx)/2 + offX, ISLAND_TOP_Y + 0.022, (tz+gz)/2 + offZ);
+  scene.add(grp);
+}
+
+// ── 150-yard marker ───────────────────────────────────────────────────────────
+// Coloured post + disc at the mid-fairway yardage point.
+function makeYardageMarker(mx, mz, color) {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.7 });
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.95, 8), mat);
+  post.position.set(mx, ISLAND_TOP_Y + 0.48, mz);
+  post.castShadow = true;
+  scene.add(post);
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 10), mat);
+  disc.position.set(mx, ISLAND_TOP_Y + 1.0, mz);
+  scene.add(disc);
+}
+
+// ── Hole sign ─────────────────────────────────────────────────────────────────
+// Dark green placard on a wooden post standing beside each tee.
+function makeHoleSign(tx, tz, gx, gz) {
+  const ang    = Math.atan2(gx - tx, gz - tz);
+  const rightX = Math.cos(ang), rightZ = -Math.sin(ang);
+  const sx = tx + rightX * 3.8, sz = tz + rightZ * 3.8;
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x3a2e18, roughness: 0.9 });
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 1.7, 8), postMat);
+  post.position.set(sx, ISLAND_TOP_Y + 0.85, sz);
+  post.castShadow = true;
+  scene.add(post);
+  const signMat = new THREE.MeshStandardMaterial({ color: 0x1a4a0a, roughness: 0.72 });
+  const signBrd = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.72, 0.07), signMat);
+  signBrd.position.set(sx, ISLAND_TOP_Y + 1.78, sz);
+  signBrd.rotation.y = ang + Math.PI * 0.5; // face across the tee
+  signBrd.castShadow = true;
+  scene.add(signBrd);
+}
+
+// ── Approach / apron ──────────────────────────────────────────────────────────
+// Lighter strip of tight-cut grass leading from the fairway collar to the green.
+function makeApron(tx, tz, gx, gz, greenR) {
+  const approachMat = new THREE.MeshStandardMaterial({
+    color: 0x4a8828, roughness: 0.89,
+    polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -5
+  });
+  const dx = tx - gx, dz = tz - gz;
+  const len = Math.sqrt(dx*dx + dz*dz);
+  const ang = Math.atan2(dx, dz); // pointing from green toward tee
+  const apronLen = 6.0, apronW = greenR * 1.25;
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(apronW, apronLen), approachMat);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.receiveShadow = true;
+  const grp = new THREE.Group();
+  grp.add(mesh);
+  grp.rotation.y = ang;
+  const nx = dx / len, nz = dz / len;
+  grp.position.set(
+    gx + nx * (greenR + apronLen * 0.5),
+    ISLAND_TOP_Y + 0.026,
+    gz + nz * (greenR + apronLen * 0.5)
+  );
   scene.add(grp);
 }
 
@@ -1124,10 +1250,35 @@ function makeBunker(cx, cz, wx, wz, angle) {
   scene.add(rimGrp);
 }
 
-// ── Fairways ──────────────────────────────────────────────────────────────────
-makeFairway(22, -5,  30,  5, 7);
-makeFairway(-15, -8, -22, -18, 7);
-makeFairway(5,  16,   8,  28, 7);
+// ── Fairways (striped mow pattern) ───────────────────────────────────────────
+makeFairwayStriped(22,  -5,  30,   5,  7);
+makeFairwayStriped(-15, -8, -22, -18,  7);
+makeFairwayStriped(5,   16,   8,  28,  7);
+
+// ── Approach / apron for each green ──────────────────────────────────────────
+makeApron(22, -5,  30,   5, GREENS[0].r);
+makeApron(-15, -8, -22, -18, GREENS[1].r);
+makeApron(5,  16,   8,  28, GREENS[2].r);
+
+// ── Tee boxes ─────────────────────────────────────────────────────────────────
+makeTeeBox(22,  -5,  30,   5);
+makeTeeBox(-15, -8, -22, -18);
+makeTeeBox(5,   16,   8,  28);
+
+// ── Cart paths ────────────────────────────────────────────────────────────────
+makeCartPath(22,  -5,  30,   5);
+makeCartPath(-15, -8, -22, -18);
+makeCartPath(5,   16,   8,  28);
+
+// ── 150-yard markers (white post at mid-fairway) ──────────────────────────────
+makeYardageMarker(26,    0,   0xffffff);  // H1
+makeYardageMarker(-18.5,-13, 0xffffff);  // H2
+makeYardageMarker(6.5,   22, 0xffffff);  // H3
+
+// ── Hole signs beside each tee ────────────────────────────────────────────────
+makeHoleSign(22,  -5,  30,   5);
+makeHoleSign(-15, -8, -22, -18);
+makeHoleSign(5,   16,   8,  28);
 
 // Hill definitions — shared with getGroundY for terrain height sampling
 // [cx, cz, rx, rz, height]  (matches makeHill parameters exactly)
@@ -1386,8 +1537,11 @@ const swingBtnEl   = document.getElementById('swing-btn');
 const exitGolfBtnEl = document.getElementById('exit-golf-btn');
 
 function golfInfoText() {
-  const h = GOLF.holeIdx;
-  return `HOLE ${h+1}  ·  STROKES: ${GOLF.strokes[h]}`;
+  const h   = GOLF.holeIdx;
+  const par = PARS[h];
+  const s   = GOLF.strokes[h];
+  const rel = s === 0 ? '' : ` (${s - par >= 0 ? '+' : ''}${s - par})`;
+  return `HOLE ${h+1}  ·  PAR ${par}  ·  STROKES: ${s}${rel}`;
 }
 
 function startGolf(idx) {
@@ -1858,8 +2012,8 @@ function animate() {
   // Live state debug in build label
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
-      ? `B22 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 22';
+      ? `B23 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
+      : 'BUILD 23';
 
   renderer.render(scene, camera);
 }
