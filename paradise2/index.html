@@ -375,6 +375,17 @@ function makeIsland() {
     group.add(gm);
   });
 
+  // Sandy beach ring around island edge — pale sand from radius 36 to 46
+  const beachMat = new THREE.MeshStandardMaterial({
+    color: 0xd4b483, roughness: 0.95,
+    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -3
+  });
+  const beachRing = new THREE.Mesh(new THREE.RingGeometry(36, 46, 64), beachMat);
+  beachRing.rotation.x = -Math.PI / 2;
+  beachRing.position.y = 4.021;
+  beachRing.receiveShadow = true;
+  group.add(beachRing);
+
   // Pebbles scattered in rough only — excluded from greens and fringe
   for (let i = 0; i < 120; i++) {
     const angle = Math.random() * Math.PI * 2;
@@ -863,6 +874,76 @@ scene.add(boat);
   }
 });
 
+// ─── Cruise ship (far horizon) ────────────────────────────────────────────────
+function makeCruiseShip() {
+  const g = new THREE.Group();
+  const hullMat  = new THREE.MeshStandardMaterial({ color: 0x1a2a5a, roughness: 0.65 });
+  const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf0efe8, roughness: 0.60 });
+  const yellowMat = new THREE.MeshStandardMaterial({ color: 0xddaa00, roughness: 0.55 });
+  const glassMat  = new THREE.MeshStandardMaterial({ color: 0x88aacc, roughness: 0.2, metalness: 0.3 });
+
+  // Main hull — dark blue, rides low in water
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(90, 12, 22), hullMat);
+  hull.position.y = 0;
+  hull.castShadow = true;
+  g.add(hull);
+
+  // White hull band at waterline
+  const band = new THREE.Mesh(new THREE.BoxGeometry(92, 2.5, 24), whiteMat);
+  band.position.y = 6;
+  g.add(band);
+
+  // Bow taper — wedge shape at front
+  const bowGeo = new THREE.CylinderGeometry(0.5, 11, 12, 4, 1, false);
+  const bow = new THREE.Mesh(bowGeo, hullMat);
+  bow.rotation.y = Math.PI / 4;
+  bow.position.set(47, 0, 0);
+  g.add(bow);
+
+  // Superstructure decks — 7 stacked slabs, tapering back
+  for (let i = 0; i < 7; i++) {
+    const dw = 80 - i * 5;
+    const dd = 18 - i * 0.8;
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(dw, 3.2, Math.max(dd, 10)), whiteMat);
+    deck.position.set(-5 + i * 0.5, 8 + i * 3.2, 0);
+    deck.castShadow = true;
+    g.add(deck);
+
+    // Row of portholes/windows on each deck
+    const winRow = new THREE.Mesh(new THREE.BoxGeometry(dw * 0.85, 1.0, 0.3), glassMat);
+    winRow.position.set(-5 + i * 0.5, 9.0 + i * 3.2, Math.max(dd, 10) / 2 + 0.05);
+    g.add(winRow);
+  }
+
+  // Two funnels — yellow with black tops
+  [[-8, 0], [8, 0]].forEach(([fx]) => {
+    const funnel = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 4.2, 10, 14), yellowMat);
+    funnel.position.set(fx, 8 + 7 * 3.2 + 5, 0);
+    funnel.castShadow = true;
+    g.add(funnel);
+
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.6, 2.5, 14),
+      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 }));
+    top.position.set(fx, 8 + 7 * 3.2 + 11.2, 0);
+    g.add(top);
+  });
+
+  // Radar mast at bow
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 18, 8), whiteMat);
+  mast.position.set(35, 8 + 7 * 3.2 + 9, 0);
+  g.add(mast);
+
+  return g;
+}
+
+{
+  const ship = makeCruiseShip();
+  // Far southeast horizon — large enough to be clearly visible
+  ship.position.set(240, -3.5, 200);
+  ship.rotation.y = -0.5;
+  scene.add(ship);
+}
+
 // ─── Golf flags ───────────────────────────────────────────────────────────────
 const poleMat  = new THREE.MeshStandardMaterial({ color: 0xdddddd });
 const flagColors = [0xff2222, 0x2244ff, 0xffcc00];
@@ -1048,13 +1129,19 @@ makeFairway(22, -5,  30,  5, 7);
 makeFairway(-15, -8, -22, -18, 7);
 makeFairway(5,  16,   8,  28, 7);
 
+// Hill definitions — shared with getGroundY for terrain height sampling
+// [cx, cz, rx, rz, height]  (matches makeHill parameters exactly)
+const HILL_DEFS = [
+  [16,  -2,  8.0, 5.5, 2.2],
+  [27, -10,  5.5, 8.5, 1.8],
+  [-9, -14,  8.5, 6.0, 2.0],
+  [-21, -5,  6.0, 8.2, 1.8],
+  [  0,  22, 7.5, 5.5, 1.9],
+  [ 13,  24, 5.8, 8.5, 1.7],
+];
+
 // ── Hills (bunker-aware — depressions baked in) ───────────────────────────────
-makeHill(16, -2,  8.0, 5.5, 2.2);
-makeHill(27, -10, 5.5, 8.5, 1.8);
-makeHill(-9, -14, 8.5, 6.0, 2.0);
-makeHill(-21, -5, 6.0, 8.2, 1.8);
-makeHill( 0,  22, 7.5, 5.5, 1.9);
-makeHill(13,  24, 5.8, 8.5, 1.7);
+HILL_DEFS.forEach(([cx, cz, rx, rz, h]) => makeHill(cx, cz, rx, rz, h));
 
 // ── Bunkers (3D bowl geometry) ────────────────────────────────────────────────
 BUNKER_DEFS.forEach(([cx, cz, wx, wz], i) => {
@@ -1401,13 +1488,43 @@ function hidePrompt() {
 
 // ─── Collision / grounding ────────────────────────────────────────────────────
 function getGroundY(px, pz) {
-  const dist = Math.sqrt(px*px + pz*pz);
-  if (dist >= ISLAND_RADIUS + 8) return 0.05;
-  if (dist >= ISLAND_RADIUS) return (ISLAND_TOP_Y + 0.02) - (dist - ISLAND_RADIUS) * 0.55;
-  for (const g of GREENS) {
-    if (Math.sqrt((px-g.x)**2 + (pz-g.z)**2) < g.r) return ISLAND_TOP_Y + 0.04; // green surface
+  // Pier walkway (width 3.2 → half 1.6 + margin) — deck at world y=1.9
+  if (Math.abs(px) <= 2.0 && pz >= 46 && pz <= 68) return 1.9;
+  // T-dock platform at end of pier (width 9 → half 4.5 + margin)
+  if (Math.abs(px) <= 5.0 && pz > 68 && pz <= 75) return 1.9;
+  // Ramp connecting island surface to pier deck (z 43–46)
+  if (Math.abs(px) <= 2.0 && pz >= 43 && pz < 46) {
+    const t = (pz - 43) / 3.0; // 0 at island, 1 at pier start
+    return (ISLAND_TOP_Y + 0.02) * (1.0 - t) + 1.9 * t;
   }
-  return ISLAND_TOP_Y + 0.02; // ground disc surface
+
+  const dist = Math.sqrt(px*px + pz*pz);
+  // Ocean / deep water
+  if (dist >= ISLAND_RADIUS + 8) return 0.05;
+  // Beach slope — player can wade in this zone
+  if (dist >= ISLAND_RADIUS) return (ISLAND_TOP_Y + 0.02) - (dist - ISLAND_RADIUS) * 0.55;
+
+  // Island surface — start at rough grass height
+  let groundY = ISLAND_TOP_Y + 0.02;
+
+  // Putting greens are slightly raised
+  for (const g of GREENS) {
+    if (Math.sqrt((px-g.x)**2 + (pz-g.z)**2) < g.r) { groundY = ISLAND_TOP_Y + 0.04; break; }
+  }
+
+  // Hills — top-hemisphere surface: world_y = (ISLAND_TOP_Y-0.1) + height*sqrt(1 - r²)
+  // where r = sqrt(((px-cx)/rx)² + ((pz-cz)/rz)²), valid when r < 1
+  for (const [hx, hz, rx, rz, height] of HILL_DEFS) {
+    const lx = (px - hx) / rx;
+    const lz = (pz - hz) / rz;
+    const r2 = lx*lx + lz*lz;
+    if (r2 < 1.0) {
+      const hillTop = (ISLAND_TOP_Y - 0.1) + height * Math.sqrt(1.0 - r2);
+      if (hillTop > groundY) groundY = hillTop;
+    }
+  }
+
+  return groundY;
 }
 
 // Computer interaction zone
@@ -1651,11 +1768,32 @@ function animate() {
       let nz = camera.position.z + move.z * speed * dt;
       let ny = camera.position.y + vy * dt;
 
-      const distFromCenter = Math.sqrt(nx*nx + nz*nz);
-      if (distFromCenter > ISLAND_RADIUS) {
-        const pushAngle = Math.atan2(nz, nx);
-        nx = Math.cos(pushAngle) * ISLAND_RADIUS;
-        nz = Math.sin(pushAngle) * ISLAND_RADIUS;
+      // Pier / dock footprint — player is on a structure, skip radial boundary
+      const onPier = Math.abs(nx) <= 2.0 && nz >= 43 && nz <= 68;
+      const onDock = Math.abs(nx) <= 5.0 && nz > 68 && nz <= 75;
+      if (onPier || onDock) {
+        // Hard stop at dock end
+        if (nz > 75) nz = 75;
+      } else {
+        // Allow wading into beach (ISLAND_RADIUS + 8 before ocean cutoff)
+        const distFromCenter = Math.sqrt(nx*nx + nz*nz);
+        if (distFromCenter > ISLAND_RADIUS + 8) {
+          const pushAngle = Math.atan2(nz, nx);
+          nx = Math.cos(pushAngle) * (ISLAND_RADIUS + 8);
+          nz = Math.sin(pushAngle) * (ISLAND_RADIUS + 8);
+        }
+      }
+
+      // Rock collision — push player outside boulder radius
+      const PLAYER_R = 0.45;
+      for (const rc of ROCK_COLLIDERS) {
+        const rdx = nx - rc.x, rdz = nz - rc.z;
+        const d = Math.sqrt(rdx*rdx + rdz*rdz);
+        const minD = rc.r + PLAYER_R;
+        if (d < minD && d > 0.001) {
+          nx = rc.x + rdx / d * minD;
+          nz = rc.z + rdz / d * minD;
+        }
       }
 
       const groundY = getGroundY(nx, nz) + PLAYER_HEIGHT;
@@ -1720,8 +1858,8 @@ function animate() {
   // Live state debug in build label
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
-      ? `B21 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 21';
+      ? `B22 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
+      : 'BUILD 22';
 
   renderer.render(scene, camera);
 }
