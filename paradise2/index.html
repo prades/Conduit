@@ -985,8 +985,8 @@ const BUNKER_DEFS = [
   [15,  28, 2.6, 4.2],  // H3 right green
   [ 8,  36, 3.4, 2.4],  // H3 back
 ];
-const BUNKER_RIM_Y    = ISLAND_TOP_Y + 0.22; // world Y where bunker rim sits
 const BUNKER_BOWL_D   = 0.18;                // depth from rim to bowl center (world units)
+const HILL_BASE_Y     = ISLAND_TOP_Y - 0.55; // equator buried below ground for dramatic emergence
 
 // Materials
 // Two alternating fairway tones — simulates cross-cut mowing stripes
@@ -1176,58 +1176,45 @@ function makeApron(tx, tz, gx, gz, greenR) {
   scene.add(grp);
 }
 
-// Organic grass hill — upper hemisphere only, bunker depressions baked into vertices.
-// No random rotation.y so world-XZ computation is accurate for bunker matching.
+// Organic grass hill — upper hemisphere, equator buried at HILL_BASE_Y.
+// Bunkers are no longer baked in here; they float on top of the hill surface.
 function makeHill(cx, cz, rx, rz, height) {
-  // SphereGeometry top hemisphere: y=0 at equator/base, y=1 at apex
-  const geo = new THREE.SphereGeometry(1, 36, 22, 0, Math.PI * 2, 0, Math.PI / 2);
+  const geo = new THREE.SphereGeometry(1, 40, 24, 0, Math.PI * 2, 0, Math.PI / 2);
   const pos = geo.attributes.position;
-  const seed = cx * 7.31 + cz * 11.73; // unique organic noise per hill
-
-  // Target local-Y at the bunker rim (so hill surface meets bunker edge cleanly)
-  const rimLocalY = (BUNKER_RIM_Y - (ISLAND_TOP_Y - 0.1)) / height; // ≈ 0.32/height
-
+  const seed = cx * 7.31 + cz * 11.73;
   for (let i = 0; i < pos.count; i++) {
     let lx = pos.getX(i), ly = pos.getY(i), lz = pos.getZ(i);
-
-    // Organic surface noise — zero at equator (ly=0), max at apex (ly=1)
-    lx += Math.sin(lz * 3.9 + ly * 5.1 + seed)        * 0.13 * ly;
-    lz += Math.sin(lx * 6.2 + ly * 4.8 + seed * 0.7)  * 0.13 * ly;
-    ly += Math.sin(lx * 4.3 + lz * 3.7 + seed * 0.4)  * 0.08 * ly;
-
-    // World XZ of this vertex (scale applied, no rotation)
-    const wx = cx + lx * rx, wz = cz + lz * rz;
-
-    // Bunker depression — deform hill surface down toward rim level at each bunker
-    for (const [bx, bz, bwx, bwz] of BUNKER_DEFS) {
-      const nd = Math.sqrt(((wx - bx) / (bwx * 1.15)) ** 2 + ((wz - bz) / (bwz * 1.15)) ** 2);
-      if (nd < 1.0) {
-        const t = 1.0 - nd;            // 0 at edge, 1 at center
-        const excess = ly - rimLocalY; // how much higher than rim level this vertex is
-        if (excess > 0) ly -= t * t * excess; // smoothly pull down to rim level
-      }
-    }
-
+    lx += Math.sin(lz * 3.9 + ly * 5.1 + seed)       * 0.13 * ly;
+    lz += Math.sin(lx * 6.2 + ly * 4.8 + seed * 0.7) * 0.13 * ly;
+    ly += Math.sin(lx * 4.3 + lz * 3.7 + seed * 0.4) * 0.08 * ly;
     pos.setXYZ(i, lx, Math.max(0.001, ly), lz);
   }
   geo.computeVertexNormals();
-
   const mesh = new THREE.Mesh(geo, hillMat);
   mesh.scale.set(rx, height, rz);
-  // Base ring buried 0.1 below ground so hill emerges seamlessly from terrain
-  mesh.position.set(cx, ISLAND_TOP_Y - 0.1, cz);
+  mesh.position.set(cx, HILL_BASE_Y, cz);
   mesh.receiveShadow = true;
   mesh.castShadow = true;
   scene.add(mesh);
 }
 
-// Sand bunker — actual 3D bowl mesh with grass rim ring
+// Sand bunker — 3D bowl mesh placed on top of whatever terrain exists at (cx,cz).
+// When bunkers fall on hill slopes the bowl rides up the hillside automatically.
 function makeBunker(cx, cz, wx, wz, angle) {
   const a = angle || 0;
-  const bowlGeo = createBowlGeo(14, 40);
 
-  // Bowl: rim sits at BUNKER_RIM_Y, center sinks BUNKER_BOWL_D below that
-  // scale.z = BUNKER_BOWL_D so local Z=-1 maps to world-Y offset of -BUNKER_BOWL_D
+  // Sample hill surface height at bunker centre (HILL_DEFS defined just below)
+  let rimY = ISLAND_TOP_Y + 0.08;
+  for (const [hx, hz, hrx, hrz, height] of HILL_DEFS) {
+    const lx = (cx - hx) / hrx, lz = (cz - hz) / hrz;
+    const r2 = lx*lx + lz*lz;
+    if (r2 < 1.0) {
+      const hy = HILL_BASE_Y + height * Math.sqrt(1.0 - r2) + 0.12;
+      if (hy > rimY) rimY = hy;
+    }
+  }
+
+  const bowlGeo = createBowlGeo(14, 40);
   const bowl = new THREE.Mesh(bowlGeo, bunkerSandMat);
   bowl.rotation.x = -Math.PI / 2;
   bowl.scale.set(wx, wz, BUNKER_BOWL_D);
@@ -1235,10 +1222,10 @@ function makeBunker(cx, cz, wx, wz, angle) {
   const bowlGrp = new THREE.Group();
   bowlGrp.add(bowl);
   bowlGrp.rotation.y = a;
-  bowlGrp.position.set(cx, BUNKER_RIM_Y, cz);
+  bowlGrp.position.set(cx, rimY, cz);
   scene.add(bowlGrp);
 
-  // Grass rim ring — raised collar around the bowl edge
+  // Grass rim ring — collar around the bowl edge
   const rim = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.55, 40), bunkerRimMat);
   rim.rotation.x = -Math.PI / 2;
   rim.scale.set(wx + 0.2, wz + 0.2, 1);
@@ -1246,7 +1233,7 @@ function makeBunker(cx, cz, wx, wz, angle) {
   const rimGrp = new THREE.Group();
   rimGrp.add(rim);
   rimGrp.rotation.y = a;
-  rimGrp.position.set(cx, BUNKER_RIM_Y + 0.01, cz);
+  rimGrp.position.set(cx, rimY + 0.01, cz);
   scene.add(rimGrp);
 }
 
@@ -1280,25 +1267,89 @@ makeHoleSign(22,  -5,  30,   5);
 makeHoleSign(-15, -8, -22, -18);
 makeHoleSign(5,   16,   8,  28);
 
-// Hill definitions — shared with getGroundY for terrain height sampling
-// [cx, cz, rx, rz, height]  (matches makeHill parameters exactly)
+// Hill definitions — [cx, cz, rx, rz, height]
+// Used by makeHill, getGroundY, and dynamic bunker placement.
 const HILL_DEFS = [
-  [16,  -2,  8.0, 5.5, 2.2],
-  [27, -10,  5.5, 8.5, 1.8],
-  [-9, -14,  8.5, 6.0, 2.0],
-  [-21, -5,  6.0, 8.2, 1.8],
-  [  0,  22, 7.5, 5.5, 1.9],
-  [ 13,  24, 5.8, 8.5, 1.7],
+  [ 16,  -2, 11.0,  7.5, 3.8],  // H1 main — east ridge
+  [ 28, -11,  8.0, 12.5, 3.4],  // H1 wing — SE shoulder
+  [ -9, -14, 13.0,  9.0, 3.8],  // H2 main — south ridge
+  [-22,  -4,  9.0, 12.0, 3.4],  // H2 wing — west shoulder
+  [  0,  22, 11.0,  8.0, 3.6],  // H3 main — north ridge
+  [ 14,  25,  8.5, 12.5, 3.2],  // H3 wing — NE shoulder
+  [-38,   2, 17.0, 13.0, 5.8],  // coastal cliff hill — western promontory
 ];
 
-// ── Hills (bunker-aware — depressions baked in) ───────────────────────────────
+// ── Hills ─────────────────────────────────────────────────────────────────────
 HILL_DEFS.forEach(([cx, cz, rx, rz, h]) => makeHill(cx, cz, rx, rz, h));
 
-// ── Bunkers (3D bowl geometry) ────────────────────────────────────────────────
+// ── Bunkers (3D bowl geometry — float on hill surface) ────────────────────────
 BUNKER_DEFS.forEach(([cx, cz, wx, wz], i) => {
   const angles = [0.5, 0.8, 0.0, 0.4, 1.0, 0.2, 0.3, 1.1, 0.0];
   makeBunker(cx, cz, wx, wz, angles[i]);
 });
+
+// ── Western cliff face — rocky drop on the coastal promontory ─────────────────
+{
+  const cx = -38, cz = 2;
+  const cMat1 = new THREE.MeshStandardMaterial({ color: 0x3e3c38, roughness: 1.0, flatShading: true });
+  const cMat2 = new THREE.MeshStandardMaterial({ color: 0x525048, roughness: 0.95, flatShading: true });
+
+  // Large deformed rock slabs forming the cliff face
+  [[cx-16, cz,    8.5, 4.8, 10.0, cMat1],
+   [cx-18, cz+7,  7.0, 5.2,  9.5, cMat2],
+   [cx-17, cz-8,  7.8, 5.0, 10.5, cMat1],
+   [cx-20, cz+2,  5.5, 3.8,  8.0, cMat2],
+  ].forEach(([bx, bz, sx, sz, sy, mat]) => {
+    const geo = new THREE.IcosahedronGeometry(1, 2);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      pos.setXYZ(i,
+        x + Math.sin(y * 2.1 + z * 1.8) * 0.26,
+        y + Math.sin(x * 1.9 + z * 2.3) * 0.13,
+        z + Math.sin(x * 2.7 + y * 1.6) * 0.22
+      );
+    }
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.scale.set(sx, sy, sz);
+    mesh.position.set(bx, ISLAND_TOP_Y + sy * 0.3, bz);
+    mesh.rotation.y = Math.sin(bx * 0.31 + bz * 0.17) * 0.4; // slight twist per slab
+    mesh.castShadow = true;
+    scene.add(mesh);
+    ROCK_COLLIDERS.push({ x: bx, z: bz, r: Math.max(sx, sz) * 0.85 });
+  });
+
+  // Boulder outcrops at the base extending toward the ocean
+  [[cx-23, cz+2, 3.2], [cx-25, cz+8, 2.6], [cx-24, cz-6, 3.0],
+   [cx-27, cz,   2.3], [cx-28, cz+5, 2.0]].forEach(([bx, bz, r]) => {
+    scene.add(makeBoulder(bx, bz, r, ISLAND_TOP_Y - 1.0));
+    ROCK_COLLIDERS.push({ x: bx, z: bz, r: r * 1.2 });
+  });
+}
+
+// ── Walking paths connecting each green to the next tee ───────────────────────
+{
+  const walkMat = new THREE.MeshStandardMaterial({
+    color: 0x8a7c68, roughness: 0.98,
+    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2
+  });
+  function makeWalkPath(x1, z1, x2, z2) {
+    const len = Math.sqrt((x2-x1)**2 + (z2-z1)**2);
+    const ang = Math.atan2(x1-x2, z1-z2);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2.0, len), walkMat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.receiveShadow = true;
+    const grp = new THREE.Group();
+    grp.add(mesh);
+    grp.rotation.y = ang;
+    grp.position.set((x1+x2)*0.5, ISLAND_TOP_Y + 0.023, (z1+z2)*0.5);
+    scene.add(grp);
+  }
+  makeWalkPath( 30,   5, -15,  -8);  // H1 green → H2 tee
+  makeWalkPath(-22, -18,   5,  16);  // H2 green → H3 tee
+  makeWalkPath(  8,  28,  22,  -5);  // H3 green → H1 tee (loop)
+}
 
 // ─── Golf balls + tees ───────────────────────────────────────────────────────
 const TEES = [
@@ -1666,14 +1717,13 @@ function getGroundY(px, pz) {
     if (Math.sqrt((px-g.x)**2 + (pz-g.z)**2) < g.r) { groundY = ISLAND_TOP_Y + 0.04; break; }
   }
 
-  // Hills — top-hemisphere surface: world_y = (ISLAND_TOP_Y-0.1) + height*sqrt(1 - r²)
-  // where r = sqrt(((px-cx)/rx)² + ((pz-cz)/rz)²), valid when r < 1
+  // Hills — top-hemisphere surface: world_y = HILL_BASE_Y + height*sqrt(1 - r²)
   for (const [hx, hz, rx, rz, height] of HILL_DEFS) {
     const lx = (px - hx) / rx;
     const lz = (pz - hz) / rz;
     const r2 = lx*lx + lz*lz;
     if (r2 < 1.0) {
-      const hillTop = (ISLAND_TOP_Y - 0.1) + height * Math.sqrt(1.0 - r2);
+      const hillTop = HILL_BASE_Y + height * Math.sqrt(1.0 - r2);
       if (hillTop > groundY) groundY = hillTop;
     }
   }
@@ -2012,8 +2062,8 @@ function animate() {
   // Live state debug in build label
   document.getElementById('build').textContent =
     GOLF.state !== 'idle'
-      ? `B23 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
-      : 'BUILD 23';
+      ? `B24 | golf:${GOLF.state} pwr:${GOLF.power.toFixed(2)}`
+      : 'BUILD 24';
 
   renderer.render(scene, camera);
 }
