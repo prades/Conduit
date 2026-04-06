@@ -69,6 +69,16 @@ const handleInput=(ex,ey)=>{
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
+
+    // ── WALL PANEL TAP — open math bypass minigame when close ──
+    if (t && t.nodeType === 'wall_panel' && !t.panelActivated) {
+        const _hpdx = player.x - t.x, _hpdy = player.y - t.y;
+        if (_hpdx * _hpdx + _hpdy * _hpdy < 9) { // within 3 tiles
+            openHackPanel(t);
+            return;
+        }
+    }
+
     if (t&&!t.type.includes('wall')) { player.targetX=gx; player.targetY=gy; }
     player.selectedFollower=null;
 };
@@ -111,7 +121,7 @@ canvas.addEventListener('pointerdown', e=>{
     [pressX,pressY]=toCanvas(e.clientX,e.clientY); pressStartTime=performance.now();
 
     // Canvas overlay panels — absorb pointerdown so no game action triggers
-    if (elementPickerOpen || infoPanelOpen || campMenuOpen || trapPickerOpen || settingsPanelOpen) return;
+    if (hackPanelOpen || elementPickerOpen || infoPanelOpen || campMenuOpen || trapPickerOpen || settingsPanelOpen) return;
 
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
     if (commandPendingTap) return;
