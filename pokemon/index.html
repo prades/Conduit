@@ -1755,6 +1755,169 @@
     }
     .dl-settings-note a { color: rgba(0,245,255,0.6); text-decoration: none; }
     .dl-settings-note a:hover { color: var(--cyan); }
+
+    /* ── Variant Tab Panel ── */
+    .variant-tabs-panel {
+      margin: 20px 0;
+      border: 1px solid rgba(0,245,255,0.1);
+      background: rgba(3,0,9,0.6);
+    }
+    .vtab-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      border-bottom: 1px solid rgba(0,245,255,0.08);
+      background: rgba(0,0,0,0.3);
+    }
+    .vtab-panel-title {
+      font-size: 0.6rem;
+      letter-spacing: 0.22em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+    .vtab-panel-count {
+      font-size: 0.58rem;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+    }
+    .vtab-sections {
+      padding: 12px 14px 0;
+    }
+    .vtab-row-label {
+      font-size: 0.52rem;
+      letter-spacing: 0.2em;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .vtab-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+    .vtab {
+      background: rgba(0,245,255,0.03);
+      border: 1px solid rgba(0,245,255,0.12);
+      color: var(--dim);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.63rem;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      cursor: pointer;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      white-space: nowrap;
+    }
+    .vtab:hover:not(.vtab-active) {
+      background: rgba(0,245,255,0.07);
+      border-color: rgba(0,245,255,0.28);
+      color: var(--text);
+    }
+    .vtab.vtab-active {
+      background: rgba(0,245,255,0.12);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+    /* 1st Edition — gold accent */
+    .vtab.vtab-1st { border-color: rgba(255,215,0,0.28); color: rgba(255,215,0,0.55); }
+    .vtab.vtab-1st:hover:not(.vtab-active) { background: rgba(255,215,0,0.06); border-color: rgba(255,215,0,0.5); color: rgba(255,215,0,0.8); }
+    .vtab.vtab-1st.vtab-active  { background: rgba(255,215,0,0.1); border-color: var(--gold); color: var(--gold); }
+    /* Japanese — red accent */
+    .vtab.vtab-jpn { border-color: rgba(255,51,85,0.28); color: rgba(255,51,85,0.55); }
+    .vtab.vtab-jpn:hover:not(.vtab-active) { background: rgba(255,51,85,0.06); border-color: rgba(255,51,85,0.5); color: rgba(255,51,85,0.85); }
+    .vtab.vtab-jpn.vtab-active  { background: rgba(255,51,85,0.1); border-color: var(--red); color: var(--red); }
+    /* Shadowless — purple accent */
+    .vtab.vtab-shad { border-color: rgba(136,0,255,0.35); color: rgba(136,0,255,0.65); }
+    .vtab.vtab-shad:hover:not(.vtab-active) { background: rgba(136,0,255,0.07); border-color: rgba(136,0,255,0.55); color: #aa44ff; }
+    .vtab.vtab-shad.vtab-active { background: rgba(136,0,255,0.12); border-color: var(--purple); color: #bb66ff; }
+
+    /* ── Variant Content Area ── */
+    .vtab-content {
+      padding: 14px;
+      border-top: 1px solid rgba(0,245,255,0.07);
+      min-height: 120px;
+    }
+    .vtab-price-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .vtab-variant-title {
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      color: var(--cyan);
+      text-transform: uppercase;
+    }
+    .vtab-variant-title.gold  { color: var(--gold); }
+    .vtab-variant-title.red   { color: var(--red); }
+    .vtab-variant-title.purple{ color: #bb66ff; }
+    .vtab-source-tag { font-size: 0.58rem; color: var(--dim); letter-spacing: 0.1em; }
+    .vtab-price-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 480px) { .vtab-price-grid { grid-template-columns: repeat(2, 1fr); } }
+    .vtab-price-cell {
+      padding: 9px 8px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(0,245,255,0.06);
+      text-align: center;
+    }
+    .vtab-price-label { font-size: 0.52rem; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 4px; }
+    .vtab-price-val { font-size: 1.0rem; font-weight: 700; line-height: 1; }
+    .vtab-price-val.market { color: var(--cyan); }
+    .vtab-price-val.gold   { color: var(--gold); }
+    .vtab-price-val.low    { color: var(--green); }
+    .vtab-price-val.mid    { color: var(--text); }
+    .vtab-price-val.high   { color: var(--red); }
+    .vtab-spread {
+      font-size: 0.6rem;
+      color: var(--dim);
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .vtab-edition-note {
+      font-size: 0.63rem;
+      color: var(--dim);
+      letter-spacing: 0.04em;
+      line-height: 1.55;
+      padding: 7px 10px;
+      border-left: 2px solid rgba(0,245,255,0.18);
+      margin-bottom: 10px;
+    }
+    .vtab-edition-note.gold-note   { border-color: rgba(255,215,0,0.4); }
+    .vtab-edition-note.red-note    { border-color: rgba(255,51,85,0.4); }
+    .vtab-edition-note.purple-note { border-color: rgba(136,0,255,0.4); }
+    .vtab-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .vtab-link {
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      background: rgba(0,245,255,0.04);
+      border: 1px solid rgba(0,245,255,0.18);
+      color: var(--dim);
+      text-decoration: none;
+      clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+      transition: color 0.1s, border-color 0.1s;
+    }
+    .vtab-link:hover { color: var(--cyan); border-color: var(--cyan); }
+    .vtab-link.gold-link { border-color: rgba(255,215,0,0.3); color: rgba(255,215,0,0.6); }
+    .vtab-link.gold-link:hover { border-color: var(--gold); color: var(--gold); }
+    .vtab-link.red-link  { border-color: rgba(255,51,85,0.3); color: rgba(255,51,85,0.6); }
+    .vtab-link.red-link:hover { border-color: var(--red); color: var(--red); }
+    .vtab-link.purple-link { border-color: rgba(136,0,255,0.35); color: rgba(136,0,255,0.65); }
+    .vtab-link.purple-link:hover { border-color: var(--purple); color: #bb66ff; }
+    .vtab-no-data { font-size: 0.68rem; color: var(--dim); letter-spacing: 0.1em; padding: 18px 0; text-align: center; }
   </style>
 </head>
 <body>
@@ -2692,6 +2855,240 @@
     `;
   }
 
+  /* ── Variant Tabs ── */
+  const PRINT_ORDER = ['1stEditionHolofoil','1stEditionNormal','unlimitedHolofoil','holofoil','reverseHolofoil','normal'];
+  const PRINT_LABELS = {
+    '1stEditionHolofoil': '1st Ed Holo',
+    '1stEditionNormal':   '1st Ed Normal',
+    unlimitedHolofoil:    'Unlimited Holo',
+    holofoil:             'Holofoil',
+    reverseHolofoil:      'Reverse Holo',
+    normal:               'Normal',
+  };
+  const PRINT_TAB_CLASS = {
+    '1stEditionHolofoil': 'vtab-1st',
+    '1stEditionNormal':   'vtab-1st',
+    unlimitedHolofoil:    '',
+    holofoil:             '',
+    reverseHolofoil:      '',
+    normal:               '',
+  };
+
+  function buildVariantTabsHTML(card) {
+    const tcp = card.tcgplayer?.prices || {};
+    const availableKeys = PRINT_ORDER.filter(k => tcp[k]);
+    const isShadowless = card.set?.id === 'base1';
+    const variantCount = availableKeys.length + (isShadowless ? 1 : 0) + 1; // +1 for JPN
+
+    const langTabsHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="vtab-row-label">LANG</span>
+        <div class="vtab-bar">
+          <button class="vtab vtab-active" data-vtab-lang="eng">ENG</button>
+          <button class="vtab vtab-jpn" data-vtab-lang="jpn">JPN</button>
+        </div>
+      </div>
+    `;
+
+    let printTabsHTML = '';
+    if (availableKeys.length > 0 || isShadowless) {
+      const tabs = [];
+      for (const k of availableKeys) {
+        const cls = PRINT_TAB_CLASS[k] ? ` ${PRINT_TAB_CLASS[k]}` : '';
+        const activeClass = tabs.length === 0 ? ' vtab-active' : '';
+        tabs.push(`<button class="vtab${cls}${activeClass}" data-vtab-print="${k}">${PRINT_LABELS[k]}</button>`);
+      }
+      if (isShadowless) {
+        tabs.push(`<button class="vtab vtab-shad" data-vtab-print="shadowless">Shadowless</button>`);
+      }
+      printTabsHTML = `
+        <div id="vtabPrintRow" style="display:flex;align-items:center;gap:8px">
+          <span class="vtab-row-label">TYPE</span>
+          <div class="vtab-bar">${tabs.join('')}</div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="variant-tabs-panel">
+        <div class="vtab-panel-header">
+          <span class="vtab-panel-title">CARD VARIANTS</span>
+          <span class="vtab-panel-count">${variantCount} variant${variantCount !== 1 ? 's' : ''} available</span>
+        </div>
+        <div class="vtab-sections">
+          ${langTabsHTML}
+          ${printTabsHTML}
+        </div>
+        <div class="vtab-content" id="vtabContent"></div>
+      </div>
+    `;
+  }
+
+  function renderVariantContent(card, lang, printKey) {
+    const el = document.getElementById('vtabContent');
+    if (!el) return;
+
+    if (lang === 'jpn') {
+      el.innerHTML = buildJPNContent(card);
+      return;
+    }
+
+    if (printKey === 'shadowless') {
+      const cardName = encodeURIComponent(card.name);
+      el.innerHTML = `
+        <div class="vtab-price-header">
+          <span class="vtab-variant-title purple">Shadowless</span>
+          <span class="vtab-source-tag">// Base Set · Transitional Print Run</span>
+        </div>
+        <div class="vtab-edition-note purple-note">
+          Shadowless cards are a transitional print run from the original Base Set (1999). They lack the drop shadow beneath the card art box. TCGPlayer lists them under general categories — filter by "Shadowless" in condition notes for accurate pricing.
+        </div>
+        <div class="vtab-links">
+          <a class="vtab-link purple-link" href="https://www.tcgplayer.com/search/pokemon/base-set?q=shadowless" target="_blank" rel="noopener">TCGPlayer · Shadowless ↗</a>
+          <a class="vtab-link purple-link" href="https://www.ebay.com/sch/i.html?_nkw=pokemon+shadowless+${cardName}&LH_Sold=1&LH_Complete=1" target="_blank" rel="noopener">eBay Sold Listings ↗</a>
+        </div>
+      `;
+      return;
+    }
+
+    const tcp = card.tcgplayer?.prices || {};
+    const p = tcp[printKey];
+    if (!p) {
+      el.innerHTML = `<div class="vtab-no-data">NO PRICE DATA FOR THIS VARIANT</div>`;
+      return;
+    }
+
+    const is1st = printKey.startsWith('1st');
+    const titleClass = is1st ? 'gold' : '';
+    const label = PRINT_LABELS[printKey] || printKey;
+    const spread = (p.low != null && p.high != null)
+      ? `<div class="vtab-spread">Spread: <span>${fmt(p.low)}</span> — <span>${fmt(p.high)}</span></div>`
+      : '';
+    const ebayQ = encodeURIComponent(`pokemon card ${card.name} ${label}`);
+    const tcgURL = card.tcgplayer?.url || `https://www.tcgplayer.com/search/pokemon/product?q=${encodeURIComponent(card.name)}`;
+    const linkCls = is1st ? ' gold-link' : '';
+
+    el.innerHTML = `
+      <div class="vtab-price-header">
+        <span class="vtab-variant-title ${titleClass}">${label}</span>
+        <span class="vtab-source-tag">// TCGPlayer · ${card.tcgplayer?.updatedAt || 'Live'}</span>
+      </div>
+      <div class="vtab-price-grid">
+        <div class="vtab-price-cell">
+          <div class="vtab-price-label">Market</div>
+          <div class="vtab-price-val market">${fmt(p.market)}</div>
+        </div>
+        <div class="vtab-price-cell">
+          <div class="vtab-price-label">Low</div>
+          <div class="vtab-price-val low">${fmt(p.low)}</div>
+        </div>
+        <div class="vtab-price-cell">
+          <div class="vtab-price-label">Mid</div>
+          <div class="vtab-price-val mid">${fmt(p.mid)}</div>
+        </div>
+        <div class="vtab-price-cell">
+          <div class="vtab-price-label">High</div>
+          <div class="vtab-price-val high">${fmt(p.high)}</div>
+        </div>
+      </div>
+      ${spread}
+      ${is1st ? `<div class="vtab-edition-note gold-note">1st Edition cards carry a significant collector premium. Look for the "Edition 1" stamp on the left side below the featured Pokémon.</div>` : ''}
+      <div class="vtab-links">
+        <a class="vtab-link${linkCls}" href="${tcgURL}" target="_blank" rel="noopener">TCGPlayer ↗</a>
+        <a class="vtab-link${linkCls}" href="https://www.ebay.com/sch/i.html?_nkw=${ebayQ}&LH_Sold=1&LH_Complete=1" target="_blank" rel="noopener">eBay Sold ↗</a>
+        <a class="vtab-link${linkCls}" href="https://www.psacard.com/smrpopulation/tcg-cards/pokemon" target="_blank" rel="noopener">PSA Pop ↗</a>
+      </div>
+    `;
+  }
+
+  function buildJPNContent(card) {
+    const cm = card.cardmarket?.prices;
+    const name = encodeURIComponent(card.name);
+    let priceBlock = '';
+
+    if (cm) {
+      const rhRow = cm.reverseHoloTrend ? `
+        <div class="vtab-price-cell">
+          <div class="vtab-price-label">RH Trend</div>
+          <div class="vtab-price-val gold">€${Number(cm.reverseHoloTrend||0).toFixed(2)}</div>
+        </div>
+      ` : '';
+      priceBlock = `
+        <div class="vtab-price-header">
+          <span class="vtab-variant-title red">Japanese / EU Market</span>
+          <span class="vtab-source-tag">// Cardmarket · EUR</span>
+        </div>
+        <div class="vtab-price-grid">
+          <div class="vtab-price-cell">
+            <div class="vtab-price-label">Avg Sell</div>
+            <div class="vtab-price-val gold">€${Number(cm.averageSellPrice||0).toFixed(2)}</div>
+          </div>
+          <div class="vtab-price-cell">
+            <div class="vtab-price-label">Low</div>
+            <div class="vtab-price-val low">€${Number(cm.lowPrice||0).toFixed(2)}</div>
+          </div>
+          <div class="vtab-price-cell">
+            <div class="vtab-price-label">Trend</div>
+            <div class="vtab-price-val gold">€${Number(cm.trendPrice||0).toFixed(2)}</div>
+          </div>
+          ${rhRow}
+        </div>
+        <div class="vtab-edition-note red-note">EUR prices via Cardmarket. Japanese original printings are often rarer — use the links below for JP-specific listings.</div>
+      `;
+    } else {
+      priceBlock = `
+        <div class="vtab-price-header">
+          <span class="vtab-variant-title red">Japanese Market</span>
+          <span class="vtab-source-tag">// No Cardmarket Data</span>
+        </div>
+        <div class="vtab-no-data">No EU/JP price data available for this card.</div>
+      `;
+    }
+
+    return `
+      ${priceBlock}
+      <div class="vtab-links">
+        <a class="vtab-link red-link" href="https://www.cardmarket.com/en/Pokemon/Cards/search?searchString=${name}&language=3" target="_blank" rel="noopener">Cardmarket JPN ↗</a>
+        <a class="vtab-link red-link" href="https://www.ebay.com/sch/i.html?_nkw=pokemon+card+japanese+${name}&LH_Sold=1&LH_Complete=1" target="_blank" rel="noopener">eBay JPN Sold ↗</a>
+        <a class="vtab-link red-link" href="https://buyee.jp/item/search?query=${name}+ポケモン+カード" target="_blank" rel="noopener">Buyee (JP) ↗</a>
+        <a class="vtab-link red-link" href="https://www.pokemon-card.com/card-search/index.php/search/simpleSearch?keyword=${name}" target="_blank" rel="noopener">pokemon-card.com ↗</a>
+      </div>
+    `;
+  }
+
+  function attachVariantTabListeners(card) {
+    const tcp = card.tcgplayer?.prices || {};
+    const availableKeys = PRINT_ORDER.filter(k => tcp[k]);
+    const isShadowless = card.set?.id === 'base1';
+    let currentLang = 'eng';
+    let currentPrint = availableKeys[0] || (isShadowless ? 'shadowless' : null);
+
+    // Initial render
+    renderVariantContent(card, currentLang, currentPrint);
+
+    // Language tab clicks
+    document.querySelectorAll('[data-vtab-lang]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-vtab-lang]').forEach(b => b.classList.remove('vtab-active'));
+        btn.classList.add('vtab-active');
+        currentLang = btn.dataset.vtabLang;
+        const printRow = document.getElementById('vtabPrintRow');
+        if (printRow) printRow.style.display = currentLang === 'jpn' ? 'none' : 'flex';
+        renderVariantContent(card, currentLang, currentPrint);
+      });
+    });
+
+    // Print type tab clicks
+    document.querySelectorAll('[data-vtab-print]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-vtab-print]').forEach(b => b.classList.remove('vtab-active'));
+        btn.classList.add('vtab-active');
+        currentPrint = btn.dataset.vtabPrint;
+        renderVariantContent(card, currentLang, currentPrint);
+      });
+    });
+  }
+
   /* ── Modal ── */
   function openModal(idx) {
     const card = currentCards[idx];
@@ -2700,76 +3097,6 @@
     const rc = rarityClass(card.rarity);
     const tcp = card.tcgplayer?.prices || {};
     const imgSrc = card.images?.large || card.images?.small || '';
-
-    // Build price entries
-    const priceTypes = {
-      normal:                'Normal',
-      holofoil:              'Holofoil',
-      reverseHolofoil:       'Reverse Holo',
-      '1stEditionNormal':    '1st Ed Normal',
-      '1stEditionHolofoil':  '1st Ed Holo',
-      unlimitedHolofoil:     'Unlimited Holo',
-    };
-
-    let priceHTML = '';
-    const tcpKeys = Object.keys(tcp).filter(k => tcp[k]);
-    if (tcpKeys.length > 0) {
-      const entries = tcpKeys.map(k => {
-        const label = priceTypes[k] || k;
-        const p = tcp[k];
-        return `
-          <div class="price-entry">
-            <div class="price-entry-type">${label}</div>
-            <div class="price-entry-values">
-              <div class="pev-item"><div class="pev-label">Market</div><div class="pev-val market">${fmt(p.market)}</div></div>
-              <div class="pev-item"><div class="pev-label">Low</div><div class="pev-val low">${fmt(p.low)}</div></div>
-              <div class="pev-item"><div class="pev-label">Mid</div><div class="pev-val mid">${fmt(p.mid)}</div></div>
-              <div class="pev-item"><div class="pev-label">High</div><div class="pev-val high">${fmt(p.high)}</div></div>
-            </div>
-          </div>
-        `;
-      }).join('');
-      priceHTML = `
-        <div class="price-section">
-          <div class="price-section-title">PRICES <span class="source-tag">// TCGPlayer</span></div>
-          <div class="price-table">${entries}</div>
-          ${card.tcgplayer?.url
-            ? `<a class="modal-tcg-link" href="${card.tcgplayer.url}" target="_blank" rel="noopener">VIEW ON TCGPLAYER ↗</a>`
-            : ''}
-        </div>
-      `;
-    } else {
-      priceHTML = `<div class="no-price-note">No price data available for this card.</div>`;
-    }
-
-    // Cardmarket prices
-    let cmHTML = '';
-    const cm = card.cardmarket?.prices;
-    if (cm) {
-      cmHTML = `
-        <div class="price-section" style="margin-top:20px">
-          <div class="price-section-title">PRICES <span class="source-tag">// Cardmarket (EU)</span></div>
-          <div class="price-table">
-            <div class="price-entry">
-              <div class="price-entry-type">Market</div>
-              <div class="price-entry-values">
-                <div class="pev-item"><div class="pev-label">Avg Sell</div><div class="pev-val market">€${Number(cm.averageSellPrice||0).toFixed(2)}</div></div>
-                <div class="pev-item"><div class="pev-label">Low</div><div class="pev-val low">€${Number(cm.lowPrice||0).toFixed(2)}</div></div>
-                <div class="pev-item"><div class="pev-label">Trend</div><div class="pev-val mid">€${Number(cm.trendPrice||0).toFixed(2)}</div></div>
-              </div>
-            </div>
-            ${cm.reverseHoloTrend ? `
-            <div class="price-entry">
-              <div class="price-entry-type">Reverse Holo</div>
-              <div class="price-entry-values">
-                <div class="pev-item"><div class="pev-label">Trend</div><div class="pev-val market">€${Number(cm.reverseHoloTrend||0).toFixed(2)}</div></div>
-                <div class="pev-item"><div class="pev-label">Avg Sell</div><div class="pev-val low">€${Number(cm.reverseHoloSell||0).toFixed(2)}</div></div>
-              </div>
-            </div>` : ''}
-          </div>
-        </div>
-      `;
-    }
 
     const supertype = card.supertype || '';
     const subtypes = (card.subtypes || []).join(', ');
@@ -2817,6 +3144,8 @@
 
     const psaHTML = buildPsaSection(card);
 
+    const variantTabsHTML = buildVariantTabsHTML(card);
+
     modalBody.innerHTML = `
       <div class="modal-grid">
         <div>
@@ -2833,14 +3162,15 @@
             ${card.artist ? `Artist: <span>${card.artist}</span><br>` : ''}
             Updated: <span>${card.tcgplayer?.updatedAt || '—'}</span>
           </div>
-          ${priceHTML}
-          ${cmHTML}
         </div>
       </div>
+      ${variantTabsHTML}
       ${trendsHTML}
       ${historyHTML}
       ${psaHTML}
     `;
+
+    attachVariantTabListeners(card);
 
     modalOverlay.classList.add('active');
     document.body.style.overflow = 'hidden';
