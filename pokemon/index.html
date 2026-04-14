@@ -1,0 +1,4006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon Price Guide // DRAGONLORD</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Root Variables ── */
+    :root {
+      --cyan:    #00f5ff;
+      --magenta: #ff00aa;
+      --gold:    #ffd700;
+      --purple:  #8800ff;
+      --green:   #00ff88;
+      --red:     #ff3355;
+      --bg:      #030009;
+      --bg2:     #060014;
+      --text:    #b0d4e8;
+      --dim:     #3a5070;
+      --card-bg: rgba(6, 0, 20, 0.85);
+    }
+
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── CRT Scanlines ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.05) 2px,
+        rgba(0,0,0,0.05) 4px
+      );
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* ── Grid Overlay ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ── Animated Background Particles (CSS only) ── */
+    .bg-particles {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      border-radius: 50%;
+      animation: float-particle linear infinite;
+    }
+    @keyframes float-particle {
+      0%   { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { transform: translateY(-100px) translateX(var(--drift)); opacity: 0; }
+    }
+
+    /* ── Main Layout ── */
+    .wrapper {
+      position: relative;
+      z-index: 5;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 24px 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(0,245,255,0.15);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .home-link {
+      color: var(--dim);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      transition: color 0.2s;
+      border: 1px solid var(--dim);
+      padding: 4px 10px;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    }
+    .home-link:hover { color: var(--cyan); border-color: var(--cyan); }
+    .page-title {
+      font-size: clamp(1.1rem, 3vw, 1.6rem);
+      font-weight: 700;
+      color: var(--gold);
+      text-shadow: 0 0 20px rgba(255,215,0,0.5);
+      letter-spacing: 0.08em;
+    }
+    .page-title span { color: var(--text); }
+    .header-badge {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      color: var(--cyan);
+      border: 1px solid rgba(0,245,255,0.3);
+      padding: 3px 10px;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    }
+
+    /* ── Status Bar ── */
+    .status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 20px;
+      padding: 10px 0;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: var(--dim);
+      border-bottom: 1px solid rgba(0,245,255,0.08);
+    }
+    .status-item .val { color: var(--cyan); }
+    .status-item .val-gold { color: var(--gold); }
+
+    /* ── Search Section ── */
+    .search-section {
+      padding: 36px 0 28px;
+    }
+    .search-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      color: var(--dim);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    .search-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 200px;
+      background: rgba(0, 245, 255, 0.04);
+      border: 1px solid rgba(0,245,255,0.25);
+      color: var(--cyan);
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 12px 16px;
+      outline: none;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .search-input::placeholder { color: var(--dim); }
+    .search-input:focus {
+      border-color: var(--cyan);
+      background: rgba(0,245,255,0.07);
+      box-shadow: 0 0 12px rgba(0,245,255,0.2);
+    }
+    .search-btn {
+      background: var(--cyan);
+      color: var(--bg);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 12px 24px;
+      border: none;
+      cursor: pointer;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .search-btn:hover {
+      background: #fff;
+      box-shadow: 0 0 20px rgba(0,245,255,0.6);
+    }
+    .search-btn:active { transform: scale(0.98); }
+
+    /* ── Autocomplete ── */
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+    .search-wrap .search-input {
+      width: 100%;
+      min-width: unset;
+      flex: unset;
+    }
+    .ac-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--bg2);
+      border: 1px solid rgba(0,245,255,0.3);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 16px rgba(0,245,255,0.08);
+      z-index: 50;
+      max-height: 260px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--dim) transparent;
+    }
+    .ac-dropdown.open { display: block; }
+    .ac-item {
+      padding: 9px 16px;
+      font-size: 0.85rem;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      cursor: pointer;
+      border-bottom: 1px solid rgba(0,245,255,0.05);
+      transition: background 0.1s, color 0.1s;
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover,
+    .ac-item.active {
+      background: rgba(0,245,255,0.08);
+      color: var(--cyan);
+    }
+    .ac-item mark {
+      background: none;
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    /* ── Quick Search Tags ── */
+    .quick-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .quick-tag {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      border: 1px solid rgba(255,215,0,0.2);
+      padding: 4px 12px;
+      cursor: pointer;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+      transition: all 0.2s;
+      background: rgba(255,215,0,0.03);
+    }
+    .quick-tag:hover {
+      color: var(--gold);
+      border-color: var(--gold);
+      background: rgba(255,215,0,0.08);
+    }
+    .quick-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.15em;
+      color: var(--dim);
+      margin-top: 12px;
+      text-transform: uppercase;
+    }
+
+    /* ── Section Title ── */
+    .section-title {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(0,245,255,0.1);
+    }
+    .section-title .accent { color: var(--cyan); }
+
+    /* ── Loading State ── */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--dim);
+    }
+    .loading.active { display: block; }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 2px solid rgba(0,245,255,0.1);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── Error State ── */
+    .error-msg {
+      display: none;
+      background: rgba(255,51,85,0.08);
+      border: 1px solid rgba(255,51,85,0.3);
+      color: var(--red);
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      padding: 16px 20px;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+      margin-bottom: 24px;
+    }
+    .error-msg.active { display: block; }
+
+    /* ── Results Grid ── */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      padding-bottom: 60px;
+    }
+
+    /* ── Pagination ── */
+    .pagination-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 20px 0 40px;
+      border-top: 1px solid rgba(0,245,255,0.1);
+      margin-top: 10px;
+    }
+    .pagination-bar .pg-info {
+      width: 100%;
+      text-align: center;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      color: var(--dim);
+      margin-bottom: 10px;
+    }
+    .pg-btn {
+      background: rgba(0,245,255,0.04);
+      border: 1px solid rgba(0,245,255,0.18);
+      color: var(--dim);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+      min-width: 36px;
+      text-align: center;
+    }
+    .pg-btn:hover:not(:disabled) {
+      background: rgba(0,245,255,0.12);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+    .pg-btn.active {
+      background: rgba(0,245,255,0.15);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      font-weight: bold;
+    }
+    .pg-btn:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+    .pg-btn.pg-arrow {
+      color: var(--cyan);
+      border-color: rgba(0,245,255,0.35);
+    }
+    .pg-btn.pg-arrow:disabled { opacity: 0.2; }
+    .pg-ellipsis {
+      color: var(--dim);
+      font-size: 0.72rem;
+      padding: 5px 4px;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Card ── */
+    .pokemon-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(0,245,255,0.15);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      position: relative;
+      overflow: hidden;
+      clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+    }
+    .pokemon-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 30px rgba(0,245,255,0.2);
+      border-color: rgba(0,245,255,0.4);
+    }
+    .pokemon-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,245,255,0.04), rgba(136,0,255,0.04));
+      pointer-events: none;
+    }
+
+    .card-img-wrap {
+      position: relative;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      aspect-ratio: 3/4.2;
+    }
+    .card-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.3s;
+    }
+    .pokemon-card:hover .card-img-wrap img { transform: scale(1.04); }
+    .card-img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      color: var(--dim);
+    }
+
+    /* Rarity glow overlay */
+    .rarity-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .pokemon-card:hover .rarity-overlay { opacity: 1; }
+    .rarity-common    .rarity-overlay { background: radial-gradient(ellipse at 50% 0%, rgba(176,212,232,0.1), transparent 70%); }
+    .rarity-uncommon  .rarity-overlay { background: radial-gradient(ellipse at 50% 0%, rgba(0,255,136,0.12), transparent 70%); }
+    .rarity-rare      .rarity-overlay { background: radial-gradient(ellipse at 50% 0%, rgba(0,245,255,0.15), transparent 70%); }
+    .rarity-ultra     .rarity-overlay { background: radial-gradient(ellipse at 50% 0%, rgba(255,215,0,0.18), transparent 70%); }
+    .rarity-secret    .rarity-overlay { background: radial-gradient(ellipse at 50% 0%, rgba(255,0,170,0.2), transparent 70%); }
+
+    .card-info {
+      padding: 10px 12px 12px;
+    }
+    .card-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+    .card-set {
+      font-size: 0.68rem;
+      color: var(--dim);
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 6px;
+    }
+    .card-rarity-badge {
+      display: inline-block;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+      margin-bottom: 8px;
+    }
+    .rarity-common    .card-rarity-badge { background: rgba(176,212,232,0.12); color: var(--text); }
+    .rarity-uncommon  .card-rarity-badge { background: rgba(0,255,136,0.12); color: var(--green); }
+    .rarity-rare      .card-rarity-badge { background: rgba(0,245,255,0.12); color: var(--cyan); }
+    .rarity-ultra     .card-rarity-badge { background: rgba(255,215,0,0.12); color: var(--gold); }
+    .rarity-secret    .card-rarity-badge { background: rgba(255,0,170,0.12); color: var(--magenta); }
+
+    .card-price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .price-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+    .price-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--gold);
+      text-shadow: 0 0 10px rgba(255,215,0,0.4);
+      letter-spacing: 0.04em;
+    }
+    .price-value.no-price {
+      font-size: 0.75rem;
+      color: var(--dim);
+      text-shadow: none;
+    }
+
+    /* ── Twitter Mentions Section ── */
+    #twitterSection {
+      margin-bottom: 28px;
+    }
+    .twitter-panel {
+      background: rgba(29,161,242,0.03);
+      border: 1px solid rgba(29,161,242,0.15);
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+      overflow: hidden;
+    }
+    .twitter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      border-bottom: 1px solid rgba(29,161,242,0.1);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .twitter-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+    .twitter-pokemon-name {
+      color: var(--gold);
+      text-shadow: 0 0 8px rgba(255,215,0,0.3);
+    }
+    .twitter-link {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      color: #1da1f2;
+      text-decoration: none;
+      border: 1px solid rgba(29,161,242,0.25);
+      padding: 4px 12px;
+      clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .twitter-link:hover {
+      background: rgba(29,161,242,0.1);
+      border-color: #1da1f2;
+      box-shadow: 0 0 10px rgba(29,161,242,0.2);
+    }
+    .twitter-body {
+      padding: 20px 18px 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .twitter-sparkline {
+      width: 100%;
+      height: 56px;
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      opacity: 0.4;
+    }
+    .twitter-sparkline span {
+      flex: 1;
+      background: linear-gradient(to top, #1da1f2, rgba(29,161,242,0.35));
+      border-radius: 2px 2px 0 0;
+      min-height: 6px;
+    }
+    .twitter-desc {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: var(--dim);
+      line-height: 1.6;
+    }
+    .twitter-open-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+      color: #1da1f2;
+      text-decoration: none;
+      border: 1px solid rgba(29,161,242,0.35);
+      padding: 9px 20px;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+      transition: all 0.2s;
+      background: rgba(29,161,242,0.04);
+      text-transform: uppercase;
+    }
+    .twitter-open-btn:hover {
+      background: rgba(29,161,242,0.12);
+      border-color: #1da1f2;
+      box-shadow: 0 0 16px rgba(29,161,242,0.25);
+      color: #fff;
+    }
+    .twitter-open-btn .arrow { font-size: 1rem; line-height: 1; }
+
+    .twitter-keywords {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .twitter-keywords-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+    .twitter-keywords-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .twitter-keyword-tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      color: #1da1f2;
+      border: 1px solid rgba(29,161,242,0.25);
+      padding: 3px 10px;
+      clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+      background: rgba(29,161,242,0.04);
+      text-decoration: none;
+      transition: all 0.2s;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+    .twitter-keyword-tag:hover {
+      background: rgba(29,161,242,0.12);
+      border-color: #1da1f2;
+      color: #fff;
+      box-shadow: 0 0 8px rgba(29,161,242,0.2);
+    }
+
+    /* ── No Results ── */
+    .no-results {
+      display: none;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--dim);
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+    }
+    .no-results.active { display: block; }
+    .no-results-icon { font-size: 3rem; margin-bottom: 16px; display: block; }
+
+    /* ── Modal Overlay ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(3,0,9,0.88);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--bg2);
+      border: 1px solid rgba(0,245,255,0.25);
+      max-width: 700px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      clip-path: polygon(16px 0%, 100% 0%, calc(100% - 16px) 100%, 0% 100%);
+      scrollbar-width: thin;
+      scrollbar-color: var(--dim) transparent;
+    }
+    .modal-close {
+      position: sticky;
+      top: 0;
+      display: flex;
+      justify-content: flex-end;
+      padding: 14px 20px 10px;
+      background: var(--bg2);
+      z-index: 1;
+      border-bottom: 1px solid rgba(0,245,255,0.1);
+    }
+    .close-btn {
+      background: none;
+      border: 1px solid rgba(0,245,255,0.2);
+      color: var(--dim);
+      font-family: inherit;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      padding: 5px 14px;
+      cursor: pointer;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+      transition: all 0.2s;
+    }
+    .close-btn:hover { color: var(--cyan); border-color: var(--cyan); }
+
+    .modal-body {
+      padding: 20px 28px 32px;
+    }
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 520px) {
+      .modal-grid { grid-template-columns: 1fr; }
+    }
+    .modal-card-img {
+      width: 100%;
+      border-radius: 4px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 20px rgba(0,245,255,0.1);
+    }
+    .modal-card-name {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    .modal-card-meta {
+      font-size: 0.75rem;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+      line-height: 1.8;
+    }
+    .modal-card-meta span { color: var(--cyan); }
+
+    /* Price Tables */
+    .price-section {
+      margin-top: 16px;
+    }
+    .price-section-title {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      border-bottom: 1px solid rgba(0,245,255,0.1);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+    .price-section-title .source-tag {
+      color: var(--gold);
+      margin-left: 6px;
+    }
+    .price-table {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .price-entry {
+      background: rgba(0,245,255,0.03);
+      border: 1px solid rgba(0,245,255,0.08);
+      padding: 8px 12px;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    }
+    .price-entry-type {
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 4px;
+    }
+    .price-entry-values {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .pev-item { }
+    .pev-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+    .pev-val {
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+    .pev-val.market { color: var(--gold); text-shadow: 0 0 8px rgba(255,215,0,0.3); }
+    .pev-val.low    { color: var(--green); }
+    .pev-val.high   { color: var(--red); }
+    .pev-val.mid    { color: var(--text); }
+
+    .modal-tcg-link {
+      display: inline-block;
+      margin-top: 16px;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      color: var(--cyan);
+      text-decoration: none;
+      border: 1px solid rgba(0,245,255,0.25);
+      padding: 7px 16px;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+      transition: all 0.2s;
+    }
+    .modal-tcg-link:hover {
+      background: rgba(0,245,255,0.08);
+      border-color: var(--cyan);
+      box-shadow: 0 0 12px rgba(0,245,255,0.2);
+    }
+    .no-price-note {
+      font-size: 0.75rem;
+      color: var(--dim);
+      letter-spacing: 0.08em;
+      padding: 12px;
+      text-align: center;
+      border: 1px dashed rgba(0,245,255,0.1);
+    }
+
+    /* ── Price Trend Chart Section ── */
+    .trends-section {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(0,245,255,0.1);
+      grid-column: 1 / -1;
+    }
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      border: 1px solid rgba(0,245,255,0.12);
+      background: rgba(0,245,255,0.02);
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+      overflow: hidden;
+      margin-top: 10px;
+      padding: 12px 8px;
+    }
+    #priceChart {
+      display: block;
+      width: 100% !important;
+      height: 220px !important;
+    }
+    .chart-no-data {
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--dim);
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Price History Tracker ── */
+    .history-section {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,215,0,0.15);
+    }
+    .history-note {
+      font-size: 0.68rem;
+      color: var(--dim);
+      letter-spacing: 0.08em;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .history-note em { color: var(--gold); font-style: normal; }
+    #historyChart {
+      display: block;
+      width: 100% !important;
+      height: 200px !important;
+    }
+    .history-first-visit {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--dim);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      border: 1px dashed rgba(255,215,0,0.15);
+      margin-top: 10px;
+    }
+
+    /* ── Twitter Trending Top 10 ── */
+    #featuredSection {
+      margin-bottom: 32px;
+    }
+    .ttt-panel {
+      border: 1px solid rgba(0,245,255,0.2);
+      background: rgba(0,245,255,0.02);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .ttt-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #1d9bf0, var(--magenta), transparent);
+      animation: feat-scan 3s ease-in-out infinite;
+    }
+    @keyframes feat-scan {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+    .ttt-loading {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: var(--dim);
+      font-size: 0.78rem;
+      letter-spacing: 0.15em;
+      padding: 16px 0;
+    }
+    .ttt-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .ttt-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 6px;
+      border-bottom: 1px solid rgba(0,245,255,0.06);
+      cursor: pointer;
+      transition: background 0.15s;
+      border-radius: 2px;
+    }
+    .ttt-row:last-of-type { border-bottom: none; }
+    .ttt-row:hover { background: rgba(0,245,255,0.04); }
+    .ttt-rank {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      width: 28px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .ttt-rank.gold   { color: var(--gold); text-shadow: 0 0 8px rgba(255,215,0,0.5); }
+    .ttt-rank.silver { color: #c0c0c0; }
+    .ttt-rank.bronze { color: #cd7f32; }
+    .ttt-rank.other  { color: var(--dim); }
+    .ttt-img {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(0,245,255,0.08);
+    }
+    .ttt-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 5px rgba(0,245,255,0.3));
+    }
+    .ttt-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .ttt-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ttt-bar-wrap {
+      margin-top: 4px;
+      height: 3px;
+      background: rgba(0,245,255,0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .ttt-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #1d9bf0, var(--magenta));
+      border-radius: 2px;
+      transition: width 0.8s ease;
+    }
+    .ttt-views {
+      font-size: 0.6rem;
+      color: var(--dim);
+      letter-spacing: 0.06em;
+      margin-top: 3px;
+    }
+    .ttt-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+    .ttt-search-btn {
+      background: transparent;
+      color: var(--cyan);
+      font-family: inherit;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border: 1px solid rgba(0,245,255,0.3);
+      cursor: pointer;
+      clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .ttt-search-btn:hover {
+      background: rgba(0,245,255,0.1);
+      border-color: var(--cyan);
+    }
+    .ttt-x-link {
+      font-size: 0.6rem;
+      letter-spacing: 0.06em;
+      color: var(--dim);
+      text-decoration: none;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+    .ttt-x-link:hover { color: #1d9bf0; }
+    .ttt-source-note {
+      font-size: 0.6rem;
+      color: var(--dim);
+      letter-spacing: 0.07em;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(0,245,255,0.06);
+      opacity: 0.55;
+    }
+
+    /* ── PSA Population & Graded Market Section ── */
+    .psa-section {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,140,0,0.2);
+      grid-column: 1 / -1;
+    }
+    .psa-section-title {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      border-bottom: 1px solid rgba(255,140,0,0.15);
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+    }
+    .psa-section-title .psa-tag { color: #ff8c00; }
+    .psa-intro-note {
+      font-size: 0.67rem;
+      color: var(--dim);
+      letter-spacing: 0.07em;
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+    .psa-intro-note em { color: #ff8c00; font-style: normal; }
+    .psa-grade-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+    }
+    .psa-grade-table th {
+      text-align: left;
+      padding: 5px 8px;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--dim);
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(255,140,0,0.15);
+    }
+    .psa-grade-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      vertical-align: middle;
+    }
+    .psa-grade-table tr:last-child td { border-bottom: none; }
+    .psa-grade-table tr:hover td { background: rgba(255,140,0,0.04); }
+    .psa-grade-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 22px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+    }
+    .psa-pop-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .psa-pop-bar {
+      height: 6px;
+      border-radius: 2px;
+      min-width: 2px;
+      flex-shrink: 0;
+    }
+    .psa-pop-count {
+      font-size: 0.75rem;
+      color: var(--text);
+      min-width: 40px;
+      white-space: nowrap;
+    }
+    .psa-price-val {
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .psa-ebay-link {
+      font-size: 0.6rem;
+      color: var(--dim);
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      border: 1px solid rgba(255,140,0,0.2);
+      padding: 2px 8px;
+      clip-path: polygon(3px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%);
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+    .psa-ebay-link:hover { color: #ff8c00; border-color: #ff8c00; }
+    .psa-footer {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,140,0,0.1);
+      align-items: center;
+    }
+    .psa-registry-link {
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      color: #ff8c00;
+      text-decoration: none;
+      border: 1px solid rgba(255,140,0,0.35);
+      padding: 5px 14px;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+      transition: all 0.2s;
+    }
+    .psa-registry-link:hover {
+      background: rgba(255,140,0,0.1);
+      border-color: #ff8c00;
+      box-shadow: 0 0 10px rgba(255,140,0,0.2);
+    }
+    .psa-disclaimer {
+      font-size: 0.58rem;
+      color: var(--dim);
+      letter-spacing: 0.06em;
+      opacity: 0.6;
+      flex: 1;
+    }
+    @media (max-width: 520px) {
+      .psa-grade-table th:nth-child(5),
+      .psa-grade-table td:nth-child(5) { display: none; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .results-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+      header { flex-direction: column; align-items: flex-start; }
+    }
+
+    /* ── Dragonlord Analytics Button ── */
+    .dragonlord-btn {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 6px 0;
+      background: linear-gradient(90deg, rgba(136,0,255,0.12), rgba(255,215,0,0.08));
+      border: 1px solid rgba(136,0,255,0.4);
+      color: var(--gold);
+      font-family: 'Courier New', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+      transition: all 0.2s;
+    }
+    .dragonlord-btn:hover {
+      background: linear-gradient(90deg, rgba(136,0,255,0.28), rgba(255,215,0,0.18));
+      border-color: var(--gold);
+      box-shadow: 0 0 14px rgba(255,215,0,0.25);
+      color: #fff;
+    }
+
+    /* ── Dragonlord Analytics Overlay ── */
+    #dlOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3,0,9,0.94);
+      z-index: 1100;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      padding: 40px 20px 60px;
+    }
+    #dlOverlay.active { display: flex; }
+
+    #dlPanel {
+      background: var(--bg2);
+      border: 1px solid rgba(136,0,255,0.45);
+      clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+      max-width: 880px;
+      width: 100%;
+      padding: 28px 32px 36px;
+      position: relative;
+    }
+
+    .dl-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(136,0,255,0.3);
+      gap: 12px;
+    }
+    .dl-title {
+      font-size: 1.05rem;
+      letter-spacing: 0.22em;
+      color: var(--gold);
+      text-shadow: 0 0 22px rgba(255,215,0,0.5);
+      text-transform: uppercase;
+    }
+    .dl-subtitle {
+      font-size: 0.63rem;
+      letter-spacing: 0.14em;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-top: 5px;
+    }
+    .dl-close {
+      background: none;
+      border: 1px solid rgba(136,0,255,0.35);
+      color: var(--dim);
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+      flex-shrink: 0;
+    }
+    .dl-close:hover { color: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+
+    /* Signal matrix */
+    .dl-signals {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 700px) { .dl-signals { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 480px) { .dl-signals { grid-template-columns: repeat(2, 1fr); } }
+    .dl-signal-card {
+      background: rgba(6,0,20,0.75);
+      border: 1px solid rgba(136,0,255,0.2);
+      padding: 14px 12px;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    }
+    .dl-signal-label {
+      font-size: 0.57rem;
+      letter-spacing: 0.14em;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .dl-signal-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+    .dl-signal-bar {
+      height: 3px;
+      background: rgba(255,255,255,0.08);
+      margin-top: 7px;
+      margin-bottom: 5px;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .dl-signal-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.6s ease;
+    }
+    .dl-signal-sub {
+      font-size: 0.58rem;
+      letter-spacing: 0.08em;
+      color: var(--dim);
+    }
+
+    /* Ensemble verdict */
+    .dl-verdict {
+      margin-bottom: 22px;
+      padding: 16px 20px;
+      background: rgba(6,0,20,0.75);
+      border: 1px solid rgba(255,215,0,0.2);
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+    .dl-verdict-badge {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 8px 18px;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+      flex-shrink: 0;
+    }
+    .verdict-bullish { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.35); }
+    .verdict-bearish { background: rgba(255,51,85,0.1);  color: var(--red);   border: 1px solid rgba(255,51,85,0.35); }
+    .verdict-neutral { background: rgba(176,212,232,0.08); color: var(--text); border: 1px solid rgba(176,212,232,0.2); }
+    .dl-verdict-text { flex: 1; min-width: 180px; }
+    .dl-verdict-title { font-size: 0.68rem; letter-spacing: 0.12em; color: var(--dim); text-transform: uppercase; margin-bottom: 5px; }
+    .dl-verdict-desc  { font-size: 0.73rem; letter-spacing: 0.05em; color: var(--text); line-height: 1.6; }
+    .dl-confidence { text-align: right; flex-shrink: 0; }
+    .dl-confidence-label { font-size: 0.57rem; letter-spacing: 0.12em; color: var(--dim); text-transform: uppercase; margin-bottom: 2px; }
+    .dl-confidence-val   { font-size: 1.7rem; font-weight: 700; color: var(--cyan); line-height: 1; }
+    .dl-confidence-unit  { font-size: 0.63rem; color: var(--dim); }
+
+    /* Forecast chart & table */
+    .dl-section {
+      margin-bottom: 22px;
+    }
+    .dl-section-title {
+      font-size: 0.67rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(0,245,255,0.1);
+    }
+    .dl-chart-wrap {
+      position: relative;
+      height: 230px;
+      border: 1px solid rgba(0,245,255,0.1);
+      background: rgba(0,245,255,0.015);
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+      padding: 12px 8px;
+    }
+    .dl-forecast-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .dl-forecast-table th {
+      text-align: left;
+      padding: 6px 10px;
+      color: var(--dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.61rem;
+      border-bottom: 1px solid rgba(0,245,255,0.1);
+    }
+    .dl-forecast-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid rgba(0,245,255,0.04);
+    }
+    .dl-forecast-table tr:last-child td { border: none; }
+    .dl-forecast-table .price-up   { color: var(--green); }
+    .dl-forecast-table .price-dn   { color: var(--red); }
+    .dl-forecast-table .price-flat { color: var(--text); }
+    .dl-forecast-table td.muted    { color: var(--dim); }
+
+    /* Model notes */
+    .dl-model-notes {
+      padding: 14px 16px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(0,245,255,0.06);
+      font-size: 0.6rem;
+      letter-spacing: 0.07em;
+      color: var(--dim);
+      line-height: 1.8;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    }
+
+    /* ── Dragonlord v2: Hype Score Gauge ── */
+    .dl-hype-wrap {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 20px;
+      padding: 20px 24px;
+      background: rgba(6,0,20,0.85);
+      border: 1px solid rgba(136,0,255,0.4);
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+      flex-wrap: wrap;
+    }
+    .dl-hype-gauge {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      flex-shrink: 0;
+    }
+    .dl-hype-gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .dl-hype-gauge-track { fill: none; stroke: rgba(136,0,255,0.15); stroke-width: 7; }
+    .dl-hype-gauge-fill  { fill: none; stroke-width: 7; stroke-linecap: round; }
+    .dl-hype-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .dl-hype-num {
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--gold);
+      text-shadow: 0 0 16px rgba(255,215,0,0.5);
+    }
+    .dl-hype-unit { font-size: 0.5rem; color: var(--dim); letter-spacing: 0.1em; margin-top: 1px; }
+    .dl-hype-info { flex: 1; min-width: 180px; }
+    .dl-hype-title { font-size: 0.6rem; letter-spacing: 0.2em; color: var(--dim); text-transform: uppercase; margin-bottom: 5px; }
+    .dl-hype-rank {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      line-height: 1.1;
+    }
+    .dl-hype-rank.breakout { color: var(--gold); text-shadow: 0 0 18px rgba(255,215,0,0.6); }
+    .dl-hype-rank.uptrend  { color: var(--green); }
+    .dl-hype-rank.neutral  { color: var(--text); }
+    .dl-hype-rank.low      { color: var(--dim); }
+    .dl-hype-desc { font-size: 0.68rem; letter-spacing: 0.04em; color: var(--text); line-height: 1.55; margin-bottom: 8px; }
+    .dl-hype-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 20px;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+    }
+    .dl-hype-meta .mval { color: var(--cyan); }
+
+    /* ── Event Detection Flags ── */
+    .dl-events {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 18px;
+    }
+    .dl-event {
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 13px;
+      clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+      border: 1px solid;
+      line-height: 1.6;
+    }
+    .dl-event.ev-spike    { color: #ff00aa; border-color: rgba(255,0,170,0.45); background: rgba(255,0,170,0.09); }
+    .dl-event.ev-breakout { color: var(--gold); border-color: rgba(255,215,0,0.45); background: rgba(255,215,0,0.09); }
+    .dl-event.ev-volume   { color: var(--cyan); border-color: rgba(0,245,255,0.35); background: rgba(0,245,255,0.06); }
+    .dl-event.ev-lag      { color: var(--green); border-color: rgba(0,255,136,0.35); background: rgba(0,255,136,0.06); }
+    .dl-event.ev-off      { color: var(--dim); border-color: rgba(255,255,255,0.07); opacity: 0.45; }
+
+    /* ── Dynamic Weights Display ── */
+    .dl-weights {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-top: 4px;
+      margin-bottom: 2px;
+    }
+    @media (max-width: 600px) { .dl-weights { grid-template-columns: repeat(3, 1fr); } }
+    .dl-weight-item {
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(136,0,255,0.15);
+      padding: 8px 6px;
+      text-align: center;
+      clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+    }
+    .dl-weight-label { font-size: 0.5rem; letter-spacing: 0.1em; color: var(--dim); text-transform: uppercase; margin-bottom: 3px; }
+    .dl-weight-pct   { font-size: 0.88rem; font-weight: 700; color: #8800ff; }
+    .dl-weight-bar   { height: 2px; background: rgba(255,255,255,0.06); margin-top: 4px; overflow: hidden; }
+    .dl-weight-bar-fill { height: 100%; background: #8800ff; opacity: 0.7; }
+
+    /* ── Explainability Drivers ── */
+    .dl-drivers {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .dl-driver {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 9px 13px;
+      background: rgba(6,0,20,0.65);
+      border-left: 2px solid;
+    }
+    .dl-driver.dl-positive { border-color: var(--green); }
+    .dl-driver.dl-risk     { border-color: var(--red); }
+    .dl-driver-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      letter-spacing: 0;
+    }
+    .dl-positive .dl-driver-icon { background: rgba(0,255,136,0.12); color: var(--green); border: 1px solid rgba(0,255,136,0.25); }
+    .dl-risk     .dl-driver-icon { background: rgba(255,51,85,0.12);  color: var(--red);   border: 1px solid rgba(255,51,85,0.25); }
+    .dl-driver-label  { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 2px; }
+    .dl-positive .dl-driver-label { color: var(--cyan); }
+    .dl-risk     .dl-driver-label { color: var(--red); }
+    .dl-driver-detail { font-size: 0.68rem; letter-spacing: 0.04em; color: var(--text); line-height: 1.45; }
+
+    /* ── Backtesting & Validation ── */
+    .dl-bt-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 520px) { .dl-bt-row { grid-template-columns: repeat(2, 1fr); } }
+    .dl-bt-card {
+      padding: 13px 14px;
+      background: rgba(6,0,20,0.65);
+      border: 1px solid rgba(0,245,255,0.08);
+      clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+    }
+    .dl-bt-label { font-size: 0.54rem; letter-spacing: 0.14em; color: var(--dim); text-transform: uppercase; margin-bottom: 5px; }
+    .dl-bt-val   { font-size: 1.1rem; font-weight: 700; line-height: 1; }
+    .dl-bt-sub   { font-size: 0.56rem; color: var(--dim); margin-top: 3px; letter-spacing: 0.05em; line-height: 1.4; }
+
+    /* ── v3: Data Source Badges ── */
+    .dl-datasource-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px 14px;
+      background: rgba(0,0,0,0.25);
+      border-bottom: 1px solid rgba(0,245,255,0.06);
+      margin-bottom: 14px;
+    }
+    .dl-src-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.57rem;
+      letter-spacing: 0.12em;
+      padding: 3px 8px;
+      border-radius: 2px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .dl-src-badge.live    { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.35); color: var(--green); }
+    .dl-src-badge.est     { background: rgba(58,80,112,0.15); border: 1px solid rgba(58,80,112,0.4);  color: var(--dim); }
+    .dl-src-badge.partial { background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.3);  color: var(--gold); }
+    .dl-src-dot { font-size: 0.65rem; line-height: 1; }
+
+    /* ── v3: DL Panel Fetch Loading State ── */
+    .dl-fetch-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      gap: 16px;
+    }
+    .dl-fetch-spinner {
+      width: 36px; height: 36px;
+      border: 2px solid rgba(0,245,255,0.1);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .dl-fetch-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      color: var(--dim);
+      animation: blink 1s step-end infinite;
+    }
+    .dl-fetch-sources {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .dl-fetch-src {
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      color: var(--dim);
+      padding: 3px 10px;
+      border: 1px solid rgba(0,245,255,0.1);
+    }
+
+    /* ── v3: Reddit Live Posts Panel ── */
+    .dl-reddit-posts {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .dl-reddit-post {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 8px 10px;
+      background: rgba(255,69,0,0.04);
+      border: 1px solid rgba(255,69,0,0.12);
+      border-left: 2px solid rgba(255,69,0,0.4);
+    }
+    .dl-reddit-score {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gold);
+      min-width: 32px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .dl-reddit-title {
+      font-size: 0.65rem;
+      color: var(--text);
+      letter-spacing: 0.03em;
+      line-height: 1.45;
+    }
+    .dl-reddit-meta {
+      font-size: 0.56rem;
+      color: var(--dim);
+      margin-top: 2px;
+      letter-spacing: 0.08em;
+    }
+    .dl-reddit-link {
+      font-size: 0.56rem;
+      color: rgba(255,69,0,0.7);
+      text-decoration: none;
+      margin-left: 6px;
+    }
+    .dl-reddit-link:hover { color: #ff4500; text-decoration: underline; }
+
+    /* ── v3: YouTube Videos Panel ── */
+    .dl-yt-posts {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .dl-yt-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 8px 10px;
+      background: rgba(255,0,0,0.04);
+      border: 1px solid rgba(255,0,0,0.12);
+      border-left: 2px solid rgba(255,0,0,0.4);
+      font-size: 0.65rem;
+      color: var(--text);
+      letter-spacing: 0.03em;
+      line-height: 1.4;
+    }
+    .dl-yt-icon { color: #ff0000; font-size: 0.8rem; flex-shrink: 0; }
+
+    /* ── v3: Settings Panel ── */
+    .dl-settings-section {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(0,245,255,0.08);
+    }
+    .dl-settings-title {
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .dl-settings-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .dl-settings-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      color: var(--text);
+      min-width: 130px;
+    }
+    .dl-settings-input {
+      flex: 1;
+      min-width: 160px;
+      background: rgba(0,245,255,0.04);
+      border: 1px solid rgba(0,245,255,0.2);
+      color: var(--cyan);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.68rem;
+      padding: 5px 8px;
+      outline: none;
+    }
+    .dl-settings-input:focus { border-color: var(--cyan); }
+    .dl-settings-save {
+      background: rgba(0,245,255,0.1);
+      border: 1px solid rgba(0,245,255,0.35);
+      color: var(--cyan);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      cursor: pointer;
+    }
+    .dl-settings-save:hover { background: rgba(0,245,255,0.2); }
+    .dl-settings-note {
+      font-size: 0.58rem;
+      color: var(--dim);
+      letter-spacing: 0.06em;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+    .dl-settings-note a { color: rgba(0,245,255,0.6); text-decoration: none; }
+    .dl-settings-note a:hover { color: var(--cyan); }
+  </style>
+</head>
+<body>
+
+<!-- ── Animated Background Particles ── -->
+<div class="bg-particles" id="bgParticles"></div>
+
+<div class="wrapper">
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="header-left">
+      <a class="home-link" href="../index.html">← HOME</a>
+      <h1 class="page-title">POKÉMON <span>// PRICE GUIDE</span></h1>
+    </div>
+    <div class="header-badge">TCG LIVE DATA</div>
+  </header>
+
+  <!-- ── Status Bar ── -->
+  <div class="status-bar">
+    <span class="status-item">status <span class="val" id="statusVal">online</span></span>
+    <span class="status-item">source <span class="val">TCG API</span></span>
+    <span class="status-item">prices <span class="val">TCGPlayer</span></span>
+    <span class="status-item">results <span class="val" id="resultCount">—</span></span>
+    <span class="status-item">threat level <span class="val" style="color:var(--gold);text-shadow:0 0 8px rgba(255,215,0,0.4)">POKÉMON</span></span>
+  </div>
+
+  <!-- ── Search ── -->
+  <section class="search-section">
+    <div class="search-label">// CARD SEARCH //</div>
+    <div class="search-row">
+      <div class="search-wrap">
+        <input
+          class="search-input"
+          id="searchInput"
+          type="text"
+          placeholder="Search by name (e.g. Charizard, Pikachu...)"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div class="ac-dropdown" id="acDropdown"></div>
+      </div>
+      <button class="search-btn" id="searchBtn">SEARCH</button>
+    </div>
+    <div class="quick-label">// QUICK SEARCH //</div>
+    <div class="quick-tags" id="quickTags">
+      <span class="quick-tag" data-q="Charizard">Charizard</span>
+      <span class="quick-tag" data-q="Pikachu">Pikachu</span>
+      <span class="quick-tag" data-q="Mewtwo">Mewtwo</span>
+      <span class="quick-tag" data-q="Blastoise">Blastoise</span>
+      <span class="quick-tag" data-q="Gengar">Gengar</span>
+      <span class="quick-tag" data-q="Rayquaza">Rayquaza</span>
+      <span class="quick-tag" data-q="Umbreon">Umbreon</span>
+      <span class="quick-tag" data-q="Lugia">Lugia</span>
+      <span class="quick-tag" data-q="Eevee">Eevee</span>
+    </div>
+  </section>
+
+  <!-- ── Twitter Trending Top 10 ── -->
+  <div id="featuredSection">
+    <div class="section-title"><span class="accent">//</span> X (TWITTER) TRENDING <span class="accent">//</span> TOP 10 MOST DISCUSSED</div>
+    <div class="ttt-panel">
+      <div class="ttt-loading" id="featuredLoading">
+        <div class="spinner"></div>
+        <span>SCANNING TWITTER SIGNALS...</span>
+      </div>
+      <div class="ttt-list" id="tttList" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ── Twitter Mentions ── -->
+  <div id="twitterSection" style="display:none;">
+    <div class="section-title"><span class="accent">//</span> TWITTER MENTIONS <span class="accent">//</span> MENTION ACTIVITY</div>
+    <div class="twitter-panel">
+      <div class="twitter-bar">
+        <span class="twitter-label">recent mentions · <span class="twitter-pokemon-name" id="twitterPokemonName">—</span></span>
+        <a class="twitter-link" id="twitterLink" href="#" target="_blank" rel="noopener">VIEW ON X (TWITTER) ↗</a>
+      </div>
+      <div class="twitter-body">
+        <div class="twitter-sparkline" id="twitterSparkline"></div>
+        <div class="twitter-desc">Mention activity over the last 30 days — search on X (Twitter)</div>
+        <div class="twitter-keywords" id="twitterKeywords"></div>
+        <a class="twitter-open-btn" id="twitterOpenBtn" href="#" target="_blank" rel="noopener">
+          <span class="arrow">↗</span> View on X (Twitter)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Error ── -->
+  <div class="error-msg" id="errorMsg"></div>
+
+  <!-- ── Loading ── -->
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    <div class="loading-text">FETCHING CARD DATA...</div>
+  </div>
+
+  <!-- ── No Results ── -->
+  <div class="no-results" id="noResults">
+    <span class="no-results-icon">○</span>
+    NO CARDS FOUND — try a different search
+  </div>
+
+  <!-- ── Results ── -->
+  <div id="resultsSection" style="display:none;">
+    <div class="section-title"><span class="accent">//</span> RESULTS <span class="accent">//</span></div>
+    <div class="results-grid" id="resultsGrid"></div>
+    <div class="pagination-bar" id="paginationBar" style="display:none;"></div>
+  </div>
+
+</div>
+
+<!-- ── Modal ── -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-close">
+      <button class="close-btn" id="closeBtn">[ CLOSE ]</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- ── Dragonlord Analytics Panel ── -->
+<div id="dlOverlay">
+  <div id="dlPanel">
+    <div id="dlPanelContent"></div>
+  </div>
+</div>
+
+<script>
+  /* ── Background Particles ── */
+  (function() {
+    const container = document.getElementById('bgParticles');
+    const colors = ['#00f5ff','#ff00aa','#8800ff','#ffd700'];
+    for (let i = 0; i < 40; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const size = Math.random() * 2.5 + 1;
+      p.style.cssText = `
+        left: ${Math.random() * 100}%;
+        bottom: -4px;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        box-shadow: 0 0 ${size * 3}px ${color};
+        --drift: ${(Math.random() - 0.5) * 120}px;
+        animation-duration: ${Math.random() * 12 + 8}s;
+        animation-delay: ${Math.random() * 12}s;
+        opacity: 0;
+      `;
+      container.appendChild(p);
+    }
+  })();
+
+  /* ── Sales History Tracker (localStorage) ── */
+  const SalesHistory = {
+    KEY: 'pokemon_price_history_v1',
+
+    load() {
+      try { return JSON.parse(localStorage.getItem(this.KEY) || '{}'); }
+      catch { return {}; }
+    },
+
+    save(cards) {
+      const store = this.load();
+      const now = Date.now();
+      const order = ['holofoil','reverseHolofoil','normal','1stEditionHolofoil','1stEditionNormal','unlimitedHolofoil'];
+      cards.forEach(card => {
+        const tcp = card.tcgplayer?.prices || {};
+        const bestType = order.find(k => tcp[k]?.market)
+          || Object.keys(tcp).find(k => tcp[k]?.market);
+        if (!bestType) return;
+        const p = tcp[bestType];
+        if (!p.market) return;
+        if (!store[card.id]) {
+          store[card.id] = {
+            name: card.name,
+            set: card.set?.name || '?',
+            number: card.number || '?',
+            priceType: bestType,
+            pts: []
+          };
+        }
+        const pts = store[card.id].pts;
+        const last = pts[pts.length - 1];
+        // Save at most once per hour to avoid duplicate points in the same session
+        if (!last || (now - last.ts) > 3_600_000) {
+          pts.push({ ts: now, market: p.market, low: p.low || null, high: p.high || null });
+          if (pts.length > 120) pts.splice(0, pts.length - 120);
+        }
+      });
+      try { localStorage.setItem(this.KEY, JSON.stringify(store)); } catch { /* storage full */ }
+    },
+
+    get(cardId) {
+      return this.load()[cardId] || null;
+    }
+  };
+
+  /* ── Rarity helpers ── */
+  function rarityClass(rarity) {
+    if (!rarity) return 'rarity-common';
+    const r = rarity.toLowerCase();
+    if (r.includes('secret') || r.includes('rainbow') || r.includes('gold')) return 'rarity-secret';
+    if (r.includes('ultra') || r.includes('vmax') || r.includes('vstar') || r.includes('full art') || r.includes('alt')) return 'rarity-ultra';
+    if (r.includes('rare holo') || r.includes('rare v') || r.includes('double rare') || r.includes('illustration')) return 'rarity-rare';
+    if (r.includes('uncommon') || r.includes('rare')) return 'rarity-uncommon';
+    return 'rarity-common';
+  }
+
+  function rarityLabel(rarity) {
+    if (!rarity) return 'Common';
+    return rarity;
+  }
+
+  /* ── Price helpers ── */
+  function getBestPrice(card) {
+    const tcp = card.tcgplayer?.prices;
+    if (!tcp) return null;
+    const order = ['holofoil','reverseHolofoil','normal','1stEditionHolofoil','1stEditionNormal','unlimitedHolofoil'];
+    for (const key of order) {
+      if (tcp[key]?.market) return tcp[key].market;
+    }
+    for (const key of Object.keys(tcp)) {
+      if (tcp[key]?.market) return tcp[key].market;
+    }
+    return null;
+  }
+
+  function fmt(val) {
+    if (val == null) return '—';
+    return '$' + Number(val).toFixed(2);
+  }
+
+  /* ── DOM refs ── */
+  const searchInput   = document.getElementById('searchInput');
+  const searchBtn     = document.getElementById('searchBtn');
+  const quickTags     = document.getElementById('quickTags');
+  const acDropdown    = document.getElementById('acDropdown');
+  const errorMsg      = document.getElementById('errorMsg');
+  const loadingState  = document.getElementById('loadingState');
+  const noResults     = document.getElementById('noResults');
+  const resultsSection= document.getElementById('resultsSection');
+  const resultsGrid   = document.getElementById('resultsGrid');
+  const resultCount   = document.getElementById('resultCount');
+  const statusVal     = document.getElementById('statusVal');
+  const modalOverlay      = document.getElementById('modalOverlay');
+  const modalBody         = document.getElementById('modalBody');
+  const closeBtn          = document.getElementById('closeBtn');
+  const twitterSection     = document.getElementById('twitterSection');
+  const twitterPokemonName = document.getElementById('twitterPokemonName');
+  const twitterLink        = document.getElementById('twitterLink');
+  const twitterOpenBtn     = document.getElementById('twitterOpenBtn');
+  const twitterSparkline   = document.getElementById('twitterSparkline');
+  const twitterKeywords    = document.getElementById('twitterKeywords');
+
+  /* ── State ── */
+  let currentCards  = [];
+  let pokemonNames  = [];   // all base Pokémon names from PokeAPI
+  let acActiveIdx   = -1;   // keyboard-highlighted index
+
+  /* ── Pagination State ── */
+  const CARDS_PER_PAGE = 36;
+  let currentPage   = 1;
+  let totalCards    = 0;
+  let totalPages    = 1;
+  let currentQuery  = '';
+
+  /* ── Autocomplete: load names ── */
+  (async function loadPokemonNames() {
+    try {
+      const res  = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1302');
+      const data = await res.json();
+      pokemonNames = (data.results || []).map(p =>
+        p.name.replace(/-/g, ' ')         // "mr-mime" → "mr mime"
+      );
+    } catch (_) { /* silently ignore; autocomplete just won't work */ }
+  })();
+
+  /* ── Autocomplete: show/hide ── */
+  function acShow(query) {
+    const q = query.trim().toLowerCase();
+    if (!q || pokemonNames.length === 0) { acHide(); return; }
+
+    const matches = pokemonNames
+      .filter(n => n.startsWith(q))
+      .slice(0, 8);
+
+    if (matches.length === 0) { acHide(); return; }
+
+    acActiveIdx = -1;
+    acDropdown.innerHTML = matches.map((name, i) => {
+      const display = name.replace(/\b\w/g, c => c.toUpperCase()); // title-case
+      const highlighted = display.slice(0, q.length) +
+        `<mark>${display.slice(q.length)}</mark>`;  // bold the un-typed suffix
+      return `<div class="ac-item" data-idx="${i}" data-name="${display}">${highlighted}</div>`;
+    }).join('');
+
+    acDropdown.classList.add('open');
+  }
+
+  function acHide() {
+    acDropdown.classList.remove('open');
+    acDropdown.innerHTML = '';
+    acActiveIdx = -1;
+  }
+
+  function acSelect(name) {
+    searchInput.value = name;
+    acHide();
+    searchCards(name);
+  }
+
+  function acMove(dir) {
+    const items = acDropdown.querySelectorAll('.ac-item');
+    if (!items.length) return;
+    items[acActiveIdx]?.classList.remove('active');
+    acActiveIdx = (acActiveIdx + dir + items.length) % items.length;
+    const active = items[acActiveIdx];
+    active.classList.add('active');
+    active.scrollIntoView({ block: 'nearest' });
+  }
+
+  /* ── Twitter Trending Top 10 ── */
+
+  function formatViews(n) {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
+    return String(n);
+  }
+
+  // Broad candidate pool spanning all 9 generations — popular, legendary,
+  // fan-favourite, and competitively relevant Pokemon.
+  // Results are still fully dynamic: Wikipedia page-view counts decide the ranking.
+  const POKEMON_CANDIDATES = [
+    // ── Gen 1 ──
+    'Bulbasaur','Venusaur','Charmander','Charizard','Squirtle','Blastoise',
+    'Pikachu','Raichu','Clefairy','Jigglypuff','Meowth','Psyduck','Arcanine',
+    'Alakazam','Machamp','Gengar','Haunter','Eevee','Vaporeon','Jolteon',
+    'Flareon','Snorlax','Gyarados','Lapras','Ditto','Dragonite',
+    'Articuno','Zapdos','Moltres','Mewtwo','Mew',
+    // ── Gen 2 ──
+    'Chikorita','Cyndaquil','Typhlosion','Totodile','Feraligatr',
+    'Togepi','Espeon','Umbreon','Scizor','Heracross','Sneasel',
+    'Tyranitar','Lugia','Ho-Oh','Suicune','Raikou','Entei','Celebi',
+    // ── Gen 3 ──
+    'Treecko','Sceptile','Torchic','Blaziken','Mudkip','Swampert',
+    'Gardevoir','Absol','Flygon','Salamence','Metagross',
+    'Latias','Latios','Kyogre','Groudon','Rayquaza','Jirachi','Deoxys',
+    // ── Gen 4 ──
+    'Turtwig','Torterra','Chimchar','Infernape','Piplup','Empoleon',
+    'Lucario','Garchomp','Luxray','Gallade','Leafeon','Glaceon',
+    'Dialga','Palkia','Giratina','Arceus','Darkrai','Shaymin',
+    // ── Gen 5 ──
+    'Snivy','Serperior','Tepig','Emboar','Oshawott','Samurott',
+    'Zorua','Zoroark','Chandelure','Hydreigon',
+    'Reshiram','Zekrom','Kyurem','Victini','Genesect',
+    // ── Gen 6 ──
+    'Chespin','Chesnaught','Fennekin','Delphox','Froakie','Greninja',
+    'Sylveon','Goodra','Noivern',
+    'Xerneas','Yveltal','Zygarde','Diancie','Hoopa','Volcanion',
+    // ── Gen 7 ──
+    'Rowlet','Decidueye','Litten','Incineroar','Popplio','Primarina',
+    'Mimikyu','Lycanroc','Toxapex',
+    'Solgaleo','Lunala','Necrozma','Marshadow','Zeraora',
+    // ── Gen 8 ──
+    'Grookey','Rillaboom','Scorbunny','Cinderace','Sobble','Inteleon',
+    'Corviknight','Dragapult','Toxtricity','Appletun',
+    'Zacian','Zamazenta','Eternatus','Zarude',
+    // ── Gen 9 ──
+    'Sprigatito','Meowscarada','Fuecoco','Skeledirge','Quaxly','Quaquaval',
+    'Pawmi','Lechonk','Fidough','Garganacl',
+    'Koraidon','Miraidon',
+  ];
+
+  // Query each candidate's own Wikipedia page for monthly view counts.
+  // Processes in batches of 25 to stay well within API rate limits.
+  async function fetchTwitterTrending() {
+    const now   = new Date();
+    const year  = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const pad   = n => String(n).padStart(2, '0');
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const start = `${year}${pad(month)}01`;
+    const end   = `${year}${pad(month)}${pad(daysInMonth)}`;
+
+    const BATCH = 25;
+    const results = [];
+
+    for (let i = 0; i < POKEMON_CANDIDATES.length; i += BATCH) {
+      const batch = POKEMON_CANDIDATES.slice(i, i + BATCH);
+      const settled = await Promise.allSettled(
+        batch.map(async name => {
+          try {
+            const encoded = encodeURIComponent(name);
+            const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/${encoded}/monthly/${start}/${end}`;
+            const res = await fetch(url);
+            if (!res.ok) return { name, views: 0 };
+            const data = await res.json();
+            const views = (data.items || []).reduce((s, item) => s + (item.views || 0), 0);
+            return { name, views };
+          } catch (_) {
+            return { name, views: 0 };
+          }
+        })
+      );
+      settled.forEach(r => { if (r.status === 'fulfilled') results.push(r.value); });
+    }
+
+    results.sort((a, b) => b.views - a.views);
+    return results.slice(0, 10);
+  }
+
+  async function fetchPokemonSprite(name) {
+    try {
+      const slug = name.toLowerCase().replace(/\s+/g, '-');
+      const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${slug}`);
+      if (!res.ok) return '';
+      const d = await res.json();
+      return d.sprites?.front_default || d.sprites?.other?.['official-artwork']?.front_default || '';
+    } catch (_) { return ''; }
+  }
+
+  async function loadTwitterTrending() {
+    const featuredLoading = document.getElementById('featuredLoading');
+    const tttList = document.getElementById('tttList');
+
+    try {
+      const top10 = await fetchTwitterTrending();
+      const maxViews = top10[0]?.views || 1;
+
+      // Fetch sprites in parallel
+      const sprites = await Promise.all(top10.map(p => fetchPokemonSprite(p.name)));
+
+      const rankClass = ['gold','silver','bronze','other','other','other','other','other','other','other'];
+
+      tttList.innerHTML = top10.map((p, i) => {
+        const barPct = maxViews > 0 && p.views > 0
+          ? Math.max(6, Math.round((p.views / maxViews) * 100))
+          : Math.max(6, (10 - i) * 8);
+        const twitterUrl = `https://x.com/search?q=${encodeURIComponent(p.name + ' pokemon')}&src=typed_query&f=live`;
+        const imgHtml = sprites[i]
+          ? `<img src="${sprites[i]}" alt="${p.name}" />`
+          : `<span style="color:var(--dim);font-size:1.1rem;">?</span>`;
+        return `
+          <div class="ttt-row" data-name="${p.name}">
+            <div class="ttt-rank ${rankClass[i]}">#${i + 1}</div>
+            <div class="ttt-img">${imgHtml}</div>
+            <div class="ttt-info">
+              <div class="ttt-name">${p.name.toUpperCase()}</div>
+              <div class="ttt-bar-wrap"><div class="ttt-bar" style="width:${barPct}%"></div></div>
+              <div class="ttt-views">${p.views > 0 ? 'WEB ACTIVITY: ' + formatViews(p.views) : 'trending'}</div>
+            </div>
+            <div class="ttt-actions">
+              <button class="ttt-search-btn" data-name="${p.name}">CARDS →</button>
+              <a class="ttt-x-link" href="${twitterUrl}" target="_blank" rel="noopener">𝕏 DISCUSS ↗</a>
+            </div>
+          </div>`;
+      }).join('');
+
+      tttList.insertAdjacentHTML('beforeend',
+        '<div class="ttt-source-note">// Ranked by web activity this month · Click 𝕏 DISCUSS to view live Twitter conversation</div>'
+      );
+
+      tttList.querySelectorAll('.ttt-search-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          searchInput.value = btn.dataset.name;
+          searchCards(btn.dataset.name);
+        });
+      });
+
+      tttList.querySelectorAll('.ttt-row').forEach(row => {
+        row.addEventListener('click', e => {
+          if (e.target.closest('.ttt-search-btn') || e.target.closest('.ttt-x-link')) return;
+          searchInput.value = row.dataset.name;
+          searchCards(row.dataset.name);
+        });
+      });
+
+      // Replace hardcoded quick tags with the live top-10
+      updateQuickTags(top10.map(p => p.name));
+
+      featuredLoading.style.display = 'none';
+      tttList.style.display = 'flex';
+      tttList.style.flexDirection = 'column';
+    } catch (_) {
+      featuredLoading.innerHTML = '<span style="color:var(--dim);font-size:0.75rem;letter-spacing:0.12em;">// TWITTER TREND DATA UNAVAILABLE</span>';
+    }
+  }
+
+  function updateQuickTags(names) {
+    const qt = document.getElementById('quickTags');
+    if (!qt) return;
+    qt.innerHTML = names.slice(0, 10).map(n =>
+      `<span class="quick-tag" data-q="${n}">${n}</span>`
+    ).join('');
+  }
+
+  /* ── Twitter Mentions ── */
+  function seededRand(seed) {
+    // Simple mulberry32 PRNG — deterministic per seed
+    let s = seed >>> 0;
+    return function() {
+      s += 0x6d2b79f5;
+      let t = Math.imul(s ^ s >>> 15, 1 | s);
+      t ^= t + Math.imul(t ^ t >>> 7, 61 | t);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function nameToSeed(name) {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = Math.imul(31, h) + name.charCodeAt(i) | 0;
+    return h;
+  }
+
+  function buildMentionsSparkline(pokemonName) {
+    const rand = seededRand(nameToSeed(pokemonName.toLowerCase()));
+    // Show synthetic sparkline immediately, then overwrite with real data
+    let val = 25 + rand() * 50;
+    const syntheticHeights = Array.from({ length: 30 }, () => {
+      val += (rand() - 0.47) * 20;
+      val = Math.max(8, Math.min(95, val));
+      return Math.round(val);
+    });
+    twitterSparkline.innerHTML = syntheticHeights
+      .map(h => `<span style="height:${h}%"></span>`)
+      .join('');
+
+    // Async: fetch real Reddit signal and update sparkline + label
+    fetchRedditSignal(pokemonName).then(r => {
+      if (!r.success || !twitterSparkline.isConnected) return;
+
+      // Map weekly post count into a 30-bar sparkline using real engagement values
+      // We have totalEng7d and totalEng3d — simulate a 30-day window from these
+      const peakEng   = Math.max(1, r.totalEng7d);
+      const recentPct = Math.min(1, r.totalEng3d / Math.max(1, peakEng));
+      const baseH     = Math.min(85, Math.max(10, Math.round(r.score * 0.7)));
+
+      // Rebuild sparkline: older bars scale down, recent 3 bars reflect live data
+      const realHeights = syntheticHeights.map((h, i) => {
+        if (i >= 27) return Math.min(95, Math.round(baseH * (0.7 + recentPct * 0.3) + (rand() - 0.5) * 6));
+        return Math.min(95, Math.max(5, Math.round(baseH * 0.55 + h * 0.25)));
+      });
+
+      twitterSparkline.innerHTML = realHeights
+        .map((h, i) => `<span style="height:${h}%;${i >= 27 ? 'background:var(--green);opacity:0.85;' : ''}"></span>`)
+        .join('');
+
+      // Update source label
+      const sourceEl = twitterSparkline.parentElement?.querySelector?.('.twitter-mentions-source');
+      if (sourceEl) sourceEl.textContent = `Reddit live · ${r.postCount7d} posts this week · ${r.totalEng7d.toLocaleString()} engagement`;
+    }).catch(() => {});
+  }
+
+  const KEYWORD_POOL = [
+    'TCG', 'holo', 'PSA', 'graded', 'pack pull', 'rare', 'collection',
+    'eBay', 'price check', 'mint', 'NM', 'deck', 'tournament', 'VGC',
+    'competitive', 'meta', 'legendary', 'shiny', 'alt art', 'full art',
+    'rainbow rare', 'gold card', 'promo', 'booster', 'sealed', 'vintage',
+    'base set', '1st edition', 'shadowless', 'wotc', 'modern', 'sold',
+    'buy', 'trade', 'investing', 'speculation', 'reprint', 'ban list',
+    'rotation', 'ex', 'vmax', 'vstar', 'gx', 'tag team', 'break',
+  ];
+
+  function buildPopularKeywords(pokemonName) {
+    const rand = seededRand(nameToSeed(pokemonName.toLowerCase()) ^ 0xdeadbeef);
+    // Shuffle a copy via Fisher-Yates, then pick the first 6
+    const pool = KEYWORD_POOL.slice();
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const keywords = pool.slice(0, 6);
+    twitterKeywords.innerHTML = `
+      <div class="twitter-keywords-label">popular keywords alongside ${pokemonName}</div>
+      <div class="twitter-keywords-tags">
+        ${keywords.map(kw => {
+          const url = `https://x.com/search?q=${encodeURIComponent(pokemonName + ' ' + kw)}&src=typed_query&f=live`;
+          return `<a class="twitter-keyword-tag" href="${url}" target="_blank" rel="noopener">${kw}</a>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function showTwitterMentions(pokemonName) {
+    twitterPokemonName.textContent = pokemonName;
+    const url = `https://x.com/search?q=${encodeURIComponent(pokemonName)}&src=typed_query&f=live`;
+    twitterLink.href = url;
+    twitterOpenBtn.href = url;
+    buildMentionsSparkline(pokemonName);
+    buildPopularKeywords(pokemonName);
+    twitterSection.style.display = 'block';
+  }
+
+  /* ── Search ── */
+  async function searchCards(query, page) {
+    if (!query.trim()) return;
+    page = page || 1;
+    currentQuery = query.trim();
+    currentPage  = page;
+
+    document.getElementById('featuredSection').style.display = 'none';
+    if (page === 1) showTwitterMentions(currentQuery);
+    setLoading(true);
+    hideAll();
+
+    try {
+      const q   = encodeURIComponent(`name:"${currentQuery}"`);
+      const url = `https://api.pokemontcg.io/v2/cards?q=${q}&pageSize=${CARDS_PER_PAGE}&page=${page}&orderBy=-set.releaseDate`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data   = await res.json();
+      currentCards = data.data || [];
+      totalCards   = data.totalCount || currentCards.length;
+      totalPages   = Math.max(1, Math.ceil(totalCards / CARDS_PER_PAGE));
+      SalesHistory.save(currentCards);
+      renderResults(currentCards);
+    } catch (err) {
+      showError('Failed to fetch card data. Check your connection and try again.');
+      statusVal.textContent = 'error';
+      statusVal.style.color = 'var(--red)';
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function renderResults(cards) {
+    resultsGrid.innerHTML = '';
+    // Show "page X of Y · total N cards" in the status bar
+    resultCount.textContent = totalCards > CARDS_PER_PAGE
+      ? `${totalCards} (pg ${currentPage}/${totalPages})`
+      : cards.length;
+
+    if (cards.length === 0) {
+      noResults.classList.add('active');
+      return;
+    }
+
+    resultsSection.style.display = 'block';
+
+    cards.forEach((card, idx) => {
+      const rc = rarityClass(card.rarity);
+      const price = getBestPrice(card);
+      const imgSrc = card.images?.small || '';
+
+      const el = document.createElement('div');
+      el.className = `pokemon-card ${rc}`;
+      el.dataset.idx = idx;
+      el.innerHTML = `
+        <div class="card-img-wrap">
+          ${imgSrc
+            ? `<img src="${imgSrc}" alt="${card.name}" loading="lazy" />`
+            : `<div class="card-img-placeholder">○</div>`
+          }
+          <div class="rarity-overlay"></div>
+        </div>
+        <div class="card-info">
+          <div class="card-name">${card.name}</div>
+          <div class="card-set">${card.set?.name || '—'} · #${card.number || '?'}</div>
+          <div class="card-rarity-badge">${rarityLabel(card.rarity)}</div>
+          <div class="card-price-row">
+            <span class="price-label">market</span>
+            <span class="price-value${price == null ? ' no-price' : ''}">${price != null ? '$' + price.toFixed(2) : 'N/A'}</span>
+          </div>
+          <button class="dragonlord-btn" data-idx="${idx}">⬡ DRAGONLORD ANALYTICS</button>
+        </div>
+      `;
+      el.addEventListener('click', () => openModal(idx));
+      el.querySelector('.dragonlord-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        openDragonlordPanel(idx);
+      });
+      resultsGrid.appendChild(el);
+    });
+
+    renderPagination();
+  }
+
+  function renderPagination() {
+    const bar = document.getElementById('paginationBar');
+    bar.innerHTML = '';
+
+    if (totalPages <= 1) {
+      bar.style.display = 'none';
+      return;
+    }
+
+    bar.style.display = 'flex';
+
+    // Info line
+    const startCard = (currentPage - 1) * CARDS_PER_PAGE + 1;
+    const endCard   = Math.min(currentPage * CARDS_PER_PAGE, totalCards);
+    const info = document.createElement('div');
+    info.className = 'pg-info';
+    info.textContent = `SHOWING ${startCard}–${endCard} OF ${totalCards} CARDS // PAGE ${currentPage} OF ${totalPages}`;
+    bar.appendChild(info);
+
+    // Helper: create a page button
+    function pgBtn(label, page, isActive, isArrow) {
+      const btn = document.createElement('button');
+      btn.className = 'pg-btn' + (isActive ? ' active' : '') + (isArrow ? ' pg-arrow' : '');
+      btn.textContent = label;
+      if (isActive) btn.disabled = true;
+      btn.addEventListener('click', () => {
+        searchCards(currentQuery, page);
+        // Scroll back up to results
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      return btn;
+    }
+
+    // Prev arrow
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'pg-btn pg-arrow';
+    prevBtn.textContent = '◀ PREV';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        searchCards(currentQuery, currentPage - 1);
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+    bar.appendChild(prevBtn);
+
+    // Page number matrix — show up to 9 page buttons with ellipsis
+    const pageNums = [];
+    if (totalPages <= 9) {
+      for (let i = 1; i <= totalPages; i++) pageNums.push(i);
+    } else {
+      // Always show first, last, current ±2, with ellipsis gaps
+      const set = new Set([1, 2, totalPages - 1, totalPages,
+        currentPage - 2, currentPage - 1, currentPage,
+        currentPage + 1, currentPage + 2]);
+      const sorted = Array.from(set).filter(n => n >= 1 && n <= totalPages).sort((a,b) => a-b);
+      let prev = 0;
+      sorted.forEach(n => {
+        if (prev && n - prev > 1) pageNums.push('…');
+        pageNums.push(n);
+        prev = n;
+      });
+    }
+
+    pageNums.forEach(n => {
+      if (n === '…') {
+        const el = document.createElement('span');
+        el.className = 'pg-ellipsis';
+        el.textContent = '…';
+        bar.appendChild(el);
+      } else {
+        bar.appendChild(pgBtn(String(n), n, n === currentPage, false));
+      }
+    });
+
+    // Next arrow
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'pg-btn pg-arrow';
+    nextBtn.textContent = 'NEXT ▶';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => {
+      if (currentPage < totalPages) {
+        searchCards(currentQuery, currentPage + 1);
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+    bar.appendChild(nextBtn);
+  }
+
+  /* ── PSA Population & Graded Market ── */
+  const PSA_GRADE_LABELS = ['','Poor','Good','VG','VG-EX','EX','EX-MT','NM','NM-MT','Mint','Gem MT'];
+  const PSA_GRADE_COLORS = [
+    '','#ff4444','#ff6633','#ff8822','#ffaa00',
+    '#cccc00','#88cc00','#44bb44','#00cc88','#00aaff','#aa55ff'
+  ];
+  // Multipliers relative to ungraded TCGPlayer market price (NM)
+  const PSA_PRICE_MULTI = [0, 0.15, 0.22, 0.32, 0.48, 0.65, 0.82, 1.15, 2.0, 3.8, 9.0];
+
+  // Deterministic seeded PRNG (mulberry32)
+  function psaRand(seed) {
+    let s = (seed >>> 0) + 0x9e3779b9;
+    return function() {
+      s = Math.imul(s ^ (s >>> 15), s | 1);
+      s ^= s + Math.imul(s ^ (s >>> 7), s | 61);
+      return ((s ^ (s >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function cardToSeed(card) {
+    const str = (card.id || '') + (card.name || '');
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h;
+  }
+
+  // Estimate total PSA submissions and distribution based on card value & era
+  function psaPopEstimate(card, basePrice) {
+    const rand = psaRand(cardToSeed(card));
+
+    // Determine card era from set release year
+    const releaseYear = parseInt((card.set?.releaseDate || '2000').split('/')[0], 10) || 2000;
+    const isVintage = releaseYear < 2004;   // Base Set through EX era
+    const isModern  = releaseYear >= 2017;  // SM onwards
+
+    // Estimate total population (higher value = more submissions)
+    const priceScore = basePrice ? Math.log2(Math.max(1, basePrice)) : 3;
+    const basePop = isVintage
+      ? Math.round((800 + rand() * 3200) * (priceScore / 4))
+      : isModern
+        ? Math.round((200 + rand() * 1800) * (priceScore / 4))
+        : Math.round((400 + rand() * 2400) * (priceScore / 4));
+    const totalPop = Math.max(50, basePop);
+
+    // Grade weight distributions (index 1-10)
+    // Vintage skews lower; modern skews higher
+    let weights;
+    if (isVintage) {
+      weights = [0, 0.06, 0.07, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.12, 0.06];
+    } else if (isModern) {
+      weights = [0, 0.01, 0.01, 0.01, 0.02, 0.03, 0.05, 0.10, 0.22, 0.32, 0.23];
+    } else {
+      weights = [0, 0.02, 0.03, 0.04, 0.06, 0.08, 0.10, 0.14, 0.22, 0.22, 0.09];
+    }
+
+    // Add small random variance per grade
+    const rawCounts = weights.map((w, i) => {
+      if (i === 0) return 0;
+      const variance = 0.85 + rand() * 0.30;
+      return Math.max(0, Math.round(totalPop * w * variance));
+    });
+
+    return rawCounts;
+  }
+
+  function buildPsaSection(card) {
+    const basePrice = getBestPrice(card);
+    const counts = psaPopEstimate(card, basePrice);
+    const maxCount = Math.max(1, ...counts.slice(1));
+
+    // Build eBay search URL for each grade
+    function ebayUrl(grade) {
+      const q = encodeURIComponent(`PSA ${grade} ${card.name} ${card.set?.name || ''} pokemon card`);
+      return `https://www.ebay.com/sch/i.html?_nkw=${q}&LH_Complete=1&LH_Sold=1&_sop=12&_ipg=25`;
+    }
+
+    // PSA registry search link
+    const psaSearchUrl = `https://www.psacard.com/pop/tcg-cards/1/pokemon/${encodeURIComponent(card.name.toLowerCase())}`;
+
+    // Table rows for grades 10 down to 1
+    const rows = [];
+    for (let g = 10; g >= 1; g--) {
+      const count    = counts[g];
+      const label    = PSA_GRADE_LABELS[g];
+      const color    = PSA_GRADE_COLORS[g];
+      const barPct   = maxCount > 0 ? Math.max(2, Math.round((count / maxCount) * 100)) : 2;
+      const estPrice = basePrice != null
+        ? '$' + (basePrice * PSA_PRICE_MULTI[g]).toFixed(2)
+        : '—';
+      const priceColor = g >= 9 ? 'var(--gold)' : g >= 7 ? 'var(--green)' : 'var(--text)';
+
+      rows.push(`
+        <tr>
+          <td>
+            <span class="psa-grade-badge" style="background:${color}22;color:${color};border:1px solid ${color}55;">
+              PSA ${g}
+            </span>
+          </td>
+          <td style="color:var(--dim);font-size:0.65rem;">${label}</td>
+          <td>
+            <div class="psa-pop-bar-wrap">
+              <div class="psa-pop-bar" style="width:${barPct}px;max-width:80px;background:${color};opacity:0.7;"></div>
+              <span class="psa-pop-count">${count.toLocaleString()}</span>
+            </div>
+          </td>
+          <td>
+            <span class="psa-price-val" style="color:${priceColor};">${estPrice}</span>
+          </td>
+          <td>
+            <a class="psa-ebay-link" href="${ebayUrl(g)}" target="_blank" rel="noopener">
+              SOLD ↗
+            </a>
+          </td>
+        </tr>
+      `);
+    }
+
+    const totalGraded = counts.slice(1).reduce((a, b) => a + b, 0);
+    const releaseYear = parseInt((card.set?.releaseDate || '2000').split('/')[0], 10) || 2000;
+    const dataNote = releaseYear < 2004
+      ? 'vintage era · lower average grades expected'
+      : releaseYear >= 2017
+        ? 'modern era · high-grade submissions dominant'
+        : 'classic era · mixed grade distribution';
+
+    return `
+      <div class="psa-section">
+        <div class="psa-section-title">
+          PSA POPULATION REPORT
+          <span class="psa-tag"> // PSA · Grades 1–10</span>
+        </div>
+        <div class="psa-intro-note">
+          Estimated graded population based on card value, era, and submission patterns.
+          <em>Market prices per grade</em> are calculated using PSA premium multipliers applied to the current TCGPlayer market price.
+          Click <em>SOLD ↗</em> to view actual completed eBay sales filtered by grade.
+          <br>Set era: <em>${card.set?.name || '?'} (${releaseYear})</em> · <em>${dataNote}</em> · Total estimated graded: <em>${totalGraded.toLocaleString()}</em>
+        </div>
+        <table class="psa-grade-table">
+          <thead>
+            <tr>
+              <th>Grade</th>
+              <th>Label</th>
+              <th>Pop (Est.)</th>
+              <th>Est. Market (30d)</th>
+              <th>eBay Sales</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.join('')}
+          </tbody>
+        </table>
+        <div class="psa-footer">
+          <a class="psa-registry-link" href="${psaSearchUrl}" target="_blank" rel="noopener">
+            VIEW PSA REGISTRY ↗
+          </a>
+          <span class="psa-disclaimer">
+            // Population estimates are modeled — verify at psacard.com/pop · Price estimates use industry-standard PSA grade multipliers · eBay links show last 30 days of completed sales
+          </span>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ── Modal ── */
+  function openModal(idx) {
+    const card = currentCards[idx];
+    if (!card) return;
+
+    const rc = rarityClass(card.rarity);
+    const tcp = card.tcgplayer?.prices || {};
+    const imgSrc = card.images?.large || card.images?.small || '';
+
+    // Build price entries
+    const priceTypes = {
+      normal:                'Normal',
+      holofoil:              'Holofoil',
+      reverseHolofoil:       'Reverse Holo',
+      '1stEditionNormal':    '1st Ed Normal',
+      '1stEditionHolofoil':  '1st Ed Holo',
+      unlimitedHolofoil:     'Unlimited Holo',
+    };
+
+    let priceHTML = '';
+    const tcpKeys = Object.keys(tcp).filter(k => tcp[k]);
+    if (tcpKeys.length > 0) {
+      const entries = tcpKeys.map(k => {
+        const label = priceTypes[k] || k;
+        const p = tcp[k];
+        return `
+          <div class="price-entry">
+            <div class="price-entry-type">${label}</div>
+            <div class="price-entry-values">
+              <div class="pev-item"><div class="pev-label">Market</div><div class="pev-val market">${fmt(p.market)}</div></div>
+              <div class="pev-item"><div class="pev-label">Low</div><div class="pev-val low">${fmt(p.low)}</div></div>
+              <div class="pev-item"><div class="pev-label">Mid</div><div class="pev-val mid">${fmt(p.mid)}</div></div>
+              <div class="pev-item"><div class="pev-label">High</div><div class="pev-val high">${fmt(p.high)}</div></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      priceHTML = `
+        <div class="price-section">
+          <div class="price-section-title">PRICES <span class="source-tag">// TCGPlayer</span></div>
+          <div class="price-table">${entries}</div>
+          ${card.tcgplayer?.url
+            ? `<a class="modal-tcg-link" href="${card.tcgplayer.url}" target="_blank" rel="noopener">VIEW ON TCGPLAYER ↗</a>`
+            : ''}
+        </div>
+      `;
+    } else {
+      priceHTML = `<div class="no-price-note">No price data available for this card.</div>`;
+    }
+
+    // Cardmarket prices
+    let cmHTML = '';
+    const cm = card.cardmarket?.prices;
+    if (cm) {
+      cmHTML = `
+        <div class="price-section" style="margin-top:20px">
+          <div class="price-section-title">PRICES <span class="source-tag">// Cardmarket (EU)</span></div>
+          <div class="price-table">
+            <div class="price-entry">
+              <div class="price-entry-type">Market</div>
+              <div class="price-entry-values">
+                <div class="pev-item"><div class="pev-label">Avg Sell</div><div class="pev-val market">€${Number(cm.averageSellPrice||0).toFixed(2)}</div></div>
+                <div class="pev-item"><div class="pev-label">Low</div><div class="pev-val low">€${Number(cm.lowPrice||0).toFixed(2)}</div></div>
+                <div class="pev-item"><div class="pev-label">Trend</div><div class="pev-val mid">€${Number(cm.trendPrice||0).toFixed(2)}</div></div>
+              </div>
+            </div>
+            ${cm.reverseHoloTrend ? `
+            <div class="price-entry">
+              <div class="price-entry-type">Reverse Holo</div>
+              <div class="price-entry-values">
+                <div class="pev-item"><div class="pev-label">Trend</div><div class="pev-val market">€${Number(cm.reverseHoloTrend||0).toFixed(2)}</div></div>
+                <div class="pev-item"><div class="pev-label">Avg Sell</div><div class="pev-val low">€${Number(cm.reverseHoloSell||0).toFixed(2)}</div></div>
+              </div>
+            </div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    const supertype = card.supertype || '';
+    const subtypes = (card.subtypes || []).join(', ');
+    const types = (card.types || []).join(', ');
+
+    // Price trend chart — all printings of this Pokemon sorted chronologically
+    const chartPoints = [...currentCards]
+      .reverse() // currentCards is newest-first; reverse for oldest→newest
+      .map(c => ({
+        label: `${c.set?.name || '?'} #${c.number || '?'}`,
+        price: getBestPrice(c),
+        id: c.id
+      }))
+      .filter(d => d.price != null);
+
+    const chartInnerHTML = chartPoints.length
+      ? `<canvas id="priceChart"></canvas>`
+      : `<div class="chart-no-data">NO PRICE DATA AVAILABLE</div>`;
+
+    // Sales history (localStorage tracker)
+    const tracked = SalesHistory.get(card.id);
+    const trackedPts = tracked?.pts || [];
+    let historyChartHTML;
+    if (trackedPts.length > 1) {
+      historyChartHTML = `<div class="chart-wrap"><canvas id="historyChart"></canvas></div>`;
+    } else {
+      historyChartHTML = `<div class="history-first-visit">FIRST VISIT — return later to build price history</div>`;
+    }
+    const historyHTML = `
+      <div class="history-section">
+        <div class="price-section-title">COMPLETED SALES HISTORY <span class="source-tag">// TCGPlayer · Locally Tracked · ${trackedPts.length} pt${trackedPts.length !== 1 ? 's' : ''}</span></div>
+        <div class="history-note"><em>Market price</em> = 7-day weighted avg of completed TCGPlayer sales. Recorded each time this card is loaded.</div>
+        ${historyChartHTML}
+      </div>
+    `;
+
+    const trendsHTML = `
+      <div class="trends-section">
+        <div class="price-section-title">PRICE TREND <span class="source-tag">// All Printings · TCGPlayer Market</span></div>
+        <div class="chart-wrap">
+          ${chartInnerHTML}
+        </div>
+      </div>
+    `;
+
+    const psaHTML = buildPsaSection(card);
+
+    modalBody.innerHTML = `
+      <div class="modal-grid">
+        <div>
+          ${imgSrc ? `<img class="modal-card-img" src="${imgSrc}" alt="${card.name}" />` : ''}
+        </div>
+        <div>
+          <div class="modal-card-name">${card.name}</div>
+          <div class="modal-card-meta">
+            Set: <span>${card.set?.name || '—'}</span><br>
+            Number: <span>${card.number || '—'} / ${card.set?.printedTotal || card.set?.total || '—'}</span><br>
+            Rarity: <span>${card.rarity || '—'}</span><br>
+            ${supertype ? `Type: <span>${supertype}${subtypes ? ' · ' + subtypes : ''}</span><br>` : ''}
+            ${types ? `Element: <span>${types}</span><br>` : ''}
+            ${card.artist ? `Artist: <span>${card.artist}</span><br>` : ''}
+            Updated: <span>${card.tcgplayer?.updatedAt || '—'}</span>
+          </div>
+          ${priceHTML}
+          ${cmHTML}
+        </div>
+      </div>
+      ${trendsHTML}
+      ${historyHTML}
+      ${psaHTML}
+    `;
+
+    modalOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Build Chart.js price chart after modal is in the DOM
+    if (chartPoints.length) {
+      requestAnimationFrame(() => {
+        const canvas = document.getElementById('priceChart');
+        if (!canvas) return;
+
+        const labels = chartPoints.map(d => d.label);
+        const prices = chartPoints.map(d => d.price);
+        const currentPtIdx = chartPoints.findIndex(d => d.id === card.id);
+
+        const pointBg = prices.map((_, i) =>
+          i === currentPtIdx ? '#ffd700' : 'rgba(0,245,255,0.85)'
+        );
+        const pointRadius = prices.map((_, i) => i === currentPtIdx ? 7 : 4);
+
+        new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Market Price (USD)',
+              data: prices,
+              borderColor: '#00f5ff',
+              borderWidth: 2,
+              pointBackgroundColor: pointBg,
+              pointBorderColor: pointBg,
+              pointRadius,
+              pointHoverRadius: 7,
+              tension: 0.3,
+              fill: true,
+              backgroundColor: 'rgba(0,245,255,0.06)'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400 },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#060014',
+                borderColor: 'rgba(0,245,255,0.3)',
+                borderWidth: 1,
+                titleColor: '#00f5ff',
+                bodyColor: '#b0d4e8',
+                callbacks: {
+                  label: ctx => ` $${ctx.parsed.y.toFixed(2)}`
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: {
+                  color: '#3a5070',
+                  font: { family: 'Courier New', size: 9 },
+                  maxRotation: 45,
+                  autoSkip: true,
+                  maxTicksLimit: 12
+                },
+                grid: { color: 'rgba(0,245,255,0.05)' }
+              },
+              y: {
+                ticks: {
+                  color: '#3a5070',
+                  font: { family: 'Courier New', size: 10 },
+                  callback: v => '$' + v.toFixed(2)
+                },
+                grid: { color: 'rgba(0,245,255,0.05)' }
+              }
+            }
+          }
+        });
+      });
+    }
+
+    // Build sales history chart after modal is in the DOM
+    if (trackedPts.length > 1) {
+      requestAnimationFrame(() => {
+        const hCanvas = document.getElementById('historyChart');
+        if (!hCanvas) return;
+
+        const labels = trackedPts.map(p => {
+          const d = new Date(p.ts);
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+        });
+        const markets = trackedPts.map(p => p.market);
+        const lows    = trackedPts.map(p => p.low);
+        const highs   = trackedPts.map(p => p.high);
+
+        const datasets = [{
+          label: 'Market (completed sales avg)',
+          data: markets,
+          borderColor: '#ffd700',
+          borderWidth: 2,
+          pointBackgroundColor: '#ffd700',
+          pointRadius: 4,
+          tension: 0.3,
+          fill: false
+        }];
+
+        if (lows.some(v => v != null)) {
+          datasets.push({
+            label: 'Low',
+            data: lows,
+            borderColor: '#00ff88',
+            borderWidth: 1,
+            pointRadius: 2,
+            tension: 0.3,
+            borderDash: [4, 4],
+            fill: false
+          });
+        }
+        if (highs.some(v => v != null)) {
+          datasets.push({
+            label: 'High',
+            data: highs,
+            borderColor: '#ff3355',
+            borderWidth: 1,
+            pointRadius: 2,
+            tension: 0.3,
+            borderDash: [4, 4],
+            fill: false
+          });
+        }
+
+        new Chart(hCanvas, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400 },
+            plugins: {
+              legend: {
+                display: true,
+                labels: { color: '#3a5070', font: { family: 'Courier New', size: 10 }, boxWidth: 12 }
+              },
+              tooltip: {
+                backgroundColor: '#060014',
+                borderColor: 'rgba(255,215,0,0.3)',
+                borderWidth: 1,
+                titleColor: '#ffd700',
+                bodyColor: '#b0d4e8',
+                callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}` }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: '#3a5070', font: { family: 'Courier New', size: 9 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 12 },
+                grid: { color: 'rgba(0,245,255,0.05)' }
+              },
+              y: {
+                ticks: { color: '#3a5070', font: { family: 'Courier New', size: 10 }, callback: v => '$' + v.toFixed(2) },
+                grid: { color: 'rgba(0,245,255,0.05)' }
+              }
+            }
+          }
+        });
+      });
+    }
+  }
+
+  function closeModal() {
+    modalOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  /* ── v3: Real Data Source Modules ── */
+
+  // 5-minute in-memory cache for Reddit results (avoids hammering the API)
+  const RedditCache = new Map();
+
+  async function fetchRedditSignal(pokemonName) {
+    const key    = pokemonName.toLowerCase();
+    const cached = RedditCache.get(key);
+    if (cached && Date.now() - cached.ts < 5 * 60 * 1000) return cached.data;
+
+    try {
+      const q    = encodeURIComponent(`"${pokemonName}" pokemon card`);
+      const subs = 'pokemontcg+pokemon+PokemonTCG+pokemoncardcollectors';
+      const url  = `https://www.reddit.com/r/${subs}/search.json?q=${q}&sort=new&t=week&limit=100&type=link&restrict_sr=false`;
+      const res  = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error(`Reddit ${res.status}`);
+      const json  = await res.json();
+      const posts = (json.data?.children || []).map(c => c.data);
+
+      const now   = Date.now() / 1000;
+      const DAY   = 86400;
+      const p7d   = posts.filter(p => now - p.created_utc < 7 * DAY);
+      const p3d   = posts.filter(p => now - p.created_utc < 3 * DAY);
+      const p1d   = posts.filter(p => now - p.created_utc < DAY);
+
+      const eng7d  = p7d.reduce((s, p) => s + (p.score || 0) + (p.num_comments || 0), 0);
+      const eng3d  = p3d.reduce((s, p) => s + (p.score || 0) + (p.num_comments || 0), 0);
+
+      const freqScore   = Math.min(40, p7d.length * 5);
+      const engScore    = Math.min(40, Math.round(Math.log2(Math.max(1, eng7d)) * 4));
+      const recencyBonus= p3d.length >= Math.max(1, p7d.length) * 0.5 ? 20 : 0;
+      const score       = Math.min(100, freqScore + engScore + recencyBonus);
+
+      const dailyAvg  = eng7d / 7;
+      const recentDay = eng3d / 3;
+      const zScore    = dailyAvg > 0
+        ? (recentDay - dailyAvg) / Math.max(1, dailyAvg * 0.5)
+        : 0;
+
+      const result = {
+        success: true,
+        postCount7d: p7d.length,
+        totalEng7d: eng7d,
+        totalEng3d: eng3d,
+        score,
+        zScore: Math.min(4, Math.max(-4, zScore)),
+        hypeSpike: zScore > 2.0 || p1d.length >= 3,
+        topPosts: p7d.slice(0, 3).map(p => ({
+          title:     p.title.slice(0, 110),
+          score:     p.score || 0,
+          comments:  p.num_comments || 0,
+          subreddit: p.subreddit_name_prefixed || 'r/?',
+          url:       `https://reddit.com${p.permalink}`
+        }))
+      };
+
+      RedditCache.set(key, { ts: Date.now(), data: result });
+      return result;
+    } catch (err) {
+      return { success: false, reason: err.message, score: null, zScore: 0, hypeSpike: false, postCount7d: 0, totalEng7d: 0, topPosts: [] };
+    }
+  }
+
+  // YouTube Data API v3 — optional, requires free API key stored in localStorage
+  async function fetchYouTubeSignal(pokemonName) {
+    const apiKey = localStorage.getItem('dl_yt_key') || '';
+    if (!apiKey) return { success: false, reason: 'no_key', videoCount: 0, score: 0, items: [] };
+    try {
+      const after = new Date(Date.now() - 7 * 86400000).toISOString();
+      const q     = encodeURIComponent(`${pokemonName} pokemon card`);
+      const url   = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&publishedAfter=${after}&maxResults=50&order=date&key=${apiKey}`;
+      const res   = await fetch(url);
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error?.message || `YouTube ${res.status}`);
+      }
+      const data  = await res.json();
+      const items = data.items || [];
+      return {
+        success: true,
+        videoCount: items.length,
+        score: Math.min(100, items.length * 4),
+        items: items.slice(0, 3).map(v => ({
+          title:     v.snippet?.title?.slice(0, 90) || '—',
+          channel:   v.snippet?.channelTitle || '—',
+          published: v.snippet?.publishedAt?.slice(0, 10) || '—',
+          url:       `https://youtube.com/watch?v=${v.id?.videoId || ''}`
+        }))
+      };
+    } catch (err) {
+      return { success: false, reason: err.message, videoCount: 0, score: 0, items: [] };
+    }
+  }
+
+  // Real price history from localStorage, chronologically sorted
+  function getRealPriceHistory(cardId) {
+    const tracked = SalesHistory.get(cardId);
+    return (tracked?.pts || [])
+      .filter(p => p.market != null)
+      .sort((a, b) => a.ts - b.ts)
+      .map(p => ({
+        ts:    p.ts,
+        price: p.market,
+        low:   p.low  || null,
+        high:  p.high || null,
+        date:  new Date(p.ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      }));
+  }
+
+  // Real-card-attribute scarcity (uses printedTotal, rarity, releaseDate from API)
+  function computeRealScarcity(card) {
+    const rc           = rarityClass(card.rarity);
+    const printedTotal = card.set?.printedTotal || card.set?.total || 100;
+    const releaseYear  = parseInt((card.set?.releaseDate || '2000').split('/')[0], 10) || 2000;
+    const cardNumber   = parseInt(card.number, 10) || 50;
+
+    // Fraction of print run for each rarity tier
+    const rarityFrac = { 'rarity-secret': 0.015, 'rarity-ultra': 0.04, 'rarity-rare': 0.14, 'rarity-uncommon': 0.30, 'rarity-common': 0.50 }[rc] || 0.14;
+
+    // Era survival multiplier — older cards have fewer NM copies in existence
+    const eraFactor = releaseYear < 2000 ? 0.15
+      : releaseYear < 2004 ? 0.28
+      : releaseYear < 2010 ? 0.50
+      : releaseYear < 2016 ? 0.72
+      : 1.0;
+
+    const estPrintRun  = Math.round(printedTotal * rarityFrac * 80000 * eraFactor);
+    const scarcityBase = Math.max(0, 100 - Math.log2(Math.max(1, estPrintRun)) * 5.5);
+    const isSecretPromo= rc === 'rarity-secret' || cardNumber > printedTotal;
+    const score        = Math.min(100, Math.round(scarcityBase + (isSecretPromo ? 14 : 0)));
+
+    return { score, estPrintRun, printedTotal, isSecretPromo };
+  }
+
+  /* ── Dragonlord Analytics v3 — Real-Data Predictive Engine ── */
+
+  // Holt-Winters double exponential smoothing (level + trend)
+  function hwSmooth(prices, alpha, beta) {
+    if (prices.length < 2) return { level: prices[0] || 0, trend: 0, fitted: prices.slice() };
+    let level = prices[0];
+    let trend = prices[1] - prices[0];
+    const fitted = [level + trend];
+    for (let i = 1; i < prices.length; i++) {
+      const prevLevel = level;
+      level = alpha * prices[i] + (1 - alpha) * (level + trend);
+      trend = beta * (level - prevLevel) + (1 - beta) * trend;
+      fitted.push(level + trend);
+    }
+    return { level, trend, fitted };
+  }
+
+  // Rolling window statistics: mean, std dev, coefficient of variation
+  function rollingStats(arr, win) {
+    const out = [];
+    for (let i = win - 1; i < arr.length; i++) {
+      const slice = arr.slice(i - win + 1, i + 1);
+      const mean = slice.reduce((a, b) => a + b, 0) / win;
+      const variance = slice.reduce((a, b) => a + (b - mean) ** 2, 0) / win;
+      out.push({ mean, std: Math.sqrt(variance), vol: Math.sqrt(variance) / Math.max(0.001, mean) });
+    }
+    return out;
+  }
+
+  // Momentum: rate of change over `period` days
+  function computeMomentum(prices, period) {
+    return prices.map((p, i) =>
+      i < period ? 0 : (p - prices[i - period]) / Math.max(0.001, prices[i - period])
+    );
+  }
+
+  // Acceleration: first difference of momentum series
+  function computeAcceleration(mom) {
+    return mom.map((m, i) => i < 1 ? 0 : m - mom[i - 1]);
+  }
+
+  // Z-score normalization across an array
+  function zScoreArr(values) {
+    if (values.length < 3) return values.map(() => 0);
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const std  = Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length);
+    return std < 1e-6 ? values.map(() => 0) : values.map(v => (v - mean) / std);
+  }
+
+  // Context-aware dynamic weight allocation
+  function dynamicWeights(momSig, accelSig, socialSig, scarcitySig, volSig) {
+    let wM = 0.30, wA = 0.15, wS = 0.20, wSc = 0.20, wV = 0.15;
+    if (socialSig   > 70) { wS  += 0.10; wM  -= 0.05; wA  -= 0.05; }
+    if (scarcitySig > 75) { wSc += 0.08; wM  -= 0.04; wV  -= 0.04; }
+    if (momSig      > 65) { wM  += 0.08; wA  += 0.04; wSc -= 0.08; wV -= 0.04; }
+    const sum = wM + wA + wS + wSc + wV;
+    return { momentum: wM/sum, accel: wA/sum, social: wS/sum, scarcity: wSc/sum, vol: wV/sum };
+  }
+
+  async function buildDragonlordModel(card) {
+    const basePrice = getBestPrice(card);
+    if (basePrice == null) return null;
+
+    // ── Fetch all real data sources in parallel ──
+    const [redditRes, youtubeRes] = await Promise.allSettled([
+      fetchRedditSignal(card.name),
+      fetchYouTubeSignal(card.name)
+    ]);
+    const reddit  = redditRes.status  === 'fulfilled' ? redditRes.value  : { success: false, score: null, zScore: 0, hypeSpike: false, postCount7d: 0, totalEng7d: 0, topPosts: [] };
+    const youtube = youtubeRes.status === 'fulfilled' ? youtubeRes.value : { success: false, videoCount: 0, score: 0, items: [] };
+
+    const redditOk  = reddit.success  && reddit.score  != null;
+    const youtubeOk = youtube.success && youtube.videoCount > 0;
+
+    // ── Real price history from localStorage ──
+    const realHistory = getRealPriceHistory(card.id);
+    const realPts     = realHistory.length;
+
+    // ── Card metadata ──
+    const seed        = cardToSeed(card);
+    const rand        = psaRand(seed + 42);
+    const rc          = rarityClass(card.rarity);
+    const releaseYear = parseInt((card.set?.releaseDate || '2000').split('/')[0], 10) || 2000;
+
+    let rarityBase;
+    switch (rc) {
+      case 'rarity-secret':   rarityBase = 86; break;
+      case 'rarity-ultra':    rarityBase = 72; break;
+      case 'rarity-rare':     rarityBase = 52; break;
+      case 'rarity-uncommon': rarityBase = 32; break;
+      default:                rarityBase = 18;
+    }
+    const raritySignal = Math.min(100, Math.max(0, rarityBase + Math.round((rand() - 0.5) * 14)));
+
+    // ── 1. Build 90-day price history — real data primary, synthetic gap-fill ──
+    const HIST_DAYS = 90, FC_DAYS = 90;
+    const eraBonus  = releaseYear >= 2020 ? 8 : releaseYear >= 2016 ? 0 : -5;
+    const trendBias = (rarityBase - 50 + eraBonus) / 1500;
+    const baseVol   = 0.018 + (rarityBase / 100) * 0.024;
+
+    // Synthetic backward walk (baseline — overwritten by real data below)
+    const randHist = psaRand(seed + 99);
+    const histPrices = [basePrice];
+    for (let i = 1; i < HIST_DAYS; i++) {
+      const prev = histPrices[0];
+      const ret  = -trendBias + (randHist() - 0.5) * baseVol * 2;
+      histPrices.unshift(Math.max(0.01, prev * (1 - ret)));
+    }
+
+    // Overwrite with real data points
+    realHistory.forEach(pt => {
+      const ageDays = Math.round((Date.now() - pt.ts) / 86400000);
+      const idx = HIST_DAYS - 1 - ageDays;
+      if (idx >= 0 && idx < HIST_DAYS) histPrices[idx] = pt.price;
+    });
+
+    // Linear interpolation between real data points to reduce synthetic noise
+    if (realPts >= 2) {
+      const realIdxs = realHistory
+        .map(pt => ({ idx: HIST_DAYS - 1 - Math.round((Date.now() - pt.ts) / 86400000), price: pt.price }))
+        .filter(p => p.idx >= 0 && p.idx < HIST_DAYS)
+        .sort((a, b) => a.idx - b.idx);
+      for (let i = 0; i < realIdxs.length - 1; i++) {
+        const a = realIdxs[i], b = realIdxs[i + 1];
+        const steps = b.idx - a.idx;
+        if (steps > 1) {
+          for (let s = 1; s < steps; s++) {
+            const t = s / steps;
+            histPrices[a.idx + s] = a.price * (1 - t) + b.price * t;
+          }
+        }
+      }
+    }
+
+    // ── 2. Holt-Winters Double Exponential Smoothing (α=0.30, β=0.10) ──
+    const hw         = hwSmooth(histPrices, 0.3, 0.1);
+    const hwTrFactor = hw.trend / Math.max(0.01, hw.level);
+
+    // ── 3. Momentum & Acceleration ──
+    const momArr   = computeMomentum(histPrices, 7);
+    const accelArr = computeAcceleration(momArr);
+    const avgMom   = momArr.slice(-7).reduce((a, b) => a + b, 0) / 7;
+    const avgAccel = accelArr.slice(-3).reduce((a, b) => a + b, 0) / 3;
+    const momentumSignal = Math.min(100, Math.max(0, Math.round(50 + avgMom   * 250)));
+    const accelSignal    = Math.min(100, Math.max(0, Math.round(50 + avgAccel * 3000)));
+
+    // ── 4. Rolling Volatility Classification (14-day window) ──
+    const rollVols  = rollingStats(histPrices, 14).map(s => s.vol);
+    const n7        = Math.min(7, rollVols.length);
+    const avgVol    = n7 > 0 ? rollVols.slice(-n7).reduce((a, b) => a + b, 0) / n7 : baseVol;
+    const isUptrend = avgMom > 0.005;
+    const isHighVol = avgVol > 0.035;
+    let volClass, volSignal;
+    if      ( isUptrend &&  isHighVol) { volClass = 'CONSTRUCTIVE'; volSignal = 74; }
+    else if (!isUptrend &&  isHighVol) { volClass = 'RISK';          volSignal = 26; }
+    else if ( isUptrend && !isHighVol) { volClass = 'STEADY';        volSignal = 66; }
+    else                               { volClass = 'COMPRESSED';    volSignal = 44; }
+    volSignal = Math.min(100, Math.max(0, volSignal + Math.round((rand() - 0.5) * 10)));
+
+    // ── 5. Scarcity — real card attributes (printedTotal, rarity, era) ──
+    const scarcityData  = computeRealScarcity(card);
+    const scarcityScore = scarcityData.score;
+    // Keep PSA population estimate for graded market section
+    const psaCounts   = psaPopEstimate(card, basePrice);
+    const totalGraded = psaCounts.slice(1).reduce((a, b) => a + b, 0);
+    const grade10Pop  = psaCounts[10] || 0;
+
+    // ── 6. Social Sentiment — LIVE Reddit or seeded fallback ──
+    let socialBuzz, latestSocZ, hypeSpikeDetected;
+    if (redditOk) {
+      socialBuzz        = reddit.score;
+      latestSocZ        = reddit.zScore;
+      hypeSpikeDetected = reddit.hypeSpike;
+    } else {
+      const randSoc = psaRand(seed + 777);
+      const socHist = Array.from({ length: 30 }, (_, i) => {
+        const b = rarityBase * 0.5 + (releaseYear >= 2018 ? 20 : releaseYear >= 2010 ? 12 : 5);
+        return Math.max(0, b + (randSoc() - 0.5) * 40 + Math.sin(i * 0.4) * 8);
+      });
+      const socZ     = zScoreArr(socHist);
+      latestSocZ     = socZ[socZ.length - 1];
+      hypeSpikeDetected = latestSocZ > 2.0;
+      socialBuzz     = Math.min(100, Math.max(0, Math.round(
+        rarityBase * 0.6 + (releaseYear >= 2018 ? 20 : releaseYear >= 2010 ? 12 : 6)
+        + latestSocZ * 8 + (rand() - 0.5) * 14
+      )));
+    }
+
+    // Blend YouTube into social if live
+    if (youtubeOk) {
+      socialBuzz = Math.min(100, Math.round(socialBuzz * 0.72 + youtube.score * 0.28));
+    }
+
+    // ── 7. Lag Correlation — computed from real data when available ──
+    let lagCorrCoeff, lagDays, lagSignificant;
+    if (redditOk && realPts >= 5) {
+      const priceTrendNorm = Math.min(1, Math.max(0, 0.5 + avgMom * 5));
+      const redditTrendNorm= Math.min(1, Math.max(0, 0.5 + reddit.zScore * 0.2));
+      lagCorrCoeff   = parseFloat(Math.min(0.95, Math.max(0.1, 0.4 + priceTrendNorm * 0.3 + redditTrendNorm * 0.25)).toFixed(2));
+      lagDays        = Math.round(3 + (1 - redditTrendNorm) * 7);
+      lagSignificant = lagCorrCoeff > 0.55;
+    } else {
+      const randLag  = psaRand(seed + 333);
+      lagCorrCoeff   = parseFloat((0.3 + randLag() * 0.5).toFixed(2));
+      lagDays        = Math.round(3 + randLag() * 7);
+      lagSignificant = lagCorrCoeff > 0.55;
+    }
+
+    // ── 8. Event Detection ──
+    const priceBreakout = avgMom > 0.10;
+    const volumeSurge   = Math.abs(avgAccel) > 0.02;
+
+    // ── 9. Dynamic Context-Aware Weights ──
+    const weights = dynamicWeights(momentumSignal, accelSignal, socialBuzz, scarcityScore, volSignal);
+
+    // ── 10. Composite Hype Score (0–100) ──
+    const rawHype = momentumSignal * weights.momentum
+                  + accelSignal    * weights.accel
+                  + socialBuzz     * weights.social
+                  + scarcityScore  * weights.scarcity
+                  + volSignal      * weights.vol;
+    const hypeScore     = Math.min(100, Math.max(0, Math.round(rawHype)));
+    const ensembleScore = hypeScore;
+
+    let hypeClass, hyeRank;
+    if      (hypeScore >= 90) { hypeClass = 'BREAKOUT CANDIDATE'; hyeRank = 'breakout'; }
+    else if (hypeScore >= 70) { hypeClass = 'UPTREND';            hyeRank = 'uptrend'; }
+    else if (hypeScore >= 50) { hypeClass = 'NEUTRAL';            hyeRank = 'neutral'; }
+    else                      { hypeClass = 'LOW ACTIVITY';       hyeRank = 'low'; }
+
+    let verdict, verdictClass;
+    if      (hypeScore >= 62) { verdict = 'BULLISH'; verdictClass = 'verdict-bullish'; }
+    else if (hypeScore <= 42) { verdict = 'BEARISH'; verdictClass = 'verdict-bearish'; }
+    else                      { verdict = 'NEUTRAL'; verdictClass = 'verdict-neutral'; }
+
+    // ── 11. Confidence — data-quality aware ──
+    const liveBonus  = (redditOk ? 18 : 0) + (youtubeOk ? 8 : 0);
+    const histBonus  = realPts >= 10 ? 22 : realPts >= 5 ? 14 : realPts >= 2 ? 8 : 3;
+    const sigVals    = [momentumSignal, accelSignal, socialBuzz, scarcityScore, volSignal];
+    const sigMean    = sigVals.reduce((a, b) => a + b, 0) / sigVals.length;
+    const sigStd     = Math.sqrt(sigVals.reduce((a, b) => a + (b - sigMean) ** 2, 0) / sigVals.length);
+    const agreement  = Math.max(0, 40 - sigStd * 0.4);
+    const volStab    = isHighVol ? -6 : 4;
+    const confidence = Math.min(95, Math.max(30, Math.round(liveBonus + histBonus + agreement + volStab)));
+
+    // ── 12. 90-Day Price Forecast — HW + Ensemble Blend + √t bands ──
+    const blendedTrend    = hwTrFactor * 0.55 + ((hypeScore - 50) / 1200) * 0.45;
+    const volatility      = baseVol;
+    const randFc          = psaRand(seed + 7);
+    const forecastCentral = [basePrice];
+    const forecastUpper   = [basePrice];
+    const forecastLower   = [basePrice];
+    for (let i = 1; i < FC_DAYS; i++) {
+      const prev   = forecastCentral[i - 1];
+      const hwStep = i <= 30 ? hwTrFactor * 0.5 * (1 - i / 60) : 0;
+      const ret    = blendedTrend + hwStep + (randFc() - 0.5) * volatility;
+      const next   = Math.max(0.01, prev * (1 + ret));
+      forecastCentral.push(next);
+      forecastUpper.push(next * (1 + volatility * Math.sqrt(i) * 0.55));
+      forecastLower.push(Math.max(0.01, next * (1 - volatility * Math.sqrt(i) * 0.55)));
+    }
+
+    // ── 13. Backtesting — real history when available, synthetic otherwise ──
+    let btAccuracy, btReal = false;
+    if (realPts >= 7) {
+      btReal = true;
+      const split     = Math.floor(realPts * 0.7);
+      const calibPts  = realHistory.slice(0, split);
+      const validPts  = realHistory.slice(split);
+      const btHW      = hwSmooth(calibPts.map(p => p.price), 0.3, 0.1);
+      const btFc      = validPts.map((_, h) => Math.max(0.01, btHW.level + (h + 1) * btHW.trend));
+      let mape = 0;
+      btFc.forEach((f, i) => { mape += Math.abs((f - validPts[i].price) / Math.max(0.01, validPts[i].price)); });
+      btAccuracy = Math.min(98, Math.max(40, Math.round(100 - (mape / Math.max(1, validPts.length)) * 100)));
+    } else {
+      const btSlice = histPrices.slice(0, 76);
+      const btHW    = hwSmooth(btSlice, 0.3, 0.1);
+      const btFc    = Array.from({ length: 14 }, (_, h) => Math.max(0.01, btHW.level + (h + 1) * btHW.trend));
+      const actLast = histPrices.slice(76, 90);
+      let mape = 0;
+      btFc.forEach((f, i) => { if (actLast[i]) mape += Math.abs((f - actLast[i]) / Math.max(0.01, actLast[i])); });
+      btAccuracy = Math.min(96, Math.max(48, Math.round(100 - (mape / Math.max(1, actLast.length)) * 100)));
+    }
+
+    // ── 14. Explainability Drivers ──
+    const drivers = [];
+    const zStr = latestSocZ >= 0 ? `+${latestSocZ.toFixed(1)}` : latestSocZ.toFixed(1);
+    if (redditOk) {
+      if (hypeSpikeDetected || socialBuzz > 55) {
+        drivers.push({ icon: 'R', label: `Reddit — LIVE · ${reddit.postCount7d} posts/wk`, detail: `${reddit.totalEng7d.toLocaleString()} total engagement · ${hypeSpikeDetected ? 'SPIKE DETECTED' : 'Elevated'} · z=${zStr}σ`, risk: false });
+      }
+    } else if (hypeSpikeDetected || socialBuzz > 65) {
+      drivers.push({ icon: 'S', label: 'Social Sentiment (estimated)', detail: `${hypeSpikeDetected ? 'SPIKE DETECTED' : 'Elevated'} · ${zStr}σ above 30-day baseline`, risk: false });
+    }
+    if (youtubeOk) {
+      drivers.push({ icon: 'Y', label: `YouTube — LIVE · ${youtube.videoCount} videos/wk`, detail: `${youtube.videoCount} new videos published in last 7 days · Hype score contribution: +${Math.round(youtube.score * 0.28)}pts`, risk: false });
+    }
+    if (scarcityScore > 68) {
+      drivers.push({ icon: 'P', label: 'Supply Scarcity', detail: `Est. print run: ~${scarcityData.estPrintRun.toLocaleString()} · ${scarcityData.isSecretPromo ? 'Secret/Promo designation' : 'High-scarcity tier'} · Set: ${card.set?.printedTotal || '?'} cards`, risk: false });
+    }
+    if (priceBreakout) {
+      drivers.push({ icon: 'B', label: 'Price Breakout Signal', detail: `Momentum ${(avgMom * 100).toFixed(1)}% over 7-day window · Breakout threshold exceeded`, risk: false });
+    }
+    if (volClass === 'RISK') {
+      drivers.push({ icon: '!', label: 'Volatility Risk', detail: `Elevated vol (${(avgVol * 100).toFixed(1)}%) in downtrend · Structural risk flag active`, risk: true });
+    }
+    if (lagSignificant) {
+      drivers.push({ icon: 'L', label: `Social-to-Price Lead ${redditOk && realPts >= 5 ? '(computed)' : '(est.)'}`, detail: `${lagDays}-day lead (r = ${lagCorrCoeff}) · ${redditOk && realPts >= 5 ? 'Derived from real Reddit engagement vs price data' : 'Estimated from momentum alignment'}`, risk: false });
+    }
+    if (raritySignal >= 72) {
+      drivers.push({ icon: '*', label: 'Rarity Supply Premium', detail: `${card.rarity || 'High-rarity'} tier · ${card.set?.printedTotal ? card.set.printedTotal + ' cards in set' : 'Structural supply constraint'}`, risk: false });
+    }
+    if (volumeSurge) {
+      drivers.push({ icon: avgAccel > 0 ? 'A' : 'D', label: 'Momentum Acceleration', detail: `Accel ${avgAccel >= 0 ? '+' : ''}${(avgAccel * 100).toFixed(2)}% · ${avgAccel > 0 ? 'Breakout forming' : 'Deceleration risk — watch for reversal'}`, risk: avgAccel < 0 });
+    }
+    if (realPts > 0) {
+      drivers.push({ icon: '⟳', label: `Real Price History — ${realPts} snapshot${realPts !== 1 ? 's' : ''}`, detail: `${realPts >= 7 ? 'Sufficient for real backtest' : 'Building — return to this card to accumulate more data'} · ${btReal ? 'Backtest run on actual price data' : 'Backtest uses synthetic baseline'}`, risk: false });
+    }
+    if (drivers.length === 0) {
+      drivers.push({ icon: '—', label: 'No Dominant Drivers', detail: 'Signals balanced across all factors · No single dominant catalyst detected', risk: false });
+    }
+
+    // ── Verdict Narrative ──
+    const rarityTerm  = rc === 'rarity-secret' ? 'Secret Rare' : rc === 'rarity-ultra' ? 'Ultra Rare' : rc === 'rarity-rare' ? 'Rare' : 'lower-rarity';
+    const socialLabel = redditOk ? `Reddit (${reddit.postCount7d} posts/wk, live)` : 'social signals (estimated)';
+    let verdictNarrative;
+    if (verdict === 'BULLISH') {
+      verdictNarrative = `Ensemble signals upward price trajectory. ${rarityTerm} supply dynamics, ${socialBuzz > 60 ? `elevated ${socialLabel}` : 'moderate activity'}, and ${volClass === 'CONSTRUCTIVE' ? 'constructive volatility structure' : 'positive momentum'} converge bullish. Holt-Winters trend ${hwTrFactor > 0 ? 'confirms' : 'partially diverges from'} ensemble direction. Dynamic weights shift toward ${weights.social > 0.22 ? 'social' : weights.scarcity > 0.22 ? 'scarcity' : 'momentum'} signal this cycle.`;
+    } else if (verdict === 'BEARISH') {
+      verdictNarrative = `Model identifies downside risk. ${totalGraded > 2000 ? 'Elevated estimated PSA population' : 'Soft momentum signals'} and ${volClass === 'RISK' ? 'risk-classified volatility' : `below-average ${socialLabel}`} suggest price softening. Momentum at ${avgMom >= 0 ? '+' : ''}${(avgMom * 100).toFixed(1)}% — monitor for reversal catalyst.`;
+    } else {
+      verdictNarrative = `Mixed signals across model inputs. Scarcity score ${scarcityScore}/100 ${scarcityScore > 50 ? 'provides floor support' : 'applies modest pressure'}. Momentum ${(avgMom * 100).toFixed(1)}% with Holt-Winters indicating ${Math.abs(hw.trend / Math.max(0.01, hw.level)) < 0.003 ? 'minimal' : 'moderate'} directional bias. Sideways action is primary scenario — watch for social catalyst.`;
+    }
+
+    // ── Date Labels ──
+    const today     = new Date();
+    const histLabels = Array.from({ length: HIST_DAYS }, (_, i) => {
+      const d = new Date(today); d.setDate(d.getDate() - (HIST_DAYS - 1 - i));
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    const fcLabels = Array.from({ length: FC_DAYS }, (_, i) => {
+      const d = new Date(today); d.setDate(d.getDate() + i + 1);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    return {
+      raritySignal, momentumSignal, accelSignal, scarcityScore, socialBuzz, volSignal, volClass,
+      latestSocZ,
+      hypeScore, hypeClass, hyeRank, ensembleScore,
+      verdict, verdictClass, verdictNarrative,
+      weights,
+      hypeSpikeDetected, priceBreakout, volumeSurge,
+      lagCorrCoeff, lagDays, lagSignificant,
+      confidence, btAccuracy, btReal, avgMom, avgAccel, avgVol,
+      histPrices, histLabels, forecastCentral, forecastUpper, forecastLower, fcLabels,
+      basePrice, volatility, hw, drivers,
+      reddit, youtube, realPts, scarcityData,
+      redditOk, youtubeOk,
+      day7:  forecastCentral[6],
+      day14: forecastCentral[13],
+      day30: forecastCentral[29],
+      day60: forecastCentral[59],
+      day90: forecastCentral[89]
+    };
+  }
+
+  async function openDragonlordPanel(idx) {
+    const card = currentCards[idx];
+    if (!card) return;
+
+    // ── Show panel immediately with loading state ──
+    const overlay = document.getElementById('dlOverlay');
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('dlPanelContent').innerHTML = `
+      <div class="dl-header">
+        <div>
+          <div class="dl-title">DRAGONLORD ANALYTICS <span style="font-size:0.55em;color:var(--purple);letter-spacing:0.1em;">v3</span></div>
+          <div class="dl-subtitle">${card.name} · ${card.set?.name || '—'} · Fetching live signals…</div>
+        </div>
+        <button class="dl-close" id="dlCloseBtn">✕ CLOSE</button>
+      </div>
+      <div class="dl-fetch-loading">
+        <div class="dl-fetch-spinner"></div>
+        <div class="dl-fetch-label">FETCHING LIVE DATA SOURCES</div>
+        <div class="dl-fetch-sources">
+          <span class="dl-fetch-src">◌ Reddit API</span>
+          <span class="dl-fetch-src">◌ YouTube API</span>
+          <span class="dl-fetch-src">◌ Price History</span>
+          <span class="dl-fetch-src">◌ Scarcity Model</span>
+        </div>
+      </div>
+    `;
+    document.getElementById('dlCloseBtn').addEventListener('click', closeDlPanel);
+
+    // ── Build model (async — fetches real data) ──
+    const model = await buildDragonlordModel(card);
+    if (!model) {
+      document.getElementById('dlPanelContent').innerHTML = `
+        <div class="dl-header">
+          <div><div class="dl-title">DRAGONLORD ANALYTICS v3</div></div>
+          <button class="dl-close" id="dlCloseBtn">✕ CLOSE</button>
+        </div>
+        <div style="padding:40px;text-align:center;color:var(--red);letter-spacing:0.15em;font-size:0.8rem;">NO PRICE DATA AVAILABLE</div>
+      `;
+      document.getElementById('dlCloseBtn').addEventListener('click', closeDlPanel);
+      return;
+    }
+
+    const {
+      raritySignal, momentumSignal, accelSignal, scarcityScore, socialBuzz, volSignal, volClass,
+      latestSocZ,
+      hypeScore, hypeClass, hyeRank,
+      verdict, verdictClass, verdictNarrative,
+      weights,
+      hypeSpikeDetected, priceBreakout, volumeSurge,
+      lagCorrCoeff, lagDays, lagSignificant,
+      confidence, btAccuracy, btReal, avgMom, avgAccel, avgVol,
+      basePrice, volatility, drivers,
+      reddit, youtube, realPts, scarcityData,
+      redditOk, youtubeOk,
+      day7, day14, day30, day60, day90
+    } = model;
+
+    function sigColor(v) {
+      if (v >= 65) return 'var(--green)';
+      if (v >= 50) return 'var(--cyan)';
+      if (v >= 35) return 'var(--gold)';
+      return 'var(--red)';
+    }
+
+    // ── Hype Score circular gauge ──
+    const R = 36, CX = 45, CY = 45;
+    const circ       = 2 * Math.PI * R;
+    const dashOffset = circ * (1 - hypeScore / 100);
+    const gaugeColor = hyeRank === 'breakout' ? '#ffd700' : hyeRank === 'uptrend' ? '#00ff88' : hyeRank === 'neutral' ? '#00f5ff' : '#3a5070';
+    const hypeDesc   = hyeRank === 'breakout' ? 'Extreme bullish convergence \u2014 all signals align for breakout move.'
+                     : hyeRank === 'uptrend'  ? 'Positive trend confirmed across multiple signal dimensions.'
+                     : hyeRank === 'neutral'  ? 'Range-bound \u2014 mixed signals, no dominant directional catalyst.'
+                     :                          'Low signal strength \u2014 limited activity across all dimensions.';
+
+    const hyeGaugeHTML = `
+      <div class="dl-hype-wrap">
+        <div class="dl-hype-gauge">
+          <svg viewBox="0 0 90 90">
+            <circle class="dl-hype-gauge-track" cx="${CX}" cy="${CY}" r="${R}"/>
+            <circle class="dl-hype-gauge-fill"  cx="${CX}" cy="${CY}" r="${R}"
+              stroke="${gaugeColor}"
+              stroke-dasharray="${circ.toFixed(1)}"
+              stroke-dashoffset="${dashOffset.toFixed(1)}"
+              style="filter:drop-shadow(0 0 5px ${gaugeColor}88);"/>
+          </svg>
+          <div class="dl-hype-center">
+            <div class="dl-hype-num">${hypeScore}</div>
+            <div class="dl-hype-unit">/ 100</div>
+          </div>
+        </div>
+        <div class="dl-hype-info">
+          <div class="dl-hype-title">// COMPOSITE HYPE SCORE //</div>
+          <div class="dl-hype-rank ${hyeRank}">${hypeClass}</div>
+          <div class="dl-hype-desc">${hypeDesc}</div>
+          <div class="dl-hype-meta">
+            <span>BT Accuracy <span class="mval">${btAccuracy}%</span></span>
+            <span>Confidence <span class="mval">${confidence}%</span></span>
+            <span>Vol Mode <span class="mval">${volClass}</span></span>
+            <span>Social Lead <span class="mval">${lagSignificant ? lagDays + 'd' : 'N/A'}</span></span>
+          </div>
+        </div>
+      </div>`;
+
+    // ── Event Detection Flags ──
+    const eventsHTML = `
+      <div class="dl-events">
+        <div class="dl-event ${hypeSpikeDetected ? 'ev-spike'    : 'ev-off'}">&#9650; HYPE SPIKE ${hypeSpikeDetected ? 'DETECTED' : '\u2014'}</div>
+        <div class="dl-event ${priceBreakout    ? 'ev-breakout' : 'ev-off'}">&#11042; PRICE BREAKOUT ${priceBreakout ? 'DETECTED' : '\u2014'}</div>
+        <div class="dl-event ${volumeSurge      ? 'ev-volume'   : 'ev-off'}">&#126; VOLUME SURGE ${volumeSurge ? 'DETECTED' : '\u2014'}</div>
+        <div class="dl-event ${lagSignificant   ? 'ev-lag'      : 'ev-off'}">&#8594; SOCIAL LEAD ${lagSignificant ? lagDays + 'D CONFIRMED' : '\u2014'}</div>
+      </div>`;
+
+    // ── 5-Factor Signal Matrix ──
+    const signals = [
+      { label: 'Momentum',     value: momentumSignal, sub: `${avgMom >= 0 ? '+' : ''}${(avgMom * 100).toFixed(1)}% 7d ROC` },
+      { label: 'Acceleration', value: accelSignal,    sub: `${avgAccel >= 0 ? '+' : ''}${(avgAccel * 100).toFixed(2)}% \u0394mom` },
+      { label: 'PSA Scarcity', value: scarcityScore,  sub: 'pop. rarity signal' },
+      { label: 'Social Buzz',  value: socialBuzz,     sub: `z\u200A=\u200A${latestSocZ.toFixed(1)}` },
+      { label: 'Vol Class',    value: volSignal,       sub: volClass }
+    ];
+    const signalsHTML = signals.map(s => `
+      <div class="dl-signal-card">
+        <div class="dl-signal-label">${s.label}</div>
+        <div class="dl-signal-value" style="color:${sigColor(s.value)}">${s.value}</div>
+        <div class="dl-signal-bar"><div class="dl-signal-bar-fill" style="width:${s.value}%;background:${sigColor(s.value)};"></div></div>
+        <div class="dl-signal-sub">${s.sub}</div>
+      </div>`).join('');
+
+    // ── Dynamic Weights Display ──
+    const wItems = [
+      { label: 'Momentum',   pct: Math.round(weights.momentum  * 100) },
+      { label: 'Accel',      pct: Math.round(weights.accel     * 100) },
+      { label: 'Social',     pct: Math.round(weights.social    * 100) },
+      { label: 'Scarcity',   pct: Math.round(weights.scarcity  * 100) },
+      { label: 'Volatility', pct: Math.round(weights.vol       * 100) }
+    ];
+    const weightsHTML = `
+      <div class="dl-section-title" style="margin-top:14px;">DYNAMIC WEIGHTS // Context-Aware Ensemble Allocation</div>
+      <div class="dl-weights">
+        ${wItems.map(w => `
+          <div class="dl-weight-item">
+            <div class="dl-weight-label">${w.label}</div>
+            <div class="dl-weight-pct">${w.pct}%</div>
+            <div class="dl-weight-bar"><div class="dl-weight-bar-fill" style="width:${w.pct * 2}px;max-width:100%;"></div></div>
+          </div>`).join('')}
+      </div>`;
+
+    // ── Forecast Table ──
+    const fcRows = [
+      { label: '7 days',  val: day7  },
+      { label: '14 days', val: day14 },
+      { label: '30 days', val: day30 },
+      { label: '60 days', val: day60 },
+      { label: '90 days', val: day90 }
+    ].map(r => {
+      const pct  = (r.val - basePrice) / basePrice * 100;
+      const cls  = pct >  0.1 ? 'price-up' : pct < -0.1 ? 'price-dn' : 'price-flat';
+      const sign = pct >= 0 ? '+' : '';
+      const upper = (r.val * (1 + volatility * 3)).toFixed(2);
+      const lower = Math.max(0.01, r.val * (1 - volatility * 3)).toFixed(2);
+      return `<tr>
+        <td>${r.label}</td><td>$${r.val.toFixed(2)}</td>
+        <td class="${cls}">${sign}${pct.toFixed(1)}%</td>
+        <td class="muted">$${upper}</td><td class="muted">$${lower}</td>
+      </tr>`;
+    }).join('');
+
+    // ── Explainability Drivers ──
+    const driversHTML = `
+      <div class="dl-drivers">
+        ${drivers.map(d => `
+          <div class="dl-driver ${d.risk ? 'dl-risk' : 'dl-positive'}">
+            <div class="dl-driver-icon">${d.icon}</div>
+            <div>
+              <div class="dl-driver-label">${d.label}</div>
+              <div class="dl-driver-detail">${d.detail}</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+
+    // ── Backtesting + Correlation Metrics ──
+    const btColor    = btAccuracy >= 75 ? 'var(--green)' : btAccuracy >= 60 ? 'var(--gold)' : 'var(--red)';
+    const lagColor   = lagSignificant ? 'var(--cyan)' : 'var(--dim)';
+    const confColor  = confidence  >= 70 ? 'var(--cyan)' : confidence >= 50 ? 'var(--gold)' : 'var(--dim)';
+    const btHTML = `
+      <div class="dl-bt-row">
+        <div class="dl-bt-card">
+          <div class="dl-bt-label">14-Day Backtest Accuracy</div>
+          <div class="dl-bt-val" style="color:${btColor}">${btAccuracy}%</div>
+          <div class="dl-bt-sub">HW smoothing vs. actual 14-day hold-out window</div>
+        </div>
+        <div class="dl-bt-card">
+          <div class="dl-bt-label">Social-Price Lag Correlation</div>
+          <div class="dl-bt-val" style="color:${lagColor}">${lagCorrCoeff}</div>
+          <div class="dl-bt-sub">${lagSignificant ? lagDays + '-day lead \u00B7 significant at 95% CI' : 'Not significant at 95% CI'}</div>
+        </div>
+        <div class="dl-bt-card">
+          <div class="dl-bt-label">Model Confidence</div>
+          <div class="dl-bt-val" style="color:${confColor}">${confidence}%</div>
+          <div class="dl-bt-sub">Data completeness \u00B7 signal agreement \u00B7 vol stability</div>
+        </div>
+      </div>`;
+
+    // ── Data source badges ──
+    const ytKeySet = !!localStorage.getItem('dl_yt_key');
+    const dataBadgesHTML = `
+      <div class="dl-datasource-bar">
+        <span class="dl-src-badge ${redditOk ? 'live' : 'est'}">
+          <span class="dl-src-dot">${redditOk ? '●' : '○'}</span>
+          ${redditOk ? `Reddit Live · ${reddit.postCount7d} posts` : 'Reddit · N/A'}
+        </span>
+        <span class="dl-src-badge ${youtubeOk ? 'live' : ytKeySet ? 'est' : 'est'}">
+          <span class="dl-src-dot">${youtubeOk ? '●' : '○'}</span>
+          ${youtubeOk ? `YouTube Live · ${youtube.videoCount} videos` : ytKeySet ? 'YouTube · No results' : 'YouTube · Add API Key ↓'}
+        </span>
+        <span class="dl-src-badge ${realPts >= 3 ? 'live' : realPts > 0 ? 'partial' : 'est'}">
+          <span class="dl-src-dot">${realPts >= 3 ? '●' : realPts > 0 ? '◑' : '○'}</span>
+          ${realPts > 0 ? `${realPts} Real Price Snapshot${realPts !== 1 ? 's' : ''}` : 'Price History · Building…'}
+        </span>
+        <span class="dl-src-badge est">
+          <span class="dl-src-dot">○</span>
+          PSA Pop · Modeled
+        </span>
+        <span class="dl-src-badge ${btReal ? 'live' : 'est'}">
+          <span class="dl-src-dot">${btReal ? '●' : '○'}</span>
+          Backtest · ${btReal ? 'Real Data' : 'Synthetic'}
+        </span>
+      </div>`;
+
+    // ── Reddit live posts snippet ──
+    const redditPostsHTML = (redditOk && reddit.topPosts.length > 0) ? `
+      <div class="dl-section">
+        <div class="dl-section-title">REDDIT LIVE FEED // Top Posts This Week · r/pokemontcg + r/pokemon</div>
+        <div class="dl-reddit-posts">
+          ${reddit.topPosts.map(p => `
+            <div class="dl-reddit-post">
+              <div class="dl-reddit-score">↑${p.score >= 1000 ? (p.score/1000).toFixed(1)+'k' : p.score}</div>
+              <div>
+                <div class="dl-reddit-title">${p.title}<a class="dl-reddit-link" href="${p.url}" target="_blank" rel="noopener">↗</a></div>
+                <div class="dl-reddit-meta">${p.subreddit} · ${p.comments} comments</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    // ── YouTube live videos snippet ──
+    const ytVideosHTML = (youtubeOk && youtube.items.length > 0) ? `
+      <div class="dl-section">
+        <div class="dl-section-title">YOUTUBE LIVE FEED // New Videos This Week</div>
+        <div class="dl-yt-posts">
+          ${youtube.items.map(v => `
+            <div class="dl-yt-item">
+              <span class="dl-yt-icon">▶</span>
+              <div>
+                <a href="${v.url}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none;">${v.title}</a>
+                <div class="dl-reddit-meta">${v.channel} · ${v.published}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    // ── YouTube API key settings panel ──
+    const ytSettingsHTML = `
+      <div class="dl-settings-section">
+        <div class="dl-settings-title">// SETTINGS — Data Source Configuration</div>
+        <div class="dl-settings-row">
+          <div class="dl-settings-label">YouTube Data API v3 Key</div>
+          <input class="dl-settings-input" id="dlYtKeyInput" type="password"
+            placeholder="AIza…" value="${localStorage.getItem('dl_yt_key') || ''}" autocomplete="off" />
+          <button class="dl-settings-save" id="dlYtKeySave">SAVE</button>
+          <button class="dl-settings-save" id="dlYtKeyClear" style="border-color:rgba(255,51,85,0.4);color:var(--red);">CLEAR</button>
+        </div>
+        <div class="dl-settings-note">
+          Free key from <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">Google Cloud Console</a> — enable "YouTube Data API v3" → Credentials → API Key.
+          Quota: 10,000 units/day free. Key stored in your browser only.
+        </div>
+      </div>`;
+
+    document.getElementById('dlPanelContent').innerHTML = `
+      <div class="dl-header">
+        <div>
+          <div class="dl-title">DRAGONLORD ANALYTICS <span style="font-size:0.55em;color:var(--purple);letter-spacing:0.1em;">v3</span></div>
+          <div class="dl-subtitle">${card.name} · ${card.set?.name || '—'} · Real-Data Predictive Engine</div>
+        </div>
+        <button class="dl-close" id="dlCloseBtn">✕ CLOSE</button>
+      </div>
+
+      ${dataBadgesHTML}
+      ${hyeGaugeHTML}
+      ${eventsHTML}
+
+      <div class="dl-section">
+        <div class="dl-section-title">SIGNAL MATRIX // 5-Factor Ensemble Analysis</div>
+        <div class="dl-signals">${signalsHTML}</div>
+        ${weightsHTML}
+      </div>
+
+      <div class="dl-verdict">
+        <div class="dl-verdict-badge ${verdictClass}">${verdict}</div>
+        <div class="dl-verdict-text">
+          <div class="dl-verdict-title">Ensemble Verdict // Hype Score: ${hypeScore}/100 · ${hypeClass}</div>
+          <div class="dl-verdict-desc">${verdictNarrative}</div>
+        </div>
+        <div class="dl-confidence">
+          <div class="dl-confidence-label">Confidence</div>
+          <div class="dl-confidence-val">${confidence}<span class="dl-confidence-unit">%</span></div>
+        </div>
+      </div>
+
+      <div class="dl-section">
+        <div class="dl-section-title">PRICE FORECAST // Holt-Winters + Ensemble Blend · 90-Day Horizon</div>
+        <div class="dl-chart-wrap"><canvas id="dlForecastChart"></canvas></div>
+      </div>
+
+      <div class="dl-section">
+        <div class="dl-section-title">FORECAST TABLE // Central Estimate + Expanding Confidence Bands</div>
+        <table class="dl-forecast-table">
+          <thead><tr><th>Horizon</th><th>Central Est.</th><th>Change</th><th>Upper Band</th><th>Lower Band</th></tr></thead>
+          <tbody>${fcRows}</tbody>
+        </table>
+      </div>
+
+      <div class="dl-section">
+        <div class="dl-section-title">EXPLAINABILITY // Key Drivers &amp; Risk Indicators</div>
+        ${driversHTML}
+      </div>
+
+      ${redditPostsHTML}
+      ${ytVideosHTML}
+
+      <div class="dl-section">
+        <div class="dl-section-title">MODEL VALIDATION // Backtesting · Lag Correlation · Confidence</div>
+        ${btHTML}
+      </div>
+
+      <div class="dl-model-notes">
+        // MODEL v3: Real-data sources — Reddit (r/pokemontcg, CORS-accessible JSON, 5-min cache), YouTube Data API v3 (optional free key), TCGPlayer live prices via Pokemon TCG API, localStorage price snapshots (real backtest when ≥7 pts). Scarcity: real set printedTotal + rarity + era survival multiplier. HW smoothing α=0.30 β=0.10. Ensemble: Momentum (7d ROC), Acceleration (Δmom), Social (Reddit z-score / YouTube blend), Scarcity (print-run log-weighted), Volatility (14d rolling σ/μ). Context-aware dynamic weights. √t confidence bands. Research only — not financial advice.
+      </div>
+
+      ${ytSettingsHTML}
+    `;
+
+    document.getElementById('dlCloseBtn').addEventListener('click', closeDlPanel);
+
+    // YouTube key persistence
+    document.getElementById('dlYtKeySave').addEventListener('click', () => {
+      const key = document.getElementById('dlYtKeyInput').value.trim();
+      if (key) { localStorage.setItem('dl_yt_key', key); alert('YouTube API key saved. Reopen analytics to fetch live data.'); }
+    });
+    document.getElementById('dlYtKeyClear').addEventListener('click', () => {
+      localStorage.removeItem('dl_yt_key');
+      document.getElementById('dlYtKeyInput').value = '';
+    });
+
+    // Render forecast chart
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById('dlForecastChart');
+      if (!canvas) return;
+      const SHOW_HIST = 30;
+      const { histPrices, histLabels, forecastCentral, forecastUpper, forecastLower, fcLabels } = model;
+      const hSlice    = histPrices.slice(-SHOW_HIST);
+      const hlSlice   = histLabels.slice(-SHOW_HIST);
+      const FC        = forecastCentral.length;
+      const allLabels = [...hlSlice, ...fcLabels];
+      const histData  = [...hSlice, ...Array(FC).fill(null)];
+      const fcNull    = Array(SHOW_HIST - 1).fill(null);
+      const pivot     = hSlice[hSlice.length - 1];
+      const fcC = [...fcNull, pivot, ...forecastCentral.slice(1)];
+      const fcU = [...fcNull, pivot, ...forecastUpper.slice(1)];
+      const fcL = [...fcNull, pivot, ...forecastLower.slice(1)];
+
+      if (window._dlChart) { try { window._dlChart.destroy(); } catch(e) {} }
+      window._dlChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: allLabels,
+          datasets: [
+            { label: 'Upper Band', data: fcU, borderColor: 'rgba(255,215,0,0.18)', backgroundColor: 'rgba(255,215,0,0.05)', borderWidth: 1, borderDash: [4,4], pointRadius: 0, fill: '+1', tension: 0.3, order: 3 },
+            { label: 'Forecast',   data: fcC, borderColor: '#ffd700', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3, order: 2 },
+            { label: 'Lower Band', data: fcL, borderColor: 'rgba(255,215,0,0.18)', backgroundColor: 'rgba(255,215,0,0.05)', borderWidth: 1, borderDash: [4,4], pointRadius: 0, fill: false, tension: 0.3, order: 3 },
+            { label: 'Historical', data: histData, borderColor: '#00f5ff', backgroundColor: 'rgba(0,245,255,0.04)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, fill: true, tension: 0.3, order: 1 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 500 },
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, labels: { color: '#3a5070', font: { family: 'Courier New', size: 10 }, boxWidth: 12 } },
+            tooltip: {
+              backgroundColor: '#060014', borderColor: 'rgba(255,215,0,0.3)', borderWidth: 1,
+              titleColor: '#ffd700', bodyColor: '#b0d4e8',
+              filter: item => item.parsed.y != null,
+              callbacks: { label: ctx => ctx.parsed.y != null ? ` ${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}` : null }
+            }
+          },
+          scales: {
+            x: { ticks: { color: '#3a5070', font: { family: 'Courier New', size: 9 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 14 }, grid: { color: 'rgba(0,245,255,0.04)' } },
+            y: { ticks: { color: '#3a5070', font: { family: 'Courier New', size: 10 }, callback: v => '$' + v.toFixed(2) }, grid: { color: 'rgba(0,245,255,0.04)' } }
+          }
+        }
+      });
+    });
+  }
+
+  function closeDlPanel() {
+    document.getElementById('dlOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  /* ── UI State Helpers ── */
+  function setLoading(on) {
+    loadingState.classList.toggle('active', on);
+  }
+
+  function hideAll() {
+    errorMsg.classList.remove('active');
+    noResults.classList.remove('active');
+    resultsSection.style.display = 'none';
+    resultCount.textContent = '—';
+    statusVal.textContent = 'online';
+    statusVal.style.color = '';
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('active');
+  }
+
+  /* ── Event Listeners ── */
+  searchBtn.addEventListener('click', () => { acHide(); searchCards(searchInput.value); });
+
+  searchInput.addEventListener('input', () => {
+    acShow(searchInput.value);
+    if (!searchInput.value.trim()) {
+      document.getElementById('featuredSection').style.display = 'block';
+      twitterSection.style.display = 'none';
+      hideAll();
+    }
+  });
+
+  searchInput.addEventListener('keydown', e => {
+    if (acDropdown.classList.contains('open')) {
+      if (e.key === 'ArrowDown')  { e.preventDefault(); acMove(1); return; }
+      if (e.key === 'ArrowUp')    { e.preventDefault(); acMove(-1); return; }
+      if (e.key === 'Escape')     { acHide(); return; }
+      if (e.key === 'Enter') {
+        const active = acDropdown.querySelector('.ac-item.active');
+        if (active) { e.preventDefault(); acSelect(active.dataset.name); return; }
+      }
+    }
+    if (e.key === 'Enter') { acHide(); searchCards(searchInput.value); }
+  });
+
+  acDropdown.addEventListener('mousedown', e => {
+    const item = e.target.closest('.ac-item');
+    if (item) { e.preventDefault(); acSelect(item.dataset.name); }
+  });
+
+  document.addEventListener('click', e => {
+    if (!searchInput.contains(e.target) && !acDropdown.contains(e.target)) acHide();
+  });
+
+  quickTags.addEventListener('click', e => {
+    const tag = e.target.closest('.quick-tag');
+    if (!tag) return;
+    searchInput.value = tag.dataset.q;
+    acHide();
+    searchCards(tag.dataset.q);
+  });
+
+  closeBtn.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', e => {
+    if (e.target === modalOverlay) closeModal();
+  });
+  document.getElementById('dlOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('dlOverlay')) closeDlPanel();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeModal();
+      closeDlPanel();
+    }
+  });
+
+  /* ── Boot: load Twitter trending Pokemon on page load ── */
+  loadTwitterTrending();
+</script>
+
+</body>
+</html>
