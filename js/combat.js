@@ -52,6 +52,32 @@ function updateStatusEffects() {
         // ── SHIELD ──
         if (actor.shielded && actor.shieldAmount <= 0) actor.shielded = false;
 
+        // ── KNOCKBACK VELOCITY — decays each frame, gives smooth animated push ──
+        if (actor.kbVX || actor.kbVY) {
+            actor.x += actor.kbVX || 0;
+            actor.y += actor.kbVY || 0;
+            actor.kbVX = (actor.kbVX || 0) * 0.72;
+            actor.kbVY = (actor.kbVY || 0) * 0.72;
+            if (Math.abs(actor.kbVX) < 0.001) actor.kbVX = 0;
+            if (Math.abs(actor.kbVY) < 0.001) actor.kbVY = 0;
+            // Keep within corridor bounds
+            actor.y = Math.max(0, Math.min(3, actor.y));
+            actor.x = Math.max(0, actor.x);
+        }
+
+        // ── EMP GLOW (electric ultimate hit marker) ──
+        if (actor.empGlow > 0) actor.empGlow--;
+
+        // ── TOXIC WEAKENED (smoke bomb power debuff) ──
+        if (actor.toxicWeakened > 0) actor.toxicWeakened--;
+
+        // ── PHYSICAL ATTACK VISUAL TIMERS (follower) ──
+        if (actor.fireOrbitTimer  > 0) actor.fireOrbitTimer--;
+        if (actor.sparkSurround   > 0) { actor.sparkSurround--; if (actor.sparkSurround <= 0) actor._electricChainTargets = null; }
+        if (actor.icicleAttack)        { if (--actor.icicleAttack.timer <= 0) actor.icicleAttack = null; }
+        if (actor.fluxAura        > 0) actor.fluxAura--;
+        if (actor.corePulse       > 0) actor.corePulse--;
+
         // ── WILL REGEN ──
         if (typeof actor.currentWill === "number" && actor.stats) {
             if (actor.currentWill < actor.stats.will) {
@@ -106,6 +132,7 @@ function followerAttack(actor, target) {
     }
 
     // Execute attack
+    actor.state = "attack"; actor.attackAnim = 0;
     if (attackTier === "normal") {
         // Plain hit — no aura, no element
         const baseDmg = (actor.stats?.attack||5) * 0.25;

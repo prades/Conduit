@@ -10,101 +10,266 @@ function performElementJob(actor, tile) {
 }
 
 function issueJobCommand(tile) {
-    const pool=(followerByElement[player.selectedElement]||[]).filter(a=>!a.job).slice(0,3);
+    const pool=getCommandPool().filter(a=>!a.job).slice(0,4);
     pool.forEach(a => { a.job={ type:"elementJob", target:tile, executed:false, timer:0 }; });
 }
 
 function issueMoveCommand(tile) {
-    const pool=followerByElement[player.selectedElement]||[];
-    pool.forEach(a => { a.job={ type:"move", target:tile }; a.stance="hold"; });
+    getCommandPool().forEach(a => { a.job={ type:"move", target:tile }; a.stance="hold"; });
 }
 
 function issueReconstruct(pylon) {
     if (!pylon||!followers||followers.length===0) return;
     if (!pylon.reconstructing) { pylon.reconstructing=false; pylon.reconstructProgress=0; pylon.workers=[]; }
     if (pylon.reconstructing) return;
-    const pool=(followerByElement[player.selectedElement]||[]).filter(a=>!a.job).slice(0,3);
+    const pool=(followerByElement[player.selectedElement]||[]).filter(a=>!a.job).slice(0,4);
     if (pool.length===0) return;
     pylon.reconstructing=true; pylon.reconstructProgress=0; pylon.workers=pool;
     pool.forEach(a => { a.job={ type:"reconstruct", target:pylon }; });
 }
 
+// ── ELEMENT PICKER ────────────────────────────────────────
+function openElementPicker(mode, target) {
+    elementPickerMode   = mode;
+    elementPickerTarget = target;
+    elementPickerOpen   = true;
+}
+
+function closeElementPicker() {
+    elementPickerOpen   = false;
+    elementPickerMode   = null;
+    elementPickerTarget = null;
+}
+
+function _executeBuild(el, t) {
+    if (!t || shardCount < 10) {
+        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 10 SHARDS",color:"#f44",life:90,vy:-0.2});
+        return;
+    }
+    shardCount -= 10; saveShards();
+    const _baseHP = 80 + (pylonMaxHPBonus||0);
+    const _PYLON_STYLES=["sentinel","spire","monolith","antenna","shrine","conduit"];
+    t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=_baseHP;
+    t.pylonStyle=t.pylonStyle||_PYLON_STYLES[Math.floor(Math.random()*_PYLON_STYLES.length)];
+    t.upgraded=false; t.destroyed=false;
+    t.attackMode=false; t.waveMode=false;
+    t.attackModeElement=null; t.attackModeColor=null;
+    t.reconstructing=false; t.workers=[];
+    if (buildMode) {
+        const builderPool=[...getCommandPool().filter(a=>!a.dead&&(!a.job||a.job.type!=="attack")),...followers.filter(a=>!a.dead&&(!a.job||a.job.type!=="attack"))]
+            .filter((a,i,arr)=>arr.indexOf(a)===i).slice(0,4);
+        if (builderPool.length === 0) {
+            // No available followers — abort and refund
+            shardCount += 10; saveShards();
+            t.pillar=false; t.constructing=false;
+            floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NO FOLLOWERS AVAILABLE TO BUILD",color:"#f44",life:90,vy:-0.2});
+            return;
+        }
+        t.constructing=true; t.constructProgress=0; t.health=0;
+        builderPool.forEach(builder=>{
+            const speedMult=[1,0.6,0.45,0.35][Math.min(builderPool.length-1,3)];
+            const baseBuildTime=(builder.element==="core")?60:1800;
+            builder.job={type:"build_pylon",target:t,buildTime:Math.max(30,Math.round(baseBuildTime*speedMult))};
+        });
+        // Store element to apply once built
+        t.chosenElement = el.id; t.chosenColor = el.color;
+    } else {
+        t.health=20; t.constructing=false; t.constructProgress=1;
+        // Immediately apply element — find a follower to merge
+        _sendMergeFollower(t, el);
+    }
+    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:"#0f8",life:100,vy:-0.2});
+}
+
+function _executeBuildInstant(el, t) {
+    if (!t || shardCount < 40) {
+        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 40 SHARDS",color:"#f44",life:90,vy:-0.2});
+        return;
+    }
+    shardCount -= 40; saveShards();
+    const _iHP = 80 + (pylonMaxHPBonus||0);
+    const _IPYLON_STYLES=["sentinel","spire","monolith","antenna","shrine","conduit"];
+    t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=_iHP;
+    t.pylonStyle=t.pylonStyle||_IPYLON_STYLES[Math.floor(Math.random()*_IPYLON_STYLES.length)];
+    t.upgraded=false; t.destroyed=false;
+    t.reconstructing=false; t.workers=[];
+    t.constructing=false; t.constructProgress=1; t.health=t.maxHealth;
+    // Auto-activate with the chosen element (no follower merge needed)
+    if (unlockedElements.has(el.id)) {
+        t.attackMode=true; t.waveMode=false;
+        t.attackModeElement=el.id; t.attackModeColor=el.color;
+        t.attackPower=15; t.attackRange=2.5 + (pylonRangeBonus||0);
+        t.chosenElement=el.id; t.chosenColor=el.color;
+    }
+    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
+}
+
+function _executeUpgrade(el, pylon) {
+    if (!pylon || !pylon.pillar || pylon.destroyed) return;
+    if (pylon.attackMode || pylon.waveMode) {
+        // Already upgraded — just swap element directly
+        pylon.attackModeElement = el.id;
+        pylon.attackModeColor   = el.color;
+        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON → "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
+    } else {
+        // Not yet upgraded — send a follower to merge; store chosen element
+        pylon.chosenElement = el.id;
+        pylon.chosenColor   = el.color;
+        _sendMergeFollower(pylon, el);
+        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"UPGRADING WITH "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
+    }
+}
+
+function _sendMergeFollower(pylon, el) {
+    // Prefer a follower of the chosen element (camper first), then any idle follower
+    let best = null;
+    const elPool = (followerByElement[el.id]||[]).filter(a=>!a.dead&&!a.job);
+    best = elPool.find(a=>a.role==="camper") || elPool[0] || null;
+    if (!best) {
+        let bd = Infinity;
+        followers.forEach(f=>{ if(!f.dead&&!f.job){const d=Math.hypot(f.x-pylon.x,f.y-pylon.y);if(d<bd){bd=d;best=f;}} });
+    }
+    if (best) {
+        best.job = { type:"merge_pylon", target:pylon };
+        pylon.pendingUpgrade  = true;
+        pylon.upgradeFollower = best;
+    }
+}
+
+// ── INFO PANEL ────────────────────────────────────────────
+function openInfoPanel(targetTile) {
+    infoPanelTarget = targetTile;
+    infoPanelOpen   = true;
+}
+
+function closeInfoPanel() {
+    infoPanelOpen   = false;
+    infoPanelTarget = null;
+}
+
+// ── COMMAND EXECUTION ─────────────────────────────────────
 function executeCommand() {
-    if (!selectedRadialAction) { commandMode=false; return; }
-    if (!commandMode) return;
-    if (!commandTarget) { commandMode=false; selectedRadialAction=null; return; }
+    commandMode=false; commandPendingTap=false;
+    if (!selectedRadialAction) return;
+    if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
+    const isNestCmd = selectedRadialAction==="destroy_nest"||selectedRadialAction==="connect_nest"||selectedRadialAction==="attack_nest";
+    if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
+    if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;
+
     switch(selectedRadialAction) {
-        case "job":        issueJobCommand(commandTarget); break;
+        // ── TOP: BUILD / UPGRADE ──────────────────────────
+        case "build_upgrade": {
+            const pylon = commandTarget;
+            // A constructing pylon with no health is stuck (builder died or none assigned) — reset it so the player can rebuild
+            if (pylon && pylon.pillar && pylon.constructing && pylon.health === 0) {
+                pylon.pillar=false; pylon.constructing=false; pylon.constructProgress=0;
+            }
+            if (pylon && pylon.pillar && !pylon.destroyed) {
+                openElementPicker("upgrade", pylon);
+            } else if (commandTarget) {
+                if (shardCount >= 40) {
+                    openElementPicker("build", commandTarget);
+                } else {
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 40 SHARDS TO BUILD",color:"#f44",life:90,vy:-0.2});
+                }
+            }
+            break;
+        }
+        // ── DOWN: POSITION ────────────────────────────────
+        case "position": {
+            if (commandTarget) issueMoveCommand(commandTarget);
+            break;
+        }
+        // ── DOWN (capturable tile): CAPTURE ───────────────
+        case "capture": {
+            const capTile = commandTarget;
+            if (!capTile || !capTile.capturable || capTile.captured) break;
+            // Assign up to 4 idle followers to capture this node
+            const pool = getCommandPool().filter(a => !a.dead && !a.job).slice(0, 4);
+            if (pool.length === 0) {
+                floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
+                    text: "NO FOLLOWERS AVAILABLE", color: "#f44", life: 90, vy: -0.2 });
+                break;
+            }
+            pool.forEach(a => { a.job = { type: "capture_node", target: capTile }; });
+            floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
+                text: "CAPTURING NODE…", color: "#0df", life: 90, vy: -0.2 });
+            break;
+        }
+        // ── RIGHT: INFO ───────────────────────────────────
+        case "info": {
+            openInfoPanel(commandTarget);
+            break;
+        }
+        // ── LEFT: SWITCH (role / pylon mode) ─────────────
+        case "switch_context": {
+            const pylon = commandTarget;
+            if (pylon && pylon.pillar && !pylon.destroyed && (pylon.attackMode || pylon.waveMode)) {
+                // Toggle attack ↔ wave
+                if (pylon.attackMode) { pylon.attackMode=false; pylon.waveMode=true; }
+                else                  { pylon.waveMode=false;   pylon.attackMode=true; }
+                floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
+                    text:"PYLON → "+(pylon.attackMode?"ATTACK":"WAVE")+" MODE",color:"#0f8",life:90,vy:-0.2});
+            } else {
+                // Cycle follower roles in command pool
+                const roles=["brawler","sniper","camper"];
+                const pool=getCommandPool().filter(a=>!a.dead);
+                pool.forEach(f=>{ const i=roles.indexOf(f.role); f.role=roles[(i+1)%roles.length]; });
+                if (pool.length>0)
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
+                        text:"→ "+pool[0].role.toUpperCase(),color:"#0f8",life:90,vy:-0.2});
+            }
+            break;
+        }
+        // ── PLACE TRAP ───────────────────────────────────
+        case "place_trap": {
+            if (commandTarget) openTrapPicker(commandTarget);
+            break;
+        }
+        // ── LEGACY NEST COMMANDS ──────────────────────────
+        case "connect_nest": {
+            if (commandNestTarget && commandNestTarget.nestHealth <= 0) {
+                nestConnectMode  = true;
+                pendingConnectNest = commandNestTarget;
+                floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
+                    text:"TAP AN UPGRADED PYLON TO LINK",color:"#00ffcc",life:180,vy:-0.15});
+            }
+            break;
+        }
+        case "destroy_nest": {
+            if (commandNestTarget && commandNestTarget.nestHealth > 0) {
+                const pool=getCommandPool().filter(a=>!a.job).slice(0,5);
+                pool.forEach(a => { a.job={ type:"destroy_nest", target:commandNestTarget }; });
+            }
+            break;
+        }
+        // ── REMAINING LEGACY CASES (attack, reconstruct, etc.) ──
+        case "job":       issueJobCommand(commandTarget); break;
         case "reconstruct":
             if (commandTarget.pillar&&!commandTarget.destroyed) issueReconstruct(commandTarget);
             break;
-        case "upgrade_pylon": {
-            const pylon = commandTarget;
-            if (pylon&&pylon.pillar&&!pylon.destroyed&&!pylon.attackMode&&!pylon.waveMode) {
-                const el = player.selectedElement;
-                // Prefer nearest camper of selected element, fallback to any nearest follower
-                const pool = (followerByElement[el]||[]).filter(a=>!a.dead&&!a.job);
-                let best = pool.find(a=>a.role==="camper")||pool[0]||null;
-                if (!best) {
-                    // fallback: any follower regardless of element
-                    let bd=Infinity;
-                    followers.forEach(f=>{
-                        if (!f.dead&&!f.job) {
-                            const d=Math.hypot(f.x-pylon.x,f.y-pylon.y);
-                            if (d<bd) { bd=d; best=f; }
-                        }
-                    });
-                }
-                if (best) {
-                    best.job = { type:"merge_pylon", target:pylon };
-                    pylon.pendingUpgrade = true;
-                    pylon.upgradeFollower = best;
-                }
-            }
-            break;
-        }
-        case "set_wave_mode": {
-            const pylon = commandTarget;
-            if (pylon&&pylon.pillar&&!pylon.destroyed&&(pylon.attackMode||pylon.waveMode)) {
-                pylon.attackMode = false;
-                pylon.waveMode = true;
-            }
-            break;
-        }
-        case "set_attack_mode": {
-            const pylon = commandTarget;
-            if (pylon&&pylon.pillar&&!pylon.destroyed&&(pylon.attackMode||pylon.waveMode)) {
-                pylon.attackMode = true;
-                pylon.waveMode = false;
-            }
-            break;
-        }
         case "attack": {
             let enemy=getEnemyAtTile(commandTarget);
             if (!enemy) {
                 let bd=2;
-                actors.forEach(a => {
-                    if (a instanceof Predator&&!a.dead) {
-                        const dx=a.x-commandTarget.x, dy=a.y-commandTarget.y, d=Math.sqrt(dx*dx+dy*dy);
-                        if (d<bd) { bd=d; enemy=a; }
+                actors.forEach(a=>{
+                    if (a instanceof Predator&&!a.dead){
+                        const dx=a.x-commandTarget.x,dy=a.y-commandTarget.y,d=Math.sqrt(dx*dx+dy*dy);
+                        if(d<bd){bd=d;enemy=a;}
                     }
                 });
             }
             if (!enemy) break;
-            const pool=(followerByElement[player.selectedElement]||[]).filter(a=>!a.job).slice(0,5);
-            pool.forEach(a => { a.job={ type:"attack", target:enemy }; });
+            getCommandPool().filter(a=>!a.job).slice(0,5).forEach(a=>{a.job={type:"attack",target:enemy};});
             break;
         }
-        case "move":  issueMoveCommand(commandTarget); break;
-        case "build":
-            if (shardCount>=10&&commandTarget&&!commandTarget.pillar) {
-                shardCount-=10;
-                commandTarget.pillar=true; commandTarget.pillarTeam="green";
-                commandTarget.pillarCol="#0f8"; commandTarget.health=20;
-                commandTarget.maxHealth=20; commandTarget.upgraded=false;
-                commandTarget.destroyed=false;
+        case "move":   issueMoveCommand(commandTarget); break;
+        case "attack_nest": {
+            if (commandNestTarget) {
+                getCommandPool().filter(a=>!a.job).slice(0,5).forEach(a=>{a.job={type:"move",target:commandNestTarget};a.stance="hold";});
             }
             break;
+        }
     }
-    commandMode=false; commandTarget=null;
+    commandMode=false; commandTarget=null; commandNestTarget=null;
 }

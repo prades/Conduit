@@ -5,6 +5,7 @@ function saveGameState() {
     try { localStorage.setItem("tubecrawler_gamestate", JSON.stringify({
         nightNumber: gameState.nightNumber,
         totalWavesSurvived: gameState.totalWavesSurvived,
+        highestZoneCleared: gameState.highestZoneCleared,
         activeDayZones: activeDayZones
     })); } catch(e) {}
 }
@@ -14,6 +15,45 @@ function loadGameState() {
 }
 function clearGameState() {
     try { localStorage.removeItem("tubecrawler_gamestate"); } catch(e) {}
+}
+
+function savePermUpgrades() {
+    try { localStorage.setItem("tubecrawler_permupgrades", JSON.stringify({
+        ids: [...permUpgrades],
+        pylonMaxHPBonus, pylonRangeBonus, pylonFireRateBonus,
+        followerPermPowerBonus, followerPermHPBonus
+    })); } catch(e) {}
+}
+function loadPermUpgrades() {
+    try { return JSON.parse(localStorage.getItem("tubecrawler_permupgrades") || "null"); }
+    catch(e) { return null; }
+}
+function clearPermUpgrades() {
+    try { localStorage.removeItem("tubecrawler_permupgrades"); } catch(e) {}
+}
+
+function savePylons() {
+    const data = world
+        .filter(t => t.pillar)
+        .map(t => ({
+            x: t.x, y: t.y,
+            pillarTeam: t.pillarTeam, pillarCol: t.pillarCol,
+            health: t.health, maxHealth: t.maxHealth,
+            destroyed: t.destroyed,
+            attackMode: !!t.attackMode, waveMode: !!t.waveMode,
+            attackModeElement: t.attackModeElement || null,
+            attackModeColor: t.attackModeColor || null,
+            seasoned: t.seasoned || 0,
+            upgraded: !!t.upgraded
+        }));
+    try { localStorage.setItem("tubecrawler_pylons", JSON.stringify(data)); } catch(e) {}
+}
+function loadPylons() {
+    try { return JSON.parse(localStorage.getItem("tubecrawler_pylons") || "null"); }
+    catch(e) { return null; }
+}
+function clearPylons() {
+    try { localStorage.removeItem("tubecrawler_pylons"); } catch(e) {}
 }
 
 function getShards() {

@@ -63,42 +63,69 @@ function assignRole(stats) {
 //  Each species has 3 classes: scout, striker, tank
 //  Species rank up as waves progress (front zone first)
 // ─────────────────────────────────────────────────────────
+// reactionSpeed: frames before a hit predator retaliates (lower = faster)
+// abdomenAttack: fires ranged shots from the rear; won't turn when hit from behind
+// rangeDamage / abdomenCooldown: dry-shot stats (special shot scales up when charged)
 const SPECIES = {
     ant: {
         rank: 1,
         color: "#aa55ff",
-        nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:6,  dnaDrops:1, shardDrop:2  },
-        scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:12, dnaDrops:1, shardDrop:3  },
-        striker: { width:28, height:12, moveSpeed:0.018, health:100, power:18, dnaDrops:1, shardDrop:5  },
-        tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:25, dnaDrops:2, shardDrop:8  },
-        boss:    { width:52, height:24, moveSpeed:0.008, health:500, power:40, dnaDrops:4, shardDrop:20 }
+        nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:9,  dnaDrops:1, shardDrop:2,  reactionSpeed:15 },
+        scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:18, dnaDrops:1, shardDrop:3,  reactionSpeed:5  },
+        striker: { width:28, height:12, moveSpeed:0.018, health:100, power:27, dnaDrops:1, shardDrop:5,  reactionSpeed:10 },
+        tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:38, dnaDrops:2, shardDrop:8,  reactionSpeed:22 },
+        boss:    { width:26, height:12, moveSpeed:0.008, health:500, power:60, dnaDrops:4, shardDrop:20, reactionSpeed:8  }
     },
     beetle: {
         rank: 2,
         color: "#cc44ff",
-        nymph:   { width:16, height:8,  moveSpeed:0.028, health:45,  power:8,  dnaDrops:1, shardDrop:4  },
-        scout:   { width:26, height:12, moveSpeed:0.020, health:100, power:18, dnaDrops:1, shardDrop:6  },
-        striker: { width:32, height:14, moveSpeed:0.016, health:160, power:26, dnaDrops:2, shardDrop:9  },
-        tank:    { width:42, height:18, moveSpeed:0.010, health:280, power:35, dnaDrops:2, shardDrop:14 },
-        boss:    { width:62, height:28, moveSpeed:0.007, health:800, power:60, dnaDrops:5, shardDrop:30 }
+        nymph:   { width:16, height:8,  moveSpeed:0.028, health:45,  power:12, dnaDrops:1, shardDrop:4,  reactionSpeed:15 },
+        scout:   { width:26, height:12, moveSpeed:0.020, health:100, power:27, dnaDrops:1, shardDrop:6,  reactionSpeed:5  },
+        striker: { width:32, height:14, moveSpeed:0.016, health:160, power:39, dnaDrops:2, shardDrop:9,  reactionSpeed:10 },
+        tank:    { width:42, height:18, moveSpeed:0.010, health:280, power:53, dnaDrops:2, shardDrop:14, reactionSpeed:22 },
+        boss:    { width:31, height:14, moveSpeed:0.007, health:800, power:90, dnaDrops:5, shardDrop:30, reactionSpeed:8  }
     },
     scorpion: {
         rank: 3,
         color: "#8844ff",
-        nymph:   { width:18, height:9,  moveSpeed:0.026, health:65,  power:12, dnaDrops:2, shardDrop:6  },
-        scout:   { width:30, height:13, moveSpeed:0.019, health:150, power:25, dnaDrops:2, shardDrop:10 },
-        striker: { width:36, height:15, moveSpeed:0.015, health:240, power:36, dnaDrops:3, shardDrop:15 },
-        tank:    { width:48, height:20, moveSpeed:0.009, health:400, power:50, dnaDrops:3, shardDrop:22 },
-        boss:    { width:70, height:32, moveSpeed:0.006, health:1200, power:80, dnaDrops:6, shardDrop:45 }
+        nymph:   { width:18, height:9,  moveSpeed:0.026, health:65,  power:18, dnaDrops:2, shardDrop:6,  reactionSpeed:15 },
+        scout:   { width:30, height:13, moveSpeed:0.019, health:150, power:38, dnaDrops:2, shardDrop:10, reactionSpeed:5  },
+        // striker/tank/boss: stinger tail — abdomen ranged attacker
+        striker: { width:36, height:15, moveSpeed:0.015, health:240, power:54, dnaDrops:3, shardDrop:15, reactionSpeed:10, abdomenAttack:true, rangeDamage:30, abdomenCooldown:90 },
+        tank:    { width:48, height:20, moveSpeed:0.009, health:400, power:75, dnaDrops:3, shardDrop:22, reactionSpeed:22, abdomenAttack:true, rangeDamage:53, abdomenCooldown:75 },
+        boss:    { width:35, height:16, moveSpeed:0.006, health:1200, power:120, dnaDrops:6, shardDrop:45, reactionSpeed:8,  abdomenAttack:true, rangeDamage:83, abdomenCooldown:60 }
     },
     spider: {
         rank: 4,
         color: "#cc2244",
-        nymph:   { width:20, height:10, moveSpeed:0.032, health:80,  power:15, dnaDrops:2, shardDrop:8  },
-        scout:   { width:34, height:15, moveSpeed:0.024, health:200, power:32, dnaDrops:3, shardDrop:14 },
-        striker: { width:40, height:18, moveSpeed:0.020, health:300, power:48, dnaDrops:3, shardDrop:20 },
-        tank:    { width:52, height:22, moveSpeed:0.014, health:520, power:62, dnaDrops:4, shardDrop:28 },
-        boss:    { width:80, height:36, moveSpeed:0.008, health:1800, power:100, dnaDrops:8, shardDrop:60 }
+        nymph:   { width:13, height:10, moveSpeed:0.032, health:80,  power:23, dnaDrops:2, shardDrop:8,  reactionSpeed:15 },
+        scout:   { width:22, height:15, moveSpeed:0.024, health:200, power:48, dnaDrops:3, shardDrop:14, reactionSpeed:5  },
+        // striker/tank/boss: spinneret venom — abdomen ranged attacker
+        striker: { width:26, height:18, moveSpeed:0.020, health:300, power:72, dnaDrops:3, shardDrop:20, reactionSpeed:10, abdomenAttack:true, rangeDamage:27, abdomenCooldown:85 },
+        tank:    { width:34, height:22, moveSpeed:0.014, health:520, power:93, dnaDrops:4, shardDrop:28, reactionSpeed:22, abdomenAttack:true, rangeDamage:45, abdomenCooldown:75 },
+        boss:    { width:40, height:18, moveSpeed:0.008, health:1800, power:150, dnaDrops:8, shardDrop:60, reactionSpeed:8,  abdomenAttack:true, rangeDamage:72, abdomenCooldown:65 }
+    },
+    // ── Mantis — raised prothorax, angled abdomen, raptorial forelegs ──────
+    mantis: {
+        rank: 4,
+        color: "#44dd55",
+        nymph:   { width:14, height:8,  moveSpeed:0.032, health:40,  power:12,  dnaDrops:1, shardDrop:4,  reactionSpeed:10 },
+        scout:   { width:20, height:10, moveSpeed:0.026, health:110, power:34,  dnaDrops:2, shardDrop:9,  reactionSpeed:4  },
+        // striker+ use raptorial foreleg strike as ranged/abdomen attack
+        striker: { width:26, height:12, moveSpeed:0.022, health:180, power:52,  dnaDrops:3, shardDrop:14, reactionSpeed:8,  abdomenAttack:true, rangeDamage:28, abdomenCooldown:80 },
+        tank:    { width:34, height:15, moveSpeed:0.014, health:320, power:70,  dnaDrops:3, shardDrop:20, reactionSpeed:18, abdomenAttack:true, rangeDamage:48, abdomenCooldown:70 },
+        boss:    { width:30, height:14, moveSpeed:0.009, health:1100, power:110, dnaDrops:6, shardDrop:40, reactionSpeed:7,  abdomenAttack:true, rangeDamage:80, abdomenCooldown:55 }
+    },
+    // ── Moth — vertical stance, compound rounded-triangular wings, wing-dust ranged ──
+    moth: {
+        rank: 5,
+        color: "#dd8822",
+        nymph:   { width:12, height:9,  moveSpeed:0.031, health:85,  power:25,  dnaDrops:2, shardDrop:8,  reactionSpeed:12 },
+        scout:   { width:22, height:13, moveSpeed:0.023, health:220, power:55,  dnaDrops:3, shardDrop:16, reactionSpeed:5  },
+        // striker+ fire wing-dust powder as ranged abdomen attack
+        striker: { width:30, height:16, moveSpeed:0.018, health:340, power:80,  dnaDrops:4, shardDrop:22, reactionSpeed:9,  abdomenAttack:true, rangeDamage:32, abdomenCooldown:78 },
+        tank:    { width:40, height:20, moveSpeed:0.011, health:560, power:102, dnaDrops:4, shardDrop:30, reactionSpeed:20, abdomenAttack:true, rangeDamage:55, abdomenCooldown:66 },
+        boss:    { width:46, height:22, moveSpeed:0.007, health:2000, power:162, dnaDrops:9, shardDrop:65, reactionSpeed:7,  abdomenAttack:true, rangeDamage:92, abdomenCooldown:52 }
     }
 };
 
@@ -109,71 +136,86 @@ const PREDATOR_POOLS = {
     3: ["scout","striker","tank"]
 };
 const PREDATOR_TYPES = {
-    nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:6,  color:"#aa55ff" },
-    scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:12, color:"#aa55ff" },
-    striker: { width:28, height:12, moveSpeed:0.018, health:100, power:18, color:"#cc44ff" },
-    tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:25, color:"#8844ff" },
-    boss:    { width:52, height:24, moveSpeed:0.008, health:500, power:40, color:"#8844ff" }
+    nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:9,  color:"#aa55ff", reactionSpeed:15 },
+    scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:18, color:"#aa55ff", reactionSpeed:5  },
+    striker: { width:28, height:12, moveSpeed:0.018, health:100, power:27, color:"#cc44ff", reactionSpeed:10 },
+    tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:38, color:"#8844ff", reactionSpeed:22 },
+    boss:    { width:26, height:12, moveSpeed:0.008, health:500, power:60, color:"#8844ff", reactionSpeed:8  }
     // Spider uses SPECIES lookup directly — no legacy entry needed
 };
 
-// Get species for a given zone on a given night
+// Get species for a given zone — purely zone-based, independent of night number.
+// Zone 1–6: natural species (ant→beetle→scorpion→mantis→moth→spider).
+// Zone 7+:  synthetic deep-zone constructs from predator_randomizer.js.
 function getZoneSpecies(zoneIndex, nightNumber) {
-    const speciesOrder = ["ant","beetle","scorpion","spider"];
-    const frontZone = activeDayZones - 1; // max index = 4
-
-    let rank = 1;
-    if (nightNumber > 5) {
-        // Each night after 5 upgrades one more zone to beetle, front-first
-        const upgradeNights = Math.min(nightNumber - 5, frontZone); // clamp so threshold never goes below 1
-        const upgradeThreshold = Math.max(1, frontZone - upgradeNights + 1);
-        if (zoneIndex >= upgradeThreshold) rank = 2;
+    const speciesOrder = ["ant","beetle","scorpion","mantis","moth","spider"];
+    if (zoneIndex <= speciesOrder.length) {
+        const rank = Math.max(1, Math.min(zoneIndex, speciesOrder.length));
+        const baseSpecies = speciesOrder[rank - 1];
+        // 15% chance to spawn one tier lower (never below ant)
+        if (rank > 1 && Math.random() < 0.15) return speciesOrder[rank - 2];
+        return baseSpecies;
     }
-    if (nightNumber > 10) {
-        const scorpionNights = Math.min(nightNumber - 10, frontZone);
-        const scorpionThreshold = Math.max(1, frontZone - scorpionNights + 1);
-        if (zoneIndex >= scorpionThreshold) rank = 3;
-    }
-    if (nightNumber > 15) {
-        // Spider tier: front zone first, cascades back each night
-        const spiderNights = Math.min(nightNumber - 15, frontZone);
-        const spiderThreshold = Math.max(1, frontZone - spiderNights + 1);
-        if (zoneIndex >= spiderThreshold) rank = 4;
-    }
-
-    // Clamp rank to valid index
-    rank = Math.max(1, Math.min(rank, speciesOrder.length));
-    const baseSpecies = speciesOrder[rank - 1];
-
-    // 15% chance to spawn one tier lower (never below ant)
-    if (rank > 1 && Math.random() < 0.15) {
-        return speciesOrder[rank - 2];
-    }
-    return baseSpecies;
+    // Zones 7+ use synthetic chimera species defined in predator_randomizer.js
+    return getSyntheticZoneSpecies(zoneIndex);
 }
 
-// Get class for a zone based on night (harder zones get strikers/tanks sooner)
+// Get class for a zone — scales with nightNumber so individual predators
+// grow stronger over time even when the player re-farms the same zone.
+// Night tier 0 (N1-5): nymphs/scouts dominant.
+// Night tier 1 (N6-10): scouts/strikers dominant.
+// Night tier 2 (N11-15): strikers/tanks dominant.
+// Night tier 3 (N16+): mostly tanks, rarer nymphs.
 function getZoneClass(zoneIndex) {
+    const n    = gameState.nightNumber;
     const roll = Math.random();
-    if (zoneIndex >= activeDayZones - 1) {
-        // Front zone: full class range + rare boss
+    const isFront = zoneIndex >= activeDayZones - 1;
+    const tier = Math.min(3, Math.floor((n - 1) / 5)); // 0→1→2→3
+
+    // Probability ceilings [nymph, scout, striker] per tier
+    // Front zone gets harder classes and rare boss
+    const frontT = [
+        [0.20, 0.46, 0.73], // tier 0
+        [0.12, 0.38, 0.70], // tier 1
+        [0.05, 0.26, 0.64], // tier 2
+        [0.02, 0.16, 0.56], // tier 3
+    ];
+    const backT = [
+        [0.15, 0.55, 0.85], // tier 0
+        [0.08, 0.40, 0.78], // tier 1
+        [0.03, 0.26, 0.70], // tier 2
+        [0.01, 0.14, 0.60], // tier 3
+    ];
+
+    if (isFront) {
         if (roll < 0.08) return "boss";
-        if (roll < 0.20) return "nymph";
-        if (roll < 0.46) return "scout";
-        if (roll < 0.73) return "striker";
+        const t = frontT[tier];
+        if (roll < t[0]) return "nymph";
+        if (roll < t[1]) return "scout";
+        if (roll < t[2]) return "striker";
         return "tank";
     }
-    // Back zones: mostly scouts and nymphs
-    if (roll < 0.15) return "nymph";
-    if (roll < 0.55) return "scout";
-    if (roll < 0.85) return "striker";
+    const t = backT[tier];
+    if (roll < t[0]) return "nymph";
+    if (roll < t[1]) return "scout";
+    if (roll < t[2]) return "striker";
     return "tank";
 }
 
 // Clone cost table
 const CLONE_COSTS = {
-    ant:      { base:1, tankExtra:1, bossExtra:4, splicesNeeded:3  },
-    beetle:   { base:2, tankExtra:1, bossExtra:5, splicesNeeded:5  },
-    scorpion: { base:3, tankExtra:1, bossExtra:6, splicesNeeded:8  },
-    spider:   { base:4, tankExtra:2, bossExtra:8, splicesNeeded:10 }
+    ant:      { base:1, tankExtra:1, bossExtra:4,  splicesNeeded:3  },
+    beetle:   { base:2, tankExtra:1, bossExtra:5,  splicesNeeded:5  },
+    scorpion: { base:3, tankExtra:1, bossExtra:6,  splicesNeeded:8  },
+    spider:   { base:4, tankExtra:2, bossExtra:8,  splicesNeeded:10 },
+    mantis:   { base:3, tankExtra:1, bossExtra:6,  splicesNeeded:8  },
+    moth:     { base:4, tankExtra:2, bossExtra:7,  splicesNeeded:12 },
+    // Synthetic deep-zone constructs — cloning not normally available but
+    // entries prevent crashes if DNA of an unknown species is ever queried
+    "XV-09":  { base:5, tankExtra:2, bossExtra:10, splicesNeeded:20 },
+    "RS-a4":  { base:6, tankExtra:3, bossExtra:12, splicesNeeded:25 },
+    "HG-b2":  { base:7, tankExtra:3, bossExtra:14, splicesNeeded:30 },
+    "NX-w7":  { base:8, tankExtra:4, bossExtra:16, splicesNeeded:36 },
+    "AB-p3":  { base:9, tankExtra:4, bossExtra:18, splicesNeeded:42 },
+    "QX-z1":  { base:10,tankExtra:5, bossExtra:20, splicesNeeded:50 }
 };

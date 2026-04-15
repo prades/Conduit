@@ -1,137 +1,395 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tube Crawler: Peak AI Data-Driven</title>
-    <style>
-        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
-        canvas { display: block; width: 100vw; height: 100vh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragonlord — Home</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    #ui {
-        position: absolute; top: 20px; left: 230px;
-        width: 200px; height: 28px;
-        background: rgba(0,0,0,0.6);
-        border: 1px solid #333; border-radius: 4px; overflow: hidden;
+    body {
+      background: #040810;
+      color: #c8d8f0;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    #hp { height: 100%; background: #0f8; width: 100%; box-shadow: 0 0 10px #0f8; transition: background 0.3s; }
 
-    #shards {
-        position: absolute; top: 12px; left: 10px;
-        color: #ff0; font-size: 14px; font-weight: bold;
-        background: rgba(0,0,0,0.8); padding: 2px 6px;
-        border-radius: 4px; z-index: 10;
+    /* Three.js canvas fills the hero */
+    #bg-canvas {
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none;
     }
-    #waveInfo {
-        position: absolute; top: 12px; left: 50%;
-        transform: translateX(-50%);
-        color: #0f8; font-size: 13px; font-weight: bold;
-        background: rgba(0,0,0,0.8); padding: 2px 10px;
-        border-radius: 4px; z-index: 10; pointer-events: none;
-    }
-    /* ── OVERLAY (game-over / wave-clear / shop) ── */
-    #overlay {
-        display: none;
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,0.82);
-        z-index: 10000;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        font-family: monospace;
-        color: #0f8;
-    }
-    #overlay.active { display: flex; }
-    #overlay h1 { font-size: 2.2rem; margin: 0 0 8px; letter-spacing: 4px; }
-    #overlay p  { color: #aaa; margin: 4px 0; font-size: 0.9rem; }
-    #overlay .stat { color: #ff0; }
-    .ovr-btn {
-        margin-top: 18px; padding: 10px 28px;
-        background: #0a1f14; border: 2px solid #0f8;
-        color: #0f8; font-family: monospace; font-size: 1rem;
-        border-radius: 6px; cursor: pointer; letter-spacing: 2px;
-    }
-    .ovr-btn:hover { background: #0f8; color: #000; }
-    /* ── SHOP ── */
-    #shopGrid {
-        display: flex; gap: 12px; flex-wrap: wrap;
-        justify-content: center; margin-top: 16px;
-        max-width: 480px;
-    }
-    .shop-item {
-        background: #0e1418; border: 1px solid #0f8;
-        border-radius: 8px; padding: 10px 14px;
-        min-width: 120px; cursor: pointer; text-align: center;
-    }
-    .shop-item:hover { background: #0f8; color: #000; }
-    .shop-item .cost { color: #ff0; font-size: 0.8rem; }
-    .shop-item.bought { opacity: 0.4; pointer-events: none; }
-</style>
 
+    .content { position: relative; z-index: 1; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 40px 20px;
+    }
+
+    .dragon-icon {
+      font-size: 64px; margin-bottom: 20px;
+      filter: drop-shadow(0 0 24px #ff6600);
+      animation: floatIcon 3.5s ease-in-out infinite;
+    }
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-12px); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.6rem, 7vw, 5rem);
+      font-weight: 900;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ff6600, #ffcc00, #ff3300);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      filter: drop-shadow(0 0 18px rgba(255,100,0,0.5));
+      margin-bottom: 14px;
+    }
+
+    .hero .tagline {
+      font-size: clamp(0.85rem, 2vw, 1.1rem);
+      color: #7bb8e8;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      opacity: 0.85;
+    }
+
+    .hero .bio {
+      max-width: 560px;
+      font-size: 1rem;
+      line-height: 1.8;
+      color: #a0bcd8;
+      margin-bottom: 40px;
+    }
+
+    .scroll-hint {
+      color: #4a7a9e; font-size: 12px; letter-spacing: 2px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 1; }
+    }
+
+    /* ── Section ── */
+    .section {
+      max-width: 960px; margin: 0 auto; padding: 80px 24px;
+    }
+
+    .section-title {
+      font-size: 1rem; letter-spacing: 4px; text-transform: uppercase;
+      color: #ff6600; margin-bottom: 48px; text-align: center;
+      position: relative;
+    }
+    .section-title::after {
+      content: ''; display: block; width: 60px; height: 2px;
+      background: linear-gradient(to right, #ff6600, #ffcc00);
+      margin: 12px auto 0;
+    }
+
+    /* ── Project Grid ── */
+    .projects { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+
+    .project-card {
+      position: relative; overflow: hidden;
+      border: 1px solid rgba(255,100,0,0.2);
+      border-radius: 12px;
+      background: rgba(10,20,40,0.7);
+      padding: 28px 24px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+      backdrop-filter: blur(6px);
+    }
+    .project-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(255,150,0,0.55);
+      box-shadow: 0 12px 40px rgba(255,100,0,0.18);
+    }
+    .project-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,100,0,0.06), transparent 60%);
+      pointer-events: none;
+    }
+
+    .card-badge {
+      display: inline-block; font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; padding: 3px 9px; border-radius: 20px;
+      margin-bottom: 14px; font-weight: bold;
+    }
+    .badge-new    { background: rgba(255,200,0,0.15); color: #ffcc00; border: 1px solid #ffcc0044; }
+    .badge-game   { background: rgba(0,200,120,0.12); color: #00e676; border: 1px solid #00e67644; }
+    .badge-active { background: rgba(100,160,255,0.12); color: #7cb8ff; border: 1px solid #7cb8ff44; }
+
+    .project-card h3 {
+      font-size: 1.3rem; letter-spacing: 1px; margin-bottom: 10px;
+      color: #e8f0ff;
+    }
+    .project-card p {
+      font-size: 0.875rem; line-height: 1.7; color: #7a99bc; margin-bottom: 18px;
+    }
+    .card-tech {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 3px;
+      background: rgba(255,255,255,0.05); color: #6a8fb0;
+      border: 1px solid rgba(255,255,255,0.08); letter-spacing: 1px;
+    }
+    .card-arrow {
+      position: absolute; top: 24px; right: 24px;
+      color: rgba(255,150,0,0.4); font-size: 18px;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .project-card:hover .card-arrow {
+      color: #ff9900; transform: translate(3px, -3px);
+    }
+
+    /* ── Featured project glow ── */
+    .project-card.featured {
+      border-color: rgba(255,200,0,0.35);
+      box-shadow: 0 0 30px rgba(255,180,0,0.1);
+    }
+
+    /* ── About strip ── */
+    .about-strip {
+      background: rgba(10,25,50,0.6);
+      border-top: 1px solid rgba(255,100,0,0.12);
+      border-bottom: 1px solid rgba(255,100,0,0.12);
+      padding: 60px 24px;
+      text-align: center;
+    }
+    .about-strip p {
+      max-width: 620px; margin: 0 auto;
+      line-height: 1.9; color: #8aafc8; font-size: 0.95rem;
+    }
+    .about-strip strong { color: #ffcc00; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding: 40px 20px;
+      color: #2a4060; font-size: 12px; letter-spacing: 2px;
+    }
+    footer a { color: #3a6080; text-decoration: none; }
+    footer a:hover { color: #7cb8ff; }
+
+    /* ── Divider ── */
+    .divider {
+      border: none; height: 1px;
+      background: linear-gradient(to right, transparent, rgba(255,100,0,0.18), transparent);
+      margin: 0;
+    }
+  </style>
 </head>
 <body>
 
-<!-- HUD -->
+<canvas id="bg-canvas"></canvas>
 
-<div id="shards">Shards: 0</div>
-<div id="ui"><div id="hp"></div></div>
-<div id="waveInfo">Night 1</div>
-<div id="zoneInfo" style="position:absolute;top:12px;right:10px;color:#0f8;font-size:13px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;z-index:10;">Zone: Home</div>
-<div id="dnaHud" style="position:absolute;top:42px;left:10px;color:#0f8;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;z-index:10;">DNA: none</div>
+<div class="content">
 
-<!-- OVERLAY (game-over / wave-clear / shop) -->
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="dragon-icon">🐉</div>
+    <h1>Dragonlord</h1>
+    <p class="tagline">Game Developer &amp; Digital Architect</p>
+    <p class="bio">
+      I build worlds from code. Browser games, 3D environments, and interactive
+      experiences crafted from the ground up — no engines, just raw creativity
+      and JavaScript.
+    </p>
+    <p class="scroll-hint">▼ &nbsp; explore projects &nbsp; ▼</p>
+  </section>
 
-<div id="overlay">
-    <h1 id="ovr-title">GAME OVER</h1>
-    <p id="ovr-sub"></p>
-    <p>Shards collected: <span class="stat" id="ovr-shards">0</span></p>
-    <p>Enemies converted: <span class="stat" id="ovr-conv">0</span></p>
-    <p>Waves survived: <span class="stat" id="ovr-waves">0</span></p>
-    <div id="shopGrid"></div>
-    <button class="ovr-btn" id="ovr-btn">RESTART</button>
+  <hr class="divider">
+
+  <!-- ── Projects ── -->
+  <section class="section">
+    <h2 class="section-title">Public Projects</h2>
+    <div class="projects">
+
+      <!-- Paradise -->
+      <a class="project-card featured" href="paradise/index.html">
+        <span class="card-arrow">↗</span>
+        <span class="card-badge badge-new">New</span>
+        <h3>Paradise</h3>
+        <p>
+          An immersive 3D open-world experience — explore a lush island paradise
+          with dynamic terrain, forests, and a living sky. Built entirely in Three.js.
+        </p>
+        <div class="card-tech">
+          <span class="tag">Three.js</span>
+          <span class="tag">WebGL</span>
+          <span class="tag">3D</span>
+          <span class="tag">Open World</span>
+        </div>
+      </a>
+
+      <!-- Conduit -->
+      <a class="project-card" href="game.html">
+        <span class="card-arrow">↗</span>
+        <span class="card-badge badge-game">Game</span>
+        <h3>Conduit</h3>
+        <p>
+          A fast-paced top-down tube crawler with wave-based combat, elemental
+          powers, crafting, and AI-driven enemies. Pure canvas, zero dependencies.
+        </p>
+        <div class="card-tech">
+          <span class="tag">Canvas 2D</span>
+          <span class="tag">Vanilla JS</span>
+          <span class="tag">Wave Defense</span>
+          <span class="tag">RPG</span>
+        </div>
+      </a>
+
+      <!-- Loresmith -->
+      <a class="project-card" href="https://github.com/prades" target="_blank" rel="noopener">
+        <span class="card-arrow">↗</span>
+        <span class="card-badge badge-active">Active</span>
+        <h3>Loresmith</h3>
+        <p>
+          A procedural lore and world-building toolkit — generate kingdoms, factions,
+          mythologies, and histories with a single click. For writers and worldbuilders.
+        </p>
+        <div class="card-tech">
+          <span class="tag">Procedural Gen</span>
+          <span class="tag">JavaScript</span>
+          <span class="tag">World Building</span>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── About ── -->
+  <div class="about-strip">
+    <p>
+      I go by <strong>Dragonlord</strong> online. I'm passionate about pushing
+      what the browser can do — from real-time 3D with <strong>Three.js</strong>
+      to complex game systems built on raw Canvas APIs. Everything you see here
+      runs natively in your browser, no plugins required.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── Footer ── -->
+  <footer>
+    <p>© Dragonlord &nbsp;·&nbsp; <a href="https://github.com/prades" target="_blank" rel="noopener">GitHub</a></p>
+  </footer>
+
 </div>
 
-<canvas id="cavernCanvas"></canvas>
-
-<script>
-// ── GLOBAL ERROR DISPLAY ──────────────────────────────────
-window.onerror = function(msg, src, line, col, err) {
-    const e = document.createElement("div");
-    Object.assign(e.style, {
-        position:"fixed", top:"0", left:"0", right:"0",
-        background:"rgba(0,0,0,0.9)", color:"#ff5555",
-        font:"12px monospace", padding:"10px",
-        zIndex:"99999", whiteSpace:"pre-wrap"
-    });
-    e.textContent = "CRASH\n\n" + msg + "\nLine:" + line +
-        (err && err.stack ? "\n\n" + err.stack : "");
-    document.body.appendChild(e);
-};
+<!-- ── Three.js Background ── -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"
+  }
+}
 </script>
 
-<!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js"></script>
-<script src="js/traits.js"></script>
-<script src="js/elements.js"></script>
-<script src="js/combat.js"></script>
-<script src="js/species.js"></script>
-<script src="js/save.js"></script>
-<script src="js/wavedata.js"></script>
-<script src="js/helpers.js"></script>
-<script src="js/predator.js"></script>
-<script src="js/world.js"></script>
-<script src="js/commands.js"></script>
-<script src="js/npc.js"></script>
-<script src="js/draw.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/waves.js"></script>
-<script src="js/drops.js"></script>
-<script src="js/clone.js"></script>
-<script src="js/input.js"></script>
-<script src="js/game.js"></script>
-<script src="js/dev.js"></script>
-<script src="js/init.js"></script>
+<script type="module">
+import * as THREE from 'three';
+
+const canvas  = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setSize(innerWidth, innerHeight);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 200);
+camera.position.z = 30;
+
+// Particle field — floating embers / stars
+const COUNT = 800;
+const geo   = new THREE.BufferGeometry();
+const positions = new Float32Array(COUNT * 3);
+const colors    = new Float32Array(COUNT * 3);
+const speeds    = new Float32Array(COUNT);
+
+for (let i = 0; i < COUNT; i++) {
+  positions[i * 3]     = (Math.random() - 0.5) * 120;
+  positions[i * 3 + 1] = (Math.random() - 0.5) * 80;
+  positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+
+  // Orange-to-gold ember colours
+  const t = Math.random();
+  colors[i * 3]     = 0.8 + t * 0.2;
+  colors[i * 3 + 1] = 0.2 + t * 0.55;
+  colors[i * 3 + 2] = 0.0 + t * 0.05;
+
+  speeds[i] = 0.3 + Math.random() * 0.9;
+}
+
+geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+geo.setAttribute('color',    new THREE.BufferAttribute(colors,    3));
+
+const mat = new THREE.PointsMaterial({
+  size: 0.4, vertexColors: true,
+  transparent: true, opacity: 0.55,
+  sizeAttenuation: true,
+});
+const particles = new THREE.Points(geo, mat);
+scene.add(particles);
+
+// Subtle rotating dragon-scale mesh in background
+const ringGeo = new THREE.TorusGeometry(14, 0.12, 6, 80);
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.06 });
+const ring1   = new THREE.Mesh(ringGeo, ringMat);
+const ring2   = new THREE.Mesh(new THREE.TorusGeometry(20, 0.08, 6, 80), new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.04 }));
+scene.add(ring1, ring2);
+
+let mouseX = 0, mouseY = 0;
+document.addEventListener('mousemove', e => {
+  mouseX = (e.clientX / innerWidth  - 0.5) * 2;
+  mouseY = (e.clientY / innerHeight - 0.5) * 2;
+});
+
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  // Drift particles upward slowly
+  for (let i = 0; i < COUNT; i++) {
+    positions[i * 3 + 1] += speeds[i] * 0.008;
+    if (positions[i * 3 + 1] > 40) positions[i * 3 + 1] = -40;
+  }
+  geo.attributes.position.needsUpdate = true;
+
+  // Rotate rings
+  ring1.rotation.x = t * 0.08;
+  ring1.rotation.y = t * 0.05;
+  ring2.rotation.x = -t * 0.04;
+  ring2.rotation.z = t * 0.03;
+
+  // Subtle camera parallax
+  camera.position.x += (mouseX * 2  - camera.position.x) * 0.02;
+  camera.position.y += (-mouseY * 1.5 - camera.position.y) * 0.02;
+  camera.lookAt(scene.position);
+
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
 
 </body>
 </html>

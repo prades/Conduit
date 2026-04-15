@@ -6,9 +6,22 @@ function updateRTSNPC(actor) {
     if (actor.dead) return;
     if (actor.spawnProtection>0) { actor.spawnProtection--; }
     if (actor.hitFlash>0) actor.hitFlash--;
+    if (actor.isFollower && actor.state === "attack") {
+        actor.attackAnim = (actor.attackAnim||0) + 0.18;
+        if (actor.attackAnim >= Math.PI) { actor.attackAnim = 0; actor.state = "idle"; }
+    }
 
     if (actor.combatTrait) { const t=COMBAT_TRAITS[actor.combatTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
     if (actor.naturalTrait){ const t=NATURAL_TRAITS[actor.naturalTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
+
+    // ── EMP SPEED BOOST TIMER ──
+    if ((actor._empBoostTimer||0) > 0) {
+        actor._empBoostTimer--;
+        if (actor._empBoostTimer === 0 && actor._empBaseSpeed != null) {
+            actor.moveSpeed = actor._empBaseSpeed;
+            actor._empBaseSpeed = null;
+        }
+    }
 
     // return to crystal
     if (!actor.dead&&actor.team==="green"&&actor.returningToCrystal) {
@@ -28,7 +41,10 @@ function updateRTSNPC(actor) {
                 actor.power       = actor.stats.attack;
                 actor.moveSpeed   = NPC_TYPES["virus"].moveSpeed + (actor.stats.speed-10)*0.001;
             }
-            if (!actor.element) {
+            // Always reassign element at crystal — world-spawn element is stale/irrelevant
+            if (activeCrystalModulation) {
+                actor.element = activeCrystalModulation.pair[Math.floor(Math.random()*activeCrystalModulation.pair.length)];
+            } else {
                 const pool = [...unlockedElements];
                 actor.element = pool[Math.floor(Math.random()*pool.length)] || "fire";
             }
@@ -96,10 +112,12 @@ function updateRTSNPC(actor) {
         } else {
             // Arrived — merge: absorb follower into pylon
             p.attackMode = true;
-            p.attackModeElement = actor.element || "core";
-            p.attackModeColor = actor.color || "#0f8";
+            p.attackModeElement = p.chosenElement || actor.element || "core";
+            const _chEl = ELEMENTS.find(e=>e.id===p.attackModeElement);
+            p.attackModeColor = p.chosenColor || (_chEl ? _chEl.color : actor.color) || "#0f8";
+            p.chosenElement = null; p.chosenColor = null;
             p.attackFireTimer = 0;
-            p.attackRange = 2.5;
+            p.attackRange = 2.5 + (pylonRangeBonus||0);
             p.attackPower = (actor.stats?.specialAttack||10) * 1.2;
             p.pendingUpgrade = false;
             p.upgradeFollower = null;
@@ -117,6 +135,35 @@ function updateRTSNPC(actor) {
         return;
     }
 
+    // build new pylon (build mode)
+    if (actor.job&&actor.job.type==="build_pylon") {
+        const p=actor.job.target;
+        if (!p||p.dead||!p.constructing) { actor.job=null; return; }
+        const dx=p.x-actor.x, dy=p.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
+        if (dist>0.5) {
+            actor.x+=dx*actor.moveSpeed*2; actor.y+=dy*actor.moveSpeed*2;
+            actor.walkCycle+=actor.moveSpeed*40;
+        } else {
+            p.constructProgress=(p.constructProgress||0)+1/actor.job.buildTime;
+            if (p.constructProgress>=1) {
+                p.constructing=false; p.constructProgress=1;
+                p.health=p.maxHealth;
+                // Activate the pylon with its chosen element now that construction is done
+                if (p.chosenElement) {
+                    p.attackMode=true; p.waveMode=false;
+                    p.attackModeElement=p.chosenElement;
+                    const _chEl=ELEMENTS.find(e=>e.id===p.chosenElement);
+                    p.attackModeColor=p.chosenColor||(_chEl?_chEl.color:"#0f8");
+                    p.attackPower=15; p.attackRange=2.5+(pylonRangeBonus||0);
+                    p.attackFireTimer=0; p.pulseTimer=0;
+                    p.chosenElement=null; p.chosenColor=null;
+                }
+                actor.job=null;
+            }
+        }
+        return;
+    }
+
     // reconstruct
     if (actor.job&&actor.job.type==="reconstruct") {
         const p=actor.job.target;
@@ -127,16 +174,68 @@ function updateRTSNPC(actor) {
         return;
     }
 
-    // move / hold
+    // move / hold — guard position, attack nearby enemies
     if (actor.job&&actor.job.type==="move") {
         if (actor.health<actor.maxHealth*0.5) { actor.job=null; }
         else {
             const t=actor.job.target;
             if (!t) { actor.job=null; return; }
-            const dx=t.x-actor.x, dy=t.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-            if (dist>0.6) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+            // Refresh nearby-enemy cache every 10 frames
+            if (!actor._guardCacheFrame || frame-actor._guardCacheFrame>=10 || actor._guardEnemy?.dead) {
+                actor._guardEnemy=null; let bd2=20.25; // 4.5²=20.25
+                actors.forEach(a=>{ if(a.team!=="green"&&!a.dead){const dx=a.x-actor.x,dy=a.y-actor.y,d2=dx*dx+dy*dy;if(d2<bd2){bd2=d2;actor._guardEnemy=a;}} });
+                actor._guardCacheFrame=frame;
+            }
+            const enemy=actor._guardEnemy&&!actor._guardEnemy.dead?actor._guardEnemy:null;
+            if (enemy) {
+                // Engage enemy — move toward it and attack
+                const ed=Math.hypot(enemy.x-actor.x,enemy.y-actor.y);
+                if (ed>0.8) { actor.x+=(enemy.x-actor.x)/ed*actor.moveSpeed; actor.y+=(enemy.y-actor.y)/ed*actor.moveSpeed; }
+                followerAttack(actor,enemy);
+            } else {
+                // No threat — hold position
+                const dx=t.x-actor.x, dy=t.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
+                if (dist>0.6) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+            }
             return;
         }
+    }
+
+    // capture node job — walk to capturable tile and hold position to fill progress
+    if (actor.job&&actor.job.type==="capture_node") {
+        const node=actor.job.target;
+        if (!node||node.captured) { actor.job=null; return; }
+        const dx=node.x-actor.x, dy=node.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
+        if (dist>0.7) {
+            actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed;
+        }
+        // Stay at node — job remains active until captured (updateCaptureProgress clears it)
+        return;
+    }
+
+    // destroy nest job — walk to live nest pod and bash it
+    if (actor.job&&actor.job.type==="destroy_nest") {
+        const nest=actor.job.target;
+        if (!nest||nest.nestHealth<=0) { actor.job=null; return; }
+        const dx=nest.x-actor.x, dy=(nest.y+0.5)-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
+        if (dist>1.0) {
+            actor.x+=(dx/dist)*actor.moveSpeed;
+            actor.y+=(dy/dist)*actor.moveSpeed;
+        } else {
+            if (!actor.attackCooldown) actor.attackCooldown=0;
+            actor.attackCooldown--;
+            if (actor.attackCooldown<=0) {
+                const dmg=(actor.power||5)*0.5;
+                nest.nestHealth=Math.max(0,nest.nestHealth-dmg);
+                floatingTexts.push({x:nest.x,y:nest.y-0.5,text:"-"+Math.round(dmg),color:"#ff4400",life:25,vy:-0.05});
+                actor.attackCooldown=45;
+                if (nest.nestHealth<=0) {
+                    floatingTexts.push({x:nest.x,y:nest.y-1,text:"NEST DESTROYED!",color:"#ff0000",life:60,vy:-0.1});
+                    actor.job=null;
+                }
+            }
+        }
+        return;
     }
 
     // attack job
@@ -167,33 +266,69 @@ function updateRTSNPC(actor) {
         }
     }
 
+    // ── WALK CYCLE + DIRECTION (before role returns) ──
+    const dxM=actor.x-(actor.lastX??actor.x), dyM=actor.y-(actor.lastY??actor.y);
+    if (Math.abs(dxM)>0.001||Math.abs(dyM)>0.001) {
+        actor.walkCycle+=0.25;
+        const dlen=Math.hypot(dxM,dyM);
+        actor.dirX=dxM/dlen; actor.dirY=dyM/dlen;
+    }
+    actor.lastX=actor.x; actor.lastY=actor.y;
+
     // ── ROLE-DRIVEN MOVEMENT ──────────────────────────────
     if (actor.team==="green" && (actor.stance||"follow")==="follow") {
 
+        // Acid avoidance — applied before role movement so it always wins
+        for (const h of environmentalHazards) {
+            if (h.type !== "acid" || !h.active) continue;
+            for (const [tx, ty] of (h.tiles || [])) {
+                const adx = actor.x - tx, ady = actor.y - ty;
+                if (Math.abs(adx) < 1.0 && Math.abs(ady) < 1.0) {
+                    const alen = Math.hypot(adx, ady) || 1;
+                    actor.x += (adx / alen) * actor.moveSpeed * 5;
+                    actor.y += (ady / alen) * actor.moveSpeed * 5;
+                }
+            }
+        }
+
         const role = actor.role || "brawler";
 
-        // Find nearest enemy for role decisions
-        let nearestEnemy = null;
-        let nearestEnemyDist = Infinity;
-        actors.forEach(a => {
-            if ((a.team==="red" || (a instanceof Predator && a.team !== "green" && !a.isClone)) && !a.dead) {
-                const dx=a.x-actor.x, dy=a.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
-                if (d < nearestEnemyDist) { nearestEnemyDist=d; nearestEnemy=a; }
-            }
-        });
+        // Find nearest enemy — cache result for 8 frames to avoid per-frame full scan.
+        // Followers ignore wandering (un-provoked) predators; only engage hostile ones.
+        if (!actor._enemyCacheFrame || frame - actor._enemyCacheFrame >= 8 ||
+            actor._nearestEnemy?.dead) {
+            actor._nearestEnemy = null;
+            let nearestEnemyDist = Infinity;
+            actors.forEach(a => {
+                if (a instanceof Predator && a.team !== "green" && !a.isClone && !a.dead) {
+                    // Skip predators that are wandering and haven't been provoked
+                    if (a.state === "wander" && !a.provoked) return;
+                    const dx=a.x-actor.x, dy=a.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
+                    if (d < nearestEnemyDist) { nearestEnemyDist=d; actor._nearestEnemy=a; }
+                }
+            });
+            actor._enemyCacheFrame = frame;
+        }
+        const nearestEnemy = actor._nearestEnemy;
+        const nearestEnemyDist = nearestEnemy
+            ? Math.hypot(nearestEnemy.x - actor.x, nearestEnemy.y - actor.y) : Infinity;
 
-        // ── BRAWLER: chase nearest enemy aggressively ──
+        // ── BRAWLER: chase nearest enemy aggressively, circle when in range ──
         if (role === "brawler") {
             if (nearestEnemy && nearestEnemyDist < 6) {
-                // Close in on enemy
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy);
-                if (dist > 0.8) {
+                if (dist > 1.4) {
+                    // Approach
                     actor.x+=(dx/dist)*actor.moveSpeed;
                     actor.y+=(dy/dist)*actor.moveSpeed;
-                }
-                // Auto attack when in range
-                if (dist <= 0.8) {
+                } else {
+                    // In strike range — orbit the target while attacking
+                    if (!actor.orbitDir) actor.orbitDir = Math.random() < 0.5 ? 1 : -1;
+                    const tangX = (-dy/dist) * actor.orbitDir;
+                    const tangY = ( dx/dist) * actor.orbitDir;
+                    actor.x += tangX * actor.moveSpeed * 0.8;
+                    actor.y += tangY * actor.moveSpeed * 0.8;
                     followerAttack(actor, nearestEnemy);
                 }
             } else {
@@ -228,7 +363,7 @@ function updateRTSNPC(actor) {
                         const dmg   = (actor.stats?.specialAttack||10) * 0.5;
                         spawnFollowerProjectile(actor, nearestEnemy, col, dmg, 5, null);
                         actor.attackCooldown = 55;
-                        if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - 1);
+                        if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
                     } else {
                         actor.attackCooldown--;
                     }
@@ -276,11 +411,6 @@ function updateRTSNPC(actor) {
         return;
     }
 
-    // walk cycle
-    const dxM=actor.x-(actor.lastX||actor.x), dyM=actor.y-(actor.lastY||actor.y);
-    if (Math.abs(dxM)>0.001||Math.abs(dyM)>0.001) actor.walkCycle+=0.25;
-    actor.lastX=actor.x; actor.lastY=actor.y;
-
     // idle wander
     if (actor.moveCooldown>0) { actor.moveCooldown--; return; }
     const dirs=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
@@ -296,6 +426,12 @@ function updateNPC(actor) {
     } else {
         const _prevX = actor.x, _prevY = actor.y;
         updateRTSNPC(actor);
+        // Clamp all NPC actors to floor bounds regardless of role.
+        // Relax lower bound when a job targets a back-wall tile (y < 0) so
+        // followers can reach y=-1 floor tiles without getting stuck at y=-0.5.
+        const _jobTargetY = actor.job?.target?.y;
+        const _minY = (typeof _jobTargetY === 'number' && _jobTargetY < 0) ? -1.5 : -0.5;
+        actor.y = Math.max(_minY, Math.min(4, actor.y));
         // Tick walk cycle for clones based on actual movement
         if (actor.isClone) {
             const _moved = Math.hypot(actor.x - _prevX, actor.y - _prevY);
