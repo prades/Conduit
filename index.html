@@ -308,7 +308,7 @@
 
 </div>
 
-<!-- ── Three.js Background ── -->
+<!-- ── Three.js Background — Stonehenge ── -->
 <script type="importmap">
 {
   "imports": {
@@ -325,155 +325,190 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true 
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 
-const scene  = new THREE.Scene();
-scene.fog    = new THREE.FogExp2(0x000000, 0.018);
+const scene = new THREE.Scene();
+scene.fog   = new THREE.FogExp2(0x020508, 0.011);
 
-const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 300);
-camera.position.set(0, 2, 38);
+const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 300);
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Materials ────────────────────────────────────────────────────────────────
+const stoneMat  = new THREE.MeshPhongMaterial({ color: 0x514438, specular: 0x141010, shininess: 7 });
+const groundMat = new THREE.MeshPhongMaterial({ color: 0x060c04 });
 
-function edgeMat(hex, opacity) {
-  return new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity });
-}
+// ── Ground ───────────────────────────────────────────────────────────────────
+const ground = new THREE.Mesh(new THREE.CircleGeometry(130, 72), groundMat);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
 
-// ── Ancient Relic Monoliths ───────────────────────────────────────────────────
-// Each monolith: dark stone body + glowing wireframe edges + carved band rings
-
-function buildMonolith(w, h, d, x, y, z, rotY, glowHex) {
-  const group = new THREE.Group();
-
-  // Stone body
-  const bodyGeo = new THREE.BoxGeometry(w, h, d);
-  const bodyMat = new THREE.MeshBasicMaterial({ color: 0x050208, transparent: true, opacity: 0.92 });
-  group.add(new THREE.Mesh(bodyGeo, bodyMat));
-
-  // Primary edge glow
-  const eg = new THREE.EdgesGeometry(bodyGeo);
-  group.add(new THREE.LineSegments(eg, edgeMat(glowHex, 0.75)));
-
-  // Carved horizontal bands
-  const bandHeights = [-h * 0.3, 0, h * 0.3, h * 0.45];
-  for (const bh of bandHeights) {
-    const bGeo  = new THREE.BoxGeometry(w + 0.15, 0.07, d + 0.15);
-    const bEdge = new THREE.EdgesGeometry(bGeo);
-    const band  = new THREE.LineSegments(bEdge, edgeMat(glowHex, 0.35));
-    band.position.y = bh;
-    group.add(band);
-  }
-
-  // Capstone — flattened pyramid-ish via scaled box
-  const capGeo  = new THREE.BoxGeometry(w * 0.7, h * 0.06, d * 0.7);
-  const capEdge = new THREE.EdgesGeometry(capGeo);
-  const cap     = new THREE.LineSegments(capEdge, edgeMat(glowHex, 0.9));
-  cap.position.y = h * 0.5 + 0.04;
-  group.add(cap);
-
-  // Faint inner cross-lines (rune-like)
-  for (let s = -1; s <= 1; s += 2) {
-    const rGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-w * 0.35, s * h * 0.15, d * 0.51),
-      new THREE.Vector3( w * 0.35, s * h * 0.15, d * 0.51),
-    ]);
-    group.add(new THREE.Line(rGeo, edgeMat(glowHex, 0.18)));
-  }
-
-  group.position.set(x, y, z);
-  group.rotation.y = rotY;
-  return group;
-}
-
-// Left monolith — tallest, deep orange
-const m1 = buildMonolith(2.2, 30, 1.6, -16, -6, -20, 0.18, 0xff5500);
-// Centre monolith — widest, gold-white
-const m2 = buildMonolith(3.0, 38, 2.2,   0, -8, -30, 0.00, 0xffcc44);
-// Right monolith — medium, amber
-const m3 = buildMonolith(1.8, 24, 1.4,  15, -5, -18, -0.2, 0xff8800);
-scene.add(m1, m2, m3);
-
-// ── Subatomic Orbital Shells ──────────────────────────────────────────────────
-// Multiple electron-shell rings at different inclinations, packed with
-// orbiting point-particles. Inner shells run faster.
-
-const orbitGroups = [];
-
-function buildOrbital({ radius, count, incX, incZ, color, speed, pSize, ringOpacity }) {
-  // Orbit guide ring
-  const ringPts = [];
-  for (let i = 0; i <= 160; i++) {
-    const a = (i / 160) * Math.PI * 2;
-    ringPts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
-  }
-  const ringLine = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints(ringPts),
-    new THREE.LineBasicMaterial({ color, transparent: true, opacity: ringOpacity })
-  );
-
-  // Particles on the orbit
-  const pos    = new Float32Array(count * 3);
-  const phases = Array.from({ length: count }, (_, i) => (i / count) * Math.PI * 2);
-  const pGeo   = new THREE.BufferGeometry();
-  pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const points = new THREE.Points(pGeo, new THREE.PointsMaterial({
-    color, size: pSize, transparent: true, opacity: 0.92, sizeAttenuation: true,
-  }));
-
-  const group = new THREE.Group();
-  group.add(ringLine, points);
-  group.rotation.x = incX;
-  group.rotation.z = incZ;
-  scene.add(group);
-
-  orbitGroups.push({ pGeo, pos, phases, radius, speed, count });
-}
-
-// Five shells — varied planes, colours, radii
-buildOrbital({ radius: 6,  count: 16, incX: 0.25,  incZ: 0.0,  color: 0x00f5ff, speed: 1.1,  pSize: 0.28, ringOpacity: 0.10 });
-buildOrbital({ radius: 9,  count: 22, incX: 1.05,  incZ: 0.5,  color: 0xffcc00, speed: 0.7,  pSize: 0.22, ringOpacity: 0.08 });
-buildOrbital({ radius: 12, count: 28, incX: 1.8,   incZ: 1.1,  color: 0xff6600, speed: 0.48, pSize: 0.19, ringOpacity: 0.07 });
-buildOrbital({ radius: 15, count: 18, incX: 2.5,   incZ: 0.8,  color: 0xee88ff, speed: 0.32, pSize: 0.23, ringOpacity: 0.06 });
-buildOrbital({ radius: 4,  count: 10, incX: 1.57,  incZ: 1.57, color: 0xffffff, speed: 1.8,  pSize: 0.32, ringOpacity: 0.12 });
-
-// Orbital nucleus — faint pulsing sphere at centre
-const nucleusGeo  = new THREE.SphereGeometry(0.5, 12, 8);
-const nucleusMat  = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12 });
-const nucleus     = new THREE.Mesh(nucleusGeo, nucleusMat);
-const nucleusEdge = new THREE.LineSegments(
-  new THREE.EdgesGeometry(nucleusGeo),
-  edgeMat(0x88ddff, 0.3)
+// Earthwork embankment ring (subtle raised ring)
+const bank = new THREE.Mesh(
+  new THREE.RingGeometry(20, 23.5, 72),
+  new THREE.MeshPhongMaterial({ color: 0x0d1508, side: THREE.DoubleSide })
 );
-scene.add(nucleus, nucleusEdge);
+bank.rotation.x = -Math.PI / 2;
+bank.position.y = 0.02;
+scene.add(bank);
 
-// ── Ambient Ember Particles ───────────────────────────────────────────────────
-const EMBER_COUNT = 500;
-const ePos    = new Float32Array(EMBER_COUNT * 3);
-const eCol    = new Float32Array(EMBER_COUNT * 3);
-const eSpeeds = new Float32Array(EMBER_COUNT);
+// ── Stone factory ────────────────────────────────────────────────────────────
+function addStone(w, h, d, x, y, z, ry = 0, rx = 0, rz = 0) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), stoneMat);
+  m.position.set(x, y, z);
+  m.rotation.set(rx, ry, rz);
+  scene.add(m);
+  return m;
+}
 
-for (let i = 0; i < EMBER_COUNT; i++) {
-  ePos[i * 3]     = (Math.random() - 0.5) * 140;
-  ePos[i * 3 + 1] = (Math.random() - 0.5) * 90;
-  ePos[i * 3 + 2] = (Math.random() - 0.5) * 70;
-  const t = Math.random();
-  eCol[i * 3]     = 0.75 + t * 0.25;
-  eCol[i * 3 + 1] = 0.15 + t * 0.45;
-  eCol[i * 3 + 2] = 0.0;
-  eSpeeds[i] = 0.2 + Math.random() * 0.7;
+// ── Outer Sarsen Circle ──────────────────────────────────────────────────────
+// 30 evenly-spaced slots, radius 15. Uprights 2.1 × 4.5 × 1.0.
+// Lintels connect adjacent standing pairs.
+const SARSEN_R = 15, N_SLOTS = 30;
+const UP_W = 2.1, UP_H = 4.5, UP_D = 1.0;
+const LIN_H = 1.0, LIN_D = 1.0;
+
+// Standing slots (loosely based on surviving + plausible reconstruction)
+const standing = new Set([0,1, 3,4, 5,6, 7,8, 10,11, 14,15, 16,17, 22,23, 24,25, 27,28, 29]);
+
+for (const i of standing) {
+  const a    = (i / N_SLOTS) * Math.PI * 2;
+  const tilt = (Math.sin(i * 7.3) - 0.5) * 0.07; // deterministic lean
+  addStone(UP_W, UP_H, UP_D,
+    Math.cos(a) * SARSEN_R,  UP_H / 2,  Math.sin(a) * SARSEN_R,
+    a + Math.PI / 2,  0,  tilt
+  );
+}
+
+// Lintels for intact pairs
+for (const [i, j] of [[0,1],[3,4],[5,6],[7,8],[14,15],[16,17],[22,23],[27,28]]) {
+  if (!standing.has(i) || !standing.has(j)) continue;
+  const a1 = (i / N_SLOTS) * Math.PI * 2;
+  const a2 = (j / N_SLOTS) * Math.PI * 2;
+  const mid = (a1 + a2) / 2;
+  const x1 = Math.cos(a1) * SARSEN_R, z1 = Math.sin(a1) * SARSEN_R;
+  const x2 = Math.cos(a2) * SARSEN_R, z2 = Math.sin(a2) * SARSEN_R;
+  const chord = Math.sqrt((x2 - x1) ** 2 + (z2 - z1) ** 2) + 0.3;
+  addStone(chord, LIN_H, LIN_D,
+    Math.cos(mid) * SARSEN_R,  UP_H + LIN_H / 2,  Math.sin(mid) * SARSEN_R,
+    mid + Math.PI / 2
+  );
+}
+
+// ── Inner Bluestone Circle ────────────────────────────────────────────────────
+// ~60 original stones, radius 10, only ~40% still standing
+const BLUE_R = 10, BLUE_N = 22;
+for (let i = 0; i < BLUE_N; i++) {
+  if ((i * 3 + 1) % 5 === 0) continue; // deterministic gaps
+  const a    = (i / BLUE_N) * Math.PI * 2;
+  const tilt = (Math.sin(i * 4.1) - 0.5) * 0.12;
+  addStone(0.95, 2.4, 0.65,
+    Math.cos(a) * BLUE_R,  1.2,  Math.sin(a) * BLUE_R,
+    a + Math.PI / 2,  0,  tilt
+  );
+}
+
+// ── Inner Horseshoe Trilithons ────────────────────────────────────────────────
+// 5 trilithons in a horseshoe, opening northeast. Centre trilithon tallest.
+const triDefs = [
+  { deg: 210, h: 6.5 },
+  { deg: 240, h: 7.2 },
+  { deg: 270, h: 8.0 },  // Great Trilithon
+  { deg: 300, h: 7.2 },
+  { deg: 330, h: 6.5 },
+];
+const TRI_R = 7.5, TRI_SEP = 1.55, TRI_W = 1.8, TRI_D = 1.2;
+
+for (const { deg, h } of triDefs) {
+  const a    = (deg * Math.PI) / 180;
+  const perp = a + Math.PI / 2;
+  const cx   = Math.cos(a) * TRI_R;
+  const cz   = Math.sin(a) * TRI_R;
+
+  // Two uprights
+  for (const s of [-1, 1]) {
+    addStone(TRI_W, h, TRI_D,
+      cx + Math.cos(perp) * TRI_SEP * s,  h / 2,  cz + Math.sin(perp) * TRI_SEP * s,
+      a + Math.PI / 2
+    );
+  }
+  // Lintel
+  const linH = 1.3, linSpan = TRI_SEP * 2 + TRI_W + 0.25;
+  addStone(linSpan, linH, TRI_D,  cx,  h + linH / 2,  cz,  a + Math.PI / 2);
+}
+
+// ── Feature Stones ────────────────────────────────────────────────────────────
+// Altar stone (flat, centre)
+addStone(1.6, 0.42, 4.8,  0, 0.21, 0,  0.15);
+
+// Heel Stone (standing, northeast, slight lean)
+addStone(1.6, 5.0, 1.8,  24, 2.5, -2,  0.08, 0, -0.19);
+
+// Slaughter Stone (mostly horizontal, near entrance)
+addStone(4.8, 0.85, 1.1,  19.5, 0.42, 3.5,  0.5);
+
+// Station stones (four compass points just inside bank)
+for (const [sx, sz] of [[17.5,-8],[-17.5,8],[8,17.5],[-8,-17.5]]) {
+  addStone(1.4, 1.8, 1.0,  sx, 0.9, sz);
+}
+
+// ── Fallen Stones ─────────────────────────────────────────────────────────────
+for (const [x, z, ry] of [[-13, 5, 1.2],[5, 14, -0.4],[11, -9, 2.1],[-6, -13, 0.7]]) {
+  addStone(4.4, 0.88, 1.05,  x, 0.44, z,  ry);
+}
+
+// ── Stars ─────────────────────────────────────────────────────────────────────
+const STARS = 2800;
+const sPts  = new Float32Array(STARS * 3);
+for (let i = 0; i < STARS; i++) {
+  const th = Math.random() * Math.PI * 2;
+  const ph = Math.acos(1 - Math.random());
+  const r  = 130 + Math.random() * 70;
+  sPts[i*3]   = r * Math.sin(ph) * Math.cos(th);
+  sPts[i*3+1] = Math.abs(r * Math.cos(ph)) + 10;
+  sPts[i*3+2] = r * Math.sin(ph) * Math.sin(th);
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(sPts, 3));
+scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
+  color: 0xbbccee, size: 0.3, transparent: true, opacity: 0.8, sizeAttenuation: true,
+})));
+
+// ── Ritual Fire Embers ────────────────────────────────────────────────────────
+const EMBERS = 320;
+const ePos   = new Float32Array(EMBERS * 3);
+const eSpd   = new Float32Array(EMBERS);
+const eCol   = new Float32Array(EMBERS * 3);
+
+for (let i = 0; i < EMBERS; i++) {
+  const r = Math.random() * 2.2;
+  const a = Math.random() * Math.PI * 2;
+  ePos[i*3]   = Math.cos(a) * r;
+  ePos[i*3+1] = Math.random() * 10;
+  ePos[i*3+2] = Math.sin(a) * r;
+  eSpd[i]     = 0.35 + Math.random() * 0.9;
+  const t     = Math.random();
+  eCol[i*3]   = 1.0;  eCol[i*3+1] = 0.18 + t * 0.45;  eCol[i*3+2] = 0.0;
 }
 
 const eGeo = new THREE.BufferGeometry();
 eGeo.setAttribute('position', new THREE.BufferAttribute(ePos, 3));
 eGeo.setAttribute('color',    new THREE.BufferAttribute(eCol, 3));
-scene.add(new THREE.Points(eGeo, new THREE.PointsMaterial({
-  size: 0.32, vertexColors: true, transparent: true, opacity: 0.4, sizeAttenuation: true,
-})));
+const embers = new THREE.Points(eGeo, new THREE.PointsMaterial({
+  size: 0.2, vertexColors: true, transparent: true, opacity: 0.85, sizeAttenuation: true,
+}));
+scene.add(embers);
 
-// ── Input ─────────────────────────────────────────────────────────────────────
-let mouseX = 0, mouseY = 0;
-document.addEventListener('mousemove', e => {
-  mouseX = (e.clientX / innerWidth  - 0.5) * 2;
-  mouseY = (e.clientY / innerHeight - 0.5) * 2;
-});
+// ── Lighting ──────────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0x1a2035, 3.5));
+
+const moon = new THREE.DirectionalLight(0x7799bb, 2.8);
+moon.position.set(-45, 65, -35);
+scene.add(moon);
+
+const fire = new THREE.PointLight(0xff6610, 5.5, 30);
+fire.position.set(0, 1.5, 0);
+scene.add(fire);
+
+const rim = new THREE.DirectionalLight(0x223366, 0.9);
+rim.position.set(35, 25, 40);
+scene.add(rim);
 
 // ── Animate ───────────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
@@ -482,44 +517,33 @@ function animate() {
   requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
 
-  // Monoliths — very slow sway
-  m1.rotation.y = 0.18  + Math.sin(t * 0.13) * 0.03;
-  m2.rotation.y =          Math.sin(t * 0.09) * 0.02;
-  m3.rotation.y = -0.2  + Math.sin(t * 0.11) * 0.03;
+  // Camera spirals around Stonehenge: orbit + gentle radius & height oscillation
+  const orbitAngle = t * 0.095;
+  const radius     = 42 + Math.sin(t * 0.06) * 9;
+  const height     = 15 + Math.sin(t * 0.11) * 7;
 
-  // Monolith edge pulse via fog/opacity isn't easy; subtle Y bob instead
-  m1.position.y = -6 + Math.sin(t * 0.17) * 0.15;
-  m2.position.y = -8 + Math.sin(t * 0.11) * 0.18;
-  m3.position.y = -5 + Math.sin(t * 0.19) * 0.12;
+  camera.position.set(
+    Math.cos(orbitAngle) * radius,
+    height,
+    Math.sin(orbitAngle) * radius
+  );
+  camera.lookAt(0, 3.5, 0);
 
-  // Nucleus pulse
-  const pulse = 0.08 + Math.sin(t * 2.2) * 0.06;
-  nucleusMat.opacity = pulse;
-  nucleusEdge.material.opacity = pulse * 3;
+  // Flickering fire
+  fire.intensity  = 5.0 + Math.sin(t * 6.8) * 0.8 + Math.sin(t * 14.1) * 0.4;
+  fire.color.setHSL(0.07 + Math.sin(t * 2.9) * 0.015, 1.0, 0.55);
 
-  // Orbital particle positions
-  for (const orb of orbitGroups) {
-    for (let i = 0; i < orb.count; i++) {
-      orb.phases[i] += orb.speed * 0.012;
-      const a = orb.phases[i];
-      orb.pos[i * 3]     = Math.cos(a) * orb.radius;
-      orb.pos[i * 3 + 1] = 0;
-      orb.pos[i * 3 + 2] = Math.sin(a) * orb.radius;
+  // Rising embers
+  for (let i = 0; i < EMBERS; i++) {
+    ePos[i*3+1] += eSpd[i] * 0.013;
+    ePos[i*3]   += (Math.sin(t * 0.7 + i) - 0.5) * 0.005;
+    ePos[i*3+2] += (Math.cos(t * 0.9 + i) - 0.5) * 0.005;
+    if (ePos[i*3+1] > 13) {
+      const r = Math.random() * 1.8, a = Math.random() * Math.PI * 2;
+      ePos[i*3] = Math.cos(a) * r;  ePos[i*3+1] = 0;  ePos[i*3+2] = Math.sin(a) * r;
     }
-    orb.pGeo.attributes.position.needsUpdate = true;
-  }
-
-  // Ember drift upward
-  for (let i = 0; i < EMBER_COUNT; i++) {
-    ePos[i * 3 + 1] += eSpeeds[i] * 0.007;
-    if (ePos[i * 3 + 1] > 45) ePos[i * 3 + 1] = -45;
   }
   eGeo.attributes.position.needsUpdate = true;
-
-  // Mouse parallax
-  camera.position.x += (mouseX * 3   - camera.position.x) * 0.018;
-  camera.position.y += (-mouseY * 2  - camera.position.y + 2) * 0.018;
-  camera.lookAt(0, 0, 0);
 
   renderer.render(scene, camera);
 }
