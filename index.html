@@ -320,83 +320,206 @@
 <script type="module">
 import * as THREE from 'three';
 
-const canvas  = document.getElementById('bg-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+const canvas   = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 
 const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 200);
-camera.position.z = 30;
+scene.fog    = new THREE.FogExp2(0x000000, 0.018);
 
-// Particle field — floating embers / stars
-const COUNT = 800;
-const geo   = new THREE.BufferGeometry();
-const positions = new Float32Array(COUNT * 3);
-const colors    = new Float32Array(COUNT * 3);
-const speeds    = new Float32Array(COUNT);
+const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 300);
+camera.position.set(0, 2, 38);
 
-for (let i = 0; i < COUNT; i++) {
-  positions[i * 3]     = (Math.random() - 0.5) * 120;
-  positions[i * 3 + 1] = (Math.random() - 0.5) * 80;
-  positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-  // Orange-to-gold ember colours
-  const t = Math.random();
-  colors[i * 3]     = 0.8 + t * 0.2;
-  colors[i * 3 + 1] = 0.2 + t * 0.55;
-  colors[i * 3 + 2] = 0.0 + t * 0.05;
-
-  speeds[i] = 0.3 + Math.random() * 0.9;
+function edgeMat(hex, opacity) {
+  return new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity });
 }
 
-geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-geo.setAttribute('color',    new THREE.BufferAttribute(colors,    3));
+// ── Ancient Relic Monoliths ───────────────────────────────────────────────────
+// Each monolith: dark stone body + glowing wireframe edges + carved band rings
 
-const mat = new THREE.PointsMaterial({
-  size: 0.4, vertexColors: true,
-  transparent: true, opacity: 0.55,
-  sizeAttenuation: true,
-});
-const particles = new THREE.Points(geo, mat);
-scene.add(particles);
+function buildMonolith(w, h, d, x, y, z, rotY, glowHex) {
+  const group = new THREE.Group();
 
-// Subtle rotating dragon-scale mesh in background
-const ringGeo = new THREE.TorusGeometry(14, 0.12, 6, 80);
-const ringMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.06 });
-const ring1   = new THREE.Mesh(ringGeo, ringMat);
-const ring2   = new THREE.Mesh(new THREE.TorusGeometry(20, 0.08, 6, 80), new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.04 }));
-scene.add(ring1, ring2);
+  // Stone body
+  const bodyGeo = new THREE.BoxGeometry(w, h, d);
+  const bodyMat = new THREE.MeshBasicMaterial({ color: 0x050208, transparent: true, opacity: 0.92 });
+  group.add(new THREE.Mesh(bodyGeo, bodyMat));
 
+  // Primary edge glow
+  const eg = new THREE.EdgesGeometry(bodyGeo);
+  group.add(new THREE.LineSegments(eg, edgeMat(glowHex, 0.75)));
+
+  // Carved horizontal bands
+  const bandHeights = [-h * 0.3, 0, h * 0.3, h * 0.45];
+  for (const bh of bandHeights) {
+    const bGeo  = new THREE.BoxGeometry(w + 0.15, 0.07, d + 0.15);
+    const bEdge = new THREE.EdgesGeometry(bGeo);
+    const band  = new THREE.LineSegments(bEdge, edgeMat(glowHex, 0.35));
+    band.position.y = bh;
+    group.add(band);
+  }
+
+  // Capstone — flattened pyramid-ish via scaled box
+  const capGeo  = new THREE.BoxGeometry(w * 0.7, h * 0.06, d * 0.7);
+  const capEdge = new THREE.EdgesGeometry(capGeo);
+  const cap     = new THREE.LineSegments(capEdge, edgeMat(glowHex, 0.9));
+  cap.position.y = h * 0.5 + 0.04;
+  group.add(cap);
+
+  // Faint inner cross-lines (rune-like)
+  for (let s = -1; s <= 1; s += 2) {
+    const rGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-w * 0.35, s * h * 0.15, d * 0.51),
+      new THREE.Vector3( w * 0.35, s * h * 0.15, d * 0.51),
+    ]);
+    group.add(new THREE.Line(rGeo, edgeMat(glowHex, 0.18)));
+  }
+
+  group.position.set(x, y, z);
+  group.rotation.y = rotY;
+  return group;
+}
+
+// Left monolith — tallest, deep orange
+const m1 = buildMonolith(2.2, 30, 1.6, -16, -6, -20, 0.18, 0xff5500);
+// Centre monolith — widest, gold-white
+const m2 = buildMonolith(3.0, 38, 2.2,   0, -8, -30, 0.00, 0xffcc44);
+// Right monolith — medium, amber
+const m3 = buildMonolith(1.8, 24, 1.4,  15, -5, -18, -0.2, 0xff8800);
+scene.add(m1, m2, m3);
+
+// ── Subatomic Orbital Shells ──────────────────────────────────────────────────
+// Multiple electron-shell rings at different inclinations, packed with
+// orbiting point-particles. Inner shells run faster.
+
+const orbitGroups = [];
+
+function buildOrbital({ radius, count, incX, incZ, color, speed, pSize, ringOpacity }) {
+  // Orbit guide ring
+  const ringPts = [];
+  for (let i = 0; i <= 160; i++) {
+    const a = (i / 160) * Math.PI * 2;
+    ringPts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
+  }
+  const ringLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(ringPts),
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity: ringOpacity })
+  );
+
+  // Particles on the orbit
+  const pos    = new Float32Array(count * 3);
+  const phases = Array.from({ length: count }, (_, i) => (i / count) * Math.PI * 2);
+  const pGeo   = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const points = new THREE.Points(pGeo, new THREE.PointsMaterial({
+    color, size: pSize, transparent: true, opacity: 0.92, sizeAttenuation: true,
+  }));
+
+  const group = new THREE.Group();
+  group.add(ringLine, points);
+  group.rotation.x = incX;
+  group.rotation.z = incZ;
+  scene.add(group);
+
+  orbitGroups.push({ pGeo, pos, phases, radius, speed, count });
+}
+
+// Five shells — varied planes, colours, radii
+buildOrbital({ radius: 6,  count: 16, incX: 0.25,  incZ: 0.0,  color: 0x00f5ff, speed: 1.1,  pSize: 0.28, ringOpacity: 0.10 });
+buildOrbital({ radius: 9,  count: 22, incX: 1.05,  incZ: 0.5,  color: 0xffcc00, speed: 0.7,  pSize: 0.22, ringOpacity: 0.08 });
+buildOrbital({ radius: 12, count: 28, incX: 1.8,   incZ: 1.1,  color: 0xff6600, speed: 0.48, pSize: 0.19, ringOpacity: 0.07 });
+buildOrbital({ radius: 15, count: 18, incX: 2.5,   incZ: 0.8,  color: 0xee88ff, speed: 0.32, pSize: 0.23, ringOpacity: 0.06 });
+buildOrbital({ radius: 4,  count: 10, incX: 1.57,  incZ: 1.57, color: 0xffffff, speed: 1.8,  pSize: 0.32, ringOpacity: 0.12 });
+
+// Orbital nucleus — faint pulsing sphere at centre
+const nucleusGeo  = new THREE.SphereGeometry(0.5, 12, 8);
+const nucleusMat  = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12 });
+const nucleus     = new THREE.Mesh(nucleusGeo, nucleusMat);
+const nucleusEdge = new THREE.LineSegments(
+  new THREE.EdgesGeometry(nucleusGeo),
+  edgeMat(0x88ddff, 0.3)
+);
+scene.add(nucleus, nucleusEdge);
+
+// ── Ambient Ember Particles ───────────────────────────────────────────────────
+const EMBER_COUNT = 500;
+const ePos    = new Float32Array(EMBER_COUNT * 3);
+const eCol    = new Float32Array(EMBER_COUNT * 3);
+const eSpeeds = new Float32Array(EMBER_COUNT);
+
+for (let i = 0; i < EMBER_COUNT; i++) {
+  ePos[i * 3]     = (Math.random() - 0.5) * 140;
+  ePos[i * 3 + 1] = (Math.random() - 0.5) * 90;
+  ePos[i * 3 + 2] = (Math.random() - 0.5) * 70;
+  const t = Math.random();
+  eCol[i * 3]     = 0.75 + t * 0.25;
+  eCol[i * 3 + 1] = 0.15 + t * 0.45;
+  eCol[i * 3 + 2] = 0.0;
+  eSpeeds[i] = 0.2 + Math.random() * 0.7;
+}
+
+const eGeo = new THREE.BufferGeometry();
+eGeo.setAttribute('position', new THREE.BufferAttribute(ePos, 3));
+eGeo.setAttribute('color',    new THREE.BufferAttribute(eCol, 3));
+scene.add(new THREE.Points(eGeo, new THREE.PointsMaterial({
+  size: 0.32, vertexColors: true, transparent: true, opacity: 0.4, sizeAttenuation: true,
+})));
+
+// ── Input ─────────────────────────────────────────────────────────────────────
 let mouseX = 0, mouseY = 0;
 document.addEventListener('mousemove', e => {
   mouseX = (e.clientX / innerWidth  - 0.5) * 2;
   mouseY = (e.clientY / innerHeight - 0.5) * 2;
 });
 
+// ── Animate ───────────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
 
-  // Drift particles upward slowly
-  for (let i = 0; i < COUNT; i++) {
-    positions[i * 3 + 1] += speeds[i] * 0.008;
-    if (positions[i * 3 + 1] > 40) positions[i * 3 + 1] = -40;
+  // Monoliths — very slow sway
+  m1.rotation.y = 0.18  + Math.sin(t * 0.13) * 0.03;
+  m2.rotation.y =          Math.sin(t * 0.09) * 0.02;
+  m3.rotation.y = -0.2  + Math.sin(t * 0.11) * 0.03;
+
+  // Monolith edge pulse via fog/opacity isn't easy; subtle Y bob instead
+  m1.position.y = -6 + Math.sin(t * 0.17) * 0.15;
+  m2.position.y = -8 + Math.sin(t * 0.11) * 0.18;
+  m3.position.y = -5 + Math.sin(t * 0.19) * 0.12;
+
+  // Nucleus pulse
+  const pulse = 0.08 + Math.sin(t * 2.2) * 0.06;
+  nucleusMat.opacity = pulse;
+  nucleusEdge.material.opacity = pulse * 3;
+
+  // Orbital particle positions
+  for (const orb of orbitGroups) {
+    for (let i = 0; i < orb.count; i++) {
+      orb.phases[i] += orb.speed * 0.012;
+      const a = orb.phases[i];
+      orb.pos[i * 3]     = Math.cos(a) * orb.radius;
+      orb.pos[i * 3 + 1] = 0;
+      orb.pos[i * 3 + 2] = Math.sin(a) * orb.radius;
+    }
+    orb.pGeo.attributes.position.needsUpdate = true;
   }
-  geo.attributes.position.needsUpdate = true;
 
-  // Rotate rings
-  ring1.rotation.x = t * 0.08;
-  ring1.rotation.y = t * 0.05;
-  ring2.rotation.x = -t * 0.04;
-  ring2.rotation.z = t * 0.03;
+  // Ember drift upward
+  for (let i = 0; i < EMBER_COUNT; i++) {
+    ePos[i * 3 + 1] += eSpeeds[i] * 0.007;
+    if (ePos[i * 3 + 1] > 45) ePos[i * 3 + 1] = -45;
+  }
+  eGeo.attributes.position.needsUpdate = true;
 
-  // Subtle camera parallax
-  camera.position.x += (mouseX * 2  - camera.position.x) * 0.02;
-  camera.position.y += (-mouseY * 1.5 - camera.position.y) * 0.02;
-  camera.lookAt(scene.position);
+  // Mouse parallax
+  camera.position.x += (mouseX * 3   - camera.position.x) * 0.018;
+  camera.position.y += (-mouseY * 2  - camera.position.y + 2) * 0.018;
+  camera.lookAt(0, 0, 0);
 
   renderer.render(scene, camera);
 }
