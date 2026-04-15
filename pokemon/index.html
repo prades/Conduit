@@ -3342,10 +3342,22 @@
     document.body.style.overflow = '';
   }
 
-  /* ── v3: Real Data Source Modules ── */
+  /* ── Real Data Source Modules ── */
 
-  // 5-minute in-memory cache for Reddit results (avoids hammering the API)
+  // 5-minute in-memory cache for Reddit results
   const RedditCache = new Map();
+
+  // Fetch a Reddit .json endpoint and return the post list, or [] on failure
+  async function redditJson(url) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const json = await res.json();
+      // Listing response: { data: { children: [...] } }
+      // Search response has the same shape
+      return (json.data?.children || []).map(c => c.data);
+    } catch { return []; }
+  }
 
   async function fetchRedditSignal(pokemonName) {
     const key    = pokemonName.toLowerCase();
@@ -3353,27 +3365,45 @@
     if (cached && Date.now() - cached.ts < 5 * 60 * 1000) return cached.data;
 
     try {
-      const q    = encodeURIComponent(`"${pokemonName}" pokemon card`);
+      const q    = encodeURIComponent(`${pokemonName} pokemon card`);
       const subs = 'pokemontcg+pokemon+PokemonTCG+pokemoncardcollectors';
-      const url  = `https://www.reddit.com/r/${subs}/search.json?q=${q}&sort=new&t=week&limit=100&type=link&restrict_sr=false`;
-      const res  = await fetch(url, { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error(`Reddit ${res.status}`);
-      const json  = await res.json();
-      const posts = (json.data?.children || []).map(c => c.data);
 
-      const now   = Date.now() / 1000;
-      const DAY   = 86400;
-      const p7d   = posts.filter(p => now - p.created_utc < 7 * DAY);
-      const p3d   = posts.filter(p => now - p.created_utc < 3 * DAY);
-      const p1d   = posts.filter(p => now - p.created_utc < DAY);
+      // Hit three .json endpoints in parallel:
+      // 1. Cross-subreddit search for the Pokémon name (past week, newest first)
+      // 2. r/pokemontcg hot posts this week (catches viral posts not in search)
+      // 3. r/pokemon top posts this week (broader audience signal)
+      const [searchPosts, hotPosts, topPosts] = await Promise.all([
+        redditJson(`https://www.reddit.com/r/${subs}/search.json?q=${q}&sort=new&t=week&limit=100&restrict_sr=false`),
+        redditJson(`https://www.reddit.com/r/pokemontcg/hot.json?limit=50`),
+        redditJson(`https://www.reddit.com/r/pokemon/top.json?t=week&limit=50`)
+      ]);
 
-      const eng7d  = p7d.reduce((s, p) => s + (p.score || 0) + (p.num_comments || 0), 0);
-      const eng3d  = p3d.reduce((s, p) => s + (p.score || 0) + (p.num_comments || 0), 0);
+      // Merge and deduplicate by post id; filter hot/top to posts mentioning the name
+      const nameRe = new RegExp(pokemonName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const seen   = new Set();
+      const allPosts = [];
+      for (const p of searchPosts) {
+        if (!seen.has(p.id)) { seen.add(p.id); allPosts.push(p); }
+      }
+      for (const p of [...hotPosts, ...topPosts]) {
+        if (!seen.has(p.id) && nameRe.test(p.title + ' ' + (p.selftext || ''))) {
+          seen.add(p.id); allPosts.push(p);
+        }
+      }
 
-      const freqScore   = Math.min(40, p7d.length * 5);
-      const engScore    = Math.min(40, Math.round(Math.log2(Math.max(1, eng7d)) * 4));
-      const recencyBonus= p3d.length >= Math.max(1, p7d.length) * 0.5 ? 20 : 0;
-      const score       = Math.min(100, freqScore + engScore + recencyBonus);
+      const now  = Date.now() / 1000;
+      const DAY  = 86400;
+      const p7d  = allPosts.filter(p => now - p.created_utc < 7 * DAY);
+      const p3d  = allPosts.filter(p => now - p.created_utc < 3 * DAY);
+      const p1d  = allPosts.filter(p => now - p.created_utc < DAY);
+
+      const eng7d = p7d.reduce((s, p) => s + (p.score || 0) + (p.num_comments || 0), 0);
+      const eng3d = p3d.reduce((s, p) => s + (p.score || 0) + (p.num_comments || 0), 0);
+
+      const freqScore    = Math.min(40, p7d.length * 5);
+      const engScore     = Math.min(40, Math.round(Math.log2(Math.max(1, eng7d)) * 4));
+      const recencyBonus = p3d.length >= Math.max(1, p7d.length) * 0.5 ? 20 : 0;
+      const score        = Math.min(100, freqScore + engScore + recencyBonus);
 
       const dailyAvg  = eng7d / 7;
       const recentDay = eng3d / 3;
@@ -3381,15 +3411,18 @@
         ? (recentDay - dailyAvg) / Math.max(1, dailyAvg * 0.5)
         : 0;
 
+      // Sort top posts by score for the preview panel
+      const sortedTop = [...p7d].sort((a, b) => (b.score || 0) - (a.score || 0));
+
       const result = {
-        success: true,
+        success:     true,
         postCount7d: p7d.length,
-        totalEng7d: eng7d,
-        totalEng3d: eng3d,
+        totalEng7d:  eng7d,
+        totalEng3d:  eng3d,
         score,
-        zScore: Math.min(4, Math.max(-4, zScore)),
-        hypeSpike: zScore > 2.0 || p1d.length >= 3,
-        topPosts: p7d.slice(0, 3).map(p => ({
+        zScore:      Math.min(4, Math.max(-4, zScore)),
+        hypeSpike:   zScore > 2.0 || p1d.length >= 3,
+        topPosts:    sortedTop.slice(0, 3).map(p => ({
           title:     p.title.slice(0, 110),
           score:     p.score || 0,
           comments:  p.num_comments || 0,
@@ -4179,7 +4212,7 @@
       </div>
 
       <div class="dl-model-notes">
-        // MODEL v3: Real-data sources — Reddit (r/pokemontcg, CORS-accessible JSON, 5-min cache), YouTube Data API v3 (optional free key), TCGPlayer live prices via Pokemon TCG API, localStorage price snapshots (real backtest when ≥7 pts). Scarcity: real set printedTotal + rarity + era survival multiplier. HW smoothing α=0.30 β=0.10. Ensemble: Momentum (7d ROC), Acceleration (Δmom), Social (Reddit z-score / YouTube blend), Scarcity (print-run log-weighted), Volatility (14d rolling σ/μ). Context-aware dynamic weights. √t confidence bands. Research only — not financial advice.
+        // MODEL v4: Real-data sources — Reddit (direct .json endpoints, no auth required: cross-subreddit search + r/pokemontcg hot + r/pokemon top, merged & deduplicated), YouTube Data API v3 (optional free key), TCGPlayer live prices via Pokemon TCG API, localStorage price snapshots (real backtest when ≥7 pts). Scarcity: real set printedTotal + rarity + era survival multiplier. HW smoothing α=0.30 β=0.10. Ensemble: Momentum (7d ROC), Acceleration (Δmom), Social (Reddit z-score / YouTube blend), Scarcity (print-run log-weighted), Volatility (14d rolling σ/μ). Context-aware dynamic weights. √t confidence bands. Research only — not financial advice.
       </div>
 
       ${ytSettingsHTML}
