@@ -1631,9 +1631,24 @@
       border: 1px solid rgba(0,245,255,0.1);
     }
 
-    /* ── v3: Reddit Live Posts Panel ── */
-    .dl-reddit-posts {
+    /* ── Reddit / Fan Live Posts Panel ── */
+    .dl-reddit-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
       margin-top: 10px;
+    }
+    @media (max-width: 600px) { .dl-reddit-cols { grid-template-columns: 1fr; } }
+    .dl-reddit-col-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .dl-reddit-col-label.tcg  { color: rgba(255,69,0,0.85); }
+    .dl-reddit-col-label.fan  { color: rgba(0,255,136,0.85); }
+    .dl-reddit-posts {
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -1643,9 +1658,16 @@
       gap: 10px;
       align-items: flex-start;
       padding: 8px 10px;
+    }
+    .dl-reddit-post.tcg {
       background: rgba(255,69,0,0.04);
       border: 1px solid rgba(255,69,0,0.12);
       border-left: 2px solid rgba(255,69,0,0.4);
+    }
+    .dl-reddit-post.fan {
+      background: rgba(0,255,136,0.03);
+      border: 1px solid rgba(0,255,136,0.10);
+      border-left: 2px solid rgba(0,255,136,0.35);
     }
     .dl-reddit-score {
       font-size: 0.75rem;
@@ -1669,11 +1691,27 @@
     }
     .dl-reddit-link {
       font-size: 0.56rem;
-      color: rgba(255,69,0,0.7);
       text-decoration: none;
       margin-left: 6px;
     }
-    .dl-reddit-link:hover { color: #ff4500; text-decoration: underline; }
+    .dl-reddit-link.tcg { color: rgba(255,69,0,0.7); }
+    .dl-reddit-link.tcg:hover { color: #ff4500; text-decoration: underline; }
+    .dl-reddit-link.fan { color: rgba(0,255,136,0.7); }
+    .dl-reddit-link.fan:hover { color: var(--green); text-decoration: underline; }
+    .dl-fan-score-bar {
+      display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap;
+    }
+    .dl-fan-score-item {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .dl-fan-score-val {
+      font-size: 1.1rem; font-weight: 700;
+    }
+    .dl-fan-score-val.tcg { color: #ff6633; }
+    .dl-fan-score-val.fan { color: var(--green); }
+    .dl-fan-score-lbl {
+      font-size: 0.5rem; letter-spacing: 0.12em; color: var(--dim); text-transform: uppercase;
+    }
 
     /* ── v3: YouTube Videos Panel ── */
     .dl-yt-posts {
@@ -2472,7 +2510,7 @@
 
       // Update source label
       const sourceEl = twitterSparkline.parentElement?.querySelector?.('.twitter-mentions-source');
-      if (sourceEl) sourceEl.textContent = `Reddit live · ${r.postCount7d} posts this week · ${r.totalEng7d.toLocaleString()} engagement`;
+      if (sourceEl) sourceEl.textContent = `Reddit live · TCG ${r.tcg?.postCount ?? 0} posts · Fan ${r.fan?.postCount ?? 0} posts · ${r.totalEng7d.toLocaleString()} engagement`;
     }).catch(() => {});
   }
 
@@ -3364,77 +3402,87 @@
     const cached = RedditCache.get(key);
     if (cached && Date.now() - cached.ts < 5 * 60 * 1000) return cached.data;
 
-    try {
-      const q    = encodeURIComponent(`${pokemonName} pokemon card`);
-      const subs = 'pokemontcg+pokemon+PokemonTCG+pokemoncardcollectors';
+    const nameRe = new RegExp(pokemonName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const qCard  = encodeURIComponent(`${pokemonName} pokemon card`);
+    const qFan   = encodeURIComponent(pokemonName);
 
-      // Hit three .json endpoints in parallel:
-      // 1. Cross-subreddit search for the Pokémon name (past week, newest first)
-      // 2. r/pokemontcg hot posts this week (catches viral posts not in search)
-      // 3. r/pokemon top posts this week (broader audience signal)
-      const [searchPosts, hotPosts, topPosts] = await Promise.all([
-        redditJson(`https://www.reddit.com/r/${subs}/search.json?q=${q}&sort=new&t=week&limit=100&restrict_sr=false`),
+    try {
+      // Six parallel .json fetches — TCG signal and Fan Love signal separately
+      const [tcgSearch, fanSearch, tcgHot, fanHot, shinyTop, goTop] = await Promise.all([
+        redditJson(`https://www.reddit.com/r/pokemontcg+PokemonTCG+pokemoncardcollectors/search.json?q=${qCard}&sort=new&t=week&limit=100&restrict_sr=false`),
+        redditJson(`https://www.reddit.com/r/pokemon+pokememes+shinypokemon+pokemongo+nuzlocke/search.json?q=${qFan}&sort=new&t=week&limit=100&restrict_sr=false`),
         redditJson(`https://www.reddit.com/r/pokemontcg/hot.json?limit=50`),
-        redditJson(`https://www.reddit.com/r/pokemon/top.json?t=week&limit=50`)
+        redditJson(`https://www.reddit.com/r/pokemon/hot.json?limit=50`),
+        redditJson(`https://www.reddit.com/r/shinypokemon/top.json?t=week&limit=25`),
+        redditJson(`https://www.reddit.com/r/pokemongo/top.json?t=week&limit=25`),
       ]);
 
-      // Merge and deduplicate by post id; filter hot/top to posts mentioning the name
-      const nameRe = new RegExp(pokemonName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      const seen   = new Set();
-      const allPosts = [];
-      for (const p of searchPosts) {
-        if (!seen.has(p.id)) { seen.add(p.id); allPosts.push(p); }
-      }
-      for (const p of [...hotPosts, ...topPosts]) {
-        if (!seen.has(p.id) && nameRe.test(p.title + ' ' + (p.selftext || ''))) {
-          seen.add(p.id); allPosts.push(p);
+      function buildPostSet(primary, ...extras) {
+        const seen = new Set();
+        const out  = [];
+        for (const p of primary) {
+          if (!seen.has(p.id)) { seen.add(p.id); out.push(p); }
         }
+        for (const p of extras.flat()) {
+          if (!seen.has(p.id) && nameRe.test(p.title + ' ' + (p.selftext || ''))) {
+            seen.add(p.id); out.push(p);
+          }
+        }
+        return out;
       }
 
-      const now  = Date.now() / 1000;
-      const DAY  = 86400;
-      const p7d  = allPosts.filter(p => now - p.created_utc < 7 * DAY);
-      const p3d  = allPosts.filter(p => now - p.created_utc < 3 * DAY);
-      const p1d  = allPosts.filter(p => now - p.created_utc < DAY);
+      function weekMetrics(posts) {
+        const now  = Date.now() / 1000;
+        const DAY  = 86400;
+        const p7d  = posts.filter(p => now - p.created_utc < 7 * DAY);
+        const p3d  = posts.filter(p => now - p.created_utc < 3 * DAY);
+        const p1d  = posts.filter(p => now - p.created_utc < DAY);
+        const eng7d = p7d.reduce((s, p) => s + (p.score || 0) + (p.num_comments || 0), 0);
+        const eng3d = p3d.reduce((s, p) => s + (p.score || 0) + (p.num_comments || 0), 0);
+        const freqScore = Math.min(40, p7d.length * 5);
+        const engScore  = Math.min(40, Math.round(Math.log2(Math.max(1, eng7d)) * 4));
+        const recBonus  = p3d.length >= Math.max(1, p7d.length) * 0.5 ? 20 : 0;
+        const score     = Math.min(100, freqScore + engScore + recBonus);
+        const dailyAvg  = eng7d / 7;
+        const recentDay = eng3d / 3;
+        const zScore    = dailyAvg > 0 ? (recentDay - dailyAvg) / Math.max(1, dailyAvg * 0.5) : 0;
+        const sorted    = [...p7d].sort((a, b) => (b.score || 0) - (a.score || 0));
+        return {
+          postCount: p7d.length, eng7d, eng3d, score,
+          zScore:    Math.min(4, Math.max(-4, zScore)),
+          hypeSpike: zScore > 2.0 || p1d.length >= 3,
+          topPosts:  sorted.slice(0, 3).map(p => ({
+            title:     p.title.slice(0, 110),
+            score:     p.score || 0,
+            comments:  p.num_comments || 0,
+            subreddit: p.subreddit_name_prefixed || 'r/?',
+            url:       `https://reddit.com${p.permalink}`
+          }))
+        };
+      }
 
-      const eng7d = p7d.reduce((s, p) => s + (p.score || 0) + (p.num_comments || 0), 0);
-      const eng3d = p3d.reduce((s, p) => s + (p.score || 0) + (p.num_comments || 0), 0);
+      const tcg = weekMetrics(buildPostSet(tcgSearch, tcgHot));
+      const fan = weekMetrics(buildPostSet(fanSearch, fanHot, shinyTop, goTop));
 
-      const freqScore    = Math.min(40, p7d.length * 5);
-      const engScore     = Math.min(40, Math.round(Math.log2(Math.max(1, eng7d)) * 4));
-      const recencyBonus = p3d.length >= Math.max(1, p7d.length) * 0.5 ? 20 : 0;
-      const score        = Math.min(100, freqScore + engScore + recencyBonus);
-
-      const dailyAvg  = eng7d / 7;
-      const recentDay = eng3d / 3;
-      const zScore    = dailyAvg > 0
-        ? (recentDay - dailyAvg) / Math.max(1, dailyAvg * 0.5)
-        : 0;
-
-      // Sort top posts by score for the preview panel
-      const sortedTop = [...p7d].sort((a, b) => (b.score || 0) - (a.score || 0));
+      // Fan love weighted 55% — it leads TCG demand
+      const blendedScore = Math.round(fan.score * 0.55 + tcg.score * 0.45);
 
       const result = {
         success:     true,
-        postCount7d: p7d.length,
-        totalEng7d:  eng7d,
-        totalEng3d:  eng3d,
-        score,
-        zScore:      Math.min(4, Math.max(-4, zScore)),
-        hypeSpike:   zScore > 2.0 || p1d.length >= 3,
-        topPosts:    sortedTop.slice(0, 3).map(p => ({
-          title:     p.title.slice(0, 110),
-          score:     p.score || 0,
-          comments:  p.num_comments || 0,
-          subreddit: p.subreddit_name_prefixed || 'r/?',
-          url:       `https://reddit.com${p.permalink}`
-        }))
+        postCount7d: tcg.postCount + fan.postCount,
+        totalEng7d:  tcg.eng7d + fan.eng7d,
+        totalEng3d:  tcg.eng3d + fan.eng3d,
+        score:       blendedScore,
+        zScore:      Math.max(tcg.zScore, fan.zScore),
+        hypeSpike:   tcg.hypeSpike || fan.hypeSpike,
+        topPosts:    tcg.topPosts,
+        tcg, fan,
       };
 
       RedditCache.set(key, { ts: Date.now(), data: result });
       return result;
     } catch (err) {
-      return { success: false, reason: err.message, score: null, zScore: 0, hypeSpike: false, postCount7d: 0, totalEng7d: 0, topPosts: [] };
+      return { success: false, reason: err.message, score: null, zScore: 0, hypeSpike: false, postCount7d: 0, totalEng7d: 0, topPosts: [], tcg: null, fan: null };
     }
   }
 
@@ -3798,7 +3846,7 @@
     const zStr = latestSocZ >= 0 ? `+${latestSocZ.toFixed(1)}` : latestSocZ.toFixed(1);
     if (redditOk) {
       if (hypeSpikeDetected || socialBuzz > 55) {
-        drivers.push({ icon: 'R', label: `Reddit — LIVE · ${reddit.postCount7d} posts/wk`, detail: `${reddit.totalEng7d.toLocaleString()} total engagement · ${hypeSpikeDetected ? 'SPIKE DETECTED' : 'Elevated'} · z=${zStr}σ`, risk: false });
+        drivers.push({ icon: 'R', label: `Reddit — LIVE · TCG ${reddit.tcg?.postCount ?? 0} + Fan ${reddit.fan?.postCount ?? 0} posts/wk`, detail: `TCG score ${reddit.tcg?.score ?? '—'} · Fan love ${reddit.fan?.score ?? '—'} · blended ${reddit.score} · ${hypeSpikeDetected ? 'SPIKE DETECTED' : 'z='+zStr+'σ'}`, risk: false });
       }
     } else if (hypeSpikeDetected || socialBuzz > 65) {
       drivers.push({ icon: 'S', label: 'Social Sentiment (estimated)', detail: `${hypeSpikeDetected ? 'SPIKE DETECTED' : 'Elevated'} · ${zStr}σ above 30-day baseline`, risk: false });
@@ -4085,7 +4133,7 @@
       <div class="dl-datasource-bar">
         <span class="dl-src-badge ${redditOk ? 'live' : 'est'}">
           <span class="dl-src-dot">${redditOk ? '●' : '○'}</span>
-          ${redditOk ? `Reddit Live · ${reddit.postCount7d} posts` : 'Reddit · N/A'}
+          ${redditOk ? `Reddit · TCG ${reddit.tcg?.postCount ?? 0} + Fan ${reddit.fan?.postCount ?? 0} posts` : 'Reddit · N/A'}
         </span>
         <span class="dl-src-badge ${youtubeOk ? 'live' : ytKeySet ? 'est' : 'est'}">
           <span class="dl-src-dot">${youtubeOk ? '●' : '○'}</span>
@@ -4105,19 +4153,49 @@
         </span>
       </div>`;
 
-    // ── Reddit live posts snippet ──
-    const redditPostsHTML = (redditOk && reddit.topPosts.length > 0) ? `
+    // ── Reddit live posts snippet — TCG Buzz + Fan Love side by side ──
+    function renderPosts(posts, cls) {
+      if (!posts.length) return `<div style="color:var(--dim);font-size:0.6rem;padding:8px 0">No posts this week</div>`;
+      return posts.map(p => `
+        <div class="dl-reddit-post ${cls}">
+          <div class="dl-reddit-score">↑${p.score >= 1000 ? (p.score/1000).toFixed(1)+'k' : p.score}</div>
+          <div>
+            <div class="dl-reddit-title">${p.title}<a class="dl-reddit-link ${cls}" href="${p.url}" target="_blank" rel="noopener">↗</a></div>
+            <div class="dl-reddit-meta">${p.subreddit} · ${p.comments} comments</div>
+          </div>
+        </div>`).join('');
+    }
+
+    const redditPostsHTML = redditOk ? `
       <div class="dl-section">
-        <div class="dl-section-title">REDDIT LIVE FEED // Top Posts This Week · r/pokemontcg + r/pokemon</div>
-        <div class="dl-reddit-posts">
-          ${reddit.topPosts.map(p => `
-            <div class="dl-reddit-post">
-              <div class="dl-reddit-score">↑${p.score >= 1000 ? (p.score/1000).toFixed(1)+'k' : p.score}</div>
-              <div>
-                <div class="dl-reddit-title">${p.title}<a class="dl-reddit-link" href="${p.url}" target="_blank" rel="noopener">↗</a></div>
-                <div class="dl-reddit-meta">${p.subreddit} · ${p.comments} comments</div>
-              </div>
-            </div>`).join('')}
+        <div class="dl-section-title">COMMUNITY SIGNAL // TCG Buzz · Fan Love · Blended Score ${reddit.score}/100</div>
+        <div class="dl-fan-score-bar">
+          <div class="dl-fan-score-item">
+            <span class="dl-fan-score-val tcg">${reddit.tcg?.score ?? '—'}</span>
+            <span class="dl-fan-score-lbl">TCG Score</span>
+          </div>
+          <div class="dl-fan-score-item">
+            <span class="dl-fan-score-val fan">${reddit.fan?.score ?? '—'}</span>
+            <span class="dl-fan-score-lbl">Fan Love</span>
+          </div>
+          <div class="dl-fan-score-item">
+            <span class="dl-fan-score-val" style="color:var(--cyan)">${reddit.tcg?.postCount ?? 0}</span>
+            <span class="dl-fan-score-lbl">TCG Posts/wk</span>
+          </div>
+          <div class="dl-fan-score-item">
+            <span class="dl-fan-score-val" style="color:var(--green)">${reddit.fan?.postCount ?? 0}</span>
+            <span class="dl-fan-score-lbl">Fan Posts/wk</span>
+          </div>
+        </div>
+        <div class="dl-reddit-cols">
+          <div>
+            <div class="dl-reddit-col-label tcg">⬡ TCG Buzz — r/pokemontcg · r/PokemonTCG</div>
+            <div class="dl-reddit-posts">${renderPosts(reddit.tcg?.topPosts ?? [], 'tcg')}</div>
+          </div>
+          <div>
+            <div class="dl-reddit-col-label fan">♥ Fan Love — r/pokemon · r/shinypokemon · r/pokemongo</div>
+            <div class="dl-reddit-posts">${renderPosts(reddit.fan?.topPosts ?? [], 'fan')}</div>
+          </div>
         </div>
       </div>` : '';
 
