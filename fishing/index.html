@@ -352,6 +352,8 @@ function drawSilhouette(loc) {
 
 // ── Draw full fishing scene ───────────────────────────────────────────────────
 function drawFishing(dt) {
+  updateFishing(dt);
+  if(G.screen !== 'fishing') return;
   const loc = G.location;
   const t = G.t;
 
@@ -469,7 +471,7 @@ function drawFishing(dt) {
   }
 
   // Fish shadows
-  F.fishes.forEach(fish=>drawFishShadow(fish, dt));
+  F.fishes.forEach(fish=>drawFishShadow(fish));
 
   // ── Player character (AC-style) ───────────────────────────────────────────
   const px=W*0.18, py=BANK_Y;
@@ -588,28 +590,228 @@ function drawFishing(dt) {
   ctx.fillText('◀ Map  [M]', 22, H-24);
 }
 
-function drawFishShadow(fish, dt) {
-  fish.flipTimer+=dt;
-  fish.x += fish.vx*dt;
-  if(fish.x<-40) fish.x=W+40;
-  if(fish.x>W+40) fish.x=-40;
+// ── Fish AI state machine ─────────────────────────────────────────────────────
+function updateFishAI(fish, dt) {
+  fish.stateTimer -= dt;
+  fish.flipTimer  += dt;
+  const bobX = F.bobX, bobY = F.bobY + F.bobDip;
 
-  const sc = fish.size * clamp(W/600,0.5,1.5);
-  const fw = 28*sc, fh = 14*sc;
-  ctx.save();
-  ctx.globalAlpha = fish.alpha;
-  ctx.translate(fish.x, fish.y);
-  if(fish.vx<0) ctx.scale(-1,1);
-  // Body shadow
-  ctx.fillStyle='rgba(0,0,0,0.55)';
-  ctx.beginPath(); ctx.ellipse(0,0,fw,fh,0,0,Math.PI*2); ctx.fill();
-  // Tail
-  ctx.beginPath(); ctx.moveTo(fw*0.7,0); ctx.lineTo(fw+8*sc,-fh*0.7); ctx.lineTo(fw+8*sc,fh*0.7); ctx.closePath(); ctx.fill();
-  ctx.restore();
-  ctx.globalAlpha=1;
+  if(fish.state === 'wander') {
+    fish.x += fish.vx*dt; fish.y += fish.vy*dt;
+    if(fish.stateTimer <= 0) {
+      fish.vx = (Math.random()-0.5)*28; fish.vy = (Math.random()-0.5)*8;
+      fish.stateTimer = 2+Math.random()*3;
+    }
+  } else if(fish.state === 'curious') {
+    const dx=bobX-fish.x, dy=(bobY+20)-fish.y, dist=Math.sqrt(dx*dx+dy*dy)||1;
+    fish.vx=lerp(fish.vx,(dx/dist)*50,dt*2);
+    fish.vy=lerp(fish.vy,(dy/dist)*50,dt*2);
+    fish.x+=fish.vx*dt; fish.y+=fish.vy*dt;
+    if(dist<30 && !fish.targetReached) {
+      fish.targetReached=true; fish.state='nibble';
+      fish.stateTimer=0.5+Math.random()*0.6;
+      F.nibbleCount=0; F.phase='nibble'; F.nibbleTimer=0.4;
+    } else if(fish.stateTimer<=0 && !fish.targetReached) {
+      fish.state='wander'; fish.stateTimer=2;
+    }
+  } else if(fish.state === 'nibble') {
+    fish.x=lerp(fish.x, bobX+Math.sin(G.t*5)*10, dt*3);
+    fish.y=lerp(fish.y, bobY+18, dt*3);
+    fish.vx=(fish.x-bobX)*0.5;
+    if(fish.stateTimer<=0) {
+      F.nibbleCount++; F.bobDip=10; F.nibbleTimer=0.22;
+      if(F.nibbleCount >= 2+Math.floor(Math.random()*2)) {
+        fish.state='bite'; fish.stateTimer=99;
+        F.phase='bite'; F.biteTimer=2.5+Math.random()*0.8; F.bobDip=22;
+      } else { fish.stateTimer=0.6+Math.random()*0.5; }
+    }
+  } else if(fish.state === 'bite') {
+    fish.x=lerp(fish.x,bobX,dt*4); fish.y=lerp(fish.y,bobY+10,dt*4); fish.vx=0;
+  } else if(fish.state === 'spooked') {
+    fish.x+=fish.vx*dt; fish.y+=fish.vy*dt;
+    if(fish.stateTimer<=0) {
+      fish.state='wander'; fish.stateTimer=2;
+      fish.vx=(Math.random()-0.5)*25; fish.vy=0; fish.targetReached=false;
+    }
+  }
+  fish.x = ((fish.x%(W+120))+W+120)%(W+120)-60;
+  fish.y = clamp(fish.y, SURF_Y+12, BOT_Y-12);
 }
 
-function drawCatch(dt) {}
+// ── Fishing phase logic ───────────────────────────────────────────────────────
+function updateFishing(dt) {
+  if(inp.justPressed && inp.x<130 && inp.y>H-55) { G.screen='map'; return; }
+
+  const ph = F.phase;
+  if(ph==='idle') {
+    if(inp.justPressed) {
+      F.phase='waiting'; F.waitTimer=3+Math.random()*4;
+      F.bobX=W*(0.48+Math.random()*0.22); F.bobY=SURF_Y; F.bobDip=0;
+    }
+  } else if(ph==='waiting') {
+    F.waitTimer-=dt;
+    if(F.waitTimer<=0 && !F.fishes.some(f=>f.state==='curious'||f.state==='nibble'||f.state==='bite')) {
+      const cands=F.fishes.filter(f=>f.state==='wander');
+      if(cands.length) {
+        const f=cands[Math.floor(Math.random()*cands.length)];
+        f.state='curious'; f.stateTimer=5+Math.random()*2; f.targetReached=false;
+      }
+      F.waitTimer=99;
+    }
+  } else if(ph==='nibble') {
+    F.nibbleTimer-=dt; if(F.nibbleTimer<=0) F.bobDip=0;
+  } else if(ph==='bite') {
+    F.biteTimer-=dt;
+    if(inp.justPressed) {
+      const id=pickFish(G.location), fd=FISH[id];
+      const wt=+(fd.wMin+Math.random()*(fd.wMax-fd.wMin)).toFixed(2);
+      const isNew=recordCatch(id,wt); G.caughtTotal++;
+      Object.assign(F,{hookedId:id,hookedWeight:wt,hookedIsNew:isNew,hookedFishData:fd,
+        reelProgress:0,reelMarker:0.5,reelZone:0.4+Math.random()*0.2,
+        reelZoneDir:(Math.random()>0.5?1:-1),reelZoneTimer:1.2+Math.random()});
+      F.fishes.forEach(f=>{ f.state='spooked'; f.stateTimer=3+Math.random();
+        f.vx=(Math.random()-0.5)*80; f.targetReached=false; });
+      G.screen='catch'; F.phase='idle';
+    } else if(F.biteTimer<=0) {
+      F.phase='escaped'; F.msg='It got away...'; F.msgTimer=2.2;
+      F.fishes.forEach(f=>{ if(f.state!=='wander'){
+        f.state='spooked'; f.stateTimer=3; f.vx=(Math.random()-0.5)*60; f.targetReached=false; }});
+      F.bobDip=0;
+    }
+  } else if(ph==='escaped') {
+    if(F.msgTimer<=0) F.phase='idle';
+  }
+  F.fishes.forEach(f=>updateFishAI(f,dt));
+}
+
+// ── Fish shadow draw (draw-only, no logic) ────────────────────────────────────
+function drawFishShadow(fish) {
+  const sc=fish.size*clamp(W/600,0.5,1.5), fw=28*sc, fh=14*sc;
+  ctx.save(); ctx.globalAlpha=fish.alpha;
+  ctx.translate(fish.x,fish.y);
+  if(fish.vx<0) ctx.scale(-1,1);
+  ctx.fillStyle='rgba(0,0,0,0.55)';
+  ctx.beginPath(); ctx.ellipse(0,0,fw,fh,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(fw*0.7,0); ctx.lineTo(fw+8*sc,-fh*0.7);
+  ctx.lineTo(fw+8*sc,fh*0.7); ctx.closePath(); ctx.fill();
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+// ── Reel mini-game ────────────────────────────────────────────────────────────
+function drawCatch(dt) {
+  ctx.fillStyle='rgba(20,40,60,0.84)'; ctx.fillRect(0,0,W,H);
+
+  const fd=F.hookedFishData;
+  const BX=W-72, BY=H*0.18, BH=H*0.56, BW=30;
+
+  // Zone movement
+  F.reelZoneTimer-=dt;
+  if(F.reelZoneTimer<=0){ F.reelZoneDir*=-1; F.reelZoneTimer=0.9+Math.random()*1.4; }
+  F.reelZone=clamp(F.reelZone+F.reelZoneDir*(0.09+F.reelProgress*0.07)*dt, 0.05, 0.95);
+
+  // Marker physics
+  if(inp.held) F.reelMarker=clamp(F.reelMarker-dt*0.5,0,1);
+  else         F.reelMarker=clamp(F.reelMarker+dt*0.4,0,1);
+
+  const zoneH=Math.max(0.12, 0.22-F.reelProgress*0.06);
+  const inZone=Math.abs(F.reelMarker-F.reelZone)<zoneH/2;
+  F.reelProgress=clamp(F.reelProgress+dt*(inZone?0.25:-0.15),0,1);
+
+  if(F.reelProgress>=1){ G.screen='reveal'; F.revealAnim=0; return; }
+
+  // Bar BG
+  ctx.fillStyle='rgba(0,0,0,0.55)'; rr(BX-6,BY-6,BW+12,BH+12,10); ctx.fill();
+  // Progress
+  const pH=BH*F.reelProgress;
+  const pg=ctx.createLinearGradient(BX,BY+BH-pH,BX,BY+BH);
+  pg.addColorStop(0,'#70e090'); pg.addColorStop(1,'#20a040');
+  ctx.fillStyle=pg; rr(BX,BY+BH-pH,BW,pH,4); ctx.fill();
+  // Zone
+  const zY=BY+F.reelZone*BH, zHpx=zoneH*BH;
+  ctx.fillStyle=inZone?'rgba(100,255,140,0.45)':'rgba(255,200,60,0.3)';
+  rr(BX,zY-zHpx/2,BW,zHpx,4); ctx.fill();
+  ctx.strokeStyle=inZone?'#60ff90':'#f0c040'; ctx.lineWidth=2.5;
+  rr(BX,zY-zHpx/2,BW,zHpx,4); ctx.stroke();
+  // Marker
+  const mY=BY+F.reelMarker*BH;
+  ctx.fillStyle=inZone?'#ffffff':'#ff5050';
+  rr(BX-8,mY-6,BW+16,12,5); ctx.fill();
+  // Bar outline
+  ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.lineWidth=1.5;
+  rr(BX,BY,BW,BH,6); ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.textAlign='center';
+  ctx.font=`${clamp(W*0.024,10,14)}px system-ui`;
+  ctx.fillText(Math.round(F.reelProgress*100)+'%', BX+BW/2, BY+BH+22);
+
+  // Struggling fish
+  const cx=W*0.38, cy=H*0.48;
+  const wob=Math.sin(G.t*9)*0.18*(1-F.reelProgress*0.5);
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(wob);
+  const sc2=1+Math.sin(G.t*14)*0.04; ctx.scale(sc2,sc2);
+  const fw=clamp(W*0.10,50,78), fh=fw*0.42;
+  ctx.fillStyle=fd.col;
+  ctx.beginPath(); ctx.ellipse(0,0,fw,fh,0,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.ellipse(0,0,fw,fh,0,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle=fd.col;
+  ctx.beginPath(); ctx.moveTo(fw*0.7,0); ctx.lineTo(fw+fw*0.3,-fh*0.85);
+  ctx.lineTo(fw+fw*0.3,fh*0.85); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.12)';
+  ctx.beginPath(); ctx.ellipse(-fw*0.1,-fh*0.75,fw*0.28,fh*0.45,-0.4,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(-fw*0.48,-fh*0.2,fh*0.28,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#222';
+  ctx.beginPath(); ctx.arc(-fw*0.48,-fh*0.2,fh*0.16,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // Splash particles
+  if(Math.random()<0.25)
+    F.particles.push({x:cx+(Math.random()-0.5)*50,y:cy+(Math.random()-0.5)*30,
+      r:2+Math.random()*4,vx:(Math.random()-0.5)*70,vy:-50-Math.random()*70,
+      alpha:0.75,life:1,maxLife:0.5+Math.random()*0.4});
+  F.particles=F.particles.filter(p=>p.life>0);
+  F.particles.forEach(p=>{
+    p.life-=dt/p.maxLife; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=100*dt;
+    ctx.globalAlpha=p.alpha*p.life; ctx.fillStyle='#aee8ff';
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+
+  ctx.fillStyle='#fff'; ctx.textAlign='center';
+  ctx.font=`bold ${clamp(W*0.048,20,32)}px system-ui`;
+  ctx.fillText('REEL IT IN!', W/2, H*0.14);
+  ctx.fillStyle='rgba(255,255,255,0.55)';
+  ctx.font=`${clamp(W*0.03,13,18)}px system-ui`;
+  ctx.fillText('Hold · keep marker in the zone', W/2, H*0.88);
+  const tension=Math.abs(F.reelMarker-F.reelZone)/(zoneH/2);
+  if(tension>1.2){
+    ctx.fillStyle=`rgba(255,80,50,${Math.min(1,(tension-1)*0.6)})`;
+    ctx.font=`bold ${clamp(W*0.034,13,20)}px system-ui`;
+    ctx.fillText('LINE TENSION!', W/2, H*0.93);
+  }
+}
+
+// ── Catch reveal (stub — Pass 4 replaces this) ────────────────────────────────
+function drawReveal(dt) {
+  ctx.fillStyle='#fdf5e4'; ctx.fillRect(0,0,W,H);
+  const fd=F.hookedFishData;
+  ctx.fillStyle='#3a2808'; ctx.textAlign='center';
+  ctx.font=`bold ${clamp(W*0.055,22,38)}px system-ui`;
+  ctx.fillText('You caught a...', W/2, H*0.28);
+  ctx.font=`bold ${clamp(W*0.09,36,58)}px system-ui`;
+  ctx.fillStyle=fd?fd.col:'#888';
+  ctx.fillText(fd?fd.name:'', W/2, H*0.44);
+  ctx.fillStyle='#3a2808'; ctx.font=`${clamp(W*0.042,17,28)}px system-ui`;
+  ctx.fillText(`${F.hookedWeight} lbs`, W/2, H*0.55);
+  if(F.hookedIsNew){
+    ctx.fillStyle='#e08820';
+    ctx.font=`bold ${clamp(W*0.038,15,24)}px system-ui`;
+    ctx.fillText('NEW SPECIES!', W/2, H*0.63);
+  }
+  ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.font=`${clamp(W*0.03,12,18)}px system-ui`;
+  ctx.fillText('Tap to continue', W/2, H*0.75);
+  if(inp.justPressed){ G.screen='fishing'; initFishing(); }
+}
 
 // ── Main loop ────────────────────────────────────────────────────────────────
 let lastTs = 0;
@@ -637,6 +839,8 @@ function frame(ts) {
     drawFishing(dt);
   } else if(G.screen==='catch') {
     drawCatch(dt);
+  } else if(G.screen==='reveal') {
+    drawReveal(dt);
   }
 }
 requestAnimationFrame(frame);
