@@ -228,67 +228,387 @@ canvas.addEventListener('pointermove', e=>{
     if(e.clientX>=x&&e.clientX<=x+w&&e.clientY>=y&&e.clientY<=y+h) mapHover=i; });
 });
 
+// ── Scene geometry constants (set on resize/init) ────────────────────────────
+let BANK_Y, SURF_Y, BOT_Y;
+function setSceneMetrics() {
+  BANK_Y = H * 0.40;
+  SURF_Y = H * 0.44;
+  BOT_Y  = H * 0.90;
+}
+setSceneMetrics();
+window.addEventListener('resize', setSceneMetrics);
+
 // ── Fishing state (stubs filled in pass 2-4) ─────────────────────────────────
-const F = {};   // fishing state object — populated by initFishing()
+const F = {};
 function initFishing() {
+  setSceneMetrics();
   Object.assign(F, {
-    phase: 'idle',      // idle|casting|waiting|nibble|bite|hooked|reeling|caught|escaped
-    castT: 0,           // cast animation timer
-    bobX: 0, bobY: 0,  // bobber world position (relative to water surface)
-    bobDepth: 0,        // how far below surface
-    bobDip: 0,          // extra dip amount (bite)
-    lineAngle: 0,
-    fishes: [],         // active fish shadows
-    hookedId: null,     // fish species id when hooked
-    hookedWeight: 0,
-    reelProgress: 0,    // 0-1
-    reelMarker: 0.5,    // 0-1 vertical position of player zone
-    reelFish: 0.3,      // 0-1 target fish position
-    reelFishDir: 1,
-    reelFishTimer: 0,
-    biteTimer: 0,
-    waitTimer: 0,
-    nibbleCount: 0,
-    nibbleTimer: 0,
-    catchData: null,    // { id, weight, isNew }
-    catchAnim: 0,
-    msg: '',            // temporary message shown on screen
-    msgTimer: 0,
-    raindrops: [],      // for pier location
-    particles: [],      // ambient particles
+    phase: 'idle',
+    castT: 0,
+    bobX: W*0.62, bobY: SURF_Y,
+    bobDip: 0,
+    fishes: [],
+    hookedId: null, hookedWeight: 0,
+    reelProgress: 0,
+    reelMarker: 0.5,
+    reelFish: 0.3, reelFishDir: 1, reelFishTimer: 0,
+    biteTimer: 0, waitTimer: 1.5 + Math.random()*3,
+    nibbleCount: 0, nibbleTimer: 0,
+    catchData: null, catchAnim: 0,
+    msg: '', msgTimer: 0,
+    raindrops: [], particles: [],
+    clouds: Array.from({length:5}, ()=>({
+      x: Math.random()*W*1.5, y: H*(0.05+Math.random()*0.2),
+      w: 60+Math.random()*80, speed: 8+Math.random()*12,
+    })),
   });
-  // Spawn fish
-  const waterTop = H*0.44, waterBot = H*0.88;
-  for(let i=0;i<6;i++) F.fishes.push(spawnFish(waterTop, waterBot));
-  // Initial bobber position
-  F.bobX = W*0.62; F.bobY = H*0.46;
-  // Rain for pier
-  if(G.location.id==='pier') for(let i=0;i<120;i++) F.raindrops.push(newRaindrop());
+  for(let i=0;i<6;i++) F.fishes.push(spawnFish());
+  if(G.location.id==='pier') for(let i=0;i<140;i++) F.raindrops.push(newRaindrop());
+  for(let i=0;i<20;i++) F.particles.push(newParticle());
 }
 
-function spawnFish(top, bot) {
+function spawnFish() {
   return {
-    x: Math.random()*W, y: lerp(top+20, bot-20, Math.random()),
-    vx: (Math.random()-0.5)*30, vy: 0,
-    state: 'wander',  // wander|curious|nibbling|spooked
-    stateTimer: 1+Math.random()*3,
+    x: Math.random()*W, y: lerp(SURF_Y+30, BOT_Y-30, Math.random()),
+    vx: (Math.random()-0.5)*25, vy: 0,
+    state: 'wander', stateTimer: 1.5+Math.random()*3,
     size: 0.6+Math.random()*0.8,
-    alpha: 0.35+Math.random()*0.25,
+    alpha: 0.32+Math.random()*0.2,
     flipTimer: Math.random()*2,
   };
 }
 function newRaindrop() {
-  return { x:Math.random()*W, y:Math.random()*H, speed:300+Math.random()*200, len:8+Math.random()*12 };
+  return { x:Math.random()*W*1.2-W*0.1, y:Math.random()*H,
+           speed:280+Math.random()*180, len:7+Math.random()*10 };
+}
+function newParticle() {
+  return { x:Math.random()*W, y:lerp(SURF_Y+10,BOT_Y-10,Math.random()),
+           r:1+Math.random()*2, vy:-8-Math.random()*12, alpha:0.3+Math.random()*0.3,
+           life:1, maxLife:2+Math.random()*3 };
 }
 
-// ── Fishing draw (pass 2-4 fills this in) ────────────────────────────────────
-function drawFishing(dt) {
-  ctx.fillStyle = G.location.water; ctx.fillRect(0,0,W,H);
-  // Placeholder until pass 2
-  ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.textAlign='center';
-  ctx.font=`${clamp(W*0.04,14,28)}px system-ui`;
-  ctx.fillText('Loading scene...', W/2, H/2);
+// ── Scene background silhouettes ──────────────────────────────────────────────
+function drawSilhouette(loc) {
+  const id = loc.id;
+  const skyBot = BANK_Y;
+  if(id==='river') {
+    // Pine trees on far bank
+    ctx.fillStyle='#3a6a3a';
+    for(let i=0;i<14;i++){
+      const tx=W*(i/13)*1.05-W*0.02, th=H*0.12+Math.sin(i*1.7)*H*0.04;
+      ctx.beginPath(); ctx.moveTo(tx,skyBot-th); ctx.lineTo(tx-18,skyBot); ctx.lineTo(tx+18,skyBot); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(tx,skyBot-th*0.62); ctx.lineTo(tx-13,skyBot-th*0.28); ctx.lineTo(tx+13,skyBot-th*0.28); ctx.fill();
+    }
+  } else if(id==='pond') {
+    // Rolling hills + flowers
+    ctx.fillStyle='#88c878';
+    ctx.beginPath(); ctx.moveTo(0,skyBot);
+    for(let x=0;x<=W;x+=W/20){
+      ctx.lineTo(x, skyBot-H*0.07-Math.sin(x/W*Math.PI*3)*H*0.05);
+    }
+    ctx.lineTo(W,skyBot); ctx.closePath(); ctx.fill();
+    // Flowers
+    for(let i=0;i<18;i++){
+      const fx=W*(i/17)*1.02, fy=skyBot-H*0.04-Math.sin(i*2.1)*H*0.03;
+      ctx.fillStyle=['#ff88aa','#ffdd44','#ff6666','#cc88ff'][i%4];
+      ctx.beginPath(); ctx.arc(fx,fy,3,0,Math.PI*2); ctx.fill();
+    }
+  } else if(id==='beach') {
+    // Palm trees
+    ctx.fillStyle='#5a9a48';
+    for(let i=0;i<6;i++){
+      const px=W*(0.05+i*0.18);
+      ctx.fillStyle='#7a5a30';
+      ctx.fillRect(px-4, skyBot-H*0.18, 8, H*0.18);
+      ctx.fillStyle='#5a9a48';
+      for(let j=0;j<5;j++){
+        const a=(j/5)*Math.PI*2-Math.PI/2;
+        ctx.beginPath();
+        ctx.moveTo(px, skyBot-H*0.18);
+        ctx.quadraticCurveTo(px+Math.cos(a)*40, skyBot-H*0.18+Math.sin(a)*20,
+                             px+Math.cos(a)*70, skyBot-H*0.18+Math.sin(a)*40);
+        ctx.lineWidth=6; ctx.strokeStyle='#5a9a48'; ctx.stroke();
+      }
+    }
+  } else if(id==='pier') {
+    // City skyline
+    ctx.fillStyle='#2a3a4a';
+    const buildings=[{w:60,h:0.14},{w:40,h:0.09},{w:80,h:0.17},{w:35,h:0.12},{w:55,h:0.15},{w:45,h:0.1},{w:70,h:0.18},{w:50,h:0.13}];
+    let bx=0;
+    buildings.forEach(b=>{
+      ctx.fillRect(bx, skyBot-H*b.h, b.w+20, H*b.h);
+      // Windows
+      ctx.fillStyle='rgba(255,220,100,0.4)';
+      for(let wy=skyBot-H*b.h+6;wy<skyBot-6;wy+=12){
+        for(let wx=bx+4;wx<bx+b.w;wx+=10){
+          if(Math.random()>0.4) ctx.fillRect(wx,wy,5,7);
+        }
+      }
+      ctx.fillStyle='#2a3a4a';
+      bx+=b.w+20;
+    });
+  }
 }
+
+// ── Draw full fishing scene ───────────────────────────────────────────────────
+function drawFishing(dt) {
+  const loc = G.location;
+  const t = G.t;
+
+  // ── Sky ──────────────────────────────────────────────────────────────────
+  const sg = ctx.createLinearGradient(0,0,0,BANK_Y);
+  sg.addColorStop(0, loc.sky[0]); sg.addColorStop(1, loc.sky[1]);
+  ctx.fillStyle=sg; ctx.fillRect(0,0,W,BANK_Y);
+
+  // Clouds
+  F.clouds.forEach(c=>{
+    c.x += c.speed*dt;
+    if(c.x > W+c.w*0.6) c.x = -c.w*0.6;
+    ctx.fillStyle='rgba(255,255,255,0.78)';
+    ctx.beginPath(); ctx.ellipse(c.x,c.y,c.w*0.5,c.w*0.22,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(c.x-c.w*0.18,c.y+4,c.w*0.32,c.w*0.16,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(c.x+c.w*0.2,c.y+2,c.w*0.28,c.w*0.14,0,0,Math.PI*2); ctx.fill();
+  });
+
+  // Sun / moon
+  if(loc.id==='pier'){
+    ctx.fillStyle='rgba(200,220,255,0.6)'; ctx.shadowColor='#aaccff'; ctx.shadowBlur=15;
+    ctx.beginPath(); ctx.arc(W*0.8,H*0.1,W*0.025,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+  } else {
+    ctx.fillStyle='rgba(255,230,100,0.9)'; ctx.shadowColor='#ffee44'; ctx.shadowBlur=22;
+    ctx.beginPath(); ctx.arc(W*0.78,H*0.1,W*0.03,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+  }
+
+  // Far bank silhouette
+  drawSilhouette(loc);
+
+  // ── Near bank ────────────────────────────────────────────────────────────
+  const bg1 = ctx.createLinearGradient(0,BANK_Y,0,SURF_Y);
+  bg1.addColorStop(0, loc.bank); bg1.addColorStop(1, loc.bankFar);
+  ctx.fillStyle=bg1; ctx.fillRect(0,BANK_Y,W,SURF_Y-BANK_Y);
+  // Grass tufts
+  ctx.strokeStyle=loc.id==='beach'?'#d8c060':'#6a9a48';
+  ctx.lineWidth=2;
+  for(let i=0;i<24;i++){
+    const gx=W*(i/23)*1.02, gy=BANK_Y+4;
+    ctx.beginPath(); ctx.moveTo(gx,gy+6); ctx.lineTo(gx-3,gy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx,gy+6); ctx.lineTo(gx+3,gy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx,gy+6); ctx.lineTo(gx,gy-2); ctx.stroke();
+  }
+
+  // ── Water body ───────────────────────────────────────────────────────────
+  // Base fill
+  const wg = ctx.createLinearGradient(0,SURF_Y,0,BOT_Y);
+  wg.addColorStop(0, loc.water); wg.addColorStop(0.4, loc.deep); wg.addColorStop(1,'#000000aa');
+  ctx.fillStyle=wg; ctx.fillRect(0,SURF_Y,W,BOT_Y-SURF_Y);
+
+  // God rays from surface
+  ctx.save();
+  for(let i=0;i<6;i++){
+    const rx=W*(0.1+i*0.16)+Math.sin(t*0.4+i)*20;
+    const grad=ctx.createLinearGradient(rx,SURF_Y,rx+30,BOT_Y*0.7);
+    grad.addColorStop(0,'rgba(255,255,255,0.07)');
+    grad.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    ctx.moveTo(rx,SURF_Y); ctx.lineTo(rx+40,BOT_Y*0.65);
+    ctx.lineTo(rx+55,BOT_Y*0.65); ctx.lineTo(rx+18,SURF_Y);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Bubbles / particles
+  F.particles.forEach((p,i)=>{
+    p.life -= dt; p.y += p.vy*dt;
+    p.x += Math.sin(t*2+i)*0.4;
+    if(p.life<=0 || p.y<SURF_Y){ Object.assign(p, newParticle()); return; }
+    const a=p.alpha*(p.life/p.maxLife);
+    ctx.fillStyle=`rgba(200,230,255,${a})`;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  });
+
+  // Water bottom
+  const botG=ctx.createLinearGradient(0,BOT_Y,0,H);
+  botG.addColorStop(0,loc.bottom); botG.addColorStop(1,'#1a1a0a');
+  ctx.fillStyle=botG; ctx.fillRect(0,BOT_Y,W,H-BOT_Y);
+  // Rocks on bottom
+  ctx.fillStyle='rgba(0,0,0,0.22)';
+  for(let i=0;i<12;i++){
+    const rx=W*(i/11)*1.05, rs=8+Math.sin(i*2.7)*5;
+    ctx.beginPath(); ctx.ellipse(rx,BOT_Y+rs*0.6,rs,rs*0.55,0,0,Math.PI*2); ctx.fill();
+  }
+  // Plants / kelp
+  ctx.strokeStyle=loc.id==='beach'?'rgba(80,160,80,0.5)':'rgba(60,120,60,0.4)';
+  for(let i=0;i<8;i++){
+    const kx=W*(i/7)*1.02, ks=18+Math.sin(i*1.9)*8;
+    ctx.lineWidth=3; ctx.beginPath();
+    ctx.moveTo(kx,BOT_Y);
+    ctx.quadraticCurveTo(kx+Math.sin(t*0.8+i)*10,BOT_Y-ks*0.5,kx+Math.sin(t*0.5+i)*14,BOT_Y-ks);
+    ctx.stroke();
+  }
+
+  // Water surface shimmer line
+  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  for(let x=0;x<=W;x+=W/40){
+    const y=SURF_Y+Math.sin(t*1.8+x*0.05)*1.5;
+    x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // Rain (pier only)
+  if(loc.id==='pier'){
+    ctx.strokeStyle='rgba(180,200,230,0.35)'; ctx.lineWidth=1;
+    F.raindrops.forEach(r=>{
+      r.y+=r.speed*dt; r.x-=r.speed*dt*0.15;
+      if(r.y>H){r.y=-10;r.x=Math.random()*W*1.2-W*0.1;}
+      ctx.beginPath(); ctx.moveTo(r.x,r.y); ctx.lineTo(r.x+r.len*0.15,r.y+r.len); ctx.stroke();
+    });
+  }
+
+  // Fish shadows
+  F.fishes.forEach(fish=>drawFishShadow(fish, dt));
+
+  // ── Player character (AC-style) ───────────────────────────────────────────
+  const px=W*0.18, py=BANK_Y;
+  const playerBob = Math.sin(t*1.2)*1.2;
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.15)';
+  ctx.beginPath(); ctx.ellipse(px,py+2,14,5,0,0,Math.PI*2); ctx.fill();
+  // Feet
+  ctx.fillStyle='#5a3a18';
+  ctx.beginPath(); ctx.ellipse(px-7,py+1,6,4,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(px+3,py+1,6,4,0,0,Math.PI*2); ctx.fill();
+  // Body
+  ctx.fillStyle='#7ab8e8';
+  ctx.beginPath(); ctx.ellipse(px,py-14+playerBob,10,13,0,0,Math.PI*2); ctx.fill();
+  // Head
+  ctx.fillStyle='#f0c880';
+  ctx.beginPath(); ctx.arc(px,py-30+playerBob,11,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#c89050'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(px,py-30+playerBob,11,0,Math.PI*2); ctx.stroke();
+  // Eyes
+  ctx.fillStyle='#2a1808';
+  ctx.beginPath(); ctx.arc(px-4,py-31+playerBob,2,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(px+4,py-31+playerBob,2,0,Math.PI*2); ctx.fill();
+  // Hat
+  ctx.fillStyle='#e86820';
+  ctx.beginPath(); ctx.ellipse(px,py-38+playerBob,13,5,0,0,Math.PI*2); ctx.fill();
+  ctx.fillRect(px-7,py-50+playerBob,14,14);
+
+  // ── Rod ───────────────────────────────────────────────────────────────────
+  const rodBase = {x:px+8, y:py-24+playerBob};
+  const rodTip  = {x:W*0.38+Math.sin(t*0.6)*3, y:BANK_Y-H*0.08+Math.cos(t*0.5)*2};
+  ctx.strokeStyle='#7a5028'; ctx.lineWidth=3.5;
+  ctx.beginPath(); ctx.moveTo(rodBase.x,rodBase.y); ctx.lineTo(rodTip.x,rodTip.y); ctx.stroke();
+  ctx.lineWidth=2.5;
+  ctx.strokeStyle='#9a7040';
+  ctx.beginPath(); ctx.moveTo(rodBase.x,rodBase.y); ctx.lineTo(rodTip.x,rodTip.y); ctx.stroke();
+
+  // ── Fishing line ─────────────────────────────────────────────────────────
+  const bobScreenX = F.phase==='idle' ? F.bobX : F.bobX;
+  const bobScreenY = F.bobY + F.bobDip + Math.sin(t*1.6)*2;
+  ctx.strokeStyle='rgba(220,220,220,0.75)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(rodTip.x,rodTip.y);
+  ctx.quadraticCurveTo(
+    (rodTip.x+bobScreenX)*0.5, rodTip.y+20,
+    bobScreenX, bobScreenY
+  );
+  ctx.stroke();
+
+  // ── Bobber ────────────────────────────────────────────────────────────────
+  if(F.phase!=='idle' || true) {
+    const bx=bobScreenX, by=bobScreenY;
+    // Top white half
+    ctx.fillStyle='#f0f0f0';
+    ctx.beginPath(); ctx.arc(bx,by,6,Math.PI,0); ctx.fill();
+    // Bottom red half
+    ctx.fillStyle='#e03020';
+    ctx.beginPath(); ctx.arc(bx,by,6,0,Math.PI); ctx.fill();
+    // Outline
+    ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(bx,by,6,0,Math.PI*2); ctx.stroke();
+    // Divider line
+    ctx.beginPath(); ctx.moveTo(bx-6,by); ctx.lineTo(bx+6,by); ctx.stroke();
+    // Stick
+    ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(bx,by-6); ctx.lineTo(bx,by-10); ctx.stroke();
+  }
+
+  // ── HUD ───────────────────────────────────────────────────────────────────
+  // Location name
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  rr(W-170,12,158,34,8); ctx.fill();
+  ctx.fillStyle='#ffffff'; ctx.textAlign='right';
+  ctx.font=`bold ${clamp(W*0.03,11,16)}px system-ui`;
+  ctx.fillText(loc.name, W-18, 34);
+
+  // Catch count
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  rr(12,12,120,34,8); ctx.fill();
+  ctx.fillStyle='#ffdd88'; ctx.textAlign='left';
+  ctx.font=`bold ${clamp(W*0.03,11,16)}px system-ui`;
+  ctx.fillText(`🐟 ${G.caughtTotal} caught`, 18, 34);
+
+  // Phase prompt
+  const prompts = {
+    idle:    'TAP to cast',
+    waiting: 'watching...',
+    nibble:  'get ready...',
+    bite:    '⚡ TAP NOW! ⚡',
+    hooked:  'HOOKED! reel it in',
+    escaped: 'it got away...',
+  };
+  const prompt = prompts[F.phase] || '';
+  if(prompt) {
+    ctx.textAlign='center';
+    const isBite = F.phase==='bite';
+    ctx.fillStyle = isBite?'rgba(255,80,30,0.9)':'rgba(0,0,0,0.45)';
+    rr(W/2-100,H-54,200,36,10); ctx.fill();
+    ctx.fillStyle = isBite?'#ffffff':'rgba(255,255,255,0.9)';
+    ctx.font=`${isBite?'bold ':''}${clamp(W*0.035,13,20)}px system-ui`;
+    ctx.fillText(prompt, W/2, H-30);
+  }
+
+  // Temp message
+  if(F.msgTimer>0){
+    F.msgTimer-=dt;
+    ctx.fillStyle=`rgba(50,30,10,${Math.min(1,F.msgTimer)*0.85})`;
+    ctx.textAlign='center'; ctx.font=`bold ${clamp(W*0.038,14,22)}px system-ui`;
+    ctx.fillText(F.msg, W/2, H*0.22);
+  }
+
+  // Back to map
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  rr(12,H-46,110,32,8); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.textAlign='left';
+  ctx.font=`${clamp(W*0.026,10,14)}px system-ui`;
+  ctx.fillText('◀ Map  [M]', 22, H-24);
+}
+
+function drawFishShadow(fish, dt) {
+  fish.flipTimer+=dt;
+  fish.x += fish.vx*dt;
+  if(fish.x<-40) fish.x=W+40;
+  if(fish.x>W+40) fish.x=-40;
+
+  const sc = fish.size * clamp(W/600,0.5,1.5);
+  const fw = 28*sc, fh = 14*sc;
+  ctx.save();
+  ctx.globalAlpha = fish.alpha;
+  ctx.translate(fish.x, fish.y);
+  if(fish.vx<0) ctx.scale(-1,1);
+  // Body shadow
+  ctx.fillStyle='rgba(0,0,0,0.55)';
+  ctx.beginPath(); ctx.ellipse(0,0,fw,fh,0,0,Math.PI*2); ctx.fill();
+  // Tail
+  ctx.beginPath(); ctx.moveTo(fw*0.7,0); ctx.lineTo(fw+8*sc,-fh*0.7); ctx.lineTo(fw+8*sc,fh*0.7); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha=1;
+}
+
 function drawCatch(dt) {}
 
 // ── Main loop ────────────────────────────────────────────────────────────────
