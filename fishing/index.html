@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Deep Line</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a3a2a; overflow: hidden; touch-action: none; font-family: system-ui, sans-serif; }
+  canvas { display: block; }
+  #home {
+    position: fixed; top: 14px; left: 16px; z-index: 10;
+    color: rgba(255,255,255,0.55); font-size: 12px;
+    text-decoration: none; letter-spacing: 1px;
+    padding: 4px 12px; border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 20px; background: rgba(0,0,0,0.28);
+  }
+  #home:hover { color: #fff; }
+</style>
+</head>
+<body>
+<a id="home" href="../index.html">← Home</a>
+<canvas id="c"></canvas>
+<script>
+// ── Canvas ───────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+// ── Game state ───────────────────────────────────────────────────────────────
+const G = { screen: 'title', location: null, t: 0, caughtTotal: 0 };
+
+// ── Locations ────────────────────────────────────────────────────────────────
+const LOCATIONS = [
+  { id:'river', name:'Cobblestone River', emoji:'🌿', desc:'Cool mossy waters',
+    sky:['#a8d5b8','#c8e8d0'], water:'#4a9b7f', deep:'#2a6b5f', bottom:'#8a7a5a',
+    bank:'#6a8a5a', bankFar:'#4a7a5a',
+    fish:['salmon','trout','dace','loach','dorado'] },
+  { id:'pond',  name:'Sunny Pond',        emoji:'🌸', desc:'Warm lily-pad lake',
+    sky:['#ffe8a0','#ffc870'], water:'#5ab8a0', deep:'#3a8870', bottom:'#c8b870',
+    bank:'#b8a870', bankFar:'#a09060',
+    fish:['bluegill','bass','carp','frog','goldenkoi'] },
+  { id:'beach', name:'Sunny Shore',       emoji:'🌊', desc:'Sandy coastal waters',
+    sky:['#88d8f0','#aaeeff'], water:'#2a9acc', deep:'#1a6a99', bottom:'#d8c888',
+    bank:'#e8d898', bankFar:'#c8b878',
+    fish:['snapper','pompano','anchovy','turtle','shark'] },
+  { id:'pier',  name:'Rainy Pier',        emoji:'🌧', desc:'Mysterious deep waters',
+    sky:['#6a7a8a','#4a5a6a'], water:'#2a4a6a', deep:'#0a1a3a', bottom:'#2a2a3a',
+    bank:'#4a4a5a', bankFar:'#3a3a4a',
+    fish:['seabass','squid','octopus','eel','oarfish'] },
+];
+
+// ── Fish species ─────────────────────────────────────────────────────────────
+const FISH = {
+  salmon:   {name:'Salmon',       rarity:2, wMin:1.5, wMax:5,   col:'#e07848', sz:1.1, desc:'A powerful swimmer.'},
+  trout:    {name:'Trout',        rarity:1, wMin:0.5, wMax:2.5, col:'#a0b878', sz:0.8, desc:'Speckled beauty.'},
+  dace:     {name:'Dace',         rarity:1, wMin:0.2, wMax:0.8, col:'#88a8b8', sz:0.6, desc:'Skittish little guy.'},
+  loach:    {name:'Loach',        rarity:1, wMin:0.1, wMax:0.5, col:'#a89060', sz:0.55,desc:'Hides in mud.'},
+  dorado:   {name:'Dorado',       rarity:5, wMin:4,   wMax:12,  col:'#f0c030', sz:1.5, desc:'River gold. Legendary.'},
+  bluegill: {name:'Bluegill',     rarity:1, wMin:0.2, wMax:1,   col:'#6090d0', sz:0.65,desc:'Pond favourite.'},
+  bass:     {name:'Bass',         rarity:2, wMin:1,   wMax:4,   col:'#708858', sz:1.0, desc:'Feisty fighter.'},
+  carp:     {name:'Carp',         rarity:2, wMin:2,   wMax:8,   col:'#c8a050', sz:1.2, desc:'Old and wise.'},
+  frog:     {name:'Frog',         rarity:2, wMin:0.1, wMax:0.3, col:'#60a050', sz:0.5, desc:'Wait — that\'s a frog.'},
+  goldenkoi:{name:'Golden Koi',   rarity:5, wMin:3,   wMax:9,   col:'#ffd040', sz:1.4, desc:'A living treasure.'},
+  snapper:  {name:'Snapper',      rarity:1, wMin:0.8, wMax:3,   col:'#e05040', sz:0.9, desc:'Feisty biter.'},
+  pompano:  {name:'Pompano',      rarity:2, wMin:0.5, wMax:2,   col:'#d0c070', sz:0.8, desc:'Silver and fast.'},
+  anchovy:  {name:'Anchovy',      rarity:1, wMin:0.05,wMax:0.2, col:'#a0a0b8', sz:0.4, desc:'Tiny shoaler.'},
+  turtle:   {name:'Sea Turtle',   rarity:3, wMin:20,  wMax:60,  col:'#608850', sz:1.8, desc:'Ancient wanderer.'},
+  shark:    {name:'Reef Shark',   rarity:4, wMin:30,  wMax:80,  col:'#708090', sz:2.2, desc:'Apex predator.'},
+  seabass:  {name:'Sea Bass',     rarity:1, wMin:1,   wMax:5,   col:'#9090a8', sz:1.0, desc:'Common but tasty.'},
+  squid:    {name:'Squid',        rarity:2, wMin:0.3, wMax:1.5, col:'#b888cc', sz:0.9, desc:'Eight arms, no wait.'},
+  octopus:  {name:'Octopus',      rarity:3, wMin:1,   wMax:6,   col:'#d06878', sz:1.1, desc:'Impossibly clever.'},
+  eel:      {name:'Moray Eel',    rarity:3, wMin:2,   wMax:8,   col:'#888840', sz:1.3, desc:'Long and grumpy.'},
+  oarfish:  {name:'Oarfish',      rarity:5, wMin:50,  wMax:200, col:'#c8d8e8', sz:2.8, desc:'Sea serpent of legend.'},
+};
+
+const RARITY_W = {1:0.55, 2:0.28, 3:0.11, 4:0.04, 5:0.02};
+function rarityStars(r) { return '★'.repeat(r) + '☆'.repeat(5-r); }
+function rarityColor(r) { return ['','#a0c080','#60a0e0','#c060e0','#f0a020','#f0c030'][r]; }
+
+function pickFish(loc) {
+  const pool = loc.fish;
+  const weighted = pool.map(id => ({id, w: RARITY_W[FISH[id].rarity] || 0.01}));
+  const total = weighted.reduce((s,x) => s+x.w, 0);
+  let roll = Math.random() * total;
+  for (const {id,w} of weighted) { roll -= w; if (roll <= 0) return id; }
+  return pool[0];
+}
+
+// ── Collection ───────────────────────────────────────────────────────────────
+function loadCol() { try { return JSON.parse(localStorage.getItem('deepline_caught')||'{}'); } catch { return {}; } }
+function saveCol(c) { try { localStorage.setItem('deepline_caught', JSON.stringify(c)); } catch {} }
+let collection = loadCol();
+function recordCatch(id, wt) {
+  const prev = collection[id];
+  const isNew = !prev;
+  collection[id] = {count:(prev?.count||0)+1, heaviest:Math.max(prev?.heaviest||0, wt)};
+  saveCol(collection);
+  return isNew;
+}
+
+// ── Input ────────────────────────────────────────────────────────────────────
+const inp = {justPressed:false, held:false, _raw:false, x:0, y:0};
+function onDown(x,y){ inp._raw=true; inp.x=x; inp.y=y; inp.held=true; }
+function onUp(){ inp.held=false; }
+canvas.addEventListener('pointerdown', e=>onDown(e.clientX,e.clientY));
+window.addEventListener('pointerup', onUp);
+window.addEventListener('keydown', e=>{
+  if(e.code==='Space'){e.preventDefault(); onDown(W/2,H/2);}
+  if(e.code==='KeyM' && G.screen==='fishing') G.screen='map';
+});
+window.addEventListener('keyup', e=>{ if(e.code==='Space') onUp(); });
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function lerp(a,b,t){ return a+(b-a)*t; }
+function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
+
+// ── Title screen ─────────────────────────────────────────────────────────────
+function drawTitle(t) {
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0d2a3a'); g.addColorStop(1,'#1a5a4a');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  // Water
+  const wy = H*0.58;
+  const wg = ctx.createLinearGradient(0,wy,0,H);
+  wg.addColorStop(0,'#1a7a8a'); wg.addColorStop(1,'#0a3a4a');
+  ctx.fillStyle=wg; ctx.fillRect(0,wy,W,H-wy);
+
+  // Water shimmer
+  ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1.5;
+  for(let i=0;i<10;i++){
+    const y=wy+15+i*18, x=Math.sin(t*0.7+i*1.1)*20;
+    ctx.beginPath(); ctx.moveTo(W*0.08+x,y); ctx.lineTo(W*0.45+x*0.4,y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W*0.55-x,y); ctx.lineTo(W*0.92-x*0.4,y); ctx.stroke();
+  }
+
+  // Stars
+  for(let i=0;i<25;i++){
+    const sx=(Math.sin(i*2.31)*0.5+0.5)*W, sy=(Math.cos(i*1.73)*0.5+0.5)*wy*0.88;
+    ctx.fillStyle=`rgba(255,255,200,${0.3+Math.sin(t*1.4+i)*0.3})`;
+    ctx.beginPath(); ctx.arc(sx,sy,1.2,0,Math.PI*2); ctx.fill();
+  }
+
+  // Moon
+  ctx.fillStyle='rgba(255,255,220,0.9)';
+  ctx.shadowColor='#ffffaa'; ctx.shadowBlur=20;
+  ctx.beginPath(); ctx.arc(W*0.8, H*0.18, W*0.035, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+
+  // Title
+  const fs = clamp(W*0.13, 42, 110);
+  ctx.textAlign='center';
+  ctx.font=`900 ${fs}px system-ui`;
+  ctx.fillStyle='#ffffff'; ctx.shadowColor='#40ffcc'; ctx.shadowBlur=28;
+  ctx.fillText('DEEP LINE', W/2, H*0.34);
+  ctx.shadowBlur=0;
+  const fs2 = clamp(W*0.035, 13, 28);
+  ctx.font=`${fs2}px system-ui`; ctx.fillStyle='rgba(160,230,210,0.85)';
+  ctx.fillText('a fishing story', W/2, H*0.34+fs*0.7);
+
+  // Prompt
+  ctx.fillStyle=`rgba(255,255,255,${0.45+Math.sin(t*2.2)*0.4})`;
+  ctx.font=`${clamp(W*0.033,12,22)}px system-ui`;
+  ctx.fillText('tap to cast off', W/2, H*0.83);
+}
+
+// ── Map screen ───────────────────────────────────────────────────────────────
+let mapHover = -1;
+function cardRect(i) {
+  const cols = W>580 ? 2 : 1;
+  const pad = Math.max(12, W*0.03);
+  const cw = (W - pad*(cols+1)) / cols;
+  const ch = clamp(140, 110, 200);
+  return { x: pad + (i%cols)*(cw+pad), y: 110+pad+Math.floor(i/cols)*(ch+pad), w:cw, h:ch };
+}
+
+function drawMap() {
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#f5ecd8'); g.addColorStop(1,'#e8d8b8');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle='#5a3a18'; ctx.textAlign='center';
+  ctx.font=`bold ${clamp(W*0.048,18,36)}px system-ui`;
+  ctx.fillText('Where to fish?', W/2, 72);
+  ctx.font=`${clamp(W*0.028,11,18)}px system-ui`; ctx.fillStyle='#9a7848';
+  ctx.fillText('choose your spot', W/2, 96);
+
+  LOCATIONS.forEach((loc,i)=>{
+    const {x,y,w,h}=cardRect(i);
+    const hov = mapHover===i;
+
+    ctx.fillStyle='rgba(0,0,0,0.1)';
+    rr(x+3,y+5,w,h,14); ctx.fill();
+
+    const cg=ctx.createLinearGradient(x,y,x,y+h);
+    cg.addColorStop(0, hov?'#fff':'#fdf5e4');
+    cg.addColorStop(1, hov?'#eef8f0':'#f0e4c8');
+    ctx.fillStyle=cg; rr(x,y,w,h,14); ctx.fill();
+    ctx.strokeStyle=hov?'#5aaa88':'rgba(170,140,90,0.35)';
+    ctx.lineWidth=hov?2.5:1.5; rr(x,y,w,h,14); ctx.stroke();
+
+    // Emoji
+    ctx.font=`${h*0.38}px system-ui`; ctx.textAlign='left';
+    ctx.fillText(loc.emoji, x+14, y+h*0.6);
+
+    // Name
+    ctx.fillStyle='#3a2808'; ctx.font=`bold ${clamp(h*0.2,13,22)}px system-ui`;
+    ctx.fillText(loc.name, x+h*0.48, y+h*0.38);
+    // Desc
+    ctx.fillStyle='#8a7040'; ctx.font=`${clamp(h*0.155,11,17)}px system-ui`;
+    ctx.fillText(loc.desc, x+h*0.48, y+h*0.6);
+    // Progress
+    const found = loc.fish.filter(id=>collection[id]).length;
+    ctx.fillStyle='#5aaa88'; ctx.font=`${clamp(h*0.14,10,15)}px system-ui`;
+    ctx.fillText(`${found}/${loc.fish.length} discovered`, x+h*0.48, y+h*0.82);
+  });
+}
+
+canvas.addEventListener('pointermove', e=>{
+  if(G.screen!=='map'){ mapHover=-1; return; }
+  mapHover=-1;
+  LOCATIONS.forEach((_,i)=>{ const {x,y,w,h}=cardRect(i);
+    if(e.clientX>=x&&e.clientX<=x+w&&e.clientY>=y&&e.clientY<=y+h) mapHover=i; });
+});
+
+// ── Fishing state (stubs filled in pass 2-4) ─────────────────────────────────
+const F = {};   // fishing state object — populated by initFishing()
+function initFishing() {
+  Object.assign(F, {
+    phase: 'idle',      // idle|casting|waiting|nibble|bite|hooked|reeling|caught|escaped
+    castT: 0,           // cast animation timer
+    bobX: 0, bobY: 0,  // bobber world position (relative to water surface)
+    bobDepth: 0,        // how far below surface
+    bobDip: 0,          // extra dip amount (bite)
+    lineAngle: 0,
+    fishes: [],         // active fish shadows
+    hookedId: null,     // fish species id when hooked
+    hookedWeight: 0,
+    reelProgress: 0,    // 0-1
+    reelMarker: 0.5,    // 0-1 vertical position of player zone
+    reelFish: 0.3,      // 0-1 target fish position
+    reelFishDir: 1,
+    reelFishTimer: 0,
+    biteTimer: 0,
+    waitTimer: 0,
+    nibbleCount: 0,
+    nibbleTimer: 0,
+    catchData: null,    // { id, weight, isNew }
+    catchAnim: 0,
+    msg: '',            // temporary message shown on screen
+    msgTimer: 0,
+    raindrops: [],      // for pier location
+    particles: [],      // ambient particles
+  });
+  // Spawn fish
+  const waterTop = H*0.44, waterBot = H*0.88;
+  for(let i=0;i<6;i++) F.fishes.push(spawnFish(waterTop, waterBot));
+  // Initial bobber position
+  F.bobX = W*0.62; F.bobY = H*0.46;
+  // Rain for pier
+  if(G.location.id==='pier') for(let i=0;i<120;i++) F.raindrops.push(newRaindrop());
+}
+
+function spawnFish(top, bot) {
+  return {
+    x: Math.random()*W, y: lerp(top+20, bot-20, Math.random()),
+    vx: (Math.random()-0.5)*30, vy: 0,
+    state: 'wander',  // wander|curious|nibbling|spooked
+    stateTimer: 1+Math.random()*3,
+    size: 0.6+Math.random()*0.8,
+    alpha: 0.35+Math.random()*0.25,
+    flipTimer: Math.random()*2,
+  };
+}
+function newRaindrop() {
+  return { x:Math.random()*W, y:Math.random()*H, speed:300+Math.random()*200, len:8+Math.random()*12 };
+}
+
+// ── Fishing draw (pass 2-4 fills this in) ────────────────────────────────────
+function drawFishing(dt) {
+  ctx.fillStyle = G.location.water; ctx.fillRect(0,0,W,H);
+  // Placeholder until pass 2
+  ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.textAlign='center';
+  ctx.font=`${clamp(W*0.04,14,28)}px system-ui`;
+  ctx.fillText('Loading scene...', W/2, H/2);
+}
+function drawCatch(dt) {}
+
+// ── Main loop ────────────────────────────────────────────────────────────────
+let lastTs = 0;
+function frame(ts) {
+  requestAnimationFrame(frame);
+  const dt = Math.min((ts-lastTs)/1000, 0.05); lastTs=ts; G.t+=dt;
+
+  // Consume press
+  inp.justPressed = inp._raw; inp._raw = false;
+
+  if(G.screen==='title') {
+    drawTitle(G.t);
+    if(inp.justPressed) G.screen='map';
+  } else if(G.screen==='map') {
+    drawMap();
+    if(inp.justPressed) {
+      LOCATIONS.forEach((loc,i)=>{
+        const {x,y,w,h}=cardRect(i);
+        if(inp.x>=x&&inp.x<=x+w&&inp.y>=y&&inp.y<=y+h) {
+          G.location=loc; G.screen='fishing'; initFishing();
+        }
+      });
+    }
+  } else if(G.screen==='fishing') {
+    drawFishing(dt);
+  } else if(G.screen==='catch') {
+    drawCatch(dt);
+  }
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
