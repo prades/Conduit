@@ -57,8 +57,8 @@ window.addEventListener('resize', () => {
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9FD8F0);
-scene.fog = new THREE.FogExp2(0xB8E8F8, 0.012);
+scene.background = new THREE.Color(0x8ECFF2);
+scene.fog = new THREE.FogExp2(0xC2E8F5, 0.009);
 
 // ── Camera ────────────────────────────────────────────────────────────────────
 const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.1, 400);
@@ -74,10 +74,10 @@ controls.dampingFactor = 0.07;
 controls.update();
 
 // ── Lighting ──────────────────────────────────────────────────────────────────
-scene.add(new THREE.AmbientLight(0xFFF5D8, 1.1));
-scene.add(new THREE.HemisphereLight(0x9FD8F0, 0x88CC66, 0.5));
+scene.add(new THREE.AmbientLight(0xFFF8E8, 1.3));
+scene.add(new THREE.HemisphereLight(0xAEDDF5, 0x90CC60, 0.65));
 
-const sun = new THREE.DirectionalLight(0xFFE898, 2.2);
+const sun = new THREE.DirectionalLight(0xFFEA90, 2.6);
 sun.position.set(35, 55, 25);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -90,7 +90,7 @@ sun.shadow.camera.bottom = -55;
 sun.shadow.bias = -0.001;
 scene.add(sun);
 
-const fill = new THREE.DirectionalLight(0xA8D8FF, 0.45);
+const fill = new THREE.DirectionalLight(0xB8E0FF, 0.60);
 fill.position.set(-25, 8, -20);
 scene.add(fill);
 
@@ -105,6 +105,26 @@ function gradMap(steps) {
 }
 const gm3 = gradMap(3);
 const gm4 = gradMap(4);
+
+// ── Canvas textures ───────────────────────────────────────────────────────────
+function makeIrisTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(64, 52, 4, 64, 64, 60);
+  g.addColorStop(0.00, '#90C8F0'); g.addColorStop(0.40, '#4A8EC0');
+  g.addColorStop(0.80, '#1E5080'); g.addColorStop(1.00, '#080F18');
+  x.fillStyle = g;
+  x.beginPath(); x.arc(64, 64, 60, 0, Math.PI * 2); x.fill();
+  // subtle fiber lines
+  x.strokeStyle = 'rgba(160,210,255,0.20)'; x.lineWidth = 1.2;
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2;
+    x.beginPath(); x.moveTo(64 + Math.cos(a)*12, 64 + Math.sin(a)*12);
+    x.lineTo(64 + Math.cos(a)*56, 64 + Math.sin(a)*56); x.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+const IRIS_TEX = makeIrisTex();
 
 function toon(color, extra) {
   return new THREE.MeshToonMaterial({ color, gradientMap: gm3, ...extra });
@@ -137,12 +157,12 @@ for (let i = 0; i < gPos.count; i++) {
   const y = th(x, z);
   const rv = Math.abs(x + z * 0.15);
   let r, g, b;
-  if (z > 9 || y < -0.05) {       // sand / beach
-    r = 0.96; g = 0.90; b = 0.63;
-  } else if (rv < 4.2) {           // river mud bank
-    r = 0.70; g = 0.60; b = 0.42;
-  } else {                         // grass
-    r = 0.49; g = 0.82; b = 0.44;
+  if (z > 9 || y < -0.05) {       // sand / beach — warm golden
+    r = 0.97; g = 0.91; b = 0.58;
+  } else if (rv < 4.2) {           // river mud bank — earthy
+    r = 0.68; g = 0.58; b = 0.38;
+  } else {                         // grass — vibrant AC green
+    r = 0.44; g = 0.86; b = 0.42;
   }
   colBuf[i * 3] = r; colBuf[i * 3 + 1] = g; colBuf[i * 3 + 2] = b;
 }
@@ -163,7 +183,7 @@ function waterPlane(w, d, segs, color, opacity) {
 }
 
 // Ocean
-const ocean = waterPlane(220, 100, 30, 0x55BBEC, 0.90);
+const ocean = waterPlane(220, 100, 30, 0x32C4E0, 0.92);
 ocean.position.set(0, -0.18, 55);
 scene.add(ocean);
 
@@ -212,14 +232,14 @@ function buildStrip(curve, width, segments, widen) {
 
 const river = new THREE.Mesh(
   buildStrip(riverCurve, 5.5, 50, true),
-  new THREE.MeshToonMaterial({ color: 0x70C8EE, transparent: true, opacity: 0.88, gradientMap: gm3, depthWrite: false })
+  new THREE.MeshToonMaterial({ color: 0x48C0E0, transparent: true, opacity: 0.90, gradientMap: gm3, depthWrite: false })
 );
 scene.add(river);
 
 // Estuary pool where river fans into ocean
 const estuaryGeo = new THREE.CircleGeometry(8, 16);
 const estuary = new THREE.Mesh(estuaryGeo,
-  new THREE.MeshToonMaterial({ color: 0x60BFEA, transparent: true, opacity: 0.88, gradientMap: gm3, depthWrite: false }));
+  new THREE.MeshToonMaterial({ color: 0x3ABCD8, transparent: true, opacity: 0.90, gradientMap: gm3, depthWrite: false }));
 estuary.rotation.x = -Math.PI / 2;
 estuary.position.set(1.5, -0.06, 16);
 scene.add(estuary);
@@ -362,23 +382,30 @@ for (let i = 0; i < skyPos.count; i++) {
   const y = skyPos.getY(i);
   const n = (y + 280) / 560; // 0=bottom 1=top
   const t = Math.max(0, Math.min(1, n));
-  // horizon: warm peach → zenith: blue
-  const r = 0.62 + t * (0.38 - 0.62);
-  const g = 0.85 + t * (0.72 - 0.85);
-  const b = 0.94 + t * (0.90 - 0.94);
+  // horizon: warm peach-cream → zenith: rich AC blue
+  const r = 0.92 + t * (0.28 - 0.92);
+  const g = 0.88 + t * (0.62 - 0.88);
+  const b = 0.88 + t * (0.96 - 0.88);
   skyColors[i * 3] = r; skyColors[i * 3 + 1] = g; skyColors[i * 3 + 2] = b;
 }
 skyGeo.setAttribute('color', new THREE.BufferAttribute(skyColors, 3));
 scene.add(new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ vertexColors: true })));
 
-// Sun disc
+// Sun disc + halo
+const sunDir = sun.position.clone().normalize();
+const sunPos = sunDir.clone().multiplyScalar(180);
 const sunDisc = new THREE.Mesh(
-  new THREE.CircleGeometry(9, 20),
-  new THREE.MeshBasicMaterial({ color: 0xFFE870, transparent: true, opacity: 0.75, depthWrite: false })
+  new THREE.CircleGeometry(7, 24),
+  new THREE.MeshBasicMaterial({ color: 0xFFF5A0, transparent: true, opacity: 0.95, depthWrite: false })
 );
-sunDisc.position.copy(sun.position.clone().normalize().multiplyScalar(180));
-sunDisc.lookAt(0, 0, 0);
+sunDisc.position.copy(sunPos); sunDisc.lookAt(0, 0, 0);
 scene.add(sunDisc);
+const sunHalo = new THREE.Mesh(
+  new THREE.CircleGeometry(16, 24),
+  new THREE.MeshBasicMaterial({ color: 0xFFE870, transparent: true, opacity: 0.28, depthWrite: false })
+);
+sunHalo.position.copy(sunPos.clone().multiplyScalar(0.998)); sunHalo.lookAt(0, 0, 0);
+scene.add(sunHalo);
 
 // ── Clouds ────────────────────────────────────────────────────────────────────
 const CLOUD_MAT = new THREE.MeshToonMaterial({ color: 0xFFFFFF, gradientMap: gm3 });
@@ -466,36 +493,84 @@ const headPivot = new THREE.Group();
 headPivot.position.y = 1.12;
 char.add(headPivot);
 
-// Big round head
-const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.48, 11, 9), toon(0xF0C880));
+// Big round head — warmer skin, softer 4-step shading
+const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.48, 14, 11),
+  new THREE.MeshToonMaterial({ color: 0xF5CA7A, gradientMap: gm4 }));
 headMesh.castShadow = true;
 outline(headMesh, 0.04);
 headPivot.add(headMesh);
 
-// Eyes — white sclera + dark pupil + gleam
-const eyeW = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-const eyeD = new THREE.MeshBasicMaterial({ color: 0x2A1808 });
-const gleamMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
+// Eyes with iris texture, eyelid arc, and blink
+const charBlinkMeshes = [];
 
 function addEye(px, py, pz) {
-  const w = new THREE.Mesh(new THREE.SphereGeometry(0.095, 7, 5), eyeW);
-  w.position.set(px, py, pz);
-  const d = new THREE.Mesh(new THREE.SphereGeometry(0.062, 7, 5), eyeD);
-  d.position.set(px * 0.98, py, pz + 0.04);
-  const g = new THREE.Mesh(new THREE.SphereGeometry(0.024, 5, 4), gleamMat);
-  g.position.set(px * 0.9, py + 0.035, pz + 0.08);
-  headPivot.add(w, d, g);
+  const EG = new THREE.Group();
+  EG.position.set(px, py, pz);
+
+  // Sclera
+  const sclera = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 9),
+    new THREE.MeshToonMaterial({ color: 0xFFFDF8, gradientMap: gm4 }));
+  sclera.scale.z = 0.54;
+  EG.add(sclera);
+
+  // Iris disc with canvas gradient texture
+  const iris = new THREE.Mesh(new THREE.CircleGeometry(0.066, 18),
+    new THREE.MeshBasicMaterial({ map: IRIS_TEX }));
+  iris.position.z = 0.051;
+  EG.add(iris);
+
+  // Pupil
+  const pupil = new THREE.Mesh(new THREE.CircleGeometry(0.032, 14),
+    new THREE.MeshBasicMaterial({ color: 0x060810 }));
+  pupil.position.z = 0.054;
+  EG.add(pupil);
+
+  // Highlight — large upper gleam + tiny secondary
+  const hl = new THREE.Mesh(new THREE.CircleGeometry(0.017, 8),
+    new THREE.MeshBasicMaterial({ color: 0xFFFFFF }));
+  hl.position.set(px > 0 ? -0.019 : 0.019, 0.024, 0.056);
+  EG.add(hl);
+  const hl2 = new THREE.Mesh(new THREE.CircleGeometry(0.008, 6),
+    new THREE.MeshBasicMaterial({ color: 0xEEF4FF, transparent: true, opacity: 0.80 }));
+  hl2.position.set(px > 0 ? 0.018 : -0.018, -0.018, 0.056);
+  EG.add(hl2);
+
+  // Upper eyelid arc (dark curved tube gives warmth + depth)
+  const arc = new THREE.QuadraticBezierCurve3(
+    new THREE.Vector3(-0.090, 0.004, 0),
+    new THREE.Vector3(0,      0.036, 0),
+    new THREE.Vector3( 0.090, 0.004, 0)
+  );
+  const eyelid = new THREE.Mesh(new THREE.TubeGeometry(arc, 10, 0.015, 5),
+    toon(0x2A1008, { gradientMap: gm3 }));
+  eyelid.position.z = 0.046;
+  EG.add(eyelid);
+
+  // Blink disc — skin-toned, scales up to cover eye on blink
+  const blink = new THREE.Mesh(new THREE.CircleGeometry(0.098, 16),
+    new THREE.MeshBasicMaterial({ color: 0xF2C870, depthWrite: false }));
+  blink.position.z = 0.058;
+  blink.scale.y = 0.001;
+  EG.add(blink);
+  charBlinkMeshes.push(blink);
+
+  headPivot.add(EG);
 }
 addEye(-0.18, 0.07, 0.40);
 addEye( 0.18, 0.07, 0.40);
 
-// Blush marks
-const blushMat = new THREE.MeshBasicMaterial({ color: 0xFF9999, transparent: true, opacity: 0.40 });
+// Blush — double layer (inner dense + outer soft halo)
 [-0.28, 0.28].forEach(bx => {
-  const b = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 4), blushMat);
-  b.scale.set(1.4, 0.65, 0.5);
-  b.position.set(bx, -0.02, 0.37);
-  headPivot.add(b);
+  const inner = new THREE.Mesh(new THREE.CircleGeometry(0.088, 14),
+    new THREE.MeshBasicMaterial({ color: 0xFF6868, transparent: true, opacity: 0.32, depthWrite: false }));
+  inner.scale.set(1.5, 1.0, 1.0);
+  inner.position.set(bx, -0.015, 0.425);
+  headPivot.add(inner);
+  const outer = new THREE.Mesh(new THREE.CircleGeometry(0.130, 14),
+    new THREE.MeshBasicMaterial({ color: 0xFF9090, transparent: true, opacity: 0.12, depthWrite: false }));
+  outer.scale.set(1.5, 1.0, 1.0);
+  outer.position.set(bx, -0.015, 0.422);
+  headPivot.add(outer);
 });
 
 // Hat brim + crown
@@ -570,6 +645,10 @@ renderer.domElement.addEventListener('pointerup', e => {
 renderer.domElement.addEventListener('pointercancel', e => {
   if (e.pointerId === activePtId) activePtId = -1;
 });
+
+// ── Character blink state ─────────────────────────────────────────────────────
+let charBlinkTimer = 2.5 + Math.random() * 2.5;
+let charBlinking = false, charBlinkPhase = 0;
 
 // ── Animate ───────────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
@@ -655,6 +734,20 @@ function animate() {
     headPivot.position.y = 1.12 + Math.sin(t * 1.7) * 0.022;
     headPivot.rotation.z = Math.sin(t * 0.9) * 0.015;
     bodyMesh.scale.y = 0.86 + Math.sin(t * 1.7) * 0.012;
+  }
+
+  // Character blink
+  charBlinkTimer -= dt;
+  if (charBlinkTimer <= 0 && !charBlinking) { charBlinking = true; charBlinkPhase = 0; }
+  if (charBlinking) {
+    charBlinkPhase += dt / 0.10;
+    const b = charBlinkPhase < 1 ? charBlinkPhase : Math.max(0, 2 - charBlinkPhase);
+    charBlinkMeshes.forEach(bm => { bm.scale.y = Math.max(0.001, b); });
+    if (charBlinkPhase >= 2.0) {
+      charBlinking = false;
+      charBlinkTimer = 3.0 + Math.random() * 4.5;
+      charBlinkMeshes.forEach(bm => { bm.scale.y = 0.001; });
+    }
   }
 
   controls.update();
