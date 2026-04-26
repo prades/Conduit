@@ -425,6 +425,152 @@ const oceanBase = Float32Array.from(oceanPos.array);
 const riverPos = river.geometry.attributes.position;
 const riverBase = Float32Array.from(riverPos.array);
 
+// ── Player character ──────────────────────────────────────────────────────────
+const char = new THREE.Group();
+
+// Ground shadow disc
+const charShadow = new THREE.Mesh(
+  new THREE.CircleGeometry(0.36, 14),
+  new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18, depthWrite: false })
+);
+charShadow.rotation.x = -Math.PI / 2;
+charShadow.position.y = 0.02;
+char.add(charShadow);
+
+// Legs
+const legMat = toon(0x3A5090);
+const legGeo = new THREE.CylinderGeometry(0.085, 0.095, 0.44, 7);
+const legL = new THREE.Mesh(legGeo, legMat);
+legL.position.set(-0.14, 0.27, 0); legL.castShadow = true;
+const legR = new THREE.Mesh(legGeo, legMat);
+legR.position.set( 0.14, 0.27, 0); legR.castShadow = true;
+char.add(legL, legR);
+
+// Body
+const bodyMesh = new THREE.Mesh(new THREE.SphereGeometry(0.30, 9, 7), toon(0x7AB8E8));
+bodyMesh.scale.set(1, 0.86, 0.90);
+bodyMesh.position.y = 0.60;
+bodyMesh.castShadow = true;
+outline(bodyMesh, 0.04);
+char.add(bodyMesh);
+
+// Arms
+const armMat = toon(0x7AB8E8);
+const armGeo = new THREE.CylinderGeometry(0.065, 0.07, 0.36, 6);
+const armL = new THREE.Mesh(armGeo, armMat); armL.position.set(-0.38, 0.58, 0); armL.rotation.z =  0.35; armL.castShadow = true;
+const armR = new THREE.Mesh(armGeo, armMat); armR.position.set( 0.38, 0.58, 0); armR.rotation.z = -0.35; armR.castShadow = true;
+char.add(armL, armR);
+
+// Head pivot — the "bobble" parent
+const headPivot = new THREE.Group();
+headPivot.position.y = 1.12;
+char.add(headPivot);
+
+// Big round head
+const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.48, 11, 9), toon(0xF0C880));
+headMesh.castShadow = true;
+outline(headMesh, 0.04);
+headPivot.add(headMesh);
+
+// Eyes — white sclera + dark pupil + gleam
+const eyeW = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
+const eyeD = new THREE.MeshBasicMaterial({ color: 0x2A1808 });
+const gleamMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
+
+function addEye(px, py, pz) {
+  const w = new THREE.Mesh(new THREE.SphereGeometry(0.095, 7, 5), eyeW);
+  w.position.set(px, py, pz);
+  const d = new THREE.Mesh(new THREE.SphereGeometry(0.062, 7, 5), eyeD);
+  d.position.set(px * 0.98, py, pz + 0.04);
+  const g = new THREE.Mesh(new THREE.SphereGeometry(0.024, 5, 4), gleamMat);
+  g.position.set(px * 0.9, py + 0.035, pz + 0.08);
+  headPivot.add(w, d, g);
+}
+addEye(-0.18, 0.07, 0.40);
+addEye( 0.18, 0.07, 0.40);
+
+// Blush marks
+const blushMat = new THREE.MeshBasicMaterial({ color: 0xFF9999, transparent: true, opacity: 0.40 });
+[-0.28, 0.28].forEach(bx => {
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 4), blushMat);
+  b.scale.set(1.4, 0.65, 0.5);
+  b.position.set(bx, -0.02, 0.37);
+  headPivot.add(b);
+});
+
+// Hat brim + crown
+const hatMat = toon(0xE86820);
+const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.07, 14), hatMat);
+hatBrim.position.y = 0.43;
+const hatCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.40, 0.38, 14), hatMat);
+hatCrown.position.y = 0.66;
+outline(hatCrown, 0.05);
+headPivot.add(hatBrim, hatCrown);
+
+// Start position (open grass area)
+const SPAWN_X = 5, SPAWN_Z = -3;
+char.position.set(SPAWN_X, th(SPAWN_X, SPAWN_Z), SPAWN_Z);
+scene.add(char);
+
+// ── Walk target ring ──────────────────────────────────────────────────────────
+const walkRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.22, 0.38, 18),
+  new THREE.MeshBasicMaterial({ color: 0xFFDD44, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })
+);
+walkRing.rotation.x = -Math.PI / 2;
+scene.add(walkRing);
+
+// ── Movement state ────────────────────────────────────────────────────────────
+const charPos = new THREE.Vector3(SPAWN_X, th(SPAWN_X, SPAWN_Z), SPAWN_Z);
+let charTarget = null;
+let charMoving = false;
+let walkPhase = 0;
+
+function isWalkable(x, z) {
+  if (z > 13.5) return false;          // ocean
+  if (th(x, z) < -0.22) return false;  // deep water / river channel
+  return true;
+}
+
+// ── Click / tap → walk ────────────────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const ndcMouse  = new THREE.Vector2();
+let pDownX = 0, pDownY = 0;
+let activePtId = -1;
+
+renderer.domElement.addEventListener('pointerdown', e => {
+  if (activePtId !== -1) return;
+  activePtId = e.pointerId;
+  pDownX = e.clientX; pDownY = e.clientY;
+});
+
+renderer.domElement.addEventListener('pointerup', e => {
+  if (e.pointerId !== activePtId) return;
+  activePtId = -1;
+  const dx = e.clientX - pDownX, dy = e.clientY - pDownY;
+  if (dx * dx + dy * dy > 64) return; // was a drag → orbit, ignore
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  ndcMouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+  ndcMouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(ndcMouse, camera);
+
+  const hits = raycaster.intersectObject(ground);
+  if (!hits.length) return;
+  const pt = hits[0].point;
+  if (!isWalkable(pt.x, pt.z)) return;
+
+  charTarget = new THREE.Vector3(pt.x, th(pt.x, pt.z), pt.z);
+  charMoving = true;
+  walkRing.position.set(pt.x, th(pt.x, pt.z) + 0.05, pt.z);
+  walkRing.material.opacity = 0.9;
+  walkRing.scale.setScalar(1.0);
+});
+
+renderer.domElement.addEventListener('pointercancel', e => {
+  if (e.pointerId === activePtId) activePtId = -1;
+});
+
 // ── Animate ───────────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
 function animate() {
@@ -468,6 +614,48 @@ function animate() {
     b.children[0].geometry.attributes.position.array[7] =  Math.sin(t * 6 + ph) * 0.18;
     b.children[0].geometry.attributes.position.needsUpdate = true;
   });
+
+  // ── Character update ─────────────────────────────────────────────────────────
+  if (charMoving && charTarget) {
+    const toTarget = new THREE.Vector3().subVectors(charTarget, charPos);
+    const dist = toTarget.length();
+    if (dist > 0.07) {
+      const SPEED = 4.2;
+      charPos.addScaledVector(toTarget.clone().normalize(), Math.min(SPEED * dt, dist));
+      charPos.y = th(charPos.x, charPos.z);
+      char.position.copy(charPos);
+
+      // Face movement direction
+      char.rotation.y = Math.atan2(toTarget.x, toTarget.z);
+
+      // Walk cycle: legs swing, arms counter-swing, body slight lean
+      walkPhase += dt * 10;
+      legL.rotation.x  =  Math.sin(walkPhase) * 0.55;
+      legR.rotation.x  = -Math.sin(walkPhase) * 0.55;
+      armL.rotation.x  = -Math.sin(walkPhase) * 0.40;
+      armR.rotation.x  =  Math.sin(walkPhase) * 0.40;
+      bodyMesh.rotation.z = Math.sin(walkPhase * 0.5) * 0.04;
+
+      // Head bobble — oversized head bounces more dramatically
+      headPivot.position.y = 1.12 + Math.abs(Math.sin(walkPhase * 0.5)) * 0.10;
+      headPivot.rotation.z = Math.sin(walkPhase * 0.5) * 0.06;
+    } else {
+      charMoving = false;
+      legL.rotation.x = legR.rotation.x = armL.rotation.x = armR.rotation.x = 0;
+      bodyMesh.rotation.z = 0;
+    }
+
+    // Walk ring: spin + fade
+    walkRing.rotation.y += dt * 2.5;
+    walkRing.material.opacity = Math.max(0, walkRing.material.opacity - dt * 1.2);
+  }
+
+  // Idle: gentle breathing bob
+  if (!charMoving) {
+    headPivot.position.y = 1.12 + Math.sin(t * 1.7) * 0.022;
+    headPivot.rotation.z = Math.sin(t * 0.9) * 0.015;
+    bodyMesh.scale.y = 0.86 + Math.sin(t * 1.7) * 0.012;
+  }
 
   controls.update();
   renderer.render(scene, camera);
