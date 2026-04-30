@@ -251,47 +251,198 @@ function outline(mesh, t = 0.04, col = 0x2a1a08) {
   mesh.add(m);
 }
 
-// ── Trees ─────────────────────────────────────────────────────────────────────
-const TRUNK_MAT  = toon(0x7A4E28);
-const LEAF_MATS  = [0x55A84E, 0x68BE60, 0x47984A, 0x76CC6E].map(c => toon(c));
+// ── Trunk materials ───────────────────────────────────────────────────────────
+const TRUNK_WARM = toon(0x8A5828);
+const TRUNK_DARK = toon(0x624018);
+const TRUNK_PALM = toon(0x9A7830);
 
-function makeTree(x, z, sc = 1) {
+// ── Apple tree (image 1 — round green blob mass + red fruit dots) ─────────────
+function makeAppleTree(x, z, sc = 1) {
   const g = new THREE.Group();
-  const y = th(x, z);
-  g.position.set(x, y, z);
+  g.position.set(x, th(x, z), z);
 
-  // Trunk
-  const trk = new THREE.Mesh(new THREE.CylinderGeometry(0.18 * sc, 0.26 * sc, 1.8 * sc, 8), TRUNK_MAT);
-  trk.position.y = 0.9 * sc;
-  trk.castShadow = true;
-  outline(trk, 0.06);
-  g.add(trk);
+  const trk = new THREE.Mesh(new THREE.CylinderGeometry(0.24*sc, 0.30*sc, 2.0*sc, 9), TRUNK_WARM);
+  trk.position.y = 1.0*sc; trk.castShadow = true;
+  outline(trk, 0.05); g.add(trk);
 
-  // Three stacked foliage blobs (AC signature look)
-  const lmat = LEAF_MATS[Math.floor(Math.random() * LEAF_MATS.length)];
-  [[0, 2.6, 1.2], [-0.3, 3.5, 0.95], [0.2, 4.3, 0.72]].forEach(([ox, oy, r]) => {
-    const leaf = new THREE.Mesh(new THREE.SphereGeometry(r * sc, 8, 6), lmat);
-    leaf.position.set(ox * sc, oy * sc, 0);
-    leaf.castShadow = true;
-    outline(leaf, 0.05);
-    g.add(leaf);
+  const lA = toon(0x3A8A2A), lB = toon(0x4A9A34);
+  [
+    [ 0.00, 2.90,  0.00, 1.10],
+    [-0.50, 2.60,  0.20, 0.78],
+    [ 0.50, 2.60, -0.20, 0.74],
+    [ 0.00, 2.30, -0.30, 0.68],
+    [ 0.20, 3.60,  0.10, 0.60],
+    [-0.20, 3.50, -0.20, 0.55],
+  ].forEach(([ox, oy, oz, r], i) => {
+    const leaf = new THREE.Mesh(new THREE.SphereGeometry(r*sc, 9, 7), i < 3 ? lA : lB);
+    leaf.position.set(ox*sc, oy*sc, oz*sc);
+    leaf.castShadow = true; outline(leaf, 0.04, 0x1A4814); g.add(leaf);
   });
 
+  // Red apples with tiny stems
+  const APPLE = toon(0xCC2828);
+  const STEM  = toon(0x4A2A10);
+  for (let i = 0; i < 5; i++) {
+    const a = (i/5)*Math.PI*2, r = 0.72*sc;
+    const ap = new THREE.Mesh(new THREE.SphereGeometry(0.11*sc, 6, 4), APPLE);
+    const ay  = 2.62*sc + Math.sin(i*1.3)*0.28*sc;
+    ap.position.set(Math.cos(a)*r, ay, Math.sin(a)*r*0.75); g.add(ap);
+    const st = new THREE.Mesh(new THREE.CylinderGeometry(0.013*sc, 0.013*sc, 0.12*sc, 4), STEM);
+    st.position.set(Math.cos(a)*r, ay + 0.12*sc, Math.sin(a)*r*0.75); g.add(st);
+  }
   scene.add(g);
 }
 
-// ── Bushes ────────────────────────────────────────────────────────────────────
-const BUSH_MATS = [0x68B850, 0x55A040, 0x7ACC60].map(c => toon(c));
-function makeBush(x, z, sc = 1) {
-  const y = th(x, z);
-  const mat = BUSH_MATS[Math.floor(Math.random() * BUSH_MATS.length)];
-  [[0, 0, 0.55], [-0.35, 0.1, 0.42], [0.32, 0.08, 0.40]].forEach(([ox, oy, r]) => {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(r * sc, 7, 5), mat);
-    m.position.set(x + ox * sc, y + 0.3 * sc + oy, z);
-    m.castShadow = true;
-    outline(m, 0.05);
-    scene.add(m);
+// ── Layered pine / fir (image 2 — stacked flat cone tiers) ───────────────────
+function makePineTree(x, z, sc = 1) {
+  const g = new THREE.Group();
+  g.position.set(x, th(x, z), z);
+
+  const trk = new THREE.Mesh(new THREE.CylinderGeometry(0.10*sc, 0.18*sc, 1.8*sc, 8), TRUNK_DARK);
+  trk.position.y = 0.9*sc; trk.castShadow = true; g.add(trk);
+
+  const DARK = toon(0x266022), MID = toon(0x347830);
+  [
+    { r:1.52, h:0.58, y:1.52 },
+    { r:1.28, h:0.52, y:2.22 },
+    { r:1.04, h:0.48, y:2.86 },
+    { r:0.80, h:0.44, y:3.44 },
+    { r:0.56, h:0.40, y:3.96 },
+    { r:0.28, h:0.36, y:4.44 },
+  ].forEach((t, i) => {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(t.r*sc, t.h*sc, 11), i < 3 ? DARK : MID);
+    cone.position.y = t.y*sc; cone.castShadow = true;
+    outline(cone, 0.035, 0x102810); g.add(cone);
   });
+  scene.add(g);
+}
+
+// ── Palm tree (image 1 — curved trunk, radiating fronds, coconuts) ─────────────
+function makePalmTree(x, z, sc = 1) {
+  const g = new THREE.Group();
+  g.position.set(x, th(x, z), z);
+
+  // Segmented trunk with slight curve
+  for (let i = 0; i < 7; i++) {
+    const f = i / 7;
+    const seg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.10*sc*(1-f*0.3), 0.13*sc*(1-f*0.25), 0.68*sc, 8), TRUNK_PALM);
+    seg.position.set(Math.sin(f*0.5)*0.20*sc, (0.34 + i*0.68)*sc, 0);
+    seg.rotation.z = -f * 0.16;
+    seg.castShadow = true; g.add(seg);
+  }
+
+  const TX = Math.sin(0.5)*0.20*sc*2.1, TY = 4.3*sc;
+  const FROND = toon(0x3CBB28), BLADE = toon(0x50C830);
+
+  // Fronds — 8 radiating out and drooping
+  for (let i = 0; i < 8; i++) {
+    const a = (i/8)*Math.PI*2;
+    const fg = new THREE.Group();
+    fg.position.set(TX, TY, 0);
+    fg.rotation.y = a;
+
+    // Stem
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.035*sc, 0.055*sc, 1.1*sc, 5), FROND);
+    stem.rotation.z = Math.PI/2; stem.position.x = 0.55*sc; fg.add(stem);
+
+    // Leaf blade (flat elongated sphere)
+    const blade = new THREE.Mesh(new THREE.SphereGeometry(0.40*sc, 8, 5), BLADE);
+    blade.scale.set(1.35, 0.20, 0.52);
+    blade.position.set(1.22*sc, -0.12*sc, 0); fg.add(blade);
+
+    fg.rotation.x = 0.30; // droop
+    g.add(fg);
+  }
+
+  // Coconuts
+  const COCO = toon(0x7A5020);
+  for (let i = 0; i < 3; i++) {
+    const a = (i/3)*Math.PI*2;
+    const c = new THREE.Mesh(new THREE.SphereGeometry(0.16*sc, 7, 5), COCO);
+    c.position.set(TX + Math.cos(a)*0.22*sc, TY - 0.52*sc, Math.sin(a)*0.22*sc);
+    g.add(c);
+  }
+  scene.add(g);
+}
+
+// ── Round deciduous tree (river bank style, improved clustering) ──────────────
+const LEAF_MATS = [0x4AAA38, 0x5ABB44, 0x44A030, 0x62C048].map(c => toon(c));
+function makeRoundTree(x, z, sc = 1) {
+  const g = new THREE.Group();
+  g.position.set(x, th(x, z), z);
+  const trk = new THREE.Mesh(new THREE.CylinderGeometry(0.17*sc, 0.25*sc, 1.8*sc, 9), TRUNK_WARM);
+  trk.position.y = 0.9*sc; trk.castShadow = true; outline(trk, 0.06); g.add(trk);
+  const lmat = LEAF_MATS[Math.floor(Math.random()*LEAF_MATS.length)];
+  [[0, 2.65, 1.15], [-0.32, 3.42, 0.90], [0.28, 3.40, 0.88], [0, 4.08, 0.64]]
+    .forEach(([ox, oy, r]) => {
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(r*sc, 9, 7), lmat);
+      leaf.position.set(ox*sc, oy*sc, 0);
+      leaf.castShadow = true; outline(leaf, 0.05); g.add(leaf);
+    });
+  scene.add(g);
+}
+
+// ── Flowering bush (image 2 — green base + colored flower clusters on top) ────
+const FBUSH_COLORS = [0xFFDD28, 0xFF6888, 0xFFAA28, 0xFFF080, 0xFF88AA];
+function makeFlowerBush(x, z, sc = 1, col) {
+  const y = th(x, z);
+  if (y < -0.1) return;
+  const fc  = col || FBUSH_COLORS[Math.floor(Math.random()*FBUSH_COLORS.length)];
+  const bmat = toon(0x389828), fmat = toon(fc);
+
+  [[ 0.00, 0.30,  0.00, 0.44],
+   [-0.32, 0.25,  0.12, 0.34],
+   [ 0.30, 0.24, -0.10, 0.32],
+   [ 0.08, 0.22, -0.30, 0.28],
+   [-0.12, 0.22,  0.28, 0.26]].forEach(([bx, by, bz, r]) => {
+    const b = new THREE.Mesh(new THREE.SphereGeometry(r*sc, 8, 6), bmat);
+    b.position.set(x + bx*sc, y + by*sc, z + bz*sc);
+    b.castShadow = true; outline(b, 0.04, 0x184818); scene.add(b);
+  });
+
+  // Flower dots on top surface
+  for (let i = 0; i < 7; i++) {
+    const a = (i/7)*Math.PI*2, r = 0.26*sc;
+    const f = new THREE.Mesh(new THREE.SphereGeometry(0.085*sc, 6, 4), fmat);
+    f.position.set(x + Math.cos(a)*r, y + 0.60*sc + (i%2)*0.05*sc, z + Math.sin(a)*r*0.85);
+    scene.add(f);
+  }
+  const ctr = new THREE.Mesh(new THREE.SphereGeometry(0.090*sc, 6, 4), fmat);
+  ctr.position.set(x, y + 0.68*sc, z);
+  scene.add(ctr);
+}
+
+// ── Round bush (plain green, water-edge style) ────────────────────────────────
+const RBUSH_A = toon(0x3A9828), RBUSH_B = toon(0x50A838);
+function makeRoundBush(x, z, sc = 1) {
+  const y = th(x, z);
+  const mat = Math.random() < 0.5 ? RBUSH_A : RBUSH_B;
+  [[0, 0.28, 0.44], [-0.30, 0.22, 0.34], [0.28, 0.22, 0.32], [0, 0.18, 0.26]]
+    .forEach(([ox, oy, r]) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(r*sc, 8, 6), mat);
+      m.position.set(x + ox*sc, y + oy*sc, z);
+      m.castShadow = true; outline(m, 0.04, 0x184818); scene.add(m);
+    });
+}
+
+// ── Tall tropical leaf plant (image 2 foreground) ─────────────────────────────
+function makeTallPlant(x, z, sc = 1) {
+  const y = th(x, z);
+  if (y < -0.1) return;
+  const lmat = toon(0x2A7420), lmat2 = toon(0x347A28);
+  for (let i = 0; i < 6; i++) {
+    const a = (i/6)*Math.PI*2;
+    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.38*sc, 7, 5), i % 2 === 0 ? lmat : lmat2);
+    leaf.scale.set(0.44, 0.20, 1.32);
+    leaf.position.set(x + Math.cos(a)*0.35*sc, y + 0.52*sc, z + Math.sin(a)*0.35*sc);
+    leaf.rotation.y = a; leaf.rotation.z = 0.32;
+    leaf.castShadow = true; outline(leaf, 0.05, 0x102810); scene.add(leaf);
+  }
+  // Center upright shoot
+  const shoot = new THREE.Mesh(new THREE.CylinderGeometry(0.035*sc, 0.055*sc, 0.85*sc, 6), lmat);
+  shoot.position.set(x, y + 0.42*sc, z);
+  scene.add(shoot);
 }
 
 // ── Rocks ─────────────────────────────────────────────────────────────────────
@@ -300,14 +451,11 @@ function makeRock(x, z, sc = 1) {
   const y = th(x, z);
   const geo = new THREE.DodecahedronGeometry(sc, 0);
   geo.scale(1, 0.58 + Math.random() * 0.3, 0.85 + Math.random() * 0.2);
-  const mat = ROCK_MATS[Math.floor(Math.random() * ROCK_MATS.length)];
-  const m = new THREE.Mesh(geo, mat);
+  const m = new THREE.Mesh(geo, ROCK_MATS[Math.floor(Math.random()*ROCK_MATS.length)]);
   m.position.set(x, y + sc * 0.35, z);
   m.rotation.y = Math.random() * Math.PI * 2;
-  m.castShadow = true;
-  m.receiveShadow = true;
-  outline(m, 0.05);
-  scene.add(m);
+  m.castShadow = true; m.receiveShadow = true;
+  outline(m, 0.05); scene.add(m);
 }
 
 // ── Reeds ─────────────────────────────────────────────────────────────────────
@@ -317,39 +465,51 @@ function makeReed(x, z) {
   const y = th(x, z);
   const h = 1.0 + Math.random() * 0.7;
   const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.09, h, 6), REED_MAT);
-  stalk.position.set(x + (Math.random() - 0.5) * 0.3, y + h / 2, z + (Math.random() - 0.5) * 0.3);
-  stalk.rotation.z = (Math.random() - 0.5) * 0.18;
-  scene.add(stalk);
+  stalk.position.set(x + (Math.random()-0.5)*0.3, y + h/2, z + (Math.random()-0.5)*0.3);
+  stalk.rotation.z = (Math.random()-0.5)*0.18; scene.add(stalk);
   const tuft = new THREE.Mesh(new THREE.SphereGeometry(0.16, 6, 4), TUFT_MAT);
-  tuft.position.set(stalk.position.x, y + h + 0.1, stalk.position.z);
-  scene.add(tuft);
+  tuft.position.set(stalk.position.x, y + h + 0.1, stalk.position.z); scene.add(tuft);
 }
 
-// ── Flowers ───────────────────────────────────────────────────────────────────
+// ── Small flowers ─────────────────────────────────────────────────────────────
 const FLOWER_MATS = [toon(0xFF8888), toon(0xFFCC44), toon(0xFF88CC), toon(0xFFFFAA)];
 function makeFlower(x, z) {
   const y = th(x, z);
   if (y < 0) return;
   const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.4, 5), toon(0x70A850));
-  stem.position.set(x, y + 0.2, z);
-  scene.add(stem);
-  const mat = FLOWER_MATS[Math.floor(Math.random() * FLOWER_MATS.length)];
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 4), mat);
-  head.position.set(x, y + 0.42, z);
-  scene.add(head);
+  stem.position.set(x, y + 0.2, z); scene.add(stem);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 4), FLOWER_MATS[Math.floor(Math.random()*FLOWER_MATS.length)]);
+  head.position.set(x, y + 0.42, z); scene.add(head);
 }
 
 // ── Populate ──────────────────────────────────────────────────────────────────
-// Trees: both river banks + background
-[
-  [-7,-22],[-9,-12],[-8,-2],[-10,6],[-6,2],
-  [6,-20],[8,-9],[7,1],[9,7],[5,-5],
-  [-14,-8],[-13,-28],[14,-15],[16,0],[-17,4],[15,-28],
-].forEach(([x,z]) => makeTree(x, z, 0.8 + Math.random() * 0.55));
+// Pine trees — far inland, hillier background
+[[-13,-28],[-12,-18],[14,-26],[15,-16],[-17,-10],[16,-8],[-14,2],[13,-2]]
+  .forEach(([x,z]) => makePineTree(x, z, 0.85 + Math.random()*0.45));
 
-// Bushes near water edges and paths
-[[-5,3],[4,6],[-3,-5],[5,-2],[-7,-4],[3,-9],[-12,-2],[11,3],[-4,8],[6,9]
-].forEach(([x,z]) => makeBush(x, z, 0.7 + Math.random() * 0.4));
+// Apple trees — feature trees near river bends
+[[-8,-12],[-9,-2],[7,-10],[6,2]]
+  .forEach(([x,z]) => makeAppleTree(x, z, 0.80 + Math.random()*0.35));
+
+// Palm trees — beach and estuary zone
+[[-4,10],[-1,11],[4,10],[7,9],[-6,8],[2,12]]
+  .forEach(([x,z]) => makePalmTree(x, z, 0.80 + Math.random()*0.28));
+
+// Round deciduous trees — river banks
+[[-7,-5],[-6,5],[-10,8],[5,-4],[8,5],[9,-3],[-7,-18],[8,-18]]
+  .forEach(([x,z]) => makeRoundTree(x, z, 0.80 + Math.random()*0.50));
+
+// Flowering bushes — grassland + path edges
+[[-5,3],[4,6],[-3,-5],[5,-2],[-7,-4],[3,-9],[8,-6],[-4,-2],[6,-14],[-11,-5],[-3,6],[5,3]]
+  .forEach(([x,z]) => makeFlowerBush(x, z, 0.78 + Math.random()*0.35));
+
+// Plain round bushes — near water edges
+[[-12,-2],[11,3],[-4,8],[6,9],[4,-8],[-6,-8]]
+  .forEach(([x,z]) => makeRoundBush(x, z, 0.65 + Math.random()*0.35));
+
+// Tall tropical leaf plants — river banks + estuary edges
+[[-3,7],[3,7],[5,5],[-5,5],[-2,10],[2,10],[-6,-7],[4,-6],[-3,-3],[2,-2],[-8,0],[7,-2]]
+  .forEach(([x,z]) => makeTallPlant(x, z, 0.70 + Math.random()*0.40));
 
 // Rocks along banks and beach
 [
