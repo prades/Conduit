@@ -68,6 +68,10 @@
     .type-badge { font-size: 0.6rem; letter-spacing: 0.12em; padding: 3px 10px; text-transform: uppercase; font-weight: 700; }
     .shiny-btn { background: none; border: 1px solid rgba(255,215,0,0.25); color: var(--dim); font-family: inherit; font-size: 0.6rem; letter-spacing: 0.1em; padding: 4px 10px; cursor: pointer; clip-path: polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%); transition: all 0.2s; }
     .shiny-btn.active, .shiny-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .cry-btn { background: none; border: 1px solid rgba(0,245,255,0.2); color: var(--dim); font-size: 0.85rem; padding: 2px 8px; cursor: pointer; clip-path: polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%); transition: all 0.18s; line-height: 1; }
+    .cry-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .cry-btn.playing { color: var(--green); border-color: var(--green); animation: cryPulse 0.4s ease-in-out infinite alternate; }
+    @keyframes cryPulse { from { box-shadow: 0 0 4px rgba(0,255,136,0.3); } to { box-shadow: 0 0 16px rgba(0,255,136,0.7); } }
 
     /* ── Info panel ── */
     .info-panel { display: flex; flex-direction: column; overflow: hidden; }
@@ -102,6 +106,10 @@
     .tab-panel.active { display: flex; flex-direction: column; gap: 8px; }
 
     /* ── Move table ── */
+    .gen-chips { display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; padding-bottom: 4px; border-bottom: 1px dashed rgba(255,255,255,0.06); margin-bottom: 4px; }
+    .gen-chip { background: none; border: 1px solid rgba(255,255,255,0.08); color: var(--dim); font-family: inherit; font-size: 0.52rem; letter-spacing: 0.08em; padding: 2px 7px; cursor: pointer; clip-path: polygon(3px 0%,100% 0%,calc(100% - 3px) 100%,0% 100%); transition: all 0.15s; }
+    .gen-chip:hover { border-color: rgba(255,215,0,0.4); color: var(--gold); }
+    .gen-chip.active { background: rgba(255,215,0,0.1); border-color: var(--gold); color: var(--gold); }
     .method-chips { display: flex; gap: 5px; flex-shrink: 0; }
     .method-chip { background: none; border: 1px solid rgba(255,255,255,0.1); color: var(--dim); font-family: inherit; font-size: 0.58rem; letter-spacing: 0.1em; padding: 3px 10px; cursor: pointer; clip-path: polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%); transition: all 0.15s; }
     .method-chip:hover { border-color: var(--cyan); color: var(--cyan); }
@@ -116,6 +124,21 @@
     .cat-special { color: #60a5fa; }
     .cat-status { color: var(--dim); }
     .empty-msg { color: var(--dim); font-size: 0.65rem; letter-spacing: 0.1em; padding: 20px 0; }
+
+    /* ── Evolution tree ── */
+    .evo-tree { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 0; }
+    .evo-node { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 8px; border: 1px solid rgba(0,245,255,0.12); background: rgba(0,245,255,0.04); cursor: pointer; clip-path: polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); transition: all 0.2s; min-width: 70px; }
+    .evo-node:hover { background: rgba(0,245,255,0.12); border-color: var(--cyan); }
+    .evo-node.current { background: rgba(255,215,0,0.08); border-color: var(--gold); }
+    .evo-node img { width: 56px; height: 56px; image-rendering: pixelated; }
+    .evo-node .evo-name { font-size: 0.6rem; letter-spacing: 0.06em; text-transform: capitalize; color: var(--text); }
+    .evo-node .evo-num { font-size: 0.5rem; color: var(--dim); letter-spacing: 0.1em; }
+    .evo-arrow { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--dim); font-size: 0.55rem; letter-spacing: 0.06em; padding: 0 4px; max-width: 90px; text-align: center; }
+    .evo-arrow .arrow-icon { color: var(--cyan); font-size: 1rem; line-height: 1; }
+    .evo-arrow .trigger { color: var(--gold); font-size: 0.55rem; }
+    .evo-branches { display: flex; flex-direction: column; gap: 6px; }
+    .evo-branch { display: flex; align-items: center; gap: 6px; }
+    .evo-loading { color: var(--dim); font-size: 0.65rem; letter-spacing: 0.1em; padding: 12px 0; }
 
     /* ── Defense grid ── */
     .defense-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
@@ -222,6 +245,7 @@
         <div class="scene-wrap"><canvas id="threeCanvas"></canvas></div>
         <div class="scene-footer">
           <div class="type-badges" id="typeBadges"></div>
+          <button class="cry-btn" id="cryBtn" title="Play cry">🔊</button>
           <button class="shiny-btn" id="shinyBtn">☆ SHINY</button>
         </div>
       </section>
@@ -244,10 +268,12 @@
         <div class="info-tabs">
           <div class="tab-bar">
             <button class="tab-btn active" data-tab="moves">MOVES</button>
+            <button class="tab-btn" data-tab="evolution">EVOLUTION</button>
             <button class="tab-btn" data-tab="defense">DEFENSE</button>
-            <button class="tab-btn" data-tab="dex">POKÉDEX</button>
+            <button class="tab-btn" data-tab="dex">DEX</button>
           </div>
           <div class="tab-panel active" id="tab-moves">
+            <div class="gen-chips" id="genChips"></div>
             <div class="method-chips">
               <button class="method-chip active" data-method="level-up">LEVEL</button>
               <button class="method-chip" data-method="machine">TM</button>
@@ -260,6 +286,10 @@
                 <tbody id="moveTableBody"><tr><td colspan="7" class="empty-msg">Select a Pokémon</td></tr></tbody>
               </table>
             </div>
+          </div>
+          <div class="tab-panel" id="tab-evolution">
+            <div class="section-label">EVOLUTION CHAIN</div>
+            <div class="evo-tree" id="evoTree"><div class="empty-msg">—</div></div>
           </div>
           <div class="tab-panel" id="tab-defense">
             <div class="section-label">TYPE EFFECTIVENESS (DEFENDING)</div>
@@ -326,10 +356,33 @@ function computeDefense(types) {
 /* ── Gen ranges ── */
 const GEN_RANGES = [[1,151],[152,251],[252,386],[387,493],[494,649],[650,721],[722,809],[810,905],[906,1025]];
 
+/* ── Version groups (newest → oldest) ── */
+const VERSION_GROUPS = [
+  { slug: 'scarlet-violet',          label: 'SV',    gen: 9 },
+  { slug: 'sword-shield',            label: 'SWSH',  gen: 8 },
+  { slug: 'ultra-sun-ultra-moon',    label: 'USUM',  gen: 7 },
+  { slug: 'sun-moon',                label: 'SM',    gen: 7 },
+  { slug: 'omega-ruby-alpha-sapphire', label: 'ORAS',gen: 6 },
+  { slug: 'x-y',                     label: 'XY',    gen: 6 },
+  { slug: 'black-2-white-2',         label: 'B2W2',  gen: 5 },
+  { slug: 'black-white',             label: 'BW',    gen: 5 },
+  { slug: 'heartgold-soulsilver',    label: 'HGSS',  gen: 4 },
+  { slug: 'platinum',                label: 'Pt',    gen: 4 },
+  { slug: 'diamond-pearl',           label: 'DP',    gen: 4 },
+  { slug: 'firered-leafgreen',       label: 'FRLG',  gen: 3 },
+  { slug: 'emerald',                 label: 'Em',    gen: 3 },
+  { slug: 'ruby-sapphire',           label: 'RS',    gen: 3 },
+  { slug: 'crystal',                 label: 'Cry',   gen: 2 },
+  { slug: 'gold-silver',             label: 'GS',    gen: 2 },
+  { slug: 'yellow',                  label: 'Y',     gen: 1 },
+  { slug: 'red-blue',                label: 'RB',    gen: 1 }
+];
+
 /* ── API helpers ── */
 const POKEMON_CACHE = new Map();
 const SPECIES_CACHE = new Map();
 const MOVE_CACHE    = new Map();
+const EVO_CACHE     = new Map();
 
 async function apiFetch(url) {
   const r = await fetch(url);
@@ -356,17 +409,53 @@ async function fetchMove(name) {
     return d;
   } catch { return null; }
 }
+async function fetchEvolution(url) {
+  if (EVO_CACHE.has(url)) return EVO_CACHE.get(url);
+  const d = await apiFetch(url);
+  EVO_CACHE.set(url, d);
+  return d;
+}
 
 /* ── Move helpers ── */
-const VG = 'scarlet-violet';
-function getMovesList(pokemonData, method) {
+function getMovesList(pokemonData, method, versionGroup) {
   return pokemonData.moves
-    .filter(m => m.version_group_details.some(d => d.version_group.name === VG && d.move_learn_method.name === method))
+    .filter(m => m.version_group_details.some(d => d.version_group.name === versionGroup && d.move_learn_method.name === method))
     .map(m => ({
       name: m.move.name,
-      level: m.version_group_details.find(d => d.version_group.name === VG && d.move_learn_method.name === method)?.level_learned_at ?? 0
+      level: m.version_group_details.find(d => d.version_group.name === versionGroup && d.move_learn_method.name === method)?.level_learned_at ?? 0
     }))
     .sort((a, b) => a.level - b.level);
+}
+
+/* ── Available version groups for a Pokémon ── */
+function availableVersionGroups(pokemonData) {
+  const seen = new Set();
+  pokemonData.moves.forEach(m => m.version_group_details.forEach(d => seen.add(d.version_group.name)));
+  return VERSION_GROUPS.filter(vg => seen.has(vg.slug));
+}
+
+/* ── Evolution trigger text ── */
+function evolutionTriggerText(details) {
+  if (!details || !details.length) return '?';
+  const d = details[0];
+  if (d.min_level)        return `Lv ${d.min_level}`;
+  if (d.item)             return `Use ${d.item.name.replace(/-/g,' ')}`;
+  if (d.held_item)        return `Hold ${d.held_item.name.replace(/-/g,' ')}`;
+  if (d.min_happiness)    return `♥ ${d.min_happiness}`;
+  if (d.min_affection)    return `Affection ${d.min_affection}`;
+  if (d.min_beauty)       return `Beauty ${d.min_beauty}`;
+  if (d.known_move)       return `Know ${d.known_move.name.replace(/-/g,' ')}`;
+  if (d.known_move_type)  return `Know ${d.known_move_type.name} move`;
+  if (d.location)         return `@ ${d.location.name.replace(/-/g,' ')}`;
+  if (d.trade_species)    return `Trade w/ ${d.trade_species.name}`;
+  if (d.trigger?.name === 'trade') return 'Trade';
+  if (d.trigger?.name === 'shed')  return 'Shed';
+  if (d.time_of_day)      return d.time_of_day;
+  if (d.gender === 1)     return '♀';
+  if (d.gender === 2)     return '♂';
+  if (d.needs_overworld_rain) return 'In rain';
+  if (d.turn_upside_down) return 'Upside down';
+  return d.trigger?.name?.replace(/-/g,' ') || 'Special';
 }
 
 /* ═══════════ THREE.JS SCENE ═══════════ */
@@ -487,8 +576,10 @@ let currentPokemonId = null;
 let currentData      = null;
 let isShiny          = false;
 let activeMethod     = 'level-up';
+let activeVG         = 'scarlet-violet';
 let allPokemon       = []; // [{id, name}]
 let filteredPokemon  = [];
+let cryAudio         = null;
 
 /* ═══════════ SELECT POKÉMON ═══════════ */
 async function selectPokemon(id) {
@@ -526,11 +617,17 @@ async function selectPokemon(id) {
     // Abilities
     renderAbilities(data.abilities);
 
+    // Gen chips for moves (filter to only gens this Pokémon has data for)
+    renderGenChips(data);
+
     // Moves (default method)
-    await renderMoves(data, activeMethod);
+    await renderMoves(data, activeMethod, activeVG);
 
     // Defense (pre-render for tab)
     renderDefense(data.types.map(t => t.type.name));
+
+    // Evolution chain
+    renderEvolution(species);
 
     // Dex entry
     const entry = species.flavor_text_entries?.find(e => e.language.name === 'en')?.flavor_text
@@ -581,14 +678,26 @@ function renderAbilities(abilities) {
   ).join('');
 }
 
+/* ── Render: Gen chips (which version groups this Pokémon appears in) ── */
+function renderGenChips(data) {
+  const wrap = document.getElementById('genChips');
+  const avail = availableVersionGroups(data);
+  // If active VG isn't available for this Pokémon, fall back to the newest available
+  if (!avail.find(vg => vg.slug === activeVG) && avail.length) activeVG = avail[0].slug;
+  wrap.innerHTML = avail.map(vg =>
+    `<button class="gen-chip${vg.slug === activeVG ? ' active' : ''}" data-vg="${vg.slug}">${vg.label}</button>`
+  ).join('');
+}
+
 /* ── Render: Moves ── */
-async function renderMoves(data, method) {
+async function renderMoves(data, method, vgSlug) {
   const tbody = document.getElementById('moveTableBody');
   tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">LOADING…</td></tr>`;
 
-  const moves = getMovesList(data, method);
+  const moves = getMovesList(data, method, vgSlug);
+  const vgLabel = VERSION_GROUPS.find(v => v.slug === vgSlug)?.label || vgSlug;
   if (!moves.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">No ${method} moves in Gen 9.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">No ${method} moves in ${vgLabel}.</td></tr>`;
     return;
   }
 
@@ -633,6 +742,62 @@ function renderDefense(types) {
       <span class="def-mult ${cls}">${label}</span>
     </div>`;
   }).join('');
+}
+
+/* ── Render: Evolution chain ── */
+function speciesIdFromUrl(url) {
+  const m = url.match(/\/pokemon-species\/(\d+)\//);
+  return m ? Number(m[1]) : null;
+}
+
+async function renderEvolution(species) {
+  const wrap = document.getElementById('evoTree');
+  if (!species?.evolution_chain?.url) {
+    wrap.innerHTML = `<div class="empty-msg">No evolution data.</div>`;
+    return;
+  }
+  wrap.innerHTML = `<div class="evo-loading">LOADING CHAIN…</div>`;
+  try {
+    const chain = await fetchEvolution(species.evolution_chain.url);
+    wrap.innerHTML = renderEvoNode(chain.chain);
+  } catch {
+    wrap.innerHTML = `<div class="empty-msg">Failed to load chain.</div>`;
+  }
+}
+
+function renderEvoNode(node) {
+  const id   = speciesIdFromUrl(node.species.url);
+  const name = node.species.name;
+  const isCurrent = id === currentPokemonId;
+  const nodeHtml = `<div class="evo-node${isCurrent ? ' current' : ''}" data-id="${id}">
+    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" alt="${name}" onerror="this.style.opacity=0">
+    <div class="evo-num">#${String(id).padStart(3,'0')}</div>
+    <div class="evo-name">${name}</div>
+  </div>`;
+
+  if (!node.evolves_to.length) return nodeHtml;
+
+  if (node.evolves_to.length === 1) {
+    const next = node.evolves_to[0];
+    return nodeHtml +
+      `<div class="evo-arrow">
+        <span class="arrow-icon">▶</span>
+        <span class="trigger">${evolutionTriggerText(next.evolution_details)}</span>
+      </div>` +
+      renderEvoNode(next);
+  }
+
+  // Branching evolutions (Eevee, Wurmple, etc.)
+  const branches = node.evolves_to.map(next =>
+    `<div class="evo-branch">
+      <div class="evo-arrow">
+        <span class="arrow-icon">▶</span>
+        <span class="trigger">${evolutionTriggerText(next.evolution_details)}</span>
+      </div>
+      ${renderEvoNode(next)}
+    </div>`
+  ).join('');
+  return nodeHtml + `<div class="evo-branches">${branches}</div>`;
 }
 
 /* ═══════════ LIST ═══════════ */
@@ -701,6 +866,42 @@ document.getElementById('shinyBtn').addEventListener('click', () => {
   if (currentPokemonId) loadSprite(currentData?.id ?? currentPokemonId, isShiny);
 });
 
+document.getElementById('cryBtn').addEventListener('click', () => {
+  if (!currentPokemonId) return;
+  const btn = document.getElementById('cryBtn');
+  if (cryAudio) { cryAudio.pause(); cryAudio = null; }
+  const url = `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${currentPokemonId}.ogg`;
+  cryAudio = new Audio(url);
+  cryAudio.volume = 0.55;
+  btn.classList.add('playing');
+  cryAudio.play().catch(() => {
+    // Fallback to legacy cry
+    cryAudio = new Audio(`https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/legacy/${currentPokemonId}.ogg`);
+    cryAudio.volume = 0.55;
+    cryAudio.play().catch(() => btn.classList.remove('playing'));
+  });
+  cryAudio.addEventListener('ended', () => btn.classList.remove('playing'));
+  cryAudio.addEventListener('error', () => btn.classList.remove('playing'));
+});
+
+// Gen chip clicks (delegated)
+document.getElementById('genChips').addEventListener('click', async e => {
+  const chip = e.target.closest('.gen-chip');
+  if (!chip || !currentData) return;
+  document.querySelectorAll('#genChips .gen-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  activeVG = chip.dataset.vg;
+  await renderMoves(currentData, activeMethod, activeVG);
+});
+
+// Evolution node clicks (delegated)
+document.getElementById('evoTree').addEventListener('click', e => {
+  const node = e.target.closest('.evo-node');
+  if (!node) return;
+  const id = Number(node.dataset.id);
+  if (id && id !== currentPokemonId) selectPokemon(id);
+});
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -715,7 +916,7 @@ document.querySelectorAll('.method-chip').forEach(chip => {
     document.querySelectorAll('.method-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     activeMethod = chip.dataset.method;
-    if (currentData) await renderMoves(currentData, activeMethod);
+    if (currentData) await renderMoves(currentData, activeMethod, activeVG);
   });
 });
 
