@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Line — Character</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;background:#F5EAD8;font-family:system-ui}
+canvas{display:block}
+#home{
+  position:fixed;top:14px;left:14px;z-index:10;
+  background:rgba(255,255,255,0.78);color:#3a2808;text-decoration:none;
+  padding:7px 15px;border-radius:10px;font:bold 13px/1 system-ui;
+  backdrop-filter:blur(6px);border:1.5px solid rgba(255,255,255,0.5);
+}
+#home:hover{background:rgba(255,255,255,0.95)}
+#label{
+  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  color:rgba(80,50,20,0.5);font:13px/1 system-ui;
+  pointer-events:none;letter-spacing:1px;
+}
+</style>
+</head>
+<body>
+<a id="home" href="../index.html">← Home</a>
+<div id="label">Drag to rotate · Mouse to look</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── Renderer ──────────────────────────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ── Scene ─────────────────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+
+// Warm gradient background sphere
+const bgGeo = new THREE.SphereGeometry(60, 24, 16);
+bgGeo.scale(-1, 1, 1);
+const bgColArr = new Float32Array(bgGeo.attributes.position.count * 3);
+const bgPos = bgGeo.attributes.position;
+for (let i = 0; i < bgPos.count; i++) {
+  const yn = (bgPos.getY(i) + 60) / 120;
+  bgColArr[i*3]   = 0.97 - yn * 0.08;
+  bgColArr[i*3+1] = 0.92 - yn * 0.12;
+  bgColArr[i*3+2] = 0.88 - yn * 0.14;
+}
+bgGeo.setAttribute('color', new THREE.BufferAttribute(bgColArr, 3));
+scene.add(new THREE.Mesh(bgGeo, new THREE.MeshBasicMaterial({ vertexColors: true })));
+
+// ── Camera ────────────────────────────────────────────────────────────────────
+const camera = new THREE.PerspectiveCamera(36, innerWidth / innerHeight, 0.05, 200);
+camera.position.set(0, 0.18, 4.8);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.15, 0);
+controls.minDistance = 2.2;
+controls.maxDistance = 9;
+controls.maxPolarAngle = Math.PI * 0.72;
+controls.minPolarAngle = Math.PI * 0.12;
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.update();
+
+// ── Lighting (3-point portrait setup) ────────────────────────────────────────
+const keyLight = new THREE.DirectionalLight(0xFFEDD0, 2.8);
+keyLight.position.set(2.5, 3.5, 3.5);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(1024, 1024);
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0xC8E0FF, 0.85);
+fillLight.position.set(-3.5, 1.0, 2.5);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0xFFD490, 0.60);
+rimLight.position.set(0.5, 2.5, -4.0);
+scene.add(rimLight);
+
+scene.add(new THREE.AmbientLight(0xFFF8F0, 0.55));
+
+// ── Gradient maps for toon shading ───────────────────────────────────────────
+function gradMap(n) {
+  const d = new Uint8Array(n);
+  for (let i = 0; i < n; i++) d[i] = Math.round((i / (n - 1)) * 255);
+  const t = new THREE.DataTexture(d, n, 1, THREE.RedFormat);
+  t.minFilter = t.magFilter = THREE.NearestFilter;
+  t.needsUpdate = true;
+  return t;
+}
+const gm3 = gradMap(3), gm4 = gradMap(4), gm5 = gradMap(5);
+
+// ── Canvas textures ───────────────────────────────────────────────────────────
+function makeSkinTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const x = c.getContext('2d');
+  // Warm radial skin gradient: bright center, warm-golden edge
+  const g = x.createRadialGradient(256, 215, 8, 256, 262, 268);
+  g.addColorStop(0.00, '#FBE8A8');
+  g.addColorStop(0.45, '#F2CE80');
+  g.addColorStop(0.80, '#E8B868');
+  g.addColorStop(1.00, '#D0A050');
+  x.fillStyle = g; x.fillRect(0, 0, 512, 512);
+  return new THREE.CanvasTexture(c);
+}
+
+function makeIrisTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d');
+  // Deep iris gradient: bright sky-blue center → deep navy rim
+  const g = x.createRadialGradient(128, 108, 6, 128, 128, 122);
+  g.addColorStop(0.00, '#90C8F0');
+  g.addColorStop(0.30, '#5898C8');
+  g.addColorStop(0.65, '#2A6090');
+  g.addColorStop(1.00, '#0A1830');
+  x.fillStyle = g;
+  x.beginPath(); x.arc(128, 128, 122, 0, Math.PI * 2); x.fill();
+  // Subtle radial texture lines
+  x.strokeStyle = 'rgba(180,220,255,0.18)';
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * Math.PI * 2;
+    x.lineWidth = 1.5;
+    x.beginPath();
+    x.moveTo(128 + Math.cos(a) * 14, 128 + Math.sin(a) * 14);
+    x.lineTo(128 + Math.cos(a) * 112, 128 + Math.sin(a) * 112);
+    x.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+const skinTex = makeSkinTex();
+const irisTex = makeIrisTex();
+
+// ── Toon material helpers ─────────────────────────────────────────────────────
+function toon(color, gm = gm4, extra = {}) {
+  return new THREE.MeshToonMaterial({ color, gradientMap: gm, ...extra });
+}
+function basic(color, extra = {}) {
+  return new THREE.MeshBasicMaterial({ color, ...extra });
+}
+
+// ── Back-face outline ─────────────────────────────────────────────────────────
+function outline(mesh, t = 0.035, col = 0x1E0E04) {
+  const m = new THREE.Mesh(mesh.geometry, new THREE.MeshBasicMaterial({ color: col, side: THREE.BackSide }));
+  m.scale.setScalar(1 + t);
+  mesh.add(m);
+  return mesh;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── Face group (everything is a child of this) ────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+const face = new THREE.Group();
+scene.add(face);
+
+// ── Head sphere ───────────────────────────────────────────────────────────────
+const headMat = new THREE.MeshToonMaterial({
+  color: 0xFFFFFF,   // white × texture = texture color
+  map: skinTex,
+  gradientMap: gm4,
+});
+const head = new THREE.Mesh(new THREE.SphereGeometry(1.0, 44, 36), headMat);
+head.scale.set(1.00, 1.06, 0.94);   // slightly tall, slightly shallow
+head.castShadow = true;
+head.receiveShadow = true;
+outline(head, 0.025, 0x1E0E04);
+face.add(head);
+
+// ── Ears ─────────────────────────────────────────────────────────────────────
+[-1, 1].forEach(s => {
+  const ear = new THREE.Mesh(new THREE.SphereGeometry(0.27, 14, 10),
+    new THREE.MeshToonMaterial({ color: 0xFFFFFF, map: skinTex, gradientMap: gm3 }));
+  ear.scale.set(0.42, 0.62, 0.32);
+  ear.position.set(s * 1.03, 0.12, -0.02);
+  ear.castShadow = true;
+  outline(ear, 0.10, 0x1E0E04);
+  face.add(ear);
+
+  // Inner ear
+  const inner = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), toon(0xE8A068, gm3));
+  inner.scale.set(0.32, 0.46, 0.18);
+  inner.position.set(s * 1.05, 0.12, 0.04);
+  face.add(inner);
+});
+
+// ── Hair ─────────────────────────────────────────────────────────────────────
+const hairMat  = toon(0x4A2E12, gm3);
+const hairDark = basic(0x1A0A04, { side: THREE.BackSide });
+
+function hair(x, y, z, r, sx = 1, sy = 1, sz = 1) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), hairMat);
+  m.scale.set(sx, sy, sz);
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  face.add(m);
+  // Per-ball outline
+  const o = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), hairDark);
+  o.scale.set(sx * 1.04, sy * 1.04, sz * 1.04);
+  o.position.set(x, y, z);
+  face.add(o);
+}
+
+// Main crown
+hair( 0,    1.02, -0.08, 0.82);
+// Sides
+hair(-0.62, 0.85, -0.12, 0.56);
+hair( 0.62, 0.85, -0.12, 0.56);
+// Back coverage
+hair( 0,    0.60, -0.88, 0.62);
+hair(-0.38, 0.72, -0.72, 0.46);
+hair( 0.38, 0.72, -0.72, 0.46);
+// Fringe over forehead
+hair(-0.30, 1.14,  0.52, 0.30);
+hair( 0.30, 1.14,  0.52, 0.30);
+hair( 0,    1.18,  0.60, 0.24);
+hair(-0.55, 1.00,  0.38, 0.22);
+hair( 0.55, 1.00,  0.38, 0.22);
+
+// ── Eyebrows ─────────────────────────────────────────────────────────────────
+[-1, 1].forEach(s => {
+  const pts = [
+    new THREE.Vector3(s *  0.09,  0.00, 0),
+    new THREE.Vector3(s *  0.02,  0.046, 0),
+    new THREE.Vector3(s * -0.09,  0.020, 0),
+  ];
+  const brow = new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 14, 0.030, 7),
+    toon(0x2E1608, gm3)
+  );
+  brow.position.set(s * 0.32, 0.50, 0.87);
+  face.add(brow);
+});
+
+// ── Eyes ─────────────────────────────────────────────────────────────────────
+// Head surface at (x=0.34, y=0.22): z ≈ 0.88 (accounting for z-scale 0.94)
+// Eye group center at z=0.80 so sclera front protrudes to ~0.91 (past head surface)
+
+const irisGroups = [];  // for look-at animation
+const blinkMeshes = []; // for blink animation
+
+function makeEye(side) {
+  const EG = new THREE.Group();
+  EG.position.set(side * 0.335, 0.21, 0.80);
+  face.add(EG);
+
+  // ── Sclera (white) ────────────────────────────────────────────────────────
+  const scleraMat = new THREE.MeshToonMaterial({
+    color: 0xFFFDF8, gradientMap: gm5,
+    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
+  });
+  const sclera = new THREE.Mesh(new THREE.SphereGeometry(0.218, 22, 18), scleraMat);
+  sclera.scale.z = 0.50;
+  sclera.castShadow = true;
+  EG.add(sclera);
+
+  // ── Iris + pupil group (shifts for look-at) ───────────────────────────────
+  const IG = new THREE.Group();
+  EG.add(IG);
+  irisGroups.push(IG);
+
+  // Iris disc with canvas texture
+  const iris = new THREE.Mesh(
+    new THREE.CircleGeometry(0.152, 28),
+    basic(0xFFFFFF, { map: irisTex })
+  );
+  iris.position.z = 0.108;
+  IG.add(iris);
+
+  // Dark limbal ring
+  const limbal = new THREE.Mesh(
+    new THREE.RingGeometry(0.144, 0.158, 24),
+    basic(0x0A1020, { side: THREE.DoubleSide })
+  );
+  limbal.position.z = 0.109;
+  IG.add(limbal);
+
+  // Pupil (deep, dark)
+  const pupil = new THREE.Mesh(
+    new THREE.CircleGeometry(0.072, 20),
+    basic(0x060810)
+  );
+  pupil.position.z = 0.113;
+  IG.add(pupil);
+
+  // Main highlight — large, upper-left
+  const hl = new THREE.Mesh(
+    new THREE.CircleGeometry(0.038, 12),
+    basic(0xFFFFFF)
+  );
+  hl.position.set(side * -0.042, 0.058, 0.115);
+  IG.add(hl);
+
+  // Secondary gleam — small, lower-right
+  const hl2 = new THREE.Mesh(
+    new THREE.CircleGeometry(0.018, 8),
+    basic(0xEEF4FF, { transparent: true, opacity: 0.80 })
+  );
+  hl2.position.set(side * 0.040, -0.038, 0.115);
+  IG.add(hl2);
+
+  // ── Upper eyelid shadow arc ───────────────────────────────────────────────
+  // A dark curved band across the top of the eye gives depth + warmth
+  const lidArc = new THREE.QuadraticBezierCurve3(
+    new THREE.Vector3(-0.215, 0.008, 0),
+    new THREE.Vector3( 0,     0.095, 0),
+    new THREE.Vector3( 0.215, 0.008, 0),
+  );
+  const lidTube = new THREE.Mesh(
+    new THREE.TubeGeometry(lidArc, 22, 0.040, 8),
+    toon(0x281006, gm3)
+  );
+  lidTube.position.z = 0.086;
+  EG.add(lidTube);
+
+  // ── Lower lash line (subtle) ──────────────────────────────────────────────
+  const lashArc = new THREE.QuadraticBezierCurve3(
+    new THREE.Vector3(-0.185, -0.006, 0),
+    new THREE.Vector3( 0,     -0.072, 0),
+    new THREE.Vector3( 0.185, -0.006, 0),
+  );
+  const lashLine = new THREE.Mesh(
+    new THREE.TubeGeometry(lashArc, 18, 0.016, 6),
+    toon(0x381808, gm3, { transparent: true, opacity: 0.55 })
+  );
+  lashLine.position.z = 0.084;
+  EG.add(lashLine);
+
+  // ── Blink mesh — skin-toned disc that scales to cover eye ─────────────────
+  const blink = new THREE.Mesh(
+    new THREE.CircleGeometry(0.230, 22),
+    basic(0xF2CC78, { depthWrite: false })
+  );
+  blink.position.z = 0.120;
+  blink.scale.y = 0.001;
+  EG.add(blink);
+  blinkMeshes.push(blink);
+
+  // ── Soft eye socket shadow ────────────────────────────────────────────────
+  const socket = new THREE.Mesh(
+    new THREE.SphereGeometry(0.240, 20, 16),
+    basic(0xC89040, { transparent: true, opacity: 0.10, depthWrite: false })
+  );
+  socket.scale.set(1.10, 1.12, 0.52);
+  EG.add(socket);
+}
+
+makeEye(-1);
+makeEye( 1);
+
+// ── Nose (minimal: two soft nostril marks) ────────────────────────────────────
+[-0.072, 0.072].forEach(nx => {
+  const n = new THREE.Mesh(
+    new THREE.SphereGeometry(0.038, 8, 6),
+    toon(0xC8904A, gm3, { transparent: true, opacity: 0.65 })
+  );
+  n.scale.set(1.5, 0.9, 0.55);
+  n.position.set(nx, -0.175, 0.945);
+  face.add(n);
+});
+
+// ── Mouth — gentle arc smile ──────────────────────────────────────────────────
+const smilePts = [
+  new THREE.Vector3(-0.185,  0.000, 0),
+  new THREE.Vector3(-0.090, -0.062, 0),
+  new THREE.Vector3( 0.000, -0.076, 0),
+  new THREE.Vector3( 0.090, -0.062, 0),
+  new THREE.Vector3( 0.185,  0.000, 0),
+];
+const smileMesh = new THREE.Mesh(
+  new THREE.TubeGeometry(new THREE.CatmullRomCurve3(smilePts), 28, 0.022, 8),
+  toon(0x7A2838, gm3)
+);
+smileMesh.position.set(0, -0.385, 0.920);
+face.add(smileMesh);
+
+// Subtle lip — thin warm fill under smile
+const lipPts = [
+  new THREE.Vector3(-0.105,  0, 0),
+  new THREE.Vector3( 0,     -0.026, 0),
+  new THREE.Vector3( 0.105,  0, 0),
+];
+face.add(Object.assign(
+  new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lipPts), 16, 0.014, 6),
+    toon(0xD89880, gm3, { transparent: true, opacity: 0.50 })
+  ),
+  { position: new THREE.Vector3(0, -0.418, 0.910) }
+));
+
+// ── Cheek blush ───────────────────────────────────────────────────────────────
+[-0.420, 0.420].forEach(cx => {
+  const blush = new THREE.Mesh(
+    new THREE.CircleGeometry(0.182, 20),
+    basic(0xFF7070, { transparent: true, opacity: 0.22, depthWrite: false })
+  );
+  blush.position.set(cx, -0.018, 0.940);
+  face.add(blush);
+
+  // Softer outer blush halo
+  const halo = new THREE.Mesh(
+    new THREE.CircleGeometry(0.260, 20),
+    basic(0xFF9090, { transparent: true, opacity: 0.09, depthWrite: false })
+  );
+  halo.position.set(cx, -0.018, 0.938);
+  face.add(halo);
+});
+
+// ── Neck ─────────────────────────────────────────────────────────────────────
+const neck = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.295, 0.340, 0.52, 16),
+  new THREE.MeshToonMaterial({ color: 0xFFFFFF, map: skinTex, gradientMap: gm4 })
+);
+neck.position.y = -1.22;
+neck.castShadow = true;
+face.add(neck);
+
+// ── Shirt collar ─────────────────────────────────────────────────────────────
+const shirt = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.50, 0.58, 0.30, 18),
+  toon(0x7AB8E8, gm4)
+);
+shirt.position.y = -1.52;
+shirt.castShadow = true;
+outline(shirt, 0.05, 0x204870);
+face.add(shirt);
+
+// ── Floating sparkle particles ────────────────────────────────────────────────
+const sparkles = [];
+for (let i = 0; i < 22; i++) {
+  const s = new THREE.Mesh(
+    new THREE.SphereGeometry(0.022 + Math.random() * 0.024, 5, 4),
+    basic(Math.random() < 0.5 ? 0xFFDD88 : 0xFFBBCC, { transparent: true, opacity: 0 })
+  );
+  const r = 1.4 + Math.random() * 0.9;
+  const a = Math.random() * Math.PI * 2;
+  const el = (Math.random() - 0.5) * 1.4;
+  s.userData = { r, a, el, speed: 0.3 + Math.random() * 0.5, phase: Math.random() * Math.PI * 2 };
+  scene.add(s);
+  sparkles.push(s);
+}
+
+// ── Mouse tracking ────────────────────────────────────────────────────────────
+const mouse = { x: 0.5, y: 0.5 };
+window.addEventListener('mousemove', e => {
+  mouse.x = e.clientX / innerWidth;
+  mouse.y = e.clientY / innerHeight;
+});
+
+// ── Blink state ───────────────────────────────────────────────────────────────
+let blinkTimer = 2.0 + Math.random() * 2.5;
+let blinkPhase = 0, isBlinking = false;
+
+// Auto-rotate pauses when user orbits
+let autoSpin = true;
+controls.addEventListener('start', () => autoSpin = false);
+controls.addEventListener('end',   () => setTimeout(() => autoSpin = true, 2500));
+
+// ── Animate ───────────────────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const t  = clock.elapsedTime;
+
+  // ── Gentle idle motion ───────────────────────────────────────────────────
+  if (autoSpin) face.rotation.y = Math.sin(t * 0.20) * 0.28;
+  face.position.y = Math.sin(t * 0.85) * 0.028;   // breathing float
+  face.rotation.z = Math.sin(t * 0.52) * 0.014;   // slow head tilt
+
+  // ── Pupil look-at (mouse) ────────────────────────────────────────────────
+  const lx = (mouse.x - 0.5) * 0.052;
+  const ly = (0.5 - mouse.y) * 0.038;
+  irisGroups.forEach(ig => {
+    ig.position.x += (lx - ig.position.x) * Math.min(1, dt * 5.5);
+    ig.position.y += (ly - ig.position.y) * Math.min(1, dt * 5.5);
+  });
+
+  // ── Blink ────────────────────────────────────────────────────────────────
+  blinkTimer -= dt;
+  if (blinkTimer <= 0 && !isBlinking) { isBlinking = true; blinkPhase = 0; }
+  if (isBlinking) {
+    blinkPhase += dt / 0.11;  // full close in 0.11s
+    // triangle wave 0→1 (close) then 1→0 (open)
+    const b = blinkPhase < 1 ? blinkPhase : Math.max(0, 2 - blinkPhase);
+    blinkMeshes.forEach(bm => { bm.scale.y = Math.max(0.001, b); });
+    if (blinkPhase >= 2.0) {
+      isBlinking = false;
+      blinkTimer = 2.8 + Math.random() * 3.8;
+      blinkMeshes.forEach(bm => { bm.scale.y = 0.001; });
+    }
+  }
+
+  // ── Sparkles orbit ──────────────────────────────────────────────────────
+  sparkles.forEach(s => {
+    const d = s.userData;
+    d.a += d.speed * dt;
+    s.position.set(
+      Math.cos(d.a) * d.r,
+      d.el + Math.sin(t * 0.7 + d.phase) * 0.18,
+      Math.sin(d.a) * d.r * 0.55
+    );
+    // Pulse opacity — sparkles twinkle in and out
+    s.material.opacity = Math.max(0, Math.sin(t * 1.8 + d.phase) * 0.5 + 0.18);
+  });
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
