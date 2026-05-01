@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Analytics — Dragonlord</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #040810;
+      --panel: rgba(8,16,34,0.92);
+      --border: rgba(255,100,0,0.18);
+      --border-hover: rgba(255,150,0,0.5);
+      --accent: #ff6600;
+      --accent2: #ffcc00;
+      --text: #c8d8f0;
+      --muted: #5a7a9c;
+      --pill-bg: rgba(255,255,255,0.05);
+      --pill-active: rgba(255,100,0,0.22);
+      --pill-active-border: rgba(255,130,0,0.7);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex; align-items: center; gap: 18px;
+      padding: 18px 28px;
+      background: rgba(4,8,16,0.95);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    .back-link {
+      color: var(--muted); text-decoration: none;
+      font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--accent); }
+    .header-sep { color: var(--border-hover); }
+    .header-title {
+      font-size: 14px; letter-spacing: 3px; text-transform: uppercase;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-set-name {
+      margin-left: auto; font-size: 12px; color: var(--muted);
+      letter-spacing: 1px; max-width: 280px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .change-set-btn {
+      background: var(--pill-bg); border: 1px solid var(--border);
+      color: var(--muted); font-family: inherit; font-size: 11px;
+      letter-spacing: 1px; padding: 5px 12px; border-radius: 4px;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .change-set-btn:hover { border-color: var(--border-hover); color: var(--text); }
+
+    /* ── Set Picker Screen ── */
+    #set-picker {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; padding: 60px 20px;
+    }
+    #set-picker h2 {
+      font-size: clamp(1.4rem, 4vw, 2.2rem); letter-spacing: 4px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 10px;
+    }
+    #set-picker .sub { color: var(--muted); font-size: 12px; letter-spacing: 2px; margin-bottom: 36px; }
+
+    .search-wrap {
+      position: relative; width: 100%; max-width: 520px; margin-bottom: 24px;
+    }
+    .search-wrap input {
+      width: 100%; padding: 12px 18px 12px 40px;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-family: inherit; font-size: 14px;
+      outline: none; transition: border-color 0.2s;
+    }
+    .search-wrap input:focus { border-color: var(--border-hover); }
+    .search-wrap input::placeholder { color: var(--muted); }
+    .search-icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); font-size: 14px; pointer-events: none;
+    }
+
+    /* Era tabs */
+    .era-tabs {
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+      width: 100%; max-width: 700px; margin-bottom: 28px;
+    }
+    .era-tab {
+      background: var(--pill-bg); border: 1px solid var(--border);
+      color: var(--muted); font-family: inherit; font-size: 11px;
+      letter-spacing: 1px; padding: 5px 14px; border-radius: 20px;
+      cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    }
+    .era-tab.active {
+      background: var(--pill-active); border-color: var(--pill-active-border);
+      color: var(--accent2);
+    }
+
+    /* Sets grid */
+    #sets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px; width: 100%; max-width: 1000px;
+    }
+    .set-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 14px;
+      cursor: pointer; transition: all 0.2s;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      text-align: center;
+    }
+    .set-card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 8px 28px rgba(255,100,0,0.14);
+      transform: translateY(-3px);
+    }
+    .set-card img { height: 36px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
+    .set-card .set-name { font-size: 12px; color: var(--text); line-height: 1.4; }
+    .set-card .set-meta { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+
+    /* ── Browse Screen ── */
+    #browse { display: none; padding: 0 0 60px; }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex; flex-wrap: wrap; gap: 16px;
+      padding: 16px 24px;
+      background: rgba(4,12,28,0.7);
+      border-bottom: 1px solid var(--border);
+    }
+    .stat-chip {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; letter-spacing: 1px;
+    }
+    .stat-chip .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .stat-chip .lbl { color: var(--muted); text-transform: uppercase; }
+    .stat-chip .val { color: var(--text); font-weight: bold; }
+
+    /* Controls row */
+    .controls {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 57px; z-index: 50;
+      background: rgba(4,8,20,0.97); backdrop-filter: blur(8px);
+    }
+
+    /* Filter pills group */
+    .pills-group {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    }
+    .pill {
+      background: var(--pill-bg); border: 1px solid rgba(255,255,255,0.08);
+      color: var(--muted); font-family: inherit; font-size: 11px;
+      letter-spacing: 1px; padding: 4px 12px; border-radius: 20px;
+      cursor: pointer; transition: all 0.18s; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .pill:hover { border-color: var(--border-hover); color: var(--text); }
+    .pill.active {
+      background: var(--pill-active); border-color: var(--pill-active-border);
+      color: var(--accent2);
+    }
+
+    .controls-sep {
+      width: 1px; height: 22px; background: var(--border);
+      margin: 0 4px; flex-shrink: 0;
+    }
+
+    /* Sort select */
+    .sort-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .sort-wrap label { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    .sort-wrap select {
+      background: var(--panel); border: 1px solid var(--border);
+      color: var(--text); font-family: inherit; font-size: 12px;
+      padding: 4px 10px; border-radius: 6px; outline: none;
+      cursor: pointer; transition: border-color 0.2s;
+    }
+    .sort-wrap select:focus { border-color: var(--border-hover); }
+
+    /* Search within set */
+    .set-search-wrap { position: relative; }
+    .set-search-wrap input {
+      background: var(--panel); border: 1px solid var(--border);
+      color: var(--text); font-family: inherit; font-size: 12px;
+      padding: 5px 10px 5px 28px; border-radius: 6px;
+      outline: none; width: 160px; transition: border-color 0.2s;
+    }
+    .set-search-wrap input:focus { border-color: var(--border-hover); width: 200px; }
+    .set-search-wrap input::placeholder { color: var(--muted); }
+    .set-search-wrap .si { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 11px; }
+
+    /* Results count */
+    #result-count { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+    /* Card grid */
+    #card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 14px; padding: 20px 24px;
+    }
+
+    .card-item {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+      cursor: pointer; transition: all 0.2s;
+      display: flex; flex-direction: column;
+    }
+    .card-item:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 10px 32px rgba(255,100,0,0.16);
+      transform: translateY(-4px);
+    }
+    .card-img-wrap {
+      background: #080c14;
+      display: flex; align-items: center; justify-content: center;
+      padding: 8px; min-height: 120px;
+    }
+    .card-img-wrap img {
+      width: 100%; max-width: 120px; border-radius: 5px;
+      display: block;
+    }
+    .card-img-placeholder {
+      width: 80px; height: 112px; border-radius: 5px;
+      background: linear-gradient(135deg, #0d1830, #080c18);
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: #2a4060;
+    }
+    .card-info {
+      padding: 8px 10px; flex: 1;
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .card-name { font-size: 11px; color: var(--text); line-height: 1.3; }
+    .card-num  { font-size: 10px; color: var(--muted); }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+    .card-tag  {
+      font-size: 9px; padding: 1px 5px; border-radius: 3px; letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* Type colors */
+    .t-pokemon  { background: rgba(60,180,100,0.18); color: #3eb86a; border: 1px solid #3eb86a44; }
+    .t-trainer  { background: rgba(100,140,255,0.15); color: #7ca0ff; border: 1px solid #7ca0ff44; }
+    .t-energy   { background: rgba(255,200,60,0.15); color: #ffcc3c; border: 1px solid #ffcc3c44; }
+    .t-item     { background: rgba(180,100,255,0.15); color: #c070ff; border: 1px solid #c070ff44; }
+    .t-supporter{ background: rgba(255,120,80,0.15); color: #ff8060; border: 1px solid #ff806044; }
+    .t-stadium  { background: rgba(60,200,200,0.15); color: #3cc8c8; border: 1px solid #3cc8c844; }
+    .t-tool     { background: rgba(160,220,80,0.15); color: #a0dc50; border: 1px solid #a0dc5044; }
+    .t-ex       { background: rgba(255,60,60,0.18); color: #ff5050; border: 1px solid #ff505044; }
+    .t-gx       { background: rgba(255,80,180,0.18); color: #ff50b4; border: 1px solid #ff50b444; }
+    .t-v        { background: rgba(80,160,255,0.18); color: #50a0ff; border: 1px solid #50a0ff44; }
+    .t-vmax     { background: rgba(120,60,255,0.18); color: #9050ff; border: 1px solid #9050ff44; }
+    .t-vstar    { background: rgba(255,200,60,0.25); color: #ffd040; border: 1px solid #ffd04066; }
+    .t-mega     { background: rgba(255,140,0,0.18); color: #ff9020; border: 1px solid #ff902044; }
+    .t-break    { background: rgba(0,220,180,0.15); color: #00dcb4; border: 1px solid #00dcb444; }
+    .t-prism    { background: rgba(180,230,255,0.15); color: #b4e6ff; border: 1px solid #b4e6ff44; }
+
+    /* Rarity pip */
+    .rarity-pip {
+      display: inline-block; font-size: 9px; color: var(--muted);
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    .rarity-common    { color: #5a7a9c; }
+    .rarity-uncommon  { color: #60a860; }
+    .rarity-rare      { color: #7cb8ff; }
+    .rarity-holo      { color: #c090ff; }
+    .rarity-ultra     { color: #ff9020; }
+    .rarity-secret    { color: #ffd040; }
+    .rarity-promo     { color: #ff80b0; }
+
+    /* Loading + empty */
+    .loading-spinner {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 18px; padding: 80px 20px;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 3px solid rgba(255,100,0,0.15);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-state {
+      padding: 80px 20px; text-align: center; color: var(--muted);
+      font-size: 13px; letter-spacing: 1px;
+    }
+
+    /* Card detail modal */
+    #modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(2,5,12,0.88); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    #modal-overlay.open { display: flex; }
+    .modal {
+      background: #060e1e; border: 1px solid var(--border-hover);
+      border-radius: 16px; max-width: 680px; width: 100%;
+      display: flex; flex-wrap: wrap; gap: 0;
+      overflow: hidden; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-img {
+      flex: 0 0 220px; background: #040810;
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-img img { width: 100%; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
+    .modal-body { flex: 1; padding: 28px 24px; min-width: 240px; }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; width: 32px; height: 32px;
+      border-radius: 50%; background: rgba(255,255,255,0.07);
+      border: 1px solid var(--border); color: var(--muted);
+      font-size: 16px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .modal-close:hover { background: rgba(255,100,0,0.2); color: var(--text); }
+    .modal-header { position: relative; }
+    .modal-name {
+      font-size: 1.4rem; letter-spacing: 1px; color: var(--text); margin-bottom: 4px;
+    }
+    .modal-number { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+    .modal-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 18px; }
+    .modal-section-label {
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 6px; margin-top: 14px;
+    }
+    .modal-value { font-size: 13px; color: var(--text); }
+    .modal-abilities { display: flex; flex-direction: column; gap: 10px; }
+    .ability-row { background: rgba(255,255,255,0.03); border-radius: 6px; padding: 10px 12px; }
+    .ability-row .ab-name { font-size: 12px; color: var(--accent2); letter-spacing: 1px; margin-bottom: 3px; }
+    .ability-row .ab-text { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .attack-cost { display: inline-flex; gap: 3px; margin-right: 8px; }
+    .energy-icon {
+      width: 16px; height: 16px; border-radius: 50%; display: inline-flex;
+      align-items: center; justify-content: center; font-size: 9px; font-weight: bold;
+    }
+
+    /* Price badge */
+    .price-badge {
+      font-size: 11px; font-weight: bold; letter-spacing: 0.5px;
+      margin-top: 5px; display: flex; align-items: center; gap: 5px;
+    }
+    .price-val { }
+    .price-dim   { color: #3a5878; }
+    .price-low   { color: #5a8aaa; }
+    .price-mid   { color: #c8d8f0; }
+    .price-good  { color: #50c878; }
+    .price-hot   { color: #ff9020; }
+    .price-fire  { color: #ffd040; }
+
+    .price-variant {
+      font-size: 9px; color: var(--muted); letter-spacing: 1px;
+      text-transform: uppercase; font-weight: normal;
+    }
+
+    /* Price table in modal */
+    .price-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    .price-table th {
+      font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+      padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--border);
+    }
+    .price-table th:first-child { text-align: left; }
+    .price-table td {
+      font-size: 11px; padding: 5px 8px; text-align: right;
+      border-bottom: 1px solid rgba(255,255,255,0.03); color: #8aafc8;
+    }
+    .price-table td:first-child { text-align: left; color: var(--text); letter-spacing: 1px; font-size: 10px; text-transform: uppercase; }
+    .price-table td.market { color: #50c878; font-weight: bold; }
+    .price-table tr:last-child td { border-bottom: none; }
+
+    /* Price sort indicator on card */
+    .card-item.has-price { border-color: rgba(80,200,120,0.12); }
+    .card-item.pricey { border-color: rgba(255,144,32,0.25); }
+    .card-item.fire   { border-color: rgba(255,208,64,0.35); box-shadow: 0 0 12px rgba(255,208,64,0.08); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #040810; }
+    ::-webkit-scrollbar-thumb { background: #1a3050; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2a4878; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="back-link" href="../index.html">← Home</a>
+  <span class="header-sep">/</span>
+  <span class="header-title">Set Analytics</span>
+  <span class="header-set-name" id="header-set-name"></span>
+  <button class="change-set-btn" id="change-set-btn" style="display:none">Change Set</button>
+</header>
+
+<!-- Set Picker -->
+<div id="set-picker">
+  <h2>Pick a Set</h2>
+  <p class="sub">Browse every card, filter by type, sort by rarity</p>
+
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="set-search" placeholder="Search sets…" autocomplete="off">
+  </div>
+
+  <div class="era-tabs" id="era-tabs">
+    <button class="era-tab active" data-era="all">All Eras</button>
+    <button class="era-tab" data-era="Scarlet & Violet">Scarlet &amp; Violet</button>
+    <button class="era-tab" data-era="Sword & Shield">Sword &amp; Shield</button>
+    <button class="era-tab" data-era="Sun & Moon">Sun &amp; Moon</button>
+    <button class="era-tab" data-era="XY">XY</button>
+    <button class="era-tab" data-era="Black & White">Black &amp; White</button>
+    <button class="era-tab" data-era="HeartGold SoulSilver">HG/SS</button>
+    <button class="era-tab" data-era="Platinum">Platinum</button>
+    <button class="era-tab" data-era="Diamond & Pearl">D&amp;P</button>
+    <button class="era-tab" data-era="EX">EX Era</button>
+    <button class="era-tab" data-era="Neo">Neo</button>
+    <button class="era-tab" data-era="Gym">Gym</button>
+    <button class="era-tab" data-era="Base">WotC Base</button>
+  </div>
+
+  <div id="sets-loading" class="loading-spinner">
+    <div class="spinner"></div>
+    <span>Loading sets…</span>
+  </div>
+
+  <div id="sets-grid"></div>
+</div>
+
+<!-- Browse Screen -->
+<div id="browse">
+
+  <div class="stats-bar" id="stats-bar"></div>
+
+  <div class="controls">
+    <!-- Supertype filter -->
+    <div class="pills-group" id="filter-super">
+      <button class="pill active" data-val="all">All</button>
+      <button class="pill" data-val="Pokémon">Pokemon</button>
+      <button class="pill" data-val="Trainer">Trainer</button>
+      <button class="pill" data-val="Energy">Energy</button>
+    </div>
+
+    <div class="controls-sep"></div>
+
+    <!-- Subtype pills (dynamic) -->
+    <div class="pills-group" id="filter-sub"></div>
+
+    <div class="controls-sep" id="sub-sep" style="display:none"></div>
+
+    <!-- Rarity filter -->
+    <div class="pills-group" id="filter-rarity" style="display:none"></div>
+
+    <!-- Spacer -->
+    <div style="flex:1 1 20px"></div>
+
+    <!-- Card search -->
+    <div class="set-search-wrap">
+      <span class="si">⌕</span>
+      <input type="text" id="card-search" placeholder="Search cards…" autocomplete="off">
+    </div>
+
+    <!-- Sort -->
+    <div class="sort-wrap">
+      <label>Sort</label>
+      <select id="sort-select">
+        <option value="number"># Number</option>
+        <option value="name">Name A–Z</option>
+        <option value="rarity">Rarity</option>
+        <option value="price_desc">Price High–Low</option>
+        <option value="price_asc">Price Low–High</option>
+        <option value="hp">HP High–Low</option>
+        <option value="type">Energy Type</option>
+      </select>
+    </div>
+
+    <span id="result-count"></span>
+  </div>
+
+  <div id="card-grid"></div>
+  <div id="browse-loading" class="loading-spinner" style="display:none">
+    <div class="spinner"></div>
+    <span>Loading cards…</span>
+  </div>
+  <div id="browse-empty" class="empty-state" style="display:none">No cards match this filter.</div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div class="modal" id="modal">
+    <div class="modal-img" id="modal-img-wrap"></div>
+    <div class="modal-body" id="modal-body">
+      <div class="modal-header">
+        <button class="modal-close" id="modal-close">✕</button>
+        <div class="modal-name" id="modal-name"></div>
+        <div class="modal-number" id="modal-number"></div>
+        <div class="modal-tags" id="modal-tags"></div>
+      </div>
+      <div id="modal-details"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://api.pokemontcg.io/v2';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let allSets = [];
+let allCards = [];
+let filteredCards = [];
+let activeSuper = 'all';
+let activeSub = 'all';
+let activeRarity = 'all';
+let activeSort = 'number';
+let activeEra = 'all';
+let cardQuery = '';
+
+// ── Rarity ordering ───────────────────────────────────────────────────────────
+const RARITY_ORDER = {
+  'Common': 0, 'Uncommon': 1, 'Rare': 2,
+  'Rare Holo': 3, 'Rare Holo EX': 4, 'Rare Holo GX': 4, 'Rare Holo V': 4,
+  'Rare Ultra': 5, 'Amazing Rare': 5,
+  'Rare Rainbow': 6, 'Rare Secret': 7, 'Hyper Rare': 7,
+  'Rare Shiny': 5, 'Rare Shiny GX': 6,
+  'LEGEND': 4, 'Illustration Rare': 5, 'Special Illustration Rare': 6,
+  'Double Rare': 3,
+};
+const rarityClass = (r = '') => {
+  if (!r) return '';
+  const l = r.toLowerCase();
+  if (l.includes('secret') || l.includes('rainbow') || l.includes('hyper')) return 'rarity-secret';
+  if (l.includes('ultra') || l.includes('amazing') || l.includes('shiny')) return 'rarity-ultra';
+  if (l.includes('holo') || l.includes('illustration') || l.includes('special')) return 'rarity-holo';
+  if (l.includes('rare')) return 'rarity-rare';
+  if (l.includes('uncommon')) return 'rarity-uncommon';
+  if (l.includes('promo')) return 'rarity-promo';
+  return 'rarity-common';
+};
+
+// ── Subtype tag class ─────────────────────────────────────────────────────────
+function tagClass(sub) {
+  const s = (sub || '').toLowerCase();
+  if (s === 'ex' || s === 'pokémon ex') return 't-ex';
+  if (s === 'gx') return 't-gx';
+  if (s === 'v' || s === 'v-union') return 't-v';
+  if (s === 'vmax') return 't-vmax';
+  if (s === 'vstar') return 't-vstar';
+  if (s === 'mega') return 't-mega';
+  if (s === 'break') return 't-break';
+  if (s === 'prism star') return 't-prism';
+  if (s === 'item') return 't-item';
+  if (s === 'supporter') return 't-supporter';
+  if (s === 'stadium') return 't-stadium';
+  if (s.includes('tool')) return 't-tool';
+  if (s === 'trainer' || s === 'pokémon' || s === 'pokemon') return 't-pokemon';
+  if (s === 'energy') return 't-energy';
+  return 't-pokemon';
+}
+function supertypeClass(st) {
+  const s = (st || '').toLowerCase();
+  if (s === 'trainer') return 't-trainer';
+  if (s === 'energy') return 't-energy';
+  return 't-pokemon';
+}
+
+// ── Energy type color (for attack costs) ─────────────────────────────────────
+const ENERGY_COLORS = {
+  Fire:'#e05020', Water:'#3090e0', Grass:'#30a840', Lightning:'#d0b020',
+  Psychic:'#a050c0', Fighting:'#c06020', Darkness:'#404060', Metal:'#909090',
+  Dragon:'#80a020', Fairy:'#e060a0', Colorless:'#909090',
+};
+
+// ── Price helpers ─────────────────────────────────────────────────────────────
+const VARIANT_LABELS = {
+  normal: 'Normal', holofoil: 'Holofoil', reverseHolofoil: 'Rev. Holo',
+  '1stEditionNormal': '1st Ed. Normal', '1stEditionHolofoil': '1st Ed. Holo',
+  unlimitedHolofoil: 'Unlimited Holo', unlimitedNormal: 'Unlimited',
+};
+
+function bestPrice(c) {
+  const p = c.tcgplayer?.prices;
+  if (!p) return null;
+  const order = ['holofoil','1stEditionHolofoil','unlimitedHolofoil','normal','1stEditionNormal','unlimitedNormal','reverseHolofoil'];
+  for (const v of order) {
+    if (p[v]?.market != null) return { val: p[v].market, variant: v };
+  }
+  for (const v of order) {
+    if (p[v]?.mid != null) return { val: p[v].mid, variant: v, approx: true };
+  }
+  for (const v of Object.keys(p)) {
+    const val = p[v]?.market ?? p[v]?.mid;
+    if (val != null) return { val, variant: v, approx: p[v].market == null };
+  }
+  return null;
+}
+
+function priceClass(val) {
+  if (val == null) return 'price-dim';
+  if (val < 0.50) return 'price-dim';
+  if (val < 1.50) return 'price-low';
+  if (val < 5)    return 'price-mid';
+  if (val < 20)   return 'price-good';
+  if (val < 50)   return 'price-hot';
+  return 'price-fire';
+}
+
+function fmt(v) { return v == null ? '—' : `$${v.toFixed(2)}`; }
+
+// ── Card number sort (handles "001", "PR-001", "TG01" etc.) ──────────────────
+function cardNumVal(n = '') {
+  const m = n.match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : 9999;
+}
+
+// ── Fetch all sets ────────────────────────────────────────────────────────────
+async function loadSets() {
+  try {
+    const r = await fetch(`${API}/sets?orderBy=-releaseDate&pageSize=250`);
+    const d = await r.json();
+    allSets = d.data || [];
+    renderSets();
+    document.getElementById('sets-loading').style.display = 'none';
+  } catch(e) {
+    document.getElementById('sets-loading').innerHTML =
+      '<span style="color:#e05050">Failed to load sets. Check connection.</span>';
+  }
+}
+
+// ── Set picker rendering ──────────────────────────────────────────────────────
+function renderSets() {
+  const q = document.getElementById('set-search').value.trim().toLowerCase();
+  let sets = allSets;
+  if (activeEra !== 'all') {
+    sets = sets.filter(s => s.series === activeEra);
+  }
+  if (q) {
+    sets = sets.filter(s => s.name.toLowerCase().includes(q) || s.series.toLowerCase().includes(q));
+  }
+  const grid = document.getElementById('sets-grid');
+  if (!sets.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No sets found.</div>';
+    return;
+  }
+  grid.innerHTML = sets.map(s => `
+    <div class="set-card" data-id="${s.id}" title="${s.name} (${s.releaseDate})">
+      ${s.images?.logo ? `<img src="${s.images.logo}" alt="${s.name}" loading="lazy">` : ''}
+      <span class="set-name">${s.name}</span>
+      <span class="set-meta">${s.series} · ${s.total ?? s.printedTotal ?? '?'} cards</span>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.set-card').forEach(el => {
+    el.addEventListener('click', () => openSet(el.dataset.id, el.querySelector('.set-name').textContent));
+  });
+}
+
+// ── Era tabs ──────────────────────────────────────────────────────────────────
+document.getElementById('era-tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.era-tab');
+  if (!tab) return;
+  document.querySelectorAll('.era-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  activeEra = tab.dataset.era;
+  renderSets();
+});
+
+document.getElementById('set-search').addEventListener('input', renderSets);
+
+// ── Change set button ─────────────────────────────────────────────────────────
+document.getElementById('change-set-btn').addEventListener('click', () => {
+  document.getElementById('browse').style.display = 'none';
+  document.getElementById('set-picker').style.display = 'flex';
+  document.getElementById('change-set-btn').style.display = 'none';
+  document.getElementById('header-set-name').textContent = '';
+  allCards = [];
+});
+
+// ── Load cards for a set ──────────────────────────────────────────────────────
+async function openSet(setId, setName) {
+  document.getElementById('set-picker').style.display = 'none';
+  document.getElementById('browse').style.display = 'block';
+  document.getElementById('browse-loading').style.display = 'flex';
+  document.getElementById('card-grid').style.display = 'none';
+  document.getElementById('header-set-name').textContent = setName;
+  document.getElementById('change-set-btn').style.display = '';
+
+  // Reset filters
+  activeSuper = 'all'; activeSub = 'all'; activeRarity = 'all';
+  cardQuery = '';
+  document.getElementById('card-search').value = '';
+  document.getElementById('sort-select').value = 'number';
+  activeSort = 'number';
+  document.querySelectorAll('#filter-super .pill').forEach(p => p.classList.toggle('active', p.dataset.val === 'all'));
+
+  try {
+    allCards = await fetchAllCards(setId);
+    buildSubtypeFilters();
+    buildRarityFilters();
+    buildStats();
+    applyFilters();
+    document.getElementById('browse-loading').style.display = 'none';
+    document.getElementById('card-grid').style.display = 'grid';
+  } catch(e) {
+    document.getElementById('browse-loading').innerHTML =
+      `<span style="color:#e05050">Error loading cards: ${e.message}</span>`;
+  }
+}
+
+async function fetchAllCards(setId) {
+  let cards = [], page = 1;
+  while (true) {
+    const url = `${API}/cards?q=set.id:${setId}&orderBy=number&pageSize=250&page=${page}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    cards = cards.concat(d.data || []);
+    if (cards.length >= d.totalCount || !d.data?.length) break;
+    page++;
+  }
+  return cards;
+}
+
+// ── Build dynamic subtype pills ───────────────────────────────────────────────
+const KNOWN_SUBTYPES = ['Item','Supporter','Stadium','Pokémon Tool','Technical Machine','EX','GX','V','VMAX','VSTAR','Mega','BREAK','Prism Star','Basic','Stage 1','Stage 2','Special','Restored'];
+const SPECIAL_SUBTYPES = ['EX','GX','V','VMAX','VSTAR','Mega','BREAK','Prism Star'];
+
+function buildSubtypeFilters() {
+  const presentSubs = new Set();
+  allCards.forEach(c => (c.subtypes || []).forEach(s => presentSubs.add(s)));
+  const show = KNOWN_SUBTYPES.filter(s => presentSubs.has(s));
+
+  const container = document.getElementById('filter-sub');
+  if (!show.length) { container.innerHTML = ''; return; }
+
+  container.innerHTML = show.map(s =>
+    `<button class="pill" data-val="${s}">${s}</button>`
+  ).join('');
+  container.querySelectorAll('.pill').forEach(p => {
+    p.addEventListener('click', () => {
+      activeSub = activeSub === p.dataset.val ? 'all' : p.dataset.val;
+      container.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+      if (activeSub !== 'all') p.classList.add('active');
+      applyFilters();
+    });
+  });
+}
+
+// ── Build rarity filter pills ─────────────────────────────────────────────────
+function buildRarityFilters() {
+  const rarities = [...new Set(allCards.map(c => c.rarity).filter(Boolean))].sort((a,b) => (RARITY_ORDER[a]??3) - (RARITY_ORDER[b]??3));
+  const container = document.getElementById('filter-rarity');
+  const sep = document.getElementById('sub-sep');
+  if (rarities.length < 3) { container.style.display = 'none'; sep.style.display = 'none'; return; }
+  container.style.display = '';
+  sep.style.display = '';
+  container.innerHTML = rarities.map(r =>
+    `<button class="pill" data-val="${r}"><span class="${rarityClass(r)}">${r}</span></button>`
+  ).join('');
+  container.querySelectorAll('.pill').forEach(p => {
+    p.addEventListener('click', () => {
+      activeRarity = activeRarity === p.dataset.val ? 'all' : p.dataset.val;
+      container.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+      if (activeRarity !== 'all') p.classList.add('active');
+      applyFilters();
+    });
+  });
+}
+
+// ── Supertype filter ──────────────────────────────────────────────────────────
+document.getElementById('filter-super').addEventListener('click', e => {
+  const pill = e.target.closest('.pill');
+  if (!pill) return;
+  activeSuper = pill.dataset.val;
+  document.querySelectorAll('#filter-super .pill').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+  activeSub = 'all';
+  document.querySelectorAll('#filter-sub .pill').forEach(p => p.classList.remove('active'));
+  applyFilters();
+});
+
+// ── Card search ───────────────────────────────────────────────────────────────
+document.getElementById('card-search').addEventListener('input', e => {
+  cardQuery = e.target.value.trim().toLowerCase();
+  applyFilters();
+});
+
+// ── Sort ──────────────────────────────────────────────────────────────────────
+document.getElementById('sort-select').addEventListener('change', e => {
+  activeSort = e.target.value;
+  applyFilters();
+});
+
+// ── Apply all filters + sort ──────────────────────────────────────────────────
+function applyFilters() {
+  filteredCards = allCards.filter(c => {
+    if (activeSuper !== 'all' && c.supertype !== activeSuper) return false;
+    if (activeSub !== 'all' && !(c.subtypes || []).includes(activeSub)) return false;
+    if (activeRarity !== 'all' && c.rarity !== activeRarity) return false;
+    if (cardQuery && !c.name.toLowerCase().includes(cardQuery)) return false;
+    return true;
+  });
+
+  filteredCards.sort((a, b) => {
+    if (activeSort === 'name') return a.name.localeCompare(b.name);
+    if (activeSort === 'rarity') return ((RARITY_ORDER[b.rarity]??2) - (RARITY_ORDER[a.rarity]??2)) || cardNumVal(a.number) - cardNumVal(b.number);
+    if (activeSort === 'hp') return (parseInt(b.hp)||0) - (parseInt(a.hp)||0);
+    if (activeSort === 'price_desc') {
+      const pa = bestPrice(a)?.val ?? -1, pb = bestPrice(b)?.val ?? -1;
+      return pb - pa;
+    }
+    if (activeSort === 'price_asc') {
+      const pa = bestPrice(a)?.val ?? Infinity, pb = bestPrice(b)?.val ?? Infinity;
+      return pa - pb;
+    }
+    if (activeSort === 'type') {
+      const ta = (a.types||['ZZZ'])[0], tb = (b.types||['ZZZ'])[0];
+      return ta.localeCompare(tb) || cardNumVal(a.number) - cardNumVal(b.number);
+    }
+    return cardNumVal(a.number) - cardNumVal(b.number);
+  });
+
+  document.getElementById('result-count').textContent = `${filteredCards.length} card${filteredCards.length!==1?'s':''}`;
+  const empty = document.getElementById('browse-empty');
+  empty.style.display = filteredCards.length ? 'none' : 'block';
+  renderCards();
+}
+
+// ── Build stats bar ───────────────────────────────────────────────────────────
+function buildStats() {
+  const counts = { Pokémon: 0, Trainer: 0, Energy: 0 };
+  const rarBuckets = { Common: 0, Uncommon: 0, Rare: 0, 'Holo/Ultra': 0, Secret: 0 };
+  allCards.forEach(c => {
+    if (counts[c.supertype] !== undefined) counts[c.supertype]++;
+    const r = c.rarity || '';
+    if (r === 'Common') rarBuckets.Common++;
+    else if (r === 'Uncommon') rarBuckets.Uncommon++;
+    else if (r.startsWith('Rare Holo') || r.startsWith('Rare Ultra') || r.includes('GX') || r.includes('EX') || r.includes('V') || r === 'Amazing Rare' || r === 'Double Rare') rarBuckets['Holo/Ultra']++;
+    else if (r.includes('Secret') || r.includes('Rainbow') || r.includes('Hyper') || r.includes('Special Illustration')) rarBuckets.Secret++;
+    else if (r === 'Rare') rarBuckets.Rare++;
+  });
+
+  // Price stats
+  let totalVal = 0, pricedCount = 0, topCard = null, topVal = 0;
+  allCards.forEach(c => {
+    const bp = bestPrice(c);
+    if (bp) {
+      totalVal += bp.val;
+      pricedCount++;
+      if (bp.val > topVal) { topVal = bp.val; topCard = c; }
+    }
+  });
+  const priceChips = pricedCount ? [
+    { dot: '#50c878', label: 'Set Value', val: `$${totalVal.toFixed(2)}` },
+    { dot: '#c090ff', label: 'Avg Price', val: `$${(totalVal / pricedCount).toFixed(2)}` },
+    { dot: '#ffd040', label: 'Top Card', val: topCard ? `${topCard.name} ${fmt(topVal)}` : '—' },
+  ] : [];
+
+  const chips = [
+    { dot: '#3eb86a', label: 'Pokemon', val: counts['Pokémon'] },
+    { dot: '#7ca0ff', label: 'Trainer', val: counts.Trainer },
+    { dot: '#ffcc3c', label: 'Energy', val: counts.Energy },
+    null,
+    { dot: '#5a7a9c', label: 'Common', val: rarBuckets.Common },
+    { dot: '#60a860', label: 'Uncommon', val: rarBuckets.Uncommon },
+    { dot: '#7cb8ff', label: 'Rare', val: rarBuckets.Rare },
+    { dot: '#c090ff', label: 'Holo/Ultra', val: rarBuckets['Holo/Ultra'] },
+    { dot: '#ffd040', label: 'Secret', val: rarBuckets.Secret },
+    null,
+    { dot: '#ff6600', label: 'Total', val: allCards.length },
+    ...priceChips,
+  ].filter(Boolean);
+
+  document.getElementById('stats-bar').innerHTML = chips.map(c => `
+    <div class="stat-chip">
+      <span class="dot" style="background:${c.dot}"></span>
+      <span class="lbl">${c.label}</span>
+      <span class="val">${c.val}</span>
+    </div>
+  `).join('');
+}
+
+// ── Render card grid ──────────────────────────────────────────────────────────
+function renderCards() {
+  const grid = document.getElementById('card-grid');
+  if (!filteredCards.length) { grid.innerHTML = ''; return; }
+
+  grid.innerHTML = filteredCards.map(c => {
+    const img  = c.images?.small;
+    const tags = buildTagHTML(c);
+    const rar  = c.rarity ? `<span class="rarity-pip ${rarityClass(c.rarity)}">${c.rarity}</span>` : '';
+    const bp   = bestPrice(c);
+    const priceBadge = bp
+      ? `<div class="price-badge">
+           <span class="price-val ${priceClass(bp.val)}">${bp.approx ? '~' : ''}${fmt(bp.val)}</span>
+           <span class="price-variant">${VARIANT_LABELS[bp.variant] || bp.variant}</span>
+         </div>`
+      : '';
+    const priceClass2 = bp ? (bp.val >= 50 ? ' fire' : bp.val >= 20 ? ' pricey' : ' has-price') : '';
+    return `
+      <div class="card-item${priceClass2}" data-id="${c.id}">
+        <div class="card-img-wrap">
+          ${img
+            ? `<img src="${img}" alt="${c.name}" loading="lazy">`
+            : `<div class="card-img-placeholder">?</div>`}
+        </div>
+        <div class="card-info">
+          <div class="card-name">${c.name}</div>
+          <div class="card-num">#${c.number}${c.hp ? ` · HP ${c.hp}` : ''}</div>
+          <div class="card-tags">${tags}</div>
+          ${rar}
+          ${priceBadge}
+        </div>
+      </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.card-item').forEach(el => {
+    el.addEventListener('click', () => openModal(el.dataset.id));
+  });
+}
+
+function buildTagHTML(c) {
+  const out = [];
+  if (c.supertype) out.push(`<span class="card-tag ${supertypeClass(c.supertype)}">${c.supertype}</span>`);
+  (c.subtypes || []).forEach(s => {
+    if (SPECIAL_SUBTYPES.includes(s) || ['Item','Supporter','Stadium','Pokémon Tool'].includes(s))
+      out.push(`<span class="card-tag ${tagClass(s)}">${s}</span>`);
+  });
+  (c.types || []).forEach(t => out.push(`<span class="card-tag" style="background:${ENERGY_COLORS[t]||'#333'}22;color:${ENERGY_COLORS[t]||'#999'};border:1px solid ${ENERGY_COLORS[t]||'#555'}44;font-size:9px;padding:1px 5px;border-radius:3px;letter-spacing:.5px;text-transform:uppercase">${t}</span>`));
+  return out.join('');
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal(cardId) {
+  const c = allCards.find(x => x.id === cardId);
+  if (!c) return;
+
+  document.getElementById('modal-img-wrap').innerHTML = c.images?.large
+    ? `<img src="${c.images.large}" alt="${c.name}">`
+    : `<div class="card-img-placeholder" style="width:180px;height:252px;font-size:40px">?</div>`;
+
+  document.getElementById('modal-name').textContent = c.name;
+  document.getElementById('modal-number').textContent = `${c.set?.name || ''} · #${c.number} · ${c.rarity || ''}`;
+  document.getElementById('modal-tags').innerHTML = buildTagHTML(c);
+
+  let details = '';
+
+  if (c.hp) details += `<div class="modal-section-label">HP</div><div class="modal-value">${c.hp}</div>`;
+
+  if (c.abilities?.length) {
+    details += `<div class="modal-section-label">Abilities</div><div class="modal-abilities">` +
+      c.abilities.map(a => `
+        <div class="ability-row">
+          <div class="ab-name">${a.type}: ${a.name}</div>
+          <div class="ab-text">${a.text || '—'}</div>
+        </div>`).join('') + `</div>`;
+  }
+
+  if (c.attacks?.length) {
+    details += `<div class="modal-section-label">Attacks</div><div class="modal-abilities">` +
+      c.attacks.map(a => {
+        const cost = (a.cost || []).map(t =>
+          `<span class="energy-icon" style="background:${ENERGY_COLORS[t]||'#555'}33;color:${ENERGY_COLORS[t]||'#999'}">${t[0]}</span>`
+        ).join('');
+        return `<div class="ability-row">
+          <div class="ab-name"><span class="attack-cost">${cost}</span>${a.name}${a.damage ? ` — ${a.damage}` : ''}</div>
+          <div class="ab-text">${a.text || ''}</div>
+        </div>`;
+      }).join('') + `</div>`;
+  }
+
+  if (c.rules?.length) {
+    details += `<div class="modal-section-label">Rules</div>` +
+      c.rules.map(r => `<div class="ability-row"><div class="ab-text">${r}</div></div>`).join('');
+  }
+
+  if (c.weaknesses?.length) details += `<div class="modal-section-label">Weakness</div><div class="modal-value">${c.weaknesses.map(w=>`${w.type} ${w.value}`).join(', ')}</div>`;
+  if (c.resistances?.length) details += `<div class="modal-section-label">Resistance</div><div class="modal-value">${c.resistances.map(r=>`${r.type} ${r.value}`).join(', ')}</div>`;
+  if (c.retreatCost?.length) details += `<div class="modal-section-label">Retreat Cost</div><div class="modal-value">${c.retreatCost.length} ★</div>`;
+  if (c.artist) details += `<div class="modal-section-label">Illustrator</div><div class="modal-value">${c.artist}</div>`;
+
+  const prices = c.tcgplayer?.prices;
+  if (prices && Object.keys(prices).length) {
+    details += `<div class="modal-section-label" style="margin-top:16px">TCGPlayer Prices</div>`;
+    details += `<table class="price-table"><thead><tr><th>Variant</th><th>Low</th><th>Mid</th><th>Market</th><th>High</th></tr></thead><tbody>`;
+    for (const [vk, vv] of Object.entries(prices)) {
+      if (!vv) continue;
+      details += `<tr>
+        <td>${VARIANT_LABELS[vk] || vk}</td>
+        <td>${fmt(vv.low)}</td>
+        <td>${fmt(vv.mid)}</td>
+        <td class="market">${fmt(vv.market)}</td>
+        <td>${fmt(vv.high)}</td>
+      </tr>`;
+    }
+    details += `</tbody></table>`;
+    if (c.tcgplayer?.url) {
+      details += `<a href="${c.tcgplayer.url}" target="_blank" rel="noopener"
+        style="display:inline-block;margin-top:10px;font-size:10px;letter-spacing:1px;color:#5a7a9c;text-decoration:none;text-transform:uppercase">
+        View on TCGPlayer ↗</a>`;
+    }
+  }
+  if (c.flavorText) details += `<div class="modal-section-label" style="margin-top:14px">Flavor Text</div><div class="ab-text" style="font-style:italic;color:#6a8fb0;font-size:12px;line-height:1.6">"${c.flavorText}"</div>`;
+
+  document.getElementById('modal-details').innerHTML = details;
+
+  const overlay = document.getElementById('modal-overlay');
+  overlay.classList.add('open');
+  document.getElementById('modal').scrollTop = 0;
+}
+
+document.getElementById('modal-close').addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('open');
+});
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('open');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('open');
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadSets();
+</script>
+</body>
+</html>
