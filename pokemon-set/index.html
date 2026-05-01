@@ -353,6 +353,44 @@
       align-items: center; justify-content: center; font-size: 9px; font-weight: bold;
     }
 
+    /* Price badge */
+    .price-badge {
+      font-size: 11px; font-weight: bold; letter-spacing: 0.5px;
+      margin-top: 5px; display: flex; align-items: center; gap: 5px;
+    }
+    .price-val { }
+    .price-dim   { color: #3a5878; }
+    .price-low   { color: #5a8aaa; }
+    .price-mid   { color: #c8d8f0; }
+    .price-good  { color: #50c878; }
+    .price-hot   { color: #ff9020; }
+    .price-fire  { color: #ffd040; }
+
+    .price-variant {
+      font-size: 9px; color: var(--muted); letter-spacing: 1px;
+      text-transform: uppercase; font-weight: normal;
+    }
+
+    /* Price table in modal */
+    .price-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    .price-table th {
+      font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+      padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--border);
+    }
+    .price-table th:first-child { text-align: left; }
+    .price-table td {
+      font-size: 11px; padding: 5px 8px; text-align: right;
+      border-bottom: 1px solid rgba(255,255,255,0.03); color: #8aafc8;
+    }
+    .price-table td:first-child { text-align: left; color: var(--text); letter-spacing: 1px; font-size: 10px; text-transform: uppercase; }
+    .price-table td.market { color: #50c878; font-weight: bold; }
+    .price-table tr:last-child td { border-bottom: none; }
+
+    /* Price sort indicator on card */
+    .card-item.has-price { border-color: rgba(80,200,120,0.12); }
+    .card-item.pricey { border-color: rgba(255,144,32,0.25); }
+    .card-item.fire   { border-color: rgba(255,208,64,0.35); box-shadow: 0 0 12px rgba(255,208,64,0.08); }
+
     /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #040810; }
@@ -444,6 +482,8 @@
         <option value="number"># Number</option>
         <option value="name">Name A–Z</option>
         <option value="rarity">Rarity</option>
+        <option value="price_desc">Price High–Low</option>
+        <option value="price_asc">Price Low–High</option>
         <option value="hp">HP High–Low</option>
         <option value="type">Energy Type</option>
       </select>
@@ -544,6 +584,42 @@ const ENERGY_COLORS = {
   Psychic:'#a050c0', Fighting:'#c06020', Darkness:'#404060', Metal:'#909090',
   Dragon:'#80a020', Fairy:'#e060a0', Colorless:'#909090',
 };
+
+// ── Price helpers ─────────────────────────────────────────────────────────────
+const VARIANT_LABELS = {
+  normal: 'Normal', holofoil: 'Holofoil', reverseHolofoil: 'Rev. Holo',
+  '1stEditionNormal': '1st Ed. Normal', '1stEditionHolofoil': '1st Ed. Holo',
+  unlimitedHolofoil: 'Unlimited Holo', unlimitedNormal: 'Unlimited',
+};
+
+function bestPrice(c) {
+  const p = c.tcgplayer?.prices;
+  if (!p) return null;
+  const order = ['holofoil','1stEditionHolofoil','unlimitedHolofoil','normal','1stEditionNormal','unlimitedNormal','reverseHolofoil'];
+  for (const v of order) {
+    if (p[v]?.market != null) return { val: p[v].market, variant: v };
+  }
+  for (const v of order) {
+    if (p[v]?.mid != null) return { val: p[v].mid, variant: v, approx: true };
+  }
+  for (const v of Object.keys(p)) {
+    const val = p[v]?.market ?? p[v]?.mid;
+    if (val != null) return { val, variant: v, approx: p[v].market == null };
+  }
+  return null;
+}
+
+function priceClass(val) {
+  if (val == null) return 'price-dim';
+  if (val < 0.50) return 'price-dim';
+  if (val < 1.50) return 'price-low';
+  if (val < 5)    return 'price-mid';
+  if (val < 20)   return 'price-good';
+  if (val < 50)   return 'price-hot';
+  return 'price-fire';
+}
+
+function fmt(v) { return v == null ? '—' : `$${v.toFixed(2)}`; }
 
 // ── Card number sort (handles "001", "PR-001", "TG01" etc.) ──────────────────
 function cardNumVal(n = '') {
@@ -741,6 +817,14 @@ function applyFilters() {
     if (activeSort === 'name') return a.name.localeCompare(b.name);
     if (activeSort === 'rarity') return ((RARITY_ORDER[b.rarity]??2) - (RARITY_ORDER[a.rarity]??2)) || cardNumVal(a.number) - cardNumVal(b.number);
     if (activeSort === 'hp') return (parseInt(b.hp)||0) - (parseInt(a.hp)||0);
+    if (activeSort === 'price_desc') {
+      const pa = bestPrice(a)?.val ?? -1, pb = bestPrice(b)?.val ?? -1;
+      return pb - pa;
+    }
+    if (activeSort === 'price_asc') {
+      const pa = bestPrice(a)?.val ?? Infinity, pb = bestPrice(b)?.val ?? Infinity;
+      return pa - pb;
+    }
     if (activeSort === 'type') {
       const ta = (a.types||['ZZZ'])[0], tb = (b.types||['ZZZ'])[0];
       return ta.localeCompare(tb) || cardNumVal(a.number) - cardNumVal(b.number);
@@ -768,6 +852,22 @@ function buildStats() {
     else if (r === 'Rare') rarBuckets.Rare++;
   });
 
+  // Price stats
+  let totalVal = 0, pricedCount = 0, topCard = null, topVal = 0;
+  allCards.forEach(c => {
+    const bp = bestPrice(c);
+    if (bp) {
+      totalVal += bp.val;
+      pricedCount++;
+      if (bp.val > topVal) { topVal = bp.val; topCard = c; }
+    }
+  });
+  const priceChips = pricedCount ? [
+    { dot: '#50c878', label: 'Set Value', val: `$${totalVal.toFixed(2)}` },
+    { dot: '#c090ff', label: 'Avg Price', val: `$${(totalVal / pricedCount).toFixed(2)}` },
+    { dot: '#ffd040', label: 'Top Card', val: topCard ? `${topCard.name} ${fmt(topVal)}` : '—' },
+  ] : [];
+
   const chips = [
     { dot: '#3eb86a', label: 'Pokemon', val: counts['Pokémon'] },
     { dot: '#7ca0ff', label: 'Trainer', val: counts.Trainer },
@@ -780,6 +880,7 @@ function buildStats() {
     { dot: '#ffd040', label: 'Secret', val: rarBuckets.Secret },
     null,
     { dot: '#ff6600', label: 'Total', val: allCards.length },
+    ...priceChips,
   ].filter(Boolean);
 
   document.getElementById('stats-bar').innerHTML = chips.map(c => `
@@ -797,11 +898,19 @@ function renderCards() {
   if (!filteredCards.length) { grid.innerHTML = ''; return; }
 
   grid.innerHTML = filteredCards.map(c => {
-    const img = c.images?.small;
+    const img  = c.images?.small;
     const tags = buildTagHTML(c);
     const rar  = c.rarity ? `<span class="rarity-pip ${rarityClass(c.rarity)}">${c.rarity}</span>` : '';
+    const bp   = bestPrice(c);
+    const priceBadge = bp
+      ? `<div class="price-badge">
+           <span class="price-val ${priceClass(bp.val)}">${bp.approx ? '~' : ''}${fmt(bp.val)}</span>
+           <span class="price-variant">${VARIANT_LABELS[bp.variant] || bp.variant}</span>
+         </div>`
+      : '';
+    const priceClass2 = bp ? (bp.val >= 50 ? ' fire' : bp.val >= 20 ? ' pricey' : ' has-price') : '';
     return `
-      <div class="card-item" data-id="${c.id}">
+      <div class="card-item${priceClass2}" data-id="${c.id}">
         <div class="card-img-wrap">
           ${img
             ? `<img src="${img}" alt="${c.name}" loading="lazy">`
@@ -812,6 +921,7 @@ function renderCards() {
           <div class="card-num">#${c.number}${c.hp ? ` · HP ${c.hp}` : ''}</div>
           <div class="card-tags">${tags}</div>
           ${rar}
+          ${priceBadge}
         </div>
       </div>`;
   }).join('');
@@ -880,6 +990,28 @@ function openModal(cardId) {
   if (c.resistances?.length) details += `<div class="modal-section-label">Resistance</div><div class="modal-value">${c.resistances.map(r=>`${r.type} ${r.value}`).join(', ')}</div>`;
   if (c.retreatCost?.length) details += `<div class="modal-section-label">Retreat Cost</div><div class="modal-value">${c.retreatCost.length} ★</div>`;
   if (c.artist) details += `<div class="modal-section-label">Illustrator</div><div class="modal-value">${c.artist}</div>`;
+
+  const prices = c.tcgplayer?.prices;
+  if (prices && Object.keys(prices).length) {
+    details += `<div class="modal-section-label" style="margin-top:16px">TCGPlayer Prices</div>`;
+    details += `<table class="price-table"><thead><tr><th>Variant</th><th>Low</th><th>Mid</th><th>Market</th><th>High</th></tr></thead><tbody>`;
+    for (const [vk, vv] of Object.entries(prices)) {
+      if (!vv) continue;
+      details += `<tr>
+        <td>${VARIANT_LABELS[vk] || vk}</td>
+        <td>${fmt(vv.low)}</td>
+        <td>${fmt(vv.mid)}</td>
+        <td class="market">${fmt(vv.market)}</td>
+        <td>${fmt(vv.high)}</td>
+      </tr>`;
+    }
+    details += `</tbody></table>`;
+    if (c.tcgplayer?.url) {
+      details += `<a href="${c.tcgplayer.url}" target="_blank" rel="noopener"
+        style="display:inline-block;margin-top:10px;font-size:10px;letter-spacing:1px;color:#5a7a9c;text-decoration:none;text-transform:uppercase">
+        View on TCGPlayer ↗</a>`;
+    }
+  }
   if (c.flavorText) details += `<div class="modal-section-label" style="margin-top:14px">Flavor Text</div><div class="ab-text" style="font-style:italic;color:#6a8fb0;font-size:12px;line-height:1.6">"${c.flavorText}"</div>`;
 
   document.getElementById('modal-details').innerHTML = details;
