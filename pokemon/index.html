@@ -489,6 +489,13 @@
       text-overflow: ellipsis;
       margin-bottom: 6px;
     }
+    .card-badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 2px;
+      margin-bottom: 6px;
+    }
     .card-rarity-badge {
       display: inline-block;
       font-size: 0.6rem;
@@ -496,7 +503,6 @@
       text-transform: uppercase;
       padding: 2px 7px;
       clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
-      margin-bottom: 8px;
     }
     .rarity-common    .card-rarity-badge { background: rgba(176,212,232,0.12); color: var(--text); }
     .rarity-uncommon  .card-rarity-badge { background: rgba(0,255,136,0.12); color: var(--green); }
@@ -671,6 +677,108 @@
     }
     .no-results.active { display: block; }
     .no-results-icon { font-size: 3rem; margin-bottom: 16px; display: block; }
+
+    /* ── Type Tokens ── */
+    :root {
+      --type-pokemon:   #ef4444;
+      --type-trainer:   #3b82f6;
+      --type-item:      #06b6d4;
+      --type-tool:      #8b5cf6;
+      --type-stadium:   #f59e0b;
+      --type-supporter: #10b981;
+      --type-energy:    #eab308;
+    }
+    .card-type-badge {
+      display: inline-block;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+      margin-bottom: 4px;
+      margin-right: 4px;
+    }
+    .type-pokemon            { background: rgba(239,68,68,0.14);    color: var(--type-pokemon); }
+    .type-trainer            { background: rgba(59,130,246,0.14);   color: var(--type-trainer); }
+    .type-trainer-item       { background: rgba(6,182,212,0.14);    color: var(--type-item); }
+    .type-trainer-tool       { background: rgba(139,92,246,0.14);   color: var(--type-tool); }
+    .type-trainer-stadium    { background: rgba(245,158,11,0.14);   color: var(--type-stadium); }
+    .type-trainer-supporter  { background: rgba(16,185,129,0.14);   color: var(--type-supporter); }
+    .type-energy             { background: rgba(234,179,8,0.14);    color: var(--type-energy); }
+    .type-other              { background: rgba(100,116,139,0.14);  color: var(--dim); }
+
+    /* ── Results Toolbar ── */
+    .results-toolbar {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex: 1;
+    }
+    .filter-chip {
+      font-family: inherit;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 11px;
+      clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--dim);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .filter-chip:hover { border-color: rgba(0,245,255,0.4); color: var(--cyan); }
+    .filter-chip.active { background: rgba(0,245,255,0.1); border-color: var(--cyan); color: var(--cyan); }
+    .filter-chip[data-type="pokemon"].active       { background: rgba(239,68,68,0.12);   border-color: var(--type-pokemon);   color: var(--type-pokemon); }
+    .filter-chip[data-type="trainer"].active       { background: rgba(59,130,246,0.12);  border-color: var(--type-trainer);   color: var(--type-trainer); }
+    .filter-chip[data-type="trainer-item"].active      { background: rgba(6,182,212,0.12);   border-color: var(--type-item);      color: var(--type-item); }
+    .filter-chip[data-type="trainer-tool"].active      { background: rgba(139,92,246,0.12);  border-color: var(--type-tool);      color: var(--type-tool); }
+    .filter-chip[data-type="trainer-stadium"].active   { background: rgba(245,158,11,0.12);  border-color: var(--type-stadium);   color: var(--type-stadium); }
+    .filter-chip[data-type="trainer-supporter"].active { background: rgba(16,185,129,0.12);  border-color: var(--type-supporter); color: var(--type-supporter); }
+    .filter-chip[data-type="energy"].active        { background: rgba(234,179,8,0.12);   border-color: var(--type-energy);    color: var(--type-energy); }
+    .sort-select {
+      font-family: inherit;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--dim);
+      cursor: pointer;
+      clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+      outline: none;
+      transition: all 0.18s;
+    }
+    .sort-select:hover, .sort-select:focus { border-color: rgba(0,245,255,0.4); color: var(--cyan); }
+    .sort-select option { background: #0a0a14; color: var(--text); }
+    .inline-stats {
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      margin-bottom: 12px;
+      min-height: 1.2em;
+      line-height: 1.8;
+    }
+    .inline-stats .stat-sep  { color: rgba(255,255,255,0.15); margin: 0 6px; }
+    .inline-stats .stat-val  { color: var(--cyan); }
+    .inline-stats .stat-type-pokemon   { color: var(--type-pokemon); }
+    .inline-stats .stat-type-trainer   { color: var(--type-trainer); }
+    .inline-stats .stat-type-energy    { color: var(--type-energy); }
+    .no-type-results {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--dim);
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+    }
 
     /* ── Modal Overlay ── */
     .modal-overlay {
@@ -2063,6 +2171,26 @@
   <!-- ── Results ── -->
   <div id="resultsSection" style="display:none;">
     <div class="section-title"><span class="accent">//</span> RESULTS <span class="accent">//</span></div>
+    <div class="results-toolbar">
+      <div class="filter-chips" id="filterChips">
+        <button class="filter-chip active" data-type="all">ALL</button>
+        <button class="filter-chip" data-type="pokemon">POKÉMON</button>
+        <button class="filter-chip" data-type="trainer">TRAINER</button>
+        <button class="filter-chip" data-type="trainer-item">ITEM</button>
+        <button class="filter-chip" data-type="trainer-tool">TOOL</button>
+        <button class="filter-chip" data-type="trainer-stadium">STADIUM</button>
+        <button class="filter-chip" data-type="trainer-supporter">SUPPORTER</button>
+        <button class="filter-chip" data-type="energy">ENERGY</button>
+      </div>
+      <select id="sortSelect" class="sort-select">
+        <option value="default">NEWEST FIRST</option>
+        <option value="price-desc">PRICE ↓</option>
+        <option value="price-asc">PRICE ↑</option>
+        <option value="rarity-desc">RARITY ↓</option>
+        <option value="name">NAME A–Z</option>
+      </select>
+    </div>
+    <div class="inline-stats" id="inlineStats"></div>
     <div class="results-grid" id="resultsGrid"></div>
     <div class="pagination-bar" id="paginationBar" style="display:none;"></div>
   </div>
@@ -2190,6 +2318,158 @@
   function fmt(val) {
     if (val == null) return '—';
     return '$' + Number(val).toFixed(2);
+  }
+
+  /* ── Type Classifier ── */
+  function cardType(card) {
+    const st = card.supertype || '';
+    if (st === 'Energy') return 'energy';
+    if (st === 'Trainer') {
+      const subs = (card.subtypes || []).map(s => s.toLowerCase());
+      if (subs.includes('stadium'))              return 'trainer-stadium';
+      if (subs.includes('supporter'))            return 'trainer-supporter';
+      if (subs.some(s => s.includes('tool')))   return 'trainer-tool';
+      if (subs.includes('item'))                 return 'trainer-item';
+      return 'trainer';
+    }
+    if (st === 'Pokémon' || st === 'Pokemon')   return 'pokemon';
+    return 'other';
+  }
+
+  function typeLabel(t) {
+    const MAP = {
+      'pokemon':'POKÉMON', 'trainer':'TRAINER', 'trainer-item':'ITEM',
+      'trainer-tool':'TOOL', 'trainer-stadium':'STADIUM',
+      'trainer-supporter':'SUPPORTER', 'energy':'ENERGY', 'other':'OTHER'
+    };
+    return MAP[t] || t.toUpperCase();
+  }
+
+  function typeColorClass(t) { return 'type-' + t; }
+
+  /* ── Rarity tier for sorting ── */
+  function rarityTier(rarity) {
+    const rc = rarityClass(rarity);
+    if (rc === 'rarity-secret')   return 5;
+    if (rc === 'rarity-ultra')    return 4;
+    if (rc === 'rarity-rare')     return 3;
+    if (rc === 'rarity-uncommon') return 2;
+    return 1;
+  }
+
+  /* ── Filter / Sort state ── */
+  let activeTypeFilter = 'all';
+  let activeSortKey    = 'default';
+
+  function applyFilterAndSort(cards) {
+    let out = cards.slice();
+
+    if (activeTypeFilter !== 'all') {
+      if (activeTypeFilter === 'trainer') {
+        out = out.filter(c => {
+          const t = cardType(c);
+          return t === 'trainer' || t.startsWith('trainer-');
+        });
+      } else {
+        out = out.filter(c => cardType(c) === activeTypeFilter);
+      }
+    }
+
+    if (activeSortKey === 'price-desc') {
+      out.sort((a, b) => (getBestPrice(b) ?? -1) - (getBestPrice(a) ?? -1));
+    } else if (activeSortKey === 'price-asc') {
+      out.sort((a, b) => (getBestPrice(a) ?? Infinity) - (getBestPrice(b) ?? Infinity));
+    } else if (activeSortKey === 'rarity-desc') {
+      out.sort((a, b) => rarityTier(b.rarity) - rarityTier(a.rarity));
+    } else if (activeSortKey === 'name') {
+      out.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+    return out;
+  }
+
+  /* ── Inline stats ── */
+  function renderInlineStats(cards) {
+    const el = document.getElementById('inlineStats');
+    if (!el || cards.length === 0) { if (el) el.innerHTML = ''; return; }
+
+    const priced = cards.filter(c => getBestPrice(c) != null);
+    const groups = { pokemon: [], trainer: [], energy: [] };
+    cards.forEach(c => {
+      const t = cardType(c);
+      if (t === 'pokemon') groups.pokemon.push(c);
+      else if (t.startsWith('trainer')) groups.trainer.push(c);
+      else if (t === 'energy') groups.energy.push(c);
+    });
+
+    function avgOf(arr) {
+      const p = arr.map(c => getBestPrice(c)).filter(v => v != null);
+      if (!p.length) return null;
+      return p.reduce((a, b) => a + b, 0) / p.length;
+    }
+
+    const parts = [];
+    parts.push(
+      priced.length < cards.length
+        ? `<span class="stat-val">${cards.length}</span> cards (<span class="stat-val">${priced.length}</span> priced)`
+        : `<span class="stat-val">${cards.length}</span> cards`
+    );
+
+    [
+      { key: 'pokemon', cls: 'stat-type-pokemon',  label: 'POKÉMON' },
+      { key: 'trainer', cls: 'stat-type-trainer',  label: 'TRAINER' },
+      { key: 'energy',  cls: 'stat-type-energy',   label: 'ENERGY' },
+    ].forEach(({ key, cls, label }) => {
+      const grp = groups[key];
+      if (!grp.length) return;
+      const avg = avgOf(grp);
+      if (avg != null) {
+        parts.push(`<span class="${cls}">${label}</span> avg <span class="stat-val">$${avg.toFixed(2)}</span>`);
+      } else {
+        parts.push(`<span class="${cls}">${label} ×${grp.length}</span>`);
+      }
+    });
+
+    el.innerHTML = parts.join('<span class="stat-sep">·</span>');
+  }
+
+  /* ── Filter chip + sort wiring ── */
+  function attachFilterListeners() {
+    const chips   = document.getElementById('filterChips');
+    const sortSel = document.getElementById('sortSelect');
+    if (!chips || !sortSel) return;
+
+    chips.addEventListener('click', e => {
+      const chip = e.target.closest('.filter-chip');
+      if (!chip) return;
+      chips.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeTypeFilter = chip.dataset.type;
+      saveFilterState();
+      renderResults(currentCards);
+    });
+
+    sortSel.addEventListener('change', () => {
+      activeSortKey = sortSel.value;
+      saveFilterState();
+      renderResults(currentCards);
+    });
+  }
+
+  function saveFilterState() {
+    try { localStorage.setItem('pokemon_filter_state_v1', JSON.stringify({ type: activeTypeFilter, sort: activeSortKey })); } catch(e) {}
+  }
+
+  function restoreFilterState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('pokemon_filter_state_v1') || 'null');
+      if (!saved) return;
+      if (saved.type) activeTypeFilter = saved.type;
+      if (saved.sort) activeSortKey    = saved.sort;
+      const chips   = document.getElementById('filterChips');
+      const sortSel = document.getElementById('sortSelect');
+      if (chips) chips.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.type === activeTypeFilter));
+      if (sortSel) sortSel.value = activeSortKey;
+    } catch(e) {}
   }
 
   /* ── DOM refs ── */
@@ -2598,12 +2878,25 @@
       return;
     }
 
+    // Apply type filter + sort
+    const filtered = applyFilterAndSort(cards);
+
     resultsSection.style.display = 'block';
 
-    cards.forEach((card, idx) => {
-      const rc = rarityClass(card.rarity);
+    if (filtered.length === 0) {
+      resultsGrid.innerHTML = `<div class="no-type-results">No ${typeLabel(activeTypeFilter)} cards on this page — try the next page or a different search.</div>`;
+      renderInlineStats(filtered);
+      renderPagination();
+      return;
+    }
+
+    // filtered cards keep original indices into currentCards for modal/analytics
+    filtered.forEach(card => {
+      const idx = cards.indexOf(card);
+      const rc    = rarityClass(card.rarity);
       const price = getBestPrice(card);
       const imgSrc = card.images?.small || '';
+      const ct = cardType(card);
 
       const el = document.createElement('div');
       el.className = `pokemon-card ${rc}`;
@@ -2619,7 +2912,9 @@
         <div class="card-info">
           <div class="card-name">${card.name}</div>
           <div class="card-set">${card.set?.name || '—'} · #${card.number || '?'}</div>
-          <div class="card-rarity-badge">${rarityLabel(card.rarity)}</div>
+          <div class="card-badges-row">
+            <span class="card-type-badge ${typeColorClass(ct)}">${typeLabel(ct)}</span><span class="card-rarity-badge">${rarityLabel(card.rarity)}</span>
+          </div>
           <div class="card-price-row">
             <span class="price-label">market</span>
             <span class="price-value${price == null ? ' no-price' : ''}">${price != null ? '$' + price.toFixed(2) : 'N/A'}</span>
@@ -2635,6 +2930,7 @@
       resultsGrid.appendChild(el);
     });
 
+    renderInlineStats(filtered);
     renderPagination();
   }
 
@@ -4439,7 +4735,9 @@
     }
   });
 
-  /* ── Boot: load Twitter trending Pokemon on page load ── */
+  /* ── Boot ── */
+  attachFilterListeners();
+  restoreFilterState();
   loadTwitterTrending();
 </script>
 
