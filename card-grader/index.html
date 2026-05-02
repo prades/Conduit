@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CARD GRADER — DRAGONLORD</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg:    #040810;
+      --bg2:   #080c1a;
+      --bg3:   #0c1220;
+      --cyan:  #00f5ff;
+      --gold:  #ffd700;
+      --dim:   #4a5070;
+      --text:  #c8d8f0;
+      --green: #00ff88;
+      --red:   #ff4455;
+    }
+    html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; }
+
+    /* ── Header ── */
+    .app-header {
+      display: flex; align-items: center; gap: 16px;
+      padding: 0 24px; height: 52px;
+      border-bottom: 1px solid rgba(0,245,255,0.12);
+      background: rgba(4,8,16,0.95);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .back-link { font-size: 0.7rem; letter-spacing: 0.1em; color: var(--dim); text-decoration: none; transition: color 0.2s; }
+    .back-link:hover { color: var(--cyan); }
+    .header-title { font-size: 0.78rem; letter-spacing: 0.18em; color: var(--cyan); flex: 1; text-align: center; }
+    .header-badge { font-size: 0.58rem; letter-spacing: 0.12em; color: var(--gold); border: 1px solid rgba(255,215,0,0.3); padding: 2px 8px; clip-path: polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%); }
+
+    /* ── Main grid ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 24px;
+    }
+    @media (max-width: 780px) { .main-grid { grid-template-columns: 1fr; } }
+
+    /* ── Panel shared ── */
+    .panel {
+      background: rgba(8,12,26,0.8);
+      border: 1px solid rgba(0,245,255,0.1);
+      backdrop-filter: blur(6px);
+      padding: 20px;
+    }
+    .panel-label {
+      font-size: 0.6rem; letter-spacing: 0.2em; color: var(--dim);
+      margin-bottom: 14px; text-transform: uppercase;
+    }
+
+    /* ── Upload panel ── */
+    .drop-zone {
+      position: relative;
+      border: 1px dashed rgba(0,245,255,0.25);
+      aspect-ratio: 3/4;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+      background: rgba(0,245,255,0.02);
+    }
+    .drop-zone.drag-over { border-color: var(--cyan); background: rgba(0,245,255,0.06); }
+    .drop-zone.has-image { border-color: transparent; padding: 0; overflow: hidden; }
+    .drop-icon { font-size: 2.4rem; opacity: 0.35; }
+    .drop-text { font-size: 0.65rem; letter-spacing: 0.12em; color: var(--dim); text-align: center; line-height: 1.7; }
+    .drop-text strong { color: var(--cyan); font-weight: normal; }
+    #previewCanvas { display: none; width: 100%; height: 100%; object-fit: contain; }
+    .drop-zone.has-image #previewCanvas { display: block; }
+    .drop-zone.has-image .drop-icon,
+    .drop-zone.has-image .drop-text { display: none; }
+    #fileInput { display: none; }
+
+    /* ── Tip bar ── */
+    .tip-bar {
+      margin-top: 10px;
+      font-size: 0.6rem; letter-spacing: 0.08em; color: var(--dim);
+      display: flex; align-items: flex-start; gap: 6px; line-height: 1.6;
+    }
+    .tip-bar span:first-child { flex-shrink: 0; }
+
+    /* ── Analyze button ── */
+    .analyze-btn {
+      margin-top: 14px; width: 100%;
+      background: none;
+      border: 1px solid rgba(0,245,255,0.4);
+      color: var(--cyan); font-family: inherit; font-size: 0.7rem;
+      letter-spacing: 0.18em; padding: 10px;
+      cursor: pointer; text-transform: uppercase;
+      clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+      transition: all 0.2s;
+    }
+    .analyze-btn:hover:not(:disabled) { background: rgba(0,245,255,0.08); border-color: var(--cyan); }
+    .analyze-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .analyze-btn.loading { color: var(--dim); border-color: var(--dim); animation: btnPulse 1s ease-in-out infinite; }
+    @keyframes btnPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+    /* ── Result panel ── */
+    .result-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      aspect-ratio: 3/4; color: var(--dim); font-size: 0.65rem; letter-spacing: 0.1em;
+      border: 1px dashed rgba(255,255,255,0.06); gap: 8px;
+    }
+    .result-empty-icon { font-size: 2rem; opacity: 0.2; }
+    .result-content { display: none; }
+    .result-content.visible { display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── Grade display ── */
+    .grade-row { display: flex; align-items: center; gap: 18px; }
+    .grade-number {
+      font-size: 3.5rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1;
+      color: var(--gold); text-shadow: 0 0 30px rgba(255,215,0,0.4);
+    }
+    .grade-info { display: flex; flex-direction: column; gap: 4px; }
+    .grade-label { font-size: 1rem; letter-spacing: 0.12em; color: var(--text); font-weight: 700; }
+    .grade-sub { font-size: 0.58rem; letter-spacing: 0.12em; color: var(--dim); }
+
+    /* ── Sub-scores ── */
+    .scores-section { display: flex; flex-direction: column; gap: 8px; }
+    .score-row { display: flex; align-items: center; gap: 8px; }
+    .score-name { font-size: 0.58rem; letter-spacing: 0.1em; color: var(--dim); width: 80px; text-transform: uppercase; flex-shrink: 0; }
+    .score-bar-bg { flex: 1; height: 5px; background: rgba(255,255,255,0.06); overflow: hidden; }
+    .score-bar-fill { height: 100%; width: 0; transition: width 0.7s cubic-bezier(0.25,1,0.5,1); background: var(--cyan); }
+    .score-val { font-size: 0.6rem; letter-spacing: 0.06em; width: 28px; text-align: right; flex-shrink: 0; }
+
+    /* ── Warped preview ── */
+    .warped-label { font-size: 0.58rem; letter-spacing: 0.1em; color: var(--dim); margin-bottom: 6px; }
+    #warpedCanvas { width: 100%; border: 1px solid rgba(0,245,255,0.08); display: block; }
+
+    /* ── Reset button ── */
+    .reset-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--dim); font-family: inherit; font-size: 0.62rem;
+      letter-spacing: 0.14em; padding: 8px 14px;
+      cursor: pointer; text-transform: uppercase;
+      clip-path: polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%);
+      transition: all 0.18s; align-self: flex-start;
+    }
+    .reset-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    /* ── Divider ── */
+    .section-divider { border: none; border-top: 1px solid rgba(0,245,255,0.07); margin: 4px 0; }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <a href="../" class="back-link">← HOME</a>
+  <div class="header-title">// CARD GRADER //</div>
+  <span class="header-badge">BETA</span>
+</header>
+
+<div class="main-grid">
+
+  <!-- ── Upload panel ── -->
+  <div class="panel">
+    <div class="panel-label">Upload Card Photo</div>
+
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-icon">🃏</div>
+      <div class="drop-text">
+        <strong>Drop card photo here</strong><br>
+        or click to browse<br>
+        JPG · PNG · WEBP
+      </div>
+      <canvas id="previewCanvas"></canvas>
+    </div>
+    <input type="file" id="fileInput" accept="image/*">
+
+    <div class="tip-bar">
+      <span>📷</span>
+      <span>Best results: place card on a dark background, even lighting, card filling most of the frame.</span>
+    </div>
+
+    <button class="analyze-btn" id="analyzeBtn" disabled>Analyze Card</button>
+  </div>
+
+  <!-- ── Result panel ── -->
+  <div class="panel">
+    <div class="panel-label">Condition Report</div>
+
+    <div class="result-empty" id="resultEmpty">
+      <span class="result-empty-icon">📊</span>
+      <span>Upload a card to begin</span>
+    </div>
+
+    <div class="result-content" id="resultContent">
+      <div class="grade-row">
+        <div class="grade-number" id="gradeNumber">—</div>
+        <div class="grade-info">
+          <div class="grade-label" id="gradeLabel">—</div>
+          <div class="grade-sub" id="gradeSub">PSA-STYLE ESTIMATE</div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="scores-section">
+        <div class="score-row">
+          <span class="score-name">Centering</span>
+          <div class="score-bar-bg"><div class="score-bar-fill" id="barCentering"></div></div>
+          <span class="score-val" id="valCentering">—</span>
+        </div>
+        <div class="score-row">
+          <span class="score-name">Corners</span>
+          <div class="score-bar-bg"><div class="score-bar-fill" id="barCorners"></div></div>
+          <span class="score-val" id="valCorners">—</span>
+        </div>
+        <div class="score-row">
+          <span class="score-name">Edges</span>
+          <div class="score-bar-bg"><div class="score-bar-fill" id="barEdges"></div></div>
+          <span class="score-val" id="valEdges">—</span>
+        </div>
+        <div class="score-row">
+          <span class="score-name">Surface</span>
+          <div class="score-bar-bg"><div class="score-bar-fill" id="barSurface"></div></div>
+          <span class="score-val" id="valSurface">—</span>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <div>
+        <div class="warped-label">DETECTED CARD</div>
+        <canvas id="warpedCanvas"></canvas>
+      </div>
+
+      <button class="reset-btn" id="resetBtn">↺ Analyze Another</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── State ── */
+let sourceCanvas = null; // full uploaded image drawn here (offscreen)
+
+/* ── DOM ── */
+const dropZone    = document.getElementById('dropZone');
+const fileInput   = document.getElementById('fileInput');
+const previewCanvas = document.getElementById('previewCanvas');
+const analyzeBtn  = document.getElementById('analyzeBtn');
+const resultEmpty = document.getElementById('resultEmpty');
+const resultContent = document.getElementById('resultContent');
+const resetBtn    = document.getElementById('resetBtn');
+
+/* ── Upload handling ── */
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) handleFile(file);
+});
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      // Draw to offscreen source canvas (max 1200px on long edge)
+      const MAX = 1200;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      sourceCanvas = document.createElement('canvas');
+      sourceCanvas.width = w; sourceCanvas.height = h;
+      sourceCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+      // Draw preview (fit inside drop zone)
+      const pCtx = previewCanvas.getContext('2d');
+      previewCanvas.width = w; previewCanvas.height = h;
+      pCtx.drawImage(img, 0, 0, w, h);
+
+      dropZone.classList.add('has-image');
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = 'Analyze Card';
+
+      // Reset result panel
+      resultContent.classList.remove('visible');
+      resultEmpty.style.display = 'flex';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ── Analyze (stub — replaced in Chunk 2) ── */
+analyzeBtn.addEventListener('click', async () => {
+  if (!sourceCanvas) return;
+  analyzeBtn.disabled = true;
+  analyzeBtn.classList.add('loading');
+  analyzeBtn.textContent = 'Analyzing…';
+
+  // Stub: simulate work then show placeholder grade
+  await new Promise(r => setTimeout(r, 800));
+
+  const stubScores = { centering: 82, corners: 71, edges: 68, surface: 85 };
+  showResult(stubScores);
+
+  analyzeBtn.classList.remove('loading');
+  analyzeBtn.disabled = false;
+  analyzeBtn.textContent = 'Analyze Card';
+});
+
+/* ── Show result ── */
+function showResult(scores) {
+  const weighted = scores.corners * 0.30 + scores.surface * 0.25 + scores.edges * 0.25 + scores.centering * 0.20;
+  const { grade, label } = scoreToGrade(weighted);
+
+  document.getElementById('gradeNumber').textContent = grade;
+  document.getElementById('gradeLabel').textContent = label;
+
+  const gradeColor = weighted >= 88 ? 'var(--green)' : weighted >= 65 ? 'var(--gold)' : 'var(--red)';
+  document.getElementById('gradeNumber').style.color = gradeColor;
+  document.getElementById('gradeNumber').style.textShadow = `0 0 30px ${gradeColor}66`;
+
+  // Sub-score bars (after next frame so transition fires)
+  requestAnimationFrame(() => {
+    setBar('Centering', scores.centering);
+    setBar('Corners',   scores.corners);
+    setBar('Edges',     scores.edges);
+    setBar('Surface',   scores.surface);
+  });
+
+  // Show warped canvas placeholder until chunk 2 populates it
+  const wc = document.getElementById('warpedCanvas');
+  if (wc.width === 0 && sourceCanvas) {
+    const scale = Math.min(1, 400 / Math.max(sourceCanvas.width, sourceCanvas.height));
+    wc.width  = Math.round(sourceCanvas.width * scale);
+    wc.height = Math.round(sourceCanvas.height * scale);
+    wc.getContext('2d').drawImage(sourceCanvas, 0, 0, wc.width, wc.height);
+  }
+
+  resultEmpty.style.display = 'none';
+  resultContent.classList.add('visible');
+}
+
+function setBar(name, val) {
+  const key = name.toLowerCase();
+  document.getElementById('bar' + name).style.width = val + '%';
+  const color = val >= 80 ? 'var(--green)' : val >= 55 ? 'var(--gold)' : 'var(--red)';
+  document.getElementById('bar' + name).style.background = color;
+  document.getElementById('val' + name).textContent = val;
+}
+
+function scoreToGrade(w) {
+  if (w >= 97) return { grade: '10',  label: 'GEM MINT'  };
+  if (w >= 93) return { grade: '9.5', label: 'MINT'      };
+  if (w >= 88) return { grade: '9',   label: 'MINT'      };
+  if (w >= 82) return { grade: '8.5', label: 'NEAR MINT' };
+  if (w >= 75) return { grade: '8',   label: 'NEAR MINT' };
+  if (w >= 65) return { grade: '7',   label: 'EXCELLENT' };
+  if (w >= 50) return { grade: '6',   label: 'VERY GOOD' };
+  if (w >= 35) return { grade: '5',   label: 'GOOD'      };
+  return { grade: '4', label: 'POOR' };
+}
+
+/* ── Reset ── */
+resetBtn.addEventListener('click', reset);
+function reset() {
+  sourceCanvas = null;
+  dropZone.classList.remove('has-image');
+  analyzeBtn.disabled = true;
+  analyzeBtn.textContent = 'Analyze Card';
+  previewCanvas.width = 0; previewCanvas.height = 0;
+  const wc = document.getElementById('warpedCanvas');
+  wc.width = 0; wc.height = 0;
+  resultContent.classList.remove('visible');
+  resultEmpty.style.display = 'flex';
+  fileInput.value = '';
+}
+</script>
+</body>
+</html>
