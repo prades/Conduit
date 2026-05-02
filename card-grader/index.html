@@ -119,15 +119,27 @@
     .grade-label { font-size: 1rem; letter-spacing: 0.12em; color: var(--text); font-weight: 700; }
     .grade-sub { font-size: 0.58rem; letter-spacing: 0.12em; color: var(--dim); }
 
-    /* ── Sub-scores ── */
-    .scores-section { display: flex; flex-direction: column; gap: 8px; }
-    .score-row { display: flex; align-items: center; gap: 8px; }
-    .score-name { font-size: 0.58rem; letter-spacing: 0.1em; color: var(--dim); width: 80px; text-transform: uppercase; flex-shrink: 0; }
-    .score-bar-bg { flex: 1; height: 5px; background: rgba(255,255,255,0.06); overflow: hidden; }
-    .score-bar-fill { height: 100%; width: 0; transition: width 0.7s cubic-bezier(0.25,1,0.5,1); background: var(--cyan); }
-    .score-val { font-size: 0.6rem; letter-spacing: 0.06em; width: 28px; text-align: right; flex-shrink: 0; }
+    /* ── Ratio bars (two-tone split: cyan=left/top, gold=right/bottom) ── */
+    .ratio-section { display: flex; flex-direction: column; gap: 10px; }
+    .ratio-row { display: flex; align-items: center; gap: 8px; }
+    .ratio-label { font-size: 0.58rem; letter-spacing: 0.1em; color: var(--dim); width: 32px; flex-shrink: 0; }
+    .ratio-track { flex: 1; height: 7px; display: flex; overflow: hidden; background: rgba(255,255,255,0.04); }
+    .ratio-fill-a { height: 100%; background: var(--cyan); transition: width 0.7s cubic-bezier(0.25,1,0.5,1); }
+    .ratio-fill-b { height: 100%; background: var(--gold); transition: width 0.7s cubic-bezier(0.25,1,0.5,1); }
+    .ratio-val { font-size: 0.6rem; letter-spacing: 0.06em; width: 56px; text-align: right; flex-shrink: 0; color: var(--text); }
 
-    /* ── Warped preview ── */
+    /* ── PSA qualifier table ── */
+    .psa-table { display: flex; flex-direction: column; gap: 3px; }
+    .psa-row { display: flex; align-items: center; gap: 8px; font-size: 0.58rem; letter-spacing: 0.08em; padding: 2px 4px; }
+    .psa-grade { width: 20px; color: var(--dim); font-weight: 700; flex-shrink: 0; }
+    .psa-req   { color: var(--dim); flex: 1; }
+    .psa-status { width: 14px; text-align: center; flex-shrink: 0; color: var(--dim); }
+    .psa-row.pass .psa-grade { color: var(--gold); }
+    .psa-row.pass .psa-req   { color: var(--text); }
+    .psa-row.pass .psa-status { color: var(--green); }
+    .psa-row.best { background: rgba(0,245,255,0.06); border-left: 2px solid var(--cyan); }
+
+    /* ── Centering overlay canvas ── */
     .warped-label { font-size: 0.58rem; letter-spacing: 0.1em; color: var(--dim); margin-bottom: 6px; }
     #warpedCanvas { width: 100%; border: 1px solid rgba(0,245,255,0.08); display: block; }
 
@@ -152,7 +164,7 @@
 <header class="app-header">
   <a href="../" class="back-link">← HOME</a>
   <div class="header-title">// CARD GRADER //</div>
-  <span class="header-badge">BETA</span>
+  <span class="header-badge">CENTERING</span>
 </header>
 
 <div class="main-grid">
@@ -174,7 +186,7 @@
 
     <div class="tip-bar">
       <span>📷</span>
-      <span>Best results: place card on a dark background, even lighting, card filling most of the frame.</span>
+      <span>Lay card flat on a dark background, shoot straight down, card filling most of the frame. Even lighting prevents shadow interference with border detection.</span>
     </div>
 
     <button class="analyze-btn" id="analyzeBtn" disabled>Analyze Card</button>
@@ -182,53 +194,54 @@
 
   <!-- ── Result panel ── -->
   <div class="panel">
-    <div class="panel-label">Condition Report</div>
+    <div class="panel-label">Centering Report</div>
 
     <div class="result-empty" id="resultEmpty">
-      <span class="result-empty-icon">📊</span>
-      <span>Upload a card to begin</span>
+      <span class="result-empty-icon">🎯</span>
+      <span>Upload a card to measure centering</span>
     </div>
 
     <div class="result-content" id="resultContent">
+
       <div class="grade-row">
         <div class="grade-number" id="gradeNumber">—</div>
         <div class="grade-info">
           <div class="grade-label" id="gradeLabel">—</div>
-          <div class="grade-sub" id="gradeSub">PSA-STYLE ESTIMATE</div>
-        </div>
-      </div>
-
-      <hr class="section-divider">
-
-      <div class="scores-section">
-        <div class="score-row">
-          <span class="score-name">Centering</span>
-          <div class="score-bar-bg"><div class="score-bar-fill" id="barCentering"></div></div>
-          <span class="score-val" id="valCentering">—</span>
-        </div>
-        <div class="score-row">
-          <span class="score-name">Corners</span>
-          <div class="score-bar-bg"><div class="score-bar-fill" id="barCorners"></div></div>
-          <span class="score-val" id="valCorners">—</span>
-        </div>
-        <div class="score-row">
-          <span class="score-name">Edges</span>
-          <div class="score-bar-bg"><div class="score-bar-fill" id="barEdges"></div></div>
-          <span class="score-val" id="valEdges">—</span>
-        </div>
-        <div class="score-row">
-          <span class="score-name">Surface</span>
-          <div class="score-bar-bg"><div class="score-bar-fill" id="barSurface"></div></div>
-          <span class="score-val" id="valSurface">—</span>
+          <div class="grade-sub">CENTERING QUALIFIES UP TO</div>
         </div>
       </div>
 
       <hr class="section-divider">
 
       <div>
-        <div class="warped-label">DETECTED CARD</div>
+        <div class="warped-label">DETECTED CARD — CENTERING OVERLAY</div>
         <canvas id="warpedCanvas"></canvas>
       </div>
+
+      <hr class="section-divider">
+
+      <div class="ratio-section">
+        <div class="ratio-row">
+          <span class="ratio-label">L / R</span>
+          <div class="ratio-track">
+            <div class="ratio-fill-a" id="ratioBarL" style="width:50%"></div>
+            <div class="ratio-fill-b" id="ratioBarR" style="width:50%"></div>
+          </div>
+          <span class="ratio-val" id="ratioValLR">— / —</span>
+        </div>
+        <div class="ratio-row">
+          <span class="ratio-label">T / B</span>
+          <div class="ratio-track">
+            <div class="ratio-fill-a" id="ratioBarT" style="width:50%"></div>
+            <div class="ratio-fill-b" id="ratioBarB" style="width:50%"></div>
+          </div>
+          <span class="ratio-val" id="ratioValTB">— / —</span>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="psa-table" id="psaTable"></div>
 
       <button class="reset-btn" id="resetBtn">↺ Analyze Another</button>
     </div>
@@ -522,136 +535,47 @@ function detectBorderWidths(data, w, h) {
   };
 }
 
-/* ── Centering: compare opposite white border widths ── */
+/* ── Centering: compare opposite white border widths, return PSA data ── */
 function analyzeCentering(data, w, h, bw) {
-  const hDev = Math.abs(bw.left - bw.right) / Math.max(1, bw.left + bw.right);
-  const vDev = Math.abs(bw.top - bw.bottom) / Math.max(1, bw.top + bw.bottom);
-  const score = Math.max(0, Math.min(100, Math.round(100 - Math.max(hDev, vDev) * 200)));
-  return { score, regions: [] };
+  const { left, right, top, bottom } = bw;
+  const safeRatio = (a, b) => (Math.min(a, b) < 3) ? 5 : Math.max(a, b) / Math.min(a, b);
+  const lrRatio = safeRatio(left, right);
+  const tbRatio = safeRatio(top, bottom);
+  const worstRatio = Math.max(lrRatio, tbRatio);
+
+  const grade = centeringGrade(worstRatio);
+  const score = Math.max(0, Math.min(100, Math.round(100 - (worstRatio - 1) * 38)));
+
+  const lrTotal = left + right || 1;
+  const tbTotal = top + bottom || 1;
+
+  return {
+    score, grade,
+    lrLeft:  Math.round(left   / lrTotal * 100),
+    lrRight: Math.round(right  / lrTotal * 100),
+    tbTop:   Math.round(top    / tbTotal * 100),
+    tbBot:   Math.round(bottom / tbTotal * 100),
+    px: { left, right, top, bottom }
+  };
 }
 
-/* ── Corners: detect white card stock exposed by border wear ── */
-function analyzeCorners(data, w, h, bw) {
-  const ZONE = 22;
-  const regions = [];
-  const defs = [
-    { ox: 0,   oy: 0,   sx: 1,  sy: 1,  bx: bw.left,  by: bw.top    },
-    { ox: w-1, oy: 0,   sx: -1, sy: 1,  bx: bw.right, by: bw.top    },
-    { ox: 0,   oy: h-1, sx: 1,  sy: -1, bx: bw.left,  by: bw.bottom },
-    { ox: w-1, oy: h-1, sx: -1, sy: -1, bx: bw.right, by: bw.bottom }
-  ];
-  let wearSum = 0;
-  for (const { ox, oy, sx, sy, bx, by } of defs) {
-    let whites = 0, total = 0;
-    for (let a = bx; a < bx + ZONE; a++) {
-      for (let b = by; b < by + ZONE; b++) {
-        const px = ox + sx * a, py = oy + sy * b;
-        if (px < 0 || px >= w || py < 0 || py >= h) continue;
-        const i = (py * w + px) * 4;
-        if (data[i] > 215 && data[i+1] > 215 && data[i+2] > 215) whites++;
-        total++;
-      }
-    }
-    const wear = total > 0 ? whites / total : 0;
-    wearSum += wear;
-    if (wear > 0.22) {
-      const rx = sx > 0 ? ox + bx : ox - bx - ZONE;
-      const ry = sy > 0 ? oy + by : oy - by - ZONE;
-      regions.push({ x: Math.max(0, rx), y: Math.max(0, ry), w: ZONE, h: ZONE, severity: wear });
-    }
-  }
-  const score = Math.max(0, Math.min(100, Math.round(100 - (wearSum / 4) * 220)));
-  return { score, regions };
+function centeringGrade(ratio) {
+  if (ratio <= 1.222) return { grade: '10', label: 'GEM MINT',  req: '55/45' };
+  if (ratio <= 1.500) return { grade: '9',  label: 'MINT',      req: '60/40' };
+  if (ratio <= 1.857) return { grade: '8',  label: 'NM-MT',     req: '65/35' };
+  if (ratio <= 2.333) return { grade: '7',  label: 'NEAR MINT', req: '70/30' };
+  if (ratio <= 3.000) return { grade: '6',  label: 'EX-MT',     req: '75/25' };
+  if (ratio <= 4.000) return { grade: '5',  label: 'EXCELLENT', req: '80/20' };
+  return               { grade: '4',  label: 'VG-EX',    req: '80/20+' };
 }
 
-/* ── Edges: detect brightness spikes along inner border line ── */
-function analyzeEdges(data, gray, w, h, bw) {
-  const STEP = 4, DEPTH = 2, WIN = 8, SPIKE = 30;
-  const regions = [];
-
-  function scanLine(getXY, len) {
-    const vals = [];
-    for (let pos = 0; pos < len; pos += STEP) {
-      const [x, y] = getXY(pos);
-      const i = (Math.max(0,Math.min(h-1,y)) * w + Math.max(0,Math.min(w-1,x))) * 4;
-      vals.push((data[i]*77 + data[i+1]*150 + data[i+2]*29) >> 8);
-    }
-    let spikes = 0;
-    for (let i = WIN; i < vals.length - WIN; i++) {
-      let sum = 0;
-      for (let k = -WIN; k <= WIN; k++) sum += vals[i + k];
-      if (Math.abs(vals[i] - sum / (2*WIN+1)) > SPIKE) spikes++;
-    }
-    return spikes;
-  }
-
-  const t = bw.top + DEPTH, b = h - 1 - bw.bottom - DEPTH;
-  const l = bw.left + DEPTH, r = w - 1 - bw.right - DEPTH;
-  const inner_w = w - bw.left - bw.right;
-  const inner_h = h - bw.top  - bw.bottom;
-
-  let spikes = 0;
-  spikes += scanLine(p => [bw.left + p, t], inner_w);   // top border
-  spikes += scanLine(p => [bw.left + p, b], inner_w);   // bottom border
-  spikes += scanLine(p => [l, bw.top + p],  inner_h);   // left border
-  spikes += scanLine(p => [r, bw.top + p],  inner_h);   // right border
-
-  const score = Math.max(0, Math.min(100, Math.round(100 - spikes * 3.5)));
-  return { score, regions };
-}
-
-/* ── Surface: detect scratches via local variance outliers ── */
-function analyzeSurface(gray, w, h) {
-  const mx = (w * 0.15) | 0, my = (h * 0.15) | 0;
-  const mw = (w * 0.70) | 0, mh = (h * 0.70) | 0;
-  const TILE = 18;
-  const vars = [];
-
-  for (let ty = 0; ty + TILE <= mh; ty += TILE) {
-    for (let tx = 0; tx + TILE <= mw; tx += TILE) {
-      let sum = 0, sumSq = 0;
-      const n = TILE * TILE;
-      for (let dy = 0; dy < TILE; dy++)
-        for (let dx = 0; dx < TILE; dx++) {
-          const v = gray[(my+ty+dy)*w + (mx+tx+dx)];
-          sum += v; sumSq += v * v;
-        }
-      const mean = sum / n;
-      vars.push(sumSq / n - mean * mean);
-    }
-  }
-  if (!vars.length) return { score: 85, regions: [] };
-
-  const sorted = [...vars].sort((a, b) => a - b);
-  const median = sorted[sorted.length >> 1];
-  const cutoff = Math.max(60, median * 6);
-  const outlierRatio = vars.filter(v => v > cutoff).length / vars.length;
-  const score = Math.max(0, Math.min(100, Math.round(100 - outlierRatio * 350)));
-  return { score, regions: [] };
-}
-
-/* ── Run all analyzers on the warped card canvas ── */
+/* ── Run centering analysis on the warped card canvas ── */
 function analyzeAll(cardCanvas) {
   const w = cardCanvas.width, h = cardCanvas.height;
   const imgData = cardCanvas.getContext('2d').getImageData(0, 0, w, h);
-  const data = imgData.data;
-  const gray = toGrayscale(imgData);
-  const bw   = detectBorderWidths(data, w, h);
-
-  const centering = analyzeCentering(data, w, h, bw);
-  const corners   = analyzeCorners(data, w, h, bw);
-  const edges     = analyzeEdges(data, gray, w, h, bw);
-  const surface   = analyzeSurface(gray, w, h);
-
-  return {
-    scores: {
-      centering: centering.score,
-      corners:   corners.score,
-      edges:     edges.score,
-      surface:   surface.score
-    },
-    regions: [...corners.regions, ...edges.regions]
-  };
+  const bw = detectBorderWidths(imgData.data, w, h);
+  const centering = analyzeCentering(imgData.data, w, h, bw);
+  return { centering, bw };
 }
 
 /* ── Analyze ── */
@@ -661,73 +585,106 @@ analyzeBtn.addEventListener('click', async () => {
   analyzeBtn.classList.add('loading');
   analyzeBtn.textContent = 'Analyzing…';
 
-  // Yield to browser to repaint button state
   await new Promise(r => setTimeout(r, 16));
 
   let cardCanvas = extractCard(sourceCanvas);
+  if (!cardCanvas) cardCanvas = sourceCanvas;
 
-  // If detection failed, fall back to the whole source image
-  if (!cardCanvas) {
-    cardCanvas = sourceCanvas;
-  }
-
-  // Draw detected card to warpedCanvas
-  const wc = document.getElementById('warpedCanvas');
-  const scale = Math.min(1, 400 / Math.max(cardCanvas.width, cardCanvas.height));
-  wc.width  = (cardCanvas.width  * scale) | 0;
-  wc.height = (cardCanvas.height * scale) | 0;
-  wc.getContext('2d').drawImage(cardCanvas, 0, 0, wc.width, wc.height);
-
-  const { scores, regions } = analyzeAll(cardCanvas);
-  showResult(scores, cardCanvas, regions);
+  const { centering } = analyzeAll(cardCanvas);
+  showResult(centering, cardCanvas);
 
   analyzeBtn.classList.remove('loading');
   analyzeBtn.disabled = false;
   analyzeBtn.textContent = 'Analyze Card';
 });
 
+/* ── Draw centering overlay on a copy of the card canvas ── */
+function drawCenteringOverlay(cardCanvas, bw) {
+  const w = cardCanvas.width, h = cardCanvas.height;
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(cardCanvas, 0, 0);
+
+  const { left, right, top, bottom } = bw;
+  const alpha = 0.28;
+
+  ctx.fillStyle = `rgba(0,245,255,${alpha})`;   ctx.fillRect(0, 0, left, h);
+  ctx.fillStyle = `rgba(255,215,0,${alpha})`;   ctx.fillRect(w - right, 0, right, h);
+  ctx.fillStyle = `rgba(248,88,136,${alpha})`;  ctx.fillRect(0, 0, w, top);
+  ctx.fillStyle = `rgba(0,255,136,${alpha})`;   ctx.fillRect(0, h - bottom, w, bottom);
+
+  const cx = left + (w - left - right) / 2;
+  const cy = top  + (h - top - bottom) / 2;
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx, top);    ctx.lineTo(cx, h - bottom); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(left, cy);   ctx.lineTo(w - right, cy);  ctx.stroke();
+
+  return out;
+}
+
 /* ── Show result ── */
-function showResult(scores, cardCanvas, regions = []) {
-  const weighted = scores.corners * 0.30 + scores.surface * 0.25 + scores.edges * 0.25 + scores.centering * 0.20;
-  const { grade, label } = scoreToGrade(weighted);
+function showResult(centering, cardCanvas) {
+  const { grade, label } = centering.grade;
+  const g = parseInt(grade);
+  const color = g >= 9 ? 'var(--green)' : g >= 7 ? 'var(--gold)' : 'var(--red)';
 
   document.getElementById('gradeNumber').textContent = grade;
-  document.getElementById('gradeLabel').textContent = label;
+  document.getElementById('gradeLabel').textContent  = label;
+  document.getElementById('gradeNumber').style.color = color;
+  document.getElementById('gradeNumber').style.textShadow = `0 0 30px ${color}66`;
 
-  const gradeColor = weighted >= 88 ? 'var(--green)' : weighted >= 65 ? 'var(--gold)' : 'var(--red)';
-  document.getElementById('gradeNumber').style.color = gradeColor;
-  document.getElementById('gradeNumber').style.textShadow = `0 0 30px ${gradeColor}66`;
+  // Draw centering overlay on warpedCanvas
+  const wc = document.getElementById('warpedCanvas');
+  if (cardCanvas) {
+    const overlayCanvas = drawCenteringOverlay(cardCanvas, centering.px);
+    const scale = Math.min(1, 400 / Math.max(overlayCanvas.width, overlayCanvas.height));
+    wc.width  = (overlayCanvas.width  * scale) | 0;
+    wc.height = (overlayCanvas.height * scale) | 0;
+    wc.getContext('2d').drawImage(overlayCanvas, 0, 0, wc.width, wc.height);
+  }
 
-  // Sub-score bars (after next frame so transition fires)
+  // Ratio bars
   requestAnimationFrame(() => {
-    setBar('Centering', scores.centering);
-    setBar('Corners',   scores.corners);
-    setBar('Edges',     scores.edges);
-    setBar('Surface',   scores.surface);
+    document.getElementById('ratioBarL').style.width = centering.lrLeft  + '%';
+    document.getElementById('ratioBarR').style.width = centering.lrRight + '%';
+    document.getElementById('ratioBarT').style.width = centering.tbTop   + '%';
+    document.getElementById('ratioBarB').style.width = centering.tbBot   + '%';
+    document.getElementById('ratioValLR').textContent = `${centering.lrLeft} / ${centering.lrRight}`;
+    document.getElementById('ratioValTB').textContent = `${centering.tbTop} / ${centering.tbBot}`;
   });
+
+  // PSA qualifier table
+  const psaLevels = [
+    { grade: '10', label: 'GEM MINT',  req: '55/45', ratio: 1.222 },
+    { grade: '9',  label: 'MINT',      req: '60/40', ratio: 1.500 },
+    { grade: '8',  label: 'NM-MT',     req: '65/35', ratio: 1.857 },
+    { grade: '7',  label: 'NEAR MINT', req: '70/30', ratio: 2.333 },
+    { grade: '6',  label: 'EX-MT',     req: '75/25', ratio: 3.000 },
+    { grade: '5',  label: 'EXCELLENT', req: '80/20', ratio: 4.000 },
+  ];
+  const lrR = centering.lrLeft && centering.lrRight
+    ? Math.max(centering.lrLeft, centering.lrRight) / Math.min(centering.lrLeft, centering.lrRight)
+    : 1;
+  const tbR = centering.tbTop && centering.tbBot
+    ? Math.max(centering.tbTop, centering.tbBot) / Math.min(centering.tbTop, centering.tbBot)
+    : 1;
+  const worstRatio = Math.max(lrR, tbR);
+
+  document.getElementById('psaTable').innerHTML = psaLevels.map(p => {
+    const pass = worstRatio <= p.ratio;
+    const best = p.grade === grade;
+    return `<div class="psa-row${pass ? ' pass' : ''}${best ? ' best' : ''}">
+      <span class="psa-grade">${p.grade}</span>
+      <span class="psa-req">${p.label} — ${p.req}</span>
+      <span class="psa-status">${pass ? '✓' : '✗'}</span>
+    </div>`;
+  }).join('');
 
   resultEmpty.style.display = 'none';
   resultContent.classList.add('visible');
-}
-
-function setBar(name, val) {
-  const key = name.toLowerCase();
-  document.getElementById('bar' + name).style.width = val + '%';
-  const color = val >= 80 ? 'var(--green)' : val >= 55 ? 'var(--gold)' : 'var(--red)';
-  document.getElementById('bar' + name).style.background = color;
-  document.getElementById('val' + name).textContent = val;
-}
-
-function scoreToGrade(w) {
-  if (w >= 97) return { grade: '10',  label: 'GEM MINT'  };
-  if (w >= 93) return { grade: '9.5', label: 'MINT'      };
-  if (w >= 88) return { grade: '9',   label: 'MINT'      };
-  if (w >= 82) return { grade: '8.5', label: 'NEAR MINT' };
-  if (w >= 75) return { grade: '8',   label: 'NEAR MINT' };
-  if (w >= 65) return { grade: '7',   label: 'EXCELLENT' };
-  if (w >= 50) return { grade: '6',   label: 'VERY GOOD' };
-  if (w >= 35) return { grade: '5',   label: 'GOOD'      };
-  return { grade: '4', label: 'POOR' };
 }
 
 /* ── Reset ── */
