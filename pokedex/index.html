@@ -188,6 +188,26 @@
 
     /* ── Loading ── */
     .loading-msg { display: flex; align-items: center; justify-content: center; flex: 1; color: var(--dim); font-size: 0.7rem; letter-spacing: 0.15em; }
+
+    /* ── Animated sprite overlay ── */
+    .sprite-overlay {
+      position: absolute;
+      bottom: 28%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 200px;
+      image-rendering: pixelated;
+      pointer-events: none;
+      z-index: 2;
+      animation: spriteBob 2.4s ease-in-out infinite;
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,0.7));
+    }
+    @keyframes spriteBob {
+      0%, 100% { transform: translateX(-50%) translateY(0px); }
+      50%       { transform: translateX(-50%) translateY(-10px); }
+    }
+    .sprite-overlay.shiny { filter: drop-shadow(0 8px 20px rgba(255,215,0,0.4)) brightness(1.1); }
   </style>
 </head>
 <body>
@@ -242,7 +262,10 @@
     <div class="right-panel">
       <!-- 3D Scene -->
       <section class="scene-panel">
-        <div class="scene-wrap"><canvas id="threeCanvas"></canvas></div>
+        <div class="scene-wrap">
+          <canvas id="threeCanvas"></canvas>
+          <img id="pokemonSpriteImg" class="sprite-overlay" alt="" src="">
+        </div>
         <div class="scene-footer">
           <div class="type-badges" id="typeBadges"></div>
           <button class="cry-btn" id="cryBtn" title="Play cry">🔊</button>
@@ -515,28 +538,25 @@ function buildParticles(hexColor) {
   scene.add(particlesMesh);
 }
 
-// Sprite plane
-let spriteMesh = null;
-const texLoader = new THREE.TextureLoader();
+// Sprite overlay (HTML img — animated GIFs for Gen 1-5, HOME PNG fallback for Gen 6+)
+const spriteImg = document.getElementById('pokemonSpriteImg');
 function loadSprite(id, shiny = false) {
-  const homeUrl = shiny
-    ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/shiny/${id}.png`
-    : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`;
-  const artUrl  = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${shiny ? 'shiny/' : ''}${id}.png`;
-
-  function applyTexture(tex) {
-    tex.colorSpace = THREE.SRGBColorSpace;
-    if (spriteMesh) scene.remove(spriteMesh);
-    const geo = new THREE.PlaneGeometry(2.4, 2.4);
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.04, side: THREE.DoubleSide });
-    spriteMesh = new THREE.Mesh(geo, mat);
-    spriteMesh.position.y = 0.9;
-    scene.add(spriteMesh);
+  spriteImg.classList.toggle('shiny', shiny);
+  if (id <= 649) {
+    const localPath = shiny
+      ? `sprites/animated/shiny/${id}.gif`
+      : `sprites/animated/${id}.gif`;
+    const homeFallback = shiny
+      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/shiny/${id}.png`
+      : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`;
+    spriteImg.onerror = () => { spriteImg.onerror = null; spriteImg.src = homeFallback; };
+    spriteImg.src = localPath;
+  } else {
+    spriteImg.onerror = null;
+    spriteImg.src = shiny
+      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/shiny/${id}.png`
+      : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`;
   }
-
-  texLoader.load(homeUrl, applyTexture, undefined, () => {
-    texLoader.load(artUrl, applyTexture);
-  });
 }
 
 function setTypeTheme(primaryType) {
@@ -565,7 +585,6 @@ const clock = new THREE.Clock();
 (function animate() {
   requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
-  if (spriteMesh) spriteMesh.position.y = 0.9 + Math.sin(t * 0.8) * 0.07;
   if (particlesMesh) particlesMesh.rotation.y = t * 0.08;
   ring.material.opacity = 0.4 + Math.sin(t * 2.2) * 0.18;
   renderer.render(scene, camera);
