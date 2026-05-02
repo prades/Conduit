@@ -463,6 +463,165 @@ function extractCard(srcCanvas) {
   return perspectiveWarp(srcCanvas, cornersSrc, 600, 836);
 }
 
+/* ═══════════════════════════════════════════
+   CHUNK 3 — CONDITION ANALYZERS
+   ═══════════════════════════════════════════ */
+
+/* ── Detect outer white border widths on each side ── */
+function detectBorderWidths(data, w, h) {
+  const S = 22;
+  function scan(horizontal, fromEnd) {
+    const dim = horizontal ? h : w, cross = horizontal ? w : h;
+    for (let pos = 0; pos < dim * 0.28; pos++) {
+      const p = fromEnd ? dim - 1 - pos : pos;
+      let whites = 0;
+      for (let k = 0; k < S; k++) {
+        const t = Math.floor(cross * (k + 1) / (S + 1));
+        const i = (horizontal ? (p * w + t) : (t * w + p)) * 4;
+        if (data[i] > 205 && data[i+1] > 205 && data[i+2] > 205) whites++;
+      }
+      if (whites / S < 0.50) return Math.max(5, pos);
+    }
+    return Math.max(10, Math.floor((horizontal ? h : w) * 0.05));
+  }
+  return {
+    top:    scan(true,  false), bottom: scan(true,  true),
+    left:   scan(false, false), right:  scan(false, true)
+  };
+}
+
+/* ── Centering: compare opposite white border widths ── */
+function analyzeCentering(data, w, h, bw) {
+  const hDev = Math.abs(bw.left - bw.right) / Math.max(1, bw.left + bw.right);
+  const vDev = Math.abs(bw.top - bw.bottom) / Math.max(1, bw.top + bw.bottom);
+  const score = Math.max(0, Math.min(100, Math.round(100 - Math.max(hDev, vDev) * 200)));
+  return { score, regions: [] };
+}
+
+/* ── Corners: detect white card stock exposed by border wear ── */
+function analyzeCorners(data, w, h, bw) {
+  const ZONE = 22;
+  const regions = [];
+  const defs = [
+    { ox: 0,   oy: 0,   sx: 1,  sy: 1,  bx: bw.left,  by: bw.top    },
+    { ox: w-1, oy: 0,   sx: -1, sy: 1,  bx: bw.right, by: bw.top    },
+    { ox: 0,   oy: h-1, sx: 1,  sy: -1, bx: bw.left,  by: bw.bottom },
+    { ox: w-1, oy: h-1, sx: -1, sy: -1, bx: bw.right, by: bw.bottom }
+  ];
+  let wearSum = 0;
+  for (const { ox, oy, sx, sy, bx, by } of defs) {
+    let whites = 0, total = 0;
+    for (let a = bx; a < bx + ZONE; a++) {
+      for (let b = by; b < by + ZONE; b++) {
+        const px = ox + sx * a, py = oy + sy * b;
+        if (px < 0 || px >= w || py < 0 || py >= h) continue;
+        const i = (py * w + px) * 4;
+        if (data[i] > 215 && data[i+1] > 215 && data[i+2] > 215) whites++;
+        total++;
+      }
+    }
+    const wear = total > 0 ? whites / total : 0;
+    wearSum += wear;
+    if (wear > 0.22) {
+      const rx = sx > 0 ? ox + bx : ox - bx - ZONE;
+      const ry = sy > 0 ? oy + by : oy - by - ZONE;
+      regions.push({ x: Math.max(0, rx), y: Math.max(0, ry), w: ZONE, h: ZONE, severity: wear });
+    }
+  }
+  const score = Math.max(0, Math.min(100, Math.round(100 - (wearSum / 4) * 220)));
+  return { score, regions };
+}
+
+/* ── Edges: detect brightness spikes along inner border line ── */
+function analyzeEdges(data, gray, w, h, bw) {
+  const STEP = 4, DEPTH = 2, WIN = 8, SPIKE = 30;
+  const regions = [];
+
+  function scanLine(getXY, len) {
+    const vals = [];
+    for (let pos = 0; pos < len; pos += STEP) {
+      const [x, y] = getXY(pos);
+      const i = (Math.max(0,Math.min(h-1,y)) * w + Math.max(0,Math.min(w-1,x))) * 4;
+      vals.push((data[i]*77 + data[i+1]*150 + data[i+2]*29) >> 8);
+    }
+    let spikes = 0;
+    for (let i = WIN; i < vals.length - WIN; i++) {
+      let sum = 0;
+      for (let k = -WIN; k <= WIN; k++) sum += vals[i + k];
+      if (Math.abs(vals[i] - sum / (2*WIN+1)) > SPIKE) spikes++;
+    }
+    return spikes;
+  }
+
+  const t = bw.top + DEPTH, b = h - 1 - bw.bottom - DEPTH;
+  const l = bw.left + DEPTH, r = w - 1 - bw.right - DEPTH;
+  const inner_w = w - bw.left - bw.right;
+  const inner_h = h - bw.top  - bw.bottom;
+
+  let spikes = 0;
+  spikes += scanLine(p => [bw.left + p, t], inner_w);   // top border
+  spikes += scanLine(p => [bw.left + p, b], inner_w);   // bottom border
+  spikes += scanLine(p => [l, bw.top + p],  inner_h);   // left border
+  spikes += scanLine(p => [r, bw.top + p],  inner_h);   // right border
+
+  const score = Math.max(0, Math.min(100, Math.round(100 - spikes * 3.5)));
+  return { score, regions };
+}
+
+/* ── Surface: detect scratches via local variance outliers ── */
+function analyzeSurface(gray, w, h) {
+  const mx = (w * 0.15) | 0, my = (h * 0.15) | 0;
+  const mw = (w * 0.70) | 0, mh = (h * 0.70) | 0;
+  const TILE = 18;
+  const vars = [];
+
+  for (let ty = 0; ty + TILE <= mh; ty += TILE) {
+    for (let tx = 0; tx + TILE <= mw; tx += TILE) {
+      let sum = 0, sumSq = 0;
+      const n = TILE * TILE;
+      for (let dy = 0; dy < TILE; dy++)
+        for (let dx = 0; dx < TILE; dx++) {
+          const v = gray[(my+ty+dy)*w + (mx+tx+dx)];
+          sum += v; sumSq += v * v;
+        }
+      const mean = sum / n;
+      vars.push(sumSq / n - mean * mean);
+    }
+  }
+  if (!vars.length) return { score: 85, regions: [] };
+
+  const sorted = [...vars].sort((a, b) => a - b);
+  const median = sorted[sorted.length >> 1];
+  const cutoff = Math.max(60, median * 6);
+  const outlierRatio = vars.filter(v => v > cutoff).length / vars.length;
+  const score = Math.max(0, Math.min(100, Math.round(100 - outlierRatio * 350)));
+  return { score, regions: [] };
+}
+
+/* ── Run all analyzers on the warped card canvas ── */
+function analyzeAll(cardCanvas) {
+  const w = cardCanvas.width, h = cardCanvas.height;
+  const imgData = cardCanvas.getContext('2d').getImageData(0, 0, w, h);
+  const data = imgData.data;
+  const gray = toGrayscale(imgData);
+  const bw   = detectBorderWidths(data, w, h);
+
+  const centering = analyzeCentering(data, w, h, bw);
+  const corners   = analyzeCorners(data, w, h, bw);
+  const edges     = analyzeEdges(data, gray, w, h, bw);
+  const surface   = analyzeSurface(gray, w, h);
+
+  return {
+    scores: {
+      centering: centering.score,
+      corners:   corners.score,
+      edges:     edges.score,
+      surface:   surface.score
+    },
+    regions: [...corners.regions, ...edges.regions]
+  };
+}
+
 /* ── Analyze ── */
 analyzeBtn.addEventListener('click', async () => {
   if (!sourceCanvas) return;
@@ -487,9 +646,8 @@ analyzeBtn.addEventListener('click', async () => {
   wc.height = (cardCanvas.height * scale) | 0;
   wc.getContext('2d').drawImage(cardCanvas, 0, 0, wc.width, wc.height);
 
-  // Scores still stubbed — replaced in Chunk 3
-  const stubScores = { centering: 82, corners: 71, edges: 68, surface: 85 };
-  showResult(stubScores, cardCanvas);
+  const { scores, regions } = analyzeAll(cardCanvas);
+  showResult(scores, cardCanvas, regions);
 
   analyzeBtn.classList.remove('loading');
   analyzeBtn.disabled = false;
@@ -497,7 +655,7 @@ analyzeBtn.addEventListener('click', async () => {
 });
 
 /* ── Show result ── */
-function showResult(scores, _cardCanvas) {
+function showResult(scores, cardCanvas, regions = []) {
   const weighted = scores.corners * 0.30 + scores.surface * 0.25 + scores.edges * 0.25 + scores.centering * 0.20;
   const { grade, label } = scoreToGrade(weighted);
 
