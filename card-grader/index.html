@@ -346,38 +346,48 @@ function sobelEdges(gray, w, h) {
   return out;
 }
 
-function findCardCorners(edges, w, h) {
-  const T = 28;
-  // Prefer outer-band edge pixels so interior card art doesn't skew corners
-  const bx = (w * 0.32) | 0, by = (h * 0.32) | 0;
-  let pts = [];
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++)
-      if (edges[y*w+x] >= T && (x < bx || x >= w-bx || y < by || y >= h-by))
-        pts.push([x, y]);
-  if (pts.length < 80) {
-    // Fallback: all edge pixels
-    pts = [];
-    for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++)
-        if (edges[y*w+x] >= T) pts.push([x, y]);
-  }
-  if (pts.length < 80) return null;
+/* ── Find card corners via brightness threshold (card=bright on dark bg) ──
+   Heavy blur eliminates internal card art so the card becomes a uniform
+   bright blob. Otsu threshold separates it from the dark background.
+   Sum/diff extremal points of the bright mask give the 4 actual corners,
+   even when the card is slightly tilted. ── */
+function findCardByBrightness(gray, w, h) {
+  // Aggressively blur to wipe out artwork detail — card silhouette only
+  const blurred = gaussianBlur(gray, w, h, 8);
 
-  // Sum/diff extremal points give the 4 card corners even when card is tilted
-  let tl=pts[0], tr=pts[0], br=pts[0], bl=pts[0];
-  let minS=Infinity, maxS=-Infinity, minD=Infinity, maxD=-Infinity;
-  for (const [x, y] of pts) {
-    const s=x+y, d=x-y;
-    if (s<minS){minS=s;tl=[x,y];}
-    if (s>maxS){maxS=s;br=[x,y];}
-    if (d<minD){minD=d;bl=[x,y];}  // small x, large y → BL
-    if (d>maxD){maxD=d;tr=[x,y];}  // large x, small y → TR
+  // Otsu's threshold: maximise between-class variance
+  const hist = new Array(256).fill(0);
+  for (const v of blurred) hist[v]++;
+  const n = blurred.length;
+  let sum = 0;
+  for (let i = 0; i < 256; i++) sum += i * hist[i];
+  let sumB = 0, wB = 0, maxVar = 0, T = 128;
+  for (let i = 0; i < 256; i++) {
+    wB += hist[i];
+    if (!wB || wB === n) continue;
+    const wF = n - wB;
+    sumB += i * hist[i];
+    const mB = sumB / wB, mF = (sum - sumB) / wF;
+    const v = wB * wF * (mB - mF) ** 2;
+    if (v > maxVar) { maxVar = v; T = i; }
   }
-  // Sanity: corners should span at least 30% of each dimension
-  const xs = [tl,tr,br,bl].map(p=>p[0]), ys = [tl,tr,br,bl].map(p=>p[1]);
-  const spanX = Math.max(...xs)-Math.min(...xs), spanY = Math.max(...ys)-Math.min(...ys);
-  if (spanX < w*0.3 || spanY < h*0.3) return null;
+
+  // Find extremal corners of bright (card) pixels using sum/diff trick
+  let tl=null, tr=null, br=null, bl=null;
+  let minS=Infinity, maxS=-Infinity, minD=Infinity, maxD=-Infinity;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (blurred[y*w+x] <= T) continue;
+      const s=x+y, d=x-y;
+      if (s<minS){minS=s;tl=[x,y];}
+      if (s>maxS){maxS=s;br=[x,y];}
+      if (d<minD){minD=d;bl=[x,y];}
+      if (d>maxD){maxD=d;tr=[x,y];}
+    }
+  }
+  if (!tl) return null;
+  const xs=[tl,tr,br,bl].map(p=>p[0]), ys=[tl,tr,br,bl].map(p=>p[1]);
+  if (Math.max(...xs)-Math.min(...xs) < w*0.25 || Math.max(...ys)-Math.min(...ys) < h*0.25) return null;
   return [tl, tr, br, bl];
 }
 
@@ -445,7 +455,6 @@ function perspectiveWarp(srcCanvas, corners, dstW, dstH) {
 }
 
 function extractCard(srcCanvas) {
-  // Downsample to max 600px for fast edge detection
   const MAX = 600;
   const s = Math.min(1, MAX / Math.max(srcCanvas.width, srcCanvas.height));
   const pw = (srcCanvas.width * s) | 0, ph = (srcCanvas.height * s) | 0;
@@ -453,11 +462,34 @@ function extractCard(srcCanvas) {
   pc.width = pw; pc.height = ph;
   pc.getContext('2d').drawImage(srcCanvas, 0, 0, pw, ph);
   const gray = toGrayscale(pc.getContext('2d').getImageData(0, 0, pw, ph));
-  const blurred = gaussianBlur(gray, pw, ph, 3);
-  const edges = sobelEdges(blurred, pw, ph);
-  const cornersProc = findCardCorners(edges, pw, ph);
+
+  // Primary: brightness threshold — works when card is brighter than background
+  let cornersProc = findCardByBrightness(gray, pw, ph);
+
+  // Fallback: edge detection (in case brightness approach can't find separation)
+  if (!cornersProc) {
+    const blurred = gaussianBlur(gray, pw, ph, 3);
+    const edges = sobelEdges(blurred, pw, ph);
+    // Use only pixels in a narrow outer ring (5%) to avoid interior art
+    const bx = (pw * 0.05) | 0, by = (ph * 0.05) | 0;
+    let pts = [];
+    for (let y = 0; y < ph; y++)
+      for (let x = 0; x < pw; x++)
+        if (edges[y*pw+x] >= 28 && (x < bx || x >= pw-bx || y < by || y >= ph-by))
+          pts.push([x, y]);
+    if (pts.length >= 40) {
+      let tl=pts[0],tr=pts[0],br=pts[0],bl=pts[0];
+      let minS=Infinity,maxS=-Infinity,minD=Infinity,maxD=-Infinity;
+      for (const [x,y] of pts) {
+        const s=x+y,d=x-y;
+        if(s<minS){minS=s;tl=[x,y];}if(s>maxS){maxS=s;br=[x,y];}
+        if(d<minD){minD=d;bl=[x,y];}if(d>maxD){maxD=d;tr=[x,y];}
+      }
+      cornersProc = [tl,tr,br,bl];
+    }
+  }
+
   if (!cornersProc) return null;
-  // Scale corners back to source resolution
   const inv = 1 / s;
   const cornersSrc = cornersProc.map(([x, y]) => [x * inv, y * inv]);
   return perspectiveWarp(srcCanvas, cornersSrc, 600, 836);
