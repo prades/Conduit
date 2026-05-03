@@ -520,26 +520,56 @@ function extractCard(srcCanvas) {
    CHUNK 3 — CONDITION ANALYZERS
    ═══════════════════════════════════════════ */
 
-/* ── Detect outer white border widths on each side ── */
+/* ── Detect outer border widths on each side (any border color) ──
+   Instead of looking for white/yellow specifically, we detect UNIFORMITY.
+   The border — white on modern cards, yellow on WotC-era English/Japanese —
+   is a solid-color strip with very low pixel-to-pixel variance. Card art
+   has high local variance. We scan inward and stop when variance spikes. ── */
 function detectBorderWidths(data, w, h) {
   const S = 22;
+
   function scan(horizontal, fromEnd) {
-    const dim = horizontal ? h : w, cross = horizontal ? w : h;
-    for (let pos = 0; pos < dim * 0.28; pos++) {
-      const p = fromEnd ? dim - 1 - pos : pos;
-      let whites = 0;
+    const dim = horizontal ? h : w;
+    const cross = horizontal ? w : h;
+
+    function rowLums(pos) {
+      const lums = [];
       for (let k = 0; k < S; k++) {
         const t = Math.floor(cross * (k + 1) / (S + 1));
-        const i = (horizontal ? (p * w + t) : (t * w + p)) * 4;
-        if (data[i] > 205 && data[i+1] > 205 && data[i+2] > 205) whites++;
+        const i = (horizontal ? pos * w + t : t * w + pos) * 4;
+        lums.push((data[i] * 77 + data[i+1] * 150 + data[i+2] * 29) >> 8);
       }
-      if (whites / S < 0.50) return Math.max(5, pos);
+      return lums;
     }
-    return Math.max(10, Math.floor((horizontal ? h : w) * 0.05));
+
+    function variance(lums) {
+      const mean = lums.reduce((a, b) => a + b, 0) / lums.length;
+      return lums.reduce((s, v) => s + (v - mean) ** 2, 0) / lums.length;
+    }
+
+    // Sample the outermost 4 rows to establish the border's own variance baseline.
+    // This makes the threshold relative: a slightly-textured border (WotC) still
+    // scores low compared to the art area.
+    let baseVar = 0;
+    for (let d = 0; d < 4; d++) {
+      const p = fromEnd ? dim - 1 - d : d;
+      baseVar = Math.max(baseVar, variance(rowLums(p)));
+    }
+    const thresh = Math.max(60, baseVar * 6);
+
+    // Scan inward from row 4 until variance spikes = art area reached
+    for (let pos = 4; pos < dim * 0.28; pos++) {
+      const p = fromEnd ? dim - 1 - pos : pos;
+      if (variance(rowLums(p)) > thresh) return { width: pos, found: true };
+    }
+    return { width: Math.max(10, Math.floor((horizontal ? h : w) * 0.05)), found: false };
   }
+
+  const t = scan(true, false), b = scan(true, true);
+  const l = scan(false, false), r = scan(false, true);
   return {
-    top:    scan(true,  false), bottom: scan(true,  true),
-    left:   scan(false, false), right:  scan(false, true)
+    top: t.width, bottom: b.width, left: l.width, right: r.width,
+    reliable: t.found && b.found && l.found && r.found
   };
 }
 
@@ -557,8 +587,8 @@ function analyzeCentering(data, w, h, bw) {
   const lrTotal = left + right || 1;
   const tbTotal = top + bottom || 1;
 
-  // If all borders are at or near minimum (≤12px), no white border was detected
-  const reliable = Math.max(left, right, top, bottom) > 12;
+  // Propagate reliable flag from detectBorderWidths (all 4 scans found a border)
+  const reliable = bw.reliable !== false;
 
   return {
     score, grade, reliable,
