@@ -535,21 +535,32 @@ function extractCard(srcCanvas) {
    ═══════════════════════════════════════════ */
 
 /* ── Detect outer border widths on each side (any border color) ──
-   Instead of looking for white/yellow specifically, we detect UNIFORMITY.
-   The border — white on modern cards, yellow on WotC-era English/Japanese —
-   is a solid-color strip with very low pixel-to-pixel variance. Card art
-   has high local variance. We scan inward and stop when variance spikes. ── */
+   Scans inward measuring intra-scanline luminance variance. The border
+   (white, WotC yellow/gold) is a uniform-color strip → low variance.
+   Card art has high variance. Two robustness measures vs. the naive scan:
+   1. Sample only the central 60% of each edge (skip outer 20% per side)
+      to avoid corner-region artifacts where art bleeds diagonally in.
+   2. Require 3 consecutive high-variance lines before declaring the
+      boundary — ignores single-line noise (dust, print grain, warp
+      interpolation artifacts).
+── */
 function detectBorderWidths(data, w, h) {
   const S = 22;
 
   function scan(horizontal, fromEnd) {
-    const dim = horizontal ? h : w;
+    const dim   = horizontal ? h : w;
     const cross = horizontal ? w : h;
+
+    // Sample only the central 60% of the perpendicular dimension.
+    // This skips the corner zones where the art boundary is diagonal,
+    // giving a cleaner read of the straight border strip.
+    const margin = Math.floor(cross * 0.20);
+    const range  = cross - 2 * margin;
 
     function rowLums(pos) {
       const lums = [];
       for (let k = 0; k < S; k++) {
-        const t = Math.floor(cross * (k + 1) / (S + 1));
+        const t = margin + Math.floor(range * (k + 1) / (S + 1));
         const i = (horizontal ? pos * w + t : t * w + pos) * 4;
         lums.push((data[i] * 77 + data[i+1] * 150 + data[i+2] * 29) >> 8);
       }
@@ -561,25 +572,31 @@ function detectBorderWidths(data, w, h) {
       return lums.reduce((s, v) => s + (v - mean) ** 2, 0) / lums.length;
     }
 
-    // Sample the outermost 4 rows to establish the border's own variance baseline.
-    // This makes the threshold relative: a slightly-textured border (WotC) still
-    // scores low compared to the art area.
+    // Baseline: outermost 6 rows of the border itself.
     let baseVar = 0;
-    for (let d = 0; d < 4; d++) {
+    for (let d = 0; d < 6; d++) {
       const p = fromEnd ? dim - 1 - d : d;
       baseVar = Math.max(baseVar, variance(rowLums(p)));
     }
     const thresh = Math.max(60, baseVar * 6);
 
-    // Scan inward from row 4 until variance spikes = art area reached
-    for (let pos = 4; pos < dim * 0.28; pos++) {
+    // Scan inward; require 3 consecutive high-variance lines before stopping.
+    // This prevents single-line noise (print grain, warp artifact) from
+    // triggering a premature border-end call.
+    let run = 0;
+    for (let pos = 6; pos < dim * 0.30; pos++) {
       const p = fromEnd ? dim - 1 - pos : pos;
-      if (variance(rowLums(p)) > thresh) return { width: pos, found: true };
+      if (variance(rowLums(p)) > thresh) {
+        run++;
+        if (run >= 3) return { width: pos - 2, found: true };
+      } else {
+        run = 0;
+      }
     }
     return { width: Math.max(10, Math.floor((horizontal ? h : w) * 0.05)), found: false };
   }
 
-  const t = scan(true, false), b = scan(true, true);
+  const t = scan(true,  false), b = scan(true,  true);
   const l = scan(false, false), r = scan(false, true);
   return {
     top: t.width, bottom: b.width, left: l.width, right: r.width,
@@ -590,7 +607,7 @@ function detectBorderWidths(data, w, h) {
 /* ── Centering: compare opposite white border widths, return PSA data ── */
 function analyzeCentering(data, w, h, bw) {
   const { left, right, top, bottom } = bw;
-  const safeRatio = (a, b) => (Math.min(a, b) < 3) ? 5 : Math.max(a, b) / Math.min(a, b);
+  const safeRatio = (a, b) => (Math.min(a, b) < 6) ? 5 : Math.max(a, b) / Math.min(a, b);
   const lrRatio = safeRatio(left, right);
   const tbRatio = safeRatio(top, bottom);
   const worstRatio = Math.max(lrRatio, tbRatio);
