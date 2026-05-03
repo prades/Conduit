@@ -384,23 +384,37 @@ function findCardByBrightness(gray, w, h) {
     if (v > maxVar) { maxVar = v; T = i; }
   }
 
-  // Find extremal corners of bright (card) pixels using sum/diff trick
-  let tl=null, tr=null, br=null, bl=null;
-  let minS=Infinity, maxS=-Infinity, minD=Infinity, maxD=-Infinity;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (blurred[y*w+x] <= T) continue;
-      const s=x+y, d=x-y;
-      if (s<minS){minS=s;tl=[x,y];}
-      if (s>maxS){maxS=s;br=[x,y];}
-      if (d<minD){minD=d;bl=[x,y];}
-      if (d>maxD){maxD=d;tr=[x,y];}
+  // Find extremal corners of a blob (bright or dark) using sum/diff trick
+  function getCorners(testFn) {
+    let tl=null, tr=null, br=null, bl=null;
+    let minS=Infinity, maxS=-Infinity, minD=Infinity, maxD=-Infinity;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (!testFn(blurred[y*w+x])) continue;
+        const s=x+y, d=x-y;
+        if (s<minS){minS=s;tl=[x,y];}
+        if (s>maxS){maxS=s;br=[x,y];}
+        if (d<minD){minD=d;bl=[x,y];}
+        if (d>maxD){maxD=d;tr=[x,y];}
+      }
     }
+    if (!tl) return null;
+    const xs=[tl,tr,br,bl].map(p=>p[0]), ys=[tl,tr,br,bl].map(p=>p[1]);
+    const bboxW = Math.max(...xs)-Math.min(...xs);
+    const bboxH = Math.max(...ys)-Math.min(...ys);
+    if (bboxW < w*0.25 || bboxH < h*0.25) return null;
+    return { corners: normalizeToPortrait([tl, tr, br, bl]), bboxW, bboxH };
   }
-  if (!tl) return null;
-  const xs=[tl,tr,br,bl].map(p=>p[0]), ys=[tl,tr,br,bl].map(p=>p[1]);
-  if (Math.max(...xs)-Math.min(...xs) < w*0.25 || Math.max(...ys)-Math.min(...ys) < h*0.25) return null;
-  return normalizeToPortrait([tl, tr, br, bl]);
+
+  // Primary: card is brighter than background (works for fronts and backs on dark surface).
+  // Fallback: if the bright blob fills almost the whole frame it's the background —
+  // the card is actually the dark blob (e.g., blue/teal back on a white table).
+  const bright = getCorners(v => v > T);
+  if (bright && !(bright.bboxW > w * 0.88 && bright.bboxH > h * 0.88)) {
+    return bright.corners;
+  }
+  const dark = getCorners(v => v <= T);
+  return dark ? dark.corners : (bright ? bright.corners : null);
 }
 
 /* ── Rotate corner order so card always warps to portrait (tall) ── */
