@@ -275,36 +275,35 @@ dropZone.addEventListener('drop', e => {
   if (file && file.type.startsWith('image/')) handleFile(file);
 });
 
-function handleFile(file) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      // Draw to offscreen source canvas (max 1200px on long edge)
-      const MAX = 1200;
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      sourceCanvas = document.createElement('canvas');
-      sourceCanvas.width = w; sourceCanvas.height = h;
-      sourceCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
+async function handleFile(file) {
+  // createImageBitmap with imageOrientation:'from-image' applies EXIF rotation
+  // that drawImage(img) misses in some browsers, fixing rotated phone photos
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch {
+    bitmap = await createImageBitmap(file);
+  }
 
-      // Draw preview (fit inside drop zone)
-      const pCtx = previewCanvas.getContext('2d');
-      previewCanvas.width = w; previewCanvas.height = h;
-      pCtx.drawImage(img, 0, 0, w, h);
+  const MAX = 1200;
+  const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
 
-      dropZone.classList.add('has-image');
-      analyzeBtn.disabled = false;
-      analyzeBtn.textContent = 'Analyze Card';
+  sourceCanvas = document.createElement('canvas');
+  sourceCanvas.width = w; sourceCanvas.height = h;
+  sourceCanvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
 
-      // Reset result panel
-      resultContent.classList.remove('visible');
-      resultEmpty.style.display = 'flex';
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+  const pCtx = previewCanvas.getContext('2d');
+  previewCanvas.width = w; previewCanvas.height = h;
+  pCtx.drawImage(sourceCanvas, 0, 0);
+
+  dropZone.classList.add('has-image');
+  analyzeBtn.disabled = false;
+  analyzeBtn.textContent = 'Analyze Card';
+  resultContent.classList.remove('visible');
+  resultEmpty.style.display = 'flex';
 }
 
 /* ═══════════════════════════════════════════
@@ -401,7 +400,16 @@ function findCardByBrightness(gray, w, h) {
   if (!tl) return null;
   const xs=[tl,tr,br,bl].map(p=>p[0]), ys=[tl,tr,br,bl].map(p=>p[1]);
   if (Math.max(...xs)-Math.min(...xs) < w*0.25 || Math.max(...ys)-Math.min(...ys) < h*0.25) return null;
-  return [tl, tr, br, bl];
+  return normalizeToPortrait([tl, tr, br, bl]);
+}
+
+/* ── Rotate corner order so card always warps to portrait (tall) ── */
+function normalizeToPortrait(corners) {
+  const [tl, tr, br, bl] = corners;
+  const topEdge  = Math.hypot(tr[0]-tl[0], tr[1]-tl[1]);
+  const leftEdge = Math.hypot(bl[0]-tl[0], bl[1]-tl[1]);
+  // If wider than tall (landscape), rotate assignment 90° → [bl, tl, tr, br]
+  return topEdge > leftEdge * 1.1 ? [bl, tl, tr, br] : corners;
 }
 
 /* ── Homography: inverse mapping dst→src ── */
@@ -498,7 +506,7 @@ function extractCard(srcCanvas) {
         if(s<minS){minS=s;tl=[x,y];}if(s>maxS){maxS=s;br=[x,y];}
         if(d<minD){minD=d;bl=[x,y];}if(d>maxD){maxD=d;tr=[x,y];}
       }
-      cornersProc = [tl,tr,br,bl];
+      cornersProc = normalizeToPortrait([tl,tr,br,bl]);
     }
   }
 
@@ -549,8 +557,11 @@ function analyzeCentering(data, w, h, bw) {
   const lrTotal = left + right || 1;
   const tbTotal = top + bottom || 1;
 
+  // If all borders are at or near minimum (≤12px), no white border was detected
+  const reliable = Math.max(left, right, top, bottom) > 12;
+
   return {
-    score, grade,
+    score, grade, reliable,
     lrLeft:  Math.round(left   / lrTotal * 100),
     lrRight: Math.round(right  / lrTotal * 100),
     tbTop:   Math.round(top    / tbTotal * 100),
@@ -627,6 +638,23 @@ function drawCenteringOverlay(cardCanvas, bw) {
 
 /* ── Show result ── */
 function showResult(centering, cardCanvas) {
+  if (!centering.reliable) {
+    document.getElementById('gradeNumber').textContent = '?';
+    document.getElementById('gradeLabel').textContent  = 'NOT DETECTED';
+    document.getElementById('gradeNumber').style.color = 'var(--dim)';
+    document.getElementById('gradeNumber').style.textShadow = 'none';
+    document.getElementById('psaTable').innerHTML =
+      '<div style="font-size:0.6rem;color:var(--dim);line-height:1.6">' +
+      'White border not detected.<br>' +
+      'Place card on a dark background.<br>' +
+      'Ensure all four edges are visible.</div>';
+    document.getElementById('ratioValLR').textContent = '— / —';
+    document.getElementById('ratioValTB').textContent = '— / —';
+    resultEmpty.style.display = 'none';
+    resultContent.classList.add('visible');
+    return;
+  }
+
   const { grade, label } = centering.grade;
   const g = parseInt(grade);
   const color = g >= 9 ? 'var(--green)' : g >= 7 ? 'var(--gold)' : 'var(--red)';
