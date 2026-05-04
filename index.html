@@ -31,16 +31,36 @@
       text-align: center; padding: 40px 20px;
     }
 
-    .dragon-icon {
-      font-size: 64px; margin-bottom: 20px;
-      filter: drop-shadow(0 0 24px #ff6600);
-      animation: floatIcon 3.5s ease-in-out infinite;
-    }
     @keyframes floatIcon {
       0%, 100% { transform: translateY(0); }
-      50%       { transform: translateY(-12px); }
+      50%       { transform: translateY(-10px); }
     }
 
+    /* Logo image — black-on-white PNG colorized to match the site palette */
+    .hero-logo {
+      display: block;
+      max-width: min(580px, 88vw);
+      height: auto;
+      margin: 0 auto 22px;
+      /*
+        1. invert()  → white background becomes black, black strokes become white
+        2. sepia+saturate → tint the white strokes to warm orange-gold
+        3. drop-shadow → the signature site glow
+        4. mix-blend-mode: screen → the now-black background disappears against
+           the dark page, leaving only the glowing strokes visible
+      */
+      filter:
+        invert(1)
+        sepia(1)
+        saturate(8)
+        brightness(1.15)
+        drop-shadow(0 0 16px rgba(255,120,0,0.7))
+        drop-shadow(0 0 36px rgba(255,80,0,0.35));
+      mix-blend-mode: screen;
+      animation: floatIcon 3.5s ease-in-out infinite;
+    }
+
+    /* Fallback text title shown only when logo.png is absent */
     .hero h1 {
       font-size: clamp(2.6rem, 7vw, 5rem);
       font-weight: 900;
@@ -198,8 +218,7 @@
 
   <!-- ── Hero ── -->
   <section class="hero">
-    <div class="dragon-icon">🐉</div>
-    <h1>Dragonlord</h1>
+    <img class="hero-logo" src="logo.png" alt="DRAGONLORD">
     <p class="tagline">Game Developer &amp; Digital Architect</p>
     <p class="bio">
       I build worlds from code. Browser games, 3D environments, and interactive
