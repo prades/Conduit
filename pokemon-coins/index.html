@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon Coin Prices — Dragonlord</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:     #040810;
+      --bg2:    #080f1e;
+      --bg3:    #0d1628;
+      --gold:   #ffcc00;
+      --amber:  #ff8800;
+      --text:   #c8d8f0;
+      --dim:    #4a6080;
+      --border: rgba(255,180,0,0.18);
+      --card-bg: rgba(8,15,30,0.85);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', 'Courier New', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,180,0,0.3); border-radius: 3px; }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 28px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-back {
+      color: var(--dim);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .header-back:hover { color: var(--gold); }
+
+    .header-sep { color: var(--dim); margin: 0 4px; }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--amber), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      flex: 1;
+    }
+
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+
+    .hdr-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .hdr-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(255,204,0,0.06); }
+
+    .refresh-btn { position: relative; }
+    .refresh-btn.spinning .btn-icon { display: inline-block; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-icon { display: inline-block; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 8px 28px;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      color: var(--dim);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      background: rgba(8,15,30,0.5);
+    }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--dim);
+      display: inline-block;
+    }
+    .status-dot.live { background: #00e676; box-shadow: 0 0 6px #00e676; }
+    .status-dot.error { background: #ff4444; }
+    #lastUpdated { margin-left: auto; }
+
+    /* ── Search / filter bar ── */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 28px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 180px;
+      max-width: 320px;
+    }
+    .search-wrap svg {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      width: 14px; height: 14px; opacity: 0.4;
+    }
+    #searchInput {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 7px 10px 7px 32px;
+      border-radius: 4px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #searchInput:focus { border-color: rgba(255,180,0,0.5); }
+    #searchInput::placeholder { color: var(--dim); }
+
+    .sort-select {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.82rem;
+      padding: 7px 12px;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+    }
+
+    .filter-count { color: var(--dim); font-size: 0.8rem; letter-spacing: 1px; margin-left: auto; }
+
+    /* ── Grid ── */
+    main {
+      padding: 20px 28px 40px;
+    }
+
+    #coinsGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    /* ── Coin Card ── */
+    .coin-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 16px 14px;
+      position: relative;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      overflow: hidden;
+      cursor: default;
+    }
+    .coin-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,140,0,0.04) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    .coin-card:hover {
+      border-color: rgba(255,200,0,0.45);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(255,140,0,0.12);
+    }
+
+    .coin-card.loading { opacity: 0.6; pointer-events: none; }
+    .coin-card.errored { border-color: rgba(255,60,60,0.25); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .coin-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #e8f0ff;
+    }
+
+    .listing-count {
+      font-size: 0.68rem;
+      letter-spacing: 1px;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+
+    .avg-price {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, var(--amber), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .avg-price.no-data { background: none; -webkit-text-fill-color: var(--dim); font-size: 1rem; font-weight: 400; }
+
+    .price-label {
+      font-size: 0.7rem;
+      color: var(--dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    /* Sparkline */
+    .sparkline-wrap {
+      height: 48px;
+      margin: 0 -4px 10px;
+      position: relative;
+    }
+    .sparkline-wrap canvas { width: 100% !important; height: 100% !important; }
+
+    .price-range {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--dim);
+      letter-spacing: 1px;
+    }
+    .range-low { color: #6ab0ff; }
+    .range-high { color: #ff8844; }
+
+    /* Skeleton shimmer */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg3) 25%, rgba(255,255,255,0.04) 50%, var(--bg3) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    .skel-price { height: 32px; width: 55%; margin-bottom: 6px; }
+    .skel-label { height: 10px; width: 70%; margin-bottom: 16px; }
+    .skel-chart { height: 48px; width: 100%; margin-bottom: 10px; }
+    .skel-range { height: 10px; width: 80%; }
+
+    /* ── No key placeholder ── */
+    #noKeyMessage {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 24px;
+      text-align: center;
+      gap: 16px;
+    }
+    #noKeyMessage .nk-icon { font-size: 3rem; opacity: 0.5; }
+    #noKeyMessage h2 { font-size: 1.3rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
+    #noKeyMessage p { max-width: 480px; line-height: 1.8; color: var(--dim); font-size: 0.9rem; }
+    #noKeyMessage a { color: var(--amber); }
+    #noKeyMessage .nk-btn {
+      background: rgba(255,180,0,0.1);
+      border: 1px solid var(--border);
+      color: var(--gold);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    #noKeyMessage .nk-btn:hover { background: rgba(255,180,0,0.18); border-color: rgba(255,200,0,0.5); }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      position: relative;
+    }
+
+    .modal h2 {
+      font-size: 1rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .modal p {
+      font-size: 0.85rem;
+      line-height: 1.8;
+      color: var(--dim);
+      margin-bottom: 20px;
+    }
+    .modal p a { color: var(--amber); }
+
+    .modal label {
+      display: block;
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 6px;
+    }
+
+    .modal input[type="text"] {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      padding: 10px 14px;
+      border-radius: 4px;
+      outline: none;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+    .modal input[type="text"]:focus { border-color: rgba(255,200,0,0.5); }
+
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    .modal-save {
+      background: rgba(255,180,0,0.15);
+      border: 1px solid rgba(255,200,0,0.4);
+      color: var(--gold);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 9px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-save:hover { background: rgba(255,180,0,0.25); }
+
+    .modal-cancel {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--dim);
+      font-family: inherit;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      padding: 9px 18px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .modal-cancel:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+    .modal-close {
+      position: absolute; top: 14px; right: 16px;
+      background: none; border: none; color: var(--dim);
+      font-size: 1.1rem; cursor: pointer; line-height: 1;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      background: var(--bg2);
+      border: 1px solid rgba(0,230,118,0.35);
+      color: #00e676;
+      font-size: 0.82rem;
+      letter-spacing: 1px;
+      padding: 10px 20px;
+      border-radius: 6px;
+      z-index: 300;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.err { border-color: rgba(255,60,60,0.35); color: #ff6060; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <a class="header-back" href="../">← Home</a>
+  <span class="header-sep">◈</span>
+  <h1>Coin Price Tracker</h1>
+  <div class="header-actions">
+    <button class="hdr-btn refresh-btn" id="refreshBtn" title="Refresh prices">
+      <span class="btn-icon">↺</span> Refresh
+    </button>
+    <button class="hdr-btn" id="apiKeyBtn">⚙ API Key</button>
+  </div>
+</header>
+
+<!-- ── Status bar ── -->
+<div class="status-bar">
+  <span class="status-dot" id="statusDot"></span>
+  <span id="statusText">Initializing…</span>
+  <span id="lastUpdated"></span>
+</div>
+
+<!-- ── Filter / search bar ── -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="searchInput" placeholder="Search Pokémon coin…">
+  </div>
+  <select class="sort-select" id="sortSelect">
+    <option value="avg-desc">Avg Price ↓</option>
+    <option value="avg-asc">Avg Price ↑</option>
+    <option value="name">Name A–Z</option>
+    <option value="count-desc">Most Listings</option>
+  </select>
+  <span class="filter-count" id="filterCount"></span>
+</div>
+
+<!-- ── No-key placeholder ── -->
+<div id="noKeyMessage">
+  <div class="nk-icon">🪙</div>
+  <h2>Connect eBay Data</h2>
+  <p>
+    This tracker pulls <strong style="color:#e8f0ff">real sold-listing prices</strong> for Pokémon collectible coins
+    directly from eBay's marketplace. You'll need a free eBay Developer App ID to get started —
+    sign up at <a href="https://developer.ebay.com" target="_blank" rel="noopener">developer.ebay.com</a>
+    (takes about 2 minutes, no payment required).
+  </p>
+  <button class="nk-btn" id="noKeyBtn">⚙ Enter App ID</button>
+</div>
+
+<!-- ── Coin grid ── -->
+<main>
+  <div id="coinsGrid"></div>
+</main>
+
+<!-- ── API Key Modal ── -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <button class="modal-close" id="modalClose" title="Close">✕</button>
+    <h2>eBay API Key</h2>
+    <p>
+      Enter your <strong style="color:#e8f0ff">eBay Developer App ID (Client ID)</strong>.
+      Get one free at <a href="https://developer.ebay.com" target="_blank" rel="noopener">developer.ebay.com</a> —
+      create an app and copy the Production App ID. It's stored only in your browser.
+    </p>
+    <label for="appIdInput">App ID (Client ID)</label>
+    <input type="text" id="appIdInput" placeholder="YourName-AppName-PRD-xxxxxxxxx-xxxxxxxx" autocomplete="off" spellcheck="false">
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modalCancel">Cancel</button>
+      <button class="modal-save" id="modalSave">Save &amp; Load</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'dl_ebay_appid';
+const CACHE_TTL   = 15 * 60 * 1000;
+
+const COIN_QUERIES = [
+  { id: 'pikachu',   label: 'Pikachu',   query: 'Pokemon Pikachu large coin collectible' },
+  { id: 'charizard', label: 'Charizard', query: 'Pokemon Charizard large coin collectible' },
+  { id: 'eevee',     label: 'Eevee',     query: 'Pokemon Eevee large coin collectible' },
+  { id: 'mewtwo',    label: 'Mewtwo',    query: 'Pokemon Mewtwo large coin collectible' },
+  { id: 'gengar',    label: 'Gengar',    query: 'Pokemon Gengar large coin collectible' },
+  { id: 'snorlax',   label: 'Snorlax',   query: 'Pokemon Snorlax large coin collectible' },
+  { id: 'lucario',   label: 'Lucario',   query: 'Pokemon Lucario large coin collectible' },
+  { id: 'mew',       label: 'Mew',       query: 'Pokemon Mew large coin collectible' },
+  { id: 'rayquaza',  label: 'Rayquaza',  query: 'Pokemon Rayquaza large coin collectible' },
+  { id: 'umbreon',   label: 'Umbreon',   query: 'Pokemon Umbreon large coin collectible' },
+  { id: 'espeon',    label: 'Espeon',    query: 'Pokemon Espeon large coin collectible' },
+  { id: 'blastoise', label: 'Blastoise', query: 'Pokemon Blastoise large coin collectible' },
+  { id: 'venusaur',  label: 'Venusaur',  query: 'Pokemon Venusaur large coin collectible' },
+  { id: 'lugia',     label: 'Lugia',     query: 'Pokemon Lugia large coin collectible' },
+  { id: 'ho-oh',     label: 'Ho-Oh',     query: 'Pokemon Ho-Oh large coin collectible' },
+  { id: 'garchomp',  label: 'Garchomp',  query: 'Pokemon Garchomp large coin collectible' },
+  { id: 'sylveon',   label: 'Sylveon',   query: 'Pokemon Sylveon large coin collectible' },
+  { id: 'dragonite', label: 'Dragonite', query: 'Pokemon Dragonite large coin collectible' },
+  { id: 'greninja',  label: 'Greninja',  query: 'Pokemon Greninja large coin collectible' },
+  { id: 'alakazam',  label: 'Alakazam',  query: 'Pokemon Alakazam large coin collectible' },
+];
+
+// ── State ──
+let appId = localStorage.getItem(STORAGE_KEY) || '';
+let results = {}; // id → { prices, avg, min, max, count, error }
+let searchTerm = '';
+let sortMode   = 'avg-desc';
+const charts   = {}; // id → Chart instance
+
+// ── Cache ──
+function getCached(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) { sessionStorage.removeItem(key); return null; }
+    return data;
+  } catch { return null; }
+}
+function setCache(key, data) {
+  try { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch {}
+}
+function clearAllCache() {
+  COIN_QUERIES.forEach(({ id }) => sessionStorage.removeItem(`ebay_${id}`));
+}
+
+// ── eBay fetch ──
+async function fetchCoin(coin, appId) {
+  const cacheKey = `ebay_${coin.id}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  const params = new URLSearchParams({
+    'OPERATION-NAME':        'findCompletedItems',
+    'SERVICE-VERSION':       '1.0.0',
+    'SECURITY-APPNAME':      appId,
+    'RESPONSE-DATA-FORMAT':  'JSON',
+    'keywords':              coin.query,
+    'itemFilter(0).name':    'SoldItemsOnly',
+    'itemFilter(0).value':   'true',
+    'sortOrder':             'EndTimeSoonest',
+    'paginationInput.entriesPerPage': '20',
+  });
+
+  const target = `https://svcs.ebay.com/services/search/FindingService/v1?${params}`;
+  const url    = `https://corsproxy.io/?${encodeURIComponent(target)}`;
+
+  const res  = await fetch(url, { signal: AbortSignal.timeout(12000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+
+  const ack   = json?.findCompletedItemsResponse?.[0]?.ack?.[0];
+  if (ack && ack !== 'Success' && ack !== 'Warning') {
+    const errMsg = json?.findCompletedItemsResponse?.[0]?.errorMessage?.[0]?.error?.[0]?.message?.[0] || ack;
+    throw new Error(errMsg);
+  }
+
+  const items  = json?.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.item ?? [];
+  const prices = items
+    .map(i => parseFloat(i.sellingStatus?.[0]?.currentPrice?.[0]?.__value__))
+    .filter(p => !isNaN(p) && p > 0.5 && p < 2000)
+    .slice(0, 20);
+
+  const result = {
+    prices,
+    avg:   prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
+    min:   prices.length ? Math.min(...prices) : null,
+    max:   prices.length ? Math.max(...prices) : null,
+    count: prices.length,
+    error: null,
+  };
+  setCache(cacheKey, result);
+  return result;
+}
+
+// ── Render helpers ──
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  return '$' + n.toFixed(2);
+}
+
+function makeSkeletonCard(coin) {
+  return `
+    <div class="coin-card loading" id="card-${coin.id}" data-id="${coin.id}">
+      <div class="card-header">
+        <span class="coin-name">${coin.label}</span>
+        <span class="listing-count">…</span>
+      </div>
+      <div class="skeleton skel-price"></div>
+      <div class="skeleton skel-label"></div>
+      <div class="skeleton skel-chart"></div>
+      <div class="skeleton skel-range"></div>
+    </div>`;
+}
+
+function fillCard(coin, data) {
+  const el = document.getElementById(`card-${coin.id}`);
+  if (!el) return;
+
+  if (data.error) {
+    el.classList.remove('loading');
+    el.classList.add('errored');
+    el.innerHTML = `
+      <div class="card-header">
+        <span class="coin-name">${coin.label}</span>
+      </div>
+      <div class="avg-price no-data">No data</div>
+      <div class="price-label" style="color:#ff6060">${data.error}</div>`;
+    return;
+  }
+
+  el.classList.remove('loading');
+  const noData = data.avg === null;
+
+  el.innerHTML = `
+    <div class="card-header">
+      <span class="coin-name">${coin.label}</span>
+      <span class="listing-count">${data.count} sold</span>
+    </div>
+    ${noData
+      ? `<div class="avg-price no-data">No listings</div>
+         <div class="price-label">No sold data found</div>`
+      : `<div class="avg-price">${fmt(data.avg)}</div>
+         <div class="price-label">Avg of ${data.count} sold listings</div>`
+    }
+    <div class="sparkline-wrap">
+      <canvas id="chart-${coin.id}"></canvas>
+    </div>
+    <div class="price-range">
+      <span class="range-low">Low ${fmt(data.min)}</span>
+      <span class="range-high">High ${fmt(data.max)}</span>
+    </div>`;
+
+  if (!noData && data.prices.length > 1) {
+    const canvas = document.getElementById(`chart-${coin.id}`);
+    if (charts[coin.id]) { charts[coin.id].destroy(); delete charts[coin.id]; }
+    charts[coin.id] = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: data.prices.map((_, i) => i),
+        datasets: [{
+          data: data.prices,
+          borderColor: '#ffcc00',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.35,
+          fill: true,
+          backgroundColor: 'rgba(255,180,0,0.07)',
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false },
+        },
+        animation: { duration: 600 },
+      },
+    });
+  }
+}
+
+// ── Grid render / filter ──
+function getFiltered() {
+  let list = [...COIN_QUERIES];
+  if (searchTerm) {
+    const q = searchTerm.toLowerCase();
+    list = list.filter(c => c.label.toLowerCase().includes(q));
+  }
+  return list;
+}
+
+function getSorted(list) {
+  return [...list].sort((a, b) => {
+    const ra = results[a.id], rb = results[b.id];
+    if (sortMode === 'name') return a.label.localeCompare(b.label);
+    if (sortMode === 'avg-desc') {
+      const va = ra?.avg ?? -1, vb = rb?.avg ?? -1;
+      return vb - va;
+    }
+    if (sortMode === 'avg-asc') {
+      const va = ra?.avg ?? Infinity, vb = rb?.avg ?? Infinity;
+      return va - vb;
+    }
+    if (sortMode === 'count-desc') {
+      const ca = ra?.count ?? 0, cb = rb?.count ?? 0;
+      return cb - ca;
+    }
+    return 0;
+  });
+}
+
+function renderGrid() {
+  const grid    = document.getElementById('coinsGrid');
+  const filtered = getFiltered();
+  const sorted   = getSorted(filtered);
+
+  document.getElementById('filterCount').textContent =
+    `${sorted.length} / ${COIN_QUERIES.length} coins`;
+
+  // Rebuild grid (only if cards don't exist yet, to preserve sparklines)
+  const existing = new Set([...grid.querySelectorAll('.coin-card')].map(el => el.dataset.id));
+  const needed   = new Set(sorted.map(c => c.id));
+
+  // Remove cards no longer visible
+  existing.forEach(id => {
+    if (!needed.has(id)) grid.querySelector(`#card-${id}`)?.remove();
+  });
+
+  // Add / reorder
+  sorted.forEach((coin, idx) => {
+    let el = document.getElementById(`card-${coin.id}`);
+    if (!el) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = makeSkeletonCard(coin);
+      el = tmp.firstElementChild;
+      grid.appendChild(el);
+    }
+    // Reorder via CSS order
+    el.style.order = idx;
+
+    // Fill if data ready
+    if (results[coin.id]) fillCard(coin, results[coin.id]);
+  });
+}
+
+// ── Load prices ──
+let loadTs = null;
+
+async function loadAll(force = false) {
+  if (!appId) {
+    document.getElementById('noKeyMessage').style.display = 'flex';
+    document.getElementById('coinsGrid').style.display    = 'none';
+    document.querySelector('.filter-bar').style.display   = 'none';
+    setStatus('idle', 'No API key set');
+    return;
+  }
+
+  document.getElementById('noKeyMessage').style.display = 'none';
+  document.getElementById('coinsGrid').style.display    = '';
+  document.querySelector('.filter-bar').style.display   = '';
+
+  if (force) clearAllCache();
+  results = {};
+  loadTs  = Date.now();
+  renderGrid();
+
+  setStatus('loading', `Fetching ${COIN_QUERIES.length} coins…`);
+  document.getElementById('refreshBtn').classList.add('spinning');
+
+  let done = 0;
+  const total = COIN_QUERIES.length;
+
+  await Promise.allSettled(COIN_QUERIES.map(async coin => {
+    try {
+      const data = await fetchCoin(coin, appId);
+      results[coin.id] = data;
+    } catch (err) {
+      results[coin.id] = { prices: [], avg: null, min: null, max: null, count: 0, error: err.message };
+    }
+    done++;
+    setStatus('loading', `Loaded ${done} / ${total}…`);
+    renderGrid(); // re-render as each finishes
+  }));
+
+  document.getElementById('refreshBtn').classList.remove('spinning');
+
+  const errors   = Object.values(results).filter(r => r.error).length;
+  const noData   = Object.values(results).filter(r => !r.error && r.avg === null).length;
+  const withData = total - errors - noData;
+
+  if (errors === total) {
+    setStatus('error', 'All requests failed — check your App ID');
+  } else {
+    setStatus('live', `${withData} with prices · ${noData} no listings · ${errors} errors`);
+  }
+
+  loadTs = Date.now();
+  updateLastUpdated();
+}
+
+function setStatus(type, msg) {
+  const dot  = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  dot.className  = 'status-dot' + (type === 'live' ? ' live' : type === 'error' ? ' error' : '');
+  text.textContent = msg;
+}
+
+function updateLastUpdated() {
+  if (!loadTs) return;
+  const secs = Math.round((Date.now() - loadTs) / 1000);
+  const el   = document.getElementById('lastUpdated');
+  if (secs < 60) el.textContent = `Updated ${secs}s ago`;
+  else el.textContent = `Updated ${Math.round(secs / 60)}m ago`;
+}
+setInterval(updateLastUpdated, 15000);
+
+// ── Modal ──
+function openModal() {
+  document.getElementById('appIdInput').value = appId;
+  document.getElementById('modalBackdrop').classList.add('open');
+  setTimeout(() => document.getElementById('appIdInput').focus(), 50);
+}
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+}
+
+document.getElementById('apiKeyBtn').addEventListener('click', openModal);
+document.getElementById('noKeyBtn').addEventListener('click', openModal);
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalCancel').addEventListener('click', closeModal);
+document.getElementById('modalBackdrop').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+document.getElementById('modalSave').addEventListener('click', () => {
+  const val = document.getElementById('appIdInput').value.trim();
+  if (!val) { showToast('Enter an App ID first', true); return; }
+  appId = val;
+  localStorage.setItem(STORAGE_KEY, appId);
+  closeModal();
+  showToast('API key saved');
+  loadAll(true);
+});
+
+document.getElementById('appIdInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('modalSave').click();
+});
+
+// ── Refresh ──
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  if (!appId) { openModal(); return; }
+  loadAll(true);
+});
+
+// ── Search / sort ──
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchTerm = e.target.value.trim();
+  renderGrid();
+});
+
+document.getElementById('sortSelect').addEventListener('change', e => {
+  sortMode = e.target.value;
+  renderGrid();
+});
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg, isErr = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = 'show' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+// ── Init ──
+if (!appId) {
+  openModal();
+  setStatus('idle', 'Waiting for API key');
+} else {
+  loadAll();
+}
+</script>
+</body>
+</html>
