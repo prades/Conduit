@@ -180,6 +180,75 @@
       box-shadow: 0 0 30px rgba(255,180,0,0.1);
     }
 
+    /* ── Archives ── */
+    .badge-archive { background: rgba(120,80,255,0.12); color: #b088ff; border: 1px solid #b088ff44; }
+
+    .archive-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 32px;
+      align-items: start;
+      background: rgba(8,14,30,0.9);
+      border: 1px solid rgba(120,80,255,0.28);
+      border-radius: 16px;
+      padding: 36px 40px;
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.2s;
+      box-shadow: 0 0 40px rgba(100,60,220,0.07);
+    }
+    .archive-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 80% 50%, rgba(100,60,220,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .archive-card:hover {
+      border-color: rgba(160,110,255,0.55);
+      box-shadow: 0 0 60px rgba(120,80,255,0.14);
+      transform: translateY(-2px);
+    }
+    .archive-card .card-arrow {
+      position: absolute; top: 20px; right: 24px;
+      font-size: 1.1rem; color: rgba(160,110,255,0.45);
+      transition: color 0.2s;
+    }
+    .archive-card:hover .card-arrow { color: #b088ff; }
+    .archive-left h3 {
+      font-size: 1.5rem; letter-spacing: 2px; color: #e0d0ff;
+      margin-bottom: 6px;
+    }
+    .archive-left .archive-subtitle {
+      font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase;
+      color: #7050cc; margin-bottom: 18px;
+    }
+    .archive-left p {
+      color: #8aafc8; line-height: 1.8; font-size: 0.9rem;
+      max-width: 560px; margin-bottom: 20px;
+    }
+    .archive-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 14px;
+      min-width: 140px;
+    }
+    .archive-stat {
+      text-align: right;
+    }
+    .archive-stat .stat-num {
+      font-size: 1.6rem; font-weight: bold;
+      background: linear-gradient(135deg, #8855ff, #b088ff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; line-height: 1;
+    }
+    .archive-stat .stat-label {
+      font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase;
+      color: #5a4a7a; margin-top: 2px;
+    }
+
     /* ── About strip ── */
     .about-strip {
       background: rgba(10,25,50,0.6);
@@ -322,23 +391,6 @@
         </div>
       </a>
 
-      <!-- Conduit -->
-      <a class="project-card" href="game.html">
-        <span class="card-arrow">↗</span>
-        <span class="card-badge badge-game">Game</span>
-        <h3>Conduit</h3>
-        <p>
-          A fast-paced top-down tube crawler with wave-based combat, elemental
-          powers, crafting, and AI-driven enemies. Pure canvas, zero dependencies.
-        </p>
-        <div class="card-tech">
-          <span class="tag">Canvas 2D</span>
-          <span class="tag">Vanilla JS</span>
-          <span class="tag">Wave Defense</span>
-          <span class="tag">RPG</span>
-        </div>
-      </a>
-
       <!-- Character Face -->
       <a class="project-card" href="face/index.html">
         <span class="card-arrow">↗</span>
@@ -404,6 +456,53 @@
       </a>
 
     </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Archives ── -->
+  <section class="section">
+    <h2 class="section-title">Archives</h2>
+
+    <a class="archive-card" href="game.html">
+      <span class="card-arrow">↗</span>
+      <div class="archive-left">
+        <span class="card-badge badge-archive" style="display:inline-block;margin-bottom:14px">Original</span>
+        <h3>Conduit</h3>
+        <div class="archive-subtitle">Top-Down Tube Crawler · Wave Defense</div>
+        <p>
+          The game that started it all. A full-featured top-down tube crawler with
+          wave-based combat, six elemental powers, a modular crafting system,
+          pylon-network base-building, squad followers with AI personalities,
+          predator classes, and a radial build menu. Built entirely on the Canvas 2D
+          API with zero dependencies — every system, shader, and UI drawn by hand.
+        </p>
+        <div class="card-tech">
+          <span class="tag">Canvas 2D</span>
+          <span class="tag">Vanilla JS</span>
+          <span class="tag">Wave Defense</span>
+          <span class="tag">AI Enemies</span>
+          <span class="tag">RPG Systems</span>
+          <span class="tag">Base Building</span>
+          <span class="tag">Crafting</span>
+          <span class="tag">Elemental Combat</span>
+        </div>
+      </div>
+      <div class="archive-right">
+        <div class="archive-stat">
+          <div class="stat-num">21</div>
+          <div class="stat-label">JS modules</div>
+        </div>
+        <div class="archive-stat">
+          <div class="stat-num">6</div>
+          <div class="stat-label">elements</div>
+        </div>
+        <div class="archive-stat">
+          <div class="stat-num">∞</div>
+          <div class="stat-label">waves</div>
+        </div>
+      </div>
+    </a>
   </section>
 
   <hr class="divider">
