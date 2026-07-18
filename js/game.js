@@ -13,8 +13,11 @@ function render() {
         }
     }
 
+    // ── TUTORIAL TICK ──
+    if (tutorialMode) tutorialTick();
+
     // ── PLAYER HEALTH DECAY ──
-    health=Math.max(0,health-cfg.healthDecay);
+    if (!tutorialMode) health=Math.max(0,health-cfg.healthDecay);
     const hpPct=health/100;
     hpBar.style.width=health+"%";
     hpBar.style.background=hpPct>0.6?"#0f8":hpPct>0.3?"#ff0":"#f22";
@@ -31,9 +34,10 @@ function render() {
     if (crystal.health<=0) { showGameOver(); return; }
 
     // ── WORLD GEN ──
-    if (player.x>lastGenX-10) generateSegment(lastGenX+1);
+    if (!tutorialMode && player.x>lastGenX-10) generateSegment(lastGenX+1);
 
     // ── DAY→NIGHT transition ──
+    if (tutorialMode) { /* suppress night in tutorial */ } else
     if (gameState.phase==="day") {
         dayTimer++;
         // All hostile zones must be cleared AND minimum day time elapsed
