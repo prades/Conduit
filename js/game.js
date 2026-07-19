@@ -262,6 +262,9 @@ function render() {
         }
     }
 
+    // ── TUTORIAL TICK ──
+    if (typeof tutorialMode !== 'undefined' && tutorialMode) tutorialTick();
+
     // Health no longer decays naturally — use health pads to restore HP
     const hpPct=health/100;
     // ── HUD updates — only write DOM when values actually change (avoids layout thrashing) ──

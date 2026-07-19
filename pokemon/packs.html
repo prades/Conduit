@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pack Ripper // DRAGONLORD</title>
+  <style>
+    :root {
+      --bg: #04000f;
+      --surface: #08001e;
+      --surface2: #0d0028;
+      --cyan: #00f5ff;
+      --gold: #ffd700;
+      --purple: #9933ff;
+      --green: #00ff88;
+      --red: #ff3355;
+      --text: #c8e0f4;
+      --dim: #2a4060;
+      --border: rgba(0,245,255,0.12);
+      --clr-common: #8fa8c0;
+      --clr-uncommon: #00cc66;
+      --clr-rare: #ffd700;
+      --clr-ultra: #cc66ff;
+      --clr-secret: #ff6633;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+      pointer-events: none;
+      z-index: 9000;
+    }
+
+    .screen { display: none; min-height: 100vh; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ── Header ── */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 22px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(2,0,18,0.9);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .app-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      color: var(--cyan);
+      text-shadow: 0 0 14px rgba(0,245,255,0.45);
+    }
+    .app-title em { color: var(--purple); font-style: normal; font-size: 0.62em; }
+    .header-nav { display: flex; gap: 14px; align-items: center; }
+    .nav-btn {
+      background: none; border: none;
+      font-family: 'Courier New', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      color: var(--dim);
+      cursor: pointer;
+      transition: color 0.2s;
+      text-decoration: none;
+      padding: 0;
+    }
+    .nav-btn:hover { color: var(--cyan); }
+
+    /* ── Spinner ── */
+    .spinner-wrap {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      flex: 1; gap: 14px; padding: 60px 0;
+    }
+    .spinner-ring {
+      width: 44px; height: 44px;
+      border: 2px solid var(--border);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-label { font-size: 0.6rem; letter-spacing: 0.2em; color: var(--dim); }
+
+    /* ── SET PICKER ── */
+    .picker-hero {
+      text-align: center;
+      padding: 36px 20px 20px;
+    }
+    .picker-hero h2 {
+      font-size: 1.3rem;
+      letter-spacing: 0.22em;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+    .picker-hero p { font-size: 0.65rem; color: var(--dim); letter-spacing: 0.1em; }
+
+    .search-wrap { padding: 0 22px 20px; max-width: 480px; margin: 0 auto; width: 100%; }
+    .search-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      padding: 9px 14px;
+      letter-spacing: 0.05em;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,245,255,0.12); }
+    .search-input::placeholder { color: var(--dim); }
+
+    .sets-scroll { flex: 1; overflow-y: auto; padding-bottom: 40px; }
+
+    .series-block { padding: 0 20px; margin-bottom: 28px; }
+    .series-label {
+      font-size: 0.58rem; letter-spacing: 0.22em;
+      color: var(--dim); text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 5px; margin-bottom: 12px;
+    }
+    .sets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 10px;
+    }
+    .set-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 14px 12px 12px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .set-card:hover {
+      border-color: rgba(0,245,255,0.35);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0,245,255,0.08);
+    }
+    .set-logo { width: 100%; height: 55px; object-fit: contain; filter: brightness(0.92); }
+    .set-logo-fallback {
+      width: 100%; height: 55px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; color: var(--dim); letter-spacing: 0.08em; text-align: center;
+    }
+    .set-name {
+      font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.05em; color: var(--text);
+      text-align: center; line-height: 1.3;
+    }
+    .set-meta { font-size: 0.56rem; color: var(--dim); letter-spacing: 0.08em; text-align: center; }
+    .rip-btn {
+      width: 100%;
+      background: rgba(0,245,255,0.05);
+      border: 1px solid rgba(0,245,255,0.2);
+      color: var(--cyan);
+      font-family: 'Courier New', monospace;
+      font-size: 0.62rem; font-weight: 700;
+      letter-spacing: 0.2em; padding: 7px 0;
+      cursor: pointer; transition: all 0.18s;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    }
+    .rip-btn:hover {
+      background: rgba(0,245,255,0.13);
+      border-color: var(--cyan);
+      box-shadow: 0 0 12px rgba(0,245,255,0.18);
+    }
+
+    /* ── REVEAL SCREEN ── */
+    .reveal-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 22px; border-bottom: 1px solid var(--border);
+      flex-wrap: wrap; gap: 10px;
+    }
+    .reveal-info { display: flex; flex-direction: column; gap: 3px; }
+    .reveal-set-name { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; }
+    .reveal-set-sub { font-size: 0.58rem; color: var(--dim); letter-spacing: 0.08em; }
+    .reveal-actions { display: flex; gap: 9px; }
+
+    .act-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--dim);
+      font-family: 'Courier New', monospace;
+      font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.16em; padding: 8px 15px;
+      cursor: pointer; transition: all 0.18s;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    }
+    .act-btn:hover { border-color: var(--text); color: var(--text); }
+    .act-btn.cyan {
+      border-color: rgba(0,245,255,0.3); color: var(--cyan);
+      background: rgba(0,245,255,0.04);
+    }
+    .act-btn.cyan:hover { background: rgba(0,245,255,0.11); border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,245,255,0.18); }
+    .act-btn.gold {
+      border-color: rgba(255,215,0,0.3); color: var(--gold);
+      background: rgba(255,215,0,0.04);
+    }
+    .act-btn.gold:hover { background: rgba(255,215,0,0.11); border-color: var(--gold); box-shadow: 0 0 10px rgba(255,215,0,0.18); }
+    .act-btn:disabled { opacity: 0.35; pointer-events: none; }
+
+    .value-strip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 22px; border-bottom: 1px solid var(--border);
+      background: rgba(0,0,10,0.5); font-size: 0.62rem; letter-spacing: 0.1em;
+    }
+    .value-label { color: var(--dim); }
+    .value-num { color: var(--gold); font-size: 0.9rem; font-weight: 700; }
+    .value-progress { color: var(--dim); margin-left: auto; }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+      gap: 12px; padding: 18px 22px; flex: 1;
+    }
+
+    /* ── Card slot + flip ── */
+    .card-slot { display: flex; flex-direction: column; gap: 4px; }
+
+    .flip-card {
+      perspective: 900px;
+      aspect-ratio: 2.5 / 3.5;
+      cursor: pointer;
+    }
+    .flip-inner {
+      position: relative; width: 100%; height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .flip-card.revealed .flip-inner { transform: rotateY(180deg); }
+
+    .flip-front, .flip-back {
+      position: absolute; inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 8px; overflow: hidden;
+    }
+
+    /* Face-down back */
+    .flip-front {
+      background: linear-gradient(145deg, #1a0050 0%, #050018 100%);
+      border: 1px solid rgba(153,51,255,0.25);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 6px;
+    }
+    .flip-front-hex {
+      font-size: 2.6rem; color: rgba(153,51,255,0.45);
+      text-shadow: 0 0 22px rgba(153,51,255,0.7);
+      line-height: 1;
+    }
+    .flip-front-label { font-size: 0.44rem; letter-spacing: 0.22em; color: rgba(153,51,255,0.35); }
+
+    /* Face-up front */
+    .flip-back {
+      transform: rotateY(180deg);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex; flex-direction: column;
+    }
+
+    .card-img-wrap { position: relative; flex: 1; overflow: hidden; }
+    .card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .card-img-none {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.55rem; color: var(--dim);
+    }
+    .rarity-glow {
+      position: absolute; inset: 0;
+      pointer-events: none; border-radius: 0;
+      opacity: 0; transition: opacity 0.3s 0.3s;
+    }
+    .flip-card.revealed .rarity-glow { opacity: 1; }
+
+    .tier-common    .rarity-glow { box-shadow: inset 0 0 18px rgba(143,168,192,0.15); }
+    .tier-uncommon  .rarity-glow { box-shadow: inset 0 0 22px rgba(0,204,102,0.22); }
+    .tier-rare      .rarity-glow { box-shadow: inset 0 0 28px rgba(255,215,0,0.28); }
+    .tier-ultra     .rarity-glow { box-shadow: inset 0 0 32px rgba(204,102,255,0.38); }
+    .tier-secret    .rarity-glow { box-shadow: inset 0 0 40px rgba(255,102,51,0.48); }
+
+    /* Reverse holo shimmer */
+    .flip-card.rh .flip-back::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(105deg, transparent 25%, rgba(0,245,255,0.1) 40%, rgba(255,100,255,0.09) 55%, transparent 70%);
+      background-size: 200% 200%;
+      animation: holoShimmer 3.5s ease-in-out infinite;
+      pointer-events: none; border-radius: 8px;
+    }
+    /* Secret shimmer */
+    .tier-secret .flip-back::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(105deg, transparent 20%, rgba(255,140,40,0.18) 38%, rgba(255,215,0,0.14) 52%, rgba(255,80,30,0.14) 66%, transparent 82%);
+      background-size: 200% 200%;
+      animation: holoShimmer 2.2s ease-in-out infinite;
+      pointer-events: none; border-radius: 8px;
+    }
+    @keyframes holoShimmer {
+      0%   { background-position: 200% 0%; }
+      100% { background-position: -200% 0%; }
+    }
+
+    .card-foot {
+      padding: 5px 7px 6px;
+      background: rgba(0,0,15,0.92);
+      border-top: 1px solid var(--border);
+    }
+    .card-name {
+      font-size: 0.58rem; font-weight: 700;
+      letter-spacing: 0.04em; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+    .card-foot-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+    .rarity-badge {
+      font-size: 0.46rem; letter-spacing: 0.08em;
+      font-weight: 700; padding: 1px 5px; border-radius: 2px;
+      white-space: nowrap;
+    }
+    .tier-common   .rarity-badge { background: rgba(143,168,192,0.12); color: var(--clr-common); }
+    .tier-uncommon .rarity-badge { background: rgba(0,204,102,0.1);    color: var(--clr-uncommon); }
+    .tier-rare     .rarity-badge { background: rgba(255,215,0,0.1);    color: var(--clr-rare); }
+    .tier-ultra    .rarity-badge { background: rgba(204,102,255,0.1);  color: var(--clr-ultra); }
+    .tier-secret   .rarity-badge { background: rgba(255,102,51,0.1);   color: var(--clr-secret); }
+
+    .card-price {
+      font-size: 0.58rem; font-weight: 700;
+    }
+    .tier-common   .card-price { color: var(--text); }
+    .tier-uncommon .card-price { color: var(--text); }
+    .tier-rare     .card-price { color: var(--clr-rare); }
+    .tier-ultra    .card-price { color: var(--clr-ultra); }
+    .tier-secret   .card-price { color: var(--clr-secret); }
+
+    .rh-tag {
+      font-size: 0.42rem; letter-spacing: 0.07em;
+      color: var(--cyan); border: 1px solid rgba(0,245,255,0.28);
+      padding: 1px 4px; border-radius: 2px; margin-left: 3px;
+    }
+
+    .slot-label {
+      font-size: 0.46rem; letter-spacing: 0.14em;
+      color: var(--dim); text-align: center; text-transform: uppercase;
+    }
+
+    /* Glow pulse for big pulls */
+    @keyframes ultraPulse {
+      0%,100% { box-shadow: 0 0 8px rgba(204,102,255,0.25); }
+      50%      { box-shadow: 0 0 28px rgba(204,102,255,0.65), 0 0 55px rgba(153,51,255,0.25); }
+    }
+    @keyframes secretPulse {
+      0%,100% { box-shadow: 0 0 12px rgba(255,102,51,0.3); }
+      50%      { box-shadow: 0 0 38px rgba(255,102,51,0.75), 0 0 70px rgba(255,200,0,0.2); }
+    }
+    .flip-card.revealed.tier-ultra  { animation: ultraPulse 2.2s ease-in-out infinite; }
+    .flip-card.revealed.tier-secret { animation: secretPulse 1.9s ease-in-out infinite; }
+
+    /* Reveal bounce */
+    @keyframes revealPop {
+      0%   { transform: scale(0.88); opacity: 0.5; }
+      60%  { transform: scale(1.05); }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+    .flip-card.popping { animation: revealPop 0.38s ease-out forwards; }
+
+    /* ── PULL SPLASH ── */
+    .pull-splash {
+      position: fixed; inset: 0; z-index: 8000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,8,0.93);
+      backdrop-filter: blur(6px);
+      cursor: pointer;
+    }
+    .splash-card-wrap {
+      max-width: 260px; border-radius: 12px; overflow: hidden;
+    }
+    .tier-ultra  .splash-card-wrap { box-shadow: 0 0 55px rgba(204,102,255,0.65), 0 0 110px rgba(153,51,255,0.2); }
+    .tier-secret .splash-card-wrap { box-shadow: 0 0 65px rgba(255,102,51,0.7),   0 0 120px rgba(255,200,0,0.25); }
+    .splash-card-wrap img { width: 100%; display: block; }
+    @keyframes splashIn {
+      0%   { transform: scale(0.25) rotate(-8deg); opacity: 0; }
+      70%  { transform: scale(1.06) rotate(1deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .splash-animate { animation: splashIn 0.52s cubic-bezier(0.15, 0, 0, 1.35) forwards; }
+    .splash-tier-label {
+      margin-top: 18px; font-size: 0.68rem;
+      letter-spacing: 0.32em; font-weight: 700;
+    }
+    @keyframes textBlink { 0%,100%{opacity:1} 50%{opacity:0.45} }
+    .splash-tier-label { animation: textBlink 1.6s ease-in-out infinite; }
+    .splash-name {
+      margin-top: 7px; font-size: 1.15rem;
+      font-weight: 700; letter-spacing: 0.1em; color: var(--gold);
+      text-shadow: 0 0 18px rgba(255,215,0,0.55);
+    }
+    .splash-rarity {
+      margin-top: 4px; font-size: 0.58rem;
+      letter-spacing: 0.2em; color: var(--dim);
+    }
+    .splash-dismiss {
+      margin-top: 22px; font-size: 0.52rem;
+      letter-spacing: 0.2em; color: var(--dim);
+    }
+
+    .error-note {
+      text-align: center; padding: 40px 20px;
+      font-size: 0.7rem; letter-spacing: 0.1em; color: var(--red);
+    }
+    .error-note span { display: block; color: var(--dim); font-size: 0.6rem; margin-top: 6px; }
+
+    @media (max-width: 580px) {
+      .cards-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
+      .sets-grid  { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+      .reveal-bar { padding: 10px 12px; }
+      .value-strip { padding: 8px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════ SCREEN: SET PICKER ════ -->
+<div id="screenPicker" class="screen active">
+  <div class="app-header">
+    <div class="app-title">⬡ PACK RIPPER <em>// DRAGONLORD</em></div>
+    <nav class="header-nav">
+      <a class="nav-btn" href="../Index.html">◂ HOME</a>
+      <a class="nav-btn" href="index.html">PRICE GUIDE</a>
+    </nav>
+  </div>
+
+  <div class="picker-hero">
+    <h2>CHOOSE YOUR SET</h2>
+    <p>Pick any set and rip open an 11-card pack — what will you pull?</p>
+  </div>
+
+  <div class="search-wrap">
+    <input id="setSearch" class="search-input" type="text" placeholder="Search sets or series…" autocomplete="off">
+  </div>
+
+  <div class="sets-scroll" id="setsScroll">
+    <div class="spinner-wrap" id="setsSpinner">
+      <div class="spinner-ring"></div>
+      <div class="spinner-label">LOADING SETS</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SCREEN: PACK REVEAL ════ -->
+<div id="screenReveal" class="screen">
+  <div class="app-header">
+    <div class="app-title">⬡ PACK RIPPER <em>// DRAGONLORD</em></div>
+    <nav class="header-nav">
+      <button id="btnBackToSets" class="nav-btn">◂ SETS</button>
+    </nav>
+  </div>
+
+  <div class="reveal-bar">
+    <div class="reveal-info">
+      <div class="reveal-set-name" id="revealSetName">—</div>
+      <div class="reveal-set-sub"  id="revealSetSub">—</div>
+    </div>
+    <div class="reveal-actions">
+      <button id="btnRipAnother" class="act-btn gold">⬡ RIP ANOTHER</button>
+      <button id="btnRevealAll"  class="act-btn cyan">▶ REVEAL ALL</button>
+    </div>
+  </div>
+
+  <div class="value-strip">
+    <span class="value-label">PACK VALUE</span>
+    <span class="value-num" id="packValue">$0.00</span>
+    <span class="value-progress" id="revealProgress">0 / 11 revealed</span>
+  </div>
+
+  <div class="cards-grid" id="cardsGrid"></div>
+</div>
+
+<!-- ════ PULL SPLASH ════ -->
+<div id="pullSplash" class="pull-splash" style="display:none">
+  <div class="splash-card-wrap splash-animate" id="splashWrap">
+    <img id="splashImg" src="" alt="">
+  </div>
+  <div class="splash-tier-label" id="splashLabel">ULTRA RARE PULL!</div>
+  <div class="splash-name"       id="splashName"></div>
+  <div class="splash-rarity"     id="splashRarity"></div>
+  <div class="splash-dismiss">// TAP ANYWHERE TO CONTINUE //</div>
+</div>
+
+<script>
+'use strict';
+
+/* ── Rarity tier map ── */
+const TIER_MAP = {
+  'Common':                    'common',
+  'Uncommon':                  'uncommon',
+  'Rare':                      'rare',
+  'Rare Holo':                 'rare',
+  'Double Rare':               'rare',
+  'Amazing Rare':              'rare',
+  'Radiant Rare':              'rare',
+  'Rare Shining':              'rare',
+  'LEGEND':                    'rare',
+  'ACE SPEC Rare':             'rare',
+  'Rare ACE':                  'rare',
+  'Rare Holo EX':              'ultra',
+  'Rare Holo GX':              'ultra',
+  'Rare Holo V':               'ultra',
+  'Rare Holo VMAX':            'ultra',
+  'Rare Holo VSTAR':           'ultra',
+  'Rare Ultra':                'ultra',
+  'Ultra Rare':                'ultra',
+  'Illustration Rare':         'ultra',
+  'Trainer Gallery Rare Holo': 'ultra',
+  'Rare Rainbow':              'secret',
+  'Rare Secret':               'secret',
+  'Special Illustration Rare': 'secret',
+  'Hyper Rare':                'secret',
+  'Shiny Rare':                'secret',
+  'Shiny Ultra Rare':          'secret',
+  'Secret Rare':               'secret',
+};
+const TIER_LABEL = { common:'Common', uncommon:'Uncommon', rare:'Rare', ultra:'Ultra Rare', secret:'Secret Rare' };
+const SLOT_LABELS = ['Common','Common','Common','Common','Common','Uncommon','Uncommon','Uncommon','Rare','Reverse Holo','Chase'];
+
+function getTier(rarity) { return TIER_MAP[rarity] || 'common'; }
+
+/* ── Price helpers ── */
+function getBestPrice(card) {
+  const p = card.tcgplayer?.prices;
+  if (!p) return null;
+  for (const k of ['holofoil','reverseHolofoil','normal','1stEditionHolofoil','1stEditionNormal','unlimitedHolofoil']) {
+    if (p[k]?.market != null) return p[k].market;
+  }
+  for (const k of Object.keys(p)) {
+    if (p[k]?.market != null) return p[k].market;
+  }
+  return null;
+}
+function fmtPrice(v) { return v == null ? '—' : '$' + Number(v).toFixed(2); }
+
+/* ── Random sample without replacement ── */
+function sample(arr, n) {
+  const pool = [...arr], out = [];
+  while (out.length < n && pool.length) {
+    const i = Math.floor(Math.random() * pool.length);
+    out.push(pool.splice(i, 1)[0]);
+  }
+  return out;
+}
+
+/* ── Pack builder ── */
+function buildPack(allCards) {
+  const by = { common:[], uncommon:[], rare:[], ultra:[], secret:[] };
+  for (const c of allCards) by[getTier(c.rarity)].push(c);
+
+  const commons   = by.common.length   ? by.common   : allCards;
+  const uncommons = by.uncommon.length ? by.uncommon : commons;
+  const rares     = by.rare.length     ? by.rare     : [...by.ultra, ...by.secret, ...uncommons];
+  const ultras    = by.ultra.length    ? by.ultra    : (by.secret.length ? by.secret : rares);
+  const secrets   = by.secret.length   ? by.secret   : ultras;
+
+  const used = new Set();
+  function pick(pool, n, rh = false) {
+    const avail = pool.filter(c => !used.has(c.id));
+    const chosen = sample(avail.length >= n ? avail : pool, n);
+    chosen.forEach(c => { used.add(c.id); c._rh = rh; });
+    return chosen;
+  }
+
+  const pack = [
+    ...pick(commons,   5),         // slots 1–5  : commons
+    ...pick(uncommons, 3),         // slots 6–8  : uncommons
+    ...pick(rares,     1),         // slot  9    : guaranteed rare
+    ...pick([...by.common, ...by.uncommon, ...by.rare].length
+      ? [...by.common, ...by.uncommon, ...by.rare] : commons, 1, true), // slot 10: reverse holo
+  ];
+
+  // Slot 11 — chase roll
+  const roll = Math.random();
+  if      (roll < 0.025 && by.secret.length) pack.push(...pick(secrets, 1));
+  else if (roll < 0.09  && by.ultra.length)  pack.push(...pick(ultras,  1));
+  else if (roll < 0.22)                       pack.push(...pick(rares,   1));
+  else                                        pack.push(...pick(commons, 1));
+
+  return pack;
+}
+
+/* ── API ── */
+const API_BASE = 'https://api.pokemontcg.io/v2';
+const setsCache = new Map();
+const cardsCache = new Map();
+
+async function loadSets() {
+  if (setsCache.has('all')) return setsCache.get('all');
+  const r = await fetch(`${API_BASE}/sets?orderBy=-releaseDate&pageSize=250`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const { data } = await r.json();
+  setsCache.set('all', data);
+  return data;
+}
+
+async function loadSetCards(setId) {
+  if (cardsCache.has(setId)) return cardsCache.get(setId);
+  let all = [], page = 1;
+  while (true) {
+    const r = await fetch(`${API_BASE}/cards?q=set.id:${setId}&pageSize=250&page=${page}`);
+    if (!r.ok) break;
+    const { data, totalCount } = await r.json();
+    all.push(...data);
+    if (all.length >= (totalCount || 0) || data.length < 250) break;
+    page++;
+  }
+  cardsCache.set(setId, all);
+  return all;
+}
+
+/* ── State ── */
+let allSets = [];
+let currentSet = null;
+let currentPack = [];
+let revealedCount = 0;
+let packTotal = 0;
+let revealTimer = null;
+
+/* ── DOM refs ── */
+const screenPicker  = document.getElementById('screenPicker');
+const screenReveal  = document.getElementById('screenReveal');
+const setsScroll    = document.getElementById('setsScroll');
+const setsSpinner   = document.getElementById('setsSpinner');
+const setSearch     = document.getElementById('setSearch');
+const cardsGrid     = document.getElementById('cardsGrid');
+const revealSetName = document.getElementById('revealSetName');
+const revealSetSub  = document.getElementById('revealSetSub');
+const packValueEl   = document.getElementById('packValue');
+const revealProgEl  = document.getElementById('revealProgress');
+const btnRevealAll  = document.getElementById('btnRevealAll');
+const btnRipAnother = document.getElementById('btnRipAnother');
+const btnBackToSets = document.getElementById('btnBackToSets');
+const pullSplash    = document.getElementById('pullSplash');
+
+/* ── Screen switching ── */
+function show(name) {
+  screenPicker.classList.toggle('active', name === 'picker');
+  screenReveal.classList.toggle('active', name === 'reveal');
+}
+
+/* ── Render set list ── */
+function renderSets(sets) {
+  if (!sets.length) {
+    setsScroll.innerHTML = '<div class="error-note">NO SETS FOUND</div>';
+    return;
+  }
+  const bySeasons = new Map();
+  for (const s of sets) {
+    const key = s.series || 'Other';
+    if (!bySeasons.has(key)) bySeasons.set(key, []);
+    bySeasons.get(key).push(s);
+  }
+  let html = '';
+  for (const [series, list] of bySeasons) {
+    html += `<div class="series-block"><div class="series-label">${series}</div><div class="sets-grid">`;
+    for (const s of list) {
+      const year = s.releaseDate?.split('/')[0] || '—';
+      const logo = s.images?.logo
+        ? `<img class="set-logo" src="${s.images.logo}" alt="${s.name}" loading="lazy" onerror="this.style.display='none'">`
+        : `<div class="set-logo-fallback">${s.name}</div>`;
+      html += `<div class="set-card">
+        ${logo}
+        <div class="set-name">${s.name}</div>
+        <div class="set-meta">${year} · ${s.total || '?'} cards</div>
+        <button class="rip-btn" data-sid="${s.id}">⬡ RIP A PACK</button>
+      </div>`;
+    }
+    html += '</div></div>';
+  }
+  setsScroll.innerHTML = html;
+}
+
+/* ── Open pack ── */
+async function openPack(set) {
+  currentSet = set;
+  show('reveal');
+  revealSetName.textContent = set.name;
+  revealSetSub.textContent  = `${set.series} · ${set.releaseDate?.split('/')[0] || '—'} · ${set.total || '?'} cards`;
+  packValueEl.textContent   = '$0.00';
+  revealProgEl.textContent  = '0 / 11 revealed';
+  btnRevealAll.disabled     = false;
+  clearInterval(revealTimer);
+
+  cardsGrid.innerHTML = `<div class="spinner-wrap" style="grid-column:1/-1">
+    <div class="spinner-ring"></div><div class="spinner-label">OPENING PACK…</div>
+  </div>`;
+
+  try {
+    const cards = await loadSetCards(set.id);
+    currentPack   = buildPack(cards);
+    revealedCount = 0;
+    packTotal     = 0;
+    renderPack(currentPack);
+  } catch (e) {
+    cardsGrid.innerHTML = `<div class="error-note" style="grid-column:1/-1">FAILED TO LOAD CARDS<span>${e.message}</span></div>`;
+  }
+}
+
+/* ── Render pack ── */
+function renderPack(pack) {
+  cardsGrid.innerHTML = '';
+  pack.forEach((card, i) => {
+    const tier  = getTier(card.rarity);
+    const isRH  = !!card._rh;
+    const price = getBestPrice(card);
+
+    const slot = document.createElement('div');
+    slot.className = 'card-slot';
+
+    const flip = document.createElement('div');
+    flip.className = `flip-card tier-${tier}${isRH ? ' rh' : ''}`;
+    flip.dataset.idx = i;
+
+    const imgHTML = card.images?.small
+      ? `<img class="card-img" src="${card.images.small}" alt="${card.name}" loading="lazy">`
+      : `<div class="card-img-none">NO IMAGE</div>`;
+
+    const rhTag = isRH ? '<span class="rh-tag">RH</span>' : '';
+
+    flip.innerHTML = `
+      <div class="flip-inner">
+        <div class="flip-front">
+          <div class="flip-front-hex">⬡</div>
+          <div class="flip-front-label">DRAGONLORD</div>
+        </div>
+        <div class="flip-back">
+          <div class="card-img-wrap">
+            ${imgHTML}
+            <div class="rarity-glow"></div>
+          </div>
+          <div class="card-foot">
+            <div class="card-name">${card.name}</div>
+            <div class="card-foot-row">
+              <span class="rarity-badge">${TIER_LABEL[tier]}${rhTag}</span>
+              <span class="card-price">${fmtPrice(price)}</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    flip.addEventListener('click', () => revealCard(flip, i));
+
+    const label = document.createElement('div');
+    label.className = 'slot-label';
+    label.textContent = SLOT_LABELS[i] || '';
+
+    slot.appendChild(flip);
+    slot.appendChild(label);
+    cardsGrid.appendChild(slot);
+  });
+}
+
+/* ── Reveal single card ── */
+function revealCard(el, idx) {
+  if (el.classList.contains('revealed')) return;
+  el.classList.add('revealed', 'popping');
+  setTimeout(() => el.classList.remove('popping'), 420);
+
+  revealedCount++;
+  const card  = currentPack[idx];
+  const tier  = getTier(card.rarity);
+  const price = getBestPrice(card);
+  if (price != null) packTotal += price;
+
+  packValueEl.textContent  = fmtPrice(packTotal);
+  revealProgEl.textContent = `${revealedCount} / 11 revealed`;
+
+  if (tier === 'ultra' || tier === 'secret') {
+    setTimeout(() => showSplash(card, tier, el), 420);
+  }
+}
+
+/* ── Reveal all ── */
+function revealAll() {
+  btnRevealAll.disabled = true;
+  clearInterval(revealTimer);
+  const queue = [...cardsGrid.querySelectorAll('.flip-card:not(.revealed)')];
+  let i = 0;
+  revealTimer = setInterval(() => {
+    if (i >= queue.length) { clearInterval(revealTimer); return; }
+    const el  = queue[i];
+    const idx = parseInt(el.dataset.idx, 10);
+    revealCard(el, idx);
+    i++;
+  }, 240);
+}
+
+/* ── Pull splash ── */
+function showSplash(card, tier, sourceEl) {
+  const wrap   = document.getElementById('splashWrap');
+  const img    = document.getElementById('splashImg');
+  const label  = document.getElementById('splashLabel');
+  const nameEl = document.getElementById('splashName');
+  const rarEl  = document.getElementById('splashRarity');
+
+  img.src       = card.images?.large || card.images?.small || '';
+  nameEl.textContent = card.name;
+  rarEl.textContent  = card.rarity || tier.toUpperCase();
+
+  if (tier === 'secret') {
+    label.textContent = '★ SECRET RARE PULL! ★';
+    label.style.color = 'var(--clr-secret)';
+    label.style.textShadow = '0 0 20px var(--clr-secret)';
+    wrap.style.boxShadow = '0 0 65px rgba(255,102,51,0.7), 0 0 120px rgba(255,200,0,0.25)';
+  } else {
+    label.textContent = '★ ULTRA RARE PULL! ★';
+    label.style.color = 'var(--clr-ultra)';
+    label.style.textShadow = '0 0 20px var(--clr-ultra)';
+    wrap.style.boxShadow = '0 0 55px rgba(204,102,255,0.65), 0 0 110px rgba(153,51,255,0.2)';
+  }
+
+  // Re-trigger animation
+  wrap.classList.remove('splash-animate');
+  void wrap.offsetWidth;
+  wrap.classList.add('splash-animate');
+
+  pullSplash.style.display = 'flex';
+}
+
+/* ── Events ── */
+pullSplash.addEventListener('click', () => { pullSplash.style.display = 'none'; });
+btnRevealAll.addEventListener('click', revealAll);
+btnRipAnother.addEventListener('click', () => { if (currentSet) openPack(currentSet); });
+btnBackToSets.addEventListener('click', () => { clearInterval(revealTimer); show('picker'); });
+
+setSearch.addEventListener('input', () => {
+  const q = setSearch.value.toLowerCase().trim();
+  const filtered = q
+    ? allSets.filter(s => s.name.toLowerCase().includes(q) || (s.series||'').toLowerCase().includes(q))
+    : allSets;
+  renderSets(filtered);
+});
+
+setsScroll.addEventListener('click', e => {
+  const btn = e.target.closest('[data-sid]');
+  if (!btn) return;
+  const set = allSets.find(s => s.id === btn.dataset.sid);
+  if (set) openPack(set);
+});
+
+/* ── Init ── */
+(async () => {
+  try {
+    allSets = await loadSets();
+    setsSpinner.remove();
+    renderSets(allSets);
+  } catch (e) {
+    setsScroll.innerHTML = `<div class="error-note">FAILED TO LOAD SETS<span>${e.message}</span></div>`;
+  }
+})();
+</script>
+</body>
+</html>
