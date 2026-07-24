@@ -4,7 +4,7 @@
 let tutorialMode  = false;
 let tutorialStep  = 0;
 let tutorialTimer = 0;
-let tutEnemyKilled = false; // tracks if the circle-kill step is done
+let tutEnemyKilled = false;
 
 const TUTS = [
     {
@@ -33,7 +33,7 @@ const TUTS = [
     },
     {
         title: 'READY FOR BATTLE',
-        body:  'You know the basics. The Crystal must survive the night. Good luck — tap below to begin.',
+        body:  'You know the basics. The Crystal must survive the night. Good luck!',
         icon:  '★',
         check: () => false,
     },
@@ -46,99 +46,7 @@ function startTutorial() {
     tutorialTimer  = 0;
     tutEnemyKilled = false;
 
-    // Full reset
-    world = []; actors = []; followers = [];
-    ELEMENTS.forEach(el => { followerByElement[el.id] = []; });
-    projectiles = []; fragments = []; smoke = []; shards = [];
-    if (typeof elementEffects     !== 'undefined') elementEffects     = [];
-    if (typeof floatingTexts      !== 'undefined') floatingTexts      = [];
-    if (typeof followerProjectiles!== 'undefined') followerProjectiles= [];
-    if (typeof environmentalHazards!=='undefined') environmentalHazards=[];
-    pendingPillarDestruction = []; respawnQueue = [];
-    frame = 0; shake = 0; lastGenX = 0;
-    latchedPillar = null; activePredator = null; predatorRespawnTimer = 0;
-    if (typeof zonePredators    !== 'undefined') { zonePredators = {}; }
-    if (typeof zoneRespawnTimers!== 'undefined') { zoneRespawnTimers = {}; }
-    activeDayZones = 3; exploredZones = new Set();
-    boughtItems.clear();
-    nightKillCount = 0; nightEnemiesTarget = 0;
-    if (typeof nightPredatorsRemaining !== 'undefined') nightPredatorsRemaining = 0;
-
-    shardCount = getShards();
-
-    crystal = { x: 0, y: 2, health: 300, maxHealth: 300, radius: 0.8 };
-    player  = {
-        x: 2, y: 1, visualX: 2, visualY: 1, targetX: 2, targetY: 1,
-        rotY: Math.PI * 0.75, baseRot: Math.PI * 0.75,
-        angryTimer: 0, selectedElement: 'fire', siphonHold: 0
-    };
-    gameState = { phase: 'day', nightNumber: 1, totalWavesSurvived: 0, running: true };
-    dayStats  = { redSpawned: 0, redConverted: 0 };
-    unlockedElements = new Set(['fire', 'electric']);
-
-    // Build a short fixed map — 18 segments
-    for (let i = 0; i < 18; i++) tutBuildSegment(i);
-
-    // Step 1 target: a neutral recruitable NPC at x=5
-    actors.push(makeTutNPC(5, 3, true));
-
-    // Step 3 target: a red bug enemy at x=14 that followers can kill
-    actors.push(makeTutNPC(14, 2, false));
-
-    document.getElementById('overlay').classList.remove('active');
     showTutorialUI();
-    gameState.running = true;
-    requestAnimationFrame(render);
-}
-
-/* ── Build tutorial NPC ── */
-function makeTutNPC(x, y, isRecruit) {
-    return {
-        type: 'virus', element: 'fire',
-        x, y,
-        team: 'red', convertFlash: 0,
-        isNeutralRecruit: isRecruit,
-        health: isRecruit ? 15 : 10,
-        maxHealth: isRecruit ? 15 : 10,
-        moveSpeed: 0.006, power: 1,
-        stats: null, personality: null, role: null,
-        currentResonance: 0, currentWill: 10,
-        walkCycle: 0, moveCooldown: 0,
-        stance: 'wander', isFollower: false, isHealing: false,
-        hitFlash: 0, spawnProtection: isRecruit ? 999 : 60,
-        dead: false, convertFlash: 0,
-        isTutorialEnemy: !isRecruit,
-    };
-}
-
-/* ── Fixed map: floor tiles + one wall_panel at x=9 ── */
-function tutBuildSegment(startX) {
-    for (let y = -2; y <= 5; y++) {
-        const type = (y === -2) ? 'wall_back' : (y === 5) ? 'wall_front' : 'floor';
-        const tile = {
-            x: startX, y, type,
-            h: (type === 'wall_back') ? 34 : 45,
-            pillar: false, pillarTeam: 'red', pillarCol: '#f22',
-            destroyed: false, health: 20, maxHealth: 20,
-            converting: false, pendingDestroy: false,
-            upgraded: false, pulseTimer: 0,
-            reconstructing: false, reconstructProgress: 0, workers: [],
-            // capturable node fields
-            nodeType: null, capturable: false, captureProgress: 0,
-            panelActivated: false, siphonProgress: 0,
-        };
-
-        // Place a wall_panel at x=9 on the wall_back tile
-        if (startX === 9 && type === 'wall_back') {
-            tile.nodeType       = 'wall_panel';
-            tile.capturable     = false;
-            tile.panelActivated = false;
-            tile.siphonProgress = 0;
-        }
-
-        world.push(tile);
-    }
-    lastGenX = startX;
 }
 
 /* ── Tutorial tick ── */
@@ -146,9 +54,9 @@ function tutorialTick() {
     if (!tutorialMode) return;
     tutorialTimer++;
 
-    // Track if the tutorial enemy bug gets killed
-    if (!tutEnemyKilled) {
-        tutEnemyKilled = actors.some(a => a.isTutorialEnemy && a.dead);
+    // Track if any enemy gets killed while the circle-kill step is active
+    if (!tutEnemyKilled && tutorialStep === 3) {
+        tutEnemyKilled = actors.some(a => a.dead && !a.isFollower && a.team === 'red');
     }
 
     const step = TUTS[tutorialStep];
@@ -190,7 +98,7 @@ function showTutorialUI() {
 
         const exitBtn = document.createElement('button');
         exitBtn.id = 'tutExitBtn';
-        exitBtn.textContent = 'START GAME';
+        exitBtn.textContent = 'CLOSE TUTORIAL';
         Object.assign(exitBtn.style, {
             display:       'none',
             marginTop:     '12px',
@@ -234,10 +142,9 @@ function updateTutorialUI() {
     if (exitBtn) exitBtn.style.display = tutorialStep >= TUTS.length - 1 ? 'inline-block' : 'none';
 }
 
-/* ── Exit tutorial → fresh game ── */
+/* ── Exit tutorial ── */
 function exitTutorial() {
     tutorialMode = false;
     const panel = document.getElementById('tutPanel');
     if (panel) panel.style.display = 'none';
-    restartGame();
 }
