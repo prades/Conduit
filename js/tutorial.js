@@ -4,7 +4,8 @@
 let tutorialMode  = false;
 let tutorialStep  = 0;
 let tutorialTimer = 0;
-let tutEnemyKilled = false;
+let tutEnemyKilled  = false;
+let tutModeSwitched = false;
 
 const TUTS = [
     {
@@ -27,9 +28,21 @@ const TUTS = [
     },
     {
         title: 'CIRCLE TO KILL',
-        body:  'An enemy bug is ahead. Draw a circle around it with your finger. Your follower will attack!',
+        body:  'An enemy bug is nearby. Draw a circle around it with your finger. Your followers will attack!',
         icon:  '◎',
         check: () => tutEnemyKilled,
+    },
+    {
+        title: 'UPGRADE A PYLON',
+        body:  'Tap a pylon to open the command menu, then select UPGRADE. Pick an element — a follower will sacrifice themselves to power it up as a turret.',
+        icon:  '△',
+        check: () => world.some(t => t.pillar && (t.attackMode || t.waveMode)),
+    },
+    {
+        title: 'SWITCH PYLON MODE',
+        body:  'Tap the active pylon and select SWITCH MODE. Toggle between ATTACK MODE (fires at enemies) and WAVE MODE (links with nearby pylons to boost your network).',
+        icon:  '⇌',
+        check: () => tutModeSwitched,
     },
     {
         title: 'READY FOR BATTLE',
@@ -41,10 +54,11 @@ const TUTS = [
 
 /* ── Start tutorial ── */
 function startTutorial() {
-    tutorialMode   = true;
-    tutorialStep   = 0;
-    tutorialTimer  = 0;
-    tutEnemyKilled = false;
+    tutorialMode    = true;
+    tutorialStep    = 0;
+    tutorialTimer   = 0;
+    tutEnemyKilled  = false;
+    tutModeSwitched = false;
 
     showTutorialUI();
 }
@@ -54,9 +68,14 @@ function tutorialTick() {
     if (!tutorialMode) return;
     tutorialTimer++;
 
-    // Track if any enemy gets killed while the circle-kill step is active
+    // Track enemy kill during circle-kill step (step index 3)
     if (!tutEnemyKilled && tutorialStep === 3) {
         tutEnemyKilled = actors.some(a => a.dead && !a.isFollower && a.team === 'red');
+    }
+    // Track pylon mode switch during switch-mode step (step index 5)
+    // A pylon that has waveMode means the player toggled away from the default attackMode
+    if (!tutModeSwitched && tutorialStep === 5) {
+        tutModeSwitched = world.some(t => t.pillar && t.waveMode);
     }
 
     const step = TUTS[tutorialStep];
