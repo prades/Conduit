@@ -131,8 +131,14 @@ select{appearance:none;-webkit-appearance:none;}
 /* ── DRUM ── */
 #drum{border-top:1px solid var(--border);background:var(--panel);flex-shrink:0;}
 #dhdr{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
-#dtitle{font-size:10px;letter-spacing:3px;color:var(--dim);margin-right:4px;}
+.lane{padding:9px 14px;border-radius:5px;font-size:10px;letter-spacing:2px;cursor:pointer;
+  border:1px solid var(--border);color:var(--dim);transition:.12s;min-height:38px;display:flex;align-items:center;}
+.lane.on{background:var(--cyan);color:#000;border-color:var(--cyan);}
 #gsel{width:150px;margin:0;padding:8px 10px;min-height:38px;font-size:11px;}
+.sbtn.mel{height:24px;}
+.mel-pk.on{background:var(--cyan)!important;border-color:var(--cyan)!important;}
+.mel-sy.on{background:var(--purple)!important;border-color:var(--purple)!important;}
+.mel-b8.on{background:var(--red)!important;border-color:var(--red)!important;}
 .pbtn{padding:9px 14px;background:var(--panel2);border:1px solid var(--border);
   color:var(--dim);font-family:inherit;font-size:10px;letter-spacing:1px;cursor:pointer;
   border-radius:5px;transition:.12s;min-height:38px;}
@@ -466,18 +472,31 @@ select{appearance:none;-webkit-appearance:none;}
 
 </div><!-- /main -->
 
-<!-- DRUM MACHINE -->
+<!-- SEQUENCER: DRUMS + MELODY LANES -->
 <div id="drum">
   <div id="dhdr">
-    <span id="dtitle">DRUMS</span>
-    <select class="psel" id="gsel" onchange="loadGenre(0)"></select>
-    <button class="pbtn on" id="var-0" onclick="loadGenre(0)">A</button>
-    <button class="pbtn" id="var-1" onclick="loadGenre(1)">B</button>
-    <button class="pbtn" id="var-2" onclick="loadGenre(2)">C</button>
-    <button class="pbtn danger" onclick="clearDrum()">CLEAR</button>
-    <span id="gbpm"></span>
+    <span class="lane on" id="lane-dr" onclick="setLane('dr')">DRUMS</span>
+    <span class="lane" id="lane-pk" onclick="setLane('pk')">POKÉ</span>
+    <span class="lane" id="lane-sy" onclick="setLane('sy')">SYNTH</span>
+    <span class="lane" id="lane-b8" onclick="setLane('b8')">808</span>
+    <span id="drctl" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="pbtn on" id="kit-analog" onclick="setKit('analog')">ANALOG</button>
+      <button class="pbtn" id="kit-chip" onclick="setKit('chip')">CHIP</button>
+      <button class="pbtn" id="kit-bit64" onclick="setKit('bit64')">64BIT</button>
+      <select class="psel" id="gsel" onchange="loadGenre(0)"></select>
+      <button class="pbtn on" id="var-0" onclick="loadGenre(0)">A</button>
+      <button class="pbtn" id="var-1" onclick="loadGenre(1)">B</button>
+      <button class="pbtn" id="var-2" onclick="loadGenre(2)">C</button>
+      <button class="pbtn danger" onclick="clearDrum()">CLEAR</button>
+      <span id="gbpm"></span>
+    </span>
+    <span id="melctl" style="display:none;gap:8px;align-items:center;">
+      <span style="font-size:9px;color:var(--dim);letter-spacing:1px">TAP CELLS — PLAYS WITH THE BEAT</span>
+      <button class="pbtn danger" onclick="clearMel()">CLEAR</button>
+    </span>
   </div>
   <div id="dgrid"></div>
+  <div id="mgrid" style="display:none;padding:8px 12px;"></div>
 </div>
 
 <script>
@@ -784,17 +803,22 @@ async function loadPokemon() {
   }
 }
 
-function playSample(midi) {
+function playSampleAt(midi, t, dur) {
   if (!pkBuf) return;
-  resume();
+  const d = dur || sDecay;
   const src = actx.createBufferSource();
   src.buffer = pkBuf;
   src.playbackRate.value = Math.pow(2, (midi - 60 + tuneOff) / 12);
   const eg = actx.createGain();
-  eg.gain.setValueAtTime(sVol, actx.currentTime);
-  eg.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + sDecay);
+  eg.gain.setValueAtTime(sVol, t);
+  eg.gain.exponentialRampToValueAtTime(0.001, t + d);
   src.connect(eg); eg.connect(fxBus);
-  src.start(); src.stop(actx.currentTime + sDecay + 0.05);
+  src.start(t); src.stop(t + d + 0.05);
+}
+
+function playSample(midi) {
+  resume();
+  playSampleAt(midi, actx.currentTime);
 }
 
 // ── SYNTH ──────────────────────────────────────────────
@@ -905,9 +929,9 @@ b8Shaper.connect(b8Filter); b8Filter.connect(fxBus);
 
 let b8cur = null, b8lastF = null;
 
-function play808(midi) {
+function play808(midi, when) {
   resume();
-  const now   = actx.currentTime;
+  const now   = when || actx.currentTime;
   const f     = mf(midi - 24);
   const decay = +document.getElementById('b8decay').value;
   const glide = +document.getElementById('b8glide').value;
@@ -1045,6 +1069,7 @@ const TRACKS = [
   {n:'KICK',  c:'#ff6644'}, {n:'SNARE', c:'#ffaa44'},
   {n:'HI-HAT',c:'#44ddff'}, {n:'CLAP',  c:'#ff44aa'},
   {n:'OPEN',  c:'#44ff88'}, {n:'PERC',  c:'#aa88ff'},
+  {n:'POKE',  c:'#ffee44'},
 ];
 const STEPS = 16;
 let pat = TRACKS.map(()=>new Array(STEPS).fill(0));
@@ -1128,6 +1153,7 @@ const GENRES = {
 function loadGenre(variant) {
   const g = GENRES[document.getElementById('gsel').value];
   pat = g.pats[variant].map(row => row.split('').map(Number));
+  while (pat.length < TRACKS.length) pat.push(new Array(STEPS).fill(0));
   buildGrid();
   for (let i = 0; i < 3; i++)
     document.getElementById('var-'+i).classList.toggle('on', i===variant);
@@ -1160,19 +1186,87 @@ function clearDrum() {
   for (let i = 0; i < 3; i++) document.getElementById('var-'+i).classList.remove('on');
 }
 
-// ── DRUM SYNTHESIS (routed through the FX rack) ────────
+// ── MELODY LANES — pattern maker for every instrument ──
+// 8 rows of C minor pentatonic (top = highest), 16 steps.
+const MEL_ROWS = [
+  {l:'F5', o:17},{l:'D#5',o:15},{l:'C5', o:12},{l:'A#4',o:10},
+  {l:'G4', o:7 },{l:'F4', o:5 },{l:'D#4',o:3 },{l:'C4', o:0 },
+];
+const mkMel = () => MEL_ROWS.map(()=>new Array(STEPS).fill(0));
+const melPat = { pk:mkMel(), sy:mkMel(), b8:mkMel() };
+let lane = 'dr';
+
+function setLane(l) {
+  lane = l;
+  ['dr','pk','sy','b8'].forEach(id =>
+    document.getElementById('lane-'+id).classList.toggle('on', id===l));
+  const isDrums = l === 'dr';
+  document.getElementById('dgrid').style.display  = isDrums ? 'block' : 'none';
+  document.getElementById('drctl').style.display  = isDrums ? 'flex'  : 'none';
+  document.getElementById('mgrid').style.display  = isDrums ? 'none'  : 'block';
+  document.getElementById('melctl').style.display = isDrums ? 'none'  : 'flex';
+  if (!isDrums) buildMelGrid(l);
+}
+
+function buildMelGrid(l) {
+  const g = document.getElementById('mgrid'); g.innerHTML = '';
+  MEL_ROWS.forEach((row, ri) => {
+    const r   = document.createElement('div'); r.className = 'drow';
+    const lbl = document.createElement('div'); lbl.className = 'dlabel';
+    lbl.textContent = row.l;
+    const steps = document.createElement('div'); steps.className = 'dsteps';
+    for (let si = 0; si < STEPS; si++) {
+      const b = document.createElement('div');
+      b.className = 'sbtn mel mel-'+l + (melPat[l][ri][si]?' on':'') + (si%4===0&&si>0?' beat1':'');
+      b.dataset.s = si;
+      b.addEventListener('pointerdown', ()=>{
+        melPat[l][ri][si] ^= 1;
+        b.classList.toggle('on', melPat[l][ri][si]===1);
+        if (melPat[l][ri][si]) triggerMel(l, 60 + row.o, actx.currentTime); // audition on tap
+      });
+      steps.appendChild(b);
+    }
+    r.append(lbl, steps); g.appendChild(r);
+  });
+}
+
+function clearMel() {
+  if (lane === 'dr') return;
+  melPat[lane] = mkMel();
+  buildMelGrid(lane);
+}
+
+function triggerMel(l, midi, t) {
+  if (l === 'pk') { playSampleAt(midi, t); return; }
+  if (l === 'b8') { play808(midi, t); return; }
+  // synth: envelope code is relative to "now", so fire it on a timer
+  const wait = Math.max(0, (t - actx.currentTime)*1000 - 2);
+  const gate = step16()*1000*0.85;
+  setTimeout(()=>{ playSynth(midi); setTimeout(()=>stopSynth(midi), gate); }, wait);
+}
+
+// ── DRUM SYNTHESIS — 3 KITS (routed through the FX rack) ──
 function noise(dur) {
   const n = Math.ceil(actx.sampleRate*dur), b = actx.createBuffer(1,n,actx.sampleRate);
   const d = b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return b;
 }
+// Sample-and-hold noise: holds each random value for `hold` samples.
+// Sounds like a low-sample-rate console (NES noise channel / N64 PCM).
+function lofiNoise(dur, hold) {
+  const n = Math.ceil(actx.sampleRate*dur), b = actx.createBuffer(1,n,actx.sampleRate);
+  const d = b.getChannelData(0);
+  let v = 0;
+  for (let i=0;i<n;i++) { if (i%hold===0) v = Math.random()*2-1; d[i]=v; }
+  return b;
+}
 
+/* — ANALOG KIT — */
 function kick(t) {
   const o=actx.createOscillator(), g=actx.createGain();
   o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(0.01,t+0.45);
   g.gain.setValueAtTime(1,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.45);
   o.connect(g); g.connect(fxBus); o.start(t); o.stop(t+0.45);
 }
-
 function snare(t) {
   const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
   s.buffer=noise(0.2); f.type='bandpass'; f.frequency.value=900; f.Q.value=0.9;
@@ -1182,7 +1276,6 @@ function snare(t) {
   o.frequency.value=185; og.gain.setValueAtTime(0.5,t); og.gain.exponentialRampToValueAtTime(0.001,t+0.09);
   o.connect(og); og.connect(fxBus); o.start(t); o.stop(t+0.09);
 }
-
 function hihat(t, open) {
   const dur=open?0.4:0.065;
   const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
@@ -1190,7 +1283,6 @@ function hihat(t, open) {
   g.gain.setValueAtTime(0.22,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
   s.connect(f); f.connect(g); g.connect(fxBus); s.start(t); s.stop(t+dur);
 }
-
 function clap(t) {
   [0,0.01,0.022].forEach(d=>{
     const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
@@ -1199,9 +1291,7 @@ function clap(t) {
     s.connect(f); f.connect(g); g.connect(fxBus); s.start(t+d); s.stop(t+d+0.13);
   });
 }
-
 function openhat(t) { hihat(t, true); }
-
 function perc(t) {
   const o=actx.createOscillator(), g=actx.createGain();
   o.type='triangle'; o.frequency.setValueAtTime(380,t); o.frequency.exponentialRampToValueAtTime(60,t+0.13);
@@ -1209,7 +1299,102 @@ function perc(t) {
   o.connect(g); g.connect(fxBus); o.start(t); o.stop(t+0.13);
 }
 
-const drumFns = [kick, snare, (t)=>hihat(t,false), clap, openhat, perc];
+/* — CHIP KIT (NES-style: square waves + short noise bursts) — */
+function chipKick(t) {
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type='square';
+  o.frequency.setValueAtTime(200,t); o.frequency.exponentialRampToValueAtTime(40,t+0.11);
+  g.gain.setValueAtTime(0.55,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.16);
+  o.connect(g); g.connect(fxBus); o.start(t); o.stop(t+0.16);
+}
+function chipSnare(t) {
+  const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
+  s.buffer=lofiNoise(0.09, 3); f.type='highpass'; f.frequency.value=2500;
+  g.gain.setValueAtTime(0.5,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.09);
+  s.connect(f); f.connect(g); g.connect(fxBus); s.start(t); s.stop(t+0.09);
+  const o=actx.createOscillator(), og=actx.createGain();
+  o.type='square'; o.frequency.value=220;
+  og.gain.setValueAtTime(0.18,t); og.gain.exponentialRampToValueAtTime(0.001,t+0.05);
+  o.connect(og); og.connect(fxBus); o.start(t); o.stop(t+0.05);
+}
+function chipHat(t, open) {
+  const dur = open ? 0.16 : 0.03;
+  const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
+  s.buffer=lofiNoise(dur, 2); f.type='highpass'; f.frequency.value=10000;
+  g.gain.setValueAtTime(0.2,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  s.connect(f); f.connect(g); g.connect(fxBus); s.start(t); s.stop(t+dur);
+}
+function chipClap(t) {
+  [0,0.02].forEach(d=>{
+    const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
+    s.buffer=lofiNoise(0.05, 3); f.type='bandpass'; f.frequency.value=2200; f.Q.value=1;
+    g.gain.setValueAtTime(0.4,t+d); g.gain.exponentialRampToValueAtTime(0.001,t+d+0.05);
+    s.connect(f); f.connect(g); g.connect(fxBus); s.start(t+d); s.stop(t+d+0.05);
+  });
+}
+function chipPerc(t) {
+  // two-blip square arp, classic game pickup sound
+  [[880,0],[1320,0.035]].forEach(([fr,d])=>{
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type='square'; o.frequency.value=fr;
+    g.gain.setValueAtTime(0.16,t+d); g.gain.exponentialRampToValueAtTime(0.001,t+d+0.04);
+    o.connect(g); g.connect(fxBus); o.start(t+d); o.stop(t+d+0.045);
+  });
+}
+
+/* — 64BIT KIT (crushed lo-fi PCM, early-3D-console flavor) — */
+const b64Shaper = actx.createWaveShaper();
+b64Shaper.curve = crushCurve(3);
+b64Shaper.connect(fxBus);
+function b64Kick(t) {
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(28,t+0.3);
+  g.gain.setValueAtTime(0.9,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.32);
+  o.connect(g); g.connect(b64Shaper); o.start(t); o.stop(t+0.32);
+}
+function b64Snare(t) {
+  const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
+  s.buffer=lofiNoise(0.18, 6); f.type='bandpass'; f.frequency.value=800; f.Q.value=0.7;
+  g.gain.setValueAtTime(0.7,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+  s.connect(f); f.connect(g); g.connect(b64Shaper); s.start(t); s.stop(t+0.18);
+}
+function b64Hat(t, open) {
+  const dur = open ? 0.3 : 0.05;
+  const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
+  s.buffer=lofiNoise(dur, 4); f.type='highpass'; f.frequency.value=7000;
+  g.gain.setValueAtTime(0.22,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  s.connect(f); f.connect(g); g.connect(b64Shaper); s.start(t); s.stop(t+dur);
+}
+function b64Clap(t) {
+  [0,0.012,0.026].forEach(d=>{
+    const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
+    s.buffer=lofiNoise(0.1, 5); f.type='bandpass'; f.frequency.value=1200; f.Q.value=0.6;
+    g.gain.setValueAtTime(0.35,t+d); g.gain.exponentialRampToValueAtTime(0.001,t+d+0.1);
+    s.connect(f); f.connect(g); g.connect(b64Shaper); s.start(t+d); s.stop(t+d+0.1);
+  });
+}
+function b64Perc(t) {
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type='triangle'; o.frequency.setValueAtTime(300,t); o.frequency.exponentialRampToValueAtTime(70,t+0.12);
+  g.gain.setValueAtTime(0.6,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+  o.connect(g); g.connect(b64Shaper); o.start(t); o.stop(t+0.12);
+}
+
+/* — POKE hit: the loaded cry as a drum, short + punchy, in every kit — */
+function pokeHit(t) { playSampleAt(60, t, 0.35); }
+
+const KITS = {
+  analog: [kick, snare, (t)=>hihat(t,false), clap, openhat, perc, pokeHit],
+  chip:   [chipKick, chipSnare, (t)=>chipHat(t,false), chipClap, (t)=>chipHat(t,true), chipPerc, pokeHit],
+  bit64:  [b64Kick, b64Snare, (t)=>b64Hat(t,false), b64Clap, (t)=>b64Hat(t,true), b64Perc, pokeHit],
+};
+let drumFns = KITS.analog;
+
+function setKit(k) {
+  drumFns = KITS[k];
+  ['analog','chip','bit64'].forEach(id =>
+    document.getElementById('kit-'+id).classList.toggle('on', id===k));
+}
 
 // ── SEQUENCER ──────────────────────────────────────────
 let playing=false, stepIdx=0, nextT=0, seqTimer=null;
@@ -1220,6 +1405,11 @@ function step16() { return 60 / bpm / 4; }
 function schedule() {
   while (nextT < actx.currentTime + 0.1) {
     TRACKS.forEach((_,ti) => { if(pat[ti][stepIdx]) drumFns[ti](nextT); });
+    ['pk','sy','b8'].forEach(l => {
+      MEL_ROWS.forEach((row, ri) => {
+        if (melPat[l][ri][stepIdx]) triggerMel(l, 60 + row.o, nextT);
+      });
+    });
     (function(s){ setTimeout(()=>highlight(s), (nextT - actx.currentTime)*1000 - 5); })(stepIdx);
     stepIdx = (stepIdx+1) % STEPS;
     nextT += step16();
