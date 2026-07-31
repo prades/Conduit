@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>PokéDAW</title>
+<script src="lame.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -43,8 +44,8 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 #left{width:312px;flex-shrink:0;border-right:1px solid var(--border);
   display:flex;flex-direction:column;min-height:0;}
 .tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
-.tab{flex:1;padding:13px 4px;text-align:center;cursor:pointer;color:var(--dim);
-  font-size:11px;letter-spacing:2px;border-bottom:3px solid transparent;transition:.12s;}
+.tab{flex:1;padding:13px 2px;text-align:center;cursor:pointer;color:var(--dim);
+  font-size:10px;letter-spacing:1px;border-bottom:3px solid transparent;transition:.12s;}
 .tab.on{color:var(--cyan);border-bottom-color:var(--cyan);}
 #secwrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .sec{display:none;padding:14px;}
@@ -73,10 +74,11 @@ select{appearance:none;-webkit-appearance:none;}
 .sl.p::-webkit-slider-thumb{background:var(--purple);box-shadow:0 0 8px rgba(168,85,247,.4);}
 .sl.g::-webkit-slider-thumb{background:var(--green);box-shadow:0 0 8px rgba(0,255,136,.4);}
 .sl.o::-webkit-slider-thumb{background:var(--orange);box-shadow:0 0 8px rgba(255,136,68,.4);}
+.sl.r::-webkit-slider-thumb{background:var(--red);box-shadow:0 0 8px rgba(255,68,85,.4);}
 .sl::-moz-range-track{height:6px;background:var(--border);border-radius:3px;}
 .sl::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--cyan);border:none;}
 .cv{width:44px;text-align:right;font-size:11px;color:var(--cyan);flex-shrink:0;}
-.cv.p{color:var(--purple);}.cv.g{color:var(--green);}.cv.o{color:var(--orange);}
+.cv.p{color:var(--purple);}.cv.g{color:var(--green);}.cv.o{color:var(--orange);}.cv.r{color:var(--red);}
 .wrow{display:flex;gap:6px;margin-bottom:12px;}
 .wbtn{flex:1;padding:11px 2px;background:var(--panel2);border:1px solid var(--border);
   color:var(--dim);font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;
@@ -97,10 +99,11 @@ select{appearance:none;-webkit-appearance:none;}
 #right{flex:1;display:flex;flex-direction:column;min-width:0;}
 #modebar{display:flex;align-items:center;gap:8px;padding:10px 14px;
   border-bottom:1px solid var(--border);flex-wrap:wrap;}
-.mpill{padding:9px 18px;border-radius:20px;font-size:11px;letter-spacing:1px;
+.mpill{padding:9px 16px;border-radius:20px;font-size:11px;letter-spacing:1px;
   cursor:pointer;border:1px solid var(--border);color:var(--dim);transition:.12s;min-height:38px;
   display:flex;align-items:center;}
 .mpill.on{background:var(--cyan);color:#000;border-color:var(--cyan);}
+.mpill.b8.on{background:var(--red);border-color:var(--red);color:#fff;}
 #kbwrap{flex:1;display:flex;align-items:center;justify-content:center;gap:20px;
   padding:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
 #kbcol{display:flex;flex-direction:column;align-items:center;}
@@ -129,12 +132,14 @@ select{appearance:none;-webkit-appearance:none;}
 #drum{border-top:1px solid var(--border);background:var(--panel);flex-shrink:0;}
 #dhdr{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
 #dtitle{font-size:10px;letter-spacing:3px;color:var(--dim);margin-right:4px;}
+#gsel{width:150px;margin:0;padding:8px 10px;min-height:38px;font-size:11px;}
 .pbtn{padding:9px 14px;background:var(--panel2);border:1px solid var(--border);
   color:var(--dim);font-family:inherit;font-size:10px;letter-spacing:1px;cursor:pointer;
   border-radius:5px;transition:.12s;min-height:38px;}
 .pbtn:hover{border-color:var(--green);color:var(--green);}
 .pbtn.on{background:var(--green);color:#000;border-color:var(--green);}
 .pbtn.danger:hover{border-color:var(--red);color:var(--red);}
+#gbpm{font-size:10px;color:var(--dim);letter-spacing:1px;}
 #dgrid{padding:8px 12px;}
 .drow{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
 .dlabel{width:52px;font-size:10px;letter-spacing:1px;color:var(--dim);flex-shrink:0;text-align:right;}
@@ -165,7 +170,7 @@ select{appearance:none;-webkit-appearance:none;}
   <button class="tbtn rec" id="recbtn" onclick="toggleRec()">● REC</button>
   <span id="rectime"></span>
   <span class="hdr-label">BPM</span>
-  <input type="number" id="bpm" value="90" min="40" max="200" onchange="bpm=Math.max(40,Math.min(200,+this.value||90))">
+  <input type="number" id="bpm" value="92" min="40" max="200" onchange="bpm=Math.max(40,Math.min(200,+this.value||90))">
   <div class="row ml">
     <span class="hdr-label">VOL</span>
     <input type="range" class="sl" style="width:92px" min="0" max="1" step="0.01" value="0.8"
@@ -181,6 +186,7 @@ select{appearance:none;-webkit-appearance:none;}
     <div class="tabs">
       <div class="tab on" id="tab-pk" onclick="switchTab('pk')">POKEMON</div>
       <div class="tab" id="tab-sy" onclick="switchTab('sy')">SYNTH</div>
+      <div class="tab" id="tab-b8" onclick="switchTab('b8')">808</div>
       <div class="tab" id="tab-fx" onclick="switchTab('fx')">FX</div>
     </div>
     <div id="secwrap">
@@ -298,6 +304,56 @@ select{appearance:none;-webkit-appearance:none;}
       </div>
     </div>
 
+    <!-- 808 BASS -->
+    <div class="sec" id="sec-b8">
+      <div class="slabel">808 Bass — deep sine sub, plays 2 octaves down. Select the 808 pill above the keys.</div>
+
+      <div class="cr">
+        <span class="cl">DECAY</span>
+        <input type="range" class="sl r" id="b8decay" min="0.2" max="2.5" step="0.05" value="0.9"
+          oninput="document.getElementById('b8decayv').textContent=parseFloat(this.value).toFixed(2)+'s'">
+        <span class="cv r" id="b8decayv">0.90s</span>
+      </div>
+      <div class="cr">
+        <span class="cl">GLIDE</span>
+        <input type="range" class="sl r" id="b8glide" min="0" max="0.3" step="0.005" value="0"
+          oninput="document.getElementById('b8glidev').textContent=Math.round(this.value*1000)+'ms'">
+        <span class="cv r" id="b8glidev">0ms</span>
+      </div>
+      <div class="cr">
+        <span class="cl">PUNCH</span>
+        <input type="range" class="sl r" id="b8punch" min="0" max="48" step="1" value="24"
+          oninput="document.getElementById('b8punchv').textContent=this.value+'st'">
+        <span class="cv r" id="b8punchv">24st</span>
+      </div>
+      <div class="cr">
+        <span class="cl">DRIVE</span>
+        <input type="range" class="sl r" id="b8drive" min="1" max="20" step="0.5" value="6"
+          oninput="setB8Drive(+this.value)">
+        <span class="cv r" id="b8drivev">6.0</span>
+      </div>
+      <div class="cr">
+        <span class="cl">TONE</span>
+        <input type="range" class="sl r" id="b8tone" min="100" max="8000" step="50" value="1200"
+          oninput="setB8Tone(+this.value)">
+        <span class="cv r" id="b8tonev">1.2k</span>
+      </div>
+      <div class="cr">
+        <span class="cl">GAIN</span>
+        <input type="range" class="sl r" id="b8gain" min="0" max="1.5" step="0.01" value="0.9"
+          oninput="document.getElementById('b8gainv').textContent=parseFloat(this.value).toFixed(2)">
+        <span class="cv r" id="b8gainv">0.90</span>
+      </div>
+
+      <hr class="div">
+      <div class="slabel">Tips</div>
+      <div style="font-size:11px;line-height:1.7;color:var(--dim)">
+        GLIDE &gt; 0 slides between notes (trap 808 slides).<br>
+        PUNCH is the pitch-drop click at the start.<br>
+        DRIVE saturates it so it cuts through on small speakers.
+      </div>
+    </div>
+
     <!-- FX RACK -->
     <div class="sec" id="sec-fx">
       <div class="slabel">Master FX rack — everything runs through it. Slide AMOUNT up to hear each one.</div>
@@ -393,7 +449,8 @@ select{appearance:none;-webkit-appearance:none;}
       <span style="font-size:10px;color:var(--dim);letter-spacing:2px">PLAYING:</span>
       <span class="mpill on" id="pill-pk" onclick="setMode('pk')">POKEMON</span>
       <span class="mpill" id="pill-sy" onclick="setMode('sy')">SYNTH</span>
-      <span class="mpill" id="pill-both" onclick="setMode('both')">BOTH</span>
+      <span class="mpill b8" id="pill-b8" onclick="setMode('b8')">808</span>
+      <span class="mpill" id="pill-both" onclick="setMode('both')">POKE+SYNTH</span>
     </div>
     <div id="kbwrap">
       <div id="kbcol">
@@ -412,12 +469,13 @@ select{appearance:none;-webkit-appearance:none;}
 <!-- DRUM MACHINE -->
 <div id="drum">
   <div id="dhdr">
-    <span id="dtitle">DRUM MACHINE</span>
-    <button class="pbtn on" id="pr-minimal" onclick="loadPreset('minimal')">MINIMAL</button>
-    <button class="pbtn" id="pr-hiphop"  onclick="loadPreset('hiphop')">HIP HOP</button>
-    <button class="pbtn" id="pr-trap"    onclick="loadPreset('trap')">TRAP</button>
-    <button class="pbtn" id="pr-jungle"  onclick="loadPreset('jungle')">JUNGLE</button>
-    <button class="pbtn danger"           onclick="clearDrum()">CLEAR</button>
+    <span id="dtitle">DRUMS</span>
+    <select class="psel" id="gsel" onchange="loadGenre(0)"></select>
+    <button class="pbtn on" id="var-0" onclick="loadGenre(0)">A</button>
+    <button class="pbtn" id="var-1" onclick="loadGenre(1)">B</button>
+    <button class="pbtn" id="var-2" onclick="loadGenre(2)">C</button>
+    <button class="pbtn danger" onclick="clearDrum()">CLEAR</button>
+    <span id="gbpm"></span>
   </div>
   <div id="dgrid"></div>
 </div>
@@ -431,8 +489,8 @@ masterGain.connect(actx.destination);
 const resume = () => actx.state === 'suspended' && actx.resume();
 document.addEventListener('pointerdown', resume, {once:true});
 
-// Everything (sampler, synth, drums) enters here, flows through the FX rack,
-// then into masterGain.
+// Everything (sampler, synth, 808, drums) enters here, flows through the FX
+// rack, then into masterGain.
 const fxBus = actx.createGain();
 
 function makeInsert(build) {
@@ -538,7 +596,7 @@ function makeImpulse(sec) {
 convolver.buffer = makeImpulse(2);
 FX.verb = makeInsert(inp => { inp.connect(convolver); return convolver; });
 
-// Wire the chain: fxBus → dist → crush → chorus → flange → phaser → trem → delay → verb → master
+// Wire the chain
 let head = fxBus;
 [FX.dist, FX.crush, FX.chorus, FX.flange, FX.phaser].forEach(fx => { head.connect(fx.inp); head = fx.out; });
 head.connect(tremGain); head = tremGain;
@@ -585,30 +643,72 @@ function setDelayTime(v, s) {
 }
 function setVerbSize(sec) { convolver.buffer = makeImpulse(sec); }
 
-// ── RECORDING ──────────────────────────────────────────
-const recDest = actx.createMediaStreamDestination();
-masterGain.connect(recDest);
-let mediaRec = null, recChunks = [], recTimer = null, recStart = 0, trackNum = 1;
+// ── RECORDING → MP3 ────────────────────────────────────
+// Capture raw PCM off the master bus, then encode with lamejs.
+// Falls back to WAV if the MP3 encoder isn't available.
+const capNode = actx.createScriptProcessor(4096, 2, 2);
+masterGain.connect(capNode);
+capNode.connect(actx.destination); // outputs silence; keeps the node running
+let recOn = false, recL = [], recR = [];
+capNode.onaudioprocess = e => {
+  if (!recOn) return;
+  recL.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  recR.push(new Float32Array(e.inputBuffer.getChannelData(1)));
+};
+
+let recTimer = null, recStart = 0, trackNum = 1;
+
+function flat(chunks) {
+  let len = 0; chunks.forEach(c => len += c.length);
+  const out = new Float32Array(len);
+  let off = 0; chunks.forEach(c => { out.set(c, off); off += c.length; });
+  return out;
+}
+
+function f32toI16(f) {
+  const out = new Int16Array(f.length);
+  for (let i = 0; i < f.length; i++) {
+    const s = Math.max(-1, Math.min(1, f[i]));
+    out[i] = s < 0 ? s*0x8000 : s*0x7FFF;
+  }
+  return out;
+}
+
+function encodeMP3(L, R, sr) {
+  const enc = new lamejs.Mp3Encoder(2, sr, 192);
+  const l = f32toI16(L), r = f32toI16(R);
+  const block = 1152, parts = [];
+  for (let i = 0; i < l.length; i += block) {
+    const chunk = enc.encodeBuffer(l.subarray(i, i+block), r.subarray(i, i+block));
+    if (chunk.length) parts.push(chunk);
+  }
+  const end = enc.flush();
+  if (end.length) parts.push(end);
+  return new Blob(parts, {type:'audio/mp3'});
+}
+
+function encodeWAV(L, R, sr) {
+  const n = L.length, buf = new ArrayBuffer(44 + n*4), v = new DataView(buf);
+  const ws = (o,s) => { for(let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); v.setUint32(4, 36+n*4, true); ws(8,'WAVE'); ws(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,2,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*4,true); v.setUint16(32,4,true);
+  v.setUint16(34,16,true); ws(36,'data'); v.setUint32(40,n*4,true);
+  let off = 44;
+  for (let i = 0; i < n; i++) {
+    let s = Math.max(-1, Math.min(1, L[i])); v.setInt16(off, s<0?s*0x8000:s*0x7FFF, true); off += 2;
+    s = Math.max(-1, Math.min(1, R[i]));     v.setInt16(off, s<0?s*0x8000:s*0x7FFF, true); off += 2;
+  }
+  return new Blob([buf], {type:'audio/wav'});
+}
 
 function toggleRec() {
   resume();
   const btn = document.getElementById('recbtn');
   const time = document.getElementById('rectime');
-  if (!mediaRec || mediaRec.state === 'inactive') {
-    recChunks = [];
-    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
-    mediaRec = new MediaRecorder(recDest.stream, mime ? {mimeType:mime} : undefined);
-    mediaRec.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
-    mediaRec.onstop = () => {
-      const blob = new Blob(recChunks, {type: mediaRec.mimeType || 'audio/webm'});
-      const ext  = (mediaRec.mimeType||'').includes('ogg') ? 'ogg' : 'webm';
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `pokedaw-track-${trackNum++}.${ext}`;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
-    };
-    mediaRec.start();
+  if (!recOn) {
+    recL = []; recR = [];
+    recOn = true;
     recStart = Date.now();
     btn.textContent = '■ SAVE'; btn.classList.add('on');
     recTimer = setInterval(()=>{
@@ -617,10 +717,27 @@ function toggleRec() {
     }, 500);
     time.textContent = '00:00';
   } else {
-    mediaRec.stop();
+    recOn = false;
     clearInterval(recTimer);
     btn.textContent = '● REC'; btn.classList.remove('on');
-    time.textContent = '';
+    time.textContent = 'ENCODING…';
+    setTimeout(() => {
+      const L = flat(recL), R = flat(recR);
+      recL = []; recR = [];
+      let blob, ext;
+      try {
+        if (typeof lamejs === 'undefined') throw new Error('no encoder');
+        blob = encodeMP3(L, R, actx.sampleRate); ext = 'mp3';
+      } catch(e) {
+        blob = encodeWAV(L, R, actx.sampleRate); ext = 'wav';
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `pokedaw-track-${trackNum++}.${ext}`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+      time.textContent = '';
+    }, 50);
   }
 }
 
@@ -770,6 +887,71 @@ function updateLfoDepth(v) {
   eachActive(n => n.lg.gain.setTargetAtTime(v*scale, actx.currentTime, 0.015));
 }
 
+// ── 808 BASS ───────────────────────────────────────────
+// Mono sine sub with pitch-drop punch, glide, drive, and tone filter.
+const b8Shaper = actx.createWaveShaper();
+function tanhCurve(k) {
+  const n = 1024, c = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = i/(n-1)*2 - 1;
+    c[i] = Math.tanh(k*x) / Math.tanh(k);
+  }
+  return c;
+}
+b8Shaper.curve = tanhCurve(6);
+const b8Filter = actx.createBiquadFilter();
+b8Filter.type = 'lowpass'; b8Filter.frequency.value = 1200;
+b8Shaper.connect(b8Filter); b8Filter.connect(fxBus);
+
+let b8cur = null, b8lastF = null;
+
+function play808(midi) {
+  resume();
+  const now   = actx.currentTime;
+  const f     = mf(midi - 24);
+  const decay = +document.getElementById('b8decay').value;
+  const glide = +document.getElementById('b8glide').value;
+  const punch = +document.getElementById('b8punch').value;
+  const gain  = +document.getElementById('b8gain').value;
+
+  // Mono: choke the previous note
+  if (b8cur) {
+    b8cur.g.gain.cancelScheduledValues(now);
+    b8cur.g.gain.setTargetAtTime(0, now, 0.012);
+    try { b8cur.o.stop(now + 0.08); } catch(e) {}
+  }
+
+  const o = actx.createOscillator(); o.type = 'sine';
+  const g = actx.createGain();
+
+  if (glide > 0.005 && b8lastF) {
+    o.frequency.setValueAtTime(b8lastF, now);
+    o.frequency.exponentialRampToValueAtTime(f, now + glide);
+  } else if (punch > 0) {
+    o.frequency.setValueAtTime(f * Math.pow(2, punch/12), now);
+    o.frequency.exponentialRampToValueAtTime(f, now + 0.045);
+  } else {
+    o.frequency.setValueAtTime(f, now);
+  }
+
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(gain, now + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.006 + decay);
+
+  o.connect(g); g.connect(b8Shaper);
+  o.start(now); o.stop(now + decay + 0.25);
+  b8cur = {o, g}; b8lastF = f;
+}
+
+function setB8Drive(k) {
+  b8Shaper.curve = tanhCurve(k);
+  document.getElementById('b8drivev').textContent = k.toFixed(1);
+}
+function setB8Tone(v) {
+  b8Filter.frequency.setTargetAtTime(v, actx.currentTime, 0.02);
+  document.getElementById('b8tonev').textContent = v>=1000 ? (v/1000).toFixed(1)+'k' : v+'';
+}
+
 // ── XY MOD PAD ─────────────────────────────────────────
 (function(){
   const pad = document.getElementById('xypad');
@@ -782,8 +964,8 @@ function updateLfoDepth(v) {
     let y = Math.max(0, Math.min(1, (e.clientY - r.top)  / r.height));
     dot.style.left = (x*100)+'%';
     dot.style.top  = (y*100)+'%';
-    const cut = 80 * Math.pow(18000/80, x);          // log sweep
-    const res = 0.1 + (1-y) * 14;                    // top = squelchy
+    const cut = 80 * Math.pow(18000/80, x);
+    const res = 0.1 + (1-y) * 14;
     document.getElementById('cutoff').value = cut;
     document.getElementById('res').value    = res;
     updateCutoff(cut); updateRes(res);
@@ -837,6 +1019,7 @@ function noteOn(midi) {
   resume();
   if (mode==='pk'   || mode==='both') playSample(midi);
   if (mode==='sy'   || mode==='both') playSynth(midi);
+  if (mode==='b8') play808(midi);
 }
 function noteOff(midi) {
   if (mode==='sy' || mode==='both') stopSynth(midi);
@@ -851,7 +1034,7 @@ buildKb();
 
 // ── TABS ───────────────────────────────────────────────
 function switchTab(id) {
-  ['pk','sy','fx'].forEach(t => {
+  ['pk','sy','b8','fx'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('on', t===id);
     document.getElementById('sec-'+t).classList.toggle('on', t===id);
   });
@@ -866,40 +1049,92 @@ const TRACKS = [
 const STEPS = 16;
 let pat = TRACKS.map(()=>new Array(STEPS).fill(0));
 
-const PRESETS = {
-  minimal:[
-    [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
-    [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
-    [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
-    [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
-    [0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0],
-    [0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,0],
-  ],
-  hiphop:[
-    [1,0,0,0, 0,0,1,0, 0,1,0,0, 0,0,0,0],
-    [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
-    [1,1,0,1, 1,1,0,1, 1,1,0,1, 1,1,0,1],
-    [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,1],
-    [0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
-    [0,1,0,0, 0,0,0,1, 0,0,1,0, 0,0,0,0],
-  ],
-  trap:[
-    [1,0,0,0, 0,0,0,1, 0,0,1,0, 0,0,0,0],
-    [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
-    [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
-    [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,1,0],
-    [0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
-    [1,0,0,1, 0,0,1,0, 1,0,0,0, 1,0,0,0],
-  ],
-  jungle:[
-    [1,0,0,1, 0,0,1,0, 1,0,0,0, 0,1,0,0],
-    [0,0,0,0, 1,0,0,0, 0,0,1,0, 1,0,0,0],
-    [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
-    [0,0,1,0, 0,0,0,0, 1,0,0,0, 0,0,1,0],
-    [0,0,0,0, 0,1,0,0, 0,0,0,1, 0,0,0,0],
-    [1,0,1,0, 0,1,0,1, 1,0,0,1, 0,1,0,0],
-  ],
+// ── GENRE PRESET BANK ──────────────────────────────────
+// Row order: KICK, SNARE, HI-HAT, CLAP, OPEN HAT, PERC. 16 steps = one bar.
+// Patterns follow each genre's signature conventions; bpm is the genre's
+// typical tempo and is applied when you pick a preset.
+const GENRES = {
+  hiphop: { name:'HIP HOP / BOOM BAP', bpm:92, pats:[
+    ['1000001001000000','0000100000001000','1010101010101010','0000000000000000','0000000000000010','0000000000000000'],
+    ['1000000100100000','0000100000001000','1011101010111010','0000000000000000','0000001000000000','0100000000000010'],
+    ['1000100000100010','0000100000001000','1010101010101010','0000100000001000','0000000000100000','0000000000000001'],
+  ]},
+  trap: { name:'TRAP', bpm:140, pats:[
+    ['1000001000010000','0000000010000000','1111111111111111','0000000010000000','0000000000000010','0000000000000000'],
+    ['1000000000100100','0000000010000000','1111011111110111','0000000000000000','0000001000000000','0000000000000001'],
+    ['1000000001000010','0000000010000000','1010111110101111','0000000010000000','0000000000001000','0010000000000000'],
+  ]},
+  drill: { name:'DRILL', bpm:142, pats:[
+    ['1000001000100001','0000000010000000','1010011010100110','0000000000000000','0000000000000000','0000000000000010'],
+    ['1000010000100100','0000000010000001','1010010110100101','0000000000000000','0000000001000000','0000001000000000'],
+    ['1000001001000001','0000000010000000','1110101011101010','0000000010000000','0000000000000000','0001000000010000'],
+  ]},
+  lofi: { name:'LO-FI', bpm:82, pats:[
+    ['1000000000100001','0000100000001000','1010101000101010','0000000000000000','0000000000000000','0000010000000000'],
+    ['1000000100000010','0000100000001000','1000101010100010','0000000000000000','0000000000100000','0000000001000000'],
+    ['1000001000010001','0000100000001000','1010001010100010','0000100000000000','0000000000000010','0001000000000100'],
+  ]},
+  house: { name:'HOUSE', bpm:124, pats:[
+    ['1000100010001000','0000000000000000','1111111111111111','0000100000001000','0010001000100010','0000000000000000'],
+    ['1000100010001000','0000000000000000','0010001000100010','0000100000001000','0000001000000010','0000010000000100'],
+    ['1000100010001000','0001000000010000','1111111111111111','0000100000001000','0010001000100010','0000000001000000'],
+  ]},
+  techno: { name:'TECHNO', bpm:130, pats:[
+    ['1000100010001000','0000000000000000','1111111111111111','0000100000001000','0010001000100010','0001000100010001'],
+    ['1000100010001000','0000000000000000','0010001000100010','0000000000000000','0000001000000010','0010010000100100'],
+    ['1000100010001000','0000100000001000','1111111111111111','0000100000001000','0010001000100010','0001001000010010'],
+  ]},
+  dnb: { name:'DRUM & BASS', bpm:174, pats:[
+    ['1000000000100000','0000100000001000','1010101010101010','0000000000000000','0000000000000010','0000000000000000'],
+    ['1000000100100000','0000100000001001','1111111111111111','0000000000000000','0000001000000000','0000000001000000'],
+    ['1001000000100000','0000100000001000','1010101010101010','0000100000001000','0000000000000010','0100000000000100'],
+  ]},
+  jungle: { name:'JUNGLE', bpm:168, pats:[
+    ['1001001010000100','0000100000101000','1111111111111111','0010000010000010','0000010000010000','1010010110010100'],
+    ['1000000000100100','0000100101001010','1010101010101010','0000000000000000','0000001000000000','0000000010000001'],
+    ['1001000000100010','0000100010010100','1111101011111010','0000000000000000','0000010000000000','0010000001000010'],
+  ]},
+  reggaeton: { name:'REGGAETON', bpm:96, pats:[
+    ['1000100010001000','0001001000010010','1010101010101010','0000000000000000','0000000000000000','0000000000000000'],
+    ['1000100010001000','0001001000010010','1111111111111111','0001000000010000','0000001000000000','0010000000100000'],
+    ['1000100010001000','0001001000010000','1010101010101010','0000000000000000','0000000000100000','0001001000010010'],
+  ]},
+  afrobeat: { name:'AFROBEATS', bpm:106, pats:[
+    ['1000001000100000','0000000000000000','1111111111111111','0000100000001000','0000000000000000','0010010000100100'],
+    ['1000000100100010','0000100000000000','1010101010101010','0000000000001000','0000001000000000','0100100100100100'],
+    ['1000100000101000','0000000000000000','1111111111111111','0001000000010000','0000000000000010','0010001001000100'],
+  ]},
+  funk: { name:'FUNK / BREAKS', bpm:104, pats:[
+    ['1010000000100000','0000100100001001','1010101010101010','0000000000001000','0000000000000010','0000000000000000'],
+    ['1000001010000010','0000100000001000','1111111111111111','0000000000000000','0000001000000000','0100000001000000'],
+    ['1000000001100000','0000100000001010','1010101010101010','0000000000000000','0000000000100000','0000010000000001'],
+  ]},
+  minimal: { name:'MINIMAL', bpm:122, pats:[
+    ['1000100010001000','0000100000001000','1010101010101010','0000000000000000','0000001000000010','0000000000000000'],
+    ['1000100010001000','0000000000000000','0010001000100010','0000100000001000','0000000000000010','0000010000000000'],
+    ['1000010010000100','0000100000001000','1010101010101010','0000000000000000','0000000000100000','0001000000010000'],
+  ]},
 };
+
+(function(){
+  const sel = document.getElementById('gsel');
+  Object.entries(GENRES).forEach(([id,g]) => {
+    const o = document.createElement('option');
+    o.value = id; o.textContent = g.name;
+    sel.appendChild(o);
+  });
+})();
+
+function loadGenre(variant) {
+  const g = GENRES[document.getElementById('gsel').value];
+  pat = g.pats[variant].map(row => row.split('').map(Number));
+  buildGrid();
+  for (let i = 0; i < 3; i++)
+    document.getElementById('var-'+i).classList.toggle('on', i===variant);
+  bpm = g.bpm;
+  document.getElementById('bpm').value = g.bpm;
+  document.getElementById('gbpm').textContent = g.bpm+' BPM';
+}
 
 function buildGrid() {
   const g = document.getElementById('dgrid'); g.innerHTML = '';
@@ -919,17 +1154,10 @@ function buildGrid() {
   });
 }
 
-function loadPreset(name) {
-  pat = PRESETS[name].map(r=>[...r]);
-  buildGrid();
-  document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('on'));
-  document.getElementById('pr-'+name).classList.add('on');
-}
-
 function clearDrum() {
   pat = TRACKS.map(()=>new Array(STEPS).fill(0));
   buildGrid();
-  document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('on'));
+  for (let i = 0; i < 3; i++) document.getElementById('var-'+i).classList.remove('on');
 }
 
 // ── DRUM SYNTHESIS (routed through the FX rack) ────────
@@ -985,7 +1213,7 @@ const drumFns = [kick, snare, (t)=>hihat(t,false), clap, openhat, perc];
 
 // ── SEQUENCER ──────────────────────────────────────────
 let playing=false, stepIdx=0, nextT=0, seqTimer=null;
-let bpm = 90;
+let bpm = 92;
 
 function step16() { return 60 / bpm / 4; }
 
@@ -1025,7 +1253,7 @@ function stopAll() {
 }
 
 // ── INIT ───────────────────────────────────────────────
-loadPreset('minimal');
+loadGenre(0);
 </script>
 </body>
 </html>
