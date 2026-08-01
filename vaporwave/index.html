@@ -102,6 +102,21 @@ body{
 .abtn .ico{font-size:18px;line-height:1;}
 .abtn:active{background:var(--mint);color:#12002b;box-shadow:0 0 20px rgba(5,255,161,.6);}
 
+/* sampler */
+#wave{width:100%;height:78px;display:block;background:rgba(0,0,0,.35);
+  border:1px solid var(--border);border-radius:7px;margin-bottom:10px;cursor:crosshair;touch-action:none;}
+#fileLbl{display:block;width:100%;text-align:center;padding:12px;margin-bottom:10px;
+  background:rgba(255,255,255,0.04);border:1px dashed var(--yellow);color:var(--yellow);
+  border-radius:7px;cursor:pointer;font-size:11px;letter-spacing:2px;min-height:46px;}
+#fileLbl:hover{background:rgba(255,251,150,.12);}
+#fileIn{display:none;}
+#slicepads{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px;}
+.slbtn{height:44px;background:rgba(255,255,255,0.04);border:1px solid var(--yellow);
+  color:var(--yellow);font-family:inherit;font-size:12px;cursor:pointer;border-radius:7px;transition:.1s;}
+.slbtn:active{background:var(--yellow);color:#12002b;box-shadow:0 0 18px rgba(255,251,150,.6);}
+.sl.y::-webkit-slider-thumb{background:var(--yellow);box-shadow:0 0 10px rgba(255,251,150,.6);}
+.cv.y{color:var(--yellow);}
+
 /* fx sliders */
 .cr{display:flex;align-items:center;gap:10px;margin-bottom:4px;min-height:42px;}
 .cl{width:74px;font-size:10px;color:var(--dim);letter-spacing:1px;flex-shrink:0;}
@@ -319,6 +334,44 @@ body{
         <button class="wbtn" onclick="clearLoop()">✕ CLEAR</button>
       </div>
       <div id="loopstat" style="font-size:10px;color:var(--mint);letter-spacing:2px;margin-top:8px;text-align:center;min-height:14px"></div>
+    </div>
+
+    <!-- SAMPLER -->
+    <div class="panel">
+      <div class="ptitle">ＣＨＯＰ ＳＨＯＰ <span class="jp">サンプラー</span></div>
+      <div style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-bottom:10px;line-height:1.7">
+        LOAD A TRACK FROM YOUR DEVICE — IT NEVER LEAVES YOUR BROWSER.<br>
+        SLIDE TO PICK THE SPOT. CHOPS ARE CAPPED AT ３ SECONDS.
+      </div>
+      <label id="fileLbl" for="fileIn">⏏ ＬＯＡＤ ＡＵＤＩＯ ＦＩＬＥ</label>
+      <input type="file" id="fileIn" accept="audio/*" onchange="loadSampleFile(this.files[0])">
+      <canvas id="wave" width="600" height="78"></canvas>
+      <div class="cr">
+        <span class="cl">POSITION</span>
+        <input type="range" class="sl y" id="smpPos" min="0" max="1" step="0.0005" value="0"
+          oninput="smpPos=+this.value;drawWave();document.getElementById('posv').textContent=smpTimeLabel()">
+        <span class="cv y" id="posv">0.0s</span>
+      </div>
+      <div class="cr">
+        <span class="cl">LENGTH</span>
+        <input type="range" class="sl y" id="smpLen" min="0.05" max="3" step="0.05" value="1"
+          oninput="smpLen=Math.min(3,+this.value);drawWave();this.parentElement.querySelector('.cv').textContent=smpLen.toFixed(2)+'s'">
+        <span class="cv y">1.00s</span>
+      </div>
+      <div class="cr">
+        <span class="cl">PITCH</span>
+        <input type="range" class="sl y" id="smpPitch" min="-12" max="12" step="1" value="0"
+          oninput="smpPitch=+this.value;this.parentElement.querySelector('.cv').textContent=(this.value>0?'+':'')+this.value">
+        <span class="cv y">0</span>
+      </div>
+      <div class="wrow">
+        <button class="wbtn" id="revbtn" onclick="toggleRev()">↤ REVERSE</button>
+        <button class="wbtn" id="syncbtn" onclick="toggleSmpSync()">⟳ ON BAR</button>
+        <button class="wbtn" onclick="playChop(smpPos)"
+          style="border-color:var(--yellow);color:var(--yellow)">▶ CHOP</button>
+      </div>
+      <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin:12px 0 0">SLICE PADS</div>
+      <div id="slicepads"></div>
     </div>
 
   </div>
@@ -932,6 +985,8 @@ function schedule() {
     if (tp.o[stepIdx]==='1') trapHat(nextT, true);
     if (tp.roll.includes(stepIdx)) trapHat(nextT + sd/2, false);
 
+    if (smpSync && stepIdx === 0) playChop(smpPos, nextT);
+
     // sidechain: duck keys+bass on whichever kit is louder
     const kickRow = trapDrums.gain.value > jazzDrums.gain.value ? tp.k : dr.k;
     if (kickRow[stepIdx]==='1') duck(nextT);
@@ -980,6 +1035,144 @@ function stopAll() {
   if (playing) togglePlay();
   stepIdx = 0; barIdx = 0;
 }
+
+// ── CHOP SHOP SAMPLER ──────────────────────────────────
+// The user picks a file from their own device; it is decoded in the page
+// and never uploaded anywhere. Chops are hard-capped at MAX_CHOP seconds.
+const MAX_CHOP = 3.0;
+let smpBuf = null, smpPos = 0, smpLen = 1.0, smpPitch = 0, smpRev = false, smpSync = false;
+
+async function loadSampleFile(file) {
+  if (!file) return;
+  resume();
+  const lbl = document.getElementById('fileLbl');
+  lbl.textContent = '⟳ ＤＥＣＯＤＩＮＧ…';
+  try {
+    smpBuf = await actx.decodeAudioData(await file.arrayBuffer());
+    lbl.textContent = '♪ ' + file.name.slice(0, 28).toUpperCase();
+    drawWave();
+    document.getElementById('posv').textContent = smpTimeLabel();
+  } catch (e) {
+    smpBuf = null;
+    lbl.textContent = '✗ ＣＯＵＬＤ ＮＯＴ ＲＥＡＤ ＦＩＬＥ';
+  }
+}
+
+function smpTimeLabel() {
+  if (!smpBuf) return '0.0s';
+  return (smpPos * smpBuf.duration).toFixed(1) + 's';
+}
+
+function drawWave() {
+  const c = document.getElementById('wave');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  if (!smpBuf) {
+    ctx.fillStyle = '#6b4f9e'; ctx.font = '12px Courier New'; ctx.textAlign = 'center';
+    ctx.fillText('NO AUDIO LOADED', W/2, H/2 + 4);
+    return;
+  }
+  // peak-per-column waveform
+  const d = smpBuf.getChannelData(0), step = Math.floor(d.length / W) || 1;
+  ctx.strokeStyle = '#b967ff'; ctx.lineWidth = 1; ctx.beginPath();
+  for (let x = 0; x < W; x++) {
+    let lo = 1, hi = -1;
+    for (let i = 0; i < step; i++) {
+      const v = d[x*step + i] || 0;
+      if (v < lo) lo = v; if (v > hi) hi = v;
+    }
+    ctx.moveTo(x + 0.5, H/2 - hi*H*0.46);
+    ctx.lineTo(x + 0.5, H/2 - lo*H*0.46);
+  }
+  ctx.stroke();
+  // selected chop region
+  const x1 = smpPos * W;
+  const x2 = Math.min(W, x1 + (smpLen / smpBuf.duration) * W);
+  ctx.fillStyle = 'rgba(255,251,150,.22)';
+  ctx.fillRect(x1, 0, Math.max(2, x2 - x1), H);
+  ctx.strokeStyle = '#fffb96'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(x1, H); ctx.stroke();
+}
+
+// Pull the selected region into its own buffer so REVERSE is trivial and
+// the cap cannot be bypassed by scrubbing mid-playback.
+function sliceBuffer(startFrac) {
+  const sr = smpBuf.sampleRate;
+  const dur = Math.min(smpLen, MAX_CHOP);
+  const start = Math.floor(Math.max(0, startFrac) * smpBuf.duration * sr);
+  const n = Math.min(Math.floor(dur * sr), Math.max(0, smpBuf.length - start));
+  if (n <= 0) return null;
+  const ch = smpBuf.numberOfChannels;
+  const out = actx.createBuffer(ch, n, sr);
+  const fade = Math.min(Math.floor(sr * 0.006), Math.floor(n/2)); // declick
+  for (let c = 0; c < ch; c++) {
+    const src = smpBuf.getChannelData(c), dst = out.getChannelData(c);
+    for (let i = 0; i < n; i++) {
+      dst[i] = src[smpRev ? start + n - 1 - i : start + i];
+      if (i < fade)         dst[i] *= i / fade;
+      if (i > n - fade - 1) dst[i] *= (n - 1 - i) / fade;
+    }
+  }
+  return out;
+}
+
+function playChop(startFrac, when) {
+  if (!smpBuf) return;
+  resume();
+  const buf = sliceBuffer(startFrac);
+  if (!buf) return;
+  const src = actx.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.value = Math.pow(2, (smpPitch + SLOWS[slowIdx].semis) / 12);
+  const g = actx.createGain(); g.gain.value = 0.7;
+  src.connect(g); g.connect(liveBus);   // looper + FX chain pick it up
+  src.start(when || actx.currentTime);
+}
+
+function toggleRev() {
+  smpRev = !smpRev;
+  document.getElementById('revbtn').classList.toggle('on', smpRev);
+}
+function toggleSmpSync() {
+  smpSync = !smpSync;
+  document.getElementById('syncbtn').classList.toggle('on', smpSync);
+}
+
+// 8 slice pads spread evenly across the loaded track
+(function(){
+  const wrap = document.getElementById('slicepads');
+  for (let i = 0; i < 8; i++) {
+    const b = document.createElement('button');
+    b.className = 'slbtn'; b.textContent = i + 1;
+    b.addEventListener('pointerdown', ()=>{
+      const frac = i / 8;
+      document.getElementById('smpPos').value = frac;
+      smpPos = frac; drawWave();
+      document.getElementById('posv').textContent = smpTimeLabel();
+      playChop(frac);
+    });
+    wrap.appendChild(b);
+  }
+})();
+
+// drag anywhere on the waveform to set the chop point
+(function(){
+  const c = document.getElementById('wave');
+  let down = false;
+  const set = e => {
+    const r = c.getBoundingClientRect();
+    smpPos = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    document.getElementById('smpPos').value = smpPos;
+    document.getElementById('posv').textContent = smpTimeLabel();
+    drawWave();
+  };
+  c.addEventListener('pointerdown', e => { down = true; c.setPointerCapture(e.pointerId); set(e); playChop(smpPos); });
+  c.addEventListener('pointermove', e => { if (down) set(e); });
+  c.addEventListener('pointerup',   () => { down = false; });
+  c.addEventListener('pointercancel', () => { down = false; });
+  drawWave();
+})();
 
 // ── PERFORMANCE LOOPER ─────────────────────────────────
 // Captures the live bus (vocal chops + arcade pads), then loops it
