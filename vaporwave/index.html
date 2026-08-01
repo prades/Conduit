@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ＶＡＰＯＲＷＡＶＥ ＭＡＫＥＲ</title>
+<title>ＰＯＫＥＷＡＶＥ ＭＡＫＥＲ</title>
 <script src="lame.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -125,8 +125,8 @@ body{
 
 <div id="page">
   <div id="hdr">
-    <div id="title">ＶＡＰＯＲＷＡＶＥ　ＭＡＫＥＲ</div>
-    <div id="subtitle">蒸気波メーカー · AESTHETIC STUDIO · １９８７</div>
+    <div id="title">ＰＯＫＥＷＡＶＥ　ＭＡＫＥＲ</div>
+    <div id="subtitle">ポケウェイブ · GAME BOY AESTHETIC · １９９６</div>
   </div>
 
   <div id="transport">
@@ -142,7 +142,7 @@ body{
 
     <!-- LOOPS -->
     <div class="panel">
-      <div class="ptitle">LOUNGE LOOPS <span class="jp">ラウンジ</span></div>
+      <div class="ptitle">ＧＡＭＥ ＬＯＯＰＳ <span class="jp">ゲーム音楽</span></div>
       <div id="looplist"></div>
 
       <div class="ptitle" style="margin-top:16px">ＳＬＯＷＥＤ <span class="jp">遅い</span></div>
@@ -298,9 +298,9 @@ body{
 
     <!-- ARCADE PAD -->
     <div class="panel">
-      <div class="ptitle">ＡＲＣＡＤＥ ＰＡＤ <span class="jp">アーケード</span></div>
+      <div class="ptitle">ＰＫＭＮ ＳＦＸ <span class="jp">効果音</span></div>
       <div style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-bottom:10px;line-height:1.7">
-        RETRO GAME SFX &amp; VOICES — RUNS THROUGH THE VHS FX.<br>PITCHES DOWN WITH THE SLOWED SETTING.
+        MENU, FIELD &amp; BATTLE SOUNDS — RUN THROUGH THE VHS FX.<br>PITCH DOWN WITH THE SLOWED SETTING.
       </div>
       <div id="apad"></div>
 
@@ -324,7 +324,7 @@ body{
   </div>
 
   <div id="footer">
-    ＡＬＬ ＳＯＵＮＤＳ ＳＹＮＴＨＥＳＩＺＥＤ ＬＩＶＥ · ＮＯ ＳＡＭＰＬＥＳ ＨＡＲＭＥＤ<br>
+    ＯＲＩＧＩＮＡＬ ＧＡＭＥ ＢＯＹ－ＳＴＹＬＥ ＴＵＮＥＳ · ＡＬＬ ＳＹＮＴＨＥＳＩＺＥＤ ＬＩＶＥ<br>
     ＨＩＴ ＲＥＣ → ＤＯＷＮＬＯＡＤＳ ＭＰ３
   </div>
 </div>
@@ -603,41 +603,59 @@ function setSlow(i) {
 }
 function mfp(midi) { return 440 * Math.pow(2, (midi + SLOWS[slowIdx].semis - 69)/12); }
 
-// ── INSTRUMENTS ────────────────────────────────────────
-// Rhodes-ish e-piano: sine + octave partial + bell, tremolo
-function rhodes(midi, t, dur, vel) {
+// ── GAME BOY INSTRUMENTS ───────────────────────────────
+// Real GB pulse channels use selectable duty cycles; build them as
+// PeriodicWaves so the lead and harmony have that thin chip tone.
+function pulseWave(duty) {
+  const n = 26, real = new Float32Array(n), imag = new Float32Array(n);
+  for (let i = 1; i < n; i++) imag[i] = (2/(i*Math.PI))*Math.sin(Math.PI*i*duty);
+  return actx.createPeriodicWave(real, imag);
+}
+const PW12 = pulseWave(0.125), PW25 = pulseWave(0.25), PW50 = pulseWave(0.5);
+
+// Channel 1 — lead melody, 50% duty, vibrato blooms in on held notes
+function pulseLead(midi, t, dur) {
   const f = mfp(midi);
+  const o = actx.createOscillator(); o.setPeriodicWave(PW50);
+  o.frequency.setValueAtTime(f, t);
+  const vib = actx.createOscillator(); vib.frequency.value = 6.4;
+  const vg = actx.createGain();
+  vg.gain.setValueAtTime(0, t);
+  vg.gain.linearRampToValueAtTime(f*0.009, t + Math.min(0.3, dur*0.6));
+  vib.connect(vg); vg.connect(o.frequency);
   const g = actx.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(vel, t + 0.012);
-  g.gain.exponentialRampToValueAtTime(vel*0.35, t + dur*0.6);
+  g.gain.linearRampToValueAtTime(0.2, t + 0.008);
+  g.gain.setValueAtTime(0.2, t + dur*0.78);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  const trem = actx.createOscillator(); trem.frequency.value = 4.2;
-  const tg = actx.createGain(); tg.gain.value = vel*0.12;
-  trem.connect(tg); tg.connect(g.gain); trem.start(t); trem.stop(t+dur);
-  [[1,1],[2,0.28],[6.02,0.05]].forEach(([mult,amt])=>{
-    const o = actx.createOscillator(); o.type='sine'; o.frequency.value = f*mult;
-    const og = actx.createGain(); og.gain.value = amt;
-    o.connect(og); og.connect(g);
-    o.start(t); o.stop(t+dur+0.05);
-  });
-  g.connect(keysBus);
+  o.connect(g); g.connect(keysBus);
+  o.start(t); o.stop(t + dur + 0.03);
+  vib.start(t); vib.stop(t + dur + 0.03);
 }
 
-// upright-ish bass
-function bassNote(midi, t, dur) {
-  const f = mfp(midi);
-  const o = actx.createOscillator(); o.type='sine';
-  const o2 = actx.createOscillator(); o2.type='triangle'; o2.frequency.value=f;
-  o.frequency.value = f;
+// Channel 2 — harmony/arpeggio, 25% duty, quieter and shorter
+function pulseArp(midi, t, dur) {
+  const o = actx.createOscillator(); o.setPeriodicWave(PW25);
+  o.frequency.setValueAtTime(mfp(midi), t);
   const g = actx.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.55, t+0.02);
-  g.gain.exponentialRampToValueAtTime(0.001, t+dur);
-  const g2 = actx.createGain(); g2.gain.value = 0.25;
-  o.connect(g); o2.connect(g2); g2.connect(g);
-  g.connect(bassBus);
-  o.start(t); o.stop(t+dur+0.05); o2.start(t); o2.stop(t+dur+0.05);
+  g.gain.linearRampToValueAtTime(0.075, t + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(keysBus);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+
+// Channel 3 — wavetable bass (triangle is the closest built-in)
+function triBass(midi, t, dur) {
+  const o = actx.createOscillator(); o.type = 'triangle';
+  o.frequency.setValueAtTime(mfp(midi), t);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.5, t + 0.012);
+  g.gain.setValueAtTime(0.5, t + dur*0.7);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(bassBus);
+  o.start(t); o.stop(t + dur + 0.03);
 }
 
 // brushed drums
@@ -792,42 +810,80 @@ function setAuto(on) {
 }
 setAuto(false);
 
-// ── LOUNGE LOOP ENGINE ─────────────────────────────────
-// chords: midi voicings; bass: root midi; 4 bars, 16 steps per bar
+// ── GAME LOOP ENGINE ───────────────────────────────────
+// Original Game Boy-style compositions — same instrumentation and
+// harmonic conventions as classic handheld RPG soundtracks, own melodies.
+// mel: 16 steps per bar, MIDI note or 0 (rest / hold previous).
 const PRESETS = [
-  { name:'MIDNIGHT LOUNGE', bpm:72, style:'lounge',
-    chords:[[57,60,64,67,71],[50,53,57,60,64],[53,57,60,64],[52,56,59,62]],
-    roots:[33,38,41,40] },
-  { name:'MALL JAZZ',       bpm:84, style:'swing',
-    chords:[[48,52,55,59],[45,48,52,55],[50,53,57,60],[55,59,62,65]],
-    roots:[36,33,38,31] },
-  { name:'ELEVATOR BOSSA',  bpm:92, style:'bossa',
-    chords:[[53,57,60,64],[55,59,62,65],[52,55,59,62],[57,60,64,67]],
-    roots:[41,43,40,45] },
-  { name:'SMOOTH ’85',      bpm:76, style:'slow',
-    chords:[[51,55,58,62],[48,51,55,58],[56,60,63,67],[58,62,65,68]],
-    roots:[39,36,44,46] },
+  { name:'ＳＴＡＲＴＥＲ ＴＯＷＮ', bpm:112, style:'town',
+    mel:[
+      [64,0,67,0, 72,0, 0,0, 71,0,67,0, 69,0, 0,0],
+      [72,0,69,0, 64,0, 0,0, 67,0,64,0, 60,0, 0,0],
+      [65,0,69,0, 72,0, 0,0, 74,0,72,0, 69,0, 0,0],
+      [67,0,71,0, 74,0, 0,0, 71,0,67,0, 62,0, 0,0],
+    ],
+    chords:[[60,64,67],[57,60,64],[53,57,60],[55,59,62]],
+    roots:[36,33,29,31] },
+
+  { name:'ＲＯＵＴＥ ＯＮＥ', bpm:132, style:'route',
+    mel:[
+      [74,0,74,0, 71,0,74,0, 79,0, 0,0, 74,0,71,0],
+      [69,0,69,0, 66,0,69,0, 74,0, 0,0, 69,0,66,0],
+      [71,0,71,0, 67,0,71,0, 76,0, 0,0, 71,0,67,0],
+      [72,0,76,0, 79,0,76,0, 74,0,71,0, 67,0, 0,0],
+    ],
+    chords:[[55,59,62],[50,54,57],[52,55,59],[48,52,55]],
+    roots:[31,26,28,24] },
+
+  { name:'ＨＥＡＬ ＣＥＮＴＥＲ', bpm:96, style:'center',
+    mel:[
+      [69,0, 0,0, 72,0, 0,0, 77,0, 0,0, 0,0, 0,0],
+      [74,0, 0,0, 69,0, 0,0, 65,0, 0,0, 0,0, 0,0],
+      [70,0, 0,0, 74,0, 0,0, 77,0, 0,0, 0,0, 0,0],
+      [76,0, 0,0, 72,0, 0,0, 67,0, 0,0, 0,0, 0,0],
+    ],
+    chords:[[53,57,60],[50,53,57],[46,50,53],[48,52,55]],
+    roots:[29,26,22,24] },
+
+  { name:'ＲＩＶＡＬ ＢＡＴＴＬＥ', bpm:150, style:'battle',
+    mel:[
+      [69,0,72,0, 76,0,72,0, 69,0,71,0, 72,0, 0,0],
+      [65,0,69,0, 72,0,69,0, 65,0,67,0, 69,0, 0,0],
+      [67,0,71,0, 74,0,71,0, 67,0,69,0, 71,0, 0,0],
+      [64,0,68,0, 71,0,68,0, 64,0,65,0, 64,0, 0,0],
+    ],
+    chords:[[57,60,64],[53,57,60],[55,59,62],[52,56,59]],
+    roots:[33,29,31,28] },
 ];
+
 // drum rows: kick, brush, ride, rim — 16 steps
 const STYLE_DRUMS = {
-  lounge:{k:'1000000010000000', b:'0000100000001000', r:'1010101010101010', m:'0000000000000000'},
-  swing: {k:'1000000010000010', b:'0000100000001000', r:'1010101010101011', m:'0000000000000000'},
-  bossa: {k:'1001000010010000', b:'0000000000000000', r:'1010101010101010', m:'1001001000100100'},
-  slow:  {k:'1000000000000000', b:'0000100000001000', r:'0010001000100010', m:'0000000000000000'},
+  town:  {k:'1000000010000000', b:'0000100000001000', r:'1010101010101010', m:'0000000000000000'},
+  route: {k:'1000000010000010', b:'0000100000001000', r:'1010101010101011', m:'0000000000000000'},
+  center:{k:'1000000000000000', b:'0000100000001000', r:'0010001000100010', m:'0000000000000000'},
+  battle:{k:'1001000010010000', b:'0000100000001000', r:'1111111111111111', m:'1001001000100100'},
 };
-// chord stabs [step, durSteps]; bass hits [step, which] (r=root, 5=fifth)
-const STYLE_CHORDS = {
-  lounge:[[0,16]],
-  swing: [[0,8],[8,8]],
-  bossa: [[0,3],[4,4],[8,3],[12,4]],
-  slow:  [[0,16]],
-};
+// bass: [step, semitones above the bar root]
 const STYLE_BASS = {
-  lounge:[[0,'r'],[8,'5']],
-  swing: [[0,'r'],[4,'3'],[8,'5'],[12,'3']],
-  bossa: [[0,'r'],[6,'5'],[8,'r'],[14,'5']],
-  slow:  [[0,'r'],[8,'5']],
+  town:  [[0,0],[4,7],[8,12],[12,7]],
+  route: [[0,0],[2,12],[4,7],[6,12],[8,0],[10,12],[12,7],[14,12]],
+  center:[[0,0],[8,7]],
+  battle:[[0,0],[2,0],[4,7],[6,0],[8,0],[10,0],[12,7],[14,12]],
 };
+// arpeggio steps (chord tones cycled) — GB channel 2 filler
+const STYLE_ARP = {
+  town:  [2,6,10,14],
+  route: [1,3,5,7,9,11,13,15],
+  center:[4,12],
+  battle:[1,3,5,7,9,11,13,15],
+};
+
+// how long a melody note rings: until the next note in the bar
+function melDur(bar, i) {
+  let d = 1;
+  while (i + d < 16 && bar[i + d] === 0) d++;
+  return d;
+}
 
 let curPreset = 0;
 (function(){
@@ -854,12 +910,7 @@ function stepDur() {
   return 60 / (p.bpm * SLOWS[slowIdx].rate) / 4;
 }
 
-function bassMidi(p, which) {
-  const root = p.roots[barIdx];
-  if (which === '5') return root + 7;
-  if (which === '3') return root + (p.chords[barIdx][1] - p.chords[barIdx][0]);
-  return root;
-}
+let arpIdx = 0;
 
 function schedule() {
   if (tapeOn) { nextT = actx.currentTime + 0.1; return; } // frozen during tape stop
@@ -885,12 +936,20 @@ function schedule() {
     const kickRow = trapDrums.gain.value > jazzDrums.gain.value ? tp.k : dr.k;
     if (kickRow[stepIdx]==='1') duck(nextT);
 
-    STYLE_CHORDS[p.style].forEach(([st, len]) => {
-      if (st === stepIdx)
-        p.chords[barIdx].forEach(m => rhodes(m, nextT, len*sd*0.95, 0.16));
-    });
-    STYLE_BASS[p.style].forEach(([st, which]) => {
-      if (st === stepIdx) bassNote(bassMidi(p, which), nextT, sd*5);
+    // lead melody
+    const bar = p.mel[barIdx];
+    if (bar[stepIdx]) pulseLead(bar[stepIdx], nextT, melDur(bar, stepIdx)*sd*0.94);
+
+    // arpeggio harmony
+    if (STYLE_ARP[p.style].includes(stepIdx)) {
+      const ch = p.chords[barIdx];
+      pulseArp(ch[arpIdx % ch.length], nextT, sd*0.8);
+      arpIdx++;
+    }
+
+    // wavetable bass
+    STYLE_BASS[p.style].forEach(([st, off]) => {
+      if (st === stepIdx) triBass(p.roots[barIdx] + off, nextT, sd*1.9);
     });
 
     if (stepIdx === 0 && autoChop && Math.random() < 0.4) {
@@ -899,7 +958,7 @@ function schedule() {
     }
 
     stepIdx = (stepIdx+1) % 16;
-    if (stepIdx === 0) barIdx = (barIdx+1) % PRESETS[curPreset].chords.length;
+    if (stepIdx === 0) barIdx = (barIdx+1) % PRESETS[curPreset].mel.length;
     nextT += sd;
   }
 }
@@ -909,7 +968,7 @@ function togglePlay() {
   playing = !playing;
   const btn = document.getElementById('playbtn');
   if (playing) {
-    stepIdx = 0; barIdx = 0; nextT = actx.currentTime + 0.06;
+    stepIdx = 0; barIdx = 0; arpIdx = 0; nextT = actx.currentTime + 0.06;
     seqTimer = setInterval(schedule, 24);
     btn.textContent = '⏸ ＰＡＵＳＥ'; btn.classList.add('on');
   } else {
@@ -1054,7 +1113,6 @@ function tapeUp() {
 
 // ── ARCADE PAD — retro game SFX & voices through the VHS FX ──
 const Pp = () => Math.pow(2, SLOWS[slowIdx].semis/12);
-function aosc(type, f, t) { const o=actx.createOscillator(); o.type=type; o.frequency.setValueAtTime(f*Pp(), t); return o; }
 function aenv(t, a, peak, dur) {
   const g = actx.createGain();
   g.gain.setValueAtTime(0, t);
@@ -1062,16 +1120,6 @@ function aenv(t, a, peak, dur) {
   g.gain.exponentialRampToValueAtTime(0.001, t+dur);
   g.connect(liveBus);
   return g;
-}
-function ablip(f, t, dur, type, vol) {
-  const o = aosc(type||'square', f, t), g = aenv(t, 0.004, vol||0.22, dur);
-  o.connect(g); o.start(t); o.stop(t+dur+0.02);
-}
-function asweep(type, f1, f2, t, dur, vol) {
-  const o = aosc(type, f1, t);
-  o.frequency.exponentialRampToValueAtTime(Math.max(20, f2*Pp()), t+dur);
-  const g = aenv(t, 0.005, vol||0.28, dur);
-  o.connect(g); o.start(t); o.stop(t+dur+0.02);
 }
 function anoise(t, dur, filtType, freq, vol) {
   const s = actx.createBufferSource(); s.buffer = nbuf(dur);
@@ -1081,59 +1129,56 @@ function anoise(t, dur, filtType, freq, vol) {
   return f;
 }
 const arnd = (a,b) => a + Math.random()*(b-a);
-function atalk(t, base, count, spread, dur) {
-  for (let i = 0; i < count; i++)
-    ablip(base*arnd(1-spread,1+spread), t+i*(dur+0.028), dur, 'square', 0.16);
+
+// pulse-wave blip — the core of every handheld UI sound
+function pblip(f, t, dur, vol, duty) {
+  const o = actx.createOscillator();
+  o.setPeriodicWave(duty===12 ? PW12 : duty===25 ? PW25 : PW50);
+  o.frequency.setValueAtTime(f*Pp(), t);
+  const g = aenv(t, 0.002, vol||0.2, dur);
+  o.connect(g); o.start(t); o.stop(t+dur+0.02);
+}
+function pslide(f1, f2, t, dur, vol, duty) {
+  const o = actx.createOscillator();
+  o.setPeriodicWave(duty===12 ? PW12 : duty===25 ? PW25 : PW50);
+  o.frequency.setValueAtTime(f1*Pp(), t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20, f2*Pp()), t+dur);
+  const g = aenv(t, 0.003, vol||0.2, dur);
+  o.connect(g); o.start(t); o.stop(t+dur+0.02);
+}
+function ptune(t, notes, step, dur, vol, duty) {
+  notes.forEach((f,i) => { if (f) pblip(f, t+i*step, dur, vol, duty); });
 }
 
+// Menu, field, and battle sounds — synthesized, not sampled
 const ARCADE = {
-  jump(t)    { asweep('square', 160, 620, t, 0.16); },
-  coin(t)    { ablip(988, t, 0.09); ablip(1319, t+0.09, 0.28); },
-  laser(t)   { asweep('sawtooth', 1900, 180, t, 0.19); },
-  powerup(t) { [262,330,392,523,659,784].forEach((f,i)=>ablip(f, t+i*0.055, 0.06)); },
-  explode(t) { const f = anoise(t, 0.75, 'lowpass', 2800, 0.7);
-               f.frequency.exponentialRampToValueAtTime(120, t+0.7);
-               asweep('sine', 110, 30, t, 0.5, 0.45); },
-  zap(t)     { const o = aosc('square', 520, t);
-               const l = actx.createOscillator(); l.frequency.value = 38;
-               const lg = actx.createGain(); lg.gain.value = 260*Pp();
-               l.connect(lg); lg.connect(o.frequency);
-               const g = aenv(t, 0.005, 0.22, 0.22);
-               o.connect(g); o.start(t); o.stop(t+0.24); l.start(t); l.stop(t+0.24); },
-  warp(t)    { const o = aosc('sine', 180, t);
-               o.frequency.exponentialRampToValueAtTime(1400*Pp(), t+0.7);
-               const v = actx.createOscillator(); v.frequency.value = 11;
-               const vg = actx.createGain(); vg.gain.value = 80*Pp();
-               v.connect(vg); vg.connect(o.frequency);
-               const g = aenv(t, 0.02, 0.24, 0.75);
-               o.connect(g); o.start(t); o.stop(t+0.78); v.start(t); v.stop(t+0.78); },
-  alarm(t)   { [0,0.18,0.36].forEach(d=>{ ablip(880, t+d, 0.09); ablip(660, t+d+0.09, 0.09); }); },
-  talkHi(t)  { atalk(t, 620, 9, 0.22, 0.042); },
-  talkLow(t) { atalk(t, 170, 7, 0.15, 0.06); },
-  alien(t)   { const o = aosc('sine', 700, t);
-               for (let i=1;i<=5;i++) o.frequency.exponentialRampToValueAtTime(arnd(300,1100)*Pp(), t+i*0.12);
-               const g = aenv(t, 0.02, 0.18, 0.65);
-               o.connect(g); o.start(t); o.stop(t+0.68); },
-  yes(t)     { asweep('square', 350, 700, t, 0.12, 0.2); asweep('square', 460, 900, t+0.13, 0.14, 0.2); },
-  no(t)      { asweep('square', 500, 250, t, 0.14, 0.2); asweep('square', 400, 180, t+0.15, 0.17, 0.2); },
-  growl(t)   { const o = aosc('sawtooth', 75, t);
-               const l = actx.createOscillator(); l.frequency.value = 13;
-               const lg = actx.createGain(); lg.gain.value = 22*Pp();
-               l.connect(lg); lg.connect(o.frequency);
-               const f = actx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=420;
-               const g = aenv(t, 0.03, 0.45, 0.75);
-               o.connect(f); f.connect(g); o.start(t); o.stop(t+0.78); l.start(t); l.stop(t+0.78); },
-  laugh(t)   { [420,380,420,380,420].forEach((f,i)=>ablip(f*arnd(0.96,1.04), t+i*0.09, 0.055, 'square', 0.16)); },
-  oneUp(t)   { [330,392,659,523,587,784].forEach((f,i)=>ablip(f, t+i*0.11, 0.1)); },
+  cursor(t)   { pblip(1245, t, 0.028, 0.2, 12); },
+  select(t)   { pblip(880, t, 0.026, 0.2, 25); pblip(1760, t+0.028, 0.055, 0.2, 25); },
+  back(t)     { pblip(880, t, 0.03, 0.18, 25); pblip(587, t+0.032, 0.06, 0.18, 25); },
+  menu(t)     { pslide(660, 1320, t, 0.07, 0.18, 12); },
+  text(t)     { pblip(1568, t, 0.016, 0.13, 12); },
+  save(t)     { ptune(t, [784,1046,1568], 0.085, 0.075, 0.19, 25); },
+  heal(t)     { ptune(t, [1046,1318,1568,2093,1568,2093], 0.115, 0.1, 0.17, 25); },
+  itemGet(t)  { ptune(t, [1046,1318,1568,2093], 0.07, 0.065, 0.19, 50); },
+  ballThrow(t){ pslide(300, 1500, t, 0.16, 0.16, 12);
+                const f = anoise(t, 0.2, 'bandpass', 900, 0.18);
+                f.frequency.exponentialRampToValueAtTime(3400, t+0.18); },
+  ballClick(t){ pblip(440, t, 0.022, 0.2, 12); anoise(t, 0.05, 'highpass', 3000, 0.14); },
+  caught(t)   { ptune(t, [784,988,1175,1568,0,1175,1568], 0.1, 0.09, 0.18, 25); },
+  levelUp(t)  { ptune(t, [523,659,784,1046,1318,1568], 0.06, 0.055, 0.18, 25); },
+  exp(t)      { for (let i=0;i<10;i++) pblip(1760, t+i*0.048, 0.022, 0.11, 12); },
+  faint(t)    { pslide(880, 90, t, 0.65, 0.2, 25); },
+  pcBoot(t)   { pblip(523, t, 0.09, 0.17, 50); pblip(1046, t+0.1, 0.22, 0.17, 50); },
+  evolve(t)   { for (let i=0;i<14;i++) pblip(523*Math.pow(2,i/7), t+i*0.065, 0.05, 0.14, 12); },
 };
 
 (function(){
   const pad = document.getElementById('apad');
   const DEFS = [
-    ['jump','JUMP','🕹️'], ['coin','COIN','🪙'], ['laser','LASER','🔫'], ['powerup','POWER','⭐'],
-    ['explode','BOOM','💥'], ['zap','ZAP','⚡'], ['warp','WARP','🌀'], ['alarm','ALARM','🚨'],
-    ['talkHi','TALK HI','💬'], ['talkLow','TALK LO','💬'], ['alien','ALIEN','👾'], ['yes','YES!','✅'],
-    ['no','NO!','❌'], ['growl','GROWL','🐲'], ['laugh','LAUGH','😆'], ['oneUp','1-UP','🍄'],
+    ['cursor','CURSOR','▸'],    ['select','SELECT','🅰'],   ['back','BACK','🅱'],      ['menu','MENU','▤'],
+    ['text','TEXT','💬'],       ['save','SAVE','💾'],       ['heal','HEAL','💗'],      ['itemGet','ITEM','🎁'],
+    ['ballThrow','THROW','🥎'], ['ballClick','CLICK','⚪'], ['caught','CAUGHT','✨'],  ['levelUp','LVL UP','📈'],
+    ['exp','EXP','▰'],          ['faint','FAINT','💀'],     ['pcBoot','PC','🖥️'],      ['evolve','EVOLVE','🌟'],
   ];
   DEFS.forEach(([key, label, ico]) => {
     const b = document.createElement('button');
