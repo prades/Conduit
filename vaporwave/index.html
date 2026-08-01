@@ -134,6 +134,8 @@ body{
     <button class="tbtn" onclick="stopAll()">■ ＳＴＯＰ</button>
     <button class="tbtn rec" id="recbtn" onclick="toggleRec()">● ＲＥＣ</button>
     <span id="rectime"></span>
+    <button class="tbtn" id="tapebtn" style="border-color:var(--purple);color:var(--purple)"
+      onpointerdown="tapeDown()" onpointerup="tapeUp()" onpointerleave="tapeUp()">⏏ ＴＡＰＥ ＳＴＯＰ</button>
   </div>
 
   <div id="panels">
@@ -280,6 +282,18 @@ body{
           oninput="drumFilter.frequency.setTargetAtTime(+this.value,actx.currentTime,0.03);this.parentElement.querySelector('.cv').textContent=(this.value/1000).toFixed(1)+'k'">
         <span class="cv m">18k</span>
       </div>
+      <div class="cr">
+        <span class="cl">PUMP</span>
+        <input type="range" class="sl" min="0" max="0.85" step="0.01" value="0"
+          oninput="pumpAmt=+this.value;this.parentElement.querySelector('.cv').textContent=Math.round(this.value/0.85*100)+'%'">
+        <span class="cv">0%</span>
+      </div>
+      <div class="cr">
+        <span class="cl">DJ FILTER</span>
+        <input type="range" class="sl m" min="-1" max="1" step="0.01" value="0" ondblclick="this.value=0;setDJ(0);this.parentElement.querySelector('.cv').textContent='—'"
+          oninput="setDJ(+this.value);this.parentElement.querySelector('.cv').textContent=(+this.value===0?'—':(this.value<0?'LP ':'HP ')+Math.round(Math.abs(this.value)*100)+'%')">
+        <span class="cv m">—</span>
+      </div>
     </div>
 
     <!-- ARCADE PAD -->
@@ -329,8 +343,29 @@ function setWobble(v) {
   wobDepth2.gain.setTargetAtTime(v*0.002, actx.currentTime, 0.05);
 }
 
+// tape stop: a rampable delay — growing delay time = falling pitch,
+// exactly like a cassette motor spinning down
+const tapeDelay = actx.createDelay(1.2); tapeDelay.delayTime.value = 0.012;
+const tapeGain = actx.createGain();
+wobDelay.connect(tapeDelay); tapeDelay.connect(tapeGain);
+
+// DJ filter: one macro — left = lowpass sweep, right = highpass sweep
+const djLP = actx.createBiquadFilter(); djLP.type='lowpass';  djLP.frequency.value = 20000;
+const djHP = actx.createBiquadFilter(); djHP.type='highpass'; djHP.frequency.value = 10;
+tapeGain.connect(djLP); djLP.connect(djHP);
+function setDJ(v) {
+  const t = actx.currentTime;
+  if (v < 0) {
+    djLP.frequency.setTargetAtTime(20000*Math.pow(300/20000, -v), t, 0.03);
+    djHP.frequency.setTargetAtTime(10, t, 0.03);
+  } else {
+    djLP.frequency.setTargetAtTime(20000, t, 0.03);
+    djHP.frequency.setTargetAtTime(10*Math.pow(3000/10, v), t, 0.03);
+  }
+}
+
 // chorus haze
-const chorusIn = wobDelay;
+const chorusIn = djHP;
 const chDelay = actx.createDelay(0.1); chDelay.delayTime.value = 0.024;
 const chLfo = actx.createOscillator(); chLfo.frequency.value = 0.6;
 const chDepth = actx.createGain(); chDepth.gain.value = 0.009;
@@ -363,9 +398,21 @@ const trapDrums = actx.createGain(); trapDrums.gain.value = 0; // start full jaz
 const drumBus   = actx.createGain();
 const drumFilter = actx.createBiquadFilter();
 drumFilter.type = 'lowpass'; drumFilter.frequency.value = 18000;
-keysBus.connect(fxIn); bassBus.connect(fxIn);
+// sidechain pump: kicks duck the keys + bass through this gain
+const pumpGain = actx.createGain();
+let pumpAmt = 0;
+keysBus.connect(pumpGain); bassBus.connect(pumpGain); pumpGain.connect(fxIn);
 jazzDrums.connect(drumBus); trapDrums.connect(drumBus);
 drumBus.connect(drumFilter); drumFilter.connect(fxIn);
+
+function duck(t) {
+  if (pumpAmt <= 0) return;
+  const g = pumpGain.gain;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(1, t);
+  g.linearRampToValueAtTime(1 - pumpAmt, t + 0.02);
+  g.linearRampToValueAtTime(1, t + 0.3);
+}
 
 function setXfade(v) { // equal-power: 0 = jazz, 1 = trap
   jazzDrums.gain.setTargetAtTime(Math.cos(v*Math.PI/2), actx.currentTime, 0.03);
@@ -794,6 +841,7 @@ function bassMidi(p, which) {
 }
 
 function schedule() {
+  if (tapeOn) { nextT = actx.currentTime + 0.1; return; } // frozen during tape stop
   while (nextT < actx.currentTime + 0.12) {
     const p  = PRESETS[curPreset];
     const sd = stepDur();
@@ -811,6 +859,10 @@ function schedule() {
     if (tp.h[stepIdx]==='1') trapHat(nextT, false);
     if (tp.o[stepIdx]==='1') trapHat(nextT, true);
     if (tp.roll.includes(stepIdx)) trapHat(nextT + sd/2, false);
+
+    // sidechain: duck keys+bass on whichever kit is louder
+    const kickRow = trapDrums.gain.value > jazzDrums.gain.value ? tp.k : dr.k;
+    if (kickRow[stepIdx]==='1') duck(nextT);
 
     STYLE_CHORDS[p.style].forEach(([st, len]) => {
       if (st === stepIdx)
@@ -847,6 +899,35 @@ function togglePlay() {
 function stopAll() {
   if (playing) togglePlay();
   stepIdx = 0; barIdx = 0;
+}
+
+// ── TAPE STOP (hold the button) ────────────────────────
+let tapeOn = false;
+function tapeDown() {
+  resume();
+  if (tapeOn) return;
+  tapeOn = true;
+  const t = actx.currentTime;
+  tapeDelay.delayTime.cancelScheduledValues(t);
+  tapeDelay.delayTime.setValueAtTime(tapeDelay.delayTime.value, t);
+  tapeDelay.delayTime.linearRampToValueAtTime(0.95, t + 0.9); // pitch dives as delay grows
+  tapeGain.gain.cancelScheduledValues(t);
+  tapeGain.gain.setValueAtTime(tapeGain.gain.value, t);
+  tapeGain.gain.linearRampToValueAtTime(0.0001, t + 0.95);
+  document.getElementById('tapebtn').classList.add('on');
+}
+function tapeUp() {
+  if (!tapeOn) return;
+  tapeOn = false;
+  const t = actx.currentTime;
+  tapeDelay.delayTime.cancelScheduledValues(t);
+  tapeDelay.delayTime.setValueAtTime(tapeDelay.delayTime.value, t);
+  tapeDelay.delayTime.linearRampToValueAtTime(0.012, t + 0.22); // quick spin back up
+  tapeGain.gain.cancelScheduledValues(t);
+  tapeGain.gain.setValueAtTime(0.0001, t);
+  tapeGain.gain.linearRampToValueAtTime(1, t + 0.25);
+  if (playing) nextT = t + 0.28; // resume the groove cleanly
+  document.getElementById('tapebtn').classList.remove('on');
 }
 
 // ── ARCADE PAD — retro game SFX & voices through the VHS FX ──
