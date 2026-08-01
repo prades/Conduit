@@ -697,7 +697,7 @@ function trapKick(t) {
 }
 function sub808(t, midi) {
   const o=actx.createOscillator(); o.type='sine';
-  const f = mfp(midi);
+  const f = mfp(midi - 12);
   o.frequency.setValueAtTime(f*1.5, t);
   o.frequency.exponentialRampToValueAtTime(f, t+0.04);
   const g=actx.createGain();
@@ -823,7 +823,7 @@ const PRESETS = [
       [67,0,71,0, 74,0, 0,0, 71,0,67,0, 62,0, 0,0],
     ],
     chords:[[60,64,67],[57,60,64],[53,57,60],[55,59,62]],
-    roots:[36,33,29,31] },
+    roots:[48,45,41,43] },
 
   { name:'ＲＯＵＴＥ ＯＮＥ', bpm:132, style:'route',
     mel:[
@@ -833,7 +833,7 @@ const PRESETS = [
       [72,0,76,0, 79,0,76,0, 74,0,71,0, 67,0, 0,0],
     ],
     chords:[[55,59,62],[50,54,57],[52,55,59],[48,52,55]],
-    roots:[31,26,28,24] },
+    roots:[43,38,40,36] },
 
   { name:'ＨＥＡＬ ＣＥＮＴＥＲ', bpm:96, style:'center',
     mel:[
@@ -843,7 +843,7 @@ const PRESETS = [
       [76,0, 0,0, 72,0, 0,0, 67,0, 0,0, 0,0, 0,0],
     ],
     chords:[[53,57,60],[50,53,57],[46,50,53],[48,52,55]],
-    roots:[29,26,22,24] },
+    roots:[41,38,34,36] },
 
   { name:'ＲＩＶＡＬ ＢＡＴＴＬＥ', bpm:150, style:'battle',
     mel:[
@@ -853,7 +853,7 @@ const PRESETS = [
       [64,0,68,0, 71,0,68,0, 64,0,65,0, 64,0, 0,0],
     ],
     chords:[[57,60,64],[53,57,60],[55,59,62],[52,56,59]],
-    roots:[33,29,31,28] },
+    roots:[45,41,43,40] },
 ];
 
 // drum rows: kick, brush, ride, rim — 16 steps
