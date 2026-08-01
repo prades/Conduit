@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ＰＯＫＥＷＡＶＥ ＭＡＫＥＲ</title>
+<title>ＲＥＴＲＯＷＡＶＥ ＭＡＫＥＲ</title>
 <script src="lame.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -140,8 +140,8 @@ body{
 
 <div id="page">
   <div id="hdr">
-    <div id="title">ＰＯＫＥＷＡＶＥ　ＭＡＫＥＲ</div>
-    <div id="subtitle">ポケウェイブ · GAME BOY AESTHETIC · １９９６</div>
+    <div id="title">ＲＥＴＲＯＷＡＶＥ　ＭＡＫＥＲ</div>
+    <div id="subtitle">レトロウェイブ · ８０ｓ／９０ｓ ＳＴＵＤＩＯ · １９８９</div>
   </div>
 
   <div id="transport">
@@ -157,7 +157,7 @@ body{
 
     <!-- LOOPS -->
     <div class="panel">
-      <div class="ptitle">ＧＡＭＥ ＬＯＯＰＳ <span class="jp">ゲーム音楽</span></div>
+      <div class="ptitle">ＲＥＴＲＯ ＬＯＯＰＳ <span class="jp">レトロ</span></div>
       <div id="looplist"></div>
 
       <div class="ptitle" style="margin-top:16px">ＳＬＯＷＥＤ <span class="jp">遅い</span></div>
@@ -248,10 +248,10 @@ body{
     <div class="panel">
       <div class="ptitle">ＳＴＥＭ ＭＩＸＥＲ <span class="jp">ミキサー</span></div>
       <div style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-bottom:10px;line-height:1.7">
-        SLIDE BETWEEN BRUSHED JAZZ AND TRAP DRUMS.<br>PHASE ANY STEM IN OR OUT OF THE MIX.
+        SLIDE BETWEEN 80s GATED DRUMS AND TRAP.<br>PHASE ANY STEM IN OR OUT OF THE MIX.
       </div>
       <div class="cr">
-        <span class="cl">JAZZ ⇄ TRAP</span>
+        <span class="cl">RETRO ⇄ TRAP</span>
         <input type="range" class="sl" min="0" max="1" step="0.01" value="0"
           oninput="setXfade(+this.value);this.parentElement.querySelector('.cv').textContent=Math.round(this.value*100)+'%'">
         <span class="cv">0%</span>
@@ -267,7 +267,7 @@ body{
         <button class="wbtn" id="tp-4" onclick="setTrapPat(4)">SPARSE</button>
         <button class="wbtn" id="tp-5" onclick="setTrapPat(5)">DOUBLE</button>
       </div>
-      <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin:0 0 6px">JAZZ FEEL</div>
+      <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin:0 0 6px">RETRO FEEL</div>
       <div class="wrow" style="margin-bottom:10px">
         <button class="wbtn on" id="jf-auto" onclick="setJazzFeel('auto')">AUTO</button>
         <button class="wbtn" id="jf-busy" onclick="setJazzFeel('busy')">BUSY</button>
@@ -313,9 +313,9 @@ body{
 
     <!-- ARCADE PAD -->
     <div class="panel">
-      <div class="ptitle">ＰＫＭＮ ＳＦＸ <span class="jp">効果音</span></div>
+      <div class="ptitle">８０ｓ／９０ｓ ＳＦＸ <span class="jp">効果音</span></div>
       <div style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-bottom:10px;line-height:1.7">
-        MENU, FIELD &amp; BATTLE SOUNDS — RUN THROUGH THE VHS FX.<br>PITCH DOWN WITH THE SLOWED SETTING.
+        THE ONE-SHOTS THAT DEFINED THE ERA — ALL SYNTHESIZED.<br>THEY RUN THROUGH THE VHS FX AND THE LOOPER.
       </div>
       <div id="apad"></div>
 
@@ -377,7 +377,7 @@ body{
   </div>
 
   <div id="footer">
-    ＯＲＩＧＩＮＡＬ ＧＡＭＥ ＢＯＹ－ＳＴＹＬＥ ＴＵＮＥＳ · ＡＬＬ ＳＹＮＴＨＥＳＩＺＥＤ ＬＩＶＥ<br>
+    ＯＲＩＧＩＮＡＬ ＴＲＡＣＫＳ ＩＮ ８０ｓ／９０ｓ ＳＴＹＬＥＳ · ＡＬＬ ＳＹＮＴＨＥＳＩＺＥＤ ＬＩＶＥ<br>
     ＨＩＴ ＲＥＣ → ＤＯＷＮＬＯＡＤＳ ＭＰ３
   </div>
 </div>
@@ -656,92 +656,172 @@ function setSlow(i) {
 }
 function mfp(midi) { return 440 * Math.pow(2, (midi + SLOWS[slowIdx].semis - 69)/12); }
 
-// ── GAME BOY INSTRUMENTS ───────────────────────────────
-// Real GB pulse channels use selectable duty cycles; build them as
-// PeriodicWaves so the lead and harmony have that thin chip tone.
+// ── 80s / 90s SYNTH VOICES ─────────────────────────────
 function pulseWave(duty) {
   const n = 26, real = new Float32Array(n), imag = new Float32Array(n);
   for (let i = 1; i < n; i++) imag[i] = (2/(i*Math.PI))*Math.sin(Math.PI*i*duty);
   return actx.createPeriodicWave(real, imag);
 }
-const PW12 = pulseWave(0.125), PW25 = pulseWave(0.25), PW50 = pulseWave(0.5);
+const PW25 = pulseWave(0.25);
 
-// Channel 1 — lead melody, 50% duty, vibrato blooms in on held notes
-function pulseLead(midi, t, dur) {
+// FM electric piano — 2-op, bright bell attack decaying to a soft body.
+// The DX7 sound that defined 80s ballads and city pop.
+function fmPiano(midi, t, dur) {
   const f = mfp(midi);
-  const o = actx.createOscillator(); o.setPeriodicWave(PW50);
-  o.frequency.setValueAtTime(f, t);
-  const vib = actx.createOscillator(); vib.frequency.value = 6.4;
-  const vg = actx.createGain();
-  vg.gain.setValueAtTime(0, t);
-  vg.gain.linearRampToValueAtTime(f*0.009, t + Math.min(0.3, dur*0.6));
-  vib.connect(vg); vg.connect(o.frequency);
+  const car = actx.createOscillator(); car.type = 'sine'; car.frequency.value = f;
+  const mod = actx.createOscillator(); mod.type = 'sine'; mod.frequency.value = f*14;
+  const mg = actx.createGain();
+  mg.gain.setValueAtTime(f*3.4, t);
+  mg.gain.exponentialRampToValueAtTime(f*0.06, t + 0.2);
+  mod.connect(mg); mg.connect(car.frequency);
   const g = actx.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.2, t + 0.008);
-  g.gain.setValueAtTime(0.2, t + dur*0.78);
+  g.gain.linearRampToValueAtTime(0.26, t + 0.006);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  o.connect(g); g.connect(keysBus);
-  o.start(t); o.stop(t + dur + 0.03);
-  vib.start(t); vib.stop(t + dur + 0.03);
+  car.connect(g); g.connect(keysBus);
+  car.start(t); car.stop(t + dur + 0.05);
+  mod.start(t); mod.stop(t + dur + 0.05);
 }
 
-// Channel 2 — harmony/arpeggio, 25% duty, quieter and shorter
+// Detuned three-saw lead through a resonant lowpass — the Juno/supersaw
+// tone behind every synthwave record.
+function sawLead(midi, t, dur) {
+  const f = mfp(midi);
+  const flt = actx.createBiquadFilter();
+  flt.type = 'lowpass'; flt.Q.value = 3;
+  flt.frequency.setValueAtTime(f*9, t);
+  flt.frequency.exponentialRampToValueAtTime(f*3.5, t + dur*0.8);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.12, t + 0.025);
+  g.gain.setValueAtTime(0.12, t + dur*0.82);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  [-11, 0, 11].forEach(det => {
+    const o = actx.createOscillator(); o.type = 'sawtooth';
+    o.frequency.value = f; o.detune.value = det;
+    o.connect(flt); o.start(t); o.stop(t + dur + 0.05);
+  });
+  flt.connect(g); g.connect(keysBus);
+  return g;
+}
+
+// Bright additive stab — the rave piano / M1 organ attack
+function pianoStab(midi, t, dur) {
+  const f = mfp(midi);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.19, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.001, t + Math.min(dur, 0.5));
+  [[1,1],[2,0.42],[3,0.2],[4,0.1],[6,0.05]].forEach(([m,a]) => {
+    const o = actx.createOscillator(); o.type = 'triangle';
+    o.frequency.value = f*m;
+    const og = actx.createGain(); og.gain.value = a;
+    o.connect(og); og.connect(g);
+    o.start(t); o.stop(t + dur + 0.05);
+  });
+  g.connect(keysBus);
+}
+
+// Chord filler — quiet pulse arpeggio, sits under the lead
 function pulseArp(midi, t, dur) {
   const o = actx.createOscillator(); o.setPeriodicWave(PW25);
   o.frequency.setValueAtTime(mfp(midi), t);
   const g = actx.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.075, t + 0.005);
+  g.gain.linearRampToValueAtTime(0.07, t + 0.005);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   o.connect(g); g.connect(keysBus);
   o.start(t); o.stop(t + dur + 0.02);
 }
 
-// Channel 3 — wavetable bass (triangle is the closest built-in)
-function triBass(midi, t, dur) {
-  const o = actx.createOscillator(); o.type = 'triangle';
-  o.frequency.setValueAtTime(mfp(midi), t);
+// Analog synth bass — saw through a filter envelope
+function synthBass(midi, t, dur) {
+  const f = mfp(midi);
+  const o = actx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+  const flt = actx.createBiquadFilter(); flt.type = 'lowpass'; flt.Q.value = 6;
+  flt.frequency.setValueAtTime(f*11, t);
+  flt.frequency.exponentialRampToValueAtTime(f*2.2, t + 0.13);
   const g = actx.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.5, t + 0.012);
-  g.gain.setValueAtTime(0.5, t + dur*0.7);
+  g.gain.linearRampToValueAtTime(0.4, t + 0.008);
+  g.gain.setValueAtTime(0.4, t + dur*0.7);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  o.connect(g); g.connect(bassBus);
-  o.start(t); o.stop(t + dur + 0.03);
+  o.connect(flt); flt.connect(g); g.connect(bassBus);
+  o.start(t); o.stop(t + dur + 0.04);
 }
+
+// Slap bass — square + octave saw, snappy filter pluck
+function slapBass(midi, t, dur) {
+  const f = mfp(midi);
+  const o  = actx.createOscillator(); o.type = 'square';   o.frequency.value = f;
+  const o2 = actx.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = f*2;
+  const flt = actx.createBiquadFilter(); flt.type = 'lowpass'; flt.Q.value = 9;
+  flt.frequency.setValueAtTime(f*24, t);
+  flt.frequency.exponentialRampToValueAtTime(f*2.6, t + 0.1);
+  const g2 = actx.createGain(); g2.gain.value = 0.28;
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.42, t + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.001, t + Math.min(dur, 0.55));
+  o.connect(flt); o2.connect(g2); g2.connect(flt);
+  flt.connect(g); g.connect(bassBus);
+  o.start(t); o.stop(t + dur + 0.04); o2.start(t); o2.stop(t + dur + 0.04);
+}
+
+const LEADS  = { fm: fmPiano, saw: sawLead, piano: pianoStab };
+const BASSES = { synth: synthBass, slap: slapBass };
 
 // brushed drums
 function nbuf(dur) {
   const n = Math.ceil(actx.sampleRate*dur), b = actx.createBuffer(1,n,actx.sampleRate);
   const d = b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return b;
 }
+
+/* — 80s kit: LinnDrum-style kick, gated snare, crisp hat, 808 cowbell — */
 function softKick(t) {
   const o=actx.createOscillator(), g=actx.createGain();
-  o.frequency.setValueAtTime(95,t); o.frequency.exponentialRampToValueAtTime(38,t+0.25);
-  g.gain.setValueAtTime(0.5,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.28);
-  o.connect(g); g.connect(jazzDrums); o.start(t); o.stop(t+0.3);
+  o.frequency.setValueAtTime(125,t); o.frequency.exponentialRampToValueAtTime(45,t+0.11);
+  g.gain.setValueAtTime(0.85,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.3);
+  o.connect(g); g.connect(jazzDrums); o.start(t); o.stop(t+0.32);
+  const c=actx.createBufferSource(); c.buffer=nbuf(0.014);
+  const cf=actx.createBiquadFilter(); cf.type='highpass'; cf.frequency.value=1800;
+  const cg=actx.createGain(); cg.gain.setValueAtTime(0.3,t);
+  cg.gain.exponentialRampToValueAtTime(0.001,t+0.014);
+  c.connect(cf); cf.connect(cg); cg.connect(jazzDrums); c.start(t); c.stop(t+0.016);
 }
+// The defining 80s drum sound: huge reverb tail that slams shut mid-decay.
 function brush(t) {
   const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
-  s.buffer=nbuf(0.16); f.type='lowpass'; f.frequency.value=4200;
-  g.gain.setValueAtTime(0.14,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.16);
-  s.connect(f); f.connect(g); g.connect(jazzDrums); s.start(t); s.stop(t+0.17);
+  s.buffer=nbuf(0.34); f.type='bandpass'; f.frequency.value=1150; f.Q.value=0.55;
+  g.gain.setValueAtTime(0.5,t);
+  g.gain.exponentialRampToValueAtTime(0.15,t+0.07);
+  g.gain.setValueAtTime(0.15,t+0.2);
+  g.gain.linearRampToValueAtTime(0.0001,t+0.225);   // the gate
+  s.connect(f); f.connect(g); g.connect(jazzDrums); s.start(t); s.stop(t+0.26);
+  const o=actx.createOscillator(), og=actx.createGain();
+  o.frequency.value=195; og.gain.setValueAtTime(0.3,t);
+  og.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+  o.connect(og); og.connect(jazzDrums); o.start(t); o.stop(t+0.09);
 }
 function ride(t) {
   const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
-  s.buffer=nbuf(0.09); f.type='highpass'; f.frequency.value=8500;
-  g.gain.setValueAtTime(0.055,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.09);
-  s.connect(f); f.connect(g); g.connect(jazzDrums); s.start(t); s.stop(t+0.1);
+  s.buffer=nbuf(0.06); f.type='highpass'; f.frequency.value=9500;
+  g.gain.setValueAtTime(0.16,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.06);
+  s.connect(f); f.connect(g); g.connect(jazzDrums); s.start(t); s.stop(t+0.07);
 }
+// 808 cowbell: two detuned squares through a bandpass
 function rim(t) {
-  const o=actx.createOscillator(), g=actx.createGain();
-  o.frequency.value = 1750;
-  g.gain.setValueAtTime(0.1,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.03);
-  o.connect(g); g.connect(jazzDrums); o.start(t); o.stop(t+0.035);
+  const g=actx.createGain();
+  g.gain.setValueAtTime(0.22,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+  const f=actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2640; f.Q.value=1.2;
+  [540, 800].forEach(fr => {
+    const o=actx.createOscillator(); o.type='square'; o.frequency.value=fr;
+    o.connect(f); o.start(t); o.stop(t+0.23);
+  });
+  f.connect(g); g.connect(jazzDrums);
 }
 
-// trap kit — crossfaded in with the JAZZ ⇄ TRAP slider
+// trap kit — crossfaded in with the RETRO ⇄ TRAP slider
 function trapKick(t) {
   const o=actx.createOscillator(), g=actx.createGain();
   o.frequency.setValueAtTime(160,t); o.frequency.exponentialRampToValueAtTime(34,t+0.4);
@@ -863,72 +943,71 @@ function setAuto(on) {
 }
 setAuto(false);
 
-// ── GAME LOOP ENGINE ───────────────────────────────────
-// Original Game Boy-style compositions — same instrumentation and
-// harmonic conventions as classic handheld RPG soundtracks, own melodies.
+// ── RETRO LOOP ENGINE ──────────────────────────────────
+// Original tracks written in the defining styles of the era.
 // mel: 16 steps per bar, MIDI note or 0 (rest / hold previous).
 const PRESETS = [
-  { name:'ＳＴＡＲＴＥＲ ＴＯＷＮ', bpm:112, style:'town',
+  { name:'ＯＵＴＲＵＮ ＮＩＧＨＴ', bpm:118, style:'outrun', lead:'saw', bass:'synth',
     mel:[
-      [64,0,67,0, 72,0, 0,0, 71,0,67,0, 69,0, 0,0],
-      [72,0,69,0, 64,0, 0,0, 67,0,64,0, 60,0, 0,0],
-      [65,0,69,0, 72,0, 0,0, 74,0,72,0, 69,0, 0,0],
-      [67,0,71,0, 74,0, 0,0, 71,0,67,0, 62,0, 0,0],
+      [69,0, 0,0,  0,0, 0,0, 72,0, 0,0, 71,0, 0,0],
+      [72,0, 0,0,  0,0,69,0, 65,0, 0,0, 67,0, 0,0],
+      [76,0, 0,0,  0,0, 0,0, 72,0, 0,0, 79,0, 0,0],
+      [74,0, 0,0,  0,0,71,0, 67,0, 0,0, 62,0, 0,0],
     ],
-    chords:[[60,64,67],[57,60,64],[53,57,60],[55,59,62]],
-    roots:[48,45,41,43] },
+    chords:[[57,60,64],[53,57,60],[48,52,55],[55,59,62]],
+    roots:[45,41,36,43] },
 
-  { name:'ＲＯＵＴＥ ＯＮＥ', bpm:132, style:'route',
+  { name:'ＣＩＴＹ ＰＯＰ ＤＲＩＶＥ', bpm:104, style:'citypop', lead:'fm', bass:'slap',
     mel:[
-      [74,0,74,0, 71,0,74,0, 79,0, 0,0, 74,0,71,0],
-      [69,0,69,0, 66,0,69,0, 74,0, 0,0, 69,0,66,0],
-      [71,0,71,0, 67,0,71,0, 76,0, 0,0, 71,0,67,0],
-      [72,0,76,0, 79,0,76,0, 74,0,71,0, 67,0, 0,0],
+      [72,0,74,0, 77,0, 0,0, 76,0,72,0, 69,0, 0,0],
+      [71,0,74,0, 76,0, 0,0, 74,0,71,0, 67,0, 0,0],
+      [69,0,72,0, 74,0, 0,0, 77,0,74,0, 72,0, 0,0],
+      [74,0,77,0, 79,0, 0,0, 77,0,74,0, 71,0, 0,0],
     ],
-    chords:[[55,59,62],[50,54,57],[52,55,59],[48,52,55]],
-    roots:[43,38,40,36] },
+    chords:[[53,57,60,64],[52,55,59,62],[50,53,57,60],[55,59,62,65]],
+    roots:[41,40,38,43] },
 
-  { name:'ＨＥＡＬ ＣＥＮＴＥＲ', bpm:96, style:'center',
+  { name:'ＮＥＷ ＪＡＣＫ ＳＷＩＮＧ', bpm:112, style:'njs', lead:'piano', bass:'synth',
     mel:[
-      [69,0, 0,0, 72,0, 0,0, 77,0, 0,0, 0,0, 0,0],
-      [74,0, 0,0, 69,0, 0,0, 65,0, 0,0, 0,0, 0,0],
-      [70,0, 0,0, 74,0, 0,0, 77,0, 0,0, 0,0, 0,0],
-      [76,0, 0,0, 72,0, 0,0, 67,0, 0,0, 0,0, 0,0],
+      [72,0, 0,0, 75,0, 0,0, 79,0, 0,0, 75,0, 0,0],
+      [72,0, 0,0, 68,0, 0,0, 75,0, 0,0, 72,0, 0,0],
+      [70,0, 0,0, 74,0, 0,0, 77,0, 0,0, 74,0, 0,0],
+      [67,0, 0,0, 70,0, 0,0, 74,0, 0,0, 70,0, 0,0],
     ],
-    chords:[[53,57,60],[50,53,57],[46,50,53],[48,52,55]],
-    roots:[41,38,34,36] },
+    chords:[[48,51,55],[44,48,51],[46,50,53],[43,46,50]],
+    roots:[36,32,34,31] },
 
-  { name:'ＲＩＶＡＬ ＢＡＴＴＬＥ', bpm:150, style:'battle',
+  { name:'ＲＡＶＥ ＰＩＡＮＯ', bpm:126, style:'rave', lead:'piano', bass:'synth',
     mel:[
-      [69,0,72,0, 76,0,72,0, 69,0,71,0, 72,0, 0,0],
-      [65,0,69,0, 72,0,69,0, 65,0,67,0, 69,0, 0,0],
-      [67,0,71,0, 74,0,71,0, 67,0,69,0, 71,0, 0,0],
-      [64,0,68,0, 71,0,68,0, 64,0,65,0, 64,0, 0,0],
+      [ 0,0,69,0,  0,0,72,0,  0,0,76,0,  0,0,72,0],
+      [ 0,0,65,0,  0,0,69,0,  0,0,72,0,  0,0,69,0],
+      [ 0,0,67,0,  0,0,71,0,  0,0,74,0,  0,0,71,0],
+      [ 0,0,64,0,  0,0,67,0,  0,0,71,0,  0,0,67,0],
     ],
-    chords:[[57,60,64],[53,57,60],[55,59,62],[52,56,59]],
+    chords:[[57,60,64],[53,57,60],[55,59,62],[52,55,59]],
     roots:[45,41,43,40] },
 ];
 
-// drum rows: kick, brush, ride, rim — 16 steps
+// drum rows: kick, gated snare, hat, cowbell — 16 steps
 const STYLE_DRUMS = {
-  town:  {k:'1000000010000000', b:'0000100000001000', r:'1010101010101010', m:'0000000000000000'},
-  route: {k:'1000000010000010', b:'0000100000001000', r:'1010101010101011', m:'0000000000000000'},
-  center:{k:'1000000000000000', b:'0000100000001000', r:'0010001000100010', m:'0000000000000000'},
-  battle:{k:'1001000010010000', b:'0000100000001000', r:'1111111111111111', m:'1001001000100100'},
+  outrun: {k:'1000100010001000', b:'0000100000001000', r:'0010001000100010', m:'0000000000000000'},
+  citypop:{k:'1000001000100000', b:'0000100000001000', r:'1010101010101010', m:'0000100000000010'},
+  njs:    {k:'1000001010000010', b:'0000100000001000', r:'1011101010111010', m:'0010000000100000'},
+  rave:   {k:'1000100010001000', b:'0000100000001000', r:'0010001000100010', m:'0001000100010001'},
 };
 // bass: [step, semitones above the bar root]
 const STYLE_BASS = {
-  town:  [[0,0],[4,7],[8,12],[12,7]],
-  route: [[0,0],[2,12],[4,7],[6,12],[8,0],[10,12],[12,7],[14,12]],
-  center:[[0,0],[8,7]],
-  battle:[[0,0],[2,0],[4,7],[6,0],[8,0],[10,0],[12,7],[14,12]],
+  outrun: [[0,0],[2,0],[4,0],[6,0],[8,0],[10,0],[12,0],[14,12]],
+  citypop:[[0,0],[3,7],[6,0],[8,12],[10,0],[14,7]],
+  njs:    [[0,0],[3,0],[6,7],[8,0],[11,0],[14,12]],
+  rave:   [[0,0],[2,12],[4,0],[6,12],[8,0],[10,12],[12,0],[14,12]],
 };
-// arpeggio steps (chord tones cycled) — GB channel 2 filler
+// arpeggio steps (chord tones cycled)
 const STYLE_ARP = {
-  town:  [2,6,10,14],
-  route: [1,3,5,7,9,11,13,15],
-  center:[4,12],
-  battle:[1,3,5,7,9,11,13,15],
+  outrun: [2,6,10,14],
+  citypop:[1,5,9,13],
+  njs:    [3,7,11,15],
+  rave:   [1,3,5,7,9,11,13,15],
 };
 
 // how long a melody note rings: until the next note in the bar
@@ -993,7 +1072,7 @@ function schedule() {
 
     // lead melody
     const bar = p.mel[barIdx];
-    if (bar[stepIdx]) pulseLead(bar[stepIdx], nextT, melDur(bar, stepIdx)*sd*0.94);
+    if (bar[stepIdx]) LEADS[p.lead](bar[stepIdx], nextT, melDur(bar, stepIdx)*sd*0.94);
 
     // arpeggio harmony
     if (STYLE_ARP[p.style].includes(stepIdx)) {
@@ -1004,7 +1083,7 @@ function schedule() {
 
     // wavetable bass
     STYLE_BASS[p.style].forEach(([st, off]) => {
-      if (st === stepIdx) triBass(p.roots[barIdx] + off, nextT, sd*1.9);
+      if (st === stepIdx) BASSES[p.bass](p.roots[barIdx] + off, nextT, sd*1.9);
     });
 
     if (stepIdx === 0 && autoChop && Math.random() < 0.4) {
@@ -1323,55 +1402,181 @@ function anoise(t, dur, filtType, freq, vol) {
 }
 const arnd = (a,b) => a + Math.random()*(b-a);
 
-// pulse-wave blip — the core of every handheld UI sound
-function pblip(f, t, dur, vol, duty) {
+// ── 80s / 90s ONE-SHOTS ────────────────────────────────
+function ablip(f, t, dur, type, vol) {
   const o = actx.createOscillator();
-  o.setPeriodicWave(duty===12 ? PW12 : duty===25 ? PW25 : PW50);
+  if (type === 'pulse') o.setPeriodicWave(PW25); else o.type = type || 'square';
   o.frequency.setValueAtTime(f*Pp(), t);
-  const g = aenv(t, 0.002, vol||0.2, dur);
-  o.connect(g); o.start(t); o.stop(t+dur+0.02);
-}
-function pslide(f1, f2, t, dur, vol, duty) {
-  const o = actx.createOscillator();
-  o.setPeriodicWave(duty===12 ? PW12 : duty===25 ? PW25 : PW50);
-  o.frequency.setValueAtTime(f1*Pp(), t);
-  o.frequency.exponentialRampToValueAtTime(Math.max(20, f2*Pp()), t+dur);
   const g = aenv(t, 0.003, vol||0.2, dur);
   o.connect(g); o.start(t); o.stop(t+dur+0.02);
 }
-function ptune(t, notes, step, dur, vol, duty) {
-  notes.forEach((f,i) => { if (f) pblip(f, t+i*step, dur, vol, duty); });
+function aslide(type, f1, f2, t, dur, vol) {
+  const o = actx.createOscillator(); o.type = type;
+  o.frequency.setValueAtTime(f1*Pp(), t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20, f2*Pp()), t+dur);
+  const g = aenv(t, 0.004, vol||0.24, dur);
+  o.connect(g); o.start(t); o.stop(t+dur+0.02);
 }
 
-// Menu, field, and battle sounds — synthesized, not sampled
 const ARCADE = {
-  cursor(t)   { pblip(1245, t, 0.028, 0.2, 12); },
-  select(t)   { pblip(880, t, 0.026, 0.2, 25); pblip(1760, t+0.028, 0.055, 0.2, 25); },
-  back(t)     { pblip(880, t, 0.03, 0.18, 25); pblip(587, t+0.032, 0.06, 0.18, 25); },
-  menu(t)     { pslide(660, 1320, t, 0.07, 0.18, 12); },
-  text(t)     { pblip(1568, t, 0.016, 0.13, 12); },
-  save(t)     { ptune(t, [784,1046,1568], 0.085, 0.075, 0.19, 25); },
-  heal(t)     { ptune(t, [1046,1318,1568,2093,1568,2093], 0.115, 0.1, 0.17, 25); },
-  itemGet(t)  { ptune(t, [1046,1318,1568,2093], 0.07, 0.065, 0.19, 50); },
-  ballThrow(t){ pslide(300, 1500, t, 0.16, 0.16, 12);
-                const f = anoise(t, 0.2, 'bandpass', 900, 0.18);
-                f.frequency.exponentialRampToValueAtTime(3400, t+0.18); },
-  ballClick(t){ pblip(440, t, 0.022, 0.2, 12); anoise(t, 0.05, 'highpass', 3000, 0.14); },
-  caught(t)   { ptune(t, [784,988,1175,1568,0,1175,1568], 0.1, 0.09, 0.18, 25); },
-  levelUp(t)  { ptune(t, [523,659,784,1046,1318,1568], 0.06, 0.055, 0.18, 25); },
-  exp(t)      { for (let i=0;i<10;i++) pblip(1760, t+i*0.048, 0.022, 0.11, 12); },
-  faint(t)    { pslide(880, 90, t, 0.65, 0.2, 25); },
-  pcBoot(t)   { pblip(523, t, 0.09, 0.17, 50); pblip(1046, t+0.1, 0.22, 0.17, 50); },
-  evolve(t)   { for (let i=0;i<14;i++) pblip(523*Math.pow(2,i/7), t+i*0.065, 0.05, 0.14, 12); },
+  // Fairlight-style stacked stab — the Art of Noise / hip-hop staple
+  orchHit(t) {
+    const g = aenv(t, 0.004, 0.3, 0.4);
+    [0,4,7,12,16,19].forEach(iv => [-9,0,9].forEach(det => {
+      const o = actx.createOscillator(); o.type = 'sawtooth';
+      o.frequency.value = 130.8*Math.pow(2, iv/12)*Pp();
+      o.detune.value = det;
+      const og = actx.createGain(); og.gain.value = 0.14;
+      o.connect(og); og.connect(g); o.start(t); o.stop(t+0.42);
+    }));
+    anoise(t, 0.05, 'bandpass', 2400, 0.2);
+  },
+  // huge reverb tail cut off mid-decay
+  gateSnare(t) {
+    const s = actx.createBufferSource(); s.buffer = nbuf(0.4);
+    const f = actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1100; f.Q.value=0.5;
+    const g = actx.createGain();
+    g.gain.setValueAtTime(0.6, t);
+    g.gain.exponentialRampToValueAtTime(0.2, t+0.08);
+    g.gain.setValueAtTime(0.2, t+0.27);
+    g.gain.linearRampToValueAtTime(0.0001, t+0.3);
+    s.connect(f); f.connect(g); g.connect(liveBus); s.start(t); s.stop(t+0.34);
+    const o = actx.createOscillator(); o.frequency.value = 190;
+    const og = actx.createGain(); og.gain.setValueAtTime(0.32, t);
+    og.gain.exponentialRampToValueAtTime(0.001, t+0.09);
+    o.connect(og); og.connect(liveBus); o.start(t); o.stop(t+0.1);
+  },
+  dxBell(t) {
+    const f = 523.25*Pp();
+    const car = actx.createOscillator(); car.type='sine'; car.frequency.value=f;
+    const mod = actx.createOscillator(); mod.type='sine'; mod.frequency.value=f*3.5;
+    const mg = actx.createGain();
+    mg.gain.setValueAtTime(f*4, t); mg.gain.exponentialRampToValueAtTime(f*0.1, t+0.6);
+    mod.connect(mg); mg.connect(car.frequency);
+    const g = aenv(t, 0.004, 0.24, 1.5);
+    car.connect(g); car.start(t); car.stop(t+1.55); mod.start(t); mod.stop(t+1.55);
+  },
+  scratch(t) {
+    const s = actx.createBufferSource(); s.buffer = nbuf(0.5);
+    s.playbackRate.setValueAtTime(1.9, t);
+    s.playbackRate.linearRampToValueAtTime(0.35, t+0.09);
+    s.playbackRate.linearRampToValueAtTime(2.0,  t+0.17);
+    s.playbackRate.linearRampToValueAtTime(0.4,  t+0.26);
+    const f = actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1500; f.Q.value=1.5;
+    const g = aenv(t, 0.004, 0.3, 0.3);
+    s.connect(f); f.connect(g); s.start(t); s.stop(t+0.32);
+  },
+  airHorn(t) {
+    const g = aenv(t, 0.02, 0.26, 0.8);
+    const vib = actx.createOscillator(); vib.frequency.value = 5.5;
+    const vg = actx.createGain(); vg.gain.value = 6;
+    vib.connect(vg); vib.start(t); vib.stop(t+0.85);
+    [0,7,12].forEach(iv => [-12,12].forEach(det => {
+      const o = actx.createOscillator(); o.type='sawtooth';
+      o.frequency.value = 233*Math.pow(2, iv/12)*Pp(); o.detune.value = det;
+      vg.connect(o.frequency);
+      const og = actx.createGain(); og.gain.value = 0.2;
+      o.connect(og); og.connect(g); o.start(t); o.stop(t+0.85);
+    }));
+  },
+  siren(t) {
+    const o = actx.createOscillator(); o.type='sawtooth';
+    o.frequency.setValueAtTime(400*Pp(), t);
+    o.frequency.linearRampToValueAtTime(1500*Pp(), t+0.45);
+    o.frequency.linearRampToValueAtTime(400*Pp(),  t+0.9);
+    const f = actx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=3000; f.Q.value=4;
+    const g = aenv(t, 0.02, 0.2, 0.95);
+    o.connect(f); f.connect(g); o.start(t); o.stop(t+1);
+  },
+  laser(t) { aslide('sawtooth', 2200, 160, t, 0.24, 0.24); },
+  // TB-303: saw through a screaming resonant filter sweep
+  acid(t) {
+    const o = actx.createOscillator(); o.type='sawtooth';
+    o.frequency.setValueAtTime(110*Pp(), t);
+    const f = actx.createBiquadFilter(); f.type='lowpass'; f.Q.value=18;
+    f.frequency.setValueAtTime(3200, t);
+    f.frequency.exponentialRampToValueAtTime(220, t+0.34);
+    const g = aenv(t, 0.004, 0.3, 0.36);
+    o.connect(f); f.connect(g); o.start(t); o.stop(t+0.38);
+  },
+  slap(t) {
+    const o = actx.createOscillator(); o.type='square'; o.frequency.value=98*Pp();
+    const f = actx.createBiquadFilter(); f.type='lowpass'; f.Q.value=11;
+    f.frequency.setValueAtTime(4800, t);
+    f.frequency.exponentialRampToValueAtTime(320, t+0.12);
+    const g = aenv(t, 0.003, 0.34, 0.3);
+    o.connect(f); f.connect(g); o.start(t); o.stop(t+0.32);
+  },
+  cowbell(t) {
+    const g = aenv(t, 0.003, 0.24, 0.25);
+    const f = actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2640; f.Q.value=1.2;
+    [540, 800].forEach(fr => {
+      const o = actx.createOscillator(); o.type='square'; o.frequency.value=fr*Pp();
+      o.connect(f); o.start(t); o.stop(t+0.26);
+    });
+    f.connect(g);
+  },
+  clap909(t) {
+    [0,0.011,0.023].forEach(d => anoise(t+d, 0.055, 'bandpass', 1500, 0.26));
+    const s = actx.createBufferSource(); s.buffer = nbuf(0.22);
+    const f = actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1200; f.Q.value=0.8;
+    const g = aenv(t+0.03, 0.004, 0.16, 0.2);
+    s.connect(f); f.connect(g); s.start(t+0.03); s.stop(t+0.25);
+  },
+  tomFill(t) {
+    [220,180,150,120].forEach((fr,i) => {
+      const o = actx.createOscillator(); o.type='sine';
+      o.frequency.setValueAtTime(fr*Pp(), t+i*0.11);
+      o.frequency.exponentialRampToValueAtTime(fr*0.6*Pp(), t+i*0.11+0.18);
+      const g = aenv(t+i*0.11, 0.004, 0.32, 0.2);
+      o.connect(g); o.start(t+i*0.11); o.stop(t+i*0.11+0.22);
+    });
+  },
+  crystal(t) {
+    [0,4,7,12,16].forEach((iv,i) => {
+      const fr = 1046*Math.pow(2, iv/12);
+      ablip(fr, t+i*0.055, 0.5, 'sine', 0.11);
+    });
+  },
+  brassStab(t) {
+    const g = aenv(t, 0.012, 0.24, 0.32);
+    [0,4,7].forEach(iv => [-8,8].forEach(det => {
+      const o = actx.createOscillator(); o.type='sawtooth';
+      o.frequency.value = 261.6*Math.pow(2, iv/12)*Pp(); o.detune.value = det;
+      const og = actx.createGain(); og.gain.value = 0.18;
+      o.connect(og); og.connect(g); o.start(t); o.stop(t+0.34);
+    }));
+  },
+  rewind(t) {
+    const s = actx.createBufferSource(); s.buffer = nbuf(0.5);
+    s.playbackRate.setValueAtTime(0.5, t);
+    s.playbackRate.exponentialRampToValueAtTime(3.5, t+0.5);
+    const f = actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1800; f.Q.value=1.1;
+    const g = aenv(t, 0.01, 0.22, 0.55);
+    s.connect(f); f.connect(g); s.start(t); s.stop(t+0.56);
+    aslide('square', 300, 2400, t, 0.5, 0.1);
+  },
+  riser(t) {
+    const s = actx.createBufferSource(); s.buffer = nbuf(1.3); s.loop = true;
+    const f = actx.createBiquadFilter(); f.type='bandpass'; f.Q.value=2.5;
+    f.frequency.setValueAtTime(300, t);
+    f.frequency.exponentialRampToValueAtTime(9000, t+1.2);
+    const g = actx.createGain();
+    g.gain.setValueAtTime(0.05, t);
+    g.gain.linearRampToValueAtTime(0.32, t+1.15);
+    g.gain.linearRampToValueAtTime(0.0001, t+1.28);
+    s.connect(f); f.connect(g); g.connect(liveBus);
+    s.start(t); s.stop(t+1.3);
+  },
 };
 
 (function(){
   const pad = document.getElementById('apad');
   const DEFS = [
-    ['cursor','CURSOR','▸'],    ['select','SELECT','🅰'],   ['back','BACK','🅱'],      ['menu','MENU','▤'],
-    ['text','TEXT','💬'],       ['save','SAVE','💾'],       ['heal','HEAL','💗'],      ['itemGet','ITEM','🎁'],
-    ['ballThrow','THROW','🥎'], ['ballClick','CLICK','⚪'], ['caught','CAUGHT','✨'],  ['levelUp','LVL UP','📈'],
-    ['exp','EXP','▰'],          ['faint','FAINT','💀'],     ['pcBoot','PC','🖥️'],      ['evolve','EVOLVE','🌟'],
+    ['orchHit','ORCH HIT','🎺'],  ['gateSnare','GATE SNR','🥁'], ['dxBell','DX BELL','🔔'],  ['brassStab','STAB','🎷'],
+    ['scratch','SCRATCH','💿'],   ['airHorn','AIR HORN','📢'],   ['siren','SIREN','🚨'],     ['rewind','REWIND','⏪'],
+    ['laser','LASER','🔫'],       ['acid','ACID 303','🧪'],      ['slap','SLAP','🎸'],       ['crystal','CRYSTAL','💎'],
+    ['cowbell','COWBELL','🔔'],   ['clap909','909 CLAP','👏'],   ['tomFill','TOM FILL','🛢️'], ['riser','RISER','📈'],
   ];
   DEFS.forEach(([key, label, ico]) => {
     const b = document.createElement('button');
