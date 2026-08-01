@@ -248,7 +248,7 @@ body{
     <div class="panel">
       <div class="ptitle">ＳＴＥＭ ＭＩＸＥＲ <span class="jp">ミキサー</span></div>
       <div style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-bottom:10px;line-height:1.7">
-        SLIDE BETWEEN 80s GATED DRUMS AND TRAP.<br>PHASE ANY STEM IN OR OUT OF THE MIX.
+        SLIDE BETWEEN THE LOOP'S OWN KIT AND TRAP DRUMS.<br>PHASE ANY STEM IN OR OUT OF THE MIX.
       </div>
       <div class="cr">
         <span class="cl">RETRO ⇄ TRAP</span>
@@ -768,8 +768,62 @@ function slapBass(midi, t, dur) {
   o.start(t); o.stop(t + dur + 0.04); o2.start(t); o2.stop(t + dur + 0.04);
 }
 
-const LEADS  = { fm: fmPiano, saw: sawLead, piano: pianoStab };
-const BASSES = { synth: synthBass, slap: slapBass };
+// Rhodes electric piano — sine body, octave partial, bell tine, tremolo
+function rhodes(midi, t, dur) {
+  const f = mfp(midi);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.22, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.08, t + dur*0.55);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  const trem = actx.createOscillator(); trem.frequency.value = 4.4;
+  const tg = actx.createGain(); tg.gain.value = 0.03;
+  trem.connect(tg); tg.connect(g.gain); trem.start(t); trem.stop(t + dur);
+  [[1,1],[2,0.3],[6.02,0.06]].forEach(([mult,amt]) => {
+    const o = actx.createOscillator(); o.type='sine'; o.frequency.value = f*mult;
+    const og = actx.createGain(); og.gain.value = amt;
+    o.connect(og); og.connect(g);
+    o.start(t); o.stop(t + dur + 0.05);
+  });
+  g.connect(keysBus);
+}
+
+// Vibraphone — pure sine with a deep, slow tremolo
+function vibes(midi, t, dur) {
+  const f = mfp(midi);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.2, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur*1.3);
+  const trem = actx.createOscillator(); trem.frequency.value = 5.2;
+  const tg = actx.createGain(); tg.gain.value = 0.07;
+  trem.connect(tg); tg.connect(g.gain); trem.start(t); trem.stop(t + dur*1.3);
+  [[1,1],[4,0.14],[9.2,0.04]].forEach(([mult,amt]) => {
+    const o = actx.createOscillator(); o.type='sine'; o.frequency.value = f*mult;
+    const og = actx.createGain(); og.gain.value = amt;
+    o.connect(og); og.connect(g);
+    o.start(t); o.stop(t + dur*1.3 + 0.05);
+  });
+  g.connect(keysBus);
+}
+
+// Upright bass — round sine fundamental with a short fingered attack
+function uprightBass(midi, t, dur) {
+  const f = mfp(midi);
+  const o  = actx.createOscillator(); o.type='sine';     o.frequency.value = f;
+  const o2 = actx.createOscillator(); o2.type='triangle'; o2.frequency.value = f;
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.52, t + 0.022);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  const g2 = actx.createGain(); g2.gain.value = 0.22;
+  o.connect(g); o2.connect(g2); g2.connect(g);
+  g.connect(bassBus);
+  o.start(t); o.stop(t + dur + 0.05); o2.start(t); o2.stop(t + dur + 0.05);
+}
+
+const LEADS  = { fm: fmPiano, saw: sawLead, piano: pianoStab, rhodes, vibes };
+const BASSES = { synth: synthBass, slap: slapBass, upright: uprightBass };
 
 // brushed drums
 function nbuf(dur) {
@@ -778,7 +832,7 @@ function nbuf(dur) {
 }
 
 /* — 80s kit: LinnDrum-style kick, gated snare, crisp hat, 808 cowbell — */
-function softKick(t) {
+function linnKick(t) {
   const o=actx.createOscillator(), g=actx.createGain();
   o.frequency.setValueAtTime(125,t); o.frequency.exponentialRampToValueAtTime(45,t+0.11);
   g.gain.setValueAtTime(0.85,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.3);
@@ -790,7 +844,7 @@ function softKick(t) {
   c.connect(cf); cf.connect(cg); cg.connect(jazzDrums); c.start(t); c.stop(t+0.016);
 }
 // The defining 80s drum sound: huge reverb tail that slams shut mid-decay.
-function brush(t) {
+function gatedSnare(t) {
   const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
   s.buffer=nbuf(0.34); f.type='bandpass'; f.frequency.value=1150; f.Q.value=0.55;
   g.gain.setValueAtTime(0.5,t);
@@ -803,14 +857,14 @@ function brush(t) {
   og.gain.exponentialRampToValueAtTime(0.001,t+0.08);
   o.connect(og); og.connect(jazzDrums); o.start(t); o.stop(t+0.09);
 }
-function ride(t) {
+function crispHat(t) {
   const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
   s.buffer=nbuf(0.06); f.type='highpass'; f.frequency.value=9500;
   g.gain.setValueAtTime(0.16,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.06);
   s.connect(f); f.connect(g); g.connect(jazzDrums); s.start(t); s.stop(t+0.07);
 }
 // 808 cowbell: two detuned squares through a bandpass
-function rim(t) {
+function cowbell8(t) {
   const g=actx.createGain();
   g.gain.setValueAtTime(0.22,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.22);
   const f=actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2640; f.Q.value=1.2;
@@ -820,6 +874,38 @@ function rim(t) {
   });
   f.connect(g); g.connect(jazzDrums);
 }
+
+/* — jazz kit: soft kick, brushed snare, ride tick, rim click — */
+function jazzKick(t) {
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.frequency.setValueAtTime(95,t); o.frequency.exponentialRampToValueAtTime(38,t+0.25);
+  g.gain.setValueAtTime(0.5,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.28);
+  o.connect(g); g.connect(jazzDrums); o.start(t); o.stop(t+0.3);
+}
+function brushSnare(t) {
+  const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
+  s.buffer=nbuf(0.17); f.type='lowpass'; f.frequency.value=4200;
+  g.gain.setValueAtTime(0.16,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.17);
+  s.connect(f); f.connect(g); g.connect(jazzDrums); s.start(t); s.stop(t+0.18);
+}
+function rideTick(t) {
+  const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
+  s.buffer=nbuf(0.1); f.type='highpass'; f.frequency.value=8200;
+  g.gain.setValueAtTime(0.06,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+  s.connect(f); f.connect(g); g.connect(jazzDrums); s.start(t); s.stop(t+0.11);
+}
+function rimClick(t) {
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.frequency.value = 1750;
+  g.gain.setValueAtTime(0.1,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.03);
+  o.connect(g); g.connect(jazzDrums); o.start(t); o.stop(t+0.035);
+}
+
+// each loop picks its own kit; both crossfade against trap
+const KITS = {
+  eighties: [linnKick, gatedSnare, crispHat, cowbell8],
+  jazz:     [jazzKick, brushSnare, rideTick, rimClick],
+};
 
 // trap kit — crossfaded in with the RETRO ⇄ TRAP slider
 function trapKick(t) {
@@ -947,7 +1033,7 @@ setAuto(false);
 // Original tracks written in the defining styles of the era.
 // mel: 16 steps per bar, MIDI note or 0 (rest / hold previous).
 const PRESETS = [
-  { name:'ＯＵＴＲＵＮ ＮＩＧＨＴ', bpm:118, style:'outrun', lead:'saw', bass:'synth',
+  { name:'ＯＵＴＲＵＮ ＮＩＧＨＴ', bpm:118, style:'outrun', kit:'eighties', lead:'saw', bass:'synth',
     mel:[
       [69,0, 0,0,  0,0, 0,0, 72,0, 0,0, 71,0, 0,0],
       [72,0, 0,0,  0,0,69,0, 65,0, 0,0, 67,0, 0,0],
@@ -957,7 +1043,7 @@ const PRESETS = [
     chords:[[57,60,64],[53,57,60],[48,52,55],[55,59,62]],
     roots:[45,41,36,43] },
 
-  { name:'ＣＩＴＹ ＰＯＰ ＤＲＩＶＥ', bpm:104, style:'citypop', lead:'fm', bass:'slap',
+  { name:'ＣＩＴＹ ＰＯＰ ＤＲＩＶＥ', bpm:104, style:'citypop', kit:'eighties', lead:'fm', bass:'slap',
     mel:[
       [72,0,74,0, 77,0, 0,0, 76,0,72,0, 69,0, 0,0],
       [71,0,74,0, 76,0, 0,0, 74,0,71,0, 67,0, 0,0],
@@ -967,7 +1053,7 @@ const PRESETS = [
     chords:[[53,57,60,64],[52,55,59,62],[50,53,57,60],[55,59,62,65]],
     roots:[41,40,38,43] },
 
-  { name:'ＮＥＷ ＪＡＣＫ ＳＷＩＮＧ', bpm:112, style:'njs', lead:'piano', bass:'synth',
+  { name:'ＮＥＷ ＪＡＣＫ ＳＷＩＮＧ', bpm:112, style:'njs', kit:'eighties', lead:'piano', bass:'synth',
     mel:[
       [72,0, 0,0, 75,0, 0,0, 79,0, 0,0, 75,0, 0,0],
       [72,0, 0,0, 68,0, 0,0, 75,0, 0,0, 72,0, 0,0],
@@ -977,7 +1063,7 @@ const PRESETS = [
     chords:[[48,51,55],[44,48,51],[46,50,53],[43,46,50]],
     roots:[36,32,34,31] },
 
-  { name:'ＲＡＶＥ ＰＩＡＮＯ', bpm:126, style:'rave', lead:'piano', bass:'synth',
+  { name:'ＲＡＶＥ ＰＩＡＮＯ', bpm:126, style:'rave', kit:'eighties', lead:'piano', bass:'synth',
     mel:[
       [ 0,0,69,0,  0,0,72,0,  0,0,76,0,  0,0,72,0],
       [ 0,0,65,0,  0,0,69,0,  0,0,72,0,  0,0,69,0],
@@ -986,6 +1072,46 @@ const PRESETS = [
     ],
     chords:[[57,60,64],[53,57,60],[55,59,62],[52,55,59]],
     roots:[45,41,43,40] },
+
+  { name:'ＭＩＤＮＩＧＨＴ ＬＯＵＮＧＥ', bpm:72, style:'lounge', kit:'jazz', lead:'rhodes', bass:'upright',
+    mel:[
+      [72,0, 0,0, 71,0, 0,0, 67,0,69,0,  0,0, 0,0],
+      [69,0, 0,0, 72,0, 0,0, 74,0, 0,0, 72,0, 0,0],
+      [76,0, 0,0,  0,0,72,0, 69,0, 0,0,  0,0, 0,0],
+      [71,0, 0,0, 68,0, 0,0, 64,0, 0,0,  0,0, 0,0],
+    ],
+    chords:[[57,60,64,67,71],[50,53,57,60,64],[53,57,60,64],[52,56,59,62]],
+    roots:[45,38,41,40] },
+
+  { name:'ＢＬＵＥ ＮＯＴＥ ＳＷＩＮＧ', bpm:128, style:'swing', kit:'jazz', lead:'vibes', bass:'upright',
+    mel:[
+      [74,0,72,0, 69,0,65,0, 62,0,65,0, 69,0, 0,0],
+      [71,0,74,0, 77,0,74,0, 71,0,67,0, 65,0, 0,0],
+      [72,0,76,0, 79,0,76,0, 72,0,71,0, 67,0, 0,0],
+      [69,0,73,0, 76,0,73,0, 69,0,67,0, 64,0, 0,0],
+    ],
+    chords:[[50,53,57,60],[55,59,62,65],[48,52,55,59],[45,49,52,55]],
+    roots:[38,43,36,45] },
+
+  { name:'ＢＯＳＳＡ ＣＡＦＥ', bpm:96, style:'bossa', kit:'jazz', lead:'rhodes', bass:'upright',
+    mel:[
+      [72,0, 0,74,  0,0,72,0, 69,0, 0,0,  0,0, 0,0],
+      [74,0, 0,77,  0,0,74,0, 70,0, 0,0,  0,0, 0,0],
+      [76,0, 0,79,  0,0,76,0, 72,0, 0,0,  0,0, 0,0],
+      [72,0, 0,0,  69,0, 0,0, 65,0, 0,0,  0,0, 0,0],
+    ],
+    chords:[[53,57,60,64],[55,58,62,65],[48,52,55,58],[53,57,60,64]],
+    roots:[41,43,36,41] },
+
+  { name:'ＲＡＩＮＹ ＢＡＬＬＡＤ', bpm:66, style:'ballad', kit:'jazz', lead:'rhodes', bass:'upright',
+    mel:[
+      [70,0, 0,0,  0,0, 0,0, 74,0, 0,0,  0,0, 0,0],
+      [72,0, 0,0,  0,0, 0,0, 70,0, 0,0,  0,0, 0,0],
+      [75,0, 0,0,  0,0, 0,0, 72,0, 0,0,  0,0, 0,0],
+      [77,0, 0,0,  0,0,74,0, 70,0, 0,0,  0,0, 0,0],
+    ],
+    chords:[[51,55,58,62],[48,51,55,58],[53,56,60,63],[46,50,53,56]],
+    roots:[39,36,41,34] },
 ];
 
 // drum rows: kick, gated snare, hat, cowbell — 16 steps
@@ -994,6 +1120,10 @@ const STYLE_DRUMS = {
   citypop:{k:'1000001000100000', b:'0000100000001000', r:'1010101010101010', m:'0000100000000010'},
   njs:    {k:'1000001010000010', b:'0000100000001000', r:'1011101010111010', m:'0010000000100000'},
   rave:   {k:'1000100010001000', b:'0000100000001000', r:'0010001000100010', m:'0001000100010001'},
+  lounge: {k:'1000000010000000', b:'0000100000001000', r:'1010101010101010', m:'0000000000000000'},
+  swing:  {k:'1000000010000000', b:'0000100000001000', r:'1010101110101011', m:'0000000000000000'},
+  bossa:  {k:'1001000010010000', b:'0000000000000000', r:'1010101010101010', m:'1001001000100100'},
+  ballad: {k:'1000000000000000', b:'0000100000001000', r:'0010001000100010', m:'0000000000000000'},
 };
 // bass: [step, semitones above the bar root]
 const STYLE_BASS = {
@@ -1001,6 +1131,10 @@ const STYLE_BASS = {
   citypop:[[0,0],[3,7],[6,0],[8,12],[10,0],[14,7]],
   njs:    [[0,0],[3,0],[6,7],[8,0],[11,0],[14,12]],
   rave:   [[0,0],[2,12],[4,0],[6,12],[8,0],[10,12],[12,0],[14,12]],
+  lounge: [[0,0],[8,7]],
+  swing:  [[0,0],[4,3],[8,7],[12,10]],   // walking quarters
+  bossa:  [[0,0],[6,7],[8,0],[14,7]],
+  ballad: [[0,0],[8,7]],
 };
 // arpeggio steps (chord tones cycled)
 const STYLE_ARP = {
@@ -1008,6 +1142,10 @@ const STYLE_ARP = {
   citypop:[1,5,9,13],
   njs:    [3,7,11,15],
   rave:   [1,3,5,7,9,11,13,15],
+  lounge: [4,12],
+  swing:  [2,6,10,14],
+  bossa:  [3,7,11,15],
+  ballad: [8],
 };
 
 // how long a melody note rings: until the next note in the bar
@@ -1051,10 +1189,11 @@ function schedule() {
     const sd = stepDur();
     const dr = jazzFeel === 'auto' ? STYLE_DRUMS[p.style] : JAZZ_FEELS[jazzFeel];
 
-    if (dr.k[stepIdx]==='1') softKick(nextT);
-    if (dr.b[stepIdx]==='1') brush(nextT);
-    if (dr.r[stepIdx]==='1') ride(nextT);
-    if (dr.m[stepIdx]==='1') rim(nextT);
+    const kit = KITS[p.kit] || KITS.eighties;
+    if (dr.k[stepIdx]==='1') kit[0](nextT);
+    if (dr.b[stepIdx]==='1') kit[1](nextT);
+    if (dr.r[stepIdx]==='1') kit[2](nextT);
+    if (dr.m[stepIdx]==='1') kit[3](nextT);
 
     // trap layer (audible when the JAZZ⇄TRAP slider is up)
     const tp = TRAP_PATS[curTrap];
