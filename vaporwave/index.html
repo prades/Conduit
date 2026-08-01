@@ -190,6 +190,12 @@ body{
         <span class="cv">0%</span>
       </div>
       <div class="cr">
+        <span class="cl">RAIN AMBIENCE</span>
+        <input type="range" class="sl" min="0" max="0.5" step="0.005" value="0"
+          oninput="rainGain.gain.value=+this.value;this.parentElement.querySelector('.cv').textContent=Math.round(this.value/0.5*100)+'%'">
+        <span class="cv">0%</span>
+      </div>
+      <div class="cr">
         <span class="cl">VINYL CRACKLE</span>
         <input type="range" class="sl" min="0" max="0.8" step="0.01" value="0"
           oninput="crackleGain.gain.value=+this.value;this.parentElement.querySelector('.cv').textContent=Math.round(this.value/0.8*100)+'%'">
@@ -232,6 +238,23 @@ body{
         <input type="range" class="sl" min="0" max="1" step="0.01" value="0"
           oninput="setXfade(+this.value);this.parentElement.querySelector('.cv').textContent=Math.round(this.value*100)+'%'">
         <span class="cv">0%</span>
+      </div>
+      <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin:8px 0 6px">TRAP PATTERN</div>
+      <div class="wrow" style="margin-bottom:6px">
+        <button class="wbtn on" id="tp-0" onclick="setTrapPat(0)">CLASSIC</button>
+        <button class="wbtn" id="tp-1" onclick="setTrapPat(1)">ROLLIN</button>
+        <button class="wbtn" id="tp-2" onclick="setTrapPat(2)">DRILL</button>
+      </div>
+      <div class="wrow" style="margin-bottom:10px">
+        <button class="wbtn" id="tp-3" onclick="setTrapPat(3)">BOUNCE</button>
+        <button class="wbtn" id="tp-4" onclick="setTrapPat(4)">SPARSE</button>
+        <button class="wbtn" id="tp-5" onclick="setTrapPat(5)">DOUBLE</button>
+      </div>
+      <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin:0 0 6px">JAZZ FEEL</div>
+      <div class="wrow" style="margin-bottom:10px">
+        <button class="wbtn on" id="jf-auto" onclick="setJazzFeel('auto')">AUTO</button>
+        <button class="wbtn" id="jf-busy" onclick="setJazzFeel('busy')">BUSY</button>
+        <button class="wbtn" id="jf-minimal" onclick="setJazzFeel('minimal')">MINIMAL</button>
       </div>
       <div class="cr">
         <span class="cl">KEYS</span>
@@ -385,6 +408,31 @@ const crackleFilt = actx.createBiquadFilter(); crackleFilt.type='highpass'; crac
 const crackleGain = actx.createGain(); crackleGain.gain.value = 0;
 crackleSrc.connect(crackleFilt); crackleFilt.connect(crackleGain); crackleGain.connect(masterGain);
 crackleSrc.start();
+
+// rain: low washy rumble + sparse soft droplets
+const rainGain = actx.createGain(); rainGain.gain.value = 0;
+rainGain.connect(masterGain);
+const rainWash = actx.createBufferSource();
+rainWash.buffer = noiseBuf(2.3, (d,n)=>{ for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*0.55; });
+rainWash.loop = true;
+const rainLp = actx.createBiquadFilter(); rainLp.type='lowpass'; rainLp.frequency.value=950;
+rainWash.connect(rainLp); rainLp.connect(rainGain);
+rainWash.start();
+const dropSrc = actx.createBufferSource();
+dropSrc.buffer = noiseBuf(4.1, (d,n)=>{
+  for (let i = 0; i < n; i++) d[i] = 0;
+  for (let p = 0; p < 240; p++) {
+    const at = Math.floor(Math.random()*n), amp = 0.1 + Math.random()*0.4;
+    const dur = 20 + Math.floor(Math.random()*90);
+    for (let j = 0; j < dur && at+j < n; j++)
+      d[at+j] += (Math.random()*2-1) * amp * (1 - j/dur);
+  }
+});
+dropSrc.loop = true;
+const dropBp = actx.createBiquadFilter(); dropBp.type='bandpass'; dropBp.frequency.value=3000; dropBp.Q.value=0.7;
+const dropG = actx.createGain(); dropG.gain.value = 0.5;
+dropSrc.connect(dropBp); dropBp.connect(dropG); dropG.connect(rainGain);
+dropSrc.start();
 
 // ── RECORDING → MP3 ────────────────────────────────────
 const capNode = actx.createScriptProcessor(4096, 2, 2);
@@ -587,13 +635,31 @@ function trapHat(t, open) {
   g.gain.setValueAtTime(0.16,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
   s.connect(f); f.connect(g); g.connect(trapDrums); s.start(t); s.stop(t+dur+0.01);
 }
-// halftime trap pattern: kick 1 & syncopated, snare on 3, 16th hats w/ roll
-const TRAP_PAT = {
-  k:'1000001000010000',
-  s:'0000000010000000',
-  h:'1111111111111111',
-  o:'0000001000000000',
+// trap pattern bank — kick/snare/hats/open + roll steps (extra 32nd hat)
+const TRAP_PATS = [
+  {name:'CLASSIC', k:'1000001000010000', s:'0000000010000000', h:'1111111111111111', o:'0000001000000000', roll:[14]},
+  {name:'ROLLIN',  k:'1000000000100100', s:'0000000010000000', h:'1111011111110111', o:'0000000000000010', roll:[6,14]},
+  {name:'DRILL',   k:'1000001000100001', s:'0000000010000010', h:'1010011010100110', o:'0000000000000000', roll:[]},
+  {name:'BOUNCE',  k:'1001000010010000', s:'0000000010000000', h:'1010101010101010', o:'0000001000000000', roll:[10]},
+  {name:'SPARSE',  k:'1000000001000000', s:'0000000010000000', h:'1010101010101010', o:'0000000000001000', roll:[]},
+  {name:'DOUBLE',  k:'1000100010001000', s:'0000100000001000', h:'1111111111111111', o:'0010001000100010', roll:[7,15]},
+];
+let curTrap = 0;
+function setTrapPat(i) {
+  curTrap = i;
+  TRAP_PATS.forEach((_,k)=>document.getElementById('tp-'+k).classList.toggle('on', k===i));
+}
+
+// jazz feel override: AUTO follows the loop's style, or force a feel
+const JAZZ_FEELS = {
+  busy:    {k:'1000000010000010', b:'0000100000001000', r:'1011101010111011', m:'0010000000100000'},
+  minimal: {k:'1000000000000000', b:'0000000000001000', r:'0010001000100010', m:'0000000000000000'},
 };
+let jazzFeel = 'auto';
+function setJazzFeel(f) {
+  jazzFeel = f;
+  ['auto','busy','minimal'].forEach(k=>document.getElementById('jf-'+k).classList.toggle('on', k===f));
+}
 
 // ── VOCAL CHOP SYNTH (formant voice) ───────────────────
 const VOWELS = {
@@ -731,7 +797,7 @@ function schedule() {
   while (nextT < actx.currentTime + 0.12) {
     const p  = PRESETS[curPreset];
     const sd = stepDur();
-    const dr = STYLE_DRUMS[p.style];
+    const dr = jazzFeel === 'auto' ? STYLE_DRUMS[p.style] : JAZZ_FEELS[jazzFeel];
 
     if (dr.k[stepIdx]==='1') softKick(nextT);
     if (dr.b[stepIdx]==='1') brush(nextT);
@@ -739,11 +805,12 @@ function schedule() {
     if (dr.m[stepIdx]==='1') rim(nextT);
 
     // trap layer (audible when the JAZZ⇄TRAP slider is up)
-    if (TRAP_PAT.k[stepIdx]==='1') { trapKick(nextT); sub808(nextT, p.roots[barIdx]); }
-    if (TRAP_PAT.s[stepIdx]==='1') trapSnare(nextT);
-    if (TRAP_PAT.h[stepIdx]==='1') trapHat(nextT, false);
-    if (TRAP_PAT.o[stepIdx]==='1') trapHat(nextT, true);
-    if (stepIdx === 14) trapHat(nextT + sd/2, false); // hat roll into the bar
+    const tp = TRAP_PATS[curTrap];
+    if (tp.k[stepIdx]==='1') { trapKick(nextT); sub808(nextT, p.roots[barIdx]); }
+    if (tp.s[stepIdx]==='1') trapSnare(nextT);
+    if (tp.h[stepIdx]==='1') trapHat(nextT, false);
+    if (tp.o[stepIdx]==='1') trapHat(nextT, true);
+    if (tp.roll.includes(stepIdx)) trapHat(nextT + sd/2, false);
 
     STYLE_CHORDS[p.style].forEach(([st, len]) => {
       if (st === stepIdx)
