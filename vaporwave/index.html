@@ -93,6 +93,15 @@ body{
 .padbtn:active{background:var(--cyan);color:#12002b;box-shadow:0 0 20px rgba(1,205,254,.6);}
 #autochop{margin-top:10px;}
 
+/* arcade pad */
+#apad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.abtn{height:62px;background:rgba(255,255,255,0.04);border:1px solid var(--mint);
+  color:var(--mint);font-family:inherit;font-size:10px;letter-spacing:1px;cursor:pointer;
+  border-radius:8px;transition:.1s;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;padding:2px;}
+.abtn .ico{font-size:18px;line-height:1;}
+.abtn:active{background:var(--mint);color:#12002b;box-shadow:0 0 20px rgba(5,255,161,.6);}
+
 /* fx sliders */
 .cr{display:flex;align-items:center;gap:10px;margin-bottom:4px;min-height:42px;}
 .cl{width:74px;font-size:10px;color:var(--dim);letter-spacing:1px;flex-shrink:0;}
@@ -212,6 +221,53 @@ body{
       </div>
     </div>
 
+    <!-- MIXER -->
+    <div class="panel">
+      <div class="ptitle">ＳＴＥＭ ＭＩＸＥＲ <span class="jp">ミキサー</span></div>
+      <div style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-bottom:10px;line-height:1.7">
+        SLIDE BETWEEN BRUSHED JAZZ AND TRAP DRUMS.<br>PHASE ANY STEM IN OR OUT OF THE MIX.
+      </div>
+      <div class="cr">
+        <span class="cl">JAZZ ⇄ TRAP</span>
+        <input type="range" class="sl" min="0" max="1" step="0.01" value="0"
+          oninput="setXfade(+this.value);this.parentElement.querySelector('.cv').textContent=Math.round(this.value*100)+'%'">
+        <span class="cv">0%</span>
+      </div>
+      <div class="cr">
+        <span class="cl">KEYS</span>
+        <input type="range" class="sl c" min="0" max="1.2" step="0.01" value="1"
+          oninput="keysBus.gain.setTargetAtTime(+this.value,actx.currentTime,0.03);this.parentElement.querySelector('.cv').textContent=Math.round(this.value/1.2*100)+'%'">
+        <span class="cv c">83%</span>
+      </div>
+      <div class="cr">
+        <span class="cl">BASS</span>
+        <input type="range" class="sl c" min="0" max="1.2" step="0.01" value="1"
+          oninput="bassBus.gain.setTargetAtTime(+this.value,actx.currentTime,0.03);this.parentElement.querySelector('.cv').textContent=Math.round(this.value/1.2*100)+'%'">
+        <span class="cv c">83%</span>
+      </div>
+      <div class="cr">
+        <span class="cl">DRUMS</span>
+        <input type="range" class="sl c" min="0" max="1.2" step="0.01" value="1"
+          oninput="drumBus.gain.setTargetAtTime(+this.value,actx.currentTime,0.03);this.parentElement.querySelector('.cv').textContent=Math.round(this.value/1.2*100)+'%'">
+        <span class="cv c">83%</span>
+      </div>
+      <div class="cr">
+        <span class="cl">DRUM FILTER</span>
+        <input type="range" class="sl m" min="200" max="18000" step="100" value="18000"
+          oninput="drumFilter.frequency.setTargetAtTime(+this.value,actx.currentTime,0.03);this.parentElement.querySelector('.cv').textContent=(this.value/1000).toFixed(1)+'k'">
+        <span class="cv m">18k</span>
+      </div>
+    </div>
+
+    <!-- ARCADE PAD -->
+    <div class="panel">
+      <div class="ptitle">ＡＲＣＡＤＥ ＰＡＤ <span class="jp">アーケード</span></div>
+      <div style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-bottom:10px;line-height:1.7">
+        RETRO GAME SFX &amp; VOICES — RUNS THROUGH THE VHS FX.<br>PITCHES DOWN WITH THE SLOWED SETTING.
+      </div>
+      <div id="apad"></div>
+    </div>
+
   </div>
 
   <div id="footer">
@@ -275,6 +331,23 @@ const convolver = actx.createConvolver();
 const verbWet = actx.createGain(); verbWet.gain.value = 0.3;
 preVerb.connect(masterGain);
 preVerb.connect(convolver); convolver.connect(verbWet); verbWet.connect(masterGain);
+
+// ── STEM BUSES (mixer + jazz⇄trap crossfade) ───────────
+const keysBus   = actx.createGain();
+const bassBus   = actx.createGain();
+const jazzDrums = actx.createGain();
+const trapDrums = actx.createGain(); trapDrums.gain.value = 0; // start full jazz
+const drumBus   = actx.createGain();
+const drumFilter = actx.createBiquadFilter();
+drumFilter.type = 'lowpass'; drumFilter.frequency.value = 18000;
+keysBus.connect(fxIn); bassBus.connect(fxIn);
+jazzDrums.connect(drumBus); trapDrums.connect(drumBus);
+drumBus.connect(drumFilter); drumFilter.connect(fxIn);
+
+function setXfade(v) { // equal-power: 0 = jazz, 1 = trap
+  jazzDrums.gain.setTargetAtTime(Math.cos(v*Math.PI/2), actx.currentTime, 0.03);
+  trapDrums.gain.setTargetAtTime(Math.sin(v*Math.PI/2), actx.currentTime, 0.03);
+}
 
 // ── VHS HISS + VINYL CRACKLE beds ──────────────────────
 function noiseBuf(sec, fn) {
@@ -432,7 +505,7 @@ function rhodes(midi, t, dur, vel) {
     o.connect(og); og.connect(g);
     o.start(t); o.stop(t+dur+0.05);
   });
-  g.connect(fxIn);
+  g.connect(keysBus);
 }
 
 // upright-ish bass
@@ -447,7 +520,7 @@ function bassNote(midi, t, dur) {
   g.gain.exponentialRampToValueAtTime(0.001, t+dur);
   const g2 = actx.createGain(); g2.gain.value = 0.25;
   o.connect(g); o2.connect(g2); g2.connect(g);
-  g.connect(fxIn);
+  g.connect(bassBus);
   o.start(t); o.stop(t+dur+0.05); o2.start(t); o2.stop(t+dur+0.05);
 }
 
@@ -460,26 +533,67 @@ function softKick(t) {
   const o=actx.createOscillator(), g=actx.createGain();
   o.frequency.setValueAtTime(95,t); o.frequency.exponentialRampToValueAtTime(38,t+0.25);
   g.gain.setValueAtTime(0.5,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.28);
-  o.connect(g); g.connect(fxIn); o.start(t); o.stop(t+0.3);
+  o.connect(g); g.connect(jazzDrums); o.start(t); o.stop(t+0.3);
 }
 function brush(t) {
   const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
   s.buffer=nbuf(0.16); f.type='lowpass'; f.frequency.value=4200;
   g.gain.setValueAtTime(0.14,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.16);
-  s.connect(f); f.connect(g); g.connect(fxIn); s.start(t); s.stop(t+0.17);
+  s.connect(f); f.connect(g); g.connect(jazzDrums); s.start(t); s.stop(t+0.17);
 }
 function ride(t) {
   const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
   s.buffer=nbuf(0.09); f.type='highpass'; f.frequency.value=8500;
   g.gain.setValueAtTime(0.055,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.09);
-  s.connect(f); f.connect(g); g.connect(fxIn); s.start(t); s.stop(t+0.1);
+  s.connect(f); f.connect(g); g.connect(jazzDrums); s.start(t); s.stop(t+0.1);
 }
 function rim(t) {
   const o=actx.createOscillator(), g=actx.createGain();
   o.frequency.value = 1750;
   g.gain.setValueAtTime(0.1,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.03);
-  o.connect(g); g.connect(fxIn); o.start(t); o.stop(t+0.035);
+  o.connect(g); g.connect(jazzDrums); o.start(t); o.stop(t+0.035);
 }
+
+// trap kit — crossfaded in with the JAZZ ⇄ TRAP slider
+function trapKick(t) {
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.frequency.setValueAtTime(160,t); o.frequency.exponentialRampToValueAtTime(34,t+0.4);
+  g.gain.setValueAtTime(0.95,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.42);
+  o.connect(g); g.connect(trapDrums); o.start(t); o.stop(t+0.44);
+}
+function sub808(t, midi) {
+  const o=actx.createOscillator(); o.type='sine';
+  const f = mfp(midi);
+  o.frequency.setValueAtTime(f*1.5, t);
+  o.frequency.exponentialRampToValueAtTime(f, t+0.04);
+  const g=actx.createGain();
+  g.gain.setValueAtTime(0.5,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.55);
+  o.connect(g); g.connect(trapDrums); o.start(t); o.stop(t+0.6);
+}
+function trapSnare(t) {
+  const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
+  s.buffer=nbuf(0.18); f.type='bandpass'; f.frequency.value=1000; f.Q.value=0.8;
+  g.gain.setValueAtTime(0.6,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+  s.connect(f); f.connect(g); g.connect(trapDrums); s.start(t); s.stop(t+0.19);
+  const o=actx.createOscillator(), og=actx.createGain();
+  o.frequency.value=180;
+  og.gain.setValueAtTime(0.35,t); og.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+  o.connect(og); og.connect(trapDrums); o.start(t); o.stop(t+0.09);
+}
+function trapHat(t, open) {
+  const dur = open ? 0.24 : 0.04;
+  const s=actx.createBufferSource(), f=actx.createBiquadFilter(), g=actx.createGain();
+  s.buffer=nbuf(dur); f.type='highpass'; f.frequency.value=8800;
+  g.gain.setValueAtTime(0.16,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  s.connect(f); f.connect(g); g.connect(trapDrums); s.start(t); s.stop(t+dur+0.01);
+}
+// halftime trap pattern: kick 1 & syncopated, snare on 3, 16th hats w/ roll
+const TRAP_PAT = {
+  k:'1000001000010000',
+  s:'0000000010000000',
+  h:'1111111111111111',
+  o:'0000001000000000',
+};
 
 // ── VOCAL CHOP SYNTH (formant voice) ───────────────────
 const VOWELS = {
@@ -624,6 +738,13 @@ function schedule() {
     if (dr.r[stepIdx]==='1') ride(nextT);
     if (dr.m[stepIdx]==='1') rim(nextT);
 
+    // trap layer (audible when the JAZZ⇄TRAP slider is up)
+    if (TRAP_PAT.k[stepIdx]==='1') { trapKick(nextT); sub808(nextT, p.roots[barIdx]); }
+    if (TRAP_PAT.s[stepIdx]==='1') trapSnare(nextT);
+    if (TRAP_PAT.h[stepIdx]==='1') trapHat(nextT, false);
+    if (TRAP_PAT.o[stepIdx]==='1') trapHat(nextT, true);
+    if (stepIdx === 14) trapHat(nextT + sd/2, false); // hat roll into the bar
+
     STYLE_CHORDS[p.style].forEach(([st, len]) => {
       if (st === stepIdx)
         p.chords[barIdx].forEach(m => rhodes(m, nextT, len*sd*0.95, 0.16));
@@ -660,6 +781,98 @@ function stopAll() {
   if (playing) togglePlay();
   stepIdx = 0; barIdx = 0;
 }
+
+// ── ARCADE PAD — retro game SFX & voices through the VHS FX ──
+const Pp = () => Math.pow(2, SLOWS[slowIdx].semis/12);
+function aosc(type, f, t) { const o=actx.createOscillator(); o.type=type; o.frequency.setValueAtTime(f*Pp(), t); return o; }
+function aenv(t, a, peak, dur) {
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t+a);
+  g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+  g.connect(fxIn);
+  return g;
+}
+function ablip(f, t, dur, type, vol) {
+  const o = aosc(type||'square', f, t), g = aenv(t, 0.004, vol||0.22, dur);
+  o.connect(g); o.start(t); o.stop(t+dur+0.02);
+}
+function asweep(type, f1, f2, t, dur, vol) {
+  const o = aosc(type, f1, t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20, f2*Pp()), t+dur);
+  const g = aenv(t, 0.005, vol||0.28, dur);
+  o.connect(g); o.start(t); o.stop(t+dur+0.02);
+}
+function anoise(t, dur, filtType, freq, vol) {
+  const s = actx.createBufferSource(); s.buffer = nbuf(dur);
+  const f = actx.createBiquadFilter(); f.type = filtType; f.frequency.setValueAtTime(freq, t);
+  const g = aenv(t, 0.004, vol, dur);
+  s.connect(f); f.connect(g); s.start(t); s.stop(t+dur+0.02);
+  return f;
+}
+const arnd = (a,b) => a + Math.random()*(b-a);
+function atalk(t, base, count, spread, dur) {
+  for (let i = 0; i < count; i++)
+    ablip(base*arnd(1-spread,1+spread), t+i*(dur+0.028), dur, 'square', 0.16);
+}
+
+const ARCADE = {
+  jump(t)    { asweep('square', 160, 620, t, 0.16); },
+  coin(t)    { ablip(988, t, 0.09); ablip(1319, t+0.09, 0.28); },
+  laser(t)   { asweep('sawtooth', 1900, 180, t, 0.19); },
+  powerup(t) { [262,330,392,523,659,784].forEach((f,i)=>ablip(f, t+i*0.055, 0.06)); },
+  explode(t) { const f = anoise(t, 0.75, 'lowpass', 2800, 0.7);
+               f.frequency.exponentialRampToValueAtTime(120, t+0.7);
+               asweep('sine', 110, 30, t, 0.5, 0.45); },
+  zap(t)     { const o = aosc('square', 520, t);
+               const l = actx.createOscillator(); l.frequency.value = 38;
+               const lg = actx.createGain(); lg.gain.value = 260*Pp();
+               l.connect(lg); lg.connect(o.frequency);
+               const g = aenv(t, 0.005, 0.22, 0.22);
+               o.connect(g); o.start(t); o.stop(t+0.24); l.start(t); l.stop(t+0.24); },
+  warp(t)    { const o = aosc('sine', 180, t);
+               o.frequency.exponentialRampToValueAtTime(1400*Pp(), t+0.7);
+               const v = actx.createOscillator(); v.frequency.value = 11;
+               const vg = actx.createGain(); vg.gain.value = 80*Pp();
+               v.connect(vg); vg.connect(o.frequency);
+               const g = aenv(t, 0.02, 0.24, 0.75);
+               o.connect(g); o.start(t); o.stop(t+0.78); v.start(t); v.stop(t+0.78); },
+  alarm(t)   { [0,0.18,0.36].forEach(d=>{ ablip(880, t+d, 0.09); ablip(660, t+d+0.09, 0.09); }); },
+  talkHi(t)  { atalk(t, 620, 9, 0.22, 0.042); },
+  talkLow(t) { atalk(t, 170, 7, 0.15, 0.06); },
+  alien(t)   { const o = aosc('sine', 700, t);
+               for (let i=1;i<=5;i++) o.frequency.exponentialRampToValueAtTime(arnd(300,1100)*Pp(), t+i*0.12);
+               const g = aenv(t, 0.02, 0.18, 0.65);
+               o.connect(g); o.start(t); o.stop(t+0.68); },
+  yes(t)     { asweep('square', 350, 700, t, 0.12, 0.2); asweep('square', 460, 900, t+0.13, 0.14, 0.2); },
+  no(t)      { asweep('square', 500, 250, t, 0.14, 0.2); asweep('square', 400, 180, t+0.15, 0.17, 0.2); },
+  growl(t)   { const o = aosc('sawtooth', 75, t);
+               const l = actx.createOscillator(); l.frequency.value = 13;
+               const lg = actx.createGain(); lg.gain.value = 22*Pp();
+               l.connect(lg); lg.connect(o.frequency);
+               const f = actx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=420;
+               const g = aenv(t, 0.03, 0.45, 0.75);
+               o.connect(f); f.connect(g); o.start(t); o.stop(t+0.78); l.start(t); l.stop(t+0.78); },
+  laugh(t)   { [420,380,420,380,420].forEach((f,i)=>ablip(f*arnd(0.96,1.04), t+i*0.09, 0.055, 'square', 0.16)); },
+  oneUp(t)   { [330,392,659,523,587,784].forEach((f,i)=>ablip(f, t+i*0.11, 0.1)); },
+};
+
+(function(){
+  const pad = document.getElementById('apad');
+  const DEFS = [
+    ['jump','JUMP','🕹️'], ['coin','COIN','🪙'], ['laser','LASER','🔫'], ['powerup','POWER','⭐'],
+    ['explode','BOOM','💥'], ['zap','ZAP','⚡'], ['warp','WARP','🌀'], ['alarm','ALARM','🚨'],
+    ['talkHi','TALK HI','💬'], ['talkLow','TALK LO','💬'], ['alien','ALIEN','👾'], ['yes','YES!','✅'],
+    ['no','NO!','❌'], ['growl','GROWL','🐲'], ['laugh','LAUGH','😆'], ['oneUp','1-UP','🍄'],
+  ];
+  DEFS.forEach(([key, label, ico]) => {
+    const b = document.createElement('button');
+    b.className = 'abtn';
+    b.innerHTML = `<span class="ico">${ico}</span>${label}`;
+    b.addEventListener('pointerdown', ()=>{ resume(); ARCADE[key](actx.currentTime); });
+    pad.appendChild(b);
+  });
+})();
 </script>
 </body>
 </html>
