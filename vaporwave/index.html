@@ -303,6 +303,22 @@ body{
         RETRO GAME SFX &amp; VOICES — RUNS THROUGH THE VHS FX.<br>PITCHES DOWN WITH THE SLOWED SETTING.
       </div>
       <div id="apad"></div>
+
+      <div class="ptitle" style="margin-top:16px">ＬＯＯＰＥＲ <span class="jp">ルーパー</span></div>
+      <div style="font-size:10px;color:var(--dim);letter-spacing:1px;margin-bottom:8px;line-height:1.7">
+        HIT ● THEN PLAY — IT REPEATS WHAT YOU PLAY FOREVER.<br>HIT ● AGAIN TO STACK MORE LAYERS ON TOP.
+      </div>
+      <div class="wrow" style="margin-bottom:8px">
+        <button class="wbtn" id="lb-1" onclick="setLoopBars(1)">1 BAR</button>
+        <button class="wbtn on" id="lb-2" onclick="setLoopBars(2)">2 BARS</button>
+        <button class="wbtn" id="lb-4" onclick="setLoopBars(4)">4 BARS</button>
+      </div>
+      <div class="wrow">
+        <button class="wbtn" id="looprecbtn" onclick="startLoopRec()"
+          style="border-color:var(--pink);color:var(--pink)">● LOOP REC</button>
+        <button class="wbtn" onclick="clearLoop()">✕ CLEAR</button>
+      </div>
+      <div id="loopstat" style="font-size:10px;color:var(--mint);letter-spacing:2px;margin-top:8px;text-align:center;min-height:14px"></div>
     </div>
 
   </div>
@@ -413,6 +429,11 @@ function duck(t) {
   g.linearRampToValueAtTime(1 - pumpAmt, t + 0.02);
   g.linearRampToValueAtTime(1, t + 0.3);
 }
+
+// live performance bus: vocal chops + arcade pads play through here,
+// so the looper can capture exactly what you play (not the backing loop)
+const liveBus = actx.createGain();
+liveBus.connect(fxIn);
 
 function setXfade(v) { // equal-power: 0 = jazz, 1 = trap
   jazzDrums.gain.setTargetAtTime(Math.cos(v*Math.PI/2), actx.currentTime, 0.03);
@@ -744,7 +765,7 @@ function voice(midi, t, dur) {
     const bg = actx.createGain(); bg.gain.value = vw.g[i];
     o.connect(bp); bp.connect(bg); bg.connect(env);
   }
-  env.connect(fxIn);
+  env.connect(liveBus);
   o.start(t); o.stop(t + dur + 0.05);
   vib.start(t); vib.stop(t + dur + 0.05);
 }
@@ -901,6 +922,107 @@ function stopAll() {
   stepIdx = 0; barIdx = 0;
 }
 
+// ── PERFORMANCE LOOPER ─────────────────────────────────
+// Captures the live bus (vocal chops + arcade pads), then loops it
+// endlessly through the FX chain. Recording again overdubs a new layer.
+const loopGain = actx.createGain();
+loopGain.connect(fxIn);
+const loopCap = actx.createScriptProcessor(4096, 2, 2);
+liveBus.connect(loopCap);
+loopCap.connect(actx.destination); // silent output; keeps the node alive
+
+let loopBars = 2;
+let lrOn = false, lrL = [], lrR = [], lrCount = 0, lrTarget = 0, lrPhase = 0;
+let loopBuf = null, loopSrc = null, loopStartT = 0;
+
+function setLoopBars(n) {
+  loopBars = n;
+  [1,2,4].forEach(k => document.getElementById('lb-'+k).classList.toggle('on', k===n));
+}
+
+loopCap.onaudioprocess = e => {
+  if (!lrOn) return;
+  lrL.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  lrR.push(new Float32Array(e.inputBuffer.getChannelData(1)));
+  lrCount += e.inputBuffer.length;
+  if (lrCount >= lrTarget) finishLoopRec();
+};
+
+function startLoopRec() {
+  resume();
+  if (lrOn) return;
+  // overdubs reuse the existing loop length so layers always line up
+  lrTarget = loopBuf ? loopBuf.length
+                     : Math.round(loopBars * 16 * stepDur() * actx.sampleRate);
+  // remember where the loop playhead is so the overdub lands in phase
+  lrPhase = (loopBuf && loopSrc)
+    ? Math.round(((actx.currentTime - loopStartT) % (loopBuf.length/actx.sampleRate)) * actx.sampleRate)
+    : 0;
+  lrL = []; lrR = []; lrCount = 0;
+  lrOn = true;
+  const btn = document.getElementById('looprecbtn');
+  btn.textContent = '● RECORDING…';
+  btn.style.background = 'var(--pink)'; btn.style.color = '#fff';
+  document.getElementById('loopstat').textContent =
+    'PLAY NOW — CAPTURING ' + (lrTarget/actx.sampleRate).toFixed(1) + 'S';
+}
+
+function finishLoopRec() {
+  lrOn = false;
+  const len = lrTarget, sr = actx.sampleRate;
+  const L = new Float32Array(len), R = new Float32Array(len);
+  let off = 0;
+  for (let i = 0; i < lrL.length && off < len; i++) {
+    const n = Math.min(lrL[i].length, len - off);
+    L.set(lrL[i].subarray(0, n), off);
+    R.set(lrR[i].subarray(0, n), off);
+    off += n;
+  }
+  lrL = []; lrR = [];
+
+  const buf = actx.createBuffer(2, len, sr);
+  const nL = buf.getChannelData(0), nR = buf.getChannelData(1);
+  if (loopBuf) {
+    const oL = loopBuf.getChannelData(0), oR = loopBuf.getChannelData(1);
+    for (let i = 0; i < len; i++) {
+      const j = (lrPhase + i) % len;   // rotate the take to where it was played
+      nL[j] = oL[j] + L[i];
+      nR[j] = oR[j] + R[i];
+    }
+  } else {
+    nL.set(L); nR.set(R);
+  }
+  loopBuf = buf;
+
+  // (re)start playback, keeping the current playhead position
+  const now = actx.currentTime;
+  let offset = 0;
+  if (loopSrc) {
+    offset = (now - loopStartT) % (len/sr);
+    try { loopSrc.stop(); } catch(e) {}
+  }
+  loopSrc = actx.createBufferSource();
+  loopSrc.buffer = loopBuf; loopSrc.loop = true;
+  loopSrc.connect(loopGain);
+  loopSrc.start(now, offset);
+  loopStartT = now - offset;
+
+  const btn = document.getElementById('looprecbtn');
+  btn.textContent = '● OVERDUB';
+  btn.style.background = ''; btn.style.color = 'var(--pink)';
+  document.getElementById('loopstat').textContent = '▶ LOOPING — PLAY MORE TO STACK';
+}
+
+function clearLoop() {
+  lrOn = false;
+  if (loopSrc) { try { loopSrc.stop(); } catch(e) {} loopSrc = null; }
+  loopBuf = null;
+  const btn = document.getElementById('looprecbtn');
+  btn.textContent = '● LOOP REC';
+  btn.style.background = ''; btn.style.color = 'var(--pink)';
+  document.getElementById('loopstat').textContent = '';
+}
+
 // ── TAPE STOP (hold the button) ────────────────────────
 let tapeOn = false;
 function tapeDown() {
@@ -938,7 +1060,7 @@ function aenv(t, a, peak, dur) {
   g.gain.setValueAtTime(0, t);
   g.gain.linearRampToValueAtTime(peak, t+a);
   g.gain.exponentialRampToValueAtTime(0.001, t+dur);
-  g.connect(fxIn);
+  g.connect(liveBus);
   return g;
 }
 function ablip(f, t, dur, type, vol) {
