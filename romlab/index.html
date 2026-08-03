@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ROM LAB — sample workstation</title>
+<script src="brr.js"></script>
+<script src="lame.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0f0c;--panel:#131a15;--panel2:#1b241d;--border:#2b3a2f;
+  --lime:#8ce84a;--cyan:#4ae0d0;--amber:#e8c04a;--red:#e05a5a;--mag:#e05ab0;
+  --text:#a8bfae;--dim:#5f7566;--white:#e2f0e6;
+}
+html,body{height:100%;touch-action:manipulation;}
+body{background:var(--bg);color:var(--text);font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;
+  font-size:12px;min-height:100dvh;-webkit-tap-highlight-color:transparent;user-select:none;}
+#page{max-width:1300px;margin:0 auto;padding:14px;}
+
+#hdr{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:12px;}
+#logo{font-size:17px;font-weight:bold;letter-spacing:3px;color:var(--lime);}
+#logo span{color:var(--dim);font-weight:normal;font-size:11px;letter-spacing:1px;}
+.file{padding:10px 15px;background:var(--panel2);border:1px dashed var(--lime);
+  color:var(--lime);border-radius:6px;cursor:pointer;font-size:11px;letter-spacing:1px;min-height:44px;
+  display:inline-flex;align-items:center;}
+.file:hover{background:rgba(140,232,74,.12);}
+input[type=file]{display:none;}
+#status{font-size:11px;color:var(--dim);}
+#status.ok{color:var(--lime);} #status.err{color:var(--red);}
+
+.btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  padding:10px 14px;cursor:pointer;font-family:inherit;font-size:11px;letter-spacing:1px;
+  border-radius:6px;transition:.12s;min-height:44px;}
+.btn:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan);}
+.btn:disabled{opacity:.32;cursor:not-allowed;}
+.btn.go{border-color:var(--lime);color:var(--lime);}
+.btn.on{background:var(--lime);color:#0b0f0c;border-color:var(--lime);}
+.btn.rec{border-color:var(--red);color:var(--red);}
+.btn.rec.on{background:var(--red);color:#fff;animation:blink 1s infinite;}
+@keyframes blink{50%{opacity:.6}}
+
+#transport{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);
+  border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px;}
+#bpm{background:var(--panel2);border:1px solid var(--border);color:var(--lime);width:62px;
+  padding:9px 6px;font-family:inherit;font-size:14px;text-align:center;border-radius:6px;}
+.lbl{font-size:10px;color:var(--dim);letter-spacing:1px;}
+
+#grid{display:grid;grid-template-columns:340px 1fr;gap:12px;align-items:start;}
+@media(max-width:900px){#grid{grid-template-columns:1fr;}}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;
+  overflow:hidden;margin-bottom:12px;}
+.ptitle{background:var(--panel2);padding:8px 12px;font-size:10px;letter-spacing:2px;
+  color:var(--dim);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
+.pbody{padding:11px 12px;}
+.pbody.scroll{max-height:330px;overflow:auto;-webkit-overflow-scrolling:touch;}
+
+/* sample list */
+.samp{display:flex;align-items:center;gap:9px;padding:8px;border-radius:6px;cursor:pointer;
+  border:1px solid transparent;margin-bottom:4px;}
+.samp:hover{background:var(--panel2);border-color:var(--border);}
+.samp.sel{border-color:var(--lime);background:rgba(140,232,74,.08);}
+.samp canvas{width:60px;height:26px;background:#0a0d0b;border-radius:3px;flex-shrink:0;}
+.samp .info{flex:1;min-width:0;}
+.samp .a{color:var(--white);font-size:11px;}
+.samp .b{color:var(--dim);font-size:10px;}
+
+/* pads */
+#pads{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.pad{height:74px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:5px;transition:.08s;overflow:hidden;}
+.pad .n{font-size:10px;color:var(--dim);}
+.pad .s{font-size:9px;color:var(--white);text-align:center;line-height:1.3;
+  word-break:break-all;max-height:26px;overflow:hidden;}
+.pad.filled{border-color:var(--cyan);}
+.pad.armed{border-color:var(--amber);box-shadow:0 0 0 2px rgba(232,192,74,.3);}
+.pad:active,.pad.hit{background:var(--lime);}
+.pad:active .n,.pad:active .s,.pad.hit .n,.pad.hit .s{color:#0b0f0c;}
+
+/* sequencer */
+.seqrow{display:flex;align-items:center;gap:5px;margin-bottom:5px;}
+.seqrow .nm{width:66px;font-size:9px;color:var(--dim);text-align:right;flex-shrink:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.steps{display:flex;gap:3px;flex:1;}
+.st{flex:1;height:26px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:4px;cursor:pointer;min-width:14px;}
+.st.on{background:var(--cyan);border-color:var(--cyan);}
+.st.play{background:var(--lime)!important;border-color:var(--lime)!important;}
+.st.beat{margin-left:5px;}
+
+/* keyboard */
+#keys{display:flex;gap:3px;margin-top:4px;}
+.key{flex:1;height:58px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:0 0 5px 5px;cursor:pointer;display:flex;align-items:flex-end;
+  justify-content:center;padding-bottom:5px;font-size:9px;color:var(--dim);}
+.key:active{background:var(--cyan);color:#0b0f0c;}
+.key.blk{background:#0d120e;color:#3c4d40;}
+
+/* sliders */
+.cr{display:flex;align-items:center;gap:10px;margin-bottom:4px;min-height:40px;}
+.cl{width:78px;font-size:10px;color:var(--dim);letter-spacing:1px;flex-shrink:0;}
+.sl{flex:1;-webkit-appearance:none;appearance:none;height:40px;background:transparent;cursor:pointer;}
+.sl::-webkit-slider-runnable-track{height:5px;background:var(--border);border-radius:3px;}
+.sl::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;
+  background:var(--lime);margin-top:-9px;}
+.sl::-moz-range-track{height:5px;background:var(--border);border-radius:3px;}
+.sl::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--lime);border:none;}
+.cv{width:46px;text-align:right;font-size:11px;color:var(--lime);flex-shrink:0;}
+
+#note{margin-top:14px;padding:12px 14px;background:var(--panel);border:1px solid var(--border);
+  border-left:3px solid var(--amber);border-radius:6px;font-size:11px;line-height:1.85;color:var(--dim);}
+#note b{color:var(--text);font-weight:normal;}
+body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
+  background:rgba(11,15,12,.93);border:3px dashed var(--lime);color:var(--lime);
+  display:flex;align-items:center;justify-content:center;font-size:20px;letter-spacing:4px;
+  pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="page">
+
+  <div id="hdr">
+    <div id="logo">ROM LAB <span>// sample workstation</span></div>
+    <label class="file" for="romIn">⏏ LOAD ROM — or drag one in</label>
+    <input type="file" id="romIn" onchange="loadROM(this.files[0])">
+    <span id="status">Nothing loaded — files stay on your device</span>
+  </div>
+
+  <div id="transport">
+    <button class="btn go" id="playbtn" onclick="togglePlay()" disabled>▶ PLAY</button>
+    <button class="btn" onclick="stopAll()">■ STOP</button>
+    <button class="btn rec" id="recbtn" onclick="toggleRec()">● REC</button>
+    <span id="rectime" style="font-size:11px;color:var(--red);min-width:42px"></span>
+    <span class="lbl">BPM</span>
+    <input type="number" id="bpm" value="90" min="40" max="220"
+      onchange="bpm=Math.max(40,Math.min(220,+this.value||90))">
+    <span class="lbl" style="margin-left:auto">VOL</span>
+    <input type="range" class="sl" style="width:90px" min="0" max="1" step="0.01" value="0.8"
+      oninput="master.gain.value=+this.value">
+  </div>
+
+  <div id="grid">
+    <div>
+      <div class="panel">
+        <div class="ptitle"><span>SAMPLES FOUND</span><span id="scount"></span></div>
+        <div class="pbody" style="padding-bottom:6px">
+          <div class="cr">
+            <span class="cl">MIN LENGTH</span>
+            <input type="range" class="sl" id="minlen" min="4" max="64" step="1" value="14"
+              oninput="document.getElementById('minlenv').textContent=this.value+' blk'">
+            <span class="cv" id="minlenv">14 blk</span>
+          </div>
+          <button class="btn go" style="width:100%" onclick="rescan()" id="rescanbtn" disabled>⟳ RESCAN</button>
+        </div>
+        <div class="pbody scroll" id="samplist">
+          <span style="color:var(--dim)">Load a ROM to scan it for instrument samples.</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><span>SAMPLE SHAPING</span></div>
+        <div class="pbody">
+          <div class="cr"><span class="cl">PITCH</span>
+            <input type="range" class="sl" id="pitch" min="-24" max="24" step="1" value="0"
+              oninput="document.getElementById('pitchv').textContent=(this.value>0?'+':'')+this.value">
+            <span class="cv" id="pitchv">0</span></div>
+          <div class="cr"><span class="cl">DECAY</span>
+            <input type="range" class="sl" id="decay" min="0.05" max="4" step="0.05" value="1.5"
+              oninput="document.getElementById('decayv').textContent=(+this.value).toFixed(2)+'s'">
+            <span class="cv" id="decayv">1.50s</span></div>
+          <div class="cr"><span class="cl">LOOP</span>
+            <input type="range" class="sl" id="loopn" min="1" max="8" step="1" value="1"
+              oninput="document.getElementById('loopnv').textContent=this.value+'×'">
+            <span class="cv" id="loopnv">1×</span></div>
+          <button class="btn" style="width:100%;margin-top:6px" onclick="applyShaping()">APPLY TO ARMED PAD</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><span>FX</span></div>
+        <div class="pbody">
+          <div class="cr"><span class="cl">FILTER</span>
+            <input type="range" class="sl" min="200" max="18000" step="100" value="18000"
+              oninput="lp.frequency.setTargetAtTime(+this.value,actx.currentTime,.02);this.parentElement.querySelector('.cv').textContent=(this.value/1000).toFixed(1)+'k'">
+            <span class="cv">18k</span></div>
+          <div class="cr"><span class="cl">CRUNCH</span>
+            <input type="range" class="sl" min="0" max="1" step="0.01" value="0"
+              oninput="setCrunch(+this.value);this.parentElement.querySelector('.cv').textContent=Math.round(this.value*100)+'%'">
+            <span class="cv">0%</span></div>
+          <div class="cr"><span class="cl">DELAY</span>
+            <input type="range" class="sl" min="0" max="0.7" step="0.01" value="0"
+              oninput="dlyWet.gain.value=+this.value;this.parentElement.querySelector('.cv').textContent=Math.round(this.value/0.7*100)+'%'">
+            <span class="cv">0%</span></div>
+          <div class="cr"><span class="cl">REVERB</span>
+            <input type="range" class="sl" min="0" max="1" step="0.01" value="0.12"
+              oninput="verbWet.gain.value=+this.value;this.parentElement.querySelector('.cv').textContent=Math.round(this.value*100)+'%'">
+            <span class="cv">12%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="ptitle"><span>PADS</span><span id="padhint">tap a sample, then a pad to assign</span></div>
+        <div class="pbody"><div id="pads"></div></div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><span>KEYBOARD</span><span id="kbhint">plays the armed pad, pitched</span></div>
+        <div class="pbody"><div id="keys"></div></div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><span>SEQUENCER</span>
+          <span><button class="btn" style="padding:4px 10px;min-height:0" onclick="clearSeq()">CLEAR</button></span></div>
+        <div class="pbody" id="seq"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="note">
+    <b>What this does.</b> Console music is not stored as audio — it is sequence data driving a sound
+    chip, plus a bank of instrument samples. Those samples are real audio. This scans a ROM for
+    <b>BRR</b> blocks, the SNES sample format, decodes them exactly, and hands you the results as
+    playable instruments. Raise MIN LENGTH if you are seeing noise; lower it to catch short percussion.<br>
+    <b>Where it works.</b> Best on SNES ROMs, since BRR is theirs. Other systems store samples in
+    formats this does not decode, so expect few or no hits — the scanner only reports runs that are
+    structurally valid, rather than guessing.<br>
+    <b>Your files stay here.</b> Nothing is uploaded and no ROM is included; load one you dumped
+    yourself. Audio you extract is someone's copyrighted work, same as any other sample — fine for
+    your own use, worth clearing before you release anything built on it.
+  </div>
+</div>
+
+<script>
+// ── audio graph ───────────────────────────────────────────────
+const actx = new (window.AudioContext || window.webkitAudioContext)();
+const master = actx.createGain(); master.gain.value = 0.8;
+master.connect(actx.destination);
+const resume = () => actx.state === 'suspended' && actx.resume();
+document.addEventListener('pointerdown', resume, { once: true });
+
+const bus = actx.createGain();
+const crushShaper = actx.createWaveShaper();
+function crushCurve(bits) {
+  const steps = Math.pow(2, bits), n = 2048, c = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const x = i/(n-1)*2-1; c[i] = Math.round(x*steps)/steps; }
+  return c;
+}
+crushShaper.curve = crushCurve(4);
+const crushWet = actx.createGain(); crushWet.gain.value = 0;
+const crushDry = actx.createGain(); crushDry.gain.value = 1;
+const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 18000;
+bus.connect(crushDry); crushDry.connect(lp);
+bus.connect(crushShaper); crushShaper.connect(crushWet); crushWet.connect(lp);
+function setCrunch(v) {
+  crushWet.gain.setTargetAtTime(v, actx.currentTime, .02);
+  crushDry.gain.setTargetAtTime(1 - v*0.8, actx.currentTime, .02);
+}
+
+const dly = actx.createDelay(1); dly.delayTime.value = 0.26;
+const dlyFb = actx.createGain(); dlyFb.gain.value = 0.36;
+const dlyWet = actx.createGain(); dlyWet.gain.value = 0;
+dly.connect(dlyFb); dlyFb.connect(dly);
+lp.connect(dly); dly.connect(dlyWet); dlyWet.connect(master);
+
+const conv = actx.createConvolver();
+(function () {
+  const len = Math.floor(actx.sampleRate * 2.2);
+  const b = actx.createBuffer(2, len, actx.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = b.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2.4);
+  }
+  conv.buffer = b;
+})();
+const verbWet = actx.createGain(); verbWet.gain.value = 0.12;
+lp.connect(conv); conv.connect(verbWet); verbWet.connect(master);
+lp.connect(master);
+
+// ── state ─────────────────────────────────────────────────────
+const NPADS = 8, STEPS = 16;
+let romBytes = null;
+let found = [];                 // {offset, blocks, samples, buf}
+let selected = -1;              // index into `found`
+let armed = 0;                  // pad receiving keyboard + shaping
+const pads = Array.from({ length: NPADS }, () => null);   // {name, buf, rate, decay}
+let pat = Array.from({ length: NPADS }, () => new Array(STEPS).fill(0));
+let bpm = 90;
+
+// BRR is 32 kHz on hardware; decoded audio is resampled by the graph.
+const SRC_RATE = 32000;
+
+function toBuffer(int16) {
+  const f = BRR.toFloat(int16);
+  const b = actx.createBuffer(1, Math.max(1, f.length), SRC_RATE);
+  b.copyToChannel(f, 0);
+  return b;
+}
+
+function setStatus(msg, cls) {
+  const el = document.getElementById('status');
+  el.textContent = msg; el.className = cls || '';
+}
+
+// ── ROM loading + scanning ────────────────────────────────────
+async function loadROM(file) {
+  if (!file) return;
+  resume();
+  setStatus('Reading ' + file.name + '…');
+  romBytes = new Uint8Array(await file.arrayBuffer());
+  document.getElementById('rescanbtn').disabled = false;
+  document.getElementById('playbtn').disabled = false;
+  setStatus('✓ ' + file.name + '  ·  ' + (romBytes.length/1048576).toFixed(1) + ' MB', 'ok');
+  rescan();
+}
+
+function rescan() {
+  if (!romBytes) return;
+  const minBlocks = +document.getElementById('minlen').value;
+  const hits = BRR.scan(romBytes, { minBlocks, limit: 300 });
+  found = hits.map(h => {
+    const r = BRR.decodeRun(romBytes, h.offset, h.blocks);
+    return { ...h, buf: toBuffer(r.samples), looped: r.looped };
+  });
+  renderSamples();
+  document.getElementById('scount').textContent =
+    found.length ? found.length + ' found' : 'none found';
+  if (!found.length) {
+    document.getElementById('samplist').innerHTML =
+      '<span style="color:var(--dim)">No BRR runs found. This is expected unless the ROM is ' +
+      'SNES — other systems store samples differently. Try lowering MIN LENGTH.</span>';
+  }
+}
+
+function drawWave(canvas, buf) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = 120, H = canvas.height = 52;
+  const d = buf.getChannelData(0), step = Math.max(1, Math.floor(d.length / W));
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#4ae0d0'; ctx.lineWidth = 1; ctx.beginPath();
+  for (let x = 0; x < W; x++) {
+    let lo = 1, hi = -1;
+    for (let i = 0; i < step; i++) { const v = d[x*step+i] || 0; if (v<lo) lo=v; if (v>hi) hi=v; }
+    ctx.moveTo(x + .5, H/2 - hi*H*0.45);
+    ctx.lineTo(x + .5, H/2 - lo*H*0.45);
+  }
+  ctx.stroke();
+}
+
+function renderSamples() {
+  const el = document.getElementById('samplist');
+  el.innerHTML = '';
+  found.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'samp' + (i === selected ? ' sel' : '');
+    const cv = document.createElement('canvas');
+    const info = document.createElement('div');
+    info.className = 'info';
+    info.innerHTML = '<div class="a">0x' + s.offset.toString(16).toUpperCase() + '</div>' +
+      '<div class="b">' + s.samples.toLocaleString() + ' smp · ' +
+      (s.samples / SRC_RATE).toFixed(2) + 's' + (s.looped ? ' · loop' : '') + '</div>';
+    row.append(cv, info);
+    row.addEventListener('click', () => {
+      selected = i;
+      renderSamples();
+      playBuffer(s.buf, 1, 4);
+    });
+    el.appendChild(row);
+    drawWave(cv, s.buf);
+  });
+}
+
+// ── playback ──────────────────────────────────────────────────
+function playBuffer(buf, rate, decay, when) {
+  if (!buf) return;
+  resume();
+  const t = when || actx.currentTime;
+  const src = actx.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.value = rate || 1;
+  const g = actx.createGain();
+  g.gain.setValueAtTime(1, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + (decay || 1.5));
+  src.connect(g); g.connect(bus);
+  src.start(t); src.stop(t + (decay || 1.5) + 0.05);
+}
+
+function hitPad(i, when) {
+  const p = pads[i];
+  if (!p) return;
+  playBuffer(p.buf, p.rate, p.decay, when);
+  const el = document.querySelector('.pad[data-i="' + i + '"]');
+  if (el) {
+    const delay = when ? Math.max(0, (when - actx.currentTime) * 1000) : 0;
+    setTimeout(() => { el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 90); }, delay);
+  }
+}
+
+// ── pads ──────────────────────────────────────────────────────
+function renderPads() {
+  const wrap = document.getElementById('pads');
+  wrap.innerHTML = '';
+  for (let i = 0; i < NPADS; i++) {
+    const p = pads[i];
+    const el = document.createElement('div');
+    el.className = 'pad' + (p ? ' filled' : '') + (i === armed ? ' armed' : '');
+    el.dataset.i = i;
+    el.innerHTML = '<div class="n">PAD ' + (i+1) + '</div>' +
+                   '<div class="s">' + (p ? p.name : '—') + '</div>';
+    el.addEventListener('pointerdown', () => {
+      armed = i;
+      if (selected >= 0 && !pads[i]) assign(i);      // first tap fills an empty pad
+      else if (selected >= 0 && pads[i]) assign(i);  // and replaces a full one
+      else hitPad(i);
+      renderPads();
+    });
+    wrap.appendChild(el);
+  }
+  renderSeq();
+}
+
+function assign(i) {
+  const s = found[selected];
+  if (!s) return;
+  pads[i] = {
+    name: '0x' + s.offset.toString(16).toUpperCase(),
+    buf: s.buf,
+    rate: Math.pow(2, (+document.getElementById('pitch').value) / 12),
+    decay: +document.getElementById('decay').value,
+  };
+  hitPad(i);
+}
+
+function applyShaping() {
+  const p = pads[armed];
+  if (!p) return;
+  p.rate  = Math.pow(2, (+document.getElementById('pitch').value) / 12);
+  p.decay = +document.getElementById('decay').value;
+  hitPad(armed);
+}
+
+// ── keyboard ──────────────────────────────────────────────────
+const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+(function () {
+  const wrap = document.getElementById('keys');
+  for (let n = 0; n < 13; n++) {
+    const el = document.createElement('div');
+    const name = NOTES[n % 12];
+    el.className = 'key' + (name.includes('#') ? ' blk' : '');
+    el.textContent = name;
+    el.addEventListener('pointerdown', () => {
+      const p = pads[armed];
+      if (!p) return;
+      playBuffer(p.buf, p.rate * Math.pow(2, n / 12), p.decay);
+    });
+    wrap.appendChild(el);
+  }
+})();
+
+// ── sequencer ─────────────────────────────────────────────────
+function renderSeq() {
+  const wrap = document.getElementById('seq');
+  wrap.innerHTML = '';
+  for (let i = 0; i < NPADS; i++) {
+    const row = document.createElement('div');
+    row.className = 'seqrow';
+    const nm = document.createElement('div');
+    nm.className = 'nm';
+    nm.textContent = pads[i] ? pads[i].name : 'pad ' + (i+1);
+    const steps = document.createElement('div');
+    steps.className = 'steps';
+    for (let s = 0; s < STEPS; s++) {
+      const b = document.createElement('div');
+      b.className = 'st' + (pat[i][s] ? ' on' : '') + (s % 4 === 0 && s > 0 ? ' beat' : '');
+      b.dataset.s = s;
+      b.addEventListener('pointerdown', () => {
+        pat[i][s] ^= 1;
+        b.classList.toggle('on', pat[i][s] === 1);
+        if (pat[i][s]) hitPad(i);
+      });
+      steps.appendChild(b);
+    }
+    row.append(nm, steps);
+    wrap.appendChild(row);
+  }
+}
+function clearSeq() {
+  pat = Array.from({ length: NPADS }, () => new Array(STEPS).fill(0));
+  renderSeq();
+}
+
+let playing = false, stepIdx = 0, nextT = 0, seqTimer = null;
+const stepDur = () => 60 / bpm / 4;
+
+function schedule() {
+  while (nextT < actx.currentTime + 0.12) {
+    for (let i = 0; i < NPADS; i++) if (pat[i][stepIdx]) hitPad(i, nextT);
+    (function (s, when) {
+      setTimeout(() => {
+        document.querySelectorAll('.st.play').forEach(e => e.classList.remove('play'));
+        document.querySelectorAll('.st[data-s="' + s + '"]').forEach(e => e.classList.add('play'));
+      }, Math.max(0, (when - actx.currentTime) * 1000));
+    })(stepIdx, nextT);
+    stepIdx = (stepIdx + 1) % STEPS;
+    nextT += stepDur();
+  }
+}
+
+function togglePlay() {
+  resume();
+  playing = !playing;
+  const b = document.getElementById('playbtn');
+  if (playing) {
+    stepIdx = 0; nextT = actx.currentTime + 0.06;
+    seqTimer = setInterval(schedule, 22);
+    b.textContent = '⏸ PAUSE'; b.classList.add('on');
+  } else {
+    clearInterval(seqTimer);
+    b.textContent = '▶ PLAY'; b.classList.remove('on');
+    document.querySelectorAll('.st.play').forEach(e => e.classList.remove('play'));
+  }
+}
+function stopAll() {
+  if (playing) togglePlay();
+  stepIdx = 0;
+  document.querySelectorAll('.st.play').forEach(e => e.classList.remove('play'));
+}
+
+// ── MP3 recording ─────────────────────────────────────────────
+const cap = actx.createScriptProcessor(4096, 2, 2);
+master.connect(cap); cap.connect(actx.destination);
+let recOn = false, recL = [], recR = [], recTimer = null, recStart = 0, trackNum = 1;
+cap.onaudioprocess = e => {
+  const oL = e.outputBuffer.getChannelData(0), oR = e.outputBuffer.getChannelData(1);
+  oL.fill(0); oR.fill(0);
+  if (!recOn) return;
+  recL.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  recR.push(new Float32Array(e.inputBuffer.getChannelData(1)));
+};
+function flat(cs) {
+  let n = 0; cs.forEach(c => n += c.length);
+  const out = new Float32Array(n); let o = 0;
+  cs.forEach(c => { out.set(c, o); o += c.length; });
+  return out;
+}
+function f32toI16(f) {
+  const o = new Int16Array(f.length);
+  for (let i = 0; i < f.length; i++) { const s = Math.max(-1, Math.min(1, f[i])); o[i] = s < 0 ? s*0x8000 : s*0x7FFF; }
+  return o;
+}
+function toggleRec() {
+  resume();
+  const b = document.getElementById('recbtn'), t = document.getElementById('rectime');
+  if (!recOn) {
+    recL = []; recR = []; recOn = true; recStart = Date.now();
+    b.textContent = '■ SAVE'; b.classList.add('on');
+    recTimer = setInterval(() => {
+      const s = Math.floor((Date.now() - recStart) / 1000);
+      t.textContent = String((s/60)|0).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+    }, 500);
+    t.textContent = '00:00';
+  } else {
+    recOn = false; clearInterval(recTimer);
+    b.textContent = '● REC'; b.classList.remove('on');
+    t.textContent = 'ENCODING…';
+    setTimeout(() => {
+      const L = flat(recL), R = flat(recR); recL = []; recR = [];
+      let blob, ext;
+      try {
+        const enc = new lamejs.Mp3Encoder(2, actx.sampleRate, 192);
+        const l = f32toI16(L), r = f32toI16(R), parts = [];
+        for (let i = 0; i < l.length; i += 1152) {
+          const c = enc.encodeBuffer(l.subarray(i, i+1152), r.subarray(i, i+1152));
+          if (c.length) parts.push(c);
+        }
+        const end = enc.flush(); if (end.length) parts.push(end);
+        blob = new Blob(parts, { type: 'audio/mp3' }); ext = 'mp3';
+      } catch (e) {
+        const n = L.length, buf = new ArrayBuffer(44 + n*4), v = new DataView(buf);
+        const ws = (o,s) => { for (let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+        ws(0,'RIFF'); v.setUint32(4,36+n*4,true); ws(8,'WAVE'); ws(12,'fmt ');
+        v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,2,true);
+        v.setUint32(24,actx.sampleRate,true); v.setUint32(28,actx.sampleRate*4,true);
+        v.setUint16(32,4,true); v.setUint16(34,16,true); ws(36,'data'); v.setUint32(40,n*4,true);
+        let o = 44;
+        for (let i = 0; i < n; i++) {
+          let s = Math.max(-1,Math.min(1,L[i])); v.setInt16(o, s<0?s*0x8000:s*0x7FFF, true); o += 2;
+          s = Math.max(-1,Math.min(1,R[i]));     v.setInt16(o, s<0?s*0x8000:s*0x7FFF, true); o += 2;
+        }
+        blob = new Blob([buf], { type: 'audio/wav' }); ext = 'wav';
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'romlab-' + (trackNum++) + '.' + ext;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      t.textContent = '';
+    }, 50);
+  }
+}
+
+// ── drag and drop ─────────────────────────────────────────────
+['dragenter','dragover'].forEach(ev =>
+  document.addEventListener(ev, e => { e.preventDefault(); document.body.classList.add('drag'); }));
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('drag'); });
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  document.body.classList.remove('drag');
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) loadROM(f);
+});
+
+renderPads();
+</script>
+</body>
+</html>
