@@ -78,6 +78,21 @@ select{flex:1;min-width:180px;background:var(--panel2);border:1px solid var(--bo
   line-height:1.9;color:var(--dim);flex-shrink:0;}
 #note b{color:var(--text);font-weight:normal;}
 #note code{background:var(--panel2);padding:1px 5px;border-radius:3px;color:var(--amber);}
+#library{display:none;margin-top:18px;}
+#library.on{display:block;}
+.libhead{display:flex;justify-content:space-between;font-size:10px;letter-spacing:2px;
+  color:var(--dim);margin-bottom:10px;padding:0 2px;}
+#libgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+.libcard{background:var(--panel);border:1px solid var(--border);border-radius:9px;
+  padding:13px;cursor:pointer;transition:.13s;position:relative;}
+.libcard:hover{border-color:var(--green);}
+.libcard .t{color:var(--white);font-size:12px;margin-bottom:6px;word-break:break-word;
+  padding-right:22px;line-height:1.4;}
+.libcard .s{font-size:10px;color:var(--dim);letter-spacing:1px;}
+.libcard .del{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:5px;
+  background:transparent;border:1px solid var(--border);color:var(--dim);cursor:pointer;
+  font-size:12px;line-height:1;padding:0;}
+.libcard .del:hover{border-color:var(--red);color:var(--red);}
 #err{display:none;margin-top:12px;padding:11px 13px;background:var(--panel);
   border-left:3px solid var(--red);border-radius:5px;color:var(--text);
   line-height:1.9;text-align:left;}
@@ -100,8 +115,8 @@ select{flex:1;min-width:180px;background:var(--panel2);border:1px solid var(--bo
       <p>
         N64 · PlayStation · SNES · NES · Game Boy · GBA · Mega Drive · and more<br>
         or tap to browse<br><br>
-        Nothing is uploaded. The file is read in your browser and handed<br>
-        straight to an emulator core running locally on this page.
+        Games are saved to this device so you only pick the file once.<br>
+        Nothing is uploaded — everything stays in your browser.
       </p>
     </div>
 
@@ -124,6 +139,14 @@ select{flex:1;min-width:180px;background:var(--panel2);border:1px solid var(--bo
       <div class="tip" id="systip"></div>
     </div>
 
+    <div id="library">
+      <div class="libhead">
+        <span>YOUR GAMES</span>
+        <span id="libinfo"></span>
+      </div>
+      <div id="libgrid"></div>
+    </div>
+
     <div id="err"></div>
   </div>
   <input type="file" id="fileIn" onchange="pick(this.files[0])">
@@ -140,9 +163,11 @@ select{flex:1;min-width:180px;background:var(--panel2);border:1px solid var(--bo
   <b>Controls.</b> The emulator supplies its own on-screen controls, wired straight into the core.
   <b>⚙ TOUCH SETUP</b> offers an alternative custom overlay, <b>off by default</b> since it covers
   theirs. A paired Bluetooth controller works either way and beats glass for precise steering.<br>
-  <b>Note on N64.</b> It is the hardest system here to emulate and the least stable in a browser —
-  crashes when a level loads are usually the tab running out of memory. PlayStation, SNES and the
-  handhelds are far better behaved.<br>
+  <b>Which systems actually work.</b> <b>SNES, Game Boy, GBA, Mega Drive and NES run flawlessly</b> —
+  they were built for hardware thousands of times slower than your tablet. <b>PlayStation</b> is
+  comfortable too; prefer a compressed <code>.chd</code> over a raw <code>.bin</code>. <b>N64 is the
+  one to avoid</b> — it is the hardest system to emulate and crashes when levels load, because a
+  browser tab runs out of memory.<br>
   <b>No games or BIOS files are included.</b> Load dumps of discs and cartridges you own.
 </div>
 
@@ -203,6 +228,106 @@ const BY_EXT = {
 
 let gameFile = null, biosFile = null, booted = false;
 
+// ── library ──────────────────────────────────────────────────
+// Games and BIOS images are kept in IndexedDB so a session does not begin
+// with hunting for files again. Everything stays on the device.
+const DB_NAME = 'retroplayer', STORE = 'games', BIOS_STORE = 'bios';
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains(BIOS_STORE)) db.createObjectStore(BIOS_STORE, { keyPath: 'system' });
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+
+function tx(store, mode, fn) {
+  return openDB().then(db => new Promise((res, rej) => {
+    const t = db.transaction(store, mode);
+    const req = fn(t.objectStore(store));
+    t.oncomplete = () => res(req && req.result);
+    t.onerror = () => rej(t.error);
+    t.onabort = () => rej(t.error);
+  }));
+}
+
+const libAll    = ()      => tx(STORE, 'readonly',  s => s.getAll());
+const libPut    = g       => tx(STORE, 'readwrite', s => s.put(g));
+const libDel    = id      => tx(STORE, 'readwrite', s => s.delete(id));
+const biosPut   = b       => tx(BIOS_STORE, 'readwrite', s => s.put(b));
+const biosGet   = system  => tx(BIOS_STORE, 'readonly',  s => s.get(system));
+
+async function renderLibrary() {
+  let games = [];
+  try { games = (await libAll()) || []; } catch (e) { return; }
+  const wrap = document.getElementById('library');
+  const grid = document.getElementById('libgrid');
+  if (!games.length) { wrap.classList.remove('on'); return; }
+
+  games.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+  grid.innerHTML = '';
+  games.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'libcard';
+    card.innerHTML =
+      '<div class="t">' + g.name.replace(/[<>]/g, '') + '</div>' +
+      '<div class="s">' + (SYSTEMS[g.system] ? SYSTEMS[g.system].name : g.system) +
+      '  ·  ' + (g.size / 1048576).toFixed(1) + ' MB</div>' +
+      '<button class="del" title="Remove">✕</button>';
+    card.addEventListener('click', e => {
+      if (e.target.classList.contains('del')) return;
+      playStored(g);
+    });
+    card.querySelector('.del').addEventListener('click', async e => {
+      e.stopPropagation();
+      await libDel(g.id);
+      renderLibrary();
+    });
+    grid.appendChild(card);
+  });
+  wrap.classList.add('on');
+
+  if (navigator.storage && navigator.storage.estimate) {
+    const est = await navigator.storage.estimate();
+    document.getElementById('libinfo').textContent =
+      games.length + ' saved  ·  ' + ((est.usage || 0) / 1048576).toFixed(0) + ' MB used';
+  } else {
+    document.getElementById('libinfo').textContent = games.length + ' saved';
+  }
+}
+
+async function playStored(g) {
+  gameFile = new File([g.blob], g.name);
+  document.getElementById('sysSel').value = g.system;
+  g.lastPlayed = Date.now();
+  libPut(g).catch(() => {});
+  const b = await biosGet(g.system).catch(() => null);
+  if (b) biosFile = new File([b.blob], b.name);
+  start();
+}
+
+async function remember(file, system) {
+  try {
+    await libPut({
+      id: file.name + ':' + file.size,
+      name: file.name, system, size: file.size,
+      blob: file, lastPlayed: Date.now(),
+    });
+    renderLibrary();
+  } catch (e) {
+    // Quota is the usual reason; a big disc image can exceed it on its own.
+    log_('Could not save to the library — storage is full or unavailable. ' +
+         'The game still runs; it just will not be remembered.');
+  }
+}
+
+function log_(msg) { showError('<b>Note.</b> ' + msg); }
+
 (function () {
   const sel = document.getElementById('sysSel');
   Object.keys(SYSTEMS).forEach(k => {
@@ -235,6 +360,7 @@ function reset() {
   document.getElementById('exit').classList.remove('on');
   if (window.TouchPad) TouchPad.hide();
   setStatus('Nothing loaded — files stay on your device');
+  renderLibrary();
 }
 
 function pick(file) {
@@ -267,6 +393,14 @@ function syncSystem() {
   const key = document.getElementById('sysSel').value;
   const sys = SYSTEMS[key];
   document.getElementById('biosrow').classList.toggle('on', !!sys.bios);
+
+  if (sys.bios && !biosFile) {
+    biosGet(key).then(b => {
+      if (!b) return;
+      biosFile = new File([b.blob], b.name);
+      document.getElementById('biosname').textContent = b.name + '  (saved)';
+    }).catch(() => {});
+  }
 
   let tip = '';
   if (key === 'psx') {
@@ -327,6 +461,8 @@ function start() {
 
   booted = true;
   clearError();
+  remember(gameFile, key);
+  if (biosFile) biosPut({ system: key, name: biosFile.name, blob: biosFile }).catch(() => {});
   setStatus('Downloading ' + sys.name + ' core…', 'var(--amber)');
   document.getElementById('stage').style.display = 'none';
   document.getElementById('gamewrap').classList.add('on');
@@ -439,6 +575,8 @@ function watchdog() {
     }
   }, 20000);
 }
+
+renderLibrary();
 
 const drop = document.getElementById('drop');
 drop.addEventListener('click', () => document.getElementById('fileIn').click());
