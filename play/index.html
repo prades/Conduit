@@ -167,9 +167,25 @@ function boot(file) {
   window.EJS_color         = '#41d97a';
   window.EJS_startOnLoaded = true;
 
+  // Conservative core settings. Loading a level is the biggest allocation an
+  // N64 game makes, and that spike is what tends to kill a mobile browser tab
+  // — so render at native resolution and keep the lighter plugins. Unknown
+  // keys are ignored by the core, so these are safe to pass either way.
+  window.EJS_defaultOptions = Object.assign({
+    'mupen64plus-43screensize': '320x240',
+    'mupen64plus-169screensize': '640x360',
+    'mupen64plus-rsp-plugin': 'hle',
+    'mupen64plus-EnableFBEmulation': 'False',
+    'mupen64plus-ThreadedRenderer': 'False',
+    'mupen64plus-EnableLODEmulation': 'False',
+    'mupen64plus-txFilterMode': 'None',
+    'mupen64plus-txEnhancementMode': 'None',
+  }, window.EJS_defaultOptions || {});
+
   const s = document.createElement('script');
   s.src = CDN + 'loader.js';
   s.onload  = () => {
+    watchForCrash();
     setStatus('Running — ' + file.name, 'var(--green)');
     if (window.TouchPad) setTimeout(() => TouchPad.show(), 1500);
     watchdog();
@@ -186,6 +202,64 @@ function boot(file) {
     );
   };
   document.body.appendChild(s);
+}
+
+// A crash here is nearly always the tab running out of memory when a level
+// loads. Say so plainly rather than leaving a frozen or blank canvas.
+function crashPanel(title, detail) {
+  document.getElementById('gamewrap').classList.remove('on');
+  document.getElementById('exit').classList.remove('on');
+  document.getElementById('stage').style.display = 'flex';
+  if (window.TouchPad) TouchPad.hide();
+  setStatus(title, 'var(--red)');
+  showError(
+    '<b>' + title + '</b><br>' + detail + '<br><br>' +
+    '<b>Most likely cause:</b> the tab ran out of memory. Loading a level or track ' +
+    'allocates textures, geometry and audio all at once, and a browser tab has far ' +
+    'less headroom than a native app.<br><br>' +
+    '<b>Worth trying, roughly in order:</b><br>' +
+    '· Close other tabs and background apps, then reload<br>' +
+    '· Open the emulator\'s own settings and drop the resolution / disable any enhancements<br>' +
+    '· Save a state in the emulator menu <em>before</em> the transition that kills it<br>' +
+    '· Try a different browser — Chrome generally allows a larger WebAssembly heap than Safari<br><br>' +
+    '<b>The reliable fix</b> is a native emulator: <b>RetroArch</b> (Mupen64Plus-Next core), ' +
+    '<b>simple64</b>, <b>Ares</b> or <b>Project64</b>. Browser N64 sits right at the limit of ' +
+    'what a tab can do; a native app has room to spare.'
+  );
+}
+
+let crashWatch = false;
+function watchForCrash() {
+  if (crashWatch) return;
+  crashWatch = true;
+
+  // The GPU dropping the context is the other common failure, and it is
+  // silent unless you listen for it.
+  const findCanvas = setInterval(() => {
+    const cv = document.querySelector('#game canvas');
+    if (!cv) return;
+    clearInterval(findCanvas);
+    cv.addEventListener('webglcontextlost', e => {
+      e.preventDefault();
+      crashPanel('Graphics context lost',
+        'The browser took the GPU context away from the page, which usually happens ' +
+        'under memory pressure or when the tab is backgrounded too long.');
+    });
+  }, 500);
+  setTimeout(() => clearInterval(findCanvas), 30000);
+
+  window.addEventListener('error', e => {
+    const m = String((e && e.message) || '');
+    if (/memory|allocation|abort|RuntimeError/i.test(m)) {
+      crashPanel('The emulator stopped', 'Reported: ' + m);
+    }
+  });
+  window.addEventListener('unhandledrejection', e => {
+    const m = String((e && e.reason && e.reason.message) || e.reason || '');
+    if (/memory|allocation|abort|RuntimeError/i.test(m)) {
+      crashPanel('The emulator stopped', 'Reported: ' + m);
+    }
+  });
 }
 
 // If the core loaded but nothing is visible, say what is actually wrong
