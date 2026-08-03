@@ -147,9 +147,9 @@ body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
         <div class="pbody" style="padding-bottom:6px">
           <div class="cr">
             <span class="cl">MIN LENGTH</span>
-            <input type="range" class="sl" id="minlen" min="4" max="64" step="1" value="14"
-              oninput="document.getElementById('minlenv').textContent=this.value+' blk'">
-            <span class="cv" id="minlenv">14 blk</span>
+            <input type="range" class="sl" id="minlen" min="4" max="200" step="2" value="40"
+              oninput="document.getElementById('minlenv').textContent=Math.round(this.value*16/32)+' ms'">
+            <span class="cv" id="minlenv">20 ms</span>
           </div>
           <button class="btn go" style="width:100%" onclick="rescan()" id="rescanbtn" disabled>⟳ RESCAN</button>
         </div>
@@ -166,13 +166,15 @@ body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
               oninput="document.getElementById('pitchv').textContent=(this.value>0?'+':'')+this.value">
             <span class="cv" id="pitchv">0</span></div>
           <div class="cr"><span class="cl">DECAY</span>
-            <input type="range" class="sl" id="decay" min="0.05" max="4" step="0.05" value="1.5"
+            <input type="range" class="sl" id="decay" min="0.05" max="6" step="0.05" value="1.8"
               oninput="document.getElementById('decayv').textContent=(+this.value).toFixed(2)+'s'">
-            <span class="cv" id="decayv">1.50s</span></div>
+            <span class="cv" id="decayv">1.80s</span></div>
           <div class="cr"><span class="cl">LOOP</span>
-            <input type="range" class="sl" id="loopn" min="1" max="8" step="1" value="1"
-              oninput="document.getElementById('loopnv').textContent=this.value+'×'">
-            <span class="cv" id="loopnv">1×</span></div>
+            <button class="btn on" id="loopbtn" style="flex:1" onclick="toggleLoop()">SUSTAIN</button></div>
+          <div class="cr"><span class="cl">LOOP FROM</span>
+            <input type="range" class="sl" id="loopstart" min="0" max="90" step="1" value="0"
+              oninput="document.getElementById('loopstartv').textContent=this.value+'%'">
+            <span class="cv" id="loopstartv">0%</span></div>
           <button class="btn" style="width:100%;margin-top:6px" onclick="applyShaping()">APPLY TO ARMED PAD</button>
         </div>
       </div>
@@ -223,7 +225,12 @@ body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
     <b>What this does.</b> Console music is not stored as audio — it is sequence data driving a sound
     chip, plus a bank of instrument samples. Those samples are real audio. This scans a ROM for
     <b>BRR</b> blocks, the SNES sample format, decodes them exactly, and hands you the results as
-    playable instruments. Raise MIN LENGTH if you are seeing noise; lower it to catch short percussion.<br>
+    playable instruments.<br>
+    <b>Why the samples are so short.</b> They are meant to be. A SNES instrument is typically
+    100–300 ms that the hardware <b>loops</b> while an envelope shapes the note — a cymbal ringing
+    for two seconds is a fraction of a second of audio held open. Leave <b>SUSTAIN</b> on and use
+    DECAY to set how long a note lasts; LOOP FROM skips past the attack so the held part is the
+    steady portion rather than the initial transient. Switch to ONE SHOT for percussion.<br>
     <b>Where it works.</b> Best on SNES ROMs, since BRR is theirs. Other systems store samples in
     formats this does not decode, so expect few or no hits — the scanner only reports runs that are
     structurally valid, rather than guessing.<br>
@@ -288,6 +295,15 @@ let armed = 0;                  // pad receiving keyboard + shaping
 const pads = Array.from({ length: NPADS }, () => null);   // {name, buf, rate, decay}
 let pat = Array.from({ length: NPADS }, () => new Array(STEPS).fill(0));
 let bpm = 90;
+let loopOn = true;
+
+const loopStartFrac = () => (+document.getElementById('loopstart').value) / 100;
+function toggleLoop() {
+  loopOn = !loopOn;
+  const b = document.getElementById('loopbtn');
+  b.classList.toggle('on', loopOn);
+  b.textContent = loopOn ? 'SUSTAIN' : 'ONE SHOT';
+}
 
 // BRR is 32 kHz on hardware; decoded audio is resampled by the graph.
 const SRC_RATE = 32000;
@@ -359,13 +375,13 @@ function renderSamples() {
     const info = document.createElement('div');
     info.className = 'info';
     info.innerHTML = '<div class="a">0x' + s.offset.toString(16).toUpperCase() + '</div>' +
-      '<div class="b">' + s.samples.toLocaleString() + ' smp · ' +
-      (s.samples / SRC_RATE).toFixed(2) + 's' + (s.looped ? ' · loop' : '') + '</div>';
+      '<div class="b">' + Math.round(s.samples / SRC_RATE * 1000) + ' ms · ' +
+      s.samples.toLocaleString() + ' smp' + (s.looped ? ' · loops' : '') + '</div>';
     row.append(cv, info);
     row.addEventListener('click', () => {
       selected = i;
       renderSamples();
-      playBuffer(s.buf, 1, 4);
+      playBuffer(s.buf, { decay: 1.6, loop: loopOn, loopStart: loopStartFrac() });
     });
     el.appendChild(row);
     drawWave(cv, s.buf);
@@ -373,24 +389,42 @@ function renderSamples() {
 }
 
 // ── playback ──────────────────────────────────────────────────
-function playBuffer(buf, rate, decay, when) {
+// These samples are short by design — a few hundred milliseconds that the
+// hardware loops while an envelope shapes the note. Played once they are
+// just a click, so looping is what makes them instruments.
+function playBuffer(buf, o) {
   if (!buf) return;
   resume();
-  const t = when || actx.currentTime;
+  o = o || {};
+  const t     = o.when  || actx.currentTime;
+  const rate  = o.rate  || 1;
+  const decay = o.decay || 1.8;
+  const loop  = o.loop !== false;
+
   const src = actx.createBufferSource();
   src.buffer = buf;
-  src.playbackRate.value = rate || 1;
+  src.playbackRate.value = rate;
+  if (loop) {
+    src.loop = true;
+    src.loopStart = Math.min(buf.duration * (o.loopStart || 0), buf.duration - 0.001);
+    src.loopEnd   = buf.duration;
+  }
+
   const g = actx.createGain();
-  g.gain.setValueAtTime(1, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + (decay || 1.5));
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(1, t + 0.004);          // short attack, no click
+  g.gain.exponentialRampToValueAtTime(0.001, t + decay);
   src.connect(g); g.connect(bus);
-  src.start(t); src.stop(t + (decay || 1.5) + 0.05);
+
+  // unlooped samples end on their own; looped ones need stopping
+  const dur = loop ? decay : Math.min(decay, buf.duration / rate);
+  src.start(t); src.stop(t + dur + 0.05);
 }
 
 function hitPad(i, when) {
   const p = pads[i];
   if (!p) return;
-  playBuffer(p.buf, p.rate, p.decay, when);
+  playBuffer(p.buf, { rate: p.rate, decay: p.decay, when, loop: p.loop, loopStart: p.loopStart });
   const el = document.querySelector('.pad[data-i="' + i + '"]');
   if (el) {
     const delay = when ? Math.max(0, (when - actx.currentTime) * 1000) : 0;
@@ -429,6 +463,8 @@ function assign(i) {
     buf: s.buf,
     rate: Math.pow(2, (+document.getElementById('pitch').value) / 12),
     decay: +document.getElementById('decay').value,
+    loop: loopOn,
+    loopStart: loopStartFrac(),
   };
   hitPad(i);
 }
@@ -436,8 +472,10 @@ function assign(i) {
 function applyShaping() {
   const p = pads[armed];
   if (!p) return;
-  p.rate  = Math.pow(2, (+document.getElementById('pitch').value) / 12);
-  p.decay = +document.getElementById('decay').value;
+  p.rate      = Math.pow(2, (+document.getElementById('pitch').value) / 12);
+  p.decay     = +document.getElementById('decay').value;
+  p.loop      = loopOn;
+  p.loopStart = loopStartFrac();
   hitPad(armed);
 }
 
@@ -453,7 +491,8 @@ const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
     el.addEventListener('pointerdown', () => {
       const p = pads[armed];
       if (!p) return;
-      playBuffer(p.buf, p.rate * Math.pow(2, n / 12), p.decay);
+      playBuffer(p.buf, { rate: p.rate * Math.pow(2, n / 12), decay: p.decay,
+                          loop: p.loop, loopStart: p.loopStart });
     });
     wrap.appendChild(el);
   }
