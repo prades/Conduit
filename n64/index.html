@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>N64 CPU — R4300i Emulator &amp; Debugger</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0d12;--panel:#121821;--panel2:#1a212c;--border:#26313f;
+  --green:#41d97a;--cyan:#3ac2e0;--amber:#e0a13a;--red:#e05a5a;--purple:#a97ae0;
+  --text:#9fb0c4;--dim:#5a6b7f;--white:#dfe8f2;
+}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;
+  font-size:12px;min-height:100dvh;-webkit-tap-highlight-color:transparent;}
+#page{max-width:1400px;margin:0 auto;padding:14px;}
+
+#hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+#logo{font-size:17px;font-weight:bold;letter-spacing:2px;color:var(--green);}
+#logo span{color:var(--dim);font-weight:normal;font-size:11px;letter-spacing:1px;}
+#fileLbl{padding:9px 16px;background:var(--panel2);border:1px dashed var(--green);
+  color:var(--green);border-radius:5px;cursor:pointer;font-size:11px;letter-spacing:1px;}
+#fileLbl:hover{background:rgba(65,217,122,.12);}
+#fileIn{display:none;}
+#status{font-size:11px;color:var(--dim);}
+#status.ok{color:var(--green);} #status.err{color:var(--red);}
+
+.btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  padding:8px 13px;cursor:pointer;font-family:inherit;font-size:11px;letter-spacing:1px;
+  border-radius:5px;transition:.12s;}
+.btn:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn.go{border-color:var(--green);color:var(--green);}
+.btn.stop{border-color:var(--red);color:var(--red);}
+
+#ctl{display:flex;gap:7px;align-items:center;flex-wrap:wrap;background:var(--panel);
+  border:1px solid var(--border);border-radius:7px;padding:9px 12px;margin-bottom:12px;}
+#ctl input[type=text]{background:var(--panel2);border:1px solid var(--border);color:var(--amber);
+  padding:7px 9px;font-family:inherit;font-size:11px;border-radius:4px;width:104px;}
+#ctl input:focus{outline:none;border-color:var(--cyan);}
+.sep{width:1px;height:22px;background:var(--border);margin:0 3px;}
+.lbl{font-size:10px;color:var(--dim);letter-spacing:1px;}
+
+#grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
+@media(max-width:1000px){#grid{grid-template-columns:1fr;}}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:7px;overflow:hidden;}
+.ptitle{background:var(--panel2);padding:7px 12px;font-size:10px;letter-spacing:2px;
+  color:var(--dim);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
+.pbody{padding:11px 12px;max-height:400px;overflow:auto;}
+.pbody.tall{max-height:520px;}
+
+/* header info */
+.kv{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(38,49,63,.5);}
+.kv:last-child{border:none;}
+.kv .k{color:var(--dim);}
+.kv .v{color:var(--white);}
+
+/* registers */
+#regs{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:2px 14px;}
+.reg{display:flex;justify-content:space-between;padding:2px 0;font-size:11px;}
+.reg .n{color:var(--dim);width:42px;}
+.reg .v{color:var(--white);}
+.reg.chg .v{color:var(--amber);}
+.reg.zero .v{color:#3a4654;}
+
+/* disasm */
+#disasm{font-size:11px;line-height:1.55;}
+.ln{display:flex;gap:9px;padding:1px 4px;border-radius:3px;white-space:pre;}
+.ln .a{color:var(--dim);}
+.ln .w{color:#3f5064;}
+.ln .m{color:var(--cyan);min-width:74px;}
+.ln .o{color:var(--text);}
+.ln.pc{background:rgba(65,217,122,.14);}
+.ln.pc .a{color:var(--green);font-weight:bold;}
+.ln.ds{background:rgba(224,161,58,.09);}
+.ln.bp .a{color:var(--red);font-weight:bold;}
+
+/* memory */
+#mem{font-size:11px;line-height:1.6;white-space:pre;}
+.ma{color:var(--dim);} .mh{color:var(--white);} .mc{color:var(--purple);}
+
+#log{font-size:10px;line-height:1.6;color:var(--dim);white-space:pre-wrap;}
+#log .w{color:var(--amber);} #log .e{color:var(--red);} #log .i{color:var(--cyan);}
+#note{margin-top:14px;padding:12px 14px;background:var(--panel);border:1px solid var(--border);
+  border-left:3px solid var(--amber);border-radius:6px;font-size:11px;line-height:1.85;color:var(--dim);}
+#note b{color:var(--text);font-weight:normal;}
+</style>
+</head>
+<body>
+<div id="page">
+
+  <div id="hdr">
+    <div id="logo">N64 CPU <span>// R4300i INTERPRETER + DEBUGGER</span></div>
+    <label id="fileLbl" for="fileIn">⏏ LOAD ROM (.z64 / .n64 / .v64)</label>
+    <input type="file" id="fileIn" accept=".z64,.n64,.v64,.rom,.bin" onchange="loadROM(this.files[0])">
+    <span id="status">No ROM loaded — files stay in your browser</span>
+  </div>
+
+  <div id="ctl">
+    <button class="btn" id="b-step"  onclick="step(1)"      disabled>STEP</button>
+    <button class="btn" id="b-s10"   onclick="step(10)"     disabled>×10</button>
+    <button class="btn" id="b-s1k"   onclick="step(1000)"   disabled>×1K</button>
+    <button class="btn go" id="b-run" onclick="toggleRun()" disabled>▶ RUN</button>
+    <button class="btn" id="b-reset" onclick="reset()"      disabled>⟲ RESET</button>
+    <div class="sep"></div>
+    <span class="lbl">BREAK AT</span>
+    <input type="text" id="bpIn" placeholder="A4000040" oninput="setBP(this.value)">
+    <div class="sep"></div>
+    <span class="lbl">MEM</span>
+    <input type="text" id="memIn" value="A4000040" oninput="memAddr=parseHex(this.value);renderMem()">
+    <div class="sep"></div>
+    <span class="lbl" id="cycles">0 instructions</span>
+  </div>
+
+  <div id="grid">
+    <div>
+      <div class="panel" style="margin-bottom:12px">
+        <div class="ptitle"><span>ROM HEADER</span><span id="romsize"></span></div>
+        <div class="pbody" id="hdrinfo"><span style="color:var(--dim)">Load a ROM to inspect its header.</span></div>
+      </div>
+      <div class="panel" style="margin-bottom:12px">
+        <div class="ptitle"><span>REGISTERS</span><span id="pcshow"></span></div>
+        <div class="pbody" id="regs"></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>MEMORY</span><span id="memlbl"></span></div>
+        <div class="pbody" id="mem"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel" style="margin-bottom:12px">
+        <div class="ptitle"><span>DISASSEMBLY</span><span id="dislbl"></span></div>
+        <div class="pbody tall" id="disasm"></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>LOG</span></div>
+        <div class="pbody" id="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="note">
+    <b>What this is.</b> A working NEC VR4300 (MIPS R4300i) interpreter with the N64 memory map,
+    PI DMA, a disassembler and a stepping debugger. Load a cartridge dump and it boots the way real
+    hardware does — the first 4 KB of the ROM is copied into SP DMEM and execution starts at
+    0xA4000040, so you are stepping through the cartridge's own IPL3 boot code.<br>
+    <b>What it is not.</b> This does not play games. That needs the RSP (a second CPU with a
+    128-bit vector unit), the RDP rasterizer, and high-level emulation of per-game graphics
+    microcode — tens of thousands of lines beyond this. The FPU (COP1), TLB and interrupts are
+    also stubbed. <b>No ROMs are included</b>; load one you dumped yourself.
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  N64 memory map
+//    0x00000000  RDRAM (4 MB, 8 MB with Expansion Pak)
+//    0x04000000  SP DMEM   0x04001000  SP IMEM
+//    0x04040000  SP regs   0x04300000  MI    0x04400000  VI
+//    0x04500000  AI        0x04600000  PI    0x04700000  RI
+//    0x04800000  SI        0x10000000  cartridge domain 1
+//  Virtual: KSEG0 (0x8.......) and KSEG1 (0xA.......) map straight to
+//  physical by masking off the top 3 bits; only KUSEG needs the TLB.
+// ═══════════════════════════════════════════════════════════
+const RDRAM_SIZE = 8 * 1024 * 1024;          // assume Expansion Pak
+const rdram = new DataView(new ArrayBuffer(RDRAM_SIZE));
+const dmem  = new DataView(new ArrayBuffer(4096));
+const imem  = new DataView(new ArrayBuffer(4096));
+let rom = null;                               // DataView over the big-endian ROM
+let romBytes = null;
+
+// memory-mapped register files, indexed by (offset >> 2)
+const miReg = new Uint32Array(16), viReg = new Uint32Array(16);
+const aiReg = new Uint32Array(16), piReg = new Uint32Array(16);
+const riReg = new Uint32Array(16), siReg = new Uint32Array(16);
+const spReg = new Uint32Array(16), dpReg = new Uint32Array(16);
+
+// ── CPU state ──────────────────────────────────────────────
+const REGNAME = ['zero','at','v0','v1','a0','a1','a2','a3','t0','t1','t2','t3',
+  't4','t5','t6','t7','s0','s1','s2','s3','s4','s5','s6','s7','t8','t9',
+  'k0','k1','gp','sp','s8','ra'];
+const COP0NAME = {0:'Index',1:'Random',2:'EntryLo0',3:'EntryLo1',4:'Context',5:'PageMask',
+  6:'Wired',8:'BadVAddr',9:'Count',10:'EntryHi',11:'Compare',12:'Status',13:'Cause',
+  14:'EPC',15:'PRId',16:'Config',18:'WatchLo',19:'WatchHi',28:'TagLo',29:'TagHi',30:'ErrorEPC'};
+
+let gpr = new BigInt64Array(32);
+let cop0 = new Uint32Array(32);
+let hi = 0n, lo = 0n;
+let pc = 0, nextPC = 0, inDelay = false;
+let instrCount = 0, halted = false, haltMsg = '';
+let bpAddr = -1, memAddr = 0xA4000040;
+let running = false, runTimer = null;
+let prevGPR = new BigInt64Array(32);
+
+const s32 = x => BigInt.asIntN(32, x);
+const u32 = x => Number(BigInt.asUintN(32, x)) >>> 0;
+const hex8 = n => (n >>> 0).toString(16).toUpperCase().padStart(8,'0');
+const hex64 = b => (BigInt.asUintN(64, b)).toString(16).toUpperCase().padStart(16,'0');
+const parseHex = s => (parseInt(String(s).replace(/^0x/i,''), 16) >>> 0) || 0;
+
+function log(msg, cls) {
+  const el = document.getElementById('log');
+  el.innerHTML += (cls ? `<span class="${cls}">${msg}</span>` : msg) + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Address translation + bus ──────────────────────────────
+// KSEG0/KSEG1 are direct-mapped; anything else is reported rather than
+// silently guessed, so a TLB miss is visible instead of mysterious.
+function translate(vaddr) {
+  vaddr = vaddr >>> 0;
+  if (vaddr >= 0x80000000 && vaddr < 0xC0000000) return (vaddr & 0x1FFFFFFF) >>> 0;
+  return vaddr;   // KUSEG — would need the TLB; treated as identity here
+}
+
+function read32phys(p) {
+  p = p >>> 0;
+  if (p < RDRAM_SIZE)                      return rdram.getUint32(p, false);
+  if (p >= 0x04000000 && p < 0x04001000)   return dmem.getUint32(p - 0x04000000, false);
+  if (p >= 0x04001000 && p < 0x04002000)   return imem.getUint32(p - 0x04001000, false);
+  if (p >= 0x04040000 && p < 0x04040020)   return spReg[(p - 0x04040000) >> 2];
+  if (p === 0x04080000)                    return spReg[8];            // SP_PC
+  if (p >= 0x04100000 && p < 0x04100020)   return dpReg[(p - 0x04100000) >> 2];
+  if (p >= 0x04300000 && p < 0x04300010)   return miReg[(p - 0x04300000) >> 2];
+  if (p >= 0x04400000 && p < 0x04400040)   return viReg[(p - 0x04400000) >> 2];
+  if (p >= 0x04500000 && p < 0x04500020)   return aiReg[(p - 0x04500000) >> 2];
+  if (p >= 0x04600000 && p < 0x04600040)   return piReg[(p - 0x04600000) >> 2];
+  if (p >= 0x04700000 && p < 0x04700020)   return riReg[(p - 0x04700000) >> 2];
+  if (p >= 0x04800000 && p < 0x04800020)   return siReg[(p - 0x04800000) >> 2];
+  if (p >= 0x10000000 && p < 0x1FC00000) {                              // cartridge
+    const off = p - 0x10000000;
+    return (rom && off + 4 <= rom.byteLength) ? rom.getUint32(off, false) : 0;
+  }
+  return 0;
+}
+
+function write32phys(p, v) {
+  p = p >>> 0; v = v >>> 0;
+  if (p < RDRAM_SIZE)                    { rdram.setUint32(p, v, false); return; }
+  if (p >= 0x04000000 && p < 0x04001000) { dmem.setUint32(p - 0x04000000, v, false); return; }
+  if (p >= 0x04001000 && p < 0x04002000) { imem.setUint32(p - 0x04001000, v, false); return; }
+  if (p >= 0x04040000 && p < 0x04040020) { spReg[(p - 0x04040000) >> 2] = v; return; }
+  if (p >= 0x04300000 && p < 0x04300010) { miReg[(p - 0x04300000) >> 2] = v; return; }
+  if (p >= 0x04400000 && p < 0x04400040) { viReg[(p - 0x04400000) >> 2] = v; return; }
+  if (p >= 0x04500000 && p < 0x04500020) { aiReg[(p - 0x04500000) >> 2] = v; return; }
+  if (p >= 0x04600000 && p < 0x04600040) { piWrite(p, v); return; }
+  if (p >= 0x04700000 && p < 0x04700020) { riReg[(p - 0x04700000) >> 2] = v; return; }
+  if (p >= 0x04800000 && p < 0x04800020) { siReg[(p - 0x04800000) >> 2] = v; return; }
+}
+
+// PI DMA — IPL3 uses this to pull the game out of the cartridge into RDRAM,
+// so it has to actually move bytes for the boot to get anywhere.
+function piWrite(p, v) {
+  const i = (p - 0x04600000) >> 2;
+  piReg[i] = v >>> 0;
+  if (i === 3) {                                   // PI_WR_LEN: cart -> RDRAM
+    const dram = piReg[0] & 0x00FFFFFF;
+    const cart = piReg[1] & 0x1FFFFFFF;
+    const len  = (v >>> 0) + 1;
+    const src  = cart - 0x10000000;
+    for (let k = 0; k < len; k++) {
+      const d = dram + k;
+      if (d >= RDRAM_SIZE) break;
+      rdram.setUint8(d, (rom && src + k < rom.byteLength) ? rom.getUint8(src + k) : 0);
+    }
+    piReg[4] = 0;                                  // PI_STATUS: DMA finished
+    log(`PI DMA  cart 0x${hex8(cart)} → RDRAM 0x${hex8(dram)}  (${len} bytes)`, 'i');
+  }
+}
+
+// sized accessors
+function read8(v)  { const p = translate(v); const w = read32phys(p & ~3); return (w >>> (8 * (3 - (p & 3)))) & 0xFF; }
+function read16(v) { const p = translate(v); const w = read32phys(p & ~3); return (p & 2) ? (w & 0xFFFF) : (w >>> 16) & 0xFFFF; }
+function read32(v) { return read32phys(translate(v)) >>> 0; }
+function read64(v) { return (BigInt(read32(v)) << 32n) | BigInt(read32(v + 4)); }
+
+function write8(v, b) {
+  const p = translate(v), a = p & ~3, sh = 8 * (3 - (p & 3));
+  write32phys(a, (read32phys(a) & ~(0xFF << sh)) | ((b & 0xFF) << sh));
+}
+function write16(v, h) {
+  const p = translate(v), a = p & ~3;
+  const w = read32phys(a);
+  write32phys(a, (p & 2) ? ((w & 0xFFFF0000) | (h & 0xFFFF)) : ((w & 0xFFFF) | ((h & 0xFFFF) << 16)));
+}
+function write32(v, w) { write32phys(translate(v), w); }
+function write64(v, d) { write32(v, Number(BigInt.asUintN(32, d >> 32n))); write32(v + 4, Number(BigInt.asUintN(32, d))); }
+
+// ═══════════════════════════════════════════════════════════
+//  Disassembler
+// ═══════════════════════════════════════════════════════════
+const SPECIAL = {0:'SLL',2:'SRL',3:'SRA',4:'SLLV',6:'SRLV',7:'SRAV',8:'JR',9:'JALR',
+  12:'SYSCALL',13:'BREAK',15:'SYNC',16:'MFHI',17:'MTHI',18:'MFLO',19:'MTLO',
+  20:'DSLLV',22:'DSRLV',23:'DSRAV',24:'MULT',25:'MULTU',26:'DIV',27:'DIVU',
+  28:'DMULT',29:'DMULTU',30:'DDIV',31:'DDIVU',32:'ADD',33:'ADDU',34:'SUB',35:'SUBU',
+  36:'AND',37:'OR',38:'XOR',39:'NOR',42:'SLT',43:'SLTU',44:'DADD',45:'DADDU',
+  46:'DSUB',47:'DSUBU',56:'DSLL',58:'DSRL',59:'DSRA',60:'DSLL32',62:'DSRL32',63:'DSRA32'};
+const REGIMM = {0:'BLTZ',1:'BGEZ',2:'BLTZL',3:'BGEZL',16:'BLTZAL',17:'BGEZAL'};
+const OPS = {2:'J',3:'JAL',4:'BEQ',5:'BNE',6:'BLEZ',7:'BGTZ',8:'ADDI',9:'ADDIU',
+  10:'SLTI',11:'SLTIU',12:'ANDI',13:'ORI',14:'XORI',15:'LUI',20:'BEQL',21:'BNEL',
+  22:'BLEZL',23:'BGTZL',24:'DADDI',25:'DADDIU',26:'LDL',27:'LDR',32:'LB',33:'LH',
+  34:'LWL',35:'LW',36:'LBU',37:'LHU',38:'LWR',39:'LWU',40:'SB',41:'SH',42:'SWL',
+  43:'SW',44:'SDL',45:'SDR',46:'SWR',47:'CACHE',48:'LL',49:'LWC1',53:'LDC1',55:'LD',
+  56:'SC',57:'SWC1',61:'SDC1',63:'SD'};
+
+const R = i => '$' + REGNAME[i];
+const simm16 = w => (w & 0x8000) ? (w & 0xFFFF) - 0x10000 : (w & 0xFFFF);
+const sHex = n => (n < 0 ? '-0x' + (-n).toString(16).toUpperCase() : '0x' + n.toString(16).toUpperCase());
+
+function disasm(insn, addr) {
+  insn = insn >>> 0;
+  if (insn === 0) return ['NOP', ''];
+  const op = insn >>> 26, rs = (insn >>> 21) & 31, rt = (insn >>> 16) & 31;
+  const rd = (insn >>> 11) & 31, sa = (insn >>> 6) & 31, fn = insn & 63;
+  const imm = insn & 0xFFFF, si = simm16(insn);
+  const brTarget = (addr + 4 + si * 4) >>> 0;
+  const jTarget  = (((addr + 4) & 0xF0000000) | ((insn & 0x03FFFFFF) << 2)) >>> 0;
+
+  if (op === 0) {
+    const m = SPECIAL[fn]; if (!m) return ['???', `.word 0x${hex8(insn)}`];
+    if (fn === 0 || fn === 2 || fn === 3 || (fn >= 56 && fn <= 63)) return [m, `${R(rd)}, ${R(rt)}, ${sa}`];
+    if (fn === 4 || fn === 6 || fn === 7 || fn === 20 || fn === 22 || fn === 23) return [m, `${R(rd)}, ${R(rt)}, ${R(rs)}`];
+    if (fn === 8)  return [m, R(rs)];
+    if (fn === 9)  return [m, rd === 31 ? R(rs) : `${R(rd)}, ${R(rs)}`];
+    if (fn === 12 || fn === 13 || fn === 15) return [m, ''];
+    if (fn === 16 || fn === 18) return [m, R(rd)];
+    if (fn === 17 || fn === 19) return [m, R(rs)];
+    if (fn >= 24 && fn <= 31)   return [m, `${R(rs)}, ${R(rt)}`];
+    return [m, `${R(rd)}, ${R(rs)}, ${R(rt)}`];
+  }
+  if (op === 1) {
+    const m = REGIMM[rt]; if (!m) return ['???', `.word 0x${hex8(insn)}`];
+    return [m, `${R(rs)}, 0x${hex8(brTarget)}`];
+  }
+  if (op === 16 || op === 17 || op === 18) {           // COP0 / COP1 / COP2
+    const c = op - 16;
+    if (rs === 0)  return [`MFC${c}`, `${R(rt)}, ${c === 0 ? (COP0NAME[rd] || '$'+rd) : '$f'+rd}`];
+    if (rs === 4)  return [`MTC${c}`, `${R(rt)}, ${c === 0 ? (COP0NAME[rd] || '$'+rd) : '$f'+rd}`];
+    if (rs === 1)  return [`DMFC${c}`, `${R(rt)}, $${rd}`];
+    if (rs === 5)  return [`DMTC${c}`, `${R(rt)}, $${rd}`];
+    if (op === 16 && rs === 16) {
+      const t = {1:'TLBR',2:'TLBWI',6:'TLBWR',8:'TLBP',24:'ERET'}[fn];
+      if (t) return [t, ''];
+    }
+    return [`COP${c}`, `0x${(insn & 0x1FFFFFF).toString(16).toUpperCase()}`];
+  }
+  const m = OPS[op]; if (!m) return ['???', `.word 0x${hex8(insn)}`];
+  if (op === 2 || op === 3)                      return [m, `0x${hex8(jTarget)}`];
+  if (op === 4 || op === 5 || op === 20 || op === 21) return [m, `${R(rs)}, ${R(rt)}, 0x${hex8(brTarget)}`];
+  if (op === 6 || op === 7 || op === 22 || op === 23) return [m, `${R(rs)}, 0x${hex8(brTarget)}`];
+  if (op === 15)                                 return [m, `${R(rt)}, 0x${imm.toString(16).toUpperCase()}`];
+  if (op >= 32 || op === 49 || op === 53 || op === 57 || op === 61 || op === 48 || op === 56)
+    return [m, `${R(rt)}, ${sHex(si)}(${R(rs)})`];
+  return [m, `${R(rt)}, ${R(rs)}, ${sHex(si)}`];
+}
+
+// ═══════════════════════════════════════════════════════════
+//  Interpreter
+//  Branches take effect after the delay slot, so a taken branch arms
+//  `nextPC` and the following instruction still executes first.
+// ═══════════════════════════════════════════════════════════
+let branchPC = -1, branchArmed = false;
+
+function setReg(i, val) { if (i !== 0) gpr[i] = BigInt.asIntN(64, val); }
+
+function halt(msg) { halted = true; haltMsg = msg; running = false; log('HALT: ' + msg, 'e'); }
+
+function stepOne() {
+  if (halted || !rom) return false;
+  const insn = read32(pc) >>> 0;
+  const curPC = pc;
+  const op = insn >>> 26, rs = (insn >>> 21) & 31, rt = (insn >>> 16) & 31;
+  const rd = (insn >>> 11) & 31, sa = (insn >>> 6) & 31, fn = insn & 63;
+  const imm = insn & 0xFFFF, si = simm16(insn);
+  const S = gpr[rs], T = gpr[rt];
+
+  let willBranch = false, target = 0, noDelay = false;
+  const br = c => { if (c) { willBranch = true; target = (curPC + 4 + si * 4) >>> 0; } };
+  // "likely" variants annul the delay slot when not taken
+  const brL = c => { if (c) { willBranch = true; target = (curPC + 4 + si * 4) >>> 0; } else { pc = (curPC + 8) >>> 0; instrCount++; cop0[9] = (cop0[9] + 1) >>> 0; return true; } return false; };
+
+  pc = (curPC + 4) >>> 0;
+
+  switch (op) {
+    case 0: switch (fn) {
+      case 0:  setReg(rd, s32(BigInt.asUintN(32, T) << BigInt(sa))); break;                 // SLL
+      case 2:  setReg(rd, s32(BigInt.asUintN(32, T) >> BigInt(sa))); break;                 // SRL
+      case 3:  setReg(rd, s32(BigInt.asIntN(32, T) >> BigInt(sa))); break;                  // SRA
+      case 4:  setReg(rd, s32(BigInt.asUintN(32, T) << (S & 31n))); break;                  // SLLV
+      case 6:  setReg(rd, s32(BigInt.asUintN(32, T) >> (S & 31n))); break;                  // SRLV
+      case 7:  setReg(rd, s32(BigInt.asIntN(32, T) >> (S & 31n))); break;                   // SRAV
+      case 8:  willBranch = true; target = u32(S); break;                                    // JR
+      case 9:  setReg(rd, BigInt((curPC + 8) >>> 0)); willBranch = true; target = u32(S); break; // JALR
+      case 12: halt('SYSCALL at 0x' + hex8(curPC)); return false;
+      case 13: halt('BREAK at 0x' + hex8(curPC)); return false;
+      case 15: break;                                                                        // SYNC
+      case 16: setReg(rd, hi); break;
+      case 17: hi = S; break;
+      case 18: setReg(rd, lo); break;
+      case 19: lo = S; break;
+      case 20: setReg(rd, T << (S & 63n)); break;                                            // DSLLV
+      case 22: setReg(rd, BigInt.asUintN(64, T) >> (S & 63n)); break;                        // DSRLV
+      case 23: setReg(rd, T >> (S & 63n)); break;                                            // DSRAV
+      case 24: { const p = BigInt.asIntN(32, S) * BigInt.asIntN(32, T);
+                 lo = s32(p); hi = s32(p >> 32n); break; }                                   // MULT
+      case 25: { const p = BigInt.asUintN(32, S) * BigInt.asUintN(32, T);
+                 lo = s32(p); hi = s32(p >> 32n); break; }                                   // MULTU
+      case 26: { const a = BigInt.asIntN(32, S), b = BigInt.asIntN(32, T);
+                 if (b !== 0n) { lo = s32(a / b); hi = s32(a % b); } break; }                // DIV
+      case 27: { const a = BigInt.asUintN(32, S), b = BigInt.asUintN(32, T);
+                 if (b !== 0n) { lo = s32(a / b); hi = s32(a % b); } break; }                // DIVU
+      case 28: { const p = S * T; lo = BigInt.asIntN(64, p); hi = BigInt.asIntN(64, p >> 64n); break; }
+      case 29: { const p = BigInt.asUintN(64, S) * BigInt.asUintN(64, T);
+                 lo = BigInt.asIntN(64, p); hi = BigInt.asIntN(64, p >> 64n); break; }
+      case 30: if (T !== 0n) { lo = BigInt.asIntN(64, S / T); hi = BigInt.asIntN(64, S % T); } break;
+      case 31: { const a = BigInt.asUintN(64, S), b = BigInt.asUintN(64, T);
+                 if (b !== 0n) { lo = BigInt.asIntN(64, a / b); hi = BigInt.asIntN(64, a % b); } break; }
+      case 32: case 33: setReg(rd, s32(S + T)); break;                                       // ADD / ADDU
+      case 34: case 35: setReg(rd, s32(S - T)); break;                                       // SUB / SUBU
+      case 36: setReg(rd, S & T); break;
+      case 37: setReg(rd, S | T); break;
+      case 38: setReg(rd, S ^ T); break;
+      case 39: setReg(rd, ~(S | T)); break;
+      case 42: setReg(rd, S < T ? 1n : 0n); break;                                           // SLT
+      case 43: setReg(rd, BigInt.asUintN(64, S) < BigInt.asUintN(64, T) ? 1n : 0n); break;   // SLTU
+      case 44: case 45: setReg(rd, S + T); break;                                            // DADD / DADDU
+      case 46: case 47: setReg(rd, S - T); break;                                            // DSUB / DSUBU
+      case 56: setReg(rd, T << BigInt(sa)); break;
+      case 58: setReg(rd, BigInt.asUintN(64, T) >> BigInt(sa)); break;
+      case 59: setReg(rd, T >> BigInt(sa)); break;
+      case 60: setReg(rd, T << BigInt(sa + 32)); break;
+      case 62: setReg(rd, BigInt.asUintN(64, T) >> BigInt(sa + 32)); break;
+      case 63: setReg(rd, T >> BigInt(sa + 32)); break;
+      default: halt(`unimplemented SPECIAL funct ${fn} at 0x${hex8(curPC)}`); return false;
+    } break;
+
+    case 1: switch (rt) {
+      case 0:  br(S < 0n); break;
+      case 1:  br(S >= 0n); break;
+      case 2:  if (brL(S < 0n)) return true; break;
+      case 3:  if (brL(S >= 0n)) return true; break;
+      case 16: setReg(31, BigInt((curPC + 8) >>> 0)); br(S < 0n); break;
+      case 17: setReg(31, BigInt((curPC + 8) >>> 0)); br(S >= 0n); break;
+      default: halt(`unimplemented REGIMM rt ${rt} at 0x${hex8(curPC)}`); return false;
+    } break;
+
+    case 2: willBranch = true; target = (((curPC + 4) & 0xF0000000) | ((insn & 0x03FFFFFF) << 2)) >>> 0; break;
+    case 3: setReg(31, BigInt((curPC + 8) >>> 0));
+            willBranch = true; target = (((curPC + 4) & 0xF0000000) | ((insn & 0x03FFFFFF) << 2)) >>> 0; break;
+    case 4: br(S === T); break;
+    case 5: br(S !== T); break;
+    case 6: br(S <= 0n); break;
+    case 7: br(S > 0n); break;
+    case 20: if (brL(S === T))  return true; break;
+    case 21: if (brL(S !== T))  return true; break;
+    case 22: if (brL(S <= 0n))  return true; break;
+    case 23: if (brL(S > 0n))   return true; break;
+
+    case 8: case 9:  setReg(rt, s32(S + BigInt(si))); break;                                 // ADDI / ADDIU
+    case 10: setReg(rt, S < BigInt(si) ? 1n : 0n); break;
+    case 11: setReg(rt, BigInt.asUintN(64, S) < BigInt.asUintN(64, BigInt(si)) ? 1n : 0n); break;
+    case 12: setReg(rt, S & BigInt(imm)); break;
+    case 13: setReg(rt, S | BigInt(imm)); break;
+    case 14: setReg(rt, S ^ BigInt(imm)); break;
+    case 15: setReg(rt, s32(BigInt(imm) << 16n)); break;                                     // LUI
+    case 24: case 25: setReg(rt, S + BigInt(si)); break;                                     // DADDI / DADDIU
+
+    case 32: setReg(rt, BigInt(read8 (u32(S) + si << 0) << 24 >> 24)); break;                // LB
+    case 33: setReg(rt, BigInt(read16(u32(S) + si << 0) << 16 >> 16)); break;                // LH
+    case 35: setReg(rt, BigInt(read32(u32(S) + si | 0) | 0)); break;                         // LW
+    case 36: setReg(rt, BigInt(read8 (u32(S) + si | 0))); break;                             // LBU
+    case 37: setReg(rt, BigInt(read16(u32(S) + si | 0))); break;                             // LHU
+    case 39: setReg(rt, BigInt(read32(u32(S) + si | 0) >>> 0)); break;                       // LWU
+    case 55: setReg(rt, read64(u32(S) + si | 0)); break;                                     // LD
+    case 40: write8 (u32(S) + si | 0, Number(BigInt.asUintN(8,  T))); break;                 // SB
+    case 41: write16(u32(S) + si | 0, Number(BigInt.asUintN(16, T))); break;                 // SH
+    case 43: write32(u32(S) + si | 0, Number(BigInt.asUintN(32, T))); break;                 // SW
+    case 63: write64(u32(S) + si | 0, T); break;                                             // SD
+    case 47: break;                                                                          // CACHE
+    case 48: setReg(rt, BigInt(read32(u32(S) + si | 0) | 0)); break;                         // LL
+    case 56: write32(u32(S) + si | 0, Number(BigInt.asUintN(32, T))); setReg(rt, 1n); break; // SC
+
+    case 16:                                                                                 // COP0
+      if (rs === 0)      setReg(rt, BigInt(cop0[rd] | 0));
+      else if (rs === 4) cop0[rd] = u32(T);
+      else if (rs === 16 && fn === 24) { willBranch = true; noDelay = true; target = cop0[14] >>> 0; }  // ERET
+      break;
+    case 17: case 18: break;   // COP1/COP2 — FPU not implemented; treated as NOP
+
+    default:
+      halt(`unimplemented opcode ${op} (0x${hex8(insn)}) at 0x${hex8(curPC)}`); return false;
+  }
+
+  instrCount++;
+  cop0[9] = (cop0[9] + 1) >>> 0;                 // Count
+
+  if (willBranch) {                              // run the delay slot, then jump
+    if (noDelay) { pc = target >>> 0; return true; }   // ERET has no delay slot
+    const dsPC = pc;
+    const ds = read32(dsPC) >>> 0;
+    if (ds !== 0) { pc = dsPC; const ok = stepOne(); if (!ok && halted) return false; }
+    else { instrCount++; }
+    pc = target >>> 0;
+  }
+  return true;
+}
+
+function step(n) {
+  for (let i = 0; i < n; i++) {
+    if (halted) break;
+    if (!stepOne()) break;
+    if (bpAddr >= 0 && (pc >>> 0) === (bpAddr >>> 0)) {
+      log(`Breakpoint hit at 0x${hex8(pc)}`, 'w');
+      running = false; break;
+    }
+  }
+  render();
+}
+
+function toggleRun() {
+  running = !running;
+  const b = document.getElementById('b-run');
+  if (running) {
+    b.textContent = '⏸ PAUSE'; b.className = 'btn stop';
+    const tick = () => {
+      if (!running || halted) { running = false; b.textContent = '▶ RUN'; b.className = 'btn go'; render(); return; }
+      for (let i = 0; i < 20000; i++) {
+        if (halted) break;
+        if (!stepOne()) break;
+        if (bpAddr >= 0 && (pc >>> 0) === (bpAddr >>> 0)) {
+          log(`Breakpoint hit at 0x${hex8(pc)}`, 'w'); running = false; break;
+        }
+      }
+      render();
+      runTimer = requestAnimationFrame(tick);
+    };
+    runTimer = requestAnimationFrame(tick);
+  } else {
+    b.textContent = '▶ RUN'; b.className = 'btn go';
+    cancelAnimationFrame(runTimer);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ROM loading + boot
+// ═══════════════════════════════════════════════════════════
+function normalize(buf) {
+  const b = new Uint8Array(buf);
+  const m = (b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3]) >>> 0;
+  if (m === 0x80371240) return { bytes: b, fmt: 'z64 (big-endian)' };
+  if (m === 0x37804012) {                                   // .v64 byte-swapped
+    const o = new Uint8Array(b.length);
+    for (let i = 0; i + 1 < b.length; i += 2) { o[i] = b[i+1]; o[i+1] = b[i]; }
+    return { bytes: o, fmt: 'v64 (byte-swapped)' };
+  }
+  if (m === 0x40123780) {                                   // .n64 little-endian
+    const o = new Uint8Array(b.length);
+    for (let i = 0; i + 3 < b.length; i += 4) { o[i]=b[i+3]; o[i+1]=b[i+2]; o[i+2]=b[i+1]; o[i+3]=b[i]; }
+    return { bytes: o, fmt: 'n64 (little-endian)' };
+  }
+  return null;
+}
+
+const COUNTRY = {0x44:'Germany',0x45:'North America',0x46:'France',0x49:'Italy',0x4A:'Japan',
+  0x50:'Europe',0x53:'Spain',0x55:'Australia',0x58:'Europe',0x59:'Europe'};
+
+async function loadROM(file) {
+  if (!file) return;
+  const st = document.getElementById('status');
+  st.textContent = 'Reading…'; st.className = '';
+  const norm = normalize(await file.arrayBuffer());
+  if (!norm) {
+    st.textContent = '✗ Not a recognised N64 ROM (bad magic)'; st.className = 'err';
+    log('Unrecognised header magic — expected z64/v64/n64.', 'e');
+    return;
+  }
+  romBytes = norm.bytes;
+  rom = new DataView(romBytes.buffer, romBytes.byteOffset, romBytes.byteLength);
+
+  let title = '';
+  for (let i = 0x20; i < 0x34; i++) { const c = romBytes[i]; if (c >= 32 && c < 127) title += String.fromCharCode(c); }
+  title = title.trim();
+  const entry = rom.getUint32(0x08, false) >>> 0;
+  const info = [
+    ['Title',        title || '(blank)'],
+    ['Format',       norm.fmt],
+    ['Entry point',  '0x' + hex8(entry)],
+    ['Clock rate',   '0x' + hex8(rom.getUint32(0x04, false))],
+    ['Release',      '0x' + hex8(rom.getUint32(0x0C, false))],
+    ['CRC1',         '0x' + hex8(rom.getUint32(0x10, false))],
+    ['CRC2',         '0x' + hex8(rom.getUint32(0x14, false))],
+    ['Media format', String.fromCharCode(romBytes[0x3B] || 63)],
+    ['Cartridge ID', String.fromCharCode(romBytes[0x3C] || 63, romBytes[0x3D] || 63)],
+    ['Region',       (COUNTRY[romBytes[0x3E]] || 'Unknown') + ` (0x${romBytes[0x3E].toString(16).toUpperCase()})`],
+    ['Version',      '1.' + romBytes[0x3F]],
+  ];
+  document.getElementById('hdrinfo').innerHTML =
+    info.map(([k, v]) => `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+  document.getElementById('romsize').textContent = (romBytes.length / 1048576).toFixed(1) + ' MB';
+
+  st.textContent = '✓ ' + (title || file.name); st.className = 'ok';
+  log(`Loaded ${file.name} — ${norm.fmt}, ${(romBytes.length/1048576).toFixed(1)} MB`, 'i');
+  ['b-step','b-s10','b-s1k','b-run','b-reset'].forEach(id => document.getElementById(id).disabled = false);
+  reset();
+}
+
+// Mirror what the PIF/IPL2 leaves behind: the first 4 KB of the cartridge
+// sits in SP DMEM and execution begins at 0xA4000040, i.e. the ROM's IPL3.
+function reset() {
+  if (!rom) return;
+  running = false;
+  document.getElementById('b-run').textContent = '▶ RUN';
+  document.getElementById('b-run').className = 'btn go';
+  gpr = new BigInt64Array(32); prevGPR = new BigInt64Array(32);
+  cop0 = new Uint32Array(32);
+  hi = 0n; lo = 0n; instrCount = 0; halted = false; haltMsg = '';
+  new Uint8Array(rdram.buffer).fill(0);
+  new Uint8Array(dmem.buffer).fill(0);
+  new Uint8Array(imem.buffer).fill(0);
+
+  for (let i = 0; i < 0x1000; i += 4) dmem.setUint32(i, rom.getUint32(i, false), false);
+
+  // IPL2 exit state that IPL3 expects to find
+  gpr[11] = 0xA4000040n;   // t3
+  gpr[20] = 0x00000001n;   // s4  osRomType (cart)
+  gpr[22] = 0x0000003Fn;   // s6  osCicId
+  gpr[29] = 0xA4001FF0n;   // sp
+  cop0[12] = 0x34000000;   // Status
+  cop0[15] = 0x00000B00;   // PRId
+  cop0[16] = 0x0006E463;   // Config
+  write32(0x80000318, RDRAM_SIZE);   // RDRAM size, checked during boot
+
+  pc = 0xA4000040 >>> 0;
+  document.getElementById('log').innerHTML = '';
+  log('Reset — 4 KB copied to SP DMEM, PC = 0xA4000040 (IPL3)', 'i');
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  Rendering
+// ═══════════════════════════════════════════════════════════
+function render() {
+  document.getElementById('cycles').textContent = instrCount.toLocaleString() + ' instructions';
+  document.getElementById('pcshow').textContent = 'PC 0x' + hex8(pc);
+
+  let h = '';
+  for (let i = 0; i < 32; i++) {
+    const v = gpr[i], chg = v !== prevGPR[i], z = v === 0n;
+    h += `<div class="reg ${chg?'chg':''} ${z?'zero':''}"><span class="n">${REGNAME[i]}</span><span class="v">${hex64(v)}</span></div>`;
+  }
+  h += `<div class="reg"><span class="n">pc</span><span class="v">${hex8(pc)}</span></div>`;
+  h += `<div class="reg"><span class="n">hi</span><span class="v">${hex64(hi)}</span></div>`;
+  h += `<div class="reg"><span class="n">lo</span><span class="v">${hex64(lo)}</span></div>`;
+  [12,13,14,9].forEach(i => {
+    h += `<div class="reg"><span class="n">${COP0NAME[i]}</span><span class="v">${hex8(cop0[i])}</span></div>`;
+  });
+  document.getElementById('regs').innerHTML = h;
+  prevGPR = gpr.slice();
+
+  if (rom) {
+    let d = '';
+    const start = (pc - 10 * 4) >>> 0;
+    for (let i = 0; i < 34; i++) {
+      const a = (start + i * 4) >>> 0;
+      const w = read32(a) >>> 0;
+      const [m, o] = disasm(w, a);
+      const isPC = a === (pc >>> 0), isDS = a === ((pc + 4) >>> 0);
+      const isBP = bpAddr >= 0 && a === (bpAddr >>> 0);
+      d += `<div class="ln ${isPC?'pc':''} ${isDS?'ds':''} ${isBP?'bp':''}">` +
+           `<span class="a">${hex8(a)}</span><span class="w">${hex8(w)}</span>` +
+           `<span class="m">${m}</span><span class="o">${o}</span></div>`;
+    }
+    document.getElementById('disasm').innerHTML = d;
+    document.getElementById('dislbl').textContent = halted ? 'HALTED — ' + haltMsg : '';
+    renderMem();
+  }
+}
+
+function renderMem() {
+  if (!rom) return;
+  let s = '';
+  for (let r = 0; r < 12; r++) {
+    const a = (memAddr + r * 16) >>> 0;
+    let hx = '', as = '';
+    for (let c = 0; c < 16; c += 4) {
+      const w = read32((a + c) >>> 0) >>> 0;
+      hx += hex8(w) + ' ';
+      for (let b = 3; b >= 0; b--) {
+        const ch = (w >>> (b * 8)) & 0xFF;
+        as += (ch >= 32 && ch < 127) ? String.fromCharCode(ch) : '.';
+      }
+    }
+    s += `<span class="ma">${hex8(a)}</span>  <span class="mh">${hx}</span> <span class="mc">${as}</span>\n`;
+  }
+  document.getElementById('mem').innerHTML = s;
+  document.getElementById('memlbl').textContent = '0x' + hex8(memAddr);
+}
+
+function setBP(v) {
+  const t = String(v).trim();
+  bpAddr = t ? parseHex(t) : -1;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
