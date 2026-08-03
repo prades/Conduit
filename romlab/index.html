@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>ROM LAB — sample workstation</title>
 <script src="brr.js"></script>
+<script src="dsp.js"></script>
 <script src="lame.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -122,8 +123,10 @@ body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
 
   <div id="hdr">
     <div id="logo">ROM LAB <span>// sample workstation</span></div>
-    <label class="file" for="romIn">⏏ LOAD ROM — or drag one in</label>
+    <label class="file" for="romIn">⏏ LOAD ROM</label>
     <input type="file" id="romIn" onchange="loadROM(this.files[0])">
+    <label class="file" for="audioIn" style="border-color:var(--cyan);color:var(--cyan)">⏏ SPLIT AUDIO</label>
+    <input type="file" id="audioIn" accept="audio/*" onchange="loadAudio(this.files[0])">
     <span id="status">Nothing loaded — files stay on your device</span>
   </div>
 
@@ -154,6 +157,12 @@ body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
       <div class="panel">
         <div class="ptitle"><span>SAMPLES FOUND</span><span id="scount"></span></div>
         <div class="pbody" style="padding-bottom:6px">
+          <div class="cr">
+            <span class="cl">SPLIT LEN</span>
+            <input type="range" class="sl" id="splitlen" min="10" max="120" step="5" value="30"
+              oninput="document.getElementById('splitlenv').textContent=this.value+'s'">
+            <span class="cv" id="splitlenv">30s</span>
+          </div>
           <div class="cr">
             <span class="cl">MIN LENGTH</span>
             <input type="range" class="sl" id="minlen" min="4" max="200" step="2" value="40"
@@ -254,7 +263,14 @@ body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
     for two seconds is a fraction of a second of audio held open. Leave <b>SUSTAIN</b> on and use
     DECAY to set how long a note lasts; LOOP FROM skips past the attack so the held part is the
     steady portion rather than the initial transient. Switch to ONE SHOT for percussion.<br>
-    <b>Where it works.</b> Best on SNES ROMs, since BRR is theirs. Other systems store samples in
+    <b>Splitting audio.</b> <b>SPLIT AUDIO</b> takes an MP3 or any audio file and separates it into
+    drums, bass, vocal and instrumental stems. There is no neural network involved — it uses
+    harmonic/percussive separation (median-filtering the spectrogram, so sustained content and
+    transients come apart) plus centre extraction for the vocal. <b>Drums and bass come out well;
+    the vocal split is the weakest</b>, since it relies on the lead being centre-panned. Not
+    Spleeter, but it runs entirely on your device. SPLIT LEN caps how much is analysed — longer
+    takes proportionally longer.<br>
+    <b>Where the ROM scan works.</b> Best on SNES ROMs, since BRR is theirs. Other systems store samples in
     formats this does not decode, so expect few or no hits — the scanner only reports runs that are
     structurally valid, rather than guessing.<br>
     <b>Your files stay here.</b> Nothing is uploaded and no ROM is included; load one you dumped
@@ -329,7 +345,8 @@ try { labels = JSON.parse(localStorage.getItem('romlab.labels') || '{}'); } catc
 const saveLabels = () => { try { localStorage.setItem('romlab.labels', JSON.stringify(labels)); } catch (e) {} };
 
 const labelKey = off => romKey + ':' + off;
-const labelFor = off => labels[labelKey(off)] || ('0x' + off.toString(16).toUpperCase());
+const labelFor = (off, fallback) =>
+  labels[labelKey(off)] || fallback || ('0x' + off.toString(16).toUpperCase());
 function setLabel(off, name) {
   name = String(name || '').trim().slice(0, 40);
   if (name) labels[labelKey(off)] = name;
@@ -414,6 +431,123 @@ function setStatus(msg, cls) {
   el.textContent = msg; el.className = cls || '';
 }
 
+// ── stem separation ───────────────────────────────────────────
+// No neural network here — HPSS separates sustained from transient
+// content, and centre extraction pulls the (almost always centre-panned)
+// lead out of the harmonic part. Honest DSP, not model quality.
+const yieldUI = () => new Promise(r => setTimeout(r, 0));
+
+async function loadAudio(file) {
+  if (!file) return;
+  resume();
+  setStatus('Decoding ' + file.name + '…');
+  await yieldUI();
+
+  let audio;
+  try {
+    audio = await actx.decodeAudioData(await file.arrayBuffer());
+  } catch (e) {
+    setStatus('✗ Could not decode that audio file', 'err');
+    return;
+  }
+
+  const maxSec = +document.getElementById('splitlen').value;
+  const sr  = audio.sampleRate;
+  const len = Math.min(audio.length, Math.floor(maxSec * sr));
+  const L = audio.getChannelData(0).slice(0, len);
+  const R = audio.numberOfChannels > 1 ? audio.getChannelData(1).slice(0, len) : L.slice();
+
+  const N = 1024, HOP = 256, K = 17;
+  setStatus('Analysing…'); await yieldUI();
+
+  const SL = DSP.stft(L, N, HOP);
+  await yieldUI();
+  const SR_ = DSP.stft(R, N, HOP);
+  await yieldUI();
+
+  // Masks come from the mid signal and are applied to both channels, which
+  // halves the median filtering and keeps the stereo image intact.
+  const n = SL.re.length;
+  const midRe = new Float32Array(n), midIm = new Float32Array(n);
+  const sideRe = new Float32Array(n), sideIm = new Float32Array(n);
+  const mag = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    midRe[i]  = (SL.re[i] + SR_.re[i]) * 0.5;
+    midIm[i]  = (SL.im[i] + SR_.im[i]) * 0.5;
+    sideRe[i] = (SL.re[i] - SR_.re[i]) * 0.5;
+    sideIm[i] = (SL.im[i] - SR_.im[i]) * 0.5;
+    mag[i] = Math.hypot(midRe[i], midIm[i]);
+  }
+
+  const H = new Float32Array(n), P = new Float32Array(n);
+  const CHUNK = 200;
+  for (let f0 = 0; f0 < SL.frames; f0 += CHUNK) {
+    DSP.hpssRange(mag, SL.frames, SL.bins, K, K, f0, Math.min(SL.frames, f0 + CHUNK), H, P);
+    setStatus('Separating… ' + Math.round(f0 / SL.frames * 100) + '%');
+    await yieldUI();
+  }
+  DSP.normaliseMasks(H, P);
+  await yieldUI();
+
+  // Centre extraction: bins where the side signal is weak relative to mid
+  // are centre-panned, which is where a lead vocal lives.
+  const spec = (re, im) => ({ re, im, frames: SL.frames, bins: SL.bins, N, hop: HOP });
+  const vRe = new Float32Array(n), vIm = new Float32Array(n);
+  const iLre = new Float32Array(n), iLim = new Float32Array(n);
+  const iRre = new Float32Array(n), iRim = new Float32Array(n);
+  const pLre = new Float32Array(n), pLim = new Float32Array(n);
+  const pRre = new Float32Array(n), pRim = new Float32Array(n);
+  const bRe = new Float32Array(n), bIm = new Float32Array(n);
+
+  for (let i = 0; i < n; i++) {
+    const m = Math.hypot(midRe[i], midIm[i]);
+    const sd = Math.hypot(sideRe[i], sideIm[i]);
+    const centre = Math.max(0, 1 - sd / (m + 1e-9));      // 1 = dead centre
+    const h = H[i], p = P[i];
+
+    vRe[i] = midRe[i] * h * centre;  vIm[i] = midIm[i] * h * centre;
+    iLre[i] = SL.re[i] * h - vRe[i]; iLim[i] = SL.im[i] * h - vIm[i];
+    iRre[i] = SR_.re[i] * h - vRe[i];iRim[i] = SR_.im[i] * h - vIm[i];
+    pLre[i] = SL.re[i] * p;          pLim[i] = SL.im[i] * p;
+    pRre[i] = SR_.re[i] * p;         pRim[i] = SR_.im[i] * p;
+    bRe[i] = midRe[i] * h;           bIm[i] = midIm[i] * h;
+  }
+
+  setStatus('Rendering stems…'); await yieldUI();
+
+  const drumsL = DSP.istft(spec(pLre, pLim), len);
+  const drumsR = DSP.istft(spec(pRre, pRim), len);
+  await yieldUI();
+  const bassMid = DSP.lowpass(DSP.istft(spec(bRe, bIm), len), 180, sr, 3);
+  await yieldUI();
+  const vocal   = DSP.highpass(DSP.istft(spec(vRe, vIm), len), 160, sr, 2);
+  await yieldUI();
+  const instL   = DSP.highpass(DSP.istft(spec(iLre, iLim), len), 110, sr, 1);
+  const instR   = DSP.highpass(DSP.istft(spec(iRre, iRim), len), 110, sr, 1);
+  await yieldUI();
+
+  const base = file.name.replace(/\.[^.]+$/, '').slice(0, 20);
+  addStem(base + ' DRUMS', drumsL, drumsR, sr);
+  addStem(base + ' BASS',  bassMid, null, sr);
+  addStem(base + ' VOCAL', vocal,  null, sr);
+  addStem(base + ' INSTR', instL,  instR, sr);
+
+  document.getElementById('playbtn').disabled = false;
+  setStatus('✓ 4 stems from ' + file.name, 'ok');
+  renderSamples();
+}
+
+function addStem(name, l, r, sr) {
+  const ch = r ? 2 : 1;
+  const b = actx.createBuffer(ch, l.length, sr);
+  b.copyToChannel(l, 0);
+  if (r) b.copyToChannel(r, 1);
+  found.unshift({
+    offset: -1, blocks: 0, samples: l.length, buf: b, looped: false,
+    stem: name, rate: sr,
+  });
+}
+
 // ── ROM loading + scanning ────────────────────────────────────
 async function loadROM(file) {
   if (!file) return;
@@ -473,7 +607,7 @@ function renderSamples() {
     const top = document.createElement('div');
     top.className = 'a';
     const nm = document.createElement('span');
-    nm.textContent = labelFor(s.offset);
+    nm.textContent = s.stem ? (labels['stem:' + s.stem] || s.stem) : labelFor(s.offset);
     const ren = document.createElement('button');
     ren.textContent = '✎';
     ren.title = 'Rename';
@@ -482,9 +616,11 @@ function renderSamples() {
     ren.addEventListener('pointerdown', e => e.stopPropagation());
     ren.addEventListener('click', e => {
       e.stopPropagation();
-      startRename(nm, labelFor(s.offset), v => {
-        setLabel(s.offset, v);
-        pads.forEach(p => { if (p && p.offset === s.offset) p.name = labelFor(s.offset); });
+      const cur = s.stem ? (labels['stem:' + s.stem] || s.stem) : labelFor(s.offset);
+      startRename(nm, cur, v => {
+        const nv = String(v || '').trim();
+        if (s.stem) { if (nv) labels['stem:' + s.stem] = nv; else delete labels['stem:' + s.stem]; saveLabels(); }
+        else setLabel(s.offset, nv);
         renderSamples(); renderPads();
       });
     });
@@ -492,8 +628,11 @@ function renderSamples() {
 
     const sub = document.createElement('div');
     sub.className = 'b';
-    sub.textContent = Math.round(s.samples / SRC_RATE * 1000) + ' ms · ' +
-      s.samples.toLocaleString() + ' smp' + (s.looped ? ' · loops' : '');
+    const rate = s.rate || SRC_RATE;
+    sub.textContent = s.stem
+      ? (s.samples / rate).toFixed(1) + ' s · stem'
+      : Math.round(s.samples / rate * 1000) + ' ms · ' +
+        s.samples.toLocaleString() + ' smp' + (s.looped ? ' · loops' : '');
     info.append(top, sub);
     row.append(cv, info);
     row.addEventListener('click', () => {
@@ -577,14 +716,15 @@ function assign(i) {
   const s = found[selected];
   if (!s) return;
   pads[i] = {
-    name: labelFor(s.offset),
+    name: s.stem ? (labels['stem:' + s.stem] || s.stem) : labelFor(s.offset),
     offset: s.offset,
     buf: s.buf,
     rate: Math.pow(2, (+document.getElementById('pitch').value) / 12),
     decay: +document.getElementById('decay').value,
-    loop: loopOn,
+    loop: s.stem ? false : loopOn,
     loopStart: loopStartFrac(),
   };
+  if (s.stem) pads[i].decay = Math.min(30, s.samples / (s.rate || SRC_RATE));
   hitPad(i);
 }
 
