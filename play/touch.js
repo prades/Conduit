@@ -133,8 +133,8 @@
     if (saved) CONTROLS.forEach(k => { if (saved[k]) MAP[k] = Object.assign({}, DEFAULT_MAP[k], saved[k]); });
   } catch (e) {}
 
-  const KEY_CHOICES = ['x','z','a','s','d','q','e','w','c','v','b','n','m','t','y',
-                       'Enter','Shift','Space'];
+  const KEY_CHOICES = 'abcdefghijklmnopqrstuvwxyz0123456789'.split('')
+    .concat(['Enter','Shift','Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
 
   const DEFAULT_LAYOUT = {
     stick: { x: 13, y: 68 },
@@ -507,7 +507,10 @@
         it lands. Cores disagree about which physical button becomes which N64 button.
       </div>
       <div id="t-map"></div>
-      <div class="row"><button id="t-mapreset" class="wide">RESET BUTTON MAP</button></div>
+      <div class="row">
+        <button id="t-auto" class="wide">AUTO MAP</button>
+        <button id="t-mapreset" class="wide">RESET MAP</button>
+      </div>
       <div class="note">
         A paired Bluetooth controller keeps working alongside this and will feel
         better than glass for anything needing precise steering.
@@ -517,14 +520,57 @@
 
   const $ = id => menu.querySelector(id);
 
+  // libretro's RetroPad button order, which is what EmulatorJS keys its
+  // control table by. mupen64plus then maps RetroPad -> N64 internally.
+  const RETRO_NAMES = {
+    0:'B', 1:'Y', 2:'SELECT', 3:'START', 4:'UP', 5:'DOWN', 6:'LEFT', 7:'RIGHT',
+    8:'A', 9:'X', 10:'L', 11:'R', 12:'L2', 13:'R2', 14:'L3', 15:'R3',
+  };
+  // best-known RetroPad slot for each N64 input
+  const N64_TO_RETRO = { a: 8, b: 0, z: 12, l: 10, r: 11, start: 3 };
+
+  function ejsControls() {
+    const e = window.EJS_emulator;
+    const c = e && e.controls && e.controls[0];
+    return (c && typeof c === 'object') ? c : null;
+  }
+
+  function renderBindings() {
+    const c = ejsControls();
+    if (!c) return '<span style="color:#5a6b7f">emulator control table not readable yet</span>';
+    const parts = [];
+    Object.keys(RETRO_NAMES).forEach(i => {
+      const b = c[i];
+      if (!b) return;
+      const k = b.value, g = b.value2;
+      if (k == null && g == null) return;
+      parts.push(RETRO_NAMES[i] + '=' + (k != null ? k : '·') + (g != null ? '/' + g : ''));
+    });
+    return parts.length ? parts.join('  ') : '<span style="color:#5a6b7f">nothing bound</span>';
+  }
+
+  function autoMap() {
+    const c = ejsControls();
+    if (!c) { alert('The emulator has not exposed its control table yet. Start the game first.'); return; }
+    releaseAll();
+    let filled = 0;
+    CONTROLS.forEach(n => {
+      const b = c[N64_TO_RETRO[n]];
+      if (!b) return;
+      if (b.value  != null) { MAP[n].key = String(b.value); filled++; }
+      if (b.value2 != null && !isNaN(+b.value2)) MAP[n].pad = +b.value2;
+    });
+    saveMap(); renderMap();
+    alert(filled ? ('Filled ' + filled + ' bindings from the emulator.')
+                 : 'The control table had nothing usable in it.');
+  }
+
   function renderDiag() {
     const seen = pollCount > 0;
     $('#t-diag').innerHTML =
-      'gamepad polls: <b class="' + (seen ? '' : 'bad') + '">' + pollCount + '</b><br>' +
-      (seen
-        ? 'The page is reading gamepads, so the pad path is live.'
-        : 'Nothing has read a gamepad yet — if this stays at 0 while playing, ' +
-          'the emulator is not using the pad and KEYBOARD is the path that will work.');
+      'gamepad polls: <b class="' + (seen ? '' : 'bad') + '">' + pollCount + '</b>' +
+      (seen ? ' — pad path is live' : ' — nothing is reading the pad; KEYBOARD is the live path') +
+      '<br><span style="color:#5a6b7f">emulator bindings:</span><br>' + renderBindings();
   }
 
   function renderMap() {
@@ -613,6 +659,7 @@
     layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
     saveLayout(); place();
   });
+  $('#t-auto').addEventListener('click', autoMap);
   $('#t-mapreset').addEventListener('click', () => {
     releaseAll();
     MAP = JSON.parse(JSON.stringify(DEFAULT_MAP));
