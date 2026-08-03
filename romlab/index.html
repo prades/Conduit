@@ -222,7 +222,18 @@ body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
 
       <div class="panel">
         <div class="ptitle"><span>KEYBOARD</span><span id="kbhint">plays the armed pad, pitched</span></div>
-        <div class="pbody"><div id="keys"></div></div>
+        <div class="pbody">
+          <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <button class="btn" id="savenote" onclick="toggleSaveNote()" style="flex:1">⤓ SAVE NOTE: OFF</button>
+            <button class="btn" onclick="exportAllNotes()" style="flex:1">⤓ SAVE ALL 13</button>
+          </div>
+          <div id="keys"></div>
+          <div style="font-size:10px;color:var(--dim);line-height:1.7;margin-top:8px">
+            With SAVE NOTE on, tapping a key writes that pitch out as a WAV — looped and
+            enveloped exactly as you hear it, so a 200 ms fragment becomes a full sustained
+            note. Master FX are not baked in; the file is the dry instrument.
+          </div>
+        </div>
       </div>
 
       <div class="panel">
@@ -602,22 +613,113 @@ function applyShaping() {
 
 // ── keyboard ──────────────────────────────────────────────────
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const noteName = n => NOTES[n % 12] + (4 + Math.floor(n / 12));   // 13 keys from C4
+let saveNoteMode = false;
+
+function toggleSaveNote() {
+  saveNoteMode = !saveNoteMode;
+  const b = document.getElementById('savenote');
+  b.classList.toggle('on', saveNoteMode);
+  b.textContent = '⤓ SAVE NOTE: ' + (saveNoteMode ? 'ON' : 'OFF');
+}
+
 (function () {
   const wrap = document.getElementById('keys');
   for (let n = 0; n < 13; n++) {
     const el = document.createElement('div');
     const name = NOTES[n % 12];
     el.className = 'key' + (name.includes('#') ? ' blk' : '');
-    el.textContent = name;
+    el.textContent = noteName(n);
     el.addEventListener('pointerdown', () => {
       const p = pads[armed];
       if (!p) return;
       playBuffer(p.buf, { rate: p.rate * Math.pow(2, n / 12), decay: p.decay,
                           loop: p.loop, loopStart: p.loopStart });
+      if (saveNoteMode) exportNote(p, n);
     });
     wrap.appendChild(el);
   }
 })();
+
+// ── render a note offline and save it ─────────────────────────
+// Rendering offline rather than capturing playback means the file is exact,
+// silent to produce, and independent of how long the note actually took.
+async function renderNote(p, semitone) {
+  const SR  = 44100;
+  const dur = Math.max(0.05, p.decay + 0.05);
+  const ctx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
+    1, Math.ceil(dur * SR), SR);
+
+  // AudioBuffers are not portable between contexts, so rebuild it here
+  const b = ctx.createBuffer(1, p.buf.length, p.buf.sampleRate);
+  b.copyToChannel(p.buf.getChannelData(0), 0);
+
+  const src = ctx.createBufferSource();
+  src.buffer = b;
+  src.playbackRate.value = p.rate * Math.pow(2, semitone / 12);
+  if (p.loop) {
+    src.loop = true;
+    src.loopStart = Math.min(b.duration * (p.loopStart || 0), b.duration - 0.001);
+    src.loopEnd = b.duration;
+  }
+
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0, 0);
+  g.gain.linearRampToValueAtTime(1, 0.004);
+  g.gain.exponentialRampToValueAtTime(0.001, p.decay);
+  src.connect(g); g.connect(ctx.destination);
+  src.start(0); src.stop(dur);
+
+  const rendered = await ctx.startRendering();
+  return rendered.getChannelData(0);
+}
+
+function wavBlob(data, sampleRate) {
+  const n = data.length;
+  const buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const ws = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+  ws(0, 'RIFF'); v.setUint32(4, 36 + n*2, true); ws(8, 'WAVE'); ws(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  ws(36, 'data'); v.setUint32(40, n*2, true);
+  let o = 44;
+  for (let i = 0; i < n; i++) {
+    const x = Math.max(-1, Math.min(1, data[i]));
+    v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7FFF, true);
+    o += 2;
+  }
+  return new Blob([buf], { type: 'audio/wav' });
+}
+
+function download(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+const safeName = s => String(s || '').replace(/[^\w \-]+/g, '').replace(/\s+/g, '-') || 'sample';
+
+async function exportNote(p, semitone) {
+  const data = await renderNote(p, semitone);
+  download(wavBlob(data, 44100), safeName(p.name) + '_' + noteName(semitone) + '.wav');
+}
+
+// Browsers throttle rapid downloads, so these are spaced out rather than
+// fired in a burst — otherwise most of them are silently dropped.
+async function exportAllNotes() {
+  const p = pads[armed];
+  if (!p) { alert('Arm a pad first — tap one to select it.'); return; }
+  const btn = document.querySelector('[onclick="exportAllNotes()"]');
+  for (let n = 0; n < 13; n++) {
+    if (btn) btn.textContent = '⤓ ' + (n + 1) + ' / 13';
+    await exportNote(p, n);
+    await new Promise(r => setTimeout(r, 350));
+  }
+  if (btn) btn.textContent = '⤓ SAVE ALL 13';
+}
 
 // ── sequencer ─────────────────────────────────────────────────
 function renderSeq() {
