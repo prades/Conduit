@@ -11,7 +11,7 @@
   --green:#41d97a;--cyan:#3ac2e0;--amber:#e0a13a;--red:#e05a5a;
   --text:#9fb0c4;--dim:#5a6b7f;--white:#dfe8f2;
 }
-html,body{height:100%;}
+html,body{height:100%;touch-action:manipulation;}
 body{background:var(--bg);color:var(--text);
   font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;font-size:13px;
   min-height:100dvh;-webkit-tap-highlight-color:transparent;
@@ -46,10 +46,13 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
 #gamewrap.on{display:block;}
 #game{width:100%;height:100%;}
 #game canvas{display:block;}
+/* no double-tap zoom, no pinch, no pan anywhere over the play surface */
+#gamewrap,#game,#game canvas{touch-action:none;}
 #exit{display:none;position:fixed;top:10px;right:10px;z-index:60;
   background:rgba(10,13,18,.85);border:1px solid var(--border);color:var(--text);
   padding:9px 14px;border-radius:5px;font-family:inherit;font-size:11px;
   letter-spacing:1px;cursor:pointer;}
+#exit{touch-action:manipulation;}
 #exit:hover{border-color:var(--red);color:var(--red);}
 #exit.on{display:block;}
 
@@ -107,6 +110,11 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
 
 <script src="touch.js"></script>
 <script>
+// Safari fires its own gesture events for pinch, which touch-action does
+// not cover; blocking them stops the page zooming mid-game.
+['gesturestart','gesturechange','gestureend'].forEach(ev =>
+  document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
+
 const CDN = 'https://cdn.emulatorjs.org/stable/data/';
 let booted = false;
 

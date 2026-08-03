@@ -134,13 +134,13 @@
   #tpad.edit .lbl{display:block;}
 
   #tgear{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:75;
-    pointer-events:auto;background:rgba(10,13,18,.8);border:1px solid #26313f;color:#9fb0c4;
+    pointer-events:auto;touch-action:manipulation;background:rgba(10,13,18,.8);border:1px solid #26313f;color:#9fb0c4;
     padding:8px 14px;border-radius:6px;font:11px 'SF Mono',Menlo,monospace;letter-spacing:1px;
     cursor:pointer;}
   #tgear:active{border-color:#41d97a;color:#41d97a;}
 
   #tmenu{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
-    background:rgba(6,9,13,.9);pointer-events:auto;
+    background:rgba(6,9,13,.9);pointer-events:auto;touch-action:manipulation;
     font:12px 'SF Mono',Menlo,Consolas,monospace;color:#9fb0c4;}
   #tmenu.on{display:flex;}
   #tmenu .card{background:#121821;border:1px solid #26313f;border-radius:10px;
@@ -153,7 +153,7 @@
   #tmenu input[type=range]::-webkit-slider-runnable-track{height:5px;background:#26313f;border-radius:3px;}
   #tmenu input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;
     border-radius:50%;background:#41d97a;margin-top:-9px;}
-  #tmenu button{background:#1a212c;border:1px solid #26313f;color:#9fb0c4;padding:10px 14px;
+  #tmenu button{touch-action:manipulation;background:#1a212c;border:1px solid #26313f;color:#9fb0c4;padding:10px 14px;
     border-radius:6px;font:inherit;letter-spacing:1px;cursor:pointer;min-height:42px;}
   #tmenu button.on{border-color:#41d97a;color:#41d97a;}
   #tmenu button.wide{flex:1;}
