@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PS1 — R3000A Emulator &amp; Debugger</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0910;--panel:#161320;--panel2:#1f1a2d;--border:#332a47;
+  --mag:#e05aa8;--cyan:#4ad4e0;--amber:#e0a13a;--red:#e05a5a;--green:#5ad07a;
+  --text:#b0a4c4;--dim:#6b5f80;--white:#e8e2f2;
+}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;
+  font-size:12px;min-height:100dvh;-webkit-tap-highlight-color:transparent;}
+#page{max-width:1400px;margin:0 auto;padding:14px;}
+
+#hdr{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:12px;}
+#logo{font-size:17px;font-weight:bold;letter-spacing:2px;color:var(--mag);}
+#logo span{color:var(--dim);font-weight:normal;font-size:11px;letter-spacing:1px;}
+.file{padding:9px 15px;background:var(--panel2);border:1px dashed var(--mag);
+  color:var(--mag);border-radius:5px;cursor:pointer;font-size:11px;letter-spacing:1px;}
+.file:hover{background:rgba(224,90,168,.12);}
+.file.alt{border-color:var(--cyan);color:var(--cyan);}
+.file.alt:hover{background:rgba(74,212,224,.12);}
+input[type=file]{display:none;}
+#status{font-size:11px;color:var(--dim);}
+#status.ok{color:var(--green);} #status.err{color:var(--red);}
+
+.btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  padding:8px 13px;cursor:pointer;font-family:inherit;font-size:11px;letter-spacing:1px;
+  border-radius:5px;transition:.12s;}
+.btn:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan);}
+.btn:disabled{opacity:.32;cursor:not-allowed;}
+.btn.go{border-color:var(--green);color:var(--green);}
+.btn.stop{border-color:var(--red);color:var(--red);}
+
+#ctl{display:flex;gap:7px;align-items:center;flex-wrap:wrap;background:var(--panel);
+  border:1px solid var(--border);border-radius:7px;padding:9px 12px;margin-bottom:12px;}
+#ctl input[type=text]{background:var(--panel2);border:1px solid var(--border);color:var(--amber);
+  padding:7px 9px;font-family:inherit;font-size:11px;border-radius:4px;width:100px;}
+#ctl input:focus{outline:none;border-color:var(--cyan);}
+.sep{width:1px;height:22px;background:var(--border);margin:0 3px;}
+.lbl{font-size:10px;color:var(--dim);letter-spacing:1px;}
+
+#grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
+@media(max-width:1000px){#grid{grid-template-columns:1fr;}}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:7px;overflow:hidden;
+  margin-bottom:12px;}
+.ptitle{background:var(--panel2);padding:7px 12px;font-size:10px;letter-spacing:2px;
+  color:var(--dim);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
+.pbody{padding:11px 12px;max-height:400px;overflow:auto;}
+.pbody.tall{max-height:520px;}
+.pbody.screen{padding:0;background:#000;display:flex;align-items:center;justify-content:center;
+  max-height:none;}
+
+#screen{display:block;width:100%;height:auto;image-rendering:pixelated;background:#000;}
+
+#regs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:2px 14px;}
+.reg{display:flex;justify-content:space-between;padding:2px 0;font-size:11px;}
+.reg .n{color:var(--dim);width:38px;}
+.reg .v{color:var(--white);}
+.reg.chg .v{color:var(--amber);}
+.reg.zero .v{color:#3b3350;}
+
+#disasm{font-size:11px;line-height:1.55;}
+.ln{display:flex;gap:9px;padding:1px 4px;border-radius:3px;white-space:pre;}
+.ln .a{color:var(--dim);} .ln .w{color:#4a4066;}
+.ln .m{color:var(--cyan);min-width:66px;} .ln .o{color:var(--text);}
+.ln.pc{background:rgba(90,208,122,.13);}
+.ln.pc .a{color:var(--green);font-weight:bold;}
+.ln.ds{background:rgba(224,161,58,.09);}
+.ln.bp .a{color:var(--red);font-weight:bold;}
+
+#mem{font-size:11px;line-height:1.6;white-space:pre;}
+.ma{color:var(--dim);} .mh{color:var(--white);} .mc{color:var(--mag);}
+
+#miss{font-size:11px;line-height:1.75;}
+.missrow{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(51,42,71,.5);}
+.missrow .c{color:var(--amber);}
+#log{font-size:10px;line-height:1.6;color:var(--dim);white-space:pre-wrap;}
+#log .w{color:var(--amber);} #log .e{color:var(--red);} #log .i{color:var(--cyan);}
+
+#note{margin-top:14px;padding:12px 14px;background:var(--panel);border:1px solid var(--border);
+  border-left:3px solid var(--mag);border-radius:6px;font-size:11px;line-height:1.85;color:var(--dim);}
+#note b{color:var(--text);font-weight:normal;}
+#note a{color:var(--cyan);}
+body.drag::after{content:'DROP FILE TO LOAD';position:fixed;inset:0;z-index:99;
+  background:rgba(11,9,16,.93);border:3px dashed var(--mag);color:var(--mag);
+  display:flex;align-items:center;justify-content:center;font-size:20px;letter-spacing:4px;
+  pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="page">
+
+  <div id="hdr">
+    <div id="logo">PS1 <span>// R3000A INTERPRETER + GPU + DEBUGGER</span></div>
+    <label class="file" for="exeIn">⏏ LOAD PS-EXE</label>
+    <input type="file" id="exeIn" onchange="loadFile(this.files[0],'exe')">
+    <label class="file alt" for="biosIn">⏏ LOAD BIOS</label>
+    <input type="file" id="biosIn" onchange="loadFile(this.files[0],'bios')">
+    <span id="status">Nothing loaded — files stay in your browser</span>
+  </div>
+
+  <div id="ctl">
+    <button class="btn" id="b-step" onclick="step(1)"     disabled>STEP</button>
+    <button class="btn" id="b-s10"  onclick="step(10)"    disabled>×10</button>
+    <button class="btn" id="b-s1k"  onclick="step(1000)"  disabled>×1K</button>
+    <button class="btn go" id="b-run" onclick="toggleRun()" disabled>▶ RUN</button>
+    <button class="btn" id="b-reset" onclick="doReset()"  disabled>⟲ RESET</button>
+    <div class="sep"></div>
+    <span class="lbl">BREAK AT</span>
+    <input type="text" id="bpIn" placeholder="80001000" oninput="setBP(this.value)">
+    <div class="sep"></div>
+    <span class="lbl">MEM</span>
+    <input type="text" id="memIn" value="80000000" oninput="memAddr=parseHex(this.value);renderMem()">
+    <div class="sep"></div>
+    <span class="lbl" id="cycles">0 instructions</span>
+    <span class="lbl" id="prims"></span>
+  </div>
+
+  <div id="grid">
+    <div>
+      <div class="panel">
+        <div class="ptitle"><span>DISPLAY</span><span id="dispinfo">320×240</span></div>
+        <div class="pbody screen"><canvas id="screen" width="320" height="240"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>REGISTERS</span><span id="pcshow"></span></div>
+        <div class="pbody" id="regs"></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>MEMORY</span><span id="memlbl"></span></div>
+        <div class="pbody" id="mem"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="ptitle"><span>DISASSEMBLY</span><span id="dislbl"></span></div>
+        <div class="pbody tall" id="disasm"></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>UNIMPLEMENTED — what the program reached for</span></div>
+        <div class="pbody" id="miss"><span style="color:var(--dim)">nothing yet</span></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>LOG</span></div>
+        <div class="pbody" id="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="note">
+    <b>What this is.</b> A PlayStation emulator written from scratch: a full MIPS I interpreter with
+    the R3000A's visible load delay slot, COP0 and exceptions, the memory map, DMA, and a GPU that
+    rasterises into a real 1 MB VRAM and draws it to the canvas above. The PS1 is a far more
+    tractable target than the N64 — no per-game graphics microcode, no 64-bit CPU — which is why
+    this one can render rather than only single-step.<br>
+    <b>What works.</b> <b>PS-EXE</b> homebrew loads and runs directly: flat and Gouraud polygons,
+    rectangles, fills and CPU→VRAM uploads all draw. A <b>BIOS</b> image boots from the reset vector
+    at 0xBFC00000 so you can step through it.<br>
+    <b>What is missing.</b> The GTE (so 3D geometry does not transform), SPU, CD-ROM, timers and
+    controllers. Those are counted rather than faked — the panel on the right lists exactly what a
+    program tried to use, so you can see why something stalls. Commercial discs will not run.<br>
+    <b>Nothing is included.</b> Load a BIOS dumped from your own console, or homebrew.
+    For playing games, the <a href="../play/index.html">Retro Player</a> runs a complete PS1 core.
+  </div>
+</div>
+
+<script src="psx.js"></script>
+<script>
+let memAddr = 0x80000000, bpAddr = -1;
+let running = false, runTimer = null;
+let prevRegs = new Int32Array(32);
+
+const hex8 = n => (n >>> 0).toString(16).toUpperCase().padStart(8, '0');
+const parseHex = s => (parseInt(String(s).replace(/^0x/i, ''), 16) >>> 0) || 0;
+
+function log(msg, cls) {
+  const el = document.getElementById('log');
+  el.innerHTML += (cls ? `<span class="${cls}">${msg}</span>` : msg) + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+async function loadFile(file, kind) {
+  if (!file) return;
+  const st = document.getElementById('status');
+  const bytes = new Uint8Array(await file.arrayBuffer());
+
+  if (kind === 'bios') {
+    if (bytes.length < 0x80000) {
+      st.textContent = '✗ BIOS should be 512 KB'; st.className = 'err';
+      log(`That file is ${bytes.length} bytes; a PS1 BIOS image is 524288.`, 'e');
+      return;
+    }
+    PSX.loadBIOS(bytes);
+    st.textContent = '✓ BIOS — ' + file.name; st.className = 'ok';
+    log(`BIOS loaded (${(bytes.length/1024)|0} KB). PC = 0xBFC00000, the reset vector.`, 'i');
+  } else {
+    const r = PSX.loadEXE(bytes);
+    if (!r.ok) {
+      st.textContent = '✗ ' + r.why; st.className = 'err';
+      log(r.why, 'e');
+      log('A PS-EXE starts with the ASCII tag "PS-X EXE".', 'w');
+      return;
+    }
+    st.textContent = '✓ ' + file.name; st.className = 'ok';
+    log(`PS-EXE loaded: ${r.size} bytes to 0x${hex8(r.dest)}, entry 0x${hex8(r.entry)}, sp 0x${hex8(r.sp)}`, 'i');
+  }
+  ['b-step','b-s10','b-s1k','b-run','b-reset'].forEach(id => document.getElementById(id).disabled = false);
+  memAddr = 0x80000000;
+  document.getElementById('memIn').value = '80000000';
+  render();
+}
+
+function step(n) {
+  for (let i = 0; i < n; i++) {
+    if (PSX.halted) break;
+    if (!PSX.step()) break;
+    if (bpAddr >= 0 && PSX.pc === (bpAddr >>> 0)) {
+      log('Breakpoint hit at 0x' + hex8(PSX.pc), 'w');
+      running = false;
+      break;
+    }
+  }
+  render();
+}
+
+function toggleRun() {
+  running = !running;
+  const b = document.getElementById('b-run');
+  if (running) {
+    b.textContent = '⏸ PAUSE'; b.className = 'btn stop';
+    const tick = () => {
+      if (!running || PSX.halted) {
+        running = false; b.textContent = '▶ RUN'; b.className = 'btn go'; render(); return;
+      }
+      for (let i = 0; i < 200000; i++) {
+        if (PSX.halted || !PSX.step()) break;
+        if (bpAddr >= 0 && PSX.pc === (bpAddr >>> 0)) {
+          log('Breakpoint hit at 0x' + hex8(PSX.pc), 'w');
+          running = false; break;
+        }
+      }
+      render();
+      runTimer = requestAnimationFrame(tick);
+    };
+    runTimer = requestAnimationFrame(tick);
+  } else {
+    b.textContent = '▶ RUN'; b.className = 'btn go';
+    cancelAnimationFrame(runTimer);
+  }
+}
+
+function doReset() {
+  running = false;
+  const b = document.getElementById('b-run');
+  b.textContent = '▶ RUN'; b.className = 'btn go';
+  PSX.reset();
+  log('Reset — PC = 0x' + hex8(PSX.pc), 'i');
+  render();
+}
+
+function setBP(v) {
+  const t = String(v).trim();
+  bpAddr = t ? parseHex(t) : -1;
+  render();
+}
+
+const screen = document.getElementById('screen');
+const sctx = screen.getContext('2d');
+
+function render() {
+  document.getElementById('cycles').textContent = PSX.cycles.toLocaleString() + ' instructions';
+  document.getElementById('prims').textContent  = PSX.prims ? '· ' + PSX.prims.toLocaleString() + ' primitives' : '';
+  document.getElementById('pcshow').textContent = 'PC 0x' + hex8(PSX.pc);
+  document.getElementById('dispinfo').textContent = PSX.gpu.dispW + '×' + PSX.gpu.dispH;
+
+  PSX.drawTo(sctx, screen);
+
+  const g = PSX.regs, NM = PSX.REGNAME;
+  let h = '';
+  for (let i = 0; i < 32; i++) {
+    const v = g[i], chg = v !== prevRegs[i];
+    h += `<div class="reg ${chg?'chg':''} ${v===0?'zero':''}">` +
+         `<span class="n">${NM[i]}</span><span class="v">${hex8(v)}</span></div>`;
+  }
+  h += `<div class="reg"><span class="n">pc</span><span class="v">${hex8(PSX.pc)}</span></div>`;
+  h += `<div class="reg"><span class="n">hi</span><span class="v">${hex8(PSX.hi)}</span></div>`;
+  h += `<div class="reg"><span class="n">lo</span><span class="v">${hex8(PSX.lo)}</span></div>`;
+  [12, 13, 14].forEach(i => {
+    h += `<div class="reg"><span class="n">${PSX.COP0NAME[i]}</span>` +
+         `<span class="v">${hex8(PSX.cop0[i])}</span></div>`;
+  });
+  document.getElementById('regs').innerHTML = h;
+  prevRegs = g.slice();
+
+  if (PSX.ready) {
+    let d = '';
+    const start = (PSX.pc - 10 * 4) >>> 0;
+    for (let i = 0; i < 32; i++) {
+      const a = (start + i * 4) >>> 0;
+      const w = PSX.read32(a) >>> 0;
+      const [m, o] = PSX.disasm(w, a);
+      const isPC = a === PSX.pc, isDS = a === ((PSX.pc + 4) >>> 0);
+      const isBP = bpAddr >= 0 && a === (bpAddr >>> 0);
+      d += `<div class="ln ${isPC?'pc':''} ${isDS?'ds':''} ${isBP?'bp':''}">` +
+           `<span class="a">${hex8(a)}</span><span class="w">${hex8(w)}</span>` +
+           `<span class="m">${m}</span><span class="o">${o}</span></div>`;
+    }
+    document.getElementById('disasm').innerHTML = d;
+    document.getElementById('dislbl').textContent = PSX.halted ? 'HALTED — ' + PSX.haltMsg : '';
+    renderMem();
+    renderMiss();
+  }
+}
+
+function renderMem() {
+  if (!PSX.ready) return;
+  let s = '';
+  for (let r = 0; r < 12; r++) {
+    const a = (memAddr + r * 16) >>> 0;
+    let hx = '', as = '';
+    for (let c = 0; c < 16; c += 4) {
+      const w = PSX.read32((a + c) >>> 0) >>> 0;
+      hx += hex8(w) + ' ';
+      for (let b = 0; b < 4; b++) {                 // little-endian byte order
+        const ch = (w >>> (b * 8)) & 0xFF;
+        as += (ch >= 32 && ch < 127) ? String.fromCharCode(ch) : '.';
+      }
+    }
+    s += `<span class="ma">${hex8(a)}</span>  <span class="mh">${hx}</span> <span class="mc">${as}</span>\n`;
+  }
+  document.getElementById('mem').innerHTML = s;
+  document.getElementById('memlbl').textContent = '0x' + hex8(memAddr);
+}
+
+function renderMiss() {
+  const u = PSX.unimplemented;
+  const keys = Object.keys(u).sort((a, b) => u[b] - u[a]);
+  const el = document.getElementById('miss');
+  if (!keys.length) { el.innerHTML = '<span style="color:var(--dim)">nothing yet</span>'; return; }
+  el.innerHTML = keys.slice(0, 40).map(k =>
+    `<div class="missrow"><span>${k}</span><span class="c">${u[k].toLocaleString()}</span></div>`).join('');
+}
+
+['dragenter','dragover'].forEach(ev =>
+  document.addEventListener(ev, e => { e.preventDefault(); document.body.classList.add('drag'); }));
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('drag'); });
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  document.body.classList.remove('drag');
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  // a 512 KB file is a BIOS; anything else is treated as an executable
+  f.arrayBuffer().then(b => loadFile(f, b.byteLength === 0x80000 ? 'bios' : 'exe'));
+});
+
+render();
+</script>
+</body>
+</html>
