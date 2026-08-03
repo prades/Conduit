@@ -175,6 +175,9 @@ select{appearance:none;-webkit-appearance:none;}
   <button class="tbtn" onclick="stopAll()">■ STOP</button>
   <button class="tbtn rec" id="recbtn" onclick="toggleRec()">● REC</button>
   <span id="rectime"></span>
+  <input type="text" id="trackname" placeholder="track name" maxlength="48"
+    style="background:var(--panel2);border:1px solid var(--border);color:var(--white);
+           padding:9px 10px;font-family:inherit;font-size:12px;border-radius:6px;width:140px;">
   <span class="hdr-label">BPM</span>
   <input type="number" id="bpm" value="92" min="40" max="200" onchange="bpm=Math.max(40,Math.min(200,+this.value||90))">
   <div class="row ml">
@@ -677,6 +680,13 @@ capNode.onaudioprocess = e => {
 
 let recTimer = null, recStart = 0, trackNum = 1;
 
+function exportName() {
+  const el = document.getElementById('trackname');
+  const raw = (el && el.value || '').trim();
+  const clean = raw.replace(/[^\w \-]+/g, '').replace(/\s+/g, '-').slice(0, 48);
+  return clean || ('pokedaw-track-' + (trackNum++));
+}
+
 function flat(chunks) {
   let len = 0; chunks.forEach(c => len += c.length);
   const out = new Float32Array(len);
@@ -752,7 +762,7 @@ function toggleRec() {
       }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `pokedaw-track-${trackNum++}.${ext}`;
+      a.download = exportName() + '.' + ext;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
       time.textContent = '';

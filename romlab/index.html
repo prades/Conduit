@@ -140,6 +140,10 @@ body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
     <input type="range" class="sl" id="bpmSl" style="width:150px" min="40" max="220" step="1" value="90"
       oninput="setBPM(+this.value)">
     <button class="btn" id="tapbtn" onclick="tapTempo()">TAP</button>
+    <span class="lbl">TRACK</span>
+    <input type="text" id="trackname" placeholder="untitled" maxlength="48"
+      style="background:var(--panel2);border:1px solid var(--border);color:var(--white);
+             padding:9px 10px;font-family:inherit;font-size:12px;border-radius:6px;width:150px;">
     <span class="lbl" style="margin-left:auto">VOL</span>
     <input type="range" class="sl" style="width:90px" min="0" max="1" step="0.01" value="0.8"
       oninput="master.gain.value=+this.value">
@@ -180,7 +184,10 @@ body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
             <input type="range" class="sl" id="loopstart" min="0" max="90" step="1" value="0"
               oninput="document.getElementById('loopstartv').textContent=this.value+'%'">
             <span class="cv" id="loopstartv">0%</span></div>
-          <button class="btn" style="width:100%;margin-top:6px" onclick="applyShaping()">APPLY TO ARMED PAD</button>
+          <div class="wrow" style="display:flex;gap:8px;margin-top:6px">
+            <button class="btn" style="flex:1" onclick="applyShaping()">APPLY TO PAD</button>
+            <button class="btn" style="flex:1" onclick="renamePad()">RENAME PAD</button>
+          </div>
         </div>
       </div>
 
@@ -302,6 +309,51 @@ let pat = Array.from({ length: NPADS }, () => new Array(STEPS).fill(0));
 let bpm = 90;
 let loopOn = true;
 
+// ── naming ────────────────────────────────────────────────────
+// Labels are keyed by ROM plus offset, so renaming survives a rescan and
+// comes back when the same ROM is loaded again.
+let romKey = '';
+let labels = {};
+try { labels = JSON.parse(localStorage.getItem('romlab.labels') || '{}'); } catch (e) {}
+const saveLabels = () => { try { localStorage.setItem('romlab.labels', JSON.stringify(labels)); } catch (e) {} };
+
+const labelKey = off => romKey + ':' + off;
+const labelFor = off => labels[labelKey(off)] || ('0x' + off.toString(16).toUpperCase());
+function setLabel(off, name) {
+  name = String(name || '').trim().slice(0, 40);
+  if (name) labels[labelKey(off)] = name;
+  else delete labels[labelKey(off)];
+  saveLabels();
+}
+
+// Swap a label for a text field in place; commit on Enter or blur.
+function startRename(span, current, commit) {
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = current;
+  input.maxLength = 40;
+  input.style.cssText = 'background:#0a0d0b;border:1px solid var(--lime);color:var(--white);' +
+    'font-family:inherit;font-size:11px;padding:3px 6px;border-radius:4px;width:130px;';
+  input.addEventListener('click', e => e.stopPropagation());
+  input.addEventListener('pointerdown', e => e.stopPropagation());
+  const done = () => { commit(input.value); };
+  input.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Enter') { input.blur(); }
+    if (e.key === 'Escape') { input.value = current; input.blur(); }
+  });
+  input.addEventListener('blur', done, { once: true });
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+}
+
+function exportName() {
+  const raw = (document.getElementById('trackname').value || '').trim();
+  const clean = raw.replace(/[^\w \-]+/g, '').replace(/\s+/g, '-').slice(0, 48);
+  return clean || ('romlab-' + (trackNum++));
+}
+
 // Tempo takes effect on the next scheduled step, so it can be moved while
 // the sequencer is running without restarting it.
 function setBPM(v, fromField) {
@@ -357,6 +409,7 @@ async function loadROM(file) {
   resume();
   setStatus('Reading ' + file.name + '…');
   romBytes = new Uint8Array(await file.arrayBuffer());
+  romKey = file.name + ':' + romBytes.length;
   document.getElementById('rescanbtn').disabled = false;
   document.getElementById('playbtn').disabled = false;
   setStatus('✓ ' + file.name + '  ·  ' + (romBytes.length/1048576).toFixed(1) + ' MB', 'ok');
@@ -405,9 +458,32 @@ function renderSamples() {
     const cv = document.createElement('canvas');
     const info = document.createElement('div');
     info.className = 'info';
-    info.innerHTML = '<div class="a">0x' + s.offset.toString(16).toUpperCase() + '</div>' +
-      '<div class="b">' + Math.round(s.samples / SRC_RATE * 1000) + ' ms · ' +
-      s.samples.toLocaleString() + ' smp' + (s.looped ? ' · loops' : '') + '</div>';
+
+    const top = document.createElement('div');
+    top.className = 'a';
+    const nm = document.createElement('span');
+    nm.textContent = labelFor(s.offset);
+    const ren = document.createElement('button');
+    ren.textContent = '✎';
+    ren.title = 'Rename';
+    ren.style.cssText = 'background:none;border:none;color:var(--dim);cursor:pointer;' +
+      'font-size:12px;padding:0 4px;';
+    ren.addEventListener('pointerdown', e => e.stopPropagation());
+    ren.addEventListener('click', e => {
+      e.stopPropagation();
+      startRename(nm, labelFor(s.offset), v => {
+        setLabel(s.offset, v);
+        pads.forEach(p => { if (p && p.offset === s.offset) p.name = labelFor(s.offset); });
+        renderSamples(); renderPads();
+      });
+    });
+    top.append(nm, ren);
+
+    const sub = document.createElement('div');
+    sub.className = 'b';
+    sub.textContent = Math.round(s.samples / SRC_RATE * 1000) + ' ms · ' +
+      s.samples.toLocaleString() + ' smp' + (s.looped ? ' · loops' : '');
+    info.append(top, sub);
     row.append(cv, info);
     row.addEventListener('click', () => {
       selected = i;
@@ -490,7 +566,8 @@ function assign(i) {
   const s = found[selected];
   if (!s) return;
   pads[i] = {
-    name: '0x' + s.offset.toString(16).toUpperCase(),
+    name: labelFor(s.offset),
+    offset: s.offset,
     buf: s.buf,
     rate: Math.pow(2, (+document.getElementById('pitch').value) / 12),
     decay: +document.getElementById('decay').value,
@@ -498,6 +575,19 @@ function assign(i) {
     loopStart: loopStartFrac(),
   };
   hitPad(i);
+}
+
+function renamePad() {
+  const p = pads[armed];
+  if (!p) return;
+  const el = document.querySelector('.pad[data-i="' + armed + '"] .s');
+  if (!el) return;
+  startRename(el, p.name, v => {
+    const name = String(v || '').trim().slice(0, 40);
+    p.name = name || (p.offset != null ? '0x' + p.offset.toString(16).toUpperCase() : 'pad');
+    if (p.offset != null) setLabel(p.offset, name);
+    renderPads(); renderSamples();
+  });
 }
 
 function applyShaping() {
@@ -663,7 +753,7 @@ function toggleRec() {
       }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'romlab-' + (trackNum++) + '.' + ext;
+      a.download = exportName() + '.' + ext;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
       t.textContent = '';

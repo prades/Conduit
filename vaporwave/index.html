@@ -140,6 +140,10 @@ body{
     <button class="tbtn" onclick="stopAll()">■ ＳＴＯＰ</button>
     <button class="tbtn rec" id="recbtn" onclick="toggleRec()">● ＲＥＣ</button>
     <span id="rectime"></span>
+  <input type="text" id="trackname" placeholder="track name" maxlength="48"
+    style="background:var(--panel);border:1px solid var(--border);color:#fff;
+           padding:11px 12px;font-family:inherit;font-size:12px;border-radius:6px;
+           width:150px;min-height:46px;">
   </div>
 
   <div id="panels">
@@ -1337,6 +1341,13 @@ capNode.onaudioprocess = e => {
 };
 let recTimer = null, recStart = 0, trackNum = 1;
 
+function exportName() {
+  const el = document.getElementById('trackname');
+  const raw = (el && el.value || '').trim();
+  const clean = raw.replace(/[^\w \-]+/g, '').replace(/\s+/g, '-').slice(0, 48);
+  return clean || ('futurefunk-' + (trackNum++));
+}
+
 function flat(chunks) {
   let len = 0; chunks.forEach(c=>len+=c.length);
   const out = new Float32Array(len);
@@ -1397,7 +1408,7 @@ function toggleRec() {
       } catch(e) { blob = encodeWAV(L,R,actx.sampleRate); ext='wav'; }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `futurefunk-${trackNum++}.${ext}`;
+      a.download = exportName() + '.' + ext;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
       time.textContent='';
