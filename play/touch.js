@@ -9,17 +9,22 @@
 //  Standard-mapping indices, and how mupen64plus reads them:
 //    axes 0/1  left stick      → N64 analog stick
 //    axes 2/3  right stick     → N64 C-buttons
-//    btn 0     A (bottom)      → N64 A
-//    btn 2     X (left)        → N64 B
+//    btn 1     right face      → N64 A
+//    btn 0     bottom face     → N64 B
 //    btn 4/5   L1/R1           → N64 L / R
 //    btn 6     L2              → N64 Z
 //    btn 9     Start           → N64 Start
+//
+//  Index 0 is the BOTTOM face button, which libretro reads as RetroPad B
+//  and mupen64plus maps to N64 B — so N64 A is index 1, not 0. The panel
+//  in the settings menu can re-point any of these if a core disagrees.
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
 
   const LS_LAYOUT = 'n64touch.layout.v1';
   const LS_OPTS   = 'n64touch.opts.v1';
+  const LS_MAP    = 'n64touch.map.v1';
 
   // ── virtual gamepad ──────────────────────────────────────────
   const pad = {
@@ -224,7 +229,10 @@
   const buzz = ms => { if (opts.haptics && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } };
 
   // ── button bindings ──────────────────────────────────────────
-  const BTN = { a: 0, b: 2, l: 4, r: 5, z: 6, start: 9 };
+  const DEFAULT_BTN = { a: 1, b: 0, l: 4, r: 5, z: 6, start: 9 };
+  let BTN = Object.assign({}, DEFAULT_BTN);
+  try { Object.assign(BTN, JSON.parse(localStorage.getItem(LS_MAP) || '{}')); } catch (e) {}
+  const saveMap = () => localStorage.setItem(LS_MAP, JSON.stringify(BTN));
 
   Object.keys(BTN).forEach(k => {
     const el = els[k];
@@ -427,6 +435,13 @@
         <button id="t-hide" class="wide">HIDE OVERLAY</button>
         <button id="t-close" class="wide">CLOSE</button>
       </div>
+      <h3 style="margin-top:18px">BUTTON MAP</h3>
+      <div class="sub">
+        If a button does the wrong thing, step its gamepad index until it lands.
+        Cores differ on which physical button becomes which N64 button.
+      </div>
+      <div id="t-map"></div>
+      <div class="row"><button id="t-mapreset" class="wide">RESET BUTTON MAP</button></div>
       <div class="note">
         The overlay presents itself to the emulator as a standard gamepad, so it
         feeds real analog values rather than on/off key presses. A paired Bluetooth
@@ -437,7 +452,33 @@
   document.body.appendChild(menu);
 
   const $ = id => menu.querySelector(id);
+
+  function renderMap() {
+    const wrap = $('#t-map');
+    wrap.innerHTML = '';
+    Object.keys(DEFAULT_BTN).forEach(k => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = '<span class="k">' + k.toUpperCase() + '</span>' +
+        '<button data-d="-1">−</button>' +
+        '<b style="min-width:34px;text-align:center;color:#41d97a">' + BTN[k] + '</b>' +
+        '<button data-d="1">+</button>';
+      row.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+        setButton(BTN[k], false);          // let go of the old index first
+        BTN[k] = (BTN[k] + (+b.dataset.d) + 17) % 17;
+        saveMap(); renderMap();
+      }));
+      wrap.appendChild(row);
+    });
+  }
+
+  $('#t-mapreset').addEventListener('click', () => {
+    Object.values(BTN).forEach(i => setButton(i, false));
+    BTN = Object.assign({}, DEFAULT_BTN);
+    saveMap(); renderMap();
+  });
   const syncMenu = () => {
+    renderMap();
     $('#t-op').value = opts.opacity;
     $('#t-tg').value = opts.tiltGain;
     $('#t-tilt').classList.toggle('on', !!opts.tilt);
