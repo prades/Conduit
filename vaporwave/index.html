@@ -167,6 +167,19 @@ body{
     <div class="panel">
       <div class="ptitle">ＬＯＯＰＳ <span class="jp">ループ</span></div>
       <div id="looplist"></div>
+      <div class="ptitle" style="margin-top:14px">ＴＥＭＰＯ <span class="jp">テンポ</span></div>
+      <div class="cr">
+        <span class="cl">BPM</span>
+        <input type="range" class="sl" id="tempoSl" min="50" max="200" step="1" value="124"
+          oninput="setTempo(this.value)">
+        <span class="cv" id="tempoV">124 BPM</span>
+      </div>
+      <div class="wrow" style="margin-bottom:4px">
+        <button class="wbtn" onclick="setTempo(curBPMBase()-1)">−1</button>
+        <button class="wbtn" onclick="clearTempo()">LOOP TEMPO</button>
+        <button class="wbtn" onclick="setTempo(curBPMBase()+1)">+1</button>
+      </div>
+
       <div class="ptitle" style="margin-top:14px">ＳＰＥＥＤ <span class="jp">速度</span></div>
       <div class="hint">FUTURE FUNK RUNS SAMPLES HOT — PUSH IT PAST 100%.</div>
       <div class="wrow">
@@ -497,7 +510,29 @@ function setSpeed(i) {
 }
 function mfp(midi) { return 440 * Math.pow(2, (midi + SPEEDS[speedIdx].semis - 69)/12); }
 function Pp() { return Math.pow(2, SPEEDS[speedIdx].semis/12); }
-function curBPM() { return PRESETS[curPreset].bpm * SPEEDS[speedIdx].rate; }
+// null means follow the loop's own tempo; the slider overrides it
+let tempoOverride = null;
+function curBPM() {
+  return (tempoOverride || PRESETS[curPreset].bpm) * SPEEDS[speedIdx].rate;
+}
+function setTempo(v) {
+  tempoOverride = Math.max(50, Math.min(200, Math.round(+v)));
+  const sl = document.getElementById('tempoSl');
+  const lb = document.getElementById('tempoV');
+  if (sl) sl.value = tempoOverride;
+  if (lb) lb.textContent = tempoOverride + ' BPM';
+}
+function clearTempo() {                       // back to whatever the loop wants
+  tempoOverride = null;
+  syncTempoUI();
+}
+function syncTempoUI() {
+  const base = PRESETS[curPreset].bpm;
+  const sl = document.getElementById('tempoSl');
+  const lb = document.getElementById('tempoV');
+  if (sl) sl.value = tempoOverride || base;
+  if (lb) lb.textContent = (tempoOverride || base) + ' BPM' + (tempoOverride ? '' : ' (loop)');
+}
 
 // ══════════════════════════════════════════════════════
 //  VOICES
@@ -864,16 +899,20 @@ let curPreset = 0;
       curPreset = i;
       PRESETS.forEach((_,k)=>document.getElementById('loop-'+k).classList.toggle('on', k===i));
       barIdx = 0; stepIdx = 0; arpIdx = 0;
+      syncTempoUI();
     });
     list.appendChild(b);
   });
 })();
+
+syncTempoUI();
 
 // ══════════════════════════════════════════════════════
 //  SEQUENCER
 // ══════════════════════════════════════════════════════
 let playing = false, stepIdx = 0, barIdx = 0, arpIdx = 0, nextT = 0, seqTimer = null;
 function stepDur() { return 60 / curBPM() / 4; }
+const curBPMBase = () => tempoOverride || PRESETS[curPreset].bpm;
 
 function schedule() {
   while (nextT < actx.currentTime + 0.12) {

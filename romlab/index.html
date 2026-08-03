@@ -133,8 +133,13 @@ body.drag::after{content:'DROP ROM TO SCAN';position:fixed;inset:0;z-index:99;
     <button class="btn rec" id="recbtn" onclick="toggleRec()">● REC</button>
     <span id="rectime" style="font-size:11px;color:var(--red);min-width:42px"></span>
     <span class="lbl">BPM</span>
+    <button class="btn" style="min-width:44px;padding:10px 12px" onclick="nudgeBPM(-1)">−</button>
     <input type="number" id="bpm" value="90" min="40" max="220"
-      onchange="bpm=Math.max(40,Math.min(220,+this.value||90))">
+      oninput="setBPM(+this.value, true)">
+    <button class="btn" style="min-width:44px;padding:10px 12px" onclick="nudgeBPM(1)">+</button>
+    <input type="range" class="sl" id="bpmSl" style="width:150px" min="40" max="220" step="1" value="90"
+      oninput="setBPM(+this.value)">
+    <button class="btn" id="tapbtn" onclick="tapTempo()">TAP</button>
     <span class="lbl" style="margin-left:auto">VOL</span>
     <input type="range" class="sl" style="width:90px" min="0" max="1" step="0.01" value="0.8"
       oninput="master.gain.value=+this.value">
@@ -296,6 +301,32 @@ const pads = Array.from({ length: NPADS }, () => null);   // {name, buf, rate, d
 let pat = Array.from({ length: NPADS }, () => new Array(STEPS).fill(0));
 let bpm = 90;
 let loopOn = true;
+
+// Tempo takes effect on the next scheduled step, so it can be moved while
+// the sequencer is running without restarting it.
+function setBPM(v, fromField) {
+  v = Math.max(40, Math.min(220, Math.round(+v) || 90));
+  bpm = v;
+  document.getElementById('bpmSl').value = v;
+  if (!fromField) document.getElementById('bpm').value = v;
+}
+function nudgeBPM(d) { setBPM(bpm + d); }
+
+let taps = [];
+function tapTempo() {
+  const now = performance.now();
+  taps = taps.filter(t => now - t < 2500);      // a long gap starts a new count
+  taps.push(now);
+  if (taps.length < 2) {
+    document.getElementById('tapbtn').textContent = 'TAP…';
+    return;
+  }
+  let sum = 0;
+  for (let i = 1; i < taps.length; i++) sum += taps[i] - taps[i-1];
+  setBPM(60000 / (sum / (taps.length - 1)));
+  document.getElementById('tapbtn').textContent = 'TAP ' + bpm;
+  setTimeout(() => { document.getElementById('tapbtn').textContent = 'TAP'; }, 1200);
+}
 
 const loopStartFrac = () => (+document.getElementById('loopstart').value) / 100;
 function toggleLoop() {
