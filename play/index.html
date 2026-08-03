@@ -31,7 +31,6 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
 
 #stage{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;min-height:0;}
 
-/* drop zone */
 #drop{width:100%;max-width:680px;border:2px dashed var(--border);border-radius:12px;
   padding:44px 28px;text-align:center;transition:.15s;cursor:pointer;}
 #drop:hover,#drop.over{border-color:var(--green);background:rgba(65,217,122,.06);}
@@ -40,17 +39,27 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
 #drop .big{font-size:34px;margin-bottom:14px;}
 #fileIn{display:none;}
 
-/* emulator host */
-#gamewrap{display:none;width:100%;height:100%;}
+/* The player lives in a fixed, full-viewport layer. Percentage heights only
+   resolve against a definite size, and a flex item under a min-height body
+   is not definite — that collapses the canvas to zero and shows nothing. */
+#gamewrap{display:none;position:fixed;inset:0;z-index:50;background:#000;}
+#gamewrap.on{display:block;}
 #game{width:100%;height:100%;}
+#game canvas{display:block;}
+#exit{display:none;position:fixed;top:10px;right:10px;z-index:60;
+  background:rgba(10,13,18,.85);border:1px solid var(--border);color:var(--text);
+  padding:9px 14px;border-radius:5px;font-family:inherit;font-size:11px;
+  letter-spacing:1px;cursor:pointer;}
+#exit:hover{border-color:var(--red);color:var(--red);}
+#exit.on{display:block;}
 
 #note{padding:14px 16px;border-top:1px solid var(--border);font-size:11px;
   line-height:1.9;color:var(--dim);flex-shrink:0;}
 #note b{color:var(--text);font-weight:normal;}
-#note a{color:var(--cyan);}
 #note code{background:var(--panel2);padding:1px 5px;border-radius:3px;color:var(--amber);}
 #err{display:none;margin-top:10px;padding:11px 13px;background:var(--panel);
-  border-left:3px solid var(--red);border-radius:5px;color:var(--text);line-height:1.9;}
+  border-left:3px solid var(--red);border-radius:5px;color:var(--text);
+  line-height:1.9;text-align:left;}
 </style>
 </head>
 <body>
@@ -78,6 +87,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
 </div>
 
 <div id="gamewrap"><div id="game"></div></div>
+<button id="exit" onclick="location.reload()">✕ EXIT</button>
 
 <div id="note">
   <b>What this is.</b> A thin front end around <b>EmulatorJS</b>, which runs the
@@ -86,7 +96,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
   microcode HLE). The core is fetched from the EmulatorJS CDN on first load, so it needs an
   internet connection and a few seconds to download.<br>
   <b>Controls.</b> Keyboard and gamepads work on desktop; on a tablet you get on-screen buttons.
-  Tap the EmulatorJS settings icon in the player to remap anything or go fullscreen.<br>
+  Use the settings icon in the player to remap anything or go fullscreen.<br>
   <b>Performance.</b> N64 in a browser is demanding. A desktop will do better than a tablet, and
   a native emulator (RetroArch, simple64, Project64, Ares) will beat both.<br>
   <b>No ROMs are included.</b> Load a dump of a cartridge you own.
@@ -108,11 +118,18 @@ function showError(html) {
   e.style.display = 'block';
 }
 
+function backToDropZone() {
+  booted = false;
+  document.getElementById('stage').style.display = 'flex';
+  document.getElementById('gamewrap').classList.remove('on');
+  document.getElementById('exit').classList.remove('on');
+}
+
 function boot(file) {
   if (!file || booted) return;
 
-  // A .zip is fine — the core unpacks it itself. Anything else we sanity-check
-  // by extension only, since the core does its own format detection.
+  // .zip is fine — the core unpacks it. Everything else is checked by
+  // extension only; the core does its own format detection.
   const name = file.name.toLowerCase();
   const ok = ['.z64','.n64','.v64','.zip','.7z','.rom','.bin'].some(x => name.endsWith(x));
   if (!ok) {
@@ -124,39 +141,64 @@ function boot(file) {
   booted = true;
   setStatus('Downloading emulator core…', 'var(--amber)');
   document.getElementById('stage').style.display = 'none';
-  document.getElementById('gamewrap').style.display = 'block';
+  document.getElementById('gamewrap').classList.add('on');
+  document.getElementById('exit').classList.add('on');
 
-  // EmulatorJS reads its configuration off globals, then loader.js builds the
-  // player, so every option has to be set before the script tag is injected.
-  window.EJS_player      = '#game';
-  window.EJS_core        = 'n64';
-  window.EJS_pathtodata  = CDN;
-  window.EJS_gameUrl     = URL.createObjectURL(file);
-  window.EJS_gameName    = file.name.replace(/\.[^.]+$/, '');
-  window.EJS_color       = '#41d97a';
+  // EmulatorJS reads its configuration off globals and loader.js builds the
+  // player as soon as it runs, so everything must be set before injection.
+  window.EJS_player        = '#game';
+  window.EJS_core          = 'n64';
+  window.EJS_pathtodata    = CDN;
+  window.EJS_gameUrl       = URL.createObjectURL(file);
+  window.EJS_gameName      = file.name.replace(/\.[^.]+$/, '');
+  window.EJS_color         = '#41d97a';
   window.EJS_startOnLoaded = true;
 
   const s = document.createElement('script');
   s.src = CDN + 'loader.js';
-  s.onload  = () => setStatus('Running — ' + file.name, 'var(--green)');
+  s.onload  = () => { setStatus('Running — ' + file.name, 'var(--green)'); watchdog(); };
   s.onerror = () => {
-    booted = false;
-    document.getElementById('stage').style.display = 'flex';
-    document.getElementById('gamewrap').style.display = 'none';
+    backToDropZone();
     setStatus('Could not reach the emulator core', 'var(--red)');
     showError(
       '<b>The emulator core failed to download.</b><br>' +
-      'It is fetched from <code>cdn.emulatorjs.org</code>, so this usually means no internet, ' +
+      'It comes from <code>cdn.emulatorjs.org</code>, so this usually means no internet, ' +
       'a blocked CDN, or an ad blocker interfering.<br><br>' +
-      'For reliable play, a native emulator is the better route anyway — ' +
-      '<b>RetroArch</b> (with the Mupen64Plus-Next core), <b>simple64</b>, ' +
-      '<b>Ares</b> or <b>Project64</b> all run N64 properly.'
+      'For reliable play a native emulator is the better route — <b>RetroArch</b> ' +
+      '(Mupen64Plus-Next core), <b>simple64</b>, <b>Ares</b> or <b>Project64</b>.'
     );
   };
   document.body.appendChild(s);
 }
 
-// drop anywhere
+// If the core loaded but nothing is visible, say what is actually wrong
+// instead of leaving a black screen with no explanation.
+function watchdog() {
+  setTimeout(() => {
+    const c = document.querySelector('#game canvas');
+    if (c && c.clientWidth > 0 && c.clientHeight > 0) return;
+
+    backToDropZone();
+    if (!c) {
+      setStatus('Core loaded but no display was created', 'var(--red)');
+      showError(
+        '<b>The emulator loaded but never created a display.</b><br>' +
+        'Most often this is WebGL being unavailable or blocked. Check that hardware ' +
+        'acceleration is on, and try a different browser.<br><br>' +
+        'A native emulator avoids the issue entirely — <b>RetroArch</b> ' +
+        '(Mupen64Plus-Next core), <b>simple64</b>, <b>Ares</b> or <b>Project64</b>.'
+      );
+    } else {
+      setStatus('Display created but sized to zero', 'var(--red)');
+      showError(
+        '<b>The display was created but has no size</b> (' +
+        c.clientWidth + '×' + c.clientHeight + ').<br>' +
+        'Rotating the device or reloading usually clears it.'
+      );
+    }
+  }, 20000);
+}
+
 const drop = document.getElementById('drop');
 drop.addEventListener('click', () => document.getElementById('fileIn').click());
 ['dragenter','dragover'].forEach(ev =>
