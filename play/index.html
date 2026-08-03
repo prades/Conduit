@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>N64 Player</title>
+<title>Retro Player</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -23,21 +23,40 @@ body{background:var(--bg);color:var(--text);
 #logo span{color:var(--dim);font-weight:normal;font-size:11px;letter-spacing:1px;}
 .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);
   padding:9px 15px;cursor:pointer;font-family:inherit;font-size:11px;letter-spacing:1px;
-  border-radius:5px;transition:.12s;min-height:42px;}
+  border-radius:5px;transition:.12s;min-height:42px;touch-action:manipulation;}
 .btn:hover{border-color:var(--cyan);color:var(--cyan);}
 .btn.go{border-color:var(--green);color:var(--green);}
 a.btn{text-decoration:none;display:inline-flex;align-items:center;}
 #status{font-size:11px;color:var(--dim);margin-left:auto;}
 
-#stage{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;min-height:0;}
+#stage{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;min-height:0;
+  overflow:auto;}
+#panelwrap{width:100%;max-width:700px;}
 
-#drop{width:100%;max-width:680px;border:2px dashed var(--border);border-radius:12px;
-  padding:44px 28px;text-align:center;transition:.15s;cursor:pointer;}
+#drop{border:2px dashed var(--border);border-radius:12px;
+  padding:40px 26px;text-align:center;transition:.15s;cursor:pointer;}
 #drop:hover,#drop.over{border-color:var(--green);background:rgba(65,217,122,.06);}
 #drop h2{font-size:15px;color:var(--white);letter-spacing:2px;margin-bottom:10px;font-weight:normal;}
 #drop p{font-size:12px;color:var(--dim);line-height:1.9;}
 #drop .big{font-size:34px;margin-bottom:14px;}
-#fileIn{display:none;}
+#fileIn,#biosIn{display:none;}
+
+/* confirm step */
+#confirm{display:none;background:var(--panel);border:1px solid var(--border);
+  border-radius:12px;padding:20px;}
+#confirm.on{display:block;}
+#confirm h2{font-size:14px;color:var(--white);letter-spacing:2px;margin-bottom:4px;font-weight:normal;}
+#fname{font-size:11px;color:var(--green);margin-bottom:16px;word-break:break-all;}
+.crow{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.crow .k{width:88px;font-size:10px;color:var(--dim);letter-spacing:1px;flex-shrink:0;}
+select{flex:1;min-width:180px;background:var(--panel2);border:1px solid var(--border);
+  color:var(--text);padding:11px 10px;font-family:inherit;font-size:12px;border-radius:6px;
+  min-height:44px;-webkit-appearance:none;appearance:none;}
+#biosrow{display:none;}
+#biosrow.on{display:flex;}
+#biosname{font-size:11px;color:var(--dim);}
+.tip{font-size:11px;color:var(--dim);line-height:1.85;margin-top:10px;
+  padding:10px 12px;background:var(--panel2);border-left:3px solid var(--amber);border-radius:5px;}
 
 /* The player lives in a fixed, full-viewport layer. Percentage heights only
    resolve against a definite size, and a flex item under a min-height body
@@ -51,8 +70,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
 #exit{display:none;position:fixed;top:10px;right:10px;z-index:60;
   background:rgba(10,13,18,.85);border:1px solid var(--border);color:var(--text);
   padding:9px 14px;border-radius:5px;font-family:inherit;font-size:11px;
-  letter-spacing:1px;cursor:pointer;}
-#exit{touch-action:manipulation;}
+  letter-spacing:1px;cursor:pointer;touch-action:manipulation;}
 #exit:hover{border-color:var(--red);color:var(--red);}
 #exit.on{display:block;}
 
@@ -60,7 +78,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
   line-height:1.9;color:var(--dim);flex-shrink:0;}
 #note b{color:var(--text);font-weight:normal;}
 #note code{background:var(--panel2);padding:1px 5px;border-radius:3px;color:var(--amber);}
-#err{display:none;margin-top:10px;padding:11px 13px;background:var(--panel);
+#err{display:none;margin-top:12px;padding:11px 13px;background:var(--panel);
   border-left:3px solid var(--red);border-radius:5px;color:var(--text);
   line-height:1.9;text-align:left;}
 </style>
@@ -68,44 +86,64 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
 <body>
 
 <div id="hdr">
-  <div id="logo">N64 PLAYER <span>// mupen64plus via WebAssembly</span></div>
-  <button class="btn go" onclick="document.getElementById('fileIn').click()">⏏ LOAD ROM</button>
+  <div id="logo">RETRO PLAYER <span>// libretro cores via WebAssembly</span></div>
+  <button class="btn go" onclick="document.getElementById('fileIn').click()">⏏ LOAD GAME</button>
   <a class="btn" href="../n64/index.html">◧ CPU DEBUGGER</a>
-  <span id="status">No ROM loaded — files stay on your device</span>
+  <span id="status">Nothing loaded — files stay on your device</span>
 </div>
 
 <div id="stage">
-  <div id="drop">
-    <div class="big">🎮</div>
-    <h2>DROP A CARTRIDGE DUMP HERE</h2>
-    <p>
-      .z64 · .n64 · .v64 · .zip<br>
-      or tap to browse<br><br>
-      Nothing is uploaded. The file is read in your browser and handed<br>
-      straight to the emulator core running locally on this page.
-    </p>
+  <div id="panelwrap">
+    <div id="drop">
+      <div class="big">🎮</div>
+      <h2>DROP A GAME HERE</h2>
+      <p>
+        N64 · PlayStation · SNES · NES · Game Boy · GBA · Mega Drive · and more<br>
+        or tap to browse<br><br>
+        Nothing is uploaded. The file is read in your browser and handed<br>
+        straight to an emulator core running locally on this page.
+      </p>
+    </div>
+
+    <div id="confirm">
+      <h2>READY TO START</h2>
+      <div id="fname"></div>
+      <div class="crow">
+        <span class="k">SYSTEM</span>
+        <select id="sysSel"></select>
+      </div>
+      <div class="crow" id="biosrow">
+        <span class="k">BIOS</span>
+        <button class="btn" onclick="document.getElementById('biosIn').click()">CHOOSE FILE</button>
+        <span id="biosname">none selected</span>
+      </div>
+      <div class="crow">
+        <button class="btn go" style="flex:1" onclick="start()">▶ START</button>
+        <button class="btn" style="flex:1" onclick="reset()">CANCEL</button>
+      </div>
+      <div class="tip" id="systip"></div>
+    </div>
+
     <div id="err"></div>
   </div>
-  <input type="file" id="fileIn" onchange="boot(this.files[0])">
+  <input type="file" id="fileIn" onchange="pick(this.files[0])">
+  <input type="file" id="biosIn" onchange="pickBios(this.files[0])">
 </div>
 
 <div id="gamewrap"><div id="game"></div></div>
 <button id="exit" onclick="location.reload()">✕ EXIT</button>
 
 <div id="note">
-  <b>What this is.</b> A thin front end around <b>EmulatorJS</b>, which runs the
-  <b>mupen64plus</b> N64 core compiled to WebAssembly. I did not write the emulator — it is a
-  mature open-source project doing the hard parts (RSP vector unit, RDP rasterizer, graphics
-  microcode HLE). The core is fetched from the EmulatorJS CDN on first load, so it needs an
-  internet connection and a few seconds to download.<br>
-  <b>Controls.</b> EmulatorJS supplies its own on-screen controls, wired straight into the core —
-  those are the ones to use. <b>⚙ TOUCH SETUP</b> at the bottom offers an alternative custom overlay
-  (floating analog stick, drag-to-reposition, tilt steering) which is <b>off by default</b>, since
-  turning it on covers the emulator's own. A paired Bluetooth controller works either way and beats
-  glass for precise steering.<br>
-  <b>Performance.</b> N64 in a browser is demanding. A desktop will do better than a tablet, and
-  a native emulator (RetroArch, simple64, Project64, Ares) will beat both.<br>
-  <b>No ROMs are included.</b> Load a dump of a cartridge you own.
+  <b>What this is.</b> A front end around <b>EmulatorJS</b>, which runs libretro emulator cores
+  compiled to WebAssembly. The emulators are mature open-source projects; this page only loads your
+  file into one. Cores download from the EmulatorJS CDN on first use.<br>
+  <b>Controls.</b> The emulator supplies its own on-screen controls, wired straight into the core.
+  <b>⚙ TOUCH SETUP</b> offers an alternative custom overlay, <b>off by default</b> since it covers
+  theirs. A paired Bluetooth controller works either way and beats glass for precise steering.<br>
+  <b>Note on N64.</b> It is the hardest system here to emulate and the least stable in a browser —
+  crashes when a level loads are usually the tab running out of memory. PlayStation, SNES and the
+  handhelds are far better behaved.<br>
+  <b>No games or BIOS files are included.</b> Load dumps of discs and cartridges you own.
 </div>
 
 <script src="touch.js"></script>
@@ -116,115 +154,239 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
   document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
 
 const CDN = 'https://cdn.emulatorjs.org/stable/data/';
-let booted = false;
+
+// ── systems ──────────────────────────────────────────────────
+// core: the EmulatorJS core id. bios: true where a BIOS dump is normally
+// required. opts: core settings applied at boot.
+const SYSTEMS = {
+  n64:      { name: 'Nintendo 64',        core: 'n64' },
+  psx:      { name: 'PlayStation',        core: 'psx', bios: 'recommended' },
+  snes:     { name: 'Super Nintendo',     core: 'snes' },
+  nes:      { name: 'NES / Famicom',      core: 'nes' },
+  gb:       { name: 'Game Boy / Color',   core: 'gb' },
+  gba:      { name: 'Game Boy Advance',   core: 'gba' },
+  segaMD:   { name: 'Mega Drive / Genesis', core: 'segaMD' },
+  segaMS:   { name: 'Master System',      core: 'segaMS' },
+  segaGG:   { name: 'Game Gear',          core: 'segaGG' },
+  segaCD:   { name: 'Sega CD',            core: 'segaCD', bios: 'required' },
+  sega32x:  { name: 'Sega 32X',           core: 'sega32x' },
+  segaSaturn:{ name:'Saturn',             core: 'segaSaturn', bios: 'required' },
+  pce:      { name: 'PC Engine / TG-16',  core: 'pce' },
+  vb:       { name: 'Virtual Boy',        core: 'vb' },
+  ws:       { name: 'WonderSwan',         core: 'ws' },
+  ngp:      { name: 'Neo Geo Pocket',     core: 'ngp' },
+  lynx:     { name: 'Atari Lynx',         core: 'lynx' },
+  atari2600:{ name: 'Atari 2600',         core: 'atari2600' },
+  atari7800:{ name: 'Atari 7800',         core: 'atari7800' },
+  jaguar:   { name: 'Atari Jaguar',       core: 'jaguar' },
+  '3do':    { name: '3DO',                core: '3do', bios: 'required' },
+  arcade:   { name: 'Arcade (MAME)',      core: 'arcade' },
+};
+
+// Extensions that identify a system unambiguously. .bin, .iso and .zip are
+// deliberately absent — they are used by several systems, so those fall
+// through to the picker rather than being guessed at.
+const BY_EXT = {
+  z64:'n64', n64:'n64', v64:'n64',
+  cue:'psx', chd:'psx', pbp:'psx', m3u:'psx', ecm:'psx',
+  sfc:'snes', smc:'snes', fig:'snes', swc:'snes',
+  nes:'nes', fds:'nes', unf:'nes',
+  gb:'gb', gbc:'gb', gba:'gba',
+  md:'segaMD', gen:'segaMD', smd:'segaMD',
+  sms:'segaMS', gg:'segaGG', '32x':'sega32x',
+  pce:'pce', sgx:'pce',
+  vb:'vb', vboy:'vb',
+  ws:'ws', wsc:'ws',
+  ngp:'ngp', ngc:'ngp',
+  lnx:'lynx', a26:'atari2600', a78:'atari7800', j64:'jaguar', jag:'jaguar',
+};
+
+let gameFile = null, biosFile = null, booted = false;
+
+(function () {
+  const sel = document.getElementById('sysSel');
+  Object.keys(SYSTEMS).forEach(k => {
+    const o = document.createElement('option');
+    o.value = k; o.textContent = SYSTEMS[k].name;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', syncSystem);
+})();
 
 function setStatus(msg, color) {
   const el = document.getElementById('status');
   el.textContent = msg;
   el.style.color = color || '';
 }
-
 function showError(html) {
   const e = document.getElementById('err');
   e.innerHTML = html;
   e.style.display = 'block';
 }
+function clearError() { document.getElementById('err').style.display = 'none'; }
 
-function backToDropZone() {
-  booted = false;
-  if (window.TouchPad) TouchPad.hide();
+function reset() {
+  gameFile = null; biosFile = null; booted = false;
+  document.getElementById('confirm').classList.remove('on');
+  document.getElementById('drop').style.display = 'block';
+  document.getElementById('biosname').textContent = 'none selected';
   document.getElementById('stage').style.display = 'flex';
   document.getElementById('gamewrap').classList.remove('on');
   document.getElementById('exit').classList.remove('on');
+  if (window.TouchPad) TouchPad.hide();
+  setStatus('Nothing loaded — files stay on your device');
 }
 
-function boot(file) {
-  if (!file || booted) return;
+function pick(file) {
+  if (!file) return;
+  clearError();
+  gameFile = file;
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  const guess = BY_EXT[ext];
 
-  // .zip is fine — the core unpacks it. Everything else is checked by
-  // extension only; the core does its own format detection.
-  const name = file.name.toLowerCase();
-  const ok = ['.z64','.n64','.v64','.zip','.7z','.rom','.bin'].some(x => name.endsWith(x));
-  if (!ok) {
-    showError('<b>That does not look like an N64 ROM.</b><br>' +
-      'Expected .z64, .n64, .v64 or a .zip containing one.');
+  document.getElementById('fname').textContent = file.name +
+    '  ·  ' + (file.size / 1048576).toFixed(1) + ' MB';
+  document.getElementById('sysSel').value = guess || 'psx';
+  document.getElementById('drop').style.display = 'none';
+  document.getElementById('confirm').classList.add('on');
+  syncSystem();
+
+  if (!guess) {
+    showError('<b>That extension is used by more than one system.</b><br>' +
+      'Pick the right one above before starting — .bin, .iso and .zip are all ambiguous.');
+  }
+}
+
+function pickBios(file) {
+  if (!file) return;
+  biosFile = file;
+  document.getElementById('biosname').textContent = file.name;
+}
+
+function syncSystem() {
+  const key = document.getElementById('sysSel').value;
+  const sys = SYSTEMS[key];
+  document.getElementById('biosrow').classList.toggle('on', !!sys.bios);
+
+  let tip = '';
+  if (key === 'psx') {
+    tip = 'PlayStation runs far better in a browser than N64 — fixed-function graphics ' +
+          'and a simpler CPU mean the cores are mature and stable. Disc images are large ' +
+          'though, so prefer <b>.chd</b> or <b>.pbp</b> (roughly 100–200 MB) over a raw ' +
+          '.bin/.cue (up to 700 MB), which can exhaust the tab on its own. A BIOS dump ' +
+          'from your own console improves compatibility; many games run without one.';
+  } else if (key === 'n64') {
+    tip = 'The hardest system here. Its graphics chip runs per-game microcode, so cores ' +
+          'are less reliable, and crashes when a level loads are usually the tab running ' +
+          'out of memory. Settings below are already tuned as light as they go.';
+  } else if (sys.bios === 'required') {
+    tip = 'This system needs a BIOS dump from your own hardware — it will not start without one.';
+  } else {
+    tip = 'This system emulates cleanly in a browser and should run at full speed.';
+  }
+  document.getElementById('systip').innerHTML = tip;
+}
+
+// Per-core settings. Unknown keys are ignored by the core, so passing
+// these is safe regardless of which build is fetched.
+function optionsFor(key) {
+  if (key === 'n64') {
+    // Loading a level is the biggest allocation an N64 game makes, and that
+    // spike is what kills a mobile tab — so keep everything minimal.
+    return {
+      'mupen64plus-43screensize': '320x240',
+      'mupen64plus-169screensize': '640x360',
+      'mupen64plus-rsp-plugin': 'hle',
+      'mupen64plus-EnableFBEmulation': 'False',
+      'mupen64plus-ThreadedRenderer': 'False',
+      'mupen64plus-EnableLODEmulation': 'False',
+      'mupen64plus-txFilterMode': 'None',
+      'mupen64plus-txEnhancementMode': 'None',
+    };
+  }
+  if (key === 'psx') {
+    return {
+      'pcsx_rearmed_frameskip': '0',
+      'pcsx_rearmed_neon_interlace_enable': 'disabled',
+      'pcsx_rearmed_neon_enhancement_enable': 'disabled',
+    };
+  }
+  return {};
+}
+
+function start() {
+  if (!gameFile || booted) return;
+  const key = document.getElementById('sysSel').value;
+  const sys = SYSTEMS[key];
+
+  if (sys.bios === 'required' && !biosFile) {
+    showError('<b>' + sys.name + ' needs a BIOS file.</b><br>' +
+      'Choose a dump from your own console above, then start.');
     return;
   }
 
   booted = true;
-  setStatus('Downloading emulator core…', 'var(--amber)');
+  clearError();
+  setStatus('Downloading ' + sys.name + ' core…', 'var(--amber)');
   document.getElementById('stage').style.display = 'none';
   document.getElementById('gamewrap').classList.add('on');
   document.getElementById('exit').classList.add('on');
 
   // EmulatorJS reads its configuration off globals and loader.js builds the
   // player as soon as it runs, so everything must be set before injection.
-  window.EJS_player        = '#game';
-  window.EJS_core          = 'n64';
-  window.EJS_pathtodata    = CDN;
-  window.EJS_gameUrl       = URL.createObjectURL(file);
-  window.EJS_gameName      = file.name.replace(/\.[^.]+$/, '');
-  window.EJS_color         = '#41d97a';
-  window.EJS_startOnLoaded = true;
-
-  // Conservative core settings. Loading a level is the biggest allocation an
-  // N64 game makes, and that spike is what tends to kill a mobile browser tab
-  // — so render at native resolution and keep the lighter plugins. Unknown
-  // keys are ignored by the core, so these are safe to pass either way.
-  window.EJS_defaultOptions = Object.assign({
-    'mupen64plus-43screensize': '320x240',
-    'mupen64plus-169screensize': '640x360',
-    'mupen64plus-rsp-plugin': 'hle',
-    'mupen64plus-EnableFBEmulation': 'False',
-    'mupen64plus-ThreadedRenderer': 'False',
-    'mupen64plus-EnableLODEmulation': 'False',
-    'mupen64plus-txFilterMode': 'None',
-    'mupen64plus-txEnhancementMode': 'None',
-  }, window.EJS_defaultOptions || {});
+  window.EJS_player         = '#game';
+  window.EJS_core           = sys.core;
+  window.EJS_pathtodata     = CDN;
+  window.EJS_gameUrl        = URL.createObjectURL(gameFile);
+  window.EJS_gameName       = gameFile.name.replace(/\.[^.]+$/, '');
+  window.EJS_color          = '#41d97a';
+  window.EJS_startOnLoaded  = true;
+  window.EJS_defaultOptions = optionsFor(key);
+  if (biosFile) window.EJS_biosUrl = URL.createObjectURL(biosFile);
 
   const s = document.createElement('script');
   s.src = CDN + 'loader.js';
   s.onload  = () => {
+    setStatus('Running — ' + gameFile.name, 'var(--green)');
     watchForCrash();
-    setStatus('Running — ' + file.name, 'var(--green)');
-    if (window.TouchPad) setTimeout(() => TouchPad.show(), 1500);
     watchdog();
   };
   s.onerror = () => {
-    backToDropZone();
+    booted = false;
+    reset();
     setStatus('Could not reach the emulator core', 'var(--red)');
     showError(
       '<b>The emulator core failed to download.</b><br>' +
       'It comes from <code>cdn.emulatorjs.org</code>, so this usually means no internet, ' +
       'a blocked CDN, or an ad blocker interfering.<br><br>' +
-      'For reliable play a native emulator is the better route — <b>RetroArch</b> ' +
-      '(Mupen64Plus-Next core), <b>simple64</b>, <b>Ares</b> or <b>Project64</b>.'
+      'For reliable play a native emulator is the better route — <b>RetroArch</b>, ' +
+      '<b>DuckStation</b> (PlayStation), <b>simple64</b> or <b>Ares</b>.'
     );
   };
   document.body.appendChild(s);
 }
 
-// A crash here is nearly always the tab running out of memory when a level
-// loads. Say so plainly rather than leaving a frozen or blank canvas.
+// A crash is nearly always the tab running out of memory when a level or
+// disc section loads. Say so plainly rather than leaving a blank canvas.
 function crashPanel(title, detail) {
-  document.getElementById('gamewrap').classList.remove('on');
-  document.getElementById('exit').classList.remove('on');
-  document.getElementById('stage').style.display = 'flex';
-  if (window.TouchPad) TouchPad.hide();
+  const wasN64 = document.getElementById('sysSel').value === 'n64';
+  reset();
   setStatus(title, 'var(--red)');
   showError(
     '<b>' + title + '</b><br>' + detail + '<br><br>' +
-    '<b>Most likely cause:</b> the tab ran out of memory. Loading a level or track ' +
-    'allocates textures, geometry and audio all at once, and a browser tab has far ' +
-    'less headroom than a native app.<br><br>' +
-    '<b>Worth trying, roughly in order:</b><br>' +
+    '<b>Most likely cause:</b> the tab ran out of memory. Loading a level allocates ' +
+    'textures, geometry and audio at once, and a browser tab has far less headroom ' +
+    'than a native app.<br><br>' +
+    '<b>Worth trying:</b><br>' +
     '· Close other tabs and background apps, then reload<br>' +
-    '· Open the emulator\'s own settings and drop the resolution / disable any enhancements<br>' +
     '· Save a state in the emulator menu <em>before</em> the transition that kills it<br>' +
-    '· Try a different browser — Chrome generally allows a larger WebAssembly heap than Safari<br><br>' +
-    '<b>The reliable fix</b> is a native emulator: <b>RetroArch</b> (Mupen64Plus-Next core), ' +
-    '<b>simple64</b>, <b>Ares</b> or <b>Project64</b>. Browser N64 sits right at the limit of ' +
-    'what a tab can do; a native app has room to spare.'
+    '· Try a different browser — Chrome generally allows a larger WebAssembly heap<br>' +
+    (wasN64
+      ? '· <b>Try a PlayStation or SNES game instead.</b> N64 is the hardest system to ' +
+        'emulate and the least stable here; most others run comfortably.<br>'
+      : '· If this is a disc image, a compressed <b>.chd</b> uses far less memory than a raw .bin<br>') +
+    '<br><b>The reliable fix</b> is a native emulator: <b>DuckStation</b> for PlayStation, ' +
+    '<b>RetroArch</b>, <b>simple64</b> or <b>Ares</b> for the rest.'
   );
 }
 
@@ -248,17 +410,13 @@ function watchForCrash() {
   }, 500);
   setTimeout(() => clearInterval(findCanvas), 30000);
 
+  const looksFatal = m => /memory|allocation|abort|RuntimeError/i.test(String(m || ''));
   window.addEventListener('error', e => {
-    const m = String((e && e.message) || '');
-    if (/memory|allocation|abort|RuntimeError/i.test(m)) {
-      crashPanel('The emulator stopped', 'Reported: ' + m);
-    }
+    if (looksFatal(e && e.message)) crashPanel('The emulator stopped', 'Reported: ' + e.message);
   });
   window.addEventListener('unhandledrejection', e => {
-    const m = String((e && e.reason && e.reason.message) || e.reason || '');
-    if (/memory|allocation|abort|RuntimeError/i.test(m)) {
-      crashPanel('The emulator stopped', 'Reported: ' + m);
-    }
+    const m = (e && e.reason && e.reason.message) || (e && e.reason);
+    if (looksFatal(m)) crashPanel('The emulator stopped', 'Reported: ' + m);
   });
 }
 
@@ -267,25 +425,17 @@ function watchForCrash() {
 function watchdog() {
   setTimeout(() => {
     const c = document.querySelector('#game canvas');
-    if (c && c.clientWidth > 0 && c.clientHeight > 0) return;
-
-    backToDropZone();
+    if (c && c.clientWidth > 0 && c.clientHeight > 0) {
+      if (window.TouchPad) TouchPad.show();
+      return;
+    }
     if (!c) {
-      setStatus('Core loaded but no display was created', 'var(--red)');
-      showError(
-        '<b>The emulator loaded but never created a display.</b><br>' +
-        'Most often this is WebGL being unavailable or blocked. Check that hardware ' +
-        'acceleration is on, and try a different browser.<br><br>' +
-        'A native emulator avoids the issue entirely — <b>RetroArch</b> ' +
-        '(Mupen64Plus-Next core), <b>simple64</b>, <b>Ares</b> or <b>Project64</b>.'
-      );
+      crashPanel('No display was created',
+        'The core loaded but never made a canvas. Most often this is WebGL being ' +
+        'unavailable or blocked — check that hardware acceleration is on.');
     } else {
-      setStatus('Display created but sized to zero', 'var(--red)');
-      showError(
-        '<b>The display was created but has no size</b> (' +
-        c.clientWidth + '×' + c.clientHeight + ').<br>' +
-        'Rotating the device or reloading usually clears it.'
-      );
+      crashPanel('Display sized to zero',
+        'The canvas exists but measures ' + c.clientWidth + '×' + c.clientHeight + '.');
     }
   }, 20000);
 }
@@ -299,7 +449,7 @@ document.addEventListener('drop', e => {
   e.preventDefault();
   drop.classList.remove('over');
   const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-  if (f) boot(f);
+  if (f) pick(f);
 });
 </script>
 </body>
