@@ -111,7 +111,8 @@
   }
 
   // ── options, bindings, layout ────────────────────────────────
-  const DEFAULT_OPTS = { opacity: 0.42, tilt: false, haptics: true, tiltGain: 2.4, mode: 'both' };
+  const DEFAULT_OPTS = { opacity: 0.42, tilt: false, haptics: true, tiltGain: 2.4,
+                         mode: 'both', overlay: false };
   let opts = Object.assign({}, DEFAULT_OPTS);
   try { Object.assign(opts, JSON.parse(localStorage.getItem(LS_OPTS) || '{}')); } catch (e) {}
   let mode = opts.mode;
@@ -214,7 +215,11 @@
     font:12px 'SF Mono',Menlo,Consolas,monospace;color:#9fb0c4;}
   #tmenu.on{display:flex;}
   #tmenu .card{background:#121821;border:1px solid #26313f;border-radius:10px;
-    padding:20px;width:min(480px,93vw);max-height:88vh;overflow:auto;}
+    padding:0 20px 20px;width:min(480px,93vw);max-height:88vh;overflow:auto;
+    -webkit-overflow-scrolling:touch;}
+  #tmenu .sticky{position:sticky;top:0;background:#121821;padding:16px 0 10px;
+    margin-bottom:4px;border-bottom:1px solid #26313f;display:flex;
+    align-items:center;justify-content:space-between;gap:12px;z-index:1;}
   #tmenu h3{color:#41d97a;font-size:13px;letter-spacing:3px;margin:0 0 4px;font-weight:normal;}
   #tmenu .sub{color:#5a6b7f;font-size:11px;line-height:1.8;margin-bottom:14px;}
   #tmenu .row{display:flex;align-items:center;gap:10px;margin-bottom:10px;min-height:42px;}
@@ -274,7 +279,7 @@
   cknob.className = 'cknob'; root.appendChild(cknob);
 
   const gear = document.createElement('button');
-  gear.id = 'tgear'; gear.textContent = '⚙ CONTROLS';
+  gear.id = 'tgear'; gear.textContent = '⚙ TOUCH SETUP';
   gear.style.display = 'none';
   document.body.appendChild(gear);
 
@@ -474,16 +479,35 @@
   menu.id = 'tmenu';
   menu.innerHTML = `
     <div class="card">
-      <h3>TOUCH CONTROLS</h3>
-      <div class="sub">Drag anywhere on the left half to steer — the stick homes to your thumb.</div>
+      <div class="sticky">
+        <h3>TOUCH CONTROLS</h3>
+        <button id="t-close">CLOSE</button>
+      </div>
 
-      <div class="diag" id="t-diag"></div>
+      <div class="sub">
+        The emulator has its own on-screen controls, which are wired straight into
+        the core and need no mapping. This custom overlay is an alternative — turn it
+        on only if you prefer it, since it covers theirs while active.
+      </div>
+      <div class="row">
+        <button id="t-overlay" class="wide">CUSTOM OVERLAY</button>
+      </div>
 
-      <div class="row"><span class="k">INPUT</span>
+      <h3 style="margin-top:16px">BUTTON MAP</h3>
+      <div class="sub">Only affects the custom overlay. AUTO MAP reads the emulator's own bindings.</div>
+      <div class="row"><button id="t-auto" class="wide">AUTO MAP</button>
+        <button id="t-mapreset" class="wide">RESET MAP</button></div>
+      <div id="t-map"></div>
+
+      <h3 style="margin-top:16px">INPUT PATH</h3>
+      <div class="row">
         <button id="t-mboth" class="wide">BOTH</button>
         <button id="t-mpad"  class="wide">GAMEPAD</button>
         <button id="t-mkey"  class="wide">KEYBOARD</button>
       </div>
+      <div class="diag" id="t-diag"></div>
+
+      <h3 style="margin-top:16px">APPEARANCE</h3>
       <div class="row"><span class="k">OPACITY</span>
         <input type="range" id="t-op" min="0.15" max="1" step="0.01"></div>
       <div class="row"><span class="k">TILT GAIN</span>
@@ -496,24 +520,9 @@
         <button id="t-move" class="wide">MOVE CONTROLS</button>
         <button id="t-reset" class="wide">RESET LAYOUT</button>
       </div>
-      <div class="row">
-        <button id="t-hide" class="wide">HIDE OVERLAY</button>
-        <button id="t-close" class="wide">CLOSE</button>
-      </div>
-
-      <h3 style="margin-top:16px">BUTTON MAP</h3>
-      <div class="sub">
-        If a button does the wrong thing, step its gamepad index or its key until
-        it lands. Cores disagree about which physical button becomes which N64 button.
-      </div>
-      <div id="t-map"></div>
-      <div class="row">
-        <button id="t-auto" class="wide">AUTO MAP</button>
-        <button id="t-mapreset" class="wide">RESET MAP</button>
-      </div>
       <div class="note">
-        A paired Bluetooth controller keeps working alongside this and will feel
-        better than glass for anything needing precise steering.
+        A paired Bluetooth controller works regardless of any of this, and will
+        beat glass for anything needing precise steering.
       </div>
     </div>`;
   document.body.appendChild(menu);
@@ -620,16 +629,12 @@
     $('#t-hap').classList.toggle('on', !!opts.haptics);
     $('#t-move').classList.toggle('on', editing);
     $('#t-move').textContent = editing ? 'DONE MOVING' : 'MOVE CONTROLS';
+    $('#t-overlay').classList.toggle('on', !!opts.overlay);
+    $('#t-overlay').textContent = opts.overlay ? 'CUSTOM OVERLAY: ON' : 'CUSTOM OVERLAY: OFF';
   }
 
   let diagTimer = null;
   gear.addEventListener('click', () => {
-    if (gear.dataset.hidden) {                     // re-show rather than open settings
-      root.classList.add('on'); root.classList.remove('off');
-      gear.textContent = '⚙ CONTROLS';
-      delete gear.dataset.hidden;
-      return;
-    }
     syncMenu();
     menu.classList.add('on');
     diagTimer = setInterval(renderDiag, 500);      // watch the poll count live
@@ -665,26 +670,31 @@
     MAP = JSON.parse(JSON.stringify(DEFAULT_MAP));
     saveMap(); renderMap();
   });
-  $('#t-hide').addEventListener('click', () => {
-    releaseAll();
-    root.classList.remove('on'); root.classList.add('off');
-    closeMenu();
-    gear.textContent = '⚙ SHOW CONTROLS';
-    gear.dataset.hidden = '1';
-  });
+  $('#t-overlay').addEventListener('click', () => showOverlay(!opts.overlay));
 
   window.addEventListener('resize', place);
   window.addEventListener('orientationchange', () => setTimeout(place, 250));
   window.addEventListener('blur', releaseAll);     // never leave an input stuck down
 
   // ── public API ───────────────────────────────────────────────
-  window.TouchPad = {
-    show() {
+  function showOverlay(on) {
+    opts.overlay = on; saveOpts();
+    if (on) {
       enabled = true;
       root.classList.add('on'); root.classList.remove('off');
+      place(); announce();
+    } else {
+      releaseAll();
+      enabled = false;
+      root.classList.remove('on'); root.classList.add('off');
+    }
+    if (menu.classList.contains('on')) syncMenu();
+  }
+
+  window.TouchPad = {
+    show() {
       gear.style.display = 'block';
-      place();
-      announce();
+      showOverlay(!!opts.overlay);      // off unless previously turned on
     },
     hide() {
       releaseAll();
