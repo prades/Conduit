@@ -95,13 +95,17 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;}
   mature open-source project doing the hard parts (RSP vector unit, RDP rasterizer, graphics
   microcode HLE). The core is fetched from the EmulatorJS CDN on first load, so it needs an
   internet connection and a few seconds to download.<br>
-  <b>Controls.</b> Keyboard and gamepads work on desktop; on a tablet you get on-screen buttons.
-  Use the settings icon in the player to remap anything or go fullscreen.<br>
+  <b>Controls.</b> On a tablet a touch overlay appears once the game starts: drag anywhere on
+  the left half to steer (the stick homes to your thumb, and feeds real analog values rather than
+  on/off presses), with A/B/Z/L/R, Start and a C-pad on the right. <b>⚙ CONTROLS</b> at the bottom
+  opens opacity, tilt steering, and MOVE mode for dragging anything where your hands want it —
+  the layout is saved. A paired Bluetooth controller still takes priority.<br>
   <b>Performance.</b> N64 in a browser is demanding. A desktop will do better than a tablet, and
   a native emulator (RetroArch, simple64, Project64, Ares) will beat both.<br>
   <b>No ROMs are included.</b> Load a dump of a cartridge you own.
 </div>
 
+<script src="touch.js"></script>
 <script>
 const CDN = 'https://cdn.emulatorjs.org/stable/data/';
 let booted = false;
@@ -120,6 +124,7 @@ function showError(html) {
 
 function backToDropZone() {
   booted = false;
+  if (window.TouchPad) TouchPad.hide();
   document.getElementById('stage').style.display = 'flex';
   document.getElementById('gamewrap').classList.remove('on');
   document.getElementById('exit').classList.remove('on');
@@ -156,7 +161,11 @@ function boot(file) {
 
   const s = document.createElement('script');
   s.src = CDN + 'loader.js';
-  s.onload  = () => { setStatus('Running — ' + file.name, 'var(--green)'); watchdog(); };
+  s.onload  = () => {
+    setStatus('Running — ' + file.name, 'var(--green)');
+    if (window.TouchPad) setTimeout(() => TouchPad.show(), 1500);
+    watchdog();
+  };
   s.onerror = () => {
     backToDropZone();
     setStatus('Could not reach the emulator core', 'var(--red)');
