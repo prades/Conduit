@@ -1,30 +1,30 @@
 // ═══════════════════════════════════════════════════════════════
 //  Touch controls for the N64 player
 //
-//  Rather than synthesising key events — which can only ever be digital,
-//  and would make steering full-lock-or-nothing — this presents itself as
-//  a real gamepad by wrapping navigator.getGamepads(). The emulator polls
-//  it like any other pad and reads genuine analog axes off the stick.
+//  Input goes out over two paths at once, because which one a core
+//  actually listens to is not something you can know in advance:
 //
-//  Standard-mapping indices, and how mupen64plus reads them:
-//    axes 0/1  left stick      → N64 analog stick
-//    axes 2/3  right stick     → N64 C-buttons
-//    btn 1     right face      → N64 A
-//    btn 0     bottom face     → N64 B
-//    btn 4/5   L1/R1           → N64 L / R
-//    btn 6     L2              → N64 Z
-//    btn 9     Start           → N64 Start
+//   • Gamepad  — wraps navigator.getGamepads() and presents a standard
+//                pad. This is the only way to send true analog values,
+//                so steering is not full-lock-or-nothing.
+//   • Keyboard — synthesises key events. Digital only, but emulators
+//                ship default keyboard bindings, so it usually works
+//                even when nothing is bound for a gamepad.
 //
-//  Index 0 is the BOTTOM face button, which libretro reads as RetroPad B
-//  and mupen64plus maps to N64 B — so N64 A is index 1, not 0. The panel
-//  in the settings menu can re-point any of these if a core disagrees.
+//  Both are on by default. The settings menu shows a live count of how
+//  often the page has polled for gamepads: if that stays at zero, the
+//  emulator is not reading the pad at all and keyboard is the live path.
+//  Every binding — gamepad index and key — is editable in there, since
+//  cores disagree about which physical button becomes which N64 button.
 // ═══════════════════════════════════════════════════════════════
 (function () {
   'use strict';
 
   const LS_LAYOUT = 'n64touch.layout.v1';
-  const LS_OPTS   = 'n64touch.opts.v1';
-  const LS_MAP    = 'n64touch.map.v1';
+  const LS_OPTS   = 'n64touch.opts.v2';
+  const LS_MAP    = 'n64touch.map.v2';
+
+  const CONTROLS = ['a', 'b', 'z', 'l', 'r', 'start'];
 
   // ── virtual gamepad ──────────────────────────────────────────
   const pad = {
@@ -37,30 +37,31 @@
     buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
   };
 
-  function setButton(i, on) {
+  let pollCount = 0;
+
+  function padButton(i, on) {
     const b = pad.buttons[i];
-    if (b.pressed === on) return;
+    if (!b || b.pressed === on) return;
     b.pressed = b.touched = on;
     b.value = on ? 1 : 0;
     pad.timestamp = performance.now();
   }
-  function setAxis(i, v) {
+  function padAxis(i, v) {
     v = Math.max(-1, Math.min(1, v));
     if (pad.axes[i] === v) return;
     pad.axes[i] = v;
     pad.timestamp = performance.now();
   }
 
-  // Slot ours into the first free position so a real controller, if one is
-  // plugged in later, still gets through untouched.
   const nativeGetGamepads = navigator.getGamepads
     ? navigator.getGamepads.bind(navigator)
     : () => [];
 
   navigator.getGamepads = function () {
+    pollCount++;
     const list = Array.prototype.slice.call(nativeGetGamepads());
-    if (!enabled) return list;
-    let slot = list.findIndex(g => !g);
+    if (!enabled || mode === 'keyboard') return list;
+    let slot = list.findIndex(g => !g);   // leave room for a real controller
     if (slot === -1) slot = list.length;
     pad.index = slot;
     list[slot] = pad;
@@ -72,16 +73,69 @@
       const ev = new Event('gamepadconnected');
       ev.gamepad = pad;
       window.dispatchEvent(ev);
-    } catch (e) { /* some browsers refuse a synthetic GamepadEvent; polling still finds it */ }
+    } catch (e) { /* polling still finds it */ }
   }
 
-  // ── options + layout ─────────────────────────────────────────
-  const DEFAULT_OPTS = { opacity: 0.42, tilt: false, haptics: true, tiltGain: 2.4 };
+  // ── synthetic keyboard ───────────────────────────────────────
+  const ARROW_CODES = { ArrowUp: 38, ArrowDown: 40, ArrowLeft: 37, ArrowRight: 39 };
+
+  function keyInfo(k) {
+    if (k === 'Enter') return { key: 'Enter', code: 'Enter', keyCode: 13 };
+    if (k === 'Shift') return { key: 'Shift', code: 'ShiftLeft', keyCode: 16 };
+    if (k === 'Space') return { key: ' ', code: 'Space', keyCode: 32 };
+    if (ARROW_CODES[k]) return { key: k, code: k, keyCode: ARROW_CODES[k] };
+    return { key: k, code: 'Key' + k.toUpperCase(), keyCode: k.toUpperCase().charCodeAt(0) };
+  }
+
+  // Many emulator front ends still read the legacy keyCode/which fields,
+  // and the KeyboardEvent constructor will not set them — so they are
+  // defined onto each event by hand.
+  function fireKey(type, k, target) {
+    const i = keyInfo(k);
+    const ev = new KeyboardEvent(type, {
+      key: i.key, code: i.code, bubbles: true, cancelable: true, composed: true,
+    });
+    try {
+      Object.defineProperty(ev, 'keyCode', { get: () => i.keyCode });
+      Object.defineProperty(ev, 'which',   { get: () => i.keyCode });
+    } catch (e) {}
+    target.dispatchEvent(ev);
+  }
+
+  function sendKey(k, down) {
+    if (!k) return;
+    const type = down ? 'keydown' : 'keyup';
+    fireKey(type, k, document);           // bubbles on to window
+    const cv = document.querySelector('#game canvas');
+    if (cv) fireKey(type, k, cv);
+  }
+
+  // ── options, bindings, layout ────────────────────────────────
+  const DEFAULT_OPTS = { opacity: 0.42, tilt: false, haptics: true, tiltGain: 2.4, mode: 'both' };
   let opts = Object.assign({}, DEFAULT_OPTS);
   try { Object.assign(opts, JSON.parse(localStorage.getItem(LS_OPTS) || '{}')); } catch (e) {}
+  let mode = opts.mode;
 
-  // Positions are percentages of the viewport, so a layout saved in one
-  // orientation still lands somewhere sane in the other.
+  // Gamepad index 0 is the BOTTOM face button, which libretro reads as
+  // RetroPad B and mupen64plus turns into N64 B — so N64 A is index 1.
+  // Keyboard defaults follow the usual RetroArch layout.
+  const DEFAULT_MAP = {
+    a:     { pad: 1, key: 'x' },
+    b:     { pad: 0, key: 'z' },
+    z:     { pad: 6, key: 't' },
+    l:     { pad: 4, key: 'q' },
+    r:     { pad: 5, key: 'e' },
+    start: { pad: 9, key: 'Enter' },
+  };
+  let MAP = JSON.parse(JSON.stringify(DEFAULT_MAP));
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_MAP) || 'null');
+    if (saved) CONTROLS.forEach(k => { if (saved[k]) MAP[k] = Object.assign({}, DEFAULT_MAP[k], saved[k]); });
+  } catch (e) {}
+
+  const KEY_CHOICES = ['x','z','a','s','d','q','e','w','c','v','b','n','m','t','y',
+                       'Enter','Shift','Space'];
+
   const DEFAULT_LAYOUT = {
     stick: { x: 13, y: 68 },
     cpad:  { x: 87, y: 34 },
@@ -99,9 +153,24 @@
   } catch (e) {}
 
   const saveLayout = () => localStorage.setItem(LS_LAYOUT, JSON.stringify(layout));
-  const saveOpts   = () => localStorage.setItem(LS_OPTS, JSON.stringify(opts));
+  const saveOpts   = () => { opts.mode = mode; localStorage.setItem(LS_OPTS, JSON.stringify(opts)); };
+  const saveMap    = () => localStorage.setItem(LS_MAP, JSON.stringify(MAP));
 
   let enabled = false, editing = false;
+
+  // ── unified press/release ────────────────────────────────────
+  function press(name, on) {
+    const m = MAP[name];
+    if (!m) return;
+    if (mode !== 'keyboard') padButton(m.pad, on);
+    if (mode !== 'gamepad')  sendKey(m.key, on);
+  }
+  function releaseAll() {
+    CONTROLS.forEach(n => press(n, false));
+    Object.keys(stickKeys).forEach(d => {
+      if (stickKeys[d]) { stickKeys[d] = false; sendKey(ARROW_OF[d], false); }
+    });
+  }
 
   // ── styles ───────────────────────────────────────────────────
   const css = document.createElement('style');
@@ -116,32 +185,28 @@
     background:rgba(20,26,34,.45);color:#fff;font-weight:bold;letter-spacing:1px;
     backdrop-filter:blur(2px);}
   #tpad .ctl.press{background:rgba(65,217,122,.75);border-color:#41d97a;}
-  #tpad .ctl.pill{border-radius:12px;}
   #tpad .btn-a{width:86px;height:86px;font-size:24px;}
   #tpad .btn-b{width:66px;height:66px;font-size:19px;}
   #tpad .btn-z{width:74px;height:52px;font-size:15px;border-radius:12px;}
   #tpad .btn-sh{width:88px;height:46px;font-size:14px;border-radius:12px;}
   #tpad .btn-st{width:72px;height:38px;font-size:12px;border-radius:19px;}
-
-  /* stick: the ring is a home marker, the knob is what actually moves */
   #tpad .stickbase{width:132px;height:132px;border-style:dashed;background:rgba(20,26,34,.28);}
   #tpad .knob{position:absolute;width:62px;height:62px;border-radius:50%;
     border:2px solid rgba(255,255,255,.8);background:rgba(65,217,122,.4);
-    transform:translate(-50%,-50%);pointer-events:none;transition:opacity .2s;}
+    transform:translate(-50%,-50%);pointer-events:none;}
   #tpad .cbase{width:104px;height:104px;font-size:11px;}
   #tpad .cknob{position:absolute;width:46px;height:46px;border-radius:50%;
     border:2px solid rgba(255,255,255,.75);background:rgba(58,194,224,.42);
     transform:translate(-50%,-50%);pointer-events:none;}
-
   #tpad.edit .ctl{border-color:#e0a13a;border-style:solid;box-shadow:0 0 0 3px rgba(224,161,58,.3);}
   #tpad .lbl{position:absolute;top:-16px;left:50%;transform:translateX(-50%);
     font-size:9px;color:#e0a13a;letter-spacing:1px;display:none;}
   #tpad.edit .lbl{display:block;}
 
   #tgear{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:75;
-    pointer-events:auto;touch-action:manipulation;background:rgba(10,13,18,.8);border:1px solid #26313f;color:#9fb0c4;
-    padding:8px 14px;border-radius:6px;font:11px 'SF Mono',Menlo,monospace;letter-spacing:1px;
-    cursor:pointer;}
+    pointer-events:auto;touch-action:manipulation;background:rgba(10,13,18,.8);
+    border:1px solid #26313f;color:#9fb0c4;padding:8px 14px;border-radius:6px;
+    font:11px 'SF Mono',Menlo,monospace;letter-spacing:1px;cursor:pointer;}
   #tgear:active{border-color:#41d97a;color:#41d97a;}
 
   #tmenu{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
@@ -149,24 +214,34 @@
     font:12px 'SF Mono',Menlo,Consolas,monospace;color:#9fb0c4;}
   #tmenu.on{display:flex;}
   #tmenu .card{background:#121821;border:1px solid #26313f;border-radius:10px;
-    padding:20px;width:min(440px,92vw);max-height:88vh;overflow:auto;}
-  #tmenu h3{color:#41d97a;font-size:13px;letter-spacing:3px;margin-bottom:4px;font-weight:normal;}
-  #tmenu .sub{color:#5a6b7f;font-size:11px;line-height:1.8;margin-bottom:16px;}
-  #tmenu .row{display:flex;align-items:center;gap:12px;margin-bottom:12px;min-height:42px;}
-  #tmenu .row span.k{width:96px;color:#5a6b7f;font-size:11px;letter-spacing:1px;flex-shrink:0;}
+    padding:20px;width:min(480px,93vw);max-height:88vh;overflow:auto;}
+  #tmenu h3{color:#41d97a;font-size:13px;letter-spacing:3px;margin:0 0 4px;font-weight:normal;}
+  #tmenu .sub{color:#5a6b7f;font-size:11px;line-height:1.8;margin-bottom:14px;}
+  #tmenu .row{display:flex;align-items:center;gap:10px;margin-bottom:10px;min-height:42px;}
+  #tmenu .row span.k{width:90px;color:#5a6b7f;font-size:11px;letter-spacing:1px;flex-shrink:0;}
   #tmenu input[type=range]{flex:1;height:36px;-webkit-appearance:none;background:transparent;}
   #tmenu input[type=range]::-webkit-slider-runnable-track{height:5px;background:#26313f;border-radius:3px;}
   #tmenu input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;
     border-radius:50%;background:#41d97a;margin-top:-9px;}
-  #tmenu button{touch-action:manipulation;background:#1a212c;border:1px solid #26313f;color:#9fb0c4;padding:10px 14px;
-    border-radius:6px;font:inherit;letter-spacing:1px;cursor:pointer;min-height:42px;}
+  #tmenu button{touch-action:manipulation;background:#1a212c;border:1px solid #26313f;
+    color:#9fb0c4;padding:10px 13px;border-radius:6px;font:inherit;letter-spacing:1px;
+    cursor:pointer;min-height:42px;}
   #tmenu button.on{border-color:#41d97a;color:#41d97a;}
   #tmenu button.wide{flex:1;}
-  #tmenu .note{font-size:10px;color:#5a6b7f;line-height:1.8;margin-top:10px;}
+  #tmenu button.step{min-width:38px;padding:10px 8px;}
+  #tmenu .note{font-size:10px;color:#5a6b7f;line-height:1.8;margin-top:8px;}
+  #tmenu .diag{font-size:11px;line-height:1.9;background:#0d131b;border:1px solid #26313f;
+    border-radius:6px;padding:10px 12px;margin-bottom:14px;}
+  #tmenu .diag b{color:#41d97a;font-weight:normal;}
+  #tmenu .diag b.bad{color:#e0a13a;}
+  .maprow{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+  .maprow .nm{width:52px;color:#dfe8f2;font-size:12px;}
+  .maprow .tag{font-size:9px;color:#5a6b7f;letter-spacing:1px;}
+  .maprow .val{min-width:44px;text-align:center;color:#41d97a;font-size:12px;}
   `;
   document.head.appendChild(css);
 
-  // ── build the overlay ────────────────────────────────────────
+  // ── overlay DOM ──────────────────────────────────────────────
   const root = document.createElement('div');
   root.id = 'tpad'; root.className = 'off';
   document.body.appendChild(root);
@@ -174,7 +249,6 @@
   function mk(key, cls, text, label) {
     const el = document.createElement('div');
     el.className = 'ctl ' + cls;
-    el.dataset.key = key;
     if (text) el.textContent = text;
     const l = document.createElement('div');
     l.className = 'lbl'; l.textContent = label || key.toUpperCase();
@@ -204,6 +278,13 @@
   gear.style.display = 'none';
   document.body.appendChild(gear);
 
+  const centerOf = el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: Math.min(r.width, r.height) / 2 };
+  };
+  const resetKnob  = () => { const c = centerOf(els.stick); knob.style.left = c.x + 'px'; knob.style.top = c.y + 'px'; };
+  const resetCKnob = () => { const c = centerOf(els.cpad);  cknob.style.left = c.x + 'px'; cknob.style.top = c.y + 'px'; };
+
   function place() {
     Object.keys(els).forEach(k => {
       els[k].style.left = layout[k].x + '%';
@@ -212,99 +293,88 @@
     resetKnob(); resetCKnob();
     root.style.opacity = opts.opacity;
   }
-  function centerOf(el) {
-    const r = el.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: Math.min(r.width, r.height) / 2 };
-  }
-  function resetKnob() {
-    const c = centerOf(els.stick);
-    knob.style.left = c.x + 'px'; knob.style.top = c.y + 'px';
-  }
-  function resetCKnob() {
-    const c = centerOf(els.cpad);
-    cknob.style.left = c.x + 'px'; cknob.style.top = c.y + 'px';
-  }
 
-  // ── haptics ──────────────────────────────────────────────────
   const buzz = ms => { if (opts.haptics && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } };
 
-  // ── button bindings ──────────────────────────────────────────
-  const DEFAULT_BTN = { a: 1, b: 0, l: 4, r: 5, z: 6, start: 9 };
-  let BTN = Object.assign({}, DEFAULT_BTN);
-  try { Object.assign(BTN, JSON.parse(localStorage.getItem(LS_MAP) || '{}')); } catch (e) {}
-  const saveMap = () => localStorage.setItem(LS_MAP, JSON.stringify(BTN));
-
-  Object.keys(BTN).forEach(k => {
-    const el = els[k];
+  // ── buttons ──────────────────────────────────────────────────
+  CONTROLS.forEach(name => {
+    const el = els[name];
     let holding = null;
     el.addEventListener('pointerdown', e => {
       e.preventDefault();
-      if (editing) return startDrag(k, e);
+      if (editing) return startDrag(name, e);
       holding = e.pointerId;
       el.setPointerCapture(e.pointerId);
       el.classList.add('press');
-      setButton(BTN[k], true);
+      press(name, true);
       buzz(8);
     });
     const release = e => {
       if (editing || holding !== e.pointerId) return;
       holding = null;
       el.classList.remove('press');
-      setButton(BTN[k], false);
+      press(name, false);
     };
     el.addEventListener('pointerup', release);
     el.addEventListener('pointercancel', release);
   });
 
   // ── analog stick ─────────────────────────────────────────────
-  // The visible ring is only a home marker. Touching anywhere in the left
-  // half re-homes the stick under the thumb, so you never hunt for it.
+  const ARROW_OF = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
+  const stickKeys = { up: false, down: false, left: false, right: false };
   let stickId = null, stickOrigin = null, stickRadius = 60;
 
-  function beginStick(clientX, clientY, id) {
-    stickId = id;
-    stickOrigin = { x: clientX, y: clientY };
-    stickRadius = Math.max(48, centerOf(els.stick).r);
-    els.stick.style.left = clientX + 'px';
-    els.stick.style.top  = clientY + 'px';
-    els.stick.style.opacity = '1';
-    moveStick(clientX, clientY);
+  function updateStickKeys(nx, ny) {
+    if (mode === 'gamepad') return;
+    const T = 0.42;
+    const want = { left: nx < -T, right: nx > T, up: ny < -T, down: ny > T };
+    Object.keys(want).forEach(d => {
+      if (want[d] !== stickKeys[d]) { stickKeys[d] = want[d]; sendKey(ARROW_OF[d], want[d]); }
+    });
   }
 
-  function moveStick(clientX, clientY) {
-    let dx = clientX - stickOrigin.x, dy = clientY - stickOrigin.y;
+  function beginStick(x, y, id) {
+    stickId = id;
+    stickOrigin = { x, y };
+    stickRadius = Math.max(48, centerOf(els.stick).r);
+    els.stick.style.left = x + 'px';
+    els.stick.style.top  = y + 'px';
+    moveStick(x, y);
+  }
+
+  function moveStick(x, y) {
+    let dx = x - stickOrigin.x, dy = y - stickOrigin.y;
     const d = Math.hypot(dx, dy);
     if (d > stickRadius) { dx = dx / d * stickRadius; dy = dy / d * stickRadius; }
     knob.style.left = (stickOrigin.x + dx) + 'px';
     knob.style.top  = (stickOrigin.y + dy) + 'px';
 
     let nx = dx / stickRadius, ny = dy / stickRadius;
-    // small deadzone, then rescale so the usable range still reaches 1.0
     const mag = Math.hypot(nx, ny), DZ = 0.12;
     if (mag < DZ) { nx = ny = 0; }
     else {
+      // rescale past the deadzone so full lock is still reachable, then
+      // ease the centre slightly for fine steering
       const s = ((mag - DZ) / (1 - DZ)) / mag;
       nx *= s; ny *= s;
-      // ease the centre for fine steering without losing full lock
-      const g = Math.pow(Math.min(1, Math.hypot(nx, ny)), 1.25) / Math.max(1e-6, Math.hypot(nx, ny));
-      nx *= g; ny *= g;
+      const m2 = Math.hypot(nx, ny);
+      if (m2 > 1e-6) { const g = Math.pow(Math.min(1, m2), 1.25) / m2; nx *= g; ny *= g; }
     }
-    if (!opts.tilt) setAxis(0, nx);
-    setAxis(1, ny);
+    if (mode !== 'keyboard') { if (!opts.tilt) padAxis(0, nx); padAxis(1, ny); }
+    updateStickKeys(nx, ny);
   }
 
   function endStick() {
     stickId = null;
-    if (!opts.tilt) setAxis(0, 0);
-    setAxis(1, 0);
+    if (mode !== 'keyboard') { if (!opts.tilt) padAxis(0, 0); padAxis(1, 0); }
+    updateStickKeys(0, 0);
     els.stick.style.left = layout.stick.x + '%';
     els.stick.style.top  = layout.stick.y + '%';
     requestAnimationFrame(resetKnob);
   }
 
-  // ── C-pad (right stick) ──────────────────────────────────────
+  // ── C-pad ────────────────────────────────────────────────────
   let cId = null, cOrigin = null, cRadius = 46;
-
   function beginC(x, y, id) {
     cId = id;
     const c = centerOf(els.cpad);
@@ -318,14 +388,11 @@
     if (d > cRadius) { dx = dx / d * cRadius; dy = dy / d * cRadius; }
     cknob.style.left = (cOrigin.x + dx) + 'px';
     cknob.style.top  = (cOrigin.y + dy) + 'px';
-    // C-buttons are discrete, so snap hard rather than feeding a soft axis
-    const nx = dx / cRadius, ny = dy / cRadius;
-    setAxis(2, Math.abs(nx) > 0.45 ? Math.sign(nx) : 0);
-    setAxis(3, Math.abs(ny) > 0.45 ? Math.sign(ny) : 0);
+    const nx = dx / cRadius, ny = dy / cRadius;   // C inputs are discrete, so snap
+    padAxis(2, Math.abs(nx) > 0.45 ? Math.sign(nx) : 0);
+    padAxis(3, Math.abs(ny) > 0.45 ? Math.sign(ny) : 0);
   }
-  function endC() {
-    cId = null; setAxis(2, 0); setAxis(3, 0); resetCKnob();
-  }
+  function endC() { cId = null; padAxis(2, 0); padAxis(3, 0); resetCKnob(); }
 
   els.cpad.addEventListener('pointerdown', e => {
     e.preventDefault();
@@ -335,18 +402,16 @@
     buzz(6);
   });
   els.cpad.addEventListener('pointermove', e => { if (cId === e.pointerId) moveC(e.clientX, e.clientY); });
-  els.cpad.addEventListener('pointerup', e => { if (cId === e.pointerId) endC(); });
+  els.cpad.addEventListener('pointerup',     e => { if (cId === e.pointerId) endC(); });
   els.cpad.addEventListener('pointercancel', e => { if (cId === e.pointerId) endC(); });
 
-  // The stick ring itself is draggable in edit mode; in play it just marks home.
   els.stick.addEventListener('pointerdown', e => { if (editing) { e.preventDefault(); startDrag('stick', e); } });
 
-  // Left-half catcher for the floating stick. Sits behind the buttons so a
-  // thumb landing on A never steals steering.
+  // Catcher for the floating stick, behind the buttons so a thumb landing
+  // on A never steals steering.
   const catcher = document.createElement('div');
   catcher.style.cssText = 'position:absolute;left:0;top:0;width:48%;height:100%;pointer-events:auto;touch-action:none;';
   root.insertBefore(catcher, root.firstChild);
-
   catcher.addEventListener('pointerdown', e => {
     if (editing || stickId !== null) return;
     e.preventDefault();
@@ -354,16 +419,13 @@
     beginStick(e.clientX, e.clientY, e.pointerId);
     buzz(6);
   });
-  catcher.addEventListener('pointermove', e => { if (stickId === e.pointerId) moveStick(e.clientX, e.clientY); });
-  catcher.addEventListener('pointerup', e => { if (stickId === e.pointerId) endStick(); });
+  catcher.addEventListener('pointermove',   e => { if (stickId === e.pointerId) moveStick(e.clientX, e.clientY); });
+  catcher.addEventListener('pointerup',     e => { if (stickId === e.pointerId) endStick(); });
   catcher.addEventListener('pointercancel', e => { if (stickId === e.pointerId) endStick(); });
 
   // ── drag to reposition ───────────────────────────────────────
   let drag = null;
-  function startDrag(key, e) {
-    drag = { key, id: e.pointerId };
-    els[key].setPointerCapture(e.pointerId);
-  }
+  function startDrag(key, e) { drag = { key, id: e.pointerId }; els[key].setPointerCapture(e.pointerId); }
   root.addEventListener('pointermove', e => {
     if (!drag || drag.id !== e.pointerId) return;
     layout[drag.key] = {
@@ -380,44 +442,47 @@
 
   // ── tilt steering ────────────────────────────────────────────
   let tiltNeutral = null;
-  function onTilt(e) {
-    if (!opts.tilt) return;
+  window.addEventListener('deviceorientation', e => {
+    if (!opts.tilt || mode === 'keyboard') return;
     const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
-    // in landscape the wheel-like axis is beta; in portrait it is gamma
     const landscape = Math.abs(angle) === 90 || Math.abs(angle) === 270;
     let raw = landscape ? e.beta : e.gamma;
     if (raw == null) return;
     if (angle === 270 || angle === -90) raw = -raw;
-    if (tiltNeutral === null) tiltNeutral = raw;
-    const delta = (raw - tiltNeutral) / 30;          // ~30° for full lock
-    setAxis(0, Math.max(-1, Math.min(1, delta * opts.tiltGain / 2.4)));
-  }
-  window.addEventListener('deviceorientation', onTilt);
+    if (tiltNeutral === null) tiltNeutral = raw;      // wherever you are holding it is centre
+    const delta = (raw - tiltNeutral) / 30;
+    padAxis(0, Math.max(-1, Math.min(1, delta * opts.tiltGain / 2.4)));
+  });
 
   async function enableTilt(on) {
     if (on && typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function') {
       try {
-        const res = await DeviceOrientationEvent.requestPermission();
-        if (res !== 'granted') { on = false; alert('Motion access was denied, so tilt steering stays off.'); }
+        if (await DeviceOrientationEvent.requestPermission() !== 'granted') {
+          on = false; alert('Motion access was denied, so tilt steering stays off.');
+        }
       } catch (e) { on = false; }
     }
     opts.tilt = on; tiltNeutral = null;
-    if (!on) setAxis(0, 0);
+    if (!on) padAxis(0, 0);
     saveOpts();
     return on;
   }
 
-  // ── settings menu ────────────────────────────────────────────
+  // ── settings ─────────────────────────────────────────────────
   const menu = document.createElement('div');
   menu.id = 'tmenu';
   menu.innerHTML = `
     <div class="card">
       <h3>TOUCH CONTROLS</h3>
-      <div class="sub">
-        Steering is analog — drag anywhere on the left half and the stick homes
-        to your thumb. Tap MOVE to drag any control somewhere that suits your hands;
-        the layout is remembered.
+      <div class="sub">Drag anywhere on the left half to steer — the stick homes to your thumb.</div>
+
+      <div class="diag" id="t-diag"></div>
+
+      <div class="row"><span class="k">INPUT</span>
+        <button id="t-mboth" class="wide">BOTH</button>
+        <button id="t-mpad"  class="wide">GAMEPAD</button>
+        <button id="t-mkey"  class="wide">KEYBOARD</button>
       </div>
       <div class="row"><span class="k">OPACITY</span>
         <input type="range" id="t-op" min="0.15" max="1" step="0.01"></div>
@@ -435,68 +500,104 @@
         <button id="t-hide" class="wide">HIDE OVERLAY</button>
         <button id="t-close" class="wide">CLOSE</button>
       </div>
-      <h3 style="margin-top:18px">BUTTON MAP</h3>
+
+      <h3 style="margin-top:16px">BUTTON MAP</h3>
       <div class="sub">
-        If a button does the wrong thing, step its gamepad index until it lands.
-        Cores differ on which physical button becomes which N64 button.
+        If a button does the wrong thing, step its gamepad index or its key until
+        it lands. Cores disagree about which physical button becomes which N64 button.
       </div>
       <div id="t-map"></div>
       <div class="row"><button id="t-mapreset" class="wide">RESET BUTTON MAP</button></div>
       <div class="note">
-        The overlay presents itself to the emulator as a standard gamepad, so it
-        feeds real analog values rather than on/off key presses. A paired Bluetooth
-        controller still takes priority and will feel better than glass for anything
-        that needs precise steering.
+        A paired Bluetooth controller keeps working alongside this and will feel
+        better than glass for anything needing precise steering.
       </div>
     </div>`;
   document.body.appendChild(menu);
 
   const $ = id => menu.querySelector(id);
 
+  function renderDiag() {
+    const seen = pollCount > 0;
+    $('#t-diag').innerHTML =
+      'gamepad polls: <b class="' + (seen ? '' : 'bad') + '">' + pollCount + '</b><br>' +
+      (seen
+        ? 'The page is reading gamepads, so the pad path is live.'
+        : 'Nothing has read a gamepad yet — if this stays at 0 while playing, ' +
+          'the emulator is not using the pad and KEYBOARD is the path that will work.');
+  }
+
   function renderMap() {
     const wrap = $('#t-map');
     wrap.innerHTML = '';
-    Object.keys(DEFAULT_BTN).forEach(k => {
+    CONTROLS.forEach(name => {
       const row = document.createElement('div');
-      row.className = 'row';
-      row.innerHTML = '<span class="k">' + k.toUpperCase() + '</span>' +
-        '<button data-d="-1">−</button>' +
-        '<b style="min-width:34px;text-align:center;color:#41d97a">' + BTN[k] + '</b>' +
-        '<button data-d="1">+</button>';
+      row.className = 'maprow';
+      row.innerHTML =
+        '<span class="nm">' + name.toUpperCase() + '</span>' +
+        '<span class="tag">PAD</span>' +
+        '<button class="step" data-t="pad" data-d="-1">−</button>' +
+        '<span class="val">' + MAP[name].pad + '</span>' +
+        '<button class="step" data-t="pad" data-d="1">+</button>' +
+        '<span class="tag">KEY</span>' +
+        '<button class="step" data-t="key" data-d="-1">−</button>' +
+        '<span class="val">' + MAP[name].key + '</span>' +
+        '<button class="step" data-t="key" data-d="1">+</button>';
       row.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
-        setButton(BTN[k], false);          // let go of the old index first
-        BTN[k] = (BTN[k] + (+b.dataset.d) + 17) % 17;
+        press(name, false);                         // let go of the old binding first
+        const d = +b.dataset.d;
+        if (b.dataset.t === 'pad') {
+          MAP[name].pad = (MAP[name].pad + d + 17) % 17;
+        } else {
+          const i = KEY_CHOICES.indexOf(MAP[name].key);
+          MAP[name].key = KEY_CHOICES[(i + d + KEY_CHOICES.length) % KEY_CHOICES.length];
+        }
         saveMap(); renderMap();
       }));
       wrap.appendChild(row);
     });
   }
 
-  $('#t-mapreset').addEventListener('click', () => {
-    Object.values(BTN).forEach(i => setButton(i, false));
-    BTN = Object.assign({}, DEFAULT_BTN);
-    saveMap(); renderMap();
-  });
-  const syncMenu = () => {
-    renderMap();
+  function setMode(m) {
+    releaseAll();          // nothing should stay held across a mode change
+    mode = m; saveOpts(); syncMenu();
+  }
+
+  function syncMenu() {
+    renderDiag(); renderMap();
     $('#t-op').value = opts.opacity;
     $('#t-tg').value = opts.tiltGain;
+    $('#t-mboth').classList.toggle('on', mode === 'both');
+    $('#t-mpad').classList.toggle('on',  mode === 'gamepad');
+    $('#t-mkey').classList.toggle('on',  mode === 'keyboard');
     $('#t-tilt').classList.toggle('on', !!opts.tilt);
     $('#t-hap').classList.toggle('on', !!opts.haptics);
     $('#t-move').classList.toggle('on', editing);
     $('#t-move').textContent = editing ? 'DONE MOVING' : 'MOVE CONTROLS';
-  };
+  }
 
+  let diagTimer = null;
   gear.addEventListener('click', () => {
-    if (gear.dataset.hidden) {          // re-show the overlay rather than opening settings
+    if (gear.dataset.hidden) {                     // re-show rather than open settings
       root.classList.add('on'); root.classList.remove('off');
       gear.textContent = '⚙ CONTROLS';
       delete gear.dataset.hidden;
       return;
     }
-    syncMenu(); menu.classList.add('on');
+    syncMenu();
+    menu.classList.add('on');
+    diagTimer = setInterval(renderDiag, 500);      // watch the poll count live
   });
-  $('#t-close').addEventListener('click', () => menu.classList.remove('on'));
+
+  function closeMenu() {
+    menu.classList.remove('on');
+    clearInterval(diagTimer); diagTimer = null;
+  }
+
+  $('#t-close').addEventListener('click', closeMenu);
+  $('#t-mboth').addEventListener('click', () => setMode('both'));
+  $('#t-mpad').addEventListener('click',  () => setMode('gamepad'));
+  $('#t-mkey').addEventListener('click',  () => setMode('keyboard'));
   $('#t-op').addEventListener('input', e => { opts.opacity = +e.target.value; root.style.opacity = opts.opacity; saveOpts(); });
   $('#t-tg').addEventListener('input', e => { opts.tiltGain = +e.target.value; saveOpts(); });
   $('#t-hap').addEventListener('click', () => { opts.haptics = !opts.haptics; saveOpts(); syncMenu(); buzz(12); });
@@ -506,20 +607,28 @@
     root.classList.toggle('edit', editing);
     root.style.opacity = editing ? 1 : opts.opacity;
     syncMenu();
-    if (!editing) menu.classList.remove('on');
+    if (!editing) closeMenu();
   });
   $('#t-reset').addEventListener('click', () => {
     layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
     saveLayout(); place();
   });
+  $('#t-mapreset').addEventListener('click', () => {
+    releaseAll();
+    MAP = JSON.parse(JSON.stringify(DEFAULT_MAP));
+    saveMap(); renderMap();
+  });
   $('#t-hide').addEventListener('click', () => {
+    releaseAll();
     root.classList.remove('on'); root.classList.add('off');
-    menu.classList.remove('on');
+    closeMenu();
     gear.textContent = '⚙ SHOW CONTROLS';
     gear.dataset.hidden = '1';
   });
-  window.addEventListener('resize', () => { place(); });
+
+  window.addEventListener('resize', place);
   window.addEventListener('orientationchange', () => setTimeout(place, 250));
+  window.addEventListener('blur', releaseAll);     // never leave an input stuck down
 
   // ── public API ───────────────────────────────────────────────
   window.TouchPad = {
@@ -531,6 +640,7 @@
       announce();
     },
     hide() {
+      releaseAll();
       enabled = false;
       root.classList.remove('on'); root.classList.add('off');
       gear.style.display = 'none';
