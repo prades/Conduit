@@ -180,6 +180,7 @@ select{appearance:none;-webkit-appearance:none;}
            padding:9px 10px;font-family:inherit;font-size:12px;border-radius:6px;width:140px;">
   <span class="hdr-label">BPM</span>
   <input type="number" id="bpm" value="92" min="40" max="200" onchange="bpm=Math.max(40,Math.min(200,+this.value||90))">
+  <button class="tbtn" id="tapbtn" onclick="tapTempo()">TAP</button>
   <div class="row ml">
     <span class="hdr-label">VOL</span>
     <input type="range" class="sl" style="width:92px" min="0" max="1" step="0.01" value="0.8"
@@ -1411,6 +1412,26 @@ let playing=false, stepIdx=0, nextT=0, seqTimer=null;
 let bpm = 92;
 
 function step16() { return 60 / bpm / 4; }
+
+// ── TAP TEMPO ──────────────────────────────────────────
+let tapTimes = [];
+function tapTempo() {
+  const now = performance.now();
+  if (tapTimes.length && now - tapTimes[tapTimes.length-1] > 2000) tapTimes = [];
+  tapTimes.push(now);
+  if (tapTimes.length > 8) tapTimes.shift();
+
+  const btn = document.getElementById('tapbtn');
+  btn.classList.add('on');
+  setTimeout(()=>btn.classList.remove('on'), 100);
+
+  if (tapTimes.length < 2) return;
+  const gaps = [];
+  for (let i=1;i<tapTimes.length;i++) gaps.push(tapTimes[i]-tapTimes[i-1]);
+  const avgGap = gaps.reduce((a,b)=>a+b,0)/gaps.length;
+  bpm = Math.max(40, Math.min(200, Math.round(60000/avgGap)));
+  document.getElementById('bpm').value = bpm;
+}
 
 function schedule() {
   while (nextT < actx.currentTime + 0.1) {
