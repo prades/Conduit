@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>WORDFALL</title>
+<script src="words.js"></script>
+<script src="engine.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0b14;--panel:#171325;--panel2:#221c36;--border:#332a4d;
+  --gold:#ffc857;--teal:#3ad4c0;--rose:#ff6b8a;--violet:#a98cff;
+  --text:#b3a8cc;--dim:#6b5f8a;--white:#f0ebff;
+}
+html,body{height:100%;touch-action:manipulation;}
+body{background:var(--bg);color:var(--text);
+  font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;font-size:13px;
+  min-height:100dvh;-webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+  display:flex;flex-direction:column;align-items:center;padding:10px;}
+
+#hdr{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;}
+#logo{font-size:22px;font-weight:bold;letter-spacing:5px;color:var(--gold);
+  text-shadow:0 0 18px rgba(255,200,87,.35);}
+#logo small{font-size:10px;color:var(--dim);letter-spacing:2px;font-weight:normal;}
+
+#wrap{display:flex;gap:12px;align-items:flex-start;
+  max-width:760px;width:100%;justify-content:center;}
+
+/* ── board ── */
+#boardwrap{position:relative;flex-shrink:0;}
+#board{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;
+  background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:6px;
+  width:min(58vw,300px);}
+.cell{aspect-ratio:1;border-radius:5px;background:rgba(255,255,255,.028);
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(11px,3.4vw,19px);font-weight:bold;color:var(--white);
+  position:relative;transition:background .09s;}
+.cell.tile{background:var(--panel2);border:1px solid var(--border);
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.28);}
+.cell.active{background:var(--gold);color:#171325;border-color:var(--gold);
+  box-shadow:0 0 16px rgba(255,200,87,.5);}
+.cell.ghost{background:transparent;border:1px dashed rgba(255,200,87,.32);color:transparent;}
+.cell.hit{background:var(--teal)!important;color:#0d0b14!important;
+  border-color:var(--teal)!important;animation:pop .3s ease-out;}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.22)}100%{transform:scale(1)}}
+.cell .val{position:absolute;bottom:1px;right:3px;font-size:8px;opacity:.42;font-weight:normal;}
+
+/* ── side ── */
+#side{display:flex;flex-direction:column;gap:9px;min-width:0;flex:1;max-width:220px;}
+.box{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:10px 11px;}
+.box h4{font-size:9px;letter-spacing:2px;color:var(--dim);font-weight:normal;margin-bottom:5px;}
+.big{font-size:21px;color:var(--white);font-weight:bold;}
+.row2{display:flex;gap:9px;}
+.row2 .box{flex:1;}
+#nextTile{width:44px;height:44px;border-radius:7px;background:var(--panel2);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:bold;color:var(--gold);}
+#found{max-height:150px;overflow:auto;font-size:11px;line-height:1.85;}
+#found div{display:flex;justify-content:space-between;color:var(--teal);}
+#found div span:last-child{color:var(--dim);}
+
+/* ── controls ── */
+#pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;
+  width:min(96vw,470px);}
+.pbtn{height:60px;background:var(--panel);border:1px solid var(--border);color:var(--white);
+  border-radius:10px;font-family:inherit;font-size:17px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;
+  transition:.07s;touch-action:manipulation;}
+.pbtn small{font-size:8px;color:var(--dim);letter-spacing:1px;}
+.pbtn:active{background:var(--gold);color:#171325;}
+.pbtn:active small{color:#171325;}
+.pbtn.drop{border-color:var(--gold);color:var(--gold);}
+
+#topbtns{display:flex;gap:8px;margin-top:9px;}
+.tbtn{background:var(--panel);border:1px solid var(--border);color:var(--text);
+  padding:9px 15px;border-radius:7px;font-family:inherit;font-size:11px;
+  letter-spacing:1px;cursor:pointer;min-height:40px;}
+.tbtn:hover{border-color:var(--teal);color:var(--teal);}
+
+/* ── overlay ── */
+#over{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+  background:rgba(13,11,20,.93);padding:20px;}
+#over.on{display:flex;}
+#over .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:26px;text-align:center;max-width:340px;width:100%;}
+#over h2{color:var(--gold);font-size:19px;letter-spacing:4px;margin-bottom:6px;font-weight:normal;}
+#over p{color:var(--dim);font-size:12px;line-height:1.9;margin-bottom:16px;}
+#over .stat{color:var(--white);font-size:30px;font-weight:bold;margin:10px 0;}
+#over button{width:100%;background:var(--panel2);border:1px solid var(--gold);color:var(--gold);
+  padding:14px;border-radius:9px;font-family:inherit;font-size:13px;letter-spacing:3px;
+  cursor:pointer;min-height:50px;}
+#over button:hover{background:var(--gold);color:#171325;}
+
+#toast{position:fixed;left:50%;top:16%;transform:translateX(-50%);z-index:40;
+  pointer-events:none;font-size:clamp(18px,5vw,30px);font-weight:bold;color:var(--teal);
+  text-shadow:0 0 22px rgba(58,212,192,.6);opacity:0;letter-spacing:3px;white-space:nowrap;}
+#toast.show{animation:rise 1.05s ease-out;}
+@keyframes rise{0%{opacity:0;transform:translate(-50%,14px) scale(.85)}
+  25%{opacity:1;transform:translate(-50%,0) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-30px) scale(1)}}
+
+#note{margin-top:14px;max-width:560px;font-size:11px;line-height:1.85;color:var(--dim);
+  text-align:center;padding:0 10px;}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div id="logo">WORDFALL <small>// spell to clear</small></div>
+</div>
+
+<div id="wrap">
+  <div id="boardwrap"><div id="board"></div></div>
+
+  <div id="side">
+    <div class="box">
+      <h4>SCORE</h4>
+      <div class="big" id="score">0</div>
+    </div>
+    <div class="row2">
+      <div class="box"><h4>LEVEL</h4><div class="big" id="level">1</div></div>
+      <div class="box"><h4>WORDS</h4><div class="big" id="wordcount">0</div></div>
+    </div>
+    <div class="box">
+      <h4>NEXT</h4>
+      <div id="nextTile">—</div>
+    </div>
+    <div class="box">
+      <h4>FOUND</h4>
+      <div id="found"><span style="color:var(--dim)">none yet</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="pad">
+  <button class="pbtn" onpointerdown="hold('left')"  onpointerup="release()" onpointerleave="release()">◀<small>LEFT</small></button>
+  <button class="pbtn" onpointerdown="hold('down')"  onpointerup="release()" onpointerleave="release()">▼<small>SOFT</small></button>
+  <button class="pbtn" onpointerdown="hold('right')" onpointerup="release()" onpointerleave="release()">▶<small>RIGHT</small></button>
+  <button class="pbtn drop" onpointerdown="hardDrop()">⤓<small>DROP</small></button>
+</div>
+
+<div id="topbtns">
+  <button class="tbtn" onclick="togglePause()" id="pausebtn">❚❚ PAUSE</button>
+  <button class="tbtn" onclick="newGame()">⟲ NEW GAME</button>
+</div>
+
+<div id="note">
+  Letters fall one at a time. Steer them and spell words of three letters or more,
+  across or down, to clear them — everything above drops into the gap, so one clear
+  can cascade into another for bonus points. Longer words are worth far more.
+  Dictionary is <b id="dictsize">0</b> common English words.
+</div>
+
+<div id="toast"></div>
+
+<div id="over">
+  <div class="card">
+    <h2 id="overTitle">GAME OVER</h2>
+    <p id="overMsg">The stack reached the top.</p>
+    <div class="stat" id="overScore">0</div>
+    <p id="overSub">final score</p>
+    <button onclick="newGame()">PLAY AGAIN</button>
+  </div>
+</div>
+
+<script>
+const { COLS, ROWS } = ENGINE;
+document.getElementById('dictsize').textContent = WORDS.length.toLocaleString();
+
+let grid, cur, next, score, level, wordCount, dropMs, lastDrop;
+let running = false, paused = false, over = false;
+let flashing = new Set();
+const foundLog = [];
+
+// ── board construction ────────────────────────────────────────
+const board = document.getElementById('board');
+const cells = [];
+for (let r = 0; r < ROWS; r++) {
+  cells.push([]);
+  for (let c = 0; c < COLS; c++) {
+    const el = document.createElement('div');
+    el.className = 'cell';
+    board.appendChild(el);
+    cells[r].push(el);
+  }
+}
+
+function newGame() {
+  grid = ENGINE.emptyGrid();
+  score = 0; level = 1; wordCount = 0;
+  dropMs = 900; lastDrop = performance.now();
+  foundLog.length = 0;
+  flashing.clear();
+  over = false; paused = false;
+  next = ENGINE.randomLetter();
+  spawn();
+  document.getElementById('over').classList.remove('on');
+  document.getElementById('pausebtn').textContent = '❚❚ PAUSE';
+  document.getElementById('found').innerHTML = '<span style="color:var(--dim)">none yet</span>';
+  updateHud();
+  if (!running) { running = true; requestAnimationFrame(loop); }
+  render();
+}
+
+function spawn() {
+  cur = { ch: next, r: 0, c: Math.floor(COLS / 2) };
+  next = ENGINE.randomLetter();
+  document.getElementById('nextTile').textContent = next;
+  if (grid[0][cur.c] !== null) gameOver();
+}
+
+// ── movement ──────────────────────────────────────────────────
+function move(dc) {
+  if (!cur || paused || over) return;
+  const nc = cur.c + dc;
+  if (nc < 0 || nc >= COLS) return;
+  if (grid[cur.r][nc] !== null) return;
+  cur.c = nc;
+  render();
+}
+
+function stepDown() {
+  if (!cur || paused || over) return false;
+  if (cur.r + 1 < ROWS && grid[cur.r + 1][cur.c] === null) {
+    cur.r++;
+    render();
+    return true;
+  }
+  lock();
+  return false;
+}
+
+function hardDrop() {
+  if (!cur || paused || over) return;
+  cur.r = ENGINE.dropRow(grid, cur.c, cur.r);
+  render();
+  lock();
+}
+
+// ── locking and resolution ────────────────────────────────────
+async function lock() {
+  grid[cur.r][cur.c] = cur.ch;
+  cur = null;
+
+  let chain = 0;
+  while (true) {
+    const res = ENGINE.findWords(grid, DICT);
+    if (!res.cells.size) break;
+    chain++;
+
+    flashing = res.cells;
+    render();
+    await pause(320);
+
+    const gained = ENGINE.scoreFor(res.words, chain);
+    score += gained;
+    wordCount += res.words.length;
+
+    const best = res.words.slice().sort((a, b) => b.word.length - a.word.length)[0];
+    showToast(best.word.toUpperCase() + (chain > 1 ? '  ×' + chain : '') + '  +' + gained);
+    res.words.forEach(w => logWord(w.word, chain));
+
+    ENGINE.clearAndCollapse(grid, res.cells);
+    flashing = new Set();
+    render();
+    await pause(120);
+
+    const newLevel = 1 + Math.floor(wordCount / 8);
+    if (newLevel > level) {
+      level = newLevel;
+      dropMs = Math.max(160, 900 - (level - 1) * 65);
+    }
+    updateHud();
+  }
+
+  updateHud();
+  spawn();
+  lastDrop = performance.now();
+  render();
+}
+
+const pause = ms => new Promise(r => setTimeout(r, ms));
+
+function logWord(word, chain) {
+  foundLog.unshift({ word: word.toUpperCase(), chain });
+  if (foundLog.length > 40) foundLog.pop();
+  document.getElementById('found').innerHTML = foundLog.map(f =>
+    '<div><span>' + f.word + '</span><span>' +
+    (f.chain > 1 ? '×' + f.chain : f.word.length) + '</span></div>').join('');
+}
+
+function showToast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.remove('show');
+  void t.offsetWidth;                      // restart the animation
+  t.classList.add('show');
+}
+
+function gameOver() {
+  over = true;
+  cur = null;
+  document.getElementById('overScore').textContent = score.toLocaleString();
+  document.getElementById('overMsg').textContent =
+    wordCount ? 'You spelled ' + wordCount + ' word' + (wordCount === 1 ? '' : 's') +
+                ' and reached level ' + level + '.'
+              : 'The stack reached the top before you cleared anything.';
+  document.getElementById('over').classList.add('on');
+}
+
+function togglePause() {
+  if (over) return;
+  paused = !paused;
+  document.getElementById('pausebtn').textContent = paused ? '▶ RESUME' : '❚❚ PAUSE';
+  lastDrop = performance.now();
+}
+
+function updateHud() {
+  document.getElementById('score').textContent = score.toLocaleString();
+  document.getElementById('level').textContent = level;
+  document.getElementById('wordcount').textContent = wordCount;
+}
+
+// ── rendering ─────────────────────────────────────────────────
+function render() {
+  const ghostRow = cur ? ENGINE.dropRow(grid, cur.c, cur.r) : -1;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const el = cells[r][c];
+      const ch = grid[r][c];
+      let cls = 'cell', txt = '';
+
+      if (cur && r === cur.r && c === cur.c)      { cls += ' active'; txt = cur.ch; }
+      else if (ch)                                { cls += ' tile';   txt = ch; }
+      else if (cur && r === ghostRow && c === cur.c) cls += ' ghost';
+
+      if (flashing.has(r + ',' + c)) cls += ' hit';
+      if (el.className !== cls) el.className = cls;
+
+      const val = txt ? '<span class="val">' + (ENGINE.VALUES[txt] || 1) + '</span>' : '';
+      const html = txt + val;
+      if (el.innerHTML !== html) el.innerHTML = html;
+    }
+  }
+}
+
+// ── loop ──────────────────────────────────────────────────────
+function loop(now) {
+  if (!paused && !over && cur && now - lastDrop >= dropMs) {
+    lastDrop = now;
+    stepDown();
+  }
+  requestAnimationFrame(loop);
+}
+
+// ── input ─────────────────────────────────────────────────────
+// Held direction buttons repeat, with a short delay before the repeat
+// kicks in so a single tap moves exactly one column.
+let holdTimer = null, repeatTimer = null;
+function doAction(a) {
+  if (a === 'left') move(-1);
+  else if (a === 'right') move(1);
+  else if (a === 'down') { lastDrop = performance.now(); stepDown(); }
+}
+function hold(a) {
+  doAction(a);
+  clearTimeout(holdTimer); clearInterval(repeatTimer);
+  holdTimer = setTimeout(() => {
+    repeatTimer = setInterval(() => doAction(a), a === 'down' ? 60 : 110);
+  }, 260);
+}
+function release() {
+  clearTimeout(holdTimer); clearInterval(repeatTimer);
+  holdTimer = repeatTimer = null;
+}
+
+document.addEventListener('keydown', e => {
+  const k = e.key;
+  if (['ArrowLeft','ArrowRight','ArrowDown',' ','p','P'].includes(k)) e.preventDefault();
+  if (k === 'ArrowLeft')  move(-1);
+  if (k === 'ArrowRight') move(1);
+  if (k === 'ArrowDown')  { lastDrop = performance.now(); stepDown(); }
+  if (k === ' ')          hardDrop();
+  if (k === 'p' || k === 'P') togglePause();
+});
+
+// tapping the board's left or right half nudges the tile that way
+board.addEventListener('pointerdown', e => {
+  const rect = board.getBoundingClientRect();
+  move(e.clientX < rect.left + rect.width / 2 ? -1 : 1);
+});
+
+newGame();
+</script>
+</body>
+</html>
