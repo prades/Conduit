@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>CAVE-IN</title>
+<script src="engine.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0806;--panel:#16120e;--panel2:#221b14;--border:#3a2e22;
+  --amber:#ffb347;--gold:#ffd76e;--cyan:#5fe0ff;--red:#e8503a;
+  --text:#b8a48c;--dim:#7a6852;--white:#f5ecdf;
+}
+html,body{height:100%;touch-action:manipulation;}
+body{background:var(--bg);color:var(--text);
+  font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;font-size:13px;
+  min-height:100dvh;-webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+  display:flex;flex-direction:column;align-items:center;padding:8px;}
+
+#hdr{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap;
+  justify-content:center;}
+#logo{font-size:21px;font-weight:bold;letter-spacing:5px;color:var(--amber);
+  text-shadow:0 0 20px rgba(255,179,71,.35);}
+#logo small{font-size:9px;color:var(--dim);letter-spacing:2px;font-weight:normal;}
+
+#hud{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;
+  width:min(96vw,540px);}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:7px;
+  padding:6px 11px;text-align:center;flex:1;min-width:66px;}
+.stat h4{font-size:8px;letter-spacing:2px;color:var(--dim);font-weight:normal;}
+.stat div{font-size:16px;color:var(--white);font-weight:bold;}
+.stat div.lit{color:var(--cyan);}
+.stat div.warn{color:var(--red);}
+
+#stage{position:relative;}
+canvas{display:block;border:2px solid var(--border);border-radius:9px;
+  background:#080604;max-width:96vw;height:auto;touch-action:none;}
+
+#pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;
+  width:min(96vw,420px);}
+.pbtn{height:62px;background:var(--panel);border:1px solid var(--border);color:var(--white);
+  border-radius:10px;font-family:inherit;font-size:19px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;
+  touch-action:manipulation;transition:.07s;}
+.pbtn small{font-size:8px;color:var(--dim);letter-spacing:1px;}
+.pbtn:active{background:var(--amber);color:#16120e;}
+.pbtn:active small{color:#16120e;}
+
+#btns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:center;}
+.tbtn{background:var(--panel);border:1px solid var(--border);color:var(--text);
+  padding:9px 14px;border-radius:7px;font-family:inherit;font-size:10px;
+  letter-spacing:1px;cursor:pointer;min-height:38px;}
+.tbtn:hover{border-color:var(--amber);color:var(--amber);}
+.tbtn.on{background:var(--amber);color:#16120e;border-color:var(--amber);}
+
+#over{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+  background:rgba(10,8,6,.94);padding:18px;}
+#over.on{display:flex;}
+#over .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:24px;text-align:center;max-width:360px;width:100%;}
+#over h2{font-size:19px;letter-spacing:4px;margin-bottom:6px;font-weight:normal;color:var(--amber);}
+#over h2.win{color:var(--cyan);}
+#over p{color:var(--dim);font-size:12px;line-height:1.9;margin-bottom:12px;}
+#over .stat2{color:var(--white);font-size:28px;font-weight:bold;margin:8px 0;}
+#over button{width:100%;background:var(--panel2);border:1px solid var(--amber);color:var(--amber);
+  padding:13px;border-radius:9px;font-family:inherit;font-size:12px;letter-spacing:3px;
+  cursor:pointer;min-height:48px;margin-top:8px;}
+#over button:hover{background:var(--amber);color:#16120e;}
+
+#toast{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:40;
+  pointer-events:none;font-size:clamp(15px,4.2vw,25px);font-weight:bold;color:var(--gold);
+  text-shadow:0 0 20px rgba(255,215,110,.6);opacity:0;letter-spacing:2px;white-space:nowrap;}
+#toast.show{animation:rise 1s ease-out;}
+@keyframes rise{0%{opacity:0;transform:translate(-50%,12px)}
+  25%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-26px)}}
+
+#note{margin-top:12px;max-width:600px;font-size:11px;line-height:1.85;color:var(--dim);
+  text-align:center;padding:0 10px;}
+#note b{color:var(--text);font-weight:normal;}
+</style>
+</head>
+<body>
+
+<div id="hdr"><div id="logo">CAVE-IN <small>// dig out before it buries you</small></div></div>
+
+<div id="hud">
+  <div class="stat"><h4>SCORE</h4><div id="score">0</div></div>
+  <div class="stat"><h4>LEVEL</h4><div id="level">1</div></div>
+  <div class="stat"><h4>GEMS</h4><div id="gems">0/3</div></div>
+  <div class="stat"><h4>BOMBS</h4><div id="bombs">0</div></div>
+  <div class="stat"><h4>CEILING</h4><div id="danger">SAFE</div></div>
+</div>
+
+<div id="stage"><canvas id="cv" width="440" height="640"></canvas></div>
+
+<div id="pad">
+  <button class="pbtn" onpointerdown="hold(-1)" onpointerup="release()" onpointerleave="release()">◀<small>LEFT</small></button>
+  <button class="pbtn" onpointerdown="useBomb()">💣<small>BOMB</small></button>
+  <button class="pbtn" onpointerdown="hold(1)" onpointerup="release()" onpointerleave="release()">▶<small>RIGHT</small></button>
+</div>
+
+<div id="btns">
+  <button class="tbtn" id="m-CASUAL" onclick="setMode('CASUAL')">CASUAL</button>
+  <button class="tbtn on" id="m-MINER" onclick="setMode('MINER')">MINER</button>
+  <button class="tbtn" id="m-DEEP" onclick="setMode('DEEP')">DEEP</button>
+  <button class="tbtn" onclick="togglePause()" id="pausebtn">❚❚ PAUSE</button>
+  <button class="tbtn" onclick="newGame()">⟲ RESTART</button>
+</div>
+
+<div id="note">
+  The ceiling is coming down. Rocks fall by type — <b>granite</b> smashes what it lands beside,
+  <b>dirt</b> barely disturbs anything — so a heavy landing can clear a path or bury one.
+  Collect the gem quota, then reach either <b>side tunnel</b> to escape and go deeper.
+  Bombs you pick up can be thrown to blast a way out. Get buried and the run ends.
+</div>
+
+<div id="toast"></div>
+
+<div id="over">
+  <div class="card">
+    <h2 id="overTitle">BURIED</h2>
+    <p id="overMsg"></p>
+    <div class="stat2" id="overScore">0</div>
+    <p id="overSub">final score</p>
+    <button onclick="newGame()">DIG AGAIN</button>
+  </div>
+</div>
+
+<script>
+const { COLS, ROWS, ROCKS } = ENGINE;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let CELL = 40, OX = 0, OY = 0;
+
+let grid, miner, falling, score, level, gems, bombs, mode = 'MINER';
+let diff, running = false, paused = false, dead = false, escaping = false;
+let lastSpawn = 0, lastStep = 0, particles = [], shake = 0;
+
+// ── sizing ────────────────────────────────────────────────────
+function fit() {
+  const maxW = Math.min(window.innerWidth * 0.94, 440);
+  const maxH = window.innerHeight * 0.56;
+  CELL = Math.floor(Math.min(maxW / COLS, maxH / ROWS));
+  CELL = Math.max(18, CELL);
+  cv.width = COLS * CELL;
+  cv.height = ROWS * CELL;
+}
+window.addEventListener('resize', () => { fit(); draw(); });
+
+// ── game setup ────────────────────────────────────────────────
+function newGame() {
+  score = 0; level = 1; bombs = 0;
+  dead = false; paused = false;
+  document.getElementById('over').classList.remove('on');
+  document.getElementById('pausebtn').textContent = '❚❚ PAUSE';
+  startLevel();
+  if (!running) { running = true; requestAnimationFrame(loop); }
+}
+
+function startLevel() {
+  diff = ENGINE.difficulty(level, mode);
+  grid = ENGINE.emptyGrid();
+  gems = 0;
+  escaping = false;
+  particles = [];
+  falling = null;
+
+  // Seed the floor with rubble so later levels do not start from a clean
+  // slate — the cave is already partly collapsed when you arrive.
+  for (let i = 0; i < diff.startRubble; i++) {
+    const r = ROWS - 1 - i;
+    for (let c = 0; c < COLS; c++) {
+      if (Math.random() < 0.55 - i * 0.07) grid[r][c] = ENGINE.makeRock(ENGINE.pickRockType(diff));
+    }
+  }
+  let guard = 0;
+  while (ENGINE.settle(grid) && guard++ < 60);
+
+  // drop the miner onto the surface at the centre
+  miner = { r: 0, c: Math.floor(COLS / 2) };
+  if (grid[miner.r][miner.c]) grid[miner.r][miner.c] = null;
+  miner.r = ENGINE.minerFall(grid, miner);
+
+  lastSpawn = performance.now();
+  lastStep = performance.now();
+  updateHud();
+  fit();
+  draw();
+}
+
+function spawnRock() {
+  // never drop straight onto the miner's head without warning: pick any
+  // column, but bias away from the one the miner is standing in
+  let c = Math.floor(Math.random() * COLS);
+  if (c === miner.c && Math.random() < 0.6) c = Math.floor(Math.random() * COLS);
+  if (ENGINE.columnTop(grid, c) <= 1) return;
+  falling = { t: ENGINE.pickRockType(diff), r: 0, c };
+}
+
+// ── landing ───────────────────────────────────────────────────
+function land() {
+  const { t, r, c } = falling;
+  falling = null;
+
+  if (miner.r === r && miner.c === c) { bury('A rock came down on your head.'); return; }
+
+  grid[r][c] = ENGINE.makeRock(t);
+  const destroyed = new Set();
+  const types = [];
+
+  if (t === 'BOMB') {
+    for (const key of collectTypes(grid, r, c, ROCKS.BOMB.blast)) types.push(key);
+    ENGINE.detonate(grid, r, c, destroyed);
+    shake = 9;
+    burst(r, c, ROCKS.BOMB.colour, 22);
+  } else {
+    for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const cell = ENGINE.at(grid, r + dr, c + dc);
+      if (cell) types.push(cell.t);
+    }
+    ENGINE.applyImpact(grid, r, c, destroyed);
+    if (destroyed.size) shake = Math.min(7, 2 + destroyed.size);
+  }
+
+  for (const key of destroyed) {
+    const [dr, dc] = key.split(',').map(Number);
+    burst(dr, dc, '#7a6852', 5);
+  }
+
+  const gained = ENGINE.scoreFor(types.filter((_, i) => i < destroyed.size), level);
+  if (gained) { score += gained; showToast('+' + gained); }
+
+  let guard = 0;
+  while (ENGINE.settle(grid) && guard++ < 60);
+
+  // the pile may have shifted under or onto the miner
+  if (ENGINE.crushed(grid, miner)) { bury('The rubble shifted and closed over you.'); return; }
+  miner.r = ENGINE.minerFall(grid, miner);
+
+  if (ENGINE.buried(grid)) { bury('The cave filled to the ceiling.'); return; }
+  updateHud();
+}
+
+// which rock types sit inside a blast, for scoring
+function collectTypes(g, r, c, radius) {
+  const out = [];
+  for (let dr = -radius; dr <= radius; dr++)
+    for (let dc = -radius; dc <= radius; dc++) {
+      if (Math.abs(dr) + Math.abs(dc) > radius) continue;
+      const cell = ENGINE.at(g, r + dr, c + dc);
+      if (cell) out.push(cell.t);
+    }
+  return out;
+}
+
+// ── miner actions ─────────────────────────────────────────────
+function step(dc) {
+  if (dead || paused || !miner) return;
+  const target = ENGINE.at(grid, miner.r, miner.c + dc);
+
+  // walking into a gem or a bomb picks it up
+  if (target && ROCKS[target.t].pickup) {
+    grid[miner.r][miner.c + dc] = null;
+    if (target.t === 'DIAMOND') {
+      gems++;
+      score += ENGINE.scoreFor(['DIAMOND'], level);
+      showToast('GEM  ' + gems + '/' + diff.quota);
+      burst(miner.r, miner.c + dc, ROCKS.DIAMOND.colour, 14);
+    } else {
+      bombs++;
+      showToast('BOMB PICKED UP');
+      burst(miner.r, miner.c + dc, ROCKS.BOMB.colour, 10);
+    }
+    let g2 = 0; while (ENGINE.settle(grid) && g2++ < 60);
+    miner.r = ENGINE.minerFall(grid, miner);
+    updateHud();
+    draw();
+    return;
+  }
+
+  const mv = ENGINE.minerMove(grid, miner, dc);
+  if (mv.escaped) {
+    if (gems >= diff.quota) escape();
+    else showToast('NEED ' + (diff.quota - gems) + ' MORE GEM' + (diff.quota - gems === 1 ? '' : 'S'));
+    return;
+  }
+  if (!mv.moved) return;
+  miner.r = mv.r; miner.c = mv.c;
+  miner.r = ENGINE.minerFall(grid, miner);
+  if (ENGINE.crushed(grid, miner)) { bury('You dug into a collapse.'); return; }
+  draw();
+}
+
+function useBomb() {
+  if (dead || paused || bombs <= 0 || !miner) return;
+  bombs--;
+  const destroyed = new Set();
+  const types = collectTypes(grid, miner.r, miner.c, ROCKS.BOMB.blast);
+  ENGINE.detonate(grid, miner.r, miner.c, destroyed);
+  score += ENGINE.scoreFor(types, level);
+  shake = 12;
+  burst(miner.r, miner.c, ROCKS.BOMB.colour, 30);
+  for (const key of destroyed) {
+    const [r, c] = key.split(',').map(Number);
+    burst(r, c, '#7a6852', 4);
+  }
+  let guard = 0; while (ENGINE.settle(grid) && guard++ < 60);
+  miner.r = ENGINE.minerFall(grid, miner);
+  showToast('BOOM');
+  updateHud();
+  draw();
+}
+
+function escape() {
+  escaping = true;
+  level++;
+  const bonus = 500 + level * 100;
+  score += bonus;
+  showToast('ESCAPED  +' + bonus);
+  setTimeout(() => { if (!dead) startLevel(); }, 700);
+}
+
+function bury(msg) {
+  dead = true;
+  document.getElementById('overTitle').textContent = 'BURIED';
+  document.getElementById('overTitle').className = '';
+  document.getElementById('overMsg').textContent =
+    msg + ' You reached level ' + level + '.';
+  document.getElementById('overScore').textContent = score.toLocaleString();
+  document.getElementById('over').classList.add('on');
+}
+
+// ── particles ─────────────────────────────────────────────────
+function burst(r, c, colour, n) {
+  for (let i = 0; i < n; i++) {
+    particles.push({
+      x: (c + 0.5) * CELL, y: (r + 0.5) * CELL,
+      vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.9) * 3.4,
+      life: 1, colour,
+    });
+  }
+  if (particles.length > 400) particles.splice(0, particles.length - 400);
+}
+
+// ── rendering ─────────────────────────────────────────────────
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawRock(r, c, t, dmg) {
+  const spec = ROCKS[t];
+  const x = c * CELL, y = r * CELL, p = Math.max(1, CELL * 0.045);
+  ctx.fillStyle = spec.colour;
+  roundRect(x + p, y + p, CELL - p * 2, CELL - p * 2, CELL * 0.16);
+  ctx.fill();
+
+  // top highlight so the pile reads as three-dimensional
+  ctx.fillStyle = 'rgba(255,255,255,.10)';
+  roundRect(x + p, y + p, CELL - p * 2, (CELL - p * 2) * 0.34, CELL * 0.16);
+  ctx.fill();
+
+  if (t === 'DIAMOND' || t === 'BOMB') {
+    ctx.fillStyle = t === 'DIAMOND' ? '#ffffff' : '#ffd76e';
+    ctx.font = 'bold ' + Math.floor(CELL * 0.5) + 'px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(t === 'DIAMOND' ? '◆' : '✸', x + CELL / 2, y + CELL / 2 + 1);
+  }
+
+  // cracks show accumulated damage, so a nearly-broken rock is readable
+  if (dmg > 0) {
+    ctx.strokeStyle = 'rgba(0,0,0,.45)';
+    ctx.lineWidth = Math.max(1, CELL * 0.05);
+    ctx.beginPath();
+    ctx.moveTo(x + CELL * 0.25, y + CELL * 0.3);
+    ctx.lineTo(x + CELL * 0.5, y + CELL * 0.58);
+    ctx.lineTo(x + CELL * 0.74, y + CELL * 0.36);
+    ctx.stroke();
+  }
+}
+
+function drawMiner(r, c) {
+  const x = c * CELL, y = r * CELL, s = CELL;
+  // lamp glow
+  const g = ctx.createRadialGradient(x + s / 2, y + s * 0.35, 1, x + s / 2, y + s * 0.35, s * 1.5);
+  g.addColorStop(0, 'rgba(255,215,110,.28)');
+  g.addColorStop(1, 'rgba(255,215,110,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(x - s, y - s, s * 3, s * 3);
+
+  ctx.fillStyle = '#2f6fd0';                                  // body
+  roundRect(x + s * 0.26, y + s * 0.45, s * 0.48, s * 0.46, s * 0.1);
+  ctx.fill();
+  ctx.fillStyle = '#f0c9a0';                                  // face
+  roundRect(x + s * 0.32, y + s * 0.24, s * 0.36, s * 0.26, s * 0.09);
+  ctx.fill();
+  ctx.fillStyle = '#ffb347';                                  // helmet
+  roundRect(x + s * 0.26, y + s * 0.14, s * 0.48, s * 0.18, s * 0.08);
+  ctx.fill();
+  ctx.fillStyle = '#ffe9a8';                                  // lamp
+  ctx.beginPath();
+  ctx.arc(x + s * 0.5, y + s * 0.2, s * 0.07, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function draw() {
+  if (!grid) return;
+  ctx.save();
+  if (shake > 0) {
+    ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    shake *= 0.82;
+    if (shake < 0.4) shake = 0;
+  }
+  ctx.clearRect(-20, -20, cv.width + 40, cv.height + 40);
+
+  // cave backdrop, darker toward the ceiling
+  const bg = ctx.createLinearGradient(0, 0, 0, cv.height);
+  bg.addColorStop(0, '#120d09');
+  bg.addColorStop(1, '#080604');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, cv.width, cv.height);
+
+  // exit tunnels light up once the quota is met
+  const open = gems >= diff.quota;
+  ctx.fillStyle = open ? 'rgba(95,224,255,.16)' : 'rgba(255,255,255,.03)';
+  ctx.fillRect(0, 0, CELL * 0.16, cv.height);
+  ctx.fillRect(cv.width - CELL * 0.16, 0, CELL * 0.16, cv.height);
+  if (open) {
+    ctx.fillStyle = '#5fe0ff';
+    ctx.font = 'bold ' + Math.floor(CELL * 0.42) + 'px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const y = (miner ? miner.r + 0.5 : ROWS - 1) * CELL;
+    ctx.fillText('◀', CELL * 0.42, y);
+    ctx.fillText('▶', cv.width - CELL * 0.42, y);
+  }
+
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (grid[r][c]) drawRock(r, c, grid[r][c].t, grid[r][c].dmg);
+
+  if (falling) {
+    // shadow marking where it will land
+    let lr = falling.r;
+    while (lr + 1 < ROWS && !grid[lr + 1][falling.c]) lr++;
+    ctx.fillStyle = 'rgba(255,179,71,.12)';
+    ctx.fillRect(falling.c * CELL, falling.r * CELL, CELL, (lr - falling.r + 1) * CELL);
+    drawRock(falling.r, falling.c, falling.t, 0);
+  }
+
+  if (miner && !dead) drawMiner(miner.r, miner.c);
+
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.colour;
+    ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// ── hud ───────────────────────────────────────────────────────
+function updateHud() {
+  document.getElementById('score').textContent = score.toLocaleString();
+  document.getElementById('level').textContent = level;
+  const gEl = document.getElementById('gems');
+  gEl.textContent = gems + '/' + diff.quota;
+  gEl.className = gems >= diff.quota ? 'lit' : '';
+  document.getElementById('bombs').textContent = bombs;
+
+  let lowest = ROWS;
+  for (let c = 0; c < COLS; c++) lowest = Math.min(lowest, ENGINE.columnTop(grid, c));
+  const dEl = document.getElementById('danger');
+  if (lowest <= 2)      { dEl.textContent = 'CRITICAL'; dEl.className = 'warn'; }
+  else if (lowest <= 5) { dEl.textContent = 'CLOSE';    dEl.className = 'warn'; }
+  else                  { dEl.textContent = 'SAFE';     dEl.className = ''; }
+}
+
+function showToast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.remove('show');
+  void t.offsetWidth;
+  t.classList.add('show');
+}
+
+// ── loop ──────────────────────────────────────────────────────
+function loop(now) {
+  requestAnimationFrame(loop);
+  if (paused || dead || escaping || !grid) { draw(); return; }
+
+  if (!falling && now - lastSpawn >= diff.dropMs) { spawnRock(); lastSpawn = now; lastStep = now; }
+
+  if (falling && now - lastStep >= diff.stepMs) {
+    lastStep = now;
+    if (falling.r + 1 < ROWS && !grid[falling.r + 1][falling.c]) falling.r++;
+    else land();
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.22; p.life -= 0.03;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+  draw();
+}
+
+// ── input ─────────────────────────────────────────────────────
+let holdT = null, repT = null;
+function hold(dc) {
+  step(dc);
+  clearTimeout(holdT); clearInterval(repT);
+  holdT = setTimeout(() => { repT = setInterval(() => step(dc), 130); }, 250);
+}
+function release() { clearTimeout(holdT); clearInterval(repT); holdT = repT = null; }
+
+document.addEventListener('keydown', e => {
+  if (['ArrowLeft','ArrowRight','ArrowDown',' ','p','P'].includes(e.key)) e.preventDefault();
+  if (e.key === 'ArrowLeft')  step(-1);
+  if (e.key === 'ArrowRight') step(1);
+  if (e.key === ' ')          useBomb();
+  if (e.key === 'p' || e.key === 'P') togglePause();
+});
+
+cv.addEventListener('pointerdown', e => {
+  const rect = cv.getBoundingClientRect();
+  step(e.clientX < rect.left + rect.width / 2 ? -1 : 1);
+});
+
+function togglePause() {
+  if (dead) return;
+  paused = !paused;
+  document.getElementById('pausebtn').textContent = paused ? '▶ RESUME' : '❚❚ PAUSE';
+  lastSpawn = performance.now(); lastStep = performance.now();
+}
+
+function setMode(m) {
+  mode = m;
+  Object.keys(ENGINE.MODES).forEach(k =>
+    document.getElementById('m-' + k).classList.toggle('on', k === m));
+  newGame();
+}
+
+fit();
+newGame();
+</script>
+</body>
+</html>
