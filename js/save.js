@@ -56,6 +56,24 @@ function clearPylons() {
     try { localStorage.removeItem("tubecrawler_pylons"); } catch(e) {}
 }
 
+// ── DESTROYED NESTS ──
+// Nests are floor tiles, not pillars, so savePylons() never covered them and
+// world generation always rebuilds them at full health. Without this a nest the
+// player destroyed came back on the next page load.
+function saveNests() {
+    const data = world
+        .filter(t => t.nest && t.nestHealth <= 0)
+        .map(t => ({ x: t.x, y: t.y }));
+    try { localStorage.setItem("tubecrawler_nests", JSON.stringify(data)); } catch(e) {}
+}
+function loadNests() {
+    try { return JSON.parse(localStorage.getItem("tubecrawler_nests") || "null"); }
+    catch(e) { return null; }
+}
+function clearNests() {
+    try { localStorage.removeItem("tubecrawler_nests"); } catch(e) {}
+}
+
 function getShards() {
     try { return parseInt(localStorage.getItem("tubecrawler_shards") || "0"); }
     catch(e) { return 0; }

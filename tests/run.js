@@ -7,6 +7,7 @@ const SUITES = [
     ['postfx startup paths',   'tdz.js'],
     ['load order + render seam','loadorder.js'],
     ['insect abilities',       'abtest.js'],
+    ['nest persistence',       'nests.js'],
 ];
 
 let failed = 0;

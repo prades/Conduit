@@ -232,6 +232,7 @@ function updateRTSNPC(actor) {
                 if (nest.nestHealth<=0) {
                     floatingTexts.push({x:nest.x,y:nest.y-1,text:"NEST DESTROYED!",color:"#ff0000",life:60,vy:-0.1});
                     actor.job=null;
+                    saveNests();   // persist immediately, so a reload mid-night keeps the kill
                 }
             }
         }

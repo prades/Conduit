@@ -83,6 +83,7 @@ const ELEMENT_ATTACKS = {
                     const nestDmg = (actor.stats?.attack||10) * 0.8;
                     t.nestHealth = Math.max(0, t.nestHealth - nestDmg);
                     floatingTexts.push({x:t.x,y:t.y-0.5,text:"FIRE! -"+Math.round(nestDmg),color:"#ff3300",life:30,vy:-0.06});
+                    if (t.nestHealth <= 0) saveNests();
                 }
             });
             // Fire orbit visual — 3 fireballs orbit the follower
@@ -121,6 +122,7 @@ const ELEMENT_ATTACKS = {
                     const nestDmg = (actor.stats?.specialAttack||10) * 1.8;
                     t.nestHealth = Math.max(0, t.nestHealth - nestDmg);
                     floatingTexts.push({x:t.x,y:t.y-0.5,text:"METEOR! -"+Math.round(nestDmg),color:"#ff3300",life:45,vy:-0.08});
+                    if (t.nestHealth <= 0) saveNests();
                 }
             });
             return { hit: true };

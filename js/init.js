@@ -52,6 +52,14 @@ async function loadConfig() {
             tile.upgraded          = saved.upgraded;
         });
     }
+    // Nests always generate at full health, so destroyed ones are re-killed here.
+    const savedNests = loadNests();
+    if (savedNests) {
+        savedNests.forEach(saved => {
+            const tile = worldTileMap.get(`${saved.x},${saved.y}`);
+            if (tile && tile.nest) tile.nestHealth = 0;
+        });
+    }
     const savedF = loadFollowers();
     if (savedF.length > 0) {
         savedF.forEach(entry => spawnFollowerFromSave(entry));

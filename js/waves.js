@@ -107,6 +107,26 @@ function clearAlarm() {
     }
 }
 
+// ── BETWEEN-WAVE WORLD RESTORE ──
+// Extracted from nextWave so it can be tested on its own: nextWave's body runs
+// inside a setTimeout surrounded by heavy DOM and localStorage work.
+//
+// Surviving green pylons heal and earn a seasoned stack. Nests are the
+// important case: a nest the player finished off STAYS dead, because
+// destroying one permanently shuts down that zone's spawns and that is the
+// entire reward for the effort — healing it back erased the progress. A merely
+// damaged nest still recovers, so a half-finished job gains nothing.
+function restoreWorldBetweenWaves() {
+    world.forEach(obj => {
+        if (obj.pillar && !obj.destroyed && obj.pillarTeam === "green" && obj.health > 0) {
+            obj.health = obj.maxHealth;
+            obj.pendingDestroy = false;
+            obj.seasoned = Math.min(3, (obj.seasoned || 0) + 1);
+        }
+        if (obj.nest && obj.nestHealth > 0) obj.nestHealth = obj.nestMaxHealth || 200;
+    });
+}
+
 function checkWaveClear() {
     if (gameState.phase !== "night") return;
     if (nightKillCount >= nightEnemiesTarget) {
@@ -344,18 +364,9 @@ function nextWave() {
         try { localStorage.setItem("tubecrawler_followers", JSON.stringify(rosterToSave)); } catch(e) {}
         saveGameState();
 
-        // ── Restore surviving green pylons to full health + earn seasoned bonus ──
-        // ── Also restore nest health so predators can respawn next wave ──
-        world.forEach(obj=>{
-            if (obj.pillar && !obj.destroyed && obj.pillarTeam==="green" && obj.health>0) {
-                obj.health = obj.maxHealth;
-                obj.pendingDestroy = false;
-                obj.seasoned = Math.min(3, (obj.seasoned||0) + 1);
-            }
-            if (obj.nest) obj.nestHealth = obj.nestMaxHealth || 200;
-        });
-
+        restoreWorldBetweenWaves();
         savePylons();
+        saveNests();
 
         // ── Wipe everything, start clean ──
         actors=[]; followers=[]; respawnQueue=[]; pendingPillarDestruction=[];
@@ -454,7 +465,7 @@ function restartGame() {
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
     pendingPillarDestruction=[];respawnQueue=[];
-    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();clearPermUpgrades();
+    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();clearNests();clearPermUpgrades();
     permUpgrades=new Set(); pylonMaxHPBonus=0; pylonRangeBonus=0; pylonFireRateBonus=0;
     followerPermPowerBonus=0; followerPermHPBonus=0;
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
