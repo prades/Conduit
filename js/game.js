@@ -2915,9 +2915,14 @@ function render() {
 
     // ── OVERLAYS ──
     drawElementEffects();
+    // Traps and the hold line are world-space geometry, not interface, so they
+    // belong above the post-FX seam — otherwise they sit flat and unlit on top
+    // of a scene that is bloomed and lit, and read as pasted on.
+    drawTraps();
+    drawHoldLine();
 
     // Post-processing sits here: everything above is the world and gets bloom,
-    // light haze and grain; everything below is interface and stays crisp.
+    // light and grain; everything below is interface and stays crisp.
     fxComposite();
 
     drawFloatingTexts();
@@ -2939,13 +2944,11 @@ function render() {
     drawCloneMenu();
     drawRadialMenu();
     drawCrystalPanel();
-    drawHoldLine();
     drawGestureFeedback();
     drawFollowerElementUI();
     drawElementPicker();
     drawPylonConfirm();
     drawInfoPanel();
-    drawTraps();
     drawShopButton();
     drawCampButton();
     drawSettingsButton();

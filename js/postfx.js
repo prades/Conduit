@@ -317,7 +317,9 @@ function _fxCollectSceneLights() {
     if (trapList) {
         for (const t of trapList) {
             if (!t || t.alive === false) continue;
-            pushWorldLight(t.x, t.y, 48, t.color || '#66ffcc', 0.14, 8);
+            // drawTraps puts the marking at spy + TILE_H*0.5, so the light has to
+            // be pushed *down* to sit on it rather than hovering above it.
+            pushWorldLight(t.x, t.y, 48, t.color || '#66ffcc', 0.14, -TILE_H * 0.5);
         }
     }
 }
