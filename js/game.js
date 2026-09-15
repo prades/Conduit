@@ -516,6 +516,7 @@ function render() {
 
     // ── CLEAR SCREEN ──
     ctx.fillStyle="#000"; ctx.fillRect(0,0,canvas.width,canvas.height);
+    fxBeginFrame();
     // ── CIRCUIT BOARD BACKGROUND ──
     drawCircuitLayer();
     ctx.save();
@@ -1046,10 +1047,14 @@ function render() {
         const py=(obj.x-player.visualX+(obj.y-player.visualY))*TILE_H+canvas.height/2;
 
         if (obj.type==='player') {
+            fxContactShadow(px, py + 4, 22, 1);
             drawPlayer({x:px,y:py});
         }
         else if (obj.type==='npc') {
-            drawNPC(obj.actor,px,py);
+            const _a = obj.actor;
+            const _sw = _a.dimensions ? _a.dimensions.width * 1.25 : 16;
+            fxContactShadow(px, py + 4, _sw, _a.isNymph ? 0.45 : 1);
+            drawNPC(_a,px,py);
         }
         else if (obj.type==='groundItem') {
             const gi=obj.item;
@@ -2904,6 +2909,11 @@ function render() {
 
     // ── OVERLAYS ──
     drawElementEffects();
+
+    // Post-processing sits here: everything above is the world and gets bloom,
+    // light haze and grain; everything below is interface and stays crisp.
+    fxComposite();
+
     drawFloatingTexts();
     // ── PLAYER STUN FLASH — red vignette while stunned ──
     if (player.stunned > 0) {
