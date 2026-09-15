@@ -106,7 +106,9 @@ function drawNPC(actor, px, py, drawCtx=ctx) {
 
 function _drawPredator(actor, px, py, drawCtx) {
     const dim=actor.dimensions;
-    let bodyBaseY=py-(dim.height*2) - (actor.heightBoost ? dim.height*(actor.heightBoost-1) : 0);
+    // leapLift is screen-space height during a scout's arc jump, so the whole
+    // creature — body and legs — rises off the floor together.
+    let bodyBaseY=py-(dim.height*2) - (actor.heightBoost ? dim.height*(actor.heightBoost-1) : 0) - (actor.leapLift || 0);
     let rearOffset=0;
     if (actor.state==="attack" && !actor.isMantis) { const t=actor.attackAnim/Math.PI; rearOffset=Math.sin(t*Math.PI)*4; }
     bodyBaseY-=rearOffset;
@@ -803,6 +805,7 @@ function _drawPredator(actor, px, py, drawCtx) {
     if (actor.isNymph) drawCtx.globalAlpha = 1; // restore after nymph transparency
     const _isAllyPred = actor.team === "green" || actor.isClone;
     drawHealthBar(px-18, py-85, 36, 5, actor.health, actor.maxHealth, drawCtx);
+    drawAbilityCharge(actor, px, py, drawCtx);
     // Clone/ally: green bracket frame + diamond marker for identification
     if (_isAllyPred) {
         drawCtx.strokeStyle = "#0f8"; drawCtx.lineWidth = 1;

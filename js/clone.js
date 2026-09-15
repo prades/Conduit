@@ -392,7 +392,7 @@ function spawnPredatorForZone(zoneIndex) {
     const className   = getZoneClass(zoneIndex);
     // Natural species live in SPECIES; synthetic deep-zone constructs live in SYNTHETIC_SPECIES
     const speciesDef  = SPECIES[speciesName] || SYNTHETIC_SPECIES[speciesName];
-    const classDef    = speciesDef[className];
+    const classDef    = getClassDef(speciesDef, className);
 
     const def = {
         width:           classDef.width,
@@ -430,6 +430,12 @@ function spawnPredatorForZone(zoneIndex) {
     applySpeciesBody(predator, speciesName);
     // Finalize elite mutations (must run after applySpeciesBody)
     if (_eliteInstMuts !== null) applyEliteInstance(predator, _eliteInstMuts, def);
+
+    // Capture the final speed after every mutation, so slows scale from the
+    // real base rather than from whatever the AI last parked moveSpeed at.
+    predator.baseMoveSpeed = predator.moveSpeed;
+    // Resolve the charge-up special now that species and class are both known.
+    initAbility(predator);
 
     actors.push(predator);
     if (!zonePredators[zoneIndex]) zonePredators[zoneIndex] = [];

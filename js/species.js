@@ -71,6 +71,7 @@ const SPECIES = {
         rank: 1,
         color: "#aa55ff",
         nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:9,  dnaDrops:1, shardDrop:2,  reactionSpeed:15 },
+        worker:  { width:20, height:9,  moveSpeed:0.024, health:45,  power:7,  dnaDrops:1, shardDrop:3,  reactionSpeed:25 },
         scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:18, dnaDrops:1, shardDrop:3,  reactionSpeed:5  },
         striker: { width:28, height:12, moveSpeed:0.018, health:100, power:27, dnaDrops:1, shardDrop:5,  reactionSpeed:10 },
         tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:38, dnaDrops:2, shardDrop:8,  reactionSpeed:22 },
@@ -80,6 +81,7 @@ const SPECIES = {
         rank: 2,
         color: "#cc44ff",
         nymph:   { width:16, height:8,  moveSpeed:0.028, health:45,  power:12, dnaDrops:1, shardDrop:4,  reactionSpeed:15 },
+        worker:  { width:23, height:11, moveSpeed:0.022, health:72,  power:10, dnaDrops:1, shardDrop:5,  reactionSpeed:25 },
         scout:   { width:26, height:12, moveSpeed:0.020, health:100, power:27, dnaDrops:1, shardDrop:6,  reactionSpeed:5  },
         striker: { width:32, height:14, moveSpeed:0.016, health:160, power:39, dnaDrops:2, shardDrop:9,  reactionSpeed:10 },
         tank:    { width:42, height:18, moveSpeed:0.010, health:280, power:53, dnaDrops:2, shardDrop:14, reactionSpeed:22 },
@@ -89,6 +91,7 @@ const SPECIES = {
         rank: 3,
         color: "#8844ff",
         nymph:   { width:18, height:9,  moveSpeed:0.026, health:65,  power:18, dnaDrops:2, shardDrop:6,  reactionSpeed:15 },
+        worker:  { width:26, height:12, moveSpeed:0.021, health:105, power:13, dnaDrops:2, shardDrop:8,  reactionSpeed:25 },
         scout:   { width:30, height:13, moveSpeed:0.019, health:150, power:38, dnaDrops:2, shardDrop:10, reactionSpeed:5  },
         // striker/tank/boss: stinger tail — abdomen ranged attacker
         striker: { width:36, height:15, moveSpeed:0.015, health:240, power:54, dnaDrops:3, shardDrop:15, reactionSpeed:10, abdomenAttack:true, rangeDamage:30, abdomenCooldown:90 },
@@ -99,6 +102,7 @@ const SPECIES = {
         rank: 4,
         color: "#cc2244",
         nymph:   { width:13, height:10, moveSpeed:0.032, health:80,  power:23, dnaDrops:2, shardDrop:8,  reactionSpeed:15 },
+        worker:  { width:20, height:13, moveSpeed:0.026, health:140, power:17, dnaDrops:2, shardDrop:11, reactionSpeed:25 },
         scout:   { width:22, height:15, moveSpeed:0.024, health:200, power:48, dnaDrops:3, shardDrop:14, reactionSpeed:5  },
         // striker/tank/boss: spinneret venom — abdomen ranged attacker
         striker: { width:26, height:18, moveSpeed:0.020, health:300, power:72, dnaDrops:3, shardDrop:20, reactionSpeed:10, abdomenAttack:true, rangeDamage:27, abdomenCooldown:85 },
@@ -110,6 +114,7 @@ const SPECIES = {
         rank: 4,
         color: "#44dd55",
         nymph:   { width:14, height:8,  moveSpeed:0.032, health:40,  power:12,  dnaDrops:1, shardDrop:4,  reactionSpeed:10 },
+        worker:  { width:18, height:9,  moveSpeed:0.028, health:78,  power:12, dnaDrops:2, shardDrop:7,  reactionSpeed:25 },
         scout:   { width:20, height:10, moveSpeed:0.026, health:110, power:34,  dnaDrops:2, shardDrop:9,  reactionSpeed:4  },
         // striker+ use raptorial foreleg strike as ranged/abdomen attack
         striker: { width:26, height:12, moveSpeed:0.022, health:180, power:52,  dnaDrops:3, shardDrop:14, reactionSpeed:8,  abdomenAttack:true, rangeDamage:28, abdomenCooldown:80 },
@@ -121,6 +126,7 @@ const SPECIES = {
         rank: 5,
         color: "#dd8822",
         nymph:   { width:12, height:9,  moveSpeed:0.031, health:85,  power:25,  dnaDrops:2, shardDrop:8,  reactionSpeed:12 },
+        worker:  { width:20, height:12, moveSpeed:0.025, health:154, power:19, dnaDrops:2, shardDrop:13, reactionSpeed:25 },
         scout:   { width:22, height:13, moveSpeed:0.023, health:220, power:55,  dnaDrops:3, shardDrop:16, reactionSpeed:5  },
         // striker+ fire wing-dust powder as ranged abdomen attack
         striker: { width:30, height:16, moveSpeed:0.018, health:340, power:80,  dnaDrops:4, shardDrop:22, reactionSpeed:9,  abdomenAttack:true, rangeDamage:32, abdomenCooldown:78 },
@@ -166,9 +172,51 @@ function getZoneSpecies(zoneIndex, nightNumber) {
 // Night tier 1 (N6-10): scouts/strikers dominant.
 // Night tier 2 (N11-15): strikers/tanks dominant.
 // Night tier 3 (N16+): mostly tanks, rarer nymphs.
+// A damaged enemy pylon pulls a worker into that zone, so the player sees
+// repair crews arrive as a consequence of their own attacks rather than at
+// random. Capped at two per zone so a contested zone cannot flood with them.
+function zoneNeedsWorker(zoneIndex) {
+    if (typeof zonePredators === 'undefined' || typeof world === 'undefined') return false;
+    const live = (zonePredators[zoneIndex] || []).filter(p => !p.dead && p.className === 'worker').length;
+    if (live >= 2) return false;
+    const zStart = zoneIndex * ZONE_LENGTH, zEnd = zStart + ZONE_LENGTH;
+    for (const t of world) {
+        if (!t.pillar || t.pillarTeam !== 'red') continue;
+        if (t.x < zStart || t.x >= zEnd) continue;
+        if (t.destroyed || t.health < t.maxHealth) return true;
+    }
+    return false;
+}
+
+// Synthetic deep-zone constructs define no worker block, so derive one from
+// their scout rather than letting speciesDef[className] come back undefined.
+function getClassDef(speciesDef, className) {
+    if (speciesDef && speciesDef[className]) return speciesDef[className];
+    if (!speciesDef) return null;
+    const s = speciesDef.scout || speciesDef.nymph;
+    if (className !== 'worker' || !s) return s || null;
+    return {
+        width:  Math.max(8, Math.round(s.width  * 0.88)),
+        height: Math.max(6, Math.round(s.height * 0.90)),
+        moveSpeed: s.moveSpeed * 1.10,
+        health: Math.max(10, Math.round(s.health * 0.70)),
+        power:  Math.max(2,  Math.round(s.power  * 0.35)),
+        dnaDrops:  Math.max(1, (s.dnaDrops || 1) - 1),
+        shardDrop: Math.max(1, Math.round((s.shardDrop || 4) * 0.8)),
+        reactionSpeed: 25,
+        abdomenAttack: false, rangeDamage: 0,
+    };
+}
+
 function getZoneClass(zoneIndex) {
     const n    = gameState.nightNumber;
     const roll = Math.random();
+
+    // Workers are pulled in by damage, with a small ambient trickle besides.
+    // This uses its own roll — reusing `roll` would consume the same 0.08 band
+    // the front-zone boss check below depends on, and bosses would stop spawning.
+    if (zoneNeedsWorker(zoneIndex)) return "worker";
+    if (Math.random() < 0.08) return "worker";
     const isFront = zoneIndex >= activeDayZones - 1;
     const tier = Math.min(3, Math.floor((n - 1) / 5)); // 0→1→2→3
 

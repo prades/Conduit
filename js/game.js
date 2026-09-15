@@ -649,14 +649,14 @@ function render() {
                         if (isEnemy) {
                             if (_nTier >= 3) {
                                 // Deep freeze — near-zero speed, periodic ice damage
-                                a.slowed = 60; a.slowFactor = 0.08;
+                                applySlow(a, 60, 0.08);
                                 if (frame % 60 === 0) applyDamage(a, Math.round(4 * _seasonBonus), null, "ice");
                             } else if (_nTier >= 2) {
-                                a.slowed = 50; a.slowFactor = 0.20;
+                                applySlow(a, 50, 0.20);
                                 // Random chance to freeze solid for 60 frames
-                                if (Math.random() < 0.015) { a.slowed = 90; a.slowFactor = 0.0; }
+                                if (Math.random() < 0.015) applySlow(a, 90, 0.0);
                             } else {
-                                a.slowed = 40; a.slowFactor = 0.35;
+                                applySlow(a, 40, 0.35);
                             }
                         }
                         break;
@@ -1057,9 +1057,13 @@ function render() {
             // py is the isometric ground point. Follower legs plant at about py-3
             // and span ~48px; predator legs reach the ground point itself.
             const _pred = !!_a.dimensions;
+            // A leaping scout's shadow shrinks and fades as it gains height,
+            // which is what actually sells the arc as leaving the ground.
+            const _lift = _a.leapLift || 0;
+            const _lf   = _lift > 0 ? Math.max(0.3, 1 - _lift / 42) : 1;
             fxContactShadow(px, _pred ? py - 1 : py - 3,
-                                _pred ? _a.dimensions.width * 1.15 : 19,
-                                _a.isNymph ? 0.4 : 1);
+                                (_pred ? _a.dimensions.width * 1.15 : 19) * _lf,
+                                (_a.isNymph ? 0.4 : 1) * _lf);
             drawNPC(_a,px,py);
         }
         else if (obj.type==='groundItem') {

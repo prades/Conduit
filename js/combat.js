@@ -23,10 +23,12 @@ function updateStatusEffects() {
         }
 
         // ── SLOW ──
-        if (actor.slowed > 0) {
-            actor.slowed--;
-            if (actor.slowed <= 0) actor.slowFactor = 1;
-        }
+        // tickSlowSpeed is what actually makes a slow slow anything: it scales
+        // moveSpeed from a captured base. Before it existed, slowFactor was
+        // written in eight places and read nowhere, so ice, webs and tar traps
+        // set a number that no movement code ever looked at.
+        if (actor.slowed > 0) actor.slowed--;
+        tickSlowSpeed(actor);
 
         // ── DISORIENT — scrambles movement direction ──
         if (actor.disoriented > 0) {

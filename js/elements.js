@@ -217,7 +217,7 @@ const ELEMENT_ATTACKS = {
                     if (dx*dx+dy*dy <= 6.25) { // 2.5²=6.25, no sqrt needed
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.6, actor, "ice");
                         // Slow and freeze blocked by shields
-                        if (!(a.shielded && a.shieldAmount > 0)) { a.slowed = 180; a.slowFactor = 0.4; }
+                        if (!(a.shielded && a.shieldAmount > 0)) applySlow(a, 180, 0.4);
                     }
                 }
             });

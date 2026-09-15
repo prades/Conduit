@@ -15,6 +15,7 @@ class Predator {
         this.hitFlash=0; this.hitStun=0;
         this.health=def.health; this.maxHealth=def.health;
         this.moveSpeed=def.moveSpeed; this.power=def.power;
+        this.baseMoveSpeed=def.moveSpeed;   // stable reference for slow effects
         this.entryDelay=30; this.reactionDelay=0;
         this.floatOffset=0;
         this.isRetreating=false;
@@ -119,7 +120,7 @@ class Predator {
         if (data.dimensions)  Object.assign(this.dimensions, data.dimensions);
         if (data.appendages)  Object.keys(data.appendages).forEach(k => { if(this.appendages[k]) Object.assign(this.appendages[k],data.appendages[k]); });
         if (data.stats) {
-            if (data.stats.moveSpeed) this.moveSpeed=data.stats.moveSpeed;
+            if (data.stats.moveSpeed) { this.moveSpeed=data.stats.moveSpeed; this.baseMoveSpeed=data.stats.moveSpeed; }
             if (data.stats.health)   { this.health=data.stats.health; this.maxHealth=data.stats.health; }
             if (data.stats.power)    this.power=data.stats.power;
         }
@@ -142,6 +143,13 @@ class Predator {
         // ── STATUS TIMERS ──
         if (this.smokeDebuff  > 0) this.smokeDebuff--;
         if (this.disorientFF  > 0) this.disorientFF--;
+
+        // ── CHARGE-UP ABILITY / WORKER DUTY ──
+        // Either can claim the whole frame: an insect in its windup is rooted
+        // (that is what makes the telegraph fair), a leaping one is mid-flight,
+        // and a worker ignores the combat AI to go fix pylons instead.
+        if (abilityTick(this)) return;
+        if (workerTick(this))  return;
 
         // ── THREAT SCAN ──
         let threat=null, bestDist=Infinity;
@@ -550,8 +558,7 @@ class Predator {
                             if (!hit) return;
                             // Web Shot — heavy slow (spider spinneret)
                             if (isWebShot) {
-                                hit.slowed = 300;      // 5 seconds
-                                hit.slowFactor = 0.20; // 80% speed reduction — very heavy
+                                applySlow(hit, 300, 0.20);   // 5s at 20% speed — very heavy
                                 floatingTexts.push({ x:hit.x, y:hit.y-1, text:"WEB!", color:"#cceeaa", life:35, vy:-0.05 });
                             }
                             if (chargeElem) applyElementalDamage(hit, shotDamage * 0.5, this, chargeElem);

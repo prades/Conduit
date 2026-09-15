@@ -78,8 +78,7 @@ function updateTraps() {
                     const isEnemy = (a.team === "red" || (a instanceof Predator && !a.isClone));
                     if (!isEnemy) return;
                     if (Math.hypot(a.x - trap.x, a.y - trap.y) <= 2.0) {
-                        a.slowed     = 180;   // 3 seconds at 60fps
-                        a.slowFactor = 0.0;   // full stun
+                        applySlow(a, 180, 0.0);   // 3 second full stun
                     }
                 });
                 if (typeof elementEffects !== "undefined")
@@ -124,8 +123,7 @@ function updateTraps() {
             case "feedback_snare": {
                 if (nearby.length === 0) break;
                 nearby.forEach(a => {
-                    a.slowed       = 30;
-                    a.slowFactor   = 0.6;   // 40% speed (60% slow)
+                    applySlow(a, 30, 0.6);   // 40% speed (60% slow)
                     a.reflectDamage = true;
                     // Store reflect fraction for helpers.js
                     a._snareReflect = 0.25;
