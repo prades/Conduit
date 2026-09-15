@@ -34,6 +34,14 @@ const hpBar   = document.getElementById('hp');
 const shardUI = document.getElementById('shards');
 const waveUI  = document.getElementById('waveInfo');
 
+// ── POST-FX FALLBACKS ─────────────────────────────────────
+// js/postfx.js redefines these when it loads. Declaring no-ops here means a
+// failed or cached-stale script fetch costs the player the effects, not the
+// whole game — the render loop calls these every frame.
+var fxBeginFrame    = function () {};
+var fxComposite     = function () {};
+var fxContactShadow = function () {};
+
 // Safe area inset at the bottom (for notch/home-bar devices)
 let SAFE_BOTTOM = 0;
 function resize() {

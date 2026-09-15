@@ -532,6 +532,12 @@ const _SP_RESET_Y = 156, _SP_RESET_H = 36;
 const _SP_CLOSE_Y = 210, _SP_CLOSE_H = 30;
 const _SP_GFX_LABELS = { off: 'OFF', low: 'LOW', medium: 'MED', high: 'HIGH' };
 
+// True when js/postfx.js loaded, so the graphics row can be skipped if it did not.
+function _spHasFX() {
+    try { return typeof FX_LEVELS !== 'undefined' && typeof FX !== 'undefined'; }
+    catch (e) { return false; }   // typeof does not shield a const still in TDZ
+}
+
 function drawSettingsPanel() {
     if (!settingsPanelOpen) return;
     const pw = _SP_W, ph = _SP_H;
@@ -564,6 +570,11 @@ function drawSettingsPanel() {
 
     if (!settingsResetConfirm) {
         // ── GRAPHICS quality — four segments, current one lit ──
+        // Drawn only when postfx.js is present. It cannot be stubbed in
+        // config.js the way the fx functions are, because a `const` there
+        // cannot shadow a `var` of the same name — that is a SyntaxError that
+        // would take the whole game down.
+        if (_spHasFX()) {
         ctx.fillStyle = "#778"; ctx.font = "bold 10px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText("GRAPHICS", px + pw/2, py + 80);
 
@@ -582,6 +593,7 @@ function drawSettingsPanel() {
         });
         ctx.fillStyle = "#49514d"; ctx.font = "9px monospace";
         ctx.fillText("bloom · lighting · grain", px + pw/2, py + 140);
+        }
 
         // ── RESET GAME button ──
         const btnY = py + _SP_RESET_Y;
@@ -647,7 +659,7 @@ function _handleSettingsPanelTap(tx, ty) {
         const segY   = py + _SP_GFX_Y;
         const btnY   = py + _SP_RESET_Y;
         const closeY = py + _SP_CLOSE_Y;
-        if (ty >= segY && ty < segY + _SP_GFX_H) {
+        if (ty >= segY && ty < segY + _SP_GFX_H && _spHasFX()) {
             const segW = Math.floor((pw - 40) / FX_LEVELS.length);
             const i    = Math.floor((tx - (px + 20)) / segW);
             if (i >= 0 && i < FX_LEVELS.length) fxSetLevel(FX_LEVELS[i]);
