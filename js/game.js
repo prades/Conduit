@@ -1047,13 +1047,19 @@ function render() {
         const py=(obj.x-player.visualX+(obj.y-player.visualY))*TILE_H+canvas.height/2;
 
         if (obj.type==='player') {
-            fxContactShadow(px, py + 4, 22, 1);
+            // The player is a hovering drone: its hull bottom sits ~17px above the
+            // ground point, so the shadow is wide, soft and deliberately detached.
+            fxContactShadow(px, py - 4, 26, 0.75);
             drawPlayer({x:px,y:py});
         }
         else if (obj.type==='npc') {
             const _a = obj.actor;
-            const _sw = _a.dimensions ? _a.dimensions.width * 1.25 : 16;
-            fxContactShadow(px, py + 4, _sw, _a.isNymph ? 0.45 : 1);
+            // py is the isometric ground point. Follower legs plant at about py-3
+            // and span ~48px; predator legs reach the ground point itself.
+            const _pred = !!_a.dimensions;
+            fxContactShadow(px, _pred ? py - 1 : py - 3,
+                                _pred ? _a.dimensions.width * 1.15 : 19,
+                                _a.isNymph ? 0.4 : 1);
             drawNPC(_a,px,py);
         }
         else if (obj.type==='groundItem') {
