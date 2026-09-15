@@ -1047,22 +1047,23 @@ function render() {
         const py=(obj.x-player.visualX+(obj.y-player.visualY))*TILE_H+canvas.height/2;
 
         if (obj.type==='player') {
-            // The player is a hovering drone: its hull bottom sits ~17px above the
-            // ground point, so the shadow is wide, soft and deliberately detached.
-            fxContactShadow(px, py - 4, 26, 0.75);
+            // Shadows sit slightly forward of py, not on it. py is a tile's BACK
+            // corner — game.js elsewhere treats py + TILE_H as the tile's screen
+            // centre — so a shadow drawn exactly at the feet lands in the sliver
+            // hidden behind the sprite, while one on the floor centre detaches by
+            // a full 30px. A few pixels forward reads as contact.
+            fxContactShadow(px, py + GROUND_DY * 0.15, 26, 0.7);
             drawPlayer({x:px,y:py});
         }
         else if (obj.type==='npc') {
             const _a = obj.actor;
-            // py is the isometric ground point. Follower legs plant at about py-3
-            // and span ~48px; predator legs reach the ground point itself.
             const _pred = !!_a.dimensions;
             // A leaping scout's shadow shrinks and fades as it gains height,
             // which is what actually sells the arc as leaving the ground.
             const _lift = _a.leapLift || 0;
             const _lf   = _lift > 0 ? Math.max(0.3, 1 - _lift / 42) : 1;
-            fxContactShadow(px, _pred ? py - 1 : py - 3,
-                                (_pred ? _a.dimensions.width * 1.15 : 19) * _lf,
+            fxContactShadow(px, py + GROUND_DY * (_pred ? 0.33 : 0.25),
+                                (_pred ? _a.dimensions.width * 1.1 : 21) * _lf,
                                 (_a.isNymph ? 0.4 : 1) * _lf);
             drawNPC(_a,px,py);
         }

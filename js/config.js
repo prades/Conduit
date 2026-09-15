@@ -78,6 +78,11 @@ cfg.npcSpawnRate = 0.22;
 
 // ── CONSTANTS ─────────────────────────────────────────────
 const TILE_W = 60, TILE_H = 30, RENDER_DIST = 22;
+// Actor sprites anchor their feet at py, but py is a tile's back corner: the
+// drawn diamond runs from py to py+TILE_W, so the tile's visible centre is
+// py+TILE_H. GROUND_DY is that gap, and contact shadows are placed as a
+// fraction of it — see the shadow calls in the draw loop.
+const GROUND_DY = TILE_H;
 const ZONE_LENGTH  = 15;
 const LONG_HOLD_MS = 500;
 const RADIAL_RADIUS = 60;

@@ -188,6 +188,7 @@ function _fxClearLights() {
 
 function fxBeginFrame() {
     _fxPrepared = false;
+    _fxShadowOccluders.length = 0;
     if (FX.level === 'off') return;
     _fxEnsureBuffers(canvas.width, canvas.height);
     if (!FX.lights) return;
@@ -325,18 +326,55 @@ function _fxCollectSceneLights() {
 }
 
 // ── Contact shadow (called from the depth-sorted draw pass) ──
+//
+// The floor here is around rgb(18,33,54) — total luminance 105 out of 765. A
+// half-opacity black blob on that can only darken by ~57, which measured out
+// as a 7% wash: correctly placed and effectively invisible. So the core is
+// near-opaque and the falloff is tight, to read as a silhouette rather than a
+// smudge. Anything gentler simply does not survive this palette.
+const _fxShadowOccluders = [];
+
 function fxContactShadow(px, py, rx, alpha) {
     if (!FX.shadows) return;
     ctx.save();
     ctx.translate(px, py);
-    ctx.scale(1, 0.40);
+    ctx.scale(1, 0.42);
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
-    g.addColorStop(0,    `rgba(0,0,0,${0.55 * alpha})`);
-    g.addColorStop(0.50, `rgba(0,0,0,${0.24 * alpha})`);
+    g.addColorStop(0,    `rgba(0,0,0,${0.94 * alpha})`);
+    g.addColorStop(0.42, `rgba(0,0,0,${0.66 * alpha})`);
+    g.addColorStop(0.74, `rgba(0,0,0,${0.26 * alpha})`);
     g.addColorStop(1,     'rgba(0,0,0,0)');
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
+
+    // A body standing here also blocks light. Without this the additive light
+    // pass — which composites after the world — brightens the shadow straight
+    // back out again, worst of all near pylons where a shadow matters most.
+    if (FX.lights && _fxShadowOccluders.length < 64) {
+        _fxShadowOccluders.push({ x: px, y: py, r: rx, a: alpha });
+    }
+}
+
+// Carve the recorded occluders out of the light buffer. Runs after the lights
+// are accumulated, so there is something there to remove.
+function _fxOccludeLights() {
+    if (!_fxShadowOccluders.length) return;
+    _fxLtc.globalCompositeOperation = 'destination-out';
+    for (const o of _fxShadowOccluders) {
+        const x = o.x * LT_SCALE, y = o.y * LT_SCALE, r = o.r * LT_SCALE;
+        if (r < 1) continue;
+        const g = _fxLtc.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0,    `rgba(0,0,0,${0.85 * o.a})`);
+        g.addColorStop(0.55, `rgba(0,0,0,${0.40 * o.a})`);
+        g.addColorStop(1,     'rgba(0,0,0,0)');
+        _fxLtc.fillStyle = g;
+        _fxLtc.save();
+        _fxLtc.translate(x, y); _fxLtc.scale(1, 0.42); _fxLtc.translate(-x, -y);
+        _fxLtc.fillRect(x - r, y - r, r * 2, r * 2);
+        _fxLtc.restore();
+    }
+    _fxLtc.globalCompositeOperation = 'lighter';
 }
 
 // ── Auto-downgrade so a weak tablet is not stuck at a level it cannot hold ──
@@ -386,6 +424,7 @@ function fxComposite() {
         // and 'lighter' would stack onto it forever.
         if (!_fxPrepared) _fxClearLights();
         _fxCollectSceneLights();
+        _fxOccludeLights();
         ctx.globalCompositeOperation = 'lighter';
         ctx.globalAlpha = FX.haze;
         ctx.drawImage(_fxLt, 0, 0, w, h);

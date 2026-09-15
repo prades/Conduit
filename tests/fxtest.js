@@ -107,6 +107,7 @@ function check(name, fn) {
     try { fn(); console.log('  ok   ' + name); }
     catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); }
 }
+function ok2(c, m) { if (!c) throw new Error(m); }
 function eq(a, b, msg) { if (a !== b) throw new Error(`${msg}: expected ${b}, got ${a}`); }
 
 const FX_LEVELS_LIST = ['off', 'low', 'medium', 'high'];
@@ -270,7 +271,37 @@ check('contact shadow geometry is finite', () => {
     run('fxApplyLevel("high"); fxContactShadow(600, 400, 22, 1); fxContactShadow(0, 0, 8, 0.45)');
 });
 check('shadow is skipped when disabled', () => {
+    // Start from a cleared frame so this does not inherit earlier occluders.
+    run('fxApplyLevel("high"); fxBeginFrame()');
     run('fxApplyLevel("off"); fxContactShadow(600, 400, 22, 1)');
+    eq(run('_fxShadowOccluders.length'), 0, 'no occluders recorded while off');
+});
+check('a shadow records a light occluder', () => {
+    // The additive light pass composites after the world, so without punching
+    // the shadow out of the light buffer it gets brightened straight back out.
+    run('fxApplyLevel("high"); fxBeginFrame()');
+    run('fxContactShadow(600, 400, 30, 1)');
+    eq(run('_fxShadowOccluders.length'), 1, 'recorded');
+});
+check('occluders are cleared each frame, not accumulated', () => {
+    run('fxApplyLevel("high"); fxBeginFrame(); fxContactShadow(600, 400, 30, 1)');
+    run('fxBeginFrame()');
+    eq(run('_fxShadowOccluders.length'), 0, 'cleared');
+});
+check('the occluder list is capped', () => {
+    run('fxApplyLevel("high"); fxBeginFrame()');
+    run('for (let i = 0; i < 400; i++) fxContactShadow(600, 400, 30, 1)');
+    ok2(run('_fxShadowOccluders.length') <= 64, 'capped, got ' + run('_fxShadowOccluders.length'));
+});
+check('occlusion runs inside the composite without throwing', () => {
+    run('fxApplyLevel("high"); fxBeginFrame()');
+    run('fxContactShadow(600, 400, 30, 1); fxContactShadow(100, 120, 8, 0.5)');
+    run('fxComposite()');
+});
+check('a sub-pixel occluder is skipped rather than drawn', () => {
+    run('fxApplyLevel("high"); fxBeginFrame()');
+    run('fxContactShadow(600, 400, 1, 1)');   // r*LT_SCALE < 1
+    run('fxComposite()');                     // must not throw on a 0-radius gradient
 });
 check('canvas resize rebuilds buffers', () => {
     run('fxApplyLevel("high"); fxBeginFrame(); fxComposite()');

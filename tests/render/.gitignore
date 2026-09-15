@@ -1,0 +1,6 @@
+# The screenshot harness needs @napi-rs/canvas installed locally; the game
+# itself has no dependencies and none of this belongs in the repo.
+node_modules/
+package-lock.json
+package.json
+*.png
