@@ -242,6 +242,59 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
 }
 
 // ─────────────────────────────────────────────────────────
+//  PYLON NETWORK LINKING
+// ─────────────────────────────────────────────────────────
+// Builds a spanning forest per element using union-find: pylons can have
+// multiple connections (chains are fine) but a link is skipped when the two
+// pylons are already reachable through the graph, which prevents
+// cross-connecting meshes and redundant triangle shortcuts.
+//
+// Reach is getPylonRange() tiles centre to centre — 3 by default, so a pylon on
+// tile 1 links to one on tile 4 with two empty tiles between them.
+//
+// Extracted from the render loop's cache block so it can be tested directly.
+function rebuildPylonPairs() {
+    _wPylonPairs = [];
+    const _ufParent = new Map();
+    const _ufFind = p => { let r = p; while (_ufParent.get(r) !== r) r = _ufParent.get(r); while (_ufParent.get(p) !== r) { const n = _ufParent.get(p); _ufParent.set(p, r); p = n; } return r; };
+    const _ufUnion = (a, b) => { _ufParent.set(_ufFind(a), _ufFind(b)); };
+    _wPylons.forEach(p => _ufParent.set(p, p));
+
+    // Collect all candidate pairs sorted closest-first so natural neighbours
+    // are preferred over long-range shortcuts.
+    const _pr = getPylonRange(), _pr2 = _pr * _pr;
+    const _candidates = [];
+    for (let _pi = 0; _pi < _wPylons.length; _pi++) {
+        const pa = _wPylons[_pi];
+        for (let _pj = _pi + 1; _pj < _wPylons.length; _pj++) {
+            const pb = _wPylons[_pj];
+            if (pa.attackModeElement !== pb.attackModeElement) continue;
+            const dx = pa.x-pb.x, dy = pa.y-pb.y, d2 = dx*dx+dy*dy;
+            if (d2 > _pr2) continue;
+            _candidates.push({ pa, pb, d2 });
+        }
+    }
+    _candidates.sort((a, b) => a.d2 - b.d2);
+
+    for (const { pa, pb } of _candidates) {
+        // Skip if already connected through the graph (would create a cycle/mesh)
+        if (_ufFind(pa) === _ufFind(pb)) continue;
+        _ufUnion(pa, pb);
+        const _plx = pb.x-pa.x, _ply = pb.y-pa.y;
+        _wPylonPairs.push({ pa, pb,
+            el: pa.attackModeElement,
+            col: pa.attackModeColor || "#0f8",
+            midX: (pa.x+pb.x)*0.5, midY: (pa.y+pb.y)*0.5,
+            lx: _plx, ly: _ply, len2: _plx*_plx+_ply*_ply,
+            bMinX: Math.min(pa.x,pb.x)-1.5, bMaxX: Math.max(pa.x,pb.x)+1.5,
+            bMinY: Math.min(pa.y,pb.y)-1.5, bMaxY: Math.max(pa.y,pb.y)+1.5 });
+    }
+    // O(1) partner lookup used by solo-flux ring and future checks
+    _pylonsWithPartner = new Set();
+    _wPylonPairs.forEach(({pa, pb}) => { _pylonsWithPartner.add(pa); _pylonsWithPartner.add(pb); });
+}
+
+// ─────────────────────────────────────────────────────────
 //  MAIN RENDER / GAME LOOP
 // ─────────────────────────────────────────────────────────
 function render() {
@@ -389,48 +442,7 @@ function render() {
         });
 
         // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
-        // Build a spanning forest per element using union-find: pylons can have
-        // multiple connections (chains are fine) but a connection is skipped when
-        // the two pylons are already reachable through the graph, preventing
-        // cross-connecting meshes and redundant triangle shortcuts.
-        _wPylonPairs = [];
-        const _ufParent = new Map();
-        const _ufFind = p => { let r = p; while (_ufParent.get(r) !== r) r = _ufParent.get(r); while (_ufParent.get(p) !== r) { const n = _ufParent.get(p); _ufParent.set(p, r); p = n; } return r; };
-        const _ufUnion = (a, b) => { _ufParent.set(_ufFind(a), _ufFind(b)); };
-        _wPylons.forEach(p => _ufParent.set(p, p));
-
-        // Collect all candidate pairs sorted closest-first so natural neighbours
-        // are preferred over long-range shortcuts.
-        const _pr = getPylonRange(), _pr2 = _pr * _pr;
-        const _candidates = [];
-        for (let _pi = 0; _pi < _wPylons.length; _pi++) {
-            const pa = _wPylons[_pi];
-            for (let _pj = _pi + 1; _pj < _wPylons.length; _pj++) {
-                const pb = _wPylons[_pj];
-                if (pa.attackModeElement !== pb.attackModeElement) continue;
-                const dx = pa.x-pb.x, dy = pa.y-pb.y, d2 = dx*dx+dy*dy;
-                if (d2 > _pr2) continue;
-                _candidates.push({ pa, pb, d2 });
-            }
-        }
-        _candidates.sort((a, b) => a.d2 - b.d2);
-
-        for (const { pa, pb } of _candidates) {
-            // Skip if already connected through the graph (would create a cycle/mesh)
-            if (_ufFind(pa) === _ufFind(pb)) continue;
-            _ufUnion(pa, pb);
-            const _plx = pb.x-pa.x, _ply = pb.y-pa.y;
-            _wPylonPairs.push({ pa, pb,
-                el: pa.attackModeElement,
-                col: pa.attackModeColor || "#0f8",
-                midX: (pa.x+pb.x)*0.5, midY: (pa.y+pb.y)*0.5,
-                lx: _plx, ly: _ply, len2: _plx*_plx+_ply*_ply,
-                bMinX: Math.min(pa.x,pb.x)-1.5, bMaxX: Math.max(pa.x,pb.x)+1.5,
-                bMinY: Math.min(pa.y,pb.y)-1.5, bMaxY: Math.max(pa.y,pb.y)+1.5 });
-        }
-        // O(1) partner lookup used by solo-flux ring and future checks
-        _pylonsWithPartner = new Set();
-        _wPylonPairs.forEach(({pa, pb}) => { _pylonsWithPartner.add(pa); _pylonsWithPartner.add(pb); });
+        rebuildPylonPairs();
 
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
@@ -587,7 +599,8 @@ function render() {
         }
     }
 
-    // ── WAVE FUNCTION PYLONS — connect same-element pylons within 5 tiles, apply zone effects ──
+    // ── WAVE FUNCTION PYLONS — link same-element pylons within getPylonRange()
+    //    tiles of each other (3 by default, 5 with Signal Relay), apply zone effects ──
     // _wPylonPairs is pre-computed every 60 frames in the cache section above
     const wavePylons = _wPylons;
 

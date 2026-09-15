@@ -8,6 +8,7 @@ const SUITES = [
     ['load order + render seam','loadorder.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],
+    ['pylon linking',          'pylons.js'],
 ];
 
 let failed = 0;

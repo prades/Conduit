@@ -155,6 +155,15 @@ INTERFACE.forEach(fn => check(`${fn} runs after the post-FX seam`, () => {
     if (at < 0) throw new Error('not called at all');
     if (at < seam) throw new Error('called before fxComposite, so the UI gets bloomed');
 }));
+check('rebuildPylonPairs is defined once and called once, inside render', () => {
+    const defs = (GAME.match(/^function rebuildPylonPairs\(\)/gm) || []).length;
+    eq(defs, 1, 'definitions');
+    const calls = (GAME.match(/^\s+rebuildPylonPairs\(\);/gm) || []).length;
+    eq(calls, 1, 'call sites');
+    const at = GAME.indexOf('        rebuildPylonPairs();');
+    const renderAt = GAME.indexOf('function render() {');
+    if (at < renderAt) throw new Error('called outside the render loop');
+});
 check('no world-space overlay is called twice', () => {
     WORLD_SPACE.concat(INTERFACE).forEach(fn => {
         const n = (GAME.match(new RegExp('^\\s*' + fn + '\\(\\);', 'gm')) || []).length;

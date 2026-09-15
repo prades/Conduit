@@ -74,8 +74,14 @@ function purchaseCampBuilding(id) {
 // ── BUILDING EFFECT HOOKS ─────────────────────────────────
 
 // Signal Relay — returns pylon connection range (tiles)
+// How far one pylon can link to another, centre to centre in tiles.
+// 3 tiles means a pylon on tile 1 reaches one on tile 4, leaving two empty
+// tiles between them. The epsilon keeps an exactly-3.0 span from depending on
+// floating-point equality in the `d2 > range²` comparison.
+const PYLON_LINK_TILES       = 3;   // base
+const PYLON_LINK_TILES_RELAY = 5;   // with Signal Relay — its "+2 tiles" claim
 function getPylonRange() {
-    return isCampBuilt("signal_relay") ? 3.5 : 2.5;
+    return (isCampBuilt("signal_relay") ? PYLON_LINK_TILES_RELAY : PYLON_LINK_TILES) + 0.05;
 }
 
 // Command Node — follower damage/defense multipliers
