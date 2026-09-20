@@ -7,6 +7,7 @@ const SUITES = [
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],
     ['pylon linking',          'pylons.js'],
+    ['attack facing',          'facing.js'],
 ];
 
 let failed = 0;

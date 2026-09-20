@@ -125,6 +125,58 @@ function tickSlowSpeed(actor) {
     }
 }
 
+// ── FACING ───────────────────────────────────────────────
+// A predator must look at what it is hitting. The melee attack state returns
+// before predator.js's HEAD CONTROL block ever runs, so without this a predator
+// swings and casts facing whatever direction it last happened to walk.
+//
+// Lives in this module because both the attack state and every ability need it,
+// and this is the file the ability tests load.
+//
+// The body turns smoothly so it reads as the creature rotating in place; the
+// head tracks at double that rate so the face locks on first.
+function _faceHead(pred, angle, rate) {
+    let diff = angle - (pred.headAngle || 0);
+    while (diff >  Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    pred.headAngle = (pred.headAngle || 0) + diff * rate;
+}
+
+// Turning happens in ANGLE space, not by lerping the direction vector.
+// Lerping cannot complete an exact 180° turn: the vector passes through (0,0)
+// and renormalises straight back to where it started, so a predator with a
+// follower directly behind it would spin its wheels forever without turning.
+function _turnBody(pred, want, rate) {
+    const cur = Math.atan2(pred.dirY, pred.dirX);
+    let diff = want - cur;
+    while (diff >  Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    const na = cur + diff * rate;
+    pred.dirX = Math.cos(na);
+    pred.dirY = Math.sin(na);
+}
+
+// rate 1 snaps instantly; the default eases round over a few frames.
+function faceToward(pred, tx, ty, rate) {
+    const dx = tx - pred.x, dy = ty - pred.y;
+    if (!(Math.hypot(dx, dy) > 1e-6)) return;
+    const r = rate === undefined ? 0.25 : rate;
+    const want = Math.atan2(dy, dx);
+    _turnBody(pred, want, r);
+    _faceHead(pred, want, Math.min(1, r * 2));
+}
+
+// Scorpions, spiders and moths shoot from the abdomen, so aiming at a target
+// means turning the REAR toward it. The head still looks back over the shoulder.
+function faceAbdomenToward(pred, tx, ty, rate) {
+    const dx = tx - pred.x, dy = ty - pred.y;
+    if (!(Math.hypot(dx, dy) > 1e-6)) return;
+    const r = rate === undefined ? 0.2 : rate;
+    const want = Math.atan2(dy, dx);
+    _turnBody(pred, want + Math.PI, r);
+    _faceHead(pred, want, r);
+}
+
 // ── Helpers ──────────────────────────────────────────────
 function _abHostileTeam(pred) { return pred.isClone ? 'red' : 'green'; }
 
@@ -177,6 +229,20 @@ function _abBurst(pred, color, radius, life, count) {
 
 function _abSay(pred, text, color) {
     floatingTexts.push({ x: pred.x, y: pred.y - 1.3, text, color, life: 42, vy: -0.06 });
+}
+
+// Where this ability is pointed. Recomputed each windup frame so the telegraph
+// tracks a target that is still moving.
+function _abAimPoint(pred, def) {
+    if (pred.abilityKey === 'SUPER_REPAIR') {
+        const t = _abFindRepairTarget(pred);
+        return t ? { x: t.x, y: t.y } : null;
+    }
+    const reach = pred.abilityKey === 'LEAP' ? 6
+                : pred.abilityKey === 'CARAPACE_SLAM' ? 5
+                : Math.max(2, def.radius || 2) + 1;
+    const foe = _abNearestFoe(pred, reach);
+    return foe ? { x: foe.x, y: foe.y } : null;
 }
 
 // ── Charge / phase machine ───────────────────────────────
@@ -259,6 +325,10 @@ function abilityTick(pred) {
     // ── WINDING (telegraph) ──
     if (pred.abilityPhase === 'winding') {
         pred.abilityTimer--;
+        // Rooted, but still turning: a windup aimed away from its target reads
+        // as a bug rather than as a telegraph.
+        const aim = _abAimPoint(pred, def) || pred.abilityAim;
+        if (aim) { pred.abilityAim = aim; faceToward(pred, aim.x, aim.y, 0.3); }
         if (pred.abilityTimer <= 0) {
             pred.abilityPhase = 'active';
             pred.abilityTimer = Math.max(1, def.duration);
@@ -300,6 +370,9 @@ function _abStartActive(pred, def) {
             pred.leapToX = pred.x + (ax / len) * dist;
             pred.leapToY = Math.max(0, Math.min(3, pred.y + (ay / len) * dist));
             pred.leapT = 0;
+            // Snap to the jump vector at take-off and hold it through the arc,
+            // so the scout lands facing where it went.
+            faceToward(pred, pred.leapToX, pred.leapToY, 1);
             break;
         }
         case 'CARAPACE_SLAM': {
@@ -310,11 +383,14 @@ function _abStartActive(pred, def) {
             pred.slamDX = (ax / len) * (def.distance / def.duration);
             pred.slamDY = (ay / len) * (def.distance / def.duration);
             pred.slamHit = new Set();
+            // Face down the charge line — a beetle slamming sideways looks wrong.
+            faceToward(pred, pred.x + ax / len, pred.y + ay / len, 1);
             break;
         }
         case 'VENOM_LANCE': {
             const foe = _abNearestFoe(pred, def.radius);
             if (foe) {
+                faceToward(pred, foe.x, foe.y, 1);
                 applyDamage(foe, pred.power * def.dmg, pred);
                 foe.defenseShredded   = Math.max(foe.defenseShredded || 0, def.duration);
                 foe.defenseShredFactor = def.shred;
@@ -324,6 +400,8 @@ function _abStartActive(pred, def) {
             break;
         }
         case 'WEB_SNARE': {
+            const webFoe = _abNearestFoe(pred, def.radius);
+            if (webFoe) faceToward(pred, webFoe.x, webFoe.y, 1);
             _abForEachFoeInRadius(pred, def.radius, v => {
                 if (v === null) return;    // the player is not slowed, only units
                 applySlow(v, def.slowFrames, def.slowFactor);
@@ -333,6 +411,8 @@ function _abStartActive(pred, def) {
             break;
         }
         case 'BLINDING_DUST': {
+            const dustFoe = _abNearestFoe(pred, def.radius);
+            if (dustFoe) faceToward(pred, dustFoe.x, dustFoe.y, 1);
             _abForEachFoeInRadius(pred, def.radius, v => {
                 if (v === null) return;
                 applySlow(v, def.slowFrames, def.slowFactor);
@@ -379,6 +459,10 @@ function _abRunActive(pred, def) {
         }
         case 'MANDIBLE_FRENZY':
         case 'BLADE_FLURRY': {
+            // Keep tracking between strikes — a multi-hit combo should follow a
+            // victim that is backing away rather than flail at empty floor.
+            const foe = _abNearestFoe(pred, def.radius + 1.5);
+            if (foe) faceToward(pred, foe.x, foe.y, 0.35);
             if (pred.abilityTimer % def.interval === 0) {
                 pred.attackAnim = 0.01;
                 _abForEachFoeInRadius(pred, def.radius, v => _abHurt(pred, v, pred.power * def.dmg));
@@ -388,8 +472,9 @@ function _abRunActive(pred, def) {
             return false;   // keeps swinging but still tracks its target normally
         }
         case 'VENOM_LANCE': {
+            const v = pred.venomTarget;
+            if (v && !v.dead) faceToward(pred, v.x, v.y, 0.25);
             if (pred.abilityTimer % def.poisonEvery === 0) {
-                const v = pred.venomTarget;
                 if (v && !v.dead) applyDamage(v, pred.power * def.poisonDmg, pred, 'toxic');
             }
             return false;
@@ -499,6 +584,7 @@ function workerTick(pred) {
     }
 
     // ── In range: repair ──
+    faceToward(pred, t.x, t.y, 0.2);   // face the work
     const mul = pred.superRepair ? (ABILITY_DEFS.SUPER_REPAIR.repairMul || 6) : 1;
     if (t.destroyed) {
         t.reconstructing = true;

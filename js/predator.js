@@ -229,6 +229,9 @@ class Predator {
                     this.x+=(dx/dist)*this.moveSpeed*1.15;
                     this.y+=(dy/dist)*this.moveSpeed*1.15;
                 } else {
+                    // In range and bashing — turn to face the pylon. This branch
+                    // also returns before HEAD CONTROL.
+                    faceToward(this, this.pylonAggro.x, this.pylonAggro.y, 0.3);
                     if (!this.pylonAttackCooldown) this.pylonAttackCooldown=0;
                     this.pylonAttackCooldown--;
                     if (this.pylonAttackCooldown<=0) {
@@ -370,6 +373,8 @@ class Predator {
                         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-60,text:"◈ NOVA BURST!",color:"#c84fff",life:80,vy:-0.3});
                     }
                 }
+                // Face the Crystal while chewing on it, same as any other target.
+                faceToward(this, crystal.x, crystal.y, 0.3);
                 this.state="attack";
                 this.currentTarget=null; // attacking crystal, not a unit
             }
@@ -391,6 +396,9 @@ class Predator {
                 this.moveSpeed=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
                 return;
             }
+            // Turn to face what we are biting. This branch returns before the
+            // HEAD CONTROL block below ever runs, so this is the only chance.
+            faceToward(this, target.x, target.y, 0.3);
             this.attackAnim+=0.18;
             if (this.attackAnim>=Math.PI) this.attackAnim=0;
             if (!this.attackCooldown) this.attackCooldown=0;
@@ -531,6 +539,9 @@ class Predator {
                 }
 
                 if (rearTarget) {
+                    // The weapon is the abdomen, so aiming means turning the rear
+                    // toward the target — otherwise the shot leaves sideways.
+                    faceAbdomenToward(this, rearTarget.x, rearTarget.y, 0.35);
                     const abX = this.x - this.dirX * 0.4;
                     const abY = this.y - this.dirY * 0.4;
                     const isCharged = this.charged && this.chargeElement;
