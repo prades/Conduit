@@ -367,9 +367,15 @@ function detectEnemiesInCircle() {
 
 function issueAttackOnEnemies(enemies) {
     const pool = getCommandPool().filter(a => !a.job);
+    const ordered = [];
     enemies.forEach((enemy, i) => {
-        pool.slice(i*4, i*4+4).forEach(a => { a.job = { type:"attack", target:enemy }; });
+        pool.slice(i*4, i*4+4).forEach(a => { a.job = { type:"attack", target:enemy }; ordered.push(a); });
     });
+    // The tutorial's squad lesson watches who actually took the order — an
+    // order nobody answered is the SEL/ALL distinction doing its job, not a
+    // completed lesson.
+    if (typeof tutorialNoteAttackOrder === "function") tutorialNoteAttackOrder(ordered);
+    return ordered;
 }
 
 function detectFollowerToEnemyGesture(sx, sy, ex, ey) {

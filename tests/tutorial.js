@@ -384,6 +384,199 @@ check('an enter hook runs once per step, not every frame', () => {
     eq(env.run('enters'), 1, 'the enter hook fired more than once');
 });
 
+group('the squad lesson: fire only, or everyone');
+
+// The real getCommandPool/issueAttackOnEnemies out of helpers.js, so the
+// SEL-versus-ALL behaviour under test is the game's, not a restatement of it.
+const HELPERS = fs.readFileSync(path.join(ROOT, 'js/helpers.js'), 'utf8');
+function squadEnv() {
+    const env = makeEnv();
+    for (let x = -2; x < 12; x++) for (let y = 0; y < 5; y++) env.sandbox.world.push(floor(x, y));
+    env.sandbox.squadMode = 'selected';
+    env.sandbox.selectedRole = null;
+    env.sandbox.uiTab = 'elements';
+    env.sandbox.followerByElement = {};
+    env.sandbox.player.selectedElement = 'fire';
+    env.sandbox.NPC_TYPES = { virus: { moveSpeed: 0.02 } };
+    env.sandbox.PERSONALITY_KEYS = ['stoic'];
+    env.sandbox.applyPersonality = () => ({ hp: 20, attack: 5, speed: 10, will: 20 });
+    env.sandbox.assignRole = () => 'brawler';
+    env.sandbox.followerPermHPBonus = 0;
+    env.sandbox.followerPermPowerBonus = 0;
+    env.sandbox.rebuildFollowerTable = () => {};
+    for (const name of ['getCommandPool', 'issueAttackOnEnemies', 'spawnFollowerFromSave']) {
+        const src = name === 'spawnFollowerFromSave'
+            ? fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8')
+            : HELPERS;
+        const fn = src.match(new RegExp(`function ${name}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`));
+        if (!fn) { console.log(`  FAIL could not find ${name}`); process.exit(1); }
+        env.run(fn[0]);
+    }
+    env.run('startTutorial()');
+    gotoStep(env, 'squad');
+    return env;
+}
+const sqClasses = env => env.sandbox.els['btnSquad'] && env.sandbox.els['btnSquad']._classes;
+const sqFlashing = env => !!(sqClasses(env) && sqClasses(env).has('tut-wanted'));
+
+check('THE REPORTED CASE: there is a stage for it, before a follower gets spent', () => {
+    const ids = stepIds(makeEnv());
+    ok(ids.includes('squad'), 'no squad stage in the tutorial');
+    ok(ids.indexOf('squad') > ids.indexOf('circle'),
+       'the squad lesson should come after the circle gesture it builds on');
+    ok(ids.indexOf('squad') < ids.indexOf('upgrade'),
+       'it must come before the upgrade step, which sacrifices a follower');
+});
+
+check('the stage lends a mixed squad so the lesson is demonstrable', () => {
+    const env = squadEnv();
+    eq(env.sandbox.followers.length, 0, 'fixture: no squad to begin with');
+    env.run('tutorialTick()');
+    const els = new Set(env.sandbox.followers.map(f => f.element));
+    ok(els.has('fire'), 'no fire unit to demonstrate "fire only" with');
+    ok(els.size >= 2, `a mixed squad is needed, got only ${[...els].join(',')}`);
+});
+
+check('it does not pile on units the player already has', () => {
+    const env = squadEnv();
+    env.run("spawnFollowerFromSave({ element: 'fire' })");
+    env.run("spawnFollowerFromSave({ element: 'electric' })");
+    const before = env.sandbox.followers.length;
+    env.run('tutorialTick()');
+    eq(env.sandbox.followers.length, before, 'spawned duplicates over an existing squad');
+});
+
+check('SQUAD: SEL sends only the selected element', () => {
+    const env = squadEnv();
+    env.run('tutorialTick()');
+    const foe = env.sandbox.actors.find(a => a.isTutorialFoe);
+    ok(foe, 'no enemy to order an attack on');
+    env.run("squadMode = 'selected'; player.selectedElement = 'fire'");
+    env.run('issueAttackOnEnemies([actors.find(a => a.isTutorialFoe)])');
+    const ordered = env.sandbox.followers.filter(f => f.job);
+    ok(ordered.length > 0, 'nobody answered the order');
+    ok(ordered.every(f => f.element === 'fire'),
+       `SEL sent ${ordered.map(f => f.element).join(',')} — should be fire only`);
+});
+
+check('SQUAD: ALL sends everyone', () => {
+    const env = squadEnv();
+    env.run('tutorialTick()');
+    env.run("squadMode = 'all'");
+    env.run('issueAttackOnEnemies([actors.find(a => a.isTutorialFoe)])');
+    const ordered = env.sandbox.followers.filter(f => f.job);
+    eq(ordered.length, env.sandbox.followers.length, 'ALL should commit the whole squad');
+});
+
+check('the stage needs both modes demonstrated to advance', () => {
+    const env = squadEnv();
+    env.run('tutorialTick()');
+    const aim = () => env.run('issueAttackOnEnemies([actors.find(a => a.isTutorialFoe)])');
+
+    env.run("squadMode = 'selected'; player.selectedElement = 'fire'");
+    aim();
+    env.run('tutorialTick()');
+    eq(env.run("TUTS[tutorialStep].id"), 'squad', 'advanced on one mode alone');
+
+    env.run('followers.forEach(f => f.job = null)');
+    env.run("squadMode = 'all'");
+    aim();
+    env.run('tutorialTick()');
+    ok(env.run("TUTS[tutorialStep].id") !== 'squad', 'both modes shown but the stage did not advance');
+});
+
+check('an order nobody answered does not count as a demonstration', () => {
+    // SEL with an element the player has none of commits nobody — that is the
+    // lesson working, not the lesson learned.
+    const env = squadEnv();
+    env.run('tutorialTick()');
+    env.run("squadMode = 'selected'; player.selectedElement = 'toxic'");
+    env.run('issueAttackOnEnemies([actors.find(a => a.isTutorialFoe)])');
+    eq(env.run('tutOrderedSelected'), false, 'an empty order was credited');
+});
+
+check('it flashes SQUAD only for the mode still to be shown', () => {
+    const env = squadEnv();
+    env.run('tutorialTick()');
+    // Nothing shown yet: the player can start in either mode, so no nagging.
+    ok(!sqFlashing(env), 'flashing SQUAD before the player has done anything');
+    env.run("squadMode = 'selected'; player.selectedElement = 'fire'");
+    env.run('issueAttackOnEnemies([actors.find(a => a.isTutorialFoe)])');
+    env.run('tutorialTick()');
+    ok(sqFlashing(env), 'SEL is done — SQUAD should be flashing to ask for ALL');
+    env.run("squadMode = 'all'");
+    env.run('tutorialTick()');
+    ok(!sqFlashing(env), 'the player switched; SQUAD should stop flashing');
+});
+
+check('a target stays available for the second order', () => {
+    // The first order can kill the bug, and then there is nothing to circle.
+    const env = squadEnv();
+    env.run('tutorialTick()');
+    const first = env.sandbox.actors.find(a => a.isTutorialFoe);
+    first.dead = true;
+    env.run('tutorialTick()');
+    const now = env.sandbox.actors.filter(a => a.isTutorialFoe && !a.dead);
+    eq(now.length, 1, 'no fresh target after the first one died');
+});
+
+check('the loaned units are handed back when the tutorial closes', () => {
+    const env = squadEnv();
+    env.run('tutorialTick()');
+    ok(env.sandbox.followers.length > 0, 'precondition: should have a loaned squad');
+    env.run('exitTutorial()');
+    eq(env.sandbox.followers.length, 0, 'free followers were left behind after the tutorial');
+    eq(env.sandbox.actors.filter(a => a.isTutorialUnit).length, 0, 'loaned units still in actors[]');
+    const buckets = env.run('Object.values(followerByElement).map(b => b.length).join(",")');
+    ok(!/[1-9]/.test(buckets), 'followerByElement still holds loaned units: ' + buckets);
+});
+
+check('units the player earned are NOT taken away', () => {
+    const env = squadEnv();
+    env.run("spawnFollowerFromSave({ element: 'ice' })");   // earned, not loaned
+    env.run('tutorialTick()');
+    env.run('exitTutorial()');
+    const left = env.sandbox.followers.map(f => f.element);
+    eq(left.join(','), 'ice', `the player's own follower was removed too, left: ${left}`);
+});
+
+check('handing them back does not kill them or drop shards', () => {
+    const env = squadEnv();
+    env.run('tutorialTick()');
+    const loaned = env.sandbox.followers.slice();
+    env.run('exitTutorial()');
+    ok(loaned.every(f => !f.dead), 'loaned units were killed rather than withdrawn');
+});
+
+check('a restart lends a fresh squad rather than reusing the old one', () => {
+    const env = squadEnv();
+    env.run('tutorialTick()');
+    env.run('exitTutorial()');
+    eq(env.run('tutLoanedFollowers.length'), 0, 'the loan list outlived the tutorial');
+    env.run('startTutorial()');
+    eq(env.run('tutOrderedSelected'), false, 'SEL progress survived a restart');
+    eq(env.run('tutOrderedAll'), false, 'ALL progress survived a restart');
+    gotoStep(env, 'squad');
+    env.run('tutorialTick()');
+    ok(env.sandbox.followers.length >= 2, 'no fresh squad on restart');
+});
+
+check('issueAttackOnEnemies still works with no tutorial running', () => {
+    const env = squadEnv();
+    env.run('tutorialTick()');
+    env.run('exitTutorial()');
+    env.run("spawnFollowerFromSave({ element: 'fire' })");
+    env.run("squadMode = 'all'");
+    env.run('issueAttackOnEnemies([{ x: 1, y: 1, dead: false, team: "red" }])');
+    ok(env.sandbox.followers.some(f => f.job), 'orders stopped working outside the tutorial');
+});
+
+check('the game calls the notifier, and survives it being absent', () => {
+    ok(/tutorialNoteAttackOrder/.test(HELPERS), 'helpers.js never reports an attack order');
+    ok(/typeof tutorialNoteAttackOrder === "function"/.test(HELPERS),
+       'the call should be guarded — helpers.js loads before tutorial.js');
+});
+
 group('the BUILD button flashes when the tutorial wants it');
 
 const buildClasses = env => env.sandbox.els['btnBuild'] && env.sandbox.els['btnBuild']._classes;

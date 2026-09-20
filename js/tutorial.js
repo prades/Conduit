@@ -57,16 +57,72 @@ function tutSpawnPracticeFoe() {
     return foe;
 }
 
-// BUILD is a DOM button above the canvas, so the on-board highlight cannot
-// reach it. A step that needs it declares wantsBuild(), and the button pulses
-// only while that is true — it stops the moment the player complies, rather
-// than flashing for the whole step and becoming noise.
+// ── SQUAD LESSON ──────────────────────────────────────────
+// Teaching "only the FIRE ones" versus "everybody" needs a squad with more
+// than one element in it. By this point the player has recruited exactly one
+// follower, so the step lends them a second of a different element. Both are
+// taken back when the tutorial closes — the game's rule is that followers are
+// earned, and these are on loan for the lesson.
+const TUT_SQUAD_ELEMENTS = ['fire', 'electric'];
+let tutLoanedFollowers = [];
+let tutOrderedSelected = false;   // issued an attack order with SQUAD: SEL
+let tutOrderedAll      = false;   // ...and with SQUAD: ALL
+
+function tutSpawnPracticeFollowers() {
+    if (typeof spawnFollowerFromSave !== 'function') return;
+    for (const el of TUT_SQUAD_ELEMENTS) {
+        const have = followers.filter(f => !f.dead && f.element === el).length;
+        if (have > 0) continue;
+        const before = followers.length;
+        spawnFollowerFromSave({ element: el });
+        const added = followers[followers.length - 1];
+        if (followers.length > before && added) {
+            added.isTutorialUnit = true;
+            tutLoanedFollowers.push(added);
+        }
+    }
+}
+
+// Hand the loaned followers back. Spliced out rather than killed, so no death
+// effects fire and no shards drop for units the player never earned.
+function tutReturnPracticeFollowers() {
+    for (const f of tutLoanedFollowers) {
+        let i = actors.indexOf(f);    if (i >= 0) actors.splice(i, 1);
+        i = followers.indexOf(f);     if (i >= 0) followers.splice(i, 1);
+        const bucket = followerByElement[f.element];
+        if (bucket) { i = bucket.indexOf(f); if (i >= 0) bucket.splice(i, 1); }
+    }
+    tutLoanedFollowers = [];
+    if (typeof rebuildFollowerTable === 'function') rebuildFollowerTable();
+}
+
+// Called by issueAttackOnEnemies with the units that actually took the order.
+// An order nobody answered taught nothing, so an empty pool does not count —
+// which is the whole point of the lesson: in SEL mode, only the selected
+// element answers.
+function tutorialNoteAttackOrder(pool) {
+    if (!tutorialMode) return;
+    const step = TUTS[tutorialStep];
+    if (!step || step.id !== 'squad') return;
+    if (!pool || pool.length === 0) return;
+    if (typeof squadMode !== 'undefined' && squadMode === 'all') tutOrderedAll = true;
+    else                                                         tutOrderedSelected = true;
+}
+
+// The top buttons live in the DOM above the canvas, so the on-board highlight
+// cannot reach them. A step that needs one declares wantsButton(), returning
+// its element id, and that button pulses only while the call keeps returning
+// it — so the pulse stops the moment the player complies instead of running
+// for the whole step and turning into noise.
+const TUT_HINTABLE_BUTTONS = ['btnBuild', 'btnSquad'];
+
 function tutorialUiHints() {
-    const btn = document.getElementById('btnBuild');
-    if (!btn) return;
     const step = tutorialMode ? TUTS[tutorialStep] : null;
-    const want = !!(step && step.wantsBuild && step.wantsBuild());
-    btn.classList.toggle('tut-wanted', want);
+    const want = (step && step.wantsButton && step.wantsButton()) || null;
+    for (const id of TUT_HINTABLE_BUTTONS) {
+        const btn = document.getElementById(id);
+        if (btn && btn.classList) btn.classList.toggle('tut-wanted', id === want);
+    }
 }
 
 // Called from the render loop the frame an actor dies, before dead actors are
@@ -128,6 +184,29 @@ const TUTS = [
         check: () => tutEnemyKilled,
     },
     {
+        // Who answers an attack order is decided by the SQUAD button, and it is
+        // the difference between committing one element and committing
+        // everything. Taught right after the circle gesture, while that is
+        // still fresh, and before a follower gets spent on a pylon upgrade.
+        id:    'squad',
+        title: 'WHO ANSWERS THE CALL',
+        body:  'SQUAD: SEL sends only the element picked in the ELEM list — pick FIRE and only your fire units go. SQUAD: ALL sends everyone. Circle the marked bug once on SEL, then tap the flashing SQUAD button and circle it again on ALL.',
+        icon:  '⑂',
+        enter: () => { tutSpawnPracticeFollowers(); tutSpawnPracticeFoe(); },
+        // Orders need something to be aimed at, so keep one on the board for as
+        // long as the step is asking for two of them.
+        tick:  () => tutSpawnPracticeFoe(),
+        // Flash whichever mode has not been demonstrated yet.
+        wantsButton: () => {
+            if (typeof squadMode === 'undefined') return null;
+            if (squadMode === 'all' ? tutOrderedAll : tutOrderedSelected) return 'btnSquad';
+            return null;
+        },
+        target: () => (tutPracticeFoe && !tutPracticeFoe.dead) ? tutPracticeFoe
+                    : tutNearestActor(a => a.team === 'red' && !a.isNeutralRecruit),
+        check: () => tutOrderedSelected && tutOrderedAll,
+    },
+    {
         // The reported gap: the old text said "tap a pylon", but a tap moves
         // you. The command ring is a half-second PRESS AND HOLD, and it is
         // worth a step of its own before anything asks the player to use it.
@@ -145,7 +224,7 @@ const TUTS = [
         icon:  '△',
         // Flash BUILD until it is on; once it is, the request is answered and
         // the ring's UPGRADE button is where the player should be looking.
-        wantsBuild: () => typeof buildMode !== 'undefined' && !buildMode,
+        wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
         target: () => tutNearestPylon(t => !t.attackMode && !t.waveMode),
         check: () => world.some(t => t.pillar && (t.attackMode || t.waveMode)),
     },
@@ -155,7 +234,7 @@ const TUTS = [
         body:  'Turn BUILD back off, then press and hold the marked pylon and pick SWITCH from the left of the ring. That toggles ATTACK MODE (fires at enemies) and WAVE MODE (links with nearby pylons to boost your network).',
         icon:  '⇌',
         // This step asks for the opposite: flash BUILD while it is still on.
-        wantsBuild: () => typeof buildMode !== 'undefined' && buildMode,
+        wantsButton: () => (typeof buildMode !== 'undefined' && buildMode) ? 'btnBuild' : null,
         // The upgraded pylon, or any pylon if that one got smashed mid-step —
         // better to point somewhere useful than at nothing.
         target: () => tutNearestPylon(t => t.attackMode || t.waveMode) || tutNearestPylon(),
@@ -230,7 +309,10 @@ function startTutorial() {
     tutEnemyKilled  = false;
     tutModeSwitched = false;
     tutHeldOpen     = false;
+    tutOrderedSelected = false;
+    tutOrderedAll      = false;
     tutPracticeFoe  = null;
+    tutLoanedFollowers = [];
     _tutTarget      = null; _tutTargetStep = -1;
     _tutEnteredStep = -1;
 
@@ -245,11 +327,13 @@ function tutorialTick() {
     const step = TUTS[tutorialStep];
     const id = step && step.id;
 
-    // Let a step set itself up the first time it runs.
+    // Let a step set itself up the first time it runs, and keep itself topped
+    // up after that.
     if (step && step.enter && _tutEnteredStep !== tutorialStep) {
         _tutEnteredStep = tutorialStep;
         step.enter();
     }
+    if (step && step.tick) step.tick();
 
     // Watch by step id, not index — inserting a step used to re-point these at
     // whatever landed on the old number.
@@ -421,6 +505,7 @@ function exitTutorial() {
     // predator in the safe zone, so it leaves with the lesson.
     if (tutPracticeFoe && !tutPracticeFoe.dead) tutPracticeFoe.dead = true;
     tutPracticeFoe = null;
+    tutReturnPracticeFollowers();
     // Stop the BUILD button pulsing along with everything else.
     tutorialUiHints();
     const panel = document.getElementById('tutPanel');
