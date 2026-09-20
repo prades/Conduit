@@ -241,6 +241,7 @@ function executeCommand() {
         case "connect_nest": {
             if (commandNestTarget && commandNestTarget.nestHealth <= 0) {
                 nestConnectMode  = true;
+                nestConnectMisses = 0;
                 pendingConnectNest = commandNestTarget;
                 floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
                     text:"TAP AN UPGRADED PYLON TO LINK",color:"#00ffcc",life:180,vy:-0.15});

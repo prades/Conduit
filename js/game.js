@@ -1735,7 +1735,9 @@ function render() {
             }
 
             // ── PYLON SELECT HIGHLIGHT (nest connect mode) ──
-            if (nestConnectMode && obj.pillar&&!obj.destroyed&&obj.pillarTeam==="green"&&obj.health>0&&(obj.attackMode||obj.waveMode)) {
+            // Same predicate the tap handler uses, so what is lit is exactly
+            // what is tappable.
+            if (nestConnectMode && isNestLinkablePylon(obj)) {
                 const _blink=Math.floor((frame||0)/10)%2===0;
                 ctx.save();
                 ctx.beginPath();

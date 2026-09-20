@@ -19,27 +19,64 @@ function toCanvas(cx, cy) {
     ];
 }
 
-const handleInput=(ex,ey)=>{
-    // Pylon-select mode for nest connection
-    if (nestConnectMode) {
-        const _dx=ex-canvas.width/2, _dy=ey-canvas.height/2-TILE_H;
-        const _gx=Math.round((_dy/TILE_H+_dx/TILE_W)/2+player.visualX);
-        const _gy=Math.round((_dy/TILE_H-_dx/TILE_W)/2+player.visualY);
-        let tapped=null;
-        world.forEach(t=>{
-            if(t.pillar&&!t.destroyed&&t.pillarTeam==="green"&&t.health>0
-               &&(t.attackMode||t.waveMode)
-               &&Math.hypot(t.x-_gx,t.y-_gy)<2.5) tapped=t;
-        });
-        if(tapped&&pendingConnectNest){
-            tapped.nestConnection=pendingConnectNest;
-            pendingConnectNest.connectedPylon=tapped;
-            floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
-                text:"NEST LINKED — bonus charge active",color:"#ff4444",life:120,vy:-0.3});
-        }
-        nestConnectMode=false; pendingConnectNest=null;
-        return;
+// A pylon the player is allowed to link a broken nest to — the same test the
+// blinking LINK highlight uses, so what is tappable is exactly what is lit.
+function isNestLinkablePylon(t) {
+    return !!(t && t.pillar && !t.destroyed && t.pillarTeam === "green"
+              && t.health > 0 && (t.attackMode || t.waveMode));
+}
+
+// Nearest eligible pylon to a tap. The old scan kept the LAST match in world
+// order rather than the closest, so with two lit pylons in range the tap could
+// land on the wrong one.
+function pickNestLinkPylon(ex, ey) {
+    const dx = ex - canvas.width/2, dy = ey - canvas.height/2 - TILE_H;
+    const gx = (dy/TILE_H + dx/TILE_W) / 2 + player.visualX;
+    const gy = (dy/TILE_H - dx/TILE_W) / 2 + player.visualY;
+    let best = null, bestD = 2.5;
+    for (const t of world) {
+        if (!isNestLinkablePylon(t)) continue;
+        const d = Math.hypot(t.x - gx, t.y - gy);
+        if (d < bestD) { bestD = d; best = t; }
     }
+    return best;
+}
+
+// While linking a nest, a tap means "pick that pylon" and nothing else. This
+// runs ahead of the follower and gesture handling in pointerup, because those
+// were swallowing the tap whenever a follower happened to stand within 40px of
+// the pylon — the link then failed silently and the mode cancelled itself.
+//
+// Returns true when the tap has been consumed.
+function handleNestConnectTap(ex, ey) {
+    if (!nestConnectMode) return false;
+    const tapped = pickNestLinkPylon(ex, ey);
+    if (tapped && pendingConnectNest) {
+        tapped.nestConnection = pendingConnectNest;
+        pendingConnectNest.connectedPylon = tapped;
+        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
+            text:"NEST LINKED — bonus charge active", color:"#ff4444", life:120, vy:-0.3});
+        nestConnectMode = false; pendingConnectNest = null; nestConnectMisses = 0;
+        return true;
+    }
+    // A miss no longer cancels outright — that is what made a stray tap so
+    // costly. Two misses in a row does, so the mode can never trap the player.
+    nestConnectMisses++;
+    if (nestConnectMisses >= 2) {
+        nestConnectMode = false; pendingConnectNest = null; nestConnectMisses = 0;
+        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
+            text:"LINK CANCELLED", color:"#888", life:90, vy:-0.25});
+    } else {
+        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
+            text:"TAP A LIT PYLON  (tap again to cancel)", color:"#00ffcc", life:110, vy:-0.25});
+    }
+    return true;
+}
+
+const handleInput=(ex,ey)=>{
+    // Nest linking is handled earlier in pointerup; this is a backstop for any
+    // other path that reaches handleInput while the mode is active.
+    if (nestConnectMode) { handleNestConnectTap(ex, ey); return; }
     // Short tap near crystal → open crystal panel
     if (isTapNearCrystal(ex,ey)) { crystalMenuOpen=true; return; }
 
@@ -80,6 +117,9 @@ function isTapNearCrystal(ex, ey) {
 }
 
 function handleLongHold(ex,ey) {
+    // Holding during a pending nest link would open the command menu over the
+    // pylon the player is trying to pick.
+    if (nestConnectMode) return;
     commandMode=true; commandX=ex; commandY=ey;
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
@@ -177,6 +217,10 @@ canvas.addEventListener('pointerup', e=>{
     if (handleCloneMenuTap(upX, upY)) { isPressing=false; return; }
     if (handleTrapPickerTap(upX, upY)) { isPressing=false; return; }
     if (handleCampMenuTap(upX, upY)) { isPressing=false; return; }
+    // Pylons win over everything below while a nest link is pending: the
+    // follower panel, the ultimate double-tap scan and the gesture handlers all
+    // used to get first refusal and steal the tap.
+    if (!touchMoved && handleNestConnectTap(upX, upY)) { isPressing=false; return; }
     if (handleFollowerUIClick(upX, upY)) { isPressing=false; return; }
     // SHOP button tap
     if (!touchMoved && !alertActive && gameState.phase !== "night" && gameState.phase !== "waveComplete" && gameState.phase !== "gameOver"

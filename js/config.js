@@ -182,6 +182,7 @@ let commandX = 0, commandY = 0;
 let commandTarget = null;
 let commandNestTarget = null;   // broken nest pod near long-press point
 let nestConnectMode   = false;  // true while waiting for player to tap a pylon
+let nestConnectMisses = 0;      // consecutive stray taps; two in a row cancels
 let pendingConnectNest = null;  // nest tile being connected
 let selectedRadialAction = null;
 let commandPendingTap    = false;  // true = menu open, waiting for button tap
