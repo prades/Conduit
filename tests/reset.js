@@ -24,6 +24,15 @@ const WAVES = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
 const CAMP  = fs.readFileSync(path.join(ROOT, 'js/camp.js'),  'utf8');
 
 let store = {};
+// world.js stamps every tile with the one pylon look; read it out of config.js
+// rather than copying the string.
+function _pylonStyle() {
+    const src = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
+    const m = src.match(/const PYLON_STYLE = "([^"]+)"/);
+    if (!m) { console.log('  FAIL config.js no longer defines PYLON_STYLE'); process.exit(1); }
+    return m[1];
+}
+
 function makeEnv() {
     const sandbox = {
         console, Math, JSON, Object, Array, String, Number, Set, Map,
@@ -50,6 +59,7 @@ function makeEnv() {
         activePredator: null, predatorRespawnTimer: 0,
         ELEMENTS: ['fire', 'ice', 'electric', 'core', 'flux', 'toxic'].map(id => ({ id })),
         cfg: { pillarSpawnRate: 0.15, npcSpawnRate: 0.22 },
+        PYLON_STYLE: _pylonStyle(),
         PLAYER_AMMO_START: 12, PLAYER_AMMO_MAX: 60, playerAmmo: 0,
         NPC_TYPES: { virus: { moveSpeed: 0.02 }, lobster: { moveSpeed: 0.02 }, turtle: { moveSpeed: 0.02 } },
         PERSONALITY_KEYS: ['aggressive', 'cautious', 'cunning', 'stoic', 'wild'],

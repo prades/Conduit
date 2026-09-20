@@ -10,6 +10,15 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
 let store = {};
+// world.js stamps every tile with the one pylon look; read it out of config.js
+// rather than copying the string.
+function _pylonStyle() {
+    const src = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
+    const m = src.match(/const PYLON_STYLE = "([^"]+)"/);
+    if (!m) { console.log('  FAIL config.js no longer defines PYLON_STYLE'); process.exit(1); }
+    return m[1];
+}
+
 function makeCtx() {
     const sandbox = {
         console, Math, JSON, Object, Array, String, Number, Set, Map,
@@ -20,6 +29,7 @@ function makeCtx() {
         health: 100,
         unlockedElements: new Set(['fire', 'electric']),
         cfg: { pillarSpawnRate: 0.15, npcSpawnRate: 0.22 },
+        PYLON_STYLE: _pylonStyle(),
         NPC_TYPES: { virus: { moveSpeed: 0.02 }, lobster: { moveSpeed: 0.02 }, turtle: { moveSpeed: 0.02 } },
         PERSONALITY_KEYS: ['aggressive', 'cautious', 'cunning', 'stoic', 'wild'],
         COMBAT_TRAITS: { a: {}, b: {} }, NATURAL_TRAITS: { a: {}, b: {} }, PERKS: { a: {}, b: {} },

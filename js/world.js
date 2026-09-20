@@ -16,7 +16,10 @@ function generateSegment(startX) {
             pillarCol:null,
             destroyed:false, health:20, maxHealth:20,
             converting:false, pendingDestroy:false,
-            pylonStyle:["sentinel","spire","monolith","antenna","shrine","conduit"][Math.floor(rnd()*6)],
+            // Every pylon is a sentinel now. The rnd() draw stays because the
+            // stream is positional: dropping it would shift every later draw in
+            // this segment and rebuild a different world under every save.
+            pylonStyle:(rnd(), PYLON_STYLE),
             upgraded:false, pulseTimer:0,
             reconstructing:false, reconstructProgress:0, workers:[],
             // Spawn nest — honeycomb hive structure at zone centre, y=2

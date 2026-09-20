@@ -27,6 +27,26 @@ const ELEMENTS = [
 ];
 let unlockedElements = new Set(["fire", "electric"]);
 
+// ── PYLON LOOK ────────────────────────────────────────────
+// One design for every pylon and every upgrade. There used to be six random
+// bodies (spire, monolith, antenna, shrine, conduit); the sentinel fortress
+// was the only one that read well at this scale, so it is now the whole set.
+const PYLON_STYLE = "sentinel";
+// Sentinel's palette, named once so the wall panelling can be trimmed to match
+// rather than carrying its own separate greens.
+const SENTINEL_FRONT_ACTIVE = "#1a2030";
+const SENTINEL_FRONT_DORMANT= "#252830";
+const SENTINEL_RIGHT_ACTIVE = "#0d1520";
+const SENTINEL_RIGHT_DORMANT= "#181b20";
+const SENTINEL_TOP_ACTIVE   = "#2a3545";
+const SENTINEL_TOP_DORMANT  = "#343840";
+const SENTINEL_FRONT_UPGRADED= "#0d1825";
+const SENTINEL_RIGHT_UPGRADED= "#081018";
+const SENTINEL_TOP_UPGRADED  = "#1a2535";
+const SENTINEL_SLIT         = "#050508";
+const SENTINEL_ACCENT       = "#7fb8dc";   // the cool steel highlight
+const SENTINEL_ACCENT_DIM   = "#3d4d5e";
+
 // ── GENERATOR PYLON ───────────────────────────────────────
 // A neutral pylon: no elemental zone, no tier, no network. It does two things
 // nothing else can — it is the only structure a nest will link to, and it

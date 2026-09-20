@@ -401,7 +401,7 @@ function _buildInfoTitle(targetTile) {
     subject = candidates[0] || null;
     if (subject) return (subject.role||"UNIT").toUpperCase() + " — " + (subject.speciesName||subject.type||"UNIT").toUpperCase();
     if (targetTile.pillar && !targetTile.destroyed) {
-        const _PYLON_STYLE_NAMES={sentinel:"Sentinel",spire:"Spire",monolith:"Monolith",antenna:"Antenna",shrine:"Shrine",conduit:"Conduit"};
+        const _PYLON_STYLE_NAMES={sentinel:"Sentinel"};
         const _sName=_PYLON_STYLE_NAMES[targetTile.pylonStyle]||"Pylon";
         return _sName.toUpperCase()+" PYLON";
     }
@@ -444,7 +444,7 @@ function _buildInfoRows(targetTile) {
         const mode = targetTile.attackMode?"ATTACK":targetTile.waveMode?"WAVE":"DORMANT";
         const team = targetTile.pillarTeam==="green"?"ALLY":"ENEMY";
         const teamCol = targetTile.pillarTeam==="green"?"#0f8":"#f44";
-        const _PSTYLE_NAMES={sentinel:"Sentinel",spire:"Spire",monolith:"Monolith",antenna:"Antenna",shrine:"Shrine",conduit:"Conduit"};
+        const _PSTYLE_NAMES={sentinel:"Sentinel"};
         const _styleName=(_PSTYLE_NAMES[targetTile.pylonStyle]||"Unknown").toUpperCase();
         const rows = [
             ["DESIGN",  _styleName,                        "#88f"],

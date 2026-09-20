@@ -18,6 +18,7 @@ const SUITES = [
     ['tutorial',               'tutorial.js'],
     ['no player stun',         'stun.js'],
     ['generator pylon',        'generator.js'],
+    ['pylon look',             'pylonlook.js'],
 ];
 
 let failed = 0;
