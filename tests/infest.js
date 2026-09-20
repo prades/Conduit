@@ -36,6 +36,9 @@ const GROW_FRAMES = constant('MOULD_GROW_FRAMES');
 const SPAWN_FRAMES= constant('MOULD_SPAWN_FRAMES');
 const MAX_TILES   = constant('MOULD_MAX_TILES');
 const SPAWN_CAP   = constant('MOULD_SPAWN_CAP');
+const PUDDLE_INTERVAL = constant('MOULD_PUDDLE_INTERVAL');
+const PUDDLE_DAMAGE   = constant('MOULD_PUDDLE_DAMAGE');
+const PUDDLE_COLOUR   = INFEST.match(/const MOULD_PUDDLE_COLOUR\s*=\s*"([^"]+)"/)[1];
 
 function makeEnv() {
     const calls = [];
@@ -44,7 +47,8 @@ function makeEnv() {
             if (k === 'canvas') return { width: 800, height: 600 };
             return (...a) => { calls.push({ op: k, args: a }); };
         },
-        set() { return true; },
+        // Sets are recorded too, so which colours were used is assertable.
+        set(t, k, v) { calls.push({ op: 'set:' + k, args: [v] }); return true; },
     });
     const sandbox = {
         console, Math, Object, Array, String, Number, Set, Map, isFinite, isNaN, parseInt,
@@ -447,6 +451,190 @@ check('killing its spawns frees the patch to hatch again', () => {
 check('hatching is slow enough to be answerable', () => {
     const secs = SPAWN_FRAMES / 60;
     ok(secs >= 8, `one spawn every ${secs}s is too fast to fight`);
+});
+
+group('toxic puddles');
+
+// A follower, a not-yet-recruited neutral, a predator and a clone — the four
+// kinds of thing that can stand on a puddle.
+function follower(env, x, y) {
+    const f = { x, y, type: 'virus', team: 'green', isFollower: true, dead: false,
+                health: 40, maxHealth: 40, element: 'fire' };
+    env.sandbox.actors.push(f); return f;
+}
+function neutral(env, x, y) {
+    const n = { x, y, type: 'virus', team: 'red', isNeutralRecruit: true, dead: false,
+                health: 40, maxHealth: 40 };
+    env.sandbox.actors.push(n); return n;
+}
+// A patch with a puddle at a known tile, without waiting on random growth.
+function puddleAt(env, px, py) {
+    board(env, -2, 8, 0, 4);
+    const t = greenPylon(env, 3, 2);
+    convert(env, t, mkPred(env, 3, 2));
+    const m = env.run('moulds')[0];
+    m.tiles.push([px, py]);
+    m.puddles.push([px, py]);
+    return { m, t };
+}
+
+check('THE REPORTED CASE: a puddle burns a follower standing in it', () => {
+    const env = makeEnv();
+    puddleAt(env, 5, 2);
+    const f = follower(env, 5, 2);
+    tick(env, PUDDLE_INTERVAL + 2);
+    ok(f.health < f.maxHealth, 'the follower took no damage');
+    ok(env.sandbox.floatingTexts.some(x => /TOXIC/.test(x.text)), 'no callout on the follower');
+});
+
+check('it burns an un-recruited neutral too', () => {
+    const env = makeEnv();
+    puddleAt(env, 5, 2);
+    const n = neutral(env, 5, 2);
+    tick(env, PUDDLE_INTERVAL + 2);
+    ok(n.health < n.maxHealth, 'a recruit standing in it should be hurt');
+});
+
+// Pinned in place: update() is stubbed out so the subject cannot simply walk
+// off the puddle. Without this the clone case passed for the wrong reason — it
+// wandered away to chase the predator that made the patch.
+function pinned(p) { p.update = () => {}; return p; }
+
+check('THE ASYMMETRY: predators are not touched by it', () => {
+    const env = makeEnv();
+    puddleAt(env, 5, 2);
+    const p = pinned(mkPred(env, 5, 2));
+    const hp = p.health;
+    tick(env, PUDDLE_INTERVAL * 3 + 2);
+    same(p.health, hp, 'a predator should be immune to its own kind\'s toxin');
+    same(p.x, 5, 'fixture: it must not have moved off the puddle');
+});
+
+check('THE ASYMMETRY: your clones are not touched either', () => {
+    const env = makeEnv();
+    puddleAt(env, 5, 2);
+    const c = pinned(mkPred(env, 5, 2));
+    c.isClone = true; c.team = 'green';
+    const hp = c.health;
+    tick(env, PUDDLE_INTERVAL * 3 + 2);
+    same(c.health, hp, 'a clone is still a predator');
+    same(c.x, 5, 'fixture: it must not have moved off the puddle');
+});
+
+check('THE ASYMMETRY: the player walks through untouched', () => {
+    const env = makeEnv();
+    let hurt = 0;
+    env.sandbox.hurtPlayer = () => { hurt++; return true; };
+    puddleAt(env, 5, 2);
+    env.sandbox.player.x = 5; env.sandbox.player.y = 2;
+    env.sandbox.health = 100;
+    tick(env, PUDDLE_INTERVAL * 4 + 2);
+    same(hurt, 0, 'the puddle should never reach for the player');
+    same(env.sandbox.health, 100, 'and must not touch health directly either');
+});
+
+check('the predicate is the single place that decides', () => {
+    const env = makeEnv();
+    const aff = env.run('puddleAffects');
+    same(aff({ isFollower: true, dead: false }), true, 'follower');
+    same(aff({ isNeutralRecruit: true, dead: false }), true, 'recruit');
+    same(aff({ isFollower: true, dead: true }), false, 'a corpse');
+    same(aff({ team: 'green', dead: false }), false, 'something that is neither');
+    same(aff(null), false, 'null');
+    same(aff(undefined), false, 'undefined');
+    const p = mkPred(env, 0, 2);
+    p.isFollower = true;            // even if mislabelled, a Predator is excluded
+    same(aff(p), false, 'a Predator instance is never affected');
+});
+
+check('only the puddle tiles bite, not the whole patch', () => {
+    const env = makeEnv();
+    const { m } = puddleAt(env, 5, 2);
+    // A mould tile that is NOT a puddle.
+    const plain = m.tiles.find(([tx, ty]) => !m.puddles.some(([px, py]) => px === tx && py === ty));
+    ok(plain, 'fixture: the patch should have a non-puddle tile');
+    const f = follower(env, plain[0], plain[1]);
+    tick(env, PUDDLE_INTERVAL * 3 + 2);
+    same(f.health, f.maxHealth, 'plain mould should not hurt anything');
+});
+
+check('standing beside a puddle is safe', () => {
+    const env = makeEnv();
+    puddleAt(env, 5, 2);
+    const f = follower(env, 6.5, 2);       // more than 0.8 away
+    tick(env, PUDDLE_INTERVAL * 3 + 2);
+    same(f.health, f.maxHealth, 'a follower clear of the pool should be unharmed');
+});
+
+check('it bites on an interval, not every frame', () => {
+    const env = makeEnv();
+    puddleAt(env, 5, 2);
+    const f = follower(env, 5, 2);
+    tick(env, PUDDLE_INTERVAL - 1);
+    same(f.health, f.maxHealth, 'bit before its interval elapsed');
+    tick(env, 2);
+    same(f.health, f.maxHealth - PUDDLE_DAMAGE, 'should bite once on the interval');
+});
+
+check('a puddle dies with the patch that grew it', () => {
+    const env = makeEnv();
+    const { t } = puddleAt(env, 5, 2);
+    const f = follower(env, 5, 2);
+    t.pillarTeam = 'green';
+    env.run('clearInfestationAt')(t);
+    tick(env, PUDDLE_INTERVAL * 3 + 2);
+    same(f.health, f.maxHealth, 'a reclaimed pylon should take its puddles with it');
+});
+
+check('growth wells up puddles, but not on every tile', () => {
+    // Over many patches the chance should produce some and not all.
+    const env = makeEnv();
+    board(env, -8, 14, 0, 4);
+    let grown = 0, wells = 0;
+    for (let n = 0; n < 12; n++) {
+        env.run('moulds').length = 0;
+        const t = greenPylon(env, 3, 2, { pillarTeam: 'green' });
+        convert(env, t, mkPred(env, 3, 2));
+        tick(env, GROW_FRAMES * 8);
+        const m = env.run('moulds')[0];
+        if (!m) continue;
+        grown += m.tiles.length - 1;     // the anchor tile is never a puddle
+        wells += m.puddles.length;
+        t.pillarTeam = 'green'; env.run('clearInfestationAt')(t);
+    }
+    ok(grown > 20, `fixture: expected plenty of growth, got ${grown} tiles`);
+    ok(wells > 0, 'no patch ever grew a puddle');
+    // Compared as a share of grown tiles, so "every tile wells up" is caught.
+    ok(wells / grown < 0.8, `${wells}/${grown} tiles welled up — the chance is not being applied`);
+});
+
+check('puddles are drawn, and distinctly from the mould', () => {
+    const env = makeEnv();
+    puddleAt(env, 5, 2);
+    env.calls.length = 0;
+    env.run('drawMoulds()');
+    const fills = env.calls.filter(c => c.op === 'set:fillStyle').map(c => c.args[0]);
+    ok(fills.includes(PUDDLE_COLOUR), 'the puddle colour is never used');
+    ok(env.calls.some(c => c.op === 'stroke'), 'no meniscus outline');
+});
+
+check('puddles survive a refresh', () => {
+    const env = makeEnv();
+    puddleAt(env, 5, 2);
+    const blob = JSON.parse(JSON.stringify(env.run('serialiseMoulds()')));
+    ok(blob[0].puddles.length > 0, 'puddles are not saved');
+    env.run('restoreMoulds')(blob);
+    same(env.run('moulds')[0].puddles.length, 1, 'puddles did not come back');
+    // And a patch saved before puddles existed restores without throwing.
+    const legacy = blob.map(b => { const c = Object.assign({}, b); delete c.puddles; return c; });
+    env.run('restoreMoulds')(legacy);
+    same(env.run('moulds')[0].puddles.length, 0, 'an older save should restore with no puddles');
+});
+
+check('the damage is a nuisance, not an execution', () => {
+    const perSec = (PUDDLE_DAMAGE / PUDDLE_INTERVAL) * 60;
+    ok(perSec >= 1, `${perSec} HP/s is not worth avoiding`);
+    ok(perSec <= 8, `${perSec} HP/s would delete a follower for standing still`);
 });
 
 group('reclaiming the pylon is the counter');

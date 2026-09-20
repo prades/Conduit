@@ -55,17 +55,21 @@ const CODEX_GENERATOR = [
 // player needs to know RECLAIM exists, or a converted pylon looks permanent.
 const CODEX_INFEST = [
     { h: 'IF YOU LEAVE THEM ALONE' },
-    { t: 'An undisturbed predator does not just wander. It walks to your nearest pylon and starts chewing it over to its side.' },
+    { t: 'An undisturbed predator walks to your nearest pylon and starts chewing it over to its side.' },
     ['CONVERSION', (1 / INFEST_RATE / 60).toFixed(0) + 's of contact', '#f88'],
-    { t: 'A bar over the pylon shows it happening. Interrupt the predator and the pylon recovers on its own.' },
+    { t: 'A bar shows it happening. Interrupt the predator and the pylon recovers on its own.' },
     null,
     { h: 'WHAT GROWS THERE' },
-    { t: 'A pylon they take grows a nest beside it and a mould that creeps outward. Mould that reaches another of your pylons takes that one too.' },
+    { t: 'A taken pylon grows a nest and a mould that creeps outward, claiming any pylon of yours it reaches.' },
     ['HATCHES', 'one predator every ' + (MOULD_SPAWN_FRAMES / 60).toFixed(0) + 's', '#f88'],
     { t: 'What hatches is the same species and class as whatever converted the pylon.' },
     null,
+    { h: 'TOXIC PUDDLES' },
+    { t: 'Puddles well up in a patch. They burn followers and recruits only — you and the predators are unharmed.' },
+    ['PUDDLE', MOULD_PUDDLE_DAMAGE + ' damage / ' + (MOULD_PUDDLE_INTERVAL / 60).toFixed(2).replace(/0$/, '') + 's', '#7fdd44'],
+    null,
     { h: 'TAKING IT BACK' },
-    { t: 'Press and hold a red pylon and pick RECLAIM. Followers rebuild it, and the mould and nest anchored to it die with it.' },
+    { t: 'Press and hold a red pylon and pick RECLAIM. Followers rebuild it; the mould and nest die with it.' },
 ];
 
 // Each entry: what the element is for, then what each tier adds.

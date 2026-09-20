@@ -40,6 +40,15 @@ const MOULD_SPAWN_FRAMES   = 900;   // one hatch every 15s while it has room
 const MOULD_SPAWN_CAP      = 3;     // live spawns a single patch will keep out
 const MOULD_ABSORB_RANGE   = 1.4;   // a pylon this close to mould gets taken too
 
+// Toxic puddles that well up inside a patch. They match the map's acid hazard
+// for rate and damage, but only bite recruits and followers — the player walks
+// through untouched, and predators are immune to their own kind's toxin. That
+// asymmetry is the point: mould is dangerous to send units into, not to visit.
+const MOULD_PUDDLE_CHANCE   = 0.35;  // odds a newly grown tile wells up
+const MOULD_PUDDLE_INTERVAL = 45;    // frames between bites, as the acid hazard
+const MOULD_PUDDLE_DAMAGE   = 3;
+const MOULD_PUDDLE_COLOUR   = "#7fdd44";
+
 let moulds = [];   // { tiles:[[x,y]], anchors:[tile], species, className, ... }
 
 // ── Finding something to infest ───────────────────────────
@@ -185,6 +194,7 @@ function seedMould(t, pred) {
     const m = {
         x: t.x, y: t.y,
         tiles: [[t.x, t.y]],
+        puddles: [],          // [[x,y]] — the toxic tiles inside this patch
         anchors: [t],
         species: (pred && pred.speciesName) || "ant",
         className: (pred && pred.className) || "scout",
@@ -237,6 +247,7 @@ function _growMould(m) {
     const [gx, gy] = reach ? candidates[0]
                            : candidates[Math.floor(Math.random() * candidates.length)];
     m.tiles.push([gx, gy]);
+    if (Math.random() < MOULD_PUDDLE_CHANCE) m.puddles.push([gx, gy]);
 
     // Reaching another of your pylons takes that one too — this is how one
     // patch ends up spanning several.
@@ -290,6 +301,30 @@ function _hatchFromMould(m) {
     elementEffects.push({ type: "impact", x: sx, y: sy, color: m.colour, radius: 0.5, life: 22 });
 }
 
+// Who a puddle bites. Followers and the neutral recruits you have not picked up
+// yet, and nothing else: predators are Predator instances (which covers your
+// clones too), and the player is not in actors[] at all.
+function puddleAffects(a) {
+    if (!a || a.dead) return false;
+    if (typeof Predator !== "undefined" && a instanceof Predator) return false;
+    return !!(a.isFollower || a.isNeutralRecruit);
+}
+
+function _puddleTick() {
+    if (frame % MOULD_PUDDLE_INTERVAL !== 0) return;
+    for (const m of moulds) {
+        for (const [px, py] of m.puddles) {
+            for (const a of actors) {
+                if (!puddleAffects(a)) continue;
+                if (Math.abs(a.x - px) >= 0.8 || Math.abs(a.y - py) >= 0.8) continue;
+                applyDamage(a, MOULD_PUDDLE_DAMAGE, null, "toxic");
+                floatingTexts.push({ x: a.x, y: a.y, text: "TOXIC",
+                                     color: MOULD_PUDDLE_COLOUR, life: 28, vy: -0.05 });
+            }
+        }
+    }
+}
+
 // A patch only lives while it still holds a pylon. Reclaim them all and it dies.
 function _mouldStillHeld(m) {
     m.anchors = m.anchors.filter(t => t && t.pillar && t.pillarTeam === "red" && !t.destroyed);
@@ -298,6 +333,7 @@ function _mouldStillHeld(m) {
 
 function updateInfestation() {
     decayConversions();
+    _puddleTick();
     for (let i = moulds.length - 1; i >= 0; i--) {
         const m = moulds[i];
         if (!_mouldStillHeld(m)) { moulds.splice(i, 1); continue; }
@@ -330,6 +366,7 @@ function clearInfestationAt(t) {
 function serialiseMoulds() {
     return moulds.map(m => ({
         x: m.x, y: m.y, tiles: m.tiles.map(([a, b]) => [a, b]),
+        puddles: (m.puddles || []).map(([a, b]) => [a, b]),
         anchors: m.anchors.map(t => [t.x, t.y]),
         species: m.species, className: m.className, colour: m.colour,
         growTimer: m.growTimer, spawnTimer: m.spawnTimer,
@@ -351,6 +388,8 @@ function restoreMoulds(data) {
         moulds.push({
             x: d.x, y: d.y,
             tiles: d.tiles.filter(t => Array.isArray(t) && t.length === 2).map(([a, b]) => [a, b]),
+            puddles: (Array.isArray(d.puddles) ? d.puddles : [])
+                       .filter(t => Array.isArray(t) && t.length === 2).map(([a, b]) => [a, b]),
             anchors,
             species: d.species || "ant", className: d.className || "scout",
             colour: d.colour || "#aa55ff",
@@ -400,6 +439,39 @@ function drawMoulds() {
                 ctx.arc(sx + (a - 0.5) * TILE_W * 0.6,
                         sy + (((seed >> (i * 13)) & 31) / 31 - 0.5) * TILE_H * 0.6,
                         1.2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        // ── Toxic puddles, drawn over the mould that grew them ──
+        // Bright and distinctly not the species colour: this is the bit that
+        // costs you units, so it must not read as more of the same carpet.
+        for (const [px, py] of (m.puddles || [])) {
+            const sx = (px - player.visualX - (py - player.visualY)) * TILE_W + canvas.width  / 2;
+            const sy = (px - player.visualX + (py - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
+            if (sx < -90 || sx > canvas.width + 90 || sy < -90 || sy > canvas.height + 90) continue;
+            const wob = 0.5 + 0.5 * Math.sin(m.pulse * 1.7 + px * 1.3 + py * 0.7);
+            // Pool
+            ctx.globalAlpha = 0.42 + wob * 0.16;
+            ctx.fillStyle = MOULD_PUDDLE_COLOUR;
+            ctx.beginPath();
+            ctx.ellipse(sx, sy, TILE_W * (0.34 + wob * 0.03), TILE_H * (0.34 + wob * 0.03),
+                        0, 0, Math.PI * 2);
+            ctx.fill();
+            // Meniscus, so it reads as liquid rather than paint
+            ctx.globalAlpha = 0.55 + wob * 0.25;
+            ctx.strokeStyle = "#c8ff96"; ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.ellipse(sx, sy, TILE_W * 0.34, TILE_H * 0.34, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            // A bubble or two surfacing
+            ctx.globalAlpha = 0.5 + wob * 0.4;
+            ctx.fillStyle = "#e8ffd0";
+            const bseed = (px * 2654435761) ^ (py * 40503);
+            for (let i = 0; i < 2; i++) {
+                const ph = ((m.pulse * 0.55) + i * 0.5 + ((bseed >> (i * 6)) & 7) / 8) % 1;
+                const bx = sx + (((bseed >> (i * 9 + 2)) & 15) / 15 - 0.5) * TILE_W * 0.4;
+                ctx.beginPath();
+                ctx.arc(bx, sy + (0.5 - ph) * TILE_H * 0.35, 1.1 + ph, 0, Math.PI * 2);
                 ctx.fill();
             }
         }

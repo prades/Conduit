@@ -46,7 +46,8 @@ const GEN_CONSTS = {
 };
 // codex.js quotes the infestation numbers too; they live in js/infest.js.
 const INFEST_SRC = fs.readFileSync(path.join(ROOT, 'js/infest.js'), 'utf8');
-for (const name of ['INFEST_RATE', 'MOULD_SPAWN_FRAMES']) {
+for (const name of ['INFEST_RATE', 'MOULD_SPAWN_FRAMES',
+                    'MOULD_PUDDLE_DAMAGE', 'MOULD_PUDDLE_INTERVAL']) {
     const m = INFEST_SRC.match(new RegExp(`const\\s+${name}\\s*=\\s*([\\d.]+)`));
     if (!m) { console.log(`  FAIL infest.js no longer defines ${name}`); process.exit(1); }
     GEN_CONSTS[name] = Number(m[1]);
@@ -237,7 +238,13 @@ check('no page is tall enough to run off a small screen', () => {
     // Panel height is 94 + rows*20. A 600px-tall viewport fits about 25 rows,
     // and the index previously ran to 40 once its prose was wrapped.
     const MAX_ROWS = 25;
-    const pages = { index: run('codexIndexRows')(48), rules: run('codexRulesRows')(48) };
+    // Every page, not just the two that existed when this was written — the
+    // generator and infestation pages were added later and went unchecked,
+    // and the infestation one promptly ran to 27 rows.
+    const pages = { index:     run('codexIndexRows')(48),
+                    rules:     run('codexRulesRows')(48),
+                    generator: run('codexGeneratorRows')(48),
+                    infest:    run('codexInfestRows')(48) };
     ELEMENTS.forEach(el => { pages[el.id] = run('codexElementRows')(el.id, 48); });
     for (const [name, rows] of Object.entries(pages)) {
         ok(rows.length <= MAX_ROWS,
