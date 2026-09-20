@@ -7,6 +7,68 @@ let tutorialTimer = 0;
 let tutEnemyKilled  = false;
 let tutModeSwitched = false;
 let tutHeldOpen     = false;   // player has opened the command ring at least once
+let tutPracticeFoe  = null;    // the bug spawned for the circle-to-kill step
+
+// A weak ant scout, spawned next to the player so the circle-to-kill lesson has
+// something to practise on. Predators otherwise only exist in zone 1 and up,
+// thirteen tiles or more from where the tutorial starts, so the step used to
+// say "an enemy is nearby" when there was nothing on screen at all.
+const TUT_FOE_SPECIES = 'ant';
+const TUT_FOE_CLASS   = 'scout';
+
+function tutSpawnPracticeFoe() {
+    if (tutPracticeFoe && !tutPracticeFoe.dead) return tutPracticeFoe;
+    if (typeof Predator === 'undefined' || typeof SPECIES === 'undefined') return null;
+    const speciesDef = SPECIES[TUT_FOE_SPECIES];
+    const classDef   = speciesDef && speciesDef[TUT_FOE_CLASS];
+    if (!classDef) return null;
+
+    // Stand it a few tiles off so it reads as "over there", not on top of you,
+    // and keep it on a real floor tile so it is not stuck inside a wall.
+    const spot = tutNearestTile(t => t.type === 'floor' && !t.pillar && !t.nest &&
+                                     !t.nodeType && tutDist(t) > 2 && tutDist(t) < 4.5);
+    const sx = spot ? spot.x : Math.round(player.visualX) + 3;
+    const sy = spot ? spot.y : Math.round(player.visualY);
+
+    const def = {
+        width: classDef.width, height: classDef.height,
+        moveSpeed: classDef.moveSpeed,
+        // Softer than the real thing — this is a lesson, not a fight.
+        health: Math.round(classDef.health * 0.5),
+        power:  Math.round(classDef.power  * 0.5),
+        color: speciesDef.color,
+        reactionSpeed: classDef.reactionSpeed ?? 15,
+        abdomenAttack: false, rangeDamage: 0, abdomenCooldown: 90,
+    };
+    const foe = new Predator(TUT_FOE_CLASS, def, sx, sy);
+    foe.speciesName = TUT_FOE_SPECIES;
+    foe.className   = TUT_FOE_CLASS;
+    foe.dnaDrops    = classDef.dnaDrops;
+    foe.shardDrop   = classDef.shardDrop;
+    foe.isTutorialFoe = true;
+    // No homeZone on purpose: the zone respawn bookkeeping must not treat this
+    // one as a zone's wanderer and hold a slot open for it.
+    foe.state = 'wander';
+    if (typeof applySpeciesBody === 'function') applySpeciesBody(foe, TUT_FOE_SPECIES);
+    foe.baseMoveSpeed = foe.moveSpeed;
+    if (typeof initAbility === 'function') initAbility(foe);
+    actors.push(foe);
+    tutPracticeFoe = foe;
+    return foe;
+}
+
+// Called from the render loop the frame an actor dies, before dead actors are
+// swept out of actors[]. The step used to poll `actors.some(a => a.dead)`, but
+// tutorialTick runs early in the frame and the sweep happens later in the SAME
+// frame, so a follower kill was gone before the poll could ever see it.
+function tutorialNoteKill(actor) {
+    if (!tutorialMode || !actor) return;
+    const step = TUTS[tutorialStep];
+    if (!step || step.id !== 'circle') return;
+    if (actor.isFollower || actor.team === 'green') return;
+    if (actor.isNeutralRecruit) return;   // a recruit dying is not a kill won
+    tutEnemyKilled = true;
+}
 
 // Every step points at the one thing on the map it is talking about, so the
 // panel's words and the board agree. drawTutorialHighlight() flashes it and
@@ -45,9 +107,12 @@ const TUTS = [
     {
         id:    'circle',
         title: 'CIRCLE TO KILL',
-        body:  'An enemy bug is marked. Draw a circle around it with your finger. Your followers will attack!',
+        body:  'A hostile bug is marked. Draw a circle around it with your finger — that is how you order an attack. Your followers will move in.',
         icon:  '◎',
-        target: () => tutNearestActor(a => a.team === 'red' && !a.isNeutralRecruit),
+        // Bring the lesson to the player rather than hoping one wandered close.
+        enter: () => tutSpawnPracticeFoe(),
+        target: () => (tutPracticeFoe && !tutPracticeFoe.dead) ? tutPracticeFoe
+                    : tutNearestActor(a => a.team === 'red' && !a.isNeutralRecruit),
         check: () => tutEnemyKilled,
     },
     {
@@ -123,6 +188,7 @@ function tutNearestPylon(extra) {
    die, be hacked, or be walked away from. */
 const TUT_RESCAN = 20;
 let _tutTarget = null, _tutTargetStep = -1, _tutTargetFrame = -TUT_RESCAN;
+let _tutEnteredStep = -1;   // which step has already run its enter() hook
 
 function tutorialTarget() {
     if (!tutorialMode) return null;
@@ -147,7 +213,9 @@ function startTutorial() {
     tutEnemyKilled  = false;
     tutModeSwitched = false;
     tutHeldOpen     = false;
+    tutPracticeFoe  = null;
     _tutTarget      = null; _tutTargetStep = -1;
+    _tutEnteredStep = -1;
 
     showTutorialUI();
 }
@@ -160,11 +228,20 @@ function tutorialTick() {
     const step = TUTS[tutorialStep];
     const id = step && step.id;
 
+    // Let a step set itself up the first time it runs.
+    if (step && step.enter && _tutEnteredStep !== tutorialStep) {
+        _tutEnteredStep = tutorialStep;
+        step.enter();
+    }
+
     // Watch by step id, not index — inserting a step used to re-point these at
     // whatever landed on the old number.
-    if (!tutEnemyKilled && id === 'circle') {
-        tutEnemyKilled = actors.some(a => a.dead && !a.isFollower && a.team === 'red');
-    }
+    //
+    // The kill is reported by tutorialNoteKill() from the render loop, not
+    // polled here: tutorialTick runs early in the frame and dead actors are
+    // swept out of actors[] later in that same frame, so polling for a corpse
+    // could never see a follower kill and the step hung forever.
+    //
     // A pylon in waveMode means the player toggled away from the default attackMode.
     if (!tutModeSwitched && id === 'switch') {
         tutModeSwitched = world.some(t => t.pillar && t.waveMode);
@@ -320,6 +397,11 @@ function exitTutorial() {
     // Stop the flashing with the panel — a highlight left on the board after
     // the tutorial closes has nothing explaining it.
     _tutTarget = null; _tutTargetStep = -1;
+    _tutEnteredStep = -1;
+    // A practice bug left alive after the tutorial closes is just a loose
+    // predator in the safe zone, so it leaves with the lesson.
+    if (tutPracticeFoe && !tutPracticeFoe.dead) tutPracticeFoe.dead = true;
+    tutPracticeFoe = null;
     const panel = document.getElementById('tutPanel');
     if (panel) panel.style.display = 'none';
 }

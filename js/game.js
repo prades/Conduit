@@ -922,6 +922,12 @@ function render() {
             }
         }
     });
+    // Last look at the dead before they are swept — the tutorial's kill step
+    // cannot poll for a corpse, because tutorialTick() ran earlier this frame
+    // and the sweep below happens before it runs again.
+    if (typeof tutorialMode !== "undefined" && tutorialMode) {
+        actors.forEach(a=>{ if(a.dead) tutorialNoteKill(a); });
+    }
     actors=actors.filter(a=>!a.dead);
     const _prevFL=followers.length;
     followers=followers.filter(a=>!a.dead&&a.team==="green");

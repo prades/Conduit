@@ -38,11 +38,28 @@ function makeEnv() {
         console, Math, Object, Array, String, Number, Set, Map, isFinite, isNaN,
         world: [], actors: [], followers: [], frame: 0,
         TILE_W: 60, TILE_H: 30,
-        player: { x: 0, y: 2, visualX: 0, visualY: 2 },
+        player: { x: 0, y: 2, visualX: 0, visualY: 2, invuln: 0 },
         crystal: { x: 0, y: 2, health: 300, maxHealth: 300 },
         commandMode: false, commandPendingTap: false,
         ctx: rec.ctx,
         canvas: { width: 800, height: 600 },
+        // The circle step spawns a real Predator, so predator.js and the
+        // species tables have to be in scope — a stub would let the spawn
+        // path go untested, which is exactly where the bug was.
+        elementEffects: [], floatingTexts: [], followerProjectiles: [],
+        _pillarCache: [], zonePredators: {}, health: 100, shake: 0,
+        ZONE_LENGTH: 15, activeDayZones: 3, activeCrystalBuild: null,
+        gameState: { nightNumber: 1, phase: 'day' }, alertActive: false,
+        PREDATOR_TYPES: { scout: { moveSpeed: 0.022 }, striker: { moveSpeed: 0.018 },
+                          tank: { moveSpeed: 0.012 }, worker: { moveSpeed: 0.024 } },
+        PYLON_AGGRO_EXPOSURE: 45, PYLON_AGGRO_TRAP_RATE: 3,
+        PYLON_BASH_COOLDOWN: 45, PYLON_AGGRO_GIVE_UP: 9,
+        applyDamage(t, amt) { if (t) { t.health = Math.max(0, (t.health ?? 100) - amt); if (t.health <= 0) t.dead = true; } },
+        applyElementalDamage() {},
+        hurtPlayer() { return false; },
+        findNearestFriendlyPillar: () => null,
+        spawnFollowerProjectile() {},
+        getZoneIndex: x => Math.floor(x / 15),
         document: {
             getElementById: () => ({ style: {}, textContent: '', innerHTML: '',
                                      appendChild() {}, onclick: null }),
@@ -53,6 +70,9 @@ function makeEnv() {
     };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
+    for (const f of ['js/species.js', 'js/abilities.js', 'js/predator.js']) {
+        vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
+    }
     vm.runInContext(TUT, ctx, { filename: 'js/tutorial.js' });
     return { sandbox, calls: rec.calls, run: s => vm.runInContext(s, ctx) };
 }
@@ -229,6 +249,125 @@ check('scanning the world is cached, not done every frame', () => {
     ok(scans <= 6, `walked the world ${scans} times in 60 frames`);
 });
 
+group('getting past CIRCLE TO KILL');
+
+check('THE REPORTED CASE: the kill is reported, never polled for', () => {
+    // tutorialTick() runs early in render(), and dead actors are swept out of
+    // actors[] later in the SAME frame. A follower kill was therefore gone
+    // before any poll could see it, so the step hung forever.
+    const tickBody = TUT.slice(TUT.indexOf('function tutorialTick'),
+                               TUT.indexOf('function drawTutorialHighlight'));
+    ok(!/actors\.some\([^)]*dead/.test(tickBody),
+       'tutorialTick still polls actors[] for a corpse');
+    ok(/function tutorialNoteKill/.test(TUT), 'no kill notification exists');
+});
+
+check('the notification happens before dead actors are swept away', () => {
+    const notify = GAME.indexOf('tutorialNoteKill(a)');
+    const sweep  = GAME.indexOf('actors=actors.filter(a=>!a.dead)');
+    ok(notify > -1, 'game.js never notifies the tutorial of a kill');
+    ok(sweep  > -1, 'could not find the dead-actor sweep');
+    ok(notify < sweep,
+       'the notification runs after the sweep, so the corpse is already gone');
+});
+
+check('the circle step puts an enemy next to the player', () => {
+    // Real predators only exist in zone 1 and up — thirteen or more tiles from
+    // where the tutorial starts — so the step used to promise an enemy that
+    // was nowhere on screen.
+    const env = makeEnv();
+    for (let x = -2; x < 12; x++) for (let y = 0; y < 5; y++) env.sandbox.world.push(floor(x, y));
+    env.run('startTutorial()');
+    gotoStep(env, 'circle');
+    eq(env.sandbox.actors.length, 0, 'fixture: no enemies on the board to begin with');
+    env.run('tutorialTick()');
+    eq(env.sandbox.actors.length, 1, 'the circle step did not provide anything to kill');
+    const foe = env.sandbox.actors[0];
+    const d = Math.hypot(foe.x - 0, foe.y - 2);
+    ok(d <= 4.5, `the practice bug spawned ${d.toFixed(1)} tiles away — too far to see`);
+    ok(foe.team === 'red' && !foe.isNeutralRecruit, 'the practice bug should be hostile');
+});
+
+check('the marker points at the bug the step spawned', () => {
+    const env = makeEnv();
+    for (let x = -2; x < 12; x++) for (let y = 0; y < 5; y++) env.sandbox.world.push(floor(x, y));
+    env.run('startTutorial()');
+    gotoStep(env, 'circle');
+    env.run('tutorialTick()');
+    eq(env.run('tutorialTarget()'), env.run('tutPracticeFoe'),
+       'the marker is not on the practice bug');
+    ok(highlightOf(env).length >= 1, 'the practice bug is not being flashed');
+});
+
+check('only one practice bug is ever spawned', () => {
+    const env = makeEnv();
+    for (let x = -2; x < 12; x++) for (let y = 0; y < 5; y++) env.sandbox.world.push(floor(x, y));
+    env.run('startTutorial()');
+    gotoStep(env, 'circle');
+    for (let i = 0; i < 120; i++) env.run('tutorialTick()');
+    eq(env.sandbox.actors.length, 1, 'the step kept spawning bugs every frame');
+});
+
+check('killing it advances the step', () => {
+    const env = makeEnv();
+    for (let x = -2; x < 12; x++) for (let y = 0; y < 5; y++) env.sandbox.world.push(floor(x, y));
+    env.run('startTutorial()');
+    gotoStep(env, 'circle');
+    env.run('tutorialTick()');
+    const foe = env.sandbox.actors[0];
+    // The real sequence: the follower kills it, then the render loop notifies
+    // the tutorial on its way to sweeping the corpse.
+    foe.dead = true;
+    env.run('actors.forEach(a => { if (a.dead) tutorialNoteKill(a); })');
+    env.run('tutorialTick()');
+    ok(env.run("TUTS[tutorialStep].id") !== 'circle',
+       'the step did not advance after the enemy died');
+});
+
+check('the practice bug does not hold a zone respawn slot', () => {
+    const env = makeEnv();
+    for (let x = -2; x < 12; x++) for (let y = 0; y < 5; y++) env.sandbox.world.push(floor(x, y));
+    env.run('startTutorial()');
+    gotoStep(env, 'circle');
+    env.run('tutorialTick()');
+    eq(env.sandbox.actors[0].homeZone, undefined,
+       'a homeZone would make the zone respawn logic keep a slot open for it');
+});
+
+check('the practice bug leaves when the tutorial closes', () => {
+    const env = makeEnv();
+    for (let x = -2; x < 12; x++) for (let y = 0; y < 5; y++) env.sandbox.world.push(floor(x, y));
+    env.run('startTutorial()');
+    gotoStep(env, 'circle');
+    env.run('tutorialTick()');
+    const foe = env.sandbox.actors[0];
+    env.run('exitTutorial()');
+    ok(foe.dead, 'a live practice bug was left loose in the safe zone');
+    eq(env.run('tutPracticeFoe'), null, 'the reference outlived the tutorial');
+});
+
+check('a restart spawns a fresh bug rather than pointing at the old one', () => {
+    const env = makeEnv();
+    for (let x = -2; x < 12; x++) for (let y = 0; y < 5; y++) env.sandbox.world.push(floor(x, y));
+    env.run('startTutorial()');
+    gotoStep(env, 'circle');
+    env.run('tutorialTick()');
+    env.run('exitTutorial()');
+    env.run('startTutorial()');
+    eq(env.run('tutPracticeFoe'), null, 'startTutorial kept the old bug');
+    gotoStep(env, 'circle');
+    env.run('tutorialTick()');
+    ok(env.run('tutPracticeFoe') && !env.run('tutPracticeFoe').dead, 'no fresh bug on restart');
+});
+
+check('an enter hook runs once per step, not every frame', () => {
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    env.run('TUTS[0].enter = () => { globalThis.enters = (globalThis.enters||0) + 1; }');
+    for (let i = 0; i < 50; i++) env.run('tutorialTick()');
+    eq(env.run('enters'), 1, 'the enter hook fired more than once');
+});
+
 group('the words match the game');
 
 check('THE REPORTED CASE: no step tells the player to TAP for commands', () => {
@@ -328,20 +467,32 @@ check('progress is watched by step id, not by step number', () => {
     // would have re-pointed them at whatever landed on those numbers.
     ok(!/tutorialStep === \d/.test(TUT),
        'tutorialTick still compares tutorialStep against a number');
-    ok(/id === 'circle'/.test(TUT) && /id === 'switch'/.test(TUT),
+    ok(/id !== 'circle'/.test(TUT) && /id === 'switch'/.test(TUT),
        'the watchers should key off step ids');
 });
 
-check('the kill watcher only fires on its own step', () => {
+check('the kill only counts on its own step', () => {
     const env = populate(makeEnv());
     env.run('startTutorial()');
     gotoStep(env, 'recruit');
-    env.sandbox.actors.push({ x: 1, y: 1, team: 'red', dead: true, isFollower: false });
-    env.run('tutorialTick()');
+    env.sandbox.foe = { x: 1, y: 1, team: 'red', dead: true, isFollower: false };
+    env.run('tutorialNoteKill(foe)');
     eq(env.run('tutEnemyKilled'), false, 'a corpse counted a kill on the wrong step');
     gotoStep(env, 'circle');
-    env.run('tutorialTick()');
+    env.run('tutorialNoteKill(foe)');
     eq(env.run('tutEnemyKilled'), true, 'the kill did not register on the circle step');
+});
+
+check('a dead follower or recruit is not a kill won', () => {
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'circle');
+    env.sandbox.ally   = { x: 1, y: 1, team: 'green', dead: true, isFollower: true };
+    env.sandbox.neutral= { x: 1, y: 1, team: 'red', dead: true, isNeutralRecruit: true };
+    env.run('tutorialNoteKill(ally)');
+    env.run('tutorialNoteKill(neutral)');
+    eq(env.run('tutEnemyKilled'), false, 'a dead ally or recruit satisfied the kill step');
+    env.run('tutorialNoteKill(null)');    // must not throw
 });
 
 check('every step has an id, and they are unique', () => {
