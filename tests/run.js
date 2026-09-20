@@ -11,6 +11,7 @@ const SUITES = [
     ['pylon codex',            'codex.js'],
     ['nest linking',           'nestlink.js'],
     ['save & refresh',         'persist.js'],
+    ['player weapon',          'weapon.js'],
 ];
 
 let failed = 0;

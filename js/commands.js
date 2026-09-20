@@ -212,6 +212,18 @@ function executeCommand() {
             openInfoPanel(commandTarget);
             break;
         }
+        // ── ARM / STOW ───────────────────────────────────
+        case "attack_mode": {
+            setPlayerAttackMode(true);
+            // Fire straight away at whatever was long-pressed, so arming is one
+            // gesture rather than two.
+            if (commandEnemyTarget && !commandEnemyTarget.dead) firePlayerShot(commandEnemyTarget);
+            break;
+        }
+        case "stow_weapon": {
+            setPlayerAttackMode(false);
+            break;
+        }
         // ── LEFT: SWITCH (role / pylon mode) ─────────────
         case "switch_context": {
             const pylon = commandTarget;

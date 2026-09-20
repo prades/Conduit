@@ -22,6 +22,7 @@ async function loadConfig() {
     for (let i = CAMP_MIN_X; i < 0; i++) generateSegment(i);
     for (let i = 0; i < 80; i++) generateSegment(i);
     shardCount = getShards();
+    playerAmmo = getAmmo();
     unlockedElements = new Set(getUnlocks());
     const gs = loadGameState();
     if (gs) {

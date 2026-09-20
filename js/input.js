@@ -73,6 +73,46 @@ function handleNestConnectTap(ex, ey) {
     return true;
 }
 
+// The enemy under a screen point, if any. Shared by the tap handler and the
+// long press so what you can shoot is exactly what you can target.
+function findEnemyAtScreen(ex, ey) {
+    for (const a of actors) {
+        if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
+        const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
+        const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
+        if (Math.hypot(ex - apx, ey - (apy - 55)) < 45) return a;
+    }
+    return null;
+}
+
+function firePlayerShot(foe) {
+    if (!foe || foe.dead) return false;
+    if (playerAmmo <= 0) {
+        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-60,
+            text:"OUT OF AMMO", color:"#ff5555", life:90, vy:-0.25, size:13});
+        return false;
+    }
+    const elDef = ELEMENTS.find(e => e.id === player.selectedElement);
+    spawnFollowerProjectile(
+        { x: player.x, y: player.y, element: player.selectedElement },
+        foe,
+        elDef ? elDef.color : "#ffffff",
+        10, 5,
+        null
+    );
+    playerAmmo = Math.max(0, playerAmmo - 1);
+    saveAmmo();
+    player.attackCooldown = 45;
+    return true;
+}
+
+function setPlayerAttackMode(on) {
+    playerAttackMode = !!on;
+    floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
+        text: playerAttackMode ? "ARMED — tap enemies to fire" : "WEAPON STOWED",
+        color: playerAttackMode ? "#ff8844" : "#889", life:110, vy:-0.25, size:13});
+}
+
 const handleInput=(ex,ey)=>{
     // Nest linking is handled earlier in pointerup; this is a backstop for any
     // other path that reaches handleInput while the mode is active.
@@ -80,25 +120,12 @@ const handleInput=(ex,ey)=>{
     // Short tap near crystal → open crystal panel
     if (isTapNearCrystal(ex,ey)) { crystalMenuOpen=true; return; }
 
-    // ── PLAYER ATTACK — tap on a visible enemy to fire a shot ──
-    if (!player.stunned && player.attackCooldown <= 0) {
-        for (const a of actors) {
-            if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
-            const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
-            const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
-            if (Math.hypot(ex - apx, ey - (apy - 55)) < 45) {
-                const elDef = ELEMENTS.find(e => e.id === player.selectedElement);
-                spawnFollowerProjectile(
-                    { x: player.x, y: player.y, element: player.selectedElement },
-                    a,
-                    elDef ? elDef.color : "#ffffff",
-                    10, 5,
-                    null
-                );
-                player.attackCooldown = 45;
-                return;
-            }
-        }
+    // ── PLAYER ATTACK ──
+    // Only while armed. This used to fire on any tap that happened to land near
+    // a predator, so brushing one while moving spent a shot at it.
+    if (playerAttackMode && !player.stunned && player.attackCooldown <= 0) {
+        const foe = findEnemyAtScreen(ex, ey);
+        if (foe) { firePlayerShot(foe); return; }
     }
 
     if (player.stunned) return; // can't move while stunned
@@ -134,6 +161,9 @@ function handleLongHold(ex,ey) {
         const _snap=world.find(obj=>obj.pillar&&!obj.destroyed&&obj.health>0&&Math.hypot(obj.x-gx,obj.y-gy)<2.0);
         if (_snap) commandTarget=_snap;
     }
+    // An enemy under the press takes over the menu — see drawRadialMenu.
+    commandEnemyTarget = findEnemyAtScreen(ex, ey);
+
     // Check if any nest pod (live or broken) is near this tile (within 2.5 tiles)
     commandNestTarget=null;
     world.forEach(obj=>{
@@ -203,6 +233,13 @@ canvas.addEventListener('pointerup', e=>{
     if (crystalMenuOpen) {
         handleCrystalPanelInput(upX, upY, false);
         isPressing=false; return;
+    }
+
+    // Ammo chip — tap while armed to stow the weapon again
+    if (!touchMoved && playerAttackMode && _ATKCHIP.w > 0
+        && upX >= _ATKCHIP.x && upX <= _ATKCHIP.x + _ATKCHIP.w
+        && upY >= _ATKCHIP.y && upY <= _ATKCHIP.y + _ATKCHIP.h) {
+        setPlayerAttackMode(false); isPressing=false; return;
     }
 
     // Blob button — tap opens clone menu

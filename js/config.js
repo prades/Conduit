@@ -176,11 +176,22 @@ let gesturePoints = [];
 let _ultimateLastTapActor = null;   // follower actor tapped last
 let _ultimateLastTapTime  = 0;      // performance.now() of last tap
 
+// ── PLAYER WEAPON ─────────────────────────────────────────
+// Shots used to fire on any tap, which meant brushing a predator while moving
+// spent a shot at it. Firing is now gated behind an explicit attack mode the
+// player turns on from the radial menu, and costs ammo.
+let playerAttackMode = false;
+let playerAmmo       = 0;
+const PLAYER_AMMO_MAX   = 60;
+const PLAYER_AMMO_START = 12;
+let _ATKCHIP = { x: 0, y: 0, w: 0, h: 0 };   // on-screen ammo chip, tap to disarm
+
 // ── COMMAND / RADIAL STATE ────────────────────────────────
 let commandMode = false;
 let commandX = 0, commandY = 0;
 let commandTarget = null;
 let commandNestTarget = null;   // broken nest pod near long-press point
+let commandEnemyTarget = null;  // predator under a long press, if any
 let nestConnectMode   = false;  // true while waiting for player to tap a pylon
 let nestConnectMisses = 0;      // consecutive stray taps; two in a row cancels
 let pendingConnectNest = null;  // nest tile being connected

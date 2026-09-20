@@ -74,6 +74,21 @@ function clearNests() {
     try { localStorage.removeItem("tubecrawler_nests"); } catch(e) {}
 }
 
+function getAmmo() {
+    try {
+        const v = localStorage.getItem("tubecrawler_ammo");
+        if (v === null) return PLAYER_AMMO_START;
+        const n = parseInt(v, 10);
+        return Number.isFinite(n) ? Math.max(0, Math.min(PLAYER_AMMO_MAX, n)) : PLAYER_AMMO_START;
+    } catch (e) { return PLAYER_AMMO_START; }
+}
+function saveAmmo() {
+    try { localStorage.setItem("tubecrawler_ammo", String(playerAmmo)); } catch (e) {}
+}
+function clearAmmo() {
+    try { localStorage.removeItem("tubecrawler_ammo"); } catch (e) {}
+}
+
 function getShards() {
     try { return parseInt(localStorage.getItem("tubecrawler_shards") || "0"); }
     catch(e) { return 0; }

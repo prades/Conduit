@@ -63,6 +63,9 @@ const SHOP_ITEMS = [
       apply() { const pool=[...unlockedElements]; spawnFollowerAtCrystal(pool[Math.floor(Math.random()*pool.length)]||"fire"); } },
     { id:"more_zones",    label:"+1 Zone",       cost:20,
       apply() { activeDayZones++; } },
+    { id:"ammo_resupply", label:"+10 Ammo",      cost:6, repeatable:true,
+      desc:"Rounds for your own weapon. Caps at " + PLAYER_AMMO_MAX + ".",
+      apply() { playerAmmo = Math.min(PLAYER_AMMO_MAX, playerAmmo + 10); saveAmmo(); } },
 ];
 let boughtItems = new Set();
 

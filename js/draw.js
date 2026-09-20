@@ -27,6 +27,25 @@ function drawRadialMenu() {
     ctx.strokeStyle="#0f8"; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(commandX,commandY,RADIAL_RADIUS,0,Math.PI*2); ctx.stroke();
 
+    // ── ENEMY TARGET — combat menu instead of the build/position one ──
+    // This is the only way to arm the weapon, so firing can never be triggered
+    // by an ordinary tap.
+    if (commandEnemyTarget && !commandEnemyTarget.dead) {
+        const eUp = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
+        drawRadialButton(commandX, commandY-RADIAL_RADIUS,
+                         playerAttackMode ? "STOW" : "ATTACK", eUp);
+        if (eUp) selectedRadialAction = playerAttackMode ? "stow_weapon" : "attack_mode";
+        const eRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
+        drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", eRight);
+        if (eRight) selectedRadialAction = "info";
+        // Ammo readout under the ring, so the cost of arming is visible here.
+        ctx.fillStyle = playerAmmo > 0 ? "#fa6" : "#f55";
+        ctx.font = "10px monospace"; ctx.textAlign = "center";
+        ctx.fillText("AMMO " + playerAmmo, commandX, commandY + RADIAL_RADIUS + 18);
+        ctx.restore();
+        return;
+    }
+
     const isPylonTarget   = commandTarget&&commandTarget.pillar&&!commandTarget.destroyed&&commandTarget.health>0;
     const isLiveNest      = commandNestTarget&&commandNestTarget.nestHealth>0;
     const nestAlreadyLinked = commandNestTarget&&commandNestTarget.connectedPylon&&!commandNestTarget.connectedPylon.destroyed;

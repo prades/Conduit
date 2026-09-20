@@ -221,7 +221,9 @@ function _fillShopPane(paneId, items, checkTerritory, isBuildPane) {
     items.forEach(item => {
         if (item.element && unlockedElements.has(item.element)) return;
         const isPermBought = item.oneTimeGame && permUpgrades.has(item.id);
-        const isWaveBought = !item.oneTimeGame && boughtItems.has(item.id);
+        // A repeatable item never latches as bought — ammo can be topped up
+        // as many times as the player can afford.
+        const isWaveBought = !item.oneTimeGame && !item.repeatable && boughtItems.has(item.id);
         const isBought = isPermBought || isWaveBought;
         const isLocked = !!(item.reqZones && zones < item.reqZones);
         const isActiveBuild = isBuildPane && activeCrystalBuild === item.id;
@@ -249,8 +251,8 @@ function _fillShopPane(paneId, items, checkTerritory, isBuildPane) {
             saveShards();
             item.apply();
             if (item.oneTimeGame) { permUpgrades.add(item.id); savePermUpgrades(); }
-            else boughtItems.add(item.id);
-            div.classList.add("bought");
+            else if (!item.repeatable) boughtItems.add(item.id);
+            if (!item.repeatable) div.classList.add("bought");
             document.getElementById("ovr-shards").textContent = shardCount;
             shardUI.textContent = "Shards: " + shardCount;
             _lastShardCount = shardCount; // keep HUD change-detection in sync
@@ -315,6 +317,7 @@ function nextWave() {
     commandMode       = false; commandPendingTap = false;
     commandTarget     = null; selectedRadialAction = null;
     nestConnectMode   = false; pendingConnectNest = null; nestConnectMisses = 0;
+    playerAttackMode  = false; commandEnemyTarget = null;
     buildMode         = false;
     const _bBtn = document.getElementById("btnBuild");
     if (_bBtn) { _bBtn.textContent="BUILD: OFF"; _bBtn.classList.remove("active"); }
@@ -465,7 +468,7 @@ function restartGame() {
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
     pendingPillarDestruction=[];respawnQueue=[];
-    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();clearNests();clearSession();clearWorldSeed();clearPermUpgrades();
+    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();clearNests();clearSession();clearWorldSeed();clearAmmo();clearPermUpgrades();
     permUpgrades=new Set(); pylonMaxHPBonus=0; pylonRangeBonus=0; pylonFireRateBonus=0;
     followerPermPowerBonus=0; followerPermHPBonus=0;
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}

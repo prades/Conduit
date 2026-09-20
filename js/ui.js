@@ -816,3 +816,39 @@ function handleFollowerUIClick(x,y) {
     }
     return false;
 }
+
+// ─────────────────────────────────────────────────────────
+//  AMMO / ARMED CHIP
+// ─────────────────────────────────────────────────────────
+// Always shows the round count. While armed it turns hot and becomes a tap
+// target that stows the weapon, so there is a way out that does not require
+// finding an enemy to long-press again.
+function drawAmmoChip() {
+    const w = 128, h = 26;
+    // Centred, but never overlapping the follower panel on the left — on a
+    // phone-width screen a centred chip lands right on top of it.
+    const x = Math.round(Math.max(canvas.width / 2 - w / 2, _UI_X + _UI_W + 12));
+    const y = Math.round(canvas.height - 40 - (SAFE_BOTTOM || 0));
+    _ATKCHIP.x = x; _ATKCHIP.y = y; _ATKCHIP.w = w; _ATKCHIP.h = h;
+
+    const armed = playerAttackMode;
+    const dry   = playerAmmo <= 0;
+    const pulse = 0.65 + 0.35 * Math.sin((frame || 0) * 0.09);
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle   = armed ? `rgba(40,16,6,${0.88})` : "rgba(8,14,12,0.72)";
+    ctx.strokeStyle = armed ? (dry ? "#f55" : `rgba(255,140,60,${0.55 + pulse * 0.45})`)
+                            : "rgba(90,110,100,0.55)";
+    ctx.lineWidth = armed ? 2 : 1;
+    _epRoundRect(x, y, w, h, 6);
+    ctx.fill(); ctx.stroke();
+
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = "bold 10px monospace";
+    ctx.fillStyle = armed ? (dry ? "#f66" : "#ffb070") : "rgba(140,160,150,0.8)";
+    ctx.fillText(armed ? (dry ? "NO AMMO — TAP TO STOW" : "ARMED  ◆ " + playerAmmo)
+                       : "AMMO  ◆ " + playerAmmo,
+                 x + w / 2, y + h / 2);
+    ctx.restore();
+}
