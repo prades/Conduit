@@ -319,8 +319,8 @@ function resetTransientState() {
     nestConnectMode   = false; pendingConnectNest = null; nestConnectMisses = 0;
     playerAttackMode  = false; commandEnemyTarget = null; commandFollowerTarget = null;
     chargedMass.length = 0;
-    // Mould and half-finished conversions do not survive a change of scene.
-    moulds.length = 0;
+    // Cocoon and half-finished conversions do not survive a change of scene.
+    cocoons.length = 0;
     world.forEach(t => { if (t.converting) { t.converting = false; t.convertProgress = 0; } });
     buildMode         = false;
     const _bBtn = document.getElementById("btnBuild");

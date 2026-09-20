@@ -112,7 +112,7 @@ function drawRadialMenu() {
     let leftLabel="SWITCH", leftAction="switch_context";
     const isPylonSwitchable = isPylonTarget && (commandTarget.attackMode || commandTarget.waveMode);
     // An enemy pylon takes priority: RECLAIM is the only answer to a converted
-    // one, and it is what kills the mould anchored to it.
+    // one, and it is what kills the cocoon anchored to it.
     const isEnemyPylon = commandTarget && commandTarget.pillar && !commandTarget.destroyed
                          && commandTarget.health > 0 && commandTarget.pillarTeam === "red";
     if (isEnemyPylon) { leftLabel="RECLAIM"; leftAction="reconstruct"; }

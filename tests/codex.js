@@ -46,12 +46,14 @@ const GEN_CONSTS = {
 };
 // codex.js quotes the infestation numbers too; they live in js/infest.js.
 const INFEST_SRC = fs.readFileSync(path.join(ROOT, 'js/infest.js'), 'utf8');
-for (const name of ['INFEST_RATE', 'MOULD_SPAWN_FRAMES',
-                    'MOULD_PUDDLE_DAMAGE', 'MOULD_PUDDLE_INTERVAL']) {
+for (const name of ['INFEST_RATE', 'COCOON_SPAWN_FRAMES', 'COCOON_SPAN_MAX',
+                    'COCOON_PUDDLE_DAMAGE', 'COCOON_PUDDLE_INTERVAL']) {
     const m = INFEST_SRC.match(new RegExp(`const\\s+${name}\\s*=\\s*([\\d.]+)`));
     if (!m) { console.log(`  FAIL infest.js no longer defines ${name}`); process.exit(1); }
     GEN_CONSTS[name] = Number(m[1]);
 }
+GEN_CONSTS.COCOON_TOXIN_SPECIES = JSON.parse(
+    INFEST_SRC.match(/const COCOON_TOXIN_SPECIES\s*=\s*(\[[^\]]*\])/)[1].replace(/'/g, '"'));
 Object.assign(sandbox, GEN_CONSTS);
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);

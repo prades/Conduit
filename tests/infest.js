@@ -1,8 +1,8 @@
 // INFESTATION: what predators do when nobody is fighting them.
 //
 // Left undisturbed a predator walks to the nearest pylon you hold, converts it
-// to its own side, then seeds a nest and a mould that creeps outward and
-// hatches more of the same species. A mould reaching a second pylon takes that
+// to its own side, then seeds a nest and a cocoon that creeps outward and
+// hatches more of the same species. A cocoon reaching a second pylon takes that
 // one too.
 //
 // The load-bearing parts are the guards, not the growth: "undisturbed" has to
@@ -32,13 +32,16 @@ const RATE        = constant('INFEST_RATE');
 const DECAY       = constant('INFEST_DECAY');
 const REACH       = constant('INFEST_REACH');
 const SEEK        = constant('INFEST_SEEK_RANGE');
-const GROW_FRAMES = constant('MOULD_GROW_FRAMES');
-const SPAWN_FRAMES= constant('MOULD_SPAWN_FRAMES');
-const MAX_TILES   = constant('MOULD_MAX_TILES');
-const SPAWN_CAP   = constant('MOULD_SPAWN_CAP');
-const PUDDLE_INTERVAL = constant('MOULD_PUDDLE_INTERVAL');
-const PUDDLE_DAMAGE   = constant('MOULD_PUDDLE_DAMAGE');
-const PUDDLE_COLOUR   = INFEST.match(/const MOULD_PUDDLE_COLOUR\s*=\s*"([^"]+)"/)[1];
+const SPAWN_FRAMES= constant('COCOON_SPAWN_FRAMES');
+const SPAN_MIN    = constant('COCOON_SPAN_MIN');
+const SPAN_MAX    = constant('COCOON_SPAN_MAX');
+const SWELL       = constant('COCOON_SWELL_FRAMES');
+const SPAWN_CAP   = constant('COCOON_SPAWN_CAP');
+const TOXIN_SPECIES = JSON.parse(
+    INFEST.match(/const COCOON_TOXIN_SPECIES\s*=\s*(\[[^\]]*\])/)[1].replace(/'/g, '"'));
+const PUDDLE_INTERVAL = constant('COCOON_PUDDLE_INTERVAL');
+const PUDDLE_DAMAGE   = constant('COCOON_PUDDLE_DAMAGE');
+const PUDDLE_COLOUR   = INFEST.match(/const COCOON_PUDDLE_COLOUR\s*=\s*"([^"]+)"/)[1];
 
 function makeEnv() {
     const calls = [];
@@ -108,7 +111,7 @@ function greenPylon(env, x, y, extra) {
         convertProgress: 0, upgraded: false,
     }, extra || {}));
 }
-// A board of clear floor with nothing on it, so mould has somewhere to creep.
+// A board of clear floor with nothing on it, so cocoon has somewhere to creep.
 function board(env, x0, x1, y0, y1) {
     for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
         if (!env.sandbox.worldTileMap.has(`${x},${y}`)) floorAt(env, x, y);
@@ -138,6 +141,12 @@ function tick(env, n, fn) {
 // Straight to a converted pylon, without simulating the walk each time.
 function convert(env, t, pred) {
     env.run('convertPylonToRed')(t, pred);
+}
+// A predator-shaped object that is NOT in actors[]. The shape tests need a
+// converted pylon without a live predator on the board, which would otherwise
+// walk off and convert whatever else the test had placed.
+function spinner(species, cls) {
+    return { speciesName: species || 'ant', className: cls || 'scout', color: '#aa55ff' };
 }
 
 group('undisturbed means undisturbed');
@@ -323,7 +332,7 @@ check('decay is slower than progress, so interrupting is not a free reset', () =
     ok(DECAY < RATE * 10, `decay ${DECAY} is so fast that any interruption undoes everything`);
 });
 
-group('the nest and the mould');
+group('the nest and the cocoon');
 
 check('THE REPORTED CASE: a nest grows beside the converted pylon', () => {
     const env = makeEnv();
@@ -345,58 +354,102 @@ check('a pylon next to an existing nest does not grow a second one', () => {
     same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 1, 'should reuse the nest in reach');
 });
 
-check('THE REPORTED CASE: a mould grows around it', () => {
+check('THE REPORTED CASE: a cocoon encapsulates a small square', () => {
     const env = makeEnv();
     board(env, -2, 8, 0, 4);
     const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
-    const m = env.run('moulds')[0];
-    ok(m, 'no mould seeded');
-    same(m.tiles.length, 1, 'it starts as one patch under the pylon');
-    tick(env, GROW_FRAMES * 4 + 5);
-    ok(env.run('moulds')[0].tiles.length > 1, 'the mould never crept outward');
+    convert(env, t, spinner());
+    const m = env.run('cocoons')[0];
+    ok(m, 'no cocoon spun');
+    same(m.span, SPAN_MIN, `it should start as a ${SPAN_MIN}x${SPAN_MIN}`);
+    same(m.tiles.length, SPAN_MIN * SPAN_MIN, 'the footprint should be the full square');
+    ok(m.tiles.some(([tx, ty]) => tx === t.x && ty === t.y), 'the pylon must be inside it');
 });
 
-check('it stops creeping rather than eating the map', () => {
+check('it swells once and then stops', () => {
     const env = makeEnv();
-    board(env, -6, 12, 0, 4);
+    board(env, -4, 10, 0, 4);
     const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
-    tick(env, GROW_FRAMES * (MAX_TILES + 12));
-    const m = env.run('moulds')[0];
-    ok(m.tiles.length <= MAX_TILES, `grew to ${m.tiles.length} tiles, cap is ${MAX_TILES}`);
+    convert(env, t, spinner());
+    tick(env, SWELL + 5);
+    same(env.run('cocoons')[0].span, SPAN_MAX, `it should have widened to ${SPAN_MAX}`);
+    // And then hold there however long it is left.
+    tick(env, SWELL * 6);
+    const m = env.run('cocoons')[0];
+    same(m.span, SPAN_MAX, 'it kept growing past its span');
+    ok(m.tiles.length <= SPAN_MAX * SPAN_MAX, `footprint is ${m.tiles.length} tiles`);
 });
 
-check('THE REPORTED CASE: a mould reaching another pylon takes that one too', () => {
+check('the footprint is a contiguous square, not a scatter', () => {
+    const env = makeEnv();
+    board(env, -4, 10, 0, 4);
+    const t = greenPylon(env, 4, 2);
+    convert(env, t, spinner());
+    tick(env, SWELL + 5);
+    const m = env.run('cocoons')[0];
+    const xs = m.tiles.map(([x]) => x), ys = m.tiles.map(([, y]) => y);
+    same(Math.max(...xs) - Math.min(...xs) + 1, SPAN_MAX, 'width should be the span');
+    same(Math.max(...ys) - Math.min(...ys) + 1, SPAN_MAX, 'height should be the span');
+});
+
+check('THE REPORTED CASE: swelling brings a neighbouring pylon inside the shell', () => {
     const env = makeEnv();
     board(env, -2, 10, 0, 4);
     const first  = greenPylon(env, 3, 2);
-    const second = greenPylon(env, 5, 2);   // within the patch's reach
-    convert(env, first, mkPred(env, 3, 2, 'beetle', 'striker'));
-    tick(env, GROW_FRAMES * (MAX_TILES + 4));
-    same(second.pillarTeam, 'red', 'the second pylon should have been absorbed');
-    const m = env.run('moulds')[0];
+    const second = greenPylon(env, 4, 2);   // adjacent, so a 3x3 covers it
+    convert(env, first, spinner('beetle', 'striker'));
+    tick(env, SWELL + 5);
+    same(second.pillarTeam, 'red', 'the neighbour should have been taken');
+    const m = env.run('cocoons')[0];
     ok(m.anchors.includes(first) && m.anchors.includes(second),
-       'one patch should hold both pylons');
+       'one cocoon should hold both pylons');
+    same(env.run('cocoons').length, 1, 'and it should still be a single cocoon');
 });
 
-check('a mould only creeps onto real floor', () => {
+check('a pylon outside the square is left alone', () => {
     const env = makeEnv();
-    // Floor only along y=2; everything else absent, so the patch is hemmed in.
+    board(env, -2, 12, 0, 4);
+    const inside  = greenPylon(env, 3, 2);
+    const outside = greenPylon(env, 8, 2);   // well clear of a 3x3
+    convert(env, inside, spinner());
+    tick(env, SWELL * 3);
+    same(outside.pillarTeam, 'green', 'a pylon beyond the shell should not be converted');
+});
+
+check('the footprint only covers real floor', () => {
+    const env = makeEnv();
+    // A single strip of floor, so a square would otherwise hang off the deck.
     for (let x = 0; x <= 8; x++) floorAt(env, x, 2);
     const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
-    tick(env, GROW_FRAMES * (MAX_TILES + 6));
-    const m = env.run('moulds')[0];
+    convert(env, t, spinner());
+    tick(env, SWELL + 5);
+    const m = env.run('cocoons')[0];
     for (const [mx, my] of m.tiles) {
-        same(my, 2, `mould at ${mx},${my} is off the floor strip`);
-        ok(env.sandbox.getTile(mx, my), 'mould on a tile that does not exist');
+        same(my, 2, `cocoon tile ${mx},${my} is off the floor strip`);
+        ok(env.sandbox.getTile(mx, my), 'cocoon on a tile that does not exist');
+    }
+});
+
+check('two cocoons do not claim the same tile', () => {
+    const env = makeEnv();
+    board(env, -2, 14, 0, 4);
+    const a = greenPylon(env, 3, 2);
+    const b = greenPylon(env, 6, 2);   // far enough apart to spin separately
+    convert(env, a, spinner());
+    convert(env, b, spinner());
+    tick(env, SWELL * 3);
+    const all = env.run('cocoons');
+    const seen = new Set();
+    for (const m of all) for (const [tx, ty] of m.tiles) {
+        const k = `${tx},${ty}`;
+        ok(!seen.has(k), `tile ${k} is claimed by two cocoons`);
+        seen.add(k);
     }
 });
 
 group('hatching new predators');
 
-check('THE REPORTED CASE: the mould spawns more of that class', () => {
+check('THE REPORTED CASE: the cocoon spawns more of that class', () => {
     const env = makeEnv();
     board(env, -2, 8, 0, 4);
     const t = greenPylon(env, 3, 2);
@@ -404,7 +457,7 @@ check('THE REPORTED CASE: the mould spawns more of that class', () => {
     convert(env, t, p);
     const before = env.sandbox.actors.length;
     tick(env, SPAWN_FRAMES + 5);
-    const after = env.sandbox.actors.filter(a => a.fromMould);
+    const after = env.sandbox.actors.filter(a => a.fromCocoon);
     same(after.length, 1, `expected one hatch, actors went ${before} -> ${env.sandbox.actors.length}`);
     same(after[0].speciesName, 'beetle', 'it should be the same species that grew it');
     same(after[0].className, 'tank', 'and the same class');
@@ -416,12 +469,12 @@ check('a hatched predator starts on the board, alive and wandering', () => {
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2, 'spider', 'scout'));
     tick(env, SPAWN_FRAMES + 5);
-    const spawn = env.sandbox.actors.find(a => a.fromMould);
+    const spawn = env.sandbox.actors.find(a => a.fromCocoon);
     ok(spawn, 'nothing hatched');
     same(spawn.dead, false, 'it should be alive');
     same(spawn.state, 'wander', 'it should start undisturbed, not mid-hunt');
     same(spawn.entryDelay, 0, 'it is already here — no crawl-in delay');
-    ok(env.run('moulds')[0].tiles.some(([mx, my]) => mx === Math.round(spawn.x) && my === Math.round(spawn.y)) ||
+    ok(env.run('cocoons')[0].tiles.some(([mx, my]) => mx === Math.round(spawn.x) && my === Math.round(spawn.y)) ||
        Math.hypot(spawn.x - t.x, spawn.y - t.y) < 5, 'it should hatch on the patch');
 });
 
@@ -431,7 +484,7 @@ check('a patch will not flood the map with spawns', () => {
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2));
     tick(env, SPAWN_FRAMES * (SPAWN_CAP + 4));
-    const live = env.sandbox.actors.filter(a => a.fromMould && !a.dead);
+    const live = env.sandbox.actors.filter(a => a.fromCocoon && !a.dead);
     ok(live.length <= SPAWN_CAP, `${live.length} live spawns, cap is ${SPAWN_CAP}`);
 });
 
@@ -441,11 +494,11 @@ check('killing its spawns frees the patch to hatch again', () => {
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2));
     tick(env, SPAWN_FRAMES * (SPAWN_CAP + 2));
-    let live = env.sandbox.actors.filter(a => a.fromMould && !a.dead);
+    let live = env.sandbox.actors.filter(a => a.fromCocoon && !a.dead);
     same(live.length, SPAWN_CAP, 'fixture: should be at the cap');
     live.forEach(a => { a.dead = true; });
     tick(env, SPAWN_FRAMES + 5);
-    ok(env.sandbox.actors.filter(a => a.fromMould && !a.dead).length > 0, 'it should hatch again');
+    ok(env.sandbox.actors.filter(a => a.fromCocoon && !a.dead).length > 0, 'it should hatch again');
 });
 
 check('hatching is slow enough to be answerable', () => {
@@ -472,7 +525,7 @@ function puddleAt(env, px, py) {
     board(env, -2, 8, 0, 4);
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2));
-    const m = env.run('moulds')[0];
+    const m = env.run('cocoons')[0];
     m.tiles.push([px, py]);
     m.puddles.push([px, py]);
     return { m, t };
@@ -550,12 +603,12 @@ check('the predicate is the single place that decides', () => {
 check('only the puddle tiles bite, not the whole patch', () => {
     const env = makeEnv();
     const { m } = puddleAt(env, 5, 2);
-    // A mould tile that is NOT a puddle.
+    // A cocoon tile that is NOT a puddle.
     const plain = m.tiles.find(([tx, ty]) => !m.puddles.some(([px, py]) => px === tx && py === ty));
     ok(plain, 'fixture: the patch should have a non-puddle tile');
     const f = follower(env, plain[0], plain[1]);
     tick(env, PUDDLE_INTERVAL * 3 + 2);
-    same(f.health, f.maxHealth, 'plain mould should not hurt anything');
+    same(f.health, f.maxHealth, 'plain cocoon should not hurt anything');
 });
 
 check('standing beside a puddle is safe', () => {
@@ -586,33 +639,63 @@ check('a puddle dies with the patch that grew it', () => {
     same(f.health, f.maxHealth, 'a reclaimed pylon should take its puddles with it');
 });
 
-check('growth wells up puddles, but not on every tile', () => {
-    // Over many patches the chance should produce some and not all.
+check('THE REPORTED CASE: only a venomous species leaves toxin', () => {
     const env = makeEnv();
-    board(env, -8, 14, 0, 4);
-    let grown = 0, wells = 0;
-    for (let n = 0; n < 12; n++) {
-        env.run('moulds').length = 0;
+    board(env, -4, 10, 0, 4);
+    for (const sp of TOXIN_SPECIES) {
+        env.run('cocoons').length = 0;
         const t = greenPylon(env, 3, 2, { pillarTeam: 'green' });
-        convert(env, t, mkPred(env, 3, 2));
-        tick(env, GROW_FRAMES * 8);
-        const m = env.run('moulds')[0];
-        if (!m) continue;
-        grown += m.tiles.length - 1;     // the anchor tile is never a puddle
-        wells += m.puddles.length;
+        convert(env, t, spinner(sp, 'striker'));
+        const m = env.run('cocoons')[0];
+        same(m.enhancement, 'toxic', `${sp} should carry the toxin`);
+        ok(m.puddles.length > 0, `${sp} should leave a toxin tile`);
         t.pillarTeam = 'green'; env.run('clearInfestationAt')(t);
     }
-    ok(grown > 20, `fixture: expected plenty of growth, got ${grown} tiles`);
-    ok(wells > 0, 'no patch ever grew a puddle');
-    // Compared as a share of grown tiles, so "every tile wells up" is caught.
-    ok(wells / grown < 0.8, `${wells}/${grown} tiles welled up — the chance is not being applied`);
 });
 
-check('puddles are drawn, and distinctly from the mould', () => {
+check('a species that is not venomous leaves a plain cocoon', () => {
+    const env = makeEnv();
+    board(env, -4, 10, 0, 4);
+    for (const sp of ['ant', 'beetle', 'mantis', 'moth']) {
+        ok(!TOXIN_SPECIES.includes(sp), `fixture: ${sp} should not be venomous`);
+        env.run('cocoons').length = 0;
+        const t = greenPylon(env, 3, 2, { pillarTeam: 'green' });
+        convert(env, t, spinner(sp, 'striker'));
+        const m = env.run('cocoons')[0];
+        same(m.enhancement, null, `${sp} should carry no enhancement`);
+        same(m.puddles.length, 0, `${sp} should leave no toxin`);
+        t.pillarTeam = 'green'; env.run('clearInfestationAt')(t);
+    }
+});
+
+check('the enhancement table is the single place that decides', () => {
+    const env = makeEnv();
+    const f = env.run('cocoonEnhancement');
+    for (const sp of TOXIN_SPECIES) same(f(sp), 'toxic', sp);
+    same(f('ant'), null, 'ant');
+    same(f('nonsense'), null, 'an unknown species');
+    same(f(undefined), null, 'undefined');
+});
+
+check('the toxin is ONE tile beside the pylon, not the whole footprint', () => {
+    const env = makeEnv();
+    board(env, -4, 10, 0, 4);
+    const t = greenPylon(env, 3, 2);
+    convert(env, t, spinner('spider', 'striker'));
+    tick(env, SWELL + 5);
+    const m = env.run('cocoons')[0];
+    same(m.puddles.length, 1, `expected one toxin tile, got ${m.puddles.length}`);
+    const [px, py] = m.puddles[0];
+    ok(!(px === t.x && py === t.y), 'it should be beside the pylon, not under it');
+    ok(Math.abs(px - t.x) <= 1 && Math.abs(py - t.y) <= 1, 'and adjacent to it');
+    ok(m.tiles.some(([tx, ty]) => tx === px && ty === py), 'and inside the cocoon');
+});
+
+check('puddles are drawn, and distinctly from the cocoon', () => {
     const env = makeEnv();
     puddleAt(env, 5, 2);
     env.calls.length = 0;
-    env.run('drawMoulds()');
+    env.run('drawCocoons()');
     const fills = env.calls.filter(c => c.op === 'set:fillStyle').map(c => c.args[0]);
     ok(fills.includes(PUDDLE_COLOUR), 'the puddle colour is never used');
     ok(env.calls.some(c => c.op === 'stroke'), 'no meniscus outline');
@@ -621,14 +704,14 @@ check('puddles are drawn, and distinctly from the mould', () => {
 check('puddles survive a refresh', () => {
     const env = makeEnv();
     puddleAt(env, 5, 2);
-    const blob = JSON.parse(JSON.stringify(env.run('serialiseMoulds()')));
+    const blob = JSON.parse(JSON.stringify(env.run('serialiseCocoons()')));
     ok(blob[0].puddles.length > 0, 'puddles are not saved');
-    env.run('restoreMoulds')(blob);
-    same(env.run('moulds')[0].puddles.length, 1, 'puddles did not come back');
+    env.run('restoreCocoons')(blob);
+    same(env.run('cocoons')[0].puddles.length, 1, 'puddles did not come back');
     // And a patch saved before puddles existed restores without throwing.
     const legacy = blob.map(b => { const c = Object.assign({}, b); delete c.puddles; return c; });
-    env.run('restoreMoulds')(legacy);
-    same(env.run('moulds')[0].puddles.length, 0, 'an older save should restore with no puddles');
+    env.run('restoreCocoons')(legacy);
+    same(env.run('cocoons')[0].puddles.length, 0, 'an older save should restore with no puddles');
 });
 
 check('the damage is a nuisance, not an execution', () => {
@@ -639,20 +722,20 @@ check('the damage is a nuisance, not an execution', () => {
 
 group('reclaiming the pylon is the counter');
 
-check('THE COUNTER: taking the pylon back kills its mould and nest', () => {
+check('THE COUNTER: taking the pylon back kills its cocoon and nest', () => {
     const env = makeEnv();
     board(env, -2, 8, -1, 4);
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2));
-    tick(env, GROW_FRAMES * 3);
-    ok(env.run('moulds').length === 1, 'fixture: should have a mould');
+    tick(env, SWELL + 5);
+    ok(env.run('cocoons').length === 1, 'fixture: should have a cocoon');
     const nest = env.sandbox.world.find(x => x._infestNest);
     ok(nest && nest.nestHealth > 0, 'fixture: should have a nest');
 
     // What the reconstruction completion in game.js does.
     t.pillarTeam = 'green';
     env.run('clearInfestationAt')(t);
-    same(env.run('moulds').length, 0, 'the mould should die with the pylon');
+    same(env.run('cocoons').length, 0, 'the cocoon should die with the pylon');
     same(nest.nestHealth, 0, 'the grown nest should go too');
     same(nest.nest, false, 'and stop being a nest at all');
 });
@@ -661,27 +744,27 @@ check('a patch holding two pylons survives losing one of them', () => {
     const env = makeEnv();
     board(env, -2, 10, 0, 4);
     const a = greenPylon(env, 3, 2);
-    const b = greenPylon(env, 5, 2);
-    convert(env, a, mkPred(env, 3, 2));
-    tick(env, GROW_FRAMES * (MAX_TILES + 4));
-    const m = env.run('moulds')[0];
+    const b = greenPylon(env, 4, 2);     // adjacent, so the 3x3 covers it
+    convert(env, a, spinner());
+    tick(env, SWELL + 5);
+    const m = env.run('cocoons')[0];
     ok(m.anchors.length >= 2, 'fixture: should hold both pylons');
     a.pillarTeam = 'green';
     env.run('clearInfestationAt')(a);
-    same(env.run('moulds').length, 1, 'it should still be held up by the other pylon');
+    same(env.run('cocoons').length, 1, 'it should still be held up by the other pylon');
     b.pillarTeam = 'green';
     env.run('clearInfestationAt')(b);
-    same(env.run('moulds').length, 0, 'losing the last anchor should kill it');
+    same(env.run('cocoons').length, 0, 'losing the last anchor should kill it');
 });
 
-check('a mould whose pylons are all destroyed dies on its own', () => {
+check('a cocoon whose pylons are all destroyed dies on its own', () => {
     const env = makeEnv();
     board(env, -2, 8, 0, 4);
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2));
     t.destroyed = true;
     tick(env, 5);
-    same(env.run('moulds').length, 0, 'wreckage should not keep a mould alive');
+    same(env.run('cocoons').length, 0, 'wreckage should not keep a cocoon alive');
 });
 
 check('the reclaim path is actually reachable from the ring', () => {
@@ -715,21 +798,21 @@ check('the predator AI calls it, and only after the ability and worker ticks', (
 
 check('the game loop updates and draws it', () => {
     ok(/updateInfestation\(\);/.test(GAME), 'never updated');
-    ok(/drawMoulds\(\);/.test(GAME), 'never drawn');
+    ok(/drawCocoons\(\);/.test(GAME), 'never drawn');
     ok(/drawConversionBars\(\);/.test(GAME), 'the progress bar is never drawn');
-    // Mould is on the floor, so it must go under the interface and under the
+    // Cocoon is on the floor, so it must go under the interface and under the
     // generator filaments.
-    ok(GAME.indexOf('drawMoulds();') < GAME.indexOf('drawGeneratorLinks();'), 'mould should draw under the links');
-    ok(GAME.indexOf('drawMoulds();') < GAME.indexOf('drawRadialMenu();'), 'mould should draw under the interface');
-    for (const fn of ['drawMoulds', 'drawConversionBars', 'updateInfestation']) {
+    ok(GAME.indexOf('drawCocoons();') < GAME.indexOf('drawGeneratorLinks();'), 'cocoon should draw under the links');
+    ok(GAME.indexOf('drawCocoons();') < GAME.indexOf('drawRadialMenu();'), 'cocoon should draw under the interface');
+    for (const fn of ['drawCocoons', 'drawConversionBars', 'updateInfestation']) {
         same((GAME.match(new RegExp('^\\s*' + fn + '\\(\\);', 'gm')) || []).length, 1, fn + ' called more than once');
     }
 });
 
 check('it survives a refresh', () => {
-    ok(/moulds: serialiseMoulds\(\)/.test(SAVE), 'moulds are not saved');
-    ok(/restoreMoulds\(sess\.moulds\)/.test(SAVE), 'moulds are not restored');
-    ok(SAVE.indexOf('restoreMoulds') > SAVE.indexOf('if (pylon && pylon.pillar)'),
+    ok(/cocoons: serialiseCocoons\(\)/.test(SAVE), 'cocoons are not saved');
+    ok(/restoreCocoons\(sess\.cocoons\)/.test(SAVE), 'cocoons are not restored');
+    ok(SAVE.indexOf('restoreCocoons') > SAVE.indexOf('if (pylon && pylon.pillar)'),
        'restore must run after the pylon restore, or anchors cannot resolve');
 });
 
@@ -738,31 +821,31 @@ check('a save round-trips a patch, and junk does not throw', () => {
     board(env, -2, 8, 0, 4);
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2, 'moth', 'scout'));
-    tick(env, GROW_FRAMES * 3);
-    const before = env.run('moulds')[0];
-    const blob = JSON.parse(JSON.stringify(env.run('serialiseMoulds()')));
-    env.run('restoreMoulds')(blob);
-    const after = env.run('moulds')[0];
+    tick(env, SWELL + 5);
+    const before = env.run('cocoons')[0];
+    const blob = JSON.parse(JSON.stringify(env.run('serialiseCocoons()')));
+    env.run('restoreCocoons')(blob);
+    const after = env.run('cocoons')[0];
     ok(after, 'the patch did not come back');
     same(after.tiles.length, before.tiles.length, 'tile count');
     same(after.species, 'moth', 'species');
     same(after.className, 'scout', 'class');
     ok(after.anchors.includes(t), 'the anchor should resolve back to the real tile');
-    env.run('restoreMoulds')(null);
-    env.run('restoreMoulds')([{ }, null, { tiles: 'nonsense' }]);
-    same(env.run('moulds').length, 0, 'junk should restore to nothing rather than throwing');
+    env.run('restoreCocoons')(null);
+    env.run('restoreCocoons')([{ }, null, { tiles: 'nonsense' }]);
+    same(env.run('cocoons').length, 0, 'junk should restore to nothing rather than throwing');
 });
 
 check('a patch whose anchors no longer exist is not restored', () => {
     const env = makeEnv();
     board(env, -2, 8, 0, 4);
-    env.run('restoreMoulds')([{ x: 3, y: 2, tiles: [[3, 2]], anchors: [[99, 99]],
+    env.run('restoreCocoons')([{ x: 3, y: 2, tiles: [[3, 2]], anchors: [[99, 99]],
                                 species: 'ant', className: 'scout' }]);
-    same(env.run('moulds').length, 0, 'a mould with no surviving pylon should be dropped');
+    same(env.run('cocoons').length, 0, 'a cocoon with no surviving pylon should be dropped');
 });
 
 check('a change of scene clears it', () => {
-    ok(/moulds\.length = 0;/.test(WAVES), 'moulds survive a reset or a new wave');
+    ok(/cocoons\.length = 0;/.test(WAVES), 'cocoons survive a reset or a new wave');
     ok(/t\.converting\) \{ t\.converting = false; t\.convertProgress = 0; \}/.test(WAVES),
        'half-finished conversions survive a change of scene');
 });
@@ -771,9 +854,9 @@ check('nothing is drawn when there is no infestation', () => {
     const env = makeEnv();
     board(env, -2, 4, 0, 4);
     env.calls.length = 0;
-    env.run('drawMoulds()');
+    env.run('drawCocoons()');
     env.run('drawConversionBars()');
-    same(env.calls.length, 0, 'drew something with no mould and no conversion');
+    same(env.calls.length, 0, 'drew something with no cocoon and no conversion');
 });
 
 console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

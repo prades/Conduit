@@ -3,8 +3,8 @@
 //
 //  Left undisturbed, a predator does not just wander. It walks to the nearest
 //  pylon you hold, chews it over to its own side, and then seeds the ground
-//  around it: a nest, and a mould that creeps outward and hatches more of the
-//  same species. A mould that reaches a second pylon spreads onto that one too,
+//  around it: a nest, and a cocoon that creeps outward and hatches more of the
+//  same species. A cocoon that reaches a second pylon spreads onto that one too,
 //  so a neglected stretch of the map turns into a nursery.
 //
 //  The counter is the pylon itself. Reclaim it and everything anchored to it
@@ -33,23 +33,31 @@ const INFEST_RATE          = 0.0022;// per frame in contact — about 7.5s to co
 const INFEST_DECAY         = 0.004; // per frame once nobody is working on it
 const INFEST_RESCAN_FRAMES = 45;    // how often a predator looks for a new target
 
-const MOULD_MAX_TILES      = 14;    // a patch stops creeping at this size
-const MOULD_GROW_FRAMES    = 150;   // one new tile every this many frames
-const MOULD_RADIUS         = 3.2;   // how far from its anchor it can reach
-const MOULD_SPAWN_FRAMES   = 900;   // one hatch every 15s while it has room
-const MOULD_SPAWN_CAP      = 3;     // live spawns a single patch will keep out
-const MOULD_ABSORB_RANGE   = 1.4;   // a pylon this close to mould gets taken too
+// A cocoon encapsulates a small square around the pylon it holds — it starts
+// as a 2x2 and swells to 3x3. It is a structure, not a creeping patch: the
+// first version crept tile by tile up to fourteen tiles across a 3.2 radius,
+// which read as a carpet of mould rather than something spun over the pylon.
+const COCOON_SPAN_MIN      = 2;     // starts as a 2x2 block
+const COCOON_SPAN_MAX      = 3;     // swells to 3x3 and stops
+const COCOON_SWELL_FRAMES  = 420;   // 7s before it widens
+const COCOON_SPAWN_FRAMES  = 900;   // one hatch every 15s while it has room
+const COCOON_SPAWN_CAP     = 3;     // live spawns a single cocoon will keep out
 
-// Toxic puddles that well up inside a patch. They match the map's acid hazard
-// for rate and damage, but only bite recruits and followers — the player walks
-// through untouched, and predators are immune to their own kind's toxin. That
-// asymmetry is the point: mould is dangerous to send units into, not to visit.
-const MOULD_PUDDLE_CHANCE   = 0.35;  // odds a newly grown tile wells up
-const MOULD_PUDDLE_INTERVAL = 45;    // frames between bites, as the acid hazard
-const MOULD_PUDDLE_DAMAGE   = 3;
-const MOULD_PUDDLE_COLOUR   = "#7fdd44";
+// The toxin is NOT automatic. It is the enhancement a cocoon inherits from
+// whatever spun it, and only the venomous species carry it — spiders (spinneret
+// venom) and scorpions (stinger). Anything else spins a plain cocoon.
+const COCOON_TOXIN_SPECIES   = ["spider", "scorpion"];
+const COCOON_PUDDLE_INTERVAL = 45;   // frames between bites, as the acid hazard
+const COCOON_PUDDLE_DAMAGE   = 3;
+const COCOON_PUDDLE_COLOUR   = "#7fdd44";
 
-let moulds = [];   // { tiles:[[x,y]], anchors:[tile], species, className, ... }
+// What a species' cocoon adds, if anything. One table, so a new enhancement
+// later is an entry here rather than a branch somewhere in the growth code.
+function cocoonEnhancement(species) {
+    return COCOON_TOXIN_SPECIES.includes(species) ? "toxic" : null;
+}
+
+let cocoons = [];   // { tiles:[[x,y]], anchors:[tile], species, className, ... }
 
 // ── Finding something to infest ───────────────────────────
 // Green pylons first and foremost — that is the point. A dormant grey pylon is
@@ -143,7 +151,7 @@ function convertPylonToRed(t, pred) {
     if (typeof shake !== "undefined") shake = Math.max(shake, 5);
 
     seedNestNear(t, pred);
-    seedMould(t, pred);
+    seedCocoon(t, pred);
 }
 
 // ── The nest ──────────────────────────────────────────────
@@ -171,8 +179,8 @@ function seedNestNear(t, pred) {
                              life: 120, vy: -0.2 });
         // Hand it to the patch so reclaiming can take it away. Looking for it
         // in the patch's tile list does not work — the nest sits beside the
-        // pylon and the mould may never creep onto that tile.
-        const m = mouldForAnchor(t);
+        // pylon and the cocoon may never creep onto that tile.
+        const m = cocoonForAnchor(t);
         if (m) m.nest = tile;
         else   t._pendingNest = tile;
         return tile;
@@ -180,94 +188,100 @@ function seedNestNear(t, pred) {
     return null;
 }
 
-// ── The mould ─────────────────────────────────────────────
-function mouldAt(x, y) {
-    for (const m of moulds) {
+// ── The cocoon ─────────────────────────────────────────────
+function cocoonAt(x, y) {
+    for (const m of cocoons) {
         for (const [mx, my] of m.tiles) if (mx === x && my === y) return m;
     }
     return null;
 }
 
-function seedMould(t, pred) {
-    const existing = mouldForAnchor(t);
+function seedCocoon(t, pred) {
+    const existing = cocoonForAnchor(t);
     if (existing) return existing;
+    const species = (pred && pred.speciesName) || "ant";
     const m = {
         x: t.x, y: t.y,
-        tiles: [[t.x, t.y]],
-        puddles: [],          // [[x,y]] — the toxic tiles inside this patch
+        span: COCOON_SPAN_MIN,
+        tiles: [],
+        puddles: [],          // the toxic tile, if this species carries one
         anchors: [t],
-        species: (pred && pred.speciesName) || "ant",
+        species,
         className: (pred && pred.className) || "scout",
         colour: (pred && pred.color) || "#aa55ff",
-        growTimer: MOULD_GROW_FRAMES,
-        spawnTimer: MOULD_SPAWN_FRAMES,
+        enhancement: cocoonEnhancement(species),
+        swellTimer: COCOON_SWELL_FRAMES,
+        spawnTimer: COCOON_SPAWN_FRAMES,
         spawned: [],
         nest: t._pendingNest || null,
         pulse: Math.random() * Math.PI * 2,
     };
     t._pendingNest = null;
-    moulds.push(m);
+    cocoons.push(m);
+    m.tiles = _cocoonFootprint(m, m.span);
+    _applyEnhancement(m);
     return m;
 }
 
-function mouldForAnchor(t) {
-    return moulds.find(m => m.anchors.includes(t)) || null;
+// A toxic cocoon seeps onto ONE tile beside the pylon it holds, rather than
+// welling up all over the footprint.
+function _applyEnhancement(m) {
+    if (m.enhancement !== "toxic") { m.puddles = []; return; }
+    if (m.puddles.length > 0) return;
+    const beside = m.tiles.filter(([tx, ty]) => !(tx === m.x && ty === m.y));
+    if (beside.length === 0) return;
+    m.puddles = [beside[Math.floor(Math.random() * beside.length)]];
 }
 
-// A patch creeps one tile at a time onto clear floor within its radius.
-function _growMould(m) {
-    if (m.tiles.length >= MOULD_MAX_TILES) return;
-    const candidates = [];
-    for (const [tx, ty] of m.tiles) {
-        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-            const nx = tx + dx, ny = ty + dy;
-            if (Math.hypot(nx - m.x, ny - m.y) > MOULD_RADIUS) continue;
-            if (mouldAt(nx, ny)) continue;
-            const tile = typeof getTile === "function" ? getTile(nx, ny) : null;
+// The square footprint of a cocoon: `span` tiles on a side, offset so the
+// anchor pylon sits inside it. Only real floor counts, so a cocoon against a
+// wall is simply smaller rather than hanging off the edge of the deck.
+function _cocoonFootprint(m, span) {
+    const x0 = m.x - Math.floor((span - 1) / 2);
+    const y0 = m.y - Math.floor((span - 1) / 2);
+    const out = [];
+    for (let dx = 0; dx < span; dx++) {
+        for (let dy = 0; dy < span; dy++) {
+            const tx = x0 + dx, ty = y0 + dy;
+            const tile = typeof getTile === "function" ? getTile(tx, ty) : null;
             if (!tile || tile.type !== "floor") continue;
-            candidates.push([nx, ny]);
+            if (tx === m.x && ty === m.y) { out.push([tx, ty]); continue; }
+            const other = cocoonAt(tx, ty);
+            if (other && other !== m) continue;   // another cocoon already has it
+            out.push([tx, ty]);
         }
     }
-    if (candidates.length === 0) return;
-    // If one of your pylons is in reach, the patch grows toward it. Purely
-    // random creep meant absorbing a neighbour was down to the dice and often
-    // never happened before the patch hit its size cap.
-    let reach = null, reachD = Infinity;
-    for (const t of world) {
-        if (!t.pillar || t.destroyed || t.health <= 0) continue;
-        if (t.pillarTeam !== "green") continue;
-        if (m.anchors.includes(t)) continue;
-        const d = Math.hypot(t.x - m.x, t.y - m.y);
-        if (d <= MOULD_RADIUS + MOULD_ABSORB_RANGE && d < reachD) { reachD = d; reach = t; }
-    }
-    if (reach) {
-        candidates.sort((a, b) =>
-            Math.hypot(a[0] - reach.x, a[1] - reach.y) - Math.hypot(b[0] - reach.x, b[1] - reach.y));
-    }
-    const [gx, gy] = reach ? candidates[0]
-                           : candidates[Math.floor(Math.random() * candidates.length)];
-    m.tiles.push([gx, gy]);
-    if (Math.random() < MOULD_PUDDLE_CHANCE) m.puddles.push([gx, gy]);
+    return out;
+}
 
-    // Reaching another of your pylons takes that one too — this is how one
-    // patch ends up spanning several.
+function cocoonForAnchor(t) {
+    return cocoons.find(m => m.anchors.includes(t)) || null;
+}
+
+// A cocoon does not creep — it swells once, from a 2x2 to a 3x3, and stops.
+// Widening can bring another of your pylons inside the shell, which is how one
+// cocoon ends up holding more than one.
+function _swellCocoon(m) {
+    if (m.span >= COCOON_SPAN_MAX) return;
+    m.span++;
+    m.tiles = _cocoonFootprint(m, m.span);
+    _applyEnhancement(m);
     for (const t of world) {
         if (!t.pillar || t.destroyed || t.health <= 0) continue;
         if (t.pillarTeam !== "green") continue;
         if (m.anchors.includes(t)) continue;
-        if (Math.hypot(t.x - gx, t.y - gy) > MOULD_ABSORB_RANGE) continue;
-        // Claim it BEFORE converting. convertPylonToRed seeds a mould, and
-        // seedMould only recognises an existing patch by its anchors — claiming
-        // it afterwards left the pylon anchoring two separate patches.
+        if (!m.tiles.some(([tx, ty]) => tx === t.x && ty === t.y)) continue;
+        // Claimed BEFORE converting: convertPylonToRed seeds a cocoon, and
+        // seedCocoon only recognises an existing one by its anchors.
         m.anchors.push(t);
         convertPylonToRed(t, { speciesName: m.species, className: m.className, color: m.colour });
     }
 }
 
-// Hatch one of the species that grew this patch.
-function _hatchFromMould(m) {
+// Hatch one of the species that spun this cocoon.
+function _hatchFromCocoon(m) {
     m.spawned = m.spawned.filter(p => p && !p.dead);
-    if (m.spawned.length >= MOULD_SPAWN_CAP) return;
+    if (m.spawned.length >= COCOON_SPAWN_CAP) return;
     if (typeof Predator === "undefined" || typeof SPECIES === "undefined") return;
     const speciesDef = SPECIES[m.species] ||
                        (typeof SYNTHETIC_SPECIES !== "undefined" ? SYNTHETIC_SPECIES[m.species] : null);
@@ -292,7 +306,7 @@ function _hatchFromMould(m) {
     p.dnaDrops = classDef.dnaDrops; p.shardDrop = classDef.shardDrop;
     p.state = "wander";
     p.entryDelay = 0;
-    p.fromMould = true;
+    p.fromCocoon = true;
     if (typeof applySpeciesBody === "function") applySpeciesBody(p, m.species);
     p.baseMoveSpeed = p.moveSpeed;
     if (typeof initAbility === "function") initAbility(p);
@@ -311,22 +325,22 @@ function puddleAffects(a) {
 }
 
 function _puddleTick() {
-    if (frame % MOULD_PUDDLE_INTERVAL !== 0) return;
-    for (const m of moulds) {
+    if (frame % COCOON_PUDDLE_INTERVAL !== 0) return;
+    for (const m of cocoons) {
         for (const [px, py] of m.puddles) {
             for (const a of actors) {
                 if (!puddleAffects(a)) continue;
                 if (Math.abs(a.x - px) >= 0.8 || Math.abs(a.y - py) >= 0.8) continue;
-                applyDamage(a, MOULD_PUDDLE_DAMAGE, null, "toxic");
+                applyDamage(a, COCOON_PUDDLE_DAMAGE, null, "toxic");
                 floatingTexts.push({ x: a.x, y: a.y, text: "TOXIC",
-                                     color: MOULD_PUDDLE_COLOUR, life: 28, vy: -0.05 });
+                                     color: COCOON_PUDDLE_COLOUR, life: 28, vy: -0.05 });
             }
         }
     }
 }
 
 // A patch only lives while it still holds a pylon. Reclaim them all and it dies.
-function _mouldStillHeld(m) {
+function _cocoonStillHeld(m) {
     m.anchors = m.anchors.filter(t => t && t.pillar && t.pillarTeam === "red" && !t.destroyed);
     return m.anchors.length > 0;
 }
@@ -334,11 +348,13 @@ function _mouldStillHeld(m) {
 function updateInfestation() {
     decayConversions();
     _puddleTick();
-    for (let i = moulds.length - 1; i >= 0; i--) {
-        const m = moulds[i];
-        if (!_mouldStillHeld(m)) { moulds.splice(i, 1); continue; }
-        if (--m.growTimer <= 0)  { m.growTimer = MOULD_GROW_FRAMES;  _growMould(m); }
-        if (--m.spawnTimer <= 0) { m.spawnTimer = MOULD_SPAWN_FRAMES; _hatchFromMould(m); }
+    for (let i = cocoons.length - 1; i >= 0; i--) {
+        const m = cocoons[i];
+        if (!_cocoonStillHeld(m)) { cocoons.splice(i, 1); continue; }
+        if (m.span < COCOON_SPAN_MAX && --m.swellTimer <= 0) {
+            m.swellTimer = COCOON_SWELL_FRAMES; _swellCocoon(m);
+        }
+        if (--m.spawnTimer <= 0) { m.spawnTimer = COCOON_SPAWN_FRAMES; _hatchFromCocoon(m); }
     }
 }
 
@@ -347,8 +363,8 @@ function updateInfestation() {
 function clearInfestationAt(t) {
     if (!t) return;
     t.converting = false; t.convertProgress = 0;
-    for (let i = moulds.length - 1; i >= 0; i--) {
-        const m = moulds[i];
+    for (let i = cocoons.length - 1; i >= 0; i--) {
+        const m = cocoons[i];
         const at = m.anchors.indexOf(t);
         if (at >= 0) m.anchors.splice(at, 1);
         if (m.anchors.length === 0) {
@@ -357,25 +373,26 @@ function clearInfestationAt(t) {
             if (m.nest && m.nest._infestNest) {
                 m.nest.nest = false; m.nest.nestHealth = 0; m.nest._infestNest = false;
             }
-            moulds.splice(i, 1);
+            cocoons.splice(i, 1);
         }
     }
 }
 
 // ── Persistence ───────────────────────────────────────────
-function serialiseMoulds() {
-    return moulds.map(m => ({
+function serialiseCocoons() {
+    return cocoons.map(m => ({
         x: m.x, y: m.y, tiles: m.tiles.map(([a, b]) => [a, b]),
         puddles: (m.puddles || []).map(([a, b]) => [a, b]),
         anchors: m.anchors.map(t => [t.x, t.y]),
         species: m.species, className: m.className, colour: m.colour,
-        growTimer: m.growTimer, spawnTimer: m.spawnTimer,
+        span: m.span, enhancement: m.enhancement,
+        swellTimer: m.swellTimer, spawnTimer: m.spawnTimer,
         nest: m.nest ? [m.nest.x, m.nest.y] : null,
     }));
 }
 
-function restoreMoulds(data) {
-    moulds.length = 0;
+function restoreCocoons(data) {
+    cocoons.length = 0;
     if (!Array.isArray(data)) return;
     for (const d of data) {
         if (!d || !Array.isArray(d.tiles)) continue;
@@ -385,7 +402,7 @@ function restoreMoulds(data) {
             if (tile && tile.pillar) anchors.push(tile);
         }
         if (anchors.length === 0) continue;   // nothing holds it up any more
-        moulds.push({
+        cocoons.push({
             x: d.x, y: d.y,
             tiles: d.tiles.filter(t => Array.isArray(t) && t.length === 2).map(([a, b]) => [a, b]),
             puddles: (Array.isArray(d.puddles) ? d.puddles : [])
@@ -393,8 +410,10 @@ function restoreMoulds(data) {
             anchors,
             species: d.species || "ant", className: d.className || "scout",
             colour: d.colour || "#aa55ff",
-            growTimer: d.growTimer || MOULD_GROW_FRAMES,
-            spawnTimer: d.spawnTimer || MOULD_SPAWN_FRAMES,
+            span: d.span || COCOON_SPAN_MIN,
+            enhancement: d.enhancement !== undefined ? d.enhancement : cocoonEnhancement(d.species || "ant"),
+            swellTimer: d.swellTimer || COCOON_SWELL_FRAMES,
+            spawnTimer: d.spawnTimer || COCOON_SPAWN_FRAMES,
             spawned: [],
             nest: (d.nest && typeof getTile === "function") ? getTile(d.nest[0], d.nest[1]) : null,
             pulse: Math.random() * Math.PI * 2,
@@ -405,75 +424,99 @@ function restoreMoulds(data) {
 // ── Drawing ───────────────────────────────────────────────
 // Organic blotches on the floor in the species' own colour, so which thing is
 // breeding there is readable at a glance.
-function drawMoulds() {
-    if (moulds.length === 0) return;
+function drawCocoons() {
+    if (cocoons.length === 0) return;
+    const toScreen = (wx, wy) => [
+        (wx - player.visualX - (wy - player.visualY)) * TILE_W + canvas.width  / 2,
+        (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H,
+    ];
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    for (const m of moulds) {
-        m.pulse += 0.02;
+    for (const m of cocoons) {
+        m.pulse += 0.012;
         const breathe = 0.5 + 0.5 * Math.sin(m.pulse);
-        for (const [tx, ty] of m.tiles) {
-            const sx = (tx - player.visualX - (ty - player.visualY)) * TILE_W + canvas.width  / 2;
-            const sy = (tx - player.visualX + (ty - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
-            if (sx < -90 || sx > canvas.width + 90 || sy < -90 || sy > canvas.height + 90) continue;
-            // Three overlapping lobes, offset deterministically per tile so the
-            // patch looks grown rather than tiled.
-            const seed = (tx * 73856093) ^ (ty * 19349663);
-            for (let i = 0; i < 3; i++) {
-                const a = ((seed >> (i * 5)) & 15) / 15;
-                const ox = (a - 0.5) * TILE_W * 0.5;
-                const oy = (((seed >> (i * 7 + 3)) & 15) / 15 - 0.5) * TILE_H * 0.5;
-                const r  = TILE_W * (0.30 + a * 0.16);
-                ctx.fillStyle = m.colour;
-                ctx.globalAlpha = 0.16 + breathe * 0.07;
-                ctx.beginPath();
-                ctx.ellipse(sx + ox, sy + oy, r, r * (TILE_H / TILE_W), 0, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            // Spore specks
-            ctx.globalAlpha = 0.35 + breathe * 0.25;
-            ctx.fillStyle = m.colour;
-            for (let i = 0; i < 2; i++) {
-                const a = ((seed >> (i * 11 + 1)) & 31) / 31;
-                ctx.beginPath();
-                ctx.arc(sx + (a - 0.5) * TILE_W * 0.6,
-                        sy + (((seed >> (i * 13)) & 31) / 31 - 0.5) * TILE_H * 0.6,
-                        1.2, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-        // ── Toxic puddles, drawn over the mould that grew them ──
-        // Bright and distinctly not the species colour: this is the bit that
-        // costs you units, so it must not read as more of the same carpet.
-        for (const [px, py] of (m.puddles || [])) {
-            const sx = (px - player.visualX - (py - player.visualY)) * TILE_W + canvas.width  / 2;
-            const sy = (px - player.visualX + (py - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
-            if (sx < -90 || sx > canvas.width + 90 || sy < -90 || sy > canvas.height + 90) continue;
-            const wob = 0.5 + 0.5 * Math.sin(m.pulse * 1.7 + px * 1.3 + py * 0.7);
-            // Pool
-            ctx.globalAlpha = 0.42 + wob * 0.16;
-            ctx.fillStyle = MOULD_PUDDLE_COLOUR;
+        if (m.tiles.length === 0) continue;
+
+        // The shell is anchored on the pylon it encapsulates, not on the
+        // footprint's centroid: an even 2x2 puts the pylon at a corner, and
+        // centring on the centroid made the cocoon look like it had been spun
+        // beside the pylon rather than over it.
+        const [sx, sy] = toScreen(m.x, m.y);
+        if (sx < -160 || sx > canvas.width + 160 || sy < -160 || sy > canvas.height + 160) continue;
+        const span = Math.max(1, m.span);
+        const rw = TILE_W * span * 0.52;
+        const rh = TILE_H * span * 0.52;
+
+        // ── Silk floor, holding the square together ──
+        ctx.globalAlpha = 0.13 + breathe * 0.03;
+        ctx.fillStyle = m.colour;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, rw, rh, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ── The shell ──
+        // A dome over the footprint, ribbed from base to crown the way a
+        // chrysalis is. An earlier pass drew concentric rings on the ground
+        // plus threads out to the tile corners, which read as a spiderweb
+        // target rather than as something spun over the pylon.
+        const domeH = 30 + span * 12;
+        const rx = rw * 0.80;
+        ctx.globalAlpha = 0.52 + breathe * 0.06;
+        ctx.fillStyle = "#1a1220";
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, rx, domeH, 0, Math.PI, Math.PI * 2);   // upper half only
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, rx, rh * 0.9, 0, 0, Math.PI);          // the base it sits on
+        ctx.fill();
+        // Sheen down one flank, so it reads as spun silk rather than a hole
+        ctx.globalAlpha = 0.16 + breathe * 0.05;
+        ctx.fillStyle = m.colour;
+        ctx.beginPath();
+        ctx.ellipse(sx - rx * 0.34, sy - domeH * 0.42, rx * 0.30, domeH * 0.40, -0.25, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ribs: arcs from one side of the base, over the crown, to the other.
+        ctx.globalAlpha = 0.26 + breathe * 0.08;
+        ctx.strokeStyle = m.colour;
+        ctx.lineWidth = 1;
+        for (let i = 1; i <= 4; i++) {
+            const f = i / 5;                       // 0..1 across the dome
+            const w = rx * Math.sin(f * Math.PI);  // widest at the middle
             ctx.beginPath();
-            ctx.ellipse(sx, sy, TILE_W * (0.34 + wob * 0.03), TILE_H * (0.34 + wob * 0.03),
-                        0, 0, Math.PI * 2);
-            ctx.fill();
-            // Meniscus, so it reads as liquid rather than paint
-            ctx.globalAlpha = 0.55 + wob * 0.25;
-            ctx.strokeStyle = "#c8ff96"; ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.ellipse(sx, sy, TILE_W * 0.34, TILE_H * 0.34, 0, 0, Math.PI * 2);
+            ctx.ellipse(sx, sy, w, domeH, 0, Math.PI, Math.PI * 2);
             ctx.stroke();
-            // A bubble or two surfacing
-            ctx.globalAlpha = 0.5 + wob * 0.4;
-            ctx.fillStyle = "#e8ffd0";
-            const bseed = (px * 2654435761) ^ (py * 40503);
-            for (let i = 0; i < 2; i++) {
-                const ph = ((m.pulse * 0.55) + i * 0.5 + ((bseed >> (i * 6)) & 7) / 8) % 1;
-                const bx = sx + (((bseed >> (i * 9 + 2)) & 15) / 15 - 0.5) * TILE_W * 0.4;
-                ctx.beginPath();
-                ctx.arc(bx, sy + (0.5 - ph) * TILE_H * 0.35, 1.1 + ph, 0, Math.PI * 2);
-                ctx.fill();
-            }
+        }
+        // A couple of girth bands around it
+        for (let i = 1; i <= 2; i++) {
+            const h = domeH * (i / 3);
+            ctx.beginPath();
+            ctx.ellipse(sx, sy - h, rx * Math.cos((i / 3) * Math.PI * 0.42), rh * 0.55, 0, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        // Rim where the shell meets the deck
+        ctx.globalAlpha = 0.34 + breathe * 0.10;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, rx, rh * 0.9, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // ── The toxin, if this species carries one ──
+        // One tile beside the pylon, dull rather than lit: it still has to be
+        // findable, because it is the thing that costs you units.
+        for (const [px, py] of (m.puddles || [])) {
+            const [tx, ty] = toScreen(px, py);
+            if (tx < -90 || tx > canvas.width + 90) continue;
+            const wob = 0.5 + 0.5 * Math.sin(m.pulse * 1.3 + px * 1.3 + py * 0.7);
+            ctx.globalAlpha = 0.22 + wob * 0.07;
+            ctx.fillStyle = COCOON_PUDDLE_COLOUR;
+            ctx.beginPath();
+            ctx.ellipse(tx, ty, TILE_W * 0.28, TILE_H * 0.28, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 0.24 + wob * 0.08;
+            ctx.strokeStyle = "#4c7a2e"; ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(tx, ty, TILE_W * 0.28, TILE_H * 0.28, 0, 0, Math.PI * 2);
+            ctx.stroke();
         }
         ctx.globalAlpha = 1;
     }

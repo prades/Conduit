@@ -60,16 +60,16 @@ const CODEX_INFEST = [
     { t: 'A bar shows it happening. Interrupt the predator and the pylon recovers on its own.' },
     null,
     { h: 'WHAT GROWS THERE' },
-    { t: 'A taken pylon grows a nest and a mould that creeps outward, claiming any pylon of yours it reaches.' },
-    ['HATCHES', 'one predator every ' + (MOULD_SPAWN_FRAMES / 60).toFixed(0) + 's', '#f88'],
-    { t: 'What hatches is the same species and class as whatever converted the pylon.' },
+    { t: 'A taken pylon grows a nest, and a cocoon spun over it. The cocoon swells to a ' + COCOON_SPAN_MAX + 'x' + COCOON_SPAN_MAX + ' square and takes any pylon of yours inside it.' },
+    ['HATCHES', 'one predator every ' + (COCOON_SPAWN_FRAMES / 60).toFixed(0) + 's', '#f88'],
+    { t: 'What hatches is the same species and class as whatever spun it.' },
     null,
-    { h: 'TOXIC PUDDLES' },
-    { t: 'Puddles well up in a patch. They burn followers and recruits only — you and the predators are unharmed.' },
-    ['PUDDLE', MOULD_PUDDLE_DAMAGE + ' damage / ' + (MOULD_PUDDLE_INTERVAL / 60).toFixed(2).replace(/0$/, '') + 's', '#7fdd44'],
+    { h: 'TOXIN' },
+    { t: 'Only ' + COCOON_TOXIN_SPECIES.join(' and ').toUpperCase() + ' leave any, on one tile beside the pylon. It burns followers and recruits only.' },
+    ['TOXIN', COCOON_PUDDLE_DAMAGE + ' damage / ' + (COCOON_PUDDLE_INTERVAL / 60).toFixed(2).replace(/0$/, '') + 's', '#7fdd44'],
     null,
     { h: 'TAKING IT BACK' },
-    { t: 'Press and hold a red pylon and pick RECLAIM. Followers rebuild it; the mould and nest die with it.' },
+    { t: 'Press and hold a red pylon and pick RECLAIM. Followers rebuild it; the cocoon and nest die with it.' },
 ];
 
 // Each entry: what the element is for, then what each tier adds.
