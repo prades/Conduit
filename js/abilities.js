@@ -201,7 +201,9 @@ function _abForEachFoeInRadius(pred, radius, fn) {
         const dx = a.x - pred.x, dy = a.y - pred.y;
         if (dx * dx + dy * dy <= r2) fn(a);
     }
-    if (!pred.isClone && typeof player !== 'undefined' && !player.stunned) {
+    // No immunity check here: the helper also drives non-damaging effects, and
+    // hurtPlayer() is what honours the respawn grace.
+    if (!pred.isClone && typeof player !== 'undefined') {
         const dx = player.x - pred.x, dy = player.y - pred.y;
         if (dx * dx + dy * dy <= r2) fn(null);   // null = the player
     }
@@ -209,8 +211,7 @@ function _abForEachFoeInRadius(pred, radius, fn) {
 
 function _abHurt(pred, victim, amount) {
     if (victim === null) {
-        health = Math.max(0, health - amount * 0.35);
-        shake  = Math.max(shake, 4);
+        hurtPlayer(amount * 0.35, 4);
     } else {
         applyDamage(victim, amount, pred);
     }

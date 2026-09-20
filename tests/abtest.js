@@ -15,7 +15,7 @@ const sandbox = {
     gameState: { nightNumber: 1, phase: 'day' },
     alertActive: false,
     crystal: { x: 0, y: 2, health: 300, maxHealth: 300 },
-    player: { x: 5, y: 2, visualX: 5, visualY: 2, stunned: 0 },
+    player: { x: 5, y: 2, visualX: 5, visualY: 2, invuln: 0 },
     // damage is recorded rather than simulated, so specials can be asserted on
     damageLog: [],
     applyDamage(target, amount, source, element) {
@@ -36,6 +36,14 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);
+// abilities.js hurts the player through hurtPlayer(); load the real one out of
+// helpers.js rather than stubbing it, so the respawn-grace behaviour is the
+// behaviour under test here too.
+const _helpers = fs.readFileSync(path.join(ROOT, 'js/helpers.js'), 'utf8')
+    .match(/function hurtPlayer\(amount, shakeAmt\) \{[\s\S]*?\n\}/);
+if (!_helpers) { console.log('  FAIL could not find hurtPlayer in js/helpers.js'); process.exit(1); }
+vm.runInContext(_helpers[0], ctx, { filename: 'helpers.js:hurtPlayer' });
+
 for (const f of ['js/species.js', 'js/abilities.js']) {
     vm.runInContext(fs.readFileSync(ROOT + '/' + f, 'utf8'), ctx, { filename: f });
 }

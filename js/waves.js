@@ -490,9 +490,13 @@ function restartGame() {
     clearCampBuildings();
     traps=[];
     crystal={ x:0,y:2,health:300,maxHealth:300,radius:0.8 };
+    // Must carry every field config.js's opening player has. attackCooldown was
+    // missing, and `undefined <= 0` is false, so the fire gate in input.js
+    // stayed shut — after a reset the weapon could never be used again.
     player={ x:2,y:1,visualX:2,visualY:1,targetX:2,targetY:1,
              rotY:Math.PI*0.75, baseRot:Math.PI*0.75, angryTimer:0,
-             selectedElement:"fire", siphonHold:0 };
+             selectedElement:"fire", siphonHold:0,
+             attackCooldown:0, invuln:0 };
     gameState={ phase:"day", nightNumber:1, totalWavesSurvived:0, highestZoneCleared:0, running:true };
     dayStats={ redSpawned:0, redConverted:0 };
     nightKillCount=0; nightEnemiesTarget=0; nightPredatorsRemaining=0;

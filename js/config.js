@@ -171,8 +171,13 @@ let player = {
     angryTimer: 0, selectedElement: "fire",
     siphonHold: 0,
     attackCooldown: 0,   // frames until next player shot
-    stunned: 0           // stun timer — movement + attack locked when > 0
+    invuln: 0            // damage-immune frames after a knockdown — control is never locked
 };
+
+// Frames of damage immunity after being put back at the Crystal. There is no
+// stun any more: the player keeps control the whole time. The window only
+// exists so a predator parked by the Crystal cannot chain-kill on respawn.
+const PLAYER_RESPAWN_GRACE = 90;
 
 // ── INPUT STATE ───────────────────────────────────────────
 let isPressing    = false;

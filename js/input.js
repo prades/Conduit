@@ -135,12 +135,12 @@ const handleInput=(ex,ey)=>{
     // ── PLAYER ATTACK ──
     // Only while armed. This used to fire on any tap that happened to land near
     // a predator, so brushing one while moving spent a shot at it.
-    if (playerAttackMode && !player.stunned && player.attackCooldown <= 0) {
+    if (playerAttackMode && player.attackCooldown <= 0) {
         const foe = findEnemyAtScreen(ex, ey);
         if (foe) { firePlayerShot(foe); return; }
     }
 
-    if (player.stunned) return; // can't move while stunned
+    // Movement is never locked — there is no stun any more.
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);

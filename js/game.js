@@ -511,16 +511,20 @@ function render() {
         hpBar.style.background = hpPct > 0.6 ? "#0f8" : hpPct > 0.3 ? "#ff0" : "#f22";
     }
 
-    // ── PLAYER STUN / DEATH ──
-    if (player.stunned > 0) {
-        player.stunned--;
-    } else if (health <= 0) {
-        player.stunned = 180; // 3 second stun
+    // ── PLAYER KNOCKDOWN ──
+    // No stun. Being dropped to zero puts you back at the Crystal, but control
+    // is never taken away — three seconds of standing frozen while the night
+    // carried on was punishment on top of punishment. A short damage-immune
+    // window takes its place, purely so a predator parked by the Crystal
+    // cannot chain-kill you on arrival.
+    if (player.invuln > 0) player.invuln--;
+    if (health <= 0) {
         health = 40;          // partial restore on respawn
         player.x = crystal.x + 2; player.y = crystal.y;
         player.targetX = player.x; player.targetY = player.y;
         player.visualX  = player.x; player.visualY  = player.y;
-        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-60, text:"◈ STUNNED!", color:"#ff4444", life:120, vy:-0.25, size:14});
+        player.invuln = PLAYER_RESPAWN_GRACE;
+        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-60, text:"◈ REGROUPED", color:"#ffaa33", life:100, vy:-0.25, size:14});
         shake = Math.max(shake, 8);
     }
 
@@ -2566,7 +2570,7 @@ function render() {
                                 }
                             });
                             if (Math.abs(player.x-bwx)<1.0 && Math.abs(player.y-bwy)<1.0) {
-                                health = Math.max(0, health-10); shake = Math.max(shake, 6);
+                                hurtPlayer(10, 6);
                             }
                         }
                     } else if (obj.ventState === 'blast' && obj.ventTimer >= 30) {
@@ -2950,8 +2954,9 @@ function render() {
             if (!hit && p.targetsGreen) {
                 const dx=(p.x-player.x)*TILE_W, dy=(p.y-player.y)*TILE_H;
                 if (Math.hypot(dx,dy) < 30) {
-                    health = Math.max(0, health - p.damage);
-                    shake  = Math.max(shake, 5);
+                    // Immunity stops the damage but still eats the shot, so a
+                    // projectile does not pass through and hit twice.
+                    hurtPlayer(p.damage, 5);
                     if (p.onHit) p.onHit(null);
                     hit = true;
                 }
@@ -2970,19 +2975,6 @@ function render() {
     drawHoldLine();
     drawTutorialHighlight();
     drawFloatingTexts();
-    // ── PLAYER STUN FLASH — red vignette while stunned ──
-    if (player.stunned > 0) {
-        const stunAlpha = Math.min(0.35, (player.stunned / 180) * 0.35) * (0.5 + 0.5 * Math.sin(frame * 0.25));
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.fillStyle = `rgba(220,30,30,${stunAlpha})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#ff4444";
-        ctx.font = "bold 14px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText("◈ STUNNED", canvas.width/2, canvas.height/2 - 40);
-        ctx.restore();
-    }
     drawCrystalButton();
     drawClonesBlob();
     drawCloneMenu();

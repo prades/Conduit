@@ -646,7 +646,7 @@ function updateHazards() {
                     });
                     // Damage player
                     if (Math.abs(player.x-tx)<0.8 && Math.abs(player.y-ty)<0.8 && frame%45===0) {
-                        health = Math.max(0, health-4);
+                        hurtPlayer(4);
                     }
                 });
             }
@@ -674,7 +674,7 @@ function updateHazards() {
                 });
                 const _pzdx=player.x-gx, _pzdy=player.y-gy;
                 if (_pzdx*_pzdx+_pzdy*_pzdy < 1.21) { // 1.1²=1.21
-                    health = Math.max(0, health - 6); shake = Math.max(shake, 4);
+                    hurtPlayer(6, 4);
                 }
             }
         }

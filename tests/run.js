@@ -16,6 +16,7 @@ const SUITES = [
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],
+    ['no player stun',         'stun.js'],
 ];
 
 let failed = 0;

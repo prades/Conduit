@@ -4,6 +4,22 @@
 function getZoneIndex(x) { return Math.floor(x / ZONE_LENGTH); }
 const getTile = (gx, gy) => worldTileMap.get(`${gx},${gy}`);
 
+// Every path that can hurt the player goes through here.
+//
+// The respawn grace used to be checked in exactly two places — predator melee
+// and the ability-radius helper — so abdomen shots, vent blasts, acid pools
+// and toxic zones all hit straight through it. One funnel means the window
+// actually covers what it claims to.
+// Returns whether the damage landed, for callers that want to skip their own
+// screen shake or hit effect.
+function hurtPlayer(amount, shakeAmt) {
+    if (!(amount > 0)) return false;
+    if (player.invuln > 0) return false;
+    health = Math.max(0, health - amount);
+    if (shakeAmt) shake = Math.max(shake, shakeAmt);
+    return true;
+}
+
 
 
 function applyDamage(target, amount, source=null, element=null, isReflected=false) {

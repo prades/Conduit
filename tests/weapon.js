@@ -18,7 +18,7 @@ function makeEnv() {
         },
         TILE_W: 60, TILE_H: 30,
         world: [], actors: [], followers: [], floatingTexts: [], shots,
-        player: { x: 0, y: 0, visualX: 0, visualY: 0, stunned: 0, attackCooldown: 0, selectedElement: 'fire' },
+        player: { x: 0, y: 0, visualX: 0, visualY: 0, invuln: 0, attackCooldown: 0, selectedElement: 'fire' },
         ELEMENTS: [{ id: 'fire', label: 'FIRE', color: '#ff3300' }],
         playerAttackMode: false, playerAmmo: 5,
         PLAYER_AMMO_MAX: 60, PLAYER_AMMO_START: 12,
@@ -94,13 +94,15 @@ check('armed, repeated taps keep firing', () => {
     }
     eq(env.shots.length, 3, 'three taps, three shots');
 });
-check('a stunned player cannot fire', () => {
+check('a player who was just knocked down can still fire', () => {
+    // There is no stun any more. The knockdown leaves a damage-immune window,
+    // and that window must not double as a weapons lock — see tests/stun.js.
     const env = makeEnv();
     const { sx, sy } = putEnemy(env, 2, 1);
     env.sandbox.playerAttackMode = true;
-    env.sandbox.player.stunned = 60;
+    env.sandbox.player.invuln = 60;
     env.run(`handleInput(${sx}, ${sy})`);
-    eq(env.shots.length, 0, 'stunned');
+    eq(env.shots.length, 1, 'the grace window should not stop you shooting back');
 });
 check('the cooldown still applies while armed', () => {
     const env = makeEnv();
@@ -202,7 +204,7 @@ const SHOP   = fs.readFileSync(path.join(ROOT, 'js/wavedata.js'), 'utf8');
 const WAVES  = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
 
 check('the only tap-fire path checks playerAttackMode first', () => {
-    const at = INPUT.indexOf('if (playerAttackMode && !player.stunned');
+    const at = INPUT.indexOf('if (playerAttackMode && player.attackCooldown <= 0)');
     ok(at > 0, 'the gate is gone from handleInput');
     // and nothing else calls firePlayerShot from a plain tap
     const calls = (INPUT.match(/firePlayerShot\(/g) || []).length;
