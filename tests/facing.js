@@ -38,7 +38,9 @@ for (const name of ['PYLON_AGGRO_EXPOSURE', 'PYLON_AGGRO_TRAP_RATE',
     sandbox[name] = Number(m[1]);
 }
 const ctx = vm.createContext(sandbox);
-for (const f of ['js/species.js', 'js/abilities.js', 'js/predator.js']) {
+// predator.js calls infestTick, so the real infestation file is loaded
+// rather than stubbed — a stub would hide it claiming frames it should not.
+for (const f of ['js/species.js', 'js/abilities.js', 'js/infest.js', 'js/predator.js']) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 }
 const run = s => vm.runInContext(s, ctx);

@@ -55,7 +55,9 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);
-for (const f of ['js/species.js', 'js/abilities.js', 'js/predator.js']) {
+// predator.js calls infestTick, so the real infestation file is loaded
+// rather than stubbed — a stub would hide it claiming frames it should not.
+for (const f of ['js/species.js', 'js/abilities.js', 'js/infest.js', 'js/predator.js']) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 }
 // The zone-effect loop, straight out of game.js.

@@ -111,7 +111,12 @@ function drawRadialMenu() {
     const lHov=dist>RADIAL_RADIUS*0.25&&Math.abs(angle)>Math.PI*3/4;
     let leftLabel="SWITCH", leftAction="switch_context";
     const isPylonSwitchable = isPylonTarget && (commandTarget.attackMode || commandTarget.waveMode);
-    if (!isPylonSwitchable) {
+    // An enemy pylon takes priority: RECLAIM is the only answer to a converted
+    // one, and it is what kills the mould anchored to it.
+    const isEnemyPylon = commandTarget && commandTarget.pillar && !commandTarget.destroyed
+                         && commandTarget.health > 0 && commandTarget.pillarTeam === "red";
+    if (isEnemyPylon) { leftLabel="RECLAIM"; leftAction="reconstruct"; }
+    else if (!isPylonSwitchable) {
         if (isLiveNest && !buildMode) { leftLabel="DESTROY"; leftAction="destroy_nest"; }
         else if (isBrokenNest)        { leftLabel="CONNECT"; leftAction="connect_nest"; }
     }

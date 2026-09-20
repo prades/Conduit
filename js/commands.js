@@ -19,7 +19,14 @@ function issueMoveCommand(tile) {
 }
 
 function issueReconstruct(pylon) {
-    if (!pylon||!followers||followers.length===0) return;
+    if (!pylon || !pylon.pillar || pylon.destroyed) return;
+    // Reclaiming is for pylons the predators took. A green one is already yours.
+    if (pylon.pillarTeam !== "red") return;
+    if (!followers || followers.length === 0) {
+        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
+            text:"NEED FOLLOWERS TO RECLAIM",color:"#f44",life:100,vy:-0.2});
+        return;
+    }
     if (!pylon.reconstructing) { pylon.reconstructing=false; pylon.reconstructProgress=0; pylon.workers=[]; }
     if (pylon.reconstructing) return;
     const pool=(followerByElement[player.selectedElement]||[]).filter(a=>!a.job).slice(0,4);
@@ -290,7 +297,7 @@ function executeCommand() {
         // ── REMAINING LEGACY CASES (attack, reconstruct, etc.) ──
         case "job":       issueJobCommand(commandTarget); break;
         case "reconstruct":
-            if (commandTarget.pillar&&!commandTarget.destroyed) issueReconstruct(commandTarget);
+            issueReconstruct(commandTarget);
             break;
         case "attack": {
             let enemy=getEnemyAtTile(commandTarget);

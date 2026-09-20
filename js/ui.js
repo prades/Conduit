@@ -303,6 +303,7 @@ function _infoRows() {
     if (infoPanelPage === 'codex')  return codexIndexRows(_IP_TEXT_CHARS);
     if (infoPanelPage === 'rules')  return codexRulesRows(_IP_TEXT_CHARS);
     if (infoPanelPage === 'generator') return codexGeneratorRows(_IP_TEXT_CHARS);
+    if (infoPanelPage === 'infest')    return codexInfestRows(_IP_TEXT_CHARS);
     if (infoPanelPage)              return codexElementRows(infoPanelPage, _IP_TEXT_CHARS);
     return _buildInfoRows(infoPanelTarget);
 }
@@ -316,6 +317,7 @@ function _infoNavLabel() {
 function _infoTitle() {
     if (infoPanelPage === 'rules') return "PYLON RULES";
     if (infoPanelPage === 'generator') return "GENERATOR";
+    if (infoPanelPage === 'infest')    return "INFESTATION";
     if (infoPanelPage)             return "PYLON CODEX";
     return _buildInfoTitle(infoPanelTarget);
 }

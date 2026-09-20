@@ -182,6 +182,7 @@ function saveSession() {
             explored: [...exploredZones],
             nests, panels, nodes, npcs,
             mass: serialiseChargedMass(),
+            moulds: serialiseMoulds(),
         }));
     } catch (e) {}
 }
@@ -234,6 +235,8 @@ function applySession(sess) {
         t.predatorOwned = !!n.p;
     });
     restoreChargedMass(sess.mass);
+    // After the pylon restore, so a mould's anchors resolve to real tiles.
+    restoreMoulds(sess.moulds);
 
     // Force the 60-frame world caches to rebuild against the restored tiles.
     _cacheAge = -999;

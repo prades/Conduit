@@ -84,7 +84,7 @@ function makeEnv() {
     };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
-    for (const f of ['js/rng.js', 'js/mass.js', 'js/world.js', 'js/save.js']) {
+    for (const f of ['js/rng.js', 'js/mass.js', 'js/infest.js', 'js/world.js', 'js/save.js']) {
         vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
     }
     // The real restartGame and the shared reset it calls, lifted out of waves.js.

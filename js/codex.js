@@ -51,6 +51,23 @@ const CODEX_GENERATOR = [
     ['MAX RANGE', GENERATOR_NEST_RANGE + ' tiles from a nest', '#8fa'],
 ];
 
+// Infestation gets its own page too. The important line is the last one: the
+// player needs to know RECLAIM exists, or a converted pylon looks permanent.
+const CODEX_INFEST = [
+    { h: 'IF YOU LEAVE THEM ALONE' },
+    { t: 'An undisturbed predator does not just wander. It walks to your nearest pylon and starts chewing it over to its side.' },
+    ['CONVERSION', (1 / INFEST_RATE / 60).toFixed(0) + 's of contact', '#f88'],
+    { t: 'A bar over the pylon shows it happening. Interrupt the predator and the pylon recovers on its own.' },
+    null,
+    { h: 'WHAT GROWS THERE' },
+    { t: 'A pylon they take grows a nest beside it and a mould that creeps outward. Mould that reaches another of your pylons takes that one too.' },
+    ['HATCHES', 'one predator every ' + (MOULD_SPAWN_FRAMES / 60).toFixed(0) + 's', '#f88'],
+    { t: 'What hatches is the same species and class as whatever converted the pylon.' },
+    null,
+    { h: 'TAKING IT BACK' },
+    { t: 'Press and hold a red pylon and pick RECLAIM. Followers rebuild it, and the mould and nest anchored to it die with it.' },
+];
+
 // Each entry: what the element is for, then what each tier adds.
 const CODEX_ELEMENTS = {
     fire: {
@@ -135,6 +152,17 @@ function codexWrap(text, maxChars) {
     return lines.length ? lines : [''];
 }
 
+// The infestation page.
+function codexInfestRows(maxChars) {
+    const w = maxChars || 48;
+    const rows = [];
+    CODEX_INFEST.forEach(r => {
+        if (r === null || Array.isArray(r) || r.h !== undefined) { rows.push(r); return; }
+        codexWrap(r.t, w).forEach(l => rows.push({ t: l, c: '#aad' }));
+    });
+    return rows;
+}
+
 // The generator's own page.
 function codexGeneratorRows(maxChars) {
     const w = maxChars || 48;
@@ -164,6 +192,7 @@ function codexIndexRows(maxChars) {
     // The neutral pylon sits under the six elements, because that is where a
     // player looking for "what can I put on a pylon" will be looking.
     rows.push([GENERATOR_LABEL, 'NEUTRAL \u00b7 REPAIR', GENERATOR_COLOR, { codexPage: 'generator' }]);
+    rows.push(['INFESTATION', 'WHAT THEY DO', '#f77', { codexPage: 'infest' }]);
     rows.push(null);
     // The general rules live on their own page. Appending them here made the
     // index tall enough to run off the top and bottom of a phone screen.

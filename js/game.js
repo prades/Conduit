@@ -956,6 +956,8 @@ function render() {
         if (t.reconstructing&&t.reconstructProgress>=1) {
             t.reconstructing=false; t.reconstructProgress=0; t.upgraded=true; t.pulseTimer=0;
             t.pillarTeam="green"; t.pillarCol="#0f8"; t.health=t.maxHealth;
+            // Taking it back kills the mould and nest it was holding up.
+            clearInfestationAt(t);
             if(t.workers) t.workers.forEach(a=>{ if(a.job&&a.job.type==="reconstruct") a.job=null; });
             t.workers=[];
         }
@@ -1033,6 +1035,10 @@ function render() {
         t.pulseTimer++;
         if(t.pulseTimer>120){ t.pulseTimer=0; actors.forEach(a=>{ if(a.team==="green"){const dx=a.x-t.x,dy=a.y-t.y; if(Math.abs(dx)>3.5||Math.abs(dy)>3.5) return; if(dx*dx+dy*dy<12.25) a.health=Math.min(a.maxHealth,a.health+2);} }); }
     });
+
+    // ── INFESTATION — undisturbed predators converting pylons, and the
+    //    mould and nests that follow ──
+    updateInfestation();
 
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
@@ -2890,7 +2896,10 @@ function render() {
     // rather than up with the interface.
     drawTraps();
     drawHoldLine();
+    // Mould is on the floor, so it draws under the link filaments.
+    drawMoulds();
     drawGeneratorLinks();
+    drawConversionBars();
     drawTutorialHighlight();
     drawFloatingTexts();
     drawCrystalButton();

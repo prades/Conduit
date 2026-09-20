@@ -150,6 +150,8 @@ class Predator {
         // and a worker ignores the combat AI to go fix pylons instead.
         if (abilityTick(this)) return;
         if (workerTick(this))  return;
+        // Nothing threatening it? Then it goes to work on your pylons.
+        if (infestTick(this))  return;
 
         // ── THREAT SCAN ──
         let threat=null, bestDist=Infinity;

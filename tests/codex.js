@@ -44,6 +44,13 @@ const GEN_CONSTS = {
     GENERATOR_HEAL_INTERVAL: _cfgNum('GENERATOR_HEAL_INTERVAL'),
     GENERATOR_NEST_RANGE:    _cfgNum('GENERATOR_NEST_RANGE'),
 };
+// codex.js quotes the infestation numbers too; they live in js/infest.js.
+const INFEST_SRC = fs.readFileSync(path.join(ROOT, 'js/infest.js'), 'utf8');
+for (const name of ['INFEST_RATE', 'MOULD_SPAWN_FRAMES']) {
+    const m = INFEST_SRC.match(new RegExp(`const\\s+${name}\\s*=\\s*([\\d.]+)`));
+    if (!m) { console.log(`  FAIL infest.js no longer defines ${name}`); process.exit(1); }
+    GEN_CONSTS[name] = Number(m[1]);
+}
 Object.assign(sandbox, GEN_CONSTS);
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);

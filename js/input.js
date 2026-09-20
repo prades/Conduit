@@ -391,6 +391,9 @@ canvas.addEventListener('pointerup', e=>{
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode) selectedRadialAction = "position";
                 else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4 && buildMode && !_isPyCmd) selectedRadialAction = "place_trap";
                 else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4 && !buildMode) selectedRadialAction = "info";
+                // Left side. Mirrors drawRadialMenu's leftAction, enemy pylon first.
+                else if (_isPyCmd && commandTarget.pillarTeam === "red" && commandTarget.health > 0)
+                                       selectedRadialAction = "reconstruct";
                 else if (isLiveNest)   selectedRadialAction = "destroy_nest";
                 else if (isBrokenNest) selectedRadialAction = "connect_nest";
                 else                   selectedRadialAction = "switch_context";
