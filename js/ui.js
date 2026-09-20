@@ -195,7 +195,11 @@ function drawElementPicker() {
     PYLON_PICKER_TYPES.forEach((el, i) => {
         const col = i % _EP_COLS, row = Math.floor(i / _EP_COLS);
         const cx = px + col * cellW, cy = py + _EP_HEADER_H + row * _EP_ROW_H;
-        const unlocked = isPylonTypeUnlocked(el.id);
+        // A generator out of reach of every nest is shown dimmed rather than
+        // offered and then refused after the confirm screen.
+        const outOfRange = el.id === GENERATOR_ID &&
+                           !canPlaceGenerator(elementPickerTarget).ok;
+        const unlocked = isPylonTypeUnlocked(el.id) && !outOfRange;
         const alpha = unlocked ? 1.0 : 0.35;
 
         ctx.globalAlpha = alpha;
@@ -213,7 +217,11 @@ function drawElementPicker() {
 
         // Label
         ctx.fillStyle = "#fff"; ctx.font = "10px monospace"; ctx.textAlign = "left";
-        ctx.fillText(el.label.toUpperCase(), cx + 33, cy + _EP_ROW_H/2 + 1);
+        ctx.fillText(el.label.toUpperCase(), cx + 33, cy + _EP_ROW_H/2 + (outOfRange ? -4 : 1));
+        if (outOfRange) {
+            ctx.fillStyle = "#f88"; ctx.font = "7px monospace";
+            ctx.fillText("NEEDS A NEST", cx + 33, cy + _EP_ROW_H/2 + 8);
+        }
         ctx.globalAlpha = 1;
     });
 
@@ -256,6 +264,10 @@ function _handleElementPickerTap(tx, ty) {
         const row = Math.floor((ty - gridY0) / _EP_ROW_H);
         const idx  = row * _EP_COLS + col;
         const el   = PYLON_PICKER_TYPES[idx];
+        if (el && el.id === GENERATOR_ID && !canPlaceGenerator(elementPickerTarget).ok) {
+            refuseGenerator();
+            return true;
+        }
         if (el && isPylonTypeUnlocked(el.id)) {
             const mode = elementPickerMode, target = elementPickerTarget;
             elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;

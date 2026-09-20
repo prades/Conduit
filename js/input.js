@@ -55,6 +55,14 @@ function pickNestLinkPylon(ex, ey) {
 function handleNestConnectTap(ex, ey) {
     if (!nestConnectMode) return false;
     const tapped = pickNestLinkPylon(ex, ey);
+    // Same reach the placement rule enforces, so anything you were allowed to
+    // build can always take the link — and a generator across the map cannot.
+    if (tapped && pendingConnectNest &&
+        Math.hypot(tapped.x - pendingConnectNest.x, tapped.y - pendingConnectNest.y) > GENERATOR_NEST_RANGE) {
+        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
+            text:"THAT GENERATOR IS TOO FAR FROM THE NEST", color:"#f44", life:120, vy:-0.25});
+        return true;
+    }
     if (tapped && pendingConnectNest) {
         tapped.nestConnection = pendingConnectNest;
         pendingConnectNest.connectedPylon = tapped;

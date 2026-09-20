@@ -42,6 +42,7 @@ const GEN_CONSTS = {
     GENERATOR_COLOR:         _cfgStr('GENERATOR_COLOR'),
     GENERATOR_HEAL_AMOUNT:   _cfgNum('GENERATOR_HEAL_AMOUNT'),
     GENERATOR_HEAL_INTERVAL: _cfgNum('GENERATOR_HEAL_INTERVAL'),
+    GENERATOR_NEST_RANGE:    _cfgNum('GENERATOR_NEST_RANGE'),
 };
 Object.assign(sandbox, GEN_CONSTS);
 sandbox.globalThis = sandbox;

@@ -42,6 +42,7 @@ function closeElementPicker() {
 }
 
 function _executeBuild(el, t) {
+    if (el && el.id === GENERATOR_ID && !canPlaceGenerator(t).ok) { refuseGenerator(); return; }
     if (!t || shardCount < 10) {
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 10 SHARDS",color:"#f44",life:90,vy:-0.2});
         return;
@@ -82,6 +83,7 @@ function _executeBuild(el, t) {
 }
 
 function _executeBuildInstant(el, t) {
+    if (el && el.id === GENERATOR_ID && !canPlaceGenerator(t).ok) { refuseGenerator(); return; }
     if (!t || shardCount < 40) {
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 40 SHARDS",color:"#f44",life:90,vy:-0.2});
         return;
@@ -107,6 +109,9 @@ function _executeBuildInstant(el, t) {
 
 function _executeUpgrade(el, pylon) {
     if (!pylon || !pylon.pillar || pylon.destroyed) return;
+    // Converting a pylon you already own into a generator is still creating
+    // one, so it is held to the same placement rule.
+    if (el && el.id === GENERATOR_ID && !canPlaceGenerator(pylon).ok) { refuseGenerator(); return; }
     if (pylon.attackMode || pylon.waveMode) {
         // Already upgraded — just swap element directly.
         // isGenerator is set or cleared here, so converting a generator to an

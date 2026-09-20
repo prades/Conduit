@@ -30,6 +30,14 @@ const sandbox = {
     // input.js registers save-on-leave listeners at load.
     document: { addEventListener() {}, visibilityState: 'visible' },
     saveSession() {}, savePylons() {}, saveNests() {}, saveGameState() {},
+    // The link honours the same reach the placement rule enforces; read it out
+    // of config.js rather than copying the number.
+    GENERATOR_NEST_RANGE: (() => {
+        const src = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
+        const m = src.match(/const GENERATOR_NEST_RANGE = (\d+)/);
+        if (!m) { console.log('  FAIL config.js no longer defines GENERATOR_NEST_RANGE'); process.exit(1); }
+        return Number(m[1]);
+    })(),
 };
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);
@@ -62,7 +70,9 @@ function screenOf(t) {
 }
 function setMode(nest) {
     sandbox.nestConnectMode = true;
-    sandbox.pendingConnectNest = nest || { nest: true, x: 9, y: -1, nestHealth: 0, connectedPylon: null };
+    // Within GENERATOR_NEST_RANGE of the pylon fixtures at x 3-5, y 2 — a
+    // generator further off than that is refused, which is its own check below.
+    sandbox.pendingConnectNest = nest || { nest: true, x: 4, y: -1, nestHealth: 0, connectedPylon: null };
     sandbox.nestConnectMisses = 0;
     sandbox.floatingTexts.length = 0;
     return sandbox.pendingConnectNest;
@@ -143,6 +153,30 @@ check('a hit links the nest and leaves the mode', () => {
     eq(nest.connectedPylon, p, 'nest points at the pylon');
     eq(sandbox.nestConnectMode, false, 'mode ends');
     ok(sandbox.floatingTexts.some(t => /LINKED/.test(t.text)), 'confirms to the player');
+});
+check('a generator too far from the nest is refused, and the mode survives', () => {
+    // The placement rule keeps generators within GENERATOR_NEST_RANGE of a
+    // nest; the link honours the same reach, so the two cannot disagree.
+    const R = sandbox.GENERATOR_NEST_RANGE;
+    const far = pylon({ x: 3, y: 2 });
+    sandbox.world.length = 0; sandbox.world.push(far);
+    setMode({ nest: true, x: 3 + R + 2, y: 2, nestHealth: 0, connectedPylon: null });
+    const [sx, sy] = screenOf(far);
+    eq(run('handleNestConnectTap')(sx, sy), true, 'the tap should still be consumed');
+    // Compared as a boolean: once a link exists the objects reference each
+    // other, and stringifying them for the failure message throws.
+    ok(!far.nestConnection, 'it must not link across the map');
+    eq(sandbox.nestConnectMode, true, 'the mode should stay open so the player can pick another');
+    ok(sandbox.floatingTexts.some(t => /TOO FAR/.test(t.text)), 'says why it was refused');
+});
+check('a generator just inside the range still links', () => {
+    const R = sandbox.GENERATOR_NEST_RANGE;
+    const near = pylon({ x: 3, y: 2 });
+    sandbox.world.length = 0; sandbox.world.push(near);
+    const nest = setMode({ nest: true, x: 3 + R - 0.5, y: 2, nestHealth: 0, connectedPylon: null });
+    const [sx, sy] = screenOf(near);
+    run('handleNestConnectTap')(sx, sy);
+    ok(near.nestConnection === nest, 'a generator inside the range should link');
 });
 check('a stray tap no longer cancels the link outright', () => {
     sandbox.world.length = 0; sandbox.world.push(pylon({ x: 3, y: 2 }));

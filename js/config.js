@@ -66,6 +66,39 @@ const GENERATOR_HEAL_AMOUNT   = 2;
 let _genPylons = [];   // live generator pylons
 let _genLinks  = [];   // [{ gen, pylon }] — generator → pylon it is mending
 
+// How far from a nest a generator may be placed. Linking a broken nest is the
+// generator's whole reason to exist on that side, so one built out of reach of
+// every nest could never do the job — the placement is refused rather than
+// letting the player spend 40 shards on a dead structure. The same range gates
+// the link itself, so anything you are allowed to build can always connect.
+const GENERATOR_NEST_RANGE = 6;
+
+// The nest a generator at (x, y) would serve, or null if none is in reach.
+// Dead nests count: a broken nest is exactly the one you link.
+function nestInGeneratorRange(x, y) {
+    let best = null, bestD = GENERATOR_NEST_RANGE;
+    for (const t of world) {
+        if (!t.nest) continue;
+        const d = Math.hypot(t.x - x, t.y - y);
+        if (d <= bestD) { bestD = d; best = t; }
+    }
+    return best;
+}
+
+// Whether a generator may be placed on this tile, and the nest it would serve.
+function canPlaceGenerator(t) {
+    if (!t) return { ok: false, nest: null };
+    const nest = nestInGeneratorRange(t.x, t.y);
+    return { ok: !!nest, nest };
+}
+
+// One refusal, so every path says the same thing.
+function refuseGenerator() {
+    floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
+        text: "GENERATOR MUST BE WITHIN " + GENERATOR_NEST_RANGE + " TILES OF A NEST",
+        color: "#f44", life: 120, vy: -0.2 });
+}
+
 // A generator is a pylon, so every pylon check still applies to it; this is
 // only the "which kind" test.
 function isGeneratorPylon(t) {

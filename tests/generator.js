@@ -24,6 +24,7 @@ function constant(name) {
     return Number(m[1]);
 }
 const HEAL_INTERVAL = constant('GENERATOR_HEAL_INTERVAL');
+const NEST_RANGE    = constant('GENERATOR_NEST_RANGE');
 const HEAL_AMOUNT   = constant('GENERATOR_HEAL_AMOUNT');
 
 function makeEnv(relay) {
@@ -327,6 +328,118 @@ check('a heal flash fades rather than sticking on', () => {
     const start = p._genHealFlash;
     for (let i = 0; i < start + 5; i++) env.run('drawGeneratorLinks()');
     eq(p._genHealFlash, 0, 'the flash never faded out');
+});
+
+group('where you may put one');
+
+// The real placement rule out of config.js, plus the world it reads.
+function placeEnv() {
+    const env = makeEnv();
+    for (const name of ['nestInGeneratorRange', 'canPlaceGenerator']) {
+        const fn = CONFIG.match(new RegExp(`function ${name}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`));
+        if (!fn) { console.log(`  FAIL could not find ${name} in js/config.js`); process.exit(1); }
+        env.run(fn[0]);
+    }
+    env.run(`GENERATOR_NEST_RANGE = ${NEST_RANGE}`);
+    return env;
+}
+function nest(x, y) { return { x, y, nest: true, nestHealth: 0, nestMaxHealth: 200 }; }
+
+check('THE REPORTED CASE: a generator far from every nest is refused', () => {
+    const env = placeEnv();
+    env.sandbox.world.length = 0;
+    env.sandbox.world.push(nest(0, -1));
+    const far = { x: NEST_RANGE + 5, y: 2 };
+    eq(env.run('canPlaceGenerator')(far).ok, false, 'placement should be refused out of reach');
+});
+
+check('a generator within reach of a nest is allowed', () => {
+    const env = placeEnv();
+    env.sandbox.world.length = 0;
+    const n = nest(7, -1);
+    env.sandbox.world.push(n);
+    const r = env.run('canPlaceGenerator')({ x: 7, y: 2 });
+    eq(r.ok, true, 'three tiles from the nest should be fine');
+    eq(r.nest, n, 'it should name the nest it would serve');
+});
+
+check('the boundary is inclusive and does not drift', () => {
+    const env = placeEnv();
+    env.sandbox.world.length = 0;
+    env.sandbox.world.push(nest(0, 0));
+    eq(env.run('canPlaceGenerator')({ x: NEST_RANGE, y: 0 }).ok, true,  'exactly at the range');
+    eq(env.run('canPlaceGenerator')({ x: NEST_RANGE + 0.01, y: 0 }).ok, false, 'just past it');
+});
+
+check('a nest you already destroyed still counts', () => {
+    // A broken nest is exactly the one you want to link, so it must not be
+    // excluded from the reach test.
+    const env = placeEnv();
+    env.sandbox.world.length = 0;
+    env.sandbox.world.push(Object.assign(nest(2, -1), { nestHealth: 0 }));
+    eq(env.run('canPlaceGenerator')({ x: 2, y: 2 }).ok, true, 'a dead nest should still anchor a generator');
+});
+
+check('the nearest nest is the one named', () => {
+    const env = placeEnv();
+    env.sandbox.world.length = 0;
+    const near = nest(3, 2), far = nest(1, 2);
+    // Nearest pushed FIRST, so an implementation that keeps the last match in
+    // world order returns the far one and this fails.
+    env.sandbox.world.push(near, far);
+    ok(env.run('canPlaceGenerator')({ x: 4, y: 2 }).nest === near,
+       'nearest should win, not last in world order');
+});
+
+check('no nests at all means no generators', () => {
+    const env = placeEnv();
+    env.sandbox.world.length = 0;
+    eq(env.run('canPlaceGenerator')({ x: 0, y: 0 }).ok, false, 'allowed a generator with no nest anywhere');
+});
+
+check('a missing tile is refused rather than throwing', () => {
+    const env = placeEnv();
+    env.sandbox.world.length = 0;
+    env.sandbox.world.push(nest(0, 0));
+    eq(env.run('canPlaceGenerator')(null).ok, false, 'null tile');
+    eq(env.run('canPlaceGenerator')(undefined).ok, false, 'undefined tile');
+});
+
+check('every path that creates a generator is gated', () => {
+    // Build, instant build, and converting a pylon you already own.
+    const gated = [...CMD.matchAll(/el\.id === GENERATOR_ID && !canPlaceGenerator\([^)]*\)\.ok/g)];
+    eq(gated.length, 3, `expected all three creation paths gated, found ${gated.length}`);
+    for (const fn of ['_executeBuild', '_executeBuildInstant', '_executeUpgrade']) {
+        const at = CMD.indexOf('function ' + fn);
+        ok(at > -1, 'missing ' + fn);
+        ok(/canPlaceGenerator/.test(CMD.slice(at, at + 500)), fn + ' is not gated');
+    }
+});
+
+check('the picker dims the option instead of offering a dead end', () => {
+    ok(/const outOfRange = el\.id === GENERATOR_ID &&/.test(UI),
+       'the picker does not check placement while drawing');
+    ok(/NEEDS A NEST/.test(UI), 'the dimmed cell does not say why');
+    // And a tap on it explains rather than doing nothing.
+    const at = UI.indexOf('const el   = PYLON_PICKER_TYPES[idx];');
+    ok(/refuseGenerator\(\)/.test(UI.slice(at, at + 400)), 'tapping a dimmed generator says nothing');
+});
+
+check('one refusal message, used everywhere', () => {
+    ok(/function refuseGenerator/.test(CONFIG), 'no shared refusal');
+    ok(/WITHIN " \+ GENERATOR_NEST_RANGE \+ " TILES OF A NEST/.test(CONFIG),
+       'the message should quote the real range, not a copy of it');
+    // Nothing should roll its own wording.
+    for (const [name, src] of [['commands.js', CMD], ['ui.js', UI]]) {
+        ok(!/MUST BE WITHIN/.test(src), name + ' has its own copy of the message');
+    }
+});
+
+check('the link honours the same reach as the placement rule', () => {
+    const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+    ok(/> GENERATOR_NEST_RANGE/.test(INPUT),
+       'handleNestConnectTap does not check the distance to the nest');
+    ok(/TOO FAR FROM THE NEST/.test(INPUT), 'it does not say why the link was refused');
 });
 
 group('building one, and keeping it');

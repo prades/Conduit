@@ -47,6 +47,8 @@ const CODEX_GENERATOR = [
     null,
     { h: 'IT LINKS THE NEST' },
     { t: 'A generator is the only structure a broken nest will connect to. No elemental pylon can take that link.' },
+    { t: 'Because of that, it can only be built near a nest — and only a generator inside that range can take the link.' },
+    ['MAX RANGE', GENERATOR_NEST_RANGE + ' tiles from a nest', '#8fa'],
 ];
 
 // Each entry: what the element is for, then what each tier adds.
