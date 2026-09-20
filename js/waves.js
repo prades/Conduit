@@ -301,12 +301,12 @@ function spawnFollowerFromSave(entry) {
     followerByElement[npc.element].push(npc);
 }
 
-function nextWave() {
-    gameState.nightNumber++;
-    boughtItems.clear();
-    dayStats.redSpawned=0; dayStats.redConverted=0;
-
-    // ── Close all canvas menus and reset UI/input state ──
+// Every menu, gesture and dangling target reference that must not survive
+// a change of scene. nextWave() and restartGame() both need this; keeping
+// one copy is the only way they stay in step — restartGame missed several
+// of these, so a reset carried stale charged mass and pointers to actors
+// from the world it had just thrown away.
+function resetTransientState() {
     campMenuOpen      = false;
     cloneMenuOpen     = false;
     crystalMenuOpen   = false;
@@ -325,6 +325,14 @@ function nextWave() {
     holdLineX         = null;
     isPressing        = false; longHoldFired = false; touchMoved = false; gesturePoints = [];
     shake             = 0;
+}
+
+function nextWave() {
+    gameState.nightNumber++;
+    boughtItems.clear();
+    dayStats.redSpawned=0; dayStats.redConverted=0;
+
+    resetTransientState();
 
     // ── Snapshot army before wiping — done synchronously while data is live ──
     const armyNow = [
@@ -489,8 +497,26 @@ function restartGame() {
     dayStats={ redSpawned:0, redConverted:0 };
     nightKillCount=0; nightEnemiesTarget=0; nightPredatorsRemaining=0;
     alertActive=false; alertTimer=0; alertType=null; alertSource=null; alertZone=null;
-    for (let i=-6;i<0;i++) generateSegment(i);
-    for (let i=0;i<20;i++) generateSegment(i);
+    // Menus, gestures, charged mass and every pointer into the world that was
+    // just thrown away. Shared with nextWave() so the two cannot drift.
+    resetTransientState();
+    // clearAmmo() above only wipes storage; re-read so the reset starts on the
+    // opening allowance rather than carrying the last game's rounds.
+    health=100; playerAmmo=getAmmo();
+    // Mint a new seed before generating anything. clearWorldSeed() above only
+    // forgets the old one — without this, generateSegment would build every
+    // reset from seed 0, and with nothing in storage the next refresh would
+    // rebuild a different map underneath the saved camp.
+    initWorldSeed();
+    // The last game's surviving recruits must stop filtering this one.
+    // generateSegment skips any recruit whose segment is absent from this set,
+    // which is how a refresh avoids handing back a recruit already converted or
+    // killed. Leaving it set meant a reset came up with an empty map.
+    restoredNpcKeys = null;
+    // Same span as init.js: back to CAMP_MIN_X so every base building site has
+    // ground under it, and as far forward as a fresh page load lays down.
+    for (let i=CAMP_MIN_X;i<0;i++) generateSegment(i);
+    for (let i=0;i<80;i++) generateSegment(i);
     // No free spawns — player earns followers and encounters predators naturally
     spawnHazardsForDay();
     document.getElementById("overlay").classList.remove("active");
