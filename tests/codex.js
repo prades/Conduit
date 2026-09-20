@@ -283,5 +283,88 @@ check('an unknown element degrades instead of throwing', () => {
     ok(rows.length >= 1 && rows[0].t, 'should return a placeholder row');
 });
 
+group('GAME INDEX pylon page');
+// renderPylonIndex needs a document, which the main sandbox above does not have.
+function renderIndex(mutate) {
+    const slots = {};
+    const sb = {
+        console, Math, Array, Object, String, Number, Set, Map, isNaN, isFinite, parseInt,
+        ELEMENTS, PYLON_LINK_TILES: 3, PYLON_LINK_TILES_RELAY: 5,
+        document: { getElementById: id => ({
+            set innerHTML(v) { slots[id] = v; },
+            get innerHTML() { return slots[id]; },
+        }) },
+    };
+    sb.globalThis = sb;
+    const c2 = vm.createContext(sb);
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8'), c2, { filename: 'js/codex.js' });
+    if (mutate) vm.runInContext(mutate, c2);
+    vm.runInContext('renderPylonIndex()', c2);
+    return slots;
+}
+
+check('THE REPORTED CASE: every element appears on the index pylon page', () => {
+    const el = renderIndex().cmPylonElements || '';
+    ok(el.length > 500, 'the element block is empty or tiny');
+    for (const e of ELEMENTS) {
+        ok(el.includes('>' + e.label.toUpperCase() + '<'), 'missing ' + e.label);
+        ok(el.includes(CODEX[e.id].role), e.label + ' is missing its role');
+    }
+});
+check('all three tiers are listed for all six elements', () => {
+    const el = renderIndex().cmPylonElements || '';
+    eq((el.match(/cm-tier-badge/g) || []).length, ELEMENTS.length * 3, 'tier rows');
+    for (const e of ELEMENTS) {
+        for (const t of [1, 2, 3]) {
+            const words = CODEX[e.id].tiers[t].split(' ').slice(0, 3).join(' ');
+            ok(el.includes(words), e.label + ' tier ' + t + ' text missing');
+        }
+    }
+});
+check('element colours carry through to the index', () => {
+    const el = renderIndex().cmPylonElements || '';
+    for (const e of ELEMENTS) ok(el.includes(e.color), 'missing colour for ' + e.label);
+});
+check('the CORE multi-pylon note is carried over', () => {
+    const el = renderIndex().cmPylonElements || '';
+    ok(/enclose a zone/.test(el), 'core note missing');
+});
+check('the stated link range is generated, not hardcoded', () => {
+    const net = renderIndex().cmPylonNetwork || '';
+    ok(/3 tiles/.test(net), 'should state the real 3-tile range');
+    ok(/5<\/span> with the Signal Relay/.test(net) || /5<\/span>/.test(net), 'should mention the relay range');
+});
+check('the old stale claims are gone from game.html', () => {
+    const html = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+    const pylonPage = html.slice(html.indexOf('id="cmPylons"'), html.indexOf('id="cmZones"'));
+    ok(!/within <span class="cm-stat">5 tiles<\/span> auto-connect/.test(pylonPage),
+       'the hardcoded 5-tile range is still there');
+    ok(!/ultimate charge <span style="color:#0f8">\+15%<\/span>/.test(pylonPage),
+       'the false +15% ultimate claim is still there');
+    ok(/id="cmPylonElements"/.test(pylonPage), 'no slot for the element effects');
+    ok(/id="cmPylonNetwork"/.test(pylonPage), 'no slot for the network block');
+});
+check('text from the tables is escaped, not injected', () => {
+    const slots = renderIndex('CODEX_ELEMENTS.fire.summary = "<img src=x onerror=1> & co";');
+    const el = slots.cmPylonElements || '';
+    ok(!el.includes('<img'), 'raw markup reached the page');
+    ok(el.includes('&lt;img'), 'should have been escaped');
+    ok(el.includes('&amp; co'), 'ampersand should be escaped');
+});
+check('a missing slot is not an error', () => {
+    const sb = {
+        console, Math, Array, Object, String, Number, Set, Map, isNaN, isFinite, parseInt,
+        ELEMENTS, document: { getElementById: () => null },
+    };
+    sb.globalThis = sb;
+    const c2 = vm.createContext(sb);
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8'), c2, { filename: 'js/codex.js' });
+    vm.runInContext('renderPylonIndex()', c2);   // must not throw
+});
+check('the index is populated at startup', () => {
+    const init = fs.readFileSync(path.join(ROOT, 'js/init.js'), 'utf8');
+    ok(/renderPylonIndex\(\)/.test(init), 'nothing ever fills the index page');
+});
+
 console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
 process.exit(failures ? 1 : 0);

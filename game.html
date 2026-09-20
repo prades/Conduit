@@ -980,11 +980,13 @@
       <div class="cm-ability"><strong>Wave Mode:</strong> Place <strong>2 adjacent pylons</strong> of the <em>same element</em> — they pair up automatically and project a zone-effect corridor between them. The zone type matches the element.</div>
       <div class="cm-tip"><strong>Tip:</strong> CORE pylons forming an <strong>enclosed triangle</strong> create a protected zone. Flux solo pylons emit an inward-pulling glow ring around them.</div>
 
+      <div class="ctrl-title">PYLON ELEMENT EFFECTS</div>
+      <!-- Built at runtime from CODEX_ELEMENTS so these numbers cannot drift
+           from the live effect code — see js/codex.js and tests/codex.js. -->
+      <div id="cmPylonElements"></div>
+
       <div class="ctrl-title">NETWORK STRENGTH</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:5px">Same-element pylons within <span class="cm-stat">5 tiles</span> auto-connect. The largest connected group determines your network tier.</div>
-      <div class="cm-tier"><span class="cm-tier-badge">T1</span> <span style="color:#aad">2+ pylons — basic network bonus active</span></div>
-      <div class="cm-tier"><span class="cm-tier-badge">T2</span> <span style="color:#aad">4+ pylons — enhanced zone effects + ultimate charge <span style="color:#0f8">+15%</span> faster</span></div>
-      <div class="cm-tier"><span class="cm-tier-badge">T3</span> <span style="color:#aad">6+ pylons — maximum network power, strongest zone projection</span></div>
+      <div id="cmPylonNetwork"></div>
       <div class="ctrl-row cm-dim" style="margin-top:4px">Tier-ups trigger a <strong>pulse flash</strong> on all connected pylons in the network.</div>
 
       <div class="ctrl-title">NETWORK INTEGRITY</div>

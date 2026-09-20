@@ -204,3 +204,67 @@ function codexDormantPylonRows(maxChars) {
         .forEach(l => rows.push({ t: l, c: '#6a7a72' }));
     return rows;
 }
+
+// ─────────────────────────────────────────────────────────
+//  GAME INDEX (the ? panel) — PYLON ELEMENT EFFECTS
+// ─────────────────────────────────────────────────────────
+// The index had a PYLONS page covering modes, tiers, integrity and nests, but
+// never said what a FIRE network actually does as opposed to an ICE one. This
+// fills that in from the same table the in-world info panel uses, so the two
+// can never disagree with each other or with game.js.
+function _codexEsc(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderPylonIndex() {
+    if (typeof document === 'undefined') return;
+
+    const host = document.getElementById('cmPylonElements');
+    if (host) {
+        let html = '';
+        ELEMENTS.forEach((el, i) => {
+            const e = CODEX_ELEMENTS[el.id];
+            if (!e) return;
+            if (i > 0) html += '<hr class="cm-hr">';
+            html +=
+                '<div class="cm-elem-head">' +
+                  '<span class="cm-elem-dot" style="background:' + el.color +
+                    ';box-shadow:0 0 5px ' + el.color + '"></span>' +
+                  '<span style="color:' + el.color + '">' + _codexEsc(el.label.toUpperCase()) + '</span>' +
+                  '<span class="cm-dim" style="margin-left:auto;font-size:0.68rem">' +
+                    _codexEsc(e.role) + '</span>' +
+                '</div>' +
+                '<div class="ctrl-row cm-dim" style="margin-bottom:4px">' + _codexEsc(e.summary) + '</div>';
+            for (const tier of [1, 2, 3]) {
+                html +=
+                    '<div class="cm-tier"><span class="cm-tier-badge">T' + tier + '</span> ' +
+                    '<span style="color:#aad">' + CODEX_TIER_SIZES[tier] + '+ pylons — ' +
+                    _codexEsc(e.tiers[tier]) + '</span></div>';
+            }
+            if (CODEX_NOTES[el.id]) {
+                html += '<div class="cm-tip">' + _codexEsc(CODEX_NOTES[el.id]) + '</div>';
+            }
+        });
+        host.innerHTML = html;
+    }
+
+    const net = document.getElementById('cmPylonNetwork');
+    if (net) {
+        // The old copy said "within 5 tiles" and credited tier II with a +15%
+        // ultimate bonus, neither of which the code does. Generated from the
+        // real constants instead.
+        const base  = (typeof PYLON_LINK_TILES === 'number') ? PYLON_LINK_TILES : 3;
+        const relay = (typeof PYLON_LINK_TILES_RELAY === 'number') ? PYLON_LINK_TILES_RELAY : 5;
+        let html =
+            '<div class="ctrl-row cm-dim" style="margin-bottom:5px">Same-element pylons within ' +
+            '<span class="cm-stat">' + base + ' tiles</span> auto-connect (' +
+            '<span class="cm-stat">' + relay + '</span> with the Signal Relay). ' +
+            'The largest connected group sets that element\'s tier.</div>';
+        for (const tier of [1, 2, 3]) {
+            html += '<div class="cm-tier"><span class="cm-tier-badge">T' + tier + '</span> ' +
+                    '<span style="color:#aad">' + CODEX_TIER_SIZES[tier] +
+                    '+ pylons — see the element table above for what this tier does.</span></div>';
+        }
+        net.innerHTML = html;
+    }
+}

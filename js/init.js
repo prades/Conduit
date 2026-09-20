@@ -75,6 +75,7 @@ async function loadConfig() {
         savedF.forEach(entry => spawnFollowerFromSave(entry));
     }
     loadCampBuildings();
+    renderPylonIndex();   // fill the GAME INDEX pylon page from the codex
     render();
 }
 
