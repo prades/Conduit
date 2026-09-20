@@ -11,7 +11,7 @@ function generateSegment(startX) {
         const isNest = type === 'floor' && y === -1 && startX === zoneCenter;
         const tile = {
             x:startX, y, type,
-            pillar:(type==='floor'&&y>=3&&rnd()<cfg.pillarSpawnRate),
+            pillar:(type==='floor'&&y>=3&&rnd()<cfg.pillarSpawnRate&&startX>=0),
             pillarTeam: rnd()>0.6?"green":"red",
             pillarCol:null,
             destroyed:false, health:20, maxHealth:20,

@@ -25,15 +25,64 @@ const CAMP_BUILDINGS = [
       desc:   "Rapid field maintenance keeps your squad ready." },
 ];
 
-// Fixed tile positions — y=-1 puts them right against the back wall (y=-2)
+// ── BASE LAYOUT ───────────────────────────────────────────
+// Each building occupies a footprint of w x h tiles anchored at (x, y), its
+// north-west corner. They flank a central avenue at y = 1..2 running back from
+// the Crystal, rather than standing in a single row along the back wall.
+//
+//        x  -13 -12  -11 -10   -9  -8   -7  -6   -5  -4   -3  -2  -1   0
+//  y=-1     [ conduit ]        [ sequencer ]        [ command node ]
+//  y= 0     [         ]        [           ]        [              ]
+//  y= 1  ── avenue ─────────────────────────────────────────────── crystal
+//  y= 2  ── avenue ──────────────────────────────────────── home node
+//  y= 3     [  relay  ]        [ fabricator]        [    repair    ]
+//  y= 4     [         ]        [           ]        [              ]
+const CAMP_MIN_X = -14;   // world generation reaches back this far for the base
 const _CAMP_BLDG_TILES = {
-    command_node:   { x: -2, y: -1 },
-    power_conduit:  { x: -3, y: -1 },
-    repair_station: { x: -4, y: -1 },
-    signal_relay:   { x: -5, y: -1 },
-    dna_sequencer:  { x: -6, y: -1 },
-    fabricator:     { x: -7, y: -1 },
+    command_node:   { x:  -5, y: -1, w: 3, h: 2 },   // HQ, the largest
+    repair_station: { x:  -5, y:  3, w: 3, h: 2 },
+    dna_sequencer:  { x:  -9, y: -1, w: 2, h: 2 },
+    fabricator:     { x:  -9, y:  3, w: 2, h: 2 },
+    power_conduit:  { x: -13, y: -1, w: 2, h: 2 },
+    signal_relay:   { x: -13, y:  3, w: 2, h: 2 },
 };
+
+// Every tile a building stands on.
+function campFootprint(id) {
+    const t = _CAMP_BLDG_TILES[id];
+    if (!t) return [];
+    const out = [];
+    for (let dx = 0; dx < (t.w || 1); dx++)
+        for (let dy = 0; dy < (t.h || 1); dy++) out.push({ x: t.x + dx, y: t.y + dy });
+    return out;
+}
+
+// The building standing on a tile, if any.
+function campBuildingAt(tx, ty) {
+    for (const b of CAMP_BUILDINGS) {
+        const t = _CAMP_BLDG_TILES[b.id];
+        if (!t) continue;
+        if (tx >= t.x && tx < t.x + (t.w || 1) && ty >= t.y && ty < t.y + (t.h || 1)) return b;
+    }
+    return null;
+}
+
+// A structure is drawn once, on its front-most tile (greatest x+y), so every
+// tile behind it has already been painted and anything in front still draws
+// over it. Drawing on the anchor instead would let the base's own floor
+// overwrite it.
+function campDrawTile(id) {
+    const t = _CAMP_BLDG_TILES[id];
+    if (!t) return null;
+    return { x: t.x + (t.w || 1) - 1, y: t.y + (t.h || 1) - 1 };
+}
+
+// Structures scale with their footprint so a 3x2 HQ reads bigger than a 2x2 shed.
+function campScale(id) {
+    const t = _CAMP_BLDG_TILES[id];
+    if (!t) return 1;
+    return 1 + 0.55 * ((t.w || 1) + (t.h || 1) - 2);
+}
 
 let campBuildings = new Set();
 let campMenuOpen  = false;
@@ -541,12 +590,24 @@ function drawCampFloor(obj, px, py, amb) {
     ctx.beginPath(); ctx.moveTo(px - TILE_W + 1, py + TILE_H); ctx.lineTo(px, py + TILE_W - 1); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(px + TILE_W - 1, py + TILE_H); ctx.lineTo(px, py + TILE_W - 1); ctx.stroke();
 
-    // ── Camp building 3D asset on this tile ──
-    const _campBldgHere = CAMP_BUILDINGS.find(b => {
-        const t = _CAMP_BLDG_TILES[b.id];
-        return t && t.x === txi && t.y === tyi;
-    });
-    if (_campBldgHere) _drawCampBuilding3D(_campBldgHere, tcx, tcy + TILE_H, amb);
+    // ── Foundation slab under a building's footprint ──
+    const _bldgOnTile = campBuildingAt(txi, tyi);
+    if (_bldgOnTile) _drawCampPad(px, py, amb, campBuildings.has(_bldgOnTile.id));
+
+    // ── The structure itself, once, on the footprint's front tile ──
+    if (_bldgOnTile) {
+        const dt = campDrawTile(_bldgOnTile.id);
+        if (dt && dt.x === txi && dt.y === tyi) {
+            const t  = _CAMP_BLDG_TILES[_bldgOnTile.id];
+            // Offset from this tile to the footprint centre, in tile space,
+            // projected the same way the world is.
+            const ctx_ = t.x + ((t.w || 1) - 1) / 2 - txi;
+            const cty_ = t.y + ((t.h || 1) - 1) / 2 - tyi;
+            const sx   = tcx + (ctx_ - cty_) * TILE_W;
+            const sy   = tcy + (ctx_ + cty_) * TILE_H + TILE_H;
+            _drawCampBuilding3D(_bldgOnTile, sx, sy, amb, campScale(_bldgOnTile.id));
+        }
+    }
 
     // ── Home node structure ──
     if (txi === HOME_NODE_TILE.x && tyi === HOME_NODE_TILE.y) {
@@ -554,18 +615,44 @@ function drawCampFloor(obj, px, py, amb) {
     }
 }
 
+// A metal foundation tile. Painted on every footprint tile, so adjacent tiles
+// merge into one continuous slab under a multi-tile building.
+function _drawCampPad(px, py, amb, built) {
+    ctx.save();
+    ctx.fillStyle = built ? `rgba(38,36,28,${0.88 * amb + 0.06})`
+                          : `rgba(24,26,30,${0.78 * amb + 0.05})`;
+    ctx.beginPath();
+    ctx.moveTo(px,          py);
+    ctx.lineTo(px + TILE_W, py + TILE_H);
+    ctx.lineTo(px,          py + TILE_W);
+    ctx.lineTo(px - TILE_W, py + TILE_H);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = built ? `rgba(150,120,50,${0.34 * amb})`
+                            : `rgba(90,100,110,${0.26 * amb})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+}
+
 // ── CAMP BUILDING 3-D ASSETS ────────────────────────────────
 // Draws an isometric 3D structure for each camp building.
 // Ghost (not yet bought): dim wireframe silhouette + cost label.
 // Built: full glowing asset.
 
-function _drawCampBuilding3D(bldg, tcx, tcy, amb) {
+function _drawCampBuilding3D(bldg, tcx, tcy, amb, scale) {
     const built = campBuildings.has(bldg.id);
     const pulse = 0.6 + 0.4 * Math.sin((frame || 0) * 0.07 + tcx * 0.01);
+    const s     = scale || 1;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     // Ghost: reduce amb so structure is dim but still readable; built: full
     const a = built ? amb : amb * 0.55;
+    // Scale about the structure's own base so each asset grows with its
+    // footprint without every one of them needing a size argument. The label is
+    // drawn after the matching restore — scaled lettering read as a mistake.
+    ctx.save();
+    if (s !== 1) { ctx.translate(tcx, tcy); ctx.scale(s, s); ctx.translate(-tcx, -tcy); }
 
     switch (bldg.id) {
         case 'command_node':   _campCmdNode(tcx, tcy, a, pulse, built);    break;
@@ -576,17 +663,19 @@ function _drawCampBuilding3D(bldg, tcx, tcy, amb) {
         case 'repair_station': _campRepair(tcx, tcy, a, pulse, built);     break;
     }
 
-    // Label above structure
+    ctx.restore();   // done with the structure's own scale
+
+    // Label above structure — unscaled, but lifted clear of the scaled model.
     ctx.fillStyle = built
         ? `rgba(220,170,40,${0.95*amb})`
         : `rgba(140,115,50,${0.65*amb})`;
     ctx.font      = 'bold 7px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(bldg.label.split(' ')[0].toUpperCase(), tcx, tcy - 48);
+    ctx.fillText(bldg.label.split(' ')[0].toUpperCase(), tcx, tcy - 40 * s - 10);
     if (!built) {
         ctx.fillStyle = `rgba(110,95,42,${0.55*amb})`;
         ctx.font      = '7px monospace';
-        ctx.fillText(bldg.cost + 'S', tcx, tcy - 39);
+        ctx.fillText(bldg.cost + 'S', tcx, tcy - 40 * s - 1);
     }
     ctx.restore();
 }

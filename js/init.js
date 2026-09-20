@@ -19,7 +19,7 @@ async function loadConfig() {
     const session = loadSession();
     restoredNpcKeys = (session && Array.isArray(session.npcs)) ? new Set(session.npcs) : null;
 
-    for (let i = -6; i < 0; i++) generateSegment(i);
+    for (let i = CAMP_MIN_X; i < 0; i++) generateSegment(i);
     for (let i = 0; i < 80; i++) generateSegment(i);
     shardCount = getShards();
     unlockedElements = new Set(getUnlocks());
