@@ -350,3 +350,19 @@ function updateShards() {
         return true;
     });
 }
+
+// ─────────────────────────────────────────────────────────
+//  SAVE ON LEAVING
+// ─────────────────────────────────────────────────────────
+// The autosave tick runs every 5 seconds, so without this a refresh could still
+// drop the last few seconds. pagehide is the reliable one on iOS — beforeunload
+// does not fire there when a tab is swiped away or backgrounded out of memory.
+function saveOnLeave() {
+    if (typeof saveSession !== "function") return;
+    try { saveSession(); savePylons(); saveNests(); saveGameState(); } catch (e) {}
+}
+window.addEventListener("pagehide", saveOnLeave);
+window.addEventListener("beforeunload", saveOnLeave);
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveOnLeave();
+});

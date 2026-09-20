@@ -27,6 +27,9 @@ const sandbox = {
     performance: { now: () => 0 },
     getTile: () => null,
     window: { addEventListener() {}, visualViewport: null },
+    // input.js registers save-on-leave listeners at load.
+    document: { addEventListener() {}, visibilityState: 'visible' },
+    saveSession() {}, savePylons() {}, saveNests() {}, saveGameState() {},
 };
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);

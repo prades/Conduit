@@ -2,6 +2,8 @@
 //  WORLD GENERATION
 // ─────────────────────────────────────────────────────────
 function generateSegment(startX) {
+    // One deterministic stream per segment — see js/rng.js.
+    const rnd = segmentRng(startX);
     const zoneIndex = Math.floor(startX / ZONE_LENGTH);
     const zoneCenter = zoneIndex * ZONE_LENGTH + Math.floor(ZONE_LENGTH / 2);
     for (let y=-2; y<=5; y++) {
@@ -9,12 +11,12 @@ function generateSegment(startX) {
         const isNest = type === 'floor' && y === -1 && startX === zoneCenter;
         const tile = {
             x:startX, y, type,
-            pillar:(type==='floor'&&y>=3&&Math.random()<cfg.pillarSpawnRate),
-            pillarTeam: Math.random()>0.6?"green":"red",
+            pillar:(type==='floor'&&y>=3&&rnd()<cfg.pillarSpawnRate),
+            pillarTeam: rnd()>0.6?"green":"red",
             pillarCol:null,
             destroyed:false, health:20, maxHealth:20,
             converting:false, pendingDestroy:false,
-            pylonStyle:["sentinel","spire","monolith","antenna","shrine","conduit"][Math.floor(Math.random()*6)],
+            pylonStyle:["sentinel","spire","monolith","antenna","shrine","conduit"][Math.floor(rnd()*6)],
             upgraded:false, pulseTimer:0,
             reconstructing:false, reconstructProgress:0, workers:[],
             // Spawn nest — honeycomb hive structure at zone centre, y=2
@@ -30,24 +32,24 @@ function generateSegment(startX) {
 
         // ── WALL PANELS — back-row floor tiles (y=0) in forward zones ──
         const PANEL_ALARM_TYPES = ["proximity", "zone", "facility"];
-        if (zoneIndex >= 1 && type === 'floor' && y === 0 && Math.random() < 0.18) {
+        if (zoneIndex >= 1 && type === 'floor' && y === 0 && rnd() < 0.18) {
             tile.nodeType    = 'wall_panel';
             tile.capturable  = false;
             tile.panelActivated = false;
-            tile.isDecoy     = Math.random() < 0.40;
-            tile.shardReward = 10 + Math.floor(Math.random() * 21);
-            tile.alarmType   = PANEL_ALARM_TYPES[Math.floor(Math.random() * PANEL_ALARM_TYPES.length)];
-            tile.panelFlicker = Math.random() * Math.PI * 2;
+            tile.isDecoy     = rnd() < 0.40;
+            tile.shardReward = 10 + Math.floor(rnd() * 21);
+            tile.alarmType   = PANEL_ALARM_TYPES[Math.floor(rnd() * PANEL_ALARM_TYPES.length)];
+            tile.panelFlicker = rnd() * Math.PI * 2;
         }
 
         // NPC spawns
-        if (zoneIndex>=0 && zoneIndex<activeDayZones && type==='floor' && y===3 && Math.random()<cfg.npcSpawnRate) {
+        if (zoneIndex>=0 && zoneIndex<activeDayZones && type==='floor' && y===3 && rnd()<cfg.npcSpawnRate) {
             const typeKeys=["virus","lobster","turtle"];
-            const npcType=typeKeys[Math.floor(Math.random()*typeKeys.length)];
+            const npcType=typeKeys[Math.floor(rnd()*typeKeys.length)];
             const def=NPC_TYPES[npcType];
             const ELEMENT_POOL=[...unlockedElements];
-            const element=ELEMENT_POOL[Math.floor(Math.random()*ELEMENT_POOL.length)];
-            const personality = PERSONALITY_KEYS[Math.floor(Math.random() * PERSONALITY_KEYS.length)];
+            const element=ELEMENT_POOL[Math.floor(rnd()*ELEMENT_POOL.length)];
+            const personality = PERSONALITY_KEYS[Math.floor(rnd() * PERSONALITY_KEYS.length)];
             const stats       = applyPersonality(personality);
             const role        = assignRole(stats);
             const npc={
@@ -63,12 +65,19 @@ function generateSegment(startX) {
                 walkCycle:0, moveCooldown:0,
                 stance:"follow", isFollower:false, isHealing:false,
                 hitFlash:0, spawnProtection:180, dead:false,
-                combatTrait:  Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)],
-                naturalTrait: Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)],
-                perk:         Object.keys(PERKS)[Math.floor(Math.random()*2)]
+                combatTrait:  Object.keys(COMBAT_TRAITS)[Math.floor(rnd()*2)],
+                naturalTrait: Object.keys(NATURAL_TRAITS)[Math.floor(rnd()*2)],
+                perk:         Object.keys(PERKS)[Math.floor(rnd()*2)],
+                // Stable identity across reloads — at most one recruit per
+                // segment, so its x is enough to name it.
+                spawnKey: startX
             };
-            actors.push(npc);
-            dayStats.redSpawned++;
+            // The object is built either way so the stream stays aligned; only
+            // the push is skipped for a recruit already converted or killed.
+            if (!restoredNpcKeys || restoredNpcKeys.has(startX)) {
+                actors.push(npc);
+                dayStats.redSpawned++;
+            }
         }
     }
     lastGenX=startX;

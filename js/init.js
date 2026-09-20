@@ -13,6 +13,12 @@ async function loadConfig() {
         if (res.ok) { const data = await res.json(); cfg = {...cfg, ...data}; }
     } catch(e) { console.log("Using default config"); }
 
+    // Seed and session first: the seed decides the terrain, and the session
+    // says which recruits are still standing, both of which generateSegment reads.
+    initWorldSeed();
+    const session = loadSession();
+    restoredNpcKeys = (session && Array.isArray(session.npcs)) ? new Set(session.npcs) : null;
+
     for (let i = -6; i < 0; i++) generateSegment(i);
     for (let i = 0; i < 80; i++) generateSegment(i);
     shardCount = getShards();
@@ -60,6 +66,9 @@ async function loadConfig() {
             if (tile && tile.nest) tile.nestHealth = 0;
         });
     }
+    // After the pylon and nest restores, so nest links can resolve to real tiles.
+    applySession(session);
+
     const savedF = loadFollowers();
     if (savedF.length > 0) {
         savedF.forEach(entry => spawnFollowerFromSave(entry));

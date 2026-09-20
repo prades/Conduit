@@ -465,7 +465,7 @@ function restartGame() {
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
     pendingPillarDestruction=[];respawnQueue=[];
-    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();clearNests();clearPermUpgrades();
+    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();clearNests();clearSession();clearWorldSeed();clearPermUpgrades();
     permUpgrades=new Set(); pylonMaxHPBonus=0; pylonRangeBonus=0; pylonFireRateBonus=0;
     followerPermPowerBonus=0; followerPermHPBonus=0;
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}

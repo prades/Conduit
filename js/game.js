@@ -526,6 +526,12 @@ function render() {
     // ── EXPLORED ZONES ──
     exploredZones.add(getZoneIndex(Math.floor(player.x)));
 
+    // ── AUTOSAVE ──
+    // Pylons were only written at wave transitions, so anything built or
+    // upgraded mid-day was lost on a refresh. Every 5s is cheap next to the
+    // rest of the frame and keeps a reload close to where the player was.
+    if (frame % 300 === 0) { saveSession(); savePylons(); saveNests(); }
+
     // ── CLEAR SCREEN ──
     ctx.fillStyle="#000"; ctx.fillRect(0,0,canvas.width,canvas.height);
     // ── CIRCUIT BOARD BACKGROUND ──

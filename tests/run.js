@@ -10,6 +10,7 @@ const SUITES = [
     ['attack facing',          'facing.js'],
     ['pylon codex',            'codex.js'],
     ['nest linking',           'nestlink.js'],
+    ['save & refresh',         'persist.js'],
 ];
 
 let failed = 0;
