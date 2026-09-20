@@ -435,9 +435,12 @@ const WORKER_SEEK_RANGE    = 14;
 const WORKER_RESCAN_FRAMES = 30;
 
 function _abFindRepairTarget(pred) {
-    if (pred._repairScanFrame !== undefined &&
-        frame - pred._repairScanFrame < WORKER_RESCAN_FRAMES &&
-        _abRepairStillValid(pred, pred._repairScan)) {
+    const fresh = pred._repairScanFrame !== undefined &&
+                  frame - pred._repairScanFrame < WORKER_RESCAN_FRAMES;
+    // A cached null is a real answer, not a cache miss. Treating it as one meant
+    // a worker with nothing to repair — the common case — rescanned the entire
+    // world array every single frame instead of every 30.
+    if (fresh && (pred._repairScan === null || _abRepairStillValid(pred, pred._repairScan))) {
         return pred._repairScan;
     }
     pred._repairScanFrame = frame;

@@ -528,7 +528,6 @@ function render() {
 
     // ── CLEAR SCREEN ──
     ctx.fillStyle="#000"; ctx.fillRect(0,0,canvas.width,canvas.height);
-    fxBeginFrame();
     // ── CIRCUIT BOARD BACKGROUND ──
     drawCircuitLayer();
     ctx.save();
@@ -1060,25 +1059,10 @@ function render() {
         const py=(obj.x-player.visualX+(obj.y-player.visualY))*TILE_H+canvas.height/2;
 
         if (obj.type==='player') {
-            // Shadows sit slightly forward of py, not on it. py is a tile's BACK
-            // corner — game.js elsewhere treats py + TILE_H as the tile's screen
-            // centre — so a shadow drawn exactly at the feet lands in the sliver
-            // hidden behind the sprite, while one on the floor centre detaches by
-            // a full 30px. A few pixels forward reads as contact.
-            fxContactShadow(px, py + GROUND_DY * 0.15, 26, 0.7);
             drawPlayer({x:px,y:py});
         }
         else if (obj.type==='npc') {
-            const _a = obj.actor;
-            const _pred = !!_a.dimensions;
-            // A leaping scout's shadow shrinks and fades as it gains height,
-            // which is what actually sells the arc as leaving the ground.
-            const _lift = _a.leapLift || 0;
-            const _lf   = _lift > 0 ? Math.max(0.3, 1 - _lift / 42) : 1;
-            fxContactShadow(px, py + GROUND_DY * (_pred ? 0.33 : 0.25),
-                                (_pred ? _a.dimensions.width * 1.1 : 21) * _lf,
-                                (_a.isNymph ? 0.4 : 1) * _lf);
-            drawNPC(_a,px,py);
+            drawNPC(obj.actor,px,py);
         }
         else if (obj.type==='groundItem') {
             const gi=obj.item;
@@ -2933,16 +2917,10 @@ function render() {
 
     // ── OVERLAYS ──
     drawElementEffects();
-    // Traps and the hold line are world-space geometry, not interface, so they
-    // belong above the post-FX seam — otherwise they sit flat and unlit on top
-    // of a scene that is bloomed and lit, and read as pasted on.
+    // Traps and the hold line are world geometry, so they draw with the world
+    // rather than up with the interface.
     drawTraps();
     drawHoldLine();
-
-    // Post-processing sits here: everything above is the world and gets bloom,
-    // light and grain; everything below is interface and stays crisp.
-    fxComposite();
-
     drawFloatingTexts();
     // ── PLAYER STUN FLASH — red vignette while stunned ──
     if (player.stunned > 0) {

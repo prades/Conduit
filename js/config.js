@@ -34,14 +34,6 @@ const hpBar   = document.getElementById('hp');
 const shardUI = document.getElementById('shards');
 const waveUI  = document.getElementById('waveInfo');
 
-// ── POST-FX FALLBACKS ─────────────────────────────────────
-// js/postfx.js redefines these when it loads. Declaring no-ops here means a
-// failed or cached-stale script fetch costs the player the effects, not the
-// whole game — the render loop calls these every frame.
-var fxBeginFrame    = function () {};
-var fxComposite     = function () {};
-var fxContactShadow = function () {};
-
 // Safe area inset at the bottom (for notch/home-bar devices)
 let SAFE_BOTTOM = 0;
 function resize() {
@@ -78,11 +70,6 @@ cfg.npcSpawnRate = 0.22;
 
 // ── CONSTANTS ─────────────────────────────────────────────
 const TILE_W = 60, TILE_H = 30, RENDER_DIST = 22;
-// Actor sprites anchor their feet at py, but py is a tile's back corner: the
-// drawn diamond runs from py to py+TILE_W, so the tile's visible centre is
-// py+TILE_H. GROUND_DY is that gap, and contact shadows are placed as a
-// fraction of it — see the shadow calls in the draw loop.
-const GROUND_DY = TILE_H;
 const ZONE_LENGTH  = 15;
 const LONG_HOLD_MS = 500;
 const RADIAL_RADIUS = 60;

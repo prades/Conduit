@@ -1,8 +1,5 @@
-// Headless screenshot of a representative Conduit frame — floor, actors,
-// contact shadows, dynamic light and bloom — so visual changes can be checked
-// without a browser. This is how the contact-shadow contrast bug was found:
-// the shadow was correctly placed but only darkened the floor by 57/765, which
-// is invisible on a palette this dark.
+// Headless screenshot of a representative Conduit frame — floor and actors —
+// so visual changes can be checked without a browser.
 //
 // Needs a canvas implementation, which the game itself does not:
 //     npm install @napi-rs/canvas
@@ -25,7 +22,6 @@ const ORDER=fs.readFileSync(path.join(ROOT,'game.html'),'utf8').split('\n').map(
 for(const r of ORDER){ if(r==='js/init.js'||r==='js/dev.js') continue; try{vm.runInContext(fs.readFileSync(path.join(ROOT,r),'utf8'),c,{filename:r})}catch(e){} }
 const run=s=>vm.runInContext(s,c);
 run(`canvas.width=${W};canvas.height=${H};frame=40;`);
-run('fxSetLevel("high")');
 const TILE_W=run('TILE_W'), TILE_H=run('TILE_H');
 const ctx=real.getContext('2d');
 
@@ -39,7 +35,6 @@ run('crystal.x=0; crystal.y=2; crystal.health=300; crystal.maxHealth=300;');
 run('elementEffects.length=0; followerProjectiles.length=0; projectiles.length=0;');
 run('world.length=0; _wallPanelCache.length=0; _nestCache.length=0; _capturableNodeCache.length=0; traps.length=0;');
 
-run('fxBeginFrame()');
 ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
 const tiles=[]; for(let x=0;x<=7;x++) for(let y=0;y<=3;y++) tiles.push({x,y});
 tiles.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
@@ -76,15 +71,11 @@ run('actors.length=0'); subs.forEach(s=>run('actors').push(s.o));
 subs.sort((a,b)=>(a.o.x+a.o.y)-(b.o.x+b.o.y));
 for(const s of subs){
   const o=s.o, px=sx(o.x,o.y), py=sy(o.x,o.y);
-  const rx=s.pred?o.dimensions.width*1.15:19;
-  run('fxContactShadow')(px, s.pred?py-1:py-3, rx, 1);
   run('drawNPC')(o,px,py);
 }
 { const px=sx(1,0), py=sy(1,0);
-  run('fxContactShadow')(px,py-4,26,0.75);
   run('drawPlayer')({x:px,y:py}); }
-run('fxComposite()');
 ctx.fillStyle='#fff'; ctx.font='bold 13px monospace'; ctx.textAlign='left';
-ctx.fillText('after fix — shadows + lighting + bloom, FX=high', 14, 24);
-fs.writeFileSync(path.join(__dirname,'shadows-after.png'), real.toBuffer('image/png'));
-console.log('wrote shadows-after.png');
+ctx.fillText('Conduit — floor and actors', 14, 24);
+fs.writeFileSync(path.join(__dirname,'frame.png'), real.toBuffer('image/png'));
+console.log('wrote frame.png');

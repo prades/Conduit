@@ -525,18 +525,10 @@ function handleOverlayPanelTap(tx, ty) {
 // ─────────────────────────────────────────────────────────
 //  SETTINGS PANEL  (canvas-drawn)
 // ─────────────────────────────────────────────────────────
-const _SP_W = 260, _SP_H = 262;
+const _SP_W = 260, _SP_H = 200;
 // Row geometry shared by the draw and tap handlers so they cannot drift apart.
-const _SP_GFX_Y   = 96,  _SP_GFX_H   = 30;
-const _SP_RESET_Y = 156, _SP_RESET_H = 36;
-const _SP_CLOSE_Y = 210, _SP_CLOSE_H = 30;
-const _SP_GFX_LABELS = { off: 'OFF', low: 'LOW', medium: 'MED', high: 'HIGH' };
-
-// True when js/postfx.js loaded, so the graphics row can be skipped if it did not.
-function _spHasFX() {
-    try { return typeof FX_LEVELS !== 'undefined' && typeof FX !== 'undefined'; }
-    catch (e) { return false; }   // typeof does not shield a const still in TDZ
-}
+const _SP_RESET_Y = 82,  _SP_RESET_H = 36;
+const _SP_CLOSE_Y = 148, _SP_CLOSE_H = 30;
 
 function drawSettingsPanel() {
     if (!settingsPanelOpen) return;
@@ -569,32 +561,6 @@ function drawSettingsPanel() {
     ctx.beginPath(); ctx.moveTo(px + 16, py + 66); ctx.lineTo(px + pw - 16, py + 66); ctx.stroke();
 
     if (!settingsResetConfirm) {
-        // ── GRAPHICS quality — four segments, current one lit ──
-        // Drawn only when postfx.js is present. It cannot be stubbed in
-        // config.js the way the fx functions are, because a `const` there
-        // cannot shadow a `var` of the same name — that is a SyntaxError that
-        // would take the whole game down.
-        if (_spHasFX()) {
-        ctx.fillStyle = "#778"; ctx.font = "bold 10px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("GRAPHICS", px + pw/2, py + 80);
-
-        const segY = py + _SP_GFX_Y;
-        const segW = Math.floor((pw - 40) / FX_LEVELS.length);
-        FX_LEVELS.forEach((lv, i) => {
-            const sx  = px + 20 + i * segW;
-            const on  = FX.level === lv;
-            ctx.fillStyle   = on ? "rgba(0,60,42,0.95)" : "rgba(14,20,18,0.9)";
-            ctx.strokeStyle = on ? "#0f8" : "#2c3330"; ctx.lineWidth = on ? 1.8 : 1;
-            _epRoundRect(sx + 1, segY, segW - 2, _SP_GFX_H, 5);
-            ctx.fill(); ctx.stroke();
-            ctx.fillStyle = on ? "#0f8" : "#5a625e";
-            ctx.font = (on ? "bold " : "") + "10px monospace";
-            ctx.fillText(_SP_GFX_LABELS[lv], sx + segW/2, segY + _SP_GFX_H/2);
-        });
-        ctx.fillStyle = "#49514d"; ctx.font = "9px monospace";
-        ctx.fillText("bloom · lighting · grain", px + pw/2, py + 140);
-        }
-
         // ── RESET GAME button ──
         const btnY = py + _SP_RESET_Y;
         ctx.fillStyle = "rgba(30,8,8,0.9)";
@@ -656,15 +622,8 @@ function _handleSettingsPanelTap(tx, ty) {
     }
 
     if (!settingsResetConfirm) {
-        const segY   = py + _SP_GFX_Y;
         const btnY   = py + _SP_RESET_Y;
         const closeY = py + _SP_CLOSE_Y;
-        if (ty >= segY && ty < segY + _SP_GFX_H && _spHasFX()) {
-            const segW = Math.floor((pw - 40) / FX_LEVELS.length);
-            const i    = Math.floor((tx - (px + 20)) / segW);
-            if (i >= 0 && i < FX_LEVELS.length) fxSetLevel(FX_LEVELS[i]);
-            return true;
-        }
         if (ty >= btnY && ty < btnY + _SP_RESET_H) {
             settingsResetConfirm = true;
             return true;

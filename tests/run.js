@@ -3,9 +3,7 @@ const { execFileSync } = require('child_process');
 const path = require('path');
 
 const SUITES = [
-    ['postfx pipeline',        'fxtest.js'],
-    ['postfx startup paths',   'tdz.js'],
-    ['load order + render seam','loadorder.js'],
+    ['load order + render order','loadorder.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],
     ['pylon linking',          'pylons.js'],
