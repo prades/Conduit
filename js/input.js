@@ -367,7 +367,14 @@ canvas.addEventListener('pointerup', e=>{
                 const isBrokenNest = commandNestTarget && commandNestTarget.nestHealth <= 0 && !nestLinked;
                 const _isPyCmd = commandTarget && commandTarget.pillar && !commandTarget.destroyed;
                 const _isCapturableCmd = commandTarget && commandTarget.capturable && !commandTarget.captured;
-                if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && (buildMode ? !_isPyCmd : _isPyCmd)) selectedRadialAction = "build_upgrade";
+                // The top button is drawn whenever build mode is on — UPGRADE on a
+                // pylon, BUILD on an empty tile (see showTopBtn in drawRadialMenu).
+                // This used to read `buildMode ? !_isPyCmd : _isPyCmd`, which
+                // excluded exactly the UPGRADE case: tapping the UPGRADE button on
+                // a pylon fell through to switch_context and toggled the pylon's
+                // mode instead. It also fired build_upgrade with build mode OFF,
+                // where no top button is drawn at all.
+                if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && buildMode) selectedRadialAction = "build_upgrade";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode && _isCapturableCmd) selectedRadialAction = "capture";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode) selectedRadialAction = "position";
                 else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4 && buildMode && !_isPyCmd) selectedRadialAction = "place_trap";

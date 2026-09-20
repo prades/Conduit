@@ -226,6 +226,22 @@
     }
     .top-btn.active { background: rgba(0,255,136,0.18); border-color: #0ff; color: #0ff; }
 
+    /* A top button the tutorial is currently asking for. Matches the pulse of
+       the on-board highlight so the two read as the same instruction. */
+    @keyframes tutBtnPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,136,0.7);  border-color: #0f8; }
+        50%      { box-shadow: 0 0 0 6px rgba(0,255,136,0);  border-color: #8fffc8; }
+    }
+    .top-btn.tut-wanted {
+        animation: tutBtnPulse 1.1s ease-in-out infinite;
+        background: rgba(0,255,136,0.22);
+        color: #baffe0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        /* Keep the emphasis, drop the movement. */
+        .top-btn.tut-wanted { animation: none; border-color: #8fffc8; }
+    }
+
     /* ── CONTROLS / INFO MENU ── */
     #controlsMenu {
         display: none; position: fixed; top: 50%; left: 50%;

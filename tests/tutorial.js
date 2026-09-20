@@ -40,7 +40,7 @@ function makeEnv() {
         TILE_W: 60, TILE_H: 30,
         player: { x: 0, y: 2, visualX: 0, visualY: 2, invuln: 0 },
         crystal: { x: 0, y: 2, health: 300, maxHealth: 300 },
-        commandMode: false, commandPendingTap: false,
+        commandMode: false, commandPendingTap: false, buildMode: false,
         ctx: rec.ctx,
         canvas: { width: 800, height: 600 },
         // The circle step spawns a real Predator, so predator.js and the
@@ -61,13 +61,29 @@ function makeEnv() {
         spawnFollowerProjectile() {},
         getZoneIndex: x => Math.floor(x / 15),
         document: {
-            getElementById: () => ({ style: {}, textContent: '', innerHTML: '',
-                                     appendChild() {}, onclick: null }),
-            createElement: () => ({ style: {}, textContent: '', innerHTML: '', id: '',
-                                    appendChild() {}, onclick: null }),
+            getElementById: id => (sandbox.els[id] = sandbox.els[id] || stubEl(id)),
+            createElement: () => stubEl('created'),
             body: { appendChild() {} },
         },
+        els: {},
     };
+    // A real-enough element: classList is tracked so the BUILD button's pulse
+    // can be asserted rather than assumed.
+    function stubEl(id) {
+        const classes = new Set();
+        return {
+            id, style: {}, textContent: '', innerHTML: '', onclick: null,
+            appendChild() {},
+            classList: {
+                add: c => classes.add(c),
+                remove: c => classes.delete(c),
+                contains: c => classes.has(c),
+                toggle: (c, on) => { if (on === undefined) on = !classes.has(c);
+                                     if (on) classes.add(c); else classes.delete(c); return on; },
+            },
+            _classes: classes,
+        };
+    }
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
     for (const f of ['js/species.js', 'js/abilities.js', 'js/predator.js']) {
@@ -366,6 +382,126 @@ check('an enter hook runs once per step, not every frame', () => {
     env.run('TUTS[0].enter = () => { globalThis.enters = (globalThis.enters||0) + 1; }');
     for (let i = 0; i < 50; i++) env.run('tutorialTick()');
     eq(env.run('enters'), 1, 'the enter hook fired more than once');
+});
+
+group('the BUILD button flashes when the tutorial wants it');
+
+const buildClasses = env => env.sandbox.els['btnBuild'] && env.sandbox.els['btnBuild']._classes;
+const buildFlashing = env => !!(buildClasses(env) && buildClasses(env).has('tut-wanted'));
+
+// populate() includes an already-upgraded pylon, which satisfies the upgrade
+// step's check() immediately — no good for watching that step's own flashing.
+function unbuilt(env) {
+    for (let x = -2; x < 12; x++) for (let y = 0; y < 5; y++) env.sandbox.world.push(floor(x, y));
+    env.sandbox.world.push(pylon(6, 3));
+    return env;
+}
+
+check('THE REPORTED CASE: the upgrade step flashes BUILD', () => {
+    const env = unbuilt(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'upgrade');
+    env.run('buildMode = false');
+    env.run('tutorialTick()');
+    ok(buildFlashing(env), 'the step asks for build mode but BUILD is not flashing');
+});
+
+check('it stops the moment the player turns build mode on', () => {
+    const env = unbuilt(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'upgrade');
+    env.run('tutorialTick()');
+    ok(buildFlashing(env), 'precondition: should be flashing');
+    env.run('buildMode = true');
+    env.run('tutorialTick()');
+    ok(!buildFlashing(env), 'BUILD kept flashing after the player complied');
+});
+
+check('the switch step asks for the opposite and flashes accordingly', () => {
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'switch');
+    env.run('buildMode = true');            // this step wants it OFF
+    env.run('tutorialTick()');
+    ok(buildFlashing(env), 'the step asks for build mode off but BUILD is not flashing');
+    env.run('buildMode = false');
+    env.run('tutorialTick()');
+    ok(!buildFlashing(env), 'BUILD kept flashing after build mode went off');
+});
+
+check('steps that do not want BUILD leave it alone', () => {
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    for (const id of ['move', 'recruit', 'panel', 'circle', 'hold', 'ready']) {
+        gotoStep(env, id);
+        env.run('tutorialTick()');
+        ok(!buildFlashing(env), `step "${id}" should not be flashing BUILD`);
+    }
+});
+
+check('nothing flashes once the tutorial closes', () => {
+    const env = unbuilt(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'upgrade');
+    env.run('tutorialTick()');
+    ok(buildFlashing(env), 'precondition: should be flashing');
+    env.run('exitTutorial()');
+    ok(!buildFlashing(env), 'BUILD is still flashing after the tutorial closed');
+});
+
+check('the class the tutorial sets is actually styled', () => {
+    const html = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+    // Anchored on the brace, so a renamed or commented-out selector is caught.
+    ok(/\.top-btn\.tut-wanted\s*\{/.test(html), 'game.html has no rule for .tut-wanted');
+    ok(/@keyframes\s+tutBtnPulse/.test(html), 'the pulse animation is missing');
+    ok(/prefers-reduced-motion[\s\S]{0,200}tut-wanted/.test(html),
+       'no reduced-motion fallback for the pulse');
+});
+
+check('a missing button is survived, not thrown on', () => {
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'upgrade');
+    env.run('document.getElementById = () => null');
+    env.run('tutorialUiHints()');     // must not throw
+});
+
+group('the ring shows and honours UPGRADE in build mode');
+
+check('THE REPORTED CASE: tapping UPGRADE on a pylon upgrades it', () => {
+    // draw.js draws the top button whenever buildMode is on (showTopBtn), but
+    // input.js resolved a tap with `buildMode ? !_isPyCmd : _isPyCmd` — which
+    // excluded exactly the UPGRADE case, so the tap fell through to
+    // switch_context and toggled the pylon's mode instead of upgrading it.
+    // Comments stripped: the fix explains itself by quoting the old expression.
+    const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8')
+        .replace(/\/\/[^\n]*/g, '');
+    ok(!/buildMode \? !_isPyCmd : _isPyCmd/.test(INPUT),
+       'the tap path still inverts the pylon test in build mode');
+    const m = INPUT.match(/relAngle < -Math\.PI\/4 && relAngle > -3\*Math\.PI\/4 && ([^)]*?)\) selectedRadialAction = "build_upgrade"/);
+    ok(m, 'could not find the top-button tap condition');
+    eq(m[1].trim(), 'buildMode', 'the tap condition should match showTopBtn in draw.js');
+});
+
+check('the draw and tap paths agree on when the top button exists', () => {
+    const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+    // draw.js: const showTopBtn = buildMode;
+    const drawn = DRAW.match(/const showTopBtn = ([^;]+);/);
+    ok(drawn, 'could not read showTopBtn from draw.js');
+    eq(drawn[1].trim(), 'buildMode', 'draw.js changed how the top button appears');
+    const tapped = INPUT.match(/&& ([A-Za-z]+)\) selectedRadialAction = "build_upgrade"/);
+    ok(tapped, 'could not read the tap condition from input.js');
+    eq(tapped[1], drawn[1].trim(),
+       'the ring draws the top button under one rule and taps it under another');
+});
+
+check('the ring redraws from buildMode every frame, so toggling updates it', () => {
+    // Nothing caches the button set; drawRadialMenu recomputes it per call.
+    // That is what lets the player tap BUILD with the ring already open.
+    const at = DRAW.indexOf('function drawRadialMenu');
+    const body = DRAW.slice(at, DRAW.indexOf('function drawPredatorDebug'));
+    ok(/const showTopBtn = buildMode;/.test(body), 'showTopBtn is not read per frame');
+    ok(GAME.includes('drawRadialMenu();'), 'the ring is not drawn from the render loop');
 });
 
 group('the words match the game');

@@ -57,6 +57,18 @@ function tutSpawnPracticeFoe() {
     return foe;
 }
 
+// BUILD is a DOM button above the canvas, so the on-board highlight cannot
+// reach it. A step that needs it declares wantsBuild(), and the button pulses
+// only while that is true — it stops the moment the player complies, rather
+// than flashing for the whole step and becoming noise.
+function tutorialUiHints() {
+    const btn = document.getElementById('btnBuild');
+    if (!btn) return;
+    const step = tutorialMode ? TUTS[tutorialStep] : null;
+    const want = !!(step && step.wantsBuild && step.wantsBuild());
+    btn.classList.toggle('tut-wanted', want);
+}
+
 // Called from the render loop the frame an actor dies, before dead actors are
 // swept out of actors[]. The step used to poll `actors.some(a => a.dead)`, but
 // tutorialTick runs early in the frame and the sweep happens later in the SAME
@@ -129,8 +141,11 @@ const TUTS = [
     {
         id:    'upgrade',
         title: 'UPGRADE A PYLON',
-        body:  'UPGRADE only shows in build mode. Tap BUILD at the top so it reads BUILD: ON, then press and hold the marked pylon and pick UPGRADE at the top of the ring. Choose an element — a follower sacrifices themselves to power it up as a turret.',
+        body:  'UPGRADE only shows in build mode. Tap the flashing BUILD button so it reads BUILD: ON, then press and hold the marked pylon and pick UPGRADE at the top of the ring. Choose an element — a follower sacrifices themselves to power it up as a turret.',
         icon:  '△',
+        // Flash BUILD until it is on; once it is, the request is answered and
+        // the ring's UPGRADE button is where the player should be looking.
+        wantsBuild: () => typeof buildMode !== 'undefined' && !buildMode,
         target: () => tutNearestPylon(t => !t.attackMode && !t.waveMode),
         check: () => world.some(t => t.pillar && (t.attackMode || t.waveMode)),
     },
@@ -139,6 +154,8 @@ const TUTS = [
         title: 'SWITCH PYLON MODE',
         body:  'Turn BUILD back off, then press and hold the marked pylon and pick SWITCH from the left of the ring. That toggles ATTACK MODE (fires at enemies) and WAVE MODE (links with nearby pylons to boost your network).',
         icon:  '⇌',
+        // This step asks for the opposite: flash BUILD while it is still on.
+        wantsBuild: () => typeof buildMode !== 'undefined' && buildMode,
         // The upgraded pylon, or any pylon if that one got smashed mid-step —
         // better to point somewhere useful than at nothing.
         target: () => tutNearestPylon(t => t.attackMode || t.waveMode) || tutNearestPylon(),
@@ -252,6 +269,8 @@ function tutorialTick() {
         tutHeldOpen = (typeof commandMode !== 'undefined' && commandMode) ||
                       (typeof commandPendingTap !== 'undefined' && commandPendingTap);
     }
+
+    tutorialUiHints();
 
     if (step && step.check && step.check()) {
         tutorialStep++;
@@ -402,6 +421,8 @@ function exitTutorial() {
     // predator in the safe zone, so it leaves with the lesson.
     if (tutPracticeFoe && !tutPracticeFoe.dead) tutPracticeFoe.dead = true;
     tutPracticeFoe = null;
+    // Stop the BUILD button pulsing along with everything else.
+    tutorialUiHints();
     const panel = document.getElementById('tutPanel');
     if (panel) panel.style.display = 'none';
 }
