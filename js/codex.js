@@ -291,17 +291,22 @@ function renderWorkCrewIndex() {
         '<div class="cm-build-row"><span class="cm-build-label">Fighters</span>' +
         'Behave exactly as before. Every follower starts as one.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Workers</span>' +
-        'Ignore combat and run the chain. Only <span class="cm-stat">ELECTRIC</span> and ' +
-        '<span class="cm-stat">CORE</span> can — nothing else has a job to do.</div>' +
+        'Ignore combat and do one job each. Only <span class="cm-stat">ELECTRIC</span>, ' +
+        '<span class="cm-stat">FLUX</span> and <span class="cm-stat">CORE</span> can — ' +
+        'nothing else has a job to do.</div>' +
 
         '<div class="cm-ability"><strong>1. Neutralise \u2014 ELECTRIC:</strong> stands on a charged lump and ' +
         'bleeds the charge off over about <span class="cm-stat">' + secs + 's</span>. Until then it just crackles.</div>' +
-        '<div class="cm-ability"><strong>2. Haul \u2014 CORE:</strong> picks up an inert lump and carries it back to ' +
-        'the Crystal, where it pays out as shards. Kill the carrier and the lump drops where it fell.</div>' +
+        '<div class="cm-ability"><strong>2. Haul \u2014 FLUX:</strong> drags an inert lump back to the Crystal, ' +
+        'where it pays out as shards. Kill the carrier and the lump drops where it fell.</div>' +
+        '<div class="cm-ability"><strong>Repair \u2014 CORE:</strong> a pylon that loses its health is not gone, ' +
+        'it is <strong>broken</strong> — it keeps its tile, its element and its mode. A core worker rebuilds it ' +
+        'in place, exactly as it was. Nothing else can.</div>' +
 
         '<div class="cm-build-row"><span class="cm-build-label">Worth</span>' +
         'About <span class="cm-stat">' + pct + '%</span> of what that predator used to be worth. ' +
         'The trip is the price of collecting it.</div>' +
         '<div class="cm-tip"><strong>The trade:</strong> every follower on the work crew is one that is not ' +
-        'holding the line. Field none and the battlefield fills with charge you cannot spend.</div>';
+        'holding the line. Field none and the battlefield fills with charge you cannot spend, and your ' +
+        'pylons stay in pieces.</div>';
 }

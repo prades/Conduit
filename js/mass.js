@@ -6,13 +6,16 @@
 //  two different jobs get done to it.
 //
 //     1. NEUTRALISE — an ELECTRIC follower on worker duty bleeds the charge off
-//     2. HAUL       — a CORE follower on worker duty carries the inert lump
-//                     back to the Crystal, where it becomes shards
+//     2. HAUL       — a FLUX follower on worker duty drags the inert lump back
+//                     to the Crystal, where it becomes shards
+//
+//  CORE workers do the other job on this page: a pylon that loses its health is
+//  not gone, it is BROKEN, and a core worker rebuilds it in place.
 //
 //  So kills stop being free income. Followers split into FIGHTERS, who behave
-//  as they always have, and WORKERS, who ignore combat to run the chain. A
-//  player who fields no workers watches the battlefield fill with charge they
-//  cannot spend.
+//  as they always have, and WORKERS, who ignore combat to run one of the three
+//  jobs. A player who fields no workers watches the battlefield fill with charge
+//  they cannot spend and their pylons stay in pieces.
 // ─────────────────────────────────────────────────────────
 
 let chargedMass = [];
@@ -28,10 +31,15 @@ const MASS_SEEK_RANGE   = 26;
 // Shards are worth a fraction of what the predator would have dropped whole —
 // the chain is the cost of collecting them.
 const MASS_VALUE_SCALE  = 0.35;
-// Only these two elements can do the work. Anything else on worker duty has
-// nothing to contribute, which is the trade-off for taking it off the line.
+// One element per job. Anything else on worker duty has nothing to contribute,
+// which is the trade-off for taking it off the line.
 const MASS_NEUTRALISER  = 'electric';
-const MASS_HAULER       = 'core';
+const MASS_HAULER       = 'flux';     // flux already drags things — see the pylon effect
+const PYLON_REPAIRER    = 'core';
+
+// A core worker rebuilds a broken pylon at this much progress per frame, so a
+// full rebuild from nothing takes a few seconds of standing there.
+const PYLON_REPAIR_RATE = 0.006;
 
 function spawnChargedMass(x, y, value) {
     const v = Math.max(1, Math.round(value));
@@ -116,6 +124,7 @@ function followerWorkTick(actor) {
 
     if (actor.element === MASS_NEUTRALISER) return _workNeutralise(actor);
     if (actor.element === MASS_HAULER)      return _workHaul(actor);
+    if (actor.element === PYLON_REPAIRER)   return _workRepair(actor);
     return false;   // any other element has no job to do here
 }
 
@@ -179,18 +188,83 @@ function _workHaul(actor) {
     return true;
 }
 
+// ── Pylon repair (CORE) ──────────────────────────────────
+// A pylon that loses its health is flagged destroyed but keeps its tile, its
+// element and its mode. Nothing used to draw it, so it looked gone; it is now
+// drawn as wreckage and a core worker can put it back up exactly as it was.
+function isBrokenPylon(t) {
+    return !!(t && t.pillar && t.destroyed);
+}
+
+function nearestBrokenPylon(x, y, team, maxDist) {
+    if (typeof world === 'undefined') return null;
+    let best = null, bestD = maxDist === undefined ? MASS_SEEK_RANGE : maxDist;
+    for (const t of world) {
+        if (!isBrokenPylon(t)) continue;
+        if (team && t.pillarTeam !== team) continue;
+        const d = Math.hypot(t.x - x, t.y - y);
+        if (d < bestD) { bestD = d; best = t; }
+    }
+    return best;
+}
+
+// Put a broken pylon back up, keeping whatever it was before it fell.
+function restoreBrokenPylon(t) {
+    if (!isBrokenPylon(t)) return false;
+    t.destroyed = false;
+    t.reconstructing = false;
+    t.reconstructProgress = 0;
+    t.pendingDestroy = false;
+    t.health = Math.max(1, Math.round((t.maxHealth || 20) * 0.6));
+    return true;
+}
+
+function _workRepair(actor) {
+    const t = actor._pylonTarget && isBrokenPylon(actor._pylonTarget)
+        ? actor._pylonTarget
+        : (actor._pylonTarget = nearestBrokenPylon(actor.x, actor.y, 'green'));
+    if (!t) return false;
+
+    const d = Math.hypot(t.x - actor.x, t.y - actor.y);
+    if (d > MASS_WORK_RANGE) { _moveToward(actor, t.x, t.y, 1.1); return true; }
+
+    t.reconstructing = true;
+    t.reconstructProgress = Math.min(1, (t.reconstructProgress || 0) + PYLON_REPAIR_RATE);
+    actor.state = 'idle';
+    if (typeof elementEffects !== 'undefined' && (frame || 0) % 10 === 0) {
+        elementEffects.push({ type: 'impact', x: t.x, y: t.y, color: '#00ccaa', radius: 0.4, life: 18 });
+    }
+    if (t.reconstructProgress >= 1) {
+        restoreBrokenPylon(t);
+        actor._pylonTarget = null;
+        floatingTexts.push({ x: t.x, y: t.y - 1, text: 'PYLON REBUILT', color: '#00ccaa', life: 60, vy: -0.06 });
+        if (typeof _cacheAge !== 'undefined') _cacheAge = -999;   // let the caches see it again
+    }
+    return true;
+}
+
 // ── Duty assignment ──────────────────────────────────────
-// Only electric and core have work to do, so putting anything else on the
-// crew would silently do nothing — say so rather than accepting it.
+// Only these three have a job, so putting anything else on the crew would
+// silently do nothing — say so rather than accepting it.
+const WORKER_ELEMENTS = [MASS_NEUTRALISER, MASS_HAULER, PYLON_REPAIRER];
+
 function canWorkMass(actor) {
-    return !!actor && (actor.element === MASS_NEUTRALISER || actor.element === MASS_HAULER);
+    return !!actor && WORKER_ELEMENTS.indexOf(actor.element) >= 0;
+}
+
+// What a given worker would actually do, for the UI to label.
+function workerJobLabel(element) {
+    if (element === MASS_NEUTRALISER) return 'NEUTRALISE';
+    if (element === MASS_HAULER)      return 'HAUL';
+    if (element === PYLON_REPAIRER)   return 'REPAIR';
+    return null;
 }
 
 function setFollowerDuty(actor, duty) {
     if (!actor) return false;
     if (duty === 'worker' && !canWorkMass(actor)) {
         floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
-            text: 'ONLY ELECTRIC AND CORE CAN WORK', color: '#f88', life: 110, vy: -0.25, size: 12 });
+            text: 'ONLY ELECTRIC, FLUX AND CORE CAN WORK', color: '#f88', life: 110, vy: -0.25, size: 12 });
         return false;
     }
     actor.duty = duty;
@@ -201,7 +275,8 @@ function setFollowerDuty(actor, duty) {
             actor.carryingMass.carrier = null;
             actor.carryingMass = null;
         }
-        actor._massTarget = null;
+        actor._massTarget  = null;
+        actor._pylonTarget = null;
     }
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
         text: duty === 'worker' ? 'ASSIGNED TO WORK CREW' : 'BACK ON THE LINE',

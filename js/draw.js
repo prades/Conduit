@@ -62,7 +62,9 @@ function drawRadialMenu() {
         if (fRight) selectedRadialAction = "info";
         ctx.fillStyle = isWorker ? "#0ca" : "#0f8";
         ctx.font = "10px monospace"; ctx.textAlign = "center";
-        ctx.fillText((f.element||"?").toUpperCase() + " \u00b7 " + (isWorker ? "WORKER" : "FIGHTER"),
+        const jobLabel = (typeof workerJobLabel === "function" && workerJobLabel(f.element)) || "NO JOB";
+        ctx.fillText((f.element||"?").toUpperCase() + " \u00b7 " +
+                     (isWorker ? "WORKER: " + jobLabel : "FIGHTER"),
                      commandX, commandY + RADIAL_RADIUS + 18);
         ctx.restore();
         return;

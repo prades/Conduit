@@ -9,7 +9,8 @@ const ROOT = path.resolve(__dirname, '..');
 function makeEnv() {
     const sandbox = {
         console, Math, Array, Object, String, Number, Set, Map, isNaN, isFinite, parseInt,
-        floatingTexts: [], elementEffects: [], actors: [], followers: [],
+        floatingTexts: [], elementEffects: [], actors: [], followers: [], world: [],
+        _cacheAge: 0,
         crystal: { x: 0, y: 2 },
         canvas: { width: 900, height: 700 },
         shardCount: 0, frame: 0,
@@ -97,12 +98,12 @@ check('it takes real time, not one frame', () => {
     const t = until(env, f, () => m.state === 'neutral');
     ok(t >= env.run('MASS_NEUTRALISE_FRAMES'), 'finished too fast: ' + t + ' frames');
 });
-check('a core worker cannot neutralise', () => {
+check('a hauler cannot neutralise', () => {
     const env = makeEnv();
     const m = env.run('spawnChargedMass')(0.2, 2, 4);
-    const f = worker(env, 'core', 0, 2);
+    const f = worker(env, 'flux', 0, 2);
     until(env, f, () => false, 400);
-    eq(m.state, 'charged', 'core should not be able to do this job');
+    eq(m.state, 'charged', 'the hauler should not be able to do this job');
 });
 check('a fighter ignores the work entirely', () => {
     const env = makeEnv();
@@ -122,21 +123,21 @@ check('an explicit player order outranks the work crew', () => {
 });
 
 group('hauling');
-check('THE CHAIN, STEP 2: a core worker carries a neutral lump to the Crystal', () => {
+check('THE CHAIN, STEP 2: a flux worker drags a neutral lump to the Crystal', () => {
     const env = makeEnv();
     const m = env.run('spawnChargedMass')(6, 2, 11);
     m.state = 'neutral';
-    const f = worker(env, 'core', 5, 2);
+    const f = worker(env, 'flux', 5, 2);
     const t = until(env, f, () => env.sandbox.shardCount > 0);
     ok(t > 0, 'never delivered');
     eq(env.sandbox.shardCount, 11, 'shards paid on delivery');
     eq(masses(env).length, 0, 'lump consumed');
     eq(env.sandbox.saved, 11, 'shard count persisted');
 });
-check('a core worker will not pick up a still-charged lump', () => {
+check('a hauler will not pick up a still-charged lump', () => {
     const env = makeEnv();
     const m = env.run('spawnChargedMass')(0.2, 2, 11);
-    const f = worker(env, 'core', 0, 2);
+    const f = worker(env, 'flux', 0, 2);
     until(env, f, () => false, 400);
     eq(m.state, 'charged', 'untouched');
     eq(env.sandbox.shardCount, 0, 'no payout');
@@ -155,7 +156,7 @@ check('a carried lump rides its carrier', () => {
     const m = env.run('spawnChargedMass')(5, 2, 3);
     m.state = 'neutral';
     env.sandbox.crystal = { x: 99, y: 99 };     // too far to deliver during the test
-    const f = worker(env, 'core', 5, 2);
+    const f = worker(env, 'flux', 5, 2);
     until(env, f, () => m.state === 'carried', 200);
     eq(m.state, 'carried', 'picked up');
     eq(m.carrier, f, 'carrier recorded');
@@ -167,7 +168,7 @@ check('killing the carrier drops the lump back on the floor', () => {
     const m = env.run('spawnChargedMass')(5, 2, 3);
     m.state = 'neutral';
     env.sandbox.crystal = { x: 99, y: 99 };
-    const f = worker(env, 'core', 5, 2);
+    const f = worker(env, 'flux', 5, 2);
     until(env, f, () => m.state === 'carried', 200);
     f.dead = true;
     env.run('updateChargedMass()');
@@ -179,7 +180,7 @@ check('the full chain end to end pays out once', () => {
     const env = makeEnv();
     const m = env.run('spawnChargedMass')(7, 2, 6);
     const e = worker(env, 'electric', 6, 2);
-    const c = worker(env, 'core', 6, 2);
+    const c = worker(env, 'flux', 6, 2);
     for (let i = 0; i < 6000 && env.sandbox.shardCount === 0; i++) {
         env.sandbox.frame++;
         env.run('followerWorkTick')(e);
@@ -191,9 +192,9 @@ check('the full chain end to end pays out once', () => {
 });
 
 group('duty assignment');
-check('electric and core can be put on the crew', () => {
+check('electric, flux and core can be put on the crew', () => {
     const env = makeEnv();
-    for (const el of ['electric', 'core']) {
+    for (const el of ['electric', 'flux', 'core']) {
         const f = worker(env, el, 0, 0); f.duty = 'fighter';
         eq(env.run('setFollowerDuty')(f, 'worker'), true, el + ' should be eligible');
         eq(f.duty, 'worker', el + ' duty');
@@ -201,16 +202,16 @@ check('electric and core can be put on the crew', () => {
 });
 check('any other element is refused, and told why', () => {
     const env = makeEnv();
-    for (const el of ['fire', 'ice', 'flux', 'toxic']) {
+    for (const el of ['fire', 'ice', 'toxic']) {
         const f = worker(env, el, 0, 0); f.duty = 'fighter';
         eq(env.run('setFollowerDuty')(f, 'worker'), false, el + ' should be refused');
         eq(f.duty, 'fighter', el + ' should stay a fighter');
     }
-    ok(env.sandbox.floatingTexts.some(t => /ONLY ELECTRIC AND CORE/.test(t.text)), 'should say why');
+    ok(env.sandbox.floatingTexts.some(t => /ONLY ELECTRIC, FLUX AND CORE/.test(t.text)), 'should say why');
 });
 check('toggling flips between the two duties', () => {
     const env = makeEnv();
-    const f = worker(env, 'core', 0, 0); f.duty = 'fighter';
+    const f = worker(env, 'flux', 0, 0); f.duty = 'fighter';
     env.run('toggleFollowerDuty')(f); eq(f.duty, 'worker', 'to work');
     env.run('toggleFollowerDuty')(f); eq(f.duty, 'fighter', 'back to the line');
 });
@@ -219,12 +220,92 @@ check('pulling a carrier back to the line makes it drop its load', () => {
     const m = env.run('spawnChargedMass')(5, 2, 3);
     m.state = 'neutral';
     env.sandbox.crystal = { x: 99, y: 99 };
-    const f = worker(env, 'core', 5, 2);
+    const f = worker(env, 'flux', 5, 2);
     until(env, f, () => m.state === 'carried', 200);
     env.run('setFollowerDuty')(f, 'fighter');
     eq(m.state, 'neutral', 'load dropped');
     eq(m.carrier, null, 'carrier cleared');
     eq(f.carryingMass, null, 'hands empty');
+});
+
+group('broken pylons');
+function brokenPylon(env, x, y, team) {
+    const t = { pillar: true, x, y, destroyed: true, pillarTeam: team || 'green',
+                health: 0, maxHealth: 20, reconstructing: false, reconstructProgress: 0,
+                attackModeElement: 'fire', waveMode: true };
+    env.sandbox.world.push(t);
+    return t;
+}
+check('a broken pylon is recognised as repairable', () => {
+    const env = makeEnv();
+    const t = brokenPylon(env, 4, 3);
+    eq(env.run('isBrokenPylon')(t), true, 'broken');
+    t.destroyed = false;
+    eq(env.run('isBrokenPylon')(t), false, 'standing pylon is not a repair job');
+    eq(env.run('isBrokenPylon')({ x: 1, y: 1 }), false, 'not a pylon at all');
+});
+check('THE REPORTED CASE: a core worker rebuilds a broken pylon in place', () => {
+    const env = makeEnv();
+    const t = brokenPylon(env, 4, 2);
+    const f = worker(env, 'core', 0, 2);
+    let done = -1;
+    for (let i = 0; i < 6000; i++) {
+        env.sandbox.frame++;
+        env.run('followerWorkTick')(f);
+        if (!t.destroyed) { done = i; break; }
+    }
+    ok(done > 0, 'never rebuilt it');
+    eq(t.destroyed, false, 'back up');
+    ok(t.health > 0, 'has health again');
+});
+check('a rebuilt pylon keeps the element and mode it had', () => {
+    const env = makeEnv();
+    const t = brokenPylon(env, 0.2, 2);
+    env.run('restoreBrokenPylon')(t);
+    eq(t.attackModeElement, 'fire', 'element kept');
+    eq(t.waveMode, true, 'mode kept');
+    eq(t.reconstructProgress, 0, 'progress cleared');
+    eq(t.reconstructing, false, 'no longer under repair');
+});
+check('repairing is not instant', () => {
+    const env = makeEnv();
+    const t = brokenPylon(env, 0.2, 2);
+    const f = worker(env, 'core', 0, 2);
+    env.run('followerWorkTick')(f);
+    ok(t.destroyed, 'one frame should not finish it');
+    ok((t.reconstructProgress || 0) > 0, 'but it should have started');
+});
+check('a core worker will not repair enemy wreckage', () => {
+    const env = makeEnv();
+    const t = brokenPylon(env, 0.2, 2, 'red');
+    const f = worker(env, 'core', 0, 2);
+    for (let i = 0; i < 600; i++) { env.sandbox.frame++; env.run('followerWorkTick')(f); }
+    eq(t.destroyed, true, 'enemy pylon left broken');
+});
+check('only core repairs — the other two ignore wreckage', () => {
+    for (const el of ['electric', 'flux']) {
+        const env = makeEnv();
+        const t = brokenPylon(env, 0.2, 2);
+        const f = worker(env, el, 0, 2);
+        for (let i = 0; i < 600; i++) { env.sandbox.frame++; env.run('followerWorkTick')(f); }
+        eq(t.destroyed, true, el + ' should not repair');
+    }
+});
+check('a core worker with no wreckage to fix stands down', () => {
+    const env = makeEnv();
+    const f = worker(env, 'core', 0, 2);
+    eq(env.run('followerWorkTick')(f), false, 'should hand the frame back');
+});
+check('each worker element has exactly one job, and they are distinct', () => {
+    const env = makeEnv();
+    const jobs = ['electric', 'flux', 'core'].map(el => env.run('workerJobLabel')(el));
+    eq(new Set(jobs).size, 3, 'jobs should be distinct: ' + jobs.join(','));
+    for (const el of ['fire', 'ice', 'toxic']) eq(env.run('workerJobLabel')(el), null, el + ' has no job');
+});
+check('broken pylons are drawn rather than vanishing', () => {
+    const game = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
+    ok(/obj\.pillar && obj\.destroyed/.test(game), 'nothing draws a broken pylon');
+    ok(/BROKEN/.test(game), 'no label on player wreckage');
 });
 
 group('counts and persistence');

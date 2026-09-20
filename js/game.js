@@ -1762,6 +1762,48 @@ function render() {
                 ctx.restore();
             }
 
+            // ── BROKEN PYLON ──
+            // A pylon that loses its health keeps its tile, its element and its
+            // mode — nothing used to draw it, so it simply vanished and looked
+            // gone for good. It is wreckage now, and a CORE worker can put it
+            // back up exactly as it was.
+            if (obj.pillar && obj.destroyed) {
+                const _bb = py + TILE_H;
+                const _bcol = obj.pillarTeam === "green" ? "#0a6" : "#722";
+                ctx.save();
+                // Scorch on the tile
+                ctx.globalAlpha = 0.5 * amb;
+                ctx.fillStyle = "rgba(10,8,6,0.9)";
+                ctx.beginPath();
+                ctx.ellipse(px, _bb - 2, 20, 9, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                // Snapped stump plus two fallen shards, angled off the base
+                ctx.strokeStyle = _bcol; ctx.lineWidth = 3; ctx.lineCap = "round";
+                ctx.beginPath();
+                ctx.moveTo(px - 4, _bb - 2); ctx.lineTo(px - 2, _bb - 16); ctx.lineTo(px + 3, _bb - 11);
+                ctx.stroke();
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(px + 6, _bb - 3);  ctx.lineTo(px + 15, _bb - 9);  ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(px - 12, _bb - 1); ctx.lineTo(px - 19, _bb - 7); ctx.stroke();
+                // Rebuild progress, so a repair in flight is visible
+                const _rp = obj.reconstructProgress || 0;
+                if (_rp > 0) {
+                    ctx.strokeStyle = "#00ccaa"; ctx.lineWidth = 2.4;
+                    ctx.beginPath();
+                    ctx.arc(px, _bb - 12, 16, -Math.PI / 2, -Math.PI / 2 + _rp * Math.PI * 2);
+                    ctx.stroke();
+                }
+                // Label only for the player's own wreckage — theirs to fix
+                if (obj.pillarTeam === "green") {
+                    ctx.fillStyle = `rgba(0,204,170,${0.55 + 0.35 * Math.sin(frame * 0.08)})`;
+                    ctx.font = "bold 8px monospace"; ctx.textAlign = "center";
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.fillText("BROKEN", px, _bb - 30);
+                }
+                ctx.restore();
+            }
+
             // Pillar — 6 unique style-based designs
             if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
                 if(obj.converting){ctx.fillStyle="#ff0";}
