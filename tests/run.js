@@ -13,6 +13,7 @@ const SUITES = [
     ['save & refresh',         'persist.js'],
     ['player weapon',          'weapon.js'],
     ['charged mass',           'mass.js'],
+    ['pylon aggro',            'pylonaggro.js'],
 ];
 
 let failed = 0;

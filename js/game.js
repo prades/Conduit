@@ -253,6 +253,189 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
 // tile 1 links to one on tile 4 with two empty tiles between them.
 //
 // Extracted from the render loop's cache block so it can be tested directly.
+// Applies every linked pylon pair's zone effect to the actors inside it.
+// Lifted out of update() so the tests can drive it directly — the
+// stuck-predator behaviour lives in here and is otherwise unreachable.
+function applyPylonZoneEffects(wavePylons) {
+    _wPylonPairs.forEach(pair=>{
+        const {pa, pb, el, col, midX, midY} = pair;
+
+            // Spawn periodic zone effect particles
+            if (frame % 20 === 0) {
+                const t = Math.random();
+                const ex = pa.x + (pb.x-pa.x)*t, ey = pa.y + (pb.y-pa.y)*t;
+                elementEffects.push({type:"impact",x:ex,y:ey,color:col,radius:0.3,life:25,element:el});
+            }
+
+            // Apply zone effects every 3 frames — visual / cooldown guards inside handle timing
+            if (frame % 3 !== 0) return;
+
+            // Compute per-element constants once per pair (not once per actor)
+            const _nTier = networkStrength[el] || 1;
+            const _seasonBonus = _seasonBonusCache[el] || 1.0;
+
+            const {lx, ly, len2, bMinX, bMaxX, bMinY, bMaxY} = pair;
+            actors.forEach(a=>{
+                if (!a||a.dead) return;
+                // Bounding box early-exit (avoids sqrt for distant actors)
+                if (a.x < bMinX || a.x > bMaxX || a.y < bMinY || a.y > bMaxY) return;
+                // Distance from point to line segment pa→pb
+                let t2 = len2>0 ? ((a.x-pa.x)*lx+(a.y-pa.y)*ly)/len2 : 0;
+                t2=Math.max(0,Math.min(1,t2));
+                const cx2=pa.x+t2*lx, cy2=pa.y+t2*ly;
+                const lineDist = Math.hypot(a.x-cx2, a.y-cy2);
+                if (lineDist > 1.5) return;
+
+                const isEnemy = (a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone));
+                const isFriend = (a.team==="green"||a.isClone||a.isFollower);
+
+                switch(el) {
+                    case "fire": {
+                        if (isEnemy) {
+                            const dmg  = Math.round((_nTier >= 3 ? 15 : _nTier >= 2 ? 10 : 6) * _seasonBonus);
+                            const intv = _nTier >= 3 ? 18 : _nTier >= 2 ? 24 : 30;
+                            if (frame % intv === 0) {
+                                applyDamage(a, dmg, null, "fire");
+                                // Tier 3: ignite — spread fire to enemies within 1.5 tiles
+                                if (_nTier >= 3 && Math.random() < 0.35) {
+                                    const _ax=a.x, _ay=a.y;
+                                    actors.forEach(other => {
+                                        if (other===a||other.dead||other.team!=="red") return;
+                                        const _odx=other.x-_ax, _ody=other.y-_ay;
+                                        if (Math.abs(_odx)>1.5||Math.abs(_ody)>1.5) return;
+                                        if (_odx*_odx+_ody*_ody < 2.25) applyDamage(other, 4, null, "fire"); // 1.5²=2.25
+                                    });
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    case "ice": {
+                        if (isEnemy) {
+                            if (_nTier >= 3) {
+                                // Deep freeze — near-zero speed, periodic ice damage
+                                applySlow(a, 60, 0.08);
+                                if (frame % 60 === 0) applyDamage(a, Math.round(4 * _seasonBonus), null, "ice");
+                            } else if (_nTier >= 2) {
+                                applySlow(a, 50, 0.20);
+                                // Random chance to freeze solid for 60 frames
+                                if (Math.random() < 0.015) applySlow(a, 90, 0.0);
+                            } else {
+                                applySlow(a, 40, 0.35);
+                            }
+                        }
+                        break;
+                    }
+                    case "electric": {
+                        if (isFriend && frame % 10 === 0) {
+                            const gain = Math.round((_nTier >= 3 ? 6 : _nTier >= 2 ? 4 : 2) * _seasonBonus);
+                            a.currentResonance = Math.min(100, (a.currentResonance||0) + gain);
+                            // Tier 2+: also accelerate ultimate charge for all network allies
+                            if (_nTier >= 2 && typeof a.ultimateCharge === "number") {
+                                a.ultimateCharge = Math.min(100, a.ultimateCharge + (_nTier >= 3 ? 2 : 1));
+                            }
+                        }
+                        break;
+                    }
+                    case "core": {
+                        const coreIntv = _nTier >= 3 ? 30 : _nTier >= 2 ? 40 : 60;
+                        if (isFriend && frame % coreIntv === 0) {
+                            const shGain = Math.round((_nTier >= 3 ? 8 : _nTier >= 2 ? 5 : 3) * _seasonBonus);
+                            const shCap  = _nTier >= 3 ? 50 : _nTier >= 2 ? 35 : 20;
+                            a.shielded = true;
+                            a.shieldAmount = Math.min(shCap, (a.shieldAmount||0) + shGain);
+                            a._shieldMax = shCap;
+                            // Tier 3: auto-repair broken shields (restore up to cap over time)
+                            if (_nTier >= 3 && a.shieldAmount > 0 && a.shieldAmount < shCap) {
+                                a.shieldAmount = Math.min(shCap, a.shieldAmount + 2);
+                            }
+                        }
+                        break;
+                    }
+                    case "flux": {
+                        // A predator that has committed to smashing a pylon is no
+                        // longer dragged. The pull is stronger than it can walk,
+                        // so without this it can never reach the thing it is
+                        // trying to break and just orbits the midpoint forever.
+                        if (isEnemy && !a.pylonAggro) {
+                            const pullSpd = (_nTier >= 3 ? 0.20 : _nTier >= 2 ? 0.15 : 0.10) * _seasonBonus;
+                            const dx=midX-a.x, dy=midY-a.y, d=Math.hypot(dx,dy)||1;
+                            a.x+=dx/d*pullSpd; a.y+=dy/d*pullSpd;
+                            // Tier 3: vortex — pulled enemies take continuous damage
+                            if (_nTier >= 3 && frame % 30 === 0) applyDamage(a, Math.round(3*_seasonBonus), null, "flux");
+                            // Tier 2+: chain — pulled actors drag nearby enemies along
+                            if (_nTier >= 2 && frame % 20 === 0) {
+                                const _ax=a.x, _ay=a.y;
+                                actors.forEach(other => {
+                                    if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
+                                    const _odx=other.x-_ax, _ody=other.y-_ay;
+                                    if (Math.abs(_odx)>1.2||Math.abs(_ody)>1.2) return;
+                                    const od2 = _odx*_odx+_ody*_ody;
+                                    if (od2 < 1.44 && od2 > 0.0001) { other.x+=dx/d*0.05; other.y+=dy/d*0.05; } // 1.2²=1.44
+                                });
+                            }
+                        }
+                        break;
+                    }
+                    case "toxic": {
+                        const toxIntv = _nTier >= 3 ? 20 : _nTier >= 2 ? 28 : 40;
+                        if (isEnemy && frame % toxIntv === 0) {
+                            const tdmg = Math.round((_nTier >= 3 ? 12 : _nTier >= 2 ? 8 : 5) * _seasonBonus);
+                            applyDamage(a, tdmg, null, "toxic");
+                            const shredChance  = _nTier >= 3 ? 0.6 : _nTier >= 2 ? 0.5 : 0.3;
+                            const shredFactor  = _nTier >= 3 ? 0.35 : _nTier >= 2 ? 0.5 : 0.6;
+                            if (Math.random() < shredChance) { a.defenseShredded = 90; a.defenseShredFactor = shredFactor; }
+                            // Tier 3: cloud spreads poison debuff to nearby enemies
+                            if (_nTier >= 3) {
+                                const _ax=a.x, _ay=a.y;
+                                actors.forEach(other => {
+                                    if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
+                                    const _odx=other.x-_ax, _ody=other.y-_ay;
+                                    if (Math.abs(_odx)>1.5||Math.abs(_ody)>1.5) return;
+                                    if (_odx*_odx+_ody*_ody < 2.25) { // 1.5²=2.25
+                                        other.defenseShredded = 60; other.defenseShredFactor = 0.55;
+                                    }
+                                });
+                            }
+                        }
+                        break;
+                    }
+                }
+                // Predator pylon aggro — how long this predator has been cooked
+                // by a pylon zone before it turns on the pylon itself.
+                //
+                // This block only runs every third frame (see the guard above),
+                // so the old threshold of 300 meant 900 real frames — fifteen
+                // seconds of standing in a zone before a predator would even
+                // consider fighting back. Inside a FLUX zone that is a death
+                // sentence with no way out: the pull is several times stronger
+                // than a predator's own walk speed, so it cannot leave, and it
+                // would not fight either. Hence a far lower threshold, and flux
+                // counting for more because it is the one that actually traps.
+                //
+                // Guard with _lastExposureFrame so multi-pair actors only count once per frame.
+                if (isEnemy && a instanceof Predator) {
+                    if (a._lastExposureFrame !== frame) {
+                        a._lastExposureFrame = frame;
+                        a.pylonExposureFrames = (a.pylonExposureFrames||0) + (el === "flux" ? PYLON_AGGRO_TRAP_RATE : 1);
+                        if (a.pylonExposureFrames > PYLON_AGGRO_EXPOSURE && !a.pylonAggro) {
+                            let nearestPylon=null, bestPD=Infinity;
+                            wavePylons.forEach(wp=>{ const d=Math.hypot(wp.x-a.x,wp.y-a.y); if(d<bestPD){bestPD=d;nearestPylon=wp;} });
+                            if (nearestPylon) {
+                                a.pylonAggro = nearestPylon;
+                                floatingTexts.push({ x:a.x, y:a.y-1.2, text:"BREAKING OUT",
+                                                     color:"#ff8800", life:50, vy:-0.07 });
+                            }
+                        }
+                    }
+                } else if (!isEnemy) {
+                    // Cool down exposure when no longer in zone
+                    if (a.pylonExposureFrames) a.pylonExposureFrames = Math.max(0, a.pylonExposureFrames - 2);
+                }
+            });
+    });
+}
+
 function rebuildPylonPairs() {
     _wPylonPairs = [];
     const _ufParent = new Map();
@@ -613,164 +796,7 @@ function render() {
     const wavePylons = _wPylons;
 
     // Apply effects for each pre-computed connected pair
-    _wPylonPairs.forEach(pair=>{
-        const {pa, pb, el, col, midX, midY} = pair;
-
-            // Spawn periodic zone effect particles
-            if (frame % 20 === 0) {
-                const t = Math.random();
-                const ex = pa.x + (pb.x-pa.x)*t, ey = pa.y + (pb.y-pa.y)*t;
-                elementEffects.push({type:"impact",x:ex,y:ey,color:col,radius:0.3,life:25,element:el});
-            }
-
-            // Apply zone effects every 3 frames — visual / cooldown guards inside handle timing
-            if (frame % 3 !== 0) return;
-
-            // Compute per-element constants once per pair (not once per actor)
-            const _nTier = networkStrength[el] || 1;
-            const _seasonBonus = _seasonBonusCache[el] || 1.0;
-
-            const {lx, ly, len2, bMinX, bMaxX, bMinY, bMaxY} = pair;
-            actors.forEach(a=>{
-                if (!a||a.dead) return;
-                // Bounding box early-exit (avoids sqrt for distant actors)
-                if (a.x < bMinX || a.x > bMaxX || a.y < bMinY || a.y > bMaxY) return;
-                // Distance from point to line segment pa→pb
-                let t2 = len2>0 ? ((a.x-pa.x)*lx+(a.y-pa.y)*ly)/len2 : 0;
-                t2=Math.max(0,Math.min(1,t2));
-                const cx2=pa.x+t2*lx, cy2=pa.y+t2*ly;
-                const lineDist = Math.hypot(a.x-cx2, a.y-cy2);
-                if (lineDist > 1.5) return;
-
-                const isEnemy = (a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone));
-                const isFriend = (a.team==="green"||a.isClone||a.isFollower);
-
-                switch(el) {
-                    case "fire": {
-                        if (isEnemy) {
-                            const dmg  = Math.round((_nTier >= 3 ? 15 : _nTier >= 2 ? 10 : 6) * _seasonBonus);
-                            const intv = _nTier >= 3 ? 18 : _nTier >= 2 ? 24 : 30;
-                            if (frame % intv === 0) {
-                                applyDamage(a, dmg, null, "fire");
-                                // Tier 3: ignite — spread fire to enemies within 1.5 tiles
-                                if (_nTier >= 3 && Math.random() < 0.35) {
-                                    const _ax=a.x, _ay=a.y;
-                                    actors.forEach(other => {
-                                        if (other===a||other.dead||other.team!=="red") return;
-                                        const _odx=other.x-_ax, _ody=other.y-_ay;
-                                        if (Math.abs(_odx)>1.5||Math.abs(_ody)>1.5) return;
-                                        if (_odx*_odx+_ody*_ody < 2.25) applyDamage(other, 4, null, "fire"); // 1.5²=2.25
-                                    });
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    case "ice": {
-                        if (isEnemy) {
-                            if (_nTier >= 3) {
-                                // Deep freeze — near-zero speed, periodic ice damage
-                                applySlow(a, 60, 0.08);
-                                if (frame % 60 === 0) applyDamage(a, Math.round(4 * _seasonBonus), null, "ice");
-                            } else if (_nTier >= 2) {
-                                applySlow(a, 50, 0.20);
-                                // Random chance to freeze solid for 60 frames
-                                if (Math.random() < 0.015) applySlow(a, 90, 0.0);
-                            } else {
-                                applySlow(a, 40, 0.35);
-                            }
-                        }
-                        break;
-                    }
-                    case "electric": {
-                        if (isFriend && frame % 10 === 0) {
-                            const gain = Math.round((_nTier >= 3 ? 6 : _nTier >= 2 ? 4 : 2) * _seasonBonus);
-                            a.currentResonance = Math.min(100, (a.currentResonance||0) + gain);
-                            // Tier 2+: also accelerate ultimate charge for all network allies
-                            if (_nTier >= 2 && typeof a.ultimateCharge === "number") {
-                                a.ultimateCharge = Math.min(100, a.ultimateCharge + (_nTier >= 3 ? 2 : 1));
-                            }
-                        }
-                        break;
-                    }
-                    case "core": {
-                        const coreIntv = _nTier >= 3 ? 30 : _nTier >= 2 ? 40 : 60;
-                        if (isFriend && frame % coreIntv === 0) {
-                            const shGain = Math.round((_nTier >= 3 ? 8 : _nTier >= 2 ? 5 : 3) * _seasonBonus);
-                            const shCap  = _nTier >= 3 ? 50 : _nTier >= 2 ? 35 : 20;
-                            a.shielded = true;
-                            a.shieldAmount = Math.min(shCap, (a.shieldAmount||0) + shGain);
-                            a._shieldMax = shCap;
-                            // Tier 3: auto-repair broken shields (restore up to cap over time)
-                            if (_nTier >= 3 && a.shieldAmount > 0 && a.shieldAmount < shCap) {
-                                a.shieldAmount = Math.min(shCap, a.shieldAmount + 2);
-                            }
-                        }
-                        break;
-                    }
-                    case "flux": {
-                        if (isEnemy) {
-                            const pullSpd = (_nTier >= 3 ? 0.20 : _nTier >= 2 ? 0.15 : 0.10) * _seasonBonus;
-                            const dx=midX-a.x, dy=midY-a.y, d=Math.hypot(dx,dy)||1;
-                            a.x+=dx/d*pullSpd; a.y+=dy/d*pullSpd;
-                            // Tier 3: vortex — pulled enemies take continuous damage
-                            if (_nTier >= 3 && frame % 30 === 0) applyDamage(a, Math.round(3*_seasonBonus), null, "flux");
-                            // Tier 2+: chain — pulled actors drag nearby enemies along
-                            if (_nTier >= 2 && frame % 20 === 0) {
-                                const _ax=a.x, _ay=a.y;
-                                actors.forEach(other => {
-                                    if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
-                                    const _odx=other.x-_ax, _ody=other.y-_ay;
-                                    if (Math.abs(_odx)>1.2||Math.abs(_ody)>1.2) return;
-                                    const od2 = _odx*_odx+_ody*_ody;
-                                    if (od2 < 1.44 && od2 > 0.0001) { other.x+=dx/d*0.05; other.y+=dy/d*0.05; } // 1.2²=1.44
-                                });
-                            }
-                        }
-                        break;
-                    }
-                    case "toxic": {
-                        const toxIntv = _nTier >= 3 ? 20 : _nTier >= 2 ? 28 : 40;
-                        if (isEnemy && frame % toxIntv === 0) {
-                            const tdmg = Math.round((_nTier >= 3 ? 12 : _nTier >= 2 ? 8 : 5) * _seasonBonus);
-                            applyDamage(a, tdmg, null, "toxic");
-                            const shredChance  = _nTier >= 3 ? 0.6 : _nTier >= 2 ? 0.5 : 0.3;
-                            const shredFactor  = _nTier >= 3 ? 0.35 : _nTier >= 2 ? 0.5 : 0.6;
-                            if (Math.random() < shredChance) { a.defenseShredded = 90; a.defenseShredFactor = shredFactor; }
-                            // Tier 3: cloud spreads poison debuff to nearby enemies
-                            if (_nTier >= 3) {
-                                const _ax=a.x, _ay=a.y;
-                                actors.forEach(other => {
-                                    if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
-                                    const _odx=other.x-_ax, _ody=other.y-_ay;
-                                    if (Math.abs(_odx)>1.5||Math.abs(_ody)>1.5) return;
-                                    if (_odx*_odx+_ody*_ody < 2.25) { // 1.5²=2.25
-                                        other.defenseShredded = 60; other.defenseShredFactor = 0.55;
-                                    }
-                                });
-                            }
-                        }
-                        break;
-                    }
-                }
-                // Predator pylon aggro — track how long a predator has been cooked by pylons.
-                // Guard with _lastExposureFrame so multi-pair actors only count once per frame.
-                if (isEnemy && a instanceof Predator) {
-                    if (a._lastExposureFrame !== frame) {
-                        a._lastExposureFrame = frame;
-                        a.pylonExposureFrames = (a.pylonExposureFrames||0) + 1;
-                        if (a.pylonExposureFrames > 300 && !a.pylonAggro) {
-                            let nearestPylon=null, bestPD=Infinity;
-                            wavePylons.forEach(wp=>{ const d=Math.hypot(wp.x-a.x,wp.y-a.y); if(d<bestPD){bestPD=d;nearestPylon=wp;} });
-                            if (nearestPylon) a.pylonAggro = nearestPylon;
-                        }
-                    }
-                } else if (!isEnemy) {
-                    // Cool down exposure when no longer in zone
-                    if (a.pylonExposureFrames) a.pylonExposureFrames = Math.max(0, a.pylonExposureFrames - 2);
-                }
-            });
-    });
+    applyPylonZoneEffects(wavePylons);
 
     // Core triangle/square zone — needs 3+ pylons to form enclosed zone
     const corePylons = wavePylons.filter(p=>p.attackModeElement==="core");

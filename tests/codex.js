@@ -113,7 +113,7 @@ check('CORE shield gain and cap per tier match', () => {
 });
 check('FLUX pull strength per tier matches', () => {
     const at = GAME.indexOf('case "flux": {');
-    const m = GAME.slice(at, at + 400).match(/pullSpd = \(_nTier >= 3 \? ([\d.]+) : _nTier >= 2 \? ([\d.]+) : ([\d.]+)\)/);
+    const m = GAME.slice(at, at + 800).match(/pullSpd = \(_nTier >= 3 \? ([\d.]+) : _nTier >= 2 \? ([\d.]+) : ([\d.]+)\)/);
     ok(m, 'flux pull not found');
     const live = [Number(m[3]), Number(m[2]), Number(m[1])];
     ok(CODEX.flux.numbers.pull.every((v, i) => Math.abs(v - live[i]) < 1e-9),

@@ -27,6 +27,16 @@ const sandbox = {
     getZoneIndex: x => Math.floor(x / 15),
 };
 sandbox.globalThis = sandbox;
+// predator.js reads a handful of config.js constants at runtime. config.js
+// itself touches the DOM, so lift just the constants out of its source —
+// copying the numbers here instead would let the test drift from the game.
+for (const name of ['PYLON_AGGRO_EXPOSURE', 'PYLON_AGGRO_TRAP_RATE',
+                    'PYLON_BASH_COOLDOWN', 'PYLON_AGGRO_GIVE_UP']) {
+    const src = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
+    const m = src.match(new RegExp(`const\\s+${name}\\s*=\\s*([\\d.]+)`));
+    if (!m) throw new Error(`config.js no longer defines ${name}`);
+    sandbox[name] = Number(m[1]);
+}
 const ctx = vm.createContext(sandbox);
 for (const f of ['js/species.js', 'js/abilities.js', 'js/predator.js']) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });

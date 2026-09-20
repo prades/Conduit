@@ -132,6 +132,18 @@ let alertSource = null;    // { x, y } where alarm was triggered
 let alertZone   = null;    // zone index where the alarm was triggered
 const ALERT_DURATION = 600; // 10 seconds at 60fps
 
+// ── PYLON AGGRO ───────────────────────────────────────────
+// Exposure needed before a predator stuck in a pylon zone turns on the pylon.
+// Counted once every three frames, so 45 is about 2.2 seconds. A FLUX zone
+// counts triple because it physically holds them in place — that is the one
+// that made the game unplayable to sit and watch.
+const PYLON_AGGRO_EXPOSURE  = 45;
+const PYLON_AGGRO_TRAP_RATE = 3;
+// Frames between bashes once it is in reach, and the distance at which it
+// gives up rather than chasing a pylon across the map.
+const PYLON_BASH_COOLDOWN   = 45;
+const PYLON_AGGRO_GIVE_UP   = 9;
+
 // ── TERRITORY / CIRCUIT HARVESTING ────────────────────────
 let capturedNodes = []; // { type, x, y, benefit }
 let signalTowers  = []; // tile refs: { x, y, active, zoneIndex } — enemy antenna structures

@@ -220,14 +220,31 @@ class Predator {
         }
 
         // ── PYLON AGGRO — overrides normal state when a predator has been fried long enough ──
+        // Exposure only counts while it is still being zapped. applyPylonZoneEffects
+        // stamps _lastExposureFrame every third frame, so anything older than that
+        // means the predator has walked out — let it forget rather than bank the
+        // exposure and turn on some pylon minutes later for no visible reason.
+        if (this.pylonExposureFrames > 0 && !this.pylonAggro &&
+            frame - (this._lastExposureFrame || 0) > 4) {
+            this.pylonExposureFrames = Math.max(0, this.pylonExposureFrames - 1);
+        }
         if (this.pylonAggro) {
+            // A pylon that has already fallen is no longer a target.
             if (this.pylonAggro.destroyed) { this.pylonAggro=null; this.pylonExposureFrames=0; }
-            else if (alertActive || gameState.phase === "night") {
+            // Give up if the pylon is out of reach — otherwise a predator can be
+            // dragged far enough away to chase one across the map forever.
+            else if (Math.hypot(this.pylonAggro.x-this.x, this.pylonAggro.y-this.y) > PYLON_AGGRO_GIVE_UP) {
+                this.pylonAggro=null; this.pylonExposureFrames=0;
+            }
+            // No longer gated on alertActive or night. A predator held in a zone
+            // during the day was stuck there with no way to fight out of it.
+            else {
                 const dx=this.pylonAggro.x-this.x, dy=this.pylonAggro.y-this.y;
                 const dist=Math.hypot(dx,dy);
                 if (dist>0.9) {
-                    this.x+=(dx/dist)*this.moveSpeed*1.15;
-                    this.y+=(dy/dist)*this.moveSpeed*1.15;
+                    this.x+=(dx/dist)*this.moveSpeed*1.5;
+                    this.y+=(dy/dist)*this.moveSpeed*1.5;
+                    faceToward(this, this.pylonAggro.x, this.pylonAggro.y, 0.2);
                 } else {
                     // In range and bashing — turn to face the pylon. This branch
                     // also returns before HEAD CONTROL.
@@ -239,7 +256,7 @@ class Predator {
                         if (typeof shake!=="undefined") shake=Math.max(shake,2);
                         floatingTexts.push({x:this.pylonAggro.x,y:this.pylonAggro.y-1,text:"BASH!",color:"#ff8800",life:30,vy:-0.05});
                         if (this.pylonAggro.health<=0) { this.pylonAggro.pendingDestroy=true; this.pylonAggro=null; this.pylonExposureFrames=0; }
-                        this.pylonAttackCooldown=90;
+                        this.pylonAttackCooldown=PYLON_BASH_COOLDOWN;
                     }
                 }
                 return;
