@@ -45,8 +45,13 @@ function check(name, fn) {
 function eq(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 function ok(c, m) { if (!c) throw new Error(m); }
 
+// The default fixture is a GENERATOR, because that is now the only thing a
+// nest will link to. `elemental()` builds the other kind, for the checks that
+// assert it is refused.
 const pylon = o => Object.assign({ pillar: true, x: 0, y: 0, destroyed: false,
-    pillarTeam: 'green', health: 20, maxHealth: 20, attackMode: true, waveMode: false }, o || {});
+    pillarTeam: 'green', health: 20, maxHealth: 20, attackMode: true, waveMode: false,
+    isGenerator: true, attackModeElement: 'generator' }, o || {});
+const elemental = o => pylon(Object.assign({ isGenerator: false, attackModeElement: 'fire' }, o || {}));
 
 // Screen position of a tile, matching the projection the tap handler inverts.
 function screenOf(t) {
@@ -64,12 +69,22 @@ function setMode(nest) {
 }
 
 group('eligibility');
-check('a linked, living green pylon in a mode is eligible', () => {
-    eq(run('isNestLinkablePylon')(pylon()), true, 'attack mode');
-    eq(run('isNestLinkablePylon')(pylon({ attackMode: false, waveMode: true })), true, 'wave mode');
+check('a living green GENERATOR is eligible', () => {
+    eq(run('isNestLinkablePylon')(pylon()), true, 'generator');
+    // A generator does not need to be in a wave network to qualify — it has no
+    // element to form one with.
+    eq(run('isNestLinkablePylon')(pylon({ attackMode: false, waveMode: false })), true,
+       'generator with no mode set');
 });
-check('dormant, destroyed, dead and enemy pylons are not', () => {
-    eq(run('isNestLinkablePylon')(pylon({ attackMode: false, waveMode: false })), false, 'dormant');
+check('THE NEW RULE: only a generator links to a nest', () => {
+    for (const el of ['fire', 'electric', 'ice', 'flux', 'core', 'toxic']) {
+        eq(run('isNestLinkablePylon')(elemental({ attackModeElement: el })), false,
+           el + ' pylon should be refused');
+    }
+    eq(run('isNestLinkablePylon')(elemental({ attackMode: false, waveMode: true })), false,
+       'a wave-mode elemental pylon is still not a generator');
+});
+check('destroyed, dead and enemy generators are not', () => {
     eq(run('isNestLinkablePylon')(pylon({ destroyed: true })), false, 'destroyed');
     eq(run('isNestLinkablePylon')(pylon({ health: 0 })), false, 'dead');
     eq(run('isNestLinkablePylon')(pylon({ pillarTeam: 'red' })), false, 'enemy');
@@ -98,10 +113,19 @@ check('a tap far from any pylon finds nothing', () => {
     eq(run('pickNestLinkPylon')(sx, sy), null, 'should miss');
 });
 check('an ineligible pylon is never picked', () => {
-    const dormant = pylon({ x: 3, y: 2, attackMode: false, waveMode: false });
-    sandbox.world.length = 0; sandbox.world.push(dormant);
-    const [sx, sy] = screenOf(dormant);
-    eq(run('pickNestLinkPylon')(sx, sy), null, 'dormant pylon is not a link target');
+    const fire = elemental({ x: 3, y: 2 });
+    sandbox.world.length = 0; sandbox.world.push(fire);
+    const [sx, sy] = screenOf(fire);
+    eq(run('pickNestLinkPylon')(sx, sy), null, 'an elemental pylon is not a link target');
+});
+check('a generator is picked over a nearer elemental pylon', () => {
+    // The tap lands on the fire pylon; only the generator can take the link,
+    // so the scan must reach past it rather than returning nothing.
+    const fire = elemental({ x: 3, y: 2 });
+    const gen  = pylon({ x: 4, y: 2 });
+    sandbox.world.length = 0; sandbox.world.push(fire, gen);
+    const [sx, sy] = screenOf(fire);
+    eq(run('pickNestLinkPylon')(sx, sy), gen, 'should skip to the generator');
 });
 
 group('the tap handler');
@@ -126,7 +150,7 @@ check('a stray tap no longer cancels the link outright', () => {
     const [sx, sy] = screenOf({ x: 20, y: 2 });
     eq(run('handleNestConnectTap')(sx, sy), true, 'still consumed, so nothing else grabs it');
     eq(sandbox.nestConnectMode, true, 'mode should survive one miss');
-    ok(sandbox.floatingTexts.some(t => /TAP A LIT PYLON/.test(t.text)), 'tells the player what to do');
+    ok(sandbox.floatingTexts.some(t => /TAP A GENERATOR/.test(t.text)), 'tells the player what to do');
 });
 check('two misses in a row cancel, so the mode cannot trap you', () => {
     sandbox.world.length = 0; sandbox.world.push(pylon({ x: 3, y: 2 }));

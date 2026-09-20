@@ -436,6 +436,85 @@ function applyPylonZoneEffects(wavePylons) {
     });
 }
 
+// Generator links are not elemental pairs: a generator reaches every friendly
+// pylon in range regardless of element, and there is no spanning-forest rule
+// because it is mending them, not forming a network that could mesh.
+// The mend links, drawn as steel filaments running generator → pylon. World
+// space, so they sit with the world rather than up with the interface.
+function drawGeneratorLinks() {
+    if (_genLinks.length === 0) return;
+    const toScreen = o => [
+        (o.x - player.visualX - (o.y - player.visualY)) * TILE_W + canvas.width  / 2,
+        (o.x - player.visualX + (o.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H,
+    ];
+    const pulse = 0.5 + 0.5 * Math.sin(frame * 0.06);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const { gen, pylon } of _genLinks) {
+        if (gen.destroyed || pylon.destroyed) continue;
+        const [gx, gy] = toScreen(gen);
+        const [px, py] = toScreen(pylon);
+        // Both ends off screen means the whole filament is too.
+        if (Math.max(gx, px) < -60 || Math.min(gx, px) > canvas.width  + 60) continue;
+        if (Math.max(gy, py) < -60 || Math.min(gy, py) > canvas.height + 60) continue;
+
+        const gTop = gy - 50, pTop = py - 44;
+        ctx.strokeStyle = `rgba(205,214,224,${0.18 + pulse * 0.22})`;
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([5, 6]);
+        ctx.beginPath(); ctx.moveTo(gx, gTop); ctx.lineTo(px, pTop); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // A charge running out to the pylon it is mending.
+        const t = ((frame * 0.014) + (pylon.x * 0.13 + pylon.y * 0.29)) % 1;
+        ctx.fillStyle = `rgba(230,240,250,${0.5 + pulse * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(gx + (px - gx) * t, gTop + (pTop - gTop) * t, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // A brief bloom on the pylon the frame it actually gained health.
+        if (pylon._genHealFlash > 0) {
+            pylon._genHealFlash--;
+            ctx.strokeStyle = `rgba(190,255,220,${pylon._genHealFlash / 12 * 0.55})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(px, py, TILE_W * 0.5, TILE_H * 0.5, 0, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+function rebuildGeneratorLinks() {
+    _genLinks = [];
+    if (_genPylons.length === 0) return;
+    const r = getPylonRange(), r2 = r * r;
+    for (const gen of _genPylons) {
+        for (const t of _pillarCache) {
+            if (t === gen) continue;
+            if (t.pillarTeam !== "green") continue;   // allies only
+            const dx = t.x - gen.x, dy = t.y - gen.y;
+            if (dx*dx + dy*dy > r2) continue;
+            _genLinks.push({ gen, pylon: t });
+        }
+    }
+}
+
+// Mend the pylons standing in a generator's reach. Broken pylons are not
+// touched — wreckage is a CORE worker's job, and letting a generator quietly
+// rebuild it would make that crew pointless.
+function generatorHealTick() {
+    if (frame % GENERATOR_HEAL_INTERVAL !== 0 || _genLinks.length === 0) return;
+    for (const { gen, pylon } of _genLinks) {
+        if (gen.destroyed || gen.health <= 0) continue;
+        if (pylon.destroyed) continue;
+        const cap = pylon.maxHealth || 0;
+        if (pylon.health >= cap) continue;
+        pylon.health = Math.min(cap, pylon.health + GENERATOR_HEAL_AMOUNT);
+        pylon._genHealFlash = 12;
+    }
+}
+
 function rebuildPylonPairs() {
     _wPylonPairs = [];
     const _ufParent = new Map();
@@ -570,8 +649,12 @@ function render() {
     if (frame - _cacheAge >= 60) {
         _cacheAge    = frame;
         _pillarCache = world.filter(t => t.pillar && !t.destroyed && t.health > 0);
-        _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement);
-        _aPylons     = _pillarCache.filter(t => t.attackMode);
+        // Generators are excluded from _wPylons on purpose: the elemental
+        // network tiers and integrity are computed from that list, and a
+        // neutral pylon has no element to contribute to either.
+        _genPylons   = _pillarCache.filter(t => t.isGenerator);
+        _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement && !t.isGenerator);
+        _aPylons     = _pillarCache.filter(t => t.attackMode && !t.isGenerator);
         _uPylons     = _pillarCache.filter(t => t.upgraded);
         _nestCache   = world.filter(t => t.nest);
         // ── WALL PANEL MAP — for wall-face panel rendering ──
@@ -630,6 +713,7 @@ function render() {
 
         // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
         rebuildPylonPairs();
+        rebuildGeneratorLinks();
 
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
@@ -949,6 +1033,9 @@ function render() {
         t.pulseTimer++;
         if(t.pulseTimer>120){ t.pulseTimer=0; actors.forEach(a=>{ if(a.team==="green"){const dx=a.x-t.x,dy=a.y-t.y; if(Math.abs(dx)>3.5||Math.abs(dy)>3.5) return; if(dx*dx+dy*dy<12.25) a.health=Math.min(a.maxHealth,a.health+2);} }); }
     });
+
+    // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
+    generatorHealTick();
 
     // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
     if (frame % 3 === 0) {
@@ -1773,7 +1860,7 @@ function render() {
 
             // ── NETWORK NODE TILE HIGHLIGHT ──
             if (obj.pillar&&!obj.destroyed&&obj.pillarTeam==="green"&&obj.health>0&&obj.attackModeElement) {
-                const _gelDef = ELEMENTS.find(e=>e.id===obj.attackModeElement);
+                const _gelDef = PYLON_PICKER_TYPES.find(e=>e.id===obj.attackModeElement);
                 const _gCol = _gelDef ? _gelDef.color : "#0f8";
                 const _gpulse = 0.5+0.5*Math.sin((frame||0)*0.07+obj.x*0.8+obj.y*0.5);
                 ctx.save();
@@ -2979,6 +3066,7 @@ function render() {
     // rather than up with the interface.
     drawTraps();
     drawHoldLine();
+    drawGeneratorLinks();
     drawTutorialHighlight();
     drawFloatingTexts();
     drawCrystalButton();

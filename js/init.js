@@ -57,6 +57,7 @@ async function loadConfig() {
             tile.attackModeColor   = saved.attackModeColor;
             tile.seasoned          = saved.seasoned;
             tile.upgraded          = saved.upgraded;
+            tile.isGenerator       = !!saved.isGenerator;
         });
     }
     // Nests always generate at full health, so destroyed ones are re-killed here.

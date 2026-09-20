@@ -119,8 +119,10 @@ function updateRTSNPC(actor) {
             // Arrived — merge: absorb follower into pylon
             p.attackMode = true;
             p.attackModeElement = p.chosenElement || actor.element || "core";
-            const _chEl = ELEMENTS.find(e=>e.id===p.attackModeElement);
+            const _chEl = PYLON_PICKER_TYPES.find(e=>e.id===p.attackModeElement);
             p.attackModeColor = p.chosenColor || (_chEl ? _chEl.color : actor.color) || "#0f8";
+            // Neutral pylons carry no element, so the flag travels with the choice.
+            p.isGenerator = (p.attackModeElement === GENERATOR_ID);
             p.chosenElement = null; p.chosenColor = null;
             p.attackFireTimer = 0;
             p.attackRange = 2.5 + (pylonRangeBonus||0);
@@ -158,8 +160,9 @@ function updateRTSNPC(actor) {
                 if (p.chosenElement) {
                     p.attackMode=true; p.waveMode=false;
                     p.attackModeElement=p.chosenElement;
-                    const _chEl=ELEMENTS.find(e=>e.id===p.chosenElement);
+                    const _chEl=PYLON_PICKER_TYPES.find(e=>e.id===p.chosenElement);
                     p.attackModeColor=p.chosenColor||(_chEl?_chEl.color:"#0f8");
+                    p.isGenerator=(p.chosenElement===GENERATOR_ID);
                     p.attackPower=15; p.attackRange=2.5+(pylonRangeBonus||0);
                     p.attackFireTimer=0; p.pulseTimer=0;
                     p.chosenElement=null; p.chosenColor=null;

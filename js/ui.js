@@ -159,7 +159,7 @@ function drawFollowerElementUI() {
 //  ELEMENT PICKER  (canvas-drawn)
 // ─────────────────────────────────────────────────────────
 const _EP_W = 310, _EP_ROW_H = 44, _EP_COLS = 3;
-const _EP_ROWS = Math.ceil(ELEMENTS.length / _EP_COLS);
+const _EP_ROWS = Math.ceil(PYLON_PICKER_TYPES.length / _EP_COLS);
 const _EP_GRID_H = _EP_ROWS * _EP_ROW_H;
 const _EP_HEADER_H = 64, _EP_CANCEL_H = 38;
 const _EP_TOTAL_H = _EP_HEADER_H + _EP_GRID_H + _EP_CANCEL_H;
@@ -192,10 +192,10 @@ function drawElementPicker() {
 
     // Element grid
     const cellW = Math.floor(pw / _EP_COLS);
-    ELEMENTS.forEach((el, i) => {
+    PYLON_PICKER_TYPES.forEach((el, i) => {
         const col = i % _EP_COLS, row = Math.floor(i / _EP_COLS);
         const cx = px + col * cellW, cy = py + _EP_HEADER_H + row * _EP_ROW_H;
-        const unlocked = unlockedElements.has(el.id);
+        const unlocked = isPylonTypeUnlocked(el.id);
         const alpha = unlocked ? 1.0 : 0.35;
 
         ctx.globalAlpha = alpha;
@@ -255,8 +255,8 @@ function _handleElementPickerTap(tx, ty) {
         const col = Math.floor((tx - px) / cellW);
         const row = Math.floor((ty - gridY0) / _EP_ROW_H);
         const idx  = row * _EP_COLS + col;
-        const el   = ELEMENTS[idx];
-        if (el && unlockedElements.has(el.id)) {
+        const el   = PYLON_PICKER_TYPES[idx];
+        if (el && isPylonTypeUnlocked(el.id)) {
             const mode = elementPickerMode, target = elementPickerTarget;
             elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;
             if (mode === "build") {
@@ -290,6 +290,7 @@ const _IP_TEXT_CHARS = Math.floor((_IP_W - 24) / 5.4);
 function _infoRows() {
     if (infoPanelPage === 'codex')  return codexIndexRows(_IP_TEXT_CHARS);
     if (infoPanelPage === 'rules')  return codexRulesRows(_IP_TEXT_CHARS);
+    if (infoPanelPage === 'generator') return codexGeneratorRows(_IP_TEXT_CHARS);
     if (infoPanelPage)              return codexElementRows(infoPanelPage, _IP_TEXT_CHARS);
     return _buildInfoRows(infoPanelTarget);
 }
@@ -302,6 +303,7 @@ function _infoNavLabel() {
 
 function _infoTitle() {
     if (infoPanelPage === 'rules') return "PYLON RULES";
+    if (infoPanelPage === 'generator') return "GENERATOR";
     if (infoPanelPage)             return "PYLON CODEX";
     return _buildInfoTitle(infoPanelTarget);
 }

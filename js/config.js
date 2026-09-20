@@ -27,6 +27,37 @@ const ELEMENTS = [
 ];
 let unlockedElements = new Set(["fire", "electric"]);
 
+// ── GENERATOR PYLON ───────────────────────────────────────
+// A neutral pylon: no elemental zone, no tier, no network. It does two things
+// nothing else can — it is the only structure a nest will link to, and it
+// mends the friendly pylons standing around it. Deliberately not in ELEMENTS:
+// that list is what followers are made of and what the elemental network is
+// tiered on, and a generator is neither.
+const GENERATOR_ID    = "generator";
+const GENERATOR_LABEL = "GENERATOR";
+const GENERATOR_COLOR = "#cdd6e0";   // neutral steel, so it reads as no element
+// What the pylon picker offers: the six elements plus the generator.
+const PYLON_PICKER_TYPES = [...ELEMENTS, { id: GENERATOR_ID, label: GENERATOR_LABEL, color: GENERATOR_COLOR }];
+// Healing: applied every GENERATOR_HEAL_INTERVAL frames to each linked pylon.
+// 2 HP per 30 frames is 4 HP/s — worth building around, but well under what a
+// single predator chewing on a pylon takes off it.
+const GENERATOR_HEAL_INTERVAL = 30;
+const GENERATOR_HEAL_AMOUNT   = 2;
+let _genPylons = [];   // live generator pylons
+let _genLinks  = [];   // [{ gen, pylon }] — generator → pylon it is mending
+
+// A generator is a pylon, so every pylon check still applies to it; this is
+// only the "which kind" test.
+function isGeneratorPylon(t) {
+    return !!(t && t.pillar && !t.destroyed && t.health > 0 && t.isGenerator);
+}
+
+// The generator is neutral, so it is never behind an element unlock — it is
+// available from the first pylon the player ever builds.
+function isPylonTypeUnlocked(id) {
+    return id === GENERATOR_ID || unlockedElements.has(id);
+}
+
 // ── CANVAS / CTX ──────────────────────────────────────────
 const canvas  = document.getElementById('cavernCanvas');
 const ctx     = canvas.getContext('2d');

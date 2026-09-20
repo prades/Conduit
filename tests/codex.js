@@ -20,6 +20,30 @@ const sandbox = {
         { id: 'toxic',    label: 'TOXIC',    color: '#66ff66' },
     ],
 };
+// The generator's codex text quotes its real tuning numbers, so they are lifted
+// out of config.js rather than copied — the whole point of this suite is that
+// the codex cannot drift from the code.
+const CONFIG = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
+function _cfgNum(name) {
+    const m = CONFIG.match(new RegExp(`const\\s+${name}\\s*=\\s*([\\d.]+)`));
+    if (!m) { console.log(`  FAIL config.js no longer defines ${name}`); process.exit(1); }
+    return Number(m[1]);
+}
+function _cfgStr(name) {
+    const m = CONFIG.match(new RegExp(`const\\s+${name}\\s*=\\s*"([^"]+)"`));
+    if (!m) { console.log(`  FAIL config.js no longer defines ${name}`); process.exit(1); }
+    return m[1];
+}
+// codex.js reads these at load time, so every sandbox that evaluates it needs
+// them. Lifted from config.js so the codex page cannot drift from the game.
+const GEN_CONSTS = {
+    GENERATOR_ID:            _cfgStr('GENERATOR_ID'),
+    GENERATOR_LABEL:         _cfgStr('GENERATOR_LABEL'),
+    GENERATOR_COLOR:         _cfgStr('GENERATOR_COLOR'),
+    GENERATOR_HEAL_AMOUNT:   _cfgNum('GENERATOR_HEAL_AMOUNT'),
+    GENERATOR_HEAL_INTERVAL: _cfgNum('GENERATOR_HEAL_INTERVAL'),
+};
+Object.assign(sandbox, GEN_CONSTS);
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8'), ctx, { filename: 'js/codex.js' });
@@ -289,7 +313,7 @@ function renderIndex(mutate) {
     const slots = {};
     const sb = {
         console, Math, Array, Object, String, Number, Set, Map, isNaN, isFinite, parseInt,
-        ELEMENTS, PYLON_LINK_TILES: 3, PYLON_LINK_TILES_RELAY: 5,
+        ELEMENTS, PYLON_LINK_TILES: 3, PYLON_LINK_TILES_RELAY: 5, ...GEN_CONSTS,
         document: { getElementById: id => ({
             set innerHTML(v) { slots[id] = v; },
             get innerHTML() { return slots[id]; },
@@ -354,7 +378,7 @@ check('text from the tables is escaped, not injected', () => {
 check('a missing slot is not an error', () => {
     const sb = {
         console, Math, Array, Object, String, Number, Set, Map, isNaN, isFinite, parseInt,
-        ELEMENTS, document: { getElementById: () => null },
+        ELEMENTS, ...GEN_CONSTS, document: { getElementById: () => null },
     };
     sb.globalThis = sb;
     const c2 = vm.createContext(sb);

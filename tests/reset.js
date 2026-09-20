@@ -34,6 +34,7 @@ function makeEnv() {
         followerProjectiles: [], pendingPillarDestruction: [], respawnQueue: [],
         traps: [], _pillarCache: [], _wPylons: [], _aPylons: [], _uPylons: [],
         _wPylonPairs: [], _capturableNodeCache: [], _pylonsWithPartner: new Set(),
+        _genPylons: [], _genLinks: [],
         exploredZones: new Set(), boughtItems: new Set(), permUpgrades: new Set(),
         unlockedElements: new Set(['fire', 'electric']),
         dayStats: { redSpawned: 0, redConverted: 0 },
@@ -329,6 +330,16 @@ check('nextWave and restartGame share one reset, so they cannot drift', () => {
        'nextWave should call the shared reset');
     ok(WAVES.slice(WAVES.indexOf('function restartGame')).includes('resetTransientState()'),
        'restartGame should call the shared reset');
+});
+
+check('the generator caches are cleared too', () => {
+    // Stale _genLinks would point at pylons in the world that was thrown away,
+    // and the heal tick walks that list every interval.
+    const loaded = reloadOn(playedSession().env);
+    loaded.run('_genPylons = [{ x: 1, y: 1 }]; _genLinks = [{ gen: {}, pylon: {} }]');
+    loaded.run('restartGame()');
+    eq(loaded.run('_genPylons').length, 0, 'generator cache survived a reset');
+    eq(loaded.run('_genLinks').length, 0, 'generator links survived a reset');
 });
 
 check('a reset still clears the things it already cleared', () => {

@@ -33,6 +33,22 @@ const CODEX_GENERAL = [
     { t: 'A pylon that survives a wave becomes seasoned. One seasoned pylon in a network multiplies its damage, shields and pull by 1.25.' },
 ];
 
+// The generator gets its own page rather than a block on the rules page: that
+// page was already at 24 of its 25-row budget, and five more entries ran it
+// off the bottom of a phone screen.
+const CODEX_GENERATOR = [
+    { h: 'GENERATOR — NEUTRAL' },
+    { t: 'No element, no tier, no wave zone. It joins no elemental network and contributes nothing to one.' },
+    null,
+    { h: 'IT MENDS PYLONS' },
+    { t: 'Every friendly pylon in range is repaired, whatever its element.' },
+    ['REPAIR', GENERATOR_HEAL_AMOUNT + ' HP / ' + (GENERATOR_HEAL_INTERVAL / 60).toFixed(1) + 's', '#8fa'],
+    { t: 'It will NOT rebuild a broken pylon. Wreckage is a CORE worker\'s job.' },
+    null,
+    { h: 'IT LINKS THE NEST' },
+    { t: 'A generator is the only structure a broken nest will connect to. No elemental pylon can take that link.' },
+];
+
 // Each entry: what the element is for, then what each tier adds.
 const CODEX_ELEMENTS = {
     fire: {
@@ -117,7 +133,19 @@ function codexWrap(text, maxChars) {
     return lines.length ? lines : [''];
 }
 
-// Build the rows for the codex index — one entry per element.
+// The generator's own page.
+function codexGeneratorRows(maxChars) {
+    const w = maxChars || 48;
+    const rows = [];
+    CODEX_GENERATOR.forEach(r => {
+        if (r === null || Array.isArray(r) || r.h !== undefined) { rows.push(r); return; }
+        codexWrap(r.t, w).forEach(l => rows.push({ t: l, c: '#aad' }));
+    });
+    return rows;
+}
+
+// Build the rows for the codex index — one entry per element, then the
+// neutral pylon, then the general rules page.
 function codexIndexRows(maxChars) {
     const w = maxChars || 48;
     const rows = [];
@@ -130,6 +158,10 @@ function codexIndexRows(maxChars) {
         if (!entry) return;
         rows.push([el.label.toUpperCase(), entry.role, el.color, { codexElement: el.id }]);
     });
+    rows.push(null);
+    // The neutral pylon sits under the six elements, because that is where a
+    // player looking for "what can I put on a pylon" will be looking.
+    rows.push([GENERATOR_LABEL, 'NEUTRAL \u00b7 REPAIR', GENERATOR_COLOR, { codexPage: 'generator' }]);
     rows.push(null);
     // The general rules live on their own page. Appending them here made the
     // index tall enough to run off the top and bottom of a phone screen.

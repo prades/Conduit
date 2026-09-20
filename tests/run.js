@@ -17,6 +17,7 @@ const SUITES = [
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],
     ['no player stun',         'stun.js'],
+    ['generator pylon',        'generator.js'],
 ];
 
 let failed = 0;

@@ -21,9 +21,13 @@ function toCanvas(cx, cy) {
 
 // A pylon the player is allowed to link a broken nest to — the same test the
 // blinking LINK highlight uses, so what is tappable is exactly what is lit.
+//
+// A nest will only link to a GENERATOR. That is the generator's whole reason
+// to exist on the nest side, and it stops the link being a free bonus on any
+// lit pylon the player happened to already own.
 function isNestLinkablePylon(t) {
     return !!(t && t.pillar && !t.destroyed && t.pillarTeam === "green"
-              && t.health > 0 && (t.attackMode || t.waveMode));
+              && t.health > 0 && t.isGenerator);
 }
 
 // Nearest eligible pylon to a tap. The old scan kept the LAST match in world
@@ -68,7 +72,7 @@ function handleNestConnectTap(ex, ey) {
             text:"LINK CANCELLED", color:"#888", life:90, vy:-0.25});
     } else {
         floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
-            text:"TAP A LIT PYLON  (tap again to cancel)", color:"#00ffcc", life:110, vy:-0.25});
+            text:"TAP A GENERATOR  (tap again to cancel)", color:"#00ffcc", life:110, vy:-0.25});
     }
     return true;
 }

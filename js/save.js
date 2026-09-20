@@ -44,7 +44,8 @@ function savePylons() {
             attackModeElement: t.attackModeElement || null,
             attackModeColor: t.attackModeColor || null,
             seasoned: t.seasoned || 0,
-            upgraded: !!t.upgraded
+            upgraded: !!t.upgraded,
+            isGenerator: !!t.isGenerator
         }));
     try { localStorage.setItem("tubecrawler_pylons", JSON.stringify(data)); } catch(e) {}
 }

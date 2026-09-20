@@ -95,11 +95,12 @@ function _executeBuildInstant(el, t) {
     t.reconstructing=false; t.workers=[];
     t.constructing=false; t.constructProgress=1; t.health=t.maxHealth;
     // Auto-activate with the chosen element (no follower merge needed)
-    if (unlockedElements.has(el.id)) {
+    if (isPylonTypeUnlocked(el.id)) {
         t.attackMode=true; t.waveMode=false;
         t.attackModeElement=el.id; t.attackModeColor=el.color;
         t.attackPower=15; t.attackRange=2.5 + (pylonRangeBonus||0);
         t.chosenElement=el.id; t.chosenColor=el.color;
+        t.isGenerator=(el.id===GENERATOR_ID);
     }
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
 }
@@ -107,9 +108,16 @@ function _executeBuildInstant(el, t) {
 function _executeUpgrade(el, pylon) {
     if (!pylon || !pylon.pillar || pylon.destroyed) return;
     if (pylon.attackMode || pylon.waveMode) {
-        // Already upgraded — just swap element directly
+        // Already upgraded — just swap element directly.
+        // isGenerator is set or cleared here, so converting a generator to an
+        // element (or back) leaves no stale flag behind.
         pylon.attackModeElement = el.id;
         pylon.attackModeColor   = el.color;
+        pylon.isGenerator       = (el.id === GENERATOR_ID);
+        if (pylon.isGenerator) {
+            // A generator has no elemental zone, so it holds no wave network.
+            pylon.waveMode = false; pylon.attackMode = true;
+        }
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON → "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
     } else {
         // Not yet upgraded — send a follower to merge; store chosen element
@@ -263,7 +271,7 @@ function executeCommand() {
                 nestConnectMisses = 0;
                 pendingConnectNest = commandNestTarget;
                 floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
-                    text:"TAP AN UPGRADED PYLON TO LINK",color:"#00ffcc",life:180,vy:-0.15});
+                    text:"TAP A GENERATOR PYLON TO LINK",color:"#00ffcc",life:180,vy:-0.15});
             }
             break;
         }
