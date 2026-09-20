@@ -311,7 +311,7 @@ function nextWave() {
     trapPickerOpen    = false; trapPickerTarget = null;
     pylonConfirmOpen  = false; pylonConfirmEl   = null; pylonConfirmTarget = null;
     elementPickerOpen = false; elementPickerTarget = null;
-    infoPanelOpen     = false; infoPanelTarget = null;
+    infoPanelOpen     = false; infoPanelTarget = null; infoPanelPage = null;
     commandMode       = false; commandPendingTap = false;
     commandTarget     = null; selectedRadialAction = null;
     nestConnectMode   = false; pendingConnectNest = null;

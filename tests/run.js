@@ -8,6 +8,7 @@ const SUITES = [
     ['nest persistence',       'nests.js'],
     ['pylon linking',          'pylons.js'],
     ['attack facing',          'facing.js'],
+    ['pylon codex',            'codex.js'],
 ];
 
 let failed = 0;

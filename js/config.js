@@ -194,6 +194,7 @@ let elementPickerTarget = null;
 // ── INFO PANEL (canvas-drawn) ─────────────────────────────
 let infoPanelOpen   = false;
 let infoPanelTarget = null;
+let infoPanelPage   = null;   // null = target readout | 'codex' | an element id
 
 // ── DEV / PREVIEW ─────────────────────────────────────────
 let devMode = false;

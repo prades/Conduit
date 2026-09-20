@@ -281,10 +281,34 @@ function _handleElementPickerTap(tx, ty) {
 //  INFO PANEL  (canvas-drawn)
 // ─────────────────────────────────────────────────────────
 const _IP_W = 280, _IP_ROW_H = 20, _IP_PAD = 14;
+// Body text is 9px monospace, so roughly 5.4px per character. Wrapping to a
+// character budget is exact for a fixed-width font rather than a guess.
+const _IP_TEXT_CHARS = Math.floor((_IP_W - 24) / 5.4);
+
+// The info panel has three pages: the target readout it has always had, the
+// codex index, and one element's detail page.
+function _infoRows() {
+    if (infoPanelPage === 'codex')  return codexIndexRows(_IP_TEXT_CHARS);
+    if (infoPanelPage === 'rules')  return codexRulesRows(_IP_TEXT_CHARS);
+    if (infoPanelPage)              return codexElementRows(infoPanelPage, _IP_TEXT_CHARS);
+    return _buildInfoRows(infoPanelTarget);
+}
+// null means "no nav button" — a full-width CLOSE instead.
+function _infoNavLabel() {
+    if (infoPanelPage && infoPanelPage !== 'codex') return "\u2039 BACK";
+    if (infoPanelPage === 'codex') return infoPanelTarget ? "\u2039 BACK" : null;
+    return "PYLON CODEX";
+}
+
+function _infoTitle() {
+    if (infoPanelPage === 'rules') return "PYLON RULES";
+    if (infoPanelPage)             return "PYLON CODEX";
+    return _buildInfoTitle(infoPanelTarget);
+}
 
 function drawInfoPanel() {
     if (!infoPanelOpen) return;
-    const rows = _buildInfoRows(infoPanelTarget);
+    const rows = _infoRows();
     const contentH = rows.length * _IP_ROW_H;
     const ph = _IP_PAD*2 + 28 + contentH + 38; // title + content + close btn
     const pw = _IP_W;
@@ -300,7 +324,7 @@ function drawInfoPanel() {
     ctx.fill(); ctx.stroke();
 
     // Title
-    const titleObj = _buildInfoTitle(infoPanelTarget);
+    const titleObj = _infoTitle();
     ctx.fillStyle = "#0ff"; ctx.font = "bold 12px monospace"; ctx.textAlign = "center";
     ctx.fillText(titleObj, px + pw/2, py + 20);
 
@@ -308,7 +332,8 @@ function drawInfoPanel() {
     ctx.strokeStyle = "#0a4"; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(px+10, py+30); ctx.lineTo(px+pw-10, py+30); ctx.stroke();
 
-    // Rows
+    // Rows — three kinds: a divider (null), a {h}eading or {t}ext line, and the
+    // original [label, value, colour] pair.
     const ryBase = py + 30 + _IP_ROW_H/2 + 2;
     rows.forEach((r, i) => {
         const ry = ryBase + i * _IP_ROW_H;
@@ -318,21 +343,50 @@ function drawInfoPanel() {
             return;
         }
         ctx.textBaseline = "middle";
+        if (!Array.isArray(r)) {
+            if (r.h !== undefined) {
+                ctx.fillStyle = r.c || "#0ff"; ctx.font = "bold 10px monospace"; ctx.textAlign = "left";
+                ctx.fillText(r.h, px + 12, ry);
+            } else {
+                ctx.fillStyle = r.c || "#9bb"; ctx.font = "9px monospace"; ctx.textAlign = "left";
+                ctx.fillText(r.t, px + 12, ry);
+            }
+            return;
+        }
         ctx.fillStyle = "#0a8"; ctx.font = "10px monospace"; ctx.textAlign = "left";
         ctx.fillText(r[0], px + 12, ry);
         // Value — may contain color annotation
         ctx.fillStyle = r[2] || "#aad"; ctx.textAlign = "right";
         ctx.fillText(r[1], px + pw - 12, ry);
+        // A row carrying a nav payload gets a tap affordance.
+        if (r[3] && (r[3].codexElement || r[3].codexPage)) {
+            ctx.fillStyle = "#0a8"; ctx.font = "9px monospace"; ctx.textAlign = "right";
+            ctx.fillText("›", px + pw - 4, ry);
+        }
     });
 
-    // Close button
+    // Buttons. A nav button only appears when there is somewhere to go back to:
+    // opened from Settings there is no target, so "back" would land on an empty
+    // NO TARGET readout.
     const closeY = py + ph - 34;
+    const navLabel = _infoNavLabel();
+    const halfW   = Math.floor((pw - 24) / 2);
+    if (navLabel) {
+        ctx.fillStyle = "rgba(10,26,16,0.9)";
+        ctx.strokeStyle = "#0a8"; ctx.lineWidth = 2;
+        _epRoundRect(px + 10, closeY, halfW, 28, 4);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#0c9"; ctx.font = "10px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(navLabel, px + 10 + halfW/2, closeY + 14);
+    }
+    const closeX = navLabel ? px + pw - 10 - halfW : px + 10;
+    const closeW = navLabel ? halfW : pw - 20;
     ctx.fillStyle = "rgba(10,26,16,0.9)";
     ctx.strokeStyle = "#0f8"; ctx.lineWidth = 2;
-    _epRoundRect(px + 10, closeY, pw - 20, 28, 4);
+    _epRoundRect(closeX, closeY, closeW, 28, 4);
     ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#0f8"; ctx.font = "11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText("CLOSE", px + pw/2, closeY + 14);
+    ctx.fillText("CLOSE", closeX + closeW/2, closeY + 14);
 
     ctx.restore();
 }
@@ -404,20 +458,40 @@ function _buildInfoRows(targetTile) {
 
 function _handleInfoPanelTap(tx, ty) {
     if (!infoPanelOpen) return false;
-    const rows = _buildInfoRows(infoPanelTarget);
+    const rows = _infoRows();
     const contentH = rows.length * _IP_ROW_H;
     const ph = _IP_PAD*2 + 28 + contentH + 38;
     const pw = _IP_W;
     const px = Math.round((canvas.width  - pw) / 2);
     const py = Math.round((canvas.height - ph) / 2);
     if (tx < px || tx > px+pw || ty < py || ty > py+ph) {
-        infoPanelOpen = false; infoPanelTarget = null;
+        closeInfoPanel();
         return true;
     }
     const closeY = py + ph - 34;
-    if (ty >= closeY) { infoPanelOpen = false; infoPanelTarget = null; }
+    if (ty >= closeY) {
+        const halfW = Math.floor((pw - 24) / 2);
+        if (_infoNavLabel() && tx <= px + 10 + halfW) {
+            // Nav: into the codex, or back out of an element page.
+            if (infoPanelPage && infoPanelPage !== 'codex') infoPanelPage = 'codex';
+            else if (infoPanelPage === 'codex')             infoPanelPage = null;
+            else                                            infoPanelPage = 'codex';
+        } else {
+            closeInfoPanel();
+        }
+        return true;
+    }
+    // A codex index row opens that element's page.
+    const ryBase = py + 30 + _IP_ROW_H/2 + 2;
+    const idx = Math.round((ty - ryBase) / _IP_ROW_H);
+    const row = rows[idx];
+    if (Array.isArray(row) && row[3]) {
+        if (row[3].codexElement) infoPanelPage = row[3].codexElement;
+        else if (row[3].codexPage) infoPanelPage = row[3].codexPage;
+    }
     return true;
 }
+
 
 // ─────────────────────────────────────────────────────────
 //  PYLON BUILD CONFIRMATION DIALOG
@@ -525,10 +599,11 @@ function handleOverlayPanelTap(tx, ty) {
 // ─────────────────────────────────────────────────────────
 //  SETTINGS PANEL  (canvas-drawn)
 // ─────────────────────────────────────────────────────────
-const _SP_W = 260, _SP_H = 200;
+const _SP_W = 260, _SP_H = 214;
 // Row geometry shared by the draw and tap handlers so they cannot drift apart.
-const _SP_RESET_Y = 82,  _SP_RESET_H = 36;
-const _SP_CLOSE_Y = 148, _SP_CLOSE_H = 30;
+const _SP_CODEX_Y = 82,  _SP_CODEX_H = 30;
+const _SP_RESET_Y = 122, _SP_RESET_H = 36;
+const _SP_CLOSE_Y = 168, _SP_CLOSE_H = 30;
 
 function drawSettingsPanel() {
     if (!settingsPanelOpen) return;
@@ -561,6 +636,15 @@ function drawSettingsPanel() {
     ctx.beginPath(); ctx.moveTo(px + 16, py + 66); ctx.lineTo(px + pw - 16, py + 66); ctx.stroke();
 
     if (!settingsResetConfirm) {
+        // ── PYLON CODEX button — the rules reference ──
+        const codexY = py + _SP_CODEX_Y;
+        ctx.fillStyle = "rgba(6,22,18,0.9)";
+        ctx.strokeStyle = "#0a8"; ctx.lineWidth = 1.5;
+        _epRoundRect(px + 20, codexY, pw - 40, _SP_CODEX_H, 6);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#0c9"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("PYLON CODEX", px + pw/2, codexY + _SP_CODEX_H/2);
+
         // ── RESET GAME button ──
         const btnY = py + _SP_RESET_Y;
         ctx.fillStyle = "rgba(30,8,8,0.9)";
@@ -622,8 +706,13 @@ function _handleSettingsPanelTap(tx, ty) {
     }
 
     if (!settingsResetConfirm) {
+        const codexY = py + _SP_CODEX_Y;
         const btnY   = py + _SP_RESET_Y;
         const closeY = py + _SP_CLOSE_Y;
+        if (ty >= codexY && ty < codexY + _SP_CODEX_H) {
+            openPylonCodex();
+            return true;
+        }
         if (ty >= btnY && ty < btnY + _SP_RESET_H) {
             settingsResetConfirm = true;
             return true;

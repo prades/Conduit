@@ -140,11 +140,22 @@ function _sendMergeFollower(pylon, el) {
 function openInfoPanel(targetTile) {
     infoPanelTarget = targetTile;
     infoPanelOpen   = true;
+    infoPanelPage   = null;      // always open on the target readout
+}
+
+// Opens the codex with no target — reachable from Settings, so the rules are
+// readable without having to stand next to something first.
+function openPylonCodex() {
+    infoPanelTarget   = null;
+    infoPanelOpen     = true;
+    infoPanelPage     = 'codex';
+    settingsPanelOpen = false;
 }
 
 function closeInfoPanel() {
     infoPanelOpen   = false;
     infoPanelTarget = null;
+    infoPanelPage   = null;
 }
 
 // ── COMMAND EXECUTION ─────────────────────────────────────
