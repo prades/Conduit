@@ -192,6 +192,7 @@ let commandX = 0, commandY = 0;
 let commandTarget = null;
 let commandNestTarget = null;   // broken nest pod near long-press point
 let commandEnemyTarget = null;  // predator under a long press, if any
+let commandFollowerTarget = null;  // own follower under a long press, if any
 let nestConnectMode   = false;  // true while waiting for player to tap a pylon
 let nestConnectMisses = 0;      // consecutive stray taps; two in a row cancels
 let pendingConnectNest = null;  // nest tile being connected

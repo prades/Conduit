@@ -85,6 +85,18 @@ function findEnemyAtScreen(ex, ey) {
     return null;
 }
 
+// The follower under a screen point. Same radius as the enemy test, so the two
+// feel identical to aim.
+function findFollowerAtScreen(ex, ey) {
+    for (const f of followers) {
+        if (!f || f.dead) continue;
+        const fpx = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
+        const fpy = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2;
+        if (Math.hypot(ex - fpx, ey - (fpy - 55)) < 45) return f;
+    }
+    return null;
+}
+
 function firePlayerShot(foe) {
     if (!foe || foe.dead) return false;
     if (playerAmmo <= 0) {
@@ -163,6 +175,8 @@ function handleLongHold(ex,ey) {
     }
     // An enemy under the press takes over the menu — see drawRadialMenu.
     commandEnemyTarget = findEnemyAtScreen(ex, ey);
+    // Otherwise a follower under the press offers its duty toggle.
+    commandFollowerTarget = commandEnemyTarget ? null : findFollowerAtScreen(ex, ey);
 
     // Check if any nest pod (live or broken) is near this tile (within 2.5 tiles)
     commandNestTarget=null;

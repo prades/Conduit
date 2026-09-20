@@ -317,7 +317,8 @@ function nextWave() {
     commandMode       = false; commandPendingTap = false;
     commandTarget     = null; selectedRadialAction = null;
     nestConnectMode   = false; pendingConnectNest = null; nestConnectMisses = 0;
-    playerAttackMode  = false; commandEnemyTarget = null;
+    playerAttackMode  = false; commandEnemyTarget = null; commandFollowerTarget = null;
+    chargedMass.length = 0;
     buildMode         = false;
     const _bBtn = document.getElementById("btnBuild");
     if (_bBtn) { _bBtn.textContent="BUILD: OFF"; _bBtn.classList.remove("active"); }

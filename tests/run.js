@@ -12,6 +12,7 @@ const SUITES = [
     ['nest linking',           'nestlink.js'],
     ['save & refresh',         'persist.js'],
     ['player weapon',          'weapon.js'],
+    ['charged mass',           'mass.js'],
 ];
 
 let failed = 0;

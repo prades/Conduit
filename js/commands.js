@@ -224,6 +224,13 @@ function executeCommand() {
             setPlayerAttackMode(false);
             break;
         }
+        // ── FIGHTER / WORKER ─────────────────────────────
+        case "toggle_duty": {
+            if (commandFollowerTarget && !commandFollowerTarget.dead) {
+                toggleFollowerDuty(commandFollowerTarget);
+            }
+            break;
+        }
         // ── LEFT: SWITCH (role / pylon mode) ─────────────
         case "switch_context": {
             const pylon = commandTarget;

@@ -5,18 +5,17 @@ function onPredatorDeath(predator) {
     const px = (predator.x - player.visualX - (predator.y - player.visualY)) * TILE_W + canvas.width/2;
     const py = (predator.x - player.visualX + (predator.y - player.visualY)) * TILE_H + canvas.height/2;
 
-    // Only bosses drop shards
-    if (predator.isBoss) {
-        const shardsGained = predator.shardDrop || 5;
-        shardCount += shardsGained;
-        saveShards();
-        floatingTexts.push({
-            x: px, y: py - 60,
-            text: "+" + shardsGained + " SHARDS",
-            color: "#ff0",
-            life: 90, vy: -0.8
-        });
-    }
+    // Every predator leaves a lump of live charged mass. It is not a pickup —
+    // an ELECTRIC worker has to bleed the charge off and a CORE worker has to
+    // haul it to the Crystal before it is worth anything. See js/mass.js.
+    const _massValue = Math.max(1, Math.round((predator.shardDrop || 5) * MASS_VALUE_SCALE));
+    spawnChargedMass(predator.x, predator.y, _massValue);
+    floatingTexts.push({
+        x: px, y: py - 60,
+        text: "CHARGED MASS \u25c8 " + _massValue,
+        color: "#ffee33",
+        life: 90, vy: -0.8
+    });
 
     // DNA splice drop
     const speciesName = predator.speciesName || "ant";

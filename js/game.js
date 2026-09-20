@@ -546,6 +546,9 @@ function render() {
     player.visualX+=(player.x-player.visualX)*0.15;
     player.visualY+=(player.y-player.visualY)*0.15;
 
+    // ── CHARGED MASS ──
+    updateChargedMass();
+
     // ── UPDATE HAZARDS ──
     updateHazards();
 
@@ -1054,6 +1057,7 @@ function render() {
     let drawList=world.filter(t=>Math.abs(t.x-player.visualX)<RENDER_DIST);
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     shards.forEach(s=>drawList.push({type:'shard',x:s.x,y:s.y,shard:s}));
+    chargedMass.forEach(m=>drawList.push({type:'mass',x:m.x,y:m.y,mass:m}));
     actors.forEach(a=>drawList.push({type:'npc',x:a.x,y:a.y,actor:a}));
     groundItems.forEach(g=>drawList.push({type:'groundItem',x:g.x,y:g.y,item:g}));
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
@@ -1228,6 +1232,9 @@ function render() {
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.restore();
             }
+        }
+        else if (obj.type==='mass') {
+            drawChargedMass(obj.mass, px, py);
         }
         else if (obj.type==='shard') {
             ctx.fillStyle=obj.shard.color;

@@ -26,6 +26,8 @@ function makeCtx() {
         applyPersonality: () => ({ hp: 20, defense: 10, attack: 10, speed: 10, specialAttack: 10, accuracy: 10, will: 20, resonance: 0 }),
         assignRole: () => 'brawler',
         player: { x: 2, y: 1, targetX: 2, targetY: 1, visualX: 2, visualY: 1 },
+        crystal: { x: 0, y: 2 }, shardCount: 0, floatingTexts: [], canvas: { width: 800, height: 600 },
+        frame: 0, saveShards() {},
         localStorage: {
             getItem(k) { return k in store ? store[k] : null; },
             setItem(k, v) { store[k] = String(v); },
@@ -34,7 +36,8 @@ function makeCtx() {
     };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
-    for (const f of ['js/rng.js', 'js/world.js', 'js/save.js']) {
+    // save.js serialises charged mass, so mass.js has to be in scope too.
+    for (const f of ['js/rng.js', 'js/mass.js', 'js/world.js', 'js/save.js']) {
         vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
     }
     return { sandbox, ctx, run: s => vm.runInContext(s, ctx) };

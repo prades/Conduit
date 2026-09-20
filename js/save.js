@@ -180,6 +180,7 @@ function saveSession() {
             lastGenX,
             explored: [...exploredZones],
             nests, panels, nodes, npcs,
+            mass: serialiseChargedMass(),
         }));
     } catch (e) {}
 }
@@ -231,6 +232,8 @@ function applySession(sess) {
         t.captured      = !!n.c;
         t.predatorOwned = !!n.p;
     });
+    restoreChargedMass(sess.mass);
+
     // Force the 60-frame world caches to rebuild against the restored tiles.
     _cacheAge = -999;
 }

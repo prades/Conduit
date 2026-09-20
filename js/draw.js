@@ -46,6 +46,28 @@ function drawRadialMenu() {
         return;
     }
 
+    // ── OWN FOLLOWER — duty assignment ──
+    // Fighters hold the line; workers run the charged-mass chain. Only ELECTRIC
+    // and CORE can work, so the button says so rather than silently refusing.
+    if (commandFollowerTarget && !commandFollowerTarget.dead) {
+        const f = commandFollowerTarget;
+        const eligible = typeof canWorkMass === "function" && canWorkMass(f);
+        const isWorker = f.duty === "worker";
+        const fUp = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
+        drawRadialButton(commandX, commandY-RADIAL_RADIUS,
+                         !eligible ? "FIGHTER" : (isWorker ? "TO LINE" : "TO WORK"), fUp);
+        if (fUp && eligible) selectedRadialAction = "toggle_duty";
+        const fRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
+        drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", fRight);
+        if (fRight) selectedRadialAction = "info";
+        ctx.fillStyle = isWorker ? "#0ca" : "#0f8";
+        ctx.font = "10px monospace"; ctx.textAlign = "center";
+        ctx.fillText((f.element||"?").toUpperCase() + " \u00b7 " + (isWorker ? "WORKER" : "FIGHTER"),
+                     commandX, commandY + RADIAL_RADIUS + 18);
+        ctx.restore();
+        return;
+    }
+
     const isPylonTarget   = commandTarget&&commandTarget.pillar&&!commandTarget.destroyed&&commandTarget.health>0;
     const isLiveNest      = commandNestTarget&&commandNestTarget.nestHealth>0;
     const nestAlreadyLinked = commandNestTarget&&commandNestTarget.connectedPylon&&!commandNestTarget.connectedPylon.destroyed;

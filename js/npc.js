@@ -11,6 +11,12 @@ function updateRTSNPC(actor) {
         if (actor.attackAnim >= Math.PI) { actor.attackAnim = 0; actor.state = "idle"; }
     }
 
+    // ── WORK CREW ──
+    // A follower on worker duty runs the charged-mass chain instead of fighting.
+    // An explicit order from the player still wins — followerWorkTick defers
+    // when actor.job is set.
+    if (actor.isFollower && actor.duty === "worker" && followerWorkTick(actor)) return;
+
     if (actor.combatTrait) { const t=COMBAT_TRAITS[actor.combatTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
     if (actor.naturalTrait){ const t=NATURAL_TRAITS[actor.naturalTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
 

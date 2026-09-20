@@ -268,3 +268,40 @@ function renderPylonIndex() {
         net.innerHTML = html;
     }
 }
+
+// ── GAME INDEX — FIGHTERS & WORKERS ──────────────────────
+// Documents the charged-mass chain on the followers page, generated from the
+// constants in js/mass.js so the text cannot drift from the behaviour.
+function renderWorkCrewIndex() {
+    if (typeof document === 'undefined') return;
+    const host = document.getElementById('cmWorkCrew');
+    if (!host) return;
+    const secs = (typeof MASS_NEUTRALISE_FRAMES === 'number')
+        ? (MASS_NEUTRALISE_FRAMES / 60).toFixed(1) : '2';
+    const pct  = (typeof MASS_VALUE_SCALE === 'number')
+        ? Math.round(MASS_VALUE_SCALE * 100) : 35;
+    host.innerHTML =
+        '<div class="cm-intro-box">Every predator you kill leaves a lump of ' +
+        '<strong>charged mass</strong>. It is not a pickup — walking over it does nothing. ' +
+        'Two jobs have to be done before it is worth anything, and only followers on ' +
+        '<strong>worker</strong> duty will do them.</div>' +
+
+        '<div class="cm-build-row"><span class="cm-build-label">Assign</span>' +
+        'Long-press one of your own followers \u2192 radial UP \u2192 TO WORK / TO LINE</div>' +
+        '<div class="cm-build-row"><span class="cm-build-label">Fighters</span>' +
+        'Behave exactly as before. Every follower starts as one.</div>' +
+        '<div class="cm-build-row"><span class="cm-build-label">Workers</span>' +
+        'Ignore combat and run the chain. Only <span class="cm-stat">ELECTRIC</span> and ' +
+        '<span class="cm-stat">CORE</span> can — nothing else has a job to do.</div>' +
+
+        '<div class="cm-ability"><strong>1. Neutralise \u2014 ELECTRIC:</strong> stands on a charged lump and ' +
+        'bleeds the charge off over about <span class="cm-stat">' + secs + 's</span>. Until then it just crackles.</div>' +
+        '<div class="cm-ability"><strong>2. Haul \u2014 CORE:</strong> picks up an inert lump and carries it back to ' +
+        'the Crystal, where it pays out as shards. Kill the carrier and the lump drops where it fell.</div>' +
+
+        '<div class="cm-build-row"><span class="cm-build-label">Worth</span>' +
+        'About <span class="cm-stat">' + pct + '%</span> of what that predator used to be worth. ' +
+        'The trip is the price of collecting it.</div>' +
+        '<div class="cm-tip"><strong>The trade:</strong> every follower on the work crew is one that is not ' +
+        'holding the line. Field none and the battlefield fills with charge you cannot spend.</div>';
+}

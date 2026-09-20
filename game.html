@@ -661,6 +661,10 @@
     <!-- ── FOLLOWERS ── -->
     <div id="cmFollowers" class="cm-section">
 
+      <div class="ctrl-title">FIGHTERS &amp; WORKERS</div>
+      <!-- Built at runtime from js/mass.js so the numbers cannot drift. -->
+      <div id="cmWorkCrew"></div>
+
       <div class="cm-intro-box">
         <strong>Recruitment:</strong> When an enemy reaches your Crystal it converts into a follower — randomly assigned a personality, element, role, combat trait, natural trait, and perk. Followers carry their element into battle.
       </div>
@@ -1246,6 +1250,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 <script src="js/combat.js"></script>
 <script src="js/species.js"></script>
 <script src="js/predator_randomizer.js"></script>
+<script src="js/mass.js"></script>
 <script src="js/save.js"></script>
 <script src="js/camp.js"></script>
 <script src="js/traps.js"></script>
