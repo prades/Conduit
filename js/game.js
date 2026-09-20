@@ -2968,6 +2968,7 @@ function render() {
     // rather than up with the interface.
     drawTraps();
     drawHoldLine();
+    drawTutorialHighlight();
     drawFloatingTexts();
     // ── PLAYER STUN FLASH — red vignette while stunned ──
     if (player.stunned > 0) {

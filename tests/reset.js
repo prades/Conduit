@@ -138,30 +138,36 @@ function reloadOn(env) {
 
 group('resetting after a game has been played');
 
-check('THE REPORTED CASE: a reset map has recruits on it', () => {
-    const { env } = playedSession();
-    const loaded = reloadOn(env);
-    ok(recruits(loaded).length <= 1, 'fixture: the reload should be down to one survivor');
-    loaded.run('restartGame()');
-    // restartGame only lays down the camp and the first stretch; walk out the
-    // rest the way the player would.
-    for (let i = loaded.sandbox.lastGenX + 1; i < 40; i++) loaded.run(`generateSegment(${i})`);
-    const after = recruits(loaded);
-    ok(after.length > 3, `a fresh game came up with ${after.length} recruits on the map`);
-});
-
-check('a reset map is as populated as a first-ever load of the same world', () => {
-    const loaded = reloadOn(playedSession().env);
-    loaded.run('restartGame()');
-    const after = recruits(loaded).length;
-    // Rebuild the exact world the reset just minted, from scratch, with no
-    // history behind it. That is the density the player should be getting.
+// How many recruits a never-played world built from `seed` holds. A reset mints
+// its own random seed, and some seeds honestly carry only two or three recruits
+// across the three active day zones, so no fixed count can be asserted — the
+// comparison has to be against the same world with no history behind it.
+function virginCount(seed) {
     const virgin = makeEnv();
-    virgin.run(`worldSeed = ${loaded.run('worldSeed')}`);
+    virgin.run(`worldSeed = ${seed}`);
     for (let i = -14; i < 0; i++) virgin.run(`generateSegment(${i})`);
     for (let i = 0; i < 80; i++) virgin.run(`generateSegment(${i})`);
-    eq(after, recruits(virgin).length,
-       'a reset map should hold every recruit a fresh load of that world would');
+    return recruits(virgin).length;
+}
+
+check('THE REPORTED CASE: a reset map has recruits on it', () => {
+    // Several resets, because one map's recruit count is a property of its
+    // random seed. What must hold every time is that the reset map carries
+    // exactly what a first-ever load of that same world would.
+    let total = 0;
+    for (let n = 0; n < 5; n++) {
+        const loaded = reloadOn(playedSession().env);
+        ok(recruits(loaded).length <= 1, 'fixture: the reload should be down to one survivor');
+        loaded.run('restartGame()');
+        const after = recruits(loaded).length;
+        const virgin = virginCount(loaded.run('worldSeed'));
+        eq(after, virgin, `reset map holds ${after} recruits where a fresh load of that world holds ${virgin}`);
+        total += after;
+    }
+    // With the bug every reset came up at 0 while a fresh load gave ~10, so the
+    // equality above is the real check; this guards the degenerate case where
+    // both sides are empty for some other reason.
+    ok(total > 10, `five resets produced ${total} recruits between them`);
 });
 
 check('the previous game\'s survivors no longer filter the new one', () => {
@@ -186,8 +192,8 @@ check('resetting twice in a row still populates the map', () => {
     const loaded = reloadOn(env);
     loaded.run('restartGame()');
     loaded.run('restartGame()');
-    for (let i = loaded.sandbox.lastGenX + 1; i < 40; i++) loaded.run(`generateSegment(${i})`);
-    ok(recruits(loaded).length > 3, 'the second reset came up empty');
+    eq(recruits(loaded).length, virginCount(loaded.run('worldSeed')),
+       'the second reset did not match a fresh load of its own world');
 });
 
 group('the world a reset builds');
