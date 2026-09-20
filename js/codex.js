@@ -168,3 +168,39 @@ function codexElementRows(elementId, maxChars) {
     }
     return rows;
 }
+
+// ── INLINE PYLON EXPLANATION ─────────────────────────────
+// The info panel used to report ELEMENT: FIRE and stop there, which told the
+// player nothing about what fire actually does. These rows go straight into
+// that panel so the answer is where the question is asked, rather than behind
+// a button to a separate reference.
+function codexPylonRows(elementId, maxChars, currentTier) {
+    const el    = ELEMENTS.find(e => e.id === elementId);
+    const entry = CODEX_ELEMENTS[elementId];
+    if (!el || !entry) return [];
+    const w = maxChars || 48;
+    const rows = [null, { h: el.label.toUpperCase() + ' NETWORK — ' + entry.role, c: el.color }];
+    codexWrap(entry.summary, w).forEach(l => rows.push({ t: l, c: '#aad' }));
+    for (const tier of [1, 2, 3]) {
+        const active = currentTier === tier;
+        rows.push({
+            h: 'TIER ' + ['', 'I', 'II', 'III'][tier] + ' (' + CODEX_TIER_SIZES[tier] + '+)' +
+               (active ? '   \u25c0 ACTIVE' : ''),
+            c: active ? el.color : '#5b6b62',
+        });
+        codexWrap(entry.tiers[tier], w).forEach(l => rows.push({ t: l, c: active ? '#cfe3dd' : '#6f7d76' }));
+    }
+    return rows;
+}
+
+// Shown for a pylon with no element yet, so the panel still answers "what is
+// this for" instead of listing six stats and stopping.
+function codexDormantPylonRows(maxChars) {
+    const w = maxChars || 48;
+    const rows = [null, { h: 'NOT INFUSED', c: '#9a8' }];
+    codexWrap('Dormant. UPGRADE it to infuse an element — a follower is spent to power it — then pick ATTACK or WAVE mode.', w)
+        .forEach(l => rows.push({ t: l, c: '#9ab' }));
+    codexWrap('PYLON CODEX below compares what every element does.', w)
+        .forEach(l => rows.push({ t: l, c: '#6a7a72' }));
+    return rows;
+}

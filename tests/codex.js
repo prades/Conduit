@@ -222,6 +222,62 @@ check('the rules page states the modes and the tier table', () => {
     for (const word of ['ATTACK MODE', 'WAVE MODE', 'UPGRADE']) ok(text.includes(word), 'missing ' + word);
     ok(rows.some(r => Array.isArray(r) && /TIER I\b/.test(r[0])), 'tier table missing');
 });
+group('inline pylon explanation');
+check('THE REPORTED CASE: a pylon page explains its element, not just names it', () => {
+    for (const el of ELEMENTS) {
+        const rows = run('codexPylonRows')(el.id, 48, 0);
+        ok(rows.length > 6, el.id + ' produced almost nothing');
+        const text = rows.filter(r => r && (r.t || r.h)).map(r => r.t || r.h).join(' ');
+        ok(text.includes(el.label.toUpperCase()), el.id + ' should name the element');
+        ok(text.includes(CODEX[el.id].role), el.id + ' should state its role');
+        // the summary has to actually be in there, not just a heading
+        const firstWords = CODEX[el.id].summary.split(' ').slice(0, 3).join(' ');
+        ok(text.includes(firstWords), el.id + ' is missing its summary');
+    }
+});
+check('all three tiers and their thresholds are listed', () => {
+    const rows = run('codexPylonRows')('fire', 48, 0);
+    const heads = rows.filter(r => r && r.h).map(r => r.h).join(' | ');
+    for (const [tier, size] of [['I', 2], ['II', 4], ['III', 6]]) {
+        ok(heads.includes('TIER ' + tier + ' (' + size + '+)'), 'missing TIER ' + tier);
+    }
+});
+check('the live tier is marked, and only that one', () => {
+    const rows = run('codexPylonRows')('fire', 48, 2);
+    const marked = rows.filter(r => r && r.h && /ACTIVE/.test(r.h));
+    eq(marked.length, 1, 'exactly one tier should be marked');
+    ok(/TIER II/.test(marked[0].h), 'the wrong tier is marked: ' + marked[0].h);
+});
+check('with no network, no tier is marked', () => {
+    const rows = run('codexPylonRows')('fire', 48, 0);
+    eq(rows.filter(r => r && r.h && /ACTIVE/.test(r.h)).length, 0, 'nothing should be active');
+});
+check('an unknown element yields no rows rather than throwing', () => {
+    eq(run('codexPylonRows')('not-an-element', 48, 0).length, 0, 'should be empty');
+});
+check('a dormant pylon is told what to do with it', () => {
+    const rows = run('codexDormantPylonRows')(48);
+    const text = rows.filter(r => r && (r.t || r.h)).map(r => r.t || r.h).join(' ');
+    for (const word of ['NOT INFUSED', 'UPGRADE', 'ATTACK', 'WAVE']) {
+        ok(text.includes(word), 'dormant text missing ' + word);
+    }
+});
+check('the info panel still fits a small screen with the explanation added', () => {
+    // Panel height is 94 + rows*20; the pylon readout is six rows before this.
+    const MAX_ROWS = 25;
+    for (const el of ELEMENTS) {
+        const total = 6 + run('codexPylonRows')(el.id, 48, 2).length;
+        ok(total <= MAX_ROWS, `${el.id}: ${total} rows (${94 + total * 20}px), max ${MAX_ROWS}`);
+    }
+    const dormant = 6 + run('codexDormantPylonRows')(48).length;
+    ok(dormant <= MAX_ROWS, 'dormant: ' + dormant + ' rows');
+});
+check('the info panel actually calls into the codex', () => {
+    const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+    ok(/codexPylonRows\(el\.id/.test(ui), 'the pylon readout does not pull in the explanation');
+    ok(/codexDormantPylonRows\(/.test(ui), 'a dormant pylon gets no explanation');
+});
+
 check('an unknown element degrades instead of throwing', () => {
     const rows = run('codexElementRows')('not-an-element', 40);
     ok(rows.length >= 1 && rows[0].t, 'should return a placeholder row');

@@ -444,7 +444,7 @@ function _buildInfoRows(targetTile) {
         const teamCol = targetTile.pillarTeam==="green"?"#0f8":"#f44";
         const _PSTYLE_NAMES={sentinel:"Sentinel",spire:"Spire",monolith:"Monolith",antenna:"Antenna",shrine:"Shrine",conduit:"Conduit"};
         const _styleName=(_PSTYLE_NAMES[targetTile.pylonStyle]||"Unknown").toUpperCase();
-        return [
+        const rows = [
             ["DESIGN",  _styleName,                        "#88f"],
             ["TEAM",    team,                              teamCol],
             ["ELEMENT", el ? el.label.toUpperCase():"NONE", el?el.color:"#555"],
@@ -452,6 +452,15 @@ function _buildInfoRows(targetTile) {
             ["HP",      Math.ceil(targetTile.health)+" / "+targetTile.maxHealth, "#0f8"],
             ["STATUS",  targetTile.constructing?"BUILDING":targetTile.reconstructing?"REPAIRING":"ACTIVE", "#aad"],
         ];
+        // What this pylon's element actually does, inline. Listing ELEMENT: FIRE
+        // and leaving it there answered nothing.
+        if (el && typeof codexPylonRows === "function") {
+            const tier = (typeof networkStrength !== "undefined" && networkStrength[el.id]) || 0;
+            rows.push(...codexPylonRows(el.id, _IP_TEXT_CHARS, tier));
+        } else if (typeof codexDormantPylonRows === "function") {
+            rows.push(...codexDormantPylonRows(_IP_TEXT_CHARS));
+        }
+        return rows;
     }
     return [["STATUS","No unit or pylon nearby","#555"]];
 }
