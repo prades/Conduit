@@ -381,16 +381,6 @@ class Predator {
                     crystal.health=Math.max(0, crystal.health-_crystalHit);
                     shake=6;
                     this.attackCooldown=60;
-                    // Nova Burst — explode when struck for 20%+ max HP in one hit
-                    if (activeCrystalBuild==="nova_burst" && _crystalHit >= crystal.maxHealth*0.2) {
-                        actors.forEach(a => {
-                            if (a.team==="red" || (a instanceof Predator && a.team!=="green")) {
-                                const dx=a.x-crystal.x, dy=a.y-crystal.y;
-                                if (Math.sqrt(dx*dx+dy*dy) <= 6) applyDamage(a, 25, null, null);
-                            }
-                        });
-                        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-60,text:"◈ NOVA BURST!",color:"#c84fff",life:80,vy:-0.3});
-                    }
                 }
                 // Face the Crystal while chewing on it, same as any other target.
                 faceToward(this, crystal.x, crystal.y, 0.3);

@@ -285,6 +285,9 @@ let playerAttackMode = false;
 let playerAmmo       = 0;
 const PLAYER_AMMO_MAX   = 60;
 const PLAYER_AMMO_START = 12;
+// Rounds a hacked wall panel yields. The shop used to sell ammo; with it gone
+// this is the only source, so it has to be enough to keep the weapon usable.
+const PANEL_AMMO_REWARD = 8;
 let _ATKCHIP = { x: 0, y: 0, w: 0, h: 0 };   // on-screen ammo chip, tap to disarm
 
 // ── COMMAND / RADIAL STATE ────────────────────────────────
@@ -333,7 +336,6 @@ let crystalMenuOpen  = false;
 let crystalMenuTab   = "clones";   // "clones"|"builds"|"modulation"|"status"|"info"
 let crystalCloneSort = "species";  // "species"|"combat"|"defense"|"hp"|"specials"
 let crystalModSlider = 0;          // 0.0 = all elements  →  1.0 = mono
-let activeCrystalBuild = null;     // null | "ghostphage"
 
 // ── SETTINGS PANEL (canvas-drawn) ─────────────────────────
 let settingsPanelOpen    = false;

@@ -153,14 +153,12 @@ function showWaveClear() {
     const _clearedZone = alertSource ? getZoneIndex(Math.floor(alertSource.x)) : 0;
     document.getElementById("ovr-title").textContent="ZONE " + _clearedZone + " CLEARED";
     document.getElementById("ovr-title").style.color="#0f8";
-    document.getElementById("ovr-sub").textContent="Opening Supply Cache…";
+    document.getElementById("ovr-sub").textContent="The tunnel goes deeper.";
     document.getElementById("ovr-shards").textContent=shardCount;
     document.getElementById("ovr-conv").textContent=dayStats.redConverted;
     document.getElementById("ovr-waves").textContent=gameState.highestZoneCleared;
     document.getElementById("ovr-btn").textContent="NEXT WAVE";
     document.getElementById("ovr-btn").onclick=nextWave;
-    buildShopGrid();
-    if (typeof switchShopTab === "function") switchShopTab("Supply");
     overlay.classList.add("active");
 }
 
@@ -196,85 +194,12 @@ function openMidGameShop() {
     document.getElementById("ovr-waves").textContent = gameState.highestZoneCleared;
     document.getElementById("ovr-btn").textContent = "CLOSE";
     document.getElementById("ovr-btn").onclick = closeMidGameShop;
-    buildShopGrid();
-    if (typeof switchShopTab === "function") switchShopTab("Supply");
     overlay.classList.add("active");
 }
 
 function closeMidGameShop() {
     document.getElementById("overlay").classList.remove("active");
     gameState.running = true;
-}
-
-function buildShopGrid() {
-    _fillShopPane("shopGridSupply",    SHOP_ITEMS,           false, false);
-    _fillShopPane("shopGridPylons",    PYLON_SHOP_ITEMS,     false, false);
-    _fillShopPane("shopGridArmaments", ARMAMENT_ITEMS,       true,  false);
-    _fillShopPane("shopGridBuilds",    CRYSTAL_BUILD_ITEMS,  false, true);
-}
-
-function _fillShopPane(paneId, items, checkTerritory, isBuildPane) {
-    const grid = document.getElementById(paneId);
-    if (!grid) return;
-    grid.innerHTML = "";
-    const zones = getControlledZones();
-    items.forEach(item => {
-        if (item.element && unlockedElements.has(item.element)) return;
-        const isPermBought = item.oneTimeGame && permUpgrades.has(item.id);
-        // A repeatable item never latches as bought — ammo can be topped up
-        // as many times as the player can afford.
-        const isWaveBought = !item.oneTimeGame && !item.repeatable && boughtItems.has(item.id);
-        const isBought = isPermBought || isWaveBought;
-        const isLocked = !!(item.reqZones && zones < item.reqZones);
-        const isActiveBuild = isBuildPane && activeCrystalBuild === item.id;
-        const tierClass = item.tier ? " tier-" + item.tier : " tier-I";
-        const tierBadge = item.tier ? `<span class="item-tier-badge tier-badge-${item.tier}">T${item.tier}</span>` : "";
-        const div = document.createElement("div");
-        let cls = "shop-item" + tierClass;
-        if (isActiveBuild) cls += " build-active";
-        else if (isBought) cls += " bought";
-        if (isLocked) cls += " locked";
-        div.className = cls;
-        const activeBadge = isActiveBuild ? `<div class="item-active-badge">◈ ACTIVE</div>` : "";
-        div.innerHTML =
-            `<div class="item-header">
-                <span class="item-label">${item.label}</span>
-                ${tierBadge}
-            </div>
-            <div class="item-cost"><span class="item-cost-shard">◈</span> ${item.cost} shards</div>` +
-            (item.desc ? `<div class="item-desc">${item.desc}</div>` : "") +
-            (item.reqZones ? `<div class="item-req">⚠ Requires ${item.reqZones} zones</div>` : "") +
-            activeBadge;
-        div.onclick = () => {
-            if (shardCount < item.cost || isBought || isLocked || isActiveBuild) return;
-            shardCount -= item.cost;
-            saveShards();
-            item.apply();
-            if (item.oneTimeGame) { permUpgrades.add(item.id); savePermUpgrades(); }
-            else if (!item.repeatable) boughtItems.add(item.id);
-            if (!item.repeatable) div.classList.add("bought");
-            document.getElementById("ovr-shards").textContent = shardCount;
-            shardUI.textContent = "Shards: " + shardCount;
-            _lastShardCount = shardCount; // keep HUD change-detection in sync
-            if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo");
-            if (_zoneEl) {
-                const _pz = getZoneIndex(Math.floor(player.x));
-                _zoneEl.textContent = _pz === 0 ? "Zone: Home" : "Zone: " + _pz;
-                _lastZoneIndex = _pz; // keep HUD change-detection in sync
-            }
-            const _dna = getDNA();
-            const dnaEntries = Object.entries(_dna).filter(([k,v]) => v > 0);
-            const dnaEl = document.getElementById("dnaHud");
-            if (dnaEl) {
-                dnaEl.textContent = dnaEntries.length === 0
-                    ? "DNA: none"
-                    : "DNA: " + dnaEntries.map(([k,v]) => k.replace("_"," ") + "x" + v).join(" | ");
-            }
-            // For build pane, refresh to update ACTIVE badges
-            if (isBuildPane) _fillShopPane(paneId, items, checkTerritory, true);
-        };
-        grid.appendChild(div);
-    });
 }
 
 function spawnFollowerFromSave(entry) {
@@ -332,7 +257,6 @@ function resetTransientState() {
 
 function nextWave() {
     gameState.nightNumber++;
-    boughtItems.clear();
     dayStats.redSpawned=0; dayStats.redConverted=0;
 
     resetTransientState();
@@ -490,7 +414,6 @@ function restartGame() {
     _genPylons=[]; _genLinks=[];
     ELEMENTS.forEach(e=>{ networkStrength[e.id]=0; networkIntegrity[e.id]=0; _prevNetworkTiers[e.id]=0; });
     activeDayZones=3;exploredZones=new Set();
-    boughtItems.clear();
     clearCampBuildings();
     traps=[];
     crystal={ x:0,y:2,health:300,maxHealth:300,radius:0.8 };

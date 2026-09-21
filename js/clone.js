@@ -499,7 +499,6 @@ let _crystalSliderDrag = false;             // true while dragging mod slider
 // Tab definitions
 const CTABS = [
     { id:"clones",     label:"CLONE BAY",  color:"#00ccaa" },
-    { id:"builds",     label:"BUILDS",     color:"#bb55ff" },
     { id:"modulation", label:"MODULATION", color:"#aaddff" },
     { id:"status",     label:"STATUS",     color:"#4499ff" },
     { id:"info",       label:"INFO",       color:"#ffcc44" },
@@ -697,7 +696,6 @@ function drawCrystalPanel() {
 
     switch(crystalMenuTab) {
         case "clones":     _drawClonesTab(PX, contentY, PW, contentH); break;
-        case "builds":     _drawBuildsTab(PX, contentY, PW, contentH); break;
         case "modulation": _drawModTab(PX, contentY, PW, contentH, scheme, cycleColor); break;
         case "status":     _drawStatusTab(PX, contentY, PW, contentH); break;
         case "info":       _drawInfoTab(PX, contentY, PW, contentH); break;
@@ -822,27 +820,6 @@ function _drawClonesTab(PX, PY, PW, PH) {
 }
 
 // ── Tab: Builds ───────────────────────────────────────────
-function _drawBuildsTab(PX, PY, PW, PH) {
-    ctx.fillStyle="#cc88ff"; ctx.font="bold 12px monospace"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
-    ctx.fillText("CRYSTAL UPGRADES", PX+PW/2, PY+22);
-    const builds=[{id:"ghostphage",label:"◈ Ghostphage",desc:"Become a ghost on last life",cost:80,color:"#aaffee"}];
-    builds.forEach((b, i) => {
-        const act = activeCrystalBuild===b.id;
-        const ry=PY+36+i*44;
-        ctx.fillStyle=act?`${b.color}14`:"rgba(0,0,0,0)";
-        ctx.fillRect(PX+10,ry,PW-20,38);
-        ctx.strokeStyle=act?b.color:"#252538"; ctx.lineWidth=1; ctx.strokeRect(PX+10,ry,PW-20,38);
-        ctx.fillStyle=b.color; ctx.font="bold 11px monospace"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
-        ctx.fillText(b.label, PX+18, ry+15);
-        ctx.fillStyle="#4a5060"; ctx.font="9px monospace";
-        ctx.fillText(b.desc, PX+18, ry+28);
-        ctx.fillStyle=act?"#0f8":"#ffee44"; ctx.textAlign="right";
-        ctx.fillText(act?"● ACTIVE":`${b.cost} shards`, PX+PW-14, ry+22);
-        b._bx=PX+10; b._by=ry; b._bw=PW-20; b._bh=38;
-    });
-    window._buildsTabBuilds = builds;
-}
-
 // ── Tab: Modulation ───────────────────────────────────────
 function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
     const splitX = PX + Math.floor(PW*0.62);  // divides crystal area from slider
@@ -941,7 +918,6 @@ function _drawStatusTab(PX, PY, PW, PH) {
         ["Snipers",   snipers,  "#88aaff"],
         ["Campers",   campers,  "#88ff88"],
         ["Ghosts",    ghosts,   "#aaffee"],
-        ["Crystal Build", activeCrystalBuild||"none", "#bb55ff"],
         ["Wave",      gameState.nightNumber, "#aaaaaa"],
         ["Zone Depth",activeDayZones-1, "#ffcc44"],
     ];
@@ -1094,15 +1070,6 @@ function handleCrystalPanelInput(ex, ey, isDown) {
             if (!opt.ready||!opt._bx) continue;
             if (ex>=opt._bx&&ex<=opt._bx+opt._bw&&ey>=opt._by&&ey<=opt._by+opt._bh) {
                 executeClone(opt); crystalMenuOpen=false; return true;
-            }
-        }
-    }
-
-    if (crystalMenuTab==="builds") {
-        for (const b2 of (window._buildsTabBuilds||[])) {
-            if (!b2._bx) continue;
-            if (ex>=b2._bx&&ex<=b2._bx+b2._bw&&ey>=b2._by&&ey<=b2._by+b2._bh) {
-                activeCrystalBuild=(activeCrystalBuild===b2.id)?null:b2.id; return true;
             }
         }
     }

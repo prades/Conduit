@@ -17,6 +17,7 @@ const SUITES = [
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],
     ['no player stun',         'stun.js'],
+    ['progression',            'progression.js'],
     ['generator pylon',        'generator.js'],
     ['pylon look',             'pylonlook.js'],
     ['infestation',            'infest.js'],

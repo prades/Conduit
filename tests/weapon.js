@@ -224,15 +224,34 @@ check('arming fires at the enemy that was long-pressed', () => {
     const body = CMD.slice(at, at + 400);
     ok(/firePlayerShot\(commandEnemyTarget\)/.test(body), 'arming should also take the shot');
 });
-check('the shop sells ammo, repeatably', () => {
-    ok(/id:"ammo_resupply"/.test(SHOP), 'no ammo item');
-    const at = SHOP.indexOf('id:"ammo_resupply"');
-    ok(/repeatable:true/.test(SHOP.slice(at, at + 260)), 'ammo should be buyable more than once');
-    ok(/PLAYER_AMMO_MAX, playerAmmo \+ 10/.test(SHOP), 'ammo should be capped');
+check('THE SHOP IS GONE: ammo comes from hacking a panel', () => {
+    // The shop sold ammo; with it removed that was the only source, which
+    // would have left the weapon permanently dry after the opening magazine.
+    const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
+    const CFG  = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
+    ok(!/id:"ammo_resupply"/.test(SHOP), 'the shop ammo item is back');
+    ok(!/SHOP_ITEMS/.test(SHOP), 'the shop item list is back');
+    const reward = CFG.match(/const PANEL_AMMO_REWARD = (\d+)/);
+    ok(reward, 'no panel ammo reward defined');
+    ok(Number(reward[1]) > 0, 'the panel reward should actually give rounds');
+    // Paid out where the panel pays shards, and capped.
+    const at = GAME.indexOf('shardCount += t.shardReward;');
+    ok(at > -1, 'could not find the panel payout');
+    const block = GAME.slice(at, at + 700);
+    ok(/PANEL_AMMO_REWARD/.test(block), 'a hacked panel does not yield ammo');
+    ok(/PLAYER_AMMO_MAX - playerAmmo/.test(block), 'the ammo gain is not capped');
+    ok(/saveAmmo\(\)/.test(block), 'the gain is not persisted');
 });
-check('a repeatable item never latches as bought', () => {
-    ok(/!item\.repeatable && boughtItems\.has\(item\.id\)/.test(WAVES), 'repeatable items still latch');
-    ok(/else if \(!item\.repeatable\) boughtItems\.add/.test(WAVES), 'repeatable items get recorded as bought');
+
+check('a decoy panel pays nothing — no shards, no ammo', () => {
+    // The decoy trips the alarm instead of paying out, and that has to stay
+    // true for ammo as well or the alarm becomes a free resupply.
+    const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
+    const at = GAME.indexOf('if (t.isDecoy) {');
+    ok(at > -1, 'could not find the decoy branch');
+    const decoy = GAME.slice(at, GAME.indexOf('} else {', at));
+    ok(!/PANEL_AMMO_REWARD|playerAmmo/.test(decoy), 'a decoy hands out ammo');
+    ok(!/shardCount/.test(decoy), 'a decoy hands out shards');
 });
 check('a new game resets the magazine and stows the weapon', () => {
     ok(/clearAmmo\(\)/.test(WAVES), 'restartGame does not clear ammo');
