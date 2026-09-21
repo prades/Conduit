@@ -435,46 +435,76 @@ function restoreCocoons(data) {
 // ── Drawing ───────────────────────────────────────────────
 // Organic blotches on the floor in the species' own colour, so which thing is
 // breeding there is readable at a glance.
-// One dome, drawn for both the cocoons and the nests an infestation grows.
-// Ribbed from base to crown the way a chrysalis is, with nothing painted flat
-// on the floor underneath it — a floor wash was what read as a carpet.
-function _drawDome(sx, sy, rx, rh, domeH, colour, breathe, ribs) {
-    ctx.globalAlpha = 0.52 + breathe * 0.06;
-    ctx.fillStyle = "#1a1220";
-    ctx.beginPath();
-    ctx.ellipse(sx, sy, rx, domeH, 0, Math.PI, Math.PI * 2);   // upper half only
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(sx, sy, rx, rh * 0.9, 0, 0, Math.PI);          // the base it sits on
-    ctx.fill();
-    // Sheen down one flank, so it reads as spun silk rather than a hole
-    ctx.globalAlpha = 0.16 + breathe * 0.05;
-    ctx.fillStyle = colour;
-    ctx.beginPath();
-    ctx.ellipse(sx - rx * 0.34, sy - domeH * 0.42, rx * 0.30, domeH * 0.40, -0.25, 0, Math.PI * 2);
-    ctx.fill();
-    // Ribs: arcs from one side of the base, over the crown, to the other
-    ctx.globalAlpha = 0.26 + breathe * 0.08;
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = 1;
-    for (let i = 1; i <= ribs; i++) {
-        const w = rx * Math.sin((i / (ribs + 1)) * Math.PI);
+// One stepped pyramid, drawn for both the cocoons and the nests an
+// infestation grows. A ziggurat of isometric tiers rather than a dome: the
+// footprint is a diamond in this projection, so stacked diamonds sit on it
+// squarely where a dome only ever approximated it.
+//
+// Nothing is painted flat on the ground underneath — a floor wash was what
+// read as a carpet through three earlier passes.
+function _drawZiggurat(sx, sy, rw, rh, height, colour, breathe, tiers) {
+    const n = Math.max(2, tiers | 0);
+    const tierH = height / n;
+    // Dark structural tones, with the species colour carried on the top faces
+    // and the tier edges — that is what says which thing built it.
+    const FACE_L = "#1a1220";
+    const FACE_R = "#100a16";
+    const FACE_T = "#241a2e";
+
+    for (let i = 0; i < n; i++) {
+        const scale = 1 - i / n;
+        const w = rw * scale, h = rh * scale;
+        const topY  = sy - (i + 1) * tierH;
+        const baseY = topY + tierH;
+
+        // Left face
+        ctx.globalAlpha = 0.88;
+        ctx.fillStyle = FACE_L;
         ctx.beginPath();
-        ctx.ellipse(sx, sy, w, domeH, 0, Math.PI, Math.PI * 2);
+        ctx.moveTo(sx - w, topY);
+        ctx.lineTo(sx,     topY + h);
+        ctx.lineTo(sx,     baseY + h);
+        ctx.lineTo(sx - w, baseY);
+        ctx.closePath(); ctx.fill();
+
+        // Right face
+        ctx.fillStyle = FACE_R;
+        ctx.beginPath();
+        ctx.moveTo(sx,     topY + h);
+        ctx.lineTo(sx + w, topY);
+        ctx.lineTo(sx + w, baseY);
+        ctx.lineTo(sx,     baseY + h);
+        ctx.closePath(); ctx.fill();
+
+        // Top face
+        ctx.fillStyle = FACE_T;
+        ctx.beginPath();
+        ctx.moveTo(sx,     topY - h);
+        ctx.lineTo(sx + w, topY);
+        ctx.lineTo(sx,     topY + h);
+        ctx.lineTo(sx - w, topY);
+        ctx.closePath(); ctx.fill();
+
+        // Species wash over the top face, strongest at the crown
+        ctx.globalAlpha = 0.10 + (i / n) * 0.12 + breathe * 0.04;
+        ctx.fillStyle = colour;
+        ctx.fill();
+
+        // Tier edge
+        ctx.globalAlpha = 0.28 + breathe * 0.10;
+        ctx.strokeStyle = colour;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // The step's front lip, so the tiers read as separate courses
+        ctx.globalAlpha = 0.18 + breathe * 0.06;
+        ctx.beginPath();
+        ctx.moveTo(sx - w, baseY);
+        ctx.lineTo(sx,     baseY + h);
+        ctx.lineTo(sx + w, baseY);
         ctx.stroke();
     }
-    // A couple of girth bands around it
-    for (let i = 1; i <= 2; i++) {
-        const h = domeH * (i / 3);
-        ctx.beginPath();
-        ctx.ellipse(sx, sy - h, rx * Math.cos((i / 3) * Math.PI * 0.42), rh * 0.55, 0, 0, Math.PI * 2);
-        ctx.stroke();
-    }
-    // Rim where the shell meets the deck
-    ctx.globalAlpha = 0.34 + breathe * 0.10;
-    ctx.beginPath();
-    ctx.ellipse(sx, sy, rx, rh * 0.9, 0, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.globalAlpha = 1;
 }
 
 function _infestToScreen(wx, wy) {
@@ -500,17 +530,21 @@ function drawGrownNests() {
         t.nestPulse = (t.nestPulse || 0) + 1;
         const breathe = 0.5 + 0.5 * Math.sin(t.nestPulse * 0.03);
         const hr = Math.max(0.2, t.nestHealth / (t.nestMaxHealth || 200));
-        // Smaller than a cocoon, and it sags as it is damaged.
-        _drawDome(sx, sy, TILE_W * 0.42, TILE_H * 0.42, 26 * hr, "#ff7744", breathe, 3);
-        // The mouth it hatches from
-        ctx.globalAlpha = 0.5 + breathe * 0.3;
-        ctx.fillStyle = "#12080a";
+        // Smaller than a cocoon, and it settles as it is damaged.
+        const nestH = 30 * hr;
+        _drawZiggurat(sx, sy, TILE_W * 0.44, TILE_H * 0.44, nestH, "#ff7744", breathe, 3);
+        // The mouth it hatches from, cut into the front of the bottom course
+        ctx.globalAlpha = 0.6 + breathe * 0.25;
+        ctx.fillStyle = "#120806";
         ctx.beginPath();
-        ctx.ellipse(sx, sy - 5, TILE_W * 0.10, TILE_H * 0.16, 0, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(sx - TILE_W * 0.10, sy - nestH / 3 + TILE_H * 0.05);
+        ctx.lineTo(sx,                 sy - nestH / 3 + TILE_H * 0.20);
+        ctx.lineTo(sx + TILE_W * 0.10, sy - nestH / 3 + TILE_H * 0.05);
+        ctx.lineTo(sx,                 sy - nestH / 3 - TILE_H * 0.10);
+        ctx.closePath(); ctx.fill();
         ctx.globalAlpha = 1;
         if (typeof drawHealthBar === "function") {
-            drawHealthBar(sx - 20, sy - 26 * hr - 14, 40, 4, t.nestHealth, t.nestMaxHealth || 200);
+            drawHealthBar(sx - 20, sy - nestH - 14, 40, 4, t.nestHealth, t.nestMaxHealth || 200);
         }
     }
     ctx.restore();
@@ -540,8 +574,8 @@ function drawCocoons() {
         const rh = TILE_H * span * 0.52;
 
         // ── The shell ──
-        const domeH = 30 + span * 12;
-        _drawDome(sx, sy, rw * 0.80, rh, domeH, m.colour, breathe, 4);
+        const shellH = 30 + span * 12;
+        _drawZiggurat(sx, sy, rw * 0.92, rh * 0.92, shellH, m.colour, breathe, 4);
 
         // ── The toxin, if this species carries one ──
         // One tile beside the pylon, dull rather than lit: it still has to be

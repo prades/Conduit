@@ -377,11 +377,57 @@ check('a grown nest actually draws, and stops when it is gone', () => {
     ok(nest && nest.nestHealth > 0, 'fixture: a nest should have grown');
     env.calls.length = 0;
     env.run('drawGrownNests()');
-    ok(env.calls.some(c => c.op === 'ellipse'), 'nothing drawn for a grown nest');
+    // A ziggurat is drawn with paths, not ellipses — the shape changed from a
+    // dome, so this asserts that something was filled rather than which
+    // primitive was used.
+    ok(env.calls.some(c => c.op === 'fill'), 'nothing drawn for a grown nest');
     nest.nestHealth = 0;
     env.calls.length = 0;
     env.run('drawGrownNests()');
     same(env.calls.length, 0, 'a dead grown nest should draw nothing');
+});
+
+check('THE REPORTED CASE: it is a stepped pyramid, not a dome', () => {
+    ok(/function _drawZiggurat/.test(INFEST), 'no stepped-pyramid drawing');
+    ok(!/function _drawDome/.test(INFEST), 'the dome drawing is still there');
+    const at = INFEST.indexOf('function _drawZiggurat');
+    const body = INFEST.slice(at, INFEST.indexOf('function _infestToScreen'));
+    // Stacked isometric tiers: diamond faces built from paths, no arcs.
+    ok(!/ctx\.ellipse/.test(body), 'a ziggurat should not be drawn with ellipses');
+    ok(/for \(let i = 0; i < n; i\+\+\)/.test(body), 'it should step through tiers');
+    ok(/Left face/.test(body) && /Right face/.test(body) && /Top face/.test(body),
+       'each tier needs its three visible isometric faces');
+    // Both the cocoon and the grown nests use it.
+    same((INFEST.match(/_drawZiggurat\(/g) || []).length, 3,
+         'expected the definition plus two call sites');
+});
+
+check('the tiers step inward and upward', () => {
+    // Driven through the recorder so the geometry is checked, not just the
+    // presence of the code.
+    const env = makeEnv();
+    env.calls.length = 0;
+    env.run('_drawZiggurat')(100, 200, 40, 20, 60, '#ff7744', 0.5, 4);
+    const tops = env.calls.filter(c => c.op === 'moveTo').map(c => c.args);
+    ok(tops.length >= 8, `expected several tier paths, got ${tops.length}`);
+    // Each successive tier is narrower and higher. Deduped by width, because a
+    // tier issues more than one moveTo at its left edge (the face and the lip).
+    const byWidth = new Map();
+    for (const c of env.calls) {
+        if (c.op !== 'moveTo' || c.args[0] >= 100) continue;
+        const w = Math.round(100 - c.args[0]);
+        if (!byWidth.has(w)) byWidth.set(w, c.args[1]);
+        else byWidth.set(w, Math.min(byWidth.get(w), c.args[1]));
+    }
+    const tiers = [...byWidth.entries()].sort((a, b) => b[0] - a[0]);   // widest first
+    same(tiers.length, 4, `expected 4 distinct tier widths, got ${tiers.map(t => t[0]).join(',')}`);
+    for (let i = 1; i < tiers.length; i++) {
+        ok(tiers[i][0] < tiers[i - 1][0], `tier ${i} should be narrower`);
+        ok(tiers[i][1] < tiers[i - 1][1], `tier ${i} should sit higher`);
+    }
+    // The bottom course sits on the ground, not floating above it.
+    const lowest = Math.max(...env.calls.filter(c => c.op === 'lineTo').map(c => c.args[1]));
+    ok(lowest >= 200, `the base should reach the ground at y=200, lowest was ${lowest}`);
 });
 
 check('nothing is painted flat on the floor under a cocoon', () => {
