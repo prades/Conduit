@@ -389,19 +389,57 @@ check('a grown nest actually draws, and stops when it is gone', () => {
     same(env.calls.length, 0, 'a dead grown nest should draw nothing');
 });
 
-check('THE REPORTED CASE: it is a silk sac — no pyramid, no dome, no carpet', () => {
-    ok(/function _drawCocoonSac/.test(INFEST), 'no sac drawing');
+check('THE REPORTED CASE: it is geometric, not round', () => {
+    // These are computer bugs on a circuit board. Every earlier pass was
+    // organic — a mould carpet, a smooth dome, a tapered bezier sac — or
+    // monumental. The cocoon is an encapsulated component now, and the rule
+    // that encodes that is: straight lines only.
+    ok(/function _drawCocoonSac/.test(INFEST), 'no cocoon drawing');
     ok(!/function _drawZiggurat/.test(INFEST), 'the stepped pyramid is still there');
     ok(!/function _drawDome/.test(INFEST), 'the dome is still there');
     const at = INFEST.indexOf('function _drawCocoonSac');
     const body = INFEST.slice(at, INFEST.indexOf('function _infestToScreen'));
-    // A spun sac: tapered with beziers, wrapped, with loose fibres.
-    ok(/bezierCurveTo/.test(body), 'a sac should taper, not be a capsule');
-    ok(/banding/i.test(body), 'no silk banding');
-    ok(/fibres/i.test(body), 'no loose fibres off the ends');
-    // Both the cocoon and the grown nests use it.
+    ok(!/bezierCurveTo|quadraticCurveTo/.test(body), 'a curve survives in the cocoon');
+    ok(!/ctx\.arc\b|ctx\.ellipse/.test(body), 'something round survives in the cocoon');
+    const layer = INFEST.slice(INFEST.indexOf('function drawCocoons'));
+    ok(!/ctx\.arc\b|ctx\.ellipse|bezierCurveTo/.test(layer.slice(0, layer.indexOf('function drawConversionBars'))),
+       'something round survives elsewhere in the cocoon layer');
+    // ...and the board motifs that make it read as a component.
+    ok(/trace/i.test(body), 'no circuit traces across the lid');
+    ok(/pad/i.test(body), 'no solder pads');
+    ok(/pins/i.test(body), 'no pins out to the board');
     same((INFEST.match(/_drawCocoonSac\(/g) || []).length, 3,
          'expected the definition plus two call sites');
+});
+
+check('nothing round is drawn for a cocoon at all', () => {
+    // Driven, not read: the whole cocoon layer must emit no arcs or ellipses.
+    // The toxin pool is the one exception and is drawn separately below.
+    const env = makeEnv();
+    board(env, -4, 10, 0, 4);
+    const t = greenPylon(env, 0, 2);
+    // A venomous one, so the toxin patch is included — it has to be angular
+    // too. Nothing round on a circuit board.
+    convert(env, t, spinner('spider', 'striker'));
+    ok(env.run('cocoons')[0].puddles.length > 0, 'fixture: should carry the toxin');
+    env.calls.length = 0;
+    env.run('drawCocoons()');
+    const round = env.calls.filter(c => c.op === 'arc' || c.op === 'ellipse');
+    same(round.length, 0, `the cocoon emitted ${round.length} round primitives`);
+    ok(env.calls.some(c => c.op === 'lineTo'), 'fixture: it should have drawn something');
+});
+
+check('a grown nest is geometric too', () => {
+    const env = makeEnv();
+    board(env, -4, 10, -1, 4);
+    const t = greenPylon(env, 0, 2);
+    convert(env, t, spinner('ant', 'scout'));
+    ok(env.sandbox.world.some(x => x._infestNest), 'fixture: a nest should have grown');
+    env.calls.length = 0;
+    env.run('drawGrownNests()');
+    const round = env.calls.filter(c => c.op === 'arc' || c.op === 'ellipse');
+    same(round.length, 0, `the grown nest emitted ${round.length} round primitives`);
+    ok(env.calls.some(c => c.op === 'fill'), 'nothing drawn for a grown nest');
 });
 
 // Every coordinate the drawing emits, so its real extent can be measured

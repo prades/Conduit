@@ -435,82 +435,129 @@ function restoreCocoons(data) {
 // ── Drawing ───────────────────────────────────────────────
 // Organic blotches on the floor in the species' own colour, so which thing is
 // breeding there is readable at a glance.
-// A silk sac — the cocoon itself, and the same shape for the nests an
-// infestation grows.
+// The cocoon, and the same shell for the nests an infestation grows.
 //
-// Kept deliberately small and low. Three earlier attempts failed for the same
-// reason in different clothes: a mould carpet, then a dome, then a stepped
-// pyramid, each big enough to stand in front of the creatures and, in the
-// pyramid's case, to read as a monument the player had built rather than
-// something growing on their pylon. A sac is the right size because a sac is
-// small: roughly half a tile across and under twenty pixels tall, so a
-// predator standing behind one is still entirely visible.
+// These are computer bugs on a circuit board, so the cocoon is not spun silk —
+// it is an encapsulated component. A faceted hexagonal prism sitting on the
+// deck like a surface-mount package, with right-angle traces across its lid,
+// solder pads, and stub pins soldered out to the board. Drawn with straight
+// lines only: no beziers, no arcs, nothing round. Three earlier passes went
+// wrong by being organic (a mould carpet, then a smooth dome, then a tapered
+// sac) and one by being monumental (a stepped pyramid big enough to hide a
+// creature behind).
+//
+// Small and low on purpose: about half a tile across and fifteen pixels tall,
+// well under a predator sprite's ~44px, so one standing behind it is visible.
 const COCOON_SAC_W = 17;    // half-width in pixels at span 2
 const COCOON_SAC_H = 15;    // total height in pixels at span 2
 
-function _drawCocoonSac(sx, sy, w, h, colour, breathe, wisps) {
-    const cy = sy - h * 0.48;          // the sac sits ON the deck, not above it
-    // Shadow it casts, so it is attached to the ground
+// The lid outline, as offsets from the package centre. An elongated hexagon:
+// pointed at the two ends, flat along the long edges.
+const _COCOON_LID = [
+    [-1.00,  0.00], [-0.46, -0.52], [0.46, -0.52],
+    [ 1.00,  0.00], [ 0.46,  0.44], [-0.46, 0.44],
+];
+
+function _cocoonPath(sx, cy, w, h, dy) {
+    ctx.beginPath();
+    for (let i = 0; i < _COCOON_LID.length; i++) {
+        const [ox, oy] = _COCOON_LID[i];
+        const x = sx + ox * w, y = cy + oy * h + (dy || 0);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+}
+
+function _drawCocoonSac(sx, sy, w, h, colour, breathe, pins) {
+    const thick = Math.max(3, h * 0.34);     // how far the package stands proud
+    const cy = sy - thick;                    // lid height above the deck
+
+    // Ground shadow — a flattened diamond, not an ellipse. Nothing round.
     ctx.globalAlpha = 0.34;
     ctx.fillStyle = "#07060a";
     ctx.beginPath();
-    ctx.ellipse(sx, sy, w * 0.92, h * 0.26, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(sx - w, sy); ctx.lineTo(sx, sy - h * 0.20);
+    ctx.lineTo(sx + w, sy); ctx.lineTo(sx, sy + h * 0.20);
+    ctx.closePath(); ctx.fill();
 
-    // Body: an ovoid drawn as two bezier arcs so the ends taper to a point,
-    // the way a spun sac does rather than a capsule.
-    const bodyPath = () => {
-        ctx.beginPath();
-        ctx.moveTo(sx - w, cy);
-        ctx.bezierCurveTo(sx - w * 0.55, cy - h * 0.62, sx + w * 0.55, cy - h * 0.62, sx + w, cy);
-        ctx.bezierCurveTo(sx + w * 0.55, cy + h * 0.52, sx - w * 0.55, cy + h * 0.52, sx - w, cy);
-        ctx.closePath();
-    };
-    ctx.globalAlpha = 0.9;
-    ctx.fillStyle = "#171320";
-    bodyPath(); ctx.fill();
-    // Silk over it, tinted by whatever spun it
-    ctx.globalAlpha = 0.30 + breathe * 0.06;
+    // ── Body sides: the lid outline dropped by `thick` ──
+    ctx.globalAlpha = 0.92;
+    for (let i = 0; i < _COCOON_LID.length; i++) {
+        const [ax, ay] = _COCOON_LID[i];
+        const [bx, by] = _COCOON_LID[(i + 1) % _COCOON_LID.length];
+        // Only the near faces are visible: those whose edge runs along the
+        // lower half of the outline.
+        if (ay + by > -0.2) {
+            ctx.fillStyle = (ax + bx) > 0 ? "#0d1016" : "#151a24";
+            ctx.beginPath();
+            ctx.moveTo(sx + ax * w, cy + ay * h);
+            ctx.lineTo(sx + bx * w, cy + by * h);
+            ctx.lineTo(sx + bx * w, cy + by * h + thick);
+            ctx.lineTo(sx + ax * w, cy + ay * h + thick);
+            ctx.closePath(); ctx.fill();
+        }
+    }
+
+    // ── Lid ──
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = "#1c2430";
+    _cocoonPath(sx, cy, w, h, 0); ctx.fill();
+    // Species wash, so which bug encapsulated itself here is readable
+    ctx.globalAlpha = 0.26 + breathe * 0.07;
     ctx.fillStyle = colour;
-    bodyPath(); ctx.fill();
-    // A pale sheen along the upper flank
-    ctx.globalAlpha = 0.16 + breathe * 0.06;
-    ctx.fillStyle = "#cfc6d8";
-    ctx.beginPath();
-    ctx.ellipse(sx - w * 0.18, cy - h * 0.24, w * 0.42, h * 0.16, -0.22, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Silk banding wrapped across the short axis
+    _cocoonPath(sx, cy, w, h, 0); ctx.fill();
+    // Chamfer: a bright edge along the lid outline
     ctx.globalAlpha = 0.34 + breathe * 0.10;
-    ctx.strokeStyle = "#b9b0c4";
+    ctx.strokeStyle = typeof SENTINEL_ACCENT !== "undefined" ? SENTINEL_ACCENT : "#7fb8dc";
     ctx.lineWidth = 1;
-    for (let i = -1; i <= 1; i++) {
-        const bx = sx + i * w * 0.42;
-        const bw = w * 0.30 * (1 - Math.abs(i) * 0.3);
+    _cocoonPath(sx, cy, w, h, 0); ctx.stroke();
+
+    // ── Traces across the lid — right angles, like board routing ──
+    ctx.globalAlpha = 0.40 + breathe * 0.14;
+    ctx.strokeStyle = colour;
+    ctx.lineJoin = "miter"; ctx.lineCap = "butt";
+    const runs = [
+        [[-0.62, -0.10], [-0.20, -0.10], [-0.20,  0.16], [ 0.30,  0.16]],
+        [[-0.30, -0.30], [ 0.14, -0.30], [ 0.14, -0.06], [ 0.62, -0.06]],
+        [[ 0.00,  0.30], [ 0.40,  0.30]],
+    ];
+    for (const run of runs) {
         ctx.beginPath();
-        ctx.moveTo(bx, cy - h * 0.40);
-        ctx.bezierCurveTo(bx + bw, cy - h * 0.12, bx + bw, cy + h * 0.14, bx, cy + h * 0.38);
+        run.forEach(([ox, oy], i) => {
+            const x = sx + ox * w, y = cy + oy * h;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
         ctx.stroke();
     }
-    // Seam along the length
-    ctx.globalAlpha = 0.22 + breathe * 0.08;
-    ctx.beginPath();
-    ctx.moveTo(sx - w * 0.86, cy - h * 0.02);
-    ctx.bezierCurveTo(sx - w * 0.3, cy - h * 0.16, sx + w * 0.3, cy - h * 0.16, sx + w * 0.86, cy - h * 0.02);
-    ctx.stroke();
+    // Solder pads at the ends of the runs
+    ctx.globalAlpha = 0.5 + breathe * 0.2;
+    ctx.fillStyle = typeof SENTINEL_ACCENT !== "undefined" ? SENTINEL_ACCENT : "#7fb8dc";
+    for (const run of runs) {
+        for (const [ox, oy] of [run[0], run[run.length - 1]]) {
+            ctx.fillRect(sx + ox * w - 1.2, cy + oy * h - 1.2, 2.4, 2.4);
+        }
+    }
+    // Dead-centre die marker
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = typeof SENTINEL_SLIT !== "undefined" ? SENTINEL_SLIT : "#050508";
+    ctx.fillRect(sx - w * 0.14, cy - h * 0.10, w * 0.28, h * 0.20);
 
-    // Loose fibres off each end, which is what makes it read as spun
-    ctx.globalAlpha = 0.24 + breathe * 0.10;
-    ctx.strokeStyle = colour;
-    for (let i = 0; i < (wisps || 3); i++) {
-        const t = (i + 1) / ((wisps || 3) + 1);
-        const dy = (t - 0.5) * h * 0.55;
-        ctx.beginPath();
-        ctx.moveTo(sx - w, cy + dy);
-        ctx.lineTo(sx - w - 5 - i * 2, cy + dy * 1.7);
-        ctx.moveTo(sx + w, cy + dy);
-        ctx.lineTo(sx + w + 5 + i * 2, cy + dy * 1.7);
-        ctx.stroke();
+    // ── Pins, soldered out to the board ──
+    ctx.globalAlpha = 0.42 + breathe * 0.12;
+    ctx.strokeStyle = typeof SENTINEL_ACCENT !== "undefined" ? SENTINEL_ACCENT : "#7fb8dc";
+    const n = pins || 3;
+    for (let i = 0; i < n; i++) {
+        const t = (i + 1) / (n + 1);
+        const oy = (t - 0.5) * 0.7;
+        for (const side of [-1, 1]) {
+            const x0 = sx + side * w * 0.88, y0 = cy + oy * h;
+            const x1 = x0 + side * (4 + i * 2);
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.lineTo(x1, y0);            // out
+            ctx.lineTo(x1, sy);            // then straight down to the deck
+            ctx.stroke();
+        }
     }
     ctx.globalAlpha = 1;
 }
@@ -541,13 +588,25 @@ function drawGrownNests() {
         // Smaller than a cocoon, and it slumps as it is damaged.
         const nh = COCOON_SAC_H * (0.7 + hr * 0.4);
         _drawCocoonSac(sx, sy, COCOON_SAC_W * 0.78, nh, "#ff7744", breathe, 2);
-        // The opening it hatches from, torn in the near flank
-        ctx.globalAlpha = 0.65 + breathe * 0.2;
+        // The hatch it opens from — a cracked die window, cut as an angular
+        // slot rather than a soft hole. Nothing round anywhere on these.
+        const hx = sx + COCOON_SAC_W * 0.18, hy = sy - nh * 0.62;
+        const hw = COCOON_SAC_W * 0.22, hh = nh * 0.26;
+        ctx.globalAlpha = 0.78 + breathe * 0.15;
         ctx.fillStyle = "#120806";
         ctx.beginPath();
-        ctx.ellipse(sx + COCOON_SAC_W * 0.20, sy - nh * 0.42,
-                    COCOON_SAC_W * 0.19, nh * 0.26, 0.25, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(hx - hw, hy);
+        ctx.lineTo(hx - hw * 0.2, hy - hh);
+        ctx.lineTo(hx + hw,       hy - hh * 0.3);
+        ctx.lineTo(hx + hw * 0.3, hy + hh);
+        ctx.closePath(); ctx.fill();
+        // A split running out of it
+        ctx.globalAlpha = 0.5 + breathe * 0.2;
+        ctx.strokeStyle = "#120806"; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(hx + hw, hy - hh * 0.3);
+        ctx.lineTo(hx + hw * 1.9, hy + hh * 0.4);
+        ctx.stroke();
         ctx.globalAlpha = 1;
         if (typeof drawHealthBar === "function") {
             drawHealthBar(sx - 20, sy - nh - 12, 40, 4, t.nestHealth, t.nestMaxHealth || 200);
@@ -602,21 +661,40 @@ function drawCocoons() {
         ctx.globalAlpha = 1;
 
         // ── The toxin, if this species carries one ──
-        // One tile beside the pylon, dull rather than lit: it still has to be
-        // findable, because it is the thing that costs you units.
+        // An etched patch, not a puddle: hard-edged like acid eaten into the
+        // board's solder mask. Angular for the same reason as everything else
+        // here — nothing round on a circuit board.
         for (const [px, py] of (m.puddles || [])) {
-            const [tx, ty] = toScreen(px, py);
+            const [tx, ty] = _infestToScreen(px, py);
             if (tx < -90 || tx > canvas.width + 90) continue;
             const wob = 0.5 + 0.5 * Math.sin(m.pulse * 1.3 + px * 1.3 + py * 0.7);
-            ctx.globalAlpha = 0.22 + wob * 0.07;
-            ctx.fillStyle = COCOON_PUDDLE_COLOUR;
-            ctx.beginPath();
-            ctx.ellipse(tx, ty, TILE_W * 0.28, TILE_H * 0.28, 0, 0, Math.PI * 2);
-            ctx.fill();
+            const ew = TILE_W * 0.30, eh = TILE_H * 0.30;
+            // An irregular octagon, seeded off the tile so each patch differs.
+            const seed = (px * 73856093) ^ (py * 19349663);
+            const etch = () => {
+                ctx.beginPath();
+                for (let i = 0; i < 8; i++) {
+                    const a = (i / 8) * Math.PI * 2;
+                    const j = 0.74 + (((seed >> (i * 3)) & 7) / 7) * 0.34;
+                    const x = tx + Math.cos(a) * ew * j;
+                    const y = ty + Math.sin(a) * eh * j;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+            };
             ctx.globalAlpha = 0.24 + wob * 0.08;
+            ctx.fillStyle = COCOON_PUDDLE_COLOUR;
+            etch(); ctx.fill();
+            ctx.globalAlpha = 0.30 + wob * 0.10;
             ctx.strokeStyle = "#4c7a2e"; ctx.lineWidth = 1;
+            etch(); ctx.stroke();
+            // Two right-angle runs of corrosion creeping off it
+            ctx.globalAlpha = 0.18 + wob * 0.08;
             ctx.beginPath();
-            ctx.ellipse(tx, ty, TILE_W * 0.28, TILE_H * 0.28, 0, 0, Math.PI * 2);
+            ctx.moveTo(tx - ew, ty); ctx.lineTo(tx - ew * 1.7, ty);
+            ctx.lineTo(tx - ew * 1.7, ty - eh * 0.6);
+            ctx.moveTo(tx + ew, ty); ctx.lineTo(tx + ew * 1.6, ty);
+            ctx.lineTo(tx + ew * 1.6, ty + eh * 0.6);
             ctx.stroke();
         }
         ctx.globalAlpha = 1;
