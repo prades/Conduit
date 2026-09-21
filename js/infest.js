@@ -328,9 +328,14 @@ function _hatchFromCocoon(m) {
 // Who a puddle bites. Followers and the neutral recruits you have not picked up
 // yet, and nothing else: predators are Predator instances (which covers your
 // clones too), and the player is not in actors[] at all.
+//
+// FIRE is the exception. Burning this stuff back is its job (see scourStep), so
+// the toxin is no trouble to it — which is what makes a fire follower the right
+// one to send rather than merely an available one.
 function puddleAffects(a) {
     if (!a || a.dead) return false;
     if (typeof Predator !== "undefined" && a instanceof Predator) return false;
+    if (a.isFollower && a.element === SCOUR_ELEMENT) return false;
     return !!(a.isFollower || a.isNeutralRecruit);
 }
 
@@ -347,6 +352,125 @@ function _puddleTick() {
             }
         }
     }
+}
+
+// ── SCOURING — what a FIRE worker burns back ───────────────
+//
+// The infestation used to be a one-way ratchet with exactly one counter:
+// reclaim the pylon and everything anchored to it dies. That is still the way
+// to get the pylon back, but it left the growth itself untouchable — a toxin
+// patch sat there biting your squad and there was nothing to do about it short
+// of a reconstruction.
+//
+// So FIRE gets a work job. A fire follower on worker duty walks to the nearest
+// piece of growth and burns it off. Deliberately unhurried: the slowest of the
+// three takes fifteen seconds, which is one hatch cycle, so a single scourer
+// roughly holds a cocoon even and two of them gain ground. It cleans the mess;
+// it does not take the pylon back. Those stay separate jobs.
+const SCOUR_ELEMENT       = "fire";
+const SCOUR_PUDDLE_FRAMES = 150;    // 2.5s — the quickest, being what hurts you now
+const SCOUR_COCOON_FRAMES = 900;    // 15s, matching COCOON_SPAWN_FRAMES
+const SCOUR_NEST_FRAMES   = 1500;   // 25s for a full-health grown nest
+const SCOUR_COLOUR        = "#ff7722";
+
+// Ranked by how much harm the thing is doing right now rather than by distance:
+// a toxin patch is eating the squad, a grown nest is minting predators, a
+// cocoon is doing both but more slowly. Distance only breaks a tie within a
+// rank, so a worker never walks past a puddle to get to a cocoon.
+const SCOUR_RANK = { puddle: 0, nest: 1, cocoon: 2 };
+
+function nearestScourChore(x, y, maxDist) {
+    const reach = maxDist === undefined ? INFEST_SEEK_RANGE : maxDist;
+    let best = null, bestRank = 99, bestD = Infinity;
+    const consider = (kind, tx, ty, extra) => {
+        const rank = SCOUR_RANK[kind];
+        if (rank > bestRank) return;
+        const d = Math.hypot(tx - x, ty - y);
+        if (d > reach) return;
+        if (rank === bestRank && d >= bestD) return;
+        bestRank = rank; bestD = d;
+        best = Object.assign({ kind, x: tx, y: ty }, extra);
+    };
+    for (const m of cocoons) {
+        for (const [px, py] of (m.puddles || [])) consider("puddle", px, py, { cocoon: m });
+        consider("cocoon", m.x, m.y, { cocoon: m });
+    }
+    // Only the nests an infestation GREW. A zone nest is a fight, not a chore,
+    // and sending the work crew to chew on one would quietly replace the
+    // destroy_nest order the player gives by hand.
+    if (typeof world !== "undefined") {
+        for (const t of world) {
+            if (!t._infestNest || !t.nest || t.nestHealth <= 0) continue;
+            consider("nest", t.x, t.y, { tile: t });
+        }
+    }
+    return best;
+}
+
+// A cached chore has to be re-validated: another worker may have finished it,
+// or the player may have reclaimed the pylon out from under it.
+function scourChoreStillGood(c) {
+    if (!c) return false;
+    if (c.kind === "puddle") return !!(c.cocoon && cocoons.includes(c.cocoon) && c.cocoon.puddles.length > 0);
+    if (c.kind === "cocoon") return !!(c.cocoon && cocoons.includes(c.cocoon));
+    if (c.kind === "nest")   return !!(c.tile && c.tile.nest && c.tile.nestHealth > 0 && c.tile._infestNest);
+    return false;
+}
+
+// Put a grown nest out. Shared with clearInfestationAt so a nest cannot be
+// half-killed by one path and left drawable by the other.
+function _killGrownNest(tile) {
+    if (!tile || !tile._infestNest) return false;
+    tile.nest = false;
+    tile.nestHealth = 0;
+    tile._infestNest = false;
+    return true;
+}
+
+// One frame of burning, from one worker. Progress is kept on the thing being
+// burnt rather than on the worker, so two scourers on the same chore add up and
+// a worker that dies partway does not take the progress with it.
+// Returns true on the frame the chore is finished.
+function scourStep(chore) {
+    if (!scourChoreStillGood(chore)) return false;
+
+    if (chore.kind === "puddle") {
+        const m = chore.cocoon;
+        m.puddleBurn = (m.puddleBurn || 0) + 1 / SCOUR_PUDDLE_FRAMES;
+        if (m.puddleBurn < 1) return false;
+        m.puddles = [];
+        m.puddleBurn = 0;
+        // The enhancement goes with it, or the next swell calls
+        // _applyEnhancement and seeps a fresh patch straight back out.
+        m.enhancement = null;
+        floatingTexts.push({ x: chore.x, y: chore.y - 0.6, text: "TOXIN BURNED OFF",
+                             color: SCOUR_COLOUR, life: 70, vy: -0.12 });
+        return true;
+    }
+
+    if (chore.kind === "nest") {
+        const t = chore.tile;
+        const per = (t.nestMaxHealth || 200) / SCOUR_NEST_FRAMES;
+        t.nestHealth = Math.max(0, t.nestHealth - per);
+        if (t.nestHealth > 0) return false;
+        _killGrownNest(t);
+        if (typeof saveNests === "function") saveNests();
+        floatingTexts.push({ x: chore.x, y: chore.y - 1, text: "NEST BURNED OUT",
+                             color: SCOUR_COLOUR, life: 90, vy: -0.16 });
+        return true;
+    }
+
+    // The cocoon. Burning the shell open stops it hatching, but the pylon it
+    // encapsulates stays red — scouring is not a substitute for reclaiming.
+    const m = chore.cocoon;
+    m.shellBurn = (m.shellBurn || 0) + 1 / SCOUR_COCOON_FRAMES;
+    if (m.shellBurn < 1) return false;
+    const at = cocoons.indexOf(m);
+    if (at >= 0) cocoons.splice(at, 1);
+    floatingTexts.push({ x: chore.x, y: chore.y - 1, text: "COCOON BURNED OPEN",
+                         color: SCOUR_COLOUR, life: 100, vy: -0.18 });
+    if (typeof shake !== "undefined") shake = Math.max(shake, 3);
+    return true;
 }
 
 // A patch only lives while it still holds a pylon. Reclaim them all and it dies.
@@ -380,12 +504,28 @@ function clearInfestationAt(t) {
         if (m.anchors.length === 0) {
             // Take the grown nest with it, so reclaiming really does clear the
             // ground rather than leaving a spawner behind.
-            if (m.nest && m.nest._infestNest) {
-                m.nest.nest = false; m.nest.nestHealth = 0; m.nest._infestNest = false;
-            }
+            _killGrownNest(m.nest);
             cocoons.splice(i, 1);
         }
     }
+    // A nest whose cocoon is already gone — burned open by a fire worker. It is
+    // found by looking beside the pylon rather than by a stored reference, so it
+    // still works after a refresh, and it is only taken if no surviving cocoon
+    // still claims it (a patch holding two pylons must keep its nest when only
+    // one of them is reclaimed).
+    const orphan = _grownNestBeside(t);
+    if (orphan && !cocoons.some(m => m.nest === orphan)) _killGrownNest(orphan);
+}
+
+// The grown nest belonging to a pylon: one of the tiles seedNestNear would have
+// put it on.
+function _grownNestBeside(t) {
+    if (!t || typeof getTile !== "function") return null;
+    for (const [dx, dy] of [[1,1],[0,1],[1,0],[-1,1],[1,-1],[-1,0],[0,-1]]) {
+        const tile = getTile(t.x + dx, t.y + dy);
+        if (tile && tile._infestNest && tile.nest) return tile;
+    }
+    return null;
 }
 
 // ── Persistence ───────────────────────────────────────────
@@ -397,6 +537,8 @@ function serialiseCocoons() {
         species: m.species, className: m.className, colour: m.colour,
         span: m.span, enhancement: m.enhancement,
         swellTimer: m.swellTimer, spawnTimer: m.spawnTimer,
+        // Scour progress, so a refresh does not undo a worker's shift.
+        shellBurn: m.shellBurn || 0, puddleBurn: m.puddleBurn || 0,
         nest: m.nest ? [m.nest.x, m.nest.y] : null,
     }));
 }
@@ -423,6 +565,8 @@ function restoreCocoons(data) {
             enhancement: d.enhancement !== undefined ? d.enhancement : cocoonEnhancement(d.species || "ant"),
             swellTimer: d.swellTimer || COCOON_SWELL_FRAMES,
             spawnTimer: d.spawnTimer || COCOON_SPAWN_FRAMES,
+            shellBurn: Number.isFinite(d.shellBurn) ? Math.min(1, Math.max(0, d.shellBurn)) : 0,
+            puddleBurn: Number.isFinite(d.puddleBurn) ? Math.min(1, Math.max(0, d.puddleBurn)) : 0,
             spawned: [],
             nest: (d.nest && typeof getTile === "function") ? getTile(d.nest[0], d.nest[1]) : null,
             pulse: Math.random() * Math.PI * 2,

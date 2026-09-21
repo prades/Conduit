@@ -347,6 +347,17 @@ function renderWorkCrewIndex() {
         ? (MASS_NEUTRALISE_FRAMES / 60).toFixed(1) : '2';
     const pct  = (typeof MASS_VALUE_SCALE === 'number')
         ? Math.round(MASS_VALUE_SCALE * 100) : 35;
+    const cocoonSecs = (typeof SCOUR_COCOON_FRAMES === 'number')
+        ? Math.round(SCOUR_COCOON_FRAMES / 60) : 15;
+    const nestSecs = (typeof SCOUR_NEST_FRAMES === 'number')
+        ? Math.round(SCOUR_NEST_FRAMES / 60) : 25;
+    // Read off the list rather than spelled out, so adding a fifth worker
+    // element cannot leave this page naming four.
+    const whoCanWork = (typeof workerElements === 'function' ? workerElements() : [])
+        .map(e => '<span class="cm-stat">' + e.toUpperCase() + '</span>');
+    const whoText = whoCanWork.length
+        ? whoCanWork.slice(0, -1).join(', ') + ' and ' + whoCanWork[whoCanWork.length - 1]
+        : 'nothing';
     host.innerHTML =
         '<div class="cm-intro-box">Every predator you kill leaves a lump of ' +
         '<strong>charged mass</strong>. It is not a pickup — walking over it does nothing. ' +
@@ -358,8 +369,7 @@ function renderWorkCrewIndex() {
         '<div class="cm-build-row"><span class="cm-build-label">Fighters</span>' +
         'Behave exactly as before. Every follower starts as one.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Workers</span>' +
-        'Ignore combat and do one job each. Only <span class="cm-stat">ELECTRIC</span>, ' +
-        '<span class="cm-stat">FLUX</span> and <span class="cm-stat">CORE</span> can — ' +
+        'Ignore combat and do one job each. Only ' + whoText + ' can — ' +
         'nothing else has a job to do.</div>' +
 
         '<div class="cm-ability"><strong>1. Neutralise \u2014 ELECTRIC:</strong> stands on a charged lump and ' +
@@ -369,6 +379,12 @@ function renderWorkCrewIndex() {
         '<div class="cm-ability"><strong>Repair \u2014 CORE:</strong> a pylon that loses its health is not gone, ' +
         'it is <strong>broken</strong> — it keeps its tile, its element and its mode. A core worker rebuilds it ' +
         'in place, exactly as it was. Nothing else can.</div>' +
+        '<div class="cm-ability"><strong>Scour — FIRE:</strong> burns back what an infestation leaves on ' +
+        'the ground. It takes the worst thing in reach first: a <strong>toxin patch</strong>, then a ' +
+        '<strong>grown nest</strong> (about <span class="cm-stat">' + nestSecs + 's</span>), then the ' +
+        '<strong>cocoon</strong> (about <span class="cm-stat">' + cocoonSecs + 's</span>). Two scourers on the ' +
+        'same thing are twice as quick, and the toxin does not hurt a fire follower. Scouring stops the ' +
+        'hatching — it does <em>not</em> hand the pylon back, which still takes a RECLAIM.</div>' +
 
         '<div class="cm-build-row"><span class="cm-build-label">Worth</span>' +
         'About <span class="cm-stat">' + pct + '%</span> of what that predator used to be worth. ' +

@@ -12,10 +12,15 @@
 //  CORE workers do the other job on this page: a pylon that loses its health is
 //  not gone, it is BROKEN, and a core worker rebuilds it in place.
 //
+//  FIRE workers SCOUR: they burn back the growth an infestation leaves behind —
+//  toxin patches, grown nests, cocoons. The job itself lives in js/infest.js
+//  next to the things it burns; only the duty dispatch is here.
+//
 //  So kills stop being free income. Followers split into FIGHTERS, who behave
-//  as they always have, and WORKERS, who ignore combat to run one of the three
-//  jobs. A player who fields no workers watches the battlefield fill with charge
-//  they cannot spend and their pylons stay in pieces.
+//  as they always have, and WORKERS, who ignore combat to run one job each. A
+//  player who fields no workers watches the battlefield fill with charge they
+//  cannot spend, their pylons stay in pieces, and the infestation keeps the
+//  ground it has taken.
 // ─────────────────────────────────────────────────────────
 
 let chargedMass = [];
@@ -36,6 +41,9 @@ const MASS_VALUE_SCALE  = 0.35;
 const MASS_NEUTRALISER  = 'electric';
 const MASS_HAULER       = 'flux';     // flux already drags things — see the pylon effect
 const PYLON_REPAIRER    = 'core';
+// The fourth worker element is SCOUR_ELEMENT in js/infest.js, which the page
+// loads after this file — so it is read at call time rather than copied here.
+// A second literal 'fire' in this file is exactly how the two drift apart.
 
 // A core worker rebuilds a broken pylon at this much progress per frame, so a
 // full rebuild from nothing takes a few seconds of standing there.
@@ -125,6 +133,8 @@ function followerWorkTick(actor) {
     if (actor.element === MASS_NEUTRALISER) return _workNeutralise(actor);
     if (actor.element === MASS_HAULER)      return _workHaul(actor);
     if (actor.element === PYLON_REPAIRER)   return _workRepair(actor);
+    if (typeof SCOUR_ELEMENT !== 'undefined' && actor.element === SCOUR_ELEMENT)
+        return _workScour(actor);
     return false;   // any other element has no job to do here
 }
 
@@ -243,13 +253,52 @@ function _workRepair(actor) {
     return true;
 }
 
+// ── Scouring the infestation (FIRE) ──────────────────────
+// The chore list, the ranking and the burning all live in js/infest.js, with the
+// growth they act on. This is only the walk-there-and-work loop, shaped like the
+// three above it.
+function _workScour(actor) {
+    if (typeof nearestScourChore !== 'function') return false;
+
+    let chore = actor._scourTarget;
+    if (!scourChoreStillGood(chore)) {
+        chore = actor._scourTarget = nearestScourChore(actor.x, actor.y);
+    }
+    if (!chore) return false;
+
+    const d = Math.hypot(chore.x - actor.x, chore.y - actor.y);
+    if (d > MASS_WORK_RANGE) { _moveToward(actor, chore.x, chore.y, 1.05); return true; }
+
+    actor.state = 'idle';
+    const finished = scourStep(chore);
+    if (typeof elementEffects !== 'undefined' && (frame || 0) % 7 === 0) {
+        elementEffects.push({ type: 'impact', x: chore.x, y: chore.y,
+                              color: SCOUR_COLOUR, radius: 0.38, life: 16 });
+    }
+    if (finished) actor._scourTarget = null;
+    return true;
+}
+
 // ── Duty assignment ──────────────────────────────────────
-// Only these three have a job, so putting anything else on the crew would
-// silently do nothing — say so rather than accepting it.
-const WORKER_ELEMENTS = [MASS_NEUTRALISER, MASS_HAULER, PYLON_REPAIRER];
+// Only these have a job, so putting anything else on the crew would silently do
+// nothing — say so rather than accepting it.
+function workerElements() {
+    const list = [MASS_NEUTRALISER, MASS_HAULER, PYLON_REPAIRER];
+    if (typeof SCOUR_ELEMENT === 'string') list.push(SCOUR_ELEMENT);
+    return list;
+}
 
 function canWorkMass(actor) {
-    return !!actor && WORKER_ELEMENTS.indexOf(actor.element) >= 0;
+    return !!actor && workerElements().indexOf(actor.element) >= 0;
+}
+
+// "ELECTRIC, FLUX, CORE AND FIRE". Read off the list rather than written out,
+// because a hardcoded sentence is how the refusal ends up naming three elements
+// after a fourth has been added.
+function workerElementsLabel() {
+    const names = workerElements().map(e => e.toUpperCase());
+    if (names.length <= 1) return names[0] || '';
+    return names.slice(0, -1).join(', ') + ' AND ' + names[names.length - 1];
 }
 
 // What a given worker would actually do, for the UI to label.
@@ -257,6 +306,7 @@ function workerJobLabel(element) {
     if (element === MASS_NEUTRALISER) return 'NEUTRALISE';
     if (element === MASS_HAULER)      return 'HAUL';
     if (element === PYLON_REPAIRER)   return 'REPAIR';
+    if (typeof SCOUR_ELEMENT !== 'undefined' && element === SCOUR_ELEMENT) return 'SCOUR';
     return null;
 }
 
@@ -264,7 +314,7 @@ function setFollowerDuty(actor, duty) {
     if (!actor) return false;
     if (duty === 'worker' && !canWorkMass(actor)) {
         floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
-            text: 'ONLY ELECTRIC, FLUX AND CORE CAN WORK', color: '#f88', life: 110, vy: -0.25, size: 12 });
+            text: 'ONLY ' + workerElementsLabel() + ' CAN WORK', color: '#f88', life: 110, vy: -0.25, size: 12 });
         return false;
     }
     actor.duty = duty;
@@ -277,6 +327,7 @@ function setFollowerDuty(actor, duty) {
         }
         actor._massTarget  = null;
         actor._pylonTarget = null;
+        actor._scourTarget = null;
     }
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
         text: duty === 'worker' ? 'ASSIGNED TO WORK CREW' : 'BACK ON THE LINE',

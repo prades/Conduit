@@ -22,6 +22,7 @@ const SUITES = [
     ['generator pylon',        'generator.js'],
     ['pylon look',             'pylonlook.js'],
     ['infestation',            'infest.js'],
+    ['fire scour job',         'scour.js'],
 ];
 
 let failed = 0;

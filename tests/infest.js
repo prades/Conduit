@@ -763,9 +763,11 @@ group('toxic puddles');
 
 // A follower, a not-yet-recruited neutral, a predator and a clone — the four
 // kinds of thing that can stand on a puddle.
-function follower(env, x, y) {
+// Element matters now: FIRE followers scour this stuff for a living and the
+// toxin does not touch them, so the hazard fixture is deliberately NOT fire.
+function follower(env, x, y, element) {
     const f = { x, y, type: 'virus', team: 'green', isFollower: true, dead: false,
-                health: 40, maxHealth: 40, element: 'fire' };
+                health: 40, maxHealth: 40, element: element || 'ice' };
     env.sandbox.actors.push(f); return f;
 }
 function neutral(env, x, y) {
