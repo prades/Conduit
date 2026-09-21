@@ -73,6 +73,81 @@ function generate(env, from, to) {
     for (let i = from; i < to; i++) env.run(`generateSegment(${i})`);
 }
 
+group('recruits across a refresh');
+
+check('THE REPORTED CASE: between-wave recruits survive a refresh', () => {
+    // nextWave() drops fresh neutrals in with NO spawnKey, and nothing
+    // regenerates them — they were dropped from the save entirely, so a
+    // refresh after a wave came up with an empty map.
+    store = {};
+    const a = makeCtx();
+    a.run('initWorldSeed()');
+    a.sandbox.actors.push(
+        { type: 'virus', x: 18.5, y: 2, team: 'red', isNeutralRecruit: true,
+          dead: false, health: 12, maxHealth: 15 },
+        { type: 'virus', x: 33.25, y: 3, team: 'red', isNeutralRecruit: true,
+          dead: false, health: 15, maxHealth: 15 });
+    a.run('saveSession()');
+
+    const b = makeCtx();
+    const sess = b.run('loadSession()');
+    ok(Array.isArray(sess.waveNpcs), 'the session should carry the wave recruits');
+    eq(sess.waveNpcs.length, 2, 'both should be saved');
+    b.run('restoreWaveRecruits')(sess.waveNpcs);
+    const back = b.sandbox.actors.filter(x => x.isNeutralRecruit);
+    eq(back.length, 2, 'both should come back');
+    eq(back[0].x, 18.5, 'position should survive');
+    eq(back[0].health, 12, 'damage taken should survive');
+    ok(back.every(x => !x.dead && x.team === 'red'), 'they should be live recruits');
+});
+
+check('a killed one is not handed back', () => {
+    store = {};
+    const a = makeCtx();
+    a.run('initWorldSeed()');
+    a.sandbox.actors.push(
+        { type: 'virus', x: 18, y: 2, team: 'red', isNeutralRecruit: true, dead: true, health: 0 },
+        { type: 'virus', x: 20, y: 2, team: 'red', isNeutralRecruit: true, dead: false, health: 15 });
+    a.run('saveSession()');
+    eq(makeCtx().run('loadSession()').waveNpcs.length, 1, 'only the survivor should be saved');
+});
+
+check('a converted recruit is not handed back either', () => {
+    // Recruiting one flips it to team green; it is a follower now and the
+    // follower roster owns it.
+    store = {};
+    const a = makeCtx();
+    a.run('initWorldSeed()');
+    a.sandbox.actors.push(
+        { type: 'virus', x: 18, y: 2, team: 'green', isFollower: true, isNeutralRecruit: false,
+          dead: false, health: 15 });
+    a.run('saveSession()');
+    eq(makeCtx().run('loadSession()').waveNpcs.length, 0, 'a follower is not a loose recruit');
+});
+
+check('the generated ones are still tracked by key, not duplicated', () => {
+    // A segment-generated recruit carries a spawnKey and generateSegment
+    // re-creates it; saving it as a wave recruit too would double it.
+    store = {};
+    const a = makeCtx();
+    a.run('initWorldSeed()');
+    a.sandbox.actors.push(
+        { type: 'virus', x: 7, y: 3, team: 'red', isNeutralRecruit: true,
+          dead: false, health: 15, spawnKey: 7 });
+    a.run('saveSession()');
+    const sess = makeCtx().run('loadSession()');
+    eq(sess.npcs.length, 1, 'it should be saved by key');
+    eq(sess.waveNpcs.length, 0, 'and NOT also as a wave recruit');
+});
+
+check('a session with no wave recruits restores without throwing', () => {
+    const b = makeCtx();
+    b.run('restoreWaveRecruits')(undefined);
+    b.run('restoreWaveRecruits')(null);
+    b.run('restoreWaveRecruits')([{}, null, { x: 'nonsense', y: 2 }]);
+    eq(b.sandbox.actors.length, 0, 'junk should restore nothing');
+});
+
 group('the world seed');
 check('a seed is created and then reused', () => {
     store = {};

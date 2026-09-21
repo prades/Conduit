@@ -171,16 +171,26 @@ function saveSession() {
         }));
         // Recruits still standing. Anything converted or killed is absent, so
         // it will not be handed back on the next load.
-        const npcs = actors
-            .filter(a => a.spawnKey !== undefined && !a.dead && a.team === "red")
+        //
+        // Two kinds, and both have to be saved. Segment-generated ones carry a
+        // spawnKey and are re-created by generateSegment, so only the key is
+        // needed. The ones nextWave() drops in between waves have NO spawnKey
+        // and nothing regenerates them — they were simply lost on every
+        // refresh, which is why the map came up empty after a wave.
+        const liveRecruits = actors.filter(a => !a.dead && a.team === "red" && a.isNeutralRecruit);
+        const npcs = liveRecruits
+            .filter(a => a.spawnKey !== undefined)
             .map(a => a.spawnKey);
+        const waveNpcs = liveRecruits
+            .filter(a => a.spawnKey === undefined)
+            .map(a => ({ x: +a.x.toFixed(2), y: +a.y.toFixed(2), h: Math.round(a.health) }));
 
         localStorage.setItem("tubecrawler_session", JSON.stringify({
             px: player.x, py: player.y,
             health: Math.round(health),
             lastGenX,
             explored: [...exploredZones],
-            nests, panels, nodes, npcs,
+            nests, panels, nodes, npcs, waveNpcs,
             mass: serialiseChargedMass(),
             cocoons: serialiseCocoons(),
         }));
@@ -190,6 +200,26 @@ function saveSession() {
 function loadSession() {
     try { return JSON.parse(localStorage.getItem("tubecrawler_session") || "null"); }
     catch (e) { return null; }
+}
+
+// The between-wave recruits, rebuilt in the shape nextWave() spawns them.
+// Without this they vanished on every refresh and the map looked barren.
+function restoreWaveRecruits(data) {
+    if (!Array.isArray(data)) return;
+    for (const d of data) {
+        if (!d || !Number.isFinite(d.x) || !Number.isFinite(d.y)) continue;
+        actors.push({
+            type: "virus", element: null, x: d.x, y: d.y,
+            team: "red", isNeutralRecruit: true,
+            health: Math.max(1, d.h || 15), maxHealth: 15,
+            moveSpeed: 0.018, power: 2,
+            stats: null, personality: null, role: null,
+            currentResonance: 0, currentWill: 0,
+            walkCycle: 0, moveCooldown: 0,
+            stance: "wander", isFollower: false, isHealing: false,
+            hitFlash: 0, spawnProtection: 120, dead: false, convertFlash: 0,
+        });
+    }
 }
 
 function clearSession() {
@@ -235,6 +265,7 @@ function applySession(sess) {
         t.predatorOwned = !!n.p;
     });
     restoreChargedMass(sess.mass);
+    restoreWaveRecruits(sess.waveNpcs);
     // After the pylon restore, so a cocoon's anchors resolve to real tiles.
     restoreCocoons(sess.cocoons);
 

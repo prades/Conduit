@@ -1,9 +1,9 @@
 // INFESTATION: what predators do when nobody is fighting them.
 //
 // Left undisturbed a predator walks to the nearest pylon you hold, converts it
-// to its own side, then seeds a nest and a cocoon that creeps outward and
-// hatches more of the same species. A cocoon reaching a second pylon takes that
-// one too.
+// to its own side, then seeds a nest and a cocoon spun over it. The cocoon
+// swells to a small square and hatches more of the same species; a pylon that
+// ends up inside it is taken too.
 //
 // The load-bearing parts are the guards, not the growth: "undisturbed" has to
 // mean undisturbed, conversion must not be a ratchet the player cannot undo,
@@ -111,7 +111,7 @@ function greenPylon(env, x, y, extra) {
         convertProgress: 0, upgraded: false,
     }, extra || {}));
 }
-// A board of clear floor with nothing on it, so cocoon has somewhere to creep.
+// A board of clear floor with nothing on it, so a cocoon has room to swell.
 function board(env, x0, x1, y0, y1) {
     for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
         if (!env.sandbox.worldTileMap.has(`${x},${y}`)) floorAt(env, x, y);
@@ -354,6 +354,47 @@ check('a pylon next to an existing nest does not grow a second one', () => {
     same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 1, 'should reuse the nest in reach');
 });
 
+check('THE REPORTED CASE: a grown nest is a dome, not a wall honeycomb', () => {
+    // The zone nests sit at y=-1 against the wall, and their renderer projects
+    // a honeycomb onto that wall face. A nest GROWN on open floor has no wall
+    // behind it, so that projection painted a flat rug on the ground.
+    ok(/obj\.nest && obj\.nestHealth > 0 && !obj\._infestNest/.test(GAME),
+       'the wall honeycomb still draws for grown nests');
+    ok(/obj\.nest && obj\.nestHealth <= 0 && !obj\._infestNest/.test(GAME),
+       'the broken-nest wreckage makes the same wall assumption');
+    ok(/function drawGrownNests/.test(INFEST), 'grown nests have no drawing of their own');
+    ok(/drawGrownNests\(\);/.test(GAME), 'drawGrownNests is never called');
+    ok(GAME.indexOf('drawGrownNests();') < GAME.indexOf('drawRadialMenu();'),
+       'it should draw under the interface');
+});
+
+check('a grown nest actually draws, and stops when it is gone', () => {
+    const env = makeEnv();
+    board(env, -4, 10, -1, 4);
+    const t = greenPylon(env, 3, 2);
+    convert(env, t, spinner());
+    const nest = env.sandbox.world.find(x => x._infestNest);
+    ok(nest && nest.nestHealth > 0, 'fixture: a nest should have grown');
+    env.calls.length = 0;
+    env.run('drawGrownNests()');
+    ok(env.calls.some(c => c.op === 'ellipse'), 'nothing drawn for a grown nest');
+    nest.nestHealth = 0;
+    env.calls.length = 0;
+    env.run('drawGrownNests()');
+    same(env.calls.length, 0, 'a dead grown nest should draw nothing');
+});
+
+check('nothing is painted flat on the floor under a cocoon', () => {
+    // The floor wash under the dome was what read as a carpet. The dome's own
+    // base half-ellipse stays; a full ground ellipse in the species colour
+    // does not.
+    const at = INFEST.indexOf('function drawCocoons');
+    const body = INFEST.slice(at, at + 2600);
+    ok(!/Silk floor/.test(body), 'the silk floor wash is back');
+    ok(!/ctx\.ellipse\(sx, sy, rw, rh, 0, 0, Math\.PI \* 2\)/.test(body),
+       'a full ground ellipse is being filled under the dome');
+});
+
 check('THE REPORTED CASE: a cocoon encapsulates a small square', () => {
     const env = makeEnv();
     board(env, -2, 8, 0, 4);
@@ -520,21 +561,22 @@ function neutral(env, x, y) {
                 health: 40, maxHealth: 40 };
     env.sandbox.actors.push(n); return n;
 }
-// A patch with a puddle at a known tile, without waiting on random growth.
-function puddleAt(env, px, py) {
-    board(env, -2, 8, 0, 4);
+// A cocoon spun by a venomous species, so the toxin tile is placed by the real
+// rule rather than faked. An earlier version pushed a tile outside the
+// footprint, which the restore now (correctly) rejects.
+function puddleAt(env) {
+    board(env, -4, 10, 0, 4);
     const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
+    convert(env, t, spinner('spider', 'striker'));
     const m = env.run('cocoons')[0];
-    m.tiles.push([px, py]);
-    m.puddles.push([px, py]);
-    return { m, t };
+    ok(m.puddles.length === 1, 'fixture: a spider cocoon should leave one toxin tile');
+    return { m, t, tile: m.puddles[0], px: m.puddles[0][0], py: m.puddles[0][1] };
 }
 
 check('THE REPORTED CASE: a puddle burns a follower standing in it', () => {
     const env = makeEnv();
-    puddleAt(env, 5, 2);
-    const f = follower(env, 5, 2);
+    const P = puddleAt(env);
+    const f = follower(env, P.px, P.py);
     tick(env, PUDDLE_INTERVAL + 2);
     ok(f.health < f.maxHealth, 'the follower took no damage');
     ok(env.sandbox.floatingTexts.some(x => /TOXIC/.test(x.text)), 'no callout on the follower');
@@ -542,8 +584,8 @@ check('THE REPORTED CASE: a puddle burns a follower standing in it', () => {
 
 check('it burns an un-recruited neutral too', () => {
     const env = makeEnv();
-    puddleAt(env, 5, 2);
-    const n = neutral(env, 5, 2);
+    const P = puddleAt(env);
+    const n = neutral(env, P.px, P.py);
     tick(env, PUDDLE_INTERVAL + 2);
     ok(n.health < n.maxHealth, 'a recruit standing in it should be hurt');
 });
@@ -555,31 +597,31 @@ function pinned(p) { p.update = () => {}; return p; }
 
 check('THE ASYMMETRY: predators are not touched by it', () => {
     const env = makeEnv();
-    puddleAt(env, 5, 2);
-    const p = pinned(mkPred(env, 5, 2));
+    const P = puddleAt(env);
+    const p = pinned(mkPred(env, P.px, P.py));
     const hp = p.health;
     tick(env, PUDDLE_INTERVAL * 3 + 2);
     same(p.health, hp, 'a predator should be immune to its own kind\'s toxin');
-    same(p.x, 5, 'fixture: it must not have moved off the puddle');
+    same(p.x, P.px, 'fixture: it must not have moved off the puddle');
 });
 
 check('THE ASYMMETRY: your clones are not touched either', () => {
     const env = makeEnv();
-    puddleAt(env, 5, 2);
-    const c = pinned(mkPred(env, 5, 2));
+    const P = puddleAt(env);
+    const c = pinned(mkPred(env, P.px, P.py));
     c.isClone = true; c.team = 'green';
     const hp = c.health;
     tick(env, PUDDLE_INTERVAL * 3 + 2);
     same(c.health, hp, 'a clone is still a predator');
-    same(c.x, 5, 'fixture: it must not have moved off the puddle');
+    same(c.x, P.px, 'fixture: it must not have moved off the puddle');
 });
 
 check('THE ASYMMETRY: the player walks through untouched', () => {
     const env = makeEnv();
     let hurt = 0;
     env.sandbox.hurtPlayer = () => { hurt++; return true; };
-    puddleAt(env, 5, 2);
-    env.sandbox.player.x = 5; env.sandbox.player.y = 2;
+    const P = puddleAt(env);
+    env.sandbox.player.x = P.px; env.sandbox.player.y = P.py;
     env.sandbox.health = 100;
     tick(env, PUDDLE_INTERVAL * 4 + 2);
     same(hurt, 0, 'the puddle should never reach for the player');
@@ -602,7 +644,7 @@ check('the predicate is the single place that decides', () => {
 
 check('only the puddle tiles bite, not the whole patch', () => {
     const env = makeEnv();
-    const { m } = puddleAt(env, 5, 2);
+    const P = puddleAt(env); const m = P.m;
     // A cocoon tile that is NOT a puddle.
     const plain = m.tiles.find(([tx, ty]) => !m.puddles.some(([px, py]) => px === tx && py === ty));
     ok(plain, 'fixture: the patch should have a non-puddle tile');
@@ -613,16 +655,16 @@ check('only the puddle tiles bite, not the whole patch', () => {
 
 check('standing beside a puddle is safe', () => {
     const env = makeEnv();
-    puddleAt(env, 5, 2);
-    const f = follower(env, 6.5, 2);       // more than 0.8 away
+    const P = puddleAt(env);
+    const f = follower(env, P.px + 1.6, P.py);   // well clear of the pool
     tick(env, PUDDLE_INTERVAL * 3 + 2);
     same(f.health, f.maxHealth, 'a follower clear of the pool should be unharmed');
 });
 
 check('it bites on an interval, not every frame', () => {
     const env = makeEnv();
-    puddleAt(env, 5, 2);
-    const f = follower(env, 5, 2);
+    const P = puddleAt(env);
+    const f = follower(env, P.px, P.py);
     tick(env, PUDDLE_INTERVAL - 1);
     same(f.health, f.maxHealth, 'bit before its interval elapsed');
     tick(env, 2);
@@ -631,8 +673,8 @@ check('it bites on an interval, not every frame', () => {
 
 check('a puddle dies with the patch that grew it', () => {
     const env = makeEnv();
-    const { t } = puddleAt(env, 5, 2);
-    const f = follower(env, 5, 2);
+    const P = puddleAt(env); const t = P.t;
+    const f = follower(env, P.px, P.py);
     t.pillarTeam = 'green';
     env.run('clearInfestationAt')(t);
     tick(env, PUDDLE_INTERVAL * 3 + 2);
@@ -693,7 +735,7 @@ check('the toxin is ONE tile beside the pylon, not the whole footprint', () => {
 
 check('puddles are drawn, and distinctly from the cocoon', () => {
     const env = makeEnv();
-    puddleAt(env, 5, 2);
+    const P = puddleAt(env);
     env.calls.length = 0;
     env.run('drawCocoons()');
     const fills = env.calls.filter(c => c.op === 'set:fillStyle').map(c => c.args[0]);
@@ -703,15 +745,39 @@ check('puddles are drawn, and distinctly from the cocoon', () => {
 
 check('puddles survive a refresh', () => {
     const env = makeEnv();
-    puddleAt(env, 5, 2);
+    const P = puddleAt(env);
     const blob = JSON.parse(JSON.stringify(env.run('serialiseCocoons()')));
     ok(blob[0].puddles.length > 0, 'puddles are not saved');
     env.run('restoreCocoons')(blob);
     same(env.run('cocoons')[0].puddles.length, 1, 'puddles did not come back');
-    // And a patch saved before puddles existed restores without throwing.
-    const legacy = blob.map(b => { const c = Object.assign({}, b); delete c.puddles; return c; });
+    // A save written before the toxin existed gets it back, because the
+    // enhancement is derived from the species rather than stored — a spider
+    // cocoon is toxic whether or not the save says so.
+    const legacy = blob.map(b => { const c = Object.assign({}, b); delete c.puddles; delete c.enhancement; return c; });
     env.run('restoreCocoons')(legacy);
-    same(env.run('cocoons')[0].puddles.length, 0, 'an older save should restore with no puddles');
+    same(env.run('cocoons')[0].puddles.length, 1, 'a venomous legacy save should regain its toxin');
+    // ...and a non-venomous one still gets none.
+    const plain = legacy.map(b => Object.assign({}, b, { species: 'ant' }));
+    env.run('restoreCocoons')(plain);
+    same(env.run('cocoons')[0].puddles.length, 0, 'an ant cocoon should have no toxin');
+});
+
+check('a creeping-era save does not bring the old carpet back', () => {
+    // Sessions written before the rework hold a sprawling footprint of up to
+    // fourteen scattered tiles. Restoring that verbatim put the carpet back.
+    const env = makeEnv();
+    const P = puddleAt(env);
+    const blob = JSON.parse(JSON.stringify(env.run('serialiseCocoons()')));
+    blob[0].tiles = [];
+    for (let i = 0; i < 14; i++) blob[0].tiles.push([3 + i, 2]);   // a long creeping strip
+    blob[0].puddles = blob[0].tiles.slice(0, 5);
+    env.run('restoreCocoons')(blob);
+    const m = env.run('cocoons')[0];
+    ok(m.tiles.length <= SPAN_MAX * SPAN_MAX,
+       `restored ${m.tiles.length} tiles from a creeping-era save`);
+    ok(m.puddles.length <= 1, `restored ${m.puddles.length} toxin tiles, expected at most one`);
+    const xs = m.tiles.map(([x]) => x);
+    ok(Math.max(...xs) - Math.min(...xs) + 1 <= SPAN_MAX, 'the footprint should be a square again');
 });
 
 check('the damage is a nuisance, not an execution', () => {

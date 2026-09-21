@@ -3,9 +3,10 @@
 //
 //  Left undisturbed, a predator does not just wander. It walks to the nearest
 //  pylon you hold, chews it over to its own side, and then seeds the ground
-//  around it: a nest, and a cocoon that creeps outward and hatches more of the
-//  same species. A cocoon that reaches a second pylon spreads onto that one too,
-//  so a neglected stretch of the map turns into a nursery.
+//  around it: a nest, and a cocoon spun over the pylon. The cocoon swells to a
+//  small square and hatches more of the same species; a pylon that ends up
+//  inside the widened square is taken with it, so a neglected stretch of the
+//  map turns into a nursery.
 //
 //  The counter is the pylon itself. Reclaim it and everything anchored to it
 //  dies with it — see clearInfestationAt(), called from the reconstruction
@@ -395,7 +396,7 @@ function restoreCocoons(data) {
     cocoons.length = 0;
     if (!Array.isArray(data)) return;
     for (const d of data) {
-        if (!d || !Array.isArray(d.tiles)) continue;
+        if (!d) continue;
         const anchors = [];
         for (const a of (d.anchors || [])) {
             const tile = typeof getTile === "function" ? getTile(a[0], a[1]) : null;
@@ -404,9 +405,8 @@ function restoreCocoons(data) {
         if (anchors.length === 0) continue;   // nothing holds it up any more
         cocoons.push({
             x: d.x, y: d.y,
-            tiles: d.tiles.filter(t => Array.isArray(t) && t.length === 2).map(([a, b]) => [a, b]),
-            puddles: (Array.isArray(d.puddles) ? d.puddles : [])
-                       .filter(t => Array.isArray(t) && t.length === 2).map(([a, b]) => [a, b]),
+            tiles: [],       // recomputed from the span below
+            puddles: [],
             anchors,
             species: d.species || "ant", className: d.className || "scout",
             colour: d.colour || "#aa55ff",
@@ -418,12 +418,104 @@ function restoreCocoons(data) {
             nest: (d.nest && typeof getTile === "function") ? getTile(d.nest[0], d.nest[1]) : null,
             pulse: Math.random() * Math.PI * 2,
         });
+        // Footprint and toxin come from the span, not from whatever was saved:
+        // a session written before the cocoon rework holds a creeping-era
+        // patch of up to fourteen scattered tiles, and restoring that verbatim
+        // brought the old carpet back.
+        const m = cocoons[cocoons.length - 1];
+        m.tiles = _cocoonFootprint(m, m.span);
+        const savedToxin = (Array.isArray(d.puddles) ? d.puddles : [])
+            .filter(t => Array.isArray(t) && t.length === 2)
+            .filter(([a, b]) => m.tiles.some(([tx, ty]) => tx === a && ty === b));
+        m.puddles = savedToxin.slice(0, 1);
+        _applyEnhancement(m);
     }
 }
 
 // ── Drawing ───────────────────────────────────────────────
 // Organic blotches on the floor in the species' own colour, so which thing is
 // breeding there is readable at a glance.
+// One dome, drawn for both the cocoons and the nests an infestation grows.
+// Ribbed from base to crown the way a chrysalis is, with nothing painted flat
+// on the floor underneath it — a floor wash was what read as a carpet.
+function _drawDome(sx, sy, rx, rh, domeH, colour, breathe, ribs) {
+    ctx.globalAlpha = 0.52 + breathe * 0.06;
+    ctx.fillStyle = "#1a1220";
+    ctx.beginPath();
+    ctx.ellipse(sx, sy, rx, domeH, 0, Math.PI, Math.PI * 2);   // upper half only
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(sx, sy, rx, rh * 0.9, 0, 0, Math.PI);          // the base it sits on
+    ctx.fill();
+    // Sheen down one flank, so it reads as spun silk rather than a hole
+    ctx.globalAlpha = 0.16 + breathe * 0.05;
+    ctx.fillStyle = colour;
+    ctx.beginPath();
+    ctx.ellipse(sx - rx * 0.34, sy - domeH * 0.42, rx * 0.30, domeH * 0.40, -0.25, 0, Math.PI * 2);
+    ctx.fill();
+    // Ribs: arcs from one side of the base, over the crown, to the other
+    ctx.globalAlpha = 0.26 + breathe * 0.08;
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= ribs; i++) {
+        const w = rx * Math.sin((i / (ribs + 1)) * Math.PI);
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, w, domeH, 0, Math.PI, Math.PI * 2);
+        ctx.stroke();
+    }
+    // A couple of girth bands around it
+    for (let i = 1; i <= 2; i++) {
+        const h = domeH * (i / 3);
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - h, rx * Math.cos((i / 3) * Math.PI * 0.42), rh * 0.55, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    // Rim where the shell meets the deck
+    ctx.globalAlpha = 0.34 + breathe * 0.10;
+    ctx.beginPath();
+    ctx.ellipse(sx, sy, rx, rh * 0.9, 0, 0, Math.PI * 2);
+    ctx.stroke();
+}
+
+function _infestToScreen(wx, wy) {
+    return [
+        (wx - player.visualX - (wy - player.visualY)) * TILE_W + canvas.width  / 2,
+        (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H,
+    ];
+}
+
+// A nest an infestation grew stands on open floor, so it gets a dome of its
+// own rather than the zone nests' wall honeycomb, which would be projected
+// onto a wall that is not behind it.
+function drawGrownNests() {
+    let any = false;
+    for (const t of world) if (t._infestNest && t.nest && t.nestHealth > 0) { any = true; break; }
+    if (!any) return;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const t of world) {
+        if (!t._infestNest || !t.nest || t.nestHealth <= 0) continue;
+        const [sx, sy] = _infestToScreen(t.x, t.y);
+        if (sx < -120 || sx > canvas.width + 120 || sy < -120 || sy > canvas.height + 120) continue;
+        t.nestPulse = (t.nestPulse || 0) + 1;
+        const breathe = 0.5 + 0.5 * Math.sin(t.nestPulse * 0.03);
+        const hr = Math.max(0.2, t.nestHealth / (t.nestMaxHealth || 200));
+        // Smaller than a cocoon, and it sags as it is damaged.
+        _drawDome(sx, sy, TILE_W * 0.42, TILE_H * 0.42, 26 * hr, "#ff7744", breathe, 3);
+        // The mouth it hatches from
+        ctx.globalAlpha = 0.5 + breathe * 0.3;
+        ctx.fillStyle = "#12080a";
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 5, TILE_W * 0.10, TILE_H * 0.16, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        if (typeof drawHealthBar === "function") {
+            drawHealthBar(sx - 20, sy - 26 * hr - 14, 40, 4, t.nestHealth, t.nestMaxHealth || 200);
+        }
+    }
+    ctx.restore();
+}
+
 function drawCocoons() {
     if (cocoons.length === 0) return;
     const toScreen = (wx, wy) => [
@@ -447,58 +539,9 @@ function drawCocoons() {
         const rw = TILE_W * span * 0.52;
         const rh = TILE_H * span * 0.52;
 
-        // ── Silk floor, holding the square together ──
-        ctx.globalAlpha = 0.13 + breathe * 0.03;
-        ctx.fillStyle = m.colour;
-        ctx.beginPath();
-        ctx.ellipse(sx, sy, rw, rh, 0, 0, Math.PI * 2);
-        ctx.fill();
-
         // ── The shell ──
-        // A dome over the footprint, ribbed from base to crown the way a
-        // chrysalis is. An earlier pass drew concentric rings on the ground
-        // plus threads out to the tile corners, which read as a spiderweb
-        // target rather than as something spun over the pylon.
         const domeH = 30 + span * 12;
-        const rx = rw * 0.80;
-        ctx.globalAlpha = 0.52 + breathe * 0.06;
-        ctx.fillStyle = "#1a1220";
-        ctx.beginPath();
-        ctx.ellipse(sx, sy, rx, domeH, 0, Math.PI, Math.PI * 2);   // upper half only
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(sx, sy, rx, rh * 0.9, 0, 0, Math.PI);          // the base it sits on
-        ctx.fill();
-        // Sheen down one flank, so it reads as spun silk rather than a hole
-        ctx.globalAlpha = 0.16 + breathe * 0.05;
-        ctx.fillStyle = m.colour;
-        ctx.beginPath();
-        ctx.ellipse(sx - rx * 0.34, sy - domeH * 0.42, rx * 0.30, domeH * 0.40, -0.25, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Ribs: arcs from one side of the base, over the crown, to the other.
-        ctx.globalAlpha = 0.26 + breathe * 0.08;
-        ctx.strokeStyle = m.colour;
-        ctx.lineWidth = 1;
-        for (let i = 1; i <= 4; i++) {
-            const f = i / 5;                       // 0..1 across the dome
-            const w = rx * Math.sin(f * Math.PI);  // widest at the middle
-            ctx.beginPath();
-            ctx.ellipse(sx, sy, w, domeH, 0, Math.PI, Math.PI * 2);
-            ctx.stroke();
-        }
-        // A couple of girth bands around it
-        for (let i = 1; i <= 2; i++) {
-            const h = domeH * (i / 3);
-            ctx.beginPath();
-            ctx.ellipse(sx, sy - h, rx * Math.cos((i / 3) * Math.PI * 0.42), rh * 0.55, 0, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-        // Rim where the shell meets the deck
-        ctx.globalAlpha = 0.34 + breathe * 0.10;
-        ctx.beginPath();
-        ctx.ellipse(sx, sy, rx, rh * 0.9, 0, 0, Math.PI * 2);
-        ctx.stroke();
+        _drawDome(sx, sy, rw * 0.80, rh, domeH, m.colour, breathe, 4);
 
         // ── The toxin, if this species carries one ──
         // One tile beside the pylon, dull rather than lit: it still has to be

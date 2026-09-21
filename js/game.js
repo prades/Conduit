@@ -1597,7 +1597,7 @@ function render() {
             if (obj.nodeType && obj.nodeType !== 'wall_panel') drawCapturableNode(obj, px, py);
 
             // ── BROKEN NEST POD — charred gray husk with teal accent ──
-            if (obj.nest && obj.nestHealth <= 0) {
+            if (obj.nest && obj.nestHealth <= 0 && !obj._infestNest) {
                 const sW1x=px, sW1y=py-60, numT=4, WH=110;
                 const wfBL={x:sW1x-TILE_W,y:sW1y+TILE_H};
                 const wfBR={x:sW1x+(numT-1)*TILE_W,y:sW1y+(numT+1)*TILE_H};
@@ -1662,7 +1662,12 @@ function render() {
             }
 
             // ── SPAWN NEST — honeycomb hex holes filling 4-tile wall face ──
-            if (obj.nest && obj.nestHealth > 0) {
+            // Only for the generated zone nests, which sit at y=-1 against the
+            // wall. A nest GROWN by an infestation stands on open floor, and
+            // this projection would paint its honeycomb onto a wall that is not
+            // there — which is the flat rug that kept showing up. Those are
+            // drawn as domes instead, in drawGrownNests().
+            if (obj.nest && obj.nestHealth > 0 && !obj._infestNest) {
                 obj.nestPulse = (obj.nestPulse || 0) + 1;
                 const hr    = obj.nestHealth / obj.nestMaxHealth;
                 const pulse = 0.5 + 0.5 * Math.sin(obj.nestPulse * 0.06);
@@ -2898,6 +2903,7 @@ function render() {
     drawHoldLine();
     // Cocoon is on the floor, so it draws under the link filaments.
     drawCocoons();
+    drawGrownNests();
     drawGeneratorLinks();
     drawConversionBars();
     drawTutorialHighlight();
