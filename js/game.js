@@ -1661,6 +1661,10 @@ function render() {
                 }
             }
 
+            // A nest an infestation grew stands on open floor, so it is drawn
+            // here in the sorted pass rather than as an overlay.
+            drawGrownNestForTile(obj, px, py);
+
             // ── SPAWN NEST — honeycomb hex holes filling 4-tile wall face ──
             // Only for the generated zone nests, which sit at y=-1 against the
             // wall. A nest GROWN by an infestation stands on open floor, and
@@ -1938,7 +1942,12 @@ function render() {
                 ctx.restore();
             }
 
-            // Pillar — 6 unique style-based designs
+            // The cocoon encapsulating this pylon, under the pylon body so the
+            // pylon rises out of the package rather than the package being
+            // pasted over it.
+            drawCocoonForTile(obj, px, py);
+
+            // Pillar — one design, drawn for every pylon and upgrade
             if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
                 if(obj.converting){ctx.fillStyle="#ff0";}
                 const _base=py+TILE_H; // anchor to tile center, not north vertex
@@ -2901,9 +2910,10 @@ function render() {
     // rather than up with the interface.
     drawTraps();
     drawHoldLine();
-    // Cocoon is on the floor, so it draws under the link filaments.
-    drawCocoons();
-    drawGrownNests();
+    // Cocoons and grown nests are NOT drawn here. As a flat overlay they
+    // painted over every pylon on the board, including ones in front of them,
+    // which made a nest look like it was floating above the pylon instead of
+    // sitting under it. They draw per tile in the depth-sorted pass instead.
     drawGeneratorLinks();
     drawConversionBars();
     drawTutorialHighlight();

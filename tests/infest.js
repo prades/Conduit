@@ -144,6 +144,20 @@ function tick(env, n, fn) {
 function convert(env, t, pred) {
     env.run('convertPylonToRed')(t, pred);
 }
+// Drive the per-tile draw the way the depth-sorted pass in game.js does: the
+// cocoon and the grown nest are no longer flat overlays, so they are called
+// with a tile and that tile's screen position.
+function drawTile(env, t) {
+    const px = (t.x - env.sandbox.player.visualX - (t.y - env.sandbox.player.visualY)) * 60 + 400;
+    const py = (t.x - env.sandbox.player.visualX + (t.y - env.sandbox.player.visualY)) * 30 + 300;
+    env.run('drawCocoonForTile')(t, px, py);
+    env.run('drawGrownNestForTile')(t, px, py);
+}
+// Every cocoon and grown nest on the board, in tile order.
+function drawAll(env) {
+    for (const t of env.sandbox.world) drawTile(env, t);
+}
+
 // A predator-shaped object that is NOT in actors[]. The shape tests need a
 // converted pylon without a live predator on the board, which would otherwise
 // walk off and convert whatever else the test had placed.
@@ -347,6 +361,41 @@ check('THE REPORTED CASE: a nest grows beside the converted pylon', () => {
     ok(nests[0]._infestNest, 'it should be marked as grown rather than generated');
 });
 
+check('THE REPORTED CASE: the nest lands below the pylon, never above it', () => {
+    // Depth in this projection is x+y: a bigger sum draws lower and in front.
+    // The nest used to prefer (x, y-1), a SMALLER sum, so it appeared a row
+    // above the pylon it belongs to.
+    const env = makeEnv();
+    board(env, -4, 10, -1, 5);
+    const t = greenPylon(env, 3, 2);
+    convert(env, t, spinner());
+    const nest = env.sandbox.world.find(x => x._infestNest);
+    ok(nest, 'no nest grew');
+    ok(nest.x + nest.y > t.x + t.y,
+       `nest at ${nest.x},${nest.y} (depth ${nest.x + nest.y}) is not in front of the ` +
+       `pylon at ${t.x},${t.y} (depth ${t.x + t.y})`);
+});
+
+check('it will settle for beside, and only goes above as a last resort', () => {
+    // Fence the pylon in so the tiles in front are unavailable.
+    const env = makeEnv();
+    for (const [x, y] of [[3, 2], [4, 3], [3, 3], [4, 2], [2, 3], [4, 1], [2, 2], [3, 1]]) {
+        floorAt(env, x, y);
+    }
+    const t = env.sandbox.worldTileMap.get('3,2');
+    Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green',
+                       health: 80, maxHealth: 80, attackMode: true });
+    env.sandbox._pillarCache.push(t);
+    // Occupy everything at depth >= the pylon's, leaving only tiles above it.
+    for (const k of ['4,3', '3,3', '4,2', '2,3', '4,1']) {
+        env.sandbox.worldTileMap.get(k).nodeType = 'blocked';
+    }
+    convert(env, t, spinner());
+    const nest = env.sandbox.world.find(x => x._infestNest);
+    ok(nest, 'it should still find somewhere');
+    ok(nest.x + nest.y < t.x + t.y, 'with nowhere else it may go above');
+});
+
 check('a pylon next to an existing nest does not grow a second one', () => {
     const env = makeEnv();
     board(env, -2, 6, -1, 4);
@@ -364,10 +413,7 @@ check('THE REPORTED CASE: a grown nest is a dome, not a wall honeycomb', () => {
        'the wall honeycomb still draws for grown nests');
     ok(/obj\.nest && obj\.nestHealth <= 0 && !obj\._infestNest/.test(GAME),
        'the broken-nest wreckage makes the same wall assumption');
-    ok(/function drawGrownNests/.test(INFEST), 'grown nests have no drawing of their own');
-    ok(/drawGrownNests\(\);/.test(GAME), 'drawGrownNests is never called');
-    ok(GAME.indexOf('drawGrownNests();') < GAME.indexOf('drawRadialMenu();'),
-       'it should draw under the interface');
+    ok(/function drawGrownNestForTile/.test(INFEST), 'grown nests have no drawing of their own');
 });
 
 check('a grown nest actually draws, and stops when it is gone', () => {
@@ -378,14 +424,15 @@ check('a grown nest actually draws, and stops when it is gone', () => {
     const nest = env.sandbox.world.find(x => x._infestNest);
     ok(nest && nest.nestHealth > 0, 'fixture: a nest should have grown');
     env.calls.length = 0;
-    env.run('drawGrownNests()');
+    drawAll(env);
     // A ziggurat is drawn with paths, not ellipses — the shape changed from a
     // dome, so this asserts that something was filled rather than which
     // primitive was used.
     ok(env.calls.some(c => c.op === 'fill'), 'nothing drawn for a grown nest');
     nest.nestHealth = 0;
     env.calls.length = 0;
-    env.run('drawGrownNests()');
+    // Only the nest here — drawAll would also draw the cocoon on its own tile.
+    drawTile(env, nest);
     same(env.calls.length, 0, 'a dead grown nest should draw nothing');
 });
 
@@ -423,7 +470,7 @@ check('nothing round is drawn for a cocoon at all', () => {
     convert(env, t, spinner('spider', 'striker'));
     ok(env.run('cocoons')[0].puddles.length > 0, 'fixture: should carry the toxin');
     env.calls.length = 0;
-    env.run('drawCocoons()');
+    drawAll(env);
     const round = env.calls.filter(c => c.op === 'arc' || c.op === 'ellipse');
     same(round.length, 0, `the cocoon emitted ${round.length} round primitives`);
     ok(env.calls.some(c => c.op === 'lineTo'), 'fixture: it should have drawn something');
@@ -436,7 +483,7 @@ check('a grown nest is geometric too', () => {
     convert(env, t, spinner('ant', 'scout'));
     ok(env.sandbox.world.some(x => x._infestNest), 'fixture: a nest should have grown');
     env.calls.length = 0;
-    env.run('drawGrownNests()');
+    drawAll(env);
     const round = env.calls.filter(c => c.op === 'arc' || c.op === 'ellipse');
     same(round.length, 0, `the grown nest emitted ${round.length} round primitives`);
     ok(env.calls.some(c => c.op === 'fill'), 'nothing drawn for a grown nest');
@@ -445,8 +492,11 @@ check('a grown nest is geometric too', () => {
 // Every coordinate the drawing emits, so its real extent can be measured
 // rather than assumed.
 function drawnExtent(env, fn) {
+    return drawnExtentOf(env, () => env.run(fn));
+}
+function drawnExtentOf(env, run) {
     env.calls.length = 0;
-    env.run(fn);
+    run();
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const c of env.calls) {
         if (!['moveTo', 'lineTo', 'ellipse', 'bezierCurveTo', 'arc'].includes(c.op)) continue;
@@ -495,7 +545,7 @@ check('the threads it runs to the footprint cannot hide anything', () => {
     const t = greenPylon(env, 0, 2);
     convert(env, t, spinner('spider', 'striker'));
     env.calls.length = 0;
-    env.run('drawCocoons()');
+    drawAll(env);
     const widths = env.calls.filter(c => c.op === 'set:lineWidth').map(c => c.args[0]);
     ok(widths.length > 0, 'nothing sets a line width');
     ok(widths.every(w => w <= 1.5), `a thread is ${Math.max(...widths)}px thick`);
@@ -518,7 +568,7 @@ check('it barely grows with the footprint', () => {
         m.tiles = [[m.x, m.y]];      // no threads, so this is the sac alone
         m.puddles = [];
         m.pulse = 0;
-        const e = drawnExtent(env, 'drawCocoons()');
+        const e = drawnExtentOf(env, () => drawTile(env, t));
         return { w: e.maxX - e.minX, h: e.maxY - e.minY };
     };
     const a = measure(SPAN_MIN), b = measure(SPAN_MAX);
@@ -899,7 +949,7 @@ check('puddles are drawn, and distinctly from the cocoon', () => {
     const env = makeEnv();
     const P = puddleAt(env);
     env.calls.length = 0;
-    env.run('drawCocoons()');
+    drawAll(env);
     const fills = env.calls.filter(c => c.op === 'set:fillStyle').map(c => c.args[0]);
     ok(fills.includes(PUDDLE_COLOUR), 'the puddle colour is never used');
     ok(env.calls.some(c => c.op === 'stroke'), 'no meniscus outline');
@@ -1024,16 +1074,34 @@ check('the predator AI calls it, and only after the ability and worker ticks', (
     ok(i > a && i > w, 'infesting must not pre-empt an ability windup or worker duty');
 });
 
-check('the game loop updates and draws it', () => {
+check('THE REPORTED CASE: they draw in the world, under the pylons', () => {
+    // As flat overlays these painted over every pylon on the board, so a nest
+    // behind a pylon still landed on top of it and looked like it was floating
+    // above it. They belong in the depth-sorted tile pass.
     ok(/updateInfestation\(\);/.test(GAME), 'never updated');
-    ok(/drawCocoons\(\);/.test(GAME), 'never drawn');
     ok(/drawConversionBars\(\);/.test(GAME), 'the progress bar is never drawn');
-    // Cocoon is on the floor, so it must go under the interface and under the
-    // generator filaments.
-    ok(GAME.indexOf('drawCocoons();') < GAME.indexOf('drawGeneratorLinks();'), 'cocoon should draw under the links');
-    ok(GAME.indexOf('drawCocoons();') < GAME.indexOf('drawRadialMenu();'), 'cocoon should draw under the interface');
-    for (const fn of ['drawCocoons', 'drawConversionBars', 'updateInfestation']) {
-        same((GAME.match(new RegExp('^\\s*' + fn + '\\(\\);', 'gm')) || []).length, 1, fn + ' called more than once');
+    ok(!/drawCocoons\(\);/.test(GAME), 'the flat cocoon overlay is back');
+    ok(!/drawGrownNests\(\);/.test(GAME), 'the flat nest overlay is back');
+
+    const cocoonAt = GAME.indexOf('drawCocoonForTile(obj, px, py);');
+    const nestAt   = GAME.indexOf('drawGrownNestForTile(obj, px, py);');
+    ok(cocoonAt > -1, 'the cocoon is never drawn per tile');
+    ok(nestAt   > -1, 'the grown nest is never drawn per tile');
+
+    // Both must be inside the sorted draw loop, not after it.
+    const loopAt  = GAME.indexOf('drawList.forEach(obj=>{');
+    const ifaceAt = GAME.indexOf('drawRadialMenu();');
+    ok(loopAt > -1 && ifaceAt > loopAt, 'could not locate the sorted pass');
+    ok(cocoonAt > loopAt && cocoonAt < ifaceAt, 'the cocoon is outside the sorted pass');
+    ok(nestAt   > loopAt && nestAt   < ifaceAt, 'the grown nest is outside the sorted pass');
+
+    // And the cocoon must precede the pylon body, so the pylon rises out of it.
+    const pylonAt = GAME.indexOf('if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {');
+    ok(pylonAt > -1, 'could not find the pylon body branch');
+    ok(cocoonAt < pylonAt, 'the cocoon is pasted over the pylon instead of under it');
+
+    for (const fn of ['drawCocoonForTile', 'drawGrownNestForTile', 'drawConversionBars', 'updateInfestation']) {
+        same((GAME.match(new RegExp(fn + '\\(', 'g')) || []).length, 1, fn + ' called more than once');
     }
 });
 
@@ -1082,7 +1150,7 @@ check('nothing is drawn when there is no infestation', () => {
     const env = makeEnv();
     board(env, -2, 4, 0, 4);
     env.calls.length = 0;
-    env.run('drawCocoons()');
+    drawAll(env);
     env.run('drawConversionBars()');
     same(env.calls.length, 0, 'drew something with no cocoon and no conversion');
 });

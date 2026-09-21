@@ -164,8 +164,17 @@ function seedNestNear(t, pred) {
     for (const obj of world) {
         if (obj.nest && obj.nestHealth > 0 && Math.hypot(obj.x - t.x, obj.y - t.y) < 4) return null;
     }
-    const spots = [[t.x, t.y - 1], [t.x + 1, t.y], [t.x - 1, t.y], [t.x, t.y + 1],
-                   [t.x + 1, t.y - 1], [t.x - 1, t.y - 1]];
+    // Ordered by where the tile lands on screen. Depth here is x+y: a bigger
+    // sum draws lower and in front. The first choice used to be (x, y-1),
+    // which is a SMALLER sum — so the nest appeared a row above the pylon it
+    // belongs to. Below and in front first now, beside second, and above only
+    // if there is genuinely nowhere else.
+    const spots = [
+        [t.x + 1, t.y + 1],                      // +2: clearly in front
+        [t.x,     t.y + 1], [t.x + 1, t.y],      // +1: below-left, below-right
+        [t.x - 1, t.y + 1], [t.x + 1, t.y - 1],  //  0: beside, same row
+        [t.x - 1, t.y],     [t.x,     t.y - 1],  // -1: last resort, above
+    ];
     for (const [sx, sy] of spots) {
         const tile = typeof getTile === "function" ? getTile(sx, sy) : null;
         if (!tile || tile.type !== "floor") continue;
@@ -572,16 +581,16 @@ function _infestToScreen(wx, wy) {
 // A nest an infestation grew stands on open floor, so it gets a dome of its
 // own rather than the zone nests' wall honeycomb, which would be projected
 // onto a wall that is not behind it.
-function drawGrownNests() {
-    let any = false;
-    for (const t of world) if (t._infestNest && t.nest && t.nestHealth > 0) { any = true; break; }
-    if (!any) return;
+// Called from the depth-sorted tile pass in game.js, at the point that tile is
+// drawn. As a flat overlay these painted over every pylon on the board — a nest
+// on a tile BEHIND a pylon still landed on top of it, which is what made them
+// look like they were floating above the pylons instead of sitting under them.
+function drawGrownNestForTile(t, px, py) {
+    if (!t || !t._infestNest || !t.nest || t.nestHealth <= 0) return;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    for (const t of world) {
-        if (!t._infestNest || !t.nest || t.nestHealth <= 0) continue;
-        const [sx, sy] = _infestToScreen(t.x, t.y);
-        if (sx < -120 || sx > canvas.width + 120 || sy < -120 || sy > canvas.height + 120) continue;
+    {
+        const sx = px, sy = py + TILE_H;   // tile centre, as the pylons anchor
         t.nestPulse = (t.nestPulse || 0) + 1;
         const breathe = 0.5 + 0.5 * Math.sin(t.nestPulse * 0.03);
         const hr = Math.max(0.2, t.nestHealth / (t.nestMaxHealth || 200));
@@ -615,25 +624,17 @@ function drawGrownNests() {
     ctx.restore();
 }
 
-function drawCocoons() {
-    if (cocoons.length === 0) return;
-    const toScreen = (wx, wy) => [
-        (wx - player.visualX - (wy - player.visualY)) * TILE_W + canvas.width  / 2,
-        (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H,
-    ];
+// One cocoon, positioned by its caller. The shell is anchored on the pylon it
+// encapsulates rather than on the footprint's centroid: an even 2x2 puts the
+// pylon at a corner, and centring on the centroid made the cocoon look spun
+// beside the pylon instead of over it.
+function _drawOneCocoon(m, sx, sy) {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    for (const m of cocoons) {
         m.pulse += 0.012;
         const breathe = 0.5 + 0.5 * Math.sin(m.pulse);
-        if (m.tiles.length === 0) continue;
+        if (m.tiles.length === 0) { ctx.restore(); return; }
 
-        // The shell is anchored on the pylon it encapsulates, not on the
-        // footprint's centroid: an even 2x2 puts the pylon at a corner, and
-        // centring on the centroid made the cocoon look like it had been spun
-        // beside the pylon rather than over it.
-        const [sx, sy] = toScreen(m.x, m.y);
-        if (sx < -160 || sx > canvas.width + 160 || sy < -160 || sy > canvas.height + 160) continue;
         const span = Math.max(1, m.span);
         const rw = TILE_W * span * 0.52;
         const rh = TILE_H * span * 0.52;
@@ -698,9 +699,21 @@ function drawCocoons() {
             ctx.stroke();
         }
         ctx.globalAlpha = 1;
-    }
     ctx.restore();
 }
+
+// The cocoon whose anchor is this tile. Drawn from the same per-tile pass and
+// BEFORE the pylon body, so the pylon rises out of the package rather than the
+// package being pasted over it.
+function drawCocoonForTile(t, px, py) {
+    if (cocoons.length === 0 || !t) return;
+    for (const m of cocoons) {
+        if (m.x !== t.x || m.y !== t.y) continue;
+        _drawOneCocoon(m, px, py + TILE_H);
+    }
+}
+
+
 
 // The bar shown over a pylon being chewed on, so a conversion in progress is
 // something the player can see and interrupt rather than discover afterwards.
