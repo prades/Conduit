@@ -42,6 +42,8 @@ const TOXIN_SPECIES = JSON.parse(
 const PUDDLE_INTERVAL = constant('COCOON_PUDDLE_INTERVAL');
 const PUDDLE_DAMAGE   = constant('COCOON_PUDDLE_DAMAGE');
 const PUDDLE_COLOUR   = INFEST.match(/const COCOON_PUDDLE_COLOUR\s*=\s*"([^"]+)"/)[1];
+// Half a tile is 30px; a sac should not reach much past one tile either side.
+const TILE_W_HALF_LIMIT = 40;
 
 function makeEnv() {
     const calls = [];
@@ -387,47 +389,123 @@ check('a grown nest actually draws, and stops when it is gone', () => {
     same(env.calls.length, 0, 'a dead grown nest should draw nothing');
 });
 
-check('THE REPORTED CASE: it is a stepped pyramid, not a dome', () => {
-    ok(/function _drawZiggurat/.test(INFEST), 'no stepped-pyramid drawing');
-    ok(!/function _drawDome/.test(INFEST), 'the dome drawing is still there');
-    const at = INFEST.indexOf('function _drawZiggurat');
+check('THE REPORTED CASE: it is a silk sac — no pyramid, no dome, no carpet', () => {
+    ok(/function _drawCocoonSac/.test(INFEST), 'no sac drawing');
+    ok(!/function _drawZiggurat/.test(INFEST), 'the stepped pyramid is still there');
+    ok(!/function _drawDome/.test(INFEST), 'the dome is still there');
+    const at = INFEST.indexOf('function _drawCocoonSac');
     const body = INFEST.slice(at, INFEST.indexOf('function _infestToScreen'));
-    // Stacked isometric tiers: diamond faces built from paths, no arcs.
-    ok(!/ctx\.ellipse/.test(body), 'a ziggurat should not be drawn with ellipses');
-    ok(/for \(let i = 0; i < n; i\+\+\)/.test(body), 'it should step through tiers');
-    ok(/Left face/.test(body) && /Right face/.test(body) && /Top face/.test(body),
-       'each tier needs its three visible isometric faces');
+    // A spun sac: tapered with beziers, wrapped, with loose fibres.
+    ok(/bezierCurveTo/.test(body), 'a sac should taper, not be a capsule');
+    ok(/banding/i.test(body), 'no silk banding');
+    ok(/fibres/i.test(body), 'no loose fibres off the ends');
     // Both the cocoon and the grown nests use it.
-    same((INFEST.match(/_drawZiggurat\(/g) || []).length, 3,
+    same((INFEST.match(/_drawCocoonSac\(/g) || []).length, 3,
          'expected the definition plus two call sites');
 });
 
-check('the tiers step inward and upward', () => {
-    // Driven through the recorder so the geometry is checked, not just the
-    // presence of the code.
-    const env = makeEnv();
+// Every coordinate the drawing emits, so its real extent can be measured
+// rather than assumed.
+function drawnExtent(env, fn) {
     env.calls.length = 0;
-    env.run('_drawZiggurat')(100, 200, 40, 20, 60, '#ff7744', 0.5, 4);
-    const tops = env.calls.filter(c => c.op === 'moveTo').map(c => c.args);
-    ok(tops.length >= 8, `expected several tier paths, got ${tops.length}`);
-    // Each successive tier is narrower and higher. Deduped by width, because a
-    // tier issues more than one moveTo at its left edge (the face and the lip).
-    const byWidth = new Map();
+    env.run(fn);
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const c of env.calls) {
-        if (c.op !== 'moveTo' || c.args[0] >= 100) continue;
-        const w = Math.round(100 - c.args[0]);
-        if (!byWidth.has(w)) byWidth.set(w, c.args[1]);
-        else byWidth.set(w, Math.min(byWidth.get(w), c.args[1]));
+        if (!['moveTo', 'lineTo', 'ellipse', 'bezierCurveTo', 'arc'].includes(c.op)) continue;
+        // x,y are the first two args for every one of these.
+        const pts = c.op === 'bezierCurveTo'
+            ? [[c.args[0], c.args[1]], [c.args[2], c.args[3]], [c.args[4], c.args[5]]]
+            : [[c.args[0], c.args[1]]];
+        for (const [x, y] of pts) {
+            if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+            minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+        }
+        // An ellipse carries its radii, which extend past its centre.
+        if (c.op === 'ellipse') {
+            minX = Math.min(minX, c.args[0] - c.args[2]); maxX = Math.max(maxX, c.args[0] + c.args[2]);
+            minY = Math.min(minY, c.args[1] - c.args[3]); maxY = Math.max(maxY, c.args[1] + c.args[3]);
+        }
     }
-    const tiers = [...byWidth.entries()].sort((a, b) => b[0] - a[0]);   // widest first
-    same(tiers.length, 4, `expected 4 distinct tier widths, got ${tiers.map(t => t[0]).join(',')}`);
-    for (let i = 1; i < tiers.length; i++) {
-        ok(tiers[i][0] < tiers[i - 1][0], `tier ${i} should be narrower`);
-        ok(tiers[i][1] < tiers[i - 1][1], `tier ${i} should sit higher`);
-    }
-    // The bottom course sits on the ground, not floating above it.
-    const lowest = Math.max(...env.calls.filter(c => c.op === 'lineTo').map(c => c.args[1]));
-    ok(lowest >= 200, `the base should reach the ground at y=200, lowest was ${lowest}`);
+    return { minX, maxX, minY, maxY };
+}
+
+check('THE REPORTED CASE: it is small enough not to stand in front of things', () => {
+    // The pyramid rose ~66px over a 3x3 and hid whatever walked behind it.
+    // A predator sprite is drawn roughly 44px tall, so the sac has to stay
+    // well under that to leave one visible.
+    //
+    // The sac body is measured on its own. drawCocoons also runs hairline
+    // threads out to the footprint tiles, which legitimately reach a tile
+    // away; those cannot hide anything and would otherwise dominate this.
+    const env = makeEnv();
+    const GY = 330;
+    const biggest = `_drawCocoonSac(400, ${GY}, COCOON_SAC_W + ${SPAN_MAX - SPAN_MIN} * 3, ` +
+                    `COCOON_SAC_H + ${SPAN_MAX - SPAN_MIN} * 2, "#cc2244", 1, 3)`;
+    const e = drawnExtent(env, biggest);
+    const height = GY - e.minY;
+    ok(height < 30, `the sac stands ${height.toFixed(0)}px tall — too tall to see past`);
+    const halfW = Math.max(e.maxX - 400, 400 - e.minX);
+    ok(halfW < TILE_W_HALF_LIMIT, `the sac reaches ${halfW.toFixed(0)}px either side of its tile`);
+});
+
+check('the threads it runs to the footprint cannot hide anything', () => {
+    // They reach a tile out by design, so what matters is that they are
+    // hairlines rather than anything with area.
+    const env = makeEnv();
+    board(env, -4, 10, 0, 4);
+    const t = greenPylon(env, 0, 2);
+    convert(env, t, spinner('spider', 'striker'));
+    env.calls.length = 0;
+    env.run('drawCocoons()');
+    const widths = env.calls.filter(c => c.op === 'set:lineWidth').map(c => c.args[0]);
+    ok(widths.length > 0, 'nothing sets a line width');
+    ok(widths.every(w => w <= 1.5), `a thread is ${Math.max(...widths)}px thick`);
+    const alphas = env.calls.filter(c => c.op === 'set:globalAlpha').map(c => c.args[0]);
+    ok(Math.min(...alphas) < 0.2, 'the threads should be drawn faintly');
+});
+
+check('it barely grows with the footprint', () => {
+    // Scaling the drawing with the mechanical extent is what produced
+    // something big enough to hide behind. Measured through drawCocoons, so
+    // the call site is under test and not just the helper — with the footprint
+    // pinned to the anchor tile so the threads do not skew the extent.
+    const env = makeEnv();
+    board(env, -4, 10, 0, 4);
+    const t = greenPylon(env, 0, 2);
+    convert(env, t, spinner('spider', 'striker'));
+    const m = env.run('cocoons')[0];
+    const measure = span => {
+        m.span = span;
+        m.tiles = [[m.x, m.y]];      // no threads, so this is the sac alone
+        m.puddles = [];
+        m.pulse = 0;
+        const e = drawnExtent(env, 'drawCocoons()');
+        return { w: e.maxX - e.minX, h: e.maxY - e.minY };
+    };
+    const a = measure(SPAN_MIN), b = measure(SPAN_MAX);
+    ok(b.w > a.w, 'a bigger span should read slightly bigger');
+    const grow = b.w - a.w;
+    ok(grow < 12, `span ${SPAN_MIN} to ${SPAN_MAX} widened the sac by ${grow.toFixed(0)}px — too much`);
+    ok(b.h - a.h < 10, `and heightened it by ${(b.h - a.h).toFixed(0)}px — too much`);
+    ok(b.h < 34, `the widest sac is ${b.h.toFixed(0)}px tall overall`);
+});
+
+check('it sits on the deck rather than floating', () => {
+    const env = makeEnv();
+    const e = drawnExtent(env, '_drawCocoonSac(400, 330, COCOON_SAC_W, COCOON_SAC_H, "#cc2244", 0.5, 3)');
+    ok(e.maxY >= 330 - 1, `the sac's lowest point is ${e.maxY.toFixed(0)}, above the ground at 330`);
+    ok(e.maxY <= 330 + 8, 'it should not sink through the deck either');
+});
+
+check('the footprint is threaded, not filled', () => {
+    // The extent is communicated with hairlines out to the tiles; a fill
+    // across them is the carpet coming back.
+    const at = INFEST.indexOf('Hairline anchor threads');
+    ok(at > -1, 'no anchor threads — the footprint extent is invisible');
+    const block = INFEST.slice(at, at + 600);
+    ok(/ctx\.stroke\(\)/.test(block), 'the threads should be stroked');
+    ok(!/ctx\.fill\(\)/.test(block), 'the footprint tiles must not be filled');
 });
 
 check('nothing is painted flat on the floor under a cocoon', () => {

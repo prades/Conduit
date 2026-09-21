@@ -3,10 +3,10 @@
 //
 //  Left undisturbed, a predator does not just wander. It walks to the nearest
 //  pylon you hold, chews it over to its own side, and then seeds the ground
-//  around it: a nest, and a cocoon spun over the pylon. The cocoon swells to a
-//  small square and hatches more of the same species; a pylon that ends up
-//  inside the widened square is taken with it, so a neglected stretch of the
-//  map turns into a nursery.
+//  around it: a nest, and a cocoon spun over the pylon. Both are small silk
+//  sacs — they hatch more of the same species, and the cocoon's footprint
+//  swells to a small square, taking any pylon that ends up inside it, so a
+//  neglected stretch of the map turns into a nursery.
 //
 //  The counter is the pylon itself. Reclaim it and everything anchored to it
 //  dies with it — see clearInfestationAt(), called from the reconstruction
@@ -435,73 +435,81 @@ function restoreCocoons(data) {
 // ── Drawing ───────────────────────────────────────────────
 // Organic blotches on the floor in the species' own colour, so which thing is
 // breeding there is readable at a glance.
-// One stepped pyramid, drawn for both the cocoons and the nests an
-// infestation grows. A ziggurat of isometric tiers rather than a dome: the
-// footprint is a diamond in this projection, so stacked diamonds sit on it
-// squarely where a dome only ever approximated it.
+// A silk sac — the cocoon itself, and the same shape for the nests an
+// infestation grows.
 //
-// Nothing is painted flat on the ground underneath — a floor wash was what
-// read as a carpet through three earlier passes.
-function _drawZiggurat(sx, sy, rw, rh, height, colour, breathe, tiers) {
-    const n = Math.max(2, tiers | 0);
-    const tierH = height / n;
-    // Dark structural tones, with the species colour carried on the top faces
-    // and the tier edges — that is what says which thing built it.
-    const FACE_L = "#1a1220";
-    const FACE_R = "#100a16";
-    const FACE_T = "#241a2e";
+// Kept deliberately small and low. Three earlier attempts failed for the same
+// reason in different clothes: a mould carpet, then a dome, then a stepped
+// pyramid, each big enough to stand in front of the creatures and, in the
+// pyramid's case, to read as a monument the player had built rather than
+// something growing on their pylon. A sac is the right size because a sac is
+// small: roughly half a tile across and under twenty pixels tall, so a
+// predator standing behind one is still entirely visible.
+const COCOON_SAC_W = 17;    // half-width in pixels at span 2
+const COCOON_SAC_H = 15;    // total height in pixels at span 2
 
-    for (let i = 0; i < n; i++) {
-        const scale = 1 - i / n;
-        const w = rw * scale, h = rh * scale;
-        const topY  = sy - (i + 1) * tierH;
-        const baseY = topY + tierH;
+function _drawCocoonSac(sx, sy, w, h, colour, breathe, wisps) {
+    const cy = sy - h * 0.48;          // the sac sits ON the deck, not above it
+    // Shadow it casts, so it is attached to the ground
+    ctx.globalAlpha = 0.34;
+    ctx.fillStyle = "#07060a";
+    ctx.beginPath();
+    ctx.ellipse(sx, sy, w * 0.92, h * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-        // Left face
-        ctx.globalAlpha = 0.88;
-        ctx.fillStyle = FACE_L;
+    // Body: an ovoid drawn as two bezier arcs so the ends taper to a point,
+    // the way a spun sac does rather than a capsule.
+    const bodyPath = () => {
         ctx.beginPath();
-        ctx.moveTo(sx - w, topY);
-        ctx.lineTo(sx,     topY + h);
-        ctx.lineTo(sx,     baseY + h);
-        ctx.lineTo(sx - w, baseY);
-        ctx.closePath(); ctx.fill();
+        ctx.moveTo(sx - w, cy);
+        ctx.bezierCurveTo(sx - w * 0.55, cy - h * 0.62, sx + w * 0.55, cy - h * 0.62, sx + w, cy);
+        ctx.bezierCurveTo(sx + w * 0.55, cy + h * 0.52, sx - w * 0.55, cy + h * 0.52, sx - w, cy);
+        ctx.closePath();
+    };
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = "#171320";
+    bodyPath(); ctx.fill();
+    // Silk over it, tinted by whatever spun it
+    ctx.globalAlpha = 0.30 + breathe * 0.06;
+    ctx.fillStyle = colour;
+    bodyPath(); ctx.fill();
+    // A pale sheen along the upper flank
+    ctx.globalAlpha = 0.16 + breathe * 0.06;
+    ctx.fillStyle = "#cfc6d8";
+    ctx.beginPath();
+    ctx.ellipse(sx - w * 0.18, cy - h * 0.24, w * 0.42, h * 0.16, -0.22, 0, Math.PI * 2);
+    ctx.fill();
 
-        // Right face
-        ctx.fillStyle = FACE_R;
+    // Silk banding wrapped across the short axis
+    ctx.globalAlpha = 0.34 + breathe * 0.10;
+    ctx.strokeStyle = "#b9b0c4";
+    ctx.lineWidth = 1;
+    for (let i = -1; i <= 1; i++) {
+        const bx = sx + i * w * 0.42;
+        const bw = w * 0.30 * (1 - Math.abs(i) * 0.3);
         ctx.beginPath();
-        ctx.moveTo(sx,     topY + h);
-        ctx.lineTo(sx + w, topY);
-        ctx.lineTo(sx + w, baseY);
-        ctx.lineTo(sx,     baseY + h);
-        ctx.closePath(); ctx.fill();
-
-        // Top face
-        ctx.fillStyle = FACE_T;
-        ctx.beginPath();
-        ctx.moveTo(sx,     topY - h);
-        ctx.lineTo(sx + w, topY);
-        ctx.lineTo(sx,     topY + h);
-        ctx.lineTo(sx - w, topY);
-        ctx.closePath(); ctx.fill();
-
-        // Species wash over the top face, strongest at the crown
-        ctx.globalAlpha = 0.10 + (i / n) * 0.12 + breathe * 0.04;
-        ctx.fillStyle = colour;
-        ctx.fill();
-
-        // Tier edge
-        ctx.globalAlpha = 0.28 + breathe * 0.10;
-        ctx.strokeStyle = colour;
-        ctx.lineWidth = 1;
+        ctx.moveTo(bx, cy - h * 0.40);
+        ctx.bezierCurveTo(bx + bw, cy - h * 0.12, bx + bw, cy + h * 0.14, bx, cy + h * 0.38);
         ctx.stroke();
+    }
+    // Seam along the length
+    ctx.globalAlpha = 0.22 + breathe * 0.08;
+    ctx.beginPath();
+    ctx.moveTo(sx - w * 0.86, cy - h * 0.02);
+    ctx.bezierCurveTo(sx - w * 0.3, cy - h * 0.16, sx + w * 0.3, cy - h * 0.16, sx + w * 0.86, cy - h * 0.02);
+    ctx.stroke();
 
-        // The step's front lip, so the tiers read as separate courses
-        ctx.globalAlpha = 0.18 + breathe * 0.06;
+    // Loose fibres off each end, which is what makes it read as spun
+    ctx.globalAlpha = 0.24 + breathe * 0.10;
+    ctx.strokeStyle = colour;
+    for (let i = 0; i < (wisps || 3); i++) {
+        const t = (i + 1) / ((wisps || 3) + 1);
+        const dy = (t - 0.5) * h * 0.55;
         ctx.beginPath();
-        ctx.moveTo(sx - w, baseY);
-        ctx.lineTo(sx,     baseY + h);
-        ctx.lineTo(sx + w, baseY);
+        ctx.moveTo(sx - w, cy + dy);
+        ctx.lineTo(sx - w - 5 - i * 2, cy + dy * 1.7);
+        ctx.moveTo(sx + w, cy + dy);
+        ctx.lineTo(sx + w + 5 + i * 2, cy + dy * 1.7);
         ctx.stroke();
     }
     ctx.globalAlpha = 1;
@@ -530,21 +538,19 @@ function drawGrownNests() {
         t.nestPulse = (t.nestPulse || 0) + 1;
         const breathe = 0.5 + 0.5 * Math.sin(t.nestPulse * 0.03);
         const hr = Math.max(0.2, t.nestHealth / (t.nestMaxHealth || 200));
-        // Smaller than a cocoon, and it settles as it is damaged.
-        const nestH = 30 * hr;
-        _drawZiggurat(sx, sy, TILE_W * 0.44, TILE_H * 0.44, nestH, "#ff7744", breathe, 3);
-        // The mouth it hatches from, cut into the front of the bottom course
-        ctx.globalAlpha = 0.6 + breathe * 0.25;
+        // Smaller than a cocoon, and it slumps as it is damaged.
+        const nh = COCOON_SAC_H * (0.7 + hr * 0.4);
+        _drawCocoonSac(sx, sy, COCOON_SAC_W * 0.78, nh, "#ff7744", breathe, 2);
+        // The opening it hatches from, torn in the near flank
+        ctx.globalAlpha = 0.65 + breathe * 0.2;
         ctx.fillStyle = "#120806";
         ctx.beginPath();
-        ctx.moveTo(sx - TILE_W * 0.10, sy - nestH / 3 + TILE_H * 0.05);
-        ctx.lineTo(sx,                 sy - nestH / 3 + TILE_H * 0.20);
-        ctx.lineTo(sx + TILE_W * 0.10, sy - nestH / 3 + TILE_H * 0.05);
-        ctx.lineTo(sx,                 sy - nestH / 3 - TILE_H * 0.10);
-        ctx.closePath(); ctx.fill();
+        ctx.ellipse(sx + COCOON_SAC_W * 0.20, sy - nh * 0.42,
+                    COCOON_SAC_W * 0.19, nh * 0.26, 0.25, 0, Math.PI * 2);
+        ctx.fill();
         ctx.globalAlpha = 1;
         if (typeof drawHealthBar === "function") {
-            drawHealthBar(sx - 20, sy - nestH - 14, 40, 4, t.nestHealth, t.nestMaxHealth || 200);
+            drawHealthBar(sx - 20, sy - nh - 12, 40, 4, t.nestHealth, t.nestMaxHealth || 200);
         }
     }
     ctx.restore();
@@ -573,9 +579,27 @@ function drawCocoons() {
         const rw = TILE_W * span * 0.52;
         const rh = TILE_H * span * 0.52;
 
-        // ── The shell ──
-        const shellH = 30 + span * 12;
-        _drawZiggurat(sx, sy, rw * 0.92, rh * 0.92, shellH, m.colour, breathe, 4);
+        // ── The sac ──
+        // Barely grows with the span: the footprint is a mechanical extent, not
+        // a thing to fill in. Making the drawing scale with it is what produced
+        // a structure big enough to hide creatures behind.
+        const sacW = COCOON_SAC_W + (span - COCOON_SPAN_MIN) * 3;
+        const sacH = COCOON_SAC_H + (span - COCOON_SPAN_MIN) * 2;
+        _drawCocoonSac(sx, sy, sacW, sacH, m.colour, breathe, 3);
+
+        // Hairline anchor threads out to the footprint's tiles, so the extent
+        // is legible without painting anything on the floor.
+        ctx.globalAlpha = 0.10 + breathe * 0.04;
+        ctx.strokeStyle = m.colour; ctx.lineWidth = 1;
+        for (const [tx, ty] of m.tiles) {
+            if (tx === m.x && ty === m.y) continue;
+            const [ex, ey] = _infestToScreen(tx, ty);
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - sacH * 0.4);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
 
         // ── The toxin, if this species carries one ──
         // One tile beside the pylon, dull rather than lit: it still has to be
