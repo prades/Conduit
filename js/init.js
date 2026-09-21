@@ -34,15 +34,9 @@ async function loadConfig() {
         gameState.highestZoneCleared = gs.highestZoneCleared || 0;
         activeDayZones               = gs.activeDayZones     || 3;
     }
-    const pu = loadPermUpgrades();
-    if (pu) {
-        if (Array.isArray(pu.ids)) permUpgrades = new Set(pu.ids);
-        pylonMaxHPBonus        = pu.pylonMaxHPBonus        || 0;
-        pylonRangeBonus        = pu.pylonRangeBonus        || 0;
-        pylonFireRateBonus     = pu.pylonFireRateBonus     || 0;
-        followerPermPowerBonus = pu.followerPermPowerBonus || 0;
-        followerPermHPBonus    = pu.followerPermHPBonus    || 0;
-    }
+    // Purge the shop era's permanent-upgrade store. Every bonus it held is gone,
+    // so the key is dead weight in a returning player's browser.
+    clearPermUpgrades();
     const savedPylons = loadPylons();
     if (savedPylons) {
         savedPylons.forEach(saved => {

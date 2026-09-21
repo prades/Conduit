@@ -401,8 +401,6 @@ function squadEnv() {
     env.sandbox.PERSONALITY_KEYS = ['stoic'];
     env.sandbox.applyPersonality = () => ({ hp: 20, attack: 5, speed: 10, will: 20 });
     env.sandbox.assignRole = () => 'brawler';
-    env.sandbox.followerPermHPBonus = 0;
-    env.sandbox.followerPermPowerBonus = 0;
     env.sandbox.rebuildFollowerTable = () => {};
     for (const name of ['getCommandPool', 'issueAttackOnEnemies', 'spawnFollowerFromSave']) {
         const src = name === 'spawnFollowerFromSave'

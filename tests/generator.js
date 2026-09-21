@@ -45,7 +45,6 @@ function makeEnv(relay) {
         player: { x: 0, y: 2, visualX: 0, visualY: 2 },
         canvas: { width: 800, height: 600 }, ctx: gctx,
         campBuilt: relay ? { signal_relay: true } : {},
-        pylonRangeBonus: 0,
         GENERATOR_ID: 'generator',
         GENERATOR_HEAL_INTERVAL: HEAL_INTERVAL,
         GENERATOR_HEAL_AMOUNT: HEAL_AMOUNT,

@@ -55,7 +55,7 @@ function _executeBuild(el, t) {
         return;
     }
     shardCount -= 10; saveShards();
-    const _baseHP = 80 + (pylonMaxHPBonus||0);
+    const _baseHP = 80;
 
     t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=_baseHP;
     t.pylonStyle=PYLON_STYLE;
@@ -96,7 +96,7 @@ function _executeBuildInstant(el, t) {
         return;
     }
     shardCount -= 40; saveShards();
-    const _iHP = 80 + (pylonMaxHPBonus||0);
+    const _iHP = 80;
 
     t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=_iHP;
     t.pylonStyle=PYLON_STYLE;
@@ -107,7 +107,7 @@ function _executeBuildInstant(el, t) {
     if (isPylonTypeUnlocked(el.id)) {
         t.attackMode=true; t.waveMode=false;
         t.attackModeElement=el.id; t.attackModeColor=el.color;
-        t.attackPower=15; t.attackRange=2.5 + (pylonRangeBonus||0);
+        t.attackPower=15; t.attackRange=2.5;
         t.chosenElement=el.id; t.chosenColor=el.color;
         t.isGenerator=(el.id===GENERATOR_ID);
     }

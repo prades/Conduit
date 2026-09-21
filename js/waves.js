@@ -211,10 +211,10 @@ function spawnFollowerFromSave(entry) {
         x:crystal.x+(Math.random()-0.5)*2,
         y:crystal.y+(Math.random()-0.5)*2,
         team:"green",
-        health:(stats.hp||10) + (followerPermHPBonus||0),
-        maxHealth:(stats.hp||10) + (followerPermHPBonus||0),
+        health:(stats.hp||10),
+        maxHealth:(stats.hp||10),
         moveSpeed: NPC_TYPES["virus"].moveSpeed + ((stats.speed||10)-10)*0.001,
-        power: (stats.attack||5) + (followerPermPowerBonus||0),
+        power: (stats.attack||5),
         stats, personality, role,
         currentResonance:0, currentWill:stats.will||20,
         walkCycle:0, moveCooldown:0, stance:"follow", isFollower:true, isHealing:false,
@@ -405,8 +405,6 @@ function restartGame() {
     if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
     pendingPillarDestruction=[];respawnQueue=[];
     frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearProgress();clearFollowers();clearGameState();clearPylons();clearNests();clearSession();clearWorldSeed();clearAmmo();clearPermUpgrades();
-    permUpgrades=new Set(); pylonMaxHPBonus=0; pylonRangeBonus=0; pylonFireRateBonus=0;
-    followerPermPowerBonus=0; followerPermHPBonus=0;
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
     unlockedElements=new Set(["fire","electric"]);
     pendingElements=[]; lifetimeKills=0; modulationDirty=false;

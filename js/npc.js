@@ -129,7 +129,7 @@ function updateRTSNPC(actor) {
             p.isGenerator = (p.attackModeElement === GENERATOR_ID);
             p.chosenElement = null; p.chosenColor = null;
             p.attackFireTimer = 0;
-            p.attackRange = 2.5 + (pylonRangeBonus||0);
+            p.attackRange = 2.5;
             p.attackPower = (actor.stats?.specialAttack||10) * 1.2;
             p.pendingUpgrade = false;
             p.upgradeFollower = null;
@@ -167,7 +167,7 @@ function updateRTSNPC(actor) {
                     const _chEl=PYLON_PICKER_TYPES.find(e=>e.id===p.chosenElement);
                     p.attackModeColor=p.chosenColor||(_chEl?_chEl.color:"#0f8");
                     p.isGenerator=(p.chosenElement===GENERATOR_ID);
-                    p.attackPower=15; p.attackRange=2.5+(pylonRangeBonus||0);
+                    p.attackPower=15; p.attackRange=2.5;
                     p.attackFireTimer=0; p.pulseTimer=0;
                     p.chosenElement=null; p.chosenColor=null;
                 }
