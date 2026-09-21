@@ -404,11 +404,13 @@ function restartGame() {
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
     pendingPillarDestruction=[];respawnQueue=[];
-    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearFollowers();clearGameState();clearPylons();clearNests();clearSession();clearWorldSeed();clearAmmo();clearPermUpgrades();
+    frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearProgress();clearFollowers();clearGameState();clearPylons();clearNests();clearSession();clearWorldSeed();clearAmmo();clearPermUpgrades();
     permUpgrades=new Set(); pylonMaxHPBonus=0; pylonRangeBonus=0; pylonFireRateBonus=0;
     followerPermPowerBonus=0; followerPermHPBonus=0;
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
     unlockedElements=new Set(["fire","electric"]);
+    pendingElements=[]; lifetimeKills=0; modulationDirty=false;
+    crystalModSlider=0;
     activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};
     _cacheAge=-999; _pillarCache=[]; _wPylons=[]; _aPylons=[]; _uPylons=[]; _wPylonPairs=[]; _pylonsWithPartner=new Set(); _capturableNodeCache=[];
     _genPylons=[]; _genLinks=[];

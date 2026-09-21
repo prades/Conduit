@@ -26,6 +26,14 @@ const ELEMENTS = [
     { id:"toxic",    label:"TOXIC",    color:"#66ff66" }
 ];
 let unlockedElements = new Set(["fire", "electric"]);
+// Elements earned by kills but not yet brought online at the Crystal.
+let pendingElements = [];
+// Every enemy killed this game. Cumulative and one-way — it is what earns
+// elements, so it persists.
+let lifetimeKills = 0;
+// Set when the element pool changes, so the game can prompt the player that
+// their modulation is stale. Cleared once they re-modulate.
+let modulationDirty = false;
 
 // ── PYLON LOOK ────────────────────────────────────────────
 // One design for every pylon and every upgrade. There used to be six random

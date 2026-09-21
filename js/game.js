@@ -977,6 +977,13 @@ function render() {
             if (newHp<=0) return; // permanent death — don't queue
             respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:180, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp) });
         }
+        // Progression counts EVERY enemy killed, wanderers included — it is a
+        // record of what you have fought, not of wave quotas. The wave counter
+        // below still ignores wanderers.
+        if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.progressCounted) {
+            a.progressCounted = true;
+            noteKillForProgression();
+        }
         // track kills for wave clear — count dead enemies not clones, wanderers don't count
         if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.killCounted && !a.isWanderer) {
             a.killCounted = true;
@@ -1033,9 +1040,6 @@ function render() {
         t.pulseTimer++;
         if(t.pulseTimer>120){ t.pulseTimer=0; actors.forEach(a=>{ if(a.team==="green"){const dx=a.x-t.x,dy=a.y-t.y; if(Math.abs(dx)>3.5||Math.abs(dy)>3.5) return; if(dx*dx+dy*dy<12.25) a.health=Math.min(a.maxHealth,a.health+2);} }); }
     });
-
-    // ── DEPTH PROGRESSION — a dead nest hands over its zone's element ──
-    checkDepthUnlocks();
 
     // ── INFESTATION — undisturbed predators converting pylons, and the
     //    cocoon and nests that follow ──

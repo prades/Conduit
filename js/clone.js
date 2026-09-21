@@ -513,6 +513,17 @@ const CSORTS = [
     { id:"specials", label:"SPECIALS" },
 ];
 
+// What new recruits draw from. This is the modulation slider's actual job —
+// until now _getModScheme() was only ever used to draw a label and swatches,
+// so the slider was decorative and recruits took any unlocked element.
+// Falls back to everything activated if the scheme somehow comes back empty,
+// because a recruit with no element is worse than an unmodulated one.
+function recruitElementPool() {
+    const scheme = _getModScheme();
+    const ids = (scheme.elements || []).map(e => e.id).filter(id => unlockedElements.has(id));
+    return ids.length ? ids : [...unlockedElements];
+}
+
 // ── Modulation scheme from slider ─────────────────────────
 function _getModScheme() {
     const unlocked = ELEMENTS.filter(e => unlockedElements.has(e.id));
@@ -567,6 +578,34 @@ function drawCrystalButton() {
     _CRYSBTN.x = bx; _CRYSBTN.y = by;
     const t = (frame||0) * 0.022;
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+
+    // ── PROMPT ──
+    // An element earned in the tunnel is useless until it is activated here,
+    // and a new element makes whatever the slider was set to stale. Both are
+    // easy to miss, so the button itself says so rather than relying on a
+    // floating text the player may have walked away from.
+    if (!crystalMenuOpen && (pendingElements.length > 0 || modulationDirty)) {
+        const urgent = pendingElements.length > 0;
+        const pulse = 0.5 + 0.5 * Math.sin(t * 4.2);
+        const col = urgent ? "#ffcc44" : "#aaddff";
+        // Ring
+        ctx.strokeStyle = col; ctx.globalAlpha = 0.35 + pulse * 0.5; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(bx, by, 24 + pulse * 3, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 1;
+        // Count badge for pending elements
+        if (urgent) {
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.arc(bx + 15, by - 15, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#1a1206"; ctx.font = "bold 11px monospace";
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(String(pendingElements.length), bx + 15, by - 14);
+        }
+        // Label under the button
+        ctx.fillStyle = col; ctx.globalAlpha = 0.6 + pulse * 0.4;
+        ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+        ctx.fillText(urgent ? "ELEMENT READY" : "RE-MODULATE", bx, by + 32);
+        ctx.globalAlpha = 1;
+    }
 
     // Outer glow when open
     if (crystalMenuOpen) {
@@ -851,8 +890,45 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
         });
     }
 
+    // ── PENDING ELEMENTS — earned by kills, activated here ──────────────
+    // This is the whole point of coming back to the Crystal: an element you
+    // earned in the tunnel does nothing until you bring it online here.
+    window._modActivateRects = [];
+    let pendY = crystY + crystR + 58;
+    if (pendingElements.length > 0) {
+        ctx.fillStyle = "#ffcc44"; ctx.font = "bold 9px monospace";
+        ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+        ctx.fillText("EARNED — TAP TO ACTIVATE:", PX + 10, pendY);
+        pendY += 6;
+        pendingElements.forEach((id, i) => {
+            const el = ELEMENTS.find(e => e.id === id);
+            const col = el ? el.color : "#888";
+            const bx = PX + 10, by = pendY + i * 20, bw = Math.min(150, splitX - PX - 20), bh = 17;
+            const pulse = 0.5 + 0.5 * Math.sin(_crystalModPhase * 0.09 + i);
+            ctx.fillStyle = col + "22"; ctx.fillRect(bx, by, bw, bh);
+            ctx.strokeStyle = col; ctx.globalAlpha = 0.5 + pulse * 0.5; ctx.lineWidth = 1;
+            ctx.strokeRect(bx, by, bw, bh); ctx.globalAlpha = 1;
+            ctx.fillStyle = col; ctx.font = "bold 10px monospace";
+            ctx.fillText("◈ ACTIVATE " + (el ? el.label : id.toUpperCase()), bx + 6, by + 12);
+            window._modActivateRects.push({ id, bx, by, bw, bh });
+        });
+        pendY += pendingElements.length * 20 + 6;
+    } else {
+        const next = nextKillUnlock();
+        ctx.fillStyle = "#2a3040"; ctx.font = "9px monospace";
+        ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+        if (next) {
+            const el = ELEMENTS.find(e => e.id === next.element);
+            ctx.fillText("NEXT: " + (el ? el.label : next.element.toUpperCase()) +
+                         " in " + next.remaining + " kills", PX + 10, pendY);
+        } else {
+            ctx.fillText("ALL ELEMENTS ONLINE · " + lifetimeKills + " kills", PX + 10, pendY);
+        }
+        pendY += 14;
+    }
+
     // Owned modulators list (bottom of left area)
-    const modListY = Math.min(crystY+crystR+60, PY+PH-50);
+    const modListY = Math.min(Math.max(pendY + 6, crystY+crystR+60), PY+PH-50);
     ctx.fillStyle="#2a3040"; ctx.font="9px monospace"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
     ctx.fillText("OWNED MODULATORS:", PX+10, modListY);
     if (ownedModulators.length === 0) {
@@ -1017,6 +1093,17 @@ function handleCrystalPanelInput(ex, ey, isDown) {
     const b = window._cpBounds;
     if (!b) return crystalMenuOpen;
 
+    // Activating a pending element — checked before the slider, so a tap on an
+    // ACTIVATE button is never swallowed as a slider drag.
+    if (crystalMenuTab==="modulation") {
+        for (const r of (window._modActivateRects||[])) {
+            if (ex>=r.bx && ex<=r.bx+r.bw && ey>=r.by && ey<=r.by+r.bh) {
+                activatePendingElement(r.id);
+                return true;
+            }
+        }
+    }
+
     // Modulation slider drag (check first — works on move too)
     const st = window._crystalSliderTrack;
     if (crystalMenuTab==="modulation" && st) {
@@ -1024,6 +1111,7 @@ function handleCrystalPanelInput(ex, ey, isDown) {
             if (isDown) {
                 _crystalSliderDrag = true;
                 crystalModSlider = 1 - Math.max(0, Math.min(1, (ey-st.t)/st.h));
+                modulationDirty = false;   // they have re-modulated
             } else {
                 _crystalSliderDrag = false;
             }

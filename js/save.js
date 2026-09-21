@@ -222,6 +222,31 @@ function restoreWaveRecruits(data) {
     }
 }
 
+// Kills earned and elements pending activation. Kept out of the session blob
+// because they are game-long progress, not a snapshot of where you are —
+// clearing a session must not cost the player their elements.
+function saveProgress() {
+    try {
+        localStorage.setItem("tubecrawler_progress", JSON.stringify({
+            kills: lifetimeKills, pending: pendingElements,
+        }));
+    } catch (e) {}
+}
+function loadProgress() {
+    try { return JSON.parse(localStorage.getItem("tubecrawler_progress") || "null"); }
+    catch (e) { return null; }
+}
+function clearProgress() {
+    try { localStorage.removeItem("tubecrawler_progress"); } catch (e) {}
+}
+function applyProgress(p) {
+    if (!p) return;
+    lifetimeKills = Number.isFinite(p.kills) ? Math.max(0, p.kills) : 0;
+    pendingElements = Array.isArray(p.pending)
+        ? p.pending.filter(e => typeof e === "string" && !unlockedElements.has(e))
+        : [];
+}
+
 function clearSession() {
     try { localStorage.removeItem("tubecrawler_session"); } catch (e) {}
 }

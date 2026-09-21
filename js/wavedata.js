@@ -49,42 +49,71 @@ let zoneRespawnTimers = {}; // zoneIndex -> frames until respawn
 //  SHOP
 // ─────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────
-//  DEPTH PROGRESSION
+//  PROGRESSION — KILLS EARN ELEMENTS, THE CRYSTAL ACTIVATES THEM
 //
-//  Elements used to be bought from the shop. They come from depth now: kill a
-//  zone's nest and you take the element that zone's species fight with. The
-//  tunnel is the progression — you do not get stronger, you get deeper.
+//  Two steps on purpose. Killing things EARNS an element; it sits pending
+//  until you walk back to the Crystal and activate it. That makes the Crystal
+//  a place you return to rather than a thing you defend, and it gives the
+//  modulation slider — which until now drew a label and nothing else — a real
+//  job: it decides which of your activated elements new recruits draw from.
 //
-//  A dead nest is permanent (restoreWorldBetweenWaves deliberately keeps them
-//  dead), so this is a one-way ratchet and needs no bookkeeping of its own —
-//  unlockedElements IS the record, and it already persists.
+//  Earning is one-way and cumulative. Activating is the deliberate act.
 // ─────────────────────────────────────────────────────────
-const DEPTH_ELEMENT_UNLOCKS = { 1: "ice", 2: "flux", 3: "core", 4: "toxic" };
+const KILL_UNLOCKS = [
+    { kills:  25, element: "ice"   },
+    { kills:  60, element: "flux"  },
+    { kills: 110, element: "core"  },
+    { kills: 180, element: "toxic" },
+];
 
-// The element a zone's nest hands over, if any. Zone 0 is home and gives
-// nothing; past the last entry there is nothing left to unlock.
-function depthUnlockFor(zoneIndex) {
-    return DEPTH_ELEMENT_UNLOCKS[zoneIndex] || null;
+// The next element still to be earned, with how many kills remain — drives the
+// on-screen readout so the player can see what they are working toward.
+function nextKillUnlock() {
+    for (const u of KILL_UNLOCKS) {
+        if (unlockedElements.has(u.element)) continue;
+        if (pendingElements.includes(u.element)) continue;
+        return { element: u.element, at: u.kills, remaining: Math.max(0, u.kills - lifetimeKills) };
+    }
+    return null;
 }
 
-// Watches for newly dead nests rather than hooking each place that damages one
-// — nestHealth is written from several element effects and the destroy_nest
-// job, and a watcher cannot be forgotten when a seventh site is added.
-function checkDepthUnlocks() {
-    if (typeof _nestCache === "undefined") return;
-    for (const t of _nestCache) {
-        if (!t.nest || t.nestHealth > 0) continue;
-        const el = depthUnlockFor(t.nestZone);
-        if (!el || unlockedElements.has(el)) continue;
-        unlockedElements.add(el);
-        saveUnlocks();
-        const def = ELEMENTS.find(e => e.id === el);
+// Called once per enemy killed. Earned elements go to pendingElements, NOT
+// straight into unlockedElements — the Crystal is where they come online.
+function noteKillForProgression() {
+    lifetimeKills++;
+    saveProgress();
+    for (const u of KILL_UNLOCKS) {
+        if (lifetimeKills < u.kills) break;               // the list is ordered
+        if (unlockedElements.has(u.element)) continue;
+        if (pendingElements.includes(u.element)) continue;
+        pendingElements.push(u.element);
+        saveProgress();
+        const def = ELEMENTS.find(e => e.id === u.element);
         floatingTexts.push({
-            x: t.x, y: t.y - 1.5,
-            text: (def ? def.label : el.toUpperCase()) + " TAKEN FROM ZONE " + t.nestZone,
-            color: def ? def.color : "#0f8", life: 220, vy: -0.16, size: 14,
+            x: canvas.width / 2, y: canvas.height / 2 - 90,
+            text: (def ? def.label : u.element.toUpperCase()) + " EARNED — ACTIVATE AT THE CRYSTAL",
+            color: def ? def.color : "#0f8", life: 260, vy: -0.16, size: 15,
         });
     }
+}
+
+// The deliberate act at the Crystal. Returns the element activated, or null.
+function activatePendingElement(elementId) {
+    const at = pendingElements.indexOf(elementId);
+    if (at < 0) return null;
+    pendingElements.splice(at, 1);
+    unlockedElements.add(elementId);
+    saveUnlocks();
+    saveProgress();
+    const def = ELEMENTS.find(e => e.id === elementId);
+    floatingTexts.push({
+        x: canvas.width / 2, y: canvas.height / 2 - 70,
+        text: (def ? def.label : elementId.toUpperCase()) + " ONLINE — RE-MODULATE THE CRYSTAL",
+        color: def ? def.color : "#0f8", life: 260, vy: -0.16, size: 15,
+    });
+    // The pool just changed, so whatever the slider was pointing at is stale.
+    modulationDirty = true;
+    return elementId;
 }
 
 // The shop is gone — all four panes (Supply, Pylons, Armaments, Builds) and

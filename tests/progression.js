@@ -32,11 +32,12 @@ function check(name, fn) {
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${b}, got ${a}`); }
 function ok(c, m) { if (!c) throw new Error(m); }
 
-// The real depth-unlock code out of wavedata.js, with a world of nests.
+// The real progression code out of wavedata.js, with a Crystal to walk back to.
 function makeEnv() {
     const sandbox = {
         console, Math, Object, Array, String, Number, Set, Map, isNaN, isFinite, parseInt,
-        floatingTexts: [], _nestCache: [],
+        floatingTexts: [],
+        canvas: { width: 800, height: 600 },
         ELEMENTS: [
             { id: 'fire', label: 'FIRE', color: '#ff3300' },
             { id: 'electric', label: 'ELECTRIC', color: '#ffee33' },
@@ -46,19 +47,18 @@ function makeEnv() {
             { id: 'toxic', label: 'TOXIC', color: '#66ff66' },
         ],
         unlockedElements: new Set(['fire', 'electric']),
-        saves: 0,
+        pendingElements: [],
+        lifetimeKills: 0,
+        modulationDirty: false,
+        unlockSaves: 0, progressSaves: 0,
     };
-    sandbox.saveUnlocks = () => { sandbox.saves++; };
+    sandbox.saveUnlocks  = () => { sandbox.unlockSaves++; };
+    sandbox.saveProgress = () => { sandbox.progressSaves++; };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
-    // Lift just the depth-progression block; wavedata.js otherwise reaches for
-    // the DOM and the whole wave system.
-    // From the table through the end of checkDepthUnlocks. A non-greedy match
-    // to the first closing brace stopped at depthUnlockFor and left the watcher
-    // out, which looked like the watcher was missing.
-    const from = SRC.wavedata.indexOf('const DEPTH_ELEMENT_UNLOCKS');
-    const at   = SRC.wavedata.indexOf('function checkDepthUnlocks', from);
-    if (from < 0 || at < 0) { console.log('  FAIL could not find the depth-progression block'); process.exit(1); }
+    const from = SRC.wavedata.indexOf('const KILL_UNLOCKS');
+    const at   = SRC.wavedata.indexOf('function activatePendingElement', from);
+    if (from < 0 || at < 0) { console.log('  FAIL could not find the progression block'); process.exit(1); }
     let i = SRC.wavedata.indexOf('{', at), depth = 0;
     while (true) {
         if (SRC.wavedata[i] === '{') depth++;
@@ -66,142 +66,236 @@ function makeEnv() {
         if (depth === 0) break;
         i++;
     }
-    vm.runInContext(SRC.wavedata.slice(from, i + 1), ctx, { filename: 'wavedata.js:depth' });
+    vm.runInContext(SRC.wavedata.slice(from, i + 1), ctx, { filename: 'wavedata.js:progression' });
     return { sandbox, run: s => vm.runInContext(s, ctx) };
 }
-function nest(zone, health) {
-    return { nest: true, nestZone: zone, nestHealth: health, nestMaxHealth: 200, x: zone * 15 + 7, y: -1 };
-}
+function kill(env, n) { for (let k = 0; k < n; k++) env.run('noteKillForProgression()'); }
+const thresholds = () => {
+    const m = SRC.wavedata.match(/const KILL_UNLOCKS = \[[\s\S]*?\n\];/)[0];
+    return [...m.matchAll(/kills:\s*(\d+), element: "([a-z]+)"/g)].map(x => ({ kills: +x[1], element: x[2] }));
+};
 
-group('the shop is gone');
+group('kills earn elements');
 
-check('THE REPORTED CASE: no shop, no items, no purchasing', () => {
-    for (const list of ['SHOP_ITEMS', 'PYLON_SHOP_ITEMS', 'ARMAMENT_ITEMS', 'CRYSTAL_BUILD_ITEMS']) {
-        ok(!new RegExp('const ' + list + ' = \\[').test(SRC.wavedata), list + ' is back');
+check('THE REPORTED CASE: enough kills earns an element', () => {
+    const env = makeEnv();
+    const first = thresholds()[0];
+    kill(env, first.kills - 1);
+    same(env.sandbox.pendingElements.length, 0, 'one kill short should earn nothing');
+    kill(env, 1);
+    same(env.sandbox.pendingElements.join(','), first.element, 'the threshold should earn it');
+});
+
+check('earning is NOT activating — it does not go straight into the pool', () => {
+    // This is the whole two-step: the Crystal is where an element comes online.
+    const env = makeEnv();
+    kill(env, thresholds()[0].kills);
+    ok(!env.sandbox.unlockedElements.has(thresholds()[0].element),
+       'an earned element must not be usable before it is activated');
+    same(env.sandbox.unlockSaves, 0, 'and must not be written as unlocked');
+    ok(env.sandbox.floatingTexts.some(t => /ACTIVATE AT THE CRYSTAL/.test(t.text)),
+       'the player should be told where to go');
+});
+
+check('activating at the crystal brings it online', () => {
+    const env = makeEnv();
+    const el = thresholds()[0].element;
+    kill(env, thresholds()[0].kills);
+    same(env.run('activatePendingElement')(el), el, 'it should activate');
+    ok(env.sandbox.unlockedElements.has(el), 'it should now be usable');
+    same(env.sandbox.pendingElements.length, 0, 'and no longer pending');
+    ok(env.sandbox.unlockSaves > 0, 'the unlock should persist');
+});
+
+check('activating flags the modulation as stale', () => {
+    const env = makeEnv();
+    kill(env, thresholds()[0].kills);
+    same(env.sandbox.modulationDirty, false, 'clean before');
+    env.run('activatePendingElement')(thresholds()[0].element);
+    same(env.sandbox.modulationDirty, true, 'a new element makes the slider stale');
+    ok(env.sandbox.floatingTexts.some(t => /RE-MODULATE/.test(t.text)), 'the player should be prompted');
+});
+
+check('activating something you have not earned does nothing', () => {
+    const env = makeEnv();
+    same(env.run('activatePendingElement')('toxic'), null, 'not earned');
+    same(env.run('activatePendingElement')('fire'), null, 'already held');
+    same(env.run('activatePendingElement')(undefined), null, 'nonsense');
+    same(env.sandbox.unlockedElements.size, 2, 'nothing should have been granted');
+});
+
+check('an element is never earned twice', () => {
+    const env = makeEnv();
+    const el = thresholds()[0].element;
+    kill(env, thresholds()[0].kills + 40);
+    same(env.sandbox.pendingElements.filter(e => e === el).length, 1, 'pending once');
+    env.run('activatePendingElement')(el);
+    kill(env, 60);
+    ok(!env.sandbox.pendingElements.includes(el), 'an activated element must not come back as pending');
+});
+
+check('every element is reachable, and the thresholds climb', () => {
+    const ts = thresholds();
+    const env = makeEnv();
+    kill(env, ts[ts.length - 1].kills);
+    same(env.sandbox.pendingElements.length, ts.length, 'all of them should be earned by the last threshold');
+    for (let i = 1; i < ts.length; i++) {
+        ok(ts[i].kills > ts[i - 1].kills, `threshold ${i} should cost more than the one before`);
     }
-    ok(!/boughtItems/.test(SRC.wavedata) && !/boughtItems/.test(SRC.waves),
-       'the bought-items ledger is back');
-    ok(!/function buildShopGrid/.test(SRC.waves), 'the shop grid builder is back');
-    ok(!/function _fillShopPane/.test(SRC.waves), 'the shop pane filler is back');
-    ok(!/switchShopTab/.test(HTML), 'the shop tab switcher is back in the page');
-    ok(!/id="shopGridSupply"/.test(HTML), 'the shop markup is back in the page');
-});
-
-check('crystal builds cannot be acquired, and nothing reads them', () => {
-    // All 21 were set only from the Builds pane and one tab in clone.js.
-    ok(!/activeCrystalBuild/.test(SRC.config), 'activeCrystalBuild is still declared');
-    for (const f of ['waves', 'game', 'clone', 'helpers', 'predator']) {
-        ok(!/activeCrystalBuild/.test(SRC[f]), `js/${f}.js still references activeCrystalBuild`);
-    }
-    ok(!/_drawBuildsTab/.test(SRC.clone), 'the builds tab is back');
-    ok(!/id:"builds"/.test(SRC.clone), 'the builds tab is still offered');
-});
-
-check('the two last-life saves went with them', () => {
-    // ghostphage and warden_pact were crystal builds, so running out of HP
-    // stat is permanent now. The queue must not resurrect on a zero.
-    ok(/if \(newHp<=0\) return;/.test(SRC.game),
-       'a follower out of HP is still being queued for respawn');
-    ok(!/isGhostSave|isWardenSave/.test(SRC.game), 'the build-only saves survive');
-});
-
-group('elements come from depth');
-
-check('THE REPLACEMENT: killing a zone nest hands over its element', () => {
-    const env = makeEnv();
-    env.sandbox._nestCache.push(nest(1, 0));       // zone 1 nest destroyed
-    env.run('checkDepthUnlocks()');
-    ok(env.sandbox.unlockedElements.has('ice'), 'zone 1 should hand over ICE');
-    ok(env.sandbox.saves > 0, 'the unlock should be persisted');
-    ok(env.sandbox.floatingTexts.some(t => /ICE/.test(t.text)), 'the player should be told');
-});
-
-check('a living nest hands over nothing', () => {
-    const env = makeEnv();
-    env.sandbox._nestCache.push(nest(1, 200), nest(2, 120));
-    env.run('checkDepthUnlocks()');
-    same(env.sandbox.unlockedElements.size, 2, 'nothing should unlock while the nests stand');
-    same(env.sandbox.saves, 0, 'and nothing should be written');
-});
-
-check('all four elements are reachable, one per zone', () => {
-    const env = makeEnv();
-    for (const z of [1, 2, 3, 4]) env.sandbox._nestCache.push(nest(z, 0));
-    env.run('checkDepthUnlocks()');
-    for (const el of ['ice', 'flux', 'core', 'toxic']) {
-        ok(env.sandbox.unlockedElements.has(el), el + ' should be reachable');
-    }
-    same(env.sandbox.unlockedElements.size, 6, 'all six should be held');
-});
-
-check('every element the game has is reachable from some zone', () => {
-    // A sixth element with no zone behind it would be unobtainable.
-    const env = makeEnv();
-    const table = env.run('DEPTH_ELEMENT_UNLOCKS');
-    const granted = new Set(Object.values(table));
+    // Nothing unobtainable.
+    const granted = new Set(ts.map(t => t.element));
     for (const el of env.sandbox.ELEMENTS) {
-        const startsUnlocked = el.id === 'fire' || el.id === 'electric';
-        ok(startsUnlocked || granted.has(el.id),
-           el.id + ' can never be obtained — no zone grants it');
+        ok(el.id === 'fire' || el.id === 'electric' || granted.has(el.id),
+           el.id + ' can never be obtained');
     }
 });
 
-check('home gives nothing, and depths past the table give nothing', () => {
+check('the readout says what is next and how far', () => {
     const env = makeEnv();
-    same(env.run('depthUnlockFor')(0), null, 'zone 0 is home');
-    same(env.run('depthUnlockFor')(9), null, 'there is nothing left to grant that deep');
-    same(env.run('depthUnlockFor')(undefined), null, 'a nest with no zone');
+    const ts = thresholds();
+    let n = env.run('nextKillUnlock()');
+    same(n.element, ts[0].element, 'the first element should be next');
+    same(n.remaining, ts[0].kills, 'with the full count to go');
+    kill(env, 10);
+    same(env.run('nextKillUnlock()').remaining, ts[0].kills - 10, 'it should count down');
+    // Once earned it is no longer "next", even before activation.
+    kill(env, ts[0].kills);
+    n = env.run('nextKillUnlock()');
+    ok(!n || n.element !== ts[0].element, 'an earned element should not still be next');
 });
 
-check('it is idempotent — a dead nest does not re-grant every frame', () => {
+check('with everything held there is nothing next', () => {
     const env = makeEnv();
-    env.sandbox._nestCache.push(nest(1, 0));
-    for (let i = 0; i < 50; i++) env.run('checkDepthUnlocks()');
-    same(env.sandbox.saves, 1, 'should write once, not once per frame');
-    same(env.sandbox.floatingTexts.length, 1, 'and announce once');
+    for (const t of thresholds()) env.sandbox.unlockedElements.add(t.element);
+    same(env.run('nextKillUnlock()'), null, 'nothing left to earn');
 });
 
-check('it watches rather than hooking each damage site', () => {
-    // nestHealth is written from two element effects, the destroy_nest job and
-    // the nest hack. A watcher cannot be forgotten when a fifth site is added.
-    ok(/function checkDepthUnlocks/.test(SRC.wavedata), 'no watcher');
-    ok(/checkDepthUnlocks\(\);/.test(SRC.game), 'the watcher is never called');
-    same((SRC.game.match(/checkDepthUnlocks\(\);/g) || []).length, 1, 'called more than once');
+check('progress is saved as it is made', () => {
+    const env = makeEnv();
+    kill(env, 3);
+    ok(env.sandbox.progressSaves >= 3, 'each kill should be recorded');
 });
 
-check('an unlock survives a refresh', () => {
-    // unlockedElements already persists, which is why this needs no ledger of
-    // its own — the unlock IS the record.
-    ok(/saveUnlocks\(\)/.test(SRC.wavedata), 'the unlock is not persisted');
+group('the crystal is where it happens');
+
+check('the modulation slider actually drives recruits now', () => {
+    // _getModScheme() only ever fed a label and swatches; recruits took any
+    // unlocked element regardless of where the slider sat.
+    ok(/function recruitElementPool/.test(SRC.clone), 'no recruit pool from the scheme');
+    const NPC = fs.readFileSync(path.join(ROOT, 'js/npc.js'), 'utf8');
+    ok(/recruitElementPool\(\)/.test(NPC), 'recruits do not use the modulation pool');
+    ok(!/const pool = \[\.\.\.unlockedElements\];/.test(NPC),
+       'recruits still ignore the slider and take any unlocked element');
+});
+
+check('the pool never comes back empty', () => {
+    // A recruit with no element is worse than an unmodulated one.
+    const at = SRC.clone.indexOf('function recruitElementPool');
+    const body = SRC.clone.slice(at, at + 500);
+    ok(/ids\.length \? ids : \[\.\.\.unlockedElements\]/.test(body), 'no fallback for an empty scheme');
+    ok(/unlockedElements\.has\(id\)/.test(body), 'the pool should only offer activated elements');
+});
+
+check('a boss modulator still overrides the slider', () => {
+    const NPC = fs.readFileSync(path.join(ROOT, 'js/npc.js'), 'utf8');
+    const at = NPC.indexOf('if (activeCrystalModulation) {');
+    ok(at > -1, 'the boss modulator override is gone');
+    ok(at < NPC.indexOf('recruitElementPool()'), 'the modulator should be checked first');
+});
+
+check('the crystal offers an ACTIVATE control per pending element', () => {
+    ok(/EARNED — TAP TO ACTIVATE/.test(SRC.clone), 'the tab does not offer activation');
+    ok(/_modActivateRects/.test(SRC.clone), 'no hit targets for activation');
+    ok(/activatePendingElement\(r\.id\)/.test(SRC.clone), 'tapping one does not activate it');
+    // Checked before the slider, or a tap gets swallowed as a drag.
+    ok(SRC.clone.indexOf('_modActivateRects||[]') < SRC.clone.indexOf('Modulation slider drag'),
+       'the activate tap must be checked before the slider drag');
+});
+
+check('the crystal shows what is next when nothing is pending', () => {
+    ok(/nextKillUnlock\(\)/.test(SRC.clone), 'the tab does not show the next unlock');
+    ok(/kills", PX \+ 10, pendY\)|in " \+ next\.remaining \+ " kills/.test(SRC.clone),
+       'the remaining kill count is not shown');
+});
+
+check('THE PROMPT: the crystal button says an element is waiting', () => {
+    const at = SRC.clone.indexOf('function drawCrystalButton');
+    const body = SRC.clone.slice(at, at + 2200);
+    ok(/pendingElements\.length > 0 \|\| modulationDirty/.test(body),
+       'the button does not prompt');
+    ok(/ELEMENT READY/.test(body), 'no prompt for a pending element');
+    ok(/RE-MODULATE/.test(body), 'no prompt for a stale modulation');
+    ok(/!crystalMenuOpen/.test(body), 'it should stop prompting once the menu is open');
+});
+
+check('re-modulating clears the prompt', () => {
+    ok(/modulationDirty = false;\s*\/\/ they have re-modulated/.test(SRC.clone),
+       'moving the slider does not clear the stale flag');
+});
+
+group('it survives a refresh, and a reset clears it');
+
+check('kills and pending elements persist', () => {
     const SAVE = fs.readFileSync(path.join(ROOT, 'js/save.js'), 'utf8');
-    ok(/function saveUnlocks/.test(SAVE) && /function getUnlocks/.test(SAVE),
-       'unlocks have no storage behind them');
+    for (const fn of ['saveProgress', 'loadProgress', 'clearProgress', 'applyProgress']) {
+        ok(new RegExp('function ' + fn).test(SAVE), 'no ' + fn);
+    }
+    const INIT = fs.readFileSync(path.join(ROOT, 'js/init.js'), 'utf8');
+    ok(/applyProgress\(loadProgress\(\)\)/.test(INIT), 'progress is never loaded');
+    ok(INIT.indexOf('unlockedElements = new Set(getUnlocks())') < INIT.indexOf('applyProgress'),
+       'progress must load after unlocks, so activated elements drop out of pending');
 });
 
-check('a dead nest stays dead, so the unlock cannot be undone', () => {
-    // restoreWorldBetweenWaves heals damaged nests but deliberately leaves
-    // destroyed ones destroyed. That is what makes depth a ratchet.
-    ok(/if \(obj\.nest && obj\.nestHealth > 0\) obj\.nestHealth = obj\.nestMaxHealth/.test(SRC.waves),
-       'between-wave restore no longer spares destroyed nests');
+check('an already-activated element does not come back as pending', () => {
+    const SAVE = fs.readFileSync(path.join(ROOT, 'js/save.js'), 'utf8');
+    const at = SAVE.indexOf('function applyProgress');
+    ok(/!unlockedElements\.has\(e\)/.test(SAVE.slice(at, at + 400)),
+       'applyProgress should drop pending elements that are already online');
+});
+
+check('progress is kept out of the session blob', () => {
+    // Clearing a session must not cost the player their elements.
+    const SAVE = fs.readFileSync(path.join(ROOT, 'js/save.js'), 'utf8');
+    const at = SAVE.indexOf('tubecrawler_session');
+    const blob = SAVE.slice(at, at + 600);
+    ok(!/lifetimeKills|pendingElements/.test(blob), 'progress is inside the session snapshot');
+    ok(/tubecrawler_progress/.test(SAVE), 'progress has no storage key of its own');
+});
+
+check('a reset clears it all', () => {
+    ok(/clearProgress\(\)/.test(SRC.waves), 'restartGame does not clear progress');
+    ok(/pendingElements=\[\]; lifetimeKills=0; modulationDirty=false;/.test(SRC.waves),
+       'restartGame leaves progression state behind');
+    ok(/crystalModSlider=0;/.test(SRC.waves), 'restartGame leaves the slider where it was');
+});
+
+check('every enemy killed counts, wanderers included', () => {
+    // The wave quota ignores wanderers; progression should not, because it is a
+    // record of what you have fought rather than of a quota.
+    ok(/noteKillForProgression\(\);/.test(SRC.game), 'kills are never reported to progression');
+    const at = SRC.game.indexOf('!a.progressCounted');
+    ok(at > -1, 'no separate progression guard — it would share the wave flag');
+    const block = SRC.game.slice(at - 200, at + 200);
+    ok(!/isWanderer/.test(block), 'progression should not skip wanderers');
+    same((SRC.game.match(/noteKillForProgression\(\)/g) || []).length, 1, 'reported more than once');
 });
 
 group('the in-game docs match');
 
-check('the index no longer tells the player to buy elements', () => {
+check('the index describes kills and the crystal, not zones or a shop', () => {
     ok(!/purchased in the shop/.test(HTML), 'the docs still describe buying elements');
-    ok(!/Shop: <span class="cm-stat">\d+ shards/.test(HTML), 'the per-element shop prices are back');
+    ok(!/ZONE 1 nest/.test(HTML), 'the docs still describe the old nest rule');
     ok(/There is no shop/.test(HTML), 'the docs do not say the shop is gone');
-    for (const z of ['ZONE 1 nest', 'ZONE 2 nest', 'ZONE 3 nest', 'ZONE 4 nest']) {
-        ok(HTML.includes(z), 'the docs do not list ' + z);
-    }
+    ok(/kills/i.test(HTML), 'the docs do not mention kills');
+    ok(/ACTIVATE/.test(HTML) || /activate/.test(HTML), 'the docs do not mention activating at the crystal');
 });
 
-check('the documented mapping matches the code', () => {
-    const env = makeEnv();
-    const table = env.run('DEPTH_ELEMENT_UNLOCKS');
-    for (const [zone, el] of Object.entries(table)) {
-        const re = new RegExp('ZONE ' + zone + ' nest</span><br><span class="cost">unlocks ' + el.toUpperCase());
-        ok(re.test(HTML), `the docs disagree with the code for zone ${zone} (${el})`);
+check('the documented thresholds match the code', () => {
+    for (const t of thresholds()) {
+        const re = new RegExp(t.kills + '[^<]*</span>[\\s\\S]{0,120}?' + t.element.toUpperCase(), 'i');
+        const alt = new RegExp(t.element.toUpperCase() + '[\\s\\S]{0,160}?' + t.kills, 'i');
+        ok(re.test(HTML) || alt.test(HTML),
+           `the docs do not state ${t.element.toUpperCase()} at ${t.kills} kills`);
     }
 });
 

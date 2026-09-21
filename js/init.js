@@ -24,6 +24,9 @@ async function loadConfig() {
     shardCount = getShards();
     playerAmmo = getAmmo();
     unlockedElements = new Set(getUnlocks());
+    // After unlockedElements, because applyProgress drops any pending element
+    // that has already been activated.
+    applyProgress(loadProgress());
     const gs = loadGameState();
     if (gs) {
         gameState.nightNumber        = gs.nightNumber        || 1;

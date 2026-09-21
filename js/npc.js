@@ -48,10 +48,14 @@ function updateRTSNPC(actor) {
                 actor.moveSpeed   = NPC_TYPES["virus"].moveSpeed + (actor.stats.speed-10)*0.001;
             }
             // Always reassign element at crystal — world-spawn element is stale/irrelevant
+            // The modulation slider decides the pool. It used to draw a label
+            // and a row of swatches and nothing read the result — recruits just
+            // took a random unlocked element regardless of where the slider sat.
+            // A boss modulator still overrides it.
             if (activeCrystalModulation) {
                 actor.element = activeCrystalModulation.pair[Math.floor(Math.random()*activeCrystalModulation.pair.length)];
             } else {
-                const pool = [...unlockedElements];
+                const pool = recruitElementPool();
                 actor.element = pool[Math.floor(Math.random()*pool.length)] || "fire";
             }
             if (!actor.combatTrait)  actor.combatTrait  = Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)];
