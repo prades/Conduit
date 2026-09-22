@@ -19,6 +19,7 @@ const SUITES = [
     ['tutorial',               'tutorial.js'],
     ['no player stun',         'stun.js'],
     ['progression',            'progression.js'],
+    ['modulation',             'modulation.js'],
     ['generator pylon',        'generator.js'],
     ['pylon look',             'pylonlook.js'],
     ['infestation',            'infest.js'],

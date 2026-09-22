@@ -112,7 +112,7 @@ check('activating flags the modulation as stale', () => {
     kill(env, thresholds()[0].kills);
     same(env.sandbox.modulationDirty, false, 'clean before');
     env.run('activatePendingElement')(thresholds()[0].element);
-    same(env.sandbox.modulationDirty, true, 'a new element makes the slider stale');
+    same(env.sandbox.modulationDirty, true, 'a new element makes the modulation stale');
     ok(env.sandbox.floatingTexts.some(t => /RE-MODULATE/.test(t.text)), 'the player should be prompted');
 });
 
@@ -178,14 +178,14 @@ check('progress is saved as it is made', () => {
 
 group('the crystal is where it happens');
 
-check('the modulation slider actually drives recruits now', () => {
+check('the modulation actually drives recruits now', () => {
     // _getModScheme() only ever fed a label and swatches; recruits took any
-    // unlocked element regardless of where the slider sat.
+    // unlocked element regardless of how the crystal was modulated.
     ok(/function recruitElementPool/.test(SRC.clone), 'no recruit pool from the scheme');
     const NPC = fs.readFileSync(path.join(ROOT, 'js/npc.js'), 'utf8');
     ok(/recruitElementPool\(\)/.test(NPC), 'recruits do not use the modulation pool');
     ok(!/const pool = \[\.\.\.unlockedElements\];/.test(NPC),
-       'recruits still ignore the slider and take any unlocked element');
+       'recruits still ignore the modulation and take any unlocked element');
 });
 
 check('the pool never comes back empty', () => {
@@ -196,7 +196,7 @@ check('the pool never comes back empty', () => {
     ok(/unlockedElements\.has\(id\)/.test(body), 'the pool should only offer activated elements');
 });
 
-check('a boss modulator still overrides the slider', () => {
+check('a boss modulator still overrides the modulation', () => {
     const NPC = fs.readFileSync(path.join(ROOT, 'js/npc.js'), 'utf8');
     const at = NPC.indexOf('if (activeCrystalModulation) {');
     ok(at > -1, 'the boss modulator override is gone');
@@ -207,9 +207,10 @@ check('the crystal offers an ACTIVATE control per pending element', () => {
     ok(/EARNED — TAP TO ACTIVATE/.test(SRC.clone), 'the tab does not offer activation');
     ok(/_modActivateRects/.test(SRC.clone), 'no hit targets for activation');
     ok(/activatePendingElement\(r\.id\)/.test(SRC.clone), 'tapping one does not activate it');
-    // Checked before the slider, or a tap gets swallowed as a drag.
-    ok(SRC.clone.indexOf('_modActivateRects||[]') < SRC.clone.indexOf('Modulation slider drag'),
-       'the activate tap must be checked before the slider drag');
+    // Checked before the swatches, or an ACTIVATE tap that happens to land on
+    // a swatch toggles the mix instead of bringing the element online.
+    ok(SRC.clone.indexOf('_modActivateRects||[]') < SRC.clone.indexOf('_modSwatchRects||[]'),
+       'the activate tap must be checked before the modulation swatches');
 });
 
 check('the crystal shows what is next when nothing is pending', () => {
@@ -229,8 +230,8 @@ check('THE PROMPT: the crystal button says an element is waiting', () => {
 });
 
 check('re-modulating clears the prompt', () => {
-    ok(/modulationDirty = false;\s*\/\/ they have re-modulated/.test(SRC.clone),
-       'moving the slider does not clear the stale flag');
+    ok(/modulationDirty = false;\s*\/\/ they have modulated/.test(SRC.clone),
+       'changing the modulation does not clear the stale flag');
 });
 
 group('it survives a refresh, and a reset clears it');
@@ -266,7 +267,8 @@ check('a reset clears it all', () => {
     ok(/clearProgress\(\)/.test(SRC.waves), 'restartGame does not clear progress');
     ok(/pendingElements=\[\]; lifetimeKills=0; modulationDirty=false;/.test(SRC.waves),
        'restartGame leaves progression state behind');
-    ok(/crystalModSlider=0;/.test(SRC.waves), 'restartGame leaves the slider where it was');
+    ok(/modulationMask=new Set\(\["fire","electric"\]\);/.test(SRC.waves),
+       'restartGame leaves the modulation where it was');
 });
 
 check('every enemy killed counts, wanderers included', () => {

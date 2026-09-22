@@ -57,6 +57,9 @@ function makeBrowserSandbox(store = {}) {
         isNaN, isFinite, parseInt, parseFloat, encodeURIComponent, decodeURIComponent,
         setTimeout: () => 0, clearTimeout: () => {}, setInterval: () => 0, clearInterval: () => {},
         requestAnimationFrame: () => 0,   // never actually start the loop
+        // config.js sizes the canvas from the viewport. Without these,
+        // canvas.width is undefined and every layout computed from it is NaN.
+        innerWidth: 900, innerHeight: 700,
         performance: { now: () => 0 },
         navigator: { hardwareConcurrency: 8, userAgent: 'node', maxTouchPoints: 0 },
         // No config files on disk here, and the game already handles that.

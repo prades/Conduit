@@ -494,7 +494,6 @@ function drawClonesBlob() {
 const _CRYSBTN  = { x: 0, y: 0, r: 22 };  // canvas button hit area
 let _crystalModPhase = 0;                   // color-cycle frame counter
 let _crystalScrollY  = 0;                   // clone list scroll offset (px)
-let _crystalSliderDrag = false;             // true while dragging mod slider
 
 // Tab definitions
 const CTABS = [
@@ -524,36 +523,101 @@ function recruitElementPool() {
     return ids.length ? ids : [...unlockedElements];
 }
 
-// ── Modulation scheme from slider ─────────────────────────
-function _getModScheme() {
+// ── Modulation: which elements new followers come out as ──
+//
+// The mask is the single source of truth. Everything else — the label, the
+// swatches, the HUD chip, recruitElementPool — reads it through here.
+//
+// It replaced a 0..1 slider that indexed a generated list of element
+// combinations. With exactly two elements unlocked (fire and electric, the
+// starting pair) a slider value in the 0.25..0.55 band skipped the TRI branch,
+// which wants n >= 3, and fell into the BI branch where (s - 0.55) is negative:
+// Math.floor gave -1, combos[-1] was undefined, and combo.map threw. A set of
+// toggles has no such arithmetic to get wrong.
+//
+// The mask is kept honest on every read rather than only on write: elements
+// come online mid-run, a reset relocks them, and a saved mask can name an
+// element this save has not earned. An empty mask means "any", which is also
+// the starting state, so a player who has never opened the control still gets a
+// sensible mix.
+function normaliseModulationMask() {
     const unlocked = ELEMENTS.filter(e => unlockedElements.has(e.id));
-    const n = unlocked.length;
-    if (n === 0) return { colors:["#888"], elements:[], size:0, label:"NONE" };
-    const s = Math.max(0, Math.min(1, crystalModSlider));
-    // Slider zones: 0–0.25=ALL, 0.25–0.55=TRI, 0.55–0.80=BI, 0.80–1.0=MONO
-    if (s < 0.25 || n <= 1) {
-        return { colors:unlocked.map(e=>e.color), elements:unlocked, size:n, label:"ALL ×"+n };
+    for (const id of [...modulationMask]) {
+        if (!unlockedElements.has(id)) modulationMask.delete(id);
     }
-    if (s < 0.55 && n >= 3) {
-        const combos = [];
-        for (let a=0;a<n;a++) for (let b=a+1;b<n;b++) for (let c=b+1;c<n;c++)
-            combos.push([unlocked[a],unlocked[b],unlocked[c]]);
-        const idx = Math.min(Math.floor(((s-0.25)/0.30)*combos.length), combos.length-1);
-        const combo = combos[idx];
-        return { colors:combo.map(e=>e.color), elements:combo, size:3,
-                 label:combo.map(e=>e.label.slice(0,3)).join("·") };
+    if (modulationMask.size === 0) for (const e of unlocked) modulationMask.add(e.id);
+    return unlocked;
+}
+
+function _getModScheme() {
+    const unlocked = normaliseModulationMask();
+    if (unlocked.length === 0) return { colors:["#888"], elements:[], size:0, label:"NONE" };
+    const on = unlocked.filter(e => modulationMask.has(e.id));
+    const size = on.length;
+    // The label says what it does rather than naming a band: every recruit is
+    // one element, or the mix it draws from.
+    const label = size === unlocked.length ? "ALL \u00d7" + size
+                : size === 1               ? on[0].label
+                : on.map(e => e.label.slice(0, 3)).join("\u00b7");
+    return { colors: on.map(e => e.color), elements: on, size, label };
+}
+
+// Toggling is the only way the mask changes. It refuses to switch the last
+// element off: an empty mask reads as "any", so emptying it by tapping would
+// silently do the opposite of what the tap looks like.
+function modulationToggle(id) {
+    normaliseModulationMask();
+    if (!unlockedElements.has(id)) return false;
+    if (modulationMask.has(id)) {
+        if (modulationMask.size <= 1) {
+            floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
+                text: "AT LEAST ONE ELEMENT", color: "#f88", life: 90, vy: -0.25, size: 11 });
+            return false;
+        }
+        modulationMask.delete(id);
+    } else {
+        modulationMask.add(id);
     }
-    if (s < 0.80 && n >= 2) {
-        const combos = [];
-        for (let a=0;a<n;a++) for (let b=a+1;b<n;b++) combos.push([unlocked[a],unlocked[b]]);
-        const idx = Math.min(Math.floor(((s-0.55)/0.25)*combos.length), combos.length-1);
-        const combo = combos[idx];
-        return { colors:combo.map(e=>e.color), elements:combo, size:2,
-                 label:combo.map(e=>e.label.slice(0,3)).join("·") };
-    }
-    const idx = Math.min(Math.floor(((s-0.80)/0.20)*n), n-1);
-    const el = unlocked[Math.max(0,idx)];
-    return { colors:[el.color], elements:[el], size:1, label:el.label };
+    modulationDirty = false;        // they have modulated; the prompt can rest
+    if (typeof saveProgress === "function") saveProgress();
+    const el = ELEMENTS.find(e => e.id === id);
+    floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 96,
+        text: "MODULATION \u2014 " + _getModScheme().label,
+        color: el ? el.color : "#aaddff", life: 80, vy: -0.22, size: 11 });
+    return true;
+}
+
+// One swatch per unlocked element: lit when it is in the mix, dark when it is
+// not. Shared by the Crystal panel and the HUD chip so the two cannot disagree
+// about what is on, and returns its hit rects so the caller can route taps.
+function drawModulationSwatches(x, y, cell, gap, showLabels) {
+    const unlocked = normaliseModulationMask();
+    const rects = [];
+    unlocked.forEach((el, i) => {
+        const sx = x + i * (cell + gap);
+        const on = modulationMask.has(el.id);
+        const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.06 + i * 0.9);
+        ctx.fillStyle = on ? el.color : "#10141c";
+        ctx.globalAlpha = on ? 0.55 + pulse * 0.45 : 1;
+        ctx.fillRect(sx, y, cell, cell);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = on ? "#ffffff" : el.color + "55";
+        ctx.lineWidth = on ? 1.6 : 1;
+        ctx.strokeRect(sx + 0.5, y + 0.5, cell - 1, cell - 1);
+        if (showLabels) {
+            ctx.fillStyle = on ? el.color : "#39404e";
+            ctx.font = "bold 7px monospace";
+            ctx.textAlign = "center"; ctx.textBaseline = "top";
+            ctx.fillText(el.label.slice(0, 3).toUpperCase(), sx + cell / 2, y + cell + 3);
+        }
+        rects.push({ id: el.id, x: sx, y, w: cell, h: cell });
+    });
+    return rects;
+}
+
+function modulationSwatchesWidth(cell, gap) {
+    const n = normaliseModulationMask().length;
+    return n > 0 ? n * cell + (n - 1) * gap : 0;
 }
 
 // ── Sort clone options ────────────────────────────────────
@@ -570,6 +634,98 @@ function _sortedCloneOptions(opts, mode) {
         return cl && (cl.abdomenAttack || (cl.rangeDamage && cl.rangeDamage > 0));
     });
     return copy; // "species" — natural order
+}
+
+// ── Modulation chip (bottom-right HUD) ────────────────
+//
+// Changing what your followers are made of used to be four taps deep: open the
+// Crystal, find the MODULATION tab, drag a slider whose bands were unlabelled
+// in play. It is the dial the whole follower economy turns on, so it belongs on
+// the HUD where it can be read at a glance and changed with one tap.
+//
+// Bottom-right, stacked ABOVE the TUTORIAL button rather than beside it: that
+// button is a fixed-position DOM element at bottom:20px, so sharing the row
+// would collide on a narrow screen.
+const _MODCHIP = { x: 0, y: 0, w: 0, h: 0, rects: [] };
+const _MODCHIP_CELL = 16;
+const _MODCHIP_GAP  = 4;
+const _MODCHIP_TUT_CLEARANCE = 76;   // 20px inset + the button + a gap
+
+function drawModulationChip() {
+    // Hidden behind the Crystal panel, which covers the whole lower screen and
+    // carries the same control on its MODULATION tab.
+    if (crystalMenuOpen) { _MODCHIP.w = 0; _MODCHIP.rects = []; return; }
+    const swW = modulationSwatchesWidth(_MODCHIP_CELL, _MODCHIP_GAP);
+    if (swW <= 0) { _MODCHIP.w = 0; _MODCHIP.rects = []; return; }
+
+    const padX = 8, padTop = 16, padBottom = 14;
+    const w = swW + padX * 2;
+    const h = padTop + _MODCHIP_CELL + padBottom;
+    const x = Math.round(canvas.width - w - 20);
+    const y = Math.round(canvas.height - _MODCHIP_TUT_CLEARANCE - h - (SAFE_BOTTOM || 0));
+    _MODCHIP.x = x; _MODCHIP.y = y; _MODCHIP.w = w; _MODCHIP.h = h;
+
+    const scheme = _getModScheme();
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    ctx.fillStyle = "rgba(6,10,16,0.88)";
+    _epRoundRect(x, y, w, h, 6); ctx.fill();
+
+    // The wash sits under each element's OWN column rather than dividing the
+    // body by the number of lit elements: bands by count put the second colour
+    // under the third swatch, so with fire and toxic lit out of six the chip
+    // read as half red and half green while the lit swatches were at the ends.
+    const unlocked = normaliseModulationMask();
+    if (unlocked.length > 0) {
+        ctx.save();
+        _epRoundRect(x, y, w, h, 6); ctx.clip();
+        unlocked.forEach((el, i) => {
+            if (!modulationMask.has(el.id)) return;
+            const cx0 = x + padX + i * (_MODCHIP_CELL + _MODCHIP_GAP) - _MODCHIP_GAP / 2;
+            ctx.globalAlpha = 0.20;
+            ctx.fillStyle = el.color;
+            ctx.fillRect(cx0, y, _MODCHIP_CELL + _MODCHIP_GAP, h);
+        });
+        ctx.restore();
+        ctx.globalAlpha = 1;
+    }
+
+    // A prompt border while the mix is stale — a new element just came online.
+    const stale = !!modulationDirty;
+    const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.1);
+    ctx.strokeStyle = stale ? `rgba(255,204,68,${0.5 + pulse * 0.5})` : "rgba(120,150,180,0.5)";
+    ctx.lineWidth = stale ? 2 : 1;
+    _epRoundRect(x, y, w, h, 6); ctx.stroke();
+
+    ctx.fillStyle = stale ? "#ffcc44" : "#7f98b4";
+    ctx.font = "bold 8px monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText(stale ? "RE-MODULATE" : "MODULATION", x + w / 2, y + 4);
+
+    _MODCHIP.rects = drawModulationSwatches(x + padX, y + padTop, _MODCHIP_CELL, _MODCHIP_GAP, false);
+
+    ctx.fillStyle = "#93a7bd";
+    ctx.font = "bold 8px monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    ctx.fillText(scheme.label.toUpperCase(), x + w / 2, y + h - 3);
+    ctx.restore();
+}
+
+// Returns true when the tap was the chip's, so the caller stops there rather
+// than also issuing a world command underneath it.
+function modulationChipTap(ex, ey) {
+    if (crystalMenuOpen || _MODCHIP.w <= 0) return false;
+    if (ex < _MODCHIP.x || ex > _MODCHIP.x + _MODCHIP.w ||
+        ey < _MODCHIP.y || ey > _MODCHIP.y + _MODCHIP.h) return false;
+    for (const r of _MODCHIP.rects) {
+        // Generous vertically: the swatches are 16px on a touch screen.
+        if (ex >= r.x - 2 && ex <= r.x + r.w + 2 && ey >= r.y - 8 && ey <= r.y + r.h + 8) {
+            modulationToggle(r.id);
+            return true;
+        }
+    }
+    return true;   // a tap on the chip's body is still the chip's, not the world's
 }
 
 // ── Animated crystal HUD button (top-center) ──────────────
@@ -941,43 +1097,29 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
         });
     }
 
-    // ── Vertical slider ──────────────────────────────────
-    const slX   = splitX + Math.floor((PW - (splitX-PX)) * 0.45);
-    const slT   = PY + 14;
-    const slB   = PY + PH - 14;
-    const slH   = slB - slT;
-    const slW   = 8;
+    // ── The control ───────────────────────────────────
+    // The same swatch row as the HUD chip, so there is one mechanism and the
+    // two cannot disagree. It replaced a vertical slider with four unlabelled
+    // bands (ALL / TRI / BI / MONO) that indexed a generated combination list;
+    // that indexing is what crashed on two unlocked elements.
+    const modX = splitX + 16;
+    const modY = PY + 40;
+    const cell = 26, gap = 8;
+    ctx.fillStyle = "#aaddff"; ctx.font = "bold 11px monospace";
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("NEW FOLLOWERS COME OUT AS:", modX, modY - 12);
 
-    // Track
-    ctx.fillStyle="#08060f"; ctx.fillRect(slX-slW/2, slT, slW, slH);
-    ctx.strokeStyle="#1e1e35"; ctx.lineWidth=1; ctx.strokeRect(slX-slW/2, slT, slW, slH);
+    window._modSwatchRects = drawModulationSwatches(modX, modY, cell, gap, true);
 
-    // Zone bands (color the track)
-    const zones=[
-        {lo:0,   hi:0.25, col:"#ffcc44", label:"ALL"},
-        {lo:0.25,hi:0.55, col:"#88ffcc", label:"TRI"},
-        {lo:0.55,hi:0.80, col:"#aaddff", label:"BI"},
-        {lo:0.80,hi:1.0,  col:"#ff88ff", label:"MONO"},
-    ];
-    zones.forEach(z => {
-        const yTop = slT + (1-z.hi)*slH;
-        const yBot = slT + (1-z.lo)*slH;
-        ctx.fillStyle=z.col+"22"; ctx.fillRect(slX-slW/2, yTop, slW, yBot-yTop);
-        const midY=(yTop+yBot)/2;
-        ctx.strokeStyle=z.col+"44"; ctx.lineWidth=1; ctx.setLineDash([2,4]);
-        ctx.beginPath(); ctx.moveTo(slX-20,midY); ctx.lineTo(slX-slW/2,midY); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle=z.col; ctx.font="8px monospace"; ctx.textAlign="right"; ctx.textBaseline="middle";
-        ctx.fillText(z.label, slX-13, midY);
-    });
+    ctx.fillStyle = "#49556a"; ctx.font = "9px monospace";
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("Tap an element to add or drop it from the mix.", modX, modY + cell + 26);
+    ctx.fillText("They take it at the Crystal \u2014 on recruitment, and again", modX, modY + cell + 39);
+    ctx.fillText("every time one respawns.", modX, modY + cell + 52);
 
-    // Handle
-    const handleY = slT + (1-crystalModSlider)*slH;
-    ctx.fillStyle=cycleColor;
-    ctx.beginPath(); ctx.arc(slX, handleY, 10, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle="#fff"; ctx.lineWidth=1.5; ctx.stroke();
-
-    window._crystalSliderTrack = { x:slX, t:slT, b:slB, h:slH };
+    const sch = _getModScheme();
+    ctx.fillStyle = cycleColor; ctx.font = "bold 12px monospace";
+    ctx.fillText(sch.label.toUpperCase(), modX, modY + cell + 74);
 }
 
 // ── Tab: Status ───────────────────────────────────────────
@@ -1104,21 +1246,17 @@ function handleCrystalPanelInput(ex, ey, isDown) {
         }
     }
 
-    // Modulation slider drag (check first — works on move too)
-    const st = window._crystalSliderTrack;
-    if (crystalMenuTab==="modulation" && st) {
-        if (_crystalSliderDrag || (isDown && Math.abs(ex-st.x)<20 && ey>=st.t-14 && ey<=st.b+14)) {
-            if (isDown) {
-                _crystalSliderDrag = true;
-                crystalModSlider = 1 - Math.max(0, Math.min(1, (ey-st.t)/st.h));
-                modulationDirty = false;   // they have re-modulated
-            } else {
-                _crystalSliderDrag = false;
+    // Modulation swatches. Tapped on RELEASE, not on press: a toggle that
+    // fires on press repeats for every move event while the finger is down.
+    if (crystalMenuTab==="modulation" && !isDown) {
+        for (const r of (window._modSwatchRects||[])) {
+            if (ex>=r.x-4 && ex<=r.x+r.w+4 && ey>=r.y-4 && ey<=r.y+r.h+10) {
+                modulationToggle(r.id);
+                return true;
             }
-            return true;
         }
     }
-    if (!isDown) { _crystalSliderDrag=false; return crystalMenuOpen; }
+    if (!isDown) { return crystalMenuOpen; }
 
     // Close button
     if (ex>=b.closeX && ex<=b.closeX+b.closeW && ey>=b.PY && ey<=b.PY+b.tabH) {

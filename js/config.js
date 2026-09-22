@@ -343,7 +343,14 @@ let followerPoolMinimized = false; // whether the follower pool panel is collaps
 let crystalMenuOpen  = false;
 let crystalMenuTab   = "clones";   // "clones"|"builds"|"modulation"|"status"|"info"
 let crystalCloneSort = "species";  // "species"|"combat"|"defense"|"hp"|"specials"
-let crystalModSlider = 0;          // 0.0 = all elements  →  1.0 = mono
+// Which elements new followers may come out as. A subset of the unlocked set —
+// the whole set means "any", one element means every recruit is that element.
+// This replaced a 0..1 slider that indexed into a generated list of element
+// combinations: with exactly two elements unlocked (fire and electric, the
+// starting pair) a slider value in the TRI band fell through to the BI branch
+// with a negative offset, indexed combos[-1] and crashed on combo.map.
+// A set of toggles has no such arithmetic to get wrong.
+let modulationMask = new Set();
 
 // ── SETTINGS PANEL (canvas-drawn) ─────────────────────────
 let settingsPanelOpen    = false;

@@ -408,7 +408,7 @@ function restartGame() {
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
     unlockedElements=new Set(["fire","electric"]);
     pendingElements=[]; lifetimeKills=0; modulationDirty=false;
-    crystalModSlider=0;
+    modulationMask=new Set(["fire","electric"]);
     activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};
     _cacheAge=-999; _pillarCache=[]; _wPylons=[]; _aPylons=[]; _uPylons=[]; _wPylonPairs=[]; _pylonsWithPartner=new Set(); _capturableNodeCache=[];
     _genPylons=[]; _genLinks=[];

@@ -220,6 +220,12 @@ function saveProgress() {
     try {
         localStorage.setItem("tubecrawler_progress", JSON.stringify({
             kills: lifetimeKills, pending: pendingElements,
+            // The modulation belongs here rather than in the session snapshot:
+            // it is a standing choice about the colony, not where the player is
+            // standing. Left out of the save it silently reset to "any" on every
+            // refresh, which for a HUD control the player sets deliberately is
+            // its own kind of broken.
+            modulation: [...modulationMask],
         }));
     } catch (e) {}
 }
@@ -236,6 +242,13 @@ function applyProgress(p) {
     pendingElements = Array.isArray(p.pending)
         ? p.pending.filter(e => typeof e === "string" && !unlockedElements.has(e))
         : [];
+    // Only elements this save has actually brought online. An empty mask reads
+    // as "any", which is the right answer both for a fresh save and for one
+    // whose every saved element has since been relocked by a reset.
+    modulationMask = new Set(
+        (Array.isArray(p.modulation) ? p.modulation : [])
+            .filter(e => typeof e === "string" && unlockedElements.has(e))
+    );
 }
 
 function clearSession() {

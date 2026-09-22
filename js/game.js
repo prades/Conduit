@@ -2836,8 +2836,17 @@ function render() {
                 if (entry.hpStat!==undefined) stats.hp = entry.hpStat;
                 const role        = assignRole(stats);
                 const hp          = entry.ghostphageLife ? 1 : stats.hp;
+                // The element comes from the Crystal, not from the corpse. A
+                // follower respawns AT the crystal, so it is re-modulated on the
+                // way out — which is what makes the modulation chip a live dial
+                // rather than something that only affects brand-new recruits.
+                // A boss modulator still overrides it.
+                const rPool = activeCrystalModulation
+                    ? activeCrystalModulation.pair
+                    : recruitElementPool();
+                const rElement = rPool[Math.floor(Math.random()*rPool.length)] || entry.element || "fire";
                 const npc = {
-                    type:"virus", element:entry.element, x:crystal.x, y:crystal.y, team:"green",
+                    type:"virus", element:rElement, x:crystal.x, y:crystal.y, team:"green",
                     health: hp, maxHealth: hp,
                     moveSpeed: def.moveSpeed + (stats.speed - 10) * 0.001,
                     power: stats.attack,
@@ -2850,8 +2859,8 @@ function render() {
                     ghostphageLife: entry.ghostphageLife||false
                 };
                 actors.push(npc); followers.push(npc);
-                if(!followerByElement[entry.element]) followerByElement[entry.element]=[];
-                followerByElement[entry.element].push(npc);
+                if(!followerByElement[rElement]) followerByElement[rElement]=[];
+                followerByElement[rElement].push(npc);
             }
             respawnQueue.splice(i,1);
         }
@@ -2934,6 +2943,7 @@ function render() {
     drawShopButton();
     drawCampButton();
     drawAmmoChip();
+    drawModulationChip();
     drawSettingsButton();
     drawSettingsPanel();
     drawCampMenu();
