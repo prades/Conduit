@@ -38,11 +38,21 @@
     #ultWrap.ready { border-color: #ffdd44; animation: ultReady 1s ease-in-out infinite; }
     #ultWrap.surging { border-color: #fff; }
     #ultLabel {
-        position: absolute; top: 0; left: 0; right: 0; height: 15px;
+        position: absolute; top: 0; left: 0; right: 18px; height: 15px;
         font-family: monospace; font-size: 9px; font-weight: bold; letter-spacing: 1px;
         color: #cbd5e0; text-align: center; line-height: 15px;
         text-shadow: 0 0 3px #000; pointer-events: none;
     }
+    /* The siphon switch, inside the bar at its right end. It stops the click
+       from reaching the bar, which fires the ultimate. */
+    #siphonBtn {
+        position: absolute; top: 0; right: 0; width: 17px; height: 15px;
+        background: rgba(0,0,0,0.45); border: none; border-left: 1px solid #333;
+        color: #ffee33; font-family: monospace; font-size: 11px; line-height: 15px;
+        padding: 0; cursor: pointer; touch-action: manipulation;
+        text-shadow: 0 0 4px #ffee33;
+    }
+    #siphonBtn.off { color: #55606e; text-shadow: none; }
     @keyframes ultReady {
         0%,100% { box-shadow: 0 0 4px #ffdd44; }
         50%     { box-shadow: 0 0 14px #ffdd44; }
@@ -432,7 +442,7 @@
 
 <div id="shards">Shards: 0</div>
 <div id="ui"><div id="hp"></div></div>
-<div id="ultWrap" onclick="fireArmySurge()"><div id="ult"></div><span id="ultLabel">ULTIMATE</span></div>
+<div id="ultWrap" onclick="fireArmySurge()"><div id="ult"></div><span id="ultLabel">ULTIMATE</span><button id="siphonBtn" onclick="event.stopPropagation();toggleSiphon()" title="Draw charge from your followers">⌁</button></div>
 <div id="padHud" style="display:none;position:absolute;top:22px;right:10px;color:#ff9944;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;z-index:10;"></div>
 <div id="waveInfo">WAVE 1 — clear panels for shards</div>
 <button id="tutBtn" onclick="startTutorial()" style="position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.85);border:2px solid #0f8;color:#0f8;font-family:monospace;font-size:13px;font-weight:bold;padding:10px 18px;border-radius:4px;letter-spacing:2px;cursor:pointer;z-index:200;touch-action:manipulation;">TUTORIAL</button>
@@ -1027,7 +1037,9 @@
         <div class="cm-shop-item"><span class="label">TOXIC</span><br><span class="cost">wave 4</span></div>
       </div>
       <div class="ctrl-row cm-dim" style="margin-top:5px">4 elements to earn, so the ladder is spent after 4 waves. Clearing another wave while one is still pending stacks a second — the reward is for the wave, so putting off the trip back does not forfeit it. The Crystal button flashes <span class="cm-stat">ELEMENT READY</span> when something is waiting.</div>
-      <div class="ctrl-row"><span class="ctrl-key">ULTIMATE</span>The bar under your health is your own. It fills as you kill — about <span class="cm-stat">15 kills</span> — and when it is full, tapping it spends the whole bar on an <strong>ARMY SURGE</strong>: every follower and clone you own is healed, has its WILL refilled, has its own ultimate charged, and deals <span class="cm-stat">1.6×</span> damage for <span class="cm-stat">10 seconds</span>. It will not charge while a surge is running, so a surge never pays for the next one.</div>
+      <div class="ctrl-row"><span class="ctrl-key">ULTIMATE</span>The bar under your health is your own, and it is <strong>siphoned from your followers</strong> — each one sends a wisp of static across to you every couple of seconds, and the charge lands when the wisp arrives. So the rate depends on how many you are fielding: ten fill it in about <span class="cm-stat">30 seconds</span>, three take a few minutes, and with none it does not fill at all.</div>
+      <div class="ctrl-row cm-dim">Tap the bar when it is full to spend the whole thing on an <strong>ARMY SURGE</strong>: every follower and clone healed, WILL refilled, its own ultimate charged, and <span class="cm-stat">1.6×</span> damage for <span class="cm-stat">10 seconds</span>. Nothing is siphoned while a surge is running, so a surge never pays for the next one.</div>
+      <div class="ctrl-row cm-dim">The <span class="cm-stat">⌁</span> switch at the right end of the bar turns the siphon off. Wisps already in the air still land. There is no cost to leaving it on — the switch is there so you can quiet the effect down.</div>
       <div class="ctrl-row cm-dim" style="margin-top:4px">Kills are still counted — the Crystal shows your lifetime total — but they no longer earn anything.</div>
       <div class="ctrl-row cm-dim" style="margin-top:4px">Activating a new element makes your modulation stale, and both the Crystal button and the modulation chip flash <span class="cm-stat">RE-MODULATE</span>.</div>
       <div class="ctrl-row"><span class="ctrl-key">MODULATION</span>The multicoloured chip in the <strong>bottom-right of the HUD</strong> decides what your followers are made of. Tap an element to add or drop it from the mix; at least one has to stay on. Followers take their element <strong>at the Crystal</strong> — when a recruit reaches it, and again every time one respawns — so re-modulating gradually re-colours the whole squad as they cycle. It is also on the Crystal's MODULATION tab, same control.</div>

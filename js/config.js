@@ -130,6 +130,7 @@ const hpBar   = document.getElementById('hp');
 const ultBar  = document.getElementById('ult');
 const ultWrap = document.getElementById('ultWrap');
 const ultLabel= document.getElementById('ultLabel');
+const siphonBtn = document.getElementById('siphonBtn');
 const shardUI = document.getElementById('shards');
 const waveUI  = document.getElementById('waveInfo');
 
@@ -211,6 +212,7 @@ let _seasonBonusCache= {};  // seasoned-bonus multiplier per element (1.0 or 1.2
 let _lastHpInt      = -1;    // last integer hp written to hpBar
 let _lastUltInt     = -1;    // last integer ultimate written to ultBar
 let _lastUltState   = '';    // last ready/surging class written
+let _lastSiphonOn   = null;  // last siphon state written to siphonBtn
 let _lastShardCount = -1;    // last shard count written to shardUI
 let _lastZoneIndex  = -999;  // last zone index written to zoneInfo
 let _zoneEl         = null;  // cached zoneInfo element (fetched once on first use)
@@ -370,11 +372,24 @@ let modulationMask = new Set();
 // per-follower, charge individually and fire on a double-tap. That system keeps
 // working exactly as it did; the surge charges all of them at once.
 const PLAYER_ULT_MAX      = 100;
-const PLAYER_ULT_PER_KILL = 7;     // about fifteen kills to fill
 const ARMY_SURGE_FRAMES   = 600;   // ten seconds
 const ARMY_SURGE_POWER    = 1.6;   // damage multiplier for the whole army
+// The bar is SIPHONED from the squad, not earned from kills. Each follower
+// sends a small wisp of static to the player every SIPHON_INTERVAL frames, and
+// the charge is delivered when the wisp arrives — so the trickle you can see is
+// the transfer itself rather than decoration over a counter.
+//
+// The rate therefore scales with how many followers you are fielding: ten of
+// them fill the bar in about half a minute, three take a couple of minutes, and
+// with none it does not fill at all.
+const SIPHON_INTERVAL  = 120;      // frames between one follower's wisps
+const SIPHON_TRAVEL    = 34;       // frames a wisp takes to reach the player
+const SIPHON_PER_WISP  = 0.7;      // charge one arriving wisp carries
+const SIPHON_COLOUR    = "#ffee33";// electric — it is static, not element magic
 let playerUltimate = 0;            // 0 .. PLAYER_ULT_MAX
 let armySurgeTimer = 0;            // frames of surge left
+let siphonEnabled  = true;         // the player can switch the draw off
+let siphonWisps    = [];           // { ax, ay, t, seed } in flight
 
 // ── SETTINGS PANEL (canvas-drawn) ─────────────────────────
 let settingsPanelOpen    = false;

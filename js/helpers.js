@@ -209,6 +209,103 @@ function fireArmySurge() {
     return true;
 }
 
+// ── The siphon ─────────────────────────────────────────
+// One wisp per follower per SIPHON_INTERVAL, and the charge lands when the wisp
+// does. Emission is staggered by a per-follower timer seeded at random, so a
+// squad does not pulse in unison — ten followers firing on the same frame reads
+// as a strobe rather than a trickle.
+function siphonTick() {
+    // Nothing is drawn from the squad mid-surge: the bar is spent, and charging
+    // during a surge would let one pay for the next.
+    if (!siphonEnabled || armySurgeTimer > 0) {
+        // Wisps already in flight still land — they were paid for.
+        _advanceSiphonWisps();
+        return;
+    }
+    if (playerUltimate < PLAYER_ULT_MAX) {
+        for (const a of armyUnits()) {
+            if (a._siphonTimer === undefined) {
+                // Random phase, so the first wave of wisps is spread out too.
+                a._siphonTimer = Math.floor(Math.random() * SIPHON_INTERVAL);
+            }
+            if (--a._siphonTimer > 0) continue;
+            a._siphonTimer = SIPHON_INTERVAL;
+            siphonWisps.push({ ax: a.x, ay: a.y, t: 0, seed: (Math.random() * 1e6) | 0 });
+        }
+    }
+    _advanceSiphonWisps();
+}
+
+// Wisps travel toward wherever the player IS, not where they were when it left,
+// so the trickle follows you rather than aiming at a stale point.
+function _advanceSiphonWisps() {
+    for (let i = siphonWisps.length - 1; i >= 0; i--) {
+        const w = siphonWisps[i];
+        w.t += 1 / SIPHON_TRAVEL;
+        if (w.t < 1) continue;
+        siphonWisps.splice(i, 1);
+        chargePlayerUltimate(SIPHON_PER_WISP);
+    }
+}
+
+// The switch. Wisps already in flight are left alone; they have been paid for
+// and dropping them mid-air would look like a glitch.
+function toggleSiphon() {
+    siphonEnabled = !siphonEnabled;
+    if (typeof saveSession === "function") saveSession();
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+        text: siphonEnabled ? "SIPHON ON" : "SIPHON OFF",
+        color: siphonEnabled ? SIPHON_COLOUR : "#8899aa", life: 100, vy: -0.25, size: 12 });
+    return siphonEnabled;
+}
+
+// A wisp is a few pixels of jagged static, drawn along the line from the
+// follower it left to the player. Deliberately small: the brief was "not crazy,
+// just a little wisp", and at roughly eight canvas operations each with about
+// three in flight at a time it costs nothing measurable.
+function drawSiphonWisps() {
+    if (siphonWisps.length === 0) return;
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.strokeStyle = SIPHON_COLOUR;
+    ctx.lineWidth = 1;
+    ctx.lineCap = "round";
+    for (const w of siphonWisps) {
+        // Ease toward the player so it accelerates in, like a discharge.
+        const e = w.t * w.t;
+        const wx = w.ax + (player.visualX - w.ax) * e;
+        const wy = w.ay + (player.visualY - w.ay) * e;
+        const dx = wx - player.visualX, dy = wy - player.visualY;
+        const px = (dx - dy) * TILE_W + cx;
+        const py = (dx + dy) * TILE_H + cy + TILE_H - 14 - 10 * (1 - w.t);
+        // Brightest in the middle of the trip, so it does not pop in or out.
+        ctx.globalAlpha = 0.30 + 0.45 * Math.sin(Math.PI * w.t);
+        // Laid ALONG the direction of travel, with the jitter perpendicular to
+        // it, so the wisp points where it is going. Drawn straight up it read as
+        // a static fleck rather than something cycling in to the player.
+        // The player is always at the centre of the screen, so that IS the target.
+        const tx = cx, ty = cy + TILE_H - 14;
+        let ux = tx - px, uy = ty - py;
+        const ul = Math.hypot(ux, uy) || 1;
+        ux /= ul; uy /= ul;
+        const nx = -uy, ny = ux;             // perpendicular
+        // Three short segments, jittered off the seed so no two look alike.
+        let s = w.seed ^ ((frame * 2654435761) | 0);
+        const rnd = () => { s = (s * 1103515245 + 12345) | 0; return ((s >>> 16) & 255) / 255 - 0.5; };
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        for (let k = 1; k <= 3; k++) {
+            const along = k * 4;
+            const off   = rnd() * 6;
+            ctx.lineTo(px + ux * along + nx * off, py + uy * along + ny * off);
+        }
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+}
+
 function tickArmySurge() {
     if (armySurgeTimer <= 0) return;
     armySurgeTimer--;

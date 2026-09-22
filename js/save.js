@@ -186,6 +186,9 @@ function saveSession() {
             // saved on purpose: a ten-second buff resuming hours later would be
             // a stranger outcome than letting it lapse.
             ult: Math.round(playerUltimate),
+            // The switch is a standing preference, so it belongs with the rest
+            // of the session rather than resetting to on every refresh.
+            siphon: !!siphonEnabled,
             lastGenX,
             explored: [...exploredZones],
             nests, panels, nodes, npcs, waveNpcs,
@@ -276,6 +279,9 @@ function applySession(sess) {
     if (Number.isFinite(sess.ult)) {
         playerUltimate = Math.max(0, Math.min(PLAYER_ULT_MAX, sess.ult));
     }
+    // Only a real boolean flips it: anything else leaves the siphon on, which
+    // is the state a player who has never touched the switch expects.
+    if (typeof sess.siphon === "boolean") siphonEnabled = sess.siphon;
     if (Number.isFinite(sess.lastGenX)) lastGenX = Math.max(lastGenX, sess.lastGenX);
     if (Array.isArray(sess.explored)) exploredZones = new Set(sess.explored);
 

@@ -412,6 +412,7 @@ function restartGame() {
     unlockedElements=new Set(STARTING_ELEMENTS);
     pendingElements=[]; lifetimeKills=0; modulationDirty=false;
     playerUltimate=0; armySurgeTimer=0; _lastUltInt=-1; _lastUltState="";
+    siphonEnabled=true; siphonWisps=[]; _lastSiphonOn=null;
     modulationMask=new Set(STARTING_ELEMENTS);
     activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};
     _cacheAge=-999; _pillarCache=[]; _wPylons=[]; _aPylons=[]; _uPylons=[]; _wPylonPairs=[]; _pylonsWithPartner=new Set(); _capturableNodeCache=[];

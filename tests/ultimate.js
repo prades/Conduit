@@ -9,8 +9,12 @@
 // would even open, the effective price was always 40 and the 10-shard path was
 // unreachable. It is now one constant at 10.
 //
-// THE ULTIMATE BAR. One bar, the character's own, filled by killing and spent on
-// an army-wide surge. It is deliberately NOT the same system as
+// THE ULTIMATE BAR. One bar, the character's own, SIPHONED from the squad and
+// spent on an army-wide surge. Each follower sends a wisp of static to the
+// player every SIPHON_INTERVAL frames and the charge lands when the wisp
+// arrives, so the trickle on screen is the transfer rather than decoration over
+// a counter — and the player can switch the draw off. It is deliberately NOT
+// the same system as
 // FOLLOWER_ULTIMATES, which are per-follower and fire on a double-tap; those
 // keep working, and the surge charges all of them at once.
 //
@@ -112,11 +116,27 @@ async function boot(store) {
     const D3 = await boot();   // the enemy excluded
     const H1 = await boot();   // the bar is written
     const H2 = await boot();   // labels
+    const P1 = await boot();   // one wisp, launch to landing
+    const P2 = await boot();   // rate with one follower
+    const P3 = await boot();   // rate with six
+    const P4 = await boot();   // no squad at all
+    const P5 = await boot();   // a full bar
+    const P6 = await boot();   // mid-surge
+    const P7 = await boot();   // the switch
+    const P8 = await boot();   // a wisp in flight when it is switched off
+    const P9 = await boot();   // launch versus arrival, with no squad to interfere
+    const PR = await boot();   // the rate against the arithmetic
     // Persistence: write with one context, read back with another.
     const RT = {};
     const RTa = await boot(RT);
     RTa.run('playerUltimate = 42; saveSession();');
     const RTb = await boot(RT);
+    // The switch, written by one context and read back by another.
+    const SIPH = {};
+    const SIPHa = await boot(SIPH);
+    SIPHa.run('siphonEnabled = false; saveSession();');
+    const SIPHb = await boot(SIPH);
+    const SIPHjunk = await boot({ tubecrawler_session: JSON.stringify({ siphon: 'off' }) });
     const clamped = [];
     for (const [saved, expect] of [[9999, 100], [-5, 0], ['lots', 0]]) {
         const C = await boot({ tubecrawler_session: JSON.stringify({ ult: saved }) });
@@ -192,25 +212,20 @@ async function boot(store) {
         ok(/ultimateCharge/.test(SRC.elements), 'the per-follower charge was removed');
     });
 
-    check('killing charges it', () => {
-        E.run('playerUltimate = 0; armySurgeTimer = 0;');
-        same(E.run('chargePlayerUltimate(PLAYER_ULT_PER_KILL)'), true, 'a kill should charge it');
-        same(E.run('playerUltimate'), E.run('PLAYER_ULT_PER_KILL'), 'by the per-kill amount');
-    });
-
-    check('it is the kill that charges it, in the running game', () => {
-        // Wired on the same guard progression uses, so every enemy counts once.
+    check('THE ASK: the squad is what charges it, not kills', () => {
+        ok(!/chargePlayerUltimate/.test(SRC.game),
+           'game.js still charges the bar directly — the siphon should be the only source');
         const at = SRC.game.indexOf('a.progressCounted = true;');
         const body = SRC.game.slice(at, at + 200);
-        ok(/chargePlayerUltimate\(PLAYER_ULT_PER_KILL\)/.test(body),
-           'a kill does not charge the bar');
-        same((SRC.game.match(/chargePlayerUltimate\(/g) || []).length, 1,
-             'it should be charged from exactly one place');
+        ok(!/chargePlayerUltimate/.test(body), 'a kill still charges the bar');
+        ok(/siphonTick\(\)/.test(SRC.game), 'the siphon is never ticked');
+        same((SRC.game.match(/siphonTick\(\)/g) || []).length, 1,
+             'ticking twice a frame would double the rate');
     });
 
     check('it fills, stops, and announces itself once', () => {
         E.run('playerUltimate = 0; armySurgeTimer = 0; floatingTexts = [];');
-        E.run('for (let i = 0; i < 200; i++) chargePlayerUltimate(PLAYER_ULT_PER_KILL);');
+        E.run('for (let i = 0; i < 400; i++) chargePlayerUltimate(SIPHON_PER_WISP);');
         same(E.run('playerUltimate'), E.run('PLAYER_ULT_MAX'), 'it should cap at the ceiling');
         same(E.run('playerUltimateReady()'), true, 'and read as ready');
         same(E.run('floatingTexts.filter(t => /ULTIMATE READY/.test(t.text)).length'), 1,
@@ -221,6 +236,186 @@ async function boot(store) {
         E.fill();
         same(E.run('chargePlayerUltimate(50)'), false, 'a full bar should refuse');
         same(E.run('playerUltimate'), E.run('PLAYER_ULT_MAX'), 'and not overflow');
+    });
+
+    // ─────────────────────────────────────────────────────
+    group('THE ASK: it is siphoned off the followers');
+
+    check('a follower sends a wisp', () => {
+        P1.squad(1);
+        P1.run('playerUltimate = 0; armySurgeTimer = 0; siphonEnabled = true; siphonWisps = [];');
+        // Emission is randomly phased, so a full interval guarantees one.
+        const emitted = P1.run(`(function(){
+            let seen = 0;
+            for (let i = 0; i < SIPHON_INTERVAL + 2; i++) { siphonTick(); seen += siphonWisps.length; }
+            return seen;
+        })()`);
+        ok(emitted > 0, 'a follower should have sent something within one interval');
+    });
+
+    check('THE ASK: it is the WISP that pays, not the launch', () => {
+        // With no followers nothing can be emitted, so the only wisp in play is
+        // the one placed by hand — which is what makes this able to tell launch
+        // from arrival. Driving it with a live squad cannot: emissions during
+        // the flight would mask it, which is how the first version of this
+        // check passed with the charge moved to the launch.
+        P9.run(`actors = []; followers = [];
+                playerUltimate = 0; armySurgeTimer = 0; siphonEnabled = true;
+                siphonWisps = [{ ax: 5, ay: 5, t: 0, seed: 1 }];`);
+        const early = P9.run(`(function(){
+            const seen = [];
+            for (let i = 0; i < SIPHON_TRAVEL - 1; i++) { siphonTick(); seen.push(playerUltimate); }
+            return seen;
+        })()`);
+        ok(early.every(v => v === 0),
+           'charge landed before the wisp did: ' + JSON.stringify(early.filter(v => v !== 0)));
+        P9.run('siphonTick(); siphonTick();');
+        ok(P9.run('playerUltimate') > 0, 'charge should land when the wisp arrives');
+        same(P9.run('siphonWisps.length'), 0, 'and the wisp should be spent');
+    });
+
+    check('the rate matches the arithmetic, so nothing pays twice', () => {
+        // Charging at BOTH launch and arrival looks almost identical on screen
+        // and doubles the fill rate, which no other check here can see. So the
+        // rate is compared against what the constants say it should be:
+        //   followers x (frames - travel) / interval x per-wisp
+        const N = 6, T = 1200;
+        PR.squad(N);
+        PR.run('playerUltimate = 0; armySurgeTimer = 0; siphonEnabled = true; siphonWisps = [];');
+        PR.run(`for (let i = 0; i < ${T}; i++) siphonTick();`);
+        const got = PR.run('playerUltimate');
+        const per = PR.run('SIPHON_PER_WISP');
+        const iv  = PR.run('SIPHON_INTERVAL');
+        const tr  = PR.run('SIPHON_TRAVEL');
+        const expected = N * ((T - tr) / iv) * per;
+        ok(got > expected * 0.7 && got < expected * 1.3,
+           `expected about ${expected.toFixed(1)} after ${T} frames, got ${got.toFixed(1)}`);
+    });
+
+    check('the rate scales with the size of the squad', () => {
+        // "Siphoned from the followers" means more of them is faster. This is
+        // the whole shape of the mechanic, so it is measured rather than assumed.
+        const charge = (env, n) => {
+            env.squad(n);
+            env.run('playerUltimate = 0; armySurgeTimer = 0; siphonEnabled = true; siphonWisps = [];');
+            env.run(`for (let i = 0; i < ${600}; i++) siphonTick();`);
+            return env.run('playerUltimate');
+        };
+        const one  = charge(P2, 1);
+        const six  = charge(P3, 6);
+        ok(six > one * 3, `six followers (${six.toFixed(1)}) should far outpace one (${one.toFixed(1)})`);
+    });
+
+    check('with no followers it does not fill at all', () => {
+        // The consequence of siphoning: an empty squad means an empty bar.
+        P4.run('actors = []; followers = []; playerUltimate = 0; siphonWisps = []; siphonEnabled = true;');
+        P4.run('for (let i = 0; i < 600; i++) siphonTick();');
+        same(P4.run('playerUltimate'), 0, 'nothing to siphon from, nothing to show');
+        same(P4.run('siphonWisps.length'), 0, 'and no wisps from nowhere');
+    });
+
+    check('a full bar stops drawing', () => {
+        P5.squad(4);
+        P5.run('playerUltimate = PLAYER_ULT_MAX; armySurgeTimer = 0; siphonEnabled = true; siphonWisps = [];');
+        P5.run('for (let i = 0; i < 400; i++) siphonTick();');
+        same(P5.run('siphonWisps.length'), 0, 'a full bar should not keep pulling on the squad');
+    });
+
+    check('no wisp is sent during a surge', () => {
+        // Checked at EVERY tick, not once at the end. A wisp lives 34 frames,
+        // so a single snapshot after 400 ticks can read empty by luck — which
+        // is exactly how the first version of this check passed with the guard
+        // taken out. Note the bar is protected twice over: chargePlayerUltimate
+        // also refuses mid-surge, so the guard here is specifically about not
+        // drawing on the squad, and it has to be tested as that.
+        P6.squad(4);
+        P6.fill();
+        P6.run('fireArmySurge(); siphonWisps = [];');
+        const everSeen = P6.run(`(function(){
+            let seen = 0;
+            for (let i = 0; i < 400; i++) { siphonTick(); seen += siphonWisps.length; }
+            return seen;
+        })()`);
+        same(everSeen, 0, 'a surge should not draw on the squad at all');
+        same(P6.run('playerUltimate'), 0, 'nor charge the bar');
+    });
+
+    // ─────────────────────────────────────────────────────
+    group('THE ASK: the player can turn it off');
+
+    check('switching it off stops the wisps and the charge', () => {
+        P7.squad(6);
+        P7.run('playerUltimate = 0; armySurgeTimer = 0; siphonWisps = []; siphonEnabled = true;');
+        same(P7.run('toggleSiphon()'), false, 'the toggle should report the new state');
+        P7.run('for (let i = 0; i < 600; i++) siphonTick();');
+        same(P7.run('siphonWisps.length'), 0, 'no wisps while it is off');
+        same(P7.run('playerUltimate'), 0, 'and no charge');
+        ok(P7.run('floatingTexts.some(t => /SIPHON OFF/.test(t.text))'), 'it should say so');
+    });
+
+    check('switching it back on resumes', () => {
+        same(P7.run('toggleSiphon()'), true, 'it should flip back');
+        P7.run(`for (let i = 0; i < 600; i++) siphonTick();`);
+        ok(P7.run('playerUltimate') > 0, 'the draw should resume');
+    });
+
+    check('a wisp already in flight still lands when you switch off', () => {
+        // It has been paid for. Dropping it mid-air would read as a glitch.
+        P8.squad(1);
+        // Through toggleSiphon(), not by assigning the flag: the first version
+        // set siphonEnabled directly, so it could not see a toggle that threw
+        // the wisps away.
+        P8.run(`actors = []; followers = [];
+                playerUltimate = 0; armySurgeTimer = 0; siphonEnabled = true;
+                siphonWisps = [{ ax: 5, ay: 5, t: 0.5, seed: 7 }];
+                toggleSiphon();`);
+        same(P8.run('siphonEnabled'), false, 'fixture: the toggle should have switched it off');
+        same(P8.run('siphonWisps.length'), 1, 'the wisp in flight was thrown away');
+        P8.run(`for (let i = 0; i < ${P8.run('SIPHON_TRAVEL')}; i++) siphonTick();`);
+        ok(P8.run('playerUltimate') > 0, 'the wisp in flight should still have paid out');
+        same(P8.run('siphonWisps.length'), 0, 'and cleared');
+    });
+
+    check('the switch is on the bar and does NOT fire the ultimate', () => {
+        ok(/id="siphonBtn"/.test(SRC.html), 'there is no switch in the HUD');
+        ok(/onclick="event\.stopPropagation\(\);toggleSiphon\(\)"/.test(SRC.html),
+           'a tap on the switch would fall through to the bar and fire the ultimate');
+        // And it lives inside the bar, so it cannot drift away from it on a
+        // resize. The element is written on one line, so the line is the scope
+        // — slicing to the first </div> stops at the inner fill element.
+        const at = SRC.html.indexOf('id="ultWrap"');
+        const line = SRC.html.slice(at, SRC.html.indexOf('\n', at));
+        ok(/siphonBtn/.test(line), 'the switch is not inside the bar');
+        ok(line.indexOf('id="ult"') < line.indexOf('siphonBtn'),
+           'the switch should come after the fill, or it draws under it');
+    });
+
+    check('the switch survives a refresh', () => {
+        same(JSON.parse(SIPH.tubecrawler_session).siphon, false, 'the switch is not saved');
+        same(SIPHb.run('siphonEnabled'), false, 'it should come back off');
+    });
+
+    check('a junk saved value leaves it on', () => {
+        // On is what a player who has never touched it expects.
+        same(SIPHjunk.run('siphonEnabled'), true, 'a non-boolean should not switch it off');
+    });
+
+    check('a reset turns it back on and clears the air', () => {
+        ok(/siphonEnabled=true; siphonWisps=\[\]; _lastSiphonOn=null;/.test(SRC.waves),
+           'restartGame leaves the siphon where it was');
+    });
+
+    check('the wisps draw with the world, and cheaply', () => {
+        ok(/drawSiphonWisps\(\)/.test(SRC.game), 'the wisps are never drawn');
+        // World space: they travel between two things in the world, so they must
+        // sort with it rather than sit up with the interface.
+        ok(SRC.game.indexOf('drawSiphonWisps()') < SRC.game.indexOf('drawRadialMenu()'),
+           'the wisps draw up with the interface instead of the world');
+        // Small by design — the brief was "not crazy, just a little wisp".
+        const at = SRC.helpers.indexOf('function drawSiphonWisps');
+        const body = SRC.helpers.slice(at, SRC.helpers.indexOf('\nfunction ', at + 10));
+        ok(!/shadowBlur/.test(body), 'a glow on every wisp is not "a little wisp"');
+        ok(/k <= 3/.test(body), 'the wisp should be a few short segments');
     });
 
     // ─────────────────────────────────────────────────────
@@ -409,8 +604,13 @@ async function boot(store) {
     check('the GAME INDEX documents it', () => {
         ok(/ARMY SURGE/.test(SRC.html), 'the index does not describe the ultimate');
         ok(/bar under your health/i.test(SRC.html), 'it does not say where the bar is');
-        ok(/will not charge while a surge is running/i.test(SRC.html),
+        ok(/siphoned from your followers/i.test(SRC.html), 'it does not say where the charge comes from');
+        ok(/with none it does not fill at all/i.test(SRC.html),
+           'it does not admit the consequence of siphoning');
+        ok(/switch at the right end of the bar/i.test(SRC.html), 'it does not mention the switch');
+        ok(/Nothing is siphoned while a surge is running/i.test(SRC.html),
            'it does not state the one rule a player could otherwise not infer');
+        ok(!/fills as you kill/i.test(SRC.html), 'the index still says kills charge it');
     });
 
     check('a reset clears the bar and any running surge', () => {

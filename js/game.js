@@ -617,6 +617,7 @@ function render() {
 
     // ── PLAYER ULTIMATE ──
     tickArmySurge();
+    siphonTick();
     const _ultInt = armySurgeTimer > 0
         ? Math.ceil(armySurgeTimer / 60)          // counting the surge down
         : Math.round(playerUltimate);              // filling
@@ -630,10 +631,17 @@ function render() {
         } else {
             ultBar.style.width = (playerUltimate / PLAYER_ULT_MAX * 100) + "%";
             ultLabel.textContent = playerUltimateReady() ? "TAP \u2014 ARMY SURGE"
-                                                         : "ULTIMATE " + _ultInt + "%";
+                                 : !siphonEnabled           ? "SIPHON OFF \u00b7 " + _ultInt + "%"
+                                                            : "ULTIMATE " + _ultInt + "%";
         }
         ultWrap.classList.toggle("ready",   _ultState === "ready");
         ultWrap.classList.toggle("surging", _ultState === "surging");
+    }
+    // The switch is its own cache: it changes on a tap, not with the bar.
+    if (siphonEnabled !== _lastSiphonOn) {
+        _lastSiphonOn = siphonEnabled;
+        siphonBtn.classList.toggle("off", !siphonEnabled);
+        _lastUltInt = -1;            // force the label to catch up
     }
 
     // ── PLAYER KNOCKDOWN ──
@@ -1034,7 +1042,6 @@ function render() {
         if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.progressCounted) {
             a.progressCounted = true;
             noteKillForProgression();
-            chargePlayerUltimate(PLAYER_ULT_PER_KILL);
         }
         // track kills for wave clear — count dead enemies not clones, wanderers don't count
         if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.killCounted && !a.isWanderer) {
@@ -2974,6 +2981,7 @@ function render() {
 
     // ── OVERLAYS ──
     drawElementEffects();
+    drawSiphonWisps();
     // Traps and the hold line are world geometry, so they draw with the world
     // rather than up with the interface.
     drawTraps();
