@@ -382,6 +382,11 @@ const ARMY_SURGE_POWER    = 1.6;   // damage multiplier for the whole army
 // The rate therefore scales with how many followers you are fielding: ten of
 // them fill the bar in about half a minute, three take a couple of minutes, and
 // with none it does not fill at all.
+// Only followers NEAR you are drawn from. 6 tiles: brawlers close to
+// FOLLOW_STOP (2.0) and snipers hold at 4.0, so both count with slack for
+// combat drift, while a camper anchored to a distant pylon and a worker off on
+// a chore — neither of which follows you at all — do not.
+const SIPHON_RANGE     = 6;
 const SIPHON_INTERVAL  = 120;      // frames between one follower's wisps
 const SIPHON_TRAVEL    = 34;       // frames a wisp takes to reach the player
 const SIPHON_PER_WISP  = 0.7;      // charge one arriving wisp carries
@@ -390,6 +395,7 @@ let playerUltimate = 0;            // 0 .. PLAYER_ULT_MAX
 let armySurgeTimer = 0;            // frames of surge left
 let siphonEnabled  = true;         // the player can switch the draw off
 let siphonWisps    = [];           // { ax, ay, t, seed } in flight
+let _siphonInRange = 0;            // units the siphon can reach, for the HUD
 
 // ── SETTINGS PANEL (canvas-drawn) ─────────────────────────
 let settingsPanelOpen    = false;

@@ -72,11 +72,17 @@ async function boot(store) {
         sandbox, run, store: store || {},
         // A squad standing at the origin, hurt and out of WILL, so a surge has
         // something visible to do.
-        squad(n) {
+        // `at` places the squad relative to the player. It defaults to right on
+        // top of them because most checks are not about range — but it has to
+        // be explicit, or a range gate can be added and every check still
+        // passes by accident, which is exactly what happened.
+        squad(n, at) {
+            const off = at === undefined ? 0 : at;
+            run(`player.x = 0; player.y = 0; player.visualX = 0; player.visualY = 0;`);
             run('actors = []; followers = [];');
             for (let i = 0; i < n; i++) {
                 run(`(function(){
-                    const f = { x: ${i * 0.1}, y: 0, type: "virus", team: "green",
+                    const f = { x: ${off + i * 0.1}, y: 0, type: "virus", team: "green",
                                 isFollower: true, dead: false, element: "fire",
                                 health: 10, maxHealth: 40, power: 10,
                                 stats: { hp: 40, attack: 10, specialAttack: 10, will: 20 },
@@ -126,6 +132,12 @@ async function boot(store) {
     const P8 = await boot();   // a wisp in flight when it is switched off
     const P9 = await boot();   // launch versus arrival, with no squad to interfere
     const PR = await boot();   // the rate against the arithmetic
+    const R1 = await boot();   // out of range
+    const R2 = await boot();   // just inside
+    const R3 = await boot();   // walking away and back
+    const R4 = await boot();   // no accrual in absentia
+    const R5 = await boot();   // the surge is not range-gated
+    const R6 = await boot();   // the stalled caption
     // Persistence: write with one context, read back with another.
     const RT = {};
     const RTa = await boot(RT);
@@ -338,6 +350,120 @@ async function boot(store) {
         })()`);
         same(everSeen, 0, 'a surge should not draw on the squad at all');
         same(P6.run('playerUltimate'), 0, 'nor charge the bar');
+    });
+
+    // ─────────────────────────────────────────────────────
+    group('THE ASK: only followers near me');
+
+    check('a follower out of range contributes nothing', () => {
+        const far = R1.run('SIPHON_RANGE') + 3;
+        R1.squad(6, far);
+        R1.run('playerUltimate = 0; armySurgeTimer = 0; siphonEnabled = true; siphonWisps = [];');
+        const everSeen = R1.run(`(function(){
+            let seen = 0;
+            for (let i = 0; i < 900; i++) { siphonTick(); seen += siphonWisps.length; }
+            return seen;
+        })()`);
+        same(everSeen, 0, 'a squad that far away should send nothing');
+        same(R1.run('playerUltimate'), 0, 'and the bar should not move');
+        same(R1.run('_siphonInRange'), 0, 'nor count as reachable');
+    });
+
+    check('the same follower just inside the range does contribute', () => {
+        // Paired with the check above so the range is shown to be the ONLY
+        // difference: same squad size, same frames, one tile either side.
+        const near = R2.run('SIPHON_RANGE') - 1;
+        R2.squad(6, near);
+        R2.run('playerUltimate = 0; armySurgeTimer = 0; siphonEnabled = true; siphonWisps = [];');
+        R2.run('for (let i = 0; i < 900; i++) siphonTick();');
+        ok(R2.run('playerUltimate') > 0, 'a squad in reach should be drawn from');
+        same(R2.run('_siphonInRange'), 6, 'and all six should count');
+    });
+
+    check('walking away stalls it, coming back resumes', () => {
+        R3.squad(4, 0);
+        R3.run('playerUltimate = 0; armySurgeTimer = 0; siphonEnabled = true; siphonWisps = [];');
+        R3.run('for (let i = 0; i < 400; i++) siphonTick();');
+        const near = R3.run('playerUltimate');
+        ok(near > 0, 'fixture: it should be filling while together');
+        // Step well away without moving the squad.
+        R3.run(`player.x = SIPHON_RANGE + 10; player.y = 0; siphonWisps = [];`);
+        R3.run('for (let i = 0; i < 600; i++) siphonTick();');
+        same(R3.run('playerUltimate'), near, 'nothing should accrue at a distance');
+        // And back.
+        R3.run('player.x = 0; player.y = 0;');
+        R3.run('for (let i = 0; i < 400; i++) siphonTick();');
+        ok(R3.run('playerUltimate') > near, 'the draw should resume on return');
+    });
+
+    check('nothing accrues in absentia — a returning squad waits its turn', () => {
+        // The timer is skipped rather than ticked while out of range, so coming
+        // back does not dump a backlog of wisps at once.
+        R4.squad(1, 0);
+        R4.run('playerUltimate = 0; armySurgeTimer = 0; siphonEnabled = true; siphonWisps = [];');
+        R4.run('siphonTick();');                       // seed the timer
+        const t0 = R4.run('followers[0]._siphonTimer');
+        ok(Number.isFinite(t0), 'fixture: the timer should be set');
+        R4.run(`player.x = SIPHON_RANGE + 10;`);
+        R4.run('for (let i = 0; i < 500; i++) siphonTick();');
+        same(R4.run('followers[0]._siphonTimer'), t0, 'the timer ticked down while away');
+    });
+
+    check('THE DISTINCTION: a surge still lifts the WHOLE army', () => {
+        // The range gate is about the siphon. Spending the bar was asked to
+        // power up the entire army, and that has not changed.
+        const far = R5.run('SIPHON_RANGE') + 8;
+        R5.squad(5, far);
+        R5.fill();
+        same(R5.run('siphonableUnits().length'), 0, 'fixture: none of them should be reachable');
+        same(R5.run('fireArmySurge()'), true, 'the surge should still fire');
+        const healed = R5.run('followers.filter(f => f.health === f.maxHealth).length');
+        same(healed, 5, 'every unit should have been lifted, however far away');
+    });
+
+    check('one predicate decides what "near" means', () => {
+        // Stating the rule twice — once in the tick, once for the UI — is how
+        // the two come to disagree.
+        ok(/function inSiphonRange/.test(SRC.helpers), 'there is no single range predicate');
+        const at = SRC.helpers.indexOf('function siphonableUnits');
+        const body = SRC.helpers.slice(at, at + 300);
+        ok(/inSiphonRange/.test(body), 'siphonableUnits does not use the predicate');
+        const tick = SRC.helpers.slice(SRC.helpers.indexOf('function siphonTick'), SRC.helpers.indexOf('function siphonTick') + 1800);
+        ok(/inSiphonRange\(a\)/.test(tick), 'the tick does not use the predicate');
+        // Squared, because it runs for every unit every frame.
+        const pred = SRC.helpers.slice(SRC.helpers.indexOf('function inSiphonRange'), SRC.helpers.indexOf('function siphonableUnits'));
+        ok(!/Math\.(hypot|sqrt)/.test(pred), 'the range test takes a square root on the hot path');
+    });
+
+    check('the range is a named constant, bounded at both ends', () => {
+        // Bounded ABOVE as well as below, because the checks that place a squad
+        // out of reach read the range from the code — so they move with it and
+        // cannot notice it being widened until the gate means nothing. The two
+        // bounds are what "near me" has to mean to be worth having.
+        ok(/const SIPHON_RANGE/.test(SRC.config), 'the range is not named');
+        const r = Number(SRC.config.match(/const SIPHON_RANGE\s*=\s*([\d.]+)/)[1]);
+        const follow = Number(SRC.config.match(/const FOLLOW_STOP\s*=\s*([\d.]+)/)[1]);
+        ok(r > 4.0, `a range of ${r} would exclude a sniper standing at 4.0`);
+        ok(r > follow, `a range of ${r} would exclude a brawler at FOLLOW_STOP (${follow})`);
+        // A camper anchors to a pylon and a worker walks off on chores; both can
+        // be a long way off, and neither is "near me".
+        ok(r < 14, `a range of ${r} reaches things that are not with you at all`);
+    });
+
+    check('the HUD explains a stalled bar', () => {
+        const far = R6.run('SIPHON_RANGE') + 6;
+        R6.squad(3, far);
+        R6.run(`gameState.running = true; playerUltimate = 30; armySurgeTimer = 0;
+                siphonEnabled = true; _lastUltInt = -1; _lastUltState = ""; render();`);
+        const label = R6.run('ultLabel.textContent');
+        ok(/NO SQUAD IN RANGE/.test(label), 'a stalled bar says nothing about why: ' + label);
+        // And the caption must change the moment they come back into reach,
+        // even though the percentage has not moved. Walk TO the squad — the
+        // first version of this moved the player to the origin while the squad
+        // stood far away, so they were still apart and it "stuck" correctly.
+        R6.run(`player.x = ${far}; player.y = 0; render();`);
+        const back = R6.run('ultLabel.textContent');
+        ok(!/NO SQUAD IN RANGE/.test(back), 'the caption stuck after they came back: ' + back);
     });
 
     // ─────────────────────────────────────────────────────
@@ -604,8 +730,15 @@ async function boot(store) {
     check('the GAME INDEX documents it', () => {
         ok(/ARMY SURGE/.test(SRC.html), 'the index does not describe the ultimate');
         ok(/bar under your health/i.test(SRC.html), 'it does not say where the bar is');
-        ok(/siphoned from your followers/i.test(SRC.html), 'it does not say where the charge comes from');
-        ok(/with none it does not fill at all/i.test(SRC.html),
+        ok(/siphoned from followers near you/i.test(SRC.html),
+           'it does not say the charge comes from followers NEAR you');
+        ok(/NO SQUAD IN RANGE/.test(SRC.html), 'it does not explain the stalled caption');
+        // The range in the docs must be the range in the code.
+        const r = SRC.config.match(/const SIPHON_RANGE\s*=\s*([\d.]+)/)[1];
+        ok(new RegExp('>' + r + ' tiles<').test(SRC.html),
+           'the documented range does not match SIPHON_RANGE (' + r + ')');
+        ok(/camper|worker/i.test(SRC.html), 'it does not say who falls outside the range');
+        ok(/does not fill at all/i.test(SRC.html),
            'it does not admit the consequence of siphoning');
         ok(/switch at the right end of the bar/i.test(SRC.html), 'it does not mention the switch');
         ok(/Nothing is siphoned while a surge is running/i.test(SRC.html),

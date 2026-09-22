@@ -214,25 +214,48 @@ function fireArmySurge() {
 // does. Emission is staggered by a per-follower timer seeded at random, so a
 // squad does not pulse in unison — ten followers firing on the same frame reads
 // as a strobe rather than a trickle.
+// Near enough to draw from. Squared, so there is no square root on a path that
+// runs for every unit every frame. One predicate, used by both the tick and
+// siphonableUnits(), so the rule cannot be stated twice and drift.
+function inSiphonRange(a) {
+    const dx = a.x - player.x, dy = a.y - player.y;
+    return dx * dx + dy * dy <= SIPHON_RANGE * SIPHON_RANGE;
+}
+
+// The units the siphon can actually reach. Distinct from armyUnits(), which is
+// the WHOLE army and is what a surge lifts — the surge is not range-gated.
+function siphonableUnits() {
+    return armyUnits().filter(inSiphonRange);
+}
+
 function siphonTick() {
-    // Nothing is drawn from the squad mid-surge: the bar is spent, and charging
-    // during a surge would let one pay for the next.
-    if (!siphonEnabled || armySurgeTimer > 0) {
-        // Wisps already in flight still land — they were paid for.
-        _advanceSiphonWisps();
-        return;
-    }
-    if (playerUltimate < PLAYER_ULT_MAX) {
-        for (const a of armyUnits()) {
-            if (a._siphonTimer === undefined) {
-                // Random phase, so the first wave of wisps is spread out too.
-                a._siphonTimer = Math.floor(Math.random() * SIPHON_INTERVAL);
-            }
-            if (--a._siphonTimer > 0) continue;
-            a._siphonTimer = SIPHON_INTERVAL;
-            siphonWisps.push({ ax: a.x, ay: a.y, t: 0, seed: (Math.random() * 1e6) | 0 });
+    // Written as one pass with no intermediate arrays and no square root: it
+    // runs for every unit on every frame.
+    //
+    // Nothing is drawn from the squad mid-surge — the bar is spent, and a surge
+    // paying for the next one would stop the bar reading as a cost — nor once
+    // the bar is full, nor with the switch off. But the in-range count is
+    // tallied regardless, because the HUD needs it to explain a stalled bar.
+    const canDraw = siphonEnabled && armySurgeTimer <= 0 && playerUltimate < PLAYER_ULT_MAX;
+    let inRange = 0;
+    for (const a of actors) {
+        if (a.dead || a.team !== "green") continue;
+        if (!(a.isFollower || a.isClone)) continue;
+        if (!inSiphonRange(a)) continue;
+        inRange++;
+        if (!canDraw) continue;
+        if (a._siphonTimer === undefined) {
+            // Random phase, so the first wave of wisps is spread out too.
+            a._siphonTimer = Math.floor(Math.random() * SIPHON_INTERVAL);
         }
+        // Out-of-range units never reach here, so their timer does not tick
+        // down while they are away: nothing accrues in absentia.
+        if (--a._siphonTimer > 0) continue;
+        a._siphonTimer = SIPHON_INTERVAL;
+        siphonWisps.push({ ax: a.x, ay: a.y, t: 0, seed: (Math.random() * 1e6) | 0 });
     }
+    _siphonInRange = inRange;
+    // Wisps already in flight always land — they were paid for.
     _advanceSiphonWisps();
 }
 

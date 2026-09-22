@@ -622,7 +622,12 @@ function render() {
         ? Math.ceil(armySurgeTimer / 60)          // counting the surge down
         : Math.round(playerUltimate);              // filling
     const _ultState = armySurgeTimer > 0 ? "surging"
-                    : playerUltimateReady() ? "ready" : "";
+                    : playerUltimateReady() ? "ready"
+                    : (siphonEnabled && _siphonInRange === 0) ? "stalled" : "";
+    // The in-range count is part of the change key, not just the label: a bar
+    // stalled at the same percentage would otherwise keep its old caption when
+    // the player walks away from the squad, which is the one moment the caption
+    // matters.
     if (_ultInt !== _lastUltInt || _ultState !== _lastUltState) {
         _lastUltInt = _ultInt; _lastUltState = _ultState;
         if (armySurgeTimer > 0) {
@@ -630,9 +635,13 @@ function render() {
             ultLabel.textContent = "SURGE " + _ultInt + "s";
         } else {
             ultBar.style.width = (playerUltimate / PLAYER_ULT_MAX * 100) + "%";
-            ultLabel.textContent = playerUltimateReady() ? "TAP \u2014 ARMY SURGE"
-                                 : !siphonEnabled           ? "SIPHON OFF \u00b7 " + _ultInt + "%"
-                                                            : "ULTIMATE " + _ultInt + "%";
+            ultLabel.textContent =
+                  playerUltimateReady()            ? "TAP \u2014 ARMY SURGE"
+                : !siphonEnabled                   ? "SIPHON OFF \u00b7 " + _ultInt + "%"
+                // The range gate has to announce itself, or a bar that has
+                // stopped filling because the squad is elsewhere reads as broken.
+                : _siphonInRange === 0             ? "NO SQUAD IN RANGE \u00b7 " + _ultInt + "%"
+                                                   : "ULTIMATE " + _ultInt + "%";
         }
         ultWrap.classList.toggle("ready",   _ultState === "ready");
         ultWrap.classList.toggle("surging", _ultState === "surging");
