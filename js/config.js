@@ -81,7 +81,7 @@ let _genLinks  = [];   // [{ gen, pylon }] — generator → pylon it is mending
 // How far from a nest a generator may be placed. Linking a broken nest is the
 // generator's whole reason to exist on that side, so one built out of reach of
 // every nest could never do the job — the placement is refused rather than
-// letting the player spend 40 shards on a dead structure. The same range gates
+// letting the player spend the build cost on a dead structure. The same range gates
 // the link itself, so anything you are allowed to build can always connect.
 const GENERATOR_NEST_RANGE = 6;
 
@@ -127,6 +127,9 @@ function isPylonTypeUnlocked(id) {
 const canvas  = document.getElementById('cavernCanvas');
 const ctx     = canvas.getContext('2d');
 const hpBar   = document.getElementById('hp');
+const ultBar  = document.getElementById('ult');
+const ultWrap = document.getElementById('ultWrap');
+const ultLabel= document.getElementById('ultLabel');
 const shardUI = document.getElementById('shards');
 const waveUI  = document.getElementById('waveInfo');
 
@@ -206,6 +209,8 @@ let _seasonBonusCache= {};  // seasoned-bonus multiplier per element (1.0 or 1.2
 
 // ── HUD CHANGE-DETECTION CACHE (avoids DOM style writes every frame) ──────────
 let _lastHpInt      = -1;    // last integer hp written to hpBar
+let _lastUltInt     = -1;    // last integer ultimate written to ultBar
+let _lastUltState   = '';    // last ready/surging class written
 let _lastShardCount = -1;    // last shard count written to shardUI
 let _lastZoneIndex  = -999;  // last zone index written to zoneInfo
 let _zoneEl         = null;  // cached zoneInfo element (fetched once on first use)
@@ -356,6 +361,21 @@ let crystalCloneSort = "species";  // "species"|"combat"|"defense"|"hp"|"special
 // A set of toggles has no such arithmetic to get wrong.
 let modulationMask = new Set();
 
+// ── PLAYER ULTIMATE ───────────────────────────────
+// One bar, the character's own, filled by killing and spent on an ARMY SURGE:
+// every unit you own healed, its WILL refilled, its own ultimate charged, and
+// harder-hitting for the duration.
+//
+// This is NOT the same thing as FOLLOWER_ULTIMATES in js/elements.js, which are
+// per-follower, charge individually and fire on a double-tap. That system keeps
+// working exactly as it did; the surge charges all of them at once.
+const PLAYER_ULT_MAX      = 100;
+const PLAYER_ULT_PER_KILL = 7;     // about fifteen kills to fill
+const ARMY_SURGE_FRAMES   = 600;   // ten seconds
+const ARMY_SURGE_POWER    = 1.6;   // damage multiplier for the whole army
+let playerUltimate = 0;            // 0 .. PLAYER_ULT_MAX
+let armySurgeTimer = 0;            // frames of surge left
+
 // ── SETTINGS PANEL (canvas-drawn) ─────────────────────────
 let settingsPanelOpen    = false;
 let settingsResetConfirm = false;   // true = showing "ARE YOU SURE?" step
@@ -384,6 +404,10 @@ let groundItems        = [];   // [{ type, element, x, y }]  — world pickups
 // Using a pad heals 30 HP and costs 1 charge; pad is removed when charges reach 0
 const HEALTH_PAD_MAX_CHARGES = 3;
 const HEALTH_PAD_HEAL        = 30;   // HP restored per charge
+// What a pylon costs, everywhere. It was 10 in the slow build path and 40 in
+// the instant one, with the radial gate and the element picker each holding
+// their own copy of 40 — eight literals for one price.
+const PYLON_BUILD_COST       = 10;
 const HEALTH_PAD_CRAFT_COST  = 8;    // shards to craft one pad
 let healthPads = [];   // [{ charges: N }]
 

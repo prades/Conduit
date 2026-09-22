@@ -20,6 +20,7 @@ const SUITES = [
     ['no player stun',         'stun.js'],
     ['progression',            'progression.js'],
     ['modulation',             'modulation.js'],
+    ['ultimate + pylon cost',  'ultimate.js'],
     ['generator pylon',        'generator.js'],
     ['pylon look',             'pylonlook.js'],
     ['infestation',            'infest.js'],

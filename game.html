@@ -21,6 +21,39 @@
     }
     #hp { height: 100%; background: #0f8; width: 100%; box-shadow: 0 0 10px #0f8; transition: background 0.3s; }
 
+    /* The character's ultimate, sitting right under their health so the two
+       read as one status block. Tapping it spends the bar. */
+    #ultWrap {
+        position: absolute; top: 52px; left: 230px; right: 80px;
+        max-width: 200px; height: 15px;
+        background: rgba(0,0,0,0.6);
+        border: 1px solid #333; border-radius: 4px; overflow: hidden;
+        z-index: 10; cursor: pointer; touch-action: manipulation;
+    }
+    #ult {
+        height: 100%; width: 0%;
+        background: linear-gradient(90deg, #663311, #ffdd44);
+        transition: width 0.18s linear;
+    }
+    #ultWrap.ready { border-color: #ffdd44; animation: ultReady 1s ease-in-out infinite; }
+    #ultWrap.surging { border-color: #fff; }
+    #ultLabel {
+        position: absolute; top: 0; left: 0; right: 0; height: 15px;
+        font-family: monospace; font-size: 9px; font-weight: bold; letter-spacing: 1px;
+        color: #cbd5e0; text-align: center; line-height: 15px;
+        text-shadow: 0 0 3px #000; pointer-events: none;
+    }
+    @keyframes ultReady {
+        0%,100% { box-shadow: 0 0 4px #ffdd44; }
+        50%     { box-shadow: 0 0 14px #ffdd44; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        #ultWrap.ready { animation: none; box-shadow: 0 0 10px #ffdd44; }
+    }
+    @media (max-width: 480px) {
+        #ultWrap { left: 130px; right: 60px; max-width: none; }
+    }
+
     #shards {
         position: absolute; top: 12px; left: 10px;
         color: #ff0; font-size: 14px; font-weight: bold;
@@ -399,6 +432,7 @@
 
 <div id="shards">Shards: 0</div>
 <div id="ui"><div id="hp"></div></div>
+<div id="ultWrap" onclick="fireArmySurge()"><div id="ult"></div><span id="ultLabel">ULTIMATE</span></div>
 <div id="padHud" style="display:none;position:absolute;top:22px;right:10px;color:#ff9944;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;z-index:10;"></div>
 <div id="waveInfo">WAVE 1 — clear panels for shards</div>
 <button id="tutBtn" onclick="startTutorial()" style="position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.85);border:2px solid #0f8;color:#0f8;font-family:monospace;font-size:13px;font-weight:bold;padding:10px 18px;border-radius:4px;letter-spacing:2px;cursor:pointer;z-index:200;touch-action:manipulation;">TUTORIAL</button>
@@ -993,6 +1027,7 @@
         <div class="cm-shop-item"><span class="label">TOXIC</span><br><span class="cost">wave 4</span></div>
       </div>
       <div class="ctrl-row cm-dim" style="margin-top:5px">4 elements to earn, so the ladder is spent after 4 waves. Clearing another wave while one is still pending stacks a second — the reward is for the wave, so putting off the trip back does not forfeit it. The Crystal button flashes <span class="cm-stat">ELEMENT READY</span> when something is waiting.</div>
+      <div class="ctrl-row"><span class="ctrl-key">ULTIMATE</span>The bar under your health is your own. It fills as you kill — about <span class="cm-stat">15 kills</span> — and when it is full, tapping it spends the whole bar on an <strong>ARMY SURGE</strong>: every follower and clone you own is healed, has its WILL refilled, has its own ultimate charged, and deals <span class="cm-stat">1.6×</span> damage for <span class="cm-stat">10 seconds</span>. It will not charge while a surge is running, so a surge never pays for the next one.</div>
       <div class="ctrl-row cm-dim" style="margin-top:4px">Kills are still counted — the Crystal shows your lifetime total — but they no longer earn anything.</div>
       <div class="ctrl-row cm-dim" style="margin-top:4px">Activating a new element makes your modulation stale, and both the Crystal button and the modulation chip flash <span class="cm-stat">RE-MODULATE</span>.</div>
       <div class="ctrl-row"><span class="ctrl-key">MODULATION</span>The multicoloured chip in the <strong>bottom-right of the HUD</strong> decides what your followers are made of. Tap an element to add or drop it from the mix; at least one has to stay on. Followers take their element <strong>at the Crystal</strong> — when a recruit reaches it, and again every time one respawns — so re-modulating gradually re-colours the whole squad as they cycle. It is also on the Crystal's MODULATION tab, same control.</div>

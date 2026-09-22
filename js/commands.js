@@ -50,11 +50,11 @@ function closeElementPicker() {
 
 function _executeBuild(el, t) {
     if (el && el.id === GENERATOR_ID && !canPlaceGenerator(t).ok) { refuseGenerator(); return; }
-    if (!t || shardCount < 10) {
-        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 10 SHARDS",color:"#f44",life:90,vy:-0.2});
+    if (!t || shardCount < PYLON_BUILD_COST) {
+        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS",color:"#f44",life:90,vy:-0.2});
         return;
     }
-    shardCount -= 10; saveShards();
+    shardCount -= PYLON_BUILD_COST; saveShards();
     const _baseHP = 80;
 
     t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=_baseHP;
@@ -68,7 +68,7 @@ function _executeBuild(el, t) {
             .filter((a,i,arr)=>arr.indexOf(a)===i).slice(0,4);
         if (builderPool.length === 0) {
             // No available followers — abort and refund
-            shardCount += 10; saveShards();
+            shardCount += PYLON_BUILD_COST; saveShards();
             t.pillar=false; t.constructing=false;
             floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NO FOLLOWERS AVAILABLE TO BUILD",color:"#f44",life:90,vy:-0.2});
             return;
@@ -91,11 +91,11 @@ function _executeBuild(el, t) {
 
 function _executeBuildInstant(el, t) {
     if (el && el.id === GENERATOR_ID && !canPlaceGenerator(t).ok) { refuseGenerator(); return; }
-    if (!t || shardCount < 40) {
-        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 40 SHARDS",color:"#f44",life:90,vy:-0.2});
+    if (!t || shardCount < PYLON_BUILD_COST) {
+        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS",color:"#f44",life:90,vy:-0.2});
         return;
     }
-    shardCount -= 40; saveShards();
+    shardCount -= PYLON_BUILD_COST; saveShards();
     const _iHP = 80;
 
     t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=_iHP;
@@ -198,10 +198,10 @@ function executeCommand() {
             if (pylon && pylon.pillar && !pylon.destroyed) {
                 openElementPicker("upgrade", pylon);
             } else if (commandTarget) {
-                if (shardCount >= 40) {
+                if (shardCount >= PYLON_BUILD_COST) {
                     openElementPicker("build", commandTarget);
                 } else {
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 40 SHARDS TO BUILD",color:"#f44",life:90,vy:-0.2});
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS TO BUILD",color:"#f44",life:90,vy:-0.2});
                 }
             }
             break;

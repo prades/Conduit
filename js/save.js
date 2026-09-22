@@ -182,6 +182,10 @@ function saveSession() {
         localStorage.setItem("tubecrawler_session", JSON.stringify({
             px: player.x, py: player.y,
             health: Math.round(health),
+            // The bar is a session thing, like health. The surge TIMER is not
+            // saved on purpose: a ten-second buff resuming hours later would be
+            // a stranger outcome than letting it lapse.
+            ult: Math.round(playerUltimate),
             lastGenX,
             explored: [...exploredZones],
             nests, panels, nodes, npcs, waveNpcs,
@@ -267,6 +271,11 @@ function applySession(sess) {
         player.y = player.targetY = player.visualY = sess.py;
     }
     if (Number.isFinite(sess.health)) health = Math.max(1, Math.min(100, sess.health));
+    // Clamped on the way in: a hand-edited or older save must not leave the bar
+    // reading as permanently charged, nor above what the meter can draw.
+    if (Number.isFinite(sess.ult)) {
+        playerUltimate = Math.max(0, Math.min(PLAYER_ULT_MAX, sess.ult));
+    }
     if (Number.isFinite(sess.lastGenX)) lastGenX = Math.max(lastGenX, sess.lastGenX);
     if (Array.isArray(sess.explored)) exploredZones = new Set(sess.explored);
 

@@ -186,7 +186,7 @@ function drawElementPicker() {
 
     // Sub-label
     ctx.fillStyle = "#ff0"; ctx.font = "10px monospace";
-    const subText = elementPickerMode === "build" ? "Cost: 40 shards" :
+    const subText = elementPickerMode === "build" ? "Cost: "+PYLON_BUILD_COST+" shards" :
         (elementPickerTarget && (elementPickerTarget.attackMode || elementPickerTarget.waveMode) ? "Element change — free" : "Requires a follower sacrifice");
     ctx.fillText(subText, px + pw/2, py + 44);
 
@@ -526,7 +526,7 @@ const _PC_W = 280, _PC_H = 180;
 function drawPylonConfirm() {
     if (!pylonConfirmOpen || !pylonConfirmEl) return;
     const el = pylonConfirmEl;
-    const canAfford = shardCount >= 40;
+    const canAfford = shardCount >= PYLON_BUILD_COST;
     const pw = _PC_W, ph = _PC_H;
     const px = Math.round((canvas.width  - pw) / 2);
     const py = Math.round((canvas.height - ph) / 2);
@@ -558,7 +558,7 @@ function drawPylonConfirm() {
 
     // Cost row
     ctx.fillStyle = canAfford ? "#ff0" : "#f44"; ctx.font = "11px monospace"; ctx.textAlign = "center";
-    ctx.fillText("Cost: 40 shards  (have: "+shardCount+")", px + pw/2, py + 92);
+    ctx.fillText("Cost: "+PYLON_BUILD_COST+" shards  (have: "+shardCount+")", px + pw/2, py + 92);
 
     // SUBMIT button
     const submitY = py + 112;
@@ -596,12 +596,12 @@ function _handlePylonConfirmTap(tx, ty) {
     const submitY = py + 112, cancelY = py + 146;
 
     if (ty >= submitY && ty < submitY + 28) {
-        if (shardCount >= 40) {
+        if (shardCount >= PYLON_BUILD_COST) {
             const el = pylonConfirmEl, t = pylonConfirmTarget;
             pylonConfirmOpen = false; pylonConfirmEl = null; pylonConfirmTarget = null;
             _executeBuildInstant(el, t);
         } else {
-            floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED 40 SHARDS",color:"#f44",life:90,vy:-0.2});
+            floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS",color:"#f44",life:90,vy:-0.2});
         }
         return true;
     }

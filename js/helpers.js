@@ -32,6 +32,15 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (target.spawnProtection && target.spawnProtection > 0) return;
     // Command Node — 10% ATK bonus for followers dealing damage
     if (source && source.isFollower && source.team === "green") amount *= getFollowerAttackMult();
+    // ARMY SURGE. Applied here rather than at each attack because the twelve
+    // damage expressions in js/elements.js all funnel through this one
+    // function — patching them individually would have missed one.
+    // Followers and clones both count; the player's own shots do not, because
+    // this is what the player spends rather than something they gain.
+    if (armySurgeTimer > 0 && source && source.team === "green" &&
+        (source.isFollower || source.isClone)) {
+        amount *= ARMY_SURGE_POWER;
+    }
     // Provoke predators hit during day
     if (target instanceof Predator && target.team !== "green" && gameState.phase === "day") {
         target.provoked = true; target.state = "hunt";
@@ -130,6 +139,83 @@ function applyElementalDamage(target, amount, source, element) {
     if (mult > 1) floatingTexts.push({x:target.x,y:target.y-1,text:'WEAK!',color:'#ffcc00',life:40,vy:-0.04});
     else if (mult < 1) floatingTexts.push({x:target.x,y:target.y-1,text:'RESIST',color:'#88aaff',life:40,vy:-0.04});
     applyDamage(target, amount * mult, source, element);
+}
+
+// ──────────────────────────────────────────────────────
+//  THE PLAYER'S ULTIMATE — one bar, spent on the whole army
+// ──────────────────────────────────────────────────────
+function armySurgeActive() { return armySurgeTimer > 0; }
+function playerUltimateReady() { return playerUltimate >= PLAYER_ULT_MAX; }
+
+// Everything the army is made of: your followers and your clones. The player is
+// not in actors[] and is deliberately not included — the surge is what the bar
+// buys for the squad, not a personal buff.
+function armyUnits() {
+    return actors.filter(a => !a.dead && a.team === "green" && (a.isFollower || a.isClone));
+}
+
+function chargePlayerUltimate(amount) {
+    if (!(amount > 0)) return false;
+    // No charging while it is running. Otherwise a surge that wins a fight
+    // pays for the next one, and the bar never reads as a cost.
+    if (armySurgeTimer > 0) return false;
+    if (playerUltimate >= PLAYER_ULT_MAX) return false;
+    const was = playerUltimate;
+    playerUltimate = Math.min(PLAYER_ULT_MAX, playerUltimate + amount);
+    if (was < PLAYER_ULT_MAX && playerUltimate >= PLAYER_ULT_MAX) {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 110,
+            text: "ULTIMATE READY \u2014 TAP THE BAR", color: "#ffdd44",
+            life: 220, vy: -0.16, size: 15 });
+    }
+    return true;
+}
+
+// Spends the bar. Returns true only if it actually fired, so the caller can
+// tell a real discharge from a tap on an unfilled bar.
+function fireArmySurge() {
+    if (armySurgeTimer > 0) {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 90,
+            text: "SURGE ALREADY RUNNING", color: "#ffdd44", life: 80, vy: -0.2, size: 12 });
+        return false;
+    }
+    if (!playerUltimateReady()) {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 90,
+            text: "ULTIMATE " + Math.floor(playerUltimate) + "%", color: "#f88",
+            life: 90, vy: -0.2, size: 12 });
+        return false;
+    }
+    playerUltimate = 0;
+    armySurgeTimer = ARMY_SURGE_FRAMES;
+
+    const units = armyUnits();
+    for (const a of units) {
+        a.health = a.maxHealth;
+        // WILL is what gates a follower's real attacks — on empty they fall
+        // back to a quarter-strength poke, so refilling it is most of the
+        // "powered up".
+        if (a.stats && typeof a.currentWill === "number") a.currentWill = a.stats.will;
+        // And their own ultimates come online, which is the existing
+        // double-tap system rather than a new one.
+        if (typeof a.ultimateCharge === "number") a.ultimateCharge = 100;
+        if (typeof elementEffects !== "undefined") {
+            elementEffects.push({ type: "impact", x: a.x, y: a.y,
+                                  color: "#ffdd44", radius: 0.9, life: 26 });
+        }
+    }
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 100,
+        text: "ARMY SURGE \u2014 " + units.length + (units.length === 1 ? " UNIT" : " UNITS"),
+        color: "#ffdd44", life: 200, vy: -0.2, size: 17 });
+    if (typeof shake !== "undefined") shake = Math.max(shake, 7);
+    return true;
+}
+
+function tickArmySurge() {
+    if (armySurgeTimer <= 0) return;
+    armySurgeTimer--;
+    if (armySurgeTimer === 0) {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 90,
+            text: "SURGE SPENT", color: "#8899aa", life: 120, vy: -0.16, size: 12 });
+    }
 }
 
 function spawnFireWall(x, y) {

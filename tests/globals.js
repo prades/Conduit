@@ -203,13 +203,18 @@ async function passC() {
             // 90 frames, to come round several times.
             for (let f = 0; f < 240; f++) render();
             did.push('frames');
+            // Persistence is part of the gameplay path: it runs on a timer in
+            // the real game, so nothing else here would exercise it.
+            saveSession();
+            did.push('saved');
             return { did, aPylons: _aPylons.length, frames: frame };
         })()`, ctx);
     } catch (e) { threw = e; }
 
     for (let i = 0; i < 10; i++) await new Promise(r => setImmediate(r));
     const offenders = [...seen.keys()].filter(k => !HOST_PROVIDED.has(k)).sort();
-    return { seen, offenders, drove, threw };
+    return { seen, offenders, drove, threw,
+             wroteSession: sandbox.localStorage.getItem('tubecrawler_session') };
 }
 
 const DEAD_NAMES = ['followerPermHPBonus', 'followerPermPowerBonus',
@@ -329,7 +334,7 @@ const DEAD_NAMES = ['followerPermHPBonus', 'followerPermPowerBonus',
         // silently did nothing.
         ok(!C.threw, 'driving threw: ' + (C.threw && C.threw.message || ''));
         ok(C.drove, 'the drive returned nothing');
-        for (const step of ['buildInstant', 'build', 'upgrade', 'frames']) {
+        for (const step of ['buildInstant', 'build', 'upgrade', 'frames', 'saved']) {
             ok(C.drove.did.includes(step), 'never reached ' + step);
         }
         ok(C.drove.aPylons > 0, 'no attack pylon existed, so the fire tick never ran');
@@ -344,6 +349,20 @@ const DEAD_NAMES = ['followerPermHPBonus', 'followerPermPowerBonus',
     check('the perm-bonus names are not read on the gameplay paths', () => {
         const live = DEAD_NAMES.filter(n => C.seen.has(n));
         ok(live.length === 0, 'still read: ' + live.join(', '));
+    });
+
+    check('saveSession actually writes \u2014 it swallows its own errors', () => {
+        // saveSession's whole body sits in try {} catch(e) {}, so ANY throw
+        // inside it — a global it reads that nobody declared, say — silently
+        // disables every bit of session persistence with no symptom at all.
+        // Adding the ultimate bar to the snapshot hit exactly that: the save
+        // stopped happening and only the test fixtures noticed.
+        ok(!C.threw, 'the drive threw: ' + (C.threw && C.threw.message || ''));
+        ok(C.wroteSession, 'the session blob was not written after a drive');
+        const blob = JSON.parse(C.wroteSession);
+        for (const key of ['px', 'py', 'health', 'ult']) {
+            ok(key in blob, 'the snapshot is missing ' + key);
+        }
     });
 
     group('nothing re-grows the shop');

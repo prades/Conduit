@@ -53,6 +53,8 @@ function makeEnv() {
         followerByElement: {}, zonePredators: {}, zoneRespawnTimers: {},
         activeDayZones: 3, ZONE_LENGTH: 15, lastGenX: 0, _cacheAge: 0,
         frame: 0, shake: 0, shardCount: 0, health: 100,
+        // The session snapshot now records the player's ultimate bar.
+        playerUltimate: 0, PLAYER_ULT_MAX: 100,
         nightKillCount: 0, nightEnemiesTarget: 0, nightPredatorsRemaining: 0,
         alertActive: false, alertTimer: 0, alertType: null, alertSource: null, alertZone: null,
         activePredator: null, predatorRespawnTimer: 0,

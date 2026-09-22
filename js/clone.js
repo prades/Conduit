@@ -1185,7 +1185,7 @@ function _drawInfoTab(PX, PY, PW, PH) {
         {el:"toxic",   name:"Plague Bloom", desc:"4 toxic clouds on random enemies"},
     ];
     const pylons=[
-        {col:"#0f8",    text:"BUILD (10 shards) — place on any floor tile"},
+        {col:"#0f8",    text:"BUILD ("+PYLON_BUILD_COST+" shards) — place on any floor tile"},
         {col:"#ffcc44", text:"UPGRADE — merge a follower into the pylon"},
         {col:"#88aaff", text:"WAVE/ATTACK — toggle pylon firing mode"},
         {col:"#ff8844", text:"RECON — send squad to reconstruct a pylon"},

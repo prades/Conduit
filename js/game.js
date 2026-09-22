@@ -585,6 +585,27 @@ function render() {
         hpBar.style.background = hpPct > 0.6 ? "#0f8" : hpPct > 0.3 ? "#ff0" : "#f22";
     }
 
+    // ── PLAYER ULTIMATE ──
+    tickArmySurge();
+    const _ultInt = armySurgeTimer > 0
+        ? Math.ceil(armySurgeTimer / 60)          // counting the surge down
+        : Math.round(playerUltimate);              // filling
+    const _ultState = armySurgeTimer > 0 ? "surging"
+                    : playerUltimateReady() ? "ready" : "";
+    if (_ultInt !== _lastUltInt || _ultState !== _lastUltState) {
+        _lastUltInt = _ultInt; _lastUltState = _ultState;
+        if (armySurgeTimer > 0) {
+            ultBar.style.width = (armySurgeTimer / ARMY_SURGE_FRAMES * 100) + "%";
+            ultLabel.textContent = "SURGE " + _ultInt + "s";
+        } else {
+            ultBar.style.width = (playerUltimate / PLAYER_ULT_MAX * 100) + "%";
+            ultLabel.textContent = playerUltimateReady() ? "TAP \u2014 ARMY SURGE"
+                                                         : "ULTIMATE " + _ultInt + "%";
+        }
+        ultWrap.classList.toggle("ready",   _ultState === "ready");
+        ultWrap.classList.toggle("surging", _ultState === "surging");
+    }
+
     // ── PLAYER KNOCKDOWN ──
     // No stun. Being dropped to zero puts you back at the Crystal, but control
     // is never taken away — three seconds of standing frozen while the night
@@ -983,6 +1004,7 @@ function render() {
         if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.progressCounted) {
             a.progressCounted = true;
             noteKillForProgression();
+            chargePlayerUltimate(PLAYER_ULT_PER_KILL);
         }
         // track kills for wave clear — count dead enemies not clones, wanderers don't count
         if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.killCounted && !a.isWanderer) {

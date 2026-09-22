@@ -27,6 +27,8 @@ function makeCtx() {
         exploredZones: new Set(), dayStats: { redSpawned: 0, redConverted: 0 },
         activeDayZones: 3, ZONE_LENGTH: 15, lastGenX: 0, _cacheAge: 0,
         health: 100,
+        // The session snapshot now records the player's ultimate bar.
+        playerUltimate: 0, PLAYER_ULT_MAX: 100,
         unlockedElements: new Set(['fire', 'electric']),
         cfg: { pillarSpawnRate: 0.15, npcSpawnRate: 0.22 },
         PYLON_STYLE: _pylonStyle(),
