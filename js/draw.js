@@ -1696,61 +1696,72 @@ function drawCapturableNode(tile, px, py) {
     const cx = px, cy = py + TILE_H;
 
     if (tile.nodeType === 'capacitor_node') {
-        // Glowing orange cylindrical capacitor cap — cyan when captured
-        const col = captured ? '#00ccff' : '#ff8800';
-        const darkCol = captured ? '#003355' : '#221100';
+        // A VORTEX in the floor, not a capacitor cap on top of it.
+        //
+        // The node was always "predatorOwned: true — starts under predator
+        // control"; it is now what that ownership means, a hole predators come
+        // out of. Sealing it is the capture that already existed, so the two
+        // mechanics are one: stand on it to shut the spawner.
+        //
+        // Drawn in the isometric floor plane, so every ring is squashed to
+        // TILE_H/TILE_W. Rotation comes from moving each ring's start angle
+        // rather than rotating the ellipse itself, which would tip it out of
+        // the plane.
+        const open   = !captured;
+        const col    = open ? '#ff8800' : '#00ccff';
+        const spin   = open ? frame * 0.035 + tile.x : 0;
+        const RX     = 23, SQUASH = TILE_H / TILE_W;   // a little under half a tile
         ctx.save();
-        ctx.shadowColor = col;
-        ctx.shadowBlur = captured ? 18 : 12;
 
-        // Body cylinder
-        ctx.fillStyle = darkCol;
-        ctx.fillRect(cx - 7, cy - 28, 14, 20);
-
-        // Lead stripes
-        ctx.fillStyle = col;
-        ctx.globalAlpha = 0.4;
-        ctx.fillRect(cx - 7, cy - 24, 14, 3);
-        ctx.fillRect(cx - 7, cy - 18, 14, 3);
-        ctx.globalAlpha = 1;
-
-        // Top cap (ellipse)
-        ctx.fillStyle = col;
+        // The throat: a dark hole, darkest at the centre.
+        const g = ctx.createRadialGradient(cx, cy, 1, cx, cy, RX);
+        g.addColorStop(0, open ? 'rgba(12,4,0,0.95)' : 'rgba(0,10,18,0.9)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.ellipse(cx, cy - 28, 8, 3.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(cx, cy, RX, RX * SQUASH, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Bottom ring
+        // Three swirl arcs, each a partial ring turning at its own rate. The
+        // gap in each arc is what makes it read as drawn inward rather than as
+        // concentric circles.
+        ctx.shadowColor = col;
+        ctx.shadowBlur  = open ? 8 : 4;
         ctx.strokeStyle = col;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy - 8, 8, 3.5, 0, 0, Math.PI * 2);
-        ctx.stroke();
+        for (let r = 0; r < 3; r++) {
+            const rx = RX * (1 - r * 0.28);
+            const a0 = spin * (1 + r * 0.9) + r * 2.1;
+            ctx.globalAlpha = (open ? 0.75 : 0.4) - r * 0.13;
+            ctx.lineWidth = 2 - r * 0.4;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, rx, rx * SQUASH, 0, a0, a0 + Math.PI * 1.35);
+            ctx.stroke();
+        }
 
-        // Glow pulse ring
-        const _pulse = 0.5 + 0.5 * Math.sin(frame * 0.1 + tile.x * 0.7);
-        ctx.globalAlpha = 0.2 + _pulse * 0.25;
-        ctx.strokeStyle = col;
-        ctx.lineWidth = 2 + _pulse * 2;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy - 8, 14 + _pulse * 4, 6 + _pulse * 2, 0, 0, Math.PI * 2);
-        ctx.stroke();
+        // Four short spokes being pulled in, angled with the spin.
+        ctx.globalAlpha = open ? 0.35 : 0.15;
+        ctx.lineWidth = 1;
+        for (let k = 0; k < 4; k++) {
+            const a = spin * 0.6 + k * Math.PI / 2;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(a) * RX, cy + Math.sin(a) * RX * SQUASH);
+            ctx.lineTo(cx + Math.cos(a) * RX * 0.45, cy + Math.sin(a) * RX * 0.45 * SQUASH);
+            ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
 
         // Capture progress bar
-        if (!captured && progress > 0) {
-            ctx.fillStyle = '#000'; ctx.fillRect(cx - 12, cy - 40, 24, 4);
-            ctx.fillStyle = '#0df'; ctx.fillRect(cx - 12, cy - 40, Math.round(24 * (progress / 100)), 4);
+        if (open && progress > 0) {
+            ctx.fillStyle = '#000'; ctx.fillRect(cx - 12, cy - 26, 24, 4);
+            ctx.fillStyle = '#0df'; ctx.fillRect(cx - 12, cy - 26, Math.round(24 * (progress / 100)), 4);
         }
-        // "CAPTURED" label
         if (captured) {
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
             ctx.fillStyle = '#00ccff';
-            ctx.fillText('◈ NODE', cx, cy - 42);
+            ctx.fillText('\u25c8 SEALED', cx, cy - 26);
         }
-
-        ctx.shadowBlur = 0;
         ctx.restore();
 
     } else if (tile.nodeType === 'signal_tower') {

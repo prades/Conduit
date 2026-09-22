@@ -25,6 +25,7 @@ const SUITES = [
     ['generator pylon',        'generator.js'],
     ['pylon look',             'pylonlook.js'],
     ['infestation',            'infest.js'],
+    ['spawn vortex',           'vortex.js'],
     ['fire scour job',         'scour.js'],
 ];
 

@@ -31,6 +31,17 @@ const restoreFn = wavesSrc.match(/function restoreWorldBetweenWaves\(\)[\s\S]*?\
 if (!restoreFn) { console.log('  FAIL could not find restoreWorldBetweenWaves in js/waves.js'); process.exit(1); }
 vm.runInContext(restoreFn[0], ctx, { filename: 'waves.js:restoreWorldBetweenWaves' });
 
+// zoneSpawnPoints decides which mouths a zone still has. Pulled in so the
+// spawn guard can be DRIVEN rather than matched against source text — the two
+// checks below used to assert the shape of the old one-nest condition, so they
+// broke the moment the vortex became a second spawn point even though the
+// behaviour they protect was intact.
+const cloneSrc = fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8');
+const spFn = cloneSrc.match(/function zoneSpawnPoints\(zoneIndex\)[\s\S]*?\n\}/);
+if (!spFn) { console.log('  FAIL could not find zoneSpawnPoints in js/clone.js'); process.exit(1); }
+sandbox.getZoneIndex = x => Math.floor(x / 15);
+vm.runInContext(spFn[0], ctx, { filename: 'clone.js:zoneSpawnPoints' });
+
 const run = s => vm.runInContext(s, ctx);
 let failures = 0;
 function group(n) { console.log('\n' + n); }
@@ -172,17 +183,77 @@ check('a destroyed nest survives repeated wave transitions', () => {
 });
 
 group('spawn consequence');
-check('the spawn guard treats a zero-health nest as shut down', () => {
-    // game.js: `if (nest && nest.nestHealth <= 0) continue;` — this is the
-    // payoff for destroying one, so assert the condition it depends on.
-    const gameSrc = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
-    ok(/nest\.nestHealth\s*<=\s*0\s*\)\s*continue/.test(gameSrc),
-       'the zone spawn loop no longer skips dead nests');
+function mkVortex(x, captured) {
+    return { x, y: 2, type: 'floor', nodeType: 'capacitor_node',
+             capturable: true, captured: !!captured, predatorOwned: !captured };
+}
+
+check('a destroyed nest is not offered as a spawn point', () => {
+    setWorld([mkNest(16, 1, 0)]);
+    const open = run('zoneSpawnPoints(1)');
+    eq(open.length, 0, 'a dead nest should offer nothing');
 });
-check('a destroyed nest is also not chosen as a spawn point', () => {
-    const cloneSrc = fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8');
-    ok(/t\.nest\s*&&\s*t\.nestZone\s*===\s*zoneIndex\s*&&\s*t\.nestHealth\s*>\s*0/.test(cloneSrc),
-       'spawnPredatorForZone no longer requires a living nest');
+
+check('a living nest is', () => {
+    setWorld([mkNest(16, 1, 200)]);
+    eq(run('zoneSpawnPoints(1)').length, 1, 'a living nest should be a mouth');
+});
+
+check('THE ASK: the vortex is a mouth too', () => {
+    setWorld([mkVortex(18, false)]);
+    eq(run('zoneSpawnPoints(1)').length, 1, 'an open vortex should be a mouth');
+});
+
+check('and a sealed one is not', () => {
+    setWorld([mkVortex(18, true)]);
+    eq(run('zoneSpawnPoints(1)').length, 0, 'a captured vortex should be shut');
+});
+
+check('a zone with both offers both', () => {
+    setWorld([mkNest(16, 1, 200), mkVortex(18, false)]);
+    eq(run('zoneSpawnPoints(1)').length, 2, 'predators should come out of either');
+});
+
+check('killing the nest alone does NOT shut the zone', () => {
+    // This is the whole point of a second mouth, and it is what the old
+    // one-nest guard would have got wrong.
+    setWorld([mkNest(16, 1, 0), mkVortex(18, false)]);
+    const open = run('zoneSpawnPoints(1)');
+    eq(open.length, 1, 'the vortex should still be producing');
+    eq(open[0].nodeType, 'capacitor_node', 'and it should be the vortex');
+});
+
+check('shutting BOTH shuts the zone', () => {
+    setWorld([mkNest(16, 1, 0), mkVortex(18, true)]);
+    eq(run('zoneSpawnPoints(1)').length, 0, 'with every mouth shut the zone should stop');
+});
+
+check('a zone with no mouths at all reads differently from one with none left', () => {
+    // null means "nothing was ever there", which still spawns from the zone
+    // centre as it always did. An empty array means "all shut", which stops.
+    setWorld([{ x: 16, y: 2, type: 'floor' }]);
+    eq(run('zoneSpawnPoints(1)'), null, 'a zone with no spawners should report null');
+    setWorld([mkVortex(18, true)]);
+    eq(run('zoneSpawnPoints(1)').length, 0, 'a zone with all shut should report empty');
+});
+
+check('mouths in another zone are not counted', () => {
+    setWorld([mkNest(16, 1, 200), mkVortex(33, false)]);   // x 33 is zone 2
+    eq(run('zoneSpawnPoints(1)').length, 1, 'zone 1 should not see zone 2\'s vortex');
+    eq(run('zoneSpawnPoints(2)').length, 1, 'and zone 2 should see its own');
+});
+
+check('the spawn loop and the spawner agree on the rule', () => {
+    // One function decides, and both callers use it — the guard in game.js and
+    // the choice in clone.js. Two copies of "is this zone finished" is how they
+    // come to disagree.
+    const gameSrc = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
+    ok(/zoneSpawnPoints\(z\)/.test(gameSrc), 'the zone loop does not use zoneSpawnPoints');
+    ok(/mouths && mouths\.length === 0\) continue/.test(gameSrc),
+       'the zone loop no longer stops when every mouth is shut');
+    ok(/zoneSpawnPoints\(zoneIndex\)/.test(cloneSrc), 'the spawner does not use zoneSpawnPoints');
+    ok(!/nest\.nestHealth\s*<=\s*0\s*\)\s*continue/.test(gameSrc),
+       'the old one-nest guard is still there as well');
 });
 
 console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

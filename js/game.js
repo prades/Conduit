@@ -923,8 +923,11 @@ function render() {
         // Cap at 12 to populate infinite zones without unbounded actor counts.
         const hostileZoneCount = Math.min(gameState.nightNumber, 12);
         for (let z = 1; z <= hostileZoneCount; z++) {
-            const nest = _nestCache.find(t => t.nestZone === z);
-            if (nest && nest.nestHealth <= 0) continue;
+            // A zone stops producing only when EVERY mouth it has is shut —
+            // its wall nest dead and its vortex sealed. It used to stop on the
+            // nest alone, which would have made the vortex decorative.
+            const mouths = zoneSpawnPoints(z);
+            if (mouths && mouths.length === 0) continue;
             if (!zonePredators[z]) zonePredators[z] = [];
             const alivePredators = zonePredators[z].filter(p => !p.dead);
             zonePredators[z] = alivePredators;

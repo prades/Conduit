@@ -387,6 +387,34 @@ function spawnFollowerProjectile(actor, target, color, damage, radius, onHit) {
     });
 }
 
+// Where a zone's predators come out: its wall nest, and its floor VORTEX.
+//
+// Both, not one — "predators should spawn out of it or the wall nest". A nest
+// counts while it still has health; a vortex counts while it is still open,
+// which is to say not yet captured. Capturing it is what seals it, so the
+// capture mechanic that was already on the tile is now also the way to shut a
+// spawner down.
+//
+// Returns an empty list when a zone HAS spawners and every one of them is
+// closed. A zone with no spawners at all returns null instead, so the caller
+// can tell "nothing left to shut" from "nothing was ever there" — the second
+// still spawns from the zone centre, as it always did.
+function zoneSpawnPoints(zoneIndex) {
+    let any = false;
+    const open = [];
+    for (const t of world) {
+        if (t.nest && t.nestZone === zoneIndex) {
+            any = true;
+            if (t.nestHealth > 0) open.push(t);
+        } else if (t.nodeType === 'capacitor_node' &&
+                   typeof getZoneIndex === 'function' && getZoneIndex(Math.floor(t.x)) === zoneIndex) {
+            any = true;
+            if (!t.captured) open.push(t);
+        }
+    }
+    return any ? open : null;
+}
+
 function spawnPredatorForZone(zoneIndex) {
     const speciesName = getZoneSpecies(zoneIndex, gameState.nightNumber);
     const className   = getZoneClass(zoneIndex);
@@ -410,10 +438,15 @@ function spawnPredatorForZone(zoneIndex) {
     // Elite randomization: later zones spawn increasingly powerful mutant variants
     const _eliteInstMuts = maybeApplyEliteDef(def, zoneIndex);
 
-    // Spawn at the zone's nest if it's alive, otherwise fall back to zone centre
-    const nest   = world.find(t => t.nest && t.nestZone === zoneIndex && t.nestHealth > 0);
-    const spawnX = nest ? nest.x : zoneIndex * ZONE_LENGTH + Math.floor(ZONE_LENGTH / 2);
-    const spawnY = nest ? nest.y : 2;
+    // Out of whichever mouth this zone still has open — the wall nest or the
+    // floor vortex. With both open it is a coin toss, so a zone with two feels
+    // like two. With neither, the zone centre, as before.
+    const mouths = zoneSpawnPoints(zoneIndex);
+    const from   = (mouths && mouths.length)
+        ? mouths[Math.floor(Math.random() * mouths.length)]
+        : null;
+    const spawnX = from ? from.x : zoneIndex * ZONE_LENGTH + Math.floor(ZONE_LENGTH / 2);
+    const spawnY = from ? from.y : 2;
 
     const predator = new Predator(className, def, spawnX, spawnY);
     const isAlarmZone = alertActive && (alertType === "facility" || zoneIndex === alertZone);
