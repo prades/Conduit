@@ -557,6 +557,36 @@ function rebuildPylonPairs() {
 }
 
 // ─────────────────────────────────────────────────────────
+//  DRAW CULLING
+// ─────────────────────────────────────────────────────────
+// Whether anything anchored at this world position can touch the screen.
+//
+// The draw list used to be `world.filter(t => Math.abs(t.x - player.visualX) <
+// RENDER_DIST)` — column distance, not screen position. But the isometric
+// projection is horizontal in (x - y): a tile twenty columns away at the same y
+// lands 1200px right of centre. Measured on a 900x700 view that filter selected
+// 304 tiles of which 150 were on screen, so half of every frame's tile work and
+// the canvas calls that go with it were spent outside the viewport. Actors were
+// not culled at all, and one actor costs around 200 canvas operations.
+//
+// The margins are asymmetric because sprites are drawn UPWARD from their tile
+// anchor. Something below the bottom edge can still poke into view, so that
+// side is generous; a tile above the top edge only ever shows its floor
+// diamond, so that side can be tight. Getting these wrong shows up as objects
+// popping in and out at the edges, which is why they are named constants with a
+// test rather than numbers inline.
+const DRAW_CULL_SIDE   = TILE_W * 2.5;   // 150px — wider than any sprite
+const DRAW_CULL_TOP    = TILE_H * 5;     // 150px — floor diamonds only
+const DRAW_CULL_BOTTOM = TILE_H * 7;     // 210px — the tallest sprite, and then some
+function visibleForDraw(x, y) {
+    const dx = x - player.visualX, dy = y - player.visualY;
+    const px = (dx - dy) * TILE_W + canvas.width / 2;
+    if (px < -DRAW_CULL_SIDE || px > canvas.width + DRAW_CULL_SIDE) return false;
+    const py = (dx + dy) * TILE_H + canvas.height / 2;
+    return py >= -DRAW_CULL_TOP && py <= canvas.height + DRAW_CULL_BOTTOM;
+}
+
+// ─────────────────────────────────────────────────────────
 //  MAIN RENDER / GAME LOOP
 // ─────────────────────────────────────────────────────────
 function render() {
@@ -1210,12 +1240,16 @@ function render() {
     const smokeTileZones = new Map(); // zone → smokeEffect obj
     elementEffects.forEach(e => { if (e.type === "smokeScreen") smokeTileZones.set(e.zone, e); });
 
-    let drawList=world.filter(t=>Math.abs(t.x-player.visualX)<RENDER_DIST);
+    // Culled in SCREEN space by visibleForDraw — see its comment for why the
+    // old column-distance filter kept half the frame's work off screen. The
+    // player and the crystal are never culled: the player IS the camera, and
+    // the crystal is a fixed landmark other code expects in the list.
+    let drawList=world.filter(t=>visibleForDraw(t.x,t.y));
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
-    shards.forEach(s=>drawList.push({type:'shard',x:s.x,y:s.y,shard:s}));
-    chargedMass.forEach(m=>drawList.push({type:'mass',x:m.x,y:m.y,mass:m}));
-    actors.forEach(a=>drawList.push({type:'npc',x:a.x,y:a.y,actor:a}));
-    groundItems.forEach(g=>drawList.push({type:'groundItem',x:g.x,y:g.y,item:g}));
+    shards.forEach(s=>{ if(visibleForDraw(s.x,s.y)) drawList.push({type:'shard',x:s.x,y:s.y,shard:s}); });
+    chargedMass.forEach(m=>{ if(visibleForDraw(m.x,m.y)) drawList.push({type:'mass',x:m.x,y:m.y,mass:m}); });
+    actors.forEach(a=>{ if(visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });
+    groundItems.forEach(g=>{ if(visibleForDraw(g.x,g.y)) drawList.push({type:'groundItem',x:g.x,y:g.y,item:g}); });
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
     drawList.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
 

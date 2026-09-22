@@ -4,6 +4,7 @@ const path = require('path');
 
 const SUITES = [
     ['load order + render order','loadorder.js'],
+    ['performance + culling',  'perf.js'],
     ['declared globals',       'globals.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],

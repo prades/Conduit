@@ -788,7 +788,10 @@ function drawHazards() {
                     const wobble = Math.sin(frame * 0.1 + i * 1.9) * (live ? 2 : 0.5);
                     ctx.strokeStyle = live ? "#ffdd88" : "#888";
                     ctx.lineWidth   = 1;
-                    ctx.shadowColor = live ? "#ffaa00" : "none";
+                    // "none" is not a colour: a browser ignores the assignment and
+                    // leaves whatever shadow was set before in place. Inert here only
+                    // because shadowBlur is 0 on the same branch.
+                    ctx.shadowColor = live ? "#ffaa00" : "transparent";
                     ctx.shadowBlur  = live ? 6 : 0;
                     ctx.beginPath();
                     ctx.moveTo(ex, ey);
