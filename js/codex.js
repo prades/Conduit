@@ -365,7 +365,10 @@ function renderWorkCrewIndex() {
         '<strong>worker</strong> duty will do them.</div>' +
 
         '<div class="cm-build-row"><span class="cm-build-label">Assign</span>' +
-        'Long-press one of your own followers \u2192 radial UP \u2192 TO WORK / TO LINE</div>' +
+        'Long-press one of your own followers \u2192 radial UP \u2192 TO WORK / TO LINE. ' +
+        'Changing duty <strong>releases a standing POSITION order</strong> \u2014 a post is not a ' +
+        'task and never finishes on its own, so it would otherwise keep the unit off work for good. ' +
+        'A real task in progress is left to finish.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Fighters</span>' +
         'Behave exactly as before. Every follower starts as one.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Workers</span>' +

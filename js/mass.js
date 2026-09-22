@@ -127,8 +127,19 @@ function updateChargedMass() {
 // follower AI is skipped.
 function followerWorkTick(actor) {
     if (!actor || actor.dead || actor.duty !== 'worker') return false;
-    // A worker with an explicit order from the player still obeys it.
-    if (actor.job) return false;
+    // A worker with an explicit TASK still finishes it first — building,
+    // reconstructing, capturing, attacking, an element job. Every one of those
+    // clears itself when it is done.
+    //
+    // A "move" order is the exception, and it is why this used to be `if
+    // (actor.job) return false`. It is not a task, it is a standing post: it
+    // never completes, clearing only if the unit drops below half health or the
+    // target tile vanishes. So positioning a follower and then putting it on
+    // the crew benched it permanently — the work tick deferred forever to an
+    // order that would never finish. A worker with a post still holds it when
+    // there is no chore in reach, because this returns false and the move
+    // handler runs; it just no longer means "never work again".
+    if (actor.job && actor.job.type !== 'move') return false;
 
     if (actor.element === MASS_NEUTRALISER) return _workNeutralise(actor);
     if (actor.element === MASS_HAULER)      return _workHaul(actor);
@@ -310,6 +321,20 @@ function workerJobLabel(element) {
     return null;
 }
 
+// Changing duty is a NEW instruction, so it releases a standing position order
+// and puts the unit back to following. Without the stance reset it would skip
+// the whole follow block in updateRTSNPC — which is gated on stance being
+// "follow" — and fall through to idle wandering.
+//
+// Transient tasks are left alone: they finish on their own, and cancelling a
+// build mid-way would leave a pylon constructing with no builder.
+function releaseStandingPost(actor) {
+    if (!actor) return false;
+    if (actor.job && actor.job.type === 'move') actor.job = null;
+    if (actor.stance === 'hold') actor.stance = 'follow';
+    return true;
+}
+
 function setFollowerDuty(actor, duty) {
     if (!actor) return false;
     if (duty === 'worker' && !canWorkMass(actor)) {
@@ -318,6 +343,7 @@ function setFollowerDuty(actor, duty) {
         return false;
     }
     actor.duty = duty;
+    releaseStandingPost(actor);
     if (duty !== 'worker') {
         // Drop anything in hand when pulled back to the line.
         if (actor.carryingMass) {

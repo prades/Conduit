@@ -521,6 +521,115 @@ check('a non-fire worker does not scour', () => {
 });
 
 // ─────────────────────────────────────────────────────────
+group('a standing position order must not bench a worker');
+
+// The reported case: "I positioned my followers to a certain spot and then
+// they're stuck on that positioning relay and they won't take on a new duty."
+//
+// followerWorkTick used to bail on ANY job, on the reasoning that an explicit
+// order from the player wins. That is right for a task — building, capturing,
+// attacking, an element job — because each of those clears itself when it is
+// done. But a "move" order is not a task, it is a post: it never completes,
+// clearing only if the unit drops under half health or the target tile
+// vanishes. So a positioned follower put on the crew deferred to that order
+// forever and never did a minute's work.
+function positioned(env, f, tx, ty) {
+    // Exactly what issueMoveCommand does.
+    f.job = { type: 'move', target: { x: tx, y: ty } };
+    f.stance = 'hold';
+    return f;
+}
+
+check('THE REPORTED CASE: positioned first, then put on the crew', () => {
+    const env = makeEnv();
+    const { m } = cocoonOnly(env, 3, 2);
+    const f = worker(env, m.x, m.y);
+    positioned(env, f, 9, 1);
+    // setFollowerDuty is how the radial assigns it.
+    same(env.run('setFollowerDuty')(f, 'worker'), true, 'the assignment should be accepted');
+    work(env, f, 200);
+    ok(m.shellBurn > 0, 'a positioned follower put on the crew should get to work');
+});
+
+check('assigning a duty releases the post and the hold stance', () => {
+    const env = makeEnv();
+    const f = worker(env, 0, 0);
+    positioned(env, f, 9, 1);
+    env.run('setFollowerDuty')(f, 'worker');
+    same(f.job, null, 'the standing order should be released');
+    same(f.stance, 'follow', 'and the hold stance with it \u2014 otherwise it idles instead of following');
+});
+
+check('taking one off the crew releases it too', () => {
+    // The post order is long gone by then; going back on the line should mean
+    // following, not standing on a spot the player has forgotten about.
+    const env = makeEnv();
+    const f = worker(env, 0, 0);
+    positioned(env, f, 9, 1);
+    env.run('setFollowerDuty')(f, 'fighter');
+    same(f.job, null, 'the standing order should be released');
+    same(f.stance, 'follow', 'and the stance restored');
+});
+
+check('positioned AFTER being put on the crew, it still works', () => {
+    // The same trap in the other order. The duty assignment cannot clear an
+    // order that has not been given yet, so the work tick has to be the one
+    // that does not treat a post as a task.
+    const env = makeEnv();
+    const { m } = cocoonOnly(env, 3, 2);
+    const f = worker(env, m.x, m.y);
+    env.run('setFollowerDuty')(f, 'worker');
+    positioned(env, f, 9, 1);
+    work(env, f, 200);
+    ok(m.shellBurn > 0, 'a worker given a post should still take a chore');
+});
+
+check('a worker with a post and NO chore holds the post', () => {
+    // The post is not ignored, it is outranked. With nothing to burn the work
+    // tick hands the frame back and the move handler keeps the unit in place.
+    const env = makeEnv();
+    board(env, 0, 12, 0, 4);
+    const f = worker(env, 3, 2);
+    positioned(env, f, 9, 1);
+    same(env.run('followerWorkTick')(f), false, 'with no chore it should hand the frame back');
+    ok(!!f.job, 'and leave the post in place for the move handler');
+});
+
+check('a worker still finishes a real task first', () => {
+    // The original rule, which must survive: a task the player ordered is not
+    // interrupted by a chore.
+    const env = makeEnv();
+    const { m } = cocoonOnly(env, 3, 2);
+    const f = worker(env, m.x, m.y);
+    f.job = { type: 'attack', target: { x: 5, y: 2, dead: false } };
+    same(env.run('followerWorkTick')(f), false, 'an ordered task should still win');
+    work(env, f, 200);
+    ok(!(m.shellBurn > 0), 'and nothing should have been scoured meanwhile');
+});
+
+check('"move" is the only job that never completes', () => {
+    // This is what makes the exception principled rather than a special case.
+    // If another standing job type is ever added, it has to be considered here
+    // too — so the list is asserted rather than left as a comment.
+    const NPC = fs.readFileSync(path.join(ROOT, 'js/npc.js'), 'utf8');
+    const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
+    const types = [...new Set([...NPC.matchAll(/job\.type\s*===?\s*"(\w+)"/g)].map(m => m[1]))];
+    ok(types.includes('move'), 'fixture: the move job should still exist');
+    for (const t of types) {
+        if (t === 'move') continue;
+        // Each other type must have a path that sets job = null.
+        const at = NPC.indexOf(`job.type==="${t}"`);
+        const body = at < 0 ? '' : NPC.slice(at, at + 1400);
+        const clears = /job\s*=\s*null/.test(body) ||
+                       new RegExp(`job\\.type==="${t}"\\) a\\.job=null`).test(GAME) ||
+                       new RegExp(`type==="${t}"[\\s\\S]{0,200}job=null`).test(GAME);
+        ok(clears, `the "${t}" job has no path that clears itself — it would bench a worker too`);
+    }
+    // And the work tick names move specifically.
+    ok(/job\.type !== 'move'/.test(MASS), 'the work tick no longer makes the move exception');
+});
+
+// ─────────────────────────────────────────────────────────
 group('it survives a refresh');
 
 check('burn progress is saved and restored', () => {
@@ -563,6 +672,15 @@ check('a cocoon restored mid-burn still finishes', () => {
 
 // ─────────────────────────────────────────────────────────
 group('the index says so');
+
+check('the index says a duty releases a standing post', () => {
+    // The reported confusion was that a positioned follower would not take a
+    // duty. The behaviour is fixed; the page has to say so, because "my order
+    // was silently dropped" is its own surprise.
+    ok(/releases a standing POSITION order/i.test(CODEX),
+       'the work crew page does not mention what a duty change does to a post');
+    ok(/left to finish/i.test(CODEX), 'nor that a real task is not cancelled');
+});
 
 check('the work crew page documents the job from the constants', () => {
     for (const name of ['SCOUR_COCOON_FRAMES', 'SCOUR_NEST_FRAMES', 'workerElements']) {
