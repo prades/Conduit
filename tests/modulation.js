@@ -148,6 +148,53 @@ async function boot(store) {
         same(s.size, 3, 'an empty mask should mean any');
     });
 
+    check('THE TRAP: an untouched mix takes in elements earned later', () => {
+        // normaliseModulationMask used to FILL an empty mask with every
+        // unlocked element and keep it, so the implicit "any" became an
+        // explicit list the first time anything read it. A player who never
+        // opened the control then had their mix frozen at fire and electric,
+        // and every element earned afterwards was silently left out — which
+        // makes a per-wave element reward pay nothing.
+        E.unlock(['fire', 'electric']);
+        E.scheme();                       // a read, as drawing the chip does
+        E.run('drawModulationChip();');   // and the draw itself
+        same(E.maskNow().length, 0, 'a read must not freeze the mix into a choice');
+        E.run('unlockedElements.add("toxic");');
+        const s = E.scheme();
+        same(s.size, 3, 'the newly earned element should be in the mix, got ' + s.label);
+        ok(s.elements.some(e => e.id === 'toxic'), 'toxic should be in it by name');
+        same(E.run('recruitElementPool()').includes('toxic'), true,
+             'and recruits should be able to come out as it');
+    });
+
+    check('an untouched mix shows every swatch lit', () => {
+        // "Any" has to LOOK like everything is on, or an empty mask reads as
+        // nothing selected.
+        E.unlock(['fire', 'electric', 'ice']);
+        E.run('crystalMenuOpen = false; drawModulationChip();');
+        same(E.maskNow().length, 0, 'fixture: the mask should still be untouched');
+        same(E.scheme().size, 3, 'all three should read as in the mix');
+    });
+
+    check('the first tap narrows, it does not invert', () => {
+        // With an empty mask every swatch is lit, so tapping one must drop that
+        // one element — not switch everything else off.
+        E.unlock(['fire', 'electric', 'ice']);
+        same(E.maskNow().length, 0, 'fixture: start untouched');
+        E.run('modulationToggle("ice")');
+        const left = E.maskNow();
+        same(left.join(','), 'electric,fire', 'the tapped element should be the only one dropped');
+        same(E.scheme().size, 2, 'and the mix should be the other two');
+    });
+
+    check('one helper decides what an empty mask means', () => {
+        // Three readers — the scheme, the swatches, the chip's wash — and if
+        // they each decided for themselves they would disagree.
+        ok(/function modulationIncludes/.test(SRC.clone), 'no single decision point');
+        const direct = (SRC.clone.match(/modulationMask\.has\(/g) || []).length;
+        ok(direct <= 2, direct + ' direct mask reads bypass the helper');
+    });
+
     check('a relock empties the mask rather than leaving it stuck', () => {
         E.unlock(['fire', 'electric', 'ice']);
         E.mask(['ice']);
@@ -430,8 +477,10 @@ async function boot(store) {
     });
 
     check('a reset puts it back to the starting pair', () => {
-        ok(/modulationMask=new Set\(\["fire","electric"\]\);/.test(SRC.waves),
+        ok(/modulationMask=new Set\(STARTING_ELEMENTS\);/.test(SRC.waves),
            'restartGame leaves the modulation where it was');
+        // And the pair itself is named once rather than spelled out per site.
+        ok(/const STARTING_ELEMENTS/.test(SRC.config), 'the starting pair has no name');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

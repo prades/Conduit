@@ -25,7 +25,11 @@ const ELEMENTS = [
     { id:"core",     label:"CORE",     color:"#00ccaa" },
     { id:"toxic",    label:"TOXIC",    color:"#66ff66" }
 ];
-let unlockedElements = new Set(["fire", "electric"]);
+// The two you begin with. Named once because four places used to spell the
+// pair out, and the wave ladder is defined as "everything that is not one of
+// these" — a fifth copy would decide which elements are earnable.
+const STARTING_ELEMENTS = ["fire", "electric"];
+let unlockedElements = new Set(STARTING_ELEMENTS);
 // Elements earned by kills but not yet brought online at the Crystal.
 let pendingElements = [];
 // Every enemy killed this game. Cumulative and one-way — it is what earns

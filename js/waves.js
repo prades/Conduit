@@ -140,6 +140,9 @@ function checkWaveClear() {
                 saveGameState();
             }
         }
+        // The wave's reward: the next element, earned but not yet online. Before
+        // showWaveClear, so the overlay can read what was just earned.
+        noteWaveClearedForProgression();
         // Reset panels immediately on wave clear — player re-enters day with fresh panels
         resetPanels();
         showWaveClear();
@@ -406,9 +409,9 @@ function restartGame() {
     pendingPillarDestruction=[];respawnQueue=[];
     frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearProgress();clearFollowers();clearGameState();clearPylons();clearNests();clearSession();clearWorldSeed();clearAmmo();clearPermUpgrades();
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
-    unlockedElements=new Set(["fire","electric"]);
+    unlockedElements=new Set(STARTING_ELEMENTS);
     pendingElements=[]; lifetimeKills=0; modulationDirty=false;
-    modulationMask=new Set(["fire","electric"]);
+    modulationMask=new Set(STARTING_ELEMENTS);
     activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};
     _cacheAge=-999; _pillarCache=[]; _wPylons=[]; _aPylons=[]; _uPylons=[]; _wPylonPairs=[]; _pylonsWithPartner=new Set(); _capturableNodeCache=[];
     _genPylons=[]; _genLinks=[];

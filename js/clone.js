@@ -541,18 +541,28 @@ function recruitElementPool() {
 // the starting state, so a player who has never opened the control still gets a
 // sensible mix.
 function normaliseModulationMask() {
-    const unlocked = ELEMENTS.filter(e => unlockedElements.has(e.id));
+    // Prune only. Filling an empty mask with every unlocked element and KEEPING
+    // it turned the implicit "any" into an explicit list the first time
+    // anything read it — so a player who never opened the control had their mix
+    // frozen to fire and electric, and every element earned afterwards was
+    // silently left out. An empty mask stays empty and means "any".
     for (const id of [...modulationMask]) {
         if (!unlockedElements.has(id)) modulationMask.delete(id);
     }
-    if (modulationMask.size === 0) for (const e of unlocked) modulationMask.add(e.id);
-    return unlocked;
+    return ELEMENTS.filter(e => unlockedElements.has(e.id));
+}
+
+// What is actually in the mix: the mask, or everything when the player has
+// made no choice. One place, so the scheme, the swatches and the recruit pool
+// cannot disagree about what an empty mask means.
+function modulationIncludes(id) {
+    return modulationMask.size === 0 ? unlockedElements.has(id) : modulationMask.has(id);
 }
 
 function _getModScheme() {
     const unlocked = normaliseModulationMask();
     if (unlocked.length === 0) return { colors:["#888"], elements:[], size:0, label:"NONE" };
-    const on = unlocked.filter(e => modulationMask.has(e.id));
+    const on = unlocked.filter(e => modulationIncludes(e.id));
     const size = on.length;
     // The label says what it does rather than naming a band: every recruit is
     // one element, or the mix it draws from.
@@ -566,8 +576,12 @@ function _getModScheme() {
 // element off: an empty mask reads as "any", so emptying it by tapping would
 // silently do the opposite of what the tap looks like.
 function modulationToggle(id) {
-    normaliseModulationMask();
+    const unlocked = normaliseModulationMask();
     if (!unlockedElements.has(id)) return false;
+    // The first tap turns "any" into an explicit list before narrowing it, so
+    // tapping a lit swatch drops that one element rather than inverting the
+    // whole mix.
+    if (modulationMask.size === 0) for (const e of unlocked) modulationMask.add(e.id);
     if (modulationMask.has(id)) {
         if (modulationMask.size <= 1) {
             floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
@@ -595,7 +609,7 @@ function drawModulationSwatches(x, y, cell, gap, showLabels) {
     const rects = [];
     unlocked.forEach((el, i) => {
         const sx = x + i * (cell + gap);
-        const on = modulationMask.has(el.id);
+        const on = modulationIncludes(el.id);
         const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.06 + i * 0.9);
         ctx.fillStyle = on ? el.color : "#10141c";
         ctx.globalAlpha = on ? 0.55 + pulse * 0.45 : 1;
@@ -681,7 +695,7 @@ function drawModulationChip() {
         ctx.save();
         _epRoundRect(x, y, w, h, 6); ctx.clip();
         unlocked.forEach((el, i) => {
-            if (!modulationMask.has(el.id)) return;
+            if (!modulationIncludes(el.id)) return;
             const cx0 = x + padX + i * (_MODCHIP_CELL + _MODCHIP_GAP) - _MODCHIP_GAP / 2;
             ctx.globalAlpha = 0.20;
             ctx.fillStyle = el.color;
@@ -1070,13 +1084,13 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
         });
         pendY += pendingElements.length * 20 + 6;
     } else {
-        const next = nextKillUnlock();
+        const next = nextWaveUnlock();
         ctx.fillStyle = "#2a3040"; ctx.font = "9px monospace";
         ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
         if (next) {
             const el = ELEMENTS.find(e => e.id === next.element);
             ctx.fillText("NEXT: " + (el ? el.label : next.element.toUpperCase()) +
-                         " in " + next.remaining + " kills", PX + 10, pendY);
+                         " — CLEAR A WAVE", PX + 10, pendY);
         } else {
             ctx.fillText("ALL ELEMENTS ONLINE · " + lifetimeKills + " kills", PX + 10, pendY);
         }

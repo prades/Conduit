@@ -48,53 +48,68 @@ let zoneRespawnTimers = {}; // zoneIndex -> frames until respawn
 // ─────────────────────────────────────────────────────────
 //  SHOP
 // ─────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────
-//  PROGRESSION — KILLS EARN ELEMENTS, THE CRYSTAL ACTIVATES THEM
+// ──────────────────────────────────────────────────────
+//  PROGRESSION — A CLEARED WAVE EARNS AN ELEMENT
 //
-//  Two steps on purpose. Killing things EARNS an element; it sits pending
+//  Two steps on purpose. Clearing a wave EARNS an element; it sits pending
 //  until you walk back to the Crystal and activate it. That makes the Crystal
-//  a place you return to rather than a thing you defend, and it gives the
-//  modulation slider — which until now drew a label and nothing else — a real
-//  job: it decides which of your activated elements new recruits draw from.
+//  somewhere you return to rather than a thing you defend, and it is what gives
+//  the modulation chip something to chew on: a new element arrives, the mix
+//  goes stale, and you decide what your followers are made of next.
 //
-//  Earning is one-way and cumulative. Activating is the deliberate act.
-// ─────────────────────────────────────────────────────────
-const KILL_UNLOCKS = [
-    { kills:  25, element: "ice"   },
-    { kills:  60, element: "flux"  },
-    { kills: 110, element: "core"  },
-    { kills: 180, element: "toxic" },
-];
+//  This replaced a kill ladder (25 / 60 / 110 / 180 lifetime kills). Kills are
+//  still counted — they are the record of what you have fought, and the Crystal
+//  shows the total — but they no longer gate anything.
+//
+//  ON LENGTH: there are six elements and two are granted at the start, so there
+//  are exactly FOUR to earn. At one per cleared wave the ladder is spent after
+//  four waves, and nextWaveUnlock() returns null from then on. That is the rate
+//  asked for; carrying earnable rewards past wave four means more elements, or
+//  something other than elements to earn.
+// ──────────────────────────────────────────────────────
 
-// The next element still to be earned, with how many kills remain — drives the
-// on-screen readout so the player can see what they are working toward.
-function nextKillUnlock() {
-    for (const u of KILL_UNLOCKS) {
-        if (unlockedElements.has(u.element)) continue;
-        if (pendingElements.includes(u.element)) continue;
-        return { element: u.element, at: u.kills, remaining: Math.max(0, u.kills - lifetimeKills) };
+// The order they arrive in, one per cleared wave. Derived from ELEMENTS rather
+// than written out again, so adding an element to that list extends the ladder
+// instead of leaving the new element unreachable.
+const WAVE_UNLOCK_ORDER = ELEMENTS
+    .map(e => e.id)
+    .filter(id => !STARTING_ELEMENTS.includes(id));
+
+// The next element still to be earned, or null when the ladder is spent. It
+// arrives on the next cleared wave, so there is no distance to report — the
+// readout says which one is coming, not how far away it is.
+function nextWaveUnlock() {
+    for (const id of WAVE_UNLOCK_ORDER) {
+        if (unlockedElements.has(id)) continue;
+        if (pendingElements.includes(id)) continue;
+        return { element: id };
     }
     return null;
 }
 
-// Called once per enemy killed. Earned elements go to pendingElements, NOT
-// straight into unlockedElements — the Crystal is where they come online.
+// Called once per enemy killed. Kills are a running total now, not a gate.
 function noteKillForProgression() {
     lifetimeKills++;
     saveProgress();
-    for (const u of KILL_UNLOCKS) {
-        if (lifetimeKills < u.kills) break;               // the list is ordered
-        if (unlockedElements.has(u.element)) continue;
-        if (pendingElements.includes(u.element)) continue;
-        pendingElements.push(u.element);
-        saveProgress();
-        const def = ELEMENTS.find(e => e.id === u.element);
-        floatingTexts.push({
-            x: canvas.width / 2, y: canvas.height / 2 - 90,
-            text: (def ? def.label : u.element.toUpperCase()) + " EARNED — ACTIVATE AT THE CRYSTAL",
-            color: def ? def.color : "#0f8", life: 260, vy: -0.16, size: 15,
-        });
-    }
+}
+
+// Called once per cleared wave. The earned element goes to pendingElements,
+// NOT straight into unlockedElements — the Crystal is where it comes online.
+//
+// Clearing another wave while one is still pending stacks a second: the reward
+// is for the wave, so putting off the trip back does not forfeit it.
+function noteWaveClearedForProgression() {
+    const next = nextWaveUnlock();
+    if (!next) return null;
+    pendingElements.push(next.element);
+    saveProgress();
+    const def = ELEMENTS.find(e => e.id === next.element);
+    floatingTexts.push({
+        x: canvas.width / 2, y: canvas.height / 2 - 90,
+        text: (def ? def.label : next.element.toUpperCase()) + " EARNED — ACTIVATE AT THE CRYSTAL",
+        color: def ? def.color : "#0f8", life: 260, vy: -0.16, size: 15,
+    });
+    return next.element;
 }
 
 // The deliberate act at the Crystal. Returns the element activated, or null.

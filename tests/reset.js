@@ -45,6 +45,7 @@ function makeEnv() {
         _wPylonPairs: [], _capturableNodeCache: [], _pylonsWithPartner: new Set(),
         _genPylons: [], _genLinks: [],
         exploredZones: new Set(), boughtItems: new Set(),
+        STARTING_ELEMENTS: ['fire', 'electric'],
         unlockedElements: new Set(['fire', 'electric']),
         dayStats: { redSpawned: 0, redConverted: 0 },
         gameState: { phase: 'day', nightNumber: 1, running: true },

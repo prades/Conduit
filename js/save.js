@@ -104,8 +104,11 @@ function clearFollowers() {
 }
 
 function getUnlocks() {
-    try { return JSON.parse(localStorage.getItem("tubecrawler_unlocks") || '["fire","electric"]'); }
-    catch(e) { return ["fire","electric"]; }
+    try {
+        const raw = localStorage.getItem("tubecrawler_unlocks");
+        return raw ? JSON.parse(raw) : [...STARTING_ELEMENTS];
+    }
+    catch(e) { return [...STARTING_ELEMENTS]; }
 }
 function saveUnlocks() {
     try { localStorage.setItem("tubecrawler_unlocks", JSON.stringify([...unlockedElements])); }

@@ -22,6 +22,33 @@ for (const f of ['config', 'wavedata', 'waves', 'game', 'clone', 'helpers', 'pre
     SRC[f] = fs.readFileSync(path.join(ROOT, `js/${f}.js`), 'utf8');
 }
 const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+const { scriptOrder, makeBrowserSandbox } = require('./domstub.js');
+
+// The whole page, so a wave can be cleared the way the game clears one. The
+// fragment sandbox below calls noteWaveClearedForProgression directly, which
+// cannot tell whether checkWaveClear actually reaches it.
+async function bootGame() {
+    const store = {};
+    const sandbox = makeBrowserSandbox(store);
+    const ctx = vm.createContext(sandbox);
+    for (const rel of scriptOrder()) {
+        try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), ctx, { filename: rel }); }
+        catch (e) { /* DOM-heavy init is noisy under stubs */ }
+    }
+    for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
+    const run = e => vm.runInContext(e, ctx);
+    return {
+        run, store,
+        // Meet the quota, then let checkWaveClear do what it does.
+        clearOne() {
+            run(`gameState.phase = "night"; nightEnemiesTarget = 1; nightKillCount = 1;
+                 alertSource = { x: 20, y: 2 };`);
+            run('checkWaveClear();');
+        },
+        pending() { return run('[...pendingElements]'); },
+        unlocked() { return run('[...unlockedElements]'); },
+    };
+}
 
 let failures = 0;
 function group(n) { console.log('\n' + n); }
@@ -51,12 +78,17 @@ function makeEnv() {
         lifetimeKills: 0,
         modulationDirty: false,
         unlockSaves: 0, progressSaves: 0,
+        // Read out of config.js rather than written here: the wave ladder is
+        // "every element that is not a starting one", so a fixture that
+        // disagreed with the real pair would test a different ladder.
+        STARTING_ELEMENTS: JSON.parse(
+            SRC.config.match(/const STARTING_ELEMENTS = (\[[^\]]*\])/)[1].replace(/'/g, '"')),
     };
     sandbox.saveUnlocks  = () => { sandbox.unlockSaves++; };
     sandbox.saveProgress = () => { sandbox.progressSaves++; };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
-    const from = SRC.wavedata.indexOf('const KILL_UNLOCKS');
+    const from = SRC.wavedata.indexOf('const WAVE_UNLOCK_ORDER');
     const at   = SRC.wavedata.indexOf('function activatePendingElement', from);
     if (from < 0 || at < 0) { console.log('  FAIL could not find the progression block'); process.exit(1); }
     let i = SRC.wavedata.indexOf('{', at), depth = 0;
@@ -70,27 +102,73 @@ function makeEnv() {
     return { sandbox, run: s => vm.runInContext(s, ctx) };
 }
 function kill(env, n) { for (let k = 0; k < n; k++) env.run('noteKillForProgression()'); }
-const thresholds = () => {
-    const m = SRC.wavedata.match(/const KILL_UNLOCKS = \[[\s\S]*?\n\];/)[0];
-    return [...m.matchAll(/kills:\s*(\d+), element: "([a-z]+)"/g)].map(x => ({ kills: +x[1], element: x[2] }));
-};
+function clearWave(env, n) {
+    for (let k = 0; k < (n === undefined ? 1 : n); k++) env.run('noteWaveClearedForProgression()');
+}
+// The ladder, read out of the running code rather than restated: it is derived
+// from ELEMENTS minus STARTING_ELEMENTS, so a new element extends it.
+const ladder = env => env.run('[...WAVE_UNLOCK_ORDER]');
 
-group('kills earn elements');
+group('a cleared wave earns an element');
 
-check('THE REPORTED CASE: enough kills earns an element', () => {
+check('THE ASK: clearing a wave earns the next element', () => {
     const env = makeEnv();
-    const first = thresholds()[0];
-    kill(env, first.kills - 1);
-    same(env.sandbox.pendingElements.length, 0, 'one kill short should earn nothing');
-    kill(env, 1);
-    same(env.sandbox.pendingElements.join(','), first.element, 'the threshold should earn it');
+    same(env.sandbox.pendingElements.length, 0, 'nothing earned before the first wave');
+    clearWave(env);
+    same(env.sandbox.pendingElements.join(','), ladder(env)[0],
+         'the first cleared wave should earn the first element');
+});
+
+check('THE ASK: every single wave earns one', () => {
+    const env = makeEnv();
+    const L = ladder(env);
+    for (let i = 0; i < L.length; i++) {
+        clearWave(env);
+        same(env.sandbox.pendingElements.length, i + 1,
+             `wave ${i + 1} should have earned ${i + 1} elements in total`);
+    }
+    same(env.sandbox.pendingElements.join(','), L.join(','), 'and in ladder order');
+});
+
+check('kills no longer gate anything', () => {
+    // They are still counted — the Crystal shows the total — but a pile of
+    // kills with no cleared wave earns nothing.
+    const env = makeEnv();
+    kill(env, 500);
+    same(env.sandbox.pendingElements.length, 0, 'kills should not earn elements any more');
+    same(env.sandbox.lifetimeKills, 500, 'but they should still be counted');
+    ok(!/KILL_UNLOCKS/.test(SRC.wavedata), 'the kill ladder is still in the source');
+});
+
+check('THE LIMIT: the ladder is spent once every element is earned', () => {
+    // Four to earn, so the fifth cleared wave has nothing to give. Asserted
+    // rather than left implicit, because "an element every wave" cannot hold
+    // past wave four with six elements in the game.
+    const env = makeEnv();
+    const L = ladder(env);
+    clearWave(env, L.length + 3);
+    same(env.sandbox.pendingElements.length, L.length,
+         'it should stop at the end of the ladder, not keep pushing');
+    same(env.run('noteWaveClearedForProgression()'), null, 'and report that there was nothing to give');
+});
+
+check('the ladder is derived from ELEMENTS, not written out again', () => {
+    // A hand-written list is how a newly added element ends up unreachable.
+    const env = makeEnv();
+    const L = ladder(env);
+    const starting = env.sandbox.STARTING_ELEMENTS;
+    for (const el of env.sandbox.ELEMENTS) {
+        ok(starting.includes(el.id) || L.includes(el.id), el.id + ' can never be obtained');
+    }
+    same(L.length, env.sandbox.ELEMENTS.length - starting.length, 'the ladder is the wrong length');
+    ok(/ELEMENTS\s*\n?\s*\.map/.test(SRC.wavedata), 'WAVE_UNLOCK_ORDER is not derived from ELEMENTS');
 });
 
 check('earning is NOT activating — it does not go straight into the pool', () => {
     // This is the whole two-step: the Crystal is where an element comes online.
     const env = makeEnv();
-    kill(env, thresholds()[0].kills);
-    ok(!env.sandbox.unlockedElements.has(thresholds()[0].element),
+    clearWave(env);
+    ok(!env.sandbox.unlockedElements.has(ladder(env)[0]),
        'an earned element must not be usable before it is activated');
     same(env.sandbox.unlockSaves, 0, 'and must not be written as unlocked');
     ok(env.sandbox.floatingTexts.some(t => /ACTIVATE AT THE CRYSTAL/.test(t.text)),
@@ -99,8 +177,8 @@ check('earning is NOT activating — it does not go straight into the pool', () 
 
 check('activating at the crystal brings it online', () => {
     const env = makeEnv();
-    const el = thresholds()[0].element;
-    kill(env, thresholds()[0].kills);
+    const el = ladder(env)[0];
+    clearWave(env);
     same(env.run('activatePendingElement')(el), el, 'it should activate');
     ok(env.sandbox.unlockedElements.has(el), 'it should now be usable');
     same(env.sandbox.pendingElements.length, 0, 'and no longer pending');
@@ -109,9 +187,9 @@ check('activating at the crystal brings it online', () => {
 
 check('activating flags the modulation as stale', () => {
     const env = makeEnv();
-    kill(env, thresholds()[0].kills);
+    clearWave(env);
     same(env.sandbox.modulationDirty, false, 'clean before');
-    env.run('activatePendingElement')(thresholds()[0].element);
+    env.run('activatePendingElement')(ladder(env)[0]);
     same(env.sandbox.modulationDirty, true, 'a new element makes the modulation stale');
     ok(env.sandbox.floatingTexts.some(t => /RE-MODULATE/.test(t.text)), 'the player should be prompted');
 });
@@ -126,48 +204,50 @@ check('activating something you have not earned does nothing', () => {
 
 check('an element is never earned twice', () => {
     const env = makeEnv();
-    const el = thresholds()[0].element;
-    kill(env, thresholds()[0].kills + 40);
+    const el = ladder(env)[0];
+    clearWave(env, 3);
     same(env.sandbox.pendingElements.filter(e => e === el).length, 1, 'pending once');
     env.run('activatePendingElement')(el);
-    kill(env, 60);
+    clearWave(env, 3);
     ok(!env.sandbox.pendingElements.includes(el), 'an activated element must not come back as pending');
 });
 
-check('every element is reachable, and the thresholds climb', () => {
-    const ts = thresholds();
+check('putting off the trip back does not forfeit the reward', () => {
+    // The reward is for the wave. Clearing another while one is still pending
+    // should stack rather than overwrite or be dropped.
     const env = makeEnv();
-    kill(env, ts[ts.length - 1].kills);
-    same(env.sandbox.pendingElements.length, ts.length, 'all of them should be earned by the last threshold');
-    for (let i = 1; i < ts.length; i++) {
-        ok(ts[i].kills > ts[i - 1].kills, `threshold ${i} should cost more than the one before`);
-    }
-    // Nothing unobtainable.
-    const granted = new Set(ts.map(t => t.element));
-    for (const el of env.sandbox.ELEMENTS) {
-        ok(el.id === 'fire' || el.id === 'electric' || granted.has(el.id),
-           el.id + ' can never be obtained');
-    }
+    clearWave(env);
+    clearWave(env);
+    same(env.sandbox.pendingElements.length, 2, 'both waves should have paid out');
+    same(new Set(env.sandbox.pendingElements).size, 2, 'and with different elements');
 });
 
-check('the readout says what is next and how far', () => {
+check('THE WIRING: the wave clear is what calls it', () => {
+    const at = SRC.waves.indexOf('function checkWaveClear');
+    const body = SRC.waves.slice(at, SRC.waves.indexOf('\n}', at));
+    ok(/noteWaveClearedForProgression\(\)/.test(body), 'checkWaveClear does not earn the element');
+    // Once per wave: checkWaveClear returns early unless the phase is "night",
+    // and it sets the phase to "waveComplete" before paying out.
+    ok(body.indexOf('gameState.phase = "waveComplete"') <
+       body.indexOf('noteWaveClearedForProgression()'),
+       'the phase must be closed out first, or a wave could pay twice');
+    same((SRC.waves.match(/noteWaveClearedForProgression\(\)/g) || []).length, 1,
+         'it should be called from exactly one place');
+});
+
+check('the readout says which element is next', () => {
     const env = makeEnv();
-    const ts = thresholds();
-    let n = env.run('nextKillUnlock()');
-    same(n.element, ts[0].element, 'the first element should be next');
-    same(n.remaining, ts[0].kills, 'with the full count to go');
-    kill(env, 10);
-    same(env.run('nextKillUnlock()').remaining, ts[0].kills - 10, 'it should count down');
-    // Once earned it is no longer "next", even before activation.
-    kill(env, ts[0].kills);
-    n = env.run('nextKillUnlock()');
-    ok(!n || n.element !== ts[0].element, 'an earned element should not still be next');
+    const n = env.run('nextWaveUnlock()');
+    same(n.element, ladder(env)[0], 'the first element should be next');
+    clearWave(env);
+    ok(env.run('nextWaveUnlock()').element !== ladder(env)[0],
+       'an earned element should not still be next');
 });
 
 check('with everything held there is nothing next', () => {
     const env = makeEnv();
-    for (const t of thresholds()) env.sandbox.unlockedElements.add(t.element);
-    same(env.run('nextKillUnlock()'), null, 'nothing left to earn');
+    for (const id of ladder(env)) env.sandbox.unlockedElements.add(id);
+    same(env.run('nextWaveUnlock()'), null, 'nothing left to earn');
 });
 
 check('progress is saved as it is made', () => {
@@ -214,9 +294,8 @@ check('the crystal offers an ACTIVATE control per pending element', () => {
 });
 
 check('the crystal shows what is next when nothing is pending', () => {
-    ok(/nextKillUnlock\(\)/.test(SRC.clone), 'the tab does not show the next unlock');
-    ok(/kills", PX \+ 10, pendY\)|in " \+ next\.remaining \+ " kills/.test(SRC.clone),
-       'the remaining kill count is not shown');
+    ok(/nextWaveUnlock\(\)/.test(SRC.clone), 'the tab does not show the next unlock');
+    ok(/CLEAR A WAVE/.test(SRC.clone), 'it does not say how the next one is earned');
 });
 
 check('THE PROMPT: the crystal button says an element is waiting', () => {
@@ -267,7 +346,7 @@ check('a reset clears it all', () => {
     ok(/clearProgress\(\)/.test(SRC.waves), 'restartGame does not clear progress');
     ok(/pendingElements=\[\]; lifetimeKills=0; modulationDirty=false;/.test(SRC.waves),
        'restartGame leaves progression state behind');
-    ok(/modulationMask=new Set\(\["fire","electric"\]\);/.test(SRC.waves),
+    ok(/modulationMask=new Set\(STARTING_ELEMENTS\);/.test(SRC.waves),
        'restartGame leaves the modulation where it was');
 });
 
@@ -284,22 +363,66 @@ check('every enemy killed counts, wanderers included', () => {
 
 group('the in-game docs match');
 
-check('the index describes kills and the crystal, not zones or a shop', () => {
+check('the index describes waves and the crystal, not zones, kills or a shop', () => {
     ok(!/purchased in the shop/.test(HTML), 'the docs still describe buying elements');
     ok(!/ZONE 1 nest/.test(HTML), 'the docs still describe the old nest rule');
     ok(/There is no shop/.test(HTML), 'the docs do not say the shop is gone');
-    ok(/kills/i.test(HTML), 'the docs do not mention kills');
-    ok(/ACTIVATE/.test(HTML) || /activate/.test(HTML), 'the docs do not mention activating at the crystal');
+    ok(/Clear a wave, earn an element/i.test(HTML), 'the docs do not state the wave rule');
+    ok(/no longer earn anything/i.test(HTML), 'the docs do not say kills stopped gating');
+    ok(/activate/i.test(HTML), 'the docs do not mention activating at the crystal');
 });
 
-check('the documented thresholds match the code', () => {
-    for (const t of thresholds()) {
-        const re = new RegExp(t.kills + '[^<]*</span>[\\s\\S]{0,120}?' + t.element.toUpperCase(), 'i');
-        const alt = new RegExp(t.element.toUpperCase() + '[\\s\\S]{0,160}?' + t.kills, 'i');
-        ok(re.test(HTML) || alt.test(HTML),
-           `the docs do not state ${t.element.toUpperCase()} at ${t.kills} kills`);
-    }
+check('the documented ladder matches the code', () => {
+    const env = makeEnv();
+    const L = ladder(env);
+    L.forEach((id, i) => {
+        // The index lists each element against the wave it arrives on.
+        const re = new RegExp(id.toUpperCase() + '[\\s\\S]{0,120}?wave ' + (i + 1), 'i');
+        ok(re.test(HTML), `the docs do not put ${id.toUpperCase()} on wave ${i + 1}`);
+    });
+    ok(/CLEARED WAVE EARNS/i.test(HTML), 'the index still describes the kill ladder');
+    ok(!/25 kills|180 kills/.test(HTML), 'the old kill thresholds are still documented');
+    // And it must be honest about running out.
+    ok(new RegExp('spent after ' + L.length + ' waves', 'i').test(HTML),
+       'the index does not say the ladder runs out');
 });
 
-console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
-process.exit(failures ? 1 : 0);
+(async () => {
+    group('a real wave clear, end to end');
+    const G = await bootGame();
+
+    check('THE ASK, in the running game: clearing a wave earns an element', () => {
+        same(G.pending().length, 0, 'nothing pending before the first wave');
+        G.clearOne();
+        same(G.pending().length, 1, 'the cleared wave should have earned one');
+        same(G.pending()[0], G.run('WAVE_UNLOCK_ORDER[0]'), 'and it should be the first of the ladder');
+    });
+
+    // A fresh game: G has already cleared one wave above.
+    const H = await bootGame();
+    check('and it is one per wave, right up the ladder', () => {
+        const L = H.run('[...WAVE_UNLOCK_ORDER]');
+        H.clearOne();
+        same(H.pending().length, 1, 'fixture: the first wave should pay out');
+        for (let i = 1; i < L.length; i++) {
+            H.clearOne();
+            same(H.pending().length, i + 1, `after ${i + 1} waves, ${i + 1} should be pending`);
+        }
+        H.clearOne();
+        same(H.pending().length, L.length, 'a fifth wave has nothing left to give');
+    });
+
+    check('activating them at the crystal brings each online', () => {
+        for (const id of G.pending().slice()) G.run(`activatePendingElement(${JSON.stringify(id)});`);
+        ok(G.unlocked().length > 2, 'the activated element should be online');
+        same(G.run('modulationDirty'), true, 'and the mix should be flagged stale');
+    });
+
+    check('the earned element survives a refresh before it is activated', () => {
+        const blob = JSON.parse(G.store.tubecrawler_progress || '{}');
+        ok(Array.isArray(blob.pending), 'pending elements are not saved');
+    });
+
+    console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
+    process.exit(failures ? 1 : 0);
+})();
