@@ -44,12 +44,35 @@ function predatorMayHurtPlayer() {
 //
 // Unifying them also closes the second form, which counted a green CLONE of
 // yours as a target — chain lightning could jump to your own clone.
-function isHostileTarget(a) {
-    if (!a || a.dead) return false;
+// WHOSE SIDE is this on — nothing about whether it can be attacked. A corpse
+// still belongs to the side it fought for, and the two places that COUNT kills
+// are asking exactly that about something that is already dead.
+//
+// Splitting this out is not tidiness. Folding twenty-five hostility expressions
+// into isHostileTarget swept up two that were not asking about targeting at
+// all, and because that function begins `if (a.dead) return false`, the
+// surviving conditions read `a.dead && isHostileTarget(a)` — which is
+// `a.dead && !a.dead`, and never true. Both kill counters became dead code:
+// lifetimeKills stopped earning elements and nightKillCount stopped clearing
+// waves. Measured at wave 3: six ordinary predators killed, zero counted on
+// either. The drops still paid out, which is why it went unnoticed.
+// `!a.isClone` is redundant and kept deliberately: it only bites on a RED
+// clone, and the red branch above has already returned by then, so no state the
+// game can reach reaches it. It mirrors isHostileTarget rather than quietly
+// diverging from it.
+function isEnemyUnit(a) {
+    if (!a) return false;
     if (isNeutralBystander(a)) return false;
     if (a.team === "red") return true;
     return typeof Predator !== "undefined" && (a instanceof Predator)
            && a.team !== "green" && !a.isClone;
+}
+
+// MAY I SHOOT THIS — the question every weapon asks, which additionally
+// requires the thing to be alive.
+function isHostileTarget(a) {
+    if (!a || a.dead) return false;
+    return isEnemyUnit(a);
 }
 
 function isNeutralBystander(a) {

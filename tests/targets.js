@@ -115,6 +115,7 @@ const SCENE = `(function(){
     const C1 = await ready();   // a predator pinned on the player
     const C2 = await ready();   // a clone pinned on a recruit
     const C3 = await ready();   // the same clone on a real foe
+    const K  = await ready();   // kill counting, reset between checks
     const startRecruits = W.run(SCENE);
     // Cleared every frame: the cocoon toxin is DESIGNED to bite recruits, so
     // leaving puddles in made this scene's verdict depend on whether one
@@ -302,6 +303,156 @@ const SCENE = `(function(){
         }
         same((SRC.helpers.match(/function isHostileTarget/g) || []).length, 1,
              'the predicate is defined more than once');
+    });
+
+    // ─────────────────────────────────────────────────────
+    group('KILLS STILL COUNT — the cost of unifying the predicate');
+
+    // The regression this group exists for: "I'm not getting my kills
+    // calculated."
+    //
+    // Folding twenty-five hostility expressions into isHostileTarget swept up
+    // two that were not asking about targeting at all — the two places that
+    // COUNT a kill. isHostileTarget begins `if (a.dead) return false`, so those
+    // conditions became `a.dead && isHostileTarget(a)`, which is
+    // `a.dead && !a.dead`. Never true. Measured at wave 3: six ordinary
+    // predators killed, zero counted on either counter.
+    //
+    // The drops kept paying out, which is why nothing looked wrong at a glance,
+    // and nothing here or anywhere else tested a kill being counted at all.
+
+    check('THE PAIR: a corpse is still an enemy unit, just not a target', () => {
+        const r = E.run(`(function(){
+            const dead = { team: 'red', dead: true };
+            return { unitDead:   isEnemyUnit(dead),
+                     targetDead: isHostileTarget(dead),
+                     unitAlive:  isEnemyUnit({ team: 'red' }),
+                     recruit:    isEnemyUnit({ team: 'red', isNeutralRecruit: true, dead: true }),
+                     follower:   isEnemyUnit({ team: 'green', isFollower: true, dead: true }),
+                     nothing:    isEnemyUnit(null) };
+        })()`);
+        same(r.unitDead, true, 'a dead enemy is still one of theirs — that is what a kill IS');
+        same(r.targetDead, false, 'but it is not something you may shoot');
+        same(r.unitAlive, true, 'and a live one is both');
+        same(r.recruit, false, 'a dead recruit was never theirs to begin with');
+        same(r.follower, false, 'nor is one of yours');
+        same(r.nothing, false, 'nor is nothing at all');
+    });
+
+    check('THE BUG: no condition anywhere asks for a dead hostile TARGET', () => {
+        // The generalisable guard. `x.dead && isHostileTarget(x)` cannot be
+        // true, so any such condition is dead code — this catches the whole
+        // class rather than the two instances of it that were found.
+        // Comments stripped first. The explanation of this very bug, sitting
+        // above the fixed line in game.js, matched the pattern and failed the
+        // check on correct code.
+        const code = s => s.split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+        for (const [name, src] of [['game.js', SRC.game], ['elements.js', SRC.elements],
+                                   ['traps.js', SRC.traps], ['helpers.js', SRC.helpers]]) {
+            const bad = code(src).match(/\w+\.dead\s*&&\s*isHostileTarget\s*\(/g);
+            ok(!bad, name + ' has a condition that can never be true: ' + (bad || []).join(', '));
+        }
+    });
+
+    // One world, reset between checks. check() is synchronous and drops a
+    // returned promise on the floor, so an `async () =>` check here would pass
+    // no matter what it asserted.
+    const killScene = body => K.run(`(function(){
+        // running, or render() bails out before it ever reaches the counters
+        // and every one of these checks quietly reads zero.
+        gameState.running = true;
+        gameState.phase = 'night';
+        actors.length = 0;
+        lifetimeKills = 0; nightKillCount = 0;
+        // Out of reach by default. Left at 0 the wave clears on the first
+        // frame, which changes phase out from under the scene — the checks that
+        // are not about clearing set their own target below.
+        nightEnemiesTarget = 99999;
+        alertActive = true; alertType = 'facility'; alertZone = 1;
+        alertSource = { x: 20, y: 2 };
+        _cacheAge = -999;
+        ${body}
+    })()`);
+
+    check('killing an ordinary enemy counts toward the element ladder', () => {
+        const r = killScene(
+            `const p = spawnPredatorForZone(1);
+             p.isWanderer = false; p.x = 5; p.y = 2;
+             render();
+             p.health = 0; p.dead = true;
+             for (let f = 0; f < 5; f++) render();
+             return { kills: lifetimeKills, flagged: !!p.progressCounted };`);
+        same(r.kills, 1, 'lifetimeKills did not move');
+        same(r.flagged, true, 'the corpse was never marked as counted');
+    });
+
+    check('and toward clearing the wave, or a night can never end', () => {
+        const r = killScene(
+            `nightEnemiesTarget = 3;
+             const made = [];
+             for (let i = 0; i < 3; i++) {
+                 const p = spawnPredatorForZone(1);
+                 p.isWanderer = false; p.x = 5 + i; p.y = 2;
+                 made.push(p);
+             }
+             render();
+             for (const p of made) { p.health = 0; p.dead = true; }
+             for (let f = 0; f < 5; f++) render();
+             return { night: nightKillCount, target: nightEnemiesTarget };`);
+        same(r.night, 3, 'nightKillCount did not move — the wave could never clear');
+        ok(r.night >= r.target, 'the target should now be reached');
+    });
+
+    check('a kill is counted exactly ONCE, end to end', () => {
+        // What this actually proves, and what it does not. Two seconds of
+        // frames after the death yield one kill — that is the behaviour the
+        // player sees, and it is worth pinning.
+        //
+        // It is NOT a test of the progressCounted / killCounted flags. The
+        // cleanup pass splices a corpse out of `actors` on the very first frame
+        // after it dies, so the counting loop never sees it twice and the flags
+        // are belt-and-braces today: removing them leaves this green. The
+        // corpse lifetime is asserted below so that if cleanup ever starts
+        // retaining bodies — for a death animation, say — the flags become
+        // load-bearing and this check starts testing them for real.
+        const r = killScene(
+            `const p = spawnPredatorForZone(1);
+             p.isWanderer = false; p.x = 5; p.y = 2;
+             render();
+             p.health = 0; p.dead = true;
+             let lingered = 0;
+             for (let f = 0; f < 120; f++) { render(); if (actors.includes(p)) lingered++; }
+             return { kills: lifetimeKills, night: nightKillCount, lingered };`);
+        same(r.kills, 1, 'the same corpse was counted more than once');
+        same(r.night, 1, 'and toward the wave more than once');
+        same(r.lingered, 0,
+             'corpses now linger in actors for ' + r.lingered + ' frames — the '
+             + 'progressCounted/killCounted flags are load-bearing now, not belt-and-braces');
+    });
+
+    check('a recruit dying is not a kill won', () => {
+        // It is on the enemy's team until it arrives, so a naive "team red died"
+        // would bank it — and the player did nothing to earn it.
+        const r = killScene(
+            `const rec = { x: 5, y: 2, team: 'red', isNeutralRecruit: true, dead: true,
+                           health: 0, maxHealth: 60, type: 'virus' };
+             actors.push(rec);
+             for (let f = 0; f < 5; f++) render();
+             return { kills: lifetimeKills, night: nightKillCount };`);
+        same(r.kills, 0, 'a dead recruit should not earn an element');
+        same(r.night, 0, 'nor advance the wave');
+    });
+
+    check('and neither is one of your own clones dying', () => {
+        const r = killScene(
+            `const p = spawnPredatorForZone(1);
+             p.team = 'green'; p.isClone = true; p.x = 5; p.y = 2;
+             render();
+             p.health = 0; p.dead = true;
+             for (let f = 0; f < 5; f++) render();
+             return { kills: lifetimeKills, night: nightKillCount };`);
+        same(r.kills, 0, 'losing a clone should not count as a kill');
+        same(r.night, 0, 'nor advance the wave');
     });
 
     check('chain lightning no longer jumps to your own clone', () => {

@@ -1076,12 +1076,15 @@ function render() {
         // Progression counts EVERY enemy killed, wanderers included — it is a
         // record of what you have fought, not of wave quotas. The wave counter
         // below still ignores wanderers.
-        if (a.dead && isHostileTarget(a) && !a.progressCounted) {
+        // isEnemyUnit, NOT isHostileTarget: the latter refuses anything dead,
+        // so `a.dead && isHostileTarget(a)` was never true and neither counter
+        // ever ran. What is being asked here is whose side the corpse was on.
+        if (a.dead && isEnemyUnit(a) && !a.progressCounted) {
             a.progressCounted = true;
             noteKillForProgression();
         }
         // track kills for wave clear — count dead enemies not clones, wanderers don't count
-        if (a.dead && isHostileTarget(a) && !a.killCounted && !a.isWanderer) {
+        if (a.dead && isEnemyUnit(a) && !a.killCounted && !a.isWanderer) {
             a.killCounted = true;
             nightKillCount++;
             const _kz = alertSource ? getZoneIndex(Math.floor(alertSource.x)) : 1;
