@@ -1690,6 +1690,83 @@ function _buildCircuit(W, H) {
 //  CAPTURABLE NODE DRAWING
 //  Call from floor tile draw pass when tile.nodeType is set.
 // ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+//  THE VORTEX SWIRL
+// ─────────────────────────────────────────────────────────
+// Drawn as CIRCLES in whatever plane the caller has set up with a transform.
+// There are two vortices in the game and they differ only by that plane:
+//
+//   the floor node  lies flat, squashed to TILE_H/TILE_W
+//   the wall nest   stands in the wall face, which is a SHEAR — its two basis
+//                   vectors are not perpendicular, so a circle on it does not
+//                   map to an axis-aligned ellipse with a rotation and cannot
+//                   be expressed with ctx.ellipse's rotation argument at all.
+//                   It needs a real matrix.
+//
+// One swirl, two transforms. Writing the wall one separately would have been
+// two implementations of the same thing, free to drift apart.
+function drawVortexSwirl(r, colour, spin, glow, alpha) {
+    const a = alpha === undefined ? 1 : alpha;
+    // The throat: a hole, darkest at the centre.
+    const g = ctx.createRadialGradient(0, 0, 1, 0, 0, r);
+    g.addColorStop(0, 'rgba(8,3,0,0.95)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+
+    // Three partial rings turning at their own rates. The gap in each is what
+    // makes it read as drawn inward rather than as concentric circles.
+    ctx.shadowColor = colour;
+    ctx.shadowBlur  = glow;
+    ctx.strokeStyle = colour;
+    for (let i = 0; i < 3; i++) {
+        const rr = r * (1 - i * 0.28);
+        const a0 = spin * (1 + i * 0.9) + i * 2.1;
+        ctx.globalAlpha = (0.75 - i * 0.13) * a;
+        ctx.lineWidth = 2 - i * 0.4;
+        ctx.beginPath();
+        ctx.arc(0, 0, rr, a0, a0 + Math.PI * 1.35);
+        ctx.stroke();
+    }
+
+    // Four short spokes being pulled in, angled with the spin.
+    ctx.globalAlpha = 0.35 * a;
+    ctx.lineWidth = 1;
+    for (let k = 0; k < 4; k++) {
+        const ang = spin * 0.6 + k * Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(ang) * r, Math.sin(ang) * r);
+        ctx.lineTo(Math.cos(ang) * r * 0.45, Math.sin(ang) * r * 0.45);
+        ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+}
+
+// The wall face's basis, per the projection: one tile along the wall moves
+// (TILE_W, TILE_H) on screen, and up the wall is straight up. Normalised so a
+// radius is a radius.
+const WALL_AXIS_LEN = Math.hypot(TILE_W, TILE_H);
+const WALL_UX = TILE_W / WALL_AXIS_LEN, WALL_UY = TILE_H / WALL_AXIS_LEN;
+
+// The wall nest's vortex, in the WALL plane.
+//
+// Called from both nest states in render's sorted pass — live and collapsed —
+// so the wall-face geometry is derived once here rather than recomputed at each
+// site. `px, py` is the nest tile's screen anchor, at (obj.x, -1); the face it
+// stands in spans four tiles from (obj.x-1, -2).
+const NEST_WALL_H = 110;
+function drawNestWallVortex(px, py, r, colour, spin, glow, alpha) {
+    const sW1x = px, sW1y = py - 60, numT = 4;
+    const blx = sW1x - TILE_W,            bly = sW1y + TILE_H;
+    const brx = sW1x + (numT - 1) * TILE_W, bry = sW1y + (numT + 1) * TILE_H;
+    const cx = (blx + brx) / 2, cy = (bly + bry) / 2 - NEST_WALL_H * 0.5;
+    ctx.save();
+    ctx.transform(WALL_UX, WALL_UY, 0, -1, cx, cy);
+    drawVortexSwirl(r, colour, spin, glow, alpha);
+    ctx.restore();
+}
+
 function drawCapturableNode(tile, px, py) {
     const captured = tile.captured;
     const progress = tile.captureProgress || 0;
@@ -1700,57 +1777,18 @@ function drawCapturableNode(tile, px, py) {
         //
         // The node was always "predatorOwned: true — starts under predator
         // control"; it is now what that ownership means, a hole predators come
-        // out of. Sealing it is the capture that already existed, so the two
-        // mechanics are one: stand on it to shut the spawner.
-        //
-        // Drawn in the isometric floor plane, so every ring is squashed to
-        // TILE_H/TILE_W. Rotation comes from moving each ring's start angle
-        // rather than rotating the ellipse itself, which would tip it out of
-        // the plane.
-        const open   = !captured;
-        const col    = open ? '#ff8800' : '#00ccff';
-        const spin   = open ? frame * 0.035 + tile.x : 0;
-        const RX     = 23, SQUASH = TILE_H / TILE_W;   // a little under half a tile
+        // out of. Sealing it is the capture that already existed.
+        const open = !captured;
+        const col  = open ? '#ff8800' : '#00ccff';
+        const spin = open ? frame * 0.035 + tile.x : 0;
+        const RX   = 23;                       // a little under half a tile
         ctx.save();
+        // The FLOOR plane: flat, squashed to the isometric ratio.
+        ctx.transform(1, 0, 0, TILE_H / TILE_W, cx, cy);
+        drawVortexSwirl(RX, col, spin, open ? 8 : 4, open ? 1 : 0.55);
+        ctx.restore();
 
-        // The throat: a dark hole, darkest at the centre.
-        const g = ctx.createRadialGradient(cx, cy, 1, cx, cy, RX);
-        g.addColorStop(0, open ? 'rgba(12,4,0,0.95)' : 'rgba(0,10,18,0.9)');
-        g.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, RX, RX * SQUASH, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Three swirl arcs, each a partial ring turning at its own rate. The
-        // gap in each arc is what makes it read as drawn inward rather than as
-        // concentric circles.
-        ctx.shadowColor = col;
-        ctx.shadowBlur  = open ? 8 : 4;
-        ctx.strokeStyle = col;
-        for (let r = 0; r < 3; r++) {
-            const rx = RX * (1 - r * 0.28);
-            const a0 = spin * (1 + r * 0.9) + r * 2.1;
-            ctx.globalAlpha = (open ? 0.75 : 0.4) - r * 0.13;
-            ctx.lineWidth = 2 - r * 0.4;
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, rx, rx * SQUASH, 0, a0, a0 + Math.PI * 1.35);
-            ctx.stroke();
-        }
-
-        // Four short spokes being pulled in, angled with the spin.
-        ctx.globalAlpha = open ? 0.35 : 0.15;
-        ctx.lineWidth = 1;
-        for (let k = 0; k < 4; k++) {
-            const a = spin * 0.6 + k * Math.PI / 2;
-            ctx.beginPath();
-            ctx.moveTo(cx + Math.cos(a) * RX, cy + Math.sin(a) * RX * SQUASH);
-            ctx.lineTo(cx + Math.cos(a) * RX * 0.45, cy + Math.sin(a) * RX * 0.45 * SQUASH);
-            ctx.stroke();
-        }
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-
+        ctx.save();
         // Capture progress bar
         if (open && progress > 0) {
             ctx.fillStyle = '#000'; ctx.fillRect(cx - 12, cy - 26, 24, 4);

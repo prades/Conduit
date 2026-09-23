@@ -20,6 +20,14 @@
 //   - hunting and attacking already own the frame
 function predatorUndisturbed(pred) {
     if (!pred || pred.dead || pred.isClone || pred.team === "green") return false;
+    // A predator that HATCHED from a cocoon never gardens. This is the loop
+    // that ran away: a predator converts a pylon, the pylon gets a cocoon, the
+    // cocoon hatches predators, and those convert more pylons. Measured at
+    // wave 8 after one minute of neglect, 34 of 42 predators on the map had
+    // come out of cocoons rather than out of the zones. Cutting this one edge
+    // takes the gardening population from the whole swarm back to what the
+    // zones themselves spawn.
+    if (pred.fromCocoon) return false;
     if (typeof alertActive !== "undefined" && alertActive) return false;
     if (pred.provoked) return false;
     if (pred.state === "attack" || pred.state === "hunt" || pred.state === "crawl_in") return false;
@@ -30,7 +38,11 @@ function predatorUndisturbed(pred) {
 // ── Tuning ────────────────────────────────────────────────
 const INFEST_SEEK_RANGE    = 14;    // how far a predator will walk to find a pylon
 const INFEST_REACH         = 0.95;  // close enough to start working on it
-const INFEST_RATE          = 0.0022;// per frame in contact — about 7.5s to convert
+// Per frame in contact. Was 0.0022 — 7.5 seconds — which let a dozen
+// predators strip a network inside a minute with no time to notice. At 25
+// seconds a conversion is something you can see starting and interrupt, and
+// INFEST_DECAY below is six times faster, so interrupting genuinely saves it.
+const INFEST_RATE          = 0.00067;// per frame in contact — about 25s to convert
 const INFEST_DECAY         = 0.004; // per frame once nobody is working on it
 const INFEST_RESCAN_FRAMES = 45;    // how often a predator looks for a new target
 
@@ -43,6 +55,10 @@ const COCOON_SPAN_MAX      = 3;     // swells to 3x3 and stops
 const COCOON_SWELL_FRAMES  = 420;   // 7s before it widens
 const COCOON_SPAWN_FRAMES  = 900;   // one hatch every 15s while it has room
 const COCOON_SPAWN_CAP     = 3;     // live spawns a single cocoon will keep out
+// And a LIFETIME total. A cocoon used to refill its three live spawns for
+// ever, so an unattended site was an endless tap; now it goes inert after this
+// many and stops being a reason to hurry.
+const COCOON_HATCH_LIMIT   = 4;
 
 // The toxin is NOT automatic. It is the enhancement a cocoon inherits from
 // whatever spun it, and only the venomous species carry it — spiders (spinneret
@@ -102,7 +118,13 @@ function infestTick(pred) {
     if (!t) return false;   // nothing to do — fall through to ordinary wandering
 
     const dx = t.x - pred.x, dy = t.y - pred.y;
-    const dist = Math.hypot(dx, dy) || 1;
+    // NOT `|| 1`. That guard was there to avoid dividing by zero, but zero is
+    // falsy, so a predator standing exactly on the pylon got dist = 1, which is
+    // past INFEST_REACH — it took the walk branch, moved nowhere (dx/dist is 0)
+    // and never converted. A deadlock at distance zero. The division only
+    // happens inside the branch below, which needs dist > INFEST_REACH, so it
+    // cannot divide by zero anyway.
+    const dist = Math.hypot(dx, dy);
     if (dist > INFEST_REACH) {
         pred.x += (dx / dist) * pred.moveSpeed * 0.8;   // an unhurried walk
         pred.y += (dy / dist) * pred.moveSpeed * 0.8;
@@ -164,6 +186,17 @@ function seedNestNear(t, pred) {
     for (const obj of world) {
         if (obj.nest && obj.nestHealth > 0 && Math.hypot(obj.x - t.x, obj.y - t.y) < 4) return null;
     }
+    // And at most ONE grown nest per zone, on top of whatever the zone was
+    // generated with. The four-tile guard above only stops them touching:
+    // measured at wave 8, zones 1, 2 and 4 each ended up with two, spread far
+    // enough apart to satisfy it. A zone is the unit the player thinks in, so
+    // it is the unit the cap uses.
+    const zone = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(t.x)) : -1;
+    for (const obj of world) {
+        if (!obj._infestNest || !obj.nest || obj.nestHealth <= 0) continue;
+        const oz = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(obj.x)) : -2;
+        if (oz === zone) return null;
+    }
     // Ordered by where the tile lands on screen. Depth here is x+y: a bigger
     // sum draws lower and in front. The first choice used to be (x, y-1),
     // which is a SMALLER sum — so the nest appeared a row above the pylon it
@@ -222,6 +255,7 @@ function seedCocoon(t, pred) {
         enhancement: cocoonEnhancement(species),
         swellTimer: COCOON_SWELL_FRAMES,
         spawnTimer: COCOON_SPAWN_FRAMES,
+        hatchesLeft: COCOON_HATCH_LIMIT,
         spawned: [],
         nest: t._pendingNest || null,
         pulse: Math.random() * Math.PI * 2,
@@ -290,6 +324,9 @@ function _swellCocoon(m) {
 
 // Hatch one of the species that spun this cocoon.
 function _hatchFromCocoon(m) {
+    // Spent cocoons are inert. The live cap below limits how many are out at
+    // once; this limits how many a single site ever produces.
+    if (!(m.hatchesLeft > 0)) return;
     m.spawned = m.spawned.filter(p => p && !p.dead);
     if (m.spawned.length >= COCOON_SPAWN_CAP) return;
     if (typeof Predator === "undefined" || typeof SPECIES === "undefined") return;
@@ -322,6 +359,7 @@ function _hatchFromCocoon(m) {
     if (typeof initAbility === "function") initAbility(p);
     actors.push(p);
     m.spawned.push(p);
+    m.hatchesLeft--;
     elementEffects.push({ type: "impact", x: sx, y: sy, color: m.colour, radius: 0.5, life: 22 });
 }
 
@@ -537,6 +575,7 @@ function serialiseCocoons() {
         species: m.species, className: m.className, colour: m.colour,
         span: m.span, enhancement: m.enhancement,
         swellTimer: m.swellTimer, spawnTimer: m.spawnTimer,
+        hatchesLeft: m.hatchesLeft,
         // Scour progress, so a refresh does not undo a worker's shift.
         shellBurn: m.shellBurn || 0, puddleBurn: m.puddleBurn || 0,
         nest: m.nest ? [m.nest.x, m.nest.y] : null,
@@ -565,6 +604,11 @@ function restoreCocoons(data) {
             enhancement: d.enhancement !== undefined ? d.enhancement : cocoonEnhancement(d.species || "ant"),
             swellTimer: d.swellTimer || COCOON_SWELL_FRAMES,
             spawnTimer: d.spawnTimer || COCOON_SPAWN_FRAMES,
+            // A save written before cocoons burned out carries no count. It
+            // gets a fresh allowance rather than an unlimited one.
+            hatchesLeft: Number.isFinite(d.hatchesLeft)
+                ? Math.max(0, Math.min(COCOON_HATCH_LIMIT, d.hatchesLeft))
+                : COCOON_HATCH_LIMIT,
             shellBurn: Number.isFinite(d.shellBurn) ? Math.min(1, Math.max(0, d.shellBurn)) : 0,
             puddleBurn: Number.isFinite(d.puddleBurn) ? Math.min(1, Math.max(0, d.puddleBurn)) : 0,
             spawned: [],
@@ -789,7 +833,12 @@ function _drawOneCocoon(m, sx, sy) {
         // a structure big enough to hide creatures behind.
         const sacW = COCOON_SAC_W + (span - COCOON_SPAN_MIN) * 3;
         const sacH = COCOON_SAC_H + (span - COCOON_SPAN_MIN) * 2;
-        _drawCocoonSac(sx, sy, sacW, sacH, m.colour, breathe, 3);
+        // A spent cocoon goes grey and stops breathing. Leaving it looking
+        // identical to a live one would make "this site is finished"
+        // unreadable, which is most of the value of it burning out.
+        const spent = !(m.hatchesLeft > 0);
+        _drawCocoonSac(sx, sy, sacW, sacH, spent ? "#4a4a52" : m.colour,
+                       spent ? 0 : breathe, 3);
 
         // Hairline anchor threads out to the footprint's tiles, so the extent
         // is legible without painting anything on the floor.

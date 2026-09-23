@@ -101,6 +101,7 @@ async function ready() {
     const A2 = await ready();   // the art, sealed
     const A3 = await ready();   // the art, mid-capture
     const A4 = await ready();   // the art, a later frame (for the spin)
+    const A5 = await ready();   // the wall nest, through the real draw pass
 
     // ─────────────────────────────────────────────────────
     group('it is the orange thing in the middle');
@@ -253,44 +254,104 @@ async function ready() {
     const artOpen    = capture(A1, { captured: false, captureProgress: 0   }, 300);
     const artSealed  = capture(A2, { captured: true,  captureProgress: 100 }, 300);
     const artOpenLater = capture(A4, { captured: false, captureProgress: 0 }, 340);
+    // The wall nest, drawn through the real per-tile pass in game.js.
+    // Called directly, the way the floor node is. Capturing a whole frame and
+    // sifting it does not work: the tile pass sets up its own wall transforms,
+    // and the count would be the frame's 8,000 operations rather than the
+    // nest's — which is how the first version of this both missed the vortex
+    // and reported it as costing 8,256 operations.
+    const artWall = (() => {
+        A5.calls.length = 0;
+        A5.run(`drawNestWallVortex(400, 300, 40, '#ff5522', 1.2, 10, 1);`);
+        return A5.calls.slice();
+    })();
     const artSealedLater = capture(A2, { captured: true, captureProgress: 100 }, 340);
 
     check('it is drawn IN the floor, not standing on it', () => {
         // The capacitor cap was a 20px-tall cylinder with a top ellipse 28px
-        // above the tile. A vortex is a hole: everything sits within a few
-        // pixels of the tile centre, and nothing is a body rectangle.
-        const rects = artOpen.filter(c => c.op === 'fillRect');
-        // The only rects allowed are the capture progress bar, which is absent
-        // at zero progress.
-        same(rects.length, 0, 'something is still drawing a solid body');
-        const ellipses = artOpen.filter(c => c.op === 'ellipse');
-        ok(ellipses.length >= 3, 'a vortex should be several rings, got ' + ellipses.length);
-        // Every ring centred on the tile centre we passed in (400, 330).
-        for (const e of ellipses) {
-            same(e.args[0], 400, 'a ring is off the tile centre in x');
-            same(e.args[1], 330, 'a ring is off the tile centre in y');
+        // above the tile. A vortex is a hole: rings, no solid body.
+        same(artOpen.filter(c => c.op === 'fillRect').length, 0,
+             'something is still drawing a solid body');
+        const arcs = artOpen.filter(c => c.op === 'arc');
+        ok(arcs.length >= 4, 'a vortex should be a throat and several rings, got ' + arcs.length);
+        // Drawn in LOCAL space — the plane is in the transform, so every ring
+        // is centred on the origin.
+        for (const a of arcs) {
+            same(a.args[0], 0, 'a ring is not centred in the local plane');
+            same(a.args[1], 0, 'a ring is not centred in the local plane');
+            ok(a.args[2] <= 30, `a ring of radius ${a.args[2]} is wider than half a tile`);
         }
     });
 
-    check('the rings lie in the isometric plane', () => {
-        // A circle on an isometric floor is squashed by TILE_H/TILE_W. Drawing
-        // them round would make the vortex look like a sticker facing the
-        // camera rather than a hole in the ground.
+    check('the floor vortex lies in the isometric floor plane', () => {
+        // The plane is now a matrix rather than a squashed ellipse, which is
+        // what lets the wall nest reuse the same swirl. A floor circle is
+        // squashed by TILE_H/TILE_W; drawn round it would look like a sticker
+        // facing the camera rather than a hole in the ground.
         const squash = E.run('TILE_H / TILE_W');
-        for (const e of artOpen.filter(c => c.op === 'ellipse')) {
-            const [, , rx, ry] = e.args;
-            ok(Math.abs(ry / rx - squash) < 0.01,
-               `a ring is ${(ry / rx).toFixed(3)} tall where the floor plane is ${squash}`);
-            // "A LITTLE vortex": under half a tile across.
-            ok(rx <= 30, `a ring of radius ${rx} is wider than half a tile`);
-        }
+        const tf = artOpen.filter(c => c.op === 'transform');
+        ok(tf.length >= 1, 'the vortex sets up no plane at all');
+        const [a, b, c, d] = tf[0].args;
+        same(a, 1, 'the floor plane should not scale along x');
+        same(b, 0, 'the floor plane should not shear');
+        same(c, 0, 'the floor plane should not shear');
+        ok(Math.abs(d - squash) < 1e-9,
+           `the floor plane is ${d} tall where the projection is ${squash}`);
+    });
+
+    check('THE ASK: the wall nest uses the same swirl on a DIFFERENT axis', () => {
+        // "I want the wall nest to look like that vortex... but on a different
+        // axis." The wall face is a shear: one tile along it moves
+        // (TILE_W, TILE_H) while up the wall is straight up, and those two are
+        // not perpendicular — so it cannot be an ellipse rotation, and it must
+        // not be the floor plane either.
+        const planes = artWall.filter(c => c.op === 'transform').map(c => c.args.slice(0, 4));
+        ok(planes.length >= 1, 'the wall nest sets up no plane');
+        const len = E.run('Math.hypot(TILE_W, TILE_H)');
+        const ux = E.run('TILE_W') / len, uy = E.run('TILE_H') / len;
+        const wall = planes.find(pl => Math.abs(pl[0] - ux) < 1e-6 && Math.abs(pl[1] - uy) < 1e-6);
+        ok(!!wall, 'no plane runs along the wall face: ' + JSON.stringify(planes));
+        same(wall[2], 0, 'up the wall should not lean sideways');
+        same(wall[3], -1, 'up the wall should be straight up');
+        // And it is NOT the floor plane — that is the whole ask.
+        const floorPlane = artOpen.filter(c => c.op === 'transform')[0].args.slice(0, 4);
+        ok(JSON.stringify(wall) !== JSON.stringify(floorPlane),
+           'the wall nest is drawn in the same plane as the floor node');
+        // Same swirl, so the same rings come out of it.
+        ok(artWall.filter(c => c.op === 'arc').length >= 4, 'the wall nest draws no rings');
+    });
+
+    check('the honeycomb is gone, and with it ~800 operations a frame', () => {
+        // The hex grid was about 88 hexes of 9 operations each, for one nest.
+        ok(!/Honeycomb hex grid/.test(SRC.game), 'the honeycomb is still being drawn');
+        ok(!/hexR\s*=\s*12/.test(SRC.game), 'the hex geometry is still there');
+        ok(/drawNestWallVortex/.test(SRC.game), 'the wall nest does not use the shared swirl');
+        ok(artWall.length < 120, 'the wall nest costs ' + artWall.length + ' operations');
+    });
+
+    check('one swirl, not two', () => {
+        // Two implementations of the same vortex would be free to drift apart.
+        // The floor node calls the swirl directly; the wall nest goes through
+        // drawNestWallVortex, which owns the wall-face geometry so that it is
+        // derived once rather than at each of the two nest states.
+        same((SRC.draw.match(/function drawVortexSwirl/g) || []).length, 1,
+             'the swirl is defined more than once');
+        const uses = (SRC.draw.match(/drawVortexSwirl\(/g) || []).length;
+        ok(uses >= 3, 'the swirl should be called by both the floor and the wall, got ' + uses);
+        same((SRC.draw.match(/function drawNestWallVortex/g) || []).length, 1,
+             'the wall-face wrapper is defined more than once');
+        // Both nest states go through the wrapper: live and collapsed.
+        ok((SRC.game.match(/drawNestWallVortex\(/g) || []).length >= 2,
+           'only one of the two nest states uses the wall vortex');
+        // And game.js no longer computes the wall plane itself.
+        ok(!/WALL_UX/.test(SRC.game), 'game.js still sets up the wall plane by hand');
     });
 
     check('it turns while it is open, and stops when sealed', () => {
         // Compared ACROSS FRAMES, not against zero: the rings have static
         // per-ring offsets even when still, so "every start angle is 0" was
         // the wrong question and failed on a correct implementation.
-        const angles = a => a.filter(c => c.op === 'ellipse').map(c => c.args[5]);
+        const angles = a => a.filter(c => c.op === 'arc').map(c => c.args[3]);
         const o1 = angles(artOpen), o2 = angles(artOpenLater);
         same(o1.length, o2.length, 'fixture: the same rings should be drawn both frames');
         ok(o1.some((v, i) => v !== o2[i]), 'an open vortex should turn between frames');

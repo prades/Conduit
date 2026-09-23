@@ -1148,6 +1148,207 @@ check('a change of scene clears it', () => {
        'half-finished conversions survive a change of scene');
 });
 
+// One converted pylon and its cocoon. Used by the taming checks, which are
+// about the cocoon rather than the nest beside it.
+function infestOne(env, x, y, species) {
+    board(env, x - 4, x + 6, 0, 4);
+    const t = greenPylon(env, x, y);
+    env.run('convertPylonToRed')(t, spinner(species || 'ant', 'striker'));
+    const m = env.run('cocoons').find(c => c.anchors.includes(t));
+    ok(!!m, 'fixture: conversion should have spun a cocoon');
+    return { t, m };
+}
+
+// ─────────────────────────────────────────────────────────
+group('taming it: the runaway loop');
+
+check('the index documents all four limits', () => {
+    const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+    ok(/never gardens/i.test(HTML), 'the index does not say hatchlings cannot convert');
+    ok(/one grown nest per zone/i.test(HTML), 'nor the per-zone cap');
+    ok(/burns out/i.test(HTML), 'nor that cocoons go inert');
+    const lim = constant('COCOON_HATCH_LIMIT');
+    ok(new RegExp('>' + lim + '</span> hatchlings').test(HTML),
+       'the documented hatch limit does not match COCOON_HATCH_LIMIT (' + lim + ')');
+    // And the conversion time in the docs must match the constant.
+    const secs = Math.round(1 / constant('INFEST_RATE') / 60);
+    ok(new RegExp('>' + secs + ' seconds<').test(HTML),
+       'the documented conversion time does not match INFEST_RATE (' + secs + 's)');
+});
+
+check('the index describes the wall nest as a vortex', () => {
+    const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+    ok(/vortex in the back wall/i.test(HTML), 'the wall nest is not described as a vortex');
+    ok(/wall plane/i.test(HTML), 'it does not say the plane is what differs');
+    ok(!/honeycomb/i.test(HTML), 'the index still describes a honeycomb');
+});
+
+// THE REPORTED CASE: "it gets crazy hectic real fast when they start laying
+// nests everywhere."
+//
+// Measured at wave 8, one minute of leaving pylons alone: 11 of 27 pylons lost,
+// 7 grown nests on top of the 6 the zones generate, 10 cocoons, 31 predators —
+// and 34 of the eventual 42 predators had come OUT OF COCOONS rather than out
+// of the zones. That is the loop: convert a pylon, get a cocoon, the cocoon
+// hatches predators, they convert more pylons.
+//
+// Four levers, all four chosen: hatchlings do not garden, one grown nest per
+// zone, conversion takes 25s instead of 7.5s, and a cocoon goes inert after a
+// lifetime total of hatches.
+
+check('THE LOOP: a predator hatched from a cocoon never gardens', () => {
+    const env = makeEnv();
+    const p = mkPred(env, 0, 2);
+    same(env.run('predatorUndisturbed')(p), true, 'fixture: a quiet zone predator gardens');
+    p.fromCocoon = true;
+    same(env.run('predatorUndisturbed')(p), false, 'a hatchling must not garden');
+});
+
+check('so a hatchling cannot convert a pylon either', () => {
+    // The gate is one function, so this follows — but it is the behaviour that
+    // matters, and infestTick is where it bites.
+    const env = makeEnv();
+    board(env, 0, 8, 0, 4);
+    const t = greenPylon(env, 3, 2);
+    const p = mkPred(env, 3, 2);
+    p.fromCocoon = true;
+    same(env.run('infestTick')(p), false, 'a hatchling should not claim the frame to garden');
+    tick(env, 200);
+    same(t.pillarTeam, 'green', 'and the pylon should still be yours');
+});
+
+check('a cocoon-hatched predator IS flagged as one', () => {
+    // The whole lever rests on this flag being set where cocoons hatch.
+    ok(/p\.fromCocoon = true/.test(INFEST), '_hatchFromCocoon no longer marks its spawn');
+});
+
+check('THE RATE: a pylon takes about 25 seconds, not 7.5', () => {
+    const env = makeEnv();
+    board(env, 0, 8, 0, 4);
+    const t = greenPylon(env, 3, 2);
+    const p = mkPred(env, 3, 2);
+    let frames = 0;
+    while (t.pillarTeam === 'green' && frames < 60 * 60) {
+        env.sandbox.frame++;
+        env.run('infestTick')(p);
+        frames++;
+    }
+    ok(t.pillarTeam === 'red', 'it should still convert eventually');
+    const secs = frames / 60;
+    ok(secs > 18, `a conversion took ${secs.toFixed(1)}s — fast enough to strip a network unseen`);
+    ok(secs < 35, `a conversion took ${secs.toFixed(1)}s, which is no longer a threat`);
+});
+
+check('a predator standing exactly on the pylon still converts it', () => {
+    // Found by the rate check above, which put the predator on the tile.
+    // `Math.hypot(dx,dy) || 1` made dist 1 at distance ZERO, because zero is
+    // falsy — past INFEST_REACH, so it took the walk branch, moved nowhere
+    // (dx/dist is 0) and never converted. A deadlock. Unreachable in play,
+    // where predators walk in and land short of the reach, but the guard was
+    // wrong and the next caller would have found it the hard way.
+    const env = makeEnv();
+    board(env, 0, 8, 0, 4);
+    const t = greenPylon(env, 3, 2);
+    const p = mkPred(env, 3, 2);
+    same(p.x, t.x, 'fixture: exactly on the tile');
+    same(p.y, t.y, 'fixture: exactly on the tile');
+    same(env.run('infestTick')(p), true, 'it should claim the frame to work, not to walk');
+    ok((t.convertProgress || 0) > 0, 'and make progress from a standing start');
+});
+
+check('interrupting still saves it, and faster than it is taken', () => {
+    // The decay has to outrun the rate or interrupting would be pointless.
+    ok(constant('INFEST_DECAY') > constant('INFEST_RATE') * 3,
+       'decay should comfortably outrun conversion');
+});
+
+check('THE CAP: one grown nest per zone', () => {
+    const env = makeEnv();
+    board(env, 0, 14, 0, 4);
+    const a = greenPylon(env, 3, 2);
+    const b = greenPylon(env, 11, 2);      // same zone (0..14), clear of the 4-tile guard
+    convert(env, a, spinner('ant', 'striker'));
+    const first = env.sandbox.world.filter(t => t._infestNest && t.nest).length;
+    same(first, 1, 'fixture: the first conversion should grow one');
+    convert(env, b, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
+         'a second conversion in the same zone should grow no second nest');
+});
+
+check('but a different zone gets its own', () => {
+    const env = makeEnv();
+    board(env, 0, 40, 0, 4);
+    const a = greenPylon(env, 3, 2);       // zone 0
+    const b = greenPylon(env, 20, 2);      // zone 1
+    convert(env, a, spinner('ant', 'striker'));
+    convert(env, b, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
+         'the cap is per zone, not per map');
+});
+
+check('the cap counts only GROWN nests, not the zone\'s own', () => {
+    // A zone is generated with a wall nest. If that counted, a zone could never
+    // grow one at all and the mechanic would be dead.
+    const env = makeEnv();
+    board(env, 0, 14, 0, 4);
+    addTile(env, { x: 6, y: -1, type: 'floor', nest: true, nestHealth: 200,
+                   nestMaxHealth: 200, nestZone: 0 });
+    const t = greenPylon(env, 11, 2);
+    convert(env, t, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(x => x._infestNest && x.nest).length, 1,
+         'a zone wall nest should not block the grown one');
+});
+
+check('THE TAP: a cocoon goes inert after a lifetime of hatches', () => {
+    const env = makeEnv();
+    const { m } = infestOne(env, 3, 2);
+    const limit = constant('COCOON_HATCH_LIMIT');
+    same(m.hatchesLeft, limit, 'a fresh cocoon should have its full allowance');
+    // Hatch it dry, clearing the live cap between each so only the lifetime
+    // total is under test.
+    let hatched = 0;
+    for (let i = 0; i < limit + 4; i++) {
+        env.sandbox.actors.length = 0;
+        m.spawned = [];
+        const before = env.sandbox.actors.length;
+        env.run('_hatchFromCocoon')(m);
+        if (env.sandbox.actors.length > before) hatched++;
+    }
+    same(hatched, limit, `it should hatch exactly ${limit} in its life, got ${hatched}`);
+    same(m.hatchesLeft, 0, 'and be spent');
+});
+
+check('a spent cocoon stops, and looks stopped', () => {
+    // Identical-looking live and spent cocoons would make "this site is
+    // finished" unreadable, which is most of the value of it burning out.
+    const env = makeEnv();
+    const { m, t } = infestOne(env, 3, 2);
+    m.hatchesLeft = 0;
+    env.sandbox.actors.length = 0;
+    env.run('_hatchFromCocoon')(m);
+    same(env.sandbox.actors.length, 0, 'a spent cocoon should hatch nothing');
+    env.calls.length = 0;
+    drawTile(env, t);
+    const greys = env.calls.filter(c => c.op === 'set:fillStyle' && /#4a4a52/i.test(String(c.args[0])));
+    ok(greys.length > 0, 'a spent cocoon should go grey rather than keep its species colour');
+});
+
+check('the allowance survives a refresh, and an old save is not immortal', () => {
+    const env = makeEnv();
+    const { m } = infestOne(env, 3, 2);
+    m.hatchesLeft = 1;
+    const blob = JSON.parse(JSON.stringify(env.run('serialiseCocoons')()));
+    same(blob[0].hatchesLeft, 1, 'the count is not saved');
+    env.run('restoreCocoons')(blob);
+    same(env.run('cocoons')[0].hatchesLeft, 1, 'it should come back where it was');
+    // A save written before cocoons burned out carries no count at all.
+    delete blob[0].hatchesLeft;
+    env.run('restoreCocoons')(blob);
+    same(env.run('cocoons')[0].hatchesLeft, constant('COCOON_HATCH_LIMIT'),
+         'an older save should get a fresh allowance, not an unlimited one');
+});
+
+// ─────────────────────────────────────────────────────────
 check('nothing is drawn when there is no infestation', () => {
     const env = makeEnv();
     board(env, -2, 4, 0, 4);

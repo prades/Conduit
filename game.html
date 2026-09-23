@@ -965,8 +965,8 @@
 
       <div class="ctrl-title">ZONE OBJECTS</div>
 
-      <div class="cm-elem-head" style="color:#f55">▣ NEST</div>
-      <div class="ctrl-row cm-dim">Enemy spawn structure at the center of each forward zone (y=2). <span class="cm-stat">200 HP</span>. Spawns waves of enemies each night.</div>
+      <div class="cm-elem-head" style="color:#f55">◉ WALL NEST</div>
+      <div class="ctrl-row cm-dim">A <strong>vortex in the back wall</strong> of each forward zone — the same swirl as the floor SPAWN VORTEX, but standing in the wall plane rather than lying flat, so the two read as the same kind of thing on different surfaces. <span class="cm-stat">200 HP</span>; it dims and shrinks as you hurt it, and collapses to a dark still swirl when destroyed.</div>
       <div class="ctrl-row cm-dim"><span style="color:#ff0">Destroy</span> — Use the LEFT radial command to assign followers to attack it. Eliminating a nest stops spawns from that zone.</div>
       <div class="ctrl-row cm-dim"><span style="color:#0ff">Link to Pylon</span> — Use the RIGHT radial on an adjacent pylon, then select the nest. Enemies from that nest are routed through your pylon network. Fire meteor deals <span class="cm-stat">2× damage</span> to nests.</div>
 
@@ -977,6 +977,15 @@
       <div class="ctrl-row cm-dim" style="padding-left:16px">• <span class="cm-stat">Proximity</span> — Enemies within 6 tiles become hostile</div>
       <div class="ctrl-row cm-dim" style="padding-left:16px">• <span class="cm-stat">Zone</span> — All enemies in the same zone become hostile</div>
       <div class="ctrl-row cm-dim" style="padding-left:16px">• <span class="cm-stat">Facility</span> — All enemies on the map become hostile</div>
+
+      <div class="cm-elem-head" style="color:#f66">◈ INFESTATION — AND ITS LIMITS</div>
+      <div class="ctrl-row cm-dim">Left alone, a predator walks to a pylon of yours, chews it over to its side in about <span class="cm-stat">25 seconds</span>, and seeds a <strong>nest</strong> and a <strong>cocoon</strong> there. Interrupt it and the pylon recovers about six times faster than it was taken, so stepping in genuinely saves it.</div>
+      <div class="ctrl-row cm-dim">Four things stop that becoming a runaway:</div>
+      <div class="ctrl-row cm-dim" style="padding-left:16px">• A predator <strong>hatched from a cocoon never gardens</strong> — it hunts, but it will not convert pylons. That breaks the loop of cocoons making predators making cocoons.</div>
+      <div class="ctrl-row cm-dim" style="padding-left:16px">• At most <strong>one grown nest per zone</strong>, on top of the zone's own wall nest.</div>
+      <div class="ctrl-row cm-dim" style="padding-left:16px">• A cocoon <strong>burns out</strong> after <span class="cm-stat">4</span> hatchlings in its life. It goes grey and inert, and stops being a reason to hurry.</div>
+      <div class="ctrl-row cm-dim" style="padding-left:16px">• Conversion is slow enough to notice and reverse.</div>
+      <div class="ctrl-row cm-dim">A <span class="cm-stat">FIRE</span> follower on worker duty burns the leftovers back — see FIGHTERS &amp; WORKERS. Reclaiming the pylon clears everything anchored to it.</div>
 
       <div class="cm-elem-head" style="color:#fa0">◉ SPAWN VORTEX</div>
       <div class="ctrl-row cm-dim">The turning orange swirl in the middle of the tunnel — one per forward zone, near the front (zone start + 3 tiles), on the centre row. It is a <strong>second mouth</strong>: predators come up out of it just as they come out of the <strong>wall nest</strong>, and with both open a zone uses whichever it feels like.</div>

@@ -1683,30 +1683,18 @@ function render() {
                 const wfBR={x:sW1x+(numT-1)*TILE_W,y:sW1y+(numT+1)*TILE_H};
                 const wfTR={x:wfBR.x,y:wfBR.y-WH};
                 const wfTL={x:wfBL.x,y:wfBL.y-WH};
+                // A COLLAPSED vortex: the same swirl in the same wall plane as
+                // the live one, but dark, still and unlit. Matching the live
+                // nest matters — a destroyed nest that looked like a different
+                // kind of object would read as a different thing entirely.
                 ctx.save();
                 ctx.beginPath();
                 ctx.moveTo(wfBL.x,wfBL.y); ctx.lineTo(wfBR.x,wfBR.y);
                 ctx.lineTo(wfTR.x,wfTR.y); ctx.lineTo(wfTL.x,wfTL.y);
                 ctx.closePath();
-                // Charred dark fill
                 ctx.fillStyle="rgba(18,10,8,0.92)"; ctx.fill();
-                // Cracked hex outlines — gray/teal
-                ctx.strokeStyle=obj.connectedPylon?"rgba(0,255,200,0.45)":"rgba(55,45,40,0.7)";
-                ctx.lineWidth=1; ctx.clip();
-                const hexR=12, hexWd=hexR*Math.sqrt(3), hexRH=hexR*1.5;
-                const gridLeft=wfTL.x-hexWd, gridTop=wfTL.y-hexR;
-                const nRows=Math.ceil((WH+hexR*4)/hexRH)+1;
-                const nCols=Math.ceil((wfBR.x-wfBL.x+hexWd*2)/hexWd)+1;
-                const hexCos=[], hexSin=[];
-                for(let vi=0;vi<6;vi++){const a=Math.PI/6+vi*Math.PI/3;hexCos.push(Math.cos(a));hexSin.push(Math.sin(a));}
-                for(let row=0;row<nRows;row++) for(let col=0;col<nCols;col++){
-                    const hcx=gridLeft+col*hexWd+(row%2===0?0:hexWd*0.5), hcy=gridTop+hexR+row*hexRH;
-                    ctx.beginPath();
-                    ctx.moveTo(hcx+hexR*hexCos[0],hcy+hexR*hexSin[0]);
-                    for(let vi=1;vi<6;vi++) ctx.lineTo(hcx+hexR*hexCos[vi],hcy+hexR*hexSin[vi]);
-                    ctx.closePath(); ctx.stroke();
-                }
-                // "BROKEN" label
+                drawNestWallVortex(px, py, Math.min(WH*0.42,46)*0.5,
+                    obj.connectedPylon?"#00ffcc":"#4a3a33", 0, 0, 0.5);
                 ctx.setTransform(1,0,0,1,0,0);
                 const _bCx=(wfTL.x+wfTR.x)/2;
                 ctx.fillStyle=obj.connectedPylon?"#00ffcc":"#664433";
@@ -1767,79 +1755,18 @@ function render() {
                 const wfTR = { x: wfBR.x,                   y: wfBR.y - WH            };
                 const wfTL = { x: wfBL.x,                   y: wfBL.y - WH            };
 
-                ctx.save();
-                // Clip to parallelogram so hexes only appear on the wall face
-                ctx.beginPath();
-                ctx.moveTo(wfBL.x, wfBL.y); ctx.lineTo(wfBR.x, wfBR.y);
-                ctx.lineTo(wfTR.x, wfTR.y); ctx.lineTo(wfTL.x, wfTL.y);
-                ctx.closePath();
-                ctx.clip();
-
-                // Honeycomb hex grid (pointy-top)
-                const hexR  = 12;
-                const hexWd = hexR * Math.sqrt(3);
-                const hexRH = hexR * 1.5;
-                const gridLeft = wfTL.x - hexWd;
-                const gridTop  = wfTL.y - hexR;
-                const nRows = Math.ceil((WH + hexR * 4) / hexRH) + 1;
-                const nCols = Math.ceil((wfBR.x - wfBL.x + hexWd * 2) / hexWd) + 1;
-
-                const rc = (190 * hr) | 0;
-                const gc = (75  * hr) | 0;
-
-                // Pre-compute hex vertex offsets once — avoids 900+ trig calls/frame
-                const hexCos = [], hexSin = [];
-                for (let vi = 0; vi < 6; vi++) {
-                    const ang = Math.PI/6 + vi * Math.PI/3;
-                    hexCos.push(Math.cos(ang)); hexSin.push(Math.sin(ang));
-                }
-
-                // Flat colours computed once outside the loop (no per-cell gradient)
-                const fillCol   = `rgba(${rc*0.22|0},${gc*0.18|0},0,0.93)`;
-                const strokeCol = `rgba(${Math.min(255,(rc*1.5)|0)},${(gc*1.4)|0},0,0.75)`;
-                ctx.lineWidth = 1.5;
-
-                for (let row = 0; row < nRows; row++) {
-                    for (let col = 0; col < nCols; col++) {
-                        const hcx = gridLeft + col * hexWd + (row % 2 === 0 ? 0 : hexWd * 0.5);
-                        const hcy = gridTop + hexR + row * hexRH;
-
-                        ctx.beginPath();
-                        ctx.moveTo(hcx + hexR * hexCos[0], hcy + hexR * hexSin[0]);
-                        for (let vi = 1; vi < 6; vi++) ctx.lineTo(hcx + hexR * hexCos[vi], hcy + hexR * hexSin[vi]);
-                        ctx.closePath();
-                        ctx.fillStyle   = fillCol;
-                        ctx.fill();
-                        ctx.strokeStyle = strokeCol;
-                        ctx.stroke();
-                    }
-                }
-
-                // Depth overlay — single linear gradient over whole face (no per-cell cost)
-                const depthGrd = ctx.createLinearGradient(wfTL.x, wfTL.y, wfBL.x, wfBL.y);
-                depthGrd.addColorStop(0, 'rgba(0,0,0,0.55)');
-                depthGrd.addColorStop(0.45, 'rgba(0,0,0,0.05)');
-                depthGrd.addColorStop(1, 'rgba(0,0,0,0.38)');
-                ctx.fillStyle = depthGrd;
-                ctx.beginPath();
-                ctx.moveTo(wfBL.x, wfBL.y); ctx.lineTo(wfBR.x, wfBR.y);
-                ctx.lineTo(wfTR.x, wfTR.y); ctx.lineTo(wfTL.x, wfTL.y);
-                ctx.closePath();
-                ctx.fill();
-
-                // Pulsing amber bloom — radial gradient, NO shadowBlur
-                const bloomA = (0.10 + pulse * 0.14) * hr;
-                const bloomX = (wfBL.x + wfBR.x) * 0.5, bloomY = (wfTL.y + wfBL.y) * 0.5;
-                const bloomGrd = ctx.createRadialGradient(bloomX, bloomY, 0, bloomX, bloomY, 150);
-                bloomGrd.addColorStop(0, `rgba(255,110,0,${bloomA})`);
-                bloomGrd.addColorStop(1, 'rgba(255,60,0,0)');
-                ctx.fillStyle = bloomGrd;
-                ctx.beginPath();
-                ctx.moveTo(wfBL.x, wfBL.y); ctx.lineTo(wfBR.x, wfBR.y);
-                ctx.lineTo(wfTR.x, wfTR.y); ctx.lineTo(wfTL.x, wfTL.y);
-                ctx.closePath();
-                ctx.fill();
-                ctx.restore();
+                // The same vortex as the floor node, but standing IN THE WALL
+                // FACE rather than lying flat. That plane is a shear — one tile
+                // along the wall moves (TILE_W, TILE_H) on screen while up the
+                // wall is straight up, and those two are not perpendicular — so
+                // it is applied as a matrix rather than as a squashed ellipse.
+                //
+                // It replaces a honeycomb of ~88 hexes, which was around 800
+                // canvas operations a frame for one nest.
+                drawNestWallVortex(px, py,
+                    Math.min(WH * 0.42, 46) * (0.55 + hr * 0.45),
+                    hr > 0.35 ? '#ff5522' : '#7a2a14',
+                    obj.nestPulse * 0.03, 10 + pulse * 6, 0.65 + hr * 0.35);
 
                 // Health bar centred on the top edge of the face
                 const barCx = (wfTL.x + wfTR.x) / 2;
