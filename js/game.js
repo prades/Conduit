@@ -557,6 +557,17 @@ function rebuildPylonPairs() {
 }
 
 // ─────────────────────────────────────────────────────────
+//  DRAW DEPTH
+// ─────────────────────────────────────────────────────────
+// One place decides what draws in front of what. See the note at the sort for
+// why a wall nest is not simply x+y.
+const NEST_DRAW_BIAS = 1.01;   // just past the last wall tile of its own face
+function drawDepthOf(o) {
+    const d = o.x + o.y;
+    return (o.nest && !o._infestNest) ? d + NEST_DRAW_BIAS : d;
+}
+
+// ─────────────────────────────────────────────────────────
 //  DRAW CULLING
 // ─────────────────────────────────────────────────────────
 // Whether anything anchored at this world position can touch the screen.
@@ -1270,7 +1281,21 @@ function render() {
     actors.forEach(a=>{ if(visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });
     groundItems.forEach(g=>{ if(visibleForDraw(g.x,g.y)) drawList.push({type:'groundItem',x:g.x,y:g.y,item:g}); });
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
-    drawList.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
+    // Depth is x+y: a bigger sum draws lower and in front.
+    //
+    // A WALL NEST is the exception. Its vortex is painted across a four-tile
+    // wall face running from (x-1,-2) to (x+2,-2), but the tile it hangs on
+    // sorts at x-1 — while the deepest wall tile of its own face sorts at
+    // (x+2)+(-2) = x. So the last two wall tiles of the face were drawn AFTER
+    // the nest and painted over its right-hand side: the nest looked half sunk
+    // into the wall. Biasing it past them is enough, and is much narrower than
+    // drawing nests last would be — drawn last, a nest would paint over
+    // anything standing in front of the wall.
+    //
+    // Nothing in the tunnel is lost to the bias: the vortex sits high on the
+    // wall face, well above the y=-1 floor row, so the handful of tiles that
+    // now sort before it do not share pixels with it.
+    drawList.sort((a,b)=>drawDepthOf(a)-drawDepthOf(b));
 
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{

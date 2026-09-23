@@ -321,6 +321,62 @@ async function ready() {
         ok(artWall.filter(c => c.op === 'arc').length >= 4, 'the wall nest draws no rings');
     });
 
+    check('THE REPORTED CASE: the nest is not half sunk into the wall', () => {
+        // "The nest is halfway into the wall." Depth is x+y, and the nest tile
+        // sits at (x,-1) — depth x-1 — while its vortex is painted across a
+        // four-tile wall face reaching (x+2,-2), whose depth is x. So the last
+        // two wall tiles of its OWN face drew after it and painted over its
+        // right-hand side. Every tile of the face must now sort before it.
+        const r = E.run(`(function(){
+            const n = world.find(t => t.nest && t.nestHealth > 0 && !t._infestNest);
+            const nd = drawDepthOf(n);
+            const face = [];
+            for (let k = -1; k <= 2; k++) {
+                const w = world.find(t => t.type === 'wall_back' && t.x === n.x + k);
+                if (w) face.push({ x: w.x, d: drawDepthOf(w) });
+            }
+            return { nx: n.x, nd, face };
+        })()`);
+        ok(r.face.length >= 3, 'fixture: the wall face should have tiles, got ' + r.face.length);
+        for (const w of r.face) {
+            ok(w.d < r.nd,
+               `wall_back(${w.x}) sorts at ${w.d} which is not before the nest at ${r.nd}`);
+        }
+    });
+
+    check('the bias is only as big as it needs to be', () => {
+        // It has to exceed 1 to clear the last tile of the face. Much more than
+        // that and the nest starts overtaking things standing in the tunnel,
+        // which is the failure mode of just drawing nests last.
+        const b = E.run('NEST_DRAW_BIAS');
+        ok(b > 1, `a bias of ${b} does not clear the last wall tile of the face`);
+        ok(b < 2, `a bias of ${b} reaches past the tunnel row in front of the nest`);
+    });
+
+    check('only WALL nests are biased', () => {
+        // A grown nest stands on open floor and belongs at its own depth.
+        // Biasing it would put it in front of things it should be behind —
+        // which is the bug that made grown nests look like they floated above
+        // the pylons in the first place.
+        const r = E.run(`(function(){
+            const t = { x: 5, y: 2, nest: true, nestHealth: 200 };
+            const grown = { x: 5, y: 2, nest: true, nestHealth: 200, _infestNest: true };
+            const plain = { x: 5, y: 2 };
+            return { wall: drawDepthOf(t), grown: drawDepthOf(grown), plain: drawDepthOf(plain) };
+        })()`);
+        same(r.plain, 7, 'an ordinary tile should sort at x+y');
+        same(r.grown, 7, 'a GROWN nest should sort at x+y, unbiased');
+        ok(r.wall > 7, 'a wall nest should be biased past its face');
+    });
+
+    check('one function decides depth, and the sort uses it', () => {
+        ok(/function drawDepthOf/.test(SRC.game), 'there is no single depth rule');
+        ok(/drawList\.sort\(\(a,b\)=>drawDepthOf\(a\)-drawDepthOf\(b\)\)/.test(SRC.game),
+           'the draw list is not sorted by it');
+        ok(!/drawList\.sort\(\(a,b\)=>\(a\.x\+a\.y\)-\(b\.x\+b\.y\)\)/.test(SRC.game),
+           'the raw x+y sort is still there as well');
+    });
+
     check('the honeycomb is gone, and with it ~800 operations a frame', () => {
         // The hex grid was about 88 hexes of 9 operations each, for one nest.
         ok(!/Honeycomb hex grid/.test(SRC.game), 'the honeycomb is still being drawn');
