@@ -42,6 +42,11 @@ const TOXIN_SPECIES = JSON.parse(
 const PUDDLE_INTERVAL = constant('COCOON_PUDDLE_INTERVAL');
 const PUDDLE_DAMAGE   = constant('COCOON_PUDDLE_DAMAGE');
 const PUDDLE_COLOUR   = INFEST.match(/const COCOON_PUDDLE_COLOUR\s*=\s*"([^"]+)"/)[1];
+const NEST_COOLDOWN   = constant('NEST_GROW_COOLDOWN');
+const SETTLE_MIN      = constant('INFEST_SETTLE_MIN');
+const SETTLE_MAX      = constant('INFEST_SETTLE_MAX');
+const PACE_MIN        = constant('INFEST_PACE_MIN');
+const PACE_MAX        = constant('INFEST_PACE_MAX');
 // Half a tile is 30px; a sac should not reach much past one tile either side.
 const TILE_W_HALF_LIMIT = 40;
 
@@ -142,6 +147,14 @@ function tick(env, n, fn) {
 }
 // Straight to a converted pylon, without simulating the walk each time.
 function convert(env, t, pred) {
+    env.run('convertPylonToRed')(t, pred);
+}
+// The same, with the world-wide nest cooldown already spent — for the checks
+// that are about the per-zone CAP rather than the pacing. Without this a cap
+// check passes because the cooldown swallowed the second nest, which means it
+// would keep passing with the cap deleted.
+function convertPaced(env, t, pred) {
+    env.sandbox.frame += NEST_COOLDOWN;
     env.run('convertPylonToRed')(t, pred);
 }
 // Drive the per-tile draw the way the depth-sorted pass in game.js does: the
@@ -1162,11 +1175,17 @@ function infestOne(env, x, y, species) {
 // ─────────────────────────────────────────────────────────
 group('taming it: the runaway loop');
 
-check('the index documents all four limits', () => {
+check('the index documents every limit', () => {
     const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
     ok(/never gardens/i.test(HTML), 'the index does not say hatchlings cannot convert');
     ok(/one grown nest per zone/i.test(HTML), 'nor the per-zone cap');
     ok(/burns out/i.test(HTML), 'nor that cocoons go inert');
+    // The pacing floor and the de-synchronisation, from the constants.
+    const cool = Math.round(NEST_COOLDOWN / 60);
+    ok(new RegExp('once every <span class="cm-stat">' + cool + ' seconds').test(HTML),
+       'the documented nest cooldown does not match NEST_GROW_COOLDOWN (' + cool + 's)');
+    ok(/settle back into gardening at their own pace/i.test(HTML),
+       'nor that predators do not all resume converting together');
     const lim = constant('COCOON_HATCH_LIMIT');
     ok(new RegExp('>' + lim + '</span> hatchlings').test(HTML),
        'the documented hatch limit does not match COCOON_HATCH_LIMIT (' + lim + ')');
@@ -1174,6 +1193,19 @@ check('the index documents all four limits', () => {
     const secs = Math.round(1 / constant('INFEST_RATE') / 60);
     ok(new RegExp('>' + secs + ' seconds<').test(HTML),
        'the documented conversion time does not match INFEST_RATE (' + secs + 's)');
+});
+
+check('and it no longer claims every taken pylon grows a nest', () => {
+    // It used to say "seeds a nest and a cocoon there", which was true before
+    // the pacing floor and is not now. Same claim in the in-game codex.
+    const HTML  = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+    const CODEX = fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8');
+    ok(!/seeds a <strong>nest<\/strong> and a <strong>cocoon<\/strong>/.test(HTML),
+       'the index still promises a nest with every conversion');
+    ok(!/A taken pylon grows a nest/.test(CODEX),
+       'the codex still promises a nest with every conversion');
+    ok(/NEST_GROW_COOLDOWN/.test(CODEX),
+       'the codex should read the cooldown from the constant rather than restate it');
 });
 
 check('the index describes the wall nest as a vortex', () => {
@@ -1267,10 +1299,11 @@ check('THE CAP: one grown nest per zone', () => {
     board(env, 0, 14, 0, 4);
     const a = greenPylon(env, 3, 2);
     const b = greenPylon(env, 11, 2);      // same zone (0..14), clear of the 4-tile guard
-    convert(env, a, spinner('ant', 'striker'));
+    convertPaced(env, a, spinner('ant', 'striker'));
     const first = env.sandbox.world.filter(t => t._infestNest && t.nest).length;
     same(first, 1, 'fixture: the first conversion should grow one');
-    convert(env, b, spinner('ant', 'striker'));
+    // Paced, so the cooldown is NOT what is being measured here.
+    convertPaced(env, b, spinner('ant', 'striker'));
     same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
          'a second conversion in the same zone should grow no second nest');
 });
@@ -1280,10 +1313,182 @@ check('but a different zone gets its own', () => {
     board(env, 0, 40, 0, 4);
     const a = greenPylon(env, 3, 2);       // zone 0
     const b = greenPylon(env, 20, 2);      // zone 1
-    convert(env, a, spinner('ant', 'striker'));
-    convert(env, b, spinner('ant', 'striker'));
+    convertPaced(env, a, spinner('ant', 'striker'));
+    convertPaced(env, b, spinner('ant', 'striker'));
     same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
          'the cap is per zone, not per map');
+});
+
+// ─────────────────────────────────────────────────────────
+//  "NESTS ARE OCCURRING TOO OFTEN"
+// ─────────────────────────────────────────────────────────
+// Reported after the caps above were already in place and working — the five
+// nests measured at wave 8 really were in five different zones. The complaint
+// was not how MANY there were, it was that they all turned up at once.
+//
+// Traced with a conversion timeline. Nothing was wrong with the rate: every
+// predator started gardening on the same frame and worked at the same flat
+// rate, so they all crossed the line together. Four nests grew inside 142
+// frames, five inside ten seconds, after twenty-five seconds of nothing.
+//
+// The synchroniser is structural, not accidental: predatorUndisturbed() bails
+// out while alertActive, and alertActive is one global flag, so the frame an
+// alarm clears is the frame every wanderer in every zone resumes.
+//
+// Two fixes. Predators settle back to work at their own pace and then work at
+// their own speed; and a nest can GROW at most once every NEST_GROW_COOLDOWN
+// anywhere on the map, which bounds arrival rate rather than population.
+
+check('THE PACING: a second nest cannot grow right behind the first', () => {
+    const env = makeEnv();
+    board(env, 0, 40, 0, 4);
+    const a = greenPylon(env, 3, 2);       // zone 0
+    const b = greenPylon(env, 20, 2);      // zone 1 — the per-zone cap allows it
+    convert(env, a, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
+         'fixture: the first one should grow');
+    // Same frame, different zone, nowhere near the 4-tile guard: every other
+    // gate says yes. Only the cooldown should stop it.
+    convert(env, b, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
+         'a nest grew in the same breath as the last one');
+});
+
+check('and the pylon is still lost, and still cocooned, when it does not', () => {
+    // The cooldown must not turn into an amnesty. Losing the pylon is the
+    // consequence; the nest is the extra.
+    const env = makeEnv();
+    board(env, 0, 40, 0, 4);
+    const a = greenPylon(env, 3, 2);
+    const b = greenPylon(env, 20, 2);
+    convert(env, a, spinner('ant', 'striker'));
+    convert(env, b, spinner('ant', 'striker'));
+    same(b.pillarTeam, 'red', 'the pylon should still change hands');
+    ok(!!env.run('cocoonForAnchor')(b), 'and should still be cocooned');
+});
+
+check('once the cooldown is up, the next one grows', () => {
+    // Otherwise this is not pacing, it is a one-nest-per-game cap.
+    const env = makeEnv();
+    board(env, 0, 40, 0, 4);
+    const a = greenPylon(env, 3, 2);
+    const b = greenPylon(env, 20, 2);
+    convert(env, a, spinner('ant', 'striker'));
+    env.sandbox.frame += NEST_COOLDOWN;
+    convert(env, b, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
+         'the second should grow once the map has had a rest');
+});
+
+check('a blocked conversion does not spend the cooldown on nothing', () => {
+    // The stamp is at the point a nest is actually placed. If it were taken on
+    // entry, a conversion the per-zone cap rejected would silently push the
+    // next real nest another 45 seconds out.
+    const env = makeEnv();
+    board(env, 0, 40, 0, 4);
+    const a = greenPylon(env, 3, 2);       // zone 0
+    const b = greenPylon(env, 11, 2);      // zone 0 too — capped out
+    const c = greenPylon(env, 20, 2);      // zone 1
+    convert(env, a, spinner('ant', 'striker'));
+    env.sandbox.frame += NEST_COOLDOWN;
+    convert(env, b, spinner('ant', 'striker'));   // rejected by the zone cap
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
+         'fixture: the zone cap should have refused that one');
+    convert(env, c, spinner('ant', 'striker'));   // same frame, fresh zone
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
+         'the refused conversion consumed the cooldown');
+});
+
+check('THE SYNCHRONISER: a disturbed predator has to settle before gardening', () => {
+    const env = makeEnv();
+    board(env, 0, 8, 0, 4);
+    const t = greenPylon(env, 3, 2);
+    const p = mkPred(env, 3, 2);
+    // Disturb it the way an alarm does, tick once, then let it go quiet again.
+    env.sandbox.alertActive = true;
+    same(env.run('infestTick')(p), false, 'fixture: it should not garden under alarm');
+    env.sandbox.alertActive = false;
+    ok(p._infestSettle > 0, 'it should have been given a settle time');
+    same(env.run('infestTick')(p), false, 'it should not resume on the very next frame');
+    same(t.convertProgress || 0, 0, 'and should have made no progress');
+});
+
+check('it does resume, once it has settled', () => {
+    const env = makeEnv();
+    board(env, 0, 8, 0, 4);
+    const t = greenPylon(env, 3, 2);
+    const p = mkPred(env, 3, 2);
+    env.sandbox.alertActive = true;
+    env.run('infestTick')(p);
+    env.sandbox.alertActive = false;
+    let frames = 0;
+    while ((t.convertProgress || 0) === 0 && frames < SETTLE_MAX + 120) {
+        env.sandbox.frame++; env.run('infestTick')(p); frames++;
+    }
+    ok((t.convertProgress || 0) > 0, 'it never went back to work at all');
+    ok(frames >= SETTLE_MIN, `it waited only ${frames} frames, under INFEST_SETTLE_MIN`);
+    ok(frames <= SETTLE_MAX + 4, `it waited ${frames} frames, past INFEST_SETTLE_MAX`);
+});
+
+check('and two predators do not settle on the same frame', () => {
+    // The whole point. A settle time that were constant would pass every check
+    // above and change nothing about the burst.
+    const env = makeEnv();
+    board(env, 0, 8, 0, 4);
+    const waits = new Set();
+    for (let i = 0; i < 40; i++) {
+        const p = mkPred(env, 3, 2);
+        env.sandbox.alertActive = true;
+        env.run('infestTick')(p);
+        env.sandbox.alertActive = false;
+        waits.add(p._infestSettle);
+    }
+    ok(waits.size > 20, `40 predators produced only ${waits.size} distinct settle times`);
+});
+
+check('nor at the same speed', () => {
+    const env = makeEnv();
+    const paces = new Set();
+    for (let i = 0; i < 40; i++) {
+        const p = mkPred(env, 3, 2);
+        env.run('rollInfestSettle')(p);
+        ok(p._infestPace >= PACE_MIN && p._infestPace <= PACE_MAX,
+           `pace ${p._infestPace} is outside the declared range`);
+        paces.add(p._infestPace);
+    }
+    ok(paces.size > 20, `40 predators produced only ${paces.size} distinct paces`);
+});
+
+check('the pace range is centred, so 25 seconds is still the average', () => {
+    // tests further up assert the GAME INDEX's documented conversion time
+    // against 1/INFEST_RATE. A lopsided pace range would quietly make the
+    // documentation wrong without failing that check.
+    const mid = (PACE_MIN + PACE_MAX) / 2;
+    ok(Math.abs(mid - 1) < 0.001, `the pace range averages ${mid}, not 1`);
+});
+
+check('a predator with no history gardens straight away', () => {
+    // The settle is rolled on disturbance and at spawn, never lazily on first
+    // use. A lone wanderer that has never been bothered should not sit idle,
+    // and the reach and rate checks above depend on it.
+    const env = makeEnv();
+    board(env, 0, 8, 0, 4);
+    const t = greenPylon(env, 3, 2);
+    const p = mkPred(env, 3, 2);
+    same(p._infestSettle, undefined, 'fixture: no settle history');
+    same(env.run('infestTick')(p), true, 'it should claim the frame at once');
+    ok((t.convertProgress || 0) > 0, 'and make progress');
+});
+
+check('a freshly spawned predator is staggered too', () => {
+    // A batch of spawns is the other way a cohort ends up synchronised, and
+    // spawnPredatorForZone lives in clone.js, so this is a cross-file contract.
+    const CLONE = fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8');
+    ok(/rollInfestSettle\(predator\)/.test(CLONE),
+       'spawnPredatorForZone no longer rolls a settle time');
+    // And it has to be read at call time, because infest.js loads after clone.js.
+    ok(/typeof rollInfestSettle === "function"/.test(CLONE),
+       'it should guard on the function existing, not assume load order');
 });
 
 check('the cap counts only GROWN nests, not the zone\'s own', () => {

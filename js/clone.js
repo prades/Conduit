@@ -469,6 +469,10 @@ function spawnPredatorForZone(zoneIndex) {
     predator.baseMoveSpeed = predator.moveSpeed;
     // Resolve the charge-up special now that species and class are both known.
     initAbility(predator);
+    // Its own gardening pace, so a batch of spawns does not later finish
+    // converting a batch of pylons on the same frame. Read at call time —
+    // infest.js loads after this file.
+    if (typeof rollInfestSettle === "function") rollInfestSettle(predator);
 
     actors.push(predator);
     if (!zonePredators[zoneIndex]) zonePredators[zoneIndex] = [];

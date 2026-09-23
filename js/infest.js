@@ -46,6 +46,34 @@ const INFEST_RATE          = 0.00067;// per frame in contact — about 25s to co
 const INFEST_DECAY         = 0.004; // per frame once nobody is working on it
 const INFEST_RESCAN_FRAMES = 45;    // how often a predator looks for a new target
 
+// "Nests are occurring too often." The rate above was not the problem — the
+// SYNCHRONISATION was. Every predator gardened at the same flat rate, and they
+// all started on the same frame, because the thing that stops them gardening
+// stops for everybody at once: alertActive is global, so the frame an alarm
+// clears is the frame every wanderer in every zone takes up gardening again.
+// Identical start, identical rate, identical finish. Measured at wave 8: four
+// nests grew inside 142 frames and five inside ten seconds, after twenty-five
+// seconds of nothing at all. That reads as the map sprouting nests.
+//
+// So a predator settles back into gardening at its own pace after any
+// disturbance, and works at its own speed once it does. The pace range is
+// centred on 1.0, so the documented 25-second conversion is still the average.
+const INFEST_SETTLE_MIN    = 240;   // 4s before the calmest goes back to work
+const INFEST_SETTLE_MAX    = 1080;  // and up to 18s for the most rattled
+const INFEST_PACE_MIN      = 0.8;   // its own rate, so two never finish together
+const INFEST_PACE_MAX      = 1.2;
+
+// How long a predator waits before gardening again, and how fast it works.
+// Rolled on disturbance and at spawn. NOT rolled lazily on first use: a
+// predator with no history at all gardens immediately, which is what a
+// hand-placed one in a test means and what a lone wanderer should do.
+function rollInfestSettle(pred) {
+    if (!pred) return;
+    pred._infestSettle = INFEST_SETTLE_MIN
+        + Math.floor(Math.random() * (INFEST_SETTLE_MAX - INFEST_SETTLE_MIN));
+    pred._infestPace = INFEST_PACE_MIN + Math.random() * (INFEST_PACE_MAX - INFEST_PACE_MIN);
+}
+
 // A cocoon encapsulates a small square around the pylon it holds — it starts
 // as a 2x2 and swells to 3x3. It is a structure, not a creeping patch: the
 // first version crept tile by tile up to fourteen tiles across a 3.2 radius,
@@ -104,8 +132,13 @@ function infestTick(pred) {
         // Dropping the target on the way out means a predator pulled into a
         // fight does not silently resume gardening the instant it is over.
         pred.infestTarget = null;
+        // And it now has to settle before it goes back to work. This is the
+        // line that breaks the burst: an alarm ends for every predator on the
+        // same frame, so without it they all resume together.
+        rollInfestSettle(pred);
         return false;
     }
+    if (pred._infestSettle > 0) { pred._infestSettle--; return false; }
     // Cached, because the scan walks the whole world. A cached null is a real
     // answer — there may simply be no pylon of yours left standing nearby.
     const fresh = pred._infestScanFrame !== undefined &&
@@ -137,7 +170,7 @@ function infestTick(pred) {
     // In contact — work on it.
     if (typeof faceToward === "function") faceToward(pred, t.x, t.y, 0.2);
     t.converting = true;
-    t.convertProgress = (t.convertProgress || 0) + INFEST_RATE;
+    t.convertProgress = (t.convertProgress || 0) + INFEST_RATE * (pred._infestPace || 1);
     t._convertFrame = frame;
     if (t.convertProgress >= 1) convertPylonToRed(t, pred);
     return true;
@@ -181,11 +214,25 @@ function convertPylonToRed(t, pred) {
 // One nest per converted pylon, on a clear floor tile beside it. Nests are
 // normally one per zone at its centre; these are extra, so they carry the same
 // zone index for the spawn bookkeeping but do not displace the original.
+
+// A world-wide floor on how fast nests ARRIVE, which is a different thing from
+// how many EXIST. The per-zone cap below already bounds the total, and it was
+// being honoured — the five nests measured at wave 8 were in five different
+// zones. They still all showed up within ten seconds of each other, because
+// nothing paced them. So however many pylons fall at once, a nest grows at most
+// once every this often, anywhere on the map. The pylon is still lost and a
+// cocoon is still spun; you just do not get a fresh vortex every time.
+const NEST_GROW_COOLDOWN = 2700;    // 45s between grown nests, world-wide
+let _lastNestGrowFrame = -NEST_GROW_COOLDOWN;   // so the first one is never delayed
+
 function seedNestNear(t, pred) {
     // Already a nest in reach? Then this pylon joins that one's territory.
     for (const obj of world) {
         if (obj.nest && obj.nestHealth > 0 && Math.hypot(obj.x - t.x, obj.y - t.y) < 4) return null;
     }
+    // Paced, not just capped.
+    const now = typeof frame === "number" ? frame : 0;
+    if (now - _lastNestGrowFrame < NEST_GROW_COOLDOWN) return null;
     // And at most ONE grown nest per zone, on top of whatever the zone was
     // generated with. The four-tile guard above only stops them touching:
     // measured at wave 8, zones 1, 2 and 4 each ended up with two, spread far
@@ -218,6 +265,9 @@ function seedNestNear(t, pred) {
         tile.nestZone = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(tile.x)) : -1;
         tile.nestPulse = 0;
         tile._infestNest = true;    // marks it as grown, not generated
+        // Stamped here rather than on entry, so a conversion that finds nowhere
+        // to put a nest does not spend the cooldown on nothing.
+        _lastNestGrowFrame = now;
         floatingTexts.push({ x: tile.x, y: tile.y - 1, text: "NEST GROWN", color: "#ff7744",
                              life: 120, vy: -0.2 });
         // Hand it to the patch so reclaiming can take it away. Looking for it
@@ -408,7 +458,14 @@ function _puddleTick() {
 const SCOUR_ELEMENT       = "fire";
 const SCOUR_PUDDLE_FRAMES = 150;    // 2.5s — the quickest, being what hurts you now
 const SCOUR_COCOON_FRAMES = 900;    // 15s, matching COCOON_SPAWN_FRAMES
-const SCOUR_NEST_FRAMES   = 1500;   // 25s for a full-health grown nest
+// A nest used to take 1500 frames — twenty-five seconds, the longest chore on
+// the list, longer even than the cocoon. That was the wrong way round. A grown
+// nest is surface growth on a floor tile and it is the thing actively minting
+// predators, so it is what you most want a fire crew to be good at; the cocoon
+// is wrapped around a pylon and stays the long job. At 600 frames one worker
+// clears a nest in ten seconds and two do it in five, which is the crew being
+// worth having.
+const SCOUR_NEST_FRAMES   = 600;    // 10s for a full-health grown nest
 const SCOUR_COLOUR        = "#ff7722";
 
 // Ranked by how much harm the thing is doing right now rather than by distance:

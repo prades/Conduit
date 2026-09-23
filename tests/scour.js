@@ -308,6 +308,63 @@ check('two workers on the same chore are twice as quick', () => {
     near(done, COCOON_FRAMES / 2, 3, 'two scourers should halve it');
 });
 
+// ─────────────────────────────────────────────────────────
+// "MAKE THE FIRE WORKERS DEAL MORE DAMAGE TO THE NESTS."
+//
+// A nest used to be the longest chore on the list at 1500 frames — longer than
+// the cocoon, which was backwards. A grown nest is surface growth on a floor
+// tile and it is the thing actively minting predators, so it is what a fire
+// crew should be best at; the cocoon is spun around a pylon and stays the long
+// job. These checks pin the ratio, not just the constant, because a constant on
+// its own can be read from source and satisfied by any value.
+
+check('THE DAMAGE: one worker clears a nest in the documented time', () => {
+    const env = makeEnv();
+    infested(env, 3, 2);
+    const nest = grownNestOf(env);
+    ok(!!nest, 'fixture: conversion should have grown a nest');
+    const f = worker(env, nest.x, nest.y);
+    let done = 0;
+    for (let i = 1; i <= NEST_FRAMES * 3 && !done; i++) {
+        env.sandbox.frame++;
+        env.run('followerWorkTick')(f);
+        if (!nest.nest) done = i;
+    }
+    ok(done > 0, 'it never burned the nest out');
+    near(done, NEST_FRAMES, 3, 'a single scourer should take SCOUR_NEST_FRAMES');
+});
+
+check('two workers halve it, so a crew is worth having', () => {
+    const env = makeEnv();
+    infested(env, 3, 2);
+    const nest = grownNestOf(env);
+    const a = worker(env, nest.x, nest.y), b = worker(env, nest.x, nest.y);
+    let done = 0;
+    for (let i = 1; i <= NEST_FRAMES && !done; i++) {
+        env.sandbox.frame++;
+        env.run('followerWorkTick')(a);
+        env.run('followerWorkTick')(b);
+        if (!nest.nest) done = i;
+    }
+    ok(done > 0, 'two workers never finished');
+    near(done, NEST_FRAMES / 2, 3, 'two scourers should halve the nest too');
+});
+
+check('a nest now burns faster than the cocoon, not slower', () => {
+    // The reported case. At 1500 against the cocoon's 900 this was inverted,
+    // and reverting the constant fails here rather than anywhere above.
+    ok(NEST_FRAMES < COCOON_FRAMES,
+       `a nest takes ${NEST_FRAMES} frames against the cocoon's ${COCOON_FRAMES}`);
+});
+
+check('but it is still a real job, not a touch', () => {
+    // It has to stay slower than the toxin patch, which is the quick one, and
+    // slow enough that a nest is worth burning rather than free to ignore.
+    ok(NEST_FRAMES > PUDDLE_FRAMES,
+       `a nest takes ${NEST_FRAMES} frames, no more than the toxin patch`);
+    ok(NEST_FRAMES >= 300, `at ${NEST_FRAMES} frames a nest is gone in under 5s`);
+});
+
 check('a worker that dies partway does not take the progress with it', () => {
     const env = makeEnv();
     const { m } = cocoonOnly(env, 3, 2);
