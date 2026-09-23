@@ -192,22 +192,34 @@ check('the full chain end to end pays out once', () => {
 });
 
 group('duty assignment');
-check('electric, flux and core can be put on the crew', () => {
+check('every element on the crew list can be put on the crew', () => {
+    // It was three, then four with FIRE scouring, and is now every element:
+    // TOXIC repels and ICE sets a block. Read off workerElements() rather than
+    // restated, so this check follows the roster instead of pinning a snapshot
+    // of it — the previous version named 'ice' and 'toxic' as refused and would
+    // have had to be rewritten to say the opposite either way.
     const env = makeEnv();
-    for (const el of ['electric', 'flux', 'core']) {
+    for (const el of env.run('workerElements()')) {
         const f = worker(env, el, 0, 0); f.duty = 'fighter';
         eq(env.run('setFollowerDuty')(f, 'worker'), true, el + ' should be eligible');
         eq(f.duty, 'worker', el + ' duty');
     }
 });
-check('any other element is refused, and told why', () => {
+check('an element with no job at all is still refused, and told why', () => {
+    // The refusal path still has to work. A seventh element added later without
+    // a job must be turned away rather than quietly benched — which is exactly
+    // what being on the crew with nothing to do would be.
     const env = makeEnv();
-    for (const el of ['fire', 'ice', 'toxic']) {
-        const f = worker(env, el, 0, 0); f.duty = 'fighter';
-        eq(env.run('setFollowerDuty')(f, 'worker'), false, el + ' should be refused');
-        eq(f.duty, 'fighter', el + ' should stay a fighter');
+    const f = worker(env, 'plasma', 0, 0); f.duty = 'fighter';
+    eq(env.run('setFollowerDuty')(f, 'worker'), false, 'an element with no job should be refused');
+    eq(f.duty, 'fighter', 'and it should stay a fighter');
+    const said = env.sandbox.floatingTexts.map(t => t.text).join(' | ');
+    ok(/ONLY /.test(said), 'should say why: ' + said);
+    // Named off the live list: the old wording was frozen at "ELECTRIC, FLUX
+    // AND CORE" and would have kept saying that with five on the crew.
+    for (const el of env.run('workerElements()')) {
+        ok(said.includes(el.toUpperCase()), 'the refusal does not mention ' + el);
     }
-    ok(env.sandbox.floatingTexts.some(t => /ONLY ELECTRIC, FLUX AND CORE/.test(t.text)), 'should say why');
 });
 check('toggling flips between the two duties', () => {
     const env = makeEnv();
@@ -298,9 +310,13 @@ check('a core worker with no wreckage to fix stands down', () => {
 });
 check('each worker element has exactly one job, and they are distinct', () => {
     const env = makeEnv();
-    const jobs = ['electric', 'flux', 'core'].map(el => env.run('workerJobLabel')(el));
-    eq(new Set(jobs).size, 3, 'jobs should be distinct: ' + jobs.join(','));
-    for (const el of ['fire', 'ice', 'toxic']) eq(env.run('workerJobLabel')(el), null, el + ' has no job');
+    const els  = env.run('workerElements()');
+    const jobs = els.map(el => env.run('workerJobLabel')(el));
+    ok(jobs.every(j => !!j),
+       'an element is on the crew with no job: ' + els.map((e, i) => e + '=' + jobs[i]).join(','));
+    eq(new Set(jobs).size, els.length, 'jobs should be distinct: ' + jobs.join(','));
+    // And nothing off the list has one, which is the other half of the pairing.
+    eq(env.run('workerJobLabel')('plasma'), null, 'an unknown element should have no job');
 });
 check('broken pylons are drawn rather than vanishing', () => {
     const game = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');

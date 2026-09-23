@@ -68,6 +68,20 @@ function hurtPlayer(amount, shakeAmt) {
 
 function applyDamage(target, amount, source=null, element=null, isReflected=false) {
     if (!target || target.dead) return;
+    // A recruit walking to the Crystal takes NOTHING, from anyone or anything.
+    //
+    // isHostileTarget above stops everything that deliberately picks a target,
+    // and measuring the predator specials proved that holds: all seven
+    // offensive abilities land in full on a follower standing beside a recruit
+    // and do not scratch the recruit. What was left were the two paths that
+    // never picked a target at all — the red health-decay pass, which bleeds
+    // anything on team red, and the cocoon toxin, which named recruits
+    // outright. A recruit could arrive dead without a single predator having
+    // chosen to hurt it, which is what "attacked before they get an element"
+    // actually was. Both are gated at their own site as well, so nothing
+    // spends effects or floating text on a hit that lands nowhere; this is the
+    // chokepoint that catches the path nobody has thought of yet.
+    if (isNeutralBystander(target)) return;
     // Ghostphage ghost — immune to hazards; instantly killed by any direct attack
     if (target.ghostphageLife) {
         if (source && source.team) { target.health=0; target.dead=true; }

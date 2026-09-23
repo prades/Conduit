@@ -633,8 +633,14 @@ async function boot(store) {
         // The twelve damage expressions in elements.js all funnel through
         // applyDamage, which is why the multiplier lives there rather than at
         // each attack — patching them one by one would have missed some.
-        const at = SRC.helpers.indexOf('function applyDamage');
-        const body = SRC.helpers.slice(at, at + 1800);
+        // Sliced to the function's own boundary, not to a character count. A
+        // fixed 1800-char window passed until a comment was added at the top of
+        // applyDamage and pushed the multiplier out of it — the check broke on
+        // a change that could not possibly have affected what it tests.
+        const at   = SRC.helpers.indexOf('function applyDamage');
+        const next = SRC.helpers.indexOf('\nfunction ', at + 1);
+        const body = SRC.helpers.slice(at, next === -1 ? undefined : next);
+        ok(body.length > 400, 'the applyDamage body could not be located');
         ok(/ARMY_SURGE_POWER/.test(body), 'the multiplier is not in the damage funnel');
         ok(/applyDamage\(target, amount \* mult, source, element\)/.test(SRC.helpers),
            'applyElementalDamage no longer funnels into applyDamage');

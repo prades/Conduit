@@ -914,6 +914,10 @@ function render() {
     for (let _i = 0; _i < _fl.length; _i++) {
         for (let _j = _i+1; _j < _fl.length; _j++) {
             const _a = _fl[_i], _b = _fl[_j];
+            // A frozen block is terrain, not a unit in the crowd: it neither
+            // gives ground to a follower nor jostles one. iceBlockTick below
+            // is what clears the space around it, in both directions.
+            if (_a.iceBlock || _b.iceBlock) continue;
             const _dx = _b.x - _a.x, _dy = _b.y - _a.y;
             const _d2 = _dx*_dx + _dy*_dy;
             if (_d2 >= 0.3025 || _d2 < 0.000001) continue; // 0.55² = 0.3025
@@ -924,8 +928,18 @@ function render() {
         }
     }
 
+    // ── ICE BLOCKS ──
+    // After every other thing that moves, so a block has the last word on its
+    // own tile. Running it before the separation pass above would let a
+    // follower shove its way back in for a frame at a time.
+    iceBlockTick();
+
     // ── RED HEALTH DECAY ──
-    actors.forEach(a=>{ if(a.team==="red"){a.health-=0.01; if(a.health<=0){a.health=0;a.dead=true;}} });
+    // Skips a neutral recruit. The decay is meant to bleed enemies that have
+    // wandered off; a recruit is on team red only for bookkeeping until it
+    // reaches the Crystal, and at 0.01 a frame a long walk in cost it 36 HP —
+    // enough to kill a weak one on the way to a body it never got to use.
+    actors.forEach(a=>{ if(a.team==="red" && !isNeutralBystander(a)){a.health-=0.01; if(a.health<=0){a.health=0;a.dead=true;}} });
 
     // ── PREDATOR SPAWNING — always present (graze by default, hunt when alarm is active) ──
     if (gameState.phase === "day" || gameState.phase === "night") {

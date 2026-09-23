@@ -28,6 +28,7 @@ const SUITES = [
     ['spawn vortex',           'vortex.js'],
     ['targeting rules',        'targets.js'],
     ['fire scour job',         'scour.js'],
+    ['repel + ice block',      'crew.js'],
 ];
 
 let failed = 0;

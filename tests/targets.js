@@ -382,15 +382,18 @@ const SCENE = `(function(){
         }
     });
 
-    check('the cocoon toxin still reaches recruits, by design', () => {
-        // Which is why the attack scene above clears cocoons: a recruit CAN be
-        // hurt by a hazard, and that is not the bug that was reported.
+    check('the cocoon toxin no longer reaches recruits either', () => {
+        // Reversed. This used to say "by design", on the grounds that a hazard
+        // is not an attack. It was then measured: over a minute of a busy wave
+        // 8, every point of damage that landed on a recruit came from this
+        // puddle. "Recruits are never attacked" meant nothing while the biggest
+        // source of harm to them was a hazard, so the promise now covers it.
         const r = E.run(`(function(){
             return { recruit: puddleAffects({ isNeutralRecruit: true, dead: false }),
                      follower: puddleAffects({ isFollower: true, element: 'ice', dead: false }) };
         })()`);
-        same(r.recruit, true, 'the toxin should still reach an un-recruited recruit');
-        same(r.follower, true, 'and a follower');
+        same(r.recruit, false, 'the toxin should no longer reach an un-recruited recruit');
+        same(r.follower, true, 'but it should still reach a follower');
     });
 
     check('the cocoon toxin still bites followers', () => {

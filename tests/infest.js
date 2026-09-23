@@ -809,12 +809,26 @@ check('THE REPORTED CASE: a puddle burns a follower standing in it', () => {
     ok(env.sandbox.floatingTexts.some(x => /TOXIC/.test(x.text)), 'no callout on the follower');
 });
 
-check('it burns an un-recruited neutral too', () => {
+check('THE REVERSAL: it does NOT burn a recruit on its way in', () => {
+    // This check used to assert the opposite, and said "by design". The design
+    // changed: a recruit walking to the Crystal takes nothing from anyone or
+    // anything. Measured over a minute of a busy wave 8, every single point of
+    // damage landed on a recruit came from this puddle — it was not a corner
+    // case, it was the whole of what was hurting them.
+    //
+    // A recruit cannot fight, cannot be ordered and has no element yet, so a
+    // toxin patch lying across its route was a coin toss it had no part in.
     const env = makeEnv();
     const P = puddleAt(env);
     const n = neutral(env, P.px, P.py);
+    tick(env, PUDDLE_INTERVAL * 4 + 2);
+    same(n.health, n.maxHealth, 'a recruit standing in it should be untouched');
+    // And a follower in the same patch still burns, so this cannot pass because
+    // the puddle stopped working altogether.
+    const f = follower(env, P.px, P.py);
     tick(env, PUDDLE_INTERVAL + 2);
-    ok(n.health < n.maxHealth, 'a recruit standing in it should be hurt');
+    ok(f.health < f.maxHealth, 'the puddle should still bite a follower');
+    same(n.health, n.maxHealth, 'and still not the recruit beside it');
 });
 
 // Pinned in place: update() is stubbed out so the subject cannot simply walk
@@ -859,7 +873,7 @@ check('the predicate is the single place that decides', () => {
     const env = makeEnv();
     const aff = env.run('puddleAffects');
     same(aff({ isFollower: true, dead: false }), true, 'follower');
-    same(aff({ isNeutralRecruit: true, dead: false }), true, 'recruit');
+    same(aff({ isNeutralRecruit: true, dead: false }), false, 'a recruit is no longer affected');
     same(aff({ isFollower: true, dead: true }), false, 'a corpse');
     same(aff({ team: 'green', dead: false }), false, 'something that is neither');
     same(aff(null), false, 'null');

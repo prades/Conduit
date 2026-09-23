@@ -54,8 +54,12 @@ function drawRadialMenu() {
         const eligible = typeof canWorkMass === "function" && canWorkMass(f);
         const isWorker = f.duty === "worker";
         const fUp = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
+        // A frozen block says THAW rather than TO LINE. It is the same
+        // instruction — coming off the crew melts it — but "TO LINE" on a
+        // block reads as an order it cannot follow.
         drawRadialButton(commandX, commandY-RADIAL_RADIUS,
-                         !eligible ? "FIGHTER" : (isWorker ? "TO LINE" : "TO WORK"), fUp);
+                         !eligible ? "FIGHTER"
+                                   : (f.iceBlock ? "THAW" : (isWorker ? "TO LINE" : "TO WORK")), fUp);
         if (fUp && eligible) selectedRadialAction = "toggle_duty";
         const fRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
         drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", fRight);
@@ -64,7 +68,8 @@ function drawRadialMenu() {
         ctx.font = "10px monospace"; ctx.textAlign = "center";
         const jobLabel = (typeof workerJobLabel === "function" && workerJobLabel(f.element)) || "NO JOB";
         ctx.fillText((f.element||"?").toUpperCase() + " \u00b7 " +
-                     (isWorker ? "WORKER: " + jobLabel : "FIGHTER"),
+                     (f.iceBlock ? "FROZEN BLOCK"
+                                 : (isWorker ? "WORKER: " + jobLabel : "FIGHTER")),
                      commandX, commandY + RADIAL_RADIUS + 18);
         ctx.restore();
         return;
@@ -145,11 +150,83 @@ function drawPredatorDebug(actor, px, py) {
 //  DRAW NPC  (FIX: one drawLeg per scope, no duplicate)
 // ─────────────────────────────────────────────────────────
 function drawNPC(actor, px, py, drawCtx=ctx) {
-    if (actor instanceof Predator) {
+    if (actor.iceBlock) {
+        _drawIceBlock(actor, px, py, drawCtx);
+    } else if (actor instanceof Predator) {
         _drawPredator(actor, px, py, drawCtx);
     } else {
         _drawVirus(actor, px, py, drawCtx);
     }
+}
+
+// A follower that has set itself. Drawn as an isometric cube sitting on the
+// tile rather than as a unit, because that is what it now is — the shape has
+// to say "you cannot walk here" at a glance.
+//
+// The top face is the tile diamond; the two side faces drop from its left and
+// right corners. While it is still forming, the whole thing rises out of the
+// floor, so freezing reads as the block growing rather than popping in.
+function _drawIceBlock(actor, px, py, drawCtx) {
+    const form = 1 - Math.max(0, Math.min(1, (actor.iceFormFrames || 0) / ICE_FORM_FRAMES));
+    const hw = TILE_W * 0.5, hh = TILE_H * 0.5;
+    // A CUBE, not a column. One tile edge measures sqrt(hw² + hh²) ≈ 33.5px on
+    // screen, so a vertical edge of about TILE_H * 1.15 gives equal edges and
+    // the block reads as one tile in every direction. The first attempt used
+    // TILE_H * 1.9 and rendered a pillar — obvious the moment it was drawn next
+    // to its own tile outline, and not before.
+    const H  = TILE_H * 1.15 * (0.18 + 0.82 * form);   // block height, screen px
+    // The tile's visual centre sits a tile-height below the projected point.
+    const cy = py + TILE_H;
+    const topY = cy - H;
+
+    drawCtx.save();
+    // ── Side faces ──
+    // Left face is darker than right, so the cube reads as lit from one side.
+    drawCtx.beginPath();
+    drawCtx.moveTo(px - hw, cy);
+    drawCtx.lineTo(px,      cy + hh);
+    drawCtx.lineTo(px,      cy + hh - H);
+    drawCtx.lineTo(px - hw, cy - H);
+    drawCtx.closePath();
+    drawCtx.fillStyle = "rgba(60,120,165,0.88)";
+    drawCtx.fill();
+
+    drawCtx.beginPath();
+    drawCtx.moveTo(px + hw, cy);
+    drawCtx.lineTo(px,      cy + hh);
+    drawCtx.lineTo(px,      cy + hh - H);
+    drawCtx.lineTo(px + hw, cy - H);
+    drawCtx.closePath();
+    drawCtx.fillStyle = "rgba(95,165,205,0.88)";
+    drawCtx.fill();
+
+    // ── Top face ──
+    drawCtx.beginPath();
+    drawCtx.moveTo(px,      topY - hh);
+    drawCtx.lineTo(px + hw, topY);
+    drawCtx.lineTo(px,      topY + hh);
+    drawCtx.lineTo(px - hw, topY);
+    drawCtx.closePath();
+    drawCtx.fillStyle = "rgba(190,235,255,0.92)";
+    drawCtx.fill();
+    drawCtx.strokeStyle = ICE_COLOUR;
+    drawCtx.lineWidth = 1.4;
+    drawCtx.stroke();
+
+    // ── Fracture lines ──
+    // Seeded off the block's tile so a given block's cracks never crawl.
+    const seed = (actor.iceBlockX || 0) * 31 + (actor.iceBlockY || 0) * 7;
+    drawCtx.strokeStyle = "rgba(235,250,255,0.5)";
+    drawCtx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+        const t = ((seed + i * 41) % 17) / 17;
+        const x0 = px - hw * 0.6 + hw * 1.2 * t;
+        drawCtx.beginPath();
+        drawCtx.moveTo(x0, cy + hh * 0.3 - H * 0.1);
+        drawCtx.lineTo(x0 + (i % 2 ? 5 : -5), cy - H * 0.75);
+        drawCtx.stroke();
+    }
+    drawCtx.restore();
 }
 
 function _drawPredator(actor, px, py, drawCtx) {

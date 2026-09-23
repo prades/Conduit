@@ -158,9 +158,17 @@ check('the three original jobs still work', () => {
 });
 
 check('an element with no job is still refused', () => {
+    // Not 'ice' any more — ice sets a block now. Any name that is not on the
+    // crew list does the job this check needs, and picking one that cannot
+    // later be given a job keeps it from flipping meaning a third time.
     const env = makeEnv();
-    same(env.run('canWorkMass')({ element: 'ice' }), false, 'ice has no job and should be refused');
-    same(env.run('setFollowerDuty')({ element: 'ice' }, 'worker'), false, 'it should not be accepted');
+    same(env.run('canWorkMass')({ element: 'plasma' }), false, 'an unknown element should be refused');
+    same(env.run('setFollowerDuty')({ element: 'plasma' }, 'worker'), false, 'it should not be accepted');
+    // And every element that IS on the list is accepted, so this cannot pass by
+    // refusing everything.
+    for (const el of env.run('workerElements()')) {
+        same(env.run('canWorkMass')({ element: el }), true, el + ' should be able to work');
+    }
 });
 
 check('the refusal names the elements that CAN work, from the list', () => {

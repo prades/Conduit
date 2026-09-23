@@ -60,9 +60,20 @@ function mkPred(species,cls,x,y,dir){
   return b;
 }
 const mkVirus=(x,y,el)=>({type:'virus',element:el,x,y,team:'green',isFollower:true,health:80,maxHealth:100,moveSpeed:0.02,power:10,stats:{attack:12,specialAttack:11,accuracy:10,defense:10,speed:10,will:20},walkCycle:1.2,state:'hunt',hitFlash:0,dead:false,ultimateCharge:40,currentResonance:10,currentWill:20});
+// An ICE worker that has set itself, and a half-formed one beside it, so both
+// ends of the freeze-over animation are visible in one frame.
+const mkIceBlock=(x,y,form)=>{
+  const b=mkVirus(x,y,'ice');
+  b.duty='worker'; b.iceBlock=true;
+  b.iceBlockX=x; b.iceBlockY=y;
+  b.iceFormFrames=Math.round(run('ICE_FORM_FRAMES')*form);
+  return b;
+};
 const subs=[
   {o:mkVirus(2,1,'fire'),pred:false},
-  {o:mkVirus(2.6,2.2,'ice'),pred:false},
+  {o:mkIceBlock(3,0,0),pred:false},     // fully set
+  {o:mkIceBlock(4,3,0.6),pred:false},   // still freezing over
+  {o:mkVirus(2.6,2.2,'toxic'),pred:false},
   {o:mkPred('ant','scout',4,1,0.3),pred:true},
   {o:mkPred('beetle','tank',5.6,2.4,2.6),pred:true},
   {o:mkPred('ant','worker',3.2,3,1.0),pred:true},

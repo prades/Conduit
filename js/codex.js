@@ -352,6 +352,10 @@ function renderWorkCrewIndex() {
         ? Math.round(SCOUR_COCOON_FRAMES / 60) : 15;
     const nestSecs = (typeof SCOUR_NEST_FRAMES === 'number')
         ? Math.round(SCOUR_NEST_FRAMES / 60) : 25;
+    // The cloud is stated as a diameter, which is what the player sees; the
+    // constant is a radius.
+    const repelR = (typeof REPEL_RADIUS === 'number')
+        ? (REPEL_RADIUS * 2).toFixed(1).replace(/\.0$/, '') : '5';
     // Read off the list rather than spelled out, so adding a fifth worker
     // element cannot leave this page naming four.
     const whoCanWork = (typeof workerElements === 'function' ? workerElements() : [])
@@ -389,6 +393,18 @@ function renderWorkCrewIndex() {
         '<strong>cocoon</strong> (about <span class="cm-stat">' + cocoonSecs + 's</span>). Two scourers on the ' +
         'same thing are twice as quick, and the toxin does not hurt a fire follower. Scouring stops the ' +
         'hatching — it does <em>not</em> hand the pylon back, which still takes a RECLAIM.</div>' +
+        '<div class="cm-ability"><strong>Repel — TOXIC:</strong> a cloud <span class="cm-stat">' +
+        repelR + ' tiles</span> across that nothing hostile can stand in. It does <strong>no damage ' +
+        'at all</strong> — what it buys you is <strong>ground</strong>. The shove is strongest at the ' +
+        'middle and fades to nothing at the rim, and it beats a predator’s walking speed, so one ' +
+        'parked on a pylon keeps them off it without ever winning a fight. Recruits walking to the ' +
+        'Crystal are never pushed.</div>' +
+        '<div class="cm-ability"><strong>Set a block — ICE:</strong> freezes where it stands into a ' +
+        'solid block <strong>one tile wide</strong>, snapped to that tile. Everything is pushed out of it ' +
+        '— <strong>enemies, your own squad and you</strong>, because a block your side can stand ' +
+        'inside is cover rather than a wall. It stops being a unit: it does not walk, fight or seek, and ' +
+        'it holds its tile however hard it is shoved. <strong>Long-press it → THAW</strong> to melt it ' +
+        'and put it back in the line.</div>' +
 
         '<div class="cm-build-row"><span class="cm-build-label">Worth</span>' +
         'About <span class="cm-stat">' + pct + '%</span> of what that predator used to be worth. ' +

@@ -424,7 +424,12 @@ function puddleAffects(a) {
     if (!a || a.dead) return false;
     if (typeof Predator !== "undefined" && a instanceof Predator) return false;
     if (a.isFollower && a.element === SCOUR_ELEMENT) return false;
-    return !!(a.isFollower || a.isNeutralRecruit);
+    // NOT recruits, any more. This used to name them outright, and it was the
+    // single largest source of damage to a recruit walking in — every hit
+    // measured on a recruit over a minute of a busy wave 8 came from here. A
+    // recruit cannot fight, cannot be ordered and has no element yet, so a
+    // toxin patch on its route was a coin toss it had no part in.
+    return !!a.isFollower;
 }
 
 function _puddleTick() {
