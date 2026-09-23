@@ -4,6 +4,10 @@ const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
+// Read out of config.js rather than written here: a fixture that disagreed with
+// the game about whether predators bite the player would test a different game.
+const PREDATORS_ATTACK_PLAYER_FIXTURE = /const PREDATORS_ATTACK_PLAYER\s*=\s*true/
+    .test(fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8'));
 
 const sandbox = {
     console, Math, Array, Object, String, Number, Set, Map, isFinite, isNaN, parseInt,
@@ -22,6 +26,11 @@ const sandbox = {
         sandbox.damageLog.push({ target, amount, element });
         if (target) target.health = Math.max(0, (target.health ?? 100) - amount);
     },
+    // The real predicates from js/helpers.js, which the ability and predator
+    // code now consults. Stubbing them as permissive would hide the very
+    // behaviour these suites check.
+    predatorMayHurtPlayer: () => PREDATORS_ATTACK_PLAYER_FIXTURE,
+    isNeutralBystander: a => !!(a && a.isNeutralRecruit && a.team === 'red'),
     Predator: class {},
     SYNTHETIC_SPECIES: {
         'XV-09': {
@@ -279,19 +288,49 @@ check('BLINDING DUST slows and shreds in an area', () => {
     ok(f.slowed > 0, 'slowed');
     ok(f.defenseShredded > 0, 'shredded');
 });
-check('hostile specials can hit the player, clone specials cannot', () => {
+check('THE RULE: no special touches the player, hostile or friendly', () => {
+    // This check used to assert the opposite — that a hostile special SHOULD
+    // hit the player — which was the design until predators stopped attacking
+    // them at all. The player is a saboteur, not a body on the line. Hazards
+    // still hurt; a predator's own attacks do not.
     reset();
     sandbox.player.x = 5.2; sandbox.player.y = 2;
     const b = mkBug('ant', 'striker'); mkFoe();
     spin(b, 500);
-    ok(sandbox.health < 100, 'player took damage from a hostile frenzy');
+    eq(sandbox.health, 100, 'a hostile frenzy should not touch the player');
 
     reset();
     sandbox.player.x = 5.2;
     const c = mkBug('ant', 'striker', { isClone: true, team: 'green' });
     sandbox.actors.push({ x: 6, y: 2, team: 'red', health: 1e9, maxHealth: 1e9, dead: false });
     spin(c, 500);
-    eq(sandbox.health, 100, 'a friendly clone never hurts the player');
+    eq(sandbox.health, 100, 'nor should a friendly clone');
+});
+
+check('but the special still lands on what it IS aimed at', () => {
+    // The gate must not have quietly disarmed the ability itself.
+    reset();
+    sandbox.player.x = 99; sandbox.player.y = 99;      // far away, irrelevant
+    const b = mkBug('ant', 'striker');
+    const foe = mkFoe();
+    spin(b, 500);
+    ok(sandbox.damageLog.some(d => d.target === foe),
+       'a hostile frenzy should still hit the follower it is aimed at');
+});
+
+check('a special spares a recruit walking to the Crystal', () => {
+    // A clone's specials reach team "red", which is a recruit's team until it
+    // arrives. Without the bystander rule your own converted predators cut down
+    // the reinforcements on the way in.
+    reset();
+    sandbox.player.x = 99; sandbox.player.y = 99;
+    const c = mkBug('ant', 'striker', { isClone: true, team: 'green' });
+    const recruit = { x: 6, y: 2, team: 'red', isNeutralRecruit: true,
+                      health: 1e9, maxHealth: 1e9, dead: false };
+    sandbox.actors.push(recruit);
+    spin(c, 500);
+    ok(!sandbox.damageLog.some(d => d.target === recruit),
+       'a recruit should not be hit by a clone special');
 });
 
 group('scout leap');

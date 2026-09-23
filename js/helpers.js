@@ -12,6 +12,50 @@ const getTile = (gx, gy) => worldTileMap.get(`${gx},${gy}`);
 // actually covers what it claims to.
 // Returns whether the damage landed, for callers that want to skip their own
 // screen shake or hit effect.
+// Whether a PREDATOR may damage the player. One place, consulted by the three
+// paths that could: the melee swipe, the ability radius helper, and the abdomen
+// projectile. Hazards do not go through this — they are not predators.
+function predatorMayHurtPlayer() {
+    return PREDATORS_ATTACK_PLAYER;
+}
+
+// An un-recruited recruit is a BYSTANDER. It is walking to the Crystal to join
+// you and nothing on either side should shoot at it on the way.
+//
+// This mattered most on the green side, which is the surprising part: a recruit
+// is on team "red" until it arrives, and your CLONES scan and strike team
+// "red". So your own converted predators were cutting down the reinforcements
+// as they came in — and since a clone looks exactly like a predator, it read as
+// the enemy doing it. The player's own gesture commands could target them too.
+// What a unit on YOUR side may attack.
+//
+// This expression was written out twenty times across the codebase — fourteen
+// in js/elements.js alone, plus game.js and traps.js — in four slightly
+// different forms:
+//
+//   a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)
+//   a.team==="red" || (a instanceof Predator)                    <- elements.js chain
+//   a.team==="red" || (a instanceof Predator && !a.isClone)      <- traps.js
+//
+// Every one of them counted a NEUTRAL RECRUIT as hostile, because a recruit is
+// on team "red" until it reaches the Crystal. That is what killed
+// reinforcements on the way in: not the predators, but your own followers'
+// element attacks sweeping the area around whatever they were aiming at.
+//
+// Unifying them also closes the second form, which counted a green CLONE of
+// yours as a target — chain lightning could jump to your own clone.
+function isHostileTarget(a) {
+    if (!a || a.dead) return false;
+    if (isNeutralBystander(a)) return false;
+    if (a.team === "red") return true;
+    return typeof Predator !== "undefined" && (a instanceof Predator)
+           && a.team !== "green" && !a.isClone;
+}
+
+function isNeutralBystander(a) {
+    return !!(a && a.isNeutralRecruit && a.team === "red");
+}
+
 function hurtPlayer(amount, shakeAmt) {
     if (!(amount > 0)) return false;
     if (player.invuln > 0) return false;
@@ -392,7 +436,7 @@ function getEnemyAtTile(tile) {
     let best=null, bestDist2=Infinity;
     actors.forEach(a => {
         const isHostile = (a instanceof Predator)||(a.team==="red");
-        if (!isHostile) return;
+        if (!isHostile || isNeutralBystander(a)) return;
         const dx=a.x-tile.x, dy=a.y-tile.y, d2=dx*dx+dy*dy;
         if (d2<2.25&&d2<bestDist2) { bestDist2=d2; best=a; } // 1.5² = 2.25
     });
@@ -503,7 +547,7 @@ function detectEnemiesInCircle() {
     const enclosed = [];
     actors.forEach(a => {
         if (!(a instanceof Predator) && a.team!=="red") return;
-        if (a.dead) return;
+        if (a.dead || isNeutralBystander(a)) return;
         const epx=(a.x-player.visualX-(a.y-player.visualY))*TILE_W+canvas.width/2;
         const epy=(a.x-player.visualX+(a.y-player.visualY))*TILE_H+canvas.height/2;
         if (Math.hypot(epx-cx,epy-cy)<r) enclosed.push(a);
@@ -538,7 +582,7 @@ function detectFollowerToEnemyGesture(sx, sy, ex, ey) {
     let tgtEnemy = null;
     for (const a of actors) {
         if (!(a instanceof Predator) && a.team!=="red") continue;
-        if (a.dead) continue;
+        if (a.dead || isNeutralBystander(a)) continue;
         const epx=(a.x-player.visualX-(a.y-player.visualY))*TILE_W+canvas.width/2;
         const epy=(a.x-player.visualX+(a.y-player.visualY))*TILE_H+canvas.height/2;
         if (Math.hypot(ex-epx,ey-epy)<52) { tgtEnemy=a; break; }

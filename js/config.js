@@ -371,6 +371,14 @@ let modulationMask = new Set();
 // This is NOT the same thing as FOLLOWER_ULTIMATES in js/elements.js, which are
 // per-follower, charge individually and fire on a double-tap. That system keeps
 // working exactly as it did; the surge charges all of them at once.
+// ── WHO PREDATORS WILL BITE ───────────────────────────────
+// Predators do not attack the player. You are a saboteur moving through the
+// tunnel, not a body on the line: the squad fights, and a predator that could
+// simply chew on you made positioning them beside the point. Environmental
+// hazards still hurt — acid pools, vent blasts, ground zones, cocoon toxin —
+// because those are not predators, and dodging them is a real decision.
+const PREDATORS_ATTACK_PLAYER = false;
+
 const PLAYER_ULT_MAX      = 100;
 const ARMY_SURGE_FRAMES   = 600;   // ten seconds
 const ARMY_SURGE_POWER    = 1.6;   // damage multiplier for the whole army

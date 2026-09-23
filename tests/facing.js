@@ -5,6 +5,10 @@ const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
+// Read out of config.js rather than written here: a fixture that disagreed with
+// the game about whether predators bite the player would test a different game.
+const PREDATORS_ATTACK_PLAYER_FIXTURE = /const PREDATORS_ATTACK_PLAYER\s*=\s*true/
+    .test(fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8'));
 
 const sandbox = {
     console, Math, Array, Object, String, Number, Set, Map, isFinite, isNaN, parseInt,
@@ -21,6 +25,11 @@ const sandbox = {
                       tank: { moveSpeed: 0.012 }, worker: { moveSpeed: 0.024 } },
     damageLog: [],
     applyDamage(t, amt, src, el) { sandbox.damageLog.push({ t, amt, el }); if (t) t.health = Math.max(0, (t.health ?? 100) - amt); },
+    // The real predicates from js/helpers.js, which the ability and predator
+    // code now consults. Stubbing them as permissive would hide the very
+    // behaviour these suites check.
+    predatorMayHurtPlayer: () => PREDATORS_ATTACK_PLAYER_FIXTURE,
+    isNeutralBystander: a => !!(a && a.isNeutralRecruit && a.team === 'red'),
     applyElementalDamage() {},
     findNearestFriendlyPillar: () => null,
     spawnFollowerProjectile() { sandbox.followerProjectiles.push({}); },

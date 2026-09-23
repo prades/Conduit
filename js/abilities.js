@@ -185,6 +185,7 @@ function _abNearestFoe(pred, maxDist) {
     let best = null, bestD = maxDist;
     for (const a of actors) {
         if (a === pred || a.dead || a.team !== team) continue;
+        if (isNeutralBystander(a)) continue;
         const d = Math.hypot(a.x - pred.x, a.y - pred.y);
         if (d < bestD) { bestD = d; best = a; }
     }
@@ -198,12 +199,14 @@ function _abForEachFoeInRadius(pred, radius, fn) {
     const r2 = radius * radius;
     for (const a of actors) {
         if (a === pred || a.dead || a.team !== team) continue;
+        if (isNeutralBystander(a)) continue;
         const dx = a.x - pred.x, dy = a.y - pred.y;
         if (dx * dx + dy * dy <= r2) fn(a);
     }
     // No immunity check here: the helper also drives non-damaging effects, and
-    // hurtPlayer() is what honours the respawn grace.
-    if (!pred.isClone && typeof player !== 'undefined') {
+    // hurtPlayer() is what honours the respawn grace. The PLAYER is gated
+    // separately — predators do not attack them at all.
+    if (!pred.isClone && predatorMayHurtPlayer() && typeof player !== 'undefined') {
         const dx = player.x - pred.x, dy = player.y - pred.y;
         if (dx * dx + dy * dy <= r2) fn(null);   // null = the player
     }

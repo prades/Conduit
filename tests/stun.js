@@ -208,13 +208,18 @@ check('the melee swipe no longer carries its own immunity check', () => {
     ok(!/player\.(stunned|invuln)/.test(slice), 'melee should not re-check immunity itself');
 });
 
-check('the ability radius helper still reaches the player', () => {
-    // Dropping the stun check there must not drop the player from the sweep —
-    // non-damaging effects run through the same helper.
+check('the ability radius helper gates the player, and not on the old stun', () => {
+    // This used to assert the player was swept in unconditionally. Predators no
+    // longer attack the player at all, so the branch is still there — the helper
+    // drives non-damaging effects too — but it is gated on
+    // predatorMayHurtPlayer() rather than removed. Sliced to the function
+    // rather than a fixed 700 characters: adding the gate pushed fn(null) past
+    // that window and failed this check on correct code.
     const a = SRC['js/abilities.js'];
-    const at = a.indexOf('_abForEachFoeInRadius');
-    const slice = a.slice(at, at + 700);
-    ok(/fn\(null\)/.test(slice), 'the player is no longer included in ability radii');
+    const at = a.indexOf('function _abForEachFoeInRadius');
+    const slice = a.slice(at, a.indexOf('\nfunction ', at + 10));
+    ok(/fn\(null\)/.test(slice), 'the player branch has been removed entirely');
+    ok(/predatorMayHurtPlayer\(\)/.test(slice), 'the player branch is not gated');
     ok(!/player\.stunned/.test(slice), 'still gating on the old stun');
 });
 

@@ -66,7 +66,7 @@ function updateTraps() {
 
         const nearby = actors.filter(a => {
             if (a.dead) return false;
-            const isEnemy = (a.team === "red" || (a instanceof Predator && !a.isClone));
+            const isEnemy = isHostileTarget(a);
             return isEnemy && Math.hypot(a.x - trap.x, a.y - trap.y) <= def.range;
         });
 
@@ -75,7 +75,7 @@ function updateTraps() {
                 if (nearby.length === 0) break;
                 actors.forEach(a => {
                     if (a.dead) return;
-                    const isEnemy = (a.team === "red" || (a instanceof Predator && !a.isClone));
+                    const isEnemy = isHostileTarget(a);
                     if (!isEnemy) return;
                     if (Math.hypot(a.x - trap.x, a.y - trap.y) <= 2.0) {
                         applySlow(a, 180, 0.0);   // 3 second full stun
@@ -97,7 +97,7 @@ function updateTraps() {
                     // Discharge
                     actors.forEach(a => {
                         if (a.dead) return;
-                        const isEnemy = (a.team === "red" || (a instanceof Predator && !a.isClone));
+                        const isEnemy = isHostileTarget(a);
                         if (!isEnemy) return;
                         if (Math.hypot(a.x - trap.x, a.y - trap.y) <= 2.5)
                             applyDamage(a, 40, null, "electric");

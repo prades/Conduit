@@ -164,6 +164,7 @@ class Predator {
             const scanTeam = this.isClone ? "red" : "green";
             actors.forEach(a => {
                 if (a.team!==scanTeam||a.dead) return;
+                if (isNeutralBystander(a)) return;   // not a threat, not a target
                 if (!this.isClone && (a.spawnProtection||0)>0) return;
                 const dx=a.x-this.x, dy=a.y-this.y, d=Math.sqrt(dx*dx+dy*dy);
                 if (d<1.2&&d<bestDist) { bestDist=d; threat=a; }
@@ -311,6 +312,11 @@ class Predator {
                 let nearestRed=null, bestRD=Infinity;
                 actors.forEach(a => {
                     if (a.dead||a.team!=="red") return;
+                    // A recruit on its way to the Crystal is not prey. Without
+                    // this a clone still ACQUIRED one — it did no damage, but it
+                    // chased the recruit instead of the enemy, and stood over
+                    // it swinging.
+                    if (isNeutralBystander(a)) return;
                     const d=Math.hypot(a.x-this.x, a.y-this.y);
                     if (d<bestRD) { bestRD=d; nearestRed=a; }
                 });
@@ -339,6 +345,7 @@ class Predator {
                 let nearRed=null, bd2=Infinity;
                 actors.forEach(a=>{
                     if(a===this||a.dead||a.team!=="red"||a.isClone) return;
+                    if(isNeutralBystander(a)) return;
                     const dx=a.x-this.x,dy=a.y-this.y,d2=dx*dx+dy*dy;
                     if(d2<bd2){bd2=d2;nearRed=a;}
                 });
@@ -418,6 +425,7 @@ class Predator {
                     // ── FRIENDLY FIRE — attack other red predators ──
                     actors.forEach(a => {
                         if (a===this||a.dead||a.team!=="red"||a.isClone) return;
+                        if (isNeutralBystander(a)) return;
                         const adx=a.x-this.x, ady=a.y-this.y;
                         if (adx*adx+ady*ady<=2.25) applyDamage(a, pwr, this); // 1.5²=2.25
                     });
@@ -426,14 +434,21 @@ class Predator {
                     const hitTeam = this.isClone ? "red" : "green";
                     actors.forEach(a => {
                         if (a.dead || a.team !== hitTeam) return;
+                        // A recruit on its way to the Crystal is not a target.
+                        // Clones strike team "red", which is the recruits' team
+                        // until they arrive — so this is what stopped your own
+                        // converted predators killing the reinforcements.
+                        if (isNeutralBystander(a)) return;
                         const adx=a.x-this.x, ady=a.y-this.y;
                         if (adx*adx+ady*ady<=2.25) { // 1.5²=2.25
                             if (!this.isClone && this.smokeDebuff > 0 && Math.random() < 0.5) return; // miss
                             applyDamage(a, pwr, this);
                         }
                     });
-                    // ── PLAYER HIT — hostile melee predators can swipe the player ──
-                    if (!this.isClone) {
+                    // ── PLAYER HIT ──
+                    // Gated: predators do not bite the player. See
+                    // PREDATORS_ATTACK_PLAYER in js/config.js.
+                    if (!this.isClone && predatorMayHurtPlayer()) {
                         const pdx=player.x-this.x, pdy=player.y-this.y;
                         if (pdx*pdx+pdy*pdy<=2.25) hurtPlayer(pwr * 0.35, 4);
                     }

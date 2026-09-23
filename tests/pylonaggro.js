@@ -48,6 +48,16 @@ const sandbox = {
     PYLON_AGGRO_EXPOSURE, PYLON_AGGRO_TRAP_RATE, PYLON_BASH_COOLDOWN, PYLON_AGGRO_GIVE_UP,
     damageLog: [],
     applyDamage(t, amt) { sandbox.damageLog.push({ t, amt }); if (t) t.health = Math.max(0, (t.health ?? 100) - amt); },
+    // The real target predicate from js/helpers.js. game.js consults it, and
+    // stubbing it as permissive would let a recruit count as hostile here while
+    // the game says otherwise.
+    isNeutralBystander: a => !!(a && a.isNeutralRecruit && a.team === 'red'),
+    isHostileTarget(a) {
+        if (!a || a.dead) return false;
+        if (sandbox.isNeutralBystander(a)) return false;
+        if (a.team === 'red') return true;
+        return (a instanceof sandbox.Predator) && a.team !== 'green' && !a.isClone;
+    },
     applyElementalDamage() {},
     findNearestFriendlyPillar: () => null,
     spawnFollowerProjectile() {},

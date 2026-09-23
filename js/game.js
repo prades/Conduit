@@ -286,7 +286,7 @@ function applyPylonZoneEffects(wavePylons) {
                 const lineDist = Math.hypot(a.x-cx2, a.y-cy2);
                 if (lineDist > 1.5) return;
 
-                const isEnemy = (a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone));
+                const isEnemy = isHostileTarget(a);
                 const isFriend = (a.team==="green"||a.isClone||a.isFollower);
 
                 switch(el) {
@@ -996,7 +996,7 @@ function render() {
         if (_pylonsWithPartner.has(pv)) return; // already handled by pair logic
         actors.forEach(a=>{
             if (!a||a.dead) return;
-            const isEnemy=(a.team==="red"||(a instanceof Predator&&a.team!=="green"&&!a.isClone));
+            const isEnemy=isHostileTarget(a);
             if (!isEnemy) return;
             const dx=a.x-pv.x, dy=a.y-pv.y, d=Math.hypot(dx,dy);
             if (d>3||d<0.01) return;
@@ -1015,7 +1015,7 @@ function render() {
         // Find nearest enemy within range — squared distance avoids sqrt for non-targets
         let nearest=null, bd2=t.attackRange*t.attackRange;
         actors.forEach(a=>{
-            if ((a.team==="red"||(a instanceof Predator&&a.team!=="green"))&&!a.dead) {
+            if (isHostileTarget(a)) {
                 const dx=a.x-t.x, dy=a.y-t.y, d2=dx*dx+dy*dy;
                 if (d2<bd2) { bd2=d2; nearest=a; }
             }
@@ -1062,12 +1062,12 @@ function render() {
         // Progression counts EVERY enemy killed, wanderers included — it is a
         // record of what you have fought, not of wave quotas. The wave counter
         // below still ignores wanderers.
-        if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.progressCounted) {
+        if (a.dead && isHostileTarget(a) && !a.progressCounted) {
             a.progressCounted = true;
             noteKillForProgression();
         }
         // track kills for wave clear — count dead enemies not clones, wanderers don't count
-        if (a.dead && (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)) && !a.killCounted && !a.isWanderer) {
+        if (a.dead && isHostileTarget(a) && !a.killCounted && !a.isWanderer) {
             a.killCounted = true;
             nightKillCount++;
             const _kz = alertSource ? getZoneIndex(Math.floor(alertSource.x)) : 1;
@@ -2916,7 +2916,7 @@ function render() {
                 if (hit || a.dead) return;
                 const isTarget = p.targetsGreen
                     ? a.team === "green"
-                    : (a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone));
+                    : isHostileTarget(a);
                 if (isTarget) {
                     const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
                     if (Math.hypot(dx,dy) < 30) {
@@ -2926,8 +2926,11 @@ function render() {
                     }
                 }
             });
-            // Predator abdomen shots can also hit the player directly
-            if (!hit && p.targetsGreen) {
+            // Predator abdomen shots can also hit the player directly — gated,
+            // because predators do not attack the player. Ungated it also ate
+            // the shot, so this is the difference between being hit and the
+            // round passing you by.
+            if (!hit && p.targetsGreen && predatorMayHurtPlayer()) {
                 const dx=(p.x-player.x)*TILE_W, dy=(p.y-player.y)*TILE_H;
                 if (Math.hypot(dx,dy) < 30) {
                     // Immunity stops the damage but still eats the shot, so a
