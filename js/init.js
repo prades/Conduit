@@ -75,6 +75,7 @@ async function loadConfig() {
     loadCampBuildings();
     renderPylonIndex();     // fill the GAME INDEX pylon page from the codex
     renderWorkCrewIndex();  // and the fighters/workers page from js/mass.js
+    renderCloneCostIndex(); // and the clone prices from js/species.js
     render();
 }
 

@@ -1067,15 +1067,10 @@
       <div class="ctrl-row"><span class="ctrl-key">MODULATION</span>The multicoloured chip in the <strong>bottom-right of the HUD</strong> decides what your followers are made of. Tap an element to add or drop it from the mix; at least one has to stay on. Followers take their element <strong>at the Crystal</strong> — when a recruit reaches it, and again every time one respawns — so re-modulating gradually re-colours the whole squad as they cycle. It is also on the Crystal's MODULATION tab, same control.</div>
 
       <div class="ctrl-title">CLONE SUMMONING</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:5px">Spend <strong>DNA splices</strong> (dropped by enemies) and sacrifice followers to summon enemy species as your allies. Max <span class="cm-stat">4 active clones</span> at once.</div>
-      <table class="cm-clone-table">
-        <tr><th>Species</th><th>DNA needed</th><th>Scout cost</th><th>Tank cost (extra)</th></tr>
-        <tr><td style="color:#aa55ff">Ant</td><td>3 splices</td><td>1 follower</td><td>+1 follower</td></tr>
-        <tr><td style="color:#cc44ff">Beetle</td><td>5 splices</td><td>2 followers</td><td>+1 follower</td></tr>
-        <tr><td style="color:#8844ff">Scorpion</td><td>8 splices</td><td>3 followers</td><td>+1 follower</td></tr>
-        <tr><td style="color:#cc2244">Spider</td><td>10 splices</td><td>4 followers</td><td>+2 followers</td></tr>
-        <tr><td style="color:#44dd55">Mantis</td><td>8 splices</td><td>3 followers</td><td>+1 follower</td></tr>
-      </table>
+      <!-- Built at runtime from CLONE_COSTS in js/species.js so the prices
+           cannot drift. The hardcoded table that used to live here still
+           said "1 follower" long after followers stopped being the price. -->
+      <div id="cmCloneCosts"></div>
       <div class="ctrl-row cm-dim">Clones appear in the CLONES tab of the bottom-left panel. Command them like followers via the gesture system.</div>
 
       <div class="ctrl-title">CRYSTAL BUILDS</div>

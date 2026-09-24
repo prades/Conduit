@@ -30,6 +30,7 @@ const SUITES = [
     ['fire scour job',         'scour.js'],
     ['repel + ice block',      'crew.js'],
     ['reclaim + upgrade',      'reclaim.js'],
+    ['clone cost',             'clones.js'],
 ];
 
 let failed = 0;

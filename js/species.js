@@ -250,20 +250,47 @@ function getZoneClass(zoneIndex) {
     return "tank";
 }
 
-// Clone cost table
+// ── Clone cost table ─────────────────────────────────────
+// A clone costs SHARDS and DNA SPLICES. It used to cost splices and FOLLOWERS —
+// up to five of them, killed outright at the Crystal — which made the whole
+// mechanic something you avoided rather than used: trading your squad for one
+// unit of a squad is not a trade anyone takes twice.
+//
+// The splices stay. They are what makes a clone specific to something you
+// actually fought and killed, and no amount of shards substitutes for that.
+//
+// The shard price runs from 5 for the lowest grade to 25 for the highest, and
+// cloneShardCost() CLAMPS to those two numbers, so the range is a guarantee
+// rather than something that happens to fall out of the table.
+const CLONE_SHARD_MIN = 5;
+const CLONE_SHARD_MAX = 25;
+
+// What the class adds on top of the species price. A scout is the baseline.
+const CLONE_CLASS_SHARDS = { nymph: -2, scout: 0, striker: 2, tank: 5, boss: 10 };
+
 const CLONE_COSTS = {
-    ant:      { base:1, tankExtra:1, bossExtra:4,  splicesNeeded:3  },
-    beetle:   { base:2, tankExtra:1, bossExtra:5,  splicesNeeded:5  },
-    scorpion: { base:3, tankExtra:1, bossExtra:6,  splicesNeeded:8  },
-    spider:   { base:4, tankExtra:2, bossExtra:8,  splicesNeeded:10 },
-    mantis:   { base:3, tankExtra:1, bossExtra:6,  splicesNeeded:8  },
-    moth:     { base:4, tankExtra:2, bossExtra:7,  splicesNeeded:12 },
+    ant:      { shards:5,  splicesNeeded:3  },
+    beetle:   { shards:7,  splicesNeeded:5  },
+    mantis:   { shards:9,  splicesNeeded:8  },
+    scorpion: { shards:10, splicesNeeded:8  },
+    spider:   { shards:12, splicesNeeded:10 },
+    moth:     { shards:14, splicesNeeded:12 },
     // Synthetic deep-zone constructs — cloning not normally available but
     // entries prevent crashes if DNA of an unknown species is ever queried
-    "XV-09":  { base:5, tankExtra:2, bossExtra:10, splicesNeeded:20 },
-    "RS-a4":  { base:6, tankExtra:3, bossExtra:12, splicesNeeded:25 },
-    "HG-b2":  { base:7, tankExtra:3, bossExtra:14, splicesNeeded:30 },
-    "NX-w7":  { base:8, tankExtra:4, bossExtra:16, splicesNeeded:36 },
-    "AB-p3":  { base:9, tankExtra:4, bossExtra:18, splicesNeeded:42 },
-    "QX-z1":  { base:10,tankExtra:5, bossExtra:20, splicesNeeded:50 }
+    "XV-09":  { shards:15, splicesNeeded:20 },
+    "RS-a4":  { shards:16, splicesNeeded:25 },
+    "HG-b2":  { shards:17, splicesNeeded:30 },
+    "NX-w7":  { shards:18, splicesNeeded:36 },
+    "AB-p3":  { shards:19, splicesNeeded:42 },
+    "QX-z1":  { shards:20, splicesNeeded:50 }
 };
+
+// The one place the price is decided. An unknown species costs the maximum
+// rather than nothing, so a DNA key the table has never heard of cannot be
+// cloned for free.
+function cloneShardCost(speciesName, className) {
+    const c = CLONE_COSTS[speciesName];
+    if (!c) return CLONE_SHARD_MAX;
+    const extra = CLONE_CLASS_SHARDS[className] || 0;
+    return Math.max(CLONE_SHARD_MIN, Math.min(CLONE_SHARD_MAX, c.shards + extra));
+}

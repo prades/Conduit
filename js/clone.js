@@ -18,16 +18,15 @@ function getCloneOptions() {
             const key = speciesName + "_" + className;
             const inv = getDNA(); const have = inv[key] || 0;
             const needed = CLONE_COSTS[speciesName].splicesNeeded;
-            const baseCost = CLONE_COSTS[speciesName].base + (className==="tank" ? CLONE_COSTS[speciesName].tankExtra : 0);
-            let followerCost = baseCost;
-            if (className === "tank")  followerCost += CLONE_COSTS[speciesName].tankExtra;
-            if (className === "boss")  followerCost += CLONE_COSTS[speciesName].bossExtra;
-            if (className === "nymph") followerCost = Math.max(1, baseCost - 1);
+            // Shards, not followers. The old sum also counted tankExtra TWICE
+            // — once folded into baseCost and again on the next line — so a
+            // tank quietly cost double what the table said.
+            const shardCost = cloneShardCost(speciesName, className);
             options.push({
                 key, speciesName, className,
                 have, needed,
-                followerCost,
-                ready: have >= needed && followers.length >= followerCost && liveClones < MAX_CLONES
+                shardCost,
+                ready: have >= needed && shardCount >= shardCost && liveClones < MAX_CLONES
             });
         });
     });
@@ -39,20 +38,20 @@ function executeClone(option) {
     if (!option.ready) return;
     if (actors.filter(a => a.isClone && !a.dead).length >= MAX_CLONES) return;
 
-    // Deduct splices
+    // Re-checked here rather than trusting option.ready, which was computed
+    // whenever the menu was last built — shards can have been spent since.
+    const cost = cloneShardCost(option.speciesName, option.className);
+    if (shardCount < cost) {
+        floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
+            text: "NEED " + cost + " SHARDS TO CLONE", color: "#f44", life: 100, vy: -0.2 });
+        return;
+    }
+
+    // Splices and shards. NO followers — cloning used to kill up to five of
+    // them at the Crystal, which is why nobody used it.
     deductDNA(option.key, option.needed);
-
-    // Sacrifice nearest followers
-    const toSacrifice = followers
-        .filter(a => !a.dead)
-        .sort((a,b) => {
-            const da = Math.hypot(a.x-crystal.x, a.y-crystal.y);
-            const db = Math.hypot(b.x-crystal.x, b.y-crystal.y);
-            return da - db;
-        })
-        .slice(0, option.followerCost);
-
-    toSacrifice.forEach(a => { a.dead = true; a.sacrificed = true; });
+    shardCount -= cost;
+    if (typeof saveShards === "function") saveShards();
 
     // Spawn clone at crystal
     const speciesDef = SPECIES[option.speciesName];
@@ -160,9 +159,10 @@ function drawCloneMenu() {
         ctx.font = "10px monospace";
         ctx.fillText(opt.have + "/" + opt.needed + " splices", panelX + 34, rowY + 42);
 
-        // Follower cost
-        ctx.fillStyle = "#ff0";
-        ctx.fillText(opt.followerCost + " followers", panelX + 120, rowY + 42);
+        // Shard cost — greyed when you cannot afford it, so the number itself
+        // says why the CLONE button is missing.
+        ctx.fillStyle = shardCount >= opt.shardCost ? "#ffee44" : "#775533";
+        ctx.fillText(opt.shardCost + " shards", panelX + 120, rowY + 42);
 
         // Clone button
         if (ready) {
@@ -1028,8 +1028,9 @@ function _drawClonesTab(PX, PY, PW, PH) {
         ctx.fillStyle=opt.ready?"#0f8":sd.color; ctx.fillRect(PX+32, rowY+35, 120*prog, 6);
         ctx.fillStyle="#3a4055"; ctx.font="9px monospace"; ctx.textBaseline="alphabetic";
         ctx.fillText(`${opt.have}/${opt.needed} splices`, PX+32, rowY+50);
-        ctx.fillStyle="#ffee44"; ctx.textAlign="right";
-        ctx.fillText(`${opt.followerCost}✦`, PX+PW-54, rowY+50);
+        ctx.fillStyle = shardCount >= opt.shardCost ? "#ffee44" : "#775533";
+        ctx.textAlign="right";
+        ctx.fillText(`${opt.shardCost}✦`, PX+PW-54, rowY+50);
 
         if (opt.ready) {
             const bx=PX+PW-72, by2=rowY+10, bw=62, bh=24;

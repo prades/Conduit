@@ -416,3 +416,51 @@ function renderWorkCrewIndex() {
         'holding the line. Field none and the battlefield fills with charge you cannot spend, and your ' +
         'pylons stay in pieces.</div>';
 }
+
+// ── GAME INDEX — CLONE SUMMONING ─────────────────────────
+// Generated from CLONE_COSTS and cloneShardCost() in js/species.js. The table
+// that used to sit in game.html was hand-written, and it was still promising
+// "1 follower / +1 follower" after followers had stopped being the price at
+// all — the exact drift this replaces.
+function renderCloneCostIndex() {
+    if (typeof document === 'undefined') return;
+    const host = document.getElementById('cmCloneCosts');
+    if (!host) return;
+    if (typeof CLONE_COSTS === 'undefined' || typeof cloneShardCost !== 'function') return;
+
+    const lo = typeof CLONE_SHARD_MIN === 'number' ? CLONE_SHARD_MIN : 5;
+    const hi = typeof CLONE_SHARD_MAX === 'number' ? CLONE_SHARD_MAX : 25;
+    const cap = typeof MAX_CLONES === 'number' ? MAX_CLONES : 4;
+    // Only the species you can actually meet and clone. The synthetic
+    // constructs have entries so an unknown DNA key cannot crash or come free,
+    // but they are not offered, so listing them would be a lie.
+    const natural = ['ant', 'beetle', 'mantis', 'scorpion', 'spider', 'moth']
+        .filter(s => CLONE_COSTS[s]);
+    // The classes the menu actually offers — see getCloneOptions.
+    const classes = ['scout', 'striker', 'tank'];
+
+    let rows = '<tr><th>Species</th><th>DNA needed</th>'
+             + classes.map(c => '<th>' + c[0].toUpperCase() + c.slice(1) + '</th>').join('')
+             + '</tr>';
+    for (const s of natural) {
+        const col = (typeof SPECIES !== 'undefined' && SPECIES[s] && SPECIES[s].color) || '#aaa';
+        rows += '<tr><td style="color:' + col + '">' + s[0].toUpperCase() + s.slice(1) + '</td>'
+              + '<td>' + CLONE_COSTS[s].splicesNeeded + ' splices</td>'
+              + classes.map(c => '<td>' + cloneShardCost(s, c) + '✦</td>').join('')
+              + '</tr>';
+    }
+
+    host.innerHTML =
+        '<div class="ctrl-row cm-dim" style="margin-bottom:5px">Spend <strong>DNA splices</strong> ' +
+        '(dropped by enemies) and <strong>shards</strong> to summon an enemy species as your ally. ' +
+        'Max <span class="cm-stat">' + cap + ' active clones</span> at once.</div>' +
+        '<div class="ctrl-row cm-dim" style="margin-bottom:5px"><strong>It costs you no followers.</strong> ' +
+        'It used to kill up to five of them at the Crystal, which is why nobody used it — trading your ' +
+        'squad for one unit of a squad is not a trade you take twice. The splices stay, because they are ' +
+        'what makes a clone specific to something you actually fought and killed.</div>' +
+        '<table class="cm-clone-table">' + rows + '</table>' +
+        '<div class="ctrl-row cm-dim">Prices start at <span class="cm-stat">' + lo + '✦</span> for the ' +
+        'lowest grade and the scale tops out at <span class="cm-stat">' + hi + '✦</span>. The table ' +
+        'stops at MOTH because the deep-zone <strong>synthetic constructs</strong> are not offered for ' +
+        'cloning — they hold the top of that scale.</div>';
+}
