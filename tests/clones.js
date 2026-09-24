@@ -255,6 +255,163 @@ async function ready() {
     });
 
     // ─────────────────────────────────────────────────────
+    group('BUYING ONE FROM THE CRYSTAL MENU');
+
+    // REPORTED: "even though I have the money, I'm unable to buy the clone
+    // from the crystal menu."
+    //
+    // Not the price. With four clones already out, every row went dim, the
+    // CLONE button was simply not drawn, and a tap did nothing and said
+    // nothing — so three affordable rows sat there with no way to act on them.
+    // And clones PERSIST across waves (waves.js rebuilds cloneArmy at the start
+    // of each one), so the cap filled once and stayed full for the rest of the
+    // game. There was no way to dismiss one anywhere in the game.
+    //
+    // A sweep of every sort mode against five scroll positions also turned up
+    // sixteen GHOST buttons: rows scrolled out of the clipped list kept their
+    // tappable bounds, so a tap on empty space bought a clone you never chose.
+
+    // Open the crystal clone tab with `live` clones already out, draw it, and
+    // hand back what the player can see and press.
+    const menu = (live, body) => C.run(`(function(){
+        actors.length = 0; followers.length = 0; floatingTexts.length = 0;
+        ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+        shardCount = 9999;
+        const inv = {};
+        for (const c of ['scout','striker','tank']) inv['ant_' + c] = 99;
+        setDNA(inv);
+        for (let i = 0; i < ${live}; i++) {
+            const S = SPECIES['ant'];
+            const c = new Predator('scout', Object.assign({}, S.scout, {color:S.color}), 1, 2);
+            c.team = 'green'; c.isClone = true; c.speciesName = 'ant'; c.className = 'scout';
+            actors.push(c);
+        }
+        crystalMenuOpen = true; crystalMenuTab = 'clones';
+        crystalCloneSort = 'species'; _crystalScrollY = 0;
+        drawCrystalPanel();
+        ${body || ''}
+        const tab = window._cloneTabOpts || [];
+        return {
+            offered: tab.length,
+            ready: tab.filter(o => o.ready).length,
+            buyable: tab.filter(o => typeof o._bx === 'number').length,
+            explains: tab.filter(o => typeof o._nbx === 'number').length,
+            clones: actors.filter(a => a.isClone && !a.dead).length,
+            dismissBtn: !!window._cloneDismissBtn,
+            said: floatingTexts.map(f => f.text),
+        };
+    })()`);
+
+    check('under the cap, a row you can afford has a CLONE button', () => {
+        const r = menu(3);
+        same(r.ready, 3, 'all three ant rows should be ready');
+        same(r.buyable, 3, 'and all three should be pressable');
+    });
+
+    check('THE REPORTED CASE: at the cap, a blocked row EXPLAINS itself', () => {
+        // It used to draw nothing at all and swallow the tap.
+        const r = menu(4);
+        same(r.ready, 0, 'fixture: nothing should be ready at the cap');
+        same(r.buyable, 0, 'and nothing should be buyable');
+        ok(r.explains > 0, 'a blocked row must still be tappable so it can say why');
+    });
+
+    check('and tapping it says exactly what is in the way', () => {
+        const r = menu(4, `
+            const o = (window._cloneTabOpts||[]).find(x => typeof x._nbx === 'number');
+            crystalMenuOpen = true;
+            handleCrystalPanelInput(o._nbx + o._nbw/2, o._nby + o._nbh/2, true);
+        `);
+        ok(r.said.some(s => /CLONE CAP 4\/4/.test(s)),
+           'it should name the cap: ' + JSON.stringify(r.said));
+        same(r.clones, 4, 'and must not buy anything');
+    });
+
+    check('the reason is specific — DNA and shards each say their own thing', () => {
+        const r = C.run(`(function(){
+            actors.length = 0; followers.length = 0;
+            shardCount = 9999; setDNA({ ant_scout: 1 });
+            const short = getCloneOptions().find(o => o.key === 'ant_scout');
+            const dnaWhy = cloneBlockedReason(short);
+            const dnaLbl = cloneBlockedLabel(short);
+            shardCount = 0; setDNA({ ant_scout: 99 });
+            const poor = getCloneOptions().find(o => o.key === 'ant_scout');
+            const shardWhy = cloneBlockedReason(poor);
+            const shardLbl = cloneBlockedLabel(poor);
+            return { dnaWhy, dnaLbl, shardWhy, shardLbl };
+        })()`);
+        ok(/DNA/.test(r.dnaWhy), 'short on splices should say so: ' + r.dnaWhy);
+        ok(/SHARDS/.test(r.shardWhy), 'short on shards should say so: ' + r.shardWhy);
+        ok(r.dnaWhy !== r.shardWhy, 'the two reasons must not be the same sentence');
+        ok(r.dnaLbl !== r.shardLbl, 'nor the two button labels');
+    });
+
+    check('THE WAY OUT: DISMISS frees a slot and the rows come back', () => {
+        // Clones persist across waves, so without this the cap filled once and
+        // the whole menu was dead for the rest of the game.
+        const r = menu(4, `
+            const db = window._cloneDismissBtn;
+            if (!db) throw new Error('no DISMISS button was drawn at the cap');
+            crystalMenuOpen = true;
+            handleCrystalPanelInput(db.x + db.w/2, db.y + db.h/2, true);
+            drawCrystalPanel();
+        `);
+        same(r.clones, 3, 'one clone should have been dismissed');
+        same(r.ready, 3, 'and the rows should be ready again');
+        ok(r.buyable > 0, 'with a pressable CLONE button');
+    });
+
+    check('and then the purchase actually goes through', () => {
+        const r = menu(4, `
+            const db = window._cloneDismissBtn;
+            crystalMenuOpen = true;
+            handleCrystalPanelInput(db.x + db.w/2, db.y + db.h/2, true);
+            drawCrystalPanel();
+            const o = (window._cloneTabOpts||[]).find(x => typeof x._bx === 'number');
+            crystalMenuOpen = true;
+            handleCrystalPanelInput(o._bx + o._bw/2, o._by + o._bh/2, true);
+        `);
+        same(r.clones, 4, 'the slot freed by DISMISS should have been refilled');
+        ok(r.said.some(s => /DISMISSED/.test(s)), 'the dismissal should be announced');
+        ok(r.said.some(s => /CLONED/.test(s)), 'and so should the purchase');
+    });
+
+    check('DISMISS is not offered when there is nothing to dismiss', () => {
+        same(menu(0).dismissBtn, false, 'an empty field should not offer it');
+        same(menu(1).dismissBtn, true, 'one clone out should');
+    });
+
+    check('THE GHOSTS: a button you cannot see is not tappable', () => {
+        // Every sort mode against several scroll positions. A row scrolled out
+        // of the clipped list must leave no bounds behind.
+        const r = C.run(`(function(){
+            actors.length = 0; followers.length = 0; shardCount = 9999;
+            const inv = {};
+            for (const s of ['ant','beetle','mantis','scorpion','spider','moth'])
+                for (const c of ['scout','striker','tank']) inv[s + '_' + c] = 99;
+            setDNA(inv);
+            crystalMenuOpen = true; crystalMenuTab = 'clones';
+            const bad = [];
+            for (const sort of CSORTS.map(s => s.id)) {
+                for (const scroll of [0, 60, 200, 600, 2000]) {
+                    crystalCloneSort = sort; _crystalScrollY = scroll;
+                    drawCrystalPanel();
+                    const cl = window._cloneTabBounds;
+                    for (const o of (window._cloneTabOpts || [])) {
+                        for (const [bx, by, bh] of [[o._bx, o._by, o._bh], [o._nbx, o._nby, o._nbh]]) {
+                            if (typeof bx !== 'number') continue;
+                            if (by < cl.listY || by + bh > cl.listY + cl.listH)
+                                bad.push(sort + '@' + scroll + ' ' + o.key);
+                        }
+                    }
+                }
+            }
+            return bad;
+        })()`);
+        same(r.length, 0, 'tappable but invisible: ' + r.slice(0, 6).join(', '));
+    });
+
+    // ─────────────────────────────────────────────────────
     group('the index says so');
 
     check('the clone page is generated from the table', () => {

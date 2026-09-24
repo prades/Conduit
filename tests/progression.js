@@ -60,7 +60,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${b}, got 
 function ok(c, m) { if (!c) throw new Error(m); }
 
 // The real progression code out of wavedata.js, with a Crystal to walk back to.
-function makeEnv() {
+// `starting` overrides the starting set for the checks that test a RULE of the
+// ladder rather than the ladder the game ships with. Stacking two unclaimed
+// rewards needs at least two elements left to earn, and the shipped ladder is
+// down to one — but the rule still has to hold if a seventh element is ever
+// added, so it is tested against a widened ladder and the real one is pinned
+// separately below.
+function makeEnv(starting) {
     const sandbox = {
         console, Math, Object, Array, String, Number, Set, Map, isNaN, isFinite, parseInt,
         floatingTexts: [],
@@ -81,9 +87,10 @@ function makeEnv() {
         // Read out of config.js rather than written here: the wave ladder is
         // "every element that is not a starting one", so a fixture that
         // disagreed with the real pair would test a different ladder.
-        STARTING_ELEMENTS: JSON.parse(
+        STARTING_ELEMENTS: starting || JSON.parse(
             SRC.config.match(/const STARTING_ELEMENTS = (\[[^\]]*\])/)[1].replace(/'/g, '"')),
     };
+    if (starting) sandbox.unlockedElements = new Set(starting);
     sandbox.saveUnlocks  = () => { sandbox.unlockSaves++; };
     sandbox.saveProgress = () => { sandbox.progressSaves++; };
     sandbox.globalThis = sandbox;
@@ -215,7 +222,13 @@ check('an element is never earned twice', () => {
 check('putting off the trip back does not forfeit the reward', () => {
     // The reward is for the wave. Clearing another while one is still pending
     // should stack rather than overwrite or be dropped.
-    const env = makeEnv();
+    //
+    // Tested against a WIDENED ladder: the shipped game now starts with five of
+    // the six elements, so there is only one left to earn and two waves cannot
+    // both pay out. The rule is still the rule, and it has to keep holding if a
+    // seventh element is ever added.
+    const env = makeEnv(['fire', 'electric']);
+    ok(ladder(env).length >= 2, 'fixture: this needs at least two earnable elements');
     clearWave(env);
     clearWave(env);
     same(env.sandbox.pendingElements.length, 2, 'both waves should have paid out');
@@ -236,12 +249,38 @@ check('THE WIRING: the wave clear is what calls it', () => {
 });
 
 check('the readout says which element is next', () => {
-    const env = makeEnv();
+    // Widened for the same reason: with a one-element ladder there is no
+    // "next" left to move on to once the first is earned.
+    const env = makeEnv(['fire', 'electric']);
     const n = env.run('nextWaveUnlock()');
     same(n.element, ladder(env)[0], 'the first element should be next');
     clearWave(env);
-    ok(env.run('nextWaveUnlock()').element !== ladder(env)[0],
+    const after = env.run('nextWaveUnlock()');
+    ok(after && after.element !== ladder(env)[0],
        'an earned element should not still be next');
+});
+
+check('THE SHIPPED LADDER: what you start with, and what is left', () => {
+    // Pinned, because STARTING_ELEMENTS decides the whole ladder and the
+    // checks above deliberately widen it.
+    const env = makeEnv();
+    const start = env.sandbox.STARTING_ELEMENTS;
+    for (const id of ['electric', 'core', 'toxic', 'flux', 'fire']) {
+        ok(start.includes(id), 'the game should start with ' + id.toUpperCase());
+    }
+    ok(!start.includes('ice'), 'ICE should be the one still to earn');
+    same(ladder(env).join(','), 'ice', 'the ladder should be exactly ICE');
+});
+
+check('and the very first cleared wave spends it', () => {
+    // The direct consequence of starting with five: one wave and the ladder is
+    // done. Worth stating plainly rather than leaving to be discovered.
+    const env = makeEnv();
+    clearWave(env);
+    same(env.sandbox.pendingElements.join(','), 'ice', 'the first wave should earn ICE');
+    clearWave(env);
+    same(env.sandbox.pendingElements.length, 1, 'and a second wave has nothing left to pay');
+    same(env.run('nextWaveUnlock()'), null, 'with nothing reported as next');
 });
 
 check('with everything held there is nothing next', () => {
@@ -383,8 +422,10 @@ check('the documented ladder matches the code', () => {
     ok(/CLEARED WAVE EARNS/i.test(HTML), 'the index still describes the kill ladder');
     ok(!/25 kills|180 kills/.test(HTML), 'the old kill thresholds are still documented');
     // And it must be honest about running out.
-    ok(new RegExp('spent after ' + L.length + ' waves', 'i').test(HTML),
-       'the index does not say the ladder runs out');
+    // Singular when there is one left, which there now is — the text has to
+    // read as English, not as a template.
+    ok(new RegExp('spent after ' + L.length + ' wave' + (L.length === 1 ? '\\b' : 's'), 'i').test(HTML),
+       'the index does not say the ladder runs out after ' + L.length);
 });
 
 (async () => {

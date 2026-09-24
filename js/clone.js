@@ -34,8 +34,55 @@ function getCloneOptions() {
     return options.filter(o => o.have > 0);
 }
 
+// Why a row cannot be bought, in the order the player can do something about
+// it. Short enough for the button-sized box; cloneBlockedReason() is the long
+// form for the floating text.
+function cloneBlockedReason(option) {
+    if (!option) return null;
+    const live = actors.filter(a => a.isClone && !a.dead).length;
+    if (live >= MAX_CLONES)
+        return "CLONE CAP " + live + "/" + MAX_CLONES + " — DISMISS ONE FIRST";
+    if (option.have < option.needed)
+        return "NEED " + (option.needed - option.have) + " MORE " +
+               option.speciesName.toUpperCase() + " DNA";
+    if (shardCount < option.shardCost)
+        return "NEED " + (option.shardCost - shardCount) + " MORE SHARDS";
+    return null;
+}
+
+function cloneBlockedLabel(option) {
+    const live = actors.filter(a => a.isClone && !a.dead).length;
+    if (live >= MAX_CLONES)                  return "CAP " + live + "/" + MAX_CLONES;
+    if (option.have < option.needed)         return "DNA " + option.have + "/" + option.needed;
+    if (shardCount < option.shardCost)       return "NEED " + option.shardCost + "✦";
+    return "—";
+}
+
+// Free a slot. Clones persist across waves — waves.js rebuilds cloneArmy at the
+// start of each one — so four of them stayed out for the rest of the game and
+// the cap sat permanently full with no way to clear it. There was no dismiss
+// anywhere in the game.
+function dismissOldestClone() {
+    const live = actors.filter(a => a.isClone && !a.dead);
+    if (live.length === 0) return false;
+    const c = live[0];   // actors order is summon order
+    c.dead = true;
+    c.dismissed = true;
+    floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
+        text: (c.speciesName || "CLONE").toUpperCase() + " DISMISSED",
+        color: "#88aacc", life: 100, vy: -0.2 });
+    return true;
+}
+
 function executeClone(option) {
-    if (!option.ready) return;
+    if (!option.ready) {
+        const why = cloneBlockedReason(option);
+        if (why) {
+            floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
+                text: why, color: "#f44", life: 110, vy: -0.22, size: 12 });
+        }
+        return;
+    }
     if (actors.filter(a => a.isClone && !a.dead).length >= MAX_CLONES) return;
 
     // Re-checked here rather than trusting option.ready, which was computed
@@ -978,6 +1025,21 @@ function _drawClonesTab(PX, PY, PW, PH) {
     ctx.fillStyle = capAtMax ? "#ff4444" : "#3a5040";
     ctx.font = "bold 9px monospace"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
     ctx.fillText(`CLONES: ${liveClones}/${MAX_CLONES}`, PX+PW-8, capY+10);
+    // DISMISS — the only way to free a slot. Clones persist across waves, so
+    // without this the cap filled once and stayed full for the rest of the
+    // game, which is what made the whole menu look broken.
+    if (liveClones > 0) {
+        const dw=54, dh=14, dx=PX+PW-8-dw-74, dy=capY-2;
+        ctx.fillStyle = capAtMax ? "#3a2030" : "#1c2028";
+        ctx.fillRect(dx,dy,dw,dh);
+        ctx.strokeStyle = capAtMax ? "#cc5577" : "#3a4055"; ctx.lineWidth=1;
+        ctx.strokeRect(dx,dy,dw,dh);
+        ctx.fillStyle = capAtMax ? "#ffaacc" : "#66708a";
+        ctx.font="bold 8px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
+        ctx.fillText("DISMISS", dx+dw/2, dy+dh/2);
+        window._cloneDismissBtn = { x:dx, y:dy, w:dw, h:dh };
+        ctx.textAlign="right"; ctx.textBaseline="alphabetic";
+    } else { window._cloneDismissBtn = null; }
 
     const listY = PY + sortH + 18;
     const listH = PH - sortH - 18;
@@ -998,6 +1060,14 @@ function _drawClonesTab(PX, PY, PW, PH) {
     opts.forEach((opt, i) => {
         const rowY = listY + i*rowH - _crystalScrollY;
         if (rowY+rowH < listY || rowY > listY+listH) return;
+        // The list is CLIPPED, so a partially-visible row draws its button
+        // outside the visible band — invisible, but the bounds were recorded
+        // anyway. A sweep of every sort mode and scroll position found sixteen
+        // buttons you could not see and could still press, buying a clone you
+        // never chose. Bounds are only recorded when the button itself is
+        // wholly inside the band.
+        const btnTop = rowY + 10, btnBot = rowY + 34;
+        const btnVisible = btnTop >= listY && btnBot <= listY + listH;
         const sd = SPECIES[opt.speciesName];
         const cl = SPECIES[opt.speciesName]?.[opt.className];
 
@@ -1037,7 +1107,22 @@ function _drawClonesTab(PX, PY, PW, PH) {
             ctx.fillStyle="#0f8"; ctx.fillRect(bx,by2,bw,bh);
             ctx.fillStyle="#001a0a"; ctx.font="bold 10px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
             ctx.fillText("CLONE", bx+bw/2, by2+bh/2);
-            opt._bx=bx; opt._by=by2; opt._bw=bw; opt._bh=bh;
+            if (btnVisible) { opt._bx=bx; opt._by=by2; opt._bw=bw; opt._bh=bh; }
+        } else {
+            // WHY NOT. A blocked row used to render dim with no button and no
+            // reason, so a player with four clones already out saw three
+            // affordable prices and nothing to press — "even though I have the
+            // money, I'm unable to buy the clone". The blocker goes where the
+            // button would have been.
+            const bx=PX+PW-72, by2=rowY+10, bw=62, bh=24;
+            ctx.fillStyle="#2a1a1a"; ctx.fillRect(bx,by2,bw,bh);
+            ctx.strokeStyle="#553344"; ctx.lineWidth=1; ctx.strokeRect(bx,by2,bw,bh);
+            ctx.fillStyle="#cc7788"; ctx.font="bold 9px monospace";
+            ctx.textAlign="center"; ctx.textBaseline="middle";
+            ctx.fillText(cloneBlockedLabel(opt), bx+bw/2, by2+bh/2);
+            // Tappable, so the tap can EXPLAIN. Kept separate from _bx, which
+            // means "this can be bought".
+            if (btnVisible) { opt._nbx=bx; opt._nby=by2; opt._nbw=bw; opt._nbh=bh; }
         }
     });
     ctx.restore();
@@ -1343,11 +1428,27 @@ function handleCrystalPanelInput(ex, ey, isDown) {
             if (ex>=sa.upX&&ex<=sa.upX+sa.upW&&ey>=sa.upY&&ey<=sa.upY+sa.upH) { _crystalScrollY=Math.max(0,_crystalScrollY-sa.rowH); return true; }
             if (ex>=sa.dnX&&ex<=sa.dnX+sa.dnW&&ey>=sa.dnY&&ey<=sa.dnY+sa.dnH) { _crystalScrollY+=sa.rowH; return true; }
         }
+        // DISMISS — frees a slot. Checked before the rows so it is never
+        // swallowed by one.
+        const db = window._cloneDismissBtn;
+        if (db && ex>=db.x && ex<=db.x+db.w && ey>=db.y && ey<=db.y+db.h) {
+            dismissOldestClone();
+            return true;
+        }
         // Clone buttons
         for (const opt of (window._cloneTabOpts||[])) {
             if (!opt.ready||!opt._bx) continue;
             if (ex>=opt._bx&&ex<=opt._bx+opt._bw&&ey>=opt._by&&ey<=opt._by+opt._bh) {
                 executeClone(opt); crystalMenuOpen=false; return true;
+            }
+        }
+        // A BLOCKED row explains itself rather than swallowing the tap in
+        // silence, which is what made the menu look broken.
+        for (const opt of (window._cloneTabOpts||[])) {
+            if (opt.ready||!opt._nbx) continue;
+            if (ex>=opt._nbx&&ex<=opt._nbx+opt._nbw&&ey>=opt._nby&&ey<=opt._nby+opt._nbh) {
+                executeClone(opt);   // refuses, and says why
+                return true;
             }
         }
     }

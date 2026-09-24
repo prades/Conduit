@@ -25,10 +25,15 @@ const ELEMENTS = [
     { id:"core",     label:"CORE",     color:"#00ccaa" },
     { id:"toxic",    label:"TOXIC",    color:"#66ff66" }
 ];
-// The two you begin with. Named once because four places used to spell the
-// pair out, and the wave ladder is defined as "everything that is not one of
-// these" — a fifth copy would decide which elements are earnable.
-const STARTING_ELEMENTS = ["fire", "electric"];
+// What you begin with. Named once because four places used to spell the list
+// out, and the wave ladder is defined as "everything that is not one of these"
+// — another copy would quietly decide which elements are earnable.
+//
+// Was ["fire", "electric"]. Now five of the six, which leaves ICE as the only
+// thing left on the wave-unlock ladder: you start with every worker job except
+// the ice block, so the whole work crew is available from the first round
+// rather than two thirds of it being locked behind waves.
+const STARTING_ELEMENTS = ["electric", "core", "toxic", "flux", "fire"];
 let unlockedElements = new Set(STARTING_ELEMENTS);
 // Elements earned by kills but not yet brought online at the Crystal.
 let pendingElements = [];
