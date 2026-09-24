@@ -18,21 +18,78 @@ function issueMoveCommand(tile) {
     getCommandPool().forEach(a => { a.job={ type:"move", target:tile }; a.stance="hold"; });
 }
 
+const RECLAIM_CREW_MAX = 4;
+
+function _reclaimRefusal(text) {
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+                         text, color: "#f44", life: 100, vy: -0.2 });
+}
+
+// Who can be sent to take a pylon back.
+//
+// This used to be `followerByElement[player.selectedElement]` and nothing else,
+// which made RECLAIM depend on the element TAB the player happened to have
+// open. For the first round that is invisible — you start on fire and your
+// first recruits are fire. After that the Crystal's modulation hands out
+// something else, so the squad is ICE while the tab still says FIRE, the pool
+// comes back empty, and RECLAIM silently does nothing for the rest of the game.
+//
+// So: the selected element first, because that is what the player is looking
+// at, and then anyone who is free. _sendMergeFollower already worked this way.
+function reclaimCrew() {
+    // A standing POSITION order counts as available. It is not a task — it
+    // never finishes on its own — so `!a.job` benched a positioned follower
+    // from reclaiming permanently, the same way it used to bench one from
+    // taking a work duty.
+    const free = a => a && !a.dead && (!a.job || a.job.type === "move");
+    const pref = (followerByElement[player.selectedElement] || []).filter(free);
+    const pool = pref.length ? pref : followers.filter(free);
+    return pool.slice(0, RECLAIM_CREW_MAX);
+}
+
 function issueReconstruct(pylon) {
     if (!pylon || !pylon.pillar || pylon.destroyed) return;
     // Reclaiming is for pylons the predators took. A green one is already yours.
     if (pylon.pillarTeam !== "red") return;
-    if (!followers || followers.length === 0) {
-        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
-            text:"NEED FOLLOWERS TO RECLAIM",color:"#f44",life:100,vy:-0.2});
+
+    // A reclaim whose crew was wiped out left `reconstructing` set with the
+    // progress frozen, and the early return below then refused every retry —
+    // one interrupted attempt and that pylon could never be reclaimed again,
+    // with no message to say why. Losing the crew is the ordinary way a reclaim
+    // ends, so this was reachable in the first fight of the first round.
+    if (pylon.reconstructing && Array.isArray(pylon.workers)) {
+        const live = pylon.workers.filter(a => a && !a.dead
+                        && a.job && a.job.type === "reconstruct" && a.job.target === pylon);
+        if (live.length === 0) {
+            pylon.reconstructing = false;
+            pylon.workers = [];
+        } else {
+            pylon.workers = live;       // still under way — prune and fall through
+        }
+    }
+    // Still set means genuinely in progress: a live crew above, or a CORE
+    // worker rebuilding it (which sets the flag without ever filling `workers`).
+    // Either way it must not be restarted, or every press would reset the
+    // progress to zero and it could never finish.
+    if (pylon.reconstructing) return;
+
+    if (!followers || followers.filter(a => !a.dead).length === 0) {
+        _reclaimRefusal("NEED FOLLOWERS TO RECLAIM");
         return;
     }
-    if (!pylon.reconstructing) { pylon.reconstructing=false; pylon.reconstructProgress=0; pylon.workers=[]; }
-    if (pylon.reconstructing) return;
-    const pool=(followerByElement[player.selectedElement]||[]).filter(a=>!a.job).slice(0,4);
-    if (pool.length===0) return;
-    pylon.reconstructing=true; pylon.reconstructProgress=0; pylon.workers=pool;
-    pool.forEach(a => { a.job={ type:"reconstruct", target:pylon }; });
+    const pool = reclaimCrew();
+    if (pool.length === 0) {
+        // Never silent. This is the state the report was about.
+        _reclaimRefusal("NO FOLLOWER FREE TO RECLAIM");
+        return;
+    }
+    pylon.reconstructing = true;
+    pylon.reconstructProgress = 0;
+    pylon.workers = pool;
+    pool.forEach(a => {
+        if (typeof releaseStandingPost === "function") releaseStandingPost(a);
+        a.job = { type: "reconstruct", target: pylon };
+    });
 }
 
 // ── ELEMENT PICKER ────────────────────────────────────────
@@ -114,8 +171,27 @@ function _executeBuildInstant(el, t) {
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
 }
 
+// Can this pylon be upgraded at all? Only one you own.
+//
+// The upgrade path set attackMode, attackModeElement and attackModeColor and
+// never touched pillarTeam, and the attack-pylon and wave-pylon passes do not
+// filter by team — so upgrading an enemy pylon turned it into a working turret
+// of yours that still counted as theirs. It made a converted pylon yours again
+// without the RECLAIM it is supposed to cost, which is the whole counter to the
+// infestation.
+function canUpgradePylon(pylon) {
+    return !!(pylon && pylon.pillar && !pylon.destroyed && pylon.pillarTeam === "green");
+}
+
+function refuseEnemyUpgrade() {
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+                         text: "RECLAIM IT FIRST — NOT YOURS TO UPGRADE",
+                         color: "#f44", life: 110, vy: -0.22, size: 12 });
+}
+
 function _executeUpgrade(el, pylon) {
     if (!pylon || !pylon.pillar || pylon.destroyed) return;
+    if (!canUpgradePylon(pylon)) { refuseEnemyUpgrade(); return; }
     // Converting a pylon you already own into a generator is still creating
     // one, so it is held to the same placement rule.
     if (el && el.id === GENERATOR_ID && !canPlaceGenerator(pylon).ok) { refuseGenerator(); return; }
@@ -196,6 +272,9 @@ function executeCommand() {
                 pylon.pillar=false; pylon.constructing=false; pylon.constructProgress=0;
             }
             if (pylon && pylon.pillar && !pylon.destroyed) {
+                // Refused before the picker opens, so the player is not asked
+                // to choose an element for something that cannot take one.
+                if (!canUpgradePylon(pylon)) { refuseEnemyUpgrade(); break; }
                 openElementPicker("upgrade", pylon);
             } else if (commandTarget) {
                 if (shardCount >= PYLON_BUILD_COST) {

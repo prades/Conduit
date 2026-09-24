@@ -29,6 +29,7 @@ const SUITES = [
     ['targeting rules',        'targets.js'],
     ['fire scour job',         'scour.js'],
     ['repel + ice block',      'crew.js'],
+    ['reclaim + upgrade',      'reclaim.js'],
 ];
 
 let failed = 0;

@@ -66,11 +66,14 @@ const CODEX_INFEST = [
     { t: 'What hatches is the same species and class as whatever spun it.' },
     null,
     { h: 'TOXIN' },
-    { t: 'Only ' + COCOON_TOXIN_SPECIES.join(' and ').toUpperCase() + ' leave any, on one tile beside the pylon. It burns followers and recruits only.' },
+    // "and recruits" was left behind when recruits stopped taking any damage at
+    // all on their way in. Nothing read it against puddleAffects, so the page
+    // went on promising something the code had stopped doing.
+    { t: 'Only ' + COCOON_TOXIN_SPECIES.join(' and ').toUpperCase() + ' leave any, on one tile beside the pylon. It burns followers only.' },
     ['TOXIN', COCOON_PUDDLE_DAMAGE + ' damage / ' + (COCOON_PUDDLE_INTERVAL / 60).toFixed(2).replace(/0$/, '') + 's', '#7fdd44'],
     null,
     { h: 'TAKING IT BACK' },
-    { t: 'Press and hold a red pylon and pick RECLAIM. Followers rebuild it; the cocoon and nest die with it.' },
+    { t: 'Long-press a red pylon and pick RECLAIM. A crew rebuilds it and the cocoon and nest die with it. If the crew dies, order it again — UPGRADE will not do, it is not yours yet.' },
 ];
 
 // Each entry: what the element is for, then what each tier adds.

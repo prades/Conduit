@@ -84,8 +84,15 @@ function drawRadialMenu() {
     const showTopBtn = buildMode;
     const tHov = showTopBtn && dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
     if (showTopBtn) {
-        drawRadialButton(commandX, commandY-RADIAL_RADIUS, isPylonTarget?"UPGRADE":"BUILD", tHov);
-        if (tHov) selectedRadialAction="build_upgrade";
+        // An enemy pylon is not yours to upgrade — the left button offers
+        // RECLAIM instead, and that is the only way back. Saying "NOT YOURS"
+        // rather than drawing UPGRADE means the option is never presented as
+        // available in the first place.
+        const canUp = !isPylonTarget
+                      || (typeof canUpgradePylon === "function" && canUpgradePylon(commandTarget));
+        drawRadialButton(commandX, commandY-RADIAL_RADIUS,
+                         !canUp ? "NOT YOURS" : (isPylonTarget?"UPGRADE":"BUILD"), tHov);
+        if (tHov && canUp) selectedRadialAction="build_upgrade";
     }
 
     // ── DOWN = POSITION (or CAPTURE on capturable tiles) — hidden in build mode ──

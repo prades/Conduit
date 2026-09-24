@@ -198,8 +198,14 @@ async function boot(store) {
     check('10 shards is enough to open the picker', () => {
         // The radial gate demanded 40 before the element picker would appear,
         // which is what made the cheaper path unreachable.
-        const at = SRC.commands.indexOf('case "build_upgrade"');
-        const body = SRC.commands.slice(at, SRC.commands.indexOf('break;', at));
+        // Sliced to the end of the CASE, not to the first `break;`. An early
+        // refusal added inside the case (for upgrading an enemy pylon) put a
+        // `break;` ahead of the price check and cut it out of the window —
+        // failing this on a change that has nothing to do with shards.
+        const at   = SRC.commands.indexOf('case "build_upgrade"');
+        const next = SRC.commands.indexOf('\n        case "', at + 1);
+        const body = SRC.commands.slice(at, next === -1 ? undefined : next);
+        ok(at > -1 && body.length > 200, 'the build_upgrade case could not be located');
         ok(/shardCount >= PYLON_BUILD_COST/.test(body), 'the radial gate has its own price');
     });
 
