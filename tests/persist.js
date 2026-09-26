@@ -8,6 +8,7 @@ const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
+const { configNums } = require('./domstub.js');
 
 let store = {};
 // world.js stamps every tile with the one pylon look; read it out of config.js
@@ -33,6 +34,8 @@ function makeCtx() {
         siphonEnabled: true, siphonWisps: [],
         unlockedElements: new Set(['fire', 'electric']),
         cfg: { pillarSpawnRate: 0.15, npcSpawnRate: 0.22 },
+        // World generation reads these; lifted from config.js, not restated.
+        ...configNums(['PANEL_DECOY_CHANCE', 'PANEL_SHARD_MIN', 'PANEL_SHARD_MAX']),
         PYLON_STYLE: _pylonStyle(),
         NPC_TYPES: { virus: { moveSpeed: 0.02 }, lobster: { moveSpeed: 0.02 }, turtle: { moveSpeed: 0.02 } },
         PERSONALITY_KEYS: ['aggressive', 'cautious', 'cunning', 'stoic', 'wild'],

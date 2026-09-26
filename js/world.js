@@ -39,8 +39,9 @@ function generateSegment(startX) {
             tile.nodeType    = 'wall_panel';
             tile.capturable  = false;
             tile.panelActivated = false;
-            tile.isDecoy     = rnd() < 0.40;
-            tile.shardReward = 10 + Math.floor(rnd() * 21);
+            tile.isDecoy     = rnd() < PANEL_DECOY_CHANCE;
+            tile.shardReward = PANEL_SHARD_MIN
+                             + Math.floor(rnd() * (PANEL_SHARD_MAX - PANEL_SHARD_MIN + 1));
             tile.alarmType   = PANEL_ALARM_TYPES[Math.floor(rnd() * PANEL_ALARM_TYPES.length)];
             tile.panelFlicker = rnd() * Math.PI * 2;
         }

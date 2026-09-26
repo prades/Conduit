@@ -13,6 +13,7 @@ const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
+const { configNums } = require('./domstub.js');
 
 const CONFIG = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
 const GAME   = fs.readFileSync(path.join(ROOT, 'js/game.js'),   'utf8');
@@ -46,6 +47,8 @@ function generate(worldSrc, seed, from, to) {
         activeDayZones: 3, ZONE_LENGTH: 15, lastGenX: 0, _cacheAge: 0,
         unlockedElements: new Set(['fire', 'electric']),
         cfg: { pillarSpawnRate: 0.15, npcSpawnRate: 0.22 },
+        // World generation reads these; lifted from config.js, not restated.
+        ...configNums(['PANEL_DECOY_CHANCE', 'PANEL_SHARD_MIN', 'PANEL_SHARD_MAX']),
         NPC_TYPES: { virus: { moveSpeed: 0.02 }, lobster: { moveSpeed: 0.02 }, turtle: { moveSpeed: 0.02 } },
         PERSONALITY_KEYS: ['aggressive', 'cautious', 'cunning', 'stoic', 'wild'],
         COMBAT_TRAITS: { a: {}, b: {} }, NATURAL_TRAITS: { a: {}, b: {} }, PERKS: { a: {}, b: {} },

@@ -19,6 +19,7 @@ const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
+const { configNums } = require('./domstub.js');
 
 const WAVES = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
 const CAMP  = fs.readFileSync(path.join(ROOT, 'js/camp.js'),  'utf8');
@@ -62,6 +63,8 @@ function makeEnv() {
         activePredator: null, predatorRespawnTimer: 0,
         ELEMENTS: ['fire', 'ice', 'electric', 'core', 'flux', 'toxic'].map(id => ({ id })),
         cfg: { pillarSpawnRate: 0.15, npcSpawnRate: 0.22 },
+        // World generation reads these; lifted from config.js, not restated.
+        ...configNums(['PANEL_DECOY_CHANCE', 'PANEL_SHARD_MIN', 'PANEL_SHARD_MAX']),
         PYLON_STYLE: _pylonStyle(),
         PLAYER_AMMO_START: 12, PLAYER_AMMO_MAX: 60, playerAmmo: 0,
         NPC_TYPES: { virus: { moveSpeed: 0.02 }, lobster: { moveSpeed: 0.02 }, turtle: { moveSpeed: 0.02 } },

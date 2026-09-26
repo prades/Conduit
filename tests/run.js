@@ -31,6 +31,7 @@ const SUITES = [
     ['repel + ice block',      'crew.js'],
     ['reclaim + upgrade',      'reclaim.js'],
     ['clone cost',             'clones.js'],
+    ['early economy',          'economy.js'],
 ];
 
 let failed = 0;

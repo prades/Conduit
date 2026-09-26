@@ -91,4 +91,22 @@ function makeBrowserSandbox(store = {}) {
     return sandbox;
 }
 
-module.exports = { ROOT, scriptOrder, makeBrowserSandbox, stubEl, stubCtx };
+// Numeric constants lifted straight out of js/config.js, for the fixtures that
+// evaluate one file in isolation and have to supply its globals by hand.
+//
+// Read, never restated. Three suites hand-built their sandbox and broke the
+// moment generation started reading a new named constant, and hardcoding the
+// values in each of them is how a fixture ends up testing a number the game no
+// longer uses.
+function configNums(names) {
+    const src = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
+    const out = {};
+    for (const n of names) {
+        const m = src.match(new RegExp(`const\\s+${n}\\s*=\\s*(-?[\\d.]+)`));
+        if (!m) throw new Error('js/config.js no longer defines ' + n);
+        out[n] = Number(m[1]);
+    }
+    return out;
+}
+
+module.exports = { ROOT, scriptOrder, makeBrowserSandbox, stubEl, stubCtx, configNums };

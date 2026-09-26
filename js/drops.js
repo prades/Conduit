@@ -6,8 +6,10 @@ function onPredatorDeath(predator) {
     const py = (predator.x - player.visualX + (predator.y - player.visualY)) * TILE_H + canvas.height/2;
 
     // Every predator leaves a lump of live charged mass. It is not a pickup —
-    // an ELECTRIC worker has to bleed the charge off and a CORE worker has to
+    // an ELECTRIC worker has to bleed the charge off and a FLUX worker has to
     // haul it to the Crystal before it is worth anything. See js/mass.js.
+    // (It said CORE, which is the worker that rebuilds broken pylons.)
+    // This lump is the ONLY shard a kill gives: there is no separate drop.
     const _massValue = Math.max(1, Math.round((predator.shardDrop || 5) * MASS_VALUE_SCALE));
     spawnChargedMass(predator.x, predator.y, _massValue);
     floatingTexts.push({

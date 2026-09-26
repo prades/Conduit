@@ -410,8 +410,12 @@ function renderWorkCrewIndex() {
         'and put it back in the line.</div>' +
 
         '<div class="cm-build-row"><span class="cm-build-label">Worth</span>' +
-        'About <span class="cm-stat">' + pct + '%</span> of what that predator used to be worth. ' +
-        'The trip is the price of collecting it.</div>' +
+        '<span class="cm-stat">' + pct + '%</span> of what that predator was worth' +
+        (pct >= 100
+            ? ' — the full amount. This lump is the ONLY shard a kill gives, so the ' +
+              'two jobs are the price, not a cut taken off the top.'
+            : ' — the trip is the price of collecting it.') +
+        '</div>' +
         '<div class="cm-tip"><strong>The trade:</strong> every follower on the work crew is one that is not ' +
         'holding the line. Field none and the battlefield fills with charge you cannot spend, and your ' +
         'pylons stay in pieces.</div>';

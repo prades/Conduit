@@ -312,6 +312,21 @@ const PLAYER_AMMO_START = 12;
 // Rounds a hacked wall panel yields. The shop used to sell ammo; with it gone
 // this is the only source, so it has to be enough to keep the weapon usable.
 const PANEL_AMMO_REWARD = 8;
+// How likely a freshly generated wall panel is a DECOY that trips an alarm.
+//
+// Was 0.40 per panel, which measured at 28% and 5.4 decoys across the first
+// four zones — and every alarm raises the wave number, so a new player farming
+// panels for shards escalated themselves several waves before doing anything
+// else. The opening was also far harsher than the rest of the game: after any
+// alarm, resetPanels() reshuffles to exactly ONE decoy in the whole world.
+// This brings the first pass in line with that, so the tension is the same
+// throughout — you still never know which panel it is, there are just not five
+// of them waiting in the first three zones.
+const PANEL_DECOY_CHANCE = 0.08;
+// What a reward panel pays, inclusive. Named because the index quoted "5-15"
+// while generation had always produced 10-30 — nothing held the two together.
+const PANEL_SHARD_MIN = 10;
+const PANEL_SHARD_MAX = 30;
 let _ATKCHIP = { x: 0, y: 0, w: 0, h: 0 };   // on-screen ammo chip, tap to disarm
 
 // ── COMMAND / RADIAL STATE ────────────────────────────────

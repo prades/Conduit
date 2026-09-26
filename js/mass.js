@@ -33,9 +33,19 @@ const MASS_NEUTRALISE_FRAMES = 110;
 const MASS_WORK_RANGE   = 0.85;
 // How far a worker will travel to find a job.
 const MASS_SEEK_RANGE   = 26;
-// Shards are worth a fraction of what the predator would have dropped whole —
-// the chain is the cost of collecting them.
-const MASS_VALUE_SCALE  = 0.35;
+// What a hauled lump pays, as a multiple of the predator's shardDrop.
+//
+// Was 0.35, and a kill's mass is the ONLY shard a predator gives — there is no
+// separate drop, so 0.35 was the whole payout. Measured across the species
+// table that made a lump worth 1 to 11 shards, and the enemies you actually
+// meet first — ants and beetles — paid 1 to 5. A pylon costs 10. So an early
+// player ran the two-job chain (an ELECTRIC worker to bleed the charge, a FLUX
+// worker to haul it back, both taken off the line) for one or two shards.
+//
+// At 1.0 a lump is worth exactly what the predator was worth. The chain is the
+// COST — two followers off the line for the length of a round trip — rather
+// than a discount on top of it.
+const MASS_VALUE_SCALE  = 1.0;
 // One element per job. Anything else on worker duty has nothing to contribute,
 // which is the trade-off for taking it off the line.
 const MASS_NEUTRALISER  = 'electric';
