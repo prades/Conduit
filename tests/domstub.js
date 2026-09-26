@@ -109,4 +109,23 @@ function configNums(names) {
     return out;
 }
 
-module.exports = { ROOT, scriptOrder, makeBrowserSandbox, stubEl, stubCtx, configNums };
+// The SOURCE of a named top-level function, for the fixtures that evaluate one
+// file in isolation and need a helper it calls. Evaluating the real thing beats
+// stubbing it: a stub is a second copy of the rule, and this codebase has been
+// bitten more than once by the copy that did not get updated.
+function fnSource(relFile, name) {
+    const src = fs.readFileSync(path.join(ROOT, relFile), 'utf8');
+    const at = src.indexOf('function ' + name + '(');
+    if (at === -1) throw new Error(relFile + ' has no function ' + name);
+    let i = src.indexOf('{', at), depth = 0;
+    for (;;) {
+        if (src[i] === '{') depth++;
+        else if (src[i] === '}') depth--;
+        if (depth === 0) break;
+        i++;
+        if (i >= src.length) throw new Error('unterminated ' + name + ' in ' + relFile);
+    }
+    return src.slice(at, i + 1);
+}
+
+module.exports = { ROOT, scriptOrder, makeBrowserSandbox, stubEl, stubCtx, configNums, fnSource };

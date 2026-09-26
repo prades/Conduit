@@ -9,6 +9,7 @@ const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
+const { fnSource, configNums } = require('./domstub.js');
 
 const CONFIG = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
 const GAME   = fs.readFileSync(path.join(ROOT, 'js/game.js'),   'utf8');
@@ -39,6 +40,11 @@ function makeEnv(relay) {
     const sandbox = {
         console, Math, Object, Array, String, Number, Set, Map, isFinite, isNaN,
         world: [], actors: [], floatingTexts: [], _pillarCache: [],
+        // The aura ring the link draw now paints asks the pylon's network tier
+        // and its element colour. Tiers come from the game at runtime; an empty
+        // table means "nothing networked", which is the honest default here.
+        networkStrength: {},
+        ...configNums(['GEN_AURA_RADIUS', 'GEN_AURA_PER_TIER', 'GEN_AURA_INTERVAL', 'GEN_AURA_HEAL']),
         _genPylons: [], _genLinks: [], _wPylons: [], _wPylonPairs: [],
         _pylonsWithPartner: new Set(),
         frame: 0, TILE_W: 60, TILE_H: 30,
@@ -65,6 +71,12 @@ function makeEnv(relay) {
         if (!fn) { console.log(`  FAIL could not find ${name} in js/game.js`); process.exit(1); }
         vm.runInContext(fn[0], ctx, { filename: 'game.js:' + name });
     }
+    // The link draw now also draws the healing aura's reach, which asks the
+    // pylon's network tier and the aura constants. Real function, real numbers.
+    vm.runInContext(fnSource('js/game.js', 'pylonNetworkTier'), ctx, { filename: 'game.js:pylonNetworkTier' });
+    // The real ELEMENTS declaration, evaluated rather than transcribed: the
+    // aura ring colours itself from the pylon's element.
+    vm.runInContext(CONFIG.match(/const ELEMENTS = \[[\s\S]*?\n\];/)[0], ctx, { filename: 'config.js:ELEMENTS' });
     return { sandbox, calls, run: s => vm.runInContext(s, ctx) };
 }
 

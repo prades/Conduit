@@ -5,6 +5,7 @@ const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
+const { fnSource } = require('./domstub.js');
 
 let store = {};
 function makeEnv() {
@@ -43,6 +44,10 @@ function makeEnv() {
     sandbox.Predator = class Predator {};
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
+    // input.js asks whether a tap landed on the home portal. The REAL
+    // predicate, evaluated from helpers.js — a stub here would be a second
+    // copy of the rule and would not follow it when it changes.
+    vm.runInContext(fnSource('js/helpers.js', 'isHomePortal'), ctx, { filename: 'helpers.js:isHomePortal' });
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8'), ctx, { filename: 'js/input.js' });
     return { sandbox, shots, run: s => vm.runInContext(s, ctx) };
 }

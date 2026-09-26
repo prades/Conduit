@@ -89,6 +89,16 @@ let _genLinks  = [];   // [{ gen, pylon }] — generator → pylon it is mending
 // letting the player spend the build cost on a dead structure. The same range gates
 // the link itself, so anything you are allowed to build can always connect.
 const GENERATOR_NEST_RANGE = 6;
+// ── The generator's HEALING AURA ─────────────────────────
+// A pylon linked to a generator does not just keep itself standing — it mends
+// whoever is standing near it. The rate and the reach are multiplied by that
+// pylon's own NETWORK TIER, so a lone linked pylon is a trickle and a tier III
+// network is a field hospital. Tier 0 means "not networked at all", and the
+// floor of 1 keeps a linked pylon from being worth nothing.
+const GEN_AURA_INTERVAL = 20;    // frames between pulses
+const GEN_AURA_HEAL     = 0.9;   // HP per pulse, per tier
+const GEN_AURA_RADIUS   = 1.8;   // tiles at tier 1
+const GEN_AURA_PER_TIER = 0.5;   // extra tiles per tier above the first
 
 // The nest a generator at (x, y) would serve, or null if none is in reach.
 // Dead nests count: a broken nest is exactly the one you link.

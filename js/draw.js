@@ -1851,6 +1851,77 @@ function drawNestWallVortex(px, py, r, colour, spin, glow, alpha) {
     ctx.restore();
 }
 
+// ── THE HOME PORTAL ──────────────────────────────────────
+// Zone 0's nest, which was never a nest: it spawns nothing, raises no alarm,
+// and sits in the one place the player is safe while looking exactly like the
+// six hives that are trying to kill them. It is the way back into the Crystal.
+//
+// Drawn in the same sheared wall plane as the wall-nest vortex — one tile
+// along the wall moves (TILE_W, TILE_H) on screen while up the wall is (0,-1),
+// and those are not perpendicular, so it needs the transform rather than a
+// rotation. Green, steady and open, against the hives' orange churn.
+const PORTAL_R = 30;
+const PORTAL_COLOUR = "#2bff9b";
+
+function drawHomePortal(px, py) {
+    const sW1x = px, sW1y = py - 60, numT = 4;
+    const blx = sW1x - TILE_W,              bly = sW1y + TILE_H;
+    const brx = sW1x + (numT - 1) * TILE_W, bry = sW1y + (numT + 1) * TILE_H;
+    const cx = (blx + brx) / 2, cy = (bly + bry) / 2 - NEST_WALL_H * 0.5;
+    const t = (frame || 0);
+    const breathe = 0.5 + 0.5 * Math.sin(t * 0.035);
+
+    ctx.save();
+    ctx.transform(WALL_UX, WALL_UY, 0, -1, cx, cy);
+
+    // ── The opening: a dark green well that is deeper at the centre ──
+    const well = ctx.createRadialGradient(0, 0, 2, 0, 0, PORTAL_R);
+    well.addColorStop(0,    "rgba(4,26,16,0.96)");
+    well.addColorStop(0.55, "rgba(10,70,44,0.85)");
+    well.addColorStop(1,    "rgba(20,120,74,0.30)");
+    ctx.fillStyle = well;
+    ctx.beginPath(); ctx.ellipse(0, 0, PORTAL_R, PORTAL_R, 0, 0, Math.PI * 2); ctx.fill();
+
+    // ── Slow inward drift, so it reads as a way THROUGH rather than a light ──
+    ctx.strokeStyle = PORTAL_COLOUR;
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 3; i++) {
+        const k = ((t * 0.004 + i / 3) % 1);
+        const r = PORTAL_R * (1 - k);
+        ctx.globalAlpha = 0.55 * k;
+        ctx.beginPath(); ctx.ellipse(0, 0, r, r, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // ── The ring ──
+    ctx.strokeStyle = PORTAL_COLOUR;
+    ctx.lineWidth = 2.4 + breathe * 0.8;
+    ctx.shadowColor = PORTAL_COLOUR;
+    ctx.shadowBlur = 10 + breathe * 10;
+    ctx.beginPath(); ctx.ellipse(0, 0, PORTAL_R, PORTAL_R, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // ── Four anchors on the ring, turning slowly ──
+    ctx.fillStyle = "#d8ffe8";
+    for (let i = 0; i < 4; i++) {
+        const a = t * 0.012 + i * Math.PI / 2;
+        ctx.beginPath();
+        ctx.ellipse(Math.cos(a) * PORTAL_R, Math.sin(a) * PORTAL_R, 2.4, 2.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // ── Label, in screen space so it is never sheared ──
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.font = "bold 9px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = PORTAL_COLOUR;
+    ctx.globalAlpha = 0.65 + breathe * 0.35;
+    ctx.fillText("\u25c8 CRYSTAL", cx, cy + PORTAL_R + 16);
+    ctx.restore();
+}
+
 function drawCapturableNode(tile, px, py) {
     const captured = tile.captured;
     const progress = tile.captureProgress || 0;

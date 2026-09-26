@@ -79,6 +79,20 @@ function isNeutralBystander(a) {
     return !!(a && a.isNeutralRecruit && a.team === "red");
 }
 
+// THE HOME PORTAL. Zone 0's nest is not a nest at all.
+//
+// It never spawned anything — the spawn loop starts at zone 1 — and it never
+// raised an alarm, because the hack explicitly skips zone 0. It was an inert
+// hive structure sitting in the one place the player is safe, looking exactly
+// like the six that are trying to kill them. It is drawn as a green portal
+// instead, and tapping it opens the Crystal.
+//
+// One predicate, because the draw, the input, the radial menu and the squad's
+// orders all have to agree about what it is.
+function isHomePortal(t) {
+    return !!(t && t.nest && t.nestZone === 0 && !t._infestNest);
+}
+
 // How many of THEIRS are alive. Your own clones are green and do not count
 // against the enemy's budget.
 function livePredatorCount() {

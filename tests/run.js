@@ -32,6 +32,7 @@ const SUITES = [
     ['reclaim + upgrade',      'reclaim.js'],
     ['clone cost',             'clones.js'],
     ['early economy',          'economy.js'],
+    ['portal + aura',          'homebase.js'],
 ];
 
 let failed = 0;

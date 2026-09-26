@@ -472,6 +472,24 @@ function drawGeneratorLinks() {
         ctx.arc(gx + (px - gx) * t, gTop + (pTop - gTop) * t, 2, 0, Math.PI * 2);
         ctx.fill();
 
+        // THE HEALING AURA's reach, on the floor, so the player can see where
+        // to stand. Drawn from the same numbers the tick heals by, and it
+        // widens visibly as the network tier climbs.
+        if (pylon.pillarTeam === "green" && !pylon.destroyed && pylon.health > 0) {
+            const tier  = Math.max(1, pylonNetworkTier(pylon));
+            const reach = GEN_AURA_RADIUS + GEN_AURA_PER_TIER * (tier - 1);
+            const col   = (ELEMENTS.find(e => e.id === pylon.attackModeElement) || {}).color || "#9fe8c0";
+            const breathe = 0.5 + 0.5 * Math.sin(frame * 0.05 + pylon.x);
+            ctx.save();
+            ctx.globalAlpha = 0.10 + 0.07 * breathe + 0.03 * tier;
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 1 + tier * 0.4;
+            ctx.beginPath();
+            ctx.ellipse(px, py + TILE_H, reach * TILE_W, reach * TILE_H, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
         // A brief bloom on the pylon the frame it actually gained health.
         if (pylon._genHealFlash > 0) {
             pylon._genHealFlash--;
@@ -512,6 +530,51 @@ function generatorHealTick() {
         if (pylon.health >= cap) continue;
         pylon.health = Math.min(cap, pylon.health + GENERATOR_HEAL_AMOUNT);
         pylon._genHealFlash = 12;
+    }
+}
+
+// A pylon's network tier — 0 when it carries no element or stands alone.
+// One place, because the aura, the HUD and the zone effects all ask it.
+function pylonNetworkTier(pylon) {
+    if (!pylon) return 0;
+    const el = pylon.attackModeElement;
+    if (!el) return 0;
+    return networkStrength[el] || 0;
+}
+
+// THE AURA. Every pylon linked to a generator mends the squad standing around
+// it, at a rate and a reach multiplied by that pylon's network tier.
+//
+// Generator-linked only: this is what the generator is FOR, and it gives the
+// placement rule (within GENERATOR_NEST_RANGE of a nest) something to buy
+// beyond keeping the linked pylons repaired.
+function generatorAuraTick() {
+    if (frame % GEN_AURA_INTERVAL !== 0 || _genLinks.length === 0) return;
+    for (const { gen, pylon } of _genLinks) {
+        if (gen.destroyed || gen.health <= 0) continue;
+        if (pylon.destroyed || pylon.health <= 0) continue;
+        if (pylon.pillarTeam !== "green") continue;
+        // Floor of 1: a linked pylon always mends something, and the tier is
+        // the multiplier on top rather than a gate in front.
+        const tier = Math.max(1, pylonNetworkTier(pylon));
+        const heal = GEN_AURA_HEAL * tier;
+        const reach = GEN_AURA_RADIUS + GEN_AURA_PER_TIER * (tier - 1);
+        const r2 = reach * reach;
+        for (const a of actors) {
+            if (a.dead || a.team !== "green") continue;
+            if (!(a.health < a.maxHealth)) continue;
+            const dx = a.x - pylon.x, dy = a.y - pylon.y;
+            if (dx * dx + dy * dy > r2) continue;
+            a.health = Math.min(a.maxHealth, a.health + heal);
+            a._auraFlash = 10;
+        }
+        // The player is not in actors[], and is the one most likely to be
+        // standing on a pylon when things have gone wrong.
+        const pdx = player.x - pylon.x, pdy = player.y - pylon.y;
+        if (pdx * pdx + pdy * pdy <= r2 && health < 100) {
+            health = Math.min(100, health + heal);
+        }
+        pylon._auraPulse = (pylon._auraPulse || 0) + 1;
     }
 }
 
@@ -1232,6 +1295,7 @@ function render() {
 
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
+    generatorAuraTick();
 
     // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
     if (frame % 3 === 0) {
@@ -1867,7 +1931,12 @@ function render() {
             // this projection would paint its honeycomb onto a wall that is not
             // there — which is the flat rug that kept showing up. Those are
             // drawn as domes instead, in drawGrownNests().
-            if (obj.nest && obj.nestHealth > 0 && !obj._infestNest) {
+            // Zone 0's is the HOME PORTAL, not a hive — drawn green on its own
+            // wall face and skipping every honeycomb below.
+            if (isHomePortal(obj)) {
+                drawHomePortal(px, py);
+            }
+            else if (obj.nest && obj.nestHealth > 0 && !obj._infestNest) {
                 obj.nestPulse = (obj.nestPulse || 0) + 1;
                 const hr    = obj.nestHealth / obj.nestMaxHealth;
                 const pulse = 0.5 + 0.5 * Math.sin(obj.nestPulse * 0.06);

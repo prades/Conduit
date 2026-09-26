@@ -450,7 +450,12 @@ function zoneSpawnPoints(zoneIndex) {
     let any = false;
     const open = [];
     for (const t of world) {
-        if (t.nest && t.nestZone === zoneIndex) {
+        // The home portal is not a mouth. It never produced anything — the
+        // spawn loop starts at zone 1 — but it answered as one here, so
+        // anything that ever counted from zero would have poured predators out
+        // of the player's own doorway.
+        if (t.nest && t.nestZone === zoneIndex
+            && !(typeof isHomePortal === 'function' && isHomePortal(t))) {
             any = true;
             if (t.nestHealth > 0) open.push(t);
         } else if (t.nodeType === 'capacitor_node' &&

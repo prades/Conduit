@@ -143,6 +143,10 @@ const handleInput=(ex,ey)=>{
     if (nestConnectMode) { handleNestConnectTap(ex, ey); return; }
     // Short tap near crystal → open crystal panel
     if (isTapNearCrystal(ex,ey)) { crystalMenuOpen=true; return; }
+    // The HOME PORTAL is the other way in. Zone 0's nest spawns nothing and
+    // raises no alarm, so it was an inert hive taking up the safest tile in
+    // the game; it is the Crystal's doorway now.
+    if (isTapNearHomePortal(ex,ey)) { crystalMenuOpen=true; return; }
 
     // ── PLAYER ATTACK ──
     // Only while armed. This used to fire on any tap that happened to land near
@@ -165,6 +169,26 @@ function isTapNearCrystal(ex, ey) {
     const px = (crystal.x - player.visualX - (crystal.y - player.visualY)) * TILE_W + canvas.width/2;
     const py = (crystal.x - player.visualX + (crystal.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
     return Math.hypot(ex - px, ey - py) < 60;
+}
+
+// The portal's screen position is the centre of its wall face, which is where
+// drawHomePortal puts it — not the tile's own projected point. Kept next to
+// isTapNearCrystal because the two answer the same question.
+function homePortalScreenPos() {
+    const t = world.find(isHomePortal);
+    if (!t) return null;
+    const px = (t.x - player.visualX - (t.y - player.visualY)) * TILE_W + canvas.width/2;
+    const py = (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + canvas.height/2;
+    const sW1x = px, sW1y = py - 60, numT = 4;
+    const blx = sW1x - TILE_W,              bly = sW1y + TILE_H;
+    const brx = sW1x + (numT - 1) * TILE_W, bry = sW1y + (numT + 1) * TILE_H;
+    return { x: (blx + brx) / 2, y: (bly + bry) / 2 - NEST_WALL_H * 0.5 };
+}
+
+function isTapNearHomePortal(ex, ey) {
+    const p = homePortalScreenPos();
+    if (!p) return false;
+    return Math.hypot(ex - p.x, ey - p.y) < PORTAL_R + 18;
 }
 
 function handleLongHold(ex,ey) {
@@ -193,7 +217,9 @@ function handleLongHold(ex,ey) {
     // Check if any nest pod (live or broken) is near this tile (within 2.5 tiles)
     commandNestTarget=null;
     world.forEach(obj=>{
-        if (obj.nest && Math.hypot(obj.x-gx,obj.y-gy)<4.0) {
+        // Never the home portal: DESTROY / CONNECT on it are orders against
+        // your own doorway.
+        if (obj.nest && !isHomePortal(obj) && Math.hypot(obj.x-gx,obj.y-gy)<4.0) {
             commandNestTarget=obj;
         }
     });
