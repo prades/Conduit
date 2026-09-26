@@ -312,6 +312,12 @@ const PLAYER_AMMO_START = 12;
 // Rounds a hacked wall panel yields. The shop used to sell ammo; with it gone
 // this is the only source, so it has to be enough to keep the weapon usable.
 const PANEL_AMMO_REWARD = 8;
+// The most hostile predators alive at once, anywhere on the map. A global
+// ceiling on top of the per-zone ones, which bound WHERE predators are and not
+// how many exist — see the spawn loop in js/game.js for the measurements.
+// Frame cost is ~0.07ms per predator on top of a ~3ms floor, so this is the
+// single number that decides how heavy a busy wave is.
+const MAX_LIVE_PREDATORS = 24;
 // How likely a freshly generated wall panel is a DECOY that trips an alarm.
 //
 // Was 0.40 per panel, which measured at 28% and 5.4 decoys across the first

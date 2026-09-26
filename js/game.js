@@ -589,6 +589,73 @@ function drawDepthOf(o) {
 const DRAW_CULL_SIDE   = TILE_W * 2.5;   // 150px — wider than any sprite
 const DRAW_CULL_TOP    = TILE_H * 5;     // 150px — floor diamonds only
 const DRAW_CULL_BOTTOM = TILE_H * 7;     // 210px — the tallest sprite, and then some
+// Tiles indexed by column, built straight off `world` as it grows. Derived
+// rather than maintained: anything pushed into world by anybody is picked up on
+// the next call, so the index cannot drift out of step with the list.
+//
+// A restart replaces `world` with a fresh array, which the identity check
+// catches — keying on length alone would miss a new array of the same size.
+let _colIndex = new Map(), _colIndexedLen = 0, _colIndexWorld = null;
+let _lastDrawScan = 0;   // candidates examined by the last visibleTilesForDraw()
+function tileColumns() {
+    if (_colIndexWorld !== world) {
+        _colIndex = new Map(); _colIndexedLen = 0; _colIndexWorld = world;
+    }
+    for (let i = _colIndexedLen; i < world.length; i++) {
+        const t = world[i];
+        let col = _colIndex.get(t.x);
+        if (col === undefined) { col = []; _colIndex.set(t.x, col); }
+        col.push(t);
+    }
+    _colIndexedLen = world.length;
+    return _colIndex;
+}
+
+// Only the columns that could possibly be on screen.
+//
+// The draw list was `world.filter(visibleForDraw)` — every tile in the world,
+// every frame. `world` is appended to as the player walks, so that scan grows
+// without bound while the number of visible tiles does not: measured at 1256
+// tiles scanned to find 158, and twice the scan for the same picture after
+// walking twice as far.
+//
+// A cache keyed on the camera was tried first and was worthless: the camera
+// moves further in one frame than any lag small enough to be safe, so it
+// rebuilt every frame and hit 0% of the time.
+//
+// The cull is a screen-space box, so it bounds both isometric axes — (dx-dy)
+// from the horizontal test and (dx+dy) from the vertical one. Half their sum
+// bounds dx, which is the column. For a 900x700 view that is 28 columns rather
+// than the whole map, and the resulting set is IDENTICAL to the old filter
+// because every candidate still goes through visibleForDraw.
+function visibleTilesForDraw() {
+    const cols = tileColumns();
+    const halfW = canvas.width / 2, halfH = canvas.height / 2;
+    const aMin = (-DRAW_CULL_SIDE - halfW) / TILE_W;                    // min (dx-dy)
+    const aMax = (canvas.width + DRAW_CULL_SIDE - halfW) / TILE_W;      // max (dx-dy)
+    const bMin = (-DRAW_CULL_TOP - halfH) / TILE_H;                     // min (dx+dy)
+    const bMax = (canvas.height + DRAW_CULL_BOTTOM - halfH) / TILE_H;   // max (dx+dy)
+    const xMin = Math.floor(player.visualX + (aMin + bMin) / 2);
+    const xMax = Math.ceil (player.visualX + (aMax + bMax) / 2);
+    const out = [];
+    let scanned = 0;
+    for (let x = xMin; x <= xMax; x++) {
+        const col = cols.get(x);
+        if (col === undefined) continue;
+        scanned += col.length;
+        for (let i = 0; i < col.length; i++) {
+            const t = col[i];
+            if (visibleForDraw(t.x, t.y)) out.push(t);
+        }
+    }
+    // How many candidates that took. The whole point of the index is that this
+    // stays flat as `world` grows, and it is the only way to tell a working
+    // index from one whose window has quietly widened to the whole map —
+    // a too-wide window still produces the correct set, just slowly.
+    _lastDrawScan = scanned;
+    return out;
+}
+
 function visibleForDraw(x, y) {
     const dx = x - player.visualX, dy = y - player.visualY;
     const px = (dx - dy) * TILE_W + canvas.width / 2;
@@ -947,7 +1014,25 @@ function render() {
         // synthetic deep-zone constructs (XV-09 … QX-z1) fill zones 7-12.
         // Cap at 12 to populate infinite zones without unbounded actor counts.
         const hostileZoneCount = Math.min(gameState.nightNumber, 12);
+        // A GLOBAL ceiling on top of the per-zone ones.
+        //
+        // The per-zone caps bound where predators are, not how many exist. A
+        // facility alarm makes EVERY zone an alarm zone, each allowing 2+z, so
+        // at wave 9 the zones alone allow 3+4+...+11 = 63 alive at once, and
+        // more at wave 12.
+        //
+        // That is the term the frame time scales on. Measured at wave 9 with
+        // the alarm up, holding everything else fixed: 61 predators cost
+        // 7.02 ms of JS a frame, 29 cost 4.27 and 9 cost 3.33 — a flat
+        // ~0.07 ms each on top of a ~3 ms floor. Nothing else in the frame
+        // grows like that.
+        // Counted by livePredatorCount(), not here: a second copy of the rule
+        // is how the cocoon hatch ended up past the ceiling the spawner
+        // respected, and how "your clones do not count" would drift out of one
+        // of the two.
+        let _livePredators = livePredatorCount();
         for (let z = 1; z <= hostileZoneCount; z++) {
+            if (_livePredators >= MAX_LIVE_PREDATORS) break;
             // A zone stops producing only when EVERY mouth it has is shut —
             // its wall nest dead and its vortex sealed. It used to stop on the
             // nest alone, which would have made the vortex decorative.
@@ -968,6 +1053,7 @@ function render() {
                     zoneRespawnTimers[z]--;
                 } else {
                     spawnPredatorForZone(z);
+                    _livePredators++;
                     // Alarm zone: stagger spawns scaled by wave number (higher wave = faster spawns); wanderer zones: slow respawn
                     const _spawnDelay = isAlarmZone ? Math.max(15, 90 - (gameState.nightNumber - 1) * 5) : 240;
                     zoneRespawnTimers[z] = _spawnDelay;
@@ -1291,7 +1377,7 @@ function render() {
     // old column-distance filter kept half the frame's work off screen. The
     // player and the crystal are never culled: the player IS the camera, and
     // the crystal is a fixed landmark other code expects in the list.
-    let drawList=world.filter(t=>visibleForDraw(t.x,t.y));
+    let drawList=visibleTilesForDraw();
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     shards.forEach(s=>{ if(visibleForDraw(s.x,s.y)) drawList.push({type:'shard',x:s.x,y:s.y,shard:s}); });
     chargedMass.forEach(m=>{ if(visibleForDraw(m.x,m.y)) drawList.push({type:'mass',x:m.x,y:m.y,mass:m}); });

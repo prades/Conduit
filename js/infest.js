@@ -379,6 +379,11 @@ function _hatchFromCocoon(m) {
     if (!(m.hatchesLeft > 0)) return;
     m.spawned = m.spawned.filter(p => p && !p.dead);
     if (m.spawned.length >= COCOON_SPAWN_CAP) return;
+    // And the MAP's ceiling, not just this cocoon's. Capping the zone spawner
+    // alone left this path free to run past it — measured at 27 alive against
+    // a cap of 24. The hatch is not spent, only deferred: hatchesLeft is
+    // untouched, so the cocoon still owes what it owed once there is room.
+    if (typeof predatorBudgetFull === "function" && predatorBudgetFull()) return;
     if (typeof Predator === "undefined" || typeof SPECIES === "undefined") return;
     const speciesDef = SPECIES[m.species] ||
                        (typeof SYNTHETIC_SPECIES !== "undefined" ? SYNTHETIC_SPECIES[m.species] : null);

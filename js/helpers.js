@@ -79,6 +79,27 @@ function isNeutralBystander(a) {
     return !!(a && a.isNeutralRecruit && a.team === "red");
 }
 
+// How many of THEIRS are alive. Your own clones are green and do not count
+// against the enemy's budget.
+function livePredatorCount() {
+    let n = 0;
+    for (const a of actors) {
+        if (a.dead) continue;
+        if (typeof Predator === "undefined" || !(a instanceof Predator)) continue;
+        if (a.team === "green" || a.isClone) continue;
+        n++;
+    }
+    return n;
+}
+
+// The population ceiling, asked at every source that makes one. The zone
+// spawner is the obvious source and was capped first, but a cocoon hatches
+// predators too and went straight past it — measured at 27 alive against a cap
+// of 24. One predicate, so the next source to be added has something to ask.
+function predatorBudgetFull() {
+    return livePredatorCount() >= MAX_LIVE_PREDATORS;
+}
+
 function hurtPlayer(amount, shakeAmt) {
     if (!(amount > 0)) return false;
     if (player.invuln > 0) return false;
