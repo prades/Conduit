@@ -19,7 +19,7 @@
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
-const { ROOT, scriptOrder, makeBrowserSandbox } = require('./domstub.js');
+const { ROOT, scriptOrder, makeBrowserSandbox, fnSource, configNums } = require('./domstub.js');
 
 const SRC = {
     clone:   fs.readFileSync(path.join(ROOT, 'js/clone.js'),   'utf8'),
@@ -412,6 +412,260 @@ async function ready() {
     });
 
     // ─────────────────────────────────────────────────────
+    group('A CLONE IS A BETTER VERSION OF WHAT YOU KILLED');
+
+    // "I want the clones to be more resilient — basically three times as much
+    // health as their predator counterparts. And they respawn but slowly, and
+    // there's a ticker at the crystal showing the respawn time. And make it
+    // more noticeable they're on your team — a little green health bar."
+    //
+    // The 3x POWER multiplier already existed, at ONE of the three places a
+    // clone is built. The respawn and the between-waves restore each built
+    // their own and left it off, so a clone that died once — or merely
+    // survived a wave — came back an ordinary predator for the rest of the
+    // game. All three go through makeClone() now.
+    const MUL = configNums(['CLONE_HEALTH_MULT', 'CLONE_POWER_MULT', 'CLONE_RESPAWN_FRAMES']);
+
+    const built = (how) => C.run(`(function(){
+        actors.length = 0; respawnQueue.length = 0;
+        shardCount = 9999; setDNA({ ant_scout: 99 });
+        ${how}
+        const c = actors.find(a => a && a.isClone);
+        const cd = SPECIES['ant'].scout;
+        return c ? { hp: c.maxHealth, health: c.health, power: c.power,
+                     baseHp: cd.health, basePower: cd.power,
+                     team: c.team, isClone: !!c.isClone } : null;
+    })()`);
+
+    check('THE ASK: a summoned clone has 3x the health', () => {
+        const r = built(`executeClone(getCloneOptions().find(o => o.key === 'ant_scout'));`);
+        ok(!!r, 'no clone was summoned');
+        same(r.hp, r.baseHp * MUL.CLONE_HEALTH_MULT,
+             `${r.hp} max health against a base of ${r.baseHp}`);
+        same(r.health, r.hp, 'it should arrive at FULL health, not a third of the bar');
+    });
+
+    check('and 3x the power, which it always had', () => {
+        const r = built(`executeClone(getCloneOptions().find(o => o.key === 'ant_scout'));`);
+        same(r.power, r.basePower * MUL.CLONE_POWER_MULT,
+             `${r.power} power against a base of ${r.basePower}`);
+    });
+
+    check('THE BUG: a RESPAWNED clone is just as strong', () => {
+        // It was not. This block built its own predator and never multiplied.
+        const r = built(`
+            const victim = makeClone('ant', 'scout', 0, 2);
+            victim.dead = true; victim.stats = { hp: 5 };
+            for (let f = 0; f < 5; f++) render();
+            const q = respawnQueue.find(e => e.isClone);
+            if (q) q.timer = 1;
+            actors.length = 0;
+            for (let f = 0; f < 5; f++) render();
+        `);
+        ok(!!r, 'nothing respawned');
+        same(r.hp, r.baseHp * MUL.CLONE_HEALTH_MULT, 'a respawned clone lost its health bonus');
+        same(r.power, r.basePower * MUL.CLONE_POWER_MULT, 'a respawned clone lost its power bonus');
+    });
+
+    check('and so is one that merely SURVIVED a wave', () => {
+        // The between-waves restore in waves.js was the third copy.
+        const WAVES = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
+        ok(/makeClone\(/.test(WAVES), 'the wave restore still builds its own clone');
+        ok(!/clone\.isClone\s*=\s*true/.test(WAVES), 'it still assembles one by hand');
+    });
+
+    check('ONE builder, so the three can never disagree again', () => {
+        const CLONE = fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8');
+        const GAME  = fs.readFileSync(path.join(ROOT, 'js/game.js'),  'utf8');
+        same((CLONE.match(/function makeClone/g) || []).length, 1,
+             'makeClone is declared more than once');
+        // Nothing else may construct a Predator and call it a clone.
+        for (const [name, src] of [['game.js', GAME], ['waves.js',
+                fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8')]]) {
+            ok(!/isClone\s*=\s*true/.test(src), name + ' still hand-builds a clone');
+        }
+    });
+
+    check('the multipliers are named constants, not numbers inline', () => {
+        const CLONE = fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8');
+        ok(/CLONE_HEALTH_MULT/.test(CLONE), 'the health multiplier is not named');
+        ok(/CLONE_POWER_MULT/.test(CLONE), 'the power multiplier is not named');
+        ok(!/clone\.power \* 3\b/.test(CLONE), 'the old inline 3 is still there');
+    });
+
+    check('THE SLOW RESPAWN: a clone takes far longer than a follower', () => {
+        const r = C.run(`(function(){
+            actors.length = 0; respawnQueue.length = 0;
+            const c = makeClone('ant', 'scout', 0, 2);
+            c.dead = true; c.stats = { hp: 5 };
+            const f = { x: 0, y: 2, team: 'green', dead: true, element: 'fire',
+                        stats: { hp: 5 }, isFollower: true };
+            actors.push(f); followers.push(f);
+            for (let n = 0; n < 5; n++) render();
+            const clone    = respawnQueue.find(e => e.isClone);
+            const follower = respawnQueue.find(e => !e.isClone);
+            return { clone: clone ? clone.timer : null,
+                     total: clone ? clone.totalTimer : null,
+                     follower: follower ? follower.timer : null };
+        })()`);
+        ok(r.clone !== null, 'the clone was never queued to respawn');
+        ok(r.follower !== null, 'fixture: the follower was not queued');
+        ok(r.clone > r.follower * 5,
+           `a clone waits ${r.clone} frames against a follower's ${r.follower}`);
+        same(r.total, MUL.CLONE_RESPAWN_FRAMES, 'the total is not recorded for the ticker');
+    });
+
+    check('it does come back — slow, not never', () => {
+        const r = built(`
+            const victim = makeClone('ant', 'scout', 0, 2);
+            victim.dead = true; victim.stats = { hp: 5 };
+            for (let n = 0; n < 5; n++) render();
+            actors.length = 0;
+            for (let n = 0; n < CLONE_RESPAWN_FRAMES + 120; n++) render();
+        `);
+        ok(!!r, 'the clone never came back at all');
+        same(r.isClone, true, 'it came back as something other than a clone');
+        same(r.team, 'green', 'it came back on the wrong side');
+    });
+
+    // ─────────────────────────────────────────────────────
+    group('a clone LOOKS like yours');
+
+    // A recording context, because the game's own ctx is a const and cannot be
+    // swapped out from a test. Only the two drawing functions are evaluated —
+    // fnSource lifts the real ones rather than a copy.
+    function painter(extra) {
+        const ops = [];
+        const rec = new Proxy({}, {
+            get(t, k) {
+                if (k in t) return t[k];
+                return (...a) => { ops.push({ op: k, args: a }); };
+            },
+            set(t, k, v) { ops.push({ op: 'set:' + k, args: [v] }); t[k] = v; return true; },
+        });
+        const sandbox = Object.assign({
+            console, Math, Object, Array, String, Number, JSON,
+            ctx: rec, respawnQueue: [],
+        }, extra || {});
+        sandbox.globalThis = sandbox;
+        const c = vm.createContext(sandbox);
+        vm.runInContext(fnSource('js/draw.js', 'drawHealthBar'), c, { filename: 'drawHealthBar' });
+        vm.runInContext(fnSource('js/game.js', 'drawCloneRespawnTicker'), c, { filename: 'ticker' });
+        return { ops, run: e => vm.runInContext(e, c), sandbox };
+    }
+
+    check('THE ASK: an ally bar is GREEN at a health an enemy\'s is not', () => {
+        const p = painter();
+        p.run('drawHealthBar(0,0,36,5,50,100,ctx,false)');
+        const enemy = p.ops.filter(o => o.op === 'set:fillStyle').map(o => o.args[0]);
+        p.ops.length = 0;
+        p.run('drawHealthBar(0,0,36,5,50,100,ctx,true)');
+        const ally = p.ops.filter(o => o.op === 'set:fillStyle').map(o => o.args[0]);
+        // At half health the ordinary ramp is yellow — the same colour as the
+        // enemy standing next to it, which is the whole complaint.
+        ok(enemy.some(c => /^#ff0/i.test(c)), 'fixture: a half-health enemy bar should be yellow: ' + enemy);
+        ok(!ally.some(c => /^#ff0/i.test(c)), 'the ally bar is still yellow at half health: ' + ally);
+        ok(ally.some(c => /^#(1|2)[0-9a-f]c?/i.test(c) && c !== '#000'), 'the ally bar is not green: ' + ally);
+    });
+
+    check('and it is green at every health, because colour means WHOSE', () => {
+        const p = painter();
+        const at = pct => {
+            p.ops.length = 0;
+            p.run(`drawHealthBar(0,0,36,5,${pct},100,ctx,true)`);
+            return p.ops.filter(o => o.op === 'set:fillStyle')
+                        .map(o => o.args[0]).filter(c => c !== '#000');
+        };
+        for (const pct of [95, 50, 10]) {
+            const cols = at(pct);
+            ok(cols.length > 0, 'nothing drawn at ' + pct + '%');
+            for (const c of cols) {
+                // Handles #rgb as well as #rrggbb — the ordinary ramp uses the
+                // short form, and a 6-digit parser read "#0f8" as r=15 g=8 and
+                // reported a green colour as not green.
+                const hex = c.length === 4
+                    ? c[1] + c[1] + c[2] + c[2] + c[3] + c[3]
+                    : c.slice(1);
+                const r = parseInt(hex.slice(0, 2), 16), g = parseInt(hex.slice(2, 4), 16);
+                ok(g > r, `at ${pct}% health the ally bar is ${c} (r=${r} g=${g}), which is not green`);
+            }
+        }
+    });
+
+    check('the bar still SHRINKS, so length is still health', () => {
+        // Colour carrying ownership must not cost the health reading.
+        const p = painter();
+        const width = pct => {
+            p.ops.length = 0;
+            p.run(`drawHealthBar(0,0,36,5,${pct},100,ctx,true)`);
+            const fills = p.ops.filter(o => o.op === 'fillRect');
+            return fills.length > 1 ? fills[1].args[2] : null;
+        };
+        const full = width(100), half = width(50);
+        ok(full > half, `the bar does not shrink: ${full} at full, ${half} at half`);
+    });
+
+    check('an allied PREDATOR is drawn with the ally bar', () => {
+        const DRAW = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8');
+        ok(/_isAllyPred = actor\.team === "green" \|\| actor\.isClone/.test(DRAW),
+           'the ally test changed shape');
+        ok(/drawHealthBar\(px-18, py-85, 36, 5, actor\.health, actor\.maxHealth, drawCtx, _isAllyPred\)/
+            .test(DRAW), 'the predator bar is not told whether it is an ally');
+    });
+
+    // ─────────────────────────────────────────────────────
+    group('THE TICKER: the Crystal shows what is coming back');
+
+    check('it lists a clone that is on its way', () => {
+        const p = painter();
+        p.run(`respawnQueue.push({ isClone: true, speciesName: 'ant', className: 'scout',
+                                   timer: 900, totalTimer: 1800 });`);
+        p.run('drawCloneRespawnTicker(100, 200)');
+        const text = p.ops.filter(o => o.op === 'fillText').map(o => o.args[0]).join(' | ');
+        ok(/ANT SCOUT/.test(text), 'the ticker does not name the clone: ' + text);
+        ok(/15s/.test(text), 'the ticker does not count down in seconds: ' + text);
+    });
+
+    check('it ignores a FOLLOWER waiting to respawn', () => {
+        const p = painter();
+        p.run(`respawnQueue.push({ isClone: false, element: 'fire', timer: 100 });`);
+        p.run('drawCloneRespawnTicker(100, 200)');
+        same(p.ops.filter(o => o.op === 'fillText').length, 0,
+             'the ticker listed an ordinary follower');
+    });
+
+    check('nothing is drawn when nothing is coming back', () => {
+        const p = painter();
+        p.run('drawCloneRespawnTicker(100, 200)');
+        same(p.ops.length, 0, 'the ticker drew with an empty queue');
+    });
+
+    check('the soonest is listed first', () => {
+        const p = painter();
+        p.run(`respawnQueue.push({ isClone: true, speciesName: 'moth', className: 'tank',
+                                   timer: 1500, totalTimer: 1800 });
+               respawnQueue.push({ isClone: true, speciesName: 'ant', className: 'scout',
+                                   timer: 120, totalTimer: 1800 });`);
+        p.run('drawCloneRespawnTicker(100, 200)');
+        const text = p.ops.filter(o => o.op === 'fillText').map(o => o.args[0]);
+        ok(/ANT/.test(text[0]), 'the soonest is not first: ' + text.join(' | '));
+    });
+
+    check('it is wired to the Crystal, not floating in the HUD', () => {
+        const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
+        // Bounded by the BRANCH, not by a character count. The crystal branch
+        // is a hundred and thirty lines of gem, halo and light-pool drawing, so
+        // a fixed window put the call outside it and failed on correct code —
+        // the same trap as every other fixed-size source slice in this suite.
+        const at   = GAME.indexOf("obj.type==='crystal'");
+        ok(at > -1, 'the crystal draw branch could not be found');
+        const next = GAME.indexOf("else if (obj.type===", at + 10);
+        const body = GAME.slice(at, next === -1 ? undefined : next);
+        ok(body.length > 500, 'the crystal branch could not be measured');
+        ok(/drawCloneRespawnTicker\(/.test(body), 'the ticker is not drawn with the Crystal');
+    });
+
+    // ─────────────────────────────────────────────────────
     group('the index says so');
 
     check('the clone page is generated from the table', () => {
@@ -467,6 +721,12 @@ async function ready() {
         const antTank = C.run(`cloneShardCost('ant','tank')`);
         ok(r.includes(String(antTank)), 'the ant tank price ' + antTank + ' is not on the page');
         ok(/splices/.test(r), 'the page does not mention the DNA splices');
+        const HTML2 = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+        ok(new RegExp(MUL.CLONE_HEALTH_MULT + '&times; the health').test(HTML2),
+           'the index does not state the health multiplier');
+        ok(/green health bar/i.test(HTML2), 'nor that an ally bar is green');
+        ok(new RegExp(Math.round(MUL.CLONE_RESPAWN_FRAMES / 60) + ' seconds').test(HTML2),
+           'nor the respawn wait');
         // Synthetic constructs are not offered, so listing them would be a lie.
         ok(!/QX-z1/.test(r), 'the page lists a species you cannot clone');
     });

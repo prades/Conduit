@@ -74,6 +74,45 @@ function dismissOldestClone() {
     return true;
 }
 
+// ── BUILDING A CLONE ─────────────────────────────────────
+// THE one place a clone is made. There were three — the summon, the respawn
+// and the between-waves restore — and only the summon applied the 3x power
+// multiplier, so a clone that died once came back an ordinary predator for the
+// rest of the game. Every rule about what a clone IS lives here.
+function makeClone(speciesName, className, x, y, state) {
+    const speciesDef = (typeof SPECIES !== "undefined" && SPECIES[speciesName]) ||
+                       (typeof SYNTHETIC_SPECIES !== "undefined" ? SYNTHETIC_SPECIES[speciesName] : null);
+    if (!speciesDef) return null;
+    const classDef = typeof getClassDef === "function"
+        ? getClassDef(speciesDef, className)
+        : speciesDef[className];
+    if (!classDef) return null;
+
+    const def = {
+        width:     classDef.width,
+        height:    classDef.height,
+        moveSpeed: classDef.moveSpeed,
+        // Tripled on the way in, so health AND maxHealth carry it — the
+        // constructor sets both from def.health, and a clone patched after
+        // construction would show a full bar at a third of the length.
+        health:    classDef.health * CLONE_HEALTH_MULT,
+        power:     classDef.power,
+        color:     speciesDef.color
+    };
+
+    const clone = new Predator(className, def, x, y);
+    clone.state       = state || "wander";
+    clone.wanderTimer = 0;
+    clone.team        = "green";
+    clone.isClone     = true;
+    clone.power       = Math.round(clone.power * CLONE_POWER_MULT);
+    clone.speciesName = speciesName;
+    clone.className   = className;
+    if (typeof applySpeciesBody === "function") applySpeciesBody(clone, speciesName);
+    actors.push(clone);
+    return clone;
+}
+
 function executeClone(option) {
     if (!option.ready) {
         const why = cloneBlockedReason(option);
@@ -100,28 +139,11 @@ function executeClone(option) {
     shardCount -= cost;
     if (typeof saveShards === "function") saveShards();
 
-    // Spawn clone at crystal
+    // Spawn clone at crystal. "hunt", because one you just paid for should go
+    // and do something rather than wander off.
+    const clone = makeClone(option.speciesName, option.className, crystal.x, crystal.y, "hunt");
+    if (!clone) return;
     const speciesDef = SPECIES[option.speciesName];
-    const classDef   = speciesDef[option.className];
-    const def = {
-        width:     classDef.width,
-        height:    classDef.height,
-        moveSpeed: classDef.moveSpeed,
-        health:    classDef.health,
-        power:     classDef.power,
-        color:     speciesDef.color
-    };
-
-    const clone = new Predator(option.className, def, crystal.x, crystal.y);
-    clone.state       = "hunt";
-    clone.wanderTimer = 0;
-    clone.team        = "green";
-    clone.isClone     = true;
-    clone.power       = Math.round(clone.power * 3);   // clones hit hard
-    clone.speciesName = option.speciesName;
-    clone.className   = option.className;
-    applySpeciesBody(clone, option.speciesName);
-    actors.push(clone);
 
     // Floating text
     floatingTexts.push({

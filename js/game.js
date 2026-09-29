@@ -533,6 +533,48 @@ function generatorHealTick() {
     }
 }
 
+// THE CLONE RESPAWN TICKER.
+//
+// A clone takes CLONE_RESPAWN_FRAMES to come back — half a minute, against a
+// follower's three seconds — and without this the player has no way to know
+// whether one is coming or whether it is gone for good. Drawn over the Crystal,
+// which is where it will reappear.
+function drawCloneRespawnTicker(cx, topY) {
+    if (typeof respawnQueue === "undefined") return;
+    const waiting = respawnQueue.filter(e => e && e.isClone);
+    if (waiting.length === 0) return;
+    // Soonest first, so the top line is the one about to land.
+    waiting.sort((a, b) => a.timer - b.timer);
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+
+    const rowH = 13;
+    let y = topY - (waiting.length - 1) * rowH;
+    for (const e of waiting) {
+        const secs  = Math.max(0, Math.ceil(e.timer / 60));
+        const total = e.totalTimer || CLONE_RESPAWN_FRAMES;
+        const done  = Math.max(0, Math.min(1, 1 - e.timer / total));
+        const name  = ((e.speciesName || "clone") + " " + (e.className || "")).toUpperCase().trim();
+
+        // A bar that fills as it comes back, so the wait is legible at a glance
+        // and the number is the detail rather than the whole message.
+        const bw = 56, bh = 3;
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(cx - bw / 2 - 1, y - 9, bw + 2, bh + 2);
+        ctx.fillStyle = "#22ff88";
+        ctx.fillRect(cx - bw / 2, y - 8, bw * done, bh);
+
+        ctx.font = "bold 8px monospace";
+        ctx.fillStyle = "#22ff88";
+        ctx.fillText(name + "  " + secs + "s", cx, y);
+        y += rowH;
+    }
+    ctx.restore();
+}
+
 // A pylon's network tier — 0 when it carries no element or stands alone.
 // One place, because the aura, the HUD and the zone effects all ask it.
 function pylonNetworkTier(pylon) {
@@ -1220,7 +1262,11 @@ function render() {
             // builds and nothing can set one any more, so running out of HP
             // stat is simply permanent.
             if (newHp<=0) return; // permanent death — don't queue
-            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:180, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp) });
+            // A clone takes far longer to come back than a follower: it is
+            // worth three times as much in a fight and cost shards and DNA, so
+            // losing one has to be felt. The Crystal shows the countdown.
+            const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
+            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp) });
         }
         // Progression counts EVERY enemy killed, wanderers included — it is a
         // record of what you have fought, not of wave quotas. The wave counter
@@ -1627,6 +1673,7 @@ function render() {
             ctx.restore();
 
             drawHealthBar(px - 25, py - 118 + bob, 50, 7, crystal.health, crystal.maxHealth);
+            drawCloneRespawnTicker(px, py - 130 + bob);
             if (hpR < 0.3 && frame % 30 < 15) {
                 ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.fillStyle = "rgba(255,0,0,0.08)";
@@ -3006,27 +3053,12 @@ function render() {
         if(entry.timer<=0){
             if (entry.isClone && entry.speciesName) {
                 // Respawn as clone
-                const speciesDef = SPECIES[entry.speciesName];
-                if (!speciesDef) { respawnQueue.splice(i,1); continue; }
-                const classDef   = speciesDef[entry.className];
-                if (!classDef) { respawnQueue.splice(i,1); continue; }
-                const def = {
-                    width:     classDef.width,
-                    height:    classDef.height,
-                    moveSpeed: classDef.moveSpeed,
-                    health:    classDef.health,
-                    power:     classDef.power,
-                    color:     speciesDef.color
-                };
-                const clone = new Predator(entry.className, def, crystal.x, crystal.y);
-                clone.state       = "wander";
-                clone.wanderTimer = 0;
-                clone.team        = "green";
-                clone.isClone     = true;
-                clone.speciesName = entry.speciesName;
-                clone.className   = entry.className;
-                applySpeciesBody(clone, entry.speciesName);
-                actors.push(clone);
+                // makeClone, so a respawned clone is the same thing the
+                // summon built. This block used to construct its own and left
+                // off the power multiplier entirely — one death and a clone
+                // was an ordinary predator for the rest of the game.
+                const clone = makeClone(entry.speciesName, entry.className, crystal.x, crystal.y);
+                if (!clone) { respawnQueue.splice(i,1); continue; }
             } else {
                 // Respawn as regular follower — apply HP stat degradation
                 const def         = NPC_TYPES["virus"];

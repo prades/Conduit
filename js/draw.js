@@ -1,12 +1,26 @@
 // ─────────────────────────────────────────────────────────
 //  DRAWING HELPERS
 // ─────────────────────────────────────────────────────────
-function drawHealthBar(x, y, width, height, health, maxHealth, drawCtx=ctx) {
+// `ally` switches the bar to a GREEN ramp instead of the green/yellow/red one.
+//
+// On the ordinary ramp the colour means HEALTH, which is the same information
+// the length already carries — and it means a clone at half health is yellow,
+// exactly like the enemy next to it. On the ally ramp the colour means WHOSE
+// IT IS and the length still means health, so a clone reads as yours across
+// the room at any health.
+function drawHealthBar(x, y, width, height, health, maxHealth, drawCtx=ctx, ally=false) {
     if (typeof health!=="number"||typeof maxHealth!=="number"||maxHealth<=0) return;
     const pct=Math.max(0,Math.min(1,health/maxHealth));
-    const col = pct>0.6?"#0f8":pct>0.3?"#ff0":"#f22";
+    const col = ally ? (pct>0.6?"#22ff88":pct>0.3?"#18c46a":"#0f7a44")
+                     : (pct>0.6?"#0f8":pct>0.3?"#ff0":"#f22");
     drawCtx.fillStyle="#000"; drawCtx.fillRect(x,y,width,height);
     drawCtx.fillStyle=col;    drawCtx.fillRect(x+1,y+1,(width-2)*pct,height-2);
+    if (ally) {
+        // A thin green outline, so the bar itself is the marker rather than
+        // relying on the bracket drawn separately around it.
+        drawCtx.strokeStyle="#22ff88"; drawCtx.lineWidth=1;
+        drawCtx.strokeRect(x+0.5,y+0.5,width-1,height-1);
+    }
 }
 
 function drawRadialButton(x, y, label, active) {
@@ -936,7 +950,7 @@ function _drawPredator(actor, px, py, drawCtx) {
 
     if (actor.isNymph) drawCtx.globalAlpha = 1; // restore after nymph transparency
     const _isAllyPred = actor.team === "green" || actor.isClone;
-    drawHealthBar(px-18, py-85, 36, 5, actor.health, actor.maxHealth, drawCtx);
+    drawHealthBar(px-18, py-85, 36, 5, actor.health, actor.maxHealth, drawCtx, _isAllyPred);
     drawAbilityCharge(actor, px, py, drawCtx);
     // Clone/ally: green bracket frame + diamond marker for identification
     if (_isAllyPred) {

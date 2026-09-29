@@ -328,16 +328,13 @@ function nextWave() {
                 a.job = null; a.state = "wander";
                 actors.push(a);
             } else {
-                const speciesDef = SPECIES[a.speciesName];
-                if (!speciesDef) return;
-                const classDef = speciesDef[a.className];
-                if (!classDef) return;
-                const def = { width:classDef.width, height:classDef.height, moveSpeed:classDef.moveSpeed, health:classDef.health, power:classDef.power, color:speciesDef.color };
-                const clone = new Predator(a.className, def, crystal.x+(Math.random()-0.5)*2, crystal.y+(Math.random()-0.5)*2);
-                clone.state="wander"; clone.team="green"; clone.isClone=true;
-                clone.speciesName=a.speciesName; clone.className=a.className;
-                applySpeciesBody(clone, a.speciesName);
-                actors.push(clone);
+                // makeClone, like the summon and the respawn. Built by hand
+                // here, this block also left off the power multiplier, so a
+                // clone that merely SURVIVED a wave came back weaker than the
+                // one you paid for.
+                makeClone(a.speciesName, a.className,
+                          crystal.x + (Math.random()-0.5)*2,
+                          crystal.y + (Math.random()-0.5)*2);
             }
         });
 

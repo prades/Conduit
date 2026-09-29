@@ -69,6 +69,7 @@ let tutOrderedSelected = false;   // issued an attack order with SQUAD: SEL
 let tutOrderedAll      = false;   // ...and with SQUAD: ALL
 let tutCrystalOpened   = false;   // the player has opened the Crystal menu
 let tutPutToWork       = false;   // ...and put a follower on the work crew
+let tutCloned          = false;   // ...and summoned a clone
 
 function tutSpawnPracticeFollowers() {
     if (typeof spawnFollowerFromSave !== 'function') return;
@@ -82,6 +83,22 @@ function tutSpawnPracticeFollowers() {
             added.isTutorialUnit = true;
             tutLoanedFollowers.push(added);
         }
+    }
+}
+
+// Enough DNA and shards for one cheap clone, so the step can actually be
+// finished. Loaned like the practice followers: the player has not earned it,
+// but a tutorial that asks for something it does not provide simply stalls.
+function tutGrantCloneMaterials() {
+    if (typeof getDNA !== 'function' || typeof setDNA !== 'function') return;
+    if (typeof CLONE_COSTS === 'undefined') return;
+    const inv = getDNA();
+    const key = 'ant_scout';                 // the cheapest thing on the list
+    const need = (CLONE_COSTS.ant && CLONE_COSTS.ant.splicesNeeded) || 3;
+    if ((inv[key] || 0) < need) { inv[key] = need; setDNA(inv); }
+    if (typeof shardCount === 'number' && typeof cloneShardCost === 'function') {
+        const cost = cloneShardCost('ant', 'scout');
+        if (shardCount < cost) { shardCount = cost; if (typeof saveShards === 'function') saveShards(); }
     }
 }
 
@@ -254,6 +271,20 @@ const TUTS = [
         check: () => tutCrystalOpened,
     },
     {
+        // Clones are the one thing in the game that turns a kill into a unit,
+        // and nothing had ever pointed at them. Taught straight after the
+        // Crystal, because that is the tab it lives on.
+        id:    'clone',
+        title: 'SUMMON A CLONE',
+        body:  'Open the Crystal and pick CLONES. Killing a predator drops its DNA; spend enough of one species plus shards and it fights for YOU, with ' + CLONE_HEALTH_MULT + 'x the health and ' + CLONE_POWER_MULT + 'x the power. A green bar over the head means it is yours.',
+        icon:  '\u2687',
+        // Enough DNA and shards to actually do it — a step the player cannot
+        // finish is worse than no step at all.
+        enter: () => tutGrantCloneMaterials(),
+        target: () => (typeof crystal !== 'undefined' && crystal) ? crystal : null,
+        check: () => tutCloned,
+    },
+    {
         // A generator is an UPGRADE choice, not a building of its own, and the
         // placement rule is the whole reason it needs explaining: it has to be
         // near a NEST. The green portal at home counts as one, which is why
@@ -368,6 +399,7 @@ function startTutorial() {
     tutOrderedAll      = false;
     tutCrystalOpened   = false;
     tutPutToWork       = false;
+    tutCloned          = false;
     tutPracticeFoe  = null;
     tutLoanedFollowers = [];
     _tutTarget      = null; _tutTargetStep = -1;
@@ -420,6 +452,13 @@ function tutorialTick() {
     // the crew should not un-complete the step.
     if (!tutPutToWork && id === 'work') {
         tutPutToWork = followers.some(f => f && !f.dead && f.duty === 'worker');
+    }
+    // Latched, not polled: a clone summoned and then killed would otherwise
+    // un-complete a step the player has already finished. Polling for a LIVE
+    // actor is safe — nothing sweeps the living away mid-frame, which is the
+    // hazard that made the kill step a notification instead of a poll.
+    if (!tutCloned && id === 'clone') {
+        tutCloned = actors.some(a => a && a.isClone && !a.dead);
     }
 
     tutorialUiHints();

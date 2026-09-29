@@ -46,7 +46,7 @@ function makeEnv() {
         // The generator step quotes the real placement range in its text, and
         // reads it when the step table is built. Lifted from config.js so the
         // words and the rule cannot disagree.
-        ...configNums(['GENERATOR_NEST_RANGE']),
+        ...configNums(['GENERATOR_NEST_RANGE', 'CLONE_HEALTH_MULT', 'CLONE_POWER_MULT']),
         canPlaceGenerator: t => ({ ok: !!t, nest: null }),
         ctx: rec.ctx,
         canvas: { width: 800, height: 600 },
@@ -280,8 +280,15 @@ check('THE REPORTED CASE: the kill is reported, never polled for', () => {
     // before any poll could see it, so the step hung forever.
     const tickBody = TUT.slice(TUT.indexOf('function tutorialTick'),
                                TUT.indexOf('function drawTutorialHighlight'));
-    ok(!/actors\.some\([^)]*dead/.test(tickBody),
-       'tutorialTick still polls actors[] for a corpse');
+    // Polling for a LIVE actor is fine — nothing sweeps the living away
+    // mid-frame — so the negated form is stripped before looking. The blunt
+    // version of this pattern failed on `actors.some(a => a.isClone && !a.dead)`,
+    // which is the opposite of the bug it exists to catch.
+    const corpsePolls = (tickBody.match(/actors\.some\([^)]*\)/g) || [])
+        .map(poll => poll.replace(/![\s]*\w+\.dead/g, ''))
+        .filter(poll => /\.dead/.test(poll));
+    ok(corpsePolls.length === 0,
+       'tutorialTick still polls actors[] for a corpse: ' + corpsePolls.join(' | '));
     ok(/function tutorialNoteKill/.test(TUT), 'no kill notification exists');
 });
 
@@ -875,6 +882,65 @@ check('the work step names a job for every element that has one', () => {
     ok(/TO WORK/.test(s.body), 'it does not name the TO WORK button');
 });
 
+check('the clone step exists, and points at the Crystal', () => {
+    const env = makeEnv();
+    const s = env.run('TUTS').find(t => t.id === 'clone');
+    ok(!!s, 'there is no clone step');
+    ok(/CLONES/.test(s.body), 'it does not name the CLONES tab');
+    ok(/DNA/.test(s.body), 'it does not say where the DNA comes from');
+    ok(/green bar/i.test(s.body), 'it does not say how to tell a clone is yours');
+});
+
+check('and it quotes the REAL multipliers', () => {
+    const env = makeEnv();
+    const s = env.run('TUTS').find(t => t.id === 'clone');
+    const hp  = env.run('CLONE_HEALTH_MULT');
+    const pow = env.run('CLONE_POWER_MULT');
+    ok(new RegExp(hp + 'x the health').test(s.body), `it should say ${hp}x the health: ` + s.body);
+    ok(new RegExp(pow + 'x the power').test(s.body),  `it should say ${pow}x the power: ` + s.body);
+});
+
+check('THE STALL: the clone step hands over the DNA and shards it asks for', () => {
+    // A step the player cannot finish is worse than no step. With no DNA and
+    // no shards, nothing in the game would let them past it.
+    const env = makeEnv();
+    let dna = {}, shards = 0;
+    env.sandbox.getDNA = () => dna;
+    env.sandbox.setDNA = o => { dna = o; };
+    env.sandbox.CLONE_COSTS = { ant: { shards: 5, splicesNeeded: 3 } };
+    env.sandbox.cloneShardCost = () => 5;
+    env.sandbox.shardCount = 0;
+    env.sandbox.saveShards = () => {};
+    env.run('tutGrantCloneMaterials()');
+    ok((dna['ant_scout'] || 0) >= 3, 'no DNA was granted: ' + JSON.stringify(dna));
+    ok(env.run('shardCount') >= 5, 'no shards were granted: ' + env.run('shardCount'));
+});
+
+check('and the step actually runs that grant', () => {
+    const env = makeEnv();
+    const s = env.run('TUTS').find(t => t.id === 'clone');
+    ok(typeof s.enter === 'function', 'the clone step sets nothing up');
+    ok(/tutGrantCloneMaterials/.test(TUT), 'the grant helper is never called');
+});
+
+check('the clone step is watched by id and latched', () => {
+    ok(/id === 'clone'/.test(TUT), 'the clone step is not watched by id');
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'clone');
+    env.run(`actors.push({ isClone: true, dead: false, x: 2, y: 2 }); tutorialTick();`);
+    eq(env.run('tutCloned'), true, 'summoning a clone was not latched');
+    // And killing it again must not un-finish the step.
+    env.run('actors.forEach(a => { if (a.isClone) a.dead = true; }); tutorialTick();');
+    eq(env.run('tutCloned'), true, 'the step un-completed when the clone died');
+});
+
+check('and the clone tracker resets with the rest', () => {
+    const env = makeEnv();
+    env.run('tutCloned = true; startTutorial();');
+    eq(env.run('tutCloned'), false, 'the clone tracker survived a restart');
+});
+
 check('the new steps sit before READY and after the basics', () => {
     const ids = stepIds(makeEnv());
     const at = id => ids.indexOf(id);
@@ -882,7 +948,8 @@ check('the new steps sit before READY and after the basics', () => {
     ok(at('generator') > at('upgrade'), 'the generator comes before UPGRADE is taught');
     ok(at('aura') > at('generator'), 'the aura is explained before the generator exists');
     ok(at('ready') === ids.length - 1, 'READY is no longer last');
-    for (const id of ['crystal', 'generator', 'aura', 'work']) {
+    ok(at('clone') > at('crystal'), 'the clone step comes before the Crystal is opened');
+    for (const id of ['crystal', 'clone', 'generator', 'aura', 'work']) {
         ok(at(id) < at('ready'), id + ' comes after the closing step');
     }
 });

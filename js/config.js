@@ -328,6 +328,23 @@ const PANEL_AMMO_REWARD = 8;
 // Frame cost is ~0.07ms per predator on top of a ~3ms floor, so this is the
 // single number that decides how heavy a busy wave is.
 const MAX_LIVE_PREDATORS = 24;
+
+// ── CLONES ───────────────────────────────────────────────
+// A clone is the same creature fighting for you, and it is meant to be a
+// better one: three times the power its species has, and now three times the
+// health as well. It costs shards and DNA that came from killing one, so it
+// should feel like an upgrade rather than a copy.
+//
+// The power multiplier already existed — but only at ONE of the three places a
+// clone is built. A clone that died and respawned, or one restored at the start
+// of a wave, came back at ordinary predator strength. All three go through
+// makeClone() in js/clone.js now.
+const CLONE_POWER_MULT  = 3;
+const CLONE_HEALTH_MULT = 3;
+// Followers respawn in 3 seconds. A clone is worth far more than that, so
+// losing one has to cost something — it comes back, slowly, and the Crystal
+// shows the countdown.
+const CLONE_RESPAWN_FRAMES = 1800;   // 30 seconds
 // How likely a freshly generated wall panel is a DECOY that trips an alarm.
 //
 // Was 0.40 per panel, which measured at 28% and 5.4 decoys across the first
