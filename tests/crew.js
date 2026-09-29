@@ -25,6 +25,7 @@ const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
+const { scriptOrder, makeBrowserSandbox } = require('./domstub.js');
 
 const MASS    = fs.readFileSync(path.join(ROOT, 'js/mass.js'),    'utf8');
 const HELPERS = fs.readFileSync(path.join(ROOT, 'js/helpers.js'), 'utf8');
@@ -575,11 +576,219 @@ check('the drawn block reads as a cube, not a column', () => {
     // One tile edge is sqrt(30² + 15²) ≈ 33.5px on screen, so the vertical edge
     // has to be about TILE_H * 1.1 for the three edges to match. The first pass
     // used 1.9 and drew a pillar — caught by rendering it beside its own tile.
-    const m = DRAW.match(/const H\s*=\s*TILE_H \* ([\d.]+)/);
-    ok(!!m, 'the block height is no longer a multiple of TILE_H');
+    // Named ICE_BLOCK_H_MULT now, because the TAP test needs the same number
+    // to know where the cube is — it used to probe 68px above it and tapping a
+    // block selected nothing.
+    ok(/const H\s*=\s*TILE_H \* ICE_BLOCK_H_MULT/.test(DRAW),
+       'the block height is no longer a multiple of TILE_H');
+    const m = MASS.match(/const ICE_BLOCK_H_MULT\s*=\s*([\d.]+)/);
+    ok(!!m, 'ICE_BLOCK_H_MULT is not declared in mass.js');
     const mul = Number(m[1]);
     ok(mul > 0.9 && mul < 1.4, `a height of TILE_H * ${mul} is not one tile tall`);
 });
 
-console.log(failures ? `\n${failures} FAILING` : '\nall passing');
-process.exit(failures ? 1 : 0);
+// ─────────────────────────────────────────────────────────
+//  CALLING A WORKER BACK
+//
+// REPORTED: "the ICE followers need to be able to be unassigned from work —
+// whenever they're in the ICE block you need to be able to take them out of it.
+// Also the toxic followers need a quit-working option."
+//
+// Both commands already existed on the radial — THAW on a block, TO LINE on
+// any other worker. Neither could be REACHED, for two different reasons, both
+// measured before being fixed:
+//
+//   ICE:   findFollowerAtScreen probes 55px above a follower's projected point,
+//          where a virus sprite's body is drawn. A block is a cube sitting ON
+//          its tile, 68px lower. Tapping the block selected nothing; the only
+//          way in was to tap the empty air above it.
+//
+//   TOXIC: an enemy under the press took the ring outright. A repeller has
+//          enemies pressed against it BY DESIGN — that is its whole job — so
+//          with a predator inside 0.3 tiles the worker could not be selected
+//          at all and the ring showed ATTACK. The closer of the two wins now.
+(async () => {
+    const sandbox = makeBrowserSandbox({ tubecrawler_seed: '305419896', tubecrawler_shards: '999' });
+    const vctx = vm.createContext(sandbox);
+    for (const rel of scriptOrder()) {
+        try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), vctx, { filename: rel }); }
+        catch (e) { /* DOM-heavy init is noisy under stubs */ }
+    }
+    for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
+    const R = e => vm.runInContext(e, vctx);
+    R('gameState.running = true;');
+
+    // One worker of `el`, optionally a predator `enemyOff` tiles away, then a
+    // long press aimed at the worker and the ring driven UP to the duty button.
+    const recall = (el, enemyOff, settle) => R(`(function(){
+        actors.length = 0; followers.length = 0;
+        ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+        spawnFollowerAtCrystal(${JSON.stringify(el)});
+        const f = followers[0];
+        f.x = 6; f.y = 2;
+        player.x = 6; player.y = 4; player.visualX = 6; player.visualY = 4;
+        setFollowerDuty(f, 'worker');
+        for (let n = 0; n < ${settle || 0}; n++) render();
+        let foe = null;
+        ${enemyOff === null ? '' : `
+        const S = SPECIES['ant'];
+        foe = new Predator('scout', Object.assign({}, S.scout, {color:S.color}), 6 + ${enemyOff}, 2);
+        foe.team = 'red'; foe.speciesName = 'ant'; foe.className = 'scout';
+        actors.push(foe);`}
+        const wasBlock = !!f.iceBlock;
+        // Aimed at where the thing is DRAWN, worked out from the projection and
+        // the draw's own height — NOT from followerPickPoint, which is the
+        // function under test. Using it to choose the tap made the test follow
+        // the bug: delete the block branch and it happily aimed at the sprite
+        // instead and still passed.
+        const _px = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
+        const _py = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2;
+        const pt = wasBlock
+            ? { x: _px, y: _py + TILE_H - (TILE_H * ICE_BLOCK_H_MULT) / 2 }
+            : { x: _px, y: _py - 55 };
+        commandFollowerTarget = null; commandEnemyTarget = null;
+        handleLongHold(pt.x, pt.y);
+        const pickedF = commandFollowerTarget === f;
+        const pickedE = !!foe && commandEnemyTarget === foe;
+        dragDX = 0; dragDY = -RADIAL_RADIUS;
+        drawRadialMenu();
+        const action = selectedRadialAction;
+        executeCommand();
+        for (let n = 0; n < 5; n++) render();
+        return { wasBlock, pickedF, pickedE, action,
+                 stillBlock: !!f.iceBlock, duty: f.duty, speed: f.moveSpeed };
+    })()`);
+
+    group('ICE: the block can be tapped, and thawed');
+
+    check('THE REPORTED CASE: long-holding the BLOCK selects it', () => {
+        const r = recall('ice', null, 40);
+        same(r.wasBlock, true, 'fixture: it never froze');
+        ok(r.pickedF, 'tapping the block did not select the follower');
+    });
+
+    check('and the ring melts it and gives the speed back', () => {
+        const r = recall('ice', null, 40);
+        same(r.action, 'toggle_duty', 'the ring did not offer the duty toggle');
+        same(r.stillBlock, false, 'it is still frozen');
+        same(r.duty, 'fighter', 'it is still on the work crew');
+        ok(r.speed > 0, 'it thawed without getting its speed back');
+    });
+
+    check('the pick point follows the BLOCK, not the walking sprite', () => {
+        const r = R(`(function(){
+            actors.length = 0; followers.length = 0;
+            ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+            spawnFollowerAtCrystal('ice');
+            const f = followers[0]; f.x = 4; f.y = 2;
+            player.x = 4; player.y = 4; player.visualX = 4; player.visualY = 4;
+            const walking = followerPickPoint(f).y;
+            setFollowerDuty(f, 'worker');
+            for (let n = 0; n < 40; n++) render();
+            const py = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2;
+            return { walking, frozen: followerPickPoint(f).y, froze: !!f.iceBlock,
+                     drawnCentre: py + TILE_H - (TILE_H * ICE_BLOCK_H_MULT) / 2 };
+        })()`);
+        same(r.froze, true, 'fixture: it never froze');
+        ok(r.frozen > r.walking + 40,
+           `the block's pick point (${r.frozen}) is not well below the sprite's (${r.walking})`);
+        ok(Math.abs(r.frozen - r.drawnCentre) < 2,
+           `the pick point (${r.frozen}) is not where the cube is drawn (${r.drawnCentre})`);
+    });
+
+    group('TOXIC: an enemy in the cloud no longer steals the ring');
+
+    check('THE REPORTED CASE: the worker is reachable with a predator on top', () => {
+        for (const off of [0, 0.1, 0.3, 0.8]) {
+            const r = recall('toxic', off);
+            ok(r.pickedF, `with a predator ${off} tiles away the worker was not selectable`);
+            same(r.pickedE, false, `the enemy took the ring at ${off} tiles`);
+            same(r.action, 'toggle_duty', `no duty toggle offered at ${off} tiles`);
+            same(r.duty, 'fighter', `it could not be taken off the crew at ${off} tiles`);
+        }
+    });
+
+    check('but aiming at the ENEMY still arms the weapon', () => {
+        // The new precedence must not cost the ability to attack.
+        const r = R(`(function(){
+            actors.length = 0; followers.length = 0;
+            ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+            spawnFollowerAtCrystal('toxic');
+            const f = followers[0]; f.x = 6; f.y = 2;
+            player.x = 6; player.y = 4; player.visualX = 6; player.visualY = 4;
+            setFollowerDuty(f, 'worker');
+            const S = SPECIES['ant'];
+            const foe = new Predator('scout', Object.assign({}, S.scout, {color:S.color}), 6.6, 2);
+            foe.team = 'red'; foe.speciesName = 'ant'; foe.className = 'scout';
+            actors.push(foe);
+            const apx = (foe.x - player.visualX - (foe.y - player.visualY)) * TILE_W + canvas.width/2;
+            const apy = (foe.x - player.visualX + (foe.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
+            commandFollowerTarget = null; commandEnemyTarget = null;
+            handleLongHold(apx, apy - 55);
+            const out = { enemy: commandEnemyTarget === foe, follower: commandFollowerTarget === f };
+            commandMode = false; commandEnemyTarget = null; commandFollowerTarget = null;
+            return out;
+        })()`);
+        same(r.enemy, true, 'aiming squarely at an enemy no longer selects it');
+        same(r.follower, false, 'it selected the follower instead');
+    });
+
+    check('every worker element can be called back the same way', () => {
+        // Not just the two that were reported — the ring is one control.
+        for (const el of R('workerElements()')) {
+            const r = recall(el, null, el === 'ice' ? 40 : 0);
+            ok(r.pickedF, el + ' could not be selected');
+            same(r.duty, 'fighter', el + ' could not be taken off the crew');
+        }
+    });
+
+    check('with several in reach, the CLOSEST is picked', () => {
+        // Each finder used to return the first match it walked past, which with
+        // a crowd is whichever happens to sit earliest in the array.
+        const r = R(`(function(){
+            actors.length = 0; followers.length = 0;
+            ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+            player.x = 6; player.y = 4; player.visualX = 6; player.visualY = 4;
+            for (const el of ['fire', 'toxic', 'ice']) spawnFollowerAtCrystal(el);
+            // Far one FIRST in the array, near one last.
+            followers[0].x = 6.6; followers[0].y = 2;
+            followers[1].x = 6.3; followers[1].y = 2;
+            followers[2].x = 6.0; followers[2].y = 2;
+            const want = followers[2];
+            const p = followerPickPoint(want);
+            const got = findFollowerAtScreen(p.x, p.y);
+            return { right: got === want,
+                     gotEl: got ? got.element : null, wantEl: want.element };
+        })()`);
+        same(r.right, true,
+             'it picked the ' + r.gotEl + ' follower instead of the ' + r.wantEl + ' one under the finger');
+    });
+
+    check('the work crew page says how to call one back', () => {
+        const CODEX = fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8');
+        ok(/Call back/.test(CODEX), 'the page does not mention taking one off the crew');
+        ok(/THAW/.test(CODEX), 'nor that a block says THAW');
+        ok(/not the air above it/i.test(CODEX), 'nor where to press a block');
+        ok(/nearer your finger/i.test(CODEX),
+           'nor that a worker with an enemy on it is still reachable');
+    });
+
+    check('the two finders share one radius and one rule', () => {
+        const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+        ok(/const PICK_RADIUS = \d+/.test(INPUT), 'the tap radius is not a named constant');
+        ok(/function followerPickPoint/.test(INPUT), 'there is no shared pick point');
+        ok(/_fD <= _eD/.test(INPUT), 'the closer of the two no longer wins');
+        ok(!/commandFollowerTarget = commandEnemyTarget \? null :/.test(INPUT),
+           'the enemy still takes the ring outright');
+    });
+
+    check('the block height is one constant, shared by the draw and the tap', () => {
+        const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+        ok(/ICE_BLOCK_H_MULT/.test(DRAW), 'the draw no longer uses the named height');
+        ok(/ICE_BLOCK_H_MULT/.test(INPUT), 'the tap test does not use the same height');
+    });
+
+    console.log(failures ? `\n${failures} FAILING` : '\nall passing');
+    process.exit(failures ? 1 : 0);
+})();
+

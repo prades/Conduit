@@ -377,6 +377,11 @@ function renderWorkCrewIndex() {
         'Changing duty <strong>releases a standing POSITION order</strong> \u2014 a post is not a ' +
         'task and never finishes on its own, so it would otherwise keep the unit off work for good. ' +
         'A real task in progress is left to finish.</div>' +
+        '<div class="cm-build-row"><span class="cm-build-label">Call back</span>' +
+        'The same long press takes one OFF the crew. A frozen ICE block says <strong>THAW</strong> ' +
+        'instead of TO LINE \u2014 press the BLOCK itself, not the air above it. And a worker with an ' +
+        'enemy right on top of it, which is where a TOXIC repeller always is, can still be reached: ' +
+        'whichever of the two is nearer your finger wins the ring.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Fighters</span>' +
         'Behave exactly as before. Every follower starts as one.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Workers</span>' +

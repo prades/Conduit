@@ -87,26 +87,70 @@ function handleNestConnectTap(ex, ey) {
 
 // The enemy under a screen point, if any. Shared by the tap handler and the
 // long press so what you can shoot is exactly what you can target.
+const PICK_RADIUS = 45;
+
+// Where a unit is TAPPED. Most stand about 55px above their projected point,
+// which is where a virus sprite's body is drawn.
+//
+// An ICE BLOCK does not: it is a cube sitting ON its tile, so its centre is a
+// little above the tile's own centre and 68px BELOW where the old probe looked.
+// Tapping a block therefore never selected it, and the only way to open its
+// menu — and so to thaw it — was to tap the empty air above it.
+function followerPickPoint(f) {
+    const px = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
+    const py = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2;
+    if (f.iceBlock) {
+        return { x: px, y: py + TILE_H - (TILE_H * ICE_BLOCK_H_MULT) / 2 };
+    }
+    return { x: px, y: py - 55 };
+}
+
+// Each finder returns the CLOSEST match rather than the first one it walks
+// past, so the two can be compared fairly — see handleLongHold.
 function findEnemyAtScreen(ex, ey) {
+    let best = null, bestD = PICK_RADIUS;
     for (const a of actors) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
         const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
         const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
-        if (Math.hypot(ex - apx, ey - (apy - 55)) < 45) return a;
+        const d = Math.hypot(ex - apx, ey - (apy - 55));
+        if (d < bestD) { bestD = d; best = a; }
     }
-    return null;
+    return best;
+}
+function enemyPickDistance(ex, ey) {
+    let bestD = Infinity;
+    for (const a of actors) {
+        if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
+        const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
+        const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
+        const d = Math.hypot(ex - apx, ey - (apy - 55));
+        if (d < bestD) bestD = d;
+    }
+    return bestD;
 }
 
 // The follower under a screen point. Same radius as the enemy test, so the two
 // feel identical to aim.
 function findFollowerAtScreen(ex, ey) {
+    let best = null, bestD = PICK_RADIUS;
     for (const f of followers) {
         if (!f || f.dead) continue;
-        const fpx = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
-        const fpy = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2;
-        if (Math.hypot(ex - fpx, ey - (fpy - 55)) < 45) return f;
+        const p = followerPickPoint(f);
+        const d = Math.hypot(ex - p.x, ey - p.y);
+        if (d < bestD) { bestD = d; best = f; }
     }
-    return null;
+    return best;
+}
+function followerPickDistance(ex, ey) {
+    let bestD = Infinity;
+    for (const f of followers) {
+        if (!f || f.dead) continue;
+        const p = followerPickPoint(f);
+        const d = Math.hypot(ex - p.x, ey - p.y);
+        if (d < bestD) bestD = d;
+    }
+    return bestD;
 }
 
 function firePlayerShot(foe) {
@@ -209,10 +253,21 @@ function handleLongHold(ex,ey) {
         const _snap=world.find(obj=>obj.pillar&&!obj.destroyed&&obj.health>0&&Math.hypot(obj.x-gx,obj.y-gy)<2.0);
         if (_snap) commandTarget=_snap;
     }
-    // An enemy under the press takes over the menu — see drawRadialMenu.
-    commandEnemyTarget = findEnemyAtScreen(ex, ey);
-    // Otherwise a follower under the press offers its duty toggle.
-    commandFollowerTarget = commandEnemyTarget ? null : findFollowerAtScreen(ex, ey);
+    // Whichever is CLOSER to the finger wins, rather than the enemy always
+    // taking it. An enemy used to win outright, and a TOXIC repeller has
+    // enemies pressed right up against it by definition — that is its whole
+    // job — so the ring showed ATTACK at exactly the moment you wanted to call
+    // the worker off. Measured: with a predator within 0.3 tiles the follower
+    // could not be selected at all.
+    const _eD = enemyPickDistance(ex, ey);
+    const _fD = followerPickDistance(ex, ey);
+    if (_fD <= _eD) {
+        commandFollowerTarget = findFollowerAtScreen(ex, ey);
+        commandEnemyTarget    = null;
+    } else {
+        commandEnemyTarget    = findEnemyAtScreen(ex, ey);
+        commandFollowerTarget = null;
+    }
 
     // Check if any nest pod (live or broken) is near this tile (within 2.5 tiles)
     commandNestTarget=null;

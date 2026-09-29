@@ -195,7 +195,7 @@ function _drawIceBlock(actor, px, py, drawCtx) {
     // the block reads as one tile in every direction. The first attempt used
     // TILE_H * 1.9 and rendered a pillar — obvious the moment it was drawn next
     // to its own tile outline, and not before.
-    const H  = TILE_H * 1.15 * (0.18 + 0.82 * form);   // block height, screen px
+    const H  = TILE_H * ICE_BLOCK_H_MULT * (0.18 + 0.82 * form);   // block height, screen px
     // The tile's visual centre sits a tile-height below the projected point.
     const cy = py + TILE_H;
     const topY = cy - H;

@@ -84,6 +84,13 @@ const ICE_BLOCK_R       = 0.62;
 const ICE_BLOCK_PUSH    = 0.09;  // per frame for anything that wanders in
 const ICE_FORM_FRAMES   = 45;    // the freeze-over animation
 const ICE_COLOUR        = '#99ddff';
+// The block's height on screen, as a multiple of TILE_H. One tile edge measures
+// about 33.5px, so 1.15 makes the three cube edges match. Named because the
+// DRAW needs it to draw the cube and the INPUT needs it to know where the cube
+// is: the tap test used to probe 55px above the tile, where a virus sprite's
+// body sits, which is 68px above the block — so tapping a block never selected
+// it and the only way to open its menu was to tap the empty air above it.
+const ICE_BLOCK_H_MULT  = 1.15;
 
 function spawnChargedMass(x, y, value) {
     const v = Math.max(1, Math.round(value));
