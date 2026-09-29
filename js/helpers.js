@@ -89,6 +89,51 @@ function isNeutralBystander(a) {
 //
 // One predicate, because the draw, the input, the radial menu and the squad's
 // orders all have to agree about what it is.
+// The patch of floor that hacks a nest. One place, because the LOGIC that
+// counts the hack up and the DRAWING that shows the player where to stand have
+// to agree — the range was a bare 2.25 in the tick and the progress bar divided
+// by a literal 180 while the tick used its own constant.
+function nestHackCentre(nest) {
+    return { x: nest.x, y: nest.y + 1 };
+}
+function inNestHackRange(nest, x, y) {
+    if (!nest) return false;
+    const c = nestHackCentre(nest);
+    const dx = x - c.x, dy = y - c.y;
+    return dx * dx + dy * dy < NEST_HACK_RANGE * NEST_HACK_RANGE;
+}
+// Would an un-hacked wall panel take the siphon from this spot? The panel loop
+// runs first and claims the frame, so it wins — standing here hacks the PANEL,
+// not the nest, and nothing on screen said so.
+function panelWouldClaimSiphon(x, y) {
+    if (typeof world === "undefined") return false;
+    const r2 = PANEL_SIPHON_RANGE * PANEL_SIPHON_RANGE;
+    for (const t of world) {
+        if (t.nodeType !== "wall_panel" || t.panelActivated) continue;
+        const dx = x - t.x, dy = y - t.y;
+        if (dx * dx + dy * dy < r2) return true;
+    }
+    return false;
+}
+
+// Can the player actually hack this nest from here? Range AND nothing else
+// claiming the siphon. The highlight uses this rather than range alone: a lit
+// tile that does nothing is worse than no highlight.
+function canHackNestFrom(nest, x, y) {
+    return inNestHackRange(nest, x, y) && !panelWouldClaimSiphon(x, y);
+}
+
+// Is this nest something the player could hack right now? Zone 0's is the home
+// portal, a dead nest has nothing left to hack, and one alarm runs at a time.
+function nestIsHackable(nest) {
+    if (!nest || !nest.nest) return false;
+    if (typeof isHomePortal === "function" && isHomePortal(nest)) return false;
+    if (nest.nestZone === 0) return false;
+    if (!(nest.nestHealth > 0)) return false;
+    if (typeof alertActive !== "undefined" && alertActive) return false;
+    return true;
+}
+
 function isHomePortal(t) {
     return !!(t && t.nest && t.nestZone === 0 && !t._infestNest);
 }

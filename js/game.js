@@ -575,6 +575,55 @@ function drawCloneRespawnTicker(cx, topY) {
     ctx.restore();
 }
 
+// THE HACK ZONE — the patch of floor that hacks a nest, painted on the floor.
+//
+// It used to be a line of text on the wall: "[ HOLD to HACK NEST ]". That was
+// wrong twice over. There is no hold — the hack is proximity, you walk in and
+// wait — and it named no place, so the player had to find the spot by trial.
+// The tiles say where; the word HACKING over the bar says what.
+//
+// Tiles are chosen with the SAME predicate the hack tick uses, so the lit floor
+// cannot promise a tile that would not actually work.
+function drawNestHackZone(nest) {
+    if (!nestIsHackable(nest)) return;
+    const c = nestHackCentre(nest);
+    // Only when the player is near enough for it to be about them.
+    const pdx = player.x - c.x, pdy = player.y - c.y;
+    if (pdx * pdx + pdy * pdy > NEST_HACK_SHOW * NEST_HACK_SHOW) return;
+
+    const standing = canHackNestFrom(nest, player.x, player.y);
+    const pulse = 0.5 + 0.5 * Math.sin(frame * (standing ? 0.18 : 0.06));
+    const R = Math.ceil(NEST_HACK_RANGE);
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (let ty = c.y - R; ty <= c.y + R; ty++) {
+        for (let tx = c.x - R; tx <= c.x + R; tx++) {
+            if (!canHackNestFrom(nest, tx, ty)) continue;
+            const t = typeof getTile === "function" ? getTile(tx, ty) : null;
+            if (!t || t.type !== "floor") continue;
+            const px = (tx - player.visualX - (ty - player.visualY)) * TILE_W + canvas.width / 2;
+            const py = (tx - player.visualX + (ty - player.visualY)) * TILE_H + canvas.height / 2;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px + TILE_W, py + TILE_H);
+            ctx.lineTo(px, py + TILE_W);
+            ctx.lineTo(px - TILE_W, py + TILE_H);
+            ctx.closePath();
+            // Brighter while the player is actually standing in it, so the
+            // floor confirms the hack has started before the bar has moved.
+            ctx.fillStyle = standing
+                ? `rgba(0,255,136,${0.16 + pulse * 0.16})`
+                : `rgba(0,255,136,${0.06 + pulse * 0.05})`;
+            ctx.fill();
+            ctx.strokeStyle = `rgba(0,255,136,${standing ? 0.55 + pulse * 0.35 : 0.28 + pulse * 0.15})`;
+            ctx.lineWidth = standing ? 2 : 1;
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
 // A pylon's network tier — 0 when it carries no element or stands alone.
 // One place, because the aura, the HUD and the zone effects all ask it.
 function pylonNetworkTier(pylon) {
@@ -1024,13 +1073,13 @@ function render() {
     // ── NEST HACK SIPHON ──
     // Player stands near a live nest to hack it — triggers a zone alarm for that nest's zone.
     // Cannot hack during an active alarm (one wave at a time).
-    const NEST_HACK_FRAMES = 180; // ~3 seconds at 60fps
+    // NEST_HACK_FRAMES and the range are named in js/config.js now: the bar
+    // below divided by a literal 180 while this loop counted to its own local
+    // copy, and the range was a bare 2.25 in both places.
     if (!alertActive) {
         for (const nest of _nestCache) {
-            if (nest.nestZone === 0) { nest.nestHackProgress = 0; continue; } // zone 0 is safe — no alarms
-            if (nest.nestHealth <= 0) { nest.nestHackProgress = 0; continue; }
-            const _nhdx = player.x - nest.x, _nhdy = player.y - (nest.y + 1);
-            const playerNearNest = _nhdx*_nhdx + _nhdy*_nhdy < 2.25; // 1.5 tiles
+            if (!nestIsHackable(nest)) { nest.nestHackProgress = 0; continue; }
+            const playerNearNest = inNestHackRange(nest, player.x, player.y);
             if (playerNearNest && !_siphonActive) {
                 _siphonActive = true; // block panel siphons while hacking a nest
                 nest.nestHackProgress = (nest.nestHackProgress || 0) + 1;
@@ -1932,6 +1981,7 @@ function render() {
                 ctx.lineTo(wfTR.x,wfTR.y); ctx.lineTo(wfTL.x,wfTL.y);
                 ctx.closePath();
                 ctx.fillStyle="rgba(18,10,8,0.92)"; ctx.fill();
+                drawNestHackZone(obj);
                 drawNestWallVortex(px, py, Math.min(WH*0.42,46)*0.5,
                     obj.connectedPylon?"#00ffcc":"#4a3a33", 0, 0, 0.5);
                 ctx.setTransform(1,0,0,1,0,0);
@@ -2016,10 +2066,11 @@ function render() {
                 const barCx = (wfTL.x + wfTR.x) / 2;
                 drawHealthBar(barCx - 40, wfTL.y - 10, 80, 5, obj.nestHealth, obj.nestMaxHealth);
 
-                // Hack progress bar — shown when player is hacking this nest
+                // Hack progress — the word only, over the bar. The floor
+                // beneath says WHERE, so the label does not have to.
                 const _hackProg = obj.nestHackProgress || 0;
                 if (_hackProg > 0) {
-                    const _hp = _hackProg / 180;
+                    const _hp = _hackProg / NEST_HACK_FRAMES;
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                     ctx.fillStyle = "rgba(0,0,0,0.55)";
                     ctx.fillRect(barCx - 40, wfTL.y - 22, 80, 7);
@@ -2028,18 +2079,8 @@ function render() {
                     ctx.strokeStyle = "#0f8"; ctx.lineWidth = 1;
                     ctx.strokeRect(barCx - 40, wfTL.y - 22, 80, 7);
                     ctx.font = "9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#0f8";
-                    ctx.fillText("HACKING NEST...", barCx, wfTL.y - 26);
+                    ctx.fillText("HACKING", barCx, wfTL.y - 26);
                     ctx.restore();
-                } else if (!alertActive) {
-                    // Hint label when player is not currently hacking
-                    const _dxH = player.x - obj.x, _dyH = player.y - (obj.y + 1);
-                    if (_dxH*_dxH + _dyH*_dyH < 9) { // within 3 tiles — show hint
-                        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                        ctx.font = "9px monospace"; ctx.textAlign = "center";
-                        ctx.fillStyle = "rgba(0,255,136,0.7)";
-                        ctx.fillText("[ HOLD to HACK NEST ]", barCx, wfTL.y - 26);
-                        ctx.restore();
-                    }
                 }
             }
 

@@ -322,6 +322,19 @@ const PLAYER_AMMO_START = 12;
 // Rounds a hacked wall panel yields. The shop used to sell ammo; with it gone
 // this is the only source, so it has to be enough to keep the weapon usable.
 const PANEL_AMMO_REWARD = 8;
+// ── HACKING A NEST ───────────────────────────────────────
+// Standing in the patch of floor in front of a live nest hacks it, which raises
+// that zone's alarm. It is PROXIMITY, not a gesture: the label used to read
+// "[ HOLD to HACK NEST ]" and there is no hold anywhere in it — you walk into
+// the zone and wait. The zone is drawn on the floor now instead of described.
+const NEST_HACK_FRAMES = 180;   // 3s of standing there
+const NEST_HACK_RANGE  = 1.5;   // tiles, measured from the tile in front of it
+const NEST_HACK_SHOW   = 6;     // how close before the zone is painted at all
+// A wall panel claims the siphon first — the panel loop runs before the nest
+// loop and sets the same "one thing at a time" flag — so a tile in range of an
+// un-hacked panel will NOT hack a nest, however close to it you stand. Named
+// here because the highlight has to know, or it lights floor that does nothing.
+const PANEL_SIPHON_RANGE = 1.5;
 // The most hostile predators alive at once, anywhere on the map. A global
 // ceiling on top of the per-zone ones, which bound WHERE predators are and not
 // how many exist — see the spawn loop in js/game.js for the measurements.

@@ -201,11 +201,190 @@ async function ready(seed) {
     });
 
     check('zone 0 is still safe', () => {
-        ok(/nest\.nestZone === 0/.test(SRC.game), 'the home zone no longer suppresses alarms');
+        // Behaviour, not source. This grepped game.js for the zone check, which
+        // has since moved into nestIsHackable() — the rule is unchanged and in
+        // a better place, but the check could not tell the difference.
+        const r = E.run(`(function(){
+            const was = alertActive; alertActive = false;
+            const home = { nest: true, nestZone: 0, nestHealth: 200 };
+            const fwd  = { nest: true, nestZone: 2, nestHealth: 200 };
+            const dead = { nest: true, nestZone: 2, nestHealth: 0 };
+            const out = { home: nestIsHackable(home), fwd: nestIsHackable(fwd),
+                          dead: nestIsHackable(dead) };
+            alertActive = true;
+            out.duringAlarm = nestIsHackable(fwd);
+            alertActive = was;
+            return out;
+        })()`);
+        same(r.home, false, 'the home zone nest can be hacked, raising an alarm at base');
+        same(r.fwd, true, 'a forward nest can no longer be hacked at all');
+        same(r.dead, false, 'a dead nest can still be hacked');
+        same(r.duringAlarm, false, 'a nest can be hacked while an alarm is already running');
+    });
+
+    // ─────────────────────────────────────────────────────
+    group('HACKING A NEST: the floor says where');
+
+    // REPORTED: "change the wording on the hold to hack nest feature — just
+    // have a highlighted zone and have it say HACKING. Highlight the tiles
+    // around the area where the hacking can take place."
+    //
+    // The old label read "[ HOLD to HACK NEST ]" and was wrong twice: there is
+    // no hold anywhere in it — the hack is proximity, you walk in and wait —
+    // and it named no place, so the spot had to be found by trial.
+    //
+    // Two duplications turned up underneath it: the progress bar divided by a
+    // literal 180 while the tick counted to its own local NEST_HACK_FRAMES, and
+    // the range was a bare 2.25 in both.
+
+    check('THE WORDING: the misleading label is gone', () => {
+        const code = SRC.game.split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+        ok(!/HOLD to HACK/.test(code), 'the HOLD label is still drawn');
+        ok(!/HACKING NEST\.\.\./.test(code), 'the old progress caption is still there');
+        ok(/fillText\("HACKING"/.test(code), 'the bar no longer says HACKING');
+    });
+
+    check('the progress bar and the tick agree on how long it takes', () => {
+        const code = SRC.game.split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+        ok(/_hackProg \/ NEST_HACK_FRAMES/.test(code),
+           'the bar still divides by its own number');
+        ok(!/_hackProg \/ 180/.test(code), 'the literal 180 is still in the bar');
+    });
+
+    check('THE HIGHLIGHT: every lit tile really does hack', () => {
+        // The whole point. A green tile that does nothing is worse than none.
+        const r = E.run(`(function(){
+            alertActive = false;
+            const nest = world.find(t => t.nest && t.nestZone >= 1 && t.nestHealth > 0);
+            if (!nest) throw new Error('fixture: no forward nest');
+            const c = nestHackCentre(nest);
+            const R = Math.ceil(NEST_HACK_RANGE);
+            const lit = [];
+            for (let y = c.y - R; y <= c.y + R; y++)
+                for (let x = c.x - R; x <= c.x + R; x++) {
+                    if (!canHackNestFrom(nest, x, y)) continue;
+                    const t = getTile(x, y);
+                    if (t && t.type === 'floor') lit.push([x, y]);
+                }
+            const worked = [];
+            for (const [x, y] of lit) {
+                nest.nestHackProgress = 0;
+                // targetX/targetY too, or render() walks the player back to
+                // wherever they were going and they are never in the zone.
+                player.x = x; player.y = y;
+                player.targetX = x; player.targetY = y;
+                player.visualX = x; player.visualY = y;
+                for (let f = 0; f < 10; f++) render();
+                worked.push([x + ',' + y, nest.nestHackProgress]);
+            }
+            return { lit: lit.length, worked, dead: worked.filter(w => w[1] === 0) };
+        })()`);
+        ok(r.lit > 0, 'the highlight lit no tiles at all');
+        same(r.dead.length, 0,
+             'lit tiles that do NOT hack: ' + JSON.stringify(r.dead));
+        // The half above proves the PREDICATE is right. This proves the DRAW
+        // uses it — building the list here with canHackNestFrom passed happily
+        // while the draw still lit tiles with the range test alone.
+        const code = SRC.game.split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+        const at   = code.indexOf('function drawNestHackZone');
+        const body = code.slice(at, code.indexOf('\nfunction ', at + 1));
+        ok(at > -1 && body.length > 200, 'drawNestHackZone could not be located');
+        ok(/canHackNestFrom\(nest, tx, ty\)/.test(body),
+           'the highlight picks tiles by range alone, so it lights floor a panel will steal');
+    });
+
+    check('THE TRAP IT EXPOSED: a wall panel silently claims the siphon', () => {
+        // The panel loop runs before the nest loop and sets the same "one thing
+        // at a time" flag, so standing in a nest's range next to an un-hacked
+        // panel hacks the PANEL and the nest never counts. Nothing said so.
+        // The highlight now leaves those tiles dark rather than lying.
+        const r = E.run(`(function(){
+            const nest = world.find(t => t.nest && t.nestZone >= 1 && t.nestHealth > 0);
+            const c = nestHackCentre(nest);
+            // A panel planted right on a tile that is otherwise in range.
+            const t = getTile(c.x, c.y);
+            const wasType = t.nodeType, wasDone = t.panelActivated;
+            t.nodeType = 'wall_panel'; t.panelActivated = false;
+            const claimed = panelWouldClaimSiphon(c.x, c.y);
+            const inRange = inNestHackRange(nest, c.x, c.y);
+            const lit     = canHackNestFrom(nest, c.x, c.y);
+            t.nodeType = wasType; t.panelActivated = wasDone;
+            return { claimed, inRange, lit };
+        })()`);
+        same(r.inRange, true, 'fixture: the tile should be in range');
+        same(r.claimed, true, 'fixture: the panel should claim that tile');
+        same(r.lit, false, 'the highlight lights a tile a panel will steal');
+    });
+
+    check('an ACTIVATED panel does not steal it', () => {
+        // Every panel in reach has to be spent, not just the one planted here:
+        // the generated map already had a live panel one tile away, so the
+        // first version of this check measured that one instead.
+        const r = E.run(`(function(){
+            const nest = world.find(t => t.nest && t.nestZone >= 1 && t.nestHealth > 0);
+            const c = nestHackCentre(nest);
+            const touched = [];
+            for (const t of world) {
+                if (t.nodeType !== 'wall_panel') continue;
+                if ((c.x - t.x) ** 2 + (c.y - t.y) ** 2 >= PANEL_SIPHON_RANGE ** 2) continue;
+                touched.push([t, t.panelActivated]);
+            }
+            const live  = touched.length;
+            const before = canHackNestFrom(nest, c.x, c.y);
+            for (const [t] of touched) t.panelActivated = true;
+            const after = canHackNestFrom(nest, c.x, c.y);
+            for (const [t, was] of touched) t.panelActivated = was;
+            return { live, before, after };
+        })()`);
+        ok(r.live > 0, 'fixture: no panel was in reach of the hack centre to spend');
+        same(r.before, false, 'fixture: a live panel should have been blocking it');
+        same(r.after, true, 'a spent panel still blocks the nest hack');
+    });
+
+    check('the zone is not painted for a nest you cannot hack', () => {
+        const ops = [];
+        const r = E.run(`(function(){
+            const nest = world.find(t => t.nest && t.nestZone >= 1 && t.nestHealth > 0);
+            const c = nestHackCentre(nest);
+            player.x = c.x; player.y = c.y; player.visualX = c.x; player.visualY = c.y;
+            const out = {};
+            alertActive = false; out.hackable = nestIsHackable(nest);
+            alertActive = true;  out.duringAlarm = nestIsHackable(nest);
+            alertActive = false;
+            const hp = nest.nestHealth; nest.nestHealth = 0;
+            out.dead = nestIsHackable(nest);
+            nest.nestHealth = hp;
+            const home = world.find(isHomePortal);
+            out.home = home ? nestIsHackable(home) : 'no portal';
+            return out;
+        })()`);
+        same(r.hackable, true, 'fixture: a live forward nest should be hackable');
+        same(r.duringAlarm, false, 'the zone would show while an alarm is already running');
+        same(r.dead, false, 'a dead nest still shows a hack zone');
+        same(r.home, false, 'the home portal shows a hack zone');
+    });
+
+    check('the draw and the tick use the SAME range', () => {
+        const code = SRC.game.split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+        ok(/inNestHackRange\(nest, player\.x, player\.y\)/.test(code),
+           'the tick no longer uses the shared range test');
+        ok(!/_nhdx\*_nhdx \+ _nhdy\*_nhdy < 2\.25/.test(code),
+           'the bare 2.25 is still in the tick');
+        const HELP = fs.readFileSync(path.join(ROOT, 'js/helpers.js'), 'utf8');
+        same((HELP.match(/function inNestHackRange/g) || []).length, 1,
+             'the range test is declared more than once');
     });
 
     // ─────────────────────────────────────────────────────
     group('the index says so');
+
+    check('the index describes the hack zone, not a hold', () => {
+        ok(!/HOLD to HACK/i.test(HTML), 'the index still tells the player to hold');
+        ok(/green patch of floor/i.test(HTML), 'it does not describe the lit zone');
+        ok(/no button and no hold/i.test(HTML), 'it does not say the hack is proximity');
+        ok(/un-hacked wall panel/i.test(HTML),
+           'it does not warn that a panel takes the siphon first');
+    });
 
     check('the documented decoy odds match the constant', () => {
         const pct = Math.round(C.PANEL_DECOY_CHANCE * 100);
