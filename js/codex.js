@@ -409,6 +409,10 @@ function renderWorkCrewIndex() {
         'it holds its tile however hard it is shoved. <strong>Long-press it → THAW</strong> to melt it ' +
         'and put it back in the line.</div>' +
 
+        '<div class="cm-build-row"><span class="cm-build-label">It keeps</span>' +
+        'Mass you have not hauled home <strong>stays on the floor between rounds</strong>. ' +
+        'A lump someone was carrying when the round turned over is simply dropped where ' +
+        'they stood, and the next FLUX worker picks it up.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Worth</span>' +
         '<span class="cm-stat">' + pct + '%</span> of what that predator was worth' +
         (pct >= 100

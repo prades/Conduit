@@ -591,6 +591,27 @@ function toggleFollowerDuty(actor) {
     return setFollowerDuty(actor, actor && actor.duty === 'worker' ? 'fighter' : 'worker');
 }
 
+// Put every carried lump back on the floor where its carrier is standing.
+//
+// A change of scene rebuilds followers[] from the save, so a carrier that was
+// mid-haul stops existing. The lump it held would keep state CARRIED and a
+// reference to a follower nobody can see — permanently uncollectable, because
+// _workHaul only picks up a lump that is NEUTRAL and has no carrier.
+//
+// The same rule the save already used: a carried lump becomes an ordinary one
+// lying where the carrier was.
+function dropCarriedMass() {
+    let dropped = 0;
+    for (const m of chargedMass) {
+        if (m.state !== MASS_STATE.CARRIED && !m.carrier) continue;
+        if (m.carrier) m.carrier.carryingMass = null;
+        m.carrier = null;
+        m.state   = MASS_STATE.NEUTRAL;
+        dropped++;
+    }
+    return dropped;
+}
+
 // ── Persistence ──────────────────────────────────────────
 // Carrier references cannot survive JSON, so a carried lump is saved as an
 // ordinary neutral one lying where the carrier was standing.

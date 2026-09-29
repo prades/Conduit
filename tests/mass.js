@@ -391,5 +391,87 @@ check('the radial can assign duty', () => {
     ok(/toggle_duty/.test(draw) && /case "toggle_duty"/.test(cmd), 'duty toggle not wired');
 });
 
+group('it survives the round turning over');
+
+// REPORTED: "whenever the round restarts it gets rid of all the charged
+// particles on the ground, and it shouldn't — it should let you collect those
+// in the next round."
+//
+// resetTransientState() wiped chargedMass, and nextWave() runs it. So every
+// lump you had not hauled home yet vanished at the wave boundary, and the
+// kills that made it were simply lost — which is the entire point of the
+// electric/flux chain.
+//
+// The clear moved to restartGame(), which is the only place that should wipe a
+// floor. What a wave DOES have to reset is the carrying: followers[] is rebuilt
+// from the save, so a carrier mid-haul stops existing and its lump would sit in
+// the CARRIED state holding a reference to nobody — permanently uncollectable,
+// because _workHaul only picks up a lump that is NEUTRAL with no carrier.
+
+const WAVES_SRC = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
+
+check('THE REPORTED CASE: the wave reset no longer wipes the floor', () => {
+    const at   = WAVES_SRC.indexOf('function resetTransientState');
+    const body = WAVES_SRC.slice(at, WAVES_SRC.indexOf('\n}', at));
+    ok(at > -1 && body.length > 200, 'resetTransientState could not be located');
+    ok(!/chargedMass\.length\s*=\s*0/.test(body),
+       'the wave reset still empties chargedMass');
+    ok(/dropCarriedMass\(\)/.test(body), 'it no longer releases carried lumps either');
+});
+
+check('but a full RESTART still clears it', () => {
+    const at   = WAVES_SRC.indexOf('function restartGame');
+    const body = WAVES_SRC.slice(at, WAVES_SRC.length);
+    ok(at > -1, 'restartGame could not be located');
+    ok(/chargedMass\.length\s*=\s*0/.test(body),
+       'a new game would start on the last one\'s floor');
+});
+
+check('the work crew page says the floor keeps its mass', () => {
+    const codex = fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8');
+    ok(/stays on the floor between rounds/i.test(codex),
+       'the page does not say mass survives the round');
+    ok(/dropped where/i.test(codex), 'nor what happens to a lump mid-haul');
+});
+
+check('dropCarriedMass puts a carried lump back, collectable', () => {
+    const env = makeEnv();
+    const m = env.run('spawnChargedMass')(5, 2, 7);
+    const f = worker(env, 'flux', 5, 2);
+    m.state = 'carried'; m.carrier = f; f.carryingMass = m;
+    const n = env.run('dropCarriedMass')();
+    eq(n, 1, 'it reported dropping ' + n);
+    eq(m.state, 'neutral', 'the lump is still marked as carried');
+    eq(m.carrier, null, 'it still points at its old carrier');
+    eq(f.carryingMass, null, 'the carrier still thinks it is holding one');
+    eq(m.value, 7, 'the lump lost its value');
+});
+
+check('and leaves an ordinary lump alone', () => {
+    const env = makeEnv();
+    const a = env.run('spawnChargedMass')(1, 2, 3);
+    const b = env.run('spawnChargedMass')(2, 2, 4); b.state = 'neutral';
+    const n = env.run('dropCarriedMass')();
+    eq(n, 0, 'it dropped something that was not being carried');
+    eq(a.state, 'charged', 'a charged lump was changed');
+    eq(b.state, 'neutral', 'a neutral lump was changed');
+});
+
+check('a dropped lump can be picked up again', () => {
+    // The point of dropping it rather than leaving it stranded.
+    const env = makeEnv();
+    const m = env.run('spawnChargedMass')(5, 2, 7);
+    const dead = worker(env, 'flux', 5, 2);
+    m.state = 'carried'; m.carrier = dead; dead.carryingMass = m;
+    env.run('dropCarriedMass')();
+    // A new hauler, as the next wave would bring.
+    dead.dead = true;
+    env.sandbox.crystal = { x: 99, y: 99 };
+    const fresh = worker(env, 'flux', 5, 2);
+    until(env, fresh, () => m.state === 'carried', 400);
+    eq(m.state, 'carried', 'the next hauler could not pick the dropped lump up');
+    eq(m.carrier, fresh, 'it was not picked up by the new hauler');
+});
+
 console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
 process.exit(failures ? 1 : 0);

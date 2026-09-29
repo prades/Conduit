@@ -326,6 +326,50 @@ async function ready() {
     });
 
     // ─────────────────────────────────────────────────────
+    group('CHARGED MASS survives the round turning over');
+
+    // The source checks in tests/mass.js prove the clear has moved. This proves
+    // the lumps are actually still there afterwards, through a real nextWave().
+
+    check('THE REPORTED CASE: lumps are still on the floor next round', () => {
+        const r = E.run(`(function(){
+            chargedMass.length = 0; actors.length = 0; followers.length = 0;
+            ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+            spawnChargedMass(5, 2, 7);
+            spawnChargedMass(6, 2, 4);
+            spawnChargedMass(7, 2, 9);
+            const before = { n: chargedMass.length, value: massCounts().value };
+            nextWave();
+            return { before, after: { n: chargedMass.length, value: massCounts().value } };
+        })()`);
+        same(r.before.n, 3, 'fixture: three lumps should have been dropped');
+        same(r.after.n, r.before.n, 'the wave swept the floor: ' + JSON.stringify(r));
+        same(r.after.value, r.before.value, 'the lumps lost their value across the wave');
+    });
+
+    check('and a lump that was mid-haul is dropped, not stranded', () => {
+        // followers[] is rebuilt from the save, so the carrier stops existing.
+        const r = E.run(`(function(){
+            chargedMass.length = 0; actors.length = 0; followers.length = 0;
+            ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+            spawnChargedMass(5, 2, 7);
+            spawnFollowerAtCrystal('flux');
+            const hauler = followers[0], m = chargedMass[0];
+            m.state = MASS_STATE.CARRIED; m.carrier = hauler; hauler.carryingMass = m;
+            nextWave();
+            return { n: chargedMass.length,
+                     carried: chargedMass.filter(x => x.state === MASS_STATE.CARRIED).length,
+                     stranded: chargedMass.filter(x => !!x.carrier).length,
+                     collectable: chargedMass.filter(x => !x.carrier
+                        && (x.state === MASS_STATE.NEUTRAL || x.state === MASS_STATE.CHARGED)).length };
+        })()`);
+        same(r.n, 1, 'the lump vanished with its carrier');
+        same(r.carried, 0, 'it is still marked as being carried by a follower that is gone');
+        same(r.stranded, 0, 'it still points at a carrier that no longer exists');
+        same(r.collectable, 1, 'it cannot be picked up again');
+    });
+
+    // ─────────────────────────────────────────────────────
     group('the index says so');
 
     check('the portal and the aura are documented', () => {

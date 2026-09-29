@@ -246,7 +246,16 @@ function resetTransientState() {
     commandTarget     = null; selectedRadialAction = null;
     nestConnectMode   = false; pendingConnectNest = null; nestConnectMisses = 0;
     playerAttackMode  = false; commandEnemyTarget = null; commandFollowerTarget = null;
-    chargedMass.length = 0;
+    // Charged mass STAYS on the floor between waves. It used to be wiped here,
+    // so every lump you had not hauled home yet — the whole point of the
+    // electric/flux chain — vanished the moment the round turned over, and the
+    // kills that made it were simply lost.
+    //
+    // Only the CARRYING is reset: followers[] is rebuilt from the save, so a
+    // carrier mid-haul stops existing and its lump would be stranded in the
+    // CARRIED state with a reference to nobody. Dropped where it stood, it is
+    // picked up again by the next flux worker.
+    dropCarriedMass();
     // Cocoon and half-finished conversions do not survive a change of scene.
     cocoons.length = 0;
     world.forEach(t => { if (t.converting) { t.converting = false; t.convertProgress = 0; } });
@@ -404,6 +413,9 @@ function restartGame() {
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
     pendingPillarDestruction=[];respawnQueue=[];
+    // Cleared HERE rather than in resetTransientState(), which a wave
+    // transition also runs and which must now leave the floor alone.
+    chargedMass.length=0;
     frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearProgress();clearFollowers();clearGameState();clearPylons();clearNests();clearSession();clearWorldSeed();clearAmmo();clearPermUpgrades();
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
     unlockedElements=new Set(STARTING_ELEMENTS);
