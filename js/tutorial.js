@@ -67,6 +67,8 @@ const TUT_SQUAD_ELEMENTS = ['fire', 'electric'];
 let tutLoanedFollowers = [];
 let tutOrderedSelected = false;   // issued an attack order with SQUAD: SEL
 let tutOrderedAll      = false;   // ...and with SQUAD: ALL
+let tutCrystalOpened   = false;   // the player has opened the Crystal menu
+let tutPutToWork       = false;   // ...and put a follower on the work crew
 
 function tutSpawnPracticeFollowers() {
     if (typeof spawnFollowerFromSave !== 'function') return;
@@ -241,6 +243,59 @@ const TUTS = [
         check: () => tutModeSwitched,
     },
     {
+        // The Crystal is where modulation, clones and recruiting live, and
+        // nothing had ever told the player it opens. It is a TAP, not a hold —
+        // the hold ring is for things on the floor.
+        id:    'crystal',
+        title: 'OPEN THE CRYSTAL',
+        body:  'Tap the Crystal to open it. Inside are MODULATION (what your followers are made of), CLONES (summon an enemy species with DNA and shards) and RECRUIT. The green portal on zone 0\'s back wall opens the same menu, so you can reach it from either end of home.',
+        icon:  '\u25c8',
+        target: () => (typeof crystal !== 'undefined' && crystal) ? crystal : null,
+        check: () => tutCrystalOpened,
+    },
+    {
+        // A generator is an UPGRADE choice, not a building of its own, and the
+        // placement rule is the whole reason it needs explaining: it has to be
+        // near a NEST. The green portal at home counts as one, which is why
+        // this step can be finished without leaving zone 0.
+        id:    'generator',
+        title: 'BUILD A GENERATOR',
+        body:  'Turn BUILD on, press and hold the marked pylon, pick UPGRADE and choose GENERATOR. It can only go within ' + GENERATOR_NEST_RANGE + ' tiles of a NEST — the green portal at home counts, so there is a spot right here.',
+        icon:  '\u2699',
+        wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
+        // A pylon that could actually take one, so the marker never points at a
+        // tile the game would refuse.
+        target: () => tutNearestPylon(t => !t.isGenerator &&
+                                           typeof canPlaceGenerator === 'function' &&
+                                           canPlaceGenerator(t).ok),
+        check: () => world.some(t => t.pillar && t.isGenerator && !t.destroyed),
+    },
+    {
+        // What the generator is FOR. No action to perform — it is already true
+        // the moment the generator exists — so it reads and moves on.
+        id:    'aura',
+        title: 'THE HEALING AURA',
+        body:  'A generator links itself to nearby pylons — nothing to connect. Each linked pylon mends your followers, your clones and YOU standing near it; the faint ring is its reach. Rate and reach both scale with that pylon\'s NETWORK TIER.',
+        icon:  '\u271a',
+        target: () => tutNearestPylon(t => t.isGenerator) || tutNearestPylon(),
+        check: () => tutorialTimer > 300,   // ~5s to read it
+    },
+    {
+        // Six elements, six jobs. Worth a step because nothing else in the game
+        // says a follower can be taken off the line at all.
+        id:    'work',
+        title: 'PUT SOMEONE TO WORK',
+        body:  'Press and hold one of your followers and pick TO WORK. Each element has its own job: ELECTRIC and FLUX turn kills into shards, CORE rebuilds broken pylons, FIRE burns back infestation, TOXIC repels, ICE freezes into a block.',
+        icon:  '\u2692',
+        enter: () => tutSpawnPracticeFollowers(),
+        // Falls back to the Crystal when there is no follower to point at —
+        // that is where the next one comes from, and every step has to mark
+        // something or the panel talks about a board the player cannot find.
+        target: () => tutNearestActor(a => a.isFollower && !a.dead && a.duty !== 'worker')
+                   || ((typeof crystal !== 'undefined' && crystal) ? crystal : null),
+        check: () => tutPutToWork,
+    },
+    {
         id:    'ready',
         title: 'READY FOR BATTLE',
         body:  'You know the basics. Remember: tap to move, circle to attack, press and hold for commands. The Crystal must survive the night. Good luck!',
@@ -311,6 +366,8 @@ function startTutorial() {
     tutHeldOpen     = false;
     tutOrderedSelected = false;
     tutOrderedAll      = false;
+    tutCrystalOpened   = false;
+    tutPutToWork       = false;
     tutPracticeFoe  = null;
     tutLoanedFollowers = [];
     _tutTarget      = null; _tutTargetStep = -1;
@@ -352,6 +409,17 @@ function tutorialTick() {
     if (!tutHeldOpen && id === 'hold') {
         tutHeldOpen = (typeof commandMode !== 'undefined' && commandMode) ||
                       (typeof commandPendingTap !== 'undefined' && commandPendingTap);
+    }
+    // The Crystal menu is a MOMENT, not a state: the player opens it, reads it
+    // and closes it again, and polling check() might never land on a frame
+    // where it happens to be open. Latched here, the same way the hold is.
+    if (!tutCrystalOpened && id === 'crystal') {
+        tutCrystalOpened = (typeof crystalMenuOpen !== 'undefined' && crystalMenuOpen);
+    }
+    // Duty is a state, but latch it too: taking the follower straight back off
+    // the crew should not un-complete the step.
+    if (!tutPutToWork && id === 'work') {
+        tutPutToWork = followers.some(f => f && !f.dead && f.duty === 'worker');
     }
 
     tutorialUiHints();

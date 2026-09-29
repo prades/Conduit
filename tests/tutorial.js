@@ -11,6 +11,7 @@
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
+const { configNums } = require('./domstub.js');
 const ROOT = path.resolve(__dirname, '..');
 
 const TUT   = fs.readFileSync(path.join(ROOT, 'js/tutorial.js'), 'utf8');
@@ -41,6 +42,12 @@ function makeEnv() {
         player: { x: 0, y: 2, visualX: 0, visualY: 2, invuln: 0 },
         crystal: { x: 0, y: 2, health: 300, maxHealth: 300 },
         commandMode: false, commandPendingTap: false, buildMode: false,
+        crystalMenuOpen: false,
+        // The generator step quotes the real placement range in its text, and
+        // reads it when the step table is built. Lifted from config.js so the
+        // words and the rule cannot disagree.
+        ...configNums(['GENERATOR_NEST_RANGE']),
+        canPlaceGenerator: t => ({ ok: !!t, nest: null }),
         ctx: rec.ctx,
         canvas: { width: 800, height: 600 },
         // The circle step spawns a real Predator, so predator.js and the
@@ -785,6 +792,151 @@ check('no step is too long for the panel on a phone', () => {
     // And none so terse it explains nothing.
     const tooShort = tuts.filter(s => s.body.length < 40);
     eq(tooShort.length, 0, `steps with no real explanation: ${tooShort.map(s => s.id).join(', ')}`);
+});
+
+group('the new steps: the Crystal, the generator, the aura and the work crew');
+
+// REPORTED: "long hold the crystal to connect to generator, these should be
+// discussed in the tutorial" — and then: add more.
+//
+// Checked against what the game actually does rather than what the request
+// said, because the two differ and the tutorial has to be right:
+//
+//   - the Crystal opens on a TAP, not a hold. The hold ring is for things on
+//     the floor.
+//   - a generator is an UPGRADE choice, not a building of its own, and there
+//     is nothing to CONNECT: it links itself to green pylons in range.
+//   - what it does need is a NEST within GENERATOR_NEST_RANGE. Zone 0's green
+//     portal counts as one, which is what lets this be taught at home.
+
+check('the Crystal step exists and says TAP, not hold', () => {
+    const s = makeEnv().run('TUTS').find(t => t.id === 'crystal');
+    ok(!!s, 'there is no crystal step');
+    ok(/\bTap\b/i.test(s.body), 'it does not tell the player to tap: ' + s.body);
+    ok(!/hold/i.test(s.body), 'it tells the player to HOLD the Crystal, which does nothing');
+    ok(/MODULATION/.test(s.body) && /CLONES/.test(s.body),
+       'it does not say what is inside the Crystal');
+});
+
+check('and it names the home portal as the other way in', () => {
+    const s = makeEnv().run('TUTS').find(t => t.id === 'crystal');
+    ok(/portal/i.test(s.body), 'the crystal step does not mention the portal');
+});
+
+check('the generator step does NOT promise a connect step', () => {
+    // The mechanic the request described does not exist, and teaching it would
+    // leave the player hunting for a button.
+    const env = makeEnv();
+    const gen  = env.run('TUTS').find(t => t.id === 'generator');
+    const aura = env.run('TUTS').find(t => t.id === 'aura');
+    ok(!!gen, 'there is no generator step');
+    ok(/UPGRADE/.test(gen.body), 'it does not say a generator is an UPGRADE choice');
+    ok(/GENERATOR/.test(gen.body), 'it does not name the GENERATOR option');
+    ok(/links itself|nothing to connect/i.test(aura.body),
+       'nothing tells the player the generator links itself');
+});
+
+check('the generator step quotes the REAL placement range', () => {
+    const env = makeEnv();
+    const s = env.run('TUTS').find(t => t.id === 'generator');
+    const range = env.run('GENERATOR_NEST_RANGE');
+    ok(new RegExp('\\b' + range + ' tiles').test(s.body),
+       `it should say ${range} tiles: ` + s.body);
+    ok(/NEST/i.test(s.body), 'it does not say the range is measured to a nest');
+});
+
+check('it flashes BUILD, because UPGRADE only shows in build mode', () => {
+    const env = makeEnv();
+    const s = env.run('TUTS').find(t => t.id === 'generator');
+    ok(typeof s.wantsButton === 'function', 'the generator step flashes no button');
+    env.run('buildMode = false');
+    eq(env.run('TUTS.find(t=>t.id==="generator").wantsButton()'), 'btnBuild',
+       'it should flash BUILD while build mode is off');
+    env.run('buildMode = true');
+    eq(env.run('TUTS.find(t=>t.id==="generator").wantsButton()'), null,
+       'it should stop flashing once build mode is on');
+    env.run('buildMode = false');
+});
+
+check('the aura step explains what the tier multiplies', () => {
+    const s = makeEnv().run('TUTS').find(t => t.id === 'aura');
+    ok(!!s, 'there is no aura step');
+    ok(/NETWORK TIER/i.test(s.body), 'it does not mention the network tier');
+    ok(/rate and reach|reach/i.test(s.body), 'it does not say the reach grows too');
+});
+
+check('the work step names a job for every element that has one', () => {
+    const env = makeEnv();
+    const s = env.run('TUTS').find(t => t.id === 'work');
+    ok(!!s, 'there is no work step');
+    for (const el of ['ELECTRIC', 'FLUX', 'CORE', 'FIRE', 'TOXIC', 'ICE']) {
+        ok(new RegExp(el).test(s.body), 'the work step does not mention ' + el);
+    }
+    ok(/TO WORK/.test(s.body), 'it does not name the TO WORK button');
+});
+
+check('the new steps sit before READY and after the basics', () => {
+    const ids = stepIds(makeEnv());
+    const at = id => ids.indexOf(id);
+    ok(at('crystal') > at('hold'), 'the Crystal step comes before the hold is taught');
+    ok(at('generator') > at('upgrade'), 'the generator comes before UPGRADE is taught');
+    ok(at('aura') > at('generator'), 'the aura is explained before the generator exists');
+    ok(at('ready') === ids.length - 1, 'READY is no longer last');
+    for (const id of ['crystal', 'generator', 'aura', 'work']) {
+        ok(at(id) < at('ready'), id + ' comes after the closing step');
+    }
+});
+
+check('each new step is watched by ID, like the rest', () => {
+    // Watching by index is what inserting a step breaks, and this commit
+    // inserts four.
+    ok(/id === 'crystal'/.test(TUT), 'the crystal step is not watched by id');
+    ok(/id === 'work'/.test(TUT), 'the work step is not watched by id');
+    ok(!/tutorialStep === \d/.test(TUT), 'something still watches progress by step number');
+});
+
+check('the new trackers are cleared when the tutorial restarts', () => {
+    // A second run would otherwise skip the steps the first one finished.
+    const env = makeEnv();
+    env.run('tutCrystalOpened = true; tutPutToWork = true;');
+    env.run('startTutorial()');
+    eq(env.run('tutCrystalOpened'), false, 'the Crystal tracker survived a restart');
+    eq(env.run('tutPutToWork'), false, 'the work tracker survived a restart');
+});
+
+check('THE LATCH: opening the Crystal once is enough', () => {
+    // The menu is a moment, not a state — the player opens it, reads it and
+    // closes it. Polling check() might never land on an open frame.
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'crystal');
+    env.run('crystalMenuOpen = true;  tutorialTick();');
+    env.run('crystalMenuOpen = false;');
+    eq(env.run('tutCrystalOpened'), true, 'the open was not latched');
+});
+
+check('and it is not latched by a step that is not asking', () => {
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'hold');
+    env.run('crystalMenuOpen = true; tutorialTick(); crystalMenuOpen = false;');
+    eq(env.run('tutCrystalOpened'), false,
+       'the Crystal step completed itself from a different step');
+});
+
+check('the work step marks a follower, and the Crystal when there is none', () => {
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'work');
+    // No followers on the board: it must still mark something.
+    env.run('followers.length = 0; actors.length = 0; _tutTarget = null; _tutTargetStep = -1;');
+    const fallback = env.run('tutorialTarget()');
+    ok(!!fallback, 'with no followers the work step marks nothing at all');
+    // And with one, it marks that one.
+    env.run(`const f = { x: 4, y: 2, isFollower: true, dead: false, duty: 'fighter', team: 'green' };
+             actors.push(f); followers.push(f); _tutTarget = null; _tutTargetStep = -1;`);
+    const marked = env.run('tutorialTarget()');
+    eq(marked && marked.x, 4, 'it did not mark the follower');
 });
 
 group('progress tracking');
