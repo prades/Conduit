@@ -22,6 +22,7 @@ const ROOT = path.resolve(__dirname, '..');
 const { configNums } = require('./domstub.js');
 
 const WAVES = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
+const { fnSource } = require('./domstub.js');
 const CAMP  = fs.readFileSync(path.join(ROOT, 'js/camp.js'),  'utf8');
 
 let store = {};
@@ -93,11 +94,12 @@ function makeEnv() {
     for (const f of ['js/rng.js', 'js/mass.js', 'js/infest.js', 'js/world.js', 'js/save.js']) {
         vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
     }
-    // The real restartGame and the shared reset it calls, lifted out of waves.js.
-    for (const name of ['resetTransientState', 'restartGame']) {
-        const fn = WAVES.match(new RegExp(`function ${name}\\(\\) \\{[\\s\\S]*?\\n\\}`));
-        if (!fn) { console.log(`  FAIL could not find ${name} in js/waves.js`); process.exit(1); }
-        vm.runInContext(fn[0], ctx, { filename: 'waves.js:' + name });
+    // The real restartGame, the shared reset it calls, and the objective line
+    // it now refreshes — lifted out of waves.js by brace matching rather than a
+    // zero-argument regex, since objectiveText/updateObjectiveUI take one.
+    for (const name of ['nextZoneToTake', 'objectiveText', 'updateObjectiveUI',
+                        'resetTransientState', 'restartGame']) {
+        vm.runInContext(fnSource('js/waves.js', name), ctx, { filename: 'waves.js:' + name });
     }
     // ...and CAMP_MIN_X plus the building footprints, so this suite tracks the
     // camp's real extent rather than a copy of it.

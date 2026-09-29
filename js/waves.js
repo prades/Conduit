@@ -5,6 +5,50 @@
 // ── TRIGGER ALARM — called when a decoy panel is activated ──
 // type: "proximity" | "zone" | "facility"
 // sx, sy: world-space source of the triggered panel
+// ── THE OBJECTIVE LINE ───────────────────────────────────
+// The one line at the top of the screen. It used to read "Best Zone: 3", which
+// reports what you have already done and says nothing about what to do next —
+// and it was written out in six places, each slightly different.
+//
+// A zone is CONQUERED by clearing the wave its alarm came from, which is what
+// moves highestZoneCleared. So the next objective is simply the zone after it,
+// and the line names it and says how to start it: you pick the fight by hacking
+// a nest there.
+function nextZoneToTake() {
+    return (gameState.highestZoneCleared || 0) + 1;
+}
+
+function objectiveText(suffix) {
+    // Under alarm the objective IS the alarm — the zone that raised it and the
+    // quota that ends it. Nothing else is worth saying while that is running.
+    //
+    // ...but NOT once the wave is complete. alertActive is still set at the
+    // moment a zone is taken, so this branch won and the line went on reading
+    // "TAKING ZONE 1 — Kill 5/5" at exactly the moment the player had finished
+    // taking zone 1. The phase is what says the fight is over.
+    const _fighting = typeof gameState !== "undefined" && gameState.phase !== "waveComplete";
+    if (_fighting && typeof alertActive !== "undefined" && alertActive) {
+        const z = (alertZone !== null && alertZone !== undefined)
+            ? alertZone
+            : (alertSource ? getZoneIndex(Math.floor(alertSource.x)) : nextZoneToTake());
+        return "\u26a0 TAKING ZONE " + z + " \u2014 Kill " + nightKillCount + "/" + nightEnemiesTarget;
+    }
+    const cleared = gameState.highestZoneCleared || 0;
+    const head = cleared > 0 ? ("ZONE " + cleared + " TAKEN") : "HOME SECURE";
+    let line = head + "  \u2192  NEXT: ZONE " + nextZoneToTake();
+    if (suffix) line += " \u2014 " + suffix;
+    else        line += " \u2014 hack a nest there";
+    return line;
+}
+
+// Push it to the banner. Called wherever the objective can have changed, which
+// includes the moment a zone is taken — the old code only refreshed it on the
+// next wave, so the line still named the zone you had just finished.
+function updateObjectiveUI(suffix) {
+    if (typeof waveUI === "undefined" || !waveUI) return;
+    waveUI.textContent = objectiveText(suffix);
+}
+
 function triggerAlarm(type, sx, sy) {
     alertActive = true;
     alertTimer  = ALERT_DURATION;
@@ -101,9 +145,10 @@ function clearAlarm() {
 
     // Keep phase as "night" so kills can still complete the wave after alarm expires
     if (gameState.phase === "night" && nightKillCount < nightEnemiesTarget) {
-        waveUI.textContent = "Best Zone: " + gameState.highestZoneCleared + " — Kill " + nightKillCount + "/" + nightEnemiesTarget;
+        // The alarm has expired but the quota has not — still the same fight.
+        updateObjectiveUI("Kill " + nightKillCount + "/" + nightEnemiesTarget);
     } else {
-        waveUI.textContent = "Best Zone: " + gameState.highestZoneCleared;
+        updateObjectiveUI();
     }
 }
 
@@ -139,6 +184,10 @@ function checkWaveClear() {
                 gameState.highestZoneCleared = clearedZone;
                 saveGameState();
             }
+            // Refreshed HERE, the moment the zone is taken. It used to wait
+            // for the next wave to start, so the banner went on naming the
+            // zone the player had just finished.
+            updateObjectiveUI();
         }
         // The wave's reward: the next element, earned but not yet online. Before
         // showWaveClear, so the overlay can read what was just earned.
@@ -295,7 +344,7 @@ function nextWave() {
 
     // ── Close overlay immediately so the browser can repaint ──
     document.getElementById("overlay").classList.remove("active");
-    waveUI.textContent = "Best Zone: " + gameState.highestZoneCleared + " — loading…";
+    updateObjectiveUI("loading…");
 
     // ── Defer all heavy world work so the browser gets a frame to breathe ──
     setTimeout(() => {
@@ -401,7 +450,7 @@ function nextWave() {
 
         gameState.phase   = "day";
         gameState.running = true;
-        waveUI.textContent = "Best Zone: " + gameState.highestZoneCleared + " — explore panels";
+        updateObjectiveUI();
     }, 0);
 }
 
@@ -465,5 +514,5 @@ function restartGame() {
     // No free spawns — player earns followers and encounters predators naturally
     spawnHazardsForDay();
     document.getElementById("overlay").classList.remove("active");
-    waveUI.textContent = "Best Zone: 0 — explore panels";
+    updateObjectiveUI();
 }

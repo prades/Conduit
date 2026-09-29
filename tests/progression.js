@@ -22,7 +22,7 @@ for (const f of ['config', 'wavedata', 'waves', 'game', 'clone', 'helpers', 'pre
     SRC[f] = fs.readFileSync(path.join(ROOT, `js/${f}.js`), 'utf8');
 }
 const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-const { scriptOrder, makeBrowserSandbox } = require('./domstub.js');
+const { scriptOrder, makeBrowserSandbox, fnSource } = require('./domstub.js');
 
 // The whole page, so a wave can be cleared the way the game clears one. The
 // fragment sandbox below calls noteWaveClearedForProgression directly, which
@@ -426,6 +426,125 @@ check('the documented ladder matches the code', () => {
     // read as English, not as a template.
     ok(new RegExp('spent after ' + L.length + ' wave' + (L.length === 1 ? '\\b' : 's'), 'i').test(HTML),
        'the index does not say the ladder runs out after ' + L.length);
+});
+
+group('THE OBJECTIVE LINE: what to take next');
+
+// REPORTED: "after each zone that you conquer it should update the top, and it
+// should say to conquer the next zone and which zone it is you need to attack."
+//
+// The banner read "Best Zone: 3" — a score, not an objective. It named what had
+// already been done and never said where to go, and the string was written out
+// in six places, each slightly different.
+//
+// A zone is CONQUERED by clearing the wave its alarm came from, which is what
+// moves highestZoneCleared, so the next objective is simply the zone after it.
+
+const OBJ = (() => {
+    const sandbox = {
+        console, Math, Object, Array, String, Number, JSON,
+        gameState: { highestZoneCleared: 0, phase: 'day' },
+        alertActive: false, alertZone: null, alertSource: null,
+        nightKillCount: 0, nightEnemiesTarget: 0,
+        getZoneIndex: x => Math.floor(x / 15),
+        waveUI: null,
+    };
+    sandbox.globalThis = sandbox;
+    const ctx = vm.createContext(sandbox);
+    for (const name of ['nextZoneToTake', 'objectiveText', 'updateObjectiveUI']) {
+        vm.runInContext(fnSource('js/waves.js', name), ctx, { filename: 'waves.js:' + name });
+    }
+    return { sandbox, run: e => vm.runInContext(e, ctx) };
+})();
+
+check('THE ASK: it names the zone to attack next', () => {
+    OBJ.sandbox.gameState.highestZoneCleared = 3;
+    OBJ.sandbox.alertActive = false;
+    const line = OBJ.run('objectiveText()');
+    ok(/NEXT: ZONE 4/.test(line), 'it does not name the next zone: ' + line);
+    ok(/ZONE 3 TAKEN/.test(line), 'nor what was just taken: ' + line);
+});
+
+check('and it says HOW to start it', () => {
+    OBJ.sandbox.gameState.highestZoneCleared = 2;
+    OBJ.sandbox.alertActive = false;
+    ok(/hack a nest/i.test(OBJ.run('objectiveText()')),
+       'it does not say how to pick the fight');
+});
+
+check('a fresh game is pointed at zone 1', () => {
+    OBJ.sandbox.gameState.highestZoneCleared = 0;
+    OBJ.sandbox.alertActive = false;
+    const line = OBJ.run('objectiveText()');
+    ok(/NEXT: ZONE 1/.test(line), 'a new game is not pointed anywhere: ' + line);
+    ok(!/ZONE 0 TAKEN/.test(line), 'it claims zone 0 was conquered: ' + line);
+});
+
+check('the next zone is always the one after the last taken', () => {
+    for (const taken of [0, 1, 5, 11]) {
+        OBJ.sandbox.gameState.highestZoneCleared = taken;
+        same(OBJ.run('nextZoneToTake()'), taken + 1, 'after taking ' + taken);
+    }
+});
+
+check('during the fight it shows the fight, not the next objective', () => {
+    OBJ.sandbox.gameState.highestZoneCleared = 2;
+    OBJ.sandbox.gameState.phase = 'night';
+    OBJ.sandbox.alertActive = true;
+    OBJ.sandbox.alertZone = 3;
+    OBJ.sandbox.nightKillCount = 2;
+    OBJ.sandbox.nightEnemiesTarget = 7;
+    const line = OBJ.run('objectiveText()');
+    ok(/TAKING ZONE 3/.test(line), 'it does not name the zone being taken: ' + line);
+    ok(/2\/7/.test(line), 'nor the quota: ' + line);
+    OBJ.sandbox.alertActive = false;
+    OBJ.sandbox.gameState.phase = 'day';
+});
+
+check('THE MOMENT OF CONQUEST: the alarm no longer wins the line', () => {
+    // alertActive is still set when a zone is taken, so the alarm branch used
+    // to win and the banner read "TAKING ZONE 1 — Kill 5/5" at exactly the
+    // moment zone 1 had been taken. The PHASE is what says the fight is over.
+    OBJ.sandbox.gameState.highestZoneCleared = 1;
+    OBJ.sandbox.gameState.phase = 'waveComplete';
+    OBJ.sandbox.alertActive = true;
+    OBJ.sandbox.alertZone = 1;
+    OBJ.sandbox.nightKillCount = 5;
+    OBJ.sandbox.nightEnemiesTarget = 5;
+    const line = OBJ.run('objectiveText()');
+    ok(/NEXT: ZONE 2/.test(line), 'the line still shows the finished fight: ' + line);
+    ok(!/TAKING/.test(line), 'it is still counting kills for a wave that is over: ' + line);
+    OBJ.sandbox.alertActive = false;
+    OBJ.sandbox.gameState.phase = 'day';
+});
+
+check('it is refreshed AT the clear, not on the next wave', () => {
+    const at = SRC.waves.indexOf('function checkWaveClear');
+    const body = SRC.waves.slice(at, SRC.waves.indexOf('\n}', at));
+    ok(at > -1 && body.length > 200, 'checkWaveClear could not be located');
+    ok(/updateObjectiveUI\(\)/.test(body),
+       'the banner is not refreshed when the zone is taken');
+    ok(body.indexOf('highestZoneCleared =') < body.indexOf('updateObjectiveUI()'),
+       'the refresh runs before the zone is recorded, so it names the old one');
+});
+
+check('ONE line, not six copies of a string', () => {
+    // It was written out at every site that touched the banner.
+    ok(!/waveUI\.textContent = "Best Zone/.test(SRC.waves),
+       'a "Best Zone" banner string is still written by hand');
+    const writes = (SRC.waves.match(/waveUI\.textContent\s*=/g) || []).length;
+    ok(writes <= 2,
+       writes + ' places still write the banner directly instead of calling updateObjectiveUI');
+    same((SRC.waves.match(/function objectiveText/g) || []).length, 1,
+         'the objective line is built in more than one place');
+});
+
+check('the canvas readout agrees with the banner', () => {
+    const GAME = SRC.game;
+    ok(!/Best Zone: "\+gameState\.highestZoneCleared/.test(GAME),
+       'the HUD still shows a score instead of an objective');
+    ok(/NEXT: ZONE/.test(GAME), 'the HUD does not name the next zone');
+    ok(/nextZoneToTake/.test(GAME), 'the HUD works the next zone out for itself');
 });
 
 (async () => {

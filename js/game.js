@@ -3055,8 +3055,16 @@ function render() {
         ctx.font = "13px monospace";
         ctx.fillText("Kill "+nightKillCount+"/"+nightEnemiesTarget, 230, 74);
     } else {
+        // The canvas readout says the same thing the banner does: what has been
+        // taken, and which zone is next. "Best Zone: 3" was a score, not an
+        // objective.
+        const _taken = gameState.highestZoneCleared || 0;
         ctx.fillStyle = "#0f8";
-        ctx.fillText("Best Zone: "+gameState.highestZoneCleared, 230, 58);
+        ctx.fillText(_taken > 0 ? ("ZONE " + _taken + " TAKEN") : "HOME SECURE", 230, 58);
+        ctx.fillStyle = "#8fd";
+        ctx.font = "13px monospace";
+        ctx.fillText("NEXT: ZONE " + (typeof nextZoneToTake === "function"
+                                      ? nextZoneToTake() : _taken + 1), 230, 74);
     }
     ctx.restore();
 
