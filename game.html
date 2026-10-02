@@ -9,26 +9,52 @@
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
         canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 
+    /* ── TOP HUD ──
+       Every piece of this used to be placed by hand at an absolute top/left,
+       which is fine until the text grows or the screen narrows. Measured in a
+       real browser at five sizes, the old layout produced 27 overlaps — the
+       health bar sat ON the objective line at every size except a wide desktop,
+       which is why it shipped looking fine.
+       It is a column of rows now, so the pieces cannot overlap by
+       construction: the browser lays them out instead of us guessing. */
+    #topHud {
+        position: fixed; top: 0; left: 0; right: 0;
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
+        padding: 8px 10px 0; box-sizing: border-box;
+        z-index: 10; pointer-events: none;
+    }
+    #hudRow1 {
+        display: flex; width: 100%; gap: 8px;
+        align-items: flex-start; justify-content: space-between;
+    }
+    #hudLeft, #hudCentre, #hudRight {
+        display: flex; flex-direction: column; gap: 4px; min-width: 0;
+    }
+    #hudLeft  { align-items: flex-start; }
+    #hudRight { align-items: flex-end; }
+    #hudCentre { flex: 0 1 200px; }
+    /* Interactive pieces take their clicks back from the see-through column. */
+    #ultWrap, #siphonBtn, .top-btn { pointer-events: auto; }
+
     #ui {
-        position: absolute; top: 20px; left: 230px; right: 80px;
-        max-width: 200px; height: 28px;
+        width: 100%; height: 28px;
         background: rgba(0,0,0,0.6);
         border: 1px solid #333; border-radius: 4px; overflow: hidden;
+        box-sizing: border-box;
     }
     @media (max-width: 480px) {
-        #ui { left: 130px; right: 60px; max-width: none; }
         #shards { font-size: 12px; }
+        #hudCentre { flex: 0 1 140px; }
     }
     #hp { height: 100%; background: #0f8; width: 100%; box-shadow: 0 0 10px #0f8; transition: background 0.3s; }
 
     /* The character's ultimate, sitting right under their health so the two
        read as one status block. Tapping it spends the bar. */
     #ultWrap {
-        position: absolute; top: 52px; left: 230px; right: 80px;
-        max-width: 200px; height: 15px;
+        position: relative; width: 100%; height: 15px;
         background: rgba(0,0,0,0.6);
         border: 1px solid #333; border-radius: 4px; overflow: hidden;
-        z-index: 10; cursor: pointer; touch-action: manipulation;
+        cursor: pointer; touch-action: manipulation; box-sizing: border-box;
     }
     #ult {
         height: 100%; width: 0%;
@@ -42,6 +68,13 @@
         font-family: monospace; font-size: 9px; font-weight: bold; letter-spacing: 1px;
         color: #cbd5e0; text-align: center; line-height: 15px;
         text-shadow: 0 0 3px #000; pointer-events: none;
+        /* The longest caption, "NO SQUAD IN RANGE · 100%", is wider than the
+           bar on a phone and used to run out under the siphon switch. Clip it
+           rather than let it escape, and shrink it where the bar is narrow. */
+        overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    }
+    @media (max-width: 560px) {
+        #ultLabel { font-size: 7px; letter-spacing: 0; }
     }
     /* The siphon switch, inside the bar at its right end. It stops the click
        from reaching the bar, which fires the ultimate. */
@@ -60,24 +93,29 @@
     @media (prefers-reduced-motion: reduce) {
         #ultWrap.ready { animation: none; box-shadow: 0 0 10px #ffdd44; }
     }
-    @media (max-width: 480px) {
-        #ultWrap { left: 130px; right: 60px; max-width: none; }
-    }
 
     #shards {
-        position: absolute; top: 12px; left: 10px;
         color: #ff0; font-size: 14px; font-weight: bold;
         background: rgba(0,0,0,0.8); padding: 2px 6px;
-        border-radius: 4px; z-index: 10;
+        border-radius: 4px; white-space: nowrap;
     }
+    /* The objective line. It shrinks with the screen rather than pushing into
+       its neighbours — it is the longest thing in the HUD and the one that
+       used to run underneath the status bars. */
     #waveInfo {
-        position: absolute; top: 10px; left: 50%;
-        transform: translateX(-50%);
-        color: #0f8; font-size: 17px; font-weight: bold;
+        color: #0f8; font-size: clamp(11px, 1.9vw, 17px); font-weight: bold;
         background: rgba(0,0,0,0.85); padding: 4px 14px;
-        border-radius: 5px; z-index: 10; pointer-events: none;
-        letter-spacing: 0.5px;
+        border-radius: 5px; pointer-events: none;
+        letter-spacing: 0.5px; text-align: center;
+        max-width: 100%; box-sizing: border-box;
     }
+    /* Under alarm this line IS the alarm. The canvas used to flash a second
+       copy of it; the flash lives here now so there is only one. */
+    #waveInfo.alarm {
+        color: #ff4422;
+        animation: waveAlarmPulse 0.8s ease-in-out infinite;
+    }
+    @keyframes waveAlarmPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
     /* ── OVERLAY (game-over / wave-clear) ── */
     #overlay {
         display: none;
@@ -139,10 +177,8 @@
 
     /* ── TOP COMMAND TOGGLES ── */
     #topToggles {
-        position: absolute; top: 44px; left: 50%;
-        transform: translateX(-50%);
-        display: flex; gap: 4px; z-index: 20;
-        max-width: calc(100vw - 20px); flex-wrap: nowrap;
+        display: flex; gap: 4px;
+        max-width: 100%; flex-wrap: nowrap;
     }
     .top-btn {
         background: rgba(0,0,0,0.78); border: 1px solid #0f8;
@@ -440,21 +476,31 @@
 
 <!-- HUD -->
 
-<div id="shards">Shards: 0</div>
-<div id="ui"><div id="hp"></div></div>
-<div id="ultWrap" onclick="fireArmySurge()"><div id="ult"></div><span id="ultLabel">ULTIMATE</span><button id="siphonBtn" onclick="event.stopPropagation();toggleSiphon()" title="Draw charge from your followers">⌁</button></div>
-<div id="padHud" style="display:none;position:absolute;top:22px;right:10px;color:#ff9944;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;z-index:10;"></div>
-<div id="waveInfo">WAVE 1 — clear panels for shards</div>
-<button id="tutBtn" onclick="startTutorial()" style="position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.85);border:2px solid #0f8;color:#0f8;font-family:monospace;font-size:13px;font-weight:bold;padding:10px 18px;border-radius:4px;letter-spacing:2px;cursor:pointer;z-index:200;touch-action:manipulation;">TUTORIAL</button>
-<div id="zoneInfo" style="position:absolute;top:44px;right:10px;color:#0f8;font-size:13px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;z-index:10;">Zone: Home</div>
-<div id="dnaHud" style="display:none;position:absolute;top:42px;left:10px;color:#0f8;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;z-index:10;">DNA: none</div>
-
-<!-- TOP COMMAND TOGGLES -->
-<div id="topToggles">
+<!-- HUD — one flow column, so the pieces cannot overlap. See #topHud. -->
+<div id="topHud">
+  <div id="hudRow1">
+    <div id="hudLeft">
+      <div id="shards">Shards: 0</div>
+      <div id="dnaHud" style="display:none;color:#0f8;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;">DNA: none</div>
+    </div>
+    <div id="hudCentre">
+      <div id="ui"><div id="hp"></div></div>
+      <div id="ultWrap" onclick="fireArmySurge()"><div id="ult"></div><span id="ultLabel">ULTIMATE</span><button id="siphonBtn" onclick="event.stopPropagation();toggleSiphon()" title="Draw charge from your followers">⌁</button></div>
+    </div>
+    <div id="hudRight">
+      <div id="padHud" style="display:none;color:#ff9944;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;"></div>
+      <div id="zoneInfo" style="color:#0f8;font-size:13px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;">Zone: Home</div>
+    </div>
+  </div>
+  <div id="waveInfo">WAVE 1 — clear panels for shards</div>
+  <div id="topToggles">
     <button id="btnSquad" class="top-btn" onclick="toggleSquad()">SQUAD: SEL</button>
     <button id="btnBuild" class="top-btn" onclick="toggleBuild()">BUILD: OFF</button>
     <button id="btnCtrl"  class="top-btn" onclick="toggleControlsMenu()">?</button>
 </div>
+</div>
+<button id="tutBtn" onclick="startTutorial()" style="position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.85);border:2px solid #0f8;color:#0f8;font-family:monospace;font-size:13px;font-weight:bold;padding:10px 18px;border-radius:4px;letter-spacing:2px;cursor:pointer;z-index:200;touch-action:manipulation;">TUTORIAL</button>
+
 
 <!-- CONTROLS / INFO MENU — 5-tab reference panel -->
 <div id="controlsMenu">
@@ -503,6 +549,21 @@
       <div class="ctrl-row"><span class="ctrl-key">SQUAD</span> Toggle SEL (selected followers) / ALL (every follower)</div>
       <div class="ctrl-row"><span class="ctrl-key">BUILD</span> Toggle build mode ON/OFF — tap tile to place pylon</div>
       <div class="ctrl-row"><span class="ctrl-key">?</span> Open / close this reference panel</div>
+
+      <div class="ctrl-title">THE TOP BAR — WHAT IS WHERE</div>
+      <div class="ctrl-row cm-dim">The top of the screen stacks in three rows and never overlaps itself, at any screen size. Tapping an empty part of it reaches the cavern underneath.</div>
+      <div class="cm-build-row"><span class="cm-build-label">Left</span>Shards, and the <span class="cm-stat">DNA</span> you are carrying</div>
+      <div class="cm-build-row"><span class="cm-build-label">Centre</span>Your health, and the <span class="cm-stat">ULTIMATE</span> bar under it with its <span class="cm-stat">⌁</span> siphon switch</div>
+      <div class="cm-build-row"><span class="cm-build-label">Right</span>Launch-pad charge, and the zone you are standing in</div>
+      <div class="cm-build-row"><span class="cm-build-label">Middle line</span>The <span class="cm-stat">OBJECTIVE</span> — see below</div>
+      <div class="cm-build-row"><span class="cm-build-label">Bottom row</span>SQUAD, BUILD and <span class="cm-stat">?</span></div>
+
+      <div class="ctrl-title">THE OBJECTIVE LINE</div>
+      <div class="ctrl-row cm-dim">The green line across the middle of the top bar always says the same two things: <span class="cm-stat">what you have taken</span> and <span class="cm-stat">which zone is next</span>. It updates the moment a zone falls, not on the next wave.</div>
+      <div class="cm-build-row"><span class="cm-build-label">Quiet</span><span class="cm-stat">ZONE 3 TAKEN → NEXT: ZONE 4 — hack a nest there</span></div>
+      <div class="cm-build-row"><span class="cm-build-label">Fresh game</span><span class="cm-stat">HOME SECURE → NEXT: ZONE 1</span> — nothing is taken yet, and zone 0 is your own doorway</div>
+      <div class="cm-build-row"><span class="cm-build-label">Under alarm</span>It turns red and flashes, names what tripped it — <span class="cm-stat">PROXIMITY ALARM</span>, <span class="cm-stat">ZONE ALARM</span> or <span class="cm-stat">FACILITY BREACH</span> — the zone being taken, and your kill count against the quota</div>
+      <div class="ctrl-row cm-dim">A zone is taken by clearing the wave its alarm raised, which is why the fight and the objective are the same line.</div>
 
       <div class="ctrl-title">ULTIMATE CHARGE</div>
       <div class="ctrl-row cm-dim">The thin bar below a follower's health bar shows ultimate charge.</div>

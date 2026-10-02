@@ -680,10 +680,17 @@ async function boot(store) {
     check('THE ASK: there is a bar, under the health bar', () => {
         ok(/id="ultWrap"/.test(SRC.html), 'no ultimate bar in the HUD');
         ok(/id="ult"/.test(SRC.html), 'the bar has no fill element');
-        // Below the health bar: #ui sits at top 20 with height 28.
-        const m = SRC.html.match(/#ultWrap\s*\{[^}]*top:\s*(\d+)px/);
-        ok(!!m, 'the bar is not positioned');
-        ok(Number(m[1]) >= 48, 'it should sit below the health bar, got top ' + m[1]);
+        // It used to be pinned at a hand-picked `top: 48px`, which is how the
+        // whole HUD ended up stacked on itself at anything but desktop width.
+        // The HUD is a flow column now, so "under the health bar" means "after
+        // it, in the same column" — and where it actually LANDS is measured in
+        // a real browser by tests/hud.js.
+        const col = SRC.html.slice(SRC.html.indexOf('<div id="hudCentre"'));
+        const centre = col.slice(0, col.indexOf('<div id="hudRight"'));
+        ok(centre.indexOf('id="ui"') > -1 && centre.indexOf('id="ultWrap"') > -1,
+           'the health bar and the ultimate bar are no longer in the same column');
+        ok(centre.indexOf('id="ui"') < centre.indexOf('id="ultWrap"'),
+           'the ultimate bar comes before the health bar, so it sits above it');
     });
 
     check('tapping it fires the ultimate', () => {

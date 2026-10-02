@@ -1331,8 +1331,9 @@ function render() {
         if (a.dead && isEnemyUnit(a) && !a.killCounted && !a.isWanderer) {
             a.killCounted = true;
             nightKillCount++;
-            const _kz = alertSource ? getZoneIndex(Math.floor(alertSource.x)) : 1;
-            waveUI.textContent = "⚠ Zone "+_kz+" — Kill "+nightKillCount+"/"+nightEnemiesTarget;
+            // Was a seventh hand-written copy of the banner, in a format none of
+            // the other six used ("Zone 2" where the rest say "TAKING ZONE 2").
+            updateKillProgressUI();
         }
     });
 
@@ -3039,34 +3040,12 @@ function render() {
     drawHazards();
 
     // ── HUD TEXT ──
-    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-    ctx.fillStyle="#fff"; ctx.font="13px monospace";
-    if (alertActive) {
-        // Flashing alert banner
-        const _af = 0.6 + 0.4 * Math.sin(frame * 0.3);
-        ctx.globalAlpha = _af;
-        ctx.fillStyle = "#ff2200";
-        ctx.font = "bold 13px monospace";
-        const _label = alertType === "proximity" ? "PROXIMITY ALARM" :
-                       alertType === "zone"      ? "ZONE ALARM"      : "FACILITY BREACH";
-        ctx.fillText("⚠ " + _label, 230, 58);
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = "#f84";
-        ctx.font = "13px monospace";
-        ctx.fillText("Kill "+nightKillCount+"/"+nightEnemiesTarget, 230, 74);
-    } else {
-        // The canvas readout says the same thing the banner does: what has been
-        // taken, and which zone is next. "Best Zone: 3" was a score, not an
-        // objective.
-        const _taken = gameState.highestZoneCleared || 0;
-        ctx.fillStyle = "#0f8";
-        ctx.fillText(_taken > 0 ? ("ZONE " + _taken + " TAKEN") : "HOME SECURE", 230, 58);
-        ctx.fillStyle = "#8fd";
-        ctx.font = "13px monospace";
-        ctx.fillText("NEXT: ZONE " + (typeof nextZoneToTake === "function"
-                                      ? nextZoneToTake() : _taken + 1), 230, 74);
-    }
-    ctx.restore();
+    // Deliberately empty. The objective, the alarm and the kill tally used to be
+    // painted here at a hardcoded screen x=230,y=58 — which is inside the HUD
+    // banner's box on anything narrower than a desktop, so the two sentences
+    // overprinted each other and neither could be read. The banner (#waveInfo)
+    // is laid out by the browser, says all three things, and flashes via its
+    // "alarm" class, so there is nothing left for the canvas to say.
 
     // ── NETWORK STATUS HUD ──
     drawNetworkStatusHUD();

@@ -188,8 +188,12 @@ function initPreview() {
 
     // DEV Toggle button
     const devBtn=document.createElement("button");
+    devBtn.id="devBtn";
     devBtn.textContent="DEV";
-    Object.assign(devBtn.style,{position:"fixed",right:"15px",top:"15px",zIndex:"9999",
+    // Bottom LEFT, not top right: at top right it sat on top of the pad readout
+    // and the zone name at z-index 9999, so on a tablet the player could not
+    // read either. Bottom right is the TUTORIAL button, so left it is.
+    Object.assign(devBtn.style,{position:"fixed",left:"15px",bottom:"15px",zIndex:"9999",
         background:"#111",color:"#0f8",border:"1px solid #0f8",padding:"6px 10px",fontFamily:"monospace",cursor:"pointer"});
     devBtn.onclick=toggleDevPreview;
     document.body.appendChild(devBtn);

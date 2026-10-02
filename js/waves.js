@@ -18,6 +18,19 @@ function nextZoneToTake() {
     return (gameState.highestZoneCleared || 0) + 1;
 }
 
+// What tripped the alarm, in the player's words. Written out twice — once for
+// the floating announcement, once for the canvas — with two different key sets,
+// so an unrecognised type read "INTRUDER ALERT" in one place and "FACILITY
+// BREACH" in the other. One list.
+const ALARM_LABELS = {
+    proximity: "PROXIMITY ALARM",
+    zone:      "ZONE ALARM",
+    facility:  "FACILITY BREACH",
+};
+function alarmLabel(type) {
+    return ALARM_LABELS[type] || "INTRUDER ALERT";
+}
+
 function objectiveText(suffix) {
     // Under alarm the objective IS the alarm — the zone that raised it and the
     // quota that ends it. Nothing else is worth saying while that is running.
@@ -31,7 +44,10 @@ function objectiveText(suffix) {
         const z = (alertZone !== null && alertZone !== undefined)
             ? alertZone
             : (alertSource ? getZoneIndex(Math.floor(alertSource.x)) : nextZoneToTake());
-        return "\u26a0 TAKING ZONE " + z + " \u2014 Kill " + nightKillCount + "/" + nightEnemiesTarget;
+        // What tripped the alarm used to be painted on the canvas and was lost
+        // when that copy went; it belongs on the one line that is left.
+        return "\u26a0 " + alarmLabel(alertType) + " \u2014 TAKING ZONE " + z
+             + " \u2014 Kill " + nightKillCount + "/" + nightEnemiesTarget;
     }
     const cleared = gameState.highestZoneCleared || 0;
     const head = cleared > 0 ? ("ZONE " + cleared + " TAKEN") : "HOME SECURE";
@@ -47,6 +63,27 @@ function objectiveText(suffix) {
 function updateObjectiveUI(suffix) {
     if (typeof waveUI === "undefined" || !waveUI) return;
     waveUI.textContent = objectiveText(suffix);
+    // The banner carries the alarm itself now, so it has to LOOK like an alarm.
+    // The canvas used to paint a second, flashing copy of this sentence at a
+    // hardcoded x=230, which landed underneath this box and made both
+    // unreadable. One line, one place, and the urgency lives in a class.
+    const _fighting = typeof gameState !== "undefined" && gameState.phase !== "waveComplete";
+    const _alarm = _fighting && typeof alertActive !== "undefined" && alertActive;
+    if (waveUI.classList) waveUI.classList.toggle("alarm", !!_alarm);
+}
+
+// The kill tally shows two different ways: inside the alarm line while the
+// alarm runs, and as a suffix once the alarm has expired but the quota has not.
+// Both callers — the alarm timer and the kill counter itself — need the same
+// choice made, so it is made once.
+function updateKillProgressUI() {
+    if (typeof alertActive !== "undefined" && alertActive) { updateObjectiveUI(); return; }
+    if (typeof gameState !== "undefined" && gameState.phase === "night"
+        && nightKillCount < nightEnemiesTarget) {
+        updateObjectiveUI("Kill " + nightKillCount + "/" + nightEnemiesTarget);
+        return;
+    }
+    updateObjectiveUI();
 }
 
 function triggerAlarm(type, sx, sy) {
@@ -69,8 +106,7 @@ function triggerAlarm(type, sx, sy) {
     }
 
     // Announce alarm type
-    const labels = { proximity:"PROXIMITY ALARM", zone:"ZONE ALARM", facility:"FACILITY BREACH" };
-    const label  = labels[type] || "INTRUDER ALERT";
+    const label = alarmLabel(type);
     const _floatZone = getZoneIndex(Math.floor(sx));
     floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80,
         text:"⚠ ZONE " + _floatZone + " " + label + " ⚠", color:"#ff2200", life:180, vy:-0.25, size:16 });
@@ -143,13 +179,10 @@ function clearAlarm() {
     // Reactivate all panels so the player can replay the same zones
     resetPanels();
 
-    // Keep phase as "night" so kills can still complete the wave after alarm expires
-    if (gameState.phase === "night" && nightKillCount < nightEnemiesTarget) {
-        // The alarm has expired but the quota has not — still the same fight.
-        updateObjectiveUI("Kill " + nightKillCount + "/" + nightEnemiesTarget);
-    } else {
-        updateObjectiveUI();
-    }
+    // Keep phase as "night" so kills can still complete the wave after alarm
+    // expires — the alarm has expired but the quota has not, which is still the
+    // same fight and still wants the tally.
+    updateKillProgressUI();
 }
 
 // ── BETWEEN-WAVE WORLD RESTORE ──

@@ -444,14 +444,31 @@ const OBJ = (() => {
     const sandbox = {
         console, Math, Object, Array, String, Number, JSON,
         gameState: { highestZoneCleared: 0, phase: 'day' },
-        alertActive: false, alertZone: null, alertSource: null,
+        alertActive: false, alertZone: null, alertSource: null, alertType: 'facility',
         nightKillCount: 0, nightEnemiesTarget: 0,
         getZoneIndex: x => Math.floor(x / 15),
-        waveUI: null,
+        // A banner element good enough to take the text AND the alarm class,
+        // because the flash now lives on the class rather than on the canvas.
+        waveUI: (() => {
+            const classes = new Set();
+            return {
+                textContent: '',
+                classList: {
+                    toggle: (n, on) => { if (on) classes.add(n); else classes.delete(n); },
+                    contains: n => classes.has(n),
+                },
+            };
+        })(),
     };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
-    for (const name of ['nextZoneToTake', 'objectiveText', 'updateObjectiveUI']) {
+    // alarmLabel reads a table declared beside it. Take the real declaration
+    // rather than restating the three names here, so a test cannot agree with
+    // itself while the game says something else.
+    const table = SRC.waves.match(/const ALARM_LABELS = \{[\s\S]*?\};/);
+    if (!table) throw new Error('the alarm label table could not be located');
+    vm.runInContext(table[0].replace('const ', 'var '), ctx, { filename: 'waves.js:ALARM_LABELS' });
+    for (const name of ['nextZoneToTake', 'alarmLabel', 'objectiveText', 'updateObjectiveUI']) {
         vm.runInContext(fnSource('js/waves.js', name), ctx, { filename: 'waves.js:' + name });
     }
     return { sandbox, run: e => vm.runInContext(e, ctx) };
@@ -539,12 +556,98 @@ check('ONE line, not six copies of a string', () => {
          'the objective line is built in more than one place');
 });
 
-check('the canvas readout agrees with the banner', () => {
+check('the canvas does not paint a SECOND copy of the line', () => {
+    // It used to, at a hardcoded screen position (230, 58) — which is inside
+    // the banner's box on anything narrower than a desktop, so on a tablet the
+    // two sentences printed over each other and neither could be read.
+    // REPORTED: "update the HUD so that all parts are visible, the wave
+    // information is hidden".
     const GAME = SRC.game;
     ok(!/Best Zone: "\+gameState\.highestZoneCleared/.test(GAME),
        'the HUD still shows a score instead of an objective');
-    ok(/NEXT: ZONE/.test(GAME), 'the HUD does not name the next zone');
-    ok(/nextZoneToTake/.test(GAME), 'the HUD works the next zone out for itself');
+    for (const phrase of ['HOME SECURE', 'NEXT: ZONE', 'PROXIMITY ALARM',
+                          'ZONE ALARM', 'FACILITY BREACH']) {
+        ok(!new RegExp('fillText\\([^)]*' + phrase).test(GAME)
+           && GAME.indexOf('"' + phrase + '"') === -1,
+           'the canvas still paints "' + phrase + '" over the banner');
+    }
+    // And the one place that DOES say it must still work the zone out itself.
+    ok(/nextZoneToTake/.test(SRC.waves), 'the banner no longer derives the next zone');
+});
+
+check('the alarm kind survives the move off the canvas', () => {
+    // Deleting the canvas copy nearly took "PROXIMITY ALARM" with it — what
+    // tripped the alarm is the one thing the banner did not already say.
+    OBJ.sandbox.gameState.highestZoneCleared = 1;
+    OBJ.sandbox.gameState.phase = 'night';
+    OBJ.sandbox.alertActive = true;
+    OBJ.sandbox.alertZone = 2;
+    OBJ.sandbox.nightKillCount = 1;
+    OBJ.sandbox.nightEnemiesTarget = 4;
+    // The types come from the world generator's own list, not from a copy here
+    // — the first version of this test invented a type ("breach") the game
+    // never raises, and passed anyway against a fallback.
+    const WORLD = fs.readFileSync(path.join(ROOT, 'js/world.js'), 'utf8');
+    const listed = WORLD.match(/PANEL_ALARM_TYPES\s*=\s*\[([^\]]*)\]/);
+    ok(!!listed, 'the alarm types could not be located in the world generator');
+    const kinds = listed[1].match(/"([^"]+)"/g).map(s => s.replace(/"/g, ''));
+    same(kinds.length, 3, 'there are no longer three kinds of alarm');
+    const seen = {};
+    for (const kind of kinds) {
+        OBJ.sandbox.alertType = kind;
+        const line = OBJ.run('objectiveText()');
+        const label = OBJ.run(`alarmLabel(${JSON.stringify(kind)})`);
+        ok(label !== 'INTRUDER ALERT', kind + ' is raised but has no name of its own');
+        ok(line.indexOf(label) > -1, kind + ' does not name itself: ' + line);
+        ok(/TAKING ZONE 2/.test(line) && /1\/4/.test(line),
+           'naming the alarm cost the zone or the quota: ' + line);
+        seen[label] = true;
+    }
+    same(Object.keys(seen).length, 3, 'the three alarms are not told apart');
+    OBJ.sandbox.alertActive = false;
+    OBJ.sandbox.gameState.phase = 'day';
+});
+
+check('the banner flashes under alarm, and stops when the alarm does', () => {
+    // The canvas painted the flashing copy. Deleting it would have left the
+    // alarm looking like any other line, so the urgency moved onto the banner
+    // itself — which means it now has to be TAKEN OFF again, or the line stays
+    // red for the rest of the game.
+    const lit = () => OBJ.sandbox.waveUI.classList.contains('alarm');
+    OBJ.sandbox.gameState.phase = 'night';
+    OBJ.sandbox.alertActive = true;
+    OBJ.sandbox.alertZone = 2;
+    OBJ.run('updateObjectiveUI()');
+    ok(lit(), 'the banner does not flash while the alarm is running');
+    OBJ.sandbox.alertActive = false;
+    OBJ.run('updateObjectiveUI()');
+    ok(!lit(), 'the banner is still flashing after the alarm stopped');
+    // And it stops at the moment the zone falls, while alertActive is still set.
+    OBJ.sandbox.alertActive = true;
+    OBJ.sandbox.gameState.phase = 'waveComplete';
+    OBJ.run('updateObjectiveUI()');
+    ok(!lit(), 'the banner flashes an alarm for a fight that is already won');
+    OBJ.sandbox.alertActive = false;
+    OBJ.sandbox.gameState.phase = 'day';
+    // The whole selector, not a prefix of it: `/#waveInfo\.alarm/` happily
+    // matched `#waveInfo.alarmX`, so renaming the rule looked like a pass.
+    const rule = HTML.match(/#waveInfo\.alarm\s*\{([^}]*)\}/);
+    ok(!!rule, 'nothing in the stylesheet reacts to the alarm class');
+    ok(/animation|color/.test(rule[1]), 'the alarm rule does not change how the line looks');
+});
+
+check('the kill counter updates the banner through the shared builder', () => {
+    // The kill site hand-wrote a SEVENTH copy, in a format none of the other
+    // six used ("Zone 2" where every other line says "TAKING ZONE 2").
+    ok(/function updateKillProgressUI/.test(SRC.waves),
+       'there is no shared updater for the tally');
+    const at = SRC.game.indexOf('nightKillCount++');
+    ok(at > -1, 'the kill counter could not be located');
+    const near = SRC.game.slice(at, at + 400);
+    ok(/updateKillProgressUI\(\)/.test(near),
+       'the kill counter does not refresh the banner through the shared builder');
+    ok(!/waveUI\.textContent\s*=/.test(SRC.game),
+       'game.js still writes the banner text by hand');
 });
 
 (async () => {

@@ -33,6 +33,7 @@ const SUITES = [
     ['clone cost',             'clones.js'],
     ['early economy',          'economy.js'],
     ['portal + aura',          'homebase.js'],
+    ['HUD layout',             'hud.js'],
 ];
 
 let failed = 0;
