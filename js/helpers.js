@@ -123,6 +123,27 @@ function canHackNestFrom(nest, x, y) {
     return inNestHackRange(nest, x, y) && !panelWouldClaimSiphon(x, y);
 }
 
+// Has this zone been taken? One definition, shared with the spawn loop: a zone
+// is neutralised when it HAD a mouth and every one of them is shut. That is
+// exactly what zoneSpawnPoints already answers — [] means shut, null means
+// there was never anything there — so asking it again here would be a second
+// copy of the rule, free to disagree with the first.
+//
+// Home is never "taken". It was always yours.
+function zoneIsNeutralised(zoneIndex) {
+    if (!(zoneIndex > 0)) return false;
+    if (typeof zoneSpawnPoints !== "function") return false;
+    const mouths = zoneSpawnPoints(zoneIndex);
+    return !!mouths && mouths.length === 0;
+}
+
+// The zone a tile stands in. Wrapped so the floor(x) that every caller was
+// writing out is in one place.
+function zoneOfTile(t) {
+    if (!t || typeof getZoneIndex !== "function") return -1;
+    return getZoneIndex(Math.floor(t.x));
+}
+
 // Is this nest something the player could hack right now? Zone 0's is the home
 // portal, a dead nest has nothing left to hack, and one alarm runs at a time.
 function nestIsHackable(nest) {

@@ -156,8 +156,13 @@ function resetPanels() {
         t.isDecoy         = false;
     });
 
-    // Assign one new random decoy
-    allPanels[Math.floor(Math.random() * allPanels.length)].isDecoy = true;
+    // Assign one new random decoy — but only in a zone that can still raise an
+    // alarm. A decoy in a zone you have already taken does nothing at all, so
+    // dropping it there would quietly hand the player a free wave.
+    const live = allPanels.filter(t => !(typeof zoneIsNeutralised === "function"
+                                         && zoneIsNeutralised(zoneOfTile(t))));
+    const pool = live.length > 0 ? live : allPanels;
+    pool[Math.floor(Math.random() * pool.length)].isDecoy = true;
 
     // Force the world-cache to rebuild so _wallPanelCache picks up the reset panels
     _cacheAge = -999;

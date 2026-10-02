@@ -2009,16 +2009,22 @@ function drawCapturableNode(tile, px, py) {
         const activated = tile.panelActivated;
         const flicker = tile.panelFlicker || 0;
         const _blink = Math.sin(frame * 0.12 + flicker);
-        const ledCol = activated ? '#444' : (_blink > 0.6 ? '#00ff88' : '#00cc66');
-        const screenCol = activated ? '#111' : '#001a0a';
-        const rimCol = activated ? '#333' : '#0f8';
+        // A panel in a zone you have taken is BLUE, like that zone's nest: it
+        // cannot raise an alarm and it pays less, and the player needs to be
+        // able to see which it is before walking up to it rather than after.
+        const _taken = typeof zoneIsNeutralised === 'function'
+                       && zoneIsNeutralised(zoneOfTile(tile));
+        const liveLed = _taken ? NEST_COLOUR_CONTROLLED : (_blink > 0.6 ? '#00ff88' : '#00cc66');
+        const ledCol = activated ? '#444' : liveLed;
+        const screenCol = activated ? '#111' : (_taken ? '#071326' : '#001a0a');
+        const rimCol = activated ? '#333' : (_taken ? NEST_COLOUR_CONTROLLED : '#0f8');
 
         ctx.save();
-        ctx.shadowColor = activated ? 'transparent' : '#00ff88';
+        ctx.shadowColor = activated ? 'transparent' : (_taken ? NEST_COLOUR_CONTROLLED : '#00ff88');
         ctx.shadowBlur = activated ? 0 : 8 + _blink * 5;
 
         // Panel body (flat-panel against back wall)
-        ctx.fillStyle = activated ? '#1a1a1a' : '#0a1a10';
+        ctx.fillStyle = activated ? '#1a1a1a' : (_taken ? '#0a1222' : '#0a1a10');
         ctx.fillRect(cx - 10, cy - 32, 20, 18);
 
         // Rim highlight

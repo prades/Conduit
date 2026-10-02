@@ -36,6 +36,7 @@ const SRC = {
     world: fs.readFileSync(path.join(ROOT, 'js/world.js'), 'utf8'),
     waves: fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8'),
     game:  fs.readFileSync(path.join(ROOT, 'js/game.js'),  'utf8'),
+    config: fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8'),
 };
 const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
 
@@ -223,6 +224,188 @@ async function ready(seed) {
     });
 
     // ─────────────────────────────────────────────────────
+    group('A TAKEN ZONE: its panels are neutralised too');
+
+    // REPORTED: "even the panels of that zone cleared should be neutralised —
+    // no setting off the alarm; yes hacking for shards, but less than the
+    // normal amount."
+    //
+    // Driven through the real panel loop rather than read out of the source:
+    // the player walks up, stands there for SIPHON_FRAMES, and what happens is
+    // what happens.
+
+    // Its OWN booted world. This group walks the player around, rewrites panel
+    // state and empties _wallPanelCache; doing that in the shared one left a
+    // later check with no panel in reach of the nest it was testing.
+    const P = await ready();
+
+    // Stand the player in front of a panel and run the siphon to completion.
+    // Returns what the game did about it.
+    const hack = (env, zone, { decoy, taken }) => env.run(`(function(){
+        gameState.running = true;
+        alertActive = false; alertType = null; alertSource = null; alertZone = null;
+        floatingTexts.length = 0;
+        shardCount = 0; playerAmmo = 0;
+        // Put every zone's nest back up, then take this one's down if asked.
+        world.forEach(t => { if (t.nest) t.nestHealth = t.nestMaxHealth || 200; });
+        if (${!!taken}) world.forEach(t => {
+            if (t.nest && t.nestZone === ${zone}) t.nestHealth = 0;
+        });
+        const p = world.find(t => t.nodeType === 'wall_panel'
+                                  && getZoneIndex(Math.floor(t.x)) === ${zone});
+        if (!p) return { missing: true };
+        p.panelActivated = false; p.siphonProgress = 0;
+        p.isDecoy = ${!!decoy};
+        p.shardReward = 20;
+        _wallPanelCache.length = 0; _wallPanelCache.push(p);
+        player.x = p.x; player.y = p.y + 1;
+        player.visualX = player.x; player.visualY = player.y;
+        player.targetX = player.x; player.targetY = player.y;
+        for (let i = 0; i < 200 && !p.panelActivated; i++) render();
+        return {
+            activated: !!p.panelActivated,
+            shards: shardCount,
+            alarm: !!alertActive,
+            neutral: zoneIsNeutralised(${zone}),
+            said: floatingTexts.map(t => t.text).join(' | '),
+        };
+    })()`);
+
+    check('fixture: a panel in a live zone behaves as it always did', () => {
+        const r = hack(P, 1, { decoy: false, taken: false });
+        ok(!r.missing, 'no panel generated in zone 1 to test with');
+        same(r.activated, true, 'the panel never finished siphoning');
+        same(r.neutral, false, 'fixture: zone 1 should still be theirs');
+        same(r.shards, 20, 'a live zone should pay the full reward');
+        same(r.alarm, false, 'a plain panel should not raise anything');
+    });
+
+    check('THE ASK: a decoy in a taken zone does NOT raise the alarm', () => {
+        const r = hack(P, 1, { decoy: true, taken: true });
+        same(r.neutral, true, 'fixture: zone 1 should read as taken');
+        same(r.activated, true, 'the panel never finished siphoning');
+        same(r.alarm, false, 'hacking a panel in a taken zone raised the alarm');
+    });
+
+    check('...and the same decoy in a LIVE zone still does', () => {
+        // Otherwise the check above passes because decoys stopped working.
+        const r = hack(P, 1, { decoy: true, taken: false });
+        same(r.neutral, false, 'fixture: zone 1 should still be theirs');
+        same(r.alarm, true, 'a decoy in a live zone no longer raises the alarm');
+    });
+
+    check('THE ASK: it still pays shards, but fewer', () => {
+        const live  = hack(P, 1, { decoy: false, taken: false });
+        const taken = hack(P, 1, { decoy: false, taken: true });
+        ok(taken.shards > 0, 'a taken zone pays nothing at all');
+        ok(taken.shards < live.shards,
+           `a taken zone pays ${taken.shards}, the same as the live ${live.shards}`);
+        // And by the documented amount, read from the constant.
+        const mult = Number(SRC.config.match(/const PANEL_NEUTRAL_SHARD_MULT = ([\d.]+)/)[1]);
+        ok(mult > 0 && mult < 1, 'the multiplier should reduce the payout, got ' + mult);
+        same(taken.shards, Math.max(1, Math.round(live.shards * mult)),
+             'the reduced payout does not match PANEL_NEUTRAL_SHARD_MULT');
+    });
+
+    check('even a decoy pays, once its zone is taken', () => {
+        // There is nobody left to raise, so the decoy is just a panel.
+        const r = hack(P, 1, { decoy: true, taken: true });
+        ok(r.shards > 0, 'a decoy in a taken zone pays nothing');
+        same(r.alarm, false, 'and it must still not raise anything');
+    });
+
+    check('and it says why the payout is smaller', () => {
+        const r = hack(P, 1, { decoy: false, taken: true });
+        ok(/zone taken/i.test(r.said),
+           'the payout does not tell the player the zone is taken: ' + r.said);
+    });
+
+    check('taking one zone does not neutralise the next', () => {
+        const r = P.run(`(function(){
+            world.forEach(t => { if (t.nest) t.nestHealth = t.nestMaxHealth || 200; });
+            world.forEach(t => { if (t.nest && t.nestZone === 1) t.nestHealth = 0; });
+            return { one: zoneIsNeutralised(1), two: zoneIsNeutralised(2),
+                     home: zoneIsNeutralised(0) };
+        })()`);
+        same(r.one, true, 'the taken zone should read as taken');
+        same(r.two, false, 'the next zone should not');
+        same(r.home, false, 'home is not a zone you take');
+    });
+
+    check('a zone that never had a nest is NOT taken', () => {
+        // zoneSpawnPoints says null for "there was nothing here" and [] for
+        // "everything here is shut", and the spawn loop still produces from the
+        // zone centre in the first case. Reading null as taken would neutralise
+        // the panels of a zone that is still spawning.
+        const r = P.run(`(function(){
+            world.forEach(t => { if (t.nest) t.nestHealth = t.nestMaxHealth || 200; });
+            // Strip zone 2's nests entirely, as if it had generated without one.
+            const stripped = [];
+            world.forEach(t => {
+                if (t.nest && t.nestZone === 2) { t.nest = false; stripped.push(t); }
+            });
+            const out = { stripped: stripped.length,
+                          mouths: zoneSpawnPoints(2),
+                          taken: zoneIsNeutralised(2) };
+            stripped.forEach(t => { t.nest = true; });   // put it back
+            return out;
+        })()`);
+        ok(r.stripped > 0, 'fixture: zone 2 should have had a nest to strip');
+        same(r.mouths, null, 'fixture: a zone with no nest should report null');
+        same(r.taken, false, 'a zone that never had a nest was read as taken');
+    });
+
+    check('the decoy is never dropped in a zone that cannot raise it', () => {
+        // resetPanels reshuffles to exactly one decoy map-wide. Putting it in a
+        // taken zone would silently hand the player a free wave.
+        const r = P.run(`(function(){
+            world.forEach(t => { if (t.nest) t.nestHealth = t.nestMaxHealth || 200; });
+            // Take every zone but the deepest one that has panels.
+            const zones = [...new Set(world.filter(t => t.nodeType === 'wall_panel')
+                                           .map(t => getZoneIndex(Math.floor(t.x))))].sort();
+            const keep = zones[zones.length - 1];
+            world.forEach(t => {
+                if (t.nest && t.nestZone !== keep && t.nestZone > 0) t.nestHealth = 0;
+            });
+            const seen = {};
+            for (let i = 0; i < 40; i++) {
+                resetPanels();
+                world.filter(t => t.isDecoy).forEach(t => {
+                    seen[getZoneIndex(Math.floor(t.x))] = true;
+                });
+            }
+            return { keep, zones, seen: Object.keys(seen).map(Number) };
+        })()`);
+        ok(r.zones.length > 1, 'fixture: needs panels in more than one zone');
+        same(r.seen.join(','), String(r.keep),
+             'a decoy was placed in a taken zone (' + r.seen.join(',') + ')');
+    });
+
+    check('a taken zone\'s panel looks taken, before you walk up to it', () => {
+        // Behaviour the player cannot see until after the fact is a trap. The
+        // panel is painted in the same blue as that zone's nest.
+        const DRAW = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8');
+        const at = DRAW.indexOf("} else if (tile.nodeType === 'wall_panel')");
+        ok(at > -1, 'the wall panel drawing could not be located');
+        const body = DRAW.slice(at, at + 1400);
+        ok(/zoneIsNeutralised/.test(body), 'the panel does not know whether its zone is taken');
+        ok(/NEST_COLOUR_CONTROLLED/.test(body),
+           'a taken zone\'s panel is not painted the colour of that zone');
+    });
+
+    check('the index says what a taken zone\'s panels do', () => {
+        const at = HTML.indexOf('WALL PANEL');
+        ok(at > -1, 'the index no longer documents wall panels');
+        const page = HTML.slice(at, HTML.indexOf('WHO CAN BE ATTACKED', at));
+        ok(/zone you have taken/i.test(page), 'it does not mention a taken zone at all');
+        ok(/no panel can trip the alarm/i.test(page), 'nor that the alarm cannot be tripped');
+        // The documented reduction has to match the constant.
+        const mult = Number(SRC.config.match(/const PANEL_NEUTRAL_SHARD_MULT = ([\d.]+)/)[1]);
+        const pct = Math.round(mult * 100) + '%';
+        ok(page.indexOf('>' + pct + '<') > -1,
+           'the index does not say ' + pct + ', which is what PANEL_NEUTRAL_SHARD_MULT pays');
+    });
+
     group('HACKING A NEST: the floor says where');
 
     // REPORTED: "change the wording on the hold to hack nest feature — just

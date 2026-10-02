@@ -1048,10 +1048,18 @@ function render() {
             if (t.siphonProgress >= SIPHON_FRAMES) {
                 t.panelActivated = true;
                 _wallPanelCache.splice(_wpi, 1);
-                if (t.isDecoy) {
+                // A panel in a zone you have already taken is neutralised with
+                // it: there is nobody left in there to raise, so a decoy cannot
+                // trip the alarm, and the wall still has shards in it but fewer
+                // than one you have not cleared.
+                const _neutral = zoneIsNeutralised(zoneOfTile(t));
+                if (t.isDecoy && !_neutral) {
                     triggerAlarm(t.alarmType, t.x, t.y);
                 } else {
-                    shardCount += t.shardReward;
+                    const _pay = _neutral
+                        ? Math.max(1, Math.round(t.shardReward * PANEL_NEUTRAL_SHARD_MULT))
+                        : t.shardReward;
+                    shardCount += _pay;
                     saveShards();
                     shardUI.textContent = "Shards: " + shardCount;
                     // Ammo used to come from the shop, which is gone. A hacked
@@ -1061,8 +1069,9 @@ function render() {
                     const _ammoGain = Math.min(PANEL_AMMO_REWARD, PLAYER_AMMO_MAX - playerAmmo);
                     if (_ammoGain > 0) { playerAmmo += _ammoGain; saveAmmo(); }
                     floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-60,
-                        text:"+"+t.shardReward+" SHARDS" + (_ammoGain > 0 ? "  +"+_ammoGain+" AMMO" : "") + " (Panel)",
-                        color:"#ff8800", life:120, vy:-0.2 });
+                        text:"+"+_pay+" SHARDS" + (_ammoGain > 0 ? "  +"+_ammoGain+" AMMO" : "")
+                             + (_neutral ? " (Panel \u00b7 zone taken)" : " (Panel)"),
+                        color:_neutral ? NEST_COLOUR_CONTROLLED : "#ff8800", life:120, vy:-0.2 });
                 }
             }
         } else {

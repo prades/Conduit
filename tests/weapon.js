@@ -240,7 +240,7 @@ check('THE SHOP IS GONE: ammo comes from hacking a panel', () => {
     ok(reward, 'no panel ammo reward defined');
     ok(Number(reward[1]) > 0, 'the panel reward should actually give rounds');
     // Paid out where the panel pays shards, and capped.
-    const at = GAME.indexOf('shardCount += t.shardReward;');
+    const at = GAME.indexOf('shardCount += _pay;');
     ok(at > -1, 'could not find the panel payout');
     const block = GAME.slice(at, at + 700);
     ok(/PANEL_AMMO_REWARD/.test(block), 'a hacked panel does not yield ammo');
@@ -252,9 +252,12 @@ check('a decoy panel pays nothing — no shards, no ammo', () => {
     // The decoy trips the alarm instead of paying out, and that has to stay
     // true for ammo as well or the alarm becomes a free resupply.
     const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
-    const at = GAME.indexOf('if (t.isDecoy) {');
+    // A decoy only trips the alarm in a zone that has not been taken; the
+    // branch is guarded now, so match it by what it does rather than by the
+    // exact condition.
+    const at = GAME.indexOf('triggerAlarm(t.alarmType, t.x, t.y);');
     ok(at > -1, 'could not find the decoy branch');
-    const decoy = GAME.slice(at, GAME.indexOf('} else {', at));
+    const decoy = GAME.slice(GAME.lastIndexOf('if (', at), GAME.indexOf('} else {', at));
     ok(!/PANEL_AMMO_REWARD|playerAmmo/.test(decoy), 'a decoy hands out ammo');
     ok(!/shardCount/.test(decoy), 'a decoy hands out shards');
 });

@@ -395,6 +395,11 @@ const CLONE_RESPAWN_FRAMES = 1800;   // 30 seconds
 const PANEL_DECOY_CHANCE = 0.08;
 // What a reward panel pays, inclusive. Named because the index quoted "5-15"
 // while generation had always produced 10-30 — nothing held the two together.
+// What a panel pays in a zone you have already taken. A neutralised zone still
+// has shards in its walls — "yes hacking for shards, but less than the normal
+// amount" — so the zone stays worth walking back through without being as good
+// as the fight you have not had yet.
+const PANEL_NEUTRAL_SHARD_MULT = 0.4;
 const PANEL_SHARD_MIN = 10;
 const PANEL_SHARD_MAX = 30;
 let _ATKCHIP = { x: 0, y: 0, w: 0, h: 0 };   // on-screen ammo chip, tap to disarm
