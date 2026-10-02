@@ -34,6 +34,7 @@ const SUITES = [
     ['early economy',          'economy.js'],
     ['portal + aura',          'homebase.js'],
     ['HUD layout',             'hud.js'],
+    ['walkable bounds',        'bounds.js'],
 ];
 
 let failed = 0;

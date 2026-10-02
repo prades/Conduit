@@ -1124,7 +1124,7 @@ function render() {
     // ── CAMERA FOLLOW ──
     player.x+=(player.targetX-player.x)*cfg.playerSpeed;
     player.y+=(player.targetY-player.y)*cfg.playerSpeed;
-    player.y = Math.max(-0.5, Math.min(4, player.y));
+    player.y = Math.max(PLAYER_Y_MIN, Math.min(FLOOR_Y_MAX, player.y));
     player.visualX+=(player.x-player.visualX)*0.15;
     player.visualY+=(player.y-player.visualY)*0.15;
 
@@ -1155,6 +1155,11 @@ function render() {
             const _p = (1/_d) * (0.55 - _d) * 0.5;
             _a.x -= _dx*_p; _a.y -= _dy*_p;
             _b.x += _dx*_p; _b.y += _dy*_p;
+            // Jostling is still bounded by the floor. This pass runs AFTER the
+            // per-actor clamp in updateNPC, so without this a crowd pressed up
+            // against the back row pushed itself straight through the wall —
+            // one follower stayed put, a squad did not.
+            clampToFloor(_a); clampToFloor(_b);
         }
     }
 

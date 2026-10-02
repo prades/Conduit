@@ -123,6 +123,23 @@ function canHackNestFrom(nest, x, y) {
     return inNestHackRange(nest, x, y) && !panelWouldClaimSiphon(x, y);
 }
 
+// Put an actor back on the walkable strip. The ONE place that decides where the
+// floor ends, so a crowd cannot be squeezed off it by a pass that was written
+// without the bounds in mind.
+//
+// REPORTED, with a screenshot of a dozen followers piled into the back wall:
+// "followers are going off into the walls on the right side." Two things let
+// them. The per-actor clamp relaxed its lower bound to -1.5 whenever the job in
+// hand pointed at a back-wall row, which is already half a tile inside the
+// wall; and the crowd-separation pass runs AFTER that clamp and shoved them
+// further still, which is why it took a squad rather than one follower.
+function clampToFloor(a) {
+    if (!a) return a;
+    if (a.y < FLOOR_Y_MIN) a.y = FLOOR_Y_MIN;
+    else if (a.y > FLOOR_Y_MAX) a.y = FLOOR_Y_MAX;
+    return a;
+}
+
 // Has this zone been taken? One definition, shared with the spawn loop: a zone
 // is neutralised when it HAD a mouth and every one of them is shut. That is
 // exactly what zoneSpawnPoints already answers — [] means shut, null means

@@ -440,12 +440,13 @@ function updateNPC(actor) {
     } else {
         const _prevX = actor.x, _prevY = actor.y;
         updateRTSNPC(actor);
-        // Clamp all NPC actors to floor bounds regardless of role.
-        // Relax lower bound when a job targets a back-wall tile (y < 0) so
-        // followers can reach y=-1 floor tiles without getting stuck at y=-0.5.
-        const _jobTargetY = actor.job?.target?.y;
-        const _minY = (typeof _jobTargetY === 'number' && _jobTargetY < 0) ? -1.5 : -0.5;
-        actor.y = Math.max(_minY, Math.min(4, actor.y));
+        // Back on the floor. This used to pick its own lower bound: -0.5
+        // normally, which is short of the y=-1 row the nests and wall panels
+        // are on, and -1.5 when the job in hand pointed at that row — which is
+        // half a tile INSIDE the back wall. One bound, and it is the real edge
+        // of the floor, so a follower can reach a nest without walking through
+        // the wall behind it.
+        clampToFloor(actor);
         // Tick walk cycle for clones based on actual movement
         if (actor.isClone) {
             const _moved = Math.hypot(actor.x - _prevX, actor.y - _prevY);

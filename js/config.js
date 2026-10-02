@@ -330,6 +330,26 @@ const PLAYER_AMMO_START = 12;
 // Rounds a hacked wall panel yields. The shop used to sell ammo; with it gone
 // this is the only source, so it has to be enough to keep the weapon usable.
 const PANEL_AMMO_REWARD = 8;
+// ── THE WALKABLE STRIP ───────────────────────────────────
+// generateSegment builds rows -2..5: wall_back at -2, wall_front at 5, and
+// FLOOR in between. Nothing on a team should ever stand outside that, and the
+// bounds are named here because they were being written out as bare numbers in
+// four places that did not agree — the player stopped at -0.5, a follower at
+// -0.5 or -1.5 depending on what job it held, and the crowd-separation pass
+// did not stop anywhere at all.
+//
+// -1 is a real floor row: it is where the nests and the wall panels are, so a
+// follower sent to one has to be able to stand there. -1.5 is half a tile
+// INSIDE the back wall, which is what the squad was walking into.
+const FLOOR_Y_MIN = -1;
+const FLOOR_Y_MAX = 4;
+// The player stops one half-tile short of the back row. Not an accident and
+// not the same number by coincidence: at y=-1 they stand level with the nest's
+// own wall face, which draws over them, and the SIPHON readout goes with it.
+// Followers have no such readout and do need to reach that row, which is why
+// the two bounds differ.
+const PLAYER_Y_MIN = -0.5;
+
 // ── THE THREE STATES OF A NEST ───────────────────────────
 // A nest's colour is the only thing that says whose it is, so the three are
 // named here rather than written out at each of the places that draw one.
