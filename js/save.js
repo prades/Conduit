@@ -194,6 +194,25 @@ function saveSession() {
             .filter(a => a.spawnKey === undefined)
             .map(a => ({ x: +a.x.toFixed(2), y: +a.y.toFixed(2), h: Math.round(a.health) }));
 
+        // THE FIGHT IN PROGRESS, read through typeof every time.
+        //
+        // saveSession's whole body sits in one try/catch, so a single missing
+        // global here does not cost you this field — it costs you the entire
+        // session, silently, forever. Nothing on the page would say so.
+        const _fight = {
+            phase:  (typeof gameState !== "undefined" && gameState) ? gameState.phase : "day",
+            kills:  typeof nightKillCount          === "number" ? nightKillCount          : 0,
+            target: typeof nightEnemiesTarget      === "number" ? nightEnemiesTarget      : 0,
+            remaining: typeof nightPredatorsRemaining === "number" ? nightPredatorsRemaining : 0,
+            alertActive: typeof alertActive !== "undefined" && !!alertActive,
+            alertTimer: typeof alertTimer === "number" ? alertTimer : 0,
+            alertType:  typeof alertType  === "string" ? alertType  : null,
+            alertZone:  typeof alertZone  === "number" ? alertZone  : null,
+            alertSource: (typeof alertSource !== "undefined" && alertSource
+                          && Number.isFinite(alertSource.x))
+                ? { x: alertSource.x, y: alertSource.y } : null,
+        };
+
         localStorage.setItem("tubecrawler_session", JSON.stringify({
             px: player.x, py: player.y,
             health: Math.round(health),
@@ -209,6 +228,11 @@ function saveSession() {
             nests, panels, nodes, npcs, waveNpcs,
             mass: serialiseChargedMass(),
             cocoons: serialiseCocoons(),
+            // Without this a refresh during a wave put the player back in
+            // "day" with the alarm gone and the kill count at zero — the wave
+            // NUMBER survived in tubecrawler_gamestate, but the wave itself
+            // started over, which is what "it resets to the beginning" meant.
+            fight: _fight,
         }));
     } catch (e) {}
 }
@@ -305,6 +329,35 @@ function applySession(sess) {
     // frontier that never moved.
     if (typeof ensureWorldTo === "function") ensureWorldTo(sess.lastGenX);
     if (Array.isArray(sess.explored)) exploredZones = new Set(sess.explored);
+
+    // Back into the fight you were in. A save written before this existed has
+    // no `fight` block at all, so the player simply resumes in day phase as
+    // they used to rather than being dropped into a half-restored alarm.
+    const f = sess.fight;
+    if (f && typeof f === "object") {
+        // Guarded, not assumed. applySession runs in one try-less block, so a
+        // missing global here would abort every restore that follows it — the
+        // position, the nest links, the panels — and leave the player with a
+        // half-loaded game rather than one missing feature.
+        if (typeof gameState !== "undefined" && gameState
+            && (f.phase === "day" || f.phase === "night" || f.phase === "waveComplete")) {
+            gameState.phase = f.phase;
+        }
+        if (Number.isFinite(f.kills))     nightKillCount          = Math.max(0, f.kills);
+        if (Number.isFinite(f.target))    nightEnemiesTarget      = Math.max(0, f.target);
+        if (Number.isFinite(f.remaining)) nightPredatorsRemaining = Math.max(0, f.remaining);
+        // The alarm only comes back if it had time left on it. A zero or
+        // negative timer is an alarm that was about to expire anyway, and
+        // restoring one of those leaves a siren nothing will ever turn off.
+        if (f.alertActive && Number.isFinite(f.alertTimer) && f.alertTimer > 0) {
+            alertActive = true;
+            alertTimer  = f.alertTimer;
+            alertType   = f.alertType || "zone";
+            alertZone   = Number.isFinite(f.alertZone) ? f.alertZone : null;
+            alertSource = (f.alertSource && Number.isFinite(f.alertSource.x))
+                ? { x: f.alertSource.x, y: f.alertSource.y } : null;
+        }
+    }
 
     const at = (x, y) => worldTileMap.get(`${x},${y}`);
 

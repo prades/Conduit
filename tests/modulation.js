@@ -31,9 +31,19 @@ const SRC = {
 
 let failures = 0;
 function group(n) { console.log('\n' + n); }
+// Returns a promise when `fn` is async, so an async check must be AWAITED.
+// Without the await an async check that throws prints "ok" and the suite goes
+// green on a broken game: the try/catch sees a returned promise, not a throw.
 function check(name, fn) {
-    try { fn(); console.log('  ok   ' + name); }
-    catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); }
+    try {
+        const r = fn();
+        if (r && typeof r.then === 'function') {
+            return r.then(() => console.log('  ok   ' + name),
+                          e => { failures++; console.log('  FAIL ' + name + ' — ' + e.message); });
+        }
+        console.log('  ok   ' + name);
+    } catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); }
+    return Promise.resolve();
 }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${b}, got ${a}`); }
 function ok(c, m) { if (!c) throw new Error(m); }
@@ -295,7 +305,7 @@ async function boot(store) {
         ok(/activeCrystalModulation/.test(body), 'a boss modulator should still override it');
     });
 
-    check('a respawn really does come out re-modulated', async () => {
+    await check('a respawn really does come out re-modulated', async () => {
         const R = await boot();
         R.run(`
             unlockedElements = new Set(["fire","electric","ice"]);
@@ -489,7 +499,7 @@ async function boot(store) {
     // ─────────────────────────────────────────────────────
     group('it survives a refresh, and a reset clears it');
 
-    check('the mask round-trips through the save', async () => {
+    await check('the mask round-trips through the save', async () => {
         const store = {};
         const A = await boot(store);
         A.run('unlockedElements = new Set(["fire","electric","ice"]); saveUnlocks();');
@@ -505,7 +515,7 @@ async function boot(store) {
            'applyProgress does not filter the saved mask against the unlocks');
     });
 
-    check('junk in the saved mask does not throw', async () => {
+    await check('junk in the saved mask does not throw', async () => {
         const store = { tubecrawler_progress: JSON.stringify({ kills: 5, modulation: 'fire' }) };
         const C = await boot(store);
         ok(Array.isArray(C.maskNow()), 'a non-array mask should read as empty');

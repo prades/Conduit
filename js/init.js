@@ -76,6 +76,15 @@ async function loadConfig() {
     renderPylonIndex();     // fill the GAME INDEX pylon page from the codex
     renderWorkCrewIndex();  // and the fighters/workers page from js/mass.js
     renderCloneCostIndex(); // and the clone prices from js/species.js
+    // THE OBJECTIVE LINE, last, once everything it reads has been restored.
+    //
+    // REPORTED: "whenever I refresh the game, it forgets what wave I'm on and
+    // resets it to the beginning." It did not forget — nightNumber comes back
+    // out of tubecrawler_gamestate — but nothing ever refreshed the banner, so
+    // it sat on the placeholder written into game.html, "WAVE 1 — clear panels
+    // for shards", until an alarm or a wave clear happened to rewrite it. The
+    // player reads the banner, so the game had reset as far as they could tell.
+    updateObjectiveUI();
     render();
 }
 

@@ -62,9 +62,19 @@ function makeCtx() {
 
 let failures = 0;
 function group(n) { console.log('\n' + n); }
+// Returns a promise when `fn` is async, so an async check must be AWAITED.
+// Without the await an async check that throws prints "ok" and the suite goes
+// green on a broken game: the try/catch sees a returned promise, not a throw.
 function check(name, fn) {
-    try { fn(); console.log('  ok   ' + name); }
-    catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); }
+    try {
+        const r = fn();
+        if (r && typeof r.then === 'function') {
+            return r.then(() => console.log('  ok   ' + name),
+                          e => { failures++; console.log('  FAIL ' + name + ' — ' + e.message); });
+        }
+        console.log('  ok   ' + name);
+    } catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); }
+    return Promise.resolve();
 }
 function eq(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 function ok(c, m) { if (!c) throw new Error(m); }
@@ -519,6 +529,136 @@ const SNAPSHOT = `(function(){
         ok(C.built > 0, 'it refused to build anything at all');
         ok(C.built < 10000, `it built ${C.built} columns before stopping`);
         ok(C.got > C.was, 'the frontier did not move');
+    });
+
+    // ─────────────────────────────────────────────────────
+    group('a refresh resumes the wave you were on');
+
+    // REPORTED: "whenever I refresh the game, it forgets what wave I'm on and
+    // resets it to the beginning."
+    //
+    // It did not forget. nightNumber comes back out of tubecrawler_gamestate
+    // and always did. What reset was what the player READS: the objective line
+    // is written into game.html as a placeholder — "WAVE 1 — clear panels for
+    // shards" — and nothing on the boot path ever rewrote it, so it sat there
+    // saying WAVE 1 until an alarm or a wave clear happened along. Underneath,
+    // the fight itself really was lost: the phase, the kill count and the alarm
+    // were in no save at all.
+    const PLACEHOLDER = (() => {
+        const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+        const m = HTML.match(/<div id="waveInfo">([^<]*)<\/div>/);
+        ok(!!m, 'the objective line is no longer in game.html');
+        return m[1];
+    })();
+
+    // Play to a given state, save, and boot again. Returns what the second boot
+    // came back with.
+    async function refreshFrom(setup) {
+        const st = {};
+        const a = await bootPage(st);
+        a.run(`(function(){ ${setup} saveGameState(); saveSession(); })()`);
+        const b = await bootPage(st);
+        return b.run(`({ wave: gameState.nightNumber, phase: gameState.phase,
+                         cleared: gameState.highestZoneCleared,
+                         alarm: !!alertActive, alertZone, alertType,
+                         kills: nightKillCount, target: nightEnemiesTarget,
+                         banner: waveUI ? String(waveUI.textContent) : null })`);
+    }
+
+    check('fixture: game.html really does ship a WAVE 1 placeholder', () => {
+        ok(/WAVE 1/i.test(PLACEHOLDER),
+           'the placeholder no longer says WAVE 1, so this group is testing nothing: ' + PLACEHOLDER);
+    });
+
+    await check('THE ASK: the line names where you are, not the placeholder', async () => {
+        const r = await refreshFrom('gameState.nightNumber = 7; gameState.highestZoneCleared = 3;');
+        eq(r.wave, 7, 'the wave number itself was lost');
+        ok(r.banner !== PLACEHOLDER,
+           'the objective line is still the placeholder after a refresh');
+        ok(/ZONE 3 TAKEN/.test(r.banner), 'it does not say what has been taken: ' + r.banner);
+        ok(/NEXT: ZONE 4/.test(r.banner), 'nor where to go next: ' + r.banner);
+    });
+
+    await check('and on a brand new game it is not the placeholder either', async () => {
+        const st = {};
+        const a = await bootPage(st);
+        const banner = a.run('waveUI ? String(waveUI.textContent) : null');
+        ok(banner !== PLACEHOLDER, 'a fresh game still shows the raw placeholder');
+        ok(/HOME SECURE/.test(banner), 'a fresh game should start from home: ' + banner);
+    });
+
+    await check('THE FIGHT: a refresh mid-wave puts you back in it', async () => {
+        const r = await refreshFrom(`
+            const nest = world.find(t => t.nest && t.nestZone === 2);
+            triggerAlarm('proximity', nest.x, nest.y);
+            nightEnemiesTarget = 9; nightKillCount = 4;
+        `);
+        eq(r.phase, 'night', 'the fight was dropped back to day');
+        eq(r.alarm, true, 'the alarm was lost');
+        eq(r.alertZone, 2, 'the alarm forgot which zone it was for');
+        eq(r.alertType, 'proximity', 'and what tripped it');
+        eq(r.kills, 4, 'the kill count went back to zero');
+        eq(r.target, 9, 'and the quota with it');
+        ok(/4\/9/.test(r.banner), 'the line does not show the fight: ' + r.banner);
+    });
+
+    await check('an alarm with no time left does NOT come back', async () => {
+        // Restoring an expired alarm leaves a siren nothing will ever switch
+        // off, because the thing that clears it is the timer running out.
+        const r = await refreshFrom(`
+            const nest = world.find(t => t.nest && t.nestZone === 2);
+            triggerAlarm('zone', nest.x, nest.y);
+            alertTimer = 0;
+        `);
+        eq(r.alarm, false, 'an expired alarm was restored');
+    });
+
+    await check('a save written before any of this still loads', async () => {
+        // Every returning player has one. It carries no fight block at all.
+        const st = {};
+        const a = await bootPage(st);
+        a.run(`(function(){
+            gameState.nightNumber = 5; gameState.highestZoneCleared = 2;
+            saveGameState(); saveSession();
+            const s = JSON.parse(localStorage.getItem('tubecrawler_session'));
+            delete s.fight;
+            localStorage.setItem('tubecrawler_session', JSON.stringify(s));
+        })()`);
+        const b = await bootPage(st);
+        const r = b.run(`({ wave: gameState.nightNumber, phase: gameState.phase,
+                            alarm: !!alertActive,
+                            banner: waveUI ? String(waveUI.textContent) : null })`);
+        eq(r.wave, 5, 'an older save lost its wave number');
+        eq(r.phase, 'day', 'it should resume quietly, not in a half-restored fight');
+        eq(r.alarm, false, 'it should not come back under alarm');
+        ok(/ZONE 2 TAKEN/.test(r.banner), 'the line is wrong on an older save: ' + r.banner);
+    });
+
+    await check('junk in the fight block is ignored rather than thrown', async () => {
+        const st = {};
+        const a = await bootPage(st);
+        a.run(`(function(){
+            gameState.nightNumber = 4; saveGameState(); saveSession();
+            const s = JSON.parse(localStorage.getItem('tubecrawler_session'));
+            s.fight = { phase: 'elevenses', kills: 'lots', target: null,
+                        alertActive: 'yes', alertTimer: 'soon', alertZone: {} };
+            localStorage.setItem('tubecrawler_session', JSON.stringify(s));
+        })()`);
+        const b = await bootPage(st);
+        const r = b.run(`({ phase: gameState.phase, alarm: !!alertActive,
+                            kills: nightKillCount, target: nightEnemiesTarget,
+                            wave: gameState.nightNumber })`);
+        eq(r.wave, 4, 'a junk fight block took the wave number with it');
+        eq(r.phase, 'day', 'a nonsense phase was accepted: ' + r.phase);
+        eq(r.alarm, false, 'a nonsense alarm was raised');
+        eq(r.kills, 0, 'a nonsense kill count was accepted');
+    });
+
+    check('the boot refreshes the line LAST, once it has something to say', () => {
+        const INIT = fs.readFileSync(path.join(ROOT, 'js/init.js'), 'utf8');
+        ok(/updateObjectiveUI\(\)/.test(INIT), 'the boot never refreshes the objective line');
+        ok(INIT.indexOf('applySession(session)') < INIT.indexOf('updateObjectiveUI()'),
+           'the line is written before the session it describes has been restored');
     });
 
     check('asking for ground already there is free', () => {
