@@ -10,11 +10,10 @@
 //   - it must be SLOW, or it trivialises the infestation
 //   - it must NOT hand the pylon back, or it replaces the reclaim counter
 //   - it must not make a player who scours first WORSE off than one who simply
-//     reclaims
-//   - it must not touch a NEST at all. Infestations used to grow extra nests on
-//     open floor and burning those was the crew's third chore; those are gone,
-//     and the zone nest on the back wall is a fight the player picks, not a
-//     chore the work crew can quietly take over
+//     reclaims, which is a real risk because reclaiming used to clear the grown
+//     nest through the cocoon that a scourer has just removed
+//   - the nests it burns must be the GROWN ones only; a zone nest is a fight
+//     the player picks, not a chore the work crew quietly takes over
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -33,6 +32,7 @@ function constant(src, name) {
 }
 const PUDDLE_FRAMES = constant(INFEST, 'SCOUR_PUDDLE_FRAMES');
 const COCOON_FRAMES = constant(INFEST, 'SCOUR_COCOON_FRAMES');
+const NEST_FRAMES   = constant(INFEST, 'SCOUR_NEST_FRAMES');
 const WORK_RANGE    = constant(MASS,   'MASS_WORK_RANGE');
 const SCOUR_EL      = INFEST.match(/const SCOUR_ELEMENT\s*=\s*"([^"]+)"/)[1];
 
@@ -95,8 +95,9 @@ function greenPylon(env, x, y, extra) {
 function spinner(species, cls) {
     return { speciesName: species || 'ant', className: cls || 'scout', color: '#aa55ff' };
 }
-// An infested pylon: red, with its cocoon in place. A spider spins the toxin,
-// an ant does not, so the species picks whether there is a puddle to find.
+// An infested pylon: red, with its cocoon and grown nest in place. A spider
+// spins the toxin, an ant does not, so the species picks whether there is a
+// puddle to find.
 function infested(env, x, y, species) {
     board(env, x - 4, x + 4, 0, 4);
     const t = greenPylon(env, x, y);
@@ -122,11 +123,20 @@ function work(env, crew, n) {
         for (const f of list) env.run('followerWorkTick')(f);
     }
 }
-// A conversion used to grow a nest as well, and the nest outranked the cocoon,
-// so a test that wanted the cocoon had to clear the nest out of the way first.
-// Nothing grows a nest any more, so an infested pylon IS the cocoon case.
+function grownNestOf(env) {
+    return env.sandbox.world.find(t => t._infestNest && t.nest && t.nestHealth > 0) || null;
+}
+// A board where the COCOON is the top-ranked chore. A conversion also grows a
+// nest, and a nest outranks a cocoon by design — so a worker standing on the
+// cocoon correctly burns the nest first, and a test that wants to measure the
+// cocoon has to clear the nest out of the way rather than assume it.
 function cocoonOnly(env, x, y, species) {
-    return infested(env, x, y, species);
+    const r = infested(env, x, y, species);
+    const nest = grownNestOf(env);
+    if (nest) { nest.nest = false; nest.nestHealth = 0; nest._infestNest = false; }
+    ok(env.run('nearestScourChore')(r.m.x, r.m.y).kind !== 'nest',
+       'fixture: the nest should no longer be the top chore');
+    return r;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -208,6 +218,20 @@ check('THE REPORTED CASE: a fire worker burns a cocoon open', () => {
     work(env, f, COCOON_FRAMES + 4);
     ok(!env.run('cocoons').includes(m), 'the cocoon should be gone');
     ok(env.sandbox.floatingTexts.some(x => /COCOON BURNED/.test(x.text)), 'no callout');
+});
+
+check('it burns a grown nest out', () => {
+    const env = makeEnv();
+    infested(env, 3, 2);
+    const nest = grownNestOf(env);
+    ok(!!nest, 'fixture: conversion should have grown a nest');
+    // Stand on the nest and let the cocoon be out of reach, so the nest is the
+    // chore under test rather than whatever happens to rank first.
+    const f = worker(env, nest.x, nest.y);
+    work(env, f, NEST_FRAMES + 8);
+    same(nest.nest, false, 'the nest should be out');
+    same(nest.nestHealth, 0, 'and at zero health');
+    ok(env.sandbox.savedNests > 0, 'the kill should be persisted immediately');
 });
 
 check('it burns a toxin patch off', () => {
@@ -293,21 +317,60 @@ check('two workers on the same chore are twice as quick', () => {
 });
 
 // ─────────────────────────────────────────────────────────
-// "REMOVE THE NESTS IN THE MIDDLE."
+// "MAKE THE FIRE WORKERS DEAL MORE DAMAGE TO THE NESTS."
 //
-// Burning a grown nest used to be the crew's top chore, and the one they were
-// made best at — 600 frames against the cocoon's 900. There are no grown nests
-// now, so the crew has two jobs, and the important property is the one it must
-// NOT acquire: the zone nest on the back wall is the objective, and a work crew
-// that quietly chewed through it would replace the fight the player picks.
+// A nest used to be the longest chore on the list at 1500 frames — longer than
+// the cocoon, which was backwards. A grown nest is surface growth on a floor
+// tile and it is the thing actively minting predators, so it is what a fire
+// crew should be best at; the cocoon is spun around a pylon and stays the long
+// job. These checks pin the ratio, not just the constant, because a constant on
+// its own can be read from source and satisfied by any value.
 
-check('nothing is left in the code that burns one', () => {
-    ok(!/SCOUR_NEST_FRAMES/.test(INFEST), 'the nest burn rate survives');
-    ok(!/kind === "nest"/.test(INFEST), 'the nest chore branch survives');
-    ok(!/_infestNest/.test(INFEST), 'grown nests can still be marked');
-    const rank = INFEST.match(/const SCOUR_RANK = \{([^}]*)\}/);
-    ok(!!rank, 'the chore ranking could not be located');
-    ok(!/nest/.test(rank[1]), 'nest is still ranked as a chore: ' + rank[1]);
+check('THE DAMAGE: one worker clears a nest in the documented time', () => {
+    const env = makeEnv();
+    infested(env, 3, 2);
+    const nest = grownNestOf(env);
+    ok(!!nest, 'fixture: conversion should have grown a nest');
+    const f = worker(env, nest.x, nest.y);
+    let done = 0;
+    for (let i = 1; i <= NEST_FRAMES * 3 && !done; i++) {
+        env.sandbox.frame++;
+        env.run('followerWorkTick')(f);
+        if (!nest.nest) done = i;
+    }
+    ok(done > 0, 'it never burned the nest out');
+    near(done, NEST_FRAMES, 3, 'a single scourer should take SCOUR_NEST_FRAMES');
+});
+
+check('two workers halve it, so a crew is worth having', () => {
+    const env = makeEnv();
+    infested(env, 3, 2);
+    const nest = grownNestOf(env);
+    const a = worker(env, nest.x, nest.y), b = worker(env, nest.x, nest.y);
+    let done = 0;
+    for (let i = 1; i <= NEST_FRAMES && !done; i++) {
+        env.sandbox.frame++;
+        env.run('followerWorkTick')(a);
+        env.run('followerWorkTick')(b);
+        if (!nest.nest) done = i;
+    }
+    ok(done > 0, 'two workers never finished');
+    near(done, NEST_FRAMES / 2, 3, 'two scourers should halve the nest too');
+});
+
+check('a nest now burns faster than the cocoon, not slower', () => {
+    // The reported case. At 1500 against the cocoon's 900 this was inverted,
+    // and reverting the constant fails here rather than anywhere above.
+    ok(NEST_FRAMES < COCOON_FRAMES,
+       `a nest takes ${NEST_FRAMES} frames against the cocoon's ${COCOON_FRAMES}`);
+});
+
+check('but it is still a real job, not a touch', () => {
+    // It has to stay slower than the toxin patch, which is the quick one, and
+    // slow enough that a nest is worth burning rather than free to ignore.
+    ok(NEST_FRAMES > PUDDLE_FRAMES,
+       `a nest takes ${NEST_FRAMES} frames, no more than the toxin patch`);
+    ok(NEST_FRAMES >= 300, `at ${NEST_FRAMES} frames a nest is gone in under 5s`);
 });
 
 check('a worker that dies partway does not take the progress with it', () => {
@@ -333,6 +396,57 @@ check('THE BOUNDARY: burning the cocoon leaves the pylon red', () => {
     ok(!env.run('cocoons').includes(m), 'fixture: the cocoon must actually have burned');
     same(t.pillarTeam, 'red', 'scouring must not hand the pylon back');
     same(t.attackMode, false, 'nor put it back to work');
+});
+
+check('the nest is burned before the cocoon, so the order cannot invert', () => {
+    // Why this matters: reclaiming clears the grown nest THROUGH the cocoon's
+    // reference to it. If a scourer could burn the cocoon while the nest still
+    // stood, that link would be gone and the player who scoured would be left
+    // with a spawner the player who simply reclaimed would not have. The
+    // ranking is what rules that out, so it is asserted rather than assumed.
+    const env = makeEnv();
+    const { m } = infested(env, 3, 2);
+    const nest = grownNestOf(env);
+    ok(!!nest, 'fixture: there should be a grown nest');
+    const f = worker(env, m.x, m.y);
+    // Generous: it has to walk off the cocoon tile to the nest beside it before
+    // any of the burn budget is spent.
+    work(env, f, NEST_FRAMES + 200);
+    same(nest.nest, false, 'the nest should have gone first');
+    ok(env.run('cocoons').includes(m), 'and the cocoon should still be standing');
+});
+
+check('a nest its cocoon has lost track of is still cleared on reclaim', () => {
+    // The reachable orphan: a session saved before cocoons recorded their nest
+    // restores with m.nest === null while the nest tile is still standing. The
+    // cocoon reference cannot clear it, so reclaiming finds it by looking beside
+    // the pylon instead.
+    const env = makeEnv();
+    const { t } = infested(env, 3, 2);
+    const nest = grownNestOf(env);
+    const blob = JSON.parse(JSON.stringify(env.run('serialiseCocoons')()));
+    delete blob[0].nest;                       // an older save
+    env.run('restoreCocoons')(blob);
+    same(env.run('cocoons')[0].nest, null, 'fixture: the reference should be missing');
+    ok(nest.nest, 'fixture: but the nest itself should still be standing');
+    t.pillarTeam = 'green';
+    env.run('clearInfestationAt')(t);
+    same(nest.nest, false, 'reclaiming should find it anyway');
+});
+
+check('reclaiming one pylon of a two-pylon patch keeps the nest', () => {
+    // The other side of the same coin: the orphan sweep must not fire while a
+    // cocoon is still standing and still holds that nest.
+    const env = makeEnv();
+    const { t, m } = infested(env, 3, 2);
+    const nest = grownNestOf(env);
+    const second = greenPylon(env, 4, 2);
+    m.anchors.push(second);
+    env.run('convertPylonToRed')(second, spinner('ant', 'striker'));
+    t.pillarTeam = 'green';
+    env.run('clearInfestationAt')(t);
+    ok(env.run('cocoons').includes(m), 'the patch should survive losing one pylon');
+    ok(nest.nest, 'and keep its nest');
 });
 
 check('a zone nest is not a chore', () => {
@@ -370,22 +484,22 @@ check('THE RANKING: the toxin patch comes before the cocoon', () => {
     ok(chore.x === px && chore.y === py, 'and it should be the real patch');
 });
 
-check('with no toxin, the cocoon is what is left', () => {
-    // A grown nest used to rank between the two; there are none now, so an
-    // ant's cocoon is the only thing on the list.
+check('the grown nest comes before the cocoon', () => {
     const env = makeEnv();
     const { m } = infested(env, 3, 2);          // an ant: no toxin
+    const nest = grownNestOf(env);
     const chore = env.run('nearestScourChore')(m.x, m.y);
-    same(chore.kind, 'cocoon', 'the shell should be the only chore');
-    ok(chore.cocoon === m, 'and it should be this one');
+    same(chore.kind, 'nest', 'a spawner should outrank the shell');
+    ok(chore.x === nest.x && chore.y === nest.y, 'and be the grown nest');
 });
 
 check('distance only breaks a tie inside a rank', () => {
     const env = makeEnv();
     const a = infested(env, 3, 2);
     const b = infested(env, 12, 2);
-    // The two cocoons are the only chores on the board, so ask from right
-    // beside the far one.
+    // Kill both nests so the two cocoons are the only chores left, then ask
+    // from right beside the far one.
+    for (const t of env.sandbox.world) if (t._infestNest) { t.nest = false; t.nestHealth = 0; }
     const chore = env.run('nearestScourChore')(12, 2);
     same(chore.kind, 'cocoon', 'fixture: only cocoons should be left');
     same(chore.cocoon, b.m, 'the nearer cocoon of the same rank should win');
@@ -634,14 +748,10 @@ check('the index says a duty releases a standing post', () => {
 });
 
 check('the work crew page documents the job from the constants', () => {
-    for (const name of ['SCOUR_COCOON_FRAMES', 'workerElements']) {
+    for (const name of ['SCOUR_COCOON_FRAMES', 'SCOUR_NEST_FRAMES', 'workerElements']) {
         ok(CODEX.includes(name), 'the codex should read ' + name + ' rather than restating it');
     }
     ok(/Scour/.test(CODEX), 'the page should name the job');
-    // And it must not go on offering a chore the crew no longer has.
-    const at = CODEX.indexOf('Scour');
-    ok(!/grown nest/.test(CODEX.slice(at, at + 900)),
-       'the page still tells the player a fire crew burns grown nests');
 });
 
 check('it does not promise the pylon back', () => {

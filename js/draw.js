@@ -1939,37 +1939,11 @@ function drawCapturableNode(tile, px, py) {
     const progress = tile.captureProgress || 0;
     const cx = px, cy = py + TILE_H;
 
-    if (tile.nodeType === 'capacitor_node') {
-        // A VORTEX in the floor, not a capacitor cap on top of it.
-        //
-        // The node was always "predatorOwned: true — starts under predator
-        // control"; it is now what that ownership means, a hole predators come
-        // out of. Sealing it is the capture that already existed.
-        const open = !captured;
-        const col  = open ? '#ff8800' : '#00ccff';
-        const spin = open ? frame * 0.035 + tile.x : 0;
-        const RX   = 23;                       // a little under half a tile
-        ctx.save();
-        // The FLOOR plane: flat, squashed to the isometric ratio.
-        ctx.transform(1, 0, 0, TILE_H / TILE_W, cx, cy);
-        drawVortexSwirl(RX, col, spin, open ? 8 : 4, open ? 1 : 0.55);
-        ctx.restore();
-
-        ctx.save();
-        // Capture progress bar
-        if (open && progress > 0) {
-            ctx.fillStyle = '#000'; ctx.fillRect(cx - 12, cy - 26, 24, 4);
-            ctx.fillStyle = '#0df'; ctx.fillRect(cx - 12, cy - 26, Math.round(24 * (progress / 100)), 4);
-        }
-        if (captured) {
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
-            ctx.fillStyle = '#00ccff';
-            ctx.fillText('\u25c8 SEALED', cx, cy - 26);
-        }
-        ctx.restore();
-
-    } else if (tile.nodeType === 'signal_tower') {
+    // The CAPACITOR NODE was drawn here: a vortex in the floor plane, orange
+    // and turning while open, cyan and still once captured. There is no such
+    // tile any more — a zone's only mouth is the nest in its back wall — so the
+    // signal tower is the first case now.
+    if (tile.nodeType === 'signal_tower') {
         // Tall antenna with pulsing ring — red (enemy) or cyan (captured)
         const col = captured ? '#00ccff' : '#cc2222';
         const _pulse = 0.5 + 0.5 * Math.sin(frame * 0.07 + tile.x * 0.5);

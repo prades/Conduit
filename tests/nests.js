@@ -183,10 +183,15 @@ check('a destroyed nest survives repeated wave transitions', () => {
 });
 
 group('spawn consequence');
-function mkVortex(x, captured) {
-    return { x, y: 2, type: 'floor', nodeType: 'capacitor_node',
-             capturable: true, captured: !!captured, predatorOwned: !captured };
-}
+
+// REPORTED: "I want the portals on the wall to be the nests. I don't want the
+// holes on the ground or the floor any more."
+//
+// A zone used to have TWO mouths: its wall nest and a floor vortex (the
+// capacitor node, open until captured). Killing the nest was not enough, which
+// is what the old one-nest guard would have got wrong. The floor vortex is gone
+// now, so the nest in the back wall is the only mouth and killing it is the
+// whole of it.
 
 check('a destroyed nest is not offered as a spawn point', () => {
     setWorld([mkNest(16, 1, 0)]);
@@ -199,47 +204,39 @@ check('a living nest is', () => {
     eq(run('zoneSpawnPoints(1)').length, 1, 'a living nest should be a mouth');
 });
 
-check('THE ASK: the vortex is a mouth too', () => {
-    setWorld([mkVortex(18, false)]);
-    eq(run('zoneSpawnPoints(1)').length, 1, 'an open vortex should be a mouth');
-});
-
-check('and a sealed one is not', () => {
-    setWorld([mkVortex(18, true)]);
-    eq(run('zoneSpawnPoints(1)').length, 0, 'a captured vortex should be shut');
-});
-
-check('a zone with both offers both', () => {
-    setWorld([mkNest(16, 1, 200), mkVortex(18, false)]);
-    eq(run('zoneSpawnPoints(1)').length, 2, 'predators should come out of either');
-});
-
-check('killing the nest alone does NOT shut the zone', () => {
-    // This is the whole point of a second mouth, and it is what the old
-    // one-nest guard would have got wrong.
-    setWorld([mkNest(16, 1, 0), mkVortex(18, false)]);
+check('THE ASK: a floor tile is never a mouth, whatever is on it', () => {
+    // The vortex sat at y=2 on an ordinary floor tile and answered as a mouth.
+    // No tile on the floor does any more.
+    setWorld([mkNest(16, 1, 200),
+              { x: 18, y: 2, type: 'floor', nodeType: 'capacitor_node',
+                capturable: true, captured: false },
+              { x: 19, y: 2, type: 'floor', nodeType: 'signal_tower',
+                capturable: true, captured: false }]);
     const open = run('zoneSpawnPoints(1)');
-    eq(open.length, 1, 'the vortex should still be producing');
-    eq(open[0].nodeType, 'capacitor_node', 'and it should be the vortex');
+    eq(open.length, 1, 'something on the floor is still counted as a mouth');
+    eq(open[0].y, -1, 'the one mouth should be the nest against the back wall');
 });
 
-check('shutting BOTH shuts the zone', () => {
-    setWorld([mkNest(16, 1, 0), mkVortex(18, true)]);
-    eq(run('zoneSpawnPoints(1)').length, 0, 'with every mouth shut the zone should stop');
+check('THE ASK: killing the nest shuts the zone outright', () => {
+    setWorld([mkNest(16, 1, 0),
+              { x: 18, y: 2, type: 'floor', nodeType: 'capacitor_node',
+                capturable: true, captured: false }]);
+    eq(run('zoneSpawnPoints(1)').length, 0,
+       'the zone is still producing after its nest died');
 });
 
-check('a zone with no mouths at all reads differently from one with none left', () => {
+check('a zone with no nest reads differently from one whose nest is dead', () => {
     // null means "nothing was ever there", which still spawns from the zone
-    // centre as it always did. An empty array means "all shut", which stops.
+    // centre as it always did. An empty array means "shut", which stops.
     setWorld([{ x: 16, y: 2, type: 'floor' }]);
-    eq(run('zoneSpawnPoints(1)'), null, 'a zone with no spawners should report null');
-    setWorld([mkVortex(18, true)]);
-    eq(run('zoneSpawnPoints(1)').length, 0, 'a zone with all shut should report empty');
+    eq(run('zoneSpawnPoints(1)'), null, 'a zone with no nest should report null');
+    setWorld([mkNest(16, 1, 0)]);
+    eq(run('zoneSpawnPoints(1)').length, 0, 'a zone with a dead nest should report empty');
 });
 
-check('mouths in another zone are not counted', () => {
-    setWorld([mkNest(16, 1, 200), mkVortex(33, false)]);   // x 33 is zone 2
-    eq(run('zoneSpawnPoints(1)').length, 1, 'zone 1 should not see zone 2\'s vortex');
+check('a nest in another zone is not counted', () => {
+    setWorld([mkNest(16, 1, 200), mkNest(33, 2, 200)]);   // x 33 is zone 2
+    eq(run('zoneSpawnPoints(1)').length, 1, "zone 1 should not see zone 2's nest");
     eq(run('zoneSpawnPoints(2)').length, 1, 'and zone 2 should see its own');
 });
 

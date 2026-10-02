@@ -206,21 +206,80 @@ function convertPylonToRed(t, pred) {
                          life: 140, vy: -0.22, size: 12 });
     if (typeof shake !== "undefined") shake = Math.max(shake, 5);
 
+    seedNestNear(t, pred);
     seedCocoon(t, pred);
 }
 
-// ── NO NEST GROWS HERE ────────────────────────────────────
-// A converted pylon used to grow a nest on a clear floor tile beside it, on
-// top of the one its zone was generated with. Those were the nests that sat in
-// the middle of the walkable strip: a zone nest is on the back wall and is the
-// objective, but a grown one landed wherever a pylon happened to fall, in the
-// open, and spawned from there.
-//
-// They are gone. Losing a pylon still costs you the pylon and still spins a
-// cocoon around it; it no longer plants a second spawner in the middle of the
-// floor. Everything that existed only to manage them went with them: the
-// world-wide grow cooldown, the per-zone cap, the fire crew's nest-burning
-// chore, and the reclaim path that had to hunt for an orphaned one.
+// ── The nest ──────────────────────────────────────────────
+// One nest per converted pylon, on a clear floor tile beside it. Nests are
+// normally one per zone at its centre; these are extra, so they carry the same
+// zone index for the spawn bookkeeping but do not displace the original.
+
+// A world-wide floor on how fast nests ARRIVE, which is a different thing from
+// how many EXIST. The per-zone cap below already bounds the total, and it was
+// being honoured — the five nests measured at wave 8 were in five different
+// zones. They still all showed up within ten seconds of each other, because
+// nothing paced them. So however many pylons fall at once, a nest grows at most
+// once every this often, anywhere on the map. The pylon is still lost and a
+// cocoon is still spun; you just do not get a fresh vortex every time.
+const NEST_GROW_COOLDOWN = 2700;    // 45s between grown nests, world-wide
+let _lastNestGrowFrame = -NEST_GROW_COOLDOWN;   // so the first one is never delayed
+
+function seedNestNear(t, pred) {
+    // Already a nest in reach? Then this pylon joins that one's territory.
+    for (const obj of world) {
+        if (obj.nest && obj.nestHealth > 0 && Math.hypot(obj.x - t.x, obj.y - t.y) < 4) return null;
+    }
+    // Paced, not just capped.
+    const now = typeof frame === "number" ? frame : 0;
+    if (now - _lastNestGrowFrame < NEST_GROW_COOLDOWN) return null;
+    // And at most ONE grown nest per zone, on top of whatever the zone was
+    // generated with. The four-tile guard above only stops them touching:
+    // measured at wave 8, zones 1, 2 and 4 each ended up with two, spread far
+    // enough apart to satisfy it. A zone is the unit the player thinks in, so
+    // it is the unit the cap uses.
+    const zone = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(t.x)) : -1;
+    for (const obj of world) {
+        if (!obj._infestNest || !obj.nest || obj.nestHealth <= 0) continue;
+        const oz = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(obj.x)) : -2;
+        if (oz === zone) return null;
+    }
+    // Ordered by where the tile lands on screen. Depth here is x+y: a bigger
+    // sum draws lower and in front. The first choice used to be (x, y-1),
+    // which is a SMALLER sum — so the nest appeared a row above the pylon it
+    // belongs to. Below and in front first now, beside second, and above only
+    // if there is genuinely nowhere else.
+    const spots = [
+        [t.x + 1, t.y + 1],                      // +2: clearly in front
+        [t.x,     t.y + 1], [t.x + 1, t.y],      // +1: below-left, below-right
+        [t.x - 1, t.y + 1], [t.x + 1, t.y - 1],  //  0: beside, same row
+        [t.x - 1, t.y],     [t.x,     t.y - 1],  // -1: last resort, above
+    ];
+    for (const [sx, sy] of spots) {
+        const tile = typeof getTile === "function" ? getTile(sx, sy) : null;
+        if (!tile || tile.type !== "floor") continue;
+        if (tile.pillar || tile.nest || tile.nodeType) continue;
+        tile.nest = true;
+        tile.nestMaxHealth = tile.nestMaxHealth || 200;
+        tile.nestHealth = tile.nestMaxHealth;
+        tile.nestZone = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(tile.x)) : -1;
+        tile.nestPulse = 0;
+        tile._infestNest = true;    // marks it as grown, not generated
+        // Stamped here rather than on entry, so a conversion that finds nowhere
+        // to put a nest does not spend the cooldown on nothing.
+        _lastNestGrowFrame = now;
+        floatingTexts.push({ x: tile.x, y: tile.y - 1, text: "NEST GROWN", color: "#ff7744",
+                             life: 120, vy: -0.2 });
+        // Hand it to the patch so reclaiming can take it away. Looking for it
+        // in the patch's tile list does not work — the nest sits beside the
+        // pylon and the cocoon may never creep onto that tile.
+        const m = cocoonForAnchor(t);
+        if (m) m.nest = tile;
+        else   t._pendingNest = tile;
+        return tile;
+    }
+    return null;
+}
 
 // ── The cocoon ─────────────────────────────────────────────
 function cocoonAt(x, y) {
@@ -248,8 +307,10 @@ function seedCocoon(t, pred) {
         spawnTimer: COCOON_SPAWN_FRAMES,
         hatchesLeft: COCOON_HATCH_LIMIT,
         spawned: [],
+        nest: t._pendingNest || null,
         pulse: Math.random() * Math.PI * 2,
     };
+    t._pendingNest = null;
     cocoons.push(m);
     m.tiles = _cocoonFootprint(m, m.span);
     _applyEnhancement(m);
@@ -414,15 +475,14 @@ const SCOUR_COCOON_FRAMES = 900;    // 15s, matching COCOON_SPAWN_FRAMES
 // is wrapped around a pylon and stays the long job. At 600 frames one worker
 // clears a nest in ten seconds and two do it in five, which is the crew being
 // worth having.
+const SCOUR_NEST_FRAMES   = 600;    // 10s for a full-health grown nest
 const SCOUR_COLOUR        = "#ff7722";
 
 // Ranked by how much harm the thing is doing right now rather than by distance:
-// a toxin patch is eating the squad, a cocoon is doing the same more slowly
-// while it hatches. Distance only breaks a tie within a rank, so a worker never
-// walks past a puddle to get to a cocoon. A "nest" rank sat between the two
-// until nests stopped growing on the floor; a zone nest is a fight the player
-// picks, not a chore, and was never on this list.
-const SCOUR_RANK = { puddle: 0, cocoon: 1 };
+// a toxin patch is eating the squad, a grown nest is minting predators, a
+// cocoon is doing both but more slowly. Distance only breaks a tie within a
+// rank, so a worker never walks past a puddle to get to a cocoon.
+const SCOUR_RANK = { puddle: 0, nest: 1, cocoon: 2 };
 
 function nearestScourChore(x, y, maxDist) {
     const reach = maxDist === undefined ? INFEST_SEEK_RANGE : maxDist;
@@ -440,6 +500,15 @@ function nearestScourChore(x, y, maxDist) {
         for (const [px, py] of (m.puddles || [])) consider("puddle", px, py, { cocoon: m });
         consider("cocoon", m.x, m.y, { cocoon: m });
     }
+    // Only the nests an infestation GREW. A zone nest is a fight, not a chore,
+    // and sending the work crew to chew on one would quietly replace the
+    // destroy_nest order the player gives by hand.
+    if (typeof world !== "undefined") {
+        for (const t of world) {
+            if (!t._infestNest || !t.nest || t.nestHealth <= 0) continue;
+            consider("nest", t.x, t.y, { tile: t });
+        }
+    }
     return best;
 }
 
@@ -449,7 +518,18 @@ function scourChoreStillGood(c) {
     if (!c) return false;
     if (c.kind === "puddle") return !!(c.cocoon && cocoons.includes(c.cocoon) && c.cocoon.puddles.length > 0);
     if (c.kind === "cocoon") return !!(c.cocoon && cocoons.includes(c.cocoon));
+    if (c.kind === "nest")   return !!(c.tile && c.tile.nest && c.tile.nestHealth > 0 && c.tile._infestNest);
     return false;
+}
+
+// Put a grown nest out. Shared with clearInfestationAt so a nest cannot be
+// half-killed by one path and left drawable by the other.
+function _killGrownNest(tile) {
+    if (!tile || !tile._infestNest) return false;
+    tile.nest = false;
+    tile.nestHealth = 0;
+    tile._infestNest = false;
+    return true;
 }
 
 // One frame of burning, from one worker. Progress is kept on the thing being
@@ -470,6 +550,18 @@ function scourStep(chore) {
         m.enhancement = null;
         floatingTexts.push({ x: chore.x, y: chore.y - 0.6, text: "TOXIN BURNED OFF",
                              color: SCOUR_COLOUR, life: 70, vy: -0.12 });
+        return true;
+    }
+
+    if (chore.kind === "nest") {
+        const t = chore.tile;
+        const per = (t.nestMaxHealth || 200) / SCOUR_NEST_FRAMES;
+        t.nestHealth = Math.max(0, t.nestHealth - per);
+        if (t.nestHealth > 0) return false;
+        _killGrownNest(t);
+        if (typeof saveNests === "function") saveNests();
+        floatingTexts.push({ x: chore.x, y: chore.y - 1, text: "NEST BURNED OUT",
+                             color: SCOUR_COLOUR, life: 90, vy: -0.16 });
         return true;
     }
 
@@ -514,10 +606,31 @@ function clearInfestationAt(t) {
         const m = cocoons[i];
         const at = m.anchors.indexOf(t);
         if (at >= 0) m.anchors.splice(at, 1);
-        if (m.anchors.length === 0) cocoons.splice(i, 1);
+        if (m.anchors.length === 0) {
+            // Take the grown nest with it, so reclaiming really does clear the
+            // ground rather than leaving a spawner behind.
+            _killGrownNest(m.nest);
+            cocoons.splice(i, 1);
+        }
     }
-    // There is no longer a grown nest to take with it, nor an orphaned one left
-    // behind by a fire worker who burned its cocoon open first.
+    // A nest whose cocoon is already gone — burned open by a fire worker. It is
+    // found by looking beside the pylon rather than by a stored reference, so it
+    // still works after a refresh, and it is only taken if no surviving cocoon
+    // still claims it (a patch holding two pylons must keep its nest when only
+    // one of them is reclaimed).
+    const orphan = _grownNestBeside(t);
+    if (orphan && !cocoons.some(m => m.nest === orphan)) _killGrownNest(orphan);
+}
+
+// The grown nest belonging to a pylon: one of the tiles seedNestNear would have
+// put it on.
+function _grownNestBeside(t) {
+    if (!t || typeof getTile !== "function") return null;
+    for (const [dx, dy] of [[1,1],[0,1],[1,0],[-1,1],[1,-1],[-1,0],[0,-1]]) {
+        const tile = getTile(t.x + dx, t.y + dy);
+        if (tile && tile._infestNest && tile.nest) return tile;
+    }
+    return null;
 }
 
 // ── Persistence ───────────────────────────────────────────
@@ -532,6 +645,7 @@ function serialiseCocoons() {
         hatchesLeft: m.hatchesLeft,
         // Scour progress, so a refresh does not undo a worker's shift.
         shellBurn: m.shellBurn || 0, puddleBurn: m.puddleBurn || 0,
+        nest: m.nest ? [m.nest.x, m.nest.y] : null,
     }));
 }
 
@@ -565,6 +679,7 @@ function restoreCocoons(data) {
             shellBurn: Number.isFinite(d.shellBurn) ? Math.min(1, Math.max(0, d.shellBurn)) : 0,
             puddleBurn: Number.isFinite(d.puddleBurn) ? Math.min(1, Math.max(0, d.puddleBurn)) : 0,
             spawned: [],
+            nest: (d.nest && typeof getTile === "function") ? getTile(d.nest[0], d.nest[1]) : null,
             pulse: Math.random() * Math.PI * 2,
         });
         // Footprint and toxin come from the span, not from whatever was saved:
@@ -718,6 +833,51 @@ function _infestToScreen(wx, wy) {
     ];
 }
 
+// A nest an infestation grew stands on open floor, so it gets a dome of its
+// own rather than the zone nests' wall honeycomb, which would be projected
+// onto a wall that is not behind it.
+// Called from the depth-sorted tile pass in game.js, at the point that tile is
+// drawn. As a flat overlay these painted over every pylon on the board — a nest
+// on a tile BEHIND a pylon still landed on top of it, which is what made them
+// look like they were floating above the pylons instead of sitting under them.
+function drawGrownNestForTile(t, px, py) {
+    if (!t || !t._infestNest || !t.nest || t.nestHealth <= 0) return;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    {
+        const sx = px, sy = py + TILE_H;   // tile centre, as the pylons anchor
+        t.nestPulse = (t.nestPulse || 0) + 1;
+        const breathe = 0.5 + 0.5 * Math.sin(t.nestPulse * 0.03);
+        const hr = Math.max(0.2, t.nestHealth / (t.nestMaxHealth || 200));
+        // Smaller than a cocoon, and it slumps as it is damaged.
+        const nh = COCOON_SAC_H * (0.7 + hr * 0.4);
+        _drawCocoonSac(sx, sy, COCOON_SAC_W * 0.78, nh, "#ff7744", breathe, 2);
+        // The hatch it opens from — a cracked die window, cut as an angular
+        // slot rather than a soft hole. Nothing round anywhere on these.
+        const hx = sx + COCOON_SAC_W * 0.18, hy = sy - nh * 0.62;
+        const hw = COCOON_SAC_W * 0.22, hh = nh * 0.26;
+        ctx.globalAlpha = 0.78 + breathe * 0.15;
+        ctx.fillStyle = "#120806";
+        ctx.beginPath();
+        ctx.moveTo(hx - hw, hy);
+        ctx.lineTo(hx - hw * 0.2, hy - hh);
+        ctx.lineTo(hx + hw,       hy - hh * 0.3);
+        ctx.lineTo(hx + hw * 0.3, hy + hh);
+        ctx.closePath(); ctx.fill();
+        // A split running out of it
+        ctx.globalAlpha = 0.5 + breathe * 0.2;
+        ctx.strokeStyle = "#120806"; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(hx + hw, hy - hh * 0.3);
+        ctx.lineTo(hx + hw * 1.9, hy + hh * 0.4);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        if (typeof drawHealthBar === "function") {
+            drawHealthBar(sx - 20, sy - nh - 12, 40, 4, t.nestHealth, t.nestMaxHealth || 200);
+        }
+    }
+    ctx.restore();
+}
 
 // One cocoon, positioned by its caller. The shell is anchored on the pylon it
 // encapsulates rather than on the footprint's centroid: an even 2x2 puts the

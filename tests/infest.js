@@ -42,6 +42,7 @@ const TOXIN_SPECIES = JSON.parse(
 const PUDDLE_INTERVAL = constant('COCOON_PUDDLE_INTERVAL');
 const PUDDLE_DAMAGE   = constant('COCOON_PUDDLE_DAMAGE');
 const PUDDLE_COLOUR   = INFEST.match(/const COCOON_PUDDLE_COLOUR\s*=\s*"([^"]+)"/)[1];
+const NEST_COOLDOWN   = constant('NEST_GROW_COOLDOWN');
 const SETTLE_MIN      = constant('INFEST_SETTLE_MIN');
 const SETTLE_MAX      = constant('INFEST_SETTLE_MAX');
 const PACE_MIN        = constant('INFEST_PACE_MIN');
@@ -148,15 +149,24 @@ function tick(env, n, fn) {
 function convert(env, t, pred) {
     env.run('convertPylonToRed')(t, pred);
 }
+// The same, with the world-wide nest cooldown already spent — for the checks
+// that are about the per-zone CAP rather than the pacing. Without this a cap
+// check passes because the cooldown swallowed the second nest, which means it
+// would keep passing with the cap deleted.
+function convertPaced(env, t, pred) {
+    env.sandbox.frame += NEST_COOLDOWN;
+    env.run('convertPylonToRed')(t, pred);
+}
 // Drive the per-tile draw the way the depth-sorted pass in game.js does: the
-// cocoon is no longer a flat overlay, so it is called with a tile and that
-// tile's screen position.
+// cocoon and the grown nest are no longer flat overlays, so they are called
+// with a tile and that tile's screen position.
 function drawTile(env, t) {
     const px = (t.x - env.sandbox.player.visualX - (t.y - env.sandbox.player.visualY)) * 60 + 400;
     const py = (t.x - env.sandbox.player.visualX + (t.y - env.sandbox.player.visualY)) * 30 + 300;
     env.run('drawCocoonForTile')(t, px, py);
+    env.run('drawGrownNestForTile')(t, px, py);
 }
-// Every cocoon on the board, in tile order.
+// Every cocoon and grown nest on the board, in tile order.
 function drawAll(env) {
     for (const t of env.sandbox.world) drawTile(env, t);
 }
@@ -353,68 +363,90 @@ check('decay is slower than progress, so interrupting is not a free reset', () =
 
 group('the nest and the cocoon');
 
-// REPORTED: "remove the nests in the middle."
-//
-// A converted pylon used to grow a nest on a clear floor tile beside it, on top
-// of the one its zone is generated with. A zone nest sits at y=-1 against the
-// back wall and is the objective; a grown one landed wherever a pylon happened
-// to fall, in the open middle of the strip, and spawned from there. Half this
-// suite existed to manage them: where the nest landed relative to its pylon,
-// its own dome renderer (the wall honeycomb painted a flat rug on bare ground),
-// a per-zone cap, a world-wide grow cooldown, and two reclaim paths to make
-// sure one was never left behind.
-//
-// All of it is gone. What is left to check is that it stays gone.
-
-check('THE ASK: converting a pylon grows no nest', () => {
+check('THE REPORTED CASE: a nest grows beside the converted pylon', () => {
     const env = makeEnv();
     board(env, -2, 6, -1, 4);
-    const before = env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length;
-    same(before, 0, 'fixture: the board should start with no nests');
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2));
-    const after = env.sandbox.world.filter(x => x.nest && x.nestHealth > 0);
-    same(after.length, 0, 'a nest grew anyway, at ' + after.map(n => n.x + ',' + n.y).join(' '));
-    // The pylon is still lost and still gets a cocoon — only the nest is gone.
-    same(t.pillarTeam, 'red', 'the pylon should still have been taken');
-    same(env.run('cocoons').length, 1, 'and still be wrapped in a cocoon');
+    const nests = env.sandbox.world.filter(x => x.nest && x.nestHealth > 0);
+    same(nests.length, 1, 'exactly one nest should have grown');
+    ok(Math.hypot(nests[0].x - t.x, nests[0].y - t.y) <= 2, 'it should be beside the pylon');
+    ok(nests[0]._infestNest, 'it should be marked as grown rather than generated');
 });
 
-check('and none grows however many fall', () => {
+check('THE REPORTED CASE: the nest lands below the pylon, never above it', () => {
+    // Depth in this projection is x+y: a bigger sum draws lower and in front.
+    // The nest used to prefer (x, y-1), a SMALLER sum, so it appeared a row
+    // above the pylon it belongs to.
     const env = makeEnv();
-    board(env, -2, 20, -1, 4);
-    for (const x of [3, 6, 9, 12, 15]) {
-        const t = greenPylon(env, x, 2);
-        convert(env, t, mkPred(env, x, 2));
-    }
-    same(env.run('cocoons').length, 5, 'fixture: five pylons should have fallen');
-    same(env.sandbox.world.filter(x => x.nest).length, 0, 'something still plants nests');
+    board(env, -4, 10, -1, 5);
+    const t = greenPylon(env, 3, 2);
+    convert(env, t, spinner());
+    const nest = env.sandbox.world.find(x => x._infestNest);
+    ok(nest, 'no nest grew');
+    ok(nest.x + nest.y > t.x + t.y,
+       `nest at ${nest.x},${nest.y} (depth ${nest.x + nest.y}) is not in front of the ` +
+       `pylon at ${t.x},${t.y} (depth ${t.x + t.y})`);
 });
 
-check('nothing is left in the code that could grow one', () => {
-    for (const name of ['seedNestNear', 'NEST_GROW_COOLDOWN', '_lastNestGrowFrame',
-                        '_infestNest', '_killGrownNest', '_grownNestBeside',
-                        'drawGrownNestForTile']) {
-        ok(!INFEST.includes(name), 'infest.js still carries ' + name);
+check('it will settle for beside, and only goes above as a last resort', () => {
+    // Fence the pylon in so the tiles in front are unavailable.
+    const env = makeEnv();
+    for (const [x, y] of [[3, 2], [4, 3], [3, 3], [4, 2], [2, 3], [4, 1], [2, 2], [3, 1]]) {
+        floorAt(env, x, y);
     }
-    ok(!/drawGrownNestForTile|_infestNest/.test(GAME), 'game.js still knows about grown nests');
+    const t = env.sandbox.worldTileMap.get('3,2');
+    Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green',
+                       health: 80, maxHealth: 80, attackMode: true });
+    env.sandbox._pillarCache.push(t);
+    // Occupy everything at depth >= the pylon's, leaving only tiles above it.
+    for (const k of ['4,3', '3,3', '4,2', '2,3', '4,1']) {
+        env.sandbox.worldTileMap.get(k).nodeType = 'blocked';
+    }
+    convert(env, t, spinner());
+    const nest = env.sandbox.world.find(x => x._infestNest);
+    ok(nest, 'it should still find somewhere');
+    ok(nest.x + nest.y < t.x + t.y, 'with nowhere else it may go above');
 });
 
-check('a zone nest is untouched by all of this', () => {
-    // The one that matters: it is the objective, and it is NOT what was asked
-    // to be removed.
+check('a pylon next to an existing nest does not grow a second one', () => {
     const env = makeEnv();
     board(env, -2, 6, -1, 4);
-    const zoneNest = floorAt(env, 4, -1, { nest: true, nestHealth: 200,
-                                           nestMaxHealth: 200, nestZone: 1 });
+    floorAt(env, 4, -1, { nest: true, nestHealth: 200, nestMaxHealth: 200 });
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2));
-    same(zoneNest.nest, true, 'converting a pylon beside it removed the zone nest');
-    same(zoneNest.nestHealth, 200, 'or damaged it');
-    // And it still draws as a wall honeycomb, which is the renderer that was
-    // only ever right for a nest with a wall behind it.
-    ok(/obj\.nest && obj\.nestHealth > 0/.test(GAME), 'the wall honeycomb is gone');
-    ok(/obj\.nest && obj\.nestHealth <= 0/.test(GAME), 'the broken-nest wreckage is gone');
+    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 1, 'should reuse the nest in reach');
+});
+
+check('THE REPORTED CASE: a grown nest is a dome, not a wall honeycomb', () => {
+    // The zone nests sit at y=-1 against the wall, and their renderer projects
+    // a honeycomb onto that wall face. A nest GROWN on open floor has no wall
+    // behind it, so that projection painted a flat rug on the ground.
+    ok(/obj\.nest && obj\.nestHealth > 0 && !obj\._infestNest/.test(GAME),
+       'the wall honeycomb still draws for grown nests');
+    ok(/obj\.nest && obj\.nestHealth <= 0 && !obj\._infestNest/.test(GAME),
+       'the broken-nest wreckage makes the same wall assumption');
+    ok(/function drawGrownNestForTile/.test(INFEST), 'grown nests have no drawing of their own');
+});
+
+check('a grown nest actually draws, and stops when it is gone', () => {
+    const env = makeEnv();
+    board(env, -4, 10, -1, 4);
+    const t = greenPylon(env, 3, 2);
+    convert(env, t, spinner());
+    const nest = env.sandbox.world.find(x => x._infestNest);
+    ok(nest && nest.nestHealth > 0, 'fixture: a nest should have grown');
+    env.calls.length = 0;
+    drawAll(env);
+    // A ziggurat is drawn with paths, not ellipses — the shape changed from a
+    // dome, so this asserts that something was filled rather than which
+    // primitive was used.
+    ok(env.calls.some(c => c.op === 'fill'), 'nothing drawn for a grown nest');
+    nest.nestHealth = 0;
+    env.calls.length = 0;
+    // Only the nest here — drawAll would also draw the cocoon on its own tile.
+    drawTile(env, nest);
+    same(env.calls.length, 0, 'a dead grown nest should draw nothing');
 });
 
 check('THE REPORTED CASE: it is geometric, not round', () => {
@@ -436,10 +468,8 @@ check('THE REPORTED CASE: it is geometric, not round', () => {
     ok(/trace/i.test(body), 'no circuit traces across the lid');
     ok(/pad/i.test(body), 'no solder pads');
     ok(/pins/i.test(body), 'no pins out to the board');
-    // The grown nest drew with the same sac and was the second call site; it
-    // is gone, so the definition and the cocoon's own call are what is left.
-    same((INFEST.match(/_drawCocoonSac\(/g) || []).length, 2,
-         'expected the definition plus one call site');
+    same((INFEST.match(/_drawCocoonSac\(/g) || []).length, 3,
+         'expected the definition plus two call sites');
 });
 
 check('nothing round is drawn for a cocoon at all', () => {
@@ -457,6 +487,19 @@ check('nothing round is drawn for a cocoon at all', () => {
     const round = env.calls.filter(c => c.op === 'arc' || c.op === 'ellipse');
     same(round.length, 0, `the cocoon emitted ${round.length} round primitives`);
     ok(env.calls.some(c => c.op === 'lineTo'), 'fixture: it should have drawn something');
+});
+
+check('a grown nest is geometric too', () => {
+    const env = makeEnv();
+    board(env, -4, 10, -1, 4);
+    const t = greenPylon(env, 0, 2);
+    convert(env, t, spinner('ant', 'scout'));
+    ok(env.sandbox.world.some(x => x._infestNest), 'fixture: a nest should have grown');
+    env.calls.length = 0;
+    drawAll(env);
+    const round = env.calls.filter(c => c.op === 'arc' || c.op === 'ellipse');
+    same(round.length, 0, `the grown nest emitted ${round.length} round primitives`);
+    ok(env.calls.some(c => c.op === 'fill'), 'nothing drawn for a grown nest');
 });
 
 // Every coordinate the drawing emits, so its real extent can be measured
@@ -986,23 +1029,22 @@ check('the damage is a nuisance, not an execution', () => {
 
 group('reclaiming the pylon is the counter');
 
-check('THE COUNTER: taking the pylon back kills its cocoon', () => {
-    // It used to have to take a grown nest with it as well — reclaiming cleared
-    // the nest through the cocoon's reference to it, and a second path swept up
-    // one whose cocoon a fire worker had already burned. No nest grows now, so
-    // the cocoon is the whole of it.
+check('THE COUNTER: taking the pylon back kills its cocoon and nest', () => {
     const env = makeEnv();
     board(env, -2, 8, -1, 4);
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2));
     tick(env, SWELL + 5);
     ok(env.run('cocoons').length === 1, 'fixture: should have a cocoon');
-    same(env.sandbox.world.filter(x => x.nest).length, 0, 'fixture: and no nest');
+    const nest = env.sandbox.world.find(x => x._infestNest);
+    ok(nest && nest.nestHealth > 0, 'fixture: should have a nest');
 
     // What the reconstruction completion in game.js does.
     t.pillarTeam = 'green';
     env.run('clearInfestationAt')(t);
     same(env.run('cocoons').length, 0, 'the cocoon should die with the pylon');
+    same(nest.nestHealth, 0, 'the grown nest should go too');
+    same(nest.nest, false, 'and stop being a nest at all');
 });
 
 check('a patch holding two pylons survives losing one of them', () => {
@@ -1061,29 +1103,33 @@ check('the predator AI calls it, and only after the ability and worker ticks', (
     ok(i > a && i > w, 'infesting must not pre-empt an ability windup or worker duty');
 });
 
-check('THE REPORTED CASE: it draws in the world, under the pylons', () => {
-    // As a flat overlay this painted over every pylon on the board, so a cocoon
+check('THE REPORTED CASE: they draw in the world, under the pylons', () => {
+    // As flat overlays these painted over every pylon on the board, so a nest
     // behind a pylon still landed on top of it and looked like it was floating
-    // above it. It belongs in the depth-sorted tile pass.
+    // above it. They belong in the depth-sorted tile pass.
     ok(/updateInfestation\(\);/.test(GAME), 'never updated');
     ok(/drawConversionBars\(\);/.test(GAME), 'the progress bar is never drawn');
     ok(!/drawCocoons\(\);/.test(GAME), 'the flat cocoon overlay is back');
+    ok(!/drawGrownNests\(\);/.test(GAME), 'the flat nest overlay is back');
 
     const cocoonAt = GAME.indexOf('drawCocoonForTile(obj, px, py);');
+    const nestAt   = GAME.indexOf('drawGrownNestForTile(obj, px, py);');
     ok(cocoonAt > -1, 'the cocoon is never drawn per tile');
+    ok(nestAt   > -1, 'the grown nest is never drawn per tile');
 
-    // It must be inside the sorted draw loop, not after it.
+    // Both must be inside the sorted draw loop, not after it.
     const loopAt  = GAME.indexOf('drawList.forEach(obj=>{');
     const ifaceAt = GAME.indexOf('drawRadialMenu();');
     ok(loopAt > -1 && ifaceAt > loopAt, 'could not locate the sorted pass');
     ok(cocoonAt > loopAt && cocoonAt < ifaceAt, 'the cocoon is outside the sorted pass');
+    ok(nestAt   > loopAt && nestAt   < ifaceAt, 'the grown nest is outside the sorted pass');
 
     // And the cocoon must precede the pylon body, so the pylon rises out of it.
     const pylonAt = GAME.indexOf('if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {');
     ok(pylonAt > -1, 'could not find the pylon body branch');
     ok(cocoonAt < pylonAt, 'the cocoon is pasted over the pylon instead of under it');
 
-    for (const fn of ['drawCocoonForTile', 'drawConversionBars', 'updateInfestation']) {
+    for (const fn of ['drawCocoonForTile', 'drawGrownNestForTile', 'drawConversionBars', 'updateInfestation']) {
         same((GAME.match(new RegExp(fn + '\\(', 'g')) || []).length, 1, fn + ' called more than once');
     }
 });
@@ -1146,19 +1192,12 @@ group('taming it: the runaway loop');
 check('the index documents every limit', () => {
     const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
     ok(/never gardens/i.test(HTML), 'the index does not say hatchlings cannot convert');
+    ok(/one grown nest per zone/i.test(HTML), 'nor the per-zone cap');
     ok(/burns out/i.test(HTML), 'nor that cocoons go inert');
-    // And the limits it no longer has: a per-zone cap and a grow cooldown were
-    // both built to tame nests that no longer grow.
-    ok(!/grown nest/i.test(HTML), 'the index still promises nests that grow from pylons');
-    ok(/No nest grows from it/i.test(HTML), 'nor does it say outright that none does');
-    // The count at the head of the list has to match the list.
-    const m = HTML.match(/(\w+) things stop that becoming a runaway:<\/div>([\s\S]*?)<div class="cm-elem-head"/);
-    ok(!!m, 'the list of limits could not be located');
-    const WORDS = { Two: 2, Three: 3, Four: 4, Five: 5, Six: 6, Seven: 7 };
-    const claimed = WORDS[m[1]];
-    ok(claimed !== undefined, 'the list head says "' + m[1] + '", which is not a number');
-    const bullets = (m[2].match(/padding-left:16px">\u2022/g) || []).length;
-    same(bullets, claimed, 'the index promises ' + claimed + ' limits and lists ' + bullets);
+    // The pacing floor and the de-synchronisation, from the constants.
+    const cool = Math.round(NEST_COOLDOWN / 60);
+    ok(new RegExp('once every <span class="cm-stat">' + cool + ' seconds').test(HTML),
+       'the documented nest cooldown does not match NEST_GROW_COOLDOWN (' + cool + 's)');
     ok(/settle back into gardening at their own pace/i.test(HTML),
        'nor that predators do not all resume converting together');
     const lim = constant('COCOON_HATCH_LIMIT');
@@ -1179,8 +1218,8 @@ check('and it no longer claims every taken pylon grows a nest', () => {
        'the index still promises a nest with every conversion');
     ok(!/A taken pylon grows a nest/.test(CODEX),
        'the codex still promises a nest with every conversion');
-    ok(/No nest grows from it/.test(CODEX),
-       'the codex does not say outright that no nest grows');
+    ok(/NEST_GROW_COOLDOWN/.test(CODEX),
+       'the codex should read the cooldown from the constant rather than restate it');
 });
 
 check('the index describes the wall nest as a vortex', () => {
@@ -1269,10 +1308,110 @@ check('interrupting still saves it, and faster than it is taken', () => {
        'decay should comfortably outrun conversion');
 });
 
-// The per-zone nest cap, the world-wide grow cooldown and the settle-time
-// de-synchroniser were all built to tame nests arriving in bursts. Two of the
-// three are gone with the nests themselves; the settling is not, because it
-// paces CONVERSIONS, and a pylon still falls.
+check('THE CAP: one grown nest per zone', () => {
+    const env = makeEnv();
+    board(env, 0, 14, 0, 4);
+    const a = greenPylon(env, 3, 2);
+    const b = greenPylon(env, 11, 2);      // same zone (0..14), clear of the 4-tile guard
+    convertPaced(env, a, spinner('ant', 'striker'));
+    const first = env.sandbox.world.filter(t => t._infestNest && t.nest).length;
+    same(first, 1, 'fixture: the first conversion should grow one');
+    // Paced, so the cooldown is NOT what is being measured here.
+    convertPaced(env, b, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
+         'a second conversion in the same zone should grow no second nest');
+});
+
+check('but a different zone gets its own', () => {
+    const env = makeEnv();
+    board(env, 0, 40, 0, 4);
+    const a = greenPylon(env, 3, 2);       // zone 0
+    const b = greenPylon(env, 20, 2);      // zone 1
+    convertPaced(env, a, spinner('ant', 'striker'));
+    convertPaced(env, b, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
+         'the cap is per zone, not per map');
+});
+
+// ─────────────────────────────────────────────────────────
+//  "NESTS ARE OCCURRING TOO OFTEN"
+// ─────────────────────────────────────────────────────────
+// Reported after the caps above were already in place and working — the five
+// nests measured at wave 8 really were in five different zones. The complaint
+// was not how MANY there were, it was that they all turned up at once.
+//
+// Traced with a conversion timeline. Nothing was wrong with the rate: every
+// predator started gardening on the same frame and worked at the same flat
+// rate, so they all crossed the line together. Four nests grew inside 142
+// frames, five inside ten seconds, after twenty-five seconds of nothing.
+//
+// The synchroniser is structural, not accidental: predatorUndisturbed() bails
+// out while alertActive, and alertActive is one global flag, so the frame an
+// alarm clears is the frame every wanderer in every zone resumes.
+//
+// Two fixes. Predators settle back to work at their own pace and then work at
+// their own speed; and a nest can GROW at most once every NEST_GROW_COOLDOWN
+// anywhere on the map, which bounds arrival rate rather than population.
+
+check('THE PACING: a second nest cannot grow right behind the first', () => {
+    const env = makeEnv();
+    board(env, 0, 40, 0, 4);
+    const a = greenPylon(env, 3, 2);       // zone 0
+    const b = greenPylon(env, 20, 2);      // zone 1 — the per-zone cap allows it
+    convert(env, a, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
+         'fixture: the first one should grow');
+    // Same frame, different zone, nowhere near the 4-tile guard: every other
+    // gate says yes. Only the cooldown should stop it.
+    convert(env, b, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
+         'a nest grew in the same breath as the last one');
+});
+
+check('and the pylon is still lost, and still cocooned, when it does not', () => {
+    // The cooldown must not turn into an amnesty. Losing the pylon is the
+    // consequence; the nest is the extra.
+    const env = makeEnv();
+    board(env, 0, 40, 0, 4);
+    const a = greenPylon(env, 3, 2);
+    const b = greenPylon(env, 20, 2);
+    convert(env, a, spinner('ant', 'striker'));
+    convert(env, b, spinner('ant', 'striker'));
+    same(b.pillarTeam, 'red', 'the pylon should still change hands');
+    ok(!!env.run('cocoonForAnchor')(b), 'and should still be cocooned');
+});
+
+check('once the cooldown is up, the next one grows', () => {
+    // Otherwise this is not pacing, it is a one-nest-per-game cap.
+    const env = makeEnv();
+    board(env, 0, 40, 0, 4);
+    const a = greenPylon(env, 3, 2);
+    const b = greenPylon(env, 20, 2);
+    convert(env, a, spinner('ant', 'striker'));
+    env.sandbox.frame += NEST_COOLDOWN;
+    convert(env, b, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
+         'the second should grow once the map has had a rest');
+});
+
+check('a blocked conversion does not spend the cooldown on nothing', () => {
+    // The stamp is at the point a nest is actually placed. If it were taken on
+    // entry, a conversion the per-zone cap rejected would silently push the
+    // next real nest another 45 seconds out.
+    const env = makeEnv();
+    board(env, 0, 40, 0, 4);
+    const a = greenPylon(env, 3, 2);       // zone 0
+    const b = greenPylon(env, 11, 2);      // zone 0 too — capped out
+    const c = greenPylon(env, 20, 2);      // zone 1
+    convert(env, a, spinner('ant', 'striker'));
+    env.sandbox.frame += NEST_COOLDOWN;
+    convert(env, b, spinner('ant', 'striker'));   // rejected by the zone cap
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
+         'fixture: the zone cap should have refused that one');
+    convert(env, c, spinner('ant', 'striker'));   // same frame, fresh zone
+    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
+         'the refused conversion consumed the cooldown');
+});
 
 check('THE SYNCHRONISER: a disturbed predator has to settle before gardening', () => {
     const env = makeEnv();
@@ -1286,6 +1425,97 @@ check('THE SYNCHRONISER: a disturbed predator has to settle before gardening', (
     ok(p._infestSettle > 0, 'it should have been given a settle time');
     same(env.run('infestTick')(p), false, 'it should not resume on the very next frame');
     same(t.convertProgress || 0, 0, 'and should have made no progress');
+});
+
+check('it does resume, once it has settled', () => {
+    const env = makeEnv();
+    board(env, 0, 8, 0, 4);
+    const t = greenPylon(env, 3, 2);
+    const p = mkPred(env, 3, 2);
+    env.sandbox.alertActive = true;
+    env.run('infestTick')(p);
+    env.sandbox.alertActive = false;
+    let frames = 0;
+    while ((t.convertProgress || 0) === 0 && frames < SETTLE_MAX + 120) {
+        env.sandbox.frame++; env.run('infestTick')(p); frames++;
+    }
+    ok((t.convertProgress || 0) > 0, 'it never went back to work at all');
+    ok(frames >= SETTLE_MIN, `it waited only ${frames} frames, under INFEST_SETTLE_MIN`);
+    ok(frames <= SETTLE_MAX + 4, `it waited ${frames} frames, past INFEST_SETTLE_MAX`);
+});
+
+check('and two predators do not settle on the same frame', () => {
+    // The whole point. A settle time that were constant would pass every check
+    // above and change nothing about the burst.
+    const env = makeEnv();
+    board(env, 0, 8, 0, 4);
+    const waits = new Set();
+    for (let i = 0; i < 40; i++) {
+        const p = mkPred(env, 3, 2);
+        env.sandbox.alertActive = true;
+        env.run('infestTick')(p);
+        env.sandbox.alertActive = false;
+        waits.add(p._infestSettle);
+    }
+    ok(waits.size > 20, `40 predators produced only ${waits.size} distinct settle times`);
+});
+
+check('nor at the same speed', () => {
+    const env = makeEnv();
+    const paces = new Set();
+    for (let i = 0; i < 40; i++) {
+        const p = mkPred(env, 3, 2);
+        env.run('rollInfestSettle')(p);
+        ok(p._infestPace >= PACE_MIN && p._infestPace <= PACE_MAX,
+           `pace ${p._infestPace} is outside the declared range`);
+        paces.add(p._infestPace);
+    }
+    ok(paces.size > 20, `40 predators produced only ${paces.size} distinct paces`);
+});
+
+check('the pace range is centred, so 25 seconds is still the average', () => {
+    // tests further up assert the GAME INDEX's documented conversion time
+    // against 1/INFEST_RATE. A lopsided pace range would quietly make the
+    // documentation wrong without failing that check.
+    const mid = (PACE_MIN + PACE_MAX) / 2;
+    ok(Math.abs(mid - 1) < 0.001, `the pace range averages ${mid}, not 1`);
+});
+
+check('a predator with no history gardens straight away', () => {
+    // The settle is rolled on disturbance and at spawn, never lazily on first
+    // use. A lone wanderer that has never been bothered should not sit idle,
+    // and the reach and rate checks above depend on it.
+    const env = makeEnv();
+    board(env, 0, 8, 0, 4);
+    const t = greenPylon(env, 3, 2);
+    const p = mkPred(env, 3, 2);
+    same(p._infestSettle, undefined, 'fixture: no settle history');
+    same(env.run('infestTick')(p), true, 'it should claim the frame at once');
+    ok((t.convertProgress || 0) > 0, 'and make progress');
+});
+
+check('a freshly spawned predator is staggered too', () => {
+    // A batch of spawns is the other way a cohort ends up synchronised, and
+    // spawnPredatorForZone lives in clone.js, so this is a cross-file contract.
+    const CLONE = fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8');
+    ok(/rollInfestSettle\(predator\)/.test(CLONE),
+       'spawnPredatorForZone no longer rolls a settle time');
+    // And it has to be read at call time, because infest.js loads after clone.js.
+    ok(/typeof rollInfestSettle === "function"/.test(CLONE),
+       'it should guard on the function existing, not assume load order');
+});
+
+check('the cap counts only GROWN nests, not the zone\'s own', () => {
+    // A zone is generated with a wall nest. If that counted, a zone could never
+    // grow one at all and the mechanic would be dead.
+    const env = makeEnv();
+    board(env, 0, 14, 0, 4);
+    addTile(env, { x: 6, y: -1, type: 'floor', nest: true, nestHealth: 200,
+                   nestMaxHealth: 200, nestZone: 0 });
+    const t = greenPylon(env, 11, 2);
+    convert(env, t, spinner('ant', 'striker'));
+    same(env.sandbox.world.filter(x => x._infestNest && x.nest).length, 1,
+         'a zone wall nest should not block the grown one');
 });
 
 check('THE TAP: a cocoon goes inert after a lifetime of hatches', () => {

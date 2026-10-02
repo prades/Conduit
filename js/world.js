@@ -86,16 +86,15 @@ function generateSegment(startX) {
     }
     lastGenX=startX;
 
-    // ── CAPACITOR NODE — 1 per forward zone, at zone x-offset 3, y=2 ──
-    const capNodeX = zoneIndex * ZONE_LENGTH + 3;
-    if (zoneIndex >= 1 && startX === capNodeX) {
-        const nodeTile = world.find(t => t.x === startX && t.y === 2 && t.type === 'floor' && !t.nest && !t.nodeType);
-        if (nodeTile) {
-            nodeTile.nodeType = 'capacitor_node';
-            nodeTile.capturable = true;
-            nodeTile.predatorOwned = true; // starts under predator control
-        }
-    }
+    // ── NO HOLE IN THE FLOOR ──────────────────────────────────────────────
+    // Every forward zone used to get a CAPACITOR NODE at zone x-offset 3, y=2:
+    // a vortex in the middle of the walkable strip, open by default, that
+    // predators came up out of. It was a second mouth, and it was on the ground
+    // where the player walks.
+    //
+    // REPORTED: "I want the portals on the wall to be the nests. I don't want
+    // the holes on the ground or the floor any more." So a zone has exactly one
+    // mouth now — the nest in its back wall — and the floor is floor.
 
     // ── SIGNAL TOWER — zones 4+, placed at zone centre, y=1 ──
     if (zoneIndex >= 4 && startX === zoneCenter) {

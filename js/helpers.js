@@ -135,7 +135,7 @@ function nestIsHackable(nest) {
 }
 
 function isHomePortal(t) {
-    return !!(t && t.nest && t.nestZone === 0);
+    return !!(t && t.nest && t.nestZone === 0 && !t._infestNest);
 }
 
 // How many of THEIRS are alive. Your own clones are green and do not count

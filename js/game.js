@@ -718,9 +718,7 @@ function rebuildPylonPairs() {
 const NEST_DRAW_BIAS = 1.01;   // just past the last wall tile of its own face
 function drawDepthOf(o) {
     const d = o.x + o.y;
-    // Every nest is a wall nest now. The guard was for the ones an infestation
-    // grew on open floor, which no longer exist.
-    return o.nest ? d + NEST_DRAW_BIAS : d;
+    return (o.nest && !o._infestNest) ? d + NEST_DRAW_BIAS : d;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -1962,12 +1960,12 @@ function render() {
                 }
             }
 
-            // ── CAPTURABLE NODES (capacitor / signal tower) ──
+            // ── CAPTURABLE NODES (the signal tower) ──
             // wall_panel is drawn on the wall face in the wall_back pass — skip it here.
             if (obj.nodeType && obj.nodeType !== 'wall_panel') drawCapturableNode(obj, px, py);
 
             // ── BROKEN NEST POD — charred gray husk with teal accent ──
-            if (obj.nest && obj.nestHealth <= 0) {
+            if (obj.nest && obj.nestHealth <= 0 && !obj._infestNest) {
                 const sW1x=px, sW1y=py-60, numT=4, WH=110;
                 const wfBL={x:sW1x-TILE_W,y:sW1y+TILE_H};
                 const wfBR={x:sW1x+(numT-1)*TILE_W,y:sW1y+(numT+1)*TILE_H};
@@ -2020,18 +2018,22 @@ function render() {
                 }
             }
 
+            // A nest an infestation grew stands on open floor, so it is drawn
+            // here in the sorted pass rather than as an overlay.
+            drawGrownNestForTile(obj, px, py);
+
             // ── SPAWN NEST — honeycomb hex holes filling 4-tile wall face ──
-            // Every nest is a generated zone nest now, sitting at y=-1 against
-            // the wall this projection paints onto. Infestations used to grow
-            // extra ones on open floor, where the same projection landed on a
-            // wall that was not there — the flat rug that kept showing up — so
-            // those were drawn as domes instead. They are gone.
+            // Only for the generated zone nests, which sit at y=-1 against the
+            // wall. A nest GROWN by an infestation stands on open floor, and
+            // this projection would paint its honeycomb onto a wall that is not
+            // there — which is the flat rug that kept showing up. Those are
+            // drawn as domes instead.
             // Zone 0's is the HOME PORTAL, not a hive — drawn green on its own
             // wall face and skipping every honeycomb below.
             if (isHomePortal(obj)) {
                 drawHomePortal(px, py);
             }
-            else if (obj.nest && obj.nestHealth > 0) {
+            else if (obj.nest && obj.nestHealth > 0 && !obj._infestNest) {
                 obj.nestPulse = (obj.nestPulse || 0) + 1;
                 const hr    = obj.nestHealth / obj.nestMaxHealth;
                 const pulse = 0.5 + 0.5 * Math.sin(obj.nestPulse * 0.06);
@@ -3181,10 +3183,10 @@ function render() {
     // The hold line is world geometry, so it draws with the world rather than
     // up with the interface.
     drawHoldLine();
-    // Cocoons are NOT drawn here. As a flat overlay they painted over every
-    // pylon on the board, including ones in front of them, so a cocoon looked
-    // like it was floating above the pylon instead of wrapped around it. They
-    // draw per tile in the depth-sorted pass instead.
+    // Cocoons and grown nests are NOT drawn here. As a flat overlay they
+    // painted over every pylon on the board, including ones in front of them,
+    // which made a nest look like it was floating above the pylon instead of
+    // sitting under it. They draw per tile in the depth-sorted pass instead.
     drawGeneratorLinks();
     drawConversionBars();
     drawTutorialHighlight();

@@ -455,14 +455,8 @@ function nextWave() {
         }
 
         // ── CAPTURED NODE BENEFITS ──
-        capturedNodes.forEach(n => {
-            if (n.type === 'capacitor_node') {
-                shardCount += 5;
-                floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 60,
-                    text: '+5 SHARDS (Capacitor Node)', color: '#ff8800', life: 120, vy: -0.2 });
-            }
-        });
-        if (capturedNodes.some(n => n.type === 'capacitor_node')) saveShards();
+        // The capacitor node paid 5 shards a wave. It was the floor vortex, and
+        // it is gone with the rest of the holes in the ground.
 
         capturedNodes.forEach(n => {
             if (n.type === 'memory_bank') {

@@ -1,20 +1,18 @@
-// THE VORTEX — the orange thing in the middle of the tunnel.
+// THE VORTEX — now the nest in the back wall, and nothing on the floor.
 //
-// THE ASK: "the little orange thing in the middle should act like a nest, it
-// should look like a little vortex on the ground and the predators should spawn
-// out of it or the wall nest."
+// It began as the capacitor node: one per forward zone, on the centre row
+// (y = 2), generated with `predatorOwned: true` and the comment "starts under
+// predator control". It was made into what that ownership claimed — a hole
+// predators came out of — so a zone had TWO mouths, the wall nest and the floor
+// vortex, and shutting one was not enough.
 //
-// It is the capacitor node: one per forward zone, on the centre row (y = 2),
-// generated with `predatorOwned: true` and the comment "starts under predator
-// control". It was drawn as an orange capacitor cap standing on the floor, and
-// it did nothing but sit there waiting to be captured. It is now what that
-// ownership already claimed — a hole predators come out of.
+// REPORTED: "I want the portals on the wall to be the nests. I don't want the
+// holes on the ground or the floor any more. Remove those instead."
 //
-// Sealing it is the capture that was already on the tile, so the two mechanics
-// became one: stand on it to shut the spawner. That means a zone has TWO
-// mouths, and the one thing that had to change beyond drawing and spawning was
-// the guard that stops a zone producing: it used to test the wall nest alone,
-// which would have left the vortex decorative.
+// So the floor vortex is gone: not generated, not drawn, not a spawn point, and
+// not worth 5 shards a wave. The swirl itself stays, because the WALL nest is
+// drawn with it — on the wall plane, which is a shear, not the floor plane.
+// A zone has one mouth again, and killing its nest is what shuts it.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -92,62 +90,53 @@ async function ready() {
 
 (async () => {
     const E  = await ready();
-    const V1 = await ready();   // only the vortex open
-    const V2 = await ready();   // only the wall nest alive
-    const V3 = await ready();   // both open
-    const V4 = await ready();   // nest dead, vortex open — zone still producing
-    const V5 = await ready();   // both shut — zone silent
-    const A1 = await ready();   // the art, open
-    const A2 = await ready();   // the art, sealed
-    const A3 = await ready();   // the art, mid-capture
-    const A4 = await ready();   // the art, a later frame (for the spin)
-    const A5 = await ready();   // the wall nest, through the real draw pass
+    const V2 = await ready();   // the wall nest alive — the only mouth
+    const V5 = await ready();   // the nest dead — zone silent
+    const A5 = await ready();   // the wall nest, drawn
 
     // ─────────────────────────────────────────────────────
-    group('it is the orange thing in the middle');
+    group('THE ASK: there is no hole in the floor');
 
-    check('one per forward zone, on the centre row, predator-owned', () => {
-        // Establishes the subject: this is what the player was pointing at.
-        ok(/nodeType\s*=\s*'capacitor_node'/.test(SRC.world), 'the node is no longer generated');
-        ok(/predatorOwned = true/.test(SRC.world), 'it no longer starts under predator control');
-        const nodes = E.run(`world.filter(t => t.nodeType === 'capacitor_node')
-                                  .map(t => ({ x: t.x, y: t.y, cap: !!t.capturable }))`);
-        ok(nodes.length > 0, 'no nodes were generated at all');
-        for (const n of nodes) {
-            same(n.y, 2, 'a node should sit on the centre row');
-            same(n.cap, true, 'and still be capturable — that is how it gets sealed');
+    check('no capacitor node is generated at all', () => {
+        ok(!/nodeType\s*=\s*'capacitor_node'/.test(SRC.world),
+           'the floor vortex is still generated');
+        const nodes = E.run(`world.filter(t => t.nodeType === 'capacitor_node').length`);
+        same(nodes, 0, nodes + ' floor vortexes are still in the world');
+    });
+
+    check('nothing in the code can spawn one, draw one or pay for one', () => {
+        for (const [name, src] of [['clone.js', SRC.clone], ['draw.js', SRC.draw],
+                                   ['game.js', SRC.game], ['world.js', SRC.world]]) {
+            const code = src.split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+            ok(!/capacitor_node/.test(code), name + " still acts on a 'capacitor_node' tile");
         }
+        const WAVES = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8')
+            .split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+        ok(!/capacitor_node/.test(WAVES), 'it is still paying out 5 shards a wave');
+    });
+
+    check('the floor of a forward zone is walkable all the way across', () => {
+        // The node sat at zone start + 3 on the centre row. That tile is plain
+        // floor now, like its neighbours.
+        const r = E.run(`(function(){
+            const x = ZONE_LENGTH + 3;
+            const t = world.find(o => o.x === x && o.y === 2);
+            return t ? { type: t.type, nodeType: t.nodeType, cap: !!t.capturable } : null;
+        })()`);
+        ok(!!r, 'the tile the node used to occupy is missing from the world');
+        same(r.type, 'floor', 'it is not floor');
+        same(r.nodeType, null, 'something else has claimed it: ' + r.nodeType);
+        same(r.cap, false, 'it is still capturable');
     });
 
     // ─────────────────────────────────────────────────────
-    group('THE ASK: predators come out of it');
+    group('THE ASK: predators come out of the wall');
 
-    check('with only the vortex open, a predator spawns AT it', () => {
-        const V = V1;
-        V.run(`(function(){
-            gameState.running = true; gameState.phase = "day";
-            actors = []; zonePredators = {}; zoneRespawnTimers = {};
-            // Zone 1: kill the wall nest, leave the vortex open.
-            world.forEach(t => { if (t.nest && t.nestZone === 1) { t.nest = false; t.nestHealth = 0; } });
-            const v = world.find(t => t.nodeType === 'capacitor_node' && getZoneIndex(Math.floor(t.x)) === 1);
-            v.captured = false;
-            globalThis._v = v;
-        })()`);
-        const v = V.run('({ x: _v.x, y: _v.y })');
-        V.run('spawnPredatorForZone(1);');
-        const at = V.run('actors.filter(a => a instanceof Predator).map(a => ({x: a.x, y: a.y}))');
-        same(at.length, 1, 'one predator should have spawned');
-        same(at[0].x, v.x, 'it should come out of the vortex, not the zone centre');
-        same(at[0].y, v.y, 'on the vortex tile');
-    });
-
-    check('with only the wall nest alive, it spawns there instead', () => {
+    check('THE ASK: a predator spawns at the wall nest', () => {
         const V = V2;
         V.run(`(function(){
             gameState.running = true; gameState.phase = "day";
             actors = []; zonePredators = {}; zoneRespawnTimers = {};
-            const v = world.find(t => t.nodeType === 'capacitor_node' && getZoneIndex(Math.floor(t.x)) === 1);
-            v.captured = true;                       // sealed
             const n = world.find(t => t.nest && t.nestZone === 1);
             if (n) { n.nestHealth = n.nestMaxHealth || 200; }
             globalThis._n = n;
@@ -161,73 +150,24 @@ async function ready() {
         same(at[0].x, n.x, 'it should come out of the nest');
     });
 
-    check('with both open, both get used', () => {
-        // A zone with two mouths should feel like a zone with two. Over enough
-        // spawns, each one has to be seen.
-        const V = V3;
-        V.run(`(function(){
-            gameState.running = true; gameState.phase = "day";
-            actors = []; zonePredators = {}; zoneRespawnTimers = {};
-            const v = world.find(t => t.nodeType === 'capacitor_node' && getZoneIndex(Math.floor(t.x)) === 1);
-            v.captured = false;
-            let n = world.find(t => t.nest && t.nestZone === 1);
-            if (!n) {
-                // Give the zone a nest if the seed did not, so "both" is real.
-                n = world.find(t => t.type === 'floor' && t.y === 0 && getZoneIndex(Math.floor(t.x)) === 1
-                                    && !t.pillar && !t.nodeType);
-                n.nest = true; n.nestZone = 1; n.nestMaxHealth = 200;
-            }
-            n.nestHealth = 200;
-            globalThis._pair = [v.x, n.x];
-        })()`);
-        const [vx, nx] = V.run('_pair');
-        ok(vx !== nx, 'fixture: the two mouths should be in different places');
-        const seen = new Set();
-        for (let i = 0; i < 60; i++) {
-            V.run('actors = []; spawnPredatorForZone(1);');
-            seen.add(V.run('actors.filter(a => a instanceof Predator)[0].x'));
-        }
-        ok(seen.has(vx), 'the vortex was never used in 60 spawns');
-        ok(seen.has(nx), 'the wall nest was never used in 60 spawns');
-    });
-
     // ─────────────────────────────────────────────────────
-    group('THE CONSEQUENCE: it takes both to shut a zone');
+    group('THE CONSEQUENCE: the nest alone shuts a zone');
 
-    check('killing the nest alone leaves the zone producing', () => {
-        const V = V4;
-        V.run(`(function(){
-            gameState.running = true; gameState.phase = "day";
-            gameState.nightNumber = 3;
-            actors = []; zonePredators = {}; zoneRespawnTimers = {};
-            world.forEach(t => { if (t.nest && t.nestZone === 1) t.nestHealth = 0; });
-            const v = world.find(t => t.nodeType === 'capacitor_node' && getZoneIndex(Math.floor(t.x)) === 1);
-            v.captured = false;
-            _cacheAge = -999;
-        })()`);
-        V.run('for (let i = 0; i < 300; i++) render();');
-        // Counted from the game's own per-zone bookkeeping, not from where
-        // predators are standing: they wander, and over 300 frames one can walk
-        // out of zone 1 — which made the first version of this check fail
-        // during a revert that only touched drawing code.
-        const n = V.run('(zonePredators[1] || []).filter(p => !p.dead).length');
-        ok(n > 0, 'zone 1 should still be producing through its vortex');
-    });
-
-    check('sealing the vortex as well finally shuts it', () => {
+    check('THE ASK: killing the nest is now enough', () => {
+        // It used to take the nest AND the floor vortex. With the vortex gone,
+        // the nest is the whole of it — which is what makes the wall portal the
+        // thing the player goes after.
         const V = V5;
         V.run(`(function(){
             gameState.running = true; gameState.phase = "day";
             gameState.nightNumber = 3;
             actors = []; zonePredators = {}; zoneRespawnTimers = {};
             world.forEach(t => { if (t.nest && t.nestZone === 1) t.nestHealth = 0; });
-            const v = world.find(t => t.nodeType === 'capacitor_node' && getZoneIndex(Math.floor(t.x)) === 1);
-            v.captured = true;
             _cacheAge = -999;
         })()`);
         V.run('for (let i = 0; i < 300; i++) render();');
         const n = V.run('(zonePredators[1] || []).filter(p => !p.dead).length');
-        same(n, 0, 'with both mouths shut, zone 1 should produce nothing');
+        same(n, 0, 'with its nest dead, zone 1 should produce nothing');
     });
 
     check('one function decides, and both callers use it', () => {
@@ -240,71 +180,41 @@ async function ready() {
     });
 
     // ─────────────────────────────────────────────────────
-    group('THE ASK: it looks like a vortex on the ground');
+    group('THE ASK: the wall portal looks like a vortex');
 
-    const capture = (env, tile, atFrame) => {
-        env.calls.length = 0;
-        env.run(`(function(){
-            frame = ${atFrame};
-            drawCapturableNode(Object.assign({ x: 0, y: 2, nodeType: 'capacitor_node' },
-                                             ${JSON.stringify(tile)}), 400, 300);
-        })()`);
-        return env.calls.slice();
-    };
-    const artOpen    = capture(A1, { captured: false, captureProgress: 0   }, 300);
-    const artSealed  = capture(A2, { captured: true,  captureProgress: 100 }, 300);
-    const artOpenLater = capture(A4, { captured: false, captureProgress: 0 }, 340);
-    // The wall nest, drawn through the real per-tile pass in game.js.
-    // Called directly, the way the floor node is. Capturing a whole frame and
-    // sifting it does not work: the tile pass sets up its own wall transforms,
-    // and the count would be the frame's 8,000 operations rather than the
-    // nest's — which is how the first version of this both missed the vortex
-    // and reported it as costing 8,256 operations.
+    // The wall nest, drawn through the real per-tile pass in game.js. Called
+    // directly: capturing a whole frame and sifting it does not work, because
+    // the tile pass sets up its own wall transforms and the count would be the
+    // frame's 8,000 operations rather than the nest's.
     const artWall = (() => {
         A5.calls.length = 0;
         A5.run(`drawNestWallVortex(400, 300, 40, '#ff5522', 1.2, 10, 1);`);
         return A5.calls.slice();
     })();
-    const artSealedLater = capture(A2, { captured: true, captureProgress: 100 }, 340);
+    const artWallLater = (() => {
+        A5.calls.length = 0;
+        A5.run(`drawNestWallVortex(400, 300, 40, '#ff5522', 2.9, 10, 1);`);
+        return A5.calls.slice();
+    })();
 
-    check('it is drawn IN the floor, not standing on it', () => {
-        // The capacitor cap was a 20px-tall cylinder with a top ellipse 28px
-        // above the tile. A vortex is a hole: rings, no solid body.
-        same(artOpen.filter(c => c.op === 'fillRect').length, 0,
-             'something is still drawing a solid body');
-        const arcs = artOpen.filter(c => c.op === 'arc');
+    check('it is a hole, not a thing standing on a surface', () => {
+        same(artWall.filter(c => c.op === 'fillRect').length, 0,
+             'something is drawing a solid body');
+        const arcs = artWall.filter(c => c.op === 'arc');
         ok(arcs.length >= 4, 'a vortex should be a throat and several rings, got ' + arcs.length);
         // Drawn in LOCAL space — the plane is in the transform, so every ring
         // is centred on the origin.
         for (const a of arcs) {
             same(a.args[0], 0, 'a ring is not centred in the local plane');
             same(a.args[1], 0, 'a ring is not centred in the local plane');
-            ok(a.args[2] <= 30, `a ring of radius ${a.args[2]} is wider than half a tile`);
         }
     });
 
-    check('the floor vortex lies in the isometric floor plane', () => {
-        // The plane is now a matrix rather than a squashed ellipse, which is
-        // what lets the wall nest reuse the same swirl. A floor circle is
-        // squashed by TILE_H/TILE_W; drawn round it would look like a sticker
-        // facing the camera rather than a hole in the ground.
-        const squash = E.run('TILE_H / TILE_W');
-        const tf = artOpen.filter(c => c.op === 'transform');
-        ok(tf.length >= 1, 'the vortex sets up no plane at all');
-        const [a, b, c, d] = tf[0].args;
-        same(a, 1, 'the floor plane should not scale along x');
-        same(b, 0, 'the floor plane should not shear');
-        same(c, 0, 'the floor plane should not shear');
-        ok(Math.abs(d - squash) < 1e-9,
-           `the floor plane is ${d} tall where the projection is ${squash}`);
-    });
-
-    check('THE ASK: the wall nest uses the same swirl on a DIFFERENT axis', () => {
-        // "I want the wall nest to look like that vortex... but on a different
-        // axis." The wall face is a shear: one tile along it moves
-        // (TILE_W, TILE_H) while up the wall is straight up, and those two are
-        // not perpendicular — so it cannot be an ellipse rotation, and it must
-        // not be the floor plane either.
+    check('THE ASK: it lies in the WALL plane, which is a shear', () => {
+        // The wall face is a shear: one tile along it moves (TILE_W, TILE_H)
+        // while up the wall is straight up, and those two are not
+        // perpendicular — so it cannot be an ellipse rotation, and it must not
+        // be the floor plane, or the portal reads as a sticker on the ground.
         const planes = artWall.filter(c => c.op === 'transform').map(c => c.args.slice(0, 4));
         ok(planes.length >= 1, 'the wall nest sets up no plane');
         const len = E.run('Math.hypot(TILE_W, TILE_H)');
@@ -313,12 +223,21 @@ async function ready() {
         ok(!!wall, 'no plane runs along the wall face: ' + JSON.stringify(planes));
         same(wall[2], 0, 'up the wall should not lean sideways');
         same(wall[3], -1, 'up the wall should be straight up');
-        // And it is NOT the floor plane — that is the whole ask.
-        const floorPlane = artOpen.filter(c => c.op === 'transform')[0].args.slice(0, 4);
-        ok(JSON.stringify(wall) !== JSON.stringify(floorPlane),
-           'the wall nest is drawn in the same plane as the floor node');
-        // Same swirl, so the same rings come out of it.
-        ok(artWall.filter(c => c.op === 'arc').length >= 4, 'the wall nest draws no rings');
+        // NOT the floor plane. That plane is 1,0,0,TILE_H/TILE_W, which is what
+        // the floor vortex used before it was removed.
+        const squash = E.run('TILE_H / TILE_W');
+        ok(!(Math.abs(wall[0] - 1) < 1e-9 && wall[1] === 0 && wall[2] === 0
+             && Math.abs(wall[3] - squash) < 1e-9),
+           'the wall nest is drawn flat on the floor');
+    });
+
+    check('it turns', () => {
+        // Compared across spins, not against zero: the rings have static
+        // per-ring offsets even when still.
+        const angles = a => a.filter(c => c.op === 'arc').map(c => c.args[3]);
+        const o1 = angles(artWall), o2 = angles(artWallLater);
+        same(o1.length, o2.length, 'fixture: the same rings should be drawn for both');
+        ok(o1.some((v, i) => v !== o2[i]), 'the portal does not turn');
     });
 
     check('THE REPORTED CASE: the nest is not half sunk into the wall', () => {
@@ -353,18 +272,19 @@ async function ready() {
         ok(b < 2, `a bias of ${b} reaches past the tunnel row in front of the nest`);
     });
 
-    check('only nests are biased — everything else sorts at x+y', () => {
-        // Every nest is a wall nest now. Infestations used to grow extra ones on
-        // open floor, which belonged at their own depth: biasing those put them
-        // in front of things they should have been behind, which is what made
-        // them look like they floated above the pylons. They are gone, so the
-        // only thing the bias has to leave alone is an ordinary tile.
+    check('only WALL nests are biased', () => {
+        // A grown nest stands on open floor and belongs at its own depth.
+        // Biasing it would put it in front of things it should be behind —
+        // which is the bug that made grown nests look like they floated above
+        // the pylons in the first place.
         const r = E.run(`(function(){
             const t = { x: 5, y: 2, nest: true, nestHealth: 200 };
+            const grown = { x: 5, y: 2, nest: true, nestHealth: 200, _infestNest: true };
             const plain = { x: 5, y: 2 };
-            return { wall: drawDepthOf(t), plain: drawDepthOf(plain) };
+            return { wall: drawDepthOf(t), grown: drawDepthOf(grown), plain: drawDepthOf(plain) };
         })()`);
         same(r.plain, 7, 'an ordinary tile should sort at x+y');
+        same(r.grown, 7, 'a GROWN nest should sort at x+y, unbiased');
         ok(r.wall > 7, 'a wall nest should be biased past its face');
     });
 
@@ -384,15 +304,15 @@ async function ready() {
         ok(artWall.length < 120, 'the wall nest costs ' + artWall.length + ' operations');
     });
 
-    check('one swirl, not two', () => {
+    check('one swirl, one wrapper', () => {
         // Two implementations of the same vortex would be free to drift apart.
-        // The floor node calls the swirl directly; the wall nest goes through
-        // drawNestWallVortex, which owns the wall-face geometry so that it is
-        // derived once rather than at each of the two nest states.
+        // The floor node used to call the swirl directly; with it gone the only
+        // caller is drawNestWallVortex, which owns the wall-face geometry so
+        // that it is derived once rather than at each of the two nest states.
         same((SRC.draw.match(/function drawVortexSwirl/g) || []).length, 1,
              'the swirl is defined more than once');
         const uses = (SRC.draw.match(/drawVortexSwirl\(/g) || []).length;
-        ok(uses >= 3, 'the swirl should be called by both the floor and the wall, got ' + uses);
+        same(uses, 2, 'expected the definition and the wall wrapper, got ' + uses);
         same((SRC.draw.match(/function drawNestWallVortex/g) || []).length, 1,
              'the wall-face wrapper is defined more than once');
         // Both nest states go through the wrapper: live and collapsed.
@@ -402,53 +322,20 @@ async function ready() {
         ok(!/WALL_UX/.test(SRC.game), 'game.js still sets up the wall plane by hand');
     });
 
-    check('it turns while it is open, and stops when sealed', () => {
-        // Compared ACROSS FRAMES, not against zero: the rings have static
-        // per-ring offsets even when still, so "every start angle is 0" was
-        // the wrong question and failed on a correct implementation.
-        const angles = a => a.filter(c => c.op === 'arc').map(c => c.args[3]);
-        const o1 = angles(artOpen), o2 = angles(artOpenLater);
-        same(o1.length, o2.length, 'fixture: the same rings should be drawn both frames');
-        ok(o1.some((v, i) => v !== o2[i]), 'an open vortex should turn between frames');
-        const s1 = angles(artSealed), s2 = angles(artSealedLater);
-        ok(s1.every((v, i) => v === s2[i]), 'a sealed one should be still');
-    });
-
-    check('orange while open, cyan once sealed', () => {
-        const colours = a => a.filter(c => c.op === 'set:strokeStyle' || c.op === 'set:shadowColor')
-                              .map(c => String(c.args[0]).toLowerCase());
-        ok(colours(artOpen).includes('#ff8800'), 'an open vortex should be orange');
-        ok(colours(artSealed).includes('#00ccff'), 'a sealed one should be cyan');
-    });
-
-    check('the old capacitor cap is gone', () => {
-        const at = SRC.draw.indexOf("if (tile.nodeType === 'capacitor_node')");
-        const body = SRC.draw.slice(at, SRC.draw.indexOf("} else if (tile.nodeType === 'signal_tower')", at));
-        ok(!/cy - 28/.test(body), 'the cylinder body is still being drawn');
-        ok(!/Lead stripes/.test(body), 'the capacitor lead stripes are still there');
-        ok(/vortex|VORTEX/i.test(body), 'the new drawing does not say what it is');
-    });
-
-    check('it still shows capture progress, and says when it is shut', () => {
-        const mid = capture(A3, { captured: false, captureProgress: 55 }, 300);
-        ok(mid.some(c => c.op === 'fillRect'), 'a partly-captured vortex shows no progress bar');
-        ok(artSealed.some(c => c.op === 'fillText' && /SEALED/.test(String(c.args[0]))),
-           'a sealed vortex does not say so');
-    });
-
-    check('the GAME INDEX describes it as a spawner, not a trinket', () => {
+    check('the GAME INDEX says the wall is the only mouth', () => {
         const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-        ok(/SPAWN VORTEX/.test(HTML), 'the index still calls it a capacitor node');
-        ok(/second mouth/i.test(HTML), 'it does not say predators come out of it');
-        ok(/wall nest/i.test(HTML), 'it does not say the wall nest is the other one');
-        ok(/every.{0,20}mouth is shut/i.test(HTML),
-           'it does not explain that shutting one is not enough');
-        ok(/seals/i.test(HTML), 'it does not say capturing seals it');
+        ok(!/SPAWN VORTEX/.test(HTML), 'the index still documents the floor vortex');
+        ok(!/second mouth/i.test(HTML), 'it still tells the player there are two');
+        ok(!/Capacitor Node/i.test(HTML), 'it still names the capacitor node');
+        ok(/vortex in the back wall/i.test(HTML), 'it no longer describes the wall portal');
+        ok(/only.{0,10}mouth/i.test(HTML), 'it does not say the wall nest is the only one');
+        ok(/stops spawns from that zone/i.test(HTML),
+           'it does not say that killing the nest shuts the zone');
     });
 
     check('it is cheap — one or two are on screen at a time', () => {
         // The perf pass is recent; a swirl per zone should not undo it.
-        ok(artOpen.length < 60, 'the vortex costs ' + artOpen.length + ' canvas operations');
+        ok(artWall.length < 120, 'the portal costs ' + artWall.length + ' canvas operations');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

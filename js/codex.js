@@ -60,7 +60,8 @@ const CODEX_INFEST = [
     { t: 'A bar shows it happening. Interrupt the predator and the pylon recovers on its own.' },
     null,
     { h: 'WHAT GROWS THERE' },
-    { t: 'A taken pylon gets a cocoon. It swells to a ' + COCOON_SPAN_MAX + 'x' + COCOON_SPAN_MAX + ' square and takes your pylons inside it. No nest grows from it.' },
+    { t: 'A taken pylon gets a cocoon. It swells to a ' + COCOON_SPAN_MAX + 'x' + COCOON_SPAN_MAX + ' square and takes your pylons inside it.' },
+    ['NESTS GROW', '1 per zone, 1 per ' + (NEST_GROW_COOLDOWN / 60).toFixed(0) + 's map-wide', '#ff7744'],
     ['HATCHES', 'one predator every ' + (COCOON_SPAWN_FRAMES / 60).toFixed(0) + 's', '#f88'],
     { t: 'What hatches is the same species and class as whatever spun it.' },
     null,
@@ -352,6 +353,8 @@ function renderWorkCrewIndex() {
         ? Math.round(MASS_VALUE_SCALE * 100) : 35;
     const cocoonSecs = (typeof SCOUR_COCOON_FRAMES === 'number')
         ? Math.round(SCOUR_COCOON_FRAMES / 60) : 15;
+    const nestSecs = (typeof SCOUR_NEST_FRAMES === 'number')
+        ? Math.round(SCOUR_NEST_FRAMES / 60) : 25;
     // The cloud is stated as a diameter, which is what the player sees; the
     // constant is a radius.
     const repelR = (typeof REPEL_RADIUS === 'number')
@@ -393,7 +396,8 @@ function renderWorkCrewIndex() {
         'it is <strong>broken</strong> — it keeps its tile, its element and its mode. A core worker rebuilds it ' +
         'in place, exactly as it was. Nothing else can.</div>' +
         '<div class="cm-ability"><strong>Scour — FIRE:</strong> burns back what an infestation leaves on ' +
-        'the ground. It takes the worst thing in reach first: a <strong>toxin patch</strong>, then the ' +
+        'the ground. It takes the worst thing in reach first: a <strong>toxin patch</strong>, then a ' +
+        '<strong>grown nest</strong> (about <span class="cm-stat">' + nestSecs + 's</span>), then the ' +
         '<strong>cocoon</strong> (about <span class="cm-stat">' + cocoonSecs + 's</span>). Two scourers on the ' +
         'same thing are twice as quick, and the toxin does not hurt a fire follower. Scouring stops the ' +
         'hatching — it does <em>not</em> hand the pylon back, which still takes a RECLAIM.</div>' +

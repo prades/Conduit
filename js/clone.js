@@ -456,18 +456,19 @@ function spawnFollowerProjectile(actor, target, color, damage, radius, onHit) {
     });
 }
 
-// Where a zone's predators come out: its wall nest, and its floor VORTEX.
+// Where a zone's predators come out: the NEST IN ITS BACK WALL, and nothing
+// else. A nest counts while it still has health, so killing it is what shuts
+// the zone's mouth.
 //
-// Both, not one — "predators should spawn out of it or the wall nest". A nest
-// counts while it still has health; a vortex counts while it is still open,
-// which is to say not yet captured. Capturing it is what seals it, so the
-// capture mechanic that was already on the tile is now also the way to shut a
-// spawner down.
+// There used to be a second one — a vortex in the floor at zone x-offset 3,
+// open until captured. "I want the portals on the wall to be the nests. I don't
+// want the holes on the ground or the floor any more", so the floor vortex is
+// gone and the wall is the only way in.
 //
-// Returns an empty list when a zone HAS spawners and every one of them is
-// closed. A zone with no spawners at all returns null instead, so the caller
-// can tell "nothing left to shut" from "nothing was ever there" — the second
-// still spawns from the zone centre, as it always did.
+// Returns an empty list when a zone HAS a nest and it is dead. A zone with no
+// nest at all returns null instead, so the caller can tell "nothing left to
+// shut" from "nothing was ever there" — the second still spawns from the zone
+// centre, as it always did.
 function zoneSpawnPoints(zoneIndex) {
     let any = false;
     const open = [];
@@ -480,10 +481,6 @@ function zoneSpawnPoints(zoneIndex) {
             && !(typeof isHomePortal === 'function' && isHomePortal(t))) {
             any = true;
             if (t.nestHealth > 0) open.push(t);
-        } else if (t.nodeType === 'capacitor_node' &&
-                   typeof getZoneIndex === 'function' && getZoneIndex(Math.floor(t.x)) === zoneIndex) {
-            any = true;
-            if (!t.captured) open.push(t);
         }
     }
     return any ? open : null;
@@ -512,9 +509,8 @@ function spawnPredatorForZone(zoneIndex) {
     // Elite randomization: later zones spawn increasingly powerful mutant variants
     const _eliteInstMuts = maybeApplyEliteDef(def, zoneIndex);
 
-    // Out of whichever mouth this zone still has open — the wall nest or the
-    // floor vortex. With both open it is a coin toss, so a zone with two feels
-    // like two. With neither, the zone centre, as before.
+    // Out of the zone's wall nest while it is alive. With none, the zone centre,
+    // as before.
     const mouths = zoneSpawnPoints(zoneIndex);
     const from   = (mouths && mouths.length)
         ? mouths[Math.floor(Math.random() * mouths.length)]
