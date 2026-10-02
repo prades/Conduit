@@ -47,9 +47,9 @@ check('settings panel rows fit inside the panel', () => {
 // ── Render order ──
 // World geometry draws with the world; interface draws after it.
 const GAME = fs.readFileSync(ROOT + '/js/game.js', 'utf8');
-const WORLD_SPACE = ['drawElementEffects', 'drawTraps', 'drawHoldLine'];
+const WORLD_SPACE = ['drawElementEffects', 'drawHoldLine'];
 const INTERFACE   = ['drawRadialMenu', 'drawElementPicker',
-                     'drawSettingsPanel', 'drawInfoPanel', 'drawTrapPicker'];
+                     'drawSettingsPanel', 'drawInfoPanel', 'drawCampMenu'];
 
 console.log('\nrender order:');
 check('no post-FX hook survives in the render loop', () => {
@@ -67,6 +67,17 @@ WORLD_SPACE.forEach(fn => check(`${fn} draws with the world`, () => {
     if (at < 0) throw new Error('not called at all');
     if (at > firstInterface) throw new Error('drawn up with the interface instead of the world');
 }));
+check('the placeable-trap system is gone, not just unhooked', () => {
+    // REPORTED: "remove the traps that you can set up in the middle of the
+    // zones." A file left on disk and merely unloaded comes back.
+    for (const fn of ['drawTraps', 'drawTrapPicker', 'updateTraps', 'placeTrap']) {
+        if (GAME.includes(fn + '(')) throw new Error(fn + ' is still called in game.js');
+    }
+    if (fs.existsSync(ROOT + '/js/traps.js')) throw new Error('js/traps.js is still on disk');
+    const HTML = fs.readFileSync(ROOT + '/game.html', 'utf8');
+    if (HTML.includes('traps.js')) throw new Error('game.html still loads traps.js');
+});
+
 check('no world-space overlay is called twice', () => {
     WORLD_SPACE.concat(INTERFACE).forEach(fn => {
         const n = (GAME.match(new RegExp('^\\s*' + fn + '\\(\\);', 'gm')) || []).length;

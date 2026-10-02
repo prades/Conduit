@@ -13,8 +13,8 @@
 //  not gone, it is BROKEN, and a core worker rebuilds it in place.
 //
 //  FIRE workers SCOUR: they burn back the growth an infestation leaves behind —
-//  toxin patches, grown nests, cocoons. The job itself lives in js/infest.js
-//  next to the things it burns; only the duty dispatch is here.
+//  toxin patches and cocoons. The job itself lives in js/infest.js next to the
+//  things it burns; only the duty dispatch is here.
 //
 //  So kills stop being free income. Followers split into FIGHTERS, who behave
 //  as they always have, and WORKERS, who ignore combat to run one job each. A

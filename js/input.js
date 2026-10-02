@@ -288,7 +288,7 @@ canvas.addEventListener('pointerdown', e=>{
     [pressX,pressY]=toCanvas(e.clientX,e.clientY); pressStartTime=performance.now();
 
     // Canvas overlay panels — absorb pointerdown so no game action triggers
-    if (elementPickerOpen || infoPanelOpen || campMenuOpen || trapPickerOpen || settingsPanelOpen) return;
+    if (elementPickerOpen || infoPanelOpen || campMenuOpen || settingsPanelOpen) return;
 
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
     if (commandPendingTap) return;
@@ -353,7 +353,6 @@ canvas.addEventListener('pointerup', e=>{
 
     if (handleOverlayPanelTap(upX, upY)) { isPressing=false; return; }
     if (handleCloneMenuTap(upX, upY)) { isPressing=false; return; }
-    if (handleTrapPickerTap(upX, upY)) { isPressing=false; return; }
     if (handleCampMenuTap(upX, upY)) { isPressing=false; return; }
     // Pylons win over everything below while a nest link is pending: the
     // follower panel, the ultimate double-tap scan and the gesture handlers all
@@ -464,8 +463,11 @@ canvas.addEventListener('pointerup', e=>{
                 if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && buildMode) selectedRadialAction = "build_upgrade";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode && _isCapturableCmd) selectedRadialAction = "capture";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode) selectedRadialAction = "position";
-                else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4 && buildMode && !_isPyCmd) selectedRadialAction = "place_trap";
-                else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4 && !buildMode) selectedRadialAction = "info";
+                // RIGHT is INFO whether build mode is on or off. It used to be
+                // TRAP in build mode on an empty tile; placeable traps are gone,
+                // and leaving the side dead would have made a quarter of the
+                // menu do nothing.
+                else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4) selectedRadialAction = "info";
                 // Left side. Mirrors drawRadialMenu's leftAction, enemy pylon first.
                 else if (_isPyCmd && commandTarget.pillarTeam === "red" && commandTarget.health > 0)
                                        selectedRadialAction = "reconstruct";

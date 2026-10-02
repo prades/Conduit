@@ -320,7 +320,6 @@ function resetTransientState() {
     campMenuOpen      = false;
     cloneMenuOpen     = false;
     crystalMenuOpen   = false;
-    trapPickerOpen    = false; trapPickerTarget = null;
     pylonConfirmOpen  = false; pylonConfirmEl   = null; pylonConfirmTarget = null;
     elementPickerOpen = false; elementPickerTarget = null;
     infoPanelOpen     = false; infoPanelTarget = null; infoPanelPage = null;
@@ -383,7 +382,7 @@ function nextWave() {
     setTimeout(() => {
         // ── Clear leftover game objects from previous wave ──
         projectiles=[]; fragments=[]; smoke=[]; followerProjectiles=[];
-        elementEffects=[]; floatingTexts=[]; groundItems=[]; traps=[];
+        elementEffects=[]; floatingTexts=[]; groundItems=[];
         if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
         if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
         shards=[];
@@ -511,7 +510,6 @@ function restartGame() {
     ELEMENTS.forEach(e=>{ networkStrength[e.id]=0; networkIntegrity[e.id]=0; _prevNetworkTiers[e.id]=0; });
     activeDayZones=3;exploredZones=new Set();
     clearCampBuildings();
-    traps=[];
     crystal={ x:0,y:2,health:300,maxHealth:300,radius:0.8 };
     // Must carry every field config.js's opening player has. attackCooldown was
     // missing, and `undefined <= 0` is false, so the fire gate in input.js

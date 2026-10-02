@@ -35,7 +35,7 @@ function predatorMayHurtPlayer() {
 //
 //   a.team==="red" || (a instanceof Predator && a.team!=="green" && !a.isClone)
 //   a.team==="red" || (a instanceof Predator)                    <- elements.js chain
-//   a.team==="red" || (a instanceof Predator && !a.isClone)      <- traps.js
+//   a.team==="red" || (a instanceof Predator && !a.isClone)      <- the traps
 //
 // Every one of them counted a NEUTRAL RECRUIT as hostile, because a recruit is
 // on team "red" until it reaches the Crystal. That is what killed
@@ -135,7 +135,7 @@ function nestIsHackable(nest) {
 }
 
 function isHomePortal(t) {
-    return !!(t && t.nest && t.nestZone === 0 && !t._infestNest);
+    return !!(t && t.nest && t.nestZone === 0);
 }
 
 // How many of THEIRS are alive. Your own clones are green and do not count

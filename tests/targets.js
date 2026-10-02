@@ -20,7 +20,8 @@
 //
 // The cause was one expression written out TWENTY times across elements.js,
 // game.js and traps.js, in four slightly different forms, each of which
-// counted a recruit as hostile. It is now one predicate.
+// counted a recruit as hostile. It is now one predicate. (traps.js has since
+// gone with the placeable traps; the files that remain still answer to it.)
 //
 // THE PLAYER. Three paths could damage them: the melee swipe, the ability
 // radius helper, and the abdomen projectile. All three now consult one flag.
@@ -38,7 +39,6 @@ const SRC = {
     abilities:fs.readFileSync(path.join(ROOT, 'js/abilities.js'), 'utf8'),
     elements: fs.readFileSync(path.join(ROOT, 'js/elements.js'),  'utf8'),
     game:     fs.readFileSync(path.join(ROOT, 'js/game.js'),      'utf8'),
-    traps:    fs.readFileSync(path.join(ROOT, 'js/traps.js'),     'utf8'),
 };
 
 let failures = 0;
@@ -295,12 +295,22 @@ const SCENE = `(function(){
     check('one predicate, not twenty copies', () => {
         // The expression lived in four forms across three files, and every one
         // counted a recruit as hostile.
-        for (const [name, src] of [['elements.js', SRC.elements], ['game.js', SRC.game],
-                                   ['traps.js', SRC.traps]]) {
+        // Every file, not a hand-kept list of three: the copies were spread
+        // across the codebase and a list can go stale the moment one moves.
+        const files = fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js'));
+        ok(files.length > 20, 'the source directory could not be read, got ' + files.length);
+        let users = 0;
+        for (const f of files) {
+            const raw = fs.readFileSync(path.join(ROOT, 'js', f), 'utf8');
+            // Comments stripped: helpers.js quotes all four of the old forms
+            // directly above the predicate that replaced them, so the file that
+            // fixed the bug matched the pattern for it.
+            const src = raw.split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
             ok(!/a\.team\s*===?\s*"red"\s*\|\|\s*\(a instanceof Predator/.test(src),
-               name + ' still spells the hostile test out for itself');
-            ok(/isHostileTarget\(/.test(src), name + ' does not use the predicate');
+               f + ' still spells the hostile test out for itself');
+            if (/isHostileTarget\(/.test(raw)) users++;
         }
+        ok(users >= 3, 'only ' + users + ' file(s) ask the predicate — it is not the shared rule');
         same((SRC.helpers.match(/function isHostileTarget/g) || []).length, 1,
              'the predicate is defined more than once');
     });
@@ -348,7 +358,7 @@ const SCENE = `(function(){
         // check on correct code.
         const code = s => s.split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
         for (const [name, src] of [['game.js', SRC.game], ['elements.js', SRC.elements],
-                                   ['traps.js', SRC.traps], ['helpers.js', SRC.helpers]]) {
+                                   ['predator.js', SRC.predator], ['helpers.js', SRC.helpers]]) {
             const bad = code(src).match(/\w+\.dead\s*&&\s*isHostileTarget\s*\(/g);
             ok(!bad, name + ' has a condition that can never be true: ' + (bad || []).join(', '));
         }

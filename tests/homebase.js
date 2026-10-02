@@ -72,17 +72,18 @@ async function ready() {
         ok(r.hives >= 3, 'fixture: the other zones should still have hives, got ' + r.hives);
     });
 
-    check('an infestation-grown nest is never mistaken for it', () => {
-        // A grown nest carries a zone index too, and a nest grown in zone 0
-        // would otherwise read as the doorway and become unattackable.
+    check('only zone 0\'s own nest is the portal', () => {
+        // It used to have to tell a GROWN nest apart from this one: an
+        // infestation could plant one in zone 0, and it carried a zone index
+        // too, so without the guard it read as the doorway and became
+        // unattackable. Nothing grows nests on the floor any more, so zone 0
+        // has exactly one nest and it is this.
         const r = E.run(`(function(){
-            return { grown: isHomePortal({ nest: true, nestZone: 0, _infestNest: true }),
-                     real:  isHomePortal({ nest: true, nestZone: 0 }),
+            return { real:  isHomePortal({ nest: true, nestZone: 0 }),
                      other: isHomePortal({ nest: true, nestZone: 2 }),
                      notANest: isHomePortal({ nestZone: 0 }),
                      nothing: isHomePortal(null) };
         })()`);
-        same(r.grown, false, 'a grown nest in zone 0 must still be a target');
         same(r.real, true, 'the generated zone 0 nest is the portal');
         same(r.other, false, 'zone 2\'s nest is a hive');
         same(r.notANest, false, 'a bare tile is not the portal');

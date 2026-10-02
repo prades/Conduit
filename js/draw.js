@@ -122,15 +122,13 @@ function drawRadialMenu() {
         }
     }
 
-    // ── RIGHT = INFO (normal) / TRAP (build mode on empty tile) ──
-    if (!buildMode) {
+    // ── RIGHT = INFO ──
+    // In build mode on an empty tile this used to be TRAP. Placeable traps are
+    // gone, and the hit test in input.js mirrors this: one label, both modes.
+    {
         const rHov=dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
         drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", rHov);
         if (rHov) selectedRadialAction="info";
-    } else if (buildMode && !isPylonTarget) {
-        const rHov=dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
-        drawRadialButton(commandX+RADIAL_RADIUS, commandY, "TRAP", rHov);
-        if (rHov) selectedRadialAction="place_trap";
     }
 
     // ── LEFT = SWITCH / DESTROY / CONNECT (context) ───────

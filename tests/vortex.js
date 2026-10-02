@@ -353,19 +353,18 @@ async function ready() {
         ok(b < 2, `a bias of ${b} reaches past the tunnel row in front of the nest`);
     });
 
-    check('only WALL nests are biased', () => {
-        // A grown nest stands on open floor and belongs at its own depth.
-        // Biasing it would put it in front of things it should be behind —
-        // which is the bug that made grown nests look like they floated above
-        // the pylons in the first place.
+    check('only nests are biased — everything else sorts at x+y', () => {
+        // Every nest is a wall nest now. Infestations used to grow extra ones on
+        // open floor, which belonged at their own depth: biasing those put them
+        // in front of things they should have been behind, which is what made
+        // them look like they floated above the pylons. They are gone, so the
+        // only thing the bias has to leave alone is an ordinary tile.
         const r = E.run(`(function(){
             const t = { x: 5, y: 2, nest: true, nestHealth: 200 };
-            const grown = { x: 5, y: 2, nest: true, nestHealth: 200, _infestNest: true };
             const plain = { x: 5, y: 2 };
-            return { wall: drawDepthOf(t), grown: drawDepthOf(grown), plain: drawDepthOf(plain) };
+            return { wall: drawDepthOf(t), plain: drawDepthOf(plain) };
         })()`);
         same(r.plain, 7, 'an ordinary tile should sort at x+y');
-        same(r.grown, 7, 'a GROWN nest should sort at x+y, unbiased');
         ok(r.wall > 7, 'a wall nest should be biased past its face');
     });
 

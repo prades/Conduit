@@ -48,7 +48,7 @@ const GEN_CONSTS = {
 const INFEST_SRC = fs.readFileSync(path.join(ROOT, 'js/infest.js'), 'utf8');
 for (const name of ['INFEST_RATE', 'COCOON_SPAWN_FRAMES', 'COCOON_SPAN_MAX',
                     'COCOON_PUDDLE_DAMAGE', 'COCOON_PUDDLE_INTERVAL',
-                    'NEST_GROW_COOLDOWN', 'SCOUR_COCOON_FRAMES', 'SCOUR_NEST_FRAMES']) {
+                    'SCOUR_COCOON_FRAMES']) {
     const m = INFEST_SRC.match(new RegExp(`const\\s+${name}\\s*=\\s*([\\d.]+)`));
     if (!m) { console.log(`  FAIL infest.js no longer defines ${name}`); process.exit(1); }
     GEN_CONSTS[name] = Number(m[1]);
