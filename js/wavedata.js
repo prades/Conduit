@@ -120,14 +120,19 @@ function activatePendingElement(elementId) {
     unlockedElements.add(elementId);
     saveUnlocks();
     saveProgress();
+    // Only stale if the new element is NOT in the mix. A player who has never
+    // narrowed the mix has an empty mask, which means "any", so the element
+    // just activated is already in it — there is nothing to decide, nothing to
+    // prompt about, and telling them to re-modulate would be a lie.
+    const inMix = modulationIncludes(elementId);
+    if (!inMix) modulationDirty = true;
     const def = ELEMENTS.find(e => e.id === elementId);
     floatingTexts.push({
         x: canvas.width / 2, y: canvas.height / 2 - 70,
-        text: (def ? def.label : elementId.toUpperCase()) + " ONLINE — RE-MODULATE THE CRYSTAL",
+        text: (def ? def.label : elementId.toUpperCase())
+              + (inMix ? " ONLINE — IN THE MIX" : " ONLINE — RE-MODULATE THE CRYSTAL"),
         color: def ? def.color : "#0f8", life: 260, vy: -0.16, size: 15,
     });
-    // The pool just changed, so whatever the slider was pointing at is stale.
-    modulationDirty = true;
     return elementId;
 }
 

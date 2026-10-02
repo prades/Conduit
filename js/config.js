@@ -40,8 +40,16 @@ let pendingElements = [];
 // Every enemy killed this game. Cumulative and one-way — it is what earns
 // elements, so it persists.
 let lifetimeKills = 0;
-// Set when the element pool changes, so the game can prompt the player that
-// their modulation is stale. Cleared once they re-modulate.
+// Set when a newly activated element is LEFT OUT of the mix, so the game can
+// prompt the player that there is something to decide.
+//
+// It used to be set on every activation, including the usual case where the
+// player has never narrowed the mix — an empty mask means "any", so the new
+// element was already in it and there was nothing to re-modulate. The prompt
+// lit anyway, and the only thing that cleared it was toggling a swatch, which
+// would have taken an element OUT of the mix. So the ring stayed on for the
+// rest of the game and the one way to dismiss it made the squad worse.
+// Cleared by re-modulating, or by opening the control and seeing the mix.
 let modulationDirty = false;
 
 // ── PYLON LOOK ────────────────────────────────────────────

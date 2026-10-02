@@ -761,97 +761,13 @@ function _sortedCloneOptions(opts, mode) {
     return copy; // "species" — natural order
 }
 
-// ── Modulation chip (bottom-right HUD) ────────────────
-//
-// Changing what your followers are made of used to be four taps deep: open the
-// Crystal, find the MODULATION tab, drag a slider whose bands were unlabelled
-// in play. It is the dial the whole follower economy turns on, so it belongs on
-// the HUD where it can be read at a glance and changed with one tap.
-//
-// Bottom-right, stacked ABOVE the TUTORIAL button rather than beside it: that
-// button is a fixed-position DOM element at bottom:20px, so sharing the row
-// would collide on a narrow screen.
-const _MODCHIP = { x: 0, y: 0, w: 0, h: 0, rects: [] };
-const _MODCHIP_CELL = 16;
-const _MODCHIP_GAP  = 4;
-const _MODCHIP_TUT_CLEARANCE = 76;   // 20px inset + the button + a gap
-
-function drawModulationChip() {
-    // Hidden behind the Crystal panel, which covers the whole lower screen and
-    // carries the same control on its MODULATION tab.
-    if (crystalMenuOpen) { _MODCHIP.w = 0; _MODCHIP.rects = []; return; }
-    const swW = modulationSwatchesWidth(_MODCHIP_CELL, _MODCHIP_GAP);
-    if (swW <= 0) { _MODCHIP.w = 0; _MODCHIP.rects = []; return; }
-
-    const padX = 8, padTop = 16, padBottom = 14;
-    const w = swW + padX * 2;
-    const h = padTop + _MODCHIP_CELL + padBottom;
-    const x = Math.round(canvas.width - w - 20);
-    const y = Math.round(canvas.height - _MODCHIP_TUT_CLEARANCE - h - (SAFE_BOTTOM || 0));
-    _MODCHIP.x = x; _MODCHIP.y = y; _MODCHIP.w = w; _MODCHIP.h = h;
-
-    const scheme = _getModScheme();
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-    ctx.fillStyle = "rgba(6,10,16,0.88)";
-    _epRoundRect(x, y, w, h, 6); ctx.fill();
-
-    // The wash sits under each element's OWN column rather than dividing the
-    // body by the number of lit elements: bands by count put the second colour
-    // under the third swatch, so with fire and toxic lit out of six the chip
-    // read as half red and half green while the lit swatches were at the ends.
-    const unlocked = normaliseModulationMask();
-    if (unlocked.length > 0) {
-        ctx.save();
-        _epRoundRect(x, y, w, h, 6); ctx.clip();
-        unlocked.forEach((el, i) => {
-            if (!modulationIncludes(el.id)) return;
-            const cx0 = x + padX + i * (_MODCHIP_CELL + _MODCHIP_GAP) - _MODCHIP_GAP / 2;
-            ctx.globalAlpha = 0.20;
-            ctx.fillStyle = el.color;
-            ctx.fillRect(cx0, y, _MODCHIP_CELL + _MODCHIP_GAP, h);
-        });
-        ctx.restore();
-        ctx.globalAlpha = 1;
-    }
-
-    // A prompt border while the mix is stale — a new element just came online.
-    const stale = !!modulationDirty;
-    const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.1);
-    ctx.strokeStyle = stale ? `rgba(255,204,68,${0.5 + pulse * 0.5})` : "rgba(120,150,180,0.5)";
-    ctx.lineWidth = stale ? 2 : 1;
-    _epRoundRect(x, y, w, h, 6); ctx.stroke();
-
-    ctx.fillStyle = stale ? "#ffcc44" : "#7f98b4";
-    ctx.font = "bold 8px monospace";
-    ctx.textAlign = "center"; ctx.textBaseline = "top";
-    ctx.fillText(stale ? "RE-MODULATE" : "MODULATION", x + w / 2, y + 4);
-
-    _MODCHIP.rects = drawModulationSwatches(x + padX, y + padTop, _MODCHIP_CELL, _MODCHIP_GAP, false);
-
-    ctx.fillStyle = "#93a7bd";
-    ctx.font = "bold 8px monospace";
-    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
-    ctx.fillText(scheme.label.toUpperCase(), x + w / 2, y + h - 3);
-    ctx.restore();
-}
-
-// Returns true when the tap was the chip's, so the caller stops there rather
-// than also issuing a world command underneath it.
-function modulationChipTap(ex, ey) {
-    if (crystalMenuOpen || _MODCHIP.w <= 0) return false;
-    if (ex < _MODCHIP.x || ex > _MODCHIP.x + _MODCHIP.w ||
-        ey < _MODCHIP.y || ey > _MODCHIP.y + _MODCHIP.h) return false;
-    for (const r of _MODCHIP.rects) {
-        // Generous vertically: the swatches are 16px on a touch screen.
-        if (ex >= r.x - 2 && ex <= r.x + r.w + 2 && ey >= r.y - 8 && ey <= r.y + r.h + 8) {
-            modulationToggle(r.id);
-            return true;
-        }
-    }
-    return true;   // a tap on the chip's body is still the chip's, not the world's
-}
+// ── Modulation lives in the Crystal ───────────────────────
+// There used to be a second copy of the swatch row floating at the
+// bottom-right of the HUD. Two controls for one setting is two places to read
+// a mix from and two places to keep in step, and the floating one was a 112px
+// strip of 16px swatches wedged between the radial buttons and the TUTORIAL
+// button — the hardest place on the screen to hit. The Crystal's MODULATION
+// tab is the one control now; the Crystal button is how you reach it.
 
 // ── Animated crystal HUD button (top-center) ──────────────
 function drawCrystalButton() {
@@ -1178,112 +1094,137 @@ function _drawClonesTab(PX, PY, PW, PH) {
     window._cloneTabBounds = { sortY:PY, sortH, sortW, listY, listH, rowH };
 }
 
-// ── Tab: Builds ───────────────────────────────────────────
 // ── Tab: Modulation ───────────────────────────────────────
+// ONE column, measured against the panel it is drawn in.
+//
+// REPORTED: "the modulation tab isn't fully available — make the design
+// simpler, incorporating the crystal, and remove the slider tool."
+//
+// It was two hand-placed columns split at 62% of the panel. The right column
+// held the only control and ran straight off the edge: on a 1024 tablet the
+// heading read "NEW FOLLOWERS COME OUT", the help text was cut mid-word, and
+// the fifth swatch was half outside the panel. On a phone the fifth was gone
+// entirely — with six elements unlocked the player could not reach the last
+// one at all.
+//
+// The left column was the old slider's leftovers: a decorative crystal, the
+// mix label, a size caption ("all elements") and a strip of colour chips that
+// cycled through the mix. Three of those four say the same thing as the swatch
+// row, and the mix label appeared three times on one screen.
+//
+// So: the crystal stays and becomes the readout — it already pulses through
+// the colours actually in the mix — and everything else that merely restated
+// the mix is gone. Under it, the swatch row, sized to fit rather than hoping.
 function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
-    const splitX = PX + Math.floor(PW*0.62);  // divides crystal area from slider
+    // Looking at the control IS the decision. The prompt used to be clearable
+    // only by toggling a swatch, so a player happy with their mix had no way to
+    // dismiss it that did not also change the mix.
+    modulationDirty = false;
+    const MID = PX + PW / 2;
+    const INSET = 14;
+    const INNER = PW - INSET * 2;
 
-    // 2D crystal
-    const crystX = PX + Math.floor(PW*0.31);
-    const crystY = PY + Math.floor(PH*0.40);
-    const crystR = Math.min(58, Math.floor(PH*0.29));
-    _draw2DCrystal(crystX, crystY, crystR, cycleColor);
+    // The swatch row is the control, so it decides its own size: as big as the
+    // panel allows, never wider than it. Six elements on a phone fit because
+    // the cell shrinks, not because the row is allowed to overflow.
+    const n = normaliseModulationMask().length;
+    const gap = n > 6 ? 5 : 8;
+    const cell = n > 0
+        ? Math.max(16, Math.min(34, Math.floor((INNER - (n - 1) * gap) / n)))
+        : 0;
+    const rowW = n > 0 ? n * cell + (n - 1) * gap : 0;
 
-    // Scheme label
-    ctx.fillStyle=cycleColor; ctx.font="bold 12px monospace"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
-    ctx.fillText(scheme.label, crystX, crystY+crystR+20);
-    const sizeLabel = scheme.size===0?"none":scheme.size===1?"mono":scheme.size===2?"bi-color":scheme.size===3?"tri-color":"all elements";
-    ctx.fillStyle="#3a4055"; ctx.font="9px monospace";
-    ctx.fillText(sizeLabel, crystX, crystY+crystR+33);
+    // The crystal, cycling through the colours that are actually in the mix.
+    // This IS the readout — there is no separate label for what it is showing.
+    //
+    // It takes whatever height is left once everything that has to be readable
+    // has had its share, and stands down entirely when there is not enough. In
+    // landscape on a phone the panel is 236px tall, and a crystal sized off the
+    // panel height pushed the ACTIVATE button and the footer off the bottom:
+    // the one decoration on the screen was crowding out the only control.
+    const fixedH = 36                                   // mix label + caption
+                 + cell + 30                            // the swatch row + labels
+                 + 30                                   // the two help lines
+                 + (pendingElements.length > 0
+                        ? 16 + pendingElements.length * 22 + 16
+                        : 16)                           // activate list, or NEXT
+                 + 18;                                  // the modulator footer
+    const crystR = Math.max(0, Math.min(78, Math.floor((PH - fixedH - 46) / 2)));
+    const crystY = PY + 22 + crystR;
+    if (crystR >= 22) _draw2DCrystal(MID, crystY, crystR, cycleColor);
 
-    // Color swatches
-    if (scheme.colors.length > 0) {
-        const sw = Math.min(26, Math.floor((splitX-PX-20) / scheme.colors.length) - 4);
-        scheme.colors.forEach((col, i) => {
-            const sx = PX+10 + i*(sw+4);
-            const sy = crystY+crystR+40;
-            const _ci = Math.floor(_crystalModPhase / Math.max(5,34-scheme.size*5)) % scheme.colors.length;
-            const isHot2 = i === _ci;
-            ctx.fillStyle = isHot2 ? col : col+"44";
-            ctx.fillRect(sx, sy, sw, 8);
-            if (isHot2) { ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.strokeRect(sx-1,sy-1,sw+2,10); }
-        });
-    }
+    let y = (crystR >= 22 ? crystY + crystR + 24 : PY + 24);
 
-    // ── PENDING ELEMENTS — earned by kills, activated here ──────────────
-    // This is the whole point of coming back to the Crystal: an element you
-    // earned in the tunnel does nothing until you bring it online here.
+    // What the mix is, said once.
+    ctx.fillStyle = cycleColor;
+    ctx.font = "bold 13px monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillText(scheme.label.toUpperCase(), MID, y);
+    y += 10;
+
+    ctx.fillStyle = "#49556a"; ctx.font = "9px monospace";
+    ctx.fillText("NEW FOLLOWERS COME OUT AS", MID, y + 10);
+    y += 26;
+
+    // ── The control ───────────────────────────────────────
+    window._modSwatchRects = drawModulationSwatches(
+        Math.round(MID - rowW / 2), y, cell, gap, true);
+    // The swatches carry a 7px label UNDER them, drawn at cell + 3, so the next
+    // line clears the label rather than the squares.
+    y += cell + 30;
+
+    ctx.fillStyle = "#49556a"; ctx.font = "9px monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("Tap an element to add it to the mix or drop it.", MID, y);
+    ctx.fillText("Followers take it at the Crystal, and again on respawn.", MID, y + 12);
+    y += 30;
+
+    // ── PENDING ELEMENTS — earned in the tunnel, activated here ───────────
+    // This is why the player walks back. An element earned by clearing a wave
+    // does nothing until it is brought online here.
     window._modActivateRects = [];
-    let pendY = crystY + crystR + 58;
     if (pendingElements.length > 0) {
         ctx.fillStyle = "#ffcc44"; ctx.font = "bold 9px monospace";
-        ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-        ctx.fillText("EARNED — TAP TO ACTIVATE:", PX + 10, pendY);
-        pendY += 6;
+        ctx.fillText("EARNED — TAP TO ACTIVATE", MID, y);
+        y += 8;
+        const bw = Math.min(200, INNER);
         pendingElements.forEach((id, i) => {
             const el = ELEMENTS.find(e => e.id === id);
             const col = el ? el.color : "#888";
-            const bx = PX + 10, by = pendY + i * 20, bw = Math.min(150, splitX - PX - 20), bh = 17;
+            const bx = Math.round(MID - bw / 2), by = y + i * 22, bh = 18;
             const pulse = 0.5 + 0.5 * Math.sin(_crystalModPhase * 0.09 + i);
             ctx.fillStyle = col + "22"; ctx.fillRect(bx, by, bw, bh);
             ctx.strokeStyle = col; ctx.globalAlpha = 0.5 + pulse * 0.5; ctx.lineWidth = 1;
             ctx.strokeRect(bx, by, bw, bh); ctx.globalAlpha = 1;
             ctx.fillStyle = col; ctx.font = "bold 10px monospace";
-            ctx.fillText("◈ ACTIVATE " + (el ? el.label : id.toUpperCase()), bx + 6, by + 12);
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText("◈ ACTIVATE " + (el ? el.label : id.toUpperCase()),
+                         bx + bw / 2, by + bh / 2 + 1);
+            ctx.textBaseline = "alphabetic";
             window._modActivateRects.push({ id, bx, by, bw, bh });
         });
-        pendY += pendingElements.length * 20 + 6;
+        y += pendingElements.length * 22 + 16;
     } else {
         const next = nextWaveUnlock();
         ctx.fillStyle = "#2a3040"; ctx.font = "9px monospace";
-        ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-        if (next) {
-            const el = ELEMENTS.find(e => e.id === next.element);
-            ctx.fillText("NEXT: " + (el ? el.label : next.element.toUpperCase()) +
-                         " — CLEAR A WAVE", PX + 10, pendY);
-        } else {
-            ctx.fillText("ALL ELEMENTS ONLINE · " + lifetimeKills + " kills", PX + 10, pendY);
-        }
-        pendY += 14;
+        ctx.textAlign = "center";
+        ctx.fillText(next
+            ? "NEXT: " + ((ELEMENTS.find(e => e.id === next.element) || {}).label
+                          || next.element.toUpperCase()) + " — CLEAR A WAVE"
+            : "ALL ELEMENTS ONLINE · " + lifetimeKills + " kills", MID, y);
+        y += 16;
     }
 
-    // Owned modulators list (bottom of left area)
-    const modListY = Math.min(Math.max(pendY + 6, crystY+crystR+60), PY+PH-50);
-    ctx.fillStyle="#2a3040"; ctx.font="9px monospace"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
-    ctx.fillText("OWNED MODULATORS:", PX+10, modListY);
+    // A boss modulator overrides the mix for the followers it touches, so it
+    // belongs on this screen — one line, at the foot, out of the way.
+    ctx.fillStyle = "#2a3040"; ctx.font = "9px monospace"; ctx.textAlign = "center";
     if (ownedModulators.length === 0) {
-        ctx.fillStyle="#2e3545"; ctx.fillText("none — defeat a boss to unlock", PX+10, modListY+13);
+        ctx.fillText("MODULATORS: none — defeat a boss to unlock", MID, y);
     } else {
-        ownedModulators.forEach((mod, i) => {
-            const el=ELEMENTS.find(e=>e.id===mod.element);
-            ctx.fillStyle=el?el.color:"#888";
-            ctx.fillText(`◈ ${(el?.label||mod.element).toUpperCase()}`, PX+10+i*80, modListY+13);
-        });
+        ctx.fillText("MODULATORS: " + ownedModulators.map(mod =>
+            ((ELEMENTS.find(e => e.id === mod.element) || {}).label || mod.element).toUpperCase()
+        ).join(" · "), MID, y);
     }
-
-    // ── The control ───────────────────────────────────
-    // The same swatch row as the HUD chip, so there is one mechanism and the
-    // two cannot disagree. It replaced a vertical slider with four unlabelled
-    // bands (ALL / TRI / BI / MONO) that indexed a generated combination list;
-    // that indexing is what crashed on two unlocked elements.
-    const modX = splitX + 16;
-    const modY = PY + 40;
-    const cell = 26, gap = 8;
-    ctx.fillStyle = "#aaddff"; ctx.font = "bold 11px monospace";
-    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-    ctx.fillText("NEW FOLLOWERS COME OUT AS:", modX, modY - 12);
-
-    window._modSwatchRects = drawModulationSwatches(modX, modY, cell, gap, true);
-
-    ctx.fillStyle = "#49556a"; ctx.font = "9px monospace";
-    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-    ctx.fillText("Tap an element to add or drop it from the mix.", modX, modY + cell + 26);
-    ctx.fillText("They take it at the Crystal \u2014 on recruitment, and again", modX, modY + cell + 39);
-    ctx.fillText("every time one respawns.", modX, modY + cell + 52);
-
-    const sch = _getModScheme();
-    ctx.fillStyle = cycleColor; ctx.font = "bold 12px monospace";
-    ctx.fillText(sch.label.toUpperCase(), modX, modY + cell + 74);
 }
 
 // ── Tab: Status ───────────────────────────────────────────

@@ -326,11 +326,6 @@ canvas.addEventListener('pointermove', e=>{
 canvas.addEventListener('pointerup', e=>{
     if (!gameState.running) { isPressing=false; return; } // block canvas input during buy screen
     const [upX,upY]=toCanvas(e.clientX,e.clientY);
-    // The modulation chip, before any world command: it sits over the board, so
-    // a tap landing on it must not also issue an order underneath.
-    if (!touchMoved && typeof modulationChipTap === "function" && modulationChipTap(upX, upY)) {
-        isPressing=false; return;
-    }
     // Crystal button tap — toggle panel open/close
     if (!touchMoved && Math.hypot(upX-_CRYSBTN.x, upY-_CRYSBTN.y) < _CRYSBTN.r+8) {
         crystalMenuOpen=!crystalMenuOpen; isPressing=false; return;

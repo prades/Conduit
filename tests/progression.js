@@ -83,6 +83,9 @@ function makeEnv(starting) {
         pendingElements: [],
         lifetimeKills: 0,
         modulationDirty: false,
+        // Activation now asks whether the new element is already in the mix
+        // before it prompts, so the mix has to be here. Empty means "any".
+        modulationMask: new Set(),
         unlockSaves: 0, progressSaves: 0,
         // Read out of config.js rather than written here: the wave ladder is
         // "every element that is not a starting one", so a fixture that
@@ -95,6 +98,10 @@ function makeEnv(starting) {
     sandbox.saveProgress = () => { sandbox.progressSaves++; };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
+    // The real predicate, not a stand-in: what "already in the mix" means is
+    // the whole question this fixture now asks.
+    vm.runInContext(fnSource('js/clone.js', 'modulationIncludes'), ctx,
+                    { filename: 'clone.js:modulationIncludes' });
     const from = SRC.wavedata.indexOf('const WAVE_UNLOCK_ORDER');
     const at   = SRC.wavedata.indexOf('function activatePendingElement', from);
     if (from < 0 || at < 0) { console.log('  FAIL could not find the progression block'); process.exit(1); }
@@ -192,13 +199,53 @@ check('activating at the crystal brings it online', () => {
     ok(env.sandbox.unlockSaves > 0, 'the unlock should persist');
 });
 
-check('activating flags the modulation as stale', () => {
+// REPORTED: "the element ready indicator is always active whenever it gets
+// triggered."
+//
+// Activating used to flag the mix stale every single time. The ordinary player
+// has never narrowed the mix — an empty mask means "any" — so the element just
+// activated was already in it and there was nothing to re-modulate. The prompt
+// lit anyway, and the only thing that cleared it was toggling a swatch, which
+// takes an element OUT of the mix. The ring stayed lit for the rest of the
+// game, and the one way to dismiss it made the squad worse.
+check('THE ASK: an element that lands IN the mix does not nag', () => {
     const env = makeEnv();
     clearWave(env);
-    same(env.sandbox.modulationDirty, false, 'clean before');
-    env.run('activatePendingElement')(ladder(env)[0]);
-    same(env.sandbox.modulationDirty, true, 'a new element makes the modulation stale');
-    ok(env.sandbox.floatingTexts.some(t => /RE-MODULATE/.test(t.text)), 'the player should be prompted');
+    same(env.sandbox.modulationMask.size, 0, 'fixture: the mix should start untouched');
+    const el = ladder(env)[0];
+    env.run('activatePendingElement')(el);
+    same(env.run(`modulationIncludes(${JSON.stringify(el)})`), true,
+         'fixture: an untouched mix should already include it');
+    same(env.sandbox.modulationDirty, false,
+         'the prompt lit for an element that was already in the mix');
+    ok(!env.sandbox.floatingTexts.some(t => /RE-MODULATE/.test(t.text)),
+       'it told the player to re-modulate when there was nothing to decide');
+    ok(env.sandbox.floatingTexts.some(t => /IN THE MIX/.test(t.text)),
+       'it does not say the new element is already in the mix');
+});
+
+check('but one LEFT OUT of a narrowed mix does', () => {
+    const env = makeEnv();
+    // Narrow the mix by hand, so the new element genuinely is not in it.
+    env.run('modulationMask.add("fire")');
+    clearWave(env);
+    const el = ladder(env)[0];
+    env.run('activatePendingElement')(el);
+    same(env.run(`modulationIncludes(${JSON.stringify(el)})`), false,
+         'fixture: a narrowed mix should not include it');
+    same(env.sandbox.modulationDirty, true, 'a genuinely stale mix is not flagged');
+    ok(env.sandbox.floatingTexts.some(t => /RE-MODULATE/.test(t.text)),
+       'the player should be prompted');
+});
+
+check('and the prompt can be put down by looking at the control', () => {
+    // The only way to clear it used to be toggling a swatch. Opening the
+    // control is the acknowledgement — reading the mix IS the decision.
+    const at = SRC.clone.indexOf('function _drawModTab');
+    ok(at > -1, 'the modulation tab could not be located');
+    const head = SRC.clone.slice(at, SRC.clone.indexOf('const MID', at));
+    ok(/modulationDirty = false/.test(head),
+       'opening the modulation control does not clear the prompt');
 });
 
 check('activating something you have not earned does nothing', () => {
@@ -676,9 +723,29 @@ check('the kill counter updates the banner through the shared builder', () => {
     });
 
     check('activating them at the crystal brings each online', () => {
+        const before = G.unlocked().length;
         for (const id of G.pending().slice()) G.run(`activatePendingElement(${JSON.stringify(id)});`);
-        ok(G.unlocked().length > 2, 'the activated element should be online');
-        same(G.run('modulationDirty'), true, 'and the mix should be flagged stale');
+        ok(G.unlocked().length > before, 'the activated element should be online');
+        // In the running game the mix has never been narrowed, so the new
+        // element is already in it and there is nothing to prompt about.
+        same(G.run('modulationMask.size'), 0, 'fixture: the mix should be untouched here');
+        same(G.run('modulationDirty'), false,
+             'the prompt lit although the new element was already in the mix');
+    });
+
+    check('narrowing the mix first DOES flag it, in the running game', () => {
+        const H2 = G;
+        H2.run('modulationMask.clear(); modulationMask.add("fire"); modulationDirty = false;');
+        H2.run('noteWaveClearedForProgression();');
+        const pend = H2.pending();
+        if (pend.length === 0) {
+            // The ladder is spent in this fixture — say so rather than passing
+            // on an empty loop.
+            same(H2.run('nextWaveUnlock()'), null, 'nothing pending and the ladder is not spent');
+            return;
+        }
+        H2.run(`activatePendingElement(${JSON.stringify(pend[0])});`);
+        same(H2.run('modulationDirty'), true, 'an element left out of the mix did not flag it');
     });
 
     check('the earned element survives a refresh before it is activated', () => {

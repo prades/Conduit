@@ -3206,7 +3206,6 @@ function render() {
     drawShopButton();
     drawCampButton();
     drawAmmoChip();
-    drawModulationChip();
     drawSettingsButton();
     drawSettingsPanel();
     drawCampMenu();
