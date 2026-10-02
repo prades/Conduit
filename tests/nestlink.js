@@ -38,6 +38,14 @@ const sandbox = {
         if (!m) { console.log('  FAIL config.js no longer defines GENERATOR_NEST_RANGE'); process.exit(1); }
         return Number(m[1]);
     })(),
+    // The colour a linked nest turns, named in config.js so the three nest
+    // states cannot drift apart. Read, not restated.
+    NEST_COLOUR_CONTROLLED: (() => {
+        const src = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
+        const m = src.match(/const NEST_COLOUR_CONTROLLED\s*=\s*"([^"]+)"/);
+        if (!m) { console.log('  FAIL config.js no longer defines NEST_COLOUR_CONTROLLED'); process.exit(1); }
+        return m[1];
+    })(),
 };
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);
@@ -152,7 +160,12 @@ check('a hit links the nest and leaves the mode', () => {
     eq(p.nestConnection, nest, 'pylon points at the nest');
     eq(nest.connectedPylon, p, 'nest points at the pylon');
     eq(sandbox.nestConnectMode, false, 'mode ends');
-    ok(sandbox.floatingTexts.some(t => /LINKED/.test(t.text)), 'confirms to the player');
+    // The confirmation says what the player now HAS, and is in the colour the
+    // nest turns — blue. It used to read "NEST LINKED" in red, which is the
+    // colour of the thing that was just taken off them.
+    const said = sandbox.floatingTexts.find(t => /CONTROLLED/.test(t.text));
+    ok(!!said, 'confirms to the player: ' + sandbox.floatingTexts.map(t => t.text).join(' | '));
+    eq(said.color, sandbox.NEST_COLOUR_CONTROLLED, 'the confirmation is not the controlled colour');
 });
 check('a generator too far from the nest is refused, and the mode survives', () => {
     // The placement rule keeps generators within GENERATOR_NEST_RANGE of a

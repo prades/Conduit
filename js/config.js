@@ -330,6 +330,22 @@ const PLAYER_AMMO_START = 12;
 // Rounds a hacked wall panel yields. The shop used to sell ammo; with it gone
 // this is the only source, so it has to be enough to keep the weapon usable.
 const PANEL_AMMO_REWARD = 8;
+// ── THE THREE STATES OF A NEST ───────────────────────────
+// A nest's colour is the only thing that says whose it is, so the three are
+// named here rather than written out at each of the places that draw one.
+//
+//   HOSTILE    — alive and spawning. Orange, turning, lit.
+//   NEUTRAL    — its zone has been taken. Grey, still, silent, and yours to
+//                claim. A zone goes neutral the moment its wave is cleared.
+//   CONTROLLED — linked to one of your generator pylons. BLUE, deliberately
+//                not green: green is home, and a zone you have taken is not
+//                home, it is held.
+const NEST_COLOUR_HOSTILE      = "#ff5522";
+const NEST_COLOUR_HOSTILE_HURT = "#7a2a14";   // the same nest, badly damaged
+const NEST_COLOUR_NEUTRAL      = "#6e6e78";
+const NEST_COLOUR_NEUTRAL_DIM  = "#8a8a95";   // its label, which has to be read
+const NEST_COLOUR_CONTROLLED   = "#3a86ff";
+
 // ── HACKING A NEST ───────────────────────────────────────
 // Standing in the patch of floor in front of a live nest hacks it, which raises
 // that zone's alarm. It is PROXIMITY, not a gesture: the label used to read

@@ -57,14 +57,9 @@ async function loadConfig() {
             tile.isGenerator       = !!saved.isGenerator;
         });
     }
-    // Nests always generate at full health, so destroyed ones are re-killed here.
-    const savedNests = loadNests();
-    if (savedNests) {
-        savedNests.forEach(saved => {
-            const tile = worldTileMap.get(`${saved.x},${saved.y}`);
-            if (tile && tile.nest) tile.nestHealth = 0;
-        });
-    }
+    // Nests always generate at full health, so the ones already taken are
+    // re-killed here. See applyNests in save.js — one rule, one place.
+    applyNests(loadNests());
     // After the pylon and nest restores, so nest links can resolve to real tiles.
     applySession(session);
 

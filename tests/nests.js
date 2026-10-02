@@ -42,6 +42,18 @@ if (!spFn) { console.log('  FAIL could not find zoneSpawnPoints in js/clone.js')
 sandbox.getZoneIndex = x => Math.floor(x / 15);
 vm.runInContext(spFn[0], ctx, { filename: 'clone.js:zoneSpawnPoints' });
 
+// Taking a zone puts its nest out. Pulled in the same way, so the rule is
+// driven rather than described.
+const neutFn = wavesSrc.match(/function neutraliseZone\(zoneIndex\)[\s\S]*?\n\}/);
+if (!neutFn) { console.log('  FAIL could not find neutraliseZone in js/waves.js'); process.exit(1); }
+vm.runInContext(neutFn[0], ctx, { filename: 'waves.js:neutraliseZone' });
+// The real predicate, so "the home portal is not a nest to take" is the game's
+// own answer rather than this file's.
+const helpersSrc = fs.readFileSync(path.join(ROOT, 'js/helpers.js'), 'utf8');
+const portalFn = helpersSrc.match(/function isHomePortal\(t\)[\s\S]*?\n\}/);
+if (!portalFn) { console.log('  FAIL could not find isHomePortal in js/helpers.js'); process.exit(1); }
+vm.runInContext(portalFn[0], ctx, { filename: 'helpers.js:isHomePortal' });
+
 const run = s => vm.runInContext(s, ctx);
 let failures = 0;
 function group(n) { console.log('\n' + n); }
@@ -153,14 +165,9 @@ check('a fresh world re-kills nests that were saved as destroyed', () => {
     run('worldTileMap = globalThis.worldTileMap');
     store['tubecrawler_nests'] = snapshot;
 
-    // This mirrors the restore block in init.js.
-    run(`
-        const savedNests = loadNests();
-        if (savedNests) savedNests.forEach(s => {
-            const tile = worldTileMap.get(s.x + "," + s.y);
-            if (tile && tile.nest) tile.nestHealth = 0;
-        });
-    `);
+    // The game's own restore, not a copy of it: this block used to be written
+    // out here as well as in init.js, so the test could agree with itself.
+    eq(run('applyNests(loadNests())'), 1, 'one nest should have been re-killed');
     eq(fresh[0].nestHealth, 0, 'destroyed nest re-killed on load');
     eq(fresh[1].nestHealth, 200, 'the living one is left at full health');
 });
@@ -180,6 +187,98 @@ check('a destroyed nest survives repeated wave transitions', () => {
     }
     eq(dead.nestHealth, 0, 'still dead after 10 waves');
     eq(JSON.parse(store['tubecrawler_nests']).length, 1, 'still recorded once');
+});
+
+group('TAKING A ZONE NEUTRALISES IT');
+
+// REPORTED: "after you defeat a zone and its wave, when the message pops up
+// saying zone cleared, that zone needs to be neutralised and greyed out — the
+// nest on the wall grey, and it can be controlled and turned blue."
+//
+// Clearing the wave was only a score. The zone's nest stayed alive and went on
+// pouring predators out of the wall the player had just fought their way to.
+
+check('THE ASK: clearing a zone puts its nest out', () => {
+    const nest = mkNest(16, 1, 200);
+    setWorld([nest]);
+    eq(run('neutraliseZone(1)'), true, 'it should report that it took something');
+    eq(nest.nestHealth, 0, 'the nest should be out');
+});
+
+check('and the zone goes silent, because that nest was its only mouth', () => {
+    const nest = mkNest(16, 1, 200);
+    setWorld([nest]);
+    eq(run('zoneSpawnPoints(1)').length, 1, 'fixture: it should be producing first');
+    run('neutraliseZone(1)');
+    eq(run('zoneSpawnPoints(1)').length, 0, 'the zone is still producing after it was taken');
+});
+
+check('it does not reach into a zone you have not taken', () => {
+    const one = mkNest(16, 1, 200), two = mkNest(31, 2, 200);
+    setWorld([one, two]);
+    run('neutraliseZone(1)');
+    eq(one.nestHealth, 0, 'the cleared zone should be out');
+    eq(two.nestHealth, 200, 'the next zone should be untouched');
+});
+
+check('THE HOME PORTAL is never taken — it was never theirs', () => {
+    // Zone 0's nest is the green doorway the player walks out of. Clearing a
+    // wave whose alarm somehow read as zone 0 must not grey it out.
+    const portal = mkNest(1, 0, 200);
+    setWorld([portal]);
+    eq(run('neutraliseZone(0)'), false, 'it claimed to have taken something');
+    eq(portal.nestHealth, 200, 'the home portal was put out');
+    // And not by a bad zone index either.
+    eq(run('neutraliseZone(-1)'), false, 'a negative zone took something');
+});
+
+check('taking a zone twice is harmless and reports nothing the second time', () => {
+    const nest = mkNest(16, 1, 200);
+    setWorld([nest]);
+    eq(run('neutraliseZone(1)'), true, 'the first should take it');
+    eq(run('neutraliseZone(1)'), false, 'the second should find nothing to take');
+    eq(nest.nestHealth, 0, 'and it should still be out');
+});
+
+check('a zone stays taken across the waves that follow', () => {
+    // restoreWorldBetweenWaves heals nests back to full. It must not undo this.
+    const taken = mkNest(16, 1, 200), theirs = mkNest(31, 2, 120);
+    setWorld([taken, theirs]);
+    run('neutraliseZone(1)');
+    for (let w = 0; w < 5; w++) run('restoreWorldBetweenWaves()');
+    eq(taken.nestHealth, 0, 'the taken zone came back to life');
+    eq(theirs.nestHealth, 200, 'a merely damaged nest should still recover');
+});
+
+check('and across a refresh', () => {
+    const nest = mkNest(16, 1, 200);
+    setWorld([nest]);
+    run('neutraliseZone(1)');
+    run('saveNests()');
+    // Regeneration rebuilds every nest at full health; the save is what undoes
+    // that for the ones already taken.
+    nest.nestHealth = 200;
+    run('applyNests(loadNests())');
+    eq(nest.nestHealth, 0, 'the taken zone came back after a refresh');
+});
+
+check('and init.js uses that one restore rather than its own copy', () => {
+    const INIT = fs.readFileSync(path.join(ROOT, 'js/init.js'), 'utf8');
+    ok(/applyNests\(loadNests\(\)\)/.test(INIT), 'init.js does not use the shared restore');
+    ok(!/tile\.nest\) tile\.nestHealth = 0/.test(INIT),
+       'init.js still re-kills nests with its own copy of the rule');
+    const SAVE = fs.readFileSync(path.join(ROOT, 'js/save.js'), 'utf8');
+    eq((SAVE.match(/function applyNests/g) || []).length, 1, 'the restore is defined more than once');
+});
+
+check('it is wired into the wave clear, before the overlay goes up', () => {
+    const at = wavesSrc.indexOf('function checkWaveClear');
+    const body = wavesSrc.slice(at, wavesSrc.indexOf('\nfunction ', at + 10));
+    ok(at > -1 && body.length > 200, 'checkWaveClear could not be located');
+    ok(/neutraliseZone\(clearedZone\)/.test(body),
+       'clearing a wave does not neutralise the zone');
+    ok(body.indexOf('neutraliseZone(') < body.indexOf('showWaveClear()'),
+       'the zone is taken after the ZONE CLEARED overlay, so the player sees it live');
 });
 
 group('spawn consequence');

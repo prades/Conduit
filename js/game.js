@@ -1964,8 +1964,12 @@ function render() {
             // wall_panel is drawn on the wall face in the wall_back pass — skip it here.
             if (obj.nodeType && obj.nodeType !== 'wall_panel') drawCapturableNode(obj, px, py);
 
-            // ── BROKEN NEST POD — charred gray husk with teal accent ──
+            // ── A ZONE YOU HAVE TAKEN ──
+            // Its nest is out: grey and still while it is merely neutral, blue
+            // once you link it to a generator pylon. Never green — green is
+            // home, and a zone you hold is not home.
             if (obj.nest && obj.nestHealth <= 0 && !obj._infestNest) {
+                const _held = !!obj.connectedPylon;
                 const sW1x=px, sW1y=py-60, numT=4, WH=110;
                 const wfBL={x:sW1x-TILE_W,y:sW1y+TILE_H};
                 const wfBR={x:sW1x+(numT-1)*TILE_W,y:sW1y+(numT+1)*TILE_H};
@@ -1982,13 +1986,18 @@ function render() {
                 ctx.closePath();
                 ctx.fillStyle="rgba(18,10,8,0.92)"; ctx.fill();
                 drawNestHackZone(obj);
+                // A controlled nest turns, slowly, and is lit: it is yours and
+                // it is running. A neutral one is dead still.
                 drawNestWallVortex(px, py, Math.min(WH*0.42,46)*0.5,
-                    obj.connectedPylon?"#00ffcc":"#4a3a33", 0, 0, 0.5);
+                    _held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL,
+                    _held ? (frame||0)*0.012 : 0,
+                    _held ? 7 : 0,
+                    _held ? 0.85 : 0.5);
                 ctx.setTransform(1,0,0,1,0,0);
                 const _bCx=(wfTL.x+wfTR.x)/2;
-                ctx.fillStyle=obj.connectedPylon?"#00ffcc":"#664433";
+                ctx.fillStyle=_held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM;
                 ctx.font="bold 9px monospace"; ctx.textAlign="center";
-                ctx.fillText(obj.connectedPylon?"◈ NEST LINKED":"✕ NEST BROKEN",_bCx,wfTL.y-12);
+                ctx.fillText(_held?"◈ CONTROLLED":"◇ NEUTRAL",_bCx,wfTL.y-12);
                 ctx.restore();
 
                 // ── PERMANENT ENERGY LINK to connected pylon ──
@@ -2001,8 +2010,8 @@ function render() {
                     const _pulse=0.5+0.5*Math.sin((frame||0)*0.07);
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                     // Beam
-                    ctx.strokeStyle=`rgba(0,255,200,${0.3+_pulse*0.4})`;
-                    ctx.lineWidth=1.5+_pulse; ctx.shadowColor="#00ffcc"; ctx.shadowBlur=8+_pulse*8;
+                    ctx.strokeStyle=`rgba(58,134,255,${0.3+_pulse*0.4})`;
+                    ctx.lineWidth=1.5+_pulse; ctx.shadowColor=NEST_COLOUR_CONTROLLED; ctx.shadowBlur=8+_pulse*8;
                     ctx.setLineDash([8,5]);
                     ctx.beginPath(); ctx.moveTo(_nSx,_nSy); ctx.lineTo(_cpx,_cpy-60); ctx.stroke();
                     ctx.setLineDash([]);
@@ -2010,7 +2019,7 @@ function render() {
                     for(let _i=0;_i<4;_i++){
                         const _t=((frame||0)*0.018+_i*0.25)%1;
                         const _ex=_nSx+(_cpx-_nSx)*_t, _ey=_nSy+(_cpy-60-_nSy)*_t;
-                        ctx.fillStyle="#00ffcc"; ctx.globalAlpha=0.65+_pulse*0.35;
+                        ctx.fillStyle=NEST_COLOUR_CONTROLLED; ctx.globalAlpha=0.65+_pulse*0.35;
                         ctx.shadowBlur=5;
                         ctx.beginPath(); ctx.arc(_ex,_ey,2.5,0,Math.PI*2); ctx.fill();
                     }
@@ -2059,7 +2068,7 @@ function render() {
                 // canvas operations a frame for one nest.
                 drawNestWallVortex(px, py,
                     Math.min(WH * 0.42, 46) * (0.55 + hr * 0.45),
-                    hr > 0.35 ? '#ff5522' : '#7a2a14',
+                    hr > 0.35 ? NEST_COLOUR_HOSTILE : NEST_COLOUR_HOSTILE_HURT,
                     obj.nestPulse * 0.03, 10 + pulse * 6, 0.65 + hr * 0.35);
 
                 // Health bar centred on the top edge of the face
@@ -2152,14 +2161,16 @@ function render() {
                 ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H);
                 ctx.closePath();
                 ctx.globalAlpha=_blink?0.92:0.28;
-                ctx.strokeStyle="#00ffcc"; ctx.lineWidth=3;
-                ctx.shadowColor="#00ffcc"; ctx.shadowBlur=_blink?20:6;
+                // The colour the nest will BECOME, so the prompt and the result
+                // are the same thing.
+                ctx.strokeStyle=NEST_COLOUR_CONTROLLED; ctx.lineWidth=3;
+                ctx.shadowColor=NEST_COLOUR_CONTROLLED; ctx.shadowBlur=_blink?20:6;
                 ctx.stroke();
                 ctx.globalAlpha=_blink?0.14:0.04;
-                ctx.fillStyle="#00ffcc"; ctx.fill();
+                ctx.fillStyle=NEST_COLOUR_CONTROLLED; ctx.fill();
                 // "LINK" label — above tile top corner
                 ctx.globalAlpha=_blink?1:0.4;
-                ctx.fillStyle="#00ffcc"; ctx.font="bold 9px monospace"; ctx.textAlign="center";
+                ctx.fillStyle=NEST_COLOUR_CONTROLLED; ctx.font="bold 9px monospace"; ctx.textAlign="center";
                 ctx.shadowBlur=0; ctx.setTransform(1,0,0,1,0,0);
                 ctx.fillText("LINK",px,py-8);
                 ctx.restore();

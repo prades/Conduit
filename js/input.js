@@ -67,7 +67,7 @@ function handleNestConnectTap(ex, ey) {
         tapped.nestConnection = pendingConnectNest;
         pendingConnectNest.connectedPylon = tapped;
         floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
-            text:"NEST LINKED — bonus charge active", color:"#ff4444", life:120, vy:-0.3});
+            text:"ZONE CONTROLLED — bonus charge active", color:NEST_COLOUR_CONTROLLED, life:120, vy:-0.3});
         nestConnectMode = false; pendingConnectNest = null; nestConnectMisses = 0;
         return true;
     }

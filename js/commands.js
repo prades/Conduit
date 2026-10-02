@@ -357,7 +357,7 @@ function executeCommand() {
                 nestConnectMisses = 0;
                 pendingConnectNest = commandNestTarget;
                 floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
-                    text:"TAP A GENERATOR PYLON TO LINK",color:"#00ffcc",life:180,vy:-0.15});
+                    text:"TAP A GENERATOR PYLON TO LINK",color:NEST_COLOUR_CONTROLLED,life:180,vy:-0.15});
             }
             break;
         }

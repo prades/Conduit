@@ -205,6 +205,42 @@ function restoreWorldBetweenWaves() {
     });
 }
 
+// TAKING A ZONE NEUTRALISES IT.
+//
+// REPORTED: "after you defeat a zone and its wave, when the message pops up
+// saying zone cleared, that zone needs to be neutralised and greyed out — the
+// nest on the wall grey, and it can be controlled and turned blue."
+//
+// Clearing the wave was only ever a score: the zone's nest stayed alive and
+// went on pouring predators out of the wall you had just fought your way to,
+// and restoreWorldBetweenWaves healed it back to full for good measure. Taking
+// a zone now takes its nest with it.
+//
+// The nest is the zone's only mouth, so putting it out is what makes the zone
+// quiet — the spawn loop skips a zone whose mouths are all shut. It stays out:
+// restoreWorldBetweenWaves only heals a nest that still has health, and
+// saveNests records the dead ones so a refresh does not undo it.
+//
+// Returns true when something was actually put out, so the caller can say so.
+function neutraliseZone(zoneIndex) {
+    // Zone 0 is home. Its "nest" is the green portal you walk out of, and it was
+    // never hostile, so there is nothing there to take. This is the ONLY guard
+    // it needs: a second isHomePortal() check inside the loop could never fire,
+    // because the loop only looks at nests whose zone is this one and this one
+    // is never 0 — and a guard that cannot fire is a guard nothing protects.
+    if (!(zoneIndex > 0)) return false;
+    let took = false;
+    world.forEach(t => {
+        if (!t.nest || t.nestZone !== zoneIndex) return;
+        if (!(t.nestHealth > 0)) return;      // already out
+        t.nestHealth = 0;
+        t.nestHackProgress = 0;
+        took = true;
+    });
+    if (took && typeof saveNests === "function") saveNests();
+    return took;
+}
+
 function checkWaveClear() {
     if (gameState.phase !== "night") return;
     if (nightKillCount >= nightEnemiesTarget) {
@@ -213,6 +249,10 @@ function checkWaveClear() {
         // Record highest zone cleared
         if (alertSource) {
             const clearedZone = getZoneIndex(Math.floor(alertSource.x));
+            // Put its nest out BEFORE the overlay goes up, so the player comes
+            // back to a zone that is already grey rather than one still
+            // spawning out of the wall they just cleared.
+            neutraliseZone(clearedZone);
             if (clearedZone > gameState.highestZoneCleared) {
                 gameState.highestZoneCleared = clearedZone;
                 saveGameState();

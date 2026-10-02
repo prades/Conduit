@@ -23,6 +23,7 @@ const SRC = {
     clone: fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8'),
     game:  fs.readFileSync(path.join(ROOT, 'js/game.js'),  'utf8'),
     world: fs.readFileSync(path.join(ROOT, 'js/world.js'), 'utf8'),
+    config: fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8'),
 };
 
 let failures = 0;
@@ -320,6 +321,125 @@ async function ready() {
            'only one of the two nest states uses the wall vortex');
         // And game.js no longer computes the wall plane itself.
         ok(!/WALL_UX/.test(SRC.game), 'game.js still sets up the wall plane by hand');
+    });
+
+    // ─────────────────────────────────────────────────────
+    group('THE THREE STATES: hostile, neutral, controlled');
+
+    // REPORTED: "that zone needs to be neutralised and greyed out — the nest on
+    // the wall grey, and it can be controlled and turned green or blue.
+    // Actually blue, because green is the home area."
+
+    const COL = name => {
+        const m = SRC.config.match(new RegExp('const ' + name + '\\s*=\\s*"([^"]+)"'));
+        ok(!!m, 'config.js no longer defines ' + name);
+        return m[1];
+    };
+    // Parse any CSS hex, 3 or 6 digits — a 6-digit assumption has bitten this
+    // repo before.
+    const rgb = h => {
+        const x = String(h).replace('#', '');
+        const f = x.length === 3 ? x.split('').map(c => c + c).join('') : x;
+        ok(/^[0-9a-f]{6}$/i.test(f), 'not a hex colour: ' + h);
+        return [0, 2, 4].map(i => parseInt(f.slice(i, i + 2), 16));
+    };
+    const isBlue  = c => { const [r, g, b] = rgb(c); return b > r + 40 && b > g + 40; };
+    // Saturation, not an absolute spread: a flat 24-point spread let #4a3a33
+    // through, which is brown — the colour the dead nest used to be — because a
+    // dark colour's channels are close together whatever its hue.
+    const isGrey  = c => { const [r, g, b] = rgb(c);
+                           const hi = Math.max(r, g, b), lo = Math.min(r, g, b);
+                           return hi === 0 || (hi - lo) / hi < 0.15; };
+    const isGreen = c => { const [r, g, b] = rgb(c); return g > r + 40 && g > b + 40; };
+
+    check('THE ASK: a neutral nest is grey', () => {
+        const c = COL('NEST_COLOUR_NEUTRAL');
+        ok(isGrey(c), 'the neutral nest is ' + c + ', which is not grey');
+        ok(isGrey(COL('NEST_COLOUR_NEUTRAL_DIM')), 'nor is its label');
+    });
+
+    check('THE ASK: a controlled nest is BLUE, not green', () => {
+        const c = COL('NEST_COLOUR_CONTROLLED');
+        ok(isBlue(c), 'the controlled nest is ' + c + ', which is not blue');
+        ok(!isGreen(c), 'it is green, and green is the home area');
+    });
+
+    check('and it is not the home colour', () => {
+        // The home portal is green. A zone you hold must not read as home.
+        const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+        const home = (SRC.draw.match(/const PORTAL_COLOUR\s*=\s*"([^"]+)"/) || [])[1];
+        if (home) {
+            ok(home.toLowerCase() !== COL('NEST_COLOUR_CONTROLLED').toLowerCase(),
+               'a held zone is painted the same colour as home');
+            ok(isGreen(home), 'fixture: the home portal should be green, got ' + home);
+        }
+        ok(HTML.length > 0, 'fixture: the page should be readable');
+    });
+
+    check('the three are far enough apart to tell at a glance', () => {
+        const states = ['NEST_COLOUR_HOSTILE', 'NEST_COLOUR_NEUTRAL', 'NEST_COLOUR_CONTROLLED']
+            .map(COL).map(rgb);
+        for (let i = 0; i < states.length; i++) {
+            for (let j = i + 1; j < states.length; j++) {
+                const d = Math.hypot(...states[i].map((v, k) => v - states[j][k]));
+                ok(d > 80, 'two nest states are only ' + Math.round(d) + ' apart in colour');
+            }
+        }
+    });
+
+    check('the drawing reads the names, it does not spell the colours out', () => {
+        // Three states written out at five sites is how they drift.
+        const at = SRC.game.indexOf('A ZONE YOU HAVE TAKEN');
+        ok(at > -1, 'the taken-zone branch could not be located');
+        const body = SRC.game.slice(at, SRC.game.indexOf('SPAWN NEST', at));
+        ok(/NEST_COLOUR_CONTROLLED/.test(body), 'the controlled colour is not the named one');
+        ok(/NEST_COLOUR_NEUTRAL/.test(body), 'the neutral colour is not the named one');
+        ok(!/#00ffcc|#4a3a33|#664433/.test(body), 'the old hard-coded colours survive');
+    });
+
+    check('a controlled nest turns and is lit; a neutral one is dead still', () => {
+        // Grey AND still is what "neutralised" looks like; a zone you hold is
+        // running again, so it moves.
+        const at = SRC.game.indexOf('A ZONE YOU HAVE TAKEN');
+        const body = SRC.game.slice(at, SRC.game.indexOf('SPAWN NEST', at));
+        const call = body.match(/drawNestWallVortex\(px, py,[\s\S]*?\);/);
+        ok(!!call, 'the taken nest no longer draws a vortex');
+        ok(/_held \?/.test(call[0]), 'it draws the same way whether or not it is held');
+        ok(/frame/.test(call[0]), 'a controlled nest does not turn');
+    });
+
+    check('the GAME INDEX teaches the three states, in the real colours', () => {
+        const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+        const at = HTML.indexOf('THE THREE STATES OF A NEST');
+        ok(at > -1, 'the index never explains what a nest colour means');
+        const page = HTML.slice(at, at + 2600);
+        for (const word of ['Hostile', 'Neutral', 'Controlled']) {
+            ok(page.indexOf(word) > -1, 'the index does not name the ' + word + ' state');
+        }
+        // Each KEY CHIP has to carry its own state's colour, or the page
+        // teaches a key that does not match the board. Checking that the hex
+        // appears somewhere on the page is not enough — the blue also appears
+        // in the sentence underneath, so a wrong chip went unnoticed.
+        const chips = {};
+        for (const m of page.matchAll(/<span class="cm-build-label"[^>]*>([A-Za-z]+)<\/span>/g)) {
+            const tag = page.slice(page.indexOf(m[0]), page.indexOf(m[0]) + m[0].length);
+            chips[m[1]] = tag.toLowerCase();
+        }
+        for (const [word, name] of [['Hostile', 'NEST_COLOUR_HOSTILE'],
+                                    ['Neutral', 'NEST_COLOUR_NEUTRAL'],
+                                    ['Controlled', 'NEST_COLOUR_CONTROLLED']]) {
+            const chip = chips[word];
+            ok(!!chip, 'no key chip for the ' + word + ' state');
+            ok(chip.indexOf(COL(name).toLowerCase()) > -1,
+               'the ' + word + ' chip is not painted ' + COL(name) + ': ' + chip);
+        }
+        ok(/not green/i.test(page), 'it does not say why the held colour is not green');
+        ok(/CLEARED/.test(page), 'it does not say that clearing a zone neutralises it');
+        // And the control it names has to be the one the radial offers.
+        const label = (SRC.draw.match(/leftLabel="([A-Z]+)"; leftAction="connect_nest"/) || [])[1];
+        ok(!!label, 'the connect command could not be located');
+        ok(page.indexOf(label) > -1,
+           'the index says to use a control the radial does not offer (it says ' + label + ')');
     });
 
     check('the GAME INDEX says the wall is the only mouth', () => {

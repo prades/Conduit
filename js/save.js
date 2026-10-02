@@ -65,6 +65,21 @@ function loadNests() {
 function clearNests() {
     try { localStorage.removeItem("tubecrawler_nests"); } catch(e) {}
 }
+// Put the saved kills back. World generation always rebuilds a nest at full
+// health, so this is what makes a zone you took stay taken. It used to be
+// written out inline in init.js, with a second copy of the same three lines in
+// the test that covers it — so the test could agree with itself while the game
+// did something else.
+function applyNests(saved) {
+    if (!Array.isArray(saved)) return 0;
+    let n = 0;
+    for (const s of saved) {
+        if (!s) continue;
+        const tile = worldTileMap.get(`${s.x},${s.y}`);
+        if (tile && tile.nest) { tile.nestHealth = 0; n++; }
+    }
+    return n;
+}
 
 function getAmmo() {
     try {
