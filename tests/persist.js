@@ -386,5 +386,148 @@ check('the game autosaves rather than only saving at wave transitions', () => {
     ok(/pagehide/.test(input), 'nothing saves when the page is hidden');
 });
 
+// ─────────────────────────────────────────────────────────
+//  THE WHOLE WORLD COMES BACK
+// ─────────────────────────────────────────────────────────
+// REPORTED: "sometimes when I refresh the game, the later zones do not appear."
+//
+// The checks above drive the save and restore functions directly. This bug was
+// not in either of them — it was in the ORDER init.js runs them, so it needs
+// the real page, booted twice against one localStorage.
+//
+// Boot builds columns 0..79. Clearing a wave extends the tunnel by ZONE_LENGTH
+// and pushes lastGenX out with it, so a few waves in it stands at 109. The
+// session restore then did `lastGenX = Math.max(lastGenX, sess.lastGenX)`,
+// moving the marker to 109 over ground that stopped at 79 — and nothing ever
+// filled the gap, because the only other generator appends PAST lastGenX and
+// never behind it.
+//
+// Measured before the fix: thirty columns missing, and with them eight saved
+// pylons and a nest already taken, because each restore looks its tile up in
+// worldTileMap and silently skips what is not there.
+const { scriptOrder, makeBrowserSandbox } = require('./domstub.js');
+
+async function bootPage(store) {
+    const sandbox = makeBrowserSandbox(store);
+    const ctx = vm.createContext(sandbox);
+    for (const rel of scriptOrder()) {
+        try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), ctx, { filename: rel }); }
+        catch (e) { /* DOM-heavy init is noisy under stubs */ }
+    }
+    for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
+    return { run: e => vm.runInContext(e, ctx), sandbox };
+}
+
+// What the world IS, in a form two boots can be compared by.
+const SNAPSHOT = `(function(){
+    const cols = [...new Set(world.map(t => t.x))].sort((a, b) => a - b);
+    const gaps = [];
+    for (let x = cols[0]; x <= lastGenX; x++) if (!world.some(t => t.x === x)) gaps.push(x);
+    return {
+        lastGenX, tiles: world.length,
+        minX: cols[0], maxX: cols[cols.length - 1], gaps: gaps.length,
+        gapFrom: gaps.length ? gaps[0] : null,
+        gapTo: gaps.length ? gaps[gaps.length - 1] : null,
+        zones: [...new Set(world.filter(t => t.type === 'floor')
+                                .map(t => Math.floor(t.x / ZONE_LENGTH)))].sort((a, b) => a - b).join(','),
+        pylonsFar: world.filter(t => t.pillar && !t.destroyed && t.x > 85).length,
+        deadNestsFar: world.filter(t => t.nest && t.nestHealth <= 0 && t.x > 85).length,
+    };
+})()`;
+
+(async () => {
+    group('a refresh gives back the world you left');
+
+    const store = {};
+    const A = await bootPage(store);
+    // Play forward the way clearing waves does: extend the tunnel, build out
+    // there, and take a nest out there.
+    const before = A.run(`(function(){
+        for (let i = 0; i < 4; i++) {
+            if (activeDayZones < 5) {
+                activeDayZones++;
+                const baseX = lastGenX;
+                for (let k = 1; k <= ZONE_LENGTH; k++) generateSegment(baseX + k);
+            }
+        }
+        const far = world.find(t => t.x > 85 && t.y === 3 && t.type === 'floor' && !t.pillar);
+        if (far) {
+            far.pillar = true; far.destroyed = false; far.pillarTeam = 'green';
+            far.health = 20; far.maxHealth = 20; far.pillarCol = '#0f8';
+        }
+        const farNest = world.find(t => t.nest && t.x > 85);
+        if (farNest) farNest.nestHealth = 0;
+        savePylons(); saveNests(); saveGameState(); saveSession();
+        return ${SNAPSHOT};
+    })()`);
+
+    const B = await bootPage(store);
+    const after = B.run(SNAPSHOT);
+
+    check('fixture: the game really did dig past the opening columns', () => {
+        const opening = Number(fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8')
+            .match(/const WORLD_OPENING_COLUMNS = (\d+)/)[1]);
+        ok(before.lastGenX > opening,
+           `the frontier only reached ${before.lastGenX}, inside the opening ${opening}`);
+        ok(before.pylonsFar > 0, 'fixture: nothing was built out in the new ground');
+        ok(before.deadNestsFar > 0, 'fixture: no nest was taken out in the new ground');
+    });
+
+    check('THE ASK: no column between here and the frontier is missing', () => {
+        eq(after.gaps, 0,
+             `${after.gaps} columns missing, ${after.gapFrom}..${after.gapTo}, with lastGenX at ${after.lastGenX}`);
+    });
+
+    check('the later zones are all still there', () => {
+        eq(after.zones, before.zones, 'the zones the player could walk to changed');
+        eq(after.maxX, before.maxX, 'the tunnel got shorter');
+        eq(after.tiles, before.tiles, 'the world came back a different size');
+    });
+
+    check('and so is everything built in them', () => {
+        // The real cost of the hole: the restores look their tiles up in
+        // worldTileMap, so a pylon on ground that was never rebuilt is dropped
+        // without a word.
+        eq(after.pylonsFar, before.pylonsFar, 'pylons in the later zones were lost');
+        eq(after.deadNestsFar, before.deadNestsFar, 'a nest already taken came back');
+    });
+
+    check('the frontier marker is never set without building the ground', () => {
+        const WORLD = fs.readFileSync(path.join(ROOT, 'js/world.js'), 'utf8');
+        const SAVE  = fs.readFileSync(path.join(ROOT, 'js/save.js'), 'utf8');
+        const INIT  = fs.readFileSync(path.join(ROOT, 'js/init.js'), 'utf8');
+        ok(/function ensureWorldTo/.test(WORLD), 'there is no way to ask for ground');
+        ok(!/lastGenX = Math\.max\(lastGenX, sess\.lastGenX\)/.test(SAVE),
+           'the session restore still moves the marker over ground it did not build');
+        ok(/ensureWorldTo/.test(SAVE), 'the session restore does not build the ground it claims');
+        ok(/ensureWorldTo\(session\.lastGenX\)/.test(INIT),
+           'boot does not follow the saved frontier out');
+        // ...and it has to happen BEFORE anything is restored onto that ground.
+        ok(INIT.indexOf('ensureWorldTo') < INIT.indexOf('loadPylons()'),
+           'the ground is built after the pylons are restored onto it');
+        ok(INIT.indexOf('ensureWorldTo') < INIT.indexOf('applyNests'),
+           'the ground is built after the nests are restored onto it');
+    });
+
+    check('a corrupt frontier cannot hang the boot', () => {
+        const C = A.run(`(function(){
+            const was = lastGenX;
+            const built = ensureWorldTo(1e9);
+            const got = lastGenX;
+            return { was, built, got };
+        })()`);
+        ok(C.built > 0, 'it refused to build anything at all');
+        ok(C.built < 10000, `it built ${C.built} columns before stopping`);
+        ok(C.got > C.was, 'the frontier did not move');
+    });
+
+    check('asking for ground already there is free', () => {
+        const r = A.run('ensureWorldTo(1)');
+        eq(r, 0, 'it rebuilt ' + r + ' columns that already existed');
+        eq(A.run('ensureWorldTo(undefined)'), 0, 'a missing frontier built something');
+        eq(A.run('ensureWorldTo(NaN)'), 0, 'a NaN frontier built something');
+    });
+
 console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
 process.exit(failures ? 1 : 0);
+})();

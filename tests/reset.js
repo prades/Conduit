@@ -65,7 +65,8 @@ function makeEnv() {
         ELEMENTS: ['fire', 'ice', 'electric', 'core', 'flux', 'toxic'].map(id => ({ id })),
         cfg: { pillarSpawnRate: 0.15, npcSpawnRate: 0.22 },
         // World generation reads these; lifted from config.js, not restated.
-        ...configNums(['PANEL_DECOY_CHANCE', 'PANEL_SHARD_MIN', 'PANEL_SHARD_MAX']),
+        ...configNums(['PANEL_DECOY_CHANCE', 'PANEL_SHARD_MIN', 'PANEL_SHARD_MAX',
+                        'WORLD_OPENING_COLUMNS']),
         PYLON_STYLE: _pylonStyle(),
         PLAYER_AMMO_START: 12, PLAYER_AMMO_MAX: 60, playerAmmo: 0,
         NPC_TYPES: { virus: { moveSpeed: 0.02 }, lobster: { moveSpeed: 0.02 }, turtle: { moveSpeed: 0.02 } },
@@ -285,15 +286,21 @@ check('a reset generates the same span a fresh page load does', () => {
     // the two entry points drift apart again.
     const INIT = fs.readFileSync(path.join(ROOT, 'js/init.js'), 'utf8');
     const back = INIT.match(/for \(let i = (CAMP_MIN_X|-?\d+); i < 0; i\+\+\) generateSegment\(i\)/);
-    const fwd  = INIT.match(/for \(let i = 0; i < (\d+); i\+\+\) generateSegment\(i\)/);
+    // Both entry points name the span rather than spelling it out, so there is
+    // one number and they cannot drift.
+    const fwd  = INIT.match(/for \(let i = 0; i < (WORLD_OPENING_COLUMNS|\d+); i\+\+\) generateSegment\(i\)/);
     ok(back && fwd, 'could not read init.js\'s generation span');
     ok(/for \(let i=CAMP_MIN_X;i<0;i\+\+\) generateSegment\(i\)/.test(WAVES.replace(/ /g, '')
         .replace(/for\(leti=/g, 'for (let i=')) ||
        WAVES.includes('CAMP_MIN_X'),
        'restartGame should generate back to CAMP_MIN_X, as init.js does');
-    const rFwd = WAVES.match(/function restartGame[\s\S]*?for \(let i=0;i<(\d+);i\+\+\) generateSegment\(i\)/);
+    const rFwd = WAVES.match(/function restartGame[\s\S]*?for \(let i=0;i<(WORLD_OPENING_COLUMNS|\d+);i\+\+\) generateSegment\(i\)/);
     ok(rFwd, 'could not read restartGame\'s forward span');
-    ok(Number(rFwd[1]) >= Number(fwd[1]),
+    const span = v => v === 'WORLD_OPENING_COLUMNS'
+        ? Number(fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8')
+                   .match(/const WORLD_OPENING_COLUMNS = (\d+)/)[1])
+        : Number(v);
+    ok(span(rFwd[1]) >= span(fwd[1]),
        `restart generates ${rFwd[1]} segments forward, a fresh load generates ${fwd[1]}`);
 });
 

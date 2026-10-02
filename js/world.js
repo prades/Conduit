@@ -107,3 +107,36 @@ function generateSegment(startX) {
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────
+//  THE FRONTIER
+// ─────────────────────────────────────────────────────────
+// lastGenX is how far the tunnel has been BUILT. generateSegment is the only
+// thing that builds a column, and it is what moves the marker — so the two can
+// only be told apart by code that sets the marker without building anything.
+//
+// REPORTED: "sometimes when I refresh the game, the later zones do not appear."
+//
+// That is exactly what happened. Boot generates columns 0..79. Clearing a wave
+// extends the tunnel by ZONE_LENGTH and pushes lastGenX out with it, so a few
+// waves in it stands at 109. On the next load the session restore did
+//
+//     lastGenX = Math.max(lastGenX, sess.lastGenX)
+//
+// which moved the marker to 109 over ground that stopped at 79. Nothing ever
+// filled the gap: the only other generator appends PAST lastGenX
+// (`if (player.x > lastGenX - 10) generateSegment(lastGenX + 1)`) and never
+// behind it. Measured: thirty columns missing, and with them eight saved pylons
+// and a nest the player had already taken, because the restores look their
+// tiles up in worldTileMap and silently skip the ones that are not there.
+//
+// So the marker is not settable any more. You ask for ground, and you get it.
+function ensureWorldTo(x) {
+    if (!Number.isFinite(x)) return 0;
+    let built = 0;
+    // Bounded so a corrupt save cannot hang the boot on a 10-million-column
+    // loop. Far past anything the game itself can reach.
+    const limit = lastGenX + ZONE_LENGTH * 400;
+    while (lastGenX < x && lastGenX < limit) { generateSegment(lastGenX + 1); built++; }
+    return built;
+}

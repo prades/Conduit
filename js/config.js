@@ -194,6 +194,10 @@ cfg.npcSpawnRate = 0.22;
 // ── CONSTANTS ─────────────────────────────────────────────
 const TILE_W = 60, TILE_H = 30, RENDER_DIST = 22;
 const ZONE_LENGTH  = 15;
+// How much tunnel a NEW game starts with: enough to cover the zones a fresh
+// save can reach (activeDayZones caps at 5) with room to walk into. A saved
+// game digs further than this, and the boot follows it out — see ensureWorldTo.
+const WORLD_OPENING_COLUMNS = 80;
 const LONG_HOLD_MS = 500;
 const RADIAL_RADIUS = 60;
 const FOLLOW_STOP  = 2.0;

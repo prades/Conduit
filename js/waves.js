@@ -580,7 +580,7 @@ function restartGame() {
     // Same span as init.js: back to CAMP_MIN_X so every base building site has
     // ground under it, and as far forward as a fresh page load lays down.
     for (let i=CAMP_MIN_X;i<0;i++) generateSegment(i);
-    for (let i=0;i<80;i++) generateSegment(i);
+    for (let i=0;i<WORLD_OPENING_COLUMNS;i++) generateSegment(i);
     // No free spawns — player earns followers and encounters predators naturally
     spawnHazardsForDay();
     document.getElementById("overlay").classList.remove("active");

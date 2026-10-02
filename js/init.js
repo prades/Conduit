@@ -20,7 +20,12 @@ async function loadConfig() {
     restoredNpcKeys = (session && Array.isArray(session.npcs)) ? new Set(session.npcs) : null;
 
     for (let i = CAMP_MIN_X; i < 0; i++) generateSegment(i);
-    for (let i = 0; i < 80; i++) generateSegment(i);
+    for (let i = 0; i < WORLD_OPENING_COLUMNS; i++) generateSegment(i);
+    // Out to wherever the saved game had already dug. BEFORE the pylon, nest
+    // and session restores below, because every one of them looks its tile up
+    // in worldTileMap and silently skips what is not there — which is how a
+    // refresh used to lose the later zones along with everything built in them.
+    if (session) ensureWorldTo(session.lastGenX);
     shardCount = getShards();
     playerAmmo = getAmmo();
     unlockedElements = new Set(getUnlocks());

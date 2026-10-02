@@ -297,7 +297,13 @@ function applySession(sess) {
     // Only a real boolean flips it: anything else leaves the siphon on, which
     // is the state a player who has never touched the switch expects.
     if (typeof sess.siphon === "boolean") siphonEnabled = sess.siphon;
-    if (Number.isFinite(sess.lastGenX)) lastGenX = Math.max(lastGenX, sess.lastGenX);
+    // Not an assignment: the ground has to exist before anything is restored
+    // onto it. Setting the marker alone left the later zones unbuilt, and every
+    // pylon and taken nest out there was dropped on the way back in.
+    // Deliberately no fallback that just moves the marker. That line WAS the
+    // bug, and a marker standing over ground nobody built is worse than a
+    // frontier that never moved.
+    if (typeof ensureWorldTo === "function") ensureWorldTo(sess.lastGenX);
     if (Array.isArray(sess.explored)) exploredZones = new Set(sess.explored);
 
     const at = (x, y) => worldTileMap.get(`${x},${y}`);
