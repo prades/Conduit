@@ -105,6 +105,44 @@ function followerPickPoint(f) {
     return { x: px, y: py - 55 };
 }
 
+// A pylon is a TALL BODY, not a point. It stands on its tile centre and rises
+// to about where its health bar is drawn — game.js puts that at base-75 — so
+// anywhere on that column reads as "the pylon" to the player.
+//
+// A point-and-radius test is the wrong shape for it: the body is 75px tall and
+// 60 wide, so a single centre point with a 45px radius misses the top of the
+// pylon by a few pixels, which is exactly where a finger reaching past a
+// follower lands.
+const PYLON_BODY_RISE = 75;   // matches the health bar in game.js
+const PYLON_BODY_DROP = 8;    // the base flares slightly below the tile centre
+function pylonBodyBox(t) {
+    const px = (t.x - player.visualX - (t.y - player.visualY)) * TILE_W + canvas.width/2;
+    const py = (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + canvas.height/2;
+    const base = py + TILE_H;
+    return { x: px, top: base - PYLON_BODY_RISE, bottom: base + PYLON_BODY_DROP, base };
+}
+
+// The pylon drawn under this point, or null.
+//
+// Build mode needs this because a pylon's body and a follower standing on it
+// occupy the SAME screen space: the follower is picked 55px above its tile and
+// the pylon rises 75px off that same tile. A press meant for the pylon landed
+// squarely on the follower, and the ring came back offering TO WORK.
+//
+// Where two bodies overlap the FRONT one wins — the one whose base is lower on
+// screen — because that is the one drawn on top and so the one being pointed at.
+function findPylonAtScreen(ex, ey) {
+    let best = null, bestBase = -Infinity;
+    for (const t of world) {
+        if (!t.pillar || t.destroyed || !(t.health > 0)) continue;
+        const b = pylonBodyBox(t);
+        if (Math.abs(ex - b.x) > TILE_W / 2) continue;
+        if (ey < b.top || ey > b.bottom) continue;
+        if (b.base > bestBase) { bestBase = b.base; best = t; }
+    }
+    return best;
+}
+
 // Each finder returns the CLOSEST match rather than the first one it walks
 // past, so the two can be compared fairly — see handleLongHold.
 function findEnemyAtScreen(ex, ey) {
@@ -253,6 +291,30 @@ function handleLongHold(ex,ey) {
         const _snap=world.find(obj=>obj.pillar&&!obj.destroyed&&obj.health>0&&Math.hypot(obj.x-gx,obj.y-gy)<2.0);
         if (_snap) commandTarget=_snap;
     }
+    // ── BUILD MODE: THE GROUND WINS ──────────────────────────────────────
+    // With build mode on, the player has said what this press is about. A
+    // pylon's body and a follower standing on it share the same screen space,
+    // so the press that means UPGRADE landed on the follower instead and the
+    // ring came back offering TO WORK. The same collision already had to be
+    // worked around once, for nest linking — see handleNestConnectTap.
+    //
+    // A pylon actually UNDER the point wins, which is a tighter rule than the
+    // two-tile snap above: that snap is skipped in build mode on purpose, so
+    // the empty tile beside a pylon stays reachable for a new one.
+    if (buildMode) {
+        const _onPylon = findPylonAtScreen(ex, ey);
+        if (_onPylon) commandTarget = _onPylon;
+        // And no unit takes the press. Build mode's ring has no unit actions on
+        // it — the follower and enemy branches of drawRadialMenu return before
+        // BUILD/UPGRADE is ever drawn — so picking one here could only hide the
+        // button the player opened the menu for. Turn build mode off to command
+        // the squad, exactly as POSITION already requires.
+        commandFollowerTarget = null;
+        commandEnemyTarget    = null;
+        commandNestTarget     = null;
+        dragDX=0; dragDY=0;
+        return;
+    }
     // Whichever is CLOSER to the finger wins, rather than the enemy always
     // taking it. An enemy used to win outright, and a TOXIC repeller has
     // enemies pressed right up against it by definition — that is its whole
@@ -383,7 +445,14 @@ canvas.addEventListener('pointerup', e=>{
     }
 
     // ── ULTIMATE DOUBLE-TAP DETECTION ────────────────────
-    if (!touchMoved) {
+    // Not while the radial menu is up or waiting for its tap, and not in build
+    // mode. This scan swallows any tap landing within 40px of a follower, and
+    // it runs AHEAD of the radial menu's own handling — so the tap confirming
+    // BUILD or UPGRADE was eaten whenever a follower happened to be standing
+    // near the button, and the order silently did nothing. The nest link hit
+    // exactly this and had to be moved above the scan to get out of its way;
+    // this is the same fix stated as a condition instead.
+    if (!touchMoved && !commandMode && !commandPendingTap && !buildMode) {
         let _tappedFollower = null;
         for (const f of followers) {
             if (f.dead) continue;

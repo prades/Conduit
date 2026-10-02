@@ -377,6 +377,178 @@ async function ready() {
            'the index does not say an enemy pylon cannot be upgraded');
     });
 
+    // ─────────────────────────────────────────────────────
+    group('BUILD MODE: the ground wins the press');
+
+    // REPORTED: "when build mode is on, it needs to prioritise the pylons when
+    // the user clicks on a tile that's occupied by multiple objects like
+    // followers."
+    //
+    // A pylon's drawn body and a follower standing on it share the same screen
+    // space — the follower is picked 55px above its tile, the pylon rises 75px
+    // off that same tile — so a press meant for the pylon landed on the
+    // follower. drawRadialMenu returns early on a follower target, so the ring
+    // came back offering TO WORK and the BUILD/UPGRADE button the player opened
+    // the menu for was never drawn at all.
+    //
+    // The same collision had already been worked around once, for nest linking.
+
+    // Stand `n` followers on a green pylon and press at `dy` from its base.
+    // Reports what the press picked and what the ring then offered, with the
+    // drag held UP where BUILD/UPGRADE lives.
+    const press = (build, dy, n, dx) => R.run(`(function(){
+        actors.length = 0; followers.length = 0;
+        ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+        buildMode = ${build ? 'true' : 'false'};
+        commandMode = false; commandPendingTap = false;
+        commandTarget = null; commandFollowerTarget = null; commandEnemyTarget = null;
+        selectedRadialAction = null;
+        elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;
+        shardCount = 999;
+        // A clean board. Earlier scenes leave their pylons standing, and
+        // findPylonAtScreen answers with the CLOSEST one — so without this the
+        // press was being judged against a pylon from a previous check.
+        world.forEach(x => { x.pillar = false; x.destroyed = false; });
+        const t = world.find(x => x.type === 'floor' && x.y === 3 && x.x > 2
+                                  && !x.pillar && !x.nest && !x.nodeType);
+        t.pillar = true; t.destroyed = false; t.pillarTeam = 'green';
+        t.pillarCol = '#0f8'; t.health = 20; t.maxHealth = 20; t.upgraded = false;
+        player.x = t.x; player.y = t.y + 1;
+        player.visualX = player.x; player.visualY = player.y;
+        _cacheAge = -999;
+        for (let i = 0; i < ${n}; i++) {
+            const f = { x: t.x + (i % 3 - 1) * 0.3, y: t.y + (i < 3 ? 0 : 0.3),
+                        type: 'virus', team: 'green', isFollower: true, dead: false,
+                        element: 'core', role: 'brawler', duty: 'fighter',
+                        health: 40, maxHealth: 40, moveSpeed: 0.03, walkCycle: 0,
+                        currentWill: 5, stats: { will: 5, combat: 5, defense: 5, health: 40 } };
+            actors.push(f); followers.push(f);
+        }
+        // Aimed from the projection, NOT from any picking helper — using the
+        // function under test to choose the press point would make the test
+        // follow the bug wherever it went.
+        const px = (t.x - player.visualX - (t.y - player.visualY)) * TILE_W + canvas.width/2;
+        const py = (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + canvas.height/2;
+        const base = py + TILE_H;
+        // A unit target left over from the press before. The build-mode branch
+        // returns before the follower/enemy picking runs, so without this the
+        // clearing it does would never be exercised — and a stale follower is
+        // enough to hijack the ring, because drawRadialMenu checks it first and
+        // returns before the build button is drawn.
+        commandFollowerTarget = followers[0] || null;
+        commandEnemyTarget = null;
+        handleLongHold(px + (${dx || 0}), base + (${dy}));
+        // Captured HERE, not after the order runs: executeCommand hands the
+        // target to the element picker and clears it, so a snapshot taken at
+        // the end reports null however well the press landed.
+        const picked = {
+            pickedPylon: commandTarget === t,
+            pickedFollower: !!commandFollowerTarget,
+            sameTile: !!(commandTarget && commandTarget.x === t.x && commandTarget.y === t.y),
+        };
+        dragDY = -RADIAL_RADIUS; dragDX = 0;
+        drawRadialMenu();
+        const action = selectedRadialAction;
+        executeCommand();
+        return Object.assign(picked, {
+            action,
+            picker: !!elementPickerOpen, pickerMode: elementPickerMode || null,
+            pickerOnPylon: elementPickerTarget === t,
+        });
+    })()`);
+
+    check('fixture: with nobody on it, build mode reaches the pylon', () => {
+        const r = press(true, -35, 0);
+        same(r.pickedPylon, true, 'an empty pylon could not be pressed');
+        same(r.action, 'build_upgrade', 'the ring did not offer the build button');
+    });
+
+    check('THE REPORTED CASE: a follower on the pylon no longer steals it', () => {
+        const r = press(true, -35, 1);
+        same(r.pickedFollower, false, 'the follower took the press');
+        same(r.pickedPylon, true, 'the pylon did not get it');
+        same(r.action, 'build_upgrade', 'the ring offered ' + r.action + ', not the build button');
+    });
+
+    check('and a whole squad standing on it does not either', () => {
+        const r = press(true, -35, 6);
+        same(r.pickedFollower, false, 'six followers took the press');
+        same(r.pickedPylon, true, 'the pylon did not get it');
+    });
+
+    check('the press reaches the UPGRADE through to the element picker', () => {
+        // The ring offering the button is not the same as the order arriving.
+        const r = press(true, -35, 6);
+        same(r.picker, true, 'the element picker never opened');
+        same(r.pickerMode, 'upgrade', 'it opened to ' + r.pickerMode + ' rather than upgrade');
+        same(r.pickerOnPylon, true, 'it opened on something other than that pylon');
+    });
+
+    check('the pylon wins anywhere on its BODY, not just one spot', () => {
+        // A point-and-radius test missed the top of the pylon by a few pixels,
+        // which is exactly where a finger reaching past a follower lands.
+        for (const dy of [-70, -55, -35, -15, 0]) {
+            const r = press(true, dy, 2);
+            same(r.pickedPylon, true, 'the pylon lost the press at base' + dy);
+            same(r.pickedFollower, false, 'a follower took the press at base' + dy);
+        }
+    });
+
+    check('including its base corners, where the body flares widest', () => {
+        // A point-and-radius test is the wrong SHAPE for a tall body: at the
+        // sides its vertical reach shrinks, so the bottom corners of the pylon
+        // — which is where the base is drawn and where a press naturally lands
+        // — fall outside the circle while being plainly on the pylon.
+        for (const [dx, dy] of [[26, 6], [-26, 6], [26, -72], [-26, -72]]) {
+            const r = press(true, dy, 2, dx);
+            same(r.pickedPylon, true,
+                 `the pylon lost a press on its body at (${dx}, base${dy})`);
+        }
+    });
+
+    check('but the tile ABOVE it is still reachable, or you cannot build behind one', () => {
+        // The two-tile pylon snap is skipped in build mode on purpose, so that
+        // the empty ground around a pylon stays targetable. Grabbing the pylon
+        // from too far up would undo that.
+        const r = press(true, -95, 2);
+        same(r.pickedPylon, false, 'the pylon grabbed a press well above its head');
+        same(r.sameTile, false, 'it still resolved to the pylon\'s own tile');
+        same(r.action, 'build_upgrade', 'the ring should still offer BUILD on bare ground');
+    });
+
+    check('with build mode OFF, followers are commanded as before', () => {
+        // The fix must not cost the player the duty menu. Build mode is the
+        // mode that says "this press is about the ground".
+        const r = press(false, -55, 1);
+        same(r.pickedFollower, true, 'a follower standing on a pylon can no longer be ordered');
+        same(r.action, 'toggle_duty', 'the ring offered ' + r.action + ' rather than the duty button');
+    });
+
+    check('the double-tap scan does not eat the button press', () => {
+        // It swallows ANY tap within 40px of a follower and runs ahead of the
+        // radial menu's own handling, so the tap confirming BUILD was eaten
+        // whenever a follower stood near the button.
+        const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+        const at = INPUT.indexOf('ULTIMATE DOUBLE-TAP DETECTION');
+        ok(at > -1, 'the double-tap scan could not be located');
+        const guard = INPUT.slice(at, INPUT.indexOf('let _tappedFollower', at));
+        for (const cond of ['!commandMode', '!commandPendingTap', '!buildMode']) {
+            ok(guard.indexOf(cond) > -1, 'the scan still runs with ' + cond.slice(1) + ' set');
+        }
+    });
+
+    check('build mode picks no unit at all, so the ring cannot be hijacked', () => {
+        // drawRadialMenu returns early on BOTH a follower and an enemy target,
+        // before the build button is ever drawn.
+        const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+        const at = INPUT.indexOf('BUILD MODE: THE GROUND WINS');
+        ok(at > -1, 'the build-mode branch could not be located');
+        const body = INPUT.slice(at, INPUT.indexOf('\n}', at));
+        ok(/commandFollowerTarget = null/.test(body), 'a follower can still take a build press');
+        ok(/commandEnemyTarget\s*= null/.test(body), 'an enemy can still take a build press');
+        ok(/findPylonAtScreen/.test(body), 'the pylon under the press is not consulted');
+    });
+
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
 })();
