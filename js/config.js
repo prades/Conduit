@@ -291,6 +291,11 @@ const ALERT_DURATION = 600; // 10 seconds at 60fps
 // Counted once every three frames, so 45 is about 2.2 seconds. A FLUX zone
 // counts triple because it physically holds them in place — that is the one
 // that made the game unplayable to sit and watch.
+// ELECTRIC WAVE HASTE — the move-speed multiplier a friendly gets while standing
+// in an electric wave zone, by network tier. It lingers ELECTRIC_HASTE_FRAMES
+// after they step out, so the edge of the zone does not stutter.
+const ELECTRIC_HASTE = { 1: 1.25, 2: 1.4, 3: 1.6 };
+const ELECTRIC_HASTE_FRAMES = 12;
 const PYLON_AGGRO_EXPOSURE  = 45;
 const PYLON_AGGRO_TRAP_RATE = 3;
 // Frames between bashes once it is in reach, and the distance at which it

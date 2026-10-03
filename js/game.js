@@ -327,6 +327,14 @@ function applyPylonZoneEffects(wavePylons) {
                         break;
                     }
                     case "electric": {
+                        // HASTE: your side runs faster through an electric zone, so
+                        // it is the lane to send followers back to the fight, or
+                        // out for shards. Renewed on every pass (every 3 frames)
+                        // and dropping off a moment after they leave. An enemy's
+                        // slow on the same follower wins, so ice still bites.
+                        if (isFriend && !(a.slowed > 0 && (a.slowFactor ?? 1) < 1)) {
+                            applySlow(a, ELECTRIC_HASTE_FRAMES, ELECTRIC_HASTE[Math.min(3, _nTier)] || ELECTRIC_HASTE[1]);
+                        }
                         if (isFriend && frame % 10 === 0) {
                             const gain = Math.round((_nTier >= 3 ? 6 : _nTier >= 2 ? 4 : 2) * _seasonBonus);
                             a.currentResonance = Math.min(100, (a.currentResonance||0) + gain);
@@ -1405,6 +1413,9 @@ function render() {
             }
         });
         if (!nearest) return;
+        // A turret that is shooting a predator is a pylon that is attacking it,
+        // so that predator turns on it. Nothing else sends one after a pylon.
+        if (nearest instanceof Predator && !nearest.pylonAggro) nearest.pylonAggro = t;
         // THE ROUND IS PAID FOR BEFORE IT LEAVES. A turret with nothing in
         // range has cost nothing up to here, which is the point — attack mode
         // is the cheap one precisely because it only spends when it fights.

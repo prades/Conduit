@@ -502,6 +502,25 @@ async function boot() {
         ok(r.avg > 0.1, `it faded so fast the wire reads as dead: average ${r.avg}`);
     });
 
+    check('a turret that is shooting a predator is what turns it on the pylon', () => {
+        const r = E.run(`(function(){
+            actors.length = 0; followers.length = 0;
+            world.forEach(t => { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.powerFlow = 0; });
+            const row = world.filter(t => t.type === 'floor' && t.y === 2 && t.x > 2 && !t.nest && !t.nodeType).sort((a,b) => a.x - b.x);
+            const gen = row[0];
+            Object.assign(gen, { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999, isGenerator: true, attackMode: true });
+            const t = row[1];
+            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999,
+                               attackMode: true, attackModeElement: 'fire', attackPower: 12, attackRange: 2.5 });
+            const quiet = new Predator('scout', Object.assign({}, SPECIES['ant'].scout, { color: SPECIES['ant'].color }), t.x + 2.2, t.y);
+            quiet.team = 'red'; quiet.health = 99999; quiet.maxHealth = 99999; actors.push(quiet);
+            _cacheAge = -999;
+            for (let i = 0; i < 200; i++) render();
+            return { aggro: quiet.pylonAggro === t };
+        })()`);
+        ok(r.aggro, 'a predator being shot by a turret never turned on it');
+    });
+
     check('and a turret that STOPS firing goes quiet again', () => {
         // The fade is what makes the wire a live readout rather than a latch.
         // Without it the first round a turret ever fires leaves its line lit
@@ -518,8 +537,8 @@ async function boot() {
             Object.assign(gen, { pillar: true, destroyed: false, pillarTeam: 'green',
                                  health: 20, maxHealth: 20, isGenerator: true, attackMode: true });
             const t = row[1];
-            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 20,
-                               maxHealth: 20, attackMode: true, attackModeElement: 'fire',
+            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999,
+                               maxHealth: 99999, attackMode: true, attackModeElement: 'fire',
                                attackPower: 12, attackRange: 2.5 });
             const foe = new Predator('scout', Object.assign({}, SPECIES['ant'].scout,
                                      { color: SPECIES['ant'].color }), t.x, t.y);

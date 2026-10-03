@@ -107,15 +107,14 @@ let cocoons = [];   // { tiles:[[x,y]], anchors:[tile], species, className, ... 
 // ── Finding something to infest ───────────────────────────
 // Green pylons first and foremost — that is the point. A dormant grey pylon is
 // still yours, so it counts; a generator counts too.
+//
+// Predators no longer go looking for pylons, so this finds nothing and the walk
+// to one never starts. The only pylon a predator turns on is one that is ON and
+// hurting it, and that is the bash in Predator.update (pylonAggro), not this.
+// The conversion and nest machinery below is kept for anything that converts a
+// pylon directly.
 function nearestGreenPylonFor(pred) {
-    let best = null, bestD = INFEST_SEEK_RANGE;
-    for (const t of world) {
-        if (!t.pillar || t.destroyed || t.health <= 0) continue;
-        if (t.pillarTeam !== "green") continue;
-        const d = Math.hypot(t.x - pred.x, t.y - pred.y);
-        if (d < bestD) { bestD = d; best = t; }
-    }
-    return best;
+    return null;
 }
 
 function _infestTargetStillGood(pred, t) {

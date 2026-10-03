@@ -193,7 +193,7 @@ check('a predator gnawing the Crystal faces the Crystal', () => {
 });
 check('a predator bashing a pylon faces the pylon', () => {
     reset();
-    const pylon = { x: 4.3, y: 2, pillar: true, pillarTeam: 'green', destroyed: false, health: 20, maxHealth: 20 };
+    const pylon = { x: 4.3, y: 2, pillar: true, pillarTeam: 'green', destroyed: false, health: 99999, maxHealth: 99999 };
     sandbox.world.push(pylon); sandbox._pillarCache.push(pylon);
     const p = mkPred('ant', 'tank', 5, 2);
     p.pylonAggro = pylon;

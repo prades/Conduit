@@ -37,6 +37,7 @@ const SUITES = [
     ['walkable bounds',        'bounds.js'],
     ['power grid',             'power.js'],
     ['connector pylon',        'connector.js'],
+    ['electric haste',         'haste.js'],
 ];
 
 let failed = 0;

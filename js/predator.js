@@ -351,16 +351,10 @@ class Predator {
                 });
                 if (nearRed) { this.currentTarget=nearRed; this.state="attack"; return; }
             }
-            // When alarmed, aggro on any nearby green pylon to bash it on the way to crystal
-            if ((alertActive || gameState.phase === "night") && !this.pylonAggro && frame % 30 === 0) {
-                let nearestPylon=null, bestPD2=16; // 4.0²=16
-                _pillarCache.forEach(p => {
-                    if (p.pillarTeam !== "green") return;
-                    const dx=p.x-this.x,dy=p.y-this.y,d2=dx*dx+dy*dy;
-                    if (d2 < bestPD2) { bestPD2=d2; nearestPylon=p; }
-                });
-                if (nearestPylon) this.pylonAggro = nearestPylon;
-            }
+            // Predators no longer pick on pylons just because an alarm is up or
+            // night has fallen. A pylon only becomes a target when it is ON and
+            // hurting them: the zone exposure in applyPylonZoneEffects and a
+            // turret's shot in the attack-pylon pass are what set pylonAggro.
             const dx=crystal.x-this.x, dy=crystal.y-this.y;
             const dist=Math.sqrt(dx*dx+dy*dy);
             if (dist>0.8) {

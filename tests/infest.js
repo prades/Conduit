@@ -87,6 +87,21 @@ function makeEnv() {
     for (const f of ['js/species.js', 'js/abilities.js', 'js/mass.js', 'js/infest.js', 'js/predator.js']) {
         vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
     }
+    // The game no longer sends predators looking for pylons (nearestGreenPylonFor
+    // finds nothing), but everything below the walk — the rate, the decay, the
+    // progress bar, the nests — still needs a predator standing at a pylon. So
+    // the fixtures stand in for "something sent it" with the old nearest-pylon
+    // search, and the 'predators ignore pylons' group puts the real one back.
+    vm.runInContext(`globalThis.__realSeek = nearestGreenPylonFor;
+        nearestGreenPylonFor = function (pred) {
+            let best = null, bestD = INFEST_SEEK_RANGE;
+            for (const t of world) {
+                if (!t.pillar || t.destroyed || t.health <= 0 || t.pillarTeam !== 'green') continue;
+                const d = Math.hypot(t.x - pred.x, t.y - pred.y);
+                if (d < bestD) { bestD = d; best = t; }
+            }
+            return best;
+        };`, ctx);
     return { sandbox, calls, run: s => vm.runInContext(s, ctx) };
 }
 
@@ -244,6 +259,44 @@ check('being disturbed mid-job drops the target rather than resuming later', () 
     env.sandbox.alertActive = true;
     env.run('infestTick')(p);
     ok(!p.infestTarget, 'the target should be dropped when a fight starts');
+});
+
+group('predators leave pylons alone');
+
+check('THE ASK: an undisturbed predator does not go for a pylon', () => {
+    const env = makeEnv();
+    env.run('nearestGreenPylonFor = __realSeek');
+    board(env, -2, 8, 0, 4);
+    const t = greenPylon(env, 6, 2);
+    const p = mkPred(env, 0, 2);
+    tick(env, 400);
+    ok(!p.infestTarget, 'it picked a pylon to infest');
+    same(t.pillarTeam, 'green', 'the pylon was taken');
+    ok(!t.converting, 'it began converting the pylon');
+});
+
+check('not even one standing right beside it', () => {
+    const env = makeEnv();
+    env.run('nearestGreenPylonFor = __realSeek');
+    board(env, -2, 8, 0, 4);
+    const t = greenPylon(env, 1, 2);
+    const p = mkPred(env, 0.5, 2);
+    tick(env, 600);
+    same(t.pillarTeam, 'green', 'the pylon was taken');
+    ok(!p.pylonAggro, 'it turned on a pylon that was doing nothing to it');
+});
+
+check('an alarm or the night does not send it after pylons either', () => {
+    const env = makeEnv();
+    env.run('nearestGreenPylonFor = __realSeek');
+    board(env, -2, 8, 0, 4);
+    const t = greenPylon(env, 2, 2);
+    const hp0 = t.health;
+    const p = mkPred(env, 0, 2);
+    env.sandbox.alertActive = true; env.sandbox.gameState.phase = 'night';
+    tick(env, 300);
+    ok(!p.pylonAggro, 'the alarm sent it after a pylon');
+    same(t.health, hp0, 'the pylon was damaged');
 });
 
 group('walking to a pylon and taking it');

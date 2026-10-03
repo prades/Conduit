@@ -100,13 +100,13 @@ const CODEX_ELEMENTS = {
     },
     electric: {
         role: 'SUPPORT',
-        summary: 'Charges your own side instead of hurting theirs. Feeds resonance to allies in the zone.',
+        summary: 'Charges your own side instead of hurting theirs, and SPEEDS THEM UP. Feeds resonance to allies in the zone and makes them run faster, so it is the lane to send followers back to the fight or out for shards.',
         tiers: {
-            1: '+2 resonance to every ally, six times a second.',
-            2: '+4 resonance, and ultimate charge builds faster.',
-            3: '+6 resonance, and ultimates charge faster still.',
+            1: '+2 resonance to every ally, six times a second. Allies move 1.25\u00d7 as fast.',
+            2: '+4 resonance, ultimate charge builds faster. Allies move 1.4\u00d7 as fast.',
+            3: '+6 resonance, ultimates charge faster still. Allies move 1.6\u00d7 as fast \u2014 the fastest lane on the map.',
         },
-        numbers: { gain: [2, 4, 6] },
+        numbers: { gain: [2, 4, 6], haste: [1.25, 1.4, 1.6] },
     },
     core: {
         role: 'DEFENCE',
