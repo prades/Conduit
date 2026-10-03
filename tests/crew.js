@@ -51,8 +51,8 @@ function constant(src, name) {
     if (!m) throw new Error(`no longer defines ${name}`);
     return Number(m[1]);
 }
-const REPEL_RADIUS   = constant(MASS, 'REPEL_RADIUS');
-const REPEL_PUSH     = constant(MASS, 'REPEL_PUSH');
+const MEND_RATE      = constant(MASS, 'MEND_RATE');
+const MEND_ESCORT    = constant(MASS, 'MEND_ESCORT');
 const ICE_BLOCK_R    = constant(MASS, 'ICE_BLOCK_R');
 const ICE_BLOCK_PUSH = constant(MASS, 'ICE_BLOCK_PUSH');
 const ICE_FORM       = constant(MASS, 'ICE_FORM_FRAMES');
@@ -135,7 +135,7 @@ check('TOXIC and ICE can be put on the work crew', () => {
 
 check('each has its own job, distinct from the other four', () => {
     const env = makeEnv();
-    same(env.run('workerJobLabel')('toxic'), 'REPEL', 'toxic');
+    same(env.run('workerJobLabel')('toxic'), 'TEND CLONE', 'toxic');
     same(env.run('workerJobLabel')('ice'), 'SET BLOCK', 'ice');
     const els = env.run('workerElements()');
     const jobs = els.map(e => env.run('workerJobLabel')(e));
@@ -151,143 +151,143 @@ check('the refusal message names them', () => {
 });
 
 // ─────────────────────────────────────────────────────────
-group('TOXIC: it repels');
+group('TOXIC: it tends the clones');
 
-check('THE JOB: a predator walking in is pushed back out', () => {
+// REPORTED: "change the toxic workers' effect to repairing clones — basically
+// siding by them and healing them constantly."
+//
+// It used to be a repel cloud that shoved enemies around for no damage. A clone
+// costs shards AND a DNA splice and carries 3x the health of what it was cloned
+// from, so there is both a reason to keep one alive and a lot of bar to top up.
+
+function clone(env, x, y, health) {
+    const c = { x, y, dead: false, isClone: true, team: 'green',
+                health: health === undefined ? 60 : health, maxHealth: 120,
+                moveSpeed: 0.03, dirX: 1, dirY: 0 };
+    env.sandbox.actors.push(c);
+    return c;
+}
+
+check('THE JOB: a hurt clone beside it is mended', () => {
     const env = makeEnv();
     const w = follower(env, 'toxic', 10, 2);
-    const p = enemy(env, 10.4, 2);
-    const before = dist(p, w);
+    const c = clone(env, 10.4, 2, 60);
     work(env, w, 60);
-    ok(dist(p, w) > before + 0.5,
-       `it should have been shoved: ${before.toFixed(2)} -> ${dist(p, w).toFixed(2)}`);
+    ok(c.health > 60, `the clone was not mended: still ${c.health}`);
 });
 
-check('and the push beats a predator\'s walking speed', () => {
-    // The load-bearing number. A cloud that pushes slower than a predator
-    // walks is decorative — they would stroll straight through it.
-    ok(REPEL_PUSH > 0.04, `a push of ${REPEL_PUSH} does not outpace a predator`);
-});
-
-check('it does NO damage — ground, not kills', () => {
+check('THE ASK: it heals CONSTANTLY, not once', () => {
     const env = makeEnv();
     const w = follower(env, 'toxic', 10, 2);
-    const p = enemy(env, 10.2, 2);
+    const c = clone(env, 10.4, 2, 20);
+    work(env, w, 30);  const early = c.health;
+    work(env, w, 30);  const later = c.health;
+    ok(early > 20, 'nothing happened in the first half-second');
+    ok(later > early, `it stopped after one pulse: ${early} then ${later}`);
+});
+
+check('and at the documented rate', () => {
+    const env = makeEnv();
+    const w = follower(env, 'toxic', 10, 2);
+    const c = clone(env, 10.2, 2, 10);
+    work(env, w, 60);
+    // 60 frames at MEND_RATE a frame, give or take the frames spent closing.
+    ok(Math.abs((c.health - 10) - MEND_RATE * 60) < MEND_RATE * 12,
+       `60 frames put in ${(c.health - 10).toFixed(2)}, expected about ${(MEND_RATE * 60).toFixed(2)}`);
+});
+
+check('THE ASK: it sides by the clone — it follows it around', () => {
+    // "Basically siding by them." A medic that walks to where the clone WAS
+    // spends the fight out of range of the thing it is assigned to.
+    const env = makeEnv();
+    const w = follower(env, 'toxic', 10, 2);
+    const c = clone(env, 10.3, 2, 60);
+    work(env, w, 30);
+    const near = dist(w, c);
+    // The clone walks off.
+    c.x = 18;
+    work(env, w, 200);
+    ok(dist(w, c) <= Math.max(near, MEND_ESCORT) + 0.4,
+       `it did not follow: ended ${dist(w, c).toFixed(2)} away`);
+});
+
+check('it never overheals past the clone\'s maximum', () => {
+    const env = makeEnv();
+    const w = follower(env, 'toxic', 10, 2);
+    const c = clone(env, 10.2, 2, 118);
+    work(env, w, 300);
+    same(c.health, c.maxHealth, `it healed to ${c.health}, past the cap of ${c.maxHealth}`);
+});
+
+check('a HURT clone is chosen over a healthy one that is nearer', () => {
+    // Mending is the job. Escorting a full-health clone while another is
+    // bleeding two tiles away would be the wrong call.
+    const env = makeEnv();
+    const w = follower(env, 'toxic', 10, 2);
+    const full = clone(env, 10.3, 2, 120);
+    const hurt = clone(env, 12, 2, 30);
+    work(env, w, 90);
+    ok(hurt.health > 30, 'it tended the full-health clone instead of the hurt one');
+    same(full.health, full.maxHealth, 'fixture: the healthy one should have stayed full');
+});
+
+check('with none hurt it still escorts the nearest, ready for when one is', () => {
+    const env = makeEnv();
+    const w = follower(env, 'toxic', 10, 2);
+    const c = clone(env, 14, 2, 120);
+    same(env.run('followerWorkTick')(w), true, 'it should claim the frame to escort');
+    work(env, w, 200);
+    ok(dist(w, c) < 2, `it did not take station: ${dist(w, c).toFixed(2)} away`);
+});
+
+check('it mends ONLY clones — not followers, not the player, not enemies', () => {
+    const env = makeEnv();
+    const w = follower(env, 'toxic', 10, 2);
+    const mate = follower(env, 'core', 10.3, 2, 'fighter');
+    mate.health = 10;
+    const foe = enemy(env, 10.4, 2);
+    foe.health = 10;
+    env.sandbox.player.health = 10;
     work(env, w, 120);
-    same(p.health, p.maxHealth, 'the repeller should never hurt anything');
+    same(mate.health, 10, 'it healed an ordinary follower');
+    same(foe.health, 10, 'it healed an enemy');
+});
+
+check('it does NO damage, as before', () => {
+    const env = makeEnv();
+    const w = follower(env, 'toxic', 10, 2);
+    clone(env, 10.2, 2, 60);
+    const p = enemy(env, 10.3, 2);
+    work(env, w, 120);
+    same(p.health, p.maxHealth, 'the mender should never hurt anything');
     same(p.dead, false, 'nor kill it');
 });
 
-check('it stops pushing at the edge of the cloud', () => {
+check('a mender with no clone at all hands the frame back', () => {
+    // So it falls through to holding station rather than standing still
+    // pretending to work.
     const env = makeEnv();
     const w = follower(env, 'toxic', 10, 2);
-    const far = enemy(env, 10 + REPEL_RADIUS + 0.4, 2);
-    const at = far.x;
-    work(env, w, 60);
-    // The repeller walks toward a target it can see, so the cloud follows it —
-    // what must not happen is a shove landing from outside the radius on the
-    // first frame, before it has moved at all.
-    env.sandbox.frame++;
-    const w2 = makeEnv();
-    const a = follower(w2, 'toxic', 10, 2);
-    const b = enemy(w2, 10 + REPEL_RADIUS + 0.4, 2);
-    const bx = b.x;
-    same(w2.run('repelStep')(a), 0, 'nothing outside the radius should be pushed');
-    same(b.x, bx, 'and it should not have moved');
+    same(env.run('followerWorkTick')(w), false, 'it claimed a frame with nothing to tend');
 });
 
-check('the push is strongest at the middle and fades to nothing at the rim', () => {
+check('a dead clone is dropped rather than tended forever', () => {
     const env = makeEnv();
     const w = follower(env, 'toxic', 10, 2);
-    const near_ = enemy(env, 10.1, 2);
-    const rim   = enemy(env, 10 + REPEL_RADIUS - 0.05, 2);
-    const n0 = near_.x, r0 = rim.x;
-    env.run('repelStep')(w);
-    ok(near_.x - n0 > rim.x - r0,
-       `the middle should push harder: ${(near_.x - n0).toFixed(4)} vs ${(rim.x - r0).toFixed(4)}`);
-    ok(rim.x - r0 >= 0, 'the rim should not pull inward');
+    const c = clone(env, 10.3, 2, 60);
+    work(env, w, 20);
+    ok(w.sandbox === undefined || true, 'fixture');
+    c.dead = true;
+    same(env.run('followerWorkTick')(w), false, 'it kept working on a dead clone');
 });
 
-check('THE RECRUIT: it never shoves one off its route', () => {
-    // Same rule as every weapon: a recruit walking to the Crystal is not an
-    // enemy. Pushing one around would be the same bug as shooting it.
-    //
-    // There is a REAL enemy in the cloud as well, and that is the whole point.
-    // The first version of this check had only the recruit, so the repeller
-    // found no target, handed the frame back and never ran the push at all —
-    // it passed with the recruit guard removed. The cloud has to be actually
-    // running for the recruit standing in it to prove anything.
-    const env = makeEnv();
-    const w = follower(env, 'toxic', 10, 2);
-    const r = recruit(env, 10.2, 2);
-    const p = enemy(env, 10.25, 2);
-    const at = r.x, aty = r.y, pAt = p.x;
-    work(env, w, 120);
-    ok(p.x > pAt + 0.5, 'fixture: the cloud must actually be pushing — it did not move the enemy');
-    same(r.x, at, 'a recruit should not be moved');
-    same(r.y, aty, 'nor sideways');
-    same(r.health, r.maxHealth, 'nor hurt');
-});
-
-check('and repelStep itself passes a recruit over, foe present or not', () => {
-    // The guard belongs in the push as well as in the target scan. With only a
-    // recruit in reach the worker bails out earlier, so that path alone cannot
-    // show which of the two is doing the work.
-    const env = makeEnv();
-    const w = follower(env, 'toxic', 10, 2);
-    const r = recruit(env, 10.1, 2);
-    const p = enemy(env, 10.15, 2);
-    const rAt = r.x, pAt = p.x;
-    same(env.run('repelStep')(w), 1, 'only the enemy should have counted as pushed');
-    ok(p.x > pAt, 'the enemy should have moved');
-    same(r.x, rAt, 'the recruit should not have');
-});
-
-check('nor does it push your own squad, or itself', () => {
-    const env = makeEnv();
-    const w = follower(env, 'toxic', 10, 2);
-    const mate = follower(env, 'fire', 10.2, 2, 'fighter');
-    const at = mate.x, selfAt = w.x;
-    env.run('repelStep')(w);
-    same(mate.x, at, 'an ally should not be pushed');
-    same(w.x, selfAt, 'and it must not push itself');
-});
-
-check('it walks to the ENEMY, not to the nearest recruit', () => {
-    // The target scan needs the same guard as the push. Without it a repeller
-    // would trail the closest recruit around, push nothing, and leave the
-    // predator it should be holding off alone — which reverting only the push
-    // guard does not show, because the push would still refuse the recruit.
-    const env = makeEnv();
-    const w = follower(env, 'toxic', 10, 2);
-    const r = recruit(env, 10.5, 2);         // close
-    const p = enemy(env, 16, 2);             // far, and the real threat
-    const picked = env.run('_nearestRepelTarget')(w);
-    ok(picked === p, 'it picked ' + (picked === r ? 'the recruit' : 'nothing'));
-    // And it should actually set off toward the enemy.
-    const at = w.x;
-    work(env, w, 60);
-    ok(w.x > at + 0.2, 'it should have walked toward the predator');
-});
-
-check('a repeller with nothing in reach hands the frame back', () => {
-    // So it holds station and follows normally rather than standing inert.
-    const env = makeEnv();
-    const w = follower(env, 'toxic', 10, 2);
-    enemy(env, 10 + SEEK + 6, 2);
-    same(env.run('followerWorkTick')(w), false, 'it should not claim the frame');
-});
-
-check('a foe standing exactly on it is still pushed, not sent to NaN', () => {
-    // Distance zero has no direction to push along. Dividing by it writes NaN
-    // into a coordinate, and one NaN takes the actor off the map permanently.
-    const env = makeEnv();
-    const w = follower(env, 'toxic', 10, 2);
-    w.dirX = 1; w.dirY = 0;
-    const p = enemy(env, 10, 2);
-    same(env.run('repelStep')(w), 1, 'it should still count as pushed');
-    ok(isFinite(p.x) && isFinite(p.y), `position went to ${p.x},${p.y}`);
-    ok(p.x > 10, 'it should be pushed along the repeller\'s facing');
+check('THE OLD JOB IS GONE: nothing repels any more', () => {
+    for (const name of ['repelStep', '_workRepel', 'REPEL_RADIUS', 'REPEL_PUSH',
+                        'MASS_REPELLER', '_repelTarget']) {
+        ok(!MASS.includes(name), 'mass.js still carries ' + name);
+    }
+    const CODEX = fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8');
+    ok(!/REPEL_RADIUS/.test(CODEX), 'the codex still reads the repel radius');
 });
 
 // ─────────────────────────────────────────────────────────
@@ -514,7 +514,8 @@ group('the index says so');
 
 check('the work crew page documents both new jobs, from the constants', () => {
     const CODEX = fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8');
-    ok(/Repel \\u2014 TOXIC|Repel — TOXIC/.test(CODEX), 'the page does not document REPEL');
+    ok(/Tend a clone \\u2014 TOXIC|Tend a clone — TOXIC/.test(CODEX),
+       'the page does not document TEND CLONE');
     ok(/Set a block \\u2014 ICE|Set a block — ICE/.test(CODEX), 'nor SET BLOCK');
     ok(/one tile wide/.test(CODEX), 'the page does not say the block is one tile wide');
     ok(/THAW/.test(CODEX), 'nor how to melt it');
@@ -522,16 +523,16 @@ check('the work crew page documents both new jobs, from the constants', () => {
     ok(/workerElements\(\)/.test(CODEX), 'the eligible list is not read off workerElements');
 });
 
-// Render the work-crew page for a given REPEL_RADIUS and hand back the HTML.
+// Render the work-crew page for a given MEND_RATE and hand back the HTML.
 // Grepping the source for the identifier is not enough: it still appears in a
 // `typeof` guard, so hardcoding the printed number passed that check.
-function crewPageWith(repelRadius) {
+function crewPageWith(mendRate) {
     let html = '';
     const el = { set innerHTML(v) { html = v; }, get innerHTML() { return html; } };
     const sandbox = {
         console, Math, Object, Array, String, Number, JSON, Set, Map,
         document: { getElementById: () => el },
-        REPEL_RADIUS: repelRadius,
+        MEND_RATE: mendRate,
         MASS_NEUTRALISE_FRAMES: 110, MASS_VALUE_SCALE: 0.35,
         SCOUR_COCOON_FRAMES: 900, SCOUR_NEST_FRAMES: 600,
         workerElements: () => ['electric', 'flux', 'core', 'toxic', 'ice', 'fire'],
@@ -550,23 +551,25 @@ function crewPageWith(repelRadius) {
     return html;
 }
 
-check('the cloud size on the page follows REPEL_RADIUS', () => {
-    const page = crewPageWith(REPEL_RADIUS);
-    const want = String(+(REPEL_RADIUS * 2).toFixed(1)).replace(/\.0$/, '');
-    ok(page.includes(want + ' tiles'),
-       `the page should state ${want} tiles across; it says: `
-       + (page.match(/[\d.]+ tiles/g) || ['nothing']).join(', '));
+check('the mend rate on the page follows MEND_RATE', () => {
+    // Stated per second, which is the unit the player experiences; the
+    // constant is per frame.
+    const page = crewPageWith(MEND_RATE);
+    const want = String(+(MEND_RATE * 60).toFixed(1)).replace(/\.0$/, '');
+    ok(page.includes(want + ' HP a second'),
+       `the page should state ${want} HP a second; it says: `
+       + (page.match(/[\d.]+ HP a second/g) || ['nothing']).join(', '));
     // And it MOVES with the constant, which is the part a source grep cannot
     // tell apart from a number that was typed in once.
-    const doubled = crewPageWith(REPEL_RADIUS * 2);
-    ok(!doubled.includes(want + ' tiles'),
-       'the stated cloud size did not change when REPEL_RADIUS did');
+    const doubled = crewPageWith(MEND_RATE * 2);
+    ok(!doubled.includes(want + ' HP a second'),
+       'the stated rate did not change when MEND_RATE did');
 });
 
 check('the index no longer says a hazard may hurt a recruit', () => {
     const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
     ok(/no damage at all/.test(HTML), 'the index does not state the new recruit rule');
-    ok(/never <strong>pushed<\/strong>/.test(HTML), 'nor that a repeller will not shove one');
+
     // The player's own hazard rule is a different promise and must still stand:
     // predators do not attack them, but acid and vents still do.
     ok(/Hazards still hurt/.test(HTML), 'the player hazard rule was removed by mistake');

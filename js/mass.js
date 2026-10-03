@@ -51,10 +51,14 @@ const MASS_VALUE_SCALE  = 1.0;
 const MASS_NEUTRALISER  = 'electric';
 const MASS_HAULER       = 'flux';     // flux already drags things — see the pylon effect
 const PYLON_REPAIRER    = 'core';
-// TOXIC repels. It does no damage at all — it is a cloud nothing wants to
-// stand in, so what it buys you is GROUND rather than kills. A repeller parked
-// on a pylon keeps predators off it without ever winning a fight.
-const MASS_REPELLER     = 'toxic';
+// TOXIC TENDS THE CLONES. It picks one, walks with it, and mends it while it
+// fights — a medic attached to the single most expensive unit you own. It does
+// no damage at all; what it buys you is a clone that keeps standing.
+//
+// It used to be a repel cloud that shoved enemies around. Healing the thing you
+// paid 25 shards and a DNA splice for is worth more than pushing a predator two
+// tiles, and a clone has 3x health, so there is real value to top up.
+const CLONE_MENDER      = 'toxic';
 // ICE sets. An ice worker freezes where it stands into a solid block one tile
 // wide that everything — enemy, ally and the player — is pushed out of. It is
 // the only worker job that stops being a unit and becomes terrain.
@@ -67,15 +71,15 @@ const ICE_BLOCKER       = 'ice';
 // full rebuild from nothing takes a few seconds of standing there.
 const PYLON_REPAIR_RATE = 0.006;
 
-// ── TOXIC / REPEL tuning ─────────────────────────────────
-// The push has to beat a predator's walk or the cloud is decorative — they
-// would stroll through it. A predator moves about 0.02-0.04 a frame, so 0.05
-// at the centre is a firm shove that still lets a determined one make headway
-// at the rim, where the falloff has most of it.
-const REPEL_RADIUS      = 2.6;
-const REPEL_PUSH        = 0.05;
-const REPEL_MARK_FRAMES = 12;    // how long a shoved unit renders as repelled
-const REPEL_COLOUR      = '#66ff66';
+// ── TOXIC / MEND tuning ──────────────────────────────────
+// The mender stands AT its clone rather than at arm's length, because the point
+// is to move with it — a medic that hangs back is one that is out of range the
+// moment the clone steps forward.
+const MEND_RANGE        = 1.6;   // how close it has to be to mend at all
+const MEND_ESCORT       = 1.1;   // how close it tries to stay while escorting
+const MEND_RATE         = 0.07;  // HP per frame → ~4.2/s, a shade over the
+                                 // generator aura, which is a whole network
+const MEND_COLOUR       = '#66ff66';
 
 // ── ICE / BLOCK tuning ───────────────────────────────────
 // "Just one block wide." A tile is 1.0 in world units, so a radius a shade
@@ -187,7 +191,7 @@ function followerWorkTick(actor) {
     if (actor.element === MASS_NEUTRALISER) return _workNeutralise(actor);
     if (actor.element === MASS_HAULER)      return _workHaul(actor);
     if (actor.element === PYLON_REPAIRER)   return _workRepair(actor);
-    if (actor.element === MASS_REPELLER)    return _workRepel(actor);
+    if (actor.element === CLONE_MENDER)     return _workMendClone(actor);
     if (actor.element === ICE_BLOCKER)      return _workIceBlock(actor);
     if (typeof SCOUR_ELEMENT !== 'undefined' && actor.element === SCOUR_ELEMENT)
         return _workScour(actor);
@@ -335,74 +339,64 @@ function _workScour(actor) {
     return true;
 }
 
-// ── Repelling (TOXIC) ────────────────────────────────────
-// A cloud that does no damage and takes no ground back. What it does is make a
-// patch of floor unstandable, which is a different kind of useful: the squad
-// cannot hold a line against numbers, but numbers cannot walk through this.
+// ── Tending the clones (TOXIC) ───────────────────────────
+// A medic attached to the most expensive unit you own. It picks a clone, walks
+// with it, and mends it while it fights.
 //
-// Recruits are never repelled. isHostileTarget is the one predicate that knows
-// a neutral recruit is not an enemy, and shoving one off its route to the
-// Crystal would be the same bug as shooting it, just quieter.
-function _nearestRepelTarget(actor) {
-    if (typeof isHostileTarget !== 'function') return null;
-    let best = null, bestD = MASS_SEEK_RANGE;
+// It replaced a repel cloud that shoved enemies around and did no damage. A
+// clone costs shards AND a DNA splice and carries 3x the health of what it was
+// cloned from, so there is both a reason to keep one alive and a lot of bar to
+// top up; pushing a predator two tiles was worth less than either.
+
+// The clone this worker should be with. A HURT one first — that is the whole
+// job — and the nearest of those. With none hurt it still escorts the nearest
+// live clone, because a medic that only turns up once you are bleeding is one
+// that is always too late.
+function _nearestCloneToTend(actor) {
+    let hurt = null, hurtD = Infinity;
+    let any  = null, anyD  = Infinity;
     for (const a of actors) {
-        if (!isHostileTarget(a)) continue;
+        if (!a || a.dead || !a.isClone) continue;
         const d = Math.hypot(a.x - actor.x, a.y - actor.y);
-        if (d < bestD) { bestD = d; best = a; }
+        if (d > MASS_SEEK_RANGE) continue;
+        if (d < anyD) { anyD = d; any = a; }
+        if (a.health < (a.maxHealth || 0) && d < hurtD) { hurtD = d; hurt = a; }
     }
-    return best;
+    return hurt || any;
 }
 
-// One frame of the cloud. Returns how many it moved, so a caller can tell the
-// difference between "nothing in reach" and "holding a crowd off".
-function repelStep(actor) {
-    if (typeof isHostileTarget !== 'function') return 0;
-    const R2 = REPEL_RADIUS * REPEL_RADIUS;
-    let pushed = 0;
-    for (const a of actors) {
-        if (!isHostileTarget(a)) continue;
-        const dx = a.x - actor.x, dy = a.y - actor.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 > R2) continue;
-        const d = Math.sqrt(d2);
-        // Dead centre has no direction to push along, so use the repeller's
-        // own facing rather than dividing by zero and writing NaN into a
-        // position — one NaN coordinate takes the actor off the map for good.
-        let ux, uy;
-        if (d < 0.001) { ux = actor.dirX || 1; uy = actor.dirY || 0; }
-        else           { ux = dx / d;          uy = dy / d; }
-        // Strongest at the middle, nothing at the rim, so the edge is a
-        // gradient you can lean into rather than an invisible wall.
-        const falloff = 1 - d / REPEL_RADIUS;
-        a.x += ux * REPEL_PUSH * falloff;
-        a.y  = Math.max(0, Math.min(3, a.y + uy * REPEL_PUSH * falloff));
-        a.repelledFor = REPEL_MARK_FRAMES;
-        pushed++;
-    }
-    return pushed;
+// One frame of mending. Returns how much health went in, so a caller can tell
+// "standing by a healthy clone" from "actually working".
+function mendStep(actor, clone) {
+    if (!clone || clone.dead) return 0;
+    const cap = clone.maxHealth || 0;
+    if (!(clone.health < cap)) return 0;
+    const before = clone.health;
+    clone.health = Math.min(cap, clone.health + MEND_RATE);
+    return clone.health - before;
 }
 
-function _workRepel(actor) {
-    let foe = actor._repelTarget;
-    if (!foe || foe.dead || !isHostileTarget(foe)
-        || Math.hypot(foe.x - actor.x, foe.y - actor.y) > MASS_SEEK_RANGE) {
-        foe = actor._repelTarget = _nearestRepelTarget(actor);
+function _workMendClone(actor) {
+    let clone = actor._mendTarget;
+    if (!clone || clone.dead || !clone.isClone
+        || Math.hypot(clone.x - actor.x, clone.y - actor.y) > MASS_SEEK_RANGE) {
+        clone = actor._mendTarget = _nearestCloneToTend(actor);
     }
-    if (!foe) return false;   // nothing to push — fall through to holding station
+    if (!clone) return false;   // no clone to tend — fall through to holding station
 
-    // It closes to the EDGE of its own cloud, not onto the target. Walking
-    // into contact is what a fighter does, and it would shove the target
-    // straight back out of reach the moment it arrived, so the repeller would
-    // trail a fleeing predator across the map for ever.
-    const d = Math.hypot(foe.x - actor.x, foe.y - actor.y);
-    if (d > REPEL_RADIUS * 0.75) _moveToward(actor, foe.x, foe.y, 1.0);
-    else                         actor.state = 'idle';
+    // It keeps STATION on the clone rather than closing to contact once and
+    // stopping. The clone moves; a mender that parked where the clone used to
+    // be would spend the fight out of range of the thing it is assigned to.
+    const d = Math.hypot(clone.x - actor.x, clone.y - actor.y);
+    if (d > MEND_ESCORT) _moveToward(actor, clone.x, clone.y, 1.1);
+    else                 actor.state = 'idle';
 
-    const pushed = repelStep(actor);
-    if (typeof elementEffects !== 'undefined' && pushed > 0 && (frame || 0) % 6 === 0) {
-        elementEffects.push({ type: 'impact', x: actor.x, y: actor.y,
-                              color: REPEL_COLOUR, radius: REPEL_RADIUS * 0.5, life: 20 });
+    if (d <= MEND_RANGE) {
+        const healed = mendStep(actor, clone);
+        if (healed > 0 && typeof elementEffects !== 'undefined' && (frame || 0) % 8 === 0) {
+            elementEffects.push({ type: 'impact', x: clone.x, y: clone.y,
+                                  color: MEND_COLOUR, radius: 0.45, life: 16 });
+        }
     }
     return true;
 }
@@ -519,7 +513,7 @@ function _workIceBlock(actor) {
 // nothing — say so rather than accepting it.
 function workerElements() {
     const list = [MASS_NEUTRALISER, MASS_HAULER, PYLON_REPAIRER,
-                  MASS_REPELLER, ICE_BLOCKER];
+                  CLONE_MENDER, ICE_BLOCKER];
     if (typeof SCOUR_ELEMENT === 'string') list.push(SCOUR_ELEMENT);
     return list;
 }
@@ -542,7 +536,7 @@ function workerJobLabel(element) {
     if (element === MASS_NEUTRALISER) return 'NEUTRALISE';
     if (element === MASS_HAULER)      return 'HAUL';
     if (element === PYLON_REPAIRER)   return 'REPAIR';
-    if (element === MASS_REPELLER)    return 'REPEL';
+    if (element === CLONE_MENDER)     return 'TEND CLONE';
     if (element === ICE_BLOCKER)      return 'SET BLOCK';
     if (typeof SCOUR_ELEMENT !== 'undefined' && element === SCOUR_ELEMENT) return 'SCOUR';
     return null;
@@ -581,7 +575,7 @@ function setFollowerDuty(actor, duty) {
         actor._massTarget  = null;
         actor._pylonTarget = null;
         actor._scourTarget = null;
-        actor._repelTarget = null;
+        actor._mendTarget  = null;
         // And a block melts. Coming off the crew IS the thaw — the long hold
         // that offers it is the same menu that assigns duty, so there is one
         // instruction rather than two that could disagree about whether a

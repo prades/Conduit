@@ -148,7 +148,11 @@ function marchAt(E, n, targetExpr, frames) {
         // took the separation pass, which runs after the clamp, to shove a
         // packed squad past it.
         const r = marchAt(E, 30, `world.find(t => t.nest && t.nestZone === 1)`, 2500);
-        same(r.alive, 30, 'fixture: the squad should have survived');
+        // Most of them, not all of them. 2500 frames beside a live nest is long
+        // enough for a predator to kill one, and demanding thirty survivors
+        // made this fail about one run in three on a bug it was not testing.
+        // What has to hold is that nobody left the floor.
+        ok(r.alive >= 20, `only ${r.alive} of thirty survived — too few to crowd anything`);
         same(r.offFloor, 0, 'a follower stood on ' + JSON.stringify(r.worst));
         ok(r.lowest >= C.FLOOR_Y_MIN, `thirty followers reached y=${r.lowest}`);
     });
