@@ -355,33 +355,39 @@ const FLOOR_Y_MAX = 4;
 const PLAYER_Y_MIN = -0.5;
 
 // ── THE POWER GRID ───────────────────────────────────────
-// Nests feed generators; generators feed pylons; pylons spend it on the two
-// abilities that do anything — firing and the wave functions.
+// Nests feed generators; generators feed pylons; pylons SPEND it.
 //
-// What costs power is deliberately NOT "having a pylon". A plain pylon still
-// stands, still holds territory, still takes a healing aura, and draws nothing.
-// The moment it is switched to a turret or a wave node it is on the grid, and
-// that is the moment the player is choosing to spend something.
+// A nest is a battery with a life level you can watch go down, not a tap that
+// runs forever. What comes out of it is finite at any moment, and the two
+// abilities take it in completely different shapes:
 //
-// SUPPLY. The home portal is zone 0's nest and was always yours, so it feeds
-// the grid from the first frame — without it a new game could not run the
-// pylon it starts you with. Every other nest has to be TAKEN and then LINKED
-// to a generator, which is the CONNECT order that already existed and until now
-// did almost nothing. A nest pays more the deeper its zone, so the way to grow
-// the grid is to push forward.
-const POWER_HOME_SUPPLY = 6;    // the home portal, always
-const POWER_PER_NEST    = 4;    // per linked nest, before the zone multiplier
-const POWER_ZONE_BONUS  = 1;    // +1x per zone of depth: zone 2 pays 3x the base
-// DEMAND. Wave mode costs more than a turret: it is the networked one, it tiers
-// up with the size of its network, and it affects an area rather than one target.
-const POWER_DRAW_ATTACK = 2;
-const POWER_DRAW_WAVE   = 3;
-// Live readout, recomputed with the pylon cache. _powerShed is the pylons that
-// asked for power and did not get it.
-let _powerSupply = 0;
-let _powerDemand = 0;
-let _powerShed   = [];
-// What a pylon looks like with nothing coming down the line: lightless steel.
+//   ATTACK MODE pays PER SHOT. A turret with nothing in range costs nothing;
+//               one fighting hard empties a nest fast. The shot carries the
+//               energy to the target, so what you pay is what you hit with.
+//   WAVE MODE   pays CONSTANTLY, for as long as it is switched on, whether or
+//               not anything is near it. It is the expensive one, and the way
+//               to stop paying is to switch it back to attack or cut it off
+//               from the generator.
+//
+// The pools regenerate slowly. Without that, every nest on a five-zone map
+// would eventually be flat and the game would end with nothing left to run —
+// so "finite" here means a reserve you can empty and have to nurse, not one
+// you can destroy for good.
+const NEST_ENERGY_BASE   = 60;    // a zone-0 pool; deeper nests hold more
+const NEST_ENERGY_ZONE   = 1;     // +1x capacity per zone of depth
+const NEST_ENERGY_REGEN  = 0.06;  // per frame → 3.6/s, per nest
+// The home portal's own reserve. It is what a new game runs on before any zone
+// has been taken, so it has to carry a small base on its own.
+const NEST_ENERGY_HOME   = 90;
+// What the abilities cost. A turret fires every 90 frames, so 4 a shot is
+// ~2.7/s while it has a target and nothing at all while it does not; wave mode
+// is 6/s forever. One wave pylon costs more than two turrets in a firefight.
+const POWER_SHOT_COST    = 4;
+const POWER_WAVE_DRAIN   = 0.10;  // per frame → 6/s
+// Below this a pool cannot start a shot, so a turret does not fire a round it
+// has not paid for.
+const POWER_MIN_RESERVE  = 0;
+let _powerPools = [];
 const POWER_DEAD_COLOUR = "#4a4f58";
 
 // ── THE THREE STATES OF A NEST ───────────────────────────

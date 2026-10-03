@@ -175,10 +175,10 @@ check('a generator costs the grid nothing to run', () => {
     // make the first generator a step backwards, which is the opposite of what
     // it is for.
     const POWER = fs.readFileSync(path.join(ROOT, 'js/power.js'), 'utf8');
-    const at = POWER.indexOf('function pylonPowerDraw');
-    ok(at > -1, 'the draw rule could not be located');
+    const at = POWER.indexOf('function needsPower');
+    ok(at > -1, 'the spend rule could not be located');
     const body = POWER.slice(at, POWER.indexOf('\n}', at));
-    ok(/t\.isGenerator\) return 0/.test(body), 'a generator draws power like any other pylon');
+    ok(/t\.isGenerator\) return false/.test(body), 'a generator spends power like any other pylon');
 });
 
 check('no elemental zone effect can fire for it', () => {

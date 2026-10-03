@@ -1,68 +1,71 @@
 // ─────────────────────────────────────────────────────────
-//  THE POWER GRID  —  nests feed generators feed pylons
+//  THE POWER GRID  —  nests are batteries, pylons spend them
 // ─────────────────────────────────────────────────────────
-// A pylon's abilities are not free any more. Firing and the wave functions draw
-// from a grid, the grid is fed by the nests you have taken, and a generator is
-// what carries it from one to the other. Taking a zone is no longer only a line
-// on the banner: it is the thing that lets you switch another turret on.
+// "It's like a life energy level — you need power from the nest to charge the
+// equipment on the pylon, and it's a finite amount you can draw from each nest.
+// In attack mode it fires a limited amount of energy per shot; in wave mode it
+// drains at a constant proportion until it is disconnected from the generator
+// or put back on attack mode."
 //
-// The whole system is three questions, and each is answered in one function:
+// So this is not a rate budget. Each nest holds a POOL with a level you can
+// watch go down, and the two abilities take from it in different shapes:
 //
-//   nestPowerOutput  — what one nest is worth
-//   pylonPowerDraw   — what one pylon costs
-//   recomputePower   — who gets it when there is not enough
+//   ATTACK  pays per SHOT. Idle costs nothing. The energy goes into the round,
+//           so what the pylon spends is what it hits with.
+//   WAVE    pays per FRAME, for as long as it is on, near a fight or not.
 //
-// It is recomputed with the pylon cache rather than every frame; nothing in it
-// changes faster than that, and the cache is already the place the rest of the
-// pylon bookkeeping happens.
+// The chain a pylon draws along is: pylon → the generator in reach of it → the
+// nest linked to that generator. A generator with no nest linked falls back to
+// the home portal's own reserve, which is what a new game runs on.
+//
+// Pools regenerate slowly. "Finite" here means a reserve you can empty and have
+// to nurse, not one you can destroy for good — without regen a five-zone map
+// would eventually be flat with nothing left to run.
 
-// ── SUPPLY ───────────────────────────────────────────────
-// A nest only pays if it is on your side of the fight AND wired in:
-//
-//   - the HOME PORTAL always pays. It is zone 0's nest, it was never theirs,
-//     and it needs no generator — it is the supply a new game starts with, and
-//     without it the pylon the player is given could not run.
-//   - any other nest pays only once it is NEUTRALISED (its zone taken, so it
-//     has stopped spawning) and LINKED to a live generator. A nest still
-//     pouring predators out of the wall is not yours to draw on.
-//
-// Deeper zones pay more. That is the pressure: the grid grows by going forward,
-// not by building more at home.
-function nestPowerOutput(t) {
+// ── THE POOLS ────────────────────────────────────────────
+// How much a nest can hold. Deeper nests are bigger batteries, so pushing
+// forward is still what grows the grid.
+function nestEnergyMax(t) {
     if (!t || !t.nest) return 0;
-    if (typeof isHomePortal === "function" && isHomePortal(t)) return POWER_HOME_SUPPLY;
-    if (t.nestHealth > 0) return 0;               // still theirs
-    const gen = t.connectedPylon;
-    if (!gen || !isGeneratorPylon(gen)) return 0; // taken, but not wired in
+    if (typeof isHomePortal === "function" && isHomePortal(t)) return NEST_ENERGY_HOME;
     const zone = Number.isFinite(t.nestZone) ? t.nestZone : 0;
-    return POWER_PER_NEST * (1 + POWER_ZONE_BONUS * Math.max(0, zone));
+    return NEST_ENERGY_BASE * (1 + NEST_ENERGY_ZONE * Math.max(0, zone));
 }
 
-// Everything the grid is making right now.
-function powerSupply() {
-    let total = 0;
+// Is this nest on your side of the fight at all? The home portal always is.
+// Everything else has to be TAKEN — its zone cleared, so it has stopped
+// spawning — before there is anything of yours to draw out of it.
+function nestIsPowerSource(t) {
+    if (!t || !t.nest) return false;
+    if (typeof isHomePortal === "function" && isHomePortal(t)) return true;
+    return !(t.nestHealth > 0);
+}
+
+// A nest that has never been touched starts full. Done lazily rather than at
+// generation, so a save written before any of this existed comes back with full
+// batteries instead of empty ones.
+function nestEnergy(t) {
+    if (!nestIsPowerSource(t)) return 0;
+    if (!Number.isFinite(t.nestEnergy)) t.nestEnergy = nestEnergyMax(t);
+    return t.nestEnergy;
+}
+
+// Every live pool creeps back up. Called once a frame.
+function nestEnergyTick() {
     const nests = (typeof _nestCache !== "undefined" && _nestCache.length)
         ? _nestCache : world.filter(t => t.nest);
-    for (const t of nests) total += nestPowerOutput(t);
-    return total;
+    for (const t of nests) {
+        if (!nestIsPowerSource(t)) continue;
+        const cap = nestEnergyMax(t);
+        if (!Number.isFinite(t.nestEnergy)) { t.nestEnergy = cap; continue; }
+        if (t.nestEnergy < cap) t.nestEnergy = Math.min(cap, t.nestEnergy + NEST_ENERGY_REGEN);
+    }
 }
 
-// ── DEMAND ───────────────────────────────────────────────
-// Only the two abilities cost anything. A plain pylon is free, and so is a
-// generator — a generator that charged for itself would make the first one you
-// build a step backwards.
-function pylonPowerDraw(t) {
-    if (!t || !t.pillar || t.destroyed || !(t.health > 0)) return 0;
-    if (t.pillarTeam !== "green") return 0;       // not yours to run
-    if (t.isGenerator) return 0;
-    if (t.waveMode)   return POWER_DRAW_WAVE;
-    if (t.attackMode) return POWER_DRAW_ATTACK;
-    return 0;
-}
-
-// Is this pylon close enough to a generator to be fed at all? The grid reaches
-// exactly as far as a generator's link does, which is the same range the
-// healing aura and the network links already use — one reach, not a new one.
+// ── THE CHAIN ────────────────────────────────────────────
+// The generator carrying power to this pylon, or null. The grid reaches exactly
+// as far as a generator's link does — the same range the healing aura and the
+// network links already use, rather than a new one to learn.
 function generatorFeeding(t) {
     if (!t || typeof _genPylons === "undefined") return null;
     const r = getPylonRange();
@@ -76,55 +79,110 @@ function generatorFeeding(t) {
     return best;
 }
 
-// ── WHO GETS IT ──────────────────────────────────────────
-// Called from the pylon cache rebuild, and it is what decides whether a pylon
-// actually does its job this tick. Sets `powered` on every pylon, so everything
-// downstream — the firing loop, the wave loop, the drawing — asks one flag
-// rather than working the rule out again.
+// The nest a generator draws out of: the one LINKED to it, or the home portal
+// when nothing is. The fallback is what keeps a new game running — the first
+// generator you build works before you have taken anything.
+function generatorSource(gen) {
+    if (!gen || !isGeneratorPylon(gen)) return null;
+    const linked = gen.nestConnection;
+    if (linked && nestIsPowerSource(linked)) return linked;
+    return world.find(t => typeof isHomePortal === "function" && isHomePortal(t)) || null;
+}
+
+// The pool this pylon spends out of, or null if nothing reaches it.
+function pylonSource(t) {
+    const gen = generatorFeeding(t);
+    return gen ? generatorSource(gen) : null;
+}
+
+// Take `amount` out of a pool. Returns true only if the whole amount was there,
+// so a shot is either paid for in full or not fired — a half-price round that
+// did half damage would be a third rule nobody asked for.
+function spendNestEnergy(nest, amount) {
+    if (!nest || !(amount > 0)) return false;
+    if (nestEnergy(nest) < amount + POWER_MIN_RESERVE) return false;
+    nest.nestEnergy -= amount;
+    return true;
+}
+
+// ── WHO IS LIT ───────────────────────────────────────────
+// Sets `powered` on every pylon, so the firing loop, the wave loop and the
+// drawing all ask one flag rather than working the rule out again.
 //
-// Two ways to be dark:
-//
-//   NO GENERATOR — nothing is carrying power to it. A turret on the far side of
-//                  the map is not on the grid however much the grid is making.
-//   BROWNOUT     — it is on the grid, but the grid is oversubscribed.
-//
-// Shedding order is nearest-the-generator first KEEPS power, so the base around
-// your generator stays lit and the outlying pylons are what go dark. Ties break
-// on x then y so the same board always sheds the same pylons — a grid that
-// flickered between two equally distant pylons would be unreadable.
+// Being powered means "there is a pool reaching me with something in it". What
+// it costs to USE that is charged separately, at the moment of use: per shot
+// for a turret, per frame for a wave pylon.
 function recomputePower() {
-    _powerSupply = powerSupply();
-    _powerDemand = 0;
-    _powerShed   = [];
+    _powerPools = [];
     if (typeof _pillarCache === "undefined") return;
-
-    const asking = [];
     for (const t of _pillarCache) {
-        const draw = pylonPowerDraw(t);
-        if (draw <= 0) { t.powered = true; t.powerFed = null; continue; }
-        _powerDemand += draw;
-        const gen = generatorFeeding(t);
-        t.powerFed = gen;
-        if (!gen) { t.powered = false; _powerShed.push(t); continue; }
-        asking.push({ t, draw, d2: (gen.x - t.x) ** 2 + (gen.y - t.y) ** 2 });
+        if (!needsPower(t)) { t.powered = true; t.powerSource = null; continue; }
+        const src = pylonSource(t);
+        t.powerSource = src;
+        t.powered = !!src && nestEnergy(src) > POWER_MIN_RESERVE;
     }
-
-    asking.sort((a, b) => (a.d2 - b.d2) || (a.t.x - b.t.x) || (a.t.y - b.t.y));
-    let left = _powerSupply;
-    for (const a of asking) {
-        if (a.draw <= left) { left -= a.draw; a.t.powered = true; }
-        else { a.t.powered = false; _powerShed.push(a.t); }
+    // The pools worth showing: every one something is drawing on, plus home.
+    const seen = new Set();
+    for (const t of _pillarCache) {
+        if (t.powerSource && !seen.has(t.powerSource)) { seen.add(t.powerSource); _powerPools.push(t.powerSource); }
     }
 }
 
-// What the HUD says. Kept here so the readout and the rule cannot disagree
-// about what "short" means.
+// Does this pylon spend anything at all? A plain pylon still stands, still
+// holds territory, still takes a healing aura, and costs nothing. A generator
+// is the thing carrying the power, not a thing spending it.
+function needsPower(t) {
+    if (!t || !t.pillar || t.destroyed || !(t.health > 0)) return false;
+    if (t.pillarTeam !== "green") return false;
+    if (t.isGenerator) return false;
+    return !!(t.waveMode || t.attackMode);
+}
+
+// ── SPENDING ─────────────────────────────────────────────
+// A turret's round. Called where the shot is fired, so an idle turret with
+// nothing in range costs nothing at all.
+function payForShot(t) {
+    if (!t) return false;
+    const src = t.powerSource || pylonSource(t);
+    if (!src) return false;
+    return spendNestEnergy(src, POWER_SHOT_COST);
+}
+
+// Wave mode's constant draw, once a frame per wave pylon. Switching back to
+// attack mode or losing the generator is what stops it — there is nothing else
+// to turn off.
+function waveDrainTick() {
+    if (typeof _pillarCache === "undefined") return;
+    for (const t of _pillarCache) {
+        if (!t.waveMode || t.isGenerator || t.pillarTeam !== "green") continue;
+        const src = t.powerSource || pylonSource(t);
+        if (!src) { t.powered = false; continue; }
+        if (!spendNestEnergy(src, POWER_WAVE_DRAIN)) {
+            // The pool is flat. It stays switched on and starts again by itself
+            // as the nest creeps back up, which is what makes a drained grid
+            // something you nurse rather than something you have to re-set.
+            t.powered = false;
+        }
+    }
+}
+
+// ── THE READOUT ──────────────────────────────────────────
+// What the HUD says, so the panel and the rule cannot disagree.
 function powerStatus() {
-    return {
-        supply: _powerSupply,
-        demand: _powerDemand,
-        spare: _powerSupply - _powerDemand,
-        shed: _powerShed.length,
-        short: _powerShed.length > 0,
-    };
+    const pools = (_powerPools || []).map(t => ({
+        nest: t,
+        zone: Number.isFinite(t.nestZone) ? t.nestZone : 0,
+        home: typeof isHomePortal === "function" && isHomePortal(t),
+        energy: Math.max(0, Math.round(nestEnergy(t))),
+        max: nestEnergyMax(t),
+    }));
+    let dark = 0, drawing = 0;
+    if (typeof _pillarCache !== "undefined") {
+        for (const t of _pillarCache) {
+            if (!needsPower(t)) continue;
+            drawing++;
+            if (t.powered === false) dark++;
+        }
+    }
+    return { pools, drawing, dark, flat: pools.filter(p => p.energy <= 0).length };
 }

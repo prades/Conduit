@@ -1294,6 +1294,11 @@ function render() {
             }
         });
         if (!nearest) return;
+        // THE ROUND IS PAID FOR BEFORE IT LEAVES. A turret with nothing in
+        // range has cost nothing up to here, which is the point — attack mode
+        // is the cheap one precisely because it only spends when it fights.
+        // An unaffordable shot is not fired at all rather than fired weak.
+        if (!payForShot(t)) { t.powered = false; return; }
         // Spawn missile projectile
         const col = t.attackModeColor || "#0f8";
         spawnFollowerProjectile(
@@ -1438,6 +1443,10 @@ function render() {
     updateStatusEffects();
     updateElementEffects();
     updateFloatingTexts();
+    // THE BATTERIES. Regen first, then wave mode's constant draw — so a pool
+    // that is exactly keeping up reads as steady rather than flickering.
+    nestEnergyTick();
+    waveDrainTick();
 
     // ── CRYSTAL ULTIMATE CHARGE RESTORE ──────────────────────────────────
     // Runs every 60 frames. Rate scales with max pylon zone depth and nest pod links.
@@ -2022,6 +2031,21 @@ function render() {
                 ctx.fillStyle=_held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM;
                 ctx.font="bold 9px monospace"; ctx.textAlign="center";
                 ctx.fillText(_held?"◈ CONTROLLED":"◇ NEUTRAL",_bCx,wfTL.y-12);
+                // ── THE LIFE LEVEL ──
+                // What the pylons are drawing out of it, drawn on the nest
+                // itself. A battery the player cannot see the level of is a
+                // number they have to infer from their turrets going quiet.
+                const _cap = nestEnergyMax(obj);
+                if (_cap > 0) {
+                    const _e = nestEnergy(obj), _f = Math.max(0, Math.min(1, _e / _cap));
+                    const _bw = 56, _bx = _bCx - _bw/2, _by = wfTL.y - 8;
+                    ctx.fillStyle = "rgba(0,0,0,0.55)"; ctx.fillRect(_bx-1, _by-1, _bw+2, 6);
+                    // Red when it is nearly out, which is the only state worth
+                    // reacting to.
+                    ctx.fillStyle = _f < 0.2 ? "#ff5522"
+                                  : (_held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM);
+                    ctx.fillRect(_bx, _by, Math.round(_bw * _f), 4);
+                }
                 ctx.restore();
 
                 // ── PERMANENT ENERGY LINK to connected pylon ──
@@ -3394,7 +3418,7 @@ function drawNetworkStatusHUD() {
     // The grid line shows from the first pylon, before any network has formed —
     // it is the thing the player is now budgeting, so it cannot wait for a
     // resonance tier to appear first.
-    if (activeEls.length === 0 && pw.demand === 0) return;
+    if (activeEls.length === 0 && pw.drawing === 0) return;
 
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
 
@@ -3420,16 +3444,19 @@ function drawNetworkStatusHUD() {
     ctx.fillStyle = "#0f8"; ctx.font = "bold 9px monospace"; ctx.textAlign = "left";
     ctx.fillText("◈ NETWORK RESONANCE", X + PAD, Y + 11);
 
-    // ── POWER — what the grid makes, what the pylons are drawing ──
-    // Red the moment anything is dark, because that is the only state the
-    // player has to act on. Spare capacity is just a number.
-    const _pOk = !pw.short;
+    // ── POWER — what is left in the batteries being drawn on ──
+    // The total across the pools, because that is the thing that runs out.
+    // Red the moment a pylon has gone dark, which is the only state the player
+    // has to act on.
+    const _pTot = pw.pools.reduce((a, p) => a + p.energy, 0);
+    const _pCap = pw.pools.reduce((a, p) => a + p.max, 0);
+    const _pOk = pw.dark === 0;
     ctx.fillStyle = _pOk ? "#8fd" : "#ff5522";
     ctx.font = "bold 10px monospace"; ctx.textAlign = "left";
-    ctx.fillText("\u26a1 " + pw.demand + " / " + pw.supply, X + PAD, Y + 26);
+    ctx.fillText("\u26a1 " + _pTot + " / " + _pCap, X + PAD, Y + 26);
     ctx.font = "8px monospace"; ctx.textAlign = "right";
     ctx.fillStyle = _pOk ? "#3a4555" : "#ff5522";
-    ctx.fillText(_pOk ? ("+" + pw.spare + " SPARE") : (pw.shed + " UNPOWERED"),
+    ctx.fillText(_pOk ? (pw.drawing + " DRAWING") : (pw.dark + " UNPOWERED"),
                  X + W - PAD, Y + 26);
     ctx.strokeStyle = "rgba(0,255,136,0.12)"; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(X + PAD, Y + 32); ctx.lineTo(X + W - PAD, Y + 32); ctx.stroke();
