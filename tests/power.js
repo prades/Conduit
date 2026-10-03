@@ -194,6 +194,42 @@ async function boot() {
     });
 
     // ─────────────────────────────────────────────────────
+    group('EVERY NEUTRALISED NEST can be drawn on');
+
+    // "Make sure the player can draw power from all the nests that have been
+    // neutralised." Linking picks WHICH nest; it is no longer required for any
+    // of them to work.
+    const nearNest = (taken, offX) => E.run(`(function(){
+        actors.length = 0; followers.length = 0;
+        world.forEach(t => { t.pillar = false; t.attackMode = false; t.isGenerator = false; t.isConnector = false;
+            t.connectedPylon = null; t.nestConnection = null; if (t.nest) t.nestEnergy = undefined; });
+        const nest = world.find(t => t.nest && t.nestZone === 2);
+        nest.nestHealth = ${taken ? 0 : 200};
+        const tile = world.find(t => t.type === 'floor' && t.y === 1 && Math.abs(t.x - (nest.x + ${offX})) < 0.5 && !t.nest && !t.nodeType);
+        Object.assign(tile, { pillar: true, destroyed: false, pillarTeam: 'green', health: 20, maxHealth: 20,
+                              isGenerator: true, attackMode: true, attackModeElement: 'generator' });
+        _cacheAge = -999; render();
+        const src = generatorSource(tile);
+        return { src: src === nest, none: src === null, dist: Math.hypot(tile.x - nest.x, tile.y - nest.y),
+                 home: !!(src && isHomePortal(src)) };
+    })()`);
+
+    check('an UNLINKED generator beside a neutralised nest draws on it', () => {
+        const r = nearNest(true, 1);
+        ok(r.src, 'the neutralised nest in reach was ignored (home: ' + r.home + ')');
+    });
+
+    check('a nest still alive is not a source', () => {
+        const r = nearNest(false, 1);
+        ok(!r.src, 'a live nest was drawn on');
+    });
+
+    check('a generator out of reach of the nest draws nothing from it', () => {
+        const r = nearNest(true, 8);
+        ok(r.dist > E.run('GENERATOR_NEST_RANGE'), 'fixture: the generator is not out of reach (' + r.dist + ')');
+        ok(!r.src, 'drew on a nest out of reach');
+    });
+
     group('THE HOME RESERVE does not reach across the map');
 
     // REPORTED: "the power level from the crystal should not shoot across the
@@ -628,12 +664,38 @@ async function boot() {
     group('the player can see it');
 
     check('the nest draws its own life level', () => {
-        const at = SRC.game.indexOf('THE LIFE LEVEL');
+        const DRAW = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8');
+        const at = DRAW.indexOf('function drawNestGauge');
         ok(at > -1, 'the nest does not show how much is left in it');
-        const body = SRC.game.slice(at, at + 900);
-        ok(/nestEnergy\(obj\)/.test(body), 'the bar is not drawn from the real level');
-        ok(/nestEnergyMax\(obj\)/.test(body), 'nor scaled by the real capacity');
+        const body = DRAW.slice(at, at + 1800);
+        ok(/nestEnergy\(nest\)/.test(body), 'the bar is not drawn from the real level');
+        ok(/nestEnergyMax\(nest\)/.test(body), 'nor scaled by the real capacity');
         ok(/#ff5522/.test(body), 'it never warns that a battery is nearly out');
+        ok(/drawNestGauge\(obj/.test(SRC.game), 'a neutralised nest does not draw the gauge');
+        ok(/drawNestGauge\(/.test(DRAW.slice(DRAW.indexOf('function drawHomePortal'))), 'the home portal does not draw it');
+    });
+
+    check('THE ASK: a percentage over a bar that empties as the nest is drawn down', () => {
+        const draw = (zone, energy) => E.run(`(function(){
+            const nest = world.find(t => t.nest && t.nestZone === ${zone});
+            nest.nestHealth = 0; nest.nestEnergy = ${energy};
+            const texts = [], bars = [];
+            const ft = ctx.fillText, fr = ctx.fillRect;
+            ctx.fillText = (t) => { texts.push(String(t)); };
+            ctx.fillRect = (x, y, w, h) => { bars.push(w); };
+            try { drawNestGauge(nest, 100, 100, '#fff'); } finally { ctx.fillText = ft; ctx.fillRect = fr; }
+            return { texts, bars, max: nestEnergyMax(nest) };
+        })()`);
+        const max = zoneNest(1).max;
+        const full = draw(1, max), half = draw(1, max / 2), low = draw(1, max * 0.1), empty = draw(1, 0);
+        same(full.texts[0], '100%', 'full nest');
+        same(half.texts[0], '50%', 'half nest');
+        same(low.texts[0], '10%', 'nearly-empty nest');
+        same(empty.texts[0], 'EMPTY', 'empty nest');
+        // bars[0] is the backing, bars[1] the fill: the fill shrinks with the level.
+        ok(full.bars[1] > half.bars[1] && half.bars[1] > low.bars[1] && low.bars[1] > empty.bars[1],
+           'the bar does not shrink with the level: ' + [full, half, low, empty].map(r => r.bars[1]));
+        same(empty.bars[1], 0, 'an empty nest still shows a filled bar');
     });
 
     check('an unpowered pylon is drawn dark, with no range ring', () => {
@@ -650,6 +712,14 @@ async function boot() {
         same(r.status.dark, 0, 'it reports something dark that is not');
         const flat = board('GA', [{ zone: 1, taken: true, linkTo: 0, energy: 0 }], 2);
         same(flat.status.dark, 1, 'it does not report the dark pylon');
+    });
+
+    check('the index says every neutralised nest can be drawn on, and shows the gauge', () => {
+        const at = HTML.indexOf('Every nest you have neutralised');
+        ok(at > -1, 'the index does not say any neutralised nest can be drawn on');
+        const page = HTML.slice(at, at + 900);
+        ok(page.indexOf('>' + E.run('GENERATOR_NEST_RANGE') + '<') > -1, 'it does not state the reach');
+        ok(/percentage/.test(page) && /EMPTY/.test(page), 'it does not describe the gauge');
     });
 
     check('the index says the home reserve is local, and how to connect to it', () => {

@@ -103,9 +103,26 @@ function generatorSource(gen) {
     if (!gen || !isGeneratorPylon(gen)) return null;
     const linked = gen.nestConnection;
     if (linked && nestIsPowerSource(linked)) return linked;
-    const home = homePortalTile();
-    if (home && Math.hypot(home.x - gen.x, home.y - gen.y) <= HOME_POWER_REACH) return home;
-    return null;
+    return nearestDrawableNest(gen);
+}
+
+// "The player can draw power from all the nests that have been neutralized."
+// A relay with no nest linked to it still draws on the closest battery that is
+// yours and in reach: the home reserve within HOME_POWER_REACH, or any nest you
+// have neutralised within GENERATOR_NEST_RANGE — the same reach it was allowed
+// to be built at. CONNECT is still the way to pick WHICH nest, and it wins.
+function nearestDrawableNest(r) {
+    if (!r) return null;
+    const list = (typeof _nestCache !== "undefined" && _nestCache.length) ? _nestCache : world;
+    let best = null, bestD = Infinity;
+    for (const n of list) {
+        if (!n.nest || !nestIsPowerSource(n)) continue;
+        const home = typeof isHomePortal === "function" && isHomePortal(n);
+        const d = Math.hypot(n.x - r.x, n.y - r.y);
+        if (d > (home ? HOME_POWER_REACH : GENERATOR_NEST_RANGE)) continue;
+        if (d < bestD) { bestD = d; best = n; }
+    }
+    return best;
 }
 
 // Can this nest be CONNECTED to a generator? A taken nest, or the home portal —
@@ -132,9 +149,7 @@ function connectorSource(c) {
     if (!isConnectorPylon(c)) return null;
     const linked = c.nestConnection;
     if (linked && nestIsPowerSource(linked)) return linked;
-    const home = homePortalTile();
-    if (home && Math.hypot(home.x - c.x, home.y - c.y) <= HOME_POWER_REACH) return home;
-    return null;
+    return nearestDrawableNest(c);
 }
 
 // The nearest closed connector that has something to give, or null.

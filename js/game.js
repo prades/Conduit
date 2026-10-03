@@ -2167,22 +2167,14 @@ function render() {
                 const _bCx=(wfTL.x+wfTR.x)/2;
                 ctx.fillStyle=_held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM;
                 ctx.font="bold 9px monospace"; ctx.textAlign="center";
-                ctx.fillText(_held?"◈ CONTROLLED":"◇ NEUTRAL",_bCx,wfTL.y-12);
+                // Above the gauge, which takes the first 20px over the wall.
+                ctx.fillText(_held?"◈ CONTROLLED":"◇ NEUTRAL",_bCx,wfTL.y-30);
                 // ── THE LIFE LEVEL ──
                 // What the pylons are drawing out of it, drawn on the nest
-                // itself. A battery the player cannot see the level of is a
-                // number they have to infer from their turrets going quiet.
-                const _cap = nestEnergyMax(obj);
-                if (_cap > 0) {
-                    const _e = nestEnergy(obj), _f = Math.max(0, Math.min(1, _e / _cap));
-                    const _bw = 56, _bx = _bCx - _bw/2, _by = wfTL.y - 8;
-                    ctx.fillStyle = "rgba(0,0,0,0.55)"; ctx.fillRect(_bx-1, _by-1, _bw+2, 6);
-                    // Red when it is nearly out, which is the only state worth
-                    // reacting to.
-                    ctx.fillStyle = _f < 0.2 ? "#ff5522"
-                                  : (_held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM);
-                    ctx.fillRect(_bx, _by, Math.round(_bw * _f), 4);
-                }
+                // itself as a percentage over a bar that empties. A battery the
+                // player cannot see the level of is a number they have to infer
+                // from their turrets going quiet. See drawNestGauge.
+                drawNestGauge(obj, _bCx, wfTL.y, _held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM);
                 ctx.restore();
 
                 // ── PERMANENT ENERGY LINK to connected pylon ──

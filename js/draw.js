@@ -1885,6 +1885,41 @@ function drawNestWallVortex(px, py, r, colour, spin, glow, alpha) {
 const PORTAL_R = 30;
 const PORTAL_COLOUR = "#2bff9b";
 
+// ── THE POWER GAUGE ──────────────────────────────────────
+// "A percentage level on top of the nest, with a progress bar — in this case a
+// depletion bar." A battery you draw from drains, so the bar EMPTIES from the
+// right as the level falls, with the percentage over it, and turns red and
+// blinks as it runs out. Drawn for every nest that is a power source: the home
+// portal and each zone you have neutralised.
+const NEST_GAUGE_W = 84, NEST_GAUGE_H = 7;
+function drawNestGauge(nest, cx, topY, colour) {
+    const cap = nestEnergyMax(nest);
+    if (!(cap > 0)) return;
+    const f = Math.max(0, Math.min(1, nestEnergy(nest) / cap));
+    const pct = Math.round(f * 100);
+    const low = f < 0.2;
+    const blink = low && f > 0 ? (0.55 + 0.45 * Math.sin((frame || 0) * 0.25)) : 1;
+    const x = Math.round(cx - NEST_GAUGE_W / 2), y = Math.round(topY - NEST_GAUGE_H - 2);
+    const col = low ? "#ff5522" : colour;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "rgba(0,0,0,0.65)";
+    ctx.fillRect(x - 1, y - 1, NEST_GAUGE_W + 2, NEST_GAUGE_H + 2);
+    ctx.globalAlpha = blink;
+    ctx.fillStyle = col;
+    ctx.fillRect(x, y, Math.round(NEST_GAUGE_W * f), NEST_GAUGE_H);
+    ctx.globalAlpha = 1;
+    // Quarter ticks, so how much has gone can be read off the bar.
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    for (let i = 1; i < 4; i++) ctx.fillRect(x + Math.round(NEST_GAUGE_W * i / 4), y, 1, NEST_GAUGE_H);
+    ctx.strokeStyle = col; ctx.lineWidth = 1;
+    ctx.strokeRect(x - 0.5, y - 0.5, NEST_GAUGE_W + 1, NEST_GAUGE_H + 1);
+    ctx.font = "bold 10px monospace"; ctx.textAlign = "center";
+    ctx.fillStyle = col; ctx.globalAlpha = blink;
+    ctx.fillText(f <= 0 ? "EMPTY" : pct + "%", cx, y - 4);
+    ctx.restore();
+}
+
 function drawHomePortal(px, py) {
     const sW1x = px, sW1y = py - 60, numT = 4;
     const blx = sW1x - TILE_W,              bly = sW1y + TILE_H;
@@ -1942,6 +1977,8 @@ function drawHomePortal(px, py) {
     ctx.globalAlpha = 0.65 + breathe * 0.35;
     ctx.fillText("\u25c8 CRYSTAL", cx, cy + PORTAL_R + 16);
     ctx.restore();
+    // The reserve, over the top of the wall face like every other nest's.
+    drawNestGauge(homePortalTile() || { nest: true, x: -99, y: -1 }, cx, bly - NEST_WALL_H, PORTAL_COLOUR);
 }
 
 function drawCapturableNode(tile, px, py) {
