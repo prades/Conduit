@@ -387,6 +387,10 @@ const POWER_WAVE_DRAIN   = 0.10;  // per frame → 6/s
 // Below this a pool cannot start a shot, so a turret does not fire a round it
 // has not paid for.
 const POWER_MIN_RESERVE  = 0;
+// How fast a turret's surge fades off its wire. A shot every 90 frames at this
+// rate leaves the line lit for most of the gap between rounds, so a turret that
+// is fighting reads as busy rather than as a flicker.
+const POWER_FLOW_FADE    = 0.012;
 let _powerPools = [];
 const POWER_DEAD_COLOUR = "#4a4f58";
 

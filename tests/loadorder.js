@@ -47,7 +47,7 @@ check('settings panel rows fit inside the panel', () => {
 // ── Render order ──
 // World geometry draws with the world; interface draws after it.
 const GAME = fs.readFileSync(ROOT + '/js/game.js', 'utf8');
-const WORLD_SPACE = ['drawElementEffects', 'drawHoldLine'];
+const WORLD_SPACE = ['drawElementEffects', 'drawHoldLine', 'drawPowerChain'];
 const INTERFACE   = ['drawRadialMenu', 'drawElementPicker',
                      'drawSettingsPanel', 'drawInfoPanel', 'drawCampMenu'];
 

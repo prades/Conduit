@@ -324,6 +324,174 @@ async function boot() {
     });
 
     // ─────────────────────────────────────────────────────
+    group('THE WIRING: you can see the power moving');
+
+    // REPORTED: "I can't read it. Make it more visually obvious when the
+    // power's being drawn, with the little pulses in the wiring."
+    //
+    // The chain was a 1.4px grey dashed line at 18-40% alpha with one 2px dot
+    // on it, and it was the SAME line whether the pylon was pulling hard or
+    // doing nothing at all. There was no way to look at a base and see what was
+    // costing you.
+    //
+    // The load-bearing property is that the wire follows the ACTUAL draw, so
+    // these drive the real loop and read the flow the drawing is handed.
+
+    // Peak and average flow on a pylon's wire over `frames`.
+    const wire = (kind, withFoe, frames) => E.run(`(function(){
+        actors.length = 0; followers.length = 0;
+        world.forEach(t => { t.pillar = false; t.attackMode = false; t.waveMode = false;
+                             t.isGenerator = false; t.connectedPylon = null;
+                             t.nestConnection = null; t.powerFlow = 0;
+                             if (t.nest) t.nestEnergy = undefined; });
+        const row = world.filter(t => t.type === 'floor' && t.y === 2 && t.x > 2
+                                      && !t.nest && !t.nodeType).sort((a,b) => a.x - b.x);
+        const gen = row[0];
+        Object.assign(gen, { pillar: true, destroyed: false, pillarTeam: 'green',
+                             health: 20, maxHealth: 20, isGenerator: true, attackMode: true });
+        const t = row[1];
+        Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 20,
+                           maxHealth: 20, pillarCol: '#0f8', attackModeElement: 'fire',
+                           attackModeColor: '#f50', attackPower: 12, attackRange: 2.5,
+                           attackMode: ${JSON.stringify(kind)} === 'attack',
+                           waveMode: ${JSON.stringify(kind)} === 'wave' });
+        ${withFoe ? `
+        const foe = new Predator('scout', Object.assign({}, SPECIES['ant'].scout,
+                                 { color: SPECIES['ant'].color }), t.x, t.y);
+        foe.team = 'red'; foe.speciesName = 'ant'; foe.className = 'scout';
+        foe.health = 99999; foe.maxHealth = 99999; actors.push(foe);` : ''}
+        _cacheAge = -999;
+        let peak = 0, sum = 0;
+        for (let i = 0; i < ${frames}; i++) {
+            render();
+            const f = powerFlowOf(t);
+            if (f > peak) peak = f;
+            sum += f;
+        }
+        return { peak: Math.round(peak * 100) / 100,
+                 avg: Math.round(sum / ${frames} * 100) / 100,
+                 powered: !!t.powered, gen: t.powerGen === gen };
+    })()`);
+
+    check('THE ASK: an IDLE turret\'s wire is silent — it costs you nothing', () => {
+        const r = wire('attack', false, 300);
+        same(r.powered, true, 'fixture: it should be connected and able to fire');
+        same(r.peak, 0, 'an idle turret lit its wire anyway');
+    });
+
+    check('THE ASK: a FIRING turret pulses its wire on every round', () => {
+        const r = wire('attack', true, 300);
+        ok(r.peak > 0.9, `a firing turret only reached ${r.peak} on its wire`);
+        // And it FADES between rounds, or a turret that stopped shooting would
+        // go on looking busy.
+        ok(r.avg < r.peak, `it never faded: peak ${r.peak}, average ${r.avg}`);
+        ok(r.avg > 0.1, `it faded so fast the wire reads as dead: average ${r.avg}`);
+    });
+
+    check('and a turret that STOPS firing goes quiet again', () => {
+        // The fade is what makes the wire a live readout rather than a latch.
+        // Without it the first round a turret ever fires leaves its line lit
+        // for the rest of the game, and the player can no longer tell what is
+        // costing them anything.
+        const r = E.run(`(function(){
+            actors.length = 0; followers.length = 0;
+            world.forEach(t => { t.pillar = false; t.attackMode = false; t.waveMode = false;
+                                 t.isGenerator = false; t.powerFlow = 0;
+                                 if (t.nest) t.nestEnergy = undefined; });
+            const row = world.filter(t => t.type === 'floor' && t.y === 2 && t.x > 2
+                                          && !t.nest && !t.nodeType).sort((a,b) => a.x - b.x);
+            const gen = row[0];
+            Object.assign(gen, { pillar: true, destroyed: false, pillarTeam: 'green',
+                                 health: 20, maxHealth: 20, isGenerator: true, attackMode: true });
+            const t = row[1];
+            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 20,
+                               maxHealth: 20, attackMode: true, attackModeElement: 'fire',
+                               attackPower: 12, attackRange: 2.5 });
+            const foe = new Predator('scout', Object.assign({}, SPECIES['ant'].scout,
+                                     { color: SPECIES['ant'].color }), t.x, t.y);
+            foe.team = 'red'; foe.speciesName = 'ant'; foe.className = 'scout';
+            foe.health = 99999; foe.maxHealth = 99999; actors.push(foe);
+            _cacheAge = -999;
+            // The PEAK over the fight, not the value at the end of it: the
+            // last frame of the window lands at an arbitrary point in the fade
+            // between rounds, so a single read says nothing about whether the
+            // wire ever lit.
+            let whileFighting = 0;
+            for (let i = 0; i < 200; i++) {
+                render();
+                const f = powerFlowOf(t);
+                if (f > whileFighting) whileFighting = f;
+            }
+            foe.dead = true; actors.length = 0;       // the fight ends
+            for (let i = 0; i < 200; i++) render();
+            return { whileFighting: Math.round(whileFighting * 100) / 100,
+                     after: Math.round(powerFlowOf(t) * 100) / 100 };
+        })()`);
+        ok(r.whileFighting > 0.2, `fixture: it should have been lit while fighting, was ${r.whileFighting}`);
+        same(r.after, 0, `it is still drawing ${r.after} with nothing left to shoot`);
+    });
+
+    check('THE ASK: wave mode holds its wire full, because it never stops', () => {
+        const r = wire('wave', false, 300);
+        same(r.peak, 1, 'wave mode did not light its wire');
+        same(r.avg, 1, `wave mode's draw flickers: average ${r.avg}`);
+    });
+
+    check('and the three states are plainly different from each other', () => {
+        // The whole point. If two of them look the same the wiring says nothing.
+        const idle = wire('attack', false, 300).avg;
+        const fire = wire('attack', true, 300).avg;
+        const wave = wire('wave', false, 300).avg;
+        ok(idle < fire && fire < wave,
+           `idle ${idle}, firing ${fire}, wave ${wave} — these do not separate`);
+        ok(fire - idle > 0.1 && wave - fire > 0.1,
+           `the gaps are too small to see: ${idle} / ${fire} / ${wave}`);
+    });
+
+    check('a dark pylon gets no wire at all', () => {
+        const r = board('A', null, 2);          // no generator anywhere
+        same(r.lit[0], false, 'fixture: it should be dark');
+        const f = E.run('(function(){ const t = world.find(x => x.pillar && x.attackMode); ' +
+                        'return t ? powerFlowOf(t) : null; })()');
+        same(f, 0, 'a pylon with nothing reaching it still drew a live wire');
+    });
+
+    check('the wire is drawn along the chain the grid actually routes', () => {
+        // pylon → generator → nest, and both ends remembered rather than worked
+        // out again at draw time, which would be a second copy of the routing.
+        const r = wire('wave', false, 2);
+        same(r.gen, true, 'the pylon does not remember the generator feeding it');
+        const at = SRC.game.indexOf('function drawPowerChain');
+        ok(at > -1, 'the chain is never drawn');
+        const body = SRC.game.slice(at, SRC.game.indexOf('\nfunction ', at + 10));
+        ok(/t\.powerGen/.test(body), 'it does not follow the recorded generator');
+        ok(/nestConnection/.test(body), 'it does not reach back to the nest');
+        ok(/powerFlowOf\(t\)/.test(body), 'the wire does not follow the actual draw');
+    });
+
+    check('the charges run from the SOURCE toward the thing spending', () => {
+        // A wire whose pulses run the wrong way says the pylon is feeding the
+        // nest. The two calls have to be (from, to) in that order.
+        const at = SRC.game.indexOf('function drawPowerChain');
+        const body = SRC.game.slice(at, SRC.game.indexOf('\nfunction ', at + 10));
+        const gxFirst = /_drawPowerWire\(gx, gy - \d+, px, py - \d+/.test(body);
+        const nxFirst = /_drawPowerWire\(nx, ny - \d+, gx, gy - \d+/.test(body);
+        ok(gxFirst, 'the generator → pylon wire runs the wrong way');
+        ok(nxFirst, 'the nest → generator wire runs the wrong way');
+        // ...and the bead walks the line from the first point to the second.
+        const wireAt = SRC.game.indexOf('function _drawPowerWire');
+        const wireBody = SRC.game.slice(wireAt, SRC.game.indexOf('\n}', wireAt));
+        ok(/ax \+ \(bx - ax\) \* t/.test(wireBody), 'the charges do not travel A to B');
+    });
+
+    check('a busier wire carries more charges and more light', () => {
+        const at = SRC.game.indexOf('function _drawPowerWire');
+        const body = SRC.game.slice(at, SRC.game.indexOf('\n}\n', at));
+        ok(/POWER_BEADS \* flow/.test(body), 'the number of charges ignores the draw');
+        ok(/flow \* 0\.\d+/.test(body), 'the brightness ignores the draw');
+        ok(/flow > 0\.\d+/.test(body), 'a wire with no draw is drawn the same as a live one');
+    });
+
     group('the player can see it');
 
     check('the nest draws its own life level', () => {

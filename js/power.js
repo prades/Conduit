@@ -116,10 +116,14 @@ function recomputePower() {
     _powerPools = [];
     if (typeof _pillarCache === "undefined") return;
     for (const t of _pillarCache) {
-        if (!needsPower(t)) { t.powered = true; t.powerSource = null; continue; }
-        const src = pylonSource(t);
-        t.powerSource = src;
-        t.powered = !!src && nestEnergy(src) > POWER_MIN_RESERVE;
+        if (!needsPower(t)) { t.powered = true; t.powerSource = null; t.powerGen = null; continue; }
+        // BOTH ends of the chain are remembered, not just the nest. The wiring
+        // is drawn along pylon → generator → nest, and working the middle out
+        // again at draw time would be a second copy of the routing rule.
+        const gen = generatorFeeding(t);
+        t.powerGen    = gen;
+        t.powerSource = gen ? generatorSource(gen) : null;
+        t.powered = !!t.powerSource && nestEnergy(t.powerSource) > POWER_MIN_RESERVE;
     }
     // The pools worth showing: every one something is drawing on, plus home.
     const seen = new Set();
@@ -145,7 +149,39 @@ function payForShot(t) {
     if (!t) return false;
     const src = t.powerSource || pylonSource(t);
     if (!src) return false;
-    return spendNestEnergy(src, POWER_SHOT_COST);
+    if (!spendNestEnergy(src, POWER_SHOT_COST)) return false;
+    // A SURGE down the wire. A turret's draw is a spike, not a trickle, and the
+    // wiring is the only place the player can see which pylons are costing
+    // them — so the round that was just paid for lights its own line.
+    t.powerFlow = 1;
+    if (src) src.powerFlow = 1;
+    return true;
+}
+
+// How hard this pylon is pulling right now, 0..1, for the wiring to draw.
+// Wave mode is pinned at full while it is on, because its draw never stops; a
+// turret spikes on each round and fades, so an idle turret's line goes quiet
+// and the player can see it costing nothing.
+function powerFlowOf(t) {
+    if (!t || !t.powered) return 0;
+    if (t.waveMode) return 1;
+    return Math.max(0, t.powerFlow || 0);
+}
+
+// Fade the spikes. Called once a frame with the rest of the grid.
+function powerFlowTick() {
+    if (typeof _pillarCache === "undefined") return;
+    for (const t of _pillarCache) {
+        if (t.powerFlow > 0) t.powerFlow = Math.max(0, t.powerFlow - POWER_FLOW_FADE);
+        if (t.waveMode && t.powered && !t.isGenerator && t.pillarTeam === "green") {
+            t.powerFlow = 1;
+            if (t.powerSource) t.powerSource.powerFlow = 1;
+        }
+    }
+    const nests = (typeof _nestCache !== "undefined") ? _nestCache : [];
+    for (const n of nests) {
+        if (n.powerFlow > 0) n.powerFlow = Math.max(0, n.powerFlow - POWER_FLOW_FADE);
+    }
 }
 
 // Wave mode's constant draw, once a frame per wave pylon. Switching back to

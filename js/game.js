@@ -441,6 +441,115 @@ function applyPylonZoneEffects(wavePylons) {
 // because it is mending them, not forming a network that could mesh.
 // The mend links, drawn as steel filaments running generator → pylon. World
 // space, so they sit with the world rather than up with the interface.
+// ── THE POWER CHAIN ──────────────────────────────────────
+// nest → generator → pylon, drawn as wire with charge running along it.
+//
+// REPORTED: "I can't read it. Make it more visually obvious when the power's
+// being drawn, with the little pulses in the wiring."
+//
+// It was a 1.4px grey dashed line at 18-40% alpha with one 2px dot on it, and
+// it was the same line whether the pylon was pulling hard or doing nothing at
+// all. There was no way to look at a base and see what was costing you.
+//
+// Now the wire's brightness and the number of charges on it follow the actual
+// draw, and the charges run in the direction the power goes:
+//
+//   WAVE MODE   never stops drawing, so its line is always full and busy.
+//   ATTACK MODE spikes on each round and fades, so a turret with nothing to
+//               shoot at goes quiet — you can see it costing you nothing.
+//   DARK        no charges at all, and the wire drops to a dim hint so the
+//               layout is still legible.
+const POWER_WIRE_COLOUR = "#8fd6ff";
+const POWER_WIRE_DEAD   = "rgba(120,140,160,0.18)";
+const POWER_BEADS       = 4;      // charges in flight per wire at full draw
+const POWER_BEAD_SPEED  = 0.011;  // of the wire's length, per frame
+
+// One length of wire with its charges. `flow` is 0..1 — how hard this leg is
+// being pulled — and `phase` offsets the charges so two wires from the same
+// generator do not pulse in lockstep.
+function _drawPowerWire(ax, ay, bx, by, flow, phase, colour) {
+    const lit = flow > 0.02;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // The wire. Dim and dashed when nothing is moving, solid and bright when it
+    // is — the line itself is the first thing that says "this is live".
+    if (lit) {
+        ctx.strokeStyle = colour;
+        ctx.globalAlpha = 0.25 + flow * 0.45;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = colour; ctx.shadowBlur = 6 * flow;
+        ctx.setLineDash([]);
+    } else {
+        ctx.strokeStyle = POWER_WIRE_DEAD;
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([4, 7]);
+    }
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.setLineDash([]); ctx.shadowBlur = 0;
+
+    if (lit) {
+        // The charges, running A → B, which is the direction the power goes.
+        const n = Math.max(1, Math.round(POWER_BEADS * flow));
+        for (let i = 0; i < n; i++) {
+            const t = (((frame || 0) * POWER_BEAD_SPEED) + phase + i / n) % 1;
+            const x = ax + (bx - ax) * t, y = ay + (by - ay) * t;
+            // Brightest in the middle of its run so each charge reads as
+            // travelling rather than as a row of fixed dots.
+            const fade = Math.sin(t * Math.PI);
+            ctx.globalAlpha = (0.45 + flow * 0.55) * (0.35 + fade * 0.65);
+            ctx.fillStyle = colour;
+            ctx.shadowColor = colour; ctx.shadowBlur = 7;
+            ctx.beginPath(); ctx.arc(x, y, 2.2 + flow * 1.4, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+// The whole chain, every frame. Walks the pylons that are drawing, because
+// those are the legs that matter — a generator with nothing pulling on it draws
+// no wire to a nest, which is itself information.
+function drawPowerChain() {
+    if (typeof _pillarCache === "undefined" || _pillarCache.length === 0) return;
+    const toScreen = o => [
+        (o.x - player.visualX - (o.y - player.visualY)) * TILE_W + canvas.width  / 2,
+        (o.x - player.visualX + (o.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H,
+    ];
+    // Generator → nest is drawn once per generator, at the heaviest flow any of
+    // its pylons is pulling: that leg carries all of them.
+    const genFlow = new Map();
+
+    for (const t of _pillarCache) {
+        if (!needsPower(t) || !t.powerGen) continue;
+        const gen = t.powerGen;
+        const flow = powerFlowOf(t);
+        genFlow.set(gen, Math.max(genFlow.get(gen) || 0, flow));
+        const [gx, gy] = toScreen(gen);
+        const [px, py] = toScreen(t);
+        if (Math.max(gx, px) < -80 || Math.min(gx, px) > canvas.width  + 80) continue;
+        if (Math.max(gy, py) < -80 || Math.min(gy, py) > canvas.height + 80) continue;
+        // Anchored on the bodies rather than the tiles, so the wire runs
+        // between the two structures instead of across the floor under them.
+        _drawPowerWire(gx, gy - 46, px, py - 40, flow,
+                       (t.x * 0.17 + t.y * 0.31) % 1, POWER_WIRE_COLOUR);
+    }
+
+    for (const [gen, flow] of genFlow) {
+        const nest = gen.nestConnection && nestIsPowerSource(gen.nestConnection)
+            ? gen.nestConnection
+            : world.find(o => typeof isHomePortal === "function" && isHomePortal(o));
+        if (!nest) continue;
+        const [gx, gy] = toScreen(gen);
+        const [nx, ny] = toScreen(nest);
+        if (Math.max(gx, nx) < -80 || Math.min(gx, nx) > canvas.width  + 80) continue;
+        if (Math.max(gy, ny) < -80 || Math.min(gy, ny) > canvas.height + 80) continue;
+        // Nest → generator, so the charges run the same way the power does and
+        // the whole chain reads in one direction.
+        _drawPowerWire(nx, ny - 55, gx, gy - 46, flow,
+                       (gen.x * 0.23) % 1, POWER_WIRE_COLOUR);
+    }
+}
+
 function drawGeneratorLinks() {
     if (_genLinks.length === 0) return;
     const toScreen = o => [
@@ -1447,6 +1556,7 @@ function render() {
     // that is exactly keeping up reads as steady rather than flickering.
     nestEnergyTick();
     waveDrainTick();
+    powerFlowTick();
 
     // ── CRYSTAL ULTIMATE CHARGE RESTORE ──────────────────────────────────
     // Runs every 60 frames. Rate scales with max pylon zone depth and nest pod links.
@@ -3253,7 +3363,10 @@ function render() {
     // painted over every pylon on the board, including ones in front of them,
     // which made a nest look like it was floating above the pylon instead of
     // sitting under it. They draw per tile in the depth-sorted pass instead.
+    // The power chain over the mending filament: the mending line is incidental,
+    // the power is the thing the player is managing.
     drawGeneratorLinks();
+    drawPowerChain();
     drawConversionBars();
     drawTutorialHighlight();
     drawFloatingTexts();
