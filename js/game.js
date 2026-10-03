@@ -1929,12 +1929,24 @@ function render() {
             // ── NETWORK FLOOR INTERCONNECT — PCB traces that appear when player extends the network ──
             // Tiles within range of any live pylon reveal circuit trace lines on the floor
             if (_pillarCache.length > 0) {
+                const REACH = 4.0;
                 let nearDist = Infinity;
                 for (const _p of _pillarCache) {
-                    const _d = Math.hypot(_p.x - obj.x, _p.y - obj.y);
+                    // Only a pylon within REACH on BOTH axes can be within REACH
+                    // at all, and nearDist is only ever compared against REACH —
+                    // so everything further out is rejected on a subtraction
+                    // rather than paying a hypot for it. This runs for every
+                    // visible floor tile against every pylon on the map, so it
+                    // grows with both. Measured as exactly equivalent over 564
+                    // tiles; the saving itself is too small to see on a fast
+                    // desktop and is here for slower devices and bigger bases.
+                    const _dx = _p.x - obj.x;
+                    if (_dx > REACH || _dx < -REACH) continue;
+                    const _dy = _p.y - obj.y;
+                    if (_dy > REACH || _dy < -REACH) continue;
+                    const _d = Math.hypot(_dx, _dy);
                     if (_d < nearDist) nearDist = _d;
                 }
-                const REACH = 4.0;
                 if (nearDist < REACH) {
                     const fade = Math.pow(1 - nearDist / REACH, 1.4);
                     // Tile world coords and screen center

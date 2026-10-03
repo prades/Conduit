@@ -165,6 +165,85 @@ function marchAt(E, n, targetExpr, frames) {
         ok(r.highest <= C.FLOOR_Y_MAX, `the squad reached y=${r.highest}, past ${C.FLOOR_Y_MAX}`);
     });
 
+    group('NOTHING GOES NaN: standing on a target is not a way to vanish');
+
+    // FOUND by an optimisation profile, not by a report: a brawler's orbit and a
+    // sniper's back-off divide by the distance to their target, and that
+    // distance is exactly 0 when the follower is standing on it. -dy/0 is NaN,
+    // a NaN position is permanent, and every effect that unit then spawns carries
+    // it into createRadialGradient, which THROWS on a non-finite value and takes
+    // the whole frame with it.
+    //
+    // The write is trapped rather than the result read, so the ROOT is proved
+    // fixed independently of the net that would otherwise mask it.
+    const stack = (role, el) => E.run(`(function(){
+        actors.length = 0; followers.length = 0;
+        ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+        spawnFollowerAtCrystal(${JSON.stringify(el)});
+        const f = followers[followers.length - 1];
+        f.role = ${JSON.stringify(role)}; f.x = 12; f.y = 2; f.visualX = 12; f.visualY = 2;
+        f.stance = 'follow'; f.job = null; f.duty = 'fighter';
+        const S = SPECIES['ant'];
+        const foe = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 12, 2);
+        foe.team = 'red'; foe.speciesName = 'ant'; foe.className = 'scout';
+        foe.health = 99999; foe.maxHealth = 99999; actors.push(foe);
+        let bad = null;
+        ['x', 'y'].forEach(k => { let v = f[k];
+            Object.defineProperty(f, k, { configurable: true, enumerable: true, get() { return v; },
+                set(n) { if (bad === null && !Number.isFinite(n)) bad = k + '=' + n; v = n; } }); });
+        for (let i = 0; i < 120; i++) { try { render(); } catch (e) { bad = bad || 'threw: ' + e.message; } }
+        return { wrote: bad, x: f.x, y: f.y };
+    })()`);
+
+    check('THE ASK: a brawler standing ON its target never writes a NaN', () => {
+        const r = stack('brawler', 'core');
+        same(r.wrote, null, 'a brawler on its target wrote ' + r.wrote);
+        ok(Number.isFinite(r.x) && Number.isFinite(r.y), 'and it ended at a non-finite position');
+    });
+
+    check('a sniper standing ON its target never writes a NaN', () => {
+        const r = stack('sniper', 'electric');
+        same(r.wrote, null, 'a sniper on its target wrote ' + r.wrote);
+        ok(Number.isFinite(r.x) && Number.isFinite(r.y), 'and it ended at a non-finite position');
+    });
+
+    check('and the frame survives it — nothing throws in the draw', () => {
+        // The NaN's real cost was not the unit, it was the frame: a non-finite
+        // value reaching createRadialGradient throws out of render().
+        for (const [role, el] of [['brawler', 'toxic'], ['sniper', 'toxic']]) {
+            const r = stack(role, el);
+            ok(!/threw/.test(String(r.wrote)), role + ' on its target broke the frame: ' + r.wrote);
+        }
+    });
+
+    check('THE NET: a follower that does go non-finite is put back, not kept', () => {
+        // Per-branch guards are exactly how this got through. Any NEW movement
+        // that forgets one must not leave a permanent NaN behind.
+        const r = E.run(`(function(){
+            actors.length = 0; followers.length = 0;
+            spawnFollowerAtCrystal('core');
+            const f = followers[followers.length - 1];
+            f.x = 9; f.y = 2; f.visualX = 9; f.visualY = 2; f.stance = 'follow';
+            // Poison it the way a bad division would, mid-update.
+            const real = updateRTSNPC;
+            updateRTSNPC = function (a) { real.apply(this, arguments); if (a === f) { a.x = NaN; a.y = NaN; } };
+            try { updateNPC(f); } finally { updateRTSNPC = real; }
+            return { x: f.x, y: f.y };
+        })()`);
+        ok(Number.isFinite(r.x) && Number.isFinite(r.y),
+           'a NaN position survived updateNPC: ' + r.x + ', ' + r.y);
+        same(r.x, 9, 'it was not put back where it was');
+    });
+
+    check('both guards are real code, not comments', () => {
+        const NPC = fs.readFileSync(path.join(ROOT, 'js/npc.js'), 'utf8');
+        const code = NPC.split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+        ok(/NPC_MIN_DIST/.test(code), 'the distance floor is gone');
+        ok((code.match(/Math\.max\(NPC_MIN_DIST/g) || []).length >= 2,
+           'both the orbit and the back-off should use the floor');
+        ok(/Number\.isFinite\(actor\.x\)/.test(code), 'the non-finite net is gone');
+    });
+
     group('one rule, in one place');
 
     check('the bounds are named, not written out again', () => {

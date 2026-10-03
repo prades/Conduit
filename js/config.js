@@ -345,6 +345,9 @@ const PANEL_AMMO_REWARD = 8;
 // -1 is a real floor row: it is where the nests and the wall panels are, so a
 // follower sent to one has to be able to stand there. -1.5 is half a tile
 // INSIDE the back wall, which is what the squad was walking into.
+// The smallest distance a follower divides by when it steers off a target. At
+// exactly 0 a unit standing on its target produces NaN, which is permanent.
+const NPC_MIN_DIST = 0.001;
 const FLOOR_Y_MIN = -1;
 const FLOOR_Y_MAX = 4;
 // The player stops one half-tile short of the back row. Not an accident and

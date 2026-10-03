@@ -331,7 +331,10 @@ function updateRTSNPC(actor) {
         if (role === "brawler") {
             if (nearestEnemy && nearestEnemyDist < 6) {
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
-                const dist=Math.sqrt(dx*dx+dy*dy);
+                // Floored: standing exactly on the target makes dist 0, and the
+                // orbit below divides by it. -dy/0 is NaN, and a NaN position
+                // never recovers — see the net in updateNPC.
+                const dist=Math.max(NPC_MIN_DIST, Math.sqrt(dx*dx+dy*dy));
                 if (dist > 1.4) {
                     // Approach
                     actor.x+=(dx/dist)*actor.moveSpeed;
@@ -360,7 +363,10 @@ function updateRTSNPC(actor) {
 
             if (nearestEnemy && nearestEnemyDist < 10) {
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
-                const dist=Math.sqrt(dx*dx+dy*dy);
+                // Floored for the same reason as the brawler's orbit: the
+                // back-off below runs for every dist under SNIPER_MIN, zero
+                // included.
+                const dist=Math.max(NPC_MIN_DIST, Math.sqrt(dx*dx+dy*dy));
 
                 if (dist < SNIPER_MIN) {
                     actor.x-=(dx/dist)*actor.moveSpeed*1.2;
@@ -446,6 +452,16 @@ function updateNPC(actor) {
         // half a tile INSIDE the back wall. One bound, and it is the real edge
         // of the floor, so a follower can reach a nest without walking through
         // the wall behind it.
+        // THE NET. Every follower movement above divides by a distance, and
+        // the guards are per-branch: a new one that forgets is a NaN that
+        // sticks. Put the unit back where it was rather than let it keep a
+        // coordinate that poisons every effect it spawns and every draw it is
+        // part of (createRadialGradient throws on a non-finite value, which
+        // takes the whole frame with it).
+        if (!Number.isFinite(actor.x) || !Number.isFinite(actor.y)) {
+            actor.x = Number.isFinite(_prevX) ? _prevX : (crystal ? crystal.x : 0);
+            actor.y = Number.isFinite(_prevY) ? _prevY : (crystal ? crystal.y : 2);
+        }
         clampToFloor(actor);
         // Tick walk cycle for clones based on actual movement
         if (actor.isClone) {
