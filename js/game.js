@@ -948,10 +948,15 @@ function render() {
         // network tiers and integrity are computed from that list, and a
         // neutral pylon has no element to contribute to either.
         _genPylons   = _pillarCache.filter(t => t.isGenerator);
-        _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement && !t.isGenerator);
-        _aPylons     = _pillarCache.filter(t => t.attackMode && !t.isGenerator);
-        _uPylons     = _pillarCache.filter(t => t.upgraded);
+        // Who is actually switched on. Must come after _genPylons and _nestCache
+        // — the grid is worked out from the generators that carry it and the
+        // nests that feed it — and BEFORE the two ability lists, which only
+        // carry pylons the grid can keep running.
         _nestCache   = world.filter(t => t.nest);
+        recomputePower();
+        _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement && !t.isGenerator && t.powered);
+        _aPylons     = _pillarCache.filter(t => t.attackMode && !t.isGenerator && t.powered);
+        _uPylons     = _pillarCache.filter(t => t.upgraded);
         // ── WALL PANEL MAP — for wall-face panel rendering ──
         _wallPanelMap = new Map();
         _wallPanelCache = [];
@@ -2270,13 +2275,18 @@ function render() {
                 const _base=py+TILE_H; // anchor to tile center, not north vertex
                 drawHealthBar(px-10,_base-75,20,4,obj.health,obj.maxHealth);
                 const _pulse=0.5+0.5*Math.sin(frame*0.08+(obj.x*0.97+obj.y*1.31));
-                const _acol=obj.attackModeColor||"#0f8";
+                // A pylon with no power is DARK, and the colour is the whole
+                // readout: the element it is set to is still there, it just is
+                // not doing anything. Drawing it lit would say the grid was
+                // fine while the turret quietly refused to fire.
+                const _dark = obj.powered === false;
+                const _acol = _dark ? POWER_DEAD_COLOUR : (obj.attackModeColor||"#0f8");
                 const _isActive=!!(obj.attackMode||obj.waveMode);
                 const _wTier=obj.waveMode?(networkStrength[obj.attackModeElement]||0):0;
                 const _tierMult=1+_wTier*0.4;
 
                 // ── WAVE MODE — background glow ring ──
-                if (obj.waveMode) {
+                if (obj.waveMode && !_dark) {
                     const _wGlowR=(20+_pulse*5)*Math.min(1.5,_tierMult);
                     const _wGlowA=Math.min(0.5,(0.12+_pulse*0.1)*_tierMult);
                     ctx.save(); ctx.globalAlpha=_wGlowA; ctx.fillStyle=_acol;
@@ -2291,7 +2301,9 @@ function render() {
                     }
                 }
                 // ── ATTACK MODE — range ring ──
-                if (obj.attackMode) {
+                // No range ring while dark: the ring says "this is covered",
+                // and an unpowered turret covers nothing.
+                if (obj.attackMode && !_dark) {
                     ctx.save(); ctx.globalAlpha=0.08+_pulse*0.08; ctx.strokeStyle=_acol; ctx.lineWidth=2;
                     ctx.beginPath(); ctx.arc(px,_base-20,obj.attackRange*TILE_W*0.5,0,Math.PI*2); ctx.stroke();
                     ctx.restore();
@@ -3373,7 +3385,11 @@ function applySignalTowerBuff() {
 // ─────────────────────────────────────────────────────────
 function drawNetworkStatusHUD() {
     const activeEls = ELEMENTS.filter(e => (networkStrength[e.id]||0) > 0);
-    if (activeEls.length === 0) return;
+    const pw = powerStatus();
+    // The grid line shows from the first pylon, before any network has formed —
+    // it is the thing the player is now budgeting, so it cannot wait for a
+    // resonance tier to appear first.
+    if (activeEls.length === 0 && pw.demand === 0) return;
 
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
 
@@ -3381,7 +3397,8 @@ function drawNetworkStatusHUD() {
     const PAD     = 8;
     const W       = 148;
     const HEADER  = 16;
-    const H       = HEADER + activeEls.length * ROW_H + PAD;
+    const POWER_H = 26;
+    const H       = HEADER + POWER_H + activeEls.length * ROW_H + PAD;
     const X       = canvas.width - W - 8;
     const Y       = 75;
 
@@ -3398,6 +3415,20 @@ function drawNetworkStatusHUD() {
     ctx.fillStyle = "#0f8"; ctx.font = "bold 9px monospace"; ctx.textAlign = "left";
     ctx.fillText("◈ NETWORK RESONANCE", X + PAD, Y + 11);
 
+    // ── POWER — what the grid makes, what the pylons are drawing ──
+    // Red the moment anything is dark, because that is the only state the
+    // player has to act on. Spare capacity is just a number.
+    const _pOk = !pw.short;
+    ctx.fillStyle = _pOk ? "#8fd" : "#ff5522";
+    ctx.font = "bold 10px monospace"; ctx.textAlign = "left";
+    ctx.fillText("\u26a1 " + pw.demand + " / " + pw.supply, X + PAD, Y + 26);
+    ctx.font = "8px monospace"; ctx.textAlign = "right";
+    ctx.fillStyle = _pOk ? "#3a4555" : "#ff5522";
+    ctx.fillText(_pOk ? ("+" + pw.spare + " SPARE") : (pw.shed + " UNPOWERED"),
+                 X + W - PAD, Y + 26);
+    ctx.strokeStyle = "rgba(0,255,136,0.12)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X + PAD, Y + 32); ctx.lineTo(X + W - PAD, Y + 32); ctx.stroke();
+
     // Tier label lookup
     const TIER_LABEL  = ["", "I", "II", "III"];
     const TIER_COLOR  = ["", "#888888", "#aaddff", "#ffd700"];
@@ -3407,7 +3438,7 @@ function drawNetworkStatusHUD() {
         const el        = elDef.id;
         const tier      = networkStrength[el] || 0;
         const integrity = networkIntegrity[el] || 0;
-        const ry        = Y + HEADER + i * ROW_H;
+        const ry        = Y + HEADER + POWER_H + i * ROW_H;
 
         // Element glow dot
         ctx.shadowColor = elDef.color; ctx.shadowBlur = 8;

@@ -35,6 +35,7 @@ const SUITES = [
     ['portal + aura',          'homebase.js'],
     ['HUD layout',             'hud.js'],
     ['walkable bounds',        'bounds.js'],
+    ['power grid',             'power.js'],
 ];
 
 let failed = 0;

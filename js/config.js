@@ -354,6 +354,36 @@ const FLOOR_Y_MAX = 4;
 // the two bounds differ.
 const PLAYER_Y_MIN = -0.5;
 
+// ── THE POWER GRID ───────────────────────────────────────
+// Nests feed generators; generators feed pylons; pylons spend it on the two
+// abilities that do anything — firing and the wave functions.
+//
+// What costs power is deliberately NOT "having a pylon". A plain pylon still
+// stands, still holds territory, still takes a healing aura, and draws nothing.
+// The moment it is switched to a turret or a wave node it is on the grid, and
+// that is the moment the player is choosing to spend something.
+//
+// SUPPLY. The home portal is zone 0's nest and was always yours, so it feeds
+// the grid from the first frame — without it a new game could not run the
+// pylon it starts you with. Every other nest has to be TAKEN and then LINKED
+// to a generator, which is the CONNECT order that already existed and until now
+// did almost nothing. A nest pays more the deeper its zone, so the way to grow
+// the grid is to push forward.
+const POWER_HOME_SUPPLY = 6;    // the home portal, always
+const POWER_PER_NEST    = 4;    // per linked nest, before the zone multiplier
+const POWER_ZONE_BONUS  = 1;    // +1x per zone of depth: zone 2 pays 3x the base
+// DEMAND. Wave mode costs more than a turret: it is the networked one, it tiers
+// up with the size of its network, and it affects an area rather than one target.
+const POWER_DRAW_ATTACK = 2;
+const POWER_DRAW_WAVE   = 3;
+// Live readout, recomputed with the pylon cache. _powerShed is the pylons that
+// asked for power and did not get it.
+let _powerSupply = 0;
+let _powerDemand = 0;
+let _powerShed   = [];
+// What a pylon looks like with nothing coming down the line: lightless steel.
+const POWER_DEAD_COLOUR = "#4a4f58";
+
 // ── THE THREE STATES OF A NEST ───────────────────────────
 // A nest's colour is the only thing that says whose it is, so the three are
 // named here rather than written out at each of the places that draw one.

@@ -1012,6 +1012,17 @@
       <div class="ctrl-title">SEASONED BONUS</div>
       <div class="cm-ability"><strong>+25% power</strong> permanently awarded to any pylon that survives an entire night without being destroyed. Shown visually on the pylon. Carries across all future nights.</div>
 
+      <div class="ctrl-title">⚡ POWER GRID &mdash; NESTS FEED GENERATORS FEED PYLONS</div>
+      <div class="ctrl-row cm-dim"><strong>A pylon’s abilities are not free.</strong> Firing and the wave functions draw from a grid; the grid is fed by the nests you have taken; and a <strong>generator</strong> is what carries it from one to the other. Taking a zone is no longer only a line on the banner — it is what lets you switch another turret on.</div>
+      <div class="cm-build-row"><span class="cm-build-label">Free</span>A <strong>plain pylon</strong> costs nothing. It still stands, still holds territory, still takes a healing aura. So does a <strong>generator</strong> — it is the thing carrying the power, not a thing spending it.</div>
+      <div class="cm-build-row"><span class="cm-build-label">Firing</span>Attack mode draws <span class="cm-stat">2</span></div>
+      <div class="cm-build-row"><span class="cm-build-label">Wave</span>Wave mode draws <span class="cm-stat">3</span> &mdash; it is the networked one, it tiers up with its network, and it covers ground rather than one target</div>
+      <div class="ctrl-row cm-dim" style="margin-top:5px"><strong>Where the power comes from:</strong></div>
+      <div class="cm-build-row"><span class="cm-build-label">Home</span>The <strong>home portal</strong> always feeds you <span class="cm-stat">6</span>. It is zone 0’s nest and was never theirs, so you start with enough to run a small base.</div>
+      <div class="cm-build-row"><span class="cm-build-label">A nest</span>Worth <span class="cm-stat">4</span> &times; (1 + its zone), so zone 1 pays 8 and zone 3 pays 16 &mdash; but only once it is <strong>TAKEN</strong> (its zone cleared, so it has stopped spawning) <strong>and LINKED</strong> to a generator with the <span class="cm-stat">CONNECT</span> order. A nest still pouring predators out of the wall is not yours to draw on, and one you have taken but not wired in is not on the grid yet.</div>
+      <div class="ctrl-row cm-dim"><strong>Deeper pays more</strong>, so the way to grow the grid is to push forward rather than to build more at home. The multiplier is <span class="cm-stat">1</span> extra share per zone of depth.</div>
+      <div class="ctrl-row cm-dim" style="margin-top:5px"><strong>When there is not enough:</strong> a pylon with <strong>no generator in reach</strong> is dark however full the grid is — nothing is carrying power to it. If demand runs past supply, the pylons <strong>furthest from their generator go dark first</strong>, so the base around it stays lit. A dark pylon keeps its element and its setting; it just stops doing anything, loses its range ring, and turns grey. The <span class="cm-stat">⚡</span> line on the NETWORK panel shows draw against supply and turns red the moment anything is out.</div>
+
       <div class="ctrl-title">GENERATOR — HEALING AURA</div>
       <div class="ctrl-row cm-dim">Every pylon <strong>linked to a generator</strong> mends whoever is standing near it — your followers, your clones and <strong>you</strong>. Enemies get nothing.</div>
       <div class="ctrl-row cm-dim">Both the rate <em>and</em> the reach are <strong>multiplied by that pylon's NETWORK TIER</strong>, so a lone linked pylon is a trickle and a tier III network is a field hospital. Tier 0 means "not networked at all" and still mends at the tier I floor — a linked pylon is never worth nothing.</div>
@@ -1251,6 +1262,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 <script src="js/predator_randomizer.js"></script>
 <script src="js/mass.js"></script>
 <script src="js/infest.js"></script>
+<script src="js/power.js"></script>
 <script src="js/save.js"></script>
 <script src="js/camp.js"></script>
 <script src="js/wavedata.js"></script>

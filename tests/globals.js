@@ -195,6 +195,13 @@ async function passC() {
             const did   = [];
             if (floor[8])  { _executeBuildInstant(fire, floor[8]);  did.push('buildInstant'); }
             if (floor[20]) { _executeBuild(fire, floor[20]);        did.push('build'); }
+            // A turret needs a generator carrying power to it now, so the drive
+            // builds one beside the first pylon. Without it nothing is on the
+            // grid, _aPylons comes back empty and the fire tick never runs —
+            // which is the whole path this pass exists to walk.
+            const gen = ELEMENTS.find(e => e.id === 'fire') && floor[9];
+            if (gen) { _executeBuildInstant(fire, gen); gen.isGenerator = true;
+                       gen.attackMode = false; gen.waveMode = false; did.push('generator'); }
             const plain = world.find(t => t.pillar && t.pillarTeam === 'green'
                                           && !t.attackMode && !t.waveMode);
             if (plain) { _executeUpgrade(fire, plain); did.push('upgrade'); }
@@ -334,7 +341,7 @@ const DEAD_NAMES = ['followerPermHPBonus', 'followerPermPowerBonus',
         // silently did nothing.
         ok(!C.threw, 'driving threw: ' + (C.threw && C.threw.message || ''));
         ok(C.drove, 'the drive returned nothing');
-        for (const step of ['buildInstant', 'build', 'upgrade', 'frames', 'saved']) {
+        for (const step of ['buildInstant', 'build', 'generator', 'upgrade', 'frames', 'saved']) {
             ok(C.drove.did.includes(step), 'never reached ' + step);
         }
         ok(C.drove.aPylons > 0, 'no attack pylon existed, so the fire tick never ran');

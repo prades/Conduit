@@ -154,12 +154,31 @@ check('it needs no unlock — it is neutral, not earned', () => {
 
 check('it stays out of the elemental network', () => {
     // networkStrength/networkIntegrity and every zone effect come off _wPylons.
-    ok(/_wPylons\s*=\s*_pillarCache\.filter\(t => t\.waveMode && t\.attackModeElement && !t\.isGenerator\)/.test(GAME),
+    // Both lists also filter on `powered` now — a pylon the grid cannot run is
+    // not an attack pylon or a network node for that tick — so the generator
+    // exclusion is matched on its own rather than against the whole line.
+    const wLine = GAME.match(/_wPylons\s*=\s*_pillarCache\.filter\(([^;]*)\);/);
+    const aLine = GAME.match(/_aPylons\s*=\s*_pillarCache\.filter\(([^;]*)\);/);
+    ok(wLine && /!t\.isGenerator/.test(wLine[1]),
        'a generator would be counted as part of an elemental network');
-    ok(/_aPylons\s*=\s*_pillarCache\.filter\(t => t\.attackMode && !t\.isGenerator\)/.test(GAME),
+    ok(wLine && /t\.waveMode && t\.attackModeElement/.test(wLine[1]),
+       'the wave list no longer requires a wave-mode pylon with an element');
+    ok(aLine && /!t\.isGenerator/.test(aLine[1]),
        'a generator would be counted as an attack pylon');
+    ok(aLine && /t\.attackMode/.test(aLine[1]), 'the attack list no longer requires attack mode');
     ok(/_genPylons\s*=\s*_pillarCache\.filter\(t => t\.isGenerator\)/.test(GAME),
        'generators are not cached');
+});
+
+check('a generator costs the grid nothing to run', () => {
+    // It is the thing CARRYING the power. One that charged for itself would
+    // make the first generator a step backwards, which is the opposite of what
+    // it is for.
+    const POWER = fs.readFileSync(path.join(ROOT, 'js/power.js'), 'utf8');
+    const at = POWER.indexOf('function pylonPowerDraw');
+    ok(at > -1, 'the draw rule could not be located');
+    const body = POWER.slice(at, POWER.indexOf('\n}', at));
+    ok(/t\.isGenerator\) return 0/.test(body), 'a generator draws power like any other pylon');
 });
 
 check('no elemental zone effect can fire for it', () => {
