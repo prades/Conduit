@@ -555,6 +555,18 @@ canvas.addEventListener('pointerup', e=>{
                 // a pylon fell through to switch_context and toggled the pylon's
                 // mode instead. It also fired build_upgrade with build mode OFF,
                 // where no top button is drawn at all.
+                // Own follower ring (mirrors its branch in drawRadialMenu).
+                if (commandFollowerTarget && !commandFollowerTarget.dead) {
+                    const _f = commandFollowerTarget;
+                    if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4) {
+                        if (canWorkMass(_f)) selectedRadialAction = "toggle_duty";
+                    } else if (relAngle > -Math.PI/4 && relAngle < Math.PI/4) selectedRadialAction = "info";
+                    else if (Math.abs(relAngle) > Math.PI*3/4 && canRerollFollower(_f)) selectedRadialAction = "reroll_follower";
+                    commandPendingTap = false;
+                    executeCommand(); commandTarget=null;
+                    isPressing=false;
+                    return;
+                }
                 if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && buildMode) selectedRadialAction = "build_upgrade";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode && _isCapturableCmd) selectedRadialAction = "capture";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode) selectedRadialAction = "position";

@@ -78,6 +78,11 @@ function drawRadialMenu() {
         const fRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
         drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", fRight);
         if (fRight) selectedRadialAction = "info";
+        if (typeof canRerollFollower === "function" && canRerollFollower(f)) {
+            const fLeft = dist>RADIAL_RADIUS*0.25&&Math.abs(angle)>Math.PI*3/4;
+            drawRadialButton(commandX-RADIAL_RADIUS, commandY, "RE-ROLL", fLeft);
+            if (fLeft) selectedRadialAction = "reroll_follower";
+        }
         ctx.fillStyle = isWorker ? "#0ca" : "#0f8";
         ctx.font = "10px monospace"; ctx.textAlign = "center";
         const jobLabel = (typeof workerJobLabel === "function" && workerJobLabel(f.element)) || "NO JOB";

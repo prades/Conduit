@@ -948,6 +948,93 @@ check('the drawn block reads as a cube, not a column', () => {
         ok(/ICE_BLOCK_H_MULT/.test(INPUT), 'the tap test does not use the same height');
     });
 
+    group('RE-ROLL: a long hold sends a follower back to the crystal');
+
+    // Long-press the follower, drive the ring LEFT, execute, then walk it home.
+    const reroll = (el, prep) => R(`(function(){
+        actors.length = 0; followers.length = 0;
+        ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+        spawnFollowerAtCrystal(${JSON.stringify(el)});
+        const f = followers[0];
+        f.x = 6; f.y = 2;
+        player.x = 6; player.y = 4; player.visualX = 6; player.visualY = 4;
+        ${prep || ''}
+        const before = { element: f.element, stats: JSON.stringify(f.stats), personality: f.personality };
+        const _px = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
+        const _py = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2;
+        commandFollowerTarget = null; commandEnemyTarget = null;
+        handleLongHold(_px, _py - 55);
+        const picked = commandFollowerTarget === f;
+        dragDX = -RADIAL_RADIUS; dragDY = 0;
+        drawRadialMenu();
+        const action = selectedRadialAction;
+        executeCommand();
+        const leaving = { returning: f.returningToCrystal, inList: followers.includes(f),
+            inElement: (followerByElement[before.element]||[]).includes(f), carrying: !!f.carryingMass,
+            personality: f.personality };
+        for (let n = 0; n < 3000 && f.returningToCrystal; n++) updateNPC(f);
+        const all = followers.filter(a => a === f).length;
+        const byEl = []; ELEMENTS.forEach(e => (followerByElement[e.id]||[]).forEach(a => { if (a === f) byEl.push(e.id); }));
+        return { picked, action, before, leaving, home: !f.returningToCrystal, isFollower: f.isFollower,
+                 all, byEl, element: f.element, personality: f.personality, hp: f.health, maxHp: f.maxHealth,
+                 stats: JSON.stringify(f.stats) };
+    })()`);
+
+    check('the ring offers RE-ROLL on the left and executing it sends the follower home', () => {
+        const r = reroll('fire');
+        ok(r.picked, 'fixture: follower not picked');
+        same(r.action, 'reroll_follower', 'left button is not RE-ROLL');
+        same(r.leaving.returning, true, 'it is not walking back');
+        same(r.leaving.inList, false, 'it is still in followers[] while walking');
+        same(r.leaving.inElement, false, 'it is still in followerByElement while walking');
+        same(r.leaving.personality, null, 'identity was not cleared');
+    });
+
+    check('it arrives as a follower exactly once, with fresh identity', () => {
+        const r = reroll('fire');
+        same(r.home, true, 'never arrived');
+        same(r.isFollower, true, 'not a follower again');
+        same(r.all, 1, 'duplicated in followers[]');
+        same(r.byEl.length, 1, 'duplicated or lost in followerByElement');
+        same(r.byEl[0], r.element, 'filed under the wrong element');
+        ok(r.personality, 'no personality rolled');
+        ok(r.hp > 0 && r.hp === r.maxHp, 'health not reset to the new stats');
+    });
+
+    check('stats actually re-roll (differ in at least one of several tries)', () => {
+        let changed = false;
+        for (let i = 0; i < 12 && !changed; i++) {
+            const r = reroll('fire');
+            changed = r.stats !== r.before.stats || r.element !== r.before.element;
+        }
+        ok(changed, 'twelve re-rolls never changed anything');
+    });
+
+    check('a worker carrying a lump puts it down', () => {
+        const r = reroll('electric', `setFollowerDuty(f,'worker');
+            const m = chargedMass[0] || (chargedMass.push({x:6,y:2,state:MASS_STATE.CARRIED,carrier:f,amount:1}), chargedMass[0]);
+            m.state = MASS_STATE.CARRIED; m.carrier = f; f.carryingMass = m;`);
+        same(r.leaving.carrying, false, 'still holding the lump');
+    });
+
+    check('clones cannot be re-rolled', () => {
+        const r = R(`(function(){
+            actors.length = 0; followers.length = 0;
+            spawnFollowerAtCrystal('fire');
+            const f = followers[0]; f.isClone = true;
+            return { can: canRerollFollower(f), did: startFollowerReroll(f), still: followers.includes(f) };
+        })()`);
+        same(r.can, false, 'clone offered re-roll');
+        same(r.did, false, 'clone re-rolled');
+        same(r.still, true, 'clone left the squad');
+    });
+
+    check('the release-tap path mirrors the button', () => {
+        const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+        ok(/"reroll_follower"/.test(INPUT), 'input.js cannot select RE-ROLL by tapping');
+        ok(/"reroll_follower"/.test(DRAW), 'draw.js does not offer RE-ROLL');
+    });
+
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
 })();

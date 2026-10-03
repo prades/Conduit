@@ -330,6 +330,10 @@ function executeCommand() {
             }
             break;
         }
+        case "reroll_follower": {
+            if (commandFollowerTarget) startFollowerReroll(commandFollowerTarget);
+            break;
+        }
         // ── LEFT: SWITCH (role / pylon mode) ─────────────
         case "switch_context": {
             const pylon = commandTarget;

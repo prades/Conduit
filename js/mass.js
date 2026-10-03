@@ -591,6 +591,38 @@ function setFollowerDuty(actor, duty, quiet) {
     return true;
 }
 
+// RE-ROLL: send a follower back to the crystal to be made again. Clones and
+// ghost-phages are summoned, not recruited, so they have nothing to re-roll.
+function canRerollFollower(actor) {
+    return !!actor && !actor.dead && actor.team === 'green' && actor.isFollower
+        && !actor.isClone && !actor.ghostphageLife && !actor.returningToCrystal;
+}
+
+// The follower leaves every list and walks home as a fresh recruit; the arrival
+// block in updateNPC (npc.js) already rolls identity for an actor with no
+// personality, so clearing the identity fields is all it takes to re-roll
+// element, stats, role and traits there. Anything in hand is put down first.
+function startFollowerReroll(actor) {
+    if (!canRerollFollower(actor)) return false;
+    setFollowerDuty(actor, 'fighter', true);   // drops mass, thaws a block, frees the post
+    actor.job = null;
+    actor.stance = 'follow';
+    const fi = followers.indexOf(actor);
+    if (fi >= 0) followers.splice(fi, 1);
+    const list = followerByElement[actor.element];
+    if (list) { const li = list.indexOf(actor); if (li >= 0) list.splice(li, 1); }
+    actor.isFollower = false;
+    actor.returningToCrystal = true;
+    actor.personality = null;
+    actor.combatTrait = null;
+    actor.naturalTrait = null;
+    actor.perk = null;
+    actor.convertFlash = 20;
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+        text: 'RE-ROLLING AT THE CRYSTAL', color: '#0df', life: 100, vy: -0.25, size: 12 });
+    return true;
+}
+
 function toggleFollowerDuty(actor) {
     return setFollowerDuty(actor, actor && actor.duty === 'worker' ? 'fighter' : 'worker');
 }

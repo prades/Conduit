@@ -388,6 +388,10 @@ function renderWorkCrewIndex() {
         'instead of TO LINE \u2014 press the BLOCK itself, not the air above it. And a worker with an ' +
         'enemy right on top of it, which is where a TOXIC repeller always is, can still be reached: ' +
         'whichever of the two is nearer your finger wins the ring.</div>' +
+        '<div class="cm-build-row"><span class="cm-build-label">Re-roll</span>' +
+        'Long-press a follower \u2192 radial LEFT \u2192 <strong>RE-ROLL</strong>. It drops what it ' +
+        'carries, walks back to the Crystal and comes out as a new recruit: element drawn from the ' +
+        'modulation pool again, with freshly rolled stats, role and traits. Clones cannot be re-rolled.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Fighters</span>' +
         'Behave exactly as before. Every follower starts as one.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Workers</span>' +
