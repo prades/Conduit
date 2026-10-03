@@ -378,6 +378,85 @@ async function ready() {
         ok(/network tier/i.test(HTML), 'nor that the tier multiplies it');
     });
 
+    // ─────────────────────────────────────────────────────
+    group('NO DESTROY ORDER: a nest is hacked, not bashed down');
+
+    // REPORTED: "remove the destroy nest option because it's only going to do
+    // hacking in it."
+    //
+    // DESTROY sent up to five idle followers to walk to a live nest and hit it
+    // until it died. A zone's nest now goes out when the zone's wave is cleared,
+    // which starts with the player hacking it — so a second way to kill it, by
+    // hand, was both redundant and a way round the fight the hack starts.
+
+    // What the left button of the radial offers when the press is near `nest`.
+    const leftButton = (health, linked) => E.run(`(function(){
+        buildMode = false; commandMode = true;
+        commandTarget = null; commandFollowerTarget = null; commandEnemyTarget = null;
+        const n = world.find(t => t.nest && t.nestZone === 1);
+        n.nestHealth = ${health};
+        n.connectedPylon = ${linked ? 'world.find(t => t.pillar) || {destroyed:false}' : 'null'};
+        commandNestTarget = n;
+        commandX = 300; commandY = 300;
+        dragDX = -RADIAL_RADIUS; dragDY = 0;       // held to the LEFT
+        const labels = [];
+        const orig = ctx.fillText.bind(ctx);
+        ctx.fillText = (t, ...a) => { labels.push(String(t)); return orig(t, ...a); };
+        drawRadialMenu();
+        ctx.fillText = orig;
+        const action = selectedRadialAction;
+        commandMode = false; commandNestTarget = null;
+        return { action, labels: labels.filter(t => /^[A-Z]{3,}$/.test(t)) };
+    })()`);
+
+    check('THE ASK: a LIVE nest no longer offers DESTROY', () => {
+        const r = leftButton(200, false);
+        ok(!r.labels.includes('DESTROY'), 'the radial still offers DESTROY: ' + r.labels);
+        ok(r.action !== 'destroy_nest', 'and it still maps the left button to it');
+    });
+
+    check('a taken nest still offers CONNECT — only the destroy half went', () => {
+        // The other nest order has to survive, or this removed too much.
+        const r = leftButton(0, false);
+        ok(r.labels.includes('CONNECT'), 'CONNECT is gone too: ' + r.labels);
+        same(r.action, 'connect_nest', 'the left button does not connect');
+    });
+
+    check('the order is gone from every layer, not just the button', () => {
+        // The button, the release-tap hit test that mirrors it, the command, and
+        // the job that did the bashing. Any one left behind is a way back in.
+        const code = f => fs.readFileSync(path.join(ROOT, f), 'utf8')
+            .split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+        for (const f of ['js/draw.js', 'js/input.js', 'js/commands.js', 'js/npc.js']) {
+            ok(!/destroy_nest/.test(code(f)), f + ' still handles destroy_nest');
+        }
+        ok(!/"DESTROY"/.test(code('js/draw.js')), 'the DESTROY label survives');
+    });
+
+    check('and a stale job of that type does nothing', () => {
+        // A follower carrying one from an older session must not go and bash a
+        // nest the player can no longer order anyone at.
+        const r = E.run(`(function(){
+            const n = world.find(t => t.nest && t.nestZone === 1);
+            n.nestHealth = 200;
+            actors.length = 0; followers.length = 0;
+            spawnFollowerAtCrystal('core');
+            const f = followers[followers.length - 1];
+            f.x = n.x; f.y = n.y + 0.4; f.job = { type: 'destroy_nest', target: n };
+            for (let i = 0; i < 200; i++) { try { updateNPC(f); } catch (e) {} }
+            return n.nestHealth;
+        })()`);
+        same(r, 200, 'a follower with a stale destroy order still damaged the nest');
+    });
+
+    check('the index no longer teaches it', () => {
+        const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+        ok(!/LEFT radial command to assign followers to attack it/.test(HTML),
+           'the index still tells the player to order followers at a nest');
+        ok(!/permanently removes the spawn point/.test(HTML), 'nor that a long press removes it');
+        ok(/Hack, don.t destroy|hack it/i.test(HTML), 'it does not say a nest is hacked instead');
+    });
+
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
 })();

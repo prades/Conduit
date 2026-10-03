@@ -500,9 +500,8 @@ function nearestScourChore(x, y, maxDist) {
         for (const [px, py] of (m.puddles || [])) consider("puddle", px, py, { cocoon: m });
         consider("cocoon", m.x, m.y, { cocoon: m });
     }
-    // Only the nests an infestation GREW. A zone nest is a fight, not a chore,
-    // and sending the work crew to chew on one would quietly replace the
-    // destroy_nest order the player gives by hand.
+    // Only the nests an infestation GREW. A zone nest is hacked by the player
+    // standing in front of it, not worked down by a crew.
     if (typeof world !== "undefined") {
         for (const t of world) {
             if (!t._infestNest || !t.nest || t.nestHealth <= 0) continue;

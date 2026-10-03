@@ -90,7 +90,6 @@ function drawRadialMenu() {
     }
 
     const isPylonTarget   = commandTarget&&commandTarget.pillar&&!commandTarget.destroyed&&commandTarget.health>0;
-    const isLiveNest      = commandNestTarget&&commandNestTarget.nestHealth>0;
     const nestAlreadyLinked = commandNestTarget&&commandNestTarget.connectedPylon&&!commandNestTarget.connectedPylon.destroyed;
     const isBrokenNest    = commandNestTarget&&commandNestTarget.nestHealth<=0&&!nestAlreadyLinked;
 
@@ -131,7 +130,7 @@ function drawRadialMenu() {
         if (rHov) selectedRadialAction="info";
     }
 
-    // ── LEFT = SWITCH / DESTROY / CONNECT (context) ───────
+    // ── LEFT = SWITCH / RECLAIM / CONNECT (context) ───────
     const lHov=dist>RADIAL_RADIUS*0.25&&Math.abs(angle)>Math.PI*3/4;
     let leftLabel="SWITCH", leftAction="switch_context";
     const isPylonSwitchable = isPylonTarget && (commandTarget.attackMode || commandTarget.waveMode);
@@ -141,8 +140,10 @@ function drawRadialMenu() {
                          && commandTarget.health > 0 && commandTarget.pillarTeam === "red";
     if (isEnemyPylon) { leftLabel="RECLAIM"; leftAction="reconstruct"; }
     else if (!isPylonSwitchable) {
-        if (isLiveNest && !buildMode) { leftLabel="DESTROY"; leftAction="destroy_nest"; }
-        else if (isBrokenNest)        { leftLabel="CONNECT"; leftAction="connect_nest"; }
+        // A live nest has no order of its own any more: the only thing you do to
+        // one is HACK it, by standing in front of it, and that is not a button.
+        // (It used to read DESTROY and send five followers to bash it down.)
+        if (isBrokenNest)             { leftLabel="CONNECT"; leftAction="connect_nest"; }
     }
     drawRadialButton(commandX-RADIAL_RADIUS, commandY, leftLabel, lHov);
     if (lHov) selectedRadialAction=leftAction;

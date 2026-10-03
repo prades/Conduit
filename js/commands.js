@@ -259,7 +259,7 @@ function executeCommand() {
     commandMode=false; commandPendingTap=false;
     if (!selectedRadialAction) return;
     if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
-    const isNestCmd = selectedRadialAction==="destroy_nest"||selectedRadialAction==="connect_nest"||selectedRadialAction==="attack_nest";
+    const isNestCmd = selectedRadialAction==="connect_nest"||selectedRadialAction==="attack_nest";
     if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
     if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;
 
@@ -358,13 +358,6 @@ function executeCommand() {
                 pendingConnectNest = commandNestTarget;
                 floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
                     text:"TAP A GENERATOR PYLON TO LINK",color:NEST_COLOUR_CONTROLLED,life:180,vy:-0.15});
-            }
-            break;
-        }
-        case "destroy_nest": {
-            if (commandNestTarget && commandNestTarget.nestHealth > 0) {
-                const pool=getCommandPool().filter(a=>!a.job).slice(0,5);
-                pool.forEach(a => { a.job={ type:"destroy_nest", target:commandNestTarget }; });
             }
             break;
         }

@@ -338,7 +338,7 @@ function handleLongHold(ex,ey) {
     // Check if any nest pod (live or broken) is near this tile (within 2.5 tiles)
     commandNestTarget=null;
     world.forEach(obj=>{
-        // Never the home portal: DESTROY / CONNECT on it are orders against
+        // Never the home portal: CONNECT on it is an order against
         // your own doorway.
         if (obj.nest && !isHomePortal(obj) && Math.hypot(obj.x-gx,obj.y-gy)<4.0) {
             commandNestTarget=obj;
@@ -526,7 +526,6 @@ canvas.addEventListener('pointerup', e=>{
             const relDist = Math.hypot(relX, relY);
             const relAngle = Math.atan2(relY, relX);
             if (relDist > 18) {
-                const isLiveNest   = commandNestTarget && commandNestTarget.nestHealth > 0;
                 const nestLinked   = commandNestTarget && commandNestTarget.connectedPylon && !commandNestTarget.connectedPylon.destroyed;
                 const isBrokenNest = commandNestTarget && commandNestTarget.nestHealth <= 0 && !nestLinked;
                 const _isPyCmd = commandTarget && commandTarget.pillar && !commandTarget.destroyed;
@@ -549,7 +548,6 @@ canvas.addEventListener('pointerup', e=>{
                 // Left side. Mirrors drawRadialMenu's leftAction, enemy pylon first.
                 else if (_isPyCmd && commandTarget.pillarTeam === "red" && commandTarget.health > 0)
                                        selectedRadialAction = "reconstruct";
-                else if (isLiveNest)   selectedRadialAction = "destroy_nest";
                 else if (isBrokenNest) selectedRadialAction = "connect_nest";
                 else                   selectedRadialAction = "switch_context";
             } else if (longHoldFired && !commandPendingTap) {
