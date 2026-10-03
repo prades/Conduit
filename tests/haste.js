@@ -112,6 +112,16 @@ function near(a, b, m) { if (Math.abs(a - b) > 0.02) throw new Error(`${m}: expe
         for (const k of [1, 2, 3]) ok(page.indexOf('>' + HASTE[k] + '<') > -1, 'the index does not state ' + HASTE[k]);
     });
 
+    await check('the index states the scout escape-leap and the starting shards, from the constants', () => {
+        const html = rd('game.html');
+        const at = html.indexOf('Scouts leap to escape');
+        ok(at > -1, 'no index entry for the leap');
+        const page = html.slice(at, at + 900);
+        const pct = Math.round(run('ABILITY_DEFS.LEAP.escapeBelow') * 100);
+        ok(page.indexOf('>' + pct + '%<') > -1, 'the index does not state ' + pct + '%');
+        ok(page.indexOf('>' + run('STARTING_SHARDS') + '<') > -1, 'the index does not state the starting shards');
+    });
+
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
     process.exit(failures ? 1 : 0);
 })();

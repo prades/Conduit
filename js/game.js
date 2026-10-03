@@ -1421,6 +1421,7 @@ function render() {
         // is the cheap one precisely because it only spends when it fights.
         // An unaffordable shot is not fired at all rather than fired weak.
         if (!payForShot(t)) { t.powered = false; return; }
+        nearest._shotByPylon = true;   // the tutorial's "kill with your pylons" step reads this
         // Spawn missile projectile
         const col = t.attackModeColor || "#0f8";
         spawnFollowerProjectile(

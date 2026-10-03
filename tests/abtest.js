@@ -334,10 +334,31 @@ check('a special spares a recruit walking to the Crystal', () => {
 });
 
 group('scout leap');
-check('leap arcs up and lands back on the ground', () => {
+// "The predators should use their leap to escape if they are low health and not
+// to attack." The leap fires only below ABILITY_DEFS.LEAP.escapeBelow, jumps
+// away from the nearest foe, and lands without hurting anybody.
+const lowHp = () => run('ABILITY_DEFS').LEAP.escapeBelow * 0.5 * 100;
+check('a HEALTHY scout never leaps, however close the foe', () => {
     reset();
-    const b = mkBug('ant', 'scout', { x: 5 });
-    mkFoe({ x: 8, y: 2, health: 1e9, maxHealth: 1e9 });
+    const b = mkBug('ant', 'scout', { x: 5, y: 2 });
+    mkFoe({ x: 6.5, y: 2, health: 1e9, maxHealth: 1e9 });
+    let flew = false;
+    for (let i = 0; i < 600; i++) { sandbox.frame++; run('abilityTick')(b); if (b.leapLift > 0) flew = true; }
+    ok(!flew, 'a scout at full health leapt');
+});
+check('a healthy scout does not leap at a distant foe or toward the crystal either', () => {
+    reset();
+    const b = mkBug('ant', 'scout', { x: 5, y: 2, state: 'hunt' });
+    mkFoe({ x: 9, y: 2, health: 1e9, maxHealth: 1e9 });
+    let flew = false;
+    for (let i = 0; i < 600; i++) { sandbox.frame++; run('abilityTick')(b); if (b.leapLift > 0) flew = true; }
+    ok(!flew, 'it leapt to attack or to gain ground');
+});
+check('a wounded scout leaps to ESCAPE: arcs up, lands flat, and ends farther from the foe', () => {
+    reset();
+    const b = mkBug('ant', 'scout', { x: 5, y: 2, health: lowHp() });
+    const foe = mkFoe({ x: 7, y: 2, health: 1e9, maxHealth: 1e9 });
+    const d0 = Math.hypot(foe.x - b.x, foe.y - b.y);
     let peak = 0, sawFlight = false;
     for (let i = 0; i < 400; i++) {
         sandbox.frame++;
@@ -345,14 +366,15 @@ check('leap arcs up and lands back on the ground', () => {
         if (b.leapLift > 0) { sawFlight = true; peak = Math.max(peak, b.leapLift); }
         if (sawFlight && b.abilityPhase === 'charging') break;
     }
-    ok(sawFlight, 'never left the ground');
+    ok(sawFlight, 'a wounded scout never left the ground');
     ok(peak > 10, 'arc peak too low: ' + peak);
     eq(b.leapLift, 0, 'must land flat');
+    ok(Math.hypot(foe.x - b.x, foe.y - b.y) > d0 + 1, 'it did not get away from the foe');
 });
-check('leap covers ground, capped at the ability distance', () => {
+check('the escape is capped at the ability distance', () => {
     reset();
-    const b = mkBug('ant', 'scout', { x: 5, y: 2 });
-    mkFoe({ x: 9, y: 2, health: 1e9, maxHealth: 1e9 });
+    const b = mkBug('ant', 'scout', { x: 5, y: 2, health: lowHp() });
+    mkFoe({ x: 7, y: 2, health: 1e9, maxHealth: 1e9 });
     const x0 = b.x;
     let sawFlight = false;
     for (let i = 0; i < 400; i++) {
@@ -361,16 +383,21 @@ check('leap covers ground, capped at the ability distance', () => {
         if (b.leapLift > 0) sawFlight = true;
         if (sawFlight && b.abilityPhase === 'charging') break;
     }
-    const moved = b.x - x0;
+    const moved = x0 - b.x;
     ok(moved > 1, 'barely moved: ' + moved);
     ok(moved <= run('ABILITY_DEFS').LEAP.distance + 0.01, 'overshot: ' + moved);
 });
-check('leap stays inside the corridor', () => {
+check('landing hurts nobody', () => {
     reset();
-    const b = mkBug('ant', 'scout', { x: 5, y: 0 });
-    mkFoe({ x: 5, y: 0, health: 1e9, maxHealth: 1e9 });
-    // Put the foe off-corridor so the leap vector points out of bounds.
-    sandbox.actors[1].y = -8;
+    const b = mkBug('ant', 'scout', { x: 5, y: 2, health: lowHp() });
+    const foe = mkFoe({ x: 6, y: 2, health: 1000, maxHealth: 1000 });
+    for (let i = 0; i < 400; i++) { sandbox.frame++; run('abilityTick')(b); }
+    eq(foe.health, 1000, 'the leap damaged the foe');
+});
+check('the escape stays inside the corridor', () => {
+    reset();
+    const b = mkBug('ant', 'scout', { x: 5, y: 0, health: lowHp() });
+    mkFoe({ x: 5, y: 1.5, health: 1e9, maxHealth: 1e9 });   // pushes it toward y < 0
     spin(b, 400);
     ok(b.y >= 0 && b.y <= 3, 'leapt out of the corridor to y=' + b.y);
 });

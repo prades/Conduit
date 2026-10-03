@@ -99,7 +99,14 @@ function clearAmmo() {
 }
 
 function getShards() {
-    try { return parseInt(localStorage.getItem("tubecrawler_shards") || "0"); }
+    try {
+        const raw = localStorage.getItem("tubecrawler_shards");
+        // Never saved: a brand-new play, which starts with the grant. A saved
+        // "0" is a real zero and is left alone.
+        if (raw === null || raw === undefined) return STARTING_SHARDS;
+        const n = parseInt(raw);
+        return Number.isFinite(n) ? n : 0;
+    }
     catch(e) { return 0; }
 }
 function saveShards() {

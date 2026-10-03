@@ -538,6 +538,9 @@ function restartGame() {
     // transition also runs and which must now leave the floor alone.
     chargedMass.length=0;
     frame=0;shake=0;lastGenX=0;shardCount=0;clearShards();clearUnlocks();clearProgress();clearFollowers();clearGameState();clearPylons();clearNests();clearSession();clearWorldSeed();clearAmmo();clearPermUpgrades();
+    // A restarted game is a new play: it starts with the shard grant, saved at
+    // once so a refresh straight after cannot lose it.
+    shardCount = STARTING_SHARDS; saveShards();
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
     unlockedElements=new Set(STARTING_ELEMENTS);
     pendingElements=[]; lifetimeKills=0; modulationDirty=false;

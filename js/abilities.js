@@ -26,7 +26,11 @@ const ABILITY_DEFS = {
     LEAP: {
         name: 'LEAP', color: '#ffdd44',
         chargeRate: 0.55, windup: 20, duration: 26,   // duration = frames in flight
-        distance: 2.8, peakLift: 30, landDamage: 1.3,
+        distance: 2.8, peakLift: 30,
+        // The leap is an ESCAPE, not an attack: it only fires once the insect is
+        // below this fraction of its health, it jumps AWAY from the nearest foe,
+        // and landing hurts nobody.
+        escapeBelow: 0.4,
     },
 
     // ── Species signature specials ──
@@ -246,7 +250,10 @@ function _abAimPoint(pred, def) {
                 : pred.abilityKey === 'CARAPACE_SLAM' ? 5
                 : Math.max(2, def.radius || 2) + 1;
     const foe = _abNearestFoe(pred, reach);
-    return foe ? { x: foe.x, y: foe.y } : null;
+    if (!foe) return null;
+    // A leap is an escape, so the windup turns to face AWAY from the foe.
+    if (pred.abilityKey === 'LEAP') return { x: 2 * pred.x - foe.x, y: 2 * pred.y - foe.y };
+    return { x: foe.x, y: foe.y };
 }
 
 // ── Charge / phase machine ───────────────────────────────
@@ -281,17 +288,11 @@ function _abShouldFire(pred, def) {
             return Math.hypot(t.x - pred.x, t.y - pred.y) < 1.4;
         }
         case 'LEAP': {
-            const foe = _abNearestFoe(pred, 6);
-            // Leap onto a foe that is out of melee reach but within pounce range…
-            if (foe) {
-                const d = Math.hypot(foe.x - pred.x, foe.y - pred.y);
-                if (d > 1.6 && d < 5.5) return true;
-            }
-            // …or leap forward to gain ground while closing on the crystal.
-            if (pred.state === 'hunt' && !pred.isClone && typeof crystal !== 'undefined') {
-                return Math.hypot(crystal.x - pred.x, crystal.y - pred.y) > 4;
-            }
-            return false;
+            // Only to get away: low on health with something close enough to
+            // be a threat. A healthy scout never leaps, at a foe or otherwise.
+            if (!(pred.maxHealth > 0) || pred.health / pred.maxHealth >= def.escapeBelow) return false;
+            const foe = _abNearestFoe(pred, 4.5);
+            return !!foe;
         }
         case 'WEB_SNARE':
         case 'BLINDING_DUST':
@@ -364,12 +365,14 @@ function _abStartActive(pred, def) {
             const foe = _abNearestFoe(pred, 5.5);
             let ax, ay;
             if (foe) {
-                ax = foe.x - pred.x; ay = foe.y - pred.y;
+                // Directly away from the thing it is escaping.
+                ax = pred.x - foe.x; ay = pred.y - foe.y;
             } else {
-                ax = pred.dirX; ay = pred.dirY;
+                ax = -pred.dirX; ay = -pred.dirY;
             }
+            if (!(Math.hypot(ax, ay) > 1e-6)) { ax = 1; ay = 0; }
             const len = Math.hypot(ax, ay) || 1;
-            const dist = Math.min(def.distance, foe ? len : def.distance);
+            const dist = def.distance;
             pred.leapFromX = pred.x; pred.leapFromY = pred.y;
             pred.leapToX = pred.x + (ax / len) * dist;
             pred.leapToY = Math.max(0, Math.min(3, pred.y + (ay / len) * dist));
@@ -499,12 +502,8 @@ function _abRunActive(pred, def) {
 function _abEndActive(pred, def) {
     if (pred.abilityKey === 'LEAP') {
         pred.leapLift = 0;
-        const foe = _abNearestFoe(pred, 1.5);
-        if (foe) {
-            _abHurt(pred, foe, pred.power * def.landDamage);
-            _abBurst(pred, def.color, 1.1, 24, 3);
-            if (typeof shake !== 'undefined') shake = Math.max(shake, 3);
-        }
+        // No landing damage: it jumped to get away, not to hit anything.
+        _abBurst(pred, def.color, 0.8, 14, 2);
     }
     if (pred.abilityKey === 'SUPER_REPAIR') pred.superRepair = false;
     if (pred.abilityKey === 'CARAPACE_SLAM') pred.slamHit = null;

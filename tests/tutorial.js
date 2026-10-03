@@ -46,7 +46,8 @@ function makeEnv() {
         // The generator step quotes the real placement range in its text, and
         // reads it when the step table is built. Lifted from config.js so the
         // words and the rule cannot disagree.
-        ...configNums(['GENERATOR_NEST_RANGE', 'CLONE_HEALTH_MULT', 'CLONE_POWER_MULT']),
+        ...configNums(['GENERATOR_NEST_RANGE', 'CLONE_HEALTH_MULT', 'CLONE_POWER_MULT',
+                     'CONNECTOR_RANGE', 'PYLON_BUILD_COST', 'STARTING_SHARDS']),
         canPlaceGenerator: t => ({ ok: !!t, nest: null }),
         ctx: rec.ctx,
         canvas: { width: 800, height: 600 },
@@ -521,15 +522,24 @@ check('it flashes SQUAD only for the mode still to be shown', () => {
     ok(!sqFlashing(env), 'the player switched; SQUAD should stop flashing');
 });
 
-check('a target stays available for the second order', () => {
-    // The first order can kill the bug, and then there is nothing to circle.
+check('the squad lesson spawns its two bugs ONCE and never respawns them', () => {
+    // "Do not make it so the predators infinitely spawn in the tutorial."
     const env = squadEnv();
     env.run('tutorialTick()');
-    const first = env.sandbox.actors.find(a => a.isTutorialFoe);
-    first.dead = true;
+    const foes = () => env.sandbox.actors.filter(a => a.isTutorialFoe);
+    eq(foes().length, 2, 'one bug per order');
+    for (const f of foes()) f.dead = true;
+    for (let i = 0; i < 200; i++) env.run('tutorialTick()');
+    eq(foes().filter(a => !a.dead).length, 0, 'a bug came back after both died');
+    eq(foes().length, 2, 'more bugs were spawned after the first two');
+});
+
+check('with both bugs dead the squad step moves on instead of stalling', () => {
+    const env = squadEnv();
     env.run('tutorialTick()');
-    const now = env.sandbox.actors.filter(a => a.isTutorialFoe && !a.dead);
-    eq(now.length, 1, 'no fresh target after the first one died');
+    for (const f of env.sandbox.actors.filter(a => a.isTutorialFoe)) f.dead = true;
+    env.run('tutorialTick()');
+    ok(env.run('TUTS[tutorialStep].id') !== 'squad', 'still stuck on the squad step with nothing left to order');
 });
 
 check('the loaned units are handed back when the tutorial closes', () => {
@@ -1064,6 +1074,165 @@ check('a fresh start clears the previous run\'s progress', () => {
     eq(env.run('tutEnemyKilled'), false, 'kill flag survived a restart');
     eq(env.run('tutModeSwitched'), false, 'mode-switch flag survived a restart');
     eq(env.run('tutHeldOpen'), false, 'hold flag survived a restart');
+});
+
+group('the power lessons: nests, connector, circuit, and killing with pylons');
+
+check('the new steps sit after the aura and before READY, in order', () => {
+    const env = makeEnv();
+    const ids = stepIds(env);
+    const at = id => ids.indexOf(id);
+    for (const id of ['power', 'connector', 'circuit', 'pylonkill']) ok(at(id) > -1, 'no ' + id + ' step');
+    ok(at('aura') < at('power') && at('power') < at('connector') && at('connector') < at('circuit')
+       && at('circuit') < at('pylonkill') && at('pylonkill') < at('ready'), 'steps are out of order: ' + ids);
+});
+
+check('the connector step quotes the REAL reach and placement range', () => {
+    const body = makeEnv().run('TUTS').find(s => s.id === 'connector').body;
+    ok(body.includes(String(makeEnv().run('CONNECTOR_RANGE'))), 'it does not state the connector range');
+    ok(body.includes(String(makeEnv().run('GENERATOR_NEST_RANGE'))), 'it does not state the nest range');
+    ok(/CONNECTOR/.test(body) && /UPGRADE/.test(body), 'it does not say how to build one');
+});
+
+check('THE ASK: building a connector completes that step', () => {
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'connector');
+    env.run('tutorialTick()');
+    eq(env.run('TUTS[tutorialStep].id'), 'connector', 'completed with no connector');
+    env.sandbox.world.find(t => t.pillar).isConnector = true;
+    env.run('tutorialTick()');
+    ok(env.run('TUTS[tutorialStep].id') !== 'connector', 'a connector existed and the step did not advance');
+});
+
+check('the circuit step needs the circuit OPENED and then CLOSED again', () => {
+    const env = populate(makeEnv());
+    const c = env.sandbox.world.find(t => t.pillar); c.isConnector = true; c.circuitOn = true;
+    env.run('startTutorial()');
+    gotoStep(env, 'circuit');
+    env.run('tutorialTick()');
+    eq(env.run('TUTS[tutorialStep].id'), 'circuit', 'completed untouched');
+    c.circuitOn = false; env.sandbox.c = c; env.run('tutorialNoteCircuit(c)');
+    env.run('tutorialTick()');
+    eq(env.run('TUTS[tutorialStep].id'), 'circuit', 'completed with the circuit left open');
+    c.circuitOn = true;
+    env.run('tutorialTick()');
+    ok(env.run('TUTS[tutorialStep].id') !== 'circuit', 'closing it again did not finish the step');
+});
+
+check('the game reports a circuit switch to the tutorial', () => {
+    const POWER = fs.readFileSync(path.join(ROOT, 'js/power.js'), 'utf8');
+    const at = POWER.indexOf('function toggleConnectorCircuit');
+    ok(/tutorialNoteCircuit/.test(POWER.slice(at, at + 700)), 'toggleConnectorCircuit never tells the tutorial');
+});
+
+// A board with a generator-fed, powered turret, and the pylon-kill step reached.
+function pylonKillEnv() {
+    const env = populate(makeEnv());
+    const turret = env.sandbox.world.find(t => t.pillar && t.attackMode);
+    turret.powered = true;
+    env.run('startTutorial()');
+    gotoStep(env, 'pylonkill');
+    return { env, turret };
+}
+const foesNow = env => env.sandbox.actors.filter(a => a.isTutorialFoe);
+
+check('THE ASK: a bug is sent to the powered turret, within its reach', () => {
+    const { env, turret } = pylonKillEnv();
+    env.run('tutorialTick()');
+    const f = foesNow(env);
+    eq(f.length, 1, 'no bug was sent');
+    const d = Math.hypot(f[0].x - turret.x, f[0].y - turret.y);
+    ok(d >= 1.1 && d <= 2.3, 'the bug stands ' + d.toFixed(2) + ' tiles from the turret');
+});
+
+check('no bug is sent while there is no powered turret to meet it', () => {
+    const { env, turret } = pylonKillEnv();
+    turret.powered = false;
+    for (let i = 0; i < 50; i++) env.run('tutorialTick()');
+    eq(foesNow(env).length, 0, 'a bug was sent with nothing to shoot it');
+});
+
+check('THE ASK: a bug the PYLONS shot, dying, completes the step', () => {
+    const { env } = pylonKillEnv();
+    env.run('tutorialTick()');
+    const f = foesNow(env)[0];
+    f._shotByPylon = true; f.dead = true;
+    env.sandbox.f = f; env.run('tutorialNoteKill(f)');
+    env.run('tutorialTick()');
+    ok(env.run('TUTS[tutorialStep].id') !== 'pylonkill', 'a pylon kill did not finish the step');
+});
+
+check('a kill the pylons did NOT make does not count — it sends one more', () => {
+    const { env } = pylonKillEnv();
+    env.run('tutorialTick()');
+    const f = foesNow(env)[0];
+    f.dead = true; env.sandbox.f = f; env.run('tutorialNoteKill(f)');
+    env.run('tutorialTick()');
+    eq(env.run('TUTS[tutorialStep].id'), 'pylonkill', 'a follower kill finished the pylon lesson');
+    env.run('tutorialTick()');
+    eq(foesNow(env).filter(a => !a.dead).length, 1, 'no replacement was sent');
+});
+
+check('THE ASK: the bugs are NEVER endless — a fixed number, then the step moves on', () => {
+    const { env } = pylonKillEnv();
+    const cap = env.run('TUT_PYLON_FOE_CAP');
+    for (let i = 0; i < 300; i++) {
+        env.run('tutorialTick()');
+        for (const f of foesNow(env)) f.dead = true;       // always killed by something else
+    }
+    ok(foesNow(env).length <= cap, 'spawned ' + foesNow(env).length + ' bugs, cap is ' + cap);
+    ok(env.run('TUTS[tutorialStep].id') !== 'pylonkill', 'the step stalled after the bugs ran out');
+});
+
+check('the tutorial never spawns more than a handful of bugs overall', () => {
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    let seen = 0;
+    for (let i = 0; i < env.run('TUTS.length'); i++) {
+        gotoStep(env, stepIds(env)[i]);
+        for (let k = 0; k < 120; k++) {
+            env.run('tutorialTick()');
+            for (const f of foesNow(env)) f.dead = true;
+        }
+    }
+    seen = foesNow(env).length;
+    const cap = 1 + env.run('TUT_SQUAD_FOES') + env.run('TUT_PYLON_FOE_CAP');
+    ok(seen <= cap, 'a full play-through spawned ' + seen + ' bugs, more than the ' + cap + ' it budgets');
+});
+
+check('the pylon-kill step flashes BUILD only when there is no turret yet', () => {
+    const { env, turret } = pylonKillEnv();
+    env.run('tutorialTick()');
+    ok(!buildFlashing(env), 'flashing with a turret in place');
+    turret.powered = false; turret.attackMode = false;
+    env.run('tutorialTick()');
+    ok(buildFlashing(env), 'not flashing with no turret');
+});
+
+check('the turret pass marks what it shoots, so the step can tell', () => {
+    const GAME_SRC = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
+    ok(/nearest\._shotByPylon = true/.test(GAME_SRC), 'the turret pass does not mark its target');
+    ok(GAME_SRC.indexOf('nearest._shotByPylon = true') > GAME_SRC.indexOf('if (!payForShot(t))'),
+       'a shot that was never paid for is marked');
+});
+
+check('closing the tutorial clears every bug it spawned', () => {
+    const { env } = pylonKillEnv();
+    env.run('tutorialTick()');
+    ok(foesNow(env).some(f => !f.dead), 'fixture: no bug');
+    env.run('exitTutorial()');
+    eq(foesNow(env).filter(f => !f.dead).length, 0, 'bugs survived the tutorial');
+});
+
+check('THE ASK: a new play starts with the shard grant, and the tutorial tops up to it', () => {
+    const env = makeEnv();
+    env.sandbox.shardCount = 0; env.sandbox.saveShards = () => {};
+    env.run('startTutorial()');
+    eq(env.run('shardCount'), env.run('STARTING_SHARDS'), 'the tutorial did not top the shards up');
+    env.sandbox.shardCount = 500;
+    env.run('startTutorial()');
+    eq(env.run('shardCount'), 500, 'the tutorial took shards away');
 });
 
 console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

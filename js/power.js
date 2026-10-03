@@ -174,6 +174,7 @@ function toggleConnectorCircuit(c) {
     if (!isConnectorPylon(c)) return false;
     c.circuitOn = c.circuitOn === false;   // false → true, anything else → false
     recomputePower();
+    if (typeof tutorialNoteCircuit === "function") tutorialNoteCircuit(c);
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
         text: c.circuitOn ? "CIRCUIT CLOSED — POWER FLOWING" : "CIRCUIT OPEN — GROUP DARK",
         color: c.circuitOn ? CONNECTOR_COLOR : "#f88", life: 110, vy: -0.25, size: 12 });

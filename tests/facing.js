@@ -221,7 +221,8 @@ check('the windup telegraph turns toward its target', () => {
 check('a scout lands facing where it leapt', () => {
     reset();
     const p = mkPred('ant', 'scout', 5, 2);
-    const foe = mkFoe(2.4, 2);                      // behind it, within pounce range
+    p.health = p.maxHealth * 0.1;                   // leaps only to escape
+    const foe = mkFoe(2.4, 2);                      // behind it: it jumps away, to +x
     let flew = false;
     for (let i = 0; i < 400; i++) {
         sandbox.frame++; run('abilityTick')(p);
@@ -229,7 +230,7 @@ check('a scout lands facing where it leapt', () => {
         if (flew && p.abilityPhase === 'charging') break;
     }
     ok(flew, 'never leapt');
-    ok(p.dirX < 0, 'should face the way it jumped (-x), dirX=' + p.dirX.toFixed(2));
+    ok(p.dirX > 0, 'should face the way it jumped (+x), dirX=' + p.dirX.toFixed(2));
 });
 check('a beetle charges along the direction it faces', () => {
     reset();

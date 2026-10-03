@@ -314,6 +314,10 @@ let respawnQueue = [];
 let frame = 0, shake = 0;
 let activeEmpEffect = null; // { timer, maxTimer, zone } — EMP screen-darkening flash
 let lastGenX  = 0;
+// Every new play begins with this many shards, to set things up with — a first
+// pylon, a generator, a connector — before any are earned. "New" means no shard
+// count has ever been saved, or the game was restarted.
+const STARTING_SHARDS = 100;
 let shardCount = 0; // loaded from localStorage on init
 let activePredator = null;
 let predatorRespawnTimer = 0;

@@ -8,6 +8,16 @@ let tutEnemyKilled  = false;
 let tutModeSwitched = false;
 let tutHeldOpen     = false;   // player has opened the command ring at least once
 let tutPracticeFoe  = null;    // the bug spawned for the circle-to-kill step
+let tutFoes         = [];      // EVERY bug the tutorial has spawned, so it can count and clear them
+let tutCircuitOpened = false;  // the connector's circuit has been opened at least once
+let tutPylonKill     = false;  // a bug has been killed by a pylon's fire
+let tutPylonFoeSpawns = 0;     // bugs sent at the pylons so far (capped, never endless)
+
+// The tutorial NEVER spawns bugs endlessly. Each lesson that needs enemies gets
+// a fixed number, and the lesson ends when they are dealt with — killed as part
+// of the lesson, not respawned until the player happens to comply.
+const TUT_SQUAD_FOES      = 2;   // one per order: SEL, then ALL
+const TUT_PYLON_FOE_CAP   = 2;   // sent at the pylons; if both die some other way the step moves on
 
 // A weak ant scout, spawned next to the player so the circle-to-kill lesson has
 // something to practise on. Predators otherwise only exist in zone 1 and up,
@@ -16,8 +26,11 @@ let tutPracticeFoe  = null;    // the bug spawned for the circle-to-kill step
 const TUT_FOE_SPECIES = 'ant';
 const TUT_FOE_CLASS   = 'scout';
 
-function tutSpawnPracticeFoe() {
-    if (tutPracticeFoe && !tutPracticeFoe.dead) return tutPracticeFoe;
+// opts.additional: spawn another even though one is alive (the squad lesson
+// needs two). opts.near: stand it 1.2–2.2 tiles from this pylon, in its range.
+function tutSpawnPracticeFoe(opts) {
+    opts = opts || {};
+    if (!opts.additional && tutPracticeFoe && !tutPracticeFoe.dead) return tutPracticeFoe;
     if (typeof Predator === 'undefined' || typeof SPECIES === 'undefined') return null;
     const speciesDef = SPECIES[TUT_FOE_SPECIES];
     const classDef   = speciesDef && speciesDef[TUT_FOE_CLASS];
@@ -25,10 +38,15 @@ function tutSpawnPracticeFoe() {
 
     // Stand it a few tiles off so it reads as "over there", not on top of you,
     // and keep it on a real floor tile so it is not stuck inside a wall.
-    const spot = tutNearestTile(t => t.type === 'floor' && !t.pillar && !t.nest &&
-                                     !t.nodeType && tutDist(t) > 2 && tutDist(t) < 4.5);
-    const sx = spot ? spot.x : Math.round(player.visualX) + 3;
-    const sy = spot ? spot.y : Math.round(player.visualY);
+    const clear = t => !tutFoes.some(f => !f.dead && Math.hypot(f.x - t.x, f.y - t.y) < 1.2);
+    const spot = opts.near
+        ? tutNearestTile(t => t.type === 'floor' && !t.pillar && !t.nest && !t.nodeType && clear(t) &&
+                              Math.hypot(t.x - opts.near.x, t.y - opts.near.y) >= 1.2 &&
+                              Math.hypot(t.x - opts.near.x, t.y - opts.near.y) <= 2.2)
+        : tutNearestTile(t => t.type === 'floor' && !t.pillar && !t.nest &&
+                              !t.nodeType && clear(t) && tutDist(t) > 2 && tutDist(t) < 4.5);
+    const sx = spot ? spot.x : (opts.near ? opts.near.x + 1.5 : Math.round(player.visualX) + 3);
+    const sy = spot ? spot.y : (opts.near ? opts.near.y : Math.round(player.visualY));
 
     const def = {
         width: classDef.width, height: classDef.height,
@@ -54,8 +72,12 @@ function tutSpawnPracticeFoe() {
     if (typeof initAbility === 'function') initAbility(foe);
     actors.push(foe);
     tutPracticeFoe = foe;
+    tutFoes.push(foe);
     return foe;
 }
+
+function tutLiveFoes() { return tutFoes.filter(f => f && !f.dead); }
+
 
 // ── SQUAD LESSON ──────────────────────────────────────────
 // Teaching "only the FIRE ones" versus "everybody" needs a squad with more
@@ -151,10 +173,32 @@ function tutorialUiHints() {
 function tutorialNoteKill(actor) {
     if (!tutorialMode || !actor) return;
     const step = TUTS[tutorialStep];
-    if (!step || step.id !== 'circle') return;
+    if (!step || (step.id !== 'circle' && step.id !== 'pylonkill')) return;
     if (actor.isFollower || actor.team === 'green') return;
     if (actor.isNeutralRecruit) return;   // a recruit dying is not a kill won
-    tutEnemyKilled = true;
+    if (step.id === 'circle') tutEnemyKilled = true;
+    // Only a bug the PYLONS shot counts for the pylon lesson (the turret pass
+    // in game.js marks what it fires at).
+    if (step.id === 'pylonkill' && actor._shotByPylon) tutPylonKill = true;
+}
+
+// The connector's circuit was switched (called by toggleConnectorCircuit).
+function tutorialNoteCircuit(c) {
+    if (!tutorialMode || !c) return;
+    const step = TUTS[tutorialStep];
+    if (step && step.id === 'circuit' && c.circuitOn === false) tutCircuitOpened = true;
+}
+
+// A turret that is actually firing-capable: an element pylon in attack mode
+// with power reaching it.
+function tutPoweredTurret() {
+    return tutNearestPylon(t => t.attackMode && !t.isGenerator && !t.isConnector && t.powered);
+}
+// A pylon the player can turn into a relay without losing a working turret.
+function tutPlainPylon(extra) {
+    const ok = t => !t.isGenerator && !t.isConnector && typeof canPlaceGenerator === 'function' &&
+                    canPlaceGenerator(t).ok && (!extra || extra(t));
+    return tutNearestPylon(t => ok(t) && !t.attackMode && !t.waveMode) || tutNearestPylon(ok);
 }
 
 // Every step points at the one thing on the map it is talking about, so the
@@ -211,19 +255,22 @@ const TUTS = [
         title: 'WHO ANSWERS THE CALL',
         body:  'SQUAD: SEL sends only the element picked in the ELEM list — pick FIRE and only your fire units go. SQUAD: ALL sends everyone. Circle the marked bug once on SEL, then tap the flashing SQUAD button and circle it again on ALL.',
         icon:  '⑂',
-        enter: () => { tutSpawnPracticeFollowers(); tutSpawnPracticeFoe(); },
-        // Orders need something to be aimed at, so keep one on the board for as
-        // long as the step is asking for two of them.
-        tick:  () => tutSpawnPracticeFoe(),
+        // Two bugs, once: one for each order. They are NOT respawned — the lesson
+        // ends when both orders have been given or both bugs are dead.
+        enter: () => {
+            tutSpawnPracticeFollowers();
+            for (let i = 0; i < TUT_SQUAD_FOES; i++) tutSpawnPracticeFoe({ additional: i > 0 });
+        },
         // Flash whichever mode has not been demonstrated yet.
         wantsButton: () => {
             if (typeof squadMode === 'undefined') return null;
             if (squadMode === 'all' ? tutOrderedAll : tutOrderedSelected) return 'btnSquad';
             return null;
         },
-        target: () => (tutPracticeFoe && !tutPracticeFoe.dead) ? tutPracticeFoe
-                    : tutNearestActor(a => a.team === 'red' && !a.isNeutralRecruit),
-        check: () => tutOrderedSelected && tutOrderedAll,
+        target: () => tutNearestActor(a => a.isTutorialFoe) ||
+                      tutNearestActor(a => a.team === 'red' && !a.isNeutralRecruit),
+        check: () => (tutOrderedSelected && tutOrderedAll) ||
+                     (tutFoes.length >= TUT_SQUAD_FOES && tutLiveFoes().length === 0),
     },
     {
         // The reported gap: the old text said "tap a pylon", but a tap moves
@@ -296,9 +343,7 @@ const TUTS = [
         wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
         // A pylon that could actually take one, so the marker never points at a
         // tile the game would refuse.
-        target: () => tutNearestPylon(t => !t.isGenerator &&
-                                           typeof canPlaceGenerator === 'function' &&
-                                           canPlaceGenerator(t).ok),
+        target: () => tutPlainPylon(),
         check: () => world.some(t => t.pillar && t.isGenerator && !t.destroyed),
     },
     {
@@ -310,6 +355,63 @@ const TUTS = [
         icon:  '\u271a',
         target: () => tutNearestPylon(t => t.isGenerator) || tutNearestPylon(),
         check: () => tutorialTimer > 300,   // ~5s to read it
+    },
+    {
+        // What the power IS. Read-only: the batteries are already there.
+        id:    'power',
+        title: 'NESTS ARE BATTERIES',
+        body:  'Turrets and waves run on power. Each nest you have neutralised is a battery, and the percentage above it shows what is left: the bar empties as pylons draw on it. A generator draws from the nearest one.',
+        icon:  '\u26a1',
+        target: () => (typeof homePortalTile === 'function' && homePortalTile()) ||
+                      tutNearestTile(t => t.nest) ||
+                      ((typeof crystal !== 'undefined' && crystal) ? crystal : null),
+        check: () => tutorialTimer > 420,   // ~7s to read it
+    },
+    {
+        // The new relay. Same placement rule as the generator, a very different
+        // reach: it is what carries power out to the far zones.
+        id:    'connector',
+        title: 'BUILD A CONNECTOR PYLON',
+        body:  'A CONNECTOR is a long-range relay. With BUILD on, hold a plain pylon, pick UPGRADE then CONNECTOR (within ' + GENERATOR_NEST_RANGE + ' tiles of a nest). It powers EVERY pylon within ' + CONNECTOR_RANGE + ' tiles, so one can light a far-off zone.',
+        icon:  '\u2301',
+        wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
+        target: () => tutPlainPylon(),
+        check: () => world.some(t => t.pillar && t.isConnector && !t.destroyed),
+    },
+    {
+        // The switch. Latched on the OPEN, and finished when it is closed again,
+        // so the connector is left feeding power for the next step.
+        id:    'circuit',
+        title: 'THE CIRCUIT SWITCH',
+        body:  'Press and hold your connector: the left button says OPEN CIRCUIT. Open it and every pylon it feeds goes dark at once. Then CLOSE CIRCUIT to bring the whole group back. Use it to power up a group for a fight and cut it off while you rest.',
+        icon:  '\u23fb',
+        target: () => tutNearestPylon(t => t.isConnector) || tutNearestPylon(),
+        check: () => tutCircuitOpened &&
+                     world.some(t => t.pillar && t.isConnector && !t.destroyed && t.circuitOn !== false),
+    },
+    {
+        // The goal of all of it. A bug is sent to the first powered turret, and
+        // the step ends when the PYLONS kill it.
+        id:    'pylonkill',
+        title: 'KILL WITH YOUR PYLONS',
+        body:  'Pylons fight for you. An ATTACK pylon shoots enemies near it, paying from a nest through a generator or closed connector. Keep one element turret and let the bug sent to it die to your pylons. Need a pylon? BUILD costs ' + PYLON_BUILD_COST + ' shards.',
+        icon:  '\u2694',
+        // Sends a bug to the turret \u2014 a fixed number, never endless.
+        tick: () => {
+            if (tutPylonFoeSpawns >= TUT_PYLON_FOE_CAP) return;
+            if (tutLiveFoes().some(f => f._tutPylonFoe)) return;
+            const turret = tutPoweredTurret();
+            if (!turret) return;
+            const foe = tutSpawnPracticeFoe({ near: turret, additional: true });
+            if (foe) { foe._tutPylonFoe = true; tutPylonFoeSpawns++; }
+        },
+        // No turret yet? Point at a pylon that could become one, and flash BUILD.
+        wantsButton: () => (!tutPoweredTurret() && typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
+        target: () => tutNearestActor(a => a._tutPylonFoe) || tutPoweredTurret() ||
+                      tutNearestPylon(t => !t.isGenerator && !t.isConnector && !t.attackMode && !t.waveMode) ||
+                      tutNearestPylon(),
+        check: () => tutPylonKill ||
+                     (tutPylonFoeSpawns >= TUT_PYLON_FOE_CAP && !tutLiveFoes().some(f => f._tutPylonFoe)),
     },
     {
         // Six elements, six jobs. Worth a step because nothing else in the game
@@ -401,7 +503,17 @@ function startTutorial() {
     tutPutToWork       = false;
     tutCloned          = false;
     tutPracticeFoe  = null;
+    tutFoes            = [];
+    tutCircuitOpened   = false;
+    tutPylonKill       = false;
+    tutPylonFoeSpawns  = 0;
     tutLoanedFollowers = [];
+    // Enough shards to build everything the lessons ask for, however the run
+    // has gone: a step that needs shards the player does not have just stalls.
+    if (typeof shardCount === 'number' && typeof STARTING_SHARDS === 'number' && shardCount < STARTING_SHARDS) {
+        shardCount = STARTING_SHARDS;
+        if (typeof saveShards === 'function') saveShards();
+    }
     _tutTarget      = null; _tutTargetStep = -1;
     _tutEnteredStep = -1;
 
@@ -610,8 +722,10 @@ function exitTutorial() {
     _tutEnteredStep = -1;
     // A practice bug left alive after the tutorial closes is just a loose
     // predator in the safe zone, so it leaves with the lesson.
+    for (const f of tutFoes) if (f && !f.dead) f.dead = true;
     if (tutPracticeFoe && !tutPracticeFoe.dead) tutPracticeFoe.dead = true;
     tutPracticeFoe = null;
+    tutFoes = [];
     tutReturnPracticeFollowers();
     // Stop the BUILD button pulsing along with everything else.
     tutorialUiHints();

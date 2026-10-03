@@ -610,6 +610,33 @@ async function ready(seed) {
            'the page still describes the payout as a cut taken off the top');
     });
 
+    group('STARTING SHARDS: every new play begins with a grant');
+
+    // "Give the player 100 shards at the beginning of each play to set up
+    // things." New = no shard count ever saved, or a restart.
+    const { fnSource, configNums } = require('./domstub.js');
+    const loadGet = store => {
+        const sb = { localStorage: { getItem: k => (k in store ? store[k] : null) }, parseInt, Number, ...configNums(['STARTING_SHARDS']) };
+        vm.createContext(sb);
+        vm.runInContext(fnSource('js/save.js', 'getShards'), sb);
+        return sb.getShards();
+    };
+    check('a brand-new play starts with 100 shards', () => {
+        const n = loadGet({});
+        ok(n === configNums(['STARTING_SHARDS']).STARTING_SHARDS && n === 100, 'a new play started with ' + n);
+    });
+    check('a saved count is respected, including a real zero', () => {
+        ok(loadGet({ tubecrawler_shards: '37' }) === 37, 'a saved 37 was replaced');
+        ok(loadGet({ tubecrawler_shards: '0' }) === 0, 'a saved 0 was topped up — that would refill every refresh');
+    });
+    check('a restart grants the shards and saves them at once', () => {
+        const WAVES = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
+        const at = WAVES.indexOf('function restartGame');
+        const body = WAVES.slice(at, at + 2200);
+        ok(/shardCount = STARTING_SHARDS; saveShards\(\)/.test(body), 'restartGame does not grant the starting shards');
+        ok(body.indexOf('shardCount = STARTING_SHARDS') > body.indexOf('clearShards()'), 'the grant is wiped by the clear that follows it');
+    });
+
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
 })();
