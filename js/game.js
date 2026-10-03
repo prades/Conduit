@@ -1994,24 +1994,29 @@ function render() {
                 const wfBR={x:sW1x+(numT-1)*TILE_W,y:sW1y+(numT+1)*TILE_H};
                 const wfTR={x:wfBR.x,y:wfBR.y-WH};
                 const wfTL={x:wfBL.x,y:wfBL.y-WH};
-                // A COLLAPSED vortex: the same swirl in the same wall plane as
-                // the live one, but dark, still and unlit. Matching the live
-                // nest matters — a destroyed nest that looked like a different
-                // kind of object would read as a different thing entirely.
+                // The SAME swirl, at the SAME size, as a live nest — only the
+                // colour and the motion differ. It used to paint the whole
+                // four-tile wall face a near-opaque brown first and then put a
+                // half-size circle inside it, which read as a slab bolted to
+                // the wall rather than as the portal it is, and gave no clue
+                // where the thing you connect to actually was.
+                //
+                // The face geometry above is still worked out: the label and
+                // the beam to the generator hang off its top edge.
                 ctx.save();
-                ctx.beginPath();
-                ctx.moveTo(wfBL.x,wfBL.y); ctx.lineTo(wfBR.x,wfBR.y);
-                ctx.lineTo(wfTR.x,wfTR.y); ctx.lineTo(wfTL.x,wfTL.y);
-                ctx.closePath();
-                ctx.fillStyle="rgba(18,10,8,0.92)"; ctx.fill();
                 drawNestHackZone(obj);
                 // A controlled nest turns, slowly, and is lit: it is yours and
                 // it is running. A neutral one is dead still.
-                drawNestWallVortex(px, py, Math.min(WH*0.42,46)*0.5,
+                // A neutral ring is DIM, not invisible. At no glow and half
+                // alpha it vanished into the wall, and the player still has to
+                // be able to find the thing they are meant to walk up to and
+                // connect. It stays well under the live nest's glow of 10+ and
+                // does not turn, so it still reads as switched off.
+                drawNestWallVortex(px, py, Math.min(WH*0.42,46),
                     _held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL,
                     _held ? (frame||0)*0.012 : 0,
-                    _held ? 7 : 0,
-                    _held ? 0.85 : 0.5);
+                    _held ? 7 : 3,
+                    _held ? 0.85 : 0.72);
                 ctx.setTransform(1,0,0,1,0,0);
                 const _bCx=(wfTL.x+wfTR.x)/2;
                 ctx.fillStyle=_held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM;

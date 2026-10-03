@@ -397,6 +397,70 @@ async function ready() {
         ok(!/#00ffcc|#4a3a33|#664433/.test(body), 'the old hard-coded colours survive');
     });
 
+    check('THE ASK: a taken nest is a RING, not a slab on the wall', () => {
+        // REPORTED: "there's a big rectangle on the wall ... it looks like it's
+        // overlaying the entire wall when it just needs to be just that circle
+        // still, like the other ones."
+        //
+        // It filled the whole four-tile wall face with near-opaque brown and
+        // then drew a HALF-SIZE circle inside it, so it read as a panel bolted
+        // to the wall and gave no clue where the thing you connect to was. The
+        // live nest never did that — it draws the swirl and nothing else.
+        const at = SRC.game.indexOf('A ZONE YOU HAVE TAKEN');
+        ok(at > -1, 'the taken-nest branch could not be located');
+        const body = SRC.game.slice(at, SRC.game.indexOf('SPAWN NEST', at));
+        // No filled wall quad: the four corners are still computed, because the
+        // label and the generator beam hang off the top edge, but nothing
+        // paints them.
+        ok(!/moveTo\(wfBL\.x,wfBL\.y\)[\s\S]{0,260}?fill\(\)/.test(body),
+           'the taken nest still fills its whole wall face');
+        ok(!/rgba\(18,10,8/.test(body), 'the opaque brown backing slab survives');
+    });
+
+    check('and the ring is the same size as a live one', () => {
+        // Three states of one object. A half-size circle made the taken nest
+        // read as a different kind of thing from the nest it used to be.
+        //
+        // The radius each state asks for, not the SHAPE of the expression: the
+        // live one multiplies by its health and the taken one does not, so
+        // comparing the source text compares two things that were never going
+        // to be spelled the same.
+        const radius = (health) => E.run(`(function(){
+            const n = world.find(t => t.nest && t.nestZone === 1);
+            n.nestHealth = ${health} ? n.nestMaxHealth : 0;
+            n.connectedPylon = null;
+            player.x = n.x; player.y = 1.6;
+            player.visualX = n.x; player.visualY = 1.6;
+            const real = drawNestWallVortex;
+            let got = null;
+            drawNestWallVortex = function (px, py, r) { got = r; return real.apply(this, arguments); };
+            try { render(); } finally { drawNestWallVortex = real; }
+            return got;
+        })()`);
+        const live = radius(1), taken = radius(0);
+        ok(live > 0, 'the live nest drew no ring at all');
+        ok(taken > 0, 'the taken nest drew no ring at all');
+        same(taken, live, 'the taken nest is drawn at a different size from a live one');
+    });
+
+    check('a neutral ring is dim but still findable', () => {
+        // It is the thing the player has to walk up to and CONNECT. At no glow
+        // and half alpha it disappeared into the wall.
+        const at = SRC.game.indexOf('A ZONE YOU HAVE TAKEN');
+        const body = SRC.game.slice(at, SRC.game.indexOf('SPAWN NEST', at));
+        const call = body.match(/drawNestWallVortex\([\s\S]*?\);/);
+        ok(!!call, 'the taken nest draws no vortex');
+        const nums = call[0].match(/_held \? ([\d.]+) : ([\d.]+)/g) || [];
+        ok(nums.length >= 2, 'the glow and alpha are no longer chosen per state');
+        const [glowHeld, glowNeutral] = nums[0].match(/[\d.]+/g).map(Number);
+        const [alphaHeld, alphaNeutral] = nums[1].match(/[\d.]+/g).map(Number);
+        ok(glowNeutral > 0, 'a neutral ring has no glow at all, so it vanishes');
+        ok(alphaNeutral >= 0.6, 'a neutral ring at alpha ' + alphaNeutral + ' is too faint to find');
+        // ...and still plainly less lit than one you hold.
+        ok(glowNeutral < glowHeld, 'a neutral ring glows as much as a controlled one');
+        ok(alphaNeutral < alphaHeld, 'a neutral ring is as bright as a controlled one');
+    });
+
     check('a controlled nest turns and is lit; a neutral one is dead still', () => {
         // Grey AND still is what "neutralised" looks like; a zone you hold is
         // running again, so it moves.
