@@ -698,7 +698,7 @@ function crewPageWith(mendRate) {
         GENERATOR_HEAL_AMOUNT: 1, GENERATOR_HEAL_INTERVAL: 60, GENERATOR_NEST_RANGE: 4,
         INFEST_RATE: 0.00067, COCOON_SPAWN_FRAMES: 900, COCOON_SPAN_MAX: 3,
         COCOON_PUDDLE_DAMAGE: 3, COCOON_PUDDLE_INTERVAL: 45,
-        COCOON_TOXIN_SPECIES: ['spider', 'scorpion'], NEST_GROW_COOLDOWN: 2700,
+        COCOON_TOXIN_SPECIES: ['spider', 'scorpion'], NEST_GROW_COOLDOWN: 2700, NEST_BUILD_COST: 20,
     };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);

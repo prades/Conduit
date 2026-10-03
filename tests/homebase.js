@@ -457,6 +457,47 @@ async function ready() {
         ok(/Hack, don.t destroy|hack it/i.test(HTML), 'it does not say a nest is hacked instead');
     });
 
+    // ─────────────────────────────────────────────────────
+    group('NEST MASS: a predator that dies carrying it gives it back');
+
+    // The real death path, not the helper it calls: onPredatorDeath is what runs
+    // when a carrier is killed, and a stockpile that vanished there would let a
+    // predator take a lump out of play just by dying with it in its arms.
+    check('THE REAL DEATH: a killed carrier drops its lump AND its own, both charged', () => {
+        const r = E.run(`(function(){
+            chargedMass.length = 0;
+            const S = SPECIES['ant'];
+            const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 12, 2);
+            p.team = 'red'; p.speciesName = 'ant'; p.className = 'scout';
+            p.shardDrop = 10;
+            p.nestMass = 7;
+            const site = { x: 9, y: 3, mass: 0, incoming: 7 };
+            p._nestSite = site;
+            nestSites.push(site);
+            onPredatorDeath(p);
+            const lumps = chargedMass.map(m => ({ v: m.value, s: m.state }));
+            nestSites.length = 0;
+            return { lumps, incoming: site.incoming, carrying: p.nestMass || 0 };
+        })()`);
+        const values = r.lumps.map(l => l.v).sort((a, b) => a - b);
+        same(values.join(','), '7,10', 'expected its own 10 and the 7 it carried, got ' + values);
+        ok(r.lumps.every(l => l.s === 'charged'), 'a lump came back in the wrong state: ' + JSON.stringify(r.lumps));
+        same(r.incoming, 0, 'the site still counts the dead predator as on its way');
+        same(r.carrying, 0, 'and it is still carrying');
+    });
+
+    check('a predator carrying nothing leaves just its own lump, as before', () => {
+        const r = E.run(`(function(){
+            chargedMass.length = 0;
+            const S = SPECIES['ant'];
+            const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 12, 2);
+            p.team = 'red'; p.speciesName = 'ant'; p.className = 'scout'; p.shardDrop = 10;
+            onPredatorDeath(p);
+            return chargedMass.map(m => m.value);
+        })()`);
+        same(r.join(','), '10', 'a normal death changed: ' + r);
+    });
+
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
 })();

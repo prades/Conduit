@@ -61,7 +61,7 @@ const CODEX_INFEST = [
     null,
     { h: 'WHAT GROWS THERE' },
     { t: 'A taken pylon gets a cocoon. It swells to a ' + COCOON_SPAN_MAX + 'x' + COCOON_SPAN_MAX + ' square and takes your pylons inside it.' },
-    ['NESTS GROW', '1 per zone, 1 per ' + (NEST_GROW_COOLDOWN / 60).toFixed(0) + 's map-wide', '#ff7744'],
+    ['NESTS COST', NEST_BUILD_COST + ' mass \u00b7 1 per zone \u00b7 ' + (NEST_GROW_COOLDOWN / 60).toFixed(0) + 's apart', '#ff7744'],
     ['HATCHES', 'one predator every ' + (COCOON_SPAWN_FRAMES / 60).toFixed(0) + 's', '#f88'],
     { t: 'What hatches is the same species and class as whatever spun it.' },
     null,

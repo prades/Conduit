@@ -84,7 +84,7 @@ function makeEnv() {
     sandbox.getTile = (gx, gy) => sandbox.worldTileMap.get(`${gx},${gy}`);
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
-    for (const f of ['js/species.js', 'js/abilities.js', 'js/infest.js', 'js/predator.js']) {
+    for (const f of ['js/species.js', 'js/abilities.js', 'js/mass.js', 'js/infest.js', 'js/predator.js']) {
         vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
     }
     return { sandbox, calls, run: s => vm.runInContext(s, ctx) };
@@ -149,13 +149,24 @@ function tick(env, n, fn) {
 function convert(env, t, pred) {
     env.run('convertPylonToRed')(t, pred);
 }
+// A nest now has to be PAID FOR: conversion only marks a site, and the nest is
+// built once predators have carried NEST_BUILD_COST of charged mass to it. A
+// check that needs a standing nest as its fixture pays the bill instead of
+// simulating predators ferrying lumps.
+function fundSites(env) {
+    env.run('nestSites.forEach(s => { s.mass = NEST_BUILD_COST; }); nestSiteTick();');
+}
+function convertFunded(env, t, pred) {
+    convert(env, t, pred);
+    fundSites(env);
+}
 // The same, with the world-wide nest cooldown already spent — for the checks
 // that are about the per-zone CAP rather than the pacing. Without this a cap
 // check passes because the cooldown swallowed the second nest, which means it
 // would keep passing with the cap deleted.
 function convertPaced(env, t, pred) {
     env.sandbox.frame += NEST_COOLDOWN;
-    env.run('convertPylonToRed')(t, pred);
+    convertFunded(env, t, pred);
 }
 // Drive the per-tile draw the way the depth-sorted pass in game.js does: the
 // cocoon and the grown nest are no longer flat overlays, so they are called
@@ -363,15 +374,281 @@ check('decay is slower than progress, so interrupting is not a free reset', () =
 
 group('the nest and the cocoon');
 
-check('THE REPORTED CASE: a nest grows beside the converted pylon', () => {
+// ─────────────────────────────────────────────────────────
+group('MASS FOR NESTS: predators fetch it, carry it, and pay it in');
+
+// REPORTED: "I want the charged little particles that drop from the predators
+// to be required for the predators to build nests. Have them search for the
+// particles at the beginning of their spawn, or whenever they're not doing
+// anything. If they find some, they collect it and bring it over, just like the
+// followers bring the shards to the crystal. And have them collect up to 20 to
+// build a nest."
+
+// A converted pylon with its site, and a predator (not the one that converted
+// it) standing a little way off, free to go and fetch.
+function nestScene(env, lumpAt, value) {
+    board(env, -2, 24, -1, 4);
+    const t = greenPylon(env, 8, 2);
+    convert(env, t, mkPred(env, 8, 2));
+    const site = env.run('nestSites')[0];
+    const pred = mkPred(env, 12, 2);
+    pred._infestSettle = 0;
+    const lump = lumpAt
+        ? env.run('spawnChargedMass')(lumpAt[0], lumpAt[1], value || 8) : null;
+    return { t, site, pred, lump };
+}
+// Run the real update, which is where infestTick lives.
+function step(env, pred, n) {
+    for (let i = 0; i < n; i++) { env.sandbox.frame++; pred.update(); env.run('nestSiteTick()'); }
+}
+
+check('THE ASK: an idle predator with a site waiting goes and fetches a lump', () => {
+    const env = makeEnv();
+    const { pred, lump } = nestScene(env, [14, 2], 8);
+    step(env, pred, 160);
+    ok(env.run('chargedMass').indexOf(lump) < 0, 'the lump is still lying where it fell');
+    ok(pred.nestMass > 0 || env.run('nestSites')[0].mass > 0,
+       'nobody took it: carrying ' + pred.nestMass + ', site holds ' + env.run('nestSites')[0].mass);
+});
+
+check('THE ASK: it carries the lump to the site and pays it in', () => {
+    const env = makeEnv();
+    const { pred, site } = nestScene(env, [14, 2], 8);
+    step(env, pred, 900);
+    same(site.mass, 8, 'the lump\'s value did not arrive at the site');
+    same(pred.nestMass, 0, 'it is still carrying what it delivered');
+});
+
+check('THE ASK: it takes lumps until the price is paid, and then the nest is built', () => {
+    const env = makeEnv();
+    const { pred, site } = nestScene(env, null);
+    for (const x of [13, 14, 15]) env.run('spawnChargedMass')(x, 2, 8);   // 24 >= 20
+    // Past the cooldown, so only the mass is what is being measured.
+    env.sandbox.frame += constant('NEST_GROW_COOLDOWN');
+    step(env, pred, 3000);
+    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 1,
+         'twenty-odd worth of lumps did not buy a nest; site holds ' + site.mass);
+});
+
+check('a nest is NOT built while the site is short, however long it waits', () => {
+    const env = makeEnv();
+    const { pred, site } = nestScene(env, [14, 2], 8);     // 8 of 20
+    env.sandbox.frame += constant('NEST_GROW_COOLDOWN');
+    step(env, pred, 2500);
+    ok(site.mass < constant('NEST_BUILD_COST'), 'fixture: should still be short');
+    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 0,
+         'a nest was built on ' + site.mass + ' of ' + constant('NEST_BUILD_COST'));
+});
+
+check('with NO site waiting, a predator leaves the lump alone', () => {
+    // Nothing to build, nothing to fetch for. Taking it anyway would be
+    // stealing the player\'s shards for no reason.
+    const env = makeEnv();
+    board(env, -2, 24, -1, 4);
+    const pred = mkPred(env, 12, 2);
+    pred._infestSettle = 0;
+    const lump = env.run('spawnChargedMass')(13, 2, 8);
+    step(env, pred, 200);
+    ok(env.run('chargedMass').indexOf(lump) >= 0, 'it took a lump with no site to take it to');
+    same(pred.nestMass || 0, 0, 'and it is carrying one');
+});
+
+check('it takes a lump in either state — charged or already neutralised', () => {
+    // It is their own kind of matter, so the electric worker\'s neutralising
+    // step is something only the player\'s side pays.
+    for (const state of ['charged', 'neutral']) {
+        const env = makeEnv();
+        const { pred, lump } = nestScene(env, [13, 2], 6);
+        lump.state = state;
+        step(env, pred, 200);
+        ok(env.run('chargedMass').indexOf(lump) < 0, 'a ' + state + ' lump was not taken');
+    }
+});
+
+check('a lump already in a FOLLOWER\'s arms is not stolen', () => {
+    const env = makeEnv();
+    const { pred, lump } = nestScene(env, [13, 2], 6);
+    lump.state = 'carried'; lump.carrier = { dead: false, x: 13, y: 2 };
+    step(env, pred, 200);
+    ok(env.run('chargedMass').indexOf(lump) >= 0, 'a predator took a lump out of a follower\'s arms');
+});
+
+check('only what the site can use goes in — the rest goes back on the ground', () => {
+    const env = makeEnv();
+    const { pred, site } = nestScene(env, [13, 2], 26);    // a 26-value lump, 20 wanted
+    env.sandbox.frame += constant('NEST_GROW_COOLDOWN');
+    step(env, pred, 600);
+    ok(site.mass <= constant('NEST_BUILD_COST') || env.sandbox.world.some(x => x._infestNest),
+       'the site took more than it could use');
+    const left = env.run('chargedMass').reduce((a, m) => a + m.value, 0);
+    same(left, 6, 'the overflow should be a 6-value lump on the floor, found ' + left);
+});
+
+check('predators already carrying enough do not send a second one for the same site', () => {
+    // "Collect UP TO 20": ten predators must not all go and fetch for a nest
+    // that is nearly paid for.
+    const env = makeEnv();
+    const { pred, site } = nestScene(env, [13, 2], 20);
+    const other = mkPred(env, 13.5, 2); other._infestSettle = 0;
+    env.run('spawnChargedMass')(14, 2, 8);
+    step(env, pred, 40);                    // pred takes the 20 and is carrying it
+    same(pred.nestMass, 20, 'fixture: the first predator should be carrying the 20');
+    same(site.incoming, 20, 'the site does not know it has 20 on the way');
+    other._infestSettle = 0;
+    for (let i = 0; i < 40; i++) { env.sandbox.frame++; other.update(); }
+    same(other.nestMass || 0, 0, 'a second predator fetched for a site already covered');
+});
+
+check('a predator pulled into a fight DROPS what it carries, as a charged lump', () => {
+    const env = makeEnv();
+    const { pred, site } = nestScene(env, [13, 2], 8);
+    step(env, pred, 40);
+    ok(pred.nestMass > 0, 'fixture: it should be carrying');
+    env.sandbox.alertActive = true;          // a fight breaks out
+    step(env, pred, 3);
+    same(pred.nestMass || 0, 0, 'it kept carrying through a fight');
+    same(site.incoming, 0, 'the site still counts it as on its way');
+    const back = env.run('chargedMass').filter(m => m.state === 'charged');
+    same(back.reduce((a, m) => a + m.value, 0), 8, 'the lump did not come back whole and charged');
+});
+
+check('killing a carrier gives the stockpile to the player, charged', () => {
+    // A predator must not be able to take a lump out of play by dying with it.
+    // The follower code turns a dropped CARRIED lump into a neutral one, which
+    // skips the neutralise step — which is why a predator carries a VALUE and
+    // not a hauled lump.
+    const env = makeEnv();
+    const { pred } = nestScene(env, [13, 2], 8);
+    step(env, pred, 40);
+    ok(pred.nestMass > 0, 'fixture: it should be carrying');
+    env.run('predatorDropNestMass')(pred);
+    const lumps = env.run('chargedMass');
+    ok(lumps.length >= 1 && lumps.every(m => m.state === 'charged'),
+       'what it was carrying did not come back charged: ' + JSON.stringify(lumps.map(m => m.state)));
+});
+
+check('reclaiming the pylon cancels its site and hands the stockpile back', () => {
+    const env = makeEnv();
+    const { t, site } = nestScene(env, null);
+    site.mass = 13;
+    t.pillarTeam = 'green';
+    env.run('clearInfestationAt')(t);
+    same(env.run('nestSites').length, 0, 'the site survived its pylon being taken back');
+    const back = env.run('chargedMass').reduce((a, m) => a + m.value, 0);
+    same(back, 13, 'the 13 that had been paid in was deleted rather than returned');
+    same(t._nestSite, undefined, 'the tile still thinks it is a site');
+});
+
+check('a site hanging off a pylon the player has retaken is dropped on its own', () => {
+    const env = makeEnv();
+    const { t } = nestScene(env, null);
+    t.pillarTeam = 'green';              // taken back without going through clearInfestationAt
+    env.run('nestSiteTick()');
+    same(env.run('nestSites').length, 0, 'an orphaned site was left to be built');
+});
+
+check('a hatchling from a cocoon never fetches — the loop breaker holds', () => {
+    // fromCocoon predators do not garden, so cocoons making predators making
+    // cocoons cannot run away. Fetching for a nest must not be a way round that.
+    const env = makeEnv();
+    const { pred, site, lump } = nestScene(env, [13, 2], 8);
+    pred.fromCocoon = true;
+    step(env, pred, 400);
+    // Judged by what ended up WHERE, not by what it is holding at the end: it
+    // can pick a lump up and put it in the site well inside 200 frames, and a
+    // check on its arms alone then reads zero and passes whatever it did.
+    ok(env.run('chargedMass').indexOf(lump) >= 0, 'a hatchling took the lump');
+    same(site.mass, 0, 'a hatchling paid mass into a nest site');
+    same(pred.nestMass || 0, 0, 'a hatchling is carrying mass for a nest');
+});
+
+check('a paid-for site waits for the world-wide cooldown rather than being refused', () => {
+    const env = makeEnv();
+    const { site } = nestScene(env, null);
+    env.run('_lastNestGrowFrame = frame');            // a nest was just built elsewhere
+    site.mass = constant('NEST_BUILD_COST');
+    env.run('nestSiteTick()');
+    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 0, 'it ignored the cooldown');
+    same(env.run('nestSites').length, 1, 'a paid-for site was thrown away for waiting');
+    env.sandbox.frame += constant('NEST_GROW_COOLDOWN');
+    env.run('nestSiteTick()');
+    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 1,
+         'it never built once the cooldown was over');
+});
+
+check('a site survives a refresh with what has been paid into it', () => {
+    const env = makeEnv();
+    const { t, site } = nestScene(env, null);
+    site.mass = 11;
+    const saved = JSON.parse(JSON.stringify(env.run('serialiseNestSites')()));
+    env.run('clearNestSites')();
+    same(env.run('nestSites').length, 0, 'fixture: it should be gone');
+    env.run('restoreNestSites')(saved);
+    const back = env.run('nestSites');
+    same(back.length, 1, 'the site did not come back');
+    same(back[0].mass, 11, 'what had been paid in was lost on the way');
+    ok(back[0].anchor === t, 'it came back hanging off something else');
+});
+
+check('a site with no anchor cannot take the whole save down', () => {
+    // serialiseNestSites runs inside saveSession's single try/catch. A throw
+    // there does not lose this field, it loses the ENTIRE session, silently.
+    const env = makeEnv();
+    nestScene(env, null);
+    env.run('nestSites.push({ x: 1, y: 1, mass: 4 })');          // no anchor at all
+    env.run('nestSites.push(null)');
+    let saved;
+    try { saved = env.run('serialiseNestSites')(); }
+    catch (e) { throw new Error('serialising threw: ' + e.message); }
+    same(saved.length, 1, 'only the real site should have been written, got ' + saved.length);
+});
+
+check('junk in a saved site is ignored rather than thrown', () => {
+    const env = makeEnv();
+    nestScene(env, null);
+    env.run('restoreNestSites')([null, { x: 'a' }, { x: 1, y: 1, ax: 99, ay: 99, mass: 'lots' }, 7]);
+    same(env.run('nestSites').length, 0, 'a junk site was accepted');
+});
+
+check('THE ASK: converting a pylon marks a SITE, and grows no nest by itself', () => {
+    // REPORTED: "I want the charged little particles that drop from the
+    // predators to be required for the predators to build nests."
+    //
+    // Conversion used to plant the nest on the spot, for nothing. It now only
+    // marks where one will go.
     const env = makeEnv();
     board(env, -2, 6, -1, 4);
     const t = greenPylon(env, 3, 2);
     convert(env, t, mkPred(env, 3, 2));
+    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 0,
+         'a nest grew with nothing paid for it');
+    const sites = env.run('nestSites');
+    same(sites.length, 1, 'no site was marked');
+    same(sites[0].mass, 0, 'a fresh site should start empty');
+    ok(Math.hypot(sites[0].x - t.x, sites[0].y - t.y) <= 2, 'the site should be beside the pylon');
+    same(t.pillarTeam, 'red', 'the pylon is still lost');
+    ok(!!env.run('cocoonForAnchor')(t), 'and still cocooned');
+});
+
+check('and once NEST_BUILD_COST has been carried in, the nest is built there', () => {
+    const env = makeEnv();
+    board(env, -2, 6, -1, 4);
+    const t = greenPylon(env, 3, 2);
+    convert(env, t, mkPred(env, 3, 2));
+    const site = env.run('nestSites')[0];
+    const where = { x: site.x, y: site.y };
+    // One short of the price does nothing...
+    env.run('nestSites[0].mass = NEST_BUILD_COST - 1; nestSiteTick();');
+    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 0,
+         'a nest was built one short of its price');
+    // ...and the price builds it.
+    env.run('nestSites[0].mass = NEST_BUILD_COST; nestSiteTick();');
     const nests = env.sandbox.world.filter(x => x.nest && x.nestHealth > 0);
-    same(nests.length, 1, 'exactly one nest should have grown');
-    ok(Math.hypot(nests[0].x - t.x, nests[0].y - t.y) <= 2, 'it should be beside the pylon');
+    same(nests.length, 1, 'a paid-for site did not build its nest');
+    same(nests[0].x, where.x, 'it grew somewhere other than its site');
+    same(nests[0].y, where.y, 'it grew somewhere other than its site');
     ok(nests[0]._infestNest, 'it should be marked as grown rather than generated');
+    same(env.run('nestSites').length, 0, 'the site should be spent once built');
 });
 
 check('THE REPORTED CASE: the nest lands below the pylon, never above it', () => {
@@ -381,7 +658,7 @@ check('THE REPORTED CASE: the nest lands below the pylon, never above it', () =>
     const env = makeEnv();
     board(env, -4, 10, -1, 5);
     const t = greenPylon(env, 3, 2);
-    convert(env, t, spinner());
+    convertFunded(env, t, spinner());
     const nest = env.sandbox.world.find(x => x._infestNest);
     ok(nest, 'no nest grew');
     ok(nest.x + nest.y > t.x + t.y,
@@ -403,7 +680,7 @@ check('it will settle for beside, and only goes above as a last resort', () => {
     for (const k of ['4,3', '3,3', '4,2', '2,3', '4,1']) {
         env.sandbox.worldTileMap.get(k).nodeType = 'blocked';
     }
-    convert(env, t, spinner());
+    convertFunded(env, t, spinner());
     const nest = env.sandbox.world.find(x => x._infestNest);
     ok(nest, 'it should still find somewhere');
     ok(nest.x + nest.y < t.x + t.y, 'with nowhere else it may go above');
@@ -433,7 +710,7 @@ check('a grown nest actually draws, and stops when it is gone', () => {
     const env = makeEnv();
     board(env, -4, 10, -1, 4);
     const t = greenPylon(env, 3, 2);
-    convert(env, t, spinner());
+    convertFunded(env, t, spinner());
     const nest = env.sandbox.world.find(x => x._infestNest);
     ok(nest && nest.nestHealth > 0, 'fixture: a nest should have grown');
     env.calls.length = 0;
@@ -493,7 +770,7 @@ check('a grown nest is geometric too', () => {
     const env = makeEnv();
     board(env, -4, 10, -1, 4);
     const t = greenPylon(env, 0, 2);
-    convert(env, t, spinner('ant', 'scout'));
+    convertFunded(env, t, spinner('ant', 'scout'));
     ok(env.sandbox.world.some(x => x._infestNest), 'fixture: a nest should have grown');
     env.calls.length = 0;
     drawAll(env);
@@ -1033,7 +1310,7 @@ check('THE COUNTER: taking the pylon back kills its cocoon and nest', () => {
     const env = makeEnv();
     board(env, -2, 8, -1, 4);
     const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
+    convertFunded(env, t, mkPred(env, 3, 2));
     tick(env, SWELL + 5);
     ok(env.run('cocoons').length === 1, 'fixture: should have a cocoon');
     const nest = env.sandbox.world.find(x => x._infestNest);
@@ -1358,12 +1635,12 @@ check('THE PACING: a second nest cannot grow right behind the first', () => {
     board(env, 0, 40, 0, 4);
     const a = greenPylon(env, 3, 2);       // zone 0
     const b = greenPylon(env, 20, 2);      // zone 1 — the per-zone cap allows it
-    convert(env, a, spinner('ant', 'striker'));
+    convertFunded(env, a, spinner('ant', 'striker'));
     same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
          'fixture: the first one should grow');
     // Same frame, different zone, nowhere near the 4-tile guard: every other
     // gate says yes. Only the cooldown should stop it.
-    convert(env, b, spinner('ant', 'striker'));
+    convertFunded(env, b, spinner('ant', 'striker'));
     same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
          'a nest grew in the same breath as the last one');
 });
@@ -1375,8 +1652,8 @@ check('and the pylon is still lost, and still cocooned, when it does not', () =>
     board(env, 0, 40, 0, 4);
     const a = greenPylon(env, 3, 2);
     const b = greenPylon(env, 20, 2);
-    convert(env, a, spinner('ant', 'striker'));
-    convert(env, b, spinner('ant', 'striker'));
+    convertFunded(env, a, spinner('ant', 'striker'));
+    convertFunded(env, b, spinner('ant', 'striker'));
     same(b.pillarTeam, 'red', 'the pylon should still change hands');
     ok(!!env.run('cocoonForAnchor')(b), 'and should still be cocooned');
 });
@@ -1387,9 +1664,9 @@ check('once the cooldown is up, the next one grows', () => {
     board(env, 0, 40, 0, 4);
     const a = greenPylon(env, 3, 2);
     const b = greenPylon(env, 20, 2);
-    convert(env, a, spinner('ant', 'striker'));
+    convertFunded(env, a, spinner('ant', 'striker'));
     env.sandbox.frame += NEST_COOLDOWN;
-    convert(env, b, spinner('ant', 'striker'));
+    convertFunded(env, b, spinner('ant', 'striker'));
     same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
          'the second should grow once the map has had a rest');
 });
@@ -1403,12 +1680,12 @@ check('a blocked conversion does not spend the cooldown on nothing', () => {
     const a = greenPylon(env, 3, 2);       // zone 0
     const b = greenPylon(env, 11, 2);      // zone 0 too — capped out
     const c = greenPylon(env, 20, 2);      // zone 1
-    convert(env, a, spinner('ant', 'striker'));
+    convertFunded(env, a, spinner('ant', 'striker'));
     env.sandbox.frame += NEST_COOLDOWN;
-    convert(env, b, spinner('ant', 'striker'));   // rejected by the zone cap
+    convertFunded(env, b, spinner('ant', 'striker'));   // rejected by the zone cap
     same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
          'fixture: the zone cap should have refused that one');
-    convert(env, c, spinner('ant', 'striker'));   // same frame, fresh zone
+    convertFunded(env, c, spinner('ant', 'striker'));   // same frame, fresh zone
     same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
          'the refused conversion consumed the cooldown');
 });
@@ -1513,7 +1790,7 @@ check('the cap counts only GROWN nests, not the zone\'s own', () => {
     addTile(env, { x: 6, y: -1, type: 'floor', nest: true, nestHealth: 200,
                    nestMaxHealth: 200, nestZone: 0 });
     const t = greenPylon(env, 11, 2);
-    convert(env, t, spinner('ant', 'striker'));
+    convertFunded(env, t, spinner('ant', 'striker'));
     same(env.sandbox.world.filter(x => x._infestNest && x.nest).length, 1,
          'a zone wall nest should not block the grown one');
 });

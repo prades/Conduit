@@ -1557,6 +1557,7 @@ function render() {
     nestEnergyTick();
     waveDrainTick();
     powerFlowTick();
+    nestSiteTick();
 
     // ── CRYSTAL ULTIMATE CHARGE RESTORE ──────────────────────────────────
     // Runs every 60 frames. Rate scales with max pylon zone depth and nest pod links.
@@ -1707,6 +1708,7 @@ function render() {
         }
         else if (obj.type==='npc') {
             drawNPC(obj.actor,px,py);
+            if (obj.actor.nestMass) drawPredatorNestMass(obj.actor, px, py + TILE_H);
         }
         else if (obj.type==='groundItem') {
             const gi=obj.item;
@@ -2200,6 +2202,7 @@ function render() {
             // A nest an infestation grew stands on open floor, so it is drawn
             // here in the sorted pass rather than as an overlay.
             drawGrownNestForTile(obj, px, py);
+            drawNestSiteForTile(obj, px, py);
 
             // ── SPAWN NEST — honeycomb hex holes filling 4-tile wall face ──
             // Only for the generated zone nests, which sit at y=-1 against the

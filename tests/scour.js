@@ -102,6 +102,8 @@ function infested(env, x, y, species) {
     board(env, x - 4, x + 4, 0, 4);
     const t = greenPylon(env, x, y);
     env.run('convertPylonToRed')(t, spinner(species || 'ant', 'striker'));
+    // A nest has to be paid for now; this fixture needs one standing, so it pays.
+    env.run('nestSites.forEach(s => { s.mass = NEST_BUILD_COST; }); nestSiteTick();');
     const m = env.run('cocoons').find(c => c.anchors.includes(t));
     ok(!!m, 'fixture: conversion should have spun a cocoon');
     return { t, m };

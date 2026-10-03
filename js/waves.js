@@ -384,6 +384,7 @@ function resetTransientState() {
     dropCarriedMass();
     // Cocoon and half-finished conversions do not survive a change of scene.
     cocoons.length = 0;
+    clearNestSites();
     world.forEach(t => { if (t.converting) { t.converting = false; t.convertProgress = 0; } });
     buildMode         = false;
     const _bBtn = document.getElementById("btnBuild");

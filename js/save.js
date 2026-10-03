@@ -228,6 +228,7 @@ function saveSession() {
             nests, panels, nodes, npcs, waveNpcs,
             mass: serialiseChargedMass(),
             cocoons: serialiseCocoons(),
+            nestSites: serialiseNestSites(),
             // Without this a refresh during a wave put the player back in
             // "day" with the alarm gone and the kill count at zero — the wave
             // NUMBER survived in tubecrawler_gamestate, but the wave itself
@@ -389,6 +390,7 @@ function applySession(sess) {
     restoreWaveRecruits(sess.waveNpcs);
     // After the pylon restore, so a cocoon's anchors resolve to real tiles.
     restoreCocoons(sess.cocoons);
+    restoreNestSites(sess.nestSites);
 
     // Force the 60-frame world caches to rebuild against the restored tiles.
     _cacheAge = -999;

@@ -124,6 +124,110 @@ function _infestTargetStillGood(pred, t) {
     return Math.hypot(t.x - pred.x, t.y - pred.y) <= INFEST_SEEK_RANGE + 4;
 }
 
+// ── FETCHING MASS FOR A NEST ─────────────────────────────
+// "Have them search for the particles at the beginning of their spawn, or
+// whenever they're not doing anything. If they find some, they collect it and
+// bring it over, just like the followers bring the shards to the crystal."
+//
+// A predator with a site waiting and a lump in reach walks to the lump, picks
+// it up, walks it to the site and puts it in. Nothing about the lump has to be
+// done to it first — it is their own kind of matter, so the electric worker's
+// neutralising step is something only the player's side pays.
+//
+// The lump is CONSUMED on pickup and the predator carries its VALUE. Carrying
+// it as a hauled lump the way a follower does would have let a predator launder
+// a charged one: the follower code turns a dropped carried lump into a NEUTRAL
+// one, which skips the neutralise step entirely. A number cannot be laundered.
+const NEST_FETCH_RANGE = 14;    // how far it will go for a lump
+
+// The site that still wants mass, counting what is already on its way, so ten
+// predators do not each fetch for a nest that is nearly paid for.
+function _siteWantingMass(pred) {
+    let best = null, bestD = NEST_FETCH_RANGE * 2;
+    for (const st of nestSites) {
+        if (st.mass + st.incoming >= NEST_BUILD_COST) continue;
+        if (!st.anchor || st.anchor.pillarTeam !== "red") continue;
+        const d = Math.hypot(st.x - pred.x, st.y - pred.y);
+        if (d < bestD) { bestD = d; best = st; }
+    }
+    return best;
+}
+
+// The nearest lump a predator may take. Anything not already in a follower's
+// arms, in either state — charged or neutralised.
+function _nearestLumpFor(pred) {
+    if (typeof chargedMass === "undefined") return null;
+    let best = null, bestD = NEST_FETCH_RANGE;
+    for (const m of chargedMass) {
+        if (m.carrier) continue;
+        const d = Math.hypot(m.x - pred.x, m.y - pred.y);
+        if (d < bestD) { bestD = d; best = m; }
+    }
+    return best;
+}
+
+function _predatorWalk(pred, tx, ty, speed) {
+    const dx = tx - pred.x, dy = ty - pred.y, d = Math.hypot(dx, dy);
+    if (d > 0.0001) {
+        pred.x += (dx / d) * pred.moveSpeed * speed;
+        pred.y += (dy / d) * pred.moveSpeed * speed;
+        if (typeof faceToward === "function") faceToward(pred, tx, ty, 0.12);
+        pred.walkCycle += pred.moveSpeed * 40;
+        pred.lastX = pred.x; pred.lastY = pred.y;
+    }
+    return d;
+}
+
+// Put whatever it is carrying back on the ground. Called when it is pulled into
+// a fight and when it dies, so a predator cannot take a lump out of play by
+// being killed with it in its arms.
+function predatorDropNestMass(pred) {
+    if (!pred || !(pred.nestMass > 0)) { if (pred) pred._nestSite = null; return 0; }
+    const site = pred._nestSite;
+    if (site) site.incoming = Math.max(0, site.incoming - pred.nestMass);
+    const v = pred.nestMass;
+    pred.nestMass = 0; pred._nestSite = null;
+    if (typeof spawnChargedMass === "function") spawnChargedMass(pred.x, pred.y, v);
+    return v;
+}
+
+// One frame of it. Returns true when it has claimed the frame.
+function nestFetchTick(pred) {
+    // Carrying: take it to the site.
+    if (pred.nestMass > 0) {
+        const site = pred._nestSite;
+        if (!site || nestSites.indexOf(site) < 0) { predatorDropNestMass(pred); return false; }
+        const d = _predatorWalk(pred, site.x, site.y, 0.7);    // heavier than an empty walk
+        if (d > INFEST_REACH) return true;
+        // Arrived. Only what the site can still use goes in; any overflow goes
+        // back on the ground rather than vanishing.
+        const room = Math.max(0, NEST_BUILD_COST - site.mass);
+        const put  = Math.min(pred.nestMass, room);
+        const over = pred.nestMass - put;
+        site.mass += put;
+        site.incoming = Math.max(0, site.incoming - pred.nestMass);
+        pred.nestMass = 0; pred._nestSite = null;
+        if (over > 0 && typeof spawnChargedMass === "function") spawnChargedMass(pred.x, pred.y, over);
+        floatingTexts.push({ x: site.x, y: site.y - 1, color: "#ff9966", life: 80, vy: -0.14, size: 11,
+                             text: "NEST " + Math.min(site.mass, NEST_BUILD_COST) + "/" + NEST_BUILD_COST });
+        return true;
+    }
+    // Empty-handed: is there a site that wants mass, and a lump to give it?
+    const site = _siteWantingMass(pred);
+    if (!site) return false;
+    const lump = _nearestLumpFor(pred);
+    if (!lump) return false;
+    const d = _predatorWalk(pred, lump.x, lump.y, 0.9);
+    if (d > 0.7) return true;
+    const at = chargedMass.indexOf(lump);
+    if (at < 0 || lump.carrier) return true;      // someone else got there first
+    chargedMass.splice(at, 1);
+    pred.nestMass = lump.value;
+    pred._nestSite = site;
+    site.incoming += lump.value;
+    return true;
+}
+
 // ── The predator's frame ──────────────────────────────────
 // Returns true when it has claimed the frame, the same contract abilityTick and
 // workerTick use.
@@ -132,6 +236,9 @@ function infestTick(pred) {
         // Dropping the target on the way out means a predator pulled into a
         // fight does not silently resume gardening the instant it is over.
         pred.infestTarget = null;
+        // A fight takes the lump out of its arms. It lands where it stands, and
+        // is the player's to haul again.
+        predatorDropNestMass(pred);
         // And it now has to settle before it goes back to work. This is the
         // line that breaks the burst: an alarm ends for every predator on the
         // same frame, so without it they all resume together.
@@ -139,6 +246,9 @@ function infestTick(pred) {
         return false;
     }
     if (pred._infestSettle > 0) { pred._infestSettle--; return false; }
+    // Mass for a nest comes before gardening: a site that is waiting on it is
+    // the thing gardening produced, and the point of it.
+    if (nestFetchTick(pred)) return true;
     // Cached, because the scan walks the whole world. A cached null is a real
     // answer — there may simply be no pylon of yours left standing nearby.
     const fresh = pred._infestScanFrame !== undefined &&
@@ -206,7 +316,7 @@ function convertPylonToRed(t, pred) {
                          life: 140, vy: -0.22, size: 12 });
     if (typeof shake !== "undefined") shake = Math.max(shake, 5);
 
-    seedNestNear(t, pred);
+    planNestNear(t, pred);
     seedCocoon(t, pred);
 }
 
@@ -225,30 +335,50 @@ function convertPylonToRed(t, pred) {
 const NEST_GROW_COOLDOWN = 2700;    // 45s between grown nests, world-wide
 let _lastNestGrowFrame = -NEST_GROW_COOLDOWN;   // so the first one is never delayed
 
-function seedNestNear(t, pred) {
+// ── NESTS COST MASS ──────────────────────────────────────
+// REPORTED: "I want the charged little particles that drop from the predators
+// to be required for the predators to build nests ... collect up to 20 shards
+// to build a nest."
+//
+// Converting a pylon used to plant a nest on the spot, for nothing. Now it only
+// marks a SITE, and the nest is built when predators have carried NEST_BUILD_COST
+// worth of charged mass to it — the same lumps your own workers haul to the
+// Crystal. So the two sides are in a race for the same resource: a lump left
+// lying about after a fight is shards for you or a nest for them.
+const NEST_BUILD_COST = 20;
+
+let nestSites = [];   // { x, y, tile, anchor, mass, incoming, zone }
+
+// Every nest-site gate except the cooldown, which is applied when the nest is
+// actually built — a site that is already paid for waits its turn rather than
+// being refused up front.
+function _nestSiteBlocked(t) {
     // Already a nest in reach? Then this pylon joins that one's territory.
     for (const obj of world) {
-        if (obj.nest && obj.nestHealth > 0 && Math.hypot(obj.x - t.x, obj.y - t.y) < 4) return null;
+        if (obj.nest && obj.nestHealth > 0 && Math.hypot(obj.x - t.x, obj.y - t.y) < 4) return true;
     }
-    // Paced, not just capped.
-    const now = typeof frame === "number" ? frame : 0;
-    if (now - _lastNestGrowFrame < NEST_GROW_COOLDOWN) return null;
+    for (const st of nestSites) {
+        if (Math.hypot(st.x - t.x, st.y - t.y) < 4) return true;
+    }
     // And at most ONE grown nest per zone, on top of whatever the zone was
-    // generated with. The four-tile guard above only stops them touching:
-    // measured at wave 8, zones 1, 2 and 4 each ended up with two, spread far
-    // enough apart to satisfy it. A zone is the unit the player thinks in, so
-    // it is the unit the cap uses.
+    // generated with. A zone is the unit the player thinks in, so it is the unit
+    // the cap uses. A site being paid for counts, or a zone could be sold two.
     const zone = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(t.x)) : -1;
     for (const obj of world) {
         if (!obj._infestNest || !obj.nest || obj.nestHealth <= 0) continue;
         const oz = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(obj.x)) : -2;
-        if (oz === zone) return null;
+        if (oz === zone) return true;
     }
-    // Ordered by where the tile lands on screen. Depth here is x+y: a bigger
-    // sum draws lower and in front. The first choice used to be (x, y-1),
-    // which is a SMALLER sum — so the nest appeared a row above the pylon it
-    // belongs to. Below and in front first now, beside second, and above only
-    // if there is genuinely nowhere else.
+    for (const st of nestSites) if (st.zone === zone) return true;
+    return false;
+}
+
+// Where a nest beside this pylon would go: the first clear floor tile, in the
+// order the old build used. Ordered by where the tile lands on screen — depth is
+// x+y, a bigger sum draws lower and in front — so the nest appears below and in
+// front of its pylon, beside it second, and above it only if there is nowhere
+// else.
+function _nestSpotNear(t) {
     const spots = [
         [t.x + 1, t.y + 1],                      // +2: clearly in front
         [t.x,     t.y + 1], [t.x + 1, t.y],      // +1: below-left, below-right
@@ -258,27 +388,167 @@ function seedNestNear(t, pred) {
     for (const [sx, sy] of spots) {
         const tile = typeof getTile === "function" ? getTile(sx, sy) : null;
         if (!tile || tile.type !== "floor") continue;
-        if (tile.pillar || tile.nest || tile.nodeType) continue;
-        tile.nest = true;
-        tile.nestMaxHealth = tile.nestMaxHealth || 200;
-        tile.nestHealth = tile.nestMaxHealth;
-        tile.nestZone = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(tile.x)) : -1;
-        tile.nestPulse = 0;
-        tile._infestNest = true;    // marks it as grown, not generated
-        // Stamped here rather than on entry, so a conversion that finds nowhere
-        // to put a nest does not spend the cooldown on nothing.
-        _lastNestGrowFrame = now;
-        floatingTexts.push({ x: tile.x, y: tile.y - 1, text: "NEST GROWN", color: "#ff7744",
-                             life: 120, vy: -0.2 });
-        // Hand it to the patch so reclaiming can take it away. Looking for it
-        // in the patch's tile list does not work — the nest sits beside the
-        // pylon and the cocoon may never creep onto that tile.
-        const m = cocoonForAnchor(t);
-        if (m) m.nest = tile;
-        else   t._pendingNest = tile;
+        if (tile.pillar || tile.nest || tile.nodeType || tile._nestSite) continue;
         return tile;
     }
     return null;
+}
+
+// Mark the ground. The nest itself comes later, when it has been paid for.
+function planNestNear(t, pred) {
+    if (_nestSiteBlocked(t)) return null;
+    const tile = _nestSpotNear(t);
+    if (!tile) return null;
+    const site = {
+        x: tile.x, y: tile.y, tile, anchor: t, mass: 0, incoming: 0,
+        zone: typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(tile.x)) : -1,
+    };
+    tile._nestSite = site;
+    nestSites.push(site);
+    floatingTexts.push({ x: tile.x, y: tile.y - 1, text: "NEST SITE \u00b7 NEEDS " + NEST_BUILD_COST,
+                         color: "#ff9966", life: 110, vy: -0.18, size: 11 });
+    return site;
+}
+
+// Put a site down, giving back whatever had been paid into it. Used when the
+// pylon it hangs off is reclaimed, and when its tile turns out not to be usable.
+// The stockpile comes back as a lump on the ground: it was the player's to haul
+// before the predators took it, and reclaiming should not delete it.
+function removeNestSite(site, refund) {
+    const at = nestSites.indexOf(site);
+    if (at >= 0) nestSites.splice(at, 1);
+    if (site.tile) site.tile._nestSite = null;
+    if (refund && site.mass > 0 && typeof spawnChargedMass === "function") {
+        spawnChargedMass(site.x, site.y, site.mass);
+    }
+}
+
+// Build every site that has been paid for, once the world-wide pacing allows.
+// Called each frame; a site that is full simply waits for the cooldown.
+function nestSiteTick() {
+    if (nestSites.length === 0) return;
+    const now = typeof frame === "number" ? frame : 0;
+    for (let i = nestSites.length - 1; i >= 0; i--) {
+        const site = nestSites[i];
+        if (!site.anchor || site.anchor.pillarTeam !== "red") { removeNestSite(site, true); continue; }
+        if (site.mass < NEST_BUILD_COST) continue;
+        if (now - _lastNestGrowFrame < NEST_GROW_COOLDOWN) continue;   // paid, waiting its turn
+        const tile = site.tile;
+        if (!tile || tile.pillar || tile.nest || tile.nodeType) { removeNestSite(site, true); continue; }
+        _growNestOn(tile, site.anchor, now);
+        removeNestSite(site, false);
+    }
+}
+
+// What makes a floor tile a GROWN nest. Shared by the build and by a refresh:
+// the world is regenerated on load, so the flags are gone and have to be put
+// back — and two copies of this list is how a restored nest ends up missing one.
+function _markGrownNest(tile) {
+    tile.nest = true;
+    tile.nestMaxHealth = tile.nestMaxHealth || 200;
+    tile.nestHealth = tile.nestMaxHealth;
+    tile.nestZone = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(tile.x)) : -1;
+    tile.nestPulse = 0;
+    tile._infestNest = true;    // marks it as grown, not generated
+    return tile;
+}
+
+function _growNestOn(tile, anchor, now) {
+    _markGrownNest(tile);
+    // Stamped here rather than on entry, so a site that cannot be built does not
+    // spend the cooldown on nothing.
+    _lastNestGrowFrame = now;
+    floatingTexts.push({ x: tile.x, y: tile.y - 1, text: "NEST GROWN", color: "#ff7744",
+                         life: 120, vy: -0.2 });
+    // Hand it to the patch so reclaiming can take it away. Looking for it in the
+    // patch's tile list does not work — the nest sits beside the pylon and the
+    // cocoon may never creep onto that tile.
+    const m = cocoonForAnchor(anchor);
+    if (m) m.nest = tile;
+    else   anchor._pendingNest = tile;
+    return tile;
+}
+
+function clearNestSites() {
+    for (const st of nestSites) if (st.tile) st.tile._nestSite = null;
+    nestSites.length = 0;
+    // And whatever any predator was carrying for one: with its site gone it has
+    // nowhere to take it, and nestFetchTick would drop it on its next frame
+    // anyway, in a scene it no longer belongs to.
+    if (typeof actors !== "undefined") for (const a of actors) if (a && a.nestMass) { a.nestMass = 0; a._nestSite = null; }
+}
+
+// A refresh must not lose what the predators have already carried in.
+function serialiseNestSites() {
+    // A site with no anchor cannot be restored and must not take the whole
+    // session down with it: this runs inside saveSession's one try/catch.
+    return nestSites.filter(st => st && st.anchor)
+        .map(st => ({ x: st.x, y: st.y, ax: st.anchor.x, ay: st.anchor.y, mass: st.mass }));
+}
+function restoreNestSites(data) {
+    clearNestSites();
+    if (!Array.isArray(data)) return;
+    for (const d of data) {
+        if (!d) continue;
+        const tile = typeof getTile === "function" ? getTile(d.x, d.y) : null;
+        const anchor = typeof getTile === "function" ? getTile(d.ax, d.ay) : null;
+        // Only a site whose pylon is still theirs: a site hanging off a pylon the
+        // player has since taken back is exactly what clearInfestationAt removes.
+        if (!tile || !anchor || !anchor.pillar || anchor.pillarTeam !== "red") continue;
+        if (tile.nest || tile.pillar) continue;
+        const site = { x: d.x, y: d.y, tile, anchor,
+                       mass: Math.max(0, Math.min(NEST_BUILD_COST, Number(d.mass) || 0)), incoming: 0,
+                       zone: typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(d.x)) : -1 };
+        tile._nestSite = site;
+        nestSites.push(site);
+    }
+}
+
+// ── Drawing a site ───────────────────────────────────────
+// A ring on the floor and a bar that fills as mass is carried in, so the player
+// can see a nest being paid for and knows there is still time to take the pylon
+// back. Called from the depth-sorted tile pass, like the cocoon.
+function drawNestSiteForTile(t, px, py) {
+    const st = t && t._nestSite;
+    if (!st) return;
+    const cx = px, cy = py + TILE_H;
+    const f = Math.max(0, Math.min(1, st.mass / NEST_BUILD_COST));
+    const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.08);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // The ring, flat on the floor plane.
+    ctx.strokeStyle = "#ff9966";
+    ctx.globalAlpha = 0.35 + 0.25 * pulse + 0.3 * f;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.ellipse(cx, cy, 22, 11, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    // How much it has had.
+    ctx.globalAlpha = 1;
+    const bw = 36, bx = cx - bw / 2, by = cy - 30;
+    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, by - 1, bw + 2, 6);
+    ctx.fillStyle = f >= 1 ? "#ffcc44" : "#ff9966";
+    ctx.fillRect(bx, by, Math.round(bw * f), 4);
+    ctx.fillStyle = "#ffbb99"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center";
+    ctx.fillText("NEST " + Math.min(st.mass, NEST_BUILD_COST) + "/" + NEST_BUILD_COST, cx, by - 3);
+    ctx.restore();
+}
+
+// What a predator is carrying, drawn over it: a small charged lump in the same
+// yellow the player's own lumps use, so it reads as the same thing being taken.
+function drawPredatorNestMass(pred, px, py) {
+    if (!pred || !(pred.nestMass > 0)) return;
+    const bob = Math.sin((frame || 0) * 0.15) * 2;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.shadowColor = "#ffee33"; ctx.shadowBlur = 8;
+    ctx.fillStyle = "#ffdd44";
+    ctx.beginPath(); ctx.arc(px, py - 42 + bob, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#1a1206"; ctx.font = "bold 6px monospace"; ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(pred.nestMass), px, py - 42 + bob + 0.5);
+    ctx.restore();
 }
 
 // ── The cocoon ─────────────────────────────────────────────
@@ -600,6 +870,9 @@ function updateInfestation() {
 // pylon goes with it — that is the counter to the whole mechanic.
 function clearInfestationAt(t) {
     if (!t) return;
+    // A site that was being paid for on this pylon's account. What had been
+    // delivered comes back as a lump rather than being deleted.
+    for (const st of nestSites.slice()) if (st.anchor === t) removeNestSite(st, true);
     t.converting = false; t.convertProgress = 0;
     for (let i = cocoons.length - 1; i >= 0; i--) {
         const m = cocoons[i];
@@ -633,6 +906,10 @@ function _grownNestBeside(t) {
 }
 
 // ── Persistence ───────────────────────────────────────────
+function _liveGrownNest(t) {
+    return !!(t && t.nest && t._infestNest && t.nestHealth > 0);
+}
+
 function serialiseCocoons() {
     return cocoons.map(m => ({
         x: m.x, y: m.y, tiles: m.tiles.map(([a, b]) => [a, b]),
@@ -644,7 +921,11 @@ function serialiseCocoons() {
         hatchesLeft: m.hatchesLeft,
         // Scour progress, so a refresh does not undo a worker's shift.
         shellBurn: m.shellBurn || 0, puddleBurn: m.puddleBurn || 0,
-        nest: m.nest ? [m.nest.x, m.nest.y] : null,
+        // Only a LIVE nest. A fire worker that burns one out leaves the cocoon
+        // still pointing at the tile (health 0, no longer a nest), and writing
+        // that reference down made the restore bring it back at full health.
+        nest: _liveGrownNest(m.nest) ? [m.nest.x, m.nest.y] : null,
+        nestHealth: _liveGrownNest(m.nest) ? m.nest.nestHealth : null,
     }));
 }
 
@@ -679,6 +960,7 @@ function restoreCocoons(data) {
             puddleBurn: Number.isFinite(d.puddleBurn) ? Math.min(1, Math.max(0, d.puddleBurn)) : 0,
             spawned: [],
             nest: (d.nest && typeof getTile === "function") ? getTile(d.nest[0], d.nest[1]) : null,
+            _savedNestHealth: d.nestHealth,
             pulse: Math.random() * Math.PI * 2,
         });
         // Footprint and toxin come from the span, not from whatever was saved:
@@ -686,6 +968,18 @@ function restoreCocoons(data) {
         // patch of up to fourteen scattered tiles, and restoring that verbatim
         // brought the old carpet back.
         const m = cocoons[cocoons.length - 1];
+        // The nest this cocoon owns. Regeneration rebuilt the floor without it,
+        // so the tile is still plain floor until it is marked again — which used
+        // to leave a cocoon standing with its nest gone, and the pylon already
+        // red so nothing would ever garden it again.
+        if (m.nest && !m.nest.nest && !m.nest.pillar) {
+            _markGrownNest(m.nest);
+            const h = Number(m._savedNestHealth);
+            if (Number.isFinite(h) && h > 0) m.nest.nestHealth = Math.min(m.nest.nestMaxHealth, h);
+        } else if (m.nest && !m.nest._infestNest) {
+            m.nest = null;       // the tile is something else now; do not claim it
+        }
+        delete m._savedNestHealth;
         m.tiles = _cocoonFootprint(m, m.span);
         const savedToxin = (Array.isArray(d.puddles) ? d.puddles : [])
             .filter(t => Array.isArray(t) && t.length === 2)
