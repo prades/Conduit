@@ -66,7 +66,7 @@ function makeEnv() {
         cfg: { pillarSpawnRate: 0.15, npcSpawnRate: 0.22 },
         // World generation reads these; lifted from config.js, not restated.
         ...configNums(['PANEL_DECOY_CHANCE', 'PANEL_SHARD_MIN', 'PANEL_SHARD_MAX',
-                        'WORLD_OPENING_COLUMNS']),
+                        'WORLD_OPENING_COLUMNS', 'STARTING_SHARDS']),
         PYLON_STYLE: _pylonStyle(),
         PLAYER_AMMO_START: 12, PLAYER_AMMO_MAX: 60, playerAmmo: 0,
         NPC_TYPES: { virus: { moveSpeed: 0.02 }, lobster: { moveSpeed: 0.02 }, turtle: { moveSpeed: 0.02 } },
@@ -372,7 +372,7 @@ check('a reset still clears the things it already cleared', () => {
     const loaded = reloadOn(env);
     loaded.run('shardCount = 99');
     loaded.run('restartGame()');
-    eq(loaded.run('shardCount'), 0, 'shards should be back to zero');
+    eq(loaded.run('shardCount'), loaded.run('STARTING_SHARDS'), 'a restart should leave the starting grant, not the old count');
     eq(loaded.run('gameState.nightNumber'), 1, 'night number should be back to one');
     eq(loaded.run('frame'), 0, 'frame should be back to zero');
     eq([...loaded.run('unlockedElements')].sort().join(','), 'electric,fire', 'starting elements');
