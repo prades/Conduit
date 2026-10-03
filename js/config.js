@@ -395,6 +395,11 @@ const POWER_MIN_RESERVE  = 0;
 // is fighting reads as busy rather than as a flicker.
 const POWER_FLOW_FADE    = 0.012;
 let _powerPools = [];
+// How far the HOME portal's reserve reaches. It feeds the generators standing
+// near it and no others: it is the base's own supply, not a cable across the
+// map. The same distance a generator may be placed from a nest, so any
+// generator you were allowed to build beside home can always draw from it.
+const HOME_POWER_REACH = GENERATOR_NEST_RANGE;
 const POWER_DEAD_COLOUR = "#4a4f58";
 
 // ── THE THREE STATES OF A NEST ───────────────────────────

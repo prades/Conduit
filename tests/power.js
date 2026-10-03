@@ -68,6 +68,9 @@ async function boot() {
 
 (async () => {
     const E = await boot();
+    // Read from the running game: it is defined from GENERATOR_NEST_RANGE, which
+    // a literal-only reader cannot see.
+    const HOME_REACH = E.run('HOME_POWER_REACH');
 
     // A board built from scratch each time. `plan` is one letter per tile going
     // along the row: G generator, A attack pylon, W wave pylon, P plain, . gap.
@@ -82,7 +85,10 @@ async function boot() {
             t.attackFireTimer = 0;
             if (t.nest) { t.nestHealth = t.nestMaxHealth || 200; t.nestEnergy = undefined; }
         });
-        const row = world.filter(t => t.type === 'floor' && t.y === 3 && t.x > 1 && !t.nest
+        // Starts at x=4: the home portal is at (7,-1) and only feeds generators
+        // within HOME_POWER_REACH of it, so the row has to begin inside that.
+        // At x=2 the first generator was 6.4 away and drew on nothing.
+        const row = world.filter(t => t.type === 'floor' && t.y === 3 && t.x >= 4 && !t.nest
                                       && !t.nodeType).sort((a,b) => a.x - b.x);
         const made = [];
         ${JSON.stringify(plan)}.split('').forEach((c, i) => {
@@ -188,6 +194,114 @@ async function boot() {
     });
 
     // ─────────────────────────────────────────────────────
+    group('THE HOME RESERVE does not reach across the map');
+
+    // REPORTED: "the power level from the crystal should not shoot across the
+    // map. From the crystal it should just only hit the generators that are
+    // nearby it."
+    //
+    // The fallback to the home portal was unconditional, so a generator on the
+    // far side of the map with nothing linked drew on the home reserve — and the
+    // wiring drew a beam from the Crystal all the way out to it.
+
+    // A generator and one turret beside it, placed at an exact distance from the
+    // home portal along the floor, with nothing linked to anything.
+    const atDistance = (dist, link) => E.run(`(function(){
+        actors.length = 0; followers.length = 0;
+        world.forEach(t => { t.pillar = false; t.attackMode = false; t.waveMode = false;
+                             t.isGenerator = false; t.connectedPylon = null; t.nestConnection = null;
+                             t.powered = undefined; t.powerSource = null; t.powerGen = null;
+                             if (t.nest) { t.nestHealth = t.nestMaxHealth || 200; t.nestEnergy = undefined; } });
+        const home = world.find(t => isHomePortal(t));
+        // The floor tile whose distance from home is closest to what was asked.
+        const cands = world.filter(t => t.type === 'floor' && t.y >= 0 && t.y <= 4 && !t.nest && !t.nodeType);
+        cands.sort((a, b) => Math.abs(Math.hypot(a.x - home.x, a.y - home.y) - ${dist})
+                           - Math.abs(Math.hypot(b.x - home.x, b.y - home.y) - ${dist}));
+        const gen = cands[0];
+        const turret = cands.find(t => t !== gen && Math.hypot(t.x - gen.x, t.y - gen.y) <= 1.5
+                                       && Math.hypot(t.x - gen.x, t.y - gen.y) > 0.5);
+        Object.assign(gen, { pillar: true, destroyed: false, pillarTeam: 'green', health: 20,
+                             maxHealth: 20, isGenerator: true, attackMode: true });
+        Object.assign(turret, { pillar: true, destroyed: false, pillarTeam: 'green', health: 20,
+                                maxHealth: 20, attackMode: true, attackModeElement: 'fire',
+                                attackPower: 12, attackRange: 2.5 });
+        ${link ? `const n = world.find(t => t.nest && t.nestZone === 1); n.nestHealth = 0;
+                  n.connectedPylon = gen; gen.nestConnection = n;` : ''}
+        _cacheAge = -999; render();
+        return { d: Math.round(Math.hypot(gen.x - home.x, gen.y - home.y) * 100) / 100,
+                 src: gen ? (generatorSource(gen) === home ? 'home'
+                             : generatorSource(gen) ? 'nest' : 'none') : null,
+                 turretLit: !!turret.powered, reach: HOME_POWER_REACH };
+    })()`);
+
+    check('THE ASK: a generator beside home draws on the home reserve', () => {
+        const r = atDistance(3, false);
+        same(r.src, 'home', 'a generator ' + r.d + ' tiles from home got nothing');
+        same(r.turretLit, true, 'and its turret is dark');
+    });
+
+    check('THE ASK: a generator across the map does NOT', () => {
+        const r = atDistance(40, false);
+        ok(r.d > r.reach + 10, 'fixture: it should be well past the reach, was ' + r.d);
+        same(r.src, 'none', 'a generator ' + r.d + ' tiles from home still drew on it');
+        same(r.turretLit, false, 'and its turret was lit off a reserve it cannot reach');
+    });
+
+    check('the edge is exactly HOME_POWER_REACH', () => {
+        const inside  = atDistance(HOME_REACH - 0.6, false);
+        const outside = atDistance(HOME_REACH + 1.2, false);
+        ok(inside.d <= inside.reach,   `fixture: ${inside.d} should be inside ${inside.reach}`);
+        ok(outside.d > outside.reach,  `fixture: ${outside.d} should be outside ${outside.reach}`);
+        same(inside.src, 'home', 'a generator just inside the reach got nothing');
+        same(outside.src, 'none', 'a generator just outside the reach still drew');
+    });
+
+    check('a far generator can still be wired to a nest of its own', () => {
+        // The home reserve is not the only supply. Out in a zone, the generator
+        // draws on the nest linked to it — which is the whole point of going.
+        const r = atDistance(40, true);
+        same(r.src, 'nest', 'a far generator with a nest linked drew from ' + r.src);
+        same(r.turretLit, true, 'and its turret should be lit');
+    });
+
+    check('the wiring does not draw a beam from home to a generator it is not feeding', () => {
+        // The wire and the supply used to be two copies of the rule, and the
+        // wiring one fell back to home for EVERYTHING. Counted at the draw: a
+        // far generator should have its turret wire and nothing running back to
+        // home; a near one should have both.
+        // Drive it through the real draw, and count only the leg that STARTS AT
+        // THE HOME PORTAL. Counting wires overall measured nothing: a far
+        // generator still draws its turret leg, so the totals differ either way.
+        const fromHome = (dist) => {
+            atDistance(dist, false);
+            return E.run(`(function(){
+                const real = _drawPowerWire; let legs = 0;
+                const home = world.find(t => isHomePortal(t));
+                // The camera has to be AT HOME. The wiring skips a wire whose two
+                // ends are both off screen, so with the camera anywhere else a beam
+                // from the Crystal to a far generator is culled whether or not the
+                // rule that would draw it is broken — which is how the first
+                // version of this passed against the very bug it was written for.
+                player.x = home.x; player.y = 3;
+                player.visualX = player.x; player.visualY = player.y;
+                player.targetX = player.x; player.targetY = player.y;
+                const hx = (home.x - player.visualX - (home.y - player.visualY)) * TILE_W + canvas.width / 2;
+                const hy = (home.x - player.visualX + (home.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
+                _drawPowerWire = function (ax, ay) {
+                    if (Math.abs(ax - hx) < 1.5 && Math.abs(ay - (hy - 55)) < 1.5) legs++;
+                    return real.apply(this, arguments);
+                };
+                // Wave mode is a constant draw, so the legs are lit and drawn.
+                world.forEach(t => { if (t.pillar && !t.isGenerator) { t.attackMode = false; t.waveMode = true; } });
+                try { for (let i = 0; i < 3; i++) render(); } finally { _drawPowerWire = real; }
+                return legs;
+            })()`);
+        };
+        const near = fromHome(3), far = fromHome(40);
+        ok(near > 0, 'fixture: a generator beside home should be wired to it, saw ' + near + ' legs');
+        same(far, 0, 'a far generator still had a wire running to it from the Crystal (' + far + ' legs)');
+    });
+
     group('ATTACK MODE: it pays per shot');
 
     // A turret fires every 90 frames. With a target in range, 200 frames is two
@@ -465,7 +579,7 @@ async function boot() {
         ok(at > -1, 'the chain is never drawn');
         const body = SRC.game.slice(at, SRC.game.indexOf('\nfunction ', at + 10));
         ok(/t\.powerGen/.test(body), 'it does not follow the recorded generator');
-        ok(/nestConnection/.test(body), 'it does not reach back to the nest');
+        ok(/generatorSource\(gen\)/.test(body), 'it does not ask the one source rule for the nest');
         ok(/powerFlowOf\(t\)/.test(body), 'the wire does not follow the actual draw');
     });
 
@@ -517,6 +631,18 @@ async function boot() {
         same(r.status.dark, 0, 'it reports something dark that is not');
         const flat = board('GA', [{ zone: 1, taken: true, linkTo: 0, energy: 0 }], 2);
         same(flat.status.dark, 1, 'it does not report the dark pylon');
+    });
+
+    check('the index says the home reserve is local, and how to connect to it', () => {
+        const at = HTML.indexOf('POWER GRID');
+        const page = HTML.slice(at, at + 5200);
+        ok(/only the generators standing near it/i.test(page),
+           'the index does not say the home reserve only reaches nearby generators');
+        ok(!/falls back to when no nest is linked/i.test(page),
+           'the index still says a generator falls back to home with no limit');
+        const reach = Number(E.run('HOME_POWER_REACH'));
+        ok(page.indexOf('>' + reach + '<') > -1, 'the index does not state the ' + reach + '-tile reach');
+        ok(/Long-press the CRYSTAL nest/i.test(page), 'it does not say how to connect to the portal');
     });
 
     check('the GAME INDEX teaches it, with the real numbers', () => {

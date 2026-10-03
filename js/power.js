@@ -79,14 +79,42 @@ function generatorFeeding(t) {
     return best;
 }
 
-// The nest a generator draws out of: the one LINKED to it, or the home portal
-// when nothing is. The fallback is what keeps a new game running — the first
-// generator you build works before you have taken anything.
+// The home portal — the nest labelled CRYSTAL. Looked up in the nest cache when
+// there is one: this is asked per generator per frame by the wiring.
+function homePortalTile() {
+    const list = (typeof _nestCache !== "undefined" && _nestCache.length) ? _nestCache : world;
+    for (const t of list) if (typeof isHomePortal === "function" && isHomePortal(t)) return t;
+    return null;
+}
+
+// The nest a generator draws out of: the one LINKED to it, or — only if it
+// stands near home — the home portal's own reserve.
+//
+// REPORTED: "the power level from the crystal should not shoot across the map.
+// From the crystal it should only hit the generators that are nearby it."
+//
+// The fallback used to be unconditional, so a generator on the far side of the
+// map with nothing linked to it drew on the home reserve, and the wiring drew a
+// beam from the Crystal all the way out to it. The fallback is what keeps a new
+// game running — the first generator you build works before you have taken
+// anything — and that generator is built beside home, so it keeps working. A
+// generator out in a zone has to be wired to a nest of its own.
 function generatorSource(gen) {
     if (!gen || !isGeneratorPylon(gen)) return null;
     const linked = gen.nestConnection;
     if (linked && nestIsPowerSource(linked)) return linked;
-    return world.find(t => typeof isHomePortal === "function" && isHomePortal(t)) || null;
+    const home = homePortalTile();
+    if (home && Math.hypot(home.x - gen.x, home.y - gen.y) <= HOME_POWER_REACH) return home;
+    return null;
+}
+
+// Can this nest be CONNECTED to a generator? A taken nest, or the home portal —
+// anything that is a power source — as long as it is not already wired to a
+// live generator. The home portal is never "taken", so asking whether its health
+// had run out is what kept CONNECT off it.
+function nestCanConnect(n) {
+    if (!n || !nestIsPowerSource(n)) return false;
+    return !(n.connectedPylon && !n.connectedPylon.destroyed);
 }
 
 // The pool this pylon spends out of, or null if nothing reaches it.

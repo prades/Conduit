@@ -199,9 +199,22 @@ async function passC() {
             // builds one beside the first pylon. Without it nothing is on the
             // grid, _aPylons comes back empty and the fire tick never runs —
             // which is the whole path this pass exists to walk.
-            const gen = ELEMENTS.find(e => e.id === 'fire') && floor[9];
-            if (gen) { _executeBuildInstant(fire, gen); gen.isGenerator = true;
-                       gen.attackMode = false; gen.waveMode = false; did.push('generator'); }
+            // The generator has to stand near HOME — it draws on the home portal's
+            // reserve only within HOME_POWER_REACH — and the turret beside it, or
+            // nothing is on the grid and the fire tick never runs.
+            // Any two free tiles beside each other near home, not fixed
+            // coordinates: the world seed can put a generated pylon on a chosen
+            // tile, and then no generator is built and the whole drive reports
+            // that it never reached one.
+            const home = world.find(t => isHomePortal(t));
+            const free = world.filter(t => t.type === 'floor' && !t.pillar && !t.nest && !t.nodeType
+                                           && t.y >= 2 && t.y <= 3 && Math.hypot(t.x - home.x, t.y - home.y) <= 5)
+                              .sort((a, b) => a.x - b.x);
+            const gen = free[0];
+            const feed = free.find(t => t !== gen && Math.hypot(t.x - gen.x, t.y - gen.y) <= 1.5);
+            if (gen && feed) { _executeBuildInstant(fire, gen); gen.isGenerator = true;
+                       gen.attackMode = false; gen.waveMode = false; did.push('generator');
+                       _executeBuildInstant(fire, feed); }
             const plain = world.find(t => t.pillar && t.pillarTeam === 'green'
                                           && !t.attackMode && !t.waveMode);
             if (plain) { _executeUpgrade(fire, plain); did.push('upgrade'); }

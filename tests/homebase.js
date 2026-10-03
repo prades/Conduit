@@ -458,6 +458,153 @@ async function ready() {
     });
 
     // ─────────────────────────────────────────────────────
+    group('THE PORTAL CAN CONNECT: long hold the nest that says CRYSTAL');
+
+    // REPORTED: "when you long hold on the nest at the home base, which says
+    // crystal, you should be able to connect to a generator from that spot."
+    //
+    // CONNECT was offered only on a nest whose health had run out — a nest you
+    // had TAKEN. The portal is never taken, it has always been yours, so the
+    // order was simply never offered on it. And its long-press target was
+    // excluded from the nest scan entirely (a radius around it would turn every
+    // press in the base into a CONNECT), so there was nothing to offer it on.
+
+    // Long hold at a screen point, then read what the radial's LEFT button says.
+    const holdAt = (where) => E.run(`(function(){
+        actors.length = 0; followers.length = 0;
+        world.forEach(t => { if (t.nest) { t.connectedPylon = null; } if (t.pillar) { t.nestConnection = null; } });
+        buildMode = false; commandMode = false; nestConnectMode = false; pendingConnectNest = null;
+        commandTarget = null; commandFollowerTarget = null; commandEnemyTarget = null;
+        commandNestTarget = null; selectedRadialAction = null;
+        const home = world.find(t => isHomePortal(t));
+        player.x = home.x; player.y = 3;
+        player.visualX = player.x; player.visualY = player.y;
+        player.targetX = player.x; player.targetY = player.y;
+        const p = homePortalScreenPos();
+        const pt = ${where === 'on' ? '{ x: p.x, y: p.y }'
+                    : where === 'beside' ? '{ x: p.x + 3 * TILE_W, y: p.y + 3 * TILE_H }'
+                    : '{ x: p.x, y: p.y }'};
+        handleLongHold(pt.x, pt.y);
+        commandX = pt.x; commandY = pt.y;
+        commandMode = true; dragDX = -RADIAL_RADIUS; dragDY = 0;         // held LEFT
+        const labels = [];
+        const orig = ctx.fillText.bind(ctx);
+        ctx.fillText = (t, ...a) => { labels.push(String(t)); return orig(t, ...a); };
+        drawRadialMenu();
+        ctx.fillText = orig;
+        return { target: commandNestTarget === home ? 'home'
+                        : (commandNestTarget ? 'nest ' + commandNestTarget.nestZone : 'none'),
+                 action: selectedRadialAction,
+                 labels: labels.filter(t => /^[A-Z]{3,}$/.test(t)) };
+    })()`);
+
+    check('THE ASK: a long hold ON the portal offers CONNECT', () => {
+        const r = holdAt('on');
+        same(r.target, 'home', 'the press did not pick the home portal: ' + r.target);
+        ok(r.labels.includes('CONNECT'), 'the radial does not offer CONNECT: ' + r.labels);
+        same(r.action, 'connect_nest', 'and the left button is not wired to it');
+    });
+
+    check('...even with a pylon standing right beside it', () => {
+        // The press snaps its target to any pylon within two tiles. A base is
+        // built right at the portal, and with a pylon there the left button became
+        // that pylon's SWITCH and CONNECT never came up.
+        E.run(`(function(){
+            const home = world.find(t => isHomePortal(t));
+            const t = world.find(x => x.x === home.x && x.y === 0 && x.type === 'floor' && !x.nest);
+            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 20,
+                               maxHealth: 20, attackMode: true, attackModeElement: 'fire' });
+            _cacheAge = -999;
+        })()`);
+        const r = holdAt('on');
+        E.run(`world.forEach(t => { if (t.pillar && t.y === 0) t.pillar = false; })`);
+        same(r.target, 'home', 'a neighbouring pylon took the press: ' + r.target);
+        ok(r.labels.includes('CONNECT'), 'CONNECT was not offered beside a pylon: ' + r.labels);
+    });
+
+    check('a long hold NEAR the portal, but not on it, is left alone', () => {
+        // The portal is picked by where the press lands, not by a radius: a base
+        // is built right there, and every press within a few tiles of it turning
+        // into a CONNECT would take SWITCH away from the whole home area.
+        const r = holdAt('beside');
+        ok(r.target !== 'home', 'a press three tiles away still picked the portal');
+        ok(!r.labels.includes('CONNECT'), 'CONNECT is offered away from the portal: ' + r.labels);
+    });
+
+    // Run the order and tap a generator at `dist` tiles from home.
+    const linkGen = (dist) => E.run(`(function(){
+        const home = world.find(t => isHomePortal(t));
+        holdAt_reset();
+        function holdAt_reset() { world.forEach(t => { if (t.pillar) { t.pillar = false; t.isGenerator = false; t.nestConnection = null; } }); home.connectedPylon = null; }
+        const cands = world.filter(t => t.type === 'floor' && t.y >= 0 && t.y <= 4 && !t.nest && !t.nodeType);
+        cands.sort((a, b) => Math.abs(Math.hypot(a.x - home.x, a.y - home.y) - ${dist})
+                           - Math.abs(Math.hypot(b.x - home.x, b.y - home.y) - ${dist}));
+        const gen = cands[0];
+        Object.assign(gen, { pillar: true, destroyed: false, pillarTeam: 'green', health: 20,
+                             maxHealth: 20, isGenerator: true, attackMode: true });
+        _cacheAge = -999; render();
+        floatingTexts.length = 0;
+        commandNestTarget = home; selectedRadialAction = 'connect_nest';
+        commandMode = true; executeCommand();
+        const entered = !!nestConnectMode && pendingConnectNest === home;
+        // Tap the generator where it is DRAWN, from the projection.
+        const gx = (gen.x - player.visualX - (gen.y - player.visualY)) * TILE_W + canvas.width / 2;
+        const gy = (gen.x - player.visualX + (gen.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
+        const consumed = handleNestConnectTap(gx, gy - 30);
+        return { entered, consumed,
+                 linked: gen.nestConnection === home && home.connectedPylon === gen,
+                 said: floatingTexts.map(t => t.text), stillPending: !!nestConnectMode,
+                 d: Math.round(Math.hypot(gen.x - home.x, gen.y - home.y) * 10) / 10 };
+    })()`);
+
+    check('THE ASK: the order takes a generator beside home, and says HOME CONNECTED', () => {
+        holdAt('on');
+        const r = linkGen(3);
+        same(r.entered, true, 'CONNECT did not start a link');
+        same(r.linked, true, 'the generator was not linked to the home portal');
+        ok(r.said.some(t => /HOME CONNECTED/.test(t)), 'it does not say what was connected: ' + r.said);
+        ok(!r.said.some(t => /ZONE CONTROLLED/.test(t)), 'it called the portal a controlled zone');
+    });
+
+    check('a generator out of the portal\'s reach is refused, as for any nest', () => {
+        holdAt('on');
+        const r = linkGen(30);
+        same(r.linked, false, 'a generator ' + r.d + ' tiles away was linked to home');
+        ok(r.said.some(t => /TOO FAR/.test(t)), 'it did not say why: ' + r.said);
+    });
+
+    check('a taken nest still offers CONNECT, and a hostile one still does not', () => {
+        // The shared test must not have widened or narrowed the existing rule.
+        const r = E.run(`(function(){
+            const n = world.find(t => t.nest && t.nestZone === 1);
+            n.connectedPylon = null;
+            n.nestHealth = n.nestMaxHealth || 200; const hostile = nestCanConnect(n);
+            n.nestHealth = 0;                        const taken = nestCanConnect(n);
+            n.connectedPylon = { destroyed: false }; const linked = nestCanConnect(n);
+            n.connectedPylon = { destroyed: true };  const relink = nestCanConnect(n);
+            n.connectedPylon = null;
+            return { hostile, taken, linked, relink };
+        })()`);
+        same(r.hostile, false, 'a nest still spawning offers CONNECT');
+        same(r.taken, true, 'a taken nest no longer offers CONNECT');
+        same(r.linked, false, 'an already-linked nest offers it again');
+        same(r.relink, true, 'a nest whose generator was destroyed cannot be re-linked');
+    });
+
+    check('the portal stops offering it once linked, and offers it again if the generator falls', () => {
+        const r = E.run(`(function(){
+            const home = world.find(t => isHomePortal(t));
+            home.connectedPylon = { destroyed: false };   const live = nestCanConnect(home);
+            home.connectedPylon = { destroyed: true };    const dead = nestCanConnect(home);
+            home.connectedPylon = null;                   const none = nestCanConnect(home);
+            return { live, dead, none };
+        })()`);
+        same(r.none, true, 'the portal does not offer CONNECT at all');
+        same(r.live, false, 'and keeps offering it while linked');
+        same(r.dead, true, 'a destroyed generator cannot be replaced');
+    });
+
+    // ─────────────────────────────────────────────────────
     group('NEST MASS: a predator that dies carrying it gives it back');
 
     // The real death path, not the helper it calls: onPredatorDeath is what runs

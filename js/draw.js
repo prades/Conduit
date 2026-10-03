@@ -91,7 +91,7 @@ function drawRadialMenu() {
 
     const isPylonTarget   = commandTarget&&commandTarget.pillar&&!commandTarget.destroyed&&commandTarget.health>0;
     const nestAlreadyLinked = commandNestTarget&&commandNestTarget.connectedPylon&&!commandNestTarget.connectedPylon.destroyed;
-    const isBrokenNest    = commandNestTarget&&commandNestTarget.nestHealth<=0&&!nestAlreadyLinked;
+    const isBrokenNest    = nestCanConnect(commandNestTarget);   // a taken nest, or the home portal
 
     // ── TOP = UPGRADE (pylon) / BUILD (empty tile) — only when buildMode ON ──
     const showTopBtn = buildMode;

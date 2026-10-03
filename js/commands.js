@@ -352,7 +352,7 @@ function executeCommand() {
         }
         // ── LEGACY NEST COMMANDS ──────────────────────────
         case "connect_nest": {
-            if (commandNestTarget && commandNestTarget.nestHealth <= 0) {
+            if (nestCanConnect(commandNestTarget)) {
                 nestConnectMode  = true;
                 nestConnectMisses = 0;
                 pendingConnectNest = commandNestTarget;

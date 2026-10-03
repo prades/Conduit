@@ -535,9 +535,10 @@ function drawPowerChain() {
     }
 
     for (const [gen, flow] of genFlow) {
-        const nest = gen.nestConnection && nestIsPowerSource(gen.nestConnection)
-            ? gen.nestConnection
-            : world.find(o => typeof isHomePortal === "function" && isHomePortal(o));
+        // The ONE source rule, not a second copy of it: this used to fall back to
+        // the home portal for every generator, so the wire ran from the Crystal
+        // across the whole map to ones it was not feeding at all.
+        const nest = generatorSource(gen);
         if (!nest) continue;
         const [gx, gy] = toScreen(gen);
         const [nx, ny] = toScreen(nest);

@@ -66,8 +66,11 @@ function handleNestConnectTap(ex, ey) {
     if (tapped && pendingConnectNest) {
         tapped.nestConnection = pendingConnectNest;
         pendingConnectNest.connectedPylon = tapped;
+        const _home = typeof isHomePortal === "function" && isHomePortal(pendingConnectNest);
         floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
-            text:"ZONE CONTROLLED — bonus charge active", color:NEST_COLOUR_CONTROLLED, life:120, vy:-0.3});
+            text: _home ? "HOME CONNECTED — feeding that generator"
+                        : "ZONE CONTROLLED — bonus charge active",
+            color: _home ? "#0f8" : NEST_COLOUR_CONTROLLED, life:120, vy:-0.3});
         nestConnectMode = false; pendingConnectNest = null; nestConnectMisses = 0;
         return true;
     }
@@ -344,6 +347,21 @@ function handleLongHold(ex,ey) {
             commandNestTarget=obj;
         }
     });
+    // THE HOME PORTAL, the nest labelled CRYSTAL. It is left out of the radius
+    // scan above on purpose — a long press anywhere within four tiles of it
+    // would turn every nearby press into a CONNECT, and a base is built right
+    // there — so it is picked only when the press lands ON the portal itself.
+    if (typeof isTapNearHomePortal === "function" && isTapNearHomePortal(ex, ey)) {
+        const home = typeof homePortalTile === "function" ? homePortalTile() : null;
+        if (home) {
+            commandNestTarget = home;
+            // And the portal's tile is the target, which stops the snap-to-nearest-
+            // pylon step above from handing the press to a pylon standing beside
+            // it. A base is built right there, and with a pylon within two tiles
+            // the left button became that pylon's SWITCH and CONNECT never came up.
+            commandTarget = home;
+        }
+    }
     dragDX=0; dragDY=0;
 }
 
@@ -526,8 +544,8 @@ canvas.addEventListener('pointerup', e=>{
             const relDist = Math.hypot(relX, relY);
             const relAngle = Math.atan2(relY, relX);
             if (relDist > 18) {
-                const nestLinked   = commandNestTarget && commandNestTarget.connectedPylon && !commandNestTarget.connectedPylon.destroyed;
-                const isBrokenNest = commandNestTarget && commandNestTarget.nestHealth <= 0 && !nestLinked;
+                // Mirrors drawRadialMenu: one test for "can this nest be connected".
+                const isBrokenNest = nestCanConnect(commandNestTarget);
                 const _isPyCmd = commandTarget && commandTarget.pillar && !commandTarget.destroyed;
                 const _isCapturableCmd = commandTarget && commandTarget.capturable && !commandTarget.captured;
                 // The top button is drawn whenever build mode is on — UPGRADE on a
