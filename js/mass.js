@@ -556,10 +556,13 @@ function releaseStandingPost(actor) {
     return true;
 }
 
-function setFollowerDuty(actor, duty) {
+// `quiet` suppresses the per-follower announcement. A GROUP order sets a dozen
+// at once, and a dozen identical "ASSIGNED TO WORK CREW" lines stacked on top
+// of each other is noise — the caller says it once for the whole group instead.
+function setFollowerDuty(actor, duty, quiet) {
     if (!actor) return false;
     if (duty === 'worker' && !canWorkMass(actor)) {
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+        if (!quiet) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
             text: 'ONLY ' + workerElementsLabel() + ' CAN WORK', color: '#f88', life: 110, vy: -0.25, size: 12 });
         return false;
     }
@@ -582,7 +585,7 @@ function setFollowerDuty(actor, duty) {
         // follower is still terrain.
         thawIceBlock(actor);
     }
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+    if (!quiet) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
         text: duty === 'worker' ? 'ASSIGNED TO WORK CREW' : 'BACK ON THE LINE',
         color: duty === 'worker' ? '#00ccaa' : '#0f8', life: 100, vy: -0.25, size: 12 });
     return true;

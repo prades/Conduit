@@ -801,6 +801,165 @@ function drawGestureFeedback() {
 // ─────────────────────────────────────────────────────────
 //  CLICK HANDLER
 // ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+//  GROUP DUTY SWITCH  —  long press a row in the follower index
+// ─────────────────────────────────────────────────────────
+// REPORTED: "when you long press on the little index at the bottom left of all
+// your followers, you can switch them to working or fighting by the selected
+// group — campers, brawlers, snipers, or individual element types."
+//
+// Duty was a per-follower order: long press the unit itself, pick TO WORK. With
+// a dozen followers that is a dozen long presses, and the index already groups
+// them exactly the way the player thinks about them. So the index rows are the
+// handle: one press, one group, one instruction.
+const _DUTY_W = 132, _DUTY_H = 58, _DUTY_BTN_H = 22;
+
+// Who is in a group. One place, so the count on the menu and the followers it
+// actually switches can never be two different sets.
+function dutyGroupMembers(group) {
+    if (!group || typeof followers === "undefined") return [];
+    if (group.kind === "element") return followers.filter(a => !a.dead && a.element === group.id);
+    if (group.kind === "role")    return followers.filter(a => !a.dead && a.role === group.id);
+    return [];
+}
+
+// Put a whole group on work, or back on the line.
+//
+// Eligibility is filtered HERE rather than left to setFollowerDuty: that
+// refuses one follower at a time with its own floating text, so sending ten
+// ineligible followers to work would stack ten identical refusals on the
+// screen. One group, one answer.
+function applyDutyToGroup(group, duty) {
+    const members = dutyGroupMembers(group);
+    if (members.length === 0) {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+            text: "NO " + group.label + " TO ORDER", color: "#f88", life: 100, vy: -0.22, size: 12 });
+        return 0;
+    }
+    const able = duty === "worker"
+        ? members.filter(a => typeof canWorkMass === "function" && canWorkMass(a))
+        : members;
+    let moved = 0;
+    for (const a of able) {
+        if (a.duty === duty) continue;
+        if (setFollowerDuty(a, duty, true)) moved++;
+    }
+    const verb = duty === "worker" ? "TO WORK" : "TO THE LINE";
+    if (able.length === 0) {
+        // The whole group is ineligible — say why once, naming the elements
+        // that can, rather than refusing silently.
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+            text: "ONLY " + workerElementsLabel() + " CAN WORK",
+            color: "#f88", life: 120, vy: -0.25, size: 12 });
+        return 0;
+    }
+    const skipped = members.length - able.length;
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+        text: moved + " " + group.label + " " + verb
+              + (skipped > 0 ? "  (" + skipped + " CANNOT WORK)" : ""),
+        color: group.colour || "#0f8", life: 110, vy: -0.25, size: 12 });
+    return moved;
+}
+
+// Which group a long press landed on, or null. Mirrors the tap handler's row
+// arithmetic, because they are picking out of the same list.
+function followerIndexGroupAt(x, y) {
+    const py0 = _panelY();
+    if (followerPoolMinimized) return null;
+    if (x < _UI_X || x > _UI_X + _UI_W) return null;
+    if (y < py0 + _UI_TAB_H || y > py0 + _UI_TOTAL_H) return null;
+
+    if (uiTab === "elements") {
+        const i = Math.floor((y - py0 - _UI_TAB_H) / _UI_ROW_H);
+        const el = ELEMENTS[i];
+        if (!el || !unlockedElements.has(el.id)) return null;
+        return { kind: "element", id: el.id, label: el.label.toUpperCase(),
+                 colour: el.color, rowY: py0 + _UI_TAB_H + i * _UI_ROW_H };
+    }
+    if (uiTab === "units") {
+        const unitRH = Math.floor(_UI_CONTENT_H / 3);
+        const i = Math.floor((y - py0 - _UI_TAB_H) / unitRH);
+        const roles = [
+            { id: "brawler", label: "BRAWLERS", colour: "#f88" },
+            { id: "sniper",  label: "SNIPERS",  colour: "#88f" },
+            { id: "camper",  label: "CAMPERS",  colour: "#8f8" },
+        ];
+        const r = roles[i];
+        if (!r) return null;
+        return { kind: "role", id: r.id, label: r.label, colour: r.colour,
+                 rowY: py0 + _UI_TAB_H + i * unitRH };
+    }
+    return null;   // the CLONES tab is not a duty group
+}
+
+// Returns true when the press was the index's, so the world radial does not
+// also open underneath it.
+function openFollowerDutyMenu(x, y) {
+    const group = followerIndexGroupAt(x, y);
+    if (!group) return false;
+    // Beside the panel rather than over it, so the row you pressed stays
+    // visible and it is obvious which group the menu belongs to.
+    const mx = _UI_X + _UI_W + 8;
+    const my = Math.max(4, Math.min(canvas.height - _DUTY_H - 4, group.rowY - 6));
+    followerDutyMenu = { group, x: mx, y: my, w: _DUTY_W, h: _DUTY_H };
+    return true;
+}
+
+function drawFollowerDutyMenu() {
+    const m = followerDutyMenu;
+    if (!m) return;
+    const g = m.group;
+    const members = dutyGroupMembers(g);
+    const working = members.filter(a => a.duty === "worker").length;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    ctx.fillStyle = "rgba(4,8,12,0.95)";
+    ctx.strokeStyle = g.colour || "#0f8"; ctx.lineWidth = 2;
+    _epRoundRect(m.x, m.y, m.w, m.h, 5); ctx.fill(); ctx.stroke();
+
+    // Who this is, and where they are now — so the player is not guessing what
+    // the buttons will change.
+    ctx.fillStyle = g.colour || "#0f8";
+    ctx.font = "bold 10px monospace"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText(g.label + " \u00d7" + members.length, m.x + 8, m.y + 11);
+    ctx.fillStyle = "#6a7a88"; ctx.font = "8px monospace";
+    ctx.fillText(working + " working, " + (members.length - working) + " on the line",
+                 m.x + 8, m.y + 23);
+
+    const bw = (m.w - 18) / 2, by = m.y + m.h - _DUTY_BTN_H - 6;
+    [["TO WORK", m.x + 6], ["TO LINE", m.x + 12 + bw]].forEach(([label, bx], i) => {
+        const on = i === 0 ? working === members.length : working === 0;
+        ctx.fillStyle = on ? "rgba(0,255,136,0.16)" : "rgba(0,0,0,0.6)";
+        ctx.fillRect(bx, by, bw, _DUTY_BTN_H);
+        ctx.strokeStyle = i === 0 ? "#0ca" : "#0f8"; ctx.lineWidth = 1;
+        ctx.strokeRect(bx, by, bw, _DUTY_BTN_H);
+        ctx.fillStyle = i === 0 ? "#0ca" : "#0f8";
+        ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+        ctx.fillText(label, bx + bw / 2, by + _DUTY_BTN_H / 2);
+    });
+    ctx.restore();
+    m._btn = { bw, by };
+}
+
+// Returns true when the tap was the menu's. Anything else closes it, which is
+// how every other panel in the game behaves.
+function handleFollowerDutyMenuTap(x, y) {
+    const m = followerDutyMenu;
+    if (!m) return false;
+    const b = m._btn;
+    if (b && y >= b.by && y <= b.by + _DUTY_BTN_H) {
+        if (x >= m.x + 6 && x <= m.x + 6 + b.bw) {
+            applyDutyToGroup(m.group, "worker"); followerDutyMenu = null; return true;
+        }
+        if (x >= m.x + 12 + b.bw && x <= m.x + 12 + b.bw * 2) {
+            applyDutyToGroup(m.group, "fighter"); followerDutyMenu = null; return true;
+        }
+    }
+    const inside = x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h;
+    followerDutyMenu = null;
+    return inside;   // a tap on the menu's own body is still the menu's
+}
+
 function handleFollowerUIClick(x,y) {
     const py0=_panelY();
     const panelH = followerPoolMinimized ? _UI_TAB_H : _UI_TOTAL_H;

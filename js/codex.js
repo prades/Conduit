@@ -377,6 +377,12 @@ function renderWorkCrewIndex() {
         'Changing duty <strong>releases a standing POSITION order</strong> \u2014 a post is not a ' +
         'task and never finishes on its own, so it would otherwise keep the unit off work for good. ' +
         'A real task in progress is left to finish.</div>' +
+        '<div class="cm-build-row"><span class="cm-build-label">By group</span>' +
+        '<strong>Long-press a row in the follower index</strong>, bottom left, to order that ' +
+        'whole group at once \u2014 one press instead of one per follower. On the <strong>ELEM</strong> ' +
+        'tab a row is an element; on <strong>UNITS</strong> it is a role, so BRAWLERS, SNIPERS and ' +
+        'CAMPERS each move together across every element they are made of. The menu says how many ' +
+        'are already working before you choose.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Call back</span>' +
         'The same long press takes one OFF the crew. A frozen ICE block says <strong>THAW</strong> ' +
         'instead of TO LINE \u2014 press the BLOCK itself, not the air above it. And a worker with an ' +

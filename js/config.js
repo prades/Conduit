@@ -508,6 +508,10 @@ let holdLineX    = null;       // world X boundary; null = cleared
 let uiTab        = "elements"; // "elements" | "units"
 let selectedRole = null;       // "brawler"|"sniper"|"camper"|null
 let followerPoolMinimized = false; // whether the follower pool panel is collapsed
+// The duty switch a LONG PRESS on a follower-index row opens: it puts that
+// whole group — one element, or one role — on work or back on the line in a
+// single instruction. null when closed.
+let followerDutyMenu = null;
 
 // ── CRYSTAL MENU / BUILDS ─────────────────────────────────
 let crystalMenuOpen  = false;

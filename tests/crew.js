@@ -510,6 +510,163 @@ check('the cocoon toxin no longer names them', () => {
 });
 
 // ─────────────────────────────────────────────────────────
+group('GROUP DUTY: long press the index, order the whole group');
+
+// REPORTED: "when you long press on the little index at the bottom left of all
+// your followers, you can switch them to working or fighting by the selected
+// group — campers, brawlers, snipers, or individual element types."
+//
+// Duty was a per-follower order: long press the unit, pick TO WORK. With a
+// dozen followers that is a dozen long presses, and the index already groups
+// them the way the player thinks about them.
+
+// ui.js needs more of the page than mass.js does, so this group boots the whole
+// thing rather than the two-file sandbox the rest of the suite uses.
+function uiEnv() {
+    const sandbox = makeBrowserSandbox({ tubecrawler_seed: '305419896' });
+    const ctx = vm.createContext(sandbox);
+    for (const rel of scriptOrder()) {
+        try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), ctx, { filename: rel }); }
+        catch (e) { /* DOM-heavy init is noisy under stubs */ }
+    }
+    return { sandbox, run: e => vm.runInContext(e, ctx) };
+}
+
+// Build a squad, long-press a row, press a button, report what moved.
+// `press` is 'work' | 'line' | null (null just opens the menu).
+const squadOrder = (U, tab, which, press) => U.run(`(function(){
+    gameState.running = true;
+    actors.length = 0; followers.length = 0;
+    ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+    floatingTexts.length = 0;
+    const roles = ['brawler', 'sniper', 'camper'];
+    ['core','core','core','fire','fire','flux'].forEach((el, i) => {
+        spawnFollowerAtCrystal(el);
+        const f = followers[followers.length - 1];
+        f.role = roles[i % 3];
+        f.x = 5 + i; f.y = 2; f.visualX = f.x; f.visualY = f.y;
+    });
+    uiTab = ${JSON.stringify(tab)}; followerPoolMinimized = false;
+    followerDutyMenu = null;
+    // Aimed from the panel's own geometry, not from the picker under test.
+    const py0 = canvas.height - 20 - _UI_TAB_H - _UI_CONTENT_H;
+    const i = ${typeof which === 'number' ? which
+                : `ELEMENTS.findIndex(e => e.id === ${JSON.stringify(which)})`};
+    const rh = ${JSON.stringify(tab)} === 'elements' ? _UI_ROW_H : Math.floor(_UI_CONTENT_H / 3);
+    const px = _UI_X + 90, pyy = py0 + _UI_TAB_H + i * rh + rh / 2;
+    const took = handleLongHold(px, pyy) === undefined && !!followerDutyMenu;
+    const opened = followerDutyMenu ? followerDutyMenu.group.label : null;
+    let pressed = null;
+    if (followerDutyMenu && ${JSON.stringify(press)}) {
+        drawFollowerDutyMenu();
+        const m = followerDutyMenu, b = m._btn;
+        const bx = ${JSON.stringify(press)} === 'work' ? m.x + 6 + b.bw / 2
+                                                       : m.x + 12 + b.bw + b.bw / 2;
+        pressed = handleFollowerDutyMenuTap(bx, b.by + 10);
+    }
+    const live = followers.filter(f => !f.dead);
+    return {
+        opened, pressed, stillOpen: !!followerDutyMenu,
+        workers: live.filter(f => f.duty === 'worker').length,
+        total: live.length,
+        core: live.filter(f => f.element === 'core').length,
+        coreWorking: live.filter(f => f.element === 'core' && f.duty === 'worker').length,
+        brawlers: live.filter(f => f.role === 'brawler').length,
+        brawlersWorking: live.filter(f => f.role === 'brawler' && f.duty === 'worker').length,
+        said: floatingTexts.map(t => t.text),
+    };
+})()`);
+
+const U = uiEnv();
+
+check('THE ASK: a long press on an ELEMENT row opens that group', () => {
+    const r = squadOrder(U, 'elements', 'core', null);
+    same(r.opened, 'CORE', 'the press did not open the CORE group');
+});
+
+check('and TO WORK moves the whole element group at once', () => {
+    const r = squadOrder(U, 'elements', 'core', 'work');
+    same(r.coreWorking, r.core, `only ${r.coreWorking} of ${r.core} core went to work`);
+    same(r.workers, r.core, 'it moved followers outside the group as well');
+    same(r.stillOpen, false, 'the menu stayed open after the order');
+});
+
+check('THE ASK: a long press on a ROLE row opens that group', () => {
+    const r = squadOrder(U, 'units', 0, null);
+    same(r.opened, 'BRAWLERS', 'the press did not open the BRAWLERS group');
+});
+
+check('and it orders by role across every element', () => {
+    const r = squadOrder(U, 'units', 0, 'work');
+    same(r.brawlersWorking, r.brawlers,
+         `only ${r.brawlersWorking} of ${r.brawlers} brawlers went to work`);
+    same(r.workers, r.brawlers, 'it moved followers outside the role as well');
+});
+
+check('snipers and campers are their own groups', () => {
+    same(squadOrder(U, 'units', 1, null).opened, 'SNIPERS', 'row 2 is not snipers');
+    same(squadOrder(U, 'units', 2, null).opened, 'CAMPERS', 'row 3 is not campers');
+});
+
+check('TO LINE takes the group back off the crew', () => {
+    const on  = squadOrder(U, 'elements', 'core', 'work');
+    same(on.coreWorking, on.core, 'fixture: they should be working first');
+    const off = squadOrder(U, 'elements', 'core', 'line');
+    same(off.coreWorking, 0, `${off.coreWorking} core are still on the crew`);
+});
+
+check('a group order says it ONCE, not once per follower', () => {
+    // setFollowerDuty announces every follower it moves. Three identical
+    // "ASSIGNED TO WORK CREW" lines stacked on one another is noise, so a group
+    // order silences the per-follower line and says it for the whole group.
+    const r = squadOrder(U, 'elements', 'core', 'work');
+    const perFollower = r.said.filter(t => /ASSIGNED TO WORK CREW/.test(t)).length;
+    same(perFollower, 0, perFollower + ' per-follower announcements survived');
+    const summary = r.said.filter(t => /CORE/.test(t) && /TO WORK/.test(t));
+    same(summary.length, 1, 'expected one summary for the group, got ' + summary.length);
+    ok(/3 CORE/.test(summary[0]), 'the summary does not say how many moved: ' + summary[0]);
+});
+
+check('a single follower still gets its own answer', () => {
+    // The group path must not have silenced the ordinary one-unit order.
+    const r = U.run(`(function(){
+        floatingTexts.length = 0;
+        const f = followers.find(a => !a.dead);
+        f.duty = 'fighter';
+        setFollowerDuty(f, 'worker');
+        return floatingTexts.map(t => t.text);
+    })()`);
+    ok(r.some(t => /ASSIGNED TO WORK CREW/.test(t)),
+       'a single follower order went silent: ' + JSON.stringify(r));
+});
+
+check('the CLONES tab is not a duty group', () => {
+    const r = squadOrder(U, 'clones', 0, null);
+    same(r.opened, null, 'the clones tab opened a duty menu');
+});
+
+check('the index says the group order exists', () => {
+    const CODEX = fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8');
+    ok(/follower index/i.test(CODEX), 'the page never mentions the index as a handle');
+    ok(/ELEM/.test(CODEX) && /UNITS/.test(CODEX), 'nor which tabs group what');
+    for (const role of ['BRAWLERS', 'SNIPERS', 'CAMPERS']) {
+        ok(CODEX.indexOf(role) > -1, 'it does not name ' + role);
+    }
+});
+
+check('the index takes the press before the world radial does', () => {
+    // Otherwise the command ring opens underneath the panel and the press does
+    // two things at once.
+    const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+    const at = INPUT.indexOf('function handleLongHold');
+    const body = INPUT.slice(at, INPUT.indexOf('commandTarget=', at));
+    ok(/openFollowerDutyMenu\(ex, ey\)\) return/.test(body),
+       'the long hold does not give the index first refusal');
+    // And the menu's own taps are taken before the index's row taps.
+    ok(INPUT.indexOf('handleFollowerDutyMenuTap') < INPUT.indexOf('handleFollowerUIClick(upX'),
+       'the index would swallow a tap aimed at the menu');
+});
+
 group('the index says so');
 
 check('the work crew page documents both new jobs, from the constants', () => {

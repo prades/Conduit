@@ -277,6 +277,10 @@ function handleLongHold(ex,ey) {
     // Holding during a pending nest link would open the command menu over the
     // pylon the player is trying to pick.
     if (nestConnectMode) return;
+    // The follower index takes its own long press: a row there is a GROUP, and
+    // the duty switch belongs to it. Checked before anything else so the world
+    // radial does not also open underneath the panel.
+    if (typeof openFollowerDutyMenu === "function" && openFollowerDutyMenu(ex, ey)) return;
     commandMode=true; commandX=ex; commandY=ey;
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
@@ -350,7 +354,8 @@ canvas.addEventListener('pointerdown', e=>{
     [pressX,pressY]=toCanvas(e.clientX,e.clientY); pressStartTime=performance.now();
 
     // Canvas overlay panels — absorb pointerdown so no game action triggers
-    if (elementPickerOpen || infoPanelOpen || campMenuOpen || settingsPanelOpen) return;
+    if (elementPickerOpen || infoPanelOpen || campMenuOpen || settingsPanelOpen
+        || followerDutyMenu) return;
 
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
     if (commandPendingTap) return;
@@ -420,6 +425,10 @@ canvas.addEventListener('pointerup', e=>{
     // follower panel, the ultimate double-tap scan and the gesture handlers all
     // used to get first refusal and steal the tap.
     if (!touchMoved && handleNestConnectTap(upX, upY)) { isPressing=false; return; }
+    // The group duty menu first: it sits beside the index, and the index's own
+    // tap handler would otherwise take a press aimed at the menu.
+    if (typeof handleFollowerDutyMenuTap === "function"
+        && handleFollowerDutyMenuTap(upX, upY)) { isPressing=false; return; }
     if (handleFollowerUIClick(upX, upY)) { isPressing=false; return; }
     // SHOP button tap
     if (!touchMoved && !alertActive && gameState.phase !== "night" && gameState.phase !== "waveComplete" && gameState.phase !== "gameOver"

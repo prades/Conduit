@@ -3384,6 +3384,7 @@ function render() {
     drawCampButton();
     drawAmmoChip();
     drawSettingsButton();
+    drawFollowerDutyMenu();
     drawSettingsPanel();
     drawCampMenu();
     updatePreview();
