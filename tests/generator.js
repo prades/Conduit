@@ -146,7 +146,7 @@ check('the pylon picker offers it alongside the six elements', () => {
 
 check('it needs no unlock — it is neutral, not earned', () => {
     ok(/function isPylonTypeUnlocked/.test(CONFIG), 'no unlock helper');
-    ok(/id === GENERATOR_ID \|\| unlockedElements\.has\(id\)/.test(CONFIG),
+    ok(/isRelayId\(id\) \|\| unlockedElements\.has\(id\)/.test(CONFIG),
        'the generator should bypass element unlocks');
     ok(/isPylonTypeUnlocked\(el\.id\)/.test(UI), 'the picker should use the type-aware check');
     ok(/isPylonTypeUnlocked\(el\.id\)/.test(CMD), 'the build path should use it too');
@@ -159,11 +159,11 @@ check('it stays out of the elemental network', () => {
     // exclusion is matched on its own rather than against the whole line.
     const wLine = GAME.match(/_wPylons\s*=\s*_pillarCache\.filter\(([^;]*)\);/);
     const aLine = GAME.match(/_aPylons\s*=\s*_pillarCache\.filter\(([^;]*)\);/);
-    ok(wLine && /!t\.isGenerator/.test(wLine[1]),
+    ok(wLine && /!isRelayPylon\(t\)/.test(wLine[1]),
        'a generator would be counted as part of an elemental network');
     ok(wLine && /t\.waveMode && t\.attackModeElement/.test(wLine[1]),
        'the wave list no longer requires a wave-mode pylon with an element');
-    ok(aLine && /!t\.isGenerator/.test(aLine[1]),
+    ok(aLine && /!isRelayPylon\(t\)/.test(aLine[1]),
        'a generator would be counted as an attack pylon');
     ok(aLine && /t\.attackMode/.test(aLine[1]), 'the attack list no longer requires attack mode');
     ok(/_genPylons\s*=\s*_pillarCache\.filter\(t => t\.isGenerator\)/.test(GAME),
@@ -178,7 +178,7 @@ check('a generator costs the grid nothing to run', () => {
     const at = POWER.indexOf('function needsPower');
     ok(at > -1, 'the spend rule could not be located');
     const body = POWER.slice(at, POWER.indexOf('\n}', at));
-    ok(/t\.isGenerator\) return false/.test(body), 'a generator spends power like any other pylon');
+    ok(/isRelayPylon\(t\)\) return false/.test(body), 'a generator spends power like any other pylon');
 });
 
 check('no elemental zone effect can fire for it', () => {
@@ -437,7 +437,7 @@ check('a missing tile is refused rather than throwing', () => {
 
 check('every path that creates a generator is gated', () => {
     // Build, instant build, and converting a pylon you already own.
-    const gated = [...CMD.matchAll(/el\.id === GENERATOR_ID && !canPlaceGenerator\([^)]*\)\.ok/g)];
+    const gated = [...CMD.matchAll(/isRelayId\(el\.id\) && !canPlaceGenerator\([^)]*\)\.ok/g)];
     eq(gated.length, 3, `expected all three creation paths gated, found ${gated.length}`);
     for (const fn of ['_executeBuild', '_executeBuildInstant', '_executeUpgrade']) {
         const at = CMD.indexOf('function ' + fn);
@@ -447,12 +447,12 @@ check('every path that creates a generator is gated', () => {
 });
 
 check('the picker dims the option instead of offering a dead end', () => {
-    ok(/const outOfRange = el\.id === GENERATOR_ID &&/.test(UI),
+    ok(/const outOfRange = isRelayId\(el\.id\) &&/.test(UI),
        'the picker does not check placement while drawing');
     ok(/NEEDS A NEST/.test(UI), 'the dimmed cell does not say why');
     // And a tap on it explains rather than doing nothing.
     const at = UI.indexOf('const el   = PYLON_PICKER_TYPES[idx];');
-    ok(/refuseGenerator\(\)/.test(UI.slice(at, at + 400)), 'tapping a dimmed generator says nothing');
+    ok(/refuseGenerator\(el\)/.test(UI.slice(at, at + 400)), 'tapping a dimmed generator says nothing');
 });
 
 check('one refusal message, used everywhere', () => {

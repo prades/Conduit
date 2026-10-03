@@ -197,7 +197,7 @@ function drawElementPicker() {
         const cx = px + col * cellW, cy = py + _EP_HEADER_H + row * _EP_ROW_H;
         // A generator out of reach of every nest is shown dimmed rather than
         // offered and then refused after the confirm screen.
-        const outOfRange = el.id === GENERATOR_ID &&
+        const outOfRange = isRelayId(el.id) &&
                            !canPlaceGenerator(elementPickerTarget).ok;
         const unlocked = isPylonTypeUnlocked(el.id) && !outOfRange;
         const alpha = unlocked ? 1.0 : 0.35;
@@ -264,8 +264,8 @@ function _handleElementPickerTap(tx, ty) {
         const row = Math.floor((ty - gridY0) / _EP_ROW_H);
         const idx  = row * _EP_COLS + col;
         const el   = PYLON_PICKER_TYPES[idx];
-        if (el && el.id === GENERATOR_ID && !canPlaceGenerator(elementPickerTarget).ok) {
-            refuseGenerator();
+        if (el && isRelayId(el.id) && !canPlaceGenerator(elementPickerTarget).ok) {
+            refuseGenerator(el);
             return true;
         }
         if (el && isPylonTypeUnlocked(el.id)) {

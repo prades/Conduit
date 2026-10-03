@@ -81,8 +81,27 @@ const SENTINEL_ACCENT_DIM   = "#3d4d5e";
 const GENERATOR_ID    = "generator";
 const GENERATOR_LABEL = "GENERATOR";
 const GENERATOR_COLOR = "#cdd6e0";   // neutral steel, so it reads as no element
-// What the pylon picker offers: the six elements plus the generator.
-const PYLON_PICKER_TYPES = [...ELEMENTS, { id: GENERATOR_ID, label: GENERATOR_LABEL, color: GENERATOR_COLOR }];
+// ── CONNECTOR PYLON ───────────────────────────────────────
+// "A connector pylon with a really long radius of connection strength, used to
+// carry power from the nests to power the zones in the later half — and you can
+// turn the circuitry on or off to turn on a whole group of pylons at once."
+//
+// A neutral relay like the generator: it is built near a nest, linked to one,
+// and draws from it. Where a generator only reaches the pylons beside it, a
+// connector feeds EVERY pylon inside CONNECTOR_RANGE, so a single one run out
+// to a distant zone lights the whole cluster there. Its circuit is a switch:
+// open, it feeds nothing and that whole cluster goes dark together.
+const CONNECTOR_ID    = "connector";
+const CONNECTOR_LABEL = "CONNECTOR";
+const CONNECTOR_COLOR = "#ffd24a";
+const CONNECTOR_RANGE = 14;   // tiles — over four times a plain pylon link
+// A relay is either kind of neutral power structure.
+function isRelayId(id) { return id === GENERATOR_ID || id === CONNECTOR_ID; }
+let _conPylons = [];   // live connector pylons
+// What the pylon picker offers: the six elements plus the two relays.
+const PYLON_PICKER_TYPES = [...ELEMENTS,
+    { id: GENERATOR_ID, label: GENERATOR_LABEL, color: GENERATOR_COLOR },
+    { id: CONNECTOR_ID, label: CONNECTOR_LABEL, color: CONNECTOR_COLOR }];
 // Healing: applied every GENERATOR_HEAL_INTERVAL frames to each linked pylon.
 // 2 HP per 30 frames is 4 HP/s — worth building around, but well under what a
 // single predator chewing on a pylon takes off it.
@@ -128,9 +147,9 @@ function canPlaceGenerator(t) {
 }
 
 // One refusal, so every path says the same thing.
-function refuseGenerator() {
+function refuseGenerator(el) {
     floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
-        text: "GENERATOR MUST BE WITHIN " + GENERATOR_NEST_RANGE + " TILES OF A NEST",
+        text: ((el && el.id === CONNECTOR_ID) ? "CONNECTOR" : "GENERATOR") + " MUST BE WITHIN " + GENERATOR_NEST_RANGE + " TILES OF A NEST",
         color: "#f44", life: 120, vy: -0.2 });
 }
 
@@ -139,11 +158,16 @@ function refuseGenerator() {
 function isGeneratorPylon(t) {
     return !!(t && t.pillar && !t.destroyed && t.health > 0 && t.isGenerator);
 }
+function isConnectorPylon(t) {
+    return !!(t && t.pillar && !t.destroyed && t.health > 0 && t.isConnector);
+}
+// Either neutral relay: carries power, spends none, holds no element.
+function isRelayPylon(t) { return !!(t && (t.isGenerator || t.isConnector)); }
 
 // The generator is neutral, so it is never behind an element unlock — it is
 // available from the first pylon the player ever builds.
 function isPylonTypeUnlocked(id) {
-    return id === GENERATOR_ID || unlockedElements.has(id);
+    return isRelayId(id) || unlockedElements.has(id);
 }
 
 // ── CANVAS / CTX ──────────────────────────────────────────

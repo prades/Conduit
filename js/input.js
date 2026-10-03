@@ -27,7 +27,7 @@ function toCanvas(cx, cy) {
 // lit pylon the player happened to already own.
 function isNestLinkablePylon(t) {
     return !!(t && t.pillar && !t.destroyed && t.pillarTeam === "green"
-              && t.health > 0 && t.isGenerator);
+              && t.health > 0 && (t.isGenerator || t.isConnector));
 }
 
 // Nearest eligible pylon to a tap. The old scan kept the LAST match in world
@@ -60,7 +60,7 @@ function handleNestConnectTap(ex, ey) {
     if (tapped && pendingConnectNest &&
         Math.hypot(tapped.x - pendingConnectNest.x, tapped.y - pendingConnectNest.y) > GENERATOR_NEST_RANGE) {
         floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
-            text:"THAT GENERATOR IS TOO FAR FROM THE NEST", color:"#f44", life:120, vy:-0.25});
+            text:"THAT RELAY IS TOO FAR FROM THE NEST", color:"#f44", life:120, vy:-0.25});
         return true;
     }
     if (tapped && pendingConnectNest) {
@@ -83,7 +83,7 @@ function handleNestConnectTap(ex, ey) {
             text:"LINK CANCELLED", color:"#888", life:90, vy:-0.25});
     } else {
         floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
-            text:"TAP A GENERATOR  (tap again to cancel)", color:"#00ffcc", life:110, vy:-0.25});
+            text:"TAP A GENERATOR OR CONNECTOR  (tap again to cancel)", color:"#00ffcc", life:110, vy:-0.25});
     }
     return true;
 }
@@ -578,6 +578,8 @@ canvas.addEventListener('pointerup', e=>{
                 // Left side. Mirrors drawRadialMenu's leftAction, enemy pylon first.
                 else if (_isPyCmd && commandTarget.pillarTeam === "red" && commandTarget.health > 0)
                                        selectedRadialAction = "reconstruct";
+                else if (_isPyCmd && isConnectorPylon(commandTarget) && commandTarget.pillarTeam === "green")
+                                       selectedRadialAction = "toggle_circuit";
                 else if (isBrokenNest) selectedRadialAction = "connect_nest";
                 else                   selectedRadialAction = "switch_context";
             } else if (longHoldFired && !commandPendingTap) {

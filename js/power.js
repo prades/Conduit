@@ -117,10 +117,68 @@ function nestCanConnect(n) {
     return !(n.connectedPylon && !n.connectedPylon.destroyed);
 }
 
+// ── THE CONNECTOR ────────────────────────────────────────
+// A connector is a relay with a switch. Closed (the default), it feeds every
+// pylon within CONNECTOR_RANGE out of the nest it is linked to; open, it feeds
+// none, and everything that was hanging off it goes dark at once.
+function connectorLive(c) {
+    return isConnectorPylon(c) && c.pillarTeam === "green" && c.circuitOn !== false;
+}
+
+// What a connector draws out of: its linked nest, or home's reserve if it
+// stands near home — the same rule as a generator, so a connector built beside
+// the Crystal works before anything has been taken.
+function connectorSource(c) {
+    if (!isConnectorPylon(c)) return null;
+    const linked = c.nestConnection;
+    if (linked && nestIsPowerSource(linked)) return linked;
+    const home = homePortalTile();
+    if (home && Math.hypot(home.x - c.x, home.y - c.y) <= HOME_POWER_REACH) return home;
+    return null;
+}
+
+// The nearest closed connector that has something to give, or null.
+function connectorFeeding(t) {
+    if (!t || typeof _conPylons === "undefined") return null;
+    let best = null, bestD = CONNECTOR_RANGE * CONNECTOR_RANGE;
+    for (const c of _conPylons) {
+        if (c === t || !connectorLive(c) || !connectorSource(c)) continue;
+        const dx = c.x - t.x, dy = c.y - t.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 <= bestD) { bestD = d2; best = c; }
+    }
+    return best;
+}
+
+// Where a feeder (generator OR connector) draws from — for the wiring.
+function relaySource(r) {
+    return isConnectorPylon(r) ? connectorSource(r) : generatorSource(r);
+}
+
+function toggleConnectorCircuit(c) {
+    if (!isConnectorPylon(c)) return false;
+    c.circuitOn = c.circuitOn === false;   // false → true, anything else → false
+    recomputePower();
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+        text: c.circuitOn ? "CIRCUIT CLOSED — POWER FLOWING" : "CIRCUIT OPEN — GROUP DARK",
+        color: c.circuitOn ? CONNECTOR_COLOR : "#f88", life: 110, vy: -0.25, size: 12 });
+    return true;
+}
+
+// The feeder this pylon draws along and the pool behind it. A generator beside
+// it comes first; if that has nothing to give, a connector in reach is next.
+function powerRoute(t) {
+    const gen = generatorFeeding(t);
+    const gs = gen ? generatorSource(gen) : null;
+    if (gs) return { feeder: gen, source: gs };
+    const con = connectorFeeding(t);
+    if (con) return { feeder: con, source: connectorSource(con) };
+    return { feeder: gen, source: null };
+}
+
 // The pool this pylon spends out of, or null if nothing reaches it.
 function pylonSource(t) {
-    const gen = generatorFeeding(t);
-    return gen ? generatorSource(gen) : null;
+    return powerRoute(t).source;
 }
 
 // Take `amount` out of a pool. Returns true only if the whole amount was there,
@@ -148,9 +206,10 @@ function recomputePower() {
         // BOTH ends of the chain are remembered, not just the nest. The wiring
         // is drawn along pylon → generator → nest, and working the middle out
         // again at draw time would be a second copy of the routing rule.
-        const gen = generatorFeeding(t);
+        const route = powerRoute(t);
+        const gen = route.feeder;
         t.powerGen    = gen;
-        t.powerSource = gen ? generatorSource(gen) : null;
+        t.powerSource = route.source;
         t.powered = !!t.powerSource && nestEnergy(t.powerSource) > POWER_MIN_RESERVE;
     }
     // The pools worth showing: every one something is drawing on, plus home.
@@ -166,7 +225,7 @@ function recomputePower() {
 function needsPower(t) {
     if (!t || !t.pillar || t.destroyed || !(t.health > 0)) return false;
     if (t.pillarTeam !== "green") return false;
-    if (t.isGenerator) return false;
+    if (isRelayPylon(t)) return false;
     return !!(t.waveMode || t.attackMode);
 }
 
@@ -201,7 +260,7 @@ function powerFlowTick() {
     if (typeof _pillarCache === "undefined") return;
     for (const t of _pillarCache) {
         if (t.powerFlow > 0) t.powerFlow = Math.max(0, t.powerFlow - POWER_FLOW_FADE);
-        if (t.waveMode && t.powered && !t.isGenerator && t.pillarTeam === "green") {
+        if (t.waveMode && t.powered && !isRelayPylon(t) && t.pillarTeam === "green") {
             t.powerFlow = 1;
             if (t.powerSource) t.powerSource.powerFlow = 1;
         }
@@ -218,7 +277,7 @@ function powerFlowTick() {
 function waveDrainTick() {
     if (typeof _pillarCache === "undefined") return;
     for (const t of _pillarCache) {
-        if (!t.waveMode || t.isGenerator || t.pillarTeam !== "green") continue;
+        if (!t.waveMode || isRelayPylon(t) || t.pillarTeam !== "green") continue;
         const src = t.powerSource || pylonSource(t);
         if (!src) { t.powered = false; continue; }
         if (!spendNestEnergy(src, POWER_WAVE_DRAIN)) {

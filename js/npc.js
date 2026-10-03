@@ -127,6 +127,8 @@ function updateRTSNPC(actor) {
             p.attackModeColor = p.chosenColor || (_chEl ? _chEl.color : actor.color) || "#0f8";
             // Neutral pylons carry no element, so the flag travels with the choice.
             p.isGenerator = (p.attackModeElement === GENERATOR_ID);
+            p.isConnector = (p.attackModeElement === CONNECTOR_ID);
+            if (p.isConnector && p.circuitOn === undefined) p.circuitOn = true;
             p.chosenElement = null; p.chosenColor = null;
             p.attackFireTimer = 0;
             p.attackRange = 2.5;
@@ -167,6 +169,8 @@ function updateRTSNPC(actor) {
                     const _chEl=PYLON_PICKER_TYPES.find(e=>e.id===p.chosenElement);
                     p.attackModeColor=p.chosenColor||(_chEl?_chEl.color:"#0f8");
                     p.isGenerator=(p.chosenElement===GENERATOR_ID);
+                    p.isConnector=(p.chosenElement===CONNECTOR_ID);
+                    if (p.isConnector && p.circuitOn === undefined) p.circuitOn = true;
                     p.attackPower=15; p.attackRange=2.5;
                     p.attackFireTimer=0; p.pulseTimer=0;
                     p.chosenElement=null; p.chosenColor=null;

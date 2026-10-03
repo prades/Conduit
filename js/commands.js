@@ -106,7 +106,7 @@ function closeElementPicker() {
 }
 
 function _executeBuild(el, t) {
-    if (el && el.id === GENERATOR_ID && !canPlaceGenerator(t).ok) { refuseGenerator(); return; }
+    if (el && isRelayId(el.id) && !canPlaceGenerator(t).ok) { refuseGenerator(el); return; }
     if (!t || shardCount < PYLON_BUILD_COST) {
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS",color:"#f44",life:90,vy:-0.2});
         return;
@@ -147,7 +147,7 @@ function _executeBuild(el, t) {
 }
 
 function _executeBuildInstant(el, t) {
-    if (el && el.id === GENERATOR_ID && !canPlaceGenerator(t).ok) { refuseGenerator(); return; }
+    if (el && isRelayId(el.id) && !canPlaceGenerator(t).ok) { refuseGenerator(el); return; }
     if (!t || shardCount < PYLON_BUILD_COST) {
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS",color:"#f44",life:90,vy:-0.2});
         return;
@@ -167,6 +167,7 @@ function _executeBuildInstant(el, t) {
         t.attackPower=15; t.attackRange=2.5;
         t.chosenElement=el.id; t.chosenColor=el.color;
         t.isGenerator=(el.id===GENERATOR_ID);
+        t.isConnector=(el.id===CONNECTOR_ID); t.circuitOn=true;
     }
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
 }
@@ -194,7 +195,7 @@ function _executeUpgrade(el, pylon) {
     if (!canUpgradePylon(pylon)) { refuseEnemyUpgrade(); return; }
     // Converting a pylon you already own into a generator is still creating
     // one, so it is held to the same placement rule.
-    if (el && el.id === GENERATOR_ID && !canPlaceGenerator(pylon).ok) { refuseGenerator(); return; }
+    if (el && isRelayId(el.id) && !canPlaceGenerator(pylon).ok) { refuseGenerator(el); return; }
     if (pylon.attackMode || pylon.waveMode) {
         // Already upgraded — just swap element directly.
         // isGenerator is set or cleared here, so converting a generator to an
@@ -202,8 +203,10 @@ function _executeUpgrade(el, pylon) {
         pylon.attackModeElement = el.id;
         pylon.attackModeColor   = el.color;
         pylon.isGenerator       = (el.id === GENERATOR_ID);
-        if (pylon.isGenerator) {
-            // A generator has no elemental zone, so it holds no wave network.
+        pylon.isConnector       = (el.id === CONNECTOR_ID);
+        if (pylon.isConnector && pylon.circuitOn === undefined) pylon.circuitOn = true;
+        if (pylon.isGenerator || pylon.isConnector) {
+            // A relay has no elemental zone, so it holds no wave network.
             pylon.waveMode = false; pylon.attackMode = true;
         }
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON → "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
@@ -330,6 +333,10 @@ function executeCommand() {
             }
             break;
         }
+        case "toggle_circuit": {
+            if (isConnectorPylon(commandTarget) && commandTarget.pillarTeam === "green") toggleConnectorCircuit(commandTarget);
+            break;
+        }
         case "reroll_follower": {
             if (commandFollowerTarget) startFollowerReroll(commandFollowerTarget);
             break;
@@ -361,7 +368,7 @@ function executeCommand() {
                 nestConnectMisses = 0;
                 pendingConnectNest = commandNestTarget;
                 floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
-                    text:"TAP A GENERATOR PYLON TO LINK",color:NEST_COLOUR_CONTROLLED,life:180,vy:-0.15});
+                    text:"TAP A GENERATOR OR CONNECTOR TO LINK",color:NEST_COLOUR_CONTROLLED,life:180,vy:-0.15});
             }
             break;
         }

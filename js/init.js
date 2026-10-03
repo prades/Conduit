@@ -60,6 +60,8 @@ async function loadConfig() {
             tile.seasoned          = saved.seasoned;
             tile.upgraded          = saved.upgraded;
             tile.isGenerator       = !!saved.isGenerator;
+            tile.isConnector       = !!saved.isConnector;
+            tile.circuitOn         = saved.circuitOn !== false;
         });
     }
     // Nests always generate at full health, so the ones already taken are

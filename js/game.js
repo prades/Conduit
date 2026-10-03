@@ -538,7 +538,7 @@ function drawPowerChain() {
         // The ONE source rule, not a second copy of it: this used to fall back to
         // the home portal for every generator, so the wire ran from the Crystal
         // across the whole map to ones it was not feeding at all.
-        const nest = generatorSource(gen);
+        const nest = relaySource(gen);
         if (!nest) continue;
         const [gx, gy] = toScreen(gen);
         const [nx, ny] = toScreen(nest);
@@ -1058,14 +1058,15 @@ function render() {
         // network tiers and integrity are computed from that list, and a
         // neutral pylon has no element to contribute to either.
         _genPylons   = _pillarCache.filter(t => t.isGenerator);
+        _conPylons   = _pillarCache.filter(t => t.isConnector);
         // Who is actually switched on. Must come after _genPylons and _nestCache
         // — the grid is worked out from the generators that carry it and the
         // nests that feed it — and BEFORE the two ability lists, which only
         // carry pylons the grid can keep running.
         _nestCache   = world.filter(t => t.nest);
         recomputePower();
-        _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement && !t.isGenerator && t.powered);
-        _aPylons     = _pillarCache.filter(t => t.attackMode && !t.isGenerator && t.powered);
+        _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement && !isRelayPylon(t) && t.powered);
+        _aPylons     = _pillarCache.filter(t => t.attackMode && !isRelayPylon(t) && t.powered);
         _uPylons     = _pillarCache.filter(t => t.upgraded);
         // ── WALL PANEL MAP — for wall-face panel rendering ──
         _wallPanelMap = new Map();
@@ -2347,6 +2348,30 @@ function render() {
                 ctx.fillStyle=NEST_COLOUR_CONTROLLED; ctx.font="bold 9px monospace"; ctx.textAlign="center";
                 ctx.shadowBlur=0; ctx.setTransform(1,0,0,1,0,0);
                 ctx.fillText("LINK",px,py-8);
+                ctx.restore();
+            }
+
+            // ── CONNECTOR: circuit state + reach ──
+            if (isConnectorPylon(obj) && obj.pillarTeam === "green") {
+                const _on = obj.circuitOn !== false;
+                ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                // The reach, as the ground ellipse a circle of CONNECTOR_RANGE
+                // tiles makes under the projection. Faint when closed.
+                const _cx = (obj.x - player.visualX - (obj.y - player.visualY)) * TILE_W + canvas.width/2;
+                const _cy = (obj.x - player.visualX + (obj.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
+                ctx.strokeStyle = CONNECTOR_COLOR; ctx.globalAlpha = _on ? 0.22 : 0.08; ctx.lineWidth = 1.5;
+                ctx.setLineDash([6,8]);
+                ctx.beginPath();
+                for (let i = 0; i <= 48; i++) {
+                    const a = i / 48 * Math.PI * 2, dx = Math.cos(a) * CONNECTOR_RANGE, dy = Math.sin(a) * CONNECTOR_RANGE;
+                    const sx = _cx + (dx - dy) * TILE_W, sy = _cy + (dx + dy) * TILE_H;
+                    i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+                }
+                ctx.stroke(); ctx.setLineDash([]);
+                ctx.globalAlpha = 1;
+                ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+                ctx.fillStyle = _on ? CONNECTOR_COLOR : "#f88";
+                ctx.fillText(_on ? "\u25cf CIRCUIT ON" : "\u25cb CIRCUIT OFF", _cx, _cy - 78);
                 ctx.restore();
             }
 

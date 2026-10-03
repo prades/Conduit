@@ -36,6 +36,7 @@ const SUITES = [
     ['HUD layout',             'hud.js'],
     ['walkable bounds',        'bounds.js'],
     ['power grid',             'power.js'],
+    ['connector pylon',        'connector.js'],
 ];
 
 let failed = 0;

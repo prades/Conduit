@@ -143,7 +143,11 @@ function drawRadialMenu() {
     // one, and it is what kills the cocoon anchored to it.
     const isEnemyPylon = commandTarget && commandTarget.pillar && !commandTarget.destroyed
                          && commandTarget.health > 0 && commandTarget.pillarTeam === "red";
+    const isMyConnector = isPylonTarget && isConnectorPylon(commandTarget) && commandTarget.pillarTeam === "green";
     if (isEnemyPylon) { leftLabel="RECLAIM"; leftAction="reconstruct"; }
+    // A connector has no attack/wave mode to switch — its left button is the
+    // circuit, and says what pressing it will DO.
+    else if (isMyConnector) { leftLabel = commandTarget.circuitOn === false ? "CLOSE CIRCUIT" : "OPEN CIRCUIT"; leftAction = "toggle_circuit"; }
     else if (!isPylonSwitchable) {
         // A live nest has no order of its own any more: the only thing you do to
         // one is HACK it, by standing in front of it, and that is not a button.

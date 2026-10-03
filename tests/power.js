@@ -579,7 +579,7 @@ async function boot() {
         ok(at > -1, 'the chain is never drawn');
         const body = SRC.game.slice(at, SRC.game.indexOf('\nfunction ', at + 10));
         ok(/t\.powerGen/.test(body), 'it does not follow the recorded generator');
-        ok(/generatorSource\(gen\)/.test(body), 'it does not ask the one source rule for the nest');
+        ok(/relaySource\(gen\)/.test(body), 'it does not ask the one source rule for the nest');
         ok(/powerFlowOf\(t\)/.test(body), 'the wire does not follow the actual draw');
     });
 
