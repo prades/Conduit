@@ -599,7 +599,7 @@ canvas.addEventListener('pointerup', e=>{
                 // Left side. Mirrors drawRadialMenu's leftAction, enemy pylon first.
                 else if (_isPyCmd && commandTarget.pillarTeam === "red" && commandTarget.health > 0)
                                        selectedRadialAction = "reconstruct";
-                else if (_isPyCmd && isConnectorPylon(commandTarget) && commandTarget.pillarTeam === "green")
+                else if (_isPyCmd && isSwitchableRelay(commandTarget) && commandTarget.pillarTeam === "green")
                                        selectedRadialAction = "toggle_circuit";
                 else if (isBrokenNest) selectedRadialAction = "connect_nest";
                 else                   selectedRadialAction = "switch_context";

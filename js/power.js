@@ -72,6 +72,8 @@ function generatorFeeding(t) {
     let best = null, bestD = r * r;
     for (const gen of _genPylons) {
         if (gen === t) continue;
+        // A generator that has been switched off feeds nothing.
+        if (gen.circuitOn === false) continue;
         const dx = gen.x - t.x, dy = gen.y - t.y;
         const d2 = dx * dx + dy * dy;
         if (d2 <= bestD) { bestD = d2; best = gen; }
@@ -100,7 +102,7 @@ function homePortalTile() {
 // anything — and that generator is built beside home, so it keeps working. A
 // generator out in a zone has to be wired to a nest of its own.
 function generatorSource(gen) {
-    if (!gen || !isGeneratorPylon(gen)) return null;
+    if (!gen || !isGeneratorPylon(gen) || gen.circuitOn === false) return null;
     const linked = gen.nestConnection;
     if (linked && nestIsPowerSource(linked)) return linked;
     return nearestDrawableNest(gen);
@@ -170,19 +172,25 @@ function relaySource(r) {
     return isConnectorPylon(r) ? connectorSource(r) : generatorSource(r);
 }
 
-function toggleConnectorCircuit(c) {
-    if (!isConnectorPylon(c)) return false;
-    c.circuitOn = c.circuitOn === false;   // false → true, anything else → false
+// Turn a relay on or off: a connector's circuit, or a generator's output. Either
+// way every pylon it was feeding loses power until it is switched back.
+function toggleRelayCircuit(r) {
+    if (!isSwitchableRelay(r)) return false;
+    r.circuitOn = r.circuitOn === false;   // false → true, anything else → false
     recomputePower();
-    // The wave and attack lists are rebuilt on the 60-frame cache; a circuit
-    // change should land now, not a second later.
+    // The wave and attack lists are rebuilt on the 60-frame cache; a switch
+    // should land now, not a second later.
     if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
-    if (typeof tutorialNoteCircuit === "function") tutorialNoteCircuit(c);
+    if (typeof tutorialNoteCircuit === "function") tutorialNoteCircuit(r);
+    const gen = isGeneratorPylon(r);
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
-        text: c.circuitOn ? "CIRCUIT CLOSED — POWER FLOWING" : "CIRCUIT OPEN — GROUP DARK",
-        color: c.circuitOn ? CONNECTOR_COLOR : "#f88", life: 110, vy: -0.25, size: 12 });
+        text: r.circuitOn ? (gen ? "GENERATOR ON \u2014 POWER FLOWING" : "CIRCUIT CLOSED \u2014 POWER FLOWING")
+                          : (gen ? "GENERATOR OFF \u2014 PYLONS DARK" : "CIRCUIT OPEN \u2014 GROUP DARK"),
+        color: r.circuitOn ? (gen ? "#8fd6ff" : CONNECTOR_COLOR) : "#f88", life: 110, vy: -0.25, size: 12 });
     return true;
 }
+// The connector's name for it, kept for the callers that grew up with it.
+function toggleConnectorCircuit(c) { return isConnectorPylon(c) ? toggleRelayCircuit(c) : false; }
 
 // The feeder this pylon draws along and the pool behind it. A generator beside
 // it comes first; if that has nothing to give, a connector in reach is next.
@@ -357,6 +365,7 @@ function pylonPowerState(t) {
                    : { text: "NO NEST IN REACH \u2014 LINK ONE", colour: "#f88" };
     }
     if (isGeneratorPylon(t)) {
+        if (t.circuitOn === false) return { text: "SWITCHED OFF \u2014 PYLONS DARK", colour: "#f88" };
         const src = generatorSource(t);
         return src ? { text: "FEEDING \u00b7 NEST " + pct(src), colour: "#8fd6ff" }
                    : { text: "NO NEST IN REACH \u2014 LINK ONE", colour: "#f88" };
@@ -364,6 +373,10 @@ function pylonPowerState(t) {
     if (!(t.waveMode || t.attackMode)) return { text: "NONE NEEDED (DORMANT)", colour: "#888" };
     if (t.waveTripped) return { text: "SHUT OFF \u2014 WAITING FOR THE NEST TO REFILL", colour: "#ff7755" };
     const route = powerRoute(t);
+    // A generator in reach that has been turned off is the likeliest reason.
+    if (!route.source && _genPylons.some(g => g.circuitOn === false && g !== t &&
+            Math.hypot(g.x - t.x, g.y - t.y) <= getPylonRange()))
+        return { text: "GENERATOR IS OFF \u2014 TURN IT BACK ON", colour: "#f88" };
     if (!route.feeder && !route.source) return { text: "NO GENERATOR OR CONNECTOR IN REACH", colour: "#f88" };
     if (!route.source) return { text: "FEEDER HAS NO NEST \u2014 LINK ONE", colour: "#f88" };
     if (!(nestEnergy(route.source) >= powerPriceOf(t) + POWER_MIN_RESERVE)) return { text: "NEST EMPTY", colour: "#ff7755" };

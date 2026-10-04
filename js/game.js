@@ -629,6 +629,7 @@ function rebuildGeneratorLinks() {
     if (_genPylons.length === 0) return;
     const r = getPylonRange(), r2 = r * r;
     for (const gen of _genPylons) {
+        if (gen.circuitOn === false) continue;   // switched off: it mends nothing either
         for (const t of _pillarCache) {
             if (t === gen) continue;
             if (t.pillarTeam !== "green") continue;   // allies only
@@ -1444,7 +1445,8 @@ function render() {
             }
             return;
         }
-        nearest._shotByPylon = true;   // the tutorial's "kill with your pylons" step reads this
+        nearest._shotByPylon = true;
+        t._lastShotFrame = frame;      // the turret's muzzle flash reads this   // the tutorial's "kill with your pylons" step reads this
         // Spawn missile projectile
         const col = t.attackModeColor || "#0f8";
         spawnFollowerProjectile(
@@ -2402,6 +2404,18 @@ function render() {
                 ctx.restore();
             }
 
+            // ── GENERATOR: on/off state ──
+            if (isGeneratorPylon(obj) && obj.pillarTeam === "green") {
+                const _gon = obj.circuitOn !== false;
+                const _gx = (obj.x - player.visualX - (obj.y - player.visualY)) * TILE_W + canvas.width/2;
+                const _gy = (obj.x - player.visualX + (obj.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
+                ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+                ctx.fillStyle = _gon ? "#8fd6ff" : "#f88";
+                ctx.fillText(_gon ? "\u25cf GENERATOR ON" : "\u25cb GENERATOR OFF", _gx, _gy - 78);
+                ctx.restore();
+            }
+
             // ── NETWORK NODE TILE HIGHLIGHT ──
             if (obj.pillar&&!obj.destroyed&&obj.pillarTeam==="green"&&obj.health>0&&obj.attackModeElement) {
                 const _gelDef = PYLON_PICKER_TYPES.find(e=>e.id===obj.attackModeElement);
@@ -2573,6 +2587,9 @@ function render() {
                     ctx.fillStyle=_acol; ctx.globalAlpha=0.7+_pulse*0.3;
                     ctx.beginPath(); ctx.arc(px,_orbY,_orbR,0,Math.PI*2); ctx.fill();
                     ctx.restore();
+                    // A pylon in turret mode wears a self-aiming gun that tracks
+                    // and locks onto whatever it is about to shoot.
+                    if (obj.attackMode && !isRelayPylon(obj)) drawPylonTurret(obj, px, _orbY, _acol, _dark);
                     // Element + tier label
                     const PYLON_FX_TIER={fire:["fire wall","heavy burn","ignite spread"],ice:["ice field","chill zone","deep freeze"],electric:["arc chain","arc boost","max arc"],core:["shield barrier","fast shields","regen shields"],flux:["gravity well","chain pull","vortex"],toxic:["corrodes enemies","shred+plague","plague cloud"]};
                     const PYLON_FX2={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity well",toxic:"corrodes enemies"};

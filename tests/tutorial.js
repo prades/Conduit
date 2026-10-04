@@ -1122,8 +1122,8 @@ check('the circuit step needs the circuit OPENED and then CLOSED again', () => {
 
 check('the game reports a circuit switch to the tutorial', () => {
     const POWER = fs.readFileSync(path.join(ROOT, 'js/power.js'), 'utf8');
-    const at = POWER.indexOf('function toggleConnectorCircuit');
-    ok(/tutorialNoteCircuit/.test(POWER.slice(at, at + 700)), 'toggleConnectorCircuit never tells the tutorial');
+    const at = POWER.indexOf('function toggleRelayCircuit');
+    ok(/tutorialNoteCircuit/.test(POWER.slice(at, at + 700)), 'toggleRelayCircuit never tells the tutorial');
 });
 
 // A board with a generator-fed, powered turret, and the pylon-kill step reached.

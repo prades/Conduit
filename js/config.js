@@ -162,6 +162,10 @@ function isConnectorPylon(t) {
     return !!(t && t.pillar && !t.destroyed && t.health > 0 && t.isConnector);
 }
 // Either neutral relay: carries power, spends none, holds no element.
+// A relay that has a switch you can flip: either kind can be turned off. Off, a
+// generator feeds nothing (and mends nothing) and a connector feeds nothing, so
+// whatever hangs off it goes dark until it is turned back on.
+function isSwitchableRelay(t) { return isGeneratorPylon(t) || isConnectorPylon(t); }
 function isRelayPylon(t) { return !!(t && (t.isGenerator || t.isConnector)); }
 
 // The generator is neutral, so it is never behind an element unlock — it is
@@ -294,6 +298,9 @@ const ALERT_DURATION = 600; // 10 seconds at 60fps
 // ELECTRIC WAVE HASTE — the move-speed multiplier a friendly gets while standing
 // in an electric wave zone, by network tier. It lingers ELECTRIC_HASTE_FRAMES
 // after they step out, so the edge of the zone does not stutter.
+// A turret-mode pylon wears a gun that tracks anything hostile inside
+// attackRange x this, and shows a lock once it is inside firing range.
+const TURRET_TRACK_RANGE_MULT = 1.6;
 const ELECTRIC_HASTE = { 1: 1.35, 2: 1.6, 3: 1.9 };
 const ELECTRIC_HASTE_FRAMES = 12;
 // PRESSURE BETWEEN ALARMS. Predators leave pylons alone, except for this share

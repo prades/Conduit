@@ -334,7 +334,7 @@ function executeCommand() {
             break;
         }
         case "toggle_circuit": {
-            if (isConnectorPylon(commandTarget) && commandTarget.pillarTeam === "green") toggleConnectorCircuit(commandTarget);
+            if (isSwitchableRelay(commandTarget) && commandTarget.pillarTeam === "green") toggleRelayCircuit(commandTarget);
             break;
         }
         case "reroll_follower": {

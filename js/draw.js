@@ -143,11 +143,16 @@ function drawRadialMenu() {
     // one, and it is what kills the cocoon anchored to it.
     const isEnemyPylon = commandTarget && commandTarget.pillar && !commandTarget.destroyed
                          && commandTarget.health > 0 && commandTarget.pillarTeam === "red";
-    const isMyConnector = isPylonTarget && isConnectorPylon(commandTarget) && commandTarget.pillarTeam === "green";
+    const isMyConnector = isPylonTarget && isSwitchableRelay(commandTarget) && commandTarget.pillarTeam === "green";
     if (isEnemyPylon) { leftLabel="RECLAIM"; leftAction="reconstruct"; }
     // A connector has no attack/wave mode to switch — its left button is the
     // circuit, and says what pressing it will DO.
-    else if (isMyConnector) { leftLabel = commandTarget.circuitOn === false ? "CLOSE CIRCUIT" : "OPEN CIRCUIT"; leftAction = "toggle_circuit"; }
+    else if (isMyConnector) {
+        // A generator is turned on and off; a connector has a circuit to open and close.
+        const _gen = isGeneratorPylon(commandTarget), _off = commandTarget.circuitOn === false;
+        leftLabel = _gen ? (_off ? "TURN ON" : "TURN OFF") : (_off ? "CLOSE CIRCUIT" : "OPEN CIRCUIT");
+        leftAction = "toggle_circuit";
+    }
     else if (!isPylonSwitchable) {
         // A live nest has no order of its own any more: the only thing you do to
         // one is HACK it, by standing in front of it, and that is not a button.
@@ -1884,6 +1889,104 @@ function drawNestWallVortex(px, py, r, colour, spin, glow, alpha) {
 // rotation. Green, steady and open, against the hives' orange churn.
 const PORTAL_R = 30;
 const PORTAL_COLOUR = "#2bff9b";
+
+// ── THE PYLON TURRET ─────────────────────────────────────
+// "Whenever the pylon is in turret mode it has a little self-aiming turret on top
+// that will lock onto the enemy targets." Pure presentation: firing is still the
+// attack pass in game.js. The gun turns smoothly toward the nearest hostile it
+// can see (inside attackRange x TURRET_TRACK_RANGE_MULT), draws a dashed lock
+// line and a reticle on it once it is inside firing range, flashes when a shot
+// is paid for, and sweeps slowly when there is nothing to aim at. A pylon with
+// no power droops: grey, still, and aimed at nothing.
+function turretTarget(obj) {
+    // Rescanned a few times a second, not every frame: the actors list is long
+    // and the pylons on screen are not few.
+    if (obj._tScan === undefined || frame - obj._tScan >= 6 || (obj._tTarget && obj._tTarget.dead)) {
+        obj._tScan = frame;
+        let best = null, bd2 = Math.pow((obj.attackRange || 2.5) * TURRET_TRACK_RANGE_MULT, 2);
+        for (const a of actors) {
+            if (!a || a.dead || !isHostileTarget(a)) continue;
+            const dx = a.x - obj.x, dy = a.y - obj.y, d2 = dx * dx + dy * dy;
+            if (d2 < bd2) { bd2 = d2; best = a; }
+        }
+        obj._tTarget = best;
+    }
+    return obj._tTarget;
+}
+
+function drawPylonTurret(obj, px, topY, colour, dark) {
+    const range = obj.attackRange || 2.5;
+    const target = dark ? null : turretTarget(obj);
+    const cx = px, cy = topY - 5;     // the gun's pivot, just above the merlons
+    // Aim: the screen direction of the world vector to the target.
+    let want = obj._tAng === undefined ? -Math.PI / 4 : obj._tAng;
+    let locked = false, tx = 0, ty = 0;
+    if (target) {
+        const dx = target.x - obj.x, dy = target.y - obj.y;
+        want = Math.atan2((dx + dy) * TILE_H, (dx - dy) * TILE_W);
+        tx = (target.x - player.visualX - (target.y - player.visualY)) * TILE_W + canvas.width / 2;
+        ty = (target.x - player.visualX + (target.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - 26;
+        locked = Math.hypot(dx, dy) <= range;
+    } else if (!dark) {
+        want = (obj._tAng === undefined ? -Math.PI / 4 : obj._tAng) + 0.02;   // idle sweep
+    }
+    if (obj._tAng === undefined) obj._tAng = want;
+    if (target || dark) {
+        let d = want - obj._tAng;
+        while (d >  Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        obj._tAng += d * (dark ? 0.02 : 0.22);
+    } else {
+        obj._tAng = want;
+    }
+    const ang = obj._tAng, ux = Math.cos(ang), uy = Math.sin(ang);
+    const body = dark ? "#3a3f48" : "#2a3040";
+    ctx.save();
+    // Turret ring and housing.
+    ctx.fillStyle = body; ctx.strokeStyle = colour; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(cx, cy + 2, 7, 3.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // Barrel: a thick dark line with a bright core, drawn along the aim.
+    const len = 15, bx = cx + ux * len, by = cy + uy * len * 0.9;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#11151c"; ctx.lineWidth = 4.5;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.strokeStyle = dark ? "#59606b" : colour; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by); ctx.stroke();
+    // Gun head.
+    ctx.fillStyle = dark ? "#4a4f58" : "#39465c";
+    ctx.beginPath(); ctx.arc(cx, cy, 4.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = colour; ctx.lineWidth = 1; ctx.stroke();
+    if (!dark) {
+        // Sensor eye, brighter while it has something in sight.
+        ctx.fillStyle = target ? "#ff4040" : colour; ctx.globalAlpha = target ? 1 : 0.6;
+        ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        // Lock: a dashed line to the target and a turning reticle.
+        if (target && locked) {
+            ctx.strokeStyle = "rgba(255,70,70,0.75)"; ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(tx, ty); ctx.stroke(); ctx.setLineDash([]);
+            const r = 9 + Math.sin(frame * 0.3) * 1.5, rot = frame * 0.08;
+            ctx.strokeStyle = "rgba(255,70,70,0.9)"; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(tx, ty, r, 0, Math.PI * 2); ctx.stroke();
+            for (let i = 0; i < 4; i++) {
+                const a = rot + i * Math.PI / 2;
+                ctx.beginPath(); ctx.moveTo(tx + Math.cos(a) * (r - 3), ty + Math.sin(a) * (r - 3));
+                ctx.lineTo(tx + Math.cos(a) * (r + 4), ty + Math.sin(a) * (r + 4)); ctx.stroke();
+            }
+        } else if (target) {
+            // Tracking but not in range yet: a faint tick on the target.
+            ctx.strokeStyle = "rgba(255,160,60,0.55)"; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(tx, ty, 7, 0, Math.PI * 2); ctx.stroke();
+        }
+        // Muzzle flash on the frame a shot was paid for.
+        if (obj._lastShotFrame !== undefined && frame - obj._lastShotFrame < 6) {
+            const k = 1 - (frame - obj._lastShotFrame) / 6;
+            ctx.fillStyle = "rgba(255,240,200," + (0.9 * k) + ")";
+            ctx.shadowColor = colour; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.arc(bx + ux * 3, by + uy * 3, 3 + 3 * k, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+    ctx.restore();
+}
 
 // ── THE POWER GAUGE ──────────────────────────────────────
 // "A percentage level on top of the nest, with a progress bar — in this case a
