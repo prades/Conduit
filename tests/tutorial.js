@@ -1197,8 +1197,37 @@ check('the tutorial never spawns more than a handful of bugs overall', () => {
         }
     }
     seen = foesNow(env).length;
-    const cap = 1 + env.run('TUT_SQUAD_FOES') + env.run('TUT_PYLON_FOE_CAP');
+    const cap = 1 + env.run('TUT_SQUAD_FOES') + env.run('TUT_ARM_FOES') + env.run('TUT_PYLON_FOE_CAP');
     ok(seen <= cap, 'a full play-through spawned ' + seen + ' bugs, more than the ' + cap + ' it budgets');
+});
+
+check('THE ASK: the weapon lesson sends ONE bug and ends when the weapon is armed', () => {
+    const env = populate(makeEnv());
+    env.sandbox.playerAmmo = 0; env.sandbox.PLAYER_AMMO_START = 12;
+    env.run('startTutorial()');
+    gotoStep(env, 'arm');
+    env.run('tutorialTick()');
+    eq(foesNow(env).length, 1, 'the arm step should provide exactly one bug');
+    eq(env.run('playerAmmo'), 12, 'the step armed the player with no ammo to fire');
+    for (let i = 0; i < 100; i++) env.run('tutorialTick()');
+    eq(foesNow(env).length, 1, 'more bugs were sent while waiting');
+    eq(env.run('TUTS[tutorialStep].id'), 'arm', 'completed without arming');
+    env.run('tutorialNoteArm()');
+    env.run('tutorialTick()');
+    ok(env.run('TUTS[tutorialStep].id') !== 'arm', 'arming the weapon did not finish the step');
+});
+
+check('the game tells the tutorial when the weapon is armed', () => {
+    const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+    const at = INPUT.indexOf('function setPlayerAttackMode');
+    ok(/tutorialNoteArm/.test(INPUT.slice(at, at + 300)), 'setPlayerAttackMode never tells the tutorial');
+});
+
+check('the arm step says the ring and the cost, and sits before the pylon lessons', () => {
+    const tuts = makeEnv().run('TUTS');
+    const arm = tuts.find(s => s.id === 'arm');
+    ok(/HOLD/.test(arm.body) && /ATTACK/.test(arm.body) && /ammo/i.test(arm.body), 'the step does not teach the ring, ATTACK and ammo');
+    ok(tuts.findIndex(s => s.id === 'arm') < tuts.findIndex(s => s.id === 'upgrade'), 'it comes after the pylon lessons');
 });
 
 check('the pylon-kill step flashes BUILD only when there is no turret yet', () => {

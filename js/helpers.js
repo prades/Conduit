@@ -231,6 +231,9 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (target.spawnProtection && target.spawnProtection > 0) return;
     // Command Node — 10% ATK bonus for followers dealing damage
     if (source && source.isFollower && source.team === "green") amount *= getFollowerAttackMult();
+    // BERSERKER: the trait sets damageMultiplier (1.5 under 30% health). It used
+    // to be read in one job branch only, so it did nothing in ordinary combat.
+    if (source && source.team === "green" && source.damageMultiplier > 1) amount *= source.damageMultiplier;
     // ARMY SURGE. Applied here rather than at each attack because the twelve
     // damage expressions in js/elements.js all funnel through this one
     // function — patching them individually would have missed one.

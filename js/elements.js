@@ -455,6 +455,10 @@ const FOLLOWER_ULTIMATES = {
                 if (!f._empBoostTimer || f._empBoostTimer<=0) {
                     f._empBaseSpeed = f.moveSpeed;
                     f.moveSpeed = f._empBaseSpeed * 1.5;
+                    // tickSlowSpeed pins moveSpeed back to baseMoveSpeed every
+                    // frame, which undid this boost within a frame — so the
+                    // base is raised with it and put back when it ends.
+                    if (f.baseMoveSpeed !== undefined) { f._empBaseBase = f.baseMoveSpeed; f.baseMoveSpeed = f.baseMoveSpeed * 1.5; }
                 }
                 f._empBoostTimer = 300;
                 spawnElementEffect({type:"impact",x:f.x,y:f.y,color:"#ffee33",radius:0.8,life:20,element:"electric"});

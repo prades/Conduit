@@ -50,7 +50,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
 // Every number read out of config.js rather than restated, so retuning the
 // economy moves these checks with it instead of breaking them.
 const C = configNums(['NEST_ENERGY_BASE', 'NEST_ENERGY_ZONE', 'NEST_ENERGY_REGEN',
-                      'NEST_ENERGY_HOME', 'POWER_SHOT_COST', 'POWER_WAVE_DRAIN', 'POWER_RESTART_LEVEL']);
+                      'NEST_ENERGY_HOME', 'POWER_SHOT_COST', 'POWER_WAVE_DRAIN', 'POWER_RESTART_LEVEL', 'POWER_WAVE_SHARE', 'POWER_SHED_FRAMES']);
 
 async function boot() {
     const sandbox = makeBrowserSandbox({ tubecrawler_seed: '305419896' });
@@ -466,6 +466,29 @@ async function boot() {
         const after = E.run(`(function(){ const n = world.find(t => t.nest && t.nestZone === 1);
             for (let i = 0; i < 300; i++) render(); return n.nestEnergy; })()`);
         ok(after > 5, 'a shut-off wave pylon kept draining the pool, it is ' + after);
+    });
+
+    check('THE ASK: wave pylons on one pool SHARE the drain — six cost 1.5x one, not 6x', () => {
+        const share = E.run('POWER_WAVE_SHARE');
+        const frames = 200;
+        const lost = plan => { const r = board(plan, null, frames); return C.NEST_ENERGY_HOME - r.homeEnergy; };
+        const one = lost('GW'), three = lost('GWWW');
+        const k = n => 1 + (n - 1) * share;
+        const net = n => C.POWER_WAVE_DRAIN * k(n) * frames - C.NEST_ENERGY_REGEN * frames;
+        ok(one > 0, 'fixture: one wave pylon drained nothing');
+        ok(Math.abs(three / one - net(3) / net(1)) < 0.15, 'three cost ' + (three / one).toFixed(2) + 'x one, expected ~' + (net(3) / net(1)).toFixed(2) + 'x');
+        ok(three < one * 2.2, 'three pylons still cost about three times one (' + (three / one).toFixed(2) + 'x)');
+    });
+
+    check('THE ASK: a failing network sheds ONE pylon at a time, not all on the same frame', () => {
+        board('GWWW', [{ zone: 1, taken: true, linkTo: 0, energy: 0.001 }], 1);
+        const trippedAfter = n => E.run(`(function(){ for (let i = 0; i < ${n}; i++) render();
+            return world.filter(t => t.pillar && t.waveMode && t.waveTripped).length; })()`);
+        const early = trippedAfter(20);
+        ok(early >= 1, 'nothing shut off with the pool empty');
+        ok(early < 3, 'the whole network shut off at once (' + early + ' of 3)');
+        const later = trippedAfter(E.run('POWER_SHED_FRAMES') * 3);
+        ok(later > early, 'it never shed another pylon once time had passed (' + later + ')');
     });
 
     check('switching back to attack clears the shut-off flag', () => {

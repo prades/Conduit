@@ -296,6 +296,15 @@ const ALERT_DURATION = 600; // 10 seconds at 60fps
 // after they step out, so the edge of the zone does not stutter.
 const ELECTRIC_HASTE = { 1: 1.35, 2: 1.6, 3: 1.9 };
 const ELECTRIC_HASTE_FRAMES = 12;
+// PRESSURE BETWEEN ALARMS. Predators leave pylons alone, except for this share
+// of them — hunters, chosen when they spawn — which, left undisturbed, walk to
+// a green pylon of yours and work it over to their side (infest.js). That is
+// what keeps nests, the mass-fetch rule and fire's scour job alive without
+// making every wanderer a threat.
+const PYLON_HUNTER_SHARE = 0.25;
+// The crystal heals slowly while no alarm is up, so one bad night is not a
+// permanent wound: 0.01 a frame is 0.6 a second, about eight minutes from empty.
+const CRYSTAL_REGEN = 0.01;
 const PYLON_AGGRO_EXPOSURE  = 45;
 const PYLON_AGGRO_TRAP_RATE = 3;
 // Frames between bashes once it is in reach, and the distance at which it
@@ -427,6 +436,16 @@ const POWER_WAVE_DRAIN   = 0.03;  // per frame → 1.8/s
 // refilled to this fraction of its capacity, so it does not stutter on and off
 // as regen trickles in.
 const POWER_RESTART_LEVEL = 0.25;
+// WAVE PYLONS SHARE A NETWORK. The first wave pylon on a pool costs the full
+// POWER_WAVE_DRAIN; every further one on the SAME pool adds only this fraction
+// of it, because they are one zone, not six. Six pylons cost 1 + 5 x 0.1 = 1.5
+// times one, so a tier III network can actually be held instead of costing six
+// times as much as the tier I pair that makes it possible.
+const POWER_WAVE_SHARE = 0.1;
+// When a pool cannot pay, wave pylons shut off ONE AT A TIME this many frames
+// apart rather than all in the same frame, so a failing network dims through
+// its tiers instead of switching off at once.
+const POWER_SHED_FRAMES = 180;
 // Below this a pool cannot start a shot, so a turret does not fire a round it
 // has not paid for.
 const POWER_MIN_RESERVE  = 0;

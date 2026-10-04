@@ -174,6 +174,9 @@ function toggleConnectorCircuit(c) {
     if (!isConnectorPylon(c)) return false;
     c.circuitOn = c.circuitOn === false;   // false → true, anything else → false
     recomputePower();
+    // The wave and attack lists are rebuilt on the 60-frame cache; a circuit
+    // change should land now, not a second later.
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
     if (typeof tutorialNoteCircuit === "function") tutorialNoteCircuit(c);
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
         text: c.circuitOn ? "CIRCUIT CLOSED — POWER FLOWING" : "CIRCUIT OPEN — GROUP DARK",
@@ -234,13 +237,23 @@ function recomputePower() {
             floatingTexts.push({ x: t.x, y: t.y - 1, text: "WAVE BACK ONLINE", color: "#8fd6ff", life: 70, vy: -0.06 });
         }
         if (!t.waveMode) t.waveTripped = false;
-        t.powered = !!t.powerSource && !t.waveTripped && nestEnergy(t.powerSource) > POWER_MIN_RESERVE;
+        // Lit means the pool can pay for what this pylon DOES, not merely that it
+        // holds something: with 0 < energy < the price of a shot a turret used to
+        // look powered and sit silent.
+        t.powered = !!t.powerSource && !t.waveTripped &&
+                    nestEnergy(t.powerSource) >= powerPriceOf(t) + POWER_MIN_RESERVE;
     }
     // The pools worth showing: every one something is drawing on, plus home.
     const seen = new Set();
     for (const t of _pillarCache) {
         if (t.powerSource && !seen.has(t.powerSource)) { seen.add(t.powerSource); _powerPools.push(t.powerSource); }
     }
+}
+
+// What one use costs this pylon: a shot for a turret, a frame of draw for a
+// wave pylon.
+function powerPriceOf(t) {
+    return (t && t.waveMode) ? POWER_WAVE_DRAIN : POWER_SHOT_COST;
 }
 
 // Does this pylon spend anything at all? A plain pylon still stands, still
@@ -295,25 +308,66 @@ function powerFlowTick() {
     }
 }
 
-// Wave mode's constant draw, once a frame per wave pylon. Switching back to
-// attack mode or losing the generator stops it; so does running the pool dry —
-// the pylon then SHUTS OFF (tripped) and stays off until the nest has refilled
-// to POWER_RESTART_LEVEL, rather than limping on and off with the regen.
+// Wave mode's constant draw, once a frame per POOL (not per pylon).
+//
+// Every wave pylon drawing on the same nest is one network. The first costs the
+// full POWER_WAVE_DRAIN and each extra adds POWER_WAVE_SHARE of it — see config.
+// When the pool cannot pay, the network sheds ONE pylon, and then waits
+// POWER_SHED_FRAMES before it will shed another; in between, what is left runs
+// on what the pool still has. So a dying grid steps down through its tiers
+// instead of every pylon tripping on the same frame. Switching a pylon back to
+// attack mode, losing its generator, or being tripped are the other ways off.
 function waveDrainTick() {
     if (typeof _pillarCache === "undefined") return;
+    const groups = new Map();
     for (const t of _pillarCache) {
         if (!t.waveMode || isRelayPylon(t) || t.pillarTeam !== "green") continue;
         if (t.waveTripped) { t.powered = false; continue; }
         const src = t.powerSource || pylonSource(t);
         if (!src) { t.powered = false; continue; }
-        if (!spendNestEnergy(src, POWER_WAVE_DRAIN)) {
-            t.waveTripped = true;
-            t.powered = false;
-            floatingTexts.push({ x: t.x, y: t.y - 1, text: "WAVE OFFLINE \u2014 OUT OF POWER", color: "#ff7755", life: 110, vy: -0.08 });
-            // Out of the zone lists at once, not at the next 60-frame rebuild.
-            if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
-        }
+        if (!groups.has(src)) groups.set(src, []);
+        groups.get(src).push(t);
     }
+    for (const [src, list] of groups) {
+        const cost = POWER_WAVE_DRAIN * (1 + (list.length - 1) * POWER_WAVE_SHARE);
+        if (spendNestEnergy(src, cost)) continue;
+        // Cannot pay. Shed one, then give the rest time before shedding more.
+        if (typeof frame !== "undefined" && src._shedAt !== undefined && frame - src._shedAt < POWER_SHED_FRAMES) continue;
+        const victim = list[list.length - 1];
+        victim.waveTripped = true;
+        victim.powered = false;
+        src._shedAt = (typeof frame !== "undefined") ? frame : 0;
+        floatingTexts.push({ x: victim.x, y: victim.y - 1, text: "WAVE OFFLINE \u2014 OUT OF POWER", color: "#ff7755", life: 110, vy: -0.08 });
+        // Out of the zone lists at once, not at the next 60-frame rebuild.
+        if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+    }
+}
+
+// ── WHY IS IT DARK ───────────────────────────────────────
+// One plain sentence for a pylon's power state, for the INFO panel and the
+// out-of-power messages, so the reason is a lookup rather than a guess.
+function pylonPowerState(t) {
+    const pct = n => n ? Math.round(100 * nestEnergy(n) / Math.max(1, nestEnergyMax(n))) + "%" : "";
+    if (!t || !t.pillar) return { text: "\u2014", colour: "#888" };
+    if (t.pillarTeam !== "green") return { text: "NOT YOURS \u2014 NO POWER", colour: "#f66" };
+    if (isConnectorPylon(t)) {
+        if (t.circuitOn === false) return { text: "CIRCUIT OPEN \u2014 FEEDING NOTHING", colour: "#f88" };
+        const src = connectorSource(t);
+        return src ? { text: "CIRCUIT CLOSED \u00b7 NEST " + pct(src), colour: "#ffd24a" }
+                   : { text: "NO NEST IN REACH \u2014 LINK ONE", colour: "#f88" };
+    }
+    if (isGeneratorPylon(t)) {
+        const src = generatorSource(t);
+        return src ? { text: "FEEDING \u00b7 NEST " + pct(src), colour: "#8fd6ff" }
+                   : { text: "NO NEST IN REACH \u2014 LINK ONE", colour: "#f88" };
+    }
+    if (!(t.waveMode || t.attackMode)) return { text: "NONE NEEDED (DORMANT)", colour: "#888" };
+    if (t.waveTripped) return { text: "SHUT OFF \u2014 WAITING FOR THE NEST TO REFILL", colour: "#ff7755" };
+    const route = powerRoute(t);
+    if (!route.feeder && !route.source) return { text: "NO GENERATOR OR CONNECTOR IN REACH", colour: "#f88" };
+    if (!route.source) return { text: "FEEDER HAS NO NEST \u2014 LINK ONE", colour: "#f88" };
+    if (!(nestEnergy(route.source) >= powerPriceOf(t) + POWER_MIN_RESERVE)) return { text: "NEST EMPTY", colour: "#ff7755" };
+    return { text: "POWERED \u00b7 NEST " + pct(route.source), colour: "#8fd6ff" };
 }
 
 // ── THE READOUT ──────────────────────────────────────────

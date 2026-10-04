@@ -38,6 +38,9 @@ const SUITES = [
     ['power grid',             'power.js'],
     ['connector pylon',        'connector.js'],
     ['electric haste',         'haste.js'],
+    ['traits + hybrid',        'traits.js'],
+    ['pressure + regen',       'pressure.js'],
+    ['player-facing clarity',  'ux.js'],
 ];
 
 let failed = 0;

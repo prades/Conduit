@@ -12,11 +12,13 @@ let tutFoes         = [];      // EVERY bug the tutorial has spawned, so it can 
 let tutCircuitOpened = false;  // the connector's circuit has been opened at least once
 let tutPylonKill     = false;  // a bug has been killed by a pylon's fire
 let tutPylonFoeSpawns = 0;     // bugs sent at the pylons so far (capped, never endless)
+let tutArmed         = false;  // the weapon has been armed from a bug's ring
 
 // The tutorial NEVER spawns bugs endlessly. Each lesson that needs enemies gets
 // a fixed number, and the lesson ends when they are dealt with — killed as part
 // of the lesson, not respawned until the player happens to comply.
 const TUT_SQUAD_FOES      = 2;   // one per order: SEL, then ALL
+const TUT_ARM_FOES        = 1;   // the weapon lesson gets one bug
 const TUT_PYLON_FOE_CAP   = 2;   // sent at the pylons; if both die some other way the step moves on
 
 // A weak ant scout, spawned next to the player so the circle-to-kill lesson has
@@ -182,6 +184,13 @@ function tutorialNoteKill(actor) {
     if (step.id === 'pylonkill' && actor._shotByPylon) tutPylonKill = true;
 }
 
+// The weapon was armed (called by setPlayerAttackMode).
+function tutorialNoteArm() {
+    if (!tutorialMode) return;
+    const step = TUTS[tutorialStep];
+    if (step && step.id === 'arm') tutArmed = true;
+}
+
 // The connector's circuit was switched (called by toggleConnectorCircuit).
 function tutorialNoteCircuit(c) {
     if (!tutorialMode || !c) return;
@@ -282,6 +291,20 @@ const TUTS = [
         icon:  '◉',
         target: () => tutNearestPylon(),
         check: () => tutHeldOpen,
+    },
+    {
+        // The weapon is armed ONLY from a bug's ring, and nothing had ever said
+        // so: one bug, and the step ends the moment the weapon is armed.
+        id:    'arm',
+        title: 'ARM YOUR WEAPON',
+        body:  'Press and HOLD the marked bug: its ring offers ATTACK, which arms your weapon and fires at once. Shots cost ammo; hacking wall panels refills it. Followers do the real fighting \u2014 this is for finishing a bug off.',
+        icon:  '\u2316',
+        enter: () => {
+            if (typeof playerAmmo === 'number' && typeof PLAYER_AMMO_START === 'number' && playerAmmo < PLAYER_AMMO_START) playerAmmo = PLAYER_AMMO_START;
+            if (tutFoes.length === 0 || tutLiveFoes().length === 0) tutSpawnPracticeFoe({ additional: true });
+        },
+        target: () => tutNearestActor(a => a.isTutorialFoe) || tutNearestActor(a => a.team === 'red' && !a.isNeutralRecruit),
+        check: () => tutArmed || (tutFoes.length > 0 && tutLiveFoes().length === 0),
     },
     {
         id:    'upgrade',
@@ -507,6 +530,7 @@ function startTutorial() {
     tutCircuitOpened   = false;
     tutPylonKill       = false;
     tutPylonFoeSpawns  = 0;
+    tutArmed           = false;
     tutLoanedFollowers = [];
     // Enough shards to build everything the lessons ask for, however the run
     // has gone: a step that needs shards the player does not have just stalls.

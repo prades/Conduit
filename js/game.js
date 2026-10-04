@@ -317,7 +317,10 @@ function applyPylonZoneEffects(wavePylons) {
                                 applySlow(a, 60, 0.05);
                                 if (frame % 60 === 0) applyDamage(a, Math.round(6 * _seasonBonus), null, "ice");
                             } else if (_nTier >= 2) {
-                                applySlow(a, 50, 0.12);
+                                // A target already frozen solid is left frozen: this used
+                                // to overwrite the freeze with the 12% slow on the very
+                                // next pass, three frames later.
+                                if (!(a.slowed > 0 && a.slowFactor === 0)) applySlow(a, 50, 0.12);
                                 // Random chance to freeze solid for 60 frames
                                 if (Math.random() < 0.03) applySlow(a, 90, 0.0);
                             } else {
@@ -954,6 +957,7 @@ function render() {
 
     // ── TUTORIAL TICK ──
     if (typeof tutorialMode !== 'undefined' && tutorialMode) tutorialTick();
+    if (typeof ringHintTick === 'function') ringHintTick();
 
     // Health no longer decays naturally — use health pads to restore HP
     const hpPct=health/100;
@@ -1054,6 +1058,8 @@ function render() {
 
     // ── CRYSTAL DEATH CHECK ──
     if (crystal.health<=0) { showGameOver(); return; }
+    // Slow recovery while no alarm is up (see CRYSTAL_REGEN).
+    if (!alertActive && crystal.health < crystal.maxHealth) crystal.health = Math.min(crystal.maxHealth, crystal.health + CRYSTAL_REGEN);
 
     // ── WORLD GEN ──
     if (player.x>lastGenX-10) generateSegment(lastGenX+1);
@@ -1073,8 +1079,8 @@ function render() {
         // carry pylons the grid can keep running.
         _nestCache   = world.filter(t => t.nest);
         recomputePower();
-        _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement && !isRelayPylon(t) && t.powered);
-        _aPylons     = _pillarCache.filter(t => t.attackMode && !isRelayPylon(t) && t.powered);
+        _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement && !isRelayPylon(t) && t.powered && t.pillarTeam === "green");
+        _aPylons     = _pillarCache.filter(t => t.attackMode && !isRelayPylon(t) && t.powered && t.pillarTeam === "green");
         _uPylons     = _pillarCache.filter(t => t.upgraded);
         // ── WALL PANEL MAP — for wall-face panel rendering ──
         _wallPanelMap = new Map();
@@ -1122,6 +1128,14 @@ function render() {
                 elPylons.forEach(p => {
                     for (let _i=0;_i<6;_i++) elementEffects.push({type:"impact",x:p.x,y:p.y,color:elDef.color,radius:0.6,life:40,element:el});
                 });
+            }
+            if (newTier < prevTier) {
+                // Going DOWN was silent, which is exactly what a failing wave
+                // network does as it sheds pylons. Say what was lost.
+                floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80,
+                    text: newTier > 0 ? `\u25c8 ${elDef.label} NETWORK DOWN TO ${["", "I", "II", "III"][newTier]}`
+                                      : `\u25c8 ${elDef.label} NETWORK LOST`,
+                    color:"#ff7755", life:150, vy:-0.2, size:13 });
             }
             _prevNetworkTiers[el] = newTier;
             networkStrength[el]   = newTier;
@@ -1395,7 +1409,7 @@ function render() {
             a.x-=dx/d*0.05; a.y-=dy/d*0.05;
             // Also track exposure
             a.pylonExposureFrames=(a.pylonExposureFrames||0)+1;
-            if (a.pylonExposureFrames>300&&!a.pylonAggro) a.pylonAggro=pv;
+            if (a.pylonExposureFrames>PYLON_AGGRO_EXPOSURE&&!a.pylonAggro) a.pylonAggro=pv;
         });
     });
 
@@ -1420,7 +1434,16 @@ function render() {
         // range has cost nothing up to here, which is the point — attack mode
         // is the cheap one precisely because it only spends when it fights.
         // An unaffordable shot is not fired at all rather than fired weak.
-        if (!payForShot(t)) { t.powered = false; return; }
+        if (!payForShot(t)) {
+            t.powered = false;
+            // Say so, once in a while: a turret that quietly stops firing reads
+            // as a bug rather than as an empty battery.
+            if (frame - (t._noPowerMsg || -9999) > 300) {
+                t._noPowerMsg = frame;
+                floatingTexts.push({ x: t.x, y: t.y - 1, text: "TURRET OUT OF POWER", color: "#ff7755", life: 90, vy: -0.07 });
+            }
+            return;
+        }
         nearest._shotByPylon = true;   // the tutorial's "kill with your pylons" step reads this
         // Spawn missile projectile
         const col = t.attackModeColor || "#0f8";

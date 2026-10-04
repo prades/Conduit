@@ -217,6 +217,7 @@ function firePlayerShot(foe) {
 
 function setPlayerAttackMode(on) {
     playerAttackMode = !!on;
+    if (on && typeof tutorialNoteArm === "function") tutorialNoteArm();
     floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
         text: playerAttackMode ? "ARMED — tap enemies to fire" : "WEAPON STOWED",
         color: playerAttackMode ? "#ff8844" : "#889", life:110, vy:-0.25, size:13});
@@ -276,6 +277,25 @@ function isTapNearHomePortal(ex, ey) {
     return Math.hypot(ex - p.x, ey - p.y) < PORTAL_R + 18;
 }
 
+// ── THE LONG-PRESS HINT ──────────────────────────────────
+// Every order in the game lives in a ring you open with a long press, and
+// nothing on screen said so: someone who skipped the tutorial never found
+// ATTACK, TO WORK, RE-ROLL or the circuit switch. Until the ring has been
+// opened once, ever, a tip floats up every RING_HINT_FRAMES.
+const RING_HINT_FRAMES = 2400;   // 40 seconds
+let _ringUsed = (function () { try { return localStorage.getItem("conduit_ring_used") === "1"; } catch (e) { return false; } })();
+function noteRingUsed() {
+    if (_ringUsed) return;
+    _ringUsed = true;
+    try { localStorage.setItem("conduit_ring_used", "1"); } catch (e) {}
+}
+function ringHintTick() {
+    if (_ringUsed || frame <= 0 || frame % RING_HINT_FRAMES !== 0) return;
+    if (typeof tutorialMode !== "undefined" && tutorialMode) return;
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 60,
+        text: "TIP: PRESS AND HOLD A UNIT, PYLON OR BUG FOR ORDERS", color: "#0df", life: 220, vy: -0.05, size: 12 });
+}
+
 function handleLongHold(ex,ey) {
     // Holding during a pending nest link would open the command menu over the
     // pylon the player is trying to pick.
@@ -285,6 +305,7 @@ function handleLongHold(ex,ey) {
     // radial does not also open underneath the panel.
     if (typeof openFollowerDutyMenu === "function" && openFollowerDutyMenu(ex, ey)) return;
     commandMode=true; commandX=ex; commandY=ey;
+    noteRingUsed();
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);

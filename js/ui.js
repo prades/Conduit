@@ -468,6 +468,11 @@ function _buildInfoRows(targetTile) {
             ["HP",      Math.ceil(targetTile.health)+" / "+targetTile.maxHealth, "#0f8"],
             ["STATUS",  targetTile.constructing?"BUILDING":targetTile.reconstructing?"REPAIRING":"ACTIVE", "#aad"],
         ];
+        // Why it is lit or dark, in a sentence.
+        if (typeof pylonPowerState === "function") {
+            const ps = pylonPowerState(targetTile);
+            rows.push(["POWER", ps.text, ps.colour]);
+        }
         // What this pylon's element actually does, inline. Listing ELEMENT: FIRE
         // and leaving it there answered nothing.
         if (el && typeof codexPylonRows === "function") {

@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────
 //  INFESTATION — what predators do when nobody is fighting them
 //
-//  Left undisturbed, a predator does not just wander. It walks to the nearest
-//  pylon you hold, chews it over to its own side, and then seeds the ground
+//  Left undisturbed, a HUNTER (about one predator in four — pred.huntsPylons)
+//  does not just wander. It walks to the nearest pylon you hold, chews it over to its own side, and then seeds the ground
 //  around it: a nest, and a cocoon spun over the pylon. Both are small silk
 //  sacs — they hatch more of the same species, and the cocoon's footprint
 //  swells to a small square, taking any pylon that ends up inside it, so a
@@ -108,13 +108,19 @@ let cocoons = [];   // { tiles:[[x,y]], anchors:[tile], species, className, ... 
 // Green pylons first and foremost — that is the point. A dormant grey pylon is
 // still yours, so it counts; a generator counts too.
 //
-// Predators no longer go looking for pylons, so this finds nothing and the walk
-// to one never starts. The only pylon a predator turns on is one that is ON and
-// hurting it, and that is the bash in Predator.update (pylonAggro), not this.
-// The conversion and nest machinery below is kept for anything that converts a
-// pylon directly.
+// Only HUNTERS look (pred.huntsPylons, about one predator in four); everything
+// else leaves your pylons alone. A pylon that is on and hurting a predator is
+// dealt with by the bash in Predator.update (pylonAggro), not by this search.
 function nearestGreenPylonFor(pred) {
-    return null;
+    if (!pred || !pred.huntsPylons || pred.isTutorialFoe) return null;
+    let best = null, bestD = INFEST_SEEK_RANGE;
+    for (const t of world) {
+        if (!t.pillar || t.destroyed || t.health <= 0) continue;
+        if (t.pillarTeam !== "green") continue;
+        const d = Math.hypot(t.x - pred.x, t.y - pred.y);
+        if (d < bestD) { bestD = d; best = t; }
+    }
+    return best;
 }
 
 function _infestTargetStillGood(pred, t) {
@@ -298,6 +304,9 @@ function decayConversions() {
 
 // ── Taking the pylon ──────────────────────────────────────
 function convertPylonToRed(t, pred) {
+    // Out of the firing and wave lists NOW: a taken pylon used to keep shooting
+    // (as a core turret) and keep its zone until the next 60-frame rebuild.
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
     t.pillarTeam = "red";
     t.pillarCol  = "#ff3344";
     t.converting = false;

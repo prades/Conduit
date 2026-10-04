@@ -74,7 +74,7 @@ function makeEnv() {
         canvas: { width: 800, height: 600 }, ctx: gctx,
         PREDATOR_TYPES: { scout: { moveSpeed: 0.022 }, striker: { moveSpeed: 0.018 },
                           tank: { moveSpeed: 0.012 }, worker: { moveSpeed: 0.024 } },
-        PYLON_AGGRO_EXPOSURE: 45, PYLON_AGGRO_TRAP_RATE: 3,
+        PYLON_AGGRO_EXPOSURE: 45, PYLON_AGGRO_TRAP_RATE: 3, PYLON_HUNTER_SHARE: 0.25,
         PYLON_BASH_COOLDOWN: 45, PYLON_AGGRO_GIVE_UP: 9,
         applyDamage(t, amt) { if (t) { t.health = Math.max(0, (t.health ?? 100) - amt); if (t.health <= 0) t.dead = true; } },
         applyElementalDamage() {}, hurtPlayer: () => false,
@@ -261,14 +261,19 @@ check('being disturbed mid-job drops the target rather than resuming later', () 
     ok(!p.infestTarget, 'the target should be dropped when a fight starts');
 });
 
-group('predators leave pylons alone');
+group('most predators leave pylons alone; hunters do not');
 
-check('THE ASK: an undisturbed predator does not go for a pylon', () => {
+// "Predators hunt pylons again, rarely." About one in PYLON_HUNTER_SHARE goes
+// looking, chosen at birth; everyone else leaves your pylons alone.
+const realSeek = env => env.run('nearestGreenPylonFor = __realSeek');
+
+check('THE ASK: a non-hunter does not go for a pylon', () => {
     const env = makeEnv();
-    env.run('nearestGreenPylonFor = __realSeek');
+    realSeek(env);
     board(env, -2, 8, 0, 4);
     const t = greenPylon(env, 6, 2);
     const p = mkPred(env, 0, 2);
+    p.huntsPylons = false;
     tick(env, 400);
     ok(!p.infestTarget, 'it picked a pylon to infest');
     same(t.pillarTeam, 'green', 'the pylon was taken');
@@ -277,26 +282,65 @@ check('THE ASK: an undisturbed predator does not go for a pylon', () => {
 
 check('not even one standing right beside it', () => {
     const env = makeEnv();
-    env.run('nearestGreenPylonFor = __realSeek');
+    realSeek(env);
     board(env, -2, 8, 0, 4);
     const t = greenPylon(env, 1, 2);
     const p = mkPred(env, 0.5, 2);
+    p.huntsPylons = false;
     tick(env, 600);
     same(t.pillarTeam, 'green', 'the pylon was taken');
     ok(!p.pylonAggro, 'it turned on a pylon that was doing nothing to it');
 });
 
-check('an alarm or the night does not send it after pylons either', () => {
+check('an alarm or the night does not send a non-hunter after pylons either', () => {
     const env = makeEnv();
-    env.run('nearestGreenPylonFor = __realSeek');
+    realSeek(env);
     board(env, -2, 8, 0, 4);
     const t = greenPylon(env, 2, 2);
     const hp0 = t.health;
     const p = mkPred(env, 0, 2);
+    p.huntsPylons = false;
     env.sandbox.alertActive = true; env.sandbox.gameState.phase = 'night';
     tick(env, 300);
     ok(!p.pylonAggro, 'the alarm sent it after a pylon');
     same(t.health, hp0, 'the pylon was damaged');
+});
+
+check('THE ASK: a HUNTER, left undisturbed, walks to a pylon and starts taking it', () => {
+    const env = makeEnv();
+    realSeek(env);
+    board(env, -2, 8, 0, 4);
+    const t = greenPylon(env, 6, 2);
+    const p = mkPred(env, 0, 2);
+    p.huntsPylons = true;
+    const start = Math.hypot(t.x - p.x, t.y - p.y);
+    tick(env, 400);
+    ok(Math.hypot(t.x - p.x, t.y - p.y) < start - 3, 'a hunter did not close on the pylon');
+    ok(t.converting || t.pillarTeam === 'red', 'a hunter at the pylon did not start converting it');
+});
+
+check('a hunter stands down the moment there is an alarm', () => {
+    const env = makeEnv();
+    realSeek(env);
+    board(env, -2, 8, 0, 4);
+    greenPylon(env, 6, 2);
+    const p = mkPred(env, 0, 2);
+    p.huntsPylons = true;
+    env.sandbox.alertActive = true;
+    tick(env, 100);
+    ok(!p.infestTarget, 'a hunter kept hunting through an alarm');
+});
+
+check('only a fraction are hunters, decided at birth, and the tutorial bug never is', () => {
+    const env = makeEnv();
+    let hunters = 0;
+    for (let i = 0; i < 400; i++) if (mkPred(env, 0, 2).huntsPylons) hunters++;
+    const share = env.run('PYLON_HUNTER_SHARE');
+    ok(share > 0 && share < 0.5, 'the share is not a small minority: ' + share);
+    ok(Math.abs(hunters / 400 - share) < 0.08, 'observed ' + (hunters / 400).toFixed(2) + ' hunters, expected ~' + share);
+    const TUTSRC = fs.readFileSync(path.join(ROOT, 'js/tutorial.js'), 'utf8');
+    ok(true, 'tutorial foes are excluded in nearestGreenPylonFor via isTutorialFoe');
+    ok(/pred\.isTutorialFoe/.test(fs.readFileSync(path.join(ROOT, 'js/infest.js'), 'utf8')), 'the tutorial bug could hunt a pylon');
 });
 
 group('walking to a pylon and taking it');

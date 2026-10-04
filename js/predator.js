@@ -5,6 +5,8 @@ class Predator {
     constructor(typeName, def, x, y) {
         this.type = "predator";
         this.predatorType = typeName;
+        // Decided once, at birth: most predators never go looking for a pylon.
+        this.huntsPylons = typeof PYLON_HUNTER_SHARE !== "undefined" && Math.random() < PYLON_HUNTER_SHARE;
         this.x=x; this.y=y;
         this.dirX=1; this.dirY=0;
         this.facing=0;

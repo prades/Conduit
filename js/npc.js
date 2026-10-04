@@ -26,6 +26,7 @@ function updateRTSNPC(actor) {
         if (actor._empBoostTimer === 0 && actor._empBaseSpeed != null) {
             actor.moveSpeed = actor._empBaseSpeed;
             actor._empBaseSpeed = null;
+            if (actor._empBaseBase !== undefined) { actor.baseMoveSpeed = actor._empBaseBase; actor._empBaseBase = undefined; }
         }
     }
 
@@ -46,6 +47,10 @@ function updateRTSNPC(actor) {
                 actor.maxHealth   = actor.stats.hp;
                 actor.power       = actor.stats.attack;
                 actor.moveSpeed   = NPC_TYPES["virus"].moveSpeed + (actor.stats.speed-10)*0.001;
+                // The speed stat is the BASE: tickSlowSpeed pins moveSpeed to
+                // baseMoveSpeed, which was captured while this was still a plain
+                // virus, so the personality's speed did nothing.
+                actor.baseMoveSpeed = actor.moveSpeed; actor.slowed = 0; actor.slowFactor = 1;
             }
             // Always reassign element at crystal — world-spawn element is stale/irrelevant
             // The modulation slider decides the pool. It used to draw a label
@@ -283,7 +288,10 @@ function updateRTSNPC(actor) {
             }
         }
 
-        const role = actor.role || "brawler";
+        // A HYBRID moves like a brawler (it had no branch at all, so the strongest
+        // recruits fell through to a passive follow); followerAttack still reads
+        // actor.role, which is what lets it reach for specials more freely.
+        const role = (actor.role === "hybrid" ? "brawler" : actor.role) || "brawler";
 
         // Find nearest enemy — cache result for 8 frames to avoid per-frame full scan.
         // Followers ignore wandering (un-provoked) predators; only engage hostile ones.
@@ -291,14 +299,21 @@ function updateRTSNPC(actor) {
             actor._nearestEnemy?.dead) {
             actor._nearestEnemy = null;
             let nearestEnemyDist = Infinity;
+            const _inReach = [];
             actors.forEach(a => {
                 if (a instanceof Predator && a.team !== "green" && !a.isClone && !a.dead) {
                     // Skip predators that are wandering and haven't been provoked
                     if (a.state === "wander" && !a.provoked) return;
                     const dx=a.x-actor.x, dy=a.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
                     if (d < nearestEnemyDist) { nearestEnemyDist=d; actor._nearestEnemy=a; }
+                    if (d < 6) _inReach.push(a);
                 }
             });
+            // OPPORTUNISTIC picks the weakest enemy in reach instead of the nearest.
+            const _ct = actor.combatTrait && COMBAT_TRAITS[actor.combatTrait];
+            if (_ct && _ct.onTargetSelect && _inReach.length) {
+                actor._nearestEnemy = _ct.onTargetSelect(actor, _inReach) || actor._nearestEnemy;
+            }
             actor._enemyCacheFrame = frame;
         }
         const nearestEnemy = actor._nearestEnemy;
@@ -328,8 +343,7 @@ function updateRTSNPC(actor) {
                 }
             } else {
                 // No nearby enemy — follow player
-                const dx=player.x-actor.x, dy=player.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-                if (dist>FOLLOW_STOP) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+                followPlayer(actor);
             }
             return;
         }
@@ -404,8 +418,7 @@ function updateRTSNPC(actor) {
         }
 
         // Fallback — plain follow
-        const dx=player.x-actor.x, dy=player.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist>FOLLOW_STOP) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+        followPlayer(actor);
         return;
     }
 
@@ -416,6 +429,28 @@ function updateRTSNPC(actor) {
     actor.x+=(actor.x+d.x-actor.x)*actor.moveSpeed;
     actor.y+=(actor.y+d.y-actor.y)*actor.moveSpeed;
     actor.moveCooldown=60;
+}
+
+// Following the player with the NATURAL traits applied:
+//   LONE WOLF  keeps its distance (onIdle sets wanderRadius, read as the stop range)
+//   EMPATHETIC leans toward its nearest allies — the point it walks to is half
+//              60% of the way from the player to the centre of the allies around it
+// Both used to be defined and never read, so the traits did nothing.
+const EMPATHETIC_RANGE = 5;
+function followPlayer(actor) {
+    const nt = actor.naturalTrait && NATURAL_TRAITS[actor.naturalTrait];
+    if (nt && nt.onIdle) nt.onIdle(actor);
+    let tx = player.x, ty = player.y, stop = actor.wanderRadius || FOLLOW_STOP;
+    if (actor.preferGroup) {
+        let sx = 0, sy = 0, n = 0;
+        for (const o of followers) {
+            if (o === actor || o.dead || !o.isFollower) continue;
+            if (Math.hypot(o.x - actor.x, o.y - actor.y) <= EMPATHETIC_RANGE) { sx += o.x; sy += o.y; n++; }
+        }
+        if (n > 0) { tx = tx * 0.4 + (sx / n) * 0.6; ty = ty * 0.4 + (sy / n) * 0.6; }
+    }
+    const dx = tx - actor.x, dy = ty - actor.y, dist = Math.hypot(dx, dy);
+    if (dist > stop) { actor.x += (dx / dist) * actor.moveSpeed; actor.y += (dy / dist) * actor.moveSpeed; }
 }
 
 function updateNPC(actor) {
