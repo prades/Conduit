@@ -226,7 +226,15 @@ function recomputePower() {
         const gen = route.feeder;
         t.powerGen    = gen;
         t.powerSource = route.source;
-        t.powered = !!t.powerSource && nestEnergy(t.powerSource) > POWER_MIN_RESERVE;
+        // A wave pylon that ran its pool dry is TRIPPED: it stays off until the
+        // pool has refilled to POWER_RESTART_LEVEL, not just above zero.
+        if (t.waveTripped && t.powerSource &&
+            nestEnergy(t.powerSource) >= nestEnergyMax(t.powerSource) * POWER_RESTART_LEVEL) {
+            t.waveTripped = false;
+            floatingTexts.push({ x: t.x, y: t.y - 1, text: "WAVE BACK ONLINE", color: "#8fd6ff", life: 70, vy: -0.06 });
+        }
+        if (!t.waveMode) t.waveTripped = false;
+        t.powered = !!t.powerSource && !t.waveTripped && nestEnergy(t.powerSource) > POWER_MIN_RESERVE;
     }
     // The pools worth showing: every one something is drawing on, plus home.
     const seen = new Set();
@@ -288,19 +296,22 @@ function powerFlowTick() {
 }
 
 // Wave mode's constant draw, once a frame per wave pylon. Switching back to
-// attack mode or losing the generator is what stops it — there is nothing else
-// to turn off.
+// attack mode or losing the generator stops it; so does running the pool dry —
+// the pylon then SHUTS OFF (tripped) and stays off until the nest has refilled
+// to POWER_RESTART_LEVEL, rather than limping on and off with the regen.
 function waveDrainTick() {
     if (typeof _pillarCache === "undefined") return;
     for (const t of _pillarCache) {
         if (!t.waveMode || isRelayPylon(t) || t.pillarTeam !== "green") continue;
+        if (t.waveTripped) { t.powered = false; continue; }
         const src = t.powerSource || pylonSource(t);
         if (!src) { t.powered = false; continue; }
         if (!spendNestEnergy(src, POWER_WAVE_DRAIN)) {
-            // The pool is flat. It stays switched on and starts again by itself
-            // as the nest creeps back up, which is what makes a drained grid
-            // something you nurse rather than something you have to re-set.
+            t.waveTripped = true;
             t.powered = false;
+            floatingTexts.push({ x: t.x, y: t.y - 1, text: "WAVE OFFLINE \u2014 OUT OF POWER", color: "#ff7755", life: 110, vy: -0.08 });
+            // Out of the zone lists at once, not at the next 60-frame rebuild.
+            if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
         }
     }
 }

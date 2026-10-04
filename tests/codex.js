@@ -186,6 +186,33 @@ check('the CORE multi-pylon zone note matches the live threshold', () => {
     eq(Number(m[1]), 3, 'live threshold is no longer three');
 });
 
+group('wave pylons are meaningfully stronger at every tier');
+// "The wave function pylons need to be more effective on all levels." The old
+// per-tier output is pinned here so the buff cannot quietly be undone.
+check('FIRE and TOXIC damage per second are at least 40% above the old values at every tier', () => {
+    const rate = (anchor) => {
+        const at = GAME.indexOf(anchor);
+        const sl = GAME.slice(at, at + 700);
+        const dmg = sl.match(/(?:dmg|tdmg)\s*=\s*Math\.round\(\(_nTier >= 3 \? (\d+) : _nTier >= 2 \? (\d+) : (\d+)\)/);
+        const iv  = sl.match(/(?:intv|toxIntv)\s*=\s*_nTier >= 3 \? (\d+) : _nTier >= 2 \? (\d+) : (\d+)/);
+        ok(dmg && iv, 'could not read ' + anchor);
+        return [3, 2, 1].map(i => Number(dmg[i]) / Number(iv[i]));   // damage per frame, tier I..III
+    };
+    const OLD_FIRE  = [6 / 30, 10 / 24, 15 / 18];
+    const OLD_TOXIC = [5 / 40, 8 / 28, 12 / 20];
+    const fire = rate('case "fire": {'), tox = rate('case "toxic": {');
+    fire.forEach((v, i) => ok(v >= OLD_FIRE[i] * 1.4, 'fire tier ' + (i + 1) + ' is only ' + (v / OLD_FIRE[i]).toFixed(2) + 'x the old damage rate'));
+    tox.forEach((v, i) => ok(v >= OLD_TOXIC[i] * 1.4, 'toxic tier ' + (i + 1) + ' is only ' + (v / OLD_TOXIC[i]).toFixed(2) + 'x the old damage rate'));
+});
+check('the support and control tiers all moved up too', () => {
+    ok(CODEX.electric.numbers.gain.every((v, i) => v > [2, 4, 6][i]), 'electric resonance not buffed at every tier');
+    ok(CODEX.electric.numbers.haste.every((v, i) => v > [1.25, 1.4, 1.6][i]), 'electric haste not buffed at every tier');
+    ok(CODEX.core.numbers.gain.every((v, i) => v > [3, 5, 8][i]), 'core shield gain not buffed at every tier');
+    ok(CODEX.core.numbers.cap.every((v, i) => v > [20, 35, 50][i]), 'core shield cap not buffed at every tier');
+    ok(CODEX.flux.numbers.pull.every((v, i) => v > [0.10, 0.15, 0.20][i]), 'flux pull not buffed at every tier');
+    ok(CODEX.ice.numbers.slow.every((v, i) => v < [0.35, 0.20, 0.08][i]), 'ice slow not deeper at every tier');
+});
+
 group('text wrapping');
 const wrap = run('codexWrap');
 check('no wrapped line exceeds the budget', () => {

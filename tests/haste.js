@@ -100,7 +100,7 @@ function near(a, b, m) { if (Math.abs(a - b) > 0.02) throw new Error(`${m}: expe
         const codex = rd('js/codex.js');
         for (const k of [1, 2, 3]) ok(codex.includes(String(HASTE[k])) || codex.includes(HASTE[k] + '\\u00d7') ,
             'the codex does not state ' + HASTE[k]);
-        ok(/haste: \[1\.25, 1\.4, 1\.6\]/.test(codex), 'the codex numbers drifted');
+        ok(/haste: \[1\.35, 1\.6, 1\.9\]/.test(codex), 'the codex numbers drifted');
     });
 
     await check('the GAME INDEX says predators leave pylons alone and states the haste', () => {

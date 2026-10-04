@@ -292,18 +292,18 @@ function applyPylonZoneEffects(wavePylons) {
                 switch(el) {
                     case "fire": {
                         if (isEnemy) {
-                            const dmg  = Math.round((_nTier >= 3 ? 15 : _nTier >= 2 ? 10 : 6) * _seasonBonus);
-                            const intv = _nTier >= 3 ? 18 : _nTier >= 2 ? 24 : 30;
+                            const dmg  = Math.round((_nTier >= 3 ? 24 : _nTier >= 2 ? 15 : 9) * _seasonBonus);
+                            const intv = _nTier >= 3 ? 12 : _nTier >= 2 ? 18 : 24;
                             if (frame % intv === 0) {
                                 applyDamage(a, dmg, null, "fire");
                                 // Tier 3: ignite — spread fire to enemies within 1.5 tiles
-                                if (_nTier >= 3 && Math.random() < 0.35) {
+                                if (_nTier >= 3 && Math.random() < 0.5) {
                                     const _ax=a.x, _ay=a.y;
                                     actors.forEach(other => {
                                         if (other===a||other.dead||other.team!=="red") return;
                                         const _odx=other.x-_ax, _ody=other.y-_ay;
                                         if (Math.abs(_odx)>1.5||Math.abs(_ody)>1.5) return;
-                                        if (_odx*_odx+_ody*_ody < 2.25) applyDamage(other, 4, null, "fire"); // 1.5²=2.25
+                                        if (_odx*_odx+_ody*_ody < 2.25) applyDamage(other, 6, null, "fire"); // 1.5²=2.25
                                     });
                                 }
                             }
@@ -314,14 +314,14 @@ function applyPylonZoneEffects(wavePylons) {
                         if (isEnemy) {
                             if (_nTier >= 3) {
                                 // Deep freeze — near-zero speed, periodic ice damage
-                                applySlow(a, 60, 0.08);
-                                if (frame % 60 === 0) applyDamage(a, Math.round(4 * _seasonBonus), null, "ice");
+                                applySlow(a, 60, 0.05);
+                                if (frame % 60 === 0) applyDamage(a, Math.round(6 * _seasonBonus), null, "ice");
                             } else if (_nTier >= 2) {
-                                applySlow(a, 50, 0.20);
+                                applySlow(a, 50, 0.12);
                                 // Random chance to freeze solid for 60 frames
-                                if (Math.random() < 0.015) applySlow(a, 90, 0.0);
+                                if (Math.random() < 0.03) applySlow(a, 90, 0.0);
                             } else {
-                                applySlow(a, 40, 0.35);
+                                applySlow(a, 40, 0.25);
                             }
                         }
                         break;
@@ -336,26 +336,26 @@ function applyPylonZoneEffects(wavePylons) {
                             applySlow(a, ELECTRIC_HASTE_FRAMES, ELECTRIC_HASTE[Math.min(3, _nTier)] || ELECTRIC_HASTE[1]);
                         }
                         if (isFriend && frame % 10 === 0) {
-                            const gain = Math.round((_nTier >= 3 ? 6 : _nTier >= 2 ? 4 : 2) * _seasonBonus);
+                            const gain = Math.round((_nTier >= 3 ? 10 : _nTier >= 2 ? 6 : 3) * _seasonBonus);
                             a.currentResonance = Math.min(100, (a.currentResonance||0) + gain);
                             // Tier 2+: also accelerate ultimate charge for all network allies
                             if (_nTier >= 2 && typeof a.ultimateCharge === "number") {
-                                a.ultimateCharge = Math.min(100, a.ultimateCharge + (_nTier >= 3 ? 2 : 1));
+                                a.ultimateCharge = Math.min(100, a.ultimateCharge + (_nTier >= 3 ? 3 : 2));
                             }
                         }
                         break;
                     }
                     case "core": {
-                        const coreIntv = _nTier >= 3 ? 30 : _nTier >= 2 ? 40 : 60;
+                        const coreIntv = _nTier >= 3 ? 20 : _nTier >= 2 ? 30 : 45;
                         if (isFriend && frame % coreIntv === 0) {
-                            const shGain = Math.round((_nTier >= 3 ? 8 : _nTier >= 2 ? 5 : 3) * _seasonBonus);
-                            const shCap  = _nTier >= 3 ? 50 : _nTier >= 2 ? 35 : 20;
+                            const shGain = Math.round((_nTier >= 3 ? 12 : _nTier >= 2 ? 8 : 5) * _seasonBonus);
+                            const shCap  = _nTier >= 3 ? 75 : _nTier >= 2 ? 50 : 30;
                             a.shielded = true;
                             a.shieldAmount = Math.min(shCap, (a.shieldAmount||0) + shGain);
                             a._shieldMax = shCap;
                             // Tier 3: auto-repair broken shields (restore up to cap over time)
                             if (_nTier >= 3 && a.shieldAmount > 0 && a.shieldAmount < shCap) {
-                                a.shieldAmount = Math.min(shCap, a.shieldAmount + 2);
+                                a.shieldAmount = Math.min(shCap, a.shieldAmount + 3);
                             }
                         }
                         break;
@@ -366,11 +366,11 @@ function applyPylonZoneEffects(wavePylons) {
                         // so without this it can never reach the thing it is
                         // trying to break and just orbits the midpoint forever.
                         if (isEnemy && !a.pylonAggro) {
-                            const pullSpd = (_nTier >= 3 ? 0.20 : _nTier >= 2 ? 0.15 : 0.10) * _seasonBonus;
+                            const pullSpd = (_nTier >= 3 ? 0.28 : _nTier >= 2 ? 0.21 : 0.14) * _seasonBonus;
                             const dx=midX-a.x, dy=midY-a.y, d=Math.hypot(dx,dy)||1;
                             a.x+=dx/d*pullSpd; a.y+=dy/d*pullSpd;
                             // Tier 3: vortex — pulled enemies take continuous damage
-                            if (_nTier >= 3 && frame % 30 === 0) applyDamage(a, Math.round(3*_seasonBonus), null, "flux");
+                            if (_nTier >= 3 && frame % 20 === 0) applyDamage(a, Math.round(5*_seasonBonus), null, "flux");
                             // Tier 2+: chain — pulled actors drag nearby enemies along
                             if (_nTier >= 2 && frame % 20 === 0) {
                                 const _ax=a.x, _ay=a.y;
@@ -379,19 +379,19 @@ function applyPylonZoneEffects(wavePylons) {
                                     const _odx=other.x-_ax, _ody=other.y-_ay;
                                     if (Math.abs(_odx)>1.2||Math.abs(_ody)>1.2) return;
                                     const od2 = _odx*_odx+_ody*_ody;
-                                    if (od2 < 1.44 && od2 > 0.0001) { other.x+=dx/d*0.05; other.y+=dy/d*0.05; } // 1.2²=1.44
+                                    if (od2 < 1.44 && od2 > 0.0001) { other.x+=dx/d*0.08; other.y+=dy/d*0.08; } // 1.2²=1.44
                                 });
                             }
                         }
                         break;
                     }
                     case "toxic": {
-                        const toxIntv = _nTier >= 3 ? 20 : _nTier >= 2 ? 28 : 40;
+                        const toxIntv = _nTier >= 3 ? 15 : _nTier >= 2 ? 22 : 30;
                         if (isEnemy && frame % toxIntv === 0) {
-                            const tdmg = Math.round((_nTier >= 3 ? 12 : _nTier >= 2 ? 8 : 5) * _seasonBonus);
+                            const tdmg = Math.round((_nTier >= 3 ? 18 : _nTier >= 2 ? 12 : 8) * _seasonBonus);
                             applyDamage(a, tdmg, null, "toxic");
-                            const shredChance  = _nTier >= 3 ? 0.6 : _nTier >= 2 ? 0.5 : 0.3;
-                            const shredFactor  = _nTier >= 3 ? 0.35 : _nTier >= 2 ? 0.5 : 0.6;
+                            const shredChance  = _nTier >= 3 ? 0.8 : _nTier >= 2 ? 0.65 : 0.45;
+                            const shredFactor  = _nTier >= 3 ? 0.3 : _nTier >= 2 ? 0.4 : 0.5;
                             if (Math.random() < shredChance) { a.defenseShredded = 90; a.defenseShredFactor = shredFactor; }
                             // Tier 3: cloud spreads poison debuff to nearby enemies
                             if (_nTier >= 3) {

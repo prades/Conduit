@@ -50,7 +50,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
 // Every number read out of config.js rather than restated, so retuning the
 // economy moves these checks with it instead of breaking them.
 const C = configNums(['NEST_ENERGY_BASE', 'NEST_ENERGY_ZONE', 'NEST_ENERGY_REGEN',
-                      'NEST_ENERGY_HOME', 'POWER_SHOT_COST', 'POWER_WAVE_DRAIN']);
+                      'NEST_ENERGY_HOME', 'POWER_SHOT_COST', 'POWER_WAVE_DRAIN', 'POWER_RESTART_LEVEL']);
 
 async function boot() {
     const sandbox = makeBrowserSandbox({ tubecrawler_seed: '305419896' });
@@ -80,7 +80,7 @@ async function boot() {
         actors.length = 0; followers.length = 0;
         world.forEach(t => {
             t.pillar = false; t.destroyed = false; t.attackMode = false; t.waveMode = false;
-            t.isGenerator = false; t.connectedPylon = null; t.nestConnection = null;
+            t.isGenerator = false; t.connectedPylon = null; t.nestConnection = null; t.waveTripped = false;
             t.powered = undefined; t.powerSource = null; t.pillarTeam = 'green';
             t.attackFireTimer = 0;
             if (t.nest) { t.nestHealth = t.nestMaxHealth || 200; t.nestEnergy = undefined; }
@@ -438,14 +438,47 @@ async function boot() {
         same(r.lit[0], false, 'and it was lit anyway');
     });
 
-    check('a drained pool puts its wave pylon out, and it comes back by itself', () => {
-        // The pool creeps back up, so a flat grid is something to nurse rather
-        // than something the player has to go and re-set by hand.
+    check('THE ASK: a wave pylon SHUTS OFF when its pool runs out, and stays off', () => {
         const flat = board('GW', [{ zone: 1, taken: true, linkTo: 0, energy: 0 }], 2);
         same(flat.lit[1], false, 'a wave pylon on a flat battery is still lit');
-        const rested = board('GW', [{ zone: 1, taken: true, linkTo: 0, energy: 0 }], 2,
-                             'world.forEach(t => { if (t.nest && t.nestZone === 1) t.nestEnergy = 40; });');
-        same(rested.lit[1], true, 'it did not come back once the battery had something in it');
+        same(E.run(`world.find(t => t.pillar && t.waveMode).waveTripped`), true, 'it was not marked as shut off');
+        same(flat.waving, 0, 'a shut-off wave pylon is still counted as a wave pylon');
+        const tick = n => E.run(`(function(){ for (let i = 0; i < ${n}; i++) render();
+            const w = world.find(t => t.pillar && t.waveMode);
+            return { lit: !!w.powered, tripped: w.waveTripped, waving: _wPylons.length }; })()`);
+        // A trickle is not enough: below the restart level it stays OFF.
+        const nest = f => E.run(`(function(){ const n = world.find(t => t.nest && t.nestZone === 1);
+            n.nestEnergy = nestEnergyMax(n) * ${f}; return n.nestEnergy; })()`);
+        nest(C.POWER_RESTART_LEVEL * 0.5);
+        const low = tick(130);
+        same(low.lit, false, 'it limped back on with the pool barely above empty');
+        same(low.tripped, true, 'it forgot it had shut off');
+        // At the restart level it comes back online.
+        nest(C.POWER_RESTART_LEVEL + 0.05);
+        const back = tick(130);
+        same(back.lit, true, 'it did not come back once the pool had refilled to the restart level');
+        same(back.tripped, false, 'it is still marked shut off');
+    });
+
+    check('a tripped wave pylon does not drain a nest that is refilling', () => {
+        board('GW', [{ zone: 1, taken: true, linkTo: 0, energy: 0 }], 2);
+        E.run(`(function(){ const n = world.find(t => t.nest && t.nestZone === 1); n.nestEnergy = 5; })()`);
+        const after = E.run(`(function(){ const n = world.find(t => t.nest && t.nestZone === 1);
+            for (let i = 0; i < 300; i++) render(); return n.nestEnergy; })()`);
+        ok(after > 5, 'a shut-off wave pylon kept draining the pool, it is ' + after);
+    });
+
+    check('switching back to attack clears the shut-off flag', () => {
+        ok(/pylon\.waveTripped = false/.test(fs.readFileSync(path.join(ROOT, 'js/commands.js'), 'utf8')),
+           'a fresh mode switch does not reset it');
+    });
+
+    check('the numbers are tuned so a wave pylon lasts minutes, not seconds', () => {
+        const wavePerSec = C.POWER_WAVE_DRAIN * 60, regenPerSec = C.NEST_ENERGY_REGEN * 60;
+        ok(wavePerSec > regenPerSec, 'a wave pylon should out-spend regeneration, or it would never drain');
+        const zone1 = C.NEST_ENERGY_BASE * (1 + C.NEST_ENERGY_ZONE);
+        const seconds = zone1 / (wavePerSec - regenPerSec);
+        ok(seconds >= 180, 'a zone-1 nest runs one wave pylon dry in only ' + Math.round(seconds) + 's');
     });
 
     check('the pools really do regenerate', () => {
@@ -737,7 +770,7 @@ async function boot() {
     check('the GAME INDEX teaches it, with the real numbers', () => {
         const at = HTML.indexOf('POWER GRID');
         ok(at > -1, 'the index never explains the power grid');
-        const page = HTML.slice(at, at + 3600);
+        const page = HTML.slice(at, at + 6000);
         for (const word of ['nest', 'generator', 'per shot', 'wave']) {
             ok(new RegExp(word, 'i').test(page), 'the index does not mention "' + word + '"');
         }

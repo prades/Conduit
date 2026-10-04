@@ -348,6 +348,7 @@ function executeCommand() {
                 // Toggle attack ↔ wave
                 if (pylon.attackMode) { pylon.attackMode=false; pylon.waveMode=true; }
                 else                  { pylon.waveMode=false;   pylon.attackMode=true; }
+                pylon.waveTripped = false;   // a fresh switch is a fresh start
                 floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
                     text:"PYLON → "+(pylon.attackMode?"ATTACK":"WAVE")+" MODE",color:"#0f8",life:90,vy:-0.2});
             } else {

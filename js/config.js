@@ -294,7 +294,7 @@ const ALERT_DURATION = 600; // 10 seconds at 60fps
 // ELECTRIC WAVE HASTE — the move-speed multiplier a friendly gets while standing
 // in an electric wave zone, by network tier. It lingers ELECTRIC_HASTE_FRAMES
 // after they step out, so the edge of the zone does not stutter.
-const ELECTRIC_HASTE = { 1: 1.25, 2: 1.4, 3: 1.6 };
+const ELECTRIC_HASTE = { 1: 1.35, 2: 1.6, 3: 1.9 };
 const ELECTRIC_HASTE_FRAMES = 12;
 const PYLON_AGGRO_EXPOSURE  = 45;
 const PYLON_AGGRO_TRAP_RATE = 3;
@@ -409,17 +409,24 @@ const PLAYER_Y_MIN = -0.5;
 // would eventually be flat and the game would end with nothing left to run —
 // so "finite" here means a reserve you can empty and have to nurse, not one
 // you can destroy for good.
-const NEST_ENERGY_BASE   = 60;    // a zone-0 pool; deeper nests hold more
+const NEST_ENERGY_BASE   = 200;   // a zone-0 pool; deeper nests hold more
 const NEST_ENERGY_ZONE   = 1;     // +1x capacity per zone of depth
-const NEST_ENERGY_REGEN  = 0.06;  // per frame → 3.6/s, per nest
+const NEST_ENERGY_REGEN  = 0.015; // per frame → 0.9/s, per nest
 // The home portal's own reserve. It is what a new game runs on before any zone
 // has been taken, so it has to carry a small base on its own.
-const NEST_ENERGY_HOME   = 90;
-// What the abilities cost. A turret fires every 90 frames, so 4 a shot is
-// ~2.7/s while it has a target and nothing at all while it does not; wave mode
-// is 6/s forever. One wave pylon costs more than two turrets in a firefight.
-const POWER_SHOT_COST    = 4;
-const POWER_WAVE_DRAIN   = 0.10;  // per frame → 6/s
+const NEST_ENERGY_HOME   = 300;
+// What the abilities cost. A turret fires every 90 frames, so 2 a shot is
+// ~1.3/s while it has a target and nothing at all while it does not; wave mode
+// is 1.8/s forever — more than a nest regenerates, so it is a real drain, but
+// slow enough to run for minutes. These used to be 4 a shot and 6/s against
+// pools a third the size, which emptied a zone-1 nest in about twenty seconds
+// with a single wave pylon on it.
+const POWER_SHOT_COST    = 2;
+const POWER_WAVE_DRAIN   = 0.03;  // per frame → 1.8/s
+// A wave pylon that runs its pool dry SHUTS OFF and stays off until the pool has
+// refilled to this fraction of its capacity, so it does not stutter on and off
+// as regen trickles in.
+const POWER_RESTART_LEVEL = 0.25;
 // Below this a pool cannot start a shot, so a turret does not fire a round it
 // has not paid for.
 const POWER_MIN_RESERVE  = 0;
