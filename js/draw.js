@@ -1890,6 +1890,67 @@ function drawNestWallVortex(px, py, r, colour, spin, glow, alpha) {
 const PORTAL_R = 30;
 const PORTAL_COLOUR = "#2bff9b";
 
+// ── THE WAVE MONOLITH (design 8, "Barcode Tablet") ───────
+// A broad, short slab in flat Mandark-cartoon style: near-black faces, a thin
+// purple edge, a bold black outline, on a squat plinth. Its only colour is a
+// row of element-coloured stripes of different widths down the front and one
+// down the side, with a bright scan line sweeping up them — the wave. The
+// network tier makes the sweep faster and the stripes brighter. Dark (no
+// power): grey stripes, no sweep. Chosen from design/monoliths.html.
+const WAVE_MONO_FACE = "#1b1624", WAVE_MONO_SIDE = "#0f0c15", WAVE_MONO_TOP = "#2a2236", WAVE_MONO_EDGE = "#5a3a86";
+// Fewer, more distinct bars than the design sheet: at game size the sheet's
+// nine bars ran together into one block.
+const WAVE_MONO_BARS = [[0.2, 1.5], [0.4, 2.3], [0.61, 1.3], [0.8, 2.1]];
+function _monoSlab(cx, by, hw, hd, h) {
+    const L = [cx - hw, by], F = [cx, by + hd], R = [cx + hw, by];
+    const Lt = [cx - hw, by - h], Ft = [cx, by + hd - h], Rt = [cx + hw, by - h], Bt = [cx, by - hd - h];
+    const poly = (pts, fill) => { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); };
+    poly([L, F, Ft, Lt], WAVE_MONO_FACE); poly([F, R, Rt, Ft], WAVE_MONO_SIDE); poly([Lt, Ft, Rt, Bt], WAVE_MONO_TOP);
+    ctx.strokeStyle = WAVE_MONO_EDGE; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(F[0], F[1] - 1.5); ctx.lineTo(Ft[0], Ft[1] + 1.5); ctx.stroke();
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.lineJoin = "round";
+    ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(F[0], F[1]); ctx.lineTo(R[0], R[1]); ctx.lineTo(Rt[0], Rt[1]); ctx.lineTo(Bt[0], Bt[1]); ctx.lineTo(Lt[0], Lt[1]); ctx.closePath(); ctx.stroke();
+    ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(F[0], F[1]); ctx.lineTo(Ft[0], Ft[1]); ctx.lineTo(Lt[0], Lt[1]); ctx.moveTo(Ft[0], Ft[1]); ctx.lineTo(Rt[0], Rt[1]); ctx.stroke();
+    return { L, F, R, Lt, Ft, Rt };
+}
+function _monoLeft(f, u, v) {
+    const bx = f.L[0] + (f.F[0] - f.L[0]) * u, by = f.L[1] + (f.F[1] - f.L[1]) * u;
+    const tx = f.Lt[0] + (f.Ft[0] - f.Lt[0]) * u, ty = f.Lt[1] + (f.Ft[1] - f.Lt[1]) * u;
+    return [bx + (tx - bx) * v, by + (ty - by) * v];
+}
+function _monoRight(f, u, v) {
+    const bx = f.F[0] + (f.R[0] - f.F[0]) * u, by = f.F[1] + (f.R[1] - f.F[1]) * u;
+    const tx = f.Ft[0] + (f.Rt[0] - f.Ft[0]) * u, ty = f.Ft[1] + (f.Rt[1] - f.Ft[1]) * u;
+    return [bx + (tx - bx) * v, by + (ty - by) * v];
+}
+function drawWaveMonolith(px, base, colour, dark, tier) {
+    const col = dark ? "#5c6370" : colour;
+    const t = (frame || 0) / 60;
+    ctx.save();
+    _monoSlab(px, base, 15, 7.5, 4);                    // plinth
+    const f = _monoSlab(px, base - 4, 13, 6.5, 40);     // the tablet
+    ctx.lineCap = "butt";
+    const bright = dark ? 0.9 : 0.85 + 0.05 * (tier || 0);
+    for (const [u, w] of WAVE_MONO_BARS) {
+        const [x0, y0] = _monoLeft(f, u, 0.08), [x1, y1] = _monoLeft(f, u, 0.92);
+        ctx.strokeStyle = col; ctx.lineWidth = w; ctx.globalAlpha = bright;
+        // A little glow only: at game size a big blur merges the bars.
+        if (!dark) { ctx.shadowColor = col; ctx.shadowBlur = 1.5 + (tier || 0); }
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    }
+    { const [x0, y0] = _monoRight(f, 0.5, 0.08), [x1, y1] = _monoRight(f, 0.5, 0.92);
+      ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+    if (!dark) {
+        // The scan line sweeping up the front: the wave. Faster at higher tiers.
+        const k = (t * (0.6 + 0.25 * (tier || 0))) % 1;
+        const [ax, ay] = _monoLeft(f, 0.06, 0.08 + k * 0.84), [bx, by] = _monoLeft(f, 0.94, 0.08 + k * 0.84);
+        ctx.strokeStyle = "#ffffff"; ctx.globalAlpha = 0.75; ctx.lineWidth = 1.2; ctx.shadowColor = col; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    }
+    ctx.restore();
+}
+
 // ── THE PYLON TURRET ─────────────────────────────────────
 // "Whenever the pylon is in turret mode it has a little self-aiming turret on top
 // that will lock onto the enemy targets." Pure presentation: firing is still the

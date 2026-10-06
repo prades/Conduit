@@ -2615,6 +2615,11 @@ function render() {
                 // There used to be a switch over six random bodies here; this
                 // was the only one that read well at this scale, so it is now
                 // the whole set and every upgrade wears it.
+                // A WAVE pylon is the striped Barcode Tablet instead (design 8,
+                // drawWaveMonolith in draw.js); everything else is the tower.
+                const _isWaveMono = obj.waveMode && !isRelayPylon(obj);
+                if (_isWaveMono) drawWaveMonolith(px, _base, _acol, _dark, _wTier);
+                else {
                 ctx.save();
                     const sD=6; // iso depth
                     const sFront=_isActive?SENTINEL_FRONT_ACTIVE:obj.upgraded?SENTINEL_FRONT_UPGRADED:SENTINEL_FRONT_DORMANT;
@@ -2655,18 +2660,22 @@ function render() {
                     // Arrow slit
                     ctx.fillStyle=SENTINEL_SLIT; ctx.fillRect(px-1.5,_base-43,3,10); ctx.fillRect(px-4,_base-40,8,3);
                 ctx.restore();
+                }
 
                 // ── TOP EFFECTS: glows, orbs, labels ──
                 // One body, so one orb height — it sits just above the merlons.
                 const _orbY = _base-54;
 
                 if (_isActive) {
-                    // Glowing orb at structure top
+                    // Glowing orb at structure top — not on a wave monolith, whose
+                    // stripes are its light.
+                    if (!_isWaveMono) {
                     const _orbR=obj.waveMode?6+_wTier:5;
                     ctx.save(); ctx.shadowColor=_acol; ctx.shadowBlur=(obj.waveMode?14:8)+_pulse*6;
                     ctx.fillStyle=_acol; ctx.globalAlpha=0.7+_pulse*0.3;
                     ctx.beginPath(); ctx.arc(px,_orbY,_orbR,0,Math.PI*2); ctx.fill();
                     ctx.restore();
+                    }
                     // A pylon in turret mode wears a self-aiming gun that tracks
                     // and locks onto whatever it is about to shoot.
                     if (obj.attackMode && !isRelayPylon(obj)) drawPylonTurret(obj, px, _orbY, _acol, _dark);
