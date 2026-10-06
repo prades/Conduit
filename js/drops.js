@@ -13,6 +13,8 @@ function onPredatorDeath(predator) {
     // Anything it was carrying for a nest goes back on the ground first, so
     // killing a predator mid-delivery gives the player the stockpile too.
     if (typeof predatorDropNestMass === "function") predatorDropNestMass(predator);
+    // A body left in the grub's zone is food for it (js/broods.js).
+    if (typeof noteCorpse === "function") noteCorpse(predator);
     const _massValue = Math.max(1, Math.round((predator.shardDrop || 5) * MASS_VALUE_SCALE));
     spawnChargedMass(predator.x, predator.y, _massValue);
     floatingTexts.push({

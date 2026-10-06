@@ -141,6 +141,10 @@ class Predator {
 
     update() {
         if (this.dead) return;
+        // The grub has its own life (js/broods.js): it eats, it does not fight.
+        if (this.isGrub) { grubTick(this); return; }
+        // The tyrant guards, buffs and hatches, then fights as normal.
+        if (this.isBrood) broodTick(this);
 
         // ── STATUS TIMERS ──
         if (this.smokeDebuff  > 0) this.smokeDebuff--;

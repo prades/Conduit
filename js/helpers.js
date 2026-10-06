@@ -234,6 +234,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // BERSERKER: the trait sets damageMultiplier (1.5 under 30% health). It used
     // to be read in one job branch only, so it did nothing in ordinary combat.
     if (source && source.team === "green" && source.damageMultiplier > 1) amount *= source.damageMultiplier;
+    // THE BROOD TYRANT: predators beside it hit harder (js/broods.js).
+    if (source && source.broodBuffUntil && typeof BROOD_AURA_MULT !== "undefined" && source.broodBuffUntil > frame) amount *= BROOD_AURA_MULT;
     // ARMY SURGE. Applied here rather than at each attack because the twelve
     // damage expressions in js/elements.js all funnel through this one
     // function — patching them individually would have missed one.

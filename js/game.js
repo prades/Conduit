@@ -1661,6 +1661,8 @@ function render() {
 
     // ── INFESTATION — a conversion nobody is working on recovers ──
     decayConversions();
+    // ── THE GRUB — one lives in zone 4 while that zone is hostile ──
+    if (typeof broodSpawnTick === "function") broodSpawnTick();
 
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
@@ -3517,6 +3519,7 @@ function render() {
     // The power chain over the mending filament: the mending line is incidental,
     // the power is the thing the player is managing.
     drawGeneratorLinks();
+    if (typeof drawGrubCorpses === "function") drawGrubCorpses();
     drawConversionBars();
     drawTutorialHighlight();
     drawFloatingTexts();

@@ -444,9 +444,10 @@ function zoneSpawnPoints(zoneIndex) {
     return any ? open : null;
 }
 
-function spawnPredatorForZone(zoneIndex) {
+function spawnPredatorForZone(zoneIndex, opts) {
+    opts = opts || {};
     const speciesName = getZoneSpecies(zoneIndex, gameState.nightNumber);
-    const className   = getZoneClass(zoneIndex);
+    const className   = opts.className || getZoneClass(zoneIndex);
     // Natural species live in SPECIES; synthetic deep-zone constructs live in SYNTHETIC_SPECIES
     const speciesDef  = SPECIES[speciesName] || SYNTHETIC_SPECIES[speciesName];
     const classDef    = getClassDef(speciesDef, className);
@@ -497,6 +498,10 @@ function spawnPredatorForZone(zoneIndex) {
     predator.baseMoveSpeed = predator.moveSpeed;
     // Resolve the charge-up special now that species and class are both known.
     initAbility(predator);
+    // What this zone's predators are FOR (js/broods.js): zone 1 plain
+    // attackers, zone 2 beetle haulers, zone 3 nymph swarms.
+    if (typeof applyZoneRole === "function") applyZoneRole(predator, zoneIndex);
+    if (opts.swarmChild) predator._swarmChild = true;
     // Its own gardening pace, so a batch of spawns does not later finish
     // converting a batch of pylons on the same frame. Read at call time —
     // infest.js loads after this file.
@@ -505,6 +510,7 @@ function spawnPredatorForZone(zoneIndex) {
     actors.push(predator);
     if (!zonePredators[zoneIndex]) zonePredators[zoneIndex] = [];
     zonePredators[zoneIndex].push(predator);
+    if (typeof maybeSwarm === "function") maybeSwarm(predator, zoneIndex);
     return predator;
 }
 

@@ -77,15 +77,17 @@ const SPECIES = {
         tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:38, dnaDrops:2, shardDrop:8,  reactionSpeed:22 },
         boss:    { width:26, height:12, moveSpeed:0.008, health:500, power:60, dnaDrops:4, shardDrop:20, reactionSpeed:8  }
     },
+    // THE HAULER: three times an ant's health and about two thirds of its bite.
+    // Its job is carrying charged mass to its wall nest (js/broods.js).
     beetle: {
         rank: 2,
         color: "#cc44ff",
-        nymph:   { width:16, height:8,  moveSpeed:0.028, health:45,  power:12, dnaDrops:1, shardDrop:4,  reactionSpeed:15 },
-        worker:  { width:23, height:11, moveSpeed:0.022, health:72,  power:10, dnaDrops:1, shardDrop:5,  reactionSpeed:25 },
-        scout:   { width:26, height:12, moveSpeed:0.020, health:100, power:27, dnaDrops:1, shardDrop:6,  reactionSpeed:5  },
-        striker: { width:32, height:14, moveSpeed:0.016, health:160, power:39, dnaDrops:2, shardDrop:9,  reactionSpeed:10 },
-        tank:    { width:42, height:18, moveSpeed:0.010, health:280, power:53, dnaDrops:2, shardDrop:14, reactionSpeed:22 },
-        boss:    { width:31, height:14, moveSpeed:0.007, health:800, power:90, dnaDrops:5, shardDrop:30, reactionSpeed:8  }
+        nymph:   { width:16, height:8,  moveSpeed:0.026, health:90,   power:6,  dnaDrops:1, shardDrop:4,  reactionSpeed:15 },
+        worker:  { width:23, height:11, moveSpeed:0.020, health:135,  power:5,  dnaDrops:1, shardDrop:5,  reactionSpeed:25 },
+        scout:   { width:26, height:12, moveSpeed:0.018, health:180,  power:13, dnaDrops:1, shardDrop:6,  reactionSpeed:5  },
+        striker: { width:32, height:14, moveSpeed:0.015, health:300,  power:19, dnaDrops:2, shardDrop:9,  reactionSpeed:10 },
+        tank:    { width:42, height:18, moveSpeed:0.010, health:540,  power:27, dnaDrops:2, shardDrop:14, reactionSpeed:22 },
+        boss:    { width:31, height:14, moveSpeed:0.007, health:1500, power:42, dnaDrops:5, shardDrop:30, reactionSpeed:8  }
     },
     scorpion: {
         rank: 3,
@@ -215,6 +217,10 @@ function getZoneClass(zoneIndex) {
     // Workers are pulled in by damage, with a small ambient trickle besides.
     // This uses its own roll — reusing `roll` would consume the same 0.08 band
     // the front-zone boss check below depends on, and bosses would stop spawning.
+    // Zone 1 is plain attackers: no repair crews, no bosses, just bites.
+    if (zoneIndex === 1) return roll < 0.55 ? "scout" : roll < 0.85 ? "striker" : "tank";
+    // Zone 3 is the nymph swarm: most of what it sends is nymphs, in packs.
+    if (typeof NYMPH_SWARM_ZONE !== "undefined" && zoneIndex === NYMPH_SWARM_ZONE && roll < NYMPH_SWARM_SHARE) return "nymph";
     if (zoneNeedsWorker(zoneIndex)) return "worker";
     if (Math.random() < 0.08) return "worker";
     const isFront = zoneIndex >= activeDayZones - 1;

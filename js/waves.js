@@ -382,6 +382,7 @@ function resetTransientState() {
     // picked up again by the next flux worker.
     dropCarriedMass();
     // Half-finished conversions do not survive a change of scene.
+    if (typeof clearBroods === "function") clearBroods();
     world.forEach(t => { if (t.converting) { t.converting = false; t.convertProgress = 0; } });
     buildMode         = false;
     const _bBtn = document.getElementById("btnBuild");

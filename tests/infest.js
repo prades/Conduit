@@ -72,7 +72,7 @@ function makeEnv() {
     sandbox.getTile = (gx, gy) => sandbox.worldTileMap.get(`${gx},${gy}`);
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
-    for (const f of ['js/species.js', 'js/abilities.js', 'js/mass.js', 'js/infest.js', 'js/predator.js']) {
+    for (const f of ['js/species.js', 'js/abilities.js', 'js/mass.js', 'js/infest.js', 'js/broods.js', 'js/predator.js']) {
         vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
     }
     // The game no longer sends predators looking for pylons (nearestGreenPylonFor
@@ -604,17 +604,18 @@ function stepFetch(env, pred, n) {
     for (let i = 0; i < n; i++) { env.sandbox.frame++; env.run('nestFetchTick')(pred); }
 }
 
-check('THE ASK: an idle predator picks up a lump and carries it to the wall nest', () => {
+check('THE ASK: an idle HAULER (a zone-2 beetle) picks up a lump and carries it to the wall nest', () => {
     const env = makeEnv();
     const nest = wallScene(env, [3, 2], 5);
-    const p = mkPred(env, 1, 2);
+    const p = mkPred(env, 1, 2, 'beetle');
+    p.hauler = true;
     stepFetch(env, p, 600);
     same(env.run('chargedMass.length'), 0, 'the lump is still lying where it fell');
     same(nest.massStock, 5, 'the nest was not paid what was carried');
     same(p.nestMass || 0, 0, 'it is still holding it');
 });
 
-check("THE ASK: every NEST_SPAWN_COST paid in hatches one more predator, of the carrier's kind", () => {
+check("THE ASK: every NEST_SPAWN_COST paid in hatches one more predator, of the LESSER tier", () => {
     const env = makeEnv();
     const nest = wallScene(env, null);
     const p = mkPred(env, 6, 0, 'beetle', 'striker');
@@ -624,8 +625,8 @@ check("THE ASK: every NEST_SPAWN_COST paid in hatches one more predator, of the 
     env.run('payIntoWallNest')(nest, 1, p);
     same(env.sandbox.actors.length, before + 1, 'paying the last of it hatched nothing');
     const hatch = env.sandbox.actors[env.sandbox.actors.length - 1];
-    same(hatch.speciesName, 'beetle', "the hatchling is not the carrier's species");
-    same(hatch.className, 'striker', "the hatchling is not the carrier's class");
+    same(hatch.speciesName, 'ant', "a beetle's haul should hatch the lesser tier — an ant");
+    same(hatch.className, 'scout', 'the hatchling should be a plain scout');
     ok(Math.abs(hatch.x - nest.x) < 0.01 && hatch.y >= nest.y, 'the hatchling did not appear at the nest');
     same(nest.massStock, 0, 'the price was not taken out of the stock');
 });
@@ -673,7 +674,8 @@ check('a nest you have neutralised is never fed', () => {
 check('a predator pulled into a fight drops what it carries, as a lump', () => {
     const env = makeEnv();
     wallScene(env, [3, 2], 7);
-    const p = mkPred(env, 2.6, 2);
+    const p = mkPred(env, 2.6, 2, 'beetle');
+    p.hauler = true;
     stepFetch(env, p, 40);
     same(p.nestMass, 7, 'fixture: it should be carrying');
     env.sandbox.alertActive = true;
@@ -682,10 +684,19 @@ check('a predator pulled into a fight drops what it carries, as a lump', () => {
     same(env.run('chargedMass.length'), 1, 'the mass vanished instead of dropping');
 });
 
+check('only the haulers carry: an ordinary predator leaves the lump alone', () => {
+    const env = makeEnv();
+    wallScene(env, [3, 2], 5);
+    const p = mkPred(env, 1, 2);            // an ant, not a hauler
+    stepFetch(env, p, 400);
+    same(env.run('chargedMass.length'), 1, 'a non-hauler carried mass');
+});
+
 check('the tutorial bug never feeds a nest', () => {
     const env = makeEnv();
     wallScene(env, [3, 2], 5);
     const p = mkPred(env, 1, 2);
+    p.hauler = true;
     p.isTutorialFoe = true;
     stepFetch(env, p, 200);
     same(env.run('chargedMass.length'), 1, 'the tutorial bug carried mass');

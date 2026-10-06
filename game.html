@@ -1102,9 +1102,15 @@
       <div class="ctrl-row cm-dim"><strong>Recruits are never attacked</strong> while they walk to the Crystal — not by predators, not by your clones, not by your followers' area attacks, and you cannot order an attack on one. A recruit is on the enemy's team until it arrives, which is why your own side used to cut them down on the way in.</div>
       <div class="ctrl-row cm-dim"><strong>Nor hurt by anything else.</strong> A recruit on its way in now takes <span class="cm-stat">no damage at all</span> — hazards included. The predators' specials were never the problem: all seven land in full on a follower standing beside a recruit and do not scratch the recruit. What was killing them was something that never picks a target — the slow health decay that bleeds anything on the enemy's team. A recruit could arrive dead without a single predator having chosen to hurt it.</div>
 
+      <div class="cm-elem-head" style="color:#f66">◈ PREDATOR PROGRESSION — EACH ZONE TEACHES ONE THING</div>
+      <div class="ctrl-row cm-dim"><strong>Zone 1 — ANTS: just attackers.</strong> They walk up and bite. No special, no leap, no hauling, no pylon hunting &mdash; this is where you learn the bugs are hostile.</div>
+      <div class="ctrl-row cm-dim"><strong>Zone 2 — BEETLES: the haulers.</strong> Three times an ant&rsquo;s health and less bite. A beetle carries charged mass from the floor to its wall nest, and every <span class="cm-stat">20</span> paid in hatches a predator of the <strong>lesser tier</strong> (an ant). Beetles are the only predators that haul.</div>
+      <div class="ctrl-row cm-dim"><strong>Zone 3 — NYMPH swarms.</strong> Most of what comes out is nymphs, fast and weak, and they arrive in packs of <span class="cm-stat">3</span>.</div>
+      <div class="ctrl-row cm-dim"><strong>Zone 4 — the GRUB.</strong> A pale larva with a huge pool of health and no bite. It eats &mdash; charged mass on the floor, pylon wrecks and pylons the enemy took from you, and the bodies of predators that die in its zone &mdash; and its bar shows how close it is to evolving. At <span class="cm-stat">120</span> it becomes the <strong>BROOD TYRANT</strong>, a giant boss that <strong>guards its zone</strong>: it never leaves it, predators near it hit <span class="cm-stat">1.3</span>&times; harder, and it hatches nymphs every 15 seconds. Kill the grub before it evolves and there is no tyrant; while the zone&rsquo;s nest stands, a new grub hatches a minute after the last one is gone.</div>
+
       <div class="cm-elem-head" style="color:#f66">◈ HUNTERS AND THE WALL NESTS</div>
       <div class="ctrl-row cm-dim">About <span class="cm-stat">1 in 4</span> predators is a <strong>hunter</strong>. Left alone, it walks to a pylon of yours and chews it over to its side in about <span class="cm-stat">25 seconds</span>. Interrupt it and the pylon recovers about six times faster than it was taken. A taken pylon is lost until you reclaim it &mdash; <strong>nothing grows on the floor around it</strong>: there are no floor nests or cocoons any more.</div>
-      <div class="ctrl-row cm-dim"><strong>Predators feed their wall nest.</strong> An idle predator picks up a lump of <strong>charged mass</strong> lying on the floor (charged or already neutralised), carries it to its zone&rsquo;s nest on the wall as a glowing number over its head, and pays it in. Every <span class="cm-stat">20</span> mass paid in <strong>hatches another predator</strong> there, of the kind that carried the last of it. The wall nest shows how much it holds toward the next hatch.</div>
+      <div class="ctrl-row cm-dim"><strong>Beetles feed their wall nest.</strong> An idle beetle picks up a lump of <strong>charged mass</strong> lying on the floor (charged or already neutralised), carries it to its zone&rsquo;s nest on the wall as a glowing number over its head, and pays it in. Every <span class="cm-stat">20</span> mass paid in <strong>hatches another predator</strong> there &mdash; an ant, the tier below. The wall nest shows how much it holds toward the next hatch.</div>
       <div class="ctrl-row cm-dim"><strong>You are racing them for the same lumps:</strong> mass left lying after a fight is shards for you or a new predator for them. Kill a carrier and the lump drops back on the floor.</div>
       <div class="ctrl-row cm-dim">Predators <strong>settle back into work at their own pace</strong> after a fight, so they do not all resume on the same frame when an alarm ends.</div>
 
@@ -1301,6 +1307,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 <script src="js/waves.js"></script>
 <script src="js/drops.js"></script>
 <script src="js/clone.js"></script>
+<script src="js/broods.js"></script>
 <script src="js/input.js"></script>
 <script src="js/game.js"></script>
 <script src="js/tutorial.js"></script>

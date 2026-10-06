@@ -202,8 +202,9 @@ function payIntoWallNest(nest, amount, pred) {
     let hatched = 0;
     while (nest.massStock >= NEST_SPAWN_COST) {
         if (typeof predatorBudgetFull === "function" && predatorBudgetFull()) break;
-        const p = _spawnPredatorAt(pred ? pred.speciesName || "ant" : "ant", pred ? pred.className || "scout" : "scout",
-                                   nest.x, Math.max(0, nest.y + 1));
+        // What hatches is the LESSER tier: a beetle's haul makes ants.
+        const sp = typeof lesserSpecies === "function" ? lesserSpecies(pred ? pred.speciesName || "ant" : "ant") : "ant";
+        const p = _spawnPredatorAt(sp, "scout", nest.x, Math.max(0, nest.y + 1));
         if (!p) break;
         p.fromNestMass = true;
         nest.massStock -= NEST_SPAWN_COST;
@@ -217,7 +218,8 @@ function payIntoWallNest(nest, amount, pred) {
     return hatched;
 }
 function nestFetchTick(pred) {
-    if (pred.isTutorialFoe) return false;
+    // Only the HAULERS carry: zone 2's beetles (js/broods.js).
+    if (pred.isTutorialFoe || !pred.hauler) return false;
     // Carrying: take it to the wall nest.
     if (pred.nestMass > 0) {
         const nest = pred._nestTarget;
@@ -321,6 +323,9 @@ function convertPylonToRed(t, pred) {
     if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
     t.pillarTeam = "red";
     t.pillarCol  = "#ff3344";
+    // Remembered: the grub eats pylons that were taken from you, never the
+    // enemy's own (js/broods.js).
+    t.takenFromPlayer = true;
     t.converting = false;
     t.convertProgress = 0;
     // It stops working for you: no turret, no wave zone, no generator duty.
