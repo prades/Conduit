@@ -194,27 +194,6 @@ function drawNPC(actor, px, py, drawCtx=ctx) {
     } else {
         _drawVirus(actor, px, py, drawCtx);
     }
-    // ELECTRIC HASTE: yellow speed streaks trailing a unit of yours that is
-    // being hastened, so the buff can be seen working.
-    if (actor.slowed > 0 && actor.slowFactor > 1 && (actor.isFollower || actor.isClone || actor.team === "green")) {
-        const dx = actor.dirX || 0, dy = actor.dirY || 0;
-        let sx = (dx - dy) * TILE_W, sy = (dx + dy) * TILE_H;
-        const len = Math.hypot(sx, sy) || 1; sx /= len; sy /= len;
-        if (!dx && !dy) { sx = -1; sy = 0; }
-        const k = Math.min(1, (actor.slowFactor - 1) / 0.9);
-        drawCtx.save();
-        drawCtx.strokeStyle = "#ffee33"; drawCtx.lineCap = "round"; drawCtx.lineWidth = 1.5;
-        for (let i = -1; i <= 1; i++) {
-            const ox = -sy * i * 5, oy = sx * i * 4 - 8, ph = (frame * 0.35 + i * 1.7) % 3;
-            drawCtx.globalAlpha = (0.35 + 0.45 * k) * (1 - ph / 3);
-            const L = 6 + 8 * k;
-            drawCtx.beginPath();
-            drawCtx.moveTo(px - sx * (8 + ph * 3) + ox, py - sy * (8 + ph * 3) + oy);
-            drawCtx.lineTo(px - sx * (8 + ph * 3 + L) + ox, py - sy * (8 + ph * 3 + L) + oy);
-            drawCtx.stroke();
-        }
-        drawCtx.restore();
-    }
 }
 
 // A follower that has set itself. Drawn as an isometric cube sitting on the
@@ -1050,84 +1029,12 @@ function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData,
     drawCtx.beginPath(); drawCtx.moveTo(hx, hy); drawCtx.lineTo(crestX, crestY); drawCtx.lineTo(footX, footY); drawCtx.stroke();
 }
 
-function _drawVirus(actor, px, py, drawCtx) {
-    drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
-
-    // ── ULTIMATE CHARGE BAR ───────────────────────────────
-    if (actor.isFollower && typeof actor.ultimateCharge === "number") {
-        const _uc = Math.max(0, Math.min(100, actor.ultimateCharge));
-        const _ucFull = _uc >= 100;
-        const _elDef = ELEMENTS.find(e => e.id === actor.element);
-        const _elCol = _elDef ? _elDef.color : "#aaa";
-        // Background track
-        drawCtx.fillStyle = "#111";
-        drawCtx.fillRect(px - 14, py - 82, 28, 3);
-        // Filled portion — pulses white when full
-        if (_ucFull) {
-            const _pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.18);
-            drawCtx.fillStyle = _pulse > 0.5 ? "#ffffff" : _elCol;
-        } else {
-            drawCtx.fillStyle = _elCol;
-        }
-        drawCtx.fillRect(px - 13, py - 81, Math.floor(26 * (_uc / 100)), 1);
-        // "▲" ready indicator
-        if (_ucFull) {
-            drawCtx.save();
-            drawCtx.setTransform(1, 0, 0, 1, 0, 0);
-            drawCtx.font = "bold 8px monospace";
-            drawCtx.textAlign = "center";
-            drawCtx.fillStyle = _elCol;
-            drawCtx.fillText("▲", px, py - 85);
-            drawCtx.restore();
-        }
-    }
-
-    const elementDef   = ELEMENTS.find(e => e.id === actor.element);
-    const elementColor = actor.isNeutralRecruit ? "#aaaaaa" : (elementDef ? elementDef.color : "#777");
-    const hr = actor.maxHealth > 0 ? actor.health / actor.maxHealth : 0;
-    const er = parseInt(elementColor.substring(1,3),16);
-    const eg = parseInt(elementColor.substring(3,5),16);
-    const eb = parseInt(elementColor.substring(5,7),16);
-    const flash = actor.hitFlash > 0 && actor.state !== "retreat";
-
-    // ── GHOSTPHAGE GHOST — translucent white wraith, no element color ──
-    if (actor.ghostphageLife) {
-        const bodyY2 = py - 40;
-        const pulse = 0.38 + 0.14 * Math.sin((frame||0) * 0.1);
-        drawCtx.save();
-        drawCtx.globalAlpha = pulse;
-        // Wispy legs
-        drawCtx.strokeStyle = "#aacccc"; drawCtx.lineWidth = 1.2; drawCtx.lineCap = "round";
-        [[px-6,bodyY2+22,Math.PI*0.83,Math.PI*0.56],[px+6,bodyY2+22,Math.PI*0.17,Math.PI*0.44],[px,bodyY2+20,Math.PI*0.55,Math.PI*0.38]].forEach(([hx,hy,a1,a2])=>{
-            const kx=hx+Math.cos(a1)*13, ky=hy+Math.sin(a1)*13;
-            const fx=kx+Math.cos(a2)*11, fy=ky+Math.sin(a2)*11;
-            drawCtx.beginPath(); drawCtx.moveTo(hx,hy); drawCtx.lineTo(kx,ky); drawCtx.lineTo(fx,fy); drawCtx.stroke();
-        });
-        // Ghost body — hollow white column with glow
-        drawCtx.shadowColor = "#aaffff"; drawCtx.shadowBlur = 12;
-        drawCtx.strokeStyle = "#ddeeff"; drawCtx.lineWidth = 1.2;
-        drawCtx.strokeRect(px-5, bodyY2+5, 10, 18);
-        // Head diamond — white outline
-        drawCtx.beginPath();
-        drawCtx.moveTo(px, bodyY2-8); drawCtx.lineTo(px+10, bodyY2+2);
-        drawCtx.lineTo(px, bodyY2+12); drawCtx.lineTo(px-10, bodyY2+2); drawCtx.closePath();
-        drawCtx.strokeStyle = "#ffffff"; drawCtx.lineWidth = 1.5;
-        drawCtx.stroke();
-        drawCtx.shadowBlur = 0;
-        drawCtx.restore();
-        drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
-        return;
-    }
-
-    const wc = actor.walkCycle || 0;
-
-    // ── TOXIC SMOKE FORM — make follower body transparent ────────────────────
-    const _hasSmokeForm = actor.smokeForm > 0;
-    if (_hasSmokeForm) {
-        drawCtx.save();
-        drawCtx.globalAlpha = 0.14 + 0.07 * Math.sin((frame||0) * 0.38);
-    }
-
+// ── THE FOLLOWER FIGURE ──────────────────────────────────
+// Legs and glass body, drawn at (px, py). Lifted out of _drawVirus so the same
+// code can draw straight to the screen or once into a sprite (_virusSprite).
+// REPORTED: "we need a major optimization update for when there are a lot of
+// followers" — each one was ~60 canvas paths a frame, redrawn from scratch.
+function _drawVirusFigure(drawCtx, px, py, actor, flash, er, eg, eb, wc, opts) {
     // ── Layout constants ──────────────────────────────────────────────────────
     // (all y values relative to py = isometric ground point)
     const BASE_Y    = py - 28;   // base plate centre
@@ -1282,7 +1189,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     const cR   = 7.5;
     const cBright = `rgb(${Math.min(255,er+100)},${Math.min(255,eg+100)},${Math.min(255,eb+100)})`;
     const cMid    = `rgb(${Math.min(255,er+40)},${Math.min(255,eg+40)},${Math.min(255,eb+40)})`;
-    const crystalPulse = 0.85 + 0.15 * Math.sin((frame||0) * 0.12 + (actor.x||0));
+    const crystalPulse = opts.crystalAlpha !== undefined ? opts.crystalAlpha : 0.85 + 0.15 * Math.sin((frame||0) * 0.12 + (actor.x||0));
     drawCtx.save();
     drawCtx.globalAlpha = flash ? 1 : crystalPulse;
     drawCtx.fillStyle = cMid;
@@ -1306,34 +1213,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     drawCtx.closePath(); drawCtx.fill();
     drawCtx.restore();
 
-    // ── AERATION BUBBLES — each has unique speed, size and phase ──
-    const bSeed = ((actor.x||0) * 7 + (actor.y||0) * 13) | 0;
-    const bubbleDefs = [
-        { xOff: -3, period: 55, phase: (bSeed * 3)        % 55, r: 1.2 },
-        { xOff:  4, period: 38, phase: (bSeed * 7  + 15)  % 38, r: 0.9 },
-        { xOff: -1, period: 70, phase: (bSeed * 5  + 30)  % 70, r: 1.5 },
-        { xOff:  2, period: 47, phase: (bSeed * 11 +  8)  % 47, r: 0.7 },
-        { xOff: -5, period: 62, phase: (bSeed * 2  + 22)  % 62, r: 1.0 },
-    ];
-    drawCtx.save();
-    // Clip to glass interior so bubbles don't bleed outside the walls
-    drawCtx.beginPath();
-    drawCtx.rect(px - DOME_R + 2, DOME_CY - DOME_R, (DOME_R - 2) * 2, glassH + DOME_R);
-    drawCtx.clip();
-    const riseRange = glassH + DOME_R - 4;
-    for (const b of bubbleDefs) {
-        const t   = ((frame + b.phase) % b.period) / b.period; // 0..1 progress bottom→top
-        const bY  = glassBot - 2 - t * riseRange;
-        const bX  = px + b.xOff + Math.sin(t * Math.PI * 3 + b.phase) * 1.5;
-        const alpha = t < 0.1 ? t * 10 : (t > 0.85 ? (1 - t) / 0.15 : 1);
-        drawCtx.globalAlpha = (flash ? 0.9 : 0.5) * alpha;
-        drawCtx.strokeStyle = `rgba(${Math.min(255,er+80)},${Math.min(255,eg+80)},${Math.min(255,eb+80)},1)`;
-        drawCtx.lineWidth = 0.7;
-        drawCtx.beginPath();
-        drawCtx.arc(bX, bY, b.r, 0, Math.PI * 2);
-        drawCtx.stroke();
-    }
-    drawCtx.restore();
+    if (opts.bubbles) _drawVirusBubbles(drawCtx, px, actor, er, eg, eb, flash, DOME_CY, DOME_R, glassBot, glassH);
 
     // Glass walls — barely-there tint so glass reads as solid
     drawCtx.fillStyle = "rgba(220,240,255,0.04)";
@@ -1395,6 +1275,174 @@ function _drawVirus(actor, px, py, drawCtx) {
     drawCtx.stroke();
 
     drawCtx.restore(); // end glass body save
+}
+
+function _drawVirusBubbles(drawCtx, px, actor, er, eg, eb, flash, DOME_CY, DOME_R, glassBot, glassH) {
+    // ── AERATION BUBBLES — each has unique speed, size and phase ──
+    const bSeed = ((actor.x||0) * 7 + (actor.y||0) * 13) | 0;
+    const bubbleDefs = [
+        { xOff: -3, period: 55, phase: (bSeed * 3)        % 55, r: 1.2 },
+        { xOff:  4, period: 38, phase: (bSeed * 7  + 15)  % 38, r: 0.9 },
+        { xOff: -1, period: 70, phase: (bSeed * 5  + 30)  % 70, r: 1.5 },
+        { xOff:  2, period: 47, phase: (bSeed * 11 +  8)  % 47, r: 0.7 },
+        { xOff: -5, period: 62, phase: (bSeed * 2  + 22)  % 62, r: 1.0 },
+    ];
+    drawCtx.save();
+    // No clip: the bubbles sway 1.5px and sit 3px inside the walls, and a
+    // clip per follower per frame was the most expensive call in the figure.
+    const riseRange = glassH + DOME_R - 4;
+    for (const b of bubbleDefs) {
+        const t   = ((frame + b.phase) % b.period) / b.period; // 0..1 progress bottom→top
+        const bY  = glassBot - 2 - t * riseRange;
+        const bX  = px + b.xOff + Math.sin(t * Math.PI * 3 + b.phase) * 1.5;
+        const alpha = t < 0.1 ? t * 10 : (t > 0.85 ? (1 - t) / 0.15 : 1);
+        drawCtx.globalAlpha = (flash ? 0.9 : 0.5) * alpha;
+        drawCtx.strokeStyle = `rgba(${Math.min(255,er+80)},${Math.min(255,eg+80)},${Math.min(255,eb+80)},1)`;
+        drawCtx.lineWidth = 0.7;
+        drawCtx.beginPath();
+        drawCtx.arc(bX, bY, b.r, 0, Math.PI * 2);
+        drawCtx.stroke();
+    }
+    drawCtx.restore();
+}
+
+// The sprite. Sized to hold the legs at full stride and the dome; anchored so
+// (VSPR_OX, VSPR_OY) is the ground point. Drawn at 2x for crisp edges.
+const VSPR_W = 84, VSPR_H = 84, VSPR_OX = 42, VSPR_OY = 66;
+const VIRUS_POSES = 12;            // walk-cycle steps cached per look
+const VIRUS_SPRITE_CAP = 900;      // sprites kept before the oldest are dropped
+const VIRUS_BUBBLE_CROWD = 24;     // more followers on screen than this: no bubbles
+let _virusSprites = new Map(), _virusesOnScreen = 0, _virusesCounting = 0, _virusCountFrame = -1;
+// Only the ordinary look is cached; anything unusual is drawn live.
+function _virusSpriteOk(actor) {
+    return !actor.ghostphageLife && !(actor.smokeForm > 0);
+}
+function _virusSprite(actor, flash, er, eg, eb, wc) {
+    const st = actor.isFollower ? (actor.stats || {}) : null;
+    // Shape buckets: the saw teeth and knee claws grow with stats in steps
+    // too small to see, so they are rounded to a visible step.
+    const saw  = st ? Math.round(Math.max(0, ((st.attack || 10) - 10) * 0.35) * 2) / 2 : 0;
+    const claw = st ? Math.round(Math.max(0, (Math.max(st.specialAttack || 0, st.accuracy || 0) - 10) * 0.45) * 2) / 2 : 0;
+    const TAU = Math.PI * 2;
+    const pose = Math.floor((((wc % TAU) + TAU) % TAU) / TAU * VIRUS_POSES) % VIRUS_POSES;
+    const snap = actor.state === "attack" ? Math.round(Math.sin(actor.attackAnim || 0) * 4) : 0;
+    const key = er + "," + eg + "," + eb + "|" + (flash ? 1 : 0) + "|" + saw + "|" + claw + "|" + pose + "|" + snap + "|" + (actor.isFollower ? 1 : 0) + "|" + (actor.element || "");
+    let cv = _virusSprites.get(key);
+    if (cv !== undefined) return cv;
+    cv = null;
+    const c = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
+    const g = c && c.getContext ? c.getContext("2d") : null;
+    if (g && typeof g.drawImage === "function" && typeof g.scale === "function") {
+        c.width = VSPR_W * 2; c.height = VSPR_H * 2; g.scale(2, 2);
+        // A stand-in carrying exactly what the figure reads, at the bucketed values.
+        const k = 1 / 0.35, kc = 1 / 0.45;
+        const proxy = { isFollower: actor.isFollower, element: actor.element, x: 0, y: 0,
+                        state: snap ? "attack" : "idle", attackAnim: snap ? Math.asin(Math.max(-1, Math.min(1, snap / 4))) : 0,
+                        stats: st ? { attack: 10 + saw * k, specialAttack: 10 + claw * kc, accuracy: 0 } : undefined };
+        _drawVirusFigure(g, VSPR_OX, VSPR_OY, proxy, flash, er, eg, eb, (pose + 0.5) / VIRUS_POSES * TAU, { bubbles: false, crystalAlpha: 0.93 });
+        cv = c;
+    }
+    if (_virusSprites.size >= VIRUS_SPRITE_CAP) _virusSprites.delete(_virusSprites.keys().next().value);
+    _virusSprites.set(key, cv);
+    return cv;
+}
+
+function _drawVirus(actor, px, py, drawCtx) {
+    // How many were drawn last frame — the crowd test for the bubbles.
+    if (_virusCountFrame !== frame) { _virusesOnScreen = _virusesCounting; _virusesCounting = 0; _virusCountFrame = frame; }
+    _virusesCounting++;
+    drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
+
+    // ── ULTIMATE CHARGE BAR ───────────────────────────────
+    if (actor.isFollower && typeof actor.ultimateCharge === "number") {
+        const _uc = Math.max(0, Math.min(100, actor.ultimateCharge));
+        const _ucFull = _uc >= 100;
+        const _elDef = ELEMENTS.find(e => e.id === actor.element);
+        const _elCol = _elDef ? _elDef.color : "#aaa";
+        // Background track
+        drawCtx.fillStyle = "#111";
+        drawCtx.fillRect(px - 14, py - 82, 28, 3);
+        // Filled portion — pulses white when full
+        if (_ucFull) {
+            const _pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.18);
+            drawCtx.fillStyle = _pulse > 0.5 ? "#ffffff" : _elCol;
+        } else {
+            drawCtx.fillStyle = _elCol;
+        }
+        drawCtx.fillRect(px - 13, py - 81, Math.floor(26 * (_uc / 100)), 1);
+        // "▲" ready indicator
+        if (_ucFull) {
+            drawCtx.save();
+            drawCtx.setTransform(1, 0, 0, 1, 0, 0);
+            drawCtx.font = "bold 8px monospace";
+            drawCtx.textAlign = "center";
+            drawCtx.fillStyle = _elCol;
+            drawCtx.fillText("▲", px, py - 85);
+            drawCtx.restore();
+        }
+    }
+
+    const elementDef   = ELEMENTS.find(e => e.id === actor.element);
+    const elementColor = actor.isNeutralRecruit ? "#aaaaaa" : (elementDef ? elementDef.color : "#777");
+    const hr = actor.maxHealth > 0 ? actor.health / actor.maxHealth : 0;
+    const er = parseInt(elementColor.substring(1,3),16);
+    const eg = parseInt(elementColor.substring(3,5),16);
+    const eb = parseInt(elementColor.substring(5,7),16);
+    const flash = actor.hitFlash > 0 && actor.state !== "retreat";
+
+    // ── GHOSTPHAGE GHOST — translucent white wraith, no element color ──
+    if (actor.ghostphageLife) {
+        const bodyY2 = py - 40;
+        const pulse = 0.38 + 0.14 * Math.sin((frame||0) * 0.1);
+        drawCtx.save();
+        drawCtx.globalAlpha = pulse;
+        // Wispy legs
+        drawCtx.strokeStyle = "#aacccc"; drawCtx.lineWidth = 1.2; drawCtx.lineCap = "round";
+        [[px-6,bodyY2+22,Math.PI*0.83,Math.PI*0.56],[px+6,bodyY2+22,Math.PI*0.17,Math.PI*0.44],[px,bodyY2+20,Math.PI*0.55,Math.PI*0.38]].forEach(([hx,hy,a1,a2])=>{
+            const kx=hx+Math.cos(a1)*13, ky=hy+Math.sin(a1)*13;
+            const fx=kx+Math.cos(a2)*11, fy=ky+Math.sin(a2)*11;
+            drawCtx.beginPath(); drawCtx.moveTo(hx,hy); drawCtx.lineTo(kx,ky); drawCtx.lineTo(fx,fy); drawCtx.stroke();
+        });
+        // Ghost body — hollow white column with glow
+        drawCtx.shadowColor = "#aaffff"; drawCtx.shadowBlur = 12;
+        drawCtx.strokeStyle = "#ddeeff"; drawCtx.lineWidth = 1.2;
+        drawCtx.strokeRect(px-5, bodyY2+5, 10, 18);
+        // Head diamond — white outline
+        drawCtx.beginPath();
+        drawCtx.moveTo(px, bodyY2-8); drawCtx.lineTo(px+10, bodyY2+2);
+        drawCtx.lineTo(px, bodyY2+12); drawCtx.lineTo(px-10, bodyY2+2); drawCtx.closePath();
+        drawCtx.strokeStyle = "#ffffff"; drawCtx.lineWidth = 1.5;
+        drawCtx.stroke();
+        drawCtx.shadowBlur = 0;
+        drawCtx.restore();
+        drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
+        return;
+    }
+
+    const wc = actor.walkCycle || 0;
+
+    // ── TOXIC SMOKE FORM — make follower body transparent ────────────────────
+    const _hasSmokeForm = actor.smokeForm > 0;
+    if (_hasSmokeForm) {
+        drawCtx.save();
+        drawCtx.globalAlpha = 0.14 + 0.07 * Math.sin((frame||0) * 0.38);
+    }
+
+    const _figOpts = _virusSpriteOk(actor) ? null : { bubbles: true };
+    if (_figOpts) _drawVirusFigure(drawCtx, px, py, actor, flash, er, eg, eb, wc, _figOpts);
+    else {
+        // THE CACHED FIGURE. Legs and glass body come off a sprite keyed by
+        // element, stat-driven shape and a 12-step walk pose; only the
+        // bubbles are drawn live, and not at all in a crowd.
+        const spr = _virusSprite(actor, flash, er, eg, eb, wc);
+        if (spr) {
+            drawCtx.drawImage(spr, px - VSPR_OX, py - VSPR_OY, VSPR_W, VSPR_H);
+            if (_virusesOnScreen <= VIRUS_BUBBLE_CROWD)
+                _drawVirusBubbles(drawCtx, px, actor, er, eg, eb, flash, py - 28 - 2 - 17, 10, py - 28, (py - 28) - (py - 28 - 2 - 17));
+        } else _drawVirusFigure(drawCtx, px, py, actor, flash, er, eg, eb, wc, { bubbles: true });
+    }
+    // Outside the figure: the attack effects below are placed on its body.
+    const DOME_R = 10, BASE_Y = py - 28, DOME_CY = BASE_Y - 2 - 17, glassBot = BASE_Y;
 
     // ── TOXIC TRANSPARENCY WRAPPER — end ─────────────────────────────────────
     if (_hasSmokeForm) drawCtx.restore();
@@ -1402,6 +1450,9 @@ function _drawVirus(actor, px, py, drawCtx) {
     // ─────────────────────────────────────────────────────────────────────────
     //  PHYSICAL ATTACK VISUAL EFFECTS  (drawn at full alpha, on top of body)
     // ─────────────────────────────────────────────────────────────────────────
+    // No shadowBlur in these: a gaussian blur per attacking follower per
+    // frame was the cost that grew with the size of the squad. Their gradients
+    // and strokes carry the glow on their own.
     const _attBodyY = (DOME_CY + glassBot) * 0.5; // vertical centre of entire glass body
 
     // ── FLUX — OPAQUE ELEMENT-COLOR AURA ────────────────────────────────────
@@ -1415,8 +1466,6 @@ function _drawVirus(actor, px, py, drawCtx) {
         _fxGrad.addColorStop(0.40, `rgba(${er},${eg},${eb},0.65)`);
         _fxGrad.addColorStop(1,    `rgba(${er},${eg},${eb},0)`);
         drawCtx.fillStyle  = _fxGrad;
-        drawCtx.shadowColor = elementColor;
-        drawCtx.shadowBlur  = 22;
         drawCtx.beginPath();
         drawCtx.ellipse(px, _attBodyY, _aR, _aR * 1.3, 0, 0, Math.PI * 2);
         drawCtx.fill();
@@ -1435,7 +1484,6 @@ function _drawVirus(actor, px, py, drawCtx) {
             const _fy = _attBodyY   + Math.sin(_a)        * _orbitR * 0.5;
             const _fr = 4.5 + Math.sin((frame||0) * 0.22 + _i * 2.1) * 1.2;
             drawCtx.globalAlpha = _foAlpha;
-            drawCtx.shadowColor = "#ff4400"; drawCtx.shadowBlur = 14;
             const _fbG = drawCtx.createRadialGradient(_fx, _fy, 0, _fx, _fy, _fr);
             _fbG.addColorStop(0,   "#ffffff");
             _fbG.addColorStop(0.3, "#ffdd00");
@@ -1450,7 +1498,6 @@ function _drawVirus(actor, px, py, drawCtx) {
     if (actor.sparkSurround > 0) {
         const _sAlpha = Math.min(1, actor.sparkSurround / 5);
         drawCtx.save();
-        drawCtx.shadowColor = "#ffee33"; drawCtx.shadowBlur = 10;
         // Radial zigzag sparks
         const _NS = 10;
         drawCtx.lineWidth = 1.5;
@@ -1504,7 +1551,6 @@ function _drawVirus(actor, px, py, drawCtx) {
         const _iAlpha   = Math.min(1, _it.timer / 6);
         drawCtx.save();
         drawCtx.globalAlpha = _iAlpha;
-        drawCtx.shadowColor = "#99ddff"; drawCtx.shadowBlur = 16;
         for (let _ii = 0; _ii < 3; _ii++) {
             const _sp = (_ii - 1) * 0.28;
             const _ca = Math.cos(_sp), _sa = Math.sin(_sp);
@@ -1543,7 +1589,6 @@ function _drawVirus(actor, px, py, drawCtx) {
         const _cpAlpha = Math.min(1, actor.corePulse / 10) * 0.75;
         drawCtx.save();
         drawCtx.strokeStyle = "#00ccaa";
-        drawCtx.shadowColor = "#00ccaa"; drawCtx.shadowBlur = 18;
         for (let _ri = 0; _ri < 3; _ri++) {
             const _phase = ((frame||0) * 0.16 + _ri * (Math.PI * 0.67)) % (Math.PI * 2);
             const _prog  = _phase / (Math.PI * 2);

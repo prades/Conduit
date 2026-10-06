@@ -680,6 +680,97 @@ function layAllCables() {
 // LINKED to a nest keeps that cable even while nothing pulls on it (it is the
 // link, and it used to be a separate beam in the air); an unlinked relay only
 // shows its supply cable while something is drawing.
+// ── THE FLOOR TILE ───────────────────────────────────────
+// One floor tile's look at a given distance from the camera, drawn at (px, py)
+// — the tile's top corner. Used to fill the tile sprites below, and directly
+// if a sprite cannot be made.
+const FLOOR_DIST_STEP   = 0.5;   // tiles: distances this close share a look
+const FLOOR_TRACE_STEPS = 8;     // circuit-trace strength levels
+const FLOOR_SPRITE_CAP  = 700;
+let _floorSprites = new Map();
+function _drawFloorTile(c, px, py, isNight, dist, territory, fade) {
+    const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
+    // Day: Dexter's Lab steel-blue/teal panels. Night: Dark steel with warm red-orange ambience.
+    let tR, tG, tB;
+    if (isNight) {
+        tR = (22*amb + 38*glo)|0;
+        tG = (14*amb + 10*glo)|0;
+        tB = (16*amb +  6*glo)|0;
+    } else {
+        tR = (16*amb +  8*glo)|0;
+        tG = (26*amb + 20*glo)|0;
+        tB = (42*amb + 52*glo)|0;
+    }
+    c.fillStyle=`rgb(${tR},${tG},${tB})`;
+    c.beginPath(); c.moveTo(px,py); c.lineTo(px+TILE_W,py+TILE_H); c.lineTo(px,py+TILE_W); c.lineTo(px-TILE_W,py+TILE_H); c.closePath(); c.fill();
+    // ── TERRITORY TINT — color overlay for player/enemy/contested zones ──
+    if (territory) {
+        c.save();
+        if (territory === 'player')    c.fillStyle = 'rgba(0,120,255,0.15)';
+        else if (territory === 'enemy') c.fillStyle = 'rgba(255,40,40,0.12)';
+        else                               c.fillStyle = 'rgba(200,200,0,0.1)';
+        c.beginPath();
+        c.moveTo(px,py); c.lineTo(px+TILE_W,py+TILE_H);
+        c.lineTo(px,py+TILE_W); c.lineTo(px-TILE_W,py+TILE_H);
+        c.closePath(); c.fill();
+        c.restore();
+    }
+
+    // ── Steel panel bevel — highlight top two edges, shadow bottom two ──
+    // Top-left edge highlight
+    c.strokeStyle = isNight ? `rgba(80,45,30,${0.5*amb})` : `rgba(80,130,180,${0.55*amb})`;
+    c.lineWidth = 1;
+    c.beginPath(); c.moveTo(px,py+1); c.lineTo(px-TILE_W+1,py+TILE_H); c.stroke();
+    // Top-right edge highlight
+    c.beginPath(); c.moveTo(px,py+1); c.lineTo(px+TILE_W-1,py+TILE_H); c.stroke();
+    // Bottom-left edge shadow
+    c.strokeStyle = `rgba(0,0,0,${0.35*amb})`;
+    c.beginPath(); c.moveTo(px-TILE_W+1,py+TILE_H); c.lineTo(px,py+TILE_W-1); c.stroke();
+    // Bottom-right edge shadow
+    c.beginPath(); c.moveTo(px+TILE_W-1,py+TILE_H); c.lineTo(px,py+TILE_W-1); c.stroke();
+
+    // ── NETWORK FLOOR INTERCONNECT — PCB traces that appear when player extends the network ──
+    // Tiles within range of any live pylon reveal circuit trace lines on the floor
+    if (fade > 0) {
+        {
+            const cx = px, cy = py + TILE_H; // screen center of tile
+            c.save();
+            c.lineWidth = 0.85;
+            // NW→SE trace segment (follows world x-axis): from (-30,-15) to (+30,+15) rel to center
+            c.globalAlpha = 0.16 * amb * fade;
+            c.strokeStyle = isNight ? "#cc6633" : "#00bb88";
+            c.beginPath();
+            c.moveTo(cx - 30, cy - 15);
+            c.lineTo(cx + 30, cy + 15);
+            c.stroke();
+            // NE→SW trace segment (follows world y-axis): from (+30,-15) to (-30,+15) rel to center
+            c.globalAlpha = 0.13 * amb * fade;
+            c.strokeStyle = isNight ? "#aa4422" : "#0099cc";
+            c.beginPath();
+            c.moveTo(cx + 30, cy - 15);
+            c.lineTo(cx - 30, cy + 15);
+            c.stroke();
+            c.restore();
+        }
+    }
+}
+function _floorTileSprite(isNight, dq, territory, tq) {
+    const key = (isNight ? 1 : 0) + "|" + dq + "|" + territory + "|" + tq;
+    let cv = _floorSprites.get(key);
+    if (cv !== undefined) return cv;
+    cv = null;
+    const el = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
+    const g = el && el.getContext ? el.getContext("2d") : null;
+    if (g && typeof g.drawImage === "function") {
+        el.width = TILE_W * 2 + 2; el.height = TILE_W + 2;
+        _drawFloorTile(g, TILE_W + 1, 1, isNight, dq * FLOOR_DIST_STEP, territory, tq / FLOOR_TRACE_STEPS);
+        cv = el;
+    }
+    if (_floorSprites.size >= FLOOR_SPRITE_CAP) _floorSprites.delete(_floorSprites.keys().next().value);
+    _floorSprites.set(key, cv);
+    return cv;
+}
+
 // ── NEAREST PYLON PER TILE (for the floor's circuit traces) ──
 // Built when the pylon cache is rebuilt (every 60 frames, or at once when
 // something forces it), so the floor pass can look a tile's distance up
@@ -2212,80 +2303,16 @@ function render() {
             const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
             // Home camp area — circuit board PCB style (x < 0 is behind the Crystal)
             if (obj.x < 0) { drawCampFloor(obj, px, py, amb); drawCablesOnTile(obj, px, py); return; }
-            const isNight = gameState.phase === "night";
-            // Day: Dexter's Lab steel-blue/teal panels. Night: Dark steel with warm red-orange ambience.
-            let tR, tG, tB;
-            if (isNight) {
-                tR = (22*amb + 38*glo)|0;
-                tG = (14*amb + 10*glo)|0;
-                tB = (16*amb +  6*glo)|0;
-            } else {
-                tR = (16*amb +  8*glo)|0;
-                tG = (26*amb + 20*glo)|0;
-                tB = (42*amb + 52*glo)|0;
-            }
-            ctx.fillStyle=`rgb(${tR},${tG},${tB})`;
-            ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H); ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H); ctx.closePath(); ctx.fill();
-            // ── TERRITORY TINT — color overlay for player/enemy/contested zones ──
-            if (obj.territory) {
-                ctx.save();
-                if (obj.territory === 'player')    ctx.fillStyle = 'rgba(0,120,255,0.15)';
-                else if (obj.territory === 'enemy') ctx.fillStyle = 'rgba(255,40,40,0.12)';
-                else                               ctx.fillStyle = 'rgba(200,200,0,0.1)';
-                ctx.beginPath();
-                ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H);
-                ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H);
-                ctx.closePath(); ctx.fill();
-                ctx.restore();
-            }
-
-            // ── Steel panel bevel — highlight top two edges, shadow bottom two ──
-            // Top-left edge highlight
-            ctx.strokeStyle = isNight ? `rgba(80,45,30,${0.5*amb})` : `rgba(80,130,180,${0.55*amb})`;
-            ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(px,py+1); ctx.lineTo(px-TILE_W+1,py+TILE_H); ctx.stroke();
-            // Top-right edge highlight
-            ctx.beginPath(); ctx.moveTo(px,py+1); ctx.lineTo(px+TILE_W-1,py+TILE_H); ctx.stroke();
-            // Bottom-left edge shadow
-            ctx.strokeStyle = `rgba(0,0,0,${0.35*amb})`;
-            ctx.beginPath(); ctx.moveTo(px-TILE_W+1,py+TILE_H); ctx.lineTo(px,py+TILE_W-1); ctx.stroke();
-            // Bottom-right edge shadow
-            ctx.beginPath(); ctx.moveTo(px+TILE_W-1,py+TILE_H); ctx.lineTo(px,py+TILE_W-1); ctx.stroke();
-
-            // ── NETWORK FLOOR INTERCONNECT — PCB traces that appear when player extends the network ──
-            // Tiles within range of any live pylon reveal circuit trace lines on the floor
-            if (_pillarCache.length > 0) {
-                const REACH = PCB_TRACE_REACH;
-                // Looked up, not searched: this used to loop over EVERY pylon
-                // for EVERY visible floor tile, every frame — measured as the
-                // single biggest cost in a dense base (66 pylons, ~10,000
-                // distance checks a frame). The nearest-pylon distance per tile
-                // is now built once per world-cache rebuild (rebuildPylonNear).
-                const nearDist = pylonNearDist(obj.x, obj.y);
-                if (nearDist < REACH) {
-                    const fade = Math.pow(1 - nearDist / REACH, 1.4);
-                    // Tile world coords and screen center
-                    const txi = Math.round(obj.x), tyi = Math.round(obj.y);
-                    const cx = px, cy = py + TILE_H; // screen center of tile
-                    ctx.save();
-                    ctx.lineWidth = 0.85;
-                    // NW→SE trace segment (follows world x-axis): from (-30,-15) to (+30,+15) rel to center
-                    ctx.globalAlpha = 0.16 * amb * fade;
-                    ctx.strokeStyle = isNight ? "#cc6633" : "#00bb88";
-                    ctx.beginPath();
-                    ctx.moveTo(cx - 30, cy - 15);
-                    ctx.lineTo(cx + 30, cy + 15);
-                    ctx.stroke();
-                    // NE→SW trace segment (follows world y-axis): from (+30,-15) to (-30,+15) rel to center
-                    ctx.globalAlpha = 0.13 * amb * fade;
-                    ctx.strokeStyle = isNight ? "#aa4422" : "#0099cc";
-                    ctx.beginPath();
-                    ctx.moveTo(cx + 30, cy - 15);
-                    ctx.lineTo(cx - 30, cy + 15);
-                    ctx.stroke();
-                    ctx.restore();
-                }
-            }
+            // THE TILE IS A SPRITE. Fill, territory tint, four bevel edges and
+            // the circuit traces were ~8 canvas paths per tile, ~125 tiles a
+            // frame — the biggest single cost on screen. Its look depends only
+            // on distance to the camera, night, territory and trace strength,
+            // so each look is drawn once (_floorTileSprite) and stamped.
+            const _nd = _pillarCache.length > 0 ? pylonNearDist(obj.x, obj.y) : Infinity;
+            const _tq = _nd < PCB_TRACE_REACH ? Math.round(Math.pow(1 - _nd / PCB_TRACE_REACH, 1.4) * FLOOR_TRACE_STEPS) : 0;
+            const _spr = _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), obj.territory || "", _tq);
+            if (_spr) ctx.drawImage(_spr, px - TILE_W - 1, py - 1);
+            else _drawFloorTile(ctx, px, py, gameState.phase === "night", dist, obj.territory || "", _tq / FLOOR_TRACE_STEPS);
 
             // Cables run along the floor, under pylons and units (layAllCables).
             drawCablesOnTile(obj, px, py);

@@ -79,10 +79,21 @@ function drawFloatingTexts() {
     ctx.save();
     ctx.setTransform(1,0,0,1,0,0);
     ctx.textAlign = "center";
+    // Stamped from the text-sprite cache (cachedText in draw.js): a big fight
+    // throws up dozens of damage numbers a frame, and two fillText calls each
+    // was one of the heavier costs with a large squad. Damage numbers repeat,
+    // so the cache hits.
+    const stamp = typeof cachedText === "function";
     floatingTexts.forEach(t => {
         const alpha = Math.min(1, t.life / 30);
         ctx.globalAlpha = alpha;
-        ctx.font = t.size ? `bold ${t.size}px monospace` : "bold 13px monospace";
+        const font = t.size ? `bold ${t.size}px monospace` : "bold 13px monospace";
+        if (stamp) {
+            cachedText(String(t.text), font, "#000", t.x + 1, t.y + 1);
+            cachedText(String(t.text), font, t.color, t.x, t.y);
+            return;
+        }
+        ctx.font = font;
         // Shadow
         ctx.fillStyle = "#000";
         ctx.fillText(t.text, t.x + 1, t.y + 1);

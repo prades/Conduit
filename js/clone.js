@@ -555,7 +555,10 @@ function drawClonesBlob() {
                 const k = (s.z + 1) / 2;           // 0 at the back, 1 at the front
                 ctx.globalAlpha = 0.35 + 0.65 * k;
                 ctx.fillStyle = col;
-                if (pass) { ctx.shadowColor = col; ctx.shadowBlur = 5; } else ctx.shadowBlur = 0;
+                // A faint halo instead of a blur: twelve blurred beads a frame,
+                // forever, on a HUD button.
+                if (pass) { const ga = ctx.globalAlpha; ctx.globalAlpha = ga * 0.25;
+                    ctx.beginPath(); ctx.arc(s.x, p.y, (1.4 + 1.6 * k) * 2, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = ga; }
                 ctx.beginPath(); ctx.arc(s.x, p.y, 1.4 + 1.6 * k, 0, Math.PI * 2); ctx.fill();
             }
         }

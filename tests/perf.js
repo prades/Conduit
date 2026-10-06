@@ -468,6 +468,34 @@ const SCENE = `(function(){
         ok(ops < OP_BUDGET, `${ops} operations, budget ${OP_BUDGET}`);
     });
 
+    group('a big squad');
+
+    // REPORTED: "we need a major optimization update for when there are a lot
+    // of followers". Each follower was ~210 canvas operations a frame, drawn
+    // stroke by stroke; the figure is now a sprite (_virusSprite), its
+    // bubbles are dropped in a crowd, and its attack effects carry no blur.
+    const PER_FOLLOWER_BUDGET = 120;   // was ~250 before the sprites
+    check(`each extra follower on screen costs fewer than ${PER_FOLLOWER_BUDGET} canvas operations`, () => {
+        const frameOps = n => {
+            E.run(`(function(){ followers.forEach(f => { f.dead = true; }); actors = actors.filter(a => !a.isFollower);
+                followers.length = 0;
+                for (let i = 0; i < ${n}; i++) { spawnFollowerAtCrystal(ELEMENTS[i % 6].id);
+                    const f = followers[followers.length - 1]; f.x = player.x + (i % 8) - 3.5; f.y = (i % 4) + 0.5;
+                    f.returningToCrystal = false; f.stance = 'hold'; f.job = null; }
+                for (let i = 0; i < 3; i++) render(); })()`);
+            counts.n = 0; E.run('render();'); return counts.n;
+        };
+        const none = frameOps(0), many = frameOps(40);
+        const per = (many - none) / 40;
+        console.log(`         (measured ${per.toFixed(1)} operations per follower)`);
+        ok(per > 5, 'suspiciously cheap — are the followers being drawn? ' + per);
+        ok(per < PER_FOLLOWER_BUDGET, per.toFixed(1) + ' operations per follower');
+    });
+    check('the floor tiles are stamped from sprites, not drawn path by path', () => {
+        ok(/const _spr = _floorTileSprite\(/.test(SRC.game), 'the floor branch does not use the tile sprites');
+        ok(/_virusSprite\(actor, flash, er, eg, eb, wc\)/.test(fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8')), 'followers are not drawn from sprites');
+    });
+
     check('the loop has exactly one driver', () => {
         same((SRC.game.match(/requestAnimationFrame\(render\)/g) || []).length, 1,
              'render should be scheduled from exactly one place');
