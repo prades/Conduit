@@ -446,7 +446,9 @@ canvas.addEventListener('pointerup', e=>{
             const _now = performance.now();
             if (_tappedFollower === _ultimateLastTapActor && (_now - _ultimateLastTapTime) < 400) {
                 // Double-tap confirmed — fire ultimate if charged
-                if (typeof _tappedFollower.ultimateCharge === "number" && _tappedFollower.ultimateCharge >= 100) {
+                // A bonded pair, both full and close: the DUO ultimate (js/bonds.js).
+                if (typeof tryDuoUltimate === "function" && tryDuoUltimate(_tappedFollower)) { /* fired both */ }
+                else if (typeof _tappedFollower.ultimateCharge === "number" && _tappedFollower.ultimateCharge >= 100) {
                     const _ult = FOLLOWER_ULTIMATES[_tappedFollower.element];
                     if (_ult) _ult.execute(_tappedFollower);
                 }

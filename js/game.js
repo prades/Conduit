@@ -1979,6 +1979,7 @@ function render() {
     actors.forEach(a=>{
         if (a.dead&&a.team==="green"&&!a.queuedForRespawn&&!a.sacrificed) {
             a.queuedForRespawn=true;
+            if (typeof bondOnDeath === "function") bondOnDeath(a);   // the partner rages; the bond ends
             const oldHp = a.stats?.hp||1;
             const newHp = oldHp - 1;
             // The two last-life saves (ghostphage, warden_pact) were crystal
@@ -1989,7 +1990,7 @@ function render() {
             // worth three times as much in a fight and cost shards and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
-            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp) });
+            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid });
         }
         // Progression counts EVERY enemy killed, wanderers included — it is a
         // record of what you have fought, not of wave quotas. The wave counter
@@ -2092,6 +2093,7 @@ function render() {
     updateCaptureProgress();
     if (frame % 6 === 0) applySignalTowerBuff();
     updateStatusEffects();
+    if (typeof bondTick === "function") bondTick();
     updateElementEffects();
     updateFloatingTexts();
     // THE BATTERIES. Regen first, then wave mode's constant draw — so a pool
@@ -3761,6 +3763,8 @@ function render() {
                     combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk,
                     ghostphageLife: entry.ghostphageLife||false
                 };
+                // The same person back — same uid — but the bond did not survive.
+                if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid });
                 actors.push(npc); followers.push(npc);
                 if(!followerByElement[rElement]) followerByElement[rElement]=[];
                 followerByElement[rElement].push(npc);
@@ -3829,6 +3833,7 @@ function render() {
     // The hold line is world geometry, so it draws with the world rather than
     // up with the interface.
     drawHoldLine();
+    if (typeof drawBonds === "function") drawBonds();
     // The power chain over the mending filament: the mending line is incidental,
     // the power is the thing the player is managing.
     drawGeneratorLinks();

@@ -234,6 +234,11 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // BERSERKER: the trait sets damageMultiplier (1.5 under 30% health). It used
     // to be read in one job branch only, so it did nothing in ordinary combat.
     if (source && source.team === "green" && source.damageMultiplier > 1) amount *= source.damageMultiplier;
+    // BONDS (js/bonds.js): a fighting pair hits harder together, a bereaved
+    // partner rages, a duo ultimate leaves both hitting harder for a while.
+    // Both sides of the hit count as being in combat, which is what builds one.
+    if (typeof noteCombat === "function") { noteCombat(source); noteCombat(target); }
+    if (typeof bondAttackMult === "function") amount *= bondAttackMult(source);
     // THE BROOD TYRANT: predators beside it hit harder (js/broods.js).
     if (source && source.broodBuffUntil && typeof BROOD_AURA_MULT !== "undefined" && source.broodBuffUntil > frame) amount *= BROOD_AURA_MULT;
     // ARMY SURGE. Applied here rather than at each attack because the twelve
@@ -278,6 +283,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // Command Node — 10% incoming damage reduction for followers
     if (target && target.isFollower && target.team === "green") {
         amount *= getFollowerDefMult();
+        if (typeof bondDefenseMult === "function") amount *= bondDefenseMult(target);   // a partner close by
         // Defense stat mitigation — higher DEF = more damage absorbed
         if (target.stats && target.stats.defense) {
             amount *= 10 / (10 + target.stats.defense * 0.6);
@@ -654,6 +660,7 @@ function spawnFollowerAtCrystal(element) {
         naturalTrait: Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)],
         perk:         Object.keys(PERKS)[Math.floor(Math.random()*2)]
     };
+    if (typeof followerUid === "function") followerUid(npc);
     actors.push(npc);
     followers.push(npc);
     followerByElement[element] = followerByElement[element]||[];

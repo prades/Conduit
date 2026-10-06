@@ -358,6 +358,7 @@ function spawnFollowerFromSave(entry) {
         hitFlash:0, dead:false,
         combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk
     };
+    if (typeof bondRestoreFields === "function") bondRestoreFields(npc, entry);
     actors.push(npc); followers.push(npc);
     if(!followerByElement[npc.element]) followerByElement[npc.element]=[];
     followerByElement[npc.element].push(npc);
@@ -422,7 +423,9 @@ function nextWave() {
         naturalTrait:a.naturalTrait,
         perk:        a.perk,
         stats:       a.stats,
-        role:        a.role
+        role:        a.role,
+        uid:         a.uid || null,
+        partnerUid:  a.partnerUid || null
     }));
 
     // ── Close overlay immediately so the browser can repaint ──

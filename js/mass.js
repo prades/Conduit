@@ -569,6 +569,7 @@ function canRerollFollower(actor) {
 function startFollowerReroll(actor, quiet) {
     if (!canRerollFollower(actor)) return false;
     setFollowerDuty(actor, 'fighter', true);   // drops mass, thaws a block, frees the post
+    if (typeof breakBond === "function") breakBond(actor);   // re-made: someone new, unbonded
     actor.job = null;
     actor.stance = 'follow';
     const fi = followers.indexOf(actor);

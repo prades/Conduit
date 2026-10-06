@@ -49,6 +49,7 @@ const SUITES = [
     ['element combos',         'combo.js'],
     ['overcharge',             'overcharge.js'],
     ['night sieges',           'siege.js'],
+    ['follower bonds',         'bonds.js'],
 ];
 
 let failed = 0;
