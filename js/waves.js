@@ -386,7 +386,7 @@ function resetTransientState() {
     world.forEach(t => { if (t.converting) { t.converting = false; t.convertProgress = 0; } });
     buildMode         = false;
     const _bBtn = document.getElementById("btnBuild");
-    if (_bBtn) updateBuildButton();
+    if (_bBtn && typeof updateBuildButton === "function") updateBuildButton();
     holdLineX         = null;
     isPressing        = false; longHoldFired = false; touchMoved = false; gesturePoints = [];
     shake             = 0;
