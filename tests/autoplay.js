@@ -99,6 +99,14 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r === 0, 'built ' + r + ' with no shards');
     });
 
+    await check('short of shards by day, the player goes to siphon a wall panel no further out than the next zone', () => {
+        fresh(3);
+        const r = run(`(function(){ shardCount = 0; const p = _autoSafePanel(); _autoHack();
+            const z = p ? zoneOfTile(p) : null;
+            return { panel: !!p, safe: p ? z <= nextZoneToTake() : null, tx: player.targetX, px: p && p.x }; })()`);
+        ok(r.panel && r.safe && r.tx === r.px, JSON.stringify(r));
+    });
+
     group('ULTIMATES AND WAVES');
 
     await check('THE ASK: a full ultimate with an enemy close is fired', () => {

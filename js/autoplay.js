@@ -23,7 +23,8 @@
 //   4. ALWAYS → ULTIMATES. A follower with a full bar and an enemy within
 //      AUTOPLAY_ULT_RANGE fires it (the duo ultimate if its partner can).
 //   5. ALWAYS → WORK CREW. About a quarter of the squad works, so kills keep
-//      turning into the shards the building needs.
+//      turning into the shards the building needs; and by day, short of
+//      shards, the player siphons wall panels in zones already taken.
 //   6. WAVE CLEARED → NEXT WAVE, after a short pause to read the screen.
 const AUTOPLAY_THINK        = 45;
 const AUTOPLAY_HACK_TEAM    = 3;
@@ -32,6 +33,7 @@ const AUTOPLAY_NETWORK_SIZE = 7;
 const AUTOPLAY_NET_RADIUS   = 9;    // tiles from its nest a network is counted and grown in
 const AUTOPLAY_WORK_SHARE   = 0.25;
 const AUTOPLAY_NEXT_WAVE_MS = 1500;
+const AUTOPLAY_SHARD_LOW    = 40;   // below this, by day, the player siphons safe panels first
 let autoplayOn = false;
 let _autoWaveSince = 0;
 
@@ -107,12 +109,33 @@ function _autoFight() {
     free.forEach((f, i) => { f.job = { type: "attack", target: foes[i % foes.length] }; f._autoJob = true; });
 }
 
-// 2. DAY: the hack team to the next nest.
+// A wall panel worth siphoning: not yet drained, in a zone you hold or the
+// next one to take — a decoy there only starts the night that hacking its nest
+// would have started anyway. Never further out. Nearest first.
+function _autoSafePanel() {
+    if (typeof _wallPanelCache === "undefined") return null;
+    const front = typeof nextZoneToTake === "function" ? nextZoneToTake() : 1;
+    let best = null, bd = Infinity;
+    for (const t of _wallPanelCache) {
+        if (t.panelActivated) continue;
+        const z = typeof zoneOfTile === "function" ? zoneOfTile(t) : getZoneIndex(Math.floor(t.x));
+        if (z > front) continue;
+        const d = Math.abs(t.x - player.x);
+        if (d < bd) { bd = d; best = t; }
+    }
+    return best;
+}
+
+// 2. DAY: the hack team to the next nest. Short of shards, the player first
+// siphons a safe wall panel — the building runs on them.
 function _autoHack() {
     const nest = _autoNextNest();
-    if (!nest) { const home = typeof homePortalTile === "function" ? homePortalTile() : null; if (home) _autoMovePlayer(home.x, 2); return; }
+    const panel = shardCount < AUTOPLAY_SHARD_LOW ? _autoSafePanel() : null;
+    if (!nest) { const home = typeof homePortalTile === "function" ? homePortalTile() : null;
+                 if (panel) _autoMovePlayer(panel.x, panel.y + 1); else if (home) _autoMovePlayer(home.x, 2); return; }
     const spot = nestHackCentre(nest);
-    _autoMovePlayer(spot.x - 2, 2);
+    if (panel) { player.targetX = panel.x; player.targetY = panel.y + 1; }
+    else _autoMovePlayer(spot.x - 2, 2);
     let team = followers.filter(f => !f.dead && f.hackOrder === nest);
     if (team.length < AUTOPLAY_HACK_TEAM) {
         const pick = followers.filter(f => !f.dead && !f.hackOrder && f.duty !== "worker" && !f.returningToCrystal)
