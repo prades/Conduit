@@ -1939,27 +1939,45 @@ function drawPylonTurret(obj, px, topY, colour, dark) {
     } else {
         obj._tAng = want;
     }
-    const ang = obj._tAng, ux = Math.cos(ang), uy = Math.sin(ang);
-    const body = dark ? "#3a3f48" : "#2a3040";
+    const ang = obj._tAng;
+    // ── THE RUNE BALLISTA (design B) ──────────────────────
+    // A small stone pivot block, two stone prongs laid along the aim, and a
+    // glowing glyph-bolt held between them in the element's colour. Minimal,
+    // runic, stone. The prongs follow the aim in screen space; the depth axis
+    // is squashed (uy * 0.55) so they read as lying in the ground plane.
+    const ux = Math.cos(ang), uy = Math.sin(ang);   // already a screen-space angle
+    const stoneTop = dark ? "#3a3f48" : "#3a4352", stoneSide = dark ? "#2a2e35" : "#232a35", stoneDark = dark ? "#1e2228" : "#161b23";
     ctx.save();
-    // Turret ring and housing.
-    ctx.fillStyle = body; ctx.strokeStyle = colour; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.ellipse(cx, cy + 2, 7, 3.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    // Barrel: a thick dark line with a bright core, drawn along the aim.
-    const len = 15, bx = cx + ux * len, by = cy + uy * len * 0.9;
+    // Pivot block: a squat isometric stone.
+    const pw = 8, pd = 4, ph = 5, pyb = cy + 4;
+    ctx.fillStyle = stoneSide; ctx.beginPath(); ctx.moveTo(cx - pw, pyb); ctx.lineTo(cx, pyb + pd); ctx.lineTo(cx, pyb + pd - ph); ctx.lineTo(cx - pw, pyb - ph); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = stoneDark; ctx.beginPath(); ctx.moveTo(cx, pyb + pd); ctx.lineTo(cx + pw, pyb); ctx.lineTo(cx + pw, pyb - ph); ctx.lineTo(cx, pyb + pd - ph); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = stoneTop; ctx.beginPath(); ctx.moveTo(cx - pw, pyb - ph); ctx.lineTo(cx, pyb + pd - ph); ctx.lineTo(cx + pw, pyb - ph); ctx.lineTo(cx, pyb - pd - ph); ctx.closePath(); ctx.fill();
+    // The two prongs, either side of the aim.
+    const len = 17, bx = cx + ux * len, by = cy + uy * len;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#11151c"; ctx.lineWidth = 4.5;
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by); ctx.stroke();
-    ctx.strokeStyle = dark ? "#59606b" : colour; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by); ctx.stroke();
-    // Gun head.
-    ctx.fillStyle = dark ? "#4a4f58" : "#39465c";
-    ctx.beginPath(); ctx.arc(cx, cy, 4.2, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = colour; ctx.lineWidth = 1; ctx.stroke();
+    for (const sgn of [-1, 1]) {
+        const ox = -uy * 5.5 * sgn, oy = ux * 2.8 * sgn;
+        ctx.strokeStyle = stoneTop; ctx.lineWidth = 4.5;
+        ctx.beginPath(); ctx.moveTo(cx + ox, cy + oy); ctx.lineTo(cx + ox + ux * len, cy + oy + uy * len); ctx.stroke();
+        ctx.strokeStyle = stoneDark; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(cx + ox, cy + oy + 1); ctx.lineTo(cx + ox + ux * len, cy + oy + uy * len + 1); ctx.stroke();
+    }
+    // The bolt: a lit glyph-shaft between the prongs.
+    ctx.strokeStyle = dark ? "#59606b" : colour; ctx.lineWidth = 2.4;
+    if (!dark) { ctx.shadowColor = colour; ctx.shadowBlur = target ? 12 : 7; }
+    ctx.beginPath(); ctx.moveTo(cx - ux * 4, cy - uy * 4); ctx.lineTo(bx - ux * 1, by - uy * 1); ctx.stroke();
+    ctx.shadowBlur = 0;
+    // A rune notch on the pivot.
     if (!dark) {
-        // Sensor eye, brighter while it has something in sight.
+        ctx.strokeStyle = colour; ctx.lineWidth = 1; ctx.globalAlpha = 0.85;
+        ctx.beginPath(); ctx.moveTo(cx - 2, pyb - 1); ctx.lineTo(cx, pyb - 3.5); ctx.lineTo(cx + 2, pyb - 1); ctx.stroke();
+        ctx.globalAlpha = 1;
+    }
+    if (!dark) {
+        // The bolt's head, red while it has something in its sights.
         ctx.fillStyle = target ? "#ff4040" : colour; ctx.globalAlpha = target ? 1 : 0.6;
-        ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.beginPath(); ctx.arc(bx, by, 1.8, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
         // Lock: a dashed line to the target and a turning reticle.
         if (target && locked) {
             ctx.strokeStyle = "rgba(255,70,70,0.75)"; ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]);

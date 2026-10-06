@@ -27,13 +27,15 @@
 <body>
 <header>
   <h1>PYLON DESIGN OPTIONS</h1>
-  <p class="sub">Turret heads (A&ndash;D) and wave-pylon bodies (1&ndash;8), drawn the way the game draws: isometric stone, minimal, runes lit in the element&rsquo;s colour. Pick an element to see each design carry its traits. Tell me a letter for the turret and up to eight numbers for the wave pylons.</p>
+  <p class="sub">Turret heads (A&ndash;D) and wave-pylon bodies (1&ndash;8), drawn the way the game draws: isometric stone, minimal, runes lit in the element&rsquo;s colour. Pick an element to see each design carry its traits. Turret B is now in the game. Tell me up to eight numbers (1&ndash;16) for the wave pylons.</p>
 </header>
 <div class="bar" id="bar"></div>
-<h2>TURRET HEADS &mdash; ATTACK MODE (they track the target)</h2>
+<h2>TURRET HEADS &mdash; ATTACK MODE (they track the target) &middot; <span style="color:#7dffc8">B CHOSEN &mdash; now in the game</span></h2>
 <div class="grid" id="turrets"></div>
 <h2>WAVE PYLONS &mdash; BROAD, SEGMENTED, HOLLOW</h2>
 <div class="grid" id="waves"></div>
+<h2>WAVE PYLONS &mdash; SECOND SET (9&ndash;16)</h2>
+<div class="grid" id="waves2"></div>
 <footer>Animated preview. Every design is a few stone blocks and glowing glyphs &mdash; cheap to draw on a phone.</footer>
 <script>
 const ELEMENTS = [
@@ -196,6 +198,65 @@ const WAVES = [
       trait(c, el, cx, y, 22, 30, t); } },
 ];
 
+// ── SECOND SET of wave pylons ───────────────────────────
+const WAVES2 = [
+  { name:"9 · ZIGGURAT FRAME", note:"A stepped pyramid built only of its edges: three hollow tiers, each a square frame on the one below.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b);
+      for (let k = 0; k < 3; k++) { const y = b - 8 - k * 15, w = 24 - k * 7, d = 12 - k * 3.5;
+        block(c, cx - w + 2.5, y, 2.5, 2, 13); block(c, cx + w - 2.5, y, 2.5, 2, 13); block(c, cx, y - d + 2, 2.5, 2, 13); block(c, cx, y + d - 2, 2.5, 2, 13);
+        rune(c, cx + w - 2.5, y - 6, 2.4, el.color, k, 5); }
+      trait(c, el, cx, b - 28, 18, 36, t); } },
+  { name:"10 · KEYSTONE", note:"Two leaning stelae with a keystone hovering between their tips. The element hangs in the arch they almost make.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b);
+      for (const s of [-1, 1]) for (let k = 0; k < 5; k++) block(c, cx + s * (18 - k * 2.6), b - 8 - k * 10, 5, 3, 10);
+      const ky = b - 66 + Math.sin(t * 2) * 2.5; block(c, cx, ky, 6, 3, 9); rune(c, cx, ky - 6, 3, el.color, 1, 10);
+      trait(c, el, cx, b - 32, 16, 40, t); } },
+  { name:"11 · SPIRAL STAIR", note:"Steps of stone wound in a helix round an empty shaft, climbing as they turn.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b); const st = [];
+      for (let i = 0; i < 12; i++) { const a = i * 0.75 + t * 0.6; st.push({ a, y: b - 10 - i * 4.6 }); }
+      st.sort((p, q) => Math.sin(p.a) - Math.sin(q.a));
+      for (const s0 of st) { const sx = cx + Math.cos(s0.a) * 16, sy = s0.y + Math.sin(s0.a) * 6; block(c, sx, sy, 5, 2.5, 4); if (Math.sin(s0.a) > 0.6) rune(c, sx, sy - 6, 1.8, el.color, 2, 6); }
+      trait(c, el, cx, b - 36, 10, 44, t); } },
+  { name:"12 · CROSS VAULT", note:"Two arches crossing at right angles over one tile; four feet, an open square of sky between them.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b);
+      for (const [dx, dy] of [[-17, 0], [17, 0], [0, -9], [0, 9]]) block(c, cx + dx, b - 6 + dy, 4, 2.5, 40);
+      c.save(); c.strokeStyle = STONE.top; c.lineWidth = 5;
+      c.beginPath(); c.moveTo(cx - 17, b - 46); c.quadraticCurveTo(cx, b - 66, cx + 17, b - 46); c.stroke();
+      c.beginPath(); c.moveTo(cx, b - 55); c.quadraticCurveTo(cx, b - 72, cx, b - 37); c.stroke(); c.restore();
+      rune(c, cx, b - 62, 3, el.color, 4, 10); trait(c, el, cx, b - 28, 18, 34, t); } },
+  { name:"13 · CAIRN RING", note:"A low, wide ring of stacked cairns — the broadest of the set, all footprint and no height.",
+    draw(c, cx, b, el, t) { block(c, cx, b, 34, 17, 4); const ca = [];
+      for (let i = 0; i < 8; i++) ca.push(i / 8 * Math.PI * 2);
+      ca.sort((p, q) => Math.sin(p) - Math.sin(q));
+      for (const a of ca) { const sx = cx + Math.cos(a) * 26, sy = b - 4 + Math.sin(a) * 12;
+        for (let k = 0; k < 3; k++) block(c, sx, sy - k * 6, 4 - k * 0.8, 2.2, 5); rune(c, sx, sy - 22, 1.8, el.color, Math.round(a * 2), 6); }
+      trait(c, el, cx, b - 14, 30, 20, t); } },
+  { name:"14 · OBELISK CAGE", note:"Four thin obelisks at the corners of the tile, capped and joined. The hollow inside is the zone.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b);
+      const corners = [[0, -11], [-21, 0], [21, 0], [0, 11]];
+      for (const [dx, dy] of corners) { block(c, cx + dx, b - 6 + dy, 2.6, 1.6, 46); c.save(); c.fillStyle = el.color; c.shadowColor = el.color; c.shadowBlur = 8;
+        c.beginPath(); c.moveTo(cx + dx, b - 6 + dy - 52); c.lineTo(cx + dx + 2, b - 6 + dy - 46); c.lineTo(cx + dx - 2, b - 6 + dy - 46); c.closePath(); c.fill(); c.restore(); }
+      c.save(); c.strokeStyle = rgba(el.color, 0.45); c.lineWidth = 1; c.beginPath();
+      c.moveTo(cx, b - 63); c.lineTo(cx - 21, b - 52); c.lineTo(cx, b - 41); c.lineTo(cx + 21, b - 52); c.closePath(); c.stroke(); c.restore();
+      trait(c, el, cx, b - 30, 18, 36, t); } },
+  { name:"15 · RUNE WHEEL", note:"A tall wheel of stone segments on edge with spokes of light, turning slowly in its cradle.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b); block(c, cx - 14, b - 8, 4, 3, 16); block(c, cx + 14, b - 8, 4, 3, 16);
+      const y = b - 42, R = 24;
+      for (let i = 0; i < 8; i++) { const a0 = i / 8 * Math.PI * 2 + t * 0.5 + 0.05, a1 = a0 + Math.PI / 4 - 0.1;
+        c.save(); c.strokeStyle = i % 2 ? STONE.left : STONE.top; c.lineWidth = 6; c.beginPath(); c.ellipse(cx, y, R * 0.55, R, 0, a0, a1); c.stroke(); c.restore();
+        c.save(); c.strokeStyle = rgba(el.color, 0.55); c.lineWidth = 1; c.beginPath(); c.moveTo(cx, y);
+        c.lineTo(cx + Math.cos(a0) * R * 0.5, y + Math.sin(a0) * R * 0.92); c.stroke(); c.restore(); }
+      rune(c, cx, y, 3, el.color, 3, 10); trait(c, el, cx, y, 12, 30, t); } },
+  { name:"16 · SHATTERED PILLAR", note:"One broad pillar broken into floating drums, each a hand apart, the element showing through every break.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b);
+      for (let k = 0; k < 5; k++) { const y = b - 8 - k * 12 - Math.sin(t * 1.5 + k) * 1.5, tw = (k % 2 ? 0.6 : -0.6);
+        block(c, cx + tw, y, 12 - k * 0.8, 6 - k * 0.4, 8);
+        c.save(); c.fillStyle = rgba(el.color, 0.35 + 0.25 * Math.sin(t * 3 + k)); c.shadowColor = el.color; c.shadowBlur = 8;
+        c.fillRect(cx - 9 + k * 0.6, y - 10.5, 18 - k * 1.2, 1.6); c.restore();
+        rune(c, cx + 5, y - 4, 2.2, el.color, k, 5); }
+      trait(c, el, cx, b - 36, 6, 40, t); } },
+];
+
 // ── render ───────────────────────────────────────────────
 const W = 220, H = 190;
 function makeCards(host, list) {
@@ -210,6 +271,7 @@ function makeCards(host, list) {
 }
 const tCards = makeCards(document.getElementById("turrets"), TURRETS);
 const wCards = makeCards(document.getElementById("waves"), WAVES);
+const w2Cards = makeCards(document.getElementById("waves2"), WAVES2);
 const bar = document.getElementById("bar");
 for (const e of ELEMENTS) {
   const btn = document.createElement("button"); btn.textContent = e.label; btn.style.color = e.color;
@@ -229,7 +291,7 @@ function frame(ts) {
     const tx = W / 2 + Math.cos(aim) * 80, ty = H - 50 + Math.sin(aim) * 30;
     c.save(); c.strokeStyle = "rgba(255,80,80,0.6)"; c.setLineDash([3, 4]); c.beginPath(); c.arc(tx, ty, 6, 0, Math.PI * 2); c.stroke(); c.restore();
   }
-  for (const { d, c } of wCards) {
+  for (const { d, c } of [...wCards, ...w2Cards]) {
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W * 2, H * 2); zoom(c, H - 18);
     floor(c, W / 2, H - 30); d.draw(c, W / 2, H - 30, EL, t);
   }
