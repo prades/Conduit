@@ -309,7 +309,7 @@ const TUTS = [
     {
         id:    'upgrade',
         title: 'UPGRADE A PYLON',
-        body:  'UPGRADE only shows in build mode. Tap the flashing BUILD button so it reads BUILD: ON, then press and hold the marked pylon and pick UPGRADE at the top of the ring. Choose an element — a follower sacrifices themselves to power it up as a turret.',
+        body:  'UPGRADE only shows in build mode. Tap the flashing BUILD button so it reads BUILD: ON, then press and hold the marked pylon and pick UPGRADE at the top of the ring. Choose ATTACK TURRET, then an element — a follower sacrifices themselves to power it up.',
         icon:  '△',
         // Flash BUILD until it is on; once it is, the request is answered and
         // the ring's UPGRADE button is where the player should be looking.
@@ -319,8 +319,8 @@ const TUTS = [
     },
     {
         id:    'switch',
-        title: 'SWITCH PYLON MODE',
-        body:  'Turn BUILD back off, then press and hold the marked pylon and pick SWITCH from the left of the ring. That toggles ATTACK MODE (fires at enemies) and WAVE MODE (links with nearby pylons to boost your network).',
+        title: 'CONVERT A PYLON',
+        body:  'Turn BUILD back off, then press and hold the marked pylon and pick CONVERT from the left of the ring. Choose WAVE PYLON: it stops shooting and instead links with nearby pylons, slowing bugs and hasting your followers.',
         icon:  '⇌',
         // This step asks for the opposite: flash BUILD while it is still on.
         wantsButton: () => (typeof buildMode !== 'undefined' && buildMode) ? 'btnBuild' : null,
@@ -362,7 +362,7 @@ const TUTS = [
         // this step can be finished without leaving zone 0.
         id:    'generator',
         title: 'BUILD A GENERATOR',
-        body:  'Turn BUILD on, press and hold the marked pylon, pick UPGRADE and choose GENERATOR. It can only go within ' + GENERATOR_NEST_RANGE + ' tiles of a NEST — the green portal at home counts, so there is a spot right here.',
+        body:  'Turn BUILD on, press and hold the marked pylon, pick UPGRADE and choose GENERATOR as the kind. It can only go within ' + GENERATOR_NEST_RANGE + ' tiles of a NEST — the green portal at home counts, so there is a spot right here.',
         icon:  '\u2699',
         wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
         // A pylon that could actually take one, so the marker never points at a
@@ -396,7 +396,7 @@ const TUTS = [
         // reach: it is what carries power out to the far zones.
         id:    'connector',
         title: 'BUILD A CONNECTOR PYLON',
-        body:  'A CONNECTOR is a long-range relay. With BUILD on, hold a plain pylon, pick UPGRADE then CONNECTOR (within ' + GENERATOR_NEST_RANGE + ' tiles of a nest). It powers EVERY pylon within ' + CONNECTOR_RANGE + ' tiles, so one can light a far-off zone.',
+        body:  'A CONNECTOR is a long-range relay. With BUILD on, hold a plain pylon, pick UPGRADE and choose CONNECTOR as the kind (within ' + GENERATOR_NEST_RANGE + ' tiles of a nest). It powers EVERY pylon within ' + CONNECTOR_RANGE + ' tiles, so one can light a far-off zone.',
         icon:  '\u2301',
         wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
         target: () => tutPlainPylon(),

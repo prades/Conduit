@@ -536,7 +536,7 @@
       <div class="ctrl-row"><span class="ctrl-key">○</span> Circle (no enemies) → Recall all followers</div>
       <div class="ctrl-row"><span class="ctrl-key">│</span> Vertical line → Hold line — followers stop advancing</div>
       <div class="ctrl-row"><span class="ctrl-key">→</span> Drag follower → enemy → That follower attacks target</div>
-      <div class="ctrl-row"><span class="ctrl-key">⌀</span> <strong>Long press</strong> anything → its radial menu. <strong>Every order lives here</strong> &mdash; the ring changes with what you press: a bug (ATTACK / STOW your weapon), your follower (TO WORK / TO LINE / RE-ROLL), a pylon (UPGRADE, SWITCH), a generator (TURN ON / OFF), a connector (OPEN / CLOSE CIRCUIT)</div>
+      <div class="ctrl-row"><span class="ctrl-key">⌀</span> <strong>Long press</strong> anything → its radial menu. <strong>Every order lives here</strong> &mdash; the ring changes with what you press: a bug (ATTACK / STOW your weapon), your follower (TO WORK / TO LINE / RE-ROLL), a pylon (UPGRADE, CONVERT), a generator (TURN ON / OFF), a connector (OPEN / CLOSE CIRCUIT)</div>
       <div class="ctrl-row"><span class="ctrl-key">▤</span> Long press a row in the <strong>follower index</strong> (bottom left) → order that whole group to work or back to the line</div>
       <div class="ctrl-row"><span class="ctrl-key">·</span> Tap the floor → walk there. Tap a wall panel → hack it for shards and ammo</div>
       <div class="ctrl-row"><span class="ctrl-key">✦✦</span> Double-tap follower → Fire ultimate (when charged)</div>
@@ -546,7 +546,7 @@
       <div class="ctrl-row"><span class="ctrl-key">↑</span> TOP — Build / Upgrade (only with BUILD mode ON)</div>
       <div class="ctrl-row"><span class="ctrl-key">↓</span> BOTTOM — Position / Capture (hidden in build mode)</div>
       <div class="ctrl-row"><span class="ctrl-key">→</span> RIGHT — Info panel for the unit or tile</div>
-      <div class="ctrl-row"><span class="ctrl-key">←</span> LEFT — Switch attack/wave, Reclaim an enemy pylon, Turn a generator on/off, or Open/Close a connector&rsquo;s circuit</div>
+      <div class="ctrl-row"><span class="ctrl-key">←</span> LEFT — Convert a pylon (attack turret ⇄ wave pylon), Reclaim an enemy pylon, Turn a generator on/off, or Open/Close a connector&rsquo;s circuit</div>
       <div class="ctrl-row cm-dim">On a <strong>bug</strong>: TOP is ATTACK (arms your weapon, costs ammo) or STOW. On <strong>your follower</strong>: TOP is TO WORK / TO LINE, LEFT is RE-ROLL. <strong>BUILD mode ignores units</strong> &mdash; turn it off to command them.</div>
 
       <div class="ctrl-title">BUTTONS</div>
@@ -988,9 +988,10 @@
       <div class="ctrl-title">BUILDING</div>
       <div class="cm-build-row"><span class="cm-build-label">Cost</span><span class="cm-stat">10 shards</span> + <span class="cm-stat">30 seconds</span> construction time</div>
       <div class="cm-build-row"><span class="cm-build-label">CORE followers</span>Skip the 30s delay — build <span class="cm-stat">instantly</span></div>
-      <div class="cm-build-row"><span class="cm-build-label">How to place</span>Toggle BUILD ON → tap any valid floor tile</div>
-      <div class="cm-build-row"><span class="cm-build-label">Set element</span>Long-press pylon → radial LEFT → choose element</div>
-      <div class="cm-build-row"><span class="cm-build-label">Upgrade</span>Long-press pylon → radial UP → upgrade existing pylon</div>
+      <div class="cm-build-row"><span class="cm-build-label">How to place</span>Toggle BUILD ON → long-press a floor tile → radial UP (BUILD)</div>
+      <div class="cm-build-row"><span class="cm-build-label">Kind first</span>Choose ATTACK TURRET, WAVE PYLON, CONNECTOR or GENERATOR — then, for attack or wave, its element</div>
+      <div class="cm-build-row"><span class="cm-build-label">Upgrade</span>Long-press pylon → radial UP → same two steps</div>
+      <div class="cm-build-row"><span class="cm-build-label">Convert</span>Long-press your pylon → radial LEFT (CONVERT) → attack turret ⇄ wave pylon; the element is kept</div>
 
       <div class="ctrl-title">PYLON MODES</div>
       <div class="cm-ability"><strong>Attack Mode:</strong> A pylon with an assigned element acts as a defensive tower. Automatically fires at enemies within its detection range (~2.5 tiles). Each element fires its own attack type.</div>

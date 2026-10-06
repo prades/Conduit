@@ -96,6 +96,10 @@ function issueReconstruct(pylon) {
 function openElementPicker(mode, target) {
     elementPickerMode   = mode;
     elementPickerTarget = target;
+    // Every picker starts with WHAT it is (attack / wave / connector /
+    // generator); the element comes second, and only if it applies.
+    elementPickerStage  = "type";
+    elementPickerKind   = null;
     elementPickerOpen   = true;
 }
 
@@ -103,6 +107,8 @@ function closeElementPicker() {
     elementPickerOpen   = false;
     elementPickerMode   = null;
     elementPickerTarget = null;
+    elementPickerStage  = "type";
+    elementPickerKind   = null;
 }
 
 function _executeBuild(el, t) {
@@ -146,7 +152,16 @@ function _executeBuild(el, t) {
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:"#0f8",life:100,vy:-0.2});
 }
 
-function _executeBuildInstant(el, t) {
+// `kind` is what the player chose FIRST: "attack" (a turret) or "wave" for an
+// element pylon; relays ignore it. Defaults to attack, as before.
+function _applyPylonKind(t, kind) {
+    if (isRelayPylon(t)) { t.waveMode = false; t.attackMode = true; return; }
+    if (kind === "wave") { t.waveMode = true; t.attackMode = false; }
+    else                 { t.attackMode = true; t.waveMode = false; }
+    t.waveTripped = false;
+}
+
+function _executeBuildInstant(el, t, kind) {
     if (el && isRelayId(el.id) && !canPlaceGenerator(t).ok) { refuseGenerator(el); return; }
     if (!t || shardCount < PYLON_BUILD_COST) {
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS",color:"#f44",life:90,vy:-0.2});
@@ -168,8 +183,10 @@ function _executeBuildInstant(el, t) {
         t.chosenElement=el.id; t.chosenColor=el.color;
         t.isGenerator=(el.id===GENERATOR_ID);
         t.isConnector=(el.id===CONNECTOR_ID); t.circuitOn=true;
+        _applyPylonKind(t, kind);
     }
-    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
+    const _kindLabel = isRelayId(el.id) ? "" : (kind === "wave" ? " WAVE PYLON" : " TURRET");
+    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase()+_kindLabel,color:el.color,life:100,vy:-0.2});
 }
 
 // Can this pylon be upgraded at all? Only one you own.
@@ -190,7 +207,7 @@ function refuseEnemyUpgrade() {
                          color: "#f44", life: 110, vy: -0.22, size: 12 });
 }
 
-function _executeUpgrade(el, pylon) {
+function _executeUpgrade(el, pylon, kind) {
     if (!pylon || !pylon.pillar || pylon.destroyed) return;
     if (!canUpgradePylon(pylon)) { refuseEnemyUpgrade(); return; }
     // Converting a pylon you already own into a generator is still creating
@@ -205,15 +222,15 @@ function _executeUpgrade(el, pylon) {
         pylon.isGenerator       = (el.id === GENERATOR_ID);
         pylon.isConnector       = (el.id === CONNECTOR_ID);
         if (pylon.isConnector && pylon.circuitOn === undefined) pylon.circuitOn = true;
-        if (pylon.isGenerator || pylon.isConnector) {
-            // A relay has no elemental zone, so it holds no wave network.
-            pylon.waveMode = false; pylon.attackMode = true;
-        }
+        // A relay has no elemental zone, so it holds no wave network; an
+        // element pylon takes the kind that was chosen first.
+        if (pylon.isGenerator || pylon.isConnector || kind) _applyPylonKind(pylon, kind);
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON → "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
     } else {
         // Not yet upgraded — send a follower to merge; store chosen element
         pylon.chosenElement = el.id;
         pylon.chosenColor   = el.color;
+        pylon.chosenKind    = kind || "attack";
         _sendMergeFollower(pylon, el);
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"UPGRADING WITH "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
     }
@@ -345,7 +362,16 @@ function executeCommand() {
             if (commandFollowerTarget) startFollowerReroll(commandFollowerTarget);
             break;
         }
-        // ── LEFT: SWITCH (role / pylon mode) ─────────────
+        // ── LEFT: CONVERT (pylon mode) ───────────────────
+        // Opens the choice of what the pylon can become — ATTACK TURRET or
+        // WAVE PYLON — rather than flipping it blind.
+        case "convert_pylon": {
+            const pylon = commandTarget;
+            if (pylon && pylon.pillar && !pylon.destroyed && pylon.pillarTeam === "green" && !isRelayPylon(pylon)
+                && (pylon.attackMode || pylon.waveMode)) openElementPicker("convert", pylon);
+            break;
+        }
+        // ── LEFT: SWITCH (follower role) ─────────────────
         case "switch_context": {
             const pylon = commandTarget;
             if (pylon && pylon.pillar && !pylon.destroyed && (pylon.attackMode || pylon.waveMode)) {

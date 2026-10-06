@@ -792,10 +792,12 @@ check('the upgrade step warns that UPGRADE needs BUILD mode', () => {
 });
 
 check('the switch step names the button that actually exists', () => {
-    // The ring's left button is labelled SWITCH, not "SWITCH MODE".
-    ok(/leftLabel\s*=\s*"SWITCH"/.test(DRAW), 'the left ring button is no longer SWITCH');
+    // On your own pylon the ring's left button is CONVERT, and its picker
+    // offers WAVE PYLON.
+    ok(/leftLabel = "CONVERT"/.test(DRAW), 'the left ring button on a pylon is no longer CONVERT');
     const s = makeEnv().run('TUTS').find(t => t.id === 'switch');
-    ok(/\bSWITCH\b/.test(s.body), 'the switch step does not name the SWITCH button');
+    ok(/\bCONVERT\b/.test(s.body), 'the switch step does not name the CONVERT button');
+    ok(/WAVE PYLON/.test(s.body), 'the switch step does not name the choice to make');
 });
 
 check('no step is too long for the panel on a phone', () => {

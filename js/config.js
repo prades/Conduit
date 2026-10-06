@@ -561,6 +561,9 @@ let commandPendingTap    = false;  // true = menu open, waiting for button tap
 let elementPickerOpen   = false;
 let elementPickerMode   = null;   // "build" | "upgrade"
 let elementPickerTarget = null;
+let elementPickerStage  = "type";   // "type" (attack/wave/connector/generator) then "element"
+let elementPickerKind   = null;     // the kind chosen at the first stage
+let pylonConfirmKind    = null;     // ...carried to the build confirmation
 
 // ── INFO PANEL (canvas-drawn) ─────────────────────────────
 let infoPanelOpen   = false;

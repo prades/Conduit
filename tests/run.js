@@ -43,6 +43,7 @@ const SUITES = [
     ['cables on the floor',    'cables.js'],
     ['predator progression',   'broods.js'],
     ['nest grids + switch',    'grid.js'],
+    ['convert + build by kind','convert.js'],
 ];
 
 let failed = 0;

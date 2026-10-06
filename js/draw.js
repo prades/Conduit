@@ -157,6 +157,11 @@ function drawRadialMenu() {
     else if (!isPylonTarget && commandNestTarget && nestIsPowerSource(commandNestTarget)) {
         leftLabel = commandNestTarget.powerOff ? "NEST ON" : "NEST OFF"; leftAction = "toggle_nest";
     }
+    // Your own attack turret or wave pylon: CONVERT opens a picker offering
+    // the other kind (commands.js convert_pylon). The element is kept.
+    else if (isPylonSwitchable && commandTarget.pillarTeam === "green" && !isRelayPylon(commandTarget)) {
+        leftLabel = "CONVERT"; leftAction = "convert_pylon";
+    }
     drawRadialButton(commandX-RADIAL_RADIUS, commandY, leftLabel, lHov);
     if (lHov) selectedRadialAction=leftAction;
 

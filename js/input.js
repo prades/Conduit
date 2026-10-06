@@ -521,6 +521,9 @@ canvas.addEventListener('pointerup', e=>{
                                        selectedRadialAction = "toggle_circuit";
                 else if (!_isPyCmd && commandNestTarget && nestIsPowerSource(commandNestTarget))
                                        selectedRadialAction = "toggle_nest";
+                else if (_isPyCmd && commandTarget.pillarTeam === "green" && !isRelayPylon(commandTarget)
+                         && (commandTarget.attackMode || commandTarget.waveMode))
+                                       selectedRadialAction = "convert_pylon";
                 else                   selectedRadialAction = "switch_context";
             } else if (longHoldFired && !commandPendingTap) {
                 // User released right on the long-hold spot — menu just appeared.

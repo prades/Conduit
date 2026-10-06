@@ -135,13 +135,10 @@ check('THE REPORTED CASE: there is a neutral pylon type called GENERATOR', () =>
 
 check('the pylon picker offers it alongside the six elements', () => {
     ok(/const PYLON_PICKER_TYPES = \[\.\.\.ELEMENTS,/.test(CONFIG), 'no picker list');
-    // The picker's grid, geometry and tap indexing must all read the same list,
-    // or a tap lands on a different cell than the one drawn.
-    for (const re of [/const _EP_ROWS = Math\.ceil\(PYLON_PICKER_TYPES\.length/,
-                      /PYLON_PICKER_TYPES\.forEach\(\(el, i\)/,
-                      /const el   = PYLON_PICKER_TYPES\[idx\]/]) {
-        ok(re.test(UI), 'ui.js still uses ELEMENTS somewhere the picker needs the full list: ' + re);
-    }
+    // The picker asks WHAT first: the generator is one of the four kinds,
+    // and drawing and tapping share one layout so a tap hits the cell drawn.
+    ok(/id: "generator"/.test(UI.match(/const PYLON_KINDS = \[[\s\S]*?\];/)[0]), 'GENERATOR is not a pylon kind');
+    ok((UI.match(/_epLayout\(\)/g) || []).length >= 3, 'drawing and tapping should share _epLayout');
 });
 
 check('it needs no unlock — it is neutral, not earned', () => {
@@ -447,12 +444,12 @@ check('every path that creates a generator is gated', () => {
 });
 
 check('the picker dims the option instead of offering a dead end', () => {
-    ok(/const outOfRange = isRelayId\(el\.id\) &&/.test(UI),
+    ok(/"generator"\) && !canPlaceGenerator\(t\)\.ok\) return \{ ok: false, why: "NEEDS A NEST" \}/.test(UI),
        'the picker does not check placement while drawing');
     ok(/NEEDS A NEST/.test(UI), 'the dimmed cell does not say why');
     // And a tap on it explains rather than doing nothing.
-    const at = UI.indexOf('const el   = PYLON_PICKER_TYPES[idx];');
-    ok(/refuseGenerator\(el\)/.test(UI.slice(at, at + 400)), 'tapping a dimmed generator says nothing');
+    const at = UI.indexOf('function _handleElementPickerTap');
+    ok(/if \(st\.why === "NEEDS A NEST"\) refuseGenerator\(/.test(UI.slice(at, at + 1200)), 'tapping a dimmed generator says nothing');
 });
 
 check('one refusal message, used everywhere', () => {
@@ -487,7 +484,9 @@ check('choosing GENERATOR sets the flag, choosing an element clears it', () => {
 check('a generator holds no wave network', () => {
     // waveMode is what puts a pylon into _wPylons; a neutral pylon must not
     // claim a slot in an elemental network.
-    ok(/pylon\.waveMode = false; pylon\.attackMode = true;/.test(CMD),
+    ok(/if \(isRelayPylon\(t\)\) \{ t\.waveMode = false; t\.attackMode = true; return; \}/.test(CMD),
+       'a relay given a kind should drop wave mode');
+    ok(/if \(pylon\.isGenerator \|\| pylon\.isConnector \|\| kind\) _applyPylonKind\(pylon, kind\);/.test(CMD),
        'converting to a generator should drop wave mode');
 });
 

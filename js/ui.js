@@ -158,82 +158,86 @@ function drawFollowerElementUI() {
 // ─────────────────────────────────────────────────────────
 //  ELEMENT PICKER  (canvas-drawn)
 // ─────────────────────────────────────────────────────────
-const _EP_W = 310, _EP_ROW_H = 44, _EP_COLS = 3;
-const _EP_ROWS = Math.ceil(PYLON_PICKER_TYPES.length / _EP_COLS);
-const _EP_GRID_H = _EP_ROWS * _EP_ROW_H;
-const _EP_HEADER_H = 64, _EP_CANCEL_H = 38;
-const _EP_TOTAL_H = _EP_HEADER_H + _EP_GRID_H + _EP_CANCEL_H;
+// TWO STAGES. First WHAT the pylon is — an ATTACK turret, a WAVE pylon, a
+// CONNECTOR or a GENERATOR — and then, only for attack or wave, its ELEMENT.
+// The same picker serves BUILD (a new pylon), UPGRADE (an existing one) and
+// CONVERT (an element pylon switching between attack and wave; no element step).
+// One layout function feeds both the drawing and the tap handling.
+const _EP_W = 310, _EP_HEADER_H = 58, _EP_FOOT_H = 40;
+const PYLON_KINDS = [
+    { id: "attack",    label: "ATTACK TURRET", note: "shoots what comes near",     color: "#ff7755" },
+    { id: "wave",      label: "WAVE PYLON",    note: "links up into a zone",        color: "#7fc8ff" },
+    { id: "connector", label: "CONNECTOR",     note: "long-range power relay",      color: CONNECTOR_COLOR },
+    { id: "generator", label: "GENERATOR",     note: "powers and mends nearby",     color: GENERATOR_COLOR },
+];
+function _epItems() {
+    if (elementPickerStage === "element") return ELEMENTS.map(e => ({ kind: "element", el: e }));
+    const kinds = elementPickerMode === "convert" ? PYLON_KINDS.slice(0, 2) : PYLON_KINDS;
+    return kinds.map(k => ({ kind: "type", k }));
+}
+function _epLayout() {
+    const items = _epItems();
+    const cols = elementPickerStage === "element" ? 3 : 2, rowH = elementPickerStage === "element" ? 44 : 56;
+    const rows = Math.ceil(items.length / cols);
+    const pw = _EP_W, ph = _EP_HEADER_H + rows * rowH + _EP_FOOT_H;
+    const px = Math.round((canvas.width - pw) / 2), py = Math.round((canvas.height - ph) / 2);
+    const cw = Math.floor(pw / cols);
+    const cells = items.map((it, i) => ({ it, x: px + (i % cols) * cw, y: py + _EP_HEADER_H + Math.floor(i / cols) * rowH, w: cw, h: rowH }));
+    const fy = py + _EP_HEADER_H + rows * rowH + 6;
+    const hasBack = elementPickerStage === "element";
+    const back = hasBack ? { x: px + 10, y: fy, w: (pw - 30) / 2, h: _EP_FOOT_H - 14 } : null;
+    const cancel = hasBack ? { x: px + 20 + (pw - 30) / 2, y: fy, w: (pw - 30) / 2, h: _EP_FOOT_H - 14 }
+                           : { x: px + 10, y: fy, w: pw - 20, h: _EP_FOOT_H - 14 };
+    return { px, py, pw, ph, cells, back, cancel };
+}
+// Is this first-stage choice available? Relays need a nest in reach; CONVERT
+// cannot "convert" a pylon into what it already is.
+function _epKindState(k) {
+    const t = elementPickerTarget;
+    if ((k.id === "connector" || k.id === "generator") && !canPlaceGenerator(t).ok) return { ok: false, why: "NEEDS A NEST" };
+    if (elementPickerMode === "convert" && t && ((k.id === "attack" && t.attackMode) || (k.id === "wave" && t.waveMode)))
+        return { ok: false, why: "CURRENT" };
+    return { ok: true, why: null };
+}
 
 function drawElementPicker() {
     if (!elementPickerOpen) return;
-    const pw = _EP_W, ph = _EP_TOTAL_H;
-    const px = Math.round((canvas.width  - pw) / 2);
-    const py = Math.round((canvas.height - ph) / 2);
-
+    const L = _epLayout();
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-
-    // Background + border
-    ctx.fillStyle   = "rgba(4,16,10,0.97)";
-    ctx.strokeStyle = "#0f8";
-    ctx.lineWidth   = 2;
-    _epRoundRect(px, py, pw, ph, 10);
-    ctx.fill(); ctx.stroke();
-
-    // Title
-    ctx.fillStyle = "#0ff"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center";
-    const titleText = elementPickerMode === "upgrade" ? "UPGRADE PYLON — SELECT ELEMENT" : "BUILD PYLON — SELECT ELEMENT";
-    ctx.fillText(titleText, px + pw/2, py + 22);
-
-    // Sub-label
-    ctx.fillStyle = "#ff0"; ctx.font = "10px monospace";
-    const subText = elementPickerMode === "build" ? "Cost: "+PYLON_BUILD_COST+" shards" :
-        (elementPickerTarget && (elementPickerTarget.attackMode || elementPickerTarget.waveMode) ? "Element change — free" : "Requires a follower sacrifice");
-    ctx.fillText(subText, px + pw/2, py + 44);
-
-    // Element grid
-    const cellW = Math.floor(pw / _EP_COLS);
-    PYLON_PICKER_TYPES.forEach((el, i) => {
-        const col = i % _EP_COLS, row = Math.floor(i / _EP_COLS);
-        const cx = px + col * cellW, cy = py + _EP_HEADER_H + row * _EP_ROW_H;
-        // A generator out of reach of every nest is shown dimmed rather than
-        // offered and then refused after the confirm screen.
-        const outOfRange = isRelayId(el.id) &&
-                           !canPlaceGenerator(elementPickerTarget).ok;
-        const unlocked = isPylonTypeUnlocked(el.id) && !outOfRange;
-        const alpha = unlocked ? 1.0 : 0.35;
-
-        ctx.globalAlpha = alpha;
-        // Cell background
-        ctx.fillStyle = "rgba(10,26,16,0.9)";
-        ctx.strokeStyle = el.color; ctx.lineWidth = 1;
-        _epRoundRect(cx + 4, cy + 4, cellW - 8, _EP_ROW_H - 8, 6);
-        ctx.fill(); ctx.stroke();
-
-        // Color dot
-        ctx.fillStyle = el.color;
-        ctx.shadowColor = el.color; ctx.shadowBlur = 6;
-        ctx.beginPath(); ctx.arc(cx + 20, cy + _EP_ROW_H/2, 7, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
-
-        // Label
-        ctx.fillStyle = "#fff"; ctx.font = "10px monospace"; ctx.textAlign = "left";
-        ctx.fillText(el.label.toUpperCase(), cx + 33, cy + _EP_ROW_H/2 + (outOfRange ? -4 : 1));
-        if (outOfRange) {
-            ctx.fillStyle = "#f88"; ctx.font = "7px monospace";
-            ctx.fillText("NEEDS A NEST", cx + 33, cy + _EP_ROW_H/2 + 8);
-        }
+    ctx.fillStyle = "rgba(4,16,10,0.97)"; ctx.strokeStyle = "#0f8"; ctx.lineWidth = 2;
+    _epRoundRect(L.px, L.py, L.pw, L.ph, 10); ctx.fill(); ctx.stroke();
+    // Title and sub-label
+    const kindLabel = (PYLON_KINDS.find(k => k.id === elementPickerKind) || {}).label || "";
+    const verb = elementPickerMode === "upgrade" ? "UPGRADE" : elementPickerMode === "convert" ? "CONVERT" : "BUILD";
+    const title = elementPickerStage === "element" ? verb + " " + kindLabel + " — ELEMENT"
+                : elementPickerMode === "convert" ? "CONVERT — ATTACK OR WAVE?"
+                : verb + " — WHAT KIND OF PYLON?";
+    ctx.fillStyle = "#0ff"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillText(title, L.px + L.pw / 2, L.py + 22);
+    const t = elementPickerTarget;
+    const sub = elementPickerMode === "build" ? "Cost: " + PYLON_BUILD_COST + " shards"
+              : elementPickerMode === "convert" ? "Keeps its element — free"
+              : (t && (t.attackMode || t.waveMode) ? "Change — free" : "Requires a follower sacrifice");
+    ctx.fillStyle = "#ff0"; ctx.font = "10px monospace"; ctx.fillText(sub, L.px + L.pw / 2, L.py + 42);
+    for (const c of L.cells) {
+        let color, label, note = null, ok = true, why = null;
+        if (c.it.kind === "type") { const st = _epKindState(c.it.k); ok = st.ok; why = st.why; color = c.it.k.color; label = c.it.k.label; note = c.it.k.note; }
+        else { color = c.it.el.color; label = c.it.el.label.toUpperCase(); ok = isPylonTypeUnlocked(c.it.el.id); }
+        ctx.globalAlpha = ok ? 1 : 0.35;
+        ctx.fillStyle = "rgba(10,26,16,0.9)"; ctx.strokeStyle = color; ctx.lineWidth = 1;
+        _epRoundRect(c.x + 4, c.y + 4, c.w - 8, c.h - 8, 6); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(c.x + 18, c.y + c.h / 2, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fff"; ctx.font = c.it.kind === "type" ? "bold 10px monospace" : "10px monospace"; ctx.textAlign = "left";
+        ctx.fillText(label, c.x + 30, c.y + c.h / 2 + (note || why ? -3 : 4));
+        if (why || note) { ctx.fillStyle = why ? "#f88" : "#8fb8a8"; ctx.font = "8px monospace"; ctx.fillText(why || note, c.x + 30, c.y + c.h / 2 + 10); }
         ctx.globalAlpha = 1;
-    });
-
-    // Cancel button
-    const cancelY = py + _EP_HEADER_H + _EP_GRID_H + 6;
-    ctx.fillStyle = "rgba(10,15,10,0.9)";
-    ctx.strokeStyle = "#444"; ctx.lineWidth = 1;
-    _epRoundRect(px + 10, cancelY, pw - 20, _EP_CANCEL_H - 12, 4);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "#555"; ctx.font = "11px monospace"; ctx.textAlign = "center";
-    ctx.fillText("CANCEL", px + pw/2, cancelY + (_EP_CANCEL_H - 12)/2 + 1);
-
+    }
+    for (const [b, txt, col] of [[L.back, "← BACK", "#8fd"], [L.cancel, "CANCEL", "#666"]]) {
+        if (!b) continue;
+        ctx.fillStyle = "rgba(10,15,10,0.9)"; ctx.strokeStyle = "#444"; ctx.lineWidth = 1;
+        _epRoundRect(b.x, b.y, b.w, b.h, 4); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = col; ctx.font = "11px monospace"; ctx.textAlign = "center"; ctx.fillText(txt, b.x + b.w / 2, b.y + b.h / 2 + 4);
+    }
     ctx.restore();
 }
 
@@ -249,44 +253,47 @@ function _epRoundRect(x, y, w, h, r) {
 
 function _handleElementPickerTap(tx, ty) {
     if (!elementPickerOpen) return false;
-    const pw = _EP_W, ph = _EP_TOTAL_H;
-    const px = Math.round((canvas.width  - pw) / 2);
-    const py = Math.round((canvas.height - ph) / 2);
-    if (tx < px || tx > px+pw || ty < py || ty > py+ph) {
-        // Tap outside = cancel
-        elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;
-        return true;
-    }
-    const cellW = Math.floor(pw / _EP_COLS);
-    const gridY0 = py + _EP_HEADER_H, gridY1 = gridY0 + _EP_GRID_H;
-    if (ty >= gridY0 && ty < gridY1) {
-        const col = Math.floor((tx - px) / cellW);
-        const row = Math.floor((ty - gridY0) / _EP_ROW_H);
-        const idx  = row * _EP_COLS + col;
-        const el   = PYLON_PICKER_TYPES[idx];
-        if (el && isRelayId(el.id) && !canPlaceGenerator(elementPickerTarget).ok) {
-            refuseGenerator(el);
+    const L = _epLayout();
+    const inside = (r) => r && tx >= r.x && tx <= r.x + r.w && ty >= r.y && ty <= r.y + r.h;
+    if (tx < L.px || tx > L.px + L.pw || ty < L.py || ty > L.py + L.ph) { closeElementPicker(); return true; }
+    if (inside(L.cancel)) { closeElementPicker(); return true; }
+    if (inside(L.back)) { elementPickerStage = "type"; elementPickerKind = null; return true; }
+    const cell = L.cells.find(c => inside(c));
+    if (!cell) return true;
+    const mode = elementPickerMode, target = elementPickerTarget;
+    if (cell.it.kind === "type") {
+        const k = cell.it.k, st = _epKindState(k);
+        if (!st.ok) {
+            if (st.why === "NEEDS A NEST") refuseGenerator(PYLON_PICKER_TYPES.find(e => e.id === (k.id === "connector" ? CONNECTOR_ID : GENERATOR_ID)));
             return true;
         }
-        if (el && isPylonTypeUnlocked(el.id)) {
-            const mode = elementPickerMode, target = elementPickerTarget;
-            elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;
-            if (mode === "build") {
-                // Show confirmation dialog before building
-                pylonConfirmOpen = true; pylonConfirmEl = el; pylonConfirmTarget = target;
-            } else if (mode === "upgrade") {
-                _executeUpgrade(el, target);
+        if (mode === "convert") {
+            // Same element, the other mode.
+            closeElementPicker();
+            if (target) {
+                _applyPylonKind(target, k.id);
+                if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+                floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON → "+k.label,color:k.color,life:90,vy:-0.2});
             }
+            return true;
         }
+        if (k.id === "connector" || k.id === "generator") {
+            const el = PYLON_PICKER_TYPES.find(e => e.id === (k.id === "connector" ? CONNECTOR_ID : GENERATOR_ID));
+            closeElementPicker();
+            if (mode === "build") { pylonConfirmOpen = true; pylonConfirmEl = el; pylonConfirmTarget = target; pylonConfirmKind = null; }
+            else _executeUpgrade(el, target, null);
+            return true;
+        }
+        elementPickerKind = k.id; elementPickerStage = "element";
         return true;
     }
-    // Cancel button zone
-    const cancelY = py + _EP_HEADER_H + _EP_GRID_H + 6;
-    if (ty >= cancelY && ty < cancelY + _EP_CANCEL_H - 12) {
-        elementPickerOpen = false; elementPickerMode = null; elementPickerTarget = null;
-        return true;
-    }
-    return true; // absorb all taps while open
+    const el = cell.it.el;
+    if (!isPylonTypeUnlocked(el.id)) return true;
+    const kind = elementPickerKind;
+    closeElementPicker();
+    if (mode === "build") { pylonConfirmOpen = true; pylonConfirmEl = el; pylonConfirmTarget = target; pylonConfirmKind = kind; }
+    else _executeUpgrade(el, target, kind);
+    return true;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -559,7 +566,8 @@ function drawPylonConfirm() {
     ctx.beginPath(); ctx.arc(px + 36, py + 62, 8, 0, Math.PI*2); ctx.fill();
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#fff"; ctx.font = "13px monospace"; ctx.textAlign = "left";
-    ctx.fillText(el.label.toUpperCase(), px + 52, py + 62);
+    const _kl = isRelayId(el.id) ? "" : (pylonConfirmKind === "wave" ? " WAVE PYLON" : " TURRET");
+    ctx.fillText(el.label.toUpperCase() + _kl, px + 52, py + 62);
 
     // Cost row
     ctx.fillStyle = canAfford ? "#ff0" : "#f44"; ctx.font = "11px monospace"; ctx.textAlign = "center";
@@ -602,9 +610,9 @@ function _handlePylonConfirmTap(tx, ty) {
 
     if (ty >= submitY && ty < submitY + 28) {
         if (shardCount >= PYLON_BUILD_COST) {
-            const el = pylonConfirmEl, t = pylonConfirmTarget;
-            pylonConfirmOpen = false; pylonConfirmEl = null; pylonConfirmTarget = null;
-            _executeBuildInstant(el, t);
+            const el = pylonConfirmEl, t = pylonConfirmTarget, kind = pylonConfirmKind;
+            pylonConfirmOpen = false; pylonConfirmEl = null; pylonConfirmTarget = null; pylonConfirmKind = null;
+            _executeBuildInstant(el, t, kind);
         } else {
             floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS",color:"#f44",life:90,vy:-0.2});
         }
