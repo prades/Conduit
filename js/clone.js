@@ -156,138 +156,96 @@ function executeClone(option) {
     cloneMenuOpen = false;
 }
 
+// ── THE CLONE BAY ────────────────────────────────────────
+// "Make the clone menu only appear on the HUD — the button to go to the clone
+// menu should be on the HUD, and look like a little rotating 3D DNA icon."
+// It used to be a tab inside the Crystal panel (and a second, simpler copy
+// here). Now it is one panel, opened ONLY from the DNA button on the HUD
+// (drawClonesBlob), showing the full clone bay: sort, scroll, cap, DISMISS.
+function _cloneBayGeometry() {
+    const PW = Math.min(430, canvas.width - 12);
+    const PX = Math.round((canvas.width - PW) / 2);
+    const PY = 110, barH = 36, closeW = 34;
+    const contentY = PY + barH;
+    const contentH = Math.min(canvas.height - contentY - 8, 510);
+    return { PX, PY, PW, barH, closeW, closeX: PX + PW - closeW, contentY, contentH };
+}
 function drawCloneMenu() {
     if (!cloneMenuOpen) return;
-
-    const options = getCloneOptions();
-    const panelW  = 300;
-    const rowH    = 52;
-    const panelH  = options.length * rowH + 60;
-    const panelX  = canvas.width/2  - panelW/2;
-    const panelY  = canvas.height/2 - panelH/2;
-
+    const g = _cloneBayGeometry();
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle = "rgba(1,0,7,0.92)";
+    ctx.fillRect(0, g.PY - 4, canvas.width, canvas.height - (g.PY - 4));
+    // Title bar
+    ctx.fillStyle = "rgba(0,40,30,0.75)"; ctx.fillRect(g.PX, g.PY, g.PW - g.closeW, g.barH);
+    ctx.fillStyle = "#00ccaa"; ctx.fillRect(g.PX + 1, g.PY + g.barH - 3, g.PW - g.closeW - 2, 3);
+    ctx.fillStyle = "#e8fff8"; ctx.font = "bold 12px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("\u2687 CLONE BAY", g.PX + (g.PW - g.closeW) / 2, g.PY + g.barH / 2);
+    // Close
+    ctx.fillStyle = "rgba(55,0,0,0.65)"; ctx.fillRect(g.closeX, g.PY, g.closeW, g.barH);
+    ctx.strokeStyle = "#310"; ctx.lineWidth = 1; ctx.strokeRect(g.closeX, g.PY, g.closeW, g.barH);
+    ctx.fillStyle = "#f33"; ctx.font = "bold 16px monospace";
+    ctx.fillText("\u00d7", g.closeX + g.closeW / 2, g.PY + g.barH / 2);
+    // Content
+    ctx.fillStyle = "rgba(4,2,14,0.98)"; ctx.fillRect(g.PX, g.contentY, g.PW, g.contentH);
+    ctx.strokeStyle = "#141428"; ctx.strokeRect(g.PX, g.contentY, g.PW, g.contentH);
     ctx.save();
-    ctx.setTransform(1,0,0,1,0,0);
-
-    // Background
-    ctx.fillStyle   = "rgba(0,0,0,0.88)";
-    ctx.strokeStyle = "#0f8";
-    ctx.lineWidth   = 2;
-    ctx.fillRect(panelX, panelY, panelW, panelH);
-    ctx.strokeRect(panelX, panelY, panelW, panelH);
-
-    // Title
-    ctx.fillStyle  = "#0f8";
-    ctx.font       = "bold 14px monospace";
-    ctx.textAlign  = "center";
-    ctx.fillText("CRYSTAL CLONE BAY", canvas.width/2, panelY + 24);
-
-    if (options.length === 0) {
-        ctx.fillStyle = "#666";
-        ctx.font = "12px monospace";
-        ctx.fillText("No DNA splices collected yet", canvas.width/2, panelY + 50);
-    }
-
-    options.forEach((opt, i) => {
-        const rowY = panelY + 44 + i * rowH;
-        const ready = opt.ready;
-        const speciesDef = SPECIES[opt.speciesName];
-
-        // Row background
-        ctx.fillStyle = ready ? "rgba(0,255,136,0.08)" : "rgba(255,255,255,0.03)";
-        ctx.fillRect(panelX + 8, rowY, panelW - 16, rowH - 4);
-
-        // Species color dot
-        ctx.fillStyle = speciesDef.color;
-        ctx.beginPath();
-        ctx.arc(panelX + 22, rowY + rowH/2 - 4, 6, 0, Math.PI*2);
-        ctx.fill();
-
-        // Name
-        ctx.fillStyle = ready ? "#fff" : "#888";
-        ctx.font = "bold 12px monospace";
-        ctx.textAlign = "left";
-        ctx.fillText(
-            opt.speciesName.toUpperCase() + " " + opt.className.toUpperCase(),
-            panelX + 34, rowY + 16
-        );
-
-        // Progress bar
-        const barW = 120;
-        const prog = Math.min(1, opt.have / opt.needed);
-        ctx.fillStyle = "#111";
-        ctx.fillRect(panelX + 34, rowY + 22, barW, 7);
-        ctx.fillStyle = ready ? "#0f8" : speciesDef.color;
-        ctx.fillRect(panelX + 34, rowY + 22, barW * prog, 7);
-        ctx.strokeStyle = "#333";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(panelX + 34, rowY + 22, barW, 7);
-
-        // Splice count
-        ctx.fillStyle = "#aaa";
-        ctx.font = "10px monospace";
-        ctx.fillText(opt.have + "/" + opt.needed + " splices", panelX + 34, rowY + 42);
-
-        // Shard cost — greyed when you cannot afford it, so the number itself
-        // says why the CLONE button is missing.
-        ctx.fillStyle = shardCount >= opt.shardCost ? "#ffee44" : "#775533";
-        ctx.fillText(opt.shardCost + " shards", panelX + 120, rowY + 42);
-
-        // Clone button
-        if (ready) {
-            ctx.fillStyle   = "#0f8";
-            ctx.strokeStyle = "#0f8";
-            ctx.lineWidth   = 1;
-            ctx.fillRect(panelX + panelW - 70, rowY + 10, 58, 26);
-            ctx.fillStyle  = "#000";
-            ctx.font       = "bold 11px monospace";
-            ctx.textAlign  = "center";
-            ctx.fillText("CLONE", panelX + panelW - 41, rowY + 27);
-
-            // Store hit area for tap detection
-            opt._btnX = panelX + panelW - 70;
-            opt._btnY = rowY + 10;
-            opt._btnW = 58;
-            opt._btnH = 26;
-        }
-    });
-
-    // Close hint
-    ctx.fillStyle = "#555";
-    ctx.font = "10px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("tap outside to close", canvas.width/2, panelY + panelH - 8);
-
+    ctx.beginPath(); ctx.rect(g.PX + 1, g.contentY + 1, g.PW - 2, g.contentH - 2); ctx.clip();
+    _drawClonesTab(g.PX, g.contentY, g.PW, g.contentH);
     ctx.restore();
-
-    // Store for tap detection
-    window._cloneMenuOptions = options;
-    window._cloneMenuBounds  = { x:panelX, y:panelY, w:panelW, h:panelH };
+    ctx.restore();
+    window._cloneMenuBounds = g;
 }
 
 function handleCloneMenuTap(ex, ey) {
     if (!cloneMenuOpen) return false;
-    const b = window._cloneMenuBounds;
-    if (!b) return false;
-
-    // Outside panel — close
-    if (ex < b.x || ex > b.x+b.w || ey < b.y || ey > b.y+b.h) {
-        cloneMenuOpen = false;
-        return true;
+    const g = window._cloneMenuBounds;
+    if (!g) return false;
+    if (ex >= g.closeX && ex <= g.closeX + g.closeW && ey >= g.PY && ey <= g.PY + g.barH) {
+        cloneMenuOpen = false; return true;
     }
+    if (ex < g.PX || ex > g.PX + g.PW || ey < g.PY || ey > g.contentY + g.contentH) {
+        cloneMenuOpen = false; return true;
+    }
+    _clonesTabTap(ex, ey, g.PX);
+    return true;
+}
 
-    // Check clone buttons
-    const opts = window._cloneMenuOptions || [];
-    for (const opt of opts) {
-        if (!opt.ready || !opt._btnX) continue;
-        if (ex >= opt._btnX && ex <= opt._btnX+opt._btnW &&
-            ey >= opt._btnY && ey <= opt._btnY+opt._btnH) {
-            executeClone(opt);
+// The clone bay's buttons: sort tabs, scroll arrows, DISMISS, and a row's
+// CLONE (or, on a blocked row, the explanation).
+function _clonesTabTap(ex, ey, PX) {
+    const cl = window._cloneTabBounds;
+    if (!cl) return true;
+    if (ey >= cl.sortY && ey <= cl.sortY + cl.sortH) {
+        for (let i = 0; i < CSORTS.length; i++) {
+            const tx = PX + i * cl.sortW;
+            if (ex >= tx && ex <= tx + cl.sortW) { crystalCloneSort = CSORTS[i].id; _crystalScrollY = 0; return true; }
+        }
+    }
+    const sa = window._cloneScrollArrows;
+    if (sa) {
+        if (ex>=sa.upX&&ex<=sa.upX+sa.upW&&ey>=sa.upY&&ey<=sa.upY+sa.upH) { _crystalScrollY=Math.max(0,_crystalScrollY-sa.rowH); return true; }
+        if (ex>=sa.dnX&&ex<=sa.dnX+sa.dnW&&ey>=sa.dnY&&ey<=sa.dnY+sa.dnH) { _crystalScrollY+=sa.rowH; return true; }
+    }
+    // DISMISS — frees a slot. Checked before the rows so it is never
+    // swallowed by one.
+    const db = window._cloneDismissBtn;
+    if (db && ex >= db.x && ex <= db.x + db.w && ey >= db.y && ey <= db.y + db.h) { dismissOldestClone(); return true; }
+    for (const opt of (window._cloneTabOpts || [])) {
+        if (!opt.ready || !opt._bx) continue;
+        if (ex>=opt._bx&&ex<=opt._bx+opt._bw&&ey>=opt._by&&ey<=opt._by+opt._bh) {
+            executeClone(opt); cloneMenuOpen = false; return true;
+        }
+    }
+    // A BLOCKED row explains itself rather than swallowing the tap in silence.
+    for (const opt of (window._cloneTabOpts || [])) {
+        if (opt.ready || !opt._nbx) continue;
+        if (ex>=opt._nbx&&ex<=opt._nbx+opt._nbw&&ey>=opt._nby&&ey<=opt._nby+opt._nbh) {
+            executeClone(opt);   // refuses, and says why
             return true;
         }
     }
-
-    return true; // consumed
+    return true;
 }
 
 function applySpeciesBody(predator, speciesName) {
@@ -553,43 +511,62 @@ function spawnPredatorForZone(zoneIndex) {
 // ─────────────────────────────────────────────────────────
 //  GYRATING CLONE BLOB BUTTON  (top-right)
 // ─────────────────────────────────────────────────────────
-const _BLOB = { x:0, y:0, r:26 };
+const _BLOB = { x:0, y:0, r:26 };   // the DNA button's hit area (input.js)
 
+// THE DNA BUTTON — a small double helix turning in 3D, top right of the HUD.
+// Two strands are the same sine wave half a turn apart; whichever is in front
+// (depth > 0) is drawn bigger and brighter, so it reads as turning rather than
+// as two wiggling lines. The rungs join each pair. A badge counts the clones
+// you could summon right now.
 function drawClonesBlob() {
     const bx = canvas.width - 38, by = 72;
     _BLOB.x = bx; _BLOB.y = by;
-    const t = (frame||0) * 0.055;
+    const t = (frame || 0) * 0.05;
+    const H = 40, N = 12, R = 10;
+    const top = by - H / 2;
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-
-    // Gyrating organic blob (8 lobes, phase-offset sin waves)
-    const N = 28;
-    ctx.beginPath();
-    for (let i = 0; i <= N; i++) {
-        const a = (i / N) * Math.PI * 2;
-        const r = _BLOB.r * (1
-            + 0.28*Math.sin(a*3 + t)
-            + 0.14*Math.sin(a*5 + t*1.6)
-            + 0.08*Math.sin(a*7 + t*2.3));
-        const x = bx + Math.cos(a) * r;
-        const y = by + Math.sin(a) * r * 0.7;
-        i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    // Backing disc, so it reads as a button.
+    ctx.fillStyle = cloneMenuOpen ? "rgba(0,60,45,0.85)" : "rgba(0,18,14,0.75)";
+    ctx.strokeStyle = "rgba(0,255,170,0.55)"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(bx, by, _BLOB.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    const pts = [];
+    for (let i = 0; i < N; i++) {
+        const a = t + i * 0.62, y = top + (i + 0.5) * (H / N);
+        pts.push({ y, a: { x: bx + Math.sin(a) * R, z: Math.cos(a) },
+                      b: { x: bx + Math.sin(a + Math.PI) * R, z: Math.cos(a + Math.PI) } });
     }
-    ctx.closePath();
-    const grad = ctx.createRadialGradient(bx-6,by-5,0, bx,by,_BLOB.r*1.3);
-    grad.addColorStop(0, "#1aff88");
-    grad.addColorStop(0.45,"#062e18");
-    grad.addColorStop(1, "#000b05");
-    ctx.fillStyle = grad;
-    ctx.fill();
-    // Pulsing rim
-    ctx.strokeStyle = `rgba(0,255,136,${0.35+0.25*Math.sin(t)})`;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Inner "DNA" label
-    ctx.fillStyle = `rgba(0,255,136,${0.6+0.3*Math.sin(t*1.3)})`;
-    ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText("DNA", bx, by);
+    // Rungs first (behind the beads), shaded by how far round they are.
+    for (const p of pts) {
+        ctx.strokeStyle = `rgba(120,255,210,${0.18 + 0.25 * Math.abs(Math.sin(t + p.y))})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(p.a.x, p.y); ctx.lineTo(p.b.x, p.y); ctx.stroke();
+    }
+    // Back beads, then front beads, so depth sorts itself.
+    for (const pass of [false, true]) {
+        for (const p of pts) {
+            for (const [s, col] of [[p.a, "#1aff88"], [p.b, "#33ddff"]]) {
+                if ((s.z > 0) !== pass) continue;
+                const k = (s.z + 1) / 2;           // 0 at the back, 1 at the front
+                ctx.globalAlpha = 0.35 + 0.65 * k;
+                ctx.fillStyle = col;
+                if (pass) { ctx.shadowColor = col; ctx.shadowBlur = 5; } else ctx.shadowBlur = 0;
+                ctx.beginPath(); ctx.arc(s.x, p.y, 1.4 + 1.6 * k, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+    }
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    ctx.fillStyle = "#aef5dc"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText("CLONES", bx, by + _BLOB.r + 3);
+    // How many you could summon right now.
+    // Recounted twice a second, not every frame: it reads the DNA store.
+    if (_BLOB.ready === undefined || (frame || 0) % 30 === 0)
+        _BLOB.ready = typeof getCloneOptions === "function" ? getCloneOptions().filter(o => o.ready).length : 0;
+    const ready = _BLOB.ready;
+    if (ready > 0) {
+        ctx.fillStyle = "#0f8"; ctx.beginPath(); ctx.arc(bx + _BLOB.r - 4, by - _BLOB.r + 4, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#000"; ctx.font = "bold 9px monospace"; ctx.textBaseline = "middle";
+        ctx.fillText(String(ready), bx + _BLOB.r - 4, by - _BLOB.r + 4.5);
+    }
     ctx.restore();
 }
 
@@ -604,7 +581,6 @@ let _crystalScrollY  = 0;                   // clone list scroll offset (px)
 
 // Tab definitions
 const CTABS = [
-    { id:"clones",     label:"CLONE BAY",  color:"#00ccaa" },
     { id:"modulation", label:"MODULATION", color:"#aaddff" },
     { id:"status",     label:"STATUS",     color:"#4499ff" },
     { id:"info",       label:"INFO",       color:"#ffcc44" },
@@ -927,7 +903,6 @@ function drawCrystalPanel() {
     ctx.beginPath(); ctx.rect(PX+1, contentY+1, PW-2, contentH-2); ctx.clip();
 
     switch(crystalMenuTab) {
-        case "clones":     _drawClonesTab(PX, contentY, PW, contentH); break;
         case "modulation": _drawModTab(PX, contentY, PW, contentH, scheme, cycleColor); break;
         case "status":     _drawStatusTab(PX, contentY, PW, contentH); break;
         case "info":       _drawInfoTab(PX, contentY, PW, contentH); break;
@@ -1376,47 +1351,6 @@ function handleCrystalPanelInput(ex, ey, isDown) {
     }
 
     // ── Tab-specific taps ─────────────────────────────────
-    if (crystalMenuTab==="clones") {
-        const cl=window._cloneTabBounds;
-        if (!cl) return true;
-        // Sort sub-tabs
-        if (ey>=cl.sortY && ey<=cl.sortY+cl.sortH) {
-            for (let i=0;i<CSORTS.length;i++) {
-                const tx=b.PX+i*cl.sortW;
-                if (ex>=tx&&ex<=tx+cl.sortW) { crystalCloneSort=CSORTS[i].id; _crystalScrollY=0; return true; }
-            }
-        }
-        // Scroll arrows
-        const sa=window._cloneScrollArrows;
-        if (sa) {
-            if (ex>=sa.upX&&ex<=sa.upX+sa.upW&&ey>=sa.upY&&ey<=sa.upY+sa.upH) { _crystalScrollY=Math.max(0,_crystalScrollY-sa.rowH); return true; }
-            if (ex>=sa.dnX&&ex<=sa.dnX+sa.dnW&&ey>=sa.dnY&&ey<=sa.dnY+sa.dnH) { _crystalScrollY+=sa.rowH; return true; }
-        }
-        // DISMISS — frees a slot. Checked before the rows so it is never
-        // swallowed by one.
-        const db = window._cloneDismissBtn;
-        if (db && ex>=db.x && ex<=db.x+db.w && ey>=db.y && ey<=db.y+db.h) {
-            dismissOldestClone();
-            return true;
-        }
-        // Clone buttons
-        for (const opt of (window._cloneTabOpts||[])) {
-            if (!opt.ready||!opt._bx) continue;
-            if (ex>=opt._bx&&ex<=opt._bx+opt._bw&&ey>=opt._by&&ey<=opt._by+opt._bh) {
-                executeClone(opt); crystalMenuOpen=false; return true;
-            }
-        }
-        // A BLOCKED row explains itself rather than swallowing the tap in
-        // silence, which is what made the menu look broken.
-        for (const opt of (window._cloneTabOpts||[])) {
-            if (opt.ready||!opt._nbx) continue;
-            if (ex>=opt._nbx&&ex<=opt._nbx+opt._nbw&&ey>=opt._nby&&ey<=opt._nby+opt._nbh) {
-                executeClone(opt);   // refuses, and says why
-                return true;
-            }
-        }
-    }
-
     if (crystalMenuTab==="recruit" && isDown) {
         const rb = window._recruitBtnBounds;
         if (rb && ex>=rb.x && ex<=rb.x+rb.w && ey>=rb.y && ey<=rb.y+rb.h) {

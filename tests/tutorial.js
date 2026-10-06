@@ -831,8 +831,9 @@ check('the Crystal step exists and says TAP, not hold', () => {
     ok(!!s, 'there is no crystal step');
     ok(/\bTap\b/i.test(s.body), 'it does not tell the player to tap: ' + s.body);
     ok(!/hold/i.test(s.body), 'it tells the player to HOLD the Crystal, which does nothing');
-    ok(/MODULATION/.test(s.body) && /CLONES/.test(s.body),
+    ok(/MODULATION/.test(s.body) && /RECRUIT/.test(s.body),
        'it does not say what is inside the Crystal');
+    ok(!/CLONES/.test(s.body), 'it still says the clones are inside the Crystal');
 });
 
 check('and it names the home portal as the other way in', () => {
@@ -892,13 +893,17 @@ check('the work step names a job for every element that has one', () => {
     ok(/TO WORK/.test(s.body), 'it does not name the TO WORK button');
 });
 
-check('the clone step exists, and points at the Crystal', () => {
+check('the clone step exists, and points at the DNA button on the HUD', () => {
     const env = makeEnv();
     const s = env.run('TUTS').find(t => t.id === 'clone');
     ok(!!s, 'there is no clone step');
     ok(/CLONES/.test(s.body), 'it does not name the CLONES tab');
     ok(/DNA/.test(s.body), 'it does not say where the DNA comes from');
     ok(/green bar/i.test(s.body), 'it does not say how to tell a clone is yours');
+    ok(/DNA button/.test(s.body), 'it does not say where the clone bay is');
+    const t = env.run("TUTS.find(t => t.id === 'clone').target()");
+    ok(t && t.hud === 'dna', 'the step does not mark the HUD button');
+    ok(/t\.hud === 'dna'/.test(TUT), 'the highlight cannot draw a HUD marker');
 });
 
 check('and it quotes the REAL multipliers', () => {

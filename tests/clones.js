@@ -239,10 +239,10 @@ async function ready() {
     check('the menus show the shard price, not a follower price', () => {
         ok(/shards/.test(SRC.clone), 'no shard cost is drawn');
         ok(!/followers"/.test(SRC.clone), 'a menu still labels the cost in followers');
-        // Both menus, and both greyed when unaffordable so the number explains
-        // the missing CLONE button.
-        same((SRC.clone.match(/shardCount >= opt\.shardCost/g) || []).length, 2,
-             'both clone menus should grey the price when you cannot afford it');
+        // One menu now (the HUD clone bay), greyed when unaffordable so the
+        // number explains the missing CLONE button.
+        ok((SRC.clone.match(/shardCount >= opt\.shardCost/g) || []).length >= 1,
+           'the clone bay should grey the price when you cannot afford it');
     });
 
     check('readiness depends on shards, not on squad size', () => {
@@ -286,9 +286,9 @@ async function ready() {
             c.team = 'green'; c.isClone = true; c.speciesName = 'ant'; c.className = 'scout';
             actors.push(c);
         }
-        crystalMenuOpen = true; crystalMenuTab = 'clones';
+        cloneMenuOpen = true;
         crystalCloneSort = 'species'; _crystalScrollY = 0;
-        drawCrystalPanel();
+        drawCloneMenu();
         ${body || ''}
         const tab = window._cloneTabOpts || [];
         return {
@@ -320,7 +320,7 @@ async function ready() {
         const r = menu(4, `
             const o = (window._cloneTabOpts||[]).find(x => typeof x._nbx === 'number');
             crystalMenuOpen = true;
-            handleCrystalPanelInput(o._nbx + o._nbw/2, o._nby + o._nbh/2, true);
+            handleCloneMenuTap(o._nbx + o._nbw/2, o._nby + o._nbh/2);
         `);
         ok(r.said.some(s => /CLONE CAP 4\/4/.test(s)),
            'it should name the cap: ' + JSON.stringify(r.said));
@@ -353,8 +353,8 @@ async function ready() {
             const db = window._cloneDismissBtn;
             if (!db) throw new Error('no DISMISS button was drawn at the cap');
             crystalMenuOpen = true;
-            handleCrystalPanelInput(db.x + db.w/2, db.y + db.h/2, true);
-            drawCrystalPanel();
+            handleCloneMenuTap(db.x + db.w/2, db.y + db.h/2);
+            drawCloneMenu();
         `);
         same(r.clones, 3, 'one clone should have been dismissed');
         same(r.ready, 3, 'and the rows should be ready again');
@@ -365,11 +365,11 @@ async function ready() {
         const r = menu(4, `
             const db = window._cloneDismissBtn;
             crystalMenuOpen = true;
-            handleCrystalPanelInput(db.x + db.w/2, db.y + db.h/2, true);
-            drawCrystalPanel();
+            handleCloneMenuTap(db.x + db.w/2, db.y + db.h/2);
+            drawCloneMenu();
             const o = (window._cloneTabOpts||[]).find(x => typeof x._bx === 'number');
             crystalMenuOpen = true;
-            handleCrystalPanelInput(o._bx + o._bw/2, o._by + o._bh/2, true);
+            handleCloneMenuTap(o._bx + o._bw/2, o._by + o._bh/2);
         `);
         same(r.clones, 4, 'the slot freed by DISMISS should have been refilled');
         ok(r.said.some(s => /DISMISSED/.test(s)), 'the dismissal should be announced');
@@ -390,12 +390,12 @@ async function ready() {
             for (const s of ['ant','beetle','mantis','scorpion','spider','moth'])
                 for (const c of ['scout','striker','tank']) inv[s + '_' + c] = 99;
             setDNA(inv);
-            crystalMenuOpen = true; crystalMenuTab = 'clones';
+            cloneMenuOpen = true;
             const bad = [];
             for (const sort of CSORTS.map(s => s.id)) {
                 for (const scroll of [0, 60, 200, 600, 2000]) {
                     crystalCloneSort = sort; _crystalScrollY = scroll;
-                    drawCrystalPanel();
+                    drawCloneMenu();
                     const cl = window._cloneTabBounds;
                     for (const o of (window._cloneTabOpts || [])) {
                         for (const [bx, by, bh] of [[o._bx, o._by, o._bh], [o._nbx, o._nby, o._nbh]]) {
@@ -729,6 +729,45 @@ async function ready() {
            'nor the respawn wait');
         // Synthetic constructs are not offered, so listing them would be a lie.
         ok(!/QX-z1/.test(r), 'the page lists a species you cannot clone');
+    });
+
+    group('THE CLONE BAY LIVES ON THE HUD');
+
+    // "Make the clone menu only appear on the HUD — the button should be on the
+    // HUD and look like a little rotating 3D DNA icon."
+    check('the Crystal panel no longer has a clone tab', () => {
+        const ids = C.run('CTABS.map(t => t.id)');
+        ok(!ids.includes('clones'), 'the Crystal still has a CLONES tab: ' + ids);
+        ok(!/case "clones":/.test(SRC.clone), 'the Crystal panel still draws the clone bay');
+        ok(C.run('crystalMenuTab') !== 'clones', 'the Crystal still opens on the clone bay');
+    });
+    check('the DNA button on the HUD opens (and closes) the clone bay', () => {
+        const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+        ok(/Math\.hypot\(upX-b\.x, upY-b\.y\)<b\.r\+8\) \{\s*cloneMenuOpen=!cloneMenuOpen; crystalMenuOpen=false;/.test(INPUT),
+           'the HUD button does not toggle the clone bay');
+    });
+    check('the button is a turning helix: it draws two strands and they move', () => {
+        const xs = C.run(`(function(){
+            const pts = []; const keep = ctx.arc;
+            ctx.arc = (x, y, r) => { pts.push(Math.round(x * 10) / 10); };
+            try { frame = 100; drawClonesBlob(); const a = pts.slice(); pts.length = 0;
+                  frame = 130; drawClonesBlob(); return [a, pts.slice()]; }
+            finally { ctx.arc = keep; } })()`);
+        ok(xs[0].length >= 20, 'too few beads for a double helix: ' + xs[0].length);
+        ok(JSON.stringify(xs[0]) !== JSON.stringify(xs[1]), 'the helix does not turn');
+    });
+    check('a badge counts the clones you could summon right now', () => {
+        const r = C.run(`(function(){
+            actors.length = 0; shardCount = 9999;
+            const inv = {}; for (const c of ['scout','striker','tank']) inv['ant_' + c] = 99; setDNA(inv);
+            frame = 300; _BLOB.ready = undefined;
+            const said = []; const keep = ctx.fillText;
+            ctx.fillText = (t) => said.push(String(t));
+            try { drawClonesBlob(); } finally { ctx.fillText = keep; }
+            return { ready: _BLOB.ready, said };
+        })()`);
+        same(r.ready, 3, 'the count is wrong');
+        ok(r.said.includes('3'), 'the badge does not show it: ' + r.said);
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');

@@ -330,28 +330,29 @@ const TUTS = [
         check: () => tutModeSwitched,
     },
     {
-        // The Crystal is where modulation, clones and recruiting live, and
-        // nothing had ever told the player it opens. It is a TAP, not a hold —
-        // the hold ring is for things on the floor.
+        // The Crystal is where modulation and recruiting live, and nothing had
+        // ever told the player it opens. It is a TAP, not a hold — the hold
+        // ring is for things on the floor.
         id:    'crystal',
         title: 'OPEN THE CRYSTAL',
-        body:  'Tap the Crystal to open it. Inside are MODULATION (what your followers are made of), CLONES (summon an enemy species with DNA and shards) and RECRUIT. The green portal on zone 0\'s back wall opens the same menu, so you can reach it from either end of home.',
+        body:  'Tap the Crystal to open it. Inside are MODULATION (what your followers are made of), RECRUIT and CRAFT. The green portal on zone 0\'s back wall opens the same menu, so you can reach it from either end of home.',
         icon:  '\u25c8',
         target: () => (typeof crystal !== 'undefined' && crystal) ? crystal : null,
         check: () => tutCrystalOpened,
     },
     {
-        // Clones are the one thing in the game that turns a kill into a unit,
-        // and nothing had ever pointed at them. Taught straight after the
-        // Crystal, because that is the tab it lives on.
+        // Clones are the one thing in the game that turns a kill into a unit.
+        // The clone bay lives on the HUD — the turning DNA button, top right —
+        // so this step marks THAT, not anything on the floor.
         id:    'clone',
         title: 'SUMMON A CLONE',
-        body:  'Open the Crystal and pick CLONES. Killing a predator drops its DNA; spend enough of one species plus shards and it fights for YOU, with ' + CLONE_HEALTH_MULT + 'x the health and ' + CLONE_POWER_MULT + 'x the power. A green bar over the head means it is yours.',
+        hud:   'dna',
+        body:  'Tap the turning DNA button (top right) to open the CLONES bay. Killing a predator drops its DNA; spend enough of one species plus shards and it fights for YOU, with ' + CLONE_HEALTH_MULT + 'x the health and ' + CLONE_POWER_MULT + 'x the power. A green bar over the head means it is yours.',
         icon:  '\u2687',
         // Enough DNA and shards to actually do it — a step the player cannot
         // finish is worse than no step at all.
         enter: () => tutGrantCloneMaterials(),
-        target: () => (typeof crystal !== 'undefined' && crystal) ? crystal : null,
+        target: () => ({ hud: 'dna' }),   // a HUD button, marked by drawTutorialHighlight
         check: () => tutCloned,
     },
     {
@@ -622,6 +623,15 @@ function drawTutorialHighlight() {
     if (!tutorialMode) return;
     const t = tutorialTarget();
     if (!t) return;
+    // A step about a HUD button marks the button itself, in screen space.
+    if (t.hud === 'dna' && typeof _BLOB !== 'undefined') {
+        const pulse = 0.5 + 0.5 * Math.sin(frame * 0.11);
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.strokeStyle = `rgba(0,255,136,${0.4 + pulse * 0.5})`; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(_BLOB.x, _BLOB.y, _BLOB.r + 6 + pulse * 6, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+        return;
+    }
 
     // Same projection as drawHoldLine: py is the tile's back corner, so the
     // visual centre of the tile is one TILE_H further down.

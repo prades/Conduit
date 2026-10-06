@@ -586,7 +586,7 @@ let followerDutyMenu = null;
 
 // ── CRYSTAL MENU / BUILDS ─────────────────────────────────
 let crystalMenuOpen  = false;
-let crystalMenuTab   = "clones";   // "clones"|"builds"|"modulation"|"status"|"info"
+let crystalMenuTab   = "modulation";   // "modulation"|"status"|"info"|"recruit"|"craft" — clones live on the HUD now
 let crystalCloneSort = "species";  // "species"|"combat"|"defense"|"hp"|"specials"
 // Which elements new followers may come out as. A subset of the unlocked set —
 // the whole set means "any", one element means every recruit is that element.

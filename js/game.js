@@ -3521,8 +3521,10 @@ function render() {
     drawTutorialHighlight();
     drawFloatingTexts();
     drawCrystalButton();
-    drawClonesBlob();
+    // The clone bay first, then its button over it, so the button that
+    // opened the bay (and closes it) is never dimmed by the bay's backdrop.
     drawCloneMenu();
+    drawClonesBlob();
     drawRadialMenu();
     drawCrystalPanel();
     drawGestureFeedback();

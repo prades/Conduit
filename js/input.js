@@ -377,7 +377,7 @@ canvas.addEventListener('pointerup', e=>{
     if (!touchMoved) {
         const b=_BLOB;
         if (b && Math.hypot(upX-b.x, upY-b.y)<b.r+8) {
-            cloneMenuOpen=true; isPressing=false; return;
+            cloneMenuOpen=!cloneMenuOpen; crystalMenuOpen=false; isPressing=false; return;
         }
     }
 
