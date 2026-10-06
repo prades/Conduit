@@ -180,6 +180,14 @@ async function boot() {
         ok(/case "toggle_circuit"/.test(rd('js/commands.js')), 'the command is not handled');
     });
 
+    await check("THE REPORTED CASE: the giant reach ring is only drawn while that connector is selected", () => {
+        const g = rd('js/game.js');
+        const at = g.indexOf('CONNECTOR: circuit state + reach');
+        const body = g.slice(at, at + 2600);
+        ok(/const _sel = /.test(body) && /commandTarget === obj/.test(body) && /infoPanelTarget === obj/.test(body), 'no selection test');
+        ok(/if \(_sel\) \{[\s\S]*CONNECTOR_RANGE/.test(body), 'the ring is still drawn whether or not it is selected');
+    });
+
     await check('the GAME INDEX teaches it, with the real numbers', () => {
         const html = rd('game.html');
         const at = html.indexOf('CONNECTOR PYLON');

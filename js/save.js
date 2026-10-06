@@ -236,8 +236,7 @@ function saveSession() {
             explored: [...exploredZones],
             nests, panels, nodes, npcs, waveNpcs,
             mass: serialiseChargedMass(),
-            cocoons: serialiseCocoons(),
-            nestSites: serialiseNestSites(),
+            nestStock: world.filter(t => t.nest && t.massStock > 0).map(t => ({ x: t.x, y: t.y, m: t.massStock })),
             // Without this a refresh during a wave put the player back in
             // "day" with the alarm gone and the kill count at zero — the wave
             // NUMBER survived in tubecrawler_gamestate, but the wave itself
@@ -397,9 +396,15 @@ function applySession(sess) {
     });
     restoreChargedMass(sess.mass);
     restoreWaveRecruits(sess.waveNpcs);
-    // After the pylon restore, so a cocoon's anchors resolve to real tiles.
-    restoreCocoons(sess.cocoons);
-    restoreNestSites(sess.nestSites);
+    // (Floor nests and cocoons are gone from the game; an older save's
+    // `cocoons` and `nestSites` fields are simply not read.)
+    // What the predators have paid into each wall nest so far.
+    if (Array.isArray(sess.nestStock)) {
+        for (const n of sess.nestStock) {
+            const t = n && typeof getTile === "function" ? getTile(n.x, n.y) : null;
+            if (t && t.nest && Number.isFinite(n.m)) t.massStock = Math.max(0, n.m);
+        }
+    }
 
     // Force the 60-frame world caches to rebuild against the restored tiles.
     _cacheAge = -999;

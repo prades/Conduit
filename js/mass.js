@@ -12,9 +12,9 @@
 //  CORE workers do the other job on this page: a pylon that loses its health is
 //  not gone, it is BROKEN, and a core worker rebuilds it in place.
 //
-//  FIRE workers SCOUR: they burn back the growth an infestation leaves behind —
-//  toxin patches, grown nests, cocoons. The job itself lives in js/infest.js
-//  next to the things it burns; only the duty dispatch is here.
+//  FIRE used to SCOUR the floor nests, cocoons and toxin puddles a taken pylon
+//  grew. Those were removed from the game, and with nothing left to burn FIRE
+//  has no work-crew job: it fights.
 //
 //  So kills stop being free income. Followers split into FIGHTERS, who behave
 //  as they always have, and WORKERS, who ignore combat to run one job each. A
@@ -63,9 +63,6 @@ const CLONE_MENDER      = 'toxic';
 // wide that everything — enemy, ally and the player — is pushed out of. It is
 // the only worker job that stops being a unit and becomes terrain.
 const ICE_BLOCKER       = 'ice';
-// The fourth worker element is SCOUR_ELEMENT in js/infest.js, which the page
-// loads after this file — so it is read at call time rather than copied here.
-// A second literal 'fire' in this file is exactly how the two drift apart.
 
 // A core worker rebuilds a broken pylon at this much progress per frame, so a
 // full rebuild from nothing takes a few seconds of standing there.
@@ -193,8 +190,6 @@ function followerWorkTick(actor) {
     if (actor.element === PYLON_REPAIRER)   return _workRepair(actor);
     if (actor.element === CLONE_MENDER)     return _workMendClone(actor);
     if (actor.element === ICE_BLOCKER)      return _workIceBlock(actor);
-    if (typeof SCOUR_ELEMENT !== 'undefined' && actor.element === SCOUR_ELEMENT)
-        return _workScour(actor);
     return false;   // any other element has no job to do here
 }
 
@@ -310,32 +305,6 @@ function _workRepair(actor) {
         floatingTexts.push({ x: t.x, y: t.y - 1, text: 'PYLON REBUILT', color: '#00ccaa', life: 60, vy: -0.06 });
         if (typeof _cacheAge !== 'undefined') _cacheAge = -999;   // let the caches see it again
     }
-    return true;
-}
-
-// ── Scouring the infestation (FIRE) ──────────────────────
-// The chore list, the ranking and the burning all live in js/infest.js, with the
-// growth they act on. This is only the walk-there-and-work loop, shaped like the
-// three above it.
-function _workScour(actor) {
-    if (typeof nearestScourChore !== 'function') return false;
-
-    let chore = actor._scourTarget;
-    if (!scourChoreStillGood(chore)) {
-        chore = actor._scourTarget = nearestScourChore(actor.x, actor.y);
-    }
-    if (!chore) return false;
-
-    const d = Math.hypot(chore.x - actor.x, chore.y - actor.y);
-    if (d > MASS_WORK_RANGE) { _moveToward(actor, chore.x, chore.y, 1.05); return true; }
-
-    actor.state = 'idle';
-    const finished = scourStep(chore);
-    if (typeof elementEffects !== 'undefined' && (frame || 0) % 7 === 0) {
-        elementEffects.push({ type: 'impact', x: chore.x, y: chore.y,
-                              color: SCOUR_COLOUR, radius: 0.38, life: 16 });
-    }
-    if (finished) actor._scourTarget = null;
     return true;
 }
 
@@ -512,10 +481,7 @@ function _workIceBlock(actor) {
 // Only these have a job, so putting anything else on the crew would silently do
 // nothing — say so rather than accepting it.
 function workerElements() {
-    const list = [MASS_NEUTRALISER, MASS_HAULER, PYLON_REPAIRER,
-                  CLONE_MENDER, ICE_BLOCKER];
-    if (typeof SCOUR_ELEMENT === 'string') list.push(SCOUR_ELEMENT);
-    return list;
+    return [MASS_NEUTRALISER, MASS_HAULER, PYLON_REPAIRER, CLONE_MENDER, ICE_BLOCKER];
 }
 
 function canWorkMass(actor) {
@@ -538,7 +504,6 @@ function workerJobLabel(element) {
     if (element === PYLON_REPAIRER)   return 'REPAIR';
     if (element === CLONE_MENDER)     return 'TEND CLONE';
     if (element === ICE_BLOCKER)      return 'SET BLOCK';
-    if (typeof SCOUR_ELEMENT !== 'undefined' && element === SCOUR_ELEMENT) return 'SCOUR';
     return null;
 }
 
@@ -577,7 +542,6 @@ function setFollowerDuty(actor, duty, quiet) {
         }
         actor._massTarget  = null;
         actor._pylonTarget = null;
-        actor._scourTarget = null;
         actor._mendTarget  = null;
         // And a block melts. Coming off the crew IS the thaw — the long hold
         // that offers it is the same menu that assigns duty, so there is one

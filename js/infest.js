@@ -1,16 +1,20 @@
 // ─────────────────────────────────────────────────────────
 //  INFESTATION — what predators do when nobody is fighting them
 //
-//  Left undisturbed, a HUNTER (about one predator in four — pred.huntsPylons)
-//  does not just wander. It walks to the nearest pylon you hold, chews it over to its own side, and then seeds the ground
-//  around it: a nest, and a cocoon spun over the pylon. Both are small silk
-//  sacs — they hatch more of the same species, and the cocoon's footprint
-//  swells to a small square, taking any pylon that ends up inside it, so a
-//  neglected stretch of the map turns into a nursery.
+//  Two jobs, both only while undisturbed (no alarm, not provoked, not fighting):
 //
-//  The counter is the pylon itself. Reclaim it and everything anchored to it
-//  dies with it — see clearInfestationAt(), called from the reconstruction
-//  completion in game.js. Without that the mechanic would be a one-way ratchet.
+//   - A HUNTER (about one predator in four — pred.huntsPylons) walks to your
+//     nearest pylon and works it over to its side. A taken pylon is lost until
+//     you RECLAIM it; nothing grows on the floor around it any more.
+//   - ANY predator picks up charged mass lying on the floor and carries it to
+//     its zone's wall nest. Every NEST_SPAWN_COST paid in hatches another
+//     predator there.
+//
+//  REPORTED: "the nests on the ground that the enemy predators create — get rid
+//  of those, they are so confusing. Let them grab the charged particles and
+//  carry them to the nest on the walls, and another predator spawns." The floor
+//  nests, the cocoons spun over taken pylons and their toxin puddles were all
+//  removed with this change; the wall nests are the only nests.
 // ─────────────────────────────────────────────────────────
 
 // "Undisturbed" is the whole precondition, so it is one function rather than a
@@ -20,14 +24,6 @@
 //   - hunting and attacking already own the frame
 function predatorUndisturbed(pred) {
     if (!pred || pred.dead || pred.isClone || pred.team === "green") return false;
-    // A predator that HATCHED from a cocoon never gardens. This is the loop
-    // that ran away: a predator converts a pylon, the pylon gets a cocoon, the
-    // cocoon hatches predators, and those convert more pylons. Measured at
-    // wave 8 after one minute of neglect, 34 of 42 predators on the map had
-    // come out of cocoons rather than out of the zones. Cutting this one edge
-    // takes the gardening population from the whole swarm back to what the
-    // zones themselves spawn.
-    if (pred.fromCocoon) return false;
     if (typeof alertActive !== "undefined" && alertActive) return false;
     if (pred.provoked) return false;
     if (pred.state === "attack" || pred.state === "hunt" || pred.state === "crawl_in") return false;
@@ -78,32 +74,6 @@ function rollInfestSettle(pred) {
 // as a 2x2 and swells to 3x3. It is a structure, not a creeping patch: the
 // first version crept tile by tile up to fourteen tiles across a 3.2 radius,
 // which read as a carpet of mould rather than something spun over the pylon.
-const COCOON_SPAN_MIN      = 2;     // starts as a 2x2 block
-const COCOON_SPAN_MAX      = 3;     // swells to 3x3 and stops
-const COCOON_SWELL_FRAMES  = 420;   // 7s before it widens
-const COCOON_SPAWN_FRAMES  = 900;   // one hatch every 15s while it has room
-const COCOON_SPAWN_CAP     = 3;     // live spawns a single cocoon will keep out
-// And a LIFETIME total. A cocoon used to refill its three live spawns for
-// ever, so an unattended site was an endless tap; now it goes inert after this
-// many and stops being a reason to hurry.
-const COCOON_HATCH_LIMIT   = 4;
-
-// The toxin is NOT automatic. It is the enhancement a cocoon inherits from
-// whatever spun it, and only the venomous species carry it — spiders (spinneret
-// venom) and scorpions (stinger). Anything else spins a plain cocoon.
-const COCOON_TOXIN_SPECIES   = ["spider", "scorpion"];
-const COCOON_PUDDLE_INTERVAL = 45;   // frames between bites, as the acid hazard
-const COCOON_PUDDLE_DAMAGE   = 3;
-const COCOON_PUDDLE_COLOUR   = "#7fdd44";
-
-// What a species' cocoon adds, if anything. One table, so a new enhancement
-// later is an entry here rather than a branch somewhere in the growth code.
-function cocoonEnhancement(species) {
-    return COCOON_TOXIN_SPECIES.includes(species) ? "toxic" : null;
-}
-
-let cocoons = [];   // { tiles:[[x,y]], anchors:[tile], species, className, ... }
-
 // ── Finding something to infest ───────────────────────────
 // Green pylons first and foremost — that is the point. A dormant grey pylon is
 // still yours, so it counts; a generator counts too.
@@ -129,15 +99,13 @@ function _infestTargetStillGood(pred, t) {
     return Math.hypot(t.x - pred.x, t.y - pred.y) <= INFEST_SEEK_RANGE + 4;
 }
 
-// ── FETCHING MASS FOR A NEST ─────────────────────────────
-// "Have them search for the particles at the beginning of their spawn, or
-// whenever they're not doing anything. If they find some, they collect it and
-// bring it over, just like the followers bring the shards to the crystal."
-//
-// A predator with a site waiting and a lump in reach walks to the lump, picks
-// it up, walks it to the site and puts it in. Nothing about the lump has to be
-// done to it first — it is their own kind of matter, so the electric worker's
-// neutralising step is something only the player's side pays.
+// ── FETCHING MASS FOR THE WALL NEST ───────────────────────
+// "Have them search for the particles whenever they're not doing anything. If
+// they find some, they collect it and bring it over, just like the followers
+// bring the shards to the crystal." A predator walks to the nearest lump, picks
+// it up and carries it to its zone's wall nest. Nothing about the lump has to
+// be done to it first — it is their own kind of matter, so the electric
+// worker's neutralising step is something only the player's side pays.
 //
 // The lump is CONSUMED on pickup and the predator carries its VALUE. Carrying
 // it as a hauled lump the way a follower does would have let a predator launder
@@ -145,21 +113,6 @@ function _infestTargetStillGood(pred, t) {
 // one, which skips the neutralise step entirely. A number cannot be laundered.
 const NEST_FETCH_RANGE = 14;    // how far it will go for a lump
 
-// The site that still wants mass, counting what is already on its way, so ten
-// predators do not each fetch for a nest that is nearly paid for.
-function _siteWantingMass(pred) {
-    let best = null, bestD = NEST_FETCH_RANGE * 2;
-    for (const st of nestSites) {
-        if (st.mass + st.incoming >= NEST_BUILD_COST) continue;
-        if (!st.anchor || st.anchor.pillarTeam !== "red") continue;
-        const d = Math.hypot(st.x - pred.x, st.y - pred.y);
-        if (d < bestD) { bestD = d; best = st; }
-    }
-    return best;
-}
-
-// The nearest lump a predator may take. Anything not already in a follower's
-// arms, in either state — charged or neutralised.
 function _nearestLumpFor(pred) {
     if (typeof chargedMass === "undefined") return null;
     let best = null, bestD = NEST_FETCH_RANGE;
@@ -187,39 +140,99 @@ function _predatorWalk(pred, tx, ty, speed) {
 // a fight and when it dies, so a predator cannot take a lump out of play by
 // being killed with it in its arms.
 function predatorDropNestMass(pred) {
-    if (!pred || !(pred.nestMass > 0)) { if (pred) pred._nestSite = null; return 0; }
+    if (!pred || !(pred.nestMass > 0)) { if (pred) { pred._nestSite = null; pred._nestTarget = null; } return 0; }
     const site = pred._nestSite;
     if (site) site.incoming = Math.max(0, site.incoming - pred.nestMass);
     const v = pred.nestMass;
-    pred.nestMass = 0; pred._nestSite = null;
+    pred.nestMass = 0; pred._nestSite = null; pred._nestTarget = null;
     if (typeof spawnChargedMass === "function") spawnChargedMass(pred.x, pred.y, v);
     return v;
 }
 
 // One frame of it. Returns true when it has claimed the frame.
+// THE WALL NEST IS FED. "They will grab the charged particles on the ground and
+// carry them to the nest on the walls, and if they retrieve a certain amount
+// another predator will spawn." A predator with nothing better to do picks up
+// the nearest lump of charged mass, walks it to its zone's live wall nest and
+// pays it in. Every NEST_SPAWN_COST paid in hatches one more predator of the
+// carrier's kind at that nest. Mass only drops from dead predators, so this is
+// the enemy recycling its dead — and hauling it away first is how you deny it.
+const NEST_SPAWN_COST = 20;   // mass paid into a wall nest per predator it hatches
+function _wallNestFor(pred) {
+    const list = (typeof _nestCache !== "undefined" && _nestCache.length) ? _nestCache : world;
+    let best = null, bestD = NEST_FETCH_RANGE * 2;
+    for (const t of list) {
+        if (!t.nest || t._infestNest || !(t.nestHealth > 0)) continue;
+        if (typeof isHomePortal === "function" && isHomePortal(t)) continue;
+        const d = Math.hypot(t.x - pred.x, t.y - pred.y);
+        if (d < bestD) { bestD = d; best = t; }
+    }
+    return best;
+}
+function _spawnPredatorAt(species, className, x, y) {
+    if (typeof Predator === "undefined" || typeof SPECIES === "undefined") return null;
+    const speciesDef = SPECIES[species] ||
+                       (typeof SYNTHETIC_SPECIES !== "undefined" ? SYNTHETIC_SPECIES[species] : null);
+    if (!speciesDef) return null;
+    const classDef = typeof getClassDef === "function" ? getClassDef(speciesDef, className) : speciesDef[className];
+    if (!classDef) return null;
+    const def = {
+        width: classDef.width, height: classDef.height,
+        moveSpeed: classDef.moveSpeed, health: classDef.health, power: classDef.power,
+        color: speciesDef.color,
+        reactionSpeed: classDef.reactionSpeed ?? 15,
+        abdomenAttack: classDef.abdomenAttack ?? false,
+        rangeDamage: classDef.rangeDamage ?? 0,
+        abdomenCooldown: classDef.abdomenCooldown ?? 90,
+    };
+    const p = new Predator(className, def, x, y);
+    p.speciesName = species; p.className = className;
+    p.dnaDrops = classDef.dnaDrops; p.shardDrop = classDef.shardDrop;
+    p.state = "wander"; p.entryDelay = 0;
+    if (typeof applySpeciesBody === "function") applySpeciesBody(p, species);
+    p.baseMoveSpeed = p.moveSpeed;
+    if (typeof initAbility === "function") initAbility(p);
+    actors.push(p);
+    return p;
+}
+// Pay mass into a wall nest; hatch one predator per NEST_SPAWN_COST. If the map
+// is already at its predator ceiling the stock waits rather than being lost.
+function payIntoWallNest(nest, amount, pred) {
+    nest.massStock = (nest.massStock || 0) + amount;
+    let hatched = 0;
+    while (nest.massStock >= NEST_SPAWN_COST) {
+        if (typeof predatorBudgetFull === "function" && predatorBudgetFull()) break;
+        const p = _spawnPredatorAt(pred ? pred.speciesName || "ant" : "ant", pred ? pred.className || "scout" : "scout",
+                                   nest.x, Math.max(0, nest.y + 1));
+        if (!p) break;
+        p.fromNestMass = true;
+        nest.massStock -= NEST_SPAWN_COST;
+        hatched++;
+        elementEffects.push({ type: "impact", x: nest.x, y: nest.y + 1, color: "#ff5533", radius: 0.6, life: 26 });
+        floatingTexts.push({ x: nest.x, y: nest.y, color: "#ff5533", life: 110, vy: -0.14, size: 12,
+                             text: "A PREDATOR HATCHED" });
+    }
+    if (!hatched) floatingTexts.push({ x: nest.x, y: nest.y, color: "#ff9966", life: 80, vy: -0.14, size: 11,
+                                       text: "NEST " + Math.floor(nest.massStock) + "/" + NEST_SPAWN_COST });
+    return hatched;
+}
 function nestFetchTick(pred) {
-    // Carrying: take it to the site.
+    if (pred.isTutorialFoe) return false;
+    // Carrying: take it to the wall nest.
     if (pred.nestMass > 0) {
-        const site = pred._nestSite;
-        if (!site || nestSites.indexOf(site) < 0) { predatorDropNestMass(pred); return false; }
-        const d = _predatorWalk(pred, site.x, site.y, 0.7);    // heavier than an empty walk
+        const nest = pred._nestTarget;
+        if (!nest || !nest.nest || !(nest.nestHealth > 0)) { predatorDropNestMass(pred); return false; }
+        // The nest is in the wall: it is reached from the floor row in front.
+        const d = _predatorWalk(pred, nest.x, Math.max(0, nest.y + 1), 0.7);   // heavier than an empty walk
         if (d > INFEST_REACH) return true;
-        // Arrived. Only what the site can still use goes in; any overflow goes
-        // back on the ground rather than vanishing.
-        const room = Math.max(0, NEST_BUILD_COST - site.mass);
-        const put  = Math.min(pred.nestMass, room);
-        const over = pred.nestMass - put;
-        site.mass += put;
-        site.incoming = Math.max(0, site.incoming - pred.nestMass);
-        pred.nestMass = 0; pred._nestSite = null;
-        if (over > 0 && typeof spawnChargedMass === "function") spawnChargedMass(pred.x, pred.y, over);
-        floatingTexts.push({ x: site.x, y: site.y - 1, color: "#ff9966", life: 80, vy: -0.14, size: 11,
-                             text: "NEST " + Math.min(site.mass, NEST_BUILD_COST) + "/" + NEST_BUILD_COST });
+        const v = pred.nestMass;
+        pred.nestMass = 0; pred._nestTarget = null;
+        payIntoWallNest(nest, v, pred);
         return true;
     }
-    // Empty-handed: is there a site that wants mass, and a lump to give it?
-    const site = _siteWantingMass(pred);
-    if (!site) return false;
+    // Empty-handed: a live wall nest to feed, and a lump to feed it with.
+    const nest = _wallNestFor(pred);
+    if (!nest) return false;
     const lump = _nearestLumpFor(pred);
     if (!lump) return false;
     const d = _predatorWalk(pred, lump.x, lump.y, 0.9);
@@ -228,8 +241,7 @@ function nestFetchTick(pred) {
     if (at < 0 || lump.carrier) return true;      // someone else got there first
     chargedMass.splice(at, 1);
     pred.nestMass = lump.value;
-    pred._nestSite = site;
-    site.incoming += lump.value;
+    pred._nestTarget = nest;
     return true;
 }
 
@@ -324,226 +336,12 @@ function convertPylonToRed(t, pred) {
                          life: 140, vy: -0.22, size: 12 });
     if (typeof shake !== "undefined") shake = Math.max(shake, 5);
 
-    planNestNear(t, pred);
-    seedCocoon(t, pred);
+    // A taken pylon no longer grows a nest or a cocoon on the floor beside it.
+    // REPORTED: "the nests on the ground that the enemy predators create — get
+    // rid of those, they are so confusing." Predators grow their numbers at the
+    // WALL nests instead, with the charged mass they carry there (nestFetchTick).
 }
 
-// ── The nest ──────────────────────────────────────────────
-// One nest per converted pylon, on a clear floor tile beside it. Nests are
-// normally one per zone at its centre; these are extra, so they carry the same
-// zone index for the spawn bookkeeping but do not displace the original.
-
-// A world-wide floor on how fast nests ARRIVE, which is a different thing from
-// how many EXIST. The per-zone cap below already bounds the total, and it was
-// being honoured — the five nests measured at wave 8 were in five different
-// zones. They still all showed up within ten seconds of each other, because
-// nothing paced them. So however many pylons fall at once, a nest grows at most
-// once every this often, anywhere on the map. The pylon is still lost and a
-// cocoon is still spun; you just do not get a fresh vortex every time.
-const NEST_GROW_COOLDOWN = 2700;    // 45s between grown nests, world-wide
-let _lastNestGrowFrame = -NEST_GROW_COOLDOWN;   // so the first one is never delayed
-
-// ── NESTS COST MASS ──────────────────────────────────────
-// REPORTED: "I want the charged little particles that drop from the predators
-// to be required for the predators to build nests ... collect up to 20 shards
-// to build a nest."
-//
-// Converting a pylon used to plant a nest on the spot, for nothing. Now it only
-// marks a SITE, and the nest is built when predators have carried NEST_BUILD_COST
-// worth of charged mass to it — the same lumps your own workers haul to the
-// Crystal. So the two sides are in a race for the same resource: a lump left
-// lying about after a fight is shards for you or a nest for them.
-const NEST_BUILD_COST = 20;
-
-let nestSites = [];   // { x, y, tile, anchor, mass, incoming, zone }
-
-// Every nest-site gate except the cooldown, which is applied when the nest is
-// actually built — a site that is already paid for waits its turn rather than
-// being refused up front.
-function _nestSiteBlocked(t) {
-    // Already a nest in reach? Then this pylon joins that one's territory.
-    for (const obj of world) {
-        if (obj.nest && obj.nestHealth > 0 && Math.hypot(obj.x - t.x, obj.y - t.y) < 4) return true;
-    }
-    for (const st of nestSites) {
-        if (Math.hypot(st.x - t.x, st.y - t.y) < 4) return true;
-    }
-    // And at most ONE grown nest per zone, on top of whatever the zone was
-    // generated with. A zone is the unit the player thinks in, so it is the unit
-    // the cap uses. A site being paid for counts, or a zone could be sold two.
-    const zone = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(t.x)) : -1;
-    for (const obj of world) {
-        if (!obj._infestNest || !obj.nest || obj.nestHealth <= 0) continue;
-        const oz = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(obj.x)) : -2;
-        if (oz === zone) return true;
-    }
-    for (const st of nestSites) if (st.zone === zone) return true;
-    return false;
-}
-
-// Where a nest beside this pylon would go: the first clear floor tile, in the
-// order the old build used. Ordered by where the tile lands on screen — depth is
-// x+y, a bigger sum draws lower and in front — so the nest appears below and in
-// front of its pylon, beside it second, and above it only if there is nowhere
-// else.
-function _nestSpotNear(t) {
-    const spots = [
-        [t.x + 1, t.y + 1],                      // +2: clearly in front
-        [t.x,     t.y + 1], [t.x + 1, t.y],      // +1: below-left, below-right
-        [t.x - 1, t.y + 1], [t.x + 1, t.y - 1],  //  0: beside, same row
-        [t.x - 1, t.y],     [t.x,     t.y - 1],  // -1: last resort, above
-    ];
-    for (const [sx, sy] of spots) {
-        const tile = typeof getTile === "function" ? getTile(sx, sy) : null;
-        if (!tile || tile.type !== "floor") continue;
-        if (tile.pillar || tile.nest || tile.nodeType || tile._nestSite) continue;
-        return tile;
-    }
-    return null;
-}
-
-// Mark the ground. The nest itself comes later, when it has been paid for.
-function planNestNear(t, pred) {
-    if (_nestSiteBlocked(t)) return null;
-    const tile = _nestSpotNear(t);
-    if (!tile) return null;
-    const site = {
-        x: tile.x, y: tile.y, tile, anchor: t, mass: 0, incoming: 0,
-        zone: typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(tile.x)) : -1,
-    };
-    tile._nestSite = site;
-    nestSites.push(site);
-    floatingTexts.push({ x: tile.x, y: tile.y - 1, text: "NEST SITE \u00b7 NEEDS " + NEST_BUILD_COST,
-                         color: "#ff9966", life: 110, vy: -0.18, size: 11 });
-    return site;
-}
-
-// Put a site down, giving back whatever had been paid into it. Used when the
-// pylon it hangs off is reclaimed, and when its tile turns out not to be usable.
-// The stockpile comes back as a lump on the ground: it was the player's to haul
-// before the predators took it, and reclaiming should not delete it.
-function removeNestSite(site, refund) {
-    const at = nestSites.indexOf(site);
-    if (at >= 0) nestSites.splice(at, 1);
-    if (site.tile) site.tile._nestSite = null;
-    if (refund && site.mass > 0 && typeof spawnChargedMass === "function") {
-        spawnChargedMass(site.x, site.y, site.mass);
-    }
-}
-
-// Build every site that has been paid for, once the world-wide pacing allows.
-// Called each frame; a site that is full simply waits for the cooldown.
-function nestSiteTick() {
-    if (nestSites.length === 0) return;
-    const now = typeof frame === "number" ? frame : 0;
-    for (let i = nestSites.length - 1; i >= 0; i--) {
-        const site = nestSites[i];
-        if (!site.anchor || site.anchor.pillarTeam !== "red") { removeNestSite(site, true); continue; }
-        if (site.mass < NEST_BUILD_COST) continue;
-        if (now - _lastNestGrowFrame < NEST_GROW_COOLDOWN) continue;   // paid, waiting its turn
-        const tile = site.tile;
-        if (!tile || tile.pillar || tile.nest || tile.nodeType) { removeNestSite(site, true); continue; }
-        _growNestOn(tile, site.anchor, now);
-        removeNestSite(site, false);
-    }
-}
-
-// What makes a floor tile a GROWN nest. Shared by the build and by a refresh:
-// the world is regenerated on load, so the flags are gone and have to be put
-// back — and two copies of this list is how a restored nest ends up missing one.
-function _markGrownNest(tile) {
-    tile.nest = true;
-    tile.nestMaxHealth = tile.nestMaxHealth || 200;
-    tile.nestHealth = tile.nestMaxHealth;
-    tile.nestZone = typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(tile.x)) : -1;
-    tile.nestPulse = 0;
-    tile._infestNest = true;    // marks it as grown, not generated
-    return tile;
-}
-
-function _growNestOn(tile, anchor, now) {
-    _markGrownNest(tile);
-    // Stamped here rather than on entry, so a site that cannot be built does not
-    // spend the cooldown on nothing.
-    _lastNestGrowFrame = now;
-    floatingTexts.push({ x: tile.x, y: tile.y - 1, text: "NEST GROWN", color: "#ff7744",
-                         life: 120, vy: -0.2 });
-    // Hand it to the patch so reclaiming can take it away. Looking for it in the
-    // patch's tile list does not work — the nest sits beside the pylon and the
-    // cocoon may never creep onto that tile.
-    const m = cocoonForAnchor(anchor);
-    if (m) m.nest = tile;
-    else   anchor._pendingNest = tile;
-    return tile;
-}
-
-function clearNestSites() {
-    for (const st of nestSites) if (st.tile) st.tile._nestSite = null;
-    nestSites.length = 0;
-    // And whatever any predator was carrying for one: with its site gone it has
-    // nowhere to take it, and nestFetchTick would drop it on its next frame
-    // anyway, in a scene it no longer belongs to.
-    if (typeof actors !== "undefined") for (const a of actors) if (a && a.nestMass) { a.nestMass = 0; a._nestSite = null; }
-}
-
-// A refresh must not lose what the predators have already carried in.
-function serialiseNestSites() {
-    // A site with no anchor cannot be restored and must not take the whole
-    // session down with it: this runs inside saveSession's one try/catch.
-    return nestSites.filter(st => st && st.anchor)
-        .map(st => ({ x: st.x, y: st.y, ax: st.anchor.x, ay: st.anchor.y, mass: st.mass }));
-}
-function restoreNestSites(data) {
-    clearNestSites();
-    if (!Array.isArray(data)) return;
-    for (const d of data) {
-        if (!d) continue;
-        const tile = typeof getTile === "function" ? getTile(d.x, d.y) : null;
-        const anchor = typeof getTile === "function" ? getTile(d.ax, d.ay) : null;
-        // Only a site whose pylon is still theirs: a site hanging off a pylon the
-        // player has since taken back is exactly what clearInfestationAt removes.
-        if (!tile || !anchor || !anchor.pillar || anchor.pillarTeam !== "red") continue;
-        if (tile.nest || tile.pillar) continue;
-        const site = { x: d.x, y: d.y, tile, anchor,
-                       mass: Math.max(0, Math.min(NEST_BUILD_COST, Number(d.mass) || 0)), incoming: 0,
-                       zone: typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(d.x)) : -1 };
-        tile._nestSite = site;
-        nestSites.push(site);
-    }
-}
-
-// ── Drawing a site ───────────────────────────────────────
-// A ring on the floor and a bar that fills as mass is carried in, so the player
-// can see a nest being paid for and knows there is still time to take the pylon
-// back. Called from the depth-sorted tile pass, like the cocoon.
-function drawNestSiteForTile(t, px, py) {
-    const st = t && t._nestSite;
-    if (!st) return;
-    const cx = px, cy = py + TILE_H;
-    const f = Math.max(0, Math.min(1, st.mass / NEST_BUILD_COST));
-    const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.08);
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    // The ring, flat on the floor plane.
-    ctx.strokeStyle = "#ff9966";
-    ctx.globalAlpha = 0.35 + 0.25 * pulse + 0.3 * f;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.ellipse(cx, cy, 22, 11, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.setLineDash([]);
-    // How much it has had.
-    ctx.globalAlpha = 1;
-    const bw = 36, bx = cx - bw / 2, by = cy - 30;
-    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, by - 1, bw + 2, 6);
-    ctx.fillStyle = f >= 1 ? "#ffcc44" : "#ff9966";
-    ctx.fillRect(bx, by, Math.round(bw * f), 4);
-    ctx.fillStyle = "#ffbb99"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center";
-    ctx.fillText("NEST " + Math.min(st.mass, NEST_BUILD_COST) + "/" + NEST_BUILD_COST, cx, by - 3);
-    ctx.restore();
-}
-
-// What a predator is carrying, drawn over it: a small charged lump in the same
-// yellow the player's own lumps use, so it reads as the same thing being taken.
 function drawPredatorNestMass(pred, px, py) {
     if (!pred || !(pred.nestMass > 0)) return;
     const bob = Math.sin((frame || 0) * 0.15) * 2;
@@ -559,573 +357,6 @@ function drawPredatorNestMass(pred, px, py) {
     ctx.restore();
 }
 
-// ── The cocoon ─────────────────────────────────────────────
-function cocoonAt(x, y) {
-    for (const m of cocoons) {
-        for (const [mx, my] of m.tiles) if (mx === x && my === y) return m;
-    }
-    return null;
-}
-
-function seedCocoon(t, pred) {
-    const existing = cocoonForAnchor(t);
-    if (existing) return existing;
-    const species = (pred && pred.speciesName) || "ant";
-    const m = {
-        x: t.x, y: t.y,
-        span: COCOON_SPAN_MIN,
-        tiles: [],
-        puddles: [],          // the toxic tile, if this species carries one
-        anchors: [t],
-        species,
-        className: (pred && pred.className) || "scout",
-        colour: (pred && pred.color) || "#aa55ff",
-        enhancement: cocoonEnhancement(species),
-        swellTimer: COCOON_SWELL_FRAMES,
-        spawnTimer: COCOON_SPAWN_FRAMES,
-        hatchesLeft: COCOON_HATCH_LIMIT,
-        spawned: [],
-        nest: t._pendingNest || null,
-        pulse: Math.random() * Math.PI * 2,
-    };
-    t._pendingNest = null;
-    cocoons.push(m);
-    m.tiles = _cocoonFootprint(m, m.span);
-    _applyEnhancement(m);
-    return m;
-}
-
-// A toxic cocoon seeps onto ONE tile beside the pylon it holds, rather than
-// welling up all over the footprint.
-function _applyEnhancement(m) {
-    if (m.enhancement !== "toxic") { m.puddles = []; return; }
-    if (m.puddles.length > 0) return;
-    const beside = m.tiles.filter(([tx, ty]) => !(tx === m.x && ty === m.y));
-    if (beside.length === 0) return;
-    m.puddles = [beside[Math.floor(Math.random() * beside.length)]];
-}
-
-// The square footprint of a cocoon: `span` tiles on a side, offset so the
-// anchor pylon sits inside it. Only real floor counts, so a cocoon against a
-// wall is simply smaller rather than hanging off the edge of the deck.
-function _cocoonFootprint(m, span) {
-    const x0 = m.x - Math.floor((span - 1) / 2);
-    const y0 = m.y - Math.floor((span - 1) / 2);
-    const out = [];
-    for (let dx = 0; dx < span; dx++) {
-        for (let dy = 0; dy < span; dy++) {
-            const tx = x0 + dx, ty = y0 + dy;
-            const tile = typeof getTile === "function" ? getTile(tx, ty) : null;
-            if (!tile || tile.type !== "floor") continue;
-            if (tx === m.x && ty === m.y) { out.push([tx, ty]); continue; }
-            const other = cocoonAt(tx, ty);
-            if (other && other !== m) continue;   // another cocoon already has it
-            out.push([tx, ty]);
-        }
-    }
-    return out;
-}
-
-function cocoonForAnchor(t) {
-    return cocoons.find(m => m.anchors.includes(t)) || null;
-}
-
-// A cocoon does not creep — it swells once, from a 2x2 to a 3x3, and stops.
-// Widening can bring another of your pylons inside the shell, which is how one
-// cocoon ends up holding more than one.
-function _swellCocoon(m) {
-    if (m.span >= COCOON_SPAN_MAX) return;
-    m.span++;
-    m.tiles = _cocoonFootprint(m, m.span);
-    _applyEnhancement(m);
-    for (const t of world) {
-        if (!t.pillar || t.destroyed || t.health <= 0) continue;
-        if (t.pillarTeam !== "green") continue;
-        if (m.anchors.includes(t)) continue;
-        if (!m.tiles.some(([tx, ty]) => tx === t.x && ty === t.y)) continue;
-        // Claimed BEFORE converting: convertPylonToRed seeds a cocoon, and
-        // seedCocoon only recognises an existing one by its anchors.
-        m.anchors.push(t);
-        convertPylonToRed(t, { speciesName: m.species, className: m.className, color: m.colour });
-    }
-}
-
-// Hatch one of the species that spun this cocoon.
-function _hatchFromCocoon(m) {
-    // Spent cocoons are inert. The live cap below limits how many are out at
-    // once; this limits how many a single site ever produces.
-    if (!(m.hatchesLeft > 0)) return;
-    m.spawned = m.spawned.filter(p => p && !p.dead);
-    if (m.spawned.length >= COCOON_SPAWN_CAP) return;
-    // And the MAP's ceiling, not just this cocoon's. Capping the zone spawner
-    // alone left this path free to run past it — measured at 27 alive against
-    // a cap of 24. The hatch is not spent, only deferred: hatchesLeft is
-    // untouched, so the cocoon still owes what it owed once there is room.
-    if (typeof predatorBudgetFull === "function" && predatorBudgetFull()) return;
-    if (typeof Predator === "undefined" || typeof SPECIES === "undefined") return;
-    const speciesDef = SPECIES[m.species] ||
-                       (typeof SYNTHETIC_SPECIES !== "undefined" ? SYNTHETIC_SPECIES[m.species] : null);
-    if (!speciesDef) return;
-    const classDef = typeof getClassDef === "function"
-        ? getClassDef(speciesDef, m.className)
-        : speciesDef[m.className];
-    if (!classDef) return;
-
-    const [sx, sy] = m.tiles[Math.floor(Math.random() * m.tiles.length)];
-    const def = {
-        width: classDef.width, height: classDef.height,
-        moveSpeed: classDef.moveSpeed, health: classDef.health, power: classDef.power,
-        color: speciesDef.color,
-        reactionSpeed: classDef.reactionSpeed ?? 15,
-        abdomenAttack: classDef.abdomenAttack ?? false,
-        rangeDamage: classDef.rangeDamage ?? 0,
-        abdomenCooldown: classDef.abdomenCooldown ?? 90,
-    };
-    const p = new Predator(m.className, def, sx, sy);
-    p.speciesName = m.species; p.className = m.className;
-    p.dnaDrops = classDef.dnaDrops; p.shardDrop = classDef.shardDrop;
-    p.state = "wander";
-    p.entryDelay = 0;
-    p.fromCocoon = true;
-    if (typeof applySpeciesBody === "function") applySpeciesBody(p, m.species);
-    p.baseMoveSpeed = p.moveSpeed;
-    if (typeof initAbility === "function") initAbility(p);
-    actors.push(p);
-    m.spawned.push(p);
-    m.hatchesLeft--;
-    elementEffects.push({ type: "impact", x: sx, y: sy, color: m.colour, radius: 0.5, life: 22 });
-}
-
-// Who a puddle bites. Followers and the neutral recruits you have not picked up
-// yet, and nothing else: predators are Predator instances (which covers your
-// clones too), and the player is not in actors[] at all.
-//
-// FIRE is the exception. Burning this stuff back is its job (see scourStep), so
-// the toxin is no trouble to it — which is what makes a fire follower the right
-// one to send rather than merely an available one.
-function puddleAffects(a) {
-    if (!a || a.dead) return false;
-    if (typeof Predator !== "undefined" && a instanceof Predator) return false;
-    if (a.isFollower && a.element === SCOUR_ELEMENT) return false;
-    // NOT recruits, any more. This used to name them outright, and it was the
-    // single largest source of damage to a recruit walking in — every hit
-    // measured on a recruit over a minute of a busy wave 8 came from here. A
-    // recruit cannot fight, cannot be ordered and has no element yet, so a
-    // toxin patch on its route was a coin toss it had no part in.
-    return !!a.isFollower;
-}
-
-function _puddleTick() {
-    if (frame % COCOON_PUDDLE_INTERVAL !== 0) return;
-    for (const m of cocoons) {
-        for (const [px, py] of m.puddles) {
-            for (const a of actors) {
-                if (!puddleAffects(a)) continue;
-                if (Math.abs(a.x - px) >= 0.8 || Math.abs(a.y - py) >= 0.8) continue;
-                applyDamage(a, COCOON_PUDDLE_DAMAGE, null, "toxic");
-                floatingTexts.push({ x: a.x, y: a.y, text: "TOXIC",
-                                     color: COCOON_PUDDLE_COLOUR, life: 28, vy: -0.05 });
-            }
-        }
-    }
-}
-
-// ── SCOURING — what a FIRE worker burns back ───────────────
-//
-// The infestation used to be a one-way ratchet with exactly one counter:
-// reclaim the pylon and everything anchored to it dies. That is still the way
-// to get the pylon back, but it left the growth itself untouchable — a toxin
-// patch sat there biting your squad and there was nothing to do about it short
-// of a reconstruction.
-//
-// So FIRE gets a work job. A fire follower on worker duty walks to the nearest
-// piece of growth and burns it off. Deliberately unhurried: the slowest of the
-// three takes fifteen seconds, which is one hatch cycle, so a single scourer
-// roughly holds a cocoon even and two of them gain ground. It cleans the mess;
-// it does not take the pylon back. Those stay separate jobs.
-const SCOUR_ELEMENT       = "fire";
-const SCOUR_PUDDLE_FRAMES = 150;    // 2.5s — the quickest, being what hurts you now
-const SCOUR_COCOON_FRAMES = 900;    // 15s, matching COCOON_SPAWN_FRAMES
-// A nest used to take 1500 frames — twenty-five seconds, the longest chore on
-// the list, longer even than the cocoon. That was the wrong way round. A grown
-// nest is surface growth on a floor tile and it is the thing actively minting
-// predators, so it is what you most want a fire crew to be good at; the cocoon
-// is wrapped around a pylon and stays the long job. At 600 frames one worker
-// clears a nest in ten seconds and two do it in five, which is the crew being
-// worth having.
-const SCOUR_NEST_FRAMES   = 600;    // 10s for a full-health grown nest
-const SCOUR_COLOUR        = "#ff7722";
-
-// Ranked by how much harm the thing is doing right now rather than by distance:
-// a toxin patch is eating the squad, a grown nest is minting predators, a
-// cocoon is doing both but more slowly. Distance only breaks a tie within a
-// rank, so a worker never walks past a puddle to get to a cocoon.
-const SCOUR_RANK = { puddle: 0, nest: 1, cocoon: 2 };
-
-function nearestScourChore(x, y, maxDist) {
-    const reach = maxDist === undefined ? INFEST_SEEK_RANGE : maxDist;
-    let best = null, bestRank = 99, bestD = Infinity;
-    const consider = (kind, tx, ty, extra) => {
-        const rank = SCOUR_RANK[kind];
-        if (rank > bestRank) return;
-        const d = Math.hypot(tx - x, ty - y);
-        if (d > reach) return;
-        if (rank === bestRank && d >= bestD) return;
-        bestRank = rank; bestD = d;
-        best = Object.assign({ kind, x: tx, y: ty }, extra);
-    };
-    for (const m of cocoons) {
-        for (const [px, py] of (m.puddles || [])) consider("puddle", px, py, { cocoon: m });
-        consider("cocoon", m.x, m.y, { cocoon: m });
-    }
-    // Only the nests an infestation GREW. A zone nest is hacked by the player
-    // standing in front of it, not worked down by a crew.
-    if (typeof world !== "undefined") {
-        for (const t of world) {
-            if (!t._infestNest || !t.nest || t.nestHealth <= 0) continue;
-            consider("nest", t.x, t.y, { tile: t });
-        }
-    }
-    return best;
-}
-
-// A cached chore has to be re-validated: another worker may have finished it,
-// or the player may have reclaimed the pylon out from under it.
-function scourChoreStillGood(c) {
-    if (!c) return false;
-    if (c.kind === "puddle") return !!(c.cocoon && cocoons.includes(c.cocoon) && c.cocoon.puddles.length > 0);
-    if (c.kind === "cocoon") return !!(c.cocoon && cocoons.includes(c.cocoon));
-    if (c.kind === "nest")   return !!(c.tile && c.tile.nest && c.tile.nestHealth > 0 && c.tile._infestNest);
-    return false;
-}
-
-// Put a grown nest out. Shared with clearInfestationAt so a nest cannot be
-// half-killed by one path and left drawable by the other.
-function _killGrownNest(tile) {
-    if (!tile || !tile._infestNest) return false;
-    tile.nest = false;
-    tile.nestHealth = 0;
-    tile._infestNest = false;
-    return true;
-}
-
-// One frame of burning, from one worker. Progress is kept on the thing being
-// burnt rather than on the worker, so two scourers on the same chore add up and
-// a worker that dies partway does not take the progress with it.
-// Returns true on the frame the chore is finished.
-function scourStep(chore) {
-    if (!scourChoreStillGood(chore)) return false;
-
-    if (chore.kind === "puddle") {
-        const m = chore.cocoon;
-        m.puddleBurn = (m.puddleBurn || 0) + 1 / SCOUR_PUDDLE_FRAMES;
-        if (m.puddleBurn < 1) return false;
-        m.puddles = [];
-        m.puddleBurn = 0;
-        // The enhancement goes with it, or the next swell calls
-        // _applyEnhancement and seeps a fresh patch straight back out.
-        m.enhancement = null;
-        floatingTexts.push({ x: chore.x, y: chore.y - 0.6, text: "TOXIN BURNED OFF",
-                             color: SCOUR_COLOUR, life: 70, vy: -0.12 });
-        return true;
-    }
-
-    if (chore.kind === "nest") {
-        const t = chore.tile;
-        const per = (t.nestMaxHealth || 200) / SCOUR_NEST_FRAMES;
-        t.nestHealth = Math.max(0, t.nestHealth - per);
-        if (t.nestHealth > 0) return false;
-        _killGrownNest(t);
-        if (typeof saveNests === "function") saveNests();
-        floatingTexts.push({ x: chore.x, y: chore.y - 1, text: "NEST BURNED OUT",
-                             color: SCOUR_COLOUR, life: 90, vy: -0.16 });
-        return true;
-    }
-
-    // The cocoon. Burning the shell open stops it hatching, but the pylon it
-    // encapsulates stays red — scouring is not a substitute for reclaiming.
-    const m = chore.cocoon;
-    m.shellBurn = (m.shellBurn || 0) + 1 / SCOUR_COCOON_FRAMES;
-    if (m.shellBurn < 1) return false;
-    const at = cocoons.indexOf(m);
-    if (at >= 0) cocoons.splice(at, 1);
-    floatingTexts.push({ x: chore.x, y: chore.y - 1, text: "COCOON BURNED OPEN",
-                         color: SCOUR_COLOUR, life: 100, vy: -0.18 });
-    if (typeof shake !== "undefined") shake = Math.max(shake, 3);
-    return true;
-}
-
-// A patch only lives while it still holds a pylon. Reclaim them all and it dies.
-function _cocoonStillHeld(m) {
-    m.anchors = m.anchors.filter(t => t && t.pillar && t.pillarTeam === "red" && !t.destroyed);
-    return m.anchors.length > 0;
-}
-
-function updateInfestation() {
-    decayConversions();
-    _puddleTick();
-    for (let i = cocoons.length - 1; i >= 0; i--) {
-        const m = cocoons[i];
-        if (!_cocoonStillHeld(m)) { cocoons.splice(i, 1); continue; }
-        if (m.span < COCOON_SPAN_MAX && --m.swellTimer <= 0) {
-            m.swellTimer = COCOON_SWELL_FRAMES; _swellCocoon(m);
-        }
-        if (--m.spawnTimer <= 0) { m.spawnTimer = COCOON_SPAWN_FRAMES; _hatchFromCocoon(m); }
-    }
-}
-
-// Called when the player takes a pylon back. Everything anchored only to that
-// pylon goes with it — that is the counter to the whole mechanic.
-function clearInfestationAt(t) {
-    if (!t) return;
-    // A site that was being paid for on this pylon's account. What had been
-    // delivered comes back as a lump rather than being deleted.
-    for (const st of nestSites.slice()) if (st.anchor === t) removeNestSite(st, true);
-    t.converting = false; t.convertProgress = 0;
-    for (let i = cocoons.length - 1; i >= 0; i--) {
-        const m = cocoons[i];
-        const at = m.anchors.indexOf(t);
-        if (at >= 0) m.anchors.splice(at, 1);
-        if (m.anchors.length === 0) {
-            // Take the grown nest with it, so reclaiming really does clear the
-            // ground rather than leaving a spawner behind.
-            _killGrownNest(m.nest);
-            cocoons.splice(i, 1);
-        }
-    }
-    // A nest whose cocoon is already gone — burned open by a fire worker. It is
-    // found by looking beside the pylon rather than by a stored reference, so it
-    // still works after a refresh, and it is only taken if no surviving cocoon
-    // still claims it (a patch holding two pylons must keep its nest when only
-    // one of them is reclaimed).
-    const orphan = _grownNestBeside(t);
-    if (orphan && !cocoons.some(m => m.nest === orphan)) _killGrownNest(orphan);
-}
-
-// The grown nest belonging to a pylon: one of the tiles seedNestNear would have
-// put it on.
-function _grownNestBeside(t) {
-    if (!t || typeof getTile !== "function") return null;
-    for (const [dx, dy] of [[1,1],[0,1],[1,0],[-1,1],[1,-1],[-1,0],[0,-1]]) {
-        const tile = getTile(t.x + dx, t.y + dy);
-        if (tile && tile._infestNest && tile.nest) return tile;
-    }
-    return null;
-}
-
-// ── Persistence ───────────────────────────────────────────
-function _liveGrownNest(t) {
-    return !!(t && t.nest && t._infestNest && t.nestHealth > 0);
-}
-
-function serialiseCocoons() {
-    return cocoons.map(m => ({
-        x: m.x, y: m.y, tiles: m.tiles.map(([a, b]) => [a, b]),
-        puddles: (m.puddles || []).map(([a, b]) => [a, b]),
-        anchors: m.anchors.map(t => [t.x, t.y]),
-        species: m.species, className: m.className, colour: m.colour,
-        span: m.span, enhancement: m.enhancement,
-        swellTimer: m.swellTimer, spawnTimer: m.spawnTimer,
-        hatchesLeft: m.hatchesLeft,
-        // Scour progress, so a refresh does not undo a worker's shift.
-        shellBurn: m.shellBurn || 0, puddleBurn: m.puddleBurn || 0,
-        // Only a LIVE nest. A fire worker that burns one out leaves the cocoon
-        // still pointing at the tile (health 0, no longer a nest), and writing
-        // that reference down made the restore bring it back at full health.
-        nest: _liveGrownNest(m.nest) ? [m.nest.x, m.nest.y] : null,
-        nestHealth: _liveGrownNest(m.nest) ? m.nest.nestHealth : null,
-    }));
-}
-
-function restoreCocoons(data) {
-    cocoons.length = 0;
-    if (!Array.isArray(data)) return;
-    for (const d of data) {
-        if (!d) continue;
-        const anchors = [];
-        for (const a of (d.anchors || [])) {
-            const tile = typeof getTile === "function" ? getTile(a[0], a[1]) : null;
-            if (tile && tile.pillar) anchors.push(tile);
-        }
-        if (anchors.length === 0) continue;   // nothing holds it up any more
-        cocoons.push({
-            x: d.x, y: d.y,
-            tiles: [],       // recomputed from the span below
-            puddles: [],
-            anchors,
-            species: d.species || "ant", className: d.className || "scout",
-            colour: d.colour || "#aa55ff",
-            span: d.span || COCOON_SPAN_MIN,
-            enhancement: d.enhancement !== undefined ? d.enhancement : cocoonEnhancement(d.species || "ant"),
-            swellTimer: d.swellTimer || COCOON_SWELL_FRAMES,
-            spawnTimer: d.spawnTimer || COCOON_SPAWN_FRAMES,
-            // A save written before cocoons burned out carries no count. It
-            // gets a fresh allowance rather than an unlimited one.
-            hatchesLeft: Number.isFinite(d.hatchesLeft)
-                ? Math.max(0, Math.min(COCOON_HATCH_LIMIT, d.hatchesLeft))
-                : COCOON_HATCH_LIMIT,
-            shellBurn: Number.isFinite(d.shellBurn) ? Math.min(1, Math.max(0, d.shellBurn)) : 0,
-            puddleBurn: Number.isFinite(d.puddleBurn) ? Math.min(1, Math.max(0, d.puddleBurn)) : 0,
-            spawned: [],
-            nest: (d.nest && typeof getTile === "function") ? getTile(d.nest[0], d.nest[1]) : null,
-            _savedNestHealth: d.nestHealth,
-            pulse: Math.random() * Math.PI * 2,
-        });
-        // Footprint and toxin come from the span, not from whatever was saved:
-        // a session written before the cocoon rework holds a creeping-era
-        // patch of up to fourteen scattered tiles, and restoring that verbatim
-        // brought the old carpet back.
-        const m = cocoons[cocoons.length - 1];
-        // The nest this cocoon owns. Regeneration rebuilt the floor without it,
-        // so the tile is still plain floor until it is marked again — which used
-        // to leave a cocoon standing with its nest gone, and the pylon already
-        // red so nothing would ever garden it again.
-        if (m.nest && !m.nest.nest && !m.nest.pillar) {
-            _markGrownNest(m.nest);
-            const h = Number(m._savedNestHealth);
-            if (Number.isFinite(h) && h > 0) m.nest.nestHealth = Math.min(m.nest.nestMaxHealth, h);
-        } else if (m.nest && !m.nest._infestNest) {
-            m.nest = null;       // the tile is something else now; do not claim it
-        }
-        delete m._savedNestHealth;
-        m.tiles = _cocoonFootprint(m, m.span);
-        const savedToxin = (Array.isArray(d.puddles) ? d.puddles : [])
-            .filter(t => Array.isArray(t) && t.length === 2)
-            .filter(([a, b]) => m.tiles.some(([tx, ty]) => tx === a && ty === b));
-        m.puddles = savedToxin.slice(0, 1);
-        _applyEnhancement(m);
-    }
-}
-
-// ── Drawing ───────────────────────────────────────────────
-// Organic blotches on the floor in the species' own colour, so which thing is
-// breeding there is readable at a glance.
-// The cocoon, and the same shell for the nests an infestation grows.
-//
-// These are computer bugs on a circuit board, so the cocoon is not spun silk —
-// it is an encapsulated component. A faceted hexagonal prism sitting on the
-// deck like a surface-mount package, with right-angle traces across its lid,
-// solder pads, and stub pins soldered out to the board. Drawn with straight
-// lines only: no beziers, no arcs, nothing round. Three earlier passes went
-// wrong by being organic (a mould carpet, then a smooth dome, then a tapered
-// sac) and one by being monumental (a stepped pyramid big enough to hide a
-// creature behind).
-//
-// Small and low on purpose: about half a tile across and fifteen pixels tall,
-// well under a predator sprite's ~44px, so one standing behind it is visible.
-const COCOON_SAC_W = 17;    // half-width in pixels at span 2
-const COCOON_SAC_H = 15;    // total height in pixels at span 2
-
-// The lid outline, as offsets from the package centre. An elongated hexagon:
-// pointed at the two ends, flat along the long edges.
-const _COCOON_LID = [
-    [-1.00,  0.00], [-0.46, -0.52], [0.46, -0.52],
-    [ 1.00,  0.00], [ 0.46,  0.44], [-0.46, 0.44],
-];
-
-function _cocoonPath(sx, cy, w, h, dy) {
-    ctx.beginPath();
-    for (let i = 0; i < _COCOON_LID.length; i++) {
-        const [ox, oy] = _COCOON_LID[i];
-        const x = sx + ox * w, y = cy + oy * h + (dy || 0);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.closePath();
-}
-
-function _drawCocoonSac(sx, sy, w, h, colour, breathe, pins) {
-    const thick = Math.max(3, h * 0.34);     // how far the package stands proud
-    const cy = sy - thick;                    // lid height above the deck
-
-    // Ground shadow — a flattened diamond, not an ellipse. Nothing round.
-    ctx.globalAlpha = 0.34;
-    ctx.fillStyle = "#07060a";
-    ctx.beginPath();
-    ctx.moveTo(sx - w, sy); ctx.lineTo(sx, sy - h * 0.20);
-    ctx.lineTo(sx + w, sy); ctx.lineTo(sx, sy + h * 0.20);
-    ctx.closePath(); ctx.fill();
-
-    // ── Body sides: the lid outline dropped by `thick` ──
-    ctx.globalAlpha = 0.92;
-    for (let i = 0; i < _COCOON_LID.length; i++) {
-        const [ax, ay] = _COCOON_LID[i];
-        const [bx, by] = _COCOON_LID[(i + 1) % _COCOON_LID.length];
-        // Only the near faces are visible: those whose edge runs along the
-        // lower half of the outline.
-        if (ay + by > -0.2) {
-            ctx.fillStyle = (ax + bx) > 0 ? "#0d1016" : "#151a24";
-            ctx.beginPath();
-            ctx.moveTo(sx + ax * w, cy + ay * h);
-            ctx.lineTo(sx + bx * w, cy + by * h);
-            ctx.lineTo(sx + bx * w, cy + by * h + thick);
-            ctx.lineTo(sx + ax * w, cy + ay * h + thick);
-            ctx.closePath(); ctx.fill();
-        }
-    }
-
-    // ── Lid ──
-    ctx.globalAlpha = 0.95;
-    ctx.fillStyle = "#1c2430";
-    _cocoonPath(sx, cy, w, h, 0); ctx.fill();
-    // Species wash, so which bug encapsulated itself here is readable
-    ctx.globalAlpha = 0.26 + breathe * 0.07;
-    ctx.fillStyle = colour;
-    _cocoonPath(sx, cy, w, h, 0); ctx.fill();
-    // Chamfer: a bright edge along the lid outline
-    ctx.globalAlpha = 0.34 + breathe * 0.10;
-    ctx.strokeStyle = typeof SENTINEL_ACCENT !== "undefined" ? SENTINEL_ACCENT : "#7fb8dc";
-    ctx.lineWidth = 1;
-    _cocoonPath(sx, cy, w, h, 0); ctx.stroke();
-
-    // ── Traces across the lid — right angles, like board routing ──
-    ctx.globalAlpha = 0.40 + breathe * 0.14;
-    ctx.strokeStyle = colour;
-    ctx.lineJoin = "miter"; ctx.lineCap = "butt";
-    const runs = [
-        [[-0.62, -0.10], [-0.20, -0.10], [-0.20,  0.16], [ 0.30,  0.16]],
-        [[-0.30, -0.30], [ 0.14, -0.30], [ 0.14, -0.06], [ 0.62, -0.06]],
-        [[ 0.00,  0.30], [ 0.40,  0.30]],
-    ];
-    for (const run of runs) {
-        ctx.beginPath();
-        run.forEach(([ox, oy], i) => {
-            const x = sx + ox * w, y = cy + oy * h;
-            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-    }
-    // Solder pads at the ends of the runs
-    ctx.globalAlpha = 0.5 + breathe * 0.2;
-    ctx.fillStyle = typeof SENTINEL_ACCENT !== "undefined" ? SENTINEL_ACCENT : "#7fb8dc";
-    for (const run of runs) {
-        for (const [ox, oy] of [run[0], run[run.length - 1]]) {
-            ctx.fillRect(sx + ox * w - 1.2, cy + oy * h - 1.2, 2.4, 2.4);
-        }
-    }
-    // Dead-centre die marker
-    ctx.globalAlpha = 0.7;
-    ctx.fillStyle = typeof SENTINEL_SLIT !== "undefined" ? SENTINEL_SLIT : "#050508";
-    ctx.fillRect(sx - w * 0.14, cy - h * 0.10, w * 0.28, h * 0.20);
-
-    // ── Pins, soldered out to the board ──
-    ctx.globalAlpha = 0.42 + breathe * 0.12;
-    ctx.strokeStyle = typeof SENTINEL_ACCENT !== "undefined" ? SENTINEL_ACCENT : "#7fb8dc";
-    const n = pins || 3;
-    for (let i = 0; i < n; i++) {
-        const t = (i + 1) / (n + 1);
-        const oy = (t - 0.5) * 0.7;
-        for (const side of [-1, 1]) {
-            const x0 = sx + side * w * 0.88, y0 = cy + oy * h;
-            const x1 = x0 + side * (4 + i * 2);
-            ctx.beginPath();
-            ctx.moveTo(x0, y0);
-            ctx.lineTo(x1, y0);            // out
-            ctx.lineTo(x1, sy);            // then straight down to the deck
-            ctx.stroke();
-        }
-    }
-    ctx.globalAlpha = 1;
-}
 
 function _infestToScreen(wx, wy) {
     return [
@@ -1134,150 +365,7 @@ function _infestToScreen(wx, wy) {
     ];
 }
 
-// A nest an infestation grew stands on open floor, so it gets a dome of its
-// own rather than the zone nests' wall honeycomb, which would be projected
-// onto a wall that is not behind it.
-// Called from the depth-sorted tile pass in game.js, at the point that tile is
-// drawn. As a flat overlay these painted over every pylon on the board — a nest
-// on a tile BEHIND a pylon still landed on top of it, which is what made them
-// look like they were floating above the pylons instead of sitting under them.
-function drawGrownNestForTile(t, px, py) {
-    if (!t || !t._infestNest || !t.nest || t.nestHealth <= 0) return;
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    {
-        const sx = px, sy = py + TILE_H;   // tile centre, as the pylons anchor
-        t.nestPulse = (t.nestPulse || 0) + 1;
-        const breathe = 0.5 + 0.5 * Math.sin(t.nestPulse * 0.03);
-        const hr = Math.max(0.2, t.nestHealth / (t.nestMaxHealth || 200));
-        // Smaller than a cocoon, and it slumps as it is damaged.
-        const nh = COCOON_SAC_H * (0.7 + hr * 0.4);
-        _drawCocoonSac(sx, sy, COCOON_SAC_W * 0.78, nh, "#ff7744", breathe, 2);
-        // The hatch it opens from — a cracked die window, cut as an angular
-        // slot rather than a soft hole. Nothing round anywhere on these.
-        const hx = sx + COCOON_SAC_W * 0.18, hy = sy - nh * 0.62;
-        const hw = COCOON_SAC_W * 0.22, hh = nh * 0.26;
-        ctx.globalAlpha = 0.78 + breathe * 0.15;
-        ctx.fillStyle = "#120806";
-        ctx.beginPath();
-        ctx.moveTo(hx - hw, hy);
-        ctx.lineTo(hx - hw * 0.2, hy - hh);
-        ctx.lineTo(hx + hw,       hy - hh * 0.3);
-        ctx.lineTo(hx + hw * 0.3, hy + hh);
-        ctx.closePath(); ctx.fill();
-        // A split running out of it
-        ctx.globalAlpha = 0.5 + breathe * 0.2;
-        ctx.strokeStyle = "#120806"; ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(hx + hw, hy - hh * 0.3);
-        ctx.lineTo(hx + hw * 1.9, hy + hh * 0.4);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-        if (typeof drawHealthBar === "function") {
-            drawHealthBar(sx - 20, sy - nh - 12, 40, 4, t.nestHealth, t.nestMaxHealth || 200);
-        }
-    }
-    ctx.restore();
-}
 
-// One cocoon, positioned by its caller. The shell is anchored on the pylon it
-// encapsulates rather than on the footprint's centroid: an even 2x2 puts the
-// pylon at a corner, and centring on the centroid made the cocoon look spun
-// beside the pylon instead of over it.
-function _drawOneCocoon(m, sx, sy) {
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-        m.pulse += 0.012;
-        const breathe = 0.5 + 0.5 * Math.sin(m.pulse);
-        if (m.tiles.length === 0) { ctx.restore(); return; }
-
-        const span = Math.max(1, m.span);
-        const rw = TILE_W * span * 0.52;
-        const rh = TILE_H * span * 0.52;
-
-        // ── The sac ──
-        // Barely grows with the span: the footprint is a mechanical extent, not
-        // a thing to fill in. Making the drawing scale with it is what produced
-        // a structure big enough to hide creatures behind.
-        const sacW = COCOON_SAC_W + (span - COCOON_SPAN_MIN) * 3;
-        const sacH = COCOON_SAC_H + (span - COCOON_SPAN_MIN) * 2;
-        // A spent cocoon goes grey and stops breathing. Leaving it looking
-        // identical to a live one would make "this site is finished"
-        // unreadable, which is most of the value of it burning out.
-        const spent = !(m.hatchesLeft > 0);
-        _drawCocoonSac(sx, sy, sacW, sacH, spent ? "#4a4a52" : m.colour,
-                       spent ? 0 : breathe, 3);
-
-        // Hairline anchor threads out to the footprint's tiles, so the extent
-        // is legible without painting anything on the floor.
-        ctx.globalAlpha = 0.10 + breathe * 0.04;
-        ctx.strokeStyle = m.colour; ctx.lineWidth = 1;
-        for (const [tx, ty] of m.tiles) {
-            if (tx === m.x && ty === m.y) continue;
-            const [ex, ey] = _infestToScreen(tx, ty);
-            ctx.beginPath();
-            ctx.moveTo(sx, sy - sacH * 0.4);
-            ctx.lineTo(ex, ey);
-            ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
-
-        // ── The toxin, if this species carries one ──
-        // An etched patch, not a puddle: hard-edged like acid eaten into the
-        // board's solder mask. Angular for the same reason as everything else
-        // here — nothing round on a circuit board.
-        for (const [px, py] of (m.puddles || [])) {
-            const [tx, ty] = _infestToScreen(px, py);
-            if (tx < -90 || tx > canvas.width + 90) continue;
-            const wob = 0.5 + 0.5 * Math.sin(m.pulse * 1.3 + px * 1.3 + py * 0.7);
-            const ew = TILE_W * 0.30, eh = TILE_H * 0.30;
-            // An irregular octagon, seeded off the tile so each patch differs.
-            const seed = (px * 73856093) ^ (py * 19349663);
-            const etch = () => {
-                ctx.beginPath();
-                for (let i = 0; i < 8; i++) {
-                    const a = (i / 8) * Math.PI * 2;
-                    const j = 0.74 + (((seed >> (i * 3)) & 7) / 7) * 0.34;
-                    const x = tx + Math.cos(a) * ew * j;
-                    const y = ty + Math.sin(a) * eh * j;
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-            };
-            ctx.globalAlpha = 0.24 + wob * 0.08;
-            ctx.fillStyle = COCOON_PUDDLE_COLOUR;
-            etch(); ctx.fill();
-            ctx.globalAlpha = 0.30 + wob * 0.10;
-            ctx.strokeStyle = "#4c7a2e"; ctx.lineWidth = 1;
-            etch(); ctx.stroke();
-            // Two right-angle runs of corrosion creeping off it
-            ctx.globalAlpha = 0.18 + wob * 0.08;
-            ctx.beginPath();
-            ctx.moveTo(tx - ew, ty); ctx.lineTo(tx - ew * 1.7, ty);
-            ctx.lineTo(tx - ew * 1.7, ty - eh * 0.6);
-            ctx.moveTo(tx + ew, ty); ctx.lineTo(tx + ew * 1.6, ty);
-            ctx.lineTo(tx + ew * 1.6, ty + eh * 0.6);
-            ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
-    ctx.restore();
-}
-
-// The cocoon whose anchor is this tile. Drawn from the same per-tile pass and
-// BEFORE the pylon body, so the pylon rises out of the package rather than the
-// package being pasted over it.
-function drawCocoonForTile(t, px, py) {
-    if (cocoons.length === 0 || !t) return;
-    for (const m of cocoons) {
-        if (m.x !== t.x || m.y !== t.y) continue;
-        _drawOneCocoon(m, px, py + TILE_H);
-    }
-}
-
-
-
-// The bar shown over a pylon being chewed on, so a conversion in progress is
-// something the player can see and interrupt rather than discover afterwards.
 function drawConversionBars() {
     for (const t of world) {
         if (!t.converting || !(t.convertProgress > 0)) continue;

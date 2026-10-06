@@ -1570,8 +1570,6 @@ function render() {
         if (t.reconstructing&&t.reconstructProgress>=1) {
             t.reconstructing=false; t.reconstructProgress=0; t.upgraded=true; t.pulseTimer=0;
             t.pillarTeam="green"; t.pillarCol="#0f8"; t.health=t.maxHealth;
-            // Taking it back kills the cocoon and nest it was holding up.
-            clearInfestationAt(t);
             if(t.workers) t.workers.forEach(a=>{ if(a.job&&a.job.type==="reconstruct") a.job=null; });
             t.workers=[];
         }
@@ -1661,9 +1659,8 @@ function render() {
         if(t.pulseTimer>120){ t.pulseTimer=0; actors.forEach(a=>{ if(a.team==="green"){const dx=a.x-t.x,dy=a.y-t.y; if(Math.abs(dx)>3.5||Math.abs(dy)>3.5) return; if(dx*dx+dy*dy<12.25) a.health=Math.min(a.maxHealth,a.health+2);} }); }
     });
 
-    // ── INFESTATION — undisturbed predators converting pylons, and the
-    //    cocoon and nests that follow ──
-    updateInfestation();
+    // ── INFESTATION — a conversion nobody is working on recovers ──
+    decayConversions();
 
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
@@ -1700,7 +1697,6 @@ function render() {
     nestEnergyTick();
     waveDrainTick();
     powerFlowTick();
-    nestSiteTick();
 
     // ── CRYSTAL ULTIMATE CHARGE RESTORE ──────────────────────────────────
     // Runs every 60 frames. Rate scales with max pylon zone depth and nest pod links.
@@ -2319,11 +2315,6 @@ function render() {
                 // beam in the air from the face of the nest.
             }
 
-            // A nest an infestation grew stands on open floor, so it is drawn
-            // here in the sorted pass rather than as an overlay.
-            drawGrownNestForTile(obj, px, py);
-            drawNestSiteForTile(obj, px, py);
-
             // ── SPAWN NEST — honeycomb hex holes filling 4-tile wall face ──
             // Only for the generated zone nests, which sit at y=-1 against the
             // wall. A nest GROWN by an infestation stands on open floor, and
@@ -2367,6 +2358,18 @@ function render() {
                 // Health bar centred on the top edge of the face
                 const barCx = (wfTL.x + wfTR.x) / 2;
                 drawHealthBar(barCx - 40, wfTL.y - 10, 80, 5, obj.nestHealth, obj.nestMaxHealth);
+                // What the predators have carried in, toward the next hatch.
+                if (obj.massStock > 0) {
+                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                    ctx.fillStyle = "#ff9966"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+                    // Low on the wall face, under the vortex, where it stays on screen
+                    // when the camera is down on the floor (the health bar at the top
+                    // of the face does not).
+                    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(barCx - 44, wfTL.y + WH - 22, 88, 13);
+                    ctx.fillStyle = "#ff9966";
+                    ctx.fillText("\u25c6 " + Math.floor(obj.massStock) + "/" + NEST_SPAWN_COST + " TO HATCH", barCx, wfTL.y + WH - 12);
+                    ctx.restore();
+                }
 
                 // Hack progress — the word only, over the bar. The floor
                 // beneath says WHERE, so the label does not have to.
@@ -2477,15 +2480,23 @@ function render() {
                 // tiles makes under the projection. Faint when closed.
                 const _cx = (obj.x - player.visualX - (obj.y - player.visualY)) * TILE_W + canvas.width/2;
                 const _cy = (obj.x - player.visualX + (obj.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
-                ctx.strokeStyle = CONNECTOR_COLOR; ctx.globalAlpha = _on ? 0.22 : 0.08; ctx.lineWidth = 1.5;
-                ctx.setLineDash([6,8]);
-                ctx.beginPath();
-                for (let i = 0; i <= 48; i++) {
-                    const a = i / 48 * Math.PI * 2, dx = Math.cos(a) * CONNECTOR_RANGE, dy = Math.sin(a) * CONNECTOR_RANGE;
-                    const sx = _cx + (dx - dy) * TILE_W, sy = _cy + (dx + dy) * TILE_H;
-                    i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+                // REPORTED: "I don't know what the giant circles are that encompass
+                // more than half of the zones." This was it — the connector's
+                // 14-tile reach, drawn all the time. Now it shows only while you
+                // have that connector selected (its ring or its INFO panel open).
+                const _sel = (typeof commandMode !== "undefined" && commandMode && commandTarget === obj) ||
+                             (typeof infoPanelOpen !== "undefined" && infoPanelOpen && typeof infoPanelTarget !== "undefined" && infoPanelTarget === obj);
+                if (_sel) {
+                    ctx.strokeStyle = CONNECTOR_COLOR; ctx.globalAlpha = _on ? 0.35 : 0.12; ctx.lineWidth = 1.5;
+                    ctx.setLineDash([6,8]);
+                    ctx.beginPath();
+                    for (let i = 0; i <= 48; i++) {
+                        const a = i / 48 * Math.PI * 2, dx = Math.cos(a) * CONNECTOR_RANGE, dy = Math.sin(a) * CONNECTOR_RANGE;
+                        const sx = _cx + (dx - dy) * TILE_W, sy = _cy + (dx + dy) * TILE_H;
+                        i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+                    }
+                    ctx.stroke(); ctx.setLineDash([]);
                 }
-                ctx.stroke(); ctx.setLineDash([]);
                 ctx.globalAlpha = 1;
                 ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
                 ctx.fillStyle = _on ? CONNECTOR_COLOR : "#f88";
@@ -2573,11 +2584,6 @@ function render() {
                 }
                 ctx.restore();
             }
-
-            // The cocoon encapsulating this pylon, under the pylon body so the
-            // pylon rises out of the package rather than the package being
-            // pasted over it.
-            drawCocoonForTile(obj, px, py);
 
             // Pillar — one design, drawn for every pylon and upgrade
             if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
@@ -3533,10 +3539,6 @@ function render() {
     // The hold line is world geometry, so it draws with the world rather than
     // up with the interface.
     drawHoldLine();
-    // Cocoons and grown nests are NOT drawn here. As a flat overlay they
-    // painted over every pylon on the board, including ones in front of them,
-    // which made a nest look like it was floating above the pylon instead of
-    // sitting under it. They draw per tile in the depth-sorted pass instead.
     // The power chain over the mending filament: the mending line is incidental,
     // the power is the thing the player is managing.
     drawGeneratorLinks();

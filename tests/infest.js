@@ -1,14 +1,13 @@
 // INFESTATION: what predators do when nobody is fighting them.
 //
-// Left undisturbed a predator walks to the nearest pylon you hold, converts it
-// to its own side, then seeds a nest and a cocoon spun over it. The cocoon
-// swells to a small square and hatches more of the same species; a pylon that
-// ends up inside it is taken too.
+// Left undisturbed a HUNTER walks to the nearest pylon you hold and converts it
+// to its own side; any predator carries charged mass to its zone's WALL nest,
+// and every NEST_SPAWN_COST paid in hatches another predator. Nothing grows on
+// the floor any more — no floor nests, no cocoons, no toxin puddles.
 //
-// The load-bearing parts are the guards, not the growth: "undisturbed" has to
-// mean undisturbed, conversion must not be a ratchet the player cannot undo,
-// and reclaiming the pylon has to actually clear everything anchored to it —
-// otherwise the mechanic is a one-way loss with no counter.
+// The load-bearing parts are the guards: "undisturbed" has to mean undisturbed,
+// conversion must not be a ratchet the player cannot undo, and the nest only
+// grows its numbers from mass that was really carried in.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -32,22 +31,11 @@ const RATE        = constant('INFEST_RATE');
 const DECAY       = constant('INFEST_DECAY');
 const REACH       = constant('INFEST_REACH');
 const SEEK        = constant('INFEST_SEEK_RANGE');
-const SPAWN_FRAMES= constant('COCOON_SPAWN_FRAMES');
-const SPAN_MIN    = constant('COCOON_SPAN_MIN');
-const SPAN_MAX    = constant('COCOON_SPAN_MAX');
-const SWELL       = constant('COCOON_SWELL_FRAMES');
-const SPAWN_CAP   = constant('COCOON_SPAWN_CAP');
-const TOXIN_SPECIES = JSON.parse(
-    INFEST.match(/const COCOON_TOXIN_SPECIES\s*=\s*(\[[^\]]*\])/)[1].replace(/'/g, '"'));
-const PUDDLE_INTERVAL = constant('COCOON_PUDDLE_INTERVAL');
-const PUDDLE_DAMAGE   = constant('COCOON_PUDDLE_DAMAGE');
-const PUDDLE_COLOUR   = INFEST.match(/const COCOON_PUDDLE_COLOUR\s*=\s*"([^"]+)"/)[1];
-const NEST_COOLDOWN   = constant('NEST_GROW_COOLDOWN');
 const SETTLE_MIN      = constant('INFEST_SETTLE_MIN');
 const SETTLE_MAX      = constant('INFEST_SETTLE_MAX');
 const PACE_MIN        = constant('INFEST_PACE_MIN');
 const PACE_MAX        = constant('INFEST_PACE_MAX');
-// Half a tile is 30px; a sac should not reach much past one tile either side.
+
 const TILE_W_HALF_LIMIT = 40;
 
 function makeEnv() {
@@ -133,7 +121,7 @@ function greenPylon(env, x, y, extra) {
         convertProgress: 0, upgraded: false,
     }, extra || {}));
 }
-// A board of clear floor with nothing on it, so a cocoon has room to swell.
+// A board of clear floor with nothing on it.
 function board(env, x0, x1, y0, y1) {
     for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
         if (!env.sandbox.worldTileMap.has(`${x},${y}`)) floorAt(env, x, y);
@@ -156,7 +144,7 @@ function tick(env, n, fn) {
     for (let i = 0; i < n; i++) {
         env.sandbox.frame++;
         env.sandbox.actors.forEach(a => a.update && a.update());
-        env.run('updateInfestation()');
+        env.run('decayConversions()');
         if (fn) fn(i);
     }
 }
@@ -165,41 +153,8 @@ function convert(env, t, pred) {
     env.run('convertPylonToRed')(t, pred);
 }
 // A nest now has to be PAID FOR: conversion only marks a site, and the nest is
-// built once predators have carried NEST_BUILD_COST of charged mass to it. A
-// check that needs a standing nest as its fixture pays the bill instead of
-// simulating predators ferrying lumps.
-function fundSites(env) {
-    env.run('nestSites.forEach(s => { s.mass = NEST_BUILD_COST; }); nestSiteTick();');
-}
-function convertFunded(env, t, pred) {
-    convert(env, t, pred);
-    fundSites(env);
-}
-// The same, with the world-wide nest cooldown already spent — for the checks
-// that are about the per-zone CAP rather than the pacing. Without this a cap
-// check passes because the cooldown swallowed the second nest, which means it
-// would keep passing with the cap deleted.
-function convertPaced(env, t, pred) {
-    env.sandbox.frame += NEST_COOLDOWN;
-    convertFunded(env, t, pred);
-}
-// Drive the per-tile draw the way the depth-sorted pass in game.js does: the
-// cocoon and the grown nest are no longer flat overlays, so they are called
-// with a tile and that tile's screen position.
-function drawTile(env, t) {
-    const px = (t.x - env.sandbox.player.visualX - (t.y - env.sandbox.player.visualY)) * 60 + 400;
-    const py = (t.x - env.sandbox.player.visualX + (t.y - env.sandbox.player.visualY)) * 30 + 300;
-    env.run('drawCocoonForTile')(t, px, py);
-    env.run('drawGrownNestForTile')(t, px, py);
-}
-// Every cocoon and grown nest on the board, in tile order.
-function drawAll(env) {
-    for (const t of env.sandbox.world) drawTile(env, t);
-}
 
-// A predator-shaped object that is NOT in actors[]. The shape tests need a
-// converted pylon without a live predator on the board, which would otherwise
-// walk off and convert whatever else the test had placed.
+// A predator-shaped object that is NOT in actors[].
 function spinner(species, cls) {
     return { speciesName: species || 'ant', className: cls || 'scout', color: '#aa55ff' };
 }
@@ -469,984 +424,7 @@ check('decay is slower than progress, so interrupting is not a free reset', () =
     ok(DECAY < RATE * 10, `decay ${DECAY} is so fast that any interruption undoes everything`);
 });
 
-group('the nest and the cocoon');
-
-// ─────────────────────────────────────────────────────────
-group('MASS FOR NESTS: predators fetch it, carry it, and pay it in');
-
-// REPORTED: "I want the charged little particles that drop from the predators
-// to be required for the predators to build nests. Have them search for the
-// particles at the beginning of their spawn, or whenever they're not doing
-// anything. If they find some, they collect it and bring it over, just like the
-// followers bring the shards to the crystal. And have them collect up to 20 to
-// build a nest."
-
-// A converted pylon with its site, and a predator (not the one that converted
-// it) standing a little way off, free to go and fetch.
-function nestScene(env, lumpAt, value) {
-    board(env, -2, 24, -1, 4);
-    const t = greenPylon(env, 8, 2);
-    convert(env, t, mkPred(env, 8, 2));
-    const site = env.run('nestSites')[0];
-    const pred = mkPred(env, 12, 2);
-    pred._infestSettle = 0;
-    const lump = lumpAt
-        ? env.run('spawnChargedMass')(lumpAt[0], lumpAt[1], value || 8) : null;
-    return { t, site, pred, lump };
-}
-// Run the real update, which is where infestTick lives.
-function step(env, pred, n) {
-    for (let i = 0; i < n; i++) { env.sandbox.frame++; pred.update(); env.run('nestSiteTick()'); }
-}
-
-check('THE ASK: an idle predator with a site waiting goes and fetches a lump', () => {
-    const env = makeEnv();
-    const { pred, lump } = nestScene(env, [14, 2], 8);
-    step(env, pred, 160);
-    ok(env.run('chargedMass').indexOf(lump) < 0, 'the lump is still lying where it fell');
-    ok(pred.nestMass > 0 || env.run('nestSites')[0].mass > 0,
-       'nobody took it: carrying ' + pred.nestMass + ', site holds ' + env.run('nestSites')[0].mass);
-});
-
-check('THE ASK: it carries the lump to the site and pays it in', () => {
-    const env = makeEnv();
-    const { pred, site } = nestScene(env, [14, 2], 8);
-    step(env, pred, 900);
-    same(site.mass, 8, 'the lump\'s value did not arrive at the site');
-    same(pred.nestMass, 0, 'it is still carrying what it delivered');
-});
-
-check('THE ASK: it takes lumps until the price is paid, and then the nest is built', () => {
-    const env = makeEnv();
-    const { pred, site } = nestScene(env, null);
-    for (const x of [13, 14, 15]) env.run('spawnChargedMass')(x, 2, 8);   // 24 >= 20
-    // Past the cooldown, so only the mass is what is being measured.
-    env.sandbox.frame += constant('NEST_GROW_COOLDOWN');
-    step(env, pred, 3000);
-    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 1,
-         'twenty-odd worth of lumps did not buy a nest; site holds ' + site.mass);
-});
-
-check('a nest is NOT built while the site is short, however long it waits', () => {
-    const env = makeEnv();
-    const { pred, site } = nestScene(env, [14, 2], 8);     // 8 of 20
-    env.sandbox.frame += constant('NEST_GROW_COOLDOWN');
-    step(env, pred, 2500);
-    ok(site.mass < constant('NEST_BUILD_COST'), 'fixture: should still be short');
-    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 0,
-         'a nest was built on ' + site.mass + ' of ' + constant('NEST_BUILD_COST'));
-});
-
-check('with NO site waiting, a predator leaves the lump alone', () => {
-    // Nothing to build, nothing to fetch for. Taking it anyway would be
-    // stealing the player\'s shards for no reason.
-    const env = makeEnv();
-    board(env, -2, 24, -1, 4);
-    const pred = mkPred(env, 12, 2);
-    pred._infestSettle = 0;
-    const lump = env.run('spawnChargedMass')(13, 2, 8);
-    step(env, pred, 200);
-    ok(env.run('chargedMass').indexOf(lump) >= 0, 'it took a lump with no site to take it to');
-    same(pred.nestMass || 0, 0, 'and it is carrying one');
-});
-
-check('it takes a lump in either state — charged or already neutralised', () => {
-    // It is their own kind of matter, so the electric worker\'s neutralising
-    // step is something only the player\'s side pays.
-    for (const state of ['charged', 'neutral']) {
-        const env = makeEnv();
-        const { pred, lump } = nestScene(env, [13, 2], 6);
-        lump.state = state;
-        step(env, pred, 200);
-        ok(env.run('chargedMass').indexOf(lump) < 0, 'a ' + state + ' lump was not taken');
-    }
-});
-
-check('a lump already in a FOLLOWER\'s arms is not stolen', () => {
-    const env = makeEnv();
-    const { pred, lump } = nestScene(env, [13, 2], 6);
-    lump.state = 'carried'; lump.carrier = { dead: false, x: 13, y: 2 };
-    step(env, pred, 200);
-    ok(env.run('chargedMass').indexOf(lump) >= 0, 'a predator took a lump out of a follower\'s arms');
-});
-
-check('only what the site can use goes in — the rest goes back on the ground', () => {
-    const env = makeEnv();
-    const { pred, site } = nestScene(env, [13, 2], 26);    // a 26-value lump, 20 wanted
-    env.sandbox.frame += constant('NEST_GROW_COOLDOWN');
-    step(env, pred, 600);
-    ok(site.mass <= constant('NEST_BUILD_COST') || env.sandbox.world.some(x => x._infestNest),
-       'the site took more than it could use');
-    const left = env.run('chargedMass').reduce((a, m) => a + m.value, 0);
-    same(left, 6, 'the overflow should be a 6-value lump on the floor, found ' + left);
-});
-
-check('predators already carrying enough do not send a second one for the same site', () => {
-    // "Collect UP TO 20": ten predators must not all go and fetch for a nest
-    // that is nearly paid for.
-    const env = makeEnv();
-    const { pred, site } = nestScene(env, [13, 2], 20);
-    const other = mkPred(env, 13.5, 2); other._infestSettle = 0;
-    env.run('spawnChargedMass')(14, 2, 8);
-    step(env, pred, 40);                    // pred takes the 20 and is carrying it
-    same(pred.nestMass, 20, 'fixture: the first predator should be carrying the 20');
-    same(site.incoming, 20, 'the site does not know it has 20 on the way');
-    other._infestSettle = 0;
-    for (let i = 0; i < 40; i++) { env.sandbox.frame++; other.update(); }
-    same(other.nestMass || 0, 0, 'a second predator fetched for a site already covered');
-});
-
-check('a predator pulled into a fight DROPS what it carries, as a charged lump', () => {
-    const env = makeEnv();
-    const { pred, site } = nestScene(env, [13, 2], 8);
-    step(env, pred, 40);
-    ok(pred.nestMass > 0, 'fixture: it should be carrying');
-    env.sandbox.alertActive = true;          // a fight breaks out
-    step(env, pred, 3);
-    same(pred.nestMass || 0, 0, 'it kept carrying through a fight');
-    same(site.incoming, 0, 'the site still counts it as on its way');
-    const back = env.run('chargedMass').filter(m => m.state === 'charged');
-    same(back.reduce((a, m) => a + m.value, 0), 8, 'the lump did not come back whole and charged');
-});
-
-check('killing a carrier gives the stockpile to the player, charged', () => {
-    // A predator must not be able to take a lump out of play by dying with it.
-    // The follower code turns a dropped CARRIED lump into a neutral one, which
-    // skips the neutralise step — which is why a predator carries a VALUE and
-    // not a hauled lump.
-    const env = makeEnv();
-    const { pred } = nestScene(env, [13, 2], 8);
-    step(env, pred, 40);
-    ok(pred.nestMass > 0, 'fixture: it should be carrying');
-    env.run('predatorDropNestMass')(pred);
-    const lumps = env.run('chargedMass');
-    ok(lumps.length >= 1 && lumps.every(m => m.state === 'charged'),
-       'what it was carrying did not come back charged: ' + JSON.stringify(lumps.map(m => m.state)));
-});
-
-check('reclaiming the pylon cancels its site and hands the stockpile back', () => {
-    const env = makeEnv();
-    const { t, site } = nestScene(env, null);
-    site.mass = 13;
-    t.pillarTeam = 'green';
-    env.run('clearInfestationAt')(t);
-    same(env.run('nestSites').length, 0, 'the site survived its pylon being taken back');
-    const back = env.run('chargedMass').reduce((a, m) => a + m.value, 0);
-    same(back, 13, 'the 13 that had been paid in was deleted rather than returned');
-    same(t._nestSite, undefined, 'the tile still thinks it is a site');
-});
-
-check('a site hanging off a pylon the player has retaken is dropped on its own', () => {
-    const env = makeEnv();
-    const { t } = nestScene(env, null);
-    t.pillarTeam = 'green';              // taken back without going through clearInfestationAt
-    env.run('nestSiteTick()');
-    same(env.run('nestSites').length, 0, 'an orphaned site was left to be built');
-});
-
-check('a hatchling from a cocoon never fetches — the loop breaker holds', () => {
-    // fromCocoon predators do not garden, so cocoons making predators making
-    // cocoons cannot run away. Fetching for a nest must not be a way round that.
-    const env = makeEnv();
-    const { pred, site, lump } = nestScene(env, [13, 2], 8);
-    pred.fromCocoon = true;
-    step(env, pred, 400);
-    // Judged by what ended up WHERE, not by what it is holding at the end: it
-    // can pick a lump up and put it in the site well inside 200 frames, and a
-    // check on its arms alone then reads zero and passes whatever it did.
-    ok(env.run('chargedMass').indexOf(lump) >= 0, 'a hatchling took the lump');
-    same(site.mass, 0, 'a hatchling paid mass into a nest site');
-    same(pred.nestMass || 0, 0, 'a hatchling is carrying mass for a nest');
-});
-
-check('a paid-for site waits for the world-wide cooldown rather than being refused', () => {
-    const env = makeEnv();
-    const { site } = nestScene(env, null);
-    env.run('_lastNestGrowFrame = frame');            // a nest was just built elsewhere
-    site.mass = constant('NEST_BUILD_COST');
-    env.run('nestSiteTick()');
-    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 0, 'it ignored the cooldown');
-    same(env.run('nestSites').length, 1, 'a paid-for site was thrown away for waiting');
-    env.sandbox.frame += constant('NEST_GROW_COOLDOWN');
-    env.run('nestSiteTick()');
-    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 1,
-         'it never built once the cooldown was over');
-});
-
-check('a site survives a refresh with what has been paid into it', () => {
-    const env = makeEnv();
-    const { t, site } = nestScene(env, null);
-    site.mass = 11;
-    const saved = JSON.parse(JSON.stringify(env.run('serialiseNestSites')()));
-    env.run('clearNestSites')();
-    same(env.run('nestSites').length, 0, 'fixture: it should be gone');
-    env.run('restoreNestSites')(saved);
-    const back = env.run('nestSites');
-    same(back.length, 1, 'the site did not come back');
-    same(back[0].mass, 11, 'what had been paid in was lost on the way');
-    ok(back[0].anchor === t, 'it came back hanging off something else');
-});
-
-check('a site with no anchor cannot take the whole save down', () => {
-    // serialiseNestSites runs inside saveSession's single try/catch. A throw
-    // there does not lose this field, it loses the ENTIRE session, silently.
-    const env = makeEnv();
-    nestScene(env, null);
-    env.run('nestSites.push({ x: 1, y: 1, mass: 4 })');          // no anchor at all
-    env.run('nestSites.push(null)');
-    let saved;
-    try { saved = env.run('serialiseNestSites')(); }
-    catch (e) { throw new Error('serialising threw: ' + e.message); }
-    same(saved.length, 1, 'only the real site should have been written, got ' + saved.length);
-});
-
-check('junk in a saved site is ignored rather than thrown', () => {
-    const env = makeEnv();
-    nestScene(env, null);
-    env.run('restoreNestSites')([null, { x: 'a' }, { x: 1, y: 1, ax: 99, ay: 99, mass: 'lots' }, 7]);
-    same(env.run('nestSites').length, 0, 'a junk site was accepted');
-});
-
-check('THE ASK: converting a pylon marks a SITE, and grows no nest by itself', () => {
-    // REPORTED: "I want the charged little particles that drop from the
-    // predators to be required for the predators to build nests."
-    //
-    // Conversion used to plant the nest on the spot, for nothing. It now only
-    // marks where one will go.
-    const env = makeEnv();
-    board(env, -2, 6, -1, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
-    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 0,
-         'a nest grew with nothing paid for it');
-    const sites = env.run('nestSites');
-    same(sites.length, 1, 'no site was marked');
-    same(sites[0].mass, 0, 'a fresh site should start empty');
-    ok(Math.hypot(sites[0].x - t.x, sites[0].y - t.y) <= 2, 'the site should be beside the pylon');
-    same(t.pillarTeam, 'red', 'the pylon is still lost');
-    ok(!!env.run('cocoonForAnchor')(t), 'and still cocooned');
-});
-
-check('and once NEST_BUILD_COST has been carried in, the nest is built there', () => {
-    const env = makeEnv();
-    board(env, -2, 6, -1, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
-    const site = env.run('nestSites')[0];
-    const where = { x: site.x, y: site.y };
-    // One short of the price does nothing...
-    env.run('nestSites[0].mass = NEST_BUILD_COST - 1; nestSiteTick();');
-    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 0,
-         'a nest was built one short of its price');
-    // ...and the price builds it.
-    env.run('nestSites[0].mass = NEST_BUILD_COST; nestSiteTick();');
-    const nests = env.sandbox.world.filter(x => x.nest && x.nestHealth > 0);
-    same(nests.length, 1, 'a paid-for site did not build its nest');
-    same(nests[0].x, where.x, 'it grew somewhere other than its site');
-    same(nests[0].y, where.y, 'it grew somewhere other than its site');
-    ok(nests[0]._infestNest, 'it should be marked as grown rather than generated');
-    same(env.run('nestSites').length, 0, 'the site should be spent once built');
-});
-
-check('THE REPORTED CASE: the nest lands below the pylon, never above it', () => {
-    // Depth in this projection is x+y: a bigger sum draws lower and in front.
-    // The nest used to prefer (x, y-1), a SMALLER sum, so it appeared a row
-    // above the pylon it belongs to.
-    const env = makeEnv();
-    board(env, -4, 10, -1, 5);
-    const t = greenPylon(env, 3, 2);
-    convertFunded(env, t, spinner());
-    const nest = env.sandbox.world.find(x => x._infestNest);
-    ok(nest, 'no nest grew');
-    ok(nest.x + nest.y > t.x + t.y,
-       `nest at ${nest.x},${nest.y} (depth ${nest.x + nest.y}) is not in front of the ` +
-       `pylon at ${t.x},${t.y} (depth ${t.x + t.y})`);
-});
-
-check('it will settle for beside, and only goes above as a last resort', () => {
-    // Fence the pylon in so the tiles in front are unavailable.
-    const env = makeEnv();
-    for (const [x, y] of [[3, 2], [4, 3], [3, 3], [4, 2], [2, 3], [4, 1], [2, 2], [3, 1]]) {
-        floorAt(env, x, y);
-    }
-    const t = env.sandbox.worldTileMap.get('3,2');
-    Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green',
-                       health: 80, maxHealth: 80, attackMode: true });
-    env.sandbox._pillarCache.push(t);
-    // Occupy everything at depth >= the pylon's, leaving only tiles above it.
-    for (const k of ['4,3', '3,3', '4,2', '2,3', '4,1']) {
-        env.sandbox.worldTileMap.get(k).nodeType = 'blocked';
-    }
-    convertFunded(env, t, spinner());
-    const nest = env.sandbox.world.find(x => x._infestNest);
-    ok(nest, 'it should still find somewhere');
-    ok(nest.x + nest.y < t.x + t.y, 'with nowhere else it may go above');
-});
-
-check('a pylon next to an existing nest does not grow a second one', () => {
-    const env = makeEnv();
-    board(env, -2, 6, -1, 4);
-    floorAt(env, 4, -1, { nest: true, nestHealth: 200, nestMaxHealth: 200 });
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
-    same(env.sandbox.world.filter(x => x.nest && x.nestHealth > 0).length, 1, 'should reuse the nest in reach');
-});
-
-check('THE REPORTED CASE: a grown nest is a dome, not a wall honeycomb', () => {
-    // The zone nests sit at y=-1 against the wall, and their renderer projects
-    // a honeycomb onto that wall face. A nest GROWN on open floor has no wall
-    // behind it, so that projection painted a flat rug on the ground.
-    ok(/obj\.nest && obj\.nestHealth > 0 && !obj\._infestNest/.test(GAME),
-       'the wall honeycomb still draws for grown nests');
-    ok(/obj\.nest && obj\.nestHealth <= 0 && !obj\._infestNest/.test(GAME),
-       'the broken-nest wreckage makes the same wall assumption');
-    ok(/function drawGrownNestForTile/.test(INFEST), 'grown nests have no drawing of their own');
-});
-
-check('a grown nest actually draws, and stops when it is gone', () => {
-    const env = makeEnv();
-    board(env, -4, 10, -1, 4);
-    const t = greenPylon(env, 3, 2);
-    convertFunded(env, t, spinner());
-    const nest = env.sandbox.world.find(x => x._infestNest);
-    ok(nest && nest.nestHealth > 0, 'fixture: a nest should have grown');
-    env.calls.length = 0;
-    drawAll(env);
-    // A ziggurat is drawn with paths, not ellipses — the shape changed from a
-    // dome, so this asserts that something was filled rather than which
-    // primitive was used.
-    ok(env.calls.some(c => c.op === 'fill'), 'nothing drawn for a grown nest');
-    nest.nestHealth = 0;
-    env.calls.length = 0;
-    // Only the nest here — drawAll would also draw the cocoon on its own tile.
-    drawTile(env, nest);
-    same(env.calls.length, 0, 'a dead grown nest should draw nothing');
-});
-
-check('THE REPORTED CASE: it is geometric, not round', () => {
-    // These are computer bugs on a circuit board. Every earlier pass was
-    // organic — a mould carpet, a smooth dome, a tapered bezier sac — or
-    // monumental. The cocoon is an encapsulated component now, and the rule
-    // that encodes that is: straight lines only.
-    ok(/function _drawCocoonSac/.test(INFEST), 'no cocoon drawing');
-    ok(!/function _drawZiggurat/.test(INFEST), 'the stepped pyramid is still there');
-    ok(!/function _drawDome/.test(INFEST), 'the dome is still there');
-    const at = INFEST.indexOf('function _drawCocoonSac');
-    const body = INFEST.slice(at, INFEST.indexOf('function _infestToScreen'));
-    ok(!/bezierCurveTo|quadraticCurveTo/.test(body), 'a curve survives in the cocoon');
-    ok(!/ctx\.arc\b|ctx\.ellipse/.test(body), 'something round survives in the cocoon');
-    const layer = INFEST.slice(INFEST.indexOf('function drawCocoons'));
-    ok(!/ctx\.arc\b|ctx\.ellipse|bezierCurveTo/.test(layer.slice(0, layer.indexOf('function drawConversionBars'))),
-       'something round survives elsewhere in the cocoon layer');
-    // ...and the board motifs that make it read as a component.
-    ok(/trace/i.test(body), 'no circuit traces across the lid');
-    ok(/pad/i.test(body), 'no solder pads');
-    ok(/pins/i.test(body), 'no pins out to the board');
-    same((INFEST.match(/_drawCocoonSac\(/g) || []).length, 3,
-         'expected the definition plus two call sites');
-});
-
-check('nothing round is drawn for a cocoon at all', () => {
-    // Driven, not read: the whole cocoon layer must emit no arcs or ellipses.
-    // The toxin pool is the one exception and is drawn separately below.
-    const env = makeEnv();
-    board(env, -4, 10, 0, 4);
-    const t = greenPylon(env, 0, 2);
-    // A venomous one, so the toxin patch is included — it has to be angular
-    // too. Nothing round on a circuit board.
-    convert(env, t, spinner('spider', 'striker'));
-    ok(env.run('cocoons')[0].puddles.length > 0, 'fixture: should carry the toxin');
-    env.calls.length = 0;
-    drawAll(env);
-    const round = env.calls.filter(c => c.op === 'arc' || c.op === 'ellipse');
-    same(round.length, 0, `the cocoon emitted ${round.length} round primitives`);
-    ok(env.calls.some(c => c.op === 'lineTo'), 'fixture: it should have drawn something');
-});
-
-check('a grown nest is geometric too', () => {
-    const env = makeEnv();
-    board(env, -4, 10, -1, 4);
-    const t = greenPylon(env, 0, 2);
-    convertFunded(env, t, spinner('ant', 'scout'));
-    ok(env.sandbox.world.some(x => x._infestNest), 'fixture: a nest should have grown');
-    env.calls.length = 0;
-    drawAll(env);
-    const round = env.calls.filter(c => c.op === 'arc' || c.op === 'ellipse');
-    same(round.length, 0, `the grown nest emitted ${round.length} round primitives`);
-    ok(env.calls.some(c => c.op === 'fill'), 'nothing drawn for a grown nest');
-});
-
-// Every coordinate the drawing emits, so its real extent can be measured
-// rather than assumed.
-function drawnExtent(env, fn) {
-    return drawnExtentOf(env, () => env.run(fn));
-}
-function drawnExtentOf(env, run) {
-    env.calls.length = 0;
-    run();
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const c of env.calls) {
-        if (!['moveTo', 'lineTo', 'ellipse', 'bezierCurveTo', 'arc'].includes(c.op)) continue;
-        // x,y are the first two args for every one of these.
-        const pts = c.op === 'bezierCurveTo'
-            ? [[c.args[0], c.args[1]], [c.args[2], c.args[3]], [c.args[4], c.args[5]]]
-            : [[c.args[0], c.args[1]]];
-        for (const [x, y] of pts) {
-            if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-            minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-            minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-        }
-        // An ellipse carries its radii, which extend past its centre.
-        if (c.op === 'ellipse') {
-            minX = Math.min(minX, c.args[0] - c.args[2]); maxX = Math.max(maxX, c.args[0] + c.args[2]);
-            minY = Math.min(minY, c.args[1] - c.args[3]); maxY = Math.max(maxY, c.args[1] + c.args[3]);
-        }
-    }
-    return { minX, maxX, minY, maxY };
-}
-
-check('THE REPORTED CASE: it is small enough not to stand in front of things', () => {
-    // The pyramid rose ~66px over a 3x3 and hid whatever walked behind it.
-    // A predator sprite is drawn roughly 44px tall, so the sac has to stay
-    // well under that to leave one visible.
-    //
-    // The sac body is measured on its own. drawCocoons also runs hairline
-    // threads out to the footprint tiles, which legitimately reach a tile
-    // away; those cannot hide anything and would otherwise dominate this.
-    const env = makeEnv();
-    const GY = 330;
-    const biggest = `_drawCocoonSac(400, ${GY}, COCOON_SAC_W + ${SPAN_MAX - SPAN_MIN} * 3, ` +
-                    `COCOON_SAC_H + ${SPAN_MAX - SPAN_MIN} * 2, "#cc2244", 1, 3)`;
-    const e = drawnExtent(env, biggest);
-    const height = GY - e.minY;
-    ok(height < 30, `the sac stands ${height.toFixed(0)}px tall — too tall to see past`);
-    const halfW = Math.max(e.maxX - 400, 400 - e.minX);
-    ok(halfW < TILE_W_HALF_LIMIT, `the sac reaches ${halfW.toFixed(0)}px either side of its tile`);
-});
-
-check('the threads it runs to the footprint cannot hide anything', () => {
-    // They reach a tile out by design, so what matters is that they are
-    // hairlines rather than anything with area.
-    const env = makeEnv();
-    board(env, -4, 10, 0, 4);
-    const t = greenPylon(env, 0, 2);
-    convert(env, t, spinner('spider', 'striker'));
-    env.calls.length = 0;
-    drawAll(env);
-    const widths = env.calls.filter(c => c.op === 'set:lineWidth').map(c => c.args[0]);
-    ok(widths.length > 0, 'nothing sets a line width');
-    ok(widths.every(w => w <= 1.5), `a thread is ${Math.max(...widths)}px thick`);
-    const alphas = env.calls.filter(c => c.op === 'set:globalAlpha').map(c => c.args[0]);
-    ok(Math.min(...alphas) < 0.2, 'the threads should be drawn faintly');
-});
-
-check('it barely grows with the footprint', () => {
-    // Scaling the drawing with the mechanical extent is what produced
-    // something big enough to hide behind. Measured through drawCocoons, so
-    // the call site is under test and not just the helper — with the footprint
-    // pinned to the anchor tile so the threads do not skew the extent.
-    const env = makeEnv();
-    board(env, -4, 10, 0, 4);
-    const t = greenPylon(env, 0, 2);
-    convert(env, t, spinner('spider', 'striker'));
-    const m = env.run('cocoons')[0];
-    const measure = span => {
-        m.span = span;
-        m.tiles = [[m.x, m.y]];      // no threads, so this is the sac alone
-        m.puddles = [];
-        m.pulse = 0;
-        const e = drawnExtentOf(env, () => drawTile(env, t));
-        return { w: e.maxX - e.minX, h: e.maxY - e.minY };
-    };
-    const a = measure(SPAN_MIN), b = measure(SPAN_MAX);
-    ok(b.w > a.w, 'a bigger span should read slightly bigger');
-    const grow = b.w - a.w;
-    ok(grow < 12, `span ${SPAN_MIN} to ${SPAN_MAX} widened the sac by ${grow.toFixed(0)}px — too much`);
-    ok(b.h - a.h < 10, `and heightened it by ${(b.h - a.h).toFixed(0)}px — too much`);
-    ok(b.h < 34, `the widest sac is ${b.h.toFixed(0)}px tall overall`);
-});
-
-check('it sits on the deck rather than floating', () => {
-    const env = makeEnv();
-    const e = drawnExtent(env, '_drawCocoonSac(400, 330, COCOON_SAC_W, COCOON_SAC_H, "#cc2244", 0.5, 3)');
-    ok(e.maxY >= 330 - 1, `the sac's lowest point is ${e.maxY.toFixed(0)}, above the ground at 330`);
-    ok(e.maxY <= 330 + 8, 'it should not sink through the deck either');
-});
-
-check('the footprint is threaded, not filled', () => {
-    // The extent is communicated with hairlines out to the tiles; a fill
-    // across them is the carpet coming back.
-    const at = INFEST.indexOf('Hairline anchor threads');
-    ok(at > -1, 'no anchor threads — the footprint extent is invisible');
-    const block = INFEST.slice(at, at + 600);
-    ok(/ctx\.stroke\(\)/.test(block), 'the threads should be stroked');
-    ok(!/ctx\.fill\(\)/.test(block), 'the footprint tiles must not be filled');
-});
-
-check('nothing is painted flat on the floor under a cocoon', () => {
-    // The floor wash under the dome was what read as a carpet. The dome's own
-    // base half-ellipse stays; a full ground ellipse in the species colour
-    // does not.
-    const at = INFEST.indexOf('function drawCocoons');
-    const body = INFEST.slice(at, at + 2600);
-    ok(!/Silk floor/.test(body), 'the silk floor wash is back');
-    ok(!/ctx\.ellipse\(sx, sy, rw, rh, 0, 0, Math\.PI \* 2\)/.test(body),
-       'a full ground ellipse is being filled under the dome');
-});
-
-check('THE REPORTED CASE: a cocoon encapsulates a small square', () => {
-    const env = makeEnv();
-    board(env, -2, 8, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, spinner());
-    const m = env.run('cocoons')[0];
-    ok(m, 'no cocoon spun');
-    same(m.span, SPAN_MIN, `it should start as a ${SPAN_MIN}x${SPAN_MIN}`);
-    same(m.tiles.length, SPAN_MIN * SPAN_MIN, 'the footprint should be the full square');
-    ok(m.tiles.some(([tx, ty]) => tx === t.x && ty === t.y), 'the pylon must be inside it');
-});
-
-check('it swells once and then stops', () => {
-    const env = makeEnv();
-    board(env, -4, 10, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, spinner());
-    tick(env, SWELL + 5);
-    same(env.run('cocoons')[0].span, SPAN_MAX, `it should have widened to ${SPAN_MAX}`);
-    // And then hold there however long it is left.
-    tick(env, SWELL * 6);
-    const m = env.run('cocoons')[0];
-    same(m.span, SPAN_MAX, 'it kept growing past its span');
-    ok(m.tiles.length <= SPAN_MAX * SPAN_MAX, `footprint is ${m.tiles.length} tiles`);
-});
-
-check('the footprint is a contiguous square, not a scatter', () => {
-    const env = makeEnv();
-    board(env, -4, 10, 0, 4);
-    const t = greenPylon(env, 4, 2);
-    convert(env, t, spinner());
-    tick(env, SWELL + 5);
-    const m = env.run('cocoons')[0];
-    const xs = m.tiles.map(([x]) => x), ys = m.tiles.map(([, y]) => y);
-    same(Math.max(...xs) - Math.min(...xs) + 1, SPAN_MAX, 'width should be the span');
-    same(Math.max(...ys) - Math.min(...ys) + 1, SPAN_MAX, 'height should be the span');
-});
-
-check('THE REPORTED CASE: swelling brings a neighbouring pylon inside the shell', () => {
-    const env = makeEnv();
-    board(env, -2, 10, 0, 4);
-    const first  = greenPylon(env, 3, 2);
-    const second = greenPylon(env, 4, 2);   // adjacent, so a 3x3 covers it
-    convert(env, first, spinner('beetle', 'striker'));
-    tick(env, SWELL + 5);
-    same(second.pillarTeam, 'red', 'the neighbour should have been taken');
-    const m = env.run('cocoons')[0];
-    ok(m.anchors.includes(first) && m.anchors.includes(second),
-       'one cocoon should hold both pylons');
-    same(env.run('cocoons').length, 1, 'and it should still be a single cocoon');
-});
-
-check('a pylon outside the square is left alone', () => {
-    const env = makeEnv();
-    board(env, -2, 12, 0, 4);
-    const inside  = greenPylon(env, 3, 2);
-    const outside = greenPylon(env, 8, 2);   // well clear of a 3x3
-    convert(env, inside, spinner());
-    tick(env, SWELL * 3);
-    same(outside.pillarTeam, 'green', 'a pylon beyond the shell should not be converted');
-});
-
-check('the footprint only covers real floor', () => {
-    const env = makeEnv();
-    // A single strip of floor, so a square would otherwise hang off the deck.
-    for (let x = 0; x <= 8; x++) floorAt(env, x, 2);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, spinner());
-    tick(env, SWELL + 5);
-    const m = env.run('cocoons')[0];
-    for (const [mx, my] of m.tiles) {
-        same(my, 2, `cocoon tile ${mx},${my} is off the floor strip`);
-        ok(env.sandbox.getTile(mx, my), 'cocoon on a tile that does not exist');
-    }
-});
-
-check('two cocoons do not claim the same tile', () => {
-    const env = makeEnv();
-    board(env, -2, 14, 0, 4);
-    const a = greenPylon(env, 3, 2);
-    const b = greenPylon(env, 6, 2);   // far enough apart to spin separately
-    convert(env, a, spinner());
-    convert(env, b, spinner());
-    tick(env, SWELL * 3);
-    const all = env.run('cocoons');
-    const seen = new Set();
-    for (const m of all) for (const [tx, ty] of m.tiles) {
-        const k = `${tx},${ty}`;
-        ok(!seen.has(k), `tile ${k} is claimed by two cocoons`);
-        seen.add(k);
-    }
-});
-
-group('hatching new predators');
-
-check('THE REPORTED CASE: the cocoon spawns more of that class', () => {
-    const env = makeEnv();
-    board(env, -2, 8, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    const p = mkPred(env, 3, 2, 'beetle', 'tank');
-    convert(env, t, p);
-    const before = env.sandbox.actors.length;
-    tick(env, SPAWN_FRAMES + 5);
-    const after = env.sandbox.actors.filter(a => a.fromCocoon);
-    same(after.length, 1, `expected one hatch, actors went ${before} -> ${env.sandbox.actors.length}`);
-    same(after[0].speciesName, 'beetle', 'it should be the same species that grew it');
-    same(after[0].className, 'tank', 'and the same class');
-});
-
-check('a hatched predator starts on the board, alive and wandering', () => {
-    const env = makeEnv();
-    board(env, -2, 8, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2, 'spider', 'scout'));
-    tick(env, SPAWN_FRAMES + 5);
-    const spawn = env.sandbox.actors.find(a => a.fromCocoon);
-    ok(spawn, 'nothing hatched');
-    same(spawn.dead, false, 'it should be alive');
-    same(spawn.state, 'wander', 'it should start undisturbed, not mid-hunt');
-    same(spawn.entryDelay, 0, 'it is already here — no crawl-in delay');
-    ok(env.run('cocoons')[0].tiles.some(([mx, my]) => mx === Math.round(spawn.x) && my === Math.round(spawn.y)) ||
-       Math.hypot(spawn.x - t.x, spawn.y - t.y) < 5, 'it should hatch on the patch');
-});
-
-check('a patch will not flood the map with spawns', () => {
-    const env = makeEnv();
-    board(env, -2, 8, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
-    tick(env, SPAWN_FRAMES * (SPAWN_CAP + 4));
-    const live = env.sandbox.actors.filter(a => a.fromCocoon && !a.dead);
-    ok(live.length <= SPAWN_CAP, `${live.length} live spawns, cap is ${SPAWN_CAP}`);
-});
-
-check('killing its spawns frees the patch to hatch again', () => {
-    const env = makeEnv();
-    board(env, -2, 8, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
-    tick(env, SPAWN_FRAMES * (SPAWN_CAP + 2));
-    let live = env.sandbox.actors.filter(a => a.fromCocoon && !a.dead);
-    same(live.length, SPAWN_CAP, 'fixture: should be at the cap');
-    live.forEach(a => { a.dead = true; });
-    tick(env, SPAWN_FRAMES + 5);
-    ok(env.sandbox.actors.filter(a => a.fromCocoon && !a.dead).length > 0, 'it should hatch again');
-});
-
-check('hatching is slow enough to be answerable', () => {
-    const secs = SPAWN_FRAMES / 60;
-    ok(secs >= 8, `one spawn every ${secs}s is too fast to fight`);
-});
-
-group('toxic puddles');
-
-// A follower, a not-yet-recruited neutral, a predator and a clone — the four
-// kinds of thing that can stand on a puddle.
-// Element matters now: FIRE followers scour this stuff for a living and the
-// toxin does not touch them, so the hazard fixture is deliberately NOT fire.
-function follower(env, x, y, element) {
-    const f = { x, y, type: 'virus', team: 'green', isFollower: true, dead: false,
-                health: 40, maxHealth: 40, element: element || 'ice' };
-    env.sandbox.actors.push(f); return f;
-}
-function neutral(env, x, y) {
-    const n = { x, y, type: 'virus', team: 'red', isNeutralRecruit: true, dead: false,
-                health: 40, maxHealth: 40 };
-    env.sandbox.actors.push(n); return n;
-}
-// A cocoon spun by a venomous species, so the toxin tile is placed by the real
-// rule rather than faked. An earlier version pushed a tile outside the
-// footprint, which the restore now (correctly) rejects.
-function puddleAt(env) {
-    board(env, -4, 10, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, spinner('spider', 'striker'));
-    const m = env.run('cocoons')[0];
-    ok(m.puddles.length === 1, 'fixture: a spider cocoon should leave one toxin tile');
-    return { m, t, tile: m.puddles[0], px: m.puddles[0][0], py: m.puddles[0][1] };
-}
-
-check('THE REPORTED CASE: a puddle burns a follower standing in it', () => {
-    const env = makeEnv();
-    const P = puddleAt(env);
-    const f = follower(env, P.px, P.py);
-    tick(env, PUDDLE_INTERVAL + 2);
-    ok(f.health < f.maxHealth, 'the follower took no damage');
-    ok(env.sandbox.floatingTexts.some(x => /TOXIC/.test(x.text)), 'no callout on the follower');
-});
-
-check('THE REVERSAL: it does NOT burn a recruit on its way in', () => {
-    // This check used to assert the opposite, and said "by design". The design
-    // changed: a recruit walking to the Crystal takes nothing from anyone or
-    // anything. Measured over a minute of a busy wave 8, every single point of
-    // damage landed on a recruit came from this puddle — it was not a corner
-    // case, it was the whole of what was hurting them.
-    //
-    // A recruit cannot fight, cannot be ordered and has no element yet, so a
-    // toxin patch lying across its route was a coin toss it had no part in.
-    const env = makeEnv();
-    const P = puddleAt(env);
-    const n = neutral(env, P.px, P.py);
-    tick(env, PUDDLE_INTERVAL * 4 + 2);
-    same(n.health, n.maxHealth, 'a recruit standing in it should be untouched');
-    // And a follower in the same patch still burns, so this cannot pass because
-    // the puddle stopped working altogether.
-    const f = follower(env, P.px, P.py);
-    tick(env, PUDDLE_INTERVAL + 2);
-    ok(f.health < f.maxHealth, 'the puddle should still bite a follower');
-    same(n.health, n.maxHealth, 'and still not the recruit beside it');
-});
-
-// Pinned in place: update() is stubbed out so the subject cannot simply walk
-// off the puddle. Without this the clone case passed for the wrong reason — it
-// wandered away to chase the predator that made the patch.
-function pinned(p) { p.update = () => {}; return p; }
-
-check('THE ASYMMETRY: predators are not touched by it', () => {
-    const env = makeEnv();
-    const P = puddleAt(env);
-    const p = pinned(mkPred(env, P.px, P.py));
-    const hp = p.health;
-    tick(env, PUDDLE_INTERVAL * 3 + 2);
-    same(p.health, hp, 'a predator should be immune to its own kind\'s toxin');
-    same(p.x, P.px, 'fixture: it must not have moved off the puddle');
-});
-
-check('THE ASYMMETRY: your clones are not touched either', () => {
-    const env = makeEnv();
-    const P = puddleAt(env);
-    const c = pinned(mkPred(env, P.px, P.py));
-    c.isClone = true; c.team = 'green';
-    const hp = c.health;
-    tick(env, PUDDLE_INTERVAL * 3 + 2);
-    same(c.health, hp, 'a clone is still a predator');
-    same(c.x, P.px, 'fixture: it must not have moved off the puddle');
-});
-
-check('THE ASYMMETRY: the player walks through untouched', () => {
-    const env = makeEnv();
-    let hurt = 0;
-    env.sandbox.hurtPlayer = () => { hurt++; return true; };
-    const P = puddleAt(env);
-    env.sandbox.player.x = P.px; env.sandbox.player.y = P.py;
-    env.sandbox.health = 100;
-    tick(env, PUDDLE_INTERVAL * 4 + 2);
-    same(hurt, 0, 'the puddle should never reach for the player');
-    same(env.sandbox.health, 100, 'and must not touch health directly either');
-});
-
-check('the predicate is the single place that decides', () => {
-    const env = makeEnv();
-    const aff = env.run('puddleAffects');
-    same(aff({ isFollower: true, dead: false }), true, 'follower');
-    same(aff({ isNeutralRecruit: true, dead: false }), false, 'a recruit is no longer affected');
-    same(aff({ isFollower: true, dead: true }), false, 'a corpse');
-    same(aff({ team: 'green', dead: false }), false, 'something that is neither');
-    same(aff(null), false, 'null');
-    same(aff(undefined), false, 'undefined');
-    const p = mkPred(env, 0, 2);
-    p.isFollower = true;            // even if mislabelled, a Predator is excluded
-    same(aff(p), false, 'a Predator instance is never affected');
-});
-
-check('only the puddle tiles bite, not the whole patch', () => {
-    const env = makeEnv();
-    const P = puddleAt(env); const m = P.m;
-    // A cocoon tile that is NOT a puddle.
-    const plain = m.tiles.find(([tx, ty]) => !m.puddles.some(([px, py]) => px === tx && py === ty));
-    ok(plain, 'fixture: the patch should have a non-puddle tile');
-    const f = follower(env, plain[0], plain[1]);
-    tick(env, PUDDLE_INTERVAL * 3 + 2);
-    same(f.health, f.maxHealth, 'plain cocoon should not hurt anything');
-});
-
-check('standing beside a puddle is safe', () => {
-    const env = makeEnv();
-    const P = puddleAt(env);
-    const f = follower(env, P.px + 1.6, P.py);   // well clear of the pool
-    tick(env, PUDDLE_INTERVAL * 3 + 2);
-    same(f.health, f.maxHealth, 'a follower clear of the pool should be unharmed');
-});
-
-check('it bites on an interval, not every frame', () => {
-    const env = makeEnv();
-    const P = puddleAt(env);
-    const f = follower(env, P.px, P.py);
-    tick(env, PUDDLE_INTERVAL - 1);
-    same(f.health, f.maxHealth, 'bit before its interval elapsed');
-    tick(env, 2);
-    same(f.health, f.maxHealth - PUDDLE_DAMAGE, 'should bite once on the interval');
-});
-
-check('a puddle dies with the patch that grew it', () => {
-    const env = makeEnv();
-    const P = puddleAt(env); const t = P.t;
-    const f = follower(env, P.px, P.py);
-    t.pillarTeam = 'green';
-    env.run('clearInfestationAt')(t);
-    tick(env, PUDDLE_INTERVAL * 3 + 2);
-    same(f.health, f.maxHealth, 'a reclaimed pylon should take its puddles with it');
-});
-
-check('THE REPORTED CASE: only a venomous species leaves toxin', () => {
-    const env = makeEnv();
-    board(env, -4, 10, 0, 4);
-    for (const sp of TOXIN_SPECIES) {
-        env.run('cocoons').length = 0;
-        const t = greenPylon(env, 3, 2, { pillarTeam: 'green' });
-        convert(env, t, spinner(sp, 'striker'));
-        const m = env.run('cocoons')[0];
-        same(m.enhancement, 'toxic', `${sp} should carry the toxin`);
-        ok(m.puddles.length > 0, `${sp} should leave a toxin tile`);
-        t.pillarTeam = 'green'; env.run('clearInfestationAt')(t);
-    }
-});
-
-check('a species that is not venomous leaves a plain cocoon', () => {
-    const env = makeEnv();
-    board(env, -4, 10, 0, 4);
-    for (const sp of ['ant', 'beetle', 'mantis', 'moth']) {
-        ok(!TOXIN_SPECIES.includes(sp), `fixture: ${sp} should not be venomous`);
-        env.run('cocoons').length = 0;
-        const t = greenPylon(env, 3, 2, { pillarTeam: 'green' });
-        convert(env, t, spinner(sp, 'striker'));
-        const m = env.run('cocoons')[0];
-        same(m.enhancement, null, `${sp} should carry no enhancement`);
-        same(m.puddles.length, 0, `${sp} should leave no toxin`);
-        t.pillarTeam = 'green'; env.run('clearInfestationAt')(t);
-    }
-});
-
-check('the enhancement table is the single place that decides', () => {
-    const env = makeEnv();
-    const f = env.run('cocoonEnhancement');
-    for (const sp of TOXIN_SPECIES) same(f(sp), 'toxic', sp);
-    same(f('ant'), null, 'ant');
-    same(f('nonsense'), null, 'an unknown species');
-    same(f(undefined), null, 'undefined');
-});
-
-check('the toxin is ONE tile beside the pylon, not the whole footprint', () => {
-    const env = makeEnv();
-    board(env, -4, 10, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, spinner('spider', 'striker'));
-    tick(env, SWELL + 5);
-    const m = env.run('cocoons')[0];
-    same(m.puddles.length, 1, `expected one toxin tile, got ${m.puddles.length}`);
-    const [px, py] = m.puddles[0];
-    ok(!(px === t.x && py === t.y), 'it should be beside the pylon, not under it');
-    ok(Math.abs(px - t.x) <= 1 && Math.abs(py - t.y) <= 1, 'and adjacent to it');
-    ok(m.tiles.some(([tx, ty]) => tx === px && ty === py), 'and inside the cocoon');
-});
-
-check('puddles are drawn, and distinctly from the cocoon', () => {
-    const env = makeEnv();
-    const P = puddleAt(env);
-    env.calls.length = 0;
-    drawAll(env);
-    const fills = env.calls.filter(c => c.op === 'set:fillStyle').map(c => c.args[0]);
-    ok(fills.includes(PUDDLE_COLOUR), 'the puddle colour is never used');
-    ok(env.calls.some(c => c.op === 'stroke'), 'no meniscus outline');
-});
-
-check('puddles survive a refresh', () => {
-    const env = makeEnv();
-    const P = puddleAt(env);
-    const blob = JSON.parse(JSON.stringify(env.run('serialiseCocoons()')));
-    ok(blob[0].puddles.length > 0, 'puddles are not saved');
-    env.run('restoreCocoons')(blob);
-    same(env.run('cocoons')[0].puddles.length, 1, 'puddles did not come back');
-    // A save written before the toxin existed gets it back, because the
-    // enhancement is derived from the species rather than stored — a spider
-    // cocoon is toxic whether or not the save says so.
-    const legacy = blob.map(b => { const c = Object.assign({}, b); delete c.puddles; delete c.enhancement; return c; });
-    env.run('restoreCocoons')(legacy);
-    same(env.run('cocoons')[0].puddles.length, 1, 'a venomous legacy save should regain its toxin');
-    // ...and a non-venomous one still gets none.
-    const plain = legacy.map(b => Object.assign({}, b, { species: 'ant' }));
-    env.run('restoreCocoons')(plain);
-    same(env.run('cocoons')[0].puddles.length, 0, 'an ant cocoon should have no toxin');
-});
-
-check('a creeping-era save does not bring the old carpet back', () => {
-    // Sessions written before the rework hold a sprawling footprint of up to
-    // fourteen scattered tiles. Restoring that verbatim put the carpet back.
-    const env = makeEnv();
-    const P = puddleAt(env);
-    const blob = JSON.parse(JSON.stringify(env.run('serialiseCocoons()')));
-    blob[0].tiles = [];
-    for (let i = 0; i < 14; i++) blob[0].tiles.push([3 + i, 2]);   // a long creeping strip
-    blob[0].puddles = blob[0].tiles.slice(0, 5);
-    env.run('restoreCocoons')(blob);
-    const m = env.run('cocoons')[0];
-    ok(m.tiles.length <= SPAN_MAX * SPAN_MAX,
-       `restored ${m.tiles.length} tiles from a creeping-era save`);
-    ok(m.puddles.length <= 1, `restored ${m.puddles.length} toxin tiles, expected at most one`);
-    const xs = m.tiles.map(([x]) => x);
-    ok(Math.max(...xs) - Math.min(...xs) + 1 <= SPAN_MAX, 'the footprint should be a square again');
-});
-
-check('the damage is a nuisance, not an execution', () => {
-    const perSec = (PUDDLE_DAMAGE / PUDDLE_INTERVAL) * 60;
-    ok(perSec >= 1, `${perSec} HP/s is not worth avoiding`);
-    ok(perSec <= 8, `${perSec} HP/s would delete a follower for standing still`);
-});
-
 group('reclaiming the pylon is the counter');
-
-check('THE COUNTER: taking the pylon back kills its cocoon and nest', () => {
-    const env = makeEnv();
-    board(env, -2, 8, -1, 4);
-    const t = greenPylon(env, 3, 2);
-    convertFunded(env, t, mkPred(env, 3, 2));
-    tick(env, SWELL + 5);
-    ok(env.run('cocoons').length === 1, 'fixture: should have a cocoon');
-    const nest = env.sandbox.world.find(x => x._infestNest);
-    ok(nest && nest.nestHealth > 0, 'fixture: should have a nest');
-
-    // What the reconstruction completion in game.js does.
-    t.pillarTeam = 'green';
-    env.run('clearInfestationAt')(t);
-    same(env.run('cocoons').length, 0, 'the cocoon should die with the pylon');
-    same(nest.nestHealth, 0, 'the grown nest should go too');
-    same(nest.nest, false, 'and stop being a nest at all');
-});
-
-check('a patch holding two pylons survives losing one of them', () => {
-    const env = makeEnv();
-    board(env, -2, 10, 0, 4);
-    const a = greenPylon(env, 3, 2);
-    const b = greenPylon(env, 4, 2);     // adjacent, so the 3x3 covers it
-    convert(env, a, spinner());
-    tick(env, SWELL + 5);
-    const m = env.run('cocoons')[0];
-    ok(m.anchors.length >= 2, 'fixture: should hold both pylons');
-    a.pillarTeam = 'green';
-    env.run('clearInfestationAt')(a);
-    same(env.run('cocoons').length, 1, 'it should still be held up by the other pylon');
-    b.pillarTeam = 'green';
-    env.run('clearInfestationAt')(b);
-    same(env.run('cocoons').length, 0, 'losing the last anchor should kill it');
-});
-
-check('a cocoon whose pylons are all destroyed dies on its own', () => {
-    const env = makeEnv();
-    board(env, -2, 8, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2));
-    t.destroyed = true;
-    tick(env, 5);
-    same(env.run('cocoons').length, 0, 'wreckage should not keep a cocoon alive');
-});
 
 check('the reclaim path is actually reachable from the ring', () => {
     // issueReconstruct existed before this but nothing in the radial reached
@@ -1460,13 +438,6 @@ check('the reclaim path is actually reachable from the ring', () => {
     ok(/NEED FOLLOWERS TO RECLAIM/.test(CMD), 'it should say why it cannot run');
 });
 
-check('reclaiming is wired into the reconstruction completion', () => {
-    const at = GAME.indexOf('COMPLETE RECONSTRUCTION');
-    ok(at > -1, 'could not find the reconstruction block');
-    ok(/clearInfestationAt\(t\)/.test(GAME.slice(at, at + 700)),
-       'finishing a reconstruction does not clear the infestation');
-});
-
 group('wiring');
 
 check('the predator AI calls it, and only after the ability and worker ticks', () => {
@@ -1477,170 +448,7 @@ check('the predator AI calls it, and only after the ability and worker ticks', (
     ok(i > a && i > w, 'infesting must not pre-empt an ability windup or worker duty');
 });
 
-check('THE REPORTED CASE: they draw in the world, under the pylons', () => {
-    // As flat overlays these painted over every pylon on the board, so a nest
-    // behind a pylon still landed on top of it and looked like it was floating
-    // above it. They belong in the depth-sorted tile pass.
-    ok(/updateInfestation\(\);/.test(GAME), 'never updated');
-    ok(/drawConversionBars\(\);/.test(GAME), 'the progress bar is never drawn');
-    ok(!/drawCocoons\(\);/.test(GAME), 'the flat cocoon overlay is back');
-    ok(!/drawGrownNests\(\);/.test(GAME), 'the flat nest overlay is back');
-
-    const cocoonAt = GAME.indexOf('drawCocoonForTile(obj, px, py);');
-    const nestAt   = GAME.indexOf('drawGrownNestForTile(obj, px, py);');
-    ok(cocoonAt > -1, 'the cocoon is never drawn per tile');
-    ok(nestAt   > -1, 'the grown nest is never drawn per tile');
-
-    // Both must be inside the sorted draw loop, not after it.
-    const loopAt  = GAME.indexOf('drawList.forEach(obj=>{');
-    const ifaceAt = GAME.indexOf('drawRadialMenu();');
-    ok(loopAt > -1 && ifaceAt > loopAt, 'could not locate the sorted pass');
-    ok(cocoonAt > loopAt && cocoonAt < ifaceAt, 'the cocoon is outside the sorted pass');
-    ok(nestAt   > loopAt && nestAt   < ifaceAt, 'the grown nest is outside the sorted pass');
-
-    // And the cocoon must precede the pylon body, so the pylon rises out of it.
-    const pylonAt = GAME.indexOf('if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {');
-    ok(pylonAt > -1, 'could not find the pylon body branch');
-    ok(cocoonAt < pylonAt, 'the cocoon is pasted over the pylon instead of under it');
-
-    for (const fn of ['drawCocoonForTile', 'drawGrownNestForTile', 'drawConversionBars', 'updateInfestation']) {
-        same((GAME.match(new RegExp(fn + '\\(', 'g')) || []).length, 1, fn + ' called more than once');
-    }
-});
-
-check('it survives a refresh', () => {
-    ok(/cocoons: serialiseCocoons\(\)/.test(SAVE), 'cocoons are not saved');
-    ok(/restoreCocoons\(sess\.cocoons\)/.test(SAVE), 'cocoons are not restored');
-    ok(SAVE.indexOf('restoreCocoons') > SAVE.indexOf('if (pylon && pylon.pillar)'),
-       'restore must run after the pylon restore, or anchors cannot resolve');
-});
-
-check('a save round-trips a patch, and junk does not throw', () => {
-    const env = makeEnv();
-    board(env, -2, 8, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    convert(env, t, mkPred(env, 3, 2, 'moth', 'scout'));
-    tick(env, SWELL + 5);
-    const before = env.run('cocoons')[0];
-    const blob = JSON.parse(JSON.stringify(env.run('serialiseCocoons()')));
-    env.run('restoreCocoons')(blob);
-    const after = env.run('cocoons')[0];
-    ok(after, 'the patch did not come back');
-    same(after.tiles.length, before.tiles.length, 'tile count');
-    same(after.species, 'moth', 'species');
-    same(after.className, 'scout', 'class');
-    ok(after.anchors.includes(t), 'the anchor should resolve back to the real tile');
-    env.run('restoreCocoons')(null);
-    env.run('restoreCocoons')([{ }, null, { tiles: 'nonsense' }]);
-    same(env.run('cocoons').length, 0, 'junk should restore to nothing rather than throwing');
-});
-
-check('a patch whose anchors no longer exist is not restored', () => {
-    const env = makeEnv();
-    board(env, -2, 8, 0, 4);
-    env.run('restoreCocoons')([{ x: 3, y: 2, tiles: [[3, 2]], anchors: [[99, 99]],
-                                species: 'ant', className: 'scout' }]);
-    same(env.run('cocoons').length, 0, 'a cocoon with no surviving pylon should be dropped');
-});
-
-check('a change of scene clears it', () => {
-    ok(/cocoons\.length = 0;/.test(WAVES), 'cocoons survive a reset or a new wave');
-    ok(/t\.converting\) \{ t\.converting = false; t\.convertProgress = 0; \}/.test(WAVES),
-       'half-finished conversions survive a change of scene');
-});
-
-// One converted pylon and its cocoon. Used by the taming checks, which are
-// about the cocoon rather than the nest beside it.
-function infestOne(env, x, y, species) {
-    board(env, x - 4, x + 6, 0, 4);
-    const t = greenPylon(env, x, y);
-    env.run('convertPylonToRed')(t, spinner(species || 'ant', 'striker'));
-    const m = env.run('cocoons').find(c => c.anchors.includes(t));
-    ok(!!m, 'fixture: conversion should have spun a cocoon');
-    return { t, m };
-}
-
-// ─────────────────────────────────────────────────────────
-group('taming it: the runaway loop');
-
-check('the index documents every limit', () => {
-    const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-    ok(/never gardens/i.test(HTML), 'the index does not say hatchlings cannot convert');
-    ok(/one grown nest per zone/i.test(HTML), 'nor the per-zone cap');
-    ok(/burns out/i.test(HTML), 'nor that cocoons go inert');
-    // The pacing floor and the de-synchronisation, from the constants.
-    const cool = Math.round(NEST_COOLDOWN / 60);
-    ok(new RegExp('once every <span class="cm-stat">' + cool + ' seconds').test(HTML),
-       'the documented nest cooldown does not match NEST_GROW_COOLDOWN (' + cool + 's)');
-    ok(/settle back into gardening at their own pace/i.test(HTML),
-       'nor that predators do not all resume converting together');
-    const lim = constant('COCOON_HATCH_LIMIT');
-    ok(new RegExp('>' + lim + '</span> hatchlings').test(HTML),
-       'the documented hatch limit does not match COCOON_HATCH_LIMIT (' + lim + ')');
-    // And the conversion time in the docs must match the constant.
-    const secs = Math.round(1 / constant('INFEST_RATE') / 60);
-    ok(new RegExp('>' + secs + ' seconds<').test(HTML),
-       'the documented conversion time does not match INFEST_RATE (' + secs + 's)');
-});
-
-check('and it no longer claims every taken pylon grows a nest', () => {
-    // It used to say "seeds a nest and a cocoon there", which was true before
-    // the pacing floor and is not now. Same claim in the in-game codex.
-    const HTML  = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-    const CODEX = fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8');
-    ok(!/seeds a <strong>nest<\/strong> and a <strong>cocoon<\/strong>/.test(HTML),
-       'the index still promises a nest with every conversion');
-    ok(!/A taken pylon grows a nest/.test(CODEX),
-       'the codex still promises a nest with every conversion');
-    ok(/NEST_GROW_COOLDOWN/.test(CODEX),
-       'the codex should read the cooldown from the constant rather than restate it');
-});
-
-check('the index describes the wall nest as a vortex', () => {
-    const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-    ok(/vortex in the back wall/i.test(HTML), 'the wall nest is not described as a vortex');
-    ok(/wall plane/i.test(HTML), 'it does not say the plane is what differs');
-    ok(!/honeycomb/i.test(HTML), 'the index still describes a honeycomb');
-});
-
-// THE REPORTED CASE: "it gets crazy hectic real fast when they start laying
-// nests everywhere."
-//
-// Measured at wave 8, one minute of leaving pylons alone: 11 of 27 pylons lost,
-// 7 grown nests on top of the 6 the zones generate, 10 cocoons, 31 predators —
-// and 34 of the eventual 42 predators had come OUT OF COCOONS rather than out
-// of the zones. That is the loop: convert a pylon, get a cocoon, the cocoon
-// hatches predators, they convert more pylons.
-//
-// Four levers, all four chosen: hatchlings do not garden, one grown nest per
-// zone, conversion takes 25s instead of 7.5s, and a cocoon goes inert after a
-// lifetime total of hatches.
-
-check('THE LOOP: a predator hatched from a cocoon never gardens', () => {
-    const env = makeEnv();
-    const p = mkPred(env, 0, 2);
-    same(env.run('predatorUndisturbed')(p), true, 'fixture: a quiet zone predator gardens');
-    p.fromCocoon = true;
-    same(env.run('predatorUndisturbed')(p), false, 'a hatchling must not garden');
-});
-
-check('so a hatchling cannot convert a pylon either', () => {
-    // The gate is one function, so this follows — but it is the behaviour that
-    // matters, and infestTick is where it bites.
-    const env = makeEnv();
-    board(env, 0, 8, 0, 4);
-    const t = greenPylon(env, 3, 2);
-    const p = mkPred(env, 3, 2);
-    p.fromCocoon = true;
-    same(env.run('infestTick')(p), false, 'a hatchling should not claim the frame to garden');
-    tick(env, 200);
-    same(t.pillarTeam, 'green', 'and the pylon should still be yours');
-});
-
-check('a cocoon-hatched predator IS flagged as one', () => {
-    // The whole lever rests on this flag being set where cocoons hatch.
-    ok(/p\.fromCocoon = true/.test(INFEST), '_hatchFromCocoon no longer marks its spawn');
-});
+group('the conversion itself');
 
 check('THE RATE: a pylon takes about 25 seconds, not 7.5', () => {
     const env = makeEnv();
@@ -1682,110 +490,7 @@ check('interrupting still saves it, and faster than it is taken', () => {
        'decay should comfortably outrun conversion');
 });
 
-check('THE CAP: one grown nest per zone', () => {
-    const env = makeEnv();
-    board(env, 0, 14, 0, 4);
-    const a = greenPylon(env, 3, 2);
-    const b = greenPylon(env, 11, 2);      // same zone (0..14), clear of the 4-tile guard
-    convertPaced(env, a, spinner('ant', 'striker'));
-    const first = env.sandbox.world.filter(t => t._infestNest && t.nest).length;
-    same(first, 1, 'fixture: the first conversion should grow one');
-    // Paced, so the cooldown is NOT what is being measured here.
-    convertPaced(env, b, spinner('ant', 'striker'));
-    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
-         'a second conversion in the same zone should grow no second nest');
-});
-
-check('but a different zone gets its own', () => {
-    const env = makeEnv();
-    board(env, 0, 40, 0, 4);
-    const a = greenPylon(env, 3, 2);       // zone 0
-    const b = greenPylon(env, 20, 2);      // zone 1
-    convertPaced(env, a, spinner('ant', 'striker'));
-    convertPaced(env, b, spinner('ant', 'striker'));
-    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
-         'the cap is per zone, not per map');
-});
-
-// ─────────────────────────────────────────────────────────
-//  "NESTS ARE OCCURRING TOO OFTEN"
-// ─────────────────────────────────────────────────────────
-// Reported after the caps above were already in place and working — the five
-// nests measured at wave 8 really were in five different zones. The complaint
-// was not how MANY there were, it was that they all turned up at once.
-//
-// Traced with a conversion timeline. Nothing was wrong with the rate: every
-// predator started gardening on the same frame and worked at the same flat
-// rate, so they all crossed the line together. Four nests grew inside 142
-// frames, five inside ten seconds, after twenty-five seconds of nothing.
-//
-// The synchroniser is structural, not accidental: predatorUndisturbed() bails
-// out while alertActive, and alertActive is one global flag, so the frame an
-// alarm clears is the frame every wanderer in every zone resumes.
-//
-// Two fixes. Predators settle back to work at their own pace and then work at
-// their own speed; and a nest can GROW at most once every NEST_GROW_COOLDOWN
-// anywhere on the map, which bounds arrival rate rather than population.
-
-check('THE PACING: a second nest cannot grow right behind the first', () => {
-    const env = makeEnv();
-    board(env, 0, 40, 0, 4);
-    const a = greenPylon(env, 3, 2);       // zone 0
-    const b = greenPylon(env, 20, 2);      // zone 1 — the per-zone cap allows it
-    convertFunded(env, a, spinner('ant', 'striker'));
-    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
-         'fixture: the first one should grow');
-    // Same frame, different zone, nowhere near the 4-tile guard: every other
-    // gate says yes. Only the cooldown should stop it.
-    convertFunded(env, b, spinner('ant', 'striker'));
-    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
-         'a nest grew in the same breath as the last one');
-});
-
-check('and the pylon is still lost, and still cocooned, when it does not', () => {
-    // The cooldown must not turn into an amnesty. Losing the pylon is the
-    // consequence; the nest is the extra.
-    const env = makeEnv();
-    board(env, 0, 40, 0, 4);
-    const a = greenPylon(env, 3, 2);
-    const b = greenPylon(env, 20, 2);
-    convertFunded(env, a, spinner('ant', 'striker'));
-    convertFunded(env, b, spinner('ant', 'striker'));
-    same(b.pillarTeam, 'red', 'the pylon should still change hands');
-    ok(!!env.run('cocoonForAnchor')(b), 'and should still be cocooned');
-});
-
-check('once the cooldown is up, the next one grows', () => {
-    // Otherwise this is not pacing, it is a one-nest-per-game cap.
-    const env = makeEnv();
-    board(env, 0, 40, 0, 4);
-    const a = greenPylon(env, 3, 2);
-    const b = greenPylon(env, 20, 2);
-    convertFunded(env, a, spinner('ant', 'striker'));
-    env.sandbox.frame += NEST_COOLDOWN;
-    convertFunded(env, b, spinner('ant', 'striker'));
-    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
-         'the second should grow once the map has had a rest');
-});
-
-check('a blocked conversion does not spend the cooldown on nothing', () => {
-    // The stamp is at the point a nest is actually placed. If it were taken on
-    // entry, a conversion the per-zone cap rejected would silently push the
-    // next real nest another 45 seconds out.
-    const env = makeEnv();
-    board(env, 0, 40, 0, 4);
-    const a = greenPylon(env, 3, 2);       // zone 0
-    const b = greenPylon(env, 11, 2);      // zone 0 too — capped out
-    const c = greenPylon(env, 20, 2);      // zone 1
-    convertFunded(env, a, spinner('ant', 'striker'));
-    env.sandbox.frame += NEST_COOLDOWN;
-    convertFunded(env, b, spinner('ant', 'striker'));   // rejected by the zone cap
-    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 1,
-         'fixture: the zone cap should have refused that one');
-    convertFunded(env, c, spinner('ant', 'striker'));   // same frame, fresh zone
-    same(env.sandbox.world.filter(t => t._infestNest && t.nest).length, 2,
-         'the refused conversion consumed the cooldown');
-});
+group('pacing: they settle back to work at their own speed');
 
 check('THE SYNCHRONISER: a disturbed predator has to settle before gardening', () => {
     const env = makeEnv();
@@ -1879,76 +584,126 @@ check('a freshly spawned predator is staggered too', () => {
        'it should guard on the function existing, not assume load order');
 });
 
-check('the cap counts only GROWN nests, not the zone\'s own', () => {
-    // A zone is generated with a wall nest. If that counted, a zone could never
-    // grow one at all and the mechanic would be dead.
+
+group('FEEDING THE WALL NEST');
+
+// "Let them grab the charged particles on the ground and carry them to the nest
+// on the walls, and if they retrieve a certain amount another predator spawns."
+const SPAWN_COST = constant('NEST_SPAWN_COST');
+// A live wall nest at (6,-1), floor around it, and one lump of `value` at lumpAt.
+function wallScene(env, lumpAt, value) {
+    board(env, -2, 12, -1, 4);
+    const nest = env.run('getTile')(6, -1);
+    Object.assign(nest, { nest: true, nestHealth: 200, nestMaxHealth: 200, nestZone: 1 });
+    env.sandbox._nestCache = [nest];
+    env.run('chargedMass.length = 0');
+    if (lumpAt) env.run(`chargedMass.push({ x: ${lumpAt[0]}, y: ${lumpAt[1]}, value: ${value || 5}, state: 'charged', carrier: null })`);
+    return nest;
+}
+function stepFetch(env, pred, n) {
+    for (let i = 0; i < n; i++) { env.sandbox.frame++; env.run('nestFetchTick')(pred); }
+}
+
+check('THE ASK: an idle predator picks up a lump and carries it to the wall nest', () => {
     const env = makeEnv();
-    board(env, 0, 14, 0, 4);
-    addTile(env, { x: 6, y: -1, type: 'floor', nest: true, nestHealth: 200,
-                   nestMaxHealth: 200, nestZone: 0 });
-    const t = greenPylon(env, 11, 2);
-    convertFunded(env, t, spinner('ant', 'striker'));
-    same(env.sandbox.world.filter(x => x._infestNest && x.nest).length, 1,
-         'a zone wall nest should not block the grown one');
+    const nest = wallScene(env, [3, 2], 5);
+    const p = mkPred(env, 1, 2);
+    stepFetch(env, p, 600);
+    same(env.run('chargedMass.length'), 0, 'the lump is still lying where it fell');
+    same(nest.massStock, 5, 'the nest was not paid what was carried');
+    same(p.nestMass || 0, 0, 'it is still holding it');
 });
 
-check('THE TAP: a cocoon goes inert after a lifetime of hatches', () => {
+check("THE ASK: every NEST_SPAWN_COST paid in hatches one more predator, of the carrier's kind", () => {
     const env = makeEnv();
-    const { m } = infestOne(env, 3, 2);
-    const limit = constant('COCOON_HATCH_LIMIT');
-    same(m.hatchesLeft, limit, 'a fresh cocoon should have its full allowance');
-    // Hatch it dry, clearing the live cap between each so only the lifetime
-    // total is under test.
-    let hatched = 0;
-    for (let i = 0; i < limit + 4; i++) {
-        env.sandbox.actors.length = 0;
-        m.spawned = [];
-        const before = env.sandbox.actors.length;
-        env.run('_hatchFromCocoon')(m);
-        if (env.sandbox.actors.length > before) hatched++;
-    }
-    same(hatched, limit, `it should hatch exactly ${limit} in its life, got ${hatched}`);
-    same(m.hatchesLeft, 0, 'and be spent');
+    const nest = wallScene(env, null);
+    const p = mkPred(env, 6, 0, 'beetle', 'striker');
+    const before = env.sandbox.actors.length;
+    env.run('payIntoWallNest')(nest, SPAWN_COST - 1, p);
+    same(env.sandbox.actors.length, before, 'it hatched before the price was paid');
+    env.run('payIntoWallNest')(nest, 1, p);
+    same(env.sandbox.actors.length, before + 1, 'paying the last of it hatched nothing');
+    const hatch = env.sandbox.actors[env.sandbox.actors.length - 1];
+    same(hatch.speciesName, 'beetle', "the hatchling is not the carrier's species");
+    same(hatch.className, 'striker', "the hatchling is not the carrier's class");
+    ok(Math.abs(hatch.x - nest.x) < 0.01 && hatch.y >= nest.y, 'the hatchling did not appear at the nest');
+    same(nest.massStock, 0, 'the price was not taken out of the stock');
 });
 
-check('a spent cocoon stops, and looks stopped', () => {
-    // Identical-looking live and spent cocoons would make "this site is
-    // finished" unreadable, which is most of the value of it burning out.
+check('a big delivery hatches one per price, and keeps the change', () => {
     const env = makeEnv();
-    const { m, t } = infestOne(env, 3, 2);
-    m.hatchesLeft = 0;
-    env.sandbox.actors.length = 0;
-    env.run('_hatchFromCocoon')(m);
-    same(env.sandbox.actors.length, 0, 'a spent cocoon should hatch nothing');
-    env.calls.length = 0;
-    drawTile(env, t);
-    const greys = env.calls.filter(c => c.op === 'set:fillStyle' && /#4a4a52/i.test(String(c.args[0])));
-    ok(greys.length > 0, 'a spent cocoon should go grey rather than keep its species colour');
+    const nest = wallScene(env, null);
+    const p = mkPred(env, 6, 0);
+    const before = env.sandbox.actors.length;
+    env.run('payIntoWallNest')(nest, SPAWN_COST * 2 + 3, p);
+    same(env.sandbox.actors.length, before + 2, 'two prices paid did not hatch two');
+    same(nest.massStock, 3, 'the change was lost');
 });
 
-check('the allowance survives a refresh, and an old save is not immortal', () => {
+check("at the map's predator ceiling the stock WAITS rather than being lost", () => {
     const env = makeEnv();
-    const { m } = infestOne(env, 3, 2);
-    m.hatchesLeft = 1;
-    const blob = JSON.parse(JSON.stringify(env.run('serialiseCocoons')()));
-    same(blob[0].hatchesLeft, 1, 'the count is not saved');
-    env.run('restoreCocoons')(blob);
-    same(env.run('cocoons')[0].hatchesLeft, 1, 'it should come back where it was');
-    // A save written before cocoons burned out carries no count at all.
-    delete blob[0].hatchesLeft;
-    env.run('restoreCocoons')(blob);
-    same(env.run('cocoons')[0].hatchesLeft, constant('COCOON_HATCH_LIMIT'),
-         'an older save should get a fresh allowance, not an unlimited one');
+    const nest = wallScene(env, null);
+    const p = mkPred(env, 6, 0);
+    env.sandbox.predatorBudgetFull = () => true;
+    const before = env.sandbox.actors.length;
+    env.run('payIntoWallNest')(nest, SPAWN_COST, p);
+    same(env.sandbox.actors.length, before, 'it hatched past the ceiling');
+    same(nest.massStock, SPAWN_COST, 'the stock was thrown away');
+    env.sandbox.predatorBudgetFull = () => false;
+    env.run('payIntoWallNest')(nest, 0, p);
+    same(env.sandbox.actors.length, before + 1, 'it did not hatch once there was room');
 });
 
-// ─────────────────────────────────────────────────────────
-check('nothing is drawn when there is no infestation', () => {
+check('no live wall nest in reach: it leaves the lump alone', () => {
     const env = makeEnv();
-    board(env, -2, 4, 0, 4);
-    env.calls.length = 0;
-    drawAll(env);
-    env.run('drawConversionBars()');
-    same(env.calls.length, 0, 'drew something with no cocoon and no conversion');
+    const nest = wallScene(env, [3, 2], 5);
+    nest.nestHealth = 0;                      // the zone is taken
+    const p = mkPred(env, 1, 2);
+    stepFetch(env, p, 300);
+    same(env.run('chargedMass.length'), 1, 'it picked up mass with nowhere to take it');
+});
+
+check('a nest you have neutralised is never fed', () => {
+    const env = makeEnv();
+    const nest = wallScene(env, null);
+    nest.nestHealth = 0;
+    same(env.run('_wallNestFor')(mkPred(env, 5, 1)), null, 'a taken nest was chosen');
+});
+
+check('a predator pulled into a fight drops what it carries, as a lump', () => {
+    const env = makeEnv();
+    wallScene(env, [3, 2], 7);
+    const p = mkPred(env, 2.6, 2);
+    stepFetch(env, p, 40);
+    same(p.nestMass, 7, 'fixture: it should be carrying');
+    env.sandbox.alertActive = true;
+    env.run('infestTick')(p);
+    same(p.nestMass || 0, 0, 'it kept the mass through a fight');
+    same(env.run('chargedMass.length'), 1, 'the mass vanished instead of dropping');
+});
+
+check('the tutorial bug never feeds a nest', () => {
+    const env = makeEnv();
+    wallScene(env, [3, 2], 5);
+    const p = mkPred(env, 1, 2);
+    p.isTutorialFoe = true;
+    stepFetch(env, p, 200);
+    same(env.run('chargedMass.length'), 1, 'the tutorial bug carried mass');
+});
+
+check('THE ASK: nothing grows on the floor any more', () => {
+    for (const gone of ['seedCocoon', 'planNestNear', 'drawCocoonForTile', 'drawGrownNestForTile', 'nestSiteTick', 'nearestScourChore'])
+        ok(!new RegExp('function ' + gone + '\\b').test(INFEST), gone + ' still exists');
+    const at = INFEST.indexOf('function convertPylonToRed');
+    const body = INFEST.slice(at, INFEST.indexOf('\n}', at));
+    ok(!/planNestNear\(|seedCocoon\(/.test(body), 'a converted pylon still grows something');
+    ok(!/drawCocoonForTile|drawGrownNestForTile|nestSiteTick|updateInfestation/.test(GAME), 'the game still calls into the floor nests');
+    ok(!/serialiseCocoons|serialiseNestSites/.test(SAVE), 'the save still writes floor nests');
+});
+
+check('the wall nest shows its stock, and the stock survives a refresh', () => {
+    ok(/TO HATCH/.test(GAME), 'the nest does not show how close it is to hatching');
+    ok(/nestStock:/.test(SAVE) && /t\.massStock = Math\.max\(0, n\.m\)/.test(SAVE), 'the stock is not saved and restored');
 });
 
 console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

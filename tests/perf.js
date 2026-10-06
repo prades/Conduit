@@ -117,7 +117,7 @@ const SCENE = `(function(){
     for (const g of world.filter(t => t.pillar && t.pillarTeam === 'green').slice(0, 3))
         convertPylonToRed(g, {speciesName:'spider', className:'striker', color:'#a5f'});
     _cacheAge = -999;
-    return { tiles: world.length, actors: actors.length, cocoons: cocoons.length };
+    return { tiles: world.length, actors: actors.length };
 })()`;
 
 (async () => {

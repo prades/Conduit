@@ -499,16 +499,6 @@ check('the red health-decay pass skips them', () => {
        'the decay pass still bleeds recruits');
 });
 
-check('the cocoon toxin no longer names them', () => {
-    const INFEST = fs.readFileSync(path.join(ROOT, 'js/infest.js'), 'utf8');
-    const at = INFEST.indexOf('function puddleAffects');
-    const body = INFEST.slice(at, INFEST.indexOf('\nfunction ', at + 1));
-    ok(at > 0 && body.length > 40, 'puddleAffects could not be located');
-    ok(!/return !!\(a\.isFollower \|\| a\.isNeutralRecruit\)/.test(body),
-       'the toxin still names recruits as victims');
-    ok(/a\.isFollower/.test(body), 'and it should still name followers');
-});
-
 // ─────────────────────────────────────────────────────────
 group('GROUP DUTY: long press the index, order the whole group');
 
@@ -540,7 +530,7 @@ const squadOrder = (U, tab, which, press) => U.run(`(function(){
     ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
     floatingTexts.length = 0;
     const roles = ['brawler', 'sniper', 'camper'];
-    ['core','core','core','fire','fire','flux'].forEach((el, i) => {
+    ['core','core','core','toxic','toxic','flux'].forEach((el, i) => {
         spawnFollowerAtCrystal(el);
         const f = followers[followers.length - 1];
         f.role = roles[i % 3];
@@ -692,13 +682,11 @@ function crewPageWith(mendRate) {
         MEND_RATE: mendRate,
         MASS_NEUTRALISE_FRAMES: 110, MASS_VALUE_SCALE: 0.35,
         SCOUR_COCOON_FRAMES: 900, SCOUR_NEST_FRAMES: 600,
-        workerElements: () => ['electric', 'flux', 'core', 'toxic', 'ice', 'fire'],
+        workerElements: () => ['electric', 'flux', 'core', 'toxic', 'ice'],
         ELEMENTS: [], PYLON_BUILD_COST: 10,
         GENERATOR_ID: 'gen', GENERATOR_LABEL: 'GEN', GENERATOR_COLOR: '#8fa',
         GENERATOR_HEAL_AMOUNT: 1, GENERATOR_HEAL_INTERVAL: 60, GENERATOR_NEST_RANGE: 4,
-        INFEST_RATE: 0.00067, COCOON_SPAWN_FRAMES: 900, COCOON_SPAN_MAX: 3,
-        COCOON_PUDDLE_DAMAGE: 3, COCOON_PUDDLE_INTERVAL: 45,
-        COCOON_TOXIN_SPECIES: ['spider', 'scorpion'], NEST_GROW_COOLDOWN: 2700, NEST_BUILD_COST: 20,
+        INFEST_RATE: 0.00067, NEST_SPAWN_COST: 20,
     };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);

@@ -618,18 +618,15 @@ async function ready() {
             p.team = 'red'; p.speciesName = 'ant'; p.className = 'scout';
             p.shardDrop = 10;
             p.nestMass = 7;
-            const site = { x: 9, y: 3, mass: 0, incoming: 7 };
-            p._nestSite = site;
-            nestSites.push(site);
+            p._nestTarget = world.find(t => t.nest && !isHomePortal(t)) || null;
             onPredatorDeath(p);
             const lumps = chargedMass.map(m => ({ v: m.value, s: m.state }));
-            nestSites.length = 0;
-            return { lumps, incoming: site.incoming, carrying: p.nestMass || 0 };
+            return { lumps, target: p._nestTarget, carrying: p.nestMass || 0 };
         })()`);
         const values = r.lumps.map(l => l.v).sort((a, b) => a - b);
         same(values.join(','), '7,10', 'expected its own 10 and the 7 it carried, got ' + values);
         ok(r.lumps.every(l => l.s === 'charged'), 'a lump came back in the wrong state: ' + JSON.stringify(r.lumps));
-        same(r.incoming, 0, 'the site still counts the dead predator as on its way');
+        same(r.target, null, 'it still has a nest it is carrying to');
         same(r.carrying, 0, 'and it is still carrying');
     });
 

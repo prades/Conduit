@@ -54,26 +54,18 @@ const CODEX_GENERATOR = [
 // Infestation gets its own page too. The important line is the last one: the
 // player needs to know RECLAIM exists, or a converted pylon looks permanent.
 const CODEX_INFEST = [
-    { h: 'IF YOU LEAVE THEM ALONE' },
-    { t: 'An undisturbed predator walks to your nearest pylon and starts chewing it over to its side.' },
+    { h: 'HUNTERS' },
+    { t: 'About one predator in four is a hunter. Left alone, with no alarm up, it walks to your nearest pylon and starts chewing it over to its side.' },
     ['CONVERSION', (1 / INFEST_RATE / 60).toFixed(0) + 's of contact', '#f88'],
     { t: 'A bar shows it happening. Interrupt the predator and the pylon recovers on its own.' },
     null,
-    { h: 'WHAT GROWS THERE' },
-    { t: 'A taken pylon gets a cocoon. It swells to a ' + COCOON_SPAN_MAX + 'x' + COCOON_SPAN_MAX + ' square and takes your pylons inside it.' },
-    ['NESTS COST', NEST_BUILD_COST + ' mass \u00b7 1 per zone \u00b7 ' + (NEST_GROW_COOLDOWN / 60).toFixed(0) + 's apart', '#ff7744'],
-    ['HATCHES', 'one predator every ' + (COCOON_SPAWN_FRAMES / 60).toFixed(0) + 's', '#f88'],
-    { t: 'What hatches is the same species and class as whatever spun it.' },
-    null,
-    { h: 'TOXIN' },
-    // "and recruits" was left behind when recruits stopped taking any damage at
-    // all on their way in. Nothing read it against puddleAffects, so the page
-    // went on promising something the code had stopped doing.
-    { t: 'Only ' + COCOON_TOXIN_SPECIES.join(' and ').toUpperCase() + ' leave any, on one tile beside the pylon. It burns followers only.' },
-    ['TOXIN', COCOON_PUDDLE_DAMAGE + ' damage / ' + (COCOON_PUDDLE_INTERVAL / 60).toFixed(2).replace(/0$/, '') + 's', '#7fdd44'],
+    { h: 'FEEDING THE WALL NEST' },
+    { t: 'Any idle predator picks up charged mass lying on the floor and carries it to its zone\'s wall nest. The nest shows how much it holds.' },
+    ['HATCHES', 'one predator per ' + NEST_SPAWN_COST + ' mass paid in', '#ff7744'],
+    { t: 'What hatches is the same species and class as whatever carried the last of it in. Haul the mass away first and there is nothing to feed the nest.' },
     null,
     { h: 'TAKING IT BACK' },
-    { t: 'Long-press a red pylon and pick RECLAIM. A crew rebuilds it and the cocoon and nest die with it. If the crew dies, order it again — UPGRADE will not do, it is not yours yet.' },
+    { t: 'Long-press a red pylon and pick RECLAIM. A crew rebuilds it. If the crew dies, order it again — UPGRADE will not do, it is not yours yet.' },
 ];
 
 // Each entry: what the element is for, then what each tier adds.
@@ -351,10 +343,6 @@ function renderWorkCrewIndex() {
         ? (MASS_NEUTRALISE_FRAMES / 60).toFixed(1) : '2';
     const pct  = (typeof MASS_VALUE_SCALE === 'number')
         ? Math.round(MASS_VALUE_SCALE * 100) : 35;
-    const cocoonSecs = (typeof SCOUR_COCOON_FRAMES === 'number')
-        ? Math.round(SCOUR_COCOON_FRAMES / 60) : 15;
-    const nestSecs = (typeof SCOUR_NEST_FRAMES === 'number')
-        ? Math.round(SCOUR_NEST_FRAMES / 60) : 25;
     // Stated per second, which is the unit the player experiences; the
     // constant is per frame.
     const mendRate = (typeof MEND_RATE === 'number')
@@ -405,12 +393,6 @@ function renderWorkCrewIndex() {
         '<div class="cm-ability"><strong>Repair \u2014 CORE:</strong> a pylon that loses its health is not gone, ' +
         'it is <strong>broken</strong> — it keeps its tile, its element and its mode. A core worker rebuilds it ' +
         'in place, exactly as it was. Nothing else can.</div>' +
-        '<div class="cm-ability"><strong>Scour — FIRE:</strong> burns back what an infestation leaves on ' +
-        'the ground. It takes the worst thing in reach first: a <strong>toxin patch</strong>, then a ' +
-        '<strong>grown nest</strong> (about <span class="cm-stat">' + nestSecs + 's</span>), then the ' +
-        '<strong>cocoon</strong> (about <span class="cm-stat">' + cocoonSecs + 's</span>). Two scourers on the ' +
-        'same thing are twice as quick, and the toxin does not hurt a fire follower. Scouring stops the ' +
-        'hatching — it does <em>not</em> hand the pylon back, which still takes a RECLAIM.</div>' +
         '<div class="cm-ability"><strong>Tend a clone — TOXIC:</strong> a medic for the most ' +
         'expensive unit you own. It picks a clone, <strong>walks with it</strong>, and mends it at ' +
         '<span class="cm-stat">' + mendRate + ' HP a second</span> while it fights. It does ' +

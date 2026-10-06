@@ -27,7 +27,6 @@ const SUITES = [
     ['infestation',            'infest.js'],
     ['spawn vortex',           'vortex.js'],
     ['targeting rules',        'targets.js'],
-    ['fire scour job',         'scour.js'],
     ['repel + ice block',      'crew.js'],
     ['reclaim + upgrade',      'reclaim.js'],
     ['clone cost',             'clones.js'],

@@ -125,7 +125,7 @@ const SCENE = `(function(){
     // Hazards are designed to bite recruits, so their presence made this
     // scene's verdict depend on whether one happened to form on the path.
     W.run(`for (let i = 0; i < 60 * 90; i++) {
-        alertTimer = 99999; cocoons.length = 0; environmentalHazards.length = 0;
+        alertTimer = 99999; environmentalHazards.length = 0;
         render();
     }`);
     const tally = W.run('JSON.parse(JSON.stringify(__tally))');
@@ -541,27 +541,6 @@ const SCENE = `(function(){
             ok(!/predatorMayHurtPlayer/.test(body),
                what + ' is gated as if it were a predator');
         }
-    });
-
-    check('the cocoon toxin no longer reaches recruits either', () => {
-        // Reversed. This used to say "by design", on the grounds that a hazard
-        // is not an attack. It was then measured: over a minute of a busy wave
-        // 8, every point of damage that landed on a recruit came from this
-        // puddle. "Recruits are never attacked" meant nothing while the biggest
-        // source of harm to them was a hazard, so the promise now covers it.
-        const r = E.run(`(function(){
-            return { recruit: puddleAffects({ isNeutralRecruit: true, dead: false }),
-                     follower: puddleAffects({ isFollower: true, element: 'ice', dead: false }) };
-        })()`);
-        same(r.recruit, false, 'the toxin should no longer reach an un-recruited recruit');
-        same(r.follower, true, 'but it should still reach a follower');
-    });
-
-    check('the cocoon toxin still bites followers', () => {
-        // It never touched the player, and it should still reach the squad.
-        const inf = fs.readFileSync(path.join(ROOT, 'js/infest.js'), 'utf8');
-        ok(/function puddleAffects/.test(inf), 'the toxin rule is gone');
-        ok(!/predatorMayHurtPlayer/.test(inf), 'the toxin is gated as if it were a predator');
     });
 
     // ─────────────────────────────────────────────────────
