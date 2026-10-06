@@ -2084,9 +2084,8 @@ function drawWaveMonolith(px, base, colour, dark, tier) {
 // "Whenever the pylon is in turret mode it has a little self-aiming turret on top
 // that will lock onto the enemy targets." Pure presentation: firing is still the
 // attack pass in game.js. The gun turns smoothly toward the nearest hostile it
-// can see (inside attackRange x TURRET_TRACK_RANGE_MULT), draws a dashed lock
-// line and a reticle on it once it is inside firing range, flashes when a shot
-// is paid for, and sweeps slowly when there is nothing to aim at. A pylon with
+// can see (inside attackRange x TURRET_TRACK_RANGE_MULT), fires a beam to the
+// target when a shot is paid for, and sweeps slowly when there is nothing to aim at. A pylon with
 // no power droops: grey, still, and aimed at nothing.
 function turretTarget(obj) {
     // Rescanned a few times a second, not every frame: the actors list is long
@@ -2105,18 +2104,13 @@ function turretTarget(obj) {
 }
 
 function drawPylonTurret(obj, px, topY, colour, dark) {
-    const range = obj.attackRange || 2.5;
     const target = dark ? null : turretTarget(obj);
     const cx = px, cy = topY - 5;     // the gun's pivot, just above the merlons
     // Aim: the screen direction of the world vector to the target.
     let want = obj._tAng === undefined ? -Math.PI / 4 : obj._tAng;
-    let locked = false, tx = 0, ty = 0;
     if (target) {
         const dx = target.x - obj.x, dy = target.y - obj.y;
         want = Math.atan2((dx + dy) * TILE_H, (dx - dy) * TILE_W);
-        tx = (target.x - player.visualX - (target.y - player.visualY)) * TILE_W + canvas.width / 2;
-        ty = (target.x - player.visualX + (target.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - 26;
-        locked = Math.hypot(dx, dy) <= range;
     } else if (!dark) {
         want = (obj._tAng === undefined ? -Math.PI / 4 : obj._tAng) + 0.02;   // idle sweep
     }
@@ -2164,25 +2158,25 @@ function drawPylonTurret(obj, px, topY, colour, dark) {
         ctx.globalAlpha = 1;
     }
     if (!dark) {
-        // The bolt's head, red while it has something in its sights.
-        ctx.fillStyle = target ? "#ff4040" : colour; ctx.globalAlpha = target ? 1 : 0.6;
+        // The bolt's head, brighter while it has something to aim at. No
+        // reticle or lock line: "I don't like how they lock on with that
+        // stupid little reticule thing" — the gun turning is the tell.
+        ctx.fillStyle = colour; ctx.globalAlpha = target ? 1 : 0.6;
         ctx.beginPath(); ctx.arc(bx, by, 1.8, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
-        // Lock: a dashed line to the target and a turning reticle.
-        if (target && locked) {
-            ctx.strokeStyle = "rgba(255,70,70,0.75)"; ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]);
-            ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(tx, ty); ctx.stroke(); ctx.setLineDash([]);
-            const r = 9 + Math.sin(frame * 0.3) * 1.5, rot = frame * 0.08;
-            ctx.strokeStyle = "rgba(255,70,70,0.9)"; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.arc(tx, ty, r, 0, Math.PI * 2); ctx.stroke();
-            for (let i = 0; i < 4; i++) {
-                const a = rot + i * Math.PI / 2;
-                ctx.beginPath(); ctx.moveTo(tx + Math.cos(a) * (r - 3), ty + Math.sin(a) * (r - 3));
-                ctx.lineTo(tx + Math.cos(a) * (r + 4), ty + Math.sin(a) * (r + 4)); ctx.stroke();
-            }
-        } else if (target) {
-            // Tracking but not in range yet: a faint tick on the target.
-            ctx.strokeStyle = "rgba(255,160,60,0.55)"; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.arc(tx, ty, 7, 0, Math.PI * 2); ctx.stroke();
+        // THE SHOT: a beam from the bolt to where the round landed, fading
+        // over TURRET_TRACER_FRAMES. Damage is applied the frame it fires
+        // (game.js), so this is the hit, not a projectile that may miss.
+        const since = obj._lastShotFrame !== undefined ? frame - obj._lastShotFrame : Infinity;
+        if (obj._shotAt && since < TURRET_TRACER_FRAMES) {
+            const k = 1 - since / TURRET_TRACER_FRAMES;
+            const hx = (obj._shotAt.x - player.visualX - (obj._shotAt.y - player.visualY)) * TILE_W + canvas.width / 2;
+            const hy = (obj._shotAt.x - player.visualX + (obj._shotAt.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - 20;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = colour; ctx.globalAlpha = 0.35 * k; ctx.lineWidth = 7 * k + 1;
+            ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(hx, hy); ctx.stroke();
+            ctx.strokeStyle = "#fff"; ctx.globalAlpha = 0.9 * k; ctx.lineWidth = 1.6;
+            ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(hx, hy); ctx.stroke();
+            ctx.globalAlpha = 1;
         }
         // Muzzle flash on the frame a shot was paid for.
         if (obj._lastShotFrame !== undefined && frame - obj._lastShotFrame < 6) {

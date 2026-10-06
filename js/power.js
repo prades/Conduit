@@ -328,15 +328,25 @@ function recomputePower() {
     if (typeof _pillarCache === "undefined") return;
     autoLinkRelays();
     buildNestGrids();
+    const drawing = [];
     for (const t of _pillarCache) {
         if (!needsPower(t)) { t.powered = true; t.powerSource = null; t.powerGen = null; continue; }
         // BOTH ends of the chain are remembered, not just the nest. The wiring
         // is drawn along pylon → generator → nest, and working the middle out
         // again at draw time would be a second copy of the routing rule.
         const route = powerRoute(t);
-        const gen = route.feeder;
-        t.powerGen    = gen;
+        t.powerGen    = route.feeder;
         t.powerSource = route.source;
+        drawing.push(t);
+    }
+    // POWER RUNS DOWN THE CHAIN. REPORTED: a row of electric pylons never
+    // reached tier III — only the one or two within a generator's reach were
+    // ever lit, because pylons did not pass power on. Now a pylon with no relay
+    // of its own takes power from a lit pylon within link range, and that one
+    // can pass it on again, so a network fed at one end is fed all along.
+    // powerGen is then the neighbour it is wired to.
+    propagatePower(drawing);
+    for (const t of drawing) {
         // A wave pylon that ran its pool dry is TRIPPED: it stays off until the
         // pool has refilled to POWER_RESTART_LEVEL, not just above zero.
         if (t.waveTripped && t.powerSource && gridBestFill(t.powerSource) >= POWER_RESTART_LEVEL) {
@@ -353,6 +363,22 @@ function recomputePower() {
     const seen = new Set();
     for (const t of _pillarCache) {
         if (t.powerSource && !seen.has(t.powerSource)) { seen.add(t.powerSource); _powerPools.push(t.powerSource); }
+    }
+}
+
+// Breadth-first from every pylon a relay feeds, outward through link range.
+function propagatePower(list) {
+    const r2 = Math.pow(getPylonRange(), 2);
+    const queue = list.filter(t => t.powerSource);
+    const dark = new Set(list.filter(t => !t.powerSource));
+    for (let i = 0; i < queue.length && dark.size; i++) {
+        const fed = queue[i];
+        for (const t of dark) {
+            const dx = t.x - fed.x, dy = t.y - fed.y;
+            if (dx * dx + dy * dy > r2) continue;
+            t.powerSource = fed.powerSource; t.powerGen = fed;
+            dark.delete(t); queue.push(t);
+        }
     }
 }
 
@@ -471,7 +497,9 @@ function pylonPowerState(t) {
     }
     if (!(t.waveMode || t.attackMode)) return { text: "NONE NEEDED (DORMANT)", colour: "#888" };
     if (t.waveTripped) return { text: "SHUT OFF \u2014 WAITING FOR THE NEST TO REFILL", colour: "#ff7755" };
-    const route = powerRoute(t);
+    // What recomputePower settled on, so a pylon lit down the chain reads as
+    // powered rather than as having no generator of its own.
+    const route = t.powerSource ? { feeder: t.powerGen, source: t.powerSource } : powerRoute(t);
     // A generator in reach that has been turned off is the likeliest reason.
     if (!route.source && _genPylons.some(g => g.circuitOn === false && g !== t &&
             Math.hypot(g.x - t.x, g.y - t.y) <= getPylonRange()))

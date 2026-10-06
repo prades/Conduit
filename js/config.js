@@ -302,10 +302,17 @@ const ALERT_DURATION = 600; // 10 seconds at 60fps
 // attackRange x this, and shows a lock once it is inside firing range.
 const TURRET_TRACK_RANGE_MULT = 1.6;
 // Every turret round hits this much harder than the pylon's base attack power.
-// A turret fires once every 1.5s, so at 1.0 a base 15 was 10 damage a second,
-// which a zone-2 beetle shrugged off. 1.75 makes a turret something the
-// predators have to respect without out-damaging the squad.
-const TURRET_DAMAGE_MULT = 1.75;
+// REPORTED twice: turrets "do not do any damage". Measured: one slow bolt every
+// 1.5s for ~26 — 16 a second, against predators with 60 HP in zone 1 and up to
+// 1300 later. So a turret now fires every TURRET_FIRE_FRAMES, hits at once (no
+// bolt to dodge), adds TURRET_TIER_BONUS per network tier of its element, and
+// bites TURRET_MAXHP_SHARE of the target's max HP on top, so it still matters
+// against the big ones.
+const TURRET_DAMAGE_MULT  = 2.5;
+const TURRET_FIRE_FRAMES  = 45;     // 0.75s between rounds
+const TURRET_TIER_BONUS   = 0.35;   // +35% per network tier (I, II, III)
+const TURRET_MAXHP_SHARE  = 0.05;   // + 5% of the target's max HP
+const TURRET_TRACER_FRAMES = 8;     // how long the shot's beam stays on screen
 const ELECTRIC_HASTE = { 1: 1.35, 2: 1.6, 3: 1.9 };
 const ELECTRIC_HASTE_FRAMES = 12;
 // PRESSURE BETWEEN ALARMS. Predators leave pylons alone, except for this share
@@ -442,7 +449,7 @@ const NEST_ENERGY_HOME   = 300;
 // slow enough to run for minutes. These used to be 4 a shot and 6/s against
 // pools a third the size, which emptied a zone-1 nest in about twenty seconds
 // with a single wave pylon on it.
-const POWER_SHOT_COST    = 2;
+const POWER_SHOT_COST    = 1;   // twice the rounds of old at half the price: same draw a second
 const POWER_WAVE_DRAIN   = 0.03;  // per frame → 1.8/s
 // A wave pylon that runs its pool dry SHUTS OFF and stays off until the pool has
 // refilled to this fraction of its capacity, so it does not stutter on and off

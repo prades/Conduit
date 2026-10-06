@@ -24,7 +24,7 @@ const CODEX_GENERAL = [
     { t: 'Chains are fine. Links that would just close a loop are skipped, so the network stays a tree.' },
     null,
     { h: 'NETWORK TIERS' },
-    { t: 'The largest connected group of one element sets that element\'s tier. Bigger network, stronger effect.' },
+    { t: 'The largest connected group of one element sets that element\'s tier — turrets and wave pylons both count. Bigger network, stronger effect, and harder-hitting turrets.' },
     ['TIER I',   '2+ pylons', '#8fa'],
     ['TIER II',  '4+ pylons', '#8fa'],
     ['TIER III', '6+ pylons', '#8fa'],
@@ -322,7 +322,7 @@ function renderPylonIndex() {
             '<div class="ctrl-row cm-dim" style="margin-bottom:5px">Same-element pylons within ' +
             '<span class="cm-stat">' + base + ' tiles</span> auto-connect (' +
             '<span class="cm-stat">' + relay + '</span> with the Signal Relay). ' +
-            'The largest connected group sets that element\'s tier.</div>';
+            'The largest connected group — turrets and wave pylons alike — sets that element\'s tier.</div>';
         for (const tier of [1, 2, 3]) {
             html += '<div class="cm-tier"><span class="cm-tier-badge">T' + tier + '</span> ' +
                     '<span style="color:#aad">' + CODEX_TIER_SIZES[tier] +

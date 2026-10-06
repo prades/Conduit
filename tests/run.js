@@ -44,6 +44,7 @@ const SUITES = [
     ['predator progression',   'broods.js'],
     ['nest grids + switch',    'grid.js'],
     ['convert + build by kind','convert.js'],
+    ['power chain + tier III', 'chain.js'],
 ];
 
 let failed = 0;

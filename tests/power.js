@@ -371,9 +371,10 @@ async function boot() {
         const spent = idle.srcEnergy - firing.srcEnergy;
         ok(spent >= C.POWER_SHOT_COST,
            `200 frames of firing cost ${spent}, less than one round at ${C.POWER_SHOT_COST}`);
-        // A turret fires every 90 frames, so 200 frames is two rounds.
-        same(Math.round(spent), C.POWER_SHOT_COST * 2,
-             `it cost ${spent}, which is not the two rounds it had time to fire`);
+        // A turret fires every TURRET_FIRE_FRAMES, so 200 frames is that many rounds.
+        const rounds = Math.floor(200 / E.run('TURRET_FIRE_FRAMES'));
+        same(Math.round(spent), C.POWER_SHOT_COST * rounds,
+             `it cost ${spent}, which is not the ${rounds} rounds it had time to fire`);
     });
 
     check('and a turret on a flat battery does not fire at all', () => {
@@ -384,7 +385,7 @@ async function boot() {
         // shot: long enough to attempt one, too short for regen to put anything
         // back into the pool and quietly pay for it.
         const r = board('GA', [{ zone: 1, taken: true, linkTo: 0, energy: 0 }], 2,
-                        withFoe + ' made[1].attackFireTimer = 89;');
+                        withFoe + ' made[1].attackFireTimer = TURRET_FIRE_FRAMES - 1;');
         ok(r.srcEnergy < C.POWER_SHOT_COST,
            `fixture: the battery should be too flat to pay, had ${r.srcEnergy}`);
         same(r.lit[1], false, 'a turret on a flat battery is still lit');
@@ -396,9 +397,9 @@ async function boot() {
         // rule from a take-what-is-there one. A part-paid round would have to
         // do part damage, and "what it spends is what it hits with" would stop
         // being true.
-        const part = C.POWER_SHOT_COST - 1;
+        const part = C.POWER_SHOT_COST / 2;
         const r = board('GA', [{ zone: 1, taken: true, linkTo: 0, energy: part }], 2,
-                        withFoe + ' made[1].attackFireTimer = 89;');
+                        withFoe + ' made[1].attackFireTimer = TURRET_FIRE_FRAMES - 1;');
         ok(r.srcEnergy >= part,
            `it took ${(part - r.srcEnergy).toFixed(2)} out of a battery that could not afford a round`);
         same(r.lit[1], false, 'the turret counted as powered on a battery it could not draw from');

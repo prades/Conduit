@@ -122,13 +122,20 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const want = Math.atan2(2 * 30, 2 * 60);
         ok(Math.abs(r.ang - want) < 0.1, 'aimed at ' + r.ang.toFixed(2) + ', wanted ' + want.toFixed(2));
     });
-    await check('it locks (dashed line + reticle) once the target is in firing range', () => {
-        const r = draw(foe(2, 0) + ' t._tAng = 0.46;');
-        ok(r.dashed >= 1, 'no lock line to a target inside firing range');
+    await check('THE ASK: no reticle and no dashed lock line, in range or out', () => {
+        // "I don't like how they lock on with that stupid little reticule thing."
+        for (const d of [2, 3.2]) {
+            const r = draw(foe(d, 0) + ' t._tAng = 0.46;');
+            ok(r.dashed === 0, 'a dashed lock line is still drawn at ' + d);
+            ok(r.arcs <= 1, 'something round besides the bolt head is drawn at ' + d + ' (' + r.arcs + ' arcs)');
+        }
     });
-    await check('it only TRACKS, with no lock, between firing range and tracking range', () => {
-        const r = draw(foe(3.2, 0) + ' t._tAng = 0.46;');   // beyond 2.5, inside 2.5 x 1.6
-        ok(r.dashed === 0, 'it claimed a lock on a target it could not hit');
+    await check('a shot draws a beam to where it landed, and fades', () => {
+        const beam = s => draw(s).lines.filter(([x, y]) => Math.abs(x - 520) < 2).length;
+        // _shotAt two tiles along +x: screen (400 + 2*60, ...) = x 520.
+        const at = 't._shotAt = { x: t.x + 2, y: t.y };';
+        ok(beam(at + ' t._lastShotFrame = 999;') >= 1, 'no beam right after a shot');
+        ok(beam(at + ' t._lastShotFrame = 1000 - TURRET_TRACER_FRAMES;') === 0, 'the beam never fades');
     });
     await check('it ignores a target past its tracking range, and sweeps instead', () => {
         const a = draw(foe(6, 0) + ' t._tAng = 0.1;');
@@ -139,7 +146,6 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('a dark (unpowered) pylon droops: no aiming, no lock', () => {
         const r = draw(foe(1, 0) + ' globalThis.dark = true; t._tAng = -2.0;');
         run('delete globalThis.dark');
-        ok(r.dashed === 0, 'a dark turret locked on');
         ok(Math.abs(r.ang - -2.0) < 0.2, 'a dark turret tracked a target (' + r.ang + ')');
     });
     await check('the muzzle flashes right after a shot, and not otherwise', () => {
@@ -156,24 +162,39 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/t\._lastShotFrame = frame/.test(rd('js/game.js')), 'a paid-for shot does not mark the flash');
     });
 
-    await check('THE ASK: turret rounds hit TURRET_DAMAGE_MULT harder than the base power', () => {
+    await check('THE ASK: turret rounds hit TURRET_DAMAGE_MULT harder, plus a share of the target\'s max HP', () => {
         const mult = run('TURRET_DAMAGE_MULT');
-        ok(mult >= 1.5, 'the multiplier is ' + mult);
-        const r = run(`(function(){ const keep = spawnFollowerProjectile; let dmg = null;
-            spawnFollowerProjectile = (a, tgt, col, d) => { dmg = d; };
+        ok(mult >= 2, 'the multiplier is ' + mult);
+        const r = run(`(function(){ const keep = applyDamage; let dmg = null, hp = 0;
+            applyDamage = (tgt, d) => { if (dmg === null) { dmg = d; hp = tgt.maxHealth; } };
             try {
                 const row = world.filter(t => t.type === 'floor' && t.y === 3 && t.x >= 4 && !t.nest && !t.nodeType).sort((a,b) => a.x - b.x);
-                world.forEach(t => { t.pillar = false; t.attackMode = false; t.isGenerator = false; t.isConnector = false; t.circuitOn = undefined; t.waveTripped = false; t.nestConnection = null; if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });
+                world.forEach(t => { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.circuitOn = undefined; t.waveTripped = false; t.nestConnection = null; if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });
                 Object.assign(row[0], { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999, isGenerator: true, attackMode: true, attackModeElement: 'generator' });
                 const t = row[1];
                 Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999, attackMode: true, attackModeElement: 'fire', attackPower: 20, attackRange: 2.5 });
                 actors.length = 0;
                 const S = SPECIES['ant']; const f = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), t.x + 1, t.y);
-                f.team = 'red'; f.health = 1e6; f.maxHealth = 1e6; actors.push(f);
+                f.team = 'red'; f.health = 200; f.maxHealth = 200; actors.push(f);
                 _cacheAge = -999; for (let i = 0; i < 400 && dmg === null; i++) render();
-            } finally { spawnFollowerProjectile = keep; }
-            return dmg; })()`);
-        ok(Math.abs(r - 20 * mult) < 1e-9, 'a 20-power turret fired ' + r);
+            } finally { applyDamage = keep; }
+            return { dmg, hp }; })()`);
+        const want = 20 * mult + run('TURRET_MAXHP_SHARE') * 200;
+        ok(r.dmg !== null && Math.abs(r.dmg - want) < 1e-9, 'a 20-power turret hit a 200 HP foe for ' + r.dmg + ', wanted ' + want);
+    });
+    await check('a network tier makes every round hit harder', () => {
+        const r = run(`(function(){ const keep = networkStrength.fire; const t = { attackPower: 20, attackModeElement: 'fire' };
+            networkStrength.fire = 0; const a = turretRoundDamage(t, null);
+            networkStrength.fire = 3; const b = turretRoundDamage(t, null);
+            networkStrength.fire = keep; return { a, b }; })()`);
+        ok(Math.abs(r.b / r.a - (1 + 3 * run('TURRET_TIER_BONUS'))) < 1e-9, JSON.stringify(r));
+    });
+    await check('the first round goes the moment a foe steps in, and it lands at once', () => {
+        const G = rd('js/game.js');
+        ok(/t\.attackFireTimer = Math\.min\(TURRET_FIRE_FRAMES/.test(G), 'the timer does not wait at full');
+        const at = G.indexOf('const _dmg = turretRoundDamage(t, nearest);');
+        ok(at > 0 && /applyDamage\(nearest, _dmg/.test(G.slice(at, at + 600)), 'the round is not applied on the spot');
+        ok(!/spawnFollowerProjectile/.test(G.slice(at - 2500, at + 600)), 'turrets still fire a dodgeable bolt');
     });
 
     group('the index');

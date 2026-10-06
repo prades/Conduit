@@ -722,6 +722,8 @@ function drawPowerChain() {
     }
 
     for (const [gen, flow] of genFlow) {
+        // A pylon passing power down the chain has no nest leg of its own.
+        if (!isRelayPylon(gen)) continue;
         // The ONE source rule, not a second copy of it: this used to fall back to
         // the home portal for every generator, so the wire ran from the Crystal
         // across the whole map to ones it was not feeding at all.
@@ -907,6 +909,14 @@ function drawNestHackZone(nest) {
         }
     }
     ctx.restore();
+}
+
+// One turret round: the pylon's power, the turret multiplier, its network
+// tier, and a bite out of the target's max HP so it counts against big ones.
+function turretRoundDamage(t, target) {
+    const tier = pylonNetworkTier(t);
+    const base = (t.attackPower || 12) * TURRET_DAMAGE_MULT * (1 + TURRET_TIER_BONUS * tier);
+    return base + TURRET_MAXHP_SHARE * ((target && target.maxHealth) || 0);
 }
 
 // A pylon's network tier — 0 when it carries no element or stands alone.
@@ -1263,9 +1273,13 @@ function render() {
         updateTerritory();
 
         // ── NETWORK RESONANCE — compute largest connected pylon group per element ──
+        // Every lit pylon of the element counts, turret or wave. REPORTED: "I
+        // laid down a bunch of electric pylons and it never got to level 3" —
+        // they were turrets, and only wave pylons used to count.
+        const _netPylons = _wPylons.concat(_aPylons);
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
-            const elPylons = _wPylons.filter(p => p.attackModeElement === el);
+            const elPylons = _netPylons.filter(p => p.attackModeElement === el);
             let maxGroupSize = 0;
             const visited = new Set();
             elPylons.forEach(start => {
@@ -1582,9 +1596,11 @@ function render() {
 
     // ── ATTACK MODE PYLON — fire missiles at nearby enemies ──
     _aPylons.forEach(t=>{
-        t.attackFireTimer = (t.attackFireTimer||0) + 1;
-        if (t.attackFireTimer < 90) return; // fire every 1.5s
-        t.attackFireTimer = 0;
+        // The timer waits at full while nothing is in range, so the first
+        // round goes the moment something steps in rather than up to a full
+        // interval later.
+        t.attackFireTimer = Math.min(TURRET_FIRE_FRAMES, (t.attackFireTimer||0) + 1);
+        if (t.attackFireTimer < TURRET_FIRE_FRAMES) return;
         // Find nearest enemy within range — squared distance avoids sqrt for non-targets
         let nearest=null, bd2=t.attackRange*t.attackRange;
         actors.forEach(a=>{
@@ -1594,6 +1610,7 @@ function render() {
             }
         });
         if (!nearest) return;
+        t.attackFireTimer = 0;
         // A turret that is shooting a predator is a pylon that is attacking it,
         // so that predator turns on it. Nothing else sends one after a pylon.
         if (nearest instanceof Predator && !nearest.pylonAggro) nearest.pylonAggro = t;
@@ -1611,22 +1628,15 @@ function render() {
             }
             return;
         }
-        nearest._shotByPylon = true;
-        t._lastShotFrame = frame;      // the turret's muzzle flash reads this   // the tutorial's "kill with your pylons" step reads this
-        // Spawn missile projectile
-        const col = t.attackModeColor || "#0f8";
-        // TURRET_DAMAGE_MULT on every round: turrets were too soft to matter.
-        const _dmg = (t.attackPower||12) * TURRET_DAMAGE_MULT;
-        spawnFollowerProjectile(
-            {x:t.x, y:t.y-1, element:t.attackModeElement||"core", stats:{specialAttack:_dmg}},
-            nearest,
-            col,
-            _dmg,
-            8,
-            null
-        );
-        // Muzzle flash
-        elementEffects.push({type:"impact",x:t.x,y:t.y-1,color:col,radius:0.4,life:12,element:t.attackModeElement});
+        nearest._shotByPylon = true;   // the tutorial's "kill with your pylons" step reads this
+        t._lastShotFrame = frame;      // the turret's muzzle flash and beam read these
+        t._shotAt = { x: nearest.x, y: nearest.y };
+        const _dmg = turretRoundDamage(t, nearest);
+        // A HIT, not a bolt. The old round flew at 0.18 tiles a frame toward
+        // where the target had been; this lands the frame it is paid for and
+        // the beam in drawPylonTurret shows it.
+        applyDamage(nearest, _dmg, {x:t.x, y:t.y, team:"green", element:t.attackModeElement||"core"}, t.attackModeElement||null);
+        elementEffects.push({type:"impact",x:nearest.x,y:nearest.y,color:t.attackModeColor||"#0f8",radius:0.45,life:14,element:t.attackModeElement});
     });
 
     // ── COMPLETE RECONSTRUCTION ──
