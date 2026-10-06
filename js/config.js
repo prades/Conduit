@@ -345,6 +345,52 @@ function waveRole(el) { return WAVE_SUPPORT_ELEMENTS.includes(el) ? "support" : 
 function waveRoleLabel(el) { return waveRole(el) === "support" ? "SUPPORT" : "DISRUPTION"; }
 // The picker's kinds that make a wave pylon.
 function isWaveKind(kind) { return kind === "wave" || kind === "support" || kind === "disruption"; }
+
+// ── ELEMENT COMBOS ──────────────────────────────────────
+// Two AWAKE support/disruption pylons of DIFFERENT elements within link range
+// form a combo link, and the strip between them runs that pair's effect —
+// fifteen pairs, one combo each (docs/ROADMAP-top5.md §1). Keyed by the two
+// element ids in alphabetical order (comboKey). Every "every" is a multiple of
+// 3, because the effects pass runs every third frame.
+//   foe:  dmg (per hit, every N frames), blind (frames), stun (frames, every
+//         stunEvery), pull (tiles per pass toward the link), slow (factor),
+//         shred (defense factor)
+//   ally: haste (factor), shield (+ per shieldEvery, up to shieldCap),
+//         heal (HP per healEvery), ult (charge per pass, every 30f)
+const ELEMENT_COMBOS = {
+    "fire+ice":       { name: "STEAM",         foe: { blind: 90, dmg: 4, every: 30 } },
+    "electric+fire":  { name: "PLASMA",        foe: { dmg: 10, every: 21 }, ally: { haste: 1.25 } },
+    "fire+flux":      { name: "FIRESTORM",     foe: { pull: 0.12, dmg: 6, every: 21 } },
+    "core+fire":      { name: "FORGE",         foe: { dmg: 6, every: 30 }, ally: { shield: 6, shieldEvery: 45, shieldCap: 45 } },
+    "fire+toxic":     { name: "NAPALM",        foe: { dmg: 14, every: 24, shred: 0.5 } },
+    "electric+ice":   { name: "CRYO-ARC",      foe: { stun: 30, stunEvery: 120 }, ally: { haste: 1.25 } },
+    "electric+flux":  { name: "MAGNETAR",      foe: { pull: 0.14, dmg: 8, every: 30 } },
+    "core+electric":  { name: "OVERDRIVE",     ally: { haste: 1.4, shield: 5, shieldEvery: 45, shieldCap: 40, ult: 2 } },
+    "electric+toxic": { name: "CORROSIVE ARC", foe: { dmg: 8, every: 24, shred: 0.45 } },
+    "flux+ice":       { name: "BLACK ICE",     foe: { pull: 0.10, slow: 0.3 } },
+    "core+ice":       { name: "GLACIER WALL",  foe: { slow: 0.45 }, ally: { shield: 8, shieldEvery: 45, shieldCap: 60 } },
+    "ice+toxic":      { name: "FROSTBITE",     foe: { slow: 0.5, dmg: 8, every: 30 } },
+    "core+flux":      { name: "BASTION",       foe: { pull: 0.12 }, ally: { shield: 6, shieldEvery: 45, shieldCap: 50 } },
+    "flux+toxic":     { name: "MIASMA",        foe: { pull: 0.10, dmg: 8, every: 24, shred: 0.5 } },
+    "core+toxic":     { name: "ANTIDOTE",      foe: { shred: 0.5 }, ally: { heal: 2, healEvery: 30 } },
+};
+const COMBO_MAX_LINKS = 2;        // combo links per pylon, nearest first
+const COMBO_STRIP     = 1.5;      // tiles either side of the link it reaches
+const COMBO_TIER_GAIN = 0.25;     // strength = 1 + this × the two networks' average tier
+const COMBO_STORE_KEY = "conduit_combos";
+function comboKey(a, b) { return a < b ? a + "+" + b : b + "+" + a; }
+// Discovered combos persist between games: a collection to complete.
+let comboDiscovered = new Set();
+try {
+    const raw = typeof localStorage !== "undefined" && localStorage.getItem(COMBO_STORE_KEY);
+    if (raw) comboDiscovered = new Set(JSON.parse(raw));
+} catch (e) { /* storage unavailable — this session only */ }
+function discoverCombo(key) {
+    if (!ELEMENT_COMBOS[key] || comboDiscovered.has(key)) return false;
+    comboDiscovered.add(key);
+    try { localStorage.setItem(COMBO_STORE_KEY, JSON.stringify([...comboDiscovered])); } catch (e) {}
+    return true;
+}
 const ELECTRIC_HASTE_FRAMES = 12;
 // PRESSURE BETWEEN ALARMS. Predators leave pylons alone, except for this share
 // of them — hunters, chosen when they spawn — which, left undisturbed, walk to

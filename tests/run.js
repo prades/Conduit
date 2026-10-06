@@ -46,6 +46,7 @@ const SUITES = [
     ['convert + build by kind','convert.js'],
     ['power chain + tier III', 'chain.js'],
     ['support + disruption wake','wake.js'],
+    ['element combos',         'combo.js'],
 ];
 
 let failed = 0;

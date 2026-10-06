@@ -1004,6 +1004,118 @@ function drawNestHackZone(nest) {
     ctx.restore();
 }
 
+// ── ELEMENT COMBOS (docs/ROADMAP-top5.md §1) ─────────────
+// Built with the pylon pairs, every 60 frames: each lit wave pylon links to
+// its nearest wave pylons of OTHER elements within link range, at most
+// COMBO_MAX_LINKS each. A link's effect runs while either end is awake.
+let _comboLinks = [];
+function rebuildComboLinks() {
+    _comboLinks = [];
+    const r2 = Math.pow(getPylonRange(), 2), count = new Map(), cand = [];
+    for (let i = 0; i < _wPylons.length; i++) {
+        const a = _wPylons[i];
+        for (let j = i + 1; j < _wPylons.length; j++) {
+            const b = _wPylons[j];
+            if (!a.attackModeElement || !b.attackModeElement || a.attackModeElement === b.attackModeElement) continue;
+            const key = comboKey(a.attackModeElement, b.attackModeElement);
+            if (!ELEMENT_COMBOS[key]) continue;
+            const dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
+            if (d2 <= r2) cand.push({ a, b, key, d2 });
+        }
+    }
+    cand.sort((p, q) => p.d2 - q.d2);
+    for (const c of cand) {
+        if ((count.get(c.a) || 0) >= COMBO_MAX_LINKS || (count.get(c.b) || 0) >= COMBO_MAX_LINKS) continue;
+        count.set(c.a, (count.get(c.a) || 0) + 1); count.set(c.b, (count.get(c.b) || 0) + 1);
+        const { a, b } = c, lx = b.x - a.x, ly = b.y - a.y;
+        _comboLinks.push({ a, b, key: c.key, combo: ELEMENT_COMBOS[c.key],
+            colA: a.attackModeColor || "#0f8", colB: b.attackModeColor || "#0f8",
+            lx, ly, len2: lx * lx + ly * ly, midX: (a.x + b.x) / 2, midY: (a.y + b.y) / 2,
+            bMinX: Math.min(a.x, b.x) - COMBO_STRIP, bMaxX: Math.max(a.x, b.x) + COMBO_STRIP,
+            bMinY: Math.min(a.y, b.y) - COMBO_STRIP, bMaxY: Math.max(a.y, b.y) + COMBO_STRIP });
+        // Several found at once stack down rather than printing over each other.
+        if (discoverCombo(c.key))
+            floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 110 + 18 * floatingTexts.filter(t => /COMBO DISCOVERED/.test(t.text)).length,
+                text: "\u25c6 COMBO DISCOVERED: " + ELEMENT_COMBOS[c.key].name, color: "#ffe066", life: 200, vy: -0.15, size: 14 });
+    }
+}
+
+function comboLinkActive(L) { return !(L.a.waveAwake === false && L.b.waveAwake === false); }
+
+// The effects, every third frame, on everything inside a link's strip.
+function comboTick() {
+    if (frame % 3 !== 0 || _comboLinks.length === 0) return;
+    for (const L of _comboLinks) {
+        if (!comboLinkActive(L)) continue;
+        const tA = networkStrength[L.a.attackModeElement] || 0, tB = networkStrength[L.b.attackModeElement] || 0;
+        const k = 1 + COMBO_TIER_GAIN * (tA + tB) / 2;
+        const foe = L.combo.foe, ally = L.combo.ally;
+        for (const act of actors) {
+            if (!act || act.dead) continue;
+            if (act.x < L.bMinX || act.x > L.bMaxX || act.y < L.bMinY || act.y > L.bMaxY) continue;
+            let t = L.len2 > 0 ? ((act.x - L.a.x) * L.lx + (act.y - L.a.y) * L.ly) / L.len2 : 0;
+            t = Math.max(0, Math.min(1, t));
+            const cx = L.a.x + t * L.lx, cy = L.a.y + t * L.ly;
+            if (Math.hypot(act.x - cx, act.y - cy) > COMBO_STRIP) continue;
+            if (foe && isHostileTarget(act)) applyComboFoe(act, foe, k, L);
+            else if (ally && (act.team === "green" || act.isClone || act.isFollower) && !act.isNeutralRecruit) applyComboAlly(act, ally, k);
+        }
+    }
+}
+
+function applyComboFoe(act, f, k, L) {
+    if (f.dmg && frame % f.every === 0) applyDamage(act, Math.round(f.dmg * k), null, L.a.attackModeElement);
+    if (f.blind) act.blinded = Math.max(act.blinded || 0, f.blind);
+    if (f.stun && frame % f.stunEvery === 0) { applySlow(act, f.stun, 0); act.blinded = Math.max(act.blinded || 0, f.stun); }
+    if (f.slow && !(act.slowed > 0 && act.slowFactor === 0)) applySlow(act, 30, f.slow);
+    if (f.shred) { act.defenseShredded = 60; act.defenseShredFactor = f.shred; }
+    if (f.pull && !act.pylonAggro) {
+        const dx = L.midX - act.x, dy = L.midY - act.y, d = Math.hypot(dx, dy);
+        if (d > 0.3) { const p = Math.min(d, f.pull * k); act.x += dx / d * p; act.y += dy / d * p; }
+    }
+}
+
+function applyComboAlly(act, a, k) {
+    if (a.haste && !(act.slowed > 0 && (act.slowFactor ?? 1) < 1))
+        applySlow(act, ELECTRIC_HASTE_FRAMES, Math.max(act.slowFactor > 1 && act.slowed > 0 ? act.slowFactor : 1, a.haste));
+    if (a.shield && frame % a.shieldEvery === 0) {
+        const cap = a.shieldCap;
+        act.shielded = true; act.shieldAmount = Math.min(cap, (act.shieldAmount || 0) + Math.round(a.shield * k));
+        act._shieldMax = Math.max(act._shieldMax || 0, cap);
+    }
+    if (a.heal && frame % a.healEvery === 0 && act.health < act.maxHealth)
+        act.health = Math.min(act.maxHealth, act.health + a.heal * k);
+    if (a.ult && frame % 30 === 0 && typeof act.ultimateCharge === "number")
+        act.ultimateCharge = Math.min(100, act.ultimateCharge + a.ult);
+}
+
+// A braided cable of the two element colours, the combo's name at its middle.
+// Bright and moving while it works, dim while both ends sleep.
+function drawComboLinks() {
+    if (_comboLinks.length === 0) return;
+    const W = canvas.width / 2, H = canvas.height / 2;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = "round";
+    for (const L of _comboLinks) {
+        const ax = (L.a.x - player.visualX - (L.a.y - player.visualY)) * TILE_W + W;
+        const ay = (L.a.x - player.visualX + (L.a.y - player.visualY)) * TILE_H + H - 30;
+        const bx = (L.b.x - player.visualX - (L.b.y - player.visualY)) * TILE_W + W;
+        const by = (L.b.x - player.visualX + (L.b.y - player.visualY)) * TILE_H + H - 30;
+        if (Math.max(ax, bx) < -60 || Math.min(ax, bx) > canvas.width + 60) continue;
+        const on = comboLinkActive(L), off = on ? (frame * 0.6) % 16 : 0;
+        ctx.lineWidth = on ? 3 : 2;
+        ctx.globalAlpha = on ? 0.9 : 0.3;
+        ctx.setLineDash([8, 8]);
+        ctx.strokeStyle = L.colA; ctx.lineDashOffset = -off;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        ctx.strokeStyle = L.colB; ctx.lineDashOffset = -off - 8;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        ctx.setLineDash([]); ctx.lineDashOffset = 0;
+        ctx.globalAlpha = on ? 0.95 : 0.4;
+        cachedText(L.combo.name, "bold 8px monospace", "#ffe066", (ax + bx) / 2, (ay + by) / 2 - 6);
+    }
+    ctx.restore();
+}
+
 // WAKING. A support or disruption pylon is on STANDBY until a unit it works on
 // — one of yours for SUPPORT, an enemy for DISRUPTION — is within
 // WAVE_WAKE_RADIUS; then it blinks awake (_wakeFrame) and stays up until
@@ -1528,6 +1640,7 @@ function render() {
 
         // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
         rebuildPylonPairs();
+        rebuildComboLinks();
         rebuildGeneratorLinks();
 
         ELEMENTS.forEach(elDef => {
@@ -1762,6 +1875,7 @@ function render() {
     // Apply effects for each pre-computed connected pair
     applyPylonZoneEffects(wavePylons);
     electricHasteTick();
+    comboTick();
 
     // Core triangle/square zone — needs 3+ pylons to form enclosed zone
     const corePylons = wavePylons.filter(p=>p.attackModeElement==="core");
@@ -3386,6 +3500,8 @@ function render() {
             // wall_front not rendered — it hides the action
         }
     });
+
+    drawComboLinks();
 
     // ── PYLON NETWORK CONNECTION RENDERING ──
     // Single O(P) pass over pre-computed pairs — replaces the previous O(N²) per-pylon scan.

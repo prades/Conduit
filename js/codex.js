@@ -174,6 +174,24 @@ function codexGeneratorRows(maxChars) {
     return rows;
 }
 
+// THE COMBO COLLECTION. Fifteen pairs of elements; a pair you have never
+// linked shows only as ??? until you find it (docs/ROADMAP-top5.md §1).
+function codexComboRows(maxChars) {
+    const w = maxChars || 48;
+    const rows = [];
+    codexWrap('Link a support or disruption pylon to an awake one of ANOTHER element within 3 tiles.', w)
+        .forEach(l => rows.push({ t: l, c: '#aad' }));
+    rows.push(null);
+    const label = id => { const e = ELEMENTS.find(x => x.id === id); return e ? e.label.toUpperCase() : id; };
+    Object.keys(ELEMENT_COMBOS).forEach(key => {
+        const found = typeof comboDiscovered !== 'undefined' && comboDiscovered.has(key);
+        const [a, b] = key.split('+');
+        rows.push(found ? [ELEMENT_COMBOS[key].name, label(a) + ' + ' + label(b), '#ffe066']
+                        : ['???', '??? + ???', '#556']);
+    });
+    return rows;
+}
+
 // Build the rows for the codex index — one entry per element, then the
 // neutral pylon, then the general rules page.
 function codexIndexRows(maxChars) {
@@ -193,6 +211,7 @@ function codexIndexRows(maxChars) {
     // player looking for "what can I put on a pylon" will be looking.
     rows.push([GENERATOR_LABEL, 'NEUTRAL \u00b7 REPAIR', GENERATOR_COLOR, { codexPage: 'generator' }]);
     rows.push(['INFESTATION', 'WHAT THEY DO', '#f77', { codexPage: 'infest' }]);
+    rows.push(['COMBOS', (typeof comboDiscovered !== 'undefined' ? comboDiscovered.size : 0) + ' / 15 FOUND', '#ffe066', { codexPage: 'combos' }]);
     rows.push(null);
     // The general rules live on their own page. Appending them here made the
     // index tall enough to run off the top and bottom of a phone screen.

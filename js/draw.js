@@ -191,6 +191,17 @@ function drawNPC(actor, px, py, drawCtx=ctx) {
         _drawIceBlock(actor, px, py, drawCtx);
     } else if (actor instanceof Predator) {
         _drawPredator(actor, px, py, drawCtx);
+        // BLIND (STEAM / CRYO-ARC combos): a grey haze swirling over its head.
+        if (actor.blinded > 0) {
+            const t = (frame || 0) * 0.15;
+            drawCtx.save(); drawCtx.globalAlpha = 0.55; drawCtx.strokeStyle = "#cfd6dd"; drawCtx.lineWidth = 1.5;
+            for (let i = 0; i < 3; i++) {
+                drawCtx.beginPath();
+                drawCtx.arc(px + Math.cos(t + i * 2.1) * 6, py - 48 + Math.sin(t + i * 2.1) * 2, 3.5, 0, Math.PI * 1.4);
+                drawCtx.stroke();
+            }
+            drawCtx.restore();
+        }
     } else {
         _drawVirus(actor, px, py, drawCtx);
     }

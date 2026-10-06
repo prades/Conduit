@@ -150,6 +150,19 @@ class Predator {
         if (this.smokeDebuff  > 0) this.smokeDebuff--;
         if (this.disorientFF  > 0) this.disorientFF--;
 
+        // ── BLIND (the STEAM and CRYO-ARC combos) ──
+        // It cannot see: no target, no attack, no shot — it staggers about at
+        // half pace until it clears (docs/ROADMAP-top5.md §1).
+        if (this.blinded > 0) {
+            this.blinded--;
+            if (this.state === "attack") this.moveSpeed = (PREDATOR_TYPES[this.predatorType] || this.def || { moveSpeed: 0.02 }).moveSpeed || 0.02;
+            this.currentTarget = null; this.state = "wander";
+            if (!this._blindDir || frame % 30 === 0) { const a = Math.random() * Math.PI * 2; this._blindDir = { x: Math.cos(a), y: Math.sin(a) }; }
+            this.x += this._blindDir.x * this.moveSpeed * 0.5;
+            this.y = Math.max(0, Math.min(3, this.y + this._blindDir.y * this.moveSpeed * 0.5));
+            return;
+        }
+
         // ── CHARGE-UP ABILITY / WORKER DUTY ──
         // Either can claim the whole frame: an insect in its windup is rooted
         // (that is what makes the telegraph fair), a leaping one is mid-flight,
