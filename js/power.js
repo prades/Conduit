@@ -191,6 +191,46 @@ function gridBestFill(src) {
     for (const n of gridMembers(src)) best = Math.max(best, nestEnergy(n) / Math.max(1, nestEnergyMax(n)));
     return best;
 }
+// ── OVERCHARGE ───────────────────────────────────────────
+// State lives on the grid's root nest, so every nest in a grid shares one
+// surge and one cooldown.
+function _ocRoot(n) { return n ? (n._grid || n) : null; }
+function gridFill(src) {
+    let have = 0, cap = 0;
+    for (const n of gridMembers(src)) { have += nestEnergy(n); cap += nestEnergyMax(n); }
+    return cap > 0 ? have / cap : 0;
+}
+function overchargeActive(src) { const r = _ocRoot(src); return !!r && (r._ocUntil || 0) > frame; }
+function overchargeCooldownLeft(src) { const r = _ocRoot(src); return r ? Math.max(0, (r._ocReadyAt || 0) - frame) : 0; }
+// Why it cannot fire, or null when it can.
+function overchargeBlocker(n) {
+    if (!n || !nestIsPowerSource(n)) return "NOT A POWER SOURCE";
+    if (n.powerOff) return "NEST IS OFF";
+    if (overchargeActive(n)) return "ALREADY SURGING";
+    const cd = overchargeCooldownLeft(n);
+    if (cd > 0) return "RECHARGING " + Math.ceil(cd / 60) + "s";
+    if (gridFill(n) < OVERCHARGE_MIN_FILL) return "NEEDS " + Math.round(OVERCHARGE_MIN_FILL * 100) + "% STORED";
+    return null;
+}
+function overchargeNest(n) {
+    const why = overchargeBlocker(n);
+    if (why) {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "OVERCHARGE \u2014 " + why, color: "#f88", life: 100, vy: -0.22, size: 12 });
+        return false;
+    }
+    for (const m of gridMembers(n)) m.nestEnergy = nestEnergy(m) * (1 - OVERCHARGE_COST);
+    const r = _ocRoot(n);
+    r._ocUntil = frame + OVERCHARGE_FRAMES;
+    r._ocReadyAt = frame + OVERCHARGE_COOLDOWN;
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 10);
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 100, text: "\u26a1 OVERCHARGE \u2014 " + Math.round(OVERCHARGE_FRAMES / 60) + "s",
+                         color: "#fff27a", life: 140, vy: -0.18, size: 16 });
+    return true;
+}
+// Is this pylon riding a surge right now?
+function pylonSurged(t) { return !!(t && t.powerSource && overchargeActive(t.powerSource)); }
+
 function toggleNestPower(n) {
     if (!n || !nestIsPowerSource(n)) return false;
     n.powerOff = !n.powerOff;
@@ -421,6 +461,7 @@ function payForShot(t) {
 // and the player can see it costing nothing.
 function powerFlowOf(t) {
     if (!t || !t.powered) return 0;
+    if (pylonSurged(t)) return 1;   // an OVERCHARGE runs every wire full
     if (t.waveMode) return t.waveAwake === false ? 0 : 1;   // on standby it draws nothing
     return Math.max(0, t.powerFlow || 0);
 }
@@ -458,6 +499,8 @@ function waveDrainTick() {
         if (t.waveTripped) { t.powered = false; continue; }
         // On standby it draws nothing: it only pays while it is working.
         if (t.waveAwake === false) continue;
+        // Surged by an OVERCHARGE: the 40% it cost was the price.
+        if (pylonSurged(t)) continue;
         const src = t.powerSource || pylonSource(t);
         if (!src) { t.powered = false; continue; }
         if (!groups.has(src)) groups.set(src, []);

@@ -273,7 +273,9 @@ function applyPylonZoneEffects(wavePylons) {
             if (frame % 3 !== 0) return;
 
             // Compute per-element constants once per pair (not once per actor)
-            const _nTier = networkStrength[el] || 1;
+            // OVERCHARGE: a surged link works one tier higher (capped at III).
+            const _surgeUp = typeof pylonSurged === "function" && (pylonSurged(pa) || pylonSurged(pb)) ? 1 : 0;
+            const _nTier = Math.min(3, (networkStrength[el] || 1) + _surgeUp);
             const _seasonBonus = _seasonBonusCache[el] || 1.0;
 
             const {lx, ly, len2, bMinX, bMaxX, bMinY, bMaxY} = pair;
@@ -1047,7 +1049,8 @@ function comboTick() {
     if (frame % 3 !== 0 || _comboLinks.length === 0) return;
     for (const L of _comboLinks) {
         if (!comboLinkActive(L)) continue;
-        const tA = networkStrength[L.a.attackModeElement] || 0, tB = networkStrength[L.b.attackModeElement] || 0;
+        const tA = Math.min(3, (networkStrength[L.a.attackModeElement] || 0) + (pylonSurged(L.a) ? 1 : 0));
+        const tB = Math.min(3, (networkStrength[L.b.attackModeElement] || 0) + (pylonSurged(L.b) ? 1 : 0));
         const k = 1 + COMBO_TIER_GAIN * (tA + tB) / 2;
         const foe = L.combo.foe, ally = L.combo.ally;
         for (const act of actors) {
@@ -1150,6 +1153,8 @@ function waveWakeTick() {
             }
         }
         t.waveAwake = frame < (t._awakeUntil === undefined ? -1 : t._awakeUntil);
+        // An OVERCHARGE wakes the whole grid for its duration.
+        if (!t.waveAwake && pylonSurged(t)) { if (t.waveAwake === false) t._wakeFrame = frame; t.waveAwake = true; }
     }
 }
 
@@ -1159,18 +1164,20 @@ function waveWakeTick() {
 // lingering ELECTRIC_HASTE_FRAMES. An enemy's slow on the same unit still wins.
 function electricHasteTick() {
     if (frame % 3 !== 0) return;
-    const tier = Math.min(3, networkStrength.electric || 0);
-    if (tier < 1) return;
+    const baseTier = Math.min(3, networkStrength.electric || 0);
+    if (baseTier < 1 && !_wPylons.some(p => p.attackModeElement === "electric" && pylonSurged(p))) return;
     const src = [];
     for (const p of _wPylons) if (p.attackModeElement === "electric" && p.waveAwake !== false) src.push(p);
     if (!src.length) return;
-    const mult = ELECTRIC_HASTE[tier], r2 = ELECTRIC_HASTE_RADIUS * ELECTRIC_HASTE_RADIUS;
+    const r2 = ELECTRIC_HASTE_RADIUS * ELECTRIC_HASTE_RADIUS;
     for (const a of actors) {
         if (!a || a.dead || !(a.team === "green" || a.isClone || a.isFollower)) continue;
         if (a.slowed > 0 && (a.slowFactor ?? 1) < 1) continue;
         for (const p of src) {
             const dx = a.x - p.x, dy = a.y - p.y;
-            if (dx * dx + dy * dy <= r2) { applySlow(a, ELECTRIC_HASTE_FRAMES, mult); break; }
+            if (dx * dx + dy * dy > r2) continue;
+            const tier = Math.min(3, baseTier + (pylonSurged(p) ? 1 : 0));
+            if (tier >= 1) { applySlow(a, ELECTRIC_HASTE_FRAMES, ELECTRIC_HASTE[tier]); break; }
         }
     }
 }
@@ -1919,8 +1926,11 @@ function render() {
         // The timer waits at full while nothing is in range, so the first
         // round goes the moment something steps in rather than up to a full
         // interval later.
-        t.attackFireTimer = Math.min(TURRET_FIRE_FRAMES, (t.attackFireTimer||0) + 1);
-        if (t.attackFireTimer < TURRET_FIRE_FRAMES) return;
+        // OVERCHARGE: a surged turret fires OVERCHARGE_FIRE_MULT× as often.
+        const _surged = pylonSurged(t);
+        const _every = _surged ? Math.max(1, Math.round(TURRET_FIRE_FRAMES / OVERCHARGE_FIRE_MULT)) : TURRET_FIRE_FRAMES;
+        t.attackFireTimer = Math.min(_every, (t.attackFireTimer||0) + 1);
+        if (t.attackFireTimer < _every) return;
         // Find nearest enemy within range — squared distance avoids sqrt for non-targets
         let nearest=null, bd2=t.attackRange*t.attackRange;
         actors.forEach(a=>{
@@ -1938,7 +1948,8 @@ function render() {
         // hits in full; with no power in reach, or the pool empty, it is a
         // plain round at TURRET_PLAIN_MULT. Either way it FIRES — a turret
         // that silently refused to shoot read as broken.
-        const charged = !!t.powerSource && payForShot(t);
+        // A surged round is charged and already paid for (the OVERCHARGE cost).
+        const charged = _surged || (!!t.powerSource && payForShot(t));
         t.charged = charged;
         nearest._shotByPylon = true;   // the tutorial's "kill with your pylons" step reads this
         t._lastShotFrame = frame;      // the turret's muzzle flash reads this

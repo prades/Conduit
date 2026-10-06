@@ -185,7 +185,10 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(Math.abs(r.b / r.a - (1 + 3 * run('TURRET_TIER_BONUS'))) < 1e-9, JSON.stringify(r));
     });
     await check('the first round goes the moment a foe steps in', () => {
-        ok(/t\.attackFireTimer = Math\.min\(TURRET_FIRE_FRAMES/.test(rd('js/game.js')), 'the timer does not wait at full');
+        // Waits at full — the interval is TURRET_FIRE_FRAMES, shortened by an
+        // OVERCHARGE (tests/overcharge.js).
+        const G = rd('js/game.js');
+        ok(/t\.attackFireTimer = Math\.min\(_every/.test(G) && /const _every = [^;]*TURRET_FIRE_FRAMES/.test(G), 'the timer does not wait at full');
     });
 
     group('THE BOLT');

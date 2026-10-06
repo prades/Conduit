@@ -47,6 +47,7 @@ const SUITES = [
     ['power chain + tier III', 'chain.js'],
     ['support + disruption wake','wake.js'],
     ['element combos',         'combo.js'],
+    ['overcharge',             'overcharge.js'],
 ];
 
 let failed = 0;

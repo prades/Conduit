@@ -279,7 +279,7 @@ function executeCommand() {
     commandMode=false; commandPendingTap=false;
     if (!selectedRadialAction) return;
     if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
-    const isNestCmd = selectedRadialAction==="attack_nest"||selectedRadialAction==="toggle_nest";
+    const isNestCmd = selectedRadialAction==="attack_nest"||selectedRadialAction==="toggle_nest"||selectedRadialAction==="overcharge";
     if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
     if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;
 
@@ -352,6 +352,11 @@ function executeCommand() {
         }
         case "toggle_nest": {
             if (commandNestTarget) toggleNestPower(commandNestTarget);
+            break;
+        }
+        // ── TOP (build mode off): OVERCHARGE a nest's grid ──
+        case "overcharge": {
+            if (commandNestTarget) overchargeNest(commandNestTarget);
             break;
         }
         case "toggle_circuit": {

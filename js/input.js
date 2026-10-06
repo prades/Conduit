@@ -231,6 +231,14 @@ function handleLongHold(ex,ey) {
     // radial does not also open underneath the panel.
     if (typeof openFollowerDutyMenu === "function" && openFollowerDutyMenu(ex, ey)) return;
     commandMode=true; commandX=ex; commandY=ey;
+    // KEEP THE RING ON SCREEN. A nest or the home portal on the back wall sits
+    // under the top HUD, which hid the ring's top button (OVERCHARGE). The ring
+    // is drawn clear of the HUD and the edges; a drag is still measured from
+    // the press point, so releasing in place can never pick a button.
+    const _R = typeof RADIAL_RADIUS === "number" ? RADIAL_RADIUS : 60;
+    commandX = Math.max(_R + 40, Math.min(canvas.width - _R - 40, ex));
+    commandY = Math.max(_R + 140, Math.min(canvas.height - _R - 40, ey));
+    commandShiftX = commandX - ex; commandShiftY = commandY - ey;
     noteRingUsed();
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
@@ -348,7 +356,10 @@ canvas.addEventListener('pointermove', e=>{
     if (!isPressing) return;
     [pointerX,pointerY]=toCanvas(e.clientX,e.clientY);
 
-    dragDX=pointerX-commandX; dragDY=pointerY-commandY;
+    // From the press point while the first hold is down; from the drawn ring
+    // once it is open and being tapped.
+    const _ox = commandPendingTap ? 0 : commandShiftX, _oy = commandPendingTap ? 0 : commandShiftY;
+    dragDX=pointerX-(commandX-_ox); dragDY=pointerY-(commandY-_oy);
     gesturePoints.push({x:pointerX,y:pointerY});
     if (Math.sqrt((pointerX-pressX)**2+(pointerY-pressY)**2)>22) touchMoved=true;
 });
@@ -481,7 +492,8 @@ canvas.addEventListener('pointerup', e=>{
     if (commandMode) {
         // If drag didn't hover a button, try treating release point as a tap on a button
         if (!selectedRadialAction) {
-            const relX = upX - commandX, relY = upY - commandY;
+            const _rox = commandPendingTap ? 0 : commandShiftX, _roy = commandPendingTap ? 0 : commandShiftY;
+            const relX = upX - (commandX - _rox), relY = upY - (commandY - _roy);
             const relDist = Math.hypot(relX, relY);
             const relAngle = Math.atan2(relY, relX);
             if (relDist > 18) {
@@ -507,6 +519,9 @@ canvas.addEventListener('pointerup', e=>{
                     return;
                 }
                 if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && buildMode) selectedRadialAction = "build_upgrade";
+                // Top, build mode off, on a nest you hold: OVERCHARGE (mirrors drawRadialMenu).
+                else if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && !_isPyCmd && commandNestTarget && nestIsPowerSource(commandNestTarget))
+                                       selectedRadialAction = "overcharge";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode && _isCapturableCmd) selectedRadialAction = "capture";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode) selectedRadialAction = "position";
                 // RIGHT is INFO whether build mode is on or off. It used to be

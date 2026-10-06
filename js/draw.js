@@ -111,6 +111,17 @@ function drawRadialMenu() {
         if (tHov && canUp) selectedRadialAction="build_upgrade";
     }
 
+    // ── TOP (build mode OFF) = OVERCHARGE on a nest you hold ──
+    // The slot BUILD/UPGRADE uses in build mode; on a power source outside it
+    // the top of the ring spends 40% of the grid on an 8 s surge
+    // (overchargeNest in power.js). Says why when it cannot.
+    if (!buildMode && !isPylonTarget && commandNestTarget && typeof nestIsPowerSource === "function" && nestIsPowerSource(commandNestTarget)) {
+        const ocHov = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
+        const why = overchargeBlocker(commandNestTarget);
+        drawRadialButton(commandX, commandY-RADIAL_RADIUS, why ? why : "\u26a1 OVERCHARGE", ocHov && !why);
+        if (ocHov) selectedRadialAction = "overcharge";
+    }
+
     // ── DOWN = POSITION (or CAPTURE on capturable tiles) — hidden in build mode ──
     if (!buildMode) {
         const dHov=dist>RADIAL_RADIUS*0.25&&angle>Math.PI/4&&angle<3*Math.PI/4;
@@ -2302,6 +2313,24 @@ function drawNestGauge(nest, cx, topY, colour) {
     ctx.font = "bold 10px monospace"; ctx.textAlign = "center";
     ctx.fillStyle = col; ctx.globalAlpha = blink;
     ctx.fillText(f <= 0 ? "EMPTY" : pct + "%", cx, y - 4);
+    // OVERCHARGE: surging — a bright bar and the seconds left; recharging — a
+    // thin line under the bar filling back up.
+    if (typeof overchargeActive === "function") {
+        if (overchargeActive(nest)) {
+            const left = Math.ceil(((nest._grid || nest)._ocUntil - frame) / 60);
+            ctx.globalAlpha = 0.5 + 0.5 * Math.sin((frame || 0) * 0.4);
+            ctx.strokeStyle = "#fff27a"; ctx.lineWidth = 2;
+            ctx.strokeRect(x - 2.5, y - 2.5, NEST_GAUGE_W + 5, NEST_GAUGE_H + 5);
+            ctx.globalAlpha = 1; ctx.fillStyle = "#fff27a"; ctx.font = "bold 8px monospace";
+            ctx.fillText("\u26a1 OVERCHARGE " + left + "s", cx, y + NEST_GAUGE_H + 9);
+        } else {
+            const cd = overchargeCooldownLeft(nest);
+            if (cd > 0) {
+                ctx.globalAlpha = 1; ctx.fillStyle = "rgba(255,242,122,0.7)";
+                ctx.fillRect(x, y + NEST_GAUGE_H + 2, Math.round(NEST_GAUGE_W * (1 - cd / OVERCHARGE_COOLDOWN)), 1);
+            }
+        }
+    }
     // Switched off: the level is held, and says so.
     if (nest.powerOff) {
         ctx.globalAlpha = 1; ctx.fillStyle = "rgba(0,0,0,0.55)";

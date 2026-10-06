@@ -374,6 +374,18 @@ const ELEMENT_COMBOS = {
     "flux+toxic":     { name: "MIASMA",        foe: { pull: 0.10, dmg: 8, every: 24, shred: 0.5 } },
     "core+toxic":     { name: "ANTIDOTE",      foe: { shred: 0.5 }, ally: { heal: 2, healEvery: 30 } },
 };
+// ── OVERCHARGE (docs/ROADMAP-top5.md §2) ─────────────────
+// Hold a nest you control → OVERCHARGE: every online nest in its grid gives up
+// OVERCHARGE_COST of what it holds, and for OVERCHARGE_FRAMES every pylon
+// drawing on that grid is SURGED — turrets fire OVERCHARGE_FIRE_MULT× as often
+// on charged rounds they do not pay for, support/disruption pylons count one
+// network tier higher, stay awake and draw nothing. Needs the grid at least
+// OVERCHARGE_MIN_FILL full, and recharges for OVERCHARGE_COOLDOWN.
+const OVERCHARGE_COST      = 0.4;
+const OVERCHARGE_MIN_FILL  = 0.5;
+const OVERCHARGE_FRAMES    = 480;    // 8 s
+const OVERCHARGE_COOLDOWN  = 3600;   // 60 s, counted from the moment it fires
+const OVERCHARGE_FIRE_MULT = 3;
 const COMBO_MAX_LINKS = 2;        // combo links per pylon, nearest first
 const COMBO_STRIP     = 1.5;      // tiles either side of the link it reaches
 const COMBO_TIER_GAIN = 0.25;     // strength = 1 + this × the two networks' average tier
@@ -634,6 +646,9 @@ let _ATKCHIP = { x: 0, y: 0, w: 0, h: 0 };   // on-screen ammo chip, tap to disa
 // ── COMMAND / RADIAL STATE ────────────────────────────────
 let commandMode = false;
 let commandX = 0, commandY = 0;
+// How far the ring was moved to keep it on screen (handleLongHold): it is drawn
+// at commandX/Y, but a DRAG is still measured from where the finger went down.
+let commandShiftX = 0, commandShiftY = 0;
 let commandTarget = null;
 let commandNestTarget = null;   // broken nest pod near long-press point
 let commandEnemyTarget = null;  // predator under a long press, if any
