@@ -210,6 +210,97 @@ function grubTick(g) {
     }
 }
 
+// ── THE BROOD TYRANT FIGHT (docs/ROADMAP-top5.md §5) ─────
+// Three phases by health:
+//   I   BROODMOTHER  100–66%  hatches nymphs
+//   II  BURROW        66–33%  also dives underground every TYRANT_BURROW_EVERY
+//                             and erupts under your nearest pylon
+//   III ENRAGED       < 33%   faster, attacks twice as often, hatches faster
+// Its CARAPACE takes TYRANT_CARAPACE of every hit — unless a disruption pylon is
+// AWAKE within TYRANT_EXPOSE_RANGE of it, which cracks it open: then it takes
+// TYRANT_EXPOSED. Killing it drops the TYRANT HEART, kept for good: every
+// pylon link reaches TYRANT_HEART_RANGE further.
+const TYRANT_PHASE2 = 0.66, TYRANT_PHASE3 = 0.33;
+const TYRANT_BROOD_FRAMES   = { 1: 900, 2: 720, 3: 480 };
+const TYRANT_BURROW_EVERY   = 900;    // 15 s
+const TYRANT_BURROW_FRAMES  = 180;    // 3 s underground
+const TYRANT_BURROW_SPEED   = 0.08;   // tiles a frame while burrowed
+const TYRANT_ERUPT_PYLON    = 120;    // damage to the pylon it comes up under
+const TYRANT_ERUPT_UNITS    = 30;     // to everything of yours within the radius
+const TYRANT_ERUPT_RADIUS   = 1.5;
+const TYRANT_ENRAGE_SPEED   = 1.4;
+const TYRANT_ENRAGE_COOLDOWN = 22;    // its melee cooldown, roughly half the usual
+const TYRANT_CARAPACE       = 0.5;
+const TYRANT_EXPOSED        = 1.5;
+const TYRANT_EXPOSE_RANGE   = 3;
+const TYRANT_HEART_RANGE    = 1;      // tiles added to every pylon link
+const TYRANT_HEART_KEY      = "conduit_tyrant_heart";
+let tyrantHeart = false;
+try { tyrantHeart = typeof localStorage !== "undefined" && localStorage.getItem(TYRANT_HEART_KEY) === "1"; } catch (e) {}
+
+function tyrantPhase(b) {
+    const f = b.maxHealth > 0 ? b.health / b.maxHealth : 1;
+    return f > TYRANT_PHASE2 ? 1 : f > TYRANT_PHASE3 ? 2 : 3;
+}
+// Is a disruption pylon awake close enough to crack it open?
+function tyrantExposed(b) {
+    if (typeof _wPylons === "undefined") return false;
+    const r2 = TYRANT_EXPOSE_RANGE * TYRANT_EXPOSE_RANGE;
+    for (const p of _wPylons) {
+        if (p.waveAwake === false || typeof waveRole !== "function" || waveRole(p.attackModeElement) !== "disruption") continue;
+        const dx = p.x - b.x, dy = p.y - b.y;
+        if (dx * dx + dy * dy <= r2) return true;
+    }
+    return false;
+}
+// What a hit on it is multiplied by (read in applyDamage).
+function tyrantDamageMult(b) { return b && b.isBrood ? (b._exposed ? TYRANT_EXPOSED : TYRANT_CARAPACE) : 1; }
+
+// Where it comes up: your nearest pylon inside its zone, else your nearest unit
+// there, else a random spot in the zone.
+function _tyrantBurrowTarget(b) {
+    const [x0, x1] = _zoneSpan(GRUB_ZONE);
+    const inZone = o => o.x >= x0 && o.x <= x1;
+    let best = null, bd = Infinity;
+    for (const t of (typeof _pillarCache !== "undefined" ? _pillarCache : [])) {
+        if (t.pillarTeam !== "green" || t.destroyed || !inZone(t)) continue;
+        const d = Math.hypot(t.x - b.x, t.y - b.y); if (d < bd) { bd = d; best = { x: t.x, y: t.y, pylon: t }; }
+    }
+    if (best) return best;
+    for (const a of actors) {
+        if (a.dead || a.team !== "green" || !inZone(a)) continue;
+        const d = Math.hypot(a.x - b.x, a.y - b.y); if (d < bd) { bd = d; best = { x: a.x, y: a.y }; }
+    }
+    return best || { x: x0 + Math.random() * (x1 - x0), y: Math.random() * 3 };
+}
+function _tyrantErupt(b) {
+    b.untargetable = false; b._burrow = null; b._burrowCd = TYRANT_BURROW_EVERY;
+    const t = b._burrowTarget; b._burrowTarget = null;
+    if (t && t.pylon && !t.pylon.destroyed && Math.hypot(t.pylon.x - b.x, t.pylon.y - b.y) < 1.2) {
+        t.pylon.health = Math.max(0, (t.pylon.health || 0) - TYRANT_ERUPT_PYLON);
+        if (t.pylon.health <= 0) t.pylon.pendingDestroy = true;
+    }
+    for (const a of actors) {
+        if (a.dead || a.team !== "green") continue;
+        const dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy);
+        if (d > TYRANT_ERUPT_RADIUS) continue;
+        applyDamage(a, TYRANT_ERUPT_UNITS, b);
+        if (d > 0.01) { a.kbVX = dx / d * 0.15; a.kbVY = dy / d * 0.15; }
+    }
+    if (typeof shake !== "undefined") shake = Math.max(shake, 14);
+    for (let i = 0; i < 10; i++) elementEffects.push({ type: "impact", x: b.x + (Math.random() - 0.5), y: b.y + (Math.random() - 0.5), color: "#8a6a3a", radius: 0.6, life: 30, element: "core" });
+    floatingTexts.push({ x: b.x, y: b.y - 1.5, text: "ERUPTS!", color: "#c0f040", life: 60, vy: -0.06 });
+}
+function onTyrantDeath(b) {
+    const first = !tyrantHeart;
+    tyrantHeart = true;
+    try { localStorage.setItem(TYRANT_HEART_KEY, "1"); } catch (e) {}
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 120,
+        text: first ? "\u2665 TYRANT HEART \u2014 every pylon link reaches +" + TYRANT_HEART_RANGE + " tile" : "THE BROOD TYRANT FALLS",
+        color: "#c0f040", life: 260, vy: -0.12, size: 15 });
+}
+
 // ── THE BROOD TYRANT ─────────────────────────────────────
 function evolveGrub(g) {
     if (g._evolved) return null;
@@ -230,6 +321,7 @@ function evolveGrub(g) {
     b.baseMoveSpeed = b.moveSpeed;
     if (typeof initAbility === "function") initAbility(b);
     b._broodTimer = BROOD_SPAWN_FRAMES; b._brood = [];
+    b._phase = 1; b._burrowCd = TYRANT_BURROW_EVERY;
     actors.push(b);
     if (typeof shake !== "undefined") shake = Math.max(shake, 10);
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 100, text: "THE GRUB HAS BECOME THE BROOD TYRANT",
@@ -238,8 +330,36 @@ function evolveGrub(g) {
 }
 
 // Runs at the top of the tyrant's own update, before its ordinary combat AI.
+// Returns true while it is underground: that frame is the burrow's, not the AI's.
 function broodTick(b) {
-    if (b.dead) return;
+    if (b.dead) return false;
+    // ── THE PHASES ──
+    const ph = tyrantPhase(b);
+    if (ph !== (b._phase || 1)) {
+        b._phase = ph;
+        const name = ph === 2 ? "BURROWS" : "IS ENRAGED";
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 120, text: "\u2620 THE BROOD TYRANT " + name, color: ph === 3 ? "#ff4040" : "#c0f040", life: 180, vy: -0.12, size: 15 });
+        if (ph === 3) { b.baseMoveSpeed = (b.baseMoveSpeed || b.moveSpeed) * TYRANT_ENRAGE_SPEED; b.moveSpeed *= TYRANT_ENRAGE_SPEED; }
+        if (typeof shake !== "undefined") shake = Math.max(shake, 10);
+    }
+    // The carapace: cracked while a disruption pylon is awake beside it.
+    b._exposed = tyrantExposed(b);
+    if (ph === 3 && b.attackCooldown > TYRANT_ENRAGE_COOLDOWN) b.attackCooldown = TYRANT_ENRAGE_COOLDOWN;
+    // ── BURROW (phases II and III) ──
+    if (b._burrow) {
+        const t = b._burrowTarget;
+        if (t) { const dx = t.x - b.x, dy = t.y - b.y, d = Math.hypot(dx, dy);
+                 if (d > TYRANT_BURROW_SPEED) { b.x += dx / d * TYRANT_BURROW_SPEED; b.y += dy / d * TYRANT_BURROW_SPEED; } else { b.x = t.x; b.y = t.y; } }
+        if (--b._burrow <= 0) _tyrantErupt(b);
+        return true;
+    }
+    if (ph >= 2 && --b._burrowCd <= 0) {
+        b._burrow = TYRANT_BURROW_FRAMES; b.untargetable = true;
+        b._burrowTarget = _tyrantBurrowTarget(b);
+        b.currentTarget = null; b.state = "wander";
+        floatingTexts.push({ x: b.x, y: b.y - 1.5, text: "BURROWS!", color: "#c0f040", life: 60, vy: -0.06 });
+        return true;
+    }
     // It GUARDS its zone: never more than a step outside it.
     const [x0, x1] = _zoneSpan(GRUB_ZONE);
     if (b.x < x0) b.x += Math.min(x0 - b.x, b.moveSpeed * 2);
@@ -252,7 +372,7 @@ function broodTick(b) {
     // And it hatches nymphs.
     b._brood = (b._brood || []).filter(p => p && !p.dead);
     if (--b._broodTimer <= 0) {
-        b._broodTimer = BROOD_SPAWN_FRAMES;
+        b._broodTimer = TYRANT_BROOD_FRAMES[b._phase || 1] || BROOD_SPAWN_FRAMES;
         for (let i = 0; i < BROOD_SPAWN_COUNT && b._brood.length < BROOD_MAX_NYMPHS; i++) {
             if (typeof predatorBudgetFull === "function" && predatorBudgetFull()) break;
             const p = typeof _spawnPredatorAt === "function"
@@ -261,6 +381,31 @@ function broodTick(b) {
             if (p) { p.homeZone = GRUB_ZONE; b._brood.push(p); }
         }
     }
+    return false;
+}
+
+// THE BOSS BAR. Top of the screen while the tyrant is alive and near: its name,
+// the phase it is in, and whether its carapace is cracked.
+function drawTyrantBar() {
+    let b = null;
+    for (const a of actors) if (a.isBrood && !a.dead) { b = a; break; }
+    if (!b || Math.abs(b.x - player.x) > 16) return;
+    const w = Math.min(300, canvas.width - 40), x = Math.round((canvas.width - w) / 2), y = 146;
+    const f = Math.max(0, Math.min(1, b.health / b.maxHealth));
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "rgba(0,0,0,0.75)"; ctx.fillRect(x - 2, y - 2, w + 4, 12);
+    ctx.fillStyle = b._phase === 3 ? "#ff4040" : "#c0f040"; ctx.fillRect(x, y, Math.round(w * f), 8);
+    // Phase marks at 66% and 33%.
+    ctx.fillStyle = "rgba(0,0,0,0.8)";
+    ctx.fillRect(x + Math.round(w * TYRANT_PHASE2), y, 2, 8); ctx.fillRect(x + Math.round(w * TYRANT_PHASE3), y, 2, 8);
+    ctx.font = "bold 9px monospace"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#c0f040";
+    ctx.fillText("\u2620 BROOD TYRANT \u00b7 " + ["", "I BROODMOTHER", "II BURROW", "III ENRAGED"][b._phase || 1], x, y - 4);
+    ctx.textAlign = "right";
+    if (b.untargetable) { ctx.fillStyle = "#c8a36a"; ctx.fillText("UNDERGROUND", x + w, y - 4); }
+    else if (b._exposed) { ctx.fillStyle = "#ffe066"; ctx.fillText("\u25bc EXPOSED", x + w, y - 4); }
+    else { ctx.fillStyle = "#8a9"; ctx.fillText("CARAPACE \u00bd", x + w, y - 4); }
+    ctx.restore();
 }
 
 // ── DRAWING ──────────────────────────────────────────────
@@ -301,6 +446,15 @@ function drawGrub(g, px, py, c) {
 function drawBroodLabel(b, px, py, c) {
     c = c || ctx;
     c.save();
+    // EXPOSED: glowing cracks across it while a disruption pylon is awake beside it.
+    if (b._exposed && !b.untargetable) {
+        c.strokeStyle = `rgba(255,224,102,${0.6 + 0.4 * Math.sin((frame || 0) * 0.3)})`; c.lineWidth = 2;
+        const cy = py - (b.dimensions ? b.dimensions.height * 2 : 60);
+        c.beginPath(); c.moveTo(px - 20, cy - 10); c.lineTo(px - 6, cy); c.lineTo(px - 12, cy + 12);
+        c.moveTo(px + 18, cy - 14); c.lineTo(px + 6, cy - 2); c.lineTo(px + 16, cy + 10); c.stroke();
+        c.fillStyle = "#ffe066"; c.font = "bold 9px monospace"; c.textAlign = "center";
+        c.fillText("\u25bc EXPOSED", px, py - 132);
+    }
     // A pulsing ring on the floor under it, so the boss reads as THE boss and
     // not as one more silhouette.
     const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.08);

@@ -130,7 +130,9 @@ function purchaseCampBuilding(id) {
 const PYLON_LINK_TILES       = 3;   // base
 const PYLON_LINK_TILES_RELAY = 5;   // with Signal Relay — its "+2 tiles" claim
 function getPylonRange() {
-    return (isCampBuilt("signal_relay") ? PYLON_LINK_TILES_RELAY : PYLON_LINK_TILES) + 0.05;
+    // The TYRANT HEART (killing the Brood Tyrant, js/broods.js) adds a tile for good.
+    const heart = typeof tyrantHeart !== "undefined" && tyrantHeart ? TYRANT_HEART_RANGE : 0;
+    return (isCampBuilt("signal_relay") ? PYLON_LINK_TILES_RELAY : PYLON_LINK_TILES) + heart + 0.05;
 }
 
 // Command Node — follower damage/defense multipliers

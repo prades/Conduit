@@ -290,6 +290,16 @@ function _drawIceBlock(actor, px, py, drawCtx) {
 
 function _drawPredator(actor, px, py, drawCtx) {
     if (actor.isGrub && typeof drawGrub === "function") { drawGrub(actor, px, py, drawCtx); return; }
+    // UNDERGROUND (the tyrant's burrow): only a moving mound of dirt shows.
+    if (actor.untargetable && actor._burrow) {
+        const w = 26 + Math.sin((frame || 0) * 0.4) * 3;
+        drawCtx.save(); drawCtx.fillStyle = "#5a4326";
+        drawCtx.beginPath(); drawCtx.ellipse(px, py + TILE_H * 0.2, w, w * 0.4, 0, Math.PI, 0); drawCtx.fill();
+        drawCtx.fillStyle = "#7a5c36";
+        for (let i = 0; i < 4; i++) { drawCtx.beginPath(); drawCtx.arc(px + Math.cos(frame * 0.2 + i * 1.6) * w * 0.8, py + TILE_H * 0.2 - 6 - Math.abs(Math.sin(frame * 0.2 + i)) * 8, 2.5, 0, Math.PI * 2); drawCtx.fill(); }
+        drawCtx.restore();
+        return;
+    }
     if (actor.isBrood && typeof drawBroodLabel === "function") drawBroodLabel(actor, px, py, drawCtx);
     const dim=actor.dimensions;
     // leapLift is screen-space height during a scout's arc jump, so the whole

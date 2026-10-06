@@ -2017,6 +2017,7 @@ function render() {
         if (a instanceof Predator && a.dead && !a.deathProcessed && a.team !== "green") {
             a.deathProcessed = true;
             onPredatorDeath(a);
+            if (a.isBrood && typeof onTyrantDeath === "function") onTyrantDeath(a);
             // Remove from zone array so slot opens for respawn
             if (a.homeZone !== undefined && zonePredators[a.homeZone]) {
                 zonePredators[a.homeZone] = zonePredators[a.homeZone].filter(p => p !== a);
@@ -3840,6 +3841,7 @@ function render() {
     if (typeof drawGrubCorpses === "function") drawGrubCorpses();
     drawConversionBars();
     drawTutorialHighlight();
+    if (typeof drawTyrantBar === "function") drawTyrantBar();
     drawFloatingTexts();
     drawCrystalButton();
     // The clone bay first, then its button over it, so the button that

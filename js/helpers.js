@@ -72,6 +72,7 @@ function isEnemyUnit(a) {
 // requires the thing to be alive.
 function isHostileTarget(a) {
     if (!a || a.dead) return false;
+    if (a.untargetable) return false;   // underground (the Brood Tyrant's burrow)
     return isEnemyUnit(a);
 }
 
@@ -256,6 +257,9 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     }
     // STATIC STORM (a siege night): electric hits land double, whoever throws them.
     if (element === "electric" && typeof siegeIs === "function" && siegeIs("storm")) amount *= SIEGE_STORM_MULT;
+    if (target.untargetable) return;   // underground: nothing reaches it
+    // THE TYRANT'S CARAPACE: half damage, unless a disruption pylon has it exposed.
+    if (target.isBrood && typeof tyrantDamageMult === "function") amount *= tyrantDamageMult(target);
     if (target.frozen) return;
     if (target.invulnerable && target.invulnerable > 0) return;
     if (target.smokeForm > 0 && Math.random() < (target.smokeEvasion||0.75)) return;

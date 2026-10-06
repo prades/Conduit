@@ -50,6 +50,7 @@ const SUITES = [
     ['overcharge',             'overcharge.js'],
     ['night sieges',           'siege.js'],
     ['follower bonds',         'bonds.js'],
+    ['brood tyrant fight',     'tyrant.js'],
 ];
 
 let failed = 0;
