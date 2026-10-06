@@ -566,7 +566,7 @@ function canRerollFollower(actor) {
 // block in updateNPC (npc.js) already rolls identity for an actor with no
 // personality, so clearing the identity fields is all it takes to re-roll
 // element, stats, role and traits there. Anything in hand is put down first.
-function startFollowerReroll(actor) {
+function startFollowerReroll(actor, quiet) {
     if (!canRerollFollower(actor)) return false;
     setFollowerDuty(actor, 'fighter', true);   // drops mass, thaws a block, frees the post
     actor.job = null;
@@ -582,7 +582,8 @@ function startFollowerReroll(actor) {
     actor.naturalTrait = null;
     actor.perk = null;
     actor.convertFlash = 20;
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+    // A group re-roll says it once for the lot (rerollGroup in ui.js).
+    if (!quiet) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
         text: 'RE-ROLLING AT THE CRYSTAL', color: '#0df', life: 100, vy: -0.25, size: 12 });
     return true;
 }

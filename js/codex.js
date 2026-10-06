@@ -370,7 +370,8 @@ function renderWorkCrewIndex() {
         'whole group at once \u2014 one press instead of one per follower. On the <strong>ELEM</strong> ' +
         'tab a row is an element; on <strong>UNITS</strong> it is a role, so BRAWLERS, SNIPERS and ' +
         'CAMPERS each move together across every element they are made of. The menu says how many ' +
-        'are already working before you choose.</div>' +
+        'are already working before you choose. <strong>RE-ROLL ALL</strong> sends the whole group ' +
+        'back to the Crystal to be made again \u2014 tap it twice, so it cannot happen by accident.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Call back</span>' +
         'The same long press takes one OFF the crew. A frozen ICE block says <strong>THAW</strong> ' +
         'instead of TO LINE \u2014 press the BLOCK itself, not the air above it. And a worker with an ' +

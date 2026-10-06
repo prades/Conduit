@@ -547,13 +547,22 @@ const squadOrder = (U, tab, which, press) => U.run(`(function(){
     const took = handleLongHold(px, pyy) === undefined && !!followerDutyMenu;
     const opened = followerDutyMenu ? followerDutyMenu.group.label : null;
     let pressed = null;
+    let afterOne = null;
     if (followerDutyMenu && ${JSON.stringify(press)}) {
         drawFollowerDutyMenu();
         const m = followerDutyMenu, b = m._btn;
-        const bx = ${JSON.stringify(press)} === 'work' ? m.x + 6 + b.bw / 2
-                                                       : m.x + 12 + b.bw + b.bw / 2;
-        pressed = handleFollowerDutyMenuTap(bx, b.by + 10);
+        if (${JSON.stringify(press)} === 'reroll' || ${JSON.stringify(press)} === 'reroll1') {
+            pressed = handleFollowerDutyMenuTap(m.x + m.w / 2, b.rby + 10);
+            afterOne = { open: !!followerDutyMenu, armed: !!(followerDutyMenu && followerDutyMenu.confirmReroll),
+                         rolling: followers.filter(f => f.returningToCrystal).length };
+            if (${JSON.stringify(press)} === 'reroll') { drawFollowerDutyMenu(); pressed = handleFollowerDutyMenuTap(m.x + m.w / 2, b.rby + 10); }
+        } else {
+            const bx = ${JSON.stringify(press)} === 'work' ? m.x + 6 + b.bw / 2
+                                                           : m.x + 12 + b.bw + b.bw / 2;
+            pressed = handleFollowerDutyMenuTap(bx, b.by + 10);
+        }
     }
+    const rolled = actors.filter(a => a.returningToCrystal && !a.isFollower);
     const live = followers.filter(f => !f.dead);
     return {
         opened, pressed, stillOpen: !!followerDutyMenu,
@@ -564,6 +573,7 @@ const squadOrder = (U, tab, which, press) => U.run(`(function(){
         brawlers: live.filter(f => f.role === 'brawler').length,
         brawlersWorking: live.filter(f => f.role === 'brawler' && f.duty === 'worker').length,
         said: floatingTexts.map(t => t.text),
+        afterOne, rolledEls: rolled.map(a => a.element),
     };
 })()`);
 
@@ -591,6 +601,26 @@ check('and it orders by role across every element', () => {
     same(r.brawlersWorking, r.brawlers,
          `only ${r.brawlersWorking} of ${r.brawlers} brawlers went to work`);
     same(r.workers, r.brawlers, 'it moved followers outside the role as well');
+});
+
+check('THE ASK: RE-ROLL ALL sends the whole element group back to the Crystal', () => {
+    const r = squadOrder(U, 'elements', 'core', 'reroll');
+    same(r.rolledEls.length, 3, 'all three core followers should be re-rolling: ' + JSON.stringify(r.rolledEls));
+    ok(r.rolledEls.every(e => e === 'core'), 'it re-rolled followers outside the group: ' + r.rolledEls);
+    same(r.core, 0, 'they should have left the follower list on their way home');
+    same(r.stillOpen, false, 'the menu stayed open after the re-roll');
+    ok(r.said.some(t => /RE-ROLLING 3 CORE/.test(t)), 'it should say so once: ' + JSON.stringify(r.said));
+});
+
+check('the first tap only arms it — nobody leaves yet', () => {
+    const r = squadOrder(U, 'elements', 'core', 'reroll1');
+    ok(r.afterOne.open && r.afterOne.armed, 'the first tap should keep the menu open and armed: ' + JSON.stringify(r.afterOne));
+    same(r.afterOne.rolling, 0, 'a single tap already sent followers home');
+});
+
+check('a role group re-rolls by role across elements', () => {
+    const r = squadOrder(U, 'units', 0, 'reroll');
+    same(r.rolledEls.length, 2, 'both brawlers should be re-rolling: ' + JSON.stringify(r.rolledEls));
 });
 
 check('snipers and campers are their own groups', () => {

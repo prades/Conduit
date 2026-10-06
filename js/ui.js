@@ -837,7 +837,7 @@ function drawGestureFeedback() {
 // a dozen followers that is a dozen long presses, and the index already groups
 // them exactly the way the player thinks about them. So the index rows are the
 // handle: one press, one group, one instruction.
-const _DUTY_W = 132, _DUTY_H = 58, _DUTY_BTN_H = 22;
+const _DUTY_W = 132, _DUTY_H = 86, _DUTY_BTN_H = 22;   // two button rows: duty, then RE-ROLL ALL
 
 // Who is in a group. One place, so the count on the menu and the followers it
 // actually switches can never be two different sets.
@@ -854,6 +854,23 @@ function dutyGroupMembers(group) {
 // refuses one follower at a time with its own floating text, so sending ten
 // ineligible followers to work would stack ten identical refusals on the
 // screen. One group, one answer.
+// RE-ROLL THE WHOLE GROUP. "Whenever you click on or long press on a follower
+// element type, you can re-roll them as a group." Every member that can be
+// re-rolled (not a clone, not already walking home) goes back to the Crystal
+// to be made again — the same startFollowerReroll the single-follower ring uses.
+function rerollGroup(group) {
+    const members = dutyGroupMembers(group).filter(a => canRerollFollower(a));
+    if (members.length === 0) {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+            text: "NO " + group.label + " TO RE-ROLL", color: "#f88", life: 100, vy: -0.22, size: 12 });
+        return 0;
+    }
+    members.forEach(a => startFollowerReroll(a, true));
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+        text: "RE-ROLLING " + members.length + " " + group.label + " AT THE CRYSTAL", color: "#0df", life: 110, vy: -0.25, size: 12 });
+    return members.length;
+}
+
 function applyDutyToGroup(group, duty) {
     const members = dutyGroupMembers(group);
     if (members.length === 0) {
@@ -925,7 +942,9 @@ function openFollowerDutyMenu(x, y) {
     // Beside the panel rather than over it, so the row you pressed stays
     // visible and it is obvious which group the menu belongs to.
     const mx = _UI_X + _UI_W + 8;
-    const my = Math.max(4, Math.min(canvas.height - _DUTY_H - 4, group.rowY - 6));
+    // Kept clear of the bottom edge, where the TUTORIAL button (an HTML
+    // element, so always on top of the canvas) would cover its lower row.
+    const my = Math.max(4, Math.min(canvas.height - _DUTY_H - 72 - (SAFE_BOTTOM || 0), group.rowY - 6));
     followerDutyMenu = { group, x: mx, y: my, w: _DUTY_W, h: _DUTY_H };
     return true;
 }
@@ -951,7 +970,8 @@ function drawFollowerDutyMenu() {
     ctx.fillText(working + " working, " + (members.length - working) + " on the line",
                  m.x + 8, m.y + 23);
 
-    const bw = (m.w - 18) / 2, by = m.y + m.h - _DUTY_BTN_H - 6;
+    const rby = m.y + m.h - _DUTY_BTN_H - 6;                 // RE-ROLL ALL row
+    const bw = (m.w - 18) / 2, by = rby - _DUTY_BTN_H - 6;    // duty row above it
     [["TO WORK", m.x + 6], ["TO LINE", m.x + 12 + bw]].forEach(([label, bx], i) => {
         const on = i === 0 ? working === members.length : working === 0;
         ctx.fillStyle = on ? "rgba(0,255,136,0.16)" : "rgba(0,0,0,0.6)";
@@ -962,8 +982,19 @@ function drawFollowerDutyMenu() {
         ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
         ctx.fillText(label, bx + bw / 2, by + _DUTY_BTN_H / 2);
     });
+    // RE-ROLL ALL, full width. It sends the whole group home, so the first tap
+    // only arms it and says so; the second does it.
+    const rollable = members.filter(a => canRerollFollower(a)).length;
+    const armed = !!m.confirmReroll;
+    ctx.fillStyle = armed ? "rgba(0,200,255,0.22)" : "rgba(0,0,0,0.6)";
+    ctx.fillRect(m.x + 6, rby, m.w - 12, _DUTY_BTN_H);
+    ctx.strokeStyle = "#0df"; ctx.lineWidth = armed ? 2 : 1;
+    ctx.strokeRect(m.x + 6, rby, m.w - 12, _DUTY_BTN_H);
+    ctx.fillStyle = rollable ? "#0df" : "#456"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+    ctx.fillText(armed ? "TAP AGAIN: RE-ROLL \u00d7" + rollable : "\u21bb RE-ROLL ALL \u00d7" + rollable,
+                 m.x + m.w / 2, rby + _DUTY_BTN_H / 2);
     ctx.restore();
-    m._btn = { bw, by };
+    m._btn = { bw, by, rby };
 }
 
 // Returns true when the tap was the menu's. Anything else closes it, which is
@@ -979,6 +1010,10 @@ function handleFollowerDutyMenuTap(x, y) {
         if (x >= m.x + 12 + b.bw && x <= m.x + 12 + b.bw * 2) {
             applyDutyToGroup(m.group, "fighter"); followerDutyMenu = null; return true;
         }
+    }
+    if (b && y >= b.rby && y <= b.rby + _DUTY_BTN_H && x >= m.x + 6 && x <= m.x + m.w - 6) {
+        if (!m.confirmReroll) { m.confirmReroll = true; return true; }   // arm, stay open
+        rerollGroup(m.group); followerDutyMenu = null; return true;
     }
     const inside = x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h;
     followerDutyMenu = null;
