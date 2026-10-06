@@ -99,12 +99,31 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r === 0, 'built ' + r + ' with no shards');
     });
 
-    await check('short of shards by day, the player goes to siphon a wall panel no further out than the next zone', () => {
-        fresh(3);
-        const r = run(`(function(){ shardCount = 0; const p = _autoSafePanel(); _autoHack();
-            const z = p ? zoneOfTile(p) : null;
-            return { panel: !!p, safe: p ? z <= nextZoneToTake() : null, tx: player.targetX, px: p && p.x }; })()`);
-        ok(r.panel && r.safe && r.tx === r.px, JSON.stringify(r));
+    await check('short of shards by day, ONE follower is sent to drain a wall panel no further out than the next zone', () => {
+        fresh(4);
+        const r = run(`(function(){ shardCount = 0; _autoHack(); const run_ = followers.filter(f => f.siphonOrder);
+            const p = run_[0] && run_[0].siphonOrder; const z = p ? zoneOfTile(p) : null;
+            return { n: run_.length, safe: p ? z <= nextZoneToTake() : null, job: !!(run_[0] && run_[0].job && run_[0].job.type === 'move' && run_[0].job.target.x === p.x) }; })()`);
+        ok(r.n === 1 && r.safe && r.job, JSON.stringify(r));
+    });
+    await check('a follower ORDERED to a panel drains it', () => {
+        fresh(1);
+        const r = run(`(function(){ _cacheAge = -999; render(); const p = _wallPanelCache.find(t => !t.isDecoy); const f = followers[0];
+            player.x = player.targetX = p.x - 12; player.y = player.targetY = 3; const s0 = shardCount;
+            f.siphonOrder = p; for (let i = 0; i < 170; i++) { f.x = p.x; f.y = p.y + 1; f.job = null; render(); }
+            return { done: !!p.panelActivated, gained: shardCount - s0 }; })()`);
+        ok(r.done && r.gained > 0, JSON.stringify(r));
+    });
+    await check('THE REPORTED CASE: autoplay never moves your character', () => {
+        fresh(6);
+        const r = run(`(function(){ autoplayOn = true; player.x = player.targetX = 3; player.y = player.targetY = 3;
+            shardCount = 0; for (let i = 0; i < 400; i++) render();
+            const day = { x: player.targetX, y: player.targetY };
+            alertActive = true; alertSource = { x: 40, y: 2 }; gameState.phase = 'night'; for (let i = 0; i < 100; i++) render();
+            const night = { x: player.targetX, y: player.targetY };
+            autoplayOn = false; alertActive = false; gameState.phase = 'day'; return { day, night }; })()`);
+        ok(r.day.x === 3 && r.day.y === 3 && r.night.x === 3 && r.night.y === 3, JSON.stringify(r));
+        ok(!/player\.targetX\s*=/.test(rd('js/autoplay.js')), 'autoplay.js still sets the player target');
     });
 
     group('ULTIMATES AND WAVES');

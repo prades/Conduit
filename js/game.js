@@ -1697,7 +1697,9 @@ function render() {
         const t = _wallPanelCache[_wpi];
         if (t.panelActivated) { _wallPanelCache.splice(_wpi, 1); continue; }
         const _pdx=player.x-t.x, _pdy=player.y-t.y;
-        const playerClose = _pdx*_pdx+_pdy*_pdy < 2.25; // 1.5² — player standing at y=1 in front of y=0 panel
+        // A follower ORDERED to siphon this panel counts too (autoplay's runner).
+        const playerClose = _pdx*_pdx+_pdy*_pdy < 2.25 // 1.5² — player standing at y=1 in front of y=0 panel
+            || followers.some(f => !f.dead && f.siphonOrder === t && (f.x - t.x) ** 2 + (f.y - t.y) ** 2 < 2.25);
         if (playerClose && !_siphonActive) {
             _siphonActive = true;
             t.siphonProgress = (t.siphonProgress || 0) + 1;

@@ -10,10 +10,11 @@
 // The instructions, run in this order every AUTOPLAY_THINK frames:
 //
 //   1. NIGHT → FIGHT. While an alarm runs, the squad attacks the enemies near
-//      the alarm, the player moves up behind them, and nothing else happens.
+//      the alarm.
 //   2. DAY → HACK. A team of AUTOPLAY_HACK_TEAM followers walks to the next
 //      nest's hack spot and hacks it (followers can hack when ORDERED to:
-//      `hackOrder`, read in game.js). The player waits a little behind.
+//      `hackOrder`, read in game.js).
+//   It NEVER moves your character — you stay free to go where you like.
 //   3. ALWAYS → BUILD, one pylon per think, while the shards last:
 //        a. a GENERATOR beside every nest you hold that has none,
 //        b. a CONNECTOR beside the frontier nest, reaching toward the next zone,
@@ -24,7 +25,7 @@
 //      AUTOPLAY_ULT_RANGE fires it (the duo ultimate if its partner can).
 //   5. ALWAYS → WORK CREW. About a quarter of the squad works, so kills keep
 //      turning into the shards the building needs; and by day, short of
-//      shards, the player siphons wall panels in zones already taken.
+//      shards, one follower drains wall panels no further out than the next zone.
 //   6. WAVE CLEARED → NEXT WAVE, after a short pause to read the screen.
 const AUTOPLAY_THINK        = 45;
 const AUTOPLAY_HACK_TEAM    = 3;
@@ -55,7 +56,7 @@ function toggleAutoplay() {
 // Hand the squad back: no orders of autoplay's left standing.
 function _autoRelease() {
     for (const f of followers) {
-        if (f.hackOrder) { f.hackOrder = null; if (f.job && f.job.type === "move") f.job = null; f.stance = "follow"; }
+        if (f.hackOrder || f.siphonOrder) { f.hackOrder = null; f.siphonOrder = null; if (f.job && f.job.type === "move") f.job = null; f.stance = "follow"; }
         if (f._autoJob) { f._autoJob = false; if (f.job && (f.job.type === "move" || f.job.type === "attack")) f.job = null; f.stance = "follow"; }
     }
 }
@@ -86,9 +87,6 @@ const _autoTile = (x, y) => (typeof worldTileMap !== "undefined" ? worldTileMap.
 function _autoFree(t) {
     return !!t && t.type === "floor" && !t.pillar && !t.nest && !t.nodeType && !t.capturable && t.y >= 0 && t.y <= 3;
 }
-function _autoMovePlayer(x, y) {
-    player.targetX = x; player.targetY = Math.max(0, Math.min(3, y));
-}
 function _autoNextNest() {
     const z = typeof nextZoneToTake === "function" ? nextZoneToTake() : 1;
     return (typeof _nestCache !== "undefined" ? _nestCache : []).find(n => n.nestZone === z && nestIsHackable(n)) || null;
@@ -100,10 +98,10 @@ function _autoHeldNests() {
 // 1. NIGHT: everyone on the enemies near the alarm.
 function _autoFight() {
     for (const f of followers) if (f.hackOrder) { f.hackOrder = null; if (f.job && f.job.type === "move") f.job = null; f.stance = "follow"; }
+    // Centred on the alarm, not on you: autoplay never moves your character.
     const src = alertSource || player;
-    _autoMovePlayer(src.x - 2, 2);
     const foes = actors.filter(a => isHostileTarget(a) && !a.isWanderer && Math.abs(a.x - src.x) < 12)
-                       .sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y));
+                       .sort((a, b) => Math.hypot(a.x - src.x, a.y - src.y) - Math.hypot(b.x - src.x, b.y - src.y));
     if (!foes.length) return;
     const free = followers.filter(f => !f.dead && f.duty !== "worker" && (!f.job || f._autoJob && f.job.type === "attack" && (!f.job.target || f.job.target.dead)));
     free.forEach((f, i) => { f.job = { type: "attack", target: foes[i % foes.length] }; f._autoJob = true; });
@@ -112,7 +110,7 @@ function _autoFight() {
 // A wall panel worth siphoning: not yet drained, in a zone you hold or the
 // next one to take — a decoy there only starts the night that hacking its nest
 // would have started anyway. Never further out. Nearest first.
-function _autoSafePanel() {
+function _autoSafePanel(nearX) {
     if (typeof _wallPanelCache === "undefined") return null;
     const front = typeof nextZoneToTake === "function" ? nextZoneToTake() : 1;
     let best = null, bd = Infinity;
@@ -120,31 +118,49 @@ function _autoSafePanel() {
         if (t.panelActivated) continue;
         const z = typeof zoneOfTile === "function" ? zoneOfTile(t) : getZoneIndex(Math.floor(t.x));
         if (z > front) continue;
-        const d = Math.abs(t.x - player.x);
+        const d = Math.abs(t.x - nearX);
         if (d < bd) { bd = d; best = t; }
     }
     return best;
 }
 
-// 2. DAY: the hack team to the next nest. Short of shards, the player first
-// siphons a safe wall panel — the building runs on them.
+// 2. DAY: the hack team to the next nest, and — short of shards — one runner
+// to drain the nearest safe wall panel (followers can siphon when ORDERED to:
+// siphonOrder, read in game.js). REPORTED: "it keeps teleporting me to the
+// current zone" — autoplay used to steer YOUR character to every fight, nest
+// and panel, every think, and a far target is a long lerp that reads as a jump.
+// It never touches your character now; the squad goes, you go where you like.
 function _autoHack() {
     const nest = _autoNextNest();
-    const panel = shardCount < AUTOPLAY_SHARD_LOW ? _autoSafePanel() : null;
-    if (!nest) { const home = typeof homePortalTile === "function" ? homePortalTile() : null;
-                 if (panel) _autoMovePlayer(panel.x, panel.y + 1); else if (home) _autoMovePlayer(home.x, 2); return; }
+    _autoSiphon(nest);
+    if (!nest) return;
     const spot = nestHackCentre(nest);
-    if (panel) { player.targetX = panel.x; player.targetY = panel.y + 1; }
-    else _autoMovePlayer(spot.x - 2, 2);
     let team = followers.filter(f => !f.dead && f.hackOrder === nest);
     if (team.length < AUTOPLAY_HACK_TEAM) {
-        const pick = followers.filter(f => !f.dead && !f.hackOrder && f.duty !== "worker" && !f.returningToCrystal)
+        const pick = followers.filter(f => !f.dead && !f.hackOrder && !f.siphonOrder && f.duty !== "worker" && !f.returningToCrystal)
                               .sort((a, b) => (b.health / b.maxHealth) - (a.health / a.maxHealth))
                               .slice(0, AUTOPLAY_HACK_TEAM - team.length);
         pick.forEach(f => { f.hackOrder = nest; f.job = { type: "move", target: { x: spot.x, y: spot.y } }; f.stance = "hold"; });
     }
     // A move order drops when the follower is hurt; send it back to the spot.
     for (const f of followers) if (f.hackOrder === nest && !f.job) { f.job = { type: "move", target: { x: spot.x, y: spot.y } }; f.stance = "hold"; }
+}
+
+function _autoSiphon(nest) {
+    // A drained panel releases its runner.
+    for (const f of followers) if (f.siphonOrder && (f.siphonOrder.panelActivated || f.dead)) {
+        f.siphonOrder = null; if (f.job && f.job.type === "move") f.job = null; f.stance = "follow";
+    }
+    if (shardCount >= AUTOPLAY_SHARD_LOW) return;
+    const near = nest ? nest.x : (typeof homePortalTile === "function" && homePortalTile() ? homePortalTile().x : player.x);
+    const panel = _autoSafePanel(near);
+    if (!panel) return;
+    let runner = followers.find(f => !f.dead && f.siphonOrder);
+    if (!runner) runner = followers.find(f => !f.dead && !f.hackOrder && f.duty !== "worker" && !f.returningToCrystal);
+    if (!runner) return;
+    runner.siphonOrder = panel;
+    if (!runner.job || runner.job.type !== "move" || runner.job.target.x !== panel.x)
+        { runner.job = { type: "move", target: { x: panel.x, y: panel.y + 1 } }; runner.stance = "hold"; }
 }
 
 // 3. BUILD: one thing per think.
@@ -233,7 +249,7 @@ function _autoUltimates() {
 // 5. WORK CREW: keep about a quarter of the squad turning kills into shards.
 function _autoWorkCrew() {
     if (typeof setFollowerDuty !== "function") return;
-    const live = followers.filter(f => !f.dead && !f.hackOrder);
+    const live = followers.filter(f => !f.dead && !f.hackOrder && !f.siphonOrder);
     const want = Math.floor(live.length * AUTOPLAY_WORK_SHARE);
     let have = live.filter(f => f.duty === "worker").length;
     for (const f of live) {
