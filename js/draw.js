@@ -1919,6 +1919,67 @@ function cachedText(text, font, color, x, y) {
     ctx.drawImage(e.cv, x - e.w / 2, y - (e.h - 4), e.w, e.h);
 }
 
+// ── THE SENTINEL TOWER, PRE-RENDERED ─────────────────────
+// Every turret, generator, connector and plain pylon stands on this tower: ~20
+// fills that never change between frames. Rendered once per palette (active,
+// upgraded, dormant) to an offscreen sprite and stamped after that.
+const _towerSprites = new Map();
+const TOWER_SPR_W = 30, TOWER_SPR_H = 64, TOWER_SPR_OX = 11, TOWER_SPR_OY = 58;
+function _drawTowerBody(c, px, base, sFront, sRight, sTop, _isActive, slit) {
+                    const sD=6; // iso depth
+                    // Main tower right face
+                    c.fillStyle=sRight; c.beginPath();
+                    c.moveTo(px+8,base); c.lineTo(px+8+sD,base+sD/2);
+                    c.lineTo(px+8+sD,base-35+sD/2); c.lineTo(px+8,base-35); c.closePath(); c.fill();
+                    // Main tower front face
+                    c.fillStyle=sFront; c.fillRect(px-8,base-35,16,35);
+                    // Main tower top face
+                    c.fillStyle=sTop; c.beginPath();
+                    c.moveTo(px-8,base-35); c.lineTo(px+8,base-35);
+                    c.lineTo(px+8+sD,base-35+sD/2); c.lineTo(px-8+sD,base-35+sD/2); c.closePath(); c.fill();
+                    // Upper parapet right face
+                    c.fillStyle=sRight; c.beginPath();
+                    c.moveTo(px+6,base-35); c.lineTo(px+6+sD,base-35+sD/2);
+                    c.lineTo(px+6+sD,base-48+sD/2); c.lineTo(px+6,base-48); c.closePath(); c.fill();
+                    // Upper parapet front face
+                    c.fillStyle=sFront; c.fillRect(px-6,base-48,12,13);
+                    // Upper parapet top face
+                    c.fillStyle=sTop; c.beginPath();
+                    c.moveTo(px-6,base-48); c.lineTo(px+6,base-48);
+                    c.lineTo(px+6+sD,base-48+sD/2); c.lineTo(px-6+sD,base-48+sD/2); c.closePath(); c.fill();
+                    // Battlements (2 merlons)
+                    const _merls=[{x:px-3.5,w:3.5},{x:px+3.5,w:3.5}];
+                    for (const m of _merls) {
+                        c.fillStyle=sRight; c.beginPath();
+                        c.moveTo(m.x+m.w,base-48); c.lineTo(m.x+m.w+sD*0.5,base-48+sD*0.25);
+                        c.lineTo(m.x+m.w+sD*0.5,base-52+sD*0.25); c.lineTo(m.x+m.w,base-52); c.closePath(); c.fill();
+                        c.fillStyle=_isActive?"#2a3040":"#303540";
+                        c.fillRect(m.x-m.w,base-52,m.w*2,4);
+                        c.fillStyle=sTop; c.beginPath();
+                        c.moveTo(m.x-m.w,base-52); c.lineTo(m.x+m.w,base-52);
+                        c.lineTo(m.x+m.w+sD*0.5,base-52+sD*0.25); c.lineTo(m.x-m.w+sD*0.5,base-52+sD*0.25); c.closePath(); c.fill();
+                    }
+                    // Arrow slit
+                    c.fillStyle=slit; c.fillRect(px-1.5,base-43,3,10); c.fillRect(px-4,base-40,8,3);
+}
+function drawSentinelTower(px, base, sFront, sRight, sTop, isActive, slit) {
+    const key = sFront + "|" + sRight + "|" + sTop + "|" + (isActive ? 1 : 0);
+    let spr = _towerSprites.get(key);
+    if (spr === undefined) {
+        spr = null;
+        const cv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
+        const g = cv && cv.getContext ? cv.getContext("2d") : null;
+        if (g && typeof g.scale === "function") {
+            cv.width = TOWER_SPR_W * 2; cv.height = TOWER_SPR_H * 2; g.scale(2, 2);
+            _drawTowerBody(g, TOWER_SPR_OX, TOWER_SPR_OY, sFront, sRight, sTop, isActive, slit);
+            spr = cv;
+        }
+        _towerSprites.set(key, spr);
+    }
+    if (spr) ctx.drawImage(spr, px - TOWER_SPR_OX, base - TOWER_SPR_OY, TOWER_SPR_W, TOWER_SPR_H);
+    else _drawTowerBody(ctx, px, base, sFront, sRight, sTop, isActive, slit);
+}
+
 // ── THE WAVE MONOLITH (design 8, "Barcode Tablet") ───────
 // A broad, short slab in flat Mandark-cartoon style: near-black faces, a thin
 // purple edge, a bold black outline, on a squat plinth. Its only colour is a

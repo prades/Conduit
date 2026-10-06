@@ -566,23 +566,35 @@ function drawCablesOnTile(tile, px, py) {
     // strokes are BATCHED — one path per style instead of one per piece. In a
     // dense base many cables share a tile (a generator's runs overlap), so the
     // same piece was being stroked again and again.
+    // DEDUPE: in a dense base many cables run along the same tiles (a
+    // generator's runs to ten pylons share their first leg), and every one of
+    // them was stroked on top of the others. One piece per distinct shape, in
+    // the strongest style among those sharing it (live beats dead, then the
+    // wider core). Measured as the biggest single cost in a 66-pylon base.
+    const uniq = new Map();
+    for (const pc of c.pieces) {
+        const d = pc.dirs, k = d.length ? (d[0][0] + "," + d[0][1] + (d[1] ? ";" + d[1][0] + "," + d[1][1] : "")) : "o";
+        const cur = uniq.get(k);
+        const score = (pc.style.glow ? 100 : 0) + (pc.style.dash ? 0 : 10) + pc.style.width;
+        if (!cur || score > cur.score) uniq.set(k, { pc, score });
+    }
     ctx.save();
-    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    // Flat ends and mitred joins: round caps cost an arc per segment, and the
+    // pieces meet edge to edge anyway.
+    ctx.lineCap = "butt"; ctx.lineJoin = "miter";
     // Sleeves: one path, one stroke.
     ctx.strokeStyle = CABLE_CASING; ctx.lineWidth = CABLE_WIDTH; ctx.globalAlpha = 0.85;
-    ctx.beginPath(); for (const pc of c.pieces) addPiece(pc); ctx.stroke();
+    ctx.beginPath(); for (const { pc } of uniq.values()) addPiece(pc); ctx.stroke();
     // Cores: grouped by style.
     const groups = new Map();
-    for (const pc of c.pieces) {
-        const st = pc.style, k = st.core + "|" + st.width + "|" + (st.dash ? st.dash.join(",") : "") + "|" + (st.glow ? 1 : 0);
+    for (const { pc } of uniq.values()) {
+        const st = pc.style, k = st.core + "|" + st.width + "|" + (st.dash ? st.dash.join(",") : "");
         let g = groups.get(k); if (!g) { g = { st, list: [] }; groups.set(k, g); } g.list.push(pc);
     }
     for (const { st, list } of groups.values()) {
         ctx.beginPath(); for (const pc of list) addPiece(pc);
-        // A live cable's glow is a wider, faint stroke underneath — the look
-        // of a blur without the cost of one.
-        if (st.glow) { ctx.globalAlpha = 0.22; ctx.strokeStyle = st.core; ctx.lineWidth = st.width + 4; ctx.stroke(); }
-        ctx.globalAlpha = 1; ctx.strokeStyle = st.core; ctx.lineWidth = st.width;
+        // A live cable is a touch wider instead of carrying a glow.
+        ctx.globalAlpha = 1; ctx.strokeStyle = st.core; ctx.lineWidth = st.width + (st.glow ? 1 : 0);
         if (st.dash) ctx.setLineDash(st.dash);
         ctx.stroke();
         if (st.dash) ctx.setLineDash([]);
@@ -2649,46 +2661,11 @@ function render() {
                 const _isWaveMono = obj.waveMode && !isRelayPylon(obj);
                 if (_isWaveMono) drawWaveMonolith(px, _base, _acol, _dark, _wTier);
                 else {
-                ctx.save();
-                    const sD=6; // iso depth
                     const sFront=_isActive?SENTINEL_FRONT_ACTIVE:obj.upgraded?SENTINEL_FRONT_UPGRADED:SENTINEL_FRONT_DORMANT;
                     const sRight=_isActive?SENTINEL_RIGHT_ACTIVE:obj.upgraded?SENTINEL_RIGHT_UPGRADED:SENTINEL_RIGHT_DORMANT;
                     const sTop=_isActive?SENTINEL_TOP_ACTIVE:obj.upgraded?SENTINEL_TOP_UPGRADED:SENTINEL_TOP_DORMANT;
-                    // Main tower right face
-                    ctx.fillStyle=sRight; ctx.beginPath();
-                    ctx.moveTo(px+8,_base); ctx.lineTo(px+8+sD,_base+sD/2);
-                    ctx.lineTo(px+8+sD,_base-35+sD/2); ctx.lineTo(px+8,_base-35); ctx.closePath(); ctx.fill();
-                    // Main tower front face
-                    ctx.fillStyle=sFront; ctx.fillRect(px-8,_base-35,16,35);
-                    // Main tower top face
-                    ctx.fillStyle=sTop; ctx.beginPath();
-                    ctx.moveTo(px-8,_base-35); ctx.lineTo(px+8,_base-35);
-                    ctx.lineTo(px+8+sD,_base-35+sD/2); ctx.lineTo(px-8+sD,_base-35+sD/2); ctx.closePath(); ctx.fill();
-                    // Upper parapet right face
-                    ctx.fillStyle=sRight; ctx.beginPath();
-                    ctx.moveTo(px+6,_base-35); ctx.lineTo(px+6+sD,_base-35+sD/2);
-                    ctx.lineTo(px+6+sD,_base-48+sD/2); ctx.lineTo(px+6,_base-48); ctx.closePath(); ctx.fill();
-                    // Upper parapet front face
-                    ctx.fillStyle=sFront; ctx.fillRect(px-6,_base-48,12,13);
-                    // Upper parapet top face
-                    ctx.fillStyle=sTop; ctx.beginPath();
-                    ctx.moveTo(px-6,_base-48); ctx.lineTo(px+6,_base-48);
-                    ctx.lineTo(px+6+sD,_base-48+sD/2); ctx.lineTo(px-6+sD,_base-48+sD/2); ctx.closePath(); ctx.fill();
-                    // Battlements (2 merlons)
-                    const _merls=[{x:px-3.5,w:3.5},{x:px+3.5,w:3.5}];
-                    for (const m of _merls) {
-                        ctx.fillStyle=sRight; ctx.beginPath();
-                        ctx.moveTo(m.x+m.w,_base-48); ctx.lineTo(m.x+m.w+sD*0.5,_base-48+sD*0.25);
-                        ctx.lineTo(m.x+m.w+sD*0.5,_base-52+sD*0.25); ctx.lineTo(m.x+m.w,_base-52); ctx.closePath(); ctx.fill();
-                        ctx.fillStyle=_isActive?"#2a3040":"#303540";
-                        ctx.fillRect(m.x-m.w,_base-52,m.w*2,4);
-                        ctx.fillStyle=sTop; ctx.beginPath();
-                        ctx.moveTo(m.x-m.w,_base-52); ctx.lineTo(m.x+m.w,_base-52);
-                        ctx.lineTo(m.x+m.w+sD*0.5,_base-52+sD*0.25); ctx.lineTo(m.x-m.w+sD*0.5,_base-52+sD*0.25); ctx.closePath(); ctx.fill();
-                    }
-                    // Arrow slit
-                    ctx.fillStyle=SENTINEL_SLIT; ctx.fillRect(px-1.5,_base-43,3,10); ctx.fillRect(px-4,_base-40,8,3);
-                ctx.restore();
+                    // Stamped from a pre-rendered sprite (drawSentinelTower in draw.js).
+                    drawSentinelTower(px, _base, sFront, sRight, sTop, _isActive, SENTINEL_SLIT);
                 }
 
                 // ── TOP EFFECTS: glows, orbs, labels ──
