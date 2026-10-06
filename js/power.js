@@ -126,6 +126,82 @@ function nearestDrawableNest(r) {
     return best;
 }
 
+// ── NEST GRIDS & THE NEST SWITCH ─────────────────────────
+// "Connect the power from one nest to the network of another nest, and turn the
+// power from a conquered nest on and off, so you're not drawing it all before
+// the predators approach."
+//
+// GRIDS. Two nests are one grid when a relay linked to one stands within reach
+// of a relay linked to the other — a connector's CONNECTOR_RANGE, or a plain
+// link (getPylonRange) between two generators. A relay switched off does not
+// tie. Pylons still draw through their own relay's nest, but when that nest
+// cannot pay (empty, or switched off) the grid pays from its fullest member.
+// A gold cable on the floor shows each tie.
+//
+// THE SWITCH. Long-press a nest you hold → NEST OFF. Its battery is then not
+// drawn on by anything — it keeps charging — until you turn it back on.
+let _gridLinks = [];      // [{ a, b }] relay pairs that tie two nests' grids
+function nestOnline(n) { return nestIsPowerSource(n) && !n.powerOff; }
+function buildNestGrids() {
+    _gridLinks = [];
+    const nests = (typeof _nestCache !== "undefined" && _nestCache.length) ? _nestCache : world.filter(t => t.nest);
+    const parent = new Map();
+    for (const n of nests) { n._grid = null; parent.set(n, n); }
+    const find = n => { while (parent.get(n) !== n) n = parent.get(n); return n; };
+    if (typeof _pillarCache === "undefined") return;
+    const relays = _pillarCache.filter(r => isRelayPylon(r) && r.pillarTeam === "green" && !r.destroyed && r.health > 0 &&
+                                            r.circuitOn !== false && r.nestConnection && nestIsPowerSource(r.nestConnection));
+    const tied = new Set();
+    for (let i = 0; i < relays.length; i++) {
+        for (let j = i + 1; j < relays.length; j++) {
+            const a = relays[i], b = relays[j], na = a.nestConnection, nb = b.nestConnection;
+            if (na === nb || !parent.has(na) || !parent.has(nb)) continue;
+            const reach = (a.isConnector || b.isConnector) ? CONNECTOR_RANGE : getPylonRange();
+            if (Math.hypot(a.x - b.x, a.y - b.y) > reach) continue;
+            const ra = find(na), rb = find(nb);
+            if (ra !== rb) parent.set(ra, rb);
+            const key = [na.x, na.y, nb.x, nb.y].join(",");
+            if (!tied.has(key)) { tied.add(key); _gridLinks.push({ a, b }); }
+        }
+    }
+    for (const n of nests) n._grid = find(n);
+}
+// Every ONLINE nest in this nest's grid, the nest itself first and then the
+// fullest, which is the order they pay in.
+function gridMembers(src) {
+    if (!src) return [];
+    const root = src._grid || src;
+    const list = (typeof _nestCache !== "undefined" && _nestCache.length) ? _nestCache : world.filter(t => t.nest);
+    const out = list.filter(n => n !== src && (n._grid || n) === root && nestOnline(n))
+                    .sort((x, y) => nestEnergy(y) - nestEnergy(x));
+    return nestOnline(src) ? [src, ...out] : out;
+}
+// Could the grid behind `src` pay `price` in one go?
+function gridCan(src, price) {
+    return gridMembers(src).some(n => nestEnergy(n) >= price + POWER_MIN_RESERVE);
+}
+// Pay `amount` from the grid behind `src`; returns the nest that paid, or null.
+function gridPay(src, amount) {
+    for (const n of gridMembers(src)) if (spendNestEnergy(n, amount)) return n;
+    return null;
+}
+// The best fill (0..1) of any online nest in the grid — for the wave restart.
+function gridBestFill(src) {
+    let best = 0;
+    for (const n of gridMembers(src)) best = Math.max(best, nestEnergy(n) / Math.max(1, nestEnergyMax(n)));
+    return best;
+}
+function toggleNestPower(n) {
+    if (!n || !nestIsPowerSource(n)) return false;
+    n.powerOff = !n.powerOff;
+    recomputePower();
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+        text: n.powerOff ? "NEST OFF \u2014 ITS POWER IS HELD IN RESERVE" : "NEST ON \u2014 POWER AVAILABLE",
+        color: n.powerOff ? "#ffb347" : NEST_COLOUR_CONTROLLED, life: 120, vy: -0.25, size: 12 });
+    return true;
+}
+
 // ── AUTOMATIC LINKS ──────────────────────────────────────
 // "Get rid of the connect-to-nest option and just automatically connect whenever
 // there is a connector or a pylon near it." Every generator and connector you
@@ -251,6 +327,7 @@ function recomputePower() {
     _powerPools = [];
     if (typeof _pillarCache === "undefined") return;
     autoLinkRelays();
+    buildNestGrids();
     for (const t of _pillarCache) {
         if (!needsPower(t)) { t.powered = true; t.powerSource = null; t.powerGen = null; continue; }
         // BOTH ends of the chain are remembered, not just the nest. The wiring
@@ -262,8 +339,7 @@ function recomputePower() {
         t.powerSource = route.source;
         // A wave pylon that ran its pool dry is TRIPPED: it stays off until the
         // pool has refilled to POWER_RESTART_LEVEL, not just above zero.
-        if (t.waveTripped && t.powerSource &&
-            nestEnergy(t.powerSource) >= nestEnergyMax(t.powerSource) * POWER_RESTART_LEVEL) {
+        if (t.waveTripped && t.powerSource && gridBestFill(t.powerSource) >= POWER_RESTART_LEVEL) {
             t.waveTripped = false;
             floatingTexts.push({ x: t.x, y: t.y - 1, text: "WAVE BACK ONLINE", color: "#8fd6ff", life: 70, vy: -0.06 });
         }
@@ -271,8 +347,7 @@ function recomputePower() {
         // Lit means the pool can pay for what this pylon DOES, not merely that it
         // holds something: with 0 < energy < the price of a shot a turret used to
         // look powered and sit silent.
-        t.powered = !!t.powerSource && !t.waveTripped &&
-                    nestEnergy(t.powerSource) >= powerPriceOf(t) + POWER_MIN_RESERVE;
+        t.powered = !!t.powerSource && !t.waveTripped && gridCan(t.powerSource, powerPriceOf(t));
     }
     // The pools worth showing: every one something is drawing on, plus home.
     const seen = new Set();
@@ -304,12 +379,13 @@ function payForShot(t) {
     if (!t) return false;
     const src = t.powerSource || pylonSource(t);
     if (!src) return false;
-    if (!spendNestEnergy(src, POWER_SHOT_COST)) return false;
+    const paid = gridPay(src, POWER_SHOT_COST);
+    if (!paid) return false;
     // A SURGE down the wire. A turret's draw is a spike, not a trickle, and the
     // wiring is the only place the player can see which pylons are costing
     // them — so the round that was just paid for lights its own line.
     t.powerFlow = 1;
-    if (src) src.powerFlow = 1;
+    paid.powerFlow = 1;
     return true;
 }
 
@@ -361,7 +437,7 @@ function waveDrainTick() {
     }
     for (const [src, list] of groups) {
         const cost = POWER_WAVE_DRAIN * (1 + (list.length - 1) * POWER_WAVE_SHARE);
-        if (spendNestEnergy(src, cost)) continue;
+        if (gridPay(src, cost)) continue;
         // Cannot pay. Shed one, then give the rest time before shedding more.
         if (typeof frame !== "undefined" && src._shedAt !== undefined && frame - src._shedAt < POWER_SHED_FRAMES) continue;
         const victim = list[list.length - 1];
@@ -402,7 +478,7 @@ function pylonPowerState(t) {
         return { text: "GENERATOR IS OFF \u2014 TURN IT BACK ON", colour: "#f88" };
     if (!route.feeder && !route.source) return { text: "NO GENERATOR OR CONNECTOR IN REACH", colour: "#f88" };
     if (!route.source) return { text: "FEEDER HAS NO NEST \u2014 LINK ONE", colour: "#f88" };
-    if (!(nestEnergy(route.source) >= powerPriceOf(t) + POWER_MIN_RESERVE)) return { text: "NEST EMPTY", colour: "#ff7755" };
+    if (!gridCan(route.source, powerPriceOf(t))) return { text: route.source.powerOff && gridMembers(route.source).length === 0 ? "NEST SWITCHED OFF" : "NEST EMPTY", colour: "#ff7755" };
     return { text: "POWERED \u00b7 NEST " + pct(route.source), colour: "#8fd6ff" };
 }
 

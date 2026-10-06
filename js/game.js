@@ -641,6 +641,10 @@ function layAllCables() {
     _cableTiles.clear();
     drawPowerChain();
     layMendingCables();
+    // The ties between nest grids: a gold cable between the two relays that
+    // join them (buildNestGrids in power.js).
+    if (typeof _gridLinks !== "undefined")
+        for (const { a, b } of _gridLinks) layCable(a, b, { core: CONNECTOR_COLOR, width: 2, glow: 3 });
 }
 
 // The whole chain, every frame. Each pylon that is drawing gets a cable from
@@ -1464,7 +1468,9 @@ function render() {
                     zoneRespawnTimers[z]--;
                 } else {
                     spawnPredatorForZone(z);
-                    _livePredators++;
+                    // Recounted, not incremented: a zone-3 nymph arrives with
+                    // its pack (maybeSwarm), so one spawn can be three.
+                    _livePredators = livePredatorCount();
                     // Alarm zone: stagger spawns scaled by wave number (higher wave = faster spawns); wanderer zones: slow respawn
                     const _spawnDelay = isAlarmZone ? Math.max(15, 90 - (gameState.nightNumber - 1) * 5) : 240;
                     zoneRespawnTimers[z] = _spawnDelay;
@@ -2303,7 +2309,7 @@ function render() {
                 ctx.fillStyle=_held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM;
                 ctx.font="bold 9px monospace"; ctx.textAlign="center";
                 // Above the gauge, which takes the first 20px over the wall.
-                ctx.fillText(_held?"◈ CONTROLLED":"◇ NEUTRAL",_bCx,wfTL.y-30);
+                ctx.fillText((_held?"◈ CONTROLLED":"◇ NEUTRAL") + (obj.powerOff ? " · OFF" : ""),_bCx,wfTL.y-30);
                 // ── THE LIFE LEVEL ──
                 // What the pylons are drawing out of it, drawn on the nest
                 // itself as a percentage over a bar that empties. A battery the

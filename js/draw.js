@@ -151,9 +151,12 @@ function drawRadialMenu() {
         leftLabel = _gen ? (_off ? "TURN ON" : "TURN OFF") : (_off ? "CLOSE CIRCUIT" : "OPEN CIRCUIT");
         leftAction = "toggle_circuit";
     }
-    // A nest has no order of its own: a live one you HACK by standing in front
-    // of it, and a neutralised one links itself to any generator or connector
-    // nearby (autoLinkRelays in power.js). CONNECT used to be a button here.
+    // A live nest has no order: you HACK it by standing in front of it. A nest
+    // you hold links itself to nearby relays (autoLinkRelays) — and its power
+    // can be switched off and on here (toggleNestPower in power.js).
+    else if (!isPylonTarget && commandNestTarget && nestIsPowerSource(commandNestTarget)) {
+        leftLabel = commandNestTarget.powerOff ? "NEST ON" : "NEST OFF"; leftAction = "toggle_nest";
+    }
     drawRadialButton(commandX-RADIAL_RADIUS, commandY, leftLabel, lHov);
     if (lHov) selectedRadialAction=leftAction;
 
@@ -2017,6 +2020,13 @@ function drawNestGauge(nest, cx, topY, colour) {
     ctx.font = "bold 10px monospace"; ctx.textAlign = "center";
     ctx.fillStyle = col; ctx.globalAlpha = blink;
     ctx.fillText(f <= 0 ? "EMPTY" : pct + "%", cx, y - 4);
+    // Switched off: the level is held, and says so.
+    if (nest.powerOff) {
+        ctx.globalAlpha = 1; ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(x - 1, y - 1, NEST_GAUGE_W + 2, NEST_GAUGE_H + 2);
+        ctx.fillStyle = "#ffb347"; ctx.font = "bold 8px monospace";
+        ctx.fillText("OFF \u2014 HELD", cx, y + NEST_GAUGE_H + 9);
+    }
     ctx.restore();
 }
 

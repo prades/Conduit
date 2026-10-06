@@ -237,6 +237,7 @@ function saveSession() {
             nests, panels, nodes, npcs, waveNpcs,
             mass: serialiseChargedMass(),
             nestStock: world.filter(t => t.nest && t.massStock > 0).map(t => ({ x: t.x, y: t.y, m: t.massStock })),
+            nestOff: world.filter(t => t.nest && t.powerOff).map(t => ({ x: t.x, y: t.y })),
             // Without this a refresh during a wave put the player back in
             // "day" with the alarm gone and the kill count at zero — the wave
             // NUMBER survived in tubecrawler_gamestate, but the wave itself
@@ -398,6 +399,13 @@ function applySession(sess) {
     restoreWaveRecruits(sess.waveNpcs);
     // (Floor nests and cocoons are gone from the game; an older save's
     // `cocoons` and `nestSites` fields are simply not read.)
+    // Which of your nests you switched off.
+    if (Array.isArray(sess.nestOff)) {
+        for (const n of sess.nestOff) {
+            const t = n && typeof getTile === "function" ? getTile(n.x, n.y) : null;
+            if (t && t.nest) t.powerOff = true;
+        }
+    }
     // What the predators have paid into each wall nest so far.
     if (Array.isArray(sess.nestStock)) {
         for (const n of sess.nestStock) {

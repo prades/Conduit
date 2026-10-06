@@ -262,7 +262,7 @@ function executeCommand() {
     commandMode=false; commandPendingTap=false;
     if (!selectedRadialAction) return;
     if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
-    const isNestCmd = selectedRadialAction==="attack_nest";
+    const isNestCmd = selectedRadialAction==="attack_nest"||selectedRadialAction==="toggle_nest";
     if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
     if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;
 
@@ -331,6 +331,10 @@ function executeCommand() {
             if (commandFollowerTarget && !commandFollowerTarget.dead) {
                 toggleFollowerDuty(commandFollowerTarget);
             }
+            break;
+        }
+        case "toggle_nest": {
+            if (commandNestTarget) toggleNestPower(commandNestTarget);
             break;
         }
         case "toggle_circuit": {
