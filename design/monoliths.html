@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Striped Monoliths</title>
+<style>
+  :root { --bg:#0b0a10; --ink:#e6e1ee; --dim:#8a8199; --line:#262033; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family: ui-monospace, Menlo, Consolas, monospace; }
+  header { padding:16px; max-width:900px; }
+  h1 { font-size:16px; letter-spacing:3px; margin:0 0 8px; }
+  p { margin:0 0 6px; color:var(--dim); font-size:12px; line-height:1.55; }
+  p b { color:var(--ink); }
+  .bar { display:flex; flex-wrap:wrap; gap:6px; padding:10px 16px; position:sticky; top:0; background:rgba(11,10,16,0.95); z-index:2; border-bottom:1px solid var(--line); }
+  .bar button { background:#141119; color:var(--ink); border:1px solid var(--line); padding:7px 12px; font:inherit; font-size:12px; letter-spacing:2px; cursor:pointer; border-radius:3px; }
+  .bar button.on { border-color: currentColor; box-shadow: 0 0 10px -2px currentColor inset; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px; padding:12px 16px 24px; }
+  .card { border:1px solid var(--line); border-radius:4px; overflow:hidden; background:#121019; }
+  .card canvas { display:block; width:100%; height:auto; }
+  .cap { padding:8px 10px 10px; }
+  .cap b { display:block; font-size:12px; letter-spacing:2px; }
+  .cap span { display:block; color:var(--dim); font-size:11px; line-height:1.45; margin-top:3px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>WAVE PYLONS &mdash; STRIPED MONOLITHS</h1>
+  <p><b>The brief:</b> a long rectangle with stripes down the side. Mandark cartoon: flat faces, bold black outline, near-black slab with a thin purple edge, and the stripes are the ONLY colour &mdash; the element&rsquo;s. Light runs up the stripes, which is the wave.</p>
+  <p>Each card: the monolith large, then at <b>true in-game size</b> on the floor beside a current pylon and a bug. Pick an element to recolour the stripes. <b>Pick 1&ndash;3 numbers.</b></p>
+</header>
+<div class="bar" id="bar"></div>
+<div class="grid" id="grid"></div>
+<script>
+const ELEMENTS = [
+  { id:"fire", label:"FIRE", color:"#ff5a1f" }, { id:"electric", label:"ELECTRIC", color:"#ffe23a" },
+  { id:"ice", label:"ICE", color:"#9fe3ff" }, { id:"flux", label:"FLUX", color:"#b06bff" },
+  { id:"core", label:"CORE", color:"#22e0b8" }, { id:"toxic", label:"TOXIC", color:"#7dff4a" },
+];
+let EL = ELEMENTS[0];
+const FACE = "#1b1624", SIDE = "#0f0c15", TOP = "#2a2236", EDGE = "#5a3a86", INK = "#000";
+
+// A slab: footprint half-width hw, half-depth hd, height h, standing at (cx, by).
+// Returns the corner points of its two visible faces so stripes can be laid on them.
+function slab(c, cx, by, hw, hd, h, taper) {
+  taper = taper || 0;                 // how much narrower the top is, px each side
+  const L = [cx - hw, by], F = [cx, by + hd], R = [cx + hw, by];
+  const Lt = [cx - hw + taper, by - h], Ft = [cx, by + hd - h - taper * 0.5], Rt = [cx + hw - taper, by - h], Bt = [cx, by - hd - h + taper * 0.5];
+  const poly = (pts, fill) => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) c.lineTo(p[0], p[1]); c.closePath(); c.fillStyle = fill; c.fill(); };
+  poly([L, F, Ft, Lt], FACE); poly([F, R, Rt, Ft], SIDE); poly([Lt, Ft, Rt, Bt], TOP);
+  // purple rim on the leading edge, then the bold outline
+  c.save(); c.strokeStyle = EDGE; c.lineWidth = 1.5; c.beginPath(); c.moveTo(F[0], F[1] - 2); c.lineTo(Ft[0], Ft[1] + 2); c.stroke(); c.restore();
+  c.save(); c.strokeStyle = INK; c.lineWidth = 3; c.lineJoin = "round";
+  c.beginPath(); c.moveTo(L[0], L[1]); c.lineTo(F[0], F[1]); c.lineTo(R[0], R[1]); c.lineTo(Rt[0], Rt[1]); c.lineTo(Bt[0], Bt[1]); c.lineTo(Lt[0], Lt[1]); c.closePath(); c.stroke();
+  c.lineWidth = 1.5; c.beginPath(); c.moveTo(F[0], F[1]); c.lineTo(Ft[0], Ft[1]); c.lineTo(Lt[0], Lt[1]); c.moveTo(Ft[0], Ft[1]); c.lineTo(Rt[0], Rt[1]); c.stroke(); c.restore();
+  return { L, F, R, Lt, Ft, Rt };
+}
+// A point on a face: u across (0 at the outer edge, 1 at the front corner), v up (0..1).
+function onLeft(f, u, v) { const bx = f.L[0] + (f.F[0] - f.L[0]) * u, by = f.L[1] + (f.F[1] - f.L[1]) * u, tx = f.Lt[0] + (f.Ft[0] - f.Lt[0]) * u, ty = f.Lt[1] + (f.Ft[1] - f.Lt[1]) * u; return [bx + (tx - bx) * v, by + (ty - by) * v]; }
+function onRight(f, u, v) { const bx = f.F[0] + (f.R[0] - f.F[0]) * u, by = f.F[1] + (f.R[1] - f.F[1]) * u, tx = f.Ft[0] + (f.Rt[0] - f.Ft[0]) * u, ty = f.Ft[1] + (f.Rt[1] - f.Ft[1]) * u; return [bx + (tx - bx) * v, by + (ty - by) * v]; }
+// A glowing stripe on a face from v0 to v1 at across-position u, width w px.
+function stripe(c, on, f, u, v0, v1, w, col, t, run) {
+  const [x0, y0] = on(f, u, v0), [x1, y1] = on(f, u, v1);
+  c.save(); c.lineCap = "butt"; c.strokeStyle = col; c.lineWidth = w; c.globalAlpha = 0.85; c.shadowColor = col; c.shadowBlur = 6;
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+  if (run) { // light running up the stripe: the wave
+    const k = (t * 0.6 + u) % 1; const [px, py] = on(f, u, v0 + (v1 - v0) * k), [qx, qy] = on(f, u, Math.min(v1, v0 + (v1 - v0) * (k + 0.12)));
+    c.globalAlpha = 1; c.strokeStyle = "#fff"; c.lineWidth = Math.max(1, w * 0.5); c.shadowBlur = 10; c.beginPath(); c.moveTo(px, py); c.lineTo(qx, qy); c.stroke(); }
+  c.restore();
+}
+function base(c, cx, by) { // a squat black plinth
+  const f = slab(c, cx, by, 24, 12, 6); return f;
+}
+
+const DESIGNS = [
+  { n:"1 · THE SLAB", d:"A plain tall slab with one wide stripe down the front and one down the side.",
+    draw(c, cx, by, col, t) { base(c, cx, by); const f = slab(c, cx, by - 6, 14, 7, 78);
+      stripe(c, onLeft, f, 0.5, 0.06, 0.94, 4, col, t, true); stripe(c, onRight, f, 0.5, 0.06, 0.94, 3, col, t + 0.5, true); } },
+  { n:"2 · TWIN RAILS", d:"Two thin stripes down each face, like the rails a charge rides.",
+    draw(c, cx, by, col, t) { base(c, cx, by); const f = slab(c, cx, by - 6, 14, 7, 80);
+      for (const u of [0.32, 0.68]) { stripe(c, onLeft, f, u, 0.05, 0.95, 2.2, col, t + u, true); stripe(c, onRight, f, u, 0.05, 0.95, 1.8, col, t + u + 0.3, true); } } },
+  { n:"3 · TRIPLE BARS", d:"Three bold stripes down the front face only; the side is bare black.",
+    draw(c, cx, by, col, t) { base(c, cx, by); const f = slab(c, cx, by - 6, 15, 7, 76);
+      for (const u of [0.22, 0.5, 0.78]) stripe(c, onLeft, f, u, 0.06, 0.94, 2.6, col, t + u, true); } },
+  { n:"4 · DASHED SIGNAL", d:"One stripe broken into dashes that light in turn, climbing like a signal meter.",
+    draw(c, cx, by, col, t) { base(c, cx, by); const f = slab(c, cx, by - 6, 14, 7, 80);
+      const n = 8, lit = Math.floor((t * 4) % (n + 2));
+      for (let i = 0; i < n; i++) { const v0 = 0.06 + i * 0.11, v1 = v0 + 0.07;
+        c.save(); c.globalAlpha = i < lit ? 1 : 0.25; stripe(c, onLeft, f, 0.5, v0, v1, 4, col, t, false); stripe(c, onRight, f, 0.5, v0, v1, 3, col, t, false); c.restore(); } } },
+  { n:"5 · SLOTTED", d:"A slab with a tall slot cut clean through the middle, a stripe either side of it. Hollow.",
+    draw(c, cx, by, col, t) { base(c, cx, by); const f = slab(c, cx, by - 6, 15, 7, 80);
+      const a = onLeft(f, 0.42, 0.1), b = onLeft(f, 0.58, 0.1), b2 = onLeft(f, 0.58, 0.88), a2 = onLeft(f, 0.42, 0.88);
+      c.save(); c.fillStyle = "#04030a"; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineTo(b2[0], b2[1]); c.lineTo(a2[0], a2[1]); c.closePath(); c.fill();
+      c.fillStyle = col; c.globalAlpha = 0.25 + 0.15 * Math.sin(t * 3); c.fill(); c.restore();
+      c.save(); c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineTo(b2[0], b2[1]); c.lineTo(a2[0], a2[1]); c.closePath(); c.stroke(); c.restore();
+      stripe(c, onLeft, f, 0.22, 0.06, 0.94, 2.4, col, t, true); stripe(c, onLeft, f, 0.78, 0.06, 0.94, 2.4, col, t + 0.4, true); stripe(c, onRight, f, 0.5, 0.06, 0.94, 2.4, col, t + 0.2, true); } },
+  { n:"6 · TAPERED SPIRE", d:"The slab narrows toward the top and its stripes narrow with it, to a point of light.",
+    draw(c, cx, by, col, t) { base(c, cx, by); const f = slab(c, cx, by - 6, 15, 7, 86, 6);
+      for (const u of [0.35, 0.65]) stripe(c, onLeft, f, u, 0.05, 0.96, 2.2, col, t + u, true); stripe(c, onRight, f, 0.5, 0.05, 0.96, 2, col, t, true);
+      const tip = onLeft(f, 1, 1); c.save(); c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 12; c.beginPath(); c.arc(tip[0], tip[1] - 4, 3, 0, Math.PI * 2); c.fill(); c.restore(); } },
+  { n:"7 · CAPPED", d:"A slab with a heavier cap block on top; the stripes run up and stop under the cap.",
+    draw(c, cx, by, col, t) { base(c, cx, by); const f = slab(c, cx, by - 6, 13, 6, 70);
+      stripe(c, onLeft, f, 0.5, 0.06, 0.96, 3.5, col, t, true); stripe(c, onRight, f, 0.5, 0.06, 0.96, 2.8, col, t + 0.5, true);
+      slab(c, cx, by - 76, 17, 8.5, 10); } },
+  { n:"8 · BARCODE TABLET", d:"A broader, shorter tablet with many thin stripes of different widths, like a barcode.",
+    draw(c, cx, by, col, t) { base(c, cx, by); const f = slab(c, cx, by - 6, 19, 9.5, 62);
+      const bars = [[0.12, 1.2], [0.2, 2.6], [0.3, 1], [0.38, 1.8], [0.5, 3.2], [0.6, 1], [0.68, 2], [0.78, 1.2], [0.88, 2.4]];
+      for (const [u, w] of bars) stripe(c, onLeft, f, u, 0.08, 0.92, w, col, t + u * 2, false);
+      const k = (t * 0.7) % 1, a = onLeft(f, 0.05, 0.08 + k * 0.84), b = onLeft(f, 0.95, 0.08 + k * 0.84);
+      c.save(); c.strokeStyle = "#fff"; c.globalAlpha = 0.7; c.lineWidth = 1.2; c.shadowColor = col; c.shadowBlur = 8; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); c.restore();
+      stripe(c, onRight, f, 0.5, 0.08, 0.92, 2.2, col, t, true); } },
+];
+
+const W = 200, H = 270;
+const grid = document.getElementById("grid");
+const cards = DESIGNS.map(d => {
+  const card = document.createElement("div"); card.className = "card";
+  const cv = document.createElement("canvas"); cv.width = W * 2; cv.height = H * 2;
+  const cap = document.createElement("div"); cap.className = "cap"; cap.innerHTML = `<b>${d.n}</b><span>${d.d}</span>`;
+  card.appendChild(cv); card.appendChild(cap); grid.appendChild(card); return { d, c: cv.getContext("2d") };
+});
+const bar = document.getElementById("bar");
+for (const e of ELEMENTS) { const b = document.createElement("button"); b.textContent = e.label; b.style.color = e.color;
+  b.onclick = () => { EL = e; for (const x of bar.children) x.classList.toggle("on", x === b); }; if (e === EL) b.classList.add("on"); bar.appendChild(b); }
+function floorTiles(c, cx, cy, s) {
+  c.save(); c.strokeStyle = "rgba(90,140,200,0.25)"; c.lineWidth = 1;
+  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -0.5], [0, 0.5]]) { const x = cx + dx * 30 * s, y = cy + dy * 30 * s;
+    c.beginPath(); c.moveTo(x - 30 * s, y); c.lineTo(x, y + 15 * s); c.lineTo(x + 30 * s, y); c.lineTo(x, y - 15 * s); c.closePath(); c.stroke(); }
+  c.restore();
+}
+function frame(ts) {
+  const t = ts / 1000;
+  for (const { d, c } of cards) {
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W * 2, H * 2);
+    // TOP: large
+    c.setTransform(2, 0, 0, 2, 0, 0);
+    const g = c.createRadialGradient(W / 2, 150, 10, W / 2, 150, 120); g.addColorStop(0, "#1a1426"); g.addColorStop(1, "#0b0a10");
+    c.fillStyle = g; c.fillRect(0, 0, W, 175);
+    c.save(); c.translate(W / 2, 0); c.scale(1.45, 1.45); c.translate(-W / 2, 0); d.draw(c, W / 2, 112, EL.color, t); c.restore();
+    // BOTTOM: true in-game size
+    c.fillStyle = "#0e1622"; c.fillRect(0, 175, W, H - 175);
+    floorTiles(c, 90, 245, 1);
+    c.save(); c.translate(90, 0); c.scale(0.62, 0.62); c.translate(-90, 0); d.draw(c, 90, 245 / 0.62, EL.color, t); c.restore();
+    c.fillStyle = "#1a2030"; c.fillRect(146, 199, 14, 40); c.fillStyle = "#0d1520"; c.fillRect(160, 202, 5, 37);
+    c.fillStyle = "#0f8"; c.beginPath(); c.arc(153, 193, 3, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "#000"; c.beginPath(); c.ellipse(32, 239, 9, 4, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "#8a8199"; c.font = "9px monospace"; c.fillText("true in-game size", 6, 187);
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
