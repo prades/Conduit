@@ -57,6 +57,9 @@ async function loadConfig() {
             tile.waveMode          = saved.waveMode;
             tile.attackModeElement = saved.attackModeElement;
             tile.attackModeColor   = saved.attackModeColor;
+            // Older saves did not keep these; a turret without them never fired.
+            tile.attackRange       = saved.attackRange || TURRET_RANGE;
+            tile.attackPower       = saved.attackPower || TURRET_POWER;
             tile.seasoned          = saved.seasoned;
             tile.upgraded          = saved.upgraded;
             tile.isGenerator       = !!saved.isGenerator;

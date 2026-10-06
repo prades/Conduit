@@ -2209,7 +2209,7 @@ function turretTarget(obj) {
     // and the pylons on screen are not few.
     if (obj._tScan === undefined || frame - obj._tScan >= 6 || (obj._tTarget && obj._tTarget.dead)) {
         obj._tScan = frame;
-        let best = null, bd2 = Math.pow((obj.attackRange || 2.5) * TURRET_TRACK_RANGE_MULT, 2);
+        let best = null, bd2 = Math.pow((obj.attackRange || TURRET_RANGE) * TURRET_TRACK_RANGE_MULT, 2);
         for (const a of actors) {
             if (!a || a.dead || !isHostileTarget(a)) continue;
             const dx = a.x - obj.x, dy = a.y - obj.y, d2 = dx * dx + dy * dy;

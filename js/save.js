@@ -34,6 +34,8 @@ function savePylons() {
             attackMode: !!t.attackMode, waveMode: !!t.waveMode,
             attackModeElement: t.attackModeElement || null,
             attackModeColor: t.attackModeColor || null,
+            // Without these a reloaded turret could never fire (see TURRET_RANGE).
+            attackRange: t.attackRange || null, attackPower: t.attackPower || null,
             seasoned: t.seasoned || 0,
             upgraded: !!t.upgraded,
             isGenerator: !!t.isGenerator,

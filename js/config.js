@@ -300,7 +300,18 @@ const ALERT_DURATION = 600; // 10 seconds at 60fps
 // after they step out, so the edge of the zone does not stutter.
 // A turret-mode pylon wears a gun that tracks anything hostile inside
 // attackRange x this.
-const TURRET_TRACK_RANGE_MULT = 1.6;
+// THE TURRET'S REACH, in one place. REPORTED (again): "I still don't
+// understand why the turrets do not fire at enemies." Measured: a page reload
+// restored every turret WITHOUT attackRange or attackPower — savePylons never
+// wrote them — so the firing check compared against undefined, matched
+// nothing, and the turret never fired again; the gun still tracked, because
+// the aim used a 2.5 fallback. Every read now falls back to these, and the save
+// keeps them.
+const TURRET_RANGE = 3;
+const TURRET_POWER = 15;
+// The gun turns toward a target a little before it is in range — only a little,
+// so it does not swing onto things it cannot hit (which read as "not firing").
+const TURRET_TRACK_RANGE_MULT = 1.2;
 // Every turret round hits this much harder than the pylon's base attack power.
 // REPORTED twice: turrets "do not do any damage". Measured: one slow bolt every
 // 1.5s for ~26 — 16 a second, against predators with 60 HP in zone 1 and up to

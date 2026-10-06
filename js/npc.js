@@ -137,7 +137,7 @@ function updateRTSNPC(actor) {
             if (!p.isGenerator && !p.isConnector && isWaveKind(p.chosenKind)) { p.waveMode = true; p.attackMode = false; }
             p.chosenElement = null; p.chosenColor = null; p.chosenKind = null;
             p.attackFireTimer = 0;
-            p.attackRange = 2.5;
+            p.attackRange = TURRET_RANGE;
             p.attackPower = (actor.stats?.specialAttack||10) * 1.2;
             p.pendingUpgrade = false;
             p.upgradeFollower = null;
@@ -177,7 +177,7 @@ function updateRTSNPC(actor) {
                     p.isGenerator=(p.chosenElement===GENERATOR_ID);
                     p.isConnector=(p.chosenElement===CONNECTOR_ID);
                     if (p.isConnector && p.circuitOn === undefined) p.circuitOn = true;
-                    p.attackPower=15; p.attackRange=2.5;
+                    p.attackPower=TURRET_POWER; p.attackRange=TURRET_RANGE;
                     p.attackFireTimer=0; p.pulseTimer=0;
                     if (!p.isGenerator && !p.isConnector && isWaveKind(p.chosenKind)) { p.waveMode = true; p.attackMode = false; }
                     p.chosenElement=null; p.chosenColor=null; p.chosenKind=null;

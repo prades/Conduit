@@ -244,6 +244,27 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.hurt > 0, 'its bolts did no damage');
         ok(/^PLAIN ROUNDS/.test(r.state), 'INFO should say plain rounds: ' + r.state);
     });
+    await check('THE REPORTED CASE: a turret restored from a save still fires', () => {
+        // savePylons never wrote attackRange / attackPower, so after a reload
+        // the range check compared against undefined and no turret ever fired.
+        const r = run(`(function(){
+            const row = world.filter(t => t.type === 'floor' && t.y === 3 && t.x >= 4 && !t.nest && !t.nodeType).sort((a,b) => a.x - b.x);
+            world.forEach(t => { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; });
+            const t = row[3];
+            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 999, maxHealth: 999, attackMode: true, attackModeElement: 'fire', attackFireTimer: 0 });
+            delete t.attackRange; delete t.attackPower;               // an OLD save: neither was kept
+            actors.length = 0; turretShots.length = 0;
+            const S = SPECIES['ant']; const f = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), t.x + 1, t.y);
+            f.team = 'red'; f.health = 5000; f.maxHealth = 5000; actors.push(f);
+            _cacheAge = -999; let shots = 0;
+            for (let i = 0; i < 200; i++) { f.x = t.x + 1; f.y = t.y; const l = t._lastShotFrame; render(); if (t._lastShotFrame !== l) shots++; }
+            t.attackRange = 3; t.attackPower = 15; savePylons();
+            const saved = JSON.parse(localStorage.getItem('tubecrawler_pylons')).find(s => s.x === t.x && s.y === t.y);
+            return { shots, hurt: 5000 - f.health, keeps: saved.attackRange === 3 && saved.attackPower === 15 }; })()`);
+        ok(r.shots > 0 && r.hurt > 0, 'a turret with no saved range never fired: ' + JSON.stringify(r));
+        ok(r.keeps, 'the save still drops range and power');
+        ok(/tile\.attackRange\s+= saved\.attackRange \|\| TURRET_RANGE;/.test(rd('js/init.js')), 'the reload does not restore them');
+    });
     await check('a charged round hits harder than a plain one', () => {
         ok(run('TURRET_PLAIN_MULT') < 1, 'plain rounds should be weaker');
         ok(/\* \(charged \? 1 : TURRET_PLAIN_MULT\)/.test(rd('js/game.js')), 'the attack pass does not scale plain rounds');

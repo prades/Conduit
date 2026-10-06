@@ -1238,7 +1238,7 @@ function _hasteOf(m) { return typeof stormHaste === "function" ? stormHaste(m) :
 // tier, and a bite out of the target's max HP so it counts against big ones.
 function turretRoundDamage(t, target) {
     const tier = pylonNetworkTier(t);
-    const base = (t.attackPower || 12) * TURRET_DAMAGE_MULT * (1 + TURRET_TIER_BONUS * tier);
+    const base = (t.attackPower || TURRET_POWER) * TURRET_DAMAGE_MULT * (1 + TURRET_TIER_BONUS * tier);
     return base + TURRET_MAXHP_SHARE * ((target && target.maxHealth) || 0);
 }
 
@@ -1937,7 +1937,9 @@ function render() {
         t.attackFireTimer = Math.min(_every, (t.attackFireTimer||0) + 1);
         if (t.attackFireTimer < _every) return;
         // Find nearest enemy within range — squared distance avoids sqrt for non-targets
-        let nearest=null, bd2=t.attackRange*t.attackRange;
+        // Fallback for a turret restored from a save without its range.
+        const _range = t.attackRange || TURRET_RANGE;
+        let nearest=null, bd2=_range*_range;
         actors.forEach(a=>{
             if (isHostileTarget(a)) {
                 const dx=a.x-t.x, dy=a.y-t.y, d2=dx*dx+dy*dy;
@@ -2927,7 +2929,7 @@ function render() {
                 // and an unpowered turret covers nothing.
                 if (obj.attackMode && !_dark) {
                     ctx.save(); ctx.globalAlpha=0.08+_pulse*0.08; ctx.strokeStyle=_acol; ctx.lineWidth=2;
-                    ctx.beginPath(); ctx.arc(px,_base-20,obj.attackRange*TILE_W*0.5,0,Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(px,_base-20,(obj.attackRange||TURRET_RANGE)*TILE_W*0.5,0,Math.PI*2); ctx.stroke();
                     ctx.restore();
                 }
 

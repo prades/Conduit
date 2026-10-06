@@ -179,7 +179,7 @@ function _executeBuildInstant(el, t, kind) {
     if (isPylonTypeUnlocked(el.id)) {
         t.attackMode=true; t.waveMode=false;
         t.attackModeElement=el.id; t.attackModeColor=el.color;
-        t.attackPower=15; t.attackRange=2.5;
+        t.attackPower=TURRET_POWER; t.attackRange=TURRET_RANGE;
         t.chosenElement=el.id; t.chosenColor=el.color;
         t.isGenerator=(el.id===GENERATOR_ID);
         t.isConnector=(el.id===CONNECTOR_ID); t.circuitOn=true;
