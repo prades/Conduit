@@ -312,7 +312,18 @@ const TURRET_DAMAGE_MULT  = 2.5;
 const TURRET_FIRE_FRAMES  = 45;     // 0.75s between rounds
 const TURRET_TIER_BONUS   = 0.35;   // +35% per network tier (I, II, III)
 const TURRET_MAXHP_SHARE  = 0.05;   // + 5% of the target's max HP
-const TURRET_TRACER_FRAMES = 8;     // how long the shot's beam stays on screen
+// REPORTED: "the turrets are 100% not firing". A turret with no generator or
+// connector in reach had no power, and an unpowered turret never fired — so
+// every turret built before a generator stood silent. Now a turret ALWAYS
+// fires. Fed by a generator, each round is paid for and CHARGED (full damage);
+// with no power, or an empty pool, it fires PLAIN rounds at TURRET_PLAIN_MULT.
+const TURRET_PLAIN_MULT   = 0.7;
+// The round is a glowing bolt that flies from the gun and HOMES on its target,
+// so it cannot miss; the damage lands when it arrives.
+const TURRET_SHOT_SPEED   = 0.3;    // tiles a frame
+const TURRET_MUZZLE_Z     = 52;     // px above the floor the bolt leaves from
+const TURRET_HIT_Z        = 16;     // px above the floor it strikes
+let turretShots = [];
 const ELECTRIC_HASTE = { 1: 1.35, 2: 1.6, 3: 1.9 };
 // REPORTED: "the tier 3 effect needs to take effect near the pylons". It used
 // to apply only on the strip along a link between two WAVE pylons. Now every

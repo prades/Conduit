@@ -53,7 +53,9 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('THE ASK: turned OFF, every pylon it feeds loses power', () => {
         const r = board({ genOff: true });
         ok(!r.turret && !r.wave, 'pylons stayed lit with the generator off: ' + JSON.stringify(r));
-        ok(r.firing === 0 && r.waving === 0, 'they are still counted as firing or waving');
+        ok(r.waving === 0, 'the wave pylon is still counted as waving');
+        // A turret keeps shooting, plain rounds, rather than going silent.
+        ok(r.firing === 1, 'the turret should still fire plain rounds with the generator off');
     });
     await check('turned back ON, they come back', () => {
         board({ genOff: true });
@@ -130,13 +132,6 @@ function ok(c, m) { if (!c) throw new Error(m); }
             ok(r.arcs <= 1, 'something round besides the bolt head is drawn at ' + d + ' (' + r.arcs + ' arcs)');
         }
     });
-    await check('a shot draws a beam to where it landed, and fades', () => {
-        const beam = s => draw(s).lines.filter(([x, y]) => Math.abs(x - 520) < 2).length;
-        // _shotAt two tiles along +x: screen (400 + 2*60, ...) = x 520.
-        const at = 't._shotAt = { x: t.x + 2, y: t.y };';
-        ok(beam(at + ' t._lastShotFrame = 999;') >= 1, 'no beam right after a shot');
-        ok(beam(at + ' t._lastShotFrame = 1000 - TURRET_TRACER_FRAMES;') === 0, 'the beam never fades');
-    });
     await check('it ignores a target past its tracking range, and sweeps instead', () => {
         const a = draw(foe(6, 0) + ' t._tAng = 0.1;');
         ok(a.dashed === 0, 'it locked onto something far away');
@@ -189,12 +184,66 @@ function ok(c, m) { if (!c) throw new Error(m); }
             networkStrength.fire = keep; return { a, b }; })()`);
         ok(Math.abs(r.b / r.a - (1 + 3 * run('TURRET_TIER_BONUS'))) < 1e-9, JSON.stringify(r));
     });
-    await check('the first round goes the moment a foe steps in, and it lands at once', () => {
-        const G = rd('js/game.js');
-        ok(/t\.attackFireTimer = Math\.min\(TURRET_FIRE_FRAMES/.test(G), 'the timer does not wait at full');
-        const at = G.indexOf('const _dmg = turretRoundDamage(t, nearest);');
-        ok(at > 0 && /applyDamage\(nearest, _dmg/.test(G.slice(at, at + 600)), 'the round is not applied on the spot');
-        ok(!/spawnFollowerProjectile/.test(G.slice(at - 2500, at + 600)), 'turrets still fire a dodgeable bolt');
+    await check('the first round goes the moment a foe steps in', () => {
+        ok(/t\.attackFireTimer = Math\.min\(TURRET_FIRE_FRAMES/.test(rd('js/game.js')), 'the timer does not wait at full');
+    });
+
+    group('THE BOLT');
+
+    // REPORTED: "the turrets are 100% not firing. Can you make it to where they
+    // fire a projectile and it does damage."
+    const bolt = (opts) => run(`(function(){
+        turretShots.length = 0;
+        const foe = { x: 12, y: 3, dead: false, team: 'red', health: 500, maxHealth: 500, hitFlash: 0 };
+        const keepHost = isHostileTarget; isHostileTarget = a => a === foe;
+        const keepDmg = applyDamage; let hit = null;
+        applyDamage = (tg, d) => { hit = { tg: tg === foe, d }; tg.health -= d; };
+        try {
+            turretShots.push({ x: 8, y: 3, z: TURRET_MUZZLE_Z, target: foe, dmg: 40, charged: true, el: 'fire', col: '#f50', life: 120, src: {} });
+            let frames = 0, z0 = turretShots[0].z;
+            while (turretShots.length && frames < 200) {
+                if (${!!(opts && opts.dodge)}) { foe.y += 0.05; }
+                if (${!!(opts && opts.dies)} && frames === 3) foe.dead = true;
+                turretShotsTick(); frames++;
+            }
+            return { frames, hit, hp: foe.health, left: turretShots.length };
+        } finally { applyDamage = keepDmg; isHostileTarget = keepHost; }
+    })()`);
+    await check('THE ASK: a turret round is a projectile that flies, then does its damage on arrival', () => {
+        const r = bolt();
+        ok(r.hit && r.hit.tg && r.hit.d === 40, 'it never landed: ' + JSON.stringify(r));
+        ok(r.frames > 5, 'it landed on the frame it was fired: it should fly (' + r.frames + ' frames)');
+        ok(r.left === 0, 'the bolt is still in the air after landing');
+    });
+    await check('it homes, so a target that moves is still hit', () => {
+        const r = bolt({ dodge: true });
+        ok(r.hit && r.hp === 460, JSON.stringify(r));
+    });
+    await check('a target that dies first leaves the bolt to fizzle, doing nothing', () => {
+        const r = bolt({ dies: true });
+        ok(!r.hit && r.left === 0, JSON.stringify(r));
+    });
+    await check('the turret fires it — powered or NOT', () => {
+        const r = run(`(function(){
+            const row = world.filter(t => t.type === 'floor' && t.y === 3 && t.x >= 4 && !t.nest && !t.nodeType).sort((a,b) => a.x - b.x);
+            world.forEach(t => { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.waveTripped = false; t.nestConnection = null; });
+            const t = row[3];
+            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 999, maxHealth: 999, attackMode: true, attackModeElement: 'fire', attackPower: 20, attackRange: 2.5, attackFireTimer: 0 });
+            actors.length = 0; turretShots.length = 0;
+            const S = SPECIES['ant']; const f = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), t.x + 1.5, t.y);
+            f.team = 'red'; f.health = 5000; f.maxHealth = 5000; actors.push(f);
+            _cacheAge = -999; let flew = 0;
+            for (let i = 0; i < 200; i++) { f.x = t.x + 1.5; f.y = t.y; render(); flew = Math.max(flew, turretShots.length); }
+            return { powered: t.powered, flew, hurt: 5000 - f.health, state: pylonPowerState(t).text };
+        })()`);
+        ok(r.powered === false, 'fixture: no generator, so it should have no power');
+        ok(r.flew >= 1, 'no bolt was ever in the air');
+        ok(r.hurt > 0, 'its bolts did no damage');
+        ok(/^PLAIN ROUNDS/.test(r.state), 'INFO should say plain rounds: ' + r.state);
+    });
+    await check('a charged round hits harder than a plain one', () => {
+        ok(run('TURRET_PLAIN_MULT') < 1, 'plain rounds should be weaker');
+        ok(/\* \(charged \? 1 : TURRET_PLAIN_MULT\)/.test(rd('js/game.js')), 'the attack pass does not scale plain rounds');
     });
 
     group('the index');

@@ -502,6 +502,16 @@ function pylonPowerState(t) {
     // What recomputePower settled on, so a pylon lit down the chain reads as
     // powered rather than as having no generator of its own.
     const route = t.powerSource ? { feeder: t.powerGen, source: t.powerSource } : powerRoute(t);
+    // A turret still FIRES without power — plain rounds — so its readout says
+    // that first, then why the rounds are not charged.
+    if (t.attackMode && !(route.source && gridCan(route.source, POWER_SHOT_COST))) {
+        const why = !route.source && _genPylons.some(g => g.circuitOn === false && g !== t &&
+                        Math.hypot(g.x - t.x, g.y - t.y) <= getPylonRange()) ? "GENERATOR IS OFF"
+                  : !route.source ? (route.feeder ? "FEEDER HAS NO NEST" : "NO GENERATOR OR CONNECTOR IN REACH")
+                  : "NEST EMPTY";
+        return { text: "PLAIN ROUNDS \u2014 " + why, colour: "#ffb070" };
+    }
+    if (t.attackMode) return { text: "POWERED \u00b7 CHARGED ROUNDS \u00b7 NEST " + pct(route.source), colour: "#8fd6ff" };
     // A generator in reach that has been turned off is the likeliest reason.
     if (!route.source && _genPylons.some(g => g.circuitOn === false && g !== t &&
             Math.hypot(g.x - t.x, g.y - t.y) <= getPylonRange()))

@@ -425,7 +425,7 @@ function nextWave() {
     // ── Defer all heavy world work so the browser gets a frame to breathe ──
     setTimeout(() => {
         // ── Clear leftover game objects from previous wave ──
-        projectiles=[]; fragments=[]; smoke=[]; followerProjectiles=[];
+        projectiles=[]; fragments=[]; smoke=[]; followerProjectiles=[]; turretShots=[];
         elementEffects=[]; floatingTexts=[]; groundItems=[];
         if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
         if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
@@ -528,7 +528,7 @@ function restartGame() {
     // Full reset
     world=[];worldTileMap=new Map();actors=[];followers=[];capturedNodes=[];signalTowers=[];
     ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
-    projectiles=[];fragments=[];smoke=[];shards=[];elementEffects=[];floatingTexts=[];followerProjectiles=[];clearDNA();
+    projectiles=[];fragments=[];smoke=[];shards=[];elementEffects=[];floatingTexts=[];followerProjectiles=[];turretShots=[];clearDNA();
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
     pendingPillarDestruction=[];respawnQueue=[];

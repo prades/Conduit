@@ -418,7 +418,7 @@ const TUTS = [
         // the step ends when the PYLONS kill it.
         id:    'pylonkill',
         title: 'KILL WITH YOUR PYLONS',
-        body:  'Pylons fight for you. An ATTACK pylon shoots enemies near it, paying from a nest through a generator or closed connector. Keep one element turret and let the bug sent to it die to your pylons. Need a pylon? BUILD costs ' + PYLON_BUILD_COST + ' shards.',
+        body:  'Pylons fight for you. An ATTACK pylon shoots enemies near it \u2014 harder with a generator feeding it, but it fires either way. Keep one element turret and let the bug sent to it die to your pylons. Need a pylon? BUILD costs ' + PYLON_BUILD_COST + ' shards.',
         icon:  '\u2694',
         // Sends a bug to the turret \u2014 a fixed number, never endless.
         tick: () => {

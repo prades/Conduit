@@ -972,6 +972,55 @@ function electricHasteTick() {
     }
 }
 
+// THE TURRET'S BOLT. Flies at TURRET_SHOT_SPEED and steers onto its target
+// every frame, so it lands; the damage is applied on arrival. If the target
+// dies first the bolt fizzles where it is.
+function turretShotsTick() {
+    if (!turretShots.length) return;
+    turretShots = turretShots.filter(s => {
+        s.life--;
+        const tg = s.target;
+        if (!tg || tg.dead || s.life <= 0) {
+            elementEffects.push({ type: "impact", x: s.x, y: s.y, color: s.col, radius: 0.2, life: 8, element: s.el });
+            return false;
+        }
+        const dx = tg.x - s.x, dy = tg.y - s.y, d = Math.hypot(dx, dy);
+        if (d <= TURRET_SHOT_SPEED) {
+            applyDamage(tg, s.dmg, s.src, s.el);
+            elementEffects.push({ type: "impact", x: tg.x, y: tg.y, color: s.col, radius: s.charged ? 0.55 : 0.4, life: 14, element: s.el });
+            return false;
+        }
+        // Drop from the muzzle to the target's body over the flight.
+        s.z += (TURRET_HIT_Z - s.z) * Math.min(1, TURRET_SHOT_SPEED / d);
+        s.px = s.x; s.py = s.y;
+        s.x += dx / d * TURRET_SHOT_SPEED; s.y += dy / d * TURRET_SHOT_SPEED;
+        return true;
+    });
+}
+
+function drawTurretShots() {
+    if (!turretShots.length) return;
+    const W = canvas.width / 2, H = canvas.height / 2;
+    const scr = (x, y, z) => [(x - player.visualX - (y - player.visualY)) * TILE_W + W,
+                              (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H - z];
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = "round";
+    for (const s of turretShots) {
+        const [sx, sy] = scr(s.x, s.y, s.z);
+        const [tx, ty] = scr(s.px === undefined ? s.x : s.px, s.py === undefined ? s.y : s.py, s.z);
+        const r = s.charged ? 6.5 : 5;
+        // Trail, glow, hot core.
+        ctx.strokeStyle = s.col; ctx.globalAlpha = 0.5; ctx.lineWidth = r * 1.4;
+        ctx.beginPath(); ctx.moveTo(tx - (sx - tx) * 1.5, ty - (sy - ty) * 1.5); ctx.lineTo(sx, sy); ctx.stroke();
+        ctx.globalAlpha = 0.35; ctx.fillStyle = s.col;
+        ctx.beginPath(); ctx.arc(sx, sy, r * 2, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1; ctx.fillStyle = s.col;
+        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.arc(sx, sy, r * 0.45, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+}
+
 // One turret round: the pylon's power, the turret multiplier, its network
 // tier, and a bite out of the target's max HP so it counts against big ones.
 function turretRoundDamage(t, target) {
@@ -1316,7 +1365,9 @@ function render() {
         _nestCache   = world.filter(t => t.nest);
         recomputePower();
         _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement && !isRelayPylon(t) && t.powered && t.pillarTeam === "green");
-        _aPylons     = _pillarCache.filter(t => t.attackMode && !isRelayPylon(t) && t.powered && t.pillarTeam === "green");
+        // EVERY turret is on the firing list, powered or not: power only
+        // decides whether its rounds are charged (see the attack pass).
+        _aPylons     = _pillarCache.filter(t => t.attackMode && !isRelayPylon(t) && t.pillarTeam === "green");
         _uPylons     = _pillarCache.filter(t => t.upgraded);
         // ── WALL PANEL MAP — for wall-face panel rendering ──
         _wallPanelMap = new Map();
@@ -1678,30 +1729,20 @@ function render() {
         // A turret that is shooting a predator is a pylon that is attacking it,
         // so that predator turns on it. Nothing else sends one after a pylon.
         if (nearest instanceof Predator && !nearest.pylonAggro) nearest.pylonAggro = t;
-        // THE ROUND IS PAID FOR BEFORE IT LEAVES. A turret with nothing in
-        // range has cost nothing up to here, which is the point — attack mode
-        // is the cheap one precisely because it only spends when it fights.
-        // An unaffordable shot is not fired at all rather than fired weak.
-        if (!payForShot(t)) {
-            t.powered = false;
-            // Say so, once in a while: a turret that quietly stops firing reads
-            // as a bug rather than as an empty battery.
-            if (frame - (t._noPowerMsg || -9999) > 300) {
-                t._noPowerMsg = frame;
-                floatingTexts.push({ x: t.x, y: t.y - 1, text: "TURRET OUT OF POWER", color: "#ff7755", life: 90, vy: -0.07 });
-            }
-            return;
-        }
+        // CHARGED OR PLAIN. A round a generator can pay for is charged and
+        // hits in full; with no power in reach, or the pool empty, it is a
+        // plain round at TURRET_PLAIN_MULT. Either way it FIRES — a turret
+        // that silently refused to shoot read as broken.
+        const charged = !!t.powerSource && payForShot(t);
+        t.charged = charged;
         nearest._shotByPylon = true;   // the tutorial's "kill with your pylons" step reads this
-        t._lastShotFrame = frame;      // the turret's muzzle flash and beam read these
-        t._shotAt = { x: nearest.x, y: nearest.y };
-        const _dmg = turretRoundDamage(t, nearest);
-        // A HIT, not a bolt. The old round flew at 0.18 tiles a frame toward
-        // where the target had been; this lands the frame it is paid for and
-        // the beam in drawPylonTurret shows it.
-        applyDamage(nearest, _dmg, {x:t.x, y:t.y, team:"green", element:t.attackModeElement||"core"}, t.attackModeElement||null);
-        elementEffects.push({type:"impact",x:nearest.x,y:nearest.y,color:t.attackModeColor||"#0f8",radius:0.45,life:14,element:t.attackModeElement});
+        t._lastShotFrame = frame;      // the turret's muzzle flash reads this
+        const _dmg = turretRoundDamage(t, nearest) * (charged ? 1 : TURRET_PLAIN_MULT);
+        turretShots.push({ x: t.x, y: t.y, z: TURRET_MUZZLE_Z, target: nearest, dmg: _dmg, charged,
+                           el: t.attackModeElement || null, col: t.attackModeColor || "#0f8", life: 120,
+                           src: { x: t.x, y: t.y, team: "green", element: t.attackModeElement || "core" } });
     });
+    turretShotsTick();
 
     // ── COMPLETE RECONSTRUCTION ──
     world.forEach(t=>{
@@ -2696,7 +2737,8 @@ function render() {
                 // readout: the element it is set to is still there, it just is
                 // not doing anything. Drawing it lit would say the grid was
                 // fine while the turret quietly refused to fire.
-                const _dark = obj.powered === false;
+                // A turret is never dark: it fires plain rounds without power.
+                const _dark = obj.powered === false && !obj.attackMode;
                 const _acol = _dark ? POWER_DEAD_COLOUR : (obj.attackModeColor||"#0f8");
                 const _isActive=!!(obj.attackMode||obj.waveMode);
                 const _wTier=obj.waveMode?(networkStrength[obj.attackModeElement]||0):0;
@@ -3618,6 +3660,7 @@ function render() {
         }
         return !hit && p.life > 0;
     });
+    drawTurretShots();
 
     ctx.restore();
 

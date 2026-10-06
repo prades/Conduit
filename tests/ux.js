@@ -74,10 +74,10 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     group('silent failures now speak');
 
-    await check('a turret that cannot fire says so, and not every frame', () => {
-        const src = rd('js/game.js');
-        ok(/TURRET OUT OF POWER/.test(src), 'no out-of-power message');
-        ok(/t\._noPowerMsg \|\| -9999\) > 300/.test(src), 'the message is not rate-limited');
+    await check('a turret with no power says it fires plain rounds, and why', () => {
+        // It no longer goes silent (see tests/gunswitch.js, THE BOLT), so the
+        // readout says what it is doing instead of "out of power".
+        const s = state('attack', { noGen: true }); ok(/^PLAIN ROUNDS/.test(s.text), s.text);
     });
     await check('a network that loses a tier says so', () => {
         ok(/NETWORK DOWN TO/.test(rd('js/game.js')) && /NETWORK LOST/.test(rd('js/game.js')), 'tier loss is silent');

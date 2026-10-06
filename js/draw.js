@@ -2124,8 +2124,8 @@ function drawWaveWakeBlink(px, base, colour, since) {
 // "Whenever the pylon is in turret mode it has a little self-aiming turret on top
 // that will lock onto the enemy targets." Pure presentation: firing is still the
 // attack pass in game.js. The gun turns smoothly toward the nearest hostile it
-// can see (inside attackRange x TURRET_TRACK_RANGE_MULT), fires a beam to the
-// target when a shot is paid for, and sweeps slowly when there is nothing to aim at. A pylon with
+// can see (inside attackRange x TURRET_TRACK_RANGE_MULT), flashes when a bolt
+// leaves (the bolt itself is drawTurretShots in game.js), and sweeps slowly when there is nothing to aim at. A pylon with
 // no power droops: grey, still, and aimed at nothing.
 function turretTarget(obj) {
     // Rescanned a few times a second, not every frame: the actors list is long
@@ -2203,21 +2203,6 @@ function drawPylonTurret(obj, px, topY, colour, dark) {
         // stupid little reticule thing" — the gun turning is the tell.
         ctx.fillStyle = colour; ctx.globalAlpha = target ? 1 : 0.6;
         ctx.beginPath(); ctx.arc(bx, by, 1.8, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
-        // THE SHOT: a beam from the bolt to where the round landed, fading
-        // over TURRET_TRACER_FRAMES. Damage is applied the frame it fires
-        // (game.js), so this is the hit, not a projectile that may miss.
-        const since = obj._lastShotFrame !== undefined ? frame - obj._lastShotFrame : Infinity;
-        if (obj._shotAt && since < TURRET_TRACER_FRAMES) {
-            const k = 1 - since / TURRET_TRACER_FRAMES;
-            const hx = (obj._shotAt.x - player.visualX - (obj._shotAt.y - player.visualY)) * TILE_W + canvas.width / 2;
-            const hy = (obj._shotAt.x - player.visualX + (obj._shotAt.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - 20;
-            ctx.lineCap = "round";
-            ctx.strokeStyle = colour; ctx.globalAlpha = 0.35 * k; ctx.lineWidth = 7 * k + 1;
-            ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(hx, hy); ctx.stroke();
-            ctx.strokeStyle = "#fff"; ctx.globalAlpha = 0.9 * k; ctx.lineWidth = 1.6;
-            ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(hx, hy); ctx.stroke();
-            ctx.globalAlpha = 1;
-        }
         // Muzzle flash on the frame a shot was paid for.
         if (obj._lastShotFrame !== undefined && frame - obj._lastShotFrame < 6) {
             const k = 1 - (frame - obj._lastShotFrame) / 6;

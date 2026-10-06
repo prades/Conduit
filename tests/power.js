@@ -172,10 +172,12 @@ async function boot() {
     // ─────────────────────────────────────────────────────
     group('THE CHAIN: pylon → generator → nest');
 
-    check('a turret with no generator is dark, however full the batteries', () => {
+    check('a turret with no generator has no power, however full the batteries — but still fires', () => {
+        // REPORTED: "the turrets are 100% not firing". An unpowered turret used
+        // to drop off the firing list; now it fires PLAIN rounds instead.
         const r = board('A', [{ zone: 1, taken: true }]);
         same(r.lit[0], false, 'a turret with nothing carrying power to it was lit');
-        same(r.firing, 0, 'and it was still counted as a firing pylon');
+        same(r.firing, 1, 'an unpowered turret should still be on the firing list');
     });
 
     check('a generator beside it lights it, off the home reserve', () => {
