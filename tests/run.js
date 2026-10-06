@@ -42,6 +42,7 @@ const SUITES = [
     ['pressure + regen',       'pressure.js'],
     ['player-facing clarity',  'ux.js'],
     ['generator switch + turret','gunswitch.js'],
+    ['cables on the floor',    'cables.js'],
 ];
 
 let failed = 0;

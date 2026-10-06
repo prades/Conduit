@@ -475,59 +475,183 @@ const POWER_WIRE_DEAD   = "rgba(120,140,160,0.18)";
 const POWER_BEADS       = 4;      // charges in flight per wire at full draw
 const POWER_BEAD_SPEED  = 0.011;  // of the wire's length, per frame
 
-// One length of wire with its charges. `flow` is 0..1 — how hard this leg is
-// being pulled — and `phase` offsets the charges so two wires from the same
-// generator do not pulse in lockstep.
-function _drawPowerWire(ax, ay, bx, by, flow, phase, colour) {
-    const lit = flow > 0.02;
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    // The wire. Dim and dashed when nothing is moving, solid and bright when it
-    // is — the line itself is the first thing that says "this is live".
-    if (lit) {
-        ctx.strokeStyle = colour;
-        ctx.globalAlpha = 0.25 + flow * 0.45;
-        ctx.lineWidth = 2;
-        ctx.shadowColor = colour; ctx.shadowBlur = 6 * flow;
-        ctx.setLineDash([]);
-    } else {
-        ctx.strokeStyle = POWER_WIRE_DEAD;
-        ctx.globalAlpha = 1;
-        ctx.lineWidth = 1.2;
-        ctx.setLineDash([4, 7]);
-    }
-    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-    ctx.setLineDash([]); ctx.shadowBlur = 0;
-
-    if (lit) {
-        // The charges, running A → B, which is the direction the power goes.
-        const n = Math.max(1, Math.round(POWER_BEADS * flow));
-        for (let i = 0; i < n; i++) {
-            const t = (((frame || 0) * POWER_BEAD_SPEED) + phase + i / n) % 1;
-            const x = ax + (bx - ax) * t, y = ay + (by - ay) * t;
-            // Brightest in the middle of its run so each charge reads as
-            // travelling rather than as a row of fixed dots.
-            const fade = Math.sin(t * Math.PI);
-            ctx.globalAlpha = (0.45 + flow * 0.55) * (0.35 + fade * 0.65);
-            ctx.fillStyle = colour;
-            ctx.shadowColor = colour; ctx.shadowBlur = 7;
-            ctx.beginPath(); ctx.arc(x, y, 2.2 + flow * 1.4, 0, Math.PI * 2); ctx.fill();
+// ── CABLES ARE PIPES ON THE FLOOR ────────────────────────
+// "All the cables that run in the game should run along the ground, and connect
+// like pipes that bend at 90 degree angles."
+//
+// Every cable is routed on the tile grid: from the source tile it runs along the
+// corridor (world x) to the target's column, turns a right angle, and runs
+// across (world y) to the target. It sits on the floor at tile centres, not in
+// the air between the structures' bodies. Projected, the two legs follow the
+// two iso axes, so the bend reads as a pipe elbow laid on the grid. One rule,
+// cablePath(), so every cable in the game routes the same way and two cables
+// between the same pair of things lie exactly on top of each other.
+const CABLE_CASING  = "#0b1118";   // the pipe's dark sleeve
+const CABLE_WIDTH   = 6;           // sleeve width, px
+function cablePath(from, to) {
+    const ax = Math.round(from.x), ay = Math.round(from.y);
+    const bx = Math.round(to.x),   by = Math.round(to.y);
+    const pts = [{ x: ax, y: ay }];
+    if (ax !== bx && ay !== by) pts.push({ x: bx, y: ay });   // the elbow
+    pts.push({ x: bx, y: by });
+    return pts;
+}
+// HOW THEY ARE DRAWN. A cable cannot be an overlay: drawn after the world it
+// paints over every unit and pylon standing on its path, which is the opposite
+// of lying on the floor. So each frame the cables are LAID first — broken into
+// one piece per tile they cross — and every floor tile draws its own pieces in
+// the depth-sorted pass, under whatever stands on it or in front of it. A
+// piece runs from the tile's centre to the middle of each edge it connects
+// through, so a straight run is two half-pieces meeting at the edge, and the
+// elbow is the one tile whose two halves turn.
+const _cableTiles = new Map();
+function _cableCell(x, y) {
+    const k = x + "," + y;
+    let c = _cableTiles.get(k);
+    if (!c) { c = { pieces: [], beads: [] }; _cableTiles.set(k, c); }
+    return c;
+}
+// The tiles a cable crosses, in order, from its first end to its last.
+function cableTiles(from, to) {
+    const pts = cablePath(from, to), tiles = [{ x: pts[0].x, y: pts[0].y }];
+    for (let i = 1; i < pts.length; i++) {
+        let { x, y } = tiles[tiles.length - 1];
+        const sx = Math.sign(pts[i].x - x), sy = Math.sign(pts[i].y - y);
+        // Capped: a route is never longer than the map is wide, and a bad
+        // input must not be able to spin the frame forever.
+        for (let guard = 0; (x !== pts[i].x || y !== pts[i].y) && guard < 512; guard++) {
+            x += sx; y += sy; tiles.push({ x, y });
         }
+    }
+    return tiles;
+}
+// Lay one cable. style: { core, width, dash, glow, beads: [{t, r, alpha, colour}] }
+// where each bead's t is 0..1 along the cable from `from` to `to`.
+function layCable(from, to, style) {
+    const tiles = cableTiles(from, to);
+    const last = tiles.length - 1;
+    for (let i = 0; i <= last; i++) {
+        const dirs = [];
+        if (i > 0)    dirs.push([tiles[i - 1].x - tiles[i].x, tiles[i - 1].y - tiles[i].y]);
+        if (i < last) dirs.push([tiles[i + 1].x - tiles[i].x, tiles[i + 1].y - tiles[i].y]);
+        const elbow = dirs.length === 2 && (dirs[0][0] + dirs[1][0] !== 0 || dirs[0][1] + dirs[1][1] !== 0);
+        _cableCell(tiles[i].x, tiles[i].y).pieces.push({ dirs, end: i === 0 || i === last, elbow, style });
+    }
+    // The charges are placed in world space along the tile run and drawn by the
+    // tile they are over, so they go under a unit standing on the pipe too.
+    for (const b of (style.beads || [])) {
+        const f = b.t * last, i = Math.min(last, Math.floor(f)), k = f - i;
+        const n = tiles[Math.min(last, i + 1)];
+        const wx = tiles[i].x + (n.x - tiles[i].x) * k, wy = tiles[i].y + (n.y - tiles[i].y) * k;
+        _cableCell(Math.round(wx), Math.round(wy)).beads.push(Object.assign({ wx, wy }, b));
+    }
+    return tiles;
+}
+// Called by every floor tile in the sorted pass.
+function drawCablesOnTile(tile, px, py) {
+    if (_cableTiles.size === 0) return;
+    const c = _cableTiles.get(Math.round(tile.x) + "," + Math.round(tile.y));
+    if (!c) return;
+    const cx = px, cy = py + TILE_H;
+    // One world step along +x is (TILE_W, TILE_H) on screen, along +y it is
+    // (-TILE_W, TILE_H); a half step reaches the middle of that edge.
+    const edge = ([dx, dy]) => [cx + (dx - dy) * TILE_W / 2, cy + (dx + dy) * TILE_H / 2];
+    ctx.save();
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    const trace = pc => {
+        ctx.beginPath();
+        if (pc.dirs.length === 0) { ctx.moveTo(cx, cy); ctx.lineTo(cx, cy); return; }
+        const [x0, y0] = edge(pc.dirs[0]);
+        ctx.moveTo(x0, y0); ctx.lineTo(cx, cy);
+        if (pc.dirs[1]) { const [x1, y1] = edge(pc.dirs[1]); ctx.lineTo(x1, y1); }
+    };
+    // Sleeves first, so where two cables share a tile neither sleeve covers
+    // the other's core.
+    ctx.strokeStyle = CABLE_CASING; ctx.lineWidth = CABLE_WIDTH; ctx.globalAlpha = 0.85;
+    for (const pc of c.pieces) { trace(pc); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    for (const pc of c.pieces) {
+        const st = pc.style;
+        if (st.glow) { ctx.shadowColor = st.core; ctx.shadowBlur = st.glow; }
+        ctx.strokeStyle = st.core; ctx.lineWidth = st.width; ctx.setLineDash(st.dash || []);
+        trace(pc); ctx.stroke();
+        ctx.setLineDash([]); ctx.shadowBlur = 0;
+        // An elbow collar where it turns, a coupling where it plugs in.
+        if (pc.end || pc.elbow) {
+            ctx.fillStyle = CABLE_CASING;
+            ctx.beginPath(); ctx.ellipse(cx, cy, pc.end ? 6 : 5, pc.end ? 3 : 2.5, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = st.core; ctx.lineWidth = 1; ctx.stroke();
+        }
+    }
+    for (const b of c.beads) {
+        const [bx, by] = cableScreen({ x: b.wx, y: b.wy });
+        ctx.globalAlpha = b.alpha; ctx.fillStyle = b.colour;
+        ctx.shadowColor = b.colour; ctx.shadowBlur = 7;
+        ctx.beginPath(); ctx.arc(bx, by, b.r, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
 }
+// A world point on the floor, in screen space (tile centre, ground level).
+function cableScreen(o) {
+    return [(o.x - player.visualX - (o.y - player.visualY)) * TILE_W + canvas.width  / 2,
+            (o.x - player.visualX + (o.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H];
+}
 
-// The whole chain, every frame. Walks the pylons that are drawing, because
-// those are the legs that matter — a generator with nothing pulling on it draws
-// no wire to a nest, which is itself information.
+// One power cable with its charges. `from` and `to` are WORLD points (the
+// structures themselves); `flow` is 0..1 — how hard this leg is being pulled —
+// and `phase` offsets the charges so two cables from the same relay do not
+// pulse in lockstep. The charges run from `from` to `to`, the way power goes.
+// The core is the readout: dim and dashed when nothing is moving, solid and
+// bright when it is, and a busier cable carries more charges.
+function _drawPowerWire(from, to, flow, phase, colour) {
+    const lit = flow > 0.02;
+    const beads = [];
+    if (lit) {
+        const n = Math.max(1, Math.round(POWER_BEADS * flow));
+        for (let i = 0; i < n; i++) {
+            const t = (((frame || 0) * POWER_BEAD_SPEED) + phase + i / n) % 1;
+            // Brightest in the middle of its run so each charge reads as
+            // travelling rather than as a row of fixed dots.
+            const fade = Math.sin(t * Math.PI);
+            beads.push({ t, r: 2.2 + flow * 1.4, alpha: (0.45 + flow * 0.55) * (0.35 + fade * 0.65), colour });
+        }
+    }
+    return layCable(from, to, lit
+        ? { core: colour, width: 2 + flow * 0.8, glow: 6 * flow, beads }
+        : { core: POWER_WIRE_DEAD, width: 1.4, dash: [4, 7] });
+}
+
+// The generator's mending lines: thin steel cables on the floor, routed like
+// every other cable. Where the same generator already runs a POWER cable to a
+// pylon it would lie on exactly the same path, so that one is left to carry it.
+function layMendingCables() {
+    if (typeof _genLinks === "undefined" || _genLinks.length === 0) return;
+    const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.06);
+    for (const { gen, pylon } of _genLinks) {
+        if (gen.destroyed || pylon.destroyed) continue;
+        if (needsPower(pylon) && pylon.powerGen === gen) continue;
+        const t = (((frame || 0) * 0.014) + (pylon.x * 0.13 + pylon.y * 0.29)) % 1;
+        layCable(gen, pylon, { core: `rgba(205,214,224,${0.35 + pulse * 0.3})`, width: 1.4, dash: [5, 6],
+                               beads: [{ t, r: 2, alpha: 0.5 + pulse * 0.3, colour: "#e6f0fa" }] });
+    }
+}
+
+// Every cable in the game, laid fresh each frame before the world is drawn.
+function layAllCables() {
+    _cableTiles.clear();
+    drawPowerChain();
+    layMendingCables();
+}
+
+// The whole chain, every frame. Each pylon that is drawing gets a cable from
+// the relay feeding it; each relay gets one from its nest. A relay you have
+// LINKED to a nest keeps that cable even while nothing pulls on it (it is the
+// link, and it used to be a separate beam in the air); an unlinked relay only
+// shows its supply cable while something is drawing.
 function drawPowerChain() {
     if (typeof _pillarCache === "undefined" || _pillarCache.length === 0) return;
-    const toScreen = o => [
-        (o.x - player.visualX - (o.y - player.visualY)) * TILE_W + canvas.width  / 2,
-        (o.x - player.visualX + (o.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H,
-    ];
-    // Generator → nest is drawn once per generator, at the heaviest flow any of
-    // its pylons is pulling: that leg carries all of them.
+    // Relay → nest is drawn once per relay, at the heaviest flow any of its
+    // pylons is pulling: that leg carries all of them.
     const genFlow = new Map();
 
     for (const t of _pillarCache) {
@@ -535,14 +659,11 @@ function drawPowerChain() {
         const gen = t.powerGen;
         const flow = powerFlowOf(t);
         genFlow.set(gen, Math.max(genFlow.get(gen) || 0, flow));
-        const [gx, gy] = toScreen(gen);
-        const [px, py] = toScreen(t);
-        if (Math.max(gx, px) < -80 || Math.min(gx, px) > canvas.width  + 80) continue;
-        if (Math.max(gy, py) < -80 || Math.min(gy, py) > canvas.height + 80) continue;
-        // Anchored on the bodies rather than the tiles, so the wire runs
-        // between the two structures instead of across the floor under them.
-        _drawPowerWire(gx, gy - 46, px, py - 40, flow,
-                       (t.x * 0.17 + t.y * 0.31) % 1, POWER_WIRE_COLOUR);
+        _drawPowerWire(gen, t, flow, (t.x * 0.17 + t.y * 0.31) % 1, POWER_WIRE_COLOUR);
+    }
+    for (const r of _pillarCache) {
+        if (!genFlow.has(r) && isRelayPylon(r) && r.nestConnection && nestIsPowerSource(r.nestConnection))
+            genFlow.set(r, 0);
     }
 
     for (const [gen, flow] of genFlow) {
@@ -551,14 +672,11 @@ function drawPowerChain() {
         // across the whole map to ones it was not feeding at all.
         const nest = relaySource(gen);
         if (!nest) continue;
-        const [gx, gy] = toScreen(gen);
-        const [nx, ny] = toScreen(nest);
-        if (Math.max(gx, nx) < -80 || Math.min(gx, nx) > canvas.width  + 80) continue;
-        if (Math.max(gy, ny) < -80 || Math.min(gy, ny) > canvas.height + 80) continue;
-        // Nest → generator, so the charges run the same way the power does and
-        // the whole chain reads in one direction.
-        _drawPowerWire(nx, ny - 55, gx, gy - 46, flow,
-                       (gen.x * 0.23) % 1, POWER_WIRE_COLOUR);
+        // Nest → relay, so the charges run the same way the power does and the
+        // whole chain reads in one direction. A linked nest's cable is blue,
+        // the colour of a nest you control.
+        _drawPowerWire(nest, gen, flow, (gen.x * 0.23) % 1,
+                       gen.nestConnection === nest ? NEST_COLOUR_CONTROLLED : POWER_WIRE_COLOUR);
     }
 }
 
@@ -578,20 +696,6 @@ function drawGeneratorLinks() {
         // Both ends off screen means the whole filament is too.
         if (Math.max(gx, px) < -60 || Math.min(gx, px) > canvas.width  + 60) continue;
         if (Math.max(gy, py) < -60 || Math.min(gy, py) > canvas.height + 60) continue;
-
-        const gTop = gy - 50, pTop = py - 44;
-        ctx.strokeStyle = `rgba(205,214,224,${0.18 + pulse * 0.22})`;
-        ctx.lineWidth = 1.4;
-        ctx.setLineDash([5, 6]);
-        ctx.beginPath(); ctx.moveTo(gx, gTop); ctx.lineTo(px, pTop); ctx.stroke();
-        ctx.setLineDash([]);
-
-        // A charge running out to the pylon it is mending.
-        const t = ((frame * 0.014) + (pylon.x * 0.13 + pylon.y * 0.29)) % 1;
-        ctx.fillStyle = `rgba(230,240,250,${0.5 + pulse * 0.3})`;
-        ctx.beginPath();
-        ctx.arc(gx + (px - gx) * t, gTop + (pTop - gTop) * t, 2, 0, Math.PI * 2);
-        ctx.fill();
 
         // THE HEALING AURA's reach, on the floor, so the player can see where
         // to stand. Drawn from the same numbers the tick heals by, and it
@@ -1737,6 +1841,10 @@ function render() {
     // now sort before it do not share pixels with it.
     drawList.sort((a,b)=>drawDepthOf(a)-drawDepthOf(b));
 
+    // The cables are laid before anything is drawn, and each floor tile draws
+    // its own pieces, so they lie on the ground under everything standing there.
+    layAllCables();
+
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
         const px=(obj.x-player.visualX-(obj.y-player.visualY))*TILE_W+canvas.width/2;
@@ -1926,7 +2034,7 @@ function render() {
             const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
             const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
             // Home camp area — circuit board PCB style (x < 0 is behind the Crystal)
-            if (obj.x < 0) { drawCampFloor(obj, px, py, amb); return; }
+            if (obj.x < 0) { drawCampFloor(obj, px, py, amb); drawCablesOnTile(obj, px, py); return; }
             const isNight = gameState.phase === "night";
             // Day: Dexter's Lab steel-blue/teal panels. Night: Dark steel with warm red-orange ambience.
             let tR, tG, tB;
@@ -2012,6 +2120,9 @@ function render() {
                     ctx.restore();
                 }
             }
+
+            // Cables run along the floor, under pylons and units (layAllCables).
+            drawCablesOnTile(obj, px, py);
 
             // Acid pool — drawn here so it sits on the floor but under pylons
             const acidH = acidTiles.get(`${Math.round(obj.x)},${Math.round(obj.y)}`);
@@ -2203,31 +2314,9 @@ function render() {
                 drawNestGauge(obj, _bCx, wfTL.y, _held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM);
                 ctx.restore();
 
-                // ── PERMANENT ENERGY LINK to connected pylon ──
-                if (obj.connectedPylon) {
-                    const _cp=obj.connectedPylon;
-                    const _cpx=(_cp.x-player.visualX-(_cp.y-player.visualY))*TILE_W+canvas.width/2;
-                    const _cpy=(_cp.x-player.visualX+(_cp.y-player.visualY))*TILE_H+canvas.height/2;
-                    // Nest anchor — center-top of broken nest face
-                    const _nSx=(wfTL.x+wfTR.x)/2, _nSy=wfTL.y+30;
-                    const _pulse=0.5+0.5*Math.sin((frame||0)*0.07);
-                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                    // Beam
-                    ctx.strokeStyle=`rgba(58,134,255,${0.3+_pulse*0.4})`;
-                    ctx.lineWidth=1.5+_pulse; ctx.shadowColor=NEST_COLOUR_CONTROLLED; ctx.shadowBlur=8+_pulse*8;
-                    ctx.setLineDash([8,5]);
-                    ctx.beginPath(); ctx.moveTo(_nSx,_nSy); ctx.lineTo(_cpx,_cpy-60); ctx.stroke();
-                    ctx.setLineDash([]);
-                    // Travelling energy nodes
-                    for(let _i=0;_i<4;_i++){
-                        const _t=((frame||0)*0.018+_i*0.25)%1;
-                        const _ex=_nSx+(_cpx-_nSx)*_t, _ey=_nSy+(_cpy-60-_nSy)*_t;
-                        ctx.fillStyle=NEST_COLOUR_CONTROLLED; ctx.globalAlpha=0.65+_pulse*0.35;
-                        ctx.shadowBlur=5;
-                        ctx.beginPath(); ctx.arc(_ex,_ey,2.5,0,Math.PI*2); ctx.fill();
-                    }
-                    ctx.restore();
-                }
+                // The link to its relay is a cable on the floor now, drawn with
+                // the rest of the power chain (drawPowerChain) rather than as a
+                // beam in the air from the face of the nest.
             }
 
             // A nest an infestation grew stands on open floor, so it is drawn
@@ -3451,7 +3540,6 @@ function render() {
     // The power chain over the mending filament: the mending line is incidental,
     // the power is the thing the player is managing.
     drawGeneratorLinks();
-    drawPowerChain();
     drawConversionBars();
     drawTutorialHighlight();
     drawFloatingTexts();

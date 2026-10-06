@@ -321,10 +321,9 @@ async function boot() {
                 player.x = home.x; player.y = 3;
                 player.visualX = player.x; player.visualY = player.y;
                 player.targetX = player.x; player.targetY = player.y;
-                const hx = (home.x - player.visualX - (home.y - player.visualY)) * TILE_W + canvas.width / 2;
-                const hy = (home.x - player.visualX + (home.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
-                _drawPowerWire = function (ax, ay) {
-                    if (Math.abs(ax - hx) < 1.5 && Math.abs(ay - (hy - 55)) < 1.5) legs++;
+                // A cable is laid between two structures, from the source end.
+                _drawPowerWire = function (from) {
+                    if (from === home) legs++;
                     return real.apply(this, arguments);
                 };
                 // Wave mode is a constant draw, so the legs are lit and drawn.
@@ -699,14 +698,14 @@ async function boot() {
         // nest. The two calls have to be (from, to) in that order.
         const at = SRC.game.indexOf('function drawPowerChain');
         const body = SRC.game.slice(at, SRC.game.indexOf('\nfunction ', at + 10));
-        const gxFirst = /_drawPowerWire\(gx, gy - \d+, px, py - \d+/.test(body);
-        const nxFirst = /_drawPowerWire\(nx, ny - \d+, gx, gy - \d+/.test(body);
+        const gxFirst = /_drawPowerWire\(gen, t,/.test(body);
+        const nxFirst = /_drawPowerWire\(nest, gen,/.test(body);
         ok(gxFirst, 'the generator → pylon wire runs the wrong way');
         ok(nxFirst, 'the nest → generator wire runs the wrong way');
         // ...and the bead walks the line from the first point to the second.
-        const wireAt = SRC.game.indexOf('function _drawPowerWire');
-        const wireBody = SRC.game.slice(wireAt, SRC.game.indexOf('\n}', wireAt));
-        ok(/ax \+ \(bx - ax\) \* t/.test(wireBody), 'the charges do not travel A to B');
+        const layAt = SRC.game.indexOf('function layCable');
+        const layBody = SRC.game.slice(layAt, SRC.game.indexOf('\n}', layAt));
+        ok(/b\.t \* last/.test(layBody) && /cableTiles\(from, to\)/.test(layBody), 'the charges do not travel from the first end to the last');
     });
 
     check('a busier wire carries more charges and more light', () => {
