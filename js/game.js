@@ -1011,6 +1011,7 @@ function drawNestHackZone(nest) {
 // its nearest wave pylons of OTHER elements within link range, at most
 // COMBO_MAX_LINKS each. A link's effect runs while either end is awake.
 let _comboLinks = [];
+let _netLit = {};   // lit pylons per element, for the network HUD (see the tier count)
 function rebuildComboLinks() {
     _comboLinks = [];
     const r2 = Math.pow(getPylonRange(), 2), count = new Map(), cand = [];
@@ -1598,10 +1599,20 @@ function render() {
         updateTerritory();
 
         // ── NETWORK RESONANCE — compute largest connected pylon group per element ──
-        // Every lit pylon of the element counts, turret or wave. REPORTED: "I
-        // laid down a bunch of electric pylons and it never got to level 3" —
-        // they were turrets, and only wave pylons used to count.
-        const _netPylons = _wPylons.concat(_aPylons);
+        // Every pylon of the element you have BUILT counts — turret or wave,
+        // powered or not. REPORTED: "the tier system isn't working ... I should
+        // have a tier 3 network and it doesn't even show tier 1." Measured: six
+        // electric support pylons with no generator reaching them showed tier
+        // 0, because only LIT pylons were counted — and a generator only draws
+        // on the Crystal within 6 tiles of it, so a network built further out,
+        // or one whose nest ran dry, simply vanished from the count. The tier
+        // is what you have built; whether it WORKS is power, and the HUD says
+        // so (_netLit below). Unpowered pylons still do nothing.
+        const _netPylons = _pillarCache.filter(t => (t.waveMode || t.attackMode) && t.attackModeElement
+            && !isRelayPylon(t) && t.pillarTeam === "green" && !t.destroyed && t.health > 0);
+        _netLit = {};
+        for (const t of _wPylons) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
+        for (const t of _aPylons) if (t.powered) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
             const elPylons = _netPylons.filter(p => p.attackModeElement === el);
@@ -2976,7 +2987,9 @@ function render() {
                     const PYLON_FX_TIER={fire:["fire wall","heavy burn","ignite spread"],ice:["ice field","chill zone","deep freeze"],electric:["arc chain","arc boost","max arc"],core:["shield barrier","fast shields","regen shields"],flux:["gravity well","chain pull","vortex"],toxic:["corrodes enemies","shred+plague","plague cloud"]};
                     const PYLON_FX2={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity well",toxic:"corrodes enemies"};
                     const el0=obj.attackModeElement||"";
-                    const _wTierBadge=obj.waveMode&&_wTier>0?[" T-I"," T-II"," T-III"][_wTier-1]:"";
+                    // Turrets show their network's tier too: it is what boosts their rounds.
+                    const _lblTier=(obj.waveMode||obj.attackMode)&&!isRelayPylon(obj)?(networkStrength[obj.attackModeElement]||0):0;
+                    const _wTierBadge=_lblTier>0?[" T-I"," T-II"," T-III"][_lblTier-1]:"";
                     const _tierDesc=obj.waveMode?(_wTier>0?(PYLON_FX_TIER[el0]?.[_wTier-1]||""):(PYLON_FX_TIER[el0]?.[0]||"")):(PYLON_FX2[el0]||"");
                     // A wave pylon is named by its ROLE — SUPPORT or DISRUPTION —
                     // with the element and what it does underneath, or STANDBY.
@@ -4082,8 +4095,11 @@ function drawNetworkStatusHUD() {
             core:     ["","shield","fast shield","regen shield"],
             toxic:    ["","corrode","shred+","plague cloud"]
         };
-        const desc = EFFECT_DESC[el]?.[tier] || "";
-        ctx.fillStyle = "#888"; ctx.font = "7px monospace";
+        // A network with a tier but nothing lit is built but DARK — say so, or
+        // the tier reads as a promise the pylons are not keeping.
+        const _dark = !(_netLit[el] > 0);
+        const desc = _dark ? "NO POWER \u2014 link a generator" : (EFFECT_DESC[el]?.[tier] || "");
+        ctx.fillStyle = _dark ? "#ff7755" : "#888"; ctx.font = "7px monospace";
         ctx.fillText(desc, X + PAD + 14, ry + 21);
 
         // Tier badge

@@ -87,6 +87,30 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.tier === 3 && r.lit === 6, JSON.stringify({ tier: r.tier, lit: r.lit }));
     });
 
+    await check('THE REPORTED CASE: the tier counts what you BUILT — an unpowered network still shows its tier', () => {
+        // Six electric support pylons and no generator reaching them showed
+        // tier 0: only lit pylons were counted.
+        const r = run(`(function(){
+            world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.attackModeElement = null; } });
+            shardCount = 9999; const home = world.find(t => isHomePortal(t));
+            const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
+            const ps = []; for (let i = 0; i < 6; i++) { const t = T(home.x + 14 + i * 2, 2); _executeBuildInstant(ELEMENTS.find(e => e.id === 'electric'), t, 'support'); ps.push(t); }
+            _cacheAge = -999; for (let f = 0; f < 3; f++) render();
+            const said = []; const keep = ctx.fillText; ctx.fillText = t => said.push(String(t));
+            try { drawNetworkStatusHUD(); } finally { ctx.fillText = keep; }
+            return { tier: networkStrength.electric, lit: ps.filter(t => t.powered).length, said }; })()`);
+        ok(r.lit === 0, 'fixture: these pylons should have no power, ' + r.lit + ' lit');
+        ok(r.tier === 3, 'tier ' + r.tier);
+        ok(r.said.some(t => /NO POWER/.test(t)), 'the HUD does not say the network is dark: ' + JSON.stringify(r.said));
+    });
+    await check('but a pylon the enemy holds, or a broken one, does not count', () => {
+        const r = run(`(function(){ const ps = world.filter(t => t.pillar && t.attackModeElement === 'electric');
+            ps.slice(0, 3).forEach(t => { t.pillarTeam = 'red'; }); _cacheAge = -999; render(); const a = networkStrength.electric;
+            ps.slice(0, 3).forEach(t => { t.pillarTeam = 'green'; }); ps[3].destroyed = true; _cacheAge = -999; render();
+            const b = networkStrength.electric; ps[3].destroyed = false; return { a, b }; })()`);
+        ok(r.a === 1 && r.b === 1, JSON.stringify(r));
+    });
+
     group('ELECTRIC HASTE NEAR THE PYLONS');
 
     // Six electric pylons (tier III), then a fresh follower — never measured
