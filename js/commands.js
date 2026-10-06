@@ -262,7 +262,7 @@ function executeCommand() {
     commandMode=false; commandPendingTap=false;
     if (!selectedRadialAction) return;
     if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
-    const isNestCmd = selectedRadialAction==="connect_nest"||selectedRadialAction==="attack_nest";
+    const isNestCmd = selectedRadialAction==="attack_nest";
     if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
     if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;
 
@@ -359,17 +359,6 @@ function executeCommand() {
                 if (pool.length>0)
                     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
                         text:"→ "+pool[0].role.toUpperCase(),color:"#0f8",life:90,vy:-0.2});
-            }
-            break;
-        }
-        // ── LEGACY NEST COMMANDS ──────────────────────────
-        case "connect_nest": {
-            if (nestCanConnect(commandNestTarget)) {
-                nestConnectMode  = true;
-                nestConnectMisses = 0;
-                pendingConnectNest = commandNestTarget;
-                floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
-                    text:"TAP A GENERATOR OR CONNECTOR TO LINK",color:NEST_COLOUR_CONTROLLED,life:180,vy:-0.15});
             }
             break;
         }

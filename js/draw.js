@@ -95,8 +95,6 @@ function drawRadialMenu() {
     }
 
     const isPylonTarget   = commandTarget&&commandTarget.pillar&&!commandTarget.destroyed&&commandTarget.health>0;
-    const nestAlreadyLinked = commandNestTarget&&commandNestTarget.connectedPylon&&!commandNestTarget.connectedPylon.destroyed;
-    const isBrokenNest    = nestCanConnect(commandNestTarget);   // a taken nest, or the home portal
 
     // ── TOP = UPGRADE (pylon) / BUILD (empty tile) — only when buildMode ON ──
     const showTopBtn = buildMode;
@@ -135,7 +133,7 @@ function drawRadialMenu() {
         if (rHov) selectedRadialAction="info";
     }
 
-    // ── LEFT = SWITCH / RECLAIM / CONNECT (context) ───────
+    // ── LEFT = SWITCH / RECLAIM / CIRCUIT (context) ───────
     const lHov=dist>RADIAL_RADIUS*0.25&&Math.abs(angle)>Math.PI*3/4;
     let leftLabel="SWITCH", leftAction="switch_context";
     const isPylonSwitchable = isPylonTarget && (commandTarget.attackMode || commandTarget.waveMode);
@@ -153,12 +151,9 @@ function drawRadialMenu() {
         leftLabel = _gen ? (_off ? "TURN ON" : "TURN OFF") : (_off ? "CLOSE CIRCUIT" : "OPEN CIRCUIT");
         leftAction = "toggle_circuit";
     }
-    else if (!isPylonSwitchable) {
-        // A live nest has no order of its own any more: the only thing you do to
-        // one is HACK it, by standing in front of it, and that is not a button.
-        // (It used to read DESTROY and send five followers to bash it down.)
-        if (isBrokenNest)             { leftLabel="CONNECT"; leftAction="connect_nest"; }
-    }
+    // A nest has no order of its own: a live one you HACK by standing in front
+    // of it, and a neutralised one links itself to any generator or connector
+    // nearby (autoLinkRelays in power.js). CONNECT used to be a button here.
     drawRadialButton(commandX-RADIAL_RADIUS, commandY, leftLabel, lHov);
     if (lHov) selectedRadialAction=leftAction;
 

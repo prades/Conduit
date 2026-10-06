@@ -336,11 +336,10 @@ check('no pointer survives into the world the reset threw away', () => {
     loaded.sandbox.commandEnemyTarget    = ghost;
     loaded.sandbox.commandFollowerTarget = ghost;
     loaded.sandbox.infoPanelTarget       = ghost;
-    loaded.sandbox.pendingConnectNest    = ghost;
     loaded.run('playerAttackMode = true; infoPanelOpen = true; holdLineX = 9');
     loaded.run('restartGame()');
     for (const name of ['commandEnemyTarget', 'commandFollowerTarget',
-                        'infoPanelTarget', 'pendingConnectNest', 'holdLineX']) {
+                        'infoPanelTarget', 'holdLineX']) {
         eq(loaded.run(name), null, `${name} still points into the old world`);
     }
     eq(loaded.run('playerAttackMode'), false, 'attack mode should be off after a reset');

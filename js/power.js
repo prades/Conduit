@@ -112,28 +112,50 @@ function generatorSource(gen) {
 // A relay with no nest linked to it still draws on the closest battery that is
 // yours and in reach: the home reserve within HOME_POWER_REACH, or any nest you
 // have neutralised within GENERATOR_NEST_RANGE — the same reach it was allowed
-// to be built at. CONNECT is still the way to pick WHICH nest, and it wins.
+// to be built at. The link autoLinkRelays() makes is the same nest, so it wins.
 function nearestDrawableNest(r) {
     if (!r) return null;
     const list = (typeof _nestCache !== "undefined" && _nestCache.length) ? _nestCache : world;
     let best = null, bestD = Infinity;
     for (const n of list) {
         if (!n.nest || !nestIsPowerSource(n)) continue;
-        const home = typeof isHomePortal === "function" && isHomePortal(n);
         const d = Math.hypot(n.x - r.x, n.y - r.y);
-        if (d > (home ? HOME_POWER_REACH : GENERATOR_NEST_RANGE)) continue;
+        if (d > nestReachFor(n)) continue;
         if (d < bestD) { bestD = d; best = n; }
     }
     return best;
 }
 
-// Can this nest be CONNECTED to a generator? A taken nest, or the home portal —
-// anything that is a power source — as long as it is not already wired to a
-// live generator. The home portal is never "taken", so asking whether its health
-// had run out is what kept CONNECT off it.
-function nestCanConnect(n) {
-    if (!n || !nestIsPowerSource(n)) return false;
-    return !(n.connectedPylon && !n.connectedPylon.destroyed);
+// ── AUTOMATIC LINKS ──────────────────────────────────────
+// "Get rid of the connect-to-nest option and just automatically connect whenever
+// there is a connector or a pylon near it." Every generator and connector you
+// own is linked to the closest nest it can draw on — a zone you have
+// neutralised within GENERATOR_NEST_RANGE, or the home portal within
+// HOME_POWER_REACH. A link that has gone bad (the nest is no longer yours) is
+// dropped and a new one found. The nest shows CONTROLLED and
+// the blue cable runs to it, exactly as a hand-made link used to.
+function nestReachFor(n) {
+    return (typeof isHomePortal === "function" && isHomePortal(n)) ? HOME_POWER_REACH : GENERATOR_NEST_RANGE;
+}
+function autoLinkRelays() {
+    if (typeof _pillarCache === "undefined") return;
+    for (const r of _pillarCache) {
+        if (!isRelayPylon(r) || r.pillarTeam !== "green" || r.destroyed || !(r.health > 0)) continue;
+        const cur = r.nestConnection;
+        // A link is only ever MADE in reach (and relays do not move), so the
+        // one thing that can spoil it is the nest stopping being yours.
+        const good = cur && nestIsPowerSource(cur);
+        if (good) {
+            if (!cur.connectedPylon || cur.connectedPylon.destroyed || !cur.connectedPylon.pillar) cur.connectedPylon = r;
+            continue;
+        }
+        if (cur && cur.connectedPylon === r) cur.connectedPylon = null;
+        const n = nearestDrawableNest(r);
+        r.nestConnection = n || null;
+        if (!n) continue;
+        if (!n.connectedPylon || n.connectedPylon.destroyed || !n.connectedPylon.pillar) n.connectedPylon = r;
+        floatingTexts.push({ x: r.x, y: r.y - 1, text: "LINKED TO NEST", color: NEST_COLOUR_CONTROLLED, life: 90, vy: -0.08 });
+    }
 }
 
 // ── THE CONNECTOR ────────────────────────────────────────
@@ -228,6 +250,7 @@ function spendNestEnergy(nest, amount) {
 function recomputePower() {
     _powerPools = [];
     if (typeof _pillarCache === "undefined") return;
+    autoLinkRelays();
     for (const t of _pillarCache) {
         if (!needsPower(t)) { t.powered = true; t.powerSource = null; t.powerGen = null; continue; }
         // BOTH ends of the chain are remembered, not just the nest. The wiring

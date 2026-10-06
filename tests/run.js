@@ -11,7 +11,6 @@ const SUITES = [
     ['pylon linking',          'pylons.js'],
     ['attack facing',          'facing.js'],
     ['pylon codex',            'codex.js'],
-    ['nest linking',           'nestlink.js'],
     ['save & refresh',         'persist.js'],
     ['player weapon',          'weapon.js'],
     ['charged mass',           'mass.js'],

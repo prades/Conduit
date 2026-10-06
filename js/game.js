@@ -2446,31 +2446,6 @@ function render() {
                 ctx.restore();
             }
 
-            // ── PYLON SELECT HIGHLIGHT (nest connect mode) ──
-            // Same predicate the tap handler uses, so what is lit is exactly
-            // what is tappable.
-            if (nestConnectMode && isNestLinkablePylon(obj)) {
-                const _blink=Math.floor((frame||0)/10)%2===0;
-                ctx.save();
-                ctx.beginPath();
-                ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H);
-                ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H);
-                ctx.closePath();
-                ctx.globalAlpha=_blink?0.92:0.28;
-                // The colour the nest will BECOME, so the prompt and the result
-                // are the same thing.
-                ctx.strokeStyle=NEST_COLOUR_CONTROLLED; ctx.lineWidth=3;
-                ctx.shadowColor=NEST_COLOUR_CONTROLLED; ctx.shadowBlur=_blink?20:6;
-                ctx.stroke();
-                ctx.globalAlpha=_blink?0.14:0.04;
-                ctx.fillStyle=NEST_COLOUR_CONTROLLED; ctx.fill();
-                // "LINK" label — above tile top corner
-                ctx.globalAlpha=_blink?1:0.4;
-                ctx.fillStyle=NEST_COLOUR_CONTROLLED; ctx.font="bold 9px monospace"; ctx.textAlign="center";
-                ctx.shadowBlur=0; ctx.setTransform(1,0,0,1,0,0);
-                ctx.fillText("LINK",px,py-8);
-                ctx.restore();
-            }
 
             // ── CONNECTOR: circuit state + reach ──
             if (isConnectorPylon(obj) && obj.pillarTeam === "green") {

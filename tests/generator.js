@@ -465,11 +465,10 @@ check('one refusal message, used everywhere', () => {
     }
 });
 
-check('the link honours the same reach as the placement rule', () => {
-    const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
-    ok(/> GENERATOR_NEST_RANGE/.test(INPUT),
-       'handleNestConnectTap does not check the distance to the nest');
-    ok(/TOO FAR FROM THE NEST/.test(INPUT), 'it does not say why the link was refused');
+check('the automatic link honours the same reach as the placement rule', () => {
+    const POWER = fs.readFileSync(path.join(ROOT, 'js/power.js'), 'utf8');
+    ok(/GENERATOR_NEST_RANGE/.test(POWER.slice(POWER.indexOf('function nestReachFor'))), 'the link reach is not the placement range');
+    ok(/if \(d > nestReachFor\(n\)\) continue;/.test(POWER), 'a nest out of reach can still be linked');
 });
 
 group('building one, and keeping it');

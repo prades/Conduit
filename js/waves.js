@@ -370,7 +370,6 @@ function resetTransientState() {
     infoPanelOpen     = false; infoPanelTarget = null; infoPanelPage = null;
     commandMode       = false; commandPendingTap = false;
     commandTarget     = null; selectedRadialAction = null;
-    nestConnectMode   = false; pendingConnectNest = null; nestConnectMisses = 0;
     playerAttackMode  = false; commandEnemyTarget = null; commandFollowerTarget = null;
     // Charged mass STAYS on the floor between waves. It used to be wiped here,
     // so every lump you had not hauled home yet — the whole point of the

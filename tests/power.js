@@ -786,7 +786,7 @@ async function boot() {
            'the index still says a generator falls back to home with no limit');
         const reach = Number(E.run('HOME_POWER_REACH'));
         ok(page.indexOf('>' + reach + '<') > -1, 'the index does not state the ' + reach + '-tile reach');
-        ok(/Long-press the CRYSTAL nest/i.test(page), 'it does not say how to connect to the portal');
+        ok(/links to it by itself/i.test(page), 'it does not say the portal links itself');
     });
 
     check('the GAME INDEX teaches it, with the real numbers', () => {

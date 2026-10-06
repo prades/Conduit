@@ -499,11 +499,10 @@ async function ready() {
         }
         ok(/not green/i.test(page), 'it does not say why the held colour is not green');
         ok(/CLEARED/.test(page), 'it does not say that clearing a zone neutralises it');
-        // And the control it names has to be the one the radial offers.
-        const label = (SRC.draw.match(/leftLabel="([A-Z]+)"; leftAction="connect_nest"/) || [])[1];
-        ok(!!label, 'the connect command could not be located');
-        ok(page.indexOf(label) > -1,
-           'the index says to use a control the radial does not offer (it says ' + label + ')');
+        // Control is automatic now; the page must not send the player looking
+        // for a CONNECT button the radial no longer has.
+        ok(/automatically/i.test(page), 'it does not say a nest links itself');
+        ok(!/pick <span class="cm-stat">CONNECT<\/span>/.test(page), 'it still tells the player to pick CONNECT');
     });
 
     check('the GAME INDEX says the wall is the only mouth', () => {

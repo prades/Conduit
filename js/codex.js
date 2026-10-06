@@ -46,8 +46,8 @@ const CODEX_GENERATOR = [
     { t: 'It will NOT rebuild a broken pylon. Wreckage is a CORE worker\'s job.' },
     null,
     { h: 'IT LINKS THE NEST' },
-    { t: 'A generator is the only structure a broken nest will connect to. No elemental pylon can take that link.' },
-    { t: 'Because of that, it can only be built near a nest — and only a generator inside that range can take the link.' },
+    { t: 'A generator (or connector) links ITSELF to the closest nest you hold in range — no button to press. No elemental pylon can take that link.' },
+    { t: 'Because of that, it can only be built near a nest, and it links the moment it stands.' },
     ['MAX RANGE', GENERATOR_NEST_RANGE + ' tiles from a nest', '#8fa'],
 ];
 

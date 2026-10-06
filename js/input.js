@@ -19,74 +19,6 @@ function toCanvas(cx, cy) {
     ];
 }
 
-// A pylon the player is allowed to link a broken nest to — the same test the
-// blinking LINK highlight uses, so what is tappable is exactly what is lit.
-//
-// A nest will only link to a GENERATOR. That is the generator's whole reason
-// to exist on the nest side, and it stops the link being a free bonus on any
-// lit pylon the player happened to already own.
-function isNestLinkablePylon(t) {
-    return !!(t && t.pillar && !t.destroyed && t.pillarTeam === "green"
-              && t.health > 0 && (t.isGenerator || t.isConnector));
-}
-
-// Nearest eligible pylon to a tap. The old scan kept the LAST match in world
-// order rather than the closest, so with two lit pylons in range the tap could
-// land on the wrong one.
-function pickNestLinkPylon(ex, ey) {
-    const dx = ex - canvas.width/2, dy = ey - canvas.height/2 - TILE_H;
-    const gx = (dy/TILE_H + dx/TILE_W) / 2 + player.visualX;
-    const gy = (dy/TILE_H - dx/TILE_W) / 2 + player.visualY;
-    let best = null, bestD = 2.5;
-    for (const t of world) {
-        if (!isNestLinkablePylon(t)) continue;
-        const d = Math.hypot(t.x - gx, t.y - gy);
-        if (d < bestD) { bestD = d; best = t; }
-    }
-    return best;
-}
-
-// While linking a nest, a tap means "pick that pylon" and nothing else. This
-// runs ahead of the follower and gesture handling in pointerup, because those
-// were swallowing the tap whenever a follower happened to stand within 40px of
-// the pylon — the link then failed silently and the mode cancelled itself.
-//
-// Returns true when the tap has been consumed.
-function handleNestConnectTap(ex, ey) {
-    if (!nestConnectMode) return false;
-    const tapped = pickNestLinkPylon(ex, ey);
-    // Same reach the placement rule enforces, so anything you were allowed to
-    // build can always take the link — and a generator across the map cannot.
-    if (tapped && pendingConnectNest &&
-        Math.hypot(tapped.x - pendingConnectNest.x, tapped.y - pendingConnectNest.y) > GENERATOR_NEST_RANGE) {
-        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
-            text:"THAT RELAY IS TOO FAR FROM THE NEST", color:"#f44", life:120, vy:-0.25});
-        return true;
-    }
-    if (tapped && pendingConnectNest) {
-        tapped.nestConnection = pendingConnectNest;
-        pendingConnectNest.connectedPylon = tapped;
-        const _home = typeof isHomePortal === "function" && isHomePortal(pendingConnectNest);
-        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
-            text: _home ? "HOME CONNECTED — feeding that generator"
-                        : "ZONE CONTROLLED — bonus charge active",
-            color: _home ? "#0f8" : NEST_COLOUR_CONTROLLED, life:120, vy:-0.3});
-        nestConnectMode = false; pendingConnectNest = null; nestConnectMisses = 0;
-        return true;
-    }
-    // A miss no longer cancels outright — that is what made a stray tap so
-    // costly. Two misses in a row does, so the mode can never trap the player.
-    nestConnectMisses++;
-    if (nestConnectMisses >= 2) {
-        nestConnectMode = false; pendingConnectNest = null; nestConnectMisses = 0;
-        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
-            text:"LINK CANCELLED", color:"#888", life:90, vy:-0.25});
-    } else {
-        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
-            text:"TAP A GENERATOR OR CONNECTOR  (tap again to cancel)", color:"#00ffcc", life:110, vy:-0.25});
-    }
-    return true;
-}
 
 // The enemy under a screen point, if any. Shared by the tap handler and the
 // long press so what you can shoot is exactly what you can target.
@@ -224,9 +156,6 @@ function setPlayerAttackMode(on) {
 }
 
 const handleInput=(ex,ey)=>{
-    // Nest linking is handled earlier in pointerup; this is a backstop for any
-    // other path that reaches handleInput while the mode is active.
-    if (nestConnectMode) { handleNestConnectTap(ex, ey); return; }
     // Short tap near crystal → open crystal panel
     if (isTapNearCrystal(ex,ey)) { crystalMenuOpen=true; return; }
     // The HOME PORTAL is the other way in. Zone 0's nest spawns nothing and
@@ -297,9 +226,6 @@ function ringHintTick() {
 }
 
 function handleLongHold(ex,ey) {
-    // Holding during a pending nest link would open the command menu over the
-    // pylon the player is trying to pick.
-    if (nestConnectMode) return;
     // The follower index takes its own long press: a row there is a GROUP, and
     // the duty switch belongs to it. Checked before anything else so the world
     // radial does not also open underneath the panel.
@@ -324,7 +250,7 @@ function handleLongHold(ex,ey) {
     // pylon's body and a follower standing on it share the same screen space,
     // so the press that means UPGRADE landed on the follower instead and the
     // ring came back offering TO WORK. The same collision already had to be
-    // worked around once, for nest linking — see handleNestConnectTap.
+    // worked around once already, for the old nest-linking tap.
     //
     // A pylon actually UNDER the point wins, which is a tighter rule than the
     // two-tile snap above: that snap is skipped in build mode on purpose, so
@@ -362,24 +288,22 @@ function handleLongHold(ex,ey) {
     // Check if any nest pod (live or broken) is near this tile (within 2.5 tiles)
     commandNestTarget=null;
     world.forEach(obj=>{
-        // Never the home portal: CONNECT on it is an order against
-        // your own doorway.
+        // Never the home portal: that is picked only by a press ON it, below.
         if (obj.nest && !isHomePortal(obj) && Math.hypot(obj.x-gx,obj.y-gy)<4.0) {
             commandNestTarget=obj;
         }
     });
     // THE HOME PORTAL, the nest labelled CRYSTAL. It is left out of the radius
     // scan above on purpose — a long press anywhere within four tiles of it
-    // would turn every nearby press into a CONNECT, and a base is built right
-    // there — so it is picked only when the press lands ON the portal itself.
+    // would turn every nearby press into a press on the portal, and a base is
+    // built right there — so it is picked only when the press lands ON it.
     if (typeof isTapNearHomePortal === "function" && isTapNearHomePortal(ex, ey)) {
         const home = typeof homePortalTile === "function" ? homePortalTile() : null;
         if (home) {
             commandNestTarget = home;
             // And the portal's tile is the target, which stops the snap-to-nearest-
             // pylon step above from handing the press to a pylon standing beside
-            // it. A base is built right there, and with a pylon within two tiles
-            // the left button became that pylon's SWITCH and CONNECT never came up.
+            // it, so INFO on the portal shows the portal.
             commandTarget = home;
         }
     }
@@ -460,10 +384,6 @@ canvas.addEventListener('pointerup', e=>{
     if (handleOverlayPanelTap(upX, upY)) { isPressing=false; return; }
     if (handleCloneMenuTap(upX, upY)) { isPressing=false; return; }
     if (handleCampMenuTap(upX, upY)) { isPressing=false; return; }
-    // Pylons win over everything below while a nest link is pending: the
-    // follower panel, the ultimate double-tap scan and the gesture handlers all
-    // used to get first refusal and steal the tap.
-    if (!touchMoved && handleNestConnectTap(upX, upY)) { isPressing=false; return; }
     // The group duty menu first: it sits beside the index, and the index's own
     // tap handler would otherwise take a press aimed at the menu.
     if (typeof handleFollowerDutyMenuTap === "function"
@@ -565,8 +485,6 @@ canvas.addEventListener('pointerup', e=>{
             const relDist = Math.hypot(relX, relY);
             const relAngle = Math.atan2(relY, relX);
             if (relDist > 18) {
-                // Mirrors drawRadialMenu: one test for "can this nest be connected".
-                const isBrokenNest = nestCanConnect(commandNestTarget);
                 const _isPyCmd = commandTarget && commandTarget.pillar && !commandTarget.destroyed;
                 const _isCapturableCmd = commandTarget && commandTarget.capturable && !commandTarget.captured;
                 // The top button is drawn whenever build mode is on — UPGRADE on a
@@ -601,7 +519,6 @@ canvas.addEventListener('pointerup', e=>{
                                        selectedRadialAction = "reconstruct";
                 else if (_isPyCmd && isSwitchableRelay(commandTarget) && commandTarget.pillarTeam === "green")
                                        selectedRadialAction = "toggle_circuit";
-                else if (isBrokenNest) selectedRadialAction = "connect_nest";
                 else                   selectedRadialAction = "switch_context";
             } else if (longHoldFired && !commandPendingTap) {
                 // User released right on the long-hold spot — menu just appeared.
