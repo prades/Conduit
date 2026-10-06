@@ -262,7 +262,7 @@ const TUTS = [
         // still fresh, and before a follower gets spent on a pylon upgrade.
         id:    'squad',
         title: 'WHO ANSWERS THE CALL',
-        body:  'SQUAD: SEL sends only the element picked in the ELEM list — pick FIRE and only your fire units go. SQUAD: ALL sends everyone. Circle the marked bug once on SEL, then tap the flashing SQUAD button and circle it again on ALL.',
+        body:  'The SQUAD button shows one figure on SEL: only the element picked in the ELEM list goes — pick FIRE and only fire units go. Three figures, ALL, sends everyone. Circle the marked bug once on SEL, then tap the flashing SQUAD button and circle it again on ALL.',
         icon:  '⑂',
         // Two bugs, once: one for each order. They are NOT respawned — the lesson
         // ends when both orders have been given or both bugs are dead.
@@ -309,7 +309,7 @@ const TUTS = [
     {
         id:    'upgrade',
         title: 'UPGRADE A PYLON',
-        body:  'UPGRADE only shows in build mode. Tap the flashing BUILD button so it reads BUILD: ON, then press and hold the marked pylon and pick UPGRADE at the top of the ring. Choose ATTACK TURRET, then an element — a follower sacrifices themselves to power it up.',
+        body:  'UPGRADE only shows in build mode. Tap the flashing BUILD (wrench) button to turn it ON, then press and hold the marked pylon and pick UPGRADE at the top of the ring. Choose ATTACK TURRET, then an element — a follower sacrifices themselves to power it up.',
         icon:  '△',
         // Flash BUILD until it is on; once it is, the request is answered and
         // the ring's UPGRADE button is where the player should be looking.

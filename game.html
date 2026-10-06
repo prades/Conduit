@@ -183,12 +183,18 @@
     .top-btn {
         background: rgba(0,0,0,0.78); border: 1px solid #0f8;
         color: #0f8; font-family: monospace; font-size: 11px;
-        padding: 4px 8px; border-radius: 3px; cursor: pointer;
+        padding: 0 8px; border-radius: 3px; cursor: pointer;
         letter-spacing: 1px; touch-action: manipulation;
         white-space: nowrap;
+        display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+        height: 28px; min-width: 28px; box-sizing: border-box;
     }
+    /* The icon on BUILD and SQUAD, drawn in the button's own colour. */
+    .top-btn svg { width: 18px; height: 18px; display: block; flex: none; }
+    .top-tag { font-size: 10px; }
     @media (max-width: 360px) {
-        .top-btn { font-size: 9px; padding: 3px 5px; }
+        .top-btn { font-size: 9px; padding: 0 5px; height: 26px; min-width: 26px; }
+        .top-btn svg { width: 16px; height: 16px; }
         #topToggles { gap: 3px; }
     }
     .top-btn.active { background: rgba(0,255,136,0.18); border-color: #0ff; color: #0ff; }
@@ -494,8 +500,8 @@
   </div>
   <div id="waveInfo">WAVE 1 — clear panels for shards</div>
   <div id="topToggles">
-    <button id="btnSquad" class="top-btn" onclick="toggleSquad()">SQUAD: SEL</button>
-    <button id="btnBuild" class="top-btn" onclick="toggleBuild()">BUILD: OFF</button>
+    <button id="btnSquad" class="top-btn" onclick="toggleSquad()" title="Squad: selected element only" aria-label="Squad: selected element only"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="7" r="3.6"/><path d="M5 21v-2.2a7 7 0 0 1 14 0V21z"/></svg><span class="top-tag">SEL</span></button>
+    <button id="btnBuild" class="top-btn" onclick="toggleBuild()" title="Build mode: off" aria-label="Build mode: off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.2 8.2 L19.8 19.8" stroke-width="2.4"/><path d="M10.4 5.2 L7.8 2.6 L2.6 7.8 L5.2 10.4 Z" fill="currentColor" stroke-width="1.2"/><path d="M14.6 9.4 L4.2 19.8" stroke-width="2.4"/><path d="M16.6 3.2 A4 4 0 1 0 20.8 7.4" stroke-width="2.8"/></svg><span class="top-tag">OFF</span></button>
     <button id="btnCtrl"  class="top-btn" onclick="toggleControlsMenu()">?</button>
 </div>
 </div>
@@ -733,8 +739,8 @@
       <div class="cm-stat-row"><span class="cm-stat-name">Resonance</span><span class="cm-stat-abbr">RES</span>0 → 100 — builds from damage dealt (+3/hit, +20/kill). Triggers network buffs at max.</div>
 
       <div class="ctrl-title">COMMANDING FOLLOWERS</div>
-      <div class="ctrl-row cm-dim"><span class="cm-stat">SQUAD: SEL</span> — commands apply to selected followers only</div>
-      <div class="ctrl-row cm-dim"><span class="cm-stat">SQUAD: ALL</span> — commands apply to every follower</div>
+      <div class="ctrl-row cm-dim"><span class="cm-stat">SQUAD &middot; one figure, SEL</span> — commands apply to selected followers only</div>
+      <div class="ctrl-row cm-dim"><span class="cm-stat">SQUAD &middot; three figures, ALL</span> — commands apply to every follower</div>
       <div class="ctrl-row cm-dim">Circle gesture → send squad to attack area or recall if no enemies present</div>
       <div class="ctrl-row cm-dim">Drag follower → enemy → that single follower attacks that specific target</div>
     </div>

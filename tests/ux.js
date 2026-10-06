@@ -83,6 +83,29 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/NETWORK DOWN TO/.test(rd('js/game.js')) && /NETWORK LOST/.test(rd('js/game.js')), 'tier loss is silent');
     });
 
+    group('the top buttons are icons');
+
+    await check('THE ASK: BUILD is a wrench and hammer; SQUAD is one figure on SEL and three on ALL', () => {
+        const r = run(`(function(){
+            // The shared stub hands back a fresh element per lookup; keep two.
+            const mk = () => ({ innerHTML: '', title: '', setAttribute() {}, classList: { toggle() {} } });
+            const sq = mk(), bd = mk(), keep = document.getElementById;
+            document.getElementById = id => id === 'btnSquad' ? sq : id === 'btnBuild' ? bd : keep(id);
+            squadMode = 'all'; toggleSquad(); const sel = sq.innerHTML;
+            toggleSquad(); const all = sq.innerHTML;
+            buildMode = true; toggleBuild(); const off = bd.innerHTML;
+            toggleBuild(); const on = bd.innerHTML;
+            squadMode = 'selected'; buildMode = false; document.getElementById = keep;
+            return { sel: sel.indexOf(ICON_SQUAD_SEL) === 0 && /SEL/.test(sel), all: all.indexOf(ICON_SQUAD_ALL) === 0 && /ALL/.test(all),
+                     off: off.indexOf(ICON_BUILD) === 0 && /OFF/.test(off), on: on.indexOf(ICON_BUILD) === 0 && />ON</.test(on),
+                     three: (ICON_SQUAD_ALL.match(/<circle/g) || []).length, one: (ICON_SQUAD_SEL.match(/<circle/g) || []).length };
+        })()`);
+        ok(r.sel && r.all && r.off && r.on, JSON.stringify(r));
+        ok(r.one === 1 && r.three === 3, 'one figure on SEL, three on ALL: ' + JSON.stringify(r));
+        const html = rd('game.html');
+        ok(/id="btnSquad"[^>]*>\s*<svg/.test(html) && /id="btnBuild"[^>]*>\s*<svg/.test(html), 'the buttons start without their icons');
+    });
+
     group('the quiet bugs from the audit');
 
     await check('a turret is not lit when the pool cannot pay for a shot', () => {

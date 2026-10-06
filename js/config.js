@@ -720,15 +720,37 @@ const PYLON_BUILD_COST       = 10;
 const HEALTH_PAD_CRAFT_COST  = 8;    // shards to craft one pad
 let healthPads = [];   // [{ charges: N }]
 
+// THE TOP BUTTONS ARE ICONS. "Make the build mode and the squad mode thing at
+// the top have like a wrench and some other iconic build mode icon, kind of
+// interlaced together, and with the squad button have a picture of a little
+// guy, little minimalist design." BUILD is a crossed wrench and hammer; SQUAD
+// is one figure on SEL and a group of three on ALL. A short tag keeps the
+// state readable, and the title / aria-label still say it in words.
+const ICON_BUILD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.2 8.2 L19.8 19.8" stroke-width="2.4"/><path d="M10.4 5.2 L7.8 2.6 L2.6 7.8 L5.2 10.4 Z" fill="currentColor" stroke-width="1.2"/><path d="M14.6 9.4 L4.2 19.8" stroke-width="2.4"/><path d="M16.6 3.2 A4 4 0 1 0 20.8 7.4" stroke-width="2.8"/></svg>';
+const ICON_SQUAD_SEL = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="7" r="3.6"/><path d="M5 21v-2.2a7 7 0 0 1 14 0V21z"/></svg>';
+const ICON_SQUAD_ALL = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><g opacity="0.55"><circle cx="5.2" cy="9" r="2.5"/><path d="M0.8 20v-1.4a4.4 4.4 0 0 1 8.8 0V20z"/><circle cx="18.8" cy="9" r="2.5"/><path d="M14.4 20v-1.4a4.4 4.4 0 0 1 8.8 0V20z"/></g><circle cx="12" cy="7.5" r="3.2"/><path d="M6.2 21v-1.8a5.8 5.8 0 0 1 11.6 0V21z"/></svg>';
+function _setTopButton(btn, icon, tag, label, on) {
+    if (!btn) return;
+    btn.innerHTML = icon + '<span class="top-tag">' + tag + '</span>';
+    btn.title = label; btn.setAttribute && btn.setAttribute("aria-label", label);
+    btn.classList.toggle("active", on);
+}
+function updateSquadButton() {
+    const all = squadMode === "all";
+    _setTopButton(document.getElementById("btnSquad"), all ? ICON_SQUAD_ALL : ICON_SQUAD_SEL,
+                  all ? "ALL" : "SEL", "Squad: " + (all ? "all followers" : "selected element only"), all);
+}
+function updateBuildButton() {
+    _setTopButton(document.getElementById("btnBuild"), ICON_BUILD, buildMode ? "ON" : "OFF",
+                  "Build mode: " + (buildMode ? "on" : "off"), buildMode);
+}
 function toggleSquad() {
     squadMode = (squadMode === "selected") ? "all" : "selected";
-    const btn = document.getElementById("btnSquad");
-    if (btn) { btn.textContent="SQUAD: "+(squadMode==="all"?"ALL":"SEL"); btn.classList.toggle("active",squadMode==="all"); }
+    updateSquadButton();
 }
 function toggleBuild() {
     buildMode = !buildMode;
-    const btn = document.getElementById("btnBuild");
-    if (btn) { btn.textContent="BUILD: "+(buildMode?"ON":"OFF"); btn.classList.toggle("active",buildMode); }
+    updateBuildButton();
 }
 function toggleControlsMenu() {
     const m = document.getElementById("controlsMenu");
