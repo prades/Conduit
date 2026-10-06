@@ -106,6 +106,24 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/id="btnSquad"[^>]*>\s*<svg/.test(html) && /id="btnBuild"[^>]*>\s*<svg/.test(html), 'the buttons start without their icons');
     });
 
+    group('an attack order walks, it does not sprint');
+
+    await check('THE ASK: a follower circled onto a far predator moves at its own speed, not a share of the distance', () => {
+        const r = run(`(function(){
+            actors.length = 0; followers.length = 0;
+            spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1];
+            f.personality = f.personality || 'steady'; f.returningToCrystal = false; f.duty = null; f.slowed = 0; f.slowFactor = 1;
+            const S = SPECIES.ant; const q = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), f.x + 20, f.y);
+            q.team = 'red'; q.health = q.maxHealth = 1e6; actors.push(q);
+            f.job = { type: 'attack', target: q };
+            const base = f.moveSpeed; let maxStep = 0;
+            for (let i = 0; i < 30; i++) { const x = f.x, y = f.y; q.x = f.x + 20; updateRTSNPC(f); maxStep = Math.max(maxStep, Math.hypot(f.x - x, f.y - y)); }
+            return { base, maxStep };
+        })()`);
+        ok(r.maxStep > 0, 'fixture: it never moved');
+        ok(r.maxStep <= r.base * 1.0001, 'it moved ' + r.maxStep.toFixed(3) + ' a frame against a speed of ' + r.base.toFixed(3));
+    });
+
     group('the quiet bugs from the audit');
 
     await check('a turret is not lit when the pool cannot pay for a shot', () => {

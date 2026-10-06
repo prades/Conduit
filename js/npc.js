@@ -242,7 +242,12 @@ function updateRTSNPC(actor) {
         const enemy=actor.job.target;
         if (!enemy||enemy.dead) { actor.job=null; actor.firstStrikeUsed=false; return; }
         const dx=enemy.x-actor.x, dy=enemy.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist>0.8) { actor.x+=dx*actor.moveSpeed; actor.y+=dy*actor.moveSpeed; }
+        // At its ordinary speed. This moved dx*moveSpeed — a share of the
+        // DISTANCE every frame, so a follower circled onto a bug across the map
+        // started out at twenty times its pace and slowed as it closed in.
+        // REPORTED: "they should not sprint from across the map ... they
+        // should follow the regular rules of speed."
+        if (dist>0.8) { actor.x+=dx/dist*actor.moveSpeed; actor.y+=dy/dist*actor.moveSpeed; }
         else {
             let dmg=actor.power*0.3;
             if (actor.damageMultiplier) dmg*=actor.damageMultiplier;
