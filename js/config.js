@@ -386,6 +386,34 @@ const OVERCHARGE_MIN_FILL  = 0.5;
 const OVERCHARGE_FRAMES    = 480;    // 8 s
 const OVERCHARGE_COOLDOWN  = 3600;   // 60 s, counted from the moment it fires
 const OVERCHARGE_FIRE_MULT = 3;
+// ── NIGHT SIEGE MODIFIERS (docs/ROADMAP-top5.md §3) ──────
+// From SIEGE_FROM_NIGHT on, every night rolls one of these as the alarm turns
+// day into night — never the same as the night before — and it lifts when the
+// next wave comes. Each is read where its rule lives (siegeIs).
+const SIEGES = {
+    blackout: { label: "BLACKOUT",      color: "#9aa4ff", line: "Nests regenerate nothing tonight." },
+    swarm:    { label: "SWARM TIDE",    color: "#c4ff5a", line: "Nymph swarms pour in \u2014 more of them, half the health." },
+    hunt:     { label: "HUNTER'S MOON", color: "#ff7755", line: "Every predator hunts your pylons. They are tougher tonight." },
+    storm:    { label: "STATIC STORM",  color: "#fff27a", line: "Electric everything is doubled \u2014 for both sides." },
+};
+const SIEGE_FROM_NIGHT   = 3;
+const SIEGE_SWARM_NYMPH  = 0.7;   // share of spawns that become nymphs
+const SIEGE_SWARM_HP     = 0.5;
+const SIEGE_SWARM_CAP    = 2;     // extra predators per alarm zone
+const SIEGE_HUNT_BASH    = 0.8;   // pylon bash damage — pylons are 25% tougher
+const SIEGE_STORM_MULT   = 2;     // electric damage, and the haste bonus over 1
+let siegeToday = null, siegeLast = null;
+function siegeIs(id) { return siegeToday === id; }
+// Static Storm doubles the BONUS of a haste: 1.35 becomes 1.7.
+function stormHaste(m) { return siegeIs("storm") && m > 1 ? 1 + (m - 1) * SIEGE_STORM_MULT : m; }
+function rollSiege(night) {
+    if (!(night >= SIEGE_FROM_NIGHT)) { siegeToday = null; return null; }
+    const ids = Object.keys(SIEGES).filter(k => k !== siegeLast);
+    siegeToday = ids[Math.floor(Math.random() * ids.length)];
+    return siegeToday;
+}
+// The night is over: remember it so tomorrow is different.
+function endSiege() { if (siegeToday) siegeLast = siegeToday; siegeToday = null; }
 const COMBO_MAX_LINKS = 2;        // combo links per pylon, nearest first
 const COMBO_STRIP     = 1.5;      // tiles either side of the link it reaches
 const COMBO_TIER_GAIN = 0.25;     // strength = 1 + this × the two networks' average tier

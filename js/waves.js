@@ -47,7 +47,8 @@ function objectiveText(suffix) {
         // What tripped the alarm used to be painted on the canvas and was lost
         // when that copy went; it belongs on the one line that is left.
         return "\u26a0 " + alarmLabel(alertType) + " \u2014 TAKING ZONE " + z
-             + " \u2014 Kill " + nightKillCount + "/" + nightEnemiesTarget;
+             + " \u2014 Kill " + nightKillCount + "/" + nightEnemiesTarget
+             + (typeof siegeToday !== "undefined" && siegeToday ? " \u00b7 " + SIEGES[siegeToday].label : "");
     }
     const cleared = gameState.highestZoneCleared || 0;
     const head = cleared > 0 ? ("ZONE " + cleared + " TAKEN") : "HOME SECURE";
@@ -103,6 +104,12 @@ function triggerAlarm(type, sx, sy) {
         nightKillCount = 0;
         nightEnemiesTarget    = enemiesThisWave();
         nightPredatorsRemaining = predatorsThisWave();
+        // A SIEGE MODIFIER for the night (docs/ROADMAP-top5.md §3).
+        if (typeof rollSiege === "function" && rollSiege(gameState.nightNumber)) {
+            const sg = SIEGES[siegeToday];
+            floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: "\u263e " + sg.label, color: sg.color, life: 260, vy: -0.08, size: 20 });
+            floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 108, text: sg.line, color: sg.color, life: 260, vy: -0.08, size: 11 });
+        }
     }
 
     // Announce alarm type
@@ -520,6 +527,7 @@ function nextWave() {
 
         gameState.phase   = "day";
         gameState.running = true;
+        if (typeof endSiege === "function") endSiege();   // the night's modifier lifts at dawn
         updateObjectiveUI();
     }, 0);
 }
@@ -563,6 +571,7 @@ function restartGame() {
     dayStats={ redSpawned:0, redConverted:0 };
     nightKillCount=0; nightEnemiesTarget=0; nightPredatorsRemaining=0;
     alertActive=false; alertTimer=0; alertType=null; alertSource=null; alertZone=null;
+    if (typeof siegeToday !== "undefined") { siegeToday = null; siegeLast = null; }
     // Menus, gestures, charged mass and every pointer into the world that was
     // just thrown away. Shared with nextWave() so the two cannot drift.
     resetTransientState();

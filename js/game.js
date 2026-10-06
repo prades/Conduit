@@ -340,7 +340,7 @@ function applyPylonZoneEffects(wavePylons) {
                         // and dropping off a moment after they leave. An enemy's
                         // slow on the same follower wins, so ice still bites.
                         if (isFriend && !(a.slowed > 0 && (a.slowFactor ?? 1) < 1)) {
-                            applySlow(a, ELECTRIC_HASTE_FRAMES, ELECTRIC_HASTE[Math.min(3, _nTier)] || ELECTRIC_HASTE[1]);
+                            applySlow(a, ELECTRIC_HASTE_FRAMES, _hasteOf(ELECTRIC_HASTE[Math.min(3, _nTier)] || ELECTRIC_HASTE[1]));
                         }
                         if (isFriend && frame % 10 === 0) {
                             const gain = Math.round((_nTier >= 3 ? 10 : _nTier >= 2 ? 6 : 3) * _seasonBonus);
@@ -1080,7 +1080,7 @@ function applyComboFoe(act, f, k, L) {
 
 function applyComboAlly(act, a, k) {
     if (a.haste && !(act.slowed > 0 && (act.slowFactor ?? 1) < 1))
-        applySlow(act, ELECTRIC_HASTE_FRAMES, Math.max(act.slowFactor > 1 && act.slowed > 0 ? act.slowFactor : 1, a.haste));
+        applySlow(act, ELECTRIC_HASTE_FRAMES, Math.max(act.slowFactor > 1 && act.slowed > 0 ? act.slowFactor : 1, _hasteOf(a.haste)));
     if (a.shield && frame % a.shieldEvery === 0) {
         const cap = a.shieldCap;
         act.shielded = true; act.shieldAmount = Math.min(cap, (act.shieldAmount || 0) + Math.round(a.shield * k));
@@ -1177,7 +1177,7 @@ function electricHasteTick() {
             const dx = a.x - p.x, dy = a.y - p.y;
             if (dx * dx + dy * dy > r2) continue;
             const tier = Math.min(3, baseTier + (pylonSurged(p) ? 1 : 0));
-            if (tier >= 1) { applySlow(a, ELECTRIC_HASTE_FRAMES, ELECTRIC_HASTE[tier]); break; }
+            if (tier >= 1) { applySlow(a, ELECTRIC_HASTE_FRAMES, _hasteOf(ELECTRIC_HASTE[tier])); break; }
         }
     }
 }
@@ -1230,6 +1230,9 @@ function drawTurretShots() {
     }
     ctx.restore();
 }
+
+// A haste factor through tonight's siege (Static Storm doubles the bonus).
+function _hasteOf(m) { return typeof stormHaste === "function" ? stormHaste(m) : m; }
 
 // One turret round: the pylon's power, the turret multiplier, its network
 // tier, and a bite out of the target's max HP so it counts against big ones.
@@ -1854,7 +1857,7 @@ function render() {
             const isHigherZone = alertActive && alertZone !== null && z > alertZone;
             // During alarm: spawn up to (zone depth + 2) predators in the alarm zone;
             // higher zones maintain 1 wanderer; non-alarm day keeps 1 wanderer per zone.
-            const maxPredators = isAlarmZone ? (2 + z) : 1;
+            const maxPredators = isAlarmZone ? (2 + z + (typeof siegeIs === "function" && siegeIs("swarm") ? SIEGE_SWARM_CAP : 0)) : 1;
             if (alivePredators.length < maxPredators) {
                 if (!zoneRespawnTimers[z]) zoneRespawnTimers[z] = 0;
                 if (zoneRespawnTimers[z] > 0) {
@@ -1928,7 +1931,9 @@ function render() {
         // interval later.
         // OVERCHARGE: a surged turret fires OVERCHARGE_FIRE_MULT× as often.
         const _surged = pylonSurged(t);
-        const _every = _surged ? Math.max(1, Math.round(TURRET_FIRE_FRAMES / OVERCHARGE_FIRE_MULT)) : TURRET_FIRE_FRAMES;
+        // STATIC STORM (a siege night): electric turrets fire twice as often.
+        const _storm = typeof siegeIs === "function" && siegeIs("storm") && t.attackModeElement === "electric" ? SIEGE_STORM_MULT : 1;
+        const _every = Math.max(1, Math.round(TURRET_FIRE_FRAMES / (_surged ? OVERCHARGE_FIRE_MULT : 1) / _storm));
         t.attackFireTimer = Math.min(_every, (t.attackFireTimer||0) + 1);
         if (t.attackFireTimer < _every) return;
         // Find nearest enemy within range — squared distance avoids sqrt for non-targets

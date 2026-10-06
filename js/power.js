@@ -58,6 +58,8 @@ function nestEnergyTick() {
         if (!nestIsPowerSource(t)) continue;
         const cap = nestEnergyMax(t);
         if (!Number.isFinite(t.nestEnergy)) { t.nestEnergy = cap; continue; }
+        // BLACKOUT (a siege night): nothing creeps back tonight.
+        if (typeof siegeIs === "function" && siegeIs("blackout")) continue;
         if (t.nestEnergy < cap) t.nestEnergy = Math.min(cap, t.nestEnergy + NEST_ENERGY_REGEN);
     }
 }

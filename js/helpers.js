@@ -249,6 +249,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (target instanceof Predator && target.team !== "green" && gameState.phase === "day") {
         target.provoked = true; target.state = "hunt";
     }
+    // STATIC STORM (a siege night): electric hits land double, whoever throws them.
+    if (element === "electric" && typeof siegeIs === "function" && siegeIs("storm")) amount *= SIEGE_STORM_MULT;
     if (target.frozen) return;
     if (target.invulnerable && target.invulnerable > 0) return;
     if (target.smokeForm > 0 && Math.random() < (target.smokeEvasion||0.75)) return;

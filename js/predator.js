@@ -274,7 +274,9 @@ class Predator {
                     if (!this.pylonAttackCooldown) this.pylonAttackCooldown=0;
                     this.pylonAttackCooldown--;
                     if (this.pylonAttackCooldown<=0) {
-                        this.pylonAggro.health=Math.max(0,(this.pylonAggro.health||0)-this.power*0.6);
+                        // HUNTER'S MOON: pylons hold out a quarter longer.
+                        const _bash = this.power * 0.6 * (typeof siegeIs === "function" && siegeIs("hunt") ? SIEGE_HUNT_BASH : 1);
+                        this.pylonAggro.health=Math.max(0,(this.pylonAggro.health||0)-_bash);
                         if (typeof shake!=="undefined") shake=Math.max(shake,2);
                         floatingTexts.push({x:this.pylonAggro.x,y:this.pylonAggro.y-1,text:"BASH!",color:"#ff8800",life:30,vy:-0.05});
                         if (this.pylonAggro.health<=0) { this.pylonAggro.pendingDestroy=true; this.pylonAggro=null; this.pylonExposureFrames=0; }

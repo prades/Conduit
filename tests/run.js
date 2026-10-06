@@ -48,6 +48,7 @@ const SUITES = [
     ['support + disruption wake','wake.js'],
     ['element combos',         'combo.js'],
     ['overcharge',             'overcharge.js'],
+    ['night sieges',           'siege.js'],
 ];
 
 let failed = 0;

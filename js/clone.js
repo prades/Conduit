@@ -447,7 +447,9 @@ function zoneSpawnPoints(zoneIndex) {
 function spawnPredatorForZone(zoneIndex, opts) {
     opts = opts || {};
     const speciesName = getZoneSpecies(zoneIndex, gameState.nightNumber);
-    const className   = opts.className || getZoneClass(zoneIndex);
+    // SWARM TIDE (a siege night): most spawns come as nymphs.
+    const className   = opts.className
+        || (typeof siegeIs === "function" && siegeIs("swarm") && Math.random() < SIEGE_SWARM_NYMPH ? "nymph" : getZoneClass(zoneIndex));
     // Natural species live in SPECIES; synthetic deep-zone constructs live in SYNTHETIC_SPECIES
     const speciesDef  = SPECIES[speciesName] || SYNTHETIC_SPECIES[speciesName];
     const classDef    = getClassDef(speciesDef, className);
@@ -496,11 +498,19 @@ function spawnPredatorForZone(zoneIndex, opts) {
     // Capture the final speed after every mutation, so slows scale from the
     // real base rather than from whatever the AI last parked moveSpeed at.
     predator.baseMoveSpeed = predator.moveSpeed;
+    // SWARM TIDE: more of them, half the health.
+    if (typeof siegeIs === "function" && siegeIs("swarm")) {
+        predator.maxHealth = Math.max(1, Math.round(predator.maxHealth * SIEGE_SWARM_HP));
+        predator.health = Math.min(predator.health, predator.maxHealth);
+    }
     // Resolve the charge-up special now that species and class are both known.
     initAbility(predator);
     // What this zone's predators are FOR (js/broods.js): zone 1 plain
     // attackers, zone 2 beetle haulers, zone 3 nymph swarms.
     if (typeof applyZoneRole === "function") applyZoneRole(predator, zoneIndex);
+    // HUNTER'S MOON (a siege night): every one of them is after your pylons —
+    // set after the zone role, which decides hunting for ordinary nights.
+    if (typeof siegeIs === "function" && siegeIs("hunt") && !predator.isBrood) predator.huntsPylons = true;
     if (opts.swarmChild) predator._swarmChild = true;
     // Its own gardening pace, so a batch of spawns does not later finish
     // converting a batch of pylons on the same frame. Read at call time —

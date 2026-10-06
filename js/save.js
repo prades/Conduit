@@ -220,6 +220,8 @@ function saveSession() {
             alertSource: (typeof alertSource !== "undefined" && alertSource
                           && Number.isFinite(alertSource.x))
                 ? { x: alertSource.x, y: alertSource.y } : null,
+            siege:     typeof siegeToday === "string" ? siegeToday : null,
+            siegeLast: typeof siegeLast  === "string" ? siegeLast  : null,
         };
 
         localStorage.setItem("tubecrawler_session", JSON.stringify({
@@ -356,6 +358,11 @@ function applySession(sess) {
         if (Number.isFinite(f.kills))     nightKillCount          = Math.max(0, f.kills);
         if (Number.isFinite(f.target))    nightEnemiesTarget      = Math.max(0, f.target);
         if (Number.isFinite(f.remaining)) nightPredatorsRemaining = Math.max(0, f.remaining);
+        // The night's siege modifier comes back with the night.
+        if (typeof SIEGES !== "undefined") {
+            siegeToday = (f.phase === "night" && SIEGES[f.siege]) ? f.siege : null;
+            siegeLast  = SIEGES[f.siegeLast] ? f.siegeLast : null;
+        }
         // The alarm only comes back if it had time left on it. A zero or
         // negative timer is an alarm that was about to expire anyway, and
         // restoring one of those leaves a siren nothing will ever turn off.
