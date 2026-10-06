@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ladder Antenna Silhouettes</title>
+<style>
+  :root { --bg:#0b0a10; --ink:#e6e1ee; --dim:#8a8199; --line:#262033; --paper:#d9d4e0; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family: ui-monospace, Menlo, Consolas, monospace; }
+  header { padding:16px; max-width:900px; }
+  h1 { font-size:16px; letter-spacing:3px; margin:0 0 8px; }
+  p { margin:0 0 6px; color:var(--dim); font-size:12px; line-height:1.55; }
+  p b { color:var(--ink); }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px; padding:0 16px 24px; }
+  .card { border:1px solid var(--line); border-radius:4px; overflow:hidden; background:#121019; }
+  .card canvas { display:block; width:100%; height:auto; }
+  .cap { padding:8px 10px 10px; }
+  .cap b { display:block; font-size:12px; letter-spacing:2px; }
+  .cap span { display:block; color:var(--dim); font-size:11px; line-height:1.45; margin-top:3px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>WAVE PYLONS &mdash; ROUND 2: THE LADDER &amp; ANTENNA FAMILY</h1>
+  <p><b>You liked C (Jacob&rsquo;s Ladder) and K (Antenna Mast).</b> These twelve stay in that family: tall, thin, technical &mdash; rods, masts, rings, rungs and insulators &mdash; with the hollow between the rods as the zone.</p>
+  <p><b>Style rules:</b> Mandark cartoon &mdash; flat fills, bold black outline, near-black and deep purple with ONE glowing element accent. Sharp, sinister, tall. One idea per pylon. Hollow in the middle.</p>
+  <p><b>This sheet tests shape only.</b> Top of each card: the shape as a solid silhouette &mdash; if it isn&rsquo;t recognisable as a black blob, it fails. Bottom strip: the same shape at true in-game size on the floor, beside a current pylon and a bug, against the dark floor.</p>
+  <p><b>Pick 3&ndash;4 (numbers)</b> and I&rsquo;ll take only those to colour and element variants.</p>
+</header>
+<div class="grid" id="grid"></div>
+<script>
+// Each silhouette is a path in a box: x -50..50, y 0 (base) up to -130.
+// Drawn with the even-odd rule so hollows really are holes.
+const S = [
+  { n:"1 · LADDER CROWN", d:"Jacob's ladder V with a halo ring floating where the rods are widest.",
+    p(c){ c.rect(-22,-8,44,8); c.moveTo(-9,-8); c.lineTo(-4,-8); c.lineTo(-24,-112); c.lineTo(-29,-112); c.closePath(); c.moveTo(4,-8); c.lineTo(9,-8); c.lineTo(29,-112); c.lineTo(24,-112); c.closePath();
+      c.moveTo(34,-120); c.ellipse(0,-120,34,8,0,0,Math.PI*2); c.moveTo(28,-120); c.ellipse(0,-120,28,4.5,0,0,Math.PI*2,true); } },
+  { n:"2 · RUNG LADDER", d:"Two parallel masts joined by rungs — a literal ladder of light, hollow between each rung.",
+    p(c){ c.rect(-24,-8,48,8); c.rect(-20,-128,6,120); c.rect(14,-128,6,120); for (let y = -24; y > -124; y -= 18) c.rect(-14,y,28,3); } },
+  { n:"3 · FORKED MAST", d:"A single needle mast that splits at the top into a Jacob's ladder V.",
+    p(c){ c.moveTo(-18,0); c.lineTo(18,0); c.lineTo(3,-20); c.lineTo(-3,-20); c.closePath(); c.rect(-3,-74,6,54);
+      c.moveTo(-3,-74); c.lineTo(3,-74); c.lineTo(-20,-128); c.lineTo(-26,-128); c.closePath(); c.moveTo(-3,-74); c.lineTo(3,-74); c.lineTo(26,-128); c.lineTo(20,-128); c.closePath(); } },
+  { n:"4 · TRIPOD BEACON", d:"Three splayed legs holding a mast; two rings ride the mast above the legs.",
+    p(c){ c.moveTo(-30,0); c.lineTo(-24,0); c.lineTo(-1,-54); c.lineTo(-4,-58); c.closePath(); c.moveTo(30,0); c.lineTo(24,0); c.lineTo(1,-54); c.lineTo(4,-58); c.closePath(); c.moveTo(-2,0); c.lineTo(2,0); c.lineTo(2,-54); c.lineTo(-2,-54); c.closePath();
+      c.rect(-2.5,-130,5,76); for (const [y, r] of [[-82, 20], [-108, 13]]) { c.moveTo(r, y); c.ellipse(0, y, r, r * 0.3, 0, 0, Math.PI*2); c.moveTo(r - 5, y); c.ellipse(0, y, r - 5, (r - 5) * 0.3, 0, 0, Math.PI*2, true); } } },
+  { n:"5 · TRIDENT LADDER", d:"Three rods fanning out from one insulator — a wider, angrier Jacob's ladder.",
+    p(c){ c.moveTo(-14,0); c.lineTo(14,0); c.lineTo(8,-16); c.lineTo(-8,-16); c.closePath();
+      c.moveTo(-5,-16); c.lineTo(-1,-16); c.lineTo(-30,-122); c.lineTo(-35,-122); c.closePath(); c.moveTo(1,-16); c.lineTo(5,-16); c.lineTo(35,-122); c.lineTo(30,-122); c.closePath(); c.rect(-2,-128,4,112); } },
+  { n:"6 · LATTICE TOWER", d:"A tapering radio tower of X-braces — the classic broadcast mast, all hollow.",
+    p(c){ c.moveTo(-26,0); c.lineTo(-20,0); c.lineTo(-3,-128); c.lineTo(-5,-128); c.closePath(); c.moveTo(26,0); c.lineTo(20,0); c.lineTo(3,-128); c.lineTo(5,-128); c.closePath();
+      const lv = [0, -32, -60, -84, -104, -120]; for (let i = 0; i < lv.length - 1; i++) { const y0 = lv[i], y1 = lv[i + 1], w0 = 23 - (-y0) * 0.16, w1 = 23 - (-y1) * 0.16;
+        c.moveTo(-w0, y0); c.lineTo(-w0 + 3, y0); c.lineTo(w1, y1); c.lineTo(w1 - 3, y1); c.closePath(); c.moveTo(w0, y0); c.lineTo(w0 - 3, y0); c.lineTo(-w1, y1); c.lineTo(-w1 + 3, y1); c.closePath(); } } },
+  { n:"7 · INSULATOR STACK", d:"A mast threaded with ceramic insulator discs, biggest at the bottom, like a power-line pole.",
+    p(c){ c.rect(-2.5,-130,5,130); c.rect(-18,-6,36,6); for (let i = 0; i < 6; i++) { const y = -18 - i * 18, r = 18 - i * 2.2; c.moveTo(r, y); c.ellipse(0, y, r, 4, 0, 0, Math.PI*2); } } },
+  { n:"8 · A-FRAME SPARK", d:"Two rods leaning in to touch at the top, with a crossbar — an A for the arc to climb.",
+    p(c){ c.rect(-28,-6,56,6); c.moveTo(-26,-6); c.lineTo(-20,-6); c.lineTo(1,-128); c.lineTo(-2,-128); c.closePath(); c.moveTo(26,-6); c.lineTo(20,-6); c.lineTo(-1,-128); c.lineTo(2,-128); c.closePath(); c.rect(-15,-52,30,4); } },
+  { n:"9 · DIAMOND MAST", d:"A needle mast through three square frames turned on their points.",
+    p(c){ c.rect(-2.5,-130,5,130); c.moveTo(-18,0); c.lineTo(18,0); c.lineTo(3,-20); c.lineTo(-3,-20); c.closePath();
+      for (const [y, r] of [[-50, 20], [-82, 15], [-108, 10]]) { c.moveTo(0, y - r); c.lineTo(r, y); c.lineTo(0, y + r); c.lineTo(-r, y); c.closePath(); c.moveTo(0, y - r + 5); c.lineTo(-r + 5, y); c.lineTo(0, y + r - 5); c.lineTo(r - 5, y); c.closePath(); } } },
+  { n:"10 · TWIN NEEDLES", d:"Two needle masts of different heights side by side, rings linking them like a bridge.",
+    p(c){ c.rect(-26,-8,52,8); c.rect(-14,-128,5,120); c.rect(9,-100,5,92);
+      for (const y of [-40, -70]) { c.moveTo(16, y); c.ellipse(0, y, 16, 5, 0, 0, Math.PI*2); c.moveTo(11, y); c.ellipse(0, y, 11, 2.5, 0, 0, Math.PI*2, true); } } },
+  { n:"11 · SPARK GAP COIL", d:"A short coil drum on a stem with two horn rods above it — the spark jumps the gap.",
+    p(c){ c.rect(-4,-40,8,40); c.rect(-20,-6,40,6); c.rect(-14,-64,28,24); for (let y = -60; y > -64 + 20; y -= 5) {}
+      c.moveTo(-8,-64); c.lineTo(-4,-64); c.lineTo(-22,-128); c.lineTo(-27,-126); c.closePath(); c.moveTo(4,-64); c.lineTo(8,-64); c.lineTo(27,-126); c.lineTo(22,-128); c.closePath(); } },
+  { n:"12 · HALO LADDER", d:"The Jacob's ladder V with rings threaded at three heights across both rods.",
+    p(c){ c.rect(-22,-8,44,8); c.moveTo(-9,-8); c.lineTo(-4,-8); c.lineTo(-26,-128); c.lineTo(-31,-128); c.closePath(); c.moveTo(4,-8); c.lineTo(9,-8); c.lineTo(31,-128); c.lineTo(26,-128); c.closePath();
+      for (const y of [-44, -78, -110]) { const w = 8 + (-y) * 0.19; c.moveTo(w + 4, y); c.ellipse(0, y, w + 4, 5, 0, 0, Math.PI*2); c.moveTo(w, y); c.ellipse(0, y, w, 2.5, 0, 0, Math.PI*2, true); } } },
+];
+
+const W = 200, H = 250;
+const grid = document.getElementById("grid");
+function draw(cv, s) {
+  const c = cv.getContext("2d"); c.setTransform(2,0,0,2,0,0);
+  // TOP: silhouette test on paper.
+  c.fillStyle = "#d9d4e0"; c.fillRect(0, 0, W, 150);
+  c.save(); c.translate(W / 2, 140); c.beginPath(); s.p(c); c.fillStyle = "#111"; c.fill("evenodd"); c.restore();
+  // BOTTOM: true in-game size on the dark floor, beside a current pylon and a bug.
+  c.fillStyle = "#0e1622"; c.fillRect(0, 150, W, H - 150);
+  const fy = 232;
+  for (const [x, y] of [[60, fy], [120, fy], [90, fy - 15], [90, fy + 15]]) {
+    c.strokeStyle = "rgba(90,140,200,0.25)"; c.beginPath(); c.moveTo(x - 30, y); c.lineTo(x, y + 15); c.lineTo(x + 30, y); c.lineTo(x, y - 15); c.closePath(); c.stroke(); }
+  // the new shape at game scale (~0.45 of the sheet scale)
+  c.save(); c.translate(90, fy + 4); c.scale(0.42, 0.42); c.beginPath(); s.p(c); c.fillStyle = "#15111c"; c.fill("evenodd"); c.lineWidth = 6; c.strokeStyle = "#000"; c.stroke(); c.restore();
+  // a current pylon for scale
+  c.fillStyle = "#1a2030"; c.fillRect(146, fy - 46, 14, 40); c.fillStyle = "#0d1520"; c.fillRect(160, fy - 43, 5, 37);
+  c.fillStyle = "#0f8"; c.beginPath(); c.arc(153, fy - 52, 3, 0, Math.PI * 2); c.fill();
+  // a bug for scale
+  c.fillStyle = "#000"; c.beginPath(); c.ellipse(32, fy - 6, 9, 4, 0, 0, Math.PI * 2); c.fill();
+  for (const dx of [-6, 0, 6]) { c.strokeStyle = "#000"; c.lineWidth = 1; c.beginPath(); c.moveTo(32 + dx, fy - 6); c.lineTo(32 + dx - 3, fy + 2); c.stroke(); }
+  c.fillStyle = "#8a8199"; c.font = "9px monospace"; c.fillText("true in-game size", 6, 162);
+}
+for (const s of S) {
+  const card = document.createElement("div"); card.className = "card";
+  const cv = document.createElement("canvas"); cv.width = W * 2; cv.height = H * 2;
+  const cap = document.createElement("div"); cap.className = "cap"; cap.innerHTML = `<b>${s.n}</b><span>${s.d}</span>`;
+  card.appendChild(cv); card.appendChild(cap); grid.appendChild(card); draw(cv, s);
+}
+</script>
+</body>
+</html>
