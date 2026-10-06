@@ -1890,6 +1890,35 @@ function drawNestWallVortex(px, py, r, colour, spin, glow, alpha) {
 const PORTAL_R = 30;
 const PORTAL_COLOUR = "#2bff9b";
 
+// ── CACHED LABELS ────────────────────────────────────────
+// Text is one of the slowest things a canvas draws, and every pylon wrote its
+// two labels every frame with a font switch between them. The words almost
+// never change, so each (text, font, colour) is rendered once to a small
+// offscreen canvas and stamped with drawImage after that.
+const _labelCache = new Map();
+function cachedText(text, font, color, x, y) {
+    if (!text) return;
+    const key = font + "|" + color + "|" + text;
+    let e = _labelCache.get(key);
+    if (!e) {
+        const cv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
+        const g = cv && cv.getContext ? cv.getContext("2d") : null;
+        if (!g || typeof g.measureText !== "function") {          // no offscreen canvas: draw it directly
+            ctx.font = font; ctx.fillStyle = color; ctx.textAlign = "center"; ctx.fillText(text, x, y); return;
+        }
+        g.font = font;
+        const m = g.measureText(text), px = parseInt((font.match(/(\d+)px/) || [0, 10])[1], 10);
+        const w = Math.ceil((m && m.width) || text.length * px * 0.6) + 4, h = px + 6;
+        cv.width = w * 2; cv.height = h * 2;
+        g.scale(2, 2); g.font = font; g.fillStyle = color; g.textAlign = "left"; g.textBaseline = "alphabetic";
+        g.fillText(text, 2, h - 4);
+        e = { cv, w, h };
+        if (_labelCache.size > 400) _labelCache.clear();
+        _labelCache.set(key, e);
+    }
+    ctx.drawImage(e.cv, x - e.w / 2, y - (e.h - 4), e.w, e.h);
+}
+
 // ── THE WAVE MONOLITH (design 8, "Barcode Tablet") ───────
 // A broad, short slab in flat Mandark-cartoon style: near-black faces, a thin
 // purple edge, a bold black outline, on a squat plinth. Its only colour is a
@@ -1901,16 +1930,17 @@ const WAVE_MONO_FACE = "#1b1624", WAVE_MONO_SIDE = "#0f0c15", WAVE_MONO_TOP = "#
 // Fewer, more distinct bars than the design sheet: at game size the sheet's
 // nine bars ran together into one block.
 const WAVE_MONO_BARS = [[0.2, 1.5], [0.4, 2.3], [0.61, 1.3], [0.8, 2.1]];
-function _monoSlab(cx, by, hw, hd, h) {
+function _monoSlab(cx, by, hw, hd, h, c) {
+    c = c || ctx;
     const L = [cx - hw, by], F = [cx, by + hd], R = [cx + hw, by];
     const Lt = [cx - hw, by - h], Ft = [cx, by + hd - h], Rt = [cx + hw, by - h], Bt = [cx, by - hd - h];
-    const poly = (pts, fill) => { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); };
+    const poly = (pts, fill) => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); c.fillStyle = fill; c.fill(); };
     poly([L, F, Ft, Lt], WAVE_MONO_FACE); poly([F, R, Rt, Ft], WAVE_MONO_SIDE); poly([Lt, Ft, Rt, Bt], WAVE_MONO_TOP);
-    ctx.strokeStyle = WAVE_MONO_EDGE; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(F[0], F[1] - 1.5); ctx.lineTo(Ft[0], Ft[1] + 1.5); ctx.stroke();
-    ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.lineJoin = "round";
-    ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(F[0], F[1]); ctx.lineTo(R[0], R[1]); ctx.lineTo(Rt[0], Rt[1]); ctx.lineTo(Bt[0], Bt[1]); ctx.lineTo(Lt[0], Lt[1]); ctx.closePath(); ctx.stroke();
-    ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(F[0], F[1]); ctx.lineTo(Ft[0], Ft[1]); ctx.lineTo(Lt[0], Lt[1]); ctx.moveTo(Ft[0], Ft[1]); ctx.lineTo(Rt[0], Rt[1]); ctx.stroke();
+    c.strokeStyle = WAVE_MONO_EDGE; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(F[0], F[1] - 1.5); c.lineTo(Ft[0], Ft[1] + 1.5); c.stroke();
+    c.strokeStyle = "#000"; c.lineWidth = 2; c.lineJoin = "round";
+    c.beginPath(); c.moveTo(L[0], L[1]); c.lineTo(F[0], F[1]); c.lineTo(R[0], R[1]); c.lineTo(Rt[0], Rt[1]); c.lineTo(Bt[0], Bt[1]); c.lineTo(Lt[0], Lt[1]); c.closePath(); c.stroke();
+    c.lineWidth = 1; c.beginPath(); c.moveTo(F[0], F[1]); c.lineTo(Ft[0], Ft[1]); c.lineTo(Lt[0], Lt[1]); c.moveTo(Ft[0], Ft[1]); c.lineTo(Rt[0], Rt[1]); c.stroke();
     return { L, F, R, Lt, Ft, Rt };
 }
 function _monoLeft(f, u, v) {
@@ -1923,30 +1953,63 @@ function _monoRight(f, u, v) {
     const tx = f.Ft[0] + (f.Rt[0] - f.Ft[0]) * u, ty = f.Ft[1] + (f.Rt[1] - f.Ft[1]) * u;
     return [bx + (tx - bx) * v, by + (ty - by) * v];
 }
+// The body never changes between frames, so it is rendered once per
+// (colour, dark, tier) to an offscreen canvas and stamped; only the scan line
+// is drawn live. It used to be ~30 fills and strokes per wave pylon per frame.
+const _monoSprites = new Map();
+const MONO_SPR_W = 40, MONO_SPR_H = 72, MONO_SPR_OX = 20, MONO_SPR_OY = 62;   // origin = (px, base)
+function _drawMonoBody(px, base, col, dark, tier, c) {
+    c = c || ctx;
+    _monoSlab(px, base, 15, 7.5, 4, c);                    // plinth
+    const f = _monoSlab(px, base - 4, 13, 6.5, 40, c);     // the tablet
+    c.lineCap = "butt";
+    c.strokeStyle = col; c.globalAlpha = dark ? 0.9 : 0.85 + 0.05 * (tier || 0);
+    for (const [u, w] of WAVE_MONO_BARS) {
+        const [x0, y0] = _monoLeft(f, u, 0.08), [x1, y1] = _monoLeft(f, u, 0.92);
+        c.lineWidth = w; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+    }
+    { const [x0, y0] = _monoRight(f, 0.5, 0.08), [x1, y1] = _monoRight(f, 0.5, 0.92);
+      c.lineWidth = 1.8; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
+    c.globalAlpha = 1;
+    return f;
+}
+function _monoSprite(col, dark, tier) {
+    const key = col + "|" + (dark ? 1 : 0) + "|" + (tier || 0);
+    let e = _monoSprites.get(key);
+    if (e !== undefined) return e;
+    e = null;
+    const cv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
+    const g = cv && cv.getContext ? cv.getContext("2d") : null;
+    if (g && typeof g.drawImage === "function" && typeof g.scale === "function") {
+        cv.width = MONO_SPR_W * 2; cv.height = MONO_SPR_H * 2;
+        g.scale(2, 2);
+        _drawMonoBody(MONO_SPR_OX, MONO_SPR_OY, col, dark, tier, g);   // the body, into the sprite
+        e = cv;
+    }
+    _monoSprites.set(key, e);
+    return e;
+}
 function drawWaveMonolith(px, base, colour, dark, tier) {
     const col = dark ? "#5c6370" : colour;
     const t = (frame || 0) / 60;
     ctx.save();
-    _monoSlab(px, base, 15, 7.5, 4);                    // plinth
-    const f = _monoSlab(px, base - 4, 13, 6.5, 40);     // the tablet
-    ctx.lineCap = "butt";
-    const bright = dark ? 0.9 : 0.85 + 0.05 * (tier || 0);
-    for (const [u, w] of WAVE_MONO_BARS) {
-        const [x0, y0] = _monoLeft(f, u, 0.08), [x1, y1] = _monoLeft(f, u, 0.92);
-        ctx.strokeStyle = col; ctx.lineWidth = w; ctx.globalAlpha = bright;
-        // A little glow only: at game size a big blur merges the bars.
-        if (!dark) { ctx.shadowColor = col; ctx.shadowBlur = 1.5 + (tier || 0); }
-        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    const spr = _monoSprite(col, dark, tier);
+    let f;
+    if (spr) {
+        ctx.drawImage(spr, px - MONO_SPR_OX, base - MONO_SPR_OY, MONO_SPR_W, MONO_SPR_H);
+        // The tablet's faces, for placing the scan line — same numbers as the body.
+        const hw = 13, hd = 6.5, h = 40, by = base - 4;
+        f = { L: [px - hw, by], F: [px, by + hd], R: [px + hw, by], Lt: [px - hw, by - h], Ft: [px, by + hd - h], Rt: [px + hw, by - h] };
+    } else {
+        f = _drawMonoBody(px, base, col, dark, tier);
     }
-    { const [x0, y0] = _monoRight(f, 0.5, 0.08), [x1, y1] = _monoRight(f, 0.5, 0.92);
-      ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
-    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     if (!dark) {
         // The scan line sweeping up the front: the wave. Faster at higher tiers.
         const k = (t * (0.6 + 0.25 * (tier || 0))) % 1;
         const [ax, ay] = _monoLeft(f, 0.06, 0.08 + k * 0.84), [bx, by] = _monoLeft(f, 0.94, 0.08 + k * 0.84);
-        ctx.strokeStyle = "#ffffff"; ctx.globalAlpha = 0.75; ctx.lineWidth = 1.2; ctx.shadowColor = col; ctx.shadowBlur = 8;
-        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by);
+        ctx.strokeStyle = col; ctx.globalAlpha = 0.35; ctx.lineWidth = 3.5; ctx.stroke();
+        ctx.strokeStyle = "#ffffff"; ctx.globalAlpha = 0.8; ctx.lineWidth = 1.2; ctx.stroke();
     }
     ctx.restore();
 }
@@ -2025,10 +2088,9 @@ function drawPylonTurret(obj, px, topY, colour, dark) {
         ctx.beginPath(); ctx.moveTo(cx + ox, cy + oy + 1); ctx.lineTo(cx + ox + ux * len, cy + oy + uy * len + 1); ctx.stroke();
     }
     // The bolt: a lit glyph-shaft between the prongs.
-    ctx.strokeStyle = dark ? "#59606b" : colour; ctx.lineWidth = 2.4;
-    if (!dark) { ctx.shadowColor = colour; ctx.shadowBlur = target ? 12 : 7; }
-    ctx.beginPath(); ctx.moveTo(cx - ux * 4, cy - uy * 4); ctx.lineTo(bx - ux * 1, by - uy * 1); ctx.stroke();
-    ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.moveTo(cx - ux * 4, cy - uy * 4); ctx.lineTo(bx - ux * 1, by - uy * 1);
+    if (!dark) { ctx.strokeStyle = colour; ctx.globalAlpha = target ? 0.35 : 0.2; ctx.lineWidth = 6; ctx.stroke(); ctx.globalAlpha = 1; }
+    ctx.strokeStyle = dark ? "#59606b" : colour; ctx.lineWidth = 2.4; ctx.stroke();
     // A rune notch on the pivot.
     if (!dark) {
         ctx.strokeStyle = colour; ctx.lineWidth = 1; ctx.globalAlpha = 0.85;

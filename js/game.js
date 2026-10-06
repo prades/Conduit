@@ -555,39 +555,53 @@ function drawCablesOnTile(tile, px, py) {
     const cx = px, cy = py + TILE_H;
     // One world step along +x is (TILE_W, TILE_H) on screen, along +y it is
     // (-TILE_W, TILE_H); a half step reaches the middle of that edge.
-    const edge = ([dx, dy]) => [cx + (dx - dy) * TILE_W / 2, cy + (dx + dy) * TILE_H / 2];
+    const addPiece = pc => {
+        if (pc.dirs.length === 0) { ctx.moveTo(cx, cy); ctx.lineTo(cx, cy); return; }
+        const [dx0, dy0] = pc.dirs[0];
+        ctx.moveTo(cx + (dx0 - dy0) * TILE_W / 2, cy + (dx0 + dy0) * TILE_H / 2); ctx.lineTo(cx, cy);
+        if (pc.dirs[1]) { const [dx1, dy1] = pc.dirs[1]; ctx.lineTo(cx + (dx1 - dy1) * TILE_W / 2, cy + (dx1 + dy1) * TILE_H / 2); }
+    };
+    // PERFORMANCE: no shadowBlur anywhere here (it is the slowest thing a
+    // canvas does, and this runs for every cable tile, every frame), and the
+    // strokes are BATCHED — one path per style instead of one per piece. In a
+    // dense base many cables share a tile (a generator's runs overlap), so the
+    // same piece was being stroked again and again.
     ctx.save();
     ctx.lineCap = "round"; ctx.lineJoin = "round";
-    const trace = pc => {
-        ctx.beginPath();
-        if (pc.dirs.length === 0) { ctx.moveTo(cx, cy); ctx.lineTo(cx, cy); return; }
-        const [x0, y0] = edge(pc.dirs[0]);
-        ctx.moveTo(x0, y0); ctx.lineTo(cx, cy);
-        if (pc.dirs[1]) { const [x1, y1] = edge(pc.dirs[1]); ctx.lineTo(x1, y1); }
-    };
-    // Sleeves first, so where two cables share a tile neither sleeve covers
-    // the other's core.
+    // Sleeves: one path, one stroke.
     ctx.strokeStyle = CABLE_CASING; ctx.lineWidth = CABLE_WIDTH; ctx.globalAlpha = 0.85;
-    for (const pc of c.pieces) { trace(pc); ctx.stroke(); }
-    ctx.globalAlpha = 1;
+    ctx.beginPath(); for (const pc of c.pieces) addPiece(pc); ctx.stroke();
+    // Cores: grouped by style.
+    const groups = new Map();
     for (const pc of c.pieces) {
-        const st = pc.style;
-        if (st.glow) { ctx.shadowColor = st.core; ctx.shadowBlur = st.glow; }
-        ctx.strokeStyle = st.core; ctx.lineWidth = st.width; ctx.setLineDash(st.dash || []);
-        trace(pc); ctx.stroke();
-        ctx.setLineDash([]); ctx.shadowBlur = 0;
-        // An elbow collar where it turns, a coupling where it plugs in.
-        if (pc.end || pc.elbow) {
-            ctx.fillStyle = CABLE_CASING;
-            ctx.beginPath(); ctx.ellipse(cx, cy, pc.end ? 6 : 5, pc.end ? 3 : 2.5, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = st.core; ctx.lineWidth = 1; ctx.stroke();
-        }
+        const st = pc.style, k = st.core + "|" + st.width + "|" + (st.dash ? st.dash.join(",") : "") + "|" + (st.glow ? 1 : 0);
+        let g = groups.get(k); if (!g) { g = { st, list: [] }; groups.set(k, g); } g.list.push(pc);
     }
+    for (const { st, list } of groups.values()) {
+        ctx.beginPath(); for (const pc of list) addPiece(pc);
+        // A live cable's glow is a wider, faint stroke underneath — the look
+        // of a blur without the cost of one.
+        if (st.glow) { ctx.globalAlpha = 0.22; ctx.strokeStyle = st.core; ctx.lineWidth = st.width + 4; ctx.stroke(); }
+        ctx.globalAlpha = 1; ctx.strokeStyle = st.core; ctx.lineWidth = st.width;
+        if (st.dash) ctx.setLineDash(st.dash);
+        ctx.stroke();
+        if (st.dash) ctx.setLineDash([]);
+    }
+    // An elbow collar where it turns, a coupling where it plugs in — once per tile.
+    let end = false, elbow = false, rim = null;
+    for (const pc of c.pieces) { if (pc.end) end = true; if (pc.elbow) elbow = true; if ((pc.end || pc.elbow) && !rim) rim = pc.style.core; }
+    if (end || elbow) {
+        ctx.globalAlpha = 1; ctx.fillStyle = CABLE_CASING;
+        ctx.beginPath(); ctx.ellipse(cx, cy, end ? 6 : 5, end ? 3 : 2.5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = rim; ctx.lineWidth = 1; ctx.stroke();
+    }
+    // Charges: a faint halo and a bright core, no blur.
     for (const b of c.beads) {
-        const [bx, by] = cableScreen({ x: b.wx, y: b.wy });
-        ctx.globalAlpha = b.alpha; ctx.fillStyle = b.colour;
-        ctx.shadowColor = b.colour; ctx.shadowBlur = 7;
-        ctx.beginPath(); ctx.arc(bx, by, b.r, 0, Math.PI * 2); ctx.fill();
+        const bx = (b.wx - player.visualX - (b.wy - player.visualY)) * TILE_W + canvas.width / 2;
+        const by = (b.wx - player.visualX + (b.wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
+        ctx.fillStyle = b.colour;
+        ctx.globalAlpha = b.alpha * 0.3; ctx.beginPath(); ctx.arc(bx, by, b.r * 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = b.alpha; ctx.beginPath(); ctx.arc(bx, by, b.r, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
 }
@@ -652,6 +666,31 @@ function layAllCables() {
 // LINKED to a nest keeps that cable even while nothing pulls on it (it is the
 // link, and it used to be a separate beam in the air); an unlinked relay only
 // shows its supply cable while something is drawing.
+// ── NEAREST PYLON PER TILE (for the floor's circuit traces) ──
+// Built when the pylon cache is rebuilt (every 60 frames, or at once when
+// something forces it), so the floor pass can look a tile's distance up
+// instead of searching every pylon for every tile, every frame.
+const PCB_TRACE_REACH = 4.0;
+let _pylonNear = new Map();
+function _pnKey(x, y) { return Math.round(x) * 32 + (Math.round(y) + 16); }
+function rebuildPylonNear() {
+    _pylonNear = new Map();
+    const R = Math.ceil(PCB_TRACE_REACH);
+    for (const p of _pillarCache) {
+        const px = Math.round(p.x), py = Math.round(p.y);
+        for (let dx = -R; dx <= R; dx++) for (let dy = -R; dy <= R; dy++) {
+            const d = Math.hypot(p.x - (px + dx), p.y - (py + dy));
+            if (d >= PCB_TRACE_REACH) continue;
+            const k = _pnKey(px + dx, py + dy), cur = _pylonNear.get(k);
+            if (cur === undefined || d < cur) _pylonNear.set(k, d);
+        }
+    }
+}
+function pylonNearDist(x, y) {
+    const d = _pylonNear.get(_pnKey(x, y));
+    return d === undefined ? Infinity : d;
+}
+
 function drawPowerChain() {
     if (typeof _pillarCache === "undefined" || _pillarCache.length === 0) return;
     // Relay → nest is drawn once per relay, at the heaviest flow any of its
@@ -693,8 +732,13 @@ function drawGeneratorLinks() {
     const pulse = 0.5 + 0.5 * Math.sin(frame * 0.06);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // A pylon linked to two generators used to get its aura ring drawn twice
+    // (and its heal flash faded twice as fast). Once per pylon.
+    const seen = new Set();
     for (const { gen, pylon } of _genLinks) {
         if (gen.destroyed || pylon.destroyed) continue;
+        if (seen.has(pylon)) continue;
+        seen.add(pylon);
         const [gx, gy] = toScreen(gen);
         const [px, py] = toScreen(pylon);
         // Both ends off screen means the whole filament is too.
@@ -709,14 +753,13 @@ function drawGeneratorLinks() {
             const reach = GEN_AURA_RADIUS + GEN_AURA_PER_TIER * (tier - 1);
             const col   = (ELEMENTS.find(e => e.id === pylon.attackModeElement) || {}).color || "#9fe8c0";
             const breathe = 0.5 + 0.5 * Math.sin(frame * 0.05 + pylon.x);
-            ctx.save();
             ctx.globalAlpha = 0.10 + 0.07 * breathe + 0.03 * tier;
             ctx.strokeStyle = col;
             ctx.lineWidth = 1 + tier * 0.4;
             ctx.beginPath();
             ctx.ellipse(px, py + TILE_H, reach * TILE_W, reach * TILE_H, 0, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.restore();
+            ctx.globalAlpha = 1;
         }
 
         // A brief bloom on the pylon the frame it actually gained health.
@@ -1177,6 +1220,7 @@ function render() {
     if (frame - _cacheAge >= 60) {
         _cacheAge    = frame;
         _pillarCache = world.filter(t => t.pillar && !t.destroyed && t.health > 0);
+        rebuildPylonNear();
         // Generators are excluded from _wPylons on purpose: the elemental
         // network tiers and integrity are computed from that list, and a
         // neutral pylon has no element to contribute to either.
@@ -2084,24 +2128,13 @@ function render() {
             // ── NETWORK FLOOR INTERCONNECT — PCB traces that appear when player extends the network ──
             // Tiles within range of any live pylon reveal circuit trace lines on the floor
             if (_pillarCache.length > 0) {
-                const REACH = 4.0;
-                let nearDist = Infinity;
-                for (const _p of _pillarCache) {
-                    // Only a pylon within REACH on BOTH axes can be within REACH
-                    // at all, and nearDist is only ever compared against REACH —
-                    // so everything further out is rejected on a subtraction
-                    // rather than paying a hypot for it. This runs for every
-                    // visible floor tile against every pylon on the map, so it
-                    // grows with both. Measured as exactly equivalent over 564
-                    // tiles; the saving itself is too small to see on a fast
-                    // desktop and is here for slower devices and bigger bases.
-                    const _dx = _p.x - obj.x;
-                    if (_dx > REACH || _dx < -REACH) continue;
-                    const _dy = _p.y - obj.y;
-                    if (_dy > REACH || _dy < -REACH) continue;
-                    const _d = Math.hypot(_dx, _dy);
-                    if (_d < nearDist) nearDist = _d;
-                }
+                const REACH = PCB_TRACE_REACH;
+                // Looked up, not searched: this used to loop over EVERY pylon
+                // for EVERY visible floor tile, every frame — measured as the
+                // single biggest cost in a dense base (66 pylons, ~10,000
+                // distance checks a frame). The nearest-pylon distance per tile
+                // is now built once per world-cache rebuild (rebuildPylonNear).
+                const nearDist = pylonNearDist(obj.x, obj.y);
                 if (nearDist < REACH) {
                     const fade = Math.pow(1 - nearDist / REACH, 1.4);
                     // Tile world coords and screen center
@@ -2419,13 +2452,13 @@ function render() {
                     const r=22+pulse2*8;
                     ctx.save();
                     ctx.globalAlpha=0.12+pulse2*0.08; ctx.fillStyle="#6600cc";
-                    ctx.shadowColor="#4400aa"; ctx.shadowBlur=18;
+                    
                     ctx.beginPath(); ctx.arc(px,py-60,r,0,Math.PI*2); ctx.fill();
                     ctx.shadowBlur=0;
                     for (let s=0;s<5;s++) {
                         const phase=frame*0.07+s*(Math.PI*2/5);
                         const sr=14+Math.sin(phase)*5;
-                        ctx.globalAlpha=0.45+pulse2*0.2; ctx.fillStyle="#8800ff"; ctx.shadowBlur=5;
+                        ctx.globalAlpha=0.45+pulse2*0.2; ctx.fillStyle="#8800ff";
                         ctx.beginPath(); ctx.arc(px+Math.cos(phase)*sr,py-60+Math.sin(phase)*sr*0.5,2,0,Math.PI*2); ctx.fill();
                     }
                     ctx.shadowBlur=0;
@@ -2483,9 +2516,7 @@ function render() {
                     ctx.stroke(); ctx.setLineDash([]);
                 }
                 ctx.globalAlpha = 1;
-                ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
-                ctx.fillStyle = _on ? CONNECTOR_COLOR : "#f88";
-                ctx.fillText(_on ? "\u25cf CIRCUIT ON" : "\u25cb CIRCUIT OFF", _cx, _cy - 78);
+                cachedText(_on ? "\u25cf CIRCUIT ON" : "\u25cb CIRCUIT OFF", "bold 9px monospace", _on ? CONNECTOR_COLOR : "#f88", _cx, _cy - 78);
                 ctx.restore();
             }
 
@@ -2495,9 +2526,7 @@ function render() {
                 const _gx = (obj.x - player.visualX - (obj.y - player.visualY)) * TILE_W + canvas.width/2;
                 const _gy = (obj.x - player.visualX + (obj.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
                 ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
-                ctx.fillStyle = _gon ? "#8fd6ff" : "#f88";
-                ctx.fillText(_gon ? "\u25cf GENERATOR ON" : "\u25cb GENERATOR OFF", _gx, _gy - 78);
+                cachedText(_gon ? "\u25cf GENERATOR ON" : "\u25cb GENERATOR OFF", "bold 9px monospace", _gon ? "#8fd6ff" : "#f88", _gx, _gy - 78);
                 ctx.restore();
             }
 
@@ -2521,9 +2550,10 @@ function render() {
                 // Accentuated border
                 ctx.globalAlpha = 0.3 + _gpulse * 0.4;
                 ctx.strokeStyle = _gCol;
-                ctx.lineWidth = 2;
-                ctx.shadowColor = _gCol;
-                ctx.shadowBlur = 8 + _gpulse * 6;
+                // Glow as a wide faint stroke under a thin bright one: a
+                // shadowBlur here ran under every pylon tile, every frame.
+                ctx.lineWidth = 7; ctx.globalAlpha = (0.3 + _gpulse * 0.4) * 0.25; ctx.stroke();
+                ctx.lineWidth = 2; ctx.globalAlpha = 0.3 + _gpulse * 0.4;
                 ctx.stroke();
                 ctx.restore();
             }
@@ -2591,14 +2621,13 @@ function render() {
                     const _wGlowR=(20+_pulse*5)*Math.min(1.5,_tierMult);
                     const _wGlowA=Math.min(0.5,(0.12+_pulse*0.1)*_tierMult);
                     ctx.save(); ctx.globalAlpha=_wGlowA; ctx.fillStyle=_acol;
-                    ctx.shadowColor=_acol; ctx.shadowBlur=_wTier>1?16*_tierMult:0;
                     ctx.beginPath(); ctx.arc(px,_base-36,_wGlowR,0,Math.PI*2); ctx.fill();
-                    ctx.shadowBlur=0; ctx.restore();
+                    ctx.restore();
                     if (_wTier>=2) {
                         ctx.save(); ctx.globalAlpha=(0.07+_pulse*0.07)*_tierMult;
-                        ctx.strokeStyle=_acol; ctx.lineWidth=2; ctx.shadowColor=_acol; ctx.shadowBlur=8;
+                        ctx.strokeStyle=_acol; ctx.lineWidth=3;
                         ctx.beginPath(); ctx.arc(px,_base-36,_wGlowR+10+_pulse*6,0,Math.PI*2); ctx.stroke();
-                        ctx.shadowBlur=0; ctx.restore();
+                        ctx.restore();
                     }
                 }
                 // ── ATTACK MODE — range ring ──
@@ -2671,8 +2700,10 @@ function render() {
                     // stripes are its light.
                     if (!_isWaveMono) {
                     const _orbR=obj.waveMode?6+_wTier:5;
-                    ctx.save(); ctx.shadowColor=_acol; ctx.shadowBlur=(obj.waveMode?14:8)+_pulse*6;
-                    ctx.fillStyle=_acol; ctx.globalAlpha=0.7+_pulse*0.3;
+                    ctx.save(); ctx.fillStyle=_acol;
+                    // halo instead of a blur
+                    ctx.globalAlpha=0.18+_pulse*0.12; ctx.beginPath(); ctx.arc(px,_orbY,_orbR*2.2,0,Math.PI*2); ctx.fill();
+                    ctx.globalAlpha=0.7+_pulse*0.3;
                     ctx.beginPath(); ctx.arc(px,_orbY,_orbR,0,Math.PI*2); ctx.fill();
                     ctx.restore();
                     }
@@ -2685,29 +2716,29 @@ function render() {
                     const el0=obj.attackModeElement||"";
                     const _wTierBadge=obj.waveMode&&_wTier>0?[" T-I"," T-II"," T-III"][_wTier-1]:"";
                     const _tierDesc=obj.waveMode?(_wTier>0?(PYLON_FX_TIER[el0]?.[_wTier-1]||""):(PYLON_FX_TIER[el0]?.[0]||"")):(PYLON_FX2[el0]||"");
-                    ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle=_acol; ctx.font="bold 9px monospace"; ctx.textAlign="center";
-                    ctx.fillText(el0.toUpperCase()+_wTierBadge,px,_orbY-12);
-                    ctx.font="7px monospace"; ctx.globalAlpha=0.7;
-                    ctx.fillText(_tierDesc,px,_orbY-3);
+                    // Stamped from a cache (cachedText in draw.js), not re-rendered.
+                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                    cachedText(el0.toUpperCase()+_wTierBadge, "bold 9px monospace", _acol, px, _orbY-12);
+                    ctx.globalAlpha=0.7;
+                    cachedText(_tierDesc, "7px monospace", _acol, px, _orbY-3);
                     ctx.restore();
                     // Seasoned gold bands at base
                     if ((obj.seasoned||0)>0) {
                         const sLevel=Math.min(3,obj.seasoned);
                         ctx.save(); ctx.strokeStyle="#ffd700"; ctx.lineWidth=1+sLevel*0.5;
-                        ctx.globalAlpha=0.55+_pulse*0.25; ctx.shadowColor="#ffd700"; ctx.shadowBlur=4+sLevel*3;
+                        ctx.globalAlpha=0.55+_pulse*0.25; 
                         for (let _si=0;_si<sLevel;_si++) { ctx.beginPath(); ctx.rect(px-8-_si,_base-12-_si*4,16+_si*2,2); ctx.stroke(); }
-                        ctx.shadowBlur=0; ctx.restore();
+                        ctx.restore();
                     }
                 } else if (obj.upgraded) {
                     // Dormant upgraded state — style-specific cyan aura
                     ctx.save(); ctx.globalAlpha=0.2+_pulse*0.12; ctx.fillStyle="#0ff";
-                    ctx.shadowColor="#0ff"; ctx.shadowBlur=14;
                     ctx.beginPath(); ctx.arc(px,_orbY,10,0,Math.PI*2); ctx.fill();
                     ctx.globalAlpha=0.8; ctx.beginPath(); ctx.arc(px,_orbY,3,0,Math.PI*2); ctx.fill();
                     ctx.restore();
                     // Upgraded detail — the battlements light up.
                     ctx.save(); ctx.strokeStyle=SENTINEL_ACCENT; ctx.lineWidth=1;
-                    ctx.globalAlpha=0.5+_pulse*0.3; ctx.shadowColor=SENTINEL_ACCENT; ctx.shadowBlur=5;
+                    ctx.globalAlpha=0.5+_pulse*0.3;
                     ctx.strokeRect(px-7,_base-52,4,4); ctx.strokeRect(px+3,_base-52,4,4);
                     ctx.restore();
                 } else {
@@ -2715,9 +2746,8 @@ function render() {
                     const dist2=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
                     const amb2=Math.max(0.1,0.8-dist2/RENDER_DIST);
                     ctx.fillStyle=obj.pillarCol;
-                    ctx.shadowColor=obj.pillarCol; ctx.shadowBlur=8*amb2;
-                    ctx.beginPath(); ctx.arc(px,_orbY,3,0,Math.PI*2); ctx.fill();
-                    ctx.shadowBlur=0;
+                    ctx.globalAlpha=0.25*amb2+0.1; ctx.beginPath(); ctx.arc(px,_orbY,6,0,Math.PI*2); ctx.fill();
+                    ctx.globalAlpha=1; ctx.beginPath(); ctx.arc(px,_orbY,3,0,Math.PI*2); ctx.fill();
                 }
             }
         }
