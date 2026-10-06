@@ -319,6 +319,21 @@ const ELECTRIC_HASTE = { 1: 1.35, 2: 1.6, 3: 1.9 };
 // lit electric pylon — turret or wave — hastes your side within this many
 // tiles, at the electric network's tier (I needs 2 linked, III needs 6).
 const ELECTRIC_HASTE_RADIUS = 2.5;
+// SUPPORT AND DISRUPTION. A wave pylon is one or the other by its element:
+// SUPPORT works on your side (electric haste, core shields), DISRUPTION works
+// on the enemy (fire, ice, flux, toxic). "They only activate when there is an
+// ally or an enemy nearby": one sits on STANDBY — no effect, no power draw —
+// until a unit it works on comes within WAVE_WAKE_RADIUS, then blinks awake
+// and runs its network's tier effect, staying up WAVE_WAKE_LINGER frames after
+// the last one leaves so the edge of its reach does not flicker.
+const WAVE_SUPPORT_ELEMENTS = ["electric", "core"];
+const WAVE_WAKE_RADIUS = 3;
+const WAVE_WAKE_LINGER = 90;
+const WAVE_WAKE_BLINK  = 30;   // frames the wake-up blink lasts
+function waveRole(el) { return WAVE_SUPPORT_ELEMENTS.includes(el) ? "support" : "disruption"; }
+function waveRoleLabel(el) { return waveRole(el) === "support" ? "SUPPORT" : "DISRUPTION"; }
+// The picker's kinds that make a wave pylon.
+function isWaveKind(kind) { return kind === "wave" || kind === "support" || kind === "disruption"; }
 const ELECTRIC_HASTE_FRAMES = 12;
 // PRESSURE BETWEEN ALARMS. Predators leave pylons alone, except for this share
 // of them — hunters, chosen when they spawn — which, left undisturbed, walk to

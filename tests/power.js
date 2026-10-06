@@ -18,8 +18,9 @@
 //     power rather than spending it. Only the two abilities draw.
 //   - ATTACK pays PER SHOT. A turret with nothing in range costs nothing at
 //     all, which is what makes it the cheap one.
-//   - WAVE pays PER FRAME for as long as it is on, near a fight or not. The
-//     only ways to stop paying are to switch it back or cut the generator.
+//   - WAVE pays PER FRAME for as long as it is AWAKE — and it wakes only when
+//     a unit it works on comes near (tests/wake.js). The other ways to stop
+//     paying are to switch it back or cut the generator.
 //   - A pool can EMPTY, and then the things drawing on it go dark until it
 //     creeps back up. Finite means a reserve you nurse, not one you destroy.
 //   - HOME has its own reserve, so a new game runs before anything is taken.
@@ -117,6 +118,10 @@ async function boot() {
             }
         });
         ${extra || ''}
+        // These checks are about what an AWAKE wave pylon costs. Since support
+        // and disruption pylons rest until a unit they work on comes near
+        // (tests/wake.js), every wave pylon here is held awake.
+        made.forEach(t => { if (t && t.waveMode) t._awakeUntil = Infinity; });
         _cacheAge = -999;
         for (let i = 0; i < ${frames === undefined ? 1 : frames}; i++) render();
         const home = world.find(t => isHomePortal(t));
@@ -561,6 +566,8 @@ async function boot() {
                            attackModeColor: '#f50', attackPower: 12, attackRange: 2.5,
                            attackMode: ${JSON.stringify(kind)} === 'attack',
                            waveMode: ${JSON.stringify(kind)} === 'wave' });
+        // An AWAKE wave pylon (one on standby draws nothing — tests/wake.js).
+        if (t.waveMode) t._awakeUntil = Infinity;
         ${withFoe ? `
         const foe = new Predator('scout', Object.assign({}, SPECIES['ant'].scout,
                                  { color: SPECIES['ant'].color }), t.x, t.y);
@@ -656,7 +663,7 @@ async function boot() {
         same(r.after, 0, `it is still drawing ${r.after} with nothing left to shoot`);
     });
 
-    check('THE ASK: wave mode holds its wire full, because it never stops', () => {
+    check('THE ASK: an awake wave pylon holds its wire full, because it never stops while awake', () => {
         const r = wire('wave', false, 300);
         same(r.peak, 1, 'wave mode did not light its wire');
         same(r.avg, 1, `wave mode's draw flickers: average ${r.avg}`);

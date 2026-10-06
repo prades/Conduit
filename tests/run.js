@@ -45,6 +45,7 @@ const SUITES = [
     ['nest grids + switch',    'grid.js'],
     ['convert + build by kind','convert.js'],
     ['power chain + tier III', 'chain.js'],
+    ['support + disruption wake','wake.js'],
 ];
 
 let failed = 0;

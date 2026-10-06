@@ -2076,10 +2076,12 @@ function _monoSprite(col, dark, tier) {
     _monoSprites.set(key, e);
     return e;
 }
-function drawWaveMonolith(px, base, colour, dark, tier) {
+function drawWaveMonolith(px, base, colour, dark, tier, asleep) {
     const col = dark ? "#5c6370" : colour;
     const t = (frame || 0) / 60;
     ctx.save();
+    // On standby the stripes are dimmed and the scan line is still.
+    if (asleep) ctx.globalAlpha = 0.55;
     const spr = _monoSprite(col, dark, tier);
     let f;
     if (spr) {
@@ -2090,7 +2092,7 @@ function drawWaveMonolith(px, base, colour, dark, tier) {
     } else {
         f = _drawMonoBody(px, base, col, dark, tier);
     }
-    if (!dark) {
+    if (!dark && !asleep) {
         // The scan line sweeping up the front: the wave. Faster at higher tiers.
         const k = (t * (0.6 + 0.25 * (tier || 0))) % 1;
         const [ax, ay] = _monoLeft(f, 0.06, 0.08 + k * 0.84), [bx, by] = _monoLeft(f, 0.94, 0.08 + k * 0.84);
@@ -2098,6 +2100,23 @@ function drawWaveMonolith(px, base, colour, dark, tier) {
         ctx.strokeStyle = col; ctx.globalAlpha = 0.35; ctx.lineWidth = 3.5; ctx.stroke();
         ctx.strokeStyle = "#ffffff"; ctx.globalAlpha = 0.8; ctx.lineWidth = 1.2; ctx.stroke();
     }
+    ctx.restore();
+}
+
+// THE WAKE-UP BLINK. A support or disruption pylon that has just sensed a unit
+// flashes three times and throws a ring along the floor, so you can see the
+// moment it starts working. `since` is frames since it woke.
+function drawWaveWakeBlink(px, base, colour, since) {
+    const k = since / WAVE_WAKE_BLINK;
+    ctx.save();
+    if (Math.floor(since / 5) % 2 === 0) {
+        ctx.globalAlpha = 0.55 * (1 - k); ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px - 13, base - 46, 26, 44);
+        ctx.globalAlpha = 0.5 * (1 - k); ctx.fillStyle = colour;
+        ctx.beginPath(); ctx.arc(px, base - 26, 26, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 0.8 * (1 - k); ctx.strokeStyle = colour; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.ellipse(px, base, TILE_W * (0.4 + 1.8 * k), TILE_H * (0.4 + 1.8 * k), 0, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
 }
 

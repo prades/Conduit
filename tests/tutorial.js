@@ -797,7 +797,7 @@ check('the switch step names the button that actually exists', () => {
     ok(/leftLabel = "CONVERT"/.test(DRAW), 'the left ring button on a pylon is no longer CONVERT');
     const s = makeEnv().run('TUTS').find(t => t.id === 'switch');
     ok(/\bCONVERT\b/.test(s.body), 'the switch step does not name the CONVERT button');
-    ok(/WAVE PYLON/.test(s.body), 'the switch step does not name the choice to make');
+    ok(/SUPPORT/.test(s.body) && /DISRUPTION/.test(s.body), 'the switch step does not name the choice to make');
 });
 
 check('no step is too long for the panel on a phone', () => {

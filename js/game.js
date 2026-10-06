@@ -259,6 +259,8 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
 function applyPylonZoneEffects(wavePylons) {
     _wPylonPairs.forEach(pair=>{
         const {pa, pb, el, col, midX, midY} = pair;
+        // A link runs while either end is awake; both on standby, it rests.
+        if (pa.waveAwake === false && pb.waveAwake === false) return;
 
             // Spawn periodic zone effect particles
             if (frame % 20 === 0) {
@@ -911,18 +913,53 @@ function drawNestHackZone(nest) {
     ctx.restore();
 }
 
-// ELECTRIC HASTE AROUND EVERY ELECTRIC PYLON. The link strips between wave
-// pylons still haste too (applyPylonZoneEffects); this is the ring around each
-// pylon itself, turrets included, so standing next to your electric network
-// is enough. Renewed every 3 frames and lingering ELECTRIC_HASTE_FRAMES, the
-// same as the strip. An enemy's slow on the same unit still wins.
+// WAKING. A support or disruption pylon is on STANDBY until a unit it works on
+// — one of yours for SUPPORT, an enemy for DISRUPTION — is within
+// WAVE_WAKE_RADIUS; then it blinks awake (_wakeFrame) and stays up until
+// WAVE_WAKE_LINGER frames after the last one left. waveAwake is what the zone
+// effects, the haste ring and the power draw all ask.
+function waveWakeTick() {
+    const r2 = WAVE_WAKE_RADIUS * WAVE_WAKE_RADIUS;
+    for (const t of _pillarCache) {
+        if (!t.waveMode || isRelayPylon(t)) continue;
+        // Awake is about who is near, not about power: an awake pylon on a flat
+        // pool still has to try to pay, which is what trips it (waveDrainTick).
+        if (t.pillarTeam !== "green") { t.waveAwake = false; continue; }
+        if (frame % 6 === 0 || t.waveAwake === undefined) {
+            const support = waveRole(t.attackModeElement) === "support";
+            let seen = false;
+            if (support) {
+                const pdx = player.x - t.x, pdy = player.y - t.y;
+                seen = pdx * pdx + pdy * pdy <= r2;
+            }
+            for (let i = 0; !seen && i < actors.length; i++) {
+                const a = actors[i];
+                if (!a || a.dead) continue;
+                const mine = support ? ((a.team === "green" || a.isClone || a.isFollower) && !a.isNeutralRecruit)
+                                     : isHostileTarget(a);
+                if (!mine) continue;
+                const dx = a.x - t.x, dy = a.y - t.y;
+                if (dx * dx + dy * dy <= r2) seen = true;
+            }
+            if (seen) {
+                if (!t.waveAwake) t._wakeFrame = frame;
+                t._awakeUntil = frame + WAVE_WAKE_LINGER;
+            }
+        }
+        t.waveAwake = frame < (t._awakeUntil === undefined ? -1 : t._awakeUntil);
+    }
+}
+
+// ELECTRIC HASTE AROUND EACH AWAKE ELECTRIC SUPPORT PYLON. The link strips
+// between them haste too (applyPylonZoneEffects); this is the ring around each
+// pylon itself, so standing next to one is enough. Renewed every 3 frames and
+// lingering ELECTRIC_HASTE_FRAMES. An enemy's slow on the same unit still wins.
 function electricHasteTick() {
     if (frame % 3 !== 0) return;
     const tier = Math.min(3, networkStrength.electric || 0);
     if (tier < 1) return;
     const src = [];
-    for (const p of _wPylons) if (p.attackModeElement === "electric") src.push(p);
-    for (const p of _aPylons) if (p.attackModeElement === "electric") src.push(p);
+    for (const p of _wPylons) if (p.attackModeElement === "electric" && p.waveAwake !== false) src.push(p);
     if (!src.length) return;
     const mult = ELECTRIC_HASTE[tier], r2 = ELECTRIC_HASTE_RADIUS * ELECTRIC_HASTE_RADIUS;
     for (const a of actors) {
@@ -1576,7 +1613,9 @@ function render() {
     // ── WAVE FUNCTION PYLONS — link same-element pylons within getPylonRange()
     //    tiles of each other (3 by default, 5 with Signal Relay), apply zone effects ──
     // _wPylonPairs is pre-computed every 60 frames in the cache section above
-    const wavePylons = _wPylons;
+    // Only the AWAKE ones act: a pylon on standby has nothing to work on.
+    waveWakeTick();
+    const wavePylons = _wPylons.filter(p => p.waveAwake !== false);
 
     // Apply effects for each pre-computed connected pair
     applyPylonZoneEffects(wavePylons);
@@ -2663,8 +2702,12 @@ function render() {
                 const _wTier=obj.waveMode?(networkStrength[obj.attackModeElement]||0):0;
                 const _tierMult=1+_wTier*0.4;
 
+                // STANDBY: a support/disruption pylon with nothing to work on
+                // rests unlit; it blinks for WAVE_WAKE_BLINK frames on waking.
+                const _asleep = obj.waveMode && !_dark && obj.waveAwake === false;
+                const _sinceWake = obj._wakeFrame === undefined ? Infinity : frame - obj._wakeFrame;
                 // ── WAVE MODE — background glow ring ──
-                if (obj.waveMode && !_dark) {
+                if (obj.waveMode && !_dark && !_asleep) {
                     const _wGlowR=(20+_pulse*5)*Math.min(1.5,_tierMult);
                     const _wGlowA=Math.min(0.5,(0.12+_pulse*0.1)*_tierMult);
                     ctx.save(); ctx.globalAlpha=_wGlowA; ctx.fillStyle=_acol;
@@ -2694,7 +2737,10 @@ function render() {
                 // A WAVE pylon is the striped Barcode Tablet instead (design 8,
                 // drawWaveMonolith in draw.js); everything else is the tower.
                 const _isWaveMono = obj.waveMode && !isRelayPylon(obj);
-                if (_isWaveMono) drawWaveMonolith(px, _base, _acol, _dark, _wTier);
+                if (_isWaveMono) {
+                    drawWaveMonolith(px, _base, _acol, _dark, _wTier, _asleep);
+                    if (!_dark && !_asleep && _sinceWake < WAVE_WAKE_BLINK) drawWaveWakeBlink(px, _base, _acol, _sinceWake);
+                }
                 else {
                     const sFront=_isActive?SENTINEL_FRONT_ACTIVE:obj.upgraded?SENTINEL_FRONT_UPGRADED:SENTINEL_FRONT_DORMANT;
                     const sRight=_isActive?SENTINEL_RIGHT_ACTIVE:obj.upgraded?SENTINEL_RIGHT_UPGRADED:SENTINEL_RIGHT_DORMANT;
@@ -2728,11 +2774,17 @@ function render() {
                     const el0=obj.attackModeElement||"";
                     const _wTierBadge=obj.waveMode&&_wTier>0?[" T-I"," T-II"," T-III"][_wTier-1]:"";
                     const _tierDesc=obj.waveMode?(_wTier>0?(PYLON_FX_TIER[el0]?.[_wTier-1]||""):(PYLON_FX_TIER[el0]?.[0]||"")):(PYLON_FX2[el0]||"");
+                    // A wave pylon is named by its ROLE — SUPPORT or DISRUPTION —
+                    // with the element and what it does underneath, or STANDBY.
+                    const _title = obj.waveMode && !isRelayPylon(obj) ? waveRoleLabel(el0)+_wTierBadge : el0.toUpperCase()+_wTierBadge;
+                    const _sub = obj.waveMode && !isRelayPylon(obj)
+                        ? el0 + " \u00b7 " + (_asleep ? "standby" : _tierDesc) : _tierDesc;
                     // Stamped from a cache (cachedText in draw.js), not re-rendered.
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                    cachedText(el0.toUpperCase()+_wTierBadge, "bold 9px monospace", _acol, px, _orbY-12);
-                    ctx.globalAlpha=0.7;
-                    cachedText(_tierDesc, "7px monospace", _acol, px, _orbY-3);
+                    if (_asleep) ctx.globalAlpha=0.6;
+                    cachedText(_title, "bold 9px monospace", _acol, px, _orbY-12);
+                    ctx.globalAlpha=_asleep?0.45:0.7;
+                    cachedText(_sub, "7px monospace", _acol, px, _orbY-3);
                     ctx.restore();
                     // Seasoned gold bands at base
                     if ((obj.seasoned||0)>0) {

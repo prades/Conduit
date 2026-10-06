@@ -152,11 +152,11 @@ function _executeBuild(el, t) {
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:"#0f8",life:100,vy:-0.2});
 }
 
-// `kind` is what the player chose FIRST: "attack" (a turret) or "wave" for an
-// element pylon; relays ignore it. Defaults to attack, as before.
+// `kind` is what the player chose FIRST: "attack" (a turret), or "support" /
+// "disruption" (a wave pylon — "wave" still means the same); relays ignore it. Defaults to attack, as before.
 function _applyPylonKind(t, kind) {
     if (isRelayPylon(t)) { t.waveMode = false; t.attackMode = true; return; }
-    if (kind === "wave") { t.waveMode = true; t.attackMode = false; }
+    if (isWaveKind(kind)) { t.waveMode = true; t.attackMode = false; }
     else                 { t.attackMode = true; t.waveMode = false; }
     t.waveTripped = false;
 }
@@ -185,7 +185,7 @@ function _executeBuildInstant(el, t, kind) {
         t.isConnector=(el.id===CONNECTOR_ID); t.circuitOn=true;
         _applyPylonKind(t, kind);
     }
-    const _kindLabel = isRelayId(el.id) ? "" : (kind === "wave" ? " WAVE PYLON" : " TURRET");
+    const _kindLabel = isRelayId(el.id) ? "" : (isWaveKind(kind) ? " " + waveRoleLabel(el.id) + " PYLON" : " TURRET");
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase()+_kindLabel,color:el.color,life:100,vy:-0.2});
 }
 

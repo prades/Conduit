@@ -421,7 +421,7 @@ function payForShot(t) {
 // and the player can see it costing nothing.
 function powerFlowOf(t) {
     if (!t || !t.powered) return 0;
-    if (t.waveMode) return 1;
+    if (t.waveMode) return t.waveAwake === false ? 0 : 1;   // on standby it draws nothing
     return Math.max(0, t.powerFlow || 0);
 }
 
@@ -456,6 +456,8 @@ function waveDrainTick() {
     for (const t of _pillarCache) {
         if (!t.waveMode || isRelayPylon(t) || t.pillarTeam !== "green") continue;
         if (t.waveTripped) { t.powered = false; continue; }
+        // On standby it draws nothing: it only pays while it is working.
+        if (t.waveAwake === false) continue;
         const src = t.powerSource || pylonSource(t);
         if (!src) { t.powered = false; continue; }
         if (!groups.has(src)) groups.set(src, []);

@@ -112,10 +112,10 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const r = haste('wave', 'end');
         ok(Math.abs(r.ratio - run('ELECTRIC_HASTE[3]')) < 1e-9, JSON.stringify(r));
     });
-    await check('electric TURRETS haste as well', () => {
+    await check('electric TURRETS do not haste: that is the support pylon\'s job', () => {
         tierIII('attack');
         const r = haste('attack', 'beside');
-        ok(Math.abs(r.ratio - run('ELECTRIC_HASTE[3]')) < 1e-9, JSON.stringify(r));
+        ok(r.tier === 3 && r.ratio === 1, JSON.stringify(r));
     });
     await check('and nothing far from the network', () => {
         tierIII('wave');

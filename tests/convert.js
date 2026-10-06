@@ -51,19 +51,23 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     group('BUILD: KIND FIRST, THEN ELEMENT');
 
-    await check('THE ASK: the first choice is attack, wave, connector or generator', () => {
+    await check('THE ASK: the first choice is attack, support, disruption, connector or generator', () => {
         const r = run(`__fresh(); openElementPicker('build', __row[0]); __labels()`);
-        ok(JSON.stringify(r) === JSON.stringify(['ATTACK TURRET', 'WAVE PYLON', 'CONNECTOR', 'GENERATOR']), JSON.stringify(r));
+        ok(JSON.stringify(r) === JSON.stringify(['ATTACK TURRET', 'SUPPORT PYLON', 'DISRUPTION PYLON', 'CONNECTOR', 'GENERATOR']), JSON.stringify(r));
     });
-    await check('attack or wave then asks for the element', () => {
-        const r = run(`__fresh(); openElementPicker('build', __row[0]); __tap('WAVE PYLON');
+    await check('support or disruption then asks for an element that does that job', () => {
+        const r = run(`__fresh(); openElementPicker('build', __row[0]); __tap('DISRUPTION PYLON');
             ({ stage: elementPickerStage, kind: elementPickerKind, labels: __labels(), open: elementPickerOpen })`);
-        ok(r.open && r.stage === 'element' && r.kind === 'wave', JSON.stringify(r));
-        ok(r.labels.includes('FIRE') && !r.labels.includes('GENERATOR'), 'the element step should list only elements: ' + r.labels);
+        ok(r.open && r.stage === 'element' && r.kind === 'disruption', JSON.stringify(r));
+        ok(JSON.stringify(r.labels) === JSON.stringify(['FIRE', 'ICE', 'FLUX', 'TOXIC']), 'disruption elements: ' + r.labels);
+        const s = run(`__fresh(); openElementPicker('build', __row[0]); __tap('SUPPORT PYLON'); __labels()`);
+        ok(JSON.stringify(s) === JSON.stringify(['ELECTRIC', 'CORE']), 'support elements: ' + s);
+        const a = run(`__fresh(); openElementPicker('build', __row[0]); __tap('ATTACK TURRET'); __labels()`);
+        ok(a.length === 6, 'a turret can be any element: ' + a);
     });
     await check('a wave build makes a wave pylon, not a turret', () => {
-        const r = run(`__fresh(); unlockedElements.add('fire'); openElementPicker('build', __row[0]); __tap('WAVE PYLON'); __tap('FIRE');
-            const ok1 = pylonConfirmOpen && pylonConfirmKind === 'wave';
+        const r = run(`__fresh(); unlockedElements.add('fire'); openElementPicker('build', __row[0]); __tap('DISRUPTION PYLON'); __tap('FIRE');
+            const ok1 = pylonConfirmOpen && pylonConfirmKind === 'disruption';
             _executeBuildInstant(pylonConfirmEl, pylonConfirmTarget, pylonConfirmKind);
             ({ ok1, wave: __row[0].waveMode, attack: __row[0].attackMode, el: __row[0].attackModeElement })`);
         ok(r.ok1, 'the confirm dialog did not carry the kind');
@@ -93,17 +97,17 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     await check('upgrading a dormant pylon as a wave pylon makes one once the follower merges', () => {
         const r = scene(`__fresh(); const p = __row[2]; unlockedElements.add('fire');
-            openElementPicker('upgrade', p); __tap('WAVE PYLON'); __tap('FIRE');
+            openElementPicker('upgrade', p); __tap('DISRUPTION PYLON'); __tap('FIRE');
             ({ kind: p.chosenKind, el: p.chosenElement })`);
-        ok(r.kind === 'wave' && r.el === 'fire', JSON.stringify(r));
+        ok(r.kind === 'disruption' && r.el === 'fire', JSON.stringify(r));
         // Both merge paths in npc.js honour the kind.
         const NPC = rd('js/npc.js');
-        ok((NPC.match(/p\.chosenKind === "wave"\) \{ p\.waveMode = true; p\.attackMode = false; \}/g) || []).length === 2,
+        ok((NPC.match(/isWaveKind\(p\.chosenKind\)\) \{ p\.waveMode = true; p\.attackMode = false; \}/g) || []).length === 2,
            'both merge paths should turn a wave choice into a wave pylon');
     });
     await check('upgrading an active pylon applies the kind at once', () => {
         const r = scene(`__fresh(); const p = __row[1]; unlockedElements.add('ice');
-            openElementPicker('upgrade', p); __tap('WAVE PYLON'); __tap('ICE');
+            openElementPicker('upgrade', p); __tap('DISRUPTION PYLON'); __tap('ICE');
             ({ wave: p.waveMode, attack: p.attackMode, el: p.attackModeElement })`);
         ok(r.wave && !r.attack && r.el === 'ice', JSON.stringify(r));
     });
@@ -118,14 +122,16 @@ function ok(c, m) { if (!c) throw new Error(m); }
             ({ open: elementPickerOpen, mode: elementPickerMode })`);
         ok(r.open && r.mode === 'convert', JSON.stringify(r));
     });
-    await check('it offers only attack and wave, with the current one marked', () => {
+    await check('it offers the turret and the one role its element has, the current one marked', () => {
         const r = run(`__fresh(); openElementPicker('convert', __row[1]);
-            ({ labels: __labels(), cur: _epKindState(PYLON_KINDS[0]).why, other: _epKindState(PYLON_KINDS[1]).ok })`);
-        ok(JSON.stringify(r.labels) === JSON.stringify(['ATTACK TURRET', 'WAVE PYLON']), JSON.stringify(r.labels));
+            ({ labels: __labels(), cur: _epKindState(PYLON_KINDS[0]).why, other: _epKindState(PYLON_KINDS[2]).ok })`);
+        ok(JSON.stringify(r.labels) === JSON.stringify(['ATTACK TURRET', 'DISRUPTION PYLON']), 'a fire turret: ' + JSON.stringify(r.labels));
+        const e = run(`__fresh(); __row[1].attackModeElement = 'electric'; openElementPicker('convert', __row[1]); __labels()`);
+        ok(JSON.stringify(e) === JSON.stringify(['ATTACK TURRET', 'SUPPORT PYLON']), 'an electric turret: ' + JSON.stringify(e));
         ok(r.cur === 'CURRENT' && r.other, JSON.stringify(r));
     });
     await check('converting keeps the element and needs no element step', () => {
-        const r = scene(`__fresh(); const p = __row[1]; openElementPicker('convert', p); __tap('WAVE PYLON');
+        const r = scene(`__fresh(); const p = __row[1]; openElementPicker('convert', p); __tap('DISRUPTION PYLON');
             const a = { open: elementPickerOpen, wave: p.waveMode, attack: p.attackMode, el: p.attackModeElement };
             openElementPicker('convert', p); __tap('ATTACK TURRET');
             Object.assign(a, { back: p.attackMode && !p.waveMode }); a`);

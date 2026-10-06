@@ -165,14 +165,26 @@ function drawFollowerElementUI() {
 // One layout function feeds both the drawing and the tap handling.
 const _EP_W = 310, _EP_HEADER_H = 58, _EP_FOOT_H = 40;
 const PYLON_KINDS = [
-    { id: "attack",    label: "ATTACK TURRET", note: "shoots what comes near",     color: "#ff7755" },
-    { id: "wave",      label: "WAVE PYLON",    note: "links up into a zone",        color: "#7fc8ff" },
+    { id: "attack",     label: "ATTACK TURRET",    note: "shoots what comes near",       color: "#ff7755" },
+    { id: "support",    label: "SUPPORT PYLON",    note: "helps allies nearby", color: "#7fffb0" },
+    { id: "disruption", label: "DISRUPTION PYLON", note: "hits enemies nearby", color: "#c08cff" },
     { id: "connector", label: "CONNECTOR",     note: "long-range power relay",      color: CONNECTOR_COLOR },
     { id: "generator", label: "GENERATOR",     note: "powers and mends nearby",     color: GENERATOR_COLOR },
 ];
 function _epItems() {
-    if (elementPickerStage === "element") return ELEMENTS.map(e => ({ kind: "element", el: e }));
-    const kinds = elementPickerMode === "convert" ? PYLON_KINDS.slice(0, 2) : PYLON_KINDS;
+    if (elementPickerStage === "element") {
+        // A support or disruption pylon is that role BECAUSE of its element,
+        // so the element step lists only the elements that do that job.
+        const els = (elementPickerKind === "support" || elementPickerKind === "disruption")
+            ? ELEMENTS.filter(e => waveRole(e.id) === elementPickerKind) : ELEMENTS;
+        return els.map(e => ({ kind: "element", el: e }));
+    }
+    // CONVERT keeps the element, so it offers the turret and the one wave role
+    // that element has.
+    const t = elementPickerTarget;
+    const kinds = elementPickerMode === "convert"
+        ? PYLON_KINDS.filter(k => k.id === "attack" || (t && k.id === waveRole(t.attackModeElement)))
+        : PYLON_KINDS;
     return kinds.map(k => ({ kind: "type", k }));
 }
 function _epLayout() {
@@ -195,7 +207,7 @@ function _epLayout() {
 function _epKindState(k) {
     const t = elementPickerTarget;
     if ((k.id === "connector" || k.id === "generator") && !canPlaceGenerator(t).ok) return { ok: false, why: "NEEDS A NEST" };
-    if (elementPickerMode === "convert" && t && ((k.id === "attack" && t.attackMode) || (k.id === "wave" && t.waveMode)))
+    if (elementPickerMode === "convert" && t && ((k.id === "attack" && t.attackMode) || (isWaveKind(k.id) && t.waveMode)))
         return { ok: false, why: "CURRENT" };
     return { ok: true, why: null };
 }
@@ -210,7 +222,7 @@ function drawElementPicker() {
     const kindLabel = (PYLON_KINDS.find(k => k.id === elementPickerKind) || {}).label || "";
     const verb = elementPickerMode === "upgrade" ? "UPGRADE" : elementPickerMode === "convert" ? "CONVERT" : "BUILD";
     const title = elementPickerStage === "element" ? verb + " " + kindLabel + " — ELEMENT"
-                : elementPickerMode === "convert" ? "CONVERT — ATTACK OR WAVE?"
+                : elementPickerMode === "convert" ? "CONVERT — WHAT SHOULD IT DO?"
                 : verb + " — WHAT KIND OF PYLON?";
     ctx.fillStyle = "#0ff"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
     ctx.fillText(title, L.px + L.pw / 2, L.py + 22);
@@ -462,7 +474,7 @@ function _buildInfoRows(targetTile) {
 
     if (targetTile.pillar && !targetTile.destroyed) {
         const el = ELEMENTS.find(e=>e.id===targetTile.attackModeElement);
-        const mode = targetTile.attackMode?"ATTACK":targetTile.waveMode?"WAVE":"DORMANT";
+        const mode = targetTile.attackMode?"ATTACK":targetTile.waveMode?(waveRoleLabel(targetTile.attackModeElement)+(targetTile.waveAwake===false?" (STANDBY)":"")):"DORMANT";
         const team = targetTile.pillarTeam==="green"?"ALLY":"ENEMY";
         const teamCol = targetTile.pillarTeam==="green"?"#0f8":"#f44";
         const _PSTYLE_NAMES={sentinel:"Sentinel"};
@@ -566,7 +578,7 @@ function drawPylonConfirm() {
     ctx.beginPath(); ctx.arc(px + 36, py + 62, 8, 0, Math.PI*2); ctx.fill();
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#fff"; ctx.font = "13px monospace"; ctx.textAlign = "left";
-    const _kl = isRelayId(el.id) ? "" : (pylonConfirmKind === "wave" ? " WAVE PYLON" : " TURRET");
+    const _kl = isRelayId(el.id) ? "" : (isWaveKind(pylonConfirmKind) ? " " + waveRoleLabel(el.id) + " PYLON" : " TURRET");
     ctx.fillText(el.label.toUpperCase() + _kl, px + 52, py + 62);
 
     // Cost row
