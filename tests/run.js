@@ -51,6 +51,7 @@ const SUITES = [
     ['night sieges',           'siege.js'],
     ['follower bonds',         'bonds.js'],
     ['brood tyrant fight',     'tyrant.js'],
+    ['autoplay',               'autoplay.js'],
 ];
 
 let failed = 0;

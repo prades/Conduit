@@ -66,7 +66,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
             const h0 = __t.health; applyDamage(__t, 500, null);
             return { took, under: __t.untargetable, hostile: isHostileTarget(__t), lost: h0 - __t.health }; })()`);
         ok(r.took && r.under && !r.hostile && r.lost === 0, JSON.stringify(r));
-        ok(/a\.team!=="green"&&!a\.dead&&!a\.untargetable/.test(rd('js/npc.js')), 'followers on guard still target it');
+        ok(/let bd2=actor\.hackOrder \? 2\.25 : 20\.25;[\s\S]{0,80}isHostileTarget\(a\)/.test(rd('js/npc.js')), 'followers on guard still target it');
         ok(/!a\.isClone && !a\.dead && !a\.untargetable/.test(rd('js/npc.js')), 'brawlers still chase it');
     });
     await check('and comes up under your nearest pylon in its zone, hurting it and everything of yours around it', () => {

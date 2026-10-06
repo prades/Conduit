@@ -1442,6 +1442,8 @@ function visibleForDraw(x, y) {
 // ─────────────────────────────────────────────────────────
 function render() {
     requestAnimationFrame(render); // schedule next frame first so the loop never stops
+    // AUTOPLAY presses NEXT WAVE itself — which has to be watched while paused.
+    if (typeof autoplayWatch === "function") autoplayWatch();
     if (!gameState.running) { return; } // skip all logic while paused (buy screen, game over)
 
     frame++;
@@ -1742,7 +1744,11 @@ function render() {
     if (!alertActive) {
         for (const nest of _nestCache) {
             if (!nestIsHackable(nest)) { nest.nestHackProgress = 0; continue; }
-            const playerNearNest = inNestHackRange(nest, player.x, player.y);
+            // FOLLOWERS HACK TOO — but only when ORDERED to (hackOrder, set by
+            // AUTOPLAY in js/autoplay.js), so a squad that merely walks past a
+            // nest never sets an alarm off by accident.
+            const playerNearNest = inNestHackRange(nest, player.x, player.y)
+                || followers.some(f => !f.dead && f.hackOrder === nest && inNestHackRange(nest, f.x, f.y));
             if (playerNearNest && !_siphonActive) {
                 _siphonActive = true; // block panel siphons while hacking a nest
                 nest.nestHackProgress = (nest.nestHackProgress || 0) + 1;
@@ -2108,6 +2114,7 @@ function render() {
     if (frame % 6 === 0) applySignalTowerBuff();
     updateStatusEffects();
     if (typeof bondTick === "function") bondTick();
+    if (typeof autoplayTick === "function") autoplayTick();
     updateElementEffects();
     updateFloatingTexts();
     // THE BATTERIES. Regen first, then wave mode's constant draw — so a pool
