@@ -111,14 +111,15 @@ function applySlow(actor, frames, factor) {
 
 // Called for every actor from updateStatusEffects.
 function tickSlowSpeed(actor) {
-    // Capture a clean base the first time we see this actor moving normally.
-    // Guarded against attack state (which parks moveSpeed at 0) and against
-    // capturing a value that is already slowed.
+    // Capture a clean base the first time we see this actor moving. Guarded
+    // against attack state, which parks moveSpeed at 0. A slow or haste already on it does not block the capture: moveSpeed is
+    // only ever scaled HERE, from the base, so before there is a base it is
+    // still the unscaled speed. Requiring "not slowed" meant a follower that
+    // first moved inside an electric zone — renewed every 3 frames — never
+    // got a base, and so never went any faster.
     if (actor.baseMoveSpeed === undefined) {
-        if (actor.state !== 'attack' && actor.moveSpeed > 0 && !(actor.slowed > 0)) {
-            actor.baseMoveSpeed = actor.moveSpeed;
-        }
-        return;
+        if (actor.state !== 'attack' && actor.moveSpeed > 0) actor.baseMoveSpeed = actor.moveSpeed;
+        else return;
     }
     if (actor.state === 'attack') return;   // deliberately parked at 0
     if (actor.slowed > 0) {

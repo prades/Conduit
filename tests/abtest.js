@@ -565,10 +565,15 @@ check('attack state never latches a base speed of zero', () => {
     run('tickSlowSpeed')(a);
     eq(a.baseMoveSpeed, 0.03, 'captured once moving again');
 });
-check('an already-slowed actor does not capture its slowed speed as base', () => {
-    const a = { moveSpeed: 0.004, state: 'hunt', slowed: 50, slowFactor: 0.2 };
+check('an actor first seen under a haste or slow still gets a base, and the factor', () => {
+    // moveSpeed is only ever scaled by tickSlowSpeed from the base, so before
+    // there is a base it is the unscaled speed. REPORTED: followers got no
+    // electric haste — one that first moved inside the zone, renewed every 3
+    // frames, was "slowed" forever and never captured a base at all.
+    const a = { moveSpeed: 0.02, state: 'hunt', slowed: 12, slowFactor: 1.9 };
     run('tickSlowSpeed')(a);
-    eq(a.baseMoveSpeed, undefined, 'must not capture while slowed');
+    eq(a.baseMoveSpeed, 0.02, 'captured the unscaled speed');
+    ok(Math.abs(a.moveSpeed - 0.038) < 1e-12, 'and hasted it: ' + a.moveSpeed);
 });
 check('tickSlowSpeed leaves an attacking actor parked at zero', () => {
     const a = { moveSpeed: 0, baseMoveSpeed: 0.02, state: 'attack' };

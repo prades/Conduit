@@ -194,6 +194,27 @@ function drawNPC(actor, px, py, drawCtx=ctx) {
     } else {
         _drawVirus(actor, px, py, drawCtx);
     }
+    // ELECTRIC HASTE: yellow speed streaks trailing a unit of yours that is
+    // being hastened, so the buff can be seen working.
+    if (actor.slowed > 0 && actor.slowFactor > 1 && (actor.isFollower || actor.isClone || actor.team === "green")) {
+        const dx = actor.dirX || 0, dy = actor.dirY || 0;
+        let sx = (dx - dy) * TILE_W, sy = (dx + dy) * TILE_H;
+        const len = Math.hypot(sx, sy) || 1; sx /= len; sy /= len;
+        if (!dx && !dy) { sx = -1; sy = 0; }
+        const k = Math.min(1, (actor.slowFactor - 1) / 0.9);
+        drawCtx.save();
+        drawCtx.strokeStyle = "#ffee33"; drawCtx.lineCap = "round"; drawCtx.lineWidth = 1.5;
+        for (let i = -1; i <= 1; i++) {
+            const ox = -sy * i * 5, oy = sx * i * 4 - 8, ph = (frame * 0.35 + i * 1.7) % 3;
+            drawCtx.globalAlpha = (0.35 + 0.45 * k) * (1 - ph / 3);
+            const L = 6 + 8 * k;
+            drawCtx.beginPath();
+            drawCtx.moveTo(px - sx * (8 + ph * 3) + ox, py - sy * (8 + ph * 3) + oy);
+            drawCtx.lineTo(px - sx * (8 + ph * 3 + L) + ox, py - sy * (8 + ph * 3 + L) + oy);
+            drawCtx.stroke();
+        }
+        drawCtx.restore();
+    }
 }
 
 // A follower that has set itself. Drawn as an isometric cube sitting on the

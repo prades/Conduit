@@ -87,6 +87,42 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.tier === 3 && r.lit === 6, JSON.stringify({ tier: r.tier, lit: r.lit }));
     });
 
+    group('ELECTRIC HASTE NEAR THE PYLONS');
+
+    // Six electric pylons (tier III), then a fresh follower — never measured
+    // outside the zone first — held at each spot; returns moveSpeed / base.
+    const haste = (kind, spot) => run(`(function(){
+        followers.length = 0; actors.length = 0;
+        spawnFollowerAtCrystal('fire'); const a = followers[followers.length - 1];
+        const ps = __built, home = world.find(t => isHomePortal(t));
+        const at = { beside: [ps[2].x, ps[2].y + 2], end: [ps[5].x + 2, ps[5].y], far: [home.x - 6, 2] }[${JSON.stringify(spot)}];
+        a.slowed = 0; a.slowFactor = 1; delete a.baseMoveSpeed;
+        for (let f = 0; f < 12; f++) { a.x = at[0]; a.y = at[1]; render(); }
+        return { ratio: a.moveSpeed / a.baseMoveSpeed, tier: networkStrength.electric };
+    })()`);
+    const tierIII = kind => { lay(kind, 6, 70); run(`globalThis.__built = world.filter(t => t.pillar && t.attackModeElement === 'electric').sort((a, b) => a.x - b.x);`); };
+
+    await check('THE ASK: tier III hastes a follower standing next to a wave pylon, off the link line', () => {
+        tierIII('wave');
+        const r = haste('wave', 'beside');
+        ok(r.tier === 3 && Math.abs(r.ratio - run('ELECTRIC_HASTE[3]')) < 1e-9, JSON.stringify(r));
+    });
+    await check('past the last pylon of the row too', () => {
+        tierIII('wave');
+        const r = haste('wave', 'end');
+        ok(Math.abs(r.ratio - run('ELECTRIC_HASTE[3]')) < 1e-9, JSON.stringify(r));
+    });
+    await check('electric TURRETS haste as well', () => {
+        tierIII('attack');
+        const r = haste('attack', 'beside');
+        ok(Math.abs(r.ratio - run('ELECTRIC_HASTE[3]')) < 1e-9, JSON.stringify(r));
+    });
+    await check('and nothing far from the network', () => {
+        tierIII('wave');
+        const r = haste('wave', 'far');
+        ok(r.ratio === 1, JSON.stringify(r));
+    });
+
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
     process.exit(failures ? 1 : 0);
 })();

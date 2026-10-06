@@ -911,6 +911,30 @@ function drawNestHackZone(nest) {
     ctx.restore();
 }
 
+// ELECTRIC HASTE AROUND EVERY ELECTRIC PYLON. The link strips between wave
+// pylons still haste too (applyPylonZoneEffects); this is the ring around each
+// pylon itself, turrets included, so standing next to your electric network
+// is enough. Renewed every 3 frames and lingering ELECTRIC_HASTE_FRAMES, the
+// same as the strip. An enemy's slow on the same unit still wins.
+function electricHasteTick() {
+    if (frame % 3 !== 0) return;
+    const tier = Math.min(3, networkStrength.electric || 0);
+    if (tier < 1) return;
+    const src = [];
+    for (const p of _wPylons) if (p.attackModeElement === "electric") src.push(p);
+    for (const p of _aPylons) if (p.attackModeElement === "electric") src.push(p);
+    if (!src.length) return;
+    const mult = ELECTRIC_HASTE[tier], r2 = ELECTRIC_HASTE_RADIUS * ELECTRIC_HASTE_RADIUS;
+    for (const a of actors) {
+        if (!a || a.dead || !(a.team === "green" || a.isClone || a.isFollower)) continue;
+        if (a.slowed > 0 && (a.slowFactor ?? 1) < 1) continue;
+        for (const p of src) {
+            const dx = a.x - p.x, dy = a.y - p.y;
+            if (dx * dx + dy * dy <= r2) { applySlow(a, ELECTRIC_HASTE_FRAMES, mult); break; }
+        }
+    }
+}
+
 // One turret round: the pylon's power, the turret multiplier, its network
 // tier, and a bite out of the target's max HP so it counts against big ones.
 function turretRoundDamage(t, target) {
@@ -1556,6 +1580,7 @@ function render() {
 
     // Apply effects for each pre-computed connected pair
     applyPylonZoneEffects(wavePylons);
+    electricHasteTick();
 
     // Core triangle/square zone — needs 3+ pylons to form enclosed zone
     const corePylons = wavePylons.filter(p=>p.attackModeElement==="core");

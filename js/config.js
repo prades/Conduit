@@ -299,7 +299,7 @@ const ALERT_DURATION = 600; // 10 seconds at 60fps
 // in an electric wave zone, by network tier. It lingers ELECTRIC_HASTE_FRAMES
 // after they step out, so the edge of the zone does not stutter.
 // A turret-mode pylon wears a gun that tracks anything hostile inside
-// attackRange x this, and shows a lock once it is inside firing range.
+// attackRange x this.
 const TURRET_TRACK_RANGE_MULT = 1.6;
 // Every turret round hits this much harder than the pylon's base attack power.
 // REPORTED twice: turrets "do not do any damage". Measured: one slow bolt every
@@ -314,6 +314,11 @@ const TURRET_TIER_BONUS   = 0.35;   // +35% per network tier (I, II, III)
 const TURRET_MAXHP_SHARE  = 0.05;   // + 5% of the target's max HP
 const TURRET_TRACER_FRAMES = 8;     // how long the shot's beam stays on screen
 const ELECTRIC_HASTE = { 1: 1.35, 2: 1.6, 3: 1.9 };
+// REPORTED: "the tier 3 effect needs to take effect near the pylons". It used
+// to apply only on the strip along a link between two WAVE pylons. Now every
+// lit electric pylon — turret or wave — hastes your side within this many
+// tiles, at the electric network's tier (I needs 2 linked, III needs 6).
+const ELECTRIC_HASTE_RADIUS = 2.5;
 const ELECTRIC_HASTE_FRAMES = 12;
 // PRESSURE BETWEEN ALARMS. Predators leave pylons alone, except for this share
 // of them — hunters, chosen when they spawn — which, left undisturbed, walk to
