@@ -156,6 +156,26 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/t\._lastShotFrame = frame/.test(rd('js/game.js')), 'a paid-for shot does not mark the flash');
     });
 
+    await check('THE ASK: turret rounds hit TURRET_DAMAGE_MULT harder than the base power', () => {
+        const mult = run('TURRET_DAMAGE_MULT');
+        ok(mult >= 1.5, 'the multiplier is ' + mult);
+        const r = run(`(function(){ const keep = spawnFollowerProjectile; let dmg = null;
+            spawnFollowerProjectile = (a, tgt, col, d) => { dmg = d; };
+            try {
+                const row = world.filter(t => t.type === 'floor' && t.y === 3 && t.x >= 4 && !t.nest && !t.nodeType).sort((a,b) => a.x - b.x);
+                world.forEach(t => { t.pillar = false; t.attackMode = false; t.isGenerator = false; t.isConnector = false; t.circuitOn = undefined; t.waveTripped = false; t.nestConnection = null; if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });
+                Object.assign(row[0], { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999, isGenerator: true, attackMode: true, attackModeElement: 'generator' });
+                const t = row[1];
+                Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999, attackMode: true, attackModeElement: 'fire', attackPower: 20, attackRange: 2.5 });
+                actors.length = 0;
+                const S = SPECIES['ant']; const f = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), t.x + 1, t.y);
+                f.team = 'red'; f.health = 1e6; f.maxHealth = 1e6; actors.push(f);
+                _cacheAge = -999; for (let i = 0; i < 400 && dmg === null; i++) render();
+            } finally { spawnFollowerProjectile = keep; }
+            return dmg; })()`);
+        ok(Math.abs(r - 20 * mult) < 1e-9, 'a 20-power turret fired ' + r);
+    });
+
     group('the index');
 
     await check('the index teaches both', () => {

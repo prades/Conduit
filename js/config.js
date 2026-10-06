@@ -301,6 +301,11 @@ const ALERT_DURATION = 600; // 10 seconds at 60fps
 // A turret-mode pylon wears a gun that tracks anything hostile inside
 // attackRange x this, and shows a lock once it is inside firing range.
 const TURRET_TRACK_RANGE_MULT = 1.6;
+// Every turret round hits this much harder than the pylon's base attack power.
+// A turret fires once every 1.5s, so at 1.0 a base 15 was 10 damage a second,
+// which a zone-2 beetle shrugged off. 1.75 makes a turret something the
+// predators have to respect without out-damaging the squad.
+const TURRET_DAMAGE_MULT = 1.75;
 const ELECTRIC_HASTE = { 1: 1.35, 2: 1.6, 3: 1.9 };
 const ELECTRIC_HASTE_FRAMES = 12;
 // PRESSURE BETWEEN ALARMS. Predators leave pylons alone, except for this share

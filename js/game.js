@@ -1559,11 +1559,13 @@ function render() {
         t._lastShotFrame = frame;      // the turret's muzzle flash reads this   // the tutorial's "kill with your pylons" step reads this
         // Spawn missile projectile
         const col = t.attackModeColor || "#0f8";
+        // TURRET_DAMAGE_MULT on every round: turrets were too soft to matter.
+        const _dmg = (t.attackPower||12) * TURRET_DAMAGE_MULT;
         spawnFollowerProjectile(
-            {x:t.x, y:t.y-1, element:t.attackModeElement||"core", stats:{specialAttack:t.attackPower||12}},
+            {x:t.x, y:t.y-1, element:t.attackModeElement||"core", stats:{specialAttack:_dmg}},
             nearest,
             col,
-            t.attackPower||12,
+            _dmg,
             8,
             null
         );

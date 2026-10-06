@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pylon Design Options</title>
+<style>
+  :root { --bg:#05070c; --panel:#0b1018; --ink:#cfe9df; --dim:#5d7a72; --line:#1b2633; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family: ui-monospace, Menlo, Consolas, monospace; }
+  header { padding:16px 16px 6px; }
+  h1 { font-size:16px; letter-spacing:3px; margin:0 0 4px; }
+  p.sub { margin:0; color:var(--dim); font-size:12px; line-height:1.5; max-width:820px; }
+  .bar { display:flex; flex-wrap:wrap; gap:6px; padding:10px 16px; position:sticky; top:0; background:rgba(5,7,12,0.94); z-index:2; border-bottom:1px solid var(--line); }
+  .bar button { background:var(--panel); color:var(--ink); border:1px solid var(--line); padding:7px 12px; font:inherit; font-size:12px; letter-spacing:2px; cursor:pointer; border-radius:3px; }
+  .bar button.on { border-color: currentColor; box-shadow: 0 0 10px -2px currentColor inset; }
+  h2 { font-size:13px; letter-spacing:3px; margin:18px 16px 8px; color:#9fd8c6; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:10px; padding:0 16px 8px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:4px; overflow:hidden; }
+  .card canvas { display:block; width:100%; height:auto; background: radial-gradient(ellipse at 50% 80%, #0d1a22 0%, #05070c 70%); }
+  .card .cap { padding:8px 10px 10px; }
+  .card .cap b { display:block; font-size:12px; letter-spacing:2px; }
+  .card .cap span { display:block; color:var(--dim); font-size:11px; line-height:1.45; margin-top:3px; }
+  footer { color:var(--dim); font-size:11px; padding:10px 16px 24px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>PYLON DESIGN OPTIONS</h1>
+  <p class="sub">Turret heads (A&ndash;D) and wave-pylon bodies (1&ndash;8), drawn the way the game draws: isometric stone, minimal, runes lit in the element&rsquo;s colour. Pick an element to see each design carry its traits. Tell me a letter for the turret and up to eight numbers for the wave pylons.</p>
+</header>
+<div class="bar" id="bar"></div>
+<h2>TURRET HEADS &mdash; ATTACK MODE (they track the target)</h2>
+<div class="grid" id="turrets"></div>
+<h2>WAVE PYLONS &mdash; BROAD, SEGMENTED, HOLLOW</h2>
+<div class="grid" id="waves"></div>
+<footer>Animated preview. Every design is a few stone blocks and glowing glyphs &mdash; cheap to draw on a phone.</footer>
+<script>
+const ELEMENTS = [
+  { id:"fire",     label:"FIRE",     color:"#ff5a1f" },
+  { id:"electric", label:"ELECTRIC", color:"#ffe23a" },
+  { id:"ice",      label:"ICE",      color:"#9fe3ff" },
+  { id:"flux",     label:"FLUX",     color:"#a35cff" },
+  { id:"core",     label:"CORE",     color:"#22e0b8" },
+  { id:"toxic",    label:"TOXIC",    color:"#7dff4a" },
+];
+let EL = ELEMENTS[0];
+
+// ── stone & light helpers ───────────────────────────────
+const STONE = { top:"#3a4352", left:"#232a35", right:"#161b23", edge:"rgba(255,255,255,0.06)" };
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  r = Math.round(Math.min(255, r * k)); g = Math.round(Math.min(255, g * k)); b = Math.round(Math.min(255, b * k));
+  return `rgb(${r},${g},${b})`;
+}
+function rgba(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+// An isometric block: footprint half-width hw (along the screen), half-depth hd,
+// standing from baseY up h px, centred on cx. Faces: left, right, top.
+function block(c, cx, baseY, hw, hd, h, tint) {
+  const s = tint || STONE;
+  const L = [cx - hw, baseY], R = [cx + hw, baseY], F = [cx, baseY + hd], B = [cx, baseY - hd];
+  c.fillStyle = s.left;  c.beginPath(); c.moveTo(L[0], L[1]); c.lineTo(F[0], F[1]); c.lineTo(F[0], F[1] - h); c.lineTo(L[0], L[1] - h); c.closePath(); c.fill();
+  c.fillStyle = s.right; c.beginPath(); c.moveTo(F[0], F[1]); c.lineTo(R[0], R[1]); c.lineTo(R[0], R[1] - h); c.lineTo(F[0], F[1] - h); c.closePath(); c.fill();
+  c.fillStyle = s.top;   c.beginPath(); c.moveTo(L[0], L[1] - h); c.lineTo(F[0], F[1] - h); c.lineTo(R[0], R[1] - h); c.lineTo(B[0], B[1] - h); c.closePath(); c.fill();
+  c.strokeStyle = s.edge; c.lineWidth = 1; c.stroke();
+}
+// A glowing glyph: a few strokes, like a carved rune, centred at (x, y).
+const GLYPHS = [
+  [[0,-1,0,1],[0,-1,0.6,-0.4],[0,0,0.6,0.6]],            // ᚠ-ish
+  [[-0.5,-1,-0.5,1],[-0.5,-1,0.5,0],[0.5,0,-0.5,1]],       // ᚦ-ish
+  [[0,-1,0,1],[-0.6,-0.4,0.6,0.4]],                        // ᛁ+slash
+  [[-0.6,1,0,-1],[0,-1,0.6,1],[-0.3,0.2,0.3,0.2]],         // ᚨ-ish
+  [[0,-1,0,1],[0,-0.2,0.6,-0.8],[0,-0.2,-0.6,-0.8]],       // ᛉ
+  [[-0.6,-1,0.6,1],[0.6,-1,-0.6,1]],                       // ᚷ
+];
+function rune(c, x, y, s, col, i, glow) {
+  const g = GLYPHS[i % GLYPHS.length];
+  c.save(); c.strokeStyle = col; c.lineWidth = Math.max(1, s * 0.22); c.lineCap = "round";
+  c.shadowColor = col; c.shadowBlur = glow ?? 6;
+  c.beginPath(); for (const [a,b,d,e] of g) { c.moveTo(x + a*s, y + b*s); c.lineTo(x + d*s, y + e*s); } c.stroke(); c.restore();
+}
+function floor(c, cx, cy) {
+  c.save(); c.fillStyle = "rgba(255,255,255,0.03)"; c.strokeStyle = "rgba(120,200,180,0.12)";
+  c.beginPath(); c.moveTo(cx - 60, cy); c.lineTo(cx, cy + 30); c.lineTo(cx + 60, cy); c.lineTo(cx, cy - 30); c.closePath(); c.fill(); c.stroke(); c.restore();
+}
+function plinth(c, cx, cy) { block(c, cx, cy, 26, 13, 8); }
+// Element traits drawn in the hollow / around the body. All small.
+function trait(c, el, x, y, w, h, t) {
+  const col = el.color;
+  c.save();
+  if (el.id === "fire") {
+    for (let i = 0; i < 5; i++) { const k = ((t * 0.9 + i / 5) % 1); c.globalAlpha = (1 - k) * 0.9; c.fillStyle = i % 2 ? "#ffcf6a" : col;
+      c.beginPath(); c.arc(x + Math.sin(i * 2.1 + t * 3) * w * 0.25, y + h * 0.4 - k * h, 2 + (1 - k) * 2, 0, Math.PI * 2); c.fill(); }
+  } else if (el.id === "electric") {
+    c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 8; c.lineWidth = 1.4; c.globalAlpha = 0.6 + 0.4 * Math.abs(Math.sin(t * 9));
+    c.beginPath(); c.moveTo(x - w / 2, y - h / 2); for (let i = 1; i <= 6; i++) c.lineTo(x - w / 2 + w * i / 6 + (Math.random() - 0.5) * 4, y - h / 2 + h * i / 6 + (Math.random() - 0.5) * 6); c.stroke();
+  } else if (el.id === "ice") {
+    c.fillStyle = rgba(col, 0.75); c.strokeStyle = "#eaffff"; c.lineWidth = 0.8;
+    for (const [dx, dy, s] of [[-0.18, 0.25, 1], [0.15, 0.3, 0.8], [0, 0.1, 1.3]]) {
+      const px = x + dx * w, py = y + dy * h, hh = 9 * s;
+      c.beginPath(); c.moveTo(px, py - hh); c.lineTo(px + 3 * s, py); c.lineTo(px, py + 2); c.lineTo(px - 3 * s, py); c.closePath(); c.fill(); c.stroke();
+    }
+  } else if (el.id === "flux") {
+    c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 6; c.lineWidth = 1.3;
+    for (let r = 0; r < 3; r++) { c.globalAlpha = 0.85 - r * 0.25; c.beginPath();
+      for (let a = 0; a < Math.PI * 1.6; a += 0.2) { const rr = (3 + a * 2.2) * (1 - r * 0.2); const px = x + Math.cos(a + t * 3 + r) * rr, py = y + Math.sin(a + t * 3 + r) * rr * 0.6; a ? c.lineTo(px, py) : c.moveTo(px, py); }
+      c.stroke(); }
+  } else if (el.id === "core") {
+    c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 8; c.lineWidth = 1.5; c.globalAlpha = 0.7 + 0.3 * Math.sin(t * 2);
+    c.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + Math.PI / 6; const px = x + Math.cos(a) * 8, py = y + Math.sin(a) * 8 * 0.8; i ? c.lineTo(px, py) : c.moveTo(px, py); } c.closePath(); c.stroke();
+    c.globalAlpha *= 0.4; c.fillStyle = col; c.fill();
+  } else if (el.id === "toxic") {
+    for (let i = 0; i < 4; i++) { const k = ((t * 0.6 + i / 4) % 1); c.globalAlpha = 0.8 * (1 - k); c.fillStyle = col;
+      c.beginPath(); c.arc(x + (i - 1.5) * w * 0.12, y - h * 0.3 + k * h * 0.9, 2.2, 0, Math.PI * 2); c.fill(); }
+    c.globalAlpha = 0.35; c.fillStyle = col; c.beginPath(); c.ellipse(x, y + h * 0.48, w * 0.3, 3, 0, 0, Math.PI * 2); c.fill();
+  }
+  c.restore();
+}
+
+// ── TURRET HEADS: drawn on a short stone tower; aim angle a ─────────
+function tower(c, cx, base) { plinth(c, cx, base); block(c, cx, base - 8, 14, 7, 34); }
+const TURRETS = [
+  { name:"A · MONOLITH EYE", note:"A floating stone ring around a lens. The ring turns to face the target; the lens flares on each shot.",
+    draw(c, cx, base, el, t, a) { tower(c, cx, base); const y = base - 62 + Math.sin(t * 2) * 2;
+      c.save(); c.strokeStyle = STONE.top; c.lineWidth = 6; c.beginPath(); c.ellipse(cx, y, 13, 13 * Math.abs(Math.cos(a)) + 3, 0, 0, Math.PI * 2); c.stroke();
+      c.strokeStyle = STONE.left; c.lineWidth = 2; c.stroke();
+      const lx = cx + Math.cos(a) * 3, ly = y + Math.sin(a) * 2; c.fillStyle = el.color; c.shadowColor = el.color; c.shadowBlur = 14 + 8 * Math.max(0, Math.sin(t * 4));
+      c.beginPath(); c.arc(lx, ly, 4.5, 0, Math.PI * 2); c.fill(); c.restore();
+      rune(c, cx - 7, base - 28, 4, el.color, 2); rune(c, cx + 7, base - 26, 4, el.color, 4); } },
+  { name:"B · RUNE BALLISTA", note:"Two stone prongs on a pivot with a charged glyph-bolt held between them, laid along the aim.",
+    draw(c, cx, base, el, t, a) { tower(c, cx, base); const y = base - 58; const ux = Math.cos(a), uy = Math.sin(a) * 0.55;
+      block(c, cx, y + 6, 9, 5, 6);
+      for (const s of [-1, 1]) { const ox = -uy * 6 * s, oy = ux * 3 * s; c.save(); c.strokeStyle = STONE.top; c.lineWidth = 5; c.lineCap = "round";
+        c.beginPath(); c.moveTo(cx + ox, y + oy); c.lineTo(cx + ox + ux * 18, y + oy + uy * 18); c.stroke(); c.strokeStyle = STONE.right; c.lineWidth = 2; c.stroke(); c.restore(); }
+      c.save(); c.strokeStyle = el.color; c.shadowColor = el.color; c.shadowBlur = 10; c.lineWidth = 2.4;
+      c.beginPath(); c.moveTo(cx - ux * 4, y - uy * 4); c.lineTo(cx + ux * 16, y + uy * 16); c.stroke(); c.restore();
+      rune(c, cx, base - 25, 4.5, el.color, 1); } },
+  { name:"C · OBELISK LANCE", note:"A tall tapering obelisk whose glowing tip tilts toward the target. Simplest silhouette, reads from far away.",
+    draw(c, cx, base, el, t, a) { plinth(c, cx, base); const lean = Math.cos(a) * 4;
+      c.save(); const top = base - 74;
+      c.fillStyle = STONE.left;  c.beginPath(); c.moveTo(cx - 11, base - 8); c.lineTo(cx, base - 2); c.lineTo(cx + lean, top); c.lineTo(cx - 5 + lean, top + 4); c.closePath(); c.fill();
+      c.fillStyle = STONE.right; c.beginPath(); c.moveTo(cx, base - 2); c.lineTo(cx + 11, base - 8); c.lineTo(cx + 5 + lean, top + 4); c.lineTo(cx + lean, top); c.closePath(); c.fill();
+      c.fillStyle = el.color; c.shadowColor = el.color; c.shadowBlur = 12 + 6 * Math.sin(t * 5);
+      c.beginPath(); c.moveTo(cx + lean, top - 9); c.lineTo(cx + 4 + lean, top + 1); c.lineTo(cx + lean, top + 4); c.lineTo(cx - 4 + lean, top + 1); c.closePath(); c.fill(); c.restore();
+      for (let i = 0; i < 3; i++) rune(c, cx - 4 + lean * (i / 4), base - 22 - i * 14, 3.4, el.color, i + 3, 4); } },
+  { name:"D · RUNE ORRERY", note:"Three runestones orbit a core. The one facing the target locks in place and fires; the others keep turning.",
+    draw(c, cx, base, el, t, a) { tower(c, cx, base); const y = base - 60;
+      c.save(); c.fillStyle = el.color; c.shadowColor = el.color; c.shadowBlur = 12; c.beginPath(); c.arc(cx, y, 5, 0, Math.PI * 2); c.fill(); c.restore();
+      c.save(); c.strokeStyle = rgba(el.color, 0.25); c.beginPath(); c.ellipse(cx, y, 18, 8, 0, 0, Math.PI * 2); c.stroke(); c.restore();
+      const stones = [a, t * 1.5 + 2, t * 1.5 + 4];
+      stones.sort((p, q) => Math.sin(p) - Math.sin(q));
+      for (const s of stones) { const sx = cx + Math.cos(s) * 18, sy = y + Math.sin(s) * 8; block(c, sx, sy + 4, 4, 2, 8); if (s === a) rune(c, sx, sy - 2, 2.6, el.color, 0, 10); } } },
+];
+
+// ── WAVE PYLONS: broad, segmented, hollow. (cx, base) is the tile centre ──
+const WAVES = [
+  { name:"1 · GATE", note:"Two broad pillars and a lintel: a doorway the element fills.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b); block(c, cx - 16, b - 8, 7, 4, 50); block(c, cx + 16, b - 8, 7, 4, 50); block(c, cx, b - 58, 26, 6, 8);
+      trait(c, el, cx, b - 32, 22, 44, t); rune(c, cx - 16, b - 34, 4, el.color, 0); rune(c, cx + 16, b - 34, 4, el.color, 3); rune(c, cx, b - 62, 3, el.color, 1); } },
+  { name:"2 · STANDING RING", note:"A hollow stone ring set on edge, cut into six segments with lit seams.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b); const y = b - 38;
+      for (let i = 0; i < 6; i++) { const a0 = i / 6 * Math.PI * 2 + 0.06, a1 = (i + 1) / 6 * Math.PI * 2 - 0.06;
+        c.save(); c.strokeStyle = i % 2 ? STONE.left : STONE.top; c.lineWidth = 9; c.beginPath(); c.ellipse(cx, y, 22, 26, 0, a0, a1); c.stroke(); c.restore(); }
+      c.save(); c.strokeStyle = rgba(el.color, 0.8); c.shadowColor = el.color; c.shadowBlur = 8; c.lineWidth = 1;
+      for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; c.beginPath(); c.moveTo(cx + Math.cos(a) * 17, y + Math.sin(a) * 21); c.lineTo(cx + Math.cos(a) * 27, y + Math.sin(a) * 31); c.stroke(); }
+      c.restore(); trait(c, el, cx, y, 26, 30, t); } },
+  { name:"3 · SPLIT MONOLITH", note:"One great stone split down the middle; the element burns in the gap.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b); block(c, cx - 11, b - 8, 9, 5, 56); block(c, cx + 11, b - 8, 9, 5, 52);
+      c.save(); c.fillStyle = rgba(el.color, 0.25 + 0.15 * Math.sin(t * 3)); c.fillRect(cx - 2, b - 62, 4, 52); c.restore();
+      trait(c, el, cx, b - 36, 8, 44, t); rune(c, cx - 13, b - 40, 4, el.color, 2); rune(c, cx + 13, b - 30, 4, el.color, 5); } },
+  { name:"4 · HOLLOW STACK", note:"Three open stone frames stacked and turned, each segment offset. Light shows through the middle.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b);
+      for (let k = 0; k < 3; k++) { const y = b - 8 - k * 18, w = 22 - k * 3, d = 11 - k * 1.5;
+        block(c, cx - w + 3, y, 3, d, 14); block(c, cx + w - 3, y, 3, d, 14); block(c, cx, y - 14, w, 3, 3); rune(c, cx + w - 3, y - 7, 2.5, el.color, k + 1, 5); }
+      trait(c, el, cx, b - 34, 18, 46, t); } },
+  { name:"5 · TRILITHON", note:"Three uneven stones, two standing and one laid across — the oldest shape there is.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b); block(c, cx - 15, b - 8, 8, 6, 44); block(c, cx + 15, b - 8, 8, 6, 48); block(c, cx + 1, b - 54, 25, 7, 9);
+      c.save(); c.translate(cx, b - 8); c.restore(); trait(c, el, cx, b - 30, 20, 38, t); rune(c, cx - 15, b - 30, 4.5, el.color, 4); rune(c, cx + 15, b - 34, 4.5, el.color, 0); } },
+  { name:"6 · RING COLUMN", note:"A column built of separate hollow rings, floating a hair apart, each turning on its own.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b);
+      for (let k = 0; k < 4; k++) { const y = b - 14 - k * 13 + Math.sin(t * 2 + k) * 1.5;
+        c.save(); c.strokeStyle = k % 2 ? STONE.top : STONE.left; c.lineWidth = 6; c.beginPath(); c.ellipse(cx, y, 17 - k, 7 - k * 0.3, 0, 0, Math.PI * 2); c.stroke();
+        c.strokeStyle = rgba(el.color, 0.6); c.lineWidth = 1; c.setLineDash([3, 5]); c.lineDashOffset = -t * 20 * (k % 2 ? 1 : -1); c.stroke(); c.restore(); }
+      trait(c, el, cx, b - 34, 14, 40, t); } },
+  { name:"7 · HORNS", note:"Two curved horns of stone rising from one base, nearly meeting at the top. Hollow crescent.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b);
+      for (const s of [-1, 1]) { for (let k = 0; k < 6; k++) { const f = k / 5, x = cx + s * (18 - f * f * 14), y = b - 12 - f * 50; block(c, x, y + 4, 5 - f * 1.5, 3, 9); }
+        rune(c, cx + s * 16, b - 26, 3.5, el.color, s > 0 ? 2 : 5); }
+      trait(c, el, cx, b - 34, 16, 40, t); } },
+  { name:"8 · BROKEN CIRCLE", note:"A circle of floating stones with one missing; the gap faces the next pylon in the network.",
+    draw(c, cx, b, el, t) { plinth(c, cx, b); const y = b - 36;
+      const stones = []; for (let i = 0; i < 7; i++) { const a = i / 8 * Math.PI * 2 + t * 0.4; stones.push(a); }
+      stones.sort((p, q) => Math.sin(p) - Math.sin(q));
+      for (const a of stones) { const sx = cx + Math.cos(a) * 24, sy = y + Math.sin(a) * 20; block(c, sx, sy + 6, 4.5, 3, 11); rune(c, sx, sy, 2.4, el.color, Math.round(a * 3), 5); }
+      trait(c, el, cx, y, 22, 30, t); } },
+];
+
+// ── render ───────────────────────────────────────────────
+const W = 220, H = 190;
+function makeCards(host, list) {
+  host.innerHTML = "";
+  return list.map(d => {
+    const card = document.createElement("div"); card.className = "card";
+    const cv = document.createElement("canvas"); cv.width = W * 2; cv.height = H * 2;
+    const cap = document.createElement("div"); cap.className = "cap"; cap.innerHTML = `<b>${d.name}</b><span>${d.note}</span>`;
+    card.appendChild(cv); card.appendChild(cap); host.appendChild(card);
+    return { d, c: cv.getContext("2d") };
+  });
+}
+const tCards = makeCards(document.getElementById("turrets"), TURRETS);
+const wCards = makeCards(document.getElementById("waves"), WAVES);
+const bar = document.getElementById("bar");
+for (const e of ELEMENTS) {
+  const btn = document.createElement("button"); btn.textContent = e.label; btn.style.color = e.color;
+  btn.onclick = () => { EL = e; for (const b of bar.children) b.classList.toggle("on", b === btn); };
+  if (e === EL) btn.classList.add("on");
+  bar.appendChild(btn);
+}
+function frame(ts) {
+  const t = ts / 1000;
+  const aim = Math.atan2(Math.sin(t * 0.7) * 0.9, Math.cos(t * 0.7));
+  // Drawn at game scale, then enlarged around the tile so the detail reads.
+  const K = 1.55, zoom = (c, cy0) => c.setTransform(2 * K, 0, 0, 2 * K, 2 * (W / 2) * (1 - K), 2 * cy0 * (1 - K));
+  for (const { d, c } of tCards) {
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W * 2, H * 2); zoom(c, H - 22);
+    floor(c, W / 2, H - 34); d.draw(c, W / 2, H - 34, EL, t, aim);
+    // the target it is tracking
+    const tx = W / 2 + Math.cos(aim) * 80, ty = H - 50 + Math.sin(aim) * 30;
+    c.save(); c.strokeStyle = "rgba(255,80,80,0.6)"; c.setLineDash([3, 4]); c.beginPath(); c.arc(tx, ty, 6, 0, Math.PI * 2); c.stroke(); c.restore();
+  }
+  for (const { d, c } of wCards) {
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W * 2, H * 2); zoom(c, H - 18);
+    floor(c, W / 2, H - 30); d.draw(c, W / 2, H - 30, EL, t);
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
