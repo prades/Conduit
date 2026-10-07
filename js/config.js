@@ -311,6 +311,43 @@ const TURRET_RANGE = 3;
 // DESTROY: take down one of your own pylons for good and get this many shards
 // back (it cost PYLON_BUILD_COST to build).
 const DEMOLISH_REFUND = 8;
+// ── AN ENDLESS TUNNEL ────────────────────────────────────
+// REPORTED: "the game stops at zone 13, no predators spawn. Make sure the game
+// is infinite and the enemies scale throughout and become bigger."
+// The spawner only ever looped over zones 1..min(night, 12), so zone 13 on had
+// no predators — and a hacked zone 13 had a kill quota nothing could meet.
+// Spawning now follows the FRONTIER: the zones from ZONE_SPAWN_BEHIND behind
+// the next one to take to ZONE_SPAWN_AHEAD past it, however deep that is.
+const ZONE_SPAWN_BEHIND = 3;
+const ZONE_SPAWN_AHEAD  = 2;
+// Past the last designed species (zone 12) every zone deeper makes its
+// predators tougher, harder-hitting, BIGGER and richer, without end.
+const DEEP_ZONE_FROM     = 13;
+const DEEP_HP_GROWTH     = 1.09;   // × health per zone past 12
+const DEEP_POWER_GROWTH  = 1.07;   // × damage per zone past 12
+const DEEP_SIZE_GROWTH   = 0.05;   // + body size per zone past 12 …
+const DEEP_SIZE_MAX      = 2.5;    // … up to this many times their normal size
+const DEEP_REWARD_GROWTH = 0.10;   // + shard and DNA drops per zone past 12
+function deepZoneLevel(z) { return Math.max(0, z - (DEEP_ZONE_FROM - 1)); }
+function deepZoneScale(z) {
+    const d = deepZoneLevel(z);
+    return { hp: Math.pow(DEEP_HP_GROWTH, d), power: Math.pow(DEEP_POWER_GROWTH, d),
+             size: Math.min(DEEP_SIZE_MAX, 1 + DEEP_SIZE_GROWTH * d), reward: 1 + DEEP_REWARD_GROWTH * d };
+}
+// One place that makes a predator its zone's depth — every way one is made
+// calls it (the zone spawner, and a nest hatching from hauled mass), after the
+// body shaping, which would otherwise reset the size.
+function applyDeepZone(p, z) {
+    if (!p || p.deepLevel !== undefined || deepZoneLevel(z) <= 0) return p;
+    const k = deepZoneScale(z);
+    p.maxHealth = Math.round(p.maxHealth * k.hp); p.health = p.maxHealth;
+    p.power = Math.round(p.power * k.power);
+    if (p.dimensions) { p.dimensions.width = Math.round(p.dimensions.width * k.size); p.dimensions.height = Math.round(p.dimensions.height * k.size); }
+    p.shardDrop = Math.round((p.shardDrop || 2) * k.reward);
+    p.dnaDrops  = Math.round((p.dnaDrops || 1) * k.reward);
+    p.deepLevel = deepZoneLevel(z);
+    return p;
+}
 const TURRET_POWER = 15;
 // The gun turns toward a target a little before it is in range — only a little,
 // so it does not swing onto things it cannot hit (which read as "not firing").

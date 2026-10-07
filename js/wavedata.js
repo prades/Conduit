@@ -24,7 +24,9 @@ function enemiesThisWave() {
     const alarmZone = (alertSource && typeof getZoneIndex === "function")
         ? getZoneIndex(Math.floor(alertSource.x))
         : 1;
-    const zoneBase   = 2 + Math.max(1, alarmZone);          // zone1=3, z2=4, z3=5, z4=6
+    // Capped, so a night deep in the tunnel is a hard fight, not an endless
+    // one: past zone 18 the quota stops growing and the predators do instead.
+    const zoneBase   = 2 + Math.min(18, Math.max(1, alarmZone));   // zone1=3, z2=4 … capped at 20
     const nightBonus = Math.floor((gameState.nightNumber - 1) / 5); // +1 per 5 nights
     return zoneBase + nightBonus;
 }

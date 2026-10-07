@@ -1563,6 +1563,10 @@ function render() {
 
     // ── WORLD GEN ──
     if (player.x>lastGenX-10) generateSegment(lastGenX+1);
+    // The ground ahead of the FRONTIER exists too, not only ahead of you:
+    // autoplay's squad walks out to nests the player has never been near.
+    if (frame % 120 === 0 && typeof ensureWorldTo === "function" && typeof nextZoneToTake === "function")
+        ensureWorldTo((nextZoneToTake() + ZONE_SPAWN_AHEAD + 1) * ZONE_LENGTH);
 
     // ── WORLD CACHE — rebuild pylon/nest subsets every 60 frames ──────────
     if (frame - _cacheAge >= 60) {
@@ -1843,7 +1847,12 @@ function render() {
         // Zone cap scales with night number: natural species fill zones 1-6, then
         // synthetic deep-zone constructs (XV-09 … QX-z1) fill zones 7-12.
         // Cap at 12 to populate infinite zones without unbounded actor counts.
-        const hostileZoneCount = Math.min(gameState.nightNumber, 12);
+        // Around the FRONTIER, however deep (ZONE_SPAWN_BEHIND / _AHEAD in
+        // config.js) — it used to be zones 1..min(night, 12), and nothing
+        // past zone 12 ever spawned. Early nights still open zones gradually.
+        const _front = typeof nextZoneToTake === "function" ? nextZoneToTake() : 1;
+        const _zLo = Math.max(1, _front - ZONE_SPAWN_BEHIND);
+        const hostileZoneCount = Math.max(Math.min(gameState.nightNumber, _front + ZONE_SPAWN_AHEAD), _front);
         // A GLOBAL ceiling on top of the per-zone ones.
         //
         // The per-zone caps bound where predators are, not how many exist. A
@@ -1861,7 +1870,7 @@ function render() {
         // respected, and how "your clones do not count" would drift out of one
         // of the two.
         let _livePredators = livePredatorCount();
-        for (let z = 1; z <= hostileZoneCount; z++) {
+        for (let z = _zLo; z <= hostileZoneCount; z++) {
             if (_livePredators >= MAX_LIVE_PREDATORS) break;
             // A zone stops producing only when EVERY mouth it has is shut —
             // its wall nest dead and its vortex sealed. It used to stop on the

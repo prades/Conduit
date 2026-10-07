@@ -494,6 +494,10 @@ function spawnPredatorForZone(zoneIndex, opts) {
     applySpeciesBody(predator, speciesName);
     // Finalize elite mutations (must run after applySpeciesBody)
     if (_eliteInstMuts !== null) applyEliteInstance(predator, _eliteInstMuts, def);
+    // THE DEEP ZONES (13+): tougher, harder-hitting, bigger and richer with
+    // every zone, without end (deepZoneScale in config.js). After the body
+    // shaping, which would otherwise reset the size.
+    if (typeof applyDeepZone === "function") applyDeepZone(predator, zoneIndex);
 
     // Capture the final speed after every mutation, so slows scale from the
     // real base rather than from whatever the AI last parked moveSpeed at.

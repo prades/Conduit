@@ -53,6 +53,7 @@ const SUITES = [
     ['brood tyrant fight',     'tyrant.js'],
     ['autoplay',               'autoplay.js'],
     ['destroy a pylon',        'demolish.js'],
+    ['endless tunnel',         'endless.js'],
 ];
 
 let failed = 0;
