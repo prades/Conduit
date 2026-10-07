@@ -113,7 +113,7 @@ select{flex:1;min-width:180px;background:var(--panel2);border:1px solid var(--bo
       <div class="big">🎮</div>
       <h2>DROP A GAME HERE</h2>
       <p>
-        N64 · PlayStation · SNES · NES · Game Boy · GBA · Mega Drive · and more<br>
+        N64 · PlayStation · SNES · NES · Game Boy · GBA · DS · Mega Drive · and more<br>
         or tap to browse<br><br>
         Games are saved to this device so you only pick the file once.<br>
         Nothing is uploaded — everything stays in your browser.
@@ -190,6 +190,7 @@ const SYSTEMS = {
   nes:      { name: 'NES / Famicom',      core: 'nes' },
   gb:       { name: 'Game Boy / Color',   core: 'gb' },
   gba:      { name: 'Game Boy Advance',   core: 'gba' },
+  nds:      { name: 'Nintendo DS',        core: 'nds' },
   segaMD:   { name: 'Mega Drive / Genesis', core: 'segaMD' },
   segaMS:   { name: 'Master System',      core: 'segaMS' },
   segaGG:   { name: 'Game Gear',          core: 'segaGG' },
@@ -216,7 +217,7 @@ const BY_EXT = {
   cue:'psx', chd:'psx', pbp:'psx', m3u:'psx', ecm:'psx',
   sfc:'snes', smc:'snes', fig:'snes', swc:'snes',
   nes:'nes', fds:'nes', unf:'nes',
-  gb:'gb', gbc:'gb', gba:'gba',
+  gb:'gb', gbc:'gb', gba:'gba', nds:'nds',
   md:'segaMD', gen:'segaMD', smd:'segaMD',
   sms:'segaMS', gg:'segaGG', '32x':'sega32x',
   pce:'pce', sgx:'pce',
@@ -413,6 +414,17 @@ function syncSystem() {
     tip = 'The hardest system here. Its graphics chip runs per-game microcode, so cores ' +
           'are less reliable, and crashes when a level loads are usually the tab running ' +
           'out of memory. Settings below are already tuned as light as they go.';
+  } else if (key === 'gb' || key === 'gba') {
+    tip = '<b>Great for Pokémon</b> — Red/Blue/Yellow, Gold/Silver/Crystal, Ruby/Sapphire/' +
+          'Emerald and FireRed/LeafGreen all run at full speed here, even on an iPad. ' +
+          'Settings are already tuned for speed. Your in-game save is kept on this device. ' +
+          'Use the emulator menu\'s fast-forward for grinding and long text.';
+  } else if (key === 'nds') {
+    tip = 'Pokémon Diamond/Pearl/Platinum, HeartGold/SoulSilver and Black/White. DS is ' +
+          'much heavier than Game Boy: it has two screens and two CPUs, and a browser cannot ' +
+          'use the speed-up trick native apps do. Expect most Pokémon DS games to run ' +
+          'playable but not always full speed, especially in busy areas. If it feels slow, ' +
+          '<b>Delta</b> from the App Store will do better.';
   } else if (sys.bios === 'required') {
     tip = 'This system needs a BIOS dump from your own hardware — it will not start without one.';
   } else {
@@ -443,6 +455,32 @@ function optionsFor(key) {
       'pcsx_rearmed_frameskip': '0',
       'pcsx_rearmed_neon_interlace_enable': 'disabled',
       'pcsx_rearmed_neon_enhancement_enable': 'disabled',
+    };
+  }
+  if (key === 'gb') {
+    // Plain output: skip the colour-correction pass and the extra audio filter.
+    return {
+      'gambatte_gbc_color_correction': 'disabled',
+      'gambatte_mix_frames': 'disabled',
+    };
+  }
+  if (key === 'gba') {
+    return {
+      'mgba_skip_bios': 'ON',
+      'mgba_frameskip': 'disabled',
+      'mgba_color_correction': 'OFF',
+      'mgba_interframe_blending': 'OFF',
+      'mgba_audio_low_pass_filter': 'disabled',
+    };
+  }
+  if (key === 'nds') {
+    // Lowest-cost settings for the DS core; unknown keys are ignored.
+    return {
+      'melonds_threaded_renderer': 'enabled',
+      'melonds_opengl_renderer': 'disabled',
+      'melonds_jit_enable': 'disabled',
+      'desmume_frameskip': '1',
+      'desmume_internal_resolution': '256x192',
     };
   }
   return {};
