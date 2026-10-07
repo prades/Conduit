@@ -47,6 +47,8 @@ async function loadConfig() {
         savedPylons.forEach(saved => {
             const tile = worldTileMap.get(`${saved.x},${saved.y}`);
             if (!tile) return;
+            if (saved.demolished) { tile.pillar = false; tile.demolished = true; tile.pillarTeam = null;
+                                    tile.attackMode = tile.waveMode = false; tile.attackModeElement = null; return; }
             tile.pillar            = true;
             tile.pillarTeam        = saved.pillarTeam;
             tile.pillarCol         = saved.pillarCol;

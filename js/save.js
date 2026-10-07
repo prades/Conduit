@@ -24,6 +24,9 @@ function clearPermUpgrades() {
 }
 
 function savePylons() {
+    // A DESTROYED pylon is kept as a one-line tombstone, so the world does not
+    // regrow one it placed there when the page reloads.
+    const tombs = world.filter(t => !t.pillar && t.demolished).map(t => ({ x: t.x, y: t.y, demolished: true }));
     const data = world
         .filter(t => t.pillar)
         .map(t => ({
@@ -42,7 +45,7 @@ function savePylons() {
             isConnector: !!t.isConnector,
             circuitOn: t.circuitOn !== false
         }));
-    try { localStorage.setItem("tubecrawler_pylons", JSON.stringify(data)); } catch(e) {}
+    try { localStorage.setItem("tubecrawler_pylons", JSON.stringify(data.concat(tombs))); } catch(e) {}
 }
 function loadPylons() {
     try { return JSON.parse(localStorage.getItem("tubecrawler_pylons") || "null"); }

@@ -308,6 +308,9 @@ const ALERT_DURATION = 600; // 10 seconds at 60fps
 // the aim used a 2.5 fallback. Every read now falls back to these, and the save
 // keeps them.
 const TURRET_RANGE = 3;
+// DESTROY: take down one of your own pylons for good and get this many shards
+// back (it cost PYLON_BUILD_COST to build).
+const DEMOLISH_REFUND = 8;
 const TURRET_POWER = 15;
 // The gun turns toward a target a little before it is in range — only a little,
 // so it does not swing onto things it cannot hit (which read as "not firing").

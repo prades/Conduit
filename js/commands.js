@@ -120,7 +120,7 @@ function _executeBuild(el, t) {
     shardCount -= PYLON_BUILD_COST; saveShards();
     const _baseHP = 80;
 
-    t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=_baseHP;
+    t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=_baseHP; t.demolished=false;
     t.pylonStyle=PYLON_STYLE;
     t.upgraded=false; t.destroyed=false;
     t.attackMode=false; t.waveMode=false;
@@ -170,7 +170,7 @@ function _executeBuildInstant(el, t, kind) {
     shardCount -= PYLON_BUILD_COST; saveShards();
     const _iHP = 80;
 
-    t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=_iHP;
+    t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=_iHP; t.demolished=false;
     t.pylonStyle=PYLON_STYLE;
     t.upgraded=false; t.destroyed=false;
     t.reconstructing=false; t.workers=[];
@@ -187,6 +187,37 @@ function _executeBuildInstant(el, t, kind) {
     }
     const _kindLabel = isRelayId(el.id) ? "" : (isWaveKind(kind) ? " " + waveRoleLabel(el.id) + " PYLON" : " TURRET");
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase()+_kindLabel,color:el.color,life:100,vy:-0.2});
+}
+
+// ── DESTROY ──────────────────────────────────────────────
+// "Have a destroy option that automatically destroys pylons and gives you 8
+// shards." Hold one of YOUR pylons in build mode → bottom of the ring:
+// DESTROY. It is gone — no wreckage, the tile is free to build on — and you
+// get DEMOLISH_REFUND shards back. Nothing an enemy holds, nothing mid-build.
+function canDemolishPylon(t) {
+    return !!t && t.pillar && !t.destroyed && t.pillarTeam === "green" && !t.constructing;
+}
+function demolishPylon(t) {
+    if (!canDemolishPylon(t)) return false;
+    // Anyone walking to it (to merge into it, build it, mend it) stands down.
+    for (const a of actors) if (a.job && a.job.target === t) a.job = null;
+    for (const o of world) if (o.connectedPylon === t) o.connectedPylon = null;
+    if (t.nestConnection) { t.nestConnection.connectedPylon = null; t.nestConnection = null; }
+    const col = t.attackModeColor || t.pillarCol || "#0f8";
+    Object.assign(t, { pillar: false, destroyed: false, pillarTeam: null, health: 0,
+        attackMode: false, waveMode: false, attackModeElement: null, attackModeColor: null,
+        isGenerator: false, isConnector: false, circuitOn: undefined, upgraded: false, seasoned: 0,
+        pendingUpgrade: false, upgradeFollower: null, chosenElement: null, chosenColor: null, chosenKind: null,
+        reconstructing: false, reconstructProgress: 0, waveTripped: false, powered: undefined,
+        powerSource: null, powerGen: null, waveAwake: undefined, _awakeUntil: undefined,
+        // Remembered, so a reload does not regrow a pylon the world placed here.
+        demolished: true });
+    shardCount += DEMOLISH_REFUND; saveShards();
+    for (let i = 0; i < 8; i++) elementEffects.push({ type: "impact", x: t.x + (Math.random() - 0.5) * 0.6, y: t.y + (Math.random() - 0.5) * 0.6, color: col, radius: 0.4, life: 22, element: "core" });
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "PYLON DESTROYED +" + DEMOLISH_REFUND + " \u25c6", color: "#ffcc44", life: 100, vy: -0.2 });
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 4);
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+    return true;
 }
 
 // Can this pylon be upgraded at all? Only one you own.
@@ -348,6 +379,11 @@ function executeCommand() {
             if (commandFollowerTarget && !commandFollowerTarget.dead) {
                 toggleFollowerDuty(commandFollowerTarget);
             }
+            break;
+        }
+        // ── BOTTOM (build mode): DESTROY one of your pylons ──
+        case "demolish": {
+            if (commandTarget) demolishPylon(commandTarget);
             break;
         }
         case "toggle_nest": {

@@ -122,6 +122,13 @@ function drawRadialMenu() {
         if (ocHov) selectedRadialAction = "overcharge";
     }
 
+    // ── DOWN (build mode) = DESTROY one of your own pylons, for shards back ──
+    if (buildMode && isPylonTarget && typeof canDemolishPylon === "function" && canDemolishPylon(commandTarget)) {
+        const xHov = dist>RADIAL_RADIUS*0.25&&angle>Math.PI/4&&angle<3*Math.PI/4;
+        drawRadialButton(commandX, commandY+RADIAL_RADIUS, "DESTROY +" + DEMOLISH_REFUND + "\u25c6", xHov);
+        if (xHov) selectedRadialAction = "demolish";
+    }
+
     // ── DOWN = POSITION (or CAPTURE on capturable tiles) — hidden in build mode ──
     if (!buildMode) {
         const dHov=dist>RADIAL_RADIUS*0.25&&angle>Math.PI/4&&angle<3*Math.PI/4;

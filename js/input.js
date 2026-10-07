@@ -524,6 +524,7 @@ canvas.addEventListener('pointerup', e=>{
                 // Top, build mode off, on a nest you hold: OVERCHARGE (mirrors drawRadialMenu).
                 else if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && !_isPyCmd && commandNestTarget && nestIsPowerSource(commandNestTarget))
                                        selectedRadialAction = "overcharge";
+                else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && buildMode && _isPyCmd && canDemolishPylon(commandTarget)) selectedRadialAction = "demolish";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode && _isCapturableCmd) selectedRadialAction = "capture";
                 else if (relAngle >  Math.PI/4 && relAngle <  3*Math.PI/4 && !buildMode) selectedRadialAction = "position";
                 // RIGHT is INFO whether build mode is on or off. It used to be

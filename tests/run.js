@@ -52,6 +52,7 @@ const SUITES = [
     ['follower bonds',         'bonds.js'],
     ['brood tyrant fight',     'tyrant.js'],
     ['autoplay',               'autoplay.js'],
+    ['destroy a pylon',        'demolish.js'],
 ];
 
 let failed = 0;
