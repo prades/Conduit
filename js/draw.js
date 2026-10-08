@@ -28,7 +28,7 @@ function drawRadialButton(x, y, label, active) {
     ctx.beginPath(); ctx.arc(x,y,10,0,Math.PI*2); ctx.fill();
     ctx.fillStyle=active?"#fff":"#0f8";
     ctx.font="12px monospace"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
-    ctx.shadowColor="#000"; ctx.shadowBlur=4;
+    ctx.shadowColor="#000"; ctx.shadowBlur=0;
     ctx.fillText(label,x,y-14);
     ctx.shadowBlur=0;
 }
@@ -894,7 +894,7 @@ function _drawPredator(actor, px, py, drawCtx) {
                     const ey = eyeBaseY + sideY*col*eyeSize*2*side - fwdY*row*eyeSize*2.5;
                     drawCtx.save();
                     const _isAllyEye = actor.team === "green" || actor.isClone;
-                    if (eyeGlow > 0) { drawCtx.shadowColor=_isAllyEye?"#00ee88":"#aaaacc"; drawCtx.shadowBlur=eyeSize*eyeGlow*3; }
+                    if (eyeGlow > 0) { drawCtx.shadowColor=_isAllyEye?"#00ee88":"#aaaacc"; drawCtx.shadowBlur=0; }
                     drawCtx.fillStyle = _isAllyEye ? "#00cc77" : "#9999bb";
                     drawCtx.beginPath(); drawCtx.arc(ex, ey, eyeSize, 0, Math.PI*2); drawCtx.fill();
                     // Pupil
@@ -1443,7 +1443,7 @@ function _drawVirus(actor, px, py, drawCtx) {
             drawCtx.beginPath(); drawCtx.moveTo(hx,hy); drawCtx.lineTo(kx,ky); drawCtx.lineTo(fx,fy); drawCtx.stroke();
         });
         // Ghost body — hollow white column with glow
-        drawCtx.shadowColor = "#aaffff"; drawCtx.shadowBlur = 12;
+        drawCtx.shadowColor = "#aaffff"; drawCtx.shadowBlur = 0;
         drawCtx.strokeStyle = "#ddeeff"; drawCtx.lineWidth = 1.2;
         drawCtx.strokeRect(px-5, bodyY2+5, 10, 18);
         // Head diamond — white outline
@@ -1452,7 +1452,7 @@ function _drawVirus(actor, px, py, drawCtx) {
         drawCtx.lineTo(px, bodyY2+12); drawCtx.lineTo(px-10, bodyY2+2); drawCtx.closePath();
         drawCtx.strokeStyle = "#ffffff"; drawCtx.lineWidth = 1.5;
         drawCtx.stroke();
-        drawCtx.shadowBlur = 0;
+        drawCtx.shadowBlur =0;
         drawCtx.restore();
         drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
         return;
@@ -1938,7 +1938,7 @@ function drawVortexSwirl(r, colour, spin, glow, alpha) {
     // Three partial rings turning at their own rates. The gap in each is what
     // makes it read as drawn inward rather than as concentric circles.
     ctx.shadowColor = colour;
-    ctx.shadowBlur  = glow;
+    ctx.shadowBlur  = 0;
     ctx.strokeStyle = colour;
     for (let i = 0; i < 3; i++) {
         const rr = r * (1 - i * 0.28);
@@ -1960,7 +1960,7 @@ function drawVortexSwirl(r, colour, spin, glow, alpha) {
         ctx.lineTo(Math.cos(ang) * r * 0.45, Math.sin(ang) * r * 0.45);
         ctx.stroke();
     }
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur =0;
     ctx.globalAlpha = 1;
 }
 
@@ -2191,16 +2191,13 @@ function drawWaveMonolith(px, base, colour, dark, tier, asleep) {
 // flashes three times and throws a ring along the floor, so you can see the
 // moment it starts working. `since` is frames since it woke.
 function drawWaveWakeBlink(px, base, colour, since) {
+    // One floor ring popping out to 1.6 tiles and fading over the blink
+    // (Conduit effects plan) — no white flash, no glow disc.
     const k = since / WAVE_WAKE_BLINK;
+    const r = TILE_W * (0.35 + 0.45 * k);
     ctx.save();
-    if (Math.floor(since / 5) % 2 === 0) {
-        ctx.globalAlpha = 0.55 * (1 - k); ctx.fillStyle = "#ffffff";
-        ctx.fillRect(px - 13, base - 46, 26, 44);
-        ctx.globalAlpha = 0.5 * (1 - k); ctx.fillStyle = colour;
-        ctx.beginPath(); ctx.arc(px, base - 26, 26, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 0.8 * (1 - k); ctx.strokeStyle = colour; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.ellipse(px, base, TILE_W * (0.4 + 1.8 * k), TILE_H * (0.4 + 1.8 * k), 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 0.6 * (1 - k); ctx.strokeStyle = colour; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(px, base - 2, r, r * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
 }
 
@@ -2291,7 +2288,7 @@ function drawPylonTurret(obj, px, topY, colour, dark) {
         if (obj._lastShotFrame !== undefined && frame - obj._lastShotFrame < 6) {
             const k = 1 - (frame - obj._lastShotFrame) / 6;
             ctx.fillStyle = "rgba(255,240,200," + (0.9 * k) + ")";
-            ctx.shadowColor = colour; ctx.shadowBlur = 10;
+            ctx.shadowColor = colour; ctx.shadowBlur = 0;
             ctx.beginPath(); ctx.arc(bx + ux * 3, by + uy * 3, 3 + 3 * k, 0, Math.PI * 2); ctx.fill();
         }
     }
@@ -2392,9 +2389,9 @@ function drawHomePortal(px, py) {
     ctx.strokeStyle = PORTAL_COLOUR;
     ctx.lineWidth = 2.4 + breathe * 0.8;
     ctx.shadowColor = PORTAL_COLOUR;
-    ctx.shadowBlur = 10 + breathe * 10;
-    ctx.beginPath(); ctx.ellipse(0, 0, PORTAL_R, PORTAL_R, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.ellipse(0, 0, PORTAL_R, PORTAL_R, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur =0;
 
     // ── Four anchors on the ring, turning slowly ──
     ctx.fillStyle = "#d8ffe8";
@@ -2434,7 +2431,7 @@ function drawCapturableNode(tile, px, py) {
         const _pulse = 0.5 + 0.5 * Math.sin(frame * 0.07 + tile.x * 0.5);
         ctx.save();
         ctx.shadowColor = col;
-        ctx.shadowBlur = 10 + _pulse * 8;
+        ctx.shadowBlur = 0;
 
         // Base platform
         ctx.fillStyle = captured ? '#002233' : '#1a0000';
@@ -2485,7 +2482,7 @@ function drawCapturableNode(tile, px, py) {
             ctx.fillText('◈ TOWER', cx, cy - 72);
         }
 
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur =0;
         ctx.restore();
 
     } else if (tile.nodeType === 'wall_panel') {
@@ -2506,7 +2503,7 @@ function drawCapturableNode(tile, px, py) {
 
         ctx.save();
         ctx.shadowColor = activated ? 'transparent' : (_taken ? NEST_COLOUR_CONTROLLED : '#00ff88');
-        ctx.shadowBlur = activated ? 0 : 8 + _blink * 5;
+        ctx.shadowBlur = 0;
 
         // Panel body (flat-panel against back wall)
         ctx.fillStyle = activated ? '#1a1a1a' : (_taken ? '#0a1222' : '#0a1a10');
@@ -2560,7 +2557,7 @@ function drawCapturableNode(tile, px, py) {
             ctx.fillText('USED', cx, cy - 38);
         }
 
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur =0;
         ctx.restore();
     }
 }

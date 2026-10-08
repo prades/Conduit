@@ -577,7 +577,7 @@ function drawClonesBlob() {
             }
         }
     }
-    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1; ctx.shadowBlur =0;
     ctx.fillStyle = "#aef5dc"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "top";
     ctx.fillText("CLONES", bx, by + _BLOB.r + 3);
     // How many you could summon right now.

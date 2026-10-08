@@ -447,7 +447,7 @@ const FOLLOWER_ULTIMATES = {
                 }
             });
             // Activate screen-darkening EMP flash
-            activeEmpEffect = { timer: 90, maxTimer: 90, zone: actorZone };
+            activeEmpEffect = { timer: FX_EMP_FRAMES, maxTimer: FX_EMP_FRAMES, zone: actorZone };
             // Buff followers in zone: +30 resonance + 1.5× speed for 5 seconds
             followers.forEach(f => {
                 if (f.dead || getZoneIndex(Math.floor(f.x))!==actorZone) return;
@@ -797,7 +797,7 @@ function drawHazards() {
                     // leaves whatever shadow was set before in place. Inert here only
                     // because shadowBlur is 0 on the same branch.
                     ctx.shadowColor = live ? "#ffaa00" : "transparent";
-                    ctx.shadowBlur  = live ? 6 : 0;
+                    ctx.shadowBlur  = 0;
                     ctx.beginPath();
                     ctx.moveTo(ex, ey);
                     ctx.lineTo(
@@ -807,7 +807,7 @@ function drawHazards() {
                     ctx.stroke();
                 }
             };
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur =0;
             drawCutEnd(cut1.px, cut1.py,  gnx,  gny);
             drawCutEnd(cut2.px, cut2.py, -gnx, -gny);
 
@@ -816,7 +816,7 @@ function drawHazards() {
                 for (let arc = 0; arc < 3; arc++) {
                     ctx.save();
                     ctx.shadowColor = "#88bbff";
-                    ctx.shadowBlur  = arc === 0 ? 18 : 8;
+                    ctx.shadowBlur  = 0;
                     ctx.strokeStyle = arc === 0
                         ? `rgba(200,220,255,${0.85 + Math.random() * 0.15})`
                         : `rgba(160,200,255,${0.3  + Math.random() * 0.3})`;
@@ -853,6 +853,40 @@ function drawHazards() {
 
 function spawnElementEffect(effect) {
     elementEffects.push({ ...effect, currentRadius: 0 });
+}
+
+// ── THE EFFECT BUDGET (Conduit effects plan, rule 5) ─────
+// Clouds of the same kind within a tile merge (the newer refreshes the older);
+// one blizzard per zone; and never more than FX_MAX alive — the oldest
+// short-lived ones go first, the long area effects are kept.
+const FX_MAX = 80;
+const FX_CLOUD_MAX = 12;
+const FX_LONG = { blizzardField: 1, smokeScreen: 1, flameCrater: 1 };
+function fxTidy() {
+    if (!elementEffects.length) return;
+    const keep = [], clouds = [], zones = new Map();
+    for (let i = elementEffects.length - 1; i >= 0; i--) {   // newest first
+        const e = elementEffects[i];
+        if (e.type === "toxicCloud" || e.type === "smoke") {
+            const twin = clouds.find(c => c.type === e.type && Math.abs(c.x - e.x) < 1 && Math.abs(c.y - e.y) < 1);
+            if (twin) { twin.life = Math.max(twin.life, e.life); continue; }
+            if (clouds.length >= FX_CLOUD_MAX) continue;
+            clouds.push(e);
+        }
+        if (e.type === "blizzardField") {
+            const twin = zones.get(e.zone);
+            if (twin) { twin.life = Math.max(twin.life, e.life); continue; }
+            zones.set(e.zone, e);
+        }
+        keep.push(e);
+    }
+    keep.reverse();
+    if (keep.length > FX_MAX) {
+        let drop = keep.length - FX_MAX;
+        for (let i = 0; i < keep.length && drop > 0; i++) if (!FX_LONG[keep[i].type]) { keep[i] = null; drop--; }
+    }
+    elementEffects.length = 0;
+    for (const e of keep) if (e) elementEffects.push(e);
 }
 
 function updateElementEffects() {
@@ -895,7 +929,7 @@ function updateElementEffects() {
             // 3D ground shockwave rings
             spawnElementEffect({type:"fireShockwave", x:tx,y:ty, life:38, maxLife:38, radius:6.5, element:"fire"});
             spawnElementEffect({type:"fireShockwave", x:tx,y:ty, life:55, maxLife:55, radius:10.0, element:"fire"});
-            spawnElementEffect({type:"flameCrater",   x:tx,y:ty, radius:3.0, color:"#ff4400", life:660, maxLife:660, element:"fire", tickDamage:dmg*0.06});
+            spawnElementEffect({type:"flameCrater",   x:tx,y:ty, radius:3.0, color:"#ff4400", life:FX_CRATER_FRAMES, maxLife:FX_CRATER_FRAMES, element:"fire", tickDamage:dmg*0.06});
             const _tpx=(tx-player.visualX-(ty-player.visualY))*TILE_W+canvas.width/2;
             const _tpy=(tx-player.visualX+(ty-player.visualY))*TILE_H+canvas.height/2;
             floatingTexts.push({x:_tpx,y:_tpy-60,text:"ERUPTION!",color:"#ff2200",life:65,vy:-0.9});
@@ -943,6 +977,7 @@ function updateElementEffects() {
 
         return e.life > 0;
     });
+    fxTidy();
 
     // Tick EMP screen-darkening flash
     if (activeEmpEffect) {
@@ -953,40 +988,30 @@ function updateElementEffects() {
 
 function drawElementEffects() {
 
-    // ── EMP BLACKOUT + PREDATOR HIGHLIGHT ────────────────────
+    // ── EMP: a short dim, and a crackling ring on each predator it hit ──
+    // (Conduit effects plan: 0.35 for half a second, no blur.)
     if (activeEmpEffect && activeEmpEffect.timer > 0) {
         const t = activeEmpEffect.timer / activeEmpEffect.maxTimer;
-        // Alpha curve: snap dark fast, hold, then fade out slowly
-        const darkAlpha = t > 0.85
-            ? ((1 - t) / 0.15) * 0.82
-            : t > 0.35 ? 0.82
-            : (t / 0.35) * 0.82;
-        // Dark screen overlay
         ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-        ctx.fillStyle = `rgba(0,0,14,${darkAlpha})`;
+        ctx.fillStyle = `rgba(0,0,14,${FX_EMP_DIM * t})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
-        // Electric glow around each EMP-hit predator
-        actors.forEach(a => {
-            if (!a.empGlow || a.empGlow <= 0 || a.dead) return;
-            const epx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width  / 2;
-            const epy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2;
-            const gf  = (a.empGlow / 80) * darkAlpha;
-            ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-            const grad = ctx.createRadialGradient(epx, epy - 22, 0, epx, epy - 22, 38);
-            grad.addColorStop(0,    `rgba(255,255,130,${gf * 0.95})`);
-            grad.addColorStop(0.45, `rgba(255,210,0,${gf  * 0.55})`);
-            grad.addColorStop(1,    `rgba(160,110,0,0)`);
-            ctx.fillStyle = grad;
-            ctx.beginPath(); ctx.arc(epx, epy - 22, 38, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = `rgba(255,255,160,${gf * 0.9})`;
-            ctx.lineWidth = 1.8;
-            ctx.shadowColor = '#ffff44'; ctx.shadowBlur = 16;
-            ctx.beginPath(); ctx.arc(epx, epy - 22, 20, 0, Math.PI * 2); ctx.stroke();
-            ctx.shadowBlur = 0;
-            ctx.restore();
-        });
     }
+    actors.forEach(a => {
+        if (!a.empGlow || a.empGlow <= 0 || a.dead) return;
+        const epx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width  / 2;
+        const epy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2;
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha = Math.min(1, a.empGlow / 30) * 0.85;
+        ctx.strokeStyle = "#ffee33"; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = 0; i <= 12; i++) {
+            const an = i / 12 * Math.PI * 2, r = 15 + ((i + (frame >> 2)) % 3) * 2;
+            ctx.lineTo(epx + Math.cos(an) * r, epy - 12 + Math.sin(an) * r * 0.6);
+        }
+        ctx.stroke();
+        ctx.restore();
+    });
 
     // ── VOLCANIC ERUPTION — 3D DRAW ─────────────────────────
     if (activeFireEruption) {
@@ -1005,23 +1030,28 @@ function drawElementEffects() {
 
         // ── FULL-SCREEN VIGNETTE ─────────────────────────────
         {
-            const vigA = frames < chargeEnd
-                ? (frames / chargeEnd) * 0.42
-                : 0.42 - ((frames - chargeEnd) / (maxFrames - chargeEnd)) * 0.42;
-            ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-            ctx.fillStyle = `rgba(55,4,0,${vigA})`;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.restore();
+            // Edges only, at the moment it erupts, for half a second
+            // (Conduit effects plan) — it used to wash the whole screen red.
+            const since = frames - eruptStart;
+            if (since >= 0 && since < 30) {
+                const vigA = FX_VIGNETTE * (1 - since / 30);
+                ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                const W = canvas.width, H = canvas.height;
+                const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+                g.addColorStop(0, "rgba(120,10,0,0)"); g.addColorStop(1, `rgba(120,10,0,${vigA})`);
+                ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
         }
 
         ctx.save();
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur =0;
 
         // ── GROUND GLOW (iso ellipse, ground plane) ──────────
         {
             const glowProg = frames < chargeEnd ? frames / chargeEnd : 1;
-            const gR = (0.6 + glowProg * 2.8) * TILE_W;
-            const gA = glowProg * 0.8;
+            const gR = (0.4 + glowProg * 1.1) * TILE_W;   // bounded to the crater
+            const gA = glowProg * 0.35;
             const gGrad = ctx.createRadialGradient(tpx, tpy, 0, tpx, tpy, gR);
             gGrad.addColorStop(0,   `rgba(255,170,20,${gA})`);
             gGrad.addColorStop(0.45,`rgba(220,50,0,${gA*0.5})`);
@@ -1038,7 +1068,7 @@ function drawElementEffects() {
             const crackProg = Math.min(1, frames / 44);
             const fadeOut   = frames > 80 ? Math.max(0, 1 - (frames - 80) / 28) : 1;
             const maxCrackR = 4.2 * TILE_W;
-            ctx.lineWidth = 1.8; ctx.shadowBlur = 5;
+            ctx.lineWidth = 1.8; ctx.shadowBlur = 0;
             afe.crackDirs.forEach(c => {
                 // World-space direction → iso screen offset
                 const cDX = (Math.cos(c.a) - Math.sin(c.a)) * TILE_W;
@@ -1065,7 +1095,7 @@ function drawElementEffects() {
                     ctx.stroke();
                 }
             });
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur =0;
         }
 
         // ── FIRE COLUMN (isometric 3D slices) ────────────────
@@ -1094,12 +1124,12 @@ function drawElementEffects() {
                     ctx.globalAlpha = 0.60 + (1 - t) * 0.36;
                     ctx.fillStyle   = `hsl(${hue + flk},100%,${light}%)`;
                     ctx.shadowColor = `hsl(${hue + flk},100%,${light + 10}%)`;
-                    ctx.shadowBlur  = 6 + (1 - t) * 14;
+                    ctx.shadowBlur  = 0;
                     ctx.beginPath();
                     ctx.ellipse(tpx, sliceY, rw, rh, 0, 0, Math.PI * 2);
                     ctx.fill();
                 }
-                ctx.shadowBlur = 0;
+                ctx.shadowBlur =0;
 
                 // Bright vertical core — tapered trapezoid
                 const coreGrad = ctx.createLinearGradient(tpx, tpy, tpx, tpy - colH);
@@ -1132,11 +1162,11 @@ function drawElementEffects() {
                         ctx.globalAlpha = rAlpha;
                         ctx.strokeStyle = `hsl(${50 - rPhase * 20},100%,80%)`;
                         ctx.lineWidth   = 2.5 - rPhase * 1.5;
-                        ctx.shadowColor = "#ffcc44"; ctx.shadowBlur = 10;
+                        ctx.shadowColor = "#ffcc44"; ctx.shadowBlur = 0;
                         ctx.beginPath();
                         ctx.ellipse(tpx, rY, rW2, rH2, 0, 0, Math.PI * 2);
                         ctx.stroke();
-                        ctx.shadowBlur = 0;
+                        ctx.shadowBlur =0;
                     }
                 }
 
@@ -1153,11 +1183,11 @@ function drawElementEffects() {
                     crownGrad.addColorStop(1,    "rgba(255,40,0,0)");
                     ctx.globalAlpha = crownFade;
                     ctx.fillStyle   = crownGrad;
-                    ctx.shadowColor = "#ffdd00"; ctx.shadowBlur = 35;
+                    ctx.shadowColor = "#ffdd00"; ctx.shadowBlur = 0;
                     ctx.beginPath();
                     ctx.ellipse(tpx, tpy - colH, crownRW, crownRW * 0.38, 0, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.shadowBlur = 0;
+                    ctx.shadowBlur =0;
                     // Crown spike rays
                     const NUM_RAYS = 8;
                     ctx.lineWidth = 2;
@@ -1167,7 +1197,7 @@ function drawElementEffects() {
                         const rayR1 = crownRW * (1.0 + Math.sin(frame * 0.18 + ri) * 0.25);
                         ctx.globalAlpha = crownFade * (0.4 + Math.sin(frame * 0.2 + ri * 1.3) * 0.3);
                         ctx.strokeStyle = `hsl(${40 + ri * 5},100%,75%)`;
-                        ctx.shadowColor = "#ffcc00"; ctx.shadowBlur = 8;
+                        ctx.shadowColor = "#ffcc00"; ctx.shadowBlur = 0;
                         ctx.beginPath();
                         ctx.moveTo(tpx + Math.cos(rayA) * rayR0,
                                    tpy - colH + Math.sin(rayA) * rayR0 * 0.38);
@@ -1175,7 +1205,7 @@ function drawElementEffects() {
                                    tpy - colH + Math.sin(rayA) * rayR1 * 0.38);
                         ctx.stroke();
                     }
-                    ctx.shadowBlur = 0;
+                    ctx.shadowBlur =0;
                 }
             }
 
@@ -1197,12 +1227,12 @@ function drawElementEffects() {
                     const eBr    = 60 + ((seed2 >> 13) & 3) * 9;
                     ctx.globalAlpha = (1 - cyT) * 0.88 * growT;
                     ctx.fillStyle   = `hsl(${18 + cyT * 32},100%,${eBr}%)`;
-                    ctx.shadowColor = "#ff5500"; ctx.shadowBlur = 7;
+                    ctx.shadowColor = "#ff5500"; ctx.shadowBlur = 0;
                     ctx.beginPath();
                     ctx.arc(epx2, epy2 - eScrZ, eSize, 0, Math.PI * 2);
                     ctx.fill();
                 }
-                ctx.shadowBlur = 0;
+                ctx.shadowBlur =0;
             }
         }
 
@@ -1218,40 +1248,44 @@ function drawElementEffects() {
         ctx.globalAlpha = alpha;
 
         switch(e.type) {
+            // A ring is a floor ellipse stroke growing to the effect's reach.
+            // No fill: the fill colour was built as "rgba(ff3300" — invalid —
+            // so every ring drew a hidden black disc. (Conduit effects plan.)
             case "ring":
             case "singularity": {
                 const progress = 1 - (e.life / (e.type==="singularity"?60:40));
-                const r = Math.max(1, e.radius * progress * TILE_W);
+                const r = Math.max(1, e.radius * progress * TILE_W * 0.5);
                 ctx.strokeStyle = e.color;
-                ctx.lineWidth = e.type==="singularity" ? 4 : 2;
-                ctx.shadowColor = e.color;
-                ctx.shadowBlur = 12;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = alpha * (1 - progress * 0.6);
                 ctx.beginPath();
-                ctx.arc(px, py - 30, r, 0, Math.PI*2);
+                ctx.ellipse(px, py + TILE_H * 0.6, r, r * 0.5, 0, 0, Math.PI * 2);
                 ctx.stroke();
-                // Inner glow
-                ctx.fillStyle = e.color.replace(")", ",0.08)").replace("rgb","rgba").replace("#", "rgba(").replace("rgba(", "rgba(");
-                ctx.globalAlpha = alpha * 0.15;
-                ctx.beginPath();
-                ctx.arc(px, py - 30, r, 0, Math.PI*2);
-                ctx.fill();
                 break;
             }
+            // A hit: a thin ring growing 4 → ~16 px and three sparks, 0.2 s.
             case "impact": {
-                const r = Math.max(1, e.radius * TILE_W * (1 - e.life/20));
-                ctx.fillStyle = e.color;
-                ctx.shadowColor = e.color;
-                ctx.shadowBlur = 16;
-                ctx.beginPath();
-                ctx.arc(px, py - 30, r, 0, Math.PI*2);
-                ctx.fill();
+                if (e._l0 === undefined) e._l0 = Math.max(1, e.life);
+                const k = 1 - e.life / e._l0;
+                const rMax = Math.max(10, Math.min(22, (e.radius || 0.3) * TILE_W * 0.5));
+                const r = 4 + (rMax - 4) * k;
+                ctx.globalAlpha = 1 - k;
+                ctx.strokeStyle = e.color || "#fff"; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(px, py - 30, r, 0, Math.PI * 2); ctx.stroke();
+                ctx.strokeStyle = "#ffffff";
+                const seed = (e.x * 7.1 + e.y * 3.3) % 6.28;
+                for (let si = 0; si < 3; si++) {
+                    const a = seed + si * 2.1;
+                    ctx.beginPath();
+                    ctx.moveTo(px + Math.cos(a) * r * 0.8, py - 30 + Math.sin(a) * r * 0.8);
+                    ctx.lineTo(px + Math.cos(a) * (r + 5), py - 30 + Math.sin(a) * (r + 5));
+                    ctx.stroke();
+                }
                 break;
             }
             case "meteor": {
                 const r = Math.max(1, e.radius * TILE_W * 0.6);
                 ctx.fillStyle = e.color;
-                ctx.shadowColor = e.color;
-                ctx.shadowBlur = 24;
                 ctx.beginPath();
                 ctx.arc(px, py - 30, r, 0, Math.PI*2);
                 ctx.fill();
@@ -1264,59 +1298,65 @@ function drawElementEffects() {
                 ctx.stroke();
                 break;
             }
+            // Three small puffs drifting up — hollow, a faint fill.
             case "smoke":
             case "toxicCloud": {
-                const r = e.radius * TILE_W;
-                const grad = ctx.createRadialGradient(px, py-30, 0, px, py-30, r);
-                grad.addColorStop(0, e.color + "88");
-                grad.addColorStop(1, e.color + "00");
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(px, py-30, r, 0, Math.PI*2);
-                ctx.fill();
+                if (e._l0 === undefined) e._l0 = Math.max(1, e.life);
+                const base = Math.max(8, Math.min(16, (e.radius || 0.4) * TILE_W * 0.3));
+                for (let pi = 0; pi < 3; pi++) {
+                    const u = ((frame * 0.006) + pi / 3 + (e.x % 1)) % 1;
+                    const r = base + 6 * u, x = px - 14 + pi * 14, y = py - 18 - u * 18;
+                    ctx.globalAlpha = alpha * (1 - u);
+                    ctx.fillStyle = e.color + "2e";        // ≈ 0.18
+                    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = e.color + "66";      // ≈ 0.4
+                    ctx.lineWidth = 1; ctx.stroke();
+                }
                 break;
             }
             // ── NEW EFFECT TYPES ──────────────────────────────────
+            // A 90 px crater on the floor with glowing cracks (0.35).
             case "flameCrater": {
-                // Glowing, flickering fire hole on the floor
                 const fadeIn  = Math.min(1, (e.maxLife - e.life) / 30);
                 const fadeOut = Math.min(1, e.life / 30);
                 const factor  = Math.min(fadeIn, fadeOut);
-                const flicker = 0.55 + 0.45*Math.sin(frame*0.28 + e.x*1.7);
-                const r = e.radius * TILE_W;
-                ctx.shadowColor="#ff4400"; ctx.shadowBlur=18;
-                const grad = ctx.createRadialGradient(px,py-15,0,px,py-15,r);
-                grad.addColorStop(0,"#ff660099");
-                grad.addColorStop(0.45,"#cc220066");
-                grad.addColorStop(1,"#88110000");
-                ctx.fillStyle = grad;
-                ctx.globalAlpha = factor * 0.65 * flicker;
+                const cy = py + TILE_H * 0.6;
+                ctx.globalAlpha = factor * FX_CRATER_ALPHA;
+                ctx.fillStyle = "#3c0e06";
+                ctx.beginPath(); ctx.ellipse(px, cy, 45, 22, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = factor * (0.6 + 0.3 * Math.sin(frame * 0.08 + e.x));
+                ctx.strokeStyle = "#ff7828"; ctx.lineWidth = 1.2;
                 ctx.beginPath();
-                ctx.arc(px, py-15, r, 0, Math.PI*2);
-                ctx.fill();
-                ctx.strokeStyle="#ff4400"; ctx.lineWidth=2;
-                ctx.globalAlpha = factor * 0.45 * flicker;
+                for (const [a, l] of [[0.3, 30], [1.6, 26], [2.9, 32], [4.2, 24], [5.3, 28]]) {
+                    ctx.moveTo(px, cy); ctx.lineTo(px + Math.cos(a) * l, cy + Math.sin(a) * l * 0.5);
+                }
                 ctx.stroke();
                 break;
             }
+            // Snow falling INSIDE its zone, and a light frost over that stretch
+            // of floor. It used to tint the whole screen, and every copy added
+            // another layer. (Conduit effects plan.)
             case "blizzardField": {
-                // Full-screen ice tint with swirling sparkles
                 const fadeIn  = Math.min(1, (e.maxLife - e.life) / 60);
                 const fadeOut = Math.min(1, e.life / 60);
                 const factor  = Math.min(fadeIn, fadeOut);
+                const W = canvas.width / 2, H = canvas.height / 2;
+                const scr = (x, y) => [(x - player.visualX - (y - player.visualY)) * TILE_W + W,
+                                       (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H];
+                const x0 = e.zone * ZONE_LENGTH, x1 = x0 + ZONE_LENGTH;
                 ctx.setTransform(1,0,0,1,0,0);
-                ctx.globalAlpha = factor * 0.22;
-                ctx.fillStyle = "#8cc8ff";
-                ctx.fillRect(0,0,canvas.width,canvas.height);
-                // Sparkles
-                ctx.globalAlpha = factor * 0.55;
-                ctx.fillStyle = "#ddeeff";
-                for (let i=0;i<4;i++) {
-                    const sx=Math.abs(Math.sin(frame*0.07+i*2.1+e.life*0.01))*canvas.width;
-                    const sy=Math.abs(Math.cos(frame*0.09+i*1.7+e.life*0.013))*canvas.height;
-                    ctx.beginPath();
-                    ctx.arc(sx, sy, 1+Math.abs(Math.sin(frame*0.15+i))*2, 0, Math.PI*2);
-                    ctx.fill();
+                const c1 = scr(x0, -1), c2 = scr(x1, -1), c3 = scr(x1, 4), c4 = scr(x0, 4);
+                ctx.globalAlpha = factor * FX_FROST_ALPHA;
+                ctx.fillStyle = "#aadcff";
+                ctx.beginPath(); ctx.moveTo(c1[0], c1[1]); ctx.lineTo(c2[0], c2[1]); ctx.lineTo(c3[0], c3[1]); ctx.lineTo(c4[0], c4[1]); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = "#e6f5ff";
+                for (let si = 0; si < 60; si++) {
+                    const rx = ((Math.sin(si * 127.1) * 43758.5) % 1 + 1) % 1, ry = ((Math.sin(si * 311.7) * 9631.3) % 1 + 1) % 1;
+                    const wx = x0 + rx * ZONE_LENGTH, wy = -1 + ry * 5;
+                    const [sx, sy] = scr(wx, wy);
+                    const fall = ((frame * (0.6 + rx * 0.5) + ry * 120) % 120) - 100;
+                    ctx.globalAlpha = factor * (0.4 + rx * 0.4);
+                    ctx.fillRect(sx + Math.sin(frame * 0.03 + si) * 3, sy + fall, 1.5, 1.5);
                 }
                 break;
             }
@@ -1329,39 +1369,23 @@ function drawElementEffects() {
                     const r = prog * 4.0 * TILE_W;
                     ctx.strokeStyle = "#8aaa66";
                     ctx.lineWidth = 2;
-                    ctx.shadowColor = "#8aaa66"; ctx.shadowBlur = 8;
                     ctx.globalAlpha = (1 - prog) * 0.55;
                     ctx.beginPath();
-                    ctx.arc(px, py - 15, r, 0, Math.PI * 2);
+                    ctx.ellipse(px, py + TILE_H * 0.6, r, r * 0.5, 0, 0, Math.PI * 2);
                     ctx.stroke();
                 }
                 break;
             }
+            // A ring stroke on the floor, growing and fading — no wash.
             case "fireShockwave": {
-                // Expanding isometric ground-plane ellipse — sits flat on the floor
-                const prog  = 1 - e.life / e.maxLife;       // 0 → 1 as ring expands
-                const rw    = prog * e.radius * TILE_W;
-                const rh    = rw * 0.5;                      // iso floor compression
-                const sAlpha = (1 - prog) * 0.85;
-                // Outer stroke ring
+                const prog  = 1 - e.life / e.maxLife;
+                const rw    = prog * e.radius * TILE_W * 0.5;
                 ctx.strokeStyle = `hsl(${18 + prog*20},100%,55%)`;
-                ctx.lineWidth   = 3.5 - prog * 2.5;
-                ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 16;
-                ctx.globalAlpha = sAlpha;
+                ctx.lineWidth   = 2;
+                ctx.globalAlpha = (1 - prog) * 0.7;
                 ctx.beginPath();
-                ctx.ellipse(px, py - 10, rw, rh, 0, 0, Math.PI * 2);
+                ctx.ellipse(px, py + TILE_H * 0.6, rw, rw * 0.5, 0, 0, Math.PI * 2);
                 ctx.stroke();
-                // Radial fill gradient (lava-glow wash)
-                const sfGrad = ctx.createRadialGradient(px, py - 10, 0, px, py - 10, rw);
-                sfGrad.addColorStop(0,   `rgba(255,180,10,${sAlpha * 0.40})`);
-                sfGrad.addColorStop(0.55,`rgba(220,50,0,${sAlpha * 0.18})`);
-                sfGrad.addColorStop(1,   "rgba(160,15,0,0)");
-                ctx.fillStyle   = sfGrad;
-                ctx.globalAlpha = 0.8;
-                ctx.beginPath();
-                ctx.ellipse(px, py - 10, rw, rh, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
                 break;
             }
         }

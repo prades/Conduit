@@ -501,20 +501,20 @@ function drawHomeNode(tcx, tcy, amb) {
     const l1 = Math.sin(f * 0.09) > 0;
     const l2 = Math.sin(f * 0.14 + 1.8) > 0.25;
     ctx.shadowColor = l1 ? '#ff8800' : 'transparent';
-    ctx.shadowBlur  = l1 ? 5 * amb : 0;
+    ctx.shadowBlur  = 0;
     ctx.fillStyle   = l1
         ? `rgba(${(255*amb)|0},${(140*amb)|0},0,${0.95*amb})`
         : `rgba(${(55*amb)|0},${(28*amb)|0},0,0.8)`;
     ctx.beginPath(); ctx.arc(tcx - 5, colTop + 33, 1.8, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur =0;
 
     ctx.shadowColor = l2 ? '#ff2200' : 'transparent';
-    ctx.shadowBlur  = l2 ? 5 * amb : 0;
+    ctx.shadowBlur  = 0;
     ctx.fillStyle   = l2
         ? `rgba(${(255*amb)|0},${(38*amb)|0},${(18*amb)|0},${0.95*amb})`
         : `rgba(${(52*amb)|0},${(10*amb)|0},${(8*amb)|0},0.8)`;
     ctx.beginPath(); ctx.arc(tcx - 5, colTop + 39, 1.8, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur =0;
 
     // ── Makeshift mounting bracket (asymmetric, crooked) ──
     ctx.strokeStyle = `rgba(${(75*amb)|0},${(78*amb)|0},${(85*amb)|0},0.85)`;
@@ -528,10 +528,10 @@ function drawHomeNode(tcx, tcy, amb) {
     // ── Energy emitter — janky off-centre orb (amber, flickering) ──
     const ex = tcx + 2, ey = colTop - 13;
     ctx.shadowColor = '#ffaa22';
-    ctx.shadowBlur  = (9 + 7 * pulse) * amb * flicker;
+    ctx.shadowBlur  = 0;
     ctx.fillStyle   = `rgba(${(255 * amb * pulse * flicker)|0},${(135 * amb * pulse * flicker)|0},${(18 * amb * pulse * flicker)|0},0.95)`;
     ctx.beginPath(); ctx.arc(ex, ey, 4.5 + pulse * 0.7, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur  = 0;
+    ctx.shadowBlur  =0;
 
     // Outer ring (slightly elliptical — imperfect mount)
     ctx.strokeStyle = `rgba(${(255 * amb * pulse)|0},${(115 * amb * pulse)|0},0,${0.4 * pulse})`;
@@ -766,7 +766,7 @@ function _campCmdNode(cx, cy, a, pulse, built) {
     ctx.lineWidth=0.8;
     ctx.beginPath(); ctx.moveTo(cx-5,cy-38); ctx.lineTo(cx+4,cy-40); ctx.stroke(); // cross-strut
     // Antenna tip light
-    if (built) { ctx.shadowColor='#ffaa22'; ctx.shadowBlur=7*pulse; }
+    if (built) { ctx.shadowColor='#ffaa22'; ctx.shadowBlur=0; }
     ctx.fillStyle = built
         ? `rgba(${(255*pulse)|0},${(148*a*pulse)|0},${(18*a*pulse)|0},0.95)`
         : `rgba(${(52*a)|0},${(36*a)|0},${(10*a)|0},0.8)`;
@@ -821,7 +821,7 @@ function _campDnaSeq(cx, cy, a, pulse, built) {
     ctx.fillStyle=`rgb(${(44*a)|0},${(42*a)|0},${(32*a)|0})`;
     ctx.fillRect(cx-14,cy-20,4,2); ctx.fillRect(cx+11,cy-28,5,2);
     // Top cap with glow
-    if (built) { ctx.shadowColor='#cc44ff'; ctx.shadowBlur=8*pulse; }
+    if (built) { ctx.shadowColor='#cc44ff'; ctx.shadowBlur=0; }
     ctx.fillStyle = built
         ? `rgba(${(175*pulse)|0},${(55*a*pulse)|0},${(255*pulse)|0},0.95)`
         : `rgb(${(34*a)|0},${(36*a)|0},${(44*a)|0})`;
@@ -830,7 +830,7 @@ function _campDnaSeq(cx, cy, a, pulse, built) {
     ctx.shadowBlur=0;
     // Vent tip glow (built)
     if (built) {
-        ctx.shadowColor='#cc44ff'; ctx.shadowBlur=4*pulse;
+        ctx.shadowColor='#cc44ff'; ctx.shadowBlur=0;
         ctx.fillStyle=`rgba(${(145*pulse)|0},${(38*pulse)|0},${(215*pulse)|0},0.7)`;
         ctx.beginPath(); ctx.arc(cx+13,cy-27,1.5,0,Math.PI*2); ctx.fill();
         ctx.shadowBlur=0;
@@ -869,7 +869,7 @@ function _campFabricator(cx, cy, a, pulse, built) {
     ctx.beginPath(); ctx.arc(cx-6,cy-32,3.5,0,Math.PI*2); ctx.fill(); ctx.stroke();
     // Arc sparks (built)
     if (built) {
-        ctx.shadowColor='#00ccff'; ctx.shadowBlur=9*pulse;
+        ctx.shadowColor='#00ccff'; ctx.shadowBlur=0;
         ctx.strokeStyle=`rgba(0,${(195*pulse)|0},${(255*pulse)|0},0.9)`; ctx.lineWidth=0.9;
         const sp=f*0.2;
         ctx.beginPath(); ctx.moveTo(cx-6,cy-32); ctx.lineTo(cx-6+Math.cos(sp)*5.5,cy-32+Math.sin(sp)*3.5); ctx.stroke();
@@ -907,7 +907,7 @@ function _campPowerCon(cx, cy, a, pulse, built) {
         ctx.fillStyle=`rgb(${(44*a)|0},${(42*a)|0},${(32*a)|0})`;
         ctx.fillRect(cx+ox-2,cy-20-th-1,4,2);
         if (built) {
-            ctx.shadowColor='#ffdd00'; ctx.shadowBlur=5*pulse;
+            ctx.shadowColor='#ffdd00'; ctx.shadowBlur=0;
             ctx.fillStyle=`rgba(${(255*pulse)|0},${(212*pulse)|0},0,0.85)`;
             ctx.beginPath(); ctx.arc(cx+ox,cy-20-th-1,1.6+pulse*0.5,0,Math.PI*2); ctx.fill();
             ctx.shadowBlur=0;
@@ -916,7 +916,7 @@ function _campPowerCon(cx, cy, a, pulse, built) {
     // Voltage arc between tallest tubes (built)
     if (built) {
         const arc1=Math.sin(f*0.24)*3.5, arc2=Math.cos(f*0.24)*2;
-        ctx.shadowColor='#ffdd00'; ctx.shadowBlur=6*pulse;
+        ctx.shadowColor='#ffdd00'; ctx.shadowBlur=0;
         ctx.strokeStyle=`rgba(${(255*pulse)|0},${(218*pulse)|0},${(28*pulse)|0},0.88)`; ctx.lineWidth=0.85;
         ctx.beginPath(); ctx.moveTo(cx-1,cy-48); ctx.lineTo(cx-1+arc1,cy-42); ctx.lineTo(cx+4,cy-38); ctx.stroke();
         ctx.shadowBlur=0;
@@ -953,7 +953,7 @@ function _campSigRelay(cx, cy, a, pulse, built) {
     ctx.beginPath(); ctx.moveTo(cx+4,cy-22); ctx.lineTo(cx+8,cy-26); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx+6,cy-24); ctx.lineTo(cx+10,cy-28); ctx.stroke();
     // Focal receiver stub
-    if (built) { ctx.shadowColor='#00ff88'; ctx.shadowBlur=5*pulse; }
+    if (built) { ctx.shadowColor='#00ff88'; ctx.shadowBlur=0; }
     ctx.fillStyle = built
         ? `rgba(0,${(238*pulse)|0},${(125*pulse)|0},0.95)`
         : `rgb(${(46*a)|0},${(44*a)|0},${(34*a)|0})`;
@@ -987,7 +987,7 @@ function _campRepair(cx, cy, a, pulse, built) {
     ctx.strokeStyle=`rgba(${(62*a)|0},${(66*a)|0},${(80*a)|0},0.7)`; ctx.lineWidth=0.7;
     ctx.fillRect(cx+1,cy-8,7,16); ctx.strokeRect(cx+1,cy-8,7,16);
     // Red cross on door
-    if (built) { ctx.shadowColor='#ff4444'; ctx.shadowBlur=6*pulse; }
+    if (built) { ctx.shadowColor='#ff4444'; ctx.shadowBlur=0; }
     ctx.strokeStyle = built
         ? `rgba(${(205*pulse)|0},${(38*a)|0},${(38*a)|0},${0.9*pulse})`
         : `rgba(${(80*a)|0},${(22*a)|0},${(22*a)|0},0.7)`;
@@ -1009,7 +1009,7 @@ function _campRepair(cx, cy, a, pulse, built) {
     if (built) {
         ctx.strokeStyle=`rgba(${(255*pulse)|0},${(175*pulse)|0},${(55*pulse)|0},${0.38*pulse})`; ctx.lineWidth=2;
         ctx.beginPath(); ctx.moveTo(cx,cy-28); ctx.lineTo(cx,cy-43); ctx.stroke();
-        ctx.shadowColor='#ffcc44'; ctx.shadowBlur=8*pulse;
+        ctx.shadowColor='#ffcc44'; ctx.shadowBlur=0;
         ctx.fillStyle=`rgba(${(255*pulse)|0},${(195*pulse)|0},${(75*pulse)|0},0.9)`;
         ctx.beginPath(); ctx.arc(cx,cy-43,2.2+pulse*0.5,0,Math.PI*2); ctx.fill();
         ctx.shadowBlur=0;

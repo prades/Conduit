@@ -311,6 +311,18 @@ const TURRET_RANGE = 3;
 // DESTROY: take down one of your own pylons for good and get this many shards
 // back (it cost PYLON_BUILD_COST to build).
 const DEMOLISH_REFUND = 8;
+// ── THE EFFECTS PLAN ─────────────────────────────────────
+// REPORTED: "the graphics and the atmospheric effects get way too crazy ...
+// not just a giant mist everywhere." The plan, card by card, is the Conduit
+// effects plan page; its rules: no fog (nothing tints the whole screen for
+// longer than half a second), no blur, lines not discs, quiet when idle,
+// capped (FX_MAX in elements.js), one voice (one centre banner at a time).
+const FX_EMP_FRAMES   = 30;    // the EMP's dim: half a second …
+const FX_EMP_DIM      = 0.35;  // … at this much
+const FX_VIGNETTE     = 0.2;   // the eruption's red edges
+const FX_CRATER_FRAMES = 300;  // the eruption's crater lasts 5 s
+const FX_CRATER_ALPHA = 0.35;
+const FX_FROST_ALPHA  = 0.08;  // the blizzard's frost over its zone's floor
 // ── AN ENDLESS TUNNEL ────────────────────────────────────
 // REPORTED: "the game stops at zone 13, no predators spawn. Make sure the game
 // is infinite and the enemies scale throughout and become bigger."

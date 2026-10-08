@@ -354,10 +354,10 @@ function drawPredatorNestMass(pred, px, py) {
     const bob = Math.sin((frame || 0) * 0.15) * 2;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.shadowColor = "#ffee33"; ctx.shadowBlur = 8;
+    ctx.shadowColor = "#ffee33"; ctx.shadowBlur = 0;
     ctx.fillStyle = "#ffdd44";
     ctx.beginPath(); ctx.arc(px, py - 42 + bob, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur =0;
     ctx.fillStyle = "#1a1206"; ctx.font = "bold 6px monospace"; ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(String(pred.nestMass), px, py - 42 + bob + 0.5);

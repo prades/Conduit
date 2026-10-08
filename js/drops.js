@@ -67,12 +67,34 @@ function onPredatorDeath(predator) {
 // ─────────────────────────────────────────────────────────
 //  FLOATING TEXT SYSTEM
 // ─────────────────────────────────────────────────────────
+// ONE VOICE (Conduit effects plan, "Centre banners"). A banner is a text
+// pushed at the centre of the screen. Only the oldest batch shows and counts
+// down — texts pushed on the same frame are one batch, so a title and its line
+// stay together — and the rest wait their turn. While others wait, a batch
+// gets at most BANNER_QUEUED_LIFE frames. A banner already waiting with the
+// same text is not queued twice.
+const BANNER_QUEUED_LIFE = 90;
+function isBanner(t) { return typeof canvas !== "undefined" && Math.abs(t.x - canvas.width / 2) < 1 && t.y < canvas.height * 0.75; }
 function updateFloatingTexts() {
+    let head = null;
+    const seen = new Set();
     floatingTexts = floatingTexts.filter(t => {
+        if (isBanner(t)) {
+            if (t._bq === undefined) {
+                if (seen.has(t.text)) return false;   // the same banner is already queued
+                t._bq = typeof frame !== "undefined" ? frame : 0;
+            }
+            seen.add(t.text);
+            if (head === null) head = t._bq;
+            if (t._bq !== head) { t._waiting = true; return true; }
+            t._waiting = false;
+        }
         t.y += t.vy;
         t.life--;
         return t.life > 0;
     });
+    if (head !== null && floatingTexts.some(t => t._waiting))
+        for (const t of floatingTexts) if (t._bq === head && t.life > BANNER_QUEUED_LIFE) t.life = BANNER_QUEUED_LIFE;
 }
 
 function drawFloatingTexts() {
@@ -84,13 +106,17 @@ function drawFloatingTexts() {
     // was one of the heavier costs with a large squad. Damage numbers repeat,
     // so the cache hits.
     const stamp = typeof cachedText === "function";
+    let _row = 0;
     floatingTexts.forEach(t => {
+        if (t._waiting) return;             // queued behind the banner showing now
         const alpha = Math.min(1, t.life / 30);
+        // Banners shown together stack, one line under the other.
+        const _dy = isBanner(t) ? (_row++) * 18 : 0;
         ctx.globalAlpha = alpha;
         const font = t.size ? `bold ${t.size}px monospace` : "bold 13px monospace";
         if (stamp) {
-            cachedText(String(t.text), font, "#000", t.x + 1, t.y + 1);
-            cachedText(String(t.text), font, t.color, t.x, t.y);
+            cachedText(String(t.text), font, "#000", t.x + 1, t.y + 1 + _dy);
+            cachedText(String(t.text), font, t.color, t.x, t.y + _dy);
             return;
         }
         ctx.font = font;

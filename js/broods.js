@@ -459,11 +459,11 @@ function drawBroodLabel(b, px, py, c) {
     // not as one more silhouette.
     const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.08);
     c.strokeStyle = `rgba(192,240,64,${0.35 + pulse * 0.45})`; c.lineWidth = 3;
-    c.shadowColor = "#c0f040"; c.shadowBlur = 12;
+    c.shadowColor = "#c0f040"; c.shadowBlur = 0;
     // Under its legs: the body is drawn about two of its heights above py.
     const feetY = py - (b.dimensions ? b.dimensions.height * 1.15 : 30);
     c.beginPath(); c.ellipse(px, feetY, 46 + pulse * 6, 20 + pulse * 3, 0, 0, Math.PI * 2); c.stroke();
-    c.shadowBlur = 0;
+    c.shadowBlur =0;
     c.fillStyle = "#c0f040"; c.font = "bold 10px monospace"; c.textAlign = "center";
     c.fillText("☠ " + (b.broodName || "BROOD TYRANT"), px, py - 120);
     c.restore();

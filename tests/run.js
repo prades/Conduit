@@ -54,6 +54,7 @@ const SUITES = [
     ['autoplay',               'autoplay.js'],
     ['destroy a pylon',        'demolish.js'],
     ['endless tunnel',         'endless.js'],
+    ['effects plan',           'effects.js'],
 ];
 
 let failed = 0;

@@ -576,9 +576,9 @@ function drawPylonConfirm() {
 
     // Element row
     ctx.fillStyle = el.color;
-    ctx.shadowColor = el.color; ctx.shadowBlur = 6;
+    ctx.shadowColor = el.color; ctx.shadowBlur = 0;
     ctx.beginPath(); ctx.arc(px + 36, py + 62, 8, 0, Math.PI*2); ctx.fill();
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur =0;
     ctx.fillStyle = "#fff"; ctx.font = "13px monospace"; ctx.textAlign = "left";
     const _kl = isRelayId(el.id) ? "" : (isWaveKind(pylonConfirmKind) ? " " + waveRoleLabel(el.id) + " PYLON" : " TURRET");
     ctx.fillText(el.label.toUpperCase() + _kl, px + 52, py + 62);
@@ -802,7 +802,7 @@ function drawHoldLine() {
     const sy2=(holdLineX-player.visualX+(yMax-player.visualY))*TILE_H+canvas.height/2;
     const pulse=0.5+0.5*Math.sin(frame*0.08);
     ctx.strokeStyle=`rgba(255,200,0,${0.45+pulse*0.35})`; ctx.lineWidth=2;
-    ctx.setLineDash([8,5]); ctx.shadowColor="#ff0"; ctx.shadowBlur=10;
+    ctx.setLineDash([8,5]); ctx.shadowColor="#ff0"; ctx.shadowBlur=0;
     ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
     ctx.setLineDash([]); ctx.shadowBlur=0;
     const midX=(sx1+sx2)/2, midY=(sy1+sy2)/2;

@@ -24,13 +24,13 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         grad.addColorStop(0.75,'#cc2200');
         grad.addColorStop(1,   'rgba(160,0,0,0)');
         ctx.shadowColor = '#ff5500';
-        ctx.shadowBlur  = 20;
+        ctx.shadowBlur  = 0;
         ctx.fillStyle   = grad;
         ctx.beginPath();
         ctx.arc(sx, sy, r * 2.6 * flicker, 0, Math.PI * 2);
         ctx.fill();
         // bright inner core
-        ctx.shadowBlur  = 6;
+        ctx.shadowBlur  = 0;
         ctx.fillStyle   = '#ffffff';
         ctx.beginPath();
         ctx.arc(sx, sy, r * 0.55, 0, Math.PI * 2);
@@ -44,13 +44,13 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         grad.addColorStop(0.65,'#aacc00');
         grad.addColorStop(1,   'rgba(100,200,0,0)');
         ctx.shadowColor = '#ffff00';
-        ctx.shadowBlur  = 16;
+        ctx.shadowBlur  = 0;
         ctx.fillStyle   = grad;
         ctx.beginPath();
         ctx.arc(sx, sy, r * 2.2, 0, Math.PI * 2);
         ctx.fill();
         // arc spikes
-        ctx.shadowBlur  = 8;
+        ctx.shadowBlur  = 0;
         ctx.strokeStyle = 'rgba(255,255,180,0.9)';
         ctx.lineWidth   = 1.5;
         for (let i = 0; i < 5; i++) {
@@ -65,7 +65,7 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     } else if (el === 'ice') {
         // Ice crystal — six-pointed frost shard
         ctx.shadowColor = '#aaeeff';
-        ctx.shadowBlur  = 14;
+        ctx.shadowBlur  = 0;
         ctx.fillStyle   = 'rgba(180,230,255,0.85)';
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth   = 1;
@@ -88,7 +88,7 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         grad.addColorStop(0, '#ffffff');
         grad.addColorStop(0.5, '#99ddff');
         grad.addColorStop(1,   '#2288bb');
-        ctx.shadowBlur  = 8;
+        ctx.shadowBlur  = 0;
         ctx.fillStyle   = grad;
         ctx.beginPath();
         ctx.arc(sx, sy, r * 1.1, 0, Math.PI * 2);
@@ -103,13 +103,13 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         grad.addColorStop(0.85,'#9933ff');
         grad.addColorStop(1,   'rgba(80,0,180,0)');
         ctx.shadowColor = '#aa44ff';
-        ctx.shadowBlur  = 22;
+        ctx.shadowBlur  = 0;
         ctx.fillStyle   = grad;
         ctx.beginPath();
         ctx.arc(sx, sy, r * 3.2, 0, Math.PI * 2);
         ctx.fill();
         // event horizon ring
-        ctx.shadowBlur  = 10;
+        ctx.shadowBlur  = 0;
         ctx.strokeStyle = '#dd88ff';
         ctx.lineWidth   = 2;
         ctx.beginPath();
@@ -120,13 +120,13 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
             const ang = f * 0.09 + i * (Math.PI * 2 / 3);
             ctx.strokeStyle = `rgba(200,100,255,${0.35 + i * 0.12})`;
             ctx.lineWidth   = 1;
-            ctx.shadowBlur  = 4;
+            ctx.shadowBlur  = 0;
             ctx.beginPath();
             ctx.arc(sx, sy, r * (2.1 + i * 0.35), ang, ang + Math.PI * 1.1);
             ctx.stroke();
         }
         // pure black void centre
-        ctx.shadowBlur  = 0;
+        ctx.shadowBlur  =0;
         ctx.fillStyle   = '#000000';
         ctx.beginPath();
         ctx.arc(sx, sy, r * 0.75, 0, Math.PI * 2);
@@ -140,13 +140,13 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         grad.addColorStop(0.65,'#00aaaa');
         grad.addColorStop(1,   'rgba(0,140,120,0)');
         ctx.shadowColor = '#00ffcc';
-        ctx.shadowBlur  = 18;
+        ctx.shadowBlur  = 0;
         ctx.fillStyle   = grad;
         ctx.beginPath();
         ctx.arc(sx, sy, r * 2.2, 0, Math.PI * 2);
         ctx.fill();
         // rotating hexagon ring
-        ctx.shadowBlur  = 6;
+        ctx.shadowBlur  = 0;
         ctx.strokeStyle = 'rgba(180,255,240,0.9)';
         ctx.lineWidth   = 1.5;
         ctx.save();
@@ -167,7 +167,7 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         if (p.isBomb) {
             // Smoke grenade — dark canister tumbling through the air with a smoke trail
             ctx.shadowColor = '#55ff22';
-            ctx.shadowBlur  = 10;
+            ctx.shadowBlur  = 0;
             // Canister body (rotates as it flies)
             const angle = f * 0.22;
             ctx.save();
@@ -184,12 +184,12 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
             // Fuse spark
             ctx.fillStyle = '#ffee44';
             ctx.shadowColor = '#ffaa00';
-            ctx.shadowBlur  = 8;
+            ctx.shadowBlur  = 0;
             ctx.beginPath();
             ctx.arc(sx, sy - r * 1.6, r * 0.45, 0, Math.PI * 2);
             ctx.fill();
             // Smoke trail puffs behind it
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur =0;
             for (let i = 0; i < 3; i++) {
                 const pT  = ((f + i * 9) % 27) / 27;
                 const pSx = sx + Math.sin(f * 0.2 + i * 1.2) * 5;
@@ -214,13 +214,13 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         grad.addColorStop(0.85, '#115500');
         grad.addColorStop(1,    'rgba(0,50,0,0)');
         ctx.shadowColor = '#44ff00';
-        ctx.shadowBlur  = 15;
+        ctx.shadowBlur  = 0;
         ctx.fillStyle   = grad;
         ctx.beginPath();
         ctx.arc(sx, sy, r * 2.3 * wobble, 0, Math.PI * 2);
         ctx.fill();
         // specular highlight
-        ctx.shadowBlur  = 0;
+        ctx.shadowBlur  =0;
         ctx.fillStyle   = 'rgba(200,255,200,0.35)';
         ctx.beginPath();
         ctx.arc(sx - r * 0.55, sy - r * 0.55, r * 0.55, 0, Math.PI * 2);
@@ -231,13 +231,13 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         // Fallback — plain glowing circle (predator shots, unknown element)
         ctx.fillStyle  = p.color;
         ctx.shadowColor = p.color;
-        ctx.shadowBlur  = 10;
+        ctx.shadowBlur  = 0;
         ctx.beginPath();
         ctx.arc(sx, sy, r, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur =0;
     ctx.restore();
 }
 
@@ -262,12 +262,8 @@ function applyPylonZoneEffects(wavePylons) {
         // A link runs while either end is awake; both on standby, it rests.
         if (pa.waveAwake === false && pb.waveAwake === false) return;
 
-            // Spawn periodic zone effect particles
-            if (frame % 20 === 0) {
-                const t = Math.random();
-                const ex = pa.x + (pb.x-pa.x)*t, ey = pa.y + (pb.y-pa.y)*t;
-                elementEffects.push({type:"impact",x:ex,y:ey,color:col,radius:0.3,life:25,element:el});
-            }
+            // (No periodic impact discs along the link any more — the link's own
+            // motif shows it working. Conduit effects plan, "Impact".)
 
             // Apply zone effects every 3 frames — visual / cooldown guards inside handle timing
             if (frame % 3 !== 0) return;
@@ -832,6 +828,22 @@ function drawPowerChain() {
     }
 }
 
+// A unit the generator aura just mended: a small green "+" rising off it.
+function drawHealPluses() {
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#7dffb5";
+    for (const a of actors) {
+        if (!(a._auraFlash > 0) || a.dead) continue;
+        a._auraFlash--;
+        const k = 1 - a._auraFlash / 40;
+        const x = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width / 2;
+        const y = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2;
+        ctx.globalAlpha = 1 - k;
+        ctx.fillText("+", x + 10, y - 34 - k * 14);
+    }
+    ctx.restore();
+}
+
 function drawGeneratorLinks() {
     if (_genLinks.length === 0) return;
     const toScreen = o => [
@@ -857,17 +869,22 @@ function drawGeneratorLinks() {
         // THE HEALING AURA's reach, on the floor, so the player can see where
         // to stand. Drawn from the same numbers the tick heals by, and it
         // widens visibly as the network tier climbs.
-        if (pylon.pillarTeam === "green" && !pylon.destroyed && pylon.health > 0) {
+        // Only while you hold its generator or build (Conduit effects plan,
+        // "Generator reach") — it was a pale ellipse round every linked
+        // pylon, permanently. Dotted, 0.3.
+        const _showReach = (typeof buildMode !== "undefined" && buildMode)
+            || (typeof commandMode !== "undefined" && commandMode && (commandTarget === gen || commandTarget === pylon));
+        if (_showReach && pylon.pillarTeam === "green" && !pylon.destroyed && pylon.health > 0) {
             const tier  = Math.max(1, pylonNetworkTier(pylon));
             const reach = GEN_AURA_RADIUS + GEN_AURA_PER_TIER * (tier - 1);
             const col   = (ELEMENTS.find(e => e.id === pylon.attackModeElement) || {}).color || "#9fe8c0";
-            const breathe = 0.5 + 0.5 * Math.sin(frame * 0.05 + pylon.x);
-            ctx.globalAlpha = 0.10 + 0.07 * breathe + 0.03 * tier;
+            ctx.globalAlpha = 0.3;
             ctx.strokeStyle = col;
-            ctx.lineWidth = 1 + tier * 0.4;
+            ctx.lineWidth = 1.2; ctx.setLineDash([3, 5]);
             ctx.beginPath();
             ctx.ellipse(px, py + TILE_H, reach * TILE_W, reach * TILE_H, 0, 0, Math.PI * 2);
             ctx.stroke();
+            ctx.setLineDash([]);
             ctx.globalAlpha = 1;
         }
 
@@ -1011,7 +1028,9 @@ function drawNestHackZone(nest) {
 // its nearest wave pylons of OTHER elements within link range, at most
 // COMBO_MAX_LINKS each. A link's effect runs while either end is awake.
 let _comboLinks = [];
-let _netLit = {};   // lit pylons per element, for the network HUD (see the tier count)
+let _netLit = {};
+const COMBO_LABEL_NEAR = 4;
+const PYLON_LABEL_NEAR = 4;   // tiles: a pylon's full label shows only this close to you   // tiles: a combo link names itself only this close to you   // lit pylons per element, for the network HUD (see the tier count)
 function rebuildComboLinks() {
     _comboLinks = [];
     const r2 = Math.pow(getPylonRange(), 2), count = new Map(), cand = [];
@@ -1027,6 +1046,7 @@ function rebuildComboLinks() {
         }
     }
     cand.sort((p, q) => p.d2 - q.d2);
+    const _found = [];
     for (const c of cand) {
         if ((count.get(c.a) || 0) >= COMBO_MAX_LINKS || (count.get(c.b) || 0) >= COMBO_MAX_LINKS) continue;
         count.set(c.a, (count.get(c.a) || 0) + 1); count.set(c.b, (count.get(c.b) || 0) + 1);
@@ -1036,10 +1056,17 @@ function rebuildComboLinks() {
             lx, ly, len2: lx * lx + ly * ly, midX: (a.x + b.x) / 2, midY: (a.y + b.y) / 2,
             bMinX: Math.min(a.x, b.x) - COMBO_STRIP, bMaxX: Math.max(a.x, b.x) + COMBO_STRIP,
             bMinY: Math.min(a.y, b.y) - COMBO_STRIP, bMaxY: Math.max(a.y, b.y) + COMBO_STRIP });
-        // Several found at once stack down rather than printing over each other.
-        if (discoverCombo(c.key))
-            floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 110 + 18 * floatingTexts.filter(t => /COMBO DISCOVERED/.test(t.text)).length,
-                text: "\u25c6 COMBO DISCOVERED: " + ELEMENT_COMBOS[c.key].name, color: "#ffe066", life: 200, vy: -0.15, size: 14 });
+        if (discoverCombo(c.key)) _found.push(ELEMENT_COMBOS[c.key].name);
+    }
+    // Found together, said once (Conduit effects plan, "Centre banners").
+    if (_found.length === 1)
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 110, text: "\u25c6 COMBO DISCOVERED: " + _found[0], color: "#ffe066", life: 200, vy: -0.15, size: 14 });
+    else if (_found.length > 1) {
+        // A title and a short line of names — at most three, then "+N" — so it
+        // fits a phone. Pushed together, they show together.
+        const names = _found.slice(0, 3).join(" \u00b7 ") + (_found.length > 3 ? " +" + (_found.length - 3) : "");
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 110, text: "\u25c6 " + _found.length + " COMBOS DISCOVERED", color: "#ffe066", life: 220, vy: -0.15, size: 14 });
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 110, text: names, color: "#ffe066", life: 220, vy: -0.15, size: 10 });
     }
 }
 
@@ -1093,6 +1120,63 @@ function applyComboAlly(act, a, k) {
         act.ultimateCharge = Math.min(100, act.ultimateCharge + a.ult);
 }
 
+// ── WAVE LINKS (Conduit effects plan, "Wave link") ───────
+// A 1.5 px thread on the floor between two linked pylons — one per network tier
+// — and the element's own small motif moving along it. It used to be a 10-26 px
+// stroke with up to 40 px of blur at up to 0.85 on every pair, all the time.
+// Both ends asleep: a dim thread and no motif.
+const LINK_THREAD_ALPHA = 0.35, LINK_MOTIF_ALPHA = 0.7, LINK_ASLEEP_ALPHA = 0.15;
+function _hexA(h, a) { const n = parseInt(String(h).slice(1, 7), 16) || 0; return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+function drawWaveLinks() {
+    if (_wPylonPairs.length === 0) return;
+    const W = canvas.width / 2, H = canvas.height / 2, t = frame / 60;
+    for (const { pa, pb, el, col } of _wPylonPairs) {
+        const ax = (pa.x - player.visualX - (pa.y - player.visualY)) * TILE_W + W;
+        const ay = (pa.x - player.visualX + (pa.y - player.visualY)) * TILE_H + H + TILE_H - 4;
+        const bx = (pb.x - player.visualX - (pb.y - player.visualY)) * TILE_W + W;
+        const by = (pb.x - player.visualX + (pb.y - player.visualY)) * TILE_H + H + TILE_H - 4;
+        if (Math.max(ax, bx) < -40 || Math.min(ax, bx) > canvas.width + 40) continue;
+        if (Math.max(ay, by) < -40 || Math.min(ay, by) > canvas.height + 40) continue;
+        const awake = !(pa.waveAwake === false && pb.waveAwake === false);
+        const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+        const tier = Math.max(1, Math.min(3, networkStrength[el] || 0));
+        ctx.save();
+        ctx.lineWidth = 1.5; ctx.lineCap = "round";
+        ctx.strokeStyle = _hexA(col, awake ? LINK_THREAD_ALPHA : LINK_ASLEEP_ALPHA);
+        for (let k = 0; k < tier; k++) {
+            const o = (k - (tier - 1) / 2) * 4;
+            ctx.beginPath(); ctx.moveTo(ax + nx * o, ay + ny * o); ctx.lineTo(bx + nx * o, by + ny * o); ctx.stroke();
+        }
+        if (awake) {
+            const at = u => [ax + dx * u, ay + dy * u];
+            ctx.globalAlpha = LINK_MOTIF_ALPHA;
+            const seg = Math.max(3, Math.round(L / 22));
+            if (el === "fire") for (let i = 1; i < seg; i++) {
+                const [x, y] = at(i / seg), h = 7 + 5 * Math.abs(Math.sin(t * 6 + i * 1.7));
+                ctx.fillStyle = i % 2 ? "#ff6600" : col;
+                ctx.beginPath(); ctx.moveTo(x - 2.5, y); ctx.quadraticCurveTo(x, y - h * 0.6, x, y - h); ctx.quadraticCurveTo(x, y - h * 0.6, x + 2.5, y); ctx.fill();
+            } else if (el === "ice") { ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath();
+                for (let i = 1; i < seg; i++) { const [x, y] = at(i / seg), r = 3 + Math.sin(t * 2 + i); ctx.moveTo(x - r, y); ctx.lineTo(x + r, y); ctx.moveTo(x, y - r); ctx.lineTo(x, y + r); }
+                ctx.stroke();
+            } else if (el === "electric") { ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(ax, ay);
+                const seed = Math.floor(t * 10), n = seg * 2;
+                for (let i = 1; i < n; i++) { const [x, y] = at(i / n), j = ((seed * 13 + i * 7) % 11) - 5; ctx.lineTo(x + nx * j, y + ny * j); }
+                ctx.lineTo(bx, by); ctx.stroke();
+            } else if (el === "flux") { ctx.fillStyle = col;
+                for (let i = 0; i < seg; i++) { const u = (i / seg + t * 0.25) % 1, [x, y] = at(u), r = Math.max(0.6, 2.2 - Math.abs(u - 0.5) * 2); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+            } else if (el === "core") { ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath();
+                for (let i = 1; i < seg; i++) { const [x, y] = at(i / seg), r = 3 + Math.sin(t * 3 + i);
+                    for (let q = 0; q <= 6; q++) { const a = q * Math.PI / 3, px = x + Math.cos(a) * r, py = y + Math.sin(a) * r * 0.6; if (q === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); } }
+                ctx.stroke();
+            } else if (el === "toxic") { ctx.strokeStyle = col; ctx.lineWidth = 1;
+                for (let i = 0; i < seg; i++) { const [x, y] = at((i + 0.5) / seg), u = (t * 0.8 + i * 0.3) % 1;
+                    ctx.globalAlpha = LINK_MOTIF_ALPHA * (1 - u); ctx.beginPath(); ctx.arc(x, y - u * 12, 2 + u * 2, 0, Math.PI * 2); ctx.stroke(); }
+            }
+        }
+        ctx.restore();
+    }
+}
+
 // A braided cable of the two element colours, the combo's name at its middle.
 // Bright and moving while it works, dim while both ends sleep.
 function drawComboLinks() {
@@ -1101,21 +1185,24 @@ function drawComboLinks() {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = "round";
     for (const L of _comboLinks) {
         const ax = (L.a.x - player.visualX - (L.a.y - player.visualY)) * TILE_W + W;
-        const ay = (L.a.x - player.visualX + (L.a.y - player.visualY)) * TILE_H + H - 30;
+        const ay = (L.a.x - player.visualX + (L.a.y - player.visualY)) * TILE_H + H + TILE_H - 4;
         const bx = (L.b.x - player.visualX - (L.b.y - player.visualY)) * TILE_W + W;
-        const by = (L.b.x - player.visualX + (L.b.y - player.visualY)) * TILE_H + H - 30;
+        const by = (L.b.x - player.visualX + (L.b.y - player.visualY)) * TILE_H + H + TILE_H - 4;
         if (Math.max(ax, bx) < -60 || Math.min(ax, bx) > canvas.width + 60) continue;
         const on = comboLinkActive(L), off = on ? (frame * 0.6) % 16 : 0;
-        ctx.lineWidth = on ? 3 : 2;
-        ctx.globalAlpha = on ? 0.9 : 0.3;
-        ctx.setLineDash([8, 8]);
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = on ? 0.6 : 0.2;
+        ctx.setLineDash([6, 6]);
         ctx.strokeStyle = L.colA; ctx.lineDashOffset = -off;
         ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
         ctx.strokeStyle = L.colB; ctx.lineDashOffset = -off - 8;
         ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
         ctx.setLineDash([]); ctx.lineDashOffset = 0;
-        ctx.globalAlpha = on ? 0.95 : 0.4;
-        cachedText(L.combo.name, "bold 8px monospace", "#ffe066", (ax + bx) / 2, (ay + by) / 2 - 6);
+        // The name only near you (Conduit effects plan, "Combo link").
+        if (Math.abs(L.midX - player.x) <= COMBO_LABEL_NEAR && Math.abs(L.midY - player.y) <= COMBO_LABEL_NEAR) {
+            ctx.globalAlpha = 0.7;
+            cachedText(L.combo.name, "bold 7px monospace", "#ffe066", (ax + bx) / 2, (ay + by) / 2 - 10);
+        }
     }
     ctx.restore();
 }
@@ -1276,7 +1363,8 @@ function generatorAuraTick() {
             const dx = a.x - pylon.x, dy = a.y - pylon.y;
             if (dx * dx + dy * dy > r2) continue;
             a.health = Math.min(a.maxHealth, a.health + heal);
-            a._auraFlash = 10;
+            // A small green "+" rising off it (drawHealPluses).
+            if (!(a._auraFlash > 0)) a._auraFlash = 40;
         }
         // The player is not in actors[], and is the one most likely to be
         // standing on a pylon when things have gone wrong.
@@ -1619,6 +1707,7 @@ function render() {
         _netLit = {};
         for (const t of _wPylons) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
         for (const t of _aPylons) if (t.powered) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
+        const _netUps = [], _netDowns = [];
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
             const elPylons = _netPylons.filter(p => p.attackModeElement === el);
@@ -1643,20 +1732,16 @@ function render() {
             const prevTier = _prevNetworkTiers[el] || 0;
             if (newTier > prevTier && newTier > 0) {
                 const tierLabel = ["", "I", "II", "III"][newTier];
-                floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80,
-                    text:`◈ ${elDef.label} NETWORK ${tierLabel}`, color:elDef.color, life:240, vy:-0.22, size:14 });
-                // Pulse burst from each pylon of this element
-                elPylons.forEach(p => {
-                    for (let _i=0;_i<6;_i++) elementEffects.push({type:"impact",x:p.x,y:p.y,color:elDef.color,radius:0.6,life:40,element:el});
-                });
+                _netUps.push({ text:`◈ ${elDef.label} NETWORK ${tierLabel}`, short: elDef.label + " " + tierLabel, color: elDef.color });
+                // One pulse from each pylon of this element (it was six each).
+                elPylons.forEach(p => elementEffects.push({type:"impact",x:p.x,y:p.y,color:elDef.color,radius:0.6,life:20,element:el}));
             }
             if (newTier < prevTier) {
                 // Going DOWN was silent, which is exactly what a failing wave
                 // network does as it sheds pylons. Say what was lost.
-                floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80,
-                    text: newTier > 0 ? `\u25c8 ${elDef.label} NETWORK DOWN TO ${["", "I", "II", "III"][newTier]}`
-                                      : `\u25c8 ${elDef.label} NETWORK LOST`,
-                    color:"#ff7755", life:150, vy:-0.2, size:13 });
+                _netDowns.push({ text: newTier > 0 ? `\u25c8 ${elDef.label} NETWORK DOWN TO ${["", "I", "II", "III"][newTier]}`
+                                                    : `\u25c8 ${elDef.label} NETWORK LOST`,
+                                 short: elDef.label + " " + (newTier > 0 ? ["", "I", "II", "III"][newTier] : "LOST") });
             }
             _prevNetworkTiers[el] = newTier;
             networkStrength[el]   = newTier;
@@ -1664,6 +1749,13 @@ function render() {
             if (newTier > 0) networkIntegrity[el] = Math.min(100, (networkIntegrity[el]||0) + newTier * 0.5);
             else             networkIntegrity[el] = Math.max(0,   (networkIntegrity[el]||0) - 2);
         });
+        // Changes that land together are said once (Conduit effects plan,
+        // "Centre banners") — four elements reaching tier I at once were four
+        // banners stacked over the fight.
+        if (_netUps.length === 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:_netUps[0].text, color:_netUps[0].color, life:240, vy:-0.22, size:14 });
+        else if (_netUps.length > 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:"\u25c8 NETWORKS UP: " + _netUps.map(u => u.short).join(" \u00b7 "), color:"#9fe8c0", life:240, vy:-0.22, size:12 });
+        if (_netDowns.length === 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:_netDowns[0].text, color:"#ff7755", life:150, vy:-0.2, size:13 });
+        else if (_netDowns.length > 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:"\u25c8 NETWORKS DOWN: " + _netDowns.map(u => u.short).join(" \u00b7 "), color:"#ff7755", life:150, vy:-0.2, size:12 });
 
         // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
         rebuildPylonPairs();
@@ -2296,7 +2388,7 @@ function render() {
             const bob=Math.sin(frame*0.06+gi.x*1.3)*4;
             ctx.save();
             ctx.globalAlpha=0.85+0.15*Math.sin(frame*0.08);
-            ctx.shadowColor=col; ctx.shadowBlur=14;
+            ctx.shadowColor=col; ctx.shadowBlur=0;
             ctx.fillStyle=col;
             ctx.beginPath();
             ctx.moveTo(px,       py-18+bob);
@@ -2474,9 +2566,24 @@ function render() {
             // so each look is drawn once (_floorTileSprite) and stamped.
             const _nd = _pillarCache.length > 0 ? pylonNearDist(obj.x, obj.y) : Infinity;
             const _tq = _nd < PCB_TRACE_REACH ? Math.round(Math.pow(1 - _nd / PCB_TRACE_REACH, 1.4) * FLOOR_TRACE_STEPS) : 0;
-            const _spr = _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), obj.territory || "", _tq);
+            // No territory wash on the tile any more (Conduit effects plan,
+            // "Territory") — it read as haze over the whole base.
+            const _spr = _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), "", _tq);
             if (_spr) ctx.drawImage(_spr, px - TILE_W - 1, py - 1);
-            else _drawFloorTile(ctx, px, py, gameState.phase === "night", dist, obj.territory || "", _tq / FLOOR_TRACE_STEPS);
+            else _drawFloorTile(ctx, px, py, gameState.phase === "night", dist, "", _tq / FLOOR_TRACE_STEPS);
+            // Only the FRONT LINE: a 1 px edge where your ground meets the enemy's.
+            if (obj.territory === "player" || obj.territory === "enemy") {
+                const _tx = Math.round(obj.x), _ty = Math.round(obj.y);
+                const _other = obj.territory === "player" ? "enemy" : "player";
+                const _nR = worldTileMap.get((_tx + 1) + "," + _ty), _nD = worldTileMap.get(_tx + "," + (_ty + 1));
+                const _col = obj.territory === "player" ? "rgba(90,170,255,0.35)" : "rgba(255,90,90,0.35)";
+                if ((_nR && _nR.territory === _other) || (_nD && _nD.territory === _other)) {
+                    ctx.save(); ctx.strokeStyle = _col; ctx.lineWidth = 1; ctx.beginPath();
+                    if (_nR && _nR.territory === _other) { ctx.moveTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + TILE_W); }
+                    if (_nD && _nD.territory === _other) { ctx.moveTo(px, py + TILE_W); ctx.lineTo(px - TILE_W, py + TILE_H); }
+                    ctx.stroke(); ctx.restore();
+                }
+            }
 
             // Cables run along the floor, under pylons and units (layAllCables).
             drawCablesOnTile(obj, px, py);
@@ -2569,51 +2676,25 @@ function render() {
                         const arrivalT = Math.min(1, (spreadRadius - distFromCaster) / 4);
                         const fadeOut  = Math.min(1, sE.life / 90);
                         const factor   = arrivalT * fadeOut;
-                        const sh       = Math.round(10 * factor); // max raised height in px
+                        // A 0.08 tint on the tile and a slow wisp on one tile in
+                        // three (Conduit effects plan) — it used to raise lavender
+                        // walls at up to 0.32 on every tile of the zone.
                         const seed     = obj.x * 17.3 + obj.y * 11.7;
                         ctx.save();
-
-                        // Left face — shadow side (NW wall) — pale violet mist
                         ctx.beginPath();
-                        ctx.moveTo(px,          py          - sh);
-                        ctx.lineTo(px - TILE_W, py + TILE_H - sh);
-                        ctx.lineTo(px - TILE_W, py + TILE_H);
-                        ctx.lineTo(px,          py);
+                        ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H);
+                        ctx.lineTo(px, py + TILE_W); ctx.lineTo(px - TILE_W, py + TILE_H);
                         ctx.closePath();
-                        ctx.fillStyle = `rgba(55, 45, 90, ${0.32 * factor})`;
+                        ctx.fillStyle = `rgba(150, 130, 220, ${0.08 * factor})`;
                         ctx.fill();
-
-                        // Right face — lit side (NE wall) — soft blue-lavender
-                        ctx.beginPath();
-                        ctx.moveTo(px,          py          - sh);
-                        ctx.lineTo(px + TILE_W, py + TILE_H - sh);
-                        ctx.lineTo(px + TILE_W, py + TILE_H);
-                        ctx.lineTo(px,          py);
-                        ctx.closePath();
-                        ctx.fillStyle = `rgba(100, 85, 160, ${0.25 * factor})`;
-                        ctx.fill();
-
-                        // Top face — ghostly silver-lavender diamond
-                        ctx.beginPath();
-                        ctx.moveTo(px,          py          - sh);
-                        ctx.lineTo(px + TILE_W, py + TILE_H - sh);
-                        ctx.lineTo(px,          py + TILE_W - sh);
-                        ctx.lineTo(px - TILE_W, py + TILE_H - sh);
-                        ctx.closePath();
-                        ctx.fillStyle = `rgba(190, 175, 230, ${0.18 * factor})`;
-                        ctx.fill();
-
-                        // Single rising wisp — cheap flat fill, no gradient
-                        const cycle  = ((frame * 0.8 + seed * 3) % 60) / 60;
-                        const wOx    = Math.sin(seed + frame * 0.011) * TILE_W * 0.3;
-                        const wR     = 11 * Math.min(1, factor * 2);
-                        const wAlpha = 0.22 * factor * (1 - cycle * 0.7);
-                        ctx.globalAlpha = wAlpha;
-                        ctx.fillStyle   = "rgba(200, 185, 240, 1)";
-                        ctx.beginPath();
-                        ctx.arc(px + wOx, py + TILE_H - sh - 4 - cycle * 30, wR, 0, Math.PI * 2);
-                        ctx.fill();
-
+                        if ((Math.round(obj.x) + Math.round(obj.y) * 2) % 3 === 0) {
+                            const u = ((frame * 0.5 + seed * 3) % 90) / 90;
+                            const wy = py + TILE_H - u * 20;
+                            ctx.strokeStyle = `rgba(200, 180, 255, ${0.35 * factor * (1 - u)})`;
+                            ctx.lineWidth = 1.2;
+                            ctx.beginPath(); ctx.moveTo(px - 8, wy);
+                            ctx.bezierCurveTo(px - 2, wy - 8, px + 4, wy + 4, px + 10, wy - 6); ctx.stroke();
+                        }
                         ctx.restore();
                     }
                 }
@@ -2939,26 +3020,20 @@ function render() {
                 // rests unlit; it blinks for WAVE_WAKE_BLINK frames on waking.
                 const _asleep = obj.waveMode && !_dark && obj.waveAwake === false;
                 const _sinceWake = obj._wakeFrame === undefined ? Infinity : frame - obj._wakeFrame;
-                // ── WAVE MODE — background glow ring ──
+                // ── AWAKE WAVE PYLON — a thin floor ring (Conduit effects plan) ──
+                // It was a filled glow disc 20-37 px at up to 0.48 on every awake
+                // wave pylon, plus an outer ring at tier II.
                 if (obj.waveMode && !_dark && !_asleep) {
-                    const _wGlowR=(20+_pulse*5)*Math.min(1.5,_tierMult);
-                    const _wGlowA=Math.min(0.5,(0.12+_pulse*0.1)*_tierMult);
-                    ctx.save(); ctx.globalAlpha=_wGlowA; ctx.fillStyle=_acol;
-                    ctx.beginPath(); ctx.arc(px,_base-36,_wGlowR,0,Math.PI*2); ctx.fill();
+                    ctx.save(); ctx.globalAlpha=0.45; ctx.strokeStyle=_acol; ctx.lineWidth=1.5;
+                    ctx.beginPath(); ctx.ellipse(px,_base-2,TILE_W*0.35,TILE_W*0.175,0,0,Math.PI*2); ctx.stroke();
                     ctx.restore();
-                    if (_wTier>=2) {
-                        ctx.save(); ctx.globalAlpha=(0.07+_pulse*0.07)*_tierMult;
-                        ctx.strokeStyle=_acol; ctx.lineWidth=3;
-                        ctx.beginPath(); ctx.arc(px,_base-36,_wGlowR+10+_pulse*6,0,Math.PI*2); ctx.stroke();
-                        ctx.restore();
-                    }
                 }
-                // ── ATTACK MODE — range ring ──
-                // No range ring while dark: the ring says "this is covered",
-                // and an unpowered turret covers nothing.
-                if (obj.attackMode && !_dark) {
-                    ctx.save(); ctx.globalAlpha=0.08+_pulse*0.08; ctx.strokeStyle=_acol; ctx.lineWidth=2;
-                    ctx.beginPath(); ctx.arc(px,_base-20,(obj.attackRange||TURRET_RANGE)*TILE_W*0.5,0,Math.PI*2); ctx.stroke();
+                // ── TURRET RANGE — only while you hold it or build ──
+                // It was a ring at 0.08-0.16 round every turret, all the time.
+                if (obj.attackMode && !_dark && !isRelayPylon(obj) && (buildMode || (commandMode && commandTarget === obj))) {
+                    const _rr=(obj.attackRange||TURRET_RANGE)*TILE_W*0.5;
+                    ctx.save(); ctx.globalAlpha=0.3; ctx.strokeStyle=_acol; ctx.lineWidth=1.2; ctx.setLineDash([3,5]);
+                    ctx.beginPath(); ctx.ellipse(px,_base-2,_rr,_rr*0.5,0,0,Math.PI*2); ctx.stroke();
                     ctx.restore();
                 }
 
@@ -3015,11 +3090,21 @@ function render() {
                     const _sub = obj.waveMode && !isRelayPylon(obj)
                         ? el0 + " \u00b7 " + (_asleep ? "standby" : _tierDesc) : _tierDesc;
                     // Stamped from a cache (cachedText in draw.js), not re-rendered.
+                    // The full two-line label only near you or while held
+                    // (Conduit effects plan, "Pylon labels"); elsewhere just
+                    // the tier, small.
+                    const _near = (Math.abs(obj.x-player.x)<=PYLON_LABEL_NEAR && Math.abs(obj.y-player.y)<=PYLON_LABEL_NEAR)
+                                  || (commandMode && commandTarget===obj);
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                    if (_asleep) ctx.globalAlpha=0.6;
-                    cachedText(_title, "bold 9px monospace", _acol, px, _orbY-12);
-                    ctx.globalAlpha=_asleep?0.45:0.7;
-                    cachedText(_sub, "7px monospace", _acol, px, _orbY-3);
+                    if (_near) {
+                        if (_asleep) ctx.globalAlpha=0.6;
+                        cachedText(_title, "bold 9px monospace", _acol, px, _orbY-12);
+                        ctx.globalAlpha=_asleep?0.45:0.7;
+                        cachedText(_sub, "7px monospace", _acol, px, _orbY-3);
+                    } else if (_lblTier>0) {
+                        ctx.globalAlpha=_asleep?0.45:0.8;
+                        cachedText(["I","II","III"][_lblTier-1], "bold 8px monospace", _acol, px, _orbY-6);
+                    }
                     ctx.restore();
                     // Seasoned gold bands at base
                     if ((obj.seasoned||0)>0) {
@@ -3177,13 +3262,13 @@ function render() {
                             const col = busC[bi];
                             const fade = Math.max(0, 1 - Math.abs(tLocalX - 30) / 48);
                             ctx.globalAlpha = 0.72 * amb * fade;
-                            ctx.shadowColor = col; ctx.shadowBlur = 7;
+                            ctx.shadowColor = col; ctx.shadowBlur = 0;
                             ctx.strokeStyle = col; ctx.lineWidth = 2.0;
                             ctx.beginPath();
                             ctx.moveTo(tLocalX - 10, busY[bi]);
                             ctx.lineTo(tLocalX + 3,  busY[bi]);
                             ctx.stroke();
-                            ctx.shadowBlur = 0;
+                            ctx.shadowBlur =0;
                         }
                     }
 
@@ -3229,7 +3314,7 @@ function render() {
                     ledCols.forEach((lc,i)=>{
                         const blink=(i===1)?(Math.sin(frame*0.04+xi)>0?1:0.2):1;
                         ctx.globalAlpha=0.9*amb*blink;
-                        ctx.fillStyle=lc; ctx.shadowColor=lc; ctx.shadowBlur=4;
+                        ctx.fillStyle=lc; ctx.shadowColor=lc; ctx.shadowBlur=0;
                         ctx.beginPath(); ctx.arc(-6+i*6, rh/2-6, 1.5, 0, Math.PI*2); ctx.fill();
                     });
                     ctx.shadowBlur=0; ctx.restore();
@@ -3246,7 +3331,7 @@ function render() {
                         const on=Math.sin(frame*0.08+xi*3.1+i*1.7)>0.2;
                         ctx.globalAlpha=(on?0.85:0.15)*amb;
                         ctx.fillStyle=on?"#00ffaa":"#003322";
-                        ctx.shadowColor="#00ff88"; ctx.shadowBlur=on?5:0;
+                        ctx.shadowColor="#00ff88"; ctx.shadowBlur=0;
                         ctx.beginPath(); ctx.arc(-6+i*4, 0, 1.8, 0, Math.PI*2); ctx.fill();
                     }
                     ctx.shadowBlur=0; ctx.restore();
@@ -3286,7 +3371,7 @@ function render() {
                         ctx.transform(1, 0.5, 0, -1, WX, WY);
                         ctx.globalAlpha = 0.92 * amb;
                         ctx.shadowColor = activated ? 'transparent' : SENTINEL_ACCENT;
-                        ctx.shadowBlur  = activated ? 0 : 6 + _blink * 5;
+                        ctx.shadowBlur  = 0;
 
                         const pL = pcx - pw/2, pT = pcy - ph/2;
                         // Plate — sentinel's front face, dimmer when spent
@@ -3333,9 +3418,9 @@ function render() {
                             ctx.fillRect(pcx - 4,   pT + 25, 8, 3);
                             // LED beside the readout
                             ctx.fillStyle = ledCol;
-                            ctx.shadowColor = ledCol; ctx.shadowBlur = 4;
+                            ctx.shadowColor = ledCol; ctx.shadowBlur = 0;
                             ctx.beginPath(); ctx.arc(pL + pw - 4, pT + 9, 2, 0, Math.PI*2); ctx.fill();
-                            ctx.shadowBlur = 0;
+                            ctx.shadowBlur =0;
                         }
                         ctx.restore();
 
@@ -3381,7 +3466,7 @@ function render() {
                                     const cmy = midY + b.oy;
                                     // Dark cable core
                                     ctx.strokeStyle = '#0d1410'; ctx.lineWidth = b.w + 1.4;
-                                    ctx.globalAlpha = b.alpha; ctx.shadowBlur = 0;
+                                    ctx.globalAlpha = b.alpha; ctx.shadowBlur =0;
                                     ctx.beginPath();
                                     ctx.moveTo(sx, sy);
                                     ctx.bezierCurveTo(midX + b.ox, cmy, midX + b.ox, cmy, ex, ey);
@@ -3389,7 +3474,7 @@ function render() {
                                     // Coloured glow sheath
                                     ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 0.85;
                                     ctx.globalAlpha = 0.20 + _wPulse * 0.18;
-                                    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 5;
+                                    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 0;
                                     ctx.beginPath();
                                     ctx.moveTo(sx, sy);
                                     ctx.bezierCurveTo(midX + b.ox, cmy, midX + b.ox, cmy, ex, ey);
@@ -3405,16 +3490,16 @@ function render() {
                                     const _by = _t1*_t1*_t1*stubEndY + 3*_t1*_t1*_t2*midY + 3*_t1*_t2*_t2*midY + _t2*_t2*_t2*ply;
                                     ctx.fillStyle = '#00ff88';
                                     ctx.globalAlpha = 0.65 + _wPulse * 0.35;
-                                    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 8;
+                                    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 0;
                                     ctx.beginPath(); ctx.arc(_bx, _by, 2.2, 0, Math.PI * 2); ctx.fill();
                                 }
                                 // Socket ring at player end
                                 ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.2;
                                 ctx.globalAlpha = 0.55 + _wPulse * 0.35;
-                                ctx.shadowBlur = 6;
+                                ctx.shadowBlur = 0;
                                 ctx.beginPath(); ctx.arc(plx, ply, 5, 0, Math.PI * 2); ctx.stroke();
 
-                                ctx.shadowBlur = 0;
+                                ctx.shadowBlur =0;
                                 ctx.restore();
 
                                 const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
@@ -3495,7 +3580,7 @@ function render() {
                         const t = obj.ventTimer / 50;
                         ctx.save();
                         ctx.globalAlpha = t * 0.55;
-                        ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 14;
+                        ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 0;
                         ctx.fillStyle = "#ff6600";
                         ctx.beginPath();
                         ctx.moveTo(vcx - fdx*vw*1.5, vcy - fdy*vw*1.5);
@@ -3528,7 +3613,7 @@ function render() {
                             const bpy2 = py + step * TILE_H;
                             ctx.save();
                             ctx.globalAlpha = fade * Math.max(0, 1 - step * 0.25);
-                            ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 22;
+                            ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 0;
                             ctx.fillStyle = `rgb(255,${(110 - step*25 + Math.random()*40)|0},0)`;
                             ctx.beginPath();
                             ctx.arc(bpx2, bpy2 - 18, 20 - step * 3, 0, Math.PI * 2);
@@ -3555,165 +3640,8 @@ function render() {
 
     drawComboLinks();
 
-    // ── PYLON NETWORK CONNECTION RENDERING ──
-    // Single O(P) pass over pre-computed pairs — replaces the previous O(N²) per-pylon scan.
-    if (_wPylonPairs.length > 0) {
-        const _ncPulse = 0.4 + 0.4 * Math.sin(frame * 0.1);
-        _wPylonPairs.forEach(({pa, pb, el, col}) => {
-            const px   = (pa.x - player.visualX - (pa.y - player.visualY)) * TILE_W + canvas.width/2;
-            const py   = (pa.x - player.visualX + (pa.y - player.visualY)) * TILE_H + canvas.height/2;
-            const pbpx = (pb.x - player.visualX - (pb.y - player.visualY)) * TILE_W + canvas.width/2;
-            const pbpy = (pb.x - player.visualX + (pb.y - player.visualY)) * TILE_H + canvas.height/2;
-            const y1 = py - 60, y2 = pbpy - 60;
-            const _connTier  = networkStrength[el] || 0;
-            const _connBoost = 1 + _connTier * 0.35;
-            ctx.save();
-
-            // ── PHYSICAL CABLE LAYER ──
-            {
-                const cDist = Math.hypot(pbpx - px, pbpy - py);
-                const sag   = Math.min(55, cDist * 0.22);
-                const midX  = (px + pbpx) / 2, midY = (py + pbpy) / 2 + sag;
-                ctx.shadowBlur = 0;
-                const bundles = [{ox:-3,oy:-2,w:2.5,alpha:0.85},{ox:0,oy:2,w:3.0,alpha:0.90},{ox:4,oy:-1,w:2.0,alpha:0.75}];
-                bundles.forEach(b => {
-                    const sx = px+b.ox, sy = py+b.oy, ex = pbpx+b.ox, ey = pbpy+b.oy;
-                    const cmy = midY + b.oy;
-                    ctx.globalAlpha = b.alpha * 0.9;
-                    ctx.strokeStyle = "#111418"; ctx.lineWidth = b.w + 1.5;
-                    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.bezierCurveTo(midX+b.ox,cmy,midX+b.ox,cmy,ex,ey); ctx.stroke();
-                    ctx.strokeStyle = col; ctx.lineWidth = 0.8; ctx.globalAlpha = 0.18;
-                    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.bezierCurveTo(midX+b.ox,cmy,midX+b.ox,cmy,ex,ey); ctx.stroke();
-                });
-                ctx.globalAlpha = 1;
-            }
-
-            if (el === "fire") {
-                ctx.globalAlpha = Math.min(0.85, (0.15 + _ncPulse*0.08) * _connBoost);
-                ctx.strokeStyle = "#ff3300"; ctx.lineWidth = 10 + _connTier*3;
-                ctx.shadowColor = "#ff2200"; ctx.shadowBlur = 16 + _connTier*8;
-                ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(pbpx,pbpy); ctx.stroke();
-                ctx.shadowBlur = 0;
-                const segs = 14 + _connTier*4;
-                // Hoist constant shadow state outside flame loop
-                ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 8 + _connTier*4;
-                for (let s = 0; s <= segs; s++) {
-                    const t = s/segs;
-                    const fx = px+(pbpx-px)*t, fy = py+(pbpy-py)*t;
-                    const flk = Math.sin(frame*0.18+s*1.5)*0.5+0.5;
-                    const h = (12+flk*18)*(1+_connTier*0.4);
-                    ctx.globalAlpha = Math.min(0.85,(0.3+flk*0.25)*(0.45+_ncPulse*0.25)*_connBoost);
-                    ctx.fillStyle = s%2===0?"#ff6600":"#ff3300";
-                    ctx.beginPath(); ctx.moveTo(fx-3,fy); ctx.quadraticCurveTo(fx+2,fy-h*0.55,fx,fy-h); ctx.quadraticCurveTo(fx-2,fy-h*0.55,fx+3,fy); ctx.fill();
-                }
-                ctx.shadowBlur = 0;
-
-            } else if (el === "ice") {
-                ctx.globalAlpha = Math.min(0.85,(0.18+_ncPulse*0.12)*_connBoost);
-                ctx.strokeStyle = "#aaddff"; ctx.lineWidth = 12+_connTier*4;
-                ctx.shadowColor = "#88ccff"; ctx.shadowBlur = 14+_connTier*6;
-                ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                // Hoist crystal shadow state outside crystal loop
-                ctx.shadowColor = "#88ccff"; ctx.shadowBlur = 5+_connTier*3;
-                ctx.strokeStyle = "#cceeFF"; ctx.lineWidth = 1+_connTier*0.3;
-                ctx.globalAlpha = Math.min(0.9,(0.55+_ncPulse*0.3)*_connBoost);
-                const crysts = 9+_connTier*3;
-                for (let s = 1; s < crysts; s++) {
-                    const t = s/crysts;
-                    const cx2 = px+(pbpx-px)*t, cy2 = y1+(y2-y1)*t;
-                    const sz = (4+Math.sin(frame*0.05+s*1.2)*1.5)*(1+_connTier*0.25);
-                    ctx.beginPath();
-                    ctx.moveTo(cx2-sz,cy2); ctx.lineTo(cx2+sz,cy2);
-                    ctx.moveTo(cx2,cy2-sz); ctx.lineTo(cx2,cy2+sz);
-                    ctx.moveTo(cx2-sz*0.7,cy2-sz*0.7); ctx.lineTo(cx2+sz*0.7,cy2+sz*0.7);
-                    ctx.moveTo(cx2+sz*0.7,cy2-sz*0.7); ctx.lineTo(cx2-sz*0.7,cy2+sz*0.7);
-                    ctx.stroke();
-                }
-                ctx.shadowBlur = 0;
-
-            } else if (el === "electric") {
-                const _arcCount = 1 + _connTier;
-                ctx.shadowColor = "#88aaff"; ctx.shadowBlur = 16+_connTier*8;
-                ctx.strokeStyle = `rgba(180,210,255,${Math.min(1,0.7+_ncPulse*0.3)})`;
-                ctx.lineWidth = 1.5+_connTier*0.8; ctx.lineCap = "round";
-                for (let _ai = 0; _ai < _arcCount; _ai++) {
-                    ctx.beginPath(); ctx.moveTo(px,y1);
-                    for (let s = 1; s < 10; s++) {
-                        const t = s/10;
-                        ctx.lineTo(px+(pbpx-px)*t+(Math.random()-0.5)*(14+_ai*5), y1+(y2-y1)*t+(Math.random()-0.5)*(10+_ai*3));
-                    }
-                    ctx.lineTo(pbpx,y2); ctx.stroke();
-                }
-                ctx.shadowBlur = 6; ctx.strokeStyle = `rgba(200,220,255,${0.3+_ncPulse*0.2})`; ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(px,y1);
-                for (let s = 1; s < 10; s++) {
-                    const t = s/10;
-                    ctx.lineTo(px+(pbpx-px)*t+(Math.random()-0.5)*18, y1+(y2-y1)*t+(Math.random()-0.5)*12);
-                }
-                ctx.lineTo(pbpx,y2); ctx.stroke();
-                ctx.shadowBlur = 0;
-
-            } else if (el === "flux") {
-                const midx = (px+pbpx)/2, midy = (y1+y2)/2;
-                ctx.globalAlpha = Math.min(0.85,(0.28+_ncPulse*0.18)*_connBoost);
-                ctx.strokeStyle = "#6600cc"; ctx.lineWidth = (4+_ncPulse*2)*(1+_connTier*0.3);
-                ctx.shadowColor = "#4400aa"; ctx.shadowBlur = 12+_connTier*6;
-                ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                const _fluxParts = 7 + _connTier*3;
-                ctx.fillStyle = "#9922ff"; ctx.shadowBlur = 7+_connTier*3;
-                for (let s = 0; s < _fluxParts; s++) {
-                    const phase = frame*0.07+s*(Math.PI*2/_fluxParts);
-                    const r = (10+Math.sin(phase*2)*4)*(1+_connTier*0.2);
-                    ctx.globalAlpha = Math.min(0.9,(0.55+_ncPulse*0.3)*_connBoost);
-                    ctx.beginPath(); ctx.arc(midx+Math.cos(phase)*r, midy+Math.sin(phase)*r*0.5, 2.5+_connTier*0.5, 0, Math.PI*2); ctx.fill();
-                }
-                ctx.shadowBlur = 0;
-
-            } else if (el === "toxic") {
-                ctx.globalAlpha = Math.min(0.85,(0.2+_ncPulse*0.12)*_connBoost);
-                ctx.strokeStyle = "#44cc44"; ctx.lineWidth = 14+_connTier*4;
-                ctx.shadowColor = "#22aa22"; ctx.shadowBlur = 10+_connTier*5;
-                ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                ctx.shadowBlur = 0;
-                const blobs = 8+_connTier*3;
-                for (let s = 0; s < blobs; s++) {
-                    const t = (s+Math.sin(frame*0.04+s)*0.3)/blobs;
-                    const bx = px+(pbpx-px)*t, by = y1+(y2-y1)*t;
-                    const br = (4+Math.sin(frame*0.08+s*0.9)*2)*(1+_connTier*0.3);
-                    ctx.globalAlpha = Math.min(0.85,(0.3+_ncPulse*0.2)*_connBoost);
-                    const grad = ctx.createRadialGradient(bx,by,0,bx,by,br*3);
-                    grad.addColorStop(0,"rgba(80,200,80,0.5)"); grad.addColorStop(1,"rgba(40,120,40,0)");
-                    ctx.fillStyle = grad;
-                    ctx.beginPath(); ctx.arc(bx,by,br*3,0,Math.PI*2); ctx.fill();
-                }
-
-            } else if (el === "core") {
-                ctx.globalAlpha = Math.min(0.85,(0.25+_ncPulse*0.15)*_connBoost);
-                ctx.strokeStyle = "#00ccaa"; ctx.lineWidth = 10+_connTier*3;
-                ctx.shadowColor = "#00aa88"; ctx.shadowBlur = 14+_connTier*6;
-                ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                ctx.shadowBlur = 0;
-                const ripples = 5+_connTier*2;
-                for (let s = 1; s <= ripples; s++) {
-                    const t = ((s/ripples)+frame*0.01)%1;
-                    const rx = px+(pbpx-px)*t, ry = y1+(y2-y1)*t;
-                    ctx.globalAlpha = Math.min(0.9,(1-t)*0.5*_ncPulse*_connBoost);
-                    ctx.strokeStyle = "#00ffcc"; ctx.lineWidth = 1.5+_connTier*0.5;
-                    ctx.shadowColor = "#00ccaa"; ctx.shadowBlur = 6+_connTier*3;
-                    ctx.beginPath(); ctx.arc(rx,ry,(5+t*12)*(1+_connTier*0.15),0,Math.PI*2); ctx.stroke();
-                }
-                ctx.shadowBlur = 0;
-
-            } else {
-                ctx.globalAlpha = 0.5+_ncPulse*0.3;
-                ctx.strokeStyle = col; ctx.lineWidth = 2+_ncPulse*2; ctx.setLineDash([6,4]);
-                ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(pbpx,y2); ctx.stroke();
-                ctx.setLineDash([]);
-            }
-
-            ctx.restore();
-        });
-    }
+    // ── PYLON NETWORK LINKS (drawWaveLinks) ──
+    drawWaveLinks();
 
     // ── ENVIRONMENTAL HAZARDS ──
     if (environmentalHazards.length === 0 && gameState.running) spawnHazardsForDay();
@@ -3871,6 +3799,7 @@ function render() {
     // The power chain over the mending filament: the mending line is incidental,
     // the power is the thing the player is managing.
     drawGeneratorLinks();
+    drawHealPluses();
     if (typeof drawGrubCorpses === "function") drawGrubCorpses();
     drawConversionBars();
     drawTutorialHighlight();
@@ -4095,10 +4024,10 @@ function drawNetworkStatusHUD() {
         const ry        = Y + HEADER + POWER_H + i * ROW_H;
 
         // Element glow dot
-        ctx.shadowColor = elDef.color; ctx.shadowBlur = 8;
+        ctx.shadowColor = elDef.color; ctx.shadowBlur = 0;
         ctx.fillStyle   = elDef.color;
         ctx.beginPath(); ctx.arc(X + PAD + 4, ry + 8, 4, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur  = 0;
+        ctx.shadowBlur  =0;
 
         // Element name
         ctx.fillStyle = elDef.color; ctx.font = "bold 9px monospace"; ctx.textAlign = "left";

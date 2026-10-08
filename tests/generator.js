@@ -330,8 +330,10 @@ check('the links are drawn, and with the world not the interface', () => {
     const g = gen(0, 2), p = pylon(2, 2);
     place(env, [g, p]);
     env.calls.length = 0;
-    env.run('drawGeneratorLinks()');
-    ok(env.calls.some(c => c.op === 'stroke'), 'nothing drawn for a live link');
+    // The reach ring shows while you build or hold the generator (the
+    // effects plan, "Generator reach"); otherwise nothing is drawn for it.
+    env.run('globalThis.buildMode = true; drawGeneratorLinks(); globalThis.buildMode = false;');
+    ok(env.calls.some(c => c.op === 'stroke'), 'nothing drawn for a live link in build mode');
     const at = GAME.indexOf('drawGeneratorLinks();');
     ok(at > -1, 'drawGeneratorLinks is never called');
     ok(at < GAME.indexOf('drawRadialMenu();'), 'should draw before the interface layer');
