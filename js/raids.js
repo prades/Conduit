@@ -353,10 +353,13 @@ function restoreRaids(r) {
 // octopuses and other gooey instances that look 3D and have that little glint
 // of reflective sheen." So a machine is living slime, not gunmetal: a glossy
 // mantle shaded from a lit top-left down to a dark underside, tapering
-// tentacles with a wet highlight along their top edge, slit-pupilled eyes, and
-// a white specular glint. Filled shapes, no glow (the effects rules).
+// tentacles with a wet highlight along their top edge, and a white specular
+// glint. Filled shapes, no glow (the effects rules).
+// Then: "I don't want the blob machinery tech to have eyes or any nozzles
+// coming out of their head ... it needs to look alien." From a lineup of eight
+// of each, the Sentry is the AMOEBOID and the Strider the BELL WALKER.
 const GOO = { dark: "#3a0616", base: "#b0183e", light: "#ff86a2", rim: "#24030d",
-              flash: "#ffb3c4", eye: "#ffd23a", spit: "#ff4f7a" };
+              flash: "#ffb3c4", spit: "#ff4f7a" };
 
 // A world direction as a screen direction (the iso squash).
 function _isoDir(a) { const dx = Math.cos(a), dy = Math.sin(a); const sx = dx - dy, sy = (dx + dy) / 2, l = Math.hypot(sx, sy) || 1; return [sx / l, sy / l]; }
@@ -400,13 +403,6 @@ function _gooGlint(c, cx, cy, r) {
     c.strokeStyle = "rgba(255,255,255,0.22)"; c.lineWidth = Math.max(1, r * 0.08);
     c.beginPath(); c.ellipse(cx, cy, r * 0.82, r * 0.82, 0, Math.PI * 1.05, Math.PI * 1.45); c.stroke();
     c.restore();
-}
-function _gooEyes(c, cx, cy, s, look) {
-    for (const side of [-1, 1]) {
-        const ex = cx + side * 5.5 * s + look * 1.2 * s, ey = cy;
-        c.fillStyle = GOO.eye; c.beginPath(); c.ellipse(ex, ey, 2.8 * s, 2 * s, 0, 0, Math.PI * 2); c.fill();
-        c.fillStyle = "#120006"; c.fillRect(ex - 1.9 * s + look * 0.6 * s, ey - 0.5 * s, 3.8 * s, 1 * s);
-    }
 }
 
 function drawMachine(m, px, py, c) {
@@ -475,43 +471,40 @@ function drawMachine(m, px, py, c) {
         c.strokeStyle = "rgba(255,134,162,0.6)"; c.lineWidth = 1.1; c.stroke();
         _gooGlint(c, px, by - 8 * s, R * 0.9);
     } else {
-        // SENTRY: a squat octopus rooted to the floor, its arms splayed out
-        // across it, one arm reared up as the gun.
-        const arms = [];
-        for (let k = 0; k < 6; k++) {
-            const a = k / 6 * Math.PI * 2 + 0.5, curl = Math.sin(f * 0.04 + k * 1.7 + seed) * 0.5;
-            const x0 = px + Math.cos(a) * 8 * s, y0 = py - 4 * s + Math.sin(a) * 3.5 * s;
-            const x1 = px + Math.cos(a + curl * 0.4) * 24 * s, y1 = py + Math.sin(a + curl * 0.4) * 10 * s;
-            const cxp = px + Math.cos(a - 0.5 + curl) * 19 * s, cyp = py + Math.sin(a - 0.5 + curl) * 8 * s - 2 * s;
-            arms.push({ back: Math.sin(a) < 0, args: [x0, y0, cxp, cyp, x1, y1, 5.5 * s, 0.8 * s] });
+        // THE AMOEBOID SENTRY (picked from the lineup, W7): no legs, no eyes —
+        // a fused mass of glossy bubbles rooted in its puddle, always shifting.
+        // To fire it throws a pseudopod out toward you, spits from its tip at
+        // full reach, and hauls it back in.
+        const ready = building ? 0 : Math.max(0, 1 - Math.max(0, (m._fireAt || 0) - f) / D.every);
+        const reach = Math.max(ready * ready * 16, ((m._recoil || 0) / 8) * 18) * s;
+        const B = [[0, -12, 13], [-9, -6, 9], [9, -8, 9.5], [-3, -22, 8], [6, -18, 7], [-12, -15, 5.5]];
+        // A lobe trailing on the far side, and the pseudopod reaching out.
+        _gooTentacle(c, px - ax * 8 * s, py - 8 * s - ay * 3 * s, px - ax * 16 * s, py - 6 * s - ay * 6 * s + Math.sin(f * 0.05 + seed) * 2 * s,
+                     px - ax * 22 * s, py - 1 * s - ay * 8 * s, 7 * s, 2 * s, fill, shine);
+        const sx = px + ax * 8 * s, sy = py - 10 * s + ay * 4 * s, tx = sx + ax * reach, ty = sy + ay * reach;
+        if (reach > 1) {
+            _gooTentacle(c, sx, sy, (sx + tx) / 2 - ay * 3 * s, (sy + ty) / 2 + ax * 2 * s, tx, ty, 10 * s, 5 * s, fill, shine);
         }
-        for (const A of arms) if (A.back) _gooTentacle(c, ...A.args, fill, shine);
-        const R = 14 * s, cx = px, cy = py - 16 * s;
-        // Skirt, then the tall mantle.
-        c.fillStyle = _gooFill(c, cx, py - 6 * s, R * 1.1, flash);
-        c.beginPath(); c.ellipse(cx, py - 6 * s, R * 1.05, R * 0.45, 0, 0, Math.PI * 2); c.fill();
-        c.fillStyle = _gooFill(c, cx, cy, R, flash);
-        c.beginPath(); c.ellipse(cx, cy - 2 * s, R * 0.88 / wob, R * 1.05 * wob, 0, 0, Math.PI * 2); c.fill();
-        c.strokeStyle = GOO.rim; c.lineWidth = 1; c.stroke();
-        for (const A of arms) if (!A.back) _gooTentacle(c, ...A.args, fill, shine);
-        // A drip sliding down the mantle.
-        const dt = (f * 0.012 + seed) % 1;
-        c.fillStyle = flash ? GOO.flash : GOO.base;
-        c.beginPath(); c.ellipse(cx + 6 * s, cy - 6 * s + dt * 14 * s, 1.6 * s, (2 + dt * 1.5) * s, 0, 0, Math.PI * 2); c.fill();
-        _gooEyes(c, cx, cy + 3 * s, s, ax);
-        // The gun arm rears up from the crown and points; it shortens as it spits.
-        if (!building) {
-            const len = (20 - (m._recoil || 0) * 0.8) * s, tx = cx + ax * len, ty = cy - 22 * s + ay * len * 0.6;
-            _gooTentacle(c, cx, cy - 14 * s, cx - ax * 4 * s, cy - 28 * s, tx, ty, 5 * s, 3 * s, fill, shine);
-            const ready = Math.max(0, 1 - Math.max(0, (m._fireAt || 0) - f) / D.every);
-            c.fillStyle = GOO.rim; c.beginPath(); c.arc(tx, ty, 1.8 * s, 0, Math.PI * 2); c.fill();
-            c.strokeStyle = `rgba(255,79,122,${0.35 + 0.65 * ready})`; c.lineWidth = 1.2 * s;
-            c.beginPath(); c.arc(tx, ty, 2.4 * s, 0, Math.PI * 2); c.stroke();
+        const order = B.map((b, i) => i).sort((i, j) => B[i][1] - B[j][1]);
+        for (const i of order) {
+            const [ox, oy, r0] = B[i], ph = f * 0.06 + i * 1.9 + seed;
+            const r = r0 * s * (1 + 0.07 * Math.sin(ph)), x = px + (ox + Math.sin(ph * 0.7) * 1.2) * s, y = py + (oy + Math.cos(ph * 0.6) * 0.8) * s;
+            c.fillStyle = _gooFill(c, x, y, r, flash);
+            c.beginPath(); c.ellipse(x, y, r * wob, r * 0.9 / wob, 0, 0, Math.PI * 2); c.fill();
+            c.strokeStyle = GOO.rim; c.lineWidth = 1; c.stroke();
+            _gooGlint(c, x, y, r * 0.95);
         }
-        _gooGlint(c, cx, cy - 2 * s, R);
+        // The tip of the pseudopod swells as it is about to spit.
+        if (reach > 1) {
+            const tr = (4 + 2.5 * ready) * s;
+            c.fillStyle = _gooFill(c, tx, ty, tr, flash);
+            c.beginPath(); c.ellipse(tx, ty, tr, tr * 0.85, 0, 0, Math.PI * 2); c.fill();
+            c.strokeStyle = GOO.rim; c.lineWidth = 1; c.stroke();
+            _gooGlint(c, tx, ty, tr, 0.8);
+        }
     }
     c.restore();
-    const barY = py - (m.machineKind === "strider" ? 68 : 52) * s;
+    const barY = py - (m.machineKind === "strider" ? 68 : 42) * s;
     if (typeof drawHealthBar === "function") drawHealthBar(px - 18 * s, barY, 36 * s, 4, m.health, m.maxHealth, c);
     c.save();
     c.font = "bold 8px monospace"; c.textAlign = "center"; c.textBaseline = "alphabetic";
