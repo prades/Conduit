@@ -1929,7 +1929,8 @@ function render() {
     // wandered off; a recruit is on team red only for bookkeeping until it
     // reaches the Crystal, and at 0.01 a frame a long walk in cost it 36 HP —
     // enough to kill a weak one on the way to a body it never got to use.
-    actors.forEach(a=>{ if(a.team==="red" && !isNeutralBystander(a)){a.health-=0.01; if(a.health<=0){a.health=0;a.dead=true;}} });
+    // Nor a machine (it is armour, not flesh) or a thief on a raid (its walk is long).
+    actors.forEach(a=>{ if(a.team==="red" && !isNeutralBystander(a) && !a.isMachine && !a.raider){a.health-=0.01; if(a.health<=0){a.health=0;a.dead=true;}} });
 
     // ── PREDATOR SPAWNING — always present (graze by default, hunt when alarm is active) ──
     if (gameState.phase === "day" || gameState.phase === "night") {
@@ -2184,6 +2185,8 @@ function render() {
     decayConversions();
     // ── THE GRUB — one lives in zone 4 while that zone is hostile ──
     if (typeof broodSpawnTick === "function") broodSpawnTick();
+    // ── RAIDS — shard thieves in the quiet, and the machines they pay for ──
+    if (typeof raidTick === "function") raidTick();
 
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
@@ -2377,6 +2380,7 @@ function render() {
         else if (obj.type==='npc') {
             drawNPC(obj.actor,px,py);
             if (obj.actor.nestMass) drawPredatorNestMass(obj.actor, px, py + TILE_H);
+            if (obj.actor.raider) drawThiefTag(obj.actor, px, py + TILE_H);
         }
         else if (obj.type==='groundItem') {
             const gi=obj.item;
@@ -2807,6 +2811,15 @@ function render() {
                     ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(barCx - 44, wfTL.y + WH - 22, 88, 13);
                     ctx.fillStyle = "#ff9966";
                     ctx.fillText("\u25c6 " + Math.floor(obj.massStock) + "/" + NEST_SPAWN_COST + " TO HATCH", barCx, wfTL.y + WH - 12);
+                    ctx.restore();
+                }
+                // Your stolen shards, toward its next machine (js/raids.js).
+                if (obj.stolenStock > 0 && typeof MACHINE_COST !== "undefined") {
+                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                    ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+                    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(barCx - 50, wfTL.y + WH - 37, 100, 13);
+                    ctx.fillStyle = RAID_COLOR;
+                    ctx.fillText("\u25c6 " + Math.floor(obj.stolenStock) + "/" + MACHINE_COST + " STOLEN", barCx, wfTL.y + WH - 27);
                     ctx.restore();
                 }
 
@@ -3804,6 +3817,7 @@ function render() {
     drawHealPluses();
     if (typeof drawGrubCorpses === "function") drawGrubCorpses();
     drawConversionBars();
+    if (typeof drawRaidOverlay === "function") drawRaidOverlay();
     drawTutorialHighlight();
     if (typeof drawTyrantBar === "function") drawTyrantBar();
     drawFloatingTexts();

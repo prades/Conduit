@@ -185,6 +185,7 @@ function livePredatorCount() {
         if (a.dead) continue;
         if (typeof Predator === "undefined" || !(a instanceof Predator)) continue;
         if (a.team === "green" || a.isClone) continue;
+        if (a.isMachine) continue;   // a built machine is not a spawn (js/raids.js)
         n++;
     }
     return n;

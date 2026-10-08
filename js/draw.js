@@ -297,6 +297,7 @@ function _drawIceBlock(actor, px, py, drawCtx) {
 
 function _drawPredator(actor, px, py, drawCtx) {
     if (actor.isGrub && typeof drawGrub === "function") { drawGrub(actor, px, py, drawCtx); return; }
+    if (actor.isMachine && typeof drawMachine === "function") { drawMachine(actor, px, py, drawCtx); return; }
     // UNDERGROUND (the tyrant's burrow): only a moving mound of dirt shows.
     if (actor.untargetable && actor._burrow) {
         const w = 26 + Math.sin((frame || 0) * 0.4) * 3;

@@ -143,6 +143,8 @@ class Predator {
         if (this.dead) return;
         // The grub has its own life (js/broods.js): it eats, it does not fight.
         if (this.isGrub) { grubTick(this); return; }
+        // A machine built from stolen shards (js/raids.js): a gun, not an insect.
+        if (this.isMachine) { machineTick(this); return; }
         // The tyrant guards, buffs and hatches, then fights as normal.
         if (this.isBrood && broodTick(this)) return;   // underground: the burrow has the frame
 
@@ -167,6 +169,8 @@ class Predator {
         // Either can claim the whole frame: an insect in its windup is rooted
         // (that is what makes the telegraph fair), a leaping one is mid-flight,
         // and a worker ignores the combat AI to go fix pylons instead.
+        // A shard thief on a raid (js/raids.js) — to your nest, and home with the loot.
+        if (this.raider && raidUnitTick(this)) return;
         if (abilityTick(this)) return;
         if (workerTick(this))  return;
         // Nothing threatening it? Then it goes to work on your pylons.

@@ -245,6 +245,8 @@ function saveSession() {
             mass: serialiseChargedMass(),
             nestStock: world.filter(t => t.nest && t.massStock > 0).map(t => ({ x: t.x, y: t.y, m: t.massStock })),
             nestOff: world.filter(t => t.nest && t.powerOff).map(t => ({ x: t.x, y: t.y })),
+            // Shards the thieves have banked in each enemy nest, and the machines built from them.
+            raids: typeof serialiseRaids === "function" ? serialiseRaids() : null,
             // Without this a refresh during a wave put the player back in
             // "day" with the alarm gone and the kill count at zero — the wave
             // NUMBER survived in tubecrawler_gamestate, but the wave itself
@@ -425,6 +427,7 @@ function applySession(sess) {
             if (t && t.nest && Number.isFinite(n.m)) t.massStock = Math.max(0, n.m);
         }
     }
+    if (typeof restoreRaids === "function") restoreRaids(sess.raids);
 
     // Force the 60-frame world caches to rebuild against the restored tiles.
     _cacheAge = -999;

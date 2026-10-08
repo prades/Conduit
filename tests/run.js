@@ -57,6 +57,7 @@ const SUITES = [
     ['effects plan',           'effects.js'],
     ['difficulty + drop-offs', 'difficulty.js'],
     ['shield generator',       'shieldgen.js'],
+    ['shard thieves + machines', 'raids.js'],
 ];
 
 let failed = 0;

@@ -455,7 +455,10 @@ function nextWave() {
         saveNests();
 
         // ── Wipe everything, start clean ──
-        actors=[]; followers=[]; respawnQueue=[]; pendingPillarDestruction=[];
+        // Except the machines built from stolen shards (js/raids.js): they are
+        // structures, and stay standing until you take them out.
+        const _machines = actors.filter(a => a.isMachine && !a.dead);
+        actors=_machines; followers=[]; respawnQueue=[]; pendingPillarDestruction=[];
         ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
         activePredator=null; predatorRespawnTimer=0;
         zonePredators={}; zoneRespawnTimers={};
@@ -540,6 +543,7 @@ function restartGame() {
     world=[];worldTileMap=new Map();actors=[];followers=[];capturedNodes=[];signalTowers=[];
     ELEMENTS.forEach(el=>{ followerByElement[el.id]=[]; });
     projectiles=[];fragments=[];smoke=[];shards=[];elementEffects=[];floatingTexts=[];followerProjectiles=[];turretShots=[];clearDNA();
+    if (typeof clearRaids === "function") clearRaids();
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
     pendingPillarDestruction=[];respawnQueue=[];
