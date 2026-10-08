@@ -358,8 +358,20 @@ function restoreRaids(r) {
 // Then: "I don't want the blob machinery tech to have eyes or any nozzles
 // coming out of their head ... it needs to look alien." From a lineup of eight
 // of each, the Sentry is the AMOEBOID and the Strider the BELL WALKER.
-const GOO = { dark: "#3a0616", base: "#b0183e", light: "#ff86a2", rim: "#24030d",
-              flash: "#ffb3c4", spit: "#ff4f7a" };
+// OIL SLICK (picked from a lineup of eight colour schemes): near-black goo
+// with a rainbow sheen — lilac, teal, violet — sliding over its lit side.
+const GOO = { dark: "#07060f", base: "#2b3466", light: "#e9c8ff", rim: "#020208",
+              flash: "#8a96d0", spit: "#c779ff", organ: "#7fe6d8", label: "#d6a8ff",
+              stops: [[0, "#f6e2ff"], [0.18, "#86e8da"], [0.34, "#b86bff"], [0.55, "#2b3466"], [1, "#07060f"]] };
+function _gooRgba(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+// The sheen's stops, made see-through for the bell (by band: lit, middle, dark).
+function _gooStops(g, flash, alphas) {
+    for (const [t, col0] of GOO.stops) {
+        const col = flash && t === 0.55 ? GOO.flash : col0;
+        g.addColorStop(t, alphas ? _gooRgba(col, alphas[t <= 0.2 ? 0 : t < 0.9 ? 1 : 2]) : col);
+    }
+    return g;
+}
 
 // A world direction as a screen direction (the iso squash).
 function _isoDir(a) { const dx = Math.cos(a), dy = Math.sin(a); const sx = dx - dy, sy = (dx + dy) / 2, l = Math.hypot(sx, sy) || 1; return [sx / l, sy / l]; }
@@ -389,10 +401,7 @@ function _gooTentacle(c, x0, y0, cx, cy, x1, y1, w0, w1, fill, shine) {
 // The glossy body: a radial gradient lit from the top-left.
 function _gooFill(c, cx, cy, r, flash) {
     const g = c.createRadialGradient(cx - r * 0.35, cy - r * 0.45, r * 0.08, cx, cy, r * 1.15);
-    g.addColorStop(0, flash ? "#ffe0e8" : GOO.light);
-    g.addColorStop(0.38, flash ? GOO.flash : GOO.base);
-    g.addColorStop(1, GOO.dark);
-    return g;
+    return _gooStops(g, flash);
 }
 // The sheen: a white streak and a pin-point, top-left of the dome.
 function _gooGlint(c, cx, cy, r) {
@@ -411,7 +420,7 @@ function drawMachine(m, px, py, c) {
     const D = MACHINE_DEFS[m.machineKind] || MACHINE_DEFS.sentry;
     const building = m._assemble > 0, grow = building ? 1 - m._assemble / MACHINE_ASSEMBLE : 1;
     const flash = m.hitFlash > 0, f = frame || 0, seed = (m._anchorX || 0) * 7.1;
-    const fill = flash ? GOO.flash : GOO.base, shine = "rgba(255,190,205,0.75)";
+    const fill = flash ? GOO.flash : GOO.base, shine = _gooRgba(GOO.light, 0.75);
     const [ax, ay] = _isoDir(m._aim || 0);
     c.save();
     // A wet puddle under the rooted one — the goo it is made of; a shadow
@@ -419,15 +428,15 @@ function drawMachine(m, px, py, c) {
     if (m.machineKind === "strider" && !building) {
         c.fillStyle = "rgba(0,0,0,0.38)"; c.beginPath(); c.ellipse(px, py, 20 * s, 8 * s, 0, 0, Math.PI * 2); c.fill();
     } else {
-        c.fillStyle = "rgba(60,4,20,0.55)";
+        c.fillStyle = _gooRgba(GOO.dark, 0.6);
         c.beginPath(); c.ellipse(px, py, (20 + 3 * Math.sin(f * 0.05 + seed)) * s, 8.5 * s, 0, 0, Math.PI * 2); c.fill();
-        c.fillStyle = "rgba(255,140,170,0.25)";
+        c.fillStyle = _gooRgba(GOO.light, 0.22);
         c.beginPath(); c.ellipse(px - 7 * s, py - 2 * s, 5 * s, 1.4 * s, -0.15, 0, Math.PI * 2); c.fill();
     }
     // Assembling: it heaves up out of the puddle.
     if (building) {
         c.translate(px, py); c.scale(0.55 + 0.45 * grow, 0.25 + 0.75 * grow); c.translate(-px, -py);
-        c.strokeStyle = "rgba(255,134,162,0.7)"; c.lineWidth = 1;
+        c.strokeStyle = _gooRgba(GOO.light, 0.7); c.lineWidth = 1;
         for (let i = 0; i < 3; i++) {
             const t = ((f * 0.02 + i / 3) % 1), bx = px + (i - 1) * 8 * s;
             c.beginPath(); c.arc(bx, py - t * 40 * s, (1.5 + 1.5 * (1 - t)) * s, 0, Math.PI * 2); c.stroke();
@@ -446,10 +455,10 @@ function drawMachine(m, px, py, c) {
             const a = (k / 7) * Math.PI * 2, sway = Math.sin(walk * 0.09 + k) * 5 * s;
             const fx = px + Math.cos(a) * 14 * s + sway, fy = py + Math.sin(a) * 6 * s - step(k) * 4 * s;
             _gooTentacle(c, px + Math.cos(a) * R * 0.75, by + 4 * s + Math.sin(a) * 3 * s, px + Math.cos(a) * 20 * s - sway, by + 24 * s, fx, fy,
-                         3.2 * s, 0.6 * s, flash ? "rgba(255,179,196,0.9)" : "rgba(176,24,62,0.85)", "rgba(255,190,205,0.55)");
+                         3.2 * s, 0.6 * s, _gooRgba(flash ? GOO.flash : GOO.base, 0.85), _gooRgba(GOO.light, 0.55));
         }
         // Inside: four ring organs, and what it has drained.
-        c.strokeStyle = "rgba(255,79,122,0.75)"; c.lineWidth = 2;
+        c.strokeStyle = _gooRgba(GOO.organ, 0.75); c.lineWidth = 2;
         for (let i = 0; i < 4; i++) {
             const a = i / 4 * Math.PI * 2 + f * 0.01;
             c.beginPath(); c.ellipse(px + Math.cos(a) * 6 * s, by - 6 * s + Math.sin(a) * 3 * s, 3.5 * s, 2.2 * s, a, 0, Math.PI * 2); c.stroke();
@@ -462,13 +471,11 @@ function drawMachine(m, px, py, c) {
         }
         // The bell, with its scalloped hem.
         const g = c.createRadialGradient(px - R * 0.3, by - R * 0.6, R * 0.1, px, by - R * 0.2, R * 1.2);
-        g.addColorStop(0, flash ? "rgba(255,224,232,0.8)" : "rgba(255,170,195,0.6)");
-        g.addColorStop(0.55, flash ? "rgba(255,179,196,0.6)" : "rgba(176,24,62,0.42)");
-        g.addColorStop(1, "rgba(58,6,22,0.85)");
+        _gooStops(g, flash, flash ? [0.8, 0.6, 0.85] : [0.6, 0.42, 0.85]);
         c.fillStyle = g; c.beginPath(); c.ellipse(px, by, R, R * 0.95 * wob, 0, Math.PI, Math.PI * 2);
         for (let i = 0; i <= 10; i++) { const t = 1 - i / 10; c.lineTo(px + (t * 2 - 1) * R, by + (i % 2 ? 4 : 1.5) * s); }
         c.closePath(); c.fill();
-        c.strokeStyle = "rgba(255,134,162,0.6)"; c.lineWidth = 1.1; c.stroke();
+        c.strokeStyle = _gooRgba(GOO.light, 0.6); c.lineWidth = 1.1; c.stroke();
         _gooGlint(c, px, by - 8 * s, R * 0.9);
     } else {
         // THE AMOEBOID SENTRY (picked from the lineup, W7): no legs, no eyes —
@@ -508,7 +515,7 @@ function drawMachine(m, px, py, c) {
     if (typeof drawHealthBar === "function") drawHealthBar(px - 18 * s, barY, 36 * s, 4, m.health, m.maxHealth, c);
     c.save();
     c.font = "bold 8px monospace"; c.textAlign = "center"; c.textBaseline = "alphabetic";
-    c.fillStyle = building ? "#ff9966" : "#ff8aa2";
+    c.fillStyle = building ? "#ff9966" : GOO.label;
     c.fillText(building ? "GROWING " + D.label + " " + Math.floor(grow * 100) + "%" : D.label, px, barY - 3);
     c.restore();
 }
