@@ -46,7 +46,7 @@ const MACHINE_DEFS = {
 };
 const MACHINE_DRAW_SCALE = 1.7;    // drawn big: it is a structure, not one more bug
 const RAID_COLOR    = "#5ff0ff";    // stolen shards, siphon beams
-const MACHINE_RED   = "#ff3b30";
+const MACHINE_RED   = "#ff3b30";   // its body colour in the predator record; the look is GOO below
 
 let _raidTimer   = RAID_INTERVAL_MIN;
 let _raidPending = [];              // { nest, at } thieves still to leave this raid
@@ -255,7 +255,7 @@ function machineTick(m) {
         if (frame >= m._fireAt && Math.abs(diff) < 0.4 && typeof spawnFollowerProjectile === "function") {
             m._fireAt = frame + D.every; m._recoil = 8;
             spawnFollowerProjectile({ x: m.x + Math.cos(m._aim) * 0.4, y: m.y + Math.sin(m._aim) * 0.4, stats: { specialAttack: m.power } },
-                                    tgt, MACHINE_RED, m.power, 4, null);
+                                    tgt, GOO.spit, m.power, 4, null);
             if (followerProjectiles.length) followerProjectiles[followerProjectiles.length - 1].targetsGreen = true;
         }
     }
@@ -296,7 +296,7 @@ function raidOnDeath(p) {
     shardCount += n;
     if (typeof saveShards === "function") saveShards();
     _raidText(p.x, p.y, D.label + " DESTROYED · SALVAGE +" + n + " ◆", RAID_COLOR, 13);
-    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: p.x, y: p.y, color: MACHINE_RED, radius: 0.9, life: 26 });
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: p.x, y: p.y, color: GOO.spit, radius: 0.9, life: 26 });
     if (typeof shake !== "undefined") shake = Math.max(shake, 4);
     return true;
 }
@@ -349,88 +349,170 @@ function restoreRaids(r) {
 }
 
 // ── Drawing ───────────────────────────────────────────────
-// Lines and flat faces, gunmetal and one red eye, no glow (the effects rules).
-function _isoBox(c, x, y, hw, h, top, left, right, edge) {
-    const hh = hw / 2;
-    c.fillStyle = left;  c.beginPath(); c.moveTo(x - hw, y - h); c.lineTo(x, y + hh - h); c.lineTo(x, y + hh); c.lineTo(x - hw, y); c.closePath(); c.fill();
-    c.fillStyle = right; c.beginPath(); c.moveTo(x + hw, y - h); c.lineTo(x, y + hh - h); c.lineTo(x, y + hh); c.lineTo(x + hw, y); c.closePath(); c.fill();
-    c.fillStyle = top;   c.beginPath(); c.moveTo(x, y - hh - h); c.lineTo(x + hw, y - h); c.lineTo(x, y + hh - h); c.lineTo(x - hw, y - h); c.closePath(); c.fill();
-    c.strokeStyle = edge; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(x, y - hh - h); c.lineTo(x + hw, y - h); c.lineTo(x + hw, y); c.lineTo(x, y + hh); c.lineTo(x - hw, y); c.lineTo(x - hw, y - h); c.closePath(); c.stroke();
-    c.beginPath(); c.moveTo(x - hw, y - h); c.lineTo(x, y + hh - h); c.lineTo(x + hw, y - h); c.moveTo(x, y + hh - h); c.lineTo(x, y + hh); c.stroke();
-}
+// REPORTED: "the predator machinery should look like goo. It should look like
+// octopuses and other gooey instances that look 3D and have that little glint
+// of reflective sheen." So a machine is living slime, not gunmetal: a glossy
+// mantle shaded from a lit top-left down to a dark underside, tapering
+// tentacles with a wet highlight along their top edge, slit-pupilled eyes, and
+// a white specular glint. Filled shapes, no glow (the effects rules).
+const GOO = { dark: "#3a0616", base: "#b0183e", light: "#ff86a2", rim: "#24030d",
+              flash: "#ffb3c4", eye: "#ffd23a", spit: "#ff4f7a" };
+
 // A world direction as a screen direction (the iso squash).
 function _isoDir(a) { const dx = Math.cos(a), dy = Math.sin(a); const sx = dx - dy, sy = (dx + dy) / 2, l = Math.hypot(sx, sy) || 1; return [sx / l, sy / l]; }
+
+// A tentacle: a quadratic curve from (x0,y0) through control (cx,cy) to
+// (x1,y1), filled as a ribbon that tapers from w0 to w1, then a thin wet
+// highlight along one side so it reads as round.
+function _gooTentacle(c, x0, y0, cx, cy, x1, y1, w0, w1, fill, shine) {
+    const N = 10, L = [], R = [];
+    for (let i = 0; i <= N; i++) {
+        const t = i / N, u = 1 - t;
+        const x = u * u * x0 + 2 * u * t * cx + t * t * x1, y = u * u * y0 + 2 * u * t * cy + t * t * y1;
+        const dx = 2 * u * (cx - x0) + 2 * t * (x1 - cx), dy = 2 * u * (cy - y0) + 2 * t * (y1 - cy);
+        const l = Math.hypot(dx, dy) || 1, w = (w0 + (w1 - w0) * t) / 2;
+        L.push([x - dy / l * w, y + dx / l * w]); R.push([x + dy / l * w, y - dx / l * w]);
+    }
+    c.fillStyle = fill;
+    c.beginPath(); c.moveTo(L[0][0], L[0][1]);
+    for (const q of L) c.lineTo(q[0], q[1]);
+    for (let i = R.length - 1; i >= 0; i--) c.lineTo(R[i][0], R[i][1]);
+    c.closePath(); c.fill();
+    c.strokeStyle = shine; c.lineWidth = Math.max(0.8, w0 * 0.22); c.lineCap = "round";
+    c.beginPath(); c.moveTo(R[1][0], R[1][1]);
+    for (let i = 2; i < R.length - 2; i++) c.lineTo(R[i][0], R[i][1]);
+    c.stroke();
+}
+// The glossy body: a radial gradient lit from the top-left.
+function _gooFill(c, cx, cy, r, flash) {
+    const g = c.createRadialGradient(cx - r * 0.35, cy - r * 0.45, r * 0.08, cx, cy, r * 1.15);
+    g.addColorStop(0, flash ? "#ffe0e8" : GOO.light);
+    g.addColorStop(0.38, flash ? GOO.flash : GOO.base);
+    g.addColorStop(1, GOO.dark);
+    return g;
+}
+// The sheen: a white streak and a pin-point, top-left of the dome.
+function _gooGlint(c, cx, cy, r) {
+    c.save();
+    c.fillStyle = "rgba(255,255,255,0.85)";
+    c.beginPath(); c.ellipse(cx - r * 0.38, cy - r * 0.42, r * 0.26, r * 0.12, -0.6, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(cx - r * 0.05, cy - r * 0.62, r * 0.06, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = "rgba(255,255,255,0.22)"; c.lineWidth = Math.max(1, r * 0.08);
+    c.beginPath(); c.ellipse(cx, cy, r * 0.82, r * 0.82, 0, Math.PI * 1.05, Math.PI * 1.45); c.stroke();
+    c.restore();
+}
+function _gooEyes(c, cx, cy, s, look) {
+    for (const side of [-1, 1]) {
+        const ex = cx + side * 5.5 * s + look * 1.2 * s, ey = cy;
+        c.fillStyle = GOO.eye; c.beginPath(); c.ellipse(ex, ey, 2.8 * s, 2 * s, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = "#120006"; c.fillRect(ex - 1.9 * s + look * 0.6 * s, ey - 0.5 * s, 3.8 * s, 1 * s);
+    }
+}
 
 function drawMachine(m, px, py, c) {
     c = c || ctx;
     const s = MACHINE_DRAW_SCALE * Math.max(1, (m.dimensions ? m.dimensions.width : 30) / 30);
-    const building = m._assemble > 0;
     const D = MACHINE_DEFS[m.machineKind] || MACHINE_DEFS.sentry;
-    const flash = m.hitFlash > 0;
-    const top = flash ? "#8a94a2" : "#3b4450", left = flash ? "#5a6270" : "#232830", right = flash ? "#6a7380" : "#2e353f", edge = "#5b6573";
-    c.save();
-    if (building) c.globalAlpha = 0.55 + 0.25 * Math.sin((frame || 0) * 0.2);
-    c.fillStyle = "rgba(0,0,0,0.35)"; c.beginPath(); c.ellipse(px, py, 19 * s, 8 * s, 0, 0, Math.PI * 2); c.fill();
+    const building = m._assemble > 0, grow = building ? 1 - m._assemble / MACHINE_ASSEMBLE : 1;
+    const flash = m.hitFlash > 0, f = frame || 0, seed = (m._anchorX || 0) * 7.1;
+    const fill = flash ? GOO.flash : GOO.base, shine = "rgba(255,190,205,0.75)";
     const [ax, ay] = _isoDir(m._aim || 0);
-    let gunX, gunY;
-    if (m.machineKind === "strider") {
-        // Four legs from the hull's corners to the floor, stepping in pairs.
-        const hullY = py - 24 * s, wc = (m.walkCycle || 0) * 0.05;
-        c.strokeStyle = "#1c2027"; c.lineWidth = 2.5 * s; c.lineCap = "round";
-        [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([i, j], k) => {
-            const lift = Math.max(0, Math.sin(wc + (k % 2) * Math.PI)) * 5 * s;
-            const hx = px + i * 9 * s, hy = hullY + j * 3 * s;
-            const fx = px + i * 17 * s + j * 4 * s, fy = py + j * 6 * s - lift;
-            const kx = (hx + fx) / 2 + i * 6 * s, ky = Math.min(hy, fy) - 8 * s;
-            c.beginPath(); c.moveTo(hx, hy); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke();
-            c.fillStyle = "#59636f"; c.fillRect(kx - 1.5 * s, ky - 1.5 * s, 3 * s, 3 * s);
-        });
-        _isoBox(c, px, hullY, 13 * s, 9 * s, top, left, right, edge);
-        // The visor: a red slit across the front faces.
-        c.strokeStyle = MACHINE_RED; c.lineWidth = 2 * s;
-        c.beginPath(); c.moveTo(px - 10 * s, hullY - 5 * s); c.lineTo(px, hullY - 0 * s); c.lineTo(px + 10 * s, hullY - 5 * s); c.stroke();
-        // What it has drained, in a tank on its back.
-        if (m.drained > 0) { c.fillStyle = RAID_COLOR; c.beginPath(); c.moveTo(px, hullY - 22 * s); c.lineTo(px + 4 * s, hullY - 17 * s); c.lineTo(px, hullY - 12 * s); c.lineTo(px - 4 * s, hullY - 17 * s); c.closePath(); c.fill(); }
-        gunX = px; gunY = hullY + 2 * s;
-    } else {
-        // SENTRY: a squat armoured block, a drum on top, twin barrels.
-        _isoBox(c, px, py, 15 * s, 12 * s, top, left, right, edge);
-        c.strokeStyle = "rgba(255,59,48,0.7)"; c.lineWidth = 1.5 * s;
-        c.beginPath(); c.moveTo(px - 11 * s, py - 6 * s); c.lineTo(px - 5 * s, py - 3 * s); c.moveTo(px + 5 * s, py - 3 * s); c.lineTo(px + 11 * s, py - 6 * s); c.stroke();
-        const dy = py - 14 * s;
-        c.fillStyle = flash ? "#7a8390" : "#333a44"; c.fillRect(px - 8 * s, dy - 9 * s, 16 * s, 9 * s);
-        c.fillStyle = flash ? "#9aa3b0" : "#444d59"; c.beginPath(); c.ellipse(px, dy - 9 * s, 8 * s, 4 * s, 0, 0, Math.PI * 2); c.fill();
-        c.fillStyle = flash ? "#7a8390" : "#333a44"; c.beginPath(); c.ellipse(px, dy, 8 * s, 4 * s, 0, 0, Math.PI); c.fill();
-        c.strokeStyle = edge; c.lineWidth = 1; c.beginPath(); c.ellipse(px, dy - 9 * s, 8 * s, 4 * s, 0, 0, Math.PI * 2); c.stroke();
-        gunX = px; gunY = dy - 5 * s;
+    c.save();
+    // A wet puddle under it — the goo it is made of.
+    c.fillStyle = "rgba(60,4,20,0.55)";
+    c.beginPath(); c.ellipse(px, py, (20 + 3 * Math.sin(f * 0.05 + seed)) * s, 8.5 * s, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "rgba(255,140,170,0.25)";
+    c.beginPath(); c.ellipse(px - 7 * s, py - 2 * s, 5 * s, 1.4 * s, -0.15, 0, Math.PI * 2); c.fill();
+    // Assembling: it heaves up out of the puddle.
+    if (building) {
+        c.translate(px, py); c.scale(0.55 + 0.45 * grow, 0.25 + 0.75 * grow); c.translate(-px, -py);
+        c.strokeStyle = "rgba(255,134,162,0.7)"; c.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+            const t = ((f * 0.02 + i / 3) % 1), bx = px + (i - 1) * 8 * s;
+            c.beginPath(); c.arc(bx, py - t * 40 * s, (1.5 + 1.5 * (1 - t)) * s, 0, Math.PI * 2); c.stroke();
+        }
     }
-    // Barrels, pulled back by the recoil.
-    if (!building) {
-        const len = (14 - (m._recoil || 0) * 0.6) * s, nx = -ay, ny = ax;
-        c.strokeStyle = "#15181d"; c.lineWidth = 3 * s; c.lineCap = "butt";
-        c.beginPath();
-        c.moveTo(gunX + nx * 2.5 * s, gunY + ny * 2.5 * s); c.lineTo(gunX + nx * 2.5 * s + ax * len, gunY + ny * 2.5 * s + ay * len);
-        c.moveTo(gunX - nx * 2.5 * s, gunY - ny * 2.5 * s); c.lineTo(gunX - nx * 2.5 * s + ax * len, gunY - ny * 2.5 * s + ay * len);
-        c.stroke();
-        // The eye, brighter just before it fires.
-        const ready = Math.max(0, 1 - Math.max(0, (m._fireAt || 0) - (frame || 0)) / D.every);
-        c.fillStyle = MACHINE_RED; c.globalAlpha *= 0.5 + 0.5 * ready;
-        c.beginPath(); c.arc(gunX + ax * 4 * s, gunY + ay * 4 * s, 2.6 * s, 0, Math.PI * 2); c.fill();
+    const wob = 1 + 0.05 * Math.sin(f * 0.09 + seed);
+    if (m.machineKind === "strider") {
+        // A mantle carried high on five tentacle legs that step in turn.
+        const bob = Math.sin((m.walkCycle || 0) * 0.1) * 2 * s;
+        const bx = px, by = py - 34 * s + bob, R = 14 * s;
+        const legs = [];
+        for (let k = 0; k < 5; k++) {
+            const a = k / 5 * Math.PI * 2 + 0.3;
+            const lift = Math.max(0, Math.sin((m.walkCycle || 0) * 0.05 + k * 1.3)) * 6 * s;
+            const fx = px + Math.cos(a) * 25 * s, fy = py + Math.sin(a) * 10 * s - lift;
+            const hx = bx + Math.cos(a) * 7 * s, hy = by + 6 * s + Math.sin(a) * 3 * s;
+            const kx = (hx + fx) / 2 + Math.cos(a) * 14 * s, ky = Math.min(hy, fy) - 10 * s;
+            legs.push({ back: Math.sin(a) < 0, args: [hx, hy, kx, ky, fx, fy, 5 * s, 1.2 * s] });
+        }
+        for (const L of legs) if (L.back) _gooTentacle(c, ...L.args, fill, shine);
+        // The mantle, and the bulb of the head swelling up behind it.
+        c.fillStyle = _gooFill(c, bx + 3 * s, by - 10 * s, R * 0.9, flash);
+        c.beginPath(); c.ellipse(bx + 3 * s, by - 10 * s, R * 0.78, R * 0.9 * wob, 0.25, 0, Math.PI * 2); c.fill();
+        c.fillStyle = _gooFill(c, bx, by, R, flash);
+        c.beginPath(); c.ellipse(bx, by, R, R * 0.72 / wob, 0, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = GOO.rim; c.lineWidth = 1; c.stroke();
+        // What it has drained floats inside it.
+        if (m.drained > 0) {
+            c.globalAlpha *= 0.75; c.fillStyle = RAID_COLOR;
+            const dy = by - 12 * s + Math.sin(f * 0.07) * 2 * s;
+            c.beginPath(); c.moveTo(bx + 3 * s, dy - 5 * s); c.lineTo(bx + 7 * s, dy); c.lineTo(bx + 3 * s, dy + 5 * s); c.lineTo(bx - 1 * s, dy); c.closePath(); c.fill();
+            c.globalAlpha /= 0.75;
+        }
+        for (const L of legs) if (!L.back) _gooTentacle(c, ...L.args, fill, shine);
+        _gooEyes(c, bx, by + 1 * s, s * 0.9, ax);
+        // The spitting tentacle, curled under the front toward its target.
+        if (!building) {
+            const len = (13 - (m._recoil || 0) * 0.6) * s;
+            _gooTentacle(c, bx, by + 6 * s, bx + ax * len * 0.4 - ay * 5 * s, by + 10 * s + ay * len * 0.4, bx + ax * len, by + 8 * s + ay * len, 3.6 * s, 2.4 * s, fill, shine);
+            c.fillStyle = GOO.rim; c.beginPath(); c.arc(bx + ax * len, by + 8 * s + ay * len, 1.4 * s, 0, Math.PI * 2); c.fill();
+        }
+        _gooGlint(c, bx, by, R);
+        _gooGlint(c, bx + 3 * s, by - 12 * s, R * 0.6);
     } else {
-        // Scaffold: bare uprights round it while it is put together.
-        c.strokeStyle = "#ff9966"; c.lineWidth = 1;
-        c.beginPath();
-        for (const ox of [-16, -6, 6, 16]) { c.moveTo(px + ox * s, py + 2 * s); c.lineTo(px + ox * s, py - 38 * s); }
-        c.stroke();
+        // SENTRY: a squat octopus rooted to the floor, its arms splayed out
+        // across it, one arm reared up as the gun.
+        const arms = [];
+        for (let k = 0; k < 6; k++) {
+            const a = k / 6 * Math.PI * 2 + 0.5, curl = Math.sin(f * 0.04 + k * 1.7 + seed) * 0.5;
+            const x0 = px + Math.cos(a) * 8 * s, y0 = py - 4 * s + Math.sin(a) * 3.5 * s;
+            const x1 = px + Math.cos(a + curl * 0.4) * 24 * s, y1 = py + Math.sin(a + curl * 0.4) * 10 * s;
+            const cxp = px + Math.cos(a - 0.5 + curl) * 19 * s, cyp = py + Math.sin(a - 0.5 + curl) * 8 * s - 2 * s;
+            arms.push({ back: Math.sin(a) < 0, args: [x0, y0, cxp, cyp, x1, y1, 5.5 * s, 0.8 * s] });
+        }
+        for (const A of arms) if (A.back) _gooTentacle(c, ...A.args, fill, shine);
+        const R = 14 * s, cx = px, cy = py - 16 * s;
+        // Skirt, then the tall mantle.
+        c.fillStyle = _gooFill(c, cx, py - 6 * s, R * 1.1, flash);
+        c.beginPath(); c.ellipse(cx, py - 6 * s, R * 1.05, R * 0.45, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = _gooFill(c, cx, cy, R, flash);
+        c.beginPath(); c.ellipse(cx, cy - 2 * s, R * 0.88 / wob, R * 1.05 * wob, 0, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = GOO.rim; c.lineWidth = 1; c.stroke();
+        for (const A of arms) if (!A.back) _gooTentacle(c, ...A.args, fill, shine);
+        // A drip sliding down the mantle.
+        const dt = (f * 0.012 + seed) % 1;
+        c.fillStyle = flash ? GOO.flash : GOO.base;
+        c.beginPath(); c.ellipse(cx + 6 * s, cy - 6 * s + dt * 14 * s, 1.6 * s, (2 + dt * 1.5) * s, 0, 0, Math.PI * 2); c.fill();
+        _gooEyes(c, cx, cy + 3 * s, s, ax);
+        // The gun arm rears up from the crown and points; it shortens as it spits.
+        if (!building) {
+            const len = (20 - (m._recoil || 0) * 0.8) * s, tx = cx + ax * len, ty = cy - 22 * s + ay * len * 0.6;
+            _gooTentacle(c, cx, cy - 14 * s, cx - ax * 4 * s, cy - 28 * s, tx, ty, 5 * s, 3 * s, fill, shine);
+            const ready = Math.max(0, 1 - Math.max(0, (m._fireAt || 0) - f) / D.every);
+            c.fillStyle = GOO.rim; c.beginPath(); c.arc(tx, ty, 1.8 * s, 0, Math.PI * 2); c.fill();
+            c.strokeStyle = `rgba(255,79,122,${0.35 + 0.65 * ready})`; c.lineWidth = 1.2 * s;
+            c.beginPath(); c.arc(tx, ty, 2.4 * s, 0, Math.PI * 2); c.stroke();
+        }
+        _gooGlint(c, cx, cy - 2 * s, R);
     }
     c.restore();
-    const barY = py - (m.machineKind === "strider" ? 52 : 44) * s;
+    const barY = py - (m.machineKind === "strider" ? 58 : 52) * s;
     if (typeof drawHealthBar === "function") drawHealthBar(px - 18 * s, barY, 36 * s, 4, m.health, m.maxHealth, c);
     c.save();
     c.font = "bold 8px monospace"; c.textAlign = "center"; c.textBaseline = "alphabetic";
-    c.fillStyle = building ? "#ff9966" : "#ff8a80";
-    c.fillText(building ? "ASSEMBLING " + D.label + " " + Math.floor((1 - m._assemble / MACHINE_ASSEMBLE) * 100) + "%" : D.label, px, barY - 3);
+    c.fillStyle = building ? "#ff9966" : "#ff8aa2";
+    c.fillText(building ? "GROWING " + D.label + " " + Math.floor(grow * 100) + "%" : D.label, px, barY - 3);
     c.restore();
 }
 
