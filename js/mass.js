@@ -129,6 +129,27 @@ function massCounts() {
     return { charged, neutral, carried, value, total: chargedMass.length };
 }
 
+// ── Where hauled mass is delivered ────────────────────────
+// "Should be able to bring shards to the nest wall zones instead of only
+// crystal." The Crystal, and the front of every nest you hold (a taken zone's
+// wall nest) — a worker walks to the nearest. Same shards either way.
+// Followers are still only made at the Crystal.
+function massDropPoints() {
+    const pts = [];
+    if (typeof crystal !== 'undefined' && crystal) pts.push({ x: crystal.x, y: crystal.y });
+    const nests = (typeof _nestCache !== 'undefined' && _nestCache.length) ? _nestCache : (typeof world !== 'undefined' ? world.filter(t => t.nest) : []);
+    for (const n of nests) {
+        if (typeof isHomePortal === 'function' && isHomePortal(n)) continue;
+        if (typeof nestIsPowerSource === 'function' && nestIsPowerSource(n)) pts.push({ x: n.x, y: n.y + 1, nest: n });
+    }
+    return pts;
+}
+function nearestMassDrop(x, y) {
+    let best = null, bd = Infinity;
+    for (const d of massDropPoints()) { const dd = Math.hypot(d.x - x, d.y - y); if (dd < bd) { bd = dd; best = d; } }
+    return best;
+}
+
 // ── Per-frame bookkeeping ────────────────────────────────
 function updateChargedMass() {
     for (let i = chargedMass.length - 1; i >= 0; i--) {
@@ -145,20 +166,17 @@ function updateChargedMass() {
                 continue;
             }
             m.x = c.x; m.y = c.y;
-            // Delivered.
-            if (typeof crystal !== 'undefined' && Math.hypot(c.x - crystal.x, c.y - crystal.y) < 1.4) {
+            // Delivered — at the Crystal, or at any nest you hold.
+            const _drop = massDropPoints().find(d => Math.hypot(c.x - d.x, c.y - d.y) < 1.4);
+            if (_drop) {
                 shardCount += m.value;
                 if (typeof saveShards === 'function') saveShards();
                 floatingTexts.push({
                     x: canvas.width / 2, y: canvas.height / 2 - 70,
                     text: '+' + m.value + ' SHARDS DELIVERED', color: '#ffdd44', life: 110, vy: -0.3, size: 13,
                 });
-                if (typeof elementEffects !== 'undefined') {
-                    for (let k = 0; k < 5; k++) {
-                        elementEffects.push({ type: 'impact', x: crystal.x, y: crystal.y,
-                                              color: '#ffdd44', radius: 0.7, life: 30 });
-                    }
-                }
+                if (typeof elementEffects !== 'undefined')
+                    elementEffects.push({ type: 'impact', x: _drop.x, y: _drop.y, color: '#ffdd44', radius: 0.7, life: 20 });
                 c.carryingMass = null;
                 chargedMass.splice(i, 1);
             }
@@ -233,7 +251,8 @@ function _workHaul(actor) {
     if (actor.carryingMass) {
         const m = actor.carryingMass;
         if (m.state !== MASS_STATE.CARRIED || m.carrier !== actor) { actor.carryingMass = null; return false; }
-        if (typeof crystal !== 'undefined') { _moveToward(actor, crystal.x, crystal.y, 1.05); return true; }
+        const d = nearestMassDrop(actor.x, actor.y);
+        if (d) { _moveToward(actor, d.x, d.y, 1.05); return true; }
         return false;
     }
 

@@ -340,6 +340,36 @@ const DEEP_POWER_GROWTH  = 1.07;   // × damage per zone past 12
 const DEEP_SIZE_GROWTH   = 0.05;   // + body size per zone past 12 …
 const DEEP_SIZE_MAX      = 2.5;    // … up to this many times their normal size
 const DEEP_REWARD_GROWTH = 0.10;   // + shard and DNA drops per zone past 12
+// ── THE DIFFICULTY RAMP ──────────────────────────────────
+// REPORTED: "I feel the game is too easy right now" — enemies die too fast,
+// nights are too short, the squad is never in danger. Asked to ramp with
+// depth: zones 1-2 stay as they are; from zone 3 every zone deeper (up to
+// RAMP_CAP of them) makes predators tougher and harder-hitting, raises the
+// night's kill quota and sends more of them after your pylons. It stacks with
+// the endless deep-zone growth past zone 12.
+const RAMP_FROM        = 3;
+const RAMP_CAP         = 10;     // levels: the ramp is complete by zone 12
+const RAMP_HP          = 0.25;   // + health per level (zone 6: ×2, zone 12: ×3.5)
+const RAMP_POWER       = 0.15;   // + damage per level (zone 12: ×2.5)
+const RAMP_QUOTA       = 1.5;    // + kills a night needs per level
+const RAMP_HUNTERS     = 0.05;   // + share of predators that hunt pylons per level …
+const RAMP_HUNTERS_MAX = 0.6;    // … up to this share
+const NIGHT_QUOTA_MAX  = 45;     // most kills a night can ask for, however deep
+function rampLevel(z) { return Math.max(0, Math.min(RAMP_CAP, z - (RAMP_FROM - 1))); }
+// Every predator is made its zone's difficulty here: the ramp, then the deep
+// zones. Both ways a predator is made call it (the zone spawner, a nest hatch).
+function applyZoneDifficulty(p, z) {
+    if (!p || p._zoneScaled) return p;
+    p._zoneScaled = true;
+    const r = rampLevel(z);
+    if (r > 0) {
+        p.maxHealth = Math.round(p.maxHealth * (1 + RAMP_HP * r)); p.health = p.maxHealth;
+        p.power = Math.round(p.power * (1 + RAMP_POWER * r));
+        if (!p.isBrood && Math.random() < Math.min(RAMP_HUNTERS_MAX, (typeof PYLON_HUNTER_SHARE !== "undefined" ? PYLON_HUNTER_SHARE : 0.25) + RAMP_HUNTERS * r)) p.huntsPylons = true;
+        p.rampLevel = r;
+    }
+    return applyDeepZone(p, z);
+}
 function deepZoneLevel(z) { return Math.max(0, z - (DEEP_ZONE_FROM - 1)); }
 function deepZoneScale(z) {
     const d = deepZoneLevel(z);

@@ -76,7 +76,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     });
     await check('a deep night has a quota you can finish', () => {
         const q = run(`(function(){ alertSource = { x: 100 * ZONE_LENGTH + 7, y: -1 }; gameState.nightNumber = 201; return enemiesThisWave(); })()`);
-        ok(q <= 60, 'quota ' + q);
+        ok(q <= run('NIGHT_QUOTA_MAX'), 'quota ' + q);
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

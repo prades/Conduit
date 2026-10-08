@@ -55,6 +55,7 @@ const SUITES = [
     ['destroy a pylon',        'demolish.js'],
     ['endless tunnel',         'endless.js'],
     ['effects plan',           'effects.js'],
+    ['difficulty + drop-offs', 'difficulty.js'],
 ];
 
 let failed = 0;

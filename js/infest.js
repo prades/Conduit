@@ -191,7 +191,7 @@ function _spawnPredatorAt(species, className, x, y) {
     p.state = "wander"; p.entryDelay = 0;
     if (typeof applySpeciesBody === "function") applySpeciesBody(p, species);
     // Its zone's depth (tougher and bigger past zone 12), like every predator.
-    if (typeof applyDeepZone === "function" && typeof getZoneIndex === "function") applyDeepZone(p, getZoneIndex(Math.floor(x)));
+    if (typeof applyZoneDifficulty === "function" && typeof getZoneIndex === "function") applyZoneDifficulty(p, getZoneIndex(Math.floor(x)));
     p.baseMoveSpeed = p.moveSpeed;
     if (typeof initAbility === "function") initAbility(p);
     actors.push(p);

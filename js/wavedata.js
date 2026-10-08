@@ -28,7 +28,10 @@ function enemiesThisWave() {
     // one: past zone 18 the quota stops growing and the predators do instead.
     const zoneBase   = 2 + Math.min(18, Math.max(1, alarmZone));   // zone1=3, z2=4 … capped at 20
     const nightBonus = Math.floor((gameState.nightNumber - 1) / 5); // +1 per 5 nights
-    return zoneBase + nightBonus;
+    // The difficulty ramp (config.js): longer nights from zone 3 on.
+    const rampBonus  = typeof rampLevel === "function" ? Math.floor(rampLevel(Math.max(1, alarmZone)) * RAMP_QUOTA) : 0;
+    // Capped, so a deep night is a long, hard fight — not an endless one.
+    return Math.min(typeof NIGHT_QUOTA_MAX !== "undefined" ? NIGHT_QUOTA_MAX : 45, zoneBase + nightBonus + rampBonus);
 }
 function predatorsThisWave() {
     // Zone-based count: emphasis on strength (via class), not raw numbers
