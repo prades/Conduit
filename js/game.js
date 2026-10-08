@@ -1023,6 +1023,14 @@ function drawNestHackZone(nest) {
     ctx.restore();
 }
 
+// A merged banner that fits a phone: a title, and a line of at most three
+// names then "+N". Pushed together, so the queue shows them together.
+function _bannerPair(title, names, color, life) {
+    const line = names.slice(0, 3).join(" \u00b7 ") + (names.length > 3 ? " +" + (names.length - 3) : "");
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: title, color, life, vy: -0.2, size: 14 });
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: line, color, life, vy: -0.2, size: 10 });
+}
+
 // ── ELEMENT COMBOS (docs/ROADMAP-top5.md §1) ─────────────
 // Built with the pylon pairs, every 60 frames: each lit wave pylon links to
 // its nearest wave pylons of OTHER elements within link range, at most
@@ -1753,9 +1761,9 @@ function render() {
         // "Centre banners") — four elements reaching tier I at once were four
         // banners stacked over the fight.
         if (_netUps.length === 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:_netUps[0].text, color:_netUps[0].color, life:240, vy:-0.22, size:14 });
-        else if (_netUps.length > 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:"\u25c8 NETWORKS UP: " + _netUps.map(u => u.short).join(" \u00b7 "), color:"#9fe8c0", life:240, vy:-0.22, size:12 });
+        else if (_netUps.length > 1) _bannerPair("\u25c8 " + _netUps.length + " NETWORKS UP", _netUps.map(u => u.short), "#9fe8c0", 240);
         if (_netDowns.length === 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:_netDowns[0].text, color:"#ff7755", life:150, vy:-0.2, size:13 });
-        else if (_netDowns.length > 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:"\u25c8 NETWORKS DOWN: " + _netDowns.map(u => u.short).join(" \u00b7 "), color:"#ff7755", life:150, vy:-0.2, size:12 });
+        else if (_netDowns.length > 1) _bannerPair("\u25c8 " + _netDowns.length + " NETWORKS DOWN", _netDowns.map(u => u.short), "#ff7755", 150);
 
         // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
         rebuildPylonPairs();
