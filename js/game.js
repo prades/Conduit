@@ -855,7 +855,7 @@ function drawGeneratorLinks() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     // A pylon linked to two generators used to get its aura ring drawn twice
     // (and its heal flash faded twice as fast). Once per pylon.
-    const seen = new Set();
+    const seen = new Set(), _ringed = new Set();
     for (const { gen, pylon } of _genLinks) {
         if (gen.destroyed || pylon.destroyed) continue;
         if (seen.has(pylon)) continue;
@@ -869,23 +869,18 @@ function drawGeneratorLinks() {
         // THE HEALING AURA's reach, on the floor, so the player can see where
         // to stand. Drawn from the same numbers the tick heals by, and it
         // widens visibly as the network tier climbs.
-        // Only while you hold its generator or build (Conduit effects plan,
-        // "Generator reach") — it was a pale ellipse round every linked
-        // pylon, permanently. Dotted, 0.3.
+        // The shield field's reach, round the SHIELD GENERATOR itself — only
+        // while you hold it or build (Conduit effects plan). Once per generator.
         const _showReach = (typeof buildMode !== "undefined" && buildMode)
             || (typeof commandMode !== "undefined" && commandMode && (commandTarget === gen || commandTarget === pylon));
-        if (_showReach && pylon.pillarTeam === "green" && !pylon.destroyed && pylon.health > 0) {
-            const tier  = Math.max(1, pylonNetworkTier(pylon));
-            const reach = GEN_AURA_RADIUS + GEN_AURA_PER_TIER * (tier - 1);
-            const col   = (ELEMENTS.find(e => e.id === pylon.attackModeElement) || {}).color || "#9fe8c0";
-            ctx.globalAlpha = 0.3;
-            ctx.strokeStyle = col;
+        if (_showReach && !_ringed.has(gen) && gen.circuitOn !== false) {
+            _ringed.add(gen);
+            const _sr = typeof SHIELD_GEN_RANGE === "number" ? SHIELD_GEN_RANGE : 4;
+            const rx = _sr * TILE_W, ry = _sr * TILE_H;
+            ctx.globalAlpha = 0.3; ctx.strokeStyle = typeof SHIELD_GEN_COLOR === "string" ? SHIELD_GEN_COLOR : "#dff3ff";
             ctx.lineWidth = 1.2; ctx.setLineDash([3, 5]);
-            ctx.beginPath();
-            ctx.ellipse(px, py + TILE_H, reach * TILE_W, reach * TILE_H, 0, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.globalAlpha = 1;
+            ctx.beginPath(); ctx.ellipse(gx, gy + TILE_H, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([]); ctx.globalAlpha = 1;
         }
 
         // A brief bloom on the pylon the frame it actually gained health.
@@ -1353,34 +1348,28 @@ function pylonNetworkTier(pylon) {
 // Generator-linked only: this is what the generator is FOR, and it gives the
 // placement rule (within GENERATOR_NEST_RANGE of a nest) something to buy
 // beyond keeping the linked pylons repaired.
-function generatorAuraTick() {
-    if (frame % GEN_AURA_INTERVAL !== 0 || _genLinks.length === 0) return;
-    for (const { gen, pylon } of _genLinks) {
-        if (gen.destroyed || gen.health <= 0) continue;
-        if (pylon.destroyed || pylon.health <= 0) continue;
-        if (pylon.pillarTeam !== "green") continue;
-        // Floor of 1: a linked pylon always mends something, and the tier is
-        // the multiplier on top rather than a gate in front.
-        const tier = Math.max(1, pylonNetworkTier(pylon));
-        const heal = GEN_AURA_HEAL * tier;
-        const reach = GEN_AURA_RADIUS + GEN_AURA_PER_TIER * (tier - 1);
-        const r2 = reach * reach;
+// THE SHIELD FIELD (SHIELD_GEN_* in config.js). Replaces the healing aura.
+function shieldFieldTick() {
+    if (frame % SHIELD_GEN_INTERVAL !== 0 || typeof _genPylons === "undefined" || _genPylons.length === 0) return;
+    const r2 = SHIELD_GEN_RANGE * SHIELD_GEN_RANGE;
+    for (const g of _genPylons) {
+        if (g.destroyed || !(g.health > 0) || g.pillarTeam !== "green" || g.circuitOn === false) continue;
+        const src = typeof generatorSource === "function" ? generatorSource(g) : null;
+        if (!src) continue;                       // no nest feeding it: no shields
         for (const a of actors) {
-            if (a.dead || a.team !== "green") continue;
-            if (!(a.health < a.maxHealth)) continue;
-            const dx = a.x - pylon.x, dy = a.y - pylon.y;
+            if (a.dead || a.team !== "green" || !(a.isFollower || a.isClone)) continue;
+            const dx = a.x - g.x, dy = a.y - g.y;
             if (dx * dx + dy * dy > r2) continue;
-            a.health = Math.min(a.maxHealth, a.health + heal);
-            // A small green "+" rising off it (drawHealPluses).
-            if (!(a._auraFlash > 0)) a._auraFlash = 40;
+            if (a._shieldHitAt !== undefined && frame - a._shieldHitAt < SHIELD_GEN_DELAY) continue;
+            const cap = Math.max(SHIELD_GEN_MIN, Math.round((a.maxHealth || 0) * SHIELD_GEN_SHARE));
+            const have = a.shielded ? (a.shieldAmount || 0) : 0;
+            if (have >= cap) continue;
+            const add = Math.min(SHIELD_GEN_RATE, cap - have);
+            if (!gridPay(src, add * SHIELD_GEN_COST)) continue;
+            a.shielded = true; a.shieldAmount = have + add;
+            a._shieldMax = Math.max(cap, a._shieldMax || 0);
+            a._shieldGen = g;
         }
-        // The player is not in actors[], and is the one most likely to be
-        // standing on a pylon when things have gone wrong.
-        const pdx = player.x - pylon.x, pdy = player.y - pylon.y;
-        if (pdx * pdx + pdy * pdy <= r2 && health < 100) {
-            health = Math.min(100, health + heal);
-        }
-        pylon._auraPulse = (pylon._auraPulse || 0) + 1;
     }
 }
 
@@ -2198,7 +2187,7 @@ function render() {
 
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
-    generatorAuraTick();
+    shieldFieldTick();
 
     // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
     if (frame % 3 === 0) {
@@ -2933,7 +2922,7 @@ function render() {
                 const _gx = (obj.x - player.visualX - (obj.y - player.visualY)) * TILE_W + canvas.width/2;
                 const _gy = (obj.x - player.visualX + (obj.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
                 ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                cachedText(_gon ? "\u25cf GENERATOR ON" : "\u25cb GENERATOR OFF", "bold 9px monospace", _gon ? "#8fd6ff" : "#f88", _gx, _gy - 78);
+                cachedText(_gon ? "\u25cf SHIELDS ON" : "\u25cb SHIELDS OFF", "bold 9px monospace", _gon ? "#8fd6ff" : "#f88", _gx, _gy - 92);
                 ctx.restore();
             }
 
@@ -3057,6 +3046,10 @@ function render() {
                     drawWaveMonolith(px, _base, _acol, _dark, _wTier, _asleep);
                     if (!_dark && !_asleep && _sinceWake < WAVE_WAKE_BLINK) drawWaveWakeBlink(px, _base, _acol, _sinceWake);
                 }
+                else if (obj.isGenerator && !obj.destroyed) {
+                    // THE SHIELD GENERATOR: a thicker body and a big pale orb.
+                    drawShieldGenerator(px, _base, obj.circuitOn !== false && obj.pillarTeam === "green", _pulse);
+                }
                 else {
                     const sFront=_isActive?SENTINEL_FRONT_ACTIVE:obj.upgraded?SENTINEL_FRONT_UPGRADED:SENTINEL_FRONT_DORMANT;
                     const sRight=_isActive?SENTINEL_RIGHT_ACTIVE:obj.upgraded?SENTINEL_RIGHT_UPGRADED:SENTINEL_RIGHT_DORMANT;
@@ -3072,7 +3065,7 @@ function render() {
                 if (_isActive) {
                     // Glowing orb at structure top — not on a wave monolith, whose
                     // stripes are its light.
-                    if (!_isWaveMono) {
+                    if (!_isWaveMono && !obj.isGenerator) {
                     const _orbR=obj.waveMode?6+_wTier:5;
                     ctx.save(); ctx.fillStyle=_acol;
                     // halo instead of a blur
@@ -3094,7 +3087,8 @@ function render() {
                     const _tierDesc=obj.waveMode?(_wTier>0?(PYLON_FX_TIER[el0]?.[_wTier-1]||""):(PYLON_FX_TIER[el0]?.[0]||"")):(PYLON_FX2[el0]||"");
                     // A wave pylon is named by its ROLE — SUPPORT or DISRUPTION —
                     // with the element and what it does underneath, or STANDBY.
-                    const _title = obj.waveMode && !isRelayPylon(obj) ? waveRoleLabel(el0)+_wTierBadge : el0.toUpperCase()+_wTierBadge;
+                    const _title = obj.waveMode && !isRelayPylon(obj) ? waveRoleLabel(el0)+_wTierBadge
+                                 : obj.isGenerator ? GENERATOR_LABEL : el0.toUpperCase()+_wTierBadge;
                     const _sub = obj.waveMode && !isRelayPylon(obj)
                         ? el0 + " \u00b7 " + (_asleep ? "standby" : _tierDesc) : _tierDesc;
                     // Stamped from a cache (cachedText in draw.js), not re-rendered.

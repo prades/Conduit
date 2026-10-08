@@ -878,11 +878,12 @@ check('it flashes BUILD, because UPGRADE only shows in build mode', () => {
     env.run('buildMode = false');
 });
 
-check('the aura step explains what the tier multiplies', () => {
+check('the aura step explains the shield field', () => {
+    // The healing aura became the SHIELD GENERATOR's field (tests/shieldgen.js).
     const s = makeEnv().run('TUTS').find(t => t.id === 'aura');
     ok(!!s, 'there is no aura step');
-    ok(/NETWORK TIER/i.test(s.body), 'it does not mention the network tier');
-    ok(/rate and reach|reach/i.test(s.body), 'it does not say the reach grows too');
+    ok(/SHIELD/.test(s.body) && /breaks/.test(s.body), 'it does not explain the shield');
+    ok(/within \d+ tiles/.test(s.body), 'it does not say how far the field reaches');
 });
 
 check('the work step names a job for every element that has one', () => {

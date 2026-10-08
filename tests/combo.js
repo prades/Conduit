@@ -50,7 +50,9 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const mx = (ps[0].x + ps[1].x) / 2, my = ps[0].y + (o.off || 0);
         let blindSeen = 0, minSlow = 1, maxHaste = 0, maxShield = 0, dist0 = Math.abs(o.off || 0), minDist = 99;
         for (let f = 0; f < (o.frames || 0); f++) {
-            if (u) { if (!o.free || f === 0) { u.x = mx; u.y = my; } u.spawnProtection = 0; }
+            if (u) { if (!o.free || f === 0) { u.x = mx; u.y = my; } u.spawnProtection = 0;
+                // keep the shield generator's field out of the reading: only combo shields count here
+                if (u.isFollower) u._shieldHitAt = frame; }
             render();
             if (u) { if (u.blinded > 0) blindSeen++; if (u.slowed > 0) { minSlow = Math.min(minSlow, u.slowFactor); maxHaste = Math.max(maxHaste, u.slowFactor); }
                 maxShield = Math.max(maxShield, u.shieldAmount || 0); const d = Math.hypot(u.x - mx, u.y - my); if (dist0 === null) dist0 = d; minDist = Math.min(minDist, d); }

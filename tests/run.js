@@ -56,6 +56,7 @@ const SUITES = [
     ['endless tunnel',         'endless.js'],
     ['effects plan',           'effects.js'],
     ['difficulty + drop-offs', 'difficulty.js'],
+    ['shield generator',       'shieldgen.js'],
 ];
 
 let failed = 0;

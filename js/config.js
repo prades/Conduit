@@ -79,7 +79,7 @@ const SENTINEL_ACCENT_DIM   = "#3d4d5e";
 // that list is what followers are made of and what the elemental network is
 // tiered on, and a generator is neither.
 const GENERATOR_ID    = "generator";
-const GENERATOR_LABEL = "GENERATOR";
+const GENERATOR_LABEL = "SHIELD GENERATOR";
 const GENERATOR_COLOR = "#cdd6e0";   // neutral steel, so it reads as no element
 // ── CONNECTOR PYLON ───────────────────────────────────────
 // "A connector pylon with a really long radius of connection strength, used to
@@ -311,6 +311,26 @@ const TURRET_RANGE = 3;
 // DESTROY: take down one of your own pylons for good and get this many shards
 // back (it cost PYLON_BUILD_COST to build).
 const DEMOLISH_REFUND = 8;
+// ── THE SHIELD GENERATOR ─────────────────────────────────
+// "Replace the generator with shield generator ... a little bit thicker of a
+// pylon ... a giant light coloured orb ... it starts creating shields for all
+// the followers, and the shields take 100% of damage whenever the shield is
+// active ... until the shield breaks and then the enemies are attacking their
+// health directly." It still carries power from a nest to your pylons, and
+// still mends them; the healing aura is replaced by this field. Every
+// SHIELD_GEN_INTERVAL frames, each follower and clone within SHIELD_GEN_RANGE
+// of a switched-on, nest-fed shield generator gains SHIELD_GEN_RATE shield, up
+// to SHIELD_GEN_SHARE of its max health (at least SHIELD_GEN_MIN), paying
+// SHIELD_GEN_COST power per point. A shield soaks every hit whole until it
+// breaks (applyDamage); after a hit it waits SHIELD_GEN_DELAY before charging.
+const SHIELD_GEN_RANGE    = 4;     // tiles round the shield generator
+const SHIELD_GEN_INTERVAL = 30;    // frames between charges
+const SHIELD_GEN_RATE     = 5;     // shield per charge
+const SHIELD_GEN_SHARE    = 0.5;   // cap: this share of the unit's max health …
+const SHIELD_GEN_MIN      = 20;    // … but never less than this
+const SHIELD_GEN_DELAY    = 180;   // frames after a hit before it charges again
+const SHIELD_GEN_COST     = 0.05;  // nest power per shield point
+const SHIELD_GEN_COLOR    = "#dff3ff";
 // ── THE EFFECTS PLAN ─────────────────────────────────────
 // REPORTED: "the graphics and the atmospheric effects get way too crazy ...
 // not just a giant mist everywhere." The plan, card by card, is the Conduit

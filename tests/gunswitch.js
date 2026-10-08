@@ -96,7 +96,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.turret, 'a connector in reach did not take over from the off generator');
     });
     await check('the on/off state is drawn over the generator and saved', () => {
-        ok(/GENERATOR ON/.test(rd('js/game.js')) && /GENERATOR OFF/.test(rd('js/game.js')), 'no on/off label');
+        ok(/SHIELDS ON/.test(rd('js/game.js')) && /SHIELDS OFF/.test(rd('js/game.js')), 'no on/off label');
         ok(/circuitOn: t\.circuitOn !== false/.test(rd('js/save.js')), 'not saved');
     });
 

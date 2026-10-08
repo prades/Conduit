@@ -1386,11 +1386,27 @@ function _virusSprite(actor, flash, er, eg, eb, wc) {
     return cv;
 }
 
+// A shielded follower: a thin pale bubble round it, brighter for a moment when
+// it is hit, and a blue bar under its health bar. Lines, not a disc.
+function _drawFollowerShield(actor, px, py, drawCtx) {
+    if (!(actor.shielded && actor.shieldAmount > 0)) return;
+    const max = Math.max(actor._shieldMax || 0, actor.shieldAmount);
+    const hit = actor._shieldHitAt !== undefined && (frame - actor._shieldHitAt) < 10;
+    drawCtx.save();
+    drawCtx.globalAlpha = hit ? 0.9 : 0.45; drawCtx.strokeStyle = hit ? "#ffffff" : "#9fdcff"; drawCtx.lineWidth = hit ? 2 : 1.2;
+    drawCtx.beginPath(); drawCtx.ellipse(px, py - 32, 17, 22, 0, 0, Math.PI * 2); drawCtx.stroke();
+    drawCtx.globalAlpha = 1;
+    drawCtx.fillStyle = "#000"; drawCtx.fillRect(px - 14, py - 70, 28, 3);
+    drawCtx.fillStyle = "#3af"; drawCtx.fillRect(px - 14, py - 70, Math.round(28 * Math.min(1, actor.shieldAmount / max)), 3);
+    drawCtx.restore();
+}
+
 function _drawVirus(actor, px, py, drawCtx) {
     // How many were drawn last frame — the crowd test for the bubbles.
     if (_virusCountFrame !== frame) { _virusesOnScreen = _virusesCounting; _virusesCounting = 0; _virusCountFrame = frame; }
     _virusesCounting++;
     drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
+    _drawFollowerShield(actor, px, py, drawCtx);
 
     // ── ULTIMATE CHARGE BAR ───────────────────────────────
     if (actor.isFollower && typeof actor.ultimateCharge === "number") {
@@ -2198,6 +2214,43 @@ function drawWaveWakeBlink(px, base, colour, since) {
     ctx.save();
     ctx.globalAlpha = 0.6 * (1 - k); ctx.strokeStyle = colour; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.ellipse(px, base - 2, r, r * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+}
+
+// ── THE SHIELD GENERATOR ─────────────────────────────────
+// "A little bit thicker of a pylon ... a giant light coloured orb." A squat,
+// wide steel block (half as wide again as a tower) holding a big pale orb in a
+// ring. Switched off, the orb goes grey and still. No blur (effects plan).
+function drawShieldGenerator(px, base, on, pulse) {
+    const hw = 15, hd = 7.5, h = 34, by = base - 4;
+    const L = [px - hw, by], F = [px, by + hd], R = [px + hw, by];
+    ctx.save();
+    const face = (pts, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) ctx.lineTo(p[0], p[1]); ctx.closePath(); ctx.fill(); };
+    face([L, F, [F[0], F[1] - h], [L[0], L[1] - h]], "#2a3442");
+    face([F, R, [R[0], R[1] - h], [F[0], F[1] - h]], "#1b232e");
+    face([[L[0], L[1] - h], [F[0], F[1] - h], [R[0], R[1] - h], [px, by - hd - h]], "#3a4656");
+    // Two pale bands round the body.
+    ctx.strokeStyle = on ? "rgba(223,243,255,0.55)" : "rgba(120,130,140,0.4)"; ctx.lineWidth = 1.5;
+    for (const k of [0.35, 0.7]) { ctx.beginPath(); ctx.moveTo(L[0], L[1] - h * k); ctx.lineTo(F[0], F[1] - h * k); ctx.lineTo(R[0], R[1] - h * k); ctx.stroke(); }
+    // The cradle, then the orb.
+    const oy = by - h - 14, r = 11;
+    ctx.strokeStyle = "#4a5768"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(px, oy + 6, 13, 5, 0, 0, Math.PI); ctx.stroke();
+    if (on) {
+        ctx.globalAlpha = 0.18 + 0.1 * pulse; ctx.fillStyle = SHIELD_GEN_COLOR;
+        ctx.beginPath(); ctx.arc(px, oy, r * 1.7, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.95; ctx.fillStyle = SHIELD_GEN_COLOR;
+        ctx.beginPath(); ctx.arc(px, oy, r, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.9; ctx.fillStyle = "#ffffff";
+        ctx.beginPath(); ctx.arc(px - 3.5, oy - 3.5, 3.5, 0, Math.PI * 2); ctx.fill();
+        // A slow ring of hex sparks round it.
+        ctx.globalAlpha = 0.7; ctx.strokeStyle = "#9fdcff"; ctx.lineWidth = 1;
+        const t = (frame || 0) * 0.03;
+        for (let i = 0; i < 6; i++) { const a = t + i * Math.PI / 3; ctx.beginPath(); ctx.arc(px + Math.cos(a) * (r + 6), oy + Math.sin(a) * (r + 6) * 0.45, 1.6, 0, Math.PI * 2); ctx.stroke(); }
+    } else {
+        ctx.globalAlpha = 0.9; ctx.fillStyle = "#6b7480";
+        ctx.beginPath(); ctx.arc(px, oy, r, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.restore();
 }
 

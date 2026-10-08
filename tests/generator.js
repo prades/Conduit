@@ -127,7 +127,7 @@ group('what a generator is');
 
 check('THE REPORTED CASE: there is a neutral pylon type called GENERATOR', () => {
     ok(/const GENERATOR_ID\s*=\s*"generator"/.test(CONFIG), 'no generator id');
-    ok(/const GENERATOR_LABEL\s*=\s*"GENERATOR"/.test(CONFIG), 'it should be called GENERATOR');
+    ok(/const GENERATOR_LABEL\s*=\s*"SHIELD GENERATOR"/.test(CONFIG), 'it should be called SHIELD GENERATOR');
     // Neutral: not one of the six elements followers are made of.
     const elBlock = CONFIG.match(/const ELEMENTS = \[[\s\S]*?\n\];/)[0];
     ok(!/generator/i.test(elBlock), 'the generator must not be an ELEMENT');

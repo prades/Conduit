@@ -53,7 +53,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     await check('THE ASK: the first choice is attack, support, disruption, connector or generator', () => {
         const r = run(`__fresh(); openElementPicker('build', __row[0]); __labels()`);
-        ok(JSON.stringify(r) === JSON.stringify(['ATTACK TURRET', 'SUPPORT PYLON', 'DISRUPTION PYLON', 'CONNECTOR', 'GENERATOR']), JSON.stringify(r));
+        ok(JSON.stringify(r) === JSON.stringify(['ATTACK TURRET', 'SUPPORT PYLON', 'DISRUPTION PYLON', 'CONNECTOR', 'SHIELD GEN']), JSON.stringify(r));
     });
     await check('support or disruption then asks for an element that does that job', () => {
         const r = run(`__fresh(); openElementPicker('build', __row[0]); __tap('DISRUPTION PYLON');
@@ -82,7 +82,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('connector and generator skip the element step', () => {
         const r = scene(`__fresh();
             const near = world.find(t => t.type === 'floor' && !t.pillar && !t.nest && canPlaceGenerator(t).ok);
-            openElementPicker('build', near); __tap('GENERATOR');
+            openElementPicker('build', near); __tap('SHIELD GEN');
             ({ picker: elementPickerOpen, confirm: pylonConfirmOpen, el: pylonConfirmEl && pylonConfirmEl.id, gen: GENERATOR_ID })`);
         ok(!r.picker && r.confirm && r.el === r.gen, JSON.stringify(r));
     });

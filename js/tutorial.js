@@ -361,8 +361,8 @@ const TUTS = [
         // near a NEST. The green portal at home counts as one, which is why
         // this step can be finished without leaving zone 0.
         id:    'generator',
-        title: 'BUILD A GENERATOR',
-        body:  'Turn BUILD on, press and hold the marked pylon, pick UPGRADE and choose GENERATOR as the kind. It can only go within ' + GENERATOR_NEST_RANGE + ' tiles of a NEST — the green portal at home counts, so there is a spot right here.',
+        title: 'BUILD A SHIELD GENERATOR',
+        body:  'Turn BUILD on, press and hold the marked pylon, pick UPGRADE and choose SHIELD GEN (the SHIELD GENERATOR). It can only go within ' + GENERATOR_NEST_RANGE + ' tiles of a NEST — the green portal at home counts, so there is a spot right here.',
         icon:  '\u2699',
         wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
         // A pylon that could actually take one, so the marker never points at a
@@ -374,9 +374,9 @@ const TUTS = [
         // What the generator is FOR. No action to perform — it is already true
         // the moment the generator exists — so it reads and moves on.
         id:    'aura',
-        title: 'THE HEALING AURA',
-        body:  'A generator links itself to nearby pylons — nothing to connect. Each linked pylon mends your followers, your clones and YOU standing near it; the faint ring is its reach. Rate and reach both scale with that pylon\'s NETWORK TIER.',
-        icon:  '\u271a',
+        title: 'THE SHIELD FIELD',
+        body:  'A shield generator links itself to the pylons near it, powers them, and builds a SHIELD on every follower and clone within ' + (typeof SHIELD_GEN_RANGE === 'number' ? SHIELD_GEN_RANGE : 4) + ' tiles. A shield takes every hit until it breaks; then they take damage. It recharges once they stop being hit.',
+        icon:  '\u25ce',
         target: () => tutNearestPylon(t => t.isGenerator) || tutNearestPylon(),
         check: () => tutorialTimer > 300,   // ~5s to read it
     },

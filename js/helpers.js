@@ -264,6 +264,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (target.invulnerable && target.invulnerable > 0) return;
     if (target.smokeForm > 0 && Math.random() < (target.smokeEvasion||0.75)) return;
     if (target.shielded && target.shieldAmount > 0) {
+        // A shield that takes a hit stops recharging for a while (shieldFieldTick).
+        target._shieldHitAt = typeof frame !== "undefined" ? frame : 0;
         if (element === 'toxic') {
             // toxic: bypasses shield, hits HP directly
         } else if (element === 'electric') {
