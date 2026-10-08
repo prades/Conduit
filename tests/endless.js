@@ -65,8 +65,15 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('THE ASK: deeper predators are tougher and BIGGER, zone after zone', () => {
         const a = night(12, 600), b = night(20, 600), c = night(35, 600);
         ok(a.deep === 1 && b.deep === 9 && c.deep === 24, 'deep levels ' + [a.deep, b.deep, c.deep]);
-        ok(b.hp > a.hp && c.hp > b.hp, 'health does not climb: ' + [a.hp, b.hp, c.hp].map(Math.round));
-        ok(b.w > a.w && c.w > b.w, 'size does not grow: ' + [a.w, b.w, c.w].map(Math.round));
+        // Health and size compared like for like: the SAME species and class
+        // made at each depth. Averaging whatever the night happened to send
+        // was flaky — the class is rolled (nymph to boss, about 30x the
+        // health), so one boss in a handful decided the result either way.
+        const same = run(`[13, 21, 36].map(z => { const sp = getSyntheticZoneSpecies(99);
+            const p = _spawnPredatorAt(sp, 'scout', z * ZONE_LENGTH + 7, 1); p.dead = true;
+            return { hp: p.maxHealth, w: p.dimensions.width }; })`);
+        ok(same[1].hp > same[0].hp && same[2].hp > same[1].hp, 'health does not climb: ' + same.map(q => Math.round(q.hp)));
+        ok(same[1].w > same[0].w && same[2].w > same[1].w, 'size does not grow: ' + same.map(q => Math.round(q.w)));
     });
     await check('the multipliers, and a size cap so they stay on screen', () => {
         const r = run(`({ z12: deepZoneScale(12), z13: deepZoneScale(13), z200: deepZoneScale(200) })`);

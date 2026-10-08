@@ -87,6 +87,26 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.soon === 0 && r.later > 0, JSON.stringify(r));
     });
 
+    // "The followers' shields should go away if not near a generator."
+    const pulse = 'frame = (Math.floor(frame / SHIELD_GEN_INTERVAL) + 1) * SHIELD_GEN_INTERVAL; shieldFieldTick();';
+    await check('THE ASK: walk out of the field and the shield is gone by the next pulse', () => {
+        field(1, 60);
+        ok(run('__f.shieldAmount') > 0, 'fixture: no shield to lose');
+        const r = run(`(function(){ __f.x = __g.x + SHIELD_GEN_RANGE + 2; ${pulse} return { on: __f.shielded, amt: __f.shieldAmount }; })()`);
+        ok(!r.on && r.amt === 0, 'still shielded out of range: ' + JSON.stringify(r));
+    });
+    await check('and when its generator is switched off', () => {
+        field(1, 60);
+        const r = run(`(function(){ __g.circuitOn = false; __f.x = __g.x + 1; ${pulse} return __f.shielded ? __f.shieldAmount : 0; })()`);
+        run('__g.circuitOn = true');
+        ok(r === 0, 'an OFF generator left a shield of ' + r);
+    });
+    await check('a shield from something else (a combo) is not taken with it', () => {
+        field(1, 60);
+        const r = run(`(function(){ __f.shieldAmount += 10; __f.x = __g.x + SHIELD_GEN_RANGE + 2; ${pulse} return { on: __f.shielded, amt: __f.shieldAmount }; })()`);
+        ok(r.on && r.amt === 10, 'expected the 10 from elsewhere to stay: ' + JSON.stringify(r));
+    });
+
     group('THE LOOK');
 
     await check('THE ASK: a thicker body and a big pale orb; called SHIELD GENERATOR', () => {

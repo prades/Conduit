@@ -1349,10 +1349,17 @@ function pylonNetworkTier(pylon) {
 // placement rule (within GENERATOR_NEST_RANGE of a nest) something to buy
 // beyond keeping the linked pylons repaired.
 // THE SHIELD FIELD (SHIELD_GEN_* in config.js). Replaces the healing aura.
+// REPORTED: "the followers' shields should go away if not near a generator."
+// The field is a place, not a buff you carry off: what a generator built
+// (a._genShield) is taken away the next pulse a unit is outside every working
+// field — walked out of reach, or its generator switched off, unpowered or
+// destroyed. Shields from anything else (combos, abilities) are left alone.
 function shieldFieldTick() {
-    if (frame % SHIELD_GEN_INTERVAL !== 0 || typeof _genPylons === "undefined" || _genPylons.length === 0) return;
+    if (frame % SHIELD_GEN_INTERVAL !== 0) return;
     const r2 = SHIELD_GEN_RANGE * SHIELD_GEN_RANGE;
-    for (const g of _genPylons) {
+    const covered = new Set();
+    const gens = typeof _genPylons !== "undefined" ? _genPylons : [];
+    for (const g of gens) {
         if (g.destroyed || !(g.health > 0) || g.pillarTeam !== "green" || g.circuitOn === false) continue;
         const src = typeof generatorSource === "function" ? generatorSource(g) : null;
         if (!src) continue;                       // no nest feeding it: no shields
@@ -1360,6 +1367,7 @@ function shieldFieldTick() {
             if (a.dead || a.team !== "green" || !(a.isFollower || a.isClone)) continue;
             const dx = a.x - g.x, dy = a.y - g.y;
             if (dx * dx + dy * dy > r2) continue;
+            covered.add(a);
             if (a._shieldHitAt !== undefined && frame - a._shieldHitAt < SHIELD_GEN_DELAY) continue;
             const cap = Math.max(SHIELD_GEN_MIN, Math.round((a.maxHealth || 0) * SHIELD_GEN_SHARE));
             const have = a.shielded ? (a.shieldAmount || 0) : 0;
@@ -1367,9 +1375,18 @@ function shieldFieldTick() {
             const add = Math.min(SHIELD_GEN_RATE, cap - have);
             if (!gridPay(src, add * SHIELD_GEN_COST)) continue;
             a.shielded = true; a.shieldAmount = have + add;
+            a._genShield = Math.min(a.shieldAmount, (a._genShield || 0) + add);
             a._shieldMax = Math.max(cap, a._shieldMax || 0);
             a._shieldGen = g;
         }
+    }
+    // Outside every field: the generator's part of the shield goes.
+    for (const a of actors) {
+        if (!(a._genShield > 0) || covered.has(a)) continue;
+        const left = (a.shielded ? (a.shieldAmount || 0) : 0) - a._genShield;
+        a._genShield = 0; a._shieldGen = null;
+        if (left > 0) a.shieldAmount = left;
+        else { a.shielded = false; a.shieldAmount = 0; a._shieldMax = 0; }
     }
 }
 
