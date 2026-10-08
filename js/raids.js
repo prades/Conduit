@@ -418,11 +418,16 @@ function drawMachine(m, px, py, c) {
     const fill = flash ? GOO.flash : GOO.base, shine = "rgba(255,190,205,0.75)";
     const [ax, ay] = _isoDir(m._aim || 0);
     c.save();
-    // A wet puddle under it — the goo it is made of.
-    c.fillStyle = "rgba(60,4,20,0.55)";
-    c.beginPath(); c.ellipse(px, py, (20 + 3 * Math.sin(f * 0.05 + seed)) * s, 8.5 * s, 0, 0, Math.PI * 2); c.fill();
-    c.fillStyle = "rgba(255,140,170,0.25)";
-    c.beginPath(); c.ellipse(px - 7 * s, py - 2 * s, 5 * s, 1.4 * s, -0.15, 0, Math.PI * 2); c.fill();
+    // A wet puddle under the rooted one — the goo it is made of; a shadow
+    // under the walker (a puddle while it is still growing).
+    if (m.machineKind === "strider" && !building) {
+        c.fillStyle = "rgba(0,0,0,0.38)"; c.beginPath(); c.ellipse(px, py, 20 * s, 8 * s, 0, 0, Math.PI * 2); c.fill();
+    } else {
+        c.fillStyle = "rgba(60,4,20,0.55)";
+        c.beginPath(); c.ellipse(px, py, (20 + 3 * Math.sin(f * 0.05 + seed)) * s, 8.5 * s, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = "rgba(255,140,170,0.25)";
+        c.beginPath(); c.ellipse(px - 7 * s, py - 2 * s, 5 * s, 1.4 * s, -0.15, 0, Math.PI * 2); c.fill();
+    }
     // Assembling: it heaves up out of the puddle.
     if (building) {
         c.translate(px, py); c.scale(0.55 + 0.45 * grow, 0.25 + 0.75 * grow); c.translate(-px, -py);
@@ -434,42 +439,41 @@ function drawMachine(m, px, py, c) {
     }
     const wob = 1 + 0.05 * Math.sin(f * 0.09 + seed);
     if (m.machineKind === "strider") {
-        // A mantle carried high on five tentacle legs that step in turn.
-        const bob = Math.sin((m.walkCycle || 0) * 0.1) * 2 * s;
-        const bx = px, by = py - 34 * s + bob, R = 14 * s;
-        const legs = [];
-        for (let k = 0; k < 5; k++) {
-            const a = k / 5 * Math.PI * 2 + 0.3;
-            const lift = Math.max(0, Math.sin((m.walkCycle || 0) * 0.05 + k * 1.3)) * 6 * s;
-            const fx = px + Math.cos(a) * 25 * s, fy = py + Math.sin(a) * 10 * s - lift;
-            const hx = bx + Math.cos(a) * 7 * s, hy = by + 6 * s + Math.sin(a) * 3 * s;
-            const kx = (hx + fx) / 2 + Math.cos(a) * 14 * s, ky = Math.min(hy, fy) - 10 * s;
-            legs.push({ back: Math.sin(a) < 0, args: [hx, hy, kx, ky, fx, fy, 5 * s, 1.2 * s] });
+        // THE BELL WALKER (picked from the lineup, W2): a see-through bell
+        // drifting on long ribbon tentacles that reach down to the floor and
+        // step, its ring organs and the shards it has drained showing through.
+        // No eyes, nothing on top. It shoots from under the bell.
+        const walk = (m.walkCycle || 0) * 3.3 + f * 0.4;   // it sways even standing still
+        const step = k => Math.max(0, Math.sin(walk * 0.09 + k * Math.PI * 2 / 3));
+        const by = py - 46 * s + Math.sin(walk * 0.09) * 3 * s, R = 17 * s;
+        for (let k = 0; k < 7; k++) {
+            const a = (k / 7) * Math.PI * 2, sway = Math.sin(walk * 0.09 + k) * 5 * s;
+            const fx = px + Math.cos(a) * 14 * s + sway, fy = py + Math.sin(a) * 6 * s - step(k) * 4 * s;
+            _gooTentacle(c, px + Math.cos(a) * R * 0.75, by + 4 * s + Math.sin(a) * 3 * s, px + Math.cos(a) * 20 * s - sway, by + 24 * s, fx, fy,
+                         3.2 * s, 0.6 * s, flash ? "rgba(255,179,196,0.9)" : "rgba(176,24,62,0.85)", "rgba(255,190,205,0.55)");
         }
-        for (const L of legs) if (L.back) _gooTentacle(c, ...L.args, fill, shine);
-        // The mantle, and the bulb of the head swelling up behind it.
-        c.fillStyle = _gooFill(c, bx + 3 * s, by - 10 * s, R * 0.9, flash);
-        c.beginPath(); c.ellipse(bx + 3 * s, by - 10 * s, R * 0.78, R * 0.9 * wob, 0.25, 0, Math.PI * 2); c.fill();
-        c.fillStyle = _gooFill(c, bx, by, R, flash);
-        c.beginPath(); c.ellipse(bx, by, R, R * 0.72 / wob, 0, 0, Math.PI * 2); c.fill();
-        c.strokeStyle = GOO.rim; c.lineWidth = 1; c.stroke();
-        // What it has drained floats inside it.
+        // Inside: four ring organs, and what it has drained.
+        c.strokeStyle = "rgba(255,79,122,0.75)"; c.lineWidth = 2;
+        for (let i = 0; i < 4; i++) {
+            const a = i / 4 * Math.PI * 2 + f * 0.01;
+            c.beginPath(); c.ellipse(px + Math.cos(a) * 6 * s, by - 6 * s + Math.sin(a) * 3 * s, 3.5 * s, 2.2 * s, a, 0, Math.PI * 2); c.stroke();
+        }
         if (m.drained > 0) {
-            c.globalAlpha *= 0.75; c.fillStyle = RAID_COLOR;
-            const dy = by - 12 * s + Math.sin(f * 0.07) * 2 * s;
-            c.beginPath(); c.moveTo(bx + 3 * s, dy - 5 * s); c.lineTo(bx + 7 * s, dy); c.lineTo(bx + 3 * s, dy + 5 * s); c.lineTo(bx - 1 * s, dy); c.closePath(); c.fill();
-            c.globalAlpha /= 0.75;
+            const dy = by - 7 * s, r = 3 * s;
+            c.globalAlpha *= 0.8; c.fillStyle = RAID_COLOR;
+            c.beginPath(); c.moveTo(px, dy - r * 1.2); c.lineTo(px + r, dy); c.lineTo(px, dy + r * 1.2); c.lineTo(px - r, dy); c.closePath(); c.fill();
+            c.globalAlpha /= 0.8;
         }
-        for (const L of legs) if (!L.back) _gooTentacle(c, ...L.args, fill, shine);
-        _gooEyes(c, bx, by + 1 * s, s * 0.9, ax);
-        // The spitting tentacle, curled under the front toward its target.
-        if (!building) {
-            const len = (13 - (m._recoil || 0) * 0.6) * s;
-            _gooTentacle(c, bx, by + 6 * s, bx + ax * len * 0.4 - ay * 5 * s, by + 10 * s + ay * len * 0.4, bx + ax * len, by + 8 * s + ay * len, 3.6 * s, 2.4 * s, fill, shine);
-            c.fillStyle = GOO.rim; c.beginPath(); c.arc(bx + ax * len, by + 8 * s + ay * len, 1.4 * s, 0, Math.PI * 2); c.fill();
-        }
-        _gooGlint(c, bx, by, R);
-        _gooGlint(c, bx + 3 * s, by - 12 * s, R * 0.6);
+        // The bell, with its scalloped hem.
+        const g = c.createRadialGradient(px - R * 0.3, by - R * 0.6, R * 0.1, px, by - R * 0.2, R * 1.2);
+        g.addColorStop(0, flash ? "rgba(255,224,232,0.8)" : "rgba(255,170,195,0.6)");
+        g.addColorStop(0.55, flash ? "rgba(255,179,196,0.6)" : "rgba(176,24,62,0.42)");
+        g.addColorStop(1, "rgba(58,6,22,0.85)");
+        c.fillStyle = g; c.beginPath(); c.ellipse(px, by, R, R * 0.95 * wob, 0, Math.PI, Math.PI * 2);
+        for (let i = 0; i <= 10; i++) { const t = 1 - i / 10; c.lineTo(px + (t * 2 - 1) * R, by + (i % 2 ? 4 : 1.5) * s); }
+        c.closePath(); c.fill();
+        c.strokeStyle = "rgba(255,134,162,0.6)"; c.lineWidth = 1.1; c.stroke();
+        _gooGlint(c, px, by - 8 * s, R * 0.9);
     } else {
         // SENTRY: a squat octopus rooted to the floor, its arms splayed out
         // across it, one arm reared up as the gun.
@@ -507,7 +511,7 @@ function drawMachine(m, px, py, c) {
         _gooGlint(c, cx, cy - 2 * s, R);
     }
     c.restore();
-    const barY = py - (m.machineKind === "strider" ? 58 : 52) * s;
+    const barY = py - (m.machineKind === "strider" ? 68 : 52) * s;
     if (typeof drawHealthBar === "function") drawHealthBar(px - 18 * s, barY, 36 * s, 4, m.health, m.maxHealth, c);
     c.save();
     c.font = "bold 8px monospace"; c.textAlign = "center"; c.textBaseline = "alphabetic";
