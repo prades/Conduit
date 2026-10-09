@@ -27,7 +27,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     ok(run('world.length') > 100, 'fixture: the world did not generate');
     run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
     const fresh = (n) => run(`(function(){ autoplayOn = false; actors.length = 0; followers.length = 0; floatingTexts.length = 0;
-        world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.attackModeElement = null; } if (t.nest) t._autoEl = undefined; });
+        world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.isBattery = false; t.attackModeElement = null; } if (t.nest) { t._autoEl = undefined; t._autoPlan = undefined; } });
         alertActive = false; gameState.phase = 'day'; gameState.highestZoneCleared = 0; shardCount = 500;
         for (let i = 0; i < ${n}; i++) { spawnFollowerAtCrystal(['core','core','fire','ice','electric','toxic'][i % 6]); followers[followers.length - 1].returningToCrystal = false; }
         _cacheAge = -999; render(); return followers.length; })()`);
@@ -79,19 +79,44 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     group('BUILDING');
 
-    await check('THE ASK: it builds a generator at a nest you hold, then grows a linked network to tier III', () => {
+    // REPORTED: "reimagine the auto play mode to reinforce building batteries
+    // and ultra pylons when applicable, also create a fair number of other
+    // accessories but not spammy." The base plan at each held nest.
+    const plan = (builds) => run(`(function(){ for (let i = 0; i < ${builds}; i++) { _autoBuild(); _cacheAge = -999; render(); }
+        const home = homePortalTile(), el = home._autoEl;
+        const near = world.filter(t => t.pillar && !t.destroyed && t.pillarTeam === 'green' && Math.hypot(t.x - home.x, t.y - home.y) <= AUTOPLAY_NET_RADIUS);
+        return { el, n: near.length,
+                 gen: near.some(t => t.isGenerator), cons: world.filter(t => t.pillar && t.isConnector).length,
+                 bats: near.filter(t => t.isBattery && t.attackModeElement === el).length, tier: networkStrength[el],
+                 ultra: _ultras.some(u => near.includes(u)), ultraEl: (_ultras.find(u => near.includes(u)) || { _ultra: {} })._ultra.el,
+                 form: (_formations.find(f => near.includes(f)) || { _wform: {} })._wform.kind || null,
+                 acc: near.filter(t => t.waveMode && !(t._wform || t._wformOf) && (t.attackModeElement === 'electric' || t.attackModeElement === 'core')).length }; })()`);
+    await check('THE ASK: at a nest it builds the generator, a battery bank to tier III and an ULTRA TURRET', () => {
         fresh(6);
-        const r = run(`(function(){ for (let i = 0; i < 24; i++) { _autoBuild(); _cacheAge = -999; render(); }
-            const home = homePortalTile();
-            const gen = world.find(t => t.pillar && t.isGenerator && Math.hypot(t.x - home.x, t.y - home.y) <= GENERATOR_NEST_RANGE);
-            const el = home._autoEl; const net = world.filter(t => t.pillar && t.attackModeElement === el && !t.isGenerator && !t.isConnector);
-            return { gen: !!gen, el, n: net.filter(t => !t.isBattery).length, bats: net.filter(t => t.isBattery).length, tier: networkStrength[el], waves: net.filter(t => t.waveMode).length, cons: world.filter(t => t.pillar && t.isConnector).length }; })()`);
-        ok(r.gen, 'no generator');
+        const r = plan(40);
+        ok(r.gen, 'no generator: ' + JSON.stringify(r));
         ok(r.el === 'core', 'the network should be in the commonest squad element: ' + r.el);
-        // The tier comes from a bank of batteries now (config.js BATTERY_TIER_SIZES).
-        ok(r.n === run('AUTOPLAY_NETWORK_SIZE') && r.bats === run('AUTOPLAY_BATTERIES') && r.tier === 3, JSON.stringify(r));
-        ok(r.waves >= 2, 'no support/disruption pylons in the mix: ' + r.waves);
+        ok(r.bats === run('AUTOPLAY_BATTERIES') && r.tier === 3, 'no tier III battery bank: ' + JSON.stringify(r));
+        ok(r.ultra && r.ultraEl === r.el, 'no ultra turret of the network element: ' + JSON.stringify(r));
         ok(r.cons >= 1, 'no connector reaching toward the next zone');
+    });
+    await check('THE ASK: and a formation square when an element can make one (here a toxic tower)', () => {
+        fresh(6);
+        const r = plan(40);
+        ok(r.form === 'toxtower', 'no formation: ' + JSON.stringify(r));
+    });
+    await check('THE ASK: a few accessories with shards to spare — and then it stops: not spammy', () => {
+        fresh(6);
+        const a = plan(40), b = plan(30);
+        ok(a.acc >= 1 && a.acc <= run('AUTOPLAY_ACCESSORIES'), 'accessories: ' + a.acc);
+        ok(b.n === a.n, 'it kept building after the plan was done: ' + a.n + ' -> ' + b.n);
+        ok(a.n <= 20, 'too many structures at one nest: ' + a.n);
+    });
+    await check('no accessories when shards are short', () => {
+        fresh(6);
+        run('shardCount = 170');   // the plan costs about 160: nothing spare after it
+        const r = plan(40);
+        ok(r.acc === 0, 'built ' + r.acc + ' accessories on a tight budget');
     });
     await check('it stops when the shards run out', () => {
         fresh(2);
