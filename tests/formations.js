@@ -61,7 +61,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('not three, not a mixed square, not other elements, not turrets', () => {
         ok(build(SQ.slice(0, 3), ['flux']).n === 0, 'three formed');
         ok(build(SQ, ['flux', 'flux', 'flux', 'fire']).n === 0, 'a mixed square formed');
-        ok(build(SQ, ['toxic']).n === 0, 'toxic formed something');
+        ok(build(SQ, ['core']).n === 0, 'core formed something');
         ok(build(SQ, ['flux', 'flux', 'fire', 'fire']).n === 0, 'half flux, half fire formed something');
     });
     await check('THE ASK: the four round a black hole are drawn see-through', () => {
@@ -194,6 +194,42 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.fHurt === 0 && !r.fSlow, 'it hit a follower: ' + JSON.stringify(r));
     });
 
+    group('THE TOXIC TOWER');
+
+    await check('THE ASK: four TOXIC wave pylons in a square raise a toxic tower', () => {
+        const r = build(SQ, ['toxic']);
+        ok(r.n === 1 && r.kinds[0] === 'toxtower', JSON.stringify(r));
+    });
+    await check('its fumes poison enemies and strip their armour; it runs hotter with them close', () => {
+        build(SQ, ['toxic']);
+        const r = run(`(function(){
+            const F = _formations[0]._wform, q = ${foe('_formations[0]._wform.wx + 1.6', '_formations[0]._wform.wy')};
+            for (let i = 0; i < FORM_TICK * 2 + 1; i++) { formationTick(); frame++; }
+            return { hurt: 1e6 - q.health, shred: q.defenseShredded > 0, glow: F.s.glow };
+        })()`);
+        ok(r.hurt > 0 && r.shred, 'not poisoned: ' + JSON.stringify(r));
+        ok(r.glow > 0.05, 'it did not heat up: ' + r.glow);
+    });
+    await check('THE ASK: and mend your clones standing in them — not followers, not past the fumes', () => {
+        build(SQ, ['toxic']);
+        const r = run(`(function(){
+            const F = _formations[0]._wform;
+            const c = makeClone('ant', 'scout', F.wx + 1, F.wy); c.health = c.maxHealth * 0.3;
+            const far = makeClone('ant', 'scout', F.wx + TT_RADIUS + 1, F.wy); far.health = far.maxHealth * 0.3;
+            spawnFollowerAtCrystal('fire'); const fo = followers[followers.length - 1]; fo.returningToCrystal = false; fo.x = F.wx + 1; fo.y = F.wy + 0.5; fo.maxHealth = 100; fo.health = 30;
+            const c0 = c.health, f0 = far.health, o0 = fo.health;
+            for (let i = 0; i < FORM_TICK * 2 + 1; i++) { formationTick(); frame++; }
+            return { clone: c.health - c0, far: far.health - f0, follower: fo.health - o0 };
+        })()`);
+        ok(r.clone > 0, 'the clone in the fumes was not mended: ' + JSON.stringify(r));
+        ok(r.far === 0 && r.follower === 0, 'it mended past its fumes or a follower: ' + JSON.stringify(r));
+    });
+    await check('its haze lies on the floor, painted per tile like the frost', () => {
+        build(SQ, ['toxic']);
+        const r = run(`(function(){ const F = _formations[0]._wform; let n = 0; for (const [, G] of _frostTiles) if (G === F) n++; return n; })()`);
+        ok(r >= 12, 'only ' + r + ' tiles of haze');
+    });
+
     group('DRAWING');
 
     await check('THE ASK: a vortex on the floor, painted from the front tile before its pylon', () => {
@@ -206,6 +242,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
         run('render(); drawFormationGround(_formations[0]._wform, 200, 200);');
         build(SQ, ['ice']);
         run('render(); drawFormationGround(_formations[0]._wform, 200, 200); const k = [..._frostTiles.keys()][0].split(",").map(Number); drawFrostOnTile(getTile(k[0], k[1]), 200, 200);');
+        build(SQ, ['toxic']);
+        run('render(); drawFormationGround(_formations[0]._wform, 200, 200); const k2 = [..._frostTiles.keys()][0].split(",").map(Number); drawFrostOnTile(getTile(k2[0], k2[1]), 200, 200);');
     });
     await check('an enemy standing in it is drawn over it, not under it', () => {
         build(SQ, ['flux']);
@@ -216,7 +254,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('no glow, and the guide explains it', () => {
         ok(!/shadowBlur\s*=\s*[1-9]/.test(rd('js/formations.js')), 'formations.js sets a shadowBlur');
         const html = rd('game.html');
-        ok(/BLACK HOLE/.test(html) && /in the floor/.test(html) && /SPINNING FIREWALL/.test(html) && /ICE GENERATOR/.test(html), 'the guide is out of date');
+        ok(/BLACK HOLE/.test(html) && /in the floor/.test(html) && /SPINNING FIREWALL/.test(html) && /ICE GENERATOR/.test(html) && /TOXIC TOWER/.test(html), 'the guide is out of date');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');

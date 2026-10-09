@@ -32,10 +32,18 @@
 //     where they stand for a moment. The frost is painted by each floor tile
 //     it covers (drawFrostOnTile, from the floor pass), so it lies under
 //     pylons and units however far it reaches.
+//   - TOXIC TOWER (toxic): "an ultra pylon for toxic that has exhaust and a
+//     dark vibe ... a thick tower with multiple levels and glowing exhaust
+//     coming from each layer ... boxy design." A squat four-level block
+//     tower of dark metal rises where the four meet; every level has lit
+//     grilles on its faces and vents glowing exhaust that cools to black
+//     smoke. Its fumes haze the floor for TT_RADIUS round it (painted per tile,
+//     like the frost): enemies in them are poisoned and their armour stripped;
+//     your clones in them are mended. It runs hotter with enemies close.
 //   - Only while all four are powered: a dark square forms nothing.
 // ─────────────────────────────────────────────────────────
 
-const FORM_KINDS = { flux: "blackhole", fire: "firespin", ice: "icegen" };
+const FORM_KINDS = { flux: "blackhole", fire: "firespin", ice: "icegen", toxic: "toxtower" };
 const FORM_TICK        = 30;     // frames between damage ticks
 const FORM_TIER_BONUS  = 0.25;   // + damage per network tier
 const BH_RADIUS        = 2.5;    // tiles: what it entangles
@@ -59,6 +67,11 @@ const ICE_DMG          = 4;      // chill, per tick
 const ICE_PULSE        = 240;    // frames between root pulses
 const ICE_ROOT         = 50;     // frames a pulse holds them
 const ICE_ROOT_SLOW    = 0.05;
+const TT_RADIUS        = 2.5;    // tiles of fumes round the toxic tower
+const TT_DMG           = 10;     // poison per tick on an enemy in the fumes
+const TT_SHRED         = 0.6;    // its armour while poisoned (×1/this damage taken)
+const TT_HEAL          = 8;      // mend per tick on a clone in the fumes …
+const TT_HEAL_SHARE    = 0.01;   // … plus this share of its max HP
 
 let _formations = [];            // anchors
 let _formState = new Map();      // "x,y" → { glow, size }, kept across rebuilds
@@ -87,25 +100,25 @@ function rebuildFormations() {
         const key = t.x + "," + t.y, kind = FORM_KINDS[el], old = _formState.get(key);
         const s = old || { glow: 0, size: 0, spin: 0 };
         state.set(key, s);
-        t._wform = { kind, el, tiles: sq, front: sq[3], col: t.attackModeColor || ({ blackhole: "#9933ff", firespin: "#ff3300", icegen: "#99ddff" })[kind], s,
+        t._wform = { kind, el, tiles: sq, front: sq[3], col: t.attackModeColor || ({ blackhole: "#9933ff", firespin: "#ff3300", icegen: "#99ddff", toxtower: "#66ff66" })[kind], s,
                      wx: t.x + 1, wy: t.y + 1, x0: t.x, y0: t.y, caught: [] };
         for (const p of sq) if (p !== t) p._wformOf = t;
         _formations.push(t);
         if (!old && typeof floatingTexts !== "undefined") {
             floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, color: t._wform.col, life: 130, vy: -0.2, size: 14,
-                                 text: "\u25c6 " + ({ blackhole: "BLACK HOLE", firespin: "SPINNING FIREWALL", icegen: "ICE GENERATOR" })[kind] + " FORMED" });
+                                 text: "\u25c6 " + ({ blackhole: "BLACK HOLE", firespin: "SPINNING FIREWALL", icegen: "ICE GENERATOR", toxtower: "TOXIC TOWER" })[kind] + " FORMED" });
         }
     }
     _formState = state;
     // The floor tiles each ice generator frosts.
     _frostTiles = new Map();
     for (const t of _formations) {
-        const F = t._wform; if (F.kind !== "icegen") continue;
-        const R = Math.ceil(ICE_RADIUS) + 1;
+        const F = t._wform; if (F.kind !== "icegen" && F.kind !== "toxtower") continue;
+        const RAD = F.kind === "icegen" ? ICE_RADIUS : TT_RADIUS, R = Math.ceil(RAD) + 1;
         for (let x = F.x0 - R; x <= F.x0 + R + 1; x++) for (let y = F.y0 - R; y <= F.y0 + R + 1; y++) {
             const tile = getTile(x, y);
             if (!tile || tile.type !== "floor") continue;
-            if (Math.hypot(x + 0.5 - F.wx, y + 0.5 - F.wy) < ICE_RADIUS + 0.75) _frostTiles.set(x + "," + y, F);
+            if (Math.hypot(x + 0.5 - F.wx, y + 0.5 - F.wy) < RAD + 0.75) _frostTiles.set(x + "," + y, F);
         }
     }
     return _formations.length;
@@ -127,6 +140,7 @@ function formationTick() {
         const src = { x: F.wx, y: F.wy, team: "green", element: F.el };
         if (F.kind === "firespin") { _fireSpinTick(F, src); continue; }
         if (F.kind === "icegen") { _iceGenTick(F, src, hit); continue; }
+        if (F.kind === "toxtower") { _toxTowerTick(F, src, hit); continue; }
         for (const a of actors) {
             if (!isHostileTarget(a)) continue;
             const dx = F.wx - a.x, dy = F.wy - a.y, d = Math.hypot(dx, dy);
@@ -168,6 +182,23 @@ function _fireSpinTick(F, src) {
         a._fsHitAt = f;
         applyDamage(a, _formDamage(F, FS_DMG * (1 + F.s.glow), a), src, "fire");
     }
+}
+
+function _toxTowerTick(F, src, hit) {
+    let foes = 0;
+    for (const a of actors) {
+        if (a.dead || Math.hypot(a.x - F.wx, a.y - F.wy) > TT_RADIUS) continue;
+        if (isHostileTarget(a)) {
+            foes++; F.caught.push(a);
+            if (hit) {
+                applyDamage(a, _formDamage(F, TT_DMG, a), src, "toxic");
+                a.defenseShredded = Math.max(a.defenseShredded || 0, 60); a.defenseShredFactor = TT_SHRED;
+            }
+        } else if (hit && a.isClone && a.team === "green" && a.health < a.maxHealth) {
+            a.health = Math.min(a.maxHealth, a.health + TT_HEAL + (a.maxHealth || 0) * TT_HEAL_SHARE);
+        }
+    }
+    F.s.glow += (Math.min(1, foes / 3) - F.s.glow) * 0.08;
 }
 
 function _iceGenTick(F, src, hit) {
@@ -354,6 +385,7 @@ function drawFormationGround(F, cx, cy) {
     if (F.kind === "blackhole") drawBlackHoleVortex(F, cx, cy);
     else if (F.kind === "firespin") drawFireSpin(F, cx, cy);
     else if (F.kind === "icegen") drawIceGenerator(F, cx, cy);
+    else if (F.kind === "toxtower") drawToxicTower(F, cx, cy);
 }
 
 // THE FROST, painted by each floor tile it covers (the floor pass in game.js
@@ -365,6 +397,7 @@ function drawFrostOnTile(obj, px, py) {
     if (!_frostTiles.size) return;
     const F = _frostTiles.get(Math.round(obj.x) + "," + Math.round(obj.y));
     if (!F) return;
+    if (F.kind === "toxtower") { drawToxicHazeOnTile(F, obj, px, py); return; }
     const on = formationActive(F), g = F.s.glow, f = typeof frame !== "undefined" ? frame : 0;
     const cx = px + ((F.wx - obj.x) - (F.wy - obj.y)) * TILE_W, cy = py + ((F.wx - obj.x) + (F.wy - obj.y)) * TILE_H;
     const R = ICE_RADIUS * TILE_W * Math.SQRT2;
@@ -465,6 +498,108 @@ function drawIceGenerator(F, cx, cy) {
     } else {
         ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(200,200,210,0.8)";
         ctx.fillText("ICE GENERATOR · NEEDS POWER", cx, cy - 70);
+    }
+    ctx.restore();
+}
+
+// ── THE TOXIC TOWER ───────────────────────────────────────
+// The haze on the floor round it, painted by each tile it covers (as the
+// frost is): one dark-green wash centred on the tower, clipped to the tile so
+// tiles join seamlessly, with slow darker blotches drifting across it.
+function drawToxicHazeOnTile(F, obj, px, py) {
+    const on = formationActive(F), g = F.s.glow, f = typeof frame !== "undefined" ? frame : 0;
+    const cx = px + ((F.wx - obj.x) - (F.wy - obj.y)) * TILE_W, cy = py + ((F.wx - obj.x) + (F.wy - obj.y)) * TILE_H;
+    const R = TT_RADIUS * TILE_W * Math.SQRT2;
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
+    ctx.translate(cx, cy); ctx.scale(1, 0.5);
+    const a0 = on ? 0.32 + 0.18 * g : 0.12;
+    const wash = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+    wash.addColorStop(0, `rgba(70,140,40,${a0})`); wash.addColorStop(0.65, `rgba(40,90,25,${a0 * 0.7})`); wash.addColorStop(1, "rgba(30,60,20,0)");
+    ctx.fillStyle = wash; ctx.fillRect(-R, -R, R * 2, R * 2);
+    if (on) {
+        for (let i = 0; i < 5; i++) {
+            const a = f * 0.004 + i * 1.26, d = R * (0.25 + 0.5 * ((i * 0.37) % 1));
+            ctx.fillStyle = `rgba(12,20,10,${0.18 + 0.1 * g})`;
+            ctx.beginPath(); ctx.arc(Math.cos(a) * d, Math.sin(a) * d, R * 0.16, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+// Exhaust: each puff leaves its vent bright toxic green and cools to dark
+// smoke as it rises and spreads. (dx, dy) is the push out of the vent.
+function _toxPuffs(x, y, f, seed, o) {
+    const n = o.n || 6, len = o.len || 40, size = o.size || 3.5, dx = o.dx || 0, dy = o.dy == null ? -1 : o.dy, heat = o.heat || 0;
+    for (let i = 0; i < n; i++) {
+        const t = ((f * (o.speed || 0.014) + i / n + seed) % 1);
+        const out = Math.min(t, 0.35) / 0.35;
+        const px = x + dx * len * 0.35 * out + Math.sin(t * 5 + seed * 7 + i) * 3 * t;
+        const py = y + dy * len * 0.35 * out - Math.max(0, t - 0.2) * len;
+        const r = size * (1.1 + t * 2.8);
+        const hot = Math.max(0, 1 - t * 2) * (0.75 + 0.25 * Math.min(1, heat));
+        const gr = ctx.createRadialGradient(px, py, 0, px, py, r);
+        if (hot > 0.02) {
+            gr.addColorStop(0, `rgba(210,255,170,${hot})`); gr.addColorStop(0.45, `rgba(120,250,90,${0.75 * hot})`); gr.addColorStop(1, "rgba(58,72,52,0)");
+        } else {
+            const a = (1 - t) * 0.7;
+            gr.addColorStop(0, `rgba(58,72,52,${a})`); gr.addColorStop(1, "rgba(58,72,52,0)");
+        }
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+    }
+}
+// A square block centred on (x, y) on the floor: half-width hw, height h.
+function _toxBlock(x, y, hw, h, top, left, right) {
+    const hh = hw / 2;
+    ctx.fillStyle = left;  ctx.beginPath(); ctx.moveTo(x - hw, y - h); ctx.lineTo(x, y + hh - h); ctx.lineTo(x, y + hh); ctx.lineTo(x - hw, y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = right; ctx.beginPath(); ctx.moveTo(x + hw, y - h); ctx.lineTo(x, y + hh - h); ctx.lineTo(x, y + hh); ctx.lineTo(x + hw, y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = top;   ctx.beginPath(); ctx.moveTo(x, y - hh - h); ctx.lineTo(x + hw, y - h); ctx.lineTo(x, y + hh - h); ctx.lineTo(x - hw, y - h); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "#3a4743"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x - hw, y - h); ctx.lineTo(x, y + hh - h); ctx.lineTo(x + hw, y - h); ctx.moveTo(x, y + hh - h); ctx.lineTo(x, y + hh); ctx.stroke();
+}
+// THE TOWER: four square levels of dark metal, each a little narrower, with
+// a recessed lit band between them; lit grilles on both front faces of every
+// level; glowing exhaust out of each grille and off every band; four corner
+// blocks on the roof round a big plume. Hotter — brighter and faster — with
+// enemies close; grey and still with no power.
+function drawToxicTower(F, cx, cy) {
+    const f = typeof frame !== "undefined" ? frame : 0, on = formationActive(F), heat = on ? F.s.glow : 0;
+    const glow = on ? 0.45 + 0.5 * heat + 0.05 * Math.sin(f * 0.1) : 0.12;
+    const TOP = "#1f2523", LEFT = "#0c100f", RIGHT = "#151a18", BAND = "#070908";
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(cx, cy + 2, 40, 18, 0, 0, Math.PI * 2); ctx.fill();
+    let y = cy;
+    const levels = [[30, 22], [27, 22], [24, 22], [21, 20]];
+    levels.forEach(([hw, h], i) => {
+        _toxBlock(cx, y, hw, h, TOP, LEFT, RIGHT);
+        const hh = hw / 2, mid = y - h * 0.5;
+        // Grilles: three lit slats on each front face.
+        for (const sd of [-1, 1]) {
+            const gx = cx + sd * hw * 0.5, gy = mid + hh * 0.5;
+            ctx.fillStyle = BAND; ctx.beginPath();
+            ctx.moveTo(gx - sd * 8, gy - 6); ctx.lineTo(gx + sd * 8, gy - 10); ctx.lineTo(gx + sd * 8, gy + 4 - 4); ctx.lineTo(gx - sd * 8, gy + 4); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = `rgba(125,255,106,${glow})`; ctx.lineWidth = 1.5;
+            for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(gx - sd * 7, gy - 4 + k * 3); ctx.lineTo(gx + sd * 7, gy - 8 + k * 3); ctx.stroke(); }
+            if (on) _toxPuffs(gx + sd * 9, gy - 6, f, i * 0.29 + (sd > 0 ? 0.5 : 0), { dx: sd * 0.7, dy: 0.1, len: 36, size: 3.5, heat: heat, speed: 0.012 + 0.01 * heat });
+        }
+        y -= h;
+        // The lit band between this level and the next.
+        if (i < levels.length - 1) {
+            _toxBlock(cx, y, hw - 4, 4, BAND, BAND, BAND);
+            ctx.strokeStyle = `rgba(125,255,106,${glow * 0.9})`; ctx.lineWidth = 1.5;
+            const bh = (hw - 4) / 2;
+            ctx.beginPath(); ctx.moveTo(cx - (hw - 4), y - 2); ctx.lineTo(cx, y + bh - 2); ctx.lineTo(cx + (hw - 4), y - 2); ctx.stroke();
+            y -= 4;
+        }
+    });
+    // The roof: four corner blocks round a glowing mouth and a big plume.
+    const rw = 21, rh = rw / 2;
+    for (const [dx, dy] of [[0, -rh * 0.75], [-rw * 0.75, 0], [rw * 0.75, 0], [0, rh * 0.75]]) _toxBlock(cx + dx, y + dy, 4.5, 7, "#262e2b", LEFT, RIGHT);
+    ctx.fillStyle = `rgba(125,255,106,${on ? 0.5 + 0.4 * heat : 0.1})`; ctx.beginPath(); ctx.ellipse(cx, y, 9, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+    if (on) _toxPuffs(cx, y - 2, f, 0.35, { n: 10, len: 90, size: 6, heat: 1, speed: 0.012 + 0.012 * heat });
+    else {
+        ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(200,200,210,0.8)";
+        ctx.fillText("TOXIC TOWER · NEEDS POWER", cx, y - 20);
     }
     ctx.restore();
 }
