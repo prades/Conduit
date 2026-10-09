@@ -8,8 +8,8 @@
 //  enter it and damages them."
 //
 //   - Found like the Ultra turret (js/ultra.js): every cache rebuild claims
-//     each 2x2 square of your finished wave pylons of the same element. Only
-//     FLUX squares form anything. Nothing is saved; break the square
+//     each 2x2 square of your finished wave pylons of the same element. FLUX
+//     and FIRE squares form something; the rest form nothing. Nothing is saved; break the square
 //     and it is gone, rebuild it and it is back. The four pylons keep doing
 //     what wave pylons do.
 //   - BLACK HOLE (flux): a vortex opens in the floor where the four meet —
@@ -17,12 +17,17 @@
 //     see-through. Every enemy within BH_RADIUS is ENTANGLED — dragged in,
 //     slowed, and crushed a little each half second — and the hole lights up
 //     with how many it holds.
-//   (A FIRE WALL from four fire wave pylons was tried and taken out: "the
-//   fire wall was a bad idea, it looks wonky". Fire squares form nothing.)
+//   - SPINNING FIREWALL (fire): "how about the ultra turret for the fire wave
+//     is a spinning firewall". Three standing walls of flame radiate from a
+//     glowing core and turn, inside the square (a straight wall across the
+//     tunnel was tried first and taken out: "it looks wonky"). Every enemy a
+//     wall sweeps over burns; it spins faster and burns hotter with enemies
+//     close. Kept inside its four tiles so it is drawn on the floor in depth
+//     order like the vortex, never over the tiles in front of it.
 //   - Only while all four are powered: a dark square forms nothing.
 // ─────────────────────────────────────────────────────────
 
-const FORM_KINDS = { flux: "blackhole" };
+const FORM_KINDS = { flux: "blackhole", fire: "firespin" };
 const FORM_TICK        = 30;     // frames between damage ticks
 const FORM_TIER_BONUS  = 0.25;   // + damage per network tier
 const BH_RADIUS        = 2.5;    // tiles: what it entangles
@@ -32,6 +37,14 @@ const BH_DMG           = 6;      // per tick
 const BH_SLOW          = 0.5;
 const BH_ON_VORTEX     = 0.9;    // tiles: standing on the vortex itself
 const FORM_MAXHP_SHARE = 0.01;   // + this much of the target's max HP a tick
+const FS_ARMS          = 3;      // walls of flame
+const FS_LEN           = 1.0;    // tiles from the core: inside the square
+const FS_HALF          = 0.35;   // tiles either side of a wall that burn
+const FS_SPIN          = 0.045;  // radians a frame …
+const FS_SPIN_HOT      = 0.05;   // … plus this much more when it is hot
+const FS_DMG           = 14;     // per sweep
+const FS_HIT_EVERY     = 15;     // frames before the same enemy burns again
+const FS_HEAT_REACH    = 2.2;    // tiles: enemies this close heat it up
 
 let _formations = [];            // anchors
 let _formState = new Map();      // "x,y" → { glow, size }, kept across rebuilds
@@ -57,15 +70,15 @@ function rebuildFormations() {
         if (!sq.every(p => _formPylonOk(p, el) && !used.has(p))) continue;
         sq.forEach(p => used.add(p));
         const key = t.x + "," + t.y, kind = FORM_KINDS[el], old = _formState.get(key);
-        const s = old || { glow: 0, size: 0 };
+        const s = old || { glow: 0, size: 0, spin: 0 };
         state.set(key, s);
-        t._wform = { kind, el, tiles: sq, front: sq[3], col: t.attackModeColor || "#9933ff", s,
+        t._wform = { kind, el, tiles: sq, front: sq[3], col: t.attackModeColor || (kind === "blackhole" ? "#9933ff" : "#ff3300"), s,
                      wx: t.x + 1, wy: t.y + 1, x0: t.x, y0: t.y, caught: [] };
         for (const p of sq) if (p !== t) p._wformOf = t;
         _formations.push(t);
         if (!old && typeof floatingTexts !== "undefined") {
             floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, color: t._wform.col, life: 130, vy: -0.2, size: 14,
-                                 text: "◆ BLACK HOLE FORMED" });
+                                 text: kind === "blackhole" ? "\u25c6 BLACK HOLE FORMED" : "\u25c6 SPINNING FIREWALL FORMED" });
         }
     }
     _formState = state;
@@ -86,6 +99,7 @@ function formationTick() {
         F.caught = [];
         if (!formationActive(F)) { F.s.glow *= 0.9; continue; }
         const src = { x: F.wx, y: F.wy, team: "green", element: F.el };
+        if (F.kind === "firespin") { _fireSpinTick(F, src); continue; }
         for (const a of actors) {
             if (!isHostileTarget(a)) continue;
             const dx = F.wx - a.x, dy = F.wy - a.y, d = Math.hypot(dx, dy);
@@ -101,6 +115,31 @@ function formationTick() {
             if (hit) applyDamage(a, _formDamage(F, BH_DMG, a), src, "flux");
         }
         F.s.glow += (Math.min(1, F.caught.length / 3) - F.s.glow) * 0.08;
+    }
+}
+
+// The walls' angles now: evenly round, turning.
+function fireSpinArms(F) { const o = []; for (let k = 0; k < FS_ARMS; k++) o.push(F.s.spin + k * Math.PI * 2 / FS_ARMS); return o; }
+// Does a wall at angle `a` sweep over this point (world)?
+function _fireSpinOn(F, a, x, y) {
+    const dx = x - F.wx, dy = y - F.wy, ux = Math.cos(a), uy = Math.sin(a);
+    const along = dx * ux + dy * uy;
+    if (along < 0 || along > FS_LEN + FS_HALF) return false;
+    return Math.abs(dx * uy - dy * ux) < FS_HALF;
+}
+function _fireSpinTick(F, src) {
+    let near = 0;
+    for (const a of actors) if (isHostileTarget(a) && Math.hypot(a.x - F.wx, a.y - F.wy) < FS_HEAT_REACH) near++;
+    F.s.glow += (Math.min(1, near / 2) - F.s.glow) * 0.06;
+    F.s.spin = (F.s.spin + FS_SPIN + FS_SPIN_HOT * F.s.glow) % (Math.PI * 2);
+    const arms = fireSpinArms(F), f = typeof frame !== "undefined" ? frame : 0;
+    for (const a of actors) {
+        if (!isHostileTarget(a)) continue;
+        if (!arms.some(ang => _fireSpinOn(F, ang, a.x, a.y))) continue;
+        F.caught.push(a);
+        if (a._fsHitAt !== undefined && f - a._fsHitAt < FS_HIT_EVERY) continue;
+        a._fsHitAt = f;
+        applyDamage(a, _formDamage(F, FS_DMG * (1 + F.s.glow), a), src, "fire");
     }
 }
 
@@ -186,4 +225,89 @@ function drawBlackHoleVortex(F, cx, cy) {
         ctx.fillText("BLACK HOLE · NEEDS POWER", cx, cy - R * 0.5 - 8);
     }
     ctx.restore();
+}
+
+// THE SPINNING FIREWALL. Three standing walls of flame radiate from a white-
+// hot core on a scorched ring, each curving a little behind its turn. A wall
+// is one smooth sheet of flame with a curved, flickering crest and a hotter
+// lower sheet inside it, a hot seam where it meets the floor, drawn back to
+// front round the core. Hotter (taller, brighter, faster) with enemies close.
+function drawFireSpin(F, cx, cy) {
+    const f = typeof frame !== "undefined" ? frame : 0, g = F.s.glow, on = formationActive(F);
+    const scr = (dx, dy) => [cx + (dx - dy) * TILE_W, cy + (dx + dy) * TILE_H];
+    const RX = FS_LEN * TILE_W * Math.SQRT2, RY = FS_LEN * TILE_H * Math.SQRT2;
+    ctx.save();
+    ctx.fillStyle = "rgba(28,8,2,0.55)"; ctx.beginPath(); ctx.ellipse(cx, cy, RX, RY, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = on ? `rgba(255,110,20,${0.3 + 0.45 * g})` : "rgba(120,60,30,0.35)"; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.ellipse(cx, cy, RX, RY, 0, 0, Math.PI * 2); ctx.stroke();
+    if (!on) {
+        ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(200,200,210,0.8)";
+        ctx.fillText("SPINNING FIREWALL · NEEDS POWER", cx, cy - RY - 8);
+        ctx.restore(); return;
+    }
+    const N = 9, H0 = 30 * (1 + 0.35 * g);
+    const walls = fireSpinArms(F).map((a, k) => {
+        const pts = [];
+        for (let i = 0; i <= N; i++) {
+            const r = 0.1 + (FS_LEN - 0.1) * i / N, ang = a - 0.4 * r;
+            const [x, y] = scr(Math.cos(ang) * r, Math.sin(ang) * r);
+            const t = i / N, flick = 0.82 + 0.18 * Math.sin(f * 0.35 + i * 1.7 + k * 2.3) * Math.sin(f * 0.21 + i);
+            pts.push({ x, y, h: H0 * (1 - 0.55 * t) * flick });
+        }
+        return { pts, mid: pts[Math.floor(N / 2)].y };
+    });
+    const core = () => {
+        const cg = ctx.createRadialGradient(cx, cy - 4, 1, cx, cy - 4, 18 + 6 * g);
+        cg.addColorStop(0, "rgba(255,255,235,1)"); cg.addColorStop(0.35, "rgba(255,210,90,0.95)");
+        cg.addColorStop(0.7, "rgba(255,90,10,0.6)"); cg.addColorStop(1, "rgba(255,40,0,0)");
+        ctx.fillStyle = cg; ctx.beginPath(); ctx.ellipse(cx, cy - 4, 18 + 6 * g, 12 + 4 * g, 0, 0, Math.PI * 2); ctx.fill();
+    };
+    const wall = w => {
+        const P = w.pts;
+        // The seam on the floor.
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "rgba(255,120,20,0.55)"; ctx.lineWidth = 8;
+        ctx.beginPath(); P.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
+        // The wall: one smooth sheet (a curved crest through the segment
+        // tops), then a hotter, lower sheet inside it.
+        const sheet = (k, stops) => {
+            let lo = -Infinity, hi = Infinity;
+            for (const p of P) { lo = Math.max(lo, p.y); hi = Math.min(hi, p.y - p.h * k); }
+            const gr = ctx.createLinearGradient(0, lo, 0, hi);
+            stops.forEach(([t, c]) => gr.addColorStop(t, c));
+            ctx.fillStyle = gr;
+            ctx.beginPath(); ctx.moveTo(P[0].x, P[0].y);
+            for (const p of P) ctx.lineTo(p.x, p.y);
+            const T = P.map(p => [p.x, p.y - p.h * k]).reverse();
+            ctx.lineTo(T[0][0], T[0][1]);
+            for (let i = 1; i < T.length - 1; i++) {
+                const mx = (T[i][0] + T[i + 1][0]) / 2, my = (T[i][1] + T[i + 1][1]) / 2;
+                ctx.quadraticCurveTo(T[i][0], T[i][1], mx, my);
+            }
+            ctx.lineTo(T[T.length - 1][0], T[T.length - 1][1]);
+            ctx.closePath(); ctx.fill();
+        };
+        sheet(1, [[0, "rgba(255,200,90,0.85)"], [0.45, "rgba(255,110,10,0.7)"], [1, "rgba(255,40,0,0)"]]);
+        sheet(0.55, [[0, "rgba(255,250,215,0.95)"], [0.6, "rgba(255,210,90,0.75)"], [1, "rgba(255,150,30,0)"]]);
+        // The hot seam where it meets the floor.
+        ctx.strokeStyle = "rgba(255,250,215,0.9)"; ctx.lineWidth = 2;
+        ctx.beginPath(); P.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
+    };
+    walls.sort((p, q) => p.mid - q.mid);
+    const back = walls.filter(w => w.mid < cy), front = walls.filter(w => w.mid >= cy);
+    back.forEach(wall); core(); front.forEach(wall);
+    // Sparks thrown up off the walls.
+    ctx.fillStyle = "rgba(255,210,110,0.9)";
+    for (let i = 0; i < 8 + 6 * g; i++) {
+        const w = walls[i % walls.length], p = w.pts[(i * 3) % w.pts.length], up = (f * 0.03 + i * 0.37) % 1;
+        ctx.globalAlpha = 1 - up;
+        ctx.fillRect(p.x + Math.sin(f * 0.1 + i) * 5, p.y - p.h - up * 30, 2, 2);
+    }
+    ctx.restore();
+}
+
+// The pylon pass calls this from the square's front tile (game.js).
+function drawFormationGround(F, cx, cy) {
+    if (F.kind === "blackhole") drawBlackHoleVortex(F, cx, cy);
+    else if (F.kind === "firespin") drawFireSpin(F, cx, cy);
 }

@@ -3059,11 +3059,11 @@ function render() {
             }
             // Pillar — one design, drawn for every pylon and upgrade
             else if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
-                // A BLACK HOLE's vortex lies on the floor in the middle of its
-                // square: drawn from the front tile, after the floor and before
-                // this pylon (js/formations.js).
+                // A BLACK HOLE's vortex or a SPINNING FIREWALL lies on the floor
+                // in the middle of its square: drawn from the front tile, after
+                // the floor and before this pylon (js/formations.js).
                 const _bhA = obj._wformOf || (obj._wform ? obj : null);
-                if (_bhA && _bhA._wform && _bhA._wform.front === obj && typeof drawBlackHoleVortex === "function") drawBlackHoleVortex(_bhA._wform, px, py);
+                if (_bhA && _bhA._wform && _bhA._wform.front === obj && typeof drawFormationGround === "function") drawFormationGround(_bhA._wform, px, py);
                 if(obj.converting){ctx.fillStyle="#ff0";}
                 const _base=py+TILE_H; // anchor to tile center, not north vertex
                 drawHealthBar(px-10,_base-75,20,4,obj.health,obj.maxHealth);

@@ -1,8 +1,10 @@
 // WAVE FORMATIONS — "Whenever 4 flux wave pylons are constructed together it
 // creates a black hole in the middle of the four connected pylons (now
 // transparent pylons) and lights up when enemies are entangled." Then:
-// "Black hole vortex on the ground, 3D looking." (The fire wall from four fire
-// wave pylons was taken out — "the fire wall was a bad idea".)
+// "Black hole vortex on the ground, 3D looking." The straight fire wall was
+// taken out ("it looks wonky"); four fire wave pylons now make a SPINNING
+// FIREWALL: "how about the ultra turret for the fire wave is a spinning
+// firewall".
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -52,14 +54,15 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.n === 1 && r.kinds[0] === 'blackhole', JSON.stringify(r));
         ok(r.active[0], 'fixture: it is not powered');
     });
-    await check('four FIRE wave pylons form nothing now (the fire wall is gone)', () => {
-        ok(build(SQ, ['fire']).n === 0, 'fire formed something');
-        ok(!/firewall|FIRE WALL/.test(rd('js/formations.js').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n')), 'fire wall code left behind');
+    await check('THE ASK: four FIRE wave pylons in a square make a spinning firewall', () => {
+        const r = build(SQ, ['fire']);
+        ok(r.n === 1 && r.kinds[0] === 'firespin', JSON.stringify(r));
     });
     await check('not three, not a mixed square, not other elements, not turrets', () => {
         ok(build(SQ.slice(0, 3), ['flux']).n === 0, 'three formed');
         ok(build(SQ, ['flux', 'flux', 'flux', 'fire']).n === 0, 'a mixed square formed');
         ok(build(SQ, ['ice']).n === 0, 'ice formed something');
+        ok(build(SQ, ['flux', 'flux', 'fire', 'fire']).n === 0, 'half flux, half fire formed something');
     });
     await check('THE ASK: the four round a black hole are drawn see-through', () => {
         ok(/function drawWaveMonolith\(px, base, colour, dark, tier, asleep, ghost\)/.test(rd('js/draw.js')), 'the tablet cannot be faded');
@@ -102,14 +105,64 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/NEEDS POWER/.test(rd('js/formations.js')), 'it does not say why');
     });
 
+    group('THE SPINNING FIREWALL');
+
+    await check('THE ASK: its walls turn, and an enemy one sweeps over burns', () => {
+        build(SQ, ['fire']);
+        const r = run(`(function(){
+            const F = _formations[0]._wform, q = ${foe('_formations[0]._wform.wx + 0.6', '_formations[0]._wform.wy')};
+            const s0 = F.s.spin; let swept = 0;
+            for (let i = 0; i < 160; i++) { q.x = F.wx + 0.6; q.y = F.wy; formationTick(); frame++; if (F.caught.includes(q)) swept++; }
+            return { turned: F.s.spin !== s0, swept, hurt: 1e6 - q.health };
+        })()`);
+        ok(r.turned, 'it does not turn');
+        ok(r.swept > 0 && r.hurt > 0, 'never swept or burned: ' + JSON.stringify(r));
+    });
+    await check('a wall burns the same enemy once a pass, not every frame', () => {
+        build(SQ, ['fire']);
+        const r = run(`(function(){
+            const F = _formations[0]._wform, q = ${foe('_formations[0]._wform.wx + 0.5', '_formations[0]._wform.wy')};
+            q.maxHealth = 100; let hits = 0, last = q.health;
+            F.s.spin = 0;   // a wall lies right on it
+            for (let i = 0; i < FS_HIT_EVERY; i++) { q.x = F.wx + 0.5; q.y = F.wy; F.s.spin = 0; formationTick(); F.s.spin = 0; frame++; if (q.health < last) { hits++; last = q.health; } }
+            return hits;
+        })()`);
+        ok(r === 1, 'burned ' + r + ' times in one pass');
+    });
+    await check('nothing past its walls, and it spins faster with enemies close', () => {
+        build(SQ, ['fire']);
+        const r = run(`(function(){
+            const F = _formations[0]._wform, far = ${foe('_formations[0]._wform.wx + FS_LEN + FS_HALF + 0.4', '_formations[0]._wform.wy')};
+            let cold = 0; F.s.glow = 0;
+            for (let i = 0; i < 120; i++) { formationTick(); frame++; }
+            const spin0 = F.s.spin; formationTick(); frame++; const slowStep = (F.s.spin - spin0 + Math.PI * 2) % (Math.PI * 2);
+            return { hurt: 1e6 - far.health, slowStep, glow: F.s.glow };
+        })()`);
+        ok(r.hurt === 0, 'it burned past its walls');
+        ok(r.slowStep > run('FS_SPIN') + 1e-6, 'an enemy nearby did not speed it up: ' + JSON.stringify(r));
+    });
+    await check('it spares your squad', () => {
+        build(SQ, ['fire']);
+        const r = run(`(function(){
+            const F = _formations[0]._wform;
+            spawnFollowerAtCrystal('ice'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.stance = 'hold';
+            const h0 = f.health;
+            for (let i = 0; i < 160; i++) { f.x = F.wx + 0.5; f.y = F.wy; formationTick(); frame++; }
+            return h0 - f.health;
+        })()`);
+        ok(r === 0, 'it burned a follower for ' + r);
+    });
+
     group('DRAWING');
 
     await check('THE ASK: a vortex on the floor, painted from the front tile before its pylon', () => {
         build(SQ, ['flux']);
         const g = rd('js/game.js');
-        ok(/_bhA\._wform\.front === obj && typeof drawBlackHoleVortex === "function"\) drawBlackHoleVortex\(_bhA\._wform, px, py\)/.test(g), 'not drawn from the front tile');
-        ok(g.indexOf('drawBlackHoleVortex(_bhA') < g.indexOf('drawWaveMonolith(px, _base'), 'drawn after the pylon, not under it');
-        run('player.x = player.visualX = __X; player.y = player.visualY = 3; render(); drawBlackHoleVortex(_formations[0]._wform, 200, 200);');
+        ok(/_bhA\._wform\.front === obj && typeof drawFormationGround === "function"\) drawFormationGround\(_bhA\._wform, px, py\)/.test(g), 'not drawn from the front tile');
+        ok(g.indexOf('drawFormationGround(_bhA') < g.indexOf('drawWaveMonolith(px, _base'), 'drawn after the pylon, not under it');
+        run('player.x = player.visualX = __X; player.y = player.visualY = 3; render(); drawFormationGround(_formations[0]._wform, 200, 200);');
+        build(SQ, ['fire']);
+        run('render(); drawFormationGround(_formations[0]._wform, 200, 200);');
     });
     await check('an enemy standing in it is drawn over it, not under it', () => {
         build(SQ, ['flux']);
@@ -120,7 +173,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('no glow, and the guide explains it', () => {
         ok(!/shadowBlur\s*=\s*[1-9]/.test(rd('js/formations.js')), 'formations.js sets a shadowBlur');
         const html = rd('game.html');
-        ok(/BLACK HOLE/.test(html) && /in the floor/.test(html) && !/FIRE WALL/.test(html), 'the guide is out of date');
+        ok(/BLACK HOLE/.test(html) && /in the floor/.test(html) && /SPINNING FIREWALL/.test(html), 'the guide is out of date');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
