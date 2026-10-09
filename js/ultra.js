@@ -24,7 +24,7 @@ const ULTRA_DAMAGE_BONUS  = 1.5;    // × the four turrets' rounds added togethe
 const ULTRA_RANGE_BONUS   = 2;      // tiles past a single turret's reach
 const ULTRA_SPLASH        = 1.2;    // tiles round the target the round bursts over
 const ULTRA_SPLASH_SHARE  = 0.5;    // of the round, to each one caught in the burst
-const ULTRA_MUZZLE_Z      = 96;     // px above the floor its bolt leaves from
+const ULTRA_MUZZLE_Z      = 90;     // px above the floor its bolt leaves from (the Tesla crown)
 const ULTRA_SLIDE         = 0.06;   // how fast a blocked unit slides along a face
 
 let _ultras = [];                   // anchors, rebuilt with the caches
@@ -151,119 +151,108 @@ function ultraBlockTick() {
 }
 
 // ── DRAWING ───────────────────────────────────────────────
-// The game's runic stone, at four tiles: a stone platform over the whole
-// square with rune lines round its rim, a squat tower at each corner (the
-// four turrets it was) with its element light, a central keep, and on the
-// keep a heavy ballista — four stone prongs and a big glyph-bolt.
-function _ultraBox(c, x, y, hw, hh, h, top, left, right, edge) {
-    c.fillStyle = left;  c.beginPath(); c.moveTo(x - hw, y - h); c.lineTo(x, y + hh - h); c.lineTo(x, y + hh); c.lineTo(x - hw, y); c.closePath(); c.fill();
-    c.fillStyle = right; c.beginPath(); c.moveTo(x + hw, y - h); c.lineTo(x, y + hh - h); c.lineTo(x, y + hh); c.lineTo(x + hw, y); c.closePath(); c.fill();
-    c.fillStyle = top;   c.beginPath(); c.moveTo(x, y - hh - h); c.lineTo(x + hw, y - h); c.lineTo(x, y + hh - h); c.lineTo(x - hw, y - h); c.closePath(); c.fill();
-    if (edge) {
-        c.strokeStyle = edge; c.lineWidth = 1;
-        c.beginPath(); c.moveTo(x - hw, y - h); c.lineTo(x, y + hh - h); c.lineTo(x + hw, y - h); c.moveTo(x, y + hh - h); c.lineTo(x, y + hh); c.stroke();
+// THE TESLA ARRAY (picked from a lineup of eight futuristic designs, U5;
+// "that design sucks, just make it look futuristic" retired the stone keep):
+// a dark metal plate over the four tiles with a lit trim ring, a coil tower
+// in the middle crowned with a ring, a rod at each corner (the four turrets it
+// was), and live arcs jumping from the crown to the rods — more of them as it
+// charges. Its round leaves from the crown, toward the target.
+const ULTRA_METAL = { top: "#2a3140", left: "#121720", right: "#1b212d", edge: "#4f5b74", chrome: "#a9bad2", dark: "#0b0e14" };
+const ULTRA_CROWN_Z = 90;           // px from the floor to the crown ring
+function _ultraRgba(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+// A ground polygon extruded up by h: the faces toward you, then the top.
+function _ultraPrism(c, cx, cy, pts, h, top) {
+    const M = ULTRA_METAL, P = pts.map(([x, y]) => [cx + x, cy + y]), sides = [];
+    for (let i = 0; i < P.length; i++) {
+        const a = P[i], b = P[(i + 1) % P.length];
+        const nx = b[1] - a[1], ny = -(b[0] - a[0]);
+        const out = nx * ((a[0] + b[0]) / 2 - cx) + ny * ((a[1] + b[1]) / 2 - cy) > 0 ? 1 : -1;
+        if (ny * out <= 0) continue;
+        sides.push({ a, b, my: (a[1] + b[1]) / 2, left: (a[0] + b[0]) / 2 < cx });
     }
+    sides.sort((p, q) => p.my - q.my);
+    for (const s of sides) {
+        c.fillStyle = s.left ? M.left : M.right;
+        c.beginPath(); c.moveTo(s.a[0], s.a[1]); c.lineTo(s.b[0], s.b[1]); c.lineTo(s.b[0], s.b[1] - h); c.lineTo(s.a[0], s.a[1] - h); c.closePath(); c.fill();
+    }
+    c.fillStyle = top || M.top;
+    c.beginPath(); P.forEach(([x, y], i) => i ? c.lineTo(x, y - h) : c.moveTo(x, y - h)); c.closePath(); c.fill();
+    c.strokeStyle = M.edge; c.lineWidth = 1; c.stroke();
 }
-const ULTRA_STONE = { top: "#3a4352", left: "#232a35", right: "#161b23", edge: "#4c5668" };
+function _ultraNgon(n, rx, rot) { const o = []; for (let i = 0; i < n; i++) { const a = rot + i / n * Math.PI * 2; o.push([Math.cos(a) * rx, Math.sin(a) * rx * 0.5]); } return o; }
+function _ultraDot(c, x, y, r, col) {
+    c.fillStyle = _ultraRgba(col, 0.18); c.beginPath(); c.arc(x, y, r * 2.3, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "#fff"; c.beginPath(); c.arc(x - r * 0.25, y - r * 0.25, r * 0.4, 0, Math.PI * 2); c.fill();
+}
 
 // (cx, cy): the screen point of the square's centre on the floor.
 function drawUltraTurret(t, cx, cy) {
     const U = t._ultra; if (!U) return;
-    const col = U.col, f = typeof frame !== "undefined" ? frame : 0;
+    const M = ULTRA_METAL, col = U.col, f = typeof frame !== "undefined" ? frame : 0;
     const pulse = 0.5 + 0.5 * Math.sin(f * 0.07 + U.x0);
-    const S = ULTRA_STONE;
-    ctx.save();
+    const ready = Math.min(1, (t.attackFireTimer || 0) / Math.max(1, TURRET_FIRE_FRAMES));
+    const recoil = t._lastShotFrame !== undefined ? Math.max(0, 1 - (f - t._lastShotFrame) / 14) : 0;
+    const c = ctx;
+    c.save();
     // Range, only while you build or hold it.
     if ((typeof buildMode !== "undefined" && buildMode) || (typeof commandMode !== "undefined" && commandMode && commandTarget && (commandTarget === t || commandTarget._ultraOf === t))) {
         const rr = ultraRange(t) * TILE_W;
-        ctx.globalAlpha = 0.3; ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([3, 5]);
-        ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
-        ctx.setLineDash([]); ctx.globalAlpha = 1;
+        c.globalAlpha = 0.3; c.strokeStyle = col; c.lineWidth = 1.2; c.setLineDash([3, 5]);
+        c.beginPath(); c.ellipse(cx, cy, rr, rr * 0.5, 0, 0, Math.PI * 2); c.stroke();
+        c.setLineDash([]); c.globalAlpha = 1;
     }
-    // The platform over all four tiles, with rune lines round its rim.
-    const PW = 104, PH = 52, PZ = 14;
-    _ultraBox(ctx, cx, cy, PW, PH, PZ, S.top, S.left, S.right, S.edge);
-    ctx.strokeStyle = col; ctx.globalAlpha = 0.35 + 0.35 * pulse; ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - PH - PZ + 9); ctx.lineTo(cx + PW - 18, cy - PZ); ctx.lineTo(cx, cy + PH - PZ - 9); ctx.lineTo(cx - PW + 18, cy - PZ); ctx.closePath();
-    ctx.stroke();
-    // Rune ticks on the two front faces.
-    ctx.lineWidth = 2;
-    for (let i = 1; i < 6; i++) {
-        const k = i / 6;
-        const lx = cx - PW + PW * k, ly = cy + PH * k - PZ / 2;
-        const rx = cx + PW * k, ry = cy + PH - PH * k - PZ / 2;
-        ctx.beginPath(); ctx.moveTo(lx, ly - 3); ctx.lineTo(lx, ly + 3); ctx.moveTo(rx, ry - 3); ctx.lineTo(rx, ry + 3); ctx.stroke();
+    // The plate, its trim ring and front lights.
+    const PZ = 12, top = cy - PZ;
+    _ultraPrism(c, cx, cy, _ultraNgon(8, 100, Math.PI / 8), PZ);
+    c.strokeStyle = _ultraRgba(col, 0.35 + 0.3 * pulse); c.lineWidth = 1.6;
+    c.beginPath(); c.ellipse(cx, top, 84, 42, 0, 0, Math.PI * 2); c.stroke();
+    c.fillStyle = _ultraRgba(col, 0.7);
+    for (let i = -3; i <= 3; i++) if (i) c.fillRect(cx + i * 13 - 2, cy + 46 - Math.abs(i) * 6.5 - PZ / 2 - 1, 4, 2);
+    // Rods at the corners — the four turrets it was. The back two first.
+    const ring = cy - ULTRA_CROWN_Z;
+    const rods = _ultraNgon(4, 70, Math.PI / 4).map(([x, y]) => [cx + x, top + y]);
+    const rod = ([x, y]) => { _ultraPrism(c, x, y, _ultraNgon(4, 6, Math.PI / 4), 34); _ultraDot(c, x, y - 38, 3.5, col); };
+    rods.filter(p => p[1] <= top).forEach(rod);
+    // The column, banded with copper coil.
+    c.fillStyle = M.right; c.fillRect(cx - 10, ring + 6, 20, top - ring - 6);
+    c.fillStyle = M.left; c.fillRect(cx - 10, ring + 6, 10, top - ring - 6);
+    for (let k = 0; k < 6; k++) {
+        c.strokeStyle = k % 2 ? "#b87333" : "#d08a45"; c.lineWidth = 3;
+        c.beginPath(); c.ellipse(cx, ring + 14 + k * 10, 11, 4, 0, 0, Math.PI); c.stroke();
     }
-    ctx.globalAlpha = 1;
-    // Corner towers — the four turrets it was. Back three first, then the
-    // keep, then the front one, so the keep sits between them.
-    const top = cy - PZ, CT = [[0, -PH * 0.62], [-PW * 0.62, 0], [PW * 0.62, 0], [0, PH * 0.62]];
-    const tower = ([ox, oy]) => {
-        const x = cx + ox, y = top + oy;
-        _ultraBox(ctx, x, y, 13, 6.5, 30, S.top, S.left, S.right, S.edge);
-        // Merlons.
-        ctx.fillStyle = S.top;
-        ctx.fillRect(x - 11, y - 36, 5, 5); ctx.fillRect(x + 6, y - 36, 5, 5); ctx.fillRect(x - 2.5, y - 39, 5, 5);
-        ctx.fillStyle = col; ctx.globalAlpha = 0.2 + 0.15 * pulse;
-        ctx.beginPath(); ctx.arc(x, y - 30, 7, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.arc(x, y - 30, 3, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 1;
-        // A conduit from the tower in to the keep.
-        ctx.strokeStyle = col; ctx.globalAlpha = 0.45; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(x, y - 2); ctx.lineTo(cx + ox * 0.45, top + oy * 0.45 - 2); ctx.stroke();
-        ctx.globalAlpha = 1;
-    };
-    CT.slice(0, 3).forEach(tower);
-    // The keep.
-    const KZ = 40;
-    _ultraBox(ctx, cx, top, 34, 17, KZ, S.top, S.left, S.right, S.edge);
-    // Slit windows lit in the element's colour.
-    ctx.fillStyle = col; ctx.globalAlpha = 0.55 + 0.35 * pulse;
-    ctx.fillRect(cx - 20, top - 26 + 5, 3, 10); ctx.fillRect(cx + 17, top - 26 + 5, 3, 10);
-    ctx.globalAlpha = 1;
-    // Battlements round the keep's top.
-    ctx.fillStyle = S.top;
-    for (const [mx, my] of [[-28, -3], [-14, -10], [0, -17], [14, -10], [28, -3], [-14, 4], [14, 4], [0, 11]])
-        ctx.fillRect(cx + mx - 3, top - KZ + my - 6, 6, 6);
-    CT.slice(3).forEach(tower);
-    // The heavy ballista on the keep, turning to its target.
-    const gx = cx, gy = top - KZ - 8;
+    // The arcs: jagged, redrawn every few frames, more of them as it charges.
+    const seed = Math.floor(f / 4) + U.x0 * 7;
+    const rnd = n => { const x = Math.sin(n * 91.7 + seed * 13.1) * 43758.5; return x - Math.floor(x); };
+    c.strokeStyle = col; c.lineWidth = 1.4; c.lineCap = "round";
+    rods.forEach(([x, y], i) => {
+        if (rnd(i) > 0.55 + 0.4 * (1 - ready) && recoil <= 0) return;
+        c.beginPath(); c.moveTo(cx, ring);
+        for (let k = 1; k <= 6; k++) {
+            const q = k / 6, j = k < 6;
+            c.lineTo(cx + (x - cx) * q + (j ? (rnd(i * 9 + k) - 0.5) * 14 : 0), ring + (y - 38 - ring) * q + (j ? (rnd(i * 7 + k) - 0.5) * 10 : 0));
+        }
+        c.stroke();
+    });
+    // The crown ring.
+    c.strokeStyle = M.dark; c.lineWidth = 9; c.beginPath(); c.ellipse(cx, ring, 26, 11, 0, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = M.chrome; c.lineWidth = 2; c.beginPath(); c.ellipse(cx, ring - 2, 26, 11, 0, Math.PI, Math.PI * 2); c.stroke();
+    c.strokeStyle = _ultraRgba(col, 0.6 + 0.4 * Math.max(ready, recoil)); c.lineWidth = 2.5; c.beginPath(); c.ellipse(cx, ring, 26, 11, 0, 0, Math.PI * 2); c.stroke();
+    // Where its round leaves the crown: the side facing its target.
     const tg = t._ultraTarget && !t._ultraTarget.dead ? t._ultraTarget : null;
-    let want = t._uAng === undefined ? -Math.PI / 4 : t._uAng;
-    if (tg) { const dx = tg.x - U.cx, dy = tg.y - U.cy; want = Math.atan2((dx + dy) * TILE_H, (dx - dy) * TILE_W); }
-    else want += 0.01;
-    if (t._uAng === undefined) t._uAng = want;
-    let d = want - t._uAng; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
-    t._uAng += tg ? d * 0.2 : d;
-    const ux = Math.cos(t._uAng), uy = Math.sin(t._uAng);
-    const recoil = t._lastShotFrame !== undefined ? Math.max(0, 6 - (f - t._lastShotFrame)) : 0;
-    _ultraBox(ctx, gx, gy + 6, 14, 7, 9, S.top, S.left, S.right, S.edge);
-    const len = 34 - recoil;
-    ctx.lineCap = "round";
-    for (const off of [-9, -3.5, 3.5, 9]) {
-        const ox = -uy * off, oy = ux * off * 0.5;
-        ctx.strokeStyle = S.top; ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.moveTo(gx + ox, gy + oy); ctx.lineTo(gx + ox + ux * len, gy + oy + uy * len); ctx.stroke();
-        ctx.strokeStyle = S.right; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(gx + ox, gy + oy + 2); ctx.lineTo(gx + ox + ux * len, gy + oy + uy * len + 2); ctx.stroke();
+    if (tg) {
+        const dx = tg.x - U.cx, dy = tg.y - U.cy, a = Math.atan2((dx + dy) * TILE_H, (dx - dy) * TILE_W);
+        if (ready > 0.6 || recoil > 0) _ultraDot(c, cx + Math.cos(a) * 26, ring + Math.sin(a) * 11, 2 + 4 * Math.max(ready, recoil), col);
     }
-    // The glyph-bolt laid between the prongs.
-    const bx = gx + ux * (len * 0.55), by = gy + uy * (len * 0.55);
-    ctx.fillStyle = col; ctx.globalAlpha = 0.22 + 0.2 * pulse;
-    ctx.beginPath(); ctx.arc(bx, by, 13, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = 3.5;
-    ctx.beginPath(); ctx.moveTo(gx + ux * 6, gy + uy * 6); ctx.lineTo(gx + ux * (len + 6), gy + uy * (len + 6)); ctx.stroke();
-    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(gx + ux * 10, gy + uy * 10); ctx.lineTo(gx + ux * (len + 2), gy + uy * (len + 2)); ctx.stroke();
-    ctx.restore();
+    rods.filter(p => p[1] > top).forEach(rod);
+    c.restore();
     // Combined health and the name.
     const [h, m] = ultraHealth(t);
-    if (typeof drawHealthBar === "function") drawHealthBar(cx - 30, gy - 34, 60, 5, h, m);
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (typeof drawHealthBar === "function") drawHealthBar(cx - 30, ring - 30, 60, 5, h, m);
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
     const tier = typeof networkStrength !== "undefined" ? (networkStrength[U.el] || 0) : 0;
     const label = "ULTRA · " + U.el.toUpperCase() + (tier > 0 ? [" T-I", " T-II", " T-III"][tier - 1] : "");
-    if (typeof cachedText === "function") cachedText(label, "bold 10px monospace", col, cx, gy - 40);
-    else { ctx.fillStyle = col; ctx.font = "bold 10px monospace"; ctx.textAlign = "center"; ctx.fillText(label, cx, gy - 40); }
-    ctx.restore();
+    if (typeof cachedText === "function") cachedText(label, "bold 10px monospace", col, cx, ring - 36);
+    else { c.fillStyle = col; c.font = "bold 10px monospace"; c.textAlign = "center"; c.fillText(label, cx, ring - 36); }
+    c.restore();
 }
