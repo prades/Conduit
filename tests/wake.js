@@ -32,7 +32,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     const scene = (el, who, frames) => run(`(function(){
         actors.length = 0; followers.length = 0;
         world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false;
-            t.isConnector = false; t.attackModeElement = null; t.waveTripped = false; t.circuitOn = undefined; t.nestConnection = null;
+            t.isConnector = false; t.isBattery = false; t.attackModeElement = null; t.waveTripped = false; t.circuitOn = undefined; t.nestConnection = null;
             t.waveAwake = undefined; t._awakeUntil = undefined; t._wakeFrame = undefined; }
             if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });
         shardCount = 9999;
@@ -41,6 +41,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
         _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), T(home.x + 1, 2));
         const E = ELEMENTS.find(e => e.id === ${JSON.stringify(el)}), ps = [];
         for (let i = 0; i < 6; i++) { const t = T(home.x + 2 + i * 2, 2); _executeBuildInstant(E, t, waveRole(E.id)); ps.push(t); }
+        // Tier III comes from a bank of six batteries now (config.js BATTERY_TIER_SIZES).
+        for (let i = 0; i < 6; i++) _executeBuildInstant(E, T(home.x + 2 + i * 2, 3), 'battery');
         player.x = home.x - 12; player.y = 2;
         _cacheAge = -999; for (let f = 0; f < 70; f++) render();
         globalThis.__ps = ps;

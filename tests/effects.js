@@ -161,9 +161,9 @@ function ok(c, m) { if (!c) throw new Error(m); }
     });
     await check('network tiers that change together are said once, short enough for a phone', () => {
         const r = run(`(function(){ floatingTexts.length = 0; ELEMENTS.forEach(e => { _prevNetworkTiers[e.id] = 0; networkStrength[e.id] = 0; });
-            world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.attackModeElement = null; } });
+            world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isBattery = false; t.attackModeElement = null; } });
             const home = world.find(t => isHomePortal(t)); const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
-            ['fire', 'ice', 'core', 'toxic'].forEach((id, i) => { _executeBuildInstant(ELEMENTS.find(e => e.id === id), T(home.x + 3 + i * 4, 1), 'attack'); _executeBuildInstant(ELEMENTS.find(e => e.id === id), T(home.x + 4 + i * 4, 2), 'attack'); });
+            ['fire', 'ice', 'core', 'toxic'].forEach((id, i) => { _executeBuildInstant(ELEMENTS.find(e => e.id === id), T(home.x + 3 + i * 4, 1), 'battery'); _executeBuildInstant(ELEMENTS.find(e => e.id === id), T(home.x + 4 + i * 4, 2), 'battery'); });
             floatingTexts.length = 0; _cacheAge = -999; render();
             return floatingTexts.filter(t => /NETWORK/.test(t.text) || t.size === 10).map(t => t.text); })()`);
         ok(r.length === 2 && /4 NETWORKS UP/.test(r[0]), JSON.stringify(r));

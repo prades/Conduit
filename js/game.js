@@ -671,6 +671,11 @@ function layAllCables() {
     // join them (buildNestGrids in power.js).
     if (typeof _gridLinks !== "undefined")
         for (const { a, b } of _gridLinks) layCable(a, b, { core: CONNECTOR_COLOR, width: 2, glow: 3 });
+    // Batteries linked into one bank: a cable in their element's colour.
+    for (const { a, b, el } of _batteryLinks) {
+        const def = ELEMENTS.find(e => e.id === el);
+        layCable(a, b, { core: def ? def.color : BATTERY_COLOR, width: 2, glow: 2 });
+    }
 }
 
 // The whole chain, every frame. Each pylon that is drawing gets a cable from
@@ -1032,6 +1037,7 @@ function _bannerPair(title, names, color, life) {
 // COMBO_MAX_LINKS each. A link's effect runs while either end is awake.
 let _comboLinks = [];
 let _netLit = {};
+let _batteryLinks = [];   // { a, b, el } battery to battery, laid as cables
 const COMBO_LABEL_NEAR = 4;
 const PYLON_LABEL_NEAR = 4;   // tiles: a pylon's full label shows only this close to you   // tiles: a combo link names itself only this close to you   // lit pylons per element, for the network HUD (see the tier count)
 function rebuildComboLinks() {
@@ -1714,18 +1720,18 @@ function render() {
         // ── TERRITORY — recalculate every 60 frames ──
         updateTerritory();
 
-        // ── NETWORK RESONANCE — compute largest connected pylon group per element ──
-        // Every pylon of the element you have BUILT counts — turret or wave,
-        // powered or not. REPORTED: "the tier system isn't working ... I should
-        // have a tier 3 network and it doesn't even show tier 1." Measured: six
-        // electric support pylons with no generator reaching them showed tier
-        // 0, because only LIT pylons were counted — and a generator only draws
-        // on the Crystal within 6 tiles of it, so a network built further out,
-        // or one whose nest ran dry, simply vanished from the count. The tier
-        // is what you have built; whether it WORKS is power, and the HUD says
-        // so (_netLit below). Unpowered pylons still do nothing.
-        const _netPylons = _pillarCache.filter(t => (t.waveMode || t.attackMode) && t.attackModeElement
-            && !isRelayPylon(t) && t.pillarTeam === "green" && !t.destroyed && t.health > 0);
+        // ── NETWORK TIERS — from BATTERIES only (isBatteryPylon, config.js) ──
+        // "Create battery class pylon that is now solely responsible for
+        // powering up the network: connect 2/4/6 together to create tier
+        // 1/2/3. Remove the historic version." An element's tier is the largest
+        // group of its batteries linked within getPylonRange() of each other;
+        // turrets and wave pylons no longer count. (It used to be the largest
+        // linked group of the element's turrets and wave pylons.) The links are
+        // kept to lay as cables (layAllCables).
+        const _batteries = _pillarCache.filter(t => t.isBattery && t.attackModeElement
+            && t.pillarTeam === "green" && !t.destroyed && t.health > 0);
+        _batteryLinks = [];
+        const _netPylons = _batteries;
         _netLit = {};
         for (const t of _wPylons) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
         for (const t of _aPylons) if (t.powered) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
@@ -1733,6 +1739,8 @@ function render() {
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
             const elPylons = _netPylons.filter(p => p.attackModeElement === el);
+            elPylons.forEach(p => { p._bLinked = false; });
+            if (elPylons.length) elPylons[0]._bLinked = true;
             let maxGroupSize = 0;
             const visited = new Set();
             elPylons.forEach(start => {
@@ -1744,13 +1752,15 @@ function render() {
                     if (visited.has(cur)) continue;
                     visited.add(cur); groupSize++;
                     elPylons.forEach(other => {
-                        if (!visited.has(other) && Math.hypot(cur.x-other.x, cur.y-other.y) <= getPylonRange())
+                        if (!visited.has(other) && Math.hypot(cur.x-other.x, cur.y-other.y) <= getPylonRange()) {
                             q.push(other);
+                            if (!other._bLinked) { other._bLinked = true; _batteryLinks.push({ a: cur, b: other, el }); }
+                        }
                     });
                 }
                 maxGroupSize = Math.max(maxGroupSize, groupSize);
             });
-            const newTier = maxGroupSize >= 6 ? 3 : maxGroupSize >= 4 ? 2 : maxGroupSize >= 2 ? 1 : 0;
+            const newTier = maxGroupSize >= BATTERY_TIER_SIZES[2] ? 3 : maxGroupSize >= BATTERY_TIER_SIZES[1] ? 2 : maxGroupSize >= BATTERY_TIER_SIZES[0] ? 1 : 0;
             const prevTier = _prevNetworkTiers[el] || 0;
             if (newTier > prevTier && newTier > 0) {
                 const tierLabel = ["", "I", "II", "III"][newTier];
@@ -3117,6 +3127,10 @@ function render() {
                     drawWaveMonolith(px, _base, _acol, _dark, _wTier, _asleep, _bhF && _bhF.kind === "blackhole" ? 0.35 : 1);
                     if (!_dark && !_asleep && _sinceWake < WAVE_WAKE_BLINK) drawWaveWakeBlink(px, _base, _acol, _sinceWake);
                 }
+                else if (obj.isBattery) {
+                    // THE BATTERY: its charge cells show its element's tier.
+                    drawBatteryPylon(px, _base, obj.attackModeColor || BATTERY_COLOR, networkStrength[obj.attackModeElement] || 0, _pulse, false);
+                }
                 else if (obj.isGenerator && !obj.destroyed) {
                     // THE SHIELD GENERATOR: a thicker body and a big pale orb.
                     drawShieldGenerator(px, _base, obj.circuitOn !== false && obj.pillarTeam === "green", _pulse);
@@ -3133,7 +3147,19 @@ function render() {
                 // One body, so one orb height — it sits just above the merlons.
                 const _orbY = _base-54;
 
-                if (_isActive) {
+                if (obj.isBattery) {
+                    // Its name and its element's tier, only near you or held.
+                    const _bt = networkStrength[obj.attackModeElement] || 0, _bc = obj.attackModeColor || BATTERY_COLOR;
+                    const _bNear = (Math.abs(obj.x-player.x)<=PYLON_LABEL_NEAR && Math.abs(obj.y-player.y)<=PYLON_LABEL_NEAR) || (commandMode && commandTarget===obj);
+                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                    if (_bNear) {
+                        cachedText((obj.attackModeElement||"").toUpperCase() + " BATTERY" + (_bt ? [""," T-I"," T-II"," T-III"][_bt] : ""), "bold 9px monospace", _bc, px, _base-52);
+                        ctx.globalAlpha = 0.7;
+                        cachedText(_bt ? "network tier " + ["","I","II","III"][_bt] : "link 2 for tier I", "7px monospace", _bc, px, _base-43);
+                    } else if (_bt > 0) cachedText(["","I","II","III"][_bt], "bold 8px monospace", _bc, px, _base-48);
+                    ctx.restore();
+                }
+                else if (_isActive) {
                     // Glowing orb at structure top — not on a wave monolith, whose
                     // stripes are its light.
                     if (!_isWaveMono && !obj.isGenerator) {

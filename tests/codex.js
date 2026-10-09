@@ -107,12 +107,15 @@ check('higher tiers say more than lower ones', () => {
 
 group('the documented numbers match game.js');
 check('network tier thresholds match the live rule', () => {
-    const m = GAME.match(/maxGroupSize >= (\d+) \? 3 : maxGroupSize >= (\d+) \? 2 : maxGroupSize >= (\d+) \? 1/);
-    ok(m, 'tier rule not found in game.js');
-    const sizes = run('CODEX_TIER_SIZES');
-    eq(sizes[3], Number(m[1]), 'tier III size');
-    eq(sizes[2], Number(m[2]), 'tier II size');
-    eq(sizes[1], Number(m[3]), 'tier I size');
+    // The rule is the battery bank now (BATTERY_TIER_SIZES in config.js,
+    // read by the tier pass in game.js).
+    ok(/maxGroupSize >= BATTERY_TIER_SIZES\[2\] \? 3 : maxGroupSize >= BATTERY_TIER_SIZES\[1\] \? 2 : maxGroupSize >= BATTERY_TIER_SIZES\[0\] \? 1/.test(GAME), 'tier rule not found in game.js');
+    const bm = CONFIG.match(/const\s+BATTERY_TIER_SIZES\s*=\s*\[(\d+),\s*(\d+),\s*(\d+)\]/);
+    ok(bm, 'config.js no longer defines BATTERY_TIER_SIZES');
+    const live = [Number(bm[1]), Number(bm[2]), Number(bm[3])], sizes = run('CODEX_TIER_SIZES');
+    eq(sizes[3], live[2], 'tier III size');
+    eq(sizes[2], live[1], 'tier II size');
+    eq(sizes[1], live[0], 'tier I size');
 });
 check('FIRE damage per tier matches', () => {
     const live = tierTriple(GAME, 'case "fire": {', 'dmg');

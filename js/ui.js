@@ -168,6 +168,7 @@ const PYLON_KINDS = [
     { id: "attack",     label: "ATTACK TURRET",    note: "shoots what comes near",       color: "#ff7755" },
     { id: "support",    label: "SUPPORT PYLON",    note: "helps allies nearby", color: "#7fffb0" },
     { id: "disruption", label: "DISRUPTION PYLON", note: "hits enemies nearby", color: "#c08cff" },
+    { id: "battery",    label: "BATTERY",          note: "2/4/6 linked = tier I/II/III", color: BATTERY_COLOR },
     { id: "connector", label: "CONNECTOR",     note: "long-range power relay",      color: CONNECTOR_COLOR },
     { id: "generator", label: "SHIELD GEN",    note: "powers pylons, shields squad", color: GENERATOR_COLOR },
 ];

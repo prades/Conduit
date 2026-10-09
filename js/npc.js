@@ -135,6 +135,7 @@ function updateRTSNPC(actor) {
             p.isConnector = (p.attackModeElement === CONNECTOR_ID);
             if (p.isConnector && p.circuitOn === undefined) p.circuitOn = true;
             if (!p.isGenerator && !p.isConnector && isWaveKind(p.chosenKind)) { p.waveMode = true; p.attackMode = false; }
+            if (!p.isGenerator && !p.isConnector && p.chosenKind === "battery") { p.isBattery = true; p.attackMode = false; p.waveMode = false; }
             p.chosenElement = null; p.chosenColor = null; p.chosenKind = null;
             p.attackFireTimer = 0;
             p.attackRange = TURRET_RANGE;
@@ -180,6 +181,7 @@ function updateRTSNPC(actor) {
                     p.attackPower=TURRET_POWER; p.attackRange=TURRET_RANGE;
                     p.attackFireTimer=0; p.pulseTimer=0;
                     if (!p.isGenerator && !p.isConnector && isWaveKind(p.chosenKind)) { p.waveMode = true; p.attackMode = false; }
+                    if (!p.isGenerator && !p.isConnector && p.chosenKind === "battery") { p.isBattery = true; p.attackMode = false; p.waveMode = false; }
                     p.chosenElement=null; p.chosenColor=null; p.chosenKind=null;
                 }
                 actor.job=null;

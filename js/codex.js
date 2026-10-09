@@ -12,8 +12,8 @@
 //  tier value, change it here too.
 // ─────────────────────────────────────────────────────────
 
-// Network tier is decided by the size of the largest connected same-element
-// group: 2+ pylons = I, 4+ = II, 6+ = III.
+// Network tier is decided by the size of the largest linked group of that
+// element's BATTERIES: 2+ = I, 4+ = II, 6+ = III (BATTERY_TIER_SIZES).
 const CODEX_TIER_SIZES = { 1: 2, 2: 4, 3: 6 };
 
 const CODEX_GENERAL = [
@@ -338,14 +338,14 @@ function renderPylonIndex() {
         const base  = (typeof PYLON_LINK_TILES === 'number') ? PYLON_LINK_TILES : 3;
         const relay = (typeof PYLON_LINK_TILES_RELAY === 'number') ? PYLON_LINK_TILES_RELAY : 5;
         let html =
-            '<div class="ctrl-row cm-dim" style="margin-bottom:5px">Same-element pylons within ' +
-            '<span class="cm-stat">' + base + ' tiles</span> auto-connect (' +
+            '<div class="ctrl-row cm-dim" style="margin-bottom:5px"><strong>Only BATTERIES set the tier.</strong> Build a battery (build picker &rarr; BATTERY &rarr; an element); batteries of the same element within ' +
+            '<span class="cm-stat">' + base + ' tiles</span> link up with a cable in their colour (' +
             '<span class="cm-stat">' + relay + '</span> with the Signal Relay). ' +
-            'The largest connected group — turrets and wave pylons alike — sets that element\'s tier.</div>';
+            'The largest linked bank of an element\'s batteries sets that element\'s tier for all its turrets and wave pylons. Turrets and wave pylons no longer count. A battery does nothing else; its charge cells light one per tier.</div>';
         for (const tier of [1, 2, 3]) {
             html += '<div class="cm-tier"><span class="cm-tier-badge">T' + tier + '</span> ' +
                     '<span style="color:#aad">' + CODEX_TIER_SIZES[tier] +
-                    '+ pylons — see the element table above for what this tier does.</span></div>';
+                    '+ linked batteries — see the element table above for what this tier does.</span></div>';
         }
         net.innerHTML = html;
     }

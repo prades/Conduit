@@ -43,6 +43,7 @@ function savePylons() {
             upgraded: !!t.upgraded,
             isGenerator: !!t.isGenerator,
             isConnector: !!t.isConnector,
+            isBattery: !!t.isBattery,
             circuitOn: t.circuitOn !== false
         }));
     try { localStorage.setItem("tubecrawler_pylons", JSON.stringify(data.concat(tombs))); } catch(e) {}

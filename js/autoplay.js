@@ -19,7 +19,8 @@
 //        a. a GENERATOR beside every nest you hold that has none,
 //        b. a CONNECTOR beside the frontier nest, reaching toward the next zone,
 //        c. a NETWORK of one element at each held nest, grown pylon by pylon
-//           (linked, toward the next zone) to AUTOPLAY_NETWORK_SIZE — tier III
+//           (linked, toward the next zone) to AUTOPLAY_NETWORK_SIZE, plus a
+//           bank of AUTOPLAY_BATTERIES batteries — tier III
 //           comes at 6. Two turrets for every support/disruption pylon.
 //   4. ALWAYS → ULTIMATES. A follower with a full bar and an enemy within
 //      AUTOPLAY_ULT_RANGE fires it (the duo ultimate if its partner can).
@@ -30,7 +31,8 @@
 const AUTOPLAY_THINK        = 45;
 const AUTOPLAY_HACK_TEAM    = 3;
 const AUTOPLAY_ULT_RANGE    = 4;
-const AUTOPLAY_NETWORK_SIZE = 7;
+const AUTOPLAY_NETWORK_SIZE = 7;    // turrets and wave pylons per nest …
+const AUTOPLAY_BATTERIES    = 6;    // … and a bank of batteries for tier III (BATTERY_TIER_SIZES)
 const AUTOPLAY_NET_RADIUS   = 9;    // tiles from its nest a network is counted and grown in
 const AUTOPLAY_WORK_SHARE   = 0.25;
 const AUTOPLAY_NEXT_WAVE_MS = 1500;
@@ -212,10 +214,15 @@ function _autoGrowNetwork(nest, next) {
     const near = (typeof _pillarCache !== "undefined" ? _pillarCache : []).filter(t => t.pillarTeam === "green" && !t.destroyed
         && Math.hypot(t.x - nest.x, t.y - nest.y) <= AUTOPLAY_NET_RADIUS);
     const mine = near.filter(t => t.attackModeElement === elId && !isRelayPylon(t));
-    if (mine.length >= AUTOPLAY_NETWORK_SIZE) return false;
+    // The tier comes from BATTERIES now (config.js): two guns first, then the
+    // bank of six batteries, then the rest of the guns.
+    const bats = mine.filter(t => t.isBattery), guns = mine.filter(t => !t.isBattery);
+    const wantBattery = guns.length >= 2 && bats.length < AUTOPLAY_BATTERIES;
+    if (!wantBattery && guns.length >= AUTOPLAY_NETWORK_SIZE) return false;
     // Linked to the cluster (within link range of one of ours or a relay
-    // here), not crowding it, and leaning toward the next zone.
-    const anchors = near.length ? near : [nest];
+    // here), not crowding it, and leaning toward the next zone. A battery
+    // must link to the bank, so it anchors on the batteries once there are any.
+    const anchors = wantBattery && bats.length ? bats : (near.length ? near : [nest]);
     const R = getPylonRange() - 0.15, dirX = next && next.x > nest.x ? 1 : 0;
     let best = null, bs = -Infinity;
     for (let dx = -4; dx <= 9; dx++) for (let y = 0; y <= 3; y++) {
@@ -229,7 +236,7 @@ function _autoGrowNetwork(nest, next) {
     }
     if (!best) return false;
     // Two turrets for every support/disruption pylon.
-    const kind = mine.length % 3 === 2 ? waveRole(elId) : "attack";
+    const kind = wantBattery ? "battery" : guns.length % 3 === 2 ? waveRole(elId) : "attack";
     _executeBuildInstant(el, best, kind);
     return true;
 }

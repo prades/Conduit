@@ -167,6 +167,18 @@ function isConnectorPylon(t) {
 // whatever hangs off it goes dark until it is turned back on.
 function isSwitchableRelay(t) { return isGeneratorPylon(t) || isConnectorPylon(t); }
 function isRelayPylon(t) { return !!(t && (t.isGenerator || t.isConnector)); }
+// ── THE BATTERY ──────────────────────────────────────────
+// REPORTED: "Create battery class pylon that is now solely responsible for
+// powering up the network: player must connect 2/4/6 together to create tier
+// 1/2/3 network status. Remove the historic version of upgrading the network."
+// A battery carries an element and does nothing else — no shots, no wave. Its
+// element's NETWORK TIER is the largest group of that element's batteries
+// linked within getPylonRange() of each other: 2 → I, 4 → II, 6 → III.
+// Turrets and wave pylons no longer count. (Asked: elemental batteries, and
+// they only set the tier — nests and shield generators still do the powering.)
+const BATTERY_COLOR = "#ffd34d";
+const BATTERY_TIER_SIZES = [2, 4, 6];   // linked batteries for tier I, II, III
+function isBatteryPylon(t) { return !!(t && t.isBattery && t.pillar && !t.destroyed); }
 
 // The generator is neutral, so it is never behind an element unlock — it is
 // available from the first pylon the player ever builds.

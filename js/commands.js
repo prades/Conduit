@@ -155,7 +155,10 @@ function _executeBuild(el, t) {
 // `kind` is what the player chose FIRST: "attack" (a turret), or "support" /
 // "disruption" (a wave pylon — "wave" still means the same); relays ignore it. Defaults to attack, as before.
 function _applyPylonKind(t, kind) {
+    // A BATTERY holds its element's tier and does nothing else.
+    t.isBattery = kind === "battery" && !isRelayPylon(t);
     if (isRelayPylon(t)) { t.waveMode = false; t.attackMode = true; return; }
+    if (t.isBattery) { t.attackMode = false; t.waveMode = false; t.waveTripped = false; return; }
     if (isWaveKind(kind)) { t.waveMode = true; t.attackMode = false; }
     else                 { t.attackMode = true; t.waveMode = false; }
     t.waveTripped = false;
@@ -185,7 +188,7 @@ function _executeBuildInstant(el, t, kind) {
         t.isConnector=(el.id===CONNECTOR_ID); t.circuitOn=true;
         _applyPylonKind(t, kind);
     }
-    const _kindLabel = isRelayId(el.id) ? "" : (isWaveKind(kind) ? " " + waveRoleLabel(el.id) + " PYLON" : " TURRET");
+    const _kindLabel = isRelayId(el.id) ? "" : kind === "battery" ? " BATTERY" : (isWaveKind(kind) ? " " + waveRoleLabel(el.id) + " PYLON" : " TURRET");
     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase()+_kindLabel,color:el.color,life:100,vy:-0.2});
 }
 
@@ -206,7 +209,7 @@ function demolishPylon(t) {
     const col = t.attackModeColor || t.pillarCol || "#0f8";
     Object.assign(t, { pillar: false, destroyed: false, pillarTeam: null, health: 0,
         attackMode: false, waveMode: false, attackModeElement: null, attackModeColor: null,
-        isGenerator: false, isConnector: false, circuitOn: undefined, upgraded: false, seasoned: 0,
+        isGenerator: false, isConnector: false, isBattery: false, circuitOn: undefined, upgraded: false, seasoned: 0,
         pendingUpgrade: false, upgradeFollower: null, chosenElement: null, chosenColor: null, chosenKind: null,
         reconstructing: false, reconstructProgress: 0, waveTripped: false, powered: undefined,
         powerSource: null, powerGen: null, waveAwake: undefined, _awakeUntil: undefined,

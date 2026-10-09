@@ -2183,6 +2183,52 @@ function _monoSprite(col, dark, tier) {
     _monoSprites.set(key, e);
     return e;
 }
+// THE BATTERY (isBatteryPylon, config.js): a squat boxy cell of dark metal.
+// Each of its two front faces carries a window of four stacked charge cells
+// in its element's colour — one lit per network tier it is part of, plus one
+// for itself — and two terminals sit on top, the element-coloured one live.
+function drawBatteryPylon(px, base, colour, tier, pulse, dark) {
+    const hw = 13, hh = 6.5, H = 36, by = base - 2;
+    const col = dark ? "#5c6370" : colour;
+    ctx.save();
+    // Body.
+    ctx.fillStyle = "#151b26";
+    ctx.beginPath(); ctx.moveTo(px - hw, by - H); ctx.lineTo(px, by + hh - H); ctx.lineTo(px, by + hh); ctx.lineTo(px - hw, by); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#1e2533";
+    ctx.beginPath(); ctx.moveTo(px + hw, by - H); ctx.lineTo(px, by + hh - H); ctx.lineTo(px, by + hh); ctx.lineTo(px + hw, by); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#2a3242";
+    ctx.beginPath(); ctx.moveTo(px, by - hh - H); ctx.lineTo(px + hw, by - H); ctx.lineTo(px, by + hh - H); ctx.lineTo(px - hw, by - H); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "#4f5b74"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px - hw, by - H); ctx.lineTo(px, by + hh - H); ctx.lineTo(px + hw, by - H); ctx.moveTo(px, by + hh - H); ctx.lineTo(px, by + hh); ctx.stroke();
+    // A band of its colour round the shoulder.
+    ctx.strokeStyle = col; ctx.globalAlpha = 0.75; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px - hw, by - H + 5); ctx.lineTo(px, by + hh - H + 5); ctx.lineTo(px + hw, by - H + 5); ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Charge cells on both front faces: four, bottom up; lit = tier + 1.
+    const lit = dark ? 0 : Math.min(4, (tier || 0) + 1);
+    for (const side of [-1, 1]) {
+        for (let k = 0; k < 4; k++) {
+            const y0 = by - 7 - k * 6.5;
+            const x0 = px + side * 4, x1 = px + side * 10;
+            const sk = (x) => Math.abs(x - px) * 0.5;   // the face rises away from the front edge
+            const on = k < lit;
+            ctx.fillStyle = on ? col : "#0b0f16";
+            ctx.globalAlpha = on ? (k === lit - 1 ? 0.7 + 0.3 * pulse : 0.95) : 1;
+            ctx.beginPath();
+            ctx.moveTo(x0, y0 - sk(x0)); ctx.lineTo(x1, y0 - sk(x1)); ctx.lineTo(x1, y0 - 4.5 - sk(x1)); ctx.lineTo(x0, y0 - 4.5 - sk(x0)); ctx.closePath(); ctx.fill();
+        }
+    }
+    ctx.globalAlpha = 1;
+    // Terminals: the live one in its colour, the other bare metal.
+    const term = (dx, top) => {
+        const x = px + dx, y = by - H - 1;
+        ctx.fillStyle = "#121720"; ctx.fillRect(x - 3, y - 5, 6, 5);
+        ctx.fillStyle = top; ctx.beginPath(); ctx.ellipse(x, y - 5, 3, 1.5, 0, 0, Math.PI * 2); ctx.fill();
+    };
+    term(-5, "#6b7487"); term(5, col);
+    ctx.restore();
+}
+
 // `ghost` (0..1) fades the whole tablet: the see-through pylons round a
 // black hole (js/formations.js).
 function drawWaveMonolith(px, base, colour, dark, tier, asleep, ghost) {

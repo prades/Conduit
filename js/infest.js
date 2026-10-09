@@ -333,7 +333,7 @@ function convertPylonToRed(t, pred) {
     // It stops working for you: no turret, no wave zone, no generator duty.
     t.attackMode = false; t.waveMode = false;
     t.attackModeElement = null; t.attackModeColor = null;
-    t.isGenerator = false; t.isConnector = false;
+    t.isGenerator = false; t.isConnector = false; t.isBattery = false;
     t.upgraded = false;
     // Any nest link through it is severed, both ways.
     if (t.nestConnection) { t.nestConnection.connectedPylon = null; t.nestConnection = null; }

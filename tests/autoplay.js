@@ -81,14 +81,15 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     await check('THE ASK: it builds a generator at a nest you hold, then grows a linked network to tier III', () => {
         fresh(6);
-        const r = run(`(function(){ for (let i = 0; i < 14; i++) { _autoBuild(); _cacheAge = -999; render(); }
+        const r = run(`(function(){ for (let i = 0; i < 24; i++) { _autoBuild(); _cacheAge = -999; render(); }
             const home = homePortalTile();
             const gen = world.find(t => t.pillar && t.isGenerator && Math.hypot(t.x - home.x, t.y - home.y) <= GENERATOR_NEST_RANGE);
             const el = home._autoEl; const net = world.filter(t => t.pillar && t.attackModeElement === el && !t.isGenerator && !t.isConnector);
-            return { gen: !!gen, el, n: net.length, tier: networkStrength[el], waves: net.filter(t => t.waveMode).length, cons: world.filter(t => t.pillar && t.isConnector).length }; })()`);
+            return { gen: !!gen, el, n: net.filter(t => !t.isBattery).length, bats: net.filter(t => t.isBattery).length, tier: networkStrength[el], waves: net.filter(t => t.waveMode).length, cons: world.filter(t => t.pillar && t.isConnector).length }; })()`);
         ok(r.gen, 'no generator');
         ok(r.el === 'core', 'the network should be in the commonest squad element: ' + r.el);
-        ok(r.n === run('AUTOPLAY_NETWORK_SIZE') && r.tier === 3, JSON.stringify(r));
+        // The tier comes from a bank of batteries now (config.js BATTERY_TIER_SIZES).
+        ok(r.n === run('AUTOPLAY_NETWORK_SIZE') && r.bats === run('AUTOPLAY_BATTERIES') && r.tier === 3, JSON.stringify(r));
         ok(r.waves >= 2, 'no support/disruption pylons in the mix: ' + r.waves);
         ok(r.cons >= 1, 'no connector reaching toward the next zone');
     });
