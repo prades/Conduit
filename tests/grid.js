@@ -130,7 +130,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${b}, got 
     });
     await check('the radial offers NEST OFF / NEST ON on a nest you hold, by drag and by tap', () => {
         ok(/"NEST ON" : "NEST OFF"/.test(rd('js/draw.js')) && /leftAction = "toggle_nest"/.test(rd('js/draw.js')), 'no button');
-        ok(/selectedRadialAction = "toggle_nest"/.test(rd('js/input.js')), 'the tap path does not mirror it');
+        // Since TELEPORT took the left button out of build mode, NEST ON/OFF is
+        // the build-mode left button; the tap path mirrors that choice.
+        ok(/selectedRadialAction = buildMode \? "toggle_nest"/.test(rd('js/input.js')), 'the tap path does not mirror it');
         scene();
         const r = run(`(function(){ commandTarget = null; commandFollowerTarget = null; commandEnemyTarget = null;
             commandNestTarget = __s.n2; selectedRadialAction = 'toggle_nest'; executeCommand(); return __s.n2.powerOff; })()`);

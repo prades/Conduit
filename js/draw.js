@@ -170,10 +170,16 @@ function drawRadialMenu() {
         leftAction = "toggle_circuit";
     }
     // A live nest has no order: you HACK it by standing in front of it. A nest
-    // you hold links itself to nearby relays (autoLinkRelays) — and its power
-    // can be switched off and on here (toggleNestPower in power.js).
+    // you hold links itself to nearby relays (autoLinkRelays). Out of build
+    // mode its left button TELEPORTS you to your front nest (or home from the
+    // front one — teleportToNest in commands.js); in build mode it switches
+    // the nest's power off and on (toggleNestPower in power.js).
     else if (!isPylonTarget && commandNestTarget && nestIsPowerSource(commandNestTarget)) {
-        leftLabel = commandNestTarget.powerOff ? "NEST ON" : "NEST OFF"; leftAction = "toggle_nest";
+        if (buildMode) { leftLabel = commandNestTarget.powerOff ? "NEST ON" : "NEST OFF"; leftAction = "toggle_nest"; }
+        else {
+            leftLabel = teleportLabel(commandNestTarget);
+            leftAction = teleportDestination(commandNestTarget) ? "teleport" : null;
+        }
     }
     // Your own attack turret or wave pylon: CONVERT opens a picker offering
     // the other kind (commands.js convert_pylon). The element is kept.

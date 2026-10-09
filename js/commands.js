@@ -220,6 +220,58 @@ function demolishPylon(t) {
     return true;
 }
 
+// ── TELEPORT ─────────────────────────────────────────────
+// "Next to each controlled nest, including the home zone, there should be an
+// option saying teleport to zone, and it will teleport to the controlled zone
+// closest to the enemy." Hold a nest you hold (build mode off) → left of the
+// ring: TELEPORT. It takes you, and the squad following you, to your FRONT
+// nest — the held nest furthest toward the enemy. Pressed on the front nest
+// itself, it takes you home instead.
+function teleportHeldNests() {
+    return world.filter(t => t.nest && nestIsPowerSource(t) && (isHomePortal(t) || getZoneIndex(t.x) >= 1));
+}
+function teleportDestination(from) {
+    const held = teleportHeldNests();
+    if (!held.length) return null;
+    const front = held.reduce((a, b) => (b.x > a.x ? b : a));
+    if (from && front === from) {
+        const home = held.find(t => isHomePortal(t));
+        return home && home !== from ? home : null;
+    }
+    return front;
+}
+function teleportLabel(from) {
+    const d = teleportDestination(from);
+    if (!d) return "NO ZONE HELD";
+    return isHomePortal(d) ? "TELEPORT HOME" : "TELEPORT \u00b7 ZONE " + getZoneIndex(d.x);
+}
+// Where you land: the floor in front of the nest's mouth.
+function teleportSpot(n) { return { x: n.x + 1, y: 1.5 }; }
+function teleportToNest(dest) {
+    if (!dest || !dest.nest || !nestIsPowerSource(dest)) return false;
+    const to = teleportSpot(dest), fromX = player.x, fromY = player.y;
+    // The squad that is following you comes too; anyone on a job, holding a
+    // position, hauling or heading home stays where it is.
+    const party = actors.filter(a => !a.dead && a.team === "green" && (a.isFollower || a.isClone)
+        && (a.stance || "follow") === "follow" && !a.job && a.duty !== "worker" && !a.returningToCrystal
+        && Math.hypot(a.x - fromX, a.y - fromY) < 12);
+    player.x = player.targetX = player.visualX = to.x;
+    player.y = player.targetY = player.visualY = to.y;
+    party.forEach((a, i) => {
+        const ang = i / Math.max(1, party.length) * Math.PI * 2;
+        a.x = a.lastX = to.x + Math.cos(ang) * 1.2;
+        a.y = a.lastY = Math.max(0.2, Math.min(3, to.y + Math.sin(ang) * 0.9));
+    });
+    for (const [x, y] of [[fromX, fromY], [to.x, to.y]])
+        elementEffects.push({ type: "impact", x, y, color: "#7fd6ff", radius: 0.9, life: 26 });
+    const z = getZoneIndex(dest.x);
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, color: "#7fd6ff", life: 100, vy: -0.2, size: 13,
+        text: (isHomePortal(dest) ? "TELEPORTED HOME" : "TELEPORTED \u00b7 ZONE " + z) + (party.length ? " \u00b7 SQUAD OF " + party.length : "") });
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+    if (typeof saveSession === "function") { try { saveSession(); } catch (e) {} }
+    return true;
+}
+
 // Can this pylon be upgraded at all? Only one you own.
 //
 // The upgrade path set attackMode, attackModeElement and attackModeColor and
@@ -310,7 +362,7 @@ function executeCommand() {
     commandMode=false; commandPendingTap=false;
     if (!selectedRadialAction) return;
     if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
-    const isNestCmd = selectedRadialAction==="attack_nest"||selectedRadialAction==="toggle_nest"||selectedRadialAction==="overcharge";
+    const isNestCmd = selectedRadialAction==="attack_nest"||selectedRadialAction==="toggle_nest"||selectedRadialAction==="overcharge"||selectedRadialAction==="teleport";
     if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
     if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;
 
@@ -388,6 +440,11 @@ function executeCommand() {
         }
         case "toggle_nest": {
             if (commandNestTarget) toggleNestPower(commandNestTarget);
+            break;
+        }
+        // ── LEFT (build mode off) on a nest you hold: TELEPORT ──
+        case "teleport": {
+            if (commandNestTarget) teleportToNest(teleportDestination(commandNestTarget));
             break;
         }
         // ── TOP (build mode off): OVERCHARGE a nest's grid ──

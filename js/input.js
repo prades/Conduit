@@ -538,7 +538,8 @@ canvas.addEventListener('pointerup', e=>{
                 else if (_isPyCmd && isSwitchableRelay(commandTarget) && commandTarget.pillarTeam === "green")
                                        selectedRadialAction = "toggle_circuit";
                 else if (!_isPyCmd && commandNestTarget && nestIsPowerSource(commandNestTarget))
-                                       selectedRadialAction = "toggle_nest";
+                                       selectedRadialAction = buildMode ? "toggle_nest"
+                                           : (teleportDestination(commandNestTarget) ? "teleport" : null);
                 else if (_isPyCmd && commandTarget.pillarTeam === "green" && !isRelayPylon(commandTarget)
                          && (commandTarget.attackMode || commandTarget.waveMode))
                                        selectedRadialAction = "convert_pylon";

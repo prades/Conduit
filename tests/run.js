@@ -58,6 +58,7 @@ const SUITES = [
     ['difficulty + drop-offs', 'difficulty.js'],
     ['shield generator',       'shieldgen.js'],
     ['shard thieves + machines', 'raids.js'],
+    ['teleport',               'teleport.js'],
 ];
 
 let failed = 0;
