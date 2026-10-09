@@ -240,7 +240,11 @@ check('with none hurt it still escorts the nearest, ready for when one is', () =
     ok(dist(w, c) < 2, `it did not take station: ${dist(w, c).toFixed(2)} away`);
 });
 
-check('it mends ONLY clones — not followers, not the player, not enemies', () => {
+// REPORTED: "buff the toxic workers' ability." It used to mend clones and
+// nothing else; with no clone to tend it now mends a hurt follower (at half
+// rate), and round a clone it patches up your other units too. Never an enemy
+// or the player.
+check('with no clone, it mends a hurt follower — never the player or an enemy', () => {
     const env = makeEnv();
     const w = follower(env, 'toxic', 10, 2);
     const mate = follower(env, 'core', 10.3, 2, 'fighter');
@@ -249,8 +253,22 @@ check('it mends ONLY clones — not followers, not the player, not enemies', () 
     foe.health = 10;
     env.sandbox.player.health = 10;
     work(env, w, 120);
-    same(mate.health, 10, 'it healed an ordinary follower');
+    if (!(mate.health > 10)) throw new Error('it left a hurt follower hurt: ' + mate.health);
     same(foe.health, 10, 'it healed an enemy');
+    same(env.sandbox.player.health, 10, 'it healed the player');
+});
+check('round the clone it mends, it patches up the others too', () => {
+    const env = makeEnv();
+    const w = follower(env, 'toxic', 10, 2);
+    const c = clone(env, 10.4, 2, 60);
+    const mate = follower(env, 'core', 10.9, 2.3, 'fighter');
+    mate.health = 10;
+    work(env, w, 60);
+    if (!(c.health > 60)) throw new Error('the clone was not mended');
+    if (!(mate.health > 10)) throw new Error('the follower beside the clone was not patched up: ' + mate.health);
+});
+check('it mends at the buffed rate', () => {
+    if (!(MEND_RATE >= 0.14)) throw new Error('MEND_RATE ' + MEND_RATE + ' is not the buffed rate (was 0.07)');
 });
 
 check('it does NO damage, as before', () => {

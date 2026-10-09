@@ -1397,6 +1397,31 @@ function shieldFieldTick() {
     }
 }
 
+// ── PREDATORS GO FOR THE SHIELD GENERATORS ───────────────
+// REPORTED: "more enemies need to attack shield generators." At night and in
+// any alarm, SHIELD_GEN_HUNT_SHARE of predators (decided once each) turn on
+// the nearest shield generator within SHIELD_GEN_HUNT_RANGE and bash it (the
+// pylonAggro bash in Predator.update). Machines, thieves, the grub and the
+// tyrant keep their own business.
+function shieldGenHuntTick() {
+    if (frame % 30 !== 0 || typeof _genPylons === "undefined" || !_genPylons.length) return 0;
+    if (!(alertActive || gameState.phase === "night")) return 0;
+    const gens = _genPylons.filter(g => !g.destroyed && g.health > 0 && g.pillarTeam === "green");
+    if (!gens.length) return 0;
+    const r2 = SHIELD_GEN_HUNT_RANGE * SHIELD_GEN_HUNT_RANGE;
+    let n = 0;
+    for (const a of actors) {
+        if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone || a.pylonAggro) continue;
+        if (a.isMachine || a.raider || a.isGrub || a.isBrood || a.isTutorialFoe || a.untargetable) continue;
+        if (a._genHunter === undefined) a._genHunter = Math.random() < SHIELD_GEN_HUNT_SHARE;
+        if (!a._genHunter) continue;
+        let best = null, bd = r2;
+        for (const g of gens) { const d = (g.x - a.x) ** 2 + (g.y - a.y) ** 2; if (d < bd) { bd = d; best = g; } }
+        if (best) { a.pylonAggro = best; n++; }
+    }
+    return n;
+}
+
 function rebuildPylonPairs() {
     _wPylonPairs = [];
     const _ufParent = new Map();
@@ -2234,10 +2259,13 @@ function render() {
     if (typeof broodSpawnTick === "function") broodSpawnTick();
     // ── RAIDS — shard thieves in the quiet, and the machines they pay for ──
     if (typeof raidTick === "function") raidTick();
+    // ── ELEMENTAL BREAKOUT — elements for every predator on that night ──
+    if (typeof breakoutTick === "function") breakoutTick();
 
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
     shieldFieldTick();
+    shieldGenHuntTick();
 
     // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
     if (frame % 3 === 0) {
@@ -2432,6 +2460,7 @@ function render() {
             drawNPC(obj.actor,px,py);
             if (obj.actor.nestMass) drawPredatorNestMass(obj.actor, px, py + TILE_H);
             if (obj.actor.raider) drawThiefTag(obj.actor, px, py + TILE_H);
+            if (obj.actor._breakout && typeof drawBreakoutFlare === "function") drawBreakoutFlare(obj.actor, px, py);
         }
         else if (obj.type==='groundItem') {
             const gi=obj.item;

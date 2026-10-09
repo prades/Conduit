@@ -72,10 +72,17 @@ const PYLON_REPAIR_RATE = 0.006;
 // The mender stands AT its clone rather than at arm's length, because the point
 // is to move with it — a medic that hangs back is one that is out of range the
 // moment the clone steps forward.
-const MEND_RANGE        = 1.6;   // how close it has to be to mend at all
+// REPORTED: "buff the toxic workers' ability." Twice the rate and a longer
+// reach; it also patches up your other units round its clone (MEND_SPLASH),
+// tends hurt followers when there is no clone to tend, and the clone it is
+// mending takes MEND_GUARD of each hit (applyDamage).
+const MEND_RANGE        = 2.0;   // how close it has to be to mend at all
 const MEND_ESCORT       = 1.1;   // how close it tries to stay while escorting
-const MEND_RATE         = 0.07;  // HP per frame → ~4.2/s, a shade over the
-                                 // generator aura, which is a whole network
+const MEND_RATE         = 0.15;  // HP per frame → 9/s (was 0.07)
+const MEND_SPLASH       = 1.8;   // tiles: other units round the clone mended too …
+const MEND_SPLASH_SHARE = 0.5;   // … at this share of the rate
+const MEND_GUARD        = 0.8;   // the mended clone takes this much of each hit
+const MEND_GUARD_FRAMES = 20;    // for this long after the last mend
 const MEND_COLOUR       = '#66ff66';
 
 // ── ICE / BLOCK tuning ───────────────────────────────────
@@ -363,6 +370,16 @@ function mendStep(actor, clone) {
     clone.health = Math.min(cap, clone.health + MEND_RATE);
     return clone.health - before;
 }
+// The rest of your side round the clone, at a share of the rate.
+function mendSplash(actor, clone) {
+    let n = 0;
+    for (const a of actors) {
+        if (a === actor || a === clone || a.dead || a.team !== "green" || !(a.isFollower || a.isClone)) continue;
+        if (Math.hypot(a.x - clone.x, a.y - clone.y) > MEND_SPLASH || !(a.health < (a.maxHealth || 0))) continue;
+        a.health = Math.min(a.maxHealth, a.health + MEND_RATE * MEND_SPLASH_SHARE); n++;
+    }
+    return n;
+}
 
 function _workMendClone(actor) {
     let clone = actor._mendTarget;
@@ -370,7 +387,19 @@ function _workMendClone(actor) {
         || Math.hypot(clone.x - actor.x, clone.y - actor.y) > MASS_SEEK_RANGE) {
         clone = actor._mendTarget = _nearestCloneToTend(actor);
     }
-    if (!clone) return false;   // no clone to tend — fall through to holding station
+    if (!clone) {
+        // No clone to tend: it mends the nearest hurt follower instead.
+        let f = null, fd = MASS_SEEK_RANGE;
+        for (const a of actors) {
+            if (a === actor || a.dead || a.team !== "green" || !a.isFollower || !(a.health < (a.maxHealth || 0))) continue;
+            const d = Math.hypot(a.x - actor.x, a.y - actor.y);
+            if (d < fd) { fd = d; f = a; }
+        }
+        if (!f) return false;   // nobody hurt — fall through to holding station
+        if (fd > MEND_ESCORT) _moveToward(actor, f.x, f.y, 1.1); else actor.state = 'idle';
+        if (fd <= MEND_RANGE) f.health = Math.min(f.maxHealth, f.health + MEND_RATE * MEND_SPLASH_SHARE);
+        return true;
+    }
 
     // It keeps STATION on the clone rather than closing to contact once and
     // stopping. The clone moves; a mender that parked where the clone used to
@@ -380,6 +409,8 @@ function _workMendClone(actor) {
     else                 actor.state = 'idle';
 
     if (d <= MEND_RANGE) {
+        clone._mendedAt = frame;
+        mendSplash(actor, clone);
         const healed = mendStep(actor, clone);
         if (healed > 0 && typeof elementEffects !== 'undefined' && (frame || 0) % 8 === 0) {
             elementEffects.push({ type: 'impact', x: clone.x, y: clone.y,

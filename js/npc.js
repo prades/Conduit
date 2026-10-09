@@ -132,6 +132,7 @@ function updateRTSNPC(actor) {
             p.attackModeColor = p.chosenColor || (_chEl ? _chEl.color : actor.color) || "#0f8";
             // Neutral pylons carry no element, so the flag travels with the choice.
             p.isGenerator = (p.attackModeElement === GENERATOR_ID);
+            if (p.isGenerator) { p.maxHealth = SHIELD_GEN_HP; p.health = p.maxHealth; }
             p.isConnector = (p.attackModeElement === CONNECTOR_ID);
             if (p.isConnector && p.circuitOn === undefined) p.circuitOn = true;
             if (!p.isGenerator && !p.isConnector && isWaveKind(p.chosenKind)) { p.waveMode = true; p.attackMode = false; }
@@ -176,6 +177,7 @@ function updateRTSNPC(actor) {
                     const _chEl=PYLON_PICKER_TYPES.find(e=>e.id===p.chosenElement);
                     p.attackModeColor=p.chosenColor||(_chEl?_chEl.color:"#0f8");
                     p.isGenerator=(p.chosenElement===GENERATOR_ID);
+                    if (p.isGenerator) { p.maxHealth = SHIELD_GEN_HP; p.health = p.maxHealth; }
                     p.isConnector=(p.chosenElement===CONNECTOR_ID);
                     if (p.isConnector && p.circuitOn === undefined) p.circuitOn = true;
                     p.attackPower=TURRET_POWER; p.attackRange=TURRET_RANGE;

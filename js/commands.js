@@ -186,6 +186,7 @@ function _executeBuildInstant(el, t, kind) {
         t.chosenElement=el.id; t.chosenColor=el.color;
         t.isGenerator=(el.id===GENERATOR_ID);
         t.isConnector=(el.id===CONNECTOR_ID); t.circuitOn=true;
+        if (t.isGenerator) { t.maxHealth = SHIELD_GEN_HP; t.health = t.maxHealth; }
         _applyPylonKind(t, kind);
     }
     const _kindLabel = isRelayId(el.id) ? "" : kind === "battery" ? " BATTERY" : (isWaveKind(kind) ? " " + waveRoleLabel(el.id) + " PYLON" : " TURRET");

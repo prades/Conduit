@@ -335,13 +335,21 @@ const DEMOLISH_REFUND = 8;
 // to SHIELD_GEN_SHARE of its max health (at least SHIELD_GEN_MIN), paying
 // SHIELD_GEN_COST power per point. A shield soaks every hit whole until it
 // breaks (applyDamage); after a hit it waits SHIELD_GEN_DELAY before charging.
-const SHIELD_GEN_RANGE    = 4;     // tiles round the shield generator
+// REPORTED: "buff the shield generator" (with "more enemies need to attack
+// shield generators" — SHIELD_GEN_HUNT_* below). Was 4 tiles, 5 a charge,
+// half max HP (min 20), 3 s after a hit, 0.05 power a point, 80 HP.
+const SHIELD_GEN_RANGE    = 5;     // tiles round the shield generator
 const SHIELD_GEN_INTERVAL = 30;    // frames between charges
-const SHIELD_GEN_RATE     = 5;     // shield per charge
-const SHIELD_GEN_SHARE    = 0.5;   // cap: this share of the unit's max health …
-const SHIELD_GEN_MIN      = 20;    // … but never less than this
-const SHIELD_GEN_DELAY    = 180;   // frames after a hit before it charges again
-const SHIELD_GEN_COST     = 0.05;  // nest power per shield point
+const SHIELD_GEN_RATE     = 8;     // shield per charge
+const SHIELD_GEN_SHARE    = 0.75;  // cap: this share of the unit's max health …
+const SHIELD_GEN_MIN      = 30;    // … but never less than this
+const SHIELD_GEN_DELAY    = 120;   // frames after a hit before it charges again
+const SHIELD_GEN_COST     = 0.03;  // nest power per shield point
+const SHIELD_GEN_HP       = 240;   // the generator's own health (a pylon has 80)
+// At night (and in any alarm) this share of predators goes for the nearest
+// shield generator within reach and bashes it; hunters prefer them by day.
+const SHIELD_GEN_HUNT_SHARE = 0.35;
+const SHIELD_GEN_HUNT_RANGE = 8.5;  // tiles (inside PYLON_AGGRO_GIVE_UP)
 const SHIELD_GEN_COLOR    = "#dff3ff";
 // ── THE EFFECTS PLAN ─────────────────────────────────────
 // REPORTED: "the graphics and the atmospheric effects get way too crazy ...
@@ -520,6 +528,7 @@ const SIEGES = {
     swarm:    { label: "SWARM TIDE",    color: "#c4ff5a", line: "Nymph swarms pour in \u2014 more of them, half the health." },
     hunt:     { label: "HUNTER'S MOON", color: "#ff7755", line: "Every predator hunts your pylons. They are tougher tonight." },
     storm:    { label: "STATIC STORM",  color: "#fff27a", line: "Electric everything is doubled \u2014 for both sides." },
+    breakout: { label: "ELEMENTAL BREAKOUT", color: "#ff8ae2", line: "Every predator burns with an element \u2014 hit it with what beats it (js/breakout.js)." },
 };
 const SIEGE_FROM_NIGHT   = 3;
 const SIEGE_SWARM_NYMPH  = 0.7;   // share of spawns that become nymphs
@@ -768,12 +777,15 @@ const MAX_LIVE_PREDATORS = 24;
 // clone is built. A clone that died and respawned, or one restored at the start
 // of a wave, came back at ordinary predator strength. All three go through
 // makeClone() in js/clone.js now.
-const CLONE_POWER_MULT  = 3;
-const CLONE_HEALTH_MULT = 3;
+// REPORTED: "clones need to be more powerful." Four times, not three, and
+// (makeClone) grown with the depth of your frontier the way the predators
+// are, so a clone made deep in the tunnel is not a zone-1 creature.
+const CLONE_POWER_MULT  = 4;
+const CLONE_HEALTH_MULT = 4;
 // Followers respawn in 3 seconds. A clone is worth far more than that, so
 // losing one has to cost something — it comes back, slowly, and the Crystal
 // shows the countdown.
-const CLONE_RESPAWN_FRAMES = 1800;   // 30 seconds
+const CLONE_RESPAWN_FRAMES = 1200;   // 20 seconds (was 30)
 // How likely a freshly generated wall panel is a DECOY that trips an alarm.
 //
 // Was 0.40 per panel, which measured at 28% and 5.4 decoys across the first

@@ -37,7 +37,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
             return { early, later }; })()`);
         ok(r.early === null, 'a modifier on night ' + (run('SIEGE_FROM_NIGHT') - 1));
         ok(r.later.every(x => run('Object.keys(SIEGES)').includes(x)), JSON.stringify(r.later));
-        ok(new Set(r.later).size === 4, 'not every modifier came up in 40 nights: ' + [...new Set(r.later)]);
+        ok(new Set(r.later).size === run('Object.keys(SIEGES).length'), 'not every modifier came up in 40 nights: ' + [...new Set(r.later)]);
     });
     await check('never the same two nights running', () => {
         const seq = run(`(function(){ siegeLast = null; const s = []; for (let i = 0; i < 60; i++) { s.push(rollSiege(10)); endSiege(); } return s; })()`);

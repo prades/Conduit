@@ -258,6 +258,12 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     }
     // STATIC STORM (a siege night): electric hits land double, whoever throws them.
     if (element === "electric" && typeof siegeIs === "function" && siegeIs("storm")) amount *= SIEGE_STORM_MULT;
+    // THE ELEMENT WHEEL (js/breakout.js): every hit whose element is known —
+    // the hit's own, or its attacker's — against any target with an element.
+    // (It used to run only inside applyElementalDamage, which now leaves it here.)
+    if (typeof wheelMult === "function") amount *= wheelMult(element || (source && source.element), target);
+    // An ELEMENTAL BREAKOUT predator's hit can set its element's status.
+    if (source && source._breakout && typeof breakoutProc === "function") breakoutProc(source, target);
     // THE GOO MACHINES (js/raids.js): fire barely marks them, electric tears through.
     if (target.isMachine && typeof machineElementMult === "function") amount *= machineElementMult(target, element || (source && source.element));
     if (target.untargetable) return;   // underground: nothing reaches it
@@ -289,6 +295,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
         }
     }
     if (target.defenseShredded > 0) amount *= 1 / (target.defenseShredFactor||0.5);
+    // A clone a TOXIC worker is mending is hardened by it (js/mass.js).
+    if (target.isClone && target._mendedAt !== undefined && typeof MEND_GUARD === "number" && frame - target._mendedAt < MEND_GUARD_FRAMES) amount *= MEND_GUARD;
     // Command Node — 10% incoming damage reduction for followers
     if (target && target.isFollower && target.team === "green") {
         amount *= getFollowerDefMult();
@@ -359,7 +367,9 @@ function applyElementalDamage(target, amount, source, element) {
     const mult = getElementMultiplier(element, target.element);
     if (mult > 1) floatingTexts.push({x:target.x,y:target.y-1,text:'WEAK!',color:'#ffcc00',life:40,vy:-0.04});
     else if (mult < 1) floatingTexts.push({x:target.x,y:target.y-1,text:'RESIST',color:'#88aaff',life:40,vy:-0.04});
-    applyDamage(target, amount * mult, source, element);
+    // The multiplier itself is applied inside applyDamage (the wheel runs on
+    // every hit now); this only says WEAK / RESIST.
+    applyDamage(target, amount, source, element);
 }
 
 // ──────────────────────────────────────────────────────

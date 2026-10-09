@@ -61,6 +61,8 @@ const SUITES = [
     ['teleport',               'teleport.js'],
     ['ultra turret',           'ultra.js'],
     ['black hole',             'formations.js'],
+    ['buffs',                  'buffs.js'],
+    ['elemental breakout',     'breakout.js'],
 ];
 
 let failed = 0;

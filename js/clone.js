@@ -106,6 +106,15 @@ function makeClone(speciesName, className, x, y, state) {
     clone.team        = "green";
     clone.isClone     = true;
     clone.power       = Math.round(clone.power * CLONE_POWER_MULT);
+    // Grown with the frontier's depth, the same ramp the predators get
+    // (applyZoneDifficulty in config.js), so it keeps up with what it fights.
+    if (typeof rampLevel === "function" && typeof nextZoneToTake === "function") {
+        const z = nextZoneToTake(), r = rampLevel(z);
+        const deep = typeof deepZoneScale === "function" ? deepZoneScale(z) : { hp: 1, power: 1 };
+        const kH = (1 + RAMP_HP * r) * deep.hp, kP = (1 + RAMP_POWER * r) * deep.power;
+        clone.maxHealth = Math.round(clone.maxHealth * kH); clone.health = clone.maxHealth;
+        clone.power = Math.round(clone.power * kP);
+    }
     clone.speciesName = speciesName;
     clone.className   = className;
     if (typeof applySpeciesBody === "function") applySpeciesBody(clone, speciesName);

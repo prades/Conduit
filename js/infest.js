@@ -87,7 +87,8 @@ function nearestGreenPylonFor(pred) {
     for (const t of world) {
         if (!t.pillar || t.destroyed || t.health <= 0) continue;
         if (t.pillarTeam !== "green") continue;
-        const d = Math.hypot(t.x - pred.x, t.y - pred.y);
+        // A shield generator counts as half as far: hunters go for it first.
+        const d = Math.hypot(t.x - pred.x, t.y - pred.y) * (t.isGenerator ? 0.5 : 1);
         if (d < bestD) { bestD = d; best = t; }
     }
     return best;

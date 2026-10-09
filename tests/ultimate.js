@@ -648,7 +648,9 @@ async function boot(store) {
         const body = SRC.helpers.slice(at, next === -1 ? undefined : next);
         ok(body.length > 400, 'the applyDamage body could not be located');
         ok(/ARMY_SURGE_POWER/.test(body), 'the multiplier is not in the damage funnel');
-        ok(/applyDamage\(target, amount \* mult, source, element\)/.test(SRC.helpers),
+        // The wheel's multiplier moved inside applyDamage (js/breakout.js), so
+        // applyElementalDamage now hands on the plain amount.
+        ok(/function applyElementalDamage[\s\S]{0,600}applyDamage\(target, amount, source, element\)/.test(SRC.helpers),
            'applyElementalDamage no longer funnels into applyDamage');
     });
 
