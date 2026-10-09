@@ -156,6 +156,24 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/isMachine/.test(run('nextWave.toString()')), 'nextWave wipes every actor, machines included');
     });
 
+    await check('THE ASK: fire does little to the jellies, electric is good against them', () => {
+        reset();
+        const r = run(`(function(){
+            const m = spawnMachine('strider', __n2); m._assemble = 0;
+            const hit = el => { m.health = m.maxHealth = 1e6; m.shielded = false; applyDamage(m, 100, { team: 'green', x: m.x, y: m.y }, el); return 1e6 - m.health; };
+            return { fire: hit('fire'), electric: hit('electric'), ice: hit('ice'), bySource: (function(){ m.health = 1e6; applyDamage(m, 100, { team: 'green', element: 'fire' }); return 1e6 - m.health; })() };
+        })()`);
+        ok(Math.abs(r.ice - 100) < 1e-6, 'a neutral element did not land as normal: ' + JSON.stringify(r));
+        ok(r.fire <= r.ice * 0.3, 'fire is not weak: ' + JSON.stringify(r));
+        ok(r.electric >= r.ice * 1.9, 'electric is not strong: ' + JSON.stringify(r));
+        ok(r.bySource <= r.ice * 0.3, 'a fire attacker passing no element got through in full: ' + JSON.stringify(r));
+    });
+    await check('ordinary predators are not affected', () => {
+        const r = run(`(function(){ const S = SPECIES.ant, q = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 0, 0); q.team = 'red'; q.health = q.maxHealth = 1e6;
+            applyDamage(q, 100, { team: 'green' }, 'fire'); return 1e6 - q.health; })()`);
+        ok(Math.abs(r - 100) < 1e-6, 'a predator took ' + r + ' from a 100 fire hit');
+    });
+
     group('SAVE');
 
     await check('the nest bank and the machines survive a refresh', () => {

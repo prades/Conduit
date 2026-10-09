@@ -258,6 +258,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     }
     // STATIC STORM (a siege night): electric hits land double, whoever throws them.
     if (element === "electric" && typeof siegeIs === "function" && siegeIs("storm")) amount *= SIEGE_STORM_MULT;
+    // THE GOO MACHINES (js/raids.js): fire barely marks them, electric tears through.
+    if (target.isMachine && typeof machineElementMult === "function") amount *= machineElementMult(target, element || (source && source.element));
     if (target.untargetable) return;   // underground: nothing reaches it
     // THE TYRANT'S CARAPACE: half damage, unless a disruption pylon has it exposed.
     if (target.isBrood && typeof tyrantDamageMult === "function") amount *= tyrantDamageMult(target);

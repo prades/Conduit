@@ -44,6 +44,11 @@ const MACHINE_DEFS = {
     strider: { label: "STRIDER", health: 300, power: 10, moveSpeed: 0.012, range: 4, every: 90, salvage: 12, width: 30, height: 20,
                drainEvery: 150 },   // one shard out of your count per 2.5s on your nest
 };
+// REPORTED: "fire should do little damage to the jellies, electric is good
+// against them." Every hit on a machine is scaled by its element here
+// (applyDamage calls machineElementMult); anything not listed lands as normal.
+const MACHINE_ELEMENT_MULT = { fire: 0.25, electric: 2 };
+const MACHINE_ELEMENT_SAY  = 45;    // frames between RESIST / SHOCKED callouts on one machine
 const MACHINE_DRAW_SCALE = 1.7;    // drawn big: it is a structure, not one more bug
 const RAID_COLOR    = "#5ff0ff";    // stolen shards, siphon beams
 const MACHINE_RED   = "#ff3b30";   // its body colour in the predator record; the look is GOO below
@@ -285,6 +290,15 @@ function machineTick(m) {
             if (m._home && m._home.nestHealth > 0) { m._home.stolenStock = (m._home.stolenStock || 0) + 1; raidNestBuild(m._home); }
         }
     }
+}
+
+function machineElementMult(m, el) {
+    const k = (el && MACHINE_ELEMENT_MULT[el]) || 1;
+    if (k !== 1 && m && (m._elSaidAt === undefined || frame - m._elSaidAt >= MACHINE_ELEMENT_SAY)) {
+        m._elSaidAt = frame;
+        _raidText(m.x, m.y, k < 1 ? "FIRE RESISTED" : "SHOCKED \u00d7" + k, k < 1 ? "#ffb070" : "#ffee33", 11);
+    }
+    return k;
 }
 
 // Called by onPredatorDeath before its drops. True: nothing else drops.
