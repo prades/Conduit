@@ -61,7 +61,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('not three, not a mixed square, not other elements, not turrets', () => {
         ok(build(SQ.slice(0, 3), ['flux']).n === 0, 'three formed');
         ok(build(SQ, ['flux', 'flux', 'flux', 'fire']).n === 0, 'a mixed square formed');
-        ok(build(SQ, ['ice']).n === 0, 'ice formed something');
+        ok(build(SQ, ['toxic']).n === 0, 'toxic formed something');
         ok(build(SQ, ['flux', 'flux', 'fire', 'fire']).n === 0, 'half flux, half fire formed something');
     });
     await check('THE ASK: the four round a black hole are drawn see-through', () => {
@@ -153,6 +153,47 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r === 0, 'it burned a follower for ' + r);
     });
 
+    group('THE ICE GENERATOR');
+
+    await check('THE ASK: four ICE wave pylons in a square make an ice generator', () => {
+        const r = build(SQ, ['ice']);
+        ok(r.n === 1 && r.kinds[0] === 'icegen', JSON.stringify(r));
+    });
+    await check('THE ASK: frost on the ground round it, painted by each floor tile it covers', () => {
+        build(SQ, ['ice']);
+        const r = run(`(function(){ const F = _formations[0]._wform; let near = 0, far = 0;
+            for (const [k, G] of _frostTiles) { const [x, y] = k.split(',').map(Number); const d = Math.hypot(x + 0.5 - F.wx, y + 0.5 - F.wy); if (d < 1.5) near++; if (d > ICE_RADIUS + 1) far++; }
+            return { n: _frostTiles.size, near, far }; })()`);
+        ok(r.n >= 12 && r.near >= 4 && r.far === 0, JSON.stringify(r));
+        const g = rd('js/game.js');
+        ok(/drawFrostOnTile\(obj, px, py\);[\s\S]{0,200}drawCablesOnTile\(obj, px, py\)/.test(g), 'the floor pass does not paint the frost (under the cables)');
+    });
+    await check('enemies on the frost are slowed and chilled; the pulse roots them', () => {
+        build(SQ, ['ice']);
+        const r = run(`(function(){
+            const F = _formations[0]._wform, q = ${foe('_formations[0]._wform.wx + 1.8', '_formations[0]._wform.wy')};
+            frame = Math.floor(frame / ICE_PULSE) * ICE_PULSE + 1;
+            for (let i = 0; i < FORM_TICK + 1; i++) { formationTick(); frame++; }
+            const slow = q.slowFactor, hurt = 1e6 - q.health;
+            frame = (Math.floor(frame / ICE_PULSE) + 1) * ICE_PULSE; formationTick();
+            return { slow, hurt, root: q.slowFactor };
+        })()`);
+        ok(r.slow <= run('ICE_SLOW') + 1e-9 && r.hurt > 0, 'not slowed or chilled: ' + JSON.stringify(r));
+        ok(r.root <= run('ICE_ROOT_SLOW') + 1e-9, 'the pulse did not root it: ' + JSON.stringify(r));
+    });
+    await check('not past the frost, and never your squad', () => {
+        build(SQ, ['ice']);
+        const r = run(`(function(){
+            const F = _formations[0]._wform, q = ${foe('_formations[0]._wform.wx + ICE_RADIUS + 0.5', '_formations[0]._wform.wy')};
+            spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.stance = 'hold'; f.x = F.wx + 0.5; f.y = F.wy;
+            const h0 = f.health; f.slowed = 0;
+            for (let i = 0; i < ICE_PULSE + 2; i++) { f.x = F.wx + 0.5; f.y = F.wy; formationTick(); frame++; }
+            return { qHurt: 1e6 - q.health, qSlow: q.slowed > 0, fHurt: h0 - f.health, fSlow: f.slowed > 0 };
+        })()`);
+        ok(r.qHurt === 0 && !r.qSlow, 'it reached past its frost: ' + JSON.stringify(r));
+        ok(r.fHurt === 0 && !r.fSlow, 'it hit a follower: ' + JSON.stringify(r));
+    });
+
     group('DRAWING');
 
     await check('THE ASK: a vortex on the floor, painted from the front tile before its pylon', () => {
@@ -163,6 +204,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
         run('player.x = player.visualX = __X; player.y = player.visualY = 3; render(); drawFormationGround(_formations[0]._wform, 200, 200);');
         build(SQ, ['fire']);
         run('render(); drawFormationGround(_formations[0]._wform, 200, 200);');
+        build(SQ, ['ice']);
+        run('render(); drawFormationGround(_formations[0]._wform, 200, 200); const k = [..._frostTiles.keys()][0].split(",").map(Number); drawFrostOnTile(getTile(k[0], k[1]), 200, 200);');
     });
     await check('an enemy standing in it is drawn over it, not under it', () => {
         build(SQ, ['flux']);
@@ -173,7 +216,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('no glow, and the guide explains it', () => {
         ok(!/shadowBlur\s*=\s*[1-9]/.test(rd('js/formations.js')), 'formations.js sets a shadowBlur');
         const html = rd('game.html');
-        ok(/BLACK HOLE/.test(html) && /in the floor/.test(html) && /SPINNING FIREWALL/.test(html), 'the guide is out of date');
+        ok(/BLACK HOLE/.test(html) && /in the floor/.test(html) && /SPINNING FIREWALL/.test(html) && /ICE GENERATOR/.test(html), 'the guide is out of date');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');

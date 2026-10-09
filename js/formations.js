@@ -24,10 +24,18 @@
 //     wall sweeps over burns; it spins faster and burns hotter with enemies
 //     close. Kept inside its four tiles so it is drawn on the floor in depth
 //     order like the vortex, never over the tiles in front of it.
+//   - ICE GENERATOR (ice): "make an ice generator when 4 ice wave pylons are
+//     put together and make an ice effect on the ground near them". A cluster
+//     of ice crystals grows where the four meet and FROST spreads over the
+//     floor round it (ICE_RADIUS). Enemies on the frost are slowed and
+//     chilled; every ICE_PULSE frames it sends out a pulse that roots them
+//     where they stand for a moment. The frost is painted by each floor tile
+//     it covers (drawFrostOnTile, from the floor pass), so it lies under
+//     pylons and units however far it reaches.
 //   - Only while all four are powered: a dark square forms nothing.
 // ─────────────────────────────────────────────────────────
 
-const FORM_KINDS = { flux: "blackhole", fire: "firespin" };
+const FORM_KINDS = { flux: "blackhole", fire: "firespin", ice: "icegen" };
 const FORM_TICK        = 30;     // frames between damage ticks
 const FORM_TIER_BONUS  = 0.25;   // + damage per network tier
 const BH_RADIUS        = 2.5;    // tiles: what it entangles
@@ -45,9 +53,16 @@ const FS_SPIN_HOT      = 0.05;   // … plus this much more when it is hot
 const FS_DMG           = 14;     // per sweep
 const FS_HIT_EVERY     = 15;     // frames before the same enemy burns again
 const FS_HEAT_REACH    = 2.2;    // tiles: enemies this close heat it up
+const ICE_RADIUS       = 2.5;    // tiles of frost round the generator
+const ICE_SLOW         = 0.45;   // speed on the frost
+const ICE_DMG          = 4;      // chill, per tick
+const ICE_PULSE        = 240;    // frames between root pulses
+const ICE_ROOT         = 50;     // frames a pulse holds them
+const ICE_ROOT_SLOW    = 0.05;
 
 let _formations = [];            // anchors
 let _formState = new Map();      // "x,y" → { glow, size }, kept across rebuilds
+let _frostTiles = new Map();     // "x,y" of a floor tile → the ice generator frosting it
 
 function _formPylonOk(t, el) {
     return !!t && t.pillar && !t.destroyed && t.health > 0 && t.waveMode && !t.attackMode
@@ -72,16 +87,27 @@ function rebuildFormations() {
         const key = t.x + "," + t.y, kind = FORM_KINDS[el], old = _formState.get(key);
         const s = old || { glow: 0, size: 0, spin: 0 };
         state.set(key, s);
-        t._wform = { kind, el, tiles: sq, front: sq[3], col: t.attackModeColor || (kind === "blackhole" ? "#9933ff" : "#ff3300"), s,
+        t._wform = { kind, el, tiles: sq, front: sq[3], col: t.attackModeColor || ({ blackhole: "#9933ff", firespin: "#ff3300", icegen: "#99ddff" })[kind], s,
                      wx: t.x + 1, wy: t.y + 1, x0: t.x, y0: t.y, caught: [] };
         for (const p of sq) if (p !== t) p._wformOf = t;
         _formations.push(t);
         if (!old && typeof floatingTexts !== "undefined") {
             floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, color: t._wform.col, life: 130, vy: -0.2, size: 14,
-                                 text: kind === "blackhole" ? "\u25c6 BLACK HOLE FORMED" : "\u25c6 SPINNING FIREWALL FORMED" });
+                                 text: "\u25c6 " + ({ blackhole: "BLACK HOLE", firespin: "SPINNING FIREWALL", icegen: "ICE GENERATOR" })[kind] + " FORMED" });
         }
     }
     _formState = state;
+    // The floor tiles each ice generator frosts.
+    _frostTiles = new Map();
+    for (const t of _formations) {
+        const F = t._wform; if (F.kind !== "icegen") continue;
+        const R = Math.ceil(ICE_RADIUS) + 1;
+        for (let x = F.x0 - R; x <= F.x0 + R + 1; x++) for (let y = F.y0 - R; y <= F.y0 + R + 1; y++) {
+            const tile = getTile(x, y);
+            if (!tile || tile.type !== "floor") continue;
+            if (Math.hypot(x + 0.5 - F.wx, y + 0.5 - F.wy) < ICE_RADIUS + 0.75) _frostTiles.set(x + "," + y, F);
+        }
+    }
     return _formations.length;
 }
 
@@ -100,6 +126,7 @@ function formationTick() {
         if (!formationActive(F)) { F.s.glow *= 0.9; continue; }
         const src = { x: F.wx, y: F.wy, team: "green", element: F.el };
         if (F.kind === "firespin") { _fireSpinTick(F, src); continue; }
+        if (F.kind === "icegen") { _iceGenTick(F, src, hit); continue; }
         for (const a of actors) {
             if (!isHostileTarget(a)) continue;
             const dx = F.wx - a.x, dy = F.wy - a.y, d = Math.hypot(dx, dy);
@@ -141,6 +168,22 @@ function _fireSpinTick(F, src) {
         a._fsHitAt = f;
         applyDamage(a, _formDamage(F, FS_DMG * (1 + F.s.glow), a), src, "fire");
     }
+}
+
+function _iceGenTick(F, src, hit) {
+    const f = typeof frame !== "undefined" ? frame : 0;
+    const pulse = f % ICE_PULSE === 0;
+    for (const a of actors) {
+        if (!isHostileTarget(a) || Math.hypot(a.x - F.wx, a.y - F.wy) > ICE_RADIUS) continue;
+        F.caught.push(a);
+        if (typeof applySlow === "function") {
+            if (pulse) applySlow(a, ICE_ROOT, ICE_ROOT_SLOW);
+            else if (!(a.slowed > 0 && a.slowFactor < ICE_SLOW)) applySlow(a, 20, ICE_SLOW);
+        }
+        if (hit) applyDamage(a, _formDamage(F, ICE_DMG, a), src, "ice");
+    }
+    if (pulse) { F.s.pulseAt = f; if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: F.wx, y: F.wy, color: F.col, radius: ICE_RADIUS * 0.8, life: 30, element: "ice" }); }
+    F.s.glow += (Math.min(1, F.caught.length / 3) - F.s.glow) * 0.08;
 }
 
 // ── DRAWING ───────────────────────────────────────────────
@@ -310,4 +353,118 @@ function drawFireSpin(F, cx, cy) {
 function drawFormationGround(F, cx, cy) {
     if (F.kind === "blackhole") drawBlackHoleVortex(F, cx, cy);
     else if (F.kind === "firespin") drawFireSpin(F, cx, cy);
+    else if (F.kind === "icegen") drawIceGenerator(F, cx, cy);
+}
+
+// THE FROST, painted by each floor tile it covers (the floor pass in game.js
+// calls this right after the tile, before anything stands on it). One radial
+// wash centred on the generator, squashed to the floor, clipped to the tile —
+// so neighbouring tiles join seamlessly into one round frost patch — then
+// frost feathers etched into it, and the root pulse's ring as it passes.
+function drawFrostOnTile(obj, px, py) {
+    if (!_frostTiles.size) return;
+    const F = _frostTiles.get(Math.round(obj.x) + "," + Math.round(obj.y));
+    if (!F) return;
+    const on = formationActive(F), g = F.s.glow, f = typeof frame !== "undefined" ? frame : 0;
+    const cx = px + ((F.wx - obj.x) - (F.wy - obj.y)) * TILE_W, cy = py + ((F.wx - obj.x) + (F.wy - obj.y)) * TILE_H;
+    const R = ICE_RADIUS * TILE_W * Math.SQRT2;
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
+    ctx.save();
+    ctx.translate(cx, cy); ctx.scale(1, 0.5);
+    const wash = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+    const a0 = on ? 0.42 + 0.15 * g : 0.18;
+    wash.addColorStop(0, `rgba(215,240,255,${a0})`); wash.addColorStop(0.6, `rgba(170,220,250,${a0 * 0.6})`); wash.addColorStop(1, "rgba(150,210,250,0)");
+    ctx.fillStyle = wash; ctx.fillRect(-R, -R, R * 2, R * 2);
+    // The pulse: a bright ring running out across the frost.
+    const since = F.s.pulseAt === undefined ? Infinity : f - F.s.pulseAt;
+    if (on && since < 30) {
+        const r = R * (since / 30);
+        ctx.strokeStyle = `rgba(255,255,255,${0.8 * (1 - since / 30)})`; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
+    // Frost feathers: a stem and its barbs, fixed per tile, fainter further out.
+    const d = Math.hypot(obj.x + 0.5 - F.wx, obj.y + 0.5 - F.wy), k = Math.max(0, 1 - d / ICE_RADIUS);
+    if (k > 0) {
+        const rnd = n => { const v = Math.sin((obj.x * 12.9898 + obj.y * 78.233 + n) * 43758.5453); return v - Math.floor(v); };
+        ctx.strokeStyle = `rgba(255,255,255,${(on ? 0.55 : 0.25) * k})`; ctx.lineWidth = 1; ctx.lineCap = "round";
+        for (let i = 0; i < 3; i++) {
+            const sx = px + (rnd(i) - 0.5) * TILE_W * 1.1, sy = py + TILE_H + (rnd(i + 9) - 0.5) * TILE_H * 1.1;
+            const ang = rnd(i + 3) * Math.PI * 2, L = 10 + rnd(i + 5) * 14, ux = Math.cos(ang), uy = Math.sin(ang) * 0.5;
+            ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + ux * L, sy + uy * L);
+            for (let b = 1; b <= 3; b++) {
+                const bx = sx + ux * L * b / 4, by = sy + uy * L * b / 4, bl = L * 0.35 * (1 - b / 5);
+                for (const s of [-1, 1]) {
+                    const ba = ang + s * 0.9;
+                    ctx.moveTo(bx, by); ctx.lineTo(bx + Math.cos(ba) * bl, by + Math.sin(ba) * bl * 0.5);
+                }
+            }
+            ctx.stroke();
+        }
+        // A glint sliding across the ice.
+        const gl = ((f * 0.004 + rnd(20)) % 1);
+        if (on && gl < 0.25) {
+            ctx.strokeStyle = `rgba(255,255,255,${0.35 * k * (1 - gl * 4)})`; ctx.lineWidth = 2;
+            const gx = px - TILE_W + gl * 4 * TILE_W * 2;
+            ctx.beginPath(); ctx.moveTo(gx, py + TILE_H * 0.4); ctx.lineTo(gx + 14, py + TILE_H * 1.6); ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+// THE ICE GENERATOR: a cluster of tall ice crystals where the four pylons
+// meet — six-sided shards of pale translucent ice with lit and shaded faces
+// and white edges, leaning out from a glowing frost core — with snow lifting
+// off it. Brighter while it holds enemies; the core flashes on each pulse.
+function drawIceGenerator(F, cx, cy) {
+    const f = typeof frame !== "undefined" ? frame : 0, g = F.s.glow, on = formationActive(F);
+    const since = F.s.pulseAt === undefined ? Infinity : f - F.s.pulseAt;
+    const flash = on && since < 20 ? 1 - since / 20 : 0;
+    ctx.save();
+    // The core's light on the floor.
+    const cg = ctx.createRadialGradient(cx, cy, 2, cx, cy, 34);
+    cg.addColorStop(0, `rgba(230,250,255,${on ? 0.7 + 0.3 * flash : 0.25})`); cg.addColorStop(1, "rgba(160,220,255,0)");
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.ellipse(cx, cy, 34, 17, 0, 0, Math.PI * 2); ctx.fill();
+    // The shards, back to front: [screen dx, dy, height, half-width, lean].
+    const shards = [[-14, -8, 34, 6, -0.25], [12, -9, 40, 6.5, 0.2], [0, -4, 58, 8, 0], [-20, 4, 26, 5, -0.4], [19, 5, 30, 5.5, 0.35], [-4, 9, 20, 4.5, -0.1]];
+    for (const [dx, dy, h, w, lean] of shards) {
+        const bx = cx + dx, by = cy + dy, tx = bx + lean * h, ty = by - h;
+        const L = [bx - w, by], M = [bx, by + w * 0.5], Rr = [bx + w, by];
+        const tL = [tx - w * 0.8, ty + w], tM = [tx, ty + w * 1.3], tR = [tx + w * 0.8, ty + w];
+        const lit = on ? 0.55 + 0.25 * g + 0.2 * flash : 0.35;
+        ctx.fillStyle = `rgba(120,190,235,${lit})`;
+        ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(M[0], M[1]); ctx.lineTo(tM[0], tM[1]); ctx.lineTo(tL[0], tL[1]); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = `rgba(200,240,255,${lit + 0.1})`;
+        ctx.beginPath(); ctx.moveTo(M[0], M[1]); ctx.lineTo(Rr[0], Rr[1]); ctx.lineTo(tR[0], tR[1]); ctx.lineTo(tM[0], tM[1]); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = `rgba(235,250,255,${lit + 0.2})`;
+        ctx.beginPath(); ctx.moveTo(tL[0], tL[1]); ctx.lineTo(tM[0], tM[1]); ctx.lineTo(tR[0], tR[1]); ctx.lineTo(tx, ty); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.75)"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(M[0], M[1]); ctx.lineTo(tM[0], tM[1]); ctx.lineTo(tx, ty); ctx.moveTo(tL[0], tL[1]); ctx.lineTo(tx, ty); ctx.lineTo(tR[0], tR[1]); ctx.stroke();
+        // A glint running up the lit face.
+        const gp = (f * 0.01 + dx * 0.05) % 1;
+        if (on && gp < 0.4) {
+            const q = gp / 0.4;
+            ctx.strokeStyle = `rgba(255,255,255,${0.7 * (1 - q)})`; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(M[0] + (Rr[0] - M[0]) * 0.3 + (tM[0] - M[0]) * q, M[1] + (tM[1] - M[1]) * q);
+            ctx.lineTo(M[0] + (Rr[0] - M[0]) * 0.7 + (tM[0] - M[0]) * q, M[1] + (Rr[1] - M[1]) * 0.7 + (tM[1] - M[1]) * q - 2); ctx.stroke();
+        }
+    }
+    // The frost core among their roots.
+    const pr = 6 + 3 * g + 5 * flash;
+    ctx.fillStyle = `rgba(160,230,255,${on ? 0.35 : 0.1})`; ctx.beginPath(); ctx.arc(cx, cy - 10, pr * 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = on ? "#eaffff" : "#8aa4b4"; ctx.beginPath(); ctx.arc(cx, cy - 10, pr * 0.6, 0, Math.PI * 2); ctx.fill();
+    // Snow lifting off it.
+    if (on) {
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        for (let i = 0; i < 10; i++) {
+            const up = (f * 0.006 + i * 0.137) % 1, sx = cx + Math.sin(i * 2.3 + f * 0.02) * (14 + 18 * up), sy = cy - 10 - up * 60;
+            ctx.globalAlpha = 1 - up; ctx.fillRect(sx, sy, 1.8, 1.8);
+        }
+        ctx.globalAlpha = 1;
+    } else {
+        ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(200,200,210,0.8)";
+        ctx.fillText("ICE GENERATOR · NEEDS POWER", cx, cy - 70);
+    }
+    ctx.restore();
 }

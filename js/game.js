@@ -2627,6 +2627,9 @@ function render() {
                 }
             }
 
+            // An ICE GENERATOR's frost, on the floor under everything (js/formations.js).
+            if (typeof drawFrostOnTile === "function") drawFrostOnTile(obj, px, py);
+
             // Cables run along the floor, under pylons and units (layAllCables).
             drawCablesOnTile(obj, px, py);
 
