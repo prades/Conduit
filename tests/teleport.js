@@ -124,6 +124,48 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/followerRallyTick\(\)/.test(rd('js/game.js')), 'not called');
     });
 
+    group('FOLLOWERS USE THE NESTS');
+
+    // A follower at home sent to the zone 3 nest; you hold 1-3.
+    const order = (extra) => run(`(function(){
+        actors.length = 0; followers.length = 0;
+        spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false;
+        f.x = __home.x + 2; f.y = 2; f.health = f.maxHealth;
+        const dest = { x: __z(3).x + 3, y: 2 };
+        ${extra || ''}
+        f.job = { type: 'move', target: dest }; f.stance = 'hold';
+        let tp = -1, maxStep = 0, lx = f.x;
+        for (let i = 0; i < 1500; i++) { render(); const step = Math.abs(f.x - lx); if (step > 5 && tp < 0) tp = i; lx = f.x; if (Math.hypot(f.x - dest.x, f.y - dest.y) < 0.7) break; }
+        return { tp, at: Math.hypot(f.x - dest.x, f.y - dest.y), route: f.job && f.job.route };
+    })()`);
+    await check('THE ASK: a follower positioned far off goes by nest: walks in, teleports, walks on', () => {
+        hold(3);
+        const r = order();
+        ok(r.tp >= 0, 'it never teleported');
+        ok(r.at < 0.8, 'it did not reach where it was sent: ' + r.at);
+    });
+    await check('not when walking is about as quick', () => {
+        hold(3);
+        const r = run(`(function(){ const a = { x: __z(3).x - 4, y: 2 }; return teleportRouteFor(a, __z(3).x + 3, 2); })()`);
+        ok(r === null, 'it took the nests for a short walk');
+    });
+    await check('a follower left far behind you comes back through the nests', () => {
+        hold(3);
+        const r = run(`(function(){
+            actors.length = 0; followers.length = 0;
+            spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.stance = 'follow'; f.job = null;
+            f.x = __home.x + 2; f.y = 2;
+            player.x = player.targetX = player.visualX = __z(3).x + 2; player.y = player.targetY = player.visualY = 2;
+            frame = (Math.floor(frame / RALLY_EVERY) + 1) * RALLY_EVERY + RALLY_EVERY / 2;
+            const n = followerRouteTick();
+            let far = true;
+            for (let i = 0; i < 900 && far; i++) { render(); far = Math.hypot(f.x - player.x, f.y - player.y) > ROUTE_FOLLOW_MIN; }
+            return { n, far, job: !!f.job, stance: f.stance };
+        })()`);
+        ok(r.n === 1, 'no route given: ' + JSON.stringify(r));
+        ok(!r.far, 'it did not get back to you: ' + JSON.stringify(r));
+    });
+
     group('THE RING');
 
     await check('left of the ring on a held nest: TELEPORT out of build mode, NEST ON/OFF in it', () => {

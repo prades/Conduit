@@ -1289,6 +1289,7 @@ function turretShotsTick() {
         if (d <= TURRET_SHOT_SPEED) {
             applyDamage(tg, s.dmg, s.src, s.el);
             elementEffects.push({ type: "impact", x: tg.x, y: tg.y, color: s.col, radius: s.charged ? 0.55 : 0.4, life: 14, element: s.el });
+            if (s.splash > 0 && typeof ultraSplash === "function") ultraSplash(s, tg);
             return false;
         }
         // Drop from the muzzle to the target's body over the flight.
@@ -1308,7 +1309,7 @@ function drawTurretShots() {
     for (const s of turretShots) {
         const [sx, sy] = scr(s.x, s.y, s.z);
         const [tx, ty] = scr(s.px === undefined ? s.x : s.px, s.py === undefined ? s.y : s.py, s.z);
-        const r = s.charged ? 6.5 : 5;
+        const r = (s.charged ? 6.5 : 5) * (s.big ? 1.7 : 1);
         // Trail, glow, hot core.
         ctx.strokeStyle = s.col; ctx.globalAlpha = 0.5; ctx.lineWidth = r * 1.4;
         ctx.beginPath(); ctx.moveTo(tx - (sx - tx) * 1.5, ty - (sy - ty) * 1.5); ctx.lineTo(sx, sy); ctx.stroke();
@@ -1690,6 +1691,8 @@ function render() {
         // EVERY turret is on the firing list, powered or not: power only
         // decides whether its rounds are charged (see the attack pass).
         _aPylons     = _pillarCache.filter(t => t.attackMode && !isRelayPylon(t) && t.pillarTeam === "green");
+        // Four turrets in a square fuse into an ULTRA TURRET (js/ultra.js).
+        if (typeof rebuildUltras === "function") rebuildUltras();
         _uPylons     = _pillarCache.filter(t => t.upgraded);
         // ── WALL PANEL MAP — for wall-face panel rendering ──
         _wallPanelMap = new Map();
@@ -1940,6 +1943,8 @@ function render() {
     // own tile. Running it before the separation pass above would let a
     // follower shove its way back in for a frame at a time.
     iceBlockTick();
+    // An ULTRA TURRET is solid: nothing stands on its four tiles (js/ultra.js).
+    if (typeof ultraBlockTick === "function") ultraBlockTick();
 
     // ── RED HEALTH DECAY ──
     // Skips a neutral recruit. The decay is meant to bleed enemies that have
@@ -2061,6 +2066,9 @@ function render() {
 
     // ── ATTACK MODE PYLON — fire missiles at nearby enemies ──
     _aPylons.forEach(t=>{
+        // Part of an ULTRA TURRET: its anchor fires for all four (js/ultra.js).
+        if (t._ultraOf) return;
+        const _U = t._ultra;
         // The timer waits at full while nothing is in range, so the first
         // round goes the moment something steps in rather than up to a full
         // interval later.
@@ -2073,11 +2081,13 @@ function render() {
         if (t.attackFireTimer < _every) return;
         // Find nearest enemy within range — squared distance avoids sqrt for non-targets
         // Fallback for a turret restored from a save without its range.
-        const _range = t.attackRange || TURRET_RANGE;
+        // An Ultra reaches further, from the centre of its square.
+        const _range = _U ? ultraRange(t) : (t.attackRange || TURRET_RANGE);
+        const _ox = _U ? _U.cx : t.x, _oy = _U ? _U.cy : t.y;
         let nearest=null, bd2=_range*_range;
         actors.forEach(a=>{
             if (isHostileTarget(a)) {
-                const dx=a.x-t.x, dy=a.y-t.y, d2=dx*dx+dy*dy;
+                const dx=a.x-_ox, dy=a.y-_oy, d2=dx*dx+dy*dy;
                 if (d2<bd2) { bd2=d2; nearest=a; }
             }
         });
@@ -2095,10 +2105,13 @@ function render() {
         t.charged = charged;
         nearest._shotByPylon = true;   // the tutorial's "kill with your pylons" step reads this
         t._lastShotFrame = frame;      // the turret's muzzle flash reads this
-        const _dmg = turretRoundDamage(t, nearest) * (charged ? 1 : TURRET_PLAIN_MULT);
-        turretShots.push({ x: t.x, y: t.y, z: TURRET_MUZZLE_Z, target: nearest, dmg: _dmg, charged,
-                           el: t.attackModeElement || null, col: t.attackModeColor || "#0f8", life: 120,
-                           src: { x: t.x, y: t.y, team: "green", element: t.attackModeElement || "core" } });
+        const _dmg = (_U ? ultraRoundDamage(t, nearest) : turretRoundDamage(t, nearest)) * (charged ? 1 : TURRET_PLAIN_MULT);
+        if (_U) t._ultraTarget = nearest;
+        const _el = _U ? _U.el : (t.attackModeElement || null);
+        turretShots.push({ x: _ox, y: _oy, z: _U ? ULTRA_MUZZLE_Z : TURRET_MUZZLE_Z, target: nearest, dmg: _dmg, charged,
+                           el: _el, col: _U ? _U.col : (t.attackModeColor || "#0f8"), life: 120,
+                           splash: _U ? ULTRA_SPLASH : 0, big: !!_U,
+                           src: { x: _ox, y: _oy, team: "green", element: _el || "core" } });
     });
     turretShotsTick();
 
@@ -2236,6 +2249,8 @@ function render() {
     if (typeof bondTick === "function") bondTick();
     // Followers back at home (just respawned) teleport to a fight further out.
     if (typeof followerRallyTick === "function") followerRallyTick();
+    // Followers far behind you, or sent far off, go by the nests (commands.js).
+    if (typeof followerRouteTick === "function") followerRouteTick();
     if (typeof autoplayTick === "function") autoplayTick();
     updateElementEffects();
     updateFloatingTexts();
@@ -3028,8 +3043,15 @@ function render() {
                 ctx.restore();
             }
 
+            // ULTRA TURRET: four tiles, one structure (js/ultra.js). It is drawn
+            // once, from its front tile — the last of the four in depth order —
+            // centred on the square; the other three draw nothing of their own.
+            if (obj.pillar&&!obj.destroyed&&obj.health>0&&(obj._ultra||obj._ultraOf)) {
+                const _A = obj._ultra ? obj : obj._ultraOf;
+                if (_A._ultra && _A._ultra.front === obj) drawUltraTurret(_A, px, py);
+            }
             // Pillar — one design, drawn for every pylon and upgrade
-            if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
+            else if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
                 if(obj.converting){ctx.fillStyle="#ff0";}
                 const _base=py+TILE_H; // anchor to tile center, not north vertex
                 drawHealthBar(px-10,_base-75,20,4,obj.health,obj.maxHealth);

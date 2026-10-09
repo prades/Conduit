@@ -59,6 +59,7 @@ const SUITES = [
     ['shield generator',       'shieldgen.js'],
     ['shard thieves + machines', 'raids.js'],
     ['teleport',               'teleport.js'],
+    ['ultra turret',           'ultra.js'],
 ];
 
 let failed = 0;

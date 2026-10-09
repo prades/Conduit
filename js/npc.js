@@ -204,6 +204,10 @@ function updateRTSNPC(actor) {
         else {
             const t=actor.job.target;
             if (!t) { actor.job=null; return; }
+            // A far order goes by nest when that is quicker (teleportRouteFor in
+            // commands.js): worked out once, then walked to the entry nest.
+            if (actor.job.route === undefined)
+                actor.job.route = typeof teleportRouteFor === "function" ? teleportRouteFor(actor, t.x, t.y) : null;
             // Refresh nearby-enemy cache every 10 frames
             if (!actor._guardCacheFrame || frame-actor._guardCacheFrame>=10 || actor._guardEnemy?.dead) {
                 // Only real enemies (isHostileTarget): a neutral recruit wandering
@@ -221,9 +225,16 @@ function updateRTSNPC(actor) {
                 if (ed>0.8) { actor.x+=(enemy.x-actor.x)/ed*actor.moveSpeed; actor.y+=(enemy.y-actor.y)/ed*actor.moveSpeed; }
                 followerAttack(actor,enemy);
             } else {
-                // No threat — hold position
-                const dx=t.x-actor.x, dy=t.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-                if (dist>0.6) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+                // No threat — hold position (by way of the nests, if routed).
+                const _r = actor.job.route;
+                const g = _r ? teleportSpot(_r.enter) : t;
+                const dx=g.x-actor.x, dy=g.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
+                if (_r && dist < ROUTE_REACH) {
+                    routeTeleport(actor, _r); actor.job.route = null;
+                    // Recalled to you: through the nests, it follows again.
+                    if (actor.job.follow) actor.job = null;
+                }
+                else if (dist>0.6) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
             }
             return;
         }

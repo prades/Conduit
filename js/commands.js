@@ -331,6 +331,54 @@ function followerRallyTick() {
     return party.length;
 }
 
+// ── FOLLOWERS USE THE TELEPORTERS ────────────────────────
+// "If followers are summoned they must be thinking about using the
+// teleporters to the zone they were positioned to." A follower sent somewhere
+// far — a POSITION order, a hold line, autoplay's hack team, or recalled to
+// you from across the map — works out whether going by nest is quicker: walk
+// to the held nest nearest it, teleport to the held nest nearest where it is
+// going, walk the rest. It does that only when it saves ROUTE_MARGIN tiles.
+const ROUTE_MARGIN      = 6;
+const ROUTE_FOLLOW_MIN  = 15;     // a following follower this far from you takes the nests
+const ROUTE_REACH       = 0.8;    // at the entry nest's spot: through it goes
+function teleportRouteFor(a, tx, ty) {
+    const held = teleportHeldNests();
+    if (held.length < 2) return null;
+    let enter = null, exit = null, de = Infinity, dx = Infinity;
+    for (const n of held) {
+        const s = teleportSpot(n);
+        const d1 = Math.hypot(s.x - a.x, s.y - a.y), d2 = Math.hypot(s.x - tx, s.y - ty);
+        if (d1 < de) { de = d1; enter = n; }
+        if (d2 < dx) { dx = d2; exit = n; }
+    }
+    if (!enter || !exit || enter === exit) return null;
+    const direct = Math.hypot(tx - a.x, ty - a.y);
+    return de + dx + ROUTE_MARGIN < direct ? { enter, exit } : null;
+}
+// Through the entry nest and out of the exit one.
+function routeTeleport(a, route) {
+    const to = teleportSpot(route.exit);
+    elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#7fd6ff", radius: 0.5, life: 20 });
+    a.x = a.lastX = to.x + (Math.random() - 0.5) * 1.6;
+    a.y = a.lastY = Math.max(0.2, Math.min(3, to.y + (Math.random() - 0.5) * 1.4));
+    elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#7fd6ff", radius: 0.5, life: 20 });
+}
+// Followers following you from far off: give them the nest route as a walk.
+function followerRouteTick() {
+    if (frame % RALLY_EVERY !== RALLY_EVERY / 2) return 0;
+    let n = 0;
+    for (const a of actors) {
+        if (a.dead || a.team !== "green" || !(a.isFollower || a.isClone) || a.job) continue;
+        if ((a.stance || "follow") !== "follow" || a.duty === "worker" || a.returningToCrystal) continue;
+        if (Math.hypot(a.x - player.x, a.y - player.y) < ROUTE_FOLLOW_MIN) continue;
+        const route = teleportRouteFor(a, player.x, player.y);
+        if (!route) continue;
+        a.job = { type: "move", target: { x: player.x, y: player.y }, route, follow: true };
+        n++;
+    }
+    return n;
+}
+
 // Can this pylon be upgraded at all? Only one you own.
 //
 // The upgrade path set attackMode, attackModeElement and attackModeColor and
