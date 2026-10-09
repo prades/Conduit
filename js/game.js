@@ -1693,6 +1693,8 @@ function render() {
         _aPylons     = _pillarCache.filter(t => t.attackMode && !isRelayPylon(t) && t.pillarTeam === "green");
         // Four turrets in a square fuse into an ULTRA TURRET (js/ultra.js).
         if (typeof rebuildUltras === "function") rebuildUltras();
+        // Four flux or fire wave pylons in a square: a BLACK HOLE or a FIRE WALL (js/formations.js).
+        if (typeof rebuildFormations === "function") rebuildFormations();
         _uPylons     = _pillarCache.filter(t => t.upgraded);
         // ── WALL PANEL MAP — for wall-face panel rendering ──
         _wallPanelMap = new Map();
@@ -1945,6 +1947,8 @@ function render() {
     iceBlockTick();
     // An ULTRA TURRET is solid: nothing stands on its four tiles (js/ultra.js).
     if (typeof ultraBlockTick === "function") ultraBlockTick();
+    // Black holes drag and crush, fire walls burn (js/formations.js).
+    if (typeof formationTick === "function") formationTick();
 
     // ── RED HEALTH DECAY ──
     // Skips a neutral recruit. The decay is meant to bleed enemies that have
@@ -3097,7 +3101,9 @@ function render() {
                 // drawWaveMonolith in draw.js); everything else is the tower.
                 const _isWaveMono = obj.waveMode && !isRelayPylon(obj);
                 if (_isWaveMono) {
-                    drawWaveMonolith(px, _base, _acol, _dark, _wTier, _asleep);
+                    // The four round a BLACK HOLE go see-through (js/formations.js).
+                    const _bhF = obj._wform || (obj._wformOf && obj._wformOf._wform);
+                    drawWaveMonolith(px, _base, _acol, _dark, _wTier, _asleep, _bhF && _bhF.kind === "blackhole" ? 0.35 : 1);
                     if (!_dark && !_asleep && _sinceWake < WAVE_WAKE_BLINK) drawWaveWakeBlink(px, _base, _acol, _sinceWake);
                 }
                 else if (obj.isGenerator && !obj.destroyed) {
@@ -3859,6 +3865,7 @@ function render() {
     if (typeof drawGrubCorpses === "function") drawGrubCorpses();
     drawConversionBars();
     if (typeof drawRaidOverlay === "function") drawRaidOverlay();
+    if (typeof drawFormations === "function") drawFormations();
     drawTutorialHighlight();
     if (typeof drawTyrantBar === "function") drawTyrantBar();
     drawFloatingTexts();

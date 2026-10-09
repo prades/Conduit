@@ -60,6 +60,7 @@ const SUITES = [
     ['shard thieves + machines', 'raids.js'],
     ['teleport',               'teleport.js'],
     ['ultra turret',           'ultra.js'],
+    ['black hole + fire wall', 'formations.js'],
 ];
 
 let failed = 0;

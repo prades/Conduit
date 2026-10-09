@@ -2183,12 +2183,16 @@ function _monoSprite(col, dark, tier) {
     _monoSprites.set(key, e);
     return e;
 }
-function drawWaveMonolith(px, base, colour, dark, tier, asleep) {
+// `ghost` (0..1) fades the whole tablet: the see-through pylons round a
+// black hole (js/formations.js).
+function drawWaveMonolith(px, base, colour, dark, tier, asleep, ghost) {
+    const g = ghost == null ? 1 : ghost;
     const col = dark ? "#5c6370" : colour;
     const t = (frame || 0) / 60;
     ctx.save();
+    ctx.globalAlpha = g;
     // On standby the stripes are dimmed and the scan line is still.
-    if (asleep) ctx.globalAlpha = 0.55;
+    if (asleep) ctx.globalAlpha = 0.55 * g;
     const spr = _monoSprite(col, dark, tier);
     let f;
     if (spr) {
@@ -2204,8 +2208,8 @@ function drawWaveMonolith(px, base, colour, dark, tier, asleep) {
         const k = (t * (0.6 + 0.25 * (tier || 0))) % 1;
         const [ax, ay] = _monoLeft(f, 0.06, 0.08 + k * 0.84), [bx, by] = _monoLeft(f, 0.94, 0.08 + k * 0.84);
         ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by);
-        ctx.strokeStyle = col; ctx.globalAlpha = 0.35; ctx.lineWidth = 3.5; ctx.stroke();
-        ctx.strokeStyle = "#ffffff"; ctx.globalAlpha = 0.8; ctx.lineWidth = 1.2; ctx.stroke();
+        ctx.strokeStyle = col; ctx.globalAlpha = 0.35 * g; ctx.lineWidth = 3.5; ctx.stroke();
+        ctx.strokeStyle = "#ffffff"; ctx.globalAlpha = 0.8 * g; ctx.lineWidth = 1.2; ctx.stroke();
     }
     ctx.restore();
 }
