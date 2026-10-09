@@ -1440,6 +1440,9 @@ function rebuildPylonPairs() {
 const NEST_DRAW_BIAS = 1.01;   // just past the last wall tile of its own face
 function drawDepthOf(o) {
     const d = o.x + o.y;
+    // An enemy standing in a black hole's vortex is drawn over it, not under
+    // the floor tile it is painted from (js/formations.js).
+    if (o.actor && o.actor._onVortex === frame) return d + 1.5;
     return (o.nest && !o._infestNest) ? d + NEST_DRAW_BIAS : d;
 }
 
@@ -3056,6 +3059,11 @@ function render() {
             }
             // Pillar — one design, drawn for every pylon and upgrade
             else if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
+                // A BLACK HOLE's vortex lies on the floor in the middle of its
+                // square: drawn from the front tile, after the floor and before
+                // this pylon (js/formations.js).
+                const _bhA = obj._wformOf || (obj._wform ? obj : null);
+                if (_bhA && _bhA._wform && _bhA._wform.front === obj && typeof drawBlackHoleVortex === "function") drawBlackHoleVortex(_bhA._wform, px, py);
                 if(obj.converting){ctx.fillStyle="#ff0";}
                 const _base=py+TILE_H; // anchor to tile center, not north vertex
                 drawHealthBar(px-10,_base-75,20,4,obj.health,obj.maxHealth);
@@ -3865,7 +3873,6 @@ function render() {
     if (typeof drawGrubCorpses === "function") drawGrubCorpses();
     drawConversionBars();
     if (typeof drawRaidOverlay === "function") drawRaidOverlay();
-    if (typeof drawFormations === "function") drawFormations();
     drawTutorialHighlight();
     if (typeof drawTyrantBar === "function") drawTyrantBar();
     drawFloatingTexts();

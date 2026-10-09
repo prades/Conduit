@@ -1,8 +1,8 @@
 // WAVE FORMATIONS — "Whenever 4 flux wave pylons are constructed together it
 // creates a black hole in the middle of the four connected pylons (now
-// transparent pylons) and lights up when enemies are entangled. When 4 fire
-// wave pylons are constructed it creates a small fire wall and gets bigger
-// when enemies enter it and damages them."
+// transparent pylons) and lights up when enemies are entangled." Then:
+// "Black hole vortex on the ground, 3D looking." (The fire wall from four fire
+// wave pylons was taken out — "the fire wall was a bad idea".)
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -52,9 +52,9 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.n === 1 && r.kinds[0] === 'blackhole', JSON.stringify(r));
         ok(r.active[0], 'fixture: it is not powered');
     });
-    await check('THE ASK: four fire wave pylons in a square make a fire wall', () => {
-        const r = build(SQ, ['fire']);
-        ok(r.n === 1 && r.kinds[0] === 'firewall', JSON.stringify(r));
+    await check('four FIRE wave pylons form nothing now (the fire wall is gone)', () => {
+        ok(build(SQ, ['fire']).n === 0, 'fire formed something');
+        ok(!/firewall|FIRE WALL/.test(rd('js/formations.js').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n')), 'fire wall code left behind');
     });
     await check('not three, not a mixed square, not other elements, not turrets', () => {
         ok(build(SQ.slice(0, 3), ['flux']).n === 0, 'three formed');
@@ -102,57 +102,25 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/NEEDS POWER/.test(rd('js/formations.js')), 'it does not say why');
     });
 
-    group('THE FIRE WALL');
-
-    await check('THE ASK: small to start; an enemy in it burns, and it grows while one is in it', () => {
-        build(SQ, ['fire']);
-        const r = run(`(function(){
-            const F = _formations[0]._wform, len0 = fireWallLength(F), q = ${foe('_formations[0]._wform.wx', '_formations[0]._wform.wy')};
-            for (let i = 0; i < 90; i++) { q.x = F.wx; q.y = F.wy; formationTick(); frame++; }
-            return { len0, len1: fireWallLength(F), size: F.s.size, hurt: 1e6 - q.health };
-        })()`);
-        ok(r.len0 < run('FW_LEN_MAX') * 0.5, 'not small to start: ' + r.len0);
-        ok(r.hurt > 0, 'it did not burn');
-        ok(r.size > 0.5 && r.len1 > r.len0 + 1, 'it did not grow: ' + JSON.stringify(r));
-    });
-    await check('it burns harder as it grows, and dies back down when empty', () => {
-        build(SQ, ['fire']);
-        const r = run(`(function(){
-            const F = _formations[0]._wform, q = ${foe('_formations[0]._wform.wx', '_formations[0]._wform.wy')};
-            q.maxHealth = 200;   // so the max-HP share does not drown the size term
-            const dmg = () => { const h = q.health; frame = (Math.floor(frame / FORM_TICK) + 1) * FORM_TICK; q.x = F.wx; q.y = F.wy; formationTick(); return h - q.health; };
-            const small = dmg();
-            for (let i = 0; i < 60; i++) { q.x = F.wx; q.y = F.wy; formationTick(); frame++; }
-            const big = dmg(), size = F.s.size;
-            q.x = F.wx + 3;
-            for (let i = 0; i < 400; i++) { formationTick(); frame++; }
-            return { small, big, size, after: F.s.size };
-        })()`);
-        ok(r.big > r.small, 'not harder: ' + JSON.stringify(r));
-        ok(r.after < r.size, 'it did not die back: ' + JSON.stringify(r));
-    });
-    await check('it spares your squad', () => {
-        build(SQ, ['fire']);
-        const r = run(`(function(){
-            const F = _formations[0]._wform;
-            spawnFollowerAtCrystal('ice'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.stance = 'hold';
-            const h0 = f.health;
-            for (let i = 0; i < 90; i++) { f.x = F.wx; f.y = F.wy; formationTick(); frame++; }
-            return h0 - f.health;
-        })()`);
-        ok(r === 0, 'it burned a follower for ' + r);
-    });
-
     group('DRAWING');
 
-    await check('both draw without error, with no glow, and the guide explains them', () => {
+    await check('THE ASK: a vortex on the floor, painted from the front tile before its pylon', () => {
         build(SQ, ['flux']);
-        run('player.x = player.visualX = __X; player.y = player.visualY = 3; render(); drawFormations();');
-        build(SQ, ['fire']);
-        run('player.x = player.visualX = __X; player.y = player.visualY = 3; render(); drawFormations();');
+        const g = rd('js/game.js');
+        ok(/_bhA\._wform\.front === obj && typeof drawBlackHoleVortex === "function"\) drawBlackHoleVortex\(_bhA\._wform, px, py\)/.test(g), 'not drawn from the front tile');
+        ok(g.indexOf('drawBlackHoleVortex(_bhA') < g.indexOf('drawWaveMonolith(px, _base'), 'drawn after the pylon, not under it');
+        run('player.x = player.visualX = __X; player.y = player.visualY = 3; render(); drawBlackHoleVortex(_formations[0]._wform, 200, 200);');
+    });
+    await check('an enemy standing in it is drawn over it, not under it', () => {
+        build(SQ, ['flux']);
+        const r = run(`(function(){ const F = _formations[0]._wform, q = ${foe('_formations[0]._wform.wx + 0.3', '_formations[0]._wform.wy')};
+            formationTick(); return { on: q._onVortex === frame, d: drawDepthOf({ x: q.x, y: q.y, actor: q }) - (q.x + q.y) }; })()`);
+        ok(r.on && r.d > 1, JSON.stringify(r));
+    });
+    await check('no glow, and the guide explains it', () => {
         ok(!/shadowBlur\s*=\s*[1-9]/.test(rd('js/formations.js')), 'formations.js sets a shadowBlur');
         const html = rd('game.html');
-        ok(/BLACK HOLE/.test(html) && /FIRE WALL/.test(html), 'not in the guide');
+        ok(/BLACK HOLE/.test(html) && /in the floor/.test(html) && !/FIRE WALL/.test(html), 'the guide is out of date');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
