@@ -79,6 +79,51 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(Math.abs(run('player.x') - run('__z(2).x')) < 2, 'player drifted to ' + run('player.x'));
     });
 
+    group('THE SQUAD RALLIES');
+
+    // A fight in zone 3 (a follower with a provoked enemy beside it), you out
+    // at zone 3, and followers standing at home — fresh respawns.
+    const rally = (extra) => run(`(function(){
+        actors.length = 0; followers.length = 0; floatingTexts.length = 0;
+        const S = SPECIES.ant, foe = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 3 * ZONE_LENGTH + 9, 2);
+        foe.team = 'red'; foe.provoked = true; foe.health = foe.maxHealth = 1e6; actors.push(foe);
+        const mk = (x) => { spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.stance = 'follow'; f.job = null; f.x = x; f.y = 2; return f; };
+        const fighter = mk(foe.x - 1); fighter._nearestEnemy = foe;
+        const home1 = mk(__home.x + 1), home2 = mk(__home.x + 2);
+        player.x = player.targetX = player.visualX = foe.x - 2; player.y = player.targetY = player.visualY = 2;
+        ${extra || ''}
+        frame = (Math.floor(frame / RALLY_EVERY) + 1) * RALLY_EVERY;
+        const moved = followerRallyTick();
+        return { moved, h1: getZoneIndex(Math.floor(home1.x)), h2: getZoneIndex(Math.floor(home2.x)), fighterX: fighter.x, foeX: foe.x }; })()`);
+
+    await check('THE ASK: a fight out in zone 3 pulls the followers at home to the held nest nearest it', () => {
+        hold(3);
+        const r = rally();
+        ok(r.moved === 2 && r.h1 === 3 && r.h2 === 3, JSON.stringify(r));
+    });
+    await check('it goes to the nearest held nest, even when that is behind the fight', () => {
+        hold(1);
+        const r = rally();
+        ok(r.moved === 2 && r.h1 === 1 && r.h2 === 1, JSON.stringify(r));
+    });
+    await check('no fight, no teleport', () => {
+        hold(3);
+        ok(rally('fighter._nearestEnemy = null;').moved === 0, 'they teleported with nothing to fight');
+    });
+    await check('not the followers beside you at home, nor a busy or holding one', () => {
+        hold(3);
+        ok(rally('player.x = player.targetX = player.visualX = __home.x + 1;').moved === 0, 'it took the squad from your side');
+        const r = rally('home1.job = { type: "move", x: 3, y: 2 }; home2.stance = "hold";');
+        ok(r.moved === 0 && r.h1 === 0 && r.h2 === 0, JSON.stringify(r));
+    });
+    await check('with only home held there is nowhere to send them', () => {
+        hold(0);
+        ok(rally().moved === 0, 'they went somewhere');
+    });
+    await check('it runs every frame from the game loop', () => {
+        ok(/followerRallyTick\(\)/.test(rd('js/game.js')), 'not called');
+    });
+
     group('THE RING');
 
     await check('left of the ring on a held nest: TELEPORT out of build mode, NEST ON/OFF in it', () => {

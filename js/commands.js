@@ -272,6 +272,65 @@ function teleportToNest(dest) {
     return true;
 }
 
+// ── THE SQUAD RALLIES BY TELEPORT ────────────────────────
+// "All followers use this: whenever a follower is attacking another predator
+// in a later zone, they'll all teleport to that zone if they're in the home
+// zone — if they're just respawning." Every RALLY_EVERY frames: if any of your
+// followers is fighting (an enemy within RALLY_FIGHT_REACH) out past the home
+// zone, every follower and clone standing in the home zone — the respawned,
+// the stragglers — teleports to the held nest nearest that fight and joins
+// from there. Not the ones beside you (within RALLY_LEASH), not anyone on a
+// job, holding a spot, hauling or heading home.
+const RALLY_EVERY       = 30;
+const RALLY_FIGHT_REACH = 6;
+const RALLY_LEASH       = 10;
+function rallyFight() {
+    let fight = null;
+    for (const a of actors) {
+        if (a.dead || a.team !== "green" || !(a.isFollower || a.isClone)) continue;
+        if (getZoneIndex(Math.floor(a.x)) < 1) continue;
+        const e = a._nearestEnemy;
+        if (!e || e.dead || Math.hypot(e.x - a.x, e.y - a.y) > RALLY_FIGHT_REACH) continue;
+        if (!fight || a.x > fight.x) fight = a;      // the furthest fight forward
+    }
+    return fight;
+}
+function rallyDestination(fight) {
+    let best = null, bd = Infinity;
+    for (const n of teleportHeldNests()) {
+        if (isHomePortal(n)) continue;
+        const d = Math.abs(n.x - fight.x);
+        if (d < bd) { bd = d; best = n; }
+    }
+    return best;
+}
+function followerRallyTick() {
+    if (frame % RALLY_EVERY !== 0) return 0;
+    if (typeof tutorialMode !== "undefined" && tutorialMode) return 0;
+    const fight = rallyFight();
+    if (!fight) return 0;
+    const dest = rallyDestination(fight);
+    if (!dest) return 0;
+    const party = actors.filter(a => !a.dead && a.team === "green" && (a.isFollower || a.isClone)
+        && getZoneIndex(Math.floor(a.x)) <= 0
+        && (a.stance || "follow") === "follow" && !a.job && a.duty !== "worker" && !a.returningToCrystal
+        && Math.hypot(a.x - player.x, a.y - player.y) > RALLY_LEASH);
+    if (!party.length) return 0;
+    const to = teleportSpot(dest);
+    party.forEach((a, i) => {
+        elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#7fd6ff", radius: 0.5, life: 20 });
+        const ang = i / party.length * Math.PI * 2;
+        a.x = a.lastX = to.x + Math.cos(ang) * 1.2;
+        a.y = a.lastY = Math.max(0.2, Math.min(3, to.y + Math.sin(ang) * 0.9));
+    });
+    elementEffects.push({ type: "impact", x: to.x, y: to.y, color: "#7fd6ff", radius: 0.9, life: 26 });
+    const sx = (to.x - player.visualX - (to.y - player.visualY)) * TILE_W + canvas.width / 2;
+    const sy = (to.x - player.visualX + (to.y - player.visualY)) * TILE_H + canvas.height / 2;
+    floatingTexts.push({ x: sx, y: sy - 60, color: "#7fd6ff", life: 90, vy: -0.4, size: 12,
+        text: "+" + party.length + " TELEPORTED TO THE FIGHT" });
+    return party.length;
+}
+
 // Can this pylon be upgraded at all? Only one you own.
 //
 // The upgrade path set attackMode, attackModeElement and attackModeColor and

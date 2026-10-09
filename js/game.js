@@ -2234,6 +2234,8 @@ function render() {
     if (frame % 6 === 0) applySignalTowerBuff();
     updateStatusEffects();
     if (typeof bondTick === "function") bondTick();
+    // Followers back at home (just respawned) teleport to a fight further out.
+    if (typeof followerRallyTick === "function") followerRallyTick();
     if (typeof autoplayTick === "function") autoplayTick();
     updateElementEffects();
     updateFloatingTexts();
