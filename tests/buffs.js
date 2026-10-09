@@ -100,7 +100,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
         _cacheAge = -999; render();
         let u;
         if (${JSON.stringify(who)} === 'clone') { u = makeClone('ant', 'scout', home.x + 4, 2); u.health = u.maxHealth * 0.3; }
-        if (${JSON.stringify(who)} === 'follower') { spawnFollowerAtCrystal('fire'); u = followers[followers.length - 1]; u.returningToCrystal = false; u.stance = 'hold'; u.health = u.maxHealth * 0.3; }
+        if (${JSON.stringify(who)} === 'follower') { spawnFollowerAtCrystal('fire'); u = followers[followers.length - 1]; u.returningToCrystal = false; u.stance = 'hold'; u.maxHealth = 100; u.health = 30; }
         if (${JSON.stringify(who)} === 'enemy') { const S = SPECIES.ant; u = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), home.x + 4, 2); u.team = 'red'; u.health = u.maxHealth = 1e6; actors.push(u); }
         ${extra || ''}
         const h0 = u.health; globalThis.__ab = [a, b];
@@ -108,8 +108,9 @@ function ok(c, m) { if (!c) throw new Error(m); }
         return { gain: u.health - h0, awake: [a.waveAwake, b.waveAwake], max: u.maxHealth };
     })()`);
     await check('THE ASK: a toxic link mends a clone standing on it', () => {
-        const r = toxic('clone', 120);
-        ok(r.gain > r.max * 0.05, 'the clone was barely mended: ' + JSON.stringify(r));
+        // Against a fire link, which mends nothing: the difference is the toxic link's.
+        const r = toxic('clone', 120), fire = toxic('clone', 120, '', 'fire');
+        ok(r.gain - fire.gain > r.max * 0.05, 'the toxic link barely mended the clone: ' + JSON.stringify({ toxic: r, fire }));
     });
     await check('THE ASK: and still poisons the predators on it', () => {
         const r = toxic('enemy', 120);
