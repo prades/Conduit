@@ -90,6 +90,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
                  bats: near.filter(t => t.isBattery && t.attackModeElement === el).length, tier: networkStrength[el],
                  ultra: _ultras.some(u => near.includes(u)), ultraEl: (_ultras.find(u => near.includes(u)) || { _ultra: {} })._ultra.el,
                  form: (_formations.find(f => near.includes(f)) || { _wform: {} })._wform.kind || null,
+                 formOn: _formations.some(f => near.includes(f) && formationActive(f._wform)),
                  acc: near.filter(t => t.waveMode && !(t._wform || t._wformOf) && (t.attackModeElement === 'electric' || t.attackModeElement === 'core')).length }; })()`);
     await check('THE ASK: at a nest it builds the generator, a battery bank to tier III and an ULTRA TURRET', () => {
         fresh(6);
@@ -102,19 +103,20 @@ function ok(c, m) { if (!c) throw new Error(m); }
     });
     await check('THE ASK: and a formation square when an element can make one (here a toxic tower)', () => {
         fresh(6);
-        const r = plan(40);
+        const r = plan(50);
         ok(r.form === 'toxtower', 'no formation: ' + JSON.stringify(r));
+        ok(r.formOn, 'the formation does not work — no tier II bank of its element by it: ' + JSON.stringify(r));
     });
     await check('THE ASK: a few accessories with shards to spare — and then it stops: not spammy', () => {
         fresh(6);
         const a = plan(40), b = plan(30);
         ok(a.acc >= 1 && a.acc <= run('AUTOPLAY_ACCESSORIES'), 'accessories: ' + a.acc);
         ok(b.n === a.n, 'it kept building after the plan was done: ' + a.n + ' -> ' + b.n);
-        ok(a.n <= 20, 'too many structures at one nest: ' + a.n);
+        ok(a.n <= 24, 'too many structures at one nest: ' + a.n);
     });
     await check('no accessories when shards are short', () => {
         fresh(6);
-        run('shardCount = 170');   // the plan costs about 160: nothing spare after it
+        run('shardCount = 210');   // the plan costs about 200: nothing spare after it
         const r = plan(40);
         ok(r.acc === 0, 'built ' + r.acc + ' accessories on a tight budget');
     });

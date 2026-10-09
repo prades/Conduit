@@ -124,9 +124,17 @@ function rebuildFormations() {
     return _formations.length;
 }
 
-function formationActive(F) { return F.tiles.every(p => p.powered !== false); }
+// What stops it working, if anything: power, then the tier (ULTRA_MIN_TIER of
+// its element at the square, falling off with the distance from the bank).
+function formationBlocker(F) {
+    if (!F.tiles.every(p => p.powered !== false)) return "NEEDS POWER";
+    const tier = typeof networkTierAt === "function" ? networkTierAt(F.el, F.wx, F.wy) : 3;
+    if (tier < ULTRA_MIN_TIER) return "NEEDS " + F.el.toUpperCase() + " TIER II";
+    return null;
+}
+function formationActive(F) { return !formationBlocker(F); }
 function _formDamage(F, base, a) {
-    const tier = typeof networkStrength !== "undefined" ? (networkStrength[F.el] || 0) : 0;
+    const tier = typeof networkTierAt === "function" ? networkTierAt(F.el, F.wx, F.wy) : 0;
     return base * (1 + FORM_TIER_BONUS * tier) + FORM_MAXHP_SHARE * (a.maxHealth || 0);
 }
 // Once a frame from the game loop.
@@ -296,7 +304,7 @@ function drawBlackHoleVortex(F, cx, cy) {
     }
     if (!on) {
         ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(200,200,210,0.8)";
-        ctx.fillText("BLACK HOLE · NEEDS POWER", cx, cy - R * 0.5 - 8);
+        ctx.fillText("BLACK HOLE · " + formationBlocker(F), cx, cy - R * 0.5 - 8);
     }
     ctx.restore();
 }
@@ -316,7 +324,7 @@ function drawFireSpin(F, cx, cy) {
     ctx.beginPath(); ctx.ellipse(cx, cy, RX, RY, 0, 0, Math.PI * 2); ctx.stroke();
     if (!on) {
         ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(200,200,210,0.8)";
-        ctx.fillText("SPINNING FIREWALL · NEEDS POWER", cx, cy - RY - 8);
+        ctx.fillText("SPINNING FIREWALL · " + formationBlocker(F), cx, cy - RY - 8);
         ctx.restore(); return;
     }
     const N = 9, H0 = 30 * (1 + 0.35 * g);
@@ -497,7 +505,7 @@ function drawIceGenerator(F, cx, cy) {
         ctx.globalAlpha = 1;
     } else {
         ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(200,200,210,0.8)";
-        ctx.fillText("ICE GENERATOR · NEEDS POWER", cx, cy - 70);
+        ctx.fillText("ICE GENERATOR · " + formationBlocker(F), cx, cy - 70);
     }
     ctx.restore();
 }
@@ -599,7 +607,7 @@ function drawToxicTower(F, cx, cy) {
     if (on) _toxPuffs(cx, y - 2, f, 0.35, { n: 10, len: 90, size: 6, heat: 1, speed: 0.012 + 0.012 * heat });
     else {
         ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(200,200,210,0.8)";
-        ctx.fillText("TOXIC TOWER · NEEDS POWER", cx, y - 20);
+        ctx.fillText("TOXIC TOWER · " + formationBlocker(F), cx, y - 20);
     }
     ctx.restore();
 }

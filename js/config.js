@@ -179,6 +179,17 @@ function isRelayPylon(t) { return !!(t && (t.isGenerator || t.isConnector)); }
 const BATTERY_COLOR = "#ffd34d";
 const BATTERY_TIER_SIZES = [2, 4, 6];   // linked batteries for tier I, II, III
 function isBatteryPylon(t) { return !!(t && t.isBattery && t.pillar && !t.destroyed); }
+// REPORTED: "the tier of the network should drop off gradually the further
+// [a pylon] is from the battery site" (asked: each pylon's own distance). A
+// pylon runs at its bank's tier within BANK_FULL_RANGE of the nearest battery
+// in it, and one tier lower for every BANK_FALLOFF_STEP tiles beyond
+// (networkTierAt in game.js). "The ultra pylons shouldn't work unless the
+// player has tier 2 network active": an Ultra turret fuses, and a formation
+// (black hole, firewall, ice generator, toxic tower) works, only where its
+// element's tier is at least ULTRA_MIN_TIER.
+const BANK_FULL_RANGE   = 6;
+const BANK_FALLOFF_STEP = 6;
+const ULTRA_MIN_TIER    = 2;
 
 // The generator is neutral, so it is never behind an element unlock — it is
 // available from the first pylon the player ever builds.

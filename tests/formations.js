@@ -32,13 +32,16 @@ function ok(c, m) { if (!c) throw new Error(m); }
     const build = (cells, els, opts) => run(`(function(){
         const o = ${JSON.stringify(opts || {})};
         actors.length = 0; followers.length = 0; floatingTexts.length = 0;
-        world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.attackModeElement = null; t._wform = null; t._wformOf = null; t.circuitOn = undefined; } if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });
+        world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.isBattery = false; t.attackModeElement = null; t._wform = null; t._wformOf = null; t.circuitOn = undefined; } if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });
         shardCount = 9999; _formState = new Map();   // a fresh square, not the last test's
         const home = world.find(t => isHomePortal(t)), X = home.x + 3;
         const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
         if (!o.unpowered) _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), T(home.x + 1, 3));
         const els = ${JSON.stringify(els)};
         ${JSON.stringify(cells)}.forEach(([dx, dy], i) => { const id = els[i] || els[0]; const t = T(X + dx, dy); _executeBuildInstant(ELEMENTS.find(e => e.id === id), t, waveRole(id)); t._awakeUntil = Infinity; });
+        // Four batteries of its element on the back row: tier II, which a
+        // formation needs (ULTRA_MIN_TIER). o.bats overrides the count.
+        for (let i = 0; i < (o.bats === undefined ? 4 : o.bats); i++) _executeBuildInstant(ELEMENTS.find(e => e.id === els[0]), T(X - 2 + i * 2, 0), 'battery');
         player.x = player.targetX = player.visualX = home.x - 12; player.y = player.targetY = player.visualY = 2;
         _cacheAge = -999; render();
         globalThis.__X = X; globalThis.__T = T;
@@ -67,6 +70,15 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('THE ASK: the four round a black hole are drawn see-through', () => {
         ok(/function drawWaveMonolith\(px, base, colour, dark, tier, asleep, ghost\)/.test(rd('js/draw.js')), 'the tablet cannot be faded');
         ok(/_bhF && _bhF.kind === "blackhole" \? 0\.35 : 1/.test(rd('js/game.js')), 'the pylon pass does not fade them');
+    });
+
+    group('THE TIER');
+
+    await check('THE ASK: below tier II a formation does nothing, and says it needs tier II', () => {
+        const r = build(SQ, ['flux'], { bats: 2 });
+        ok(r.n === 1 && !r.active[0], 'it works on tier I: ' + JSON.stringify(r));
+        ok(run('formationBlocker(_formations[0]._wform)') === 'NEEDS FLUX TIER II', run('formationBlocker(_formations[0]._wform)'));
+        ok(build(SQ, ['flux']).active[0], 'tier II did not switch it on');
     });
 
     group('THE BLACK HOLE');

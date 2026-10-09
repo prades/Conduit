@@ -271,7 +271,8 @@ function applyPylonZoneEffects(wavePylons) {
             // Compute per-element constants once per pair (not once per actor)
             // OVERCHARGE: a surged link works one tier higher (capped at III).
             const _surgeUp = typeof pylonSurged === "function" && (pylonSurged(pa) || pylonSurged(pb)) ? 1 : 0;
-            const _nTier = Math.min(3, (networkStrength[el] || 1) + _surgeUp);
+            const _pTier = typeof pylonNetworkTier === "function" ? Math.max(pylonNetworkTier(pa), pylonNetworkTier(pb)) : (networkStrength[el] || 0);
+            const _nTier = Math.min(3, (_pTier || 1) + _surgeUp);
             const _seasonBonus = _seasonBonusCache[el] || 1.0;
 
             const {lx, ly, len2, bMinX, bMaxX, bMinY, bMaxY} = pair;
@@ -1047,6 +1048,7 @@ function _bannerPair(title, names, color, life) {
 let _comboLinks = [];
 let _netLit = {};
 let _batteryLinks = [];   // { a, b, el } battery to battery, laid as cables
+let _batteryBanks = [];   // { el, tier, members } — each linked group of one element's batteries
 const COMBO_LABEL_NEAR = 4;
 const PYLON_LABEL_NEAR = 4;   // tiles: a pylon's full label shows only this close to you   // tiles: a combo link names itself only this close to you   // lit pylons per element, for the network HUD (see the tier count)
 function rebuildComboLinks() {
@@ -1095,8 +1097,8 @@ function comboTick() {
     if (frame % 3 !== 0 || _comboLinks.length === 0) return;
     for (const L of _comboLinks) {
         if (!comboLinkActive(L)) continue;
-        const tA = Math.min(3, (networkStrength[L.a.attackModeElement] || 0) + (pylonSurged(L.a) ? 1 : 0));
-        const tB = Math.min(3, (networkStrength[L.b.attackModeElement] || 0) + (pylonSurged(L.b) ? 1 : 0));
+        const tA = Math.min(3, pylonNetworkTier(L.a) + (pylonSurged(L.a) ? 1 : 0));
+        const tB = Math.min(3, pylonNetworkTier(L.b) + (pylonSurged(L.b) ? 1 : 0));
         const k = 1 + COMBO_TIER_GAIN * (tA + tB) / 2;
         const foe = L.combo.foe, ally = L.combo.ally;
         for (const act of actors) {
@@ -1157,7 +1159,7 @@ function drawWaveLinks() {
         if (Math.max(ay, by) < -40 || Math.min(ay, by) > canvas.height + 40) continue;
         const awake = !(pa.waveAwake === false && pb.waveAwake === false);
         const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
-        const tier = Math.max(1, Math.min(3, networkStrength[el] || 0));
+        const tier = Math.max(1, Math.min(3, Math.max(pylonNetworkTier(pa), pylonNetworkTier(pb))));
         ctx.save();
         ctx.lineWidth = 1.5; ctx.lineCap = "round";
         ctx.strokeStyle = _hexA(col, awake ? LINK_THREAD_ALPHA : LINK_ASLEEP_ALPHA);
@@ -1272,10 +1274,9 @@ function waveWakeTick() {
 // lingering ELECTRIC_HASTE_FRAMES. An enemy's slow on the same unit still wins.
 function electricHasteTick() {
     if (frame % 3 !== 0) return;
-    const baseTier = Math.min(3, networkStrength.electric || 0);
-    if (baseTier < 1 && !_wPylons.some(p => p.attackModeElement === "electric" && pylonSurged(p))) return;
+    // Each pylon at its own tier (its distance from the electric bank).
     const src = [];
-    for (const p of _wPylons) if (p.attackModeElement === "electric" && p.waveAwake !== false) src.push(p);
+    for (const p of _wPylons) if (p.attackModeElement === "electric" && p.waveAwake !== false && (pylonNetworkTier(p) >= 1 || pylonSurged(p))) src.push(p);
     if (!src.length) return;
     const r2 = ELECTRIC_HASTE_RADIUS * ELECTRIC_HASTE_RADIUS;
     for (const a of actors) {
@@ -1284,7 +1285,7 @@ function electricHasteTick() {
         for (const p of src) {
             const dx = a.x - p.x, dy = a.y - p.y;
             if (dx * dx + dy * dy > r2) continue;
-            const tier = Math.min(3, baseTier + (pylonSurged(p) ? 1 : 0));
+            const tier = Math.min(3, pylonNetworkTier(p) + (pylonSurged(p) ? 1 : 0));
             if (tier >= 1) { applySlow(a, ELECTRIC_HASTE_FRAMES, _hasteOf(ELECTRIC_HASTE[tier])); break; }
         }
     }
@@ -1351,13 +1352,28 @@ function turretRoundDamage(t, target) {
     return base + TURRET_MAXHP_SHARE * ((target && target.maxHealth) || 0);
 }
 
-// A pylon's network tier — 0 when it carries no element or stands alone.
-// One place, because the aura, the HUD and the zone effects all ask it.
+// The tier of `el` at a point: the best of that element's battery banks,
+// full within BANK_FULL_RANGE of the bank's nearest battery and a tier lower
+// for every BANK_FALLOFF_STEP tiles beyond (config.js).
+function networkTierAt(el, x, y) {
+    let best = 0;
+    for (const b of _batteryBanks) {
+        if (b.el !== el || b.tier <= best) continue;
+        let d = Infinity;
+        for (const m of b.members) { const dd = Math.hypot(m.x - x, m.y - y); if (dd < d) d = dd; }
+        const t = b.tier - Math.floor(Math.max(0, d - BANK_FULL_RANGE) / BANK_FALLOFF_STEP + (d > BANK_FULL_RANGE ? 1 : 0));
+        if (t > best) best = t;
+    }
+    return Math.max(0, Math.min(3, best));
+}
+// A pylon's network tier — 0 when it carries no element or no bank reaches
+// it. One place, because the aura, the HUD and the zone effects all ask it.
+// Worked out with the caches (pylon._tier); a pylon built since asks directly.
 function pylonNetworkTier(pylon) {
     if (!pylon) return 0;
     const el = pylon.attackModeElement;
     if (!el) return 0;
-    return networkStrength[el] || 0;
+    return pylon._tier !== undefined ? pylon._tier : networkTierAt(el, pylon.x, pylon.y);
 }
 
 // THE AURA. Every pylon linked to a generator mends the squad standing around
@@ -1737,9 +1753,6 @@ function render() {
         // decides whether its rounds are charged (see the attack pass).
         _aPylons     = _pillarCache.filter(t => t.attackMode && !isRelayPylon(t) && t.pillarTeam === "green");
         // Four turrets in a square fuse into an ULTRA TURRET (js/ultra.js).
-        if (typeof rebuildUltras === "function") rebuildUltras();
-        // Four flux or fire wave pylons in a square: a BLACK HOLE or a FIRE WALL (js/formations.js).
-        if (typeof rebuildFormations === "function") rebuildFormations();
         _uPylons     = _pillarCache.filter(t => t.upgraded);
         // ── WALL PANEL MAP — for wall-face panel rendering ──
         _wallPanelMap = new Map();
@@ -1767,6 +1780,8 @@ function render() {
         const _batteries = _pillarCache.filter(t => t.isBattery && t.attackModeElement
             && t.pillarTeam === "green" && !t.destroyed && t.health > 0);
         _batteryLinks = [];
+        _batteryBanks = [];
+        _batteries.forEach(p => { p._bBanked = false; });
         const _netPylons = _batteries;
         _netLit = {};
         for (const t of _wPylons) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
@@ -1795,6 +1810,10 @@ function render() {
                     });
                 }
                 maxGroupSize = Math.max(maxGroupSize, groupSize);
+                const _bt = groupSize >= BATTERY_TIER_SIZES[2] ? 3 : groupSize >= BATTERY_TIER_SIZES[1] ? 2 : groupSize >= BATTERY_TIER_SIZES[0] ? 1 : 0;
+                const _members = elPylons.filter(p => visited.has(p) && !p._bBanked);
+                _members.forEach(p => { p._bBanked = true; });
+                if (_bt > 0) _batteryBanks.push({ el, tier: _bt, members: _members });
             });
             const newTier = maxGroupSize >= BATTERY_TIER_SIZES[2] ? 3 : maxGroupSize >= BATTERY_TIER_SIZES[1] ? 2 : maxGroupSize >= BATTERY_TIER_SIZES[0] ? 1 : 0;
             const prevTier = _prevNetworkTiers[el] || 0;
@@ -1824,6 +1843,14 @@ function render() {
         else if (_netUps.length > 1) _bannerPair("\u25c8 " + _netUps.length + " NETWORKS UP", _netUps.map(u => u.short), "#9fe8c0", 240);
         if (_netDowns.length === 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:_netDowns[0].text, color:"#ff7755", life:150, vy:-0.2, size:13 });
         else if (_netDowns.length > 1) _bannerPair("\u25c8 " + _netDowns.length + " NETWORKS DOWN", _netDowns.map(u => u.short), "#ff7755", 150);
+
+        // Each pylon's own tier, falling off with its distance from its bank.
+        for (const t of _pillarCache) t._tier = t.attackModeElement && t.pillarTeam === "green" ? networkTierAt(t.attackModeElement, t.x, t.y) : 0;
+        // Four turrets in a square fuse into an ULTRA TURRET (js/ultra.js), and
+        // four flux / fire / ice / toxic wave pylons make a FORMATION
+        // (js/formations.js) — after the tiers, which gate both.
+        if (typeof rebuildUltras === "function") rebuildUltras();
+        if (typeof rebuildFormations === "function") rebuildFormations();
 
         // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
         rebuildPylonPairs();
@@ -3129,7 +3156,7 @@ function render() {
                 const _dark = obj.powered === false && !obj.attackMode;
                 const _acol = _dark ? POWER_DEAD_COLOUR : (obj.attackModeColor||"#0f8");
                 const _isActive=!!(obj.attackMode||obj.waveMode);
-                const _wTier=obj.waveMode?(networkStrength[obj.attackModeElement]||0):0;
+                const _wTier=obj.waveMode?pylonNetworkTier(obj):0;
                 const _tierMult=1+_wTier*0.4;
 
                 // STANDBY: a support/disruption pylon with nothing to work on
@@ -3169,7 +3196,7 @@ function render() {
                 }
                 else if (obj.isBattery) {
                     // THE BATTERY: its charge cells show its element's tier.
-                    drawBatteryPylon(px, _base, obj.attackModeColor || BATTERY_COLOR, networkStrength[obj.attackModeElement] || 0, _pulse, false);
+                    drawBatteryPylon(px, _base, obj.attackModeColor || BATTERY_COLOR, pylonNetworkTier(obj), _pulse, false);
                 }
                 else if (obj.isGenerator && !obj.destroyed) {
                     // THE SHIELD GENERATOR: a thicker body and a big pale orb.
@@ -3189,7 +3216,7 @@ function render() {
 
                 if (obj.isBattery) {
                     // Its name and its element's tier, only near you or held.
-                    const _bt = networkStrength[obj.attackModeElement] || 0, _bc = obj.attackModeColor || BATTERY_COLOR;
+                    const _bt = pylonNetworkTier(obj), _bc = obj.attackModeColor || BATTERY_COLOR;
                     const _bNear = (Math.abs(obj.x-player.x)<=PYLON_LABEL_NEAR && Math.abs(obj.y-player.y)<=PYLON_LABEL_NEAR) || (commandMode && commandTarget===obj);
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                     if (_bNear) {
@@ -3219,7 +3246,7 @@ function render() {
                     const PYLON_FX2={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity well",toxic:"corrodes enemies"};
                     const el0=obj.attackModeElement||"";
                     // Turrets show their network's tier too: it is what boosts their rounds.
-                    const _lblTier=(obj.waveMode||obj.attackMode)&&!isRelayPylon(obj)?(networkStrength[obj.attackModeElement]||0):0;
+                    const _lblTier=(obj.waveMode||obj.attackMode)&&!isRelayPylon(obj)?pylonNetworkTier(obj):0;
                     const _wTierBadge=_lblTier>0?[" T-I"," T-II"," T-III"][_lblTier-1]:"";
                     const _tierDesc=obj.waveMode?(_wTier>0?(PYLON_FX_TIER[el0]?.[_wTier-1]||""):(PYLON_FX_TIER[el0]?.[0]||"")):(PYLON_FX2[el0]||"");
                     // A wave pylon is named by its ROLE — SUPPORT or DISRUPTION —
@@ -3942,6 +3969,7 @@ function render() {
     if (typeof drawGrubCorpses === "function") drawGrubCorpses();
     drawConversionBars();
     if (typeof drawRaidOverlay === "function") drawRaidOverlay();
+    if (typeof drawUltraHints === "function") drawUltraHints();
     drawTutorialHighlight();
     if (typeof drawTyrantBar === "function") drawTyrantBar();
     drawFloatingTexts();

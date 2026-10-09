@@ -341,7 +341,7 @@ function renderPylonIndex() {
             '<div class="ctrl-row cm-dim" style="margin-bottom:5px"><strong>Only BATTERIES set the tier.</strong> Build a battery (build picker &rarr; BATTERY &rarr; an element); batteries of the same element within ' +
             '<span class="cm-stat">' + base + ' tiles</span> link up with a cable in their colour (' +
             '<span class="cm-stat">' + relay + '</span> with the Signal Relay). ' +
-            'The largest linked bank of an element\'s batteries sets that element\'s tier for all its turrets and wave pylons. Turrets and wave pylons no longer count. A battery does nothing else; its charge cells light one per tier.</div>';
+            'A bank of an element\'s linked batteries gives its turrets and wave pylons that tier at full strength within <span class="cm-stat">6 tiles</span> of the bank, then <strong>one tier less for every 6 tiles further</strong> &mdash; so build the bank where the fighting is. Turrets and wave pylons no longer count toward it. A battery does nothing else; its charge cells light one per tier. <strong>Ultra turrets and formations need tier II</strong> where they stand.</div>';
         for (const tier of [1, 2, 3]) {
             html += '<div class="cm-tier"><span class="cm-tier-badge">T' + tier + '</span> ' +
                     '<span style="color:#aad">' + CODEX_TIER_SIZES[tier] +

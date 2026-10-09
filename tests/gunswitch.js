@@ -178,10 +178,11 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.dmg !== null && Math.abs(r.dmg - want) < 1e-9, 'a 20-power turret hit a 200 HP foe for ' + r.dmg + ', wanted ' + want);
     });
     await check('a network tier makes every round hit harder', () => {
-        const r = run(`(function(){ const keep = networkStrength.fire; const t = { attackPower: 20, attackModeElement: 'fire' };
-            networkStrength.fire = 0; const a = turretRoundDamage(t, null);
-            networkStrength.fire = 3; const b = turretRoundDamage(t, null);
-            networkStrength.fire = keep; return { a, b }; })()`);
+        // The tier is the turret's own now (its distance from its bank: _tier).
+        const r = run(`(function(){ const t = { attackPower: 20, attackModeElement: 'fire' };
+            t._tier = 0; const a = turretRoundDamage(t, null);
+            t._tier = 3; const b = turretRoundDamage(t, null);
+            return { a, b }; })()`);
         ok(Math.abs(r.b / r.a - (1 + 3 * run('TURRET_TIER_BONUS'))) < 1e-9, JSON.stringify(r));
     });
     await check('the first round goes the moment a foe steps in', () => {

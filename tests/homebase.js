@@ -185,13 +185,18 @@ async function ready() {
         ok(/function pylonNetworkTier/.test(SRC.game), 'there is no single tier reader');
         same((SRC.game.match(/function pylonNetworkTier/g) || []).length, 1,
              'the tier reader is declared more than once');
+        // The tier is each pylon's own now: its element's battery bank, falling
+        // off with the pylon's distance from it (networkTierAt).
         const r = E.run(`(function(){
-            networkStrength['fire'] = 2;
-            return { withEl: pylonNetworkTier({ attackModeElement: 'fire' }),
-                     noEl:   pylonNetworkTier({ }),
-                     none:   pylonNetworkTier(null) };
+            const keep = _batteryBanks; _batteryBanks = [{ el: 'fire', tier: 2, members: [{ x: 0, y: 0 }] }];
+            const out = { withEl: pylonNetworkTier({ attackModeElement: 'fire', x: 1, y: 0 }),
+                          far:    pylonNetworkTier({ attackModeElement: 'fire', x: BANK_FULL_RANGE + 1, y: 0 }),
+                          noEl:   pylonNetworkTier({ }),
+                          none:   pylonNetworkTier(null) };
+            _batteryBanks = keep; return out;
         })()`);
-        same(r.withEl, 2, 'the tier is not read from networkStrength');
+        same(r.withEl, 2, 'the tier is not read from the battery bank');
+        same(r.far, 1, 'the tier does not fall off with distance from the bank');
         same(r.noEl, 0, 'a pylon with no element should be tier 0');
         same(r.none, 0, 'nothing should be tier 0');
     });

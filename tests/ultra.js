@@ -24,17 +24,21 @@ function ok(c, m) { if (!c) throw new Error(m); }
     run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id));');
 
     // Turrets at the listed offsets from (home.x + 4, 0), elements by index.
-    const build = (cells, els) => run(`(function(){
+    // `bats`: batteries of the square's element along the back row, for its
+    // tier (an Ultra needs tier II there — ULTRA_MIN_TIER); `batAt` moves them.
+    const build = (cells, els, bats, batAt) => run(`(function(){
         actors.length = 0; followers.length = 0; turretShots.length = 0; floatingTexts.length = 0;
-        world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.attackModeElement = null; t._ultra = null; t._ultraOf = null; } });
+        world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.isBattery = false; t.attackModeElement = null; t._ultra = null; t._ultraOf = null; } });
         shardCount = 9999;
         const home = world.find(t => isHomePortal(t)), X = home.x + 4;
         const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
         const els = ${JSON.stringify(els || [])};
         ${JSON.stringify(cells)}.forEach(([dx, dy], i) => _executeBuildInstant(ELEMENTS.find(e => e.id === (els[i] || 'fire')), T(X + dx, dy), 'attack'));
+        const counts = {}; els.forEach(e => counts[e] = (counts[e] || 0) + 1); const main = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || 'fire';
+        for (let i = 0; i < ${bats === undefined ? 4 : bats}; i++) _executeBuildInstant(ELEMENTS.find(e => e.id === main), T(X + ${batAt || 0} - 2 + i * 2, 0), 'battery');
         _cacheAge = -999; render();
         globalThis.__X = X; globalThis.__T = T;
-        return { n: _ultras.length, anchors: _ultras.map(u => [u.x - X, u.y]), el: _ultras[0] && _ultras[0]._ultra.el };
+        return { n: _ultras.length, anchors: _ultras.map(u => [u.x - X, u.y]), el: _ultras[0] && _ultras[0]._ultra.el, pending: _ultraPending.length };
     })()`);
     const SQ = [[0, 1], [1, 1], [0, 2], [1, 2]];
 
@@ -67,6 +71,26 @@ function ok(c, m) { if (!c) throw new Error(m); }
         build(SQ);
         run('rebuildUltras(); rebuildUltras();');
         ok(run('_ultras.length') === 1, 'rebuilding lost it');
+    });
+
+    group('THE TIER');
+
+    // "The ultra pylons shouldn't work unless the player has tier 2 network
+    // active", and the tier falls off with the distance from the battery bank.
+    await check('THE ASK: no fusion below tier II — the four stay turrets, and the square says what it needs', () => {
+        const none = build(SQ, [], 0), one = build(SQ, [], 2);
+        ok(none.n === 0 && none.pending === 1, 'no batteries: ' + JSON.stringify(none));
+        ok(one.n === 0 && one.pending === 1, 'tier I: ' + JSON.stringify(one));
+        ok(run('_aPylons.filter(t => !t._ultra && !t._ultraOf).length') === 4, 'the four are not ordinary turrets');
+        ok(/NEEDS " \+ h\.el\.toUpperCase\(\) \+ " TIER II/.test(rd('js/ultra.js')), 'the hint does not say it');
+    });
+    await check('THE ASK: four batteries (tier II) at the square — it fuses', () => {
+        ok(build(SQ, [], 4).n === 1, 'tier II did not fuse it');
+    });
+    await check('THE ASK: the tier falls off with distance from the bank — far away, it does not fuse', () => {
+        const r = build(SQ, [], 4, 16);
+        ok(r.n === 0, 'a bank 16 tiles away still gave it tier II');
+        ok(run('networkTierAt("fire", __X + 0.5, 1.5)') < 2, 'tier there ' + run('networkTierAt("fire", __X + 0.5, 1.5)'));
     });
 
     group('FIRING');

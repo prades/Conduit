@@ -28,6 +28,7 @@ const ULTRA_MUZZLE_Z      = 90;     // px above the floor its bolt leaves from (
 const ULTRA_SLIDE         = 0.06;   // how fast a blocked unit slides along a face
 
 let _ultras = [];                   // anchors, rebuilt with the caches
+let _ultraPending = [];             // squares that would fuse but for the tier: { x0, y0, el, tier, col }
 let _ultraKeys = new Set();         // to tell a NEW fusion (announced) from one that stands
 
 function _ultraTurretOk(t) {
@@ -40,7 +41,7 @@ function _ultraTurretOk(t) {
 function rebuildUltras() {
     for (const t of _ultras) { if (t._ultra) for (const p of t._ultra.tiles) p._ultraOf = null; t._ultra = null; }
     for (const t of world) if (t._ultraOf || t._ultra) { t._ultraOf = null; t._ultra = null; }
-    _ultras = [];
+    _ultras = []; _ultraPending = [];
     const cands = (typeof _pillarCache !== "undefined" ? _pillarCache : world).filter(_ultraTurretOk)
         .sort((a, b) => a.x - b.x || a.y - b.y);
     const used = new Set(), keys = new Set();
@@ -55,6 +56,10 @@ function rebuildUltras() {
         let el = t.attackModeElement || "core";
         for (const e in count) if (count[e] > count[el]) el = e;
         const colourOf = sq.find(p => (p.attackModeElement || "core") === el) || t;
+        // Only on a tier II network (ULTRA_MIN_TIER), at this square: below it
+        // the four stay four ordinary turrets, and the square says what it needs.
+        const tier = typeof networkTierAt === "function" ? networkTierAt(el, t.x + 0.5, t.y + 0.5) : 3;
+        if (tier < ULTRA_MIN_TIER) { _ultraPending.push({ x0: t.x, y0: t.y, el, tier, col: colourOf.attackModeColor || "#0f8" }); continue; }
         t._ultra = { tiles: sq, front: sq[3], el, col: colourOf.attackModeColor || "#0f8",
                      cx: t.x + 0.5, cy: t.y + 0.5, x0: t.x, y0: t.y };
         for (const p of sq) if (p !== t) p._ultraOf = t;
@@ -250,9 +255,31 @@ function drawUltraTurret(t, cx, cy) {
     const [h, m] = ultraHealth(t);
     if (typeof drawHealthBar === "function") drawHealthBar(cx - 30, ring - 30, 60, 5, h, m);
     c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
-    const tier = typeof networkStrength !== "undefined" ? (networkStrength[U.el] || 0) : 0;
+    const tier = typeof networkTierAt === "function" ? networkTierAt(U.el, U.cx, U.cy) : 0;
     const label = "ULTRA · " + U.el.toUpperCase() + (tier > 0 ? [" T-I", " T-II", " T-III"][tier - 1] : "");
     if (typeof cachedText === "function") cachedText(label, "bold 10px monospace", col, cx, ring - 36);
     else { c.fillStyle = col; c.font = "bold 10px monospace"; c.textAlign = "center"; c.fillText(label, cx, ring - 36); }
     c.restore();
+}
+
+// A square of four turrets short of tier II: a dashed outline round it and a
+// line saying what it needs, drawn over the world (the pass in game.js).
+function drawUltraHints() {
+    if (!_ultraPending.length) return;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const h of _ultraPending) {
+        const sx = (h.x0 + 1 - player.visualX - (h.y0 + 1 - player.visualY)) * TILE_W + canvas.width / 2;
+        const sy = (h.x0 + 1 - player.visualX + (h.y0 + 1 - player.visualY)) * TILE_H + canvas.height / 2;
+        if (sx < -150 || sx > canvas.width + 150 || sy < -150 || sy > canvas.height + 150) continue;
+        ctx.strokeStyle = h.col; ctx.globalAlpha = 0.45; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]);
+        ctx.beginPath(); ctx.moveTo(sx, sy - 2 * TILE_H); ctx.lineTo(sx + 2 * TILE_W, sy); ctx.lineTo(sx, sy + 2 * TILE_H); ctx.lineTo(sx - 2 * TILE_W, sy); ctx.closePath(); ctx.stroke();
+        ctx.setLineDash([]); ctx.globalAlpha = 1;
+        // Under the square's front corner, on a dark plate, clear of the turrets' own labels.
+        const msg = "ULTRA \u00b7 NEEDS " + h.el.toUpperCase() + " TIER II" + (h.tier ? " (HERE T-" + ["", "I"][h.tier] + ")" : "");
+        ctx.font = "bold 10px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        const w = ctx.measureText(msg).width + 12, ty = sy + 2 * TILE_H + 14;
+        ctx.fillStyle = "rgba(5,8,14,0.82)"; ctx.fillRect(sx - w / 2, ty - 9, w, 18);
+        ctx.fillStyle = h.col; ctx.fillText(msg, sx, ty);
+    }
+    ctx.restore();
 }

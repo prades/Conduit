@@ -35,6 +35,7 @@ const AUTOPLAY_BATTERIES    = 6;    // a bank of batteries for tier III (BATTERY
 const AUTOPLAY_ACCESSORIES  = 2;    // support pylons per nest, once the plan is built …
 const AUTOPLAY_SPARE        = 40;   // … and only while this many shards are left over
 const AUTOPLAY_FORM_ORDER   = ["toxic", "ice", "flux", "fire"];   // formation element, when the network's forms nothing
+const AUTOPLAY_FORM_BATTERIES = 4;  // a tier II bank for a formation of another element
 const AUTOPLAY_NET_RADIUS   = 9;    // tiles from its nest a network is counted and grown in
 const AUTOPLAY_WORK_SHARE   = 0.25;
 const AUTOPLAY_NEXT_WAVE_MS = 1500;
@@ -306,7 +307,14 @@ function _autoGrowNetwork(nest, next) {
     if (bats.length < AUTOPLAY_BATTERIES) return _autoPlaceLinked(nest, next, elId, "battery", bats.length ? bats : near.length ? near : [nest], reserved);
     // 3. The rest of the ultra square.
     if (_autoSquareStep(nest, next, "ultra", elId, "attack", 4, 0, reserved)) return true;
-    // 4. The formation square.
+    // 4. The formation square — and, when it is another element than the
+    // network's, a small bank of that element beside it: a formation only
+    // works on a tier II network at its square (ULTRA_MIN_TIER in config.js).
+    if (fel && fel !== elId && nest._autoPlan.form) {
+        const fb = near.filter(t => t.isBattery && t.attackModeElement === fel);
+        if (fb.length < AUTOPLAY_FORM_BATTERIES)
+            return _autoPlaceLinked(nest, next, fel, "battery", fb.length ? fb : _autoSquareTiles(nest._autoPlan.form), reserved);
+    }
     if (fel && _autoSquareStep(nest, next, "form", fel, waveRole(fel), 4, 2, reserved)) return true;
     // 5. A few accessories, only with shards to spare.
     if (shardCount < PYLON_BUILD_COST + AUTOPLAY_SPARE) return false;
