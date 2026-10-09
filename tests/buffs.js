@@ -84,6 +84,49 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/\(t\.isGenerator \? 0\.5 : 1\)/.test(rd('js/infest.js')), 'hunters do not prefer generators');
     });
 
+    group('TOXIC WAVE PYLONS');
+
+    // A shield generator for power and two toxic disruption pylons linked
+    // along y = 2; a unit held on the link between them for `frames`.
+    const toxic = (who, frames, extra, elId) => run(`(function(){
+        actors.length = 0; followers.length = 0;
+        world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.isBattery = false; t.attackModeElement = null; t.waveAwake = undefined; t._awakeUntil = undefined; } if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });
+        shardCount = 9999; const home = world.find(t => isHomePortal(t));
+        const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
+        _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), T(home.x + 1, 3));
+        const E = ELEMENTS.find(e => e.id === ${JSON.stringify(elId || 'toxic')}), a = T(home.x + 3, 2), b = T(home.x + 5, 2);
+        _executeBuildInstant(E, a, 'disruption'); _executeBuildInstant(E, b, 'disruption');
+        player.x = home.x - 12; player.y = 2;
+        _cacheAge = -999; render();
+        let u;
+        if (${JSON.stringify(who)} === 'clone') { u = makeClone('ant', 'scout', home.x + 4, 2); u.health = u.maxHealth * 0.3; }
+        if (${JSON.stringify(who)} === 'follower') { spawnFollowerAtCrystal('fire'); u = followers[followers.length - 1]; u.returningToCrystal = false; u.stance = 'hold'; u.health = u.maxHealth * 0.3; }
+        if (${JSON.stringify(who)} === 'enemy') { const S = SPECIES.ant; u = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), home.x + 4, 2); u.team = 'red'; u.health = u.maxHealth = 1e6; actors.push(u); }
+        ${extra || ''}
+        const h0 = u.health; globalThis.__ab = [a, b];
+        for (let f = 0; f < ${frames}; f++) { u.x = home.x + 4; u.y = 2; render(); }
+        return { gain: u.health - h0, awake: [a.waveAwake, b.waveAwake], max: u.maxHealth };
+    })()`);
+    await check('THE ASK: a toxic link mends a clone standing on it', () => {
+        const r = toxic('clone', 120);
+        ok(r.gain > r.max * 0.05, 'the clone was barely mended: ' + JSON.stringify(r));
+    });
+    await check('THE ASK: and still poisons the predators on it', () => {
+        const r = toxic('enemy', 120);
+        ok(r.gain < 0, 'the enemy took nothing: ' + JSON.stringify(r));
+    });
+    await check('a hurt clone wakes the toxic pylons on its own', () => {
+        const r = toxic('clone', 12);
+        ok(r.awake[0] || r.awake[1], 'no pylon woke for the clone: ' + JSON.stringify(r));
+    });
+    await check('it does not mend followers (that is the clones\' tending)', () => {
+        // Pylons mend anyone of yours standing right beside them anyway, so a
+        // follower on a toxic link is compared with one on a fire link.
+        const awake = 'a._awakeUntil = b._awakeUntil = Infinity;';
+        const tox = toxic('follower', 120, awake), fire = toxic('follower', 120, awake, 'fire');
+        ok(Math.abs(tox.gain - fire.gain) < 1e-6, 'the toxic link mended a follower: ' + JSON.stringify({ tox, fire }));
+    });
+
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
 })();

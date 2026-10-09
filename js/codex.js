@@ -121,14 +121,14 @@ const CODEX_ELEMENTS = {
         numbers: { pull: [0.14, 0.21, 0.28] },
     },
     toxic: {
-        role: 'DAMAGE',
-        summary: 'Poisons and strips armour. Lower damage than fire, but it makes everything else hit harder.',
+        role: 'DAMAGE + MENDS CLONES',
+        summary: 'Poisons and strips armour on enemies, and mends your clones on the same link. Lower damage than fire, but it makes everything else hit harder.',
         tiers: {
-            1: '8 damage every 0.5s, 45% chance to shred defence.',
-            2: '12 damage every 0.37s, 65% chance to shred, and the shred bites deeper.',
-            3: '18 damage every 0.25s, 80% chance to shred, and the cloud spreads the shred to enemies within 1.5 tiles.',
+            1: '10 damage every 0.5s, 45% chance to shred defence. Clones on the link mend 6 + 1% max HP.',
+            2: '15 damage every 0.37s, 65% chance to shred, and the shred bites deeper. Clones mend 9 + 1%.',
+            3: '22 damage every 0.25s, 80% chance to shred, and the cloud spreads the shred to enemies within 1.5 tiles. Clones mend 14 + 1%.',
         },
-        numbers: { dmg: [8, 12, 18] },
+        numbers: { dmg: [10, 15, 22] },
     },
 };
 

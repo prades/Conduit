@@ -471,6 +471,10 @@ const ELECTRIC_HASTE_RADIUS = 2.5;
 // and runs its network's tier effect, staying up WAVE_WAKE_LINGER frames after
 // the last one leaves so the edge of its reach does not flicker.
 const WAVE_SUPPORT_ELEMENTS = ["electric", "core"];
+// A TOXIC wave link also mends your clones on it (applyPylonZoneEffects): a
+// flat amount by tier plus this share of the clone's max HP each tick. It
+// wakes for a hurt clone as well as for an enemy (waveWakeTick).
+const TOXIC_CLONE_HEAL_SHARE = 0.01;
 const WAVE_WAKE_RADIUS = 3;
 const WAVE_WAKE_LINGER = 90;
 const WAVE_WAKE_BLINK  = 30;   // frames the wake-up blink lasts

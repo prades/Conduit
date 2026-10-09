@@ -391,7 +391,7 @@ function applyPylonZoneEffects(wavePylons) {
                     case "toxic": {
                         const toxIntv = _nTier >= 3 ? 15 : _nTier >= 2 ? 22 : 30;
                         if (isEnemy && frame % toxIntv === 0) {
-                            const tdmg = Math.round((_nTier >= 3 ? 18 : _nTier >= 2 ? 12 : 8) * _seasonBonus);
+                            const tdmg = Math.round((_nTier >= 3 ? 22 : _nTier >= 2 ? 15 : 10) * _seasonBonus);
                             applyDamage(a, tdmg, null, "toxic");
                             const shredChance  = _nTier >= 3 ? 0.8 : _nTier >= 2 ? 0.65 : 0.45;
                             const shredFactor  = _nTier >= 3 ? 0.3 : _nTier >= 2 ? 0.4 : 0.5;
@@ -408,6 +408,15 @@ function applyPylonZoneEffects(wavePylons) {
                                     }
                                 });
                             }
+                        }
+                        // REPORTED: "toxic wave pylons should heal ally clones
+                        // and damage enemy predators." A clone on the link is
+                        // mended on the same beat the poison lands, plus a
+                        // share of its max HP so a big clone still feels it.
+                        if (a.isClone && a.team === "green" && !a.dead && frame % toxIntv === 0 && a.health < a.maxHealth) {
+                            const theal = Math.round((_nTier >= 3 ? 14 : _nTier >= 2 ? 9 : 6) * _seasonBonus) + (a.maxHealth || 0) * TOXIC_CLONE_HEAL_SHARE;
+                            a.health = Math.min(a.maxHealth, a.health + theal);
+                            if (frame % (toxIntv * 2) === 0) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#66ff66", radius: 0.4, life: 14, element: "toxic" });
                         }
                         break;
                     }
@@ -1239,7 +1248,9 @@ function waveWakeTick() {
                 const a = actors[i];
                 if (!a || a.dead) continue;
                 const mine = support ? ((a.team === "green" || a.isClone || a.isFollower) && !a.isNeutralRecruit)
-                                     : isHostileTarget(a);
+                                     : (isHostileTarget(a)
+                                        // A toxic pylon also mends clones: a hurt one wakes it.
+                                        || (t.attackModeElement === "toxic" && a.isClone && a.team === "green" && a.health < a.maxHealth));
                 if (!mine) continue;
                 const dx = a.x - t.x, dy = a.y - t.y;
                 if (dx * dx + dy * dy <= r2) seen = true;
