@@ -1851,6 +1851,9 @@ function render() {
         // (js/formations.js) — after the tiers, which gate both.
         if (typeof rebuildUltras === "function") rebuildUltras();
         if (typeof rebuildFormations === "function") rebuildFormations();
+        // Pylons gone into a formation stop being wave pylons of their own:
+        // no links between them, no combos, no zone effects of their own.
+        _wPylons = _wPylons.filter(t => !t._wform && !t._wformOf);
 
         // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
         rebuildPylonPairs();
@@ -3137,13 +3140,16 @@ function render() {
                 const _A = obj._ultra ? obj : obj._ultraOf;
                 if (_A._ultra && _A._ultra.front === obj) drawUltraTurret(_A, px, py);
             }
+            // A FORMATION (black hole, firewall, ice generator, toxic tower):
+            // its four pylons are gone into it — "the toxic generator or the
+            // ultra pylons should lose the four original pylons" — so only the
+            // structure is drawn, once, from its front tile (js/formations.js).
+            else if (obj.pillar&&!obj.destroyed&&obj.health>0&&(obj._wform||obj._wformOf)) {
+                const _FA = obj._wformOf || obj;
+                if (_FA._wform && _FA._wform.front === obj && typeof drawFormationGround === "function") drawFormationGround(_FA._wform, px, py);
+            }
             // Pillar — one design, drawn for every pylon and upgrade
             else if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
-                // A BLACK HOLE's vortex or a SPINNING FIREWALL lies on the floor
-                // in the middle of its square: drawn from the front tile, after
-                // the floor and before this pylon (js/formations.js).
-                const _bhA = obj._wformOf || (obj._wform ? obj : null);
-                if (_bhA && _bhA._wform && _bhA._wform.front === obj && typeof drawFormationGround === "function") drawFormationGround(_bhA._wform, px, py);
                 if(obj.converting){ctx.fillStyle="#ff0";}
                 const _base=py+TILE_H; // anchor to tile center, not north vertex
                 drawHealthBar(px-10,_base-75,20,4,obj.health,obj.maxHealth);
@@ -3189,9 +3195,7 @@ function render() {
                 // drawWaveMonolith in draw.js); everything else is the tower.
                 const _isWaveMono = obj.waveMode && !isRelayPylon(obj);
                 if (_isWaveMono) {
-                    // The four round a BLACK HOLE go see-through (js/formations.js).
-                    const _bhF = obj._wform || (obj._wformOf && obj._wformOf._wform);
-                    drawWaveMonolith(px, _base, _acol, _dark, _wTier, _asleep, _bhF && _bhF.kind === "blackhole" ? 0.35 : 1);
+                    drawWaveMonolith(px, _base, _acol, _dark, _wTier, _asleep);
                     if (!_dark && !_asleep && _sinceWake < WAVE_WAKE_BLINK) drawWaveWakeBlink(px, _base, _acol, _sinceWake);
                 }
                 else if (obj.isBattery) {

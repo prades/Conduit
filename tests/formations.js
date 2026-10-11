@@ -67,9 +67,22 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(build(SQ, ['core']).n === 0, 'core formed something');
         ok(build(SQ, ['flux', 'flux', 'fire', 'fire']).n === 0, 'half flux, half fire formed something');
     });
-    await check('THE ASK: the four round a black hole are drawn see-through', () => {
-        ok(/function drawWaveMonolith\(px, base, colour, dark, tier, asleep, ghost\)/.test(rd('js/draw.js')), 'the tablet cannot be faded');
-        ok(/_bhF && _bhF.kind === "blackhole" \? 0\.35 : 1/.test(rd('js/game.js')), 'the pylon pass does not fade them');
+    // "The toxic generator or the ultra pylons should lose the four original
+    // pylons whenever it builds up." (The black hole's four used to be drawn
+    // see-through; now every formation's four are gone into it.)
+    await check('THE ASK: the four pylons are gone into it — not drawn, not wave pylons of their own', () => {
+        build(SQ, ['toxic']);
+        const g = rd('js/game.js');
+        ok(/else if \(obj\.pillar&&!obj\.destroyed&&obj\.health>0&&\(obj\._wform\|\|obj\._wformOf\)\) \{\s*const _FA = obj\._wformOf \|\| obj;\s*if \(_FA\._wform && _FA\._wform\.front === obj && typeof drawFormationGround === "function"\) drawFormationGround\(_FA\._wform, px, py\);\s*\}/.test(g),
+           'the pylon pass still draws the four pylons');
+        const r = run(`(function(){ const F = _formations[0]._wform; return { inWave: F.tiles.filter(t => _wPylons.includes(t)).length, links: _wPylonPairs.filter(p => F.tiles.includes(p.pa) || F.tiles.includes(p.pb)).length }; })()`);
+        ok(r.inWave === 0 && r.links === 0, 'they still act as wave pylons: ' + JSON.stringify(r));
+    });
+    await check('it rises out of their tiles as it forms, and carries their health as one bar', () => {
+        build(SQ, ['toxic']);
+        const r = run(`(function(){ const F = _formations[0]._wform; return { born: F.s.bornAt !== undefined, hp: formationHealth(F) }; })()`);
+        ok(r.born, 'no rise when it formed');
+        ok(r.hp[1] === run('_formations[0]._wform.tiles.reduce((s, t) => s + t.maxHealth, 0)'), 'health is not the four together: ' + JSON.stringify(r.hp));
     });
 
     group('THE TIER');
@@ -244,11 +257,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     group('DRAWING');
 
-    await check('THE ASK: a vortex on the floor, painted from the front tile before its pylon', () => {
+    await check('THE ASK: a vortex on the floor, painted once from the front tile', () => {
         build(SQ, ['flux']);
-        const g = rd('js/game.js');
-        ok(/_bhA\._wform\.front === obj && typeof drawFormationGround === "function"\) drawFormationGround\(_bhA\._wform, px, py\)/.test(g), 'not drawn from the front tile');
-        ok(g.indexOf('drawFormationGround(_bhA') < g.indexOf('drawWaveMonolith(px, _base'), 'drawn after the pylon, not under it');
         run('player.x = player.visualX = __X; player.y = player.visualY = 3; render(); drawFormationGround(_formations[0]._wform, 200, 200);');
         build(SQ, ['fire']);
         run('render(); drawFormationGround(_formations[0]._wform, 200, 200);');

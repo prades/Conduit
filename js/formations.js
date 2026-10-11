@@ -10,11 +10,13 @@
 //   - Found like the Ultra turret (js/ultra.js): every cache rebuild claims
 //     each 2x2 square of your finished wave pylons of the same element. FLUX
 //     and FIRE squares form something; the rest form nothing. Nothing is saved; break the square
-//     and it is gone, rebuild it and it is back. The four pylons keep doing
-//     what wave pylons do.
+//     and it is gone, rebuild it and it is back. The four pylons GO INTO IT:
+//     "the toxic generator or the ultra pylons should lose the four original
+//     pylons" — they are not drawn and do nothing as wave pylons of their
+//     own (out of _wPylons); the structure rises from their tiles and carries
+//     their health as one bar. They still take the hits and need the power.
 //   - BLACK HOLE (flux): a vortex opens in the floor where the four meet —
-//     "black hole vortex on the ground, 3D looking" — and the pylons go
-//     see-through. Every enemy within BH_RADIUS is ENTANGLED — dragged in,
+//     "black hole vortex on the ground, 3D looking". Every enemy within BH_RADIUS is ENTANGLED — dragged in,
 //     slowed, and crushed a little each half second — and the hole lights up
 //     with how many it holds.
 //   - SPINNING FIREWALL (fire): "how about the ultra turret for the fire wave
@@ -104,6 +106,11 @@ function rebuildFormations() {
                      wx: t.x + 1, wy: t.y + 1, x0: t.x, y0: t.y, caught: [] };
         for (const p of sq) if (p !== t) p._wformOf = t;
         _formations.push(t);
+        if (!old) {
+            // The four pylons go into it: it rises from their tiles.
+            s.bornAt = typeof frame !== "undefined" ? frame : 0;
+            if (typeof elementEffects !== "undefined") for (const p of sq) elementEffects.push({ type: "impact", x: p.x + 0.5, y: p.y + 0.5, color: t.attackModeColor || "#66ff66", radius: 0.6, life: 26 });
+        }
         if (!old && typeof floatingTexts !== "undefined") {
             floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, color: t._wform.col, life: 130, vy: -0.2, size: 14,
                                  text: "\u25c6 " + ({ blackhole: "BLACK HOLE", firespin: "SPINNING FIREWALL", icegen: "ICE GENERATOR", toxtower: "TOXIC TOWER" })[kind] + " FORMED" });
@@ -389,11 +396,26 @@ function drawFireSpin(F, cx, cy) {
 }
 
 // The pylon pass calls this from the square's front tile (game.js).
+// It RISES as the four pylons go into it (FORM_RISE frames from forming), and
+// carries the four's health as one bar.
+const FORM_RISE = 40;
+const FORM_BAR_Y = { blackhole: 46, firespin: 52, icegen: 84, toxtower: 128 };
+function formationHealth(F) {
+    let h = 0, m = 0; for (const p of F.tiles) { h += Math.max(0, p.health || 0); m += p.maxHealth || 0; }
+    return [h, m];
+}
 function drawFormationGround(F, cx, cy) {
+    const f = typeof frame !== "undefined" ? frame : 0;
+    const rise = F.s.bornAt === undefined ? 1 : Math.min(1, (f - F.s.bornAt) / FORM_RISE);
+    ctx.save();
+    if (rise < 1) { ctx.translate(cx, cy); ctx.scale(0.6 + 0.4 * rise, Math.max(0.05, rise)); ctx.translate(-cx, -cy); }
     if (F.kind === "blackhole") drawBlackHoleVortex(F, cx, cy);
     else if (F.kind === "firespin") drawFireSpin(F, cx, cy);
     else if (F.kind === "icegen") drawIceGenerator(F, cx, cy);
     else if (F.kind === "toxtower") drawToxicTower(F, cx, cy);
+    ctx.restore();
+    const [h, m] = formationHealth(F);
+    if (rise >= 1 && h < m && typeof drawHealthBar === "function") drawHealthBar(cx - 26, cy - (FORM_BAR_Y[F.kind] || 60), 52, 4, h, m);
 }
 
 // THE FROST, painted by each floor tile it covers (the floor pass in game.js

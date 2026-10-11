@@ -173,6 +173,11 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(Math.abs(r.ty - 2) < 1e-9, 'your walk target was not put back: ' + r.ty);
     });
 
+    await check('it rises out of the four turrets as it fuses', () => {
+        build(SQ);
+        ok(run('__T(__X, 1)._ultra.bornAt') !== undefined, 'no rise when it fused');
+    });
+
     group('DRAWING');
 
     await check('it draws once, from its front tile, as one structure', () => {

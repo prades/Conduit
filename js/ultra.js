@@ -30,6 +30,7 @@ const ULTRA_SLIDE         = 0.06;   // how fast a blocked unit slides along a fa
 let _ultras = [];                   // anchors, rebuilt with the caches
 let _ultraPending = [];             // squares that would fuse but for the tier: { x0, y0, el, tier, col }
 let _ultraKeys = new Set();         // to tell a NEW fusion (announced) from one that stands
+let _ultraBorn = new Map();         // square key → the frame it fused, for the rise
 
 function _ultraTurretOk(t) {
     return !!t && t.pillar && !t.destroyed && t.health > 0 && t.attackMode && !t.waveMode
@@ -66,6 +67,8 @@ function rebuildUltras() {
         _ultras.push(t);
         const key = t.x + "," + t.y;
         keys.add(key);
+        if (!_ultraKeys.has(key)) _ultraBorn.set(key, typeof frame !== "undefined" ? frame : 0);
+        t._ultra.bornAt = _ultraBorn.get(key);
         if (!_ultraKeys.has(key) && typeof floatingTexts !== "undefined") {
             floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, color: t._ultra.col, life: 130, vy: -0.2, size: 14,
                                  text: "◆ ULTRA TURRET FUSED · " + el.toUpperCase() });
@@ -74,6 +77,7 @@ function rebuildUltras() {
         }
     }
     _ultraKeys = keys;
+    for (const k of [..._ultraBorn.keys()]) if (!keys.has(k)) _ultraBorn.delete(k);
     return _ultras.length;
 }
 
@@ -192,7 +196,14 @@ function _ultraDot(c, x, y, r, col) {
 }
 
 // (cx, cy): the screen point of the square's centre on the floor.
+// It RISES out of the four turrets it fused from (FORM_RISE frames).
 function drawUltraTurret(t, cx, cy) {
+    const U = t._ultra; if (!U) return;
+    const _rise = U.bornAt === undefined ? 1 : Math.min(1, ((typeof frame !== "undefined" ? frame : 0) - U.bornAt) / 40);
+    if (_rise < 1) { ctx.save(); ctx.translate(cx, cy); ctx.scale(0.6 + 0.4 * _rise, Math.max(0.05, _rise)); ctx.translate(-cx, -cy); _drawUltraBody(t, cx, cy); ctx.restore(); return; }
+    _drawUltraBody(t, cx, cy);
+}
+function _drawUltraBody(t, cx, cy) {
     const U = t._ultra; if (!U) return;
     const M = ULTRA_METAL, col = U.col, f = typeof frame !== "undefined" ? frame : 0;
     const pulse = 0.5 + 0.5 * Math.sin(f * 0.07 + U.x0);
