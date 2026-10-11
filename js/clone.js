@@ -436,7 +436,14 @@ function spawnFollowerProjectile(actor, target, color, damage, radius, onHit) {
 // nest at all returns null instead, so the caller can tell "nothing left to
 // shut" from "nothing was ever there" — the second still spawns from the zone
 // centre, as it always did.
+// While the spawn loop runs (render sets _spawnMouths to { built: false }),
+// the first call answers EVERY zone in the same pass and the rest read it: the
+// loop asks once per zone per frame, and each ask was a scan of the world.
+let _spawnMouths = null;
 function zoneSpawnPoints(zoneIndex) {
+    const all = typeof _spawnMouths !== 'undefined' ? _spawnMouths : null;
+    if (all && all.built) return all.map.has(zoneIndex) ? all.map.get(zoneIndex) : null;
+    const map = all ? new Map() : null;
     let any = false;
     const open = [];
     for (const t of world) {
@@ -444,12 +451,12 @@ function zoneSpawnPoints(zoneIndex) {
         // spawn loop starts at zone 1 — but it answered as one here, so
         // anything that ever counted from zero would have poured predators out
         // of the player's own doorway.
-        if (t.nest && t.nestZone === zoneIndex
-            && !(typeof isHomePortal === 'function' && isHomePortal(t))) {
-            any = true;
-            if (t.nestHealth > 0) open.push(t);
+        if (t.nest && !(typeof isHomePortal === 'function' && isHomePortal(t))) {
+            if (map) { let l = map.get(t.nestZone); if (!l) { l = []; map.set(t.nestZone, l); } if (t.nestHealth > 0) l.push(t); }
+            if (t.nestZone === zoneIndex) { any = true; if (t.nestHealth > 0) open.push(t); }
         }
     }
+    if (map) { all.map = map; all.built = true; }
     return any ? open : null;
 }
 

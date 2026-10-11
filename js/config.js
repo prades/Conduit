@@ -238,7 +238,9 @@ function isPylonTypeUnlocked(id) {
 
 // ── CANVAS / CTX ──────────────────────────────────────────
 const canvas  = document.getElementById('cavernCanvas');
-const ctx     = canvas.getContext('2d');
+// Opaque: every frame paints the whole canvas, so the browser need not blend
+// it with the page behind (a cheaper composite on every frame).
+const ctx     = canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d');
 const hpBar   = document.getElementById('hp');
 const ultBar  = document.getElementById('ult');
 const ultWrap = document.getElementById('ultWrap');

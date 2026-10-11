@@ -484,6 +484,7 @@ function applyPylonZoneEffects(wavePylons) {
 //               layout is still legible.
 const POWER_WIRE_COLOUR = "#8fd6ff";
 const POWER_WIRE_DEAD   = "rgba(120,140,160,0.18)";
+const POWER_WIRE_DASH   = [4, 7];
 const POWER_BEADS       = 4;      // charges in flight per wire at full draw
 const POWER_BEAD_SPEED  = 0.011;  // of the wire's length, per frame
 
@@ -517,8 +518,8 @@ function cablePath(from, to) {
 // through, so a straight run is two half-pieces meeting at the edge, and the
 // elbow is the one tile whose two halves turn.
 const _cableTiles = new Map();
-function _cableCell(x, y) {
-    const k = x + "," + y;
+function _cableCell(x, y, key) {
+    const k = key || (x + "," + y);
     let c = _cableTiles.get(k);
     if (!c) { c = { pieces: [], beads: [] }; _cableTiles.set(k, c); }
     return c;
@@ -526,6 +527,9 @@ function _cableCell(x, y) {
 // The tiles a cable crosses, in order, from its first end to its last.
 // Remembered per pair of end tiles: every cable is laid again every frame,
 // and its route only changes when an end moves (the performance sweep).
+// The route also carries `cells`: each tile's map key and the shape of its
+// piece (which edges it runs to, whether it is an end or an elbow), worked
+// out once with the route instead of again for every cable every frame.
 const _cableRoutes = new Map();
 function cableTiles(from, to) {
     const key = Math.round(from.x) + "," + Math.round(from.y) + ">" + Math.round(to.x) + "," + Math.round(to.y);
@@ -533,6 +537,7 @@ function cableTiles(from, to) {
     if (!r) {
         if (_cableRoutes.size > 4000) _cableRoutes.clear();
         r = _cableTilesFresh(from, to);
+        r.cells = _cableCells(r);
         _cableRoutes.set(key, r);
     }
     return r;
@@ -550,99 +555,207 @@ function _cableTilesFresh(from, to) {
     }
     return tiles;
 }
-// Lay one cable. style: { core, width, dash, glow, beads: [{t, r, alpha, colour}] }
-// where each bead's t is 0..1 along the cable from `from` to `to`.
-function layCable(from, to, style) {
-    const tiles = cableTiles(from, to);
-    const last = tiles.length - 1;
+function _cableCells(tiles) {
+    const last = tiles.length - 1, out = [];
     for (let i = 0; i <= last; i++) {
         const dirs = [];
         if (i > 0)    dirs.push([tiles[i - 1].x - tiles[i].x, tiles[i - 1].y - tiles[i].y]);
         if (i < last) dirs.push([tiles[i + 1].x - tiles[i].x, tiles[i + 1].y - tiles[i].y]);
         const elbow = dirs.length === 2 && (dirs[0][0] + dirs[1][0] !== 0 || dirs[0][1] + dirs[1][1] !== 0);
-        _cableCell(tiles[i].x, tiles[i].y).pieces.push({ dirs, end: i === 0 || i === last, elbow, style });
+        // The piece's screen offsets from the tile centre, and a key for its
+        // shape so two cables lying the same way on a tile are drawn once.
+        const seg = dirs.map(([dx, dy]) => [(dx - dy) * TILE_W / 2, (dx + dy) * TILE_H / 2]);
+        const shape = dirs.length ? dirs.map(d => d[0] + "," + d[1]).join(";") : "o";
+        out.push({ k: tiles[i].x + "," + tiles[i].y, dirs, end: i === 0 || i === last, elbow, seg, shape });
+    }
+    return out;
+}
+// Lay one cable. style: { core, width, dash, glow } (cableStyle() hands out
+// shared ones); beads: [{t, r, alpha, colour}], each t 0..1 along the cable
+// from `from` to `to` (style.beads is still read when none are passed).
+function layCable(from, to, style, beads) {
+    const tiles = cableTiles(from, to), cells = tiles.cells;
+    const last = tiles.length - 1;
+    for (let i = 0; i <= last; i++) {
+        const cl = cells[i];
+        _cableCell(0, 0, cl.k).pieces.push({ dirs: cl.dirs, end: cl.end, elbow: cl.elbow, seg: cl.seg, shape: cl.shape, style });
     }
     // The charges are placed in world space along the tile run and drawn by the
     // tile they are over, so they go under a unit standing on the pipe too.
-    for (const b of (style.beads || [])) {
+    const bl = beads || style.beads;
+    if (bl) for (const b of bl) {
         const f = b.t * last, i = Math.min(last, Math.floor(f)), k = f - i;
         const n = tiles[Math.min(last, i + 1)];
         const wx = tiles[i].x + (n.x - tiles[i].x) * k, wy = tiles[i].y + (n.y - tiles[i].y) * k;
-        _cableCell(Math.round(wx), Math.round(wy)).beads.push(Object.assign({ wx, wy }, b));
+        _cableCell(Math.round(wx), Math.round(wy)).beads.push({ wx, wy, t: b.t, r: b.r, alpha: b.alpha, colour: b.colour });
     }
     return tiles;
 }
+// Shared style objects. A style used to be a new object per cable per frame,
+// with a width that followed the draw continuously — so no two were alike and
+// the per-tile batching below could not group them. The draw is stepped into
+// quarters, which nobody can see, and each step's style is made once.
+const _cableStyles = new Map();
+function cableStyle(core, width, glow, dash) {
+    const k = core + "|" + width + "|" + (glow || 0) + "|" + (dash ? dash.join(",") : "");
+    let st = _cableStyles.get(k);
+    if (!st) {
+        st = { core, width, glow: glow || 0, dash: dash || null, key: k };
+        if (_cableStyles.size > 500) _cableStyles.clear();
+        _cableStyles.set(k, st);
+    }
+    return st;
+}
+// A charge on a cable: a soft halo and a bright core, stamped from a sprite
+// per colour (it was two arcs, two fills and two alpha changes per charge).
+const _beadSprites = new Map();
+const BEAD_SPRITE_R = 8;   // the core radius the sprite is drawn at
+function _beadSprite(colour) {
+    let cv = _beadSprites.get(colour);
+    if (cv !== undefined) return cv;
+    cv = null;
+    try {
+        if (typeof document !== "undefined" && document.createElement) {
+            const el = document.createElement("canvas"), S = Math.ceil(BEAD_SPRITE_R * 2.2) * 2 + 2;
+            el.width = S; el.height = S;
+            const g = el.getContext && el.getContext("2d");
+            if (g && typeof g.arc === "function" && typeof g.drawImage === "function") {
+                g.fillStyle = colour;
+                g.globalAlpha = 0.3; g.beginPath(); g.arc(S / 2, S / 2, BEAD_SPRITE_R * 2.2, 0, Math.PI * 2); g.fill();
+                g.globalAlpha = 1;   g.beginPath(); g.arc(S / 2, S / 2, BEAD_SPRITE_R, 0, Math.PI * 2); g.fill();
+                cv = el;
+            }
+        }
+    } catch (e) { cv = null; }
+    _beadSprites.set(colour, cv);
+    return cv;
+}
 // Called by every floor tile in the sorted pass.
+//
+// STAMPED. A tile's cable pieces — sleeves, cores and collars — depend only on
+// which shapes cross it in which styles, and that changes rarely (a style is a
+// shared, stepped object: cableStyle). So each distinct set is drawn once into
+// a small sprite and stamped: one drawImage for what was ~10 path calls per
+// cable tile, the largest block of strokes in a dense base. The charges
+// moving along it are still drawn live, over the stamp.
+const _cableSprites = new Map();
+const CABLE_SPRITE_CAP = 900;
+const CABLE_SPR_W = TILE_W + 16, CABLE_SPR_H = TILE_H + 16;   // the half-pieces reach the tile's edge midpoints
+function _cableSprite(c) {
+    let key = c.sig;
+    if (key === undefined) {
+        key = "";
+        for (const pc of c.pieces) {
+            const st = pc.style;
+            key += (pc.shape || (pc.dirs.length ? pc.dirs.map(d => d[0] + "," + d[1]).join(";") : "o")) + (pc.end ? "E" : "") + (pc.elbow ? "L" : "") + "#" +
+                   (st.key || (st.key = st.core + "|" + st.width + "|" + (st.glow || 0) + "|" + (st.dash ? st.dash.join(",") : ""))) + "/";
+        }
+        c.sig = key;
+    }
+    let cv = _cableSprites.get(key);
+    if (cv !== undefined) return cv;
+    cv = null;
+    try {
+        if (typeof document !== "undefined" && document.createElement) {
+            const el = document.createElement("canvas");
+            el.width = CABLE_SPR_W; el.height = CABLE_SPR_H;
+            const g = el.getContext && el.getContext("2d");
+            if (g && typeof g.stroke === "function" && typeof g.drawImage === "function") {
+                _drawCablePieces(g, CABLE_SPR_W / 2, CABLE_SPR_H / 2, c.pieces);
+                cv = el;
+            }
+        }
+    } catch (e) { cv = null; }
+    if (_cableSprites.size > CABLE_SPRITE_CAP) _cableSprites.clear();
+    _cableSprites.set(key, cv);
+    return cv;
+}
 function drawCablesOnTile(tile, px, py) {
     if (_cableTiles.size === 0) return;
-    const c = _cableTiles.get(Math.round(tile.x) + "," + Math.round(tile.y));
+    // The tile's key is made once and kept on it, not built again per frame.
+    const c = _cableTiles.get(tile._ck || (tile._ck = Math.round(tile.x) + "," + Math.round(tile.y)));
     if (!c) return;
     const cx = px, cy = py + TILE_H;
+    const _ga = ctx.globalAlpha;
+    if (c.pieces.length) {
+        const spr = _cableSprite(c);
+        if (spr) { ctx.globalAlpha = 1; ctx.drawImage(spr, cx - CABLE_SPR_W / 2, cy - CABLE_SPR_H / 2); }
+        else _drawCablePieces(ctx, cx, cy, c.pieces);
+    }
+    _drawCableBeads(c);
+    ctx.globalAlpha = _ga;
+}
+// The pieces on one tile, centred on (cx, cy), into context g.
+function _drawCablePieces(g, cx, cy, pieces) {
     // One world step along +x is (TILE_W, TILE_H) on screen, along +y it is
-    // (-TILE_W, TILE_H); a half step reaches the middle of that edge.
+    // (-TILE_W, TILE_H); a half step reaches the middle of that edge (the
+    // offsets are kept on the piece: seg).
     const addPiece = pc => {
-        if (pc.dirs.length === 0) { ctx.moveTo(cx, cy); ctx.lineTo(cx, cy); return; }
-        const [dx0, dy0] = pc.dirs[0];
-        ctx.moveTo(cx + (dx0 - dy0) * TILE_W / 2, cy + (dx0 + dy0) * TILE_H / 2); ctx.lineTo(cx, cy);
-        if (pc.dirs[1]) { const [dx1, dy1] = pc.dirs[1]; ctx.lineTo(cx + (dx1 - dy1) * TILE_W / 2, cy + (dx1 + dy1) * TILE_H / 2); }
+        const sg = pc.seg || pc.dirs.map(([dx, dy]) => [(dx - dy) * TILE_W / 2, (dx + dy) * TILE_H / 2]);
+        if (sg.length === 0) { g.moveTo(cx, cy); g.lineTo(cx, cy); return; }
+        g.moveTo(cx + sg[0][0], cy + sg[0][1]); g.lineTo(cx, cy);
+        if (sg[1]) g.lineTo(cx + sg[1][0], cy + sg[1][1]);
     };
-    // PERFORMANCE: no shadowBlur anywhere here (it is the slowest thing a
-    // canvas does, and this runs for every cable tile, every frame), and the
-    // strokes are BATCHED — one path per style instead of one per piece. In a
-    // dense base many cables share a tile (a generator's runs overlap), so the
-    // same piece was being stroked again and again.
-    // DEDUPE: in a dense base many cables run along the same tiles (a
-    // generator's runs to ten pylons share their first leg), and every one of
-    // them was stroked on top of the others. One piece per distinct shape, in
-    // the strongest style among those sharing it (live beats dead, then the
-    // wider core). Measured as the biggest single cost in a 66-pylon base.
-    const uniq = new Map();
-    for (const pc of c.pieces) {
-        const d = pc.dirs, k = d.length ? (d[0][0] + "," + d[0][1] + (d[1] ? ";" + d[1][0] + "," + d[1][1] : "")) : "o";
-        const cur = uniq.get(k);
-        const score = (pc.style.glow ? 100 : 0) + (pc.style.dash ? 0 : 10) + pc.style.width;
-        if (!cur || score > cur.score) uniq.set(k, { pc, score });
+    // No shadowBlur, and the strokes are BATCHED — one path per style.
+    // DEDUPE: many cables run along the same tiles (a generator's runs to ten
+    // pylons share their first leg). One piece per distinct shape, in the
+    // strongest style among those sharing it (live beats dead, then the wider
+    // core). A tile holds a handful of pieces, so a short array beats a Map.
+    const uniq = [], score = [];
+    for (const pc of pieces) {
+        const k = pc.shape || (pc.shape = pc.dirs.length ? pc.dirs.map(d => d[0] + "," + d[1]).join(";") : "o");
+        const sc = (pc.style.glow ? 100 : 0) + (pc.style.dash ? 0 : 10) + pc.style.width;
+        let j = 0;
+        while (j < uniq.length && uniq[j].shape !== k) j++;
+        if (j === uniq.length) { uniq.push(pc); score.push(sc); }
+        else if (sc > score[j]) { uniq[j] = pc; score[j] = sc; }
     }
-    // No save/restore per cable tile (there are dozens a frame): the state it
-    // touches is noted here and put back at the end.
-    const _ga = ctx.globalAlpha, _cap = ctx.lineCap, _join = ctx.lineJoin;
-    // Flat ends and mitred joins: round caps cost an arc per segment, and the
-    // pieces meet edge to edge anyway.
-    ctx.lineCap = "butt"; ctx.lineJoin = "miter";
+    const _ga = g.globalAlpha, _cap = g.lineCap, _join = g.lineJoin;
+    // Flat ends and mitred joins: the pieces meet edge to edge.
+    g.lineCap = "butt"; g.lineJoin = "miter";
     // Sleeves: one path, one stroke.
-    ctx.strokeStyle = CABLE_CASING; ctx.lineWidth = CABLE_WIDTH; ctx.globalAlpha = 0.85;
-    ctx.beginPath(); for (const { pc } of uniq.values()) addPiece(pc); ctx.stroke();
+    g.strokeStyle = CABLE_CASING; g.lineWidth = CABLE_WIDTH; g.globalAlpha = 0.85;
+    g.beginPath(); for (const pc of uniq) addPiece(pc); g.stroke();
     // Cores: grouped by style.
-    const groups = new Map();
-    for (const { pc } of uniq.values()) {
-        const st = pc.style, k = st.core + "|" + st.width + "|" + (st.dash ? st.dash.join(",") : "");
-        let g = groups.get(k); if (!g) { g = { st, list: [] }; groups.set(k, g); } g.list.push(pc);
-    }
-    for (const { st, list } of groups.values()) {
-        ctx.beginPath(); for (const pc of list) addPiece(pc);
+    for (let i = 0; i < uniq.length; i++) {
+        const st = uniq[i].style;
+        const k = st.key || (st.key = st.core + "|" + st.width + "|" + (st.glow || 0) + "|" + (st.dash ? st.dash.join(",") : ""));
+        let seen = false;
+        for (let j = 0; j < i; j++) if (uniq[j].style.key === k) { seen = true; break; }
+        if (seen) continue;
+        g.beginPath();
+        for (let j = i; j < uniq.length; j++) if (uniq[j].style.key === k || uniq[j].style === st) addPiece(uniq[j]);
         // A live cable is a touch wider instead of carrying a glow.
-        ctx.globalAlpha = 1; ctx.strokeStyle = st.core; ctx.lineWidth = st.width + (st.glow ? 1 : 0);
-        if (st.dash) ctx.setLineDash(st.dash);
-        ctx.stroke();
-        if (st.dash) ctx.setLineDash([]);
+        g.globalAlpha = 1; g.strokeStyle = st.core; g.lineWidth = st.width + (st.glow ? 1 : 0);
+        if (st.dash) g.setLineDash(st.dash);
+        g.stroke();
+        if (st.dash) g.setLineDash([]);
     }
     // An elbow collar where it turns, a coupling where it plugs in — once per tile.
     let end = false, elbow = false, rim = null;
-    for (const pc of c.pieces) { if (pc.end) end = true; if (pc.elbow) elbow = true; if ((pc.end || pc.elbow) && !rim) rim = pc.style.core; }
+    for (const pc of pieces) { if (pc.end) end = true; if (pc.elbow) elbow = true; if ((pc.end || pc.elbow) && !rim) rim = pc.style.core; }
     if (end || elbow) {
-        ctx.globalAlpha = 1; ctx.fillStyle = CABLE_CASING;
-        ctx.beginPath(); ctx.ellipse(cx, cy, end ? 6 : 5, end ? 3 : 2.5, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = rim; ctx.lineWidth = 1; ctx.stroke();
+        g.globalAlpha = 1; g.fillStyle = CABLE_CASING;
+        g.beginPath(); g.ellipse(cx, cy, end ? 6 : 5, end ? 3 : 2.5, 0, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = rim; g.lineWidth = 1; g.stroke();
     }
-    // Charges: a faint halo and a bright core, no blur.
+    g.globalAlpha = _ga; g.lineCap = _cap; g.lineJoin = _join;
+}
+function _drawCableBeads(c) {
+    // Charges: stamped from a sprite (halo and core), no blur.
     for (const b of c.beads) {
         const bx = (b.wx - player.visualX - (b.wy - player.visualY)) * TILE_W + canvas.width / 2;
         const by = (b.wx - player.visualX + (b.wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
-        ctx.fillStyle = b.colour;
-        ctx.globalAlpha = b.alpha * 0.3; ctx.beginPath(); ctx.arc(bx, by, b.r * 2.2, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = b.alpha; ctx.beginPath(); ctx.arc(bx, by, b.r, 0, Math.PI * 2); ctx.fill();
+        const spr = _beadSprite(b.colour);
+        if (spr) {
+            const S = spr.width * b.r / BEAD_SPRITE_R;
+            ctx.globalAlpha = b.alpha; ctx.drawImage(spr, bx - S / 2, by - S / 2, S, S);
+        } else {
+            ctx.fillStyle = b.colour;
+            ctx.globalAlpha = b.alpha * 0.3; ctx.beginPath(); ctx.arc(bx, by, b.r * 2.2, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = b.alpha; ctx.beginPath(); ctx.arc(bx, by, b.r, 0, Math.PI * 2); ctx.fill();
+        }
     }
-    ctx.globalAlpha = _ga; ctx.lineCap = _cap; ctx.lineJoin = _join;
 }
 // A world point on the floor, in screen space (tile centre, ground level).
 function cableScreen(o) {
@@ -669,14 +782,17 @@ function _drawPowerWire(from, to, flow, phase, colour) {
             beads.push({ t, r: 2.2 + flow * 1.4, alpha: (0.45 + flow * 0.55) * (0.35 + fade * 0.65), colour });
         }
     }
+    // The draw is stepped into quarters so the style can be a shared one.
+    const fq = Math.round(flow * 4) / 4;
     return layCable(from, to, lit
-        ? { core: colour, width: 2 + flow * 0.8, glow: 6 * flow, beads }
-        : { core: POWER_WIRE_DEAD, width: 1.4, dash: [4, 7] });
+        ? cableStyle(colour, 2 + fq * 0.8, Math.max(1.5, 6 * fq))
+        : cableStyle(POWER_WIRE_DEAD, 1.4, 0, POWER_WIRE_DASH), beads);
 }
 
 // The generator's mending lines: thin steel cables on the floor, routed like
 // every other cable. Where the same generator already runs a POWER cable to a
 // pylon it would lie on exactly the same path, so that one is left to carry it.
+const MENDING_DASH = [5, 6];
 function layMendingCables() {
     if (typeof _genLinks === "undefined" || _genLinks.length === 0) return;
     // Only while you build, or hold a generator: in a big base these thin
@@ -690,8 +806,8 @@ function layMendingCables() {
         if (pylon._ultraOf || pylon._wformOf) continue;   // one cable per structure
         if (needsPower(pylon) && pylon.powerGen === gen) continue;
         const t = (((frame || 0) * 0.014) + (pylon.x * 0.13 + pylon.y * 0.29)) % 1;
-        layCable(gen, pylon, { core: `rgba(205,214,224,${0.35 + pulse * 0.3})`, width: 1.4, dash: [5, 6],
-                               beads: [{ t, r: 2, alpha: 0.5 + pulse * 0.3, colour: "#e6f0fa" }] });
+        layCable(gen, pylon, cableStyle(`rgba(205,214,224,${(0.35 + Math.round(pulse * 10) / 10 * 0.3).toFixed(2)})`, 1.4, 0, MENDING_DASH),
+                 [{ t, r: 2, alpha: 0.5 + pulse * 0.3, colour: "#e6f0fa" }]);
     }
 }
 
@@ -707,14 +823,14 @@ function layAllCables() {
     // The ties between nest grids: a gold cable between the two relays that
     // join them (buildNestGrids in power.js).
     if (typeof _gridLinks !== "undefined")
-        for (const { a, b } of _gridLinks) layCable(a, b, { core: CONNECTOR_COLOR, width: 2, glow: 3 });
+        for (const { a, b } of _gridLinks) layCable(a, b, cableStyle(CONNECTOR_COLOR, 2, 3));
     // Batteries linked into one bank: a cable in their element's colour.
     // While either end is charging, charge runs along it.
     for (const { a, b, el } of _batteryLinks) {
         const def = ELEMENTS.find(e => e.id === el);
         const live = typeof batteryCharging === "function" && (batteryCharging(a) || batteryCharging(b));
         const beads = live ? [0, 0.5].map(o => ({ t: (((frame || 0) * 0.02) + o) % 1, r: 2.4, alpha: 0.9, colour: BATTERY_COLOR })) : [];
-        layCable(a, b, { core: def ? def.color : BATTERY_COLOR, width: 2, glow: 2, beads });
+        layCable(a, b, cableStyle(def ? def.color : BATTERY_COLOR, 2, 2), beads);
     }
 }
 
@@ -798,7 +914,9 @@ function _drawFloorTile(c, px, py, isNight, dist, territory, fade) {
     }
 }
 function _floorTileSprite(isNight, dq, territory, tq) {
-    const key = (isNight ? 1 : 0) + "|" + dq + "|" + territory + "|" + tq;
+    // A number when there is no territory wash (always, now): no string to
+    // build for each of ~125 tiles a frame.
+    const key = territory ? (isNight ? 1 : 0) + "|" + dq + "|" + territory + "|" + tq : ((isNight ? 1 : 0) * 4096 + dq) * 64 + tq;
     let cv = _floorSprites.get(key);
     if (cv !== undefined) return cv;
     cv = null;
@@ -832,6 +950,25 @@ function rebuildPylonNear() {
             const k = _pnKey(px + dx, py + dy), cur = _pylonNear.get(k);
             if (cur === undefined || d < cur) _pylonNear.set(k, d);
         }
+    }
+}
+// Pylons by team and by tile, rebuilt with _pillarCache. The healing pass and
+// the nearest-pylon search used to walk every pylon for every actor (56 x 160
+// in a late base): by tile, an actor looks at its own few neighbours.
+let _greenPillars = [], _redPillars = [];
+let _pillarAt = new Map();          // x * 64 + (y + 16) → pylons on that tile
+let _pillarIndexOf = null;          // the _pillarCache array it was built from
+function _paKey(x, y) { return x * 64 + (y + 16); }
+// Rebuilt if _pillarCache has been replaced since (anything that sets it).
+function pillarIndexFresh() { if (_pillarIndexOf !== _pillarCache) rebuildPillarIndex(); }
+function rebuildPillarIndex() {
+    _pillarIndexOf = _pillarCache;
+    _greenPillars = []; _redPillars = []; _pillarAt = new Map();
+    for (const t of _pillarCache) {
+        if (t.pillarTeam === "green") _greenPillars.push(t); else if (t.pillarTeam === "red") _redPillars.push(t);
+        const k = _paKey(Math.round(t.x), Math.round(t.y));
+        const l = _pillarAt.get(k);
+        if (l) l.push(t); else _pillarAt.set(k, [t]);
     }
 }
 function pylonNearDist(x, y) {
@@ -1924,6 +2061,7 @@ function render() {
         _cacheAge    = frame;
         _pillarCache = world.filter(t => t.pillar && !t.destroyed && t.health > 0);
         rebuildPylonNear();
+        rebuildPillarIndex();
         // Generators are excluded from _wPylons on purpose: the elemental
         // network tiers and integrity are computed from that list, and a
         // neutral pylon has no element to contribute to either.
@@ -2157,9 +2295,10 @@ function render() {
     // rest of the frame and keeps a reload close to where the player was.
     if (frame % 300 === 0) { saveSession(); savePylons(); saveNests(); }
 
-    // ── CLEAR SCREEN ──
-    ctx.fillStyle="#000"; ctx.fillRect(0,0,canvas.width,canvas.height);
-    // ── CIRCUIT BOARD BACKGROUND ──
+    // ── CLEAR SCREEN + CIRCUIT BOARD BACKGROUND ──
+    // One opaque stamp: the faint circuit board is composited onto the black
+    // once (drawCircuitLayer), not a full-screen fill and then a full-screen
+    // blend at 6% every frame.
     drawCircuitLayer();
     ctx.save();
     if (shake>0) { ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake); shake*=0.9; }
@@ -2252,6 +2391,7 @@ function render() {
         // respected, and how "your clones do not count" would drift out of one
         // of the two.
         let _livePredators = livePredatorCount();
+        _spawnMouths = { built: false };   // one world pass answers every zone (clone.js)
         for (let z = _zLo; z <= hostileZoneCount; z++) {
             if (_livePredators >= MAX_LIVE_PREDATORS) break;
             // A zone stops producing only when EVERY mouth it has is shut —
@@ -2283,6 +2423,7 @@ function render() {
                 }
             }
         }
+        _spawnMouths = null;   // live again outside the loop
     }
 
     // ── WAVE FUNCTION PYLONS — link same-element pylons within getPylonRange()
@@ -2387,14 +2528,16 @@ function render() {
     turretShotsTick();
 
     // ── COMPLETE RECONSTRUCTION ──
-    world.forEach(t=>{
+    // A plain loop: this walks the whole world every frame.
+    for (let i = 0; i < world.length; i++) {
+        const t = world[i];
         if (t.reconstructing&&t.reconstructProgress>=1) {
             t.reconstructing=false; t.reconstructProgress=0; t.upgraded=true; t.pulseTimer=0;
             t.pillarTeam="green"; t.pillarCol="#0f8"; t.health=t.maxHealth;
             if(t.workers) t.workers.forEach(a=>{ if(a.job&&a.job.type==="reconstruct") a.job=null; });
             t.workers=[];
         }
-    });
+    }
 
     // ── REMOVE DEAD NPCs, respawn ──
     actors.forEach(a=>{
@@ -2497,16 +2640,24 @@ function render() {
     shieldGenHuntTick();
 
     // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
+    // Only the tiles around each actor are looked at (_pillarAt), not every pylon.
     if (frame % 3 === 0) {
-        actors.forEach(actor=>{
-            _pillarCache.forEach(t=>{
-                // Cheap bbox reject before team check and sqrt
-                if(Math.abs(t.x-actor.x)>1.2||Math.abs(t.y-actor.y)>1.2) return;
-                if((actor.team==="green"&&t.pillarTeam!=="green")||(actor.team==="red"&&t.pillarTeam!=="red")) return;
-                const dx=t.x-actor.x, dy=t.y-actor.y;
-                if(dx*dx+dy*dy < 1.44) actor.health=Math.min(actor.maxHealth, actor.health+0.15);
-            });
-        });
+        pillarIndexFresh();
+        for (const actor of actors) {
+            // Pylons stand on whole tiles: only those within 1.2 can count.
+            const x0 = Math.ceil(actor.x - 1.2), x1 = Math.floor(actor.x + 1.2);
+            const y0 = Math.ceil(actor.y - 1.2), y1 = Math.floor(actor.y + 1.2);
+            for (let tx = x0; tx <= x1; tx++) for (let ty = y0; ty <= y1; ty++) {
+                const list = _pillarAt.get(_paKey(tx, ty));
+                if (!list) continue;
+                for (const t of list) {
+                    if(Math.abs(t.x-actor.x)>1.2||Math.abs(t.y-actor.y)>1.2) continue;
+                    if((actor.team==="green"&&t.pillarTeam!=="green")||(actor.team==="red"&&t.pillarTeam!=="red")) continue;
+                    const dx=t.x-actor.x, dy=t.y-actor.y;
+                    if(dx*dx+dy*dy < 1.44) actor.health=Math.min(actor.maxHealth, actor.health+0.15);
+                }
+            }
+        }
     }
 
     // ── PROXIMITY CONVERSION — virus NPCs join team when player walks close ──
@@ -2571,7 +2722,15 @@ function render() {
     }
 
     // ── FIRE WALL LIFETIME ──
-    world=world.filter(obj=>{ if(obj.type==="fireWall"){obj.life--;return obj.life>0;} return true; });
+    // Only while one is burning. This ran every frame and made a NEW world
+    // array each time, which also threw away the draw index (tileColumns
+    // rebuilds when `world` is a different array) — a full rebuild of the
+    // column index, every frame, for something that is almost never there.
+    if (_fireWallCount > 0) {
+        world = world.filter(obj=>{ if(obj.type==="fireWall"){obj.life--;return obj.life>0;} return true; });
+        _fireWallCount = 0;
+        for (const o of world) if (o.type === "fireWall") _fireWallCount++;
+    }
 
     // ── GROUND ITEM PICKUP ──
     groundItems=groundItems.filter(item=>{
@@ -2672,7 +2831,9 @@ function render() {
     // Nothing in the tunnel is lost to the bias: the vortex sits high on the
     // wall face, well above the y=-1 floor row, so the handful of tiles that
     // now sort before it do not share pixels with it.
-    drawList.sort((a,b)=>drawDepthOf(a)-drawDepthOf(b));
+    // Each item's depth once, not twice per comparison (n log n calls).
+    for (let i = 0; i < drawList.length; i++) drawList[i]._dd = drawDepthOf(drawList[i]);
+    drawList.sort((a,b)=>a._dd-b._dd);
 
     // The cables are laid before anything is drawn, and each floor tile draws
     // its own pieces, so they lie on the ground under everything standing there.
@@ -2875,25 +3036,40 @@ function render() {
             // frame — the biggest single cost on screen. Its look depends only
             // on distance to the camera, night, territory and trace strength,
             // so each look is drawn once (_floorTileSprite) and stamped.
-            const _nd = _pillarCache.length > 0 ? pylonNearDist(obj.x, obj.y) : Infinity;
-            const _tq = _nd < PCB_TRACE_REACH ? Math.round(Math.pow(1 - _nd / PCB_TRACE_REACH, 1.4) * FLOOR_TRACE_STEPS) : 0;
+            // The trace strength only changes when the pylons do (the 60-frame
+            // rebuild makes a new _pylonNear), so it is kept on the tile.
+            if (obj._pnMap !== _pylonNear) {
+                obj._pnMap = _pylonNear;
+                const _nd = _pillarCache.length > 0 ? pylonNearDist(obj.x, obj.y) : Infinity;
+                obj._tq = _nd < PCB_TRACE_REACH ? Math.round(Math.pow(1 - _nd / PCB_TRACE_REACH, 1.4) * FLOOR_TRACE_STEPS) : 0;
+            }
+            const _tq = obj._tq;
             // No territory wash on the tile any more (Conduit effects plan,
             // "Territory") — it read as haze over the whole base.
             const _spr = _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), "", _tq);
             if (_spr) ctx.drawImage(_spr, px - TILE_W - 1, py - 1);
             else _drawFloorTile(ctx, px, py, gameState.phase === "night", dist, "", _tq / FLOOR_TRACE_STEPS);
             // Only the FRONT LINE: a 1 px edge where your ground meets the enemy's.
-            if (obj.territory === "player" || obj.territory === "enemy") {
-                const _tx = Math.round(obj.x), _ty = Math.round(obj.y);
-                const _other = obj.territory === "player" ? "enemy" : "player";
-                const _nR = worldTileMap.get((_tx + 1) + "," + _ty), _nD = worldTileMap.get(_tx + "," + (_ty + 1));
-                const _col = obj.territory === "player" ? "rgba(90,170,255,0.35)" : "rgba(255,90,90,0.35)";
-                if ((_nR && _nR.territory === _other) || (_nD && _nD.territory === _other)) {
-                    ctx.save(); ctx.strokeStyle = _col; ctx.lineWidth = 1; ctx.beginPath();
-                    if (_nR && _nR.territory === _other) { ctx.moveTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + TILE_W); }
-                    if (_nD && _nD.territory === _other) { ctx.moveTo(px, py + TILE_W); ctx.lineTo(px - TILE_W, py + TILE_H); }
-                    ctx.stroke(); ctx.restore();
+            // Which of its edges are a front line: worked out when the
+            // territory changes (_territoryVer), not with two map lookups per
+            // tile per frame.
+            if (obj._tv !== _territoryVer) {
+                obj._tv = _territoryVer; obj._edgeR = false; obj._edgeD = false;
+                if (obj.territory === "player" || obj.territory === "enemy") {
+                    const _tx = Math.round(obj.x), _ty = Math.round(obj.y);
+                    const _other = obj.territory === "player" ? "enemy" : "player";
+                    const _nR = worldTileMap.get((_tx + 1) + "," + _ty), _nD = worldTileMap.get(_tx + "," + (_ty + 1));
+                    obj._edgeR = !!(_nR && _nR.territory === _other);
+                    obj._edgeD = !!(_nD && _nD.territory === _other);
                 }
+            }
+            if (obj._edgeR || obj._edgeD) {
+                const _col = obj.territory === "player" ? "rgba(90,170,255,0.35)" : "rgba(255,90,90,0.35)";
+                const _lw = ctx.lineWidth;
+                ctx.strokeStyle = _col; ctx.lineWidth = 1; ctx.beginPath();
+                if (obj._edgeR) { ctx.moveTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + TILE_W); }
+                if (obj._edgeD) { ctx.moveTo(px, py + TILE_W); ctx.lineTo(px - TILE_W, py + TILE_H); }
+                ctx.stroke(); ctx.lineWidth = _lw;
             }
 
             // An ICE GENERATOR's frost, on the floor under everything (js/formations.js).
@@ -2903,7 +3079,7 @@ function render() {
             drawCablesOnTile(obj, px, py);
 
             // Acid pool — drawn here so it sits on the floor but under pylons
-            const acidH = acidTiles.get(`${Math.round(obj.x)},${Math.round(obj.y)}`);
+            const acidH = acidTiles.size ? acidTiles.get(obj._ck || (obj._ck = Math.round(obj.x) + "," + Math.round(obj.y))) : undefined;
             if (acidH) {
                 const bubble = 0.5 + 0.5 * Math.sin(frame * 0.12 + obj.x + obj.y);
                 const seed   = obj.x * 13.7 + obj.y * 7.3;
@@ -3415,9 +3591,13 @@ function render() {
                     // rest show just their charge.
                     let _bNamed = commandMode && commandTarget === obj;
                     if (_bNear && !_bNamed && !(commandMode && commandTarget && commandTarget.isBattery)) {
-                        let _bd = Infinity, _bn = null;
-                        for (const q of _batteryList) { const d = Math.abs(q.x - player.x) + Math.abs(q.y - player.y); if (d < _bd) { _bd = d; _bn = q; } }
-                        _bNamed = _bn === obj;
+                        // The nearest battery, found once a frame, not once per battery.
+                        if (_nearBatFrame !== frame) {
+                            _nearBatFrame = frame; _nearBat = null;
+                            let _bd = Infinity;
+                            for (const q of _batteryList) { const d = Math.abs(q.x - player.x) + Math.abs(q.y - player.y); if (d < _bd) { _bd = d; _nearBat = q; } }
+                        }
+                        _bNamed = _nearBat === obj;
                     }
                     if (_bNamed) cachedText((obj.attackModeElement||"").toUpperCase() + " BATTERY" + (_bt ? [""," T-I"," T-II"," T-III"][_bt] : ""), "bold 9px monospace", _bc, px, _base-52);
                     if (_bNear) {
@@ -4177,7 +4357,10 @@ function updateTerritory() {
         const k = t.x + "," + t.y, isPlayer = player.has(k), isEnemy = enemy.has(k);
         t.territory = isPlayer && isEnemy ? 'contested' : isPlayer ? 'player' : isEnemy ? 'enemy' : null;
     }
+    _territoryVer++;   // the floor's front-line edges are worked out again (render)
 }
+let _territoryVer = 0;
+let _nearBatFrame = -1, _nearBat = null;   // the battery that wears its full name this frame
 
 // Increments capture progress when followers stand on a capturable tile.
 // Progress halts while an enemy is adjacent (within 1.5 tiles).

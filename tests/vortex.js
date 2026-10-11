@@ -291,7 +291,8 @@ async function ready() {
 
     check('one function decides depth, and the sort uses it', () => {
         ok(/function drawDepthOf/.test(SRC.game), 'there is no single depth rule');
-        ok(/drawList\.sort\(\(a,b\)=>drawDepthOf\(a\)-drawDepthOf\(b\)\)/.test(SRC.game),
+        // Worked out once per item (_dd = drawDepthOf) and then sorted on.
+        ok(/drawList\[i\]\._dd = drawDepthOf\(drawList\[i\]\)/.test(SRC.game) && /drawList\.sort\(\(a,b\)=>a\._dd-b\._dd\)/.test(SRC.game),
            'the draw list is not sorted by it');
         ok(!/drawList\.sort\(\(a,b\)=>\(a\.x\+a\.y\)-\(b\.x\+b\.y\)\)/.test(SRC.game),
            'the raw x+y sort is still there as well');

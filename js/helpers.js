@@ -569,8 +569,10 @@ function tickArmySurge() {
     }
 }
 
+let _fireWallCount = 0;   // how many are burning: the world is only filtered while any are
 function spawnFireWall(x, y) {
     world.push({ type:"fireWall", x, y, life:180 });
+    _fireWallCount++;
 }
 
 function disruptEnemiesAt(x, y) {
@@ -591,11 +593,17 @@ function frenzyEnemiesAt(x, y) {
 
 function findNearestFriendlyPillar(actor) {
     let best=null, bestDist2=Infinity;
-    _pillarCache.forEach(t => {
-        if ((actor.team==="green"&&t.pillarTeam!=="green")||(actor.team==="red"&&t.pillarTeam!=="red")) return;
+    // The team's own list (game.js rebuildPillarIndex) when it is current —
+    // half the pylons, and no closure per pylon.
+    if (typeof pillarIndexFresh === "function") pillarIndexFresh();
+    const fresh = typeof _pillarIndexOf !== "undefined" && _pillarIndexOf === _pillarCache;
+    const list = !fresh ? _pillarCache : actor.team === "green" ? _greenPillars : actor.team === "red" ? _redPillars : _pillarCache;
+    for (let i = 0; i < list.length; i++) {
+        const t = list[i];
+        if ((actor.team==="green"&&t.pillarTeam!=="green")||(actor.team==="red"&&t.pillarTeam!=="red")) continue;
         const dx=t.x-actor.x, dy=t.y-actor.y, d2=dx*dx+dy*dy;
         if (d2<bestDist2) { bestDist2=d2; best=t; }
-    });
+    }
     return best;
 }
 

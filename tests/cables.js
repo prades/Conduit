@@ -80,11 +80,22 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const r = run(`(function(){ _cableTiles.clear(); layCable({x:2,y:0}, {x:3,y:0}, { core: '#fff', width: 2 });
             const calls = []; const keep = {};
             for (const k of ['moveTo','lineTo']) { keep[k] = ctx[k]; ctx[k] = (x, y) => calls.push([k, x, y]); }
-            try { drawCablesOnTile({ x: 2, y: 0 }, 400, 300); } finally { for (const k in keep) ctx[k] = keep[k]; }
+            // The pieces are drawn into the tile's cable sprite now (drawCablesOnTile
+            // stamps it); the geometry is the same, centred on the tile (400, 330).
+            try { _drawCablePieces(ctx, 400, 330, _cableTiles.get('2,0').pieces); } finally { for (const k in keep) ctx[k] = keep[k]; }
             return calls; })()`);
         // +x neighbour: half of (TILE_W, TILE_H) from the centre (400, 330)
         ok(r.some(c => c[0] === 'moveTo' && Math.abs(c[1] - 430) < 0.01 && Math.abs(c[2] - 345) < 0.01), 'no piece to the +x edge: ' + JSON.stringify(r));
         ok(r.some(c => c[0] === 'lineTo' && c[1] === 400 && c[2] === 330), 'the piece does not reach the tile centre');
+    });
+    await check('a tile\'s cables are stamped from a cached sprite, the charges drawn live over it', () => {
+        const r = run(`(function(){ _cableTiles.clear(); layCable({x:2,y:0}, {x:3,y:0}, cableStyle('#fff', 2, 0), [{ t: 0.2, r: 2, alpha: 1, colour: '#fff' }]);
+            let imgs = 0, strokes = 0; const keep = { d: ctx.drawImage, s: ctx.stroke };
+            ctx.drawImage = function () { imgs++; }; ctx.stroke = function () { strokes++; };
+            try { drawCablesOnTile({ x: 2, y: 0 }, 400, 300); drawCablesOnTile({ x: 2, y: 0 }, 400, 300); } finally { ctx.drawImage = keep.d; ctx.stroke = keep.s; }
+            return { imgs, strokes, cached: _cableSprites.size > 0 }; })()`);
+        ok(r.cached && r.strokes === 0, 'the pieces are stroked on the screen every frame: ' + JSON.stringify(r));
+        ok(r.imgs >= 2, 'no sprite stamped: ' + JSON.stringify(r));
     });
     await check('THE ASK: cables are drawn by the floor tiles in the sorted pass, not as an overlay', () => {
         ok(/drawCablesOnTile\(obj, px, py\);\s*\n\s*\n\s*\/\/ Acid pool/.test(GAME), 'the floor tile does not draw its cable pieces');

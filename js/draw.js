@@ -2703,12 +2703,29 @@ function drawCapturableNode(tile, px, py) {
     }
 }
 
+// The background: black with the circuit board at 5.8% over it, composited
+// once into an opaque image (rebuilt when the canvas changes size), and
+// stamped as the frame's clear.
+let _circuitBg = null;
 function drawCircuitLayer() {
     if (!_circuitOffscreen || _circuitSize.w !== canvas.width || _circuitSize.h !== canvas.height) {
         _circuitOffscreen = _buildCircuit(canvas.width, canvas.height);
         _circuitSize.w    = canvas.width;
         _circuitSize.h    = canvas.height;
+        _circuitBg = null;
+        try {
+            const bg = document.createElement('canvas');
+            bg.width = canvas.width; bg.height = canvas.height;
+            const g = bg.getContext('2d');
+            if (g && typeof g.drawImage === 'function') {
+                g.fillStyle = "#000"; g.fillRect(0, 0, bg.width, bg.height);
+                g.globalAlpha = 0.058; g.drawImage(_circuitOffscreen, 0, 0);
+                _circuitBg = bg;
+            }
+        } catch (e) { _circuitBg = null; }
     }
+    if (_circuitBg) { ctx.drawImage(_circuitBg, 0, 0); return; }
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.globalAlpha = 0.058;
     ctx.drawImage(_circuitOffscreen, 0, 0);
