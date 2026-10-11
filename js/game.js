@@ -522,7 +522,20 @@ function _cableCell(x, y) {
     return c;
 }
 // The tiles a cable crosses, in order, from its first end to its last.
+// Remembered per pair of end tiles: every cable is laid again every frame,
+// and its route only changes when an end moves (the performance sweep).
+const _cableRoutes = new Map();
 function cableTiles(from, to) {
+    const key = Math.round(from.x) + "," + Math.round(from.y) + ">" + Math.round(to.x) + "," + Math.round(to.y);
+    let r = _cableRoutes.get(key);
+    if (!r) {
+        if (_cableRoutes.size > 4000) _cableRoutes.clear();
+        r = _cableTilesFresh(from, to);
+        _cableRoutes.set(key, r);
+    }
+    return r;
+}
+function _cableTilesFresh(from, to) {
     const pts = cablePath(from, to), tiles = [{ x: pts[0].x, y: pts[0].y }];
     for (let i = 1; i < pts.length; i++) {
         let { x, y } = tiles[tiles.length - 1];
@@ -588,7 +601,9 @@ function drawCablesOnTile(tile, px, py) {
         const score = (pc.style.glow ? 100 : 0) + (pc.style.dash ? 0 : 10) + pc.style.width;
         if (!cur || score > cur.score) uniq.set(k, { pc, score });
     }
-    ctx.save();
+    // No save/restore per cable tile (there are dozens a frame): the state it
+    // touches is noted here and put back at the end.
+    const _ga = ctx.globalAlpha, _cap = ctx.lineCap, _join = ctx.lineJoin;
     // Flat ends and mitred joins: round caps cost an arc per segment, and the
     // pieces meet edge to edge anyway.
     ctx.lineCap = "butt"; ctx.lineJoin = "miter";
@@ -625,7 +640,7 @@ function drawCablesOnTile(tile, px, py) {
         ctx.globalAlpha = b.alpha * 0.3; ctx.beginPath(); ctx.arc(bx, by, b.r * 2.2, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = b.alpha; ctx.beginPath(); ctx.arc(bx, by, b.r, 0, Math.PI * 2); ctx.fill();
     }
-    ctx.restore();
+    ctx.globalAlpha = _ga; ctx.lineCap = _cap; ctx.lineJoin = _join;
 }
 // A world point on the floor, in screen space (tile centre, ground level).
 function cableScreen(o) {
@@ -662,6 +677,11 @@ function _drawPowerWire(from, to, flow, phase, colour) {
 // pylon it would lie on exactly the same path, so that one is left to carry it.
 function layMendingCables() {
     if (typeof _genLinks === "undefined" || _genLinks.length === 0) return;
+    // Only while you build, or hold a generator: in a big base these thin
+    // lines ran to every pylon of every generator, every frame — about a
+    // quarter of all the cable drawing — and say nothing you need mid-fight.
+    const _held = typeof commandMode !== "undefined" && commandMode && commandTarget && commandTarget.isGenerator;
+    if (!(typeof buildMode !== "undefined" && buildMode) && !_held) return;
     const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.06);
     for (const { gen, pylon } of _genLinks) {
         if (gen.destroyed || pylon.destroyed) continue;
@@ -807,6 +827,123 @@ function rebuildPylonNear() {
 function pylonNearDist(x, y) {
     const d = _pylonNear.get(_pnKey(x, y));
     return d === undefined ? Infinity : d;
+}
+
+// ── THE WALL'S CIRCUIT TRACES, cached per column ─────────
+// The bus lines, jogs, vias and the odd radial node on the south wall face are
+// fixed for a column (seeded by its x), so they are drawn once into a sprite
+// in wall space (x along the wall, y up from its base) at full strength, and
+// stamped each frame through the wall's shear with its light as the alpha.
+const _wallTraceSprites = new Map();
+const WALL_TRACE_SPRITE_CAP = 400;
+function _wallTraceSprite(xi, WH) {
+    if (_wallTraceSprites.has(xi)) return _wallTraceSprites.get(xi);
+    let cv = null;
+    try {
+        if (typeof document !== "undefined" && document.createElement) {
+            cv = document.createElement("canvas");
+            cv.width = 72; cv.height = Math.ceil(WH + 16);
+            const g = cv.getContext && cv.getContext("2d");
+            if (!g || typeof g.setTransform !== "function") cv = null;
+            else { g.setTransform(1, 0, 0, -1, 6, WH + 8); _drawWallTraces(g, xi, WH, 1); }
+        }
+    } catch (e) { cv = null; }
+    if (_wallTraceSprites.size >= WALL_TRACE_SPRITE_CAP) _wallTraceSprites.delete(_wallTraceSprites.keys().next().value);
+    _wallTraceSprites.set(xi, cv);
+    return cv;
+}
+// Draws the static traces into `g`, already in wall space; `amb` scales them.
+function _drawWallTraces(g, xi, WH, amb) {
+    const rng = _mkCircuitRng(((xi * 0xDEAD + 0xBEEF) >>> 0));
+    const WPAL = ['#0f8','#0df','#0fa','#3fc','#0cf','#2fd','#1ee'];
+    const _ga = g.globalAlpha;
+    g.lineCap = 'square'; g.lineJoin = 'miter';
+    // ── Main horizontal bus lines — fixed heights, continuous across tiles ──
+    const busY = [WH*0.18, WH*0.40, WH*0.65, WH*0.86];
+    const busC = ['#0f8', '#0df', '#0fa', '#2fd'];
+    for (let bi = 0; bi < busY.length; bi++) {
+        g.globalAlpha = amb * 0.20;
+        g.strokeStyle = busC[bi];
+        g.lineWidth   = 1.1;
+        g.beginPath();
+        g.moveTo(-2, busY[bi]);   // extend 2px past tile edge for seamless joins
+        g.lineTo(62, busY[bi]);
+        g.stroke();
+    }
+
+    // ── Tile-local jog / zigzag traces (seeded, deterministic) ──
+    const numJogs = 1 + (rng() * 3 | 0);
+    for (let j = 0; j < numJogs; j++) {
+        const jx  = 6 + rng() * 48;
+        const bi0 = rng() * busY.length | 0;
+        const bi1 = ((bi0 + 1 + (rng() * (busY.length - 1) | 0)) % busY.length);
+        const y0  = busY[bi0], y1 = busY[bi1];
+        const col = WPAL[rng() * WPAL.length | 0];
+        const hasZig = rng() > 0.45;
+        g.globalAlpha = amb * (0.14 + rng() * 0.13);
+        g.strokeStyle = col; g.lineWidth = 0.9;
+        g.beginPath(); g.moveTo(jx, y0);
+        if (hasZig) {
+            const midY = y0 + (y1 - y0) * (0.35 + rng() * 0.30);
+            const xOff = (rng() - 0.5) * 18;
+            g.lineTo(jx, midY); g.lineTo(jx + xOff, midY); g.lineTo(jx + xOff, y1);
+        } else { g.lineTo(jx, y1); }
+        g.stroke();
+        // Via pads at endpoints
+        g.globalAlpha = amb * 0.36; g.fillStyle = col;
+        g.beginPath(); g.arc(jx, y0, 2.2, 0, Math.PI*2); g.fill();
+        g.beginPath(); g.arc(hasZig ? jx+(rng()-0.5)*18 : jx, y1, 2.2, 0, Math.PI*2); g.fill();
+        g.globalAlpha = amb * 0.18; g.lineWidth = 0.5;
+        g.beginPath(); g.arc(jx, y0, 4.2, 0, Math.PI*2); g.stroke();
+    }
+
+    // ── Cluster / radial node — one every ~7 tiles ──
+    const rng2 = _mkCircuitRng(((xi * 0xF00BA5 + 0x1EAF) >>> 0));
+    if ((xi % 7) < 1 || rng2() > 0.82) {
+        const cx2 = 14 + rng2() * 32, cy2 = 32 + rng2() * 52;
+        const rad = 7 + rng2() * 10, col2 = WPAL[rng2() * WPAL.length | 0];
+        const arms = 4 + (rng2() * 4 | 0);
+        g.strokeStyle = col2; g.fillStyle = col2;
+        for (let a = 0; a < arms; a++) {
+            const ang = (a / arms) * Math.PI * 2 + rng2() * 0.5;
+            const nx = cx2 + Math.cos(ang) * rad * (0.5 + rng2() * 0.5);
+            const ny = cy2 + Math.sin(ang) * rad * (0.5 + rng2() * 0.5);
+            g.lineWidth = 0.8; g.globalAlpha = amb * 0.16;
+            g.beginPath(); g.moveTo(cx2, cy2); g.lineTo(nx, cy2); g.lineTo(nx, ny); g.stroke();
+            g.globalAlpha = amb * 0.20;
+            g.beginPath(); g.arc(nx, ny, 1.4, 0, Math.PI*2); g.fill();
+        }
+        g.globalAlpha = amb * 0.26;
+        g.beginPath(); g.arc(cx2, cy2, 2.8, 0, Math.PI*2); g.fill();
+        g.lineWidth = 0.5; g.globalAlpha = amb * 0.16;
+        g.beginPath(); g.arc(cx2, cy2, 5.0, 0, Math.PI*2); g.stroke();
+    }
+
+    g.globalAlpha = _ga;
+}
+
+// The glowing diamond under a pylon of yours, drawn once per colour at its
+// brightest; the floor pass fades it with the pulse.
+const _tileGlowSprites = new Map();
+function _tileGlowSprite(col) {
+    if (_tileGlowSprites.has(col)) return _tileGlowSprites.get(col);
+    let cv = null;
+    try {
+        if (typeof document !== "undefined" && document.createElement) {
+            cv = document.createElement("canvas"); cv.width = TILE_W * 2 + 10; cv.height = TILE_H * 2 + 10;
+            const g = cv.getContext && cv.getContext("2d");
+            if (!g || typeof g.setTransform !== "function") cv = null;
+            else {
+                const px = TILE_W + 5, py = 5;
+                g.beginPath(); g.moveTo(px, py); g.lineTo(px + TILE_W, py + TILE_H); g.lineTo(px, py + TILE_W); g.lineTo(px - TILE_W, py + TILE_H); g.closePath();
+                g.globalAlpha = 0.12; g.fillStyle = col; g.fill();
+                g.strokeStyle = col; g.lineWidth = 7; g.globalAlpha = 0.17; g.stroke();
+                g.lineWidth = 2; g.globalAlpha = 0.7; g.stroke();
+            }
+        }
+    } catch (e) { cv = null; }
+    _tileGlowSprites.set(col, cv);
+    return cv;
 }
 
 function drawPowerChain() {
@@ -3068,27 +3205,16 @@ function render() {
                 const _gelDef = PYLON_PICKER_TYPES.find(e=>e.id===obj.attackModeElement);
                 const _gCol = _gelDef ? _gelDef.color : "#0f8";
                 const _gpulse = 0.5+0.5*Math.sin((frame||0)*0.07+obj.x*0.8+obj.y*0.5);
-                ctx.save();
-                // Tile diamond outline
-                ctx.beginPath();
-                ctx.moveTo(px,          py);
-                ctx.lineTo(px + TILE_W, py + TILE_H);
-                ctx.lineTo(px,          py + TILE_W);
-                ctx.lineTo(px - TILE_W, py + TILE_H);
-                ctx.closePath();
-                // Subtle fill
-                ctx.globalAlpha = 0.05 + _gpulse * 0.07;
-                ctx.fillStyle = _gCol;
-                ctx.fill();
-                // Accentuated border
-                ctx.globalAlpha = 0.3 + _gpulse * 0.4;
-                ctx.strokeStyle = _gCol;
-                // Glow as a wide faint stroke under a thin bright one: a
-                // shadowBlur here ran under every pylon tile, every frame.
-                ctx.lineWidth = 7; ctx.globalAlpha = (0.3 + _gpulse * 0.4) * 0.25; ctx.stroke();
-                ctx.lineWidth = 2; ctx.globalAlpha = 0.3 + _gpulse * 0.4;
-                ctx.stroke();
-                ctx.restore();
+                // Stamped from a sprite per colour (_tileGlowSprite), its pulse as
+                // the alpha: it was a fill and two strokes in a save/restore under
+                // every pylon tile, every frame.
+                const _tg = _tileGlowSprite(_gCol);
+                if (_tg) {
+                    const _ga = ctx.globalAlpha;
+                    ctx.globalAlpha = _ga * (0.45 + _gpulse * 0.55);
+                    ctx.drawImage(_tg, px - TILE_W - 5, py - 5);
+                    ctx.globalAlpha = _ga;
+                }
             }
 
             // ── BROKEN PYLON ──
@@ -3152,7 +3278,9 @@ function render() {
             else if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
                 if(obj.converting){ctx.fillStyle="#ff0";}
                 const _base=py+TILE_H; // anchor to tile center, not north vertex
-                drawHealthBar(px-10,_base-75,20,4,obj.health,obj.maxHealth);
+                // Only once it is hurt: a full bar over every pylon was ~170 canvas
+                // calls a frame in a big base, and told you nothing.
+                if (obj.health < obj.maxHealth) drawHealthBar(px-10,_base-75,20,4,obj.health,obj.maxHealth);
                 const _pulse=0.5+0.5*Math.sin(frame*0.08+(obj.x*0.97+obj.y*1.31));
                 // A pylon with no power is DARK, and the colour is the whole
                 // readout: the element it is set to is still there, it just is
@@ -3352,75 +3480,26 @@ function render() {
                     // Wall-space: x ∈ [0..TILE_W], y ∈ [0..WH] (y=0 at base, y=WH at top).
                     // Transform: screen_x = x + WX,  screen_y = 0.5*x − y + WY
                     const WX = px - TILE_W, WY = py + TILE_H;
-                    // Seeded deterministic RNG per tile — same pattern every frame, different per column.
-                    const rng = _mkCircuitRng(((Math.abs(Math.floor(obj.x)) * 0xDEAD + 0xBEEF) >>> 0));
-                    const WPAL = ['#0f8','#0df','#0fa','#3fc','#0cf','#2fd','#1ee'];
+                    // The traces never change, so each column's are drawn ONCE into a
+                    // sprite (_wallTraceSprite) and stamped, faded by the wall's light.
+                    // They were ~20 canvas calls a wall tile, every frame — the single
+                    // biggest share of the frame in a built-up late game.
+                    const busY = [WH*0.18, WH*0.40, WH*0.65, WH*0.86];
+                    const busC = ['#0f8', '#0df', '#0fa', '#2fd'];
+                    const _wspr = _wallTraceSprite(Math.abs(Math.floor(obj.x)), WH);
+                    if (_wspr) {
+                        ctx.save();
+                        ctx.globalAlpha = amb;
+                        ctx.transform(1, 0.5, 0, 1, WX - 6, WY - 3 - WH - 8);
+                        ctx.drawImage(_wspr, 0, 0);
+                        ctx.restore();
+                    } else {
+                        _drawWallTraces(ctx, Math.abs(Math.floor(obj.x)), WH, amb);
+                    }
 
                     ctx.save();
                     ctx.transform(1, 0.5, 0, -1, WX, WY); // isometric shear onto wall face
                     ctx.lineCap = 'square'; ctx.lineJoin = 'miter';
-
-                    // ── Main horizontal bus lines — fixed heights, continuous across tiles ──
-                    const busY = [WH*0.18, WH*0.40, WH*0.65, WH*0.86];
-                    const busC = ['#0f8', '#0df', '#0fa', '#2fd'];
-                    for (let bi = 0; bi < busY.length; bi++) {
-                        ctx.globalAlpha = 0.20 * amb;
-                        ctx.strokeStyle = busC[bi];
-                        ctx.lineWidth   = 1.1;
-                        ctx.beginPath();
-                        ctx.moveTo(-2, busY[bi]);   // extend 2px past tile edge for seamless joins
-                        ctx.lineTo(62, busY[bi]);
-                        ctx.stroke();
-                    }
-
-                    // ── Tile-local jog / zigzag traces (seeded, deterministic) ──
-                    const numJogs = 1 + (rng() * 3 | 0);
-                    for (let j = 0; j < numJogs; j++) {
-                        const jx  = 6 + rng() * 48;
-                        const bi0 = rng() * busY.length | 0;
-                        const bi1 = ((bi0 + 1 + (rng() * (busY.length - 1) | 0)) % busY.length);
-                        const y0  = busY[bi0], y1 = busY[bi1];
-                        const col = WPAL[rng() * WPAL.length | 0];
-                        const hasZig = rng() > 0.45;
-                        ctx.globalAlpha = (0.14 + rng() * 0.13) * amb;
-                        ctx.strokeStyle = col; ctx.lineWidth = 0.9;
-                        ctx.beginPath(); ctx.moveTo(jx, y0);
-                        if (hasZig) {
-                            const midY = y0 + (y1 - y0) * (0.35 + rng() * 0.30);
-                            const xOff = (rng() - 0.5) * 18;
-                            ctx.lineTo(jx, midY); ctx.lineTo(jx + xOff, midY); ctx.lineTo(jx + xOff, y1);
-                        } else { ctx.lineTo(jx, y1); }
-                        ctx.stroke();
-                        // Via pads at endpoints
-                        ctx.globalAlpha = 0.36 * amb; ctx.fillStyle = col;
-                        ctx.beginPath(); ctx.arc(jx, y0, 2.2, 0, Math.PI*2); ctx.fill();
-                        ctx.beginPath(); ctx.arc(hasZig ? jx+(rng()-0.5)*18 : jx, y1, 2.2, 0, Math.PI*2); ctx.fill();
-                        ctx.globalAlpha = 0.18 * amb; ctx.lineWidth = 0.5;
-                        ctx.beginPath(); ctx.arc(jx, y0, 4.2, 0, Math.PI*2); ctx.stroke();
-                    }
-
-                    // ── Cluster / radial node — one every ~7 tiles ──
-                    const rng2 = _mkCircuitRng(((Math.abs(Math.floor(obj.x)) * 0xF00BA5 + 0x1EAF) >>> 0));
-                    if ((Math.abs(Math.floor(obj.x)) % 7) < 1 || rng2() > 0.82) {
-                        const cx2 = 14 + rng2() * 32, cy2 = 32 + rng2() * 52;
-                        const rad = 7 + rng2() * 10, col2 = WPAL[rng2() * WPAL.length | 0];
-                        const arms = 4 + (rng2() * 4 | 0);
-                        ctx.strokeStyle = col2; ctx.fillStyle = col2;
-                        for (let a = 0; a < arms; a++) {
-                            const ang = (a / arms) * Math.PI * 2 + rng2() * 0.5;
-                            const nx = cx2 + Math.cos(ang) * rad * (0.5 + rng2() * 0.5);
-                            const ny = cy2 + Math.sin(ang) * rad * (0.5 + rng2() * 0.5);
-                            ctx.lineWidth = 0.8; ctx.globalAlpha = 0.16 * amb;
-                            ctx.beginPath(); ctx.moveTo(cx2, cy2); ctx.lineTo(nx, cy2); ctx.lineTo(nx, ny); ctx.stroke();
-                            ctx.globalAlpha = 0.20 * amb;
-                            ctx.beginPath(); ctx.arc(nx, ny, 1.4, 0, Math.PI*2); ctx.fill();
-                        }
-                        ctx.globalAlpha = 0.26 * amb;
-                        ctx.beginPath(); ctx.arc(cx2, cy2, 2.8, 0, Math.PI*2); ctx.fill();
-                        ctx.lineWidth = 0.5; ctx.globalAlpha = 0.16 * amb;
-                        ctx.beginPath(); ctx.arc(cx2, cy2, 5.0, 0, Math.PI*2); ctx.stroke();
-                    }
-
                     // ── Pulsing tracers — bright packets flowing along bus lines ──
                     // Each of 4 tracers has a unique speed; global frame gives cross-tile continuity.
                     for (let ti = 0; ti < 4; ti++) {
@@ -4008,43 +4087,25 @@ function render() {
 // Enemy territory  = within 4 tiles of active nest OR uncaptured signal tower.
 // Contested        = overlap of both.
 function updateTerritory() {
-    // Reset
-    world.forEach(t => { if (t.type === 'floor') t.territory = null; });
-
-    const greenPylons = _pillarCache.filter(t => t.pillarTeam === 'green');
-    const activeNests = _nestCache.filter(t => t.nestHealth > 0);
-
-    world.forEach(t => {
-        if (t.type !== 'floor') return;
-        let isPlayer = false, isEnemy = false;
-
-        // Player territory: green pylon within 3 tiles
-        for (const p of greenPylons) {
-            if (Math.hypot(p.x - t.x, p.y - t.y) <= 3) { isPlayer = true; break; }
-        }
-        // Player territory: captured node within 3 tiles
-        if (!isPlayer) {
-            for (const n of capturedNodes) {
-                if (Math.hypot(n.x - t.x, n.y - t.y) <= 3) { isPlayer = true; break; }
-            }
-        }
-
-        // Enemy territory: active nest within 4 tiles
-        for (const n of activeNests) {
-            if (Math.hypot(n.x - t.x, n.y - t.y) <= 4) { isEnemy = true; break; }
-        }
-        // Enemy territory: uncaptured signal tower within 4 tiles
-        if (!isEnemy) {
-            for (const st of signalTowers) {
-                if (!st.captured && Math.hypot(st.x - t.x, st.y - t.y) <= 4) { isEnemy = true; break; }
-            }
-        }
-
-        if (isPlayer && isEnemy)  t.territory = 'contested';
-        else if (isPlayer)         t.territory = 'player';
-        else if (isEnemy)          t.territory = 'enemy';
-        else                       t.territory = null;
-    });
+    // Stamped outward from each source onto the tiles in reach, rather than
+    // every floor tile testing every pylon: it was tiles x pylons (1300 x 160
+    // in a late base, every second), the largest single cost in the cache
+    // rebuild and a visible hitch once a second.
+    const player = new Set(), enemy = new Set();
+    const stamp = (set, sx, sy, R) => {
+        const r = Math.ceil(R), x0 = Math.round(sx), y0 = Math.round(sy);
+        for (let x = x0 - r; x <= x0 + r; x++) for (let y = y0 - r; y <= y0 + r; y++)
+            if (Math.hypot(sx - x, sy - y) <= R) set.add(x + "," + y);
+    };
+    for (const p of _pillarCache) if (p.pillarTeam === 'green') stamp(player, p.x, p.y, 3);
+    for (const n of capturedNodes) stamp(player, n.x, n.y, 3);
+    for (const n of _nestCache) if (n.nestHealth > 0) stamp(enemy, n.x, n.y, 4);
+    for (const st of signalTowers) if (!st.captured) stamp(enemy, st.x, st.y, 4);
+    for (const t of world) {
+        if (t.type !== 'floor') continue;
+        const k = t.x + "," + t.y, isPlayer = player.has(k), isEnemy = enemy.has(k);
+        t.territory = isPlayer && isEnemy ? 'contested' : isPlayer ? 'player' : isEnemy ? 'enemy' : null;
+    }
 }
 
 // Increments capture progress when followers stand on a capturable tile.

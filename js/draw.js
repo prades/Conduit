@@ -1399,13 +1399,15 @@ function _drawFollowerShield(actor, px, py, drawCtx) {
     if (!(actor.shielded && actor.shieldAmount > 0)) return;
     const max = Math.max(actor._shieldMax || 0, actor.shieldAmount);
     const hit = actor._shieldHitAt !== undefined && (frame - actor._shieldHitAt) < 10;
-    drawCtx.save();
-    drawCtx.globalAlpha = hit ? 0.9 : 0.45; drawCtx.strokeStyle = hit ? "#ffffff" : "#9fdcff"; drawCtx.lineWidth = hit ? 2 : 1.2;
+    // No save/restore (it ran for every shielded unit, every frame): the one
+    // piece of state it changes, the alpha, is put back by hand.
+    const ga = drawCtx.globalAlpha;
+    drawCtx.globalAlpha = ga * (hit ? 0.9 : 0.45); drawCtx.strokeStyle = hit ? "#ffffff" : "#9fdcff"; drawCtx.lineWidth = hit ? 2 : 1.2;
     drawCtx.beginPath(); drawCtx.ellipse(px, py - 32, 17, 22, 0, 0, Math.PI * 2); drawCtx.stroke();
-    drawCtx.globalAlpha = 1;
-    drawCtx.fillStyle = "#000"; drawCtx.fillRect(px - 14, py - 70, 28, 3);
-    drawCtx.fillStyle = "#3af"; drawCtx.fillRect(px - 14, py - 70, Math.round(28 * Math.min(1, actor.shieldAmount / max)), 3);
-    drawCtx.restore();
+    drawCtx.globalAlpha = ga;
+    const k = Math.min(1, actor.shieldAmount / max);
+    if (k < 1) { drawCtx.fillStyle = "#000"; drawCtx.fillRect(px - 14, py - 70, 28, 3); }
+    drawCtx.fillStyle = "#3af"; drawCtx.fillRect(px - 14, py - 70, Math.round(28 * k), 3);
 }
 
 function _drawVirus(actor, px, py, drawCtx) {
@@ -2187,23 +2189,44 @@ function _monoSprite(col, dark, tier) {
 // Each of its two front faces carries a window of four stacked charge cells
 // in its element's colour — one lit per network tier it is part of, plus one
 // for itself — and two terminals sit on top, the element-coloured one live.
+// Stamped from a sprite per colour, tier and state: a battery was ~30 canvas
+// calls, and a base has a bank of six or more of them.
+const _batterySprites = new Map();
 function drawBatteryPylon(px, base, colour, tier, pulse, dark) {
+    const key = colour + "|" + (tier || 0) + "|" + (dark ? 1 : 0);
+    let spr = _batterySprites.get(key);
+    if (spr === undefined) {
+        spr = null;
+        try {
+            if (typeof document !== "undefined" && document.createElement) {
+                const cv = document.createElement("canvas"); cv.width = 40; cv.height = 60;
+                const g = cv.getContext && cv.getContext("2d");
+                if (g && typeof g.setTransform === "function") { _drawBatteryBody(g, 20, 54, colour, tier, dark); spr = cv; }
+            }
+        } catch (e) { spr = null; }
+        _batterySprites.set(key, spr);
+    }
+    if (spr) { ctx.drawImage(spr, px - 20, base - 54); return; }
+    _drawBatteryBody(ctx, px, base, colour, tier, dark);
+}
+function _drawBatteryBody(c, px, base, colour, tier, dark) {
+    const pulse = 0.5;
     const hw = 13, hh = 6.5, H = 36, by = base - 2;
     const col = dark ? "#5c6370" : colour;
-    ctx.save();
+    c.save();
     // Body.
-    ctx.fillStyle = "#151b26";
-    ctx.beginPath(); ctx.moveTo(px - hw, by - H); ctx.lineTo(px, by + hh - H); ctx.lineTo(px, by + hh); ctx.lineTo(px - hw, by); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#1e2533";
-    ctx.beginPath(); ctx.moveTo(px + hw, by - H); ctx.lineTo(px, by + hh - H); ctx.lineTo(px, by + hh); ctx.lineTo(px + hw, by); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#2a3242";
-    ctx.beginPath(); ctx.moveTo(px, by - hh - H); ctx.lineTo(px + hw, by - H); ctx.lineTo(px, by + hh - H); ctx.lineTo(px - hw, by - H); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = "#4f5b74"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(px - hw, by - H); ctx.lineTo(px, by + hh - H); ctx.lineTo(px + hw, by - H); ctx.moveTo(px, by + hh - H); ctx.lineTo(px, by + hh); ctx.stroke();
+    c.fillStyle = "#151b26";
+    c.beginPath(); c.moveTo(px - hw, by - H); c.lineTo(px, by + hh - H); c.lineTo(px, by + hh); c.lineTo(px - hw, by); c.closePath(); c.fill();
+    c.fillStyle = "#1e2533";
+    c.beginPath(); c.moveTo(px + hw, by - H); c.lineTo(px, by + hh - H); c.lineTo(px, by + hh); c.lineTo(px + hw, by); c.closePath(); c.fill();
+    c.fillStyle = "#2a3242";
+    c.beginPath(); c.moveTo(px, by - hh - H); c.lineTo(px + hw, by - H); c.lineTo(px, by + hh - H); c.lineTo(px - hw, by - H); c.closePath(); c.fill();
+    c.strokeStyle = "#4f5b74"; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(px - hw, by - H); c.lineTo(px, by + hh - H); c.lineTo(px + hw, by - H); c.moveTo(px, by + hh - H); c.lineTo(px, by + hh); c.stroke();
     // A band of its colour round the shoulder.
-    ctx.strokeStyle = col; ctx.globalAlpha = 0.75; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(px - hw, by - H + 5); ctx.lineTo(px, by + hh - H + 5); ctx.lineTo(px + hw, by - H + 5); ctx.stroke();
-    ctx.globalAlpha = 1;
+    c.strokeStyle = col; c.globalAlpha = 0.75; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(px - hw, by - H + 5); c.lineTo(px, by + hh - H + 5); c.lineTo(px + hw, by - H + 5); c.stroke();
+    c.globalAlpha = 1;
     // Charge cells on both front faces: four, bottom up; lit = tier + 1.
     const lit = dark ? 0 : Math.min(4, (tier || 0) + 1);
     for (const side of [-1, 1]) {
@@ -2212,21 +2235,21 @@ function drawBatteryPylon(px, base, colour, tier, pulse, dark) {
             const x0 = px + side * 4, x1 = px + side * 10;
             const sk = (x) => Math.abs(x - px) * 0.5;   // the face rises away from the front edge
             const on = k < lit;
-            ctx.fillStyle = on ? col : "#0b0f16";
-            ctx.globalAlpha = on ? (k === lit - 1 ? 0.7 + 0.3 * pulse : 0.95) : 1;
-            ctx.beginPath();
-            ctx.moveTo(x0, y0 - sk(x0)); ctx.lineTo(x1, y0 - sk(x1)); ctx.lineTo(x1, y0 - 4.5 - sk(x1)); ctx.lineTo(x0, y0 - 4.5 - sk(x0)); ctx.closePath(); ctx.fill();
+            c.fillStyle = on ? col : "#0b0f16";
+            c.globalAlpha = on ? (k === lit - 1 ? 0.7 + 0.3 * pulse : 0.95) : 1;
+            c.beginPath();
+            c.moveTo(x0, y0 - sk(x0)); c.lineTo(x1, y0 - sk(x1)); c.lineTo(x1, y0 - 4.5 - sk(x1)); c.lineTo(x0, y0 - 4.5 - sk(x0)); c.closePath(); c.fill();
         }
     }
-    ctx.globalAlpha = 1;
+    c.globalAlpha = 1;
     // Terminals: the live one in its colour, the other bare metal.
     const term = (dx, top) => {
         const x = px + dx, y = by - H - 1;
-        ctx.fillStyle = "#121720"; ctx.fillRect(x - 3, y - 5, 6, 5);
-        ctx.fillStyle = top; ctx.beginPath(); ctx.ellipse(x, y - 5, 3, 1.5, 0, 0, Math.PI * 2); ctx.fill();
+        c.fillStyle = "#121720"; c.fillRect(x - 3, y - 5, 6, 5);
+        c.fillStyle = top; c.beginPath(); c.ellipse(x, y - 5, 3, 1.5, 0, 0, Math.PI * 2); c.fill();
     };
     term(-5, "#6b7487"); term(5, col);
-    ctx.restore();
+    c.restore();
 }
 
 function drawWaveMonolith(px, base, colour, dark, tier, asleep) {

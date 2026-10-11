@@ -132,8 +132,14 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('the cable from the linked nest to its generator is laid too', () => {
         ok(scene().nestLink, 'no floor cable between the nest and the generator it is linked to');
     });
-    await check('the generator\'s mending lines are floor pipes as well', () => {
-        ok(scene().mending, 'the mending line to a plain pylon is not laid on the floor');
+    // Shown only while you build or hold a generator (the performance sweep:
+    // they ran to every pylon of every generator, every frame).
+    await check('the generator\'s mending lines are floor pipes as well — while you build', () => {
+        run('buildMode = true');
+        const r = scene().mending;
+        run('buildMode = false');
+        ok(r, 'the mending line to a plain pylon is not laid on the floor');
+        ok(!scene().mending, 'mending lines are still laid outside build mode');
     });
     await check('a live cable still carries charges', () => {
         ok(scene().beads > 0, 'no charges on a wave pylon\'s cable');
