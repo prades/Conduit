@@ -51,10 +51,15 @@ function ok(c, m) { if (!c) throw new Error(m); }
         if (${JSON.stringify(who)} === 'enemy') { const S = SPECIES.ant; unit = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 0, 0);
             unit.team = 'red'; unit.speciesName = 'ant'; unit.className = 'scout'; unit.health = unit.maxHealth = 1e6; actors.push(unit); }
         const src = ps[2].powerSource; src.nestEnergy = nestEnergyMax(src) * 0.5;
-        const before = nestEnergy(src), f0 = frame;
+        // Batteries feed the pylons now (power.js): full, and not topping up
+        // from the nest while this measures, so what is spent is the pylons'.
+        const bats = world.filter(t => t.isBattery); bats.forEach(b => { b.charge = BATTERY_CAPACITY; });
+        batteryChargeTick = () => {};
+        const stored = () => bats.reduce((a, b) => a + b.charge, 0);
+        const before = nestEnergy(src) + stored(), f0 = frame;
         for (let f = 0; f < ${frames}; f++) { if (unit) { unit.x = ps[2].x; unit.y = ps[2].y + 1; unit.spawnProtection = 0; } render(); }
         return { tier: networkStrength[${JSON.stringify(el)}], awake: ps.map(t => t.waveAwake), woke: ps[2]._wakeFrame >= f0,
-                 spent: before - nestEnergy(src), regen: NEST_ENERGY_REGEN * ${frames}, hp: unit ? unit.health : null,
+                 spent: before - nestEnergy(src) - stored(), regen: NEST_ENERGY_REGEN * ${frames}, hp: unit ? unit.health : null,
                  ratio: unit && unit.baseMoveSpeed ? unit.moveSpeed / unit.baseMoveSpeed : null };
     })()`);
 

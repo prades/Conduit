@@ -1095,6 +1095,35 @@ check('the new steps sit after the aura and before READY, in order', () => {
        && at('circuit') < at('pylonkill') && at('pylonkill') < at('ready'), 'steps are out of order: ' + ids);
 });
 
+check('THE NEW WAY: power, then build a battery, then watch it charge, before the connector', () => {
+    const env = makeEnv();
+    const ids = stepIds(env);
+    const at = id => ids.indexOf(id);
+    ok(at('power') < at('battery') && at('battery') < at('charge') && at('charge') < at('connector'), 'out of order: ' + ids);
+    const tuts = env.run('TUTS'), body = id => tuts.find(s => s.id === id).body;
+    ok(/CHARGE/.test(body('power')) && /BATTERY/.test(body('power')) && !/Each nest you have neutralised is a battery/.test(body('power')),
+       'the power step does not teach nest \u2192 battery \u2192 pylon');
+    ok(/BATTERY/.test(body('battery')) && /UPGRADE/.test(body('battery')), 'it does not say how to build one');
+    ok(/BATT/.test(body('charge')) && /MK II/.test(body('charge')), 'it does not point at the readout and MK II');
+});
+
+check('THE ASK: building a battery completes that step, and charge completes the next', () => {
+    const env = populate(makeEnv());
+    env.run('startTutorial()');
+    gotoStep(env, 'battery');
+    env.run('tutorialTick()');
+    eq(env.run('TUTS[tutorialStep].id'), 'battery', 'completed with no battery');
+    const b = env.sandbox.world.find(t => t.pillar && !t.isGenerator && !t.isConnector);
+    b.isBattery = true; b.charge = 0;
+    env.run('tutorialTick()');
+    eq(env.run('TUTS[tutorialStep].id'), 'charge', 'a battery existed and the step did not advance');
+    env.run('tutorialTick()');
+    eq(env.run('TUTS[tutorialStep].id'), 'charge', 'completed before it charged');
+    b.charge = 12;
+    env.run('tutorialTick()');
+    ok(env.run('TUTS[tutorialStep].id') !== 'charge', 'it charged and the step did not advance');
+});
+
 check('the connector step quotes the REAL reach and placement range', () => {
     const body = makeEnv().run('TUTS').find(s => s.id === 'connector').body;
     ok(body.includes(String(makeEnv().run('CONNECTOR_RANGE'))), 'it does not state the connector range');

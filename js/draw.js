@@ -111,6 +111,15 @@ function drawRadialMenu() {
         if (tHov && canUp) selectedRadialAction="build_upgrade";
     }
 
+    // ── TOP (build mode OFF) = MK II on your own turret or wave pylon ──
+    // (upgradeToMk2 in commands.js). Says why when it cannot.
+    if (!buildMode && isPylonTarget && typeof mk2Eligible === "function" && mk2Eligible(commandTarget)) {
+        const mkHov = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
+        const why = mk2Blocker(commandTarget);
+        drawRadialButton(commandX, commandY-RADIAL_RADIUS, why ? (commandTarget.mk >= 2 ? "MK II \u2713" : why) : "MK II " + MK2_COST + "\u25c6", mkHov && !why);
+        if (mkHov) selectedRadialAction = "mk2";
+    }
+
     // ── TOP (build mode OFF) = OVERCHARGE on a nest you hold ──
     // The slot BUILD/UPGRADE uses in build mode; on a power source outside it
     // the top of the ring spends 40% of the grid on an 8 s surge
@@ -2187,13 +2196,16 @@ function _monoSprite(col, dark, tier) {
 }
 // THE BATTERY (isBatteryPylon, config.js): a squat boxy cell of dark metal.
 // Each of its two front faces carries a window of four stacked charge cells
-// in its element's colour — one lit per network tier it is part of, plus one
-// for itself — and two terminals sit on top, the element-coloured one live.
-// Stamped from a sprite per colour, tier and state: a battery was ~30 canvas
-// calls, and a base has a bank of six or more of them.
+// in its element's colour — its STORED CHARGE, a cell per quarter (`fill`
+// 0..1, power.js) — and two terminals sit on top, the element-coloured one
+// live. While it charges the next cell up blinks. Stamped from a sprite per
+// colour, cells lit and state: a battery was ~30 canvas calls, and a base has
+// a bank of six or more of them.
 const _batterySprites = new Map();
-function drawBatteryPylon(px, base, colour, tier, pulse, dark) {
-    const key = colour + "|" + (tier || 0) + "|" + (dark ? 1 : 0);
+function drawBatteryPylon(px, base, colour, tier, pulse, dark, fill, charging) {
+    let cells = fill === undefined ? Math.min(4, (tier || 0) + 1) : Math.ceil(Math.max(0, Math.min(1, fill)) * 4 - 0.001);
+    if (charging && cells < 4 && Math.floor((frame || 0) / 15) % 2 === 0) cells++;
+    const key = colour + "|" + cells + "|" + (dark ? 1 : 0);
     let spr = _batterySprites.get(key);
     if (spr === undefined) {
         spr = null;
@@ -2201,15 +2213,15 @@ function drawBatteryPylon(px, base, colour, tier, pulse, dark) {
             if (typeof document !== "undefined" && document.createElement) {
                 const cv = document.createElement("canvas"); cv.width = 40; cv.height = 60;
                 const g = cv.getContext && cv.getContext("2d");
-                if (g && typeof g.setTransform === "function") { _drawBatteryBody(g, 20, 54, colour, tier, dark); spr = cv; }
+                if (g && typeof g.setTransform === "function") { _drawBatteryBody(g, 20, 54, colour, cells, dark); spr = cv; }
             }
         } catch (e) { spr = null; }
         _batterySprites.set(key, spr);
     }
     if (spr) { ctx.drawImage(spr, px - 20, base - 54); return; }
-    _drawBatteryBody(ctx, px, base, colour, tier, dark);
+    _drawBatteryBody(ctx, px, base, colour, cells, dark);
 }
-function _drawBatteryBody(c, px, base, colour, tier, dark) {
+function _drawBatteryBody(c, px, base, colour, cells, dark) {
     const pulse = 0.5;
     const hw = 13, hh = 6.5, H = 36, by = base - 2;
     const col = dark ? "#5c6370" : colour;
@@ -2227,8 +2239,8 @@ function _drawBatteryBody(c, px, base, colour, tier, dark) {
     c.strokeStyle = col; c.globalAlpha = 0.75; c.lineWidth = 1.5;
     c.beginPath(); c.moveTo(px - hw, by - H + 5); c.lineTo(px, by + hh - H + 5); c.lineTo(px + hw, by - H + 5); c.stroke();
     c.globalAlpha = 1;
-    // Charge cells on both front faces: four, bottom up; lit = tier + 1.
-    const lit = dark ? 0 : Math.min(4, (tier || 0) + 1);
+    // Charge cells on both front faces: four, bottom up, one per quarter stored.
+    const lit = dark ? 0 : Math.min(4, cells || 0);
     for (const side of [-1, 1]) {
         for (let k = 0; k < 4; k++) {
             const y0 = by - 7 - k * 6.5;

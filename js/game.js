@@ -273,7 +273,9 @@ function applyPylonZoneEffects(wavePylons) {
             const _surgeUp = typeof pylonSurged === "function" && (pylonSurged(pa) || pylonSurged(pb)) ? 1 : 0;
             const _pTier = typeof pylonNetworkTier === "function" ? Math.max(pylonNetworkTier(pa), pylonNetworkTier(pb)) : (networkStrength[el] || 0);
             const _nTier = Math.min(3, (_pTier || 1) + _surgeUp);
-            const _seasonBonus = _seasonBonusCache[el] || 1.0;
+            // The better STATUS of the two ends multiplies the link (MK II ×1.3).
+            const _status = typeof pylonStatusMult === "function" ? Math.max(pylonStatusMult(pa), pylonStatusMult(pb)) : 1;
+            const _seasonBonus = (_seasonBonusCache[el] || 1.0) * _status;
 
             const {lx, ly, len2, bMinX, bMaxX, bMinY, bMaxY} = pair;
             actors.forEach(a=>{
@@ -685,12 +687,17 @@ function layMendingCables() {
     const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.06);
     for (const { gen, pylon } of _genLinks) {
         if (gen.destroyed || pylon.destroyed) continue;
+        if (pylon._ultraOf || pylon._wformOf) continue;   // one cable per structure
         if (needsPower(pylon) && pylon.powerGen === gen) continue;
         const t = (((frame || 0) * 0.014) + (pylon.x * 0.13 + pylon.y * 0.29)) % 1;
         layCable(gen, pylon, { core: `rgba(205,214,224,${0.35 + pulse * 0.3})`, width: 1.4, dash: [5, 6],
                                beads: [{ t, r: 2, alpha: 0.5 + pulse * 0.3, colour: "#e6f0fa" }] });
     }
 }
+
+// The structure a pylon is part of: an Ultra's or a formation's anchor, or
+// the pylon itself.
+function _structureOf(o) { return (o && (o._ultraOf || o._wformOf)) || o; }
 
 // Every cable in the game, laid fresh each frame before the world is drawn.
 function layAllCables() {
@@ -702,9 +709,12 @@ function layAllCables() {
     if (typeof _gridLinks !== "undefined")
         for (const { a, b } of _gridLinks) layCable(a, b, { core: CONNECTOR_COLOR, width: 2, glow: 3 });
     // Batteries linked into one bank: a cable in their element's colour.
+    // While either end is charging, charge runs along it.
     for (const { a, b, el } of _batteryLinks) {
         const def = ELEMENTS.find(e => e.id === el);
-        layCable(a, b, { core: def ? def.color : BATTERY_COLOR, width: 2, glow: 2 });
+        const live = typeof batteryCharging === "function" && (batteryCharging(a) || batteryCharging(b));
+        const beads = live ? [0, 0.5].map(o => ({ t: (((frame || 0) * 0.02) + o) % 1, r: 2.4, alpha: 0.9, colour: BATTERY_COLOR })) : [];
+        layCable(a, b, { core: def ? def.color : BATTERY_COLOR, width: 2, glow: 2, beads });
     }
 }
 
@@ -954,10 +964,48 @@ function drawPowerChain() {
 
     for (const t of _pillarCache) {
         if (!needsPower(t) || !t.powerGen) continue;
-        const gen = t.powerGen;
+        // ONE CABLE PER ULTRA OR FORMATION. "The ultra pylons still have
+        // cables going to all 4 sides — make the ground look cleaner." The
+        // four pylons it absorbed are one structure, so it takes one cable, at
+        // its anchor, from whichever feeder outside the square reaches it; a
+        // cable that would start at one of its parts starts at the anchor.
+        if (t._ultraOf || t._wformOf) continue;
+        let gen = _structureOf(t.powerGen);
+        const S = t._ultra || t._wform;
+        if (S) {
+            const out = S.tiles.find(p => p.powerGen && _structureOf(p.powerGen) !== t);
+            if (!out) continue;
+            gen = _structureOf(out.powerGen);
+        }
         const flow = powerFlowOf(t);
+        // FED BY A BATTERY (power.js): its cable runs from that battery, in
+        // battery gold, so you can see the charge going out to the pylons.
+        if (t._supply && typeof _liveBattery === "function" && _liveBattery(t._supply)) {
+            _drawPowerWire(t._supply, t, flow, (t.x * 0.17 + t.y * 0.31) % 1, BATTERY_COLOR);
+            continue;
+        }
         genFlow.set(gen, Math.max(genFlow.get(gen) || 0, flow));
         _drawPowerWire(gen, t, flow, (t.x * 0.17 + t.y * 0.31) % 1, POWER_WIRE_COLOUR);
+    }
+    // CHARGING. One blue cable from each feeder to the nearest battery of
+    // each element it charges — the bank's own cables carry it on to the rest
+    // — lit while any of them is filling.
+    if (typeof _batteryList !== "undefined") {
+        const legs = new Map();
+        for (const b of _batteryList) {
+            if (!_liveBattery(b) || !b.powerGen) continue;
+            const gen = _structureOf(b.powerGen);
+            const k = gen.x + "," + gen.y + "|" + b.attackModeElement;
+            const d = Math.hypot(b.x - gen.x, b.y - gen.y);
+            let L = legs.get(k);
+            if (!L) { L = { gen, b, d, flow: 0 }; legs.set(k, L); }
+            else if (d < L.d) { L.b = b; L.d = d; }
+            if (batteryCharging(b)) L.flow = 1;
+        }
+        for (const { gen, b, flow } of legs.values()) {
+            genFlow.set(gen, Math.max(genFlow.get(gen) || 0, flow));
+            _drawPowerWire(gen, b, flow, (b.x * 0.19 + b.y * 0.37) % 1, POWER_WIRE_COLOUR);
+        }
     }
     for (const r of _pillarCache) {
         if (!genFlow.has(r) && isRelayPylon(r) && r.nestConnection && nestIsPowerSource(r.nestConnection))
@@ -1486,7 +1534,9 @@ function _hasteOf(m) { return typeof stormHaste === "function" ? stormHaste(m) :
 function turretRoundDamage(t, target) {
     const tier = pylonNetworkTier(t);
     const base = (t.attackPower || TURRET_POWER) * TURRET_DAMAGE_MULT * (1 + TURRET_TIER_BONUS * tier);
-    return base + TURRET_MAXHP_SHARE * ((target && target.maxHealth) || 0);
+    // Its STATUS multiplies the round: plain ×1, upgraded ×1.15, MK II ×1.3.
+    const st = typeof pylonStatusMult === "function" ? pylonStatusMult(t) : 1;
+    return (base + TURRET_MAXHP_SHARE * ((target && target.maxHealth) || 0)) * st;
 }
 
 // The tier of `el` at a point: the best of that element's battery banks,
@@ -2321,7 +2371,8 @@ function render() {
         // plain round at TURRET_PLAIN_MULT. Either way it FIRES — a turret
         // that silently refused to shoot read as broken.
         // A surged round is charged and already paid for (the OVERCHARGE cost).
-        const charged = _surged || (!!t.powerSource && payForShot(t));
+        // A battery in reach pays first (BATTERY_SUPPLY_RANGE), then the nest.
+        const charged = _surged || payForShot(t);
         t.charged = charged;
         nearest._shotByPylon = true;   // the tutorial's "kill with your pylons" step reads this
         t._lastShotFrame = frame;      // the turret's muzzle flash reads this
@@ -2480,6 +2531,7 @@ function render() {
     // THE BATTERIES. Regen first, then wave mode's constant draw — so a pool
     // that is exactly keeping up reads as steady rather than flickering.
     nestEnergyTick();
+    batteryChargeTick();   // nests → batteries (power.js)
     waveDrainTick();
     powerFlowTick();
 
@@ -3327,8 +3379,9 @@ function render() {
                     if (!_dark && !_asleep && _sinceWake < WAVE_WAKE_BLINK) drawWaveWakeBlink(px, _base, _acol, _sinceWake);
                 }
                 else if (obj.isBattery) {
-                    // THE BATTERY: its charge cells show its element's tier.
-                    drawBatteryPylon(px, _base, obj.attackModeColor || BATTERY_COLOR, pylonNetworkTier(obj), _pulse, false);
+                    // THE BATTERY: its charge cells show what it has stored.
+                    drawBatteryPylon(px, _base, obj.attackModeColor || BATTERY_COLOR, pylonNetworkTier(obj), _pulse, false,
+                                     batteryCharge(obj) / BATTERY_CAPACITY, batteryCharging(obj));
                 }
                 else if (obj.isGenerator && !obj.destroyed) {
                     // THE SHIELD GENERATOR: a thicker body and a big pale orb.
@@ -3351,11 +3404,26 @@ function render() {
                     const _bt = pylonNetworkTier(obj), _bc = obj.attackModeColor || BATTERY_COLOR;
                     const _bNear = (Math.abs(obj.x-player.x)<=PYLON_LABEL_NEAR && Math.abs(obj.y-player.y)<=PYLON_LABEL_NEAR) || (commandMode && commandTarget===obj);
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                    // Its charge, always: a gold gauge over it, the number when near.
+                    const _bf = batteryCharge(obj) / BATTERY_CAPACITY, _bChg = batteryCharging(obj);
+                    const _gy = _base - (_bNear ? 64 : 50);
+                    ctx.fillStyle = "rgba(0,0,0,0.65)"; ctx.fillRect(px - 13, _gy - 1, 26, 5);
+                    ctx.fillStyle = BATTERY_COLOR; ctx.fillRect(px - 12, _gy, 24 * _bf, 3);
+                    if (_bChg) { ctx.globalAlpha = 0.5 + 0.5 * _pulse; ctx.fillStyle = "#fff"; ctx.fillRect(px - 12 + 24 * _bf - 1, _gy, 2, 3); ctx.globalAlpha = 1; }
+                    // Batteries stand side by side in a bank, so the full name
+                    // goes on one — the one held, or the nearest you — and the
+                    // rest show just their charge.
+                    let _bNamed = commandMode && commandTarget === obj;
+                    if (_bNear && !_bNamed && !(commandMode && commandTarget && commandTarget.isBattery)) {
+                        let _bd = Infinity, _bn = null;
+                        for (const q of _batteryList) { const d = Math.abs(q.x - player.x) + Math.abs(q.y - player.y); if (d < _bd) { _bd = d; _bn = q; } }
+                        _bNamed = _bn === obj;
+                    }
+                    if (_bNamed) cachedText((obj.attackModeElement||"").toUpperCase() + " BATTERY" + (_bt ? [""," T-I"," T-II"," T-III"][_bt] : ""), "bold 9px monospace", _bc, px, _base-52);
                     if (_bNear) {
-                        cachedText((obj.attackModeElement||"").toUpperCase() + " BATTERY" + (_bt ? [""," T-I"," T-II"," T-III"][_bt] : ""), "bold 9px monospace", _bc, px, _base-52);
-                        ctx.globalAlpha = 0.7;
-                        cachedText(_bt ? "network tier " + ["","I","II","III"][_bt] : "link 2 for tier I", "7px monospace", _bc, px, _base-43);
-                    } else if (_bt > 0) cachedText(["","I","II","III"][_bt], "bold 8px monospace", _bc, px, _base-48);
+                        ctx.globalAlpha = 0.85;
+                        cachedText((_bChg ? "\u25b2 " : "") + Math.round(batteryCharge(obj)) + "/" + BATTERY_CAPACITY + (_bt || !_bNamed ? "" : " \u00b7 link 2 for T-I"), "7px monospace", BATTERY_COLOR, px, _base-43);
+                    } else if (_bt > 0) cachedText(["","I","II","III"][_bt], "bold 8px monospace", _bc, px, _base-40);
                     ctx.restore();
                 }
                 else if (_isActive) {
@@ -3394,14 +3462,17 @@ function render() {
                     const _near = (Math.abs(obj.x-player.x)<=PYLON_LABEL_NEAR && Math.abs(obj.y-player.y)<=PYLON_LABEL_NEAR)
                                   || (commandMode && commandTarget===obj);
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+                    // Its STATUS (config.js): MK II or upgraded, and what it multiplies.
+                    const _st = pylonStatusLabel(obj), _mk = (obj.mk||0) >= 2;
                     if (_near) {
                         if (_asleep) ctx.globalAlpha=0.6;
                         cachedText(_title, "bold 9px monospace", _acol, px, _orbY-12);
                         ctx.globalAlpha=_asleep?0.45:0.7;
                         cachedText(_sub, "7px monospace", _acol, px, _orbY-3);
-                    } else if (_lblTier>0) {
+                        if (_st) { ctx.globalAlpha=0.95; cachedText((_mk ? "\u25c6 " : "") + _st + " \u00d7" + pylonStatusMult(obj) + " DMG", "bold 7px monospace", _mk ? "#ffd34d" : "#7ff", px, _orbY-21); }
+                    } else if (_lblTier>0 || _mk) {
                         ctx.globalAlpha=_asleep?0.45:0.8;
-                        cachedText(["I","II","III"][_lblTier-1], "bold 8px monospace", _acol, px, _orbY-6);
+                        cachedText((_mk ? "\u25c6" : "") + (_lblTier>0 ? ["I","II","III"][_lblTier-1] : ""), "bold 8px monospace", _mk ? "#ffd34d" : _acol, px, _orbY-6);
                     }
                     ctx.restore();
                     // Seasoned gold bands at base
@@ -4202,7 +4273,7 @@ function drawNetworkStatusHUD() {
     // The grid line shows from the first pylon, before any network has formed —
     // it is the thing the player is now budgeting, so it cannot wait for a
     // resonance tier to appear first.
-    if (activeEls.length === 0 && pw.drawing === 0) return;
+    if (activeEls.length === 0 && pw.drawing === 0 && !(pw.batteries && pw.batteries.count)) return;
 
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
 
@@ -4211,7 +4282,14 @@ function drawNetworkStatusHUD() {
     const W       = 148;
     const HEADER  = 16;
     const POWER_H = 26;
-    const H       = HEADER + POWER_H + activeEls.length * ROW_H + PAD;
+    // THE BATTERIES: what they hold and which way it is flowing — the power
+    // the pylons actually run on (power.js).
+    const bs = pw.batteries || { count: 0 };
+    const BAT_H   = bs.count > 0 ? 22 : 0;
+    // Room under the rows for the "link batteries" hint, so it does not sit
+    // on the last row's text.
+    const _hintRow = Math.max(0, ...activeEls.map(e => networkStrength[e.id]||0)) < 3 ? 8 : 0;
+    const H       = HEADER + POWER_H + BAT_H + activeEls.length * ROW_H + PAD + _hintRow;
     const X       = canvas.width - W - 8;
     const Y       = 75;
 
@@ -4237,13 +4315,25 @@ function drawNetworkStatusHUD() {
     const _pOk = pw.dark === 0;
     ctx.fillStyle = _pOk ? "#8fd" : "#ff5522";
     ctx.font = "bold 10px monospace"; ctx.textAlign = "left";
-    ctx.fillText("\u26a1 " + _pTot + " / " + _pCap, X + PAD, Y + 26);
+    ctx.fillText("NESTS " + _pTot + " / " + _pCap, X + PAD, Y + 26);
     ctx.font = "8px monospace"; ctx.textAlign = "right";
     ctx.fillStyle = _pOk ? "#3a4555" : "#ff5522";
     ctx.fillText(_pOk ? (pw.drawing + " DRAWING") : (pw.dark + " UNPOWERED"),
                  X + W - PAD, Y + 26);
     ctx.strokeStyle = "rgba(0,255,136,0.12)"; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(X + PAD, Y + 32); ctx.lineTo(X + W - PAD, Y + 32); ctx.stroke();
+    if (BAT_H) {
+        const by = Y + HEADER + POWER_H;
+        ctx.fillStyle = BATTERY_COLOR; ctx.font = "bold 10px monospace"; ctx.textAlign = "left";
+        ctx.fillText("\u26a1 BATT " + bs.stored + " / " + bs.cap, X + PAD, by + 9);
+        ctx.font = "8px monospace"; ctx.textAlign = "right";
+        const net = bs.rateIn - bs.rateOut;
+        ctx.fillStyle = net >= 0.05 ? "#9fe8c0" : net <= -0.05 ? "#ff9a66" : "#6b7487";
+        ctx.fillText((net >= 0 ? "\u25b2 " : "\u25bc ") + Math.abs(net).toFixed(1) + "/s", X + W - PAD, by + 9);
+        const bX = X + PAD, bW = W - PAD * 2;
+        ctx.fillStyle = "rgba(255,255,255,0.08)"; ctx.fillRect(bX, by + 13, bW, 4);
+        ctx.fillStyle = BATTERY_COLOR; ctx.fillRect(bX, by + 13, bW * (bs.cap ? bs.stored / bs.cap : 0), 4);
+    }
 
     // Tier label lookup
     const TIER_LABEL  = ["", "I", "II", "III"];
@@ -4254,7 +4344,7 @@ function drawNetworkStatusHUD() {
         const el        = elDef.id;
         const tier      = networkStrength[el] || 0;
         const integrity = networkIntegrity[el] || 0;
-        const ry        = Y + HEADER + POWER_H + i * ROW_H;
+        const ry        = Y + HEADER + POWER_H + BAT_H + i * ROW_H;
 
         // Element glow dot
         ctx.shadowColor = elDef.color; ctx.shadowBlur = 0;
@@ -4278,7 +4368,7 @@ function drawNetworkStatusHUD() {
         // A network with a tier but nothing lit is built but DARK — say so, or
         // the tier reads as a promise the pylons are not keeping.
         const _dark = !(_netLit[el] > 0);
-        const desc = _dark ? "NO POWER \u2014 link a generator" : (EFFECT_DESC[el]?.[tier] || "");
+        const desc = _dark ? "NO POWER \u2014 charge a battery" : (EFFECT_DESC[el]?.[tier] || "");
         ctx.fillStyle = _dark ? "#ff7755" : "#888"; ctx.font = "7px monospace";
         ctx.fillText(desc, X + PAD + 14, ry + 21);
 
@@ -4307,7 +4397,7 @@ function drawNetworkStatusHUD() {
     if (maxTier < 3) {
         const needed = maxTier === 0 ? 2 : maxTier === 1 ? 4 : 6;
         ctx.fillStyle = "rgba(160,160,160,0.5)"; ctx.font = "7px monospace"; ctx.textAlign = "center";
-        ctx.fillText(`Add pylons → Tier ${maxTier+1} (need ${needed})`, X + W/2, Y + H - 3);
+        ctx.fillText(`Link batteries → Tier ${maxTier+1} (need ${needed})`, X + W/2, Y + H - 3);
     }
 
     ctx.restore();

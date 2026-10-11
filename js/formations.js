@@ -142,7 +142,10 @@ function formationBlocker(F) {
 function formationActive(F) { return !formationBlocker(F); }
 function _formDamage(F, base, a) {
     const tier = typeof networkTierAt === "function" ? networkTierAt(F.el, F.wx, F.wy) : 0;
-    return base * (1 + FORM_TIER_BONUS * tier) + FORM_MAXHP_SHARE * (a.maxHealth || 0);
+    // The best STATUS among its four pylons multiplies it (MK II ×1.3).
+    let st = 1;
+    if (typeof pylonStatusMult === "function") for (const p of F.tiles || []) st = Math.max(st, pylonStatusMult(p));
+    return (base * (1 + FORM_TIER_BONUS * tier) + FORM_MAXHP_SHARE * (a.maxHealth || 0)) * st;
 }
 // Once a frame from the game loop.
 function formationTick() {

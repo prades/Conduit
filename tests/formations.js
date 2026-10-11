@@ -32,7 +32,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     const build = (cells, els, opts) => run(`(function(){
         const o = ${JSON.stringify(opts || {})};
         actors.length = 0; followers.length = 0; floatingTexts.length = 0;
-        world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.isBattery = false; t.attackModeElement = null; t._wform = null; t._wformOf = null; t.circuitOn = undefined; } if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });
+        world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.isBattery = false; t.attackModeElement = null; t._wform = null; t._wformOf = null; t.circuitOn = undefined; t.charge = 0; } if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });
         shardCount = 9999; _formState = new Map();   // a fresh square, not the last test's
         const home = world.find(t => isHomePortal(t)), X = home.x + 3;
         const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);

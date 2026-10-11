@@ -521,6 +521,9 @@ canvas.addEventListener('pointerup', e=>{
                     return;
                 }
                 if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && buildMode) selectedRadialAction = "build_upgrade";
+                // Top, build mode off, on your own turret or wave pylon: MK II.
+                else if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && _isPyCmd && typeof mk2Eligible === "function" && mk2Eligible(commandTarget))
+                                       selectedRadialAction = "mk2";
                 // Top, build mode off, on a nest you hold: OVERCHARGE (mirrors drawRadialMenu).
                 else if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && !_isPyCmd && commandNestTarget && nestIsPowerSource(commandNestTarget))
                                        selectedRadialAction = "overcharge";

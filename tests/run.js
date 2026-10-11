@@ -63,6 +63,7 @@ const SUITES = [
     ['black hole',             'formations.js'],
     ['buffs',                  'buffs.js'],
     ['elemental breakout',     'breakout.js'],
+    ['batteries + MK II',      'batteries.js'],
 ];
 
 let failed = 0;

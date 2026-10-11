@@ -1,6 +1,12 @@
 // ─────────────────────────────────────────────────────────
-//  THE POWER GRID  —  nests are batteries, pylons spend them
+//  THE POWER GRID  —  nests charge batteries, batteries power pylons
 // ─────────────────────────────────────────────────────────
+// THE NEW WAY (config.js, "BATTERIES HOLD THE CHARGE"): power runs
+// NEST → BATTERY → PYLON. A battery fills from the nest grid it is wired to,
+// banking twice what it takes, and the pylons around it spend that first.
+// The nest only pays a pylon directly when every battery in its reach is flat.
+// What follows below is the nest side, which is unchanged.
+//
 // "It's like a life energy level — you need power from the nest to charge the
 // equipment on the pylon, and it's a finite amount you can draw from each nest.
 // In attack mode it fires a limited amount of energy per shot; in wave mode it
@@ -370,8 +376,16 @@ function recomputePower() {
     if (typeof _pillarCache === "undefined") return;
     autoLinkRelays();
     buildNestGrids();
-    const drawing = [];
+    const drawing = [], chargers = [];
     for (const t of _pillarCache) {
+        // A BATTERY is routed like a pylon — it charges along the same chain
+        // — but it spends nothing, so it is always "powered".
+        if (isBatteryPylon(t) && t.pillarTeam === "green" && t.health > 0) {
+            const r = powerRoute(t);
+            t.powerGen = r.feeder; t.powerSource = r.source; t.powered = true;
+            chargers.push(t);
+            continue;
+        }
         if (!needsPower(t)) { t.powered = true; t.powerSource = null; t.powerGen = null; continue; }
         // BOTH ends of the chain are remembered, not just the nest. The wiring
         // is drawn along pylon → generator → nest, and working the middle out
@@ -387,11 +401,14 @@ function recomputePower() {
     // of its own takes power from a lit pylon within link range, and that one
     // can pass it on again, so a network fed at one end is fed all along.
     // powerGen is then the neighbour it is wired to.
-    propagatePower(drawing);
+    propagatePower(drawing.concat(chargers));
+    _batteryList = chargers;
     for (const t of drawing) {
+        t._bats = batteriesNear(t);
         // A wave pylon that ran its pool dry is TRIPPED: it stays off until the
         // pool has refilled to POWER_RESTART_LEVEL, not just above zero.
-        if (t.waveTripped && t.powerSource && gridBestFill(t.powerSource) >= POWER_RESTART_LEVEL) {
+        if (t.waveTripped && (batteryFillNear(t) >= POWER_RESTART_LEVEL ||
+                              (t.powerSource && gridBestFill(t.powerSource) >= POWER_RESTART_LEVEL))) {
             t.waveTripped = false;
             floatingTexts.push({ x: t.x, y: t.y - 1, text: "WAVE BACK ONLINE", color: "#8fd6ff", life: 70, vy: -0.06 });
         }
@@ -399,7 +416,14 @@ function recomputePower() {
         // Lit means the pool can pay for what this pylon DOES, not merely that it
         // holds something: with 0 < energy < the price of a shot a turret used to
         // look powered and sit silent.
-        t.powered = !!t.powerSource && !t.waveTripped && gridCan(t.powerSource, powerPriceOf(t));
+        // A charged battery in reach is enough on its own: that is what
+        // batteries are for.
+        const price = powerPriceOf(t);
+        const batOk = batteryCan(t, price);
+        t.powered = !t.waveTripped && (batOk || (!!t.powerSource && gridCan(t.powerSource, price)));
+        // The battery this pylon's cable runs from, while one can pay.
+        if (!batOk) t._supply = null;
+        else if (!t._supply || !t._bats.includes(t._supply) || batteryCharge(t._supply) < price) t._supply = _fullestBattery(t, price);
     }
     // The pools worth showing: every one something is drawing on, plus home.
     const seen = new Set();
@@ -445,6 +469,9 @@ function needsPower(t) {
 // nothing in range costs nothing at all.
 function payForShot(t) {
     if (!t) return false;
+    // A battery in reach pays first: that is what it is charged for.
+    const bat = batteryPay(t, POWER_SHOT_COST);
+    if (bat) { t.powerFlow = 1; return true; }
     const src = t.powerSource || pylonSource(t);
     if (!src) return false;
     const paid = gridPay(src, POWER_SHOT_COST);
@@ -486,7 +513,8 @@ function powerFlowTick() {
 
 // Wave mode's constant draw, once a frame per POOL (not per pylon).
 //
-// Every wave pylon drawing on the same nest is one network. The first costs the
+// Every wave pylon drawing on the same battery (or, with the batteries flat,
+// the same nest) is one network. The first costs the
 // full POWER_WAVE_DRAIN and each extra adds POWER_WAVE_SHARE of it — see config.
 // When the pool cannot pay, the network sheds ONE pylon, and then waits
 // POWER_SHED_FRAMES before it will shed another; in between, what is left runs
@@ -504,13 +532,22 @@ function waveDrainTick() {
         // Surged by an OVERCHARGE: the 40% it cost was the price.
         if (pylonSurged(t)) continue;
         const src = t.powerSource || pylonSource(t);
-        if (!src) { t.powered = false; continue; }
-        if (!groups.has(src)) groups.set(src, []);
-        groups.get(src).push(t);
+        // Grouped by the battery bank that feeds it (its nearest battery)
+        // while one in reach holds charge, otherwise by its nest.
+        const key = (t._bats && t._bats.length && batteryCan(t, POWER_WAVE_DRAIN)) ? t._bats[0] : src;
+        if (!key) { t.powered = false; continue; }
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(t);
     }
-    for (const [src, list] of groups) {
+    for (const [key, list] of groups) {
         const cost = POWER_WAVE_DRAIN * (1 + (list.length - 1) * POWER_WAVE_SHARE);
-        if (gridPay(src, cost)) continue;
+        if (isBatteryPylon(key)) {
+            const bat = batteryPay(list[0], cost);
+            if (bat) { for (const t of list) t._supply = bat; continue; }
+        }
+        const src = isBatteryPylon(key) ? (list[0].powerSource || pylonSource(list[0])) : key;
+        if (src && gridPay(src, cost)) continue;
+        if (!src) continue;   // the batteries ran flat this frame; recomputePower says so
         // Cannot pay. Shed one, then give the rest time before shedding more.
         if (typeof frame !== "undefined" && src._shedAt !== undefined && frame - src._shedAt < POWER_SHED_FRAMES) continue;
         const victim = list[list.length - 1];
@@ -536,6 +573,13 @@ function pylonPowerState(t) {
         return src ? { text: "CIRCUIT CLOSED \u00b7 NEST " + pct(src), colour: "#ffd24a" }
                    : { text: "NO NEST IN REACH \u2014 LINK ONE", colour: "#f88" };
     }
+    if (isBatteryPylon(t)) {
+        const pc = Math.round(100 * batteryCharge(t) / BATTERY_CAPACITY) + "%";
+        if (batteryCharge(t) >= BATTERY_CAPACITY - 0.01) return { text: "FULL \u00b7 " + BATTERY_CAPACITY + " STORED", colour: BATTERY_COLOR };
+        if (batteryCharging(t)) return { text: "CHARGING FROM NEST \u00b7 " + pc, colour: BATTERY_COLOR };
+        if (!t.powerSource) return { text: "NO NEST WIRED \u2014 CANNOT CHARGE \u00b7 " + pc, colour: "#f88" };
+        return { text: "NEST LOW \u2014 WAITING \u00b7 " + pc, colour: "#ffb070" };
+    }
     if (isGeneratorPylon(t)) {
         if (t.circuitOn === false) return { text: "SWITCHED OFF \u2014 PYLONS DARK", colour: "#f88" };
         const src = generatorSource(t);
@@ -543,7 +587,10 @@ function pylonPowerState(t) {
                    : { text: "NO NEST IN REACH \u2014 LINK ONE", colour: "#f88" };
     }
     if (!(t.waveMode || t.attackMode)) return { text: "NONE NEEDED (DORMANT)", colour: "#888" };
-    if (t.waveTripped) return { text: "SHUT OFF \u2014 WAITING FOR THE NEST TO REFILL", colour: "#ff7755" };
+    if (t.waveTripped) return { text: "SHUT OFF \u2014 WAITING FOR A BATTERY OR NEST TO REFILL", colour: "#ff7755" };
+    // Fed by a battery: the new way, and the one the player should see.
+    if (batteryCan(t, powerPriceOf(t)))
+        return { text: "POWERED \u00b7 BATTERY " + Math.round(100 * batteryFillNear(t)) + "%", colour: BATTERY_COLOR };
     // What recomputePower settled on, so a pylon lit down the chain reads as
     // powered rather than as having no generator of its own.
     const route = t.powerSource ? { feeder: t.powerGen, source: t.powerSource } : powerRoute(t);
@@ -585,5 +632,103 @@ function powerStatus() {
             if (t.powered === false) dark++;
         }
     }
-    return { pools, drawing, dark, flat: pools.filter(p => p.energy <= 0).length };
+    return { pools, drawing, dark, flat: pools.filter(p => p.energy <= 0).length, batteries: batteryStatus() };
+}
+
+// ── THE BATTERIES ────────────────────────────────────────
+// NEST → BATTERY → PYLON (config.js, "BATTERIES HOLD THE CHARGE").
+let _batteryList = [];                  // every live battery of yours, routed
+let _batteryIn = 0, _batteryOut = 0;    // this frame's charge in / out
+let _batteryRateIn = 0, _batteryRateOut = 0;   // smoothed, per second
+
+function batteryCharge(b) {
+    if (!b) return 0;
+    if (!Number.isFinite(b.charge)) b.charge = 0;
+    return b.charge;
+}
+// Charged within the last couple of frames.
+function batteryCharging(b) { return !!b && b._chargeAt !== undefined && (frame || 0) - b._chargeAt <= 2; }
+
+// The batteries that can feed this pylon: any element, within
+// BATTERY_SUPPLY_RANGE, nearest first. Worked out with the caches.
+function batteriesNear(t) {
+    const out = [];
+    if (!t) return out;
+    const r2 = BATTERY_SUPPLY_RANGE * BATTERY_SUPPLY_RANGE;
+    const ox = t._ultra ? t._ultra.cx : t.x, oy = t._ultra ? t._ultra.cy : t.y;
+    for (const b of _batteryList) {
+        if (b === t) continue;
+        const dx = b.x - ox, dy = b.y - oy, d2 = dx * dx + dy * dy;
+        if (d2 <= r2) out.push({ b, d2 });
+    }
+    out.sort((p, q) => p.d2 - q.d2);
+    return out.map(p => p.b);
+}
+function _liveBattery(b) { return isBatteryPylon(b) && b.health > 0 && b.pillarTeam === "green"; }
+function _fullestBattery(t, amount) {
+    let best = null;
+    for (const b of (t && t._bats) || []) {
+        if (!_liveBattery(b)) continue;
+        const c = batteryCharge(b);
+        if (c >= amount && (!best || c > best.charge)) best = b;
+    }
+    return best;
+}
+// Could a battery in reach pay `amount` in one go?
+function batteryCan(t, amount) { return !!_fullestBattery(t, amount); }
+// Stored ÷ capacity across the batteries in reach (0 with none).
+function batteryFillNear(t) {
+    let have = 0, cap = 0;
+    for (const b of (t && t._bats) || []) if (_liveBattery(b)) { have += batteryCharge(b); cap += BATTERY_CAPACITY; }
+    return cap > 0 ? have / cap : 0;
+}
+// Pay `amount` from the fullest battery in reach, so a bank drains evenly.
+// Returns the battery that paid, or null.
+function batteryPay(t, amount) {
+    const b = _fullestBattery(t, amount);
+    if (!b) return null;
+    b.charge -= amount;
+    _batteryOut += amount;
+    t._supply = b;
+    b._feedAt = frame || 0;
+    return b;
+}
+
+// Once a frame: every battery that is not full draws BATTERY_CHARGE_RATE from
+// its nest grid — only out of what a nest holds above BATTERY_NEST_FLOOR — and
+// stores BATTERY_CHARGE_GAIN times that.
+function batteryChargeTick() {
+    for (const b of _batteryList) {
+        if (!_liveBattery(b)) continue;
+        const c = batteryCharge(b);
+        if (c >= BATTERY_CAPACITY) continue;
+        const src = b.powerSource;
+        if (!src) continue;
+        const want = Math.min(BATTERY_CHARGE_RATE, (BATTERY_CAPACITY - c) / BATTERY_CHARGE_GAIN);
+        let paid = null;
+        for (const n of gridMembers(src)) {
+            if (nestEnergy(n) - want >= BATTERY_NEST_FLOOR * nestEnergyMax(n)) { n.nestEnergy -= want; paid = n; break; }
+        }
+        if (!paid) continue;
+        b.charge = Math.min(BATTERY_CAPACITY, c + want * BATTERY_CHARGE_GAIN);
+        b._chargeAt = frame || 0;
+        _batteryIn += want * BATTERY_CHARGE_GAIN;
+        paid.powerFlow = Math.max(paid.powerFlow || 0, 0.6);
+    }
+    // Per second, smoothed over about a second, for the HUD.
+    _batteryRateIn  += (_batteryIn  * 60 - _batteryRateIn)  * 0.03;
+    _batteryRateOut += (_batteryOut * 60 - _batteryRateOut) * 0.03;
+    _batteryIn = 0; _batteryOut = 0;
+}
+
+// What the HUD shows: everything stored, the capacity, and the flow.
+function batteryStatus() {
+    let stored = 0, count = 0, charging = 0;
+    for (const b of _batteryList) {
+        if (!_liveBattery(b)) continue;
+        count++; stored += batteryCharge(b);
+        if (batteryCharging(b)) charging++;
+    }
+    return { count, stored: Math.round(stored), cap: count * BATTERY_CAPACITY, charging,
+             rateIn: _batteryRateIn, rateOut: _batteryRateOut };
 }

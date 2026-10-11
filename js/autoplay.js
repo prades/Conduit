@@ -222,7 +222,9 @@ function _autoNetworkElement(nest) {
 //      or toxic — the network element if it is one) — a black hole, spinning
 //      firewall, ice generator or toxic tower;
 //   5. ACCESSORIES: AUTOPLAY_ACCESSORIES support pylons (electric haste, or
-//      core shields), only while shards stay above AUTOPLAY_SPARE.
+//      core shields), only while shards stay above AUTOPLAY_SPARE;
+//   6. then MK II on its turrets and wave pylons, one at a time, on the same
+//      spare shards.
 // The two squares are claimed up front (nest._autoPlan) and kept clear of
 // everything else; the ultra takes the back rows so the front lane stays open.
 function _autoNear(nest) {
@@ -319,10 +321,17 @@ function _autoGrowNetwork(nest, next) {
     // 5. A few accessories, only with shards to spare.
     if (shardCount < PYLON_BUILD_COST + AUTOPLAY_SPARE) return false;
     const sup = ["electric", "core"].find(e => unlockedElements.has(e));
-    if (!sup) return false;
-    const have = near.filter(t => t.waveMode && t.attackModeElement === sup && !(t._wform || t._wformOf)).length;
-    if (have >= AUTOPLAY_ACCESSORIES) return false;
-    return _autoPlaceLinked(nest, next, sup, "support", near.length ? near : [nest], reserved);
+    if (sup) {
+        const have = near.filter(t => t.waveMode && t.attackModeElement === sup && !(t._wform || t._wformOf)).length;
+        if (have < AUTOPLAY_ACCESSORIES && _autoPlaceLinked(nest, next, sup, "support", near.length ? near : [nest], reserved)) return true;
+    }
+    // 6. MK II (commands.js): one pylon at a time, on its tier I network,
+    // still only with shards to spare.
+    if (typeof mk2Blocker === "function" && shardCount >= MK2_COST + AUTOPLAY_SPARE) {
+        const up = near.find(t => mk2Eligible(t) && !mk2Blocker(t));
+        if (up) return upgradeToMk2(up);
+    }
+    return false;
 }
 
 // 4. ULTIMATES.

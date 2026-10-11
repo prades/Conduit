@@ -44,6 +44,8 @@ function savePylons() {
             isGenerator: !!t.isGenerator,
             isConnector: !!t.isConnector,
             isBattery: !!t.isBattery,
+            charge: t.isBattery ? Math.round(t.charge || 0) : 0,
+            mk: t.mk || 0,
             circuitOn: t.circuitOn !== false
         }));
     try { localStorage.setItem("tubecrawler_pylons", JSON.stringify(data.concat(tombs))); } catch(e) {}

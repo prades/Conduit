@@ -50,8 +50,11 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
 // Every number read out of config.js rather than restated, so retuning the
 // economy moves these checks with it instead of breaking them.
+// The battery numbers replaced the wave-network sharing rules in the index
+// ("Erase current guidelines for power efficiency. This is the new way.").
 const C = configNums(['NEST_ENERGY_BASE', 'NEST_ENERGY_ZONE', 'NEST_ENERGY_REGEN',
-                      'NEST_ENERGY_HOME', 'POWER_SHOT_COST', 'POWER_WAVE_DRAIN', 'POWER_RESTART_LEVEL', 'POWER_WAVE_SHARE', 'POWER_SHED_FRAMES']);
+                      'NEST_ENERGY_HOME', 'POWER_SHOT_COST', 'POWER_WAVE_DRAIN', 'POWER_RESTART_LEVEL',
+                      'BATTERY_CAPACITY', 'BATTERY_CHARGE_RATE', 'BATTERY_CHARGE_GAIN', 'BATTERY_SUPPLY_RANGE']);
 
 async function boot() {
     const sandbox = makeBrowserSandbox({ tubecrawler_seed: '305419896' });

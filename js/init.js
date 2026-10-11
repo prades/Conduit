@@ -67,6 +67,8 @@ async function loadConfig() {
             tile.isGenerator       = !!saved.isGenerator;
             tile.isConnector       = !!saved.isConnector;
             tile.isBattery         = !!saved.isBattery;
+            tile.charge            = Number(saved.charge) || 0;
+            tile.mk                = saved.mk || 0;
             tile.circuitOn         = saved.circuitOn !== false;
         });
     }

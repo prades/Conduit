@@ -381,15 +381,41 @@ const TUTS = [
         check: () => tutorialTimer > 300,   // ~5s to read it
     },
     {
-        // What the power IS. Read-only: the batteries are already there.
+        // What the power IS — the new way (config.js, "BATTERIES HOLD THE
+        // CHARGE"): nests charge batteries, batteries power the pylons.
         id:    'power',
-        title: 'NESTS ARE BATTERIES',
-        body:  'Turrets and waves run on power. Each nest you have neutralised is a battery, and the percentage above it shows what is left: the bar empties as pylons draw on it. A generator draws from the nearest one.',
+        title: 'NEST \u2192 BATTERY \u2192 PYLON',
+        body:  'Power flows one way: the nests you hold CHARGE your BATTERY pylons, and batteries POWER every pylon within ' + (typeof BATTERY_SUPPLY_RANGE === 'number' ? BATTERY_SUPPLY_RANGE : 12) + ' tiles. A battery stores ' + (typeof BATTERY_CHARGE_GAIN === 'number' ? BATTERY_CHARGE_GAIN : 2) + 'x what it takes from a nest: more power than the nests alone could give.',
         icon:  '\u26a1',
         target: () => (typeof homePortalTile === 'function' && homePortalTile()) ||
                       tutNearestTile(t => t.nest) ||
                       ((typeof crystal !== 'undefined' && crystal) ? crystal : null),
         check: () => tutorialTimer > 420,   // ~7s to read it
+    },
+    {
+        // Build the thing that holds the charge. Beside the generator, so the
+        // next step can watch it fill.
+        id:    'battery',
+        title: 'BUILD A BATTERY',
+        body:  'With BUILD on, press and hold the marked pylon by your shield generator, pick UPGRADE and choose BATTERY as the kind, in any element. Linked batteries of one element also raise its network tier: 2 / 4 / 6 make tier I / II / III.',
+        icon:  '\u25a5',
+        wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
+        target: () => {
+            const plain = t => !t.isGenerator && !t.isConnector && !t.attackMode && !t.waveMode && !t.isBattery;
+            const r = typeof getPylonRange === 'function' ? getPylonRange() : 3;
+            const byGen = t => world.some(g => g.pillar && g.isGenerator && !g.destroyed && Math.hypot(g.x - t.x, g.y - t.y) <= r);
+            return tutNearestPylon(t => plain(t) && byGen(t)) || tutNearestPylon(plain) || tutNearestPylon();
+        },
+        check: () => world.some(t => t.pillar && t.isBattery && !t.destroyed),
+    },
+    {
+        // Watch it fill — the whole system on screen at once.
+        id:    'charge',
+        title: 'WATCH IT CHARGE',
+        body:  'Your battery is charging: charges run in along a blue cable, its cells fill, and the gold \u26a1 BATT line on the NETWORK panel counts up. Pylons near it draw on it first. On tier I, hold a turret (BUILD off) for MK II: x' + (typeof STATUS_MULT_MK2 === 'number' ? STATUS_MULT_MK2 : 1.3) + ' damage, ' + (typeof MK2_COST === 'number' ? MK2_COST : 15) + ' shards.',
+        icon:  '\u25b2',
+        target: () => tutNearestPylon(t => t.isBattery) || tutNearestPylon(),
+        check: () => world.some(t => t.pillar && t.isBattery && (t.charge || 0) >= 10) || tutorialTimer > 900,
     },
     {
         // The new relay. Same placement rule as the generator, a very different

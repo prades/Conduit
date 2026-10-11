@@ -171,11 +171,11 @@ function isRelayPylon(t) { return !!(t && (t.isGenerator || t.isConnector)); }
 // REPORTED: "Create battery class pylon that is now solely responsible for
 // powering up the network: player must connect 2/4/6 together to create tier
 // 1/2/3 network status. Remove the historic version of upgrading the network."
-// A battery carries an element and does nothing else — no shots, no wave. Its
-// element's NETWORK TIER is the largest group of that element's batteries
-// linked within getPylonRange() of each other: 2 → I, 4 → II, 6 → III.
-// Turrets and wave pylons no longer count. (Asked: elemental batteries, and
-// they only set the tier — nests and shield generators still do the powering.)
+// A battery carries an element — no shots, no wave. Its element's NETWORK TIER
+// is the largest group of that element's batteries linked within
+// getPylonRange() of each other: 2 → I, 4 → II, 6 → III. Turrets and wave
+// pylons no longer count. It also STORES CHARGE from the nests and powers the
+// pylons around it (below).
 const BATTERY_COLOR = "#ffd34d";
 const BATTERY_TIER_SIZES = [2, 4, 6];   // linked batteries for tier I, II, III
 function isBatteryPylon(t) { return !!(t && t.isBattery && t.pillar && !t.destroyed); }
@@ -190,6 +190,45 @@ function isBatteryPylon(t) { return !!(t && t.isBattery && t.pillar && !t.destro
 const BANK_FULL_RANGE   = 6;
 const BANK_FALLOFF_STEP = 6;
 const ULTRA_MIN_TIER    = 2;
+// ── BATTERIES HOLD THE CHARGE ────────────────────────────
+// REPORTED: "Batteries should be charged up from the nests and allow the player
+// to use more power than would otherwise be possible. That's what charges the
+// pylons. Hardcode that system." So the power runs NEST → BATTERY → PYLON:
+//   CHARGE  a battery a generator or connector reaches (or one lit down the
+//           chain) fills from that nest's grid at BATTERY_CHARGE_RATE a frame,
+//           and every point it takes out of a nest stores as
+//           BATTERY_CHARGE_GAIN points — the reason to build them. It only
+//           draws while the nest is above BATTERY_NEST_FLOOR of full, so it
+//           banks the nest's spare power, never its last.
+//   SPEND   a turret's shot and a wave pylon's draw come out of the batteries
+//           within BATTERY_SUPPLY_RANGE first (any element), the fullest one
+//           paying; only when they are flat does the nest pay directly.
+// powerBatteries / batteryChargeTick / batteryPay in power.js.
+const BATTERY_CAPACITY     = 120;    // charge one battery holds
+const BATTERY_CHARGE_RATE  = 0.05;   // nest energy drawn per frame per battery (3/s)
+const BATTERY_CHARGE_GAIN  = 2;      // charge stored per point of nest energy
+const BATTERY_NEST_FLOOR   = 0.2;    // a nest below this fill charges nothing
+const BATTERY_SUPPLY_RANGE = 12;     // tiles: how far a battery feeds pylons
+// ── PYLON STATUS: MK II ──────────────────────────────────
+// REPORTED: "make a tier of pylon upgrades for tier 1 network — make them
+// slightly better than regular upgraded pylons. Make the pylons do damage
+// equal to their status to reward the player." A pylon's STATUS is plain,
+// UPGRADED (reclaimed and rebuilt: the heal pulse) or MK II — bought for
+// MK2_COST shards on one of your turrets or wave pylons standing on its
+// element's tier I network or better. MK II keeps the heal pulse, takes
+// MK2_HP_MULT more health, and everything it deals — turret rounds, wave
+// zones, formations — is multiplied by its status (pylonStatusMult).
+const STATUS_MULT_BASE     = 1.0;
+const STATUS_MULT_UPGRADED = 1.15;
+const STATUS_MULT_MK2      = 1.3;
+const MK2_COST             = 15;
+const MK2_HP_MULT          = 1.25;
+const MK2_MIN_TIER         = 1;
+function pylonStatusMult(t) {
+    if (!t) return STATUS_MULT_BASE;
+    return (t.mk || 0) >= 2 ? STATUS_MULT_MK2 : t.upgraded ? STATUS_MULT_UPGRADED : STATUS_MULT_BASE;
+}
+function pylonStatusLabel(t) { return !t ? "" : (t.mk || 0) >= 2 ? "MK II" : t.upgraded ? "UPGRADED" : ""; }
 
 // The generator is neutral, so it is never behind an element unlock — it is
 // available from the first pylon the player ever builds.

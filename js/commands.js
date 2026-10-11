@@ -122,7 +122,7 @@ function _executeBuild(el, t) {
 
     t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=_baseHP; t.demolished=false;
     t.pylonStyle=PYLON_STYLE;
-    t.upgraded=false; t.destroyed=false;
+    t.upgraded=false; t.mk=0; t.destroyed=false;
     t.attackMode=false; t.waveMode=false;
     t.attackModeElement=null; t.attackModeColor=null;
     t.reconstructing=false; t.workers=[];
@@ -175,7 +175,7 @@ function _executeBuildInstant(el, t, kind) {
 
     t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=_iHP; t.demolished=false;
     t.pylonStyle=PYLON_STYLE;
-    t.upgraded=false; t.destroyed=false;
+    t.upgraded=false; t.mk=0; t.destroyed=false;
     t.reconstructing=false; t.workers=[];
     t.constructing=false; t.constructProgress=1; t.health=t.maxHealth;
     // Auto-activate with the chosen element (no follower merge needed)
@@ -210,7 +210,7 @@ function demolishPylon(t) {
     const col = t.attackModeColor || t.pillarCol || "#0f8";
     Object.assign(t, { pillar: false, destroyed: false, pillarTeam: null, health: 0,
         attackMode: false, waveMode: false, attackModeElement: null, attackModeColor: null,
-        isGenerator: false, isConnector: false, isBattery: false, circuitOn: undefined, upgraded: false, seasoned: 0,
+        isGenerator: false, isConnector: false, isBattery: false, circuitOn: undefined, upgraded: false, mk: 0, seasoned: 0,
         pendingUpgrade: false, upgradeFollower: null, chosenElement: null, chosenColor: null, chosenKind: null,
         reconstructing: false, reconstructProgress: 0, waveTripped: false, powered: undefined,
         powerSource: null, powerGen: null, waveAwake: undefined, _awakeUntil: undefined,
@@ -401,6 +401,41 @@ function refuseEnemyUpgrade() {
                          color: "#f44", life: 110, vy: -0.22, size: 12 });
 }
 
+// ── MK II ────────────────────────────────────────────────
+// A tier of pylon upgrade for a tier I network (config.js, "PYLON STATUS").
+// Your own turret or wave pylon, standing on its element's tier I or better,
+// for MK2_COST shards.
+function mk2Eligible(t) {
+    return !!(t && t.pillar && !t.destroyed && t.health > 0 && t.pillarTeam === "green" && !t.constructing &&
+              (t.attackMode || t.waveMode) && !t.isBattery && !isRelayPylon(t) && t.attackModeElement);
+}
+// Why it cannot be bought right now, or null when it can.
+function mk2Blocker(t) {
+    if (!mk2Eligible(t)) return "NOT A TURRET OR WAVE PYLON";
+    if ((t.mk || 0) >= 2) return "ALREADY MK II";
+    const tier = typeof networkTierAt === "function" ? networkTierAt(t.attackModeElement, t.x, t.y) : 0;
+    if (tier < MK2_MIN_TIER) return "NEEDS " + t.attackModeElement.toUpperCase() + " TIER I";
+    if (shardCount < MK2_COST) return "NEED " + MK2_COST + "\u25c6";
+    return null;
+}
+function upgradeToMk2(t) {
+    const why = mk2Blocker(t);
+    if (why) {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "MK II \u2014 " + why, color: "#f88", life: 100, vy: -0.22, size: 12 });
+        return false;
+    }
+    shardCount -= MK2_COST;
+    t.mk = 2;
+    t.upgraded = true;   // it keeps everything an upgraded pylon has
+    t.maxHealth = Math.round((t.maxHealth || 100) * MK2_HP_MULT);
+    t.health = t.maxHealth;
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "\u25c6 MK II \u2014 \u00d7" + STATUS_MULT_MK2 + " DAMAGE",
+                         color: t.attackModeColor || "#0f8", life: 120, vy: -0.2, size: 14 });
+    elementEffects.push({ type: "impact", x: t.x + 0.5, y: t.y + 0.5, color: t.attackModeColor || "#0f8", radius: 0.9, life: 26 });
+    return true;
+}
+
 function _executeUpgrade(el, pylon, kind) {
     if (!pylon || !pylon.pillar || pylon.destroyed) return;
     if (!canUpgradePylon(pylon)) { refuseEnemyUpgrade(); return; }
@@ -559,6 +594,10 @@ function executeCommand() {
             break;
         }
         // ── TOP (build mode off): OVERCHARGE a nest's grid ──
+        case "mk2": {
+            if (commandTarget) upgradeToMk2(commandTarget);
+            break;
+        }
         case "overcharge": {
             if (commandNestTarget) overchargeNest(commandNestTarget);
             break;
