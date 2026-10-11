@@ -100,5 +100,8 @@ async function loadConfig() {
     render();
 }
 
-initPreview();
+// The predator designer (js/dev.js) is a tool, not the game: if it cannot set
+// itself up, the game still starts. REPORTED: it was the line that crashed the
+// boot on a phone ("Can't find variable: PREDATOR_TYPES").
+try { initPreview(); } catch (e) { console.warn("dev preview unavailable:", e); }
 loadConfig();

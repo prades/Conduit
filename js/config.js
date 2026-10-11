@@ -3,18 +3,9 @@
 // ============================================================
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
-window.onerror = function(msg, src, line, col, err) {
-    const e = document.createElement("div");
-    Object.assign(e.style, {
-        position:"fixed", top:"0", left:"0", right:"0",
-        background:"rgba(0,0,0,0.9)", color:"#ff5555",
-        font:"12px monospace", padding:"10px",
-        zIndex:"99999", whiteSpace:"pre-wrap"
-    });
-    e.textContent = "CRASH\n\n" + msg + "\nLine:" + line +
-        (err && err.stack ? "\n\n" + err.stack : "");
-    document.body.appendChild(e);
-};
+// Lives in game.html (_showError), before any file loads. This file used to
+// replace it with its own handler, which stacked a new panel per error so the
+// first — the cause — was always hidden under the last.
 
 // ── ELEMENTS ─────────────────────────────────────────────
 const ELEMENTS = [

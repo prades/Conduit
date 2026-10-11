@@ -65,6 +65,7 @@ const SUITES = [
     ['elemental breakout',     'breakout.js'],
     ['batteries + MK II',      'batteries.js'],
     ['game index + icons',     'index.js'],
+    ['boot check',             'boot.js'],
 ];
 
 let failed = 0;

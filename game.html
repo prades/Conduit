@@ -1307,19 +1307,50 @@ function switchCMTab(id) {
 
 <script>
 // ── GLOBAL ERROR DISPLAY (catches sync + async + promise errors) ──
+// REPORTED (a phone): "CRASH — Can't find variable: PREDATOR_TYPES". Each
+// error used to stack a new full-screen panel on top of the last, so only the
+// LAST one showed — the follow-on, never the cause. Now there is one panel, the
+// FIRST error stays at the top, later ones are listed under it, and it has a
+// RELOAD button.
+var _errPanel = null, _errCount = 0;
 function _showError(msg) {
-    const e = document.createElement("div");
-    Object.assign(e.style, {
-        position:"fixed", top:"0", left:"0", right:"0", bottom:"0",
-        background:"rgba(0,0,0,0.95)", color:"#ff5555",
-        font:"13px monospace", padding:"14px", overflow:"auto",
-        zIndex:"99999", whiteSpace:"pre-wrap", touchAction:"auto"
-    });
-    e.textContent = msg;
-    document.body.appendChild(e);
+    // The boot check (below the scripts) is already reloading, or has said
+    // plainly which file failed: what follows is only the fallout of that.
+    if (window.__bootRetrying || window.__bootBroken) return;
+    if (!_errPanel) {
+        _errPanel = document.createElement("div");
+        Object.assign(_errPanel.style, {
+            position:"fixed", top:"0", left:"0", right:"0", bottom:"0",
+            background:"rgba(0,0,0,0.95)", color:"#ff5555",
+            font:"13px monospace", padding:"14px", overflow:"auto",
+            zIndex:"99999", whiteSpace:"pre-wrap", touchAction:"auto"
+        });
+        var btn = document.createElement("button");
+        btn.textContent = "RELOAD";
+        Object.assign(btn.style, { display:"block", margin:"0 0 12px", padding:"8px 18px", font:"bold 13px monospace",
+                                   background:"#000", color:"#0f8", border:"2px solid #0f8", borderRadius:"4px" });
+        btn.onclick = function () { location.reload(); };
+        _errPanel.appendChild(btn);
+        document.body.appendChild(_errPanel);
+    }
+    _errCount++;
+    var block = document.createElement("div");
+    block.style.marginBottom = "14px";
+    block.textContent = (_errCount > 1 ? "— then (" + _errCount + ") —\n" : "") + msg;
+    _errPanel.appendChild(block);
 }
+// Script files that failed to download. A missing file raises no error of its
+// own — only the "Can't find variable" from whatever needed it — so the load
+// failure is caught here, on its way down (capture phase).
+window.__bootFailed = [];
+window.addEventListener("error", function (e) {
+    var t = e && e.target;
+    if (t && t.tagName === "SCRIPT" && t.src) window.__bootFailed.push(t.src.replace(/^.*\/(js\/)/, "$1"));
+}, true);
 window.onerror = function(msg, src, line, col, err) {
-    _showError("CRASH\n\n" + msg + "\nLine:" + line +
+    // A file that does not parse (or will not run at all) is a boot failure too.
+    if (!window.__bootDone && src && /\/js\//.test(src) && /SyntaxError/.test(String(msg))) window.__bootFailed.push(src.replace(/^.*\/(js\/)/, "$1") + " (" + msg + ")");
+    _showError("CRASH\n\n" + msg + "\nLine:" + line + (src ? "  " + src.replace(/^.*\/(js\/)/, "$1") : "") +
         (err && err.stack ? "\n\n" + err.stack : ""));
 };
 window.addEventListener('unhandledrejection', function(e) {
@@ -1384,6 +1415,55 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 <script src="js/game.js"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/dev.js"></script>
+<script>
+// ── BOOT CHECK ────────────────────────────────────────────
+// Every file above must have arrived and run before init.js starts the game.
+// One that did not (a dropped download on a phone, a bad cached copy) used to
+// surface as a "Can't find variable" crash from whatever needed it first. Now:
+// reload by itself, up to twice; if it still fails, say which file, plainly.
+(function () {
+    var need = { "js/config.js": "ELEMENTS", "js/species.js": "PREDATOR_TYPES", "js/elements.js": "getElementMultiplier",
+                 "js/predator.js": "Predator", "js/power.js": "recomputePower", "js/world.js": "generateSegment",
+                 "js/draw.js": "drawNPC", "js/ui.js": "drawElementPicker", "js/game.js": "render", "js/dev.js": "initPreview" };
+    var missing = (window.__bootFailed || []).slice();
+    for (var f in need) {
+        var ok = false;
+        try { ok = typeof (0, eval)(need[f]) !== "undefined"; } catch (e) { ok = false; }
+        if (!ok && !missing.some(function (x) { return x.indexOf(f) === 0; })) missing.push(f);
+    }
+    // The retry count rides in the URL (#boot1, #boot2) as well as session
+    // storage, so a browser that blocks storage cannot reload forever.
+    var KEY = "conduit_boot_retry", tries = 0, m = /^#boot(\d)$/.exec(location.hash);
+    try { tries = +(sessionStorage.getItem(KEY) || 0); } catch (e) {}
+    if (m) tries = Math.max(tries, +m[1]);
+    var clear = function () {
+        try { sessionStorage.removeItem(KEY); } catch (e) {}
+        if (m && history.replaceState) history.replaceState(null, "", location.pathname + location.search);
+    };
+    window.__bootDone = true;
+    if (!missing.length) { clear(); return; }
+    if (tries < 2) {
+        try { sessionStorage.setItem(KEY, String(tries + 1)); } catch (e) {}
+        window.__bootRetrying = true;
+        location.hash = "boot" + (tries + 1);
+        location.reload();
+        return;
+    }
+    clear();
+    window.__bootBroken = true;
+    var d = document.createElement("div");
+    Object.assign(d.style, { position:"fixed", inset:"0", background:"rgba(0,8,4,0.97)", color:"#bfe", zIndex:"99999",
+                             font:"14px monospace", padding:"24px", whiteSpace:"pre-wrap", overflow:"auto" });
+    d.textContent = "The game did not finish loading.\n\nThese files did not arrive or would not run:\n  " + missing.join("\n  ") +
+                    "\n\nThis is usually a dropped connection. Check you are online and reload.\n\n";
+    var b = document.createElement("button");
+    b.textContent = "RELOAD";
+    Object.assign(b.style, { padding:"10px 22px", font:"bold 14px monospace", background:"#000", color:"#0f8", border:"2px solid #0f8", borderRadius:"4px" });
+    b.onclick = function () { location.reload(); };
+    d.appendChild(b);
+    document.body.appendChild(d);
+})();
+</script>
 <script src="js/init.js"></script>
 
 </body>
