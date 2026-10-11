@@ -64,6 +64,7 @@ const SUITES = [
     ['buffs',                  'buffs.js'],
     ['elemental breakout',     'breakout.js'],
     ['batteries + MK II',      'batteries.js'],
+    ['game index + icons',     'index.js'],
 ];
 
 let failed = 0;

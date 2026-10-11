@@ -55,7 +55,10 @@ function drawFollowerElementUI() {
             ctx.fillRect(x,yy,w,rh);
             ctx.strokeStyle=unlocked?el.color:"#333"; ctx.lineWidth=selected?2:1;
             ctx.strokeRect(x,yy,w,rh);
-            ctx.fillStyle=unlocked?el.color:"#222"; ctx.fillRect(x+6,yy+6,14,rh-12);
+            // The element's icon (js/icons.js); its colour swatch until that has loaded.
+            if (!(unlocked && typeof drawIcon === "function" && drawIcon(ctx, ELEMENT_ICON[el.id] || el.id, el.color, x+13, yy+rh/2, 16))) {
+                ctx.fillStyle=unlocked?el.color:"#222"; ctx.fillRect(x+6,yy+6,14,rh-12);
+            }
             ctx.fillStyle=unlocked?"#fff":"#555"; ctx.textAlign="left";
             ctx.fillText(el.label,x+28,yy+rh/2);
             if (unlocked) {
@@ -239,7 +242,11 @@ function drawElementPicker() {
         ctx.globalAlpha = ok ? 1 : 0.35;
         ctx.fillStyle = "rgba(10,26,16,0.9)"; ctx.strokeStyle = color; ctx.lineWidth = 1;
         _epRoundRect(c.x + 4, c.y + 4, c.w - 8, c.h - 8, 6); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(c.x + 18, c.y + c.h / 2, 6, 0, Math.PI * 2); ctx.fill();
+        // Its icon — the pylon kind's, or the element's (js/icons.js) — or a dot until it loads.
+        const _icon = c.it.kind === "type" ? (PYLON_KIND_ICON[c.it.k.id] || "pylon") : (ELEMENT_ICON[c.it.el.id] || c.it.el.id);
+        if (!(typeof drawIcon === "function" && drawIcon(ctx, _icon, color, c.x + 18, c.y + c.h / 2, 18))) {
+            ctx.fillStyle = color; ctx.beginPath(); ctx.arc(c.x + 18, c.y + c.h / 2, 6, 0, Math.PI * 2); ctx.fill();
+        }
         ctx.fillStyle = "#fff"; ctx.font = c.it.kind === "type" ? "bold 10px monospace" : "10px monospace"; ctx.textAlign = "left";
         ctx.fillText(label, c.x + 30, c.y + c.h / 2 + (note || why ? -3 : 4));
         if (why || note) { ctx.fillStyle = why ? "#f88" : "#8fb8a8"; ctx.font = "8px monospace"; ctx.fillText(why || note, c.x + 30, c.y + c.h / 2 + 10); }

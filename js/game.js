@@ -4529,11 +4529,11 @@ function drawNetworkStatusHUD() {
         const integrity = networkIntegrity[el] || 0;
         const ry        = Y + HEADER + POWER_H + BAT_H + i * ROW_H;
 
-        // Element glow dot
-        ctx.shadowColor = elDef.color; ctx.shadowBlur = 0;
-        ctx.fillStyle   = elDef.color;
-        ctx.beginPath(); ctx.arc(X + PAD + 4, ry + 8, 4, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur  =0;
+        // The element's icon (js/icons.js); a dot until it has loaded.
+        if (!(typeof drawIcon === "function" && drawIcon(ctx, ELEMENT_ICON[el] || el, elDef.color, X + PAD + 4, ry + 8, 11))) {
+            ctx.fillStyle = elDef.color;
+            ctx.beginPath(); ctx.arc(X + PAD + 4, ry + 8, 4, 0, Math.PI*2); ctx.fill();
+        }
 
         // Element name
         ctx.fillStyle = elDef.color; ctx.font = "bold 9px monospace"; ctx.textAlign = "left";

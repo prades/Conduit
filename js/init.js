@@ -16,6 +16,8 @@ async function loadConfig() {
     // Seed and session first: the seed decides the terrain, and the session
     // says which recruits are still standing, both of which generateSegment reads.
     initWorldSeed();
+    // The HUD's icons decode in the background (js/icons.js).
+    if (typeof preloadIcons === "function") preloadIcons();
     const session = loadSession();
     restoredNpcKeys = (session && Array.isArray(session.npcs)) ? new Set(session.npcs) : null;
 

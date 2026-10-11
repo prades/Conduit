@@ -240,7 +240,9 @@ function isPylonTypeUnlocked(id) {
 const canvas  = document.getElementById('cavernCanvas');
 // Opaque: every frame paints the whole canvas, so the browser need not blend
 // it with the page behind (a cheaper composite on every frame).
-const ctx     = canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d');
+// `let`, not `const`: the GAME INDEX points it at a small canvas for a moment
+// to paint its pictures with the board's own draw code (js/indexart.js).
+let ctx       = canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d');
 const hpBar   = document.getElementById('hp');
 const ultBar  = document.getElementById('ult');
 const ultWrap = document.getElementById('ultWrap');
@@ -1044,6 +1046,8 @@ function toggleControlsMenu() {
         m.classList.remove("minimized");
         const minBtn = document.getElementById("cm-minimize");
         if (minBtn) minBtn.textContent = "─";
+        // The index's pictures move while it is open (js/indexart.js).
+        if (typeof startIndexArt === "function") startIndexArt();
     } else {
         m.style.display = "none";
     }
@@ -1058,6 +1062,7 @@ function minimizeControlsMenu() {
         m.style.bottom = "";
         m.style.transform = "translate(-50%, -50%)";
         if (minBtn) minBtn.textContent = "─";
+        if (typeof startIndexArt === "function") startIndexArt();
     } else {
         m.classList.add("minimized");
         if (minBtn) minBtn.textContent = "▣";
