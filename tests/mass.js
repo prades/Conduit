@@ -379,7 +379,7 @@ check('the follower AI gives worker duty the frame', () => {
 });
 check('mass.js loads before save.js, which serialises it', () => {
     const html = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-    const order = html.split('\n').map(l => (l.match(/<script src="(js\/[^"]+)"><\/script>/) || [])[1]).filter(Boolean);
+    const order = html.split('\n').map(l => (l.match(/<script src="(js\/[^"?]+)(?:\?[^"]*)?"><\/script>/) || [])[1]).filter(Boolean);
     const iMass = order.indexOf('js/mass.js'), iSave = order.indexOf('js/save.js');
     ok(iMass >= 0, 'mass.js is not loaded at all');
     ok(iMass < iSave, 'mass.js must precede save.js');

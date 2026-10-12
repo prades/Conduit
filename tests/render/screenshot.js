@@ -18,7 +18,7 @@ sb.window=sb; sb.globalThis=sb; sb.addEventListener=()=>{}; sb.window.visualView
 sb.innerWidth=W; sb.innerHeight=H;
 sb.AudioContext=function(){return{createGain:()=>({connect(){},gain:{}}),destination:{}}};
 const c=vm.createContext(sb);
-const ORDER=fs.readFileSync(path.join(ROOT,'game.html'),'utf8').split('\n').map(l=>(l.match(/<script src="(js\/[^"]+)"><\/script>/)||[])[1]).filter(Boolean);
+const ORDER=fs.readFileSync(path.join(ROOT,'game.html'),'utf8').split('\n').map(l=>(l.match(/<script src="(js\/[^"?]+)(?:\?[^"]*)?"><\/script>/)||[])[1]).filter(Boolean);
 for(const r of ORDER){ if(r==='js/init.js'||r==='js/dev.js') continue; try{vm.runInContext(fs.readFileSync(path.join(ROOT,r),'utf8'),c,{filename:r})}catch(e){} }
 const run=s=>vm.runInContext(s,c);
 run(`canvas.width=${W};canvas.height=${H};frame=40;`);

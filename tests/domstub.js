@@ -17,7 +17,7 @@ const ROOT = path.resolve(__dirname, '..');
 function scriptOrder() {
     return fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8')
         .split('\n')
-        .map(l => (l.match(/<script src="(js\/[^"]+)"><\/script>/) || [])[1])
+        .map(l => (l.match(/<script src="(js\/[^"?]+)(?:\?[^"]*)?"><\/script>/) || [])[1])
         .filter(Boolean);
 }
 

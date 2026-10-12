@@ -2,6 +2,10 @@
 //  build ver. 0.0200  –  stat system + roles + personalities
 // ============================================================
 
+// The build this file belongs to — the same as window.__PAGE_BUILD and the
+// ?v= on every script tag in game.html (the boot check compares them).
+const BUILD_VERSION = "2026-10-12a";
+
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
 // replace it with its own handler, which stacked a new panel per error so the

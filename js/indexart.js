@@ -145,7 +145,16 @@ const IX_ART = {
 // Paint one canvas. False if it could not be drawn (the icon beside it stays).
 const IX_ZOOMED = { pylon: 1.3, attack: 1.3, support: 1.3, disruption: 1.3, battery: 1.35, generator: 1.2, connector: 1.3, mk2: 1.3,
                     follower: 1.5, predator: 1.7, clone: 1.7, thief: 1.6, machine: 1.15 };
+// Can the board's `ctx` be pointed elsewhere? Not if an old cached config.js
+// declared it `const` (REPORTED on an iPad: "Attempted to assign to readonly
+// property"). Then the pictures are skipped — the icons stay — and nothing throws.
+let _ixSwapOK = null;
+function _ixCanSwap() {
+    if (_ixSwapOK === null) { try { const k = ctx; ctx = k; _ixSwapOK = true; } catch (e) { _ixSwapOK = false; } }
+    return _ixSwapOK;
+}
 function paintIndexArt(cv) {
+    if (!_ixCanSwap()) return false;
     if (!cv || !cv.getContext) return false;
     const [kind, arg] = String(cv.dataset ? cv.dataset.art : cv.getAttribute("data-art")).split(":");
     const fn = IX_ART[kind];
@@ -170,7 +179,10 @@ function paintIndexArt(cv) {
             g.restore();
         } finally { if (keepFB) formationBlocker = keepFB; }
     } catch (e) { ok = false; }
-    finally { ctx = keepCtx; frame = keepFrame; }
+    finally {
+        try { ctx = keepCtx; } catch (e) { _ixSwapOK = false; }
+        try { frame = keepFrame; } catch (e) { /* frame is a let in config.js */ }
+    }
     return ok;
 }
 // Paint every picture on the open tab of the index.

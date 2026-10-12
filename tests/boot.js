@@ -21,10 +21,10 @@ const boot = HTML.slice(bootAt, HTML.indexOf('</script>', bootAt));
 
 check('THE ASK: a script that failed to download is caught (it raises no error of its own)', () => {
     ok(/addEventListener\("error", function \(e\) \{[\s\S]{0,200}t\.tagName === "SCRIPT"[\s\S]{0,200}\}, true\)/.test(HTML), 'no capture-phase listener for script load failures');
-    ok(HTML.indexOf('window.__bootFailed = []') < HTML.indexOf('<script src="js/config.js">'), 'it is installed after the scripts start loading');
+    ok(HTML.indexOf('window.__bootFailed = []') < HTML.indexOf('<script src="js/config.js'), 'it is installed after the scripts start loading');
 });
 check('THE ASK: before init.js runs, every file is checked — species.js among them', () => {
-    ok(bootAt > -1 && bootAt < HTML.indexOf('<script src="js/init.js">') && bootAt > HTML.indexOf('<script src="js/dev.js">'), 'the boot check is not between the files and init.js');
+    ok(bootAt > -1 && bootAt < HTML.indexOf('<script src="js/init.js') && bootAt > HTML.indexOf('<script src="js/dev.js'), 'the boot check is not between the files and init.js');
     ok(/"js\/species\.js": "PREDATOR_TYPES"/.test(boot), 'it does not check species.js');
     // Every name it checks is a real top-level declaration of that file.
     for (const [f, name] of [...boot.matchAll(/"(js\/[\w.]+)": "(\w+)"/g)].map(m => [m[1], m[2]])) {
@@ -47,6 +47,20 @@ check('the crash screen is one panel, first error on top, with RELOAD', () => {
 });
 check('the dev panel can never stop the game starting', () => {
     ok(/try \{ initPreview\(\); \} catch \(e\)/.test(rd('js/init.js')), 'initPreview is still unguarded');
+});
+
+check('THE ASK: every file is fetched for this build — one ?v= on every script, matching the page and config.js', () => {
+    const tags = [...HTML.matchAll(/<script src="js\/[^"?]+\?v=([^"]+)"><\/script>/g)].map(m => m[1]);
+    const all = (HTML.match(/<script src="js\//g) || []).length;
+    ok(tags.length === all && all > 30, tags.length + ' of ' + all + ' script tags carry a version');
+    ok(new Set(tags).size === 1, 'the versions differ: ' + [...new Set(tags)].join(', '));
+    const page = (HTML.match(/window\.__PAGE_BUILD = "([^"]+)"/) || [])[1], cfg = (rd('js/config.js').match(/const BUILD_VERSION = "([^"]+)"/) || [])[1];
+    ok(page === tags[0] && cfg === tags[0], 'page ' + page + ', config ' + cfg + ', tags ' + tags[0]);
+    ok(/BUILD_VERSION"\) !== window\.__PAGE_BUILD/.test(HTML), 'the boot check does not catch a stale config.js');
+});
+check('a picture is skipped, never a crash, when the board\'s ctx cannot be swapped', () => {
+    const A = rd('js/indexart.js');
+    ok(/if \(!_ixCanSwap\(\)\) return false;/.test(A) && /try \{ ctx = keepCtx; \} catch/.test(A), 'painting can still throw');
 });
 
 console.log(failures ? `\n${failures} FAILING` : '\nall passing');
