@@ -278,7 +278,8 @@ function applyPylonZoneEffects(wavePylons) {
             const _seasonBonus = (_seasonBonusCache[el] || 1.0) * _status;
 
             const {lx, ly, len2, bMinX, bMaxX, bMinY, bMaxY} = pair;
-            actors.forEach(a=>{
+            // Only the columns the link's box covers (unitsNear, helpers.js).
+            (typeof unitsNear === "function" ? unitsNear((bMinX + bMaxX) / 2, (bMaxX - bMinX) / 2) : actors).forEach(a=>{
                 if (!a||a.dead) return;
                 // Bounding box early-exit (avoids sqrt for distant actors)
                 if (a.x < bMinX || a.x > bMaxX || a.y < bMinY || a.y > bMaxY) return;
@@ -582,14 +583,33 @@ function layCable(from, to, style, beads) {
     }
     // The charges are placed in world space along the tile run and drawn by the
     // tile they are over, so they go under a unit standing on the pipe too.
-    const bl = beads || style.beads;
-    if (bl) for (const b of bl) {
+    // `beads` may be a function of the frame: then the cable is remembered and
+    // its charges are moved on every frame without laying the cable again
+    // (layAllCablesCached).
+    if (typeof beads === "function") { _cableBeadWires.push({ tiles, fn: beads }); _placeBeads(tiles, beads(frame || 0)); }
+    else _placeBeads(tiles, beads || style.beads);
+    return tiles;
+}
+let _cableBeadWires = [];   // cables whose charges move: { tiles, fn(frame) → beads }
+let _beadCells = [];        // the cells holding charges this frame
+function _placeBeads(tiles, bl) {
+    if (!bl || !bl.length) return;
+    const last = tiles.length - 1;
+    for (const b of bl) {
         const f = b.t * last, i = Math.min(last, Math.floor(f)), k = f - i;
         const n = tiles[Math.min(last, i + 1)];
         const wx = tiles[i].x + (n.x - tiles[i].x) * k, wy = tiles[i].y + (n.y - tiles[i].y) * k;
-        _cableCell(Math.round(wx), Math.round(wy)).beads.push({ wx, wy, t: b.t, r: b.r, alpha: b.alpha, colour: b.colour });
+        const c = _cableCell(Math.round(wx), Math.round(wy));
+        if (!c.beads.length) _beadCells.push(c);
+        c.beads.push({ wx, wy, t: b.t, r: b.r, alpha: b.alpha, colour: b.colour });
     }
-    return tiles;
+}
+// Move every cable's charges on to this frame, along the cables as laid.
+function refreshCableBeads() {
+    for (const c of _beadCells) c.beads.length = 0;
+    _beadCells = [];
+    const f = frame || 0;
+    for (const w of _cableBeadWires) _placeBeads(w.tiles, w.fn(f));
 }
 // Shared style objects. A style used to be a new object per cable per frame,
 // with a width that followed the draw continuously — so no two were alike and
@@ -682,7 +702,7 @@ function drawCablesOnTile(tile, px, py) {
         if (spr) { ctx.globalAlpha = 1; ctx.drawImage(spr, cx - CABLE_SPR_W / 2, cy - CABLE_SPR_H / 2); }
         else _drawCablePieces(ctx, cx, cy, c.pieces);
     }
-    _drawCableBeads(c);
+    if (!gfxLow) _drawCableBeads(c);   // LOW graphics: the cables, not the charges on them
     ctx.globalAlpha = _ga;
 }
 // The pieces on one tile, centred on (cx, cy), into context g.
@@ -771,17 +791,19 @@ function cableScreen(o) {
 // bright when it is, and a busier cable carries more charges.
 function _drawPowerWire(from, to, flow, phase, colour) {
     const lit = flow > 0.02;
-    const beads = [];
-    if (lit) {
-        const n = Math.max(1, Math.round(POWER_BEADS * flow));
+    // The charges, as a function of the frame so they keep moving between
+    // layings of the cable (refreshCableBeads).
+    const beads = lit ? (fr => {
+        const out = [], n = Math.max(1, Math.round(POWER_BEADS * flow));
         for (let i = 0; i < n; i++) {
-            const t = (((frame || 0) * POWER_BEAD_SPEED) + phase + i / n) % 1;
+            const t = ((fr * POWER_BEAD_SPEED) + phase + i / n) % 1;
             // Brightest in the middle of its run so each charge reads as
             // travelling rather than as a row of fixed dots.
             const fade = Math.sin(t * Math.PI);
-            beads.push({ t, r: 2.2 + flow * 1.4, alpha: (0.45 + flow * 0.55) * (0.35 + fade * 0.65), colour });
+            out.push({ t, r: 2.2 + flow * 1.4, alpha: (0.45 + flow * 0.55) * (0.35 + fade * 0.65), colour });
         }
-    }
+        return out;
+    }) : null;
     // The draw is stepped into quarters so the style can be a shared one.
     const fq = Math.round(flow * 4) / 4;
     return layCable(from, to, lit
@@ -805,9 +827,9 @@ function layMendingCables() {
         if (gen.destroyed || pylon.destroyed) continue;
         if (pylon._ultraOf || pylon._wformOf) continue;   // one cable per structure
         if (needsPower(pylon) && pylon.powerGen === gen) continue;
-        const t = (((frame || 0) * 0.014) + (pylon.x * 0.13 + pylon.y * 0.29)) % 1;
+        const ph = pylon.x * 0.13 + pylon.y * 0.29;
         layCable(gen, pylon, cableStyle(`rgba(205,214,224,${(0.35 + Math.round(pulse * 10) / 10 * 0.3).toFixed(2)})`, 1.4, 0, MENDING_DASH),
-                 [{ t, r: 2, alpha: 0.5 + pulse * 0.3, colour: "#e6f0fa" }]);
+                 fr => [{ t: ((fr * 0.014) + ph) % 1, r: 2, alpha: 0.5 + (0.5 + 0.5 * Math.sin(fr * 0.06)) * 0.3, colour: "#e6f0fa" }]);
     }
 }
 
@@ -818,6 +840,7 @@ function _structureOf(o) { return (o && (o._ultraOf || o._wformOf)) || o; }
 // Every cable in the game, laid fresh each frame before the world is drawn.
 function layAllCables() {
     _cableTiles.clear();
+    _cableBeadWires = []; _beadCells = [];
     drawPowerChain();
     layMendingCables();
     // The ties between nest grids: a gold cable between the two relays that
@@ -829,9 +852,27 @@ function layAllCables() {
     for (const { a, b, el } of _batteryLinks) {
         const def = ELEMENTS.find(e => e.id === el);
         const live = typeof batteryCharging === "function" && (batteryCharging(a) || batteryCharging(b));
-        const beads = live ? [0, 0.5].map(o => ({ t: (((frame || 0) * 0.02) + o) % 1, r: 2.4, alpha: 0.9, colour: BATTERY_COLOR })) : [];
+        const beads = live ? (fr => [0, 0.5].map(o => ({ t: ((fr * 0.02) + o) % 1, r: 2.4, alpha: 0.9, colour: BATTERY_COLOR }))) : null;
         layCable(a, b, cableStyle(def ? def.color : BATTERY_COLOR, 2, 2), beads);
     }
+}
+// THE FRAME'S CABLES. Laying them all was the largest single cost of a big
+// base (~15% of the frame with 300 pylons): every cable re-routed into its
+// tiles every frame, though the layout only changes when the base does. Now
+// they are laid again when the pylon caches are rebuilt (_cacheAge), when BUILD
+// or a held generator changes which cables show, and every CABLE_RELAY_FRAMES
+// frames so a cable lighting up or going quiet follows the draw — and in
+// between only the charges are moved along them (refreshCableBeads).
+const CABLE_RELAY_FRAMES = 8;
+let _cableSig = null, _cableLaidAt = -Infinity;
+function layAllCablesCached() {
+    const held = typeof commandMode !== "undefined" && commandMode && commandTarget && commandTarget.isGenerator ? commandTarget : null;
+    const sig = _cacheAge + "|" + (typeof buildMode !== "undefined" && buildMode ? 1 : 0) + "|" + (held ? held.x + "," + held.y : "");
+    const f = frame || 0;
+    if (sig !== _cableSig || f - _cableLaidAt >= CABLE_RELAY_FRAMES || f < _cableLaidAt) {
+        _cableSig = sig; _cableLaidAt = f;
+        layAllCables();
+    } else refreshCableBeads();
 }
 
 // The whole chain, every frame. Each pylon that is drawing gets a cable from
@@ -939,18 +980,12 @@ function _floorTileSprite(isNight, dq, territory, tq) {
 const PCB_TRACE_REACH = 4.0;
 let _pylonNear = new Map();
 function _pnKey(x, y) { return Math.round(x) * 32 + (Math.round(y) + 16); }
+// The trace strength under each floor tile — its distance to the nearest
+// pylon. It used to be stamped out from every pylon at every cache rebuild
+// (300 pylons x 81 cells, a share of the once-a-second hitch); now a new map
+// marks the rebuild and each tile asks when it is first drawn (pylonNearDist).
 function rebuildPylonNear() {
     _pylonNear = new Map();
-    const R = Math.ceil(PCB_TRACE_REACH);
-    for (const p of _pillarCache) {
-        const px = Math.round(p.x), py = Math.round(p.y);
-        for (let dx = -R; dx <= R; dx++) for (let dy = -R; dy <= R; dy++) {
-            const d = Math.hypot(p.x - (px + dx), p.y - (py + dy));
-            if (d >= PCB_TRACE_REACH) continue;
-            const k = _pnKey(px + dx, py + dy), cur = _pylonNear.get(k);
-            if (cur === undefined || d < cur) _pylonNear.set(k, d);
-        }
-    }
 }
 // Pylons by team and by tile, rebuilt with _pillarCache. The healing pass and
 // the nearest-pylon search used to walk every pylon for every actor (56 x 160
@@ -958,22 +993,37 @@ function rebuildPylonNear() {
 let _greenPillars = [], _redPillars = [];
 let _pillarAt = new Map();          // x * 64 + (y + 16) → pylons on that tile
 let _pillarIndexOf = null;          // the _pillarCache array it was built from
+let _pillarCol = new Map();         // x → pylons in that column
 function _paKey(x, y) { return x * 64 + (y + 16); }
 // Rebuilt if _pillarCache has been replaced since (anything that sets it).
 function pillarIndexFresh() { if (_pillarIndexOf !== _pillarCache) rebuildPillarIndex(); }
 function rebuildPillarIndex() {
     _pillarIndexOf = _pillarCache;
-    _greenPillars = []; _redPillars = []; _pillarAt = new Map();
+    _greenPillars = []; _redPillars = []; _pillarAt = new Map(); _pillarCol = new Map();
     for (const t of _pillarCache) {
         if (t.pillarTeam === "green") _greenPillars.push(t); else if (t.pillarTeam === "red") _redPillars.push(t);
         const k = _paKey(Math.round(t.x), Math.round(t.y));
         const l = _pillarAt.get(k);
         if (l) l.push(t); else _pillarAt.set(k, [t]);
+        const cx = Math.round(t.x), lc = _pillarCol.get(cx);
+        if (lc) lc.push(t); else _pillarCol.set(cx, [t]);
     }
 }
 function pylonNearDist(x, y) {
-    const d = _pylonNear.get(_pnKey(x, y));
-    return d === undefined ? Infinity : d;
+    const k = _pnKey(x, y);
+    let d = _pylonNear.get(k);
+    if (d !== undefined) return d;
+    // The pylons standing within PCB_TRACE_REACH, from the per-tile index.
+    pillarIndexFresh();
+    const R = Math.ceil(PCB_TRACE_REACH), cx = Math.round(x), cy = Math.round(y);
+    d = Infinity;
+    for (let tx = cx - R; tx <= cx + R; tx++) {
+        const l = _pillarCol.get(tx);
+        if (!l) continue;
+        for (const p of l) { if (Math.abs(Math.round(p.y) - cy) > R) continue; const dd = Math.hypot(p.x - cx, p.y - cy); if (dd < PCB_TRACE_REACH && dd < d) d = dd; }
+    }
+    _pylonNear.set(k, d);
+    return d;
 }
 
 // ── THE WALL'S CIRCUIT TRACES, cached per column ─────────
@@ -1568,8 +1618,9 @@ function waveWakeTick() {
                 const pdx = player.x - t.x, pdy = player.y - t.y;
                 seen = pdx * pdx + pdy * pdy <= r2;
             }
-            for (let i = 0; !seen && i < actors.length; i++) {
-                const a = actors[i];
+            const _near = unitsNear(t.x, WAVE_WAKE_RADIUS);
+            for (let i = 0; !seen && i < _near.length; i++) {
+                const a = _near[i];
                 if (!a || a.dead) continue;
                 const mine = support ? ((a.team === "green" || a.isClone || a.isFollower) && !a.isNeutralRecruit)
                                      : (isHostileTarget(a)
@@ -1679,10 +1730,29 @@ function turretRoundDamage(t, target) {
 // The tier of `el` at a point: the best of that element's battery banks,
 // full within BANK_FULL_RANGE of the bank's nearest battery and a tier lower
 // for every BANK_FALLOFF_STEP tiles beyond (config.js).
+// Remembered per spot until the banks are rebuilt: formations, Ultras and MK II
+// all ask it for the same few spots every frame.
+let _tierMemo = new Map(), _tierMemoBanks = null, _tierMemoLen = -1;
 function networkTierAt(el, x, y) {
+    if (_tierMemoBanks !== _batteryBanks || _tierMemoLen !== _batteryBanks.length) { _tierMemo = new Map(); _tierMemoBanks = _batteryBanks; _tierMemoLen = _batteryBanks.length; }
+    const mk = el + "|" + x + "|" + y;
+    const hit = _tierMemo.get(mk);
+    if (hit !== undefined) return hit;
+    const v = _networkTierAtRaw(el, x, y);
+    if (_tierMemo.size > 4000) _tierMemo.clear();
+    _tierMemo.set(mk, v);
+    return v;
+}
+function _networkTierAtRaw(el, x, y) {
     let best = 0;
     for (const b of _batteryBanks) {
         if (b.el !== el || b.tier <= best) continue;
+        // A bank whose bounding box is already too far to beat `best` is
+        // skipped without measuring each battery in it.
+        if (!b._bb) { const xs = b.members.map(m => m.x), ys = b.members.map(m => m.y);
+                      b._bb = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]; }
+        const bx = Math.max(b._bb[0] - x, 0, x - b._bb[1]), by = Math.max(b._bb[2] - y, 0, y - b._bb[3]);
+        if (Math.hypot(bx, by) >= BANK_FULL_RANGE + (b.tier - best) * BANK_FALLOFF_STEP) continue;
         let d = Infinity;
         for (const m of b.members) { const dd = Math.hypot(m.x - x, m.y - y); if (dd < d) d = dd; }
         const t = b.tier - Math.floor(Math.max(0, d - BANK_FULL_RANGE) / BANK_FALLOFF_STEP + (d > BANK_FULL_RANGE ? 1 : 0));
@@ -1721,7 +1791,7 @@ function shieldFieldTick() {
         if (g.destroyed || !(g.health > 0) || g.pillarTeam !== "green" || g.circuitOn === false) continue;
         const src = typeof generatorSource === "function" ? generatorSource(g) : null;
         if (!src) continue;                       // no nest feeding it: no shields
-        for (const a of actors) {
+        for (const a of unitsNear(g.x, SHIELD_GEN_RANGE)) {
             if (a.dead || a.team !== "green" || !(a.isFollower || a.isClone)) continue;
             const dx = a.x - g.x, dy = a.y - g.y;
             if (dx * dx + dy * dy > r2) continue;
@@ -1933,6 +2003,7 @@ function render() {
     // AUTOPLAY presses NEXT WAVE itself — which has to be watched while paused.
     if (typeof autoplayWatch === "function") autoplayWatch();
     if (!gameState.running) { return; } // skip all logic while paused (buy screen, game over)
+    perfFrameStart();
 
     frame++;
 
@@ -2091,8 +2162,11 @@ function render() {
             if (t.capturable) _capturableNodeCache.push(t);
         });
 
-        // ── TERRITORY — recalculate every 60 frames ──
-        updateTerritory();
+        // ── TERRITORY — once a second, but NOT in this frame: it is half a
+        // frame's work in a late base, and landing on top of every other
+        // rebuild here made the once-a-second hitch. It runs 30 frames later
+        // (below); the very first time, now.
+        if (!_territoryVer) updateTerritory();
 
         // ── NETWORK TIERS — from BATTERIES only (isBatteryPylon, config.js) ──
         // "Create battery class pylon that is now solely responsible for
@@ -2112,6 +2186,7 @@ function render() {
         for (const t of _wPylons) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
         for (const t of _aPylons) if (t.powered) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
         const _netUps = [], _netDowns = [];
+        const _bR2 = getPylonRange() * getPylonRange();   // once, not per pair
         ELEMENTS.forEach(elDef => {
             const el = elDef.id;
             const elPylons = _netPylons.filter(p => p.attackModeElement === el);
@@ -2128,7 +2203,8 @@ function render() {
                     if (visited.has(cur)) continue;
                     visited.add(cur); groupSize++;
                     elPylons.forEach(other => {
-                        if (!visited.has(other) && Math.hypot(cur.x-other.x, cur.y-other.y) <= getPylonRange()) {
+                        const _dx = cur.x-other.x, _dy = cur.y-other.y;
+                        if (!visited.has(other) && _dx*_dx + _dy*_dy <= _bR2) {
                             q.push(other);
                             if (!other._bLinked) { other._bLinked = true; _batteryLinks.push({ a: cur, b: other, el }); }
                         }
@@ -2192,6 +2268,9 @@ function render() {
     }
 
 
+    // Territory, half a second after each cache rebuild (see above).
+    if (frame - _cacheAge === 30) updateTerritory();
+
     // ── INTRUDER ALERT TIMER ──
     // Alarm persists until the kill quota is met; only then do predators stand down.
     if (alertActive) {
@@ -2212,13 +2291,15 @@ function render() {
     // Uses _wallPanelCache to avoid scanning the entire world array every frame.
     const SIPHON_FRAMES = 150; // ~2.5 seconds at 60fps
     let _siphonActive = false; // tracks whether a panel is already being siphoned this frame
+    // The followers on a siphon order, found once — not once per panel.
+    const _siphoners = followers.filter(f => !f.dead && f.siphonOrder);
     for (let _wpi = _wallPanelCache.length - 1; _wpi >= 0; _wpi--) {
         const t = _wallPanelCache[_wpi];
         if (t.panelActivated) { _wallPanelCache.splice(_wpi, 1); continue; }
         const _pdx=player.x-t.x, _pdy=player.y-t.y;
         // A follower ORDERED to siphon this panel counts too (autoplay's runner).
         const playerClose = _pdx*_pdx+_pdy*_pdy < 2.25 // 1.5² — player standing at y=1 in front of y=0 panel
-            || followers.some(f => !f.dead && f.siphonOrder === t && (f.x - t.x) ** 2 + (f.y - t.y) ** 2 < 2.25);
+            || (_siphoners.length > 0 && _siphoners.some(f => f.siphonOrder === t && (f.x - t.x) ** 2 + (f.y - t.y) ** 2 < 2.25));
         if (playerClose && !_siphonActive) {
             _siphonActive = true;
             t.siphonProgress = (t.siphonProgress || 0) + 1;
@@ -2322,10 +2403,14 @@ function render() {
     // ── FOLLOWER SEPARATION — push overlapping followers apart ──
     // Uses `followers` (already filtered live followers) instead of actors.filter every frame.
     // Squared-distance early exit avoids sqrt for non-overlapping pairs (the common case).
-    const _fl = followers; // followers[] is already dead-filtered each frame
+    // Swept in x order: two followers further apart along the tunnel than the
+    // push distance cannot overlap, so each one only meets its neighbours (it
+    // was every pair — 1,800 a frame with sixty followers).
+    const _fl = followers.slice().sort((p, q) => p.x - q.x);
     for (let _i = 0; _i < _fl.length; _i++) {
         for (let _j = _i+1; _j < _fl.length; _j++) {
             const _a = _fl[_i], _b = _fl[_j];
+            if (_b.x - _a.x >= 0.55) break;
             // A frozen block is terrain, not a unit in the crowd: it neither
             // gives ground to a follower nor jostles one. iceBlockTick below
             // is what clears the space around it, in both directions.
@@ -2496,12 +2581,13 @@ function render() {
         const _range = _U ? ultraRange(t) : (t.attackRange || TURRET_RANGE);
         const _ox = _U ? _U.cx : t.x, _oy = _U ? _U.cy : t.y;
         let nearest=null, bd2=_range*_range;
-        actors.forEach(a=>{
+        // Only the units in the columns it can reach (unitsNear, helpers.js).
+        for (const a of unitsNear(_ox, _range)) {
             if (isHostileTarget(a)) {
                 const dx=a.x-_ox, dy=a.y-_oy, d2=dx*dx+dy*dy;
                 if (d2<bd2) { bd2=d2; nearest=a; }
             }
-        });
+        }
         if (!nearest) return;
         t.attackFireTimer = 0;
         // A turret that is shooting a predator is a pylon that is attacking it,
@@ -2810,6 +2896,7 @@ function render() {
     // old column-distance filter kept half the frame's work off screen. The
     // player and the crystal are never culled: the player IS the camera, and
     // the crystal is a fixed landmark other code expects in the list.
+    perfDrawStart();   // the logic is done; from here on it is drawing
     let drawList=visibleTilesForDraw();
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     shards.forEach(s=>{ if(visibleForDraw(s.x,s.y)) drawList.push({type:'shard',x:s.x,y:s.y,shard:s}); });
@@ -2837,7 +2924,8 @@ function render() {
 
     // The cables are laid before anything is drawn, and each floor tile draws
     // its own pieces, so they lie on the ground under everything standing there.
-    layAllCables();
+    // (Laid again only when the base changes; the charges move every frame.)
+    layAllCablesCached();
 
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
@@ -3552,7 +3640,7 @@ function render() {
                 const _isWaveMono = obj.waveMode && !isRelayPylon(obj);
                 if (_isWaveMono) {
                     drawWaveMonolith(px, _base, _acol, _dark, _wTier, _asleep);
-                    if (!_dark && !_asleep && _sinceWake < WAVE_WAKE_BLINK) drawWaveWakeBlink(px, _base, _acol, _sinceWake);
+                    if (!gfxLow && !_dark && !_asleep && _sinceWake < WAVE_WAKE_BLINK) drawWaveWakeBlink(px, _base, _acol, _sinceWake);
                 }
                 else if (obj.isBattery) {
                     // THE BATTERY: its charge cells show what it has stored.
@@ -3737,8 +3825,9 @@ function render() {
                     // biggest share of the frame in a built-up late game.
                     const busY = [WH*0.18, WH*0.40, WH*0.65, WH*0.86];
                     const busC = ['#0f8', '#0df', '#0fa', '#2fd'];
-                    const _wspr = _wallTraceSprite(Math.abs(Math.floor(obj.x)), WH);
-                    if (_wspr) {
+                    const _wspr = gfxLow ? null : _wallTraceSprite(Math.abs(Math.floor(obj.x)), WH);
+                    if (gfxLow) { /* LOW graphics: no circuit traces on the wall */ }
+                    else if (_wspr) {
                         ctx.save();
                         ctx.globalAlpha = amb;
                         ctx.transform(1, 0.5, 0, 1, WX - 6, WY - 3 - WH - 8);
@@ -4162,6 +4251,7 @@ function render() {
     // Smoke is stored as world anchor (wx,wy) + screen offset (ox,oy) so particles
     // stay fixed to their vent position regardless of camera movement.
     // Iterate backwards so splice doesn't skip elements.
+    if (gfxLow && smoke.length) smoke.length = 0;          // LOW graphics: no smoke
     for (let i=smoke.length-1; i>=0; i--) {
         const sm=smoke[i];
         sm.ox+=sm.vox; sm.oy+=sm.voy; sm.life-=0.025; sm.size+=0.25;
@@ -4175,6 +4265,7 @@ function render() {
 
     // ── FRAGMENTS ──
     // Iterate backwards so splice doesn't skip elements.
+    if (gfxLow && fragments.length) fragments.length = 0;  // …and no debris
     for (let i=fragments.length-1; i>=0; i--) {
         const f=fragments[i];
         f.x+=f.vx; f.y+=f.vy; f.vy+=0.5; f.life-=0.02;
@@ -4291,7 +4382,7 @@ function render() {
 
     // ── OVERLAYS ──
     drawElementEffects();
-    drawSiphonWisps();
+    if (!gfxLow) drawSiphonWisps();
     // The hold line is world geometry, so it draws with the world rather than
     // up with the interface.
     drawHoldLine();
@@ -4299,7 +4390,7 @@ function render() {
     // The power chain over the mending filament: the mending line is incidental,
     // the power is the thing the player is managing.
     drawGeneratorLinks();
-    drawHealPluses();
+    if (!gfxLow) drawHealPluses();
     if (typeof drawGrubCorpses === "function") drawGrubCorpses();
     drawConversionBars();
     if (typeof drawRaidOverlay === "function") drawRaidOverlay();
@@ -4327,6 +4418,45 @@ function render() {
     drawSettingsPanel();
     drawCampMenu();
     updatePreview();
+    perfFrameEnd();
+}
+
+// ── THE PERFORMANCE READOUT (Settings → PERFORMANCE) ──────
+// Measured on the device: frames a second, the game's logic and its drawing
+// per frame (smoothed), the worst frame in the last second, and how much is
+// on the map. The browser's own painting happens after the frame, so a low
+// FPS with small logic and draw times points at the painting, not the game.
+const _perf = { last: 0, fps: 0, logic: 0, draw: 0, worst: 0, shownWorst: 0, winAt: 0, t0: 0, tDraw: 0 };
+function _perfNow() { return (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now(); }
+function perfFrameStart() {
+    const n = _perfNow();
+    if (_perf.last) { const dt = n - _perf.last; if (dt > 0 && dt < 1000) _perf.fps += (1000 / dt - _perf.fps) * 0.05; }
+    _perf.last = n; _perf.t0 = n; _perf.tDraw = 0;
+}
+function perfDrawStart() { _perf.tDraw = _perfNow(); }
+function perfFrameEnd() {
+    const n = _perfNow();
+    if (!_perf.tDraw) _perf.tDraw = n;
+    const L = _perf.tDraw - _perf.t0, D = n - _perf.tDraw;
+    _perf.logic += (L - _perf.logic) * 0.05; _perf.draw += (D - _perf.draw) * 0.05;
+    _perf.worst = Math.max(_perf.worst, L + D);
+    if (n - _perf.winAt > 1000) { _perf.shownWorst = _perf.worst; _perf.worst = 0; _perf.winAt = n; }
+    if (perfReadout) drawPerfReadout();
+}
+function drawPerfReadout() {
+    const lines = [
+        "FPS " + Math.round(_perf.fps) + "   GFX " + (gfxLow ? "LOW" : "HIGH"),
+        "logic " + _perf.logic.toFixed(1) + " ms   draw " + _perf.draw.toFixed(1) + " ms",
+        "worst frame " + _perf.shownWorst.toFixed(0) + " ms",
+        "units " + actors.length + "   pylons " + _pillarCache.length + "   tiles " + world.length,
+    ];
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const x = 8, y = 96, w = 214, h = 12 * lines.length + 10;
+    ctx.fillStyle = "rgba(0,0,0,0.78)"; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = _perf.fps >= 50 ? "#0f8" : _perf.fps >= 30 ? "#fd4" : "#f64"; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.font = "10px monospace"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+    lines.forEach((l, i) => { ctx.fillStyle = i === 0 ? ctx.strokeStyle : "#bfe"; ctx.fillText(l, x + 6, y + 5 + i * 12); });
+    ctx.restore();
 }
 
 // ─────────────────────────────────────────────────────────
@@ -4342,11 +4472,15 @@ function updateTerritory() {
     // every floor tile testing every pylon: it was tiles x pylons (1300 x 160
     // in a late base, every second), the largest single cost in the cache
     // rebuild and a visible hitch once a second.
+    // Number keys (_paKey), not "x,y" strings: ~15,000 strings a rebuild in a
+    // late base were most of the once-a-second hitch.
     const player = new Set(), enemy = new Set();
     const stamp = (set, sx, sy, R) => {
-        const r = Math.ceil(R), x0 = Math.round(sx), y0 = Math.round(sy);
-        for (let x = x0 - r; x <= x0 + r; x++) for (let y = y0 - r; y <= y0 + r; y++)
-            if (Math.hypot(sx - x, sy - y) <= R) set.add(x + "," + y);
+        const r = Math.ceil(R), x0 = Math.round(sx), y0 = Math.round(sy), R2 = R * R;
+        for (let x = x0 - r; x <= x0 + r; x++) for (let y = y0 - r; y <= y0 + r; y++) {
+            const dx = sx - x, dy = sy - y;
+            if (dx * dx + dy * dy <= R2) set.add(_paKey(x, y));
+        }
     };
     for (const p of _pillarCache) if (p.pillarTeam === 'green') stamp(player, p.x, p.y, 3);
     for (const n of capturedNodes) stamp(player, n.x, n.y, 3);
@@ -4354,7 +4488,7 @@ function updateTerritory() {
     for (const st of signalTowers) if (!st.captured) stamp(enemy, st.x, st.y, 4);
     for (const t of world) {
         if (t.type !== 'floor') continue;
-        const k = t.x + "," + t.y, isPlayer = player.has(k), isEnemy = enemy.has(k);
+        const k = _paKey(t.x, t.y), isPlayer = player.has(k), isEnemy = enemy.has(k);
         t.territory = isPlayer && isEnemy ? 'contested' : isPlayer ? 'player' : isEnemy ? 'enemy' : null;
     }
     _territoryVer++;   // the floor's front-line edges are worked out again (render)
@@ -4397,7 +4531,7 @@ function updateCaptureProgress() {
         t.capturingFollowers = onTile;
 
         // Halt if an enemy is within 1.5 tiles
-        const interrupted = actors.some(a =>
+        const interrupted = unitsNear(t.x, 1.5).some(a =>
             !a.dead &&
             (a.team === 'red' || (a instanceof Predator && a.team !== 'green' && !a.isClone)) &&
             Math.hypot(a.x - t.x, a.y - t.y) < 1.5
@@ -4450,9 +4584,14 @@ function applySignalTowerBuff() {
 //  NETWORK STATUS HUD
 //  Shows active element networks, their tier, and integrity
 // ─────────────────────────────────────────────────────────
+let _hudPw = null, _hudPwAt = -Infinity;
 function drawNetworkStatusHUD() {
     const activeEls = ELEMENTS.filter(e => (networkStrength[e.id]||0) > 0);
-    const pw = powerStatus();
+    // The readout is worked out a few times a second, not every frame: it
+    // walks every pylon and battery, and numbers that change 60 times a
+    // second cannot be read anyway.
+    if (!_hudPw || frame - _hudPwAt >= 10 || frame < _hudPwAt) { _hudPw = powerStatus(); _hudPwAt = frame; }
+    const pw = _hudPw;
     // The grid line shows from the first pylon, before any network has formed —
     // it is the thing the player is now budgeting, so it cannot wait for a
     // resonance tier to appear first.

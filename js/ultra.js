@@ -154,7 +154,7 @@ function ultraBlockTick() {
     if (!_ultras.length) return;
     for (const t of _ultras) {
         const U = t._ultra; if (!U) continue;
-        for (const a of actors) if (!a.dead) _ultraPushOut(a, U, false);
+        for (const a of unitsNear(U.cx, 3)) if (!a.dead) _ultraPushOut(a, U, false);
         _ultraPushOut(player, U, true);
     }
 }

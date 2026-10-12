@@ -659,11 +659,13 @@ function handleOverlayPanelTap(tx, ty) {
 // ─────────────────────────────────────────────────────────
 //  SETTINGS PANEL  (canvas-drawn)
 // ─────────────────────────────────────────────────────────
-const _SP_W = 260, _SP_H = 214;
+const _SP_W = 260, _SP_H = 290;
 // Row geometry shared by the draw and tap handlers so they cannot drift apart.
 const _SP_CODEX_Y = 82,  _SP_CODEX_H = 30;
-const _SP_RESET_Y = 122, _SP_RESET_H = 36;
-const _SP_CLOSE_Y = 168, _SP_CLOSE_H = 30;
+const _SP_GFX_Y   = 120, _SP_GFX_H   = 30;   // GRAPHICS: HIGH / LOW
+const _SP_PERF_Y  = 158, _SP_PERF_H  = 30;   // PERFORMANCE readout: ON / OFF
+const _SP_RESET_Y = 198, _SP_RESET_H = 36;
+const _SP_CLOSE_Y = 244, _SP_CLOSE_H = 30;
 
 function drawSettingsPanel() {
     if (!settingsPanelOpen) return;
@@ -704,6 +706,17 @@ function drawSettingsPanel() {
         ctx.fill(); ctx.stroke();
         ctx.fillStyle = "#0c9"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText("PYLON CODEX", px + pw/2, codexY + _SP_CODEX_H/2);
+
+        // ── GRAPHICS and PERFORMANCE toggles ──
+        for (const [y, h, label, on, col] of [[_SP_GFX_Y, _SP_GFX_H, "GRAPHICS: " + (gfxLow ? "LOW" : "HIGH"), gfxLow, "#fd4"],
+                                              [_SP_PERF_Y, _SP_PERF_H, "PERFORMANCE: " + (perfReadout ? "ON" : "OFF"), perfReadout, "#8fd6ff"]]) {
+            ctx.fillStyle = on ? "rgba(30,30,10,0.9)" : "rgba(6,18,22,0.9)";
+            ctx.strokeStyle = on ? col : "#346"; ctx.lineWidth = 1.5;
+            _epRoundRect(px + 20, py + y, pw - 40, h, 6);
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = on ? col : "#8ab"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(label, px + pw/2, py + y + h/2);
+        }
 
         // ── RESET GAME button ──
         const btnY = py + _SP_RESET_Y;
@@ -773,6 +786,8 @@ function _handleSettingsPanelTap(tx, ty) {
             openPylonCodex();
             return true;
         }
+        if (ty >= py + _SP_GFX_Y && ty < py + _SP_GFX_Y + _SP_GFX_H) { toggleGfxLow(); return true; }
+        if (ty >= py + _SP_PERF_Y && ty < py + _SP_PERF_Y + _SP_PERF_H) { togglePerfReadout(); return true; }
         if (ty >= btnY && ty < btnY + _SP_RESET_H) {
             settingsResetConfirm = true;
             return true;

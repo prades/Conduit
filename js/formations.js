@@ -159,7 +159,7 @@ function formationTick() {
         if (F.kind === "firespin") { _fireSpinTick(F, src); continue; }
         if (F.kind === "icegen") { _iceGenTick(F, src, hit); continue; }
         if (F.kind === "toxtower") { _toxTowerTick(F, src, hit); continue; }
-        for (const a of actors) {
+        for (const a of unitsNear(F.wx, BH_RADIUS)) {
             if (!isHostileTarget(a)) continue;
             const dx = F.wx - a.x, dy = F.wy - a.y, d = Math.hypot(dx, dy);
             if (d > BH_RADIUS) continue;
@@ -188,11 +188,13 @@ function _fireSpinOn(F, a, x, y) {
 }
 function _fireSpinTick(F, src) {
     let near = 0;
-    for (const a of actors) if (isHostileTarget(a) && Math.hypot(a.x - F.wx, a.y - F.wy) < FS_HEAT_REACH) near++;
+    // Only the units in the columns round it (unitsNear, helpers.js).
+    const _near = unitsNear(F.wx, Math.max(FS_HEAT_REACH, FS_LEN + FS_HALF + 0.5));
+    for (const a of _near) if (isHostileTarget(a) && Math.hypot(a.x - F.wx, a.y - F.wy) < FS_HEAT_REACH) near++;
     F.s.glow += (Math.min(1, near / 2) - F.s.glow) * 0.06;
     F.s.spin = (F.s.spin + FS_SPIN + FS_SPIN_HOT * F.s.glow) % (Math.PI * 2);
     const arms = fireSpinArms(F), f = typeof frame !== "undefined" ? frame : 0;
-    for (const a of actors) {
+    for (const a of _near) {
         if (!isHostileTarget(a)) continue;
         if (!arms.some(ang => _fireSpinOn(F, ang, a.x, a.y))) continue;
         F.caught.push(a);
@@ -204,7 +206,7 @@ function _fireSpinTick(F, src) {
 
 function _toxTowerTick(F, src, hit) {
     let foes = 0;
-    for (const a of actors) {
+    for (const a of unitsNear(F.wx, TT_RADIUS)) {
         if (a.dead || Math.hypot(a.x - F.wx, a.y - F.wy) > TT_RADIUS) continue;
         if (isHostileTarget(a)) {
             foes++; F.caught.push(a);
@@ -222,7 +224,7 @@ function _toxTowerTick(F, src, hit) {
 function _iceGenTick(F, src, hit) {
     const f = typeof frame !== "undefined" ? frame : 0;
     const pulse = f % ICE_PULSE === 0;
-    for (const a of actors) {
+    for (const a of unitsNear(F.wx, ICE_RADIUS)) {
         if (!isHostileTarget(a) || Math.hypot(a.x - F.wx, a.y - F.wy) > ICE_RADIUS) continue;
         F.caught.push(a);
         if (typeof applySlow === "function") {

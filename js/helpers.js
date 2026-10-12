@@ -76,6 +76,42 @@ function isHostileTarget(a) {
     return isEnemyUnit(a);
 }
 
+// ── UNITS BY COLUMN ───────────────────────────────────────
+// REPORTED: "the game runs pretty slow still." In a late base every structure
+// looped over every unit every frame: ~150 idle turrets x ~80 units was 12,000
+// hostility checks a frame on its own, before the wave pylons, formations,
+// the Ultra footprints and the shield fields did the same. The tunnel runs
+// along x, so units are bucketed by column once per frame and a structure
+// looks only at the columns within its reach.
+//
+// unitsNear(x, r) is a SUPERSET of the live units within r of x (one spare
+// column either side covers anything that moved this frame), so every caller
+// still does its own exact distance test. Rebuilt when the frame or the
+// number of actors changes.
+let _ucols = new Map(), _ucolsFrame = -1, _ucolsLen = -1;
+function _unitColumns() {
+    const f = typeof frame !== "undefined" ? frame : 0;
+    if (_ucolsFrame === f && _ucolsLen === actors.length) return _ucols;
+    _ucols = new Map(); _ucolsFrame = f; _ucolsLen = actors.length;
+    for (let i = 0; i < actors.length; i++) {
+        const a = actors[i];
+        if (!a || a.dead) continue;
+        const k = Math.floor(a.x);
+        const l = _ucols.get(k);
+        if (l) l.push(a); else _ucols.set(k, [a]);
+    }
+    return _ucols;
+}
+function unitsNear(x, r) {
+    const cols = _unitColumns(), out = [];
+    const c0 = Math.floor(x - r) - 1, c1 = Math.floor(x + r) + 1;
+    for (let c = c0; c <= c1; c++) {
+        const l = cols.get(c);
+        if (l) for (let i = 0; i < l.length; i++) if (!l[i].dead) out.push(l[i]);
+    }
+    return out;
+}
+
 function isNeutralBystander(a) {
     return !!(a && a.isNeutralRecruit && a.team === "red");
 }

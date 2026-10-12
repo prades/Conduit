@@ -338,7 +338,8 @@ async function boot() {
                 };
                 // Wave mode is a constant draw, so the legs are lit and drawn.
                 world.forEach(t => { if (t.pillar && !t.isGenerator) { t.attackMode = false; t.waveMode = true; } });
-                try { for (let i = 0; i < 3; i++) render(); } finally { _drawPowerWire = real; }
+                // Cables are laid again at most CABLE_RELAY_FRAMES apart (layAllCablesCached).
+                try { for (let i = 0; i < CABLE_RELAY_FRAMES + 2; i++) render(); } finally { _drawPowerWire = real; }
                 return legs;
             })()`);
         };
@@ -718,7 +719,9 @@ async function boot() {
         // ...and the bead walks the line from the first point to the second.
         const layAt = SRC.game.indexOf('function layCable');
         const layBody = SRC.game.slice(layAt, SRC.game.indexOf('\n}', layAt));
-        ok(/b\.t \* last/.test(layBody) && /cableTiles\(from, to\)/.test(layBody), 'the charges do not travel from the first end to the last');
+        const placeAt = SRC.game.indexOf('function _placeBeads');
+        const placeBody = SRC.game.slice(placeAt, SRC.game.indexOf('\n}', placeAt));
+        ok(/_placeBeads\(tiles,/.test(layBody) && /b\.t \* last/.test(placeBody) && /cableTiles\(from, to\)/.test(layBody), 'the charges do not travel from the first end to the last');
     });
 
     check('a busier wire carries more charges and more light', () => {

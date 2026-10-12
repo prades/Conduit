@@ -698,6 +698,8 @@ function batteryPay(t, amount) {
 // its nest grid — only out of what a nest holds above BATTERY_NEST_FLOOR — and
 // stores BATTERY_CHARGE_GAIN times that.
 function batteryChargeTick() {
+    // Each grid's members once per tick, not once per battery on it.
+    const grids = new Map();
     for (const b of _batteryList) {
         if (!_liveBattery(b)) continue;
         const c = batteryCharge(b);
@@ -706,7 +708,9 @@ function batteryChargeTick() {
         if (!src) continue;
         const want = Math.min(BATTERY_CHARGE_RATE, (BATTERY_CAPACITY - c) / BATTERY_CHARGE_GAIN);
         let paid = null;
-        for (const n of gridMembers(src)) {
+        let members = grids.get(src);
+        if (!members) { members = gridMembers(src); grids.set(src, members); }
+        for (const n of members) {
             if (nestEnergy(n) - want >= BATTERY_NEST_FLOOR * nestEnergyMax(n)) { n.nestEnergy -= want; paid = n; break; }
         }
         if (!paid) continue;

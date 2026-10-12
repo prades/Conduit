@@ -302,6 +302,7 @@ function infestTick(pred) {
     // In contact — work on it.
     if (typeof faceToward === "function") faceToward(pred, t.x, t.y, 0.2);
     t.converting = true;
+    _convertingTiles.add(t);
     t.convertProgress = (t.convertProgress || 0) + INFEST_RATE * (pred._infestPace || 1);
     t._convertFrame = frame;
     if (t.convertProgress >= 1) convertPylonToRed(t, pred);
@@ -310,9 +311,20 @@ function infestTick(pred) {
 
 // Conversion is not a ratchet: the moment nobody is working on a pylon it
 // recovers, so interrupting a predator actually saves the pylon.
+// The pylons being worked on, so the decay and the bars do not walk the world
+// every frame looking for them.
+// A pylon can also arrive mid-conversion from a save, or be set by hand, so
+// the world is still swept for them — once a second instead of every frame.
+const _convertingTiles = new Set();
+let _convSweepAt = -Infinity;
 function decayConversions() {
-    for (const t of world) {
-        if (!t.converting) continue;
+    const f = typeof frame !== "undefined" ? frame : 0;
+    if (f - _convSweepAt >= 60 || f < _convSweepAt) {
+        _convSweepAt = f;
+        for (const t of world) if (t.converting) _convertingTiles.add(t);
+    }
+    for (const t of _convertingTiles) {
+        if (!t.converting) { _convertingTiles.delete(t); continue; }
         if (t._convertFrame === frame) continue;   // still being worked on
         t.convertProgress = (t.convertProgress || 0) - INFEST_DECAY;
         if (t.convertProgress <= 0) { t.convertProgress = 0; t.converting = false; }
@@ -375,7 +387,7 @@ function _infestToScreen(wx, wy) {
 
 
 function drawConversionBars() {
-    for (const t of world) {
+    for (const t of _convertingTiles) {
         if (!t.converting || !(t.convertProgress > 0)) continue;
         const sx = (t.x - player.visualX - (t.y - player.visualY)) * TILE_W + canvas.width  / 2;
         const sy = (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;

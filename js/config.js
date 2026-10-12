@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-12a";
+const BUILD_VERSION = "2026-10-12b";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -966,6 +966,16 @@ let _siphonInRange = 0;            // units the siphon can reach, for the HUD
 
 // ── SETTINGS PANEL (canvas-drawn) ─────────────────────────
 let settingsPanelOpen    = false;
+// ── GRAPHICS & THE PERFORMANCE READOUT (Settings) ─────────
+// REPORTED: "the game runs pretty slow still." LOW graphics leaves out what is
+// only decoration — the wall circuit traces, the charges moving along cables,
+// smoke and debris, siphon wisps, heal pluses, the wake rings — and nothing
+// the player reads to play. The readout shows FPS and where each frame's time
+// goes, measured on the device itself. Both are remembered.
+let gfxLow = false, perfReadout = false;
+try { gfxLow = localStorage.getItem("conduit_gfx") === "low"; perfReadout = localStorage.getItem("conduit_perf") === "1"; } catch (e) {}
+function toggleGfxLow() { gfxLow = !gfxLow; try { localStorage.setItem("conduit_gfx", gfxLow ? "low" : "high"); } catch (e) {} if (gfxLow) { smoke.length = 0; fragments.length = 0; } }
+function togglePerfReadout() { perfReadout = !perfReadout; try { localStorage.setItem("conduit_perf", perfReadout ? "1" : "0"); } catch (e) {} }
 let settingsResetConfirm = false;   // true = showing "ARE YOU SURE?" step
 
 // ── PYLON BUILD CONFIRMATION ───────────────────────────────
