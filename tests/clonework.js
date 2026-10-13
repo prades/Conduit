@@ -133,6 +133,51 @@ async function boot(store) {
         ok(r.held === 2 && r.dropped === 2, JSON.stringify(r));
     });
 
+    group('ANT: BUILDER');
+
+    const antBoard = async (setup) => {
+        const runA = await boot({ tubecrawler_seed: '305419896' });
+        return runA(`(function(){
+            actors.length = 0; followers.length = 0; shardCount = 999;
+            const home = world.find(t => isHomePortal(t)), X = home.x + 4;
+            const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
+            const ant = makeClone('ant', 'striker', X, 2);
+            ${setup}
+        })()`);
+    };
+    await check('THE ASK: it speeds up a pylon under construction', async () => {
+        const r = await antBoard(`
+            const t = T(X + 2, 1); t.pillar = true; t.pillarTeam = 'green'; t.constructing = true; t.constructProgress = 0; t.health = 0; t.maxHealth = 80;
+            toggleCloneDuty(ant);
+            for (let f = 0; f < 200; f++) { frame++; updateNPC(ant); }
+            return { p: t.constructProgress, label: cloneDutyLabel(ant) };`);
+        ok(r.label === 'WORKER: BUILD', r.label);
+        ok(r.p > 0.5, 'construction barely moved: ' + JSON.stringify(r));
+    });
+    await check('THE ASK: it repairs a damaged pylon, back to full', async () => {
+        const r = await antBoard(`
+            _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), T(X + 3, 1), 'attack');
+            const t = T(X + 3, 1); t.health = Math.round(t.maxHealth * 0.3);
+            toggleCloneDuty(ant);
+            for (let f = 0; f < 600; f++) { frame++; updateNPC(ant); }
+            return { h: t.health, m: t.maxHealth };`);
+        ok(r.h === r.m, 'not repaired to full: ' + JSON.stringify(r));
+    });
+    await check('it rebuilds a wrecked pylon, faster than a core worker', async () => {
+        const r = await antBoard(`
+            _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), T(X + 3, 1), 'attack');
+            const t = T(X + 3, 1); t.destroyed = true; t.health = 0;
+            ant.x = t.x; ant.y = t.y + 0.4;   // beside it: the rebuild is timed, not the walk
+            toggleCloneDuty(ant);
+            let f = 0; for (; f < 1500 && t.destroyed; f++) { frame++; updateNPC(ant); }
+            return { back: !t.destroyed, frames: f, coreFrames: Math.ceil(1 / PYLON_REPAIR_RATE) };`);
+        ok(r.back && r.frames < r.coreFrames, JSON.stringify(r));
+    });
+    await check('with nothing to build or mend it fights like any clone', async () => {
+        const r = await antBoard(`toggleCloneDuty(ant); return CLONE_JOBS.ant.tick(ant);`);
+        ok(r === false, 'it held the frame with no work');
+    });
+
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
 })();

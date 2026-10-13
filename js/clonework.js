@@ -125,3 +125,88 @@ function renderCloneJobsIndex() {
         '<div class="ctrl-row cm-dim">Long-press a clone: <strong>TO WORK</strong> puts it on its species&rsquo; job, <strong>TO LINE</strong> brings it back. A species with no job yet says <strong>NO JOB YET</strong>.</div>';
 }
 try { renderCloneJobsIndex(); } catch (e) { /* no DOM (tests) */ }
+
+// ── ANT: BUILDER ──────────────────────────────────────────
+// Asked: "Ant — builder. Repairs damaged pylons and speeds up pylon
+// construction nearby."
+//
+// The first of these within ANT_BUILD_SEEK tiles, in this order:
+//   1. a pylon of yours UNDER CONSTRUCTION — it adds ANT_BUILD_RATE to the
+//      build each frame (a lone follower takes 30 s; with an ant it is a few);
+//      the follower who started it still finishes it and sets its element;
+//   2. a DAMAGED pylon or shield generator of yours — ANT_REPAIR_HP a frame
+//      back, to full;
+//   3. a WRECKED pylon — rebuilt as a core worker would, ANT_REBUILD_MULT x
+//      faster (restoreBrokenPylon, js/mass.js).
+// With none of those it fights like any clone. It looks again every
+// ANT_RESEEK frames, or when the job in hand is done.
+const ANT_BUILD_SEEK   = 12;      // tiles
+const ANT_BUILD_RATE   = 1 / 240; // construction progress a frame (~4 s alone)
+const ANT_REPAIR_HP    = 0.25;    // health a frame (15 a second)
+const ANT_REBUILD_MULT = 2;       // x a core worker's rebuild
+const ANT_RESEEK       = 30;      // frames between looks for new work
+function _antTask(c) {
+    const r2 = ANT_BUILD_SEEK * ANT_BUILD_SEEK;
+    let best = null, bestScore = Infinity;
+    const consider = (t, kind, rank) => {
+        const dx = t.x - c.x, dy = t.y - c.y, d2 = dx * dx + dy * dy;
+        if (d2 > r2) return;
+        const score = rank * 1e4 + d2;
+        if (score < bestScore) { bestScore = score; best = { t, kind }; }
+    };
+    for (const t of world) {
+        if (!t.pillar || t.pillarTeam !== "green") continue;
+        if (t.constructing && (t.constructProgress || 0) < 1) consider(t, "build", 0);
+        else if (t.destroyed) consider(t, "rebuild", 2);
+        else if (t.health > 0 && t.health < t.maxHealth) consider(t, "repair", 1);
+    }
+    return best;
+}
+function _antTaskLive(task) {
+    const t = task && task.t;
+    if (!t || !t.pillar || t.pillarTeam !== "green") return false;
+    if (task.kind === "build")   return !!t.constructing && (t.constructProgress || 0) < 1;
+    if (task.kind === "repair")  return !t.destroyed && t.health > 0 && t.health < t.maxHealth;
+    if (task.kind === "rebuild") return !!t.destroyed;
+    return false;
+}
+CLONE_JOBS.ant = {
+    label: "BUILD",
+    note: "Speeds up pylons under construction, repairs damaged pylons and generators, and rebuilds wrecked ones.",
+    tick(c) {
+        if (typeof world === "undefined") return false;
+        const w = c.cloneWork, f = typeof frame !== "undefined" ? frame : 0;
+        // The job in hand, until it is done; then (and every ANT_RESEEK frames
+        // while idle) look for the next.
+        if (!_antTaskLive(w.task)) {
+            if (w.task) w.lookedAt = -Infinity;   // just finished one: look again now
+            w.task = null;
+            if (f - (w.lookedAt === undefined ? -Infinity : w.lookedAt) >= ANT_RESEEK) { w.task = _antTask(c); w.lookedAt = f; }
+        }
+        const task = w.task;
+        if (!task) return false;   // nothing to build or mend: it fights
+        const t = task.t;
+        const reach = typeof MASS_WORK_RANGE !== "undefined" ? MASS_WORK_RANGE : 0.9;
+        if (Math.hypot(t.x - c.x, t.y - c.y) > reach) { _beetleStep(c, t.x, t.y); return true; }
+        c.state = "idle";
+        const col = "#aa55ff";
+        if (task.kind === "build") {
+            t.constructProgress = Math.min(1, (t.constructProgress || 0) + ANT_BUILD_RATE);
+            if (f % 12 === 0 && typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: col, radius: 0.4, life: 16 });
+        } else if (task.kind === "repair") {
+            t.health = Math.min(t.maxHealth, t.health + ANT_REPAIR_HP);
+            if (f % 12 === 0 && typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: "#7dffb5", radius: 0.35, life: 14 });
+            if (t.health >= t.maxHealth) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: t.x, y: t.y - 1, text: "REPAIRED", color: "#7dffb5", life: 50, vy: -0.06 }); }
+        } else if (task.kind === "rebuild") {
+            t.reconstructing = true;
+            t.reconstructProgress = Math.min(1, (t.reconstructProgress || 0) + (typeof PYLON_REPAIR_RATE !== "undefined" ? PYLON_REPAIR_RATE : 0.006) * ANT_REBUILD_MULT);
+            if (f % 10 === 0 && typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: col, radius: 0.4, life: 18 });
+            if (t.reconstructProgress >= 1 && typeof restoreBrokenPylon === "function") {
+                restoreBrokenPylon(t);
+                if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: t.x, y: t.y - 1, text: "PYLON REBUILT", color: col, life: 60, vy: -0.06 });
+                if (typeof _cacheAge !== "undefined") _cacheAge = -999;
+            }
+        }
+        return true;
+    },
+};
