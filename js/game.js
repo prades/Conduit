@@ -369,13 +369,18 @@ function applyPylonZoneEffects(wavePylons) {
                         }
                         break;
                     }
+                    // FLUX: halved ("the vortex's seem too strong"), and nothing
+                    // too heavy to drag is dragged (vortexPullImmune: beetles,
+                    // bosses) — it still takes the tier III damage.
                     case "flux": {
                         // A predator that has committed to smashing a pylon is no
                         // longer dragged. The pull is stronger than it can walk,
                         // so without this it can never reach the thing it is
                         // trying to break and just orbits the midpoint forever.
-                        if (isEnemy && !a.pylonAggro) {
-                            const pullSpd = (_nTier >= 3 ? 0.28 : _nTier >= 2 ? 0.21 : 0.14) * _seasonBonus;
+                        const _heavy = typeof vortexPullImmune === "function" && vortexPullImmune(a);
+                        if (isEnemy && !a.pylonAggro && _heavy && _nTier >= 3 && frame % 20 === 0) applyDamage(a, Math.round(5*_seasonBonus), null, "flux");
+                        if (isEnemy && !a.pylonAggro && !_heavy) {
+                            const pullSpd = (_nTier >= 3 ? 0.14 : _nTier >= 2 ? 0.105 : 0.07) * _seasonBonus;
                             const dx=midX-a.x, dy=midY-a.y, d=Math.hypot(dx,dy)||1;
                             a.x+=dx/d*pullSpd; a.y+=dy/d*pullSpd;
                             // Tier 3: vortex — pulled enemies take continuous damage
@@ -388,7 +393,8 @@ function applyPylonZoneEffects(wavePylons) {
                                     const _odx=other.x-_ax, _ody=other.y-_ay;
                                     if (Math.abs(_odx)>1.2||Math.abs(_ody)>1.2) return;
                                     const od2 = _odx*_odx+_ody*_ody;
-                                    if (od2 < 1.44 && od2 > 0.0001) { other.x+=dx/d*0.08; other.y+=dy/d*0.08; } // 1.2²=1.44
+                                    if (typeof vortexPullImmune === "function" && vortexPullImmune(other)) return;
+                                    if (od2 < 1.44 && od2 > 0.0001) { other.x+=dx/d*0.04; other.y+=dy/d*0.04; } // 1.2²=1.44 (halved)
                                 });
                             }
                         }
@@ -3581,25 +3587,10 @@ function render() {
 
             // Solo flux pylon — inward-pulling glow ring (only when unpaired)
             // Connection rendering moved to post-draw _wPylonPairs pass (eliminates O(N²) scan)
-            if (obj.pillar&&!obj.destroyed&&obj.waveMode&&obj.attackModeElement==="flux") {
-                if (!_pylonsWithPartner.has(obj)) {
-                    const pulse2=0.4+0.4*Math.sin(frame*0.1);
-                    const r=22+pulse2*8;
-                    ctx.save();
-                    ctx.globalAlpha=0.12+pulse2*0.08; ctx.fillStyle="#6600cc";
-                    
-                    ctx.beginPath(); ctx.arc(px,py-60,r,0,Math.PI*2); ctx.fill();
-                    ctx.shadowBlur=0;
-                    for (let s=0;s<5;s++) {
-                        const phase=frame*0.07+s*(Math.PI*2/5);
-                        const sr=14+Math.sin(phase)*5;
-                        ctx.globalAlpha=0.45+pulse2*0.2; ctx.fillStyle="#8800ff";
-                        ctx.beginPath(); ctx.arc(px+Math.cos(phase)*sr,py-60+Math.sin(phase)*sr*0.5,2,0,Math.PI*2); ctx.fill();
-                    }
-                    ctx.shadowBlur=0;
-                    ctx.restore();
-                }
-            }
+            // (A lone flux wave pylon used to float a little purple vortex over
+            // itself, from before links and the BLACK HOLE had their own look.
+            // REPORTED: "not the black hole on the ground but the mini ones that
+            // were part of the old code should be removed.")
 
             // Pylon under construction (build mode)
             if (obj.pillar&&obj.constructing&&obj.constructProgress<1) {

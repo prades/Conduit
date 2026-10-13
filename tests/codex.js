@@ -208,7 +208,9 @@ check('the support and control tiers all moved up too', () => {
     ok(CODEX.electric.numbers.haste.every((v, i) => v > [1.25, 1.4, 1.6][i]), 'electric haste not buffed at every tier');
     ok(CODEX.core.numbers.gain.every((v, i) => v > [3, 5, 8][i]), 'core shield gain not buffed at every tier');
     ok(CODEX.core.numbers.cap.every((v, i) => v > [20, 35, 50][i]), 'core shield cap not buffed at every tier');
-    ok(CODEX.flux.numbers.pull.every((v, i) => v > [0.10, 0.15, 0.20][i]), 'flux pull not buffed at every tier');
+    // Flux was buffed with these, then halved on purpose: "the vortex's seem
+    // too strong" (0.14/0.21/0.28 → 0.07/0.105/0.14). Pinned as halved.
+    ok(CODEX.flux.numbers.pull.every((v, i) => Math.abs(v - [0.14, 0.21, 0.28][i] / 2) < 1e-9), 'flux pull is not the halved pull: ' + CODEX.flux.numbers.pull);
     ok(CODEX.ice.numbers.slow.every((v, i) => v < [0.35, 0.20, 0.08][i]), 'ice slow not deeper at every tier');
 });
 

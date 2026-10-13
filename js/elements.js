@@ -250,8 +250,11 @@ const ELEMENT_ATTACKS = {
                     if (d2 < 9 && d2 > 0.0001) { // 3²=9, avoid sqrt until we need direction
                         const dist=Math.sqrt(d2);
                         // Velocity-based pull so the motion animates over several frames
-                        a.kbVX = (dx/dist) * 0.12;
-                        a.kbVY = (dy/dist) * 0.12;
+                        // (not on what is too heavy to drag — vortexPullImmune).
+                        if (!(typeof vortexPullImmune === "function" && vortexPullImmune(a))) {
+                            a.kbVX = (dx/dist) * 0.12;
+                            a.kbVY = (dy/dist) * 0.12;
+                        }
                         // Pull and disorient pierce shields
                         if (Math.random() < ELEMENT_PROC_CHANCE.flux) a.disoriented = 90;
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.5, actor, "flux");

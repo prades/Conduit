@@ -112,13 +112,13 @@ const CODEX_ELEMENTS = {
     },
     flux: {
         role: 'CONTROL',
-        summary: 'Drags enemies toward the middle of the link. Use it to pull a wave off your Crystal and bunch it up for something else to hit.',
+        summary: 'Drags enemies toward the middle of the link. Use it to pull a wave off your Crystal and bunch it up for something else to hit. Beetles and bosses are too heavy to drag.',
         tiers: {
             1: 'Steady pull toward the midpoint.',
             2: 'Stronger pull, and dragged enemies drag their neighbours along.',
             3: 'Vortex — strongest pull, plus 5 damage every 0.33s to anything caught.',
         },
-        numbers: { pull: [0.14, 0.21, 0.28] },
+        numbers: { pull: [0.07, 0.105, 0.14] },
     },
     toxic: {
         role: 'DAMAGE + MENDS CLONES',

@@ -49,7 +49,9 @@ const FORM_KINDS = { flux: "blackhole", fire: "firespin", ice: "icegen", toxic: 
 const FORM_TICK        = 30;     // frames between damage ticks
 const FORM_TIER_BONUS  = 0.25;   // + damage per network tier
 const BH_RADIUS        = 2.5;    // tiles: what it entangles
-const BH_PULL          = 0.03;   // tiles a frame at the rim's edge, more nearer in
+// Halved (was 0.03): "the vortex's seem too strong". At this a predator walking
+// hard can creep out of the rim; nearer the core it still cannot.
+const BH_PULL          = 0.015;  // tiles a frame at the rim's edge, more nearer in
 const BH_CORE          = 0.35;   // not pulled closer than this
 const BH_DMG           = 6;      // per tick
 const BH_SLOW          = 0.5;
@@ -166,7 +168,7 @@ function formationTick() {
             F.caught.push(a);
             // Standing in the vortex: drawn over it, not under (drawDepthOf).
             if (d < BH_ON_VORTEX) a._onVortex = frame;
-            if (d > BH_CORE && !a.isMachine) {
+            if (d > BH_CORE && !(typeof vortexPullImmune === "function" ? vortexPullImmune(a) : a.isMachine)) {
                 const step = Math.min(d - BH_CORE, BH_PULL * (0.4 + (1 - d / BH_RADIUS)));
                 a.x += dx / d * step; a.y += dy / d * step;
             }

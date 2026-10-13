@@ -10,6 +10,7 @@ const SUITES = [
     ['clone duties in the HUD', 'cloneduty.js'],
     ['the build window', 'buildmenu.js'],
     ['modules (med bay, force wall, overclock)', 'modules.js'],
+    ['vortex pull: beetles and bosses immune, halved', 'pullimmune.js'],
     ['declared globals',       'globals.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],

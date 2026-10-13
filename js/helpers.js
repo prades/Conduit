@@ -116,6 +116,15 @@ function unitsNear(x, r) {
 // points — no charged mass (drops.js) and no kill toward the night's quota.
 function isNymph(p) { return !!p && p.className === "nymph"; }
 
+// TOO HEAVY TO DRAG. "The vortex's seem too strong … make beetles immune" —
+// and "boss level predators" too. Nothing PULLS these: not a black hole, not a
+// flux link, not a flux follower's singularity. They still take the damage and
+// the slow; they just cannot be dragged in and held. (Machines were never
+// pulled either.)
+function vortexPullImmune(a) {
+    return !!a && (a.speciesName === "beetle" || !!a.isBoss || !!a.isMachine);
+}
+
 function isNeutralBystander(a) {
     return !!(a && a.isNeutralRecruit && a.team === "red");
 }

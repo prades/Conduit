@@ -174,7 +174,8 @@ function buildItemState(it) {
     if (it.tab === "wave" && lv === 3 && !(typeof FORM_KINDS !== "undefined" && FORM_KINDS[it.elId])) return { ok: false, why: "NO FORMATION" };
     if (!buildGridLive(it.kind)) return { ok: false, why: "NO POWER" };
     if (lv === 2 && it.kind !== "battery" && _bmBestTier(it.elId) < (typeof MK2_MIN_TIER !== "undefined" ? MK2_MIN_TIER : 1)) return { ok: false, why: "NEEDS TIER I" };
-    if (lv === 3 && it.tab === "turrets" && _bmBestTier(it.elId) < (typeof ULTRA_MIN_TIER !== "undefined" ? ULTRA_MIN_TIER : 2)) return { ok: false, why: "NEEDS TIER II" };
+    // An Ultra and a formation both need tier II to switch on (ultra.js, formations.js).
+    if (lv === 3 && (it.tab === "turrets" || it.tab === "wave") && _bmBestTier(it.elId) < (typeof ULTRA_MIN_TIER !== "undefined" ? ULTRA_MIN_TIER : 2)) return { ok: false, why: "NEEDS TIER II" };
     return { ok: true };
 }
 function _bmLocked(it) {
@@ -273,8 +274,8 @@ function canBuildAt(t, tool) {
         return { ok: false, why: _bmIsRelayKind(tool.kind) ? "NO HELD NEST IN REACH" : "NO POWER HERE" };
     if (lv === 2 && tool.kind !== "battery" && _bmTierAt(el, t.x, t.y) < (typeof MK2_MIN_TIER !== "undefined" ? MK2_MIN_TIER : 1))
         return { ok: false, why: "MK II NEEDS " + name + " TIER I HERE" };
-    if (lv === 3 && tool.tab === "turrets" && _bmTierAt(el, t.x + 0.5, t.y + 0.5) < (typeof ULTRA_MIN_TIER !== "undefined" ? ULTRA_MIN_TIER : 2))
-        return { ok: false, why: "ULTRA NEEDS " + name + " TIER II HERE" };
+    if (lv === 3 && (tool.tab === "turrets" || tool.tab === "wave") && _bmTierAt(el, t.x + 0.5, t.y + 0.5) < (typeof ULTRA_MIN_TIER !== "undefined" ? ULTRA_MIN_TIER : 2))
+        return { ok: false, why: (tool.tab === "wave" ? "FORMATION" : "ULTRA") + " NEEDS " + name + " TIER II HERE" };
     const cost = buildToolCost(tool);
     if (shardCount < cost) return { ok: false, why: "NEED " + cost + " \u25c6" };
     return { ok: true, why: "\u25c6" + cost };
@@ -410,7 +411,7 @@ function handleBuildMenuTap(x, y) {
         if (!st.ok) {
             _bmSay(it.label + ": " + (st.why === "NO POWER" ? "NO POWER \u2014 BUILD A SHIELD GEN BY A HELD NEST FIRST"
                                      : st.why === "NEEDS TIER I" ? "MK II NEEDS A TIER I NETWORK \u2014 2 LINKED " + it.label + " BATTERIES"
-                                     : st.why === "NEEDS TIER II" ? "ULTRA NEEDS A TIER II NETWORK \u2014 4 LINKED " + it.label + " BATTERIES"
+                                     : st.why === "NEEDS TIER II" ? (it.tab === "wave" ? "FORMATION" : "ULTRA") + " NEEDS A TIER II NETWORK \u2014 4 LINKED " + it.label + " BATTERIES"
                                      : st.why), "#f88");
             if (_bmSame(buildTool, it)) setBuildTool(null);
             return true;

@@ -291,6 +291,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('WAVE level 3 builds a 2×2 formation — not for support elements', () => {
         level('wave', 3);
         same(run(`buildItemState(buildMenuItems('wave').find(i => i.elId === 'electric')).why`), 'NO FORMATION', 'electric formation');
+        // A formation needs tier II of its element: a pod of four toxic batteries first.
+        same(pickEl('wave', 'disruption', 'toxic'), null, 'a toxic formation with no toxic network');
+        level('power', 2); pickEl('power', 'battery', 'toxic'); tapTile(spot('buildTool'), 'mouse'); run('setBuildTool(null);'); level('power', 1);
+        run('_cacheAge = -999; render();');
+        level('wave', 3);
         same(pickEl('wave', 'disruption', 'toxic'), 'disruption:toxic', 'tool');
         const f0 = run('_formations.length');
         const p = spot('buildTool'); ok(p, 'no 2×2 room');
@@ -299,8 +304,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         level('wave', 1);
     });
     check('changing the level puts down a tool that cannot be had at it', () => {
-        level('turrets', 1); pickEl('turrets', 'attack', 'toxic');
-        ok(run('!!buildTool'), 'precondition: toxic turret in hand');
+        // Core: no core batteries anywhere, so no MK II for it (toxic has a pod by now).
+        level('turrets', 1); pickEl('turrets', 'attack', 'core');
+        ok(run('!!buildTool'), 'precondition: core turret in hand');
         level('turrets', 2);
         same(run('buildTool'), null, 'tool after switching to a level it cannot be built at');
         level('turrets', 1);
