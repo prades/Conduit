@@ -11,11 +11,16 @@
 //   - QUIET: daytime, no alarm, and you hold at least one nest. Every
 //     RAID_INTERVAL_MIN..MAX of quiet, each of the (up to) three live enemy
 //     nests nearest your held nests sends out one THIEF.
-//   - A thief walks to your nearest held nest, SIPHONS it for a few seconds
-//     (a beam from the nest's mouth to it), and takes RAID_TAKE shards out of
-//     your count. Hit it before then and it fights like any predator.
-//   - Carrying, it runs for home and does not stop to fight. Kill it on the
-//     way and every shard comes back. Let it in and its nest banks them.
+//   - REPORTED: "the thief should go after batteries and become more powerful
+//     after consuming one. No longer go after nests." A thief walks to your
+//     nearest BATTERY, feeds on it for a few seconds (a beam from the battery
+//     to it) and EATS it: the battery is wrecked and its charge is gone (an
+//     ant clone or a core worker can rebuild it). Each one eaten makes the
+//     thief stronger — RAID_EAT_HP / _POWER / _SPEED / _SIZE, up to
+//     RAID_EAT_MAX — and it goes for the next. Hit it and it fights.
+//   - Full, or with no battery left, it goes home and its nest banks
+//     RAID_EAT_BANK per battery toward the machines. Killed, it drops a
+//     bigger lump of charged mass for every battery it ate.
 //   - A nest with MACHINE_COST banked BUILDS A MACHINE in front of itself:
 //       SENTRY  — a stationary gun that shoots your squad (the first one)
 //       STRIDER — a four-legged walker that marches onto your nearest held
@@ -35,7 +40,15 @@ const RAID_SIPHON_FRAMES   = 240;   // 4s on your nest before it has the shards
 const RAID_TAKE            = 4;     // shards one thief takes …
 const RAID_TAKE_PER_ZONES  = 3;     // … +1 for every this many zones deep its nest is
 const RAID_REACH           = 0.9;
-const RAID_FLEE_SPEED      = 1.15;  // carrying, it runs
+const RAID_FLEE_SPEED      = 1.15;  // carrying, it runs (shards from an older save)
+const RAID_EAT_FRAMES      = 240;   // 4s feeding on a battery before it is eaten
+const RAID_EAT_MAX         = 3;     // batteries one thief eats before it goes home
+const RAID_EAT_HP          = 1.5;   // × its max health per battery eaten (healed to full)
+const RAID_EAT_POWER       = 1.3;   // × its power per battery
+const RAID_EAT_SPEED       = 1.1;   // × its speed per battery
+const RAID_EAT_SIZE        = 1.12;  // × its size per battery
+const RAID_EAT_DROP        = 1.5;   // × the charged mass it leaves when killed, per battery
+const RAID_EAT_BANK        = 5;     // machine stock its nest banks per battery it brings home
 const MACHINE_COST         = 15;    // banked shards per machine
 const MACHINE_HATCH_COST   = 10;    // banked shards per predator once both machines stand
 const MACHINE_ASSEMBLE     = 480;   // 8s to assemble; it can be killed doing it
@@ -70,7 +83,13 @@ function raidQuiet() {
     if (typeof gameState === "undefined" || !gameState.running || gameState.phase !== "day") return false;
     if (typeof alertActive !== "undefined" && alertActive) return false;
     if (typeof tutorialMode !== "undefined" && tutorialMode) return false;
-    return _heldNests().length > 0;
+    // They raid once you hold ground — and have batteries for them to eat.
+    return _heldNests().length > 0 && raidBatteries().length > 0;
+}
+// Your batteries standing: what a thief eats.
+function raidBatteries() {
+    const list = (typeof _pillarCache !== "undefined" && _pillarCache.length) ? _pillarCache : world;
+    return list.filter(t => t.isBattery && t.pillar && !t.destroyed && t.health > 0 && t.pillarTeam === "green");
 }
 // The floor in front of a wall nest's mouth. The vortex is drawn on the wall
 // face a tile along from the nest tile (drawNestWallVortex), so that is where
@@ -94,19 +113,34 @@ function spawnThief(nest) {
     const z = raidZoneOf(nest);
     const p = _spawnPredatorAt(getZoneSpecies(z, gameState.nightNumber || 1), "scout", nest.x, Math.max(0, nest.y + 1));
     if (!p) return null;
-    p.raider = true; p._raidHome = nest; p.stolen = 0; p._raidProgress = 0;
+    p.raider = true; p._raidHome = nest; p.stolen = 0; p._raidProgress = 0; p.batteriesEaten = 0;
     p.huntsPylons = false; p.hauler = false; p.isWanderer = true;
     p._raidTake = RAID_TAKE + Math.floor(z / RAID_TAKE_PER_ZONES);
     return p;
 }
 function _raidTargetFor(p) {
     const t = p._raidTarget;
-    if (t && nestIsPowerSource(t) && !isHomePortal(t)) return t;
+    if (t && t.isBattery && t.pillar && !t.destroyed && t.health > 0 && t.pillarTeam === "green") return t;
     let best = null, bd = Infinity;
-    for (const n of _heldNests()) { const d = Math.hypot(n.x - p.x, n.y - p.y); if (d < bd) { bd = d; best = n; } }
+    for (const b of raidBatteries()) { const d = Math.hypot(b.x - p.x, b.y - p.y); if (d < bd) { bd = d; best = b; } }
     p._raidTarget = best;
     p._raidProgress = 0;
     return best;
+}
+// The thief eats the battery: it is wrecked and its charge is gone, and the
+// thief grows.
+function raidEatBattery(p, b) {
+    b.destroyed = true; b.health = 0; b.charge = 0;
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+    p.batteriesEaten = (p.batteriesEaten || 0) + 1;
+    p.maxHealth = Math.round(p.maxHealth * RAID_EAT_HP); p.health = p.maxHealth;
+    p.power = Math.round((p.power || 1) * RAID_EAT_POWER);
+    p.moveSpeed *= RAID_EAT_SPEED; if (p.baseMoveSpeed) p.baseMoveSpeed *= RAID_EAT_SPEED;
+    if (p.dimensions) { p.dimensions.width *= RAID_EAT_SIZE; p.dimensions.height *= RAID_EAT_SIZE; }
+    p.shardDrop = Math.round((p.shardDrop || 5) * RAID_EAT_DROP);
+    _raidText(b.x, b.y + 1, "BATTERY EATEN \u2014 THE THIEF GROWS (" + p.batteriesEaten + ")", "#ff7a6a", 13);
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: b.x + 0.5, y: b.y + 0.5, color: RAID_COLOR, radius: 0.9, life: 26 });
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 4);
 }
 function _raidHomeFor(p) {
     if (p._raidHome && p._raidHome.nestHealth > 0) return p._raidHome;
@@ -146,29 +180,29 @@ function raidUnitTick(p) {
     }
     // Before it has anything it is an ordinary predator in a fight.
     if (typeof predatorUndisturbed === "function" && !predatorUndisturbed(p)) { p._raidSiphoning = null; return false; }
-    const t = _raidTargetFor(p);
+    // Full, or nothing of yours left to eat: back into its nest, which banks
+    // what it ate toward the machines.
+    const t = (p.batteriesEaten || 0) < RAID_EAT_MAX ? _raidTargetFor(p) : null;
     if (!t) {
-        // Nothing of yours left to rob: back into its nest.
         const home = _raidHomeFor(p);
         if (!home) { p.raider = false; return false; }
         const hm = raidMouth(home);
-        if (_predatorWalk(p, hm.x, hm.y, 0.9) <= RAID_REACH) _raidVanish(p);
+        if (_predatorWalk(p, hm.x, hm.y, 0.9) <= RAID_REACH) {
+            if (p.batteriesEaten > 0) raidBank(home, p.batteriesEaten * RAID_EAT_BANK, p);
+            _raidVanish(p);
+        }
         return true;
     }
-    const tm = raidMouth(t), d = _predatorWalk(p, tm.x, tm.y, 0.9);
+    // Beside the battery, then feeding on it.
+    const d = _predatorWalk(p, t.x + 0.5, t.y + 1.1, 0.9);
     if (d > RAID_REACH) { p._raidSiphoning = null; return true; }
-    // SIPHONING
-    if (!p._raidSiphoning) _raidBanner("⚠ A THIEF IS DRAINING YOUR ZONE " + raidZoneOf(t) + " NEST");
+    if (!p._raidSiphoning) _raidBanner("\u26a0 A THIEF IS EATING YOUR " + (t.attackModeElement || "").toUpperCase() + " BATTERY");
     p._raidSiphoning = t;
     if (typeof faceToward === "function") faceToward(p, t.x, t.y, 0.2);
     p._raidProgress = (p._raidProgress || 0) + 1;
-    if (p._raidProgress < RAID_SIPHON_FRAMES) return true;
-    const take = Math.min(p._raidTake || RAID_TAKE, Math.max(0, Math.floor(shardCount)));
-    shardCount -= take;
-    if (typeof saveShards === "function") saveShards();
-    p.stolen = take; p._raidSiphoning = null; p._raidProgress = 0;
-    _raidText(t.x, t.y + 1, take > 0 ? "−" + take + " ◆ STOLEN" : "NOTHING TO STEAL", "#ff7a6a", 13);
-    if (take === 0) { p.stolen = 0; p._raidTarget = null; p.raider = false; }   // empty-handed, it just wanders
+    if (p._raidProgress < RAID_EAT_FRAMES) return true;
+    p._raidSiphoning = null; p._raidProgress = 0; p._raidTarget = null;
+    raidEatBattery(p, t);
     return true;
 }
 
@@ -545,7 +579,8 @@ function drawThiefTag(p, px, py) {
         ctx.beginPath(); ctx.moveTo(px, y - 6); ctx.lineTo(px + 5, y); ctx.lineTo(px, y + 6); ctx.lineTo(px - 5, y); ctx.closePath(); ctx.fill();
         ctx.fillText(p.stolen + " ◆", px, y - 12);
     } else {
-        ctx.fillStyle = RAID_COLOR; ctx.fillText("THIEF", px, y);
+        // How many batteries it has eaten: how much stronger it is.
+        ctx.fillStyle = RAID_COLOR; ctx.fillText(p.batteriesEaten > 0 ? "THIEF \u26a1" + p.batteriesEaten : "THIEF", px, y);
     }
     ctx.restore();
 }
@@ -560,18 +595,20 @@ function drawRaidOverlay() {
     for (const a of actors) {
         const t = a._raidSiphoning;
         if (!t || a.dead) continue;
-        // From the vortex on the wall (drawNestWallVortex's centre) to the drinker.
+        // From the vortex on the wall (drawNestWallVortex's centre) to the
+        // drinker — or, for a thief at a battery, from the battery's top.
         const [tx, ty] = scr(t.x, t.y), [ux, uy] = scr(a.x, a.y);
-        const nx = tx + TILE_W, ny = ty + 30 - (typeof NEST_WALL_H === "number" ? NEST_WALL_H : 110) / 2;
+        const bat = !!t.isBattery;
+        const nx = bat ? tx : tx + TILE_W, ny = bat ? ty + TILE_H - 40 : ty + 30 - (typeof NEST_WALL_H === "number" ? NEST_WALL_H : 110) / 2;
         if (Math.max(nx, ux) < -40 || Math.min(nx, ux) > W + 40) continue;
         ctx.strokeStyle = RAID_COLOR; ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.lineDashOffset = -((frame || 0) % 11);
         ctx.beginPath(); ctx.moveTo(nx, ny); ctx.lineTo(ux, uy - (a.isMachine ? 40 * MACHINE_DRAW_SCALE : 18)); ctx.stroke();
         ctx.setLineDash([]);
         if (a.raider) {
-            const f = Math.min(1, (a._raidProgress || 0) / RAID_SIPHON_FRAMES), w = 40, bx = nx - w / 2, by = ny - 58;
+            const f = Math.min(1, (a._raidProgress || 0) / (bat ? RAID_EAT_FRAMES : RAID_SIPHON_FRAMES)), w = 40, bx = nx - w / 2, by = ny - (bat ? 22 : 58);
             ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, by - 1, w + 2, 6);
             ctx.fillStyle = RAID_COLOR; ctx.fillRect(bx, by, w * f, 4);
-            ctx.font = "bold 8px monospace"; ctx.textAlign = "center"; ctx.fillText("SIPHONING", nx, by - 4);
+            ctx.font = "bold 8px monospace"; ctx.textAlign = "center"; ctx.fillText(bat ? "EATING" : "SIPHONING", nx, by - 4);
         }
     }
     ctx.restore();

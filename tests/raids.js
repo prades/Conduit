@@ -35,6 +35,12 @@ function ok(c, m) { if (!c) throw new Error(m); }
         shardCount = 100;
         globalThis.__held = world.find(t => t.nest && getZoneIndex(t.x) === 1);
         globalThis.__n2 = world.find(t => t.nest && getZoneIndex(t.x) === 2);
+        // Two charged batteries of yours in zone 1: what a thief eats now.
+        world.forEach(t => { if (t.pillar) { t.pillar = false; t.isBattery = false; t.destroyed = false; } });
+        const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
+        globalThis.__b1 = T(__held.x + 2, 2); globalThis.__b2 = T(__held.x + 4, 2);
+        for (const b of [__b1, __b2]) { _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), b, 'battery'); b.charge = 80; }
+        _pillarCache = world.filter(t => t.pillar && !t.destroyed && t.health > 0);
         ${extra || ''}
     })()`);
     const step = n => run(`for (let i = 0; i < ${n}; i++) { frame++; actors.forEach(a => { if (!a.dead && a.update) a.update(); }); raidTick(); actors = actors.filter(a => !a.dead); }`);
@@ -56,49 +62,66 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(run('raidThieves().length') === 0, 'a raid during an alarm');
         reset('__held.nestHealth = __held.nestMaxHealth; _nestCache = world.filter(t => t.nest);'); run('_raidTimer = 0'); step(400);
         ok(run('raidThieves().length') === 0, 'a raid with no nest of yours to rob');
+        reset('__b1.pillar = false; __b2.pillar = false; _pillarCache = [];'); run('_raidTimer = 0'); step(400);
+        ok(run('raidThieves().length') === 0, 'a raid with no battery to eat');
         run('alertActive = false');
     });
 
-    group('THE THEFT');
+    group('THE BATTERY EATER');
 
-    // One thief from zone 2, stood next to your nest.
+    // One thief from zone 2, stood beside your first battery.
     const thief = (near) => run(`(function(){ const p = spawnThief(__n2); p._infestSettle = 0;
-        ${near ? 'p.x = __held.x + 0.3; p.y = 0;' : ''} globalThis.__p = p; return true; })()`);
+        ${near ? 'p.x = __b1.x + 0.5; p.y = __b1.y + 1.1;' : ''} globalThis.__p = p; return true; })()`);
 
-    await check('THE ASK: it siphons your nest, then your shard count drops by what it carries', () => {
+    await check('THE ASK: it goes after your battery, not your nest, and eats it', () => {
         reset(); thief(true);
-        step(run('RAID_SIPHON_FRAMES') - 5);
-        ok(run('shardCount') === 100, 'took shards before the siphon finished');
-        ok(run('__p._raidSiphoning === __held'), 'not siphoning the held nest');
+        const s0 = run('shardCount');
+        step(run('RAID_EAT_FRAMES') - 5);
+        ok(run('__p._raidSiphoning === __b1'), 'it is not feeding on the battery');
+        ok(!run('__b1.destroyed'), 'the battery went before it had finished');
+        ok(run('shardCount') === s0, 'it took shards');
         step(10);
-        const r = run('({ count: shardCount, stolen: __p.stolen, take: __p._raidTake })');
-        ok(r.stolen === r.take && r.count === 100 - r.take, JSON.stringify(r));
+        const r = run('({ wrecked: __b1.destroyed, charge: __b1.charge, eaten: __p.batteriesEaten })');
+        ok(r.wrecked && r.charge === 0 && r.eaten === 1, JSON.stringify(r));
+    });
+    await check('THE ASK: eating one makes it more powerful', () => {
+        reset(); thief(true);
+        const a = run('({ hp: __p.maxHealth, pw: __p.power, sp: __p.moveSpeed, w: __p.dimensions.width })');
+        step(run('RAID_EAT_FRAMES') + 5);
+        const b = run('({ hp: __p.maxHealth, pw: __p.power, sp: __p.moveSpeed, w: __p.dimensions.width, full: __p.health === __p.maxHealth })');
+        ok(b.hp > a.hp * 1.4 && b.pw > a.pw && b.sp > a.sp && b.w > a.w, JSON.stringify({ a, b }));
+        ok(b.full, 'it was not healed by it');
+    });
+    await check('THE ASK: it no longer goes after nests', () => {
+        reset(); thief(false);
+        let nest = false;
+        for (let i = 0; i < 40; i++) { step(30); if (run('__p._raidSiphoning && __p._raidSiphoning.nest')) nest = true; }
+        ok(!nest, 'it fed on a nest');
+        ok(!/DRAINING YOUR ZONE/.test(rd('js/raids.js').slice(rd('js/raids.js').indexOf('function raidUnitTick'), rd('js/raids.js').indexOf('function raidRecover'))), 'the thief still drains nests');
     });
     await check('it walks there first, from its own nest', () => {
         reset(); thief(false);
-        const d0 = run('Math.abs(__p.x - __held.x)'); step(300);
-        ok(run('Math.abs(__p.x - __held.x)') < d0 - 2, 'it did not head for your nest');
+        const d0 = run('Math.abs(__p.x - __b1.x)'); step(300);
+        ok(run('Math.abs(__p.x - __b1.x)') < d0 - 2, 'it did not head for your battery');
     });
-    await check('carrying, it runs home and banks them in its nest; that is not a kill', () => {
+    await check('it goes on to the next battery, then home: its nest banks what it ate; that is not a kill', () => {
         reset(); thief(true);
-        step(run('RAID_SIPHON_FRAMES') + 5);
-        const take = run('__p.stolen');
-        run('__p.x = __n2.x + 0.4; __p.y = 0;'); step(5);
-        const r = run('({ stock: __n2.stolenStock, gone: !actors.includes(__p), dead: __p.dead, killed: !__p.killCounted })');
-        ok(r.stock === take, 'nest stock ' + r.stock + ', carried ' + take);
+        step(run('RAID_EAT_FRAMES') + 5);
+        run('__p.x = __b2.x + 0.5; __p.y = __b2.y + 1.1;');
+        step(run('RAID_EAT_FRAMES') + 5);
+        ok(run('__b2.destroyed && __p.batteriesEaten === 2'), 'it did not eat the second: ' + run('__p.batteriesEaten'));
+        run('__p.x = raidMouth(__p._raidHome).x; __p.y = raidMouth(__p._raidHome).y;'); step(5);
+        const r = run('({ stock: __p._raidHome.stolenStock + (nestMachines(__p._raidHome).length * MACHINE_COST), gone: !actors.includes(__p), bank: 2 * RAID_EAT_BANK })');
         ok(r.gone, 'the thief is still on the map');
+        ok(r.stock === r.bank, 'its nest banked ' + r.stock + ', not ' + r.bank);
     });
-    await check('carrying, a fight does not stop it', () => {
-        reset(); thief(true); step(run('RAID_SIPHON_FRAMES') + 5);
-        run('__p.provoked = true; __p.lastAttacker = player;');
-        const x0 = run('__p.x'); step(60);
-        ok(run('__p.x') > x0 + 0.5, 'it stopped running home');
-    });
-    await check('THE ASK: kill it with the loot and every shard comes back', () => {
-        reset(); thief(true); step(run('RAID_SIPHON_FRAMES') + 5);
-        const before = run('shardCount'), take = run('__p.stolen');
-        run('__p.health = 0; __p.dead = true; onPredatorDeath(__p);');
-        ok(run('shardCount') === before + take, `had ${before}, carried ${take}, now ${run('shardCount')}`);
+    await check('THE ASK: kill it after it has eaten and it drops a bigger lump of charged mass', () => {
+        reset(); thief(true);
+        const plain = run('Math.max(1, Math.round((__p.shardDrop || 5) * MASS_VALUE_SCALE))');
+        step(run('RAID_EAT_FRAMES') + 5);
+        run('chargedMass.length = 0; __p.health = 0; __p.dead = true; onPredatorDeath(__p);');
+        const v = run('chargedMass.length ? chargedMass[0].value : 0');
+        ok(v > plain, 'it dropped ' + v + ' (an uneaten thief drops ' + plain + ')');
     });
 
     group('THE MACHINES');
@@ -201,7 +224,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     });
     await check('the docs describe thieves and machines', () => {
         const html = rd('game.html');
-        ok(/SHARD THIEVES/.test(html) && /SENTRY/.test(html) && /STRIDER/.test(html), 'not in the docs');
+        ok(/BATTERY THIEVES/.test(html) && /eats it/.test(html) && !/SHARD THIEVES/.test(html) && /SENTRY/.test(html) && /STRIDER/.test(html), 'not in the docs');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
