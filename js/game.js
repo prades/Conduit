@@ -2507,7 +2507,7 @@ function render() {
     // Pylons were only written at wave transitions, so anything built or
     // upgraded mid-day was lost on a refresh. Every 5s is cheap next to the
     // rest of the frame and keeps a reload close to where the player was.
-    if (frame % 300 === 0) { saveSession(); savePylons(); saveNests(); }
+    if (frame % 300 === 0) { saveSession(); savePylons(); saveNests(); if (typeof saveFollowerRoster === "function") saveFollowerRoster(); }
 
     // ── CLEAR SCREEN + CIRCUIT BOARD BACKGROUND ──
     // One opaque stamp: the faint circuit board is composited onto the black
@@ -2774,7 +2774,7 @@ function render() {
             // worth three times as much in a fight and cost shards and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
-            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid });
+            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid, duty:a.duty === "worker" ? "worker" : null });
         }
         // Progression counts EVERY enemy killed, wanderers included — it is a
         // record of what you have fought, not of wave quotas. The wave counter
@@ -4439,6 +4439,9 @@ function render() {
                 };
                 // The same person back — same uid — but the bond did not survive.
                 if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid });
+                // A worker comes back a worker (a toxic medic used to come back
+                // a fighter, and stop tending its clone, after every death).
+                if (entry.duty === "worker" && (typeof canWorkMass !== "function" || canWorkMass(npc))) npc.duty = "worker";
                 actors.push(npc); followers.push(npc);
                 if(!followerByElement[rElement]) followerByElement[rElement]=[];
                 followerByElement[rElement].push(npc);

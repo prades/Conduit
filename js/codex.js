@@ -365,7 +365,10 @@ function renderWorkCrewIndex() {
     // Stated per second, which is the unit the player experiences; the
     // constant is per frame.
     const mendRate = (typeof MEND_RATE === 'number')
-        ? (MEND_RATE * 60).toFixed(1).replace(/\.0$/, '') : '4';
+        ? (MEND_RATE * 60).toFixed(1).replace(/\.0$/, '') : '9';
+    const mendPct = (typeof MEND_PCT === 'number')
+        ? (MEND_PCT * 6000).toFixed(1).replace(/\.0$/, '') : '1.5';
+    const mendLine = (typeof MEND_FIGHTER_SHARE === 'number') ? Math.round(MEND_FIGHTER_SHARE * 100) : 50;
     // Read off the list rather than spelled out, so adding a fifth worker
     // element cannot leave this page naming four.
     const whoCanWork = (typeof workerElements === 'function' ? workerElements() : [])
@@ -415,12 +418,13 @@ function renderWorkCrewIndex() {
         'in place, exactly as it was. Nothing else can.</div>' +
         '<div class="cm-ability"><strong>Tend a clone — TOXIC:</strong> a medic for the most ' +
         'expensive unit you own. It picks a clone, <strong>walks with it</strong>, and mends it at ' +
-        '<span class="cm-stat">' + mendRate + ' HP a second</span> while it fights. It does ' +
+        '<span class="cm-stat">' + mendRate + ' HP a second</span> plus <span class="cm-stat">' + mendPct + '% of its max health</span> a second while it fights. It does ' +
         '<strong>no damage at all</strong> — what it buys you is a clone that keeps standing, and ' +
         'a clone carries <span class="cm-stat">3&times;</span> the health of what it was cloned ' +
         'from, so there is a lot of bar to top up. A HURT clone is chosen first; with none hurt it ' +
         'escorts the nearest one anyway, because a medic that only turns up once you are bleeding ' +
-        'is always too late.</div>' +
+        'is always too late. A toxic follower left <strong>on the line</strong> still mends a hurt clone it is standing next to, ' +
+        'at <span class="cm-stat">' + mendLine + '%</span> of that rate. Duty is kept through waves, deaths and refreshes.</div>' +
         '<div class="cm-ability"><strong>Set a block — ICE:</strong> freezes where it stands into a ' +
         'solid block <strong>one tile wide</strong>, snapped to that tile. Everything is pushed out of it ' +
         '— <strong>enemies, your own squad and you</strong>, because a block your side can stand ' +

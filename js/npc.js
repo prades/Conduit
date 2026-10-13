@@ -28,6 +28,8 @@ function updateRTSNPC(actor) {
     // An explicit order from the player still wins — followerWorkTick defers
     // when actor.job is set.
     if (actor.isFollower && actor.duty === "worker" && followerWorkTick(actor)) return;
+    // A toxic follower on the line mends a hurt clone beside it (js/mass.js).
+    if (actor.isFollower && actor.element === "toxic" && actor.duty !== "worker" && typeof toxicFighterMend === "function") toxicFighterMend(actor);
 
     if (actor.combatTrait) { const t=COMBAT_TRAITS[actor.combatTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
     if (actor.naturalTrait){ const t=NATURAL_TRAITS[actor.naturalTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }

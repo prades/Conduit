@@ -6,6 +6,7 @@ const SUITES = [
     ['load order + render order','loadorder.js'],
     ['performance + culling',  'perf.js'],
     ['the clock (game speed)', 'clock.js'],
+    ['toxic mends the clones', 'mend.js'],
     ['declared globals',       'globals.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],

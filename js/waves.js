@@ -339,6 +339,38 @@ function closeMidGameShop() {
     gameState.running = true;
 }
 
+// THE SQUAD AS SAVED. Every follower standing, walking home, or waiting to
+// respawn — and what DUTY it is on.
+//
+// REPORTED: "The toxic followers will absolutely not heal the clones." A toxic
+// follower only mends on WORKER duty, and the duty was never saved: every wave
+// change and every refresh put the whole crew back on the line, where a toxic
+// follower fights instead of tending. And this roster was only written at a
+// wave change, so a follower gained since then was gone after a refresh
+// altogether. The autosave writes it now too (saveFollowerRoster).
+function followerRosterSnapshot() {
+    const armyNow = [
+        ...followers.filter(a=>!a.dead&&!a.sacrificed&&a.isFollower&&a.personality),
+        ...actors.filter(a=>a.team==="green"&&a.returningToCrystal&&!a.dead&&!a.sacrificed&&a.personality&&!followers.includes(a)),
+        ...respawnQueue.filter(e=>!e.isClone&&!e.sacrificed&&e.personality)
+    ];
+    return armyNow.map(a=>({
+        element:     a.element     || "fire",
+        personality: a.personality,
+        combatTrait: a.combatTrait,
+        naturalTrait:a.naturalTrait,
+        perk:        a.perk,
+        stats:       a.stats,
+        role:        a.role,
+        uid:         a.uid || null,
+        partnerUid:  a.partnerUid || null,
+        duty:        a.duty === "worker" ? "worker" : null
+    }));
+}
+function saveFollowerRoster() {
+    try { localStorage.setItem("tubecrawler_followers", JSON.stringify(followerRosterSnapshot())); } catch (e) {}
+}
+
 function spawnFollowerFromSave(entry) {
     const personality = entry.personality || PERSONALITY_KEYS[Math.floor(Math.random()*PERSONALITY_KEYS.length)];
     const stats = entry.stats || applyPersonality(personality);
@@ -359,6 +391,8 @@ function spawnFollowerFromSave(entry) {
         combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk
     };
     if (typeof bondRestoreFields === "function") bondRestoreFields(npc, entry);
+    // Back on the duty it was on (a worker stays a worker).
+    if (entry.duty === "worker" && (typeof canWorkMass !== "function" || canWorkMass(npc))) npc.duty = "worker";
     actors.push(npc); followers.push(npc);
     if(!followerByElement[npc.element]) followerByElement[npc.element]=[];
     followerByElement[npc.element].push(npc);
@@ -406,26 +440,11 @@ function nextWave() {
     resetTransientState();
 
     // ── Snapshot army before wiping — done synchronously while data is live ──
-    const armyNow = [
-        ...followers.filter(a=>!a.dead&&!a.sacrificed&&a.isFollower&&a.personality),
-        ...actors.filter(a=>a.team==="green"&&a.returningToCrystal&&!a.dead&&!a.sacrificed&&a.personality),
-        ...respawnQueue.filter(e=>!e.isClone&&!e.sacrificed&&e.personality)
-    ];
+    const rosterToSave = followerRosterSnapshot();
     const cloneArmy = [
         ...actors.filter(a=>a.isClone&&a.team==="green"&&!a.dead&&!a.sacrificed),
         ...respawnQueue.filter(e=>e.isClone)
     ];
-    const rosterToSave = armyNow.map(a=>({
-        element:     a.element     || "fire",
-        personality: a.personality,
-        combatTrait: a.combatTrait,
-        naturalTrait:a.naturalTrait,
-        perk:        a.perk,
-        stats:       a.stats,
-        role:        a.role,
-        uid:         a.uid || null,
-        partnerUid:  a.partnerUid || null
-    }));
 
     // ── Close overlay immediately so the browser can repaint ──
     document.getElementById("overlay").classList.remove("active");

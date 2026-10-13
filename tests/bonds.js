@@ -48,7 +48,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.n === 20 && r.all, JSON.stringify(r));
     });
     await check('a respawned follower comes back with the same uid', () => {
-        ok(/hpStat:Math\.max\(1,newHp\), uid:a\.uid \}/.test(rd('js/game.js')), 'the respawn queue does not carry the uid');
+        ok(/hpStat:Math\.max\(1,newHp\), uid:a\.uid[ ,]/.test(rd('js/game.js')), 'the respawn queue does not carry the uid');
         ok(/bondRestoreFields\(npc, \{ uid: entry\.uid \}\)/.test(rd('js/game.js')), 'the respawn does not restore it');
     });
     await check('uid and partner survive the wave-transition save', () => {

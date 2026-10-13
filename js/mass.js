@@ -78,7 +78,10 @@ const PYLON_REPAIR_RATE = 0.006;
 // mending takes MEND_GUARD of each hit (applyDamage).
 const MEND_RANGE        = 2.0;   // how close it has to be to mend at all
 const MEND_ESCORT       = 1.1;   // how close it tries to stay while escorting
-const MEND_RATE         = 0.15;  // HP per frame → 9/s (was 0.07)
+const MEND_RATE         = 0.15;  // HP per frame → 9/s (was 0.07) …
+const MEND_PCT          = 0.015 / 60;   // … plus 1.5% of the clone's max HP a second.
+                                // A flat 9/s was nothing on a 720 HP beetle clone.
+const MEND_FIGHTER_SHARE = 0.5; // a toxic follower on the LINE mends a clone it is next to, at this share
 const MEND_SPLASH       = 1.8;   // tiles: other units round the clone mended too …
 const MEND_SPLASH_SHARE = 0.5;   // … at this share of the rate
 const MEND_GUARD        = 0.8;   // the mended clone takes this much of each hit
@@ -362,13 +365,35 @@ function _nearestCloneToTend(actor) {
 
 // One frame of mending. Returns how much health went in, so a caller can tell
 // "standing by a healthy clone" from "actually working".
-function mendStep(actor, clone) {
+// How much one frame of mending puts into this clone.
+function mendAmount(clone) { return MEND_RATE + (clone.maxHealth || 0) * MEND_PCT; }
+function mendStep(actor, clone, share) {
     if (!clone || clone.dead) return 0;
     const cap = clone.maxHealth || 0;
     if (!(clone.health < cap)) return 0;
     const before = clone.health;
-    clone.health = Math.min(cap, clone.health + MEND_RATE);
+    clone.health = Math.min(cap, clone.health + mendAmount(clone) * (share === undefined ? 1 : share));
     return clone.health - before;
+}
+// A toxic follower that is NOT on the work crew still mends a hurt clone it is
+// standing next to while it fights — at MEND_FIGHTER_SHARE, and only within
+// MEND_RANGE. A worker is still the medic: it seeks the clone out, escorts it,
+// mends it at the full rate and hardens it (MEND_GUARD).
+function toxicFighterMend(actor) {
+    if (!actor || actor.dead || actor.element !== CLONE_MENDER || actor.duty === 'worker' || actor.team !== 'green') return 0;
+    const near = typeof unitsNear === 'function' ? unitsNear(actor.x, MEND_RANGE) : actors;
+    let clone = null, best = MEND_RANGE;
+    for (const a of near) {
+        if (!a || a.dead || !a.isClone || a.team !== 'green' || !(a.health < (a.maxHealth || 0))) continue;
+        const d = Math.hypot(a.x - actor.x, a.y - actor.y);
+        if (d <= best) { best = d; clone = a; }
+    }
+    if (!clone) return 0;
+    const healed = mendStep(actor, clone, MEND_FIGHTER_SHARE);
+    if (healed > 0 && typeof elementEffects !== 'undefined' && (frame || 0) % 12 === 0) {
+        elementEffects.push({ type: 'impact', x: clone.x, y: clone.y, color: MEND_COLOUR, radius: 0.35, life: 14 });
+    }
+    return healed;
 }
 // The rest of your side round the clone, at a share of the rate.
 function mendSplash(actor, clone) {
