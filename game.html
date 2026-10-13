@@ -632,7 +632,7 @@
 
       <div class="ctrl-title">BUTTONS</div>
       <div class="ctrl-row"><span class="ctrl-key">SQUAD</span> Toggle SEL (selected followers) / ALL (every follower)</div>
-      <div class="ctrl-row"><span class="ctrl-key">BUILD</span> Opens the <strong>build window</strong> (and build mode). Tabs: TURRETS, WAVE, POWER, CAMP &mdash; each item shows its picture and price. Pick one and it is in hand: a ghost tile shows where it goes, <strong>green</strong> if it can, <strong>red</strong> with the reason if not. <strong>Touch:</strong> tap a tile, tap it again to build. <strong>Mouse:</strong> click to build. It stays in hand for the next one &mdash; tap the item again (or Esc) to put it down and walk. <strong>DEMOLISH</strong> in the title bar takes your pylons down for a refund; &#9662; shrinks the window, &#10005; closes it. The long-press ring still works too (BUILD / UPGRADE on the top button). While build mode is on, units cannot be selected</div>
+      <div class="ctrl-row"><span class="ctrl-key">BUILD</span> Opens the <strong>build window</strong> (and build mode). Tabs: TURRETS, WAVE, POWER, CAMP &mdash; each item shows its picture and price. A <strong>LEVEL</strong> row sets what one placement makes: TURRETS 1 a turret, 2 a turret already at <strong>MK II</strong> (needs a tier I network of its element there), 3 a 2&times;2 of four that fuses into an <strong>ULTRA</strong> turret (needs tier II); WAVE 1 a pylon, 2 MK II, 3 a 2&times;2 <strong>formation</strong>; POWER batteries 1 one, 2 a <strong>pod of 4</strong>, 3 a <strong>pod of 6</strong>. Anything that could not be powered is <strong>greyed out</strong> &mdash; build a shield generator by a nest you hold first &mdash; and a tile nothing would feed shows <strong>NO POWER HERE</strong>. Pick one and it is in hand: a ghost shows where it goes, <strong>green</strong> if it can, <strong>red</strong> with the reason if not. <strong>Touch:</strong> tap a tile, tap it again to build. <strong>Mouse:</strong> click to build. It stays in hand for the next one &mdash; tap the item again (or Esc) to put it down and walk. <strong>DEMOLISH</strong> in the title bar takes your pylons down for a refund; &#9662; shrinks the window, &#10005; closes it. The long-press ring still works too (BUILD / UPGRADE on the top button). While build mode is on, units cannot be selected</div>
       <div class="ctrl-row"><span class="ctrl-key">?</span> Open / close this reference panel</div>
 
       <div class="ctrl-title">THE TOP BAR — WHAT IS WHERE</div>
@@ -1345,12 +1345,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-13k, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-13l, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-13k";
+window.__PAGE_BUILD = "2026-10-13l";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1386,46 +1386,46 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-13k"></script>
-<script src="js/icons.js?v=2026-10-13k"></script>
-<script src="js/rng.js?v=2026-10-13k"></script>
-<script src="js/traits.js?v=2026-10-13k"></script>
-<script src="js/elements.js?v=2026-10-13k"></script>
-<script src="js/combat.js?v=2026-10-13k"></script>
-<script src="js/species.js?v=2026-10-13k"></script>
-<script src="js/predator_randomizer.js?v=2026-10-13k"></script>
-<script src="js/mass.js?v=2026-10-13k"></script>
-<script src="js/infest.js?v=2026-10-13k"></script>
-<script src="js/power.js?v=2026-10-13k"></script>
-<script src="js/save.js?v=2026-10-13k"></script>
-<script src="js/camp.js?v=2026-10-13k"></script>
-<script src="js/wavedata.js?v=2026-10-13k"></script>
-<script src="js/helpers.js?v=2026-10-13k"></script>
-<script src="js/predator.js?v=2026-10-13k"></script>
-<script src="js/abilities.js?v=2026-10-13k"></script>
-<script src="js/world.js?v=2026-10-13k"></script>
-<script src="js/commands.js?v=2026-10-13k"></script>
-<script src="js/npc.js?v=2026-10-13k"></script>
-<script src="js/codex.js?v=2026-10-13k"></script>
-<script src="js/draw.js?v=2026-10-13k"></script>
-<script src="js/ui.js?v=2026-10-13k"></script>
-<script src="js/waves.js?v=2026-10-13k"></script>
-<script src="js/drops.js?v=2026-10-13k"></script>
-<script src="js/clone.js?v=2026-10-13k"></script>
-<script src="js/clonework.js?v=2026-10-13k"></script>
-<script src="js/broods.js?v=2026-10-13k"></script>
-<script src="js/raids.js?v=2026-10-13k"></script>
-<script src="js/ultra.js?v=2026-10-13k"></script>
-<script src="js/formations.js?v=2026-10-13k"></script>
-<script src="js/breakout.js?v=2026-10-13k"></script>
-<script src="js/bonds.js?v=2026-10-13k"></script>
-<script src="js/autoplay.js?v=2026-10-13k"></script>
-<script src="js/indexart.js?v=2026-10-13k"></script>
-<script src="js/buildmenu.js?v=2026-10-13k"></script>
-<script src="js/input.js?v=2026-10-13k"></script>
-<script src="js/game.js?v=2026-10-13k"></script>
-<script src="js/tutorial.js?v=2026-10-13k"></script>
-<script src="js/dev.js?v=2026-10-13k"></script>
+<script src="js/config.js?v=2026-10-13l"></script>
+<script src="js/icons.js?v=2026-10-13l"></script>
+<script src="js/rng.js?v=2026-10-13l"></script>
+<script src="js/traits.js?v=2026-10-13l"></script>
+<script src="js/elements.js?v=2026-10-13l"></script>
+<script src="js/combat.js?v=2026-10-13l"></script>
+<script src="js/species.js?v=2026-10-13l"></script>
+<script src="js/predator_randomizer.js?v=2026-10-13l"></script>
+<script src="js/mass.js?v=2026-10-13l"></script>
+<script src="js/infest.js?v=2026-10-13l"></script>
+<script src="js/power.js?v=2026-10-13l"></script>
+<script src="js/save.js?v=2026-10-13l"></script>
+<script src="js/camp.js?v=2026-10-13l"></script>
+<script src="js/wavedata.js?v=2026-10-13l"></script>
+<script src="js/helpers.js?v=2026-10-13l"></script>
+<script src="js/predator.js?v=2026-10-13l"></script>
+<script src="js/abilities.js?v=2026-10-13l"></script>
+<script src="js/world.js?v=2026-10-13l"></script>
+<script src="js/commands.js?v=2026-10-13l"></script>
+<script src="js/npc.js?v=2026-10-13l"></script>
+<script src="js/codex.js?v=2026-10-13l"></script>
+<script src="js/draw.js?v=2026-10-13l"></script>
+<script src="js/ui.js?v=2026-10-13l"></script>
+<script src="js/waves.js?v=2026-10-13l"></script>
+<script src="js/drops.js?v=2026-10-13l"></script>
+<script src="js/clone.js?v=2026-10-13l"></script>
+<script src="js/clonework.js?v=2026-10-13l"></script>
+<script src="js/broods.js?v=2026-10-13l"></script>
+<script src="js/raids.js?v=2026-10-13l"></script>
+<script src="js/ultra.js?v=2026-10-13l"></script>
+<script src="js/formations.js?v=2026-10-13l"></script>
+<script src="js/breakout.js?v=2026-10-13l"></script>
+<script src="js/bonds.js?v=2026-10-13l"></script>
+<script src="js/autoplay.js?v=2026-10-13l"></script>
+<script src="js/indexart.js?v=2026-10-13l"></script>
+<script src="js/buildmenu.js?v=2026-10-13l"></script>
+<script src="js/input.js?v=2026-10-13l"></script>
+<script src="js/game.js?v=2026-10-13l"></script>
+<script src="js/tutorial.js?v=2026-10-13l"></script>
+<script src="js/dev.js?v=2026-10-13l"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1478,7 +1478,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-13k"></script>
+<script src="js/init.js?v=2026-10-13l"></script>
 
 </body>
 </html>
