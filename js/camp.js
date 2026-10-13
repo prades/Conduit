@@ -563,7 +563,13 @@ function drawCampFloor(obj, px, py, amb) {
     const pdist   = Math.sqrt((obj.x - player.visualX) ** 2 + (obj.y - player.visualY) ** 2);
     const glo     = Math.max(0, 1.0 - pdist / 5);
 
-    // ── Tile fill — same steel-blue/teal geometry as regular floor ──
+    // ── Tile fill and bevel — the same tile as the regular floor with no
+    // circuit traces, so it is stamped from the same sprites (_floorTileSprite):
+    // one drawImage, not a fill and four strokes for every camp tile, every
+    // frame (~250 canvas calls a frame at home).
+    const _spr = typeof _floorTileSprite === "function" ? _floorTileSprite(isNight, Math.round(pdist / FLOOR_DIST_STEP), "", 0) : null;
+    if (_spr) ctx.drawImage(_spr, px - TILE_W - 1, py - 1);
+    else {
     let tR, tG, tB;
     if (isNight) {
         tR = (22 * amb + 38 * glo) | 0;
@@ -591,6 +597,7 @@ function drawCampFloor(obj, px, py, amb) {
     ctx.strokeStyle = `rgba(0,0,0,${0.35 * amb})`;
     ctx.beginPath(); ctx.moveTo(px - TILE_W + 1, py + TILE_H); ctx.lineTo(px, py + TILE_W - 1); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(px + TILE_W - 1, py + TILE_H); ctx.lineTo(px, py + TILE_W - 1); ctx.stroke();
+    }
 
     // ── Foundation slab under a building's footprint ──
     const _bldgOnTile = campBuildingAt(txi, tyi);

@@ -1031,6 +1031,51 @@ function pylonNearDist(x, y) {
 // fixed for a column (seeded by its x), so they are drawn once into a sprite
 // in wall space (x along the wall, y up from its base) at full strength, and
 // stamped each frame through the wall's shear with its light as the alpha.
+// A back-wall tile's top face, south face and the conduit pipe along its base.
+// They depend only on the light (the distance to the camera), so they are
+// drawn once per light step into a sprite (_wallFaceSprite) and stamped.
+function _drawWallFaces(c, px, py, amb, glo, WH) {
+    // Top face
+    c.fillStyle = `rgb(${14*amb+(6*glo)},${18*amb+(16*glo)},${28*amb+(38*glo)})`;
+    c.beginPath();
+    c.moveTo(px,          py - WH);
+    c.lineTo(px + TILE_W, py + TILE_H - WH);
+    c.lineTo(px,          py + 2*TILE_H - WH);
+    c.lineTo(px - TILE_W, py + TILE_H - WH);
+    c.fill();
+    // South face — from W→S base up by WH
+    c.fillStyle = `rgb(${9*amb+(4*glo)},${12*amb+(12*glo)},${19*amb+(30*glo)})`;
+    c.beginPath();
+    c.moveTo(px - TILE_W, py + TILE_H);
+    c.lineTo(px,          py + 2*TILE_H);
+    c.lineTo(px,          py + 2*TILE_H - WH);
+    c.lineTo(px - TILE_W, py + TILE_H - WH);
+    c.fill();
+    // 1. Conduit pipe along wall base (every tile)
+    c.save();
+    c.globalAlpha=0.45*amb; c.strokeStyle="#0a1a14"; c.lineWidth=3;
+    c.beginPath(); c.moveTo(px-TILE_W,py+TILE_H-3); c.lineTo(px,py+2*TILE_H-3); c.stroke();
+    c.strokeStyle="#1a3a28"; c.lineWidth=1; c.globalAlpha=0.25*amb;
+    c.stroke(); c.restore();
+}
+const _wallFaceSprites = new Map();
+function _wallFaceSprite(dq, WH) {
+    const key = dq * 1000 + WH;
+    let cv = _wallFaceSprites.get(key);
+    if (cv !== undefined) return cv;
+    cv = null;
+    const el = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
+    const g = el && el.getContext ? el.getContext("2d") : null;
+    if (g && typeof g.drawImage === "function") {
+        el.width = TILE_W * 2 + 2; el.height = WH + 2 * TILE_H + 2;
+        const dist = dq * FLOOR_DIST_STEP;
+        _drawWallFaces(g, TILE_W + 1, WH + 1, Math.max(0.1, 0.8 - dist / RENDER_DIST), Math.max(0, 1.0 - dist / 5), WH);
+        cv = el;
+    }
+    if (_wallFaceSprites.size >= 200) _wallFaceSprites.delete(_wallFaceSprites.keys().next().value);
+    _wallFaceSprites.set(key, cv);
+    return cv;
+}
 const _wallTraceSprites = new Map();
 const WALL_TRACE_SPRITE_CAP = 400;
 function _wallTraceSprite(xi, WH) {
@@ -1998,8 +2043,96 @@ function visibleForDraw(x, y) {
 // ─────────────────────────────────────────────────────────
 //  MAIN RENDER / GAME LOOP
 // ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+//  THE CLOCK — the game runs at 60 steps a second, whatever the screen manages
+// ─────────────────────────────────────────────────────────
+// REPORTED: "Changing the graphics to high does nothing to slow it down, and it
+// is slow. I believe there is something else that is slowing it down."
+//
+// There was. Everything in the game moves a fixed amount per call of render(),
+// and render() was called once per screen refresh. A device that could only
+// draw 30 frames a second therefore ran the whole GAME at half speed — slow
+// motion, not just choppy — and nothing in the graphics settings could change
+// that, because the slowdown was the clock, not the picture.
+//
+// Now gameLoop keeps time. Each screen refresh it works out how many 1/60 s
+// steps are owed and runs them: all but the last with drawing switched off
+// (ctx is swapped for a canvas that ignores every call, so the game logic that
+// lives in the draw pass — shots, vents, respawns, effect lifetimes — still
+// runs exactly once a step), and the last one drawn. A step without the
+// picture costs about a third of a drawn one. It catches up at most
+// SIM_MAX_STEPS steps and SIM_BUDGET_MS of work a refresh, so a device that is
+// struggling slows down gently instead of stalling. On a 120 Hz screen a
+// refresh with no step owed is skipped and the last picture stays up (the game
+// used to run at DOUBLE speed there).
+//
+// Calling render() directly is still exactly one step and one picture (the
+// tests and the boot use that).
+const SIM_STEP_MS   = 1000 / 60;
+const SIM_MAX_STEPS = 4;      // most steps run for one picture (15 fps still plays at full speed)
+const SIM_BUDGET_MS = 30;     // …and stop catching up once a refresh has cost this much
+let _simLast = 0, _simDebt = 0, _simGhost = false, _nullCtx = null, _simStepsShown = 0, _simStepsCount = 0, _simStepsAt = 0;
+function _makeNullCtx() {
+    // Every method of the real 2D context, doing nothing; the few whose result
+    // the code reads return something harmless. Its settings (fillStyle,
+    // globalAlpha …) are plain fields, starting at the real context's values.
+    const P = typeof CanvasRenderingContext2D !== "undefined" ? CanvasRenderingContext2D.prototype : null;
+    if (!P || typeof Proxy === "undefined") return null;
+    const noop = function () {};
+    const n = {};
+    for (const k of Object.getOwnPropertyNames(P)) {
+        let d = null; try { d = Object.getOwnPropertyDescriptor(P, k); } catch (e) {}
+        if (!d) continue;
+        if (typeof d.value === "function") n[k] = noop;
+        else if (d.get) { try { const v = ctx[k]; if (typeof v !== "function") n[k] = v; } catch (e) {} }
+    }
+    const grad = { addColorStop() {} };
+    n.createRadialGradient = n.createLinearGradient = n.createConicGradient = () => grad;
+    n.createPattern = () => null;
+    n.measureText = t => ({ width: String(t).length * 6 });
+    n.getLineDash = () => [];
+    n.isPointInPath = n.isPointInStroke = () => false;
+    n.canvas = canvas;
+    // Anything the prototype did not list (a method this browser lacks, which
+    // the game feature-tests for): a do-nothing too, never a crash mid-step.
+    return new Proxy(n, { get: (t, k) => (k in t ? t[k] : noop) });
+}
+function _simStep(draw) {
+    if (draw) { render(); return; }
+    if (_nullCtx === null) _nullCtx = _makeNullCtx() || false;
+    const keep = ctx;
+    let swapped = false;
+    if (_nullCtx) { try { ctx = _nullCtx; swapped = true; } catch (e) { _nullCtx = false; } }
+    _simGhost = true;
+    try { render(); }
+    finally { _simGhost = false; if (swapped) ctx = keep; }
+}
+function gameLoop() {
+    requestAnimationFrame(gameLoop); // schedule next frame first so the loop never stops
+    const now = _perfNow();
+    let dt = _simLast ? now - _simLast : SIM_STEP_MS;
+    _simLast = now;
+    // Paused (buy screen, game over), or back from another tab: no debt.
+    if (!gameState.running || dt > 1000) { _simDebt = 0; render(); return; }
+    _simDebt += dt;
+    // Rounded, not floored: a 60 Hz screen's refreshes jitter either side of
+    // 16.7 ms, and flooring would turn that jitter into 0-step / 2-step stutter.
+    let steps = Math.round(_simDebt / SIM_STEP_MS);
+    if (steps < 1) return;                 // a 120 Hz refresh between steps
+    if (steps > SIM_MAX_STEPS) { steps = SIM_MAX_STEPS; _simDebt = 0; }
+    else _simDebt -= steps * SIM_STEP_MS;
+    for (let i = 1; i < steps; i++) {
+        _simStep(false);
+        _simStepsCount++;
+        if (!gameState.running) return;
+        if (_perfNow() - now > SIM_BUDGET_MS) { _simDebt = 0; break; }
+    }
+    _simStep(true);
+    _simStepsCount++;
+    if (now - _simStepsAt >= 1000) { _simStepsShown = Math.round(_simStepsCount * 1000 / Math.max(1, now - _simStepsAt)); _simStepsCount = 0; _simStepsAt = now; }
+}
+
 function render() {
-    requestAnimationFrame(render); // schedule next frame first so the loop never stops
     // AUTOPLAY presses NEXT WAVE itself — which has to be watched while paused.
     if (typeof autoplayWatch === "function") autoplayWatch();
     if (!gameState.running) { return; } // skip all logic while paused (buy screen, game over)
@@ -2902,7 +3035,10 @@ function render() {
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     shards.forEach(s=>{ if(visibleForDraw(s.x,s.y)) drawList.push({type:'shard',x:s.x,y:s.y,shard:s}); });
     chargedMass.forEach(m=>{ if(visibleForDraw(m.x,m.y)) drawList.push({type:'mass',x:m.x,y:m.y,mass:m}); });
-    actors.forEach(a=>{ if(visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });
+    // A catch-up step (gameLoop) draws nothing, and drawing a unit changes
+    // nothing — so its units are not even laid out: the predators' body maths
+    // was the biggest share of a step with no picture.
+    if (!_simGhost) actors.forEach(a=>{ if(visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });
     groundItems.forEach(g=>{ if(visibleForDraw(g.x,g.y)) drawList.push({type:'groundItem',x:g.x,y:g.y,item:g}); });
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
     // Depth is x+y: a bigger sum draws lower and in front.
@@ -3783,32 +3919,15 @@ function render() {
             const WH   = 110; // wall height in pixels
 
             if (obj.type === 'wall_back') {
-                // Top face
-                ctx.fillStyle = `rgb(${14*amb+(6*glo)},${18*amb+(16*glo)},${28*amb+(38*glo)})`;
-                ctx.beginPath();
-                ctx.moveTo(px,          py - WH);
-                ctx.lineTo(px + TILE_W, py + TILE_H - WH);
-                ctx.lineTo(px,          py + 2*TILE_H - WH);
-                ctx.lineTo(px - TILE_W, py + TILE_H - WH);
-                ctx.fill();
-                // South face — from W→S base up by WH
-                ctx.fillStyle = `rgb(${9*amb+(4*glo)},${12*amb+(12*glo)},${19*amb+(30*glo)})`;
-                ctx.beginPath();
-                ctx.moveTo(px - TILE_W, py + TILE_H);
-                ctx.lineTo(px,          py + 2*TILE_H);
-                ctx.lineTo(px,          py + 2*TILE_H - WH);
-                ctx.lineTo(px - TILE_W, py + TILE_H - WH);
-                ctx.fill();
+                // The two faces and the conduit pipe depend only on the distance
+                // to the camera: stamped from a sprite (_wallFaceSprite), one
+                // drawImage instead of two fills and two strokes per wall tile.
+                const _wfs = _wallFaceSprite(Math.round(dist / FLOOR_DIST_STEP), WH);
+                if (_wfs) ctx.drawImage(_wfs, px - TILE_W - 1, py - WH - 1);
+                else _drawWallFaces(ctx, px, py, amb, glo, WH);
 
                 // ── WALL ATMOSPHERE DECORATIONS ─────────────────────────────
                 const xi = Math.abs(Math.floor(obj.x));
-
-                // 1. Conduit pipe along wall base (every tile)
-                ctx.save();
-                ctx.globalAlpha=0.45*amb; ctx.strokeStyle="#0a1a14"; ctx.lineWidth=3;
-                ctx.beginPath(); ctx.moveTo(px-TILE_W,py+TILE_H-3); ctx.lineTo(px,py+2*TILE_H-3); ctx.stroke();
-                ctx.strokeStyle="#1a3a28"; ctx.lineWidth=1; ctx.globalAlpha=0.25*amb;
-                ctx.stroke(); ctx.restore();
 
                 // 3. Server rack panels — every 9 tiles (offset from vents)
                 const isRackX=(xi%9===4);
@@ -4429,12 +4548,14 @@ function render() {
 const _perf = { last: 0, fps: 0, logic: 0, draw: 0, worst: 0, shownWorst: 0, winAt: 0, t0: 0, tDraw: 0 };
 function _perfNow() { return (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now(); }
 function perfFrameStart() {
+    if (_simGhost) return;       // a step with no picture is not a frame
     const n = _perfNow();
     if (_perf.last) { const dt = n - _perf.last; if (dt > 0 && dt < 1000) _perf.fps += (1000 / dt - _perf.fps) * 0.05; }
     _perf.last = n; _perf.t0 = n; _perf.tDraw = 0;
 }
-function perfDrawStart() { _perf.tDraw = _perfNow(); }
+function perfDrawStart() { if (!_simGhost) _perf.tDraw = _perfNow(); }
 function perfFrameEnd() {
+    if (_simGhost) return;
     const n = _perfNow();
     if (!_perf.tDraw) _perf.tDraw = n;
     const L = _perf.tDraw - _perf.t0, D = n - _perf.tDraw;
@@ -4445,7 +4566,7 @@ function perfFrameEnd() {
 }
 function drawPerfReadout() {
     const lines = [
-        "FPS " + Math.round(_perf.fps) + "   GFX " + (gfxLow ? "LOW" : "HIGH"),
+        "FPS " + Math.round(_perf.fps) + "   GAME " + (_simStepsShown || "-") + "/s   GFX " + (gfxLow ? "LOW" : "HIGH"),
         "logic " + _perf.logic.toFixed(1) + " ms   draw " + _perf.draw.toFixed(1) + " ms",
         "worst frame " + _perf.shownWorst.toFixed(0) + " ms",
         "units " + actors.length + "   pylons " + _pillarCache.length + "   tiles " + world.length,

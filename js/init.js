@@ -97,7 +97,7 @@ async function loadConfig() {
     // for shards", until an alarm or a wave clear happened to rewrite it. The
     // player reads the banner, so the game had reset as far as they could tell.
     updateObjectiveUI();
-    render();
+    gameLoop();   // the clock (game.js): 60 game steps a second, drawn as often as the screen can
 }
 
 // The predator designer (js/dev.js) is a tool, not the game: if it cannot set

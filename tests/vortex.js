@@ -145,7 +145,9 @@ async function ready() {
         const hasNest = V.run('!!_n');
         if (!hasNest) { console.log('         (zone 1 has no wall nest in this seed — skipped)'); return; }
         const n = V.run('({ x: _n.x, y: _n.y })');
-        V.run('spawnPredatorForZone(1);');
+        // A named species: an unnamed spawn can roll the wave ladder's rare
+        // tier, which comes as a PAIR (broods.js) — two, not one, about one time in ten.
+        V.run("spawnPredatorForZone(1, { species: 'ant', className: 'scout' });");
         const at = V.run('actors.filter(a => a instanceof Predator).map(a => ({x: a.x, y: a.y}))');
         same(at.length, 1, 'one predator should have spawned');
         same(at[0].x, n.x, 'it should come out of the nest');

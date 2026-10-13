@@ -1,6 +1,12 @@
 // ─────────────────────────────────────────────────────────
 //  PREDATOR CLASS
 // ─────────────────────────────────────────────────────────
+// The units within r tiles of column x — the column index (unitsNear,
+// helpers.js) when it is loaded, every actor otherwise. Each predator scans
+// its neighbourhood a few times a step; over every actor, that was the
+// biggest cost of a crowded night.
+function _predNear(x, r) { return typeof unitsNear === "function" ? unitsNear(x, r) : actors; }
+
 class Predator {
     constructor(typeName, def, x, y) {
         this.type = "predator";
@@ -184,7 +190,9 @@ class Predator {
         }
         if (!threat) {
             const scanTeam = this.isClone ? "red" : "green";
-            actors.forEach(a => {
+            // Only units within reach (1.2 tiles) can be a threat: the column
+            // index, not every actor in the game, for every predator, every step.
+            _predNear(this.x, 1.2).forEach(a => {
                 if (a.team!==scanTeam||a.dead) return;
                 if (isNeutralBystander(a)) return;   // not a threat, not a target
                 if (!this.isClone && (a.spawnProtection||0)>0) return;
@@ -535,7 +543,7 @@ class Predator {
         if (this.state==="hunt"||this.state==="wander") this.walkCycle+=this.moveSpeed*40;
 
         // ── PREDATOR SEPARATION — push away from overlapping allies so they don't stack ──
-        actors.forEach(other => {
+        _predNear(this.x, 0.9).forEach(other => {
             if (other === this || !(other instanceof Predator) || other.dead) return;
             const sdx = this.x - other.x, sdy = this.y - other.y;
             const sd2 = sdx * sdx + sdy * sdy;
@@ -560,7 +568,9 @@ class Predator {
                 const bodyAngle = Math.atan2(this.dirY, this.dirX);
                 let rearTarget = null, bestRearDist = Infinity;
                 const abdomenHitTeam = this.isClone ? "red" : "green";
-                actors.forEach(a => {
+                // Within 6 tiles only. (With nothing behind it the timer stays
+                // full and this ran every step, over every actor.)
+                _predNear(this.x, 6).forEach(a => {
                     if (a.dead || a.team !== abdomenHitTeam) return;
                     const dx = a.x - this.x, dy = a.y - this.y;
                     const d  = Math.hypot(dx, dy);

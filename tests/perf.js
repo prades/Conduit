@@ -497,8 +497,10 @@ const SCENE = `(function(){
     });
 
     check('the loop has exactly one driver', () => {
-        same((SRC.game.match(/requestAnimationFrame\(render\)/g) || []).length, 1,
-             'render should be scheduled from exactly one place');
+        same((SRC.game.match(/requestAnimationFrame\(/g) || []).length, 1,
+             'the frame should be scheduled from exactly one place');
+        same((SRC.game.match(/requestAnimationFrame\(gameLoop\)/g) || []).length, 1,
+             'and that place is the clock, gameLoop');
         for (const f of ['game', 'config']) {
             ok(!/setInterval\(/.test(SRC[f]), f + '.js drives work on a timer as well as the frame');
         }

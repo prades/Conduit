@@ -406,8 +406,11 @@ function _drawPredator(actor, px, py, drawCtx) {
         // side+1 legs are offset by +perp, so their depth delta = _legDepth.
         // side+1 is FAR (behind body) when _legDepth <= 0; NEAR (in front) when _legDepth > 0.
         // side-1 is FAR when _legDepth >= 0; NEAR when _legDepth < 0.
+        // All the legs of a pass are ONE path and one stroke (same colour and
+        // width): they were a stroke each, six or eight per predator per frame.
         if (legData && legData.count===6) {
             drawCtx.strokeStyle="#111"; drawCtx.lineWidth=2;
+            drawCtx.beginPath();
             const positions=[-1,0,1];
             positions.forEach((pos,index)=>{
                 if (actor.isMantis && pos===-1) return; // front pair replaced by raptorial praying arms
@@ -418,8 +421,10 @@ function _drawPredator(actor, px, py, drawCtx) {
                 if (farOnly ? _legDepth >= 0 : _legDepth < 0)
                     _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
             });
+            drawCtx.stroke();
         } else if (legData && legData.count===8) {
             drawCtx.strokeStyle="#111"; drawCtx.lineWidth=1.2;
+            drawCtx.beginPath();
             const positions=[-1.2,-0.4,0.4,1.2];
             positions.forEach((pos,index)=>{
                 const long=-pos*(dim.width*0.22);
@@ -429,6 +434,7 @@ function _drawPredator(actor, px, py, drawCtx) {
                 if (farOnly ? _legDepth >= 0 : _legDepth < 0)
                     _drawInsectLeg(drawCtx,hx,hy,-1,(index)%2===0?0:Math.PI,pos,actor,legData,dirX,dirY,perpX,perpY);
             });
+            drawCtx.stroke();
         }
         // ── Mantis raptorial praying forelegs — split by depth same as regular legs ──
         if (actor.isMantis && legData) {
@@ -663,18 +669,15 @@ function _drawPredator(actor, px, py, drawCtx) {
         if (!(actor.body.abdomen.round && isAbdomen) && !isHead) {
             drawCtx.strokeStyle = "rgba(65,65,65,0.7)";
             drawCtx.lineWidth = 0.8;
-            // Central spine
+            // Central spine and the two side edge lines: one path, one stroke.
             drawCtx.beginPath();
             drawCtx.moveTo(0, -seg.length * 0.3);
             drawCtx.lineTo(0,  seg.length * 0.3);
-            drawCtx.stroke();
-            // Side edge lines
-            [-1, 1].forEach(s => {
-                drawCtx.beginPath();
+            for (let s = -1; s <= 1; s += 2) {
                 drawCtx.moveTo(seg.width * 0.31 * s, -seg.length * 0.25);
                 drawCtx.lineTo(seg.width * 0.31 * s,  seg.length * 0.25);
-                drawCtx.stroke();
-            });
+            }
+            drawCtx.stroke();
         }
 
         drawCtx.restore();
@@ -725,7 +728,12 @@ function _drawPredator(actor, px, py, drawCtx) {
             const chL = Math.sin(wc * chompSpd) * 0.55;
             const chR = Math.sin(wc * chompSpd + Math.PI) * 0.55;
             drawCtx.strokeStyle = "#222"; drawCtx.lineWidth = actor.appendages.mandibles?.thickness || 2;
-            [-1, 1].forEach(side => {
+            // Both blades in one stroke, both tips in one fill (they were six
+            // separate paths; the segments stay separate sub-paths, so the
+            // round caps look exactly as before).
+            const _tips = [];
+            drawCtx.beginPath();
+            for (let side = -1; side <= 1; side += 2) {
                 const ch = side === -1 ? chL : chR;
                 const bx = faceX + sideX * side * 3.2, by = faceY + sideY * side * 3.2;
                 // Two-segment angular blade: sweeps outward then snaps inward
@@ -733,11 +741,15 @@ function _drawPredator(actor, px, py, drawCtx) {
                 const ex = bx + Math.cos(a1) * mLen * 0.52, ey = by + Math.sin(a1) * mLen * 0.52;
                 const a2 = a1 - side * 0.55;
                 const tx = ex + Math.cos(a2) * mLen * 0.55, ty = ey + Math.sin(a2) * mLen * 0.55;
-                drawCtx.beginPath(); drawCtx.moveTo(bx,by); drawCtx.lineTo(ex,ey); drawCtx.stroke();
-                drawCtx.beginPath(); drawCtx.moveTo(ex,ey); drawCtx.lineTo(tx,ty); drawCtx.stroke();
-                drawCtx.fillStyle = "#333";
-                drawCtx.beginPath(); drawCtx.arc(tx,ty,1.8,0,Math.PI*2); drawCtx.fill();
-            });
+                drawCtx.moveTo(bx,by); drawCtx.lineTo(ex,ey);
+                drawCtx.moveTo(ex,ey); drawCtx.lineTo(tx,ty);
+                _tips.push(tx, ty);
+            }
+            drawCtx.stroke();
+            drawCtx.fillStyle = "#333";
+            drawCtx.beginPath();
+            for (let i = 0; i < _tips.length; i += 2) { drawCtx.moveTo(_tips[i] + 1.8, _tips[i + 1]); drawCtx.arc(_tips[i], _tips[i + 1], 1.8, 0, Math.PI*2); }
+            drawCtx.fill();
 
         } else if (sp === "beetle") {
             // Beetle: heavy crushing horn-plates — two thick blade fins + central horn
@@ -769,6 +781,8 @@ function _drawPredator(actor, px, py, drawCtx) {
             const snapSpd = isAttacking ? 0.35 : 0.08;
             const snap = Math.sin(wc * snapSpd) * 0.4;
             drawCtx.strokeStyle = "#333"; drawCtx.lineWidth = 2.5;
+            const _dots = [];
+            drawCtx.beginPath();
             [-1, 1].forEach(side => {
                 const bx = faceX + sideX * side * 4.5, by = faceY + sideY * side * 4.5;
                 const midX = bx + fwdX * cLen * 0.55 + sideX * side * cLen * 0.22;
@@ -779,12 +793,15 @@ function _drawPredator(actor, px, py, drawCtx) {
                 // Lower claw arm (snaps toward upper)
                 const loA = ha + side * (0.7 - snap * 0.4);
                 const loTX = midX + Math.cos(loA) * cLen * 0.35, loTY = midY + Math.sin(loA) * cLen * 0.35;
-                drawCtx.beginPath(); drawCtx.moveTo(bx,by); drawCtx.quadraticCurveTo(midX,midY,upTX,upTY); drawCtx.stroke();
-                drawCtx.beginPath(); drawCtx.moveTo(midX,midY); drawCtx.lineTo(loTX,loTY); drawCtx.stroke();
-                drawCtx.fillStyle = "#444";
-                drawCtx.beginPath(); drawCtx.arc(upTX,upTY,1.8,0,Math.PI*2); drawCtx.fill();
-                drawCtx.beginPath(); drawCtx.arc(loTX,loTY,1.4,0,Math.PI*2); drawCtx.fill();
+                drawCtx.moveTo(bx,by); drawCtx.quadraticCurveTo(midX,midY,upTX,upTY);
+                drawCtx.moveTo(midX,midY); drawCtx.lineTo(loTX,loTY);
+                _dots.push(upTX, upTY, 1.8, loTX, loTY, 1.4);
             });
+            drawCtx.stroke();
+            drawCtx.fillStyle = "#444";
+            drawCtx.beginPath();
+            for (let i = 0; i < _dots.length; i += 3) { drawCtx.moveTo(_dots[i] + _dots[i + 2], _dots[i + 1]); drawCtx.arc(_dots[i], _dots[i + 1], _dots[i + 2], 0, Math.PI*2); }
+            drawCtx.fill();
 
         } else if (sp === "mantis") {
             // Mantis: sharp serrated beak — narrow pointed labrum with saw edge
@@ -817,18 +834,24 @@ function _drawPredator(actor, px, py, drawCtx) {
                 const chL = Math.sin(wc * chompSpd) * 0.4;
                 const chR = Math.sin(wc * chompSpd + Math.PI) * 0.4;
                 drawCtx.strokeStyle = "#222"; drawCtx.lineWidth = mandData.thickness;
-                [-1, 1].forEach(side => {
+                const _tips = [], _tr = mandData.thickness * 0.6;
+                drawCtx.beginPath();
+                for (let side = -1; side <= 1; side += 2) {
                     const ch = side === -1 ? chL : chR;
                     const bx = faceX + sideX * side * 3.5, by = faceY + sideY * side * 3.5;
                     const a1 = ha + side * (-0.6) + ch;
                     const ex = bx + Math.cos(a1) * mLen * 0.55, ey = by + Math.sin(a1) * mLen * 0.55;
                     const a2 = a1 - side * 0.45;
                     const tx = ex + Math.cos(a2) * mLen * 0.5, ty = ey + Math.sin(a2) * mLen * 0.5;
-                    drawCtx.beginPath(); drawCtx.moveTo(bx,by); drawCtx.lineTo(ex,ey); drawCtx.stroke();
-                    drawCtx.beginPath(); drawCtx.moveTo(ex,ey); drawCtx.lineTo(tx,ty); drawCtx.stroke();
-                    drawCtx.fillStyle = "#333";
-                    drawCtx.beginPath(); drawCtx.arc(tx,ty,mandData.thickness*0.6,0,Math.PI*2); drawCtx.fill();
-                });
+                    drawCtx.moveTo(bx,by); drawCtx.lineTo(ex,ey);
+                    drawCtx.moveTo(ex,ey); drawCtx.lineTo(tx,ty);
+                    _tips.push(tx, ty);
+                }
+                drawCtx.stroke();
+                drawCtx.fillStyle = "#333";
+                drawCtx.beginPath();
+                for (let i = 0; i < _tips.length; i += 2) { drawCtx.moveTo(_tips[i] + _tr, _tips[i + 1]); drawCtx.arc(_tips[i], _tips[i + 1], _tr, 0, Math.PI*2); }
+                drawCtx.fill();
             }
         }
         drawCtx.restore();
@@ -845,6 +868,8 @@ function _drawPredator(actor, px, py, drawCtx) {
         const fangCol = "#222";
         drawCtx.save();
         drawCtx.strokeStyle=fangCol; drawCtx.lineWidth=chelData.thickness; drawCtx.lineCap="round";
+        const _fangTips = [];
+        drawCtx.beginPath();
         [-1,1].forEach(side => {
             const ox = sideX*3.5*side, oy = sideY*3.5*side;
             // Base segment downward
@@ -853,14 +878,16 @@ function _drawPredator(actor, px, py, drawCtx) {
             // Fang curves inward — chelicerae hook
             const tipX = mid1X + fwdX*chelData.length*0.5 - sideX*side*chelData.fangCurve*6;
             const tipY = mid1Y + fwdY*chelData.length*0.5 - sideY*side*chelData.fangCurve*6;
-            drawCtx.beginPath();
             drawCtx.moveTo(baseX+ox, baseY+oy);
             drawCtx.quadraticCurveTo(mid1X, mid1Y, tipX, tipY);
-            drawCtx.stroke();
-            // Fang tip dot
-            drawCtx.fillStyle = "#444";
-            drawCtx.beginPath(); drawCtx.arc(tipX, tipY, chelData.thickness*0.7, 0, Math.PI*2); drawCtx.fill();
+            _fangTips.push(tipX, tipY);
         });
+        drawCtx.stroke();
+        // Fang tip dots
+        drawCtx.fillStyle = "#444";
+        drawCtx.beginPath();
+        for (let i = 0; i < _fangTips.length; i += 2) { drawCtx.moveTo(_fangTips[i] + chelData.thickness*0.7, _fangTips[i + 1]); drawCtx.arc(_fangTips[i], _fangTips[i + 1], chelData.thickness*0.7, 0, Math.PI*2); }
+        drawCtx.fill();
         drawCtx.restore();
     }
 
@@ -874,6 +901,8 @@ function _drawPredator(actor, px, py, drawCtx) {
         const baseX=headSeg.cx+fwdX*3, baseY=headSeg.cy+fwdY*3;
         drawCtx.save();
         drawCtx.strokeStyle="#333"; drawCtx.lineWidth=pedData.thickness; drawCtx.lineCap="round";
+        const _bulbs = [];
+        drawCtx.beginPath();
         [-1,1].forEach(side => {
             const ox=sideX*6*side, oy=sideY*6*side;
             // Two segments — elbow out then tip bulb
@@ -881,12 +910,16 @@ function _drawPredator(actor, px, py, drawCtx) {
             const j1y=baseY+oy+fwdY*pedData.length*0.5;
             const tipX=j1x+fwdX*pedData.length*0.4+sideX*side*2;
             const tipY=j1y+fwdY*pedData.length*0.4+sideY*side*2;
-            drawCtx.beginPath(); drawCtx.moveTo(baseX+ox,baseY+oy); drawCtx.lineTo(j1x,j1y); drawCtx.stroke();
-            drawCtx.beginPath(); drawCtx.moveTo(j1x,j1y); drawCtx.lineTo(tipX,tipY); drawCtx.stroke();
-            // Bulb tip
-            drawCtx.fillStyle="#444";
-            drawCtx.beginPath(); drawCtx.arc(tipX,tipY,pedData.thickness*1.2,0,Math.PI*2); drawCtx.fill();
+            drawCtx.moveTo(baseX+ox,baseY+oy); drawCtx.lineTo(j1x,j1y);
+            drawCtx.moveTo(j1x,j1y); drawCtx.lineTo(tipX,tipY);
+            _bulbs.push(tipX, tipY);
         });
+        drawCtx.stroke();
+        // Bulb tips
+        drawCtx.fillStyle="#444";
+        drawCtx.beginPath();
+        for (let i = 0; i < _bulbs.length; i += 2) { drawCtx.moveTo(_bulbs[i] + pedData.thickness*1.2, _bulbs[i + 1]); drawCtx.arc(_bulbs[i], _bulbs[i + 1], pedData.thickness*1.2, 0, Math.PI*2); }
+        drawCtx.fill();
         drawCtx.restore();
     }
 
@@ -1096,7 +1129,8 @@ function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData,
     const footX = crestX - outX * legData.tibia * 0.4 + dirX * stride * 0.8;
     const footY = crestY - outY * legData.tibia * 0.4 + (Math.abs(dirX) + Math.abs(dirY)) * legData.tibia * 0.8 - lift * 0.3 + crouchRise;
 
-    drawCtx.beginPath(); drawCtx.moveTo(hx, hy); drawCtx.lineTo(crestX, crestY); drawCtx.lineTo(footX, footY); drawCtx.stroke();
+    // Added to the pass's path; _drawLegsPass strokes them all at once.
+    drawCtx.moveTo(hx, hy); drawCtx.lineTo(crestX, crestY); drawCtx.lineTo(footX, footY);
 }
 
 // ── THE FOLLOWER FIGURE ──────────────────────────────────
@@ -1377,10 +1411,17 @@ function _drawVirusBubbles(drawCtx, px, actor, er, eg, eb, flash, DOME_CY, DOME_
 }
 
 // The sprite. Sized to hold the legs at full stride and the dome; anchored so
-// (VSPR_OX, VSPR_OY) is the ground point. Drawn at 2x for crisp edges.
-const VSPR_W = 84, VSPR_H = 84, VSPR_OX = 42, VSPR_OY = 66;
+// (VSPR_OX, VSPR_OY) is the ground point.
+//
+// Drawn at 1x. It was 2x "for crisp edges", but the game canvas is one pixel
+// per CSS pixel, so the extra detail was thrown away when stamped — and each
+// sprite cost 113 KB. In a night fight the attack lunge and stat shapes made
+// enough different looks that the cache sat at its cap (~97 MB) and built
+// about one new canvas EVERY frame: on an iPad, a texture upload per frame
+// and a lot of memory, whatever the GRAPHICS setting.
+const VSPR_W = 84, VSPR_H = 84, VSPR_OX = 42, VSPR_OY = 66, VSPR_SCALE = 1;
 const VIRUS_POSES = 12;            // walk-cycle steps cached per look
-const VIRUS_SPRITE_CAP = 900;      // sprites kept before the oldest are dropped
+const VIRUS_SPRITE_CAP = 1200;     // sprites kept before the least recently used are dropped
 const VIRUS_BUBBLE_CROWD = 24;     // more followers on screen than this: no bubbles
 let _virusSprites = new Map(), _virusesOnScreen = 0, _virusesCounting = 0, _virusCountFrame = -1;
 // Only the ordinary look is cached; anything unusual is drawn live.
@@ -1391,19 +1432,28 @@ function _virusSprite(actor, flash, er, eg, eb, wc) {
     const st = actor.isFollower ? (actor.stats || {}) : null;
     // Shape buckets: the saw teeth and knee claws grow with stats in steps
     // too small to see, so they are rounded to a visible step.
-    const saw  = st ? Math.round(Math.max(0, ((st.attack || 10) - 10) * 0.35) * 2) / 2 : 0;
-    const claw = st ? Math.round(Math.max(0, (Math.max(st.specialAttack || 0, st.accuracy || 0) - 10) * 0.45) * 2) / 2 : 0;
+    // Whole steps (they were half steps: twice the looks for no visible change).
+    const saw  = st ? Math.round(Math.max(0, ((st.attack || 10) - 10) * 0.35)) : 0;
+    const claw = st ? Math.round(Math.max(0, (Math.max(st.specialAttack || 0, st.accuracy || 0) - 10) * 0.45)) : 0;
     const TAU = Math.PI * 2;
-    const pose = Math.floor((((wc % TAU) + TAU) % TAU) / TAU * VIRUS_POSES) % VIRUS_POSES;
-    const snap = actor.state === "attack" ? Math.round(Math.sin(actor.attackAnim || 0) * 4) : 0;
+    let pose = Math.floor((((wc % TAU) + TAU) % TAU) / TAU * VIRUS_POSES) % VIRUS_POSES;
+    // The attack lunge in five steps (-4, -2, 0, 2, 4), not nine.
+    const snap = actor.state === "attack" ? Math.round(Math.sin(actor.attackAnim || 0) * 2) * 2 : 0;
+    // A hit flash or a lunge lasts a few frames: four walk poses are plenty for
+    // them, which keeps a fight's looks inside the cache.
+    if (flash || snap) pose -= pose % 3;
     const key = er + "," + eg + "," + eb + "|" + (flash ? 1 : 0) + "|" + saw + "|" + claw + "|" + pose + "|" + snap + "|" + (actor.isFollower ? 1 : 0) + "|" + (actor.element || "");
     let cv = _virusSprites.get(key);
-    if (cv !== undefined) return cv;
+    if (cv !== undefined) {
+        // Least recently used goes first: a hit moves to the back of the line.
+        _virusSprites.delete(key); _virusSprites.set(key, cv);
+        return cv;
+    }
     cv = null;
     const c = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
     const g = c && c.getContext ? c.getContext("2d") : null;
     if (g && typeof g.drawImage === "function" && typeof g.scale === "function") {
-        c.width = VSPR_W * 2; c.height = VSPR_H * 2; g.scale(2, 2);
+        c.width = VSPR_W * VSPR_SCALE; c.height = VSPR_H * VSPR_SCALE; if (VSPR_SCALE !== 1) g.scale(VSPR_SCALE, VSPR_SCALE);
         // A stand-in carrying exactly what the figure reads, at the bucketed values.
         const k = 1 / 0.35, kc = 1 / 0.45;
         const proxy = { isFollower: actor.isFollower, element: actor.element, x: 0, y: 0,
@@ -2324,35 +2374,75 @@ function drawWaveWakeBlink(px, base, colour, since) {
 // "A little bit thicker of a pylon ... a giant light coloured orb." A squat,
 // wide steel block (half as wide again as a tower) holding a big pale orb in a
 // ring. Switched off, the orb goes grey and still. No blur (effects plan).
-function drawShieldGenerator(px, base, on, pulse) {
+// The body (three faces, two bands, the cradle) and the orb are stamped from
+// sprites; only the pulsing halo and the six sparks are drawn live, and the
+// sparks as one path. It was ~14 canvas calls per generator per frame, and a
+// built-up base has dozens of them on screen.
+const _SG_W = 36, _SG_H = 72, _SG_OX = 18, _SG_OY = 66;   // sprite size; (OX, OY) is (px, base)
+const _shieldGenSprites = {};
+function _shieldGenBody(g, px, base, on) {
     const hw = 15, hd = 7.5, h = 34, by = base - 4;
     const L = [px - hw, by], F = [px, by + hd], R = [px + hw, by];
-    ctx.save();
-    const face = (pts, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) ctx.lineTo(p[0], p[1]); ctx.closePath(); ctx.fill(); };
+    const face = (pts, col) => { g.fillStyle = col; g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath(); g.fill(); };
     face([L, F, [F[0], F[1] - h], [L[0], L[1] - h]], "#2a3442");
     face([F, R, [R[0], R[1] - h], [F[0], F[1] - h]], "#1b232e");
     face([[L[0], L[1] - h], [F[0], F[1] - h], [R[0], R[1] - h], [px, by - hd - h]], "#3a4656");
     // Two pale bands round the body.
-    ctx.strokeStyle = on ? "rgba(223,243,255,0.55)" : "rgba(120,130,140,0.4)"; ctx.lineWidth = 1.5;
-    for (const k of [0.35, 0.7]) { ctx.beginPath(); ctx.moveTo(L[0], L[1] - h * k); ctx.lineTo(F[0], F[1] - h * k); ctx.lineTo(R[0], R[1] - h * k); ctx.stroke(); }
-    // The cradle, then the orb.
-    const oy = by - h - 14, r = 11;
-    ctx.strokeStyle = "#4a5768"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.ellipse(px, oy + 6, 13, 5, 0, 0, Math.PI); ctx.stroke();
+    g.strokeStyle = on ? "rgba(223,243,255,0.55)" : "rgba(120,130,140,0.4)"; g.lineWidth = 1.5;
+    for (const k of [0.35, 0.7]) { g.beginPath(); g.moveTo(L[0], L[1] - h * k); g.lineTo(F[0], F[1] - h * k); g.lineTo(R[0], R[1] - h * k); g.stroke(); }
+    // The cradle.
+    const oy = by - h - 14;
+    g.strokeStyle = "#4a5768"; g.lineWidth = 3;
+    g.beginPath(); g.ellipse(px, oy + 6, 13, 5, 0, 0, Math.PI); g.stroke();
+}
+function _shieldGenOrb(g, px, base, on) {
+    const oy = base - 4 - 34 - 14, r = 11;
     if (on) {
+        g.globalAlpha = 0.95; g.fillStyle = SHIELD_GEN_COLOR;
+        g.beginPath(); g.arc(px, oy, r, 0, Math.PI * 2); g.fill();
+        g.globalAlpha = 0.9; g.fillStyle = "#ffffff";
+        g.beginPath(); g.arc(px - 3.5, oy - 3.5, 3.5, 0, Math.PI * 2); g.fill();
+    } else {
+        g.globalAlpha = 0.9; g.fillStyle = "#6b7480";
+        g.beginPath(); g.arc(px, oy, r, 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1;
+}
+function _shieldGenSprite(part, on) {
+    const key = part + (on ? 1 : 0);
+    if (key in _shieldGenSprites) return _shieldGenSprites[key];
+    let cv = null;
+    const el = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
+    const g = el && el.getContext ? el.getContext("2d") : null;
+    if (g && typeof g.drawImage === "function") {
+        el.width = _SG_W; el.height = _SG_H;
+        (part === "body" ? _shieldGenBody : _shieldGenOrb)(g, _SG_OX, _SG_OY, on);
+        cv = el;
+    }
+    return (_shieldGenSprites[key] = cv);
+}
+function drawShieldGenerator(px, base, on, pulse) {
+    const body = _shieldGenSprite("body", on), orb = _shieldGenSprite("orb", on);
+    const oy = base - 4 - 34 - 14, r = 11;
+    ctx.save();
+    if (body) ctx.drawImage(body, px - _SG_OX, base - _SG_OY); else _shieldGenBody(ctx, px, base, on);
+    if (on) {
+        // The halo pulses, so it is live — under the orb, as before.
         ctx.globalAlpha = 0.18 + 0.1 * pulse; ctx.fillStyle = SHIELD_GEN_COLOR;
         ctx.beginPath(); ctx.arc(px, oy, r * 1.7, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 0.95; ctx.fillStyle = SHIELD_GEN_COLOR;
-        ctx.beginPath(); ctx.arc(px, oy, r, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 0.9; ctx.fillStyle = "#ffffff";
-        ctx.beginPath(); ctx.arc(px - 3.5, oy - 3.5, 3.5, 0, Math.PI * 2); ctx.fill();
-        // A slow ring of hex sparks round it.
+        ctx.globalAlpha = 1;
+    }
+    if (orb) ctx.drawImage(orb, px - _SG_OX, base - _SG_OY); else _shieldGenOrb(ctx, px, base, on);
+    if (on) {
+        // A slow ring of hex sparks round it: six circles, one stroke.
         ctx.globalAlpha = 0.7; ctx.strokeStyle = "#9fdcff"; ctx.lineWidth = 1;
         const t = (frame || 0) * 0.03;
-        for (let i = 0; i < 6; i++) { const a = t + i * Math.PI / 3; ctx.beginPath(); ctx.arc(px + Math.cos(a) * (r + 6), oy + Math.sin(a) * (r + 6) * 0.45, 1.6, 0, Math.PI * 2); ctx.stroke(); }
-    } else {
-        ctx.globalAlpha = 0.9; ctx.fillStyle = "#6b7480";
-        ctx.beginPath(); ctx.arc(px, oy, r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const a = t + i * Math.PI / 3, sx = px + Math.cos(a) * (r + 6), sy = oy + Math.sin(a) * (r + 6) * 0.45;
+            ctx.moveTo(sx + 1.6, sy); ctx.arc(sx, sy, 1.6, 0, Math.PI * 2);
+        }
+        ctx.stroke();
     }
     ctx.restore();
 }
