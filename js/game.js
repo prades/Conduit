@@ -2653,6 +2653,8 @@ function render() {
             noteKillForProgression();
         }
         // track kills for wave clear — count dead enemies not clones, wanderers don't count
+        // A nymph is not a kill toward it (drops.js isNymph — no points).
+        if (a.dead && isEnemyUnit(a) && !a.killCounted && !a.isWanderer && typeof isNymph === "function" && isNymph(a)) a.killCounted = true;
         if (a.dead && isEnemyUnit(a) && !a.killCounted && !a.isWanderer) {
             a.killCounted = true;
             nightKillCount++;

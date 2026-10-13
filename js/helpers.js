@@ -112,6 +112,10 @@ function unitsNear(x, r) {
     return out;
 }
 
+// A nymph: the smallest class, the one that comes in swarms. It is worth no
+// points — no charged mass (drops.js) and no kill toward the night's quota.
+function isNymph(p) { return !!p && p.className === "nymph"; }
+
 function isNeutralBystander(a) {
     return !!(a && a.isNeutralRecruit && a.team === "red");
 }

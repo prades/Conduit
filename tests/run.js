@@ -67,6 +67,7 @@ const SUITES = [
     ['game index + icons',     'index.js'],
     ['boot check',             'boot.js'],
     ['walk home + mass colour', 'walkhome.js'],
+    ['nymphs grant nothing',   'nymphs.js'],
 ];
 
 let failed = 0;

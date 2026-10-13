@@ -18,14 +18,19 @@ function onPredatorDeath(predator) {
     if (typeof raidOnDeath === "function" && raidOnDeath(predator)) return;
     // A body left in the grub's zone is food for it (js/broods.js).
     if (typeof noteCorpse === "function") noteCorpse(predator);
-    const _massValue = Math.max(1, Math.round((predator.shardDrop || 5) * MASS_VALUE_SCALE));
-    spawnChargedMass(predator.x, predator.y, _massValue);
-    floatingTexts.push({
-        x: px, y: py - 60,
-        text: "CHARGED MASS \u25c8 " + _massValue,
-        color: "#ffee33",
-        life: 90, vy: -0.8
-    });
+    // REPORTED: "make nymphs not grant any points." A nymph leaves no mass, so
+    // it is worth no shards (and it does not count toward the night's kills —
+    // game.js). It still drops its DNA.
+    if (!isNymph(predator)) {
+        const _massValue = Math.max(1, Math.round((predator.shardDrop || 5) * MASS_VALUE_SCALE));
+        spawnChargedMass(predator.x, predator.y, _massValue);
+        floatingTexts.push({
+            x: px, y: py - 60,
+            text: "CHARGED MASS \u25c8 " + _massValue,
+            color: "#ffee33",
+            life: 90, vy: -0.8
+        });
+    }
 
     // DNA splice drop
     const speciesName = predator.speciesName || "ant";
