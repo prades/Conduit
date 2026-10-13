@@ -411,6 +411,26 @@ async function ready() {
         same(r.length, 0, 'tappable but invisible: ' + r.slice(0, 6).join(', '));
     });
 
+    // "When I'm creating clones from the window options, it should allow me to
+    // make as many as I want by clicking the options before closing out of the
+    // menu after 1." The bay used to shut after every summon.
+    check('THE ASK: the bay STAYS OPEN — tap CLONE again and again, up to the cap', () => {
+        const r = C.run(`(function(){
+            actors.length = 0; followers.length = 0; shardCount = 9999;
+            setDNA({ ant_scout: 99 });
+            cloneMenuOpen = true; crystalCloneSort = CSORTS[0].id; _crystalScrollY = 0;
+            const tapIt = () => { drawCloneMenu(); const o = (window._cloneTabOpts || []).find(o => o.key === 'ant_scout' && o.ready && typeof o._bx === 'number');
+                if (!o) return false; handleCloneMenuTap(o._bx + o._bw / 2, o._by + o._bh / 2); return true; };
+            const made = [];
+            for (let i = 0; i < MAX_CLONES + 2; i++) { tapIt(); made.push(actors.filter(a => a.isClone && !a.dead).length); }
+            return { made, open: cloneMenuOpen, flash: _cloneBayFlash && _cloneBayFlash.text, cap: MAX_CLONES };
+        })()`);
+        same(r.open, true, 'the bay closed after summoning');
+        same(r.made.slice(0, r.cap).join(','), Array.from({ length: r.cap }, (_, i) => i + 1).join(','), 'one more clone per tap');
+        same(r.made[r.made.length - 1], r.cap, 'past the cap nothing more');
+        ok(/ANT SCOUT CLONED/.test(r.flash || ''), 'the bay does not say what it just made: ' + r.flash);
+    });
+
     // ─────────────────────────────────────────────────────
     group('A CLONE IS A BETTER VERSION OF WHAT YOU KILLED');
 

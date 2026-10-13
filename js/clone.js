@@ -168,8 +168,13 @@ function executeClone(option) {
         life: 120, vy: -0.5
     });
 
-    cloneMenuOpen = false;
+    // The bay STAYS OPEN. "It should allow me to make as many as I want by
+    // clicking the options before closing out of the menu" — it used to shut
+    // after one. The floating text above is drawn under the bay's backdrop, so
+    // the bay says it itself, in its title bar (drawCloneMenu).
+    _cloneBayFlash = { text: "\u2713 " + option.speciesName.toUpperCase() + " " + option.className.toUpperCase() + " CLONED", color: speciesDef.color, until: (frame || 0) + 90 };
 }
+let _cloneBayFlash = null;
 
 // ── THE CLONE BAY ────────────────────────────────────────
 // "Make the clone menu only appear on the HUD — the button to go to the clone
@@ -194,8 +199,11 @@ function drawCloneMenu() {
     // Title bar
     ctx.fillStyle = "rgba(0,40,30,0.75)"; ctx.fillRect(g.PX, g.PY, g.PW - g.closeW, g.barH);
     ctx.fillStyle = "#00ccaa"; ctx.fillRect(g.PX + 1, g.PY + g.barH - 3, g.PW - g.closeW - 2, 3);
-    ctx.fillStyle = "#e8fff8"; ctx.font = "bold 12px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText("\u2687 CLONE BAY", g.PX + (g.PW - g.closeW) / 2, g.PY + g.barH / 2);
+    ctx.font = "bold 12px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    // The last summon, for a moment, in place of the title (the bay stays open).
+    const _fl = _cloneBayFlash && (frame || 0) < _cloneBayFlash.until ? _cloneBayFlash : null;
+    ctx.fillStyle = _fl ? _fl.color : "#e8fff8";
+    ctx.fillText(_fl ? _fl.text + "  \u00b7  " + actors.filter(a => a.isClone && !a.dead).length + "/" + MAX_CLONES : "\u2687 CLONE BAY", g.PX + (g.PW - g.closeW) / 2, g.PY + g.barH / 2);
     // Close
     ctx.fillStyle = "rgba(55,0,0,0.65)"; ctx.fillRect(g.closeX, g.PY, g.closeW, g.barH);
     ctx.strokeStyle = "#310"; ctx.lineWidth = 1; ctx.strokeRect(g.closeX, g.PY, g.closeW, g.barH);
@@ -249,7 +257,7 @@ function _clonesTabTap(ex, ey, PX) {
     for (const opt of (window._cloneTabOpts || [])) {
         if (!opt.ready || !opt._bx) continue;
         if (ex>=opt._bx&&ex<=opt._bx+opt._bw&&ey>=opt._by&&ey<=opt._by+opt._bh) {
-            executeClone(opt); cloneMenuOpen = false; return true;
+            executeClone(opt); return true;   // and the bay stays open for the next
         }
     }
     // A BLOCKED row explains itself rather than swallowing the tap in silence.
