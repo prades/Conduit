@@ -238,6 +238,8 @@ function handleLongHold(ex,ey) {
     // the duty switch belongs to it. Checked before anything else so the world
     // radial does not also open underneath the panel.
     if (typeof openFollowerDutyMenu === "function" && openFollowerDutyMenu(ex, ey)) return;
+    // A long press on the build window is the window's, not the world's.
+    if (typeof buildMenuHit === "function" && buildMenuHit(ex, ey)) return;
     commandMode=true; commandX=ex; commandY=ey;
     // KEEP THE RING ON SCREEN. A nest or the home portal on the back wall sits
     // under the top HUD, which hid the ring's top button (OVERCHARGE). The ring
@@ -403,6 +405,9 @@ canvas.addEventListener('pointerup', e=>{
     if (handleOverlayPanelTap(upX, upY)) { isPressing=false; return; }
     if (handleCloneMenuTap(upX, upY)) { isPressing=false; return; }
     if (handleCampMenuTap(upX, upY)) { isPressing=false; return; }
+    // The build window (js/buildmenu.js): ahead of the HUD index, which it can
+    // sit over on a narrow screen.
+    if (typeof handleBuildMenuTap === "function" && handleBuildMenuTap(upX, upY)) { isPressing=false; return; }
     // The group duty menu first: it sits beside the index, and the index's own
     // tap handler would otherwise take a press aimed at the menu.
     if (typeof handleFollowerDutyMenuTap === "function"
@@ -430,6 +435,11 @@ canvas.addEventListener('pointerup', e=>{
             campMenuOpen = true; isPressing = false; return;
         }
     }
+
+    // A tool from the build window in hand: a tap on the ground places it
+    // (js/buildmenu.js). A drag, a long press or an open ring are not taps.
+    if (!touchMoved && !longHoldFired && !commandMode && !commandPendingTap
+        && typeof handleBuildToolTap === "function" && handleBuildToolTap(upX, upY)) { isPressing=false; return; }
 
     // ── ULTIMATE DOUBLE-TAP DETECTION ────────────────────
     // Not while the radial menu is up or waiting for its tap, and not in build

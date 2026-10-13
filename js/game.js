@@ -4510,6 +4510,7 @@ function render() {
     // The hold line is world geometry, so it draws with the world rather than
     // up with the interface.
     drawHoldLine();
+    if (typeof drawBuildGhost === "function") drawBuildGhost();   // the build tool's ghost on the ground
     if (typeof drawBonds === "function") drawBonds();
     // The power chain over the mending filament: the mending line is incidental,
     // the power is the thing the player is managing.
@@ -4529,6 +4530,7 @@ function render() {
     drawCrystalPanel();
     drawGestureFeedback();
     drawFollowerElementUI();
+    if (typeof drawBuildMenu === "function") drawBuildMenu();     // the build window, under the modal panels
     drawElementPicker();
     drawPylonConfirm();
     drawInfoPanel();

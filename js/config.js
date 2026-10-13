@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-13j";
+const BUILD_VERSION = "2026-10-13k";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -1040,6 +1040,8 @@ function toggleSquad() {
 function toggleBuild() {
     buildMode = !buildMode;
     updateBuildButton();
+    // The build window (js/buildmenu.js) opens and closes with the button.
+    if (typeof syncBuildMenu === "function") syncBuildMenu();
 }
 function toggleControlsMenu() {
     const m = document.getElementById("controlsMenu");

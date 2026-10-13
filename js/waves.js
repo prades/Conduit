@@ -428,6 +428,7 @@ function resetTransientState() {
     buildMode         = false;
     const _bBtn = document.getElementById("btnBuild");
     if (_bBtn && typeof updateBuildButton === "function") updateBuildButton();
+    if (typeof syncBuildMenu === "function") syncBuildMenu();   // the build window closes with it
     holdLineX         = null;
     isPressing        = false; longHoldFired = false; touchMoved = false; gesturePoints = [];
     shake             = 0;
