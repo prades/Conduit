@@ -80,7 +80,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const r = run(`(function(){ let ny = 0, half = 0; const n = 60;
             for (let i = 0; i < n; i++) { const p = spawnPredatorForZone(2, {}); if (p.className === 'nymph') ny++;
                 const def = getClassDef(SPECIES[p.speciesName] || SYNTHETIC_SPECIES[p.speciesName], p.className);
-                if (p.maxHealth <= Math.ceil(def.health * SIEGE_SWARM_HP) + 1) half++; p.dead = true; }
+                // Its LEVEL scales it (js/levels.js): half of what its level makes it.
+                if (p.maxHealth <= Math.ceil(def.health * levelFactor(p.level) / levelFactor(LEVEL_START) * SIEGE_SWARM_HP) + 1) half++; p.dead = true; }
             actors = actors.filter(a => !a.dead); return { ny, half, n }; })()`);
         set(null);
         ok(r.ny >= r.n * 0.5, `${r.ny} of ${r.n} were nymphs`);

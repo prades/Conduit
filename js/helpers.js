@@ -407,16 +407,17 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
         }
     }
     if (target.defenseShredded > 0) amount *= 1 / (target.defenseShredFactor||0.5);
+    // DEFENSE, for every unit (js/levels.js defenseMult): its DEF against the
+    // attacker's level. It was followers only, as 10 / (10 + DEF × 0.6) — the
+    // same numbers at level 5.
+    if (typeof defenseMult === "function") amount *= defenseMult(target, source);
+    else if (target.isFollower && target.stats && target.stats.defense) amount *= 10 / (10 + target.stats.defense * 0.6);
     // A clone a TOXIC worker is mending is hardened by it (js/mass.js).
     if (target.isClone && target._mendedAt !== undefined && typeof MEND_GUARD === "number" && frame - target._mendedAt < MEND_GUARD_FRAMES) amount *= MEND_GUARD;
     // Command Node — 10% incoming damage reduction for followers
     if (target && target.isFollower && target.team === "green") {
         amount *= getFollowerDefMult();
         if (typeof bondDefenseMult === "function") amount *= bondDefenseMult(target);   // a partner close by
-        // Defense stat mitigation — higher DEF = more damage absorbed
-        if (target.stats && target.stats.defense) {
-            amount *= 10 / (10 + target.stats.defense * 0.6);
-        }
         // Hard cap: no single hit can remove more than 45% of max HP
         amount = Math.min(amount, (target.maxHealth || 20) * 0.45);
     }
@@ -800,6 +801,8 @@ function spawnFollowerAtCrystal(element) {
         perk:         Object.keys(PERKS)[Math.floor(Math.random()*2)]
     };
     if (typeof followerUid === "function") followerUid(npc);
+    // Its level: the frontier's, a little behind (js/levels.js recruitLevel).
+    if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { level: recruitLevel() });
     actors.push(npc);
     followers.push(npc);
     followerByElement[element] = followerByElement[element]||[];

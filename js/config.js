@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-13o";
+const BUILD_VERSION = "2026-10-13p";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -447,13 +447,18 @@ const NIGHT_QUOTA_MAX  = 45;     // most kills a night can ask for, however deep
 function rampLevel(z) { return Math.max(0, Math.min(RAMP_CAP, z - (RAMP_FROM - 1))); }
 // Every predator is made its zone's difficulty here: the ramp, then the deep
 // zones. Both ways a predator is made call it (the zone spawner, a nest hatch).
+// LEVELS (js/levels.js) replaced the health and damage multipliers here: a
+// predator's toughness is now its LEVEL, set by the wave and this zone's depth
+// (predatorLevelFor — three levels per ramp step, six per deep zone), so the
+// number over its health bar is honestly how strong it is. The ramp still
+// sends more of them after your pylons.
 function applyZoneDifficulty(p, z) {
     if (!p || p._zoneScaled) return p;
     p._zoneScaled = true;
     const r = rampLevel(z);
+    if (typeof setPredatorLevel === "function" && !p.isClone)
+        setPredatorLevel(p, predatorLevelFor(z, undefined, true) + (p.isBoss ? 3 : 0));
     if (r > 0) {
-        p.maxHealth = Math.round(p.maxHealth * (1 + RAMP_HP * r)); p.health = p.maxHealth;
-        p.power = Math.round(p.power * (1 + RAMP_POWER * r));
         if (!p.isBrood && Math.random() < Math.min(RAMP_HUNTERS_MAX, (typeof PYLON_HUNTER_SHARE !== "undefined" ? PYLON_HUNTER_SHARE : 0.25) + RAMP_HUNTERS * r)) p.huntsPylons = true;
         p.rampLevel = r;
     }
@@ -471,8 +476,11 @@ function deepZoneScale(z) {
 function applyDeepZone(p, z) {
     if (!p || p.deepLevel !== undefined || deepZoneLevel(z) <= 0) return p;
     const k = deepZoneScale(z);
-    p.maxHealth = Math.round(p.maxHealth * k.hp); p.health = p.maxHealth;
-    p.power = Math.round(p.power * k.power);
+    // A levelled predator's depth is already in its level (levels.js).
+    if (!Number.isFinite(p.level)) {
+        p.maxHealth = Math.round(p.maxHealth * k.hp); p.health = p.maxHealth;
+        p.power = Math.round(p.power * k.power);
+    }
     if (p.dimensions) { p.dimensions.width = Math.round(p.dimensions.width * k.size); p.dimensions.height = Math.round(p.dimensions.height * k.size); }
     p.shardDrop = Math.round((p.shardDrop || 2) * k.reward);
     p.dnaDrops  = Math.round((p.dnaDrops || 1) * k.reward);

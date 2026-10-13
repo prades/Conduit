@@ -469,16 +469,22 @@ function _buildInfoRows(targetTile) {
     if (subject) {
         const el = ELEMENTS.find(e=>e.id===subject.element);
         const elColor = el ? el.color : "#0f8";
+        // LEVEL and the stat sheet (js/levels.js).
+        const _lv = subject.level, _xpNext = Number.isFinite(_lv) && _lv < LEVEL_CAP ? Math.max(0, Math.ceil(xpForLevel(_lv + 1) - (subject.xp || 0))) : 0;
         const rows = [
-            ["ELEMENT",    (el ? el.label : subject.element||"?").toUpperCase(), elColor],
+            ["LEVEL",      Number.isFinite(_lv) ? (_lv + (_lv < LEVEL_CAP ? "  \u00b7  " + _xpNext + " XP TO NEXT" : "  \u00b7  MAX")) : "\u2014", "#ffee66"],
+            subject.isClone ? ["KIND", unitTypeLabel(subject), "#0f8"]
+                            : ["ELEMENT",    (el ? el.label : subject.element||"?").toUpperCase(), elColor],
             ["PERSONALITY",(subject.personality||"—").toUpperCase(), "#aad"],
             ["HP",         Math.ceil(subject.health)+" / "+subject.maxHealth, "#0f8"],
-            ["POWER",      (subject.power||0).toFixed(1), "#ff0"],
             ["SPEED",      ((subject.moveSpeed||0)*1000).toFixed(1)+"‰", "#aad"],
         ];
         if (subject.stats) {
+            rows.push(["ATK / DEF",  (subject.stats.attack||0).toFixed(0) + " / " + (subject.stats.defense||0).toFixed(0), "#f88"]);
+            rows.push(["SP.ATK / ACC", (subject.stats.specialAttack||0).toFixed(0) + " / " + (subject.stats.accuracy||0).toFixed(0), "#c8f"]);
             rows.push(["WILL",  (subject.stats.will||0).toFixed(0), "#aad"]);
-            rows.push(["ATK",   (subject.stats.attack||0).toFixed(0), "#f88"]);
+        } else {
+            rows.push(["ATK / DEF",  (subject.power||0).toFixed(0) + " / " + (subject.def||0).toFixed(0), "#f88"]);
         }
         rows.push(null); // separator
         const ctName = subject.combatTrait  ? (COMBAT_TRAITS[subject.combatTrait]?.name  || subject.combatTrait)  : "—";

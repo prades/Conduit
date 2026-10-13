@@ -26,15 +26,22 @@ function ok(c, m) { if (!c) throw new Error(m); }
     ok(run('world.length') > 100, 'fixture: the world did not generate');
     run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
     // The same scout made in zone `z`, `n` times; its health/power and how many hunt pylons.
-    const made = (z, n) => run(`(function(){ let hp = 0, pw = 0, hunt = 0;
+    const made = (z, n) => run(`(function(){ let hp = 0, pw = 0, hunt = 0, lv = 0;
         for (let i = 0; i < ${n}; i++) { const S = SPECIES.ant; const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 0, 0);
-            applyZoneDifficulty(p, ${z}); hp += p.maxHealth; pw += p.power; if (p.huntsPylons) hunt++; }
-        return { hp: hp / ${n}, pw: pw / ${n}, hunt: hunt / ${n}, base: SPECIES.ant.scout.health }; })()`);
+            applyZoneDifficulty(p, ${z}); hp += p.maxHealth; pw += p.power; lv += p.level || 0; if (p.huntsPylons) hunt++; }
+        return { hp: hp / ${n}, pw: pw / ${n}, lv: lv / ${n}, hunt: hunt / ${n}, base: SPECIES.ant.scout.health }; })()`);
 
     group('ZONES 1-2 STAY AS THEY ARE');
 
-    await check('a zone 1 or 2 predator is untouched', () => {
-        for (const z of [1, 2]) { const r = made(z, 1); ok(r.hp === r.base, `zone ${z}: ${r.hp} vs ${r.base}`); }
+    // LEVELS (js/levels.js) replaced the ramp's multipliers: a predator's
+    // toughness is its level, set by the wave and the zone, with a spread of
+    // one level either way. Zones 1-2 on wave 1 are level 5 — as they were — ±1.
+    await check('a zone 1 or 2 predator is as it was: level 5, give or take one', () => {
+        for (const z of [1, 2]) for (let i = 0; i < 10; i++) {
+            const r = made(z, 1);
+            ok(r.lv >= 4 && r.lv <= 6, `zone ${z}: level ${r.lv}`);
+            ok(Math.abs(r.hp / r.base - 1) <= 1 / 15 + 0.01, `zone ${z}: ${r.hp} vs ${r.base}`);
+        }
     });
 
     group('FROM ZONE 3 IT CLIMBS');
@@ -42,7 +49,10 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('THE ASK: enemies take longer to kill and hit harder, zone after zone', () => {
         const z3 = made(3, 1), z6 = made(6, 1), z12 = made(12, 1);
         ok(z3.hp > z3.base && z6.hp > z3.hp && z12.hp > z6.hp, [z3.hp, z6.hp, z12.hp].join(' < '));
-        ok(Math.abs(z6.hp / z6.base - (1 + run('RAMP_HP') * 4)) < 0.02, 'zone 6 health ×' + (z6.hp / z6.base));
+        // Zone 6: three levels a ramp step, four steps — level 17 (×1.8 of level 5).
+        const z6m = made(6, 40);
+        ok(Math.abs(z6m.lv - 17) < 0.5, 'zone 6 level ' + z6m.lv);
+        ok(Math.abs(z6m.hp / z6m.base - run('levelFactor(17) / levelFactor(5)')) < 0.05, 'zone 6 health ×' + (z6m.hp / z6m.base));
         ok(z12.pw > z3.pw, 'damage does not climb');
     });
     await check('it levels off at RAMP_CAP — the endless deep growth takes over past zone 12', () => {

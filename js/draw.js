@@ -1072,6 +1072,8 @@ function _drawPredator(actor, px, py, drawCtx) {
     if (actor.isNymph) drawCtx.globalAlpha = 1; // restore after nymph transparency
     const _isAllyPred = actor.team === "green" || actor.isClone;
     drawHealthBar(px-18, py-85, 36, 5, actor.health, actor.maxHealth, drawCtx, _isAllyPred);
+    // Its level and kind, over the bar (js/levels.js).
+    if (typeof drawUnitTag === "function") drawUnitTag(actor, px, py - (_isAllyPred ? 99 : 97), drawCtx);
     drawAbilityCharge(actor, px, py, drawCtx);
     // Clone/ally: green bracket frame + diamond marker for identification
     if (_isAllyPred) {
@@ -1157,7 +1159,7 @@ function _drawVirusFigure(drawCtx, px, py, actor, flash, er, eg, eb, wc, opts) {
     const FEM_LEN = 15, TIB_LEN = 13;
 
     // Pre-compute saw size and claw size so leg loop can use them
-    const _sawSt    = (actor.isFollower && !actor.ghostphageLife) ? (actor.stats || {}) : null;
+    const _sawSt    = (actor.isFollower && !actor.ghostphageLife) ? (actor.base || actor.stats || {}) : null;
     const _sawSize  = _sawSt ? Math.max(0, ((_sawSt.attack || 10) - 10) * 0.35) : 0;
     const _clawSt   = _sawSt;
     const _clawSize = _clawSt ? Math.max(0, (Math.max(_clawSt.specialAttack || 0, _clawSt.accuracy || 0) - 10) * 0.45) : 0;
@@ -1429,7 +1431,7 @@ function _virusSpriteOk(actor) {
     return !actor.ghostphageLife && !(actor.smokeForm > 0);
 }
 function _virusSprite(actor, flash, er, eg, eb, wc) {
-    const st = actor.isFollower ? (actor.stats || {}) : null;
+    const st = actor.isFollower ? (actor.base || actor.stats || {}) : null;
     // Shape buckets: the saw teeth and knee claws grow with stats in steps
     // too small to see, so they are rounded to a visible step.
     // Whole steps (they were half steps: twice the looks for no visible change).
@@ -1489,6 +1491,8 @@ function _drawVirus(actor, px, py, drawCtx) {
     if (_virusCountFrame !== frame) { _virusesOnScreen = _virusesCounting; _virusesCounting = 0; _virusCountFrame = frame; }
     _virusesCounting++;
     drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
+    // Its level and kind, over the bar and the ultimate bar (js/levels.js).
+    if (typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 88, drawCtx);
     _drawFollowerShield(actor, px, py, drawCtx);
 
     // ── ULTIMATE CHARGE BAR ───────────────────────────────

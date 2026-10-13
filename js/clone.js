@@ -79,7 +79,7 @@ function dismissOldestClone() {
 // and the between-waves restore — and only the summon applied the 3x power
 // multiplier, so a clone that died once came back an ordinary predator for the
 // rest of the game. Every rule about what a clone IS lives here.
-function makeClone(speciesName, className, x, y, state) {
+function makeClone(speciesName, className, x, y, state, lv) {
     const speciesDef = (typeof SPECIES !== "undefined" && SPECIES[speciesName]) ||
                        (typeof SYNTHETIC_SPECIES !== "undefined" ? SYNTHETIC_SPECIES[speciesName] : null);
     if (!speciesDef) return null;
@@ -106,17 +106,23 @@ function makeClone(speciesName, className, x, y, state) {
     clone.team        = "green";
     clone.isClone     = true;
     clone.power       = Math.round(clone.power * CLONE_POWER_MULT);
-    // Grown with the frontier's depth, the same ramp the predators get
-    // (applyZoneDifficulty in config.js), so it keeps up with what it fights.
-    if (typeof rampLevel === "function" && typeof nextZoneToTake === "function") {
+    clone.speciesName = speciesName;
+    clone.className   = className;
+    // ITS LEVEL (js/levels.js). A new clone comes out at the level of what it
+    // will fight — the frontier's predators — and then grows by its own kills;
+    // a clone that respawns, or comes back from a save, keeps its own (lv).
+    if (typeof setPredatorLevel === "function") {
+        const L = lv && Number.isFinite(lv.level) ? lv.level
+                : (typeof predatorLevelFor === "function" && typeof nextZoneToTake === "function" ? predatorLevelFor(nextZoneToTake(), undefined, false) : 5);
+        setPredatorLevel(clone, L, true);
+        clone.xp = lv && Number.isFinite(lv.xp) ? Math.max(xpForLevel(clone.level), lv.xp) : xpForLevel(clone.level);
+    } else if (typeof rampLevel === "function" && typeof nextZoneToTake === "function") {
         const z = nextZoneToTake(), r = rampLevel(z);
         const deep = typeof deepZoneScale === "function" ? deepZoneScale(z) : { hp: 1, power: 1 };
         const kH = (1 + RAMP_HP * r) * deep.hp, kP = (1 + RAMP_POWER * r) * deep.power;
         clone.maxHealth = Math.round(clone.maxHealth * kH); clone.health = clone.maxHealth;
         clone.power = Math.round(clone.power * kP);
     }
-    clone.speciesName = speciesName;
-    clone.className   = className;
     if (typeof applySpeciesBody === "function") applySpeciesBody(clone, speciesName);
     actors.push(clone);
     return clone;

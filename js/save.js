@@ -189,7 +189,7 @@ function restoreClones(list, queue) {
     for (const c of (list || [])) {
         if (!c || !c.sp) continue;
         const x = Number.isFinite(c.x) ? c.x : crystal.x, y = Number.isFinite(c.y) ? c.y : crystal.y;
-        const k = makeClone(c.sp, c.cl || "scout", x, y);
+        const k = makeClone(c.sp, c.cl || "scout", x, y, undefined, { level: c.lv, xp: c.xp });
         if (!k) continue;
         if (Number.isFinite(c.h)) k.health = Math.max(1, Math.round(k.maxHealth * Math.min(1, Math.max(0, c.h))));
         if (c.duty === "worker") { k.duty = "worker"; k.cloneWork = {}; }
@@ -280,7 +280,7 @@ function saveSession() {
             // how hurt, its duty) and every one waiting to respawn.
             clones: actors.filter(a => a.isClone && a.team === "green" && !a.dead && a.speciesName).map(a => ({
                 sp: a.speciesName, cl: a.className, x: +a.x.toFixed(2), y: +a.y.toFixed(2),
-                h: a.maxHealth > 0 ? +(a.health / a.maxHealth).toFixed(3) : 1, duty: a.duty || null })),
+                h: a.maxHealth > 0 ? +(a.health / a.maxHealth).toFixed(3) : 1, duty: a.duty || null, lv: a.level, xp: a.xp })),
             cloneQueue: (typeof respawnQueue !== "undefined" ? respawnQueue : []).filter(e => e.isClone && e.speciesName).map(e => ({
                 sp: e.speciesName, cl: e.className, t: e.timer, tt: e.totalTimer })),
             // Without this a refresh during a wave put the player back in

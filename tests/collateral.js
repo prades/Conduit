@@ -95,8 +95,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         spawnFollowerProjectile(src, f, '#88ff44', 12, 4, null);
         ${greens ? 'followerProjectiles[followerProjectiles.length - 1].targetsGreen = true;' : ''}
         const pr = followerProjectiles[followerProjectiles.length - 1];
-        for (let i = 0; i < 90; i++) { gameState.running = true; f.x = ${x1}; f.y = ${y}; render(); }
-        return { follower: f.health, flying: followerProjectiles.includes(pr) }; })()`;
+        // Did THIS round hit the follower? (A floor hazard or a passing
+        // predator may nick it over 90 frames; that is not what is asked.)
+        let shotHit = false; const keep = applyDamage;
+        applyDamage = function (t, amt, source) { if (t === f && source === src) shotHit = true; return keep.apply(this, arguments); };
+        try { for (let i = 0; i < 90; i++) { gameState.running = true; f.x = ${x1}; f.y = ${y}; render(); } }
+        finally { applyDamage = keep; }
+        return { follower: shotHit ? 0 : 1000, flying: followerProjectiles.includes(pr) }; })()`;
     check('THE ASK: a round shot at a follower that passes over a turret hits the turret — and stops there', () => {
         run(PYLON(40, 2));
         const h0 = hp(40, 2);

@@ -71,6 +71,10 @@ function updateRTSNPC(actor) {
                 // virus, so the personality's speed did nothing.
                 actor.baseMoveSpeed = actor.moveSpeed; actor.slowed = 0; actor.slowFactor = 1;
             }
+            // Its LEVEL (js/levels.js): the level of the zone it was found in,
+            // a little behind that zone's predators.
+            if (!Number.isFinite(actor.level) && typeof initFollowerLevel === "function")
+                initFollowerLevel(actor, { level: recruitLevel(Number.isFinite(actor.spawnKey) && typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(actor.spawnKey)) : undefined) });
             // Always reassign element at crystal — world-spawn element is stale/irrelevant
             // The modulation slider decides the pool. It used to draw a label
             // and a row of swatches and nothing read the result — recruits just

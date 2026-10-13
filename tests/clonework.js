@@ -52,7 +52,7 @@ async function boot(store) {
         ok(r.power > 0, 'it came back without its power');
     });
     await check('they come back as real clones (makeClone: the multipliers, ours, green)', () => {
-        ok(/const k = makeClone\(c\.sp, c\.cl \|\| "scout", x, y\);/.test(rd('js/save.js')), 'not built by makeClone');
+        ok(/const k = makeClone\(c\.sp, c\.cl \|\| "scout", x, y[,)]/.test(rd('js/save.js')), 'not built by makeClone');
     });
 
     group('CLONE WORK — THE FRAMEWORK');

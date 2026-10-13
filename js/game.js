@@ -2776,17 +2776,24 @@ function render() {
         if (a.dead&&a.team==="green"&&!a.queuedForRespawn&&!a.sacrificed) {
             a.queuedForRespawn=true;
             if (typeof bondOnDeath === "function") bondOnDeath(a);   // the partner rages; the bond ends
-            const oldHp = a.stats?.hp||1;
+            // The HP stat that wears down with each death is the BASE one
+            // (js/levels.js); its level scales it back up.
+            const oldHp = a.base?.hp ?? a.stats?.hp ?? 1;
             const newHp = oldHp - 1;
             // The two last-life saves (ghostphage, warden_pact) were crystal
             // builds and nothing can set one any more, so running out of HP
             // stat is simply permanent.
-            if (newHp<=0) return; // permanent death — don't queue
+            // A clone has no HP stat to wear down: it always comes back. (It
+            // read a.stats, which a clone does not have, so it never did.)
+            if (newHp<=0 && !a.isClone) return; // permanent death — don't queue
             // A clone takes far longer to come back than a follower: it is
             // worth three times as much in a fight and cost shards and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
-            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid, duty:a.duty === "worker" ? "worker" : null });
+            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid, duty:a.duty === "worker" ? "worker" : null,
+                // Its level comes back with it, less some XP (js/levels.js).
+                base: a.base ? Object.assign({}, a.base, { hp: Math.max(1, newHp) }) : undefined,
+                level: a.level, xp: typeof xpAfterDeath === "function" ? xpAfterDeath(a) : a.xp });
         }
         // Progression counts EVERY enemy killed, wanderers included — it is a
         // record of what you have fought, not of wave quotas. The wave counter
@@ -2797,6 +2804,8 @@ function render() {
         if (a.dead && isEnemyUnit(a) && !a.progressCounted) {
             a.progressCounted = true;
             noteKillForProgression();
+            // XP to whoever killed it and those fighting near it (js/levels.js).
+            if (typeof awardKillXp === "function") awardKillXp(a);
         }
         // track kills for wave clear — count dead enemies not clones, wanderers don't count
         // A nymph is not a kill toward it (drops.js isNymph — no points).
@@ -4407,7 +4416,7 @@ function render() {
                 // summon built. This block used to construct its own and left
                 // off the power multiplier entirely — one death and a clone
                 // was an ordinary predator for the rest of the game.
-                const clone = makeClone(entry.speciesName, entry.className, crystal.x, crystal.y);
+                const clone = makeClone(entry.speciesName, entry.className, crystal.x, crystal.y, undefined, { level: entry.level, xp: entry.xp });
                 if (!clone) { respawnQueue.splice(i,1); continue; }
             } else {
                 // Respawn as regular follower — apply HP stat degradation
@@ -4441,6 +4450,9 @@ function render() {
                 };
                 // The same person back — same uid — but the bond did not survive.
                 if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid });
+                // Its level and XP (less what dying cost) — js/levels.js.
+                if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp, hpStat: entry.hpStat });
+                if (entry.ghostphageLife) npc.health = 1;
                 // A worker comes back a worker (a toxic medic used to come back
                 // a fighter, and stop tending its clone, after every death).
                 if (entry.duty === "worker" && (typeof canWorkMass !== "function" || canWorkMass(npc))) npc.duty = "worker";

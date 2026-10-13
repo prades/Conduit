@@ -364,7 +364,12 @@ function followerRosterSnapshot() {
         role:        a.role,
         uid:         a.uid || null,
         partnerUid:  a.partnerUid || null,
-        duty:        a.duty === "worker" ? "worker" : null
+        duty:        a.duty === "worker" ? "worker" : null,
+        // Its level (js/levels.js). A follower waiting to respawn carries its
+        // own (already less what dying cost).
+        base:        a.base || undefined,
+        level:       a.level,
+        xp:          a.xp
     }));
 }
 function saveFollowerRoster() {
@@ -391,6 +396,8 @@ function spawnFollowerFromSave(entry) {
         combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk
     };
     if (typeof bondRestoreFields === "function") bondRestoreFields(npc, entry);
+    // Its level and XP (js/levels.js); an old save's stats are its level-5 base.
+    if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp });
     // Back on the duty it was on (a worker stays a worker).
     if (entry.duty === "worker" && (typeof canWorkMass !== "function" || canWorkMass(npc))) npc.duty = "worker";
     actors.push(npc); followers.push(npc);
