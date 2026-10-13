@@ -94,6 +94,12 @@ function issueReconstruct(pylon) {
 
 // ── ELEMENT PICKER ────────────────────────────────────────
 function openElementPicker(mode, target) {
+    // An offline frame (js/mass.js) is brought back by a CORE worker, not by
+    // the ring: otherwise an upgrade or convert would switch it on for free.
+    if (target && target.offline && mode !== "build") {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "OFFLINE \u2014 A CORE WORKER MUST RE-ARM IT", color: "#ff9966", life: 110, vy: -0.2, size: 12 });
+        return;
+    }
     elementPickerMode   = mode;
     elementPickerTarget = target;
     // Every picker starts with WHAT it is (attack / wave / connector /
@@ -413,6 +419,7 @@ function mk2Eligible(t) {
 }
 // Why it cannot be bought right now, or null when it can.
 function mk2Blocker(t) {
+    if (t && t.offline) return "OFFLINE \u2014 NEEDS CORE";
     if (!mk2Eligible(t)) return "NOT A TURRET OR WAVE PYLON";
     if ((t.mk || 0) >= 2) return "ALREADY MK II";
     const tier = typeof networkTierAt === "function" ? networkTierAt(t.attackModeElement, t.x, t.y) : 0;

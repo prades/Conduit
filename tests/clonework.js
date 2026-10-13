@@ -139,6 +139,7 @@ async function boot(store) {
         const runA = await boot({ tubecrawler_seed: '305419896' });
         return runA(`(function(){
             actors.length = 0; followers.length = 0; shardCount = 999;
+            unlockedElements = new Set(ELEMENTS.map(e => e.id));   // a late game: every element held
             const home = world.find(t => isHomePortal(t)), X = home.x + 4;
             const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
             const ant = makeClone('ant', 'striker', X, 2);
@@ -163,7 +164,7 @@ async function boot(store) {
             return { h: t.health, m: t.maxHealth };`);
         ok(r.h === r.m, 'not repaired to full: ' + JSON.stringify(r));
     });
-    await check('it rebuilds a wrecked pylon, faster than a core worker', async () => {
+    await check('it rebuilds a wrecked pylon (ants are the only rebuilders now)', async () => {
         const r = await antBoard(`
             _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), T(X + 3, 1), 'attack');
             const t = T(X + 3, 1); t.destroyed = true; t.health = 0;
@@ -172,6 +173,31 @@ async function boot(store) {
             let f = 0; for (; f < 1500 && t.destroyed; f++) { frame++; updateNPC(ant); }
             return { back: !t.destroyed, frames: f, coreFrames: Math.ceil(1 / PYLON_REPAIR_RATE) };`);
         ok(r.back && r.frames < r.coreFrames, JSON.stringify(r));
+    });
+    await check('THE ASK: what it puts back up is an OFFLINE frame — a core worker re-arms it', async () => {
+        const r = await antBoard(`
+            _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), T(X + 3, 1), 'attack');
+            const t = T(X + 3, 1); t.destroyed = true; t.health = 0;
+            ant.x = t.x; ant.y = t.y + 0.4;
+            toggleCloneDuty(ant);
+            for (let f = 0; f < 1500 && t.destroyed; f++) { frame++; updateNPC(ant); }
+            const frameUp = !t.destroyed, off = !!t.offline, armedWhileOff = !!t.attackMode;
+            // A core follower on the crew brings it back to the turret it was.
+            spawnFollowerAtCrystal('core'); const c = followers[followers.length - 1];
+            c.returningToCrystal = false; c.x = t.x + 0.3; c.y = t.y; setFollowerDuty(c, 'worker', true);
+            for (let f = 0; f < 1500 && t.offline; f++) { frame++; followerWorkTick(c); }
+            return { frameUp, off, armedWhileOff, online: !t.offline, attack: !!t.attackMode, el: t.attackModeElement };`);
+        ok(r.frameUp && r.off && !r.armedWhileOff, 'the ant\'s rebuild: ' + JSON.stringify(r));
+        ok(r.online && r.attack && r.el === 'fire', 'the core worker\'s re-arm: ' + JSON.stringify(r));
+    });
+    await check('THE ASK: a crew keeps a turret alive — the ant patches it while it takes hits', async () => {
+        const r = await antBoard(`
+            _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), T(X + 3, 1), 'attack');
+            const t = T(X + 3, 1); ant.x = t.x; ant.y = t.y + 0.4; toggleCloneDuty(ant);
+            let low = t.maxHealth;
+            for (let f = 0; f < 1200; f++) { frame++; if (f % 10 === 0) t.health = Math.max(1, t.health - 2); updateNPC(ant); low = Math.min(low, t.health); }
+            return { h: t.health, m: t.maxHealth, low, standing: !t.destroyed };`);
+        ok(r.standing && r.low > 1 && r.h > r.m * 0.5, '20 HP a second against it: ' + JSON.stringify(r));
     });
     await check('with nothing to build or mend it fights like any clone', async () => {
         const r = await antBoard(`toggleCloneDuty(ant); return CLONE_JOBS.ant.tick(ant);`);

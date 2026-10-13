@@ -150,8 +150,9 @@ try { renderCloneJobsIndex(); } catch (e) { /* no DOM (tests) */ }
 //      the follower who started it still finishes it and sets its element;
 //   2. a DAMAGED pylon or shield generator of yours — ANT_REPAIR_HP a frame
 //      back, to full;
-//   3. a WRECKED pylon — rebuilt as a core worker would, ANT_REBUILD_MULT x
-//      faster (restoreBrokenPylon, js/mass.js).
+//   3. a WRECKED pylon — ants are the ONLY rebuilders. It stands again as an
+//      offline FRAME (rebuildPylonFrame, js/mass.js) that a core worker
+//      re-arms into the machine it was.
 // With none of those it fights like any clone. It looks again every
 // ANT_RESEEK frames, or when the job in hand is done.
 const ANT_BUILD_SEEK   = 12;      // tiles
@@ -186,7 +187,7 @@ function _antTaskLive(task) {
 }
 CLONE_JOBS.ant = {
     label: "BUILD",
-    note: "Speeds up pylons under construction, repairs damaged pylons and generators, and rebuilds wrecked ones.",
+    note: "Speeds up pylons under construction, repairs damaged pylons and generators, and is the only one that rebuilds wrecked ones (as offline frames a core worker re-arms).",
     tick(c) {
         if (typeof world === "undefined") return false;
         const w = c.cloneWork, f = typeof frame !== "undefined" ? frame : 0;
@@ -215,9 +216,11 @@ CLONE_JOBS.ant = {
             t.reconstructing = true;
             t.reconstructProgress = Math.min(1, (t.reconstructProgress || 0) + (typeof PYLON_REPAIR_RATE !== "undefined" ? PYLON_REPAIR_RATE : 0.006) * ANT_REBUILD_MULT);
             if (f % 10 === 0 && typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: col, radius: 0.4, life: 18 });
-            if (t.reconstructProgress >= 1 && typeof restoreBrokenPylon === "function") {
-                restoreBrokenPylon(t);
-                if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: t.x, y: t.y - 1, text: "PYLON REBUILT", color: col, life: 60, vy: -0.06 });
+            if (t.reconstructProgress >= 1 && typeof rebuildPylonFrame === "function") {
+                // The FRAME stands again — offline until a core worker re-arms
+                // it (js/mass.js). Ants are the only rebuilders.
+                rebuildPylonFrame(t);
+                if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: t.x, y: t.y - 1, text: "FRAME REBUILT \u2014 NEEDS CORE", color: col, life: 70, vy: -0.06 });
                 if (typeof _cacheAge !== "undefined") _cacheAge = -999;
             }
         }

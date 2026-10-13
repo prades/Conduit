@@ -72,6 +72,8 @@ async function loadConfig() {
             tile.charge            = Number(saved.charge) || 0;
             tile.mk                = saved.mk || 0;
             tile.circuitOn         = saved.circuitOn !== false;
+            tile.offline           = !!saved.offline;
+            tile._offline          = saved.offline || null;
         });
     }
     // Nests always generate at full health, so the ones already taken are

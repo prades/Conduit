@@ -4528,6 +4528,7 @@ function render() {
     // ── OVERLAYS ──
     drawElementEffects();
     if (typeof drawModuleFields === "function") drawModuleFields();   // module areas and force walls
+    if (typeof drawOfflinePylons === "function") drawOfflinePylons(); // frames waiting for a core worker (js/mass.js)
     if (!gfxLow) drawSiphonWisps();
     // The hold line is world geometry, so it draws with the world rather than
     // up with the interface.

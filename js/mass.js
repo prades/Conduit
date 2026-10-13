@@ -313,26 +313,90 @@ function restoreBrokenPylon(t) {
     return true;
 }
 
+// ── THE REPAIR CREW: ANTS REBUILD, CORE RE-ARMS ──────────
+// "Make it to where ant workers are the only ones to repair the broken pylons
+// and the core followers can make them into machines again. So a crew of
+// workers can keep a turret alive."
+//
+//   An ANT clone on worker duty (clonework.js) is the only thing that rebuilds
+//   a wreck — and what it puts back up is the FRAME: standing, at part health,
+//   but OFFLINE (takePylonOffline): no rounds, no wave, no charge, no relay.
+//   It also patches up a damaged pylon's health.
+//   A CORE follower on the work crew turns an offline frame back into the
+//   machine it was — its element, its mode — at PYLON_REARM_RATE.
+// A turret under attack can be kept alive by both: ants keep its health up,
+// and if it falls, ants raise the frame and core brings it back online.
+const PYLON_REARM_RATE = 0.006;   // a frame (~3 s)
+function isOfflinePylon(t) { return !!t && t.pillar && !t.destroyed && !!t.offline; }
+// Standing, but not a machine: what it was is kept to come back to.
+function takePylonOffline(t) {
+    if (!t || !t.pillar || t.offline) return false;
+    t._offline = { attackMode: !!t.attackMode, waveMode: !!t.waveMode, isBattery: !!t.isBattery,
+                   isGenerator: !!t.isGenerator, isConnector: !!t.isConnector };
+    t.attackMode = false; t.waveMode = false; t.isBattery = false; t.isGenerator = false; t.isConnector = false;
+    t.offline = true; t.rearmProgress = 0;
+    if (typeof _cacheAge !== "undefined") _cacheAge = -999;
+    return true;
+}
+// Back to the machine it was.
+function rearmPylon(t) {
+    if (!isOfflinePylon(t)) return false;
+    const o = t._offline || {};
+    t.attackMode = !!o.attackMode; t.waveMode = !!o.waveMode; t.isBattery = !!o.isBattery;
+    t.isGenerator = !!o.isGenerator; t.isConnector = !!o.isConnector;
+    t.offline = false; t._offline = null; t.rearmProgress = 0;
+    if (typeof _cacheAge !== "undefined") _cacheAge = -999;
+    return true;
+}
+// An ant's rebuild: the wreck stands again as an offline frame.
+function rebuildPylonFrame(t) {
+    if (!restoreBrokenPylon(t)) return false;
+    takePylonOffline(t);
+    return true;
+}
+function nearestOfflinePylon(x, y, maxDist) {
+    if (typeof world === 'undefined') return null;
+    let best = null, bestD = maxDist === undefined ? MASS_SEEK_RANGE : maxDist;
+    for (const t of world) {
+        if (!isOfflinePylon(t) || t.pillarTeam !== 'green') continue;
+        const d = Math.hypot(t.x - x, t.y - y);
+        if (d < bestD) { bestD = d; best = t; }
+    }
+    return best;
+}
+// Over each offline frame on screen: what it is waiting for, and how far a
+// core worker has got.
+function drawOfflinePylons() {
+    if (typeof _pillarCache === 'undefined' || typeof cachedText !== 'function') return;
+    for (const t of _pillarCache) {
+        if (!isOfflinePylon(t) || t.pillarTeam !== 'green') continue;
+        if (typeof visibleForDraw === 'function' && !visibleForDraw(t.x, t.y)) continue;
+        const px = (t.x - player.visualX - (t.y - player.visualY)) * TILE_W + canvas.width / 2;
+        const py = (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + canvas.height / 2;
+        const p = Math.round((t.rearmProgress || 0) * 100);
+        cachedText(p > 0 ? 'RE-ARMING ' + p + '%' : 'OFFLINE \u00b7 NEEDS CORE', 'bold 8px monospace', p > 0 ? '#00ccaa' : '#ff9966', px, py - 78);
+    }
+}
+// CORE: re-arm the nearest offline frame. (It no longer rebuilds wrecks —
+// that is the ants' work.)
 function _workRepair(actor) {
-    const t = actor._pylonTarget && isBrokenPylon(actor._pylonTarget)
+    const t = actor._pylonTarget && isOfflinePylon(actor._pylonTarget)
         ? actor._pylonTarget
-        : (actor._pylonTarget = nearestBrokenPylon(actor.x, actor.y, 'green'));
+        : (actor._pylonTarget = nearestOfflinePylon(actor.x, actor.y));
     if (!t) return false;
 
     const d = Math.hypot(t.x - actor.x, t.y - actor.y);
     if (d > MASS_WORK_RANGE) { _moveToward(actor, t.x, t.y, 1.1); return true; }
 
-    t.reconstructing = true;
-    t.reconstructProgress = Math.min(1, (t.reconstructProgress || 0) + PYLON_REPAIR_RATE);
+    t.rearmProgress = Math.min(1, (t.rearmProgress || 0) + PYLON_REARM_RATE);
     actor.state = 'idle';
     if (typeof elementEffects !== 'undefined' && (frame || 0) % 10 === 0) {
         elementEffects.push({ type: 'impact', x: t.x, y: t.y, color: '#00ccaa', radius: 0.4, life: 18 });
     }
-    if (t.reconstructProgress >= 1) {
-        restoreBrokenPylon(t);
+    if (t.rearmProgress >= 1) {
+        rearmPylon(t);
         actor._pylonTarget = null;
-        floatingTexts.push({ x: t.x, y: t.y - 1, text: 'PYLON REBUILT', color: '#00ccaa', life: 60, vy: -0.06 });
-        if (typeof _cacheAge !== 'undefined') _cacheAge = -999;   // let the caches see it again
+        floatingTexts.push({ x: t.x, y: t.y - 1, text: 'BACK ONLINE', color: '#00ccaa', life: 60, vy: -0.06 });
     }
     return true;
 }
@@ -576,7 +640,7 @@ function workerElementsLabel() {
 function workerJobLabel(element) {
     if (element === MASS_NEUTRALISER) return 'NEUTRALISE';
     if (element === MASS_HAULER)      return 'HAUL';
-    if (element === PYLON_REPAIRER)   return 'REPAIR';
+    if (element === PYLON_REPAIRER)   return 'RE-ARM';
     if (element === CLONE_MENDER)     return 'TEND CLONE';
     if (element === ICE_BLOCKER)      return 'SET BLOCK';
     return null;

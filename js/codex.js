@@ -413,9 +413,11 @@ function renderWorkCrewIndex() {
         'bleeds the charge off over about <span class="cm-stat">' + secs + 's</span>. Until then it just crackles.</div>' +
         '<div class="cm-ability"><strong>2. Haul \u2014 FLUX:</strong> drags an inert lump to the nearest drop-off \u2014 ' +
         'the Crystal, or the wall nest of any zone you hold \u2014 where it pays out as shards. Kill the carrier and the lump drops where it fell.</div>' +
-        '<div class="cm-ability"><strong>Repair \u2014 CORE:</strong> a pylon that loses its health is not gone, ' +
-        'it is <strong>broken</strong> — it keeps its tile, its element and its mode. A core worker rebuilds it ' +
-        'in place, exactly as it was. Nothing else can.</div>' +
+        '<div class="cm-ability"><strong>Re-arm \u2014 CORE:</strong> a pylon that loses its health is not gone, ' +
+        'it is <strong>broken</strong> — it keeps its tile, its element and its mode. Only an <strong>ANT clone</strong> on ' +
+        'worker duty rebuilds it, and it comes back as an <strong>offline frame</strong>: standing, but no rounds, no wave, ' +
+        'no charge. A core worker <strong>re-arms</strong> the frame into exactly the machine it was. Ants also patch up a ' +
+        'damaged pylon, so a crew of ants and core keeps a turret alive.</div>' +
         '<div class="cm-ability"><strong>Tend a clone — TOXIC:</strong> a medic for the most ' +
         'expensive unit you own. It picks a clone, <strong>walks with it</strong>, and mends it at ' +
         '<span class="cm-stat">' + mendRate + ' HP a second</span> plus <span class="cm-stat">' + mendPct + '% of its max health</span> a second while it fights. It does ' +

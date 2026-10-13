@@ -256,19 +256,30 @@ check('a broken pylon is recognised as repairable', () => {
     eq(env.run('isBrokenPylon')(t), false, 'standing pylon is not a repair job');
     eq(env.run('isBrokenPylon')({ x: 1, y: 1 }), false, 'not a pylon at all');
 });
-check('THE REPORTED CASE: a core worker rebuilds a broken pylon in place', () => {
+// "Make it to where ant workers are the only ones to repair the broken pylons
+// and the core followers can make them into machines again." An ANT clone
+// rebuilds a wreck as an OFFLINE frame (rebuildPylonFrame — tests/clonework.js
+// drives the ant); a CORE worker re-arms the frame into the machine it was.
+check('THE ASK: a core worker no longer rebuilds a wreck — that is the ants\' work', () => {
     const env = makeEnv();
     const t = brokenPylon(env, 4, 2);
     const f = worker(env, 'core', 0, 2);
+    for (let i = 0; i < 3000; i++) { env.sandbox.frame++; env.run('followerWorkTick')(f); }
+    eq(t.destroyed, true, 'a core worker rebuilt a wreck');
+});
+check('THE ASK: a rebuilt FRAME is offline — no rounds, no wave — until a core worker re-arms it', () => {
+    const env = makeEnv();
+    const t = brokenPylon(env, 4, 2);
+    env.run('rebuildPylonFrame')(t);
+    eq(t.destroyed, false, 'the frame stands');
+    eq(t.offline, true, 'offline');
+    eq(!!t.waveMode || !!t.attackMode, false, 'it works while offline');
+    const f = worker(env, 'core', 0, 2);
     let done = -1;
-    for (let i = 0; i < 6000; i++) {
-        env.sandbox.frame++;
-        env.run('followerWorkTick')(f);
-        if (!t.destroyed) { done = i; break; }
-    }
-    ok(done > 0, 'never rebuilt it');
-    eq(t.destroyed, false, 'back up');
-    ok(t.health > 0, 'has health again');
+    for (let i = 0; i < 6000; i++) { env.sandbox.frame++; env.run('followerWorkTick')(f); if (!t.offline) { done = i; break; } }
+    ok(done > 0, 'never re-armed it');
+    eq(t.waveMode, true, 'back to the wave pylon it was');
+    eq(t.attackModeElement, 'fire', 'and its element');
 });
 check('a rebuilt pylon keeps the element and mode it had', () => {
     const env = makeEnv();
@@ -279,31 +290,35 @@ check('a rebuilt pylon keeps the element and mode it had', () => {
     eq(t.reconstructProgress, 0, 'progress cleared');
     eq(t.reconstructing, false, 'no longer under repair');
 });
-check('repairing is not instant', () => {
+check('re-arming is not instant', () => {
     const env = makeEnv();
     const t = brokenPylon(env, 0.2, 2);
+    env.run('rebuildPylonFrame')(t);
     const f = worker(env, 'core', 0, 2);
     env.run('followerWorkTick')(f);
-    ok(t.destroyed, 'one frame should not finish it');
-    ok((t.reconstructProgress || 0) > 0, 'but it should have started');
+    ok(t.offline, 'one frame should not finish it');
+    ok((t.rearmProgress || 0) > 0, 'but it should have started');
 });
-check('a core worker will not repair enemy wreckage', () => {
+check('a core worker will not re-arm an enemy frame', () => {
     const env = makeEnv();
     const t = brokenPylon(env, 0.2, 2, 'red');
+    env.run('rebuildPylonFrame')(t);
     const f = worker(env, 'core', 0, 2);
     for (let i = 0; i < 600; i++) { env.sandbox.frame++; env.run('followerWorkTick')(f); }
-    eq(t.destroyed, true, 'enemy pylon left broken');
+    eq(t.offline, true, 'enemy frame left offline');
 });
-check('only core repairs — the other two ignore wreckage', () => {
+check('the other worker elements ignore wrecks and frames', () => {
     for (const el of ['electric', 'flux']) {
         const env = makeEnv();
         const t = brokenPylon(env, 0.2, 2);
+        const u = brokenPylon(env, 1.2, 2); env.run('rebuildPylonFrame')(u);
         const f = worker(env, el, 0, 2);
         for (let i = 0; i < 600; i++) { env.sandbox.frame++; env.run('followerWorkTick')(f); }
-        eq(t.destroyed, true, el + ' should not repair');
+        eq(t.destroyed, true, el + ' should not rebuild');
+        eq(u.offline, true, el + ' should not re-arm');
     }
 });
-check('a core worker with no wreckage to fix stands down', () => {
+check('a core worker with no frame to re-arm stands down', () => {
     const env = makeEnv();
     const f = worker(env, 'core', 0, 2);
     eq(env.run('followerWorkTick')(f), false, 'should hand the frame back');

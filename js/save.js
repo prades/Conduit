@@ -44,9 +44,11 @@ function savePylons() {
             isGenerator: !!t.isGenerator,
             isConnector: !!t.isConnector,
             isBattery: !!t.isBattery,
-            charge: t.isBattery ? Math.round(t.charge || 0) : 0,
+            charge: (t.isBattery || (t._offline && t._offline.isBattery)) ? Math.round(t.charge || 0) : 0,
             mk: t.mk || 0,
-            circuitOn: t.circuitOn !== false
+            circuitOn: t.circuitOn !== false,
+            // An offline frame (js/mass.js) and the machine it was.
+            offline: t.offline ? (t._offline || {}) : null
         }));
     try { localStorage.setItem("tubecrawler_pylons", JSON.stringify(data.concat(tombs))); } catch(e) {}
 }
