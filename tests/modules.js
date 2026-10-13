@@ -172,14 +172,21 @@ const PLACE = (kind, x, y) => `(function(){ toggleBuild(); if (!buildMenuOpen) t
 
     console.log('\nOVERCLOCK HUB');
     check('THE ASK: pylons within reach fire 50% faster than the same turret out of reach', () => {
+        // Earlier checks spend the home portal's energy (the med bay heals, the
+        // wall mends) by a varying amount; a dry pool would leave the hub dark.
+        run('__portal.nestEnergy = nestEnergyMax(__portal);');
         const r = run(`(function(){
             const hub = (${PLACE('overclock', g.x + 1, 3)});
+            for (let i = 0; i < 31; i++) { __portal.nestEnergy = nestEnergyMax(__portal); render(); }
             if (!hub) return null;
             const fire = PYLON_PICKER_TYPES.find(e => e.id === 'fire'), tool = { tab: 'turrets', kind: 'attack', elId: 'fire' };
             const near = world.find(t => t.x >= 0 && Math.hypot(t.x - hub.x, t.y - hub.y) <= 2 && canBuildAt(t, tool).ok);
             _executeBuildInstant(fire, near, 'attack');
             const far = world.find(t => t.x >= 0 && Math.hypot(t.x - hub.x, t.y - hub.y) > OC_RADIUS + 1 && Math.hypot(t.x - hub.x, t.y - hub.y) < 7 && canBuildAt(t, tool).ok);
             _executeBuildInstant(fire, far, 'attack');
+            // Nine seconds of a real game: a wandering predator could wreck a
+            // turret meanwhile, which is not what is being measured.
+            near.maxHealth = near.health = 1e9; far.maxHealth = far.health = 1e9;
             _cacheAge = -999; for (let i = 0; i < 31; i++) render();
             const dummy = (t) => { const p = spawnPredatorForZone(1, { species: 'beetle', className: 'scout' }); p.x = t.x + 0.6; p.y = t.y; p.update = () => {}; p.maxHealth = p.health = 1e9; p.isWanderer = false; return p; };
             dummy(near); dummy(far);
