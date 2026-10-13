@@ -83,8 +83,8 @@ let zoneRespawnTimers = {}; // zoneIndex -> frames until respawn
 // The order they arrive in, one per cleared wave. Derived from ELEMENTS rather
 // than written out again, so adding an element to that list extends the ladder
 // instead of leaving the new element unreachable.
-const WAVE_UNLOCK_ORDER = ELEMENTS
-    .map(e => e.id)
+// (The ladder's own order — ELEMENT_LADDER in config.js — not ELEMENTS'.)
+const WAVE_UNLOCK_ORDER = ELEMENT_LADDER
     .filter(id => !STARTING_ELEMENTS.includes(id));
 
 // The next element still to be earned, or null when the ladder is spent. It
@@ -111,6 +111,9 @@ function noteKillForProgression() {
 // Clearing another wave while one is still pending stacks a second: the reward
 // is for the wave, so putting off the trip back does not forfeit it.
 function noteWaveClearedForProgression() {
+    // One every ELEMENT_UNLOCK_EVERY waves: waves 2, 4, 6 … earn one.
+    const w = (typeof gameState !== "undefined" && gameState.nightNumber) || 1;
+    if (w % ELEMENT_UNLOCK_EVERY !== 0) return null;
     const next = nextWaveUnlock();
     if (!next) return null;
     pendingElements.push(next.element);

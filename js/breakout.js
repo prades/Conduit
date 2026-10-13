@@ -30,17 +30,24 @@ function _breakoutEligible(a) {
 
 // Once a frame from the game loop: hand out elements during a breakout, take
 // back the ones it handed out when it ends.
+// ONE ELEMENT A NIGHT. "Make the elemental surges only one specific type at
+// random." A breakout night rolls a single element and every predator takes
+// it (over its zone's), so the night has one answer to find.
+let breakoutElement = null;
 function breakoutTick() {
     if (typeof frame === "undefined" || frame % BREAKOUT_TICK !== 0) return 0;
     let n = 0;
     if (breakoutOn()) {
+        if (!breakoutElement) breakoutElement = BREAKOUT_ELEMENTS[Math.floor(Math.random() * BREAKOUT_ELEMENTS.length)];
         for (const a of actors) {
-            if (!_breakoutEligible(a) || a.element) continue;
-            a.element = BREAKOUT_ELEMENTS[Math.floor(Math.random() * BREAKOUT_ELEMENTS.length)];
+            if (!_breakoutEligible(a) || a._breakout) continue;
+            a.element = breakoutElement;
             a._breakout = true; n++;
         }
     } else {
-        for (const a of actors) if (a._breakout) { a.element = null; a._breakout = false; }
+        breakoutElement = null;
+        // Back to its zone's element (or none).
+        for (const a of actors) if (a._breakout) { a.element = a._zoneElement || null; a._breakout = false; }
     }
     return n;
 }
@@ -70,7 +77,18 @@ function breakoutProc(source, target) {
 
 // ── The flare: a ring at its feet and sparks circling it, in its colour ──
 function drawBreakoutFlare(a, px, py) {
-    if (!a.element || !a._breakout) return;
+    if (!a.element) return;
+    // A zone's element (not a breakout): just the ring at its feet, so a whole
+    // wave of them is not a storm of sparks and labels.
+    if (!a._breakout) {
+        const zd = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
+        if (!zd) return;
+        const zw = Math.max(16, (a.dimensions ? a.dimensions.width : 24) * 0.8);
+        const zy = py - (a.dimensions ? a.dimensions.height * 1.15 : 24);
+        ctx.save(); ctx.globalAlpha = 0.55; ctx.strokeStyle = zd.color; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.ellipse(px, zy, zw, zw * 0.45, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+        return;
+    }
     const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
     if (!def) return;
     const f = typeof frame !== "undefined" ? frame : 0, col = def.color;

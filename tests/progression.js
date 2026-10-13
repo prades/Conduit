@@ -40,10 +40,18 @@ async function bootGame() {
     return {
         run, store,
         // Meet the quota, then let checkWaveClear do what it does.
+        // One wave cleared (the wave number moves on, as nextWave moves it).
         clearOne() {
-            run(`gameState.phase = "night"; nightEnemiesTarget = 1; nightKillCount = 1;
+            run(`gameState.nightNumber = gameState.nightNumber || 1;
+                 gameState.phase = "night"; nightEnemiesTarget = 1; nightKillCount = 1;
                  alertSource = { x: 20, y: 2 };`);
             run('checkWaveClear();');
+            run('gameState.nightNumber++;');   // as nextWave moves it on
+        },
+        // An element is earned every ELEMENT_UNLOCK_EVERY waves: clear up to the next one.
+        clearEarning() {
+            const every = run('ELEMENT_UNLOCK_EVERY');
+            do { this.clearOne(); } while ((run('gameState.nightNumber') - 1) % every !== 0);
         },
         pending() { return run('[...pendingElements]'); },
         unlocked() { return run('[...unlockedElements]'); },
@@ -80,6 +88,10 @@ function makeEnv(starting) {
             { id: 'toxic', label: 'TOXIC', color: '#66ff66' },
         ],
         unlockedElements: new Set(['fire', 'electric']),
+        // The ladder's order and cadence, read from config.js.
+        ELEMENT_LADDER: JSON.parse(SRC.config.match(/const ELEMENT_LADDER\s*= (\[[^\]]*\])/)[1].replace(/'/g, '"')),
+        ELEMENT_UNLOCK_EVERY: Number(SRC.config.match(/const ELEMENT_UNLOCK_EVERY = (\d+)/)[1]),
+        gameState: { nightNumber: 0 },
         pendingElements: [],
         lifetimeKills: 0,
         modulationDirty: false,
@@ -116,8 +128,14 @@ function makeEnv(starting) {
     return { sandbox, run: s => vm.runInContext(s, ctx) };
 }
 function kill(env, n) { for (let k = 0; k < n; k++) env.run('noteKillForProgression()'); }
+// An EARNING clear: the waves up to the next multiple of ELEMENT_UNLOCK_EVERY,
+// the in-between ones (which earn nothing) included.
 function clearWave(env, n) {
-    for (let k = 0; k < (n === undefined ? 1 : n); k++) env.run('noteWaveClearedForProgression()');
+    for (let k = 0; k < (n === undefined ? 1 : n); k++) {
+        const every = env.sandbox.ELEMENT_UNLOCK_EVERY;
+        do { env.sandbox.gameState.nightNumber++; env.run('noteWaveClearedForProgression()'); }
+        while (env.sandbox.gameState.nightNumber % every !== 0);
+    }
 }
 // The ladder, read out of the running code rather than restated: it is derived
 // from ELEMENTS minus STARTING_ELEMENTS, so a new element extends it.
@@ -133,8 +151,18 @@ check('THE ASK: clearing a wave earns the next element', () => {
          'the first cleared wave should earn the first element');
 });
 
-check('THE ASK: every single wave earns one', () => {
+check('THE ASK: one every TWO waves — the odd waves earn nothing', () => {
     const env = makeEnv();
+    env.sandbox.gameState.nightNumber = 1;
+    same(env.run('noteWaveClearedForProgression()'), null, 'wave 1 earned something');
+    env.sandbox.gameState.nightNumber = 2;
+    same(env.run('noteWaveClearedForProgression()'), ladder(env)[0], 'wave 2 earns the first');
+    env.sandbox.gameState.nightNumber = 3;
+    same(env.run('noteWaveClearedForProgression()'), null, 'wave 3 earned something');
+});
+
+check('THE ASK: every second wave earns one, in ladder order', () => {
+    const env = makeEnv(['electric']);
     const L = ladder(env);
     for (let i = 0; i < L.length; i++) {
         clearWave(env);
@@ -158,7 +186,7 @@ check('THE LIMIT: the ladder is spent once every element is earned', () => {
     // Four to earn, so the fifth cleared wave has nothing to give. Asserted
     // rather than left implicit, because "an element every wave" cannot hold
     // past wave four with six elements in the game.
-    const env = makeEnv();
+    const env = makeEnv(['electric']);
     const L = ladder(env);
     clearWave(env, L.length + 3);
     same(env.sandbox.pendingElements.length, L.length,
@@ -166,7 +194,7 @@ check('THE LIMIT: the ladder is spent once every element is earned', () => {
     same(env.run('noteWaveClearedForProgression()'), null, 'and report that there was nothing to give');
 });
 
-check('the ladder is derived from ELEMENTS, not written out again', () => {
+check('the ladder is ELEMENT_LADDER (the asked order) and reaches every element', () => {
     // A hand-written list is how a newly added element ends up unreachable.
     const env = makeEnv();
     const L = ladder(env);
@@ -175,7 +203,8 @@ check('the ladder is derived from ELEMENTS, not written out again', () => {
         ok(starting.includes(el.id) || L.includes(el.id), el.id + ' can never be obtained');
     }
     same(L.length, env.sandbox.ELEMENTS.length - starting.length, 'the ladder is the wrong length');
-    ok(/ELEMENTS\s*\n?\s*\.map/.test(SRC.wavedata), 'WAVE_UNLOCK_ORDER is not derived from ELEMENTS');
+    ok(/ELEMENT_LADDER\s*\n?\s*\.filter/.test(SRC.wavedata), 'WAVE_UNLOCK_ORDER is not derived from ELEMENT_LADDER');
+    same(env.sandbox.ELEMENT_LADDER.join(','), 'electric,flux,fire,core,toxic,ice', 'the order asked for');
 });
 
 check('earning is NOT activating — it does not go straight into the pool', () => {
@@ -307,26 +336,17 @@ check('the readout says which element is next', () => {
        'an earned element should not still be next');
 });
 
-check('THE SHIPPED LADDER: what you start with, and what is left', () => {
-    // Pinned, because STARTING_ELEMENTS decides the whole ladder and the
-    // checks above deliberately widen it.
+check('THE SHIPPED LADDER: start with ELECTRIC, then flux, fire, core, toxic, ice', () => {
     const env = makeEnv();
-    const start = env.sandbox.STARTING_ELEMENTS;
-    for (const id of ['electric', 'core', 'toxic', 'flux', 'fire']) {
-        ok(start.includes(id), 'the game should start with ' + id.toUpperCase());
-    }
-    ok(!start.includes('ice'), 'ICE should be the one still to earn');
-    same(ladder(env).join(','), 'ice', 'the ladder should be exactly ICE');
+    same(env.sandbox.STARTING_ELEMENTS.join(','), 'electric', 'the start');
+    same(ladder(env).join(','), 'flux,fire,core,toxic,ice', 'the ladder');
 });
 
-check('and the very first cleared wave spends it', () => {
-    // The direct consequence of starting with five: one wave and the ladder is
-    // done. Worth stating plainly rather than leaving to be discovered.
-    const env = makeEnv();
-    clearWave(env);
-    same(env.sandbox.pendingElements.join(','), 'ice', 'the first wave should earn ICE');
-    clearWave(env);
-    same(env.sandbox.pendingElements.length, 1, 'and a second wave has nothing left to pay');
+check('and it is spent at wave 10, ICE last', () => {
+    const env = makeEnv(['electric']);
+    clearWave(env, 5);
+    same(env.sandbox.gameState.nightNumber, 10, 'fixture: five earnings take ten waves');
+    same(env.sandbox.pendingElements.join(','), 'flux,fire,core,toxic,ice', 'earned in order');
     same(env.run('nextWaveUnlock()'), null, 'with nothing reported as next');
 });
 
@@ -463,16 +483,17 @@ check('the documented ladder matches the code', () => {
     const L = ladder(env);
     L.forEach((id, i) => {
         // The index lists each element against the wave it arrives on.
-        const re = new RegExp(id.toUpperCase() + '[\\s\\S]{0,120}?wave ' + (i + 1), 'i');
-        ok(re.test(HTML), `the docs do not put ${id.toUpperCase()} on wave ${i + 1}`);
+        const at = (i + 1) * 2;   // one every two waves
+        const re = new RegExp(id.toUpperCase() + '[\\s\\S]{0,120}?wave ' + at, 'i');
+        ok(re.test(HTML), `the docs do not put ${id.toUpperCase()} on wave ${at}`);
     });
     ok(/CLEARED WAVE EARNS/i.test(HTML), 'the index still describes the kill ladder');
     ok(!/25 kills|180 kills/.test(HTML), 'the old kill thresholds are still documented');
     // And it must be honest about running out.
     // Singular when there is one left, which there now is — the text has to
     // read as English, not as a template.
-    ok(new RegExp('spent after ' + L.length + ' wave' + (L.length === 1 ? '\\b' : 's'), 'i').test(HTML),
-       'the index does not say the ladder runs out after ' + L.length);
+    ok(new RegExp('spent after ' + (L.length * 2) + ' waves', 'i').test(HTML),
+       'the index does not say the ladder runs out after ' + (L.length * 2) + ' waves');
 });
 
 group('THE OBJECTIVE LINE: what to take next');
@@ -704,7 +725,9 @@ check('the kill counter updates the banner through the shared builder', () => {
     check('THE ASK, in the running game: clearing a wave earns an element', () => {
         same(G.pending().length, 0, 'nothing pending before the first wave');
         G.clearOne();
-        same(G.pending().length, 1, 'the cleared wave should have earned one');
+        same(G.pending().length, 0, 'wave 1 alone should earn nothing');
+        G.clearOne();
+        same(G.pending().length, 1, 'wave 2 should have earned one');
         same(G.pending()[0], G.run('WAVE_UNLOCK_ORDER[0]'), 'and it should be the first of the ladder');
     });
 
@@ -712,14 +735,14 @@ check('the kill counter updates the banner through the shared builder', () => {
     const H = await bootGame();
     check('and it is one per wave, right up the ladder', () => {
         const L = H.run('[...WAVE_UNLOCK_ORDER]');
-        H.clearOne();
-        same(H.pending().length, 1, 'fixture: the first wave should pay out');
+        H.clearEarning();
+        same(H.pending().length, 1, 'fixture: the second wave should pay out');
         for (let i = 1; i < L.length; i++) {
-            H.clearOne();
-            same(H.pending().length, i + 1, `after ${i + 1} waves, ${i + 1} should be pending`);
+            H.clearEarning();
+            same(H.pending().length, i + 1, `after ${(i + 1) * 2} waves, ${i + 1} should be pending`);
         }
-        H.clearOne();
-        same(H.pending().length, L.length, 'a fifth wave has nothing left to give');
+        H.clearEarning();
+        same(H.pending().length, L.length, 'past the end there is nothing left to give');
     });
 
     check('activating them at the crystal brings each online', () => {
@@ -735,8 +758,8 @@ check('the kill counter updates the banner through the shared builder', () => {
 
     check('narrowing the mix first DOES flag it, in the running game', () => {
         const H2 = G;
-        H2.run('modulationMask.clear(); modulationMask.add("fire"); modulationDirty = false;');
-        H2.run('noteWaveClearedForProgression();');
+        H2.run('modulationMask.clear(); modulationMask.add("electric"); modulationDirty = false;');
+        H2.run('gameState.nightNumber = 4; noteWaveClearedForProgression();');
         const pend = H2.pending();
         if (pend.length === 0) {
             // The ladder is spent in this fixture — say so rather than passing

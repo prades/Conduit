@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-13p";
+const BUILD_VERSION = "2026-10-13q";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -28,7 +28,23 @@ const ELEMENTS = [
 // thing left on the wave-unlock ladder: you start with every worker job except
 // the ice block, so the whole work crew is available from the first round
 // rather than two thirds of it being locked behind waves.
-const STARTING_ELEMENTS = ["electric", "core", "toxic", "flux", "fire"];
+// THE ELEMENT LADDER. "Unlock the different elements and the different tech for
+// that element only once they acquire it. After every two waves they can unlock
+// a new element, in this order: electric, flux, fire, core, toxic and ice —
+// and every third zone the predators are the next element in that chart."
+// You start with the first; one more is earned every ELEMENT_UNLOCK_EVERY
+// cleared waves (activated at the Crystal). Everything of an element — its
+// followers, pylons, batteries, turrets — waits until it is unlocked
+// (unlockedElements, isPylonTypeUnlocked). Zone z's predators take
+// zoneElement(z): the same order, ZONE_ELEMENT_SPAN zones each, round again.
+const ELEMENT_LADDER       = ["electric", "flux", "fire", "core", "toxic", "ice"];
+const ELEMENT_UNLOCK_EVERY = 2;
+const ZONE_ELEMENT_SPAN    = 3;
+const STARTING_ELEMENTS = ["electric"];
+function zoneElement(z) {
+    if (!(z >= 1)) return null;
+    return ELEMENT_LADDER[Math.floor((z - 1) / ZONE_ELEMENT_SPAN) % ELEMENT_LADDER.length];
+}
 let unlockedElements = new Set(STARTING_ELEMENTS);
 // Elements earned by kills but not yet brought online at the Crystal.
 let pendingElements = [];
@@ -458,6 +474,9 @@ function applyZoneDifficulty(p, z) {
     const r = rampLevel(z);
     if (typeof setPredatorLevel === "function" && !p.isClone)
         setPredatorLevel(p, predatorLevelFor(z, undefined, true) + (p.isBoss ? 3 : 0));
+    // ITS ELEMENT: the zone's, on the ladder (zoneElement). The type chart now
+    // runs on every fight (applyDamage's wheel), both ways.
+    if (!p.isClone && !p.isMachine && !p.element) { p.element = zoneElement(z); p._zoneElement = p.element; }
     if (r > 0) {
         if (!p.isBrood && Math.random() < Math.min(RAMP_HUNTERS_MAX, (typeof PYLON_HUNTER_SHARE !== "undefined" ? PYLON_HUNTER_SHARE : 0.25) + RAMP_HUNTERS * r)) p.huntsPylons = true;
         p.rampLevel = r;

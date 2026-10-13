@@ -13,6 +13,7 @@ const SUITES = [
     ['vortex pull: beetles and bosses immune, halved', 'pullimmune.js'],
     ['collateral: specials and shots hit equipment', 'collateral.js'],
     ['levels and stats', 'levels.js'],
+    ['element ladder + zone elements', 'elementladder.js'],
     ['declared globals',       'globals.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],

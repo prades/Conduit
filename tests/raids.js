@@ -24,6 +24,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
     run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
+    run('unlockedElements = new Set(ELEMENTS.map(e => e.id));'); // A late game: every element held (the ladder unlocks them two waves apart).
     run('ensureWorldTo(8 * ZONE_LENGTH)');
 
     // Zone 1's nest is yours; zones 2.. are live. Nobody on the map; quiet day.

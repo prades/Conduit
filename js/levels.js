@@ -212,7 +212,8 @@ function unitTypeLabel(a) {
     if (!a) return "";
     if (a.isClone) return String(a.speciesName || "").toUpperCase() + " CLONE";
     if (a.isFollower) return String(a.element || "").toUpperCase() + " " + String(a.role || "").toUpperCase();
-    if (a.speciesName) return String(a.speciesName).toUpperCase() + " " + String(a.className || "").toUpperCase() + (a.isElite ? " ★" : "");
+    // An enemy names its element (the type chart is in every fight now).
+    if (a.speciesName) return (a.element ? String(a.element).toUpperCase() + " " : "") + String(a.speciesName).toUpperCase() + " " + String(a.className || "").toUpperCase() + (a.isElite ? " ★" : "");
     return "";
 }
 // Drawn centred above a health bar whose top edge is at y. Off in a crowd of
@@ -221,6 +222,8 @@ function drawUnitTag(a, cx, y, drawCtx) {
     if (!a || !Number.isFinite(a.level) || (drawCtx && drawCtx !== ctx)) return;
     if (typeof cachedText !== "function") return;
     const ally = a.team === "green" || a.isClone;
-    const col = ally ? "#bfffe0" : a.isElite ? "#ffd866" : "#ffb0a0";
+    // An enemy's tag is in its element's colour.
+    const elDef = !ally && a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
+    const col = ally ? "#bfffe0" : a.isElite ? "#ffd866" : elDef ? elDef.color : "#ffb0a0";
     cachedText("Lv " + a.level + " " + unitTypeLabel(a), "bold 7px monospace", col, cx, y);
 }

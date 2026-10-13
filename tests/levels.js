@@ -202,7 +202,8 @@ async function boot(store) {
             drawUnitTag(f, 0, 0, ctx); drawUnitTag(p, 0, 0, ctx); drawUnitTag(c, 0, 0, ctx); cachedText = keep;
             return { said, p: p.level, c: c.level, role: f.role.toUpperCase() }; })()`);
         same(r.said[0], 'Lv 5 FIRE ' + r.role, 'follower');
-        same(r.said[1], 'Lv ' + r.p + ' ANT SCOUT', 'predator');
+        // A predator names its element now (zone 1: electric).
+        same(r.said[1], 'Lv ' + r.p + ' ELECTRIC ANT SCOUT', 'predator');
         same(r.said[2], 'Lv ' + r.c + ' ANT CLONE', 'clone');
     });
     check('it is drawn over every unit\'s health bar', () => {

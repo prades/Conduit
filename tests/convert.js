@@ -28,6 +28,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     const scene = body => { const i = body.lastIndexOf('\n'); const last = body.slice(i + 1).trim(); return run(`(function(){ ${body.slice(0, i + 1)} return ${last}; })()`); };
     ok(run('world.length') > 100, 'fixture: the world did not generate');
     run('gameState.running = true;');
+    run('unlockedElements = new Set(ELEMENTS.map(e => e.id));'); // A late game: every element held (the ladder unlocks them two waves apart).
 
     // A clean row: row[0] an empty floor tile, row[1] a fire turret of yours,
     // row[2] a plain dormant pylon. Helpers tap the picker by label.

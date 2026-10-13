@@ -21,6 +21,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
     run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
+    run('unlockedElements = new Set(ELEMENTS.map(e => e.id));'); // A late game: every element held (the ladder unlocks them two waves apart).
 
     group('CLONES');
 

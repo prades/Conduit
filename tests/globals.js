@@ -189,6 +189,7 @@ async function passC() {
     try {
         drove = vm.runInContext(`(function(){
             gameState.running = true;
+            unlockedElements = new Set(ELEMENTS.map(e => e.id)); // A late game: every element held (the ladder unlocks them two waves apart).
             shardCount = 5000;
             const floor = world.filter(t => !t.pillar && !t.nest && t.y >= 0 && t.y <= 3);
             const fire  = ELEMENTS.find(e => e.id === 'fire');

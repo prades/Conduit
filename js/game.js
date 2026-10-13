@@ -3102,7 +3102,7 @@ function render() {
             drawNPC(obj.actor,px,py);
             if (obj.actor.nestMass) drawPredatorNestMass(obj.actor, px, py + TILE_H);
             if (obj.actor.raider) drawThiefTag(obj.actor, px, py + TILE_H);
-            if (obj.actor._breakout && typeof drawBreakoutFlare === "function") drawBreakoutFlare(obj.actor, px, py);
+            if ((obj.actor._breakout || obj.actor._zoneElement) && typeof drawBreakoutFlare === "function") drawBreakoutFlare(obj.actor, px, py);
         }
         else if (obj.type==='groundItem') {
             const gi=obj.item;

@@ -544,6 +544,7 @@ function uiEnv() {
 // `press` is 'work' | 'line' | null (null just opens the menu).
 const squadOrder = (U, tab, which, press) => U.run(`(function(){
     gameState.running = true;
+    unlockedElements = new Set(ELEMENTS.map(e => e.id)); // A late game: every element held (the ladder unlocks them two waves apart).
     actors.length = 0; followers.length = 0;
     ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
     floatingTexts.length = 0;
@@ -813,6 +814,7 @@ check('the drawn block reads as a cube, not a column', () => {
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const R = e => vm.runInContext(e, vctx);
     R('gameState.running = true;');
+    R('unlockedElements = new Set(ELEMENTS.map(e => e.id));'); // A late game: every element held (the ladder unlocks them two waves apart).
 
     // One worker of `el`, optionally a predator `enemyOff` tiles away, then a
     // long press aimed at the worker and the ring driven UP to the duty button.

@@ -206,7 +206,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     });
     await check('the starting elements it states match the game', () => {
         const n = run('STARTING_ELEMENTS.length');
-        ok(n === 5 && /Five elements start/.test(HTML), 'the index says something other than the real ' + n);
+        ok(n === 1 && /One element starts/.test(HTML) && /ELECTRIC<\/strong>/.test(HTML), 'the index says something other than the real ' + n);
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
