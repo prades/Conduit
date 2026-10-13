@@ -9,6 +9,7 @@ const SUITES = [
     ['toxic mends the clones', 'mend.js'],
     ['clone duties in the HUD', 'cloneduty.js'],
     ['the build window', 'buildmenu.js'],
+    ['modules (med bay, force wall, overclock)', 'modules.js'],
     ['declared globals',       'globals.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],

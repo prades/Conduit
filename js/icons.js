@@ -203,6 +203,18 @@ const ICONS = {
         <path d="M2 18 L12 23 L22 18 L12 13 Z" fill="${c}" opacity="0.4"/>
         <path d="M2 12 L12 17 L22 12 L12 7 Z" fill="${c}" opacity="0.7"/>
         <path d="M2 6 L12 11 L22 6 L12 1 Z" fill="${c}"/>`,
+    // Modules (js/modules.js).
+    medbay: c => `
+        <rect x="3" y="3" width="18" height="18" rx="3" fill="none" stroke="${c}" stroke-width="2"/>
+        <path d="M10 7 H14 V10 H17 V14 H14 V17 H10 V14 H7 V10 H10 Z" fill="${c}"/>`,
+    forcewall: c => `
+        <path d="M4 21 V7 L7 4 L10 7 V21" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M12 6 V20 M15.5 5 V19 M19 6 V20" stroke="${c}" stroke-width="1.6" opacity="0.65"/>
+        <circle cx="7" cy="8.5" r="1.6" fill="${c}"/>`,
+    overclock: c => `
+        <circle cx="12" cy="12" r="5" fill="none" stroke="${c}" stroke-width="2"/>
+        <path d="M12 2 V5 M12 19 V22 M2 12 H5 M19 12 H22 M4.9 4.9 L7 7 M17 17 L19.1 19.1 M4.9 19.1 L7 17 M17 7 L19.1 4.9" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M13 8.5 L10.5 12.5 H13.5 L11 15.5" fill="none" stroke="${c}" stroke-width="1.6" stroke-linejoin="round"/>`,
     controls: c => `
         <path d="M9 22 L9 11.4 Q9 9.8 10.4 9.8 Q11.8 9.8 11.8 11.4 L11.8 14 L11.8 4 Q11.8 2.4 13.2 2.4 Q14.6 2.4 14.6 4 L14.6 13 L17.4 13.4 Q19.8 13.8 19.6 16.4 L19 22 Z" fill="${c}"/>
         <circle cx="13.2" cy="4.2" r="3.6" fill="none" stroke="${c}" stroke-width="1" opacity="0.6"/>`,

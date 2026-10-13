@@ -469,12 +469,14 @@ function needsPower(t) {
 // nothing in range costs nothing at all.
 function payForShot(t) {
     if (!t) return false;
+    // An OVERCLOCK HUB in reach (js/modules.js) makes each round dearer.
+    const cost = POWER_SHOT_COST * (typeof overclockCostMult === "function" ? overclockCostMult(t) : 1);
     // A battery in reach pays first: that is what it is charged for.
-    const bat = batteryPay(t, POWER_SHOT_COST);
+    const bat = batteryPay(t, cost);
     if (bat) { t.powerFlow = 1; return true; }
     const src = t.powerSource || pylonSource(t);
     if (!src) return false;
-    const paid = gridPay(src, POWER_SHOT_COST);
+    const paid = gridPay(src, cost);
     if (!paid) return false;
     // A SURGE down the wire. A turret's draw is a spike, not a trickle, and the
     // wiring is the only place the player can see which pylons are costing
@@ -540,7 +542,9 @@ function waveDrainTick() {
         groups.get(key).push(t);
     }
     for (const [key, list] of groups) {
-        const cost = POWER_WAVE_DRAIN * (1 + (list.length - 1) * POWER_WAVE_SHARE);
+        // An overclocked pylon (js/modules.js) counts twice in its network's draw.
+        const weight = list.reduce((n, t) => n + (t._oc ? 2 : 1), 0);
+        const cost = POWER_WAVE_DRAIN * (1 + (weight - 1) * POWER_WAVE_SHARE);
         if (isBatteryPylon(key)) {
             const bat = batteryPay(list[0], cost);
             if (bat) { for (const t of list) t._supply = bat; continue; }

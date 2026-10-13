@@ -79,6 +79,7 @@ async function loadConfig() {
     applyNests(loadNests());
     // After the pylon and nest restores, so nest links can resolve to real tiles.
     applySession(session);
+    if (typeof loadModules === "function") loadModules();   // med bays, force walls, overclock hubs
 
     const savedF = loadFollowers();
     if (savedF.length > 0) {

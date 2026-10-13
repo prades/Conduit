@@ -67,7 +67,7 @@ const BUILD_MENU_TABS = [
     { id: "turrets", label: "TURRETS" },
     { id: "wave",    label: "WAVE" },
     { id: "power",   label: "POWER" },
-    { id: "camp",    label: "CAMP" },
+    { id: "modules", label: "MODULES" },
 ];
 const _BM_CELL = 56, _BM_GAP = 6, _BM_HEAD = 26, _BM_TABS = 22, _BM_STATUS = 20;
 const _CAMP_ICON = { command_node: "tier", dna_sequencer: "clone", fabricator: "worker",
@@ -88,15 +88,16 @@ function buildMenuItems(tab) {
         for (const e of els) out.push({ tab, kind: "battery", elId: e.id, label: e.label.toUpperCase(), sub: "BATTERY", icon: "battery", colour: e.color });
         out.push({ tab, kind: "connector", elId: typeof CONNECTOR_ID !== "undefined" ? CONNECTOR_ID : "connector", label: "CONNECTOR", sub: "RELAY", icon: "connector", colour: "#ffd24a" });
         out.push({ tab, kind: "generator", elId: typeof GENERATOR_ID !== "undefined" ? GENERATOR_ID : "generator", label: "SHIELD GEN", sub: "RELAY", icon: "generator", colour: "#cdd6e0" });
-    } else if (tab === "camp" && typeof CAMP_BUILDINGS !== "undefined") {
-        for (const b of CAMP_BUILDINGS) out.push({ tab, kind: "camp", id: b.id, label: b.label.toUpperCase(), sub: b.effect, icon: _CAMP_ICON[b.id] || "crystal", colour: "#ffcc44", cost: b.cost });
+    } else if (tab === "modules" && typeof MODULE_DEFS !== "undefined") {
+        // Modules (js/modules.js): structures that work while powered.
+        for (const id of MODULE_IDS) { const d = MODULE_DEFS[id]; out.push({ tab, kind: "module", id, label: d.label, sub: "MODULE", icon: d.icon, colour: d.colour, cost: d.cost }); }
     }
     return out;
 }
 function _bmIsRelayKind(kind) { return kind === "connector" || kind === "generator"; }
 // The level a tool builds at (a relay is always one).
 function buildToolLevel(tool) {
-    if (!tool || tool.kind === "demolish" || tool.kind === "camp" || _bmIsRelayKind(tool.kind)) return 1;
+    if (!tool || tool.kind === "demolish" || tool.kind === "camp" || tool.kind === "module" || _bmIsRelayKind(tool.kind)) return 1;
     return buildLevel[tool.tab] || 1;
 }
 // The tiles one placement covers, from the tapped (north-west) tile.
@@ -111,13 +112,14 @@ function buildToolFootprint(tool, x, y) {
 }
 function buildToolCount(tool) { return buildToolFootprint(tool, 0, 0).length; }
 function buildToolCost(tool) {
+    if (tool && tool.kind === "module") return typeof MODULE_DEFS !== "undefined" && MODULE_DEFS[tool.id] ? MODULE_DEFS[tool.id].cost : 0;
     const n = buildToolCount(tool), lv = buildToolLevel(tool);
     return n * PYLON_BUILD_COST + (lv === 2 && tool.kind !== "battery" ? (typeof MK2_COST !== "undefined" ? MK2_COST : 15) : 0);
 }
 // What an item costs at its tab's current level.
 function buildItemCost(it) {
     if (it.kind === "camp") return it.cost;
-    return buildToolCost({ kind: it.kind, elId: it.elId, tab: it.tab });
+    return buildToolCost({ kind: it.kind, elId: it.elId, id: it.id, tab: it.tab });
 }
 function _bmTierAt(el, x, y) { return typeof networkTierAt === "function" ? networkTierAt(el, x, y) : 0; }
 function _bmBestTier(el) { return typeof networkStrength !== "undefined" ? (networkStrength[el] || 0) : 0; }
@@ -165,6 +167,7 @@ function buildGridLive(kind) {
 // Can this item be picked at all right now, at its tab's level? (Greyed if not.)
 function buildItemState(it) {
     if (it.kind === "camp") return { ok: true };
+    if (it.kind === "module") return buildGridLive("module") ? { ok: true } : { ok: false, why: "NO POWER" };
     if (typeof isPylonTypeUnlocked === "function" && !isPylonTypeUnlocked(it.elId)) return { ok: false, why: "LOCKED" };
     if (_bmIsRelayKind(it.kind)) return { ok: true };
     const lv = buildLevel[it.tab] || 1;
@@ -175,11 +178,11 @@ function buildItemState(it) {
     return { ok: true };
 }
 function _bmLocked(it) {
-    if (it.kind === "camp") return false;
+    if (it.kind === "camp" || it.kind === "module") return false;
     return typeof isPylonTypeUnlocked === "function" ? !isPylonTypeUnlocked(it.elId) : false;
 }
 function _bmOwned(it) { return it.kind === "camp" && typeof campBuildings !== "undefined" && campBuildings.has(it.id); }
-function _bmSame(a, b) { return !!a && !!b && a.kind === b.kind && a.elId === b.elId && (a.tab || "") === (b.tab || ""); }
+function _bmSame(a, b) { return !!a && !!b && a.kind === b.kind && a.elId === b.elId && (a.id || "") === (b.id || "") && (a.tab || "") === (b.tab || ""); }
 
 // ── Open / close ──────────────────────────────────────────
 function openBuildMenu() {
@@ -195,10 +198,16 @@ function syncBuildMenu() {
     if (buildMode && !(typeof tutorialMode !== "undefined" && tutorialMode)) { if (!buildMenuOpen) openBuildMenu(); }
     else if (!buildMode) closeBuildMenu();
 }
+// The MODULES button (the old CAMP button) and the home node open the window here.
+function openModulesWindow() {
+    buildMenuTab = "modules";
+    if (!buildMenuOpen) openBuildMenu();
+    buildMenuMin = false;
+}
 function setBuildTool(it) {
     if (!it) { buildTool = null; buildGhost = null; _bmArmedKey = null; return; }
     if (_bmSame(buildTool, it)) { buildTool = null; buildGhost = null; _bmArmedKey = null; return; }   // tap again: put it down
-    buildTool = { tab: it.tab, kind: it.kind, elId: it.elId, label: it.label + (it.sub ? " " + it.sub : ""), colour: it.colour, icon: it.icon };
+    buildTool = { tab: it.tab, kind: it.kind, elId: it.elId, id: it.id, label: it.label + (it.sub ? " " + it.sub : ""), colour: it.colour, icon: it.icon };
     _bmArmedKey = null;
 }
 
@@ -224,6 +233,7 @@ function _bmTileProblem(t) {
     if (t.type !== "floor") return "NOT FLOOR";
     if (t.pillar && !t.destroyed) return "OCCUPIED";
     if (t.nest || t.nodeType || t.capturable) return "OCCUPIED";
+    if (t._module) return "OCCUPIED";
     if (typeof crystal !== "undefined" && Math.round(t.x) === Math.round(crystal.x) && Math.round(t.y) === Math.round(crystal.y)) return "THE CRYSTAL";
     // Behind the Crystal is the camp: its floor is drawn as the camp's and a
     // pylon there would never be drawn at all (game.js, the floor branch).
@@ -238,12 +248,20 @@ function canBuildAt(t, tool) {
     tool = tool || buildTool;
     if (!tool) return { ok: false, why: "PICK SOMETHING TO BUILD" };
     if (tool.kind === "demolish") {
+        if (t && t._module && typeof MODULE_DEFS !== "undefined")
+            return { ok: true, why: "REMOVE +" + Math.round(MODULE_DEFS[t._module.kind].cost * MODULE_REFUND) + " \u25c6" };
         if (t && typeof canDemolishPylon === "function" && canDemolishPylon(t)) return { ok: true, why: "DEMOLISH +" + DEMOLISH_REFUND + " \u25c6" };
         return { ok: false, why: t && t.pillar && !t.destroyed ? "NOT YOURS" : "NO PYLON HERE" };
     }
     if (!t) return { ok: false, why: "NOTHING THERE" };
     const tiles = buildToolFootprint(tool, t.x, t.y).map(p => (typeof getTile === "function" ? getTile(p.x, p.y) : null));
     for (const q of tiles) { const why = _bmTileProblem(q); if (why) return { ok: false, why: tiles.length > 1 && q !== t ? "NO ROOM: " + why : why }; }
+    if (tool.kind === "module") {
+        if (!buildPowerAt(t.x, t.y, "module")) return { ok: false, why: "NO POWER HERE" };
+        const mc = buildToolCost(tool);
+        if (shardCount < mc) return { ok: false, why: "NEED " + mc + " \u25c6" };
+        return { ok: true, why: "\u25c6" + mc };
+    }
     if (typeof isPylonTypeUnlocked === "function" && !isPylonTypeUnlocked(tool.elId)) return { ok: false, why: "LOCKED" };
     if (typeof isRelayId === "function" && isRelayId(tool.elId) && typeof canPlaceGenerator === "function" && !canPlaceGenerator(t).ok)
         return { ok: false, why: "NEEDS A NEST WITHIN " + (typeof GENERATOR_NEST_RANGE !== "undefined" ? GENERATOR_NEST_RANGE : 6) };
@@ -272,7 +290,8 @@ function buildToolPlaceAt(t) {
     if (!tool) return false;
     const v = canBuildAt(t, tool);
     if (!v.ok) { _bmSay("CAN'T BUILD: " + v.why, "#f66"); return false; }
-    if (tool.kind === "demolish") return demolishPylon(t);
+    if (tool.kind === "demolish") return t._module ? removeModule(t._module, true) : demolishPylon(t);
+    if (tool.kind === "module") return !!placeModule(tool.id, t);
     const el = PYLON_PICKER_TYPES.find(e => e.id === tool.elId);
     if (!el) return false;
     const before = shardCount, lv = buildToolLevel(tool);
@@ -478,7 +497,7 @@ function drawBuildMenu() {
         }
         // Status line: what is in hand, and what to do with it.
         let msg, col = "#9ab";
-        if (!buildTool) msg = buildMenuTab === "camp" ? "Tap a building to buy it — it goes on its own lot at home." : "Pick something to build.";
+        if (!buildTool) msg = buildMenuTab === "modules" ? "Modules work while powered, on the ground around them. Pick one." : "Pick something to build.";
         else {
             const g = buildGhost && typeof getTile === "function" ? getTile(buildGhost.x, buildGhost.y) : null;
             const v = g ? canBuildAt(g, buildTool) : null;

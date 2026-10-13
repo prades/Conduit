@@ -585,6 +585,7 @@ function restartGame() {
     ELEMENTS.forEach(e=>{ networkStrength[e.id]=0; networkIntegrity[e.id]=0; _prevNetworkTiers[e.id]=0; });
     activeDayZones=3;exploredZones=new Set();
     clearCampBuildings();
+    if (typeof clearModules === "function") clearModules();
     crystal={ x:0,y:2,health:300,maxHealth:300,radius:0.8 };
     // Must carry every field config.js's opening player has. attackCooldown was
     // missing, and `undefined <= 0` is false, so the fire gate in input.js

@@ -59,6 +59,7 @@ function campFootprint(id) {
 
 // The building standing on a tile, if any.
 function campBuildingAt(tx, ty) {
+    if (CAMP_LOTS_RETIRED) return null;   // the lots are gone (see loadCampBuildings)
     for (const b of CAMP_BUILDINGS) {
         const t = _CAMP_BLDG_TILES[b.id];
         if (!t) continue;
@@ -91,11 +92,30 @@ let campMenuOpen  = false;
 function saveCampBuildings() {
     try { localStorage.setItem("tubecrawler_camp", JSON.stringify([...campBuildings])); } catch(e) {}
 }
+// RETIRED. "I don't know if I like the current camp modules … give them actual
+// purpose. They shouldn't be just at the base camp." The six buildings are
+// replaced by MODULES you build anywhere on the grid (js/modules.js). Any
+// already bought are refunded in full, once, on the next load; their effects
+// (which read isCampBuilt) simply never apply again, and their lots are gone.
+const CAMP_LOTS_RETIRED = true;
 function loadCampBuildings() {
     try {
         const d = JSON.parse(localStorage.getItem("tubecrawler_camp") || "[]");
         campBuildings = new Set(d);
     } catch(e) { campBuildings = new Set(); }
+    if (CAMP_LOTS_RETIRED && campBuildings.size) {
+        let back = 0;
+        for (const id of campBuildings) { const b = CAMP_BUILDINGS.find(x => x.id === id); if (b) back += b.cost; }
+        campBuildings = new Set();
+        saveCampBuildings();
+        if (back > 0) {
+            shardCount += back;
+            if (typeof saveShards === "function") saveShards();
+            if (typeof floatingTexts !== "undefined")
+                floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 60, text: "CAMP BUILDINGS RETIRED \u2014 REFUNDED +" + back + " \u25c6. BUILD MODULES INSTEAD",
+                                     color: "#ffcc44", life: 260, vy: -0.12, size: 13 });
+        }
+    }
 }
 function clearCampBuildings() {
     try { localStorage.removeItem("tubecrawler_camp"); } catch(e) {}
@@ -354,7 +374,7 @@ function drawCampButton() {
     ctx.font       = "bold 8px monospace";
     ctx.textAlign  = "center";
     ctx.textBaseline = "bottom";
-    ctx.fillText("CAMP", x, y + r + 10);
+    ctx.fillText("MODULES", x, y + r + 10);
     ctx.textBaseline = "alphabetic";
 
     ctx.restore();

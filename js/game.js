@@ -275,7 +275,9 @@ function applyPylonZoneEffects(wavePylons) {
             const _nTier = Math.min(3, (_pTier || 1) + _surgeUp);
             // The better STATUS of the two ends multiplies the link (MK II ×1.3).
             const _status = typeof pylonStatusMult === "function" ? Math.max(pylonStatusMult(pa), pylonStatusMult(pb)) : 1;
-            const _seasonBonus = (_seasonBonusCache[el] || 1.0) * _status;
+            // An overclocked end (js/modules.js) drives the link harder.
+            const _ocLink = (pa._oc || pb._oc) && typeof OC_WAVE_MULT !== "undefined" ? OC_WAVE_MULT : 1;
+            const _seasonBonus = (_seasonBonusCache[el] || 1.0) * _status * _ocLink;
 
             const {lx, ly, len2, bMinX, bMaxX, bMinY, bMaxY} = pair;
             // Only the columns the link's box covers (unitsNear, helpers.js).
@@ -1937,6 +1939,7 @@ function rebuildPylonPairs() {
 const NEST_DRAW_BIAS = 1.01;   // just past the last wall tile of its own face
 function drawDepthOf(o) {
     const d = o.x + o.y;
+    if (o.type === 'module') return d + 0.1;   // over its own floor tile, which shares its depth
     // An enemy standing in a black hole's vortex is drawn over it, not under
     // the floor tile it is painted from (js/formations.js).
     if (o.actor && o.actor._onVortex === frame) return d + 1.5;
@@ -2164,6 +2167,7 @@ function render() {
     // ── PLAYER ULTIMATE ──
     tickArmySurge();
     siphonTick();
+    if (typeof moduleTick === "function") moduleTick();   // med bays, force walls, overclock hubs (js/modules.js)
     const _ultInt = armySurgeTimer > 0
         ? Math.ceil(armySurgeTimer / 60)          // counting the surge down
         : Math.round(playerUltimate);              // filling
@@ -2507,7 +2511,7 @@ function render() {
     // Pylons were only written at wave transitions, so anything built or
     // upgraded mid-day was lost on a refresh. Every 5s is cheap next to the
     // rest of the frame and keeps a reload close to where the player was.
-    if (frame % 300 === 0) { saveSession(); savePylons(); saveNests(); if (typeof saveFollowerRoster === "function") saveFollowerRoster(); }
+    if (frame % 300 === 0) { saveSession(); savePylons(); saveNests(); if (typeof saveFollowerRoster === "function") saveFollowerRoster(); if (typeof saveModules === "function") saveModules(); }
 
     // ── CLEAR SCREEN + CIRCUIT BOARD BACKGROUND ──
     // One opaque stamp: the faint circuit board is composited onto the black
@@ -2706,7 +2710,9 @@ function render() {
         const _surged = pylonSurged(t);
         // STATIC STORM (a siege night): electric turrets fire twice as often.
         const _storm = typeof siegeIs === "function" && siegeIs("storm") && t.attackModeElement === "electric" ? SIEGE_STORM_MULT : 1;
-        const _every = Math.max(1, Math.round(TURRET_FIRE_FRAMES / (_surged ? OVERCHARGE_FIRE_MULT : 1) / _storm));
+        // OVERCLOCK HUB in reach (js/modules.js): faster, and dearer per round (payForShot).
+        const _oc = typeof overclockFireMult === "function" ? overclockFireMult(t) : 1;
+        const _every = Math.max(1, Math.round(TURRET_FIRE_FRAMES / (_surged ? OVERCHARGE_FIRE_MULT : 1) / _storm / _oc));
         t.attackFireTimer = Math.min(_every, (t.attackFireTimer||0) + 1);
         if (t.attackFireTimer < _every) return;
         // Find nearest enemy within range — squared distance avoids sqrt for non-targets
@@ -3041,6 +3047,8 @@ function render() {
     if (!_simGhost) actors.forEach(a=>{ if(visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });
     groundItems.forEach(g=>{ if(visibleForDraw(g.x,g.y)) drawList.push({type:'groundItem',x:g.x,y:g.y,item:g}); });
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
+    // Modules (js/modules.js): structures on their tiles, sorted with the rest.
+    if (typeof modules !== "undefined" && !_simGhost) for (const m of modules) if (visibleForDraw(m.x, m.y)) drawList.push({ type: 'module', x: m.x, y: m.y, module: m });
     // Depth is x+y: a bigger sum draws lower and in front.
     //
     // A WALL NEST is the exception. Its vortex is painted across a four-tile
@@ -3071,6 +3079,9 @@ function render() {
 
         if (obj.type==='player') {
             drawPlayer({x:px,y:py});
+        }
+        else if (obj.type==='module') {
+            drawModule(obj.module, px, py);
         }
         else if (obj.type==='npc') {
             drawNPC(obj.actor,px,py);
@@ -4506,6 +4517,7 @@ function render() {
 
     // ── OVERLAYS ──
     drawElementEffects();
+    if (typeof drawModuleFields === "function") drawModuleFields();   // module areas and force walls
     if (!gfxLow) drawSiphonWisps();
     // The hold line is world geometry, so it draws with the world rather than
     // up with the interface.

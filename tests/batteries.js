@@ -203,7 +203,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.mk > r.up && r.up > 1, JSON.stringify(r));
     });
     await check('status reaches wave links and formations as well', () => {
-        ok(/const _seasonBonus = \(_seasonBonusCache\[el\] \|\| 1\.0\) \* _status;/.test(rd('js/game.js')), 'wave links ignore status');
+        ok(/const _seasonBonus = \(_seasonBonusCache\[el\] \|\| 1\.0\) \* _status\b/.test(rd('js/game.js')), 'wave links ignore status');
         ok(/st = Math\.max\(st, pylonStatusMult\(p\)\)/.test(rd('js/formations.js')), 'formations ignore status');
     });
     await check('the ring offers it out of build mode on your turret, and the label says MK II', () => {

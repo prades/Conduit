@@ -418,9 +418,10 @@ canvas.addEventListener('pointerup', e=>{
         && Math.hypot(upX-_SHOPBTN.x, upY-_SHOPBTN.y) < _SHOPBTN.r+8) {
         openMidGameShop(); isPressing=false; return;
     }
-    // CAMP button tap
+    // CAMP button tap — now the MODULES button: the build window on its MODULES tab
     if (!touchMoved && Math.hypot(upX-_CAMPBTN.x, upY-_CAMPBTN.y) < _CAMPBTN.r+8) {
-        campMenuOpen=!campMenuOpen; isPressing=false; return;
+        if (typeof openModulesWindow === "function") openModulesWindow(); else campMenuOpen=!campMenuOpen;
+        isPressing=false; return;
     }
     // SETTINGS button tap
     if (!touchMoved && Math.hypot(upX-_SETTINGSBTN.x, upY-_SETTINGSBTN.y) < _SETTINGSBTN.r+8) {
@@ -432,7 +433,8 @@ canvas.addEventListener('pointerup', e=>{
         const _hnx = (HOME_NODE_TILE.x - player.visualX - (HOME_NODE_TILE.y - player.visualY)) * TILE_W + canvas.width/2;
         const _hny = (HOME_NODE_TILE.x - player.visualX + (HOME_NODE_TILE.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
         if (Math.hypot(upX - _hnx, upY - (_hny - 40)) < 40) {
-            campMenuOpen = true; isPressing = false; return;
+            if (typeof openModulesWindow === "function") openModulesWindow(); else campMenuOpen = true;
+            isPressing = false; return;
         }
     }
 

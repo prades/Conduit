@@ -68,16 +68,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('THE ASK: tabs of things with their pictures and prices — everything the picker can build', () => {
         const t = run(`(function(){ const k = tab => buildMenuItems(tab).map(i => i.kind + ':' + (i.elId || i.id));
-            return { turrets: k('turrets'), wave: k('wave'), power: k('power'), camp: k('camp'),
+            return { turrets: k('turrets'), wave: k('wave'), power: k('power'), modules: k('modules'),
                      roles: buildMenuItems('wave').every(i => i.kind === waveRole(i.elId)),
-                     icons: ['turrets','wave','power','camp'].every(tb => buildMenuItems(tb).every(i => ICONS[i.icon])),
+                     icons: ['turrets','wave','power','modules'].every(tb => buildMenuItems(tb).every(i => ICONS[i.icon])),
                      kinds: PYLON_KINDS.map(k => k.id) }; })()`);
         same(t.turrets.length, run('ELEMENTS.length'), 'a turret per element');
         ok(t.turrets.every(s => s.startsWith('attack:')), 'turrets tab: ' + t.turrets);
         ok(t.roles, 'a wave item is not the role its element has');
         same(t.power.filter(s => s.startsWith('battery:')).length, run('ELEMENTS.length'), 'a battery per element');
         ok(t.power.includes('connector:' + run('CONNECTOR_ID')) && t.power.includes('generator:' + run('GENERATOR_ID')), 'power tab: ' + t.power);
-        same(t.camp.length, run('CAMP_BUILDINGS.length'), 'camp buildings');
+        same(t.modules.length, run('MODULE_IDS.length'), 'modules');
         ok(t.icons, 'an item has no picture');
         // Every kind of the picker's first stage is somewhere in the window.
         const all = [...t.turrets, ...t.wave, ...t.power].map(s => s.split(':')[0]);
@@ -177,12 +177,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(!r.v.ok && !r.done && r.still, JSON.stringify(r));
         run('setBuildTool(null);');
     });
-    check('the CAMP tab buys a building outright', () => {
-        run('shardCount = 500; campBuildings.clear();');
-        const i = run(`buildMenuItems('camp').findIndex(it => it.id === 'repair_station')`);
-        pick('camp', i);
-        ok(run(`campBuildings.has('repair_station')`), 'not bought');
-        same(run('buildTool'), null, 'a camp building is not a tool');
+    check('the MODULES tab (it was CAMP) puts a module in hand like any item', () => {
+        run('shardCount = 500;');
+        if (!run(`_pillarCache.some(t => isGeneratorPylon(t) && !t.destroyed)`)) power();
+        const i = run(`buildMenuItems('modules').findIndex(it => it.id === 'medbay')`);
+        pick('modules', i);
+        same(run('buildTool && buildTool.kind + ":" + buildTool.id'), 'module:medbay', 'tool');
+        run('setBuildTool(null);');
     });
 
     console.log('\nTHE WINDOW IN THE PAGE');
@@ -203,7 +204,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('it draws without throwing, tool and ghost and all', () => {
         run(`toggleBuild(); setBuildTool(buildMenuItems('turrets')[0]); buildGhost = { x: 10, y: 1 };
-             drawBuildMenu(); drawBuildGhost(); buildMenuTab = 'camp'; drawBuildMenu();`);
+             drawBuildMenu(); drawBuildGhost(); buildMenuTab = 'modules'; drawBuildMenu();`);
     });
     check('input routing: the window before the HUD index, the tool before the world', () => {
         const src = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');

@@ -166,6 +166,8 @@ function _applyPylonKind(t, kind) {
 
 function _executeBuildInstant(el, t, kind) {
     if (el && isRelayId(el.id) && !canPlaceGenerator(t).ok) { refuseGenerator(el); return; }
+    // A module stands there (js/modules.js).
+    if (t && t._module) { floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"A MODULE STANDS THERE",color:"#f44",life:90,vy:-0.2}); return; }
     if (!t || shardCount < PYLON_BUILD_COST) {
         floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS",color:"#f44",life:90,vy:-0.2});
         return;

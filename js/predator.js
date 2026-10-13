@@ -558,6 +558,8 @@ class Predator {
         this.y = Math.max(0, Math.min(3, this.y));
         this.x = Math.max(0, this.x);
 
+        // A FORCE WALL across the tunnel holds it on its own side (js/modules.js).
+        if (typeof forceWallBlock === "function") forceWallBlock(this);
         this.lastX=this.x; this.lastY=this.y;
 
         // ── ABDOMEN RANGED ATTACK ──
