@@ -7,6 +7,7 @@ const SUITES = [
     ['performance + culling',  'perf.js'],
     ['the clock (game speed)', 'clock.js'],
     ['toxic mends the clones', 'mend.js'],
+    ['clone duties in the HUD', 'cloneduty.js'],
     ['declared globals',       'globals.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],

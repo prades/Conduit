@@ -140,6 +140,10 @@ function drawFollowerElementUI() {
                 ctx.fillStyle="#0f8"; ctx.font="10px monospace"; ctx.textAlign="left";
                 const label=((c.speciesName||"clone").toUpperCase()+" ["+(c.className||"").toUpperCase()+"]");
                 ctx.fillText(label,x+6,yy+cloneRH/2-4);
+                // Its duty, at the right of the row — hold the row to change it.
+                const _work = c.duty === "worker" && typeof cloneJob === "function" && cloneJob(c);
+                ctx.fillStyle = _work ? "#0ca" : "#4a6a5a"; ctx.font = "bold 8px monospace"; ctx.textAlign = "right";
+                ctx.fillText(_work ? "WORK: " + _work.label : "LINE", x + w - 6, yy + cloneRH / 2 - 4);
                 // Health bar
                 const barX=x+6, barY=yy+cloneRH/2+4, barW=w-12, barH=4;
                 ctx.fillStyle="#222"; ctx.fillRect(barX,barY,barW,barH);
@@ -152,6 +156,10 @@ function drawFollowerElementUI() {
             ctx.fillRect(x,cy0,w,_UI_CONTENT_H);
             ctx.fillStyle="#0f8"; ctx.font="bold 9px monospace"; ctx.textAlign="center";
             ctx.fillText("▶ COMMANDS TARGET CLONES ◀",x+w/2,cy0+_UI_CONTENT_H-8);
+            if (clones.length < 5) {   // with more rows there is no room under them
+                ctx.fillStyle="#4a7a60"; ctx.font="8px monospace";
+                ctx.fillText("hold a row: work / line",x+w/2,cy0+_UI_CONTENT_H-19);
+            }
         }
     }
 
@@ -870,6 +878,8 @@ function dutyGroupMembers(group) {
     if (!group || typeof followers === "undefined") return [];
     if (group.kind === "element") return followers.filter(a => !a.dead && a.element === group.id);
     if (group.kind === "role")    return followers.filter(a => !a.dead && a.role === group.id);
+    // A CLONES-tab row stands for its species: every live clone of it.
+    if (group.kind === "clones")  return actors.filter(a => a && a.isClone && !a.dead && a.team === "green" && a.speciesName === group.id);
     return [];
 }
 
@@ -903,15 +913,28 @@ function applyDutyToGroup(group, duty) {
             text: "NO " + group.label + " TO ORDER", color: "#f88", life: 100, vy: -0.22, size: 12 });
         return 0;
     }
+    const clones = group.kind === "clones";
     const able = duty === "worker"
-        ? members.filter(a => typeof canWorkMass === "function" && canWorkMass(a))
+        ? members.filter(a => clones ? (typeof canCloneWork === "function" && canCloneWork(a))
+                                     : (typeof canWorkMass === "function" && canWorkMass(a)))
         : members;
     let moved = 0;
     for (const a of able) {
+        if (clones) {
+            const was = a.duty === "worker";
+            if (was === (duty === "worker")) continue;
+            if (setCloneDuty(a, duty)) moved++;
+            continue;
+        }
         if (a.duty === duty) continue;
         if (setFollowerDuty(a, duty, true)) moved++;
     }
     const verb = duty === "worker" ? "TO WORK" : "TO THE LINE";
+    if (able.length === 0 && clones) {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
+            text: "NO JOB YET FOR " + group.label, color: "#f88", life: 120, vy: -0.25, size: 12 });
+        return 0;
+    }
     if (able.length === 0) {
         // The whole group is ineligible — say why once, naming the elements
         // that can, rather than refusing silently.
@@ -956,7 +979,19 @@ function followerIndexGroupAt(x, y) {
         return { kind: "role", id: r.id, label: r.label, colour: r.colour,
                  rowY: py0 + _UI_TAB_H + i * unitRH };
     }
-    return null;   // the CLONES tab is not a duty group
+    if (uiTab === "clones") {
+        // Each row is one clone; holding it orders every clone of that species
+        // (one press, one group, one instruction — as the element rows do).
+        const clones = actors.filter(a => a.isClone && !a.dead);
+        if (clones.length === 0) return null;
+        const cloneRH = Math.floor(_UI_CONTENT_H / Math.min(clones.length, 6));
+        const i = Math.floor((y - py0 - _UI_TAB_H) / cloneRH);
+        const c = clones.slice(0, 6)[i];
+        if (!c || !c.speciesName) return null;
+        return { kind: "clones", id: c.speciesName, label: c.speciesName.toUpperCase() + " CLONES",
+                 colour: "#0f8", rowY: py0 + _UI_TAB_H + i * cloneRH };
+    }
+    return null;
 }
 
 // Returns true when the press was the index's, so the world radial does not
@@ -1007,6 +1042,17 @@ function drawFollowerDutyMenu() {
         ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
         ctx.fillText(label, bx + bw / 2, by + _DUTY_BTN_H / 2);
     });
+    if (g.kind === "clones") {
+        // Clones are not re-rolled; the bottom row says what their work IS.
+        const j = members.length && typeof cloneJob === "function" ? cloneJob(members[0]) : null;
+        ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(m.x + 6, rby, m.w - 12, _DUTY_BTN_H);
+        ctx.strokeStyle = "#345"; ctx.lineWidth = 1; ctx.strokeRect(m.x + 6, rby, m.w - 12, _DUTY_BTN_H);
+        ctx.fillStyle = j ? "#0ca" : "#678"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+        ctx.fillText(j ? "JOB: " + j.label : "NO JOB YET", m.x + m.w / 2, rby + _DUTY_BTN_H / 2);
+        ctx.restore();
+        m._btn = { bw, by, rby: -1e9 };
+        return;
+    }
     // RE-ROLL ALL, full width. It sends the whole group home, so the first tap
     // only arms it and says so; the second does it.
     const rollable = members.filter(a => canRerollFollower(a)).length;

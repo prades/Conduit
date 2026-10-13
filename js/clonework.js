@@ -41,6 +41,20 @@ function toggleCloneDuty(c) {
     return true;
 }
 
+// Put a clone on a duty outright ("worker" or anything else for the line),
+// quietly — the HUD's clone rows order a whole species at once and say it once.
+// False when it cannot (no job for its species yet).
+function setCloneDuty(c, duty) {
+    if (!c || !c.isClone || c.dead) return false;
+    if (duty === "worker") {
+        if (!canCloneWork(c)) return false;
+        if (c.duty !== "worker") { c.duty = "worker"; c.cloneWork = {}; }
+        return true;
+    }
+    if (c.duty === "worker") { c.duty = null; c.cloneWork = null; }
+    return true;
+}
+
 // Once a frame from the clone's AI (npc.js updateRTSNPC). True when the job
 // handled the frame. A clone on work duty whose species has no job (a save
 // from a build that had one) goes back to the line.
