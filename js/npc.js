@@ -1,6 +1,18 @@
 // ─────────────────────────────────────────────────────────
 //  NPC UPDATE
 // ─────────────────────────────────────────────────────────
+// One step toward (dx, dy) at the unit's speed, WALKING: the legs are drawn
+// from walkCycle and it faces the way it goes. These moves (home to the
+// Crystal, a recruit to a pylon to heal, out to a POSITION, onto a capture
+// node, over to a pylon to heal) return before the shared walk-cycle block
+// below, and changed x and y and nothing else — the unit glided on still legs.
+function _walkStep(actor, dx, dy, dist) {
+    actor.x += (dx / dist) * actor.moveSpeed; actor.y += (dy / dist) * actor.moveSpeed;
+    actor.walkCycle = (actor.walkCycle || 0) + actor.moveSpeed * 40;
+    actor.dirX = dx / dist; actor.dirY = dy / dist;
+    actor.lastX = actor.x; actor.lastY = actor.y;
+}
+
 function updateRTSNPC(actor) {
     if (actor.spawnProtection===undefined) actor.spawnProtection=0;
     if (actor.dead) return;
@@ -33,7 +45,9 @@ function updateRTSNPC(actor) {
     // return to crystal
     if (!actor.dead&&actor.team==="green"&&actor.returningToCrystal) {
         const dx=crystal.x-actor.x, dy=crystal.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist>0.6) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+        // REPORTED: "the recruits walk back to the crystal, not float back.
+        // Their legs need to move." (_walkStep)
+        if (dist>0.6) _walkStep(actor, dx, dy, dist);
         else {
             actor.returningToCrystal = false;
             actor.isFollower = true;
@@ -81,7 +95,7 @@ function updateRTSNPC(actor) {
         const pillar=findNearestFriendlyPillar(actor);
         if (pillar) {
             const dx=pillar.x-actor.x, dy=pillar.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-            if (dist>0.2) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+            if (dist>0.2) _walkStep(actor, dx, dy, dist);
             return;
         }
     }
@@ -238,7 +252,7 @@ function updateRTSNPC(actor) {
                     // Recalled to you: through the nests, it follows again.
                     if (actor.job.follow) actor.job = null;
                 }
-                else if (dist>0.6) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+                else if (dist>0.6) _walkStep(actor, dx, dy, dist);
             }
             return;
         }
@@ -249,9 +263,7 @@ function updateRTSNPC(actor) {
         const node=actor.job.target;
         if (!node||node.captured) { actor.job=null; return; }
         const dx=node.x-actor.x, dy=node.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist>0.7) {
-            actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed;
-        }
+        if (dist>0.7) _walkStep(actor, dx, dy, dist);
         // Stay at node — job remains active until captured (updateCaptureProgress clears it)
         return;
     }
@@ -284,7 +296,7 @@ function updateRTSNPC(actor) {
         const pillar=findNearestFriendlyPillar(actor);
         if (pillar) {
             const dx=pillar.x-actor.x, dy=pillar.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-            if (dist>0.6) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+            if (dist>0.6) _walkStep(actor, dx, dy, dist);
             return;
         }
     }

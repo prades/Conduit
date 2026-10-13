@@ -66,6 +66,7 @@ const SUITES = [
     ['batteries + MK II',      'batteries.js'],
     ['game index + icons',     'index.js'],
     ['boot check',             'boot.js'],
+    ['walk home + mass colour', 'walkhome.js'],
 ];
 
 let failed = 0;

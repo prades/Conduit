@@ -275,7 +275,7 @@ function _workHaul(actor) {
     m.carrier = actor;
     actor.carryingMass = m;
     actor._massTarget  = null;
-    floatingTexts.push({ x: m.x, y: m.y - 1, text: 'HAULING', color: '#00ccaa', life: 45, vy: -0.06 });
+    floatingTexts.push({ x: m.x, y: m.y - 1, text: 'HAULING', color: _massHaulColour(), life: 45, vy: -0.06 });
     return true;
 }
 
@@ -689,17 +689,30 @@ function restoreChargedMass(list) {
 }
 
 // ── Drawing ──────────────────────────────────────────────
+// REPORTED: "the charged particles on the ground after they've been
+// neutralized by the electric workers need to turn purple, because the purple
+// workers are the ones that take care of it." A neutralised lump takes the
+// colour of the element that hauls it (MASS_HAULER, flux) — it was core's teal.
+function _massHaulColour() {
+    const e = typeof ELEMENTS !== 'undefined' && ELEMENTS.find(x => x.id === MASS_HAULER);
+    return e ? e.color : '#9933ff';
+}
+function _rgbaOf(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
 function drawChargedMass(m, px, py) {
     const charged = m.state === MASS_STATE.CHARGED;
     const lift    = Math.sin(m.bob) * 3;
     const cx = px, cy = py - 16 + lift;
-    const col = charged ? '#ffee33' : '#00ccaa';
+    const haul = _massHaulColour();
+    const col = charged ? '#ffee33' : haul;
 
     ctx.save();
 
     // Ground glow
     const g = ctx.createRadialGradient(cx, py + 2, 1, cx, py + 2, 22);
-    g.addColorStop(0, charged ? 'rgba(255,238,51,0.30)' : 'rgba(0,204,170,0.22)');
+    g.addColorStop(0, charged ? 'rgba(255,238,51,0.30)' : _rgbaOf(haul, 0.26));
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.save();
     ctx.translate(cx, py + 2); ctx.scale(1, 0.4); ctx.translate(-cx, -(py + 2));
@@ -717,7 +730,7 @@ function drawChargedMass(m, px, py) {
         if (i === 0) ctx.moveTo(vx, vy); else ctx.lineTo(vx, vy);
     }
     ctx.closePath();
-    ctx.fillStyle = charged ? 'rgba(60,54,10,0.95)' : 'rgba(10,42,38,0.95)';
+    ctx.fillStyle = charged ? 'rgba(60,54,10,0.95)' : 'rgba(34,12,58,0.95)';   // dark violet when neutral
     ctx.fill();
     ctx.strokeStyle = col; ctx.lineWidth = 1.4;
     ctx.stroke();
