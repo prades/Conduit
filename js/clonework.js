@@ -58,3 +58,70 @@ function cloneDutyLabel(c) {
     if (c && c.duty === "worker" && j) return "WORKER: " + j.label;
     return j ? "FIGHTER · JOB: " + j.label : "FIGHTER · NO JOB YET";
 }
+
+// ── BEETLE: HAULER ────────────────────────────────────────
+// Asked: "Beetle — hauler. Beetles already haul mass for their nests as
+// enemies. As a clone: carries neutralised mass to the Crystal, more per trip
+// than a flux worker."
+//
+// It gathers neutralised lumps (the purple ones the electric workers leave) —
+// up to BEETLE_HAUL_LOAD at once where a flux worker takes one — then walks
+// them to the nearest drop point (the Crystal, or a nest you hold) and pays
+// them all in. The delivery is the flux worker's own (updateChargedMass, in
+// js/mass.js): each lump it carries is paid when it reaches a drop point, and
+// dropped where it fell if the beetle is killed. With nothing to haul it
+// fights like any clone.
+const BEETLE_HAUL_LOAD  = 3;     // lumps per trip (a flux worker: 1)
+const BEETLE_HAUL_SEEK  = 12;    // tiles: how far it looks for the next lump
+const BEETLE_HAUL_SPEED = 1.0;   // × its own speed while working
+function _beetleStep(c, tx, ty) {
+    const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy);
+    if (d > 1e-6) { c.dirX = dx / d; c.dirY = dy / d; }
+    _moveToward(c, tx, ty, BEETLE_HAUL_SPEED);
+    c.state = "wander";
+}
+CLONE_JOBS.beetle = {
+    label: "HAUL",
+    note: "Gathers up to " + BEETLE_HAUL_LOAD + " neutralised lumps at a time and carries them to the Crystal or a nest you hold.",
+    tick(c) {
+        if (typeof chargedMass === "undefined" || typeof MASS_STATE === "undefined") return false;
+        const w = c.cloneWork;
+        // What it is carrying: lumps whose carrier is still this beetle (a
+        // delivered lump has left chargedMass; a dropped one has no carrier).
+        w.load = (w.load || []).filter(m => m.carrier === c && m.state === MASS_STATE.CARRIED && chargedMass.includes(m));
+        w.load.forEach((m, i) => { m.stack = i; });
+        // Room for more, and one in reach: go and get it.
+        if (w.load.length < BEETLE_HAUL_LOAD) {
+            let m = w.target;
+            if (!m || m.state !== MASS_STATE.NEUTRAL || m.carrier || !chargedMass.includes(m))
+                m = w.target = nearestChargedMass(c.x, c.y, MASS_STATE.NEUTRAL, BEETLE_HAUL_SEEK);
+            if (m) {
+                if (Math.hypot(m.x - c.x, m.y - c.y) > MASS_WORK_RANGE) { _beetleStep(c, m.x, m.y); return true; }
+                m.state = MASS_STATE.CARRIED; m.carrier = c; m.stack = w.load.length;
+                w.load.push(m); w.target = null;
+                if (typeof floatingTexts !== "undefined")
+                    floatingTexts.push({ x: m.x, y: m.y - 1, text: "HAULING " + w.load.length + "/" + BEETLE_HAUL_LOAD,
+                                         color: typeof _massHaulColour === "function" ? _massHaulColour() : "#9933ff", life: 45, vy: -0.06 });
+                return true;
+            }
+        }
+        // Full, or nothing more to pick up: take the load home.
+        if (w.load.length) {
+            const d = nearestMassDrop(c.x, c.y);
+            if (d) { _beetleStep(c, d.x, d.y); return true; }
+        }
+        return false;   // no work: it fights like any clone
+    },
+};
+
+// The index's list of clone jobs (SQUAD → In detail — clones), from the table.
+function renderCloneJobsIndex() {
+    if (typeof document === "undefined" || !document.getElementById) return;
+    const host = document.getElementById("cmCloneJobs");
+    if (!host) return;
+    const rows = Object.keys(CLONE_JOBS).map(sp =>
+        '<div class="cm-build-row"><span class="cm-build-label">' + sp.toUpperCase() + ' \u00b7 ' + CLONE_JOBS[sp].label + '</span>' + CLONE_JOBS[sp].note + '</div>');
+    host.innerHTML = (rows.length ? rows.join("") : "") +
+        '<div class="ctrl-row cm-dim">Long-press a clone: <strong>TO WORK</strong> puts it on its species&rsquo; job, <strong>TO LINE</strong> brings it back. A species with no job yet says <strong>NO JOB YET</strong>.</div>';
+}
+try { renderCloneJobsIndex(); } catch (e) { /* no DOM (tests) */ }

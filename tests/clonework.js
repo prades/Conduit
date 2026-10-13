@@ -99,6 +99,40 @@ async function boot(store) {
         ok(d === 'worker', 'duty after refresh: ' + d);
     });
 
+    group('BEETLE: HAULER');
+
+    await check('THE ASK: a beetle clone at work carries several neutralised lumps at once and pays them in at the Crystal', async () => {
+        const runB = await boot({ tubecrawler_seed: '305419896' });
+        const r = runB(`(function(){
+            actors.length = 0; chargedMass.length = 0;
+            const b = makeClone('beetle', 'striker', crystal.x + 6, 2);
+            const lumps = [0, 1, 2, 3].map(i => { const m = spawnChargedMass(crystal.x + 7 + i * 0.6, 2 + (i % 2), 10); m.state = MASS_STATE.NEUTRAL; return m; });
+            const job = toggleCloneDuty(b);
+            const s0 = shardCount; let most = 0;
+            for (let f = 0; f < 3000 && chargedMass.length; f++) {
+                gameState.running = true; crystal.health = crystal.maxHealth;
+                updateNPC(b); updateChargedMass();
+                most = Math.max(most, chargedMass.filter(m => m.carrier === b).length);
+            }
+            return { job, label: cloneDutyLabel(b), most, left: chargedMass.length, paid: shardCount - s0, load: BEETLE_HAUL_LOAD }; })()`);
+        ok(r.job && r.label === 'WORKER: HAUL', JSON.stringify(r));
+        ok(r.most === r.load, 'it never carried a full load of ' + r.load + ': ' + JSON.stringify(r));
+        ok(r.left === 0 && r.paid === 40, 'not all of it was paid in: ' + JSON.stringify(r));
+    });
+    await check('killed on the way, it drops what it carries where it fell', async () => {
+        const runB = await boot({ tubecrawler_seed: '305419896' });
+        const r = runB(`(function(){
+            actors.length = 0; chargedMass.length = 0;
+            const b = makeClone('beetle', 'striker', crystal.x + 9, 2);
+            for (let i = 0; i < 2; i++) { const m = spawnChargedMass(crystal.x + 9.2, 2, 10); m.state = MASS_STATE.NEUTRAL; }
+            toggleCloneDuty(b);
+            for (let f = 0; f < 20; f++) { updateNPC(b); updateChargedMass(); }
+            const held = chargedMass.filter(m => m.carrier === b).length;
+            b.dead = true; updateChargedMass();
+            return { held, dropped: chargedMass.filter(m => m.state === MASS_STATE.NEUTRAL && !m.carrier).length }; })()`);
+        ok(r.held === 2 && r.dropped === 2, JSON.stringify(r));
+    });
+
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
 })();

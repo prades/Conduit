@@ -704,7 +704,8 @@ function _rgbaOf(hex, a) {
 function drawChargedMass(m, px, py) {
     const charged = m.state === MASS_STATE.CHARGED;
     const lift    = Math.sin(m.bob) * 3;
-    const cx = px, cy = py - 16 + lift;
+    // Stacked on a hauling beetle's back (js/clonework.js), each one higher.
+    const cx = px, cy = py - 16 + lift - (m.state === MASS_STATE.CARRIED ? (m.stack || 0) * 9 : 0);
     const haul = _massHaulColour();
     const col = charged ? '#ffee33' : haul;
 
@@ -759,7 +760,8 @@ function drawChargedMass(m, px, py) {
     ctx.fillStyle = col;
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('◈ ' + m.value, cx, cy - 15);
+    // One label per stack on a hauling beetle's back, not one per lump.
+    if (!(m.state === MASS_STATE.CARRIED && (m.stack || 0) > 0)) ctx.fillText('◈ ' + m.value, cx, cy - 15);
 
     ctx.restore();
 }
