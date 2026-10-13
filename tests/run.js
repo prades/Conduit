@@ -68,6 +68,7 @@ const SUITES = [
     ['boot check',             'boot.js'],
     ['walk home + mass colour', 'walkhome.js'],
     ['nymphs grant nothing',   'nymphs.js'],
+    ['clones: save + work',    'clonework.js'],
 ];
 
 let failed = 0;

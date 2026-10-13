@@ -573,6 +573,10 @@ function executeCommand() {
             break;
         }
         // ── FIGHTER / WORKER ─────────────────────────────
+        case "clone_duty": {
+            if (commandFollowerTarget && commandFollowerTarget.isClone && typeof toggleCloneDuty === "function") toggleCloneDuty(commandFollowerTarget);
+            break;
+        }
         case "toggle_duty": {
             if (commandFollowerTarget && !commandFollowerTarget.dead) {
                 toggleFollowerDuty(commandFollowerTarget);

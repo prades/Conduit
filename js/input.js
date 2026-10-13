@@ -37,6 +37,8 @@ function followerPickPoint(f) {
     if (f.iceBlock) {
         return { x: px, y: py + TILE_H - (TILE_H * ICE_BLOCK_H_MULT) / 2 };
     }
+    // A clone is a predator's body: low and long, not a tall glass figure.
+    if (f.isClone) return { x: px, y: py - 22 };
     return { x: px, y: py - 55 };
 }
 
@@ -105,9 +107,15 @@ function enemyPickDistance(ex, ey) {
 
 // The follower under a screen point. Same radius as the enemy test, so the two
 // feel identical to aim.
+// Your followers and your clones: a long press on either opens its ring.
+function _pickableAllies() {
+    const out = followers.slice();
+    for (const a of actors) if (a && a.isClone && a.team === "green" && !a.dead) out.push(a);
+    return out;
+}
 function findFollowerAtScreen(ex, ey) {
     let best = null, bestD = PICK_RADIUS;
-    for (const f of followers) {
+    for (const f of _pickableAllies()) {
         if (!f || f.dead) continue;
         const p = followerPickPoint(f);
         const d = Math.hypot(ex - p.x, ey - p.y);
@@ -117,7 +125,7 @@ function findFollowerAtScreen(ex, ey) {
 }
 function followerPickDistance(ex, ey) {
     let bestD = Infinity;
-    for (const f of followers) {
+    for (const f of _pickableAllies()) {
         if (!f || f.dead) continue;
         const p = followerPickPoint(f);
         const d = Math.hypot(ex - p.x, ey - p.y);
@@ -512,7 +520,8 @@ canvas.addEventListener('pointerup', e=>{
                 if (commandFollowerTarget && !commandFollowerTarget.dead) {
                     const _f = commandFollowerTarget;
                     if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4) {
-                        if (canWorkMass(_f)) selectedRadialAction = "toggle_duty";
+                        if (_f.isClone) selectedRadialAction = "clone_duty";   // js/clonework.js
+                        else if (canWorkMass(_f)) selectedRadialAction = "toggle_duty";
                     } else if (relAngle > -Math.PI/4 && relAngle < Math.PI/4) selectedRadialAction = "info";
                     else if (Math.abs(relAngle) > Math.PI*3/4 && canRerollFollower(_f)) selectedRadialAction = "reroll_follower";
                     commandPendingTap = false;

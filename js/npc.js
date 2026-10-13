@@ -42,6 +42,9 @@ function updateRTSNPC(actor) {
         }
     }
 
+    // A clone on work duty does its species' job (js/clonework.js).
+    if (actor.isClone && actor.duty === "worker" && !actor.dead && typeof cloneWorkTick === "function" && cloneWorkTick(actor)) return;
+
     // return to crystal
     if (!actor.dead&&actor.team==="green"&&actor.returningToCrystal) {
         const dx=crystal.x-actor.x, dy=crystal.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);

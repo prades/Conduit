@@ -179,6 +179,31 @@ function clearDNA() {
 // hurt they are, which nests are linked to which pylons, how far they have
 // explored, and the state of the panels and capture nodes. Paired with the
 // saved world seed in js/rng.js, reloading resumes rather than restarts.
+// Your clones, back where they stood, as hurt as they were, on the same duty —
+// built by makeClone, like the summon and the respawn — and the ones that were
+// on their way back still on their way.
+function restoreClones(list, queue) {
+    if (!Array.isArray(list) && !Array.isArray(queue)) return 0;
+    if (typeof makeClone !== "function") return 0;
+    let n = 0;
+    for (const c of (list || [])) {
+        if (!c || !c.sp) continue;
+        const x = Number.isFinite(c.x) ? c.x : crystal.x, y = Number.isFinite(c.y) ? c.y : crystal.y;
+        const k = makeClone(c.sp, c.cl || "scout", x, y);
+        if (!k) continue;
+        if (Number.isFinite(c.h)) k.health = Math.max(1, Math.round(k.maxHealth * Math.min(1, Math.max(0, c.h))));
+        if (c.duty === "worker") { k.duty = "worker"; k.cloneWork = {}; }
+        n++;
+    }
+    if (typeof respawnQueue !== "undefined") for (const q of (queue || [])) {
+        if (!q || !q.sp) continue;
+        const tt = Number.isFinite(q.tt) ? q.tt : (typeof CLONE_RESPAWN_FRAMES === "number" ? CLONE_RESPAWN_FRAMES : 1200);
+        respawnQueue.push({ isClone: true, speciesName: q.sp, className: q.cl || "scout",
+                            timer: Number.isFinite(q.t) ? Math.max(1, q.t) : tt, totalTimer: tt });
+    }
+    return n;
+}
+
 function saveSession() {
     try {
         const nests = world.filter(t => t.nest).map(t => ({
@@ -250,6 +275,14 @@ function saveSession() {
             nestOff: world.filter(t => t.nest && t.powerOff).map(t => ({ x: t.x, y: t.y })),
             // Shards the thieves have banked in each enemy nest, and the machines built from them.
             raids: typeof serialiseRaids === "function" ? serialiseRaids() : null,
+            // REPORTED: "clones disappear after refresh." Nothing saved them:
+            // the roster only carried followers. Every clone standing (where,
+            // how hurt, its duty) and every one waiting to respawn.
+            clones: actors.filter(a => a.isClone && a.team === "green" && !a.dead && a.speciesName).map(a => ({
+                sp: a.speciesName, cl: a.className, x: +a.x.toFixed(2), y: +a.y.toFixed(2),
+                h: a.maxHealth > 0 ? +(a.health / a.maxHealth).toFixed(3) : 1, duty: a.duty || null })),
+            cloneQueue: (typeof respawnQueue !== "undefined" ? respawnQueue : []).filter(e => e.isClone && e.speciesName).map(e => ({
+                sp: e.speciesName, cl: e.className, t: e.timer, tt: e.totalTimer })),
             // Without this a refresh during a wave put the player back in
             // "day" with the alarm gone and the kill count at zero — the wave
             // NUMBER survived in tubecrawler_gamestate, but the wave itself
@@ -431,6 +464,7 @@ function applySession(sess) {
         }
     }
     if (typeof restoreRaids === "function") restoreRaids(sess.raids);
+    restoreClones(sess.clones, sess.cloneQueue);
 
     // Force the 60-frame world caches to rebuild against the restored tiles.
     _cacheAge = -999;

@@ -63,6 +63,23 @@ function drawRadialMenu() {
     // ── OWN FOLLOWER — duty assignment ──
     // Fighters hold the line; workers run the charged-mass chain. Only ELECTRIC
     // and CORE can work, so the button says so rather than silently refusing.
+    // ── YOUR CLONE — work duty (js/clonework.js) ──
+    if (commandFollowerTarget && !commandFollowerTarget.dead && commandFollowerTarget.isClone) {
+        const c = commandFollowerTarget;
+        const cUp = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
+        const job = typeof cloneJob === "function" ? cloneJob(c) : null;
+        drawRadialButton(commandX, commandY-RADIAL_RADIUS, c.duty === "worker" ? "TO LINE" : job ? "TO WORK" : "NO JOB YET", cUp && (!!job || c.duty === "worker"));
+        if (cUp) selectedRadialAction = "clone_duty";
+        const cRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
+        drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", cRight);
+        if (cRight) selectedRadialAction = "info";
+        ctx.fillStyle = c.duty === "worker" ? "#0ca" : "#22ff88";
+        ctx.font = "10px monospace"; ctx.textAlign = "center";
+        ctx.fillText((c.speciesName || "").toUpperCase() + " CLONE \u00b7 " + (typeof cloneDutyLabel === "function" ? cloneDutyLabel(c) : "FIGHTER"),
+                     commandX, commandY + RADIAL_RADIUS + 18);
+        ctx.restore();
+        return;
+    }
     if (commandFollowerTarget && !commandFollowerTarget.dead) {
         const f = commandFollowerTarget;
         const eligible = typeof canWorkMass === "function" && canWorkMass(f);
