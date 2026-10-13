@@ -178,6 +178,45 @@ async function boot(store) {
         ok(r === false, 'it held the frame with no work');
     });
 
+    group('SPIDER: WEB LAYER');
+
+    await check('THE ASK: at work it spins webs on the floor round where you put it — up to six, then it fights', async () => {
+        const runS = await boot({ tubecrawler_seed: '305419896' });
+        const r = runS(`(function(){
+            actors.length = 0; _webs.clear();
+            const home = world.find(t => isHomePortal(t));
+            const sp = makeClone('spider', 'striker', home.x + 6.5, 1.5);
+            toggleCloneDuty(sp);
+            let f = 0; for (; f < 1200 && _webs.size < SPIDER_WEB_MAX; f++) { frame++; updateNPC(sp); }
+            const webs = [..._webs.values()];
+            const far = Math.max(...webs.map(w => Math.hypot(w.x - 6 - home.x, w.y - 1)));
+            const idle = CLONE_JOBS.spider.tick(sp);
+            return { n: webs.length, frames: f, far, idle, label: cloneDutyLabel(sp) }; })()`);
+        ok(r.label === 'WORKER: WEB', r.label);
+        ok(r.n === 6, 'webs spun: ' + JSON.stringify(r));
+        ok(r.far <= 2.5, 'a web is too far from where it was put: ' + JSON.stringify(r));
+        ok(r.idle === false, 'with all its webs up it still held the frame');
+    });
+    await check('THE ASK: a predator on a web is slowed, held fast the first time, and wears it out', async () => {
+        const runS = await boot({ tubecrawler_seed: '305419896' });
+        const r = runS(`(function(){
+            actors.length = 0; _webs.clear();
+            const sp = makeClone('spider', 'striker', crystal.x + 6, 2);
+            const web = { x: Math.floor(crystal.x + 8), y: 2, hp: SPIDER_WEB_HP, owner: sp }; _webs.set(web.x + ',' + web.y, web);
+            const holds = [];
+            for (let i = 0; i < SPIDER_WEB_HP; i++) {
+                const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, getClassDef(S, 'scout'), { color: S.color }), web.x + 0.5, 2.5);
+                p.team = 'red'; actors.push(p);
+                frame++; webTick();
+                holds.push(p.slowFactor === 0 && p.slowed >= SPIDER_WEB_HOLD);
+                frame++; webTick();   // still on it: held once, not again
+                p.dead = true;
+            }
+            return { holds, left: _webs.has(web.x + ',' + web.y), hp: web.hp }; })()`);
+        ok(r.holds.every(Boolean), 'not held on contact: ' + JSON.stringify(r));
+        ok(!r.left && r.hp === 0, 'it did not wear out after ' + 3 + ' catches: ' + JSON.stringify(r));
+    });
+
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
 })();

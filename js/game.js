@@ -2439,6 +2439,7 @@ function render() {
     if (typeof ultraBlockTick === "function") ultraBlockTick();
     // Black holes drag and crush, fire walls burn (js/formations.js).
     if (typeof formationTick === "function") formationTick();
+    if (typeof webTick === "function") webTick();   // spider clones' webs (js/clonework.js)
 
     // ── RED HEALTH DECAY ──
     // Skips a neutral recruit. The decay is meant to bleed enemies that have
@@ -3164,6 +3165,7 @@ function render() {
 
             // An ICE GENERATOR's frost, on the floor under everything (js/formations.js).
             if (typeof drawFrostOnTile === "function") drawFrostOnTile(obj, px, py);
+            if (typeof drawWebOnTile === "function") drawWebOnTile(obj, px, py);
 
             // Cables run along the floor, under pylons and units (layAllCables).
             drawCablesOnTile(obj, px, py);

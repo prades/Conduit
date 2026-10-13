@@ -210,3 +210,121 @@ CLONE_JOBS.ant = {
         return true;
     },
 };
+
+// ── SPIDER: WEB LAYER ─────────────────────────────────────
+// Asked: "Spider — web layer. Spins webs on the floor in a lane that slow and
+// hold predators."
+//
+// POSITION it where you want the lane held, then TO WORK: it anchors there and
+// spins a web on each floor tile around that spot, out to SPIDER_WEB_REACH
+// tiles, up to SPIDER_WEB_MAX of them, SPIDER_SPIN_FRAMES each. A predator on
+// a web is slowed to SPIDER_WEB_SLOW; the first time each one steps into a
+// web it is HELD fast for SPIDER_WEB_HOLD frames, and that wears the web — it
+// breaks after SPIDER_WEB_HP catches and the spider spins it again. With all
+// its webs up the spider fights like any clone. Webs are drawn on the floor,
+// under everything standing on them (drawWebOnTile, from the floor pass).
+const SPIDER_WEB_MAX     = 6;
+const SPIDER_WEB_REACH   = 2.5;   // tiles from its anchor
+const SPIDER_SPIN_FRAMES = 60;    // one web a second
+const SPIDER_WEB_SLOW    = 0.3;   // speed on a web
+const SPIDER_WEB_HOLD    = 60;    // frames held on first contact
+const SPIDER_WEB_HP      = 3;     // catches before it breaks
+const _webs = new Map();          // "x,y" → { x, y, hp, owner }
+function _webKey(x, y) { return x + "," + y; }
+function webAt(x, y) { return _webs.get(_webKey(Math.floor(x), Math.floor(y))) || null; }
+function _spiderNextSpot(anchor) {
+    let best = null, bd = Infinity;
+    const R = Math.ceil(SPIDER_WEB_REACH);
+    for (let x = anchor.x - R; x <= anchor.x + R; x++) for (let y = anchor.y - R; y <= anchor.y + R; y++) {
+        if (y < FLOOR_Y_MIN || y > FLOOR_Y_MAX) continue;
+        const d = Math.hypot(x - anchor.x, y - anchor.y);
+        if (d > SPIDER_WEB_REACH || _webs.has(_webKey(x, y))) continue;
+        const t = typeof getTile === "function" ? getTile(x, y) : null;
+        if (!t || t.type !== "floor" || t.nest || t.pillar || t.nodeType) continue;
+        if (d < bd) { bd = d; best = { x, y }; }
+    }
+    return best;
+}
+CLONE_JOBS.spider = {
+    label: "WEB",
+    note: "Holds a lane: spins up to " + SPIDER_WEB_MAX + " webs on the floor around where you put it. Predators on a web are slowed, held fast the first time, and wear it out.",
+    tick(c) {
+        const w = c.cloneWork;
+        if (!w.anchor) w.anchor = { x: Math.floor(c.x), y: Math.floor(c.y) };
+        let mine = 0;
+        for (const k of _webs.values()) if (k.owner === c) mine++;
+        if (mine >= SPIDER_WEB_MAX) { w.spot = null; w.spin = 0; return false; }   // all up: it fights
+        if (!w.spot || _webs.has(_webKey(w.spot.x, w.spot.y))) { w.spot = _spiderNextSpot(w.anchor); w.spin = 0; }
+        if (!w.spot) return false;
+        const sx = w.spot.x + 0.5, sy = w.spot.y + 0.5;
+        if (Math.hypot(sx - c.x, sy - c.y) > 0.35) { _beetleStep(c, sx, sy); return true; }
+        c.state = "idle";
+        w.spin = (w.spin || 0) + 1;
+        if (w.spin >= SPIDER_SPIN_FRAMES) {
+            _webs.set(_webKey(w.spot.x, w.spot.y), { x: w.spot.x, y: w.spot.y, hp: SPIDER_WEB_HP, owner: c });
+            if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: sx, y: sy, color: "#e8eef6", radius: 0.5, life: 18 });
+            w.spot = null; w.spin = 0;
+        }
+        return true;
+    },
+};
+// Once a frame (game.js): predators on webs, and webs whose spider is gone.
+function webTick() {
+    if (!_webs.size) return;
+    const f = typeof frame !== "undefined" ? frame : 0;
+    for (const [k, web] of _webs) {
+        // A spider that has died or left the field takes its webs with it.
+        if (f % 60 === 0 && (!web.owner || web.owner.dead || !actors.includes(web.owner))) { _webs.delete(k); continue; }
+        const near = typeof unitsNear === "function" ? unitsNear(web.x + 0.5, 1) : actors;
+        for (const a of near) {
+            if (!isHostileTarget(a) || Math.floor(a.x) !== web.x || Math.floor(a.y) !== web.y) continue;
+            if (typeof applySlow === "function") applySlow(a, 20, SPIDER_WEB_SLOW);
+            if (a._webHeld !== web) {
+                a._webHeld = web;
+                if (typeof applySlow === "function") applySlow(a, SPIDER_WEB_HOLD, 0);
+                web.hp--;
+                if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: web.x, y: web.y - 1, text: "WEBBED", color: "#e8eef6", life: 40, vy: -0.06 });
+                if (web.hp <= 0) { _webs.delete(k); break; }
+            }
+        }
+    }
+}
+// The web on this floor tile, if any: drawn from a sprite per wear level.
+const _webSprites = new Map();
+function _webSprite(hp) {
+    let cv = _webSprites.get(hp);
+    if (cv !== undefined) return cv;
+    cv = null;
+    try {
+        if (typeof document !== "undefined" && document.createElement) {
+            const el = document.createElement("canvas"); el.width = TILE_W * 2; el.height = TILE_H * 2;
+            const g = el.getContext && el.getContext("2d");
+            if (g && typeof g.stroke === "function") {
+                const cx = TILE_W, cy = TILE_H, a = 0.35 + 0.2 * hp;
+                g.strokeStyle = "rgba(232,238,246," + a + ")"; g.lineWidth = 1;
+                g.save(); g.translate(cx, cy); g.scale(1, 0.5);
+                const R = TILE_W * 0.62, spokes = 8;
+                g.beginPath();
+                for (let i = 0; i < spokes; i++) { const t = i * Math.PI * 2 / spokes; g.moveTo(0, 0); g.lineTo(Math.cos(t) * R, Math.sin(t) * R); }
+                for (let ring = 1; ring <= 4; ring++) {
+                    const r = R * ring / 4.4;
+                    for (let i = 0; i <= spokes; i++) {
+                        const t = i * Math.PI * 2 / spokes, rr = r * (i % 2 ? 0.9 : 1);
+                        if (i === 0) g.moveTo(Math.cos(t) * rr, Math.sin(t) * rr); else g.lineTo(Math.cos(t) * rr, Math.sin(t) * rr);
+                    }
+                }
+                g.stroke(); g.restore();
+                cv = el;
+            }
+        }
+    } catch (e) { cv = null; }
+    _webSprites.set(hp, cv);
+    return cv;
+}
+function drawWebOnTile(obj, px, py) {
+    if (!_webs.size) return;
+    const web = _webs.get(_webKey(Math.round(obj.x), Math.round(obj.y)));
+    if (!web) return;
+    const spr = _webSprite(Math.max(1, web.hp));
+    if (spr) ctx.drawImage(spr, px - TILE_W, py);
+}
