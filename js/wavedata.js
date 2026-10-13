@@ -32,12 +32,11 @@ function enemiesThisWave() {
     const rampBonus  = typeof rampLevel === "function" ? Math.floor(rampLevel(Math.max(1, alarmZone)) * RAMP_QUOTA) : 0;
     // Capped, so a deep night is a long, hard fight — not an endless one.
     const quota = Math.min(typeof NIGHT_QUOTA_MAX !== "undefined" ? NIGHT_QUOTA_MAX : 45, zoneBase + nightBonus + rampBonus);
-    // Nymphs do not count (drops.js isNymph). Where most of what spawns is
-    // nymphs — zone 3's swarm, a SWARM TIDE night — the quota counts only the
-    // rest, so the night is not several times longer than any other.
-    let counted = 1;
-    if (typeof NYMPH_SWARM_ZONE !== "undefined" && alarmZone === NYMPH_SWARM_ZONE) counted *= 1 - NYMPH_SWARM_SHARE;
-    if (typeof siegeIs === "function" && siegeIs("swarm") && typeof SIEGE_SWARM_NYMPH !== "undefined") counted *= 1 - SIEGE_SWARM_NYMPH;
+    // Nymphs do not count (drops.js isNymph). The wave ladder decides how much
+    // of a wave is nymphs (js/broods.js — nearly all of wave 1, half of wave
+    // 2, and a Swarm Tide night); the quota counts only the rest, so a wave is
+    // not several times longer than any other.
+    const counted = 1 - (typeof ladderNymphShare === "function" ? ladderNymphShare(gameState.nightNumber) : 0);
     return counted < 1 ? Math.max(NYMPH_QUOTA_FLOOR, Math.round(quota * counted)) : quota;
 }
 const NYMPH_QUOTA_FLOOR = 3;   // the fewest kills a nymph-heavy night still asks for

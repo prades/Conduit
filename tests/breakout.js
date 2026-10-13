@@ -68,7 +68,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.during[0] && r.during[1] && r.during[2], 'no elements handed out: ' + JSON.stringify(r));
         ok(!r.after[0] && !r.after[1], 'they kept them after the night: ' + JSON.stringify(r));
     });
-    await check('not on other nights, and never the machines or the grub', () => {
+    await check('not on other nights, and never the machines', () => {
         const r = run(`(function(){ actors.length = 0; const a = ${foe(null)};
             const m = spawnMachine('sentry', world.find(t => t.nest && getZoneIndex(t.x) === 2));
             siegeToday = 'storm'; frame = (Math.floor(frame / BREAKOUT_TICK) + 1) * BREAKOUT_TICK; breakoutTick(); const other = a.element;

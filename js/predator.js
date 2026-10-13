@@ -142,11 +142,10 @@ class Predator {
     update() {
         if (this.dead) return;
         // The grub has its own life (js/broods.js): it eats, it does not fight.
-        if (this.isGrub) { grubTick(this); return; }
+        if (this.isGrub) { this.dead = true; return; }   // the grub is gone from the game
         // A machine built from stolen shards (js/raids.js): a gun, not an insect.
         if (this.isMachine) { machineTick(this); return; }
         // The tyrant guards, buffs and hatches, then fights as normal.
-        if (this.isBrood && broodTick(this)) return;   // underground: the burrow has the frame
 
         // ── STATUS TIMERS ──
         if (this.smokeDebuff  > 0) this.smokeDebuff--;

@@ -462,10 +462,13 @@ function zoneSpawnPoints(zoneIndex) {
 
 function spawnPredatorForZone(zoneIndex, opts) {
     opts = opts || {};
-    const speciesName = getZoneSpecies(zoneIndex, gameState.nightNumber);
-    // SWARM TIDE (a siege night): most spawns come as nymphs.
-    const className   = opts.className
-        || (typeof siegeIs === "function" && siegeIs("swarm") && Math.random() < SIEGE_SWARM_NYMPH ? "nymph" : getZoneClass(zoneIndex));
+    // THE WAVE LADDER (js/broods.js): the wave decides what comes out, in every
+    // zone — nymphs first, then ants, beetles and up. (A Swarm Tide night's
+    // nymphs are in the pick too.) A pair partner copies its first.
+    const _pick = opts.species ? { species: opts.species, className: opts.className, rare: false }
+                : ladderPick(gameState.nightNumber, zoneIndex);
+    const speciesName = _pick.species;
+    const className   = opts.className || _pick.className;
     // Natural species live in SPECIES; synthetic deep-zone constructs live in SYNTHETIC_SPECIES
     const speciesDef  = SPECIES[speciesName] || SYNTHETIC_SPECIES[speciesName];
     const classDef    = getClassDef(speciesDef, className);
@@ -525,12 +528,11 @@ function spawnPredatorForZone(zoneIndex, opts) {
     }
     // Resolve the charge-up special now that species and class are both known.
     initAbility(predator);
-    // What this zone's predators are FOR (js/broods.js): zone 1 plain
-    // attackers, zone 2 beetle haulers, zone 3 nymph swarms.
-    if (typeof applyZoneRole === "function") applyZoneRole(predator, zoneIndex);
+    // What its species does (js/broods.js): ants plain attackers, beetles haulers.
+    if (typeof applyLadderRole === "function") applyLadderRole(predator);
     // HUNTER'S MOON (a siege night): every one of them is after your pylons —
     // set after the zone role, which decides hunting for ordinary nights.
-    if (typeof siegeIs === "function" && siegeIs("hunt") && !predator.isBrood) predator.huntsPylons = true;
+    if (typeof siegeIs === "function" && siegeIs("hunt")) predator.huntsPylons = true;
     if (opts.swarmChild) predator._swarmChild = true;
     // Its own gardening pace, so a batch of spawns does not later finish
     // converting a batch of pylons on the same frame. Read at call time —
@@ -540,7 +542,16 @@ function spawnPredatorForZone(zoneIndex, opts) {
     actors.push(predator);
     if (!zonePredators[zoneIndex]) zonePredators[zoneIndex] = [];
     zonePredators[zoneIndex].push(predator);
-    if (typeof maybeSwarm === "function") maybeSwarm(predator, zoneIndex);
+    // The new tier comes as a PAIR (LADDER_RARE_PAIR): the rest of it beside it.
+    if (_pick.rare && !opts.pairChild) {
+        for (let i = 1; i < LADDER_RARE_PAIR; i++) {
+            if (typeof predatorBudgetFull === "function" && predatorBudgetFull()) break;
+            const q = spawnPredatorForZone(zoneIndex, { species: speciesName, className, pairChild: true });
+            if (!q) break;
+            q.x = predator.x + (Math.random() - 0.5) * 1.2;
+            q.y = Math.max(0, Math.min(3, predator.y + (Math.random() - 0.5) * 1.2));
+        }
+    }
     return predator;
 }
 

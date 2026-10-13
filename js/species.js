@@ -219,8 +219,6 @@ function getZoneClass(zoneIndex) {
     // the front-zone boss check below depends on, and bosses would stop spawning.
     // Zone 1 is plain attackers: no repair crews, no bosses, just bites.
     if (zoneIndex === 1) return roll < 0.55 ? "scout" : roll < 0.85 ? "striker" : "tank";
-    // Zone 3 is the nymph swarm: most of what it sends is nymphs, in packs.
-    if (typeof NYMPH_SWARM_ZONE !== "undefined" && zoneIndex === NYMPH_SWARM_ZONE && roll < NYMPH_SWARM_SHARE) return "nymph";
     if (zoneNeedsWorker(zoneIndex)) return "worker";
     if (Math.random() < 0.08) return "worker";
     const isFront = zoneIndex >= activeDayZones - 1;

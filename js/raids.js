@@ -18,9 +18,11 @@
 //     ant clone or a core worker can rebuild it). Each one eaten makes the
 //     thief stronger — RAID_EAT_HP / _POWER / _SPEED / _SIZE, up to
 //     RAID_EAT_MAX — and it goes for the next. Hit it and it fights.
-//   - Full, or with no battery left, it goes home and its nest banks
-//     RAID_EAT_BANK per battery toward the machines. Killed, it drops a
-//     bigger lump of charged mass for every battery it ate.
+//   - Only once it has eaten one can it STEAL FROM YOUR NEST: fed, it
+//     siphons your nearest nest for shards (more for each battery eaten) and
+//     runs home with them; kill it and they all come back. Home, its nest
+//     banks the shards and RAID_EAT_BANK per battery toward the machines.
+//     Killed, it also drops a bigger lump of charged mass per battery eaten.
 //   - A nest with MACHINE_COST banked BUILDS A MACHINE in front of itself:
 //       SENTRY  — a stationary gun that shoots your squad (the first one)
 //       STRIDER — a four-legged walker that marches onto your nearest held
@@ -109,9 +111,9 @@ function nestMachines(nest) { return actors.filter(a => a.isMachine && !a.dead &
 
 // ── The thief ─────────────────────────────────────────────
 function spawnThief(nest) {
-    if (typeof _spawnPredatorAt !== "function" || typeof getZoneSpecies !== "function") return null;
+    if (typeof _spawnPredatorAt !== "function" || typeof ladderMainSpecies !== "function") return null;
     const z = raidZoneOf(nest);
-    const p = _spawnPredatorAt(getZoneSpecies(z, gameState.nightNumber || 1), "scout", nest.x, Math.max(0, nest.y + 1));
+    const p = _spawnPredatorAt(ladderMainSpecies(gameState.nightNumber || 1), "scout", nest.x, Math.max(0, nest.y + 1));
     if (!p) return null;
     p.raider = true; p._raidHome = nest; p.stolen = 0; p._raidProgress = 0; p.batteriesEaten = 0;
     p.huntsPylons = false; p.hauler = false; p.isWanderer = true;
@@ -123,8 +125,9 @@ function _raidTargetFor(p) {
     if (t && t.isBattery && t.pillar && !t.destroyed && t.health > 0 && t.pillarTeam === "green") return t;
     let best = null, bd = Infinity;
     for (const b of raidBatteries()) { const d = Math.hypot(b.x - p.x, b.y - p.y); if (d < bd) { bd = d; best = b; } }
+    // (Its feeding progress is reset where it starts on a new target, not
+    // here: this is asked every frame, even while it drains your nest.)
     p._raidTarget = best;
-    p._raidProgress = 0;
     return best;
 }
 // The thief eats the battery: it is wrecked and its charge is gone, and the
@@ -166,6 +169,17 @@ function _raidBanner(text) {
 }
 
 // One frame of a thief. Returns true when it owns the frame.
+//
+// REPORTED: "have it to where a thief that takes a battery can then steal
+// from the nest — but only after it's consumed a battery, at least one."
+//   1. It eats a battery first; with none, it has nothing it can do and goes
+//      home.
+//   2. Fed, it goes for your nearest nest — or another battery if one is
+//      closer (up to RAID_EAT_MAX) — and SIPHONS the nest for shards: its
+//      take times the batteries it has eaten.
+//   3. Carrying, it runs for home and fights nothing; kill it and every
+//      shard comes back. Home, its nest banks the shards, and RAID_EAT_BANK
+//      for each battery, toward the machines.
 function raidUnitTick(p) {
     // CARRYING: it runs for home and fights nothing on the way.
     if (p.stolen > 0) {
@@ -174,35 +188,61 @@ function raidUnitTick(p) {
         if (!home) { raidRecover(p); return false; }   // nowhere left to take it
         const hm = raidMouth(home), d = _predatorWalk(p, hm.x, hm.y, RAID_FLEE_SPEED);
         if (d > RAID_REACH) return true;
-        raidBank(home, p.stolen, p);
+        raidBank(home, p.stolen + (p.batteriesEaten || 0) * RAID_EAT_BANK, p);
         _raidVanish(p);
         return true;
     }
     // Before it has anything it is an ordinary predator in a fight.
     if (typeof predatorUndisturbed === "function" && !predatorUndisturbed(p)) { p._raidSiphoning = null; return false; }
-    // Full, or nothing of yours left to eat: back into its nest, which banks
-    // what it ate toward the machines.
-    const t = (p.batteriesEaten || 0) < RAID_EAT_MAX ? _raidTargetFor(p) : null;
-    if (!t) {
+    const eaten = p.batteriesEaten || 0;
+    const bat = eaten < RAID_EAT_MAX ? _raidTargetFor(p) : null;
+    let nest = null;
+    if (eaten >= 1) {
+        let bd = Infinity;
+        for (const n of _heldNests()) { const d = Math.hypot(n.x - p.x, n.y - p.y); if (d < bd) { bd = d; nest = n; } }
+        // A battery nearer than the nest is eaten on the way.
+        if (nest && bat && Math.hypot(bat.x - p.x, bat.y - p.y) < bd) nest = null;
+    }
+    // Nothing it can do (no battery to start on, or fed with nowhere to rob):
+    // home, banking what it ate.
+    if (!nest && !bat) {
         const home = _raidHomeFor(p);
         if (!home) { p.raider = false; return false; }
         const hm = raidMouth(home);
         if (_predatorWalk(p, hm.x, hm.y, 0.9) <= RAID_REACH) {
-            if (p.batteriesEaten > 0) raidBank(home, p.batteriesEaten * RAID_EAT_BANK, p);
+            if (eaten > 0) raidBank(home, eaten * RAID_EAT_BANK, p);
             _raidVanish(p);
         }
         return true;
     }
+    if (nest) {
+        // SIPHONING your nest — only a thief that has eaten can.
+        const tm = raidMouth(nest), d = _predatorWalk(p, tm.x, tm.y, 0.9);
+        if (d > RAID_REACH) { if (p._raidSiphoning !== nest) p._raidProgress = 0; p._raidSiphoning = null; return true; }
+        if (p._raidSiphoning !== nest) { _raidBanner("\u26a0 A FED THIEF IS DRAINING YOUR ZONE " + raidZoneOf(nest) + " NEST"); p._raidProgress = 0; }
+        p._raidSiphoning = nest;
+        if (typeof faceToward === "function") faceToward(p, nest.x, nest.y, 0.2);
+        p._raidProgress = (p._raidProgress || 0) + 1;
+        if (p._raidProgress < RAID_SIPHON_FRAMES) return true;
+        const take = Math.min((p._raidTake || RAID_TAKE) * Math.max(1, eaten), Math.max(0, Math.floor(shardCount)));
+        shardCount -= take;
+        if (typeof saveShards === "function") saveShards();
+        p._raidSiphoning = null; p._raidProgress = 0;
+        _raidText(nest.x, nest.y + 1, take > 0 ? "\u2212" + take + " \u25c6 STOLEN" : "NOTHING TO STEAL", "#ff7a6a", 13);
+        if (take > 0) p.stolen = take;
+        else { p.batteriesEaten = RAID_EAT_MAX; }   // nothing to steal: done here, it goes home
+        return true;
+    }
     // Beside the battery, then feeding on it.
-    const d = _predatorWalk(p, t.x + 0.5, t.y + 1.1, 0.9);
+    const d = _predatorWalk(p, bat.x + 0.5, bat.y + 1.1, 0.9);
     if (d > RAID_REACH) { p._raidSiphoning = null; return true; }
-    if (!p._raidSiphoning) _raidBanner("\u26a0 A THIEF IS EATING YOUR " + (t.attackModeElement || "").toUpperCase() + " BATTERY");
-    p._raidSiphoning = t;
-    if (typeof faceToward === "function") faceToward(p, t.x, t.y, 0.2);
+    if (p._raidSiphoning !== bat) { _raidBanner("\u26a0 A THIEF IS EATING YOUR " + (bat.attackModeElement || "").toUpperCase() + " BATTERY"); p._raidProgress = 0; }
+    p._raidSiphoning = bat;
+    if (typeof faceToward === "function") faceToward(p, bat.x, bat.y, 0.2);
     p._raidProgress = (p._raidProgress || 0) + 1;
     if (p._raidProgress < RAID_EAT_FRAMES) return true;
     p._raidSiphoning = null; p._raidProgress = 0; p._raidTarget = null;
-    raidEatBattery(p, t);
+    raidEatBattery(p, bat);
     return true;
 }
 
@@ -237,7 +277,7 @@ function raidNestBuild(nest) {
     // Both machines standing: the rest MULTIPLIES — it hatches predators.
     while ((nest.stolenStock || 0) >= MACHINE_HATCH_COST && nestMachines(nest).length >= 2) {
         if (typeof predatorBudgetFull === "function" && predatorBudgetFull()) break;
-        const p = _spawnPredatorAt(getZoneSpecies(raidZoneOf(nest), gameState.nightNumber || 1), "scout", nest.x, Math.max(0, nest.y + 1));
+        const p = _spawnPredatorAt(ladderMainSpecies(gameState.nightNumber || 1), "scout", nest.x, Math.max(0, nest.y + 1));
         if (!p) break;
         nest.stolenStock -= MACHINE_HATCH_COST;
         _raidText(nest.x, nest.y + 1, "A PREDATOR HATCHED", "#ff5533", 12);

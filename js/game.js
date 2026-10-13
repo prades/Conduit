@@ -2670,7 +2670,6 @@ function render() {
         if (a instanceof Predator && a.dead && !a.deathProcessed && a.team !== "green") {
             a.deathProcessed = true;
             onPredatorDeath(a);
-            if (a.isBrood && typeof onTyrantDeath === "function") onTyrantDeath(a);
             // Remove from zone array so slot opens for respawn
             if (a.homeZone !== undefined && zonePredators[a.homeZone]) {
                 zonePredators[a.homeZone] = zonePredators[a.homeZone].filter(p => p !== a);
@@ -2717,7 +2716,6 @@ function render() {
     // ── INFESTATION — a conversion nobody is working on recovers ──
     decayConversions();
     // ── THE GRUB — one lives in zone 4 while that zone is hostile ──
-    if (typeof broodSpawnTick === "function") broodSpawnTick();
     // ── RAIDS — shard thieves in the quiet, and the machines they pay for ──
     if (typeof raidTick === "function") raidTick();
     // ── ELEMENTAL BREAKOUT — elements for every predator on that night ──
@@ -4395,12 +4393,10 @@ function render() {
     // the power is the thing the player is managing.
     drawGeneratorLinks();
     if (!gfxLow) drawHealPluses();
-    if (typeof drawGrubCorpses === "function") drawGrubCorpses();
     drawConversionBars();
     if (typeof drawRaidOverlay === "function") drawRaidOverlay();
     if (typeof drawUltraHints === "function") drawUltraHints();
     drawTutorialHighlight();
-    if (typeof drawTyrantBar === "function") drawTyrantBar();
     drawFloatingTexts();
     drawCrystalButton();
     // The clone bay first, then its button over it, so the button that

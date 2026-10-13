@@ -386,7 +386,7 @@ const SCENE = `(function(){
 
     check('killing an ordinary enemy counts toward the element ladder', () => {
         const r = killScene(
-            `const p = spawnPredatorForZone(1);
+            `const p = spawnPredatorForZone(1, { species: 'ant', className: 'striker' });
              p.isWanderer = false; p.x = 5; p.y = 2;
              render();
              p.health = 0; p.dead = true;
@@ -401,7 +401,7 @@ const SCENE = `(function(){
             `nightEnemiesTarget = 3;
              const made = [];
              for (let i = 0; i < 3; i++) {
-                 const p = spawnPredatorForZone(1);
+                 const p = spawnPredatorForZone(1, { species: 'ant', className: 'striker' });
                  p.isWanderer = false; p.x = 5 + i; p.y = 2;
                  made.push(p);
              }
@@ -426,7 +426,7 @@ const SCENE = `(function(){
         // retaining bodies — for a death animation, say — the flags become
         // load-bearing and this check starts testing them for real.
         const r = killScene(
-            `const p = spawnPredatorForZone(1);
+            `const p = spawnPredatorForZone(1, { species: 'ant', className: 'striker' });
              p.isWanderer = false; p.x = 5; p.y = 2;
              render();
              p.health = 0; p.dead = true;
@@ -455,7 +455,7 @@ const SCENE = `(function(){
 
     check('and neither is one of your own clones dying', () => {
         const r = killScene(
-            `const p = spawnPredatorForZone(1);
+            `const p = spawnPredatorForZone(1, { species: 'ant', className: 'striker' });
              p.team = 'green'; p.isClone = true; p.x = 5; p.y = 2;
              render();
              p.health = 0; p.dead = true;

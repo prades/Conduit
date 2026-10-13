@@ -16,8 +16,6 @@ function onPredatorDeath(predator) {
     // A thief gives back what it was carrying; a machine leaves salvage and
     // nothing else (js/raids.js).
     if (typeof raidOnDeath === "function" && raidOnDeath(predator)) return;
-    // A body left in the grub's zone is food for it (js/broods.js).
-    if (typeof noteCorpse === "function") noteCorpse(predator);
     // REPORTED: "make nymphs not grant any points." A nymph leaves no mass, so
     // it is worth no shards (and it does not count toward the night's kills —
     // game.js). It still drops its DNA.
@@ -32,9 +30,12 @@ function onPredatorDeath(predator) {
         });
     }
 
-    // DNA splice drop
-    const speciesName = predator.speciesName || "ant";
-    const className   = predator.className   || "scout";
+    // DNA splice drop. REPORTED: "the nymphs drop the ant DNA because the
+    // ants are a crucial part of the DNA progression" — a nymph's DNA is an
+    // ant scout's, whatever species it was, so the first waves feed the ant
+    // clones (the builders).
+    const speciesName = isNymph(predator) ? "ant"   : (predator.speciesName || "ant");
+    const className   = isNymph(predator) ? "scout" : (predator.className   || "scout");
     const dnaKey      = speciesName + "_" + className;
     const baseDrops   = predator.dnaDrops || 1;
     const drops       = isCampBuilt("dna_sequencer") ? Math.ceil(baseDrops * 1.5) : baseDrops;

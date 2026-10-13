@@ -47,11 +47,13 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(kill('nymph').dna, 'a nymph dropped no DNA');
     });
     await check('where most spawns are nymphs the quota counts only the rest, so the wave can still be cleared', () => {
-        const r = run(`(function(){ const keep = alertSource;
-            const q = z => { alertSource = { x: z * ZONE_LENGTH + 7, y: 2 }; return enemiesThisWave(); };
-            const out = { z2: q(2), z3: q(3), z4: q(4) }; alertSource = keep; return out; })()`);
-        ok(r.z3 < r.z2 && r.z3 >= 3, 'zone 3 asks for ' + r.z3 + ' (zone 2: ' + r.z2 + ')');
-        ok(r.z4 > r.z3, 'the quota did not go back up past the swarm zone: ' + JSON.stringify(r));
+        // The nymph tier is wave 1 (90% nymphs) and wave 2 (half); wave 3 has none.
+        const r = run(`(function(){ const keep = alertSource, n0 = gameState.nightNumber;
+            alertSource = { x: 2 * ZONE_LENGTH + 7, y: 2 };
+            const q = w => { gameState.nightNumber = w; return enemiesThisWave(); };
+            const out = { w1: q(1), w3: q(3), floor: NYMPH_QUOTA_FLOOR };
+            alertSource = keep; gameState.nightNumber = n0; return out; })()`);
+        ok(r.w1 < r.w3 && r.w1 >= r.floor, 'wave 1 asks for ' + JSON.stringify(r));
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');

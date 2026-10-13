@@ -282,7 +282,6 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (typeof noteCombat === "function") { noteCombat(source); noteCombat(target); }
     if (typeof bondAttackMult === "function") amount *= bondAttackMult(source);
     // THE BROOD TYRANT: predators beside it hit harder (js/broods.js).
-    if (source && source.broodBuffUntil && typeof BROOD_AURA_MULT !== "undefined" && source.broodBuffUntil > frame) amount *= BROOD_AURA_MULT;
     // ARMY SURGE. Applied here rather than at each attack because the twelve
     // damage expressions in js/elements.js all funnel through this one
     // function — patching them individually would have missed one.
@@ -308,7 +307,6 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (target.isMachine && typeof machineElementMult === "function") amount *= machineElementMult(target, element || (source && source.element));
     if (target.untargetable) return;   // underground: nothing reaches it
     // THE TYRANT'S CARAPACE: half damage, unless a disruption pylon has it exposed.
-    if (target.isBrood && typeof tyrantDamageMult === "function") amount *= tyrantDamageMult(target);
     if (target.frozen) return;
     if (target.invulnerable && target.invulnerable > 0) return;
     if (target.smokeForm > 0 && Math.random() < (target.smokeEvasion||0.75)) return;
