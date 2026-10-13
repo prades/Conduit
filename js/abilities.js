@@ -453,6 +453,8 @@ function _abRunActive(pred, def) {
         case 'CARAPACE_SLAM': {
             pred.x += pred.slamDX;
             pred.y = Math.max(0, Math.min(3, pred.y + pred.slamDY));
+            // The charge goes through your equipment too, once per pylon a dash.
+            if (typeof hurtEquipmentInRadius === "function") hurtEquipmentInRadius(pred, def.radius, pred.power * def.dmg, pred.slamHit);
             _abForEachFoeInRadius(pred, def.radius, v => {
                 if (v === null) { _abHurt(pred, null, pred.power * def.dmg); return; }
                 if (pred.slamHit.has(v)) return;   // one hit per victim per slam
@@ -474,6 +476,7 @@ function _abRunActive(pred, def) {
             if (pred.abilityTimer % def.interval === 0) {
                 pred.attackAnim = 0.01;
                 _abForEachFoeInRadius(pred, def.radius, v => _abHurt(pred, v, pred.power * def.dmg));
+                if (typeof hurtEquipmentInRadius === "function") hurtEquipmentInRadius(pred, def.radius, pred.power * def.dmg);
                 _abBurst(pred, def.color, 0.9, 18, 1);
                 pred.abilityHits++;
             }
@@ -492,6 +495,8 @@ function _abRunActive(pred, def) {
                 _abForEachFoeInRadius(pred, def.radius, v => {
                     if (v !== null) applyDamage(v, pred.power * def.dotDmg, pred, 'toxic');
                 });
+                // The dust corrodes what stands in it.
+                if (typeof hurtEquipmentInRadius === "function") hurtEquipmentInRadius(pred, def.radius, pred.power * def.dotDmg);
             }
             return false;
         }

@@ -125,6 +125,71 @@ function vortexPullImmune(a) {
     return !!a && (a.speciesName === "beetle" || !!a.isBoss || !!a.isMachine);
 }
 
+// ── COLLATERAL: YOUR EQUIPMENT IN THE WAY ────────────────
+// REPORTED: "when predators aren't directly attacking the equipment like the
+// batteries and the turrets … whenever they use their special attacks like
+// their charge in or their bombs or whenever a projectile is shot at a
+// follower but hits the equipment … it does damage to the equipment."
+//
+// Your pylons (turrets, wave pylons, batteries, relays — anything standing) are
+// caught by a hostile predator's area specials (the beetle's CARAPACE SLAM, the
+// ant's MANDIBLE FRENZY, the mantis's BLADE FLURRY, the moth's BLINDING DUST)
+// and stop an enemy round flying past them (abdomen shots, web shots, a goo
+// machine's spit). A melee special hits it at EQUIP_HIT_MULT of what it does to
+// a unit — the same share a predator's own BASH does; a round hits in full.
+// Brought to nothing, it is destroyed the way a bashed pylon is.
+const EQUIP_HIT_MULT   = 0.6;
+const EQUIP_SHOT_REACH = 26;    // px (screen space, like a round's hit on a unit)
+function _equipOk(t) {
+    return !!t && t.pillar && !t.destroyed && t.pillarTeam === "green" && t.health > 0 && !t.pendingDestroy;
+}
+// Your pylons within r tiles of (x, y), from the column index when it is there.
+function equipmentNear(x, y, r) {
+    const out = [];
+    const useCols = typeof _pillarCol !== "undefined" && typeof pillarIndexFresh === "function";
+    if (useCols) {
+        pillarIndexFresh();
+        for (let cx = Math.round(x - r) - 1; cx <= Math.round(x + r) + 1; cx++) {
+            const l = _pillarCol.get(cx);
+            if (l) for (const t of l) if (_equipOk(t) && Math.hypot(t.x - x, t.y - y) <= r) out.push(t);
+        }
+    } else if (typeof _pillarCache !== "undefined") {
+        for (const t of _pillarCache) if (_equipOk(t) && Math.hypot(t.x - x, t.y - y) <= r) out.push(t);
+    }
+    return out;
+}
+function hurtEquipment(t, amount, src) {
+    if (!_equipOk(t) || !(amount > 0)) return 0;
+    t.health = Math.max(0, t.health - amount);
+    t._hitAt = typeof frame !== "undefined" ? frame : 0;
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: "#ff8800", radius: 0.4, life: 16 });
+    if (t.health <= 0) {
+        t.pendingDestroy = true;
+        if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: t.x, y: t.y - 1, text: "DESTROYED", color: "#ff5533", life: 60, vy: -0.06 });
+    }
+    return amount;
+}
+// A hostile predator's area special: every piece of your equipment within r.
+// `already` (a Set) keeps one dash from hitting the same pylon every frame.
+function hurtEquipmentInRadius(pred, r, amount, already) {
+    if (!pred || pred.team === "green" || pred.isClone) return 0;
+    let n = 0;
+    for (const t of equipmentNear(pred.x, pred.y, r)) {
+        if (already) { if (already.has(t)) continue; already.add(t); }
+        if (hurtEquipment(t, amount * EQUIP_HIT_MULT, pred)) n++;
+    }
+    return n;
+}
+// An enemy round in flight: the first piece of your equipment it passes over.
+function equipmentHitByShot(p) {
+    if (!p) return null;
+    for (const t of equipmentNear(p.x, p.y, 1)) {
+        const dx = (p.x - t.x) * TILE_W, dy = (p.y - t.y) * TILE_H;
+        if (Math.hypot(dx, dy) < EQUIP_SHOT_REACH) return t;
+    }
+    return null;
+}
+
 function isNeutralBystander(a) {
     return !!(a && a.isNeutralRecruit && a.team === "red");
 }

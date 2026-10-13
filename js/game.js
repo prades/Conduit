@@ -4489,6 +4489,13 @@ function render() {
             // because predators do not attack the player. Ungated it also ate
             // the shot, so this is the difference between being hit and the
             // round passing you by.
+            // An enemy round that passes over your equipment first hits IT
+            // (helpers.js, equipmentHitByShot): a turret or battery standing
+            // between a predator and the follower it shot at takes the round.
+            if (!hit && p.targetsGreen && typeof equipmentHitByShot === "function") {
+                const eq = equipmentHitByShot(p);
+                if (eq) { hurtEquipment(eq, p.damage, p.source); if (p.onHit) p.onHit(null); hit = true; }
+            }
             if (!hit && p.targetsGreen && predatorMayHurtPlayer()) {
                 const dx=(p.x-player.x)*TILE_W, dy=(p.y-player.y)*TILE_H;
                 if (Math.hypot(dx,dy) < 30) {
