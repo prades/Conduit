@@ -49,7 +49,7 @@
 //          SIX rounds at once from the six crystals of its ring, one at each of
 //          the nearest enemies in turn (all six into one if it is alone), each
 //          HALO_MULT × its power and setting its target burning.
-//          ROTSHARD (the TOXIC SNIPER, design No. 103, the crystal half eaten by its pool),
+//          ROTSHARD (the TOXIC SNIPER, design No. 101, the crystal half eaten by its pool),
 //          CORRODE SHOT: with an enemy within ROT_RANGE, every ROT_EVERY frames it
 //          fires one long shot (ROT_MULT × its power) that eats the target's armour
 //          (it takes 1 / ROT_SHRED × damage for ROT_SHRED_FRAMES) and splashes
@@ -90,7 +90,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", move: "CORRODE SHOT", sheet: "img/evo/rotshard.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 70.9], noGlow: true, color: "#66ff66" },
+              cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66" },
     // The electric WORKER (the neutraliser): a worker is a duty, so it comes from an electric follower on worker duty.
     pod:    { id: "pod",    name: "DYNAMO POD",   element: "electric", duty: "worker",  move: "RAPID DISCHARGE", sheet: "img/evo/pod.png",
               cell: 144, anchor: [72, 114.2], core: [72, 58], noGlow: true, color: "#ffee33" },

@@ -73,7 +73,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('fire', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'bloom', 'the fire brawler');
         mk('fire', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire worker waits (no worker form for it)');
     });
-    check('THE ASK: a TOXIC SNIPER becomes the ROTSHARD (design No. 103, the crystal eaten by its pool); other toxic followers wait', () => {
+    check('THE ASK: a TOXIC SNIPER becomes the ROTSHARD (design No. 101, the crystal eaten by its pool); other toxic followers wait', () => {
         mk('toxic', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'rotshard', 'its form'); same(r.tag, 'ROTSHARD', 'its tag'); same(r.role, 'sniper', 'its role');

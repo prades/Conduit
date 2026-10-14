@@ -23,8 +23,8 @@ const JOBS = [
   { id: 'manta',  form: 68, color: '#ffee33', idleAct: 0.2, action: [0.55, 1.0] },
   { id: 'pod',    form: 71, color: '#ffee33', idleAct: 0.2, action: [0.55, 1.0] },
   { id: 'halo',   form: 90, color: '#ff3300', idleAct: 0.1, action: [0.6, 1.0] },
-  // No. 103, the toxic sniper: the pool's shift loops over the idle period; its action is the recoil of a shot.
-  { id: 'rotshard', form: 103, color: '#14c040', idleAct: 0, action: [0.5, 1.0] },
+  // No. 101, the toxic sniper: the pool's shift loops over the idle period; its action is the recoil of a shot.
+  { id: 'rotshard', form: 101, color: '#14c040', idleAct: 0, action: [0.5, 1.0] },
 ].filter(j => !process.argv[4] || process.argv[4].split(',').includes(j.id));
 const CELL = 144, HALF = 1.7, LOOK_Y = 1.15;
 

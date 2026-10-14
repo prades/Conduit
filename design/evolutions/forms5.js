@@ -168,6 +168,6 @@ function _eatenDesign(opts) {
   return { g, core: opts.h * 0.7 + 0.2, update(t, act) { pool.shift(t); piv.rotation.z = opts.tz + 0.02 * Math.sin(1.6 * t); piv.rotation.x = opts.tx - 0.22 * (act || 0); mound.scale.setScalar(1 + 0.04 * Math.sin(1.6 * t + 1) + 0.12 * (act || 0));   // when it fires it recoils and the pool surges
     bits.forEach((c, i) => { const a = i * 2.4 + 0.6 + 0.4 * Math.sin(1.6 * t + i), d = (0.7 + 0.15 * i) * R; c.position.set(Math.sin(a) * d, 0.1, Math.cos(a) * d); c.rotation.set(1.1 + i * 0.3, a, 0.5); }); } };
 }
-fx(101, "Eaten crystal, leaning.", () => _eatenDesign({ seed: 2.0, h: 1.5, up: 0.25, reach: 0.5, tx: -0.12, tz: -0.35 }));
+fx(101, "Eaten crystal, leaning.", () => _eatenDesign({ seed: 2.0, h: 1.5, up: 0.25, reach: 0.5, tx: -0.12, tz: -0.35, R: 0.8 }));
 fx(102, "Eaten crystal, toppling.", () => _eatenDesign({ seed: 1.1, h: 1.6, up: 0.1, reach: 0.9, tx: -0.25, tz: -0.65 }));
 fx(103, "Eaten crystal, shedding bits.", () => _eatenDesign({ seed: 3.3, h: 1.4, up: 0.2, reach: 0.7, tx: 0.1, tz: -0.25, bits: 3, R: 0.8 }));
