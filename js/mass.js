@@ -179,11 +179,13 @@ function updateChargedMass() {
             // Delivered — at the Crystal, or at any nest you hold.
             const _drop = massDropPoints().find(d => Math.hypot(c.x - d.x, c.y - d.y) < 1.4);
             if (_drop) {
-                shardCount += m.value;
+                const _hvp = typeof evoHaul === 'function' ? evoHaul(c) : null, _pay = m.value * (_hvp ? _hvp.pay : 1);
+                if (_hvp) c._sigAt = typeof frame !== 'undefined' ? frame : 0;
+                shardCount += _pay;
                 if (typeof saveShards === 'function') saveShards();
                 floatingTexts.push({
                     x: canvas.width / 2, y: canvas.height / 2 - 70,
-                    text: '+' + m.value + ' SHARDS DELIVERED', color: '#ffdd44', life: 110, vy: -0.3, size: 13,
+                    text: '+' + _pay + ' SHARDS DELIVERED', color: '#ffdd44', life: 110, vy: -0.3, size: 13,
                 });
                 if (typeof elementEffects !== 'undefined')
                     elementEffects.push({ type: 'impact', x: _drop.x, y: _drop.y, color: '#ffdd44', radius: 0.7, life: 20 });
@@ -262,7 +264,8 @@ function _workHaul(actor) {
         const m = actor.carryingMass;
         if (m.state !== MASS_STATE.CARRIED || m.carrier !== actor) { actor.carryingMass = null; return false; }
         const d = nearestMassDrop(actor.x, actor.y);
-        if (d) { _moveToward(actor, d.x, d.y, 1.05); return true; }
+        const _hv = typeof evoHaul === 'function' ? evoHaul(actor) : null;   // the HOVER HAULER (js/evolution.js)
+        if (d) { _moveToward(actor, d.x, d.y, 1.05 * (_hv ? _hv.speed : 1)); return true; }
         return false;
     }
 
@@ -271,9 +274,11 @@ function _workHaul(actor) {
         : (actor._massTarget = nearestChargedMass(actor.x, actor.y, MASS_STATE.NEUTRAL));
     if (!m) return false;
 
+    const _hv2 = typeof evoHaul === 'function' ? evoHaul(actor) : null;
     const d = Math.hypot(m.x - actor.x, m.y - actor.y);
-    if (d > MASS_WORK_RANGE) { _moveToward(actor, m.x, m.y, 1.1); return true; }
+    if (d > MASS_WORK_RANGE * (_hv2 ? _hv2.reach : 1)) { _moveToward(actor, m.x, m.y, 1.1 * (_hv2 ? _hv2.speed : 1)); return true; }
 
+    if (_hv2) actor._sigAt = typeof frame !== 'undefined' ? frame : 0;
     m.state   = MASS_STATE.CARRIED;
     m.carrier = actor;
     actor.carryingMass = m;

@@ -52,8 +52,21 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.evo, 'serpent', 'its form'); same(r.tag, 'SERPENT', 'its tag');
         mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux brawler');
     });
+    check('THE ASK: a CORE BRAWLER becomes the AEGIS WARDEN (design No. 57); an ELECTRIC BRAWLER the STORM MANTA (No. 68)', () => {
+        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'warden', 'core brawler');
+        mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'manta', 'electric brawler');
+        same(run('unitTypeLabel(__f)'), 'STORM MANTA', 'its tag');
+        mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'reaver', 'the electric sniper is still the Reaver');
+    });
+    check('THE ASK: a FLUX WORKER becomes the HOVER HAULER (design No. 58) — a worker is a duty, not a role', () => {
+        mk('flux', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux brawler on worker duty');
+        mk('flux', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux SNIPER on worker duty is a worker first');
+        mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux brawler on the line');
+        mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'an electric worker waits (no worker form for it)');
+        mk('flux', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'serpent', 'a flux sniper on the line is the Serpent');
+    });
     check('…and nobody else: not a fire sniper, an ice brawler, an electric brawler — nor before level 20', () => {
-        for (const [el, role] of [['fire', 'sniper'], ['ice', 'brawler'], ['electric', 'brawler'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
+        for (const [el, role] of [['fire', 'sniper'], ['ice', 'brawler'], ['flux', 'brawler'], ['core', 'sniper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
         mk('fire', 'brawler', 19); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 19');
     });
     check('a follower already past level 20 (an old save) evolves on the next tick', () => {
@@ -80,7 +93,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.role = 'brawler'; f.evolved = 'bloom'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const near = mkP(21), far = mkP(24);
-            f._sigCd = 1; evolutionTick();
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const out = { near: 1e6 - near.health, burn: near.burning > 0, far: 1e6 - far.health, cd: f._sigCd };
             near.health = 1e6; evolutionTick(); out.again = 1e6 - near.health;
             near.dead = far.dead = true; return out; })()`);
@@ -93,7 +106,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'reaver'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(24, 2), b = mkP(25.5, 2.5), c = mkP(26.8, 1.5), lone = mkP(32, 2), tooFar = mkP(20, 40);
-            f._sigCd = 1; evolutionTick();
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), c: d(c), lone: d(lone), arcs: (f._arcPts || []).length };
             [a, b, c, lone, tooFar].forEach(p => p.dead = true); return out; })()`);
         ok(r.a > r.b && r.b > 0 && r.c > 0, 'the arc and its jumps: ' + JSON.stringify(r));
@@ -107,7 +120,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const mkP = (sp, x, y) => { const S = SPECIES[sp], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const tgt = mkP('ant', 25, 2), mate = mkP('ant', 26.5, 2.5), beetle = mkP('beetle', 25.5, 1.2), apart = mkP('ant', 29, 2), tooFar = mkP('ant', 40, 2);
             const m0 = Math.hypot(mate.x - tgt.x, mate.y - tgt.y), b0 = Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y);
-            f._sigCd = 1; evolutionTick();
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { tgt: d(tgt), mate: d(mate), mateIn: m0 - Math.hypot(mate.x - tgt.x, mate.y - tgt.y), beetleIn: b0 - Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y),
                 slowed: mate.slowed > 0, apartMoved: apart.x !== 29, cd: f._sigCd };
             [tgt, mate, beetle, apart, tooFar].forEach(p => p.dead = true); return out; })()`);
@@ -118,6 +131,54 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.cd > 300, 'it did not wait: ' + r.cd);
     });
 
+    check('THE ASK: AEGIS BURST — a blast that hits and shoves enemies back, and shields it and the allies round it', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'warden'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            spawnFollowerAtCrystal('fire'); const al = followers[1]; al.returningToCrystal = false; al.x = 21.5; al.y = 2; al.shielded = false; al.shieldAmount = 0;
+            spawnFollowerAtCrystal('fire'); const far = followers[2]; far.returningToCrystal = false; far.x = 30; far.y = 2; far.shielded = false;
+            const S = SPECIES.ant, mkP = (x) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const near = mkP(21.2), outside = mkP(25);
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            const out = { hit: 1e6 - near.health, pushed: near.x - 21.2, outside: 1e6 - outside.health, allyShield: al.shielded ? al.shieldAmount : 0, ownShield: f.shielded ? f.shieldAmount : 0, farShield: !!far.shielded, allyMax: al.maxHealth };
+            near.dead = outside.dead = true; return out; })()`);
+        ok(r.hit > 0 && r.pushed > 0.3, 'the blast: ' + JSON.stringify(r));
+        same(r.outside, 0, 'damage to one outside the blast');
+        ok(r.allyShield > 0 && r.ownShield > 0 && !r.farShield, 'the shields: ' + JSON.stringify(r));
+    });
+    check('THE ASK: STATIC RUSH — it dashes to the nearest enemy, hits it, shocks two more, and stuns them all', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'manta'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const a = mkP(23, 2), b = mkP(24.5, 2.4), c = mkP(25.8, 1.6), far = mkP(24, 8);
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            const d = p => 1e6 - p.health, out = { dist: Math.hypot(a.x - f.x, a.y - f.y), a: d(a), b: d(b), c: d(c), far: d(far), stun: [a, b, c].every(p => p.hitStun >= MANTA_STUN), cd: f._sigCd };
+            [a, b, c, far].forEach(p => p.dead = true); return out; })()`);
+        ok(r.dist < 1 && r.a > r.b && r.b > 0 && r.c > 0, 'the dash and the shocks: ' + JSON.stringify(r));
+        same(r.far, 0, 'damage to one out of reach'); ok(r.stun, 'not all stunned'); ok(r.cd > 250, 'it did not wait');
+    });
+    check('THE ASK: HEAVY HAUL — the hover hauler pays double shards, hauls faster and reaches further than a plain flux worker', () => {
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
+            const mk = (evo) => { spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.duty = 'worker'; if (evo) f.evolved = 'hauler'; return f; };
+            const plain = mk(false), hv = mk(true), pay = (c) => { const before = shardCount; chargedMass.push({ x: crystal.x, y: crystal.y, state: MASS_STATE.CARRIED, carrier: c, value: 10, bob: 0, spin: 0, progress: 1 });
+                c.x = crystal.x; c.y = crystal.y; updateChargedMass(); return shardCount - before; };
+            const out = { plain: pay(plain), hv: pay(hv), h: evoHaul(hv), none: evoHaul(plain) }; return out; })()`);
+        same(r.plain, 10, 'a plain flux worker\'s delivery'); same(r.hv, 10 * run('HAULER_PAY'), 'the hauler\'s delivery');
+        ok(r.h.speed > 1 && r.h.reach > 1 && r.none === null, JSON.stringify(r));
+        const src = fs.readFileSync(path.join(ROOT, 'js/mass.js'), 'utf8');
+        ok(/evoHaul\(actor\)/.test(src) && /_hv\.speed/.test(src) && /_hv2\.reach/.test(src), 'the haul loop does not ask for the hauler\'s speed and reach');
+    });
+    check('the hover hauler stays one across death (its element and duty too) and a reload', () => {
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ['ice'] };
+            spawnFollowerAtCrystal('flux'); const f = followers[0]; f.role = 'brawler'; f.duty = 'worker'; f.level = 22; f.xp = xpForLevel(22); _applyFollowerLevel(f, true); evoCheck(f);
+            const snap = followerRosterSnapshot()[0]; f.health = 0; f.dead = true;
+            for (let i = 0; i < 400 && !followers.some(x => !x.dead); i++) render();
+            const g = followers.find(x => !x.dead); activeCrystalModulation = null;
+            followers.length = 0; actors = actors.filter(a => !a.isFollower); spawnFollowerFromSave(snap); const h = followers[0];
+            return { saved: snap.evolved, evo: g && g.evolved, el: g && g.element, duty: g && g.duty, loaded: h.evolved, loadedDuty: h.duty }; })()`);
+        same(r.saved, 'hauler', 'in the save'); same(r.evo, 'hauler', 'after respawn'); same(r.el, 'flux', 'its element (the Crystal was set to ice)');
+        same(r.duty, 'worker', 'its duty'); same(r.loaded, 'hauler', 'after loading'); same(r.loadedDuty, 'worker', 'its duty after loading');
+    });
+
     console.log('\nIT STAYS EVOLVED');
     check('its role is fixed: a role switch skips it', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
@@ -126,6 +187,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             selectedRole = null; squadMode = 'all'; commandTarget = { x: 5, y: 2 }; selectedRadialAction = 'switch_context'; executeCommand();
             return { e: e.role, p: p.role }; })()`);
         same(r.e, 'sniper', 'the evolved one'); same(r.p, 'sniper', 'the other one (brawler → sniper)');
+    });
+    check('its role is put back if anything changes it — except the hover hauler, which has none', () => {
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
+            spawnFollowerAtCrystal('core'); const w = followers[0]; w.role = 'brawler'; w.evolved = 'warden'; w._moltAt = -1e9; w.role = 'camper';
+            spawnFollowerAtCrystal('flux'); const h = followers[1]; h.role = 'sniper'; h.duty = 'worker'; h.evolved = 'hauler'; h._moltAt = -1e9;
+            frame++; evolutionTick(); return { w: w.role, h: h.role }; })()`);
+        same(r.w, 'brawler', 'the warden put back to its role'); same(r.h, 'sniper', 'the hauler\'s role left alone');
     });
     check('it is saved, and loads back evolved with its boosted stats', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0;
@@ -150,7 +218,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }

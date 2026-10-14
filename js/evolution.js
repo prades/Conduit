@@ -22,6 +22,18 @@
 //          REAVER, ARC VOLLEY: with an enemy within REAVER_RANGE, every
 //          REAVER_EVERY frames it fans its blades and fires a charged arc
 //          (REAVER_MULT × its power) that jumps to REAVER_CHAIN more enemies.
+//          AEGIS WARDEN (the core brawler, No. 57), AEGIS BURST: with an enemy
+//          within WARDEN_RADIUS, every WARDEN_EVERY frames its shells fly out in
+//          a blast (WARDEN_MULT × its power) that shoves enemies back and gives
+//          it and every ally round it a shield (WARDEN_SHIELD of max health).
+//          STORM MANTA (the electric brawler, No. 68), STATIC RUSH: with an
+//          enemy within MANTA_RANGE, every MANTA_EVERY frames it dashes to it,
+//          hits it (MANTA_MULT × its power) and shocks two more near it; all
+//          are stunned for a moment.
+//          HOVER HAULER (the FLUX WORKER, No. 58: a flux follower on worker
+//          duty, not a role), HEAVY HAUL: it hauls neutralised lumps
+//          HAULER_SPEED× as fast, picks them up from HAULER_REACH× as far, and
+//          each delivery pays HAULER_PAY× the shards (js/mass.js asks evoHaul).
 //          SERPENT (the flux sniper, design No. 15), SINGULARITY SHOT: with an
 //          enemy within SERPENT_RANGE, every SERPENT_EVERY frames it rears up
 //          and fires a gravity round (SERPENT_MULT × its power) that DRAGS every
@@ -39,6 +51,9 @@ const EVO_SCALE    = 96 / 144;     // a sheet cell (144 px, 3.4 world units) dra
 const BLOOM_RADIUS = 1.8, BLOOM_EVERY = 360, BLOOM_MULT = 2.0, BLOOM_BURN = 180;
 const REAVER_RANGE = 6, REAVER_EVERY = 300, REAVER_MULT = 2.5, REAVER_CHAIN = 2, REAVER_HOP = 2.5, REAVER_CHAIN_SHARE = 0.6;
 const SERPENT_RANGE = 6.5, SERPENT_EVERY = 330, SERPENT_MULT = 2.2, SERPENT_PULL_R = 2.2, SERPENT_PULL = 0.75, SERPENT_SLOW = 0.5, SERPENT_SLOW_FRAMES = 90;
+const WARDEN_RADIUS = 2.2, WARDEN_EVERY = 360, WARDEN_MULT = 1.8, WARDEN_PUSH = 0.6, WARDEN_ALLY_R = 3.5, WARDEN_SHIELD = 0.35;
+const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;
+const HAULER_SPEED = 1.5, HAULER_REACH = 2, HAULER_PAY = 2;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
 
 const EVOLUTIONS = {
@@ -49,12 +64,21 @@ const EVOLUTIONS = {
     // Its reactor is in its head, which moves with its facing: the sheet carries its own light.
     serpent:{ id: "serpent",name: "SERPENT",      element: "flux",     role: "sniper",  move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
               cell: 144, anchor: [72, 114.2], core: [72, 61], noGlow: true, color: "#bb66ff" },
+    warden: { id: "warden", name: "AEGIS WARDEN", element: "core",     role: "brawler", move: "AEGIS BURST",  sheet: "img/evo/warden.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
+    manta:  { id: "manta",  name: "STORM MANTA",  element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/manta.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 57], noGlow: true, color: "#ffee33" },
+    // The flux WORKER: no role of its own (a worker is a duty); it comes from a flux follower on worker duty.
+    hauler: { id: "hauler", name: "HOVER HAULER", element: "flux",     duty: "worker",  move: "HEAVY HAUL",   sheet: "img/evo/hauler.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 70], noGlow: true, color: "#bb66ff" },
 };
 // Which egg grows into which machine.
 function evolutionFor(f) {
     if (!f || !f.isFollower) return null;
     const role = f.role === "hybrid" ? "brawler" : f.role;
-    for (const k in EVOLUTIONS) { const d = EVOLUTIONS[k]; if (d.element === f.element && d.role === role) return d; }
+    // A follower on worker duty can only evolve into a worker form (and the other way round).
+    const worker = f.duty === "worker";
+    for (const k in EVOLUTIONS) { const d = EVOLUTIONS[k]; if (d.element !== f.element) continue; if (worker ? d.duty === "worker" : d.role === role) return d; }
     return null;
 }
 function evolvedDef(f) { return f && f.evolved ? EVOLUTIONS[f.evolved] || null : null; }
@@ -83,11 +107,12 @@ function evolutionTick() {
         if (!f || f.dead) continue;
         if (!f.evolved) { if (f0 % 30 === 0) evoCheck(f); continue; }
         const d = evolvedDef(f); if (!d) continue;
-        if (f.role !== d.role) f.role = d.role;   // its role is fixed
+        if (d.role && f.role !== d.role) f.role = d.role;   // its role is fixed
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
+        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f);
     }
 }
 function _evoFoes(x, y, r) {
@@ -159,6 +184,60 @@ function singularityShot(f) {
     return true;
 }
 
+// AEGIS BURST: a blast of its shells, shoving enemies back, shielding it and its allies. True when it fired.
+function aegisBurst(f) {
+    const foes = _evoFoes(f.x, f.y, WARDEN_RADIUS);
+    if (!foes.length) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const a of foes) {
+        applyDamage(a, (f.power || 10) * WARDEN_MULT, f, "core");
+        const dx = a.x - f.x, dy = a.y - f.y, L = Math.hypot(dx, dy) || 1;
+        if (!(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { a.x += dx / L * WARDEN_PUSH; a.y += dy / L * WARDEN_PUSH; }
+    }
+    const near = typeof unitsNear === "function" ? unitsNear(f.x, WARDEN_ALLY_R) : actors;
+    for (const a of near) {
+        if (!a || a.dead || a.team !== "green" || !(a.isFollower || a.isClone) || Math.hypot(a.x - f.x, a.y - f.y) > WARDEN_ALLY_R) continue;
+        const cap = Math.round((a.maxHealth || 0) * WARDEN_SHIELD), have = a.shielded ? (a.shieldAmount || 0) : 0;
+        if (cap > have) { a.shielded = true; a.shieldAmount = cap; a._shieldMax = Math.max(a._shieldMax || 0, cap); }
+    }
+    f._sigAt = f0; f._sigCd = WARDEN_EVERY;
+    if (typeof elementEffects !== "undefined") {
+        elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: WARDEN_RADIUS, color: "#33e6c4", life: 40 });
+        elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#33e6c4", radius: WARDEN_RADIUS * 0.6, life: 24 });
+    }
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "AEGIS BURST", color: "#66ffe0", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+// STATIC RUSH: dash to the nearest enemy in range, hit it, shock two more; all stunned. True when it fired.
+function staticRush(f) {
+    const foes = _evoFoes(f.x, f.y, MANTA_RANGE);
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    const from = { x: f.x, y: f.y }, dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1, stop = Math.max(0, L - 0.8);
+    f.x += dx / L * stop; f.y += dy / L * stop; f.dirX = dx / L; f.dirY = dy / L;
+    const hits = [tgt];
+    applyDamage(tgt, (f.power || 10) * MANTA_MULT, f, "electric"); tgt.hitStun = Math.max(tgt.hitStun || 0, MANTA_STUN);
+    let last = tgt;
+    for (let i = 0; i < MANTA_CHAIN; i++) {
+        const next = _evoFoes(last.x, last.y, MANTA_HOP).filter(a => !hits.includes(a))
+            .sort((a, b) => Math.hypot(a.x - last.x, a.y - last.y) - Math.hypot(b.x - last.x, b.y - last.y))[0];
+        if (!next) break;
+        applyDamage(next, (f.power || 10) * MANTA_MULT * MANTA_CHAIN_SHARE, f, "electric"); next.hitStun = Math.max(next.hitStun || 0, MANTA_STUN);
+        hits.push(next); last = next;
+    }
+    f._sigAt = f0; f._sigCd = MANTA_EVERY;
+    f._arcPts = hits.map(a => ({ x: a.x, y: a.y })); f._arcUntil = f0 + 20; f._arcStraight = false; f._arcCol = [255, 238, 51];
+    if (typeof elementEffects !== "undefined") for (const a of hits) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffee33", radius: 0.5, life: 18 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "STATIC RUSH", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+// HEAVY HAUL: what the hover hauler's hauling is worth (js/mass.js asks). null if it is not one.
+function evoHaul(f) {
+    if (!f || f.evolved !== "hauler") return null;
+    return { speed: HAULER_SPEED, reach: HAULER_REACH, pay: HAULER_PAY };
+}
+
 // ── THE LOOK ───────────────────────────────────────────────
 function _evoImg(d) {
     if (d._img !== undefined) return d._img && d._img.complete && d._img.naturalWidth ? d._img : null;
@@ -184,7 +263,7 @@ function drawEvolvedFollower(f, px, py, g) {
     const img = _evoImg(d); if (!img) return false;
     const u = Math.min(1, (m - EVO_MOLT * 0.3) / (EVO_MOLT * 0.7));   // rising out of the burst
     const rise = m < EVO_MOLT ? 1 - Math.pow(1 - u, 3) : 1;
-    const col = d.element === "fire" ? "#ff5a1f" : d.element === "flux" ? "#bb66ff" : "#ffee33";
+    const col = d.color || (d.element === "fire" ? "#ff5a1f" : d.element === "flux" ? "#bb66ff" : "#ffee33");
     g.save();
     // its shadow
     g.fillStyle = "rgba(0,0,0,0.4)"; g.beginPath(); g.ellipse(px, py, 22 * rise, 9 * rise, 0, 0, Math.PI * 2); g.fill();

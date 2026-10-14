@@ -10,17 +10,25 @@ const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs'), path = require('path');
 const THREE_DIR = process.argv[2], OUT = process.argv[3];
 const core = fs.readFileSync(path.join(__dirname, 'forms-core.js'), 'utf8');
+// forms2.js (helpers + Nos. 33-52) and forms3.js (sentinels, robots, drones, Nos. 53-72) register FORMS2[no].
+const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8');
 const JOBS = [
   { id: 'reaver', form: 'reaver', color: '#ffee33', idleAct: 0.3, action: [0.8, 1.0] },
   { id: 'bloom',  form: 'bunker', color: '#ff3300', idleAct: 0.2, action: [0.5, 1.0] },
   // The serpent's loop is one beat of 2.2 rad/s (period 2*PI/2.2); its action rears the head.
   { id: 'serpent', form: 's15', color: '#9933ff', idleAct: 0, action: [0.6, 1.0], period: 2 * Math.PI / 2.2 },
+  // Design Nos. 57, 58 and 68 (numeric form = FORMS2[no]).
+  { id: 'warden', form: 57, color: '#00ccaa', idleAct: 0.2, action: [0.62, 1.0] },
+  { id: 'hauler', form: 58, color: '#9933ff', idleAct: 0.2, action: [0.55, 1.0] },
+  { id: 'manta',  form: 68, color: '#ffee33', idleAct: 0.2, action: [0.55, 1.0] },
 ].filter(j => !process.argv[4] || process.argv[4].split(',').includes(j.id));
 const CELL = 144, HALF = 1.7, LOOK_Y = 1.15;
 
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
 window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   ${core}
+  ${f2src}
+  ${f3src}
   const out = {};
   const renderer = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, premultipliedAlpha: false });
   renderer.setPixelRatio(1); renderer.setSize(CELL * 2, CELL * 2, false);
@@ -33,10 +41,10 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   // No overhead light: seen from above at 30 degrees, every top face would mirror it white.
   soft(3, 4, 9, 2, 2, 0x8a9bb0, -PI / 2); soft(2, 4, -9, 2, -3, 0x3c5478, PI / 2); soft(6, 1.2, 0, 2.5, 9, 0x5a6678, PI);
   const env = new T.PMREMGenerator(renderer).fromScene(es, 0.03).texture;
-  const sheet = document.createElement('canvas'); sheet.width = CELL * 16; sheet.height = CELL * 8; const sg = sheet.getContext('2d');
+  const sheetCv = document.createElement('canvas'); sheetCv.width = CELL * 16; sheetCv.height = CELL * 8; const sg = sheetCv.getContext('2d');
   for (const job of jobs) {
-    sg.clearRect(0, 0, sheet.width, sheet.height);
-    EL = { color: job.color }; setElementColour(job.color);
+    sg.clearRect(0, 0, sheetCv.width, sheetCv.height);
+    EL = { color: job.color }; setElementColour(job.color); if (typeof job.form === 'number') { M.crystal.color.multiplyScalar(0.5); M.crystal.emissive.multiplyScalar(0.8); }
     const scene = new T.Scene(); scene.environment = env;
     scene.add(new T.HemisphereLight(0x7f8ea3, 0x050505, 0.45));
     const key = new T.DirectionalLight(0xfff1e2, 2.4); key.position.set(3, 6, 4); scene.add(key);
@@ -44,7 +52,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
     // this fixed camera, and every top face blows out white.
     const rim = new T.DirectionalLight(0x6c8cff, 1.3); rim.position.set(-5, 1.2, 1.5); scene.add(rim);
     const back = new T.DirectionalLight(0x6c8cff, 0.6); back.position.set(2, 1, -5); scene.add(back);
-    const B = FORMS[job.form].build(); scene.add(B.g);
+    const B = (typeof job.form === 'number' ? FORMS2 : FORMS)[job.form].build(); scene.add(B.g);
     // Glow sprites on a transparent sheet are left to the game (it draws its own glow at the reactor).
     B.g.traverse(o => { if (o.isSprite) o.visible = false; });
     const cam = new T.OrthographicCamera(-HALF, HALF, HALF, -HALF, 0.1, 100);
@@ -70,7 +78,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
         sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL);
       }
     }
-    out[job.id] = { png: sheet.toDataURL('image/png'), meta: { cell: CELL, rows: 8, cols: 16, idle: 8, action: 8, anchor, core: coreAt, unitsPerCell: HALF * 2 } };
+    out[job.id] = { png: sheetCv.toDataURL('image/png'), meta: { cell: CELL, rows: 8, cols: 16, idle: 8, action: 8, anchor, core: coreAt, unitsPerCell: HALF * 2 } };
     scene.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   }
   return out;

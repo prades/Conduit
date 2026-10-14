@@ -4412,7 +4412,7 @@ function render() {
                 if (entry.hpStat!==undefined) stats.hp = entry.hpStat;
                 // An EVOLVED follower comes back as the same machine: its element and role are its form's.
                 const _evo        = entry.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[entry.evolved] : null;
-                const role        = _evo ? _evo.role : assignRole(stats);
+                const role        = _evo && _evo.role ? _evo.role : assignRole(stats);
                 const hp          = entry.ghostphageLife ? 1 : stats.hp;
                 // The element comes from the Crystal, not from the corpse. A
                 // follower respawns AT the crystal, so it is re-modulated on the
