@@ -143,6 +143,6 @@ function _blob2Design(o) {
     }
     if (cres) { if (o.csFlat) cres.rotation.z = t * 1.6; else cres.rotation.y = t * 1.6; } } };
 }
-fx(110, "Bare liquid blob, triangle with two satellites.", () => _blob2Design({ Y: 0.95, R: 0.6, sr: 0.3, oR: 0.75, oUp: 0.25, rR: 0.42, round: 'A', cs: 0.36, csY: 1.0, csFlat: true }));
+fx(110, "Bare liquid blob, triangle with two satellites.", () => _blob2Design({ Y: 0.95, R: 0.6, sr: 0.3, oR: 0.75, oUp: 0.25, rR: 0.42, round: 'A' }));
 fx(111, "Bare liquid blob, high orbit, no crescent.", () => _blob2Design({ Y: 0.95, R: 0.6, sr: 0.3, oR: 0.45, oUp: 0.62, rR: 0.42, round: 'A' }));
-fx(112, "Bare liquid blob, triangles round the blob.", () => _blob2Design({ Y: 0.95, R: 0.55, sr: 0.28, oR: 0.85, oUp: 0.1, round: 'B', cs: 0.36, csY: 1.0, csFlat: true }));
+fx(112, "Bare liquid blob, triangles round the blob.", () => _blob2Design({ Y: 0.95, R: 0.55, sr: 0.28, oR: 0.85, oUp: 0.1, round: 'B' }));
