@@ -183,13 +183,15 @@ function blade(w, h, d) {   // a solid black triangular shard, standing on its b
 function _groundDesign(o) {
   const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S);   // (the game sprite wants it bigger in its cell)
   const R = o.R, mass = groundBlob(R, o); mass.position.y = 0.03; b.add(mass);
+  // A flat skirt of the same liquid spread round the lump: it lies on the floor (tagged ground, so the game paints it under every unit).
+  const skirt = o.skirt ? slurryPool(o.skirt, o.skirtSeed || 1.7, 1, mass.material, new T.MeshStandardMaterial({ color: 0x0c0218, metalness: 0.2, roughness: 0.3 })) : null; if (skirt) b.add(skirt);
   const parts = [];   // [shard, x, y, z, rotX, rotY, rotZ]
   for (const s of o.shards) { const sh = blade(s.w * 1.2, s.h, s.d || 0.1); sh.position.set(s.x, s.y, s.z); sh.rotation.set(s.rx || 0, s.ry || 0, s.rz || 0); b.add(sh); parts.push({ sh, y0: s.y, inBlob: !!s.inBlob, rz: s.rz || 0 }); }
   const eyes = []; if (o.face) for (const sx of [-1, 1]) { const e = sphere(0.045, M.black, 12); e.scale.set(1, 1.3, 0.5); b.add(e); eyes.push([e, sx]); }
   const mouth = o.face ? cbox(0.2, 0.018, 0.02, 0.004, M.black) : null; if (mouth) b.add(mouth);
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.9, 0.9); b.add(L); LIGHTS.push(L);
   return { g, core: R * 0.4 * (o.S || 1), update(t, act) {
-    mass.wobble(t, act); const sq = Math.sin(1.6 * t), up = 1 + 0.06 * sq - 0.3 * (act || 0);
+    mass.wobble(t, act); if (skirt) skirt.shift(t); const sq = Math.sin(1.6 * t), up = 1 + 0.06 * sq - 0.3 * (act || 0);
     parts.forEach((q, i) => { if (q.inBlob) { q.sh.position.y = q.y0 * up; q.sh.rotation.z = q.rz + 0.04 * Math.sin(1.6 * t + i); } });
     const [dx, dy, dz] = mass.dims;   // the face sits on the front of the lump
     eyes.forEach(([e, sx]) => { e.position.set(sx * dx * 0.28, dy * 0.72 * up, dz * 0.82); });
@@ -200,7 +202,7 @@ const _SH_A = [   // shards stuck in the top, and standing round the base
   { x: 1.12, y: 0, z: 0.2, w: 0.2, h: 0.55, rz: 0.12, ry: 0.4 }, { x: -1.0, y: 0, z: -0.5, w: 0.24, h: 0.7, rz: -0.18, ry: -0.5 }, { x: 0.2, y: 0, z: -1.05, w: 0.2, h: 0.45, rz: 0.3, ry: 1.2 },
   { x: -0.55, y: 0.05, z: 1.0, w: 0.2, h: 0.4, rz: 1.45, ry: 0.3 }];
 fx(113, "Ground blob with a face.", () => _groundDesign({ R: 0.75, S: 1.3, face: true, shards: _SH_A }));
-fx(114, "Ground blob, bigger shards.", () => _groundDesign({ R: 0.78, S: 1.3, flat: 0.55, bump: [-0.8, 0.05, 0.5], shards: [
+fx(114, "Ground blob, bigger shards.", () => _groundDesign({ R: 0.78, S: 1.3, skirt: 0.8, flat: 0.55, bump: [-0.8, 0.05, 0.5], shards: [
   { x: -0.1, y: 0.1, z: 0, w: 0.34, h: 1.1, rx: 0.08, rz: 0.15, inBlob: true }, { x: 0.45, y: 0.12, z: -0.2, w: 0.28, h: 0.78, rx: -0.2, rz: 0.55, inBlob: true },
   { x: -1.1, y: 0, z: 0.3, w: 0.28, h: 0.8, rz: -0.15, ry: 0.4 }, { x: 0.9, y: 0, z: 0.75, w: 0.26, h: 0.65, rz: 0.2, ry: -0.6 }] }));
 fx(115, "Ground blob, see-through, shards inside.", () => _groundDesign({ R: 0.8, flat: 0.7, clear: true, face: true, shards: [

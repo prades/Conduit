@@ -2510,20 +2510,21 @@ function render() {
     // Swept in x order: two followers further apart along the tunnel than the
     // push distance cannot overlap, so each one only meets its neighbours (it
     // was every pair — 1,800 a frame with sixty followers).
+    const _SEP2 = FOLLOWER_SEP * FOLLOWER_SEP;
     const _fl = followers.slice().sort((p, q) => p.x - q.x);
     for (let _i = 0; _i < _fl.length; _i++) {
         for (let _j = _i+1; _j < _fl.length; _j++) {
             const _a = _fl[_i], _b = _fl[_j];
-            if (_b.x - _a.x >= 0.55) break;
+            if (_b.x - _a.x >= FOLLOWER_SEP) break;
             // A frozen block is terrain, not a unit in the crowd: it neither
             // gives ground to a follower nor jostles one. iceBlockTick below
             // is what clears the space around it, in both directions.
             if (_a.iceBlock || _b.iceBlock) continue;
             const _dx = _b.x - _a.x, _dy = _b.y - _a.y;
             const _d2 = _dx*_dx + _dy*_dy;
-            if (_d2 >= 0.3025 || _d2 < 0.000001) continue; // 0.55² = 0.3025
+            if (_d2 >= _SEP2 || _d2 < 0.000001) continue;
             const _d = Math.sqrt(_d2);
-            const _p = (1/_d) * (0.55 - _d) * 0.5;
+            const _p = (1/_d) * (FOLLOWER_SEP - _d) * 0.5;
             _a.x -= _dx*_p; _a.y -= _dy*_p;
             _b.x += _dx*_p; _b.y += _dy*_p;
             // Jostling is still bounded by the floor. This pass runs AFTER the
@@ -3058,6 +3059,9 @@ function render() {
     // (Laid again only when the base changes; the charges move every frame.)
     layAllCablesCached();
 
+    // The pools of material evolved followers stand in (js/evolution.js GROUND): painted by the floor tiles below.
+    if (typeof evoGroundBegin === "function") evoGroundBegin();
+
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
         const px=(obj.x-player.visualX-(obj.y-player.visualY))*TILE_W+canvas.width/2;
@@ -3255,7 +3259,7 @@ function render() {
             const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
             const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
             // Home camp area — circuit board PCB style (x < 0 is behind the Crystal)
-            if (obj.x < 0) { drawCampFloor(obj, px, py, amb); drawCablesOnTile(obj, px, py); return; }
+            if (obj.x < 0) { drawCampFloor(obj, px, py, amb); drawCablesOnTile(obj, px, py); if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py); return; }
             // THE TILE IS A SPRITE. Fill, territory tint, four bevel edges and
             // the circuit traces were ~8 canvas paths per tile, ~125 tiles a
             // frame — the biggest single cost on screen. Its look depends only
@@ -3274,6 +3278,7 @@ function render() {
             const _spr = _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), "", _tq);
             if (_spr) ctx.drawImage(_spr, px - TILE_W - 1, py - 1);
             else _drawFloorTile(ctx, px, py, gameState.phase === "night", dist, "", _tq / FLOOR_TRACE_STEPS);
+            if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py);   // pools of evolved followers lie on the floor
             // Only the FRONT LINE: a 1 px edge where your ground meets the enemy's.
             // Which of its edges are a front line: worked out when the
             // territory changes (_territoryVer), not with two map lookups per

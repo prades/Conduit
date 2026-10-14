@@ -38,16 +38,17 @@ function blobShape(R, seed, k, cx, cz, t) {   // the outline as a Shape in x-y (
   for (let i = 0; i <= N; i++) { const a = i / N * TAU, r = blobR(a, R, seed, t) * (k || 1); const x = (cx || 0) + Math.sin(a) * r, z = (cz || 0) + Math.cos(a) * r; if (i) sh.lineTo(x, -z); else sh.moveTo(x, -z); }
   return sh;
 }
-function slurryPool(R, seed, puddles) {
+function slurryPool(R, seed, puddles, poolMat, lipMat) {   // (the materials: olive slurry unless given)
   const g = G(), parts = [];
   const lay = (build, mat, y) => { const m = new T.Mesh(build(0), mat); m.rotation.x = -PI / 2; m.position.y = y; g.add(m); parts.push({ m, build }); };
   const ext = (sh, depth) => new T.ExtrudeGeometry(sh, { depth, bevelEnabled: false });
-  lay(t => ext(blobShape(R, seed, 1.07, 0, 0, t), 0.05), M.rotDk, 0);        // the dark lip
-  lay(t => ext(blobShape(R, seed, 1.0, 0, 0, t), 0.045), M.slurry, 0.035);   // the pool
+  lay(t => ext(blobShape(R, seed, 1.07, 0, 0, t), 0.05), lipMat || M.rotDk, 0);        // the dark lip
+  lay(t => ext(blobShape(R, seed, 1.0, 0, 0, t), 0.045), poolMat || M.slurry, 0.035);   // the pool
   lay(t => new T.ShapeGeometry(blobShape(R, seed, 1.5, 0, 0, t)), M.rotWash, 0.012);
   // two small puddles that have got away from it, drifting with it
   for (let i = 0; i < (puddles == null ? 2 : puddles); i++) lay(t => { const a = seed * 2.7 + i * 2.9 + 1 + 0.3 * Math.sin(1.6 * t + i * 2), d = blobR(a, R, seed, t) * 1.25 + 0.12;
-    return ext(blobShape(0.13 + 0.05 * i, seed + i + 1, 1, Math.sin(a) * d, Math.cos(a) * d, t), 0.04); }, M.slurry, 0.005);
+    return ext(blobShape(0.13 + 0.05 * i, seed + i + 1, 1, Math.sin(a) * d, Math.cos(a) * d, t), 0.04); }, poolMat || M.slurry, 0.005);
+  g.userData.ground = true;   // flat on the floor: baked to the ground sheet (design/evolutions/bake.js)
   g.shift = t => parts.forEach(p => { p.m.geometry.dispose(); p.m.geometry = p.build(t); });
   g.shift(0.9);
   return g;

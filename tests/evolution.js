@@ -307,6 +307,47 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         }
         ok(/js\/evolution\.js/.test(fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8')), 'not loaded by the game');
     });
+    check('the pools of material are on a sheet of their own (rotshard, mimic), the same size as the body sheet', () => {
+        for (const id of ['rotshard', 'mimic']) {
+            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '_g.png'));
+            same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
+            same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
+        }
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+    });
+    check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
+            const fake = { complete: true, naturalWidth: 2304 };
+            EVOLUTIONS.rotshard._img = fake; EVOLUTIONS.rotshard._gimg = fake; EVOLUTIONS.mimic._img = fake; EVOLUTIONS.mimic._gimg = fake;
+            canvas.width = 800; canvas.height = 600; player.visualX = 20; player.visualY = 2;
+            const mk = (el, role, evo, x, y) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = role; f.evolved = evo; f._moltAt = -1e9; f.x = x; f.y = y; return f; };
+            const a = mk('toxic', 'sniper', 'rotshard', 20.5, 2.5), b = mk('flux', 'brawler', 'mimic', 22.5, 2.5), egg = mk('fire', 'brawler', null, 20.5, 2.5);
+            const rec = () => { const c = { draws: 0, clips: 0, ellipses: 0, globalAlpha: 1 }; for (const m of ['save', 'restore', 'beginPath', 'moveTo', 'lineTo', 'closePath', 'fill', 'stroke', 'fillRect', 'arc', 'addColorStop']) c[m] = () => {};
+                c.clip = () => { c.clips++; }; c.drawImage = () => { c.draws++; }; c.ellipse = () => { c.ellipses++; }; c.createRadialGradient = () => ({ addColorStop() {} }); return c; };
+            evoGroundBegin();
+            const onTile = (tx, ty) => { const g = rec(); drawEvoGroundOnTile(tx, ty, (tx - 20 - (ty - 2)) * TILE_W + 400, (tx - 20 + (ty - 2)) * TILE_H + 300, g); return g; };
+            const out = { own: onTile(20, 2), front: onTile(19, 1), far: onTile(20, 8), other: onTile(22, 2), list: _evoGround.length };
+            const body = rec(); drawEvolvedFollower(a, 300, 300, body); out.body = body;
+            frame = frame + 1; a._moltAt = frame - 5; evoGroundBegin(); out.molting = _evoGround.length;   // still the egg: no pool yet
+            return out; })()`);
+        same(r.list, 2, 'two pools to paint (the egg has none)');
+        ok(r.own.draws === 1 && r.own.clips === 1, 'its own tile paints its pool, clipped: ' + JSON.stringify(r.own));
+        ok(r.front.draws === 1 && r.front.clips === 1, 'a neighbouring tile paints its share too: ' + JSON.stringify(r.front));
+        same(r.far.draws, 0, 'a tile far from every pool paints none');
+        ok(r.other.draws === 1, 'the other pool (the mimic\'s) is painted on its own tile: ' + JSON.stringify(r.other));
+        ok(r.body.draws === 1 && r.body.ellipses === 0, 'the body is drawn with no pool in it and no shadow: ' + JSON.stringify(r.body));
+        same(r.molting, 1, 'a molting follower paints no pool until it is out of the egg');
+        const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
+        ok(/_drawFloorTile\(ctx, px, py[^\n]*\n\s*if \(typeof drawEvoGroundOnTile === "function"\) drawEvoGroundOnTile\(obj\.x, obj\.y, px, py\)/.test(GAME), 'the floor tile does not paint the pools');
+        ok(/drawCablesOnTile\(obj, px, py\); if \(typeof drawEvoGroundOnTile === "function"\) drawEvoGroundOnTile/.test(GAME), 'the camp floor does not paint the pools');
+        ok(GAME.indexOf('evoGroundBegin()') > 0 && GAME.indexOf('evoGroundBegin()') < GAME.indexOf('drawList.forEach(obj=>{'), 'the ground list is not built before the world is drawn');
+    });
+    check('THE ASK: a bundle of followers stands a little further apart (FOLLOWER_SEP), so every unit shows', () => {
+        ok(run('FOLLOWER_SEP') >= 0.7 && run('FOLLOWER_SEP') <= 1.0, 'FOLLOWER_SEP = ' + run('FOLLOWER_SEP'));
+        const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
+        ok(/FOLLOWER SEPARATION[\s\S]{0,1800}_SEP2 = FOLLOWER_SEP \* FOLLOWER_SEP[\s\S]{0,900}FOLLOWER_SEP - _d/.test(GAME), 'the separation pass does not use it');
+        ok(!/>= 0\.55\) break|0\.3025/.test(GAME), 'a hard-coded 0.55 is left in the separation pass');
+    });
     check('it is drawn in place of the egg (and the egg is drawn until the sheet has loaded)', () => {
         const src = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8');
         ok(/drawEvolvedFollower\(actor, px, py, drawCtx\)\) \{\}\s*else if \(_figOpts\)/.test(src), 'the follower body does not hand an evolved one over');

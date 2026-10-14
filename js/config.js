@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-14o";
+const BUILD_VERSION = "2026-10-14p";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -298,6 +298,9 @@ cfg.npcSpawnRate = 0.22;
 
 // ── CONSTANTS ─────────────────────────────────────────────
 const TILE_W = 60, TILE_H = 30, RENDER_DIST = 22;
+// How close two followers may stand before they push each other apart (tiles). It was 0.55; a bundle of evolved
+// machines, wider than the eggs, hid each other at that, so they keep a little more room (see the separation pass in game.js).
+const FOLLOWER_SEP = 0.75;
 const ZONE_LENGTH  = 15;
 // How much tunnel a NEW game starts with: enough to cover the zones a fresh
 // save can reach (activeDayZones caps at 5) with room to walk into. A saved

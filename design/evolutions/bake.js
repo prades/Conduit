@@ -51,8 +51,12 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   soft(3, 4, 9, 2, 2, 0x8a9bb0, -PI / 2); soft(2, 4, -9, 2, -3, 0x3c5478, PI / 2); soft(6, 1.2, 0, 2.5, 9, 0x5a6678, PI);
   const env = new T.PMREMGenerator(renderer).fromScene(es, 0.03).texture;
   const sheetCv = document.createElement('canvas'); sheetCv.width = CELL * 16; sheetCv.height = CELL * 8; const sg = sheetCv.getContext('2d');
+  // A form's pools of material are tagged userData.ground. They are baked to a sheet of their own (<id>_g.png), which the
+  // game paints onto the floor tile by tile, under every unit; the other sheet has the body only.
+  const sheetG = document.createElement('canvas'); sheetG.width = CELL * 16; sheetG.height = CELL * 8; const sgG = sheetG.getContext('2d');
+  const isGround = o => { for (let q = o; q; q = q.parent) if (q.userData && q.userData.ground) return true; return false; };
   for (const job of jobs) {
-    sg.clearRect(0, 0, sheetCv.width, sheetCv.height);
+    sg.clearRect(0, 0, sheetCv.width, sheetCv.height); sgG.clearRect(0, 0, sheetG.width, sheetG.height);
     EL = { color: job.color }; setElementColour(job.color); if (typeof job.form === 'number') { M.crystal.color.multiplyScalar(0.5); M.crystal.emissive.multiplyScalar(0.8); }
     const scene = new T.Scene(); scene.environment = env;
     scene.add(new T.HemisphereLight(0x7f8ea3, 0x050505, 0.45));
@@ -64,6 +68,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
     const B = (typeof job.form === 'number' ? FORMS2 : FORMS)[job.form].build(); scene.add(B.g);
     // Glow sprites on a transparent sheet are left to the game (it draws its own glow at the reactor).
     B.g.traverse(o => { if (o.isSprite || o.material === M.rotWash) o.visible = false; });   // (the pool's wide glow is for the mock sheets)
+    const gMeshes = [], bMeshes = []; B.g.traverse(o => { if (o.isMesh && o.visible) (isGround(o) ? gMeshes : bMeshes).push(o); });
     const cam = new T.OrthographicCamera(-HALF, HALF, HALF, -HALF, 0.1, 100);
     // 2:1 iso: on the (1, h, 1) diagonal, a ground step along x or z projects as (±1, 0.5) when sin(elevation) = 0.5.
     const D = 10;
@@ -83,11 +88,15 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
         const t = idle ? i * P / 8 : 1.0 + i * 0.06;
         const act = idle ? job.idleAct : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8;
         B.update(t, act);
-        renderer.render(scene, cam);
-        sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL);
+        if (!gMeshes.length) { renderer.render(scene, cam); sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL); }
+        else {
+          gMeshes.forEach(m => m.visible = false); renderer.render(scene, cam); sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL);   // the body
+          bMeshes.forEach(m => m.visible = false); gMeshes.forEach(m => m.visible = true); renderer.render(scene, cam); sgG.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL);   // the ground
+          bMeshes.forEach(m => m.visible = true);
+        }
       }
     }
-    out[job.id] = { png: sheetCv.toDataURL('image/png'), meta: { cell: CELL, rows: 8, cols: 16, idle: 8, action: 8, anchor, core: coreAt, unitsPerCell: HALF * 2 } };
+    out[job.id] = { png: sheetCv.toDataURL('image/png'), ground: gMeshes.length ? sheetG.toDataURL('image/png') : null, meta: { cell: CELL, rows: 8, cols: 16, idle: 8, action: 8, anchor, core: coreAt, unitsPerCell: HALF * 2 } };
     scene.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   }
   return out;
@@ -105,6 +114,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   fs.mkdirSync(OUT, { recursive: true });
   for (const [id, r] of Object.entries(res)) {
     fs.writeFileSync(path.join(OUT, id + '.png'), Buffer.from(r.png.split(',')[1], 'base64'));
+    if (r.ground) fs.writeFileSync(path.join(OUT, id + '_g.png'), Buffer.from(r.ground.split(',')[1], 'base64'));
     fs.writeFileSync(path.join(OUT, id + '.json'), JSON.stringify(r.meta));
     console.log(id, JSON.stringify(r.meta), fs.statSync(path.join(OUT, id + '.png')).size, 'bytes');
   }

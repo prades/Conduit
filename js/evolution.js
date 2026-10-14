@@ -62,6 +62,12 @@
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
 //          sheets in img/evo/: 8 facings × 16 frames (8 idle, 8 action),
 //          seen from the game's own iso angle.
+//   GROUND A form's POOLS OF MATERIAL (the Rotshard's slurry, the Rift Mimic's skirt
+//          of liquid) are baked to a second sheet (<id>_g.png) and painted ONTO THE
+//          FLOOR, tile by tile (drawEvoGroundOnTile, called from the floor-tile
+//          draw), clipped to each tile and so under every unit and whatever
+//          stands on the tile. Drawn with the body in depth order, a pool wider
+//          than its owner painted over the units beside it in a bundle.
 
 const EVOLVE_LEVEL = 20;
 const EVOLVE_MULT  = 1.25;
@@ -96,10 +102,10 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
     // The FLUX BRAWLER: a lump of liquid on the ground (a flux worker is the Hover Hauler instead: a worker is a duty). Its surface moves, so its sheet carries its own light.
     mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff" },
+              cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png" },
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", move: "CORRODE SHOT", sheet: "img/evo/rotshard.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66" },
+              cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png" },
     // The electric WORKER (the neutraliser): a worker is a duty, so it comes from an electric follower on worker duty.
     pod:    { id: "pod",    name: "DYNAMO POD",   element: "electric", duty: "worker",  move: "RAPID DISCHARGE", sheet: "img/evo/pod.png",
               cell: 144, anchor: [72, 114.2], core: [72, 58], noGlow: true, color: "#ffee33" },
@@ -357,6 +363,28 @@ function _evoImg(d) {
     d._img = im;
     return null;
 }
+function _evoGroundImg(d) {
+    if (!d.ground) return null;
+    if (d._gimg !== undefined) return d._gimg && d._gimg.complete && d._gimg.naturalWidth ? d._gimg : null;
+    d._gimg = null;
+    if (typeof Image === "undefined") return null;
+    const im = new Image();
+    im.onload = () => { d._gimg = im; };
+    im.src = d.ground + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
+    d._gimg = im;
+    return null;
+}
+// Which frame of its sheets it is on, how big, and how far out of the egg: the body and its ground layer share this.
+function _evoFrame(f, d, f0) {
+    const m = f0 - (f._moltAt === undefined ? -1e9 : f._moltAt);
+    const u = Math.min(1, (m - EVO_MOLT * 0.3) / (EVO_MOLT * 0.7));
+    const rise = m < EVO_MOLT ? 1 - Math.pow(1 - u, 3) : 1;
+    const sigK = f._sigAt !== undefined ? (f0 - f._sigAt) / EVO_ACT_FRAMES : 9;
+    let col = Math.floor(f0 / 7) % 8;
+    if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
+    else if (f.state === "attack") col = 8 + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));
+    return { m, rise, sigK, col, row: _evoFacing(f), s: EVO_SCALE * (0.6 + 0.4 * rise) };
+}
 function _evoFacing(f) {
     const a = Math.atan2(f.dirY || 0, f.dirX === undefined ? 1 : f.dirX);
     return ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
@@ -369,20 +397,14 @@ function drawEvolvedFollower(f, px, py, g) {
     const f0 = typeof frame !== "undefined" ? frame : 0, m = f0 - (f._moltAt === undefined ? -1e9 : f._moltAt);
     if (m < EVO_MOLT * 0.3) return false;                 // still the egg, shaking (the overlay cracks it)
     const img = _evoImg(d); if (!img) return false;
-    const u = Math.min(1, (m - EVO_MOLT * 0.3) / (EVO_MOLT * 0.7));   // rising out of the burst
-    const rise = m < EVO_MOLT ? 1 - Math.pow(1 - u, 3) : 1;
     const col = d.color || (d.element === "fire" ? "#ff5a1f" : d.element === "flux" ? "#bb66ff" : "#ffee33");
+    const fr = _evoFrame(f, d, f0), rise = fr.rise, sigK = fr.sigK, s = fr.s;
     g.save();
-    // its shadow
-    g.fillStyle = "rgba(0,0,0,0.4)"; g.beginPath(); g.ellipse(px, py, 22 * rise, 9 * rise, 0, 0, Math.PI * 2); g.fill();
-    // the frame: action while it fights or has just used its move, else idle
-    const sigK = f._sigAt !== undefined ? (f0 - f._sigAt) / EVO_ACT_FRAMES : 9;
-    let col_ = Math.floor(f0 / 7) % 8;
-    if (sigK >= 0 && sigK < 1) col_ = 8 + Math.min(7, Math.floor(sigK * 8));
-    else if (f.state === "attack") col_ = 8 + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));
-    const row = _evoFacing(f), C = d.cell, s = EVO_SCALE * (0.6 + 0.4 * rise);
+    // its shadow (a form with a pool of its own stands in that: see GROUND above)
+    if (!d.ground) { g.fillStyle = "rgba(0,0,0,0.4)"; g.beginPath(); g.ellipse(px, py, 22 * rise, 9 * rise, 0, 0, Math.PI * 2); g.fill(); }
+    const C = d.cell;
     g.globalAlpha *= rise;
-    g.drawImage(img, col_ * C, row * C, C, C, px - d.anchor[0] * s, py - d.anchor[1] * s, C * s, C * s);
+    g.drawImage(img, fr.col * C, fr.row * C, C, C, px - d.anchor[0] * s, py - d.anchor[1] * s, C * s, C * s);
     // the reactor's glow (not the serpent's: its reactor sits in its head, which turns with it)
     if (d.noGlow) { g.restore(); return true; }
     const cx = px + (d.core[0] - d.anchor[0]) * s, cy = py + (d.core[1] - d.anchor[1]) * s;
@@ -394,6 +416,39 @@ function drawEvolvedFollower(f, px, py, g) {
     g.restore();
     return true;
 }
+// ── THE GROUND PASS ────────────────────────────────────────
+// Once a frame, before the floor is drawn: who has a ground layer to paint.
+let _evoGround = [];
+function evoGroundBegin() {
+    _evoGround = [];
+    if (typeof followers === "undefined") return;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const f of followers) {
+        if (!f || f.dead || !f.evolved) continue;
+        const d = evolvedDef(f); if (!d || !d.ground) continue;
+        if (f0 - (f._moltAt === undefined ? -1e9 : f._moltAt) < EVO_MOLT * 0.3) continue;   // still the egg
+        _evoGround.push(f);
+    }
+}
+// Called as the floor tile at (tx, ty), whose top corner is at (px, py), is drawn: paint this tile's share of every
+// pool near it, clipped to the tile.
+function drawEvoGroundOnTile(tx, ty, px, py, g) {
+    if (!_evoGround.length || typeof player === "undefined") return;
+    g = g || ctx;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const f of _evoGround) {
+        if (Math.abs(f.x - tx - 0.5) > 1.4 || Math.abs(f.y - ty - 0.5) > 1.4) continue;
+        const d = evolvedDef(f), img = d && _evoGroundImg(d); if (!img || !_evoImg(d)) continue;
+        const fr = _evoFrame(f, d, f0), C = d.cell, s = fr.s;
+        const fx = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width / 2, fy = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height / 2;
+        g.save();
+        g.beginPath(); g.moveTo(px, py); g.lineTo(px + TILE_W, py + TILE_H); g.lineTo(px, py + 2 * TILE_H); g.lineTo(px - TILE_W, py + TILE_H); g.closePath(); g.clip();
+        g.globalAlpha *= fr.rise;
+        g.drawImage(img, fr.col * C, fr.row * C, C, C, fx - d.anchor[0] * s, fy - d.anchor[1] * s, C * s, C * s);
+        g.restore();
+    }
+}
+
 // Drawn over the follower: the egg cracking and bursting, and the Reaver's arcs.
 function drawEvolvedOverlay(f, px, py, g) {
     const d = evolvedDef(f); if (!d) return;
