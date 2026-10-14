@@ -770,7 +770,7 @@ async function boot() {
     });
 
     check('an unpowered pylon is drawn dark, with no range ring', () => {
-        const at = SRC.game.indexOf('const _dark = obj.powered === false');
+        const at = SRC.game.indexOf('const _dark = (obj.powered === false');
         ok(at > -1, 'the drawing does not know whether the pylon has power');
         const body = SRC.game.slice(at, at + 2000);
         ok(/POWER_DEAD_COLOUR/.test(body), 'a dark pylon keeps its lit colour');

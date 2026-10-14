@@ -55,7 +55,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('THE ASK: the first choice is attack, support, disruption, connector or generator', () => {
         const r = run(`__fresh(); openElementPicker('build', __row[0]); __labels()`);
         // BATTERY joined the list when the network tier moved onto batteries.
-        ok(JSON.stringify(r) === JSON.stringify(['ATTACK TURRET', 'SUPPORT PYLON', 'DISRUPTION PYLON', 'BATTERY', 'CONNECTOR', 'SHIELD GEN']), JSON.stringify(r));
+        ok(JSON.stringify(r) === JSON.stringify(['ATTACK TURRET', 'SUPPORT PYLON', 'DISRUPTION PYLON', 'BATTERY', 'CONNECTOR', 'GENERATOR']), JSON.stringify(r));
     });
     await check('BATTERY asks for any element, and builds a battery of it', () => {
         const r = run(`__fresh(); openElementPicker('build', __row[0]); __tap('BATTERY');
@@ -92,7 +92,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('connector and generator skip the element step', () => {
         const r = scene(`__fresh();
             const near = world.find(t => t.type === 'floor' && !t.pillar && !t.nest && canPlaceGenerator(t).ok);
-            openElementPicker('build', near); __tap('SHIELD GEN');
+            openElementPicker('build', near); __tap('GENERATOR');
             ({ picker: elementPickerOpen, confirm: pylonConfirmOpen, el: pylonConfirmEl && pylonConfirmEl.id, gen: GENERATOR_ID })`);
         ok(!r.picker && r.confirm && r.el === r.gen, JSON.stringify(r));
     });

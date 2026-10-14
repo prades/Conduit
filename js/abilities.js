@@ -197,8 +197,9 @@ function _abNearestFoe(pred, maxDist) {
     return best;
 }
 
-// AoE effects hit the player too when the caster is hostile — otherwise the
-// specials are only ever a threat to followers and the player can stand inside them.
+// A special's area: the foes inside it. NOT the player — a predator hurts the
+// player only by biting them up close (PLAYER_BITE_RANGE, js/predator.js), never
+// with a shot, a blast or a special.
 function _abForEachFoeInRadius(pred, radius, fn) {
     const team = _abHostileTeam(pred);
     const r2 = radius * radius;
@@ -208,21 +209,10 @@ function _abForEachFoeInRadius(pred, radius, fn) {
         const dx = a.x - pred.x, dy = a.y - pred.y;
         if (dx * dx + dy * dy <= r2) fn(a);
     }
-    // No immunity check here: the helper also drives non-damaging effects, and
-    // hurtPlayer() is what honours the respawn grace. The PLAYER is gated
-    // separately — predators do not attack them at all.
-    if (!pred.isClone && predatorMayHurtPlayer() && typeof player !== 'undefined') {
-        const dx = player.x - pred.x, dy = player.y - pred.y;
-        if (dx * dx + dy * dy <= r2) fn(null);   // null = the player
-    }
 }
 
 function _abHurt(pred, victim, amount) {
-    if (victim === null) {
-        hurtPlayer(amount * 0.35, 4);
-    } else {
-        applyDamage(victim, amount, pred);
-    }
+    applyDamage(victim, amount, pred);
 }
 
 function _abBurst(pred, color, radius, life, count) {
@@ -456,7 +446,6 @@ function _abRunActive(pred, def) {
             // The charge goes through your equipment too, once per pylon a dash.
             if (typeof hurtEquipmentInRadius === "function") hurtEquipmentInRadius(pred, def.radius, pred.power * def.dmg, pred.slamHit);
             _abForEachFoeInRadius(pred, def.radius, v => {
-                if (v === null) { _abHurt(pred, null, pred.power * def.dmg); return; }
                 if (pred.slamHit.has(v)) return;   // one hit per victim per slam
                 pred.slamHit.add(v);
                 _abHurt(pred, v, pred.power * def.dmg);

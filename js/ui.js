@@ -181,7 +181,7 @@ const PYLON_KINDS = [
     { id: "disruption", label: "DISRUPTION PYLON", note: "hits enemies nearby", color: "#c08cff" },
     { id: "battery",    label: "BATTERY",          note: "2/4/6 linked = tier I/II/III", color: BATTERY_COLOR },
     { id: "connector", label: "CONNECTOR",     note: "long-range power relay",      color: CONNECTOR_COLOR },
-    { id: "generator", label: "SHIELD GEN",    note: "powers pylons, shields squad", color: GENERATOR_COLOR },
+    { id: "generator", label: "GENERATOR",     note: "required: powers this zone", color: GENERATOR_COLOR },
 ];
 function _epItems() {
     if (elementPickerStage === "element") {
@@ -352,7 +352,7 @@ function _infoNavLabel() {
 
 function _infoTitle() {
     if (infoPanelPage === 'rules') return "PYLON RULES";
-    if (infoPanelPage === 'generator') return "SHIELD GENERATOR";
+    if (infoPanelPage === 'generator') return "GENERATOR";
     if (infoPanelPage === 'infest')    return "INFESTATION";
     if (infoPanelPage === 'combos')    return "ELEMENT COMBOS";
     if (infoPanelPage)             return "PYLON CODEX";

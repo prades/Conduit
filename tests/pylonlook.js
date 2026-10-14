@@ -153,7 +153,9 @@ check('nothing still offers the removed styles by name', () => {
 });
 
 check('the orb sits at one height, not a per-style one', () => {
-    ok(/const _orbY = _base-54;/.test(GAME), 'the orb height is still computed per style');
+    // One tower height; a level-1 turret's gun sits on its low emplacement
+    // instead (turretIsLow, config.js) — not a per-style height.
+    ok(/const _orbY = _lowTurret \? _base - TURRET_L1_TOP : _base-54;/.test(GAME), 'the orb height is still computed per style');
 });
 
 group('the trim matches');

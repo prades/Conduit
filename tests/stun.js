@@ -43,7 +43,7 @@ function makeEnv() {
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
 
-    const hurt = SRC['js/helpers.js'].match(/function hurtPlayer\(amount, shakeAmt\) \{[\s\S]*?\n\}/);
+    const hurt = SRC['js/helpers.js'].match(/function hurtPlayer\(amount, shakeAmt, source\) \{[\s\S]*?\n\}/);
     if (!hurt) { console.log('  FAIL could not find hurtPlayer in js/helpers.js'); process.exit(1); }
     vm.runInContext(hurt[0], ctx, { filename: 'helpers.js:hurtPlayer' });
 
@@ -191,37 +191,25 @@ check('zero and nonsense damage is ignored', () => {
     eq(env.run('health'), 2, 'health changed on a no-op');
 });
 
-check('a projectile is still consumed when the window eats it', () => {
-    // Otherwise the shot passes through and can hit again a frame later.
+check('predator shots and specials never reach the player at all', () => {
+    // "They won't shoot at you": the only predator path to the player is the
+    // up-close bite. The projectile filter and the ability radius helper no
+    // longer mention the player.
     const g = SRC['js/game.js'];
-    const at = g.indexOf('hurtPlayer(p.damage, 5)');
-    ok(at > -1, 'the abdomen-shot path no longer calls hurtPlayer');
-    const after = g.slice(at, at + 200);
-    ok(/hit = true/.test(after), 'the projectile is not marked as hit');
-});
-
-check('the melee swipe no longer carries its own immunity check', () => {
-    const p = SRC['js/predator.js'];
-    const at = p.indexOf('PLAYER HIT');
-    ok(at > -1, 'could not find the player-hit branch');
-    const slice = p.slice(at, at + 400);
-    ok(/hurtPlayer\(/.test(slice), 'melee should route through hurtPlayer');
-    ok(!/player\.(stunned|invuln)/.test(slice), 'melee should not re-check immunity itself');
-});
-
-check('the ability radius helper gates the player, and not on the old stun', () => {
-    // This used to assert the player was swept in unconditionally. Predators no
-    // longer attack the player at all, so the branch is still there — the helper
-    // drives non-damaging effects too — but it is gated on
-    // predatorMayHurtPlayer() rather than removed. Sliced to the function
-    // rather than a fixed 700 characters: adding the gate pushed fn(null) past
-    // that window and failed this check on correct code.
+    ok(!/hurtPlayer\(p\.damage/.test(g), 'a predator shot still calls hurtPlayer');
     const a = SRC['js/abilities.js'];
     const at = a.indexOf('function _abForEachFoeInRadius');
     const slice = a.slice(at, a.indexOf('\nfunction ', at + 10));
-    ok(/fn\(null\)/.test(slice), 'the player branch has been removed entirely');
-    ok(/predatorMayHurtPlayer\(\)/.test(slice), 'the player branch is not gated');
-    ok(!/player\.stunned/.test(slice), 'still gating on the old stun');
+    ok(!/fn\(null\)|player/.test(slice.replace(/\/\/.*$/gm, '')), 'the ability radius helper still sweeps the player in');
+});
+
+check('the bite routes through hurtPlayer and carries no immunity check of its own', () => {
+    const p = SRC['js/predator.js'];
+    const at = p.indexOf('THE PLAYER, UP CLOSE');
+    ok(at > -1, 'could not find the bite');
+    const slice = p.slice(at, at + 1100);
+    ok(/hurtPlayer\(this\.power, 4, this\)/.test(slice), 'the bite should route through hurtPlayer, with itself as the source');
+    ok(!/player\.(stunned|invuln)/.test(slice), 'the bite should not re-check immunity itself');
 });
 
 group('a reset leaves a usable player');

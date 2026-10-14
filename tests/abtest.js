@@ -49,7 +49,7 @@ const ctx = vm.createContext(sandbox);
 // helpers.js rather than stubbing it, so the respawn-grace behaviour is the
 // behaviour under test here too.
 const _helpers = fs.readFileSync(path.join(ROOT, 'js/helpers.js'), 'utf8')
-    .match(/function hurtPlayer\(amount, shakeAmt\) \{[\s\S]*?\n\}/);
+    .match(/function hurtPlayer\(amount, shakeAmt, source\) \{[\s\S]*?\n\}/);
 if (!_helpers) { console.log('  FAIL could not find hurtPlayer in js/helpers.js'); process.exit(1); }
 vm.runInContext(_helpers[0], ctx, { filename: 'helpers.js:hurtPlayer' });
 
@@ -288,15 +288,14 @@ check('BLINDING DUST slows and shreds in an area', () => {
     ok(f.slowed > 0, 'slowed');
     ok(f.defenseShredded > 0, 'shredded');
 });
-check('THE RULE: a hostile special hits the player (one of three hits); a friendly one never does', () => {
-    // Predators attack the player again (three hits, then the Crystal —
-    // js/config.js PLAYER_HITS). A special that lands on you is ONE hit; the
-    // grace after it (nothing ticks it down here) stops a frenzy taking more.
+check('THE RULE: no special touches the player, hostile or friendly', () => {
+    // "They won't shoot at you" — a predator hurts the player only by biting
+    // them up close (js/predator.js, tests/threehits.js), never with a special.
     reset();
     sandbox.player.x = 5.2; sandbox.player.y = 2;
     const b = mkBug('ant', 'striker'); mkFoe();
     spin(b, 500);
-    eq(sandbox.health, 2, 'a hostile frenzy beside the player should take one hit');
+    eq(sandbox.health, 3, 'a hostile frenzy should not touch the player');
 
     reset();
     sandbox.player.x = 5.2;

@@ -16,16 +16,20 @@
 //     ULTRA_DAMAGE_BONUS, reaches ULTRA_RANGE_BONUS tiles further, and bursts
 //     on the target for ULTRA_SPLASH_SHARE of it to everything within
 //     ULTRA_SPLASH tiles. The other three stop firing and drawing.
-//   - It is SOLID (ultraBlockTick): nothing stands on its four tiles — your
-//     squad, predators and you are pushed off and slide round it.
+//   - COMPACT (REPORTED: "make the ultra pylons a little smaller and more
+//     compact, and let the followers move freely in between them"): it is
+//     drawn at ULTRA_SCALE on the middle of its square, and your squad, your
+//     clones and you walk straight through and between them. Only predators
+//     are kept off its core (ULTRA_CORE_R round the centre, ultraBlockTick).
 // ─────────────────────────────────────────────────────────
 
 const ULTRA_DAMAGE_BONUS  = 1.5;    // × the four turrets' rounds added together
 const ULTRA_RANGE_BONUS   = 2;      // tiles past a single turret's reach
 const ULTRA_SPLASH        = 1.2;    // tiles round the target the round bursts over
 const ULTRA_SPLASH_SHARE  = 0.5;    // of the round, to each one caught in the burst
-const ULTRA_MUZZLE_Z      = 90;     // px above the floor its bolt leaves from (the Tesla crown)
-const ULTRA_SLIDE         = 0.06;   // how fast a blocked unit slides along a face
+const ULTRA_SCALE         = 0.55;   // drawn this size on its square (was the whole 2x2)
+const ULTRA_MUZZLE_Z      = 50;     // px above the floor its bolt leaves from (the Tesla crown, scaled)
+const ULTRA_CORE_R        = 0.6;    // tiles round its centre a predator cannot stand in
 
 let _ultras = [];                   // anchors, rebuilt with the caches
 let _ultraPending = [];             // squares that would fuse but for the tier: { x0, y0, el, tier, col }
@@ -106,56 +110,21 @@ function ultraSplash(s, hit) {
     return n;
 }
 
-// ── SOLID ─────────────────────────────────────────────────
-// A unit inside a square is put back out at the nearest face it can stand
-// beyond (one that is still on the floor). Stopped at a side face, it also
-// slides along it toward the nearer open end, so it walks round instead of
-// pressing against the wall forever. The player gets a detour: their walk
-// target is moved to that open lane until they are past, then put back.
-function _ultraPushOut(a, U, isPlayer) {
-    const m = 0.04, x0 = U.x0, x1 = U.x0 + 2, y0 = U.y0, y1 = U.y0 + 2;
-    if (a.x <= x0 || a.x >= x1 || a.y <= y0 || a.y >= y1) return false;
-    const yMax = isPlayer ? FLOOR_Y_MAX - 0.5 : 3;
-    const opts = [["L", a.x - x0], ["R", x1 - a.x]];
-    if (y0 - m >= 0) opts.push(["T", a.y - y0]);
-    if (y1 + m <= yMax) opts.push(["B", y1 - a.y]);
-    opts.sort((p, q) => p[1] - q[1]);
-    const side = opts[0][0];
-    if (side === "L") a.x = x0 - m; else if (side === "R") a.x = x1 + m;
-    else if (side === "T") a.y = y0 - m; else a.y = y1 + m;
-    if (side === "L" || side === "R") {
-        // Slide toward the open end nearer to it.
-        const up = y0 - m >= 0, down = y1 + m <= yMax;
-        const goUp = up && (!down || (a.y - y0) < (y1 - a.y));
-        a.y += (goUp ? -1 : 1) * ULTRA_SLIDE;
-        if (isPlayer) {
-            const across = side === "L" ? player.targetX > x1 : player.targetX < x0;
-            if (across && player._ultraTY === undefined) {
-                player._ultraTY = player.targetY; player._ultraU = U;
-                player.targetY = player._ultraLane = goUp ? y0 - 0.4 : y1 + 0.4;
-            }
-        }
-    }
-    return true;
-}
+// ── ITS CORE ──────────────────────────────────────────────
+// Your followers, clones and you pass through freely. A predator inside the
+// core is put back out at its edge, straight away from the centre.
 function ultraBlockTick() {
-    // The player's detour ends once they are past the square (or they have
-    // tapped somewhere new, which replaces it).
-    if (player._ultraTY !== undefined) {
-        const U = player._ultraU;
-        const retapped = player.targetY !== player._ultraLane;
-        const past = !U || (player.targetX > U.x0 + 2 ? player.x > U.x0 + 2.05
-                          : player.targetX < U.x0 ? player.x < U.x0 - 0.05 : true);
-        if (retapped || past) {
-            if (!retapped) player.targetY = player._ultraTY;
-            player._ultraTY = undefined; player._ultraU = null; player._ultraLane = undefined;
-        }
-    }
     if (!_ultras.length) return;
     for (const t of _ultras) {
         const U = t._ultra; if (!U) continue;
-        for (const a of unitsNear(U.cx, 3)) if (!a.dead) _ultraPushOut(a, U, false);
-        _ultraPushOut(player, U, true);
+        for (const a of unitsNear(U.cx, 2)) {
+            if (a.dead || !(typeof Predator !== "undefined" && a instanceof Predator) || a.isClone || a.team === "green") continue;
+            let dx = a.x - U.cx, dy = a.y - U.cy;
+            const d = Math.hypot(dx, dy);
+            if (d >= ULTRA_CORE_R) continue;
+            if (d < 1e-4) { dx = 1; dy = 0; } else { dx /= d; dy /= d; }
+            a.x = U.cx + dx * ULTRA_CORE_R; a.y = U.cy + dy * ULTRA_CORE_R;
+        }
     }
 }
 
@@ -218,6 +187,8 @@ function _drawUltraBody(t, cx, cy) {
         c.beginPath(); c.ellipse(cx, cy, rr, rr * 0.5, 0, 0, Math.PI * 2); c.stroke();
         c.setLineDash([]); c.globalAlpha = 1;
     }
+    // Everything below is the full-size array, drawn at ULTRA_SCALE round its centre.
+    c.translate(cx, cy); c.scale(ULTRA_SCALE, ULTRA_SCALE); c.translate(-cx, -cy);
     // The plate, its trim ring and front lights.
     const PZ = 12, top = cy - PZ;
     _ultraPrism(c, cx, cy, _ultraNgon(8, 100, Math.PI / 8), PZ);
@@ -262,14 +233,15 @@ function _drawUltraBody(t, cx, cy) {
     }
     rods.filter(p => p[1] > top).forEach(rod);
     c.restore();
-    // Combined health and the name.
+    // Combined health and the name, over its (scaled) crown.
+    const crownY = cy - ULTRA_CROWN_Z * ULTRA_SCALE;
     const [h, m] = ultraHealth(t);
-    if (typeof drawHealthBar === "function") drawHealthBar(cx - 30, ring - 30, 60, 5, h, m);
+    if (typeof drawHealthBar === "function") drawHealthBar(cx - 24, crownY - 22, 48, 5, h, m);
     c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
     const tier = typeof networkTierAt === "function" ? networkTierAt(U.el, U.cx, U.cy) : 0;
     const label = "ULTRA · " + U.el.toUpperCase() + (tier > 0 ? [" T-I", " T-II", " T-III"][tier - 1] : "");
-    if (typeof cachedText === "function") cachedText(label, "bold 10px monospace", col, cx, ring - 36);
-    else { c.fillStyle = col; c.font = "bold 10px monospace"; c.textAlign = "center"; c.fillText(label, cx, ring - 36); }
+    if (typeof cachedText === "function") cachedText(label, "bold 10px monospace", col, cx, crownY - 28);
+    else { c.fillStyle = col; c.font = "bold 10px monospace"; c.textAlign = "center"; c.fillText(label, cx, crownY - 28); }
     c.restore();
 }
 

@@ -637,7 +637,7 @@
 
       <div class="ctrl-title">BUTTONS</div>
       <div class="ctrl-row"><span class="ctrl-key">SQUAD</span> Toggle SEL (selected followers) / ALL (every follower)</div>
-      <div class="ctrl-row"><span class="ctrl-key">BUILD</span> Opens the <strong>build window</strong> (and build mode). Tabs: TURRETS, WAVE, POWER, MODULES &mdash; each item shows its picture and price. A <strong>LEVEL</strong> row sets what one placement makes: TURRETS 1 a turret, 2 a turret already at <strong>MK II</strong> (needs a tier I network of its element there), 3 a 2&times;2 of four that fuses into an <strong>ULTRA</strong> turret (needs tier II); WAVE 1 a pylon, 2 MK II, 3 a 2&times;2 <strong>formation</strong>; POWER batteries 1 one, 2 a <strong>pod of 4</strong>, 3 a <strong>pod of 6</strong>. Anything that could not be powered is <strong>greyed out</strong> &mdash; build a shield generator by a nest you hold first &mdash; and a tile nothing would feed shows <strong>NO POWER HERE</strong>. Pick one and it is in hand: a ghost shows where it goes, <strong>green</strong> if it can, <strong>red</strong> with the reason if not. <strong>Touch:</strong> tap a tile, tap it again to build. <strong>Mouse:</strong> click to build. It stays in hand for the next one &mdash; tap the item again (or Esc) to put it down and walk. <strong>DEMOLISH</strong> in the title bar takes your pylons down for a refund; &#9662; shrinks the window, &#10005; closes it. The long-press ring still works too (BUILD / UPGRADE on the top button). While build mode is on, units cannot be selected</div>
+      <div class="ctrl-row"><span class="ctrl-key">BUILD</span> Opens the <strong>build window</strong> (and build mode). Tabs: TURRETS, WAVE, POWER, MODULES &mdash; each item shows its picture and price. A <strong>LEVEL</strong> row sets what one placement makes: TURRETS 1 a turret, 2 a turret already at <strong>MK II</strong> (needs a tier I network of its element there), 3 a 2&times;2 of four that fuses into an <strong>ULTRA</strong> turret (needs tier II); WAVE 1 a pylon, 2 MK II, 3 a 2&times;2 <strong>formation</strong>; POWER batteries 1 one, 2 a <strong>pod of 4</strong>, 3 a <strong>pod of 6</strong>. Anything that could not be powered is <strong>greyed out</strong>: <strong>every zone needs its own GENERATOR</strong> (built by a nest you hold) before any tech in it works &mdash; a tile in a zone without one shows <strong>NO GENERATOR IN ZONE</strong>, and a tile nothing would feed shows <strong>NO POWER HERE</strong>. Pick one and it is in hand: a ghost shows where it goes, <strong>green</strong> if it can, <strong>red</strong> with the reason if not. <strong>Touch:</strong> tap a tile, tap it again to build. <strong>Mouse:</strong> click to build. It stays in hand for the next one &mdash; tap the item again (or Esc) to put it down and walk. <strong>DEMOLISH</strong> in the title bar takes your pylons down for a refund; &#9662; shrinks the window, &#10005; closes it. The long-press ring still works too (BUILD / UPGRADE on the top button). While build mode is on, units cannot be selected</div>
       <div class="ctrl-row"><span class="ctrl-key">LEVELS</span> Every unit has a <strong>level</strong> and <strong>stats</strong>, shown over its health bar as e.g. <span class="cm-stat">Lv 12 FIRE BRAWLER</span>, <span class="cm-stat">Lv 8 ANT SCOUT</span>, <span class="cm-stat">Lv 6 ANT CLONE</span>. A unit's stats are its level-5 <strong>base</strong> scaled by its level (&times;2 at 20, &times;4 at 50, &times;7.3 at 100). A follower's base is the standard stats &times; its <strong>personality</strong>; HP, attack, defense, special attack, accuracy and will grow with level (walking speed does not). A predator's base is its species and class, plus armour by class (beetles have extra); its level comes from the <strong>wave</strong> (one every two waves) and the <strong>zone</strong> (three per zone from zone 3, six per deep zone), &plusmn;1. A clone is its species &times;4, born at the frontier's level. A <strong>recruit</strong> joins at the level of the zone it was found in, three below that zone's predators (never under 5). <strong>Defense</strong> now protects everyone, weighed against the attacker's level. <strong>XP</strong> comes from kills: a predator is worth its class's yield &times; its level / 5 (elites 1.5&times;); the killer gets 60% and your units within 4 tiles share 40% (a turret's kill: half to the units near it). Total XP for a level is its cube (Lv 10 = 1,000). A unit that dies keeps its level but loses a quarter of its progress to the next. Cap: level 100 (the deep tunnel's predators go past it). Hold a unit and press INFO for its full stat sheet.</div>
       <div class="ctrl-row"><span class="ctrl-key">REPAIR CREW</span> A pylon brought to nothing is a <strong>wreck</strong>, not gone. Only an <strong>ANT clone on worker duty</strong> rebuilds it &mdash; and what it puts back up is an <strong>offline frame</strong> (<span class="cm-stat">OFFLINE &middot; NEEDS CORE</span>): standing, but no rounds, no wave, no charge, no relay. A <strong>CORE follower on the work crew</strong> re-arms the frame into exactly the machine it was (<span class="cm-stat">RE-ARMING n%</span>, about 3 s). Ants also patch up a damaged pylon's health, so a crew of ants and core keeps a turret alive through a fight. The ring cannot upgrade or convert an offline frame.</div>
       <div class="ctrl-row"><span class="ctrl-key">COLLATERAL</span> Your equipment gets caught in the fighting. A predator's area specials &mdash; a beetle's <strong>CARAPACE SLAM</strong> charge, an ant's <strong>MANDIBLE FRENZY</strong>, a mantis's <strong>BLADE FLURRY</strong>, a moth's <strong>BLINDING DUST</strong> &mdash; damage any turret, wave pylon, battery or relay in their radius (60% of what they do to a unit, like a bash). An enemy round (an abdomen or web shot, a goo machine's spit) that passes over your equipment on its way to a follower <strong>hits the equipment</strong> and stops there. Worn to nothing, it is destroyed. Your own rounds and your clones' specials never hurt it.</div>
@@ -751,7 +751,7 @@
 
     <!-- ── PYLONS ── -->
     <div id="cmPylons" class="cm-section">
-<div class="ix-lede">Every pylon is <span class="cm-stat">10</span> shards and starts as a tower; what you pick in the build ring makes it one of these. Its damage is multiplied by its <strong>status</strong>: plain &times;1, upgraded &times;1.15, <strong>MK II &times;1.3</strong>.</div><div class="ix-h"><i class="ix-i" data-icon="attack" data-col="#ff7755" data-size="16"></i><span>THE PYLONS</span></div><div class="ix-grid"><div class="ix-card" style="--c:#ff7755"><canvas class="ix-art" data-art="attack:fire" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="attack" data-col="#ff7755"></i>ATTACK TURRET</div><div class="ix-card-b">Shoots the nearest enemy every 0.75 s with a homing bolt. Unpowered it still fires, at 0.7&times;.</div><div class="ix-chips"><span>range 3</span><span>+35% per tier</span></div></div><div class="ix-card" style="--c:#7fffb0"><canvas class="ix-art" data-art="support:electric" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="support" data-col="#7fffb0"></i>SUPPORT PYLON</div><div class="ix-card-b">Electric or core. Two of one element link and help your units on the strip between them.</div><div class="ix-chips"><span>wakes for allies</span></div></div><div class="ix-card" style="--c:#c08cff"><canvas class="ix-art" data-art="disruption:flux" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="disruption" data-col="#c08cff"></i>DISRUPTION PYLON</div><div class="ix-card-b">Fire, ice, flux or toxic. Linked pairs hurt, slow or drag enemies on the strip.</div><div class="ix-chips"><span>wakes for enemies</span></div></div><div class="ix-card" style="--c:#ffd34d"><canvas class="ix-art" data-art="battery:electric" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="battery" data-col="#ffd34d"></i>BATTERY</div><div class="ix-card-b">Stores power from the nests and powers pylons around it. Linked batteries set their element&rsquo;s tier.</div><div class="ix-chips"><span>2/4/6 = tier I/II/III</span></div></div><div class="ix-card" style="--c:#cfe8ff"><canvas class="ix-art" data-art="generator" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="generator" data-col="#cfe8ff"></i>SHIELD GENERATOR</div><div class="ix-card-b">Carries a nest&rsquo;s power, mends pylons and shields your squad within 5 tiles.</div><div class="ix-chips"><span>240 HP</span><span>near a nest</span></div></div><div class="ix-card" style="--c:#ffd24a"><canvas class="ix-art" data-art="connector" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="connector" data-col="#ffd24a"></i>CONNECTOR</div><div class="ix-card-b">A long-range relay: feeds every pylon within 14 tiles. Has a circuit switch.</div><div class="ix-chips"><span>near a nest</span></div></div><div class="ix-card" style="--c:#ffd34d"><canvas class="ix-art" data-art="mk2:electric" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="mk2" data-col="#ffd34d"></i>MK II</div><div class="ix-card-b">Out of build mode, hold your turret or wave pylon: top of the ring. Needs tier I there.</div><div class="ix-chips"><span>15&#9670;</span><span>&times;1.3 dmg</span><span>+25% HP</span></div></div><div class="ix-card" style="--c:#0f8"><canvas class="ix-art" data-art="pylon" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="pylon" data-col="#0f8"></i>PLAIN PYLON</div><div class="ix-card-b">Holds ground and costs nothing to run. Upgrade it into anything above.</div><div class="ix-chips"><span>10&#9670;</span><span>30 s build</span></div></div></div><div class="ix-h"><i class="ix-i" data-icon="ultra" data-col="#ffee33" data-size="16"></i><span>FOUR IN A SQUARE &mdash; NEEDS TIER II</span></div><div class="ix-grid"><div class="ix-card" style="--c:#ffee33"><canvas class="ix-art" data-art="ultra:electric" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="ultra" data-col="#ffee33"></i>ULTRA TURRET</div><div class="ix-card-b">Four turrets fuse into a Tesla array: one round for all four &times;1.5, +2 range, bursts on impact. Solid.</div></div><div class="ix-card" style="--c:#9933ff"><canvas class="ix-art" data-art="blackhole" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="blackhole" data-col="#9933ff"></i>BLACK HOLE</div><div class="ix-card-b">Four flux wave pylons: a vortex in the floor drags and crushes everything within 2.5 tiles.</div></div><div class="ix-card" style="--c:#ff3300"><canvas class="ix-art" data-art="firespin" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="firespin" data-col="#ff3300"></i>SPINNING FIREWALL</div><div class="ix-card-b">Four fire wave pylons: three walls of flame sweep the square, hotter with enemies near.</div></div><div class="ix-card" style="--c:#99ddff"><canvas class="ix-art" data-art="icegen" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="icegen" data-col="#99ddff"></i>ICE GENERATOR</div><div class="ix-card-b">Four ice wave pylons: frost on the floor slows, chills and roots enemies.</div></div><div class="ix-card" style="--c:#66ff66"><canvas class="ix-art" data-art="toxtower" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="toxtower" data-col="#66ff66"></i>TOXIC TOWER</div><div class="ix-card-b">Four toxic wave pylons: fumes poison and strip enemies, and mend your clones.</div></div></div><details class="cm-more"><summary>In detail &mdash; building, modes, element effects, tiers</summary><div class="ctrl-title">BUILDING</div>
+<div class="ix-lede">Every pylon is <span class="cm-stat">10</span> shards and starts as a tower; what you pick in the build ring makes it one of these. Its damage is multiplied by its <strong>status</strong>: plain &times;1, upgraded &times;1.15, <strong>MK II &times;1.3</strong>.</div><div class="ix-h"><i class="ix-i" data-icon="attack" data-col="#ff7755" data-size="16"></i><span>THE PYLONS</span></div><div class="ix-grid"><div class="ix-card" style="--c:#ff7755"><canvas class="ix-art" data-art="attack:fire" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="attack" data-col="#ff7755"></i>ATTACK TURRET</div><div class="ix-card-b">A low emplacement that shoots the nearest enemy every 0.75 s with a homing bolt; MK II stands on a gold-collared tower. With no power it fires at 0.7&times;; with no generator in its zone, not at all. A CORE turret drops <strong>shield cells</strong>.</div><div class="ix-chips"><span>range 3</span><span>+35% per tier</span></div></div><div class="ix-card" style="--c:#7fffb0"><canvas class="ix-art" data-art="support:electric" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="support" data-col="#7fffb0"></i>SUPPORT PYLON</div><div class="ix-card-b">Electric or core. Two of one element link and help your units on the strip between them.</div><div class="ix-chips"><span>wakes for allies</span></div></div><div class="ix-card" style="--c:#c08cff"><canvas class="ix-art" data-art="disruption:flux" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="disruption" data-col="#c08cff"></i>DISRUPTION PYLON</div><div class="ix-card-b">Fire, ice, flux or toxic. Linked pairs hurt, slow or drag enemies on the strip.</div><div class="ix-chips"><span>wakes for enemies</span></div></div><div class="ix-card" style="--c:#ffd34d"><canvas class="ix-art" data-art="battery:electric" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="battery" data-col="#ffd34d"></i>BATTERY</div><div class="ix-card-b">Stores power from the nests and powers pylons around it. Linked batteries set their element&rsquo;s tier.</div><div class="ix-chips"><span>2/4/6 = tier I/II/III</span></div></div><div class="ix-card" style="--c:#cfe8ff"><canvas class="ix-art" data-art="generator" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="generator" data-col="#cfe8ff"></i>GENERATOR</div><div class="ix-card-b">Required in every zone: nothing there works without one. Carries a nest&rsquo;s power and mends the pylons near it.</div><div class="ix-chips"><span>240 HP</span><span>near a nest</span></div></div><div class="ix-card" style="--c:#ffd24a"><canvas class="ix-art" data-art="connector" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="connector" data-col="#ffd24a"></i>CONNECTOR</div><div class="ix-card-b">A long-range relay: feeds every pylon within 14 tiles. Has a circuit switch.</div><div class="ix-chips"><span>near a nest</span></div></div><div class="ix-card" style="--c:#ffd34d"><canvas class="ix-art" data-art="mk2:electric" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="mk2" data-col="#ffd34d"></i>MK II</div><div class="ix-card-b">Out of build mode, hold your turret or wave pylon: top of the ring. Needs tier I there.</div><div class="ix-chips"><span>15&#9670;</span><span>&times;1.3 dmg</span><span>+25% HP</span></div></div><div class="ix-card" style="--c:#0f8"><canvas class="ix-art" data-art="pylon" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="pylon" data-col="#0f8"></i>PLAIN PYLON</div><div class="ix-card-b">Holds ground and costs nothing to run. Upgrade it into anything above.</div><div class="ix-chips"><span>10&#9670;</span><span>30 s build</span></div></div></div><div class="ix-h"><i class="ix-i" data-icon="ultra" data-col="#ffee33" data-size="16"></i><span>FOUR IN A SQUARE &mdash; NEEDS TIER II</span></div><div class="ix-grid"><div class="ix-card" style="--c:#ffee33"><canvas class="ix-art" data-art="ultra:electric" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="ultra" data-col="#ffee33"></i>ULTRA TURRET</div><div class="ix-card-b">Four turrets fuse into a Tesla array: one round for all four &times;1.5, +2 range, bursts on impact. Solid.</div></div><div class="ix-card" style="--c:#9933ff"><canvas class="ix-art" data-art="blackhole" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="blackhole" data-col="#9933ff"></i>BLACK HOLE</div><div class="ix-card-b">Four flux wave pylons: a vortex in the floor drags and crushes everything within 2.5 tiles.</div></div><div class="ix-card" style="--c:#ff3300"><canvas class="ix-art" data-art="firespin" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="firespin" data-col="#ff3300"></i>SPINNING FIREWALL</div><div class="ix-card-b">Four fire wave pylons: three walls of flame sweep the square, hotter with enemies near.</div></div><div class="ix-card" style="--c:#99ddff"><canvas class="ix-art" data-art="icegen" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="icegen" data-col="#99ddff"></i>ICE GENERATOR</div><div class="ix-card-b">Four ice wave pylons: frost on the floor slows, chills and roots enemies.</div></div><div class="ix-card" style="--c:#66ff66"><canvas class="ix-art" data-art="toxtower" width="132" height="112"></canvas><div class="ix-card-h"><i class="ix-i" data-icon="toxtower" data-col="#66ff66"></i>TOXIC TOWER</div><div class="ix-card-b">Four toxic wave pylons: fumes poison and strip enemies, and mend your clones.</div></div></div><details class="cm-more"><summary>In detail &mdash; building, modes, element effects, tiers</summary><div class="ctrl-title">BUILDING</div>
       <div class="cm-build-row"><span class="cm-build-label">Cost</span><span class="cm-stat">10 shards</span> + <span class="cm-stat">30 seconds</span> construction time</div>
       <div class="cm-build-row"><span class="cm-build-label">CORE followers</span>Skip the 30s delay — build <span class="cm-stat">instantly</span></div>
       <div class="cm-build-row"><span class="cm-build-label">How to place</span>Toggle BUILD ON → long-press a floor tile → radial UP (BUILD)</div>
@@ -788,13 +788,14 @@
       <div class="ctrl-row cm-dim">Every pylon has a <strong>status</strong>, and <strong>its damage is multiplied by it</strong> &mdash; turret rounds, wave links, formations and Ultra turrets: plain <span class="cm-stat">&times;1</span>, <strong>upgraded</strong> (reclaimed and rebuilt, with its healing pulse) <span class="cm-stat">&times;1.15</span>, <strong>MK II</strong> <span class="cm-stat">&times;1.3</span>.</div>
       <div class="ctrl-row cm-dim"><strong>Out of build mode, long-press your turret or wave pylon &rarr; top: MK II <span class="cm-stat">15</span>&#9670;.</strong> It needs its element&rsquo;s <strong>tier I</strong> network where it stands (2 linked batteries close by) &mdash; otherwise the button says what it needs. MK II keeps everything an upgraded pylon has, takes <span class="cm-stat">25%</span> more health, and wears a gold <span class="cm-stat">&#9670;</span> with its status written over it.</div>
 
-      </details><details class="cm-more"><summary>In detail &mdash; turret, shield generator and connector</summary><div class="ctrl-title">GENERATOR SWITCH &amp; THE PYLON TURRET</div>
+      </details><details class="cm-more"><summary>In detail &mdash; turret, generator, shield cells and connector</summary><div class="ctrl-title">GENERATOR SWITCH &amp; THE PYLON TURRET</div>
       <div class="ctrl-row cm-dim"><strong>Long-press a generator &rarr; left button: TURN OFF / TURN ON.</strong> Off, it feeds nothing and mends nothing, so <strong>every pylon it was powering goes dark until you turn it back on</strong> (a connector in reach still carries them). The state is written over it, and a dark pylon&rsquo;s info panel says <span class="cm-stat">GENERATOR IS OFF</span>.</div>
       <div class="ctrl-row cm-dim"><strong>A pylon in turret mode wears a self-aiming gun</strong>. It fires every <span class="cm-stat">0.75</span>s, the moment an enemy steps into range, and each round is a glowing <strong>bolt that homes</strong> onto its target and does its damage when it lands &mdash; it cannot miss. Charged rounds (a generator feeding it) are bigger and hit in full; plain rounds hit at <span class="cm-stat">0.7</span>&times;. Each hit is <span class="cm-stat">2.5</span>&times; its base attack power, <span class="cm-stat">+35%</span> per network tier of its element, plus <span class="cm-stat">5%</span> of the target&rsquo;s max HP so it still counts against the big ones. It turns to the nearest enemy just before it comes into range (<span class="cm-stat">1.2</span>&times; its firing range) and flashes when a shot goes out. With no target it sweeps slowly.</div>
 
-      <div class="ctrl-title">&#9678; SHIELD GENERATOR</div>
-      <div class="ctrl-row cm-dim">The generator is now a <strong>shield generator</strong>: a thicker pylon with a big pale orb. It still carries power from its nest to the pylons around it and still mends them &mdash; and it builds a <strong>shield</strong> on every follower and clone within <span class="cm-stat">5</span> tiles (a thin pale bubble, and a blue bar under the health bar).</div>
-      <div class="ctrl-row cm-dim">A shield <strong>takes 100% of every hit</strong> until it breaks; only then do enemies reach health. It charges <span class="cm-stat">8</span> every half second up to three quarters of the unit&rsquo;s max health (at least <span class="cm-stat">30</span>), paying a little nest power per point, and waits <span class="cm-stat">2</span>s after a hit before charging again. The generator itself is tough (<span class="cm-stat">240</span> health, three times a pylon) &mdash; and the predators know what it does: at night about a third of them go straight for the nearest one, and pylon hunters pick it first. Turned off, or with no nest feeding it, it builds nothing. The shield only lasts <strong>inside the field</strong>: walk out of reach, or switch the generator off, and the shield it built is gone within half a second. Its reach shows as a dotted ring while you hold it or build.</div>
+      <div class="ctrl-title">&#9678; THE GENERATOR &mdash; one in every zone</div>
+      <div class="ctrl-row cm-dim">A thicker pylon with a big pale orb. It carries power from its nest to the pylons around it and mends them &mdash; and it is <strong>required</strong>: every pylon, turret, battery and module in a zone is <strong>offline</strong> (dark, silent, greyed out in the build window) until that zone has a working generator, switched on and fed by a nest. It is tough (<span class="cm-stat">240</span> health) &mdash; and the predators know it: at night about a third of them go straight for the nearest one, and pylon hunters pick it first. Lose it and the zone goes dark. Its mending reach shows as a dotted ring while you hold it or build.</div>
+      <div class="ctrl-title">&#11041; SHIELD CELLS &mdash; the CORE tech</div>
+      <div class="ctrl-row cm-dim">A powered <strong>CORE</strong> pylon or turret drops a <strong>shield cell</strong> on the floor beside it every <span class="cm-stat">15</span>s (a MK II twice as fast; at most <span class="cm-stat">2</span> lying there). Walk over it &mdash; or let a follower &mdash; and it goes into your store, shown beside your shards (up to <span class="cm-stat">40</span>). Each follower or clone with no shield spends <strong>one cell</strong> for a full shield: three quarters of its max health (at least <span class="cm-stat">30</span>), a thin pale bubble and a blue bar. A shield <strong>takes 100% of every hit</strong> until it breaks; after a hit it waits <span class="cm-stat">2</span>s before a new one goes on. The <strong>FORCE WALL</strong> (the shield barrier) runs on cells too: <span class="cm-stat">2</span> to rise again after it breaks, and one per <span class="cm-stat">100</span> health it mends.</div>
 
       <div class="ctrl-title">🔌 CONNECTOR PYLON &mdash; POWER FOR THE FAR ZONES</div>
       <div class="ctrl-row cm-dim">A neutral pylon you pick from the same menu as the generator, and built under the same rule: <strong>within <span class="cm-stat">6</span> tiles of a nest</strong>, and it links to that nest by itself. Where a generator only feeds the pylons beside it, a connector feeds <strong>every pylon within <span class="cm-stat">14</span> tiles</strong> &mdash; run one out to the later zones and the whole cluster there draws off the nest it is wired to. A generator beside a pylon still comes first; a connector is what reaches a pylon no generator does.</div>
@@ -1361,12 +1362,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-14d, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-14e, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-14d";
+window.__PAGE_BUILD = "2026-10-14e";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1402,51 +1403,52 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-14d"></script>
-<script src="js/icons.js?v=2026-10-14d"></script>
-<script src="js/rng.js?v=2026-10-14d"></script>
-<script src="js/traits.js?v=2026-10-14d"></script>
-<script src="js/elements.js?v=2026-10-14d"></script>
-<script src="js/combat.js?v=2026-10-14d"></script>
-<script src="js/species.js?v=2026-10-14d"></script>
-<script src="js/levels.js?v=2026-10-14d"></script>
-<script src="js/predator_randomizer.js?v=2026-10-14d"></script>
-<script src="js/mass.js?v=2026-10-14d"></script>
-<script src="js/infest.js?v=2026-10-14d"></script>
-<script src="js/power.js?v=2026-10-14d"></script>
-<script src="js/save.js?v=2026-10-14d"></script>
-<script src="js/camp.js?v=2026-10-14d"></script>
-<script src="js/wavedata.js?v=2026-10-14d"></script>
-<script src="js/helpers.js?v=2026-10-14d"></script>
-<script src="js/predator.js?v=2026-10-14d"></script>
-<script src="js/abilities.js?v=2026-10-14d"></script>
-<script src="js/world.js?v=2026-10-14d"></script>
-<script src="js/commands.js?v=2026-10-14d"></script>
-<script src="js/npc.js?v=2026-10-14d"></script>
-<script src="js/codex.js?v=2026-10-14d"></script>
-<script src="js/draw.js?v=2026-10-14d"></script>
-<script src="js/beetle3d.js?v=2026-10-14d"></script>
-<script src="js/bugs3d.js?v=2026-10-14d"></script>
-<script src="js/ui.js?v=2026-10-14d"></script>
-<script src="js/waves.js?v=2026-10-14d"></script>
-<script src="js/drops.js?v=2026-10-14d"></script>
-<script src="js/clone.js?v=2026-10-14d"></script>
-<script src="js/clonework.js?v=2026-10-14d"></script>
-<script src="js/broods.js?v=2026-10-14d"></script>
-<script src="js/raids.js?v=2026-10-14d"></script>
-<script src="js/ultra.js?v=2026-10-14d"></script>
-<script src="js/formations.js?v=2026-10-14d"></script>
-<script src="js/breakout.js?v=2026-10-14d"></script>
-<script src="js/nightraids.js?v=2026-10-14d"></script>
-<script src="js/bonds.js?v=2026-10-14d"></script>
-<script src="js/autoplay.js?v=2026-10-14d"></script>
-<script src="js/indexart.js?v=2026-10-14d"></script>
-<script src="js/modules.js?v=2026-10-14d"></script>
-<script src="js/buildmenu.js?v=2026-10-14d"></script>
-<script src="js/input.js?v=2026-10-14d"></script>
-<script src="js/game.js?v=2026-10-14d"></script>
-<script src="js/tutorial.js?v=2026-10-14d"></script>
-<script src="js/dev.js?v=2026-10-14d"></script>
+<script src="js/config.js?v=2026-10-14e"></script>
+<script src="js/icons.js?v=2026-10-14e"></script>
+<script src="js/rng.js?v=2026-10-14e"></script>
+<script src="js/traits.js?v=2026-10-14e"></script>
+<script src="js/elements.js?v=2026-10-14e"></script>
+<script src="js/combat.js?v=2026-10-14e"></script>
+<script src="js/species.js?v=2026-10-14e"></script>
+<script src="js/levels.js?v=2026-10-14e"></script>
+<script src="js/predator_randomizer.js?v=2026-10-14e"></script>
+<script src="js/mass.js?v=2026-10-14e"></script>
+<script src="js/infest.js?v=2026-10-14e"></script>
+<script src="js/power.js?v=2026-10-14e"></script>
+<script src="js/save.js?v=2026-10-14e"></script>
+<script src="js/camp.js?v=2026-10-14e"></script>
+<script src="js/wavedata.js?v=2026-10-14e"></script>
+<script src="js/helpers.js?v=2026-10-14e"></script>
+<script src="js/predator.js?v=2026-10-14e"></script>
+<script src="js/abilities.js?v=2026-10-14e"></script>
+<script src="js/world.js?v=2026-10-14e"></script>
+<script src="js/commands.js?v=2026-10-14e"></script>
+<script src="js/npc.js?v=2026-10-14e"></script>
+<script src="js/codex.js?v=2026-10-14e"></script>
+<script src="js/draw.js?v=2026-10-14e"></script>
+<script src="js/beetle3d.js?v=2026-10-14e"></script>
+<script src="js/bugs3d.js?v=2026-10-14e"></script>
+<script src="js/ui.js?v=2026-10-14e"></script>
+<script src="js/waves.js?v=2026-10-14e"></script>
+<script src="js/drops.js?v=2026-10-14e"></script>
+<script src="js/clone.js?v=2026-10-14e"></script>
+<script src="js/clonework.js?v=2026-10-14e"></script>
+<script src="js/broods.js?v=2026-10-14e"></script>
+<script src="js/raids.js?v=2026-10-14e"></script>
+<script src="js/ultra.js?v=2026-10-14e"></script>
+<script src="js/formations.js?v=2026-10-14e"></script>
+<script src="js/breakout.js?v=2026-10-14e"></script>
+<script src="js/nightraids.js?v=2026-10-14e"></script>
+<script src="js/bonds.js?v=2026-10-14e"></script>
+<script src="js/autoplay.js?v=2026-10-14e"></script>
+<script src="js/indexart.js?v=2026-10-14e"></script>
+<script src="js/modules.js?v=2026-10-14e"></script>
+<script src="js/shieldcells.js?v=2026-10-14e"></script>
+<script src="js/buildmenu.js?v=2026-10-14e"></script>
+<script src="js/input.js?v=2026-10-14e"></script>
+<script src="js/game.js?v=2026-10-14e"></script>
+<script src="js/tutorial.js?v=2026-10-14e"></script>
+<script src="js/dev.js?v=2026-10-14e"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1456,7 +1458,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 (function () {
     var need = { "js/config.js": "ELEMENTS", "js/species.js": "PREDATOR_TYPES", "js/elements.js": "getElementMultiplier",
                  "js/predator.js": "Predator", "js/power.js": "recomputePower", "js/world.js": "generateSegment",
-                 "js/draw.js": "drawNPC", "js/bugs3d.js": "drawBug3D", "js/ui.js": "drawElementPicker", "js/buildmenu.js": "drawBuildMenu", "js/levels.js": "levelFactor", "js/nightraids.js": "lateralTick", "js/modules.js": "moduleTick", "js/game.js": "render", "js/dev.js": "initPreview" };
+                 "js/draw.js": "drawNPC", "js/bugs3d.js": "drawBug3D", "js/ui.js": "drawElementPicker", "js/buildmenu.js": "drawBuildMenu", "js/levels.js": "levelFactor", "js/nightraids.js": "lateralTick", "js/modules.js": "moduleTick", "js/shieldcells.js": "shieldCellTick", "js/game.js": "render", "js/dev.js": "initPreview" };
     var missing = (window.__bootFailed || []).slice();
     // A stale cached copy of config.js (from another build) is as good as missing.
     try { if ((0, eval)("BUILD_VERSION") !== window.__PAGE_BUILD) missing.push("js/config.js (an old copy from another build)"); }
@@ -1499,7 +1501,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-14d"></script>
+<script src="js/init.js?v=2026-10-14e"></script>
 
 </body>
 </html>

@@ -315,11 +315,21 @@ function predatorBudgetFull() {
 
 // One hit, whatever its size: the player has PLAYER_HITS of them (js/config.js),
 // and the knockdown in game.js puts them back at the Crystal when they run out.
-function hurtPlayer(amount, shakeAmt) {
+// A hit from something (a predator's bite) knocks you a step away from it.
+function hurtPlayer(amount, shakeAmt, source) {
     if (!(amount > 0)) return false;
     if (player.invuln > 0) return false;
     health = Math.max(0, health - 1);
     player.invuln = PLAYER_HIT_GRACE;
+    if (source && Number.isFinite(source.x) && Number.isFinite(source.y) && typeof PLAYER_KNOCKBACK !== "undefined") {
+        let kx = player.x - source.x, ky = player.y - source.y;
+        const kl = Math.hypot(kx, ky);
+        if (kl < 1e-3) { kx = -1; ky = 0; } else { kx /= kl; ky /= kl; }
+        // Both where you are and where you were walking: the camera slides you back.
+        player.x += kx * PLAYER_KNOCKBACK; player.targetX += kx * PLAYER_KNOCKBACK;
+        player.y = Math.max(PLAYER_Y_MIN, Math.min(FLOOR_Y_MAX, player.y + ky * PLAYER_KNOCKBACK));
+        player.targetY = Math.max(PLAYER_Y_MIN, Math.min(FLOOR_Y_MAX, player.targetY + ky * PLAYER_KNOCKBACK));
+    }
     shake = Math.max(shake, shakeAmt || 4);
     if (health > 0 && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
         // Over your head (the camera keeps you at the centre; 2 px off it so it

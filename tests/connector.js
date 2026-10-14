@@ -40,6 +40,10 @@ async function boot() {
 (async () => {
     const E = await boot();
     const RANGE = E.run('CONNECTOR_RANGE');
+    // These boards are about how a connector ROUTES power. Every zone now
+    // needs its own generator for anything in it to work (tests/shieldcells.js);
+    // that rule is stood in for here, and checked against the connector last.
+    E.run('globalThis.__zoneGenerated = zoneGenerated; zoneGenerated = () => true;');
 
     // Row y=3 from x=4. `plan`: C connector, A attack pylon, G generator, . gap.
     const board = (plan, opts, frames) => E.run(`(function(){
@@ -195,6 +199,15 @@ async function boot() {
         const page = html.slice(at, at + 2400);
         ok(page.indexOf('>' + RANGE + '<') > -1, 'the index does not state the ' + RANGE + '-tile reach');
         ok(/OPEN CIRCUIT/.test(page) && /CLOSE CIRCUIT/.test(page), 'it does not say how to switch it');
+    });
+
+    group('ONE GENERATOR PER ZONE');
+    await check('THE ASK: a connector alone does not light a zone with no generator in it', () => {
+        E.run('zoneGenerated = __zoneGenerated;');
+        const r = board('C' + '.'.repeat(4) + 'A');
+        const z = E.run('getZoneIndex(' + r.x[5] + ')');
+        same(E.run('zoneHasGenerator(' + z + ')'), false, 'fixture: a generator in that zone');
+        same(r.lit[5], false, 'a pylon fed only by a connector, in a zone with no generator, was lit');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

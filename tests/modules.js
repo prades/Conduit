@@ -69,7 +69,8 @@ const PLACE = (kind, x, y) => `(function(){ toggleBuild(); if (!buildMenuOpen) t
         const far = run(`(function(){ const tool = { tab: 'modules', kind: 'module', id: 'forcewall' };
             const t = world.find(t => t.type === 'floor' && !t.pillar && !t.nest && !t.nodeType && t.x > __g.x + 12 && t.x < __g.x + 20 && t.y === 2);
             return canBuildAt(t, tool).why; })()`);
-        same(far, 'NO POWER HERE', 'far from the grid');
+        // Far off it is another zone, with no generator of its own (tests/shieldcells.js).
+        ok(/^(NO POWER HERE|NO GENERATOR IN ZONE \d+)$/.test(far), 'far from the grid: ' + far);
         const m = run(`modules[0]`);
         same(run(`canBuildAt(getTile(${m.x}, ${m.y}), { tab: 'modules', kind: 'module', id: 'overclock' }).why`), 'OCCUPIED', 'on a module');
         const s0 = run('shardCount');
@@ -79,7 +80,7 @@ const PLACE = (kind, x, y) => `(function(){ toggleBuild(); if (!buildMenuOpen) t
     const r2 = await boot({});
     check('greyed in the window with no grid at all', () => {
         ok(!r2(`buildItemState(buildMenuItems('modules')[0]).ok`), 'a module was offered with no power');
-        same(r2(`buildItemState(buildMenuItems('modules')[0]).why`), 'NO POWER', 'reason');
+        same(r2(`buildItemState(buildMenuItems('modules')[0]).why`), 'NO GENERATOR', 'reason (no generator in this zone)');
     });
 
     console.log('\nMED BAY');
@@ -157,11 +158,16 @@ const PLACE = (kind, x, y) => `(function(){ toggleBuild(); if (!buildMenuOpen) t
             const fell = !forceWallUp(m);
             p.lastX = m.x + 0.6; p.x = m.x - 0.4; const through = !forceWallBlock(p);
             frame += FW_DOWN + 1; const keep = _moduleRefresh; _moduleRefresh = mm => { mm.powered = true; };
-            moduleTick(); _moduleRefresh = keep;
-            return { blows, fell, through, rose: forceWallUp(m), hp: m.wallHp }; })()`);
+            // It rises on SHIELD CELLS (js/shieldcells.js): none, and it stays down.
+            shieldCells = 0; moduleTick(); const without = forceWallUp(m);
+            shieldCells = 5; frame++; moduleTick(); _moduleRefresh = keep;
+            return { blows, fell, through, without, rose: forceWallUp(m), hp: m.wallHp, spent: 5 - shieldCells }; })()`);
         ok(r.fell && r.blows > 1, 'it never fell, or fell at once: ' + JSON.stringify(r));
         ok(r.through, 'a predator could not pass a fallen wall');
+        ok(!r.without, 'it rose with no shield cells');
         ok(r.rose && r.hp > 0, 'it did not rise again: ' + JSON.stringify(r));
+        // FW_RISE_CELLS to rise, and (back at FW_RISE_HP) one more to start mending.
+        same(r.spent, run('FW_RISE_CELLS') + 1, 'shield cells it took to rise and start mending');
     });
     check('…and with no power there is no wall', () => {
         const r = run(`(function(){ const m = moduleAt(${w.x}, ${w.y}); m.powered = false; m.wallHp = FW_HP;

@@ -68,7 +68,7 @@ const SUITES = [
     ['endless tunnel',         'endless.js'],
     ['effects plan',           'effects.js'],
     ['difficulty + drop-offs', 'difficulty.js'],
-    ['shield generator',       'shieldgen.js'],
+    ['generator per zone + shield cells', 'shieldcells.js'],
     ['shard thieves + machines', 'raids.js'],
     ['teleport',               'teleport.js'],
     ['ultra turret',           'ultra.js'],

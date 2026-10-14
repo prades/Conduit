@@ -261,7 +261,11 @@ async function ready(seed) {
         player.x = p.x; player.y = p.y + 1;
         player.visualX = player.x; player.visualY = player.y;
         player.targetX = player.x; player.targetY = player.y;
+        // A predator that wanders into you now bites and knocks you off the
+        // panel (three hits, tests/threehits.js) — this is about the panel's pay.
+        player.invuln = 1e9;
         for (let i = 0; i < 200 && !p.panelActivated; i++) render();
+        player.invuln = 0;
         return {
             activated: !!p.panelActivated,
             shards: shardCount,

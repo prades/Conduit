@@ -144,8 +144,10 @@ async function boot(store) {
         ok(r.k > 0 && near(r.k + r.a, r.worth * 0.5, 1e-6), JSON.stringify(r));
     });
     check('stronger predators are worth more', () => {
-        ok(KILL('tank').worth > KILL('scout').worth, 'tank vs scout');
-        ok(KILL('scout', 'p.isElite = true;').worth > KILL('scout').worth, 'elite vs plain');
+        // At one level: a predator's level is rolled with a spread, so two
+        // spawns can differ by more than the class or elite bonus.
+        ok(KILL('tank', 'p.level = 10;').worth > KILL('scout', 'p.level = 10;').worth, 'tank vs scout');
+        ok(KILL('scout', 'p.isElite = true; p.level = 10;').worth > KILL('scout', 'p.level = 10;').worth, 'elite vs plain');
     });
     check('enough kills level a follower up, and it says so', () => {
         const r = run(`(function(){ const f = ${FOL('', 12, 1)}; const n0 = floatingTexts.length; gainXp(f, xpForLevel(6) - f.xp + 1);

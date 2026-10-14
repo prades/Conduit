@@ -104,14 +104,22 @@ function ok(c, m) { if (!c) throw new Error(m); }
             payForShot(__T(__X, 1)); return [a.charge, b.charge]; })()`);
         ok(r[0] === 10 && r[1] === 40 - run('POWER_SHOT_COST'), JSON.stringify(r));
     });
-    await check('THE ASK: a charged battery powers a turret with no generator at all', () => {
+    await check('THE ASK (one generator per zone): a charged battery does nothing in a zone with no generator', () => {
         build({ bats: 2, charge: 60, turrets: [[0, 0]], gen: false });
-        const r = run(`(function(){ const t = __T(__X, 1); recomputePower(); return { powered: t.powered, src: !!t.powerSource, paid: payForShot(t) }; })()`);
+        const r = run(`(function(){ const t = __T(__X, 1); recomputePower(); return { powered: t.powered, dark: !!t.zoneDark, paid: payForShot(t) }; })()`);
+        ok(!r.powered && r.dark && !r.paid, JSON.stringify(r));
+    });
+    await check('a charged battery powers a turret no nest route reaches — in a zone that has a generator', () => {
+        // The zone's generator is stood in for: this is about the battery
+        // paying, not the zone rule (tests/shieldcells.js).
+        const r = run(`(function(){ const t = __T(__X, 1); const keep = zoneGenerated; zoneGenerated = () => true;
+            try { recomputePower(); return { powered: t.powered, src: !!t.powerSource, paid: payForShot(t) }; } finally { zoneGenerated = keep; } })()`);
         ok(!r.src, 'fixture: it has a nest route');
         ok(r.powered && r.paid, JSON.stringify(r));
     });
     await check('flat batteries and no nest: dark', () => {
-        const r = run(`(function(){ __T(__X, 4).charge = 0; __T(__X + 1, 4).charge = 0; const t = __T(__X, 1); recomputePower(); return { powered: t.powered, paid: payForShot(t) }; })()`);
+        const r = run(`(function(){ __T(__X, 4).charge = 0; __T(__X + 1, 4).charge = 0; const t = __T(__X, 1); const keep = zoneGenerated; zoneGenerated = () => true;
+            try { recomputePower(); return { powered: t.powered, paid: payForShot(t) }; } finally { zoneGenerated = keep; } })()`);
         ok(!r.powered && !r.paid, JSON.stringify(r));
     });
     await check('flat batteries fall back to the nest', () => {

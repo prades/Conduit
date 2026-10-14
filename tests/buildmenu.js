@@ -285,7 +285,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run(`(function(){ const tool = { tab: 'turrets', kind: 'attack', elId: 'fire' };
             const far = world.find(t => t.x > 60 && t.x < 80 && t.y === 1);
             return canBuildAt(far, tool).why; })()`);
-        ok(/TIER II|POWER/.test(r), 'far from the bank: ' + r);
+        ok(/TIER II|POWER|NO GENERATOR/.test(r), 'far from the bank: ' + r);
         level('turrets', 1);
     });
     check('WAVE level 3 builds a 2×2 formation — not for support elements', () => {
@@ -332,15 +332,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const st = r2(`['turrets','wave','power'].flatMap(tb => buildMenuItems(tb)).map(i => i.kind + ':' + buildItemState(i).ok)`);
             ok(st.filter(x => /^(attack|support|disruption|battery):/.test(x)).every(x => x.endsWith(':false')), 'something powered was offered: ' + st);
             ok(st.filter(x => /^(connector|generator):/.test(x)).every(x => x.endsWith(':true')), 'a relay was greyed: ' + st);
-            same(r2(`buildItemState(buildMenuItems('turrets')[0]).why`), 'NO POWER', 'reason');
+            same(r2(`buildItemState(buildMenuItems('turrets')[0]).why`), 'NO GENERATOR', 'reason (no generator in this zone yet)');
         });
         check('…a greyed item cannot be picked, and says how to get power', () => {
             const n0 = r2('floatingTexts.length');
             r2(`(function(){ buildMenuTab = 'turrets'; const c = _bmLayout().cells[0]; handleBuildMenuTap(c.x + 5, c.y + 5); })()`);
             same(r2('buildTool'), null, 'tool');
-            ok(r2(`floatingTexts.slice(${n0}).some(t => /SHIELD GEN/.test(t.text))`), 'it did not say how');
+            ok(r2(`floatingTexts.slice(${n0}).some(t => /BUILD ONE BY A HELD NEST|BUILD A GENERATOR/.test(t.text))`), 'it did not say how');
         });
-        check('THE ASK: once a shield generator draws on a held nest, they light up — near it, not far away', () => {
+        check('THE ASK: once a generator draws on a held nest, they light up — near it, not far away', () => {
             r2(`(function(){ const portal = world.find(t => isHomePortal(t));
                 buildMenuTab = 'power'; setBuildTool(buildMenuItems('power').find(i => i.kind === 'generator'));
                 const g = world.find(t => t.x >= 0 && Math.abs(t.x - portal.x) <= 2 && t.y === 1 && canBuildAt(t).ok);

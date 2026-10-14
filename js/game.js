@@ -1306,20 +1306,16 @@ function drawGeneratorLinks() {
         if (Math.max(gx, px) < -60 || Math.min(gx, px) > canvas.width  + 60) continue;
         if (Math.max(gy, py) < -60 || Math.min(gy, py) > canvas.height + 60) continue;
 
-        // THE HEALING AURA's reach, on the floor, so the player can see where
-        // to stand. Drawn from the same numbers the tick heals by, and it
-        // widens visibly as the network tier climbs.
-        // The shield field's reach, round the SHIELD GENERATOR itself — only
-        // while you hold it or build (Conduit effects plan). Once per generator.
+        // The reach it mends pylons in, round the GENERATOR — only while you
+        // hold it or build (Conduit effects plan). Once per generator.
         const _showReach = (typeof buildMode !== "undefined" && buildMode)
             || (typeof commandMode !== "undefined" && commandMode && (commandTarget === gen || commandTarget === pylon));
         if (_showReach && !_ringed.has(gen) && gen.circuitOn !== false) {
             _ringed.add(gen);
-            const _sr = typeof SHIELD_GEN_RANGE === "number" ? SHIELD_GEN_RANGE : 4;
-            const rx = _sr * TILE_W, ry = _sr * TILE_H;
+            const _r = getPylonRange(), rx = _r * TILE_W, ry = _r * TILE_H;
             ctx.globalAlpha = 0.3; ctx.strokeStyle = typeof SHIELD_GEN_COLOR === "string" ? SHIELD_GEN_COLOR : "#dff3ff";
             ctx.lineWidth = 1.2; ctx.setLineDash([3, 5]);
-            ctx.beginPath(); ctx.ellipse(gx, gy + TILE_H, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(gx, gy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
             ctx.setLineDash([]); ctx.globalAlpha = 1;
         }
 
@@ -1829,50 +1825,12 @@ function pylonNetworkTier(pylon) {
 // Generator-linked only: this is what the generator is FOR, and it gives the
 // placement rule (within GENERATOR_NEST_RANGE of a nest) something to buy
 // beyond keeping the linked pylons repaired.
-// THE SHIELD FIELD (SHIELD_GEN_* in config.js). Replaces the healing aura.
-// REPORTED: "the followers' shields should go away if not near a generator."
-// The field is a place, not a buff you carry off: what a generator built
-// (a._genShield) is taken away the next pulse a unit is outside every working
-// field — walked out of reach, or its generator switched off, unpowered or
-// destroyed. Shields from anything else (combos, abilities) are left alone.
-function shieldFieldTick() {
-    if (frame % SHIELD_GEN_INTERVAL !== 0) return;
-    const r2 = SHIELD_GEN_RANGE * SHIELD_GEN_RANGE;
-    const covered = new Set();
-    const gens = typeof _genPylons !== "undefined" ? _genPylons : [];
-    for (const g of gens) {
-        if (g.destroyed || !(g.health > 0) || g.pillarTeam !== "green" || g.circuitOn === false) continue;
-        const src = typeof generatorSource === "function" ? generatorSource(g) : null;
-        if (!src) continue;                       // no nest feeding it: no shields
-        for (const a of unitsNear(g.x, SHIELD_GEN_RANGE)) {
-            if (a.dead || a.team !== "green" || !(a.isFollower || a.isClone)) continue;
-            const dx = a.x - g.x, dy = a.y - g.y;
-            if (dx * dx + dy * dy > r2) continue;
-            covered.add(a);
-            if (a._shieldHitAt !== undefined && frame - a._shieldHitAt < SHIELD_GEN_DELAY) continue;
-            const cap = Math.max(SHIELD_GEN_MIN, Math.round((a.maxHealth || 0) * SHIELD_GEN_SHARE));
-            const have = a.shielded ? (a.shieldAmount || 0) : 0;
-            if (have >= cap) continue;
-            const add = Math.min(SHIELD_GEN_RATE, cap - have);
-            if (!gridPay(src, add * SHIELD_GEN_COST)) continue;
-            a.shielded = true; a.shieldAmount = have + add;
-            a._genShield = Math.min(a.shieldAmount, (a._genShield || 0) + add);
-            a._shieldMax = Math.max(cap, a._shieldMax || 0);
-            a._shieldGen = g;
-        }
-    }
-    // Outside every field: the generator's part of the shield goes.
-    for (const a of actors) {
-        if (!(a._genShield > 0) || covered.has(a)) continue;
-        const left = (a.shielded ? (a.shieldAmount || 0) : 0) - a._genShield;
-        a._genShield = 0; a._shieldGen = null;
-        if (left > 0) a.shieldAmount = left;
-        else { a.shielded = false; a.shieldAmount = 0; a._shieldMax = 0; }
-    }
-}
+// THE SHIELD FIELD is gone: shields are fuelled by SHIELD CELLS now
+// (js/shieldcells.js), made by CORE pylons.
 
-// ── PREDATORS GO FOR THE SHIELD GENERATORS ───────────────
-// REPORTED: "more enemies need to attack shield generators." At night and in
+// ── PREDATORS GO FOR THE GENERATORS ──────────────────────
+// REPORTED: "more enemies need to attack shield generators." (Now plain
+// GENERATORS — and a zone's tech dies with its generator, so all the more.) At night and in
 // any alarm, SHIELD_GEN_HUNT_SHARE of predators (decided once each) turn on
 // the nearest shield generator within SHIELD_GEN_HUNT_RANGE and bash it (the
 // pylonAggro bash in Predator.update). Machines, thieves, the grub and the
@@ -2229,9 +2187,11 @@ function render() {
 
     // ── PLAYER ATTACK COOLDOWN ──
     if (player.attackCooldown > 0) player.attackCooldown--;
-    if (shardCount !== _lastShardCount) {
-        _lastShardCount = shardCount;
-        shardUI.textContent = "Shards: " + shardCount;
+    // Shards, and your SHIELD CELLS beside them once you have any (js/shieldcells.js).
+    const _cellsNow = typeof shieldCells === "number" ? shieldCells : 0;
+    if (shardCount !== _lastShardCount || _cellsNow !== _lastCellCount) {
+        _lastShardCount = shardCount; _lastCellCount = _cellsNow;
+        shardUI.textContent = "Shards: " + shardCount + (_cellsNow > 0 ? "  \u2b21 " + _cellsNow : "");
     }
     // Zone indicator — cached element, update only on zone change
     const _pz = getZoneIndex(Math.floor(player.x));
@@ -2711,6 +2671,8 @@ function render() {
     _aPylons.forEach(t=>{
         // Part of an ULTRA TURRET: its anchor fires for all four (js/ultra.js).
         if (t._ultraOf) return;
+        // No generator in its zone (zoneHasGenerator, power.js): it does not fire.
+        if (t.zoneDark) return;
         const _U = t._ultra;
         // The timer waits at full while nothing is in range, so the first
         // round goes the moment something steps in rather than up to a full
@@ -2755,7 +2717,7 @@ function render() {
         const _dmg = (_U ? ultraRoundDamage(t, nearest) : turretRoundDamage(t, nearest)) * (charged ? 1 : TURRET_PLAIN_MULT);
         if (_U) t._ultraTarget = nearest;
         const _el = _U ? _U.el : (t.attackModeElement || null);
-        turretShots.push({ x: _ox, y: _oy, z: _U ? ULTRA_MUZZLE_Z : TURRET_MUZZLE_Z, target: nearest, dmg: _dmg, charged,
+        turretShots.push({ x: _ox, y: _oy, z: _U ? ULTRA_MUZZLE_Z : turretMuzzleZ(t), target: nearest, dmg: _dmg, charged,
                            el: _el, col: _U ? _U.col : (t.attackModeColor || "#0f8"), life: 120,
                            splash: _U ? ULTRA_SPLASH : 0, big: !!_U,
                            src: { x: _ox, y: _oy, team: "green", element: _el || "core" } });
@@ -2882,7 +2844,7 @@ function render() {
 
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
-    shieldFieldTick();
+    if (typeof shieldCellTick === "function") shieldCellTick();   // CORE pylons make shield cells; shields spend them (js/shieldcells.js)
     shieldGenHuntTick();
 
     // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
@@ -2981,6 +2943,8 @@ function render() {
     // ── GROUND ITEM PICKUP ──
     groundItems=groundItems.filter(item=>{
         if (Math.abs(player.x-item.x)<0.9 && Math.abs(player.y-item.y)<0.9) {
+            // A SHIELD CELL goes into your store — unless it is full (js/shieldcells.js).
+            if (item.type==="shieldCell") return typeof collectShieldCell === "function" ? !collectShieldCell(item, player) : true;
             if (item.type==="crystalModulator") {
                 ownedModulators.push({ element: item.element, pair: item.pair || MODULATOR_PAIRS[item.element] || [item.element] });
                 const el=ELEMENTS.find(e=>e.id===item.element);
@@ -3108,6 +3072,9 @@ function render() {
             if (obj.actor.nestMass) drawPredatorNestMass(obj.actor, px, py + TILE_H);
             if (obj.actor.raider) drawThiefTag(obj.actor, px, py + TILE_H);
             if ((obj.actor._breakout || obj.actor._zoneElement) && typeof drawBreakoutFlare === "function") drawBreakoutFlare(obj.actor, px, py);
+        }
+        else if (obj.type==='groundItem' && obj.item.type==='shieldCell') {
+            if (typeof drawShieldCellItem === "function") drawShieldCellItem(obj.item, px, py);
         }
         else if (obj.type==='groundItem') {
             const gi=obj.item;
@@ -3666,7 +3633,9 @@ function render() {
                 const _gx = (obj.x - player.visualX - (obj.y - player.visualY)) * TILE_W + canvas.width/2;
                 const _gy = (obj.x - player.visualX + (obj.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
                 ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                cachedText(_gon ? "\u25cf SHIELDS ON" : "\u25cb SHIELDS OFF", "bold 9px monospace", _gon ? "#8fd6ff" : "#f88", _gx, _gy - 92);
+                // It powers its whole zone (power.js zoneHasGenerator): say which.
+                const _gz = getZoneIndex(Math.floor(obj.x)), _zn = _gz === 0 ? "HOME" : "ZONE " + _gz;
+                cachedText(_gon ? "\u25cf " + _zn + " POWERED" : "\u25cb OFF \u00b7 " + _zn + " DARK", "bold 9px monospace", _gon ? "#8fd6ff" : "#f88", _gx, _gy - 92);
                 ctx.restore();
             }
 
@@ -3748,16 +3717,19 @@ function render() {
             else if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
                 if(obj.converting){ctx.fillStyle="#ff0";}
                 const _base=py+TILE_H; // anchor to tile center, not north vertex
+                // A level-1 turret is a low emplacement (turretIsLow, config.js).
+                const _lowTurret = turretIsLow(obj) && !isRelayPylon(obj);
                 // Only once it is hurt: a full bar over every pylon was ~170 canvas
                 // calls a frame in a big base, and told you nothing.
-                if (obj.health < obj.maxHealth) drawHealthBar(px-10,_base-75,20,4,obj.health,obj.maxHealth);
+                if (obj.health < obj.maxHealth) drawHealthBar(px-10,_base-(_lowTurret?36:75),20,4,obj.health,obj.maxHealth);
                 const _pulse=0.5+0.5*Math.sin(frame*0.08+(obj.x*0.97+obj.y*1.31));
                 // A pylon with no power is DARK, and the colour is the whole
                 // readout: the element it is set to is still there, it just is
                 // not doing anything. Drawing it lit would say the grid was
                 // fine while the turret quietly refused to fire.
                 // A turret is never dark: it fires plain rounds without power.
-                const _dark = obj.powered === false && !obj.attackMode;
+                // ...except in a zone with no generator, where nothing works.
+                const _dark = (obj.powered === false && !obj.attackMode) || !!obj.zoneDark;
                 const _acol = _dark ? POWER_DEAD_COLOUR : (obj.attackModeColor||"#0f8");
                 const _isActive=!!(obj.attackMode||obj.waveMode);
                 const _wTier=obj.waveMode?pylonNetworkTier(obj):0;
@@ -3802,8 +3774,11 @@ function render() {
                                      batteryCharge(obj) / BATTERY_CAPACITY, batteryCharging(obj));
                 }
                 else if (obj.isGenerator && !obj.destroyed) {
-                    // THE SHIELD GENERATOR: a thicker body and a big pale orb.
+                    // THE GENERATOR: a thicker body and a big pale orb.
                     drawShieldGenerator(px, _base, obj.circuitOn !== false && obj.pillarTeam === "green", _pulse);
+                }
+                else if (_lowTurret) {
+                    drawTurretEmplacement(px, _base, _acol, _dark);
                 }
                 else {
                     const sFront=_isActive?SENTINEL_FRONT_ACTIVE:obj.upgraded?SENTINEL_FRONT_UPGRADED:SENTINEL_FRONT_DORMANT;
@@ -3811,11 +3786,14 @@ function render() {
                     const sTop=_isActive?SENTINEL_TOP_ACTIVE:obj.upgraded?SENTINEL_TOP_UPGRADED:SENTINEL_TOP_DORMANT;
                     // Stamped from a pre-rendered sprite (drawSentinelTower in draw.js).
                     drawSentinelTower(px, _base, sFront, sRight, sTop, _isActive, SENTINEL_SLIT);
+                    // A MK II turret: the tower, with a gold collar under its gun.
+                    if (obj.attackMode && (obj.mk || 0) >= 2) drawMk2Collar(px, _base, _dark);
                 }
 
                 // ── TOP EFFECTS: glows, orbs, labels ──
-                // One body, so one orb height — it sits just above the merlons.
-                const _orbY = _base-54;
+                // The orb sits just above the merlons; a level-1 turret's gun
+                // sits on its low emplacement.
+                const _orbY = _lowTurret ? _base - TURRET_L1_TOP : _base-54;
 
                 if (obj.isBattery) {
                     // Its name and its element's tier, only near you or held.
@@ -3851,7 +3829,7 @@ function render() {
                 else if (_isActive) {
                     // Glowing orb at structure top — not on a wave monolith, whose
                     // stripes are its light.
-                    if (!_isWaveMono && !obj.isGenerator) {
+                    if (!_isWaveMono && !obj.isGenerator && !_lowTurret) {
                     const _orbR=obj.waveMode?6+_wTier:5;
                     ctx.save(); ctx.fillStyle=_acol;
                     // halo instead of a blur
@@ -3875,7 +3853,8 @@ function render() {
                     // with the element and what it does underneath, or STANDBY.
                     const _title = obj.waveMode && !isRelayPylon(obj) ? waveRoleLabel(el0)+_wTierBadge
                                  : obj.isGenerator ? GENERATOR_LABEL : el0.toUpperCase()+_wTierBadge;
-                    const _sub = obj.waveMode && !isRelayPylon(obj)
+                    const _sub = obj.zoneDark ? "no generator in this zone"
+                        : obj.waveMode && !isRelayPylon(obj)
                         ? el0 + " \u00b7 " + (_asleep ? "standby" : _tierDesc) : _tierDesc;
                     // Stamped from a cache (cachedText in draw.js), not re-rendered.
                     // The full two-line label only near you or while held
@@ -4502,26 +4481,14 @@ function render() {
                     }
                 }
             });
-            // Predator abdomen shots can also hit the player directly — gated,
-            // because predators do not attack the player. Ungated it also ate
-            // the shot, so this is the difference between being hit and the
-            // round passing you by.
+            // Predator shots never hit the player — a predator hurts you only by
+            // biting you up close (js/predator.js). The round passes you by.
             // An enemy round that passes over your equipment first hits IT
             // (helpers.js, equipmentHitByShot): a turret or battery standing
             // between a predator and the follower it shot at takes the round.
             if (!hit && p.targetsGreen && typeof equipmentHitByShot === "function") {
                 const eq = equipmentHitByShot(p);
                 if (eq) { hurtEquipment(eq, p.damage, p.source); if (p.onHit) p.onHit(null); hit = true; }
-            }
-            if (!hit && p.targetsGreen && predatorMayHurtPlayer()) {
-                const dx=(p.x-player.x)*TILE_W, dy=(p.y-player.y)*TILE_H;
-                if (Math.hypot(dx,dy) < 30) {
-                    // Immunity stops the damage but still eats the shot, so a
-                    // projectile does not pass through and hit twice.
-                    hurtPlayer(p.damage, 5);
-                    if (p.onHit) p.onHit(null);
-                    hit = true;
-                }
             }
         }
         return !hit && p.life > 0;

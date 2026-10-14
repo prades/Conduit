@@ -21,9 +21,11 @@
 //
 //   FORCE WALL     A wall of energy across the whole tunnel at the emitter's
 //                  column. Predators cannot cross it: they stop at it and beat
-//                  on it; your own units walk through. It holds FW_HP, mends
-//                  while powered, and when it breaks it is down for FW_DOWN
-//                  frames before it rises again.
+//                  on it; your own units walk through. It holds FW_HP. It is
+//                  the SHIELD BARRIER, fuelled by SHIELD CELLS (js/shieldcells.js):
+//                  mending burns one cell per FW_CELL_HP, and when it breaks it
+//                  is down for FW_DOWN frames and then needs FW_RISE_CELLS
+//                  cells to rise again.
 //
 //   OVERCLOCK HUB  Pylons within OC_RADIUS fire OC_FIRE_MULT× as fast and
 //                  each round costs OC_COST_MULT× the power; wave links with an
@@ -34,7 +36,7 @@ const MODULE_DEFS = {
     medbay:    { label: "MED BAY",       cost: 40, colour: "#66ffaa", icon: "medbay",
                  note: "Followers and clones within 3 tiles heal while it is powered." },
     forcewall: { label: "FORCE WALL",    cost: 50, colour: "#66ccff", icon: "forcewall",
-                 note: "A wall across the tunnel. Predators must break it; your units walk through." },
+                 note: "A shield barrier across the tunnel; runs on shield cells. Predators must break it." },
     overclock: { label: "OVERCLOCK HUB", cost: 45, colour: "#ffaa33", icon: "overclock",
                  note: "Pylons within 3 tiles fire 50% faster; each round costs double power." },
 };
@@ -55,6 +57,8 @@ const FW_RISE_HP  = 0.25;     // it rises again at this share of FW_HP
 const FW_HIT_EVERY = 45;      // frames between one predator's blows
 const FW_HIT_MULT  = 1.0;     // × the predator's power per blow
 const FW_GAP       = 0.36;    // tiles: how far from the wall a predator is held
+const FW_RISE_CELLS = 2;      // shield cells to raise it again after it breaks
+const FW_CELL_HP    = 100;    // wall HP one shield cell mends
 const FW_Y_MIN = -1, FW_Y_MAX = 4;   // the tunnel's floor rows it spans
 
 const OC_RADIUS     = 3;
@@ -112,6 +116,9 @@ function _moduleRefresh(m) {
             if (Math.hypot(q.x - m.x, q.y - m.y) <= R) { src = q.powerSource; break; }
         }
     }
+    // No generator in its zone (power.js): offline.
+    m.zoneDark = typeof zoneGenerated === "function" && !zoneGenerated(m);
+    if (m.zoneDark) { m.powerSource = null; m._bats = []; m.powered = false; return; }
     m.powerSource = src || null;
     m._bats = typeof batteriesNear === "function" ? batteriesNear(m) : [];
     const batOk = m._bats.some(b => typeof _liveBattery === "function" && _liveBattery(b) && batteryCharge(b) >= MODULE_DRAW);
@@ -156,12 +163,20 @@ function forceWallUp(m) { return m.kind === "forcewall" && m.powered && m.wallHp
 function _forcewallTick(m) {
     const f = frame || 0;
     if (m.wallHp <= 0 && f >= (m.wallDownUntil || 0) && m.powered) {
-        m.wallHp = FW_HP * FW_RISE_HP;   // back up
+        // Back up — for FW_RISE_CELLS shield cells. Without them it stays down.
+        m._needsCells = !(typeof spendShieldCells === "function" && spendShieldCells(FW_RISE_CELLS));
+        if (m._needsCells) return;
+        m.wallHp = FW_HP * FW_RISE_HP;
         if (typeof elementEffects !== "undefined") for (let y = FW_Y_MIN; y <= FW_Y_MAX; y++)
             elementEffects.push({ type: "impact", x: m.x, y, color: "#66ccff", radius: 0.4, life: 18 });
     }
+    // Mending burns cells: one buys FW_CELL_HP of wall, paid out at FW_REGEN a frame.
     if (m.powered && m.wallHp > 0 && m.wallHp < FW_HP) {
-        if (_moduleDraws(m)) m.wallHp = Math.min(FW_HP, m.wallHp + FW_REGEN);
+        if (!(m._cellHp > 0) && typeof spendShieldCells === "function" && spendShieldCells(1)) m._cellHp = FW_CELL_HP;
+        if (m._cellHp > 0 && _moduleDraws(m)) {
+            const add = Math.min(FW_REGEN, m._cellHp, FW_HP - m.wallHp);
+            m.wallHp += add; m._cellHp -= add;
+        }
     }
 }
 // Called from a predator's update, after it has moved: a predator that would
@@ -293,7 +308,7 @@ function drawModule(m, px, py) {
     if (!(typeof drawIcon === "function" && drawIcon(ctx, def.icon, col, px, top - (m.kind === "forcewall" ? 38 : 18), 18))) {
         ctx.fillStyle = col; ctx.beginPath(); ctx.arc(px, top - 16, 5, 0, Math.PI * 2); ctx.fill();
     }
-    if (!on) { ctx.fillStyle = "#f88"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center"; ctx.fillText("NO POWER", px, cy + hd + 12); }
+    if (!on) { ctx.fillStyle = "#f88"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center"; ctx.fillText(m.zoneDark ? "NO GENERATOR IN ZONE" : "NO POWER", px, cy + hd + 12); }
     ctx.restore();
 }
 // The areas and the wall, over the world (from the overlay pass, game.js).
@@ -335,7 +350,7 @@ function drawModuleFields() {
         } else if (m.kind === "forcewall" && m.powered && m.wallHp <= 0) {
             const left = Math.max(0, Math.ceil(((m.wallDownUntil || 0) - f) / 60));
             ctx.globalAlpha = 1; ctx.fillStyle = "#66ccff"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
-            ctx.fillText("RISING " + left + "s", c.x, c.y + 22);
+            ctx.fillText(left > 0 ? "RISING " + left + "s" : "NEEDS " + FW_RISE_CELLS + " SHIELD CELLS", c.x, c.y + 22);
         }
     }
     ctx.globalAlpha = 1;

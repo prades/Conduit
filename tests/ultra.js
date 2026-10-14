@@ -33,6 +33,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const home = world.find(t => isHomePortal(t)), X = home.x + 4;
         const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
         const els = ${JSON.stringify(els || [])};
+        // The zone's generator: nothing in a zone works without one (tests/shieldcells.js).
+        _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), T(home.x + 1, 3));
         ${JSON.stringify(cells)}.forEach(([dx, dy], i) => _executeBuildInstant(ELEMENTS.find(e => e.id === (els[i] || 'fire')), T(X + dx, dy), 'attack'));
         const counts = {}; els.forEach(e => counts[e] = (counts[e] || 0) + 1); const main = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || 'fire';
         for (let i = 0; i < ${bats === undefined ? 4 : bats}; i++) _executeBuildInstant(ELEMENTS.find(e => e.id === main), T(X + ${batAt || 0} - 2 + i * 2, 0), 'battery');
@@ -135,33 +137,21 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.n === 1 && r.b > 0, JSON.stringify(r));
     });
 
-    group('SOLID');
+    group('COMPACT — your units pass freely, predators are kept off its core');
 
-    await check('THE ASK: nothing stands on its four tiles', () => {
-        build(SQ);
-        const r = run(`(function(){
-            spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false;
-            const S = SPECIES.ant, q = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 0, 0); q.team = 'red'; actors.push(q);
-            f.x = __X + 0.9; f.y = 1.9; q.x = __X + 1.2; q.y = 2.2;
-            ultraBlockTick();
-            const inside = a => a.x > __X && a.x < __X + 2 && a.y > 1 && a.y < 3;
-            return { f: inside(f), q: inside(q) };
-        })()`);
-        ok(!r.f && !r.q, 'still inside: ' + JSON.stringify(r));
-    });
-    await check('THE ASK: a follower sent across it walks round it', () => {
+    await check('THE ASK: a follower sent across it walks straight through', () => {
         build(SQ);
         const r = run(`(function(){
             spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false;
             f.x = __X - 1.5; f.y = 2; f.job = { type: 'move', target: { x: __X + 3.5, y: 2 }, route: null }; f.stance = 'hold';
-            let inside = 0;
-            for (let i = 0; i < 900; i++) { render(); if (f.x > __X + 0.05 && f.x < __X + 1.95 && f.y > 1.05 && f.y < 2.95) inside++; }
-            return { x: f.x - __X, y: f.y, inside };
+            let maxDy = 0;
+            for (let i = 0; i < 900; i++) { render(); maxDy = Math.max(maxDy, Math.abs(f.y - 2)); }
+            return { x: f.x - __X, maxDy };
         })()`);
         ok(r.x > 2.8, 'it never got past: ended at ' + JSON.stringify(r));
-        ok(r.inside === 0, 'it walked through it for ' + r.inside + ' frames');
+        ok(r.maxDy < 0.3, 'it was pushed round it (' + r.maxDy.toFixed(2) + ' tiles off its line)');
     });
-    await check('you walk round it too', () => {
+    await check('THE ASK: …and you walk through it too, your walk target untouched', () => {
         build(SQ);
         const r = run(`(function(){
             player.x = player.visualX = __X - 1.5; player.y = player.visualY = 2;
@@ -170,7 +160,23 @@ function ok(c, m) { if (!c) throw new Error(m); }
             return { x: player.x - __X, y: player.y, ty: player.targetY };
         })()`);
         ok(r.x > 2.5, 'you never got past: ' + JSON.stringify(r));
-        ok(Math.abs(r.ty - 2) < 1e-9, 'your walk target was not put back: ' + r.ty);
+        ok(Math.abs(r.y - 2) < 0.05 && r.ty === 2, 'you were moved off your line: ' + JSON.stringify(r));
+    });
+    await check('a predator is kept off its core — but may stand at the square\'s edge', () => {
+        build(SQ);
+        const r = run(`(function(){
+            const U = __T(__X, 1)._ultra, S = SPECIES.ant;
+            const q = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), U.cx + 0.2, U.cy + 0.1); q.team = 'red'; actors.push(q);
+            const e = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), U.cx + 0.85, U.cy); e.team = 'red'; actors.push(e);
+            ultraBlockTick();
+            const out = { d: Math.hypot(q.x - U.cx, q.y - U.cy), ex: e.x - U.cx }; q.dead = e.dead = true; return out; })()`);
+        ok(r.d >= run('ULTRA_CORE_R') - 1e-6, 'a predator stands ' + r.d.toFixed(2) + ' from its centre');
+        ok(Math.abs(r.ex - 0.85) < 1e-9, 'a predator at the edge was moved');
+    });
+    await check('THE ASK: it is smaller — drawn at ULTRA_SCALE, its bolt from the lower crown', () => {
+        ok(run('ULTRA_SCALE') <= 0.7, 'scale ' + run('ULTRA_SCALE'));
+        ok(run('ULTRA_MUZZLE_Z') <= run('ULTRA_CROWN_Z * ULTRA_SCALE') + 2, 'the bolt leaves from ' + run('ULTRA_MUZZLE_Z') + ' px');
+        ok(/c\.scale\(ULTRA_SCALE, ULTRA_SCALE\)/.test(rd('js/ultra.js')), 'not drawn scaled');
     });
 
     await check('it rises out of the four turrets as it fuses', () => {

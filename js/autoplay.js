@@ -176,6 +176,7 @@ function _autoBuild() {
     const frontier = held[held.length - 1];
     for (const nest of held) {
         if (_autoEnsureRelay(nest, GENERATOR_ID, isGeneratorPylon, 0)) return;
+        if (_autoEnsureZoneGenerators(nest)) return;
         if (nest === frontier && next && _autoEnsureRelay(nest, CONNECTOR_ID, isConnectorPylon, 1)) return;
         if (_autoGrowNetwork(nest, next)) return;
     }
@@ -197,6 +198,37 @@ function _autoEnsureRelay(nest, id, isKind, ahead) {
     if (!best) return false;
     _executeBuildInstant(el, best, null);
     return true;
+}
+// Is there a generator of yours standing in this tile's zone? The plan only
+// builds where there is: tech in a zone with none does nothing (power.js).
+function _autoZoneOk(t) {
+    if (!t || typeof getZoneIndex !== "function") return true;
+    const z = getZoneIndex(Math.floor(t.x));
+    return (typeof _pillarCache !== "undefined" ? _pillarCache : []).some(g => isGeneratorPylon(g) && g.pillarTeam === "green" && !g.destroyed && getZoneIndex(Math.floor(g.x)) === z);
+}
+// Every zone needs its own generator (power.js zoneHasGenerator). A nest's
+// base plan reaches AUTOPLAY_NET_RADIUS round it, which can cross into the
+// next zone: give each zone it reaches a generator too, near the nest.
+function _autoEnsureZoneGenerators(nest) {
+    if (typeof getZoneIndex !== "function") return false;
+    const cache = typeof _pillarCache !== "undefined" ? _pillarCache : [];
+    const zones = new Set();
+    for (let x = Math.floor(nest.x - AUTOPLAY_NET_RADIUS); x <= Math.ceil(nest.x + AUTOPLAY_NET_RADIUS); x++) zones.add(getZoneIndex(x));
+    for (const z of zones) {
+        if (cache.some(t => isGeneratorPylon(t) && t.pillarTeam === "green" && !t.destroyed && getZoneIndex(Math.floor(t.x)) === z)) continue;
+        const el = PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID);
+        let best = null, bd = Infinity;
+        for (let dx = -GENERATOR_NEST_RANGE; dx <= GENERATOR_NEST_RANGE; dx++) for (let y = 1; y <= 3; y++) {
+            const t = _autoTile(nest.x + dx, y);
+            if (!t || getZoneIndex(Math.floor(t.x)) !== z || !_autoFree(t) || !canPlaceGenerator(t).ok) continue;
+            const d = Math.abs(dx) + Math.abs(y - 2);
+            if (d < bd) { bd = d; best = t; }
+        }
+        if (!best) continue;
+        _executeBuildInstant(el, best, null);
+        return true;
+    }
+    return false;
 }
 // The element a held nest's network is built in: the one the squad has most
 // of (it is also what the hack team and fighters lean on), fixed once chosen.
@@ -247,7 +279,7 @@ function _autoFindSquare(nest, next, rows, reserved) {
     let best = null, bs = -Infinity;
     for (const y0 of [rows, rows === 0 ? 2 : 0, 1]) for (let dx = -4; dx <= 8; dx++) {
         const sq = { x0: nest.x + dx, y0 }, tiles = _autoSquareTiles(sq);
-        if (!tiles.every(t => _autoFree(t) && !reserved.has(t.x + "," + t.y))) continue;
+        if (!tiles.every(t => _autoFree(t) && _autoZoneOk(t) && !reserved.has(t.x + "," + t.y))) continue;
         if (tiles.some(t => Math.hypot(t.x - nest.x, t.y - nest.y) > AUTOPLAY_NET_RADIUS)) continue;
         if (!tiles.some(t => anchors.some(a => Math.hypot(a.x - t.x, a.y - t.y) <= R))) continue;
         const s = (y0 === rows ? 10 : y0 === 1 ? 0 : 5) + dx * dirX * 0.4 - Math.abs(dx) * (1 - dirX) * 0.4;
@@ -276,7 +308,7 @@ function _autoPlaceLinked(nest, next, elId, kind, anchors, reserved) {
     let best = null, bs = -Infinity;
     for (let dx = -4; dx <= 9; dx++) for (let y = 0; y <= 3; y++) {
         const t = _autoTile(nest.x + dx, y);
-        if (!_autoFree(t) || reserved.has(t.x + "," + t.y) || Math.hypot(t.x - nest.x, t.y - nest.y) > AUTOPLAY_NET_RADIUS) continue;
+        if (!_autoFree(t) || !_autoZoneOk(t) || reserved.has(t.x + "," + t.y) || Math.hypot(t.x - nest.x, t.y - nest.y) > AUTOPLAY_NET_RADIUS) continue;
         let link = false, crowd = false;
         for (const a of anchors) { const d = Math.hypot(a.x - t.x, a.y - t.y); if (d <= R) link = true; if (d < 1.9) crowd = true; }
         if (!link || crowd) continue;

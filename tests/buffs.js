@@ -51,7 +51,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.mended < r.plain * 0.9, JSON.stringify(r));
     });
 
-    group('THE SHIELD GENERATOR');
+    group('THE GENERATOR');
 
     const gen = (extra) => run(`(function(){
         actors.length = 0; followers.length = 0;
@@ -69,9 +69,10 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('THE ASK: tougher — 240 health, three times a pylon', () => {
         ok(gen().hp === run('SHIELD_GEN_HP') && run('SHIELD_GEN_HP') >= 200, 'hp ' + gen().hp);
     });
-    await check('THE ASK: a bigger, faster, quicker-to-recover field', () => {
-        const r = run('({ R: SHIELD_GEN_RANGE, rate: SHIELD_GEN_RATE, share: SHIELD_GEN_SHARE, min: SHIELD_GEN_MIN, delay: SHIELD_GEN_DELAY, cost: SHIELD_GEN_COST })');
-        ok(r.R >= 5 && r.rate >= 8 && r.share >= 0.75 && r.min >= 30 && r.delay <= 120 && r.cost <= 0.03, JSON.stringify(r));
+    await check('THE ASK (kept, now on SHIELD CELLS): a big shield, quick to come back', () => {
+        // The field is gone (tests/shieldcells.js); a cell's shield keeps its numbers.
+        const r = run('({ share: SHIELD_GEN_SHARE, min: SHIELD_GEN_MIN, delay: SHIELD_GEN_DELAY })');
+        ok(r.share >= 0.75 && r.min >= 30 && r.delay <= 120, JSON.stringify(r));
     });
     await check('THE ASK: at night, a generator hunter goes for it and bashes it', () => {
         ok(gen('gameState.phase = "night"; q._genHunter = true;').aggro, 'a night hunter ignored the generator');

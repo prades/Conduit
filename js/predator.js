@@ -170,6 +170,19 @@ class Predator {
             return;
         }
 
+        // ── THE PLAYER, UP CLOSE ──
+        // Brush against one, or let it walk up to you, and it turns and bites:
+        // one of your three hits, and you are knocked back a step (hurtPlayer).
+        // It is the ONLY way a predator hurts you — no shots, no blasts.
+        // The grace after a hit (PLAYER_HIT_GRACE) is what spaces the bites out.
+        if (!this.isClone && !this.untargetable && typeof predatorMayHurtPlayer === "function" && predatorMayHurtPlayer() && typeof player !== "undefined") {
+            const pdx = player.x - this.x, pdy = player.y - this.y, _br = typeof PLAYER_BITE_RANGE === "number" ? PLAYER_BITE_RANGE : 0.9;
+            if (pdx * pdx + pdy * pdy <= _br * _br) {
+                faceToward(this, player.x, player.y, 0.5);
+                if (hurtPlayer(this.power, 4, this)) this.attackAnim = Math.PI / 2;
+            }
+        }
+
         // ── CHARGE-UP ABILITY / WORKER DUTY ──
         // Either can claim the whole frame: an insect in its windup is rooted
         // (that is what makes the telegraph fair), a leaping one is mid-flight,
@@ -471,13 +484,6 @@ class Predator {
                             applyDamage(a, pwr, this);
                         }
                     });
-                    // ── PLAYER HIT ──
-                    // Gated: predators do not bite the player. See
-                    // PREDATORS_ATTACK_PLAYER in js/config.js.
-                    if (!this.isClone && predatorMayHurtPlayer()) {
-                        const pdx=player.x-this.x, pdy=player.y-this.y;
-                        if (pdx*pdx+pdy*pdy<=2.25) hurtPlayer(pwr * 0.35, 4);
-                    }
                 }
                 this.attackCooldown=45;
             }

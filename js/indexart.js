@@ -83,8 +83,8 @@ function _ixPredator(sp, cls, px, py, extra) {
 const IX_ART = {
     // Single structures are drawn 1.3x, standing on the bottom of the picture.
     pylon:     (W, H) => { const px = W / 2, b = H - 22; _ixPad(px, b, 34); _ixTower(px, b, false); },
-    attack:    (W, H, el) => { const E = _ixEl(el || "fire"), px = W / 2, b = H - 22; _ixPad(px, b, 34); _ixTower(px, b, true);
-                               drawPylonTurret({ x: 0, y: 0, _tAng: -0.5 + 0.4 * Math.sin(_ixFrame * 0.02) }, px, b - 54, E.color, false); },
+    attack:    (W, H, el) => { const E = _ixEl(el || "fire"), px = W / 2, b = H - 22; _ixPad(px, b, 34); drawTurretEmplacement(px, b, E.color, false);
+                               drawPylonTurret({ x: 0, y: 0, _tAng: -0.5 + 0.4 * Math.sin(_ixFrame * 0.02) }, px, b - TURRET_L1_TOP, E.color, false); },
     support:   (W, H, el) => { const E = _ixEl(el || "electric"), px = W / 2, b = H - 22; _ixPad(px, b, 34);
                                ctx.save(); ctx.globalAlpha = 0.45; ctx.strokeStyle = E.color; ctx.lineWidth = 1.5;
                                ctx.beginPath(); ctx.ellipse(px, b - 2, TILE_W * 0.35, TILE_W * 0.175, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();

@@ -371,22 +371,47 @@ function spendNestEnergy(nest, amount) {
 // Being powered means "there is a pool reaching me with something in it". What
 // it costs to USE that is charged separately, at the moment of use: per shot
 // for a turret, per frame for a wave pylon.
+// ── ONE GENERATOR PER ZONE ───────────────────────────────
+// REPORTED: "Make the generator an object that is required for all tech on
+// each zone." A zone's pylons, turrets, batteries and modules work only while
+// that zone has a working generator of yours: standing, switched on and fed by
+// a nest (generatorSource). Worked out once per recomputePower.
+let _genZones = new Set();
+function zoneOfTile(t) { return typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(t.x)) : 0; }
+function _rebuildGenZones() {
+    _genZones = new Set();
+    const gens = typeof _genPylons !== "undefined" ? _genPylons : [];
+    for (const g of gens) {
+        if (!g || g.destroyed || !(g.health > 0) || g.pillarTeam !== "green" || g.circuitOn === false) continue;
+        if (!generatorSource(g)) continue;
+        _genZones.add(zoneOfTile(g));
+    }
+}
+function zoneHasGenerator(z) { return _genZones.has(z); }
+// Is this structure (a pylon, battery or module) in a zone a generator runs?
+function zoneGenerated(t) { return !!t && _genZones.has(zoneOfTile(t)); }
+
 function recomputePower() {
     _powerPools = [];
     if (typeof _pillarCache === "undefined") return;
     autoLinkRelays();
     buildNestGrids();
+    _rebuildGenZones();
     const drawing = [], chargers = [];
     for (const t of _pillarCache) {
         // A BATTERY is routed like a pylon — it charges along the same chain
         // — but it spends nothing, so it is always "powered".
         if (isBatteryPylon(t) && t.pillarTeam === "green" && t.health > 0) {
             const r = powerRoute(t);
-            t.powerGen = r.feeder; t.powerSource = r.source; t.powered = true;
+            t.zoneDark = !zoneGenerated(t);
+            t.powerGen = r.feeder; t.powerSource = t.zoneDark ? null : r.source; t.powered = !t.zoneDark;
             chargers.push(t);
             continue;
         }
-        if (!needsPower(t)) { t.powered = true; t.powerSource = null; t.powerGen = null; continue; }
+        if (!needsPower(t)) { t.powered = true; t.powerSource = null; t.powerGen = null; t.zoneDark = false; continue; }
+        // No generator in its zone: offline, whatever else reaches it.
+        t.zoneDark = !zoneGenerated(t);
+        if (t.zoneDark) { t.powered = false; t.powerSource = null; t.powerGen = null; t._supply = null; t._bats = []; continue; }
         // BOTH ends of the chain are remembered, not just the nest. The wiring
         // is drawn along pylon → generator → nest, and working the middle out
         // again at draw time would be a second copy of the routing rule.
@@ -401,7 +426,7 @@ function recomputePower() {
     // of its own takes power from a lit pylon within link range, and that one
     // can pass it on again, so a network fed at one end is fed all along.
     // powerGen is then the neighbour it is wired to.
-    propagatePower(drawing.concat(chargers));
+    propagatePower(drawing.concat(chargers.filter(b => !b.zoneDark)));
     _batteryList = chargers;
     for (const t of drawing) {
         t._bats = batteriesNear(t);
@@ -668,7 +693,7 @@ function batteriesNear(t) {
     out.sort((p, q) => p.d2 - q.d2);
     return out.map(p => p.b);
 }
-function _liveBattery(b) { return isBatteryPylon(b) && b.health > 0 && b.pillarTeam === "green"; }
+function _liveBattery(b) { return isBatteryPylon(b) && b.health > 0 && b.pillarTeam === "green" && !b.zoneDark; }
 function _fullestBattery(t, amount) {
     let best = null;
     for (const b of (t && t._bats) || []) {

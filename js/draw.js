@@ -2489,6 +2489,53 @@ function turretTarget(obj) {
     return obj._tTarget;
 }
 
+// ── THE LEVEL-1 TURRET: a low emplacement ────────────────
+// A two-step stone ring barely off the floor with its element's colour round
+// the lip; the gun (drawPylonTurret) sits right on it. Stamped from a sprite
+// per (colour, dark) — like the tower, it never changes between frames.
+const _emplSprites = new Map();
+const EMPL_SPR_W = 36, EMPL_SPR_H = 26, EMPL_SPR_OX = 18, EMPL_SPR_OY = 16;   // origin = (px, base)
+function _emplBlock(c, cx, by, hw, hd, h, front, side, top) {
+    const L = [cx - hw, by], F = [cx, by + hd], R = [cx + hw, by];
+    const Lt = [cx - hw, by - h], Ft = [cx, by + hd - h], Rt = [cx + hw, by - h], Bt = [cx, by - hd - h];
+    const poly = (pts, fill) => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); c.fillStyle = fill; c.fill(); };
+    poly([L, F, Ft, Lt], front); poly([F, R, Rt, Ft], side); poly([Lt, Ft, Rt, Bt], top);
+    return { Lt, Ft, Rt, Bt };
+}
+function _drawEmplacement(c, px, base, col, dark) {
+    _emplBlock(c, px, base, 15, 7.5, 3, dark ? "#252a31" : "#2b3340", dark ? "#1a1e24" : "#1d232c", dark ? "#30353d" : "#3a4452");
+    const t = _emplBlock(c, px, base - 3, 10.5, 5.25, TURRET_L1_TOP - 3, dark ? "#2a2f37" : "#323b49", dark ? "#1d2127" : "#222a35", dark ? "#363b44" : "#465263");
+    c.strokeStyle = dark ? "#59606b" : col; c.globalAlpha = dark ? 0.6 : 0.85; c.lineWidth = 1.3; c.lineJoin = "round";
+    c.beginPath(); c.moveTo(t.Lt[0], t.Lt[1]); c.lineTo(t.Ft[0], t.Ft[1]); c.lineTo(t.Rt[0], t.Rt[1]); c.lineTo(t.Bt[0], t.Bt[1]); c.closePath(); c.stroke();
+    c.globalAlpha = 1;
+}
+function drawTurretEmplacement(px, base, col, dark) {
+    const key = col + "|" + (dark ? 1 : 0);
+    let spr = _emplSprites.get(key);
+    if (spr === undefined) {
+        spr = null;
+        const cv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
+        const g = cv && cv.getContext ? cv.getContext("2d") : null;
+        if (g && typeof g.scale === "function") {
+            cv.width = EMPL_SPR_W * 2; cv.height = EMPL_SPR_H * 2; g.scale(2, 2);
+            _drawEmplacement(g, EMPL_SPR_OX, EMPL_SPR_OY, col, dark);
+            spr = cv;
+        }
+        _emplSprites.set(key, spr);
+    }
+    if (spr) ctx.drawImage(spr, px - EMPL_SPR_OX, base - EMPL_SPR_OY, EMPL_SPR_W, EMPL_SPR_H);
+    else _drawEmplacement(ctx, px, base, col, dark);
+}
+// MK II: a gold collar round the top of the tower, under the gun.
+function drawMk2Collar(px, base, dark) {
+    ctx.save();
+    ctx.strokeStyle = dark ? "#8a7a44" : "#ffd34d"; ctx.lineWidth = 2; ctx.globalAlpha = 0.9;
+    ctx.beginPath(); ctx.ellipse(px, base - 47, 10, 4.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 1; ctx.globalAlpha = 0.6;
+    ctx.beginPath(); ctx.ellipse(px, base - 40, 10.5, 4.8, 0, 0, Math.PI); ctx.stroke();
+    ctx.restore();
+}
+
 function drawPylonTurret(obj, px, topY, colour, dark) {
     const target = dark ? null : turretTarget(obj);
     const cx = px, cy = topY - 5;     // the gun's pivot, just above the merlons

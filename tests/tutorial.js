@@ -879,11 +879,12 @@ check('it flashes BUILD, because UPGRADE only shows in build mode', () => {
 });
 
 check('the aura step explains the shield field', () => {
-    // The healing aura became the SHIELD GENERATOR's field (tests/shieldgen.js).
+    // The healing aura became the shield field, and the field became SHIELD
+    // CELLS from CORE pylons (tests/shieldcells.js).
     const s = makeEnv().run('TUTS').find(t => t.id === 'aura');
     ok(!!s, 'there is no aura step');
     ok(/SHIELD/.test(s.body) && /breaks/.test(s.body), 'it does not explain the shield');
-    ok(/within \d+ tiles/.test(s.body), 'it does not say how far the field reaches');
+    ok(/SHIELD CELLS/.test(s.body) && /CORE/.test(s.body), 'it does not say shields come from CORE pylons\' shield cells');
 });
 
 check('the work step names a job for every element that has one', () => {

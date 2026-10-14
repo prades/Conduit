@@ -26,6 +26,10 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), ctx, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
+    // These boards are about how power is ROUTED. Every zone now needs its own
+    // generator for anything in it to work — that rule is tests/shieldcells.js
+    // (and tests/connector.js); it is stood in for here.
+    run('zoneGenerated = () => true;');
     ok(run('world.length') > 100, 'fixture: the world did not generate');
     run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
 

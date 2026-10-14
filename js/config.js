@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-14d";
+const BUILD_VERSION = "2026-10-14e";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -90,7 +90,7 @@ const SENTINEL_ACCENT_DIM   = "#3d4d5e";
 // that list is what followers are made of and what the elemental network is
 // tiered on, and a generator is neither.
 const GENERATOR_ID    = "generator";
-const GENERATOR_LABEL = "SHIELD GENERATOR";
+const GENERATOR_LABEL = "GENERATOR";
 const GENERATOR_COLOR = "#cdd6e0";   // neutral steel, so it reads as no element
 // ── CONNECTOR PYLON ───────────────────────────────────────
 // "A connector pylon with a really long radius of connection strength, used to
@@ -346,6 +346,7 @@ let _lastUltInt     = -1;    // last integer ultimate written to ultBar
 let _lastUltState   = '';    // last ready/surging class written
 let _lastSiphonOn   = null;  // last siphon state written to siphonBtn
 let _lastShardCount = -1;    // last shard count written to shardUI
+let _lastCellCount  = -1;    // … and shield cells
 let _lastZoneIndex  = -999;  // last zone index written to zoneInfo
 let _zoneEl         = null;  // cached zoneInfo element (fetched once on first use)
 let _lastPadHudKey  = null;  // last value written to padHud (avoids DOM writes every frame)
@@ -388,29 +389,38 @@ const TURRET_RANGE = 3;
 // DESTROY: take down one of your own pylons for good and get this many shards
 // back (it cost PYLON_BUILD_COST to build).
 const DEMOLISH_REFUND = 8;
-// ── THE SHIELD GENERATOR ─────────────────────────────────
-// "Replace the generator with shield generator ... a little bit thicker of a
-// pylon ... a giant light coloured orb ... it starts creating shields for all
-// the followers, and the shields take 100% of damage whenever the shield is
-// active ... until the shield breaks and then the enemies are attacking their
-// health directly." It still carries power from a nest to your pylons, and
-// still mends them; the healing aura is replaced by this field. Every
-// SHIELD_GEN_INTERVAL frames, each follower and clone within SHIELD_GEN_RANGE
-// of a switched-on, nest-fed shield generator gains SHIELD_GEN_RATE shield, up
-// to SHIELD_GEN_SHARE of its max health (at least SHIELD_GEN_MIN), paying
-// SHIELD_GEN_COST power per point. A shield soaks every hit whole until it
-// breaks (applyDamage); after a hit it waits SHIELD_GEN_DELAY before charging.
-// REPORTED: "buff the shield generator" (with "more enemies need to attack
-// shield generators" — SHIELD_GEN_HUNT_* below). Was 4 tiles, 5 a charge,
-// half max HP (min 20), 3 s after a hit, 0.05 power a point, 80 HP.
-const SHIELD_GEN_RANGE    = 5;     // tiles round the shield generator
-const SHIELD_GEN_INTERVAL = 30;    // frames between charges
-const SHIELD_GEN_RATE     = 8;     // shield per charge
-const SHIELD_GEN_SHARE    = 0.75;  // cap: this share of the unit's max health …
+// ── THE GENERATOR, AND SHIELD CELLS ───────────────────────
+// REPORTED: "get rid of the shield generator idea as a standalone object;
+// rather it be part of the core tech strategy. Make the generator an object
+// that is required for all tech on each zone." And: "The pylons should drop
+// shield cells; they're used to build up a shield cell collection used to fuel
+// individual shields for followers and the shield barrier."
+//
+// THE GENERATOR (still the thicker body with the pale orb) carries power from
+// a nest to your pylons and mends them. It no longer shields anyone, and it is
+// REQUIRED: every pylon, turret, battery and module in a zone is offline —
+// dark, silent, greyed out in the build window — until that zone has a working
+// generator (switched on, fed by a nest). zoneHasGenerator(), js/power.js.
+//
+// SHIELD CELLS (js/shieldcells.js) are the CORE tech: a powered CORE pylon or
+// turret makes one every SHIELD_CELL_EVERY frames (a MK II twice as fast) and
+// drops it on the floor beside it (at most SHIELD_CELL_DROP_MAX lying there).
+// You, or a follower, walk over it to collect it, up to SHIELD_CELL_CAP. Each
+// follower or clone with no shield spends ONE cell for a full one — up to
+// SHIELD_GEN_SHARE of its max health, never less than SHIELD_GEN_MIN — and
+// waits SHIELD_GEN_DELAY after a hit before it takes another. The FORCE WALL
+// (the shield barrier) burns cells to rise again and to mend (js/modules.js).
+// A shield soaks every hit whole until it breaks (applyDamage).
+const SHIELD_GEN_SHARE    = 0.75;  // a cell's shield: this share of the unit's max health …
 const SHIELD_GEN_MIN      = 30;    // … but never less than this
-const SHIELD_GEN_DELAY    = 120;   // frames after a hit before it charges again
-const SHIELD_GEN_COST     = 0.03;  // nest power per shield point
+const SHIELD_GEN_DELAY    = 120;   // frames after a hit before a new shield goes on
 const SHIELD_GEN_HP       = 240;   // the generator's own health (a pylon has 80)
+const SHIELD_CELL_EVERY    = 900;  // frames: one cell from a powered CORE pylon (15 s)
+const SHIELD_CELL_MK2_MULT = 2;    // a MK II makes them this much faster
+const SHIELD_CELL_DROP_MAX = 2;    // cells one pylon leaves lying on the floor at once
+const SHIELD_CELL_CAP      = 40;   // the most you can carry
+const SHIELD_CELL_PICK     = 0.8;  // tiles: walk this close to collect one
+const SHIELD_CELL_COLOR    = "#9fe8ff";
 // At night (and in any alarm) this share of predators goes for the nearest
 // shield generator within reach and bashes it; hunters prefer them by day.
 const SHIELD_GEN_HUNT_SHARE = 0.35;
@@ -530,7 +540,15 @@ const TURRET_PLAIN_MULT   = 0.7;
 // The round is a glowing bolt that flies from the gun and HOMES on its target,
 // so it cannot miss; the damage lands when it arrives.
 const TURRET_SHOT_SPEED   = 0.3;    // tiles a frame
-const TURRET_MUZZLE_Z     = 52;     // px above the floor the bolt leaves from
+const TURRET_MUZZLE_Z     = 52;     // px above the floor the bolt leaves from (a MK II, on its tower)
+// REPORTED: "make the low level turrets almost on the ground, and the MK II
+// turrets a little higher and more advanced looking — more like the level 1
+// turrets are now." A level-1 turret is a low emplacement with its gun just
+// off the floor (drawTurretEmplacement, draw.js); MK II stands on the tower.
+const TURRET_L1_TOP       = 8;      // px: the emplacement's height — the gun sits on it
+const TURRET_L1_MUZZLE_Z  = 14;
+function turretIsLow(t) { return !!t && !!t.attackMode && !t.isBattery && !t.isGenerator && !t.isConnector && (t.mk || 0) < 2; }
+function turretMuzzleZ(t) { return turretIsLow(t) ? TURRET_L1_MUZZLE_Z : TURRET_MUZZLE_Z; }
 const TURRET_HIT_Z        = 16;     // px above the floor it strikes
 let turretShots = [];
 const ELECTRIC_HASTE = { 1: 1.35, 2: 1.6, 3: 1.9 };
@@ -974,13 +992,19 @@ let modulationMask = new Set();
 // per-follower, charge individually and fire on a double-tap. That system keeps
 // working exactly as it did; the surge charges all of them at once.
 // ── WHO PREDATORS WILL BITE ───────────────────────────────
-// Predators hit the player: a bite or sting that lands beside you, a blast
-// you stand in, a shot that reaches you. Each is ONE of your three hits
-// (PLAYER_HITS) — then you are knocked back to the Crystal. Hazards — acid
-// pools, vent blasts, ground zones — count the same way.
-// (Predators still pick their targets among your squad and structures; they
-// do not hunt you down.)
+// REPORTED: "They should turn to hit you if you're super close, and they
+// won't shoot at you. If you brush up against them or they walk up to you,
+// they hit you — and you get knocked back a little after each hit."
+//
+// A predator within PLAYER_BITE_RANGE of you turns and bites: ONE of your
+// three hits (the grace after it, PLAYER_HIT_GRACE, spaces them out) (PLAYER_HITS), and you are
+// pushed PLAYER_KNOCKBACK tiles away from it. That is the only way a predator
+// hurts you — its shots and specials pass you by. Hazards (acid pools, vent
+// blasts, ground zones) still cost a hit. Predators do not hunt you down;
+// they pick their targets among your squad and structures.
 const PREDATORS_ATTACK_PLAYER = true;
+const PLAYER_BITE_RANGE    = 0.9;   // tiles
+const PLAYER_KNOCKBACK     = 0.7;   // tiles you are pushed per hit
 
 const PLAYER_ULT_MAX      = 100;
 const ARMY_SURGE_FRAMES   = 600;   // ten seconds

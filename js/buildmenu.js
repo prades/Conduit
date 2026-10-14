@@ -87,7 +87,7 @@ function buildMenuItems(tab) {
     } else if (tab === "power") {
         for (const e of els) out.push({ tab, kind: "battery", elId: e.id, label: e.label.toUpperCase(), sub: "BATTERY", icon: "battery", colour: e.color });
         out.push({ tab, kind: "connector", elId: typeof CONNECTOR_ID !== "undefined" ? CONNECTOR_ID : "connector", label: "CONNECTOR", sub: "RELAY", icon: "connector", colour: "#ffd24a" });
-        out.push({ tab, kind: "generator", elId: typeof GENERATOR_ID !== "undefined" ? GENERATOR_ID : "generator", label: "SHIELD GEN", sub: "RELAY", icon: "generator", colour: "#cdd6e0" });
+        out.push({ tab, kind: "generator", elId: typeof GENERATOR_ID !== "undefined" ? GENERATOR_ID : "generator", label: "GENERATOR", sub: "ZONE POWER", icon: "generator", colour: "#cdd6e0" });
     } else if (tab === "modules" && typeof MODULE_DEFS !== "undefined") {
         // Modules (js/modules.js): structures that work while powered.
         for (const id of MODULE_IDS) { const d = MODULE_DEFS[id]; out.push({ tab, kind: "module", id, label: d.label, sub: "MODULE", icon: d.icon, colour: d.colour, cost: d.cost }); }
@@ -165,11 +165,17 @@ function buildGridLive(kind) {
     return false;
 }
 // Can this item be picked at all right now, at its tab's level? (Greyed if not.)
+// The zone you are standing in has a working generator (power.js) — what all
+// tech in a zone needs. Asked for the window; the tile tapped is asked again.
+function _bmZoneLive() {
+    return typeof zoneHasGenerator !== "function" || typeof getZoneIndex !== "function" || zoneHasGenerator(getZoneIndex(Math.floor(player.x)));
+}
 function buildItemState(it) {
     if (it.kind === "camp") return { ok: true };
-    if (it.kind === "module") return buildGridLive("module") ? { ok: true } : { ok: false, why: "NO POWER" };
+    if (it.kind === "module") return !_bmZoneLive() ? { ok: false, why: "NO GENERATOR" } : buildGridLive("module") ? { ok: true } : { ok: false, why: "NO POWER" };
     if (typeof isPylonTypeUnlocked === "function" && !isPylonTypeUnlocked(it.elId)) return { ok: false, why: "LOCKED" };
     if (_bmIsRelayKind(it.kind)) return { ok: true };
+    if (!_bmZoneLive()) return { ok: false, why: "NO GENERATOR" };
     const lv = buildLevel[it.tab] || 1;
     if (it.tab === "wave" && lv === 3 && !(typeof FORM_KINDS !== "undefined" && FORM_KINDS[it.elId])) return { ok: false, why: "NO FORMATION" };
     if (!buildGridLive(it.kind)) return { ok: false, why: "NO POWER" };
@@ -257,6 +263,11 @@ function canBuildAt(t, tool) {
     if (!t) return { ok: false, why: "NOTHING THERE" };
     const tiles = buildToolFootprint(tool, t.x, t.y).map(p => (typeof getTile === "function" ? getTile(p.x, p.y) : null));
     for (const q of tiles) { const why = _bmTileProblem(q); if (why) return { ok: false, why: tiles.length > 1 && q !== t ? "NO ROOM: " + why : why }; }
+    // Every piece of tech needs a working generator in its zone (power.js).
+    if (!_bmIsRelayKind(tool.kind) && typeof zoneHasGenerator === "function" && typeof getZoneIndex === "function") {
+        const z = getZoneIndex(Math.floor(t.x));
+        if (!zoneHasGenerator(z)) return { ok: false, why: "NO GENERATOR IN " + (z === 0 ? "THE HOME ZONE" : "ZONE " + z) };
+    }
     if (tool.kind === "module") {
         if (!buildPowerAt(t.x, t.y, "module")) return { ok: false, why: "NO POWER HERE" };
         const mc = buildToolCost(tool);
@@ -409,7 +420,8 @@ function handleBuildMenuTap(x, y) {
         if (_bmLocked(it)) { _bmSay(it.label + " IS NOT UNLOCKED YET", "#f88"); return true; }
         const st = buildItemState(it);
         if (!st.ok) {
-            _bmSay(it.label + ": " + (st.why === "NO POWER" ? "NO POWER \u2014 BUILD A SHIELD GEN BY A HELD NEST FIRST"
+            _bmSay(it.label + ": " + (st.why === "NO GENERATOR" ? "NO GENERATOR IN THIS ZONE \u2014 BUILD ONE BY A HELD NEST FIRST"
+                                     : st.why === "NO POWER" ? "NO POWER \u2014 BUILD A GENERATOR BY A HELD NEST FIRST"
                                      : st.why === "NEEDS TIER I" ? "MK II NEEDS A TIER I NETWORK \u2014 2 LINKED " + it.label + " BATTERIES"
                                      : st.why === "NEEDS TIER II" ? (it.tab === "wave" ? "FORMATION" : "ULTRA") + " NEEDS A TIER II NETWORK \u2014 4 LINKED " + it.label + " BATTERIES"
                                      : st.why), "#f88");

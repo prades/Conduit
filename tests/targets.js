@@ -490,30 +490,19 @@ const SCENE = `(function(){
         same(E.run('predatorMayHurtPlayer()'), true, 'the predicate should say yes');
     });
 
-    check('all three paths consult it', () => {
-        // The melee swipe, the ability radius helper, and the abdomen shot.
-        ok(/!this\.isClone && predatorMayHurtPlayer\(\)/.test(SRC.predator),
-           'the melee swipe is not gated');
-        ok(/predatorMayHurtPlayer\(\) && typeof player/.test(SRC.abilities),
-           'the ability radius helper is not gated');
-        ok(/p\.targetsGreen && predatorMayHurtPlayer\(\)/.test(SRC.game),
-           'the abdomen projectile is not gated');
+    check('only the bite consults it: shots and specials never touch the player', () => {
+        // "They should turn to hit you if you're super close, and they won't
+        // shoot at you." The up-close bite is the one path (tests/threehits.js
+        // drives it); the ability radius helper and the abdomen shot have none.
+        ok(/!this\.isClone && !this\.untargetable && typeof predatorMayHurtPlayer === \"function\" && predatorMayHurtPlayer\(\)/.test(SRC.predator),
+           'the bite is not gated');
+        ok(!/predatorMayHurtPlayer|hurtPlayer/.test(SRC.abilities), 'a special can still hurt the player');
+        const at = SRC.game.indexOf('if (!hit && p.targetsGreen && typeof equipmentHitByShot');
+        ok(at > -1, 'fixture: the projectile filter');
+        const end = SRC.game.indexOf('return !hit && p.life > 0', at);
+        ok(!/hurtPlayer/.test(SRC.game.slice(at, end)), 'a predator shot can still hurt the player');
         same((SRC.helpers.match(/function predatorMayHurtPlayer/g) || []).length, 1,
              'the predicate is defined more than once');
-    });
-
-    check('an ungated shot no longer eats itself either', () => {
-        // The projectile used to be consumed by the player even when immunity
-        // stopped the damage. Gated, the round passes by instead.
-        // Sliced to the end of the enclosing filter rather than a character
-        // count — the explanatory comment inside the branch pushed `hit = true`
-        // past a 400-character window.
-        const at = SRC.game.indexOf('p.targetsGreen && predatorMayHurtPlayer()');
-        ok(at > -1, 'the projectile branch is not gated');
-        const end = SRC.game.indexOf('return !hit && p.life > 0', at);
-        ok(end > at, 'fixture: the branch should sit inside the projectile filter');
-        const body = SRC.game.slice(at, end);
-        ok(/hit = true/.test(body), 'fixture: the branch should still consume the shot');
     });
 
     // ─────────────────────────────────────────────────────
