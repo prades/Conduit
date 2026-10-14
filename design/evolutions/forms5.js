@@ -38,7 +38,7 @@ function blobShape(R, seed, k, cx, cz, t) {   // the outline as a Shape in x-y (
   for (let i = 0; i <= N; i++) { const a = i / N * TAU, r = blobR(a, R, seed, t) * (k || 1); const x = (cx || 0) + Math.sin(a) * r, z = (cz || 0) + Math.cos(a) * r; if (i) sh.lineTo(x, -z); else sh.moveTo(x, -z); }
   return sh;
 }
-function slurryPool(R, seed) {
+function slurryPool(R, seed, puddles) {
   const g = G(), parts = [];
   const lay = (build, mat, y) => { const m = new T.Mesh(build(0), mat); m.rotation.x = -PI / 2; m.position.y = y; g.add(m); parts.push({ m, build }); };
   const ext = (sh, depth) => new T.ExtrudeGeometry(sh, { depth, bevelEnabled: false });
@@ -46,7 +46,7 @@ function slurryPool(R, seed) {
   lay(t => ext(blobShape(R, seed, 1.0, 0, 0, t), 0.045), M.slurry, 0.035);   // the pool
   lay(t => new T.ShapeGeometry(blobShape(R, seed, 1.5, 0, 0, t)), M.rotWash, 0.012);
   // two small puddles that have got away from it, drifting with it
-  for (let i = 0; i < 2; i++) lay(t => { const a = seed * 2.7 + i * 2.9 + 1 + 0.3 * Math.sin(1.6 * t + i * 2), d = blobR(a, R, seed, t) * 1.25 + 0.12;
+  for (let i = 0; i < (puddles == null ? 2 : puddles); i++) lay(t => { const a = seed * 2.7 + i * 2.9 + 1 + 0.3 * Math.sin(1.6 * t + i * 2), d = blobR(a, R, seed, t) * 1.25 + 0.12;
     return ext(blobShape(0.13 + 0.05 * i, seed + i + 1, 1, Math.sin(a) * d, Math.cos(a) * d, t), 0.04); }, M.slurry, 0.005);
   g.shift = t => parts.forEach(p => { p.m.geometry.dispose(); p.m.geometry = p.build(t); });
   g.shift(0.9);
@@ -117,4 +117,33 @@ fx(97, "Rising shard-clawed crystal.", () => {   // tall, rising out of the pool
   const dr = drips(b, 0, 0, 0.9, 5);
   const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.8, 0.8); b.add(L); LIGHTS.push(L);
   return { g, core: 1.8, update(t) { pool.shift(t); rim(t); body.position.y = bob(t, 0, 0.03); dr(t); } };
+});
+
+// ── No. 95, simplified (Nos. 98–100): the clean crystal, a corroded lower half, ONE black shard, the shifting pool ──
+fx(98, "95, fewer lumps.", () => {   // 95 with four scabs, a third of the rim crystals
+  const g = G(), b = G(); g.add(b); const pool = slurryPool(1.0, 2.0); b.add(pool); const rim = rimShards(b, 0.92, 3, 2.0);
+  const body = G(); body.position.y = 0.3; b.add(body);
+  const cr = _crystalHalf(0.34, 1.3, 0.55); cr.position.y = 1.05; body.add(cr); const cg = glowSprite(0.85); cg.position.y = 1.25; body.add(cg);
+  for (let i = 0; i < 4; i++) { const a = 0.6 + i * 1.5, y = 0.5 + (i % 2) * 0.3, pl = corroded(0.13, 0.32, 0.12, 0.7, i % 2 ? M.rot : M.scab), h = G(); h.position.set(Math.sin(a) * 0.38, y, Math.cos(a) * 0.38); h.rotation.set(Math.cos(a) * 0.5, 0, -Math.sin(a) * 0.5); h.add(pl); body.add(h); }
+  const cap = shellShard(0.8, 0.32, 0.05); cap.position.set(-0.05, 1.62, 0.28); cap.rotation.set(0.5, 0.25, 0.3); body.add(cap);
+  const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.7, 0.7); body.add(L); LIGHTS.push(L);
+  return { g, core: 1.35, update(t) { pool.shift(t); rim(t); body.position.y = 0.3 + bob(t, 0, 0.02); } };
+});
+fx(99, "95, one corroded half.", () => {   // the lower half of the crystal itself is the corroded part; no scabs, no rim crystals
+  const g = G(), b = G(); g.add(b); const pool = slurryPool(1.0, 2.0, 1); b.add(pool);
+  const body = G(); body.position.y = 0.3; b.add(body);
+  const low = corroded(0.34, 0.8, 0.3, 1.0); low.position.y = 0.7; body.add(low);
+  const top = _crystalHalf(0.34, 0.75, 0.55); top.position.y = 1.5; body.add(top); const cg = glowSprite(0.85); cg.position.y = 1.6; body.add(cg);
+  const cap = shellShard(0.8, 0.32, 0.05); cap.position.set(-0.05, 1.5, 0.3); cap.rotation.set(0.5, 0.25, 0.3); body.add(cap);
+  const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.7, 0.7); body.add(L); LIGHTS.push(L);
+  return { g, core: 1.55, update(t) { pool.shift(t); body.position.y = 0.3 + bob(t, 0, 0.02); } };
+});
+fx(100, "95, bare.", () => {   // crystal, three scabs at its foot, the one shard, the pool: nothing else
+  const g = G(), b = G(); g.add(b); const pool = slurryPool(1.0, 2.0, 0); b.add(pool);
+  const body = G(); body.position.y = 0.3; b.add(body);
+  const cr = _crystalHalf(0.34, 1.3, 0.55); cr.position.y = 1.05; body.add(cr); const cg = glowSprite(0.85); cg.position.y = 1.25; body.add(cg);
+  for (let i = 0; i < 3; i++) { const a = 0.3 + i * 2.1, pl = corroded(0.15, 0.34, 0.14, 0.8, i % 2 ? M.rot : M.scab), h = G(); h.position.set(Math.sin(a) * 0.36, 0.5, Math.cos(a) * 0.36); h.rotation.set(Math.cos(a) * 0.5, 0, -Math.sin(a) * 0.5); h.add(pl); body.add(h); }
+  const cap = shellShard(0.8, 0.32, 0.05); cap.position.set(-0.05, 1.62, 0.28); cap.rotation.set(0.5, 0.25, 0.3); body.add(cap);
+  const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.7, 0.7); body.add(L); LIGHTS.push(L);
+  return { g, core: 1.35, update(t) { pool.shift(t); body.position.y = 0.3 + bob(t, 0, 0.02); } };
 });
