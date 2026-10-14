@@ -1083,6 +1083,8 @@
       <div class="cm-build-row"><span class="cm-build-label" style="background:#ff775522;color:#ff7755">Hunter&rsquo;s Moon</span>Every predator hunts your pylons &mdash; but pylons take <span class="cm-stat">20%</span> less from each bash.</div>
       <div class="cm-build-row"><span class="cm-build-label" style="background:#fff27a22;color:#fff27a">Static Storm</span>Electric is doubled for <strong>both sides</strong>: electric hits, electric turrets&rsquo; fire rate, and the bonus of every haste.</div>
       <div class="cm-build-row"><span class="cm-build-label" style="background:#ff8ae222;color:#ff8ae2">Elemental Breakout</span>Every predator is given an <strong>element</strong> and wears its flare &mdash; a ring and sparks in its colour, its element&rsquo;s name over it. Its hits can set that element&rsquo;s status on your units (burn, chill, a jolt that stops them, scramble, corrode, or a core predator heals itself). Fight it with the <strong>element wheel</strong>: hit it with what beats its element.</div>
+      <div class="cm-build-row"><span class="cm-build-label" style="background:#ff775522;color:#ff7755">Lateral Attack</span>Every enemy nest in range sends at <strong>full alarm strength</strong>, not just the one ahead &mdash; and the nests you have <strong>taken leak</strong> too: up to <span class="cm-stat">2</span> predators at a time come out of each, inside your own ground. Guard your flanks and your rear.</div>
+      <div class="cm-build-row"><span class="cm-build-label" style="background:#ff335522;color:#ff3355">Behemoth</span>One <strong>huge boss</strong> rises in the alarm zone: the wave's main species at boss class, <span class="cm-stat">5</span> levels above the zone, <span class="cm-stat">6&times;</span> health, <span class="cm-stat">1.5&times;</span> bite, twice the size, too heavy to drag. Its health is the bar across the top of the screen. <strong>The night is not over until it falls</strong> &mdash; and it drops <span class="cm-stat">5&times;</span> the shards and DNA.</div>
       </details><details class="cm-more"><summary>In detail &mdash; species tables</summary>      <div class="cm-intro-box">
         Six species, one per zone from zone 1 to 6 (ant, beetle, scorpion, mantis, moth, spider), then synthetic chimeras deeper in. Every enemy killed drops <strong>shards</strong> and <strong>DNA splices</strong>. Bosses drop Crystal Modulators.
       </div>
@@ -1354,12 +1356,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-13s, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-14a, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-13s";
+window.__PAGE_BUILD = "2026-10-14a";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1395,48 +1397,49 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-13s"></script>
-<script src="js/icons.js?v=2026-10-13s"></script>
-<script src="js/rng.js?v=2026-10-13s"></script>
-<script src="js/traits.js?v=2026-10-13s"></script>
-<script src="js/elements.js?v=2026-10-13s"></script>
-<script src="js/combat.js?v=2026-10-13s"></script>
-<script src="js/species.js?v=2026-10-13s"></script>
-<script src="js/levels.js?v=2026-10-13s"></script>
-<script src="js/predator_randomizer.js?v=2026-10-13s"></script>
-<script src="js/mass.js?v=2026-10-13s"></script>
-<script src="js/infest.js?v=2026-10-13s"></script>
-<script src="js/power.js?v=2026-10-13s"></script>
-<script src="js/save.js?v=2026-10-13s"></script>
-<script src="js/camp.js?v=2026-10-13s"></script>
-<script src="js/wavedata.js?v=2026-10-13s"></script>
-<script src="js/helpers.js?v=2026-10-13s"></script>
-<script src="js/predator.js?v=2026-10-13s"></script>
-<script src="js/abilities.js?v=2026-10-13s"></script>
-<script src="js/world.js?v=2026-10-13s"></script>
-<script src="js/commands.js?v=2026-10-13s"></script>
-<script src="js/npc.js?v=2026-10-13s"></script>
-<script src="js/codex.js?v=2026-10-13s"></script>
-<script src="js/draw.js?v=2026-10-13s"></script>
-<script src="js/ui.js?v=2026-10-13s"></script>
-<script src="js/waves.js?v=2026-10-13s"></script>
-<script src="js/drops.js?v=2026-10-13s"></script>
-<script src="js/clone.js?v=2026-10-13s"></script>
-<script src="js/clonework.js?v=2026-10-13s"></script>
-<script src="js/broods.js?v=2026-10-13s"></script>
-<script src="js/raids.js?v=2026-10-13s"></script>
-<script src="js/ultra.js?v=2026-10-13s"></script>
-<script src="js/formations.js?v=2026-10-13s"></script>
-<script src="js/breakout.js?v=2026-10-13s"></script>
-<script src="js/bonds.js?v=2026-10-13s"></script>
-<script src="js/autoplay.js?v=2026-10-13s"></script>
-<script src="js/indexart.js?v=2026-10-13s"></script>
-<script src="js/modules.js?v=2026-10-13s"></script>
-<script src="js/buildmenu.js?v=2026-10-13s"></script>
-<script src="js/input.js?v=2026-10-13s"></script>
-<script src="js/game.js?v=2026-10-13s"></script>
-<script src="js/tutorial.js?v=2026-10-13s"></script>
-<script src="js/dev.js?v=2026-10-13s"></script>
+<script src="js/config.js?v=2026-10-14a"></script>
+<script src="js/icons.js?v=2026-10-14a"></script>
+<script src="js/rng.js?v=2026-10-14a"></script>
+<script src="js/traits.js?v=2026-10-14a"></script>
+<script src="js/elements.js?v=2026-10-14a"></script>
+<script src="js/combat.js?v=2026-10-14a"></script>
+<script src="js/species.js?v=2026-10-14a"></script>
+<script src="js/levels.js?v=2026-10-14a"></script>
+<script src="js/predator_randomizer.js?v=2026-10-14a"></script>
+<script src="js/mass.js?v=2026-10-14a"></script>
+<script src="js/infest.js?v=2026-10-14a"></script>
+<script src="js/power.js?v=2026-10-14a"></script>
+<script src="js/save.js?v=2026-10-14a"></script>
+<script src="js/camp.js?v=2026-10-14a"></script>
+<script src="js/wavedata.js?v=2026-10-14a"></script>
+<script src="js/helpers.js?v=2026-10-14a"></script>
+<script src="js/predator.js?v=2026-10-14a"></script>
+<script src="js/abilities.js?v=2026-10-14a"></script>
+<script src="js/world.js?v=2026-10-14a"></script>
+<script src="js/commands.js?v=2026-10-14a"></script>
+<script src="js/npc.js?v=2026-10-14a"></script>
+<script src="js/codex.js?v=2026-10-14a"></script>
+<script src="js/draw.js?v=2026-10-14a"></script>
+<script src="js/ui.js?v=2026-10-14a"></script>
+<script src="js/waves.js?v=2026-10-14a"></script>
+<script src="js/drops.js?v=2026-10-14a"></script>
+<script src="js/clone.js?v=2026-10-14a"></script>
+<script src="js/clonework.js?v=2026-10-14a"></script>
+<script src="js/broods.js?v=2026-10-14a"></script>
+<script src="js/raids.js?v=2026-10-14a"></script>
+<script src="js/ultra.js?v=2026-10-14a"></script>
+<script src="js/formations.js?v=2026-10-14a"></script>
+<script src="js/breakout.js?v=2026-10-14a"></script>
+<script src="js/nightraids.js?v=2026-10-14a"></script>
+<script src="js/bonds.js?v=2026-10-14a"></script>
+<script src="js/autoplay.js?v=2026-10-14a"></script>
+<script src="js/indexart.js?v=2026-10-14a"></script>
+<script src="js/modules.js?v=2026-10-14a"></script>
+<script src="js/buildmenu.js?v=2026-10-14a"></script>
+<script src="js/input.js?v=2026-10-14a"></script>
+<script src="js/game.js?v=2026-10-14a"></script>
+<script src="js/tutorial.js?v=2026-10-14a"></script>
+<script src="js/dev.js?v=2026-10-14a"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1446,7 +1449,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 (function () {
     var need = { "js/config.js": "ELEMENTS", "js/species.js": "PREDATOR_TYPES", "js/elements.js": "getElementMultiplier",
                  "js/predator.js": "Predator", "js/power.js": "recomputePower", "js/world.js": "generateSegment",
-                 "js/draw.js": "drawNPC", "js/ui.js": "drawElementPicker", "js/buildmenu.js": "drawBuildMenu", "js/levels.js": "levelFactor", "js/modules.js": "moduleTick", "js/game.js": "render", "js/dev.js": "initPreview" };
+                 "js/draw.js": "drawNPC", "js/ui.js": "drawElementPicker", "js/buildmenu.js": "drawBuildMenu", "js/levels.js": "levelFactor", "js/nightraids.js": "lateralTick", "js/modules.js": "moduleTick", "js/game.js": "render", "js/dev.js": "initPreview" };
     var missing = (window.__bootFailed || []).slice();
     // A stale cached copy of config.js (from another build) is as good as missing.
     try { if ((0, eval)("BUILD_VERSION") !== window.__PAGE_BUILD) missing.push("js/config.js (an old copy from another build)"); }
@@ -1489,7 +1492,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-13s"></script>
+<script src="js/init.js?v=2026-10-14a"></script>
 
 </body>
 </html>

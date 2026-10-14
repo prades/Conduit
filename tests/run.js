@@ -14,6 +14,7 @@ const SUITES = [
     ['collateral: specials and shots hit equipment', 'collateral.js'],
     ['levels and stats', 'levels.js'],
     ['element ladder + zone elements', 'elementladder.js'],
+    ['night raids: lateral attack, behemoth', 'nightraids.js'],
     ['declared globals',       'globals.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],

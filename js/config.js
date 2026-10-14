@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-13s";
+const BUILD_VERSION = "2026-10-14a";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -609,6 +609,9 @@ const SIEGES = {
     hunt:     { label: "HUNTER'S MOON", color: "#ff7755", line: "Every predator hunts your pylons. They are tougher tonight." },
     storm:    { label: "STATIC STORM",  color: "#fff27a", line: "Electric everything is doubled \u2014 for both sides." },
     breakout: { label: "ELEMENTAL BREAKOUT", color: "#ff8ae2", line: "Every predator burns with an element \u2014 hit it with what beats it (js/breakout.js)." },
+    // js/nightraids.js
+    lateral:  { label: "LATERAL ATTACK", color: "#ff7755", line: "Every nest is leaking \u2014 the ones you hold too. They come from the sides and behind." },
+    behemoth: { label: "BEHEMOTH",       color: "#ff3355", line: "Something huge is coming. The night is not over until it falls." },
 };
 const SIEGE_FROM_NIGHT   = 3;
 const SIEGE_SWARM_NYMPH  = 0.7;   // share of spawns that become nymphs

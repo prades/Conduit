@@ -2631,7 +2631,9 @@ function render() {
             if (!zonePredators[z]) zonePredators[z] = [];
             const alivePredators = zonePredators[z].filter(p => !p.dead);
             zonePredators[z] = alivePredators;
-            const isAlarmZone = alertActive && (alertType === "facility" || z === alertZone);
+            // LATERAL ATTACK (js/nightraids.js): every nest sends at full strength.
+            const isAlarmZone = alertActive && (alertType === "facility" || z === alertZone
+                                || (typeof siegeIs === "function" && siegeIs("lateral")));
             // Higher zones (above alarm zone) keep exactly 1 wanderer — they are never hunters
             const isHigherZone = alertActive && alertZone !== null && z > alertZone;
             // During alarm: spawn up to (zone depth + 2) predators in the alarm zone;
@@ -2874,6 +2876,8 @@ function render() {
     if (typeof raidTick === "function") raidTick();
     // ── ELEMENTAL BREAKOUT — elements for every predator on that night ──
     if (typeof breakoutTick === "function") breakoutTick();
+    // The night raids (js/nightraids.js): leaking held nests, the behemoth.
+    if (typeof lateralTick === "function") { lateralTick(); behemothTick(); behemothDeathCheck(); }
 
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
@@ -4528,6 +4532,7 @@ function render() {
     // ── OVERLAYS ──
     drawElementEffects();
     if (typeof drawModuleFields === "function") drawModuleFields();   // module areas and force walls
+    if (typeof drawBehemothBar === "function") drawBehemothBar();     // the behemoth's health (js/nightraids.js)
     if (typeof drawOfflinePylons === "function") drawOfflinePylons(); // frames waiting for a core worker (js/mass.js)
     if (!gfxLow) drawSiphonWisps();
     // The hold line is world geometry, so it draws with the world rather than

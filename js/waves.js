@@ -48,6 +48,7 @@ function objectiveText(suffix) {
         // when that copy went; it belongs on the one line that is left.
         return "\u26a0 " + alarmLabel(alertType) + " \u2014 TAKING ZONE " + z
              + " \u2014 Kill " + nightKillCount + "/" + nightEnemiesTarget
+             + (typeof behemothAlive === "function" && behemothAlive() ? " + THE BEHEMOTH" : "")
              + (typeof siegeToday !== "undefined" && siegeToday ? " \u00b7 " + SIEGES[siegeToday].label : "");
     }
     const cleared = gameState.highestZoneCleared || 0;
@@ -255,6 +256,8 @@ function neutraliseZone(zoneIndex) {
 
 function checkWaveClear() {
     if (gameState.phase !== "night") return;
+    // A BEHEMOTH night is not over while it lives (js/nightraids.js).
+    if (typeof behemothBlocksClear === "function" && behemothBlocksClear()) return;
     if (nightKillCount >= nightEnemiesTarget) {
         gameState.phase = "waveComplete";
         gameState.totalWavesSurvived++;
