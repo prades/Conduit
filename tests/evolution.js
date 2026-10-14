@@ -66,8 +66,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'pod', 'an electric worker is the Dynamo Pod, not the Storm Manta');
         mk('flux', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'serpent', 'a flux sniper on the line is the Serpent');
     });
-    check('…and nobody else: not a fire sniper, an ice brawler, an electric brawler — nor before level 20', () => {
-        for (const [el, role] of [['fire', 'sniper'], ['ice', 'brawler'], ['flux', 'brawler'], ['core', 'sniper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
+    check('THE ASK: a FIRE SNIPER becomes the CINDER HALO (design No. 90, the ring drone); a fire brawler is still the Bunker Bloom', () => {
+        mk('fire', 'sniper', 20); run(lvlUp);
+        const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
+        same(r.evo, 'halo', 'its form'); same(r.tag, 'CINDER HALO', 'its tag'); same(r.role, 'sniper', 'its role');
+        mk('fire', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'bloom', 'the fire brawler');
+        mk('fire', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire worker waits (no worker form for it)');
+    });
+    check('…and nobody else: not an ice brawler, an electric brawler — nor before level 20', () => {
+        for (const [el, role] of [['ice', 'brawler'], ['flux', 'brawler'], ['core', 'sniper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
         mk('fire', 'brawler', 19); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 19');
     });
     check('a follower already past level 20 (an old save) evolves on the next tick', () => {
@@ -78,8 +85,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nWHAT IT GAINS');
     check('THE ASK: health and power × EVOLVE_MULT — and they survive the next level-up', () => {
-        // The twin is a fire SNIPER, which never evolves; stats come from base and level only.
-        const r = run(`(function(){ mkTwin = (ev) => { spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.role = ev ? 'brawler' : 'sniper';
+        // The control is an ICE brawler, which has no form yet (a plain follower of the same stats); the twin is a fire brawler turned Bunker Bloom.
+        const r = run(`(function(){ mkTwin = (ev) => { spawnFollowerAtCrystal(ev ? 'fire' : 'ice'); const f = followers[followers.length - 1]; f.role = 'brawler';
                 f.base = { hp: 40, attack: 12, defense: 10, specialAttack: 10, accuracy: 10, will: 20, speed: 10 }; f.level = 22; f.xp = xpForLevel(22); if (ev) f.evolved = 'bloom'; _applyFollowerLevel(f, true); return f; };
             const a = mkTwin(false), b = mkTwin(true); b._moltAt = -1e9;
             const r1 = { hp: b.maxHealth / a.maxHealth, pw: b.power / a.power };
@@ -113,6 +120,25 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.a > r.b && r.b > 0 && r.c > 0, 'the arc and its jumps: ' + JSON.stringify(r));
         same(r.lone, 0, 'damage to one out of reach of any jump');
         same(r.arcs, 3, 'arcs drawn');
+    });
+
+    check('THE ASK: HEXFIRE — the cinder halo fires six rounds at once, shared out among the nearest enemies, each setting its target burning', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'halo'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const fire = () => { frame++; f._sigCd = 1; evolutionTick(); };
+            const a = mkP(24, 2), b = mkP(25, 3), c = mkP(26, 1), far = mkP(40, 2);
+            fire();
+            const d = p => 1e6 - p.health, shot = d(a) + d(b) + d(c), per = f.power * HALO_MULT;
+            const out = { rounds: (f._arcPts || []).length, shot, per, a: d(a), b: d(b), c: d(c), far: d(far), burn: a.burning > 0 && b.burning > 0 && c.burning > 0, fan: f._arcFan, cd: f._sigCd };
+            [a, b, c, far].forEach(p => p.dead = true);
+            // Alone, all six go into the one.
+            const solo = mkP(24, 2); fire(); out.solo = d(solo); solo.dead = true; return out; })()`);
+        same(r.rounds, 6, 'six rounds');
+        ok(Math.abs(r.shot - 6 * r.per) < 1e-6 * r.shot + 1e-3, 'six rounds of damage in all: ' + JSON.stringify(r));
+        ok(r.a > 0 && r.b > 0 && r.c > 0 && r.burn, 'shared out among the three, burning: ' + JSON.stringify(r));
+        same(r.far, 0, 'damage 20 tiles away'); ok(r.fan, 'the rounds do not fan from the ring'); ok(r.cd > 300, 'it did not wait');
+        ok(Math.abs(r.solo - 6 * r.per) < 1e-3, 'alone, all six go into the one: ' + JSON.stringify(r));
     });
 
     check('THE ASK: SINGULARITY SHOT — a gravity round into the nearest enemy, dragging those round it in; a beetle is too heavy', () => {
@@ -237,7 +263,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }

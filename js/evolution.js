@@ -44,6 +44,11 @@
 //          enemy within SERPENT_PULL_R of the target in towards it and slows
 //          them. A beetle, a boss or a machine is too heavy to drag
 //          (vortexPullImmune) and takes the hit only.
+//          CINDER HALO (the FIRE SNIPER, design No. 90, the ring drone), HEXFIRE:
+//          with an enemy within HALO_RANGE, every HALO_EVERY frames it fires
+//          SIX rounds at once from the six crystals of its ring, one at each of
+//          the nearest enemies in turn (all six into one if it is alone), each
+//          HALO_MULT × its power and setting its target burning.
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
 //          sheets in img/evo/: 8 facings × 16 frames (8 idle, 8 action),
 //          seen from the game's own iso angle.
@@ -57,6 +62,7 @@ const REAVER_RANGE = 6, REAVER_EVERY = 300, REAVER_MULT = 2.5, REAVER_CHAIN = 2,
 const SERPENT_RANGE = 6.5, SERPENT_EVERY = 330, SERPENT_MULT = 2.2, SERPENT_PULL_R = 2.2, SERPENT_PULL = 0.75, SERPENT_SLOW = 0.5, SERPENT_SLOW_FRAMES = 90;
 const WARDEN_RADIUS = 2.2, WARDEN_EVERY = 360, WARDEN_MULT = 1.8, WARDEN_PUSH = 0.6, WARDEN_ALLY_R = 3.5, WARDEN_SHIELD = 0.35;
 const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;
+const HALO_RANGE = 7, HALO_EVERY = 330, HALO_ROUNDS = 6, HALO_MULT = 0.8, HALO_BURN = 150;
 const HAULER_SPEED = 1.5, HAULER_REACH = 2, HAULER_PAY = 2;
 const POD_RATE = 3, POD_REACH = 2, POD_SPEED = 1.4;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
@@ -73,6 +79,9 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
     manta:  { id: "manta",  name: "STORM MANTA",  element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/manta.png",
               cell: 144, anchor: [72, 114.2], core: [72, 57], noGlow: true, color: "#ffee33" },
+    // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
+    halo:   { id: "halo",   name: "CINDER HALO",  element: "fire",     role: "sniper",  move: "HEXFIRE",      sheet: "img/evo/halo.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
     // The electric WORKER (the neutraliser): a worker is a duty, so it comes from an electric follower on worker duty.
     pod:    { id: "pod",    name: "DYNAMO POD",   element: "electric", duty: "worker",  move: "RAPID DISCHARGE", sheet: "img/evo/pod.png",
               cell: 144, anchor: [72, 114.2], core: [72, 58], noGlow: true, color: "#ffee33" },
@@ -120,7 +129,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
-        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f);
+        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f);
     }
 }
 function _evoFoes(x, y, r) {
@@ -189,6 +198,29 @@ function singularityShot(f) {
         elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#bb66ff", radius: 0.7, life: 24 });
     }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "SINGULARITY", color: "#cc88ff", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+
+// HEXFIRE: six rounds at once, shared out among the nearest enemies in range (one by one, round the list).
+// True when it fired.
+function hexfire(f) {
+    const foes = _evoFoes(f.x, f.y, HALO_RANGE);
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const f0 = typeof frame !== "undefined" ? frame : 0, dmg = (f.power || 10) * HALO_MULT, pts = [];
+    for (let i = 0; i < HALO_ROUNDS; i++) {
+        const live = foes.filter(a => !a.dead);
+        if (!live.length) break;
+        const a = live[i % live.length];
+        applyDamage(a, dmg, f, "fire");
+        if (!a.dead) { a.burning = Math.max(a.burning || 0, HALO_BURN); a.burnDamage = Math.max(a.burnDamage || 0, (f.power || 10) * 0.08); }
+        pts.push({ x: a.x, y: a.y, hex: i });
+        if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ff6622", radius: 0.45, life: 18 });
+    }
+    f._sigAt = f0; f._sigCd = HALO_EVERY;
+    f._arcPts = pts; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcFan = true; f._arcCol = [255, 110, 34];
+    { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "HEXFIRE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 
@@ -337,7 +369,7 @@ function drawEvolvedOverlay(f, px, py, g) {
                 for (let k = 1; k < 6; k++) { const q = k / 6; g.lineTo(x0 + (x1 - x0) * q + (Math.random() - 0.5) * jag, y0 + (y1 - y0) * q + (Math.random() - 0.5) * jag); }
                 g.lineTo(x1, y1); g.stroke();
             }
-            x0 = x1; y0 = y1;
+            if (!f._arcFan) { x0 = x1; y0 = y1; }   // a fan: every round leaves the reactor, none from the last target
         }
     }
     g.restore();
