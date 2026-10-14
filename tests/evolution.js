@@ -62,7 +62,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux brawler on worker duty');
         mk('flux', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux SNIPER on worker duty is a worker first');
         mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux brawler on the line');
-        mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'an electric worker waits (no worker form for it)');
+        mk('core', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a core worker waits (no worker form for it)');
+        mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'pod', 'an electric worker is the Dynamo Pod, not the Storm Manta');
         mk('flux', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'serpent', 'a flux sniper on the line is the Serpent');
     });
     check('…and nobody else: not a fire sniper, an ice brawler, an electric brawler — nor before level 20', () => {
@@ -167,6 +168,24 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const src = fs.readFileSync(path.join(ROOT, 'js/mass.js'), 'utf8');
         ok(/evoHaul\(actor\)/.test(src) && /_hv\.speed/.test(src) && /_hv2\.reach/.test(src), 'the haul loop does not ask for the hauler\'s speed and reach');
     });
+    check('THE ASK: RAPID DISCHARGE — the dynamo pod (electric worker, design No. 71) neutralises faster and from further away', () => {
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); chargedMass.length = 0; player.x = 5;
+            const mk = (evo, x) => { spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.duty = 'worker'; f.job = null; f.stance = 'follow'; f.x = x; f.y = 2; f.moveSpeed = 0.05; if (evo) f.evolved = 'pod'; return f; };
+            const lump = (x) => { const m = { x, y: 2, state: MASS_STATE.CHARGED, progress: 0, carrier: null, value: 10, bob: 0, spin: 0 }; chargedMass.push(m); return m; };
+            // The same lump, 1.2 tiles from each: the pod is already in reach, the plain worker has to walk.
+            const a = mk(false, 30), b = mk(true, 60), ma = lump(31.2), mb = lump(61.2);
+            followerWorkTick(a); followerWorkTick(b);
+            const out = { plainWorking: ma.progress > 0, podWorking: mb.progress > 0 };
+            // In reach, per step: the pod's progress against a plain worker's.
+            const c = mk(false, 90), d = mk(true, 120), mc = lump(90.3), md = lump(120.3);
+            for (let i = 0; i < 10; i++) { followerWorkTick(c); followerWorkTick(d); }
+            out.plainStep = mc.progress / 10; out.podStep = md.progress / 10; out.n = evoNeutralise(d); out.none = evoNeutralise(c); return out; })()`);
+        ok(!r.plainWorking && r.podWorking, 'reach: ' + JSON.stringify(r));
+        ok(run('POD_RATE') >= 2 && Math.abs(r.podStep / r.plainStep - run('POD_RATE')) < 0.05, 'rate (a real boost, and what it does): ' + JSON.stringify(r));
+        ok(r.n && r.n.reach > 1 && r.n.speed > 1 && r.none === null, JSON.stringify(r));
+        const src = fs.readFileSync(path.join(ROOT, 'js/mass.js'), 'utf8');
+        ok(/evoNeutralise\(actor\)/.test(src) && /_nv\.rate/.test(src) && /_nv\.reach/.test(src), 'the neutralise loop does not ask for the pod\'s rate and reach');
+    });
     check('the hover hauler stays one across death (its element and duty too) and a reload', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ['ice'] };
             spawnFollowerAtCrystal('flux'); const f = followers[0]; f.role = 'brawler'; f.duty = 'worker'; f.level = 22; f.xp = xpForLevel(22); _applyFollowerLevel(f, true); evoCheck(f);
@@ -218,7 +237,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }

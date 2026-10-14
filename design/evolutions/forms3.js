@@ -239,12 +239,16 @@ fx(70, "Claw-lifter: a spherical hull with a crystal belly window, two rotor boo
 fx(71, "Hex-pod: a six-sided hull with a crystal in the middle of its top and six lit side windows, six sheet panels standing in an orbit round it, and six small thrusters.", () => {
   const g = G(), b = G(); g.add(b); const Y = 1.4, orb = G(); orb.position.y = Y; b.add(orb);
   const hull = cyl(0.55, 0.5, 0.55, M.armor, 6); hull.position.y = Y; b.add(hull); const top = hexPlate(0.45, 0.08, M.gun); top.position.y = Y + 0.3; b.add(top);
+  const panels = [], tps = [];
   for (let i = 0; i < 6; i++) { const a = i * TAU / 6 + PI / 6, w = cbox(0.3, 0.2, 0.04, 0.008, M.glow); w.position.set(Math.sin(a) * 0.5, Y + 0.02, Math.cos(a) * 0.5); w.rotation.y = a; b.add(w);
-    const t = thr(0.08); t.position.set(Math.sin(a + PI / 6) * 0.38, Y - 0.36, Math.cos(a + PI / 6) * 0.38); b.add(t);
-    const p = sheet(0.5, 0.7, i % 2 ? M.armor : M.gun); const h = G(); h.position.set(Math.sin(a - PI / 6) * 0.98, 0, Math.cos(a - PI / 6) * 0.98); h.rotation.y = a - PI / 6 + PI / 2; p.rotation.y = 0; h.add(p); orb.add(h); }
+    const t = thr(0.08); t.position.set(Math.sin(a + PI / 6) * 0.38, Y - 0.36, Math.cos(a + PI / 6) * 0.38); b.add(t); tps.push(t);
+    const p = sheet(0.5, 0.7, i % 2 ? M.armor : M.gun); const h = G(); h.position.set(Math.sin(a - PI / 6) * 0.98, 0, Math.cos(a - PI / 6) * 0.98); h.rotation.y = a - PI / 6 + PI / 2; p.rotation.y = 0; h.add(p); orb.add(h); panels.push({ h, a: a - PI / 6 }); }
   const e = eye(0.13, 0.36, 0.5); e.position.y = Y + 0.55; b.add(e); const ef = hexRing(0.2, 0.025, M.steel); ef.position.y = Y + 0.38; b.add(ef);
   const an = cyl(0.01, 0.01, 0.4, M.steel, 5); an.position.set(0.2, Y + 0.55, 0); b.add(an);
-  return { g, core: Y + 0.55, update(t) { orb.rotation.y = t * 0.5; b.position.y = bob(t, 2, 0.03); } };
+  // The orbit turns two panel-spacings per 2*PI/1.6 s, so the baked sheet loops; the action throws the panels outward and flares the thrusters.
+  return { g, core: Y + 0.55, update(t, act) { const burst = act > 0.5 ? Math.sin(Math.min(1, (act - 0.5) / 0.5) * PI) : 0;
+    orb.rotation.y = t * 1.6 / 3; b.position.y = bob(t, 2, 0.03);
+    panels.forEach(P => { const R = 0.98 + burst * 0.26; P.h.position.set(Math.sin(P.a) * R, 0, Math.cos(P.a) * R); }); tps.forEach(tp => tp.scale.setScalar(1 + burst * 0.9)); } };
 });
 fx(72, "Pulse-turret bot: a hex base on four stubby legs, a column, a rotating turret whose big barrel houses the crystal as a capacitor lens, armour wedges round it and a spinning sensor.", () => {
   const g = G(), b = G(); g.add(b);

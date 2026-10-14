@@ -240,11 +240,13 @@ function _workNeutralise(actor) {
         : (actor._massTarget = nearestChargedMass(actor.x, actor.y, MASS_STATE.CHARGED));
     if (!m) return false;
 
+    const _nv = typeof evoNeutralise === 'function' ? evoNeutralise(actor) : null;   // the DYNAMO POD (js/evolution.js)
     const d = Math.hypot(m.x - actor.x, m.y - actor.y);
-    if (d > MASS_WORK_RANGE) { _moveToward(actor, m.x, m.y, 1.1); return true; }
+    if (d > MASS_WORK_RANGE * (_nv ? _nv.reach : 1)) { _moveToward(actor, m.x, m.y, 1.1 * (_nv ? _nv.speed : 1)); return true; }
 
     // In range — bleed the charge off.
-    m.progress += 1 / MASS_NEUTRALISE_FRAMES;
+    m.progress += (_nv ? _nv.rate : 1) / MASS_NEUTRALISE_FRAMES;
+    if (_nv) actor._sigAt = typeof frame !== 'undefined' ? frame : 0;
     actor.state = 'idle';
     if (typeof elementEffects !== 'undefined' && (frame || 0) % 8 === 0) {
         elementEffects.push({ type: 'impact', x: m.x, y: m.y, color: '#ffee33', radius: 0.35, life: 16 });

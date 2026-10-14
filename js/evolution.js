@@ -34,6 +34,10 @@
 //          duty, not a role), HEAVY HAUL: it hauls neutralised lumps
 //          HAULER_SPEED× as fast, picks them up from HAULER_REACH× as far, and
 //          each delivery pays HAULER_PAY× the shards (js/mass.js asks evoHaul).
+//          DYNAMO POD (the ELECTRIC WORKER, No. 71: an electric follower on
+//          worker duty), RAPID DISCHARGE: it bleeds the charge off mass lumps
+//          POD_RATE× as fast and from POD_REACH× as far, and walks to them
+//          POD_SPEED× as fast (js/mass.js asks evoNeutralise).
 //          SERPENT (the flux sniper, design No. 15), SINGULARITY SHOT: with an
 //          enemy within SERPENT_RANGE, every SERPENT_EVERY frames it rears up
 //          and fires a gravity round (SERPENT_MULT × its power) that DRAGS every
@@ -54,6 +58,7 @@ const SERPENT_RANGE = 6.5, SERPENT_EVERY = 330, SERPENT_MULT = 2.2, SERPENT_PULL
 const WARDEN_RADIUS = 2.2, WARDEN_EVERY = 360, WARDEN_MULT = 1.8, WARDEN_PUSH = 0.6, WARDEN_ALLY_R = 3.5, WARDEN_SHIELD = 0.35;
 const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;
 const HAULER_SPEED = 1.5, HAULER_REACH = 2, HAULER_PAY = 2;
+const POD_RATE = 3, POD_REACH = 2, POD_SPEED = 1.4;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
 
 const EVOLUTIONS = {
@@ -68,6 +73,9 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
     manta:  { id: "manta",  name: "STORM MANTA",  element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/manta.png",
               cell: 144, anchor: [72, 114.2], core: [72, 57], noGlow: true, color: "#ffee33" },
+    // The electric WORKER (the neutraliser): a worker is a duty, so it comes from an electric follower on worker duty.
+    pod:    { id: "pod",    name: "DYNAMO POD",   element: "electric", duty: "worker",  move: "RAPID DISCHARGE", sheet: "img/evo/pod.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 58], noGlow: true, color: "#ffee33" },
     // The flux WORKER: no role of its own (a worker is a duty); it comes from a flux follower on worker duty.
     hauler: { id: "hauler", name: "HOVER HAULER", element: "flux",     duty: "worker",  move: "HEAVY HAUL",   sheet: "img/evo/hauler.png",
               cell: 144, anchor: [72, 114.2], core: [72, 70], noGlow: true, color: "#bb66ff" },
@@ -231,6 +239,11 @@ function staticRush(f) {
     if (typeof elementEffects !== "undefined") for (const a of hits) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffee33", radius: 0.5, life: 18 });
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "STATIC RUSH", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
     return true;
+}
+// RAPID DISCHARGE: how fast and far the dynamo pod neutralises (js/mass.js asks). null if it is not one.
+function evoNeutralise(f) {
+    if (!f || f.evolved !== "pod") return null;
+    return { rate: POD_RATE, reach: POD_REACH, speed: POD_SPEED };
 }
 // HEAVY HAUL: what the hover hauler's hauling is worth (js/mass.js asks). null if it is not one.
 function evoHaul(f) {
