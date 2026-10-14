@@ -202,6 +202,44 @@ function awardKillXp(p) {
     }
     return total;
 }
+// ── XP FOR WORKING ─────────────────────────────────────────
+// REPORTED: "How much experience is granted for working? Can we sort that out
+// right now as opposed to experience from attacking?" It was NONE: only kills
+// gave XP, so a worker never levelled (or evolved, js/evolution.js).
+//
+// A finished job pays XP_WORK[job] × (the level of the enemies in the zone
+// you are in) ÷ LEVEL_START — the same scaling a kill has (killXp), so a worker
+// keeps pace with the fighters as the zones get harder. A kill's lump is worth
+// a neutralise and a haul between them, about a scout kill's worth. Mending
+// pays per point of health put into a clone; holding the line with an ice block
+// pays once it is set and then every XP_ICE_HOLD_EVERY frames an enemy is held
+// against it.
+const XP_WORK = { neutralise: 30, haul: 50, rearm: 80, ice: 40, iceHold: 10 };
+const XP_MEND_PER_HP   = 0.12;
+const XP_ICE_HOLD_EVERY = 120;
+function workXpScale() {
+    const z = typeof getZoneIndex === "function" && typeof player !== "undefined" ? Math.max(0, getZoneIndex(Math.floor(player.x))) : 0;
+    return Math.max(LEVEL_START, predatorLevelFor(z, 0, 0)) / LEVEL_START;
+}
+// A finished job's XP to a follower. Returns what it gave.
+function awardWorkXp(a, job) {
+    const base = typeof job === "number" ? job : XP_WORK[job];
+    if (!_xpUnit(a) || a.isClone || !(base > 0)) return 0;
+    const n = Math.max(1, Math.round(base * workXpScale()));
+    gainXp(a, n);
+    a._workXp = (a._workXp || 0) + n;
+    return n;
+}
+// Mending: per point of health put in, banked and paid whole.
+function awardMendXp(a, hp) {
+    if (!_xpUnit(a) || a.isClone || !(hp > 0)) return 0;
+    a._mendXpAcc = (a._mendXpAcc || 0) + hp * XP_MEND_PER_HP * workXpScale();
+    const whole = Math.floor(a._mendXpAcc);
+    if (whole < 1) return 0;
+    a._mendXpAcc -= whole; gainXp(a, whole); a._workXp = (a._workXp || 0) + whole;
+    return whole;
+}
+
 // A unit that died: back XP_DEATH_LOSS of the way toward its last level.
 function xpAfterDeath(u) {
     if (!u || !Number.isFinite(u.level)) return undefined;

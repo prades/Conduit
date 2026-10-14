@@ -189,6 +189,7 @@ function updateChargedMass() {
                 });
                 if (typeof elementEffects !== 'undefined')
                     elementEffects.push({ type: 'impact', x: _drop.x, y: _drop.y, color: '#ffdd44', radius: 0.7, life: 20 });
+                if (typeof awardWorkXp === 'function' && c.isFollower) awardWorkXp(c, 'haul');   // js/levels.js
                 c.carryingMass = null;
                 chargedMass.splice(i, 1);
             }
@@ -255,6 +256,7 @@ function _workNeutralise(actor) {
         m.progress = 1;
         m.state = MASS_STATE.NEUTRAL;
         actor._massTarget = null;
+        if (typeof awardWorkXp === 'function') awardWorkXp(actor, 'neutralise');   // js/levels.js
         floatingTexts.push({ x: m.x, y: m.y - 1, text: 'NEUTRALISED', color: '#ffee33', life: 50, vy: -0.06 });
     }
     return true;
@@ -403,6 +405,7 @@ function _workRepair(actor) {
     if (t.rearmProgress >= 1) {
         rearmPylon(t);
         actor._pylonTarget = null;
+        if (typeof awardWorkXp === 'function') awardWorkXp(actor, 'rearm');   // js/levels.js
         floatingTexts.push({ x: t.x, y: t.y - 1, text: 'BACK ONLINE', color: '#00ccaa', life: 60, vy: -0.06 });
     }
     return true;
@@ -508,6 +511,7 @@ function _workMendClone(actor) {
         clone._mendedAt = frame;
         mendSplash(actor, clone);
         const healed = mendStep(actor, clone);
+        if (healed > 0 && typeof awardMendXp === 'function') awardMendXp(actor, healed);   // js/levels.js
         if (healed > 0 && typeof elementEffects !== 'undefined' && (frame || 0) % 8 === 0) {
             elementEffects.push({ type: 'impact', x: clone.x, y: clone.y,
                                   color: MEND_COLOUR, radius: 0.45, life: 16 });
@@ -607,13 +611,16 @@ function iceBlockTick() {
         b.x = b.iceBlockX; b.y = b.iceBlockY;   // pinned, whatever pushed it
         if (b.iceFormFrames > 0) b.iceFormFrames--;
         iceBlockShove(b, false);
+        // Holding the line: an enemy up against it pays XP (js/levels.js).
+        if (b.duty === 'worker' && typeof awardWorkXp === 'function' && typeof XP_ICE_HOLD_EVERY === 'number' && (frame || 0) % XP_ICE_HOLD_EVERY === 0 && typeof unitsNear === 'function'
+            && unitsNear(b.x, 1.6).some(a => a && !a.dead && typeof isHostileTarget === 'function' && isHostileTarget(a) && Math.hypot(a.x - b.x, a.y - b.y) <= 1.6)) awardWorkXp(b, 'iceHold');
         n++;
     }
     return n;
 }
 
 function _workIceBlock(actor) {
-    if (!actor.iceBlock) freezeIntoBlock(actor);
+    if (!actor.iceBlock && freezeIntoBlock(actor) && typeof awardWorkXp === 'function') awardWorkXp(actor, 'ice');   // js/levels.js
     // A block does nothing else, ever — it does not walk, fight or seek. The
     // per-frame pinning and shoving is iceBlockTick's job so that it still runs
     // on a frame where the work tick is skipped.

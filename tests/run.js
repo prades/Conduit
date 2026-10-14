@@ -19,6 +19,7 @@ const SUITES = [
     ['every predator species, rebuilt', 'bugs3d.js'],
     ['three hits, then the Crystal', 'threehits.js'],
     ['follower evolutions', 'evolution.js'],
+    ['xp for working', 'workxp.js'],
     ['declared globals',       'globals.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],
