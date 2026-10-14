@@ -157,7 +157,7 @@ function slurryMound(r, h, seed) {   // slurry heaped up round the crystal's foo
 }
 function eatenCrystal(r, h, tip, reach) { return corroded(r, h, tip, 1.0, M.crystal, reach); }
 function _eatenDesign(opts) {
-  const g = G(), b = G(); g.add(b); const pool = slurryPool(1.0, opts.seed, 1); b.add(pool);
+  const g = G(), b = G(); g.add(b); const R = opts.R || 1.0, pool = slurryPool(R, opts.seed, 1); b.add(pool);
   const piv = G(); piv.position.set(0, 0.08, 0); piv.rotation.set(opts.tx, 0, opts.tz); b.add(piv);   // tilts about the point where it goes into the pool
   const cr = eatenCrystal(0.34, opts.h, 0.55, opts.reach); cr.position.y = opts.h / 2 + opts.up; piv.add(cr);
   const cg = glowSprite(0.85); cg.position.y = opts.h * 0.7 + opts.up; piv.add(cg);
@@ -165,9 +165,9 @@ function _eatenDesign(opts) {
   const mound = slurryMound(0.55, 0.32, opts.seed * 10); mound.position.y = 0.0; piv.add(mound);
   const bits = []; for (let i = 0; i < (opts.bits || 0); i++) { const c = eatenCrystal(0.07 + 0.02 * i, 0.18, 0.1, 0.6); b.add(c); bits.push(c); }
   const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.7, 0.7); b.add(L); LIGHTS.push(L);
-  return { g, core: opts.h * 0.7 + 0.2, update(t) { pool.shift(t); piv.rotation.z = opts.tz + 0.02 * Math.sin(1.6 * t); mound.scale.setScalar(1 + 0.04 * Math.sin(1.6 * t + 1));
-    bits.forEach((c, i) => { const a = i * 2.4 + 0.6 + 0.4 * Math.sin(1.6 * t + i), d = 0.7 + 0.15 * i; c.position.set(Math.sin(a) * d, 0.1, Math.cos(a) * d); c.rotation.set(1.1 + i * 0.3, a, 0.5); }); } };
+  return { g, core: opts.h * 0.7 + 0.2, update(t, act) { pool.shift(t); piv.rotation.z = opts.tz + 0.02 * Math.sin(1.6 * t); piv.rotation.x = opts.tx - 0.22 * (act || 0); mound.scale.setScalar(1 + 0.04 * Math.sin(1.6 * t + 1) + 0.12 * (act || 0));   // when it fires it recoils and the pool surges
+    bits.forEach((c, i) => { const a = i * 2.4 + 0.6 + 0.4 * Math.sin(1.6 * t + i), d = (0.7 + 0.15 * i) * R; c.position.set(Math.sin(a) * d, 0.1, Math.cos(a) * d); c.rotation.set(1.1 + i * 0.3, a, 0.5); }); } };
 }
 fx(101, "Eaten crystal, leaning.", () => _eatenDesign({ seed: 2.0, h: 1.5, up: 0.25, reach: 0.5, tx: -0.12, tz: -0.35 }));
 fx(102, "Eaten crystal, toppling.", () => _eatenDesign({ seed: 1.1, h: 1.6, up: 0.1, reach: 0.9, tx: -0.25, tz: -0.65 }));
-fx(103, "Eaten crystal, shedding bits.", () => _eatenDesign({ seed: 3.3, h: 1.4, up: 0.2, reach: 0.7, tx: 0.1, tz: -0.25, bits: 3 }));
+fx(103, "Eaten crystal, shedding bits.", () => _eatenDesign({ seed: 3.3, h: 1.4, up: 0.2, reach: 0.7, tx: 0.1, tz: -0.25, bits: 3, R: 0.8 }));

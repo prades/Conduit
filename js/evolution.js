@@ -49,6 +49,11 @@
 //          SIX rounds at once from the six crystals of its ring, one at each of
 //          the nearest enemies in turn (all six into one if it is alone), each
 //          HALO_MULT × its power and setting its target burning.
+//          ROTSHARD (the TOXIC SNIPER, design No. 103, the crystal half eaten by its pool),
+//          CORRODE SHOT: with an enemy within ROT_RANGE, every ROT_EVERY frames it
+//          fires one long shot (ROT_MULT × its power) that eats the target's armour
+//          (it takes 1 / ROT_SHRED × damage for ROT_SHRED_FRAMES) and splashes
+//          the same corrosion, at half strength, over whatever is within ROT_SPLASH_R.
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
 //          sheets in img/evo/: 8 facings × 16 frames (8 idle, 8 action),
 //          seen from the game's own iso angle.
@@ -63,6 +68,7 @@ const SERPENT_RANGE = 6.5, SERPENT_EVERY = 330, SERPENT_MULT = 2.2, SERPENT_PULL
 const WARDEN_RADIUS = 2.2, WARDEN_EVERY = 360, WARDEN_MULT = 1.8, WARDEN_PUSH = 0.6, WARDEN_ALLY_R = 3.5, WARDEN_SHIELD = 0.35;
 const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;
 const HALO_RANGE = 7, HALO_EVERY = 330, HALO_ROUNDS = 6, HALO_MULT = 0.8, HALO_BURN = 150;
+const ROT_RANGE = 7, ROT_EVERY = 320, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
 const HAULER_SPEED = 1.5, HAULER_REACH = 2, HAULER_PAY = 2;
 const POD_RATE = 3, POD_REACH = 2, POD_SPEED = 1.4;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
@@ -82,6 +88,9 @@ const EVOLUTIONS = {
     // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
     halo:   { id: "halo",   name: "CINDER HALO",  element: "fire",     role: "sniper",  move: "HEXFIRE",      sheet: "img/evo/halo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
+    // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
+    rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", move: "CORRODE SHOT", sheet: "img/evo/rotshard.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 70.9], noGlow: true, color: "#66ff66" },
     // The electric WORKER (the neutraliser): a worker is a duty, so it comes from an electric follower on worker duty.
     pod:    { id: "pod",    name: "DYNAMO POD",   element: "electric", duty: "worker",  move: "RAPID DISCHARGE", sheet: "img/evo/pod.png",
               cell: 144, anchor: [72, 114.2], core: [72, 58], noGlow: true, color: "#ffee33" },
@@ -112,7 +121,7 @@ function evoCheck(f) {
     if (typeof _applyFollowerLevel === "function") _applyFollowerLevel(f, false);
     f.health = f.maxHealth;
     if (typeof floatingTexts !== "undefined")
-        floatingTexts.push({ x: f.x, y: f.y - 1.4, text: "◆ EVOLVED · " + d.name, color: d.element === "fire" ? "#ffb066" : "#fff27a", life: 150, vy: -0.05, size: 13 });
+        floatingTexts.push({ x: f.x, y: f.y - 1.4, text: "◆ EVOLVED · " + d.name, color: d.element === "fire" ? "#ffb066" : d.element === "toxic" ? "#99ff88" : "#fff27a", life: 150, vy: -0.05, size: 13 });
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 4);
     return true;
 }
@@ -129,7 +138,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
-        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f);
+        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f);
     }
 }
 function _evoFoes(x, y, r) {
@@ -221,6 +230,29 @@ function hexfire(f) {
     f._arcPts = pts; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcFan = true; f._arcCol = [255, 110, 34];
     { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "HEXFIRE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+
+// CORRODE SHOT: one long shot that eats the target's armour, splashing weaker corrosion round it. True when it fired.
+function corrodeShot(f) {
+    const foes = _evoFoes(f.x, f.y, ROT_RANGE);
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    applyDamage(tgt, (f.power || 10) * ROT_MULT, f, "toxic");
+    tgt.defenseShredded = Math.max(tgt.defenseShredded || 0, ROT_SHRED_FRAMES); tgt.defenseShredFactor = Math.min(tgt.defenseShredFactor || 1, ROT_SHRED);
+    for (const a of _evoFoes(tgt.x, tgt.y, ROT_SPLASH_R)) {
+        if (a === tgt) continue;
+        a.defenseShredded = Math.max(a.defenseShredded || 0, ROT_SPLASH_FRAMES); a.defenseShredFactor = Math.min(a.defenseShredFactor || 1, ROT_SPLASH_SHRED);
+    }
+    f._sigAt = f0; f._sigCd = ROT_EVERY;
+    f._arcPts = [{ x: tgt.x, y: tgt.y }]; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcFan = false; f._arcCol = [120, 255, 110];
+    { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    if (typeof elementEffects !== "undefined") {
+        elementEffects.push({ type: "ring", x: tgt.x, y: tgt.y, radius: ROT_SPLASH_R, color: "#66ff66", life: 36 });
+        elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#66ff66", radius: 0.6, life: 22 });
+    }
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "CORRODE", color: "#88ff88", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 

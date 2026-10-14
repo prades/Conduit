@@ -73,6 +73,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('fire', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'bloom', 'the fire brawler');
         mk('fire', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire worker waits (no worker form for it)');
     });
+    check('THE ASK: a TOXIC SNIPER becomes the ROTSHARD (design No. 103, the crystal eaten by its pool); other toxic followers wait', () => {
+        mk('toxic', 'sniper', 20); run(lvlUp);
+        const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
+        same(r.evo, 'rotshard', 'its form'); same(r.tag, 'ROTSHARD', 'its tag'); same(r.role, 'sniper', 'its role');
+        for (const role of ['brawler', 'camper']) { mk('toxic', role, 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic ' + role); }
+        mk('toxic', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic worker waits (no worker form for it)');
+    });
     check('…and nobody else: not an ice brawler, an electric brawler — nor before level 20', () => {
         for (const [el, role] of [['ice', 'brawler'], ['flux', 'brawler'], ['core', 'sniper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
         mk('fire', 'brawler', 19); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 19');
@@ -139,6 +146,20 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.a > 0 && r.b > 0 && r.c > 0 && r.burn, 'shared out among the three, burning: ' + JSON.stringify(r));
         same(r.far, 0, 'damage 20 tiles away'); ok(r.fan, 'the rounds do not fan from the ring'); ok(r.cd > 300, 'it did not wait');
         ok(Math.abs(r.solo - 6 * r.per) < 1e-3, 'alone, all six go into the one: ' + JSON.stringify(r));
+    });
+
+    check('THE ASK: CORRODE SHOT — one long shot that eats the nearest enemy\'s armour, with a weaker corrosion splashed over its neighbours', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('toxic'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'rotshard'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const a = mkP(24, 2), b = mkP(25, 2.8), far = mkP(40, 2), apart = mkP(24, 7);
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), far: d(far), apart: d(apart), sa: [a.defenseShredded, a.defenseShredFactor], sb: [b.defenseShredded, b.defenseShredFactor], sfar: far.defenseShredded || 0, sapart: apart.defenseShredded || 0, cd: f._sigCd };
+            [a, b, far, apart].forEach(p => p.dead = true); return out; })()`);
+        ok(r.a > 0 && r.b === 0, 'one shot, into the nearest: ' + JSON.stringify(r));
+        ok(r.sa[0] >= run('ROT_SHRED_FRAMES') && r.sa[1] <= run('ROT_SHRED'), 'the target\'s armour: ' + JSON.stringify(r));
+        ok(r.sb[0] > 0 && r.sb[0] < r.sa[0] && r.sb[1] > r.sa[1] && r.sb[1] < 1, 'the neighbour\'s weaker corrosion: ' + JSON.stringify(r));
+        same(r.sfar, 0, 'corroded out of range'); same(r.sapart, 0, 'corroded beyond the splash'); ok(r.cd > 300, 'it did not wait');
     });
 
     check('THE ASK: SINGULARITY SHOT — a gravity round into the nearest enemy, dragging those round it in; a beetle is too heavy', () => {
@@ -263,7 +284,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }

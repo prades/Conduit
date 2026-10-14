@@ -10,8 +10,8 @@ const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs'), path = require('path');
 const THREE_DIR = process.argv[2], OUT = process.argv[3];
 const core = fs.readFileSync(path.join(__dirname, 'forms-core.js'), 'utf8');
-// forms2.js (helpers + Nos. 33-52), forms3.js (sentinels, robots, drones, Nos. 53-72) and forms4.js (ancient relics, Nos. 73-92) register FORMS2[no].
-const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8'), f4src = fs.readFileSync(path.join(__dirname, 'forms4.js'), 'utf8');
+// forms2.js (helpers + Nos. 33-52), forms3.js (sentinels, robots, drones, Nos. 53-72) and forms4.js (ancient relics, Nos. 73-92), forms5.js (the corroded crystal, Nos. 93-103) register FORMS2[no].
+const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8'), f4src = fs.readFileSync(path.join(__dirname, 'forms4.js'), 'utf8'), f5src = fs.readFileSync(path.join(__dirname, 'forms5.js'), 'utf8');
 const JOBS = [
   { id: 'reaver', form: 'reaver', color: '#ffee33', idleAct: 0.3, action: [0.8, 1.0] },
   { id: 'bloom',  form: 'bunker', color: '#ff3300', idleAct: 0.2, action: [0.5, 1.0] },
@@ -23,6 +23,8 @@ const JOBS = [
   { id: 'manta',  form: 68, color: '#ffee33', idleAct: 0.2, action: [0.55, 1.0] },
   { id: 'pod',    form: 71, color: '#ffee33', idleAct: 0.2, action: [0.55, 1.0] },
   { id: 'halo',   form: 90, color: '#ff3300', idleAct: 0.1, action: [0.6, 1.0] },
+  // No. 103, the toxic sniper: the pool's shift loops over the idle period; its action is the recoil of a shot.
+  { id: 'rotshard', form: 103, color: '#14c040', idleAct: 0, action: [0.5, 1.0] },
 ].filter(j => !process.argv[4] || process.argv[4].split(',').includes(j.id));
 const CELL = 144, HALF = 1.7, LOOK_Y = 1.15;
 
@@ -32,6 +34,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   ${f2src}
   ${f3src}
   ${f4src}
+  ${f5src}
   const out = {};
   const renderer = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, premultipliedAlpha: false });
   renderer.setPixelRatio(1); renderer.setSize(CELL * 2, CELL * 2, false);
@@ -57,7 +60,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
     const back = new T.DirectionalLight(0x6c8cff, 0.6); back.position.set(2, 1, -5); scene.add(back);
     const B = (typeof job.form === 'number' ? FORMS2 : FORMS)[job.form].build(); scene.add(B.g);
     // Glow sprites on a transparent sheet are left to the game (it draws its own glow at the reactor).
-    B.g.traverse(o => { if (o.isSprite) o.visible = false; });
+    B.g.traverse(o => { if (o.isSprite || o.material === M.rotWash) o.visible = false; });   // (the pool's wide glow is for the mock sheets)
     const cam = new T.OrthographicCamera(-HALF, HALF, HALF, -HALF, 0.1, 100);
     // 2:1 iso: on the (1, h, 1) diagonal, a ground step along x or z projects as (±1, 0.5) when sin(elevation) = 0.5.
     const D = 10;
