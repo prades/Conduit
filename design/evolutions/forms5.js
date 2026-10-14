@@ -27,30 +27,37 @@ function shellShard(len, w, th) {   // a broken piece of the old black shell: ja
   const g = G(); g.add(plate([[-w / 2, 0], [-w * 0.52, len * 0.4], [-w * 0.24, len * 0.52], [-w * 0.34, len * 0.88], [0, len], [w * 0.36, len * 0.62], [w * 0.14, len * 0.5], [w * 0.5, len * 0.22], [w / 2, 0]], th, 0.008, M.black));
   const cr = cbox(0.012, len * 0.42, th * 1.1, 0.002, M.glow); cr.position.set(w * 0.04, len * 0.3, th / 2); g.add(cr); return g;   // a hairline of crystal light in the crack
 }
-// The pool's edge: a blobby outline, wider in places and pinched in others, with a couple of lobes running out. a = angle round it (0 = +z), seed varies the shape.
-function blobR(a, R, seed) {
-  const sd = seed || 0;
-  return R * (1 + 0.16 * Math.sin(2 * a + sd * 3.1) + 0.11 * Math.sin(3 * a + sd * 1.7 + 1) + 0.07 * Math.sin(5 * a + sd * 2.3) + 0.2 * Math.exp(-Math.pow(((a - sd * 2.2) % TAU + TAU + PI) % TAU - PI, 2) * 3));
+// The pool's edge: a blobby outline, wider in places and pinched in others, with a lobe running out. a = angle round it
+// (0 = +z), seed varies the shape, t shifts it: the harmonics turn at whole multiples of 1.6 rad/s, so the idle loop (2π/1.6 s) closes.
+function blobR(a, R, seed, t) {
+  const sd = seed || 0, w = 1.6 * (t || 0), L = (((a - sd * 2.2 - w) % TAU) + TAU + PI) % TAU - PI;
+  return R * (1 + 0.16 * Math.sin(2 * a + sd * 3.1 + w) + 0.11 * Math.sin(3 * a + sd * 1.7 + 1 - w) + 0.07 * Math.sin(5 * a + sd * 2.3 + 2 * w) + 0.2 * Math.exp(-L * L * 3));
 }
-function blobShape(R, seed, k, cx, cz) {   // the outline as a Shape in x-y (y = -z once laid flat)
+function blobShape(R, seed, k, cx, cz, t) {   // the outline as a Shape in x-y (y = -z once laid flat)
   const sh = new T.Shape(), N = 64;
-  for (let i = 0; i <= N; i++) { const a = i / N * TAU, r = blobR(a, R, seed) * (k || 1); const x = (cx || 0) + Math.sin(a) * r, z = (cz || 0) + Math.cos(a) * r; if (i) sh.lineTo(x, -z); else sh.moveTo(x, -z); }
+  for (let i = 0; i <= N; i++) { const a = i / N * TAU, r = blobR(a, R, seed, t) * (k || 1); const x = (cx || 0) + Math.sin(a) * r, z = (cz || 0) + Math.cos(a) * r; if (i) sh.lineTo(x, -z); else sh.moveTo(x, -z); }
   return sh;
 }
 function slurryPool(R, seed) {
-  const g = G();
-  const lay = (geo, mat, y) => { const m = new T.Mesh(geo, mat); m.rotation.x = -PI / 2; m.position.y = y; g.add(m); return m; };
-  lay(new T.ExtrudeGeometry(blobShape(R, seed, 1.07), { depth: 0.05, bevelEnabled: false }), M.rotDk, 0);       // the dark lip
-  lay(new T.ExtrudeGeometry(blobShape(R, seed, 1.0), { depth: 0.045, bevelEnabled: false }), M.slurry, 0.035);   // the pool
-  lay(new T.ShapeGeometry(blobShape(R, seed, 1.5)), M.rotWash, 0.012);
-  // two small puddles that have got away from it
-  for (let i = 0; i < 2; i++) { const a = seed * 2.7 + i * 2.9 + 1, d = blobR(a, R, seed) * 1.25 + 0.12; const r = 0.13 + 0.05 * i;
-    lay(new T.ExtrudeGeometry(blobShape(r, seed + i + 1, 1, Math.sin(a) * d, Math.cos(a) * d), { depth: 0.04, bevelEnabled: false }), M.slurry, 0.005); }
+  const g = G(), parts = [];
+  const lay = (build, mat, y) => { const m = new T.Mesh(build(0), mat); m.rotation.x = -PI / 2; m.position.y = y; g.add(m); parts.push({ m, build }); };
+  const ext = (sh, depth) => new T.ExtrudeGeometry(sh, { depth, bevelEnabled: false });
+  lay(t => ext(blobShape(R, seed, 1.07, 0, 0, t), 0.05), M.rotDk, 0);        // the dark lip
+  lay(t => ext(blobShape(R, seed, 1.0, 0, 0, t), 0.045), M.slurry, 0.035);   // the pool
+  lay(t => new T.ShapeGeometry(blobShape(R, seed, 1.5, 0, 0, t)), M.rotWash, 0.012);
+  // two small puddles that have got away from it, drifting with it
+  for (let i = 0; i < 2; i++) lay(t => { const a = seed * 2.7 + i * 2.9 + 1 + 0.3 * Math.sin(1.6 * t + i * 2), d = blobR(a, R, seed, t) * 1.25 + 0.12;
+    return ext(blobShape(0.13 + 0.05 * i, seed + i + 1, 1, Math.sin(a) * d, Math.cos(a) * d, t), 0.04); }, M.slurry, 0.005);
+  g.shift = t => parts.forEach(p => { p.m.geometry.dispose(); p.m.geometry = p.build(t); });
+  g.shift(0.9);
   return g;
 }
-function rimShards(parent, R, n, seed) {   // pitted off-colour crystals standing round the pool's irregular edge
-  for (let i = 0; i < n; i++) { const a = i * TAU / n + seed + (_hz(i, seed, 9) - 0.5) * 0.5, ra = _hz(i, seed, 1), c = corroded(0.06 + ra * 0.04, 0.16 + ra * 0.2, 0.1, 0.8, i % 3 ? M.rot : M.rotDk), rr = blobR(a, R, seed) * (0.9 + 0.12 * _hz(i, seed, 5));
-    const g = G(); g.position.set(Math.sin(a) * rr, 0.1 + ra * 0.05, Math.cos(a) * rr); g.rotation.set((ra - 0.5) * 0.9, 0, (_hz(seed, i, 2) - 0.5) * 0.9); c.position.y = 0.12; g.add(c); parent.add(g); }
+function rimShards(parent, R, n, seed) {   // pitted off-colour crystals standing round the pool's irregular edge; returns update(t), which moves them with the edge
+  const all = [];
+  for (let i = 0; i < n; i++) { const a = i * TAU / n + seed + (_hz(i, seed, 9) - 0.5) * 0.5, ra = _hz(i, seed, 1), c = corroded(0.06 + ra * 0.04, 0.16 + ra * 0.2, 0.1, 0.8, i % 3 ? M.rot : M.rotDk), k = 0.9 + 0.12 * _hz(i, seed, 5);
+    const g = G(); g.rotation.set((ra - 0.5) * 0.9, 0, (_hz(seed, i, 2) - 0.5) * 0.9); c.position.y = 0.12; g.add(c); parent.add(g); all.push({ g, a, k, y: 0.1 + ra * 0.05 }); }
+  const place = t => all.forEach(o => { const rr = blobR(o.a, R, seed, t) * o.k; o.g.position.set(Math.sin(o.a) * rr, o.y, Math.cos(o.a) * rr); });
+  place(0.9); return place;
 }
 function drips(parent, x, z, y0, n, cols) {   // beads of slurry falling off the corroded half: update(t) moves them
   const out = [];
@@ -60,57 +67,54 @@ function drips(parent, x, z, y0, n, cols) {   // beads of slurry falling off the
 function _crystalHalf(r, h, tip) { const c = hexCrystal(r, h, tip, M.crystal); return c; }
 
 fx(93, "Half-sunk crystal.", () => {   // standing in the pool, top half clean, a black shard through it
-  const g = G(), b = G(); g.add(b); b.add(slurryPool(1.0, 0.3)); rimShards(b, 1.0 * 0.92, 7, 0.3);
+  const g = G(), b = G(); g.add(b); const pool = slurryPool(1.0, 0.3); b.add(pool); const rim = rimShards(b, 1.0 * 0.92, 7, 0.3);
   const body = G(); b.add(body); body.rotation.z = 0.1;
   const low = corroded(0.32, 0.9, 0.35, 1.0); low.position.y = 0.75; body.add(low);
   const top = _crystalHalf(0.3, 0.7, 0.45); top.position.y = 1.65; body.add(top); const cg = glowSprite(0.7); cg.position.y = 1.7; body.add(cg);
   for (let i = 0; i < 4; i++) { const a = i * 1.7, sc = mesh(new T.IcosahedronGeometry(0.06, 0), M.scab, Math.sin(a) * 0.3, 1.25 + i * 0.08, Math.cos(a) * 0.3); sc.scale.y = 0.5; body.add(sc); }
-  const s1 = shellShard(1.0, 0.3, 0.05); s1.position.set(-0.1, 1.15, 0.28); s1.rotation.set(0.2, 0.3, 0.45); body.add(s1);
-  const s2 = shellShard(0.5, 0.2, 0.04); s2.position.set(0.22, 1.5, -0.2); s2.rotation.set(-0.1, 2.4, -0.5); body.add(s2);
+  const s1 = shellShard(0.8, 0.3, 0.05); s1.position.set(-0.1, 1.2, 0.28); s1.rotation.set(0.2, 0.3, 0.45); body.add(s1);
   const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.7, 0.6); body.add(L); LIGHTS.push(L);
-  return { g, core: 1.7, update(t) { body.position.y = bob(t, 0, 0.03); } };
+  return { g, core: 1.7, update(t) { pool.shift(t); rim(t); body.position.y = bob(t, 0, 0.03); } };
 });
 fx(94, "Corroded rifle crystal.", () => {   // tilted like a barrel: the clean tip aims, the rotten tail drips into the pool
-  const g = G(), b = G(); g.add(b); b.add(slurryPool(1.05, 1.1)); rimShards(b, 1.05 * 0.92, 6, 1.1);
+  const g = G(), b = G(); g.add(b); const pool = slurryPool(1.05, 1.1); b.add(pool); const rim = rimShards(b, 1.05 * 0.92, 6, 1.1);
   const body = G(); body.position.set(0, 1.15, 0); body.rotation.x = 1.0; b.add(body);   // long axis points forward and a little up
   const low = corroded(0.27, 1.1, 0.3, 1.0, M.rot, 0.15); low.position.y = -0.45; body.add(low);
   const top = _crystalHalf(0.25, 0.8, 0.5); top.position.y = 0.55; body.add(top);
   const cg = glowSprite(0.65); cg.position.set(0, 0.9, 0); body.add(cg);
-  const sh = shellShard(1.0, 0.3, 0.05); sh.position.set(0.0, 0.1, -0.2); sh.rotation.set(-0.3, 0.1, 0.0); body.add(sh);   // the old spine along its back
-  const sh2 = shellShard(0.55, 0.22, 0.04); sh2.position.set(0.18, 0.4, 0.05); sh2.rotation.set(0.1, 1.6, 0.4); body.add(sh2);
+  const sh = shellShard(0.8, 0.3, 0.05); sh.position.set(0.0, 0.1, -0.2); sh.rotation.set(-0.3, 0.1, 0.0); body.add(sh);   // the old spine along its back
   const dr = drips(b, 0, -0.55, 0.85, 5);
   const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.5, 0.9); b.add(L); LIGHTS.push(L);
-  return { g, core: 1.7, update(t) { body.position.y = 1.15 + bob(t, 1, 0.03); dr(t); } };
+  return { g, core: 1.7, update(t) { pool.shift(t); rim(t); body.position.y = 1.15 + bob(t, 1, 0.03); dr(t); } };
 });
 fx(95, "Scabbed crystal.", () => {   // clean crystal wearing corroded scab plates on its lower half and one side, a black shard cap on top
-  const g = G(), b = G(); g.add(b); b.add(slurryPool(1.0, 2.0)); rimShards(b, 1.0 * 0.92, 6, 2.0);
+  const g = G(), b = G(); g.add(b); const pool = slurryPool(1.0, 2.0); b.add(pool); const rim = rimShards(b, 1.0 * 0.92, 6, 2.0);
   const body = G(); body.position.y = 0.3; b.add(body);
   const cr = _crystalHalf(0.34, 1.3, 0.55); cr.position.y = 1.05; body.add(cr); const cg = glowSprite(0.85); cg.position.y = 1.25; body.add(cg);
   for (let i = 0; i < 9; i++) { const a = 0.4 + i * 0.7, y = 0.45 + (i % 4) * 0.28, k = 1 - (y - 0.4) / 1.0;
     const pl = corroded(0.1 + k * 0.05, 0.3, 0.12, 0.7, i % 2 ? M.rot : M.scab); const holder = G(); holder.position.set(Math.sin(a) * 0.38, y, Math.cos(a) * 0.38); holder.rotation.set(Math.cos(a) * 0.5, 0, -Math.sin(a) * 0.5); holder.add(pl); body.add(holder); }
-  const cap = shellShard(0.8, 0.36, 0.05); cap.position.set(-0.05, 1.62, 0.28); cap.rotation.set(0.5, 0.25, 0.3); body.add(cap);
-  const cap2 = shellShard(0.62, 0.3, 0.05); cap2.position.set(0.1, 1.7, -0.26); cap2.rotation.set(-0.45, 3.0, -0.25); body.add(cap2);
+  const cap = shellShard(0.8, 0.32, 0.05); cap.position.set(-0.05, 1.62, 0.28); cap.rotation.set(0.5, 0.25, 0.3); body.add(cap);
   const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.7, 0.7); body.add(L); LIGHTS.push(L);
-  return { g, core: 1.35, update(t) { body.position.y = 0.3 + bob(t, 0, 0.02); } };
+  return { g, core: 1.35, update(t) { pool.shift(t); rim(t); body.position.y = 0.3 + bob(t, 0, 0.02); } };
 });
 fx(96, "Corroded crystal and satellites.", () => {   // a big rotting crystal in the pool, the shell's black shards orbiting its clean tip
-  const g = G(), b = G(), orb = G(); g.add(b); b.add(slurryPool(1.1, 0.7)); rimShards(b, 1.1 * 0.92, 8, 0.7);
+  const g = G(), b = G(), orb = G(); g.add(b); const pool = slurryPool(1.1, 0.7); b.add(pool); const rim = rimShards(b, 1.1 * 0.92, 8, 0.7);
   const body = G(); body.rotation.z = -0.12; b.add(body);
   const low = corroded(0.36, 1.0, 0.35, 1.0); low.position.y = 0.7; body.add(low);
   const top = _crystalHalf(0.33, 0.9, 0.55); top.position.y = 1.7; body.add(top); const cg = glowSprite(0.9); cg.position.y = 1.8; body.add(cg);
   orb.position.y = 1.95; b.add(orb);
-  for (let i = 0; i < 3; i++) { const a = i * TAU / 3, s = shellShard(0.5 + 0.12 * i, 0.22, 0.04), h = G(); h.position.set(Math.sin(a) * 0.62, (i - 1) * 0.12, Math.cos(a) * 0.62); h.rotation.y = a; s.rotation.set(0.0, PI / 2, 0.5); h.add(s); orb.add(h); }
+  for (let i = 0; i < 1; i++) { const a = i * TAU / 3, s = shellShard(0.75, 0.28, 0.05), h = G(); h.position.set(Math.sin(a) * 0.62, (i - 1) * 0.12, Math.cos(a) * 0.62); h.rotation.y = a; s.rotation.set(0.0, PI / 2, 0.5); h.add(s); orb.add(h); }
   const sat = []; for (let i = 0; i < 3; i++) { const c = hexCrystal(0.06, 0.18, 0.1, M.crystal); b.add(c); sat.push(c); }
   const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.9, 0.8); b.add(L); LIGHTS.push(L);
-  return { g, core: 1.8, update(t) { body.position.y = bob(t, 0, 0.025); orb.rotation.y = t * 0.6; sat.forEach((c, i) => { const a = t * 0.9 + i * TAU / 3; c.position.set(Math.sin(a) * 0.75, 0.55 + 0.3 * Math.sin(t + i), Math.cos(a) * 0.75); c.rotation.z = Math.sin(a) * 0.3; }); } };
+  return { g, core: 1.8, update(t) { pool.shift(t); rim(t); body.position.y = bob(t, 0, 0.025); orb.rotation.y = t * 0.6; sat.forEach((c, i) => { const a = t * 0.9 + i * TAU / 3; c.position.set(Math.sin(a) * 0.75, 0.55 + 0.3 * Math.sin(t + i), Math.cos(a) * 0.75); c.rotation.z = Math.sin(a) * 0.3; }); } };
 });
 fx(97, "Rising shard-clawed crystal.", () => {   // tall, rising out of the pool: slimy base, pristine tip, three black shell shards clasped round it like claws
-  const g = G(), b = G(); g.add(b); b.add(slurryPool(0.95, 3.3)); rimShards(b, 0.95 * 0.92, 7, 3.3);
+  const g = G(), b = G(); g.add(b); const pool = slurryPool(0.95, 3.3); b.add(pool); const rim = rimShards(b, 0.95 * 0.92, 7, 3.3);
   const body = G(); b.add(body);
   const low = corroded(0.3, 1.0, 0.3, 1.0, M.rot, 0.2); low.position.y = 0.75; body.add(low);
   const top = _crystalHalf(0.28, 0.8, 0.5); top.position.y = 1.75; body.add(top); const cg = glowSprite(0.8); cg.position.y = 1.8; body.add(cg);
-  for (let i = 0; i < 3; i++) { const a = i * TAU / 3 + 0.4, s = shellShard(0.95, 0.26, 0.045), h = G(); h.position.set(Math.sin(a) * 0.3, 1.2, Math.cos(a) * 0.3); h.rotation.y = a; s.rotation.set(-0.12, 0, 0); s.rotation.x = -0.18; h.add(s); body.add(h); s.position.z = 0.0; }
+  for (let i = 0; i < 1; i++) { const a = 0.4, s = shellShard(0.8, 0.3, 0.05), h = G(); h.position.set(Math.sin(a) * 0.3, 1.2, Math.cos(a) * 0.3); h.rotation.y = a; s.rotation.set(-0.12, 0, 0); s.rotation.x = -0.18; h.add(s); body.add(h); s.position.z = 0.0; }
   const dr = drips(b, 0, 0, 0.9, 5);
   const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.8, 0.8); b.add(L); LIGHTS.push(L);
-  return { g, core: 1.8, update(t) { body.position.y = bob(t, 0, 0.03); dr(t); } };
+  return { g, core: 1.8, update(t) { pool.shift(t); rim(t); body.position.y = bob(t, 0, 0.03); dr(t); } };
 });
