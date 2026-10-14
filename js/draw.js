@@ -339,6 +339,14 @@ function _drawPredator(actor, px, py, drawCtx) {
         drawCtx.restore();
         return;
     }
+    // THE BEETLE has its own body, built on the ground and projected (js/beetle3d.js).
+    if (actor.speciesName === "beetle" && typeof drawBeetle3D === "function") {
+        drawBeetle3D(actor, px, py, drawCtx);
+        // Its bars just over its shell (it is lower than the other bodies).
+        const _s = (actor.dimensions ? actor.dimensions.width : 26) / 26;
+        _drawPredatorBars(actor, px, py + Math.max(0, 69 - 25 * _s) - (actor.leapLift || 0), drawCtx);
+        return;
+    }
     const dim=actor.dimensions;
     // leapLift is screen-space height during a scout's arc jump, so the whole
     // creature — body and legs — rises off the floor together.
@@ -1070,6 +1078,11 @@ function _drawPredator(actor, px, py, drawCtx) {
     }
 
     if (actor.isNymph) drawCtx.globalAlpha = 1; // restore after nymph transparency
+    _drawPredatorBars(actor, px, py, drawCtx);
+}
+// Its health bar, level tag, ability charge, ally bracket and shield bar —
+// shared by every body (the beetle's is js/beetle3d.js).
+function _drawPredatorBars(actor, px, py, drawCtx) {
     const _isAllyPred = actor.team === "green" || actor.isClone;
     drawHealthBar(px-18, py-85, 36, 5, actor.health, actor.maxHealth, drawCtx, _isAllyPred);
     // Its level and kind, over the bar (js/levels.js).
