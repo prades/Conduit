@@ -372,7 +372,8 @@ function followerRosterSnapshot() {
         // own (already less what dying cost).
         base:        a.base || undefined,
         level:       a.level,
-        xp:          a.xp
+        xp:          a.xp,
+        evolved:     a.evolved || undefined   // js/evolution.js
     }));
 }
 function saveFollowerRoster() {
@@ -399,6 +400,8 @@ function spawnFollowerFromSave(entry) {
         combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk
     };
     if (typeof bondRestoreFields === "function") bondRestoreFields(npc, entry);
+    // Evolved (js/evolution.js): set before its level, so the evolved stats apply.
+    if (entry.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[entry.evolved]) npc.evolved = entry.evolved;
     // Its level and XP (js/levels.js); an old save's stats are its level-5 base.
     if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp });
     // Back on the duty it was on (a worker stays a worker).

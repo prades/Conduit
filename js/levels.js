@@ -96,6 +96,8 @@ function initFollowerLevel(npc, entry) {
 function _applyFollowerLevel(npc, fresh) {
     const was = npc.maxHealth || 0;
     npc.stats = levelledStats(npc.base, npc.level);
+    // An EVOLVED follower (js/evolution.js) is tougher and hits harder, for good.
+    if (npc.evolved && typeof EVOLVE_MULT === "number") { npc.stats.hp = Math.round(npc.stats.hp * EVOLVE_MULT); npc.stats.attack = Math.round(npc.stats.attack * EVOLVE_MULT); }
     npc.maxHealth = npc.stats.hp;
     npc.power = npc.stats.attack;
     if (fresh) { npc.health = npc.maxHealth; npc.currentWill = npc.stats.will; }
@@ -171,6 +173,7 @@ function gainXp(u, n) {
         if (typeof floatingTexts !== "undefined")
             floatingTexts.push({ x: u.x, y: u.y - 1.2, text: "▲ LEVEL " + u.level, color: "#ffee66", life: 70, vy: -0.07, size: 12 });
         if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: u.x, y: u.y, color: "#ffee66", radius: 0.6, life: 22 });
+        if (!u.isClone && typeof evoCheck === "function") evoCheck(u);   // level 20: it may evolve (js/evolution.js)
     }
     return ups;
 }
@@ -211,6 +214,7 @@ function xpAfterDeath(u) {
 function unitTypeLabel(a) {
     if (!a) return "";
     if (a.isClone) return String(a.speciesName || "").toUpperCase() + " CLONE";
+    if (a.isFollower && a.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[a.evolved]) return EVOLUTIONS[a.evolved].name;
     if (a.isFollower) return String(a.element || "").toUpperCase() + " " + String(a.role || "").toUpperCase();
     // An enemy names its element (the type chart is in every fight now).
     if (a.speciesName) return (a.element ? String(a.element).toUpperCase() + " " : "") + String(a.speciesName).toUpperCase() + " " + String(a.className || "").toUpperCase() + (a.isElite ? " ★" : "");

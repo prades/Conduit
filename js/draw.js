@@ -1586,7 +1586,9 @@ function _drawVirus(actor, px, py, drawCtx) {
     }
 
     const _figOpts = _virusSpriteOk(actor) ? null : { bubbles: true };
-    if (_figOpts) _drawVirusFigure(drawCtx, px, py, actor, flash, er, eg, eb, wc, _figOpts);
+    // EVOLVED (js/evolution.js): the machine it molted into, not the egg.
+    if (typeof drawEvolvedFollower === "function" && drawEvolvedFollower(actor, px, py, drawCtx)) {}
+    else if (_figOpts) _drawVirusFigure(drawCtx, px, py, actor, flash, er, eg, eb, wc, _figOpts);
     else {
         // THE CACHED FIGURE. Legs and glass body come off a sprite keyed by
         // element, stat-driven shape and a 12-step walk pose; only the
@@ -1603,6 +1605,7 @@ function _drawVirus(actor, px, py, drawCtx) {
 
     // ── TOXIC TRANSPARENCY WRAPPER — end ─────────────────────────────────────
     if (_hasSmokeForm) drawCtx.restore();
+    if (actor.evolved && typeof drawEvolvedOverlay === "function") drawEvolvedOverlay(actor, px, py, drawCtx);
 
     // ─────────────────────────────────────────────────────────────────────────
     //  PHYSICAL ATTACK VISUAL EFFECTS  (drawn at full alpha, on top of body)

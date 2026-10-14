@@ -2758,7 +2758,8 @@ function render() {
             respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid, duty:a.duty === "worker" ? "worker" : null,
                 // Its level comes back with it, less some XP (js/levels.js).
                 base: a.base ? Object.assign({}, a.base, { hp: Math.max(1, newHp) }) : undefined,
-                level: a.level, xp: typeof xpAfterDeath === "function" ? xpAfterDeath(a) : a.xp });
+                level: a.level, xp: typeof xpAfterDeath === "function" ? xpAfterDeath(a) : a.xp,
+                evolved: a.evolved || undefined });
         }
         // Progression counts EVERY enemy killed, wanderers included — it is a
         // record of what you have fought, not of wave quotas. The wave counter
@@ -2844,7 +2845,8 @@ function render() {
 
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
-    if (typeof shieldCellTick === "function") shieldCellTick();   // CORE pylons make shield cells; shields spend them (js/shieldcells.js)
+    if (typeof shieldCellTick === "function") shieldCellTick();
+    if (typeof evolutionTick === "function") evolutionTick();     // level 20: the egg sheds (js/evolution.js)   // CORE pylons make shield cells; shields spend them (js/shieldcells.js)
     shieldGenHuntTick();
 
     // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
@@ -4408,7 +4410,9 @@ function render() {
                 const personality = entry.personality || PERSONALITY_KEYS[Math.floor(Math.random()*PERSONALITY_KEYS.length)];
                 const stats       = applyPersonality(personality);
                 if (entry.hpStat!==undefined) stats.hp = entry.hpStat;
-                const role        = assignRole(stats);
+                // An EVOLVED follower comes back as the same machine: its element and role are its form's.
+                const _evo        = entry.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[entry.evolved] : null;
+                const role        = _evo ? _evo.role : assignRole(stats);
                 const hp          = entry.ghostphageLife ? 1 : stats.hp;
                 // The element comes from the Crystal, not from the corpse. A
                 // follower respawns AT the crystal, so it is re-modulated on the
@@ -4418,7 +4422,7 @@ function render() {
                 const rPool = activeCrystalModulation
                     ? activeCrystalModulation.pair
                     : recruitElementPool();
-                const rElement = rPool[Math.floor(Math.random()*rPool.length)] || entry.element || "fire";
+                const rElement = _evo ? _evo.element : (rPool[Math.floor(Math.random()*rPool.length)] || entry.element || "fire");
                 const npc = {
                     type:"virus", element:rElement, x:crystal.x, y:crystal.y, team:"green",
                     health: hp, maxHealth: hp,
@@ -4434,6 +4438,7 @@ function render() {
                 };
                 // The same person back — same uid — but the bond did not survive.
                 if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid });
+                if (_evo) npc.evolved = _evo.id;   // before its level, so the evolved stats apply
                 // Its level and XP (less what dying cost) — js/levels.js.
                 if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp, hpStat: entry.hpStat });
                 if (entry.ghostphageLife) npc.health = 1;
