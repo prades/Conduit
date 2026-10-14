@@ -498,9 +498,10 @@ form("s15", { legs: "Unrolled into a segmented spine",
     segs.push(s); }
   const r = reactor(0.12, 2.4); r.g.position.z = 0.16; segs[0].add(r.g);
   const port = torus(0.13, 0.03, M.steel, 24); port.position.z = 0.17; segs[0].add(port);
-  return { g, core: Y, update(t) { r.spin(t);
-    segs.forEach((s, i) => { const ph = t * 2.2 - i * 0.75; s.position.set(Math.sin(ph) * 0.14 * (i / N + 0.2), Y + Math.sin(t * 1.4 - i * 0.6) * 0.07, 0.75 - i * 0.32);
-      s.rotation.y = Math.cos(ph) * 0.35 * (i / N + 0.2); }); } };
+  // One beat (2.2 rad/s) drives the whole ripple and the bob, so the sheet loops; `act` rears the head up.
+  return { g, core: Y, update(t, act) { r.spin(t); const a = act || 0, rear = a > 0.6 ? Math.sin(Math.min(1, (a - 0.6) / 0.4) * PI) : 0;
+    segs.forEach((s, i) => { const ph = t * 2.2 - i * 0.75; s.position.set(Math.sin(ph) * 0.14 * (i / N + 0.2), Y + Math.sin(t * 2.2 - i * 0.6) * 0.07 + rear * 0.3 * (1 - i / N) * (1 - i / N), 0.75 - i * 0.32 - rear * 0.12 * (1 - i / N));
+      s.rotation.y = Math.cos(ph) * 0.35 * (i / N + 0.2); s.rotation.x = -rear * 0.5 * (1 - i / N); }); } };
 });
 
 form("s16", { legs: "Kept, and stretched into stilts", every: 3,

@@ -46,6 +46,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('electric', 'sniper', 20); run(lvlUp);
         same(run('__f.evolved'), 'reaver', 'its form');
     });
+    check('THE ASK: a FLUX SNIPER reaching level 20 becomes the SERPENT (design No. 15)', () => {
+        mk('flux', 'sniper', 20); run(lvlUp);
+        const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f) })');
+        same(r.evo, 'serpent', 'its form'); same(r.tag, 'SERPENT', 'its tag');
+        mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux brawler');
+    });
     check('…and nobody else: not a fire sniper, an ice brawler, an electric brawler — nor before level 20', () => {
         for (const [el, role] of [['fire', 'sniper'], ['ice', 'brawler'], ['electric', 'brawler'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
         mk('fire', 'brawler', 19); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 19');
@@ -95,6 +101,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.arcs, 3, 'arcs drawn');
     });
 
+    check('THE ASK: SINGULARITY SHOT — a gravity round into the nearest enemy, dragging those round it in; a beetle is too heavy', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
+            spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'serpent'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const mkP = (sp, x, y) => { const S = SPECIES[sp], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const tgt = mkP('ant', 25, 2), mate = mkP('ant', 26.5, 2.5), beetle = mkP('beetle', 25.5, 1.2), apart = mkP('ant', 29, 2), tooFar = mkP('ant', 40, 2);
+            const m0 = Math.hypot(mate.x - tgt.x, mate.y - tgt.y), b0 = Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y);
+            f._sigCd = 1; evolutionTick();
+            const d = p => 1e6 - p.health, out = { tgt: d(tgt), mate: d(mate), mateIn: m0 - Math.hypot(mate.x - tgt.x, mate.y - tgt.y), beetleIn: b0 - Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y),
+                slowed: mate.slowed > 0, apartMoved: apart.x !== 29, cd: f._sigCd };
+            [tgt, mate, beetle, apart, tooFar].forEach(p => p.dead = true); return out; })()`);
+        ok(r.tgt > 0, 'no hit on the target: ' + JSON.stringify(r));
+        ok(r.mateIn > 0.5 && r.slowed, 'the one beside it was not dragged in and slowed: ' + JSON.stringify(r));
+        same(r.beetleIn, 0, 'a beetle was dragged');
+        ok(!r.apartMoved, 'one out of the pull\'s reach was moved');
+        ok(r.cd > 300, 'it did not wait: ' + r.cd);
+    });
+
     console.log('\nIT STAYS EVOLVED');
     check('its role is fixed: a role switch skips it', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
@@ -127,7 +150,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver']) {
+        for (const id of ['bloom', 'reaver', 'serpent']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }

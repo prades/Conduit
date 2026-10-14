@@ -22,6 +22,12 @@
 //          REAVER, ARC VOLLEY: with an enemy within REAVER_RANGE, every
 //          REAVER_EVERY frames it fans its blades and fires a charged arc
 //          (REAVER_MULT × its power) that jumps to REAVER_CHAIN more enemies.
+//          SERPENT (the flux sniper, design No. 15), SINGULARITY SHOT: with an
+//          enemy within SERPENT_RANGE, every SERPENT_EVERY frames it rears up
+//          and fires a gravity round (SERPENT_MULT × its power) that DRAGS every
+//          enemy within SERPENT_PULL_R of the target in towards it and slows
+//          them. A beetle, a boss or a machine is too heavy to drag
+//          (vortexPullImmune) and takes the hit only.
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
 //          sheets in img/evo/: 8 facings × 16 frames (8 idle, 8 action),
 //          seen from the game's own iso angle.
@@ -32,6 +38,7 @@ const EVO_MOLT     = 120;          // frames: shake, burst, rise
 const EVO_SCALE    = 96 / 144;     // a sheet cell (144 px, 3.4 world units) drawn at game size
 const BLOOM_RADIUS = 1.8, BLOOM_EVERY = 360, BLOOM_MULT = 2.0, BLOOM_BURN = 180;
 const REAVER_RANGE = 6, REAVER_EVERY = 300, REAVER_MULT = 2.5, REAVER_CHAIN = 2, REAVER_HOP = 2.5, REAVER_CHAIN_SHARE = 0.6;
+const SERPENT_RANGE = 6.5, SERPENT_EVERY = 330, SERPENT_MULT = 2.2, SERPENT_PULL_R = 2.2, SERPENT_PULL = 0.75, SERPENT_SLOW = 0.5, SERPENT_SLOW_FRAMES = 90;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
 
 const EVOLUTIONS = {
@@ -39,6 +46,9 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 74.6] },
     reaver: { id: "reaver", name: "REAVER",       element: "electric", role: "sniper",  move: "ARC VOLLEY",  sheet: "img/evo/reaver.png",
               cell: 144, anchor: [72, 114.2], core: [72, 58.4] },
+    // Its reactor is in its head, which moves with its facing: the sheet carries its own light.
+    serpent:{ id: "serpent",name: "SERPENT",      element: "flux",     role: "sniper",  move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 61], noGlow: true, color: "#bb66ff" },
 };
 // Which egg grows into which machine.
 function evolutionFor(f) {
@@ -77,7 +87,7 @@ function evolutionTick() {
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
-        if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f);
+        if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
     }
 }
 function _evoFoes(x, y, r) {
@@ -124,6 +134,31 @@ function arcVolley(f) {
     return true;
 }
 
+// SINGULARITY SHOT: a gravity round into the nearest enemy in range; whatever is
+// round it is dragged in and slowed. True when it fired.
+function singularityShot(f) {
+    const foes = _evoFoes(f.x, f.y, SERPENT_RANGE);
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    applyDamage(tgt, (f.power || 10) * SERPENT_MULT, f, "flux");
+    let pulled = 0;
+    for (const a of _evoFoes(tgt.x, tgt.y, SERPENT_PULL_R)) {
+        if (typeof applySlow === "function") applySlow(a, SERPENT_SLOW_FRAMES, SERPENT_SLOW);
+        if (a === tgt || (typeof vortexPullImmune === "function" && vortexPullImmune(a))) continue;
+        a.x += (tgt.x - a.x) * SERPENT_PULL; a.y += (tgt.y - a.y) * SERPENT_PULL; pulled++;
+    }
+    f._sigAt = f0; f._sigCd = SERPENT_EVERY;
+    f._arcPts = [{ x: tgt.x, y: tgt.y }]; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcCol = [187, 102, 255];
+    { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    if (typeof elementEffects !== "undefined") {
+        elementEffects.push({ type: "ring", x: tgt.x, y: tgt.y, radius: SERPENT_PULL_R, color: "#bb66ff", life: 40 });
+        elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#bb66ff", radius: 0.7, life: 24 });
+    }
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "SINGULARITY", color: "#cc88ff", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+
 // ── THE LOOK ───────────────────────────────────────────────
 function _evoImg(d) {
     if (d._img !== undefined) return d._img && d._img.complete && d._img.naturalWidth ? d._img : null;
@@ -149,7 +184,7 @@ function drawEvolvedFollower(f, px, py, g) {
     const img = _evoImg(d); if (!img) return false;
     const u = Math.min(1, (m - EVO_MOLT * 0.3) / (EVO_MOLT * 0.7));   // rising out of the burst
     const rise = m < EVO_MOLT ? 1 - Math.pow(1 - u, 3) : 1;
-    const col = d.element === "fire" ? "#ff5a1f" : "#ffee33";
+    const col = d.element === "fire" ? "#ff5a1f" : d.element === "flux" ? "#bb66ff" : "#ffee33";
     g.save();
     // its shadow
     g.fillStyle = "rgba(0,0,0,0.4)"; g.beginPath(); g.ellipse(px, py, 22 * rise, 9 * rise, 0, 0, Math.PI * 2); g.fill();
@@ -161,7 +196,8 @@ function drawEvolvedFollower(f, px, py, g) {
     const row = _evoFacing(f), C = d.cell, s = EVO_SCALE * (0.6 + 0.4 * rise);
     g.globalAlpha *= rise;
     g.drawImage(img, col_ * C, row * C, C, C, px - d.anchor[0] * s, py - d.anchor[1] * s, C * s, C * s);
-    // the reactor's glow
+    // the reactor's glow (not the serpent's: its reactor sits in its head, which turns with it)
+    if (d.noGlow) { g.restore(); return true; }
     const cx = px + (d.core[0] - d.anchor[0]) * s, cy = py + (d.core[1] - d.anchor[1]) * s;
     const pulse = 0.55 + 0.25 * Math.sin(f0 * 0.12) + (sigK >= 0 && sigK < 1 ? 0.6 * (1 - sigK) : 0);
     g.globalCompositeOperation = "lighter";
@@ -201,11 +237,12 @@ function drawEvolvedOverlay(f, px, py, g) {
         const s = EVO_SCALE; let [x0, y0] = [px + (d.core[0] - d.anchor[0]) * s, py + (d.core[1] - d.anchor[1]) * s];
         const al = (f._arcUntil - f0) / 20;
         g.lineCap = "round"; g.lineJoin = "round";
+        const RGB = f._arcCol || [255, 238, 51], jag = f._arcStraight ? 0 : 12;
         for (const p of f._arcPts) {
             const [x1, y1] = scr(p);
-            for (const [w, c] of [[4, `rgba(255,238,51,${0.35 * al})`], [1.6, `rgba(255,255,220,${al})`]]) {
+            for (const [w, c] of [[4, `rgba(${RGB[0]},${RGB[1]},${RGB[2]},${0.35 * al})`], [1.6, `rgba(255,255,235,${al})`]]) {
                 g.strokeStyle = c; g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0);
-                for (let k = 1; k < 6; k++) { const q = k / 6; g.lineTo(x0 + (x1 - x0) * q + (Math.random() - 0.5) * 12, y0 + (y1 - y0) * q + (Math.random() - 0.5) * 12); }
+                for (let k = 1; k < 6; k++) { const q = k / 6; g.lineTo(x0 + (x1 - x0) * q + (Math.random() - 0.5) * jag, y0 + (y1 - y0) * q + (Math.random() - 0.5) * jag); }
                 g.lineTo(x1, y1); g.stroke();
             }
             x0 = x1; y0 = y1;

@@ -13,7 +13,9 @@ const core = fs.readFileSync(path.join(__dirname, 'forms-core.js'), 'utf8');
 const JOBS = [
   { id: 'reaver', form: 'reaver', color: '#ffee33', idleAct: 0.3, action: [0.8, 1.0] },
   { id: 'bloom',  form: 'bunker', color: '#ff3300', idleAct: 0.2, action: [0.5, 1.0] },
-];
+  // The serpent's loop is one beat of 2.2 rad/s (period 2*PI/2.2); its action rears the head.
+  { id: 'serpent', form: 's15', color: '#9933ff', idleAct: 0, action: [0.6, 1.0], period: 2 * Math.PI / 2.2 },
+].filter(j => !process.argv[4] || process.argv[4].split(',').includes(j.id));
 const CELL = 144, HALF = 1.7, LOOK_Y = 1.15;
 
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
@@ -55,7 +57,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
     const anchor = { x: (g0.x * 0.5 + 0.5) * CELL, y: (1 - (g0.y * 0.5 + 0.5)) * CELL };
     const cp = new T.Vector3(0, B.core, 0).project(cam);
     const coreAt = { x: (cp.x * 0.5 + 0.5) * CELL, y: (1 - (cp.y * 0.5 + 0.5)) * CELL };
-    const P = 2 * PI / 1.6;
+    const P = job.period || 2 * PI / 1.6;
     for (let k = 0; k < 8; k++) {
       const th = k * PI / 4, fx = Math.cos(th), fz = Math.sin(th);
       B.g.rotation.y = Math.atan2(fx, fz);
