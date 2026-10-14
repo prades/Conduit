@@ -42,10 +42,21 @@
 //     smoke. Its fumes haze the floor for TT_RADIUS round it (painted per tile,
 //     like the frost): enemies in them are poisoned and their armour stripped;
 //     your clones in them are mended. It runs hotter with enemies close.
+//   - SHIELD FORGE (core): "it should be just the wave pylons for the core
+//     element, and make an ultra pylon for the wave element that creates
+//     those shield cells." A tall hexagonal crystal on a dais where the four
+//     meet, cells orbiting it, filling with light as the next one forms. It
+//     makes a SHIELD CELL every FORGE_CELL_EVERY frames — faster than its four
+//     pylons would apart (js/shieldcells.js) — and sets it on the floor round
+//     its square, up to FORGE_DROP_MAX lying there. A MK II pylon in it makes
+//     them twice as fast.
 //   - Only while all four are powered: a dark square forms nothing.
 // ─────────────────────────────────────────────────────────
 
-const FORM_KINDS = { flux: "blackhole", fire: "firespin", ice: "icegen", toxic: "toxtower" };
+const FORM_KINDS = { flux: "blackhole", fire: "firespin", ice: "icegen", toxic: "toxtower", core: "shieldforge" };
+const FORM_NAMES = { blackhole: "BLACK HOLE", firespin: "SPINNING FIREWALL", icegen: "ICE GENERATOR", toxtower: "TOXIC TOWER", shieldforge: "SHIELD FORGE" };
+const FORGE_CELL_EVERY = 150;    // frames: one shield cell (four separate CORE pylons: one per 225)
+const FORGE_DROP_MAX   = 4;      // cells it leaves lying round it at once
 const FORM_TICK        = 30;     // frames between damage ticks
 const FORM_TIER_BONUS  = 0.25;   // + damage per network tier
 const BH_RADIUS        = 2.5;    // tiles: what it entangles
@@ -104,7 +115,7 @@ function rebuildFormations() {
         const key = t.x + "," + t.y, kind = FORM_KINDS[el], old = _formState.get(key);
         const s = old || { glow: 0, size: 0, spin: 0 };
         state.set(key, s);
-        t._wform = { kind, el, tiles: sq, front: sq[3], col: t.attackModeColor || ({ blackhole: "#9933ff", firespin: "#ff3300", icegen: "#99ddff", toxtower: "#66ff66" })[kind], s,
+        t._wform = { kind, el, tiles: sq, front: sq[3], col: t.attackModeColor || ({ blackhole: "#9933ff", firespin: "#ff3300", icegen: "#99ddff", toxtower: "#66ff66", shieldforge: "#00ccaa" })[kind], s,
                      wx: t.x + 1, wy: t.y + 1, x0: t.x, y0: t.y, caught: [] };
         for (const p of sq) if (p !== t) p._wformOf = t;
         _formations.push(t);
@@ -115,7 +126,7 @@ function rebuildFormations() {
         }
         if (!old && typeof floatingTexts !== "undefined") {
             floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, color: t._wform.col, life: 130, vy: -0.2, size: 14,
-                                 text: "\u25c6 " + ({ blackhole: "BLACK HOLE", firespin: "SPINNING FIREWALL", icegen: "ICE GENERATOR", toxtower: "TOXIC TOWER" })[kind] + " FORMED" });
+                                 text: "\u25c6 " + FORM_NAMES[kind] + " FORMED" });
         }
     }
     _formState = state;
@@ -161,6 +172,7 @@ function formationTick() {
         if (F.kind === "firespin") { _fireSpinTick(F, src); continue; }
         if (F.kind === "icegen") { _iceGenTick(F, src, hit); continue; }
         if (F.kind === "toxtower") { _toxTowerTick(F, src, hit); continue; }
+        if (F.kind === "shieldforge") { _shieldForgeTick(t, F); continue; }
         for (const a of unitsNear(F.wx, BH_RADIUS)) {
             if (!isHostileTarget(a)) continue;
             const dx = F.wx - a.x, dy = F.wy - a.y, d = Math.hypot(dx, dy);
@@ -204,6 +216,21 @@ function _fireSpinTick(F, src) {
         a._fsHitAt = f;
         applyDamage(a, _formDamage(F, FS_DMG * (1 + F.s.glow), a), src, "fire");
     }
+}
+
+// THE SHIELD FORGE: a cell every FORGE_CELL_EVERY frames (MK II: faster),
+// set down on a free floor tile round its square.
+function _shieldForgeTick(anchor, F) {
+    let st = 1;
+    for (const p of F.tiles) if ((p.mk || 0) >= 2) st = typeof SHIELD_CELL_MK2_MULT === "number" ? SHIELD_CELL_MK2_MULT : 2;
+    F.s.cellT = Math.min(FORGE_CELL_EVERY, (F.s.cellT || 0) + st);
+    F.s.glow = F.s.cellT / FORGE_CELL_EVERY;
+    if (F.s.cellT < FORGE_CELL_EVERY || typeof dropShieldCell !== "function") return;
+    if (shieldCellsOnFloorFrom(anchor) >= FORGE_DROP_MAX) return;      // waits, full
+    const ring = [];
+    for (let dx = -1; dx <= 2; dx++) for (let dy = -1; dy <= 2; dy++)
+        if (dx < 0 || dx > 1 || dy < 0 || dy > 1) ring.push([F.x0 + dx, F.y0 + dy]);
+    if (dropShieldCell(anchor, ring)) F.s.cellT = 0;
 }
 
 function _toxTowerTick(F, src, hit) {
@@ -406,7 +433,7 @@ function drawFireSpin(F, cx, cy) {
 // It RISES as the four pylons go into it (FORM_RISE frames from forming), and
 // carries the four's health as one bar.
 const FORM_RISE = 40;
-const FORM_BAR_Y = { blackhole: 46, firespin: 52, icegen: 84, toxtower: 128 };
+const FORM_BAR_Y = { blackhole: 46, firespin: 52, icegen: 84, toxtower: 128, shieldforge: 96 };
 function formationHealth(F) {
     let h = 0, m = 0; for (const p of F.tiles) { h += Math.max(0, p.health || 0); m += p.maxHealth || 0; }
     return [h, m];
@@ -420,6 +447,7 @@ function drawFormationGround(F, cx, cy) {
     else if (F.kind === "firespin") drawFireSpin(F, cx, cy);
     else if (F.kind === "icegen") drawIceGenerator(F, cx, cy);
     else if (F.kind === "toxtower") drawToxicTower(F, cx, cy);
+    else if (F.kind === "shieldforge") drawShieldForge(F, cx, cy);
     ctx.restore();
     const [h, m] = formationHealth(F);
     if (rise >= 1 && h < m && typeof drawHealthBar === "function") drawHealthBar(cx - 26, cy - (FORM_BAR_Y[F.kind] || 60), 52, 4, h, m);
@@ -639,4 +667,59 @@ function drawToxicTower(F, cx, cy) {
         ctx.fillText("TOXIC TOWER · " + formationBlocker(F), cx, y - 20);
     }
     ctx.restore();
+}
+
+// ── THE SHIELD FORGE ──────────────────────────────────────
+// A low hexagonal dais of dark metal; on it a tall hexagonal crystal in the
+// core colour that fills with light from the bottom as the next cell forms
+// (F.s.glow); three cells orbit it; a bright cell crowns it.
+function _forgeHex(cx, cy, r, sq) { const o = []; for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; o.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r * sq]); } return o; }
+function _forgePrism(pts, h, side, sideDark, top) {
+    // The faces toward you (lower half of the ring), then the top.
+    for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length];
+        if ((a[1] + b[1]) / 2 < (pts[0][1] + pts[3][1]) / 2) continue;
+        ctx.fillStyle = (a[0] + b[0]) / 2 < (pts[0][0] + pts[3][0]) / 2 ? side : sideDark;
+        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(b[0], b[1] - h); ctx.lineTo(a[0], a[1] - h); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = top; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y - h) : ctx.moveTo(x, y - h)); ctx.closePath(); ctx.fill();
+}
+function drawShieldForge(F, cx, cy) {
+    const f = typeof frame !== "undefined" ? frame : 0, col = F.col, k = Math.max(0, Math.min(1, F.s.glow || 0));
+    const on = formationActive(F);
+    // The dais.
+    _forgePrism(_forgeHex(cx, cy, 40, 0.5), 8, "#1b2430", "#121922", "#2a3644");
+    ctx.strokeStyle = _formRgba(col, on ? 0.55 : 0.2); ctx.lineWidth = 1.5;
+    ctx.beginPath(); _forgeHex(cx, cy - 8, 32, 0.5).forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke();
+    const base = cy - 8, H = 58, w = 12;
+    const orbit = (front) => {
+        for (let i = 0; i < 3; i++) {
+            const a = f * 0.03 + i * Math.PI * 2 / 3, x = cx + Math.cos(a) * 26, y = base - 30 + Math.sin(a) * 9;
+            if ((Math.sin(a) > 0) !== front) continue;
+            ctx.fillStyle = "#0f2f38"; ctx.strokeStyle = _formRgba(col, on ? 0.95 : 0.35); ctx.lineWidth = 1.3;
+            ctx.beginPath(); _forgeHex(x, y, 5, 1).forEach(([px, py], j) => j ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); ctx.closePath(); ctx.fill(); ctx.stroke();
+        }
+    };
+    orbit(false);
+    // The crystal: dark glass, filling with light from the bottom.
+    const hex = _forgeHex(cx, base, w, 0.5);
+    _forgePrism(hex, H, "rgba(10,40,48,0.92)", "rgba(6,28,34,0.92)", _formRgba(col, on ? 0.55 : 0.2));
+    if (on && k > 0) {
+        const fh = H * k;
+        ctx.globalAlpha = 0.35 + 0.25 * k;
+        _forgePrism(_forgeHex(cx, base, w - 2, 0.5), fh, _formRgba(col, 0.75), _formRgba(col, 0.55), _formRgba(col, 0.9));
+        ctx.globalAlpha = 1;
+    }
+    ctx.strokeStyle = _formRgba(col, on ? 0.8 : 0.3); ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const [x, y] of hex) if (y >= base - 1) { ctx.moveTo(x, y); ctx.lineTo(x, y - H); }
+    ctx.stroke();
+    // The crown: a lit cell.
+    const ty = base - H - 10 + Math.sin(f * 0.06) * 2;
+    ctx.fillStyle = on ? _formRgba(col, 0.25 + 0.2 * k) : "rgba(60,70,80,0.2)";
+    ctx.beginPath(); ctx.arc(cx, ty, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#0f2f38"; ctx.strokeStyle = on ? col : "#4a5560"; ctx.lineWidth = 2;
+    ctx.beginPath(); _forgeHex(cx, ty, 8, 1).forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.fill(); ctx.stroke();
+    if (on) { ctx.fillStyle = col; ctx.globalAlpha = 0.6 + 0.4 * k; ctx.beginPath(); ctx.arc(cx, ty, 3, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+    orbit(true);
 }

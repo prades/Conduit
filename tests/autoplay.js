@@ -102,10 +102,10 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.ultra && r.ultraEl === r.el, 'no ultra turret of the network element: ' + JSON.stringify(r));
         ok(r.cons >= 1, 'no connector reaching toward the next zone');
     });
-    await check('THE ASK: and a formation square when an element can make one (here a toxic tower)', () => {
+    await check('THE ASK: and a formation square when an element can make one (here a SHIELD FORGE — core is the network element)', () => {
         fresh(6);
         const r = plan(50);
-        ok(r.form === 'toxtower', 'no formation: ' + JSON.stringify(r));
+        ok(r.form === 'shieldforge', 'no formation: ' + JSON.stringify(r));
         ok(r.formOn, 'the formation does not work — no tier II bank of its element by it: ' + JSON.stringify(r));
     });
     await check('THE ASK: a few accessories with shards to spare — and then it stops: not spammy', () => {
@@ -117,7 +117,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     });
     await check('no accessories when shards are short', () => {
         fresh(6);
-        run('shardCount = 210');   // the plan costs about 200: nothing spare after it
+        run('shardCount = 170');   // the plan costs about 160 (a core network: its formation is a SHIELD FORGE, no second bank): nothing spare after it
         const r = plan(40);
         ok(r.acc === 0, 'built ' + r.acc + ' accessories on a tight budget');
     });

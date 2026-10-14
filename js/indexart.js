@@ -112,10 +112,11 @@ const IX_ART = {
     firespin:  (W, H) => IX_ART._form(W, H, "firespin", "fire"),
     icegen:    (W, H) => IX_ART._form(W, H, "icegen", "ice"),
     toxtower:  (W, H) => IX_ART._form(W, H, "toxtower", "toxic"),
+    shieldforge: (W, H) => IX_ART._form(W, H, "shieldforge", "core"),
     _form:     (W, H, kind, el) => {
         const E = _ixEl(el), glow = 0.45 + 0.35 * Math.sin(_ixFrame * 0.05);
         const F = { kind, el: E.id, tiles: [], front: null, col: E.color, s: { glow, size: glow, spin: _ixFrame * 0.06, pulse: 0, t: _ixFrame }, wx: 0, wy: 0, x0: 0, y0: 0, caught: [] };
-        _ixSquare(W / 2, H - (kind === "toxtower" || kind === "icegen" ? 26 : 40), 0.55, kind === "icegen" ? "#1a2c3c" : "#13202e", (cx, cy) => drawFormationGround(F, cx, cy));
+        _ixSquare(W / 2, H - (kind === "toxtower" || kind === "icegen" || kind === "shieldforge" ? 26 : 40), 0.55, kind === "icegen" ? "#1a2c3c" : "#13202e", (cx, cy) => drawFormationGround(F, cx, cy));
     },
     follower:  (W, H, el) => { const px = W / 2, py = H - 20; _ixPad(px, py, 24); _ixFollower(el || "electric", px, py); },
     squad:     (W, H) => { ["fire", "electric", "toxic"].forEach((e, i) => { const px = 26 + i * 40, py = H - 16 - (i % 2) * 6; _ixPad(px, py, 16); _ixFollower(e, px, py); }); },

@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-14e";
+const BUILD_VERSION = "2026-10-14f";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -402,9 +402,10 @@ const DEMOLISH_REFUND = 8;
 // dark, silent, greyed out in the build window — until that zone has a working
 // generator (switched on, fed by a nest). zoneHasGenerator(), js/power.js.
 //
-// SHIELD CELLS (js/shieldcells.js) are the CORE tech: a powered CORE pylon or
-// turret makes one every SHIELD_CELL_EVERY frames (a MK II twice as fast) and
-// drops it on the floor beside it (at most SHIELD_CELL_DROP_MAX lying there).
+// SHIELD CELLS (js/shieldcells.js) are the CORE tech: a powered CORE WAVE
+// pylon makes one every SHIELD_CELL_EVERY frames (a MK II twice as fast) and
+// drops it on the floor beside it (at most SHIELD_CELL_DROP_MAX lying there);
+// four in a square fuse into a SHIELD FORGE that makes them faster.
 // You, or a follower, walk over it to collect it, up to SHIELD_CELL_CAP. Each
 // follower or clone with no shield spends ONE cell for a full one — up to
 // SHIELD_GEN_SHARE of its max health, never less than SHIELD_GEN_MIN — and

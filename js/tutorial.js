@@ -375,7 +375,7 @@ const TUTS = [
         // the moment the generator exists — so it reads and moves on.
         id:    'aura',
         title: 'SHIELD CELLS',
-        body:  'The generator links itself to the pylons near it and powers its zone. SHIELDS are CORE tech: a powered CORE pylon drops SHIELD CELLS — walk over them. A follower with no shield spends one; it takes every hit until it breaks.',
+        body:  'The generator links itself to the pylons near it and powers its zone. SHIELDS are CORE tech: a powered CORE wave pylon drops SHIELD CELLS (four make a SHIELD FORGE) — walk over them. A follower with no shield spends one; it takes every hit until it breaks.',
         icon:  '\u25ce',
         target: () => tutNearestPylon(t => t.isGenerator) || tutNearestPylon(),
         check: () => tutorialTimer > 300,   // ~5s to read it

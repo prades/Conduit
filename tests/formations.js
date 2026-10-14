@@ -64,7 +64,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('not three, not a mixed square, not other elements, not turrets', () => {
         ok(build(SQ.slice(0, 3), ['flux']).n === 0, 'three formed');
         ok(build(SQ, ['flux', 'flux', 'flux', 'fire']).n === 0, 'a mixed square formed');
-        ok(build(SQ, ['core']).n === 0, 'core formed something');
+        ok(build(SQ, ['electric']).n === 0, 'electric formed something');   // core makes a SHIELD FORGE (tests/shieldcells.js)
         ok(build(SQ, ['flux', 'flux', 'fire', 'fire']).n === 0, 'half flux, half fire formed something');
     });
     // "The toxic generator or the ultra pylons should lose the four original

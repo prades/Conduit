@@ -127,6 +127,12 @@ const ICONS = {
         <path d="M6 7.4 L8.6 11.4 L8.4 19.4 L5 19.4 L4 12 Z" fill="${c}" opacity="0.75"/>
         <path d="M18 7.4 L20 12 L19 19.4 L15.6 19.4 L15.4 11.4 Z" fill="${c}" opacity="0.75"/>
         <path d="M12 3.6 L13.2 8.4 L12.6 16" stroke="#fff" stroke-width="0.9" fill="none"/>`,
+    shieldforge: c => `
+        <ellipse cx="12" cy="20" rx="9.6" ry="3" fill="${c}" opacity="0.3"/>
+        <path d="M9 19 L9 7 L12 5 L15 7 L15 19 L12 20.6 Z" fill="#0f2f38" stroke="${c}" stroke-width="1.2"/>
+        <path d="M9.8 18.6 L9.8 12 L12 11 L14.2 12 L14.2 18.6 L12 19.8 Z" fill="${c}" opacity="0.7"/>
+        <path d="M12 0.6 L15 2.3 L15 5.7 L12 7.4 L9 5.7 L9 2.3 Z" fill="none" stroke="${c}" stroke-width="1.4"/>
+        <path d="M3.6 12.6 L5.4 11.6 L7.2 12.6 L7.2 14.6 L5.4 15.6 L3.6 14.6 Z M16.8 9.6 L18.6 8.6 L20.4 9.6 L20.4 11.6 L18.6 12.6 L16.8 11.6 Z" fill="none" stroke="${c}" stroke-width="1"/>`,
     toxtower: c => `
         <rect x="6" y="15.6" width="12" height="6.4" fill="#2a2f2a"/>
         <rect x="7" y="10" width="10" height="5.6" fill="#323832"/>
@@ -224,7 +230,7 @@ const ICON_IDS = Object.keys(ICONS);
 const ELEMENT_ICON = { fire: "fire", electric: "electric", ice: "ice", flux: "flux", core: "core", toxic: "toxic" };
 const PYLON_KIND_ICON = { attack: "attack", support: "support", disruption: "disruption", battery: "battery",
                           connector: "connector", generator: "generator" };
-const FORMATION_ICON = { blackhole: "blackhole", firespin: "firespin", icegen: "icegen", toxtower: "toxtower" };
+const FORMATION_ICON = { blackhole: "blackhole", firespin: "firespin", icegen: "icegen", toxtower: "toxtower", shieldforge: "shieldforge" };
 
 // The SVG markup for an icon, `size` css px square. Unknown ids draw nothing.
 function iconSVG(id, colour, size, title) {

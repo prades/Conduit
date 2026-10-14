@@ -454,6 +454,9 @@ async function ready(seed) {
                     if (t && t.type === 'floor') lit.push([x, y]);
                 }
             const worked = [];
+            // A predator by the nest would bite and knock you off the tile
+            // (tests/threehits.js) — this is about which tiles hack.
+            player.invuln = 1e9;
             for (const [x, y] of lit) {
                 nest.nestHackProgress = 0;
                 // targetX/targetY too, or render() walks the player back to
@@ -464,6 +467,7 @@ async function ready(seed) {
                 for (let f = 0; f < 10; f++) render();
                 worked.push([x + ',' + y, nest.nestHackProgress]);
             }
+            player.invuln = 0;
             return { lit: lit.length, worked, dead: worked.filter(w => w[1] === 0) };
         })()`);
         ok(r.lit > 0, 'the highlight lit no tiles at all');

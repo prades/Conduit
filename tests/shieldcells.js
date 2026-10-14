@@ -112,12 +112,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.home !== 'NO GENERATOR', 'greyed in the zone that has one: ' + r.home);
     });
 
-    group('SHIELD CELLS — made by CORE pylons');
+    group('SHIELD CELLS — made by CORE WAVE pylons, and the SHIELD FORGE');
+    // "It should be just the wave pylons for the core element, and make an
+    // ultra pylon for the wave element that creates those shield cells."
     const tick = n => run(`for (let i = 0; i < ${n}; i++) { frame++; shieldCellTick(); }`);
     const floorCells = 'groundItems.filter(g => g.type === "shieldCell").length';
-    check('THE ASK: a powered CORE turret drops a cell beside it every SHIELD_CELL_EVERY', () => {
+    check('THE ASK: a powered CORE wave pylon drops a cell beside it every SHIELD_CELL_EVERY', () => {
         scene(true);
-        run(`globalThis.__core = __build('core', __home.x + 3, 2, 'attack'); ${refresh} frame = Math.ceil(frame / 30) * 30;`);
+        run(`globalThis.__core = __build('core', __home.x + 3, 2, 'support'); ${refresh} frame = Math.ceil(frame / 30) * 30;`);
+        ok(run('__core.waveMode && !__core.attackMode'), 'fixture: not a wave pylon');
         tick(run('SHIELD_CELL_EVERY') - 31);
         same(run(floorCells), 0, 'cells before its time');
         tick(62);
@@ -131,15 +134,62 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('a MK II makes them twice as fast', () => {
         scene(true);
-        run(`globalThis.__core = __build('core', __home.x + 3, 2, 'attack'); __core.mk = 2; ${refresh} frame = Math.ceil(frame / 30) * 30;`);
+        run(`globalThis.__core = __build('core', __home.x + 3, 2, 'support'); __core.mk = 2; ${refresh} frame = Math.ceil(frame / 30) * 30;`);
         tick(Math.ceil(run('SHIELD_CELL_EVERY') / run('SHIELD_CELL_MK2_MULT')) + 31);
         same(run(floorCells), 1, 'cells at half the time');
     });
-    check('not a FIRE turret; not a CORE turret in a zone with no generator', () => {
+    check('THE ASK: not a CORE TURRET; not a fire wave pylon; not a core wave pylon in a zone with no generator', () => {
         scene(true);
-        run(`__build('fire', __home.x + 3, 2, 'attack'); __build('core', (getZoneIndex(__home.x) + 1) * ZONE_LENGTH + 4, 2, 'attack'); ${refresh}`);
+        run(`__build('core', __home.x + 3, 2, 'attack'); __build('fire', __home.x + 5, 2, 'disruption');
+             __build('core', (getZoneIndex(__home.x) + 1) * ZONE_LENGTH + 4, 2, 'support'); ${refresh}`);
         tick(run('SHIELD_CELL_EVERY') * 2);
         same(run(floorCells), 0, 'cells');
+    });
+
+    // Four core wave pylons in a square, and a tier II core bank by them.
+    const forge = () => run(`(function(){ const X = __home.x + 4;
+        for (const [dx, dy] of [[0, 1], [1, 1], [0, 2], [1, 2]]) __build('core', X + dx, dy, 'support');
+        for (let i = 0; i < 4; i++) __build('core', X - 2 + i * 2, 0, 'battery');
+        ${refresh}
+        const A = _formations.find(t => t._wform.kind === 'shieldforge');
+        globalThis.__forge = A;
+        return { kind: A ? A._wform.kind : null, on: !!A && formationActive(A._wform), why: A ? formationBlocker(A._wform) : 'none' }; })()`);
+    check('THE ASK: four CORE wave pylons in a square fuse into the SHIELD FORGE', () => {
+        scene(true);
+        const r = forge();
+        ok(r.kind === 'shieldforge' && r.on, JSON.stringify(r));
+        same(run('FORM_KINDS.core'), 'shieldforge', 'the core formation');
+        const why = run(`(function(){ buildLevel.wave = 3; const w = buildItemState(buildMenuItems('wave').find(i => i.elId === 'core')).why || 'ok'; buildLevel.wave = 1; return w; })()`);
+        ok(why !== 'NO FORMATION', 'the build window says core has no formation');
+    });
+    check('THE ASK: …which makes them much faster than its four pylons would apart — and they make none of their own', () => {
+        const r = run(`(function(){ groundItems.length = 0; const n = SHIELD_CELL_EVERY + 60;   // long enough for a lone pylon to make one too
+            for (let i = 0; i < n; i++) { frame++; formationTick(); shieldCellTick(); }
+            const cells = groundItems.filter(g => g.type === 'shieldCell');
+            return { n: cells.length, fromForge: cells.every(g => g.from === __forge), frames: n,
+                     around: cells.every(g => g.x >= __forge.x - 1 && g.x <= __forge.x + 2 && g.y >= __forge.y - 1 && g.y <= __forge.y + 2) }; })()`);
+        ok(r.n >= 3 && r.fromForge && r.around, JSON.stringify(r));
+        // Its four pylons apart would make 4 per SHIELD_CELL_EVERY; it makes more.
+        ok(run('SHIELD_CELL_EVERY / FORGE_CELL_EVERY') > 4, 'not faster than four pylons apart');
+    });
+    check('…up to FORGE_DROP_MAX lying round it, then it waits', () => {
+        run(`for (let i = 0; i < FORGE_CELL_EVERY * 10; i++) { frame++; formationTick(); }`);
+        same(run(floorCells), run('FORGE_DROP_MAX'), 'cells lying round it');
+    });
+    check('dark (no tier II core bank), it makes nothing', () => {
+        scene(true);
+        const r = run(`(function(){ const X = __home.x + 4;
+            for (const [dx, dy] of [[0, 1], [1, 1], [0, 2], [1, 2]]) __build('core', X + dx, dy, 'support');
+            ${refresh} groundItems.length = 0;
+            for (let i = 0; i < FORGE_CELL_EVERY * 3; i++) { frame++; formationTick(); }
+            const A = _formations.find(t => t._wform.kind === 'shieldforge');
+            return { formed: !!A, on: !!A && formationActive(A._wform), cells: groundItems.length }; })()`);
+        ok(r.formed && !r.on && r.cells === 0, JSON.stringify(r));
+    });
+    check('it is drawn, named and pictured', () => {
+        run(`drawFormationGround(__forge ? __forge._wform : { kind: 'shieldforge', col: '#00ccaa', s: { glow: 0.5 }, tiles: [] }, 200, 200);`);
+        same(run('FORM_NAMES.shieldforge'), 'SHIELD FORGE', 'its name');
+        ok(/data-art="shieldforge"/.test(rd('game.html')) && /SHIELD FORGE/.test(rd('game.html')), 'not in the guide');
     });
 
     group('SHIELD CELLS — collected');
@@ -154,6 +204,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run(`(function(){ const t = __T(__home.x + 6, 1); groundItems.push({ type: 'shieldCell', x: t.x, y: t.y, from: null });
             player.x = player.targetX = player.visualX = __home.x + 2;
             spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.x = t.x; f.y = t.y;
+            f.shielded = true; f.shieldAmount = 50;   // so it does not spend what it picks up straight away
             const before = shieldCells; for (let i = 0; i < 6; i++) { frame++; f.x = t.x; f.y = t.y; shieldCellTick(); }
             return { got: shieldCells - before, left: ${floorCells} }; })()`);
         ok(r.got === 1 && r.left === 0, JSON.stringify(r));

@@ -6,11 +6,15 @@
 // shield cells; they're used to build up a shield cell collection used to fuel
 // individual shields for followers and the shield barrier."
 //
-//   MADE     A powered CORE pylon or turret (in a zone with a generator) makes
-//            a cell every SHIELD_CELL_EVERY frames — a MK II twice as fast —
-//            and drops it on a free floor tile beside it. At most
-//            SHIELD_CELL_DROP_MAX of one pylon's cells lie on the floor; past
-//            that it waits for you to pick them up.
+//   MADE     "It should be just the WAVE pylons for the core element, and an
+//            ultra pylon for the wave element that creates those shield
+//            cells." A powered CORE wave pylon (support; not a turret), in a
+//            zone with a generator, makes a cell every SHIELD_CELL_EVERY
+//            frames — a MK II twice as fast — and drops it on a free floor
+//            tile beside it. At most SHIELD_CELL_DROP_MAX of one pylon's cells
+//            lie on the floor; past that it waits for you to pick them up.
+//            Four in a square fuse into the SHIELD FORGE (js/formations.js),
+//            which makes them faster still; its four make none of their own.
 //   KEPT     Walk over one (or let a follower walk over it) and it goes into
 //            your store, shieldCells, up to SHIELD_CELL_CAP. Kept between
 //            sessions; a new game starts with none.
@@ -34,28 +38,32 @@ function saveShieldCells() { try { localStorage.setItem(SHIELD_CELLS_KEY, String
 function clearShieldCells() { shieldCells = 0; try { localStorage.removeItem(SHIELD_CELLS_KEY); } catch (e) {} }
 loadShieldCells();
 
-// Does this pylon make cells right now?
+// Does this pylon make cells right now? A CORE WAVE pylon, powered, in a zone
+// with a generator — not one gone into a SHIELD FORGE, which makes them itself.
 function makesShieldCells(t) {
     return !!t && t.pillar && !t.destroyed && t.health > 0 && t.pillarTeam === "green"
-        && t.attackModeElement === "core" && !!(t.attackMode || t.waveMode)
+        && t.attackModeElement === "core" && !!t.waveMode && !t.attackMode
         && !t.isBattery && !(typeof isRelayPylon === "function" && isRelayPylon(t))
-        && t.powered !== false && !t.zoneDark && !t.constructing;
+        && t.powered !== false && !t.zoneDark && !t.constructing && !t._wform && !t._wformOf;
 }
-function _cellsOnFloorFrom(t) {
+function shieldCellsOnFloorFrom(t) {
     let n = 0;
     for (const g of groundItems) if (g.type === "shieldCell" && g.from === t) n++;
     return n;
 }
-// A free floor tile beside it to drop one on.
-function _cellDropTile(t) {
-    const spots = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
-    for (const [dx, dy] of spots) {
-        const q = typeof getTile === "function" ? getTile(t.x + dx, t.y + dy) : null;
+// Set a cell down on the first free floor tile of `spots` ([x, y] pairs);
+// false if there is none.
+function dropShieldCell(from, spots) {
+    const f = typeof frame !== "undefined" ? frame : 0;
+    for (const [x, y] of spots) {
+        const q = typeof getTile === "function" ? getTile(x, y) : null;
         if (!q || q.type !== "floor" || (q.pillar && !q.destroyed) || q.nest || q._module) continue;
         if (groundItems.some(g => g.type === "shieldCell" && g.x === q.x && g.y === q.y)) continue;
-        return q;
+        groundItems.push({ type: "shieldCell", x: q.x, y: q.y, from, bornAt: f });
+        if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: q.x, y: q.y, color: SHIELD_CELL_COLOR, radius: 0.3, life: 12 });
+        return true;
     }
-    return null;
+    return false;
 }
 // Into the store. False when it is full (the cell stays where it is).
 function collectShieldCell(item, by) {
@@ -83,12 +91,9 @@ function shieldCellTick() {
             if (!makesShieldCells(t)) continue;
             t._cellT = Math.min(SHIELD_CELL_EVERY, (t._cellT || 0) + 30 * ((t.mk || 0) >= 2 ? SHIELD_CELL_MK2_MULT : 1));
             if (t._cellT < SHIELD_CELL_EVERY) continue;
-            if (_cellsOnFloorFrom(t) >= SHIELD_CELL_DROP_MAX) continue;    // waits, ready
-            const q = _cellDropTile(t);
-            if (!q) continue;
-            t._cellT = 0;
-            groundItems.push({ type: "shieldCell", x: q.x, y: q.y, from: t, bornAt: f });
-            if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: q.x, y: q.y, color: SHIELD_CELL_COLOR, radius: 0.3, life: 12 });
+            if (shieldCellsOnFloorFrom(t) >= SHIELD_CELL_DROP_MAX) continue;    // waits, ready
+            const spots = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].map(([dx, dy]) => [t.x + dx, t.y + dy]);
+            if (dropShieldCell(t, spots)) t._cellT = 0;
         }
     }
     // ── KEPT: a follower walking over one picks it up (you do, in game.js) ──
