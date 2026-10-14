@@ -369,7 +369,7 @@ function applySession(sess) {
         player.x = player.targetX = player.visualX = sess.px;
         player.y = player.targetY = player.visualY = sess.py;
     }
-    if (Number.isFinite(sess.health)) health = Math.max(1, Math.min(100, sess.health));
+    if (Number.isFinite(sess.health)) health = Math.max(1, Math.min(PLAYER_HITS, Math.round(sess.health)));
     // Clamped on the way in: a hand-edited or older save must not leave the bar
     // reading as permanently charged, nor above what the meter can draw.
     if (Number.isFinite(sess.ult)) {

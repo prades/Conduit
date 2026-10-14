@@ -470,8 +470,8 @@ function nextWave() {
         if (typeof activeEmpEffect    !== "undefined") activeEmpEffect    = null;
         shards=[];
 
-        // ── Reset player health ──
-        health = 100;
+        // ── Reset player health (all three hits) ──
+        health = PLAYER_HITS;
 
         spawnHazardsForDay();
 
@@ -614,7 +614,7 @@ function restartGame() {
     resetTransientState();
     // clearAmmo() above only wipes storage; re-read so the reset starts on the
     // opening allowance rather than carrying the last game's rounds.
-    health=100; playerAmmo=getAmmo();
+    health=PLAYER_HITS; playerAmmo=getAmmo();
     // Mint a new seed before generating anything. clearWorldSeed() above only
     // forgets the old one — without this, generateSegment would build every
     // reset from seed 0, and with nothing in storage the next refresh would

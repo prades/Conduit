@@ -1445,14 +1445,14 @@ function handleCrystalPanelInput(ex, ey, isDown) {
                 return true;
             }
             if (cb.use && ex>=cb.use.x && ex<=cb.use.x+cb.use.w && ey>=cb.use.y && ey<=cb.use.y+cb.use.h) {
-                if (healthPads.length > 0 && health < 100) {
+                if (healthPads.length > 0 && health < PLAYER_HITS) {
                     const pad = healthPads[0];
-                    health = Math.min(100, health + HEALTH_PAD_HEAL);
+                    health = Math.min(PLAYER_HITS, health + HEALTH_PAD_HEAL);
                     pad.charges--;
                     if (pad.charges <= 0) healthPads.shift();
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:`+${HEALTH_PAD_HEAL} HP`,color:"#ff9944",life:100,vy:-0.2});
-                } else if (health >= 100) {
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"HP IS FULL",color:"#888",life:60,vy:-0.2});
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:`+${HEALTH_PAD_HEAL} HIT`,color:"#ff9944",life:100,vy:-0.2});
+                } else if (health >= PLAYER_HITS) {
+                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"ALL HITS LEFT",color:"#888",life:60,vy:-0.2});
                 } else {
                     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NO HEALTH PADS",color:"#f44",life:90,vy:-0.2});
                 }
@@ -1486,7 +1486,7 @@ function _drawCraftTab(PX, PY, PW, PH) {
     ctx.fillStyle = "#ccc"; ctx.font = "11px monospace";
     ctx.fillText(`Recipe:  ${HEALTH_PAD_CRAFT_COST} Shards`, PX + pad + 8, cy + 16);
     ctx.fillText(`Output:  1 pad  (${HEALTH_PAD_MAX_CHARGES} charges)`, PX + pad + 8, cy + 32);
-    ctx.fillText(`Effect:  +${HEALTH_PAD_HEAL} HP per charge`, PX + pad + 8, cy + 48);
+    ctx.fillText(`Effect:  +${HEALTH_PAD_HEAL} hit per charge`, PX + pad + 8, cy + 48);
     cy += 62;
 
     // Inventory display
@@ -1525,7 +1525,7 @@ function _drawCraftTab(PX, PY, PW, PH) {
     // ── Buttons ───────────────────────────────────────────
     const btnH = 36, btnW = Math.floor((PW - pad*2 - 8) / 2);
     const canCraft = shardCount >= HEALTH_PAD_CRAFT_COST;
-    const canUse   = healthPads.length > 0 && health < 100;
+    const canUse   = healthPads.length > 0 && health < PLAYER_HITS;
 
     // CRAFT button
     const craftX = PX + pad, craftY = cy;

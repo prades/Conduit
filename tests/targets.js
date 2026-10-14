@@ -145,13 +145,12 @@ const SCENE = `(function(){
              `${startRecruits - endRecruits} recruits died on the way in`);
     });
 
-    check('the player is not touched', () => {
-        // End-to-end evidence, but NOT the load-bearing check: in a big scene
-        // the player may simply never come into reach, and this passed even
-        // with predators re-armed. The deterministic contact checks below are
-        // the ones that bite.
-        same(tally.player || 0, 0, 'the player was damaged ' + tally.player + ' times');
-        same(W.run('health'), 100, 'and lost health');
+    check('the player\'s health stays a count of hits: 1 to PLAYER_HITS', () => {
+        // Predators hit the player now (three hits, then the Crystal —
+        // tests/threehits.js). Whatever the wave did, the count is whole and
+        // in range: the knockdown refills it, it never sticks at 0.
+        const h = W.run('health'), max = W.run('PLAYER_HITS');
+        ok(Number.isInteger(h) && h >= 1 && h <= max, 'health ' + h + ' of ' + max);
     });
 
     check('but the fight itself is untouched', () => {
@@ -171,10 +170,10 @@ const SCENE = `(function(){
     // "the player is not touched" passing, and ungating the clone melee left
     // every check passing. These put the two units in contact on purpose.
 
-    check('THE ASK: a hostile predator standing on the player does not bite', () => {
+    check('THE ASK (three hits): a hostile predator standing on the player bites — one hit per grace', () => {
         const hp = C1.run(`(function(){
             gameState.running = true;
-            actors = []; followers = []; health = 100; player.invuln = 0;
+            actors = []; followers = []; health = PLAYER_HITS; player.invuln = 0;
             player.x = 4; player.y = 2; player.visualX = 4; player.visualY = 2;
             // A follower for it to be attacking, so it is in its melee branch
             // at all — and the swipe at the player is collateral to that.
@@ -193,13 +192,15 @@ const SCENE = `(function(){
             for (let i = 0; i < 600; i++) {
                 foe.x = 4; foe.y = 2;            // pinned on the player
                 player.x = 4; player.y = 2;
-                player.invuln = 0;
+                if (player.invuln > 0) player.invuln--;   // as the game loop does
                 foe.state = 'attack'; foe.currentTarget = f;
                 foe.update();
             }
             return health;
         })()`);
-        same(hp, 100, 'the player lost health to a predator standing on them');
+        // Ten seconds on top of it: all three hits gone (the knockdown that
+        // refills them is the game loop's, not run here).
+        same(hp, 0, 'hits left after ten seconds under a predator');
     });
 
     check('and the same predator IS still mauling the follower', () => {
@@ -481,12 +482,12 @@ const SCENE = `(function(){
     });
 
     // ─────────────────────────────────────────────────────
-    group('predators do not attack the player');
+    group('predators attack the player (three hits, js/config.js PLAYER_HITS)');
 
-    check('the flag is off, and it is a named constant', () => {
-        ok(/const PREDATORS_ATTACK_PLAYER = false/.test(SRC.config),
-           'the rule is not a named constant set to false');
-        same(E.run('predatorMayHurtPlayer()'), false, 'the predicate should say no');
+    check('the flag is ON, and it is a named constant', () => {
+        ok(/const PREDATORS_ATTACK_PLAYER = true/.test(SRC.config),
+           'the rule is not a named constant set to true');
+        same(E.run('predatorMayHurtPlayer()'), true, 'the predicate should say yes');
     });
 
     check('all three paths consult it', () => {
@@ -521,11 +522,11 @@ const SCENE = `(function(){
     check('the player can still be damaged at all', () => {
         // If hurtPlayer itself had been gated, every hazard would be toothless.
         const r = E.run(`(function(){
-            health = 100; player.invuln = 0;
+            health = PLAYER_HITS; player.invuln = 0;
             hurtPlayer(12);
             return health;
         })()`);
-        same(r, 88, 'hurtPlayer should still work — hazards depend on it');
+        same(r, E.run('PLAYER_HITS') - 1, 'hurtPlayer should take one hit — hazards depend on it');
     });
 
     check('acid, vents and ground zones are NOT gated', () => {
@@ -571,8 +572,8 @@ const SCENE = `(function(){
 
     check('the rules are written down', () => {
         const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-        ok(/Predators never attack you/i.test(HTML), 'the index does not state the player rule');
-        ok(/Hazards still hurt/i.test(HTML), 'nor that hazards are the exception');
+        ok(/You can take <span class="cm-stat">3<\/span> hits/.test(HTML) && /knocks you back to the <strong>Crystal<\/strong>/.test(HTML), 'the index does not state the three-hit rule');
+        ok(/an acid pool, a vent blast or a ground zone/.test(HTML), 'nor that hazards cost a hit too');
         ok(/Recruits are never attacked/i.test(HTML), 'nor the recruit rule');
         ok(/your own side used to cut them down/i.test(HTML),
            'nor that it was your own side doing it');

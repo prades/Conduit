@@ -44,7 +44,7 @@ const SPECIES_REBUILT = ['ant', 'scorpion', 'spider', 'mantis', 'moth'];
         const cls = ${JSON.stringify(cls || 'scout')};
         const p = new Predator(cls, Object.assign({}, S[cls], { color: S.color }), 0, 0);
         p.speciesName = ${JSON.stringify(sp)}; p.className = cls; applySpeciesBody(p, ${JSON.stringify(sp)});
-        p.dirX = ${dx}; p.dirY = ${dy}; p.state = 'hunt';
+        p.dirX = ${dx}; p.dirY = ${dy}; p.state = 'hunt'; p.animationPhase = 0;   // the moth's hover bob is timed off it
         const top = drawBug3D(p, 400, 300, rec);
         const ex = eyes.reduce((a, e) => a + e[0], 0) / eyes.length, ey = eyes.reduce((a, e) => a + e[1], 0) / eyes.length;
         return { eyes: eyes.length, ex: ex - 400, ey: ey - 300, top,

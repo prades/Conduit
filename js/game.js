@@ -2160,14 +2160,15 @@ function render() {
     if (typeof tutorialMode !== 'undefined' && tutorialMode) tutorialTick();
     if (typeof ringHintTick === 'function') ringHintTick();
 
-    // Health no longer decays naturally — use health pads to restore HP
-    const hpPct=health/100;
+    // Health is a count of hits (PLAYER_HITS); it does not decay — a health pad restores one.
+    const hpPct=health/PLAYER_HITS;
     // ── HUD updates — only write DOM when values actually change (avoids layout thrashing) ──
     const _hpInt = Math.round(health);
     if (_hpInt !== _lastHpInt) {
         _lastHpInt = _hpInt;
-        hpBar.style.width = health + "%";
-        hpBar.style.background = hpPct > 0.6 ? "#0f8" : hpPct > 0.3 ? "#ff0" : "#f22";
+        hpBar.style.width = (hpPct * 100) + "%";
+        // All three green, two yellow, the last one red.
+        hpBar.style.background = health >= PLAYER_HITS ? "#0f8" : health >= PLAYER_HITS - 1 ? "#ff0" : "#f22";
     }
 
     // ── PLAYER ULTIMATE ──
@@ -2217,12 +2218,12 @@ function render() {
     // cannot chain-kill you on arrival.
     if (player.invuln > 0) player.invuln--;
     if (health <= 0) {
-        health = 40;          // partial restore on respawn
+        health = PLAYER_HITS; // knocked back to the Crystal: all three hits again
         player.x = crystal.x + 2; player.y = crystal.y;
         player.targetX = player.x; player.targetY = player.y;
         player.visualX  = player.x; player.visualY  = player.y;
         player.invuln = PLAYER_RESPAWN_GRACE;
-        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-60, text:"◈ REGROUPED", color:"#ffaa33", life:100, vy:-0.25, size:14});
+        floatingTexts.push({x:canvas.width/2, y:canvas.height/2-60, text:"◈ KNOCKED BACK TO THE CRYSTAL", color:"#ffaa33", life:100, vy:-0.25, size:14});
         shake = Math.max(shake, 8);
     }
 

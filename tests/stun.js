@@ -25,18 +25,19 @@ function constant(name) {
     return Number(m[1]);
 }
 const PLAYER_RESPAWN_GRACE = constant('PLAYER_RESPAWN_GRACE');
+const PLAYER_HITS = constant('PLAYER_HITS'), PLAYER_HIT_GRACE = constant('PLAYER_HIT_GRACE');
 
 // hurtPlayer and the knockdown block, lifted out of their real files.
 function makeEnv() {
     const sandbox = {
         console, Math, Object, Array, String, Number, Set, Map, isFinite, isNaN,
-        health: 100, shake: 0, frame: 0,
+        health: PLAYER_HITS, shake: 0, frame: 0,
         floatingTexts: [], actors: [], world: [], worldTileMap: new Map(),
         crystal: { x: 0, y: 2, health: 300, maxHealth: 300 },
         canvas: { width: 800, height: 600 },
         player: { x: 9, y: 9, visualX: 9, visualY: 9, targetX: 9, targetY: 9,
                   attackCooldown: 0, invuln: 0 },
-        PLAYER_RESPAWN_GRACE,
+        PLAYER_RESPAWN_GRACE, PLAYER_HITS, PLAYER_HIT_GRACE,
         ZONE_LENGTH: 15,
     };
     sandbox.globalThis = sandbox;
@@ -110,7 +111,7 @@ check('you are put back at the Crystal with health and a grace window', () => {
     const env = makeEnv();
     env.run('health = 0');
     env.run('knockdownTick()');
-    eq(env.run('health'), 40, 'partial restore');
+    eq(env.run('health'), PLAYER_HITS, 'all three hits again');
     eq(env.run('player.x'), env.run('crystal.x + 2'), 'moved next to the Crystal');
     eq(env.run('player.y'), env.run('crystal.y'), 'moved next to the Crystal');
     eq(env.run('player.targetX'), env.run('player.x'), 'walk target should follow, not drag you back');
@@ -160,34 +161,34 @@ check('THE REPORTED GAP: every player-damage path goes through hurtPlayer', () =
 
 check('hurtPlayer refuses damage while the window is up', () => {
     const env = makeEnv();
-    env.run('health = 100; player.invuln = 30');
+    env.run('health = PLAYER_HITS; player.invuln = 30');
     eq(env.run('hurtPlayer(25, 4)'), false, 'damage should be refused');
-    eq(env.run('health'), 100, 'health should be untouched');
+    eq(env.run('health'), PLAYER_HITS, 'health should be untouched');
     eq(env.run('shake'), 0, 'no hit shake for damage that did not land');
 });
 
 check('hurtPlayer lets damage through once the window closes', () => {
     const env = makeEnv();
-    env.run('health = 100; player.invuln = 0');
+    env.run('health = PLAYER_HITS; player.invuln = 0');
     eq(env.run('hurtPlayer(25, 4)'), true, 'damage should land');
-    eq(env.run('health'), 75, 'health should drop');
+    eq(env.run('health'), PLAYER_HITS - 1, 'one hit should be taken');
     eq(env.run('shake'), 4, 'hit shake should fire');
 });
 
 check('hurtPlayer never drives health below zero', () => {
     const env = makeEnv();
-    env.run('health = 5');
+    env.run('health = 1');
     env.run('hurtPlayer(500, 2)');
     eq(env.run('health'), 0, 'health should floor at zero, not go negative');
 });
 
 check('zero and nonsense damage is ignored', () => {
     const env = makeEnv();
-    env.run('health = 50');
+    env.run('health = 2');
     for (const arg of ['0', '-5', 'undefined', 'NaN', 'null']) {
         eq(env.run(`hurtPlayer(${arg}, 4)`), false, `hurtPlayer(${arg}) should be a no-op`);
     }
-    eq(env.run('health'), 50, 'health changed on a no-op');
+    eq(env.run('health'), 2, 'health changed on a no-op');
 });
 
 check('a projectile is still consumed when the window eats it', () => {

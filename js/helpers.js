@@ -313,11 +313,19 @@ function predatorBudgetFull() {
     return livePredatorCount() >= MAX_LIVE_PREDATORS;
 }
 
+// One hit, whatever its size: the player has PLAYER_HITS of them (js/config.js),
+// and the knockdown in game.js puts them back at the Crystal when they run out.
 function hurtPlayer(amount, shakeAmt) {
     if (!(amount > 0)) return false;
     if (player.invuln > 0) return false;
-    health = Math.max(0, health - amount);
-    if (shakeAmt) shake = Math.max(shake, shakeAmt);
+    health = Math.max(0, health - 1);
+    player.invuln = PLAYER_HIT_GRACE;
+    shake = Math.max(shake, shakeAmt || 4);
+    if (health > 0 && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
+        // Over your head (the camera keeps you at the centre; 2 px off it so it
+        // is not queued as a centre-screen banner, js/drops.js isBanner).
+        floatingTexts.push({ x: canvas.width / 2 + 2, y: canvas.height / 2 - 70, text: "HIT \u00b7 " + health + " LEFT", color: health > 1 ? "#ffcc33" : "#ff4455", life: 60, vy: -0.05, size: 11 });
+    }
     return true;
 }
 

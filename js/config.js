@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-14c";
+const BUILD_VERSION = "2026-10-14d";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -704,6 +704,19 @@ let player = {
 // exists so a predator parked by the Crystal cannot chain-kill on respawn.
 const PLAYER_RESPAWN_GRACE = 90;
 
+// ── THREE HITS ────────────────────────────────────────────
+// REPORTED: "the main character can only get hit three times by an insect or
+// a predator, then they get knocked back to the Crystal and it resets to three
+// — and it stays like this all the way into the later tiers and zones."
+//
+// The player's health is a count of hits, not hit points: any hit takes ONE,
+// however hard it was, and the third puts you back at the Crystal with all
+// three again. Nothing scales it — three at the first nest, three at the last.
+// After a hit, PLAYER_HIT_GRACE frames in which nothing lands, so one swarm's
+// volley is one hit, not all three at once.
+const PLAYER_HITS      = 3;
+const PLAYER_HIT_GRACE = 60;
+
 // ── INPUT STATE ───────────────────────────────────────────
 let isPressing    = false;
 let pressX = 0, pressY = 0;
@@ -961,12 +974,13 @@ let modulationMask = new Set();
 // per-follower, charge individually and fire on a double-tap. That system keeps
 // working exactly as it did; the surge charges all of them at once.
 // ── WHO PREDATORS WILL BITE ───────────────────────────────
-// Predators do not attack the player. You are a saboteur moving through the
-// tunnel, not a body on the line: the squad fights, and a predator that could
-// simply chew on you made positioning them beside the point. Environmental
-// hazards still hurt — acid pools, vent blasts, ground zones, cocoon toxin —
-// because those are not predators, and dodging them is a real decision.
-const PREDATORS_ATTACK_PLAYER = false;
+// Predators hit the player: a bite or sting that lands beside you, a blast
+// you stand in, a shot that reaches you. Each is ONE of your three hits
+// (PLAYER_HITS) — then you are knocked back to the Crystal. Hazards — acid
+// pools, vent blasts, ground zones — count the same way.
+// (Predators still pick their targets among your squad and structures; they
+// do not hunt you down.)
+const PREDATORS_ATTACK_PLAYER = true;
 
 const PLAYER_ULT_MAX      = 100;
 const ARMY_SURGE_FRAMES   = 600;   // ten seconds
@@ -1031,7 +1045,7 @@ let groundItems        = [];   // [{ type, element, x, y }]  — world pickups
 // Each pad: { charges: N }  — crafted via crystal menu, max 3 charges per pad
 // Using a pad heals 30 HP and costs 1 charge; pad is removed when charges reach 0
 const HEALTH_PAD_MAX_CHARGES = 3;
-const HEALTH_PAD_HEAL        = 30;   // HP restored per charge
+const HEALTH_PAD_HEAL        = 1;    // hits restored per charge (of PLAYER_HITS)
 // What a pylon costs, everywhere. It was 10 in the slow build path and 40 in
 // the instant one, with the radial gate and the element picker each holding
 // their own copy of 40 — eight literals for one price.

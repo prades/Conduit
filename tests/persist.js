@@ -27,7 +27,7 @@ function makeCtx() {
         world: [], worldTileMap: new Map(), actors: [], signalTowers: [],
         exploredZones: new Set(), dayStats: { redSpawned: 0, redConverted: 0 },
         activeDayZones: 3, ZONE_LENGTH: 15, lastGenX: 0, _cacheAge: 0,
-        health: 100,
+        health: 3, PLAYER_HITS: 3,
         // The session snapshot now records the player's ultimate bar.
         playerUltimate: 0, PLAYER_ULT_MAX: 100,
         // saveSession now records the siphon switch too.
@@ -242,7 +242,7 @@ function play(env) {
     // Simulate a bit of progress: move, take damage, link a nest, bank a panel.
     const sb = env.sandbox;
     sb.player.x = 23.5; sb.player.y = 2;
-    sb.health = 61;
+    sb.health = 2;     // hits left (of PLAYER_HITS)
     sb.lastGenX = 44;
     sb.exploredZones = new Set([0, 1, 2]);
     const nest  = sb.world.find(t => t.nest);
@@ -267,7 +267,7 @@ check('a refresh restores position, health and explored zones', () => {
     b.run('applySession(loadSession())');
     eq(b.sandbox.player.x, 23.5, 'x');
     eq(b.sandbox.player.y, 2, 'y');
-    eq(b.sandbox.health, 61, 'health');
+    eq(b.sandbox.health, 2, 'hits left');
     eq(b.sandbox.player.visualX, 23.5, 'camera follows the restored position');
     eq([...b.sandbox.exploredZones].sort().join(','), '0,1,2', 'explored zones');
     eq(b.sandbox.lastGenX >= 44, true, 'world extent');

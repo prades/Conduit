@@ -764,9 +764,9 @@ check('the index no longer says a hazard may hurt a recruit', () => {
     const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
     ok(/no damage at all/.test(HTML), 'the index does not state the new recruit rule');
 
-    // The player's own hazard rule is a different promise and must still stand:
-    // predators do not attack them, but acid and vents still do.
-    ok(/Hazards still hurt/.test(HTML), 'the player hazard rule was removed by mistake');
+    // The player's own rule is a different promise and must still stand:
+    // predators and hazards — acid, vents — each cost them one of three hits.
+    ok(/an acid pool, a vent blast or a ground zone/.test(HTML), 'the player hazard rule was removed by mistake');
 });
 
 check('the drawn block reads as a cube, not a column', () => {

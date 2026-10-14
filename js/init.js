@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────
 //  INIT
 // ─────────────────────────────────────────────────────────
-let health = 100;
+let health = PLAYER_HITS;     // hits left (js/config.js)
 
 async function loadConfig() {
     try {

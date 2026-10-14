@@ -14,7 +14,7 @@ const sandbox = {
     // ── game globals ──
     actors: [], world: [], elementEffects: [], floatingTexts: [],
     _pillarCache: [], zonePredators: {},
-    frame: 0, health: 100, shake: 0,
+    frame: 0, health: 3, shake: 0, PLAYER_HITS: 3, PLAYER_HIT_GRACE: 60,
     ZONE_LENGTH: 15, activeDayZones: 3,
     gameState: { nightNumber: 1, phase: 'day' },
     alertActive: false,
@@ -77,7 +77,7 @@ function reset() {
     sandbox.damageLog.length = 0;
     sandbox.zonePredators = {};
     sandbox.frame = 0;
-    sandbox.health = 100;
+    sandbox.health = 3; sandbox.player.invuln = 0;
     sandbox.shake = 0;
     sandbox.alertActive = false;
     sandbox.player.x = 50; sandbox.player.y = 2; sandbox.player.stunned = 0;
@@ -288,23 +288,22 @@ check('BLINDING DUST slows and shreds in an area', () => {
     ok(f.slowed > 0, 'slowed');
     ok(f.defenseShredded > 0, 'shredded');
 });
-check('THE RULE: no special touches the player, hostile or friendly', () => {
-    // This check used to assert the opposite — that a hostile special SHOULD
-    // hit the player — which was the design until predators stopped attacking
-    // them at all. The player is a saboteur, not a body on the line. Hazards
-    // still hurt; a predator's own attacks do not.
+check('THE RULE: a hostile special hits the player (one of three hits); a friendly one never does', () => {
+    // Predators attack the player again (three hits, then the Crystal —
+    // js/config.js PLAYER_HITS). A special that lands on you is ONE hit; the
+    // grace after it (nothing ticks it down here) stops a frenzy taking more.
     reset();
     sandbox.player.x = 5.2; sandbox.player.y = 2;
     const b = mkBug('ant', 'striker'); mkFoe();
     spin(b, 500);
-    eq(sandbox.health, 100, 'a hostile frenzy should not touch the player');
+    eq(sandbox.health, 2, 'a hostile frenzy beside the player should take one hit');
 
     reset();
     sandbox.player.x = 5.2;
     const c = mkBug('ant', 'striker', { isClone: true, team: 'green' });
     sandbox.actors.push({ x: 6, y: 2, team: 'red', health: 1e9, maxHealth: 1e9, dead: false });
     spin(c, 500);
-    eq(sandbox.health, 100, 'nor should a friendly clone');
+    eq(sandbox.health, 3, 'a friendly clone should not touch the player');
 });
 
 check('but the special still lands on what it IS aimed at', () => {

@@ -47,6 +47,11 @@
         #hudCentre { flex: 0 1 140px; }
     }
     #hp { height: 100%; background: #0f8; width: 100%; box-shadow: 0 0 10px #0f8; transition: background 0.3s; }
+    /* Three hits: the bar is cut into three. */
+    #ui { position: relative; }
+    #ui::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+        background: linear-gradient(90deg, transparent calc(33.333% - 1px), #000 calc(33.333% - 1px), #000 calc(33.333% + 1px), transparent calc(33.333% + 1px),
+                                           transparent calc(66.667% - 1px), #000 calc(66.667% - 1px), #000 calc(66.667% + 1px), transparent calc(66.667% + 1px)); }
 
     /* The character's ultimate, sitting right under their health so the two
        read as one status block. Tapping it spends the bar. */
@@ -642,7 +647,7 @@
       <div class="ctrl-title">THE TOP BAR — WHAT IS WHERE</div>
       <div class="ctrl-row cm-dim">The top of the screen stacks in three rows and never overlaps itself, at any screen size. Tapping an empty part of it reaches the cavern underneath.</div>
       <div class="cm-build-row"><span class="cm-build-label">Left</span>Shards, and the <span class="cm-stat">DNA</span> you are carrying</div>
-      <div class="cm-build-row"><span class="cm-build-label">Centre</span>Your health, and the <span class="cm-stat">ULTIMATE</span> bar under it with its <span class="cm-stat">⌁</span> siphon switch</div>
+      <div class="cm-build-row"><span class="cm-build-label">Centre</span>Your health &mdash; <span class="cm-stat">3</span> hits, then you are knocked back to the Crystal &mdash; and the <span class="cm-stat">ULTIMATE</span> bar under it with its <span class="cm-stat">⌁</span> siphon switch</div>
       <div class="cm-build-row"><span class="cm-build-label">Right</span>Launch-pad charge, and the zone you are standing in</div>
       <div class="cm-build-row"><span class="cm-build-label">Middle line</span>The <span class="cm-stat">OBJECTIVE</span> — see below</div>
       <div class="cm-build-row"><span class="cm-build-label">Bottom row</span>SQUAD, BUILD and <span class="cm-stat">?</span></div>
@@ -1217,7 +1222,7 @@
       <div class="ctrl-row cm-dim"><span style="color:#3a86ff">In a zone you have taken</span> the panels are neutralised with the nest, and they turn <strong>blue</strong> to say so. There is nobody left in there to raise, so <strong>no panel can trip the alarm</strong> — not even the decoy. They still pay, at <span class="cm-stat">40%</span> of the usual shards, so a cleared zone is still worth walking back through without being as good as one you have not fought for. The one decoy is only ever placed in a zone that can still raise it.</div>
 
       <div class="cm-elem-head" style="color:#8cf">◈ WHO CAN BE ATTACKED</div>
-      <div class="ctrl-row cm-dim"><strong>Predators never attack you.</strong> You are a saboteur moving through the tunnel, not a body on the line — the squad does the fighting. <span class="cm-stat">Hazards still hurt</span>: acid pools, vent blasts and ground zones are not predators, and dodging them is on you.</div>
+      <div class="ctrl-row cm-dim"><strong>You can take <span class="cm-stat">3</span> hits.</strong> A predator's bite, sting, blast or shot that reaches you is one hit, however strong it is &mdash; and so is an acid pool, a vent blast or a ground zone. The third knocks you back to the <strong>Crystal</strong> with all three again. It is three hits in every zone, first to last. After a hit you have a moment where nothing lands, so one swarm's volley costs one hit, not three. The bar at the top is cut into thirds; a health pad charge gives one hit back.</div>
       <div class="ctrl-row cm-dim"><strong>Recruits are never attacked</strong> while they walk to the Crystal — not by predators, not by your clones, not by your followers' area attacks, and you cannot order an attack on one. A recruit is on the enemy's team until it arrives, which is why your own side used to cut them down on the way in.</div>
       <div class="ctrl-row cm-dim"><strong>Nor hurt by anything else.</strong> A recruit on its way in now takes <span class="cm-stat">no damage at all</span> — hazards included. The predators' specials were never the problem: all seven land in full on a follower standing beside a recruit and do not scratch the recruit. What was killing them was something that never picks a target — the slow health decay that bleeds anything on the enemy's team. A recruit could arrive dead without a single predator having chosen to hurt it.</div>
 
@@ -1356,12 +1361,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-14c, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-14d, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-14c";
+window.__PAGE_BUILD = "2026-10-14d";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1397,51 +1402,51 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-14c"></script>
-<script src="js/icons.js?v=2026-10-14c"></script>
-<script src="js/rng.js?v=2026-10-14c"></script>
-<script src="js/traits.js?v=2026-10-14c"></script>
-<script src="js/elements.js?v=2026-10-14c"></script>
-<script src="js/combat.js?v=2026-10-14c"></script>
-<script src="js/species.js?v=2026-10-14c"></script>
-<script src="js/levels.js?v=2026-10-14c"></script>
-<script src="js/predator_randomizer.js?v=2026-10-14c"></script>
-<script src="js/mass.js?v=2026-10-14c"></script>
-<script src="js/infest.js?v=2026-10-14c"></script>
-<script src="js/power.js?v=2026-10-14c"></script>
-<script src="js/save.js?v=2026-10-14c"></script>
-<script src="js/camp.js?v=2026-10-14c"></script>
-<script src="js/wavedata.js?v=2026-10-14c"></script>
-<script src="js/helpers.js?v=2026-10-14c"></script>
-<script src="js/predator.js?v=2026-10-14c"></script>
-<script src="js/abilities.js?v=2026-10-14c"></script>
-<script src="js/world.js?v=2026-10-14c"></script>
-<script src="js/commands.js?v=2026-10-14c"></script>
-<script src="js/npc.js?v=2026-10-14c"></script>
-<script src="js/codex.js?v=2026-10-14c"></script>
-<script src="js/draw.js?v=2026-10-14c"></script>
-<script src="js/beetle3d.js?v=2026-10-14c"></script>
-<script src="js/bugs3d.js?v=2026-10-14c"></script>
-<script src="js/ui.js?v=2026-10-14c"></script>
-<script src="js/waves.js?v=2026-10-14c"></script>
-<script src="js/drops.js?v=2026-10-14c"></script>
-<script src="js/clone.js?v=2026-10-14c"></script>
-<script src="js/clonework.js?v=2026-10-14c"></script>
-<script src="js/broods.js?v=2026-10-14c"></script>
-<script src="js/raids.js?v=2026-10-14c"></script>
-<script src="js/ultra.js?v=2026-10-14c"></script>
-<script src="js/formations.js?v=2026-10-14c"></script>
-<script src="js/breakout.js?v=2026-10-14c"></script>
-<script src="js/nightraids.js?v=2026-10-14c"></script>
-<script src="js/bonds.js?v=2026-10-14c"></script>
-<script src="js/autoplay.js?v=2026-10-14c"></script>
-<script src="js/indexart.js?v=2026-10-14c"></script>
-<script src="js/modules.js?v=2026-10-14c"></script>
-<script src="js/buildmenu.js?v=2026-10-14c"></script>
-<script src="js/input.js?v=2026-10-14c"></script>
-<script src="js/game.js?v=2026-10-14c"></script>
-<script src="js/tutorial.js?v=2026-10-14c"></script>
-<script src="js/dev.js?v=2026-10-14c"></script>
+<script src="js/config.js?v=2026-10-14d"></script>
+<script src="js/icons.js?v=2026-10-14d"></script>
+<script src="js/rng.js?v=2026-10-14d"></script>
+<script src="js/traits.js?v=2026-10-14d"></script>
+<script src="js/elements.js?v=2026-10-14d"></script>
+<script src="js/combat.js?v=2026-10-14d"></script>
+<script src="js/species.js?v=2026-10-14d"></script>
+<script src="js/levels.js?v=2026-10-14d"></script>
+<script src="js/predator_randomizer.js?v=2026-10-14d"></script>
+<script src="js/mass.js?v=2026-10-14d"></script>
+<script src="js/infest.js?v=2026-10-14d"></script>
+<script src="js/power.js?v=2026-10-14d"></script>
+<script src="js/save.js?v=2026-10-14d"></script>
+<script src="js/camp.js?v=2026-10-14d"></script>
+<script src="js/wavedata.js?v=2026-10-14d"></script>
+<script src="js/helpers.js?v=2026-10-14d"></script>
+<script src="js/predator.js?v=2026-10-14d"></script>
+<script src="js/abilities.js?v=2026-10-14d"></script>
+<script src="js/world.js?v=2026-10-14d"></script>
+<script src="js/commands.js?v=2026-10-14d"></script>
+<script src="js/npc.js?v=2026-10-14d"></script>
+<script src="js/codex.js?v=2026-10-14d"></script>
+<script src="js/draw.js?v=2026-10-14d"></script>
+<script src="js/beetle3d.js?v=2026-10-14d"></script>
+<script src="js/bugs3d.js?v=2026-10-14d"></script>
+<script src="js/ui.js?v=2026-10-14d"></script>
+<script src="js/waves.js?v=2026-10-14d"></script>
+<script src="js/drops.js?v=2026-10-14d"></script>
+<script src="js/clone.js?v=2026-10-14d"></script>
+<script src="js/clonework.js?v=2026-10-14d"></script>
+<script src="js/broods.js?v=2026-10-14d"></script>
+<script src="js/raids.js?v=2026-10-14d"></script>
+<script src="js/ultra.js?v=2026-10-14d"></script>
+<script src="js/formations.js?v=2026-10-14d"></script>
+<script src="js/breakout.js?v=2026-10-14d"></script>
+<script src="js/nightraids.js?v=2026-10-14d"></script>
+<script src="js/bonds.js?v=2026-10-14d"></script>
+<script src="js/autoplay.js?v=2026-10-14d"></script>
+<script src="js/indexart.js?v=2026-10-14d"></script>
+<script src="js/modules.js?v=2026-10-14d"></script>
+<script src="js/buildmenu.js?v=2026-10-14d"></script>
+<script src="js/input.js?v=2026-10-14d"></script>
+<script src="js/game.js?v=2026-10-14d"></script>
+<script src="js/tutorial.js?v=2026-10-14d"></script>
+<script src="js/dev.js?v=2026-10-14d"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1494,7 +1499,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-14c"></script>
+<script src="js/init.js?v=2026-10-14d"></script>
 
 </body>
 </html>

@@ -54,7 +54,7 @@ function makeEnv() {
         networkStrength: {}, networkIntegrity: {}, _prevNetworkTiers: {},
         followerByElement: {}, zonePredators: {}, zoneRespawnTimers: {},
         activeDayZones: 3, ZONE_LENGTH: 15, lastGenX: 0, _cacheAge: 0,
-        frame: 0, shake: 0, shardCount: 0, health: 100,
+        frame: 0, shake: 0, shardCount: 0, health: 3, PLAYER_HITS: 3,
         // The session snapshot now records the player's ultimate bar.
         playerUltimate: 0, PLAYER_ULT_MAX: 100,
         // saveSession now records the siphon switch too.
@@ -323,9 +323,9 @@ check('charged mass from the old game does not litter the new map', () => {
 
 check('a reset restores health and the opening ammo allowance', () => {
     const loaded = reloadOn(playedSession().env);
-    loaded.run('health = 12; playerAmmo = 1');
+    loaded.run('health = 1; playerAmmo = 1');
     loaded.run('restartGame()');
-    eq(loaded.run('health'), 100, 'health should be full again');
+    eq(loaded.run('health'), 3, 'all three hits again');
     eq(loaded.run('playerAmmo'), loaded.run('PLAYER_AMMO_START'),
        'ammo should be back to the opening allowance');
 });
