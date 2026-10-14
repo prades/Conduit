@@ -94,3 +94,55 @@ function _blobDesign(o) {
 fx(107, "Liquid blob, shards, flat crescent.", () => _blobDesign({ Y: 0.95, R: 0.6, level: 0.08, sr: 0.07, sh: 0.34, sOrbit: 0.3, sUp: 0.5, cs: 0.45, csY: 0.95, csFlat: true }));
 fx(108, "Liquid blob, crown of shards.", () => _blobDesign({ Y: 0.95, R: 0.62, level: -0.05, sr: 0.065, sh: 0.36, sOrbit: 0.26, sUp: 0.62, sDown: true }));
 fx(109, "Liquid blob, tall shards, upright crescent.", () => _blobDesign({ Y: 0.9, R: 0.55, level: 0.15, sr: 0.07, sh: 0.4, sOrbit: 0.32, sUp: 0.55, cs: 0.5, csY: 0.95 }));
+
+// ── THE BARE LIQUID BLOB · the flux brawler, Nos. 110–112 ─────────────────
+// No glass: the blob is the liquid itself, glossy and wobbling, held together by revolving metal hoops.
+// Three flat black triangles: one orbits, the others revolve (110, 111: round that one; 112: round the blob).
+function liquidMass(R) {
+  const geo = new T.SphereGeometry(R, 44, 28), base = geo.attributes.position.array.slice();
+  const mat = new T.MeshStandardMaterial({ color: 0x070110, emissive: new T.Color(EL.color).multiplyScalar(0.2), emissiveIntensity: 1.0, metalness: 0.3, roughness: 0.06 }); mat.envMapIntensity = 1.6;
+  const m = new T.Mesh(geo, mat), p = geo.attributes.position;
+  m.wobble = t => {   // the surface ripples and sways; every term turns at a whole multiple of 1.6 rad/s, so the idle loop closes
+    for (let i = 0; i < p.count; i++) { const x = base[i * 3] / R, y = base[i * 3 + 1] / R, z = base[i * 3 + 2] / R, az = Math.atan2(x, z), po = Math.acos(Math.max(-1, Math.min(1, y)));
+      const k = 1 + 0.055 * Math.sin(3 * az + 1.6 * t) * Math.sin(2 * po) + 0.035 * Math.sin(5 * az - 3.2 * t + 1) * Math.cos(3 * po) + 0.03 * Math.sin(2 * po + 1.6 * t);
+      p.setXYZ(i, x * R * k, y * R * k * (1 + 0.03 * Math.sin(1.6 * t)), z * R * k); }
+    p.needsUpdate = true; geo.computeVertexNormals(); };
+  m.wobble(0.9); return m;
+}
+function triShard(r) {   // a flat black triangle with a glowing edge
+  const g = G(), pr = new T.Mesh(new T.CylinderGeometry(r, r, 0.07, 3), M.black); g.add(pr);
+  const ed = new T.Mesh(new T.TorusGeometry(r * 0.8, 0.02, 4, 3), M.glow); ed.rotation.x = PI / 2; ed.position.y = 0.04; g.add(ed);
+  const ed2 = ed.clone(); ed2.position.y = -0.04; g.add(ed2);
+  g.rotation.x = PI / 2;   // stood up: its face toward +z, like a flat blade
+  const holder = G(); holder.add(g); return holder;
+}
+function _blob2Design(o) {
+  const g = G(), b = G(); g.add(b); const Y = o.Y, R = o.R;
+  const hov = G(); hov.position.y = Y; b.add(hov);
+  const mass = liquidMass(R); hov.add(mass);
+  const hoops = []; for (let i = 0; i < 3; i++) { const h = new T.Mesh(new T.TorusGeometry(R * 1.14, 0.028, 6, 24, 1.7), i % 2 ? M.steel : M.gun); const gimbal = G(); gimbal.rotation.set(i * 1.05, 0, i * 0.5); gimbal.add(h); hov.add(gimbal); hoops.push(h); }
+  const th = thr(0.09); th.position.y = -R * 1.25; hov.add(th);
+  const drops = []; for (let i = 0; i < 2; i++) { const d = new T.Mesh(new T.SphereGeometry(0.05 - i * 0.012, 14, 10), mass.material); hov.add(d); drops.push(d); }
+  const A = triShard(o.sr), B = triShard(o.sr * 0.8), C = triShard(o.sr * 0.8); hov.add(A); hov.add(B); hov.add(C);
+  let cres = null; if (o.cs) { cres = crescent(o.cs, o.cs * 0.8, o.cs * 0.42, 0.045, M.gold); cres.position.y = R + o.csY; hov.add(cres); if (o.csFlat) cres.rotation.x = -PI / 2 + 0.55; else cres.position.z = -0.1; }
+  const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, Y + 0.2, 0.7); b.add(L); LIGHTS.push(L);
+  return { g, core: Y, update(t, act) {
+    hov.position.y = Y + bob(t, 0, 0.035) + 0.05 * (act || 0); mass.wobble(t);
+    hoops.forEach((h, i) => { h.rotation.z = t * 1.6 * (i % 2 ? -1 : 1) + i * 2; });
+    drops.forEach((d, i) => { const a = t * 1.6 * (i ? -1 : 1) + i * 3, rr = R * 1.25; d.position.set(Math.sin(a) * rr, -R * 0.35 + 0.1 * Math.sin(t * 3.2 + i), Math.cos(a) * rr); });
+    const a = t * 1.6, ax = Math.sin(a) * o.oR, az = Math.cos(a) * o.oR, ay = R + o.oUp;
+    A.position.set(ax, ay, az); A.rotation.y = a;
+    if (o.round === 'A') {   // the other two revolve round the first, one turn and a half faster, opposite ways
+      const bb = -t * 3.2;
+      B.position.set(ax + Math.sin(bb) * o.rR, ay + Math.cos(bb) * o.rR * 0.5, az + Math.cos(bb) * o.rR * 0.8);
+      C.position.set(ax - Math.sin(bb) * o.rR, ay - Math.cos(bb) * o.rR * 0.5, az - Math.cos(bb) * o.rR * 0.8);
+      B.rotation.y = C.rotation.y = a + bb;
+    } else {   // the other two revolve round the blob on an upright orbit, opposite each other
+      const bb = t * 3.2 / 2 * 2;
+      for (const [S, ph] of [[B, 0], [C, PI]]) { S.position.set(Math.sin(bb + ph) * (R * 1.5) * 0.35, Math.cos(bb + ph) * R * 1.5, Math.sin(bb + ph) * R * 1.5 * 0.94); S.rotation.set(0, bb, 0); }
+    }
+    if (cres) { if (o.csFlat) cres.rotation.z = t * 1.6; else cres.rotation.y = t * 1.6; } } };
+}
+fx(110, "Bare liquid blob, triangle with two satellites.", () => _blob2Design({ Y: 0.95, R: 0.6, sr: 0.3, oR: 0.75, oUp: 0.25, rR: 0.42, round: 'A', cs: 0.36, csY: 1.0, csFlat: true }));
+fx(111, "Bare liquid blob, high orbit, no crescent.", () => _blob2Design({ Y: 0.95, R: 0.6, sr: 0.3, oR: 0.45, oUp: 0.62, rR: 0.42, round: 'A' }));
+fx(112, "Bare liquid blob, triangles round the blob.", () => _blob2Design({ Y: 0.95, R: 0.55, sr: 0.28, oR: 0.85, oUp: 0.1, round: 'B', cs: 0.36, csY: 1.0, csFlat: true }));
