@@ -102,10 +102,16 @@ function liquidMass(R) {
   const geo = new T.SphereGeometry(R, 44, 28), base = geo.attributes.position.array.slice();
   const mat = new T.MeshStandardMaterial({ color: 0x070110, emissive: new T.Color(EL.color).multiplyScalar(0.2), emissiveIntensity: 1.0, metalness: 0.3, roughness: 0.06 }); mat.envMapIntensity = 1.6;
   const m = new T.Mesh(geo, mat), p = geo.attributes.position;
-  m.wobble = t => {   // the surface ripples and sways; every term turns at a whole multiple of 1.6 rad/s, so the idle loop closes
-    for (let i = 0; i < p.count; i++) { const x = base[i * 3] / R, y = base[i * 3 + 1] / R, z = base[i * 3 + 2] / R, az = Math.atan2(x, z), po = Math.acos(Math.max(-1, Math.min(1, y)));
-      const k = 1 + 0.055 * Math.sin(3 * az + 1.6 * t) * Math.sin(2 * po) + 0.035 * Math.sin(5 * az - 3.2 * t + 1) * Math.cos(3 * po) + 0.03 * Math.sin(2 * po + 1.6 * t);
-      p.setXYZ(i, x * R * k, y * R * k * (1 + 0.03 * Math.sin(1.6 * t)), z * R * k); }
+  // Drops land on the surface and send a ring of swell out across the mass and back to rest, like rain on water. The
+  // blob keeps its shape (the swell is a few percent of its radius); nothing juts out. Each drop repeats once per
+  // loop (2π/1.6 s), the four staggered, so the idle loop closes.
+  const DROPS = [[0.55, 0.5, 0.67], [-0.3, 0.85, 0.4], [0.9, 0.1, 0.25], [-0.55, 0.05, 0.83]].map(v => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; });
+  m.wobble = t => {
+    for (let i = 0; i < p.count; i++) { const x = base[i * 3] / R, y = base[i * 3 + 1] / R, z = base[i * 3 + 2] / R;
+      let k = 1 + 0.012 * Math.sin(1.6 * t + y * 2);   // a slow breath
+      for (let d = 0; d < DROPS.length; d++) { const c = DROPS[d], u = ((1.6 * t / TAU + d / DROPS.length) % 1 + 1) % 1, ang = Math.acos(Math.max(-1, Math.min(1, x * c[0] + y * c[1] + z * c[2]))), front = u * 1.5, e = ang - front;
+        k += 0.11 * Math.pow(1 - u, 1.2) * Math.cos(e * 7) * Math.exp(-e * e / 0.2); }
+      p.setXYZ(i, x * R * k, y * R * k, z * R * k); }
     p.needsUpdate = true; geo.computeVertexNormals(); };
   m.wobble(0.9); return m;
 }
