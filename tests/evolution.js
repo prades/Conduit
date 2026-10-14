@@ -50,7 +50,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f) })');
         same(r.evo, 'serpent', 'its form'); same(r.tag, 'SERPENT', 'its tag');
-        mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux brawler');
+        mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a flux brawler is the Rift Mimic');
+        same(run('unitTypeLabel(__f)'), 'RIFT MIMIC', 'its tag'); same(run('__f.role'), 'brawler', 'its role');
+        mk('flux', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a hybrid fights as a brawler');
+        mk('flux', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux camper waits');
     });
     check('THE ASK: a CORE BRAWLER becomes the AEGIS WARDEN (design No. 57); an ELECTRIC BRAWLER the STORM MANTA (No. 68)', () => {
         mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'warden', 'core brawler');
@@ -61,7 +64,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('THE ASK: a FLUX WORKER becomes the HOVER HAULER (design No. 58) — a worker is a duty, not a role', () => {
         mk('flux', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux brawler on worker duty');
         mk('flux', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux SNIPER on worker duty is a worker first');
-        mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux brawler on the line');
+        mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a flux brawler on the line is the Rift Mimic');
         mk('core', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a core worker waits (no worker form for it)');
         mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'pod', 'an electric worker is the Dynamo Pod, not the Storm Manta');
         mk('flux', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'serpent', 'a flux sniper on the line is the Serpent');
@@ -81,7 +84,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('toxic', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic worker waits (no worker form for it)');
     });
     check('…and nobody else: not an ice brawler, an electric brawler — nor before level 20', () => {
-        for (const [el, role] of [['ice', 'brawler'], ['flux', 'brawler'], ['core', 'sniper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
+        for (const [el, role] of [['ice', 'brawler'], ['core', 'sniper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
         mk('fire', 'brawler', 19); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 19');
     });
     check('a follower already past level 20 (an old save) evolves on the next tick', () => {
@@ -160,6 +163,20 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.sa[0] >= run('ROT_SHRED_FRAMES') && r.sa[1] <= run('ROT_SHRED'), 'the target\'s armour: ' + JSON.stringify(r));
         ok(r.sb[0] > 0 && r.sb[0] < r.sa[0] && r.sb[1] > r.sa[1] && r.sb[1] < 1, 'the neighbour\'s weaker corrosion: ' + JSON.stringify(r));
         same(r.sfar, 0, 'corroded out of range'); same(r.sapart, 0, 'corroded beyond the splash'); ok(r.cd > 300, 'it did not wait');
+    });
+
+    check('THE ASK: GRAVITY SLAM — it flattens and slams: hits, shoves and slows everything close; a beetle is too heavy to shove', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('flux'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'mimic'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const mkP = (sp, x, y) => { const S = SPECIES[sp], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const a = mkP('ant', 21.2, 2), b = mkP('ant', 20, 3.4), beetle = mkP('beetle', 18.8, 2), far = mkP('ant', 25, 2);
+            const a0 = Math.hypot(a.x - f.x, a.y - f.y), beetle0 = beetle.x;
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), beetle: d(beetle), far: d(far), pushed: Math.hypot(a.x - f.x, a.y - f.y) - a0, beetleMoved: beetle.x !== beetle0, slowed: a.slowed > 0 && b.slowed > 0, sf: a.slowFactor, farSlowed: far.slowed > 0, cd: f._sigCd };
+            [a, b, beetle, far].forEach(p => p.dead = true); return out; })()`);
+        ok(r.a > 0 && r.b > 0 && r.beetle > 0, 'the slam hit: ' + JSON.stringify(r));
+        same(r.far, 0, 'damage outside the slam'); ok(!r.farSlowed, 'slowed outside the slam');
+        ok(r.pushed > 0.3 && r.slowed && r.sf === run('MIMIC_SLOW') && r.sf < 1, 'shoved and slowed: ' + JSON.stringify(r)); ok(!r.beetleMoved, 'a beetle was shoved'); ok(r.cd > 300, 'it did not wait');
     });
 
     check('THE ASK: SINGULARITY SHOT — a gravity round into the nearest enemy, dragging those round it in; a beetle is too heavy', () => {
@@ -284,7 +301,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }

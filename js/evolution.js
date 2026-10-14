@@ -54,6 +54,11 @@
 //          fires one long shot (ROT_MULT × its power) that eats the target's armour
 //          (it takes 1 / ROT_SHRED × damage for ROT_SHRED_FRAMES) and splashes
 //          the same corrosion, at half strength, over whatever is within ROT_SPLASH_R.
+//          RIFT MIMIC (the FLUX BRAWLER, design No. 114, the Ditto-style blob with big black shards),
+//          GRAVITY SLAM: with an enemy within MIMIC_RADIUS, every MIMIC_EVERY frames it
+//          flattens and slams its weight down: everything within MIMIC_RADIUS takes
+//          MIMIC_MULT × its power, is shoved MIMIC_PUSH back (a beetle, a boss or a machine
+//          is too heavy to move) and slowed by MIMIC_SLOW for MIMIC_SLOW_FRAMES.
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
 //          sheets in img/evo/: 8 facings × 16 frames (8 idle, 8 action),
 //          seen from the game's own iso angle.
@@ -69,6 +74,7 @@ const WARDEN_RADIUS = 2.2, WARDEN_EVERY = 360, WARDEN_MULT = 1.8, WARDEN_PUSH = 
 const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;
 const HALO_RANGE = 7, HALO_EVERY = 330, HALO_ROUNDS = 6, HALO_MULT = 0.8, HALO_BURN = 150;
 const ROT_RANGE = 7, ROT_EVERY = 320, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
+const MIMIC_RADIUS = 2.2, MIMIC_EVERY = 330, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
 const HAULER_SPEED = 1.5, HAULER_REACH = 2, HAULER_PAY = 2;
 const POD_RATE = 3, POD_REACH = 2, POD_SPEED = 1.4;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
@@ -88,6 +94,9 @@ const EVOLUTIONS = {
     // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
     halo:   { id: "halo",   name: "CINDER HALO",  element: "fire",     role: "sniper",  move: "HEXFIRE",      sheet: "img/evo/halo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
+    // The FLUX BRAWLER: a lump of liquid on the ground (a flux worker is the Hover Hauler instead: a worker is a duty). Its surface moves, so its sheet carries its own light.
+    mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff" },
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", move: "CORRODE SHOT", sheet: "img/evo/rotshard.png",
               cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66" },
@@ -138,7 +147,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
-        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f);
+        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f);
     }
 }
 function _evoFoes(x, y, r) {
@@ -253,6 +262,28 @@ function corrodeShot(f) {
         elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#66ff66", radius: 0.6, life: 22 });
     }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "CORRODE", color: "#88ff88", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+
+// GRAVITY SLAM: flatten and slam, hitting, shoving and slowing everything close. True when it fired.
+function gravitySlam(f) {
+    const foes = _evoFoes(f.x, f.y, MIMIC_RADIUS);
+    if (!foes.length) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const a of foes) {
+        applyDamage(a, (f.power || 10) * MIMIC_MULT, f, "flux");
+        if (typeof applySlow === "function") applySlow(a, MIMIC_SLOW_FRAMES, MIMIC_SLOW);
+        if (typeof vortexPullImmune === "function" && vortexPullImmune(a)) continue;
+        const dx = a.x - f.x, dy = a.y - f.y, L = Math.hypot(dx, dy) || 1;
+        a.x += dx / L * MIMIC_PUSH; a.y += dy / L * MIMIC_PUSH;
+    }
+    f._sigAt = f0; f._sigCd = MIMIC_EVERY;
+    if (typeof elementEffects !== "undefined") {
+        elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: MIMIC_RADIUS, color: "#bb66ff", life: 40 });
+        elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#bb66ff", radius: MIMIC_RADIUS * 0.6, life: 24 });
+    }
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "GRAVITY SLAM", color: "#cc88ff", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 

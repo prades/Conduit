@@ -163,32 +163,33 @@ function groundBlob(R, o) {
   const bump = (() => { const v = o.bump || [0.9, 0.05, -0.4], l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; })();
   const DROPS = [[0.4, 0.8, 0.45], [-0.5, 0.7, 0.5], [0.8, 0.45, 0.2]].map(v => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; });
   const m = new T.Mesh(geo, mat); if (o.clear) m.renderOrder = 2;
-  m.wobble = t => {
-    const sq = Math.sin(1.6 * t);   // it squashes down and swells out, and back
+  m.wobble = (t, act) => {
+    const sq = Math.sin(1.6 * t), ac = act || 0;   // it squashes down and swells out, and back; firing, it slams flat
     for (let i = 0; i < p.count; i++) { const x = base[i * 3], y = base[i * 3 + 1], z = base[i * 3 + 2], az0 = Math.atan2(x, z);
       const bd = Math.acos(Math.max(-1, Math.min(1, x * bump[0] + y * bump[1] + z * bump[2])));
       let k = 1 + 0.09 * Math.sin(2 * az0 + 1) + 0.06 * Math.sin(3 * az0 - 1) * Math.max(0, y + 0.3) + 0.2 * Math.exp(-bd * bd / 0.2);   // lumpy, with one pseudopod
       for (let d = 0; d < DROPS.length; d++) { const c = DROPS[d], u = ((1.6 * t / TAU + d / DROPS.length) % 1 + 1) % 1, ang = Math.acos(Math.max(-1, Math.min(1, x * c[0] + y * c[1] + z * c[2]))), e = ang - u * 1.4;
         k += 0.05 * Math.pow(1 - u, 1.2) * Math.cos(e * 7) * Math.exp(-e * e / 0.2); }
-      p.setXYZ(i, x * R * ax * k * (1 - 0.03 * sq), Math.max(0, y) * R * ay * k * (1 + 0.06 * sq), z * R * az * k * (1 - 0.03 * sq)); }   // below the ground it is flat
+      p.setXYZ(i, x * R * ax * k * (1 - 0.03 * sq + 0.14 * ac), Math.max(0, y) * R * ay * k * (1 + 0.06 * sq - 0.3 * ac), z * R * az * k * (1 - 0.03 * sq + 0.14 * ac)); }   // below the ground it is flat
     p.needsUpdate = true; geo.computeVertexNormals(); };
   m.wobble(0.9); m.dims = [R * ax, R * ay, R * az]; return m;
 }
+const _bladeMat = new T.MeshStandardMaterial({ color: 0x0b0b10, metalness: 0.9, roughness: 0.22 }); _bladeMat.envMapIntensity = 1.6;   // black, but it catches the light along its edges
 function blade(w, h, d) {   // a solid black triangular shard, standing on its base
   const sh = new T.Shape(); sh.moveTo(-w / 2, 0); sh.lineTo(w / 2, 0); sh.lineTo(w * 0.12, h); sh.lineTo(-w / 2, 0);
   const geo = new T.ExtrudeGeometry(sh, { depth: d, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.012, bevelSegments: 1 }); geo.translate(0, 0, -d / 2);
-  const m = new T.Mesh(geo, M.black); const g = G(); g.add(m); return g;
+  const m = new T.Mesh(geo, _bladeMat); const g = G(); g.add(m); return g;
 }
 function _groundDesign(o) {
-  const g = G(), b = G(); g.add(b);
+  const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S);   // (the game sprite wants it bigger in its cell)
   const R = o.R, mass = groundBlob(R, o); mass.position.y = 0.03; b.add(mass);
   const parts = [];   // [shard, x, y, z, rotX, rotY, rotZ]
-  for (const s of o.shards) { const sh = blade(s.w, s.h, s.d || 0.07); sh.position.set(s.x, s.y, s.z); sh.rotation.set(s.rx || 0, s.ry || 0, s.rz || 0); b.add(sh); parts.push({ sh, y0: s.y, inBlob: !!s.inBlob, rz: s.rz || 0 }); }
+  for (const s of o.shards) { const sh = blade(s.w * 1.2, s.h, s.d || 0.1); sh.position.set(s.x, s.y, s.z); sh.rotation.set(s.rx || 0, s.ry || 0, s.rz || 0); b.add(sh); parts.push({ sh, y0: s.y, inBlob: !!s.inBlob, rz: s.rz || 0 }); }
   const eyes = []; if (o.face) for (const sx of [-1, 1]) { const e = sphere(0.045, M.black, 12); e.scale.set(1, 1.3, 0.5); b.add(e); eyes.push([e, sx]); }
   const mouth = o.face ? cbox(0.2, 0.018, 0.02, 0.004, M.black) : null; if (mouth) b.add(mouth);
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.9, 0.9); b.add(L); LIGHTS.push(L);
-  return { g, core: R * 0.4, update(t, act) {
-    mass.wobble(t); const sq = Math.sin(1.6 * t), up = 1 + 0.06 * sq + 0.08 * (act || 0);
+  return { g, core: R * 0.4 * (o.S || 1), update(t, act) {
+    mass.wobble(t, act); const sq = Math.sin(1.6 * t), up = 1 + 0.06 * sq - 0.3 * (act || 0);
     parts.forEach((q, i) => { if (q.inBlob) { q.sh.position.y = q.y0 * up; q.sh.rotation.z = q.rz + 0.04 * Math.sin(1.6 * t + i); } });
     const [dx, dy, dz] = mass.dims;   // the face sits on the front of the lump
     eyes.forEach(([e, sx]) => { e.position.set(sx * dx * 0.28, dy * 0.72 * up, dz * 0.82); });
@@ -198,8 +199,8 @@ const _SH_A = [   // shards stuck in the top, and standing round the base
   { x: 0.05, y: 0.12, z: -0.05, w: 0.28, h: 0.85, rx: 0.1, rz: 0.22, inBlob: true }, { x: -0.38, y: 0.14, z: 0.15, w: 0.22, h: 0.62, rx: -0.2, rz: -0.45, inBlob: true }, { x: 0.38, y: 0.14, z: 0.2, w: 0.22, h: 0.55, rx: 0.25, rz: 0.5, inBlob: true },
   { x: 1.12, y: 0, z: 0.2, w: 0.2, h: 0.55, rz: 0.12, ry: 0.4 }, { x: -1.0, y: 0, z: -0.5, w: 0.24, h: 0.7, rz: -0.18, ry: -0.5 }, { x: 0.2, y: 0, z: -1.05, w: 0.2, h: 0.45, rz: 0.3, ry: 1.2 },
   { x: -0.55, y: 0.05, z: 1.0, w: 0.2, h: 0.4, rz: 1.45, ry: 0.3 }];
-fx(113, "Ground blob with a face.", () => _groundDesign({ R: 0.75, face: true, shards: _SH_A }));
-fx(114, "Ground blob, bigger shards.", () => _groundDesign({ R: 0.78, flat: 0.55, bump: [-0.8, 0.05, 0.5], shards: [
+fx(113, "Ground blob with a face.", () => _groundDesign({ R: 0.75, S: 1.3, face: true, shards: _SH_A }));
+fx(114, "Ground blob, bigger shards.", () => _groundDesign({ R: 0.78, S: 1.3, flat: 0.55, bump: [-0.8, 0.05, 0.5], shards: [
   { x: -0.1, y: 0.1, z: 0, w: 0.34, h: 1.1, rx: 0.08, rz: 0.15, inBlob: true }, { x: 0.45, y: 0.12, z: -0.2, w: 0.28, h: 0.78, rx: -0.2, rz: 0.55, inBlob: true },
   { x: -1.1, y: 0, z: 0.3, w: 0.28, h: 0.8, rz: -0.15, ry: 0.4 }, { x: 0.9, y: 0, z: 0.75, w: 0.26, h: 0.65, rz: 0.2, ry: -0.6 }] }));
 fx(115, "Ground blob, see-through, shards inside.", () => _groundDesign({ R: 0.8, flat: 0.7, clear: true, face: true, shards: [
