@@ -16,6 +16,7 @@ const SUITES = [
     ['element ladder + zone elements', 'elementladder.js'],
     ['night raids: lateral attack, behemoth', 'nightraids.js'],
     ['the beetle, rebuilt', 'beetle.js'],
+    ['every predator species, rebuilt', 'bugs3d.js'],
     ['declared globals',       'globals.js'],
     ['insect abilities',       'abtest.js'],
     ['nest persistence',       'nests.js'],

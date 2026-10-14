@@ -60,7 +60,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
     });
     check('every beetle is drawn by it (clones, the behemoth too), with its bars over its shell', () => {
         const src = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8');
-        ok(/if \(actor\.speciesName === "beetle" && typeof drawBeetle3D === "function"\)/.test(src), 'not dispatched');
+        ok(/const _style = typeof bugBodyStyle === "function" \? bugBodyStyle\(actor\) : null;/.test(src), 'not dispatched');
+        ok(run('bugBodyStyle({ speciesName: "beetle" })') === 'beetle', 'a beetle is not given the beetle body');
         ok(/_drawPredatorBars\(actor, px, py \+ /.test(src), 'its bars are not lowered to it');
     });
 

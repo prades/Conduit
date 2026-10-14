@@ -84,8 +84,8 @@ function drawBreakoutFlare(a, px, py) {
         const zd = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
         if (!zd) return;
         const zw = Math.max(16, (a.dimensions ? a.dimensions.width : 24) * 0.8);
-        // A beetle stands on its point (js/beetle3d.js); the others' bodies are raised.
-        const zy = a.speciesName === "beetle" ? py : py - (a.dimensions ? a.dimensions.height * 1.15 : 24);
+        // The rebuilt bodies stand on their point (js/bugs3d.js); an old body is raised.
+        const zy = typeof bugBodyStyle === "function" && bugBodyStyle(a) ? py : py - (a.dimensions ? a.dimensions.height * 1.15 : 24);
         ctx.save(); ctx.globalAlpha = 0.55; ctx.strokeStyle = zd.color; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.ellipse(px, zy, zw, zw * 0.45, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
         return;
@@ -97,7 +97,7 @@ function drawBreakoutFlare(a, px, py) {
     const w = Math.max(18, (a.dimensions ? a.dimensions.width : 24) * 0.9);
     // Under its legs: a predator's body is drawn above its point (as the
     // tyrant's ring is placed, drawBroodLabel).
-    const fy = a.speciesName === "beetle" ? py : py - (a.dimensions ? a.dimensions.height * 1.15 : 24);
+    const fy = typeof bugBodyStyle === "function" && bugBodyStyle(a) ? py : py - (a.dimensions ? a.dimensions.height * 1.15 : 24);
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.strokeStyle = `rgba(${rgb},${0.55 + 0.25 * Math.sin(f * 0.15 + a.x)})`; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.ellipse(px, fy, w, w * 0.45, 0, 0, Math.PI * 2); ctx.stroke();

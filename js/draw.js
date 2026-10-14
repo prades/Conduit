@@ -339,12 +339,14 @@ function _drawPredator(actor, px, py, drawCtx) {
         drawCtx.restore();
         return;
     }
-    // THE BEETLE has its own body, built on the ground and projected (js/beetle3d.js).
-    if (actor.speciesName === "beetle" && typeof drawBeetle3D === "function") {
-        drawBeetle3D(actor, px, py, drawCtx);
-        // Its bars just over its shell (it is lower than the other bodies).
-        const _s = (actor.dimensions ? actor.dimensions.width : 26) / 26;
-        _drawPredatorBars(actor, px, py + Math.max(0, 69 - 25 * _s) - (actor.leapLift || 0), drawCtx);
+    // EVERY SPECIES has its own body now, built on the ground and projected
+    // (js/bugs3d.js; the beetle's is js/beetle3d.js) — synthetic ones wear
+    // the body they were modded from.
+    const _style = typeof bugBodyStyle === "function" ? bugBodyStyle(actor) : null;
+    if (_style) {
+        const _top = drawBug3D(actor, px, py, drawCtx, _style);
+        // Its bars just over its body.
+        _drawPredatorBars(actor, px, py + Math.max(0, 69 - _top) - (actor.leapLift || 0), drawCtx);
         return;
     }
     const dim=actor.dimensions;
