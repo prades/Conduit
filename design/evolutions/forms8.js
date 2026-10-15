@@ -1,13 +1,14 @@
 // ── THE VOLCANO TURTLE · the toxic brawler, Nos. 126–129 ──────────────────
 // A small, stout dark-armoured turtle with a volcano on its shell, the crater a little cauldron of toxic green
 // that bubbles up and runs down the cone. The crystal is the heart of the crater.
-const _rock = new T.MeshStandardMaterial({ color: 0x241d19, roughness: 0.75, metalness: 0.1, flatShading: true });
+const _rock = new T.MeshStandardMaterial({ color: 0x120d0a, roughness: 0.8, metalness: 0.1, flatShading: true });
 function _goo() { const m = new T.MeshStandardMaterial({ color: 0x03200a, emissive: new T.Color(EL.color).multiplyScalar(0.75), emissiveIntensity: 1.0, roughness: 0.12, metalness: 0.15 }); m.envMapIntensity = 1.2; return m; }
-function volcanoMesh(r0, h, rimR, seed) {   // a cone with a hollow crater and a ragged rim
-  const pts = [[0.0001, h * 0.7], [rimR * 0.55, h * 0.72], [rimR * 0.85, h * 0.95], [rimR, h], [rimR * 1.2, h * 0.88], [(rimR + r0) * 0.5, h * 0.55], [r0 * 0.88, h * 0.22], [r0, 0]].map(p => new T.Vector2(p[0], p[1]));
-  const geo = new T.LatheGeometry(pts, 11), p = geo.attributes.position;
+const _rock2 = new T.MeshStandardMaterial({ color: 0x1c140f, roughness: 0.75, metalness: 0.1, flatShading: true });   // lighter, so the cone reads against the dark
+function volcanoMesh(r0, h, rimR, seed, mat, seg) {   // a cone with a hollow crater and a ragged rim
+  const pts = [[0.0001, h * 0.7], [rimR * 0.55, h * 0.72], [rimR * 0.85, h * 0.95], [rimR, h], [rimR * 1.2, h * 0.88], [(rimR + r0) * 0.5, h * 0.55], [r0 * 0.88, h * 0.22], [r0, 0]].reverse().map(p => new T.Vector2(p[0], p[1]));   // (from the foot up: the faces then point outwards)
+  const geo = new T.LatheGeometry(pts, seg || 11), p = geo.attributes.position;
   for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), rr = Math.hypot(x, z); if (rr < 0.01) continue; const n = _hz(Math.round(x * 200) + seed, Math.round(y * 200), Math.round(z * 200)), k = 1 + (n - 0.5) * 0.22; p.setXYZ(i, x * k, y + (n - 0.5) * 0.05, z * k); }
-  geo.computeVertexNormals(); return new T.Mesh(geo, _rock);
+  geo.computeVertexNormals(); return new T.Mesh(geo, mat || _rock);
 }
 function _shell(rx, ry, rz, rings) {   // the dome of the shell: a dark half-ellipsoid with scutes laid on it
   const g = G(), dome = new T.Mesh(new T.SphereGeometry(1, 24, 12, 0, TAU, 0, PI / 2), M.dark); dome.scale.set(rx, ry, rz); g.add(dome);
@@ -40,9 +41,10 @@ function _bubbling(parent, x, y, z, R, n, o) {   // goo in the crater: a swollen
       q.bb.position.set(x + Math.sin(q.a + t) * q.rr * (1 - u * 0.4), y + 0.04 + rise, z + Math.cos(q.a + t) * q.rr * (1 - u * 0.4)); q.bb.scale.setScalar(q.sz * (1 + 1.4 * a) * Math.sin(Math.PI * Math.min(1, u * 1.05)) + 0.001); } };
 }
 function _drips(parent, vx, vy, vz, r0, h, rimR, n, seed) {   // goo running down the cone's side, hugging it
-  const gm = _goo(), rAt = y => (r0 * 0.9 + (rimR * 1.15 - r0 * 0.9) * Math.min(1, y / h));   // the cone's radius at height y
+  const gm = _goo(), prof = [[0, r0], [0.22, r0 * 0.88], [0.55, (rimR + r0) * 0.5], [0.88, rimR * 1.2], [1, rimR]];
+  const rAt = y => { const u = Math.max(0, Math.min(1, y / h)); for (let i = 1; i < prof.length; i++) if (u <= prof[i][0]) { const a = prof[i - 1], b = prof[i], k = (u - a[0]) / (b[0] - a[0]); return a[1] + (b[1] - a[1]) * k; } return rimR; };   // the cone's radius at height y (the lathe's own profile)
   for (let i = 0; i < n; i++) { const a = seed + i * (TAU / n) + _hz(i, seed, 1) * 0.6, drop = h * (0.45 + 0.4 * _hz(i, seed, 2));
-    const pts = []; for (let k = 0; k <= 6; k++) { const yy = h * 0.96 - drop * k / 6; pts.push(new T.Vector3(vx + Math.sin(a) * (rAt(yy) + 0.03), vy + yy, vz + Math.cos(a) * (rAt(yy) + 0.03))); }
+    const pts = []; for (let k = 0; k <= 6; k++) { const yy = h * 0.96 - drop * k / 6; pts.push(new T.Vector3(vx + Math.sin(a) * (rAt(yy) + 0.012), vy + yy, vz + Math.cos(a) * (rAt(yy) + 0.012))); }
     parent.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 14, 0.03, 6, false), gm)); const end = pts[pts.length - 1]; const bl = sphere(0.05, gm, 8); bl.position.copy(end); parent.add(bl); }
 }
 function _volcanoTurtle(o) {
@@ -75,8 +77,9 @@ function _simpleVolcano(o) {
   const feet = []; if (o.feet) for (let i = 0; i < 4; i++) { const sx = i % 2 ? -1 : 1, sz = i < 2 ? 1 : -1, l = G(); l.position.set(sx * o.rx * 0.72, bodyY - 0.05, sz * o.rz * 0.6);
     const th = cbox(0.22, o.legH, 0.26, 0.05, M.armor); th.position.y = -o.legH / 2; l.add(th); const ft = cbox(0.28, 0.07, 0.32, 0.025, M.gun); ft.position.set(0, -o.legH, 0.04); l.add(ft); b.add(l); feet.push(l); }
   const vx = 0, vy = bodyY + o.ry * 0.82, vz = 0;
-  const vol = volcanoMesh(o.vr, o.vh, o.rimR, o.seed || 3); vol.position.set(vx, vy, vz); b.add(vol);
+  const vol = volcanoMesh(o.vr, o.vh, o.rimR, o.seed || 3, o.light ? _rock2 : _rock, o.seg); vol.position.set(vx, vy, vz); b.add(vol);
   _drips(b, vx, vy, vz, o.vr, o.vh, o.rimR, o.drips == null ? 3 : o.drips, o.seed || 3);
+  if (o.cracks) for (let i = 0; i < o.cracks; i++) { const a = i * TAU / o.cracks + 0.5, cr = cbox(0.03, o.vh * 0.55, 0.02, 0.004, M.glow), rr = (o.vr + o.rimR) * 0.5 * 0.9; cr.position.set(vx + Math.sin(a) * rr, vy + o.vh * 0.45, vz + Math.cos(a) * rr); cr.rotation.set(Math.cos(a) * 0.55, a, -Math.sin(a) * 0.35); b.add(cr); }
   if (o.cauldron) { const lip = new T.Mesh(new T.TorusGeometry(o.rimR * 1.02, 0.045, 6, 16), M.steel); lip.rotation.x = PI / 2; lip.position.set(vx, vy + o.vh * 0.99, vz); b.add(lip); }
   const bub = _bubbling(b, vx, vy + o.vh * 0.86, vz, o.rimR * 0.92, o.bubbles || 6);
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, vy + o.vh + 0.3, 0.5); b.add(L); LIGHTS.push(L);
@@ -88,3 +91,8 @@ function _simpleVolcano(o) {
 fx(130, "Headless volcano turtle, feet.", () => _simpleVolcano({ rx: 0.6, ry: 0.4, rz: 0.66, legH: 0.24, feet: true, vr: 0.42, vh: 0.6, rimR: 0.2 }));
 fx(131, "Headless volcano turtle, on the ground.", () => _simpleVolcano({ rx: 0.68, ry: 0.36, rz: 0.72, vr: 0.44, vh: 0.58, rimR: 0.21, seed: 5 }));
 fx(132, "Headless volcano turtle, cauldron crater.", () => _simpleVolcano({ rx: 0.6, ry: 0.38, rz: 0.64, legH: 0.22, feet: true, vr: 0.4, vh: 0.46, rimR: 0.27, cauldron: true, drips: 4, seed: 7 }));
+
+// ── Four feet, a cone, no cauldron (Nos. 133–135) ──
+fx(133, "Cone volcano turtle.", () => _simpleVolcano({ rx: 0.6, ry: 0.36, rz: 0.66, legH: 0.24, feet: true, vr: 0.5, vh: 0.78, rimR: 0.14, light: true, cracks: 3, drips: 3, seg: 9, seed: 3 }));
+fx(134, "Tall cone volcano turtle.", () => _simpleVolcano({ rx: 0.56, ry: 0.34, rz: 0.62, legH: 0.24, feet: true, vr: 0.44, vh: 1.02, rimR: 0.11, light: true, cracks: 3, drips: 2, seg: 8, seed: 5 }));
+fx(135, "Squat wide cone volcano turtle.", () => _simpleVolcano({ rx: 0.66, ry: 0.32, rz: 0.7, legH: 0.22, feet: true, vr: 0.6, vh: 0.62, rimR: 0.17, light: true, cracks: 4, drips: 4, seg: 10, seed: 7 }));
