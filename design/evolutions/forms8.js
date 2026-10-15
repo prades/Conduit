@@ -39,7 +39,7 @@ function _bubbling(parent, x, y, z, R, n, o) {   // goo in the crater: a swollen
   const bubs = []; for (let i = 0; i < n; i++) { const bb = new T.Mesh(new T.SphereGeometry(1, 10, 8), gm); parent.add(bb); bubs.push({ bb, a: i * 2.4, rr: R * 0.55 * (0.3 + 0.7 * _hz(i, 3, 7)), ph: i / n, sz: 0.035 + 0.03 * _hz(i, 8, 2) }); }
   if (!(o && o.noHeart)) { const glow = glowSprite(R * 3.2); glow.position.set(x, y + 0.1, z); parent.add(glow); }   // (a haze: left out with the crystal)
   return (t, act) => { const a = act || 0; pool.scale.set(1, 0.35 + 0.1 * Math.sin(1.6 * t * 2) + 0.35 * a, 1);
-    for (const q of bubs) { const u = ((1.6 * t / TAU * (1 + (a > 0.3 ? 1 : 0)) + q.ph) % 1 + 1) % 1; const rise = (0.12 + 0.5 * (1 + 0.8 * a)) * u;
+    for (const q of bubs) { const u = ((1.6 * t / TAU * (1 + (a > 0.3 ? 1 : 0)) + q.ph) % 1 + 1) % 1; const rise = (0.1 + ((o && o.bubH) || 0.5) * (1 + 0.8 * a)) * u;
       q.bb.position.set(x + Math.sin(q.a + t) * q.rr * (1 - u * 0.4), y + 0.04 + rise, z + Math.cos(q.a + t) * q.rr * (1 - u * 0.4)); q.bb.scale.setScalar(q.sz * (1 + 1.4 * a) * Math.sin(Math.PI * Math.min(1, u * 1.05)) + 0.001); } };
 }
 function _drips(parent, vx, vy, vz, r0, h, rimR, n, seed) {   // goo running down the cone's side, hugging it
@@ -83,7 +83,7 @@ function _simpleVolcano(o) {
   _drips(b, vx, vy, vz, o.vr, o.vh, o.rimR, o.drips == null ? 3 : o.drips, o.seed || 3);
   if (o.cracks) for (let i = 0; i < o.cracks; i++) { const a = i * TAU / o.cracks + 0.5, cr = cbox(0.03, o.vh * 0.55, 0.02, 0.004, M.glow), rr = (o.vr + o.rimR) * 0.5 * 0.9; cr.position.set(vx + Math.sin(a) * rr, vy + o.vh * 0.45, vz + Math.cos(a) * rr); cr.rotation.set(Math.cos(a) * 0.55, a, -Math.sin(a) * 0.35); b.add(cr); }
   if (o.cauldron) { const lip = new T.Mesh(new T.TorusGeometry(o.rimR * 1.02, 0.045, 6, 16), M.steel); lip.rotation.x = PI / 2; lip.position.set(vx, vy + o.vh * 0.99, vz); b.add(lip); }
-  const bub = _bubbling(b, vx, vy + o.vh * 0.86, vz, o.rimR * 0.92, o.bubbles || 6, { noHeart: o.black });
+  const bub = _bubbling(b, vx, vy + o.vh * 0.86, vz, o.rimR * 0.92, o.bubbles || 6, { noHeart: o.black, bubH: o.bubH });
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, vy + o.vh + 0.3, 0.5); b.add(L); LIGHTS.push(L);
   return { g, core: vy + o.vh * 0.9, update(t, act) { const a = act || 0;
     b.position.y = 0.012 * Math.sin(1.6 * t * 2); shell.scale.y = 1 - 0.1 * a; shell.scale.x = shell.scale.z = 1 + 0.05 * a;   // it hunkers down as the volcano erupts
@@ -103,3 +103,8 @@ fx(135, "Squat wide cone volcano turtle.", () => _simpleVolcano({ rx: 0.66, ry: 
 fx(136, "Black cone volcano turtle.", () => _simpleVolcano({ black: true, rx: 0.6, ry: 0.36, rz: 0.66, legH: 0.24, feet: true, vr: 0.5, vh: 0.78, rimR: 0.14, cracks: 3, drips: 3, seg: 9, seed: 3 }));
 fx(137, "Black cone volcano turtle, smooth.", () => _simpleVolcano({ black: true, rx: 0.58, ry: 0.34, rz: 0.64, legH: 0.24, feet: true, vr: 0.46, vh: 0.9, rimR: 0.12, cracks: 0, drips: 2, seg: 14, seed: 5 }));
 fx(138, "Black volcano turtle, one mound.", () => _simpleVolcano({ black: true, rx: 0.66, ry: 0.22, rz: 0.7, legH: 0.22, feet: true, vr: 0.62, vh: 0.78, rimR: 0.15, cracks: 4, drips: 3, seg: 12, seed: 7 }));
+
+// ── Lower crater, nothing running down the sides (Nos. 139–141): no drips, no cracks; the goo stays in the hole. ──
+fx(139, "Low cone, goo kept in the crater.", () => _simpleVolcano({ black: true, rx: 0.6, ry: 0.36, rz: 0.66, legH: 0.24, feet: true, vr: 0.5, vh: 0.46, rimR: 0.17, cracks: 0, drips: 0, bubH: 0.22, bubbles: 5, seg: 9, seed: 3 }));
+fx(140, "Very low mound, wide crater.", () => _simpleVolcano({ black: true, rx: 0.66, ry: 0.3, rz: 0.7, legH: 0.22, feet: true, vr: 0.6, vh: 0.34, rimR: 0.2, cracks: 0, drips: 0, bubH: 0.18, bubbles: 5, seg: 12, seed: 7 }));
+fx(141, "Short cone, small crater.", () => _simpleVolcano({ black: true, rx: 0.58, ry: 0.34, rz: 0.64, legH: 0.24, feet: true, vr: 0.46, vh: 0.56, rimR: 0.15, cracks: 0, drips: 0, bubH: 0.26, bubbles: 5, seg: 10, seed: 5 }));
