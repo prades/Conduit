@@ -394,10 +394,12 @@ function _workRepair(actor) {
         : (actor._pylonTarget = nearestOfflinePylon(actor.x, actor.y));
     if (!t) return false;
 
+    const _rv = typeof evoRepair === 'function' ? evoRepair(actor) : null;   // the WORM VESSEL (js/evolution.js)
     const d = Math.hypot(t.x - actor.x, t.y - actor.y);
-    if (d > MASS_WORK_RANGE) { _moveToward(actor, t.x, t.y, 1.1); return true; }
+    if (d > MASS_WORK_RANGE * (_rv ? _rv.reach : 1)) { _moveToward(actor, t.x, t.y, 1.1 * (_rv ? _rv.speed : 1)); return true; }
 
-    t.rearmProgress = Math.min(1, (t.rearmProgress || 0) + PYLON_REARM_RATE);
+    t.rearmProgress = Math.min(1, (t.rearmProgress || 0) + PYLON_REARM_RATE * (_rv ? _rv.rate : 1));
+    if (_rv) actor._sigAt = typeof frame !== 'undefined' ? frame : 0;
     actor.state = 'idle';
     if (typeof elementEffects !== 'undefined' && (frame || 0) % 10 === 0) {
         elementEffects.push({ type: 'impact', x: t.x, y: t.y, color: '#00ccaa', radius: 0.4, life: 18 });

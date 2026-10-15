@@ -65,7 +65,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux brawler on worker duty');
         mk('flux', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux SNIPER on worker duty is a worker first');
         mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a flux brawler on the line is the Rift Mimic');
-        mk('core', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a core worker waits (no worker form for it)');
+        mk('core', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core brawler on worker duty is the Worm Vessel, not the Aegis Warden');
         mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'pod', 'an electric worker is the Dynamo Pod, not the Storm Manta');
         mk('flux', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'serpent', 'a flux sniper on the line is the Serpent');
     });
@@ -90,7 +90,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.evo, 'petal', 'its form'); same(r.tag, 'PETAL AEGIS', 'its tag'); same(r.role, 'sniper', 'its role id');
         mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'warden', 'the core brawler');
         mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core camper waits');
-        mk('core', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a core worker waits (no worker form for it)');
+        mk('core', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core mage on worker duty is a worker first');
     });
     check('THE ASK: the ranged role is called a MAGE on screen (its id stays "sniper")', () => {
         same(run('roleLabel("sniper")'), 'MAGE', 'sniper'); same(run('roleLabel("brawler")'), 'BRAWLER', 'brawler'); same(run('roleLabel("camper")'), 'CAMPER', 'camper'); same(run('roleLabel("hybrid")'), 'HYBRID', 'hybrid'); same(run('roleLabel(null)'), '', 'none');
@@ -271,6 +271,24 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.dist < 1 && r.a > r.b && r.b > 0 && r.c > 0, 'the dash and the shocks: ' + JSON.stringify(r));
         same(r.far, 0, 'damage to one out of reach'); ok(r.stun, 'not all stunned'); ok(r.cd > 250, 'it did not wait');
     });
+    check('THE ASK: REWIRE — the worm vessel (core worker, design No. 144) puts a downed pylon back online faster and from further away', () => {
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
+            const mk = (evo, x) => { spawnFollowerAtCrystal('core'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.duty = 'worker'; f.job = null; f.stance = 'follow'; f.x = x; f.y = 2; f.moveSpeed = 0.05; if (evo) f.evolved = 'vessel'; return f; };
+            const pyl = x => { const t = { x, y: 2, pillar: true, destroyed: false, offline: true, pillarTeam: 'green', rearmProgress: 0, health: 10, maxHealth: 20 }; world.push(t); return t; };
+            const drop = t => world.splice(world.indexOf(t), 1);
+            // The same pylon, 1.4 tiles off: the vessel is already in reach, the plain worker has to walk.
+            const a = pyl(30), p = mk(false, 28.6); followerWorkTick(p); const plainWalks = a.rearmProgress === 0; drop(a);
+            const b = pyl(30), v = mk(true, 28.6); followerWorkTick(v); const vesselWorks = b.rearmProgress > 0; drop(b);
+            // In reach, per step.
+            const c = pyl(30.3), p2 = mk(false, 30); followerWorkTick(p2); const plainStep = c.rearmProgress; drop(c);
+            const d = pyl(30.3), v2 = mk(true, 30); followerWorkTick(v2); const vesselStep = d.rearmProgress; drop(d);
+            return { plainWalks, vesselWorks, plainStep, vesselStep, n: evoRepair(v2), none: evoRepair(p2) }; })()`);
+        ok(r.plainWalks && r.vesselWorks, 'reach: ' + JSON.stringify(r));
+        ok(run('VESSEL_RATE') >= 2 && Math.abs(r.vesselStep / r.plainStep - run('VESSEL_RATE')) < 0.05, 'rate: ' + JSON.stringify(r));
+        ok(r.n && r.n.speed > 1 && r.none === null, 'the worm vessel alone has the bonus: ' + JSON.stringify(r));
+        const src = fs.readFileSync(path.join(ROOT, 'js/mass.js'), 'utf8');
+        ok(/evoRepair\(actor\)/.test(src) && /_rv\.rate/.test(src) && /_rv\.reach/.test(src), 'the repair loop does not ask for the vessel\'s rate and reach');
+    });
     check('THE ASK: HEAVY HAUL — the hover hauler pays double shards, hauls faster and reaches further than a plain flux worker', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
             const mk = (evo) => { spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.duty = 'worker'; if (evo) f.evolved = 'hauler'; return f; };
@@ -351,7 +369,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
@@ -363,7 +381,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);

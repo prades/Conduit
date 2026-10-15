@@ -43,7 +43,7 @@ async function boot(store) {
 
 // A hurt clone with one toxic follower beside it (or `gap` tiles away); how
 // much health the clone gains in `frames` steps, over its own regeneration.
-const MEND_SCENE = (duty, gap, frames, pin) => `(function(){
+const MEND_SCENE = (duty, gap, frames, pin, keep) => `(function(){   // keep: stand it back beside the clone each step (the AI is free to wander off, which made this test flake)
     actors = actors.filter(a => !a.isClone && !a.isFollower); followers.length = 0;
     for (const k in followerByElement) followerByElement[k] = [];
     const base = (function(){ const c = makeClone('beetle', 'scout', crystal.x + 4, 2); c.health = c.maxHealth * 0.3;
@@ -55,7 +55,7 @@ const MEND_SCENE = (duty, gap, frames, pin) => `(function(){
     ${pin ? 'f.moveSpeed = 0; f.baseMoveSpeed = 0; c.moveSpeed = 0;' : ''}
     c.health = c.maxHealth * 0.3;
     const h0 = c.health;
-    for (let i = 0; i < ${frames}; i++) { gameState.running = true; render(); }
+    for (let i = 0; i < ${frames}; i++) { gameState.running = true; ${keep ? 'f.x = c.x + ' + gap + '; f.y = c.y;' : ''} render(); }
     return { mended: c.health - h0 - base, max: c.maxHealth };
 })()`;
 
@@ -69,7 +69,7 @@ const MEND_SCENE = (duty, gap, frames, pin) => `(function(){
     });
     await check('THE ASK: a toxic follower ON THE LINE mends a hurt clone it is standing beside', async () => {
         const run = await boot({});
-        const r = run(MEND_SCENE(null, 0.8, 300));
+        const r = run(MEND_SCENE(null, 0.8, 300, false, true));
         ok(r.mended > 10, 'a toxic fighter beside the clone mended ' + r.mended.toFixed(1) + ' HP in five seconds');
     });
     await check('…but not from across the map, and less than a worker would', async () => {

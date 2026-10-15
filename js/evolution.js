@@ -70,6 +70,10 @@
 //          CALDERA_EVERY frames it hunkers and the crater bursts: everything within
 //          CALDERA_RADIUS takes CALDERA_MULT × its power in toxic goo and has its armour
 //          eaten (it takes 1 / CALDERA_SHRED × damage for CALDERA_SHRED_FRAMES).
+//          WORM VESSEL (the CORE WORKER, design No. 144: a solid black jar on its side with a
+//          thick glowing worm looking out of it; a core follower on worker duty), REWIRE: it
+//          re-arms a downed pylon VESSEL_RATE× as fast, from VESSEL_REACH× as far, and walks to
+//          it VESSEL_SPEED× as fast (js/mass.js asks evoRepair).
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
 //          sheets in img/evo/: 8 facings × 16 frames (8 idle, 8 action),
 //          seen from the game's own iso angle.
@@ -94,6 +98,7 @@ const ROT_RANGE = 7, ROT_EVERY = 320, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED
 const MIMIC_RADIUS = 2.2, MIMIC_EVERY = 330, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
 const PETAL_RANGE = 6.5, PETAL_EVERY = 330, PETAL_MULT = 1.8, PETAL_SHIELD = 0.35, PETAL_ALLY_R = 7;
 const CALDERA_RADIUS = 2.4, CALDERA_EVERY = 330, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
+const VESSEL_RATE = 3, VESSEL_REACH = 2, VESSEL_SPEED = 1.4;
 const HAULER_SPEED = 1.5, HAULER_REACH = 2, HAULER_PAY = 2;
 const POD_RATE = 3, POD_REACH = 2, POD_SPEED = 1.4;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
@@ -113,6 +118,9 @@ const EVOLUTIONS = {
     // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
     halo:   { id: "halo",   name: "CINDER HALO",  element: "fire",     role: "sniper",  move: "HEXFIRE",      sheet: "img/evo/halo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
+    // The CORE WORKER (the pylon re-armer): a worker is a duty, so it comes from a core follower on worker duty. The worm moves, so the sheet carries its own light.
+    vessel: { id: "vessel", name: "WORM VESSEL", element: "core",     duty: "worker",  move: "REWIRE",       sheet: "img/evo/vessel.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 52.6], noGlow: true, color: "#33e6c4" },
     // The TOXIC BRAWLER: a matte black volcano on four feet. Its shell is black and its goo moves, so its sheet carries its own light.
     caldera:{ id: "caldera", name: "CALDERA",     element: "toxic",    role: "brawler", move: "ERUPTION",     sheet: "img/evo/caldera.png",
               cell: 144, anchor: [72, 114.2], core: [72, 72], noGlow: true, color: "#66ff66" },
@@ -408,6 +416,11 @@ function staticRush(f) {
     if (typeof elementEffects !== "undefined") for (const a of hits) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffee33", radius: 0.5, life: 18 });
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "STATIC RUSH", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
     return true;
+}
+// REWIRE: how fast and far the worm vessel puts a downed pylon back online (js/mass.js asks). null if it is not one.
+function evoRepair(f) {
+    if (!f || f.evolved !== "vessel") return null;
+    return { rate: VESSEL_RATE, reach: VESSEL_REACH, speed: VESSEL_SPEED };
 }
 // RAPID DISCHARGE: how fast and far the dynamo pod neutralises (js/mass.js asks). null if it is not one.
 function evoNeutralise(f) {
