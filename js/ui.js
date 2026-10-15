@@ -70,16 +70,16 @@ function drawFollowerElementUI() {
                 ctx.font="9px monospace"; ctx.textAlign="left";
                 ctx.fillStyle="#f88"; ctx.fillText("B:"+brawlers,x+28,yy+rh-6);
                 ctx.fillStyle="#88f"; ctx.fillText("M:"+snipers, x+58,yy+rh-6);
-                ctx.fillStyle="#8f8"; ctx.fillText("C:"+campers, x+88,yy+rh-6);
+                ctx.fillStyle="#8f8"; ctx.fillText("T:"+campers, x+88,yy+rh-6);
                 ctx.font="13px monospace";
             }
         });
     } else if (uiTab==="units") {
-        // ── UNITS TAB — Brawlers / Mages / Campers ──────
+        // ── UNITS TAB — Brawlers / Mages / Technicians ──────
         const roles=[
             {id:"brawler",label:"BRAWLERS",color:"#f88",badge:"B"},
             {id:"sniper", label:"MAGES", color:"#88f",badge:"M"},
-            {id:"camper", label:"CAMPERS", color:"#8f8",badge:"C"},
+            {id:"camper", label:"TECHNICIANS", color:"#8f8",badge:"T"},
         ];
         const unitRH=Math.floor(_UI_CONTENT_H/3);
 
@@ -978,7 +978,7 @@ function followerIndexGroupAt(x, y) {
         const roles = [
             { id: "brawler", label: "BRAWLERS", colour: "#f88" },
             { id: "sniper",  label: "MAGES",    colour: "#88f" },
-            { id: "camper",  label: "CAMPERS",  colour: "#8f8" },
+            { id: "camper",  label: "TECHNICIANS", colour: "#8f8" },
         ];
         const r = roles[i];
         if (!r) return null;

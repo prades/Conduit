@@ -644,7 +644,7 @@ check('a role group re-rolls by role across elements', () => {
 
 check('snipers and campers are their own groups', () => {
     same(squadOrder(U, 'units', 1, null).opened, 'MAGES', 'row 2 is not the mages');
-    same(squadOrder(U, 'units', 2, null).opened, 'CAMPERS', 'row 3 is not campers');
+    same(squadOrder(U, 'units', 2, null).opened, 'TECHNICIANS', 'row 3 is not the technicians');
 });
 
 check('TO LINE takes the group back off the crew', () => {
@@ -688,7 +688,7 @@ check('the index says the group order exists', () => {
     const CODEX = fs.readFileSync(path.join(ROOT, 'js/codex.js'), 'utf8');
     ok(/follower index/i.test(CODEX), 'the page never mentions the index as a handle');
     ok(/ELEM/.test(CODEX) && /UNITS/.test(CODEX), 'nor which tabs group what');
-    for (const role of ['BRAWLERS', 'MAGES', 'CAMPERS']) {
+    for (const role of ['BRAWLERS', 'MAGES', 'TECHNICIANS']) {
         ok(CODEX.indexOf(role) > -1, 'it does not name ' + role);
     }
 });

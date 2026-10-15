@@ -1274,7 +1274,7 @@ function _drawStatusTab(PX, PY, PW, PH) {
         ["Total Followers", followers.filter(a=>!a.dead).length, "#0f8"],
         ["Brawlers",  brawlers, "#f88"],
         ["Mages",     snipers,  "#88aaff"],
-        ["Campers",   campers,  "#88ff88"],
+        ["Technicians", campers, "#88ff88"],
         ["Ghosts",    ghosts,   "#aaffee"],
         ["Wave",      gameState.nightNumber, "#aaaaaa"],
         ["Zone Depth",activeDayZones-1, "#ffcc44"],

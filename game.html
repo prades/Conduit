@@ -872,9 +872,9 @@
       </div>
 
       <div class="cm-follower-role camper">
-        <span class="role-badge">C</span>
+        <span class="role-badge">T</span>
         <div class="role-body">
-          <strong>Camper</strong> — Holds position, defends pylons and chokepoints. Doesn't advance far.<br>
+          <strong>Technician</strong> — Posts itself at a pylon and tends it, defending it at short range. Doesn't advance far.<br>
           <span class="role-req">Requires: DEF ≥ 14  OR  WILL ≥ 24</span>
           <span class="role-req">Best with: Cautious or Stoic personality · Iron Will perk</span>
         </div>
@@ -1002,9 +1002,9 @@
       <table class="cm-personality-table">
         <tr><th>Personality</th><th>HP</th><th>DEF</th><th>ATK</th><th>SP.ATK</th><th>WILL</th><th>Best Role</th></tr>
         <tr><td style="color:#f88">Aggressive</td><td>20</td><td class="cm-down">5</td><td class="cm-up">20</td><td>10</td><td>20</td><td style="color:#f88">Brawler</td></tr>
-        <tr><td style="color:#88f">Cautious</td><td class="cm-up">30</td><td class="cm-up">20</td><td>8</td><td>8</td><td class="cm-up">24</td><td style="color:#8f8">Camper</td></tr>
+        <tr><td style="color:#88f">Cautious</td><td class="cm-up">30</td><td class="cm-up">20</td><td>8</td><td>8</td><td class="cm-up">24</td><td style="color:#8f8">Technician</td></tr>
         <tr><td style="color:#af8">Cunning</td><td class="cm-down">16</td><td>8</td><td>10</td><td class="cm-up">15</td><td>16</td><td style="color:#88f">Mage/Hybrid</td></tr>
-        <tr><td style="color:#aaa">Stoic</td><td class="cm-up">30</td><td class="cm-up">15</td><td>10</td><td>8</td><td class="cm-up">30</td><td style="color:#8f8">Camper</td></tr>
+        <tr><td style="color:#aaa">Stoic</td><td class="cm-up">30</td><td class="cm-up">15</td><td>10</td><td>8</td><td class="cm-up">30</td><td style="color:#8f8">Technician</td></tr>
         <tr><td style="color:#fa8">Wild</td><td class="cm-down">16</td><td class="cm-down">6</td><td class="cm-up">18</td><td>6</td><td class="cm-down">12</td><td style="color:#f88">Brawler</td></tr>
       </table>
       <div class="cm-tip"><strong>Tip:</strong> Cunning is the only personality that can reach both ATK and SP.ATK thresholds needed for Hybrid role. Wild produces aggressive brawlers with very low survivability.</div>
@@ -1015,7 +1015,7 @@
       <div class="ctrl-title">PERKS (passive stat modifiers)</div>
       <div class="cm-perk-block">
         <div class="perk-title">Iron Will</div>
-        <div class="perk-desc">All incoming damage is reduced by <span class="perk-val">25%</span> (multiplied by 0.75 before applying). Best on frontline Brawlers and Campers who take constant hits.</div>
+        <div class="perk-desc">All incoming damage is reduced by <span class="perk-val">25%</span> (multiplied by 0.75 before applying). Best on frontline Brawlers and Technicians who take constant hits.</div>
       </div>
       <div class="cm-perk-block">
         <div class="perk-title">Siphon</div>
@@ -1250,7 +1250,7 @@
       <div class="cm-section-note">
         <strong>Random personality</strong> (Aggressive / Cautious / Cunning / Stoic / Wild)<br>
         <strong>Random element</strong> from the unlocked element pool<br>
-        <strong>Auto-assigned role</strong> (Brawler / Mage / Camper / Hybrid) based on stats<br>
+        <strong>Auto-assigned role</strong> (Brawler / Mage / Technician / Hybrid) based on stats<br>
         <strong>Random combat trait</strong> (Berserker or Opportunistic)<br>
         <strong>Random natural trait</strong> (Empathetic or Lone Wolf)<br>
         <strong>Random perk</strong> (Iron Will or Siphon)
@@ -1270,7 +1270,7 @@
       <div class="ctrl-row cm-dim" style="margin-top:5px">5 elements to earn, so the ladder is spent after 10 waves &mdash; ICE is the last, and after that clearing a wave earns nothing. Clearing another while one is still pending stacks a second &mdash; the reward is for the wave, so putting off the trip back does not forfeit it. The Crystal button flashes <span class="cm-stat">ELEMENT READY</span> when something is waiting.</div>
       <div class="ctrl-row cm-dim" style="margin-bottom:5px"><strong>The predators follow the same order, zone by zone</strong>: zones 1&ndash;3 are <span class="cm-stat">ELECTRIC</span>, 4&ndash;6 <span class="cm-stat">FLUX</span>, 7&ndash;9 <span class="cm-stat">FIRE</span>, 10&ndash;12 <span class="cm-stat">CORE</span>, 13&ndash;15 <span class="cm-stat">TOXIC</span>, 16&ndash;18 <span class="cm-stat">ICE</span>, then round again. Each wears a ring of its element and its tag is in its colour, and the <strong>type chart</strong> runs on every hit, both ways &mdash; bring what beats it. An <strong>ELEMENTAL BREAKOUT</strong> night rolls <strong>one</strong> element at random and every predator takes it for the night.</div>
       <div class="ctrl-row"><span class="ctrl-key">ULTIMATE</span>The bar under your health is your own, and it is <strong>siphoned from followers near you</strong> — anything within <span class="cm-stat">6 tiles</span> sends a wisp of static across every couple of seconds, and the charge lands when the wisp arrives. So the rate depends on how many are <em>with</em> you: ten fill it in about <span class="cm-stat">30 seconds</span>, three take a few minutes, and none in reach means it does not fill at all — the bar reads <span class="cm-stat">NO SQUAD IN RANGE</span> when that happens.</div>
-      <div class="ctrl-row cm-dim">Brawlers close to 2 tiles and mages hold at 4, so they are drawn from as a matter of course. A <strong>camper</strong> anchored to a far-off pylon and a <strong>worker</strong> away on a chore are not — walk over to them, or keep fighters at your side, if you want the bar moving.</div>
+      <div class="ctrl-row cm-dim">Brawlers close to 2 tiles and mages hold at 4, so they are drawn from as a matter of course. A <strong>technician</strong> anchored to a far-off pylon and a <strong>worker</strong> away on a chore are not — walk over to them, or keep fighters at your side, if you want the bar moving.</div>
       <div class="ctrl-row cm-dim">Tap the bar when it is full to spend the whole thing on an <strong>ARMY SURGE</strong>: every follower and clone healed, WILL refilled, its own ultimate charged, and <span class="cm-stat">1.6×</span> damage for <span class="cm-stat">10 seconds</span>. Nothing is siphoned while a surge is running, so a surge never pays for the next one.</div>
       <div class="ctrl-row cm-dim">The <span class="cm-stat">⌁</span> switch at the right end of the bar turns the siphon off. Wisps already in the air still land. There is no cost to leaving it on — the switch is there so you can quiet the effect down.</div>
       <div class="ctrl-row cm-dim" style="margin-top:4px">Kills are still counted — the Crystal shows your lifetime total — but they no longer earn anything.</div>
@@ -1363,12 +1363,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-15d, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-15e, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-15d";
+window.__PAGE_BUILD = "2026-10-15e";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1404,53 +1404,53 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-15d"></script>
-<script src="js/icons.js?v=2026-10-15d"></script>
-<script src="js/rng.js?v=2026-10-15d"></script>
-<script src="js/traits.js?v=2026-10-15d"></script>
-<script src="js/elements.js?v=2026-10-15d"></script>
-<script src="js/combat.js?v=2026-10-15d"></script>
-<script src="js/species.js?v=2026-10-15d"></script>
-<script src="js/levels.js?v=2026-10-15d"></script>
-<script src="js/predator_randomizer.js?v=2026-10-15d"></script>
-<script src="js/mass.js?v=2026-10-15d"></script>
-<script src="js/infest.js?v=2026-10-15d"></script>
-<script src="js/power.js?v=2026-10-15d"></script>
-<script src="js/save.js?v=2026-10-15d"></script>
-<script src="js/camp.js?v=2026-10-15d"></script>
-<script src="js/wavedata.js?v=2026-10-15d"></script>
-<script src="js/helpers.js?v=2026-10-15d"></script>
-<script src="js/predator.js?v=2026-10-15d"></script>
-<script src="js/abilities.js?v=2026-10-15d"></script>
-<script src="js/world.js?v=2026-10-15d"></script>
-<script src="js/commands.js?v=2026-10-15d"></script>
-<script src="js/npc.js?v=2026-10-15d"></script>
-<script src="js/codex.js?v=2026-10-15d"></script>
-<script src="js/draw.js?v=2026-10-15d"></script>
-<script src="js/beetle3d.js?v=2026-10-15d"></script>
-<script src="js/bugs3d.js?v=2026-10-15d"></script>
-<script src="js/ui.js?v=2026-10-15d"></script>
-<script src="js/waves.js?v=2026-10-15d"></script>
-<script src="js/drops.js?v=2026-10-15d"></script>
-<script src="js/clone.js?v=2026-10-15d"></script>
-<script src="js/clonework.js?v=2026-10-15d"></script>
-<script src="js/broods.js?v=2026-10-15d"></script>
-<script src="js/raids.js?v=2026-10-15d"></script>
-<script src="js/ultra.js?v=2026-10-15d"></script>
-<script src="js/formations.js?v=2026-10-15d"></script>
-<script src="js/breakout.js?v=2026-10-15d"></script>
-<script src="js/nightraids.js?v=2026-10-15d"></script>
-<script src="js/bonds.js?v=2026-10-15d"></script>
-<script src="js/autoplay.js?v=2026-10-15d"></script>
-<script src="js/indexart.js?v=2026-10-15d"></script>
-<script src="js/modules.js?v=2026-10-15d"></script>
-<script src="js/shieldcells.js?v=2026-10-15d"></script>
-<script src="js/evolution.js?v=2026-10-15d"></script>
-<script src="js/buildmenu.js?v=2026-10-15d"></script>
-<script src="js/input.js?v=2026-10-15d"></script>
-<script src="js/game.js?v=2026-10-15d"></script>
-<script src="js/tutorial.js?v=2026-10-15d"></script>
-<script src="js/dev.js?v=2026-10-15d"></script>
+<script src="js/config.js?v=2026-10-15e"></script>
+<script src="js/icons.js?v=2026-10-15e"></script>
+<script src="js/rng.js?v=2026-10-15e"></script>
+<script src="js/traits.js?v=2026-10-15e"></script>
+<script src="js/elements.js?v=2026-10-15e"></script>
+<script src="js/combat.js?v=2026-10-15e"></script>
+<script src="js/species.js?v=2026-10-15e"></script>
+<script src="js/levels.js?v=2026-10-15e"></script>
+<script src="js/predator_randomizer.js?v=2026-10-15e"></script>
+<script src="js/mass.js?v=2026-10-15e"></script>
+<script src="js/infest.js?v=2026-10-15e"></script>
+<script src="js/power.js?v=2026-10-15e"></script>
+<script src="js/save.js?v=2026-10-15e"></script>
+<script src="js/camp.js?v=2026-10-15e"></script>
+<script src="js/wavedata.js?v=2026-10-15e"></script>
+<script src="js/helpers.js?v=2026-10-15e"></script>
+<script src="js/predator.js?v=2026-10-15e"></script>
+<script src="js/abilities.js?v=2026-10-15e"></script>
+<script src="js/world.js?v=2026-10-15e"></script>
+<script src="js/commands.js?v=2026-10-15e"></script>
+<script src="js/npc.js?v=2026-10-15e"></script>
+<script src="js/codex.js?v=2026-10-15e"></script>
+<script src="js/draw.js?v=2026-10-15e"></script>
+<script src="js/beetle3d.js?v=2026-10-15e"></script>
+<script src="js/bugs3d.js?v=2026-10-15e"></script>
+<script src="js/ui.js?v=2026-10-15e"></script>
+<script src="js/waves.js?v=2026-10-15e"></script>
+<script src="js/drops.js?v=2026-10-15e"></script>
+<script src="js/clone.js?v=2026-10-15e"></script>
+<script src="js/clonework.js?v=2026-10-15e"></script>
+<script src="js/broods.js?v=2026-10-15e"></script>
+<script src="js/raids.js?v=2026-10-15e"></script>
+<script src="js/ultra.js?v=2026-10-15e"></script>
+<script src="js/formations.js?v=2026-10-15e"></script>
+<script src="js/breakout.js?v=2026-10-15e"></script>
+<script src="js/nightraids.js?v=2026-10-15e"></script>
+<script src="js/bonds.js?v=2026-10-15e"></script>
+<script src="js/autoplay.js?v=2026-10-15e"></script>
+<script src="js/indexart.js?v=2026-10-15e"></script>
+<script src="js/modules.js?v=2026-10-15e"></script>
+<script src="js/shieldcells.js?v=2026-10-15e"></script>
+<script src="js/evolution.js?v=2026-10-15e"></script>
+<script src="js/buildmenu.js?v=2026-10-15e"></script>
+<script src="js/input.js?v=2026-10-15e"></script>
+<script src="js/game.js?v=2026-10-15e"></script>
+<script src="js/tutorial.js?v=2026-10-15e"></script>
+<script src="js/dev.js?v=2026-10-15e"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1503,7 +1503,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-15d"></script>
+<script src="js/init.js?v=2026-10-15e"></script>
 
 </body>
 </html>

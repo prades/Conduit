@@ -92,8 +92,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core camper waits');
         mk('core', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core mage on worker duty is a worker first');
     });
-    check('THE ASK: the ranged role is called a MAGE on screen (its id stays "sniper")', () => {
-        same(run('roleLabel("sniper")'), 'MAGE', 'sniper'); same(run('roleLabel("brawler")'), 'BRAWLER', 'brawler'); same(run('roleLabel("camper")'), 'CAMPER', 'camper'); same(run('roleLabel("hybrid")'), 'HYBRID', 'hybrid'); same(run('roleLabel(null)'), '', 'none');
+    check('THE ASK: the ranged role is a MAGE and the post-holding role a TECHNICIAN on screen (their ids stay "sniper" and "camper")', () => {
+        same(run('roleLabel("sniper")'), 'MAGE', 'sniper'); same(run('roleLabel("brawler")'), 'BRAWLER', 'brawler'); same(run('roleLabel("camper")'), 'TECHNICIAN', 'camper'); same(run('roleLabel("hybrid")'), 'HYBRID', 'hybrid'); same(run('roleLabel(null)'), '', 'none');
         mk('flux', 'sniper', 5); same(run('unitTypeLabel(__f)'), 'FLUX MAGE', 'the tag over a unit');
         const UI = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
         ok(/label:"MAGES"/.test(UI) && /label: "MAGES"/.test(UI) && !/SNIPERS/.test(UI), 'the index still says SNIPERS');
