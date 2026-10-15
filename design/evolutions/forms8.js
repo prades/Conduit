@@ -2,9 +2,9 @@
 // A small, stout dark-armoured turtle with a volcano on its shell, the crater a little cauldron of toxic green
 // that bubbles up and runs down the cone. The crystal is the heart of the crater.
 const _rock = new T.MeshStandardMaterial({ color: 0x120d0a, roughness: 0.8, metalness: 0.1, flatShading: true });
-function _goo() { const m = new T.MeshStandardMaterial({ color: 0x03200a, emissive: new T.Color(EL.color).multiplyScalar(0.75), emissiveIntensity: 1.0, roughness: 0.12, metalness: 0.15 }); m.envMapIntensity = 1.2; return m; }
-const _blackGloss = new T.MeshStandardMaterial({ color: 0x040406, metalness: 0.75, roughness: 0.26 }); _blackGloss.envMapIntensity = 1.3;   // glossy black: it shows only in its highlights
-const _obsidian = new T.MeshStandardMaterial({ color: 0x050507, metalness: 0.6, roughness: 0.32, flatShading: true }); _obsidian.envMapIntensity = 1.3;
+function _goo() { const m = new T.MeshStandardMaterial({ color: 0x0a3a14, emissive: new T.Color(EL.color).multiplyScalar(0.62), emissiveIntensity: 1.0, roughness: 1, metalness: 0 }); m.envMapIntensity = 0; return m; }   // solid and matte: no shine, nothing see-through
+const _blackGloss = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.0, roughness: 1 }); _blackGloss.envMapIntensity = 0.1;   // matte black: no shine, no glass
+const _obsidian = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.0, roughness: 1, flatShading: true }); _obsidian.envMapIntensity = 0.1;
 const _rock2 = new T.MeshStandardMaterial({ color: 0x1c140f, roughness: 0.75, metalness: 0.1, flatShading: true });   // lighter, so the cone reads against the dark
 function volcanoMesh(r0, h, rimR, seed, mat, seg) {   // a cone with a hollow crater and a ragged rim
   const pts = [[0.0001, h * 0.7], [rimR * 0.55, h * 0.72], [rimR * 0.85, h * 0.95], [rimR, h], [rimR * 1.2, h * 0.88], [(rimR + r0) * 0.5, h * 0.55], [r0 * 0.88, h * 0.22], [r0, 0]].reverse().map(p => new T.Vector2(p[0], p[1]));   // (from the foot up: the faces then point outwards)
@@ -35,9 +35,9 @@ function _turtle(o) {
 }
 function _bubbling(parent, x, y, z, R, n, o) {   // goo in the crater: a swollen surface, bubbles that rise and pop, a crystal heart
   const gm = _goo(), pool = new T.Mesh(new T.SphereGeometry(R, 16, 8, 0, TAU, 0, PI / 2), gm); pool.position.set(x, y, z); pool.scale.y = 0.35; parent.add(pool);
-  const heart = hexCrystal(R * 0.22, R * 0.7, R * 0.45, M.crystal); heart.position.set(x, y + R * 0.3, z); parent.add(heart);
+  if (!(o && o.noHeart)) { const heart = hexCrystal(R * 0.22, R * 0.7, R * 0.45, M.crystal); heart.position.set(x, y + R * 0.3, z); parent.add(heart); }   // (glass-like: left out when asked)
   const bubs = []; for (let i = 0; i < n; i++) { const bb = new T.Mesh(new T.SphereGeometry(1, 10, 8), gm); parent.add(bb); bubs.push({ bb, a: i * 2.4, rr: R * 0.55 * (0.3 + 0.7 * _hz(i, 3, 7)), ph: i / n, sz: 0.035 + 0.03 * _hz(i, 8, 2) }); }
-  const glow = glowSprite(R * 3.2); glow.position.set(x, y + 0.1, z); parent.add(glow);
+  if (!(o && o.noHeart)) { const glow = glowSprite(R * 3.2); glow.position.set(x, y + 0.1, z); parent.add(glow); }   // (a haze: left out with the crystal)
   return (t, act) => { const a = act || 0; pool.scale.set(1, 0.35 + 0.1 * Math.sin(1.6 * t * 2) + 0.35 * a, 1);
     for (const q of bubs) { const u = ((1.6 * t / TAU * (1 + (a > 0.3 ? 1 : 0)) + q.ph) % 1 + 1) % 1; const rise = (0.12 + 0.5 * (1 + 0.8 * a)) * u;
       q.bb.position.set(x + Math.sin(q.a + t) * q.rr * (1 - u * 0.4), y + 0.04 + rise, z + Math.cos(q.a + t) * q.rr * (1 - u * 0.4)); q.bb.scale.setScalar(q.sz * (1 + 1.4 * a) * Math.sin(Math.PI * Math.min(1, u * 1.05)) + 0.001); } };
@@ -83,7 +83,7 @@ function _simpleVolcano(o) {
   _drips(b, vx, vy, vz, o.vr, o.vh, o.rimR, o.drips == null ? 3 : o.drips, o.seed || 3);
   if (o.cracks) for (let i = 0; i < o.cracks; i++) { const a = i * TAU / o.cracks + 0.5, cr = cbox(0.03, o.vh * 0.55, 0.02, 0.004, M.glow), rr = (o.vr + o.rimR) * 0.5 * 0.9; cr.position.set(vx + Math.sin(a) * rr, vy + o.vh * 0.45, vz + Math.cos(a) * rr); cr.rotation.set(Math.cos(a) * 0.55, a, -Math.sin(a) * 0.35); b.add(cr); }
   if (o.cauldron) { const lip = new T.Mesh(new T.TorusGeometry(o.rimR * 1.02, 0.045, 6, 16), M.steel); lip.rotation.x = PI / 2; lip.position.set(vx, vy + o.vh * 0.99, vz); b.add(lip); }
-  const bub = _bubbling(b, vx, vy + o.vh * 0.86, vz, o.rimR * 0.92, o.bubbles || 6);
+  const bub = _bubbling(b, vx, vy + o.vh * 0.86, vz, o.rimR * 0.92, o.bubbles || 6, { noHeart: o.black });
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, vy + o.vh + 0.3, 0.5); b.add(L); LIGHTS.push(L);
   return { g, core: vy + o.vh * 0.9, update(t, act) { const a = act || 0;
     b.position.y = 0.012 * Math.sin(1.6 * t * 2); shell.scale.y = 1 - 0.1 * a; shell.scale.x = shell.scale.z = 1 + 0.05 * a;   // it hunkers down as the volcano erupts
