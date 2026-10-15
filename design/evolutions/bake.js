@@ -24,8 +24,8 @@ const JOBS = [
   { id: 'pod',    form: 71, color: '#ffee33', idleAct: 0.2, action: [0.55, 1.0] },
   { id: 'halo',   form: 90, color: '#ff3300', idleAct: 0.1, action: [0.6, 1.0] },
   // No. 101, the toxic sniper: the pool's shift loops over the idle period; its action is the recoil of a shot.
-  // No. 120, the core mage (the role id is 'sniper'): the petals fan open in its action frames.
-  { id: 'petal', form: 120, color: '#00ccaa', idleAct: 0, action: [0.5, 1.0] },
+  // No. 120, the core mage (the role id is 'sniper'): its action frames are a pulse: the flower tilts forward and the petals fan open towards what it faces, then it settles.
+  { id: 'petal', form: 120, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 114, the flux brawler: a Ditto-style blob with big black shards; its action frames are the slam (it flattens and spreads).
   { id: 'mimic', form: 114, color: '#9933ff', idleAct: 0, action: [0.55, 1.0] },
   { id: 'rotshard', form: 101, color: '#14c040', idleAct: 0, action: [0.5, 1.0] },
@@ -89,7 +89,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
       for (let f = 0; f < 16; f++) {
         const idle = f < 8, i = f % 8;
         const t = idle ? i * P / 8 : 1.0 + i * 0.06;
-        const act = idle ? job.idleAct : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8;
+        const act = idle ? job.idleAct : job.pulse ? Math.sin(PI * (i + 0.5) / 8) : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8;   // pulse: up and back down, so the move ends where it began
         B.update(t, act);
         if (!gMeshes.length) { renderer.render(scene, cam); sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL); }
         else {

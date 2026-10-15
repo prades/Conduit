@@ -62,15 +62,21 @@ fx(119, "Scutum turtle.", () => {   // a dome of overlapping scale plates, a cry
   return { g, core: Y + 0.5, update(t) { b.position.y = bob(t, 0, 0.025); pivot.rotation.x = -0.25 + 0.04 * Math.sin(t * 1.6); } };
 });
 fx(120, "Petal aegis.", () => {   // an angelic rosette of six plate-petals round a crystal, a halo above: the crystal is the focus of a mage
-  const g = G(), b = G(), rose = G(), petals = [], trims = []; g.add(b); const Y = 1.3;
-  const cr = hexCrystal(0.17, 0.6, 0.4, M.crystal); cr.position.y = Y; b.add(cr); const gs = glowSprite(1.1); gs.position.y = Y; b.add(gs);
-  rose.position.y = Y; b.add(rose); for (let i = 0; i < 6; i++) { const a = i * TAU / 6, pl = G(); pl.rotation.y = a; const f = kitePlate(0.34, 0.95, 0.04, i % 2 ? M.gun : M.armor); f.position.set(0, 0, 0.55); f.rotation.x = -0.28; f.rotation.z = PI; pl.add(f); const tm = hexTrim(0.12); tm.position.set(0, -0.08, 0.6); tm.rotation.x = -0.28; pl.add(tm); rose.add(pl); petals.push(f); trims.push(tm); }
+  const g = G(), b = G(), flower = G(), rose = G(), petals = [], trims = []; g.add(b); const Y = 1.3;
+  // The flower: crystal and rosette on one stem. At rest it stands upright; casting, it tilts forward (+z, towards what it
+  // is facing) and the petals fan open, a flower turning to its sun.
+  flower.position.y = Y; b.add(flower);
+  const cr = hexCrystal(0.17, 0.6, 0.4, M.crystal); flower.add(cr); const gs = glowSprite(1.1); flower.add(gs);
+  flower.add(rose); for (let i = 0; i < 6; i++) { const a = i * TAU / 6, pl = G(); pl.rotation.y = a; const f = kitePlate(0.34, 0.95, 0.04, i % 2 ? M.gun : M.armor); f.position.set(0, 0, 0.55); f.rotation.x = -0.28; f.rotation.z = PI; pl.add(f); const tm = hexTrim(0.12); tm.position.set(0, -0.08, 0.6); tm.rotation.x = -0.28; pl.add(tm); rose.add(pl); petals.push(f); trims.push(tm); }
   const h = new T.Mesh(new T.TorusGeometry(0.34, 0.016, 8, 40), M.gold); h.rotation.x = PI / 2; h.position.y = Y + 0.78; b.add(h);
   const t = thr(0.1); t.position.y = Y - 0.55; b.add(t);
   _light(b, Y, 0.8);
-  // The rosette turns 120 degrees a loop (its petals alternate two materials, so that is what closes it); casting, the petals fan open.
-  return { g, core: Y, update(t, act) { b.position.y = bob(t, 0, 0.03); rose.rotation.y = t * 1.6 / 3; h.rotation.z = t;
-    const open = -0.28 - 0.28 * (act || 0); petals.forEach(f => f.rotation.x = open); trims.forEach(m => m.rotation.x = open); } };
+  // The rosette turns 120 degrees a loop (its petals alternate two materials, so that is what closes it).
+  return { g, core: Y, update(t, act) { const a = act || 0, k = Math.max(0, Math.min(1, (a - 0.1) / 0.6)), ease = k * k * (3 - 2 * k);
+    b.position.y = bob(t, 0, 0.03); rose.rotation.y = t * 1.6 / 3; h.rotation.z = t;
+    flower.rotation.x = 1.15 * ease; flower.position.y = Y - 0.12 * ease; flower.position.z = 0.1 * ease;
+    const open = -0.28 - 0.5 * ease;   // the petals slide out along the stem past the crystal's tip and flare: an open bloom aimed at the target
+    petals.forEach(f => { f.rotation.x = open; f.position.y = 0.42 * ease; }); trims.forEach(m => { m.rotation.x = open; m.position.y = -0.08 + 0.42 * ease; }); } };
 });
 fx(121, "Reliquary shield.", () => {   // an ancient gold round shield on a floating stand, a crystal boss, the barrel from the boss
   const g = G(), b = G(); g.add(b); const Y = 1.25;
