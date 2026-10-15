@@ -9,9 +9,9 @@ function volcanoMesh(r0, h, rimR, seed) {   // a cone with a hollow crater and a
   for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), rr = Math.hypot(x, z); if (rr < 0.01) continue; const n = _hz(Math.round(x * 200) + seed, Math.round(y * 200), Math.round(z * 200)), k = 1 + (n - 0.5) * 0.22; p.setXYZ(i, x * k, y + (n - 0.5) * 0.05, z * k); }
   geo.computeVertexNormals(); return new T.Mesh(geo, _rock);
 }
-function _shell(rx, ry, rz, plates) {   // the dome of the shell: a dark half-ellipsoid with scutes laid on it
+function _shell(rx, ry, rz, rings) {   // the dome of the shell: a dark half-ellipsoid with scutes laid on it
   const g = G(), dome = new T.Mesh(new T.SphereGeometry(1, 24, 12, 0, TAU, 0, PI / 2), M.dark); dome.scale.set(rx, ry, rz); g.add(dome);
-  for (let ring = 0; ring < 3; ring++) { const polar = 0.5 + ring * 0.4, n = 6 + ring * 3; for (let i = 0; i < n; i++) { const az = i * TAU / n + ring * 0.35;
+  for (let ring = 0; ring < (rings == null ? 3 : rings); ring++) { const polar = 0.5 + ring * 0.4, n = 6 + ring * 3; for (let i = 0; i < n; i++) { const az = i * TAU / n + ring * 0.35;
     scaleOn(g, V(Math.sin(polar) * Math.sin(az) * rx * 1.02, Math.cos(polar) * ry * 1.02, Math.sin(polar) * Math.cos(az) * rz * 1.02), 0.3 - ring * 0.03, 0.26, 0.3, (i + ring) % 3 ? M.armor : M.gun); } }
   const rim = new T.Mesh(new T.TorusGeometry(1, 0.035, 5, 28), M.steel); rim.rotation.x = PI / 2; rim.scale.set(rx * 1.02, rz * 1.02, 1); g.add(rim);   // the edge of the shell
   return g;
@@ -66,3 +66,25 @@ fx(126, "Volcano turtle.", () => _volcanoTurtle({ rx: 0.58, ry: 0.4, rz: 0.72, l
 fx(127, "Volcano turtle, cauldron crater, big head.", () => _volcanoTurtle({ rx: 0.52, ry: 0.36, rz: 0.62, legH: 0.22, leg: 1.1, head: 1.35, vr: 0.4, vh: 0.5, rimR: 0.27, cauldron: true, drips: 5, seed: 5 }));
 fx(128, "Volcano turtle, armoured and spiked.", () => _volcanoTurtle({ rx: 0.66, ry: 0.42, rz: 0.78, legH: 0.3, leg: 1.3, head: 1.1, vr: 0.44, vh: 0.7, rimR: 0.21, spikes: true, drips: 3, seed: 9 }));
 fx(129, "Volcano turtle, tall cone.", () => _volcanoTurtle({ rx: 0.5, ry: 0.34, rz: 0.62, legH: 0.24, leg: 0.95, head: 1.05, vr: 0.36, vh: 0.95, rimR: 0.17, drips: 5, bubbles: 9, seed: 7 }));
+
+// ── Simpler (Nos. 130–132): no head, no tail. The shell, the volcano, the goo, and little feet. ──
+function _simpleVolcano(o) {
+  const g = G(), b = G(); g.add(b); const bodyY = o.feet ? o.legH + 0.05 : 0.05;
+  const shell = _shell(o.rx, o.ry, o.rz, 1); shell.position.y = bodyY; b.add(shell);
+  const belly = cbox(o.rx * 1.6, 0.14, o.rz * 1.6, 0.04, M.dark); belly.position.y = bodyY - 0.02; b.add(belly);
+  const feet = []; if (o.feet) for (let i = 0; i < 4; i++) { const sx = i % 2 ? -1 : 1, sz = i < 2 ? 1 : -1, l = G(); l.position.set(sx * o.rx * 0.72, bodyY - 0.05, sz * o.rz * 0.6);
+    const th = cbox(0.22, o.legH, 0.26, 0.05, M.armor); th.position.y = -o.legH / 2; l.add(th); const ft = cbox(0.28, 0.07, 0.32, 0.025, M.gun); ft.position.set(0, -o.legH, 0.04); l.add(ft); b.add(l); feet.push(l); }
+  const vx = 0, vy = bodyY + o.ry * 0.82, vz = 0;
+  const vol = volcanoMesh(o.vr, o.vh, o.rimR, o.seed || 3); vol.position.set(vx, vy, vz); b.add(vol);
+  _drips(b, vx, vy, vz, o.vr, o.vh, o.rimR, o.drips == null ? 3 : o.drips, o.seed || 3);
+  if (o.cauldron) { const lip = new T.Mesh(new T.TorusGeometry(o.rimR * 1.02, 0.045, 6, 16), M.steel); lip.rotation.x = PI / 2; lip.position.set(vx, vy + o.vh * 0.99, vz); b.add(lip); }
+  const bub = _bubbling(b, vx, vy + o.vh * 0.86, vz, o.rimR * 0.92, o.bubbles || 6);
+  const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, vy + o.vh + 0.3, 0.5); b.add(L); LIGHTS.push(L);
+  return { g, core: vy + o.vh * 0.9, update(t, act) { const a = act || 0;
+    b.position.y = 0.012 * Math.sin(1.6 * t * 2); shell.scale.y = 1 - 0.1 * a; shell.scale.x = shell.scale.z = 1 + 0.05 * a;   // it hunkers down as the volcano erupts
+    feet.forEach((l, i) => { l.rotation.x = 0.1 * Math.sin(1.6 * t + (i % 2 ? PI : 0) + (i < 2 ? 0 : PI / 2)); });
+    bub(t, a); } };
+}
+fx(130, "Headless volcano turtle, feet.", () => _simpleVolcano({ rx: 0.6, ry: 0.4, rz: 0.66, legH: 0.24, feet: true, vr: 0.42, vh: 0.6, rimR: 0.2 }));
+fx(131, "Headless volcano turtle, on the ground.", () => _simpleVolcano({ rx: 0.68, ry: 0.36, rz: 0.72, vr: 0.44, vh: 0.58, rimR: 0.21, seed: 5 }));
+fx(132, "Headless volcano turtle, cauldron crater.", () => _simpleVolcano({ rx: 0.6, ry: 0.38, rz: 0.64, legH: 0.22, feet: true, vr: 0.4, vh: 0.46, rimR: 0.27, cauldron: true, drips: 4, seed: 7 }));
