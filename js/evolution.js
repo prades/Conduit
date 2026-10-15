@@ -59,6 +59,12 @@
 //          flattens and slams its weight down: everything within MIMIC_RADIUS takes
 //          MIMIC_MULT × its power, is shoved MIMIC_PUSH back (a beetle, a boss or a machine
 //          is too heavy to move) and slowed by MIMIC_SLOW for MIMIC_SLOW_FRAMES.
+//          PETAL AEGIS (the CORE MAGE, design No. 120: a rosette of plate-petals round a
+//          crystal; the role is called a mage to the player, its id is still "sniper"),
+//          AEGIS BLOOM: with an enemy within PETAL_RANGE, every PETAL_EVERY frames its petals
+//          fan open: a bolt of core energy (PETAL_MULT × its power) into the nearest enemy,
+//          and a shield (PETAL_SHIELD of max health) on whichever ally within PETAL_ALLY_R
+//          is hurt worst (itself included), if its shield is lower than that.
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
 //          sheets in img/evo/: 8 facings × 16 frames (8 idle, 8 action),
 //          seen from the game's own iso angle.
@@ -81,6 +87,7 @@ const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MAN
 const HALO_RANGE = 7, HALO_EVERY = 330, HALO_ROUNDS = 6, HALO_MULT = 0.8, HALO_BURN = 150;
 const ROT_RANGE = 7, ROT_EVERY = 320, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
 const MIMIC_RADIUS = 2.2, MIMIC_EVERY = 330, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
+const PETAL_RANGE = 6.5, PETAL_EVERY = 330, PETAL_MULT = 1.8, PETAL_SHIELD = 0.35, PETAL_ALLY_R = 7;
 const HAULER_SPEED = 1.5, HAULER_REACH = 2, HAULER_PAY = 2;
 const POD_RATE = 3, POD_REACH = 2, POD_SPEED = 1.4;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
@@ -100,6 +107,9 @@ const EVOLUTIONS = {
     // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
     halo:   { id: "halo",   name: "CINDER HALO",  element: "fire",     role: "sniper",  move: "HEXFIRE",      sheet: "img/evo/halo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
+    // The CORE MAGE ("sniper" in the code): a rosette of plate-petals. The crystal at its middle is the reactor, so it keeps the shared glow.
+    petal:  { id: "petal",  name: "PETAL AEGIS",  element: "core",     role: "sniper",  move: "AEGIS BLOOM",  sheet: "img/evo/petal.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 66.5], color: "#33e6c4" },
     // The FLUX BRAWLER: a lump of liquid on the ground (a flux worker is the Hover Hauler instead: a worker is a duty). Its surface moves, so its sheet carries its own light.
     mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png" },
@@ -153,7 +163,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
-        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f);
+        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal") aegisBloom(f);
     }
 }
 function _evoFoes(x, y, r) {
@@ -268,6 +278,36 @@ function corrodeShot(f) {
         elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#66ff66", radius: 0.6, life: 22 });
     }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "CORRODE", color: "#88ff88", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+
+// AEGIS BLOOM: a bolt into the nearest enemy in range, and a shield on the worst-hurt ally. True when it fired.
+function aegisBloom(f) {
+    const foes = _evoFoes(f.x, f.y, PETAL_RANGE);
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    applyDamage(tgt, (f.power || 10) * PETAL_MULT, f, "core");
+    // the ally to cover: lowest health fraction, itself included, whose shield is below what this gives
+    let best = null, bestFrac = 2;
+    const near = typeof unitsNear === "function" ? unitsNear(f.x, PETAL_ALLY_R) : actors;
+    for (const a of near) {
+        if (!a || a.dead || a.team !== "green" || !(a.isFollower || a.isClone) || Math.hypot(a.x - f.x, a.y - f.y) > PETAL_ALLY_R) continue;
+        const cap = Math.round((a.maxHealth || 0) * PETAL_SHIELD), have = a.shielded ? (a.shieldAmount || 0) : 0;
+        if (cap <= have) continue;
+        const frac = (a.health || 0) / Math.max(1, a.maxHealth || 1);
+        if (frac < bestFrac) { best = a; bestFrac = frac; }
+    }
+    if (best) {
+        const cap = Math.round((best.maxHealth || 0) * PETAL_SHIELD);
+        best.shielded = true; best.shieldAmount = cap; best._shieldMax = Math.max(best._shieldMax || 0, cap);
+        if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: best.x, y: best.y, radius: 0.9, color: "#33e6c4", life: 36 });
+    }
+    f._sigAt = f0; f._sigCd = PETAL_EVERY;
+    f._arcPts = [{ x: tgt.x, y: tgt.y }]; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcFan = false; f._arcCol = [51, 230, 196];
+    { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#33e6c4", radius: 0.6, life: 22 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "AEGIS BLOOM", color: "#66ffe0", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 

@@ -1273,7 +1273,7 @@ function _drawStatusTab(PX, PY, PW, PH) {
     const rows=[
         ["Total Followers", followers.filter(a=>!a.dead).length, "#0f8"],
         ["Brawlers",  brawlers, "#f88"],
-        ["Snipers",   snipers,  "#88aaff"],
+        ["Mages",     snipers,  "#88aaff"],
         ["Campers",   campers,  "#88ff88"],
         ["Ghosts",    ghosts,   "#aaffee"],
         ["Wave",      gameState.nightNumber, "#aaaaaa"],

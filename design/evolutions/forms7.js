@@ -61,15 +61,16 @@ fx(119, "Scutum turtle.", () => {   // a dome of overlapping scale plates, a cry
   _light(b, Y + 0.7, 0.7);
   return { g, core: Y + 0.5, update(t) { b.position.y = bob(t, 0, 0.025); pivot.rotation.x = -0.25 + 0.04 * Math.sin(t * 1.6); } };
 });
-fx(120, "Petal aegis.", () => {   // an angelic rosette of six plate-petals round a crystal, a halo above, a needle through the front
-  const g = G(), b = G(), rose = G(); g.add(b); const Y = 1.3;
+fx(120, "Petal aegis.", () => {   // an angelic rosette of six plate-petals round a crystal, a halo above: the crystal is the focus of a mage
+  const g = G(), b = G(), rose = G(), petals = [], trims = []; g.add(b); const Y = 1.3;
   const cr = hexCrystal(0.17, 0.6, 0.4, M.crystal); cr.position.y = Y; b.add(cr); const gs = glowSprite(1.1); gs.position.y = Y; b.add(gs);
-  rose.position.y = Y; b.add(rose); for (let i = 0; i < 6; i++) { const a = i * TAU / 6, pl = G(); pl.rotation.y = a; const f = kitePlate(0.34, 0.95, 0.04, i % 2 ? M.gun : M.armor); f.position.set(0, 0, 0.55); f.rotation.x = -0.28; f.rotation.z = PI; pl.add(f); const tm = hexTrim(0.12); tm.position.set(0, -0.08, 0.6); tm.rotation.x = -0.28; pl.add(tm); rose.add(pl); }
-  const nd = barrel(1.2, 0.03); nd.position.set(0, Y, 0.2); b.add(nd);
+  rose.position.y = Y; b.add(rose); for (let i = 0; i < 6; i++) { const a = i * TAU / 6, pl = G(); pl.rotation.y = a; const f = kitePlate(0.34, 0.95, 0.04, i % 2 ? M.gun : M.armor); f.position.set(0, 0, 0.55); f.rotation.x = -0.28; f.rotation.z = PI; pl.add(f); const tm = hexTrim(0.12); tm.position.set(0, -0.08, 0.6); tm.rotation.x = -0.28; pl.add(tm); rose.add(pl); petals.push(f); trims.push(tm); }
   const h = new T.Mesh(new T.TorusGeometry(0.34, 0.016, 8, 40), M.gold); h.rotation.x = PI / 2; h.position.y = Y + 0.78; b.add(h);
   const t = thr(0.1); t.position.y = Y - 0.55; b.add(t);
   _light(b, Y, 0.8);
-  return { g, core: Y, update(t) { b.position.y = bob(t, 0, 0.03); rose.rotation.y = t * 1.6 / 6; h.rotation.z = t; } };
+  // The rosette turns 120 degrees a loop (its petals alternate two materials, so that is what closes it); casting, the petals fan open.
+  return { g, core: Y, update(t, act) { b.position.y = bob(t, 0, 0.03); rose.rotation.y = t * 1.6 / 3; h.rotation.z = t;
+    const open = -0.28 - 0.28 * (act || 0); petals.forEach(f => f.rotation.x = open); trims.forEach(m => m.rotation.x = open); } };
 });
 fx(121, "Reliquary shield.", () => {   // an ancient gold round shield on a floating stand, a crystal boss, the barrel from the boss
   const g = G(), b = G(); g.add(b); const Y = 1.25;

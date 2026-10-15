@@ -83,8 +83,25 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         for (const role of ['brawler', 'camper']) { mk('toxic', role, 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic ' + role); }
         mk('toxic', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic worker waits (no worker form for it)');
     });
+    check('THE ASK: a CORE MAGE (the role id is still "sniper") becomes the PETAL AEGIS (design No. 120); a core brawler is still the Aegis Warden', () => {
+        mk('core', 'sniper', 20); run(lvlUp);
+        const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
+        same(r.evo, 'petal', 'its form'); same(r.tag, 'PETAL AEGIS', 'its tag'); same(r.role, 'sniper', 'its role id');
+        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'warden', 'the core brawler');
+        mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core camper waits');
+        mk('core', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a core worker waits (no worker form for it)');
+    });
+    check('THE ASK: the ranged role is called a MAGE on screen (its id stays "sniper")', () => {
+        same(run('roleLabel("sniper")'), 'MAGE', 'sniper'); same(run('roleLabel("brawler")'), 'BRAWLER', 'brawler'); same(run('roleLabel("camper")'), 'CAMPER', 'camper'); same(run('roleLabel("hybrid")'), 'HYBRID', 'hybrid'); same(run('roleLabel(null)'), '', 'none');
+        mk('flux', 'sniper', 5); same(run('unitTypeLabel(__f)'), 'FLUX MAGE', 'the tag over a unit');
+        const UI = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+        ok(/label:"MAGES"/.test(UI) && /label: "MAGES"/.test(UI) && !/SNIPERS/.test(UI), 'the index still says SNIPERS');
+        ok(!/Snipers/.test(fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8')), 'the colony status still says Snipers');
+        const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
+        ok(!/<strong>Sniper<\/strong>/.test(HTML) && /<strong>Mage<\/strong>/.test(HTML), 'the codex still describes a Sniper');
+    });
     check('…and nobody else: not an ice brawler, an electric brawler — nor before level 20', () => {
-        for (const [el, role] of [['ice', 'brawler'], ['core', 'sniper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
+        for (const [el, role] of [['ice', 'brawler'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
         mk('fire', 'brawler', 19); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 19');
     });
     check('a follower already past level 20 (an old save) evolves on the next tick', () => {
@@ -177,6 +194,24 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.a > 0 && r.b > 0 && r.beetle > 0, 'the slam hit: ' + JSON.stringify(r));
         same(r.far, 0, 'damage outside the slam'); ok(!r.farSlowed, 'slowed outside the slam');
         ok(r.pushed > 0.3 && r.slowed && r.sf === run('MIMIC_SLOW') && r.sf < 1, 'shoved and slowed: ' + JSON.stringify(r)); ok(!r.beetleMoved, 'a beetle was shoved'); ok(r.cd > 300, 'it did not wait');
+    });
+
+    check('THE ASK: AEGIS BLOOM — a bolt into the nearest enemy, and a shield on the worst-hurt ally in reach', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'petal'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.health = f.maxHealth; f.shielded = false;
+            const mkA = (x, y, frac) => { spawnFollowerAtCrystal('fire'); const a = followers[followers.length - 1]; a.returningToCrystal = false; a.x = x; a.y = y; a.health = Math.round(a.maxHealth * frac); a.shielded = false; a.shieldAmount = 0; return a; };
+            const early = mkA(21.5, 3, 0.6), hurt = mkA(22, 2, 0.3), fine = mkA(21, 3.5, 0.9), late = mkA(22.5, 3, 0.45), far = mkA(34, 2, 0.1);   // the worst-hurt is neither first nor last
+            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const a = mkP(24, 2), b = mkP(25, 2.5), tooFar = mkP(32, 2);
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), tooFar: d(tooFar), hurt: hurt.shielded ? hurt.shieldAmount : 0, hurtMax: hurt.maxHealth, fine: !!fine.shielded, early: !!early.shielded, late: !!late.shielded, far: !!far.shielded, self: !!f.shielded, cd: f._sigCd, arcs: (f._arcPts || []).length };
+            [a, b, tooFar].forEach(p => p.dead = true);
+            // an enemy 8 tiles off is out of its reach: it does not cast at it
+            const lone = mkP(28, 2); frame++; f._sigCd = 1; f._sigAt = undefined; evolutionTick(); out.loneHit = 1e6 - lone.health; out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
+        ok(r.a > 0 && r.b === 0, 'one bolt, into the nearest: ' + JSON.stringify(r)); same(r.tooFar, 0, 'damage out of range');
+        ok(r.hurt === Math.round(r.hurtMax * 0.35) && r.hurt > 0, 'the worst-hurt ally\'s shield (35% of its health): ' + JSON.stringify(r));
+        same(r.loneHit, 0, 'a bolt at an enemy out of range'); ok(!r.loneCast, 'it cast at an enemy out of range');
+        ok(!r.fine && !r.early && !r.late && !r.far && !r.self, 'only that one is shielded: ' + JSON.stringify(r)); ok(r.cd > 300, 'it did not wait'); same(r.arcs, 1, 'one bolt drawn');
     });
 
     check('THE ASK: SINGULARITY SHOT — a gravity round into the nearest enemy, dragging those round it in; a beetle is too heavy', () => {
@@ -301,7 +336,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
@@ -313,7 +348,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);

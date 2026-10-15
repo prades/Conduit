@@ -69,16 +69,16 @@ function drawFollowerElementUI() {
                 ctx.textAlign="right"; ctx.fillText(count,x+w-10,yy+rh/2);
                 ctx.font="9px monospace"; ctx.textAlign="left";
                 ctx.fillStyle="#f88"; ctx.fillText("B:"+brawlers,x+28,yy+rh-6);
-                ctx.fillStyle="#88f"; ctx.fillText("S:"+snipers, x+58,yy+rh-6);
+                ctx.fillStyle="#88f"; ctx.fillText("M:"+snipers, x+58,yy+rh-6);
                 ctx.fillStyle="#8f8"; ctx.fillText("C:"+campers, x+88,yy+rh-6);
                 ctx.font="13px monospace";
             }
         });
     } else if (uiTab==="units") {
-        // ── UNITS TAB — Brawlers / Snipers / Campers ──────
+        // ── UNITS TAB — Brawlers / Mages / Campers ──────
         const roles=[
             {id:"brawler",label:"BRAWLERS",color:"#f88",badge:"B"},
-            {id:"sniper", label:"SNIPERS", color:"#88f",badge:"S"},
+            {id:"sniper", label:"MAGES", color:"#88f",badge:"M"},
             {id:"camper", label:"CAMPERS", color:"#8f8",badge:"C"},
         ];
         const unitRH=Math.floor(_UI_CONTENT_H/3);
@@ -450,7 +450,7 @@ function _buildInfoTitle(targetTile) {
     const candidates = [...followers, ...actors.filter(a=>a.isClone)]
         .filter(a=>!a.dead && Math.hypot(a.x - targetTile.x, a.y - targetTile.y) < 3);
     subject = candidates[0] || null;
-    if (subject) return (subject.role||"UNIT").toUpperCase() + " — " + (subject.speciesName||subject.type||"UNIT").toUpperCase();
+    if (subject) return roleLabel(subject.role||"UNIT") + " — " + (subject.speciesName||subject.type||"UNIT").toUpperCase();
     if (targetTile.pillar && !targetTile.destroyed) {
         const _PYLON_STYLE_NAMES={sentinel:"Sentinel"};
         const _sName=_PYLON_STYLE_NAMES[targetTile.pylonStyle]||"Pylon";
@@ -977,7 +977,7 @@ function followerIndexGroupAt(x, y) {
         const i = Math.floor((y - py0 - _UI_TAB_H) / unitRH);
         const roles = [
             { id: "brawler", label: "BRAWLERS", colour: "#f88" },
-            { id: "sniper",  label: "SNIPERS",  colour: "#88f" },
+            { id: "sniper",  label: "MAGES",    colour: "#88f" },
             { id: "camper",  label: "CAMPERS",  colour: "#8f8" },
         ];
         const r = roles[i];

@@ -253,7 +253,7 @@ function unitTypeLabel(a) {
     if (!a) return "";
     if (a.isClone) return String(a.speciesName || "").toUpperCase() + " CLONE";
     if (a.isFollower && a.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[a.evolved]) return EVOLUTIONS[a.evolved].name;
-    if (a.isFollower) return String(a.element || "").toUpperCase() + " " + String(a.role || "").toUpperCase();
+    if (a.isFollower) return String(a.element || "").toUpperCase() + " " + roleLabel(a.role);
     // An enemy names its element (the type chart is in every fight now).
     if (a.speciesName) return (a.element ? String(a.element).toUpperCase() + " " : "") + String(a.speciesName).toUpperCase() + " " + String(a.className || "").toUpperCase() + (a.isElite ? " ★" : "");
     return "";

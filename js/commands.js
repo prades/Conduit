@@ -650,7 +650,7 @@ function executeCommand() {
                 pool.forEach(f=>{ if (f.evolved) return; const i=roles.indexOf(f.role); f.role=roles[(i+1)%roles.length]; });
                 if (pool.length>0)
                     floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
-                        text:"→ "+(pool.find(f=>!f.evolved)||pool[0]).role.toUpperCase(),color:"#0f8",life:90,vy:-0.2});
+                        text:"→ "+roleLabel((pool.find(f=>!f.evolved)||pool[0]).role),color:"#0f8",life:90,vy:-0.2});
             }
             break;
         }

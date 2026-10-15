@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-14p";
+const BUILD_VERSION = "2026-10-15a";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -298,6 +298,10 @@ cfg.npcSpawnRate = 0.22;
 
 // ── CONSTANTS ─────────────────────────────────────────────
 const TILE_W = 60, TILE_H = 30, RENDER_DIST = 22;
+// A role's name on screen. The ids ("brawler", "sniper", "camper") are what saves, tests and the code know them by;
+// the ranged role is a MAGE to the player.
+const ROLE_LABELS = { sniper: "MAGE" };
+function roleLabel(role) { const k = String(role == null ? "" : role); return (ROLE_LABELS[k] || k).toUpperCase(); }
 // How close two followers may stand before they push each other apart (tiles). It was 0.55; a bundle of evolved
 // machines, wider than the eggs, hid each other at that, so they keep a little more room (see the separation pass in game.js).
 const FOLLOWER_SEP = 0.75;
@@ -967,7 +971,7 @@ let squadMode    = "selected"; // "all" | "selected"
 let buildMode    = false;
 let holdLineX    = null;       // world X boundary; null = cleared
 let uiTab        = "elements"; // "elements" | "units"
-let selectedRole = null;       // "brawler"|"sniper"|"camper"|null
+let selectedRole = null;       // "brawler"|"sniper"|"camper"|null  ("sniper" is shown to the player as MAGE: see roleLabel)
 let followerPoolMinimized = false; // whether the follower pool panel is collapsed
 // The duty switch a LONG PRESS on a follower-index row opens: it puts that
 // whole group — one element, or one role — on work or back on the line in a
