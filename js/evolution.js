@@ -65,6 +65,11 @@
 //          fan open: a bolt of core energy (PETAL_MULT × its power) into the nearest enemy,
 //          and a shield (PETAL_SHIELD of max health) on whichever ally within PETAL_ALLY_R
 //          is hurt worst (itself included), if its shield is lower than that.
+//          CALDERA (the TOXIC BRAWLER, design No. 140: a matte black volcano on four feet,
+//          goo bubbling in the crater), ERUPTION: with an enemy within CALDERA_RADIUS, every
+//          CALDERA_EVERY frames it hunkers and the crater bursts: everything within
+//          CALDERA_RADIUS takes CALDERA_MULT × its power in toxic goo and has its armour
+//          eaten (it takes 1 / CALDERA_SHRED × damage for CALDERA_SHRED_FRAMES).
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
 //          sheets in img/evo/: 8 facings × 16 frames (8 idle, 8 action),
 //          seen from the game's own iso angle.
@@ -88,6 +93,7 @@ const HALO_RANGE = 7, HALO_EVERY = 330, HALO_ROUNDS = 6, HALO_MULT = 0.8, HALO_B
 const ROT_RANGE = 7, ROT_EVERY = 320, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
 const MIMIC_RADIUS = 2.2, MIMIC_EVERY = 330, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
 const PETAL_RANGE = 6.5, PETAL_EVERY = 330, PETAL_MULT = 1.8, PETAL_SHIELD = 0.35, PETAL_ALLY_R = 7;
+const CALDERA_RADIUS = 2.4, CALDERA_EVERY = 330, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
 const HAULER_SPEED = 1.5, HAULER_REACH = 2, HAULER_PAY = 2;
 const POD_RATE = 3, POD_REACH = 2, POD_SPEED = 1.4;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
@@ -107,6 +113,9 @@ const EVOLUTIONS = {
     // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
     halo:   { id: "halo",   name: "CINDER HALO",  element: "fire",     role: "sniper",  move: "HEXFIRE",      sheet: "img/evo/halo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
+    // The TOXIC BRAWLER: a matte black volcano on four feet. Its shell is black and its goo moves, so its sheet carries its own light.
+    caldera:{ id: "caldera", name: "CALDERA",     element: "toxic",    role: "brawler", move: "ERUPTION",     sheet: "img/evo/caldera.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 72], noGlow: true, color: "#66ff66" },
     // The CORE MAGE ("sniper" in the code): a rosette of plate-petals. The crystal at its middle is the reactor, so it keeps the shared glow.
     petal:  { id: "petal",  name: "PETAL AEGIS",  element: "core",     role: "sniper",  move: "AEGIS BLOOM",  sheet: "img/evo/petal.png",
               cell: 144, anchor: [72, 114.2], core: [72, 66.5], color: "#33e6c4" },
@@ -163,7 +172,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
-        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal") aegisBloom(f);
+        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal") aegisBloom(f); else if (d.id === "caldera") eruption(f);
     }
 }
 function _evoFoes(x, y, r) {
@@ -308,6 +317,25 @@ function aegisBloom(f) {
     { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#33e6c4", radius: 0.6, life: 22 });
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "AEGIS BLOOM", color: "#66ffe0", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+
+// ERUPTION: the crater bursts over everything close: toxic damage and eaten armour. True when it fired.
+function eruption(f) {
+    const foes = _evoFoes(f.x, f.y, CALDERA_RADIUS);
+    if (!foes.length) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const a of foes) {
+        applyDamage(a, (f.power || 10) * CALDERA_MULT, f, "toxic");
+        a.defenseShredded = Math.max(a.defenseShredded || 0, CALDERA_SHRED_FRAMES); a.defenseShredFactor = Math.min(a.defenseShredFactor || 1, CALDERA_SHRED);
+    }
+    f._sigAt = f0; f._sigCd = CALDERA_EVERY;
+    if (typeof elementEffects !== "undefined") {
+        elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: CALDERA_RADIUS, color: "#66ff66", life: 40 });
+        elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#66ff66", radius: CALDERA_RADIUS * 0.6, life: 24 });
+    }
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "ERUPTION", color: "#88ff88", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 

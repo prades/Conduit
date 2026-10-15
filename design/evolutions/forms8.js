@@ -73,7 +73,7 @@ fx(129, "Volcano turtle, tall cone.", () => _volcanoTurtle({ rx: 0.5, ry: 0.34, 
 
 // ── Simpler (Nos. 130–132): no head, no tail. The shell, the volcano, the goo, and little feet. ──
 function _simpleVolcano(o) {
-  const g = G(), b = G(); g.add(b); const bodyY = o.feet ? o.legH + 0.05 : 0.05;
+  const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S); const bodyY = o.feet ? o.legH + 0.05 : 0.05;
   const shell = _shell(o.rx, o.ry, o.rz, o.black ? 0 : 1, o.black); shell.position.y = bodyY; b.add(shell);
   const belly = cbox(o.rx * 1.6, 0.14, o.rz * 1.6, 0.04, o.black ? _blackGloss : M.dark); belly.position.y = bodyY - 0.02; b.add(belly);
   const feet = []; if (o.feet) for (let i = 0; i < 4; i++) { const sx = i % 2 ? -1 : 1, sz = i < 2 ? 1 : -1, l = G(); l.position.set(sx * o.rx * 0.72, bodyY - 0.05, sz * o.rz * 0.6);
@@ -85,7 +85,7 @@ function _simpleVolcano(o) {
   if (o.cauldron) { const lip = new T.Mesh(new T.TorusGeometry(o.rimR * 1.02, 0.045, 6, 16), M.steel); lip.rotation.x = PI / 2; lip.position.set(vx, vy + o.vh * 0.99, vz); b.add(lip); }
   const bub = _bubbling(b, vx, vy + o.vh * 0.86, vz, o.rimR * 0.92, o.bubbles || 6, { noHeart: o.black, bubH: o.bubH });
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, vy + o.vh + 0.3, 0.5); b.add(L); LIGHTS.push(L);
-  return { g, core: vy + o.vh * 0.9, update(t, act) { const a = act || 0;
+  return { g, core: (vy + o.vh * 0.9) * (o.S || 1), update(t, act) { const a = act || 0;
     b.position.y = 0.012 * Math.sin(1.6 * t * 2); shell.scale.y = 1 - 0.1 * a; shell.scale.x = shell.scale.z = 1 + 0.05 * a;   // it hunkers down as the volcano erupts
     feet.forEach((l, i) => { l.rotation.x = 0.1 * Math.sin(1.6 * t + (i % 2 ? PI : 0) + (i < 2 ? 0 : PI / 2)); });
     bub(t, a); } };
@@ -106,5 +106,5 @@ fx(138, "Black volcano turtle, one mound.", () => _simpleVolcano({ black: true, 
 
 // ── Lower crater, nothing running down the sides (Nos. 139–141): no drips, no cracks; the goo stays in the hole. ──
 fx(139, "Low cone, goo kept in the crater.", () => _simpleVolcano({ black: true, rx: 0.6, ry: 0.36, rz: 0.66, legH: 0.24, feet: true, vr: 0.5, vh: 0.46, rimR: 0.17, cracks: 0, drips: 0, bubH: 0.22, bubbles: 5, seg: 9, seed: 3 }));
-fx(140, "Very low mound, wide crater.", () => _simpleVolcano({ black: true, rx: 0.66, ry: 0.3, rz: 0.7, legH: 0.22, feet: true, vr: 0.6, vh: 0.34, rimR: 0.2, cracks: 0, drips: 0, bubH: 0.18, bubbles: 5, seg: 12, seed: 7 }));
+fx(140, "Very low mound, wide crater.", () => _simpleVolcano({ black: true, S: 1.4, rx: 0.66, ry: 0.3, rz: 0.7, legH: 0.22, feet: true, vr: 0.6, vh: 0.34, rimR: 0.2, cracks: 0, drips: 0, bubH: 0.18, bubbles: 5, seg: 12, seed: 7 }));
 fx(141, "Short cone, small crater.", () => _simpleVolcano({ black: true, rx: 0.58, ry: 0.34, rz: 0.64, legH: 0.24, feet: true, vr: 0.46, vh: 0.56, rimR: 0.15, cracks: 0, drips: 0, bubH: 0.26, bubbles: 5, seg: 10, seed: 5 }));
