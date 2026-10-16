@@ -21,7 +21,9 @@ function _hornedAmmonite(o) {
     const h = G(); h.position.set(Math.sin(a) * rr, yy, Math.cos(a) * rr); h.rotation.y = a; c.rotation.x = PI / 2 - 0.2; c.position.z = 0.07 * sz; h.add(c); jar.add(h); }
   const mouthY = sz * 0.46, mat = _creatureMat();
   const body = new T.Mesh(new T.IcosahedronGeometry(1, 1), mat); body.scale.set(o.body, o.body * 0.8, o.body); body.position.y = mouthY + o.body * 0.1; jar.add(body);
-  const frill = _starPlate(o.frill, o.frill * 0.55, o.spikes || 7, 0.035, mat, o.arc); frill.position.y = mouthY; jar.add(frill);
+  const frill = o.tents ? null : _starPlate(o.frill, o.frill * 0.55, o.spikes || 7, 0.035, mat, o.arc); if (frill) { frill.position.y = mouthY; jar.add(frill); }
+  // small tentacles instead of a frill: a ring (or an arc, a beard) round the mouth, each curling out and its tip winding in
+  const tents = []; if (o.tents) for (let i = 0; i < o.tents; i++) { const span = o.tentArc || TAU, a = (o.tentCentre || 0) - span / 2 + (o.tents > 1 ? i / (o.tentArc ? o.tents - 1 : o.tents) * span : 0); tents.push({ beads: _tentacle(jar, mat, o.tn || 12, o.tr || 0.05), a, ph: i * 1.3 }); }
   for (const sx of [-1, 1]) { const e = sphere(0.04, new T.MeshBasicMaterial({ color: 0x021008 }), 8); e.position.set(sx * o.body * 0.45, mouthY + o.body * 0.45, -o.body * 0.55); jar.add(e); }   // eyes on the creature's face, looking out and up
   // the horn: a long thin six-sided shard from the brow, angled up and forward
   const horn = G(); horn.position.set(0, mouthY + o.body * 0.45, -o.body * 0.35); jar.add(horn);
@@ -29,7 +31,11 @@ function _hornedAmmonite(o) {
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, Y + 0.3, 0.7); b.add(L); LIGHTS.push(L);
   return { g, core: Y * (o.S || 1), update(t, act) { const ac = act || 0, ph = 1.6 * t; jar.position.y = Y + bob(t, 0, 0.035);
     body.scale.set(o.body * (1 + 0.03 * Math.sin(ph)), o.body * (0.8 + 0.04 * Math.sin(ph + 1)), o.body * (1 + 0.03 * Math.sin(ph)));
-    frill.scale.setScalar(1 + 0.05 * Math.sin(ph * 2) + 0.12 * ac);
+    if (frill) frill.scale.setScalar(1 + 0.05 * Math.sin(ph * 2) + 0.12 * ac);
+    for (const T0 of tents) { const bs = T0.beads, N2 = bs.length, ra = Math.sin(T0.a), rb = Math.cos(T0.a), ta = rb, tb = -ra;   // an arm: forward along the jar's axis, leaning out, the tip winding in
+      let r = o.body * 0.55, y = mouthY + 0.02, th = (o.th0 == null ? 1.1 : o.th0) + 0.12 * Math.sin(ph + T0.ph) - 0.2 * ac;
+      for (let i = 0; i < N2; i++) { const u = i / (N2 - 1), sway = 0.05 * Math.sin(ph + T0.ph + u * 2) * u; bs[i].position.set(ra * r + ta * sway, y, rb * r + tb * sway); bs[i].scale.setScalar(bs[i].userData.k);
+        const step = (o.step || 0.05) * (1 - 0.6 * u); r += Math.cos(th) * step; y += Math.sin(th) * step; th -= (o.turn || 3.2) * (0.35 + u * 1.3) / N2 * 2.4; } }
     horn.rotation.x = -o.hornTilt + 0.05 * Math.sin(ph) + 0.35 * ac; horn.scale.y = 1 + 0.12 * ac; } };   // casting, the horn drops to aim and lengthens
 }
 const _hb = { tilt: 1.3, size: 1.0, body: 0.24, frill: 0.42, spikes: 7, hornR: 0.07, horn: 0.7, hornTilt: 0.75, ridges: [0.3, 0.5, 0.68], studs: 3, prof: _JAR_ROUND };
@@ -43,3 +49,16 @@ fx(169, "Horned ammonite, flat coil-shell jar.", () => _hornedAmmonite(Object.as
 fx(170, "Horned ammonite, narwhal horn from the middle, open frill.", () => _hornedAmmonite(Object.assign({}, _hb, { arc: 4.2, frill: 0.4, horn: 0.9, hornTilt: 0.3, hornR: 0.075 })));
 fx(171, "Horned ammonite, jar more upright.", () => _hornedAmmonite(Object.assign({}, _hb, { tilt: 0.9, horn: 0.7, hornTilt: 0.55, frill: 0.4 })));
 fx(172, "Horned ammonite, low wide jar, big frill, small horn.", () => _hornedAmmonite(Object.assign({}, _hb, { prof: _JAR_BARREL, wide: 1.3, size: 0.95, frill: 0.6, spikes: 10, horn: 0.4, tilt: 1.42, ridges: [0.35, 0.55] })));
+
+// ── Small tentacles instead of the frill (Nos. 173–182) ──
+const _ht = Object.assign({}, _hb, { tents: 6, tn: 12, tr: 0.05, step: 0.05, turn: 3.2, th0: 1.1, body: 0.2, horn: 0.6 });
+fx(173, "Horned ammonite, six small tentacles.", () => _hornedAmmonite(Object.assign({}, _ht)));
+fx(174, "Horned ammonite, eight tiny tentacles, long horn.", () => _hornedAmmonite(Object.assign({}, _ht, { tents: 8, tn: 10, tr: 0.04, step: 0.045, horn: 0.9 })));
+fx(175, "Horned ammonite, five tightly curled tentacles, short horn.", () => _hornedAmmonite(Object.assign({}, _ht, { tents: 5, turn: 4.4, tn: 14, horn: 0.4 })));
+fx(176, "Horned ammonite, conch jar, tentacles, raised horn.", () => _hornedAmmonite(Object.assign({}, _ht, { prof: _JAR_CONCH, ridges: [0.2, 0.34, 0.48, 0.62, 0.76], hornTilt: 0.45, horn: 0.8, studs: 4 })));
+fx(177, "Horned ammonite, barrel jar, four thicker tentacles.", () => _hornedAmmonite(Object.assign({}, _ht, { prof: _JAR_BARREL, wide: 1.1, ridges: [0.4, 0.6], tents: 4, tr: 0.07, tn: 12, horn: 0.5 })));
+fx(178, "Horned ammonite, ten short tentacles (a bushy beard).", () => _hornedAmmonite(Object.assign({}, _ht, { tents: 10, tn: 8, tr: 0.038, step: 0.04, turn: 3.6 })));
+fx(179, "Horned ammonite, drooping tentacles.", () => _hornedAmmonite(Object.assign({}, _ht, { th0: 0.15, turn: 2.2, tn: 14, hornTilt: 0.6 })));
+fx(180, "Horned ammonite, tentacles reaching forward, narwhal horn.", () => _hornedAmmonite(Object.assign({}, _ht, { th0: 1.45, turn: 2.0, tn: 14, step: 0.058, horn: 0.9, hornTilt: 0.3, hornR: 0.075 })));
+fx(181, "Horned ammonite, a beard of four tentacles below the mouth.", () => _hornedAmmonite(Object.assign({}, _ht, { tents: 4, tentArc: 2.2, tentCentre: 0, tn: 14, tr: 0.055, step: 0.055, horn: 0.65 })));
+fx(182, "Horned ammonite, flat coil-shell jar, seven tentacles.", () => _hornedAmmonite(Object.assign({}, _ht, { prof: _JAR_DISC, size: 1.15, ridges: [0.15, 0.25, 0.35, 0.45], tilt: 1.45, tents: 7, studs: 4 })));
