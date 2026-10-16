@@ -294,18 +294,18 @@ async function boot(store) {
         ok(pool.every(id => ['fire', 'electric'].includes(id)), 'and it must be an unlocked one');
     });
 
-    check('THE ASK: a respawn takes the CURRENT modulation, not the old element', () => {
+    check('THE ASK: a respawn keeps its element while that element is in the mix, and takes one from the CURRENT mix when it is not', () => {
         // "They get their element from respawning from the crystal." A follower
         // used to come back as whatever it was when it died, so changing the
         // modulation only ever affected brand-new recruits.
         const at = SRC.game.indexOf('// Respawn as regular follower');
         const body = SRC.game.slice(at, at + 1400);
         ok(/recruitElementPool\(\)/.test(body), 'a respawn does not read the modulation');
-        ok(!/element:entry\.element,/.test(body), 'a respawn still reuses the dead follower\'s element');
+        ok(/rPool\.indexOf\(entry\.element\) !== -1/.test(body), 'a respawn does not check the old element against the mix');
         ok(/activeCrystalModulation/.test(body), 'a boss modulator should still override it');
     });
 
-    await check('a respawn really does come out re-modulated', async () => {
+    await check('a respawn whose element was dropped from the mix really does come out re-modulated', async () => {
         const R = await boot();
         R.run(`
             unlockedElements = new Set(["fire","electric","ice"]);
@@ -319,10 +319,28 @@ async function boot(store) {
         R.run('for (let i = 0; i < 4; i++) render();');
         const els = R.run('followers.map(f => f.element)');
         ok(els.length === 1, 'the follower should have respawned, got ' + JSON.stringify(els));
-        same(els[0], 'ice', 'it died as fire and should come back as the current modulation');
+        same(els[0], 'ice', 'it died as fire, fire is no longer in the mix, and should come back as the current modulation');
         // And it must be filed under the element it actually has.
         same(R.run('(followerByElement["ice"]||[]).length'), 1, 'filed under the wrong element');
         same(R.run('(followerByElement["fire"]||[]).length'), 0, 'still filed under the old element');
+    });
+
+    await check('a respawn whose element is STILL in the mix comes back as that element', async () => {
+        const R = await boot();
+        R.run(`
+            unlockedElements = new Set(["fire","electric","ice"]);
+            modulationMask   = new Set(["fire","ice"]);
+            activeCrystalModulation = null;
+            followers = []; actors = [];
+            gameState.running = true;
+        `);
+        const els = [];
+        for (let n = 0; n < 8; n++) {
+            R.run(`followers = []; actors = []; respawnQueue = [{ element: "fire", personality: "stoic", timer: 1, combatTrait: null, naturalTrait: null, perk: null, hpStat: 20 }];`);
+            R.run('for (let i = 0; i < 4; i++) render();');
+            els.push(R.run('followers.map(f => f.element)')[0]);
+        }
+        ok(els.every(e => e === 'fire'), 'it died as fire, fire is still on, and it should come back fire: ' + JSON.stringify(els));
     });
 
     check('a recruit at the crystal takes it too', () => {

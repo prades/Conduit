@@ -8,7 +8,7 @@
 // an evolution of the electric sniper." Asked: automatically at a level; a
 // stat boost and a signature move.
 //
-//   WHEN   A FIRE BRAWLER or ELECTRIC SNIPER that reaches EVOLVE_LEVEL evolves
+//   WHEN   (EVOLVE_LEVEL was 20; it is 10 now.) A follower of an element and role with a form that reaches EVOLVE_LEVEL evolves
 //          on the spot. It MOLTS (EVO_MOLT frames): the egg shakes and
 //          cracks, the glass bursts and its legs drop, and the machine rises
 //          out of it. It keeps that form for good: through death, the respawn
@@ -103,7 +103,7 @@
 //          stands on the tile. Drawn with the body in depth order, a pool wider
 //          than its owner painted over the units beside it in a bundle.
 
-const EVOLVE_LEVEL = 20;
+const EVOLVE_LEVEL = 10;
 const EVOLVE_MULT  = 1.25;
 const EVO_MOLT     = 120;          // frames: shake, burst, rise
 const EVO_SCALE    = 96 / 144;     // a sheet cell (144 px, 3.4 world units) drawn at game size

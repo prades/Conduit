@@ -2847,7 +2847,7 @@ function render() {
     // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
     generatorHealTick();
     if (typeof shieldCellTick === "function") shieldCellTick();
-    if (typeof evolutionTick === "function") evolutionTick();     // level 20: the egg sheds (js/evolution.js)   // CORE pylons make shield cells; shields spend them (js/shieldcells.js)
+    if (typeof evolutionTick === "function") evolutionTick();     // the level-10 egg sheds (js/evolution.js EVOLVE_LEVEL)   // CORE pylons make shield cells; shields spend them (js/shieldcells.js)
     shieldGenHuntTick();
 
     // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
@@ -4416,18 +4416,18 @@ function render() {
                 const stats       = applyPersonality(personality);
                 if (entry.hpStat!==undefined) stats.hp = entry.hpStat;
                 // An EVOLVED follower comes back as the same machine: its element and role are its form's.
-                const _evo        = entry.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[entry.evolved] : null;
-                const role        = _evo && _evo.role ? _evo.role : assignRole(stats);
-                const hp          = entry.ghostphageLife ? 1 : stats.hp;
-                // The element comes from the Crystal, not from the corpse. A
-                // follower respawns AT the crystal, so it is re-modulated on the
-                // way out — which is what makes the modulation chip a live dial
-                // rather than something that only affects brand-new recruits.
-                // A boss modulator still overrides it.
+                // The element: the one it died as, unless that element is no longer part of the mix (the Crystal's selected elements, or a boss
+                // modulator): then it takes one from what is. (It used to be re-rolled from the mix on EVERY respawn.)
                 const rPool = activeCrystalModulation
                     ? activeCrystalModulation.pair
                     : recruitElementPool();
-                const rElement = _evo ? _evo.element : (rPool[Math.floor(Math.random()*rPool.length)] || entry.element || "fire");
+                const rElement = (entry.element && rPool.indexOf(entry.element) !== -1) ? entry.element : (rPool[Math.floor(Math.random()*rPool.length)] || entry.element || "fire");
+                // An evolved follower keeps its form only while it is still that form's element; otherwise it comes back an egg
+                // (its level comes with it, so it evolves again, into its new element's form, within half a second).
+                const _evoWas     = entry.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[entry.evolved] : null;
+                const _evo        = _evoWas && _evoWas.element === rElement ? _evoWas : null;
+                const role        = _evo && _evo.role ? _evo.role : assignRole(stats);
+                const hp          = entry.ghostphageLife ? 1 : stats.hp;
                 const npc = {
                     type:"virus", element:rElement, x:crystal.x, y:crystal.y, team:"green",
                     health: hp, maxHealth: hp,

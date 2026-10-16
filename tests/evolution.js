@@ -109,9 +109,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('ice', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'maw', 'a hybrid fights as a brawler');
         mk('ice', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'an ice worker waits (no worker form for it)');
     });
-    check('…and nobody else: not an ice brawler, an electric brawler — nor before level 20', () => {
+    check('…and nobody else: not an ice mage or a camper — nor before level 10', () => {
         for (const [el, role] of [['ice', 'sniper'], ['ice', 'camper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
-        mk('fire', 'brawler', 19); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 19');
+        mk('fire', 'brawler', 9); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 9');
+        mk('fire', 'brawler', 10); run(lvlUp); same(run('__f.evolved'), 'quillstone', 'a fire brawler at 10');
+        same(run('EVOLVE_LEVEL'), 10, 'THE ASK: they evolve at level 10');
     });
     check('a follower already past level 20 (an old save) evolves on the next tick', () => {
         const r = run(`(function(){ spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.role = 'brawler'; f.level = 34; f.xp = xpForLevel(34); _applyFollowerLevel(f, true);
@@ -380,14 +382,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/evoNeutralise\(actor\)/.test(src) && /_nv\.rate/.test(src) && /_nv\.reach/.test(src), 'the neutralise loop does not ask for the pod\'s rate and reach');
     });
     check('the hover hauler stays one across death (its element and duty too) and a reload', () => {
-        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ['ice'] };
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ['flux', 'ice'] };
             spawnFollowerAtCrystal('flux'); const f = followers[0]; f.role = 'brawler'; f.duty = 'worker'; f.level = 22; f.xp = xpForLevel(22); _applyFollowerLevel(f, true); evoCheck(f);
             const snap = followerRosterSnapshot()[0]; f.health = 0; f.dead = true;
             for (let i = 0; i < 400 && !followers.some(x => !x.dead); i++) render();
             const g = followers.find(x => !x.dead); activeCrystalModulation = null;
             followers.length = 0; actors = actors.filter(a => !a.isFollower); spawnFollowerFromSave(snap); const h = followers[0];
             return { saved: snap.evolved, evo: g && g.evolved, el: g && g.element, duty: g && g.duty, loaded: h.evolved, loadedDuty: h.duty }; })()`);
-        same(r.saved, 'hauler', 'in the save'); same(r.evo, 'hauler', 'after respawn'); same(r.el, 'flux', 'its element (the Crystal was set to ice)');
+        same(r.saved, 'hauler', 'in the save'); same(r.evo, 'hauler', 'after respawn'); same(r.el, 'flux', 'its element (flux is still in the mix)');
         same(r.duty, 'worker', 'its duty'); same(r.loaded, 'hauler', 'after loading'); same(r.loadedDuty, 'worker', 'its duty after loading');
     });
 
@@ -418,14 +420,32 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('it comes back from the dead as the same machine — its element and role too', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0;
-            activeCrystalModulation = { pair: ['ice'] };
+            activeCrystalModulation = { pair: ['electric', 'ice'] };
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'sniper'; f.level = 21; f.xp = xpForLevel(21); _applyFollowerLevel(f, true); evoCheck(f);
             f.health = 0; f.dead = true;
             for (let i = 0; i < 400 && !followers.some(x => !x.dead); i++) render();
             const g = followers.find(x => !x.dead); activeCrystalModulation = null;
             return g ? { evo: g.evolved, el: g.element, role: g.role } : null; })()`);
         ok(r, 'it never respawned');
-        same(r.evo, 'reaver', 'its form'); same(r.el, 'electric', 'its element (the Crystal was set to ice)'); same(r.role, 'sniper', 'its role');
+        same(r.evo, 'reaver', 'its form'); same(r.el, 'electric', 'its element (electric is still in the mix)'); same(r.role, 'sniper', 'its role');
+    });
+
+    console.log('\nRESPAWN');
+    check('THE ASK: a follower respawns as the element it died as — unless that element has been dropped from the mix', () => {
+        const back = (entry, pair) => run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ${JSON.stringify(pair)} };
+            const out = []; for (let n = 0; n < 8; n++) { followers.length = 0; actors = actors.filter(a => !a.isFollower);
+                respawnQueue.push(Object.assign({ personality: 'stoic', timer: 1, hpStat: 20 }, ${JSON.stringify(entry)}, { level: 15, xp: xpForLevel(15) })); for (let i = 0; i < 6; i++) render();
+                const g = followers.find(x => !x.dead); out.push(g ? { el: g.element, evo: g.evolved || null } : null); }
+            activeCrystalModulation = null; return out; })()`);
+        const egg = back({ element: 'fire' }, ['fire', 'ice']);
+        ok(egg.every(x => x && x.el === 'fire'), 'a fire follower, fire still in the mix, did not come back fire: ' + JSON.stringify(egg));
+        const dropped = back({ element: 'fire' }, ['ice', 'toxic']);
+        ok(dropped.every(x => x && (x.el === 'ice' || x.el === 'toxic')), 'a fire follower, fire dropped, should come back as one still in the mix: ' + JSON.stringify(dropped));
+        ok(dropped.some(x => x.el === 'ice') && dropped.some(x => x.el === 'toxic'), 'it should pick from the whole mix (random): ' + JSON.stringify(dropped));
+        const evo = back({ element: 'electric', evolved: 'prism' }, ['electric', 'ice']);
+        ok(evo.every(x => x && x.el === 'electric' && x.evo === 'prism'), 'an evolved follower, its element still in the mix, should keep its form: ' + JSON.stringify(evo));
+        const shed = back({ element: 'electric', evolved: 'prism' }, ['ice']);
+        ok(shed.every(x => x && x.el === 'ice' && x.evo !== 'prism'), 'an evolved follower whose element was dropped comes back as another element, an egg, not its old form: ' + JSON.stringify(shed));
     });
 
     console.log('\nTHE LOOK');

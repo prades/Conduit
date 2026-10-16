@@ -1275,7 +1275,7 @@
       <div class="ctrl-row cm-dim">The <span class="cm-stat">⌁</span> switch at the right end of the bar turns the siphon off. Wisps already in the air still land. There is no cost to leaving it on — the switch is there so you can quiet the effect down.</div>
       <div class="ctrl-row cm-dim" style="margin-top:4px">Kills are still counted — the Crystal shows your lifetime total — but they no longer earn anything.</div>
       <div class="ctrl-row cm-dim" style="margin-top:4px">Activating a new element makes your modulation stale, and both the Crystal button and the modulation chip flash <span class="cm-stat">RE-MODULATE</span>.</div>
-      <div class="ctrl-row"><span class="ctrl-key">MODULATION</span>What your followers are made of. It lives in one place: the <strong>Crystal's MODULATION tab</strong>. The crystal on that screen pulses through the colours actually in the mix, and the row of swatches under it is the control — tap one to add that element or drop it; at least one has to stay on. Followers take their element <strong>at the Crystal</strong> — when a recruit reaches it, and again every time one respawns — so re-modulating gradually re-colours the whole squad as they cycle.</div>
+      <div class="ctrl-row"><span class="ctrl-key">MODULATION</span>What your followers are made of. It lives in one place: the <strong>Crystal's MODULATION tab</strong>. The crystal on that screen pulses through the colours actually in the mix, and the row of swatches under it is the control — tap one to add that element or drop it; at least one has to stay on. Followers take their element <strong>at the Crystal</strong> when a recruit reaches it. A follower that dies respawns as the <strong>same element</strong> it was &mdash; unless you have since dropped that element from the mix, in which case it comes back as one that is still on &mdash; so re-modulating gradually re-colours the squad as the old elements fall.</div>
       <div class="ctrl-row cm-dim">An untouched mix means <span class="cm-stat">every element you have</span>, so an element you bring online is in the mix the moment it is activated and nothing nags you about it. The Crystal only asks you to <span class="cm-stat">RE-MODULATE</span> when a new element lands <strong>outside</strong> a mix you have narrowed by hand, and opening the tab puts that prompt down.</div>
 
       </details>
@@ -1363,12 +1363,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-16e, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-16f, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-16e";
+window.__PAGE_BUILD = "2026-10-16f";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1404,53 +1404,53 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-16e"></script>
-<script src="js/icons.js?v=2026-10-16e"></script>
-<script src="js/rng.js?v=2026-10-16e"></script>
-<script src="js/traits.js?v=2026-10-16e"></script>
-<script src="js/elements.js?v=2026-10-16e"></script>
-<script src="js/combat.js?v=2026-10-16e"></script>
-<script src="js/species.js?v=2026-10-16e"></script>
-<script src="js/levels.js?v=2026-10-16e"></script>
-<script src="js/predator_randomizer.js?v=2026-10-16e"></script>
-<script src="js/mass.js?v=2026-10-16e"></script>
-<script src="js/infest.js?v=2026-10-16e"></script>
-<script src="js/power.js?v=2026-10-16e"></script>
-<script src="js/save.js?v=2026-10-16e"></script>
-<script src="js/camp.js?v=2026-10-16e"></script>
-<script src="js/wavedata.js?v=2026-10-16e"></script>
-<script src="js/helpers.js?v=2026-10-16e"></script>
-<script src="js/predator.js?v=2026-10-16e"></script>
-<script src="js/abilities.js?v=2026-10-16e"></script>
-<script src="js/world.js?v=2026-10-16e"></script>
-<script src="js/commands.js?v=2026-10-16e"></script>
-<script src="js/npc.js?v=2026-10-16e"></script>
-<script src="js/codex.js?v=2026-10-16e"></script>
-<script src="js/draw.js?v=2026-10-16e"></script>
-<script src="js/beetle3d.js?v=2026-10-16e"></script>
-<script src="js/bugs3d.js?v=2026-10-16e"></script>
-<script src="js/ui.js?v=2026-10-16e"></script>
-<script src="js/waves.js?v=2026-10-16e"></script>
-<script src="js/drops.js?v=2026-10-16e"></script>
-<script src="js/clone.js?v=2026-10-16e"></script>
-<script src="js/clonework.js?v=2026-10-16e"></script>
-<script src="js/broods.js?v=2026-10-16e"></script>
-<script src="js/raids.js?v=2026-10-16e"></script>
-<script src="js/ultra.js?v=2026-10-16e"></script>
-<script src="js/formations.js?v=2026-10-16e"></script>
-<script src="js/breakout.js?v=2026-10-16e"></script>
-<script src="js/nightraids.js?v=2026-10-16e"></script>
-<script src="js/bonds.js?v=2026-10-16e"></script>
-<script src="js/autoplay.js?v=2026-10-16e"></script>
-<script src="js/indexart.js?v=2026-10-16e"></script>
-<script src="js/modules.js?v=2026-10-16e"></script>
-<script src="js/shieldcells.js?v=2026-10-16e"></script>
-<script src="js/evolution.js?v=2026-10-16e"></script>
-<script src="js/buildmenu.js?v=2026-10-16e"></script>
-<script src="js/input.js?v=2026-10-16e"></script>
-<script src="js/game.js?v=2026-10-16e"></script>
-<script src="js/tutorial.js?v=2026-10-16e"></script>
-<script src="js/dev.js?v=2026-10-16e"></script>
+<script src="js/config.js?v=2026-10-16f"></script>
+<script src="js/icons.js?v=2026-10-16f"></script>
+<script src="js/rng.js?v=2026-10-16f"></script>
+<script src="js/traits.js?v=2026-10-16f"></script>
+<script src="js/elements.js?v=2026-10-16f"></script>
+<script src="js/combat.js?v=2026-10-16f"></script>
+<script src="js/species.js?v=2026-10-16f"></script>
+<script src="js/levels.js?v=2026-10-16f"></script>
+<script src="js/predator_randomizer.js?v=2026-10-16f"></script>
+<script src="js/mass.js?v=2026-10-16f"></script>
+<script src="js/infest.js?v=2026-10-16f"></script>
+<script src="js/power.js?v=2026-10-16f"></script>
+<script src="js/save.js?v=2026-10-16f"></script>
+<script src="js/camp.js?v=2026-10-16f"></script>
+<script src="js/wavedata.js?v=2026-10-16f"></script>
+<script src="js/helpers.js?v=2026-10-16f"></script>
+<script src="js/predator.js?v=2026-10-16f"></script>
+<script src="js/abilities.js?v=2026-10-16f"></script>
+<script src="js/world.js?v=2026-10-16f"></script>
+<script src="js/commands.js?v=2026-10-16f"></script>
+<script src="js/npc.js?v=2026-10-16f"></script>
+<script src="js/codex.js?v=2026-10-16f"></script>
+<script src="js/draw.js?v=2026-10-16f"></script>
+<script src="js/beetle3d.js?v=2026-10-16f"></script>
+<script src="js/bugs3d.js?v=2026-10-16f"></script>
+<script src="js/ui.js?v=2026-10-16f"></script>
+<script src="js/waves.js?v=2026-10-16f"></script>
+<script src="js/drops.js?v=2026-10-16f"></script>
+<script src="js/clone.js?v=2026-10-16f"></script>
+<script src="js/clonework.js?v=2026-10-16f"></script>
+<script src="js/broods.js?v=2026-10-16f"></script>
+<script src="js/raids.js?v=2026-10-16f"></script>
+<script src="js/ultra.js?v=2026-10-16f"></script>
+<script src="js/formations.js?v=2026-10-16f"></script>
+<script src="js/breakout.js?v=2026-10-16f"></script>
+<script src="js/nightraids.js?v=2026-10-16f"></script>
+<script src="js/bonds.js?v=2026-10-16f"></script>
+<script src="js/autoplay.js?v=2026-10-16f"></script>
+<script src="js/indexart.js?v=2026-10-16f"></script>
+<script src="js/modules.js?v=2026-10-16f"></script>
+<script src="js/shieldcells.js?v=2026-10-16f"></script>
+<script src="js/evolution.js?v=2026-10-16f"></script>
+<script src="js/buildmenu.js?v=2026-10-16f"></script>
+<script src="js/input.js?v=2026-10-16f"></script>
+<script src="js/game.js?v=2026-10-16f"></script>
+<script src="js/tutorial.js?v=2026-10-16f"></script>
+<script src="js/dev.js?v=2026-10-16f"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1503,7 +1503,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-16e"></script>
+<script src="js/init.js?v=2026-10-16f"></script>
 
 </body>
 </html>
