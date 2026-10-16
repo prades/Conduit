@@ -240,3 +240,56 @@ fx(269, "Pyramid shell, long reaching arms.", () => _shellBrawler(Object.assign(
 fx(270, "Pyramid shell, no shards.", () => _shellBrawler(Object.assign({}, _sbk, { shards: false, arms: 5, seed: 17 })));
 fx(271, "Pyramid shell, arms spread wide, drooping.", () => _shellBrawler(Object.assign({}, _sbk, { armArc: 5.6, bigArms: 0, armDroop: 0.9, armLen: 1.05, seed: 19 })));
 fx(272, "Pyramid shell, big diamond, three giant arms.", () => _shellBrawler(Object.assign({}, _sbk, { arms: 3, bigArms: 2, armR: 0.2, armLen: 0.9, armArc: 2.8, dR: 0.18, hover: 0.5, seed: 21 })));
+
+// ── Square and fun (Nos. 273–282): the pyramid shell again, with CHUNKY SQUARE tentacles: square-section tubes, shaded in flat facets, glowing collar rings at
+// the joints, a bouncy wave instead of a zigzag, curling at the tip, and a blocky glowing fist. ──
+const _UPV = new T.Vector3(0, 1, 0);
+function _squareBrawler(o) {
+  const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S);
+  const hv = o.hover, H = o.H, R = o.R, sy = hv + H / 2;
+  const shell = new T.Mesh(new T.ConeGeometry(R, H, 4, 1, true), _stormCloak); shell.rotation.y = PI / 4; shell.position.y = sy; b.add(shell);
+  _pyrEdges(b, 0.001, R, hv + H, hv, 0.03);
+  const hem = new T.Mesh(new T.TorusGeometry(R, 0.032, 4, 4), _boltSilver); hem.rotation.set(PI / 2, 0, PI / 4); hem.position.y = hv; b.add(hem);
+  const under = new T.Mesh(new T.ConeGeometry(R * 0.98, H * 0.98, 4, 1, true), new T.MeshBasicMaterial({ color: 0x010206, side: T.BackSide })); under.rotation.y = PI / 4; under.position.y = sy; b.add(under);
+  // bolt armour lying ON the faces (front and right): the face's apothem is 0.707 R at the base, shrinking to the apex
+  const ap = R * Math.SQRT1_2, phi = Math.atan(ap / H);
+  for (const az of [0, PI / 2]) { const fg = G(); fg.rotation.y = az; b.add(fg); const u = 0.62, bl = boltArmour(H * 0.5, ap * 0.5, 0.03);
+    bl.position.set(ap * 0.04, hv + H * u, ap * (1 - u) + 0.015); bl.rotation.set(-phi, 0, PI); fg.add(bl);
+    const seam = boltPlate(H * 0.4, ap * 0.28, 0.012, M.glow); seam.position.set(-ap * 0.32, hv + H * 0.4, ap * 0.6 + 0.012); seam.rotation.set(-phi, 0, PI); fg.add(seam); }
+  const apex = hexCrystal(0.045, 0.08, 0.13, M.crystal); apex.position.y = hv + H + 0.09; b.add(apex);
+  const dY = hv * 0.55, d = hexCrystal(o.dR * 1.1, o.dR * 0.7, o.dR * 1.7, M.crystal); d.position.y = dY; b.add(d); const dc = hexCrystal(o.dR * 0.55, o.dR * 0.4, o.dR * 1.0, M.glow); dc.position.y = dY; b.add(dc);
+  const dg = glowSprite(o.dR * 9); dg.position.y = dY; b.add(dg);
+  // the tentacles
+  const flat = new T.MeshStandardMaterial({ color: new T.Color(0x7a5200), emissive: new T.Color(0xffa800).multiplyScalar(0.28), emissiveIntensity: 1.0, roughness: 0.6, metalness: 0.1, flatShading: true });
+  const bandMat = new T.MeshStandardMaterial({ color: new T.Color(0xc89000), emissive: new T.Color(0xffd000).multiplyScalar(0.6), emissiveIntensity: 1.0, roughness: 0.5, flatShading: true });
+  const arms = []; for (let i = 0; i < o.arms; i++) { const a = -o.armArc / 2 + (o.arms > 1 ? i / (o.arms - 1) : 0.5) * o.armArc + (o.armCentre || 0) + (_hz(i, o.seed, 1) - 0.5) * 0.35; const tt = _taperTube(flat, o.an, 4); b.add(tt.mesh);
+    const fist = cbox(1, 1, 1, 0.12, bandMat); b.add(fist); const bands = []; for (let k = 0; k < o.bands; k++) { const bn = cbox(1, 0.5, 1, 0.08, bandMat); b.add(bn); bands.push(bn); }
+    arms.push({ tt, fist, bands, a, big: i < o.bigArms, ph: i * 1.9, len: o.armLen * (0.85 + 0.3 * _hz(i, o.seed, 2)), pts: Array.from({ length: o.an }, () => new T.Vector3()), rad: new Array(o.an) }); }
+  const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.08, 0.18, 0.24, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
+  const L = new T.PointLight(0xffffff, 0.6, 4, 2); L.color.set(EL.color); L.position.set(0, dY, 0.4); b.add(L); LIGHTS.push(L);
+  const tan = new T.Vector3(), q = new T.Quaternion();
+  return { g, core: dY * (o.S || 1) + 0.15, update(t, act) { const ph = 1.6 * t, ac = act || 0;
+    b.position.y = 0.025 * Math.sin(ph); shell.position.y = sy + 0.02 * Math.sin(ph * 2 + 1); d.rotation.y = ph * 0.6; dc.rotation.y = -ph * 0.6; dg.scale.setScalar(o.dR * (9 + 3 * Math.sin(ph * 3) + 5 * ac));
+    for (const A of arms) { const sa = Math.sin(A.a), ca = Math.cos(A.a), N = o.an, bx = sa * R * 0.55, by = hv * 0.5, bz = ca * R * 0.55;
+      const reach = A.len * (1 + 0.45 * ac * (A.big ? 1.4 : 1)), fwd = (A.big ? 0.7 : 0.25) + 0.9 * ac * (A.big ? 1 : 0.5);
+      let px = bx, py = by, pz = bz, dx = sa * 0.9, dy = -0.3 + (A.big ? 0.25 : 0), dz = ca * 0.7 + fwd;
+      for (let k = 0; k < N; k++) { const u = k / (N - 1), wave = Math.sin(ph * 2 + A.ph + u * o.waves) * o.armAmp * (0.3 + u), r = o.armR * (A.big ? 1.2 : 1) * (1 - 0.6 * Math.pow(u, 1.2)) + 0.02;
+        A.rad[k] = r; A.pts[k].set(px + wave * Math.cos(A.a + 1.4), Math.max(r, py + 0.4 * wave * Math.sin(ph + A.ph)), pz + wave * Math.sin(A.a + 1.4));
+        const st = reach / N, Lh = Math.hypot(dx, dy, dz); px += dx / Lh * st; py += dy / Lh * st; pz += dz / Lh * st; if (py <= r + 0.02) { py = r + 0.02; dy = Math.max(0, dy) * 0.3; } else dy -= o.armDroop * st; if (u > o.curlFrom) dy += o.curl * st; }
+      A.tt.set(A.pts, A.rad);
+      for (let k = 0; k < A.bands.length; k++) { const idx = Math.round((k + 1) / (A.bands.length + 1) * (N - 2)), p = A.pts[idx], p2 = A.pts[idx + 1]; tan.subVectors(p2, p).normalize(); q.setFromUnitVectors(_UPV, tan);
+        A.bands[k].position.copy(p); A.bands[k].quaternion.copy(q); const rr = A.rad[idx] * 1.2; A.bands[k].scale.set(rr * 2, rr * 0.7, rr * 2); }
+      const e = A.pts[N - 1], e2 = A.pts[N - 2]; tan.subVectors(e, e2).normalize(); q.setFromUnitVectors(_UPV, tan); A.fist.position.copy(e); A.fist.quaternion.copy(q); const fr = (A.rad[N - 1] + 0.03) * (1.0 + 0.5 * ac + 0.08 * Math.sin(ph * 5 + A.ph)); A.fist.scale.set(fr * 1.7, fr * 1.5, fr * 1.7); }
+    for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, hv + H * 0.7 + 0.06 * Math.sin(ph * 2 + s.s) - 0.1 * ac, 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); } } };
+}
+const _sq = { hover: 0.42, H: 0.95, R: 0.62, dR: 0.13, arms: 5, bigArms: 2, armArc: 4.8, armCentre: 0, an: 12, armLen: 1.0, armR: 0.16, armAmp: 0.14, waves: 6, armDroop: 0.45, curlFrom: 0.6, curl: 1.8, bands: 3, seed: 3, shards: true, shardR: 0.72 };
+fx(273, "Square tentacles, five, collared.", () => _squareBrawler(Object.assign({}, _sq)));
+fx(274, "Square tentacles, four fat ones.", () => _squareBrawler(Object.assign({}, _sq, { arms: 4, armR: 0.17, armLen: 0.9, armArc: 3.6, bands: 2, seed: 5 })));
+fx(275, "Square tentacles, six, many collars.", () => _squareBrawler(Object.assign({}, _sq, { arms: 6, armR: 0.11, bands: 5, an: 14, armArc: 5.2, seed: 7 })));
+fx(276, "Square tentacles, big curled tips.", () => _squareBrawler(Object.assign({}, _sq, { curl: 3.5, curlFrom: 0.5, armLen: 1.1, seed: 9 })));
+fx(277, "Square tentacles, bouncy waves.", () => _squareBrawler(Object.assign({}, _sq, { armAmp: 0.24, waves: 9, armLen: 1.15, seed: 11 })));
+fx(278, "Square tentacles, short and stubby.", () => _squareBrawler(Object.assign({}, _sq, { armLen: 0.7, armR: 0.16, bands: 2, curl: 2.5, seed: 13 })));
+fx(279, "Square tentacles, tall shell.", () => _squareBrawler(Object.assign({}, _sq, { H: 1.25, R: 0.55, seed: 15 })));
+fx(280, "Square tentacles, low wide shell.", () => _squareBrawler(Object.assign({}, _sq, { H: 0.7, R: 0.82, hover: 0.36, seed: 17 })));
+fx(281, "Square tentacles, no shards, big fists.", () => _squareBrawler(Object.assign({}, _sq, { shards: false, armR: 0.15, seed: 19 })));
+fx(282, "Square tentacles, three giant ones.", () => _squareBrawler(Object.assign({}, _sq, { arms: 3, bigArms: 2, armR: 0.21, armLen: 0.95, armArc: 2.8, bands: 3, dR: 0.17, seed: 21 })));
