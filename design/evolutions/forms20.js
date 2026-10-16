@@ -47,7 +47,7 @@ function _slugReal(o) {
   const smoothHammerGeo = (Hm) => { const w = Hm.w, d = Hm.d, NX = 44, NZ = 14, thC = Hm.thC, thE = Hm.thE, fil = Hm.fillet, nl = Hm.neck, pos2 = [], idx2 = [], row = [];
     const ssm = x => x * x * (3 - 2 * x);
     for (let i = 0; i <= NX; i++) { const x = -w + 2 * w * (i / NX), ax = Math.abs(x) / w, sgn = Math.sign(x) || 1;
-      const lobe = d * 0.5 * Math.sqrt(Math.max(0, 1 - Math.pow(ax, 3))), zc = d * 0.5 + d * 0.16 * ssm(ax), neckBack = nl * d * Math.exp(-Math.pow(Math.abs(x) / fil, 2)) * 1.0;   // the lobes curve forward at the tips; the centre swells back into the neck
+      const lobe = d * 0.5 * Math.sqrt(Math.max(0, 1 - Math.pow(ax, Hm.pow || 3))), zc = d * 0.5 + d * (Hm.tipFwd == null ? 0.16 : Hm.tipFwd) * ssm(ax), neckBack = nl * d * Math.exp(-Math.pow(Math.abs(x) / fil, 2)) * 1.0;   // the lobes curve forward at the tips; the centre swells back into the neck
       let zf = zc + lobe + 0.0, zb = Math.min(zc - lobe, zc - lobe + 0) - neckBack; zb = Math.min(zb, zc - lobe); if (Hm.notch) zf -= Hm.notch * d * Math.exp(-Math.pow(x / (w * 0.18), 2));
       const tt = thE + (thC - thE) * Math.pow(1 - ax * ax, 1.6); row.push({ x, zf, zb, tt }); }
     for (let i = 0; i <= NX; i++) { const R = row[i]; for (let j = 0; j <= NZ; j++) { const t = j / NZ, z = R.zb + (R.zf - R.zb) * t, dome = 0.025 * (1 - Math.pow(2 * t - 1, 2)); pos2.push(R.x, R.tt * 0.5 + dome, z); } for (let j = 0; j <= NZ; j++) { const t = j / NZ, z = R.zb + (R.zf - R.zb) * t; pos2.push(R.x, -R.tt * 0.5, z); } }
@@ -55,7 +55,9 @@ function _slugReal(o) {
     for (let i = 0; i < NX; i++) for (const [j, flip] of [[0, 0], [NZ, 1]]) { const t0 = i * per + j, t1 = (i + 1) * per + j, b0 = t0 + NZ + 1, b1 = t1 + NZ + 1; if (flip) idx2.push(t0, t1, b0, t1, b1, b0); else idx2.push(t0, b0, t1, t1, b0, b1); }
     for (const [i, flip] of [[0, 0], [NX, 1]]) for (let j = 0; j < NZ; j++) { const t0 = i * per + j, t1 = i * per + j + 1, b0 = t0 + NZ + 1, b1 = t1 + NZ + 1; if (flip) idx2.push(t0, b0, t1, t1, b0, b1); else idx2.push(t0, t1, b0, t1, b1, b0); }
     const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos2, 3)); geo.setIndex(idx2); geo.computeVertexNormals(); return geo; };
-  let hammer = null; if (o.hammer && o.hammer.smooth) { const Hm = o.hammer, hm = G(), hmat = new T.MeshStandardMaterial({ color: 0x01020a, metalness: 0.05, roughness: 0.62, flatShading: false, side: T.DoubleSide }); hmat.envMapIntensity = 0.1; hm.add(new T.Mesh(smoothHammerGeo(Hm), hmat)); b.add(hm); hammer = { hm, Hm }; }
+  let hammer = null; if (o.hammer && o.hammer.smooth) { const Hm = o.hammer, hm = G(), hmat = new T.MeshStandardMaterial({ color: 0x01020a, metalness: 0.05, roughness: 0.62, flatShading: false, side: T.DoubleSide }); hmat.envMapIntensity = 0.1; hm.add(new T.Mesh(smoothHammerGeo(Hm), hmat));
+    if (Hm.bob) for (const sx of [-1, 1]) { const ax = 0.9, zc = Hm.d * 0.5 + Hm.d * (Hm.tipFwd == null ? 0.16 : Hm.tipFwd) * (ax * ax * (3 - 2 * ax)), bl = new T.Mesh(new T.SphereGeometry(Hm.bob, 16, 12), hmat); bl.position.set(sx * Hm.w * ax, 0, zc); hm.add(bl); }   // a round bobble at each tip
+    b.add(hm); hammer = { hm, Hm }; }
   else if (o.hammer) { const Hm = o.hammer, w = Hm.w, d = Hm.d, sh = new T.Shape(), nt = Hm.notch || 0;
     const half = [[0.13, 0], [w * 0.72, 0.1 * d], [w, 0.34 * d], [w * 1.03, 0.62 * d], [w * 0.92, 0.9 * d], [w * 0.55, 0.96 * d], [w * 0.2, (0.92 - nt) * d], [0, (0.9 - nt) * d]];
     sh.moveTo(-0.13, 0); for (let i = 0; i < half.length; i++) sh.lineTo(-half[i][0] * (i ? 1 : 1) * -1 * -1 * 0 + half[half.length - 1 - i][0] * -1, half[half.length - 1 - i][1]);   // left side, from the front centre back to the neck
@@ -204,3 +206,9 @@ const _cleanBase = Object.assign({}, _r420, { noEyes: true, noFeelers: true, hex
 fx(463, "460 cleaner: bigger tiles that stop before the head, fewer smaller spines, the same hammer.", () => _slugReal(Object.assign({}, _cleanBase, { mosaic: _tidy(0.13), spikes: { n: 5, u0: 0.2, u1: 0.9, h: 0.42, base: 0.36, thin: 0.9, sides: 4, lean: 0.3 }, hammer: { smooth: true, w: 0.72, d: 0.34, thC: 0.2, thE: 0.05, fillet: 0.16, neck: 0.5, back: 0.62 } })));
 fx(464, "Cleaner and cuter: a chubbier body, a rounder shorter hammer with thicker edges.", () => _slugReal(Object.assign({}, _cleanBase, { len: 1.5, rad: 0.37, flat: 0.9, mosaic: _tidy(0.14), spikes: { n: 5, u0: 0.2, u1: 0.88, h: 0.4, base: 0.38, thin: 0.9, sides: 4, lean: 0.3 }, hammer: { smooth: true, w: 0.58, d: 0.38, thC: 0.24, thE: 0.1, fillet: 0.2, neck: 0.5, back: 0.6 } })));
 fx(465, "Very cute: even chubbier, a soft round hammer, a tiny stubby horn and low round spikes.", () => _slugReal(Object.assign({}, _cleanBase, { len: 1.25, rad: 0.42, flat: 0.95, horn: 0.28, mosaic: _tidy(0.15), spikes: { n: 4, u0: 0.24, u1: 0.84, h: 0.3, base: 0.42, thin: 1.0, sides: 6, lean: 0.25 }, hammer: { smooth: true, w: 0.52, d: 0.42, thC: 0.28, thE: 0.14, fillet: 0.22, neck: 0.5, back: 0.6 } })));
+
+// ── 460 with a cuter head only (Nos. 466–468): the body, tiles, spikes and horn are exactly 460's ──
+const _b460 = Object.assign({}, _h456, {});
+fx(466, "460, a rounder, puffier head: softer lobes, a thick rim, no thin edges.", () => _slugReal(Object.assign({}, _b460, { hammer: { smooth: true, w: 0.64, d: 0.42, thC: 0.22, thE: 0.11, fillet: 0.18, neck: 0.5, back: 0.6, pow: 2, tipFwd: 0.06 } })));
+fx(467, "460, with a round bobble at each tip of the head.", () => _slugReal(Object.assign({}, _b460, { hammer: { smooth: true, w: 0.62, d: 0.38, thC: 0.2, thE: 0.08, fillet: 0.18, neck: 0.5, back: 0.6, pow: 2.4, tipFwd: 0.04, bob: 0.1 } })));
+fx(468, "460, two round cheeks: a rounder head with a soft dip at the front centre.", () => _slugReal(Object.assign({}, _b460, { hammer: { smooth: true, w: 0.64, d: 0.44, thC: 0.24, thE: 0.12, fillet: 0.2, neck: 0.5, back: 0.6, pow: 1.9, tipFwd: 0.0, notch: 0.22 } })));
