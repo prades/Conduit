@@ -43,6 +43,14 @@ function _slugReal(o) {
   const stalks = []; if (!o.noEyes) for (const s of [-1, 1]) { const sp = G(), shaft = cyl(o.stalkR * 0.45, o.stalkR, 1, mat, 10); sp.add(shaft); const eye = G(); const col = hexCrystal(o.eyeR * 1.0, o.eyeR * 0.5, o.eyeR * 0.3, M.crystal); col.rotation.x = PI / 2; eye.add(col);   // a thin crystal collar at the tip of a tapering stalk
     const bead = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.9, 14, 12), new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.12, metalness: 0.3 })); bead.position.z = o.eyeR * 0.45; bead.scale.set(1, 1, 0.9); eye.add(bead);   // the eye: a small glossy black bead
     const gl = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.16, 6, 5), new T.MeshBasicMaterial({ color: 0xcfe9ff })); gl.position.set(o.eyeR * 0.3, o.eyeR * 0.35, o.eyeR * 1.2); eye.add(gl); sp.add(eye); hg2.add(sp); stalks.push({ sp, shaft, eye, s }); }
+  // THE HAMMERHEAD: a wide flat bar across the front of the head, the neck narrow behind it, an optional notch at the front centre
+  let hammer = null; if (o.hammer) { const Hm = o.hammer, w = Hm.w, d = Hm.d, sh = new T.Shape(), nt = Hm.notch || 0;
+    const half = [[0.13, 0], [w * 0.72, 0.1 * d], [w, 0.34 * d], [w * 1.03, 0.62 * d], [w * 0.92, 0.9 * d], [w * 0.55, 0.96 * d], [w * 0.2, (0.92 - nt) * d], [0, (0.9 - nt) * d]];
+    sh.moveTo(-0.13, 0); for (let i = 0; i < half.length; i++) sh.lineTo(-half[i][0] * (i ? 1 : 1) * -1 * -1 * 0 + half[half.length - 1 - i][0] * -1, half[half.length - 1 - i][1]);   // left side, from the front centre back to the neck
+    // the outline built explicitly: left side then right side
+    sh.curves = []; sh.currentPoint.set(-0.13, 0); const L2 = half.slice().reverse().map(p => [-p[0], p[1]]), R2 = half.slice(); const sh2 = new T.Shape(); sh2.moveTo(L2[0][0], L2[0][1]); for (let i = 1; i < L2.length; i++) sh2.lineTo(L2[i][0], L2[i][1]); for (let i = 0; i < R2.length; i++) sh2.lineTo(R2[i][0], R2[i][1]); sh2.closePath();
+    const hgeo = new T.ExtrudeGeometry(sh2, { depth: Hm.th, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.012, bevelSegments: 1 }); hgeo.rotateX(PI / 2); hgeo.translate(0, Hm.th / 2, 0);   // shape y -> forward (z), thickness centred on y = 0
+    const hm = G(); const hmat = new T.MeshStandardMaterial({ color: 0x01020a, metalness: 0.05, roughness: 0.7, flatShading: true }); hmat.envMapIntensity = 0.08; hm.add(new T.Mesh(hgeo, hmat)); hm.add(new T.LineSegments(new T.EdgesGeometry(hgeo, 25), new T.LineBasicMaterial({ color: 0x1c6a74, transparent: true, opacity: 0.9 }))); b.add(hm); hammer = { hm, Hm }; }
   const feelers = []; if (!o.noFeelers) for (const s of [-1, 1]) { const f = new T.Mesh(new T.ConeGeometry(o.stalkR * 1.3, 0.18, 8), mat); hg2.add(f); feelers.push({ f, s }); }
   // the DORSAL FIN: a long black membrane standing on the spine from behind the head to the tail, its crest following the body's wave
   let fin = null; if (o.fin) { const F = o.fin, M2 = F.n || 70, pos = new Float32Array(M2 * 2 * 3), idx = []; for (let i = 0; i < M2 - 1; i++) { const a = i * 2, c = i * 2 + 1, d = i * 2 + 2, e = i * 2 + 3; idx.push(a, d, c, c, d, e); }
@@ -88,6 +96,7 @@ function _slugReal(o) {
     const hd = pts[N - 1]; hg2.position.set(0, hd.y + rad[N - 1] * o.flat * 0.3, hd.z - 0.05); horn.rotation.x = o.hornTilt + 0.04 * Math.sin(ph * 2) + 0.2 * ac;
     stalks.forEach(K => { const base = new T.Vector3(K.s * 0.05, rad[N - 1] * 0.3, rad[N - 1] * 0.4), tip = new T.Vector3(K.s * o.stalkSep, rad[N - 1] * 0.3 + o.stalkLen * (1 + 0.05 * Math.sin(ph * 2 + K.s * 2)), rad[N - 1] * 0.4 + 0.16 + 0.1 * Math.sin(ph * 2 + K.s * 1.4) + 0.08 * ac); setLink(K.shaft, base, tip); K.eye.position.copy(tip); K.eye.rotation.set(0.15 * Math.sin(ph * 2 + K.s), K.s * -0.12, 0); });
     feelers.forEach(F => { F.f.position.set(F.s * rad[N - 1] * 0.5, -rad[N - 1] * 0.05, rad[N - 1] * 0.75); F.f.rotation.set(PI / 2 + 0.3 + 0.12 * Math.sin(ph * 3 + F.s), 0, F.s * 0.5); });
+    if (hammer) { const hd2 = pts[N - 1], Hm = hammer.Hm; hammer.hm.position.set(0.0, o.flat * hd2.y + (Hm.y || 0), hd2.z - Hm.d * 0.45 + 0.04 + 0.06 * ac); hammer.hm.rotation.y = 0.05 * Math.sin(ph * 2 - 1.2); hammer.hm.rotation.x = -0.04 * Math.sin(ph * 2 - 0.6) - 0.06 * ac; hg2.position.y += Hm.th * 0.5 + (Hm.y || 0) * 0.4; }
     foot.position.z = 0.01 + lunge * 0.4; L2.intensity = 0.5 + 0.4 * Math.sin(ph * 2) + 0.7 * ac; } };
 }
 const _rB = { len: 1.9, rad: 0.3, flat: 0.8, arch: 0.04, horn: 1.0, hornR: 0.11, hornW: 0.2, hornTilt: 0.34, stalkLen: 0.34, stalkSep: 0.26, stalkR: 0.02, eyeR: 0.036, mantle: 0.14, hexRows: 5, hexCols: 9, hexU0: 0.12, hexU1: 0.84, hexTh: 0.34, hexSize: 0.2, keel: true };
@@ -165,3 +174,9 @@ const _f453 = { mosaic: _uz({ color: 0x01020a, hue: 0x00ccaa, base: 0.0, amp: 0.
 fx(454, "453, horn about two thirds the size.", () => _slugReal(Object.assign({}, _u440, _f453, { horn: 0.68 })));
 fx(455, "453, horn about half the size.", () => _slugReal(Object.assign({}, _u440, _f453, { horn: 0.52 })));
 fx(456, "453, a small horn, about a third the size.", () => _slugReal(Object.assign({}, _u440, _f453, { horn: 0.36 })));
+
+// ── The hammerhead (Nos. 457–459): 456 (uniform tiles, the small horn) with a hammer-shaped head ──
+const _h456 = Object.assign({}, _u440, _f453, { horn: 0.36 });
+fx(457, "Hammerhead: a wide flat hammer across the front, the small horn on top.", () => _slugReal(Object.assign({}, _h456, { hammer: { w: 0.52, d: 0.3, th: 0.1, y: 0.0 } })));
+fx(458, "Hammerhead, extra wide and flat.", () => _slugReal(Object.assign({}, _h456, { hammer: { w: 0.72, d: 0.26, th: 0.075, y: 0.0 } })));
+fx(459, "Hammerhead with a notch at the front centre, like a real hammerhead shark, and a chunkier bar.", () => _slugReal(Object.assign({}, _h456, { hammer: { w: 0.6, d: 0.34, th: 0.13, y: 0.0, notch: 0.22 } })));
