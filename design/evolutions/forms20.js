@@ -17,8 +17,10 @@ function _slugReal(o) {
     b.add(hg); hexes.push({ hg, u, th, j }); }
   // the head: spike, two long eye-stalks (a crystal rim round a black centre), two short feelers
   const hg2 = G(); b.add(hg2); const horn = G(); hg2.add(horn); const hc = hexCrystal(o.hornR, o.horn * 0.8, o.horn * 0.4, _gemMatGloss); hc.position.y = o.horn * 0.4 + 0.03; horn.add(hc); horn.rotation.x = o.hornTilt;
-  const stalks = []; for (const s of [-1, 1]) { const sp = G(), shaft = limb(o.stalkR, mat); sp.add(shaft); const eye = G(), ec = hexCrystal(o.eyeR * 1.15, o.eyeR * 1.2, o.eyeR, M.crystal); ec.rotation.x = PI / 2; eye.add(ec); const pu = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.82, 12, 10), new T.MeshBasicMaterial({ color: 0x000102 })); pu.position.z = o.eyeR * 0.85; pu.scale.set(0.95, 1.05, 0.8); eye.add(pu); sp.add(eye); hg2.add(sp); stalks.push({ sp, shaft, eye, s }); }
-  const feelers = []; for (const s of [-1, 1]) { const f = new T.Mesh(new T.ConeGeometry(o.stalkR * 1.5, 0.2, 8), mat); hg2.add(f); feelers.push({ f, s }); }
+  const stalks = []; for (const s of [-1, 1]) { const sp = G(), shaft = cyl(o.stalkR * 0.45, o.stalkR, 1, mat, 10); sp.add(shaft); const eye = G(); const col = hexCrystal(o.eyeR * 1.0, o.eyeR * 0.5, o.eyeR * 0.3, M.crystal); col.rotation.x = PI / 2; eye.add(col);   // a thin crystal collar at the tip of a tapering stalk
+    const bead = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.9, 14, 12), new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.12, metalness: 0.3 })); bead.position.z = o.eyeR * 0.45; bead.scale.set(1, 1, 0.9); eye.add(bead);   // the eye: a small glossy black bead
+    const gl = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.16, 6, 5), new T.MeshBasicMaterial({ color: 0xcfe9ff })); gl.position.set(o.eyeR * 0.3, o.eyeR * 0.35, o.eyeR * 1.2); eye.add(gl); sp.add(eye); hg2.add(sp); stalks.push({ sp, shaft, eye, s }); }
+  const feelers = []; for (const s of [-1, 1]) { const f = new T.Mesh(new T.ConeGeometry(o.stalkR * 1.3, 0.18, 8), mat); hg2.add(f); feelers.push({ f, s }); }
   const L2 = _lamp(b, 0.7, 0.6); const nrm = new T.Vector3(), up = new T.Vector3(0, 1, 0), q = new T.Quaternion(), tan = new T.Vector3();
   return { g, core: 0.4, update(t, act) { const ph = 1.6 * t, ac = act || 0, lunge = 0.25 * ac;
     for (let i = 0; i < N; i++) { const u = i / (N - 1), w = Math.sin(ph * 2 - u * 6.0) * (0.3 + 0.7 * (1 - u)); const r = prof(u); rad[i] = Math.max(0.01, r * (1 + 0.05 * w)); pts[i].set(0, Math.max(0.04, r * o.flat * 0.5 + 0.03 + o.arch * Math.sin(Math.PI * u) + 0.025 * w), -L / 2 + u * L + lunge * u); }
@@ -34,7 +36,7 @@ function _slugReal(o) {
     feelers.forEach(F => { F.f.position.set(F.s * rad[N - 1] * 0.5, -rad[N - 1] * 0.05, rad[N - 1] * 0.75); F.f.rotation.set(PI / 2 + 0.3 + 0.12 * Math.sin(ph * 3 + F.s), 0, F.s * 0.5); });
     foot.position.z = 0.01 + lunge * 0.4; L2.intensity = 0.5 + 0.4 * Math.sin(ph * 2) + 0.7 * ac; } };
 }
-const _rB = { len: 1.9, rad: 0.3, flat: 0.8, arch: 0.04, horn: 0.9, hornR: 0.11, hornTilt: 0.34, stalkLen: 0.34, stalkSep: 0.26, stalkR: 0.024, eyeR: 0.082, mantle: 0.14, hexRows: 5, hexCols: 9, hexU0: 0.12, hexU1: 0.84, hexTh: 0.34, hexSize: 0.2, keel: true };
+const _rB = { len: 1.9, rad: 0.3, flat: 0.8, arch: 0.04, horn: 0.9, hornR: 0.11, hornTilt: 0.34, stalkLen: 0.34, stalkSep: 0.26, stalkR: 0.02, eyeR: 0.036, mantle: 0.14, hexRows: 5, hexCols: 9, hexU0: 0.12, hexU1: 0.84, hexTh: 0.34, hexSize: 0.2, keel: true };
 fx(410, "Realistic slug: blue body, honeycomb of black hexagon scutes with teal edges down its back.", () => _slugReal(Object.assign({}, _rB)));
 fx(411, "Realistic slug, large hexes: bigger, bolder scutes.", () => _slugReal(Object.assign({}, _rB, { hexRows: 3, hexCols: 6, hexTh: 0.5, hexSize: 0.34 })));
 fx(412, "Realistic slug, fine hexes: a tight honeycomb over most of the body.", () => _slugReal(Object.assign({}, _rB, { hexRows: 7, hexCols: 14, hexTh: 0.26, hexSize: 0.13, hexU0: 0.08 })));
