@@ -395,7 +395,7 @@ function _hoodPyramid(o) {
   // IRREGULAR BLACK SHARDS GROWN FROM THE COAT: rooted in the pyramid's faces and ridges, each its own size, angle and shape
   if (o.attached) { const A = o.attached, UPV2 = new T.Vector3(0, 1, 0), faces = [PI / 2, PI, -PI / 2], A0 = R * Math.SQRT1_2, rn = (i, k) => _hz(i * 5 + 1, A.seed + k * 11, k);
     const mkShard = (len, r, i) => { const geo = new T.ConeGeometry(r, len, 4 + Math.floor(rn(i, 40) * 3), 1), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const x = p.getX(v), y = p.getY(v), z = p.getZ(v), n = _hz(Math.round(x * 400) + i, Math.round(y * 400), Math.round(z * 400)); p.setXYZ(v, x * (0.7 + 0.6 * n), y, z * (0.7 + 0.6 * (1 - n))); } geo.translate(0, len / 2, 0); geo.computeVertexNormals(); return new T.Mesh(geo, _hoodBlack); };
-    for (let i = 0; i < A.n; i++) { const ridge = rn(i, 1) < (A.ridge || 0), u = A.uMin + (A.uMax - A.uMin) * rn(i, 2), len = A.len[0] + (A.len[1] - A.len[0]) * Math.pow(rn(i, 3), A.skew || 1), r = len * (0.16 + 0.14 * rn(i, 4));
+    for (let i = 0; i < A.n; i++) { const ridge = rn(i, 1) < (A.ridge || 0), u = A.uMin + (A.uMax - A.uMin) * rn(i, 2), len = A.len[0] + (A.len[1] - A.len[0]) * Math.pow(rn(i, 3), A.skew || 1), r = len * (0.16 + 0.14 * rn(i, 4)) * (A.fat || 1);
       let pos, nrm; if (ridge) { const a = [3 * PI / 4, 5 * PI / 4, PI / 4, -PI / 4][Math.floor(rn(i, 5) * (A.front ? 4 : 2))], rad = R * (1 - u); pos = new T.Vector3(Math.sin(a) * rad, u * H, Math.cos(a) * rad); nrm = new T.Vector3(Math.sin(a) * H * 0.7, A0 * 0.9, Math.cos(a) * H * 0.7).normalize(); }
       else { const az = faces[Math.floor(rn(i, 5) * faces.length)], a0 = A0 * (1 - u), t = (rn(i, 6) * 2 - 1) * a0 * 0.85, rv = new T.Vector3(Math.sin(az), 0, Math.cos(az)), lv = new T.Vector3(Math.cos(az), 0, -Math.sin(az));
         pos = rv.clone().multiplyScalar(a0).addScaledVector(lv, t).add(new T.Vector3(0, u * H, 0)); nrm = rv.clone().multiplyScalar(H).add(new T.Vector3(0, A0, 0)).normalize(); }
@@ -462,3 +462,9 @@ fx(323, "Black spines along the ridges.", () => _hoodPyramid(Object.assign({}, _
 fx(324, "A cluster of black shards at the lower rim.", () => _hoodPyramid(Object.assign({}, _ha, { attached: { n: 14, uMin: 0.0, uMax: 0.22, len: [0.1, 0.34], skew: 1, seed: 9, twin: 0.5 } })));
 fx(325, "Big black spikes along the back and sides.", () => _hoodPyramid(Object.assign({}, _ha, { attached: { n: 7, uMin: 0.1, uMax: 0.6, len: [0.22, 0.5], skew: 0.8, seed: 11, twin: 0.2, ridge: 0.3 } })));
 fx(326, "Mixed irregular growths: bunches and singles.", () => _hoodPyramid(Object.assign({}, _ha, { attached: { n: 16, uMin: 0.04, uMax: 0.75, len: [0.06, 0.36], skew: 1.6, seed: 13, twin: 0.6, ridge: 0.25 } })));
+
+// ── 325, fatter (Nos. 327–329) ──
+const _h325 = { n: 7, uMin: 0.1, uMax: 0.6, len: [0.22, 0.5], skew: 0.8, seed: 11, twin: 0.2, ridge: 0.3 };
+fx(327, "325, fatter shards.", () => _hoodPyramid(Object.assign({}, _ha, { attached: Object.assign({}, _h325, { fat: 1.8 }) })));
+fx(328, "325, much fatter shards.", () => _hoodPyramid(Object.assign({}, _ha, { attached: Object.assign({}, _h325, { fat: 2.5 }) })));
+fx(329, "325, chunky fat shards, slightly shorter.", () => _hoodPyramid(Object.assign({}, _ha, { attached: Object.assign({}, _h325, { fat: 3.0, len: [0.2, 0.42] }) })));
