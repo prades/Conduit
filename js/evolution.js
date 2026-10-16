@@ -59,7 +59,10 @@
 //          flattens and slams its weight down: everything within MIMIC_RADIUS takes
 //          MIMIC_MULT × its power, is shoved MIMIC_PUSH back (a beetle, a boss or a machine
 //          is too heavy to move) and slowed by MIMIC_SLOW for MIMIC_SLOW_FRAMES.
-//          PETAL AEGIS (the CORE MAGE, design No. 120: a rosette of plate-petals round a
+//          HORNSHELL (the CORE MAGE, design No. 220: a black shell-jar on its side dragged along the ground by
+//          fat, irregular tentacles, a shard horn at its mouth) does the same AEGIS BLOOM as the Petal Aegis
+//          below, which it replaced (the Petal Aegis stays defined, marked legacy, for followers already evolved into it).
+//          PETAL AEGIS (the old CORE MAGE, design No. 120: a rosette of plate-petals round a
 //          crystal; the role is called a mage to the player, its id is still "sniper"),
 //          AEGIS BLOOM: with an enemy within PETAL_RANGE, every PETAL_EVERY frames its petals
 //          fan open: a bolt of core energy (PETAL_MULT × its power) into the nearest enemy,
@@ -127,6 +130,10 @@ const EVOLUTIONS = {
     // The ICE BRAWLER: a dome with a cave mouth. Its rubble lies on the floor (the ground sheet), and the cave is its own light.
     maw:    { id: "maw",    name: "FROST MAW",    element: "ice",      role: "brawler", move: "CHOMP",        sheet: "img/evo/maw.png",
               cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png" },
+    // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
+    // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
+    hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "AEGIS BLOOM", sheet: "img/evo/hornshell.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 89.4], noGlow: true, color: "#33e6c4" },
     // The CORE WORKER (the pylon re-armer): a worker is a duty, so it comes from a core follower on worker duty. The worm moves, so the sheet carries its own light.
     vessel: { id: "vessel", name: "WORM VESSEL", element: "core",     duty: "worker",  move: "REWIRE",       sheet: "img/evo/vessel.png",
               cell: 144, anchor: [72, 114.2], core: [72, 52.6], noGlow: true, color: "#33e6c4" },
@@ -134,7 +141,8 @@ const EVOLUTIONS = {
     caldera:{ id: "caldera", name: "CALDERA",     element: "toxic",    role: "brawler", move: "ERUPTION",     sheet: "img/evo/caldera.png",
               cell: 144, anchor: [72, 114.2], core: [72, 72], noGlow: true, color: "#66ff66" },
     // The CORE MAGE ("sniper" in the code): a rosette of plate-petals. The crystal at its middle is the reactor, so it keeps the shared glow.
-    petal:  { id: "petal",  name: "PETAL AEGIS",  element: "core",     role: "sniper",  move: "AEGIS BLOOM",  sheet: "img/evo/petal.png",
+    // LEGACY: the first core mage. New evolutions use the Hornshell; a follower already evolved into this keeps it.
+    petal:  { id: "petal",  legacy: true, name: "PETAL AEGIS",  element: "core",     role: "sniper",  move: "AEGIS BLOOM",  sheet: "img/evo/petal.png",
               cell: 144, anchor: [72, 114.2], core: [72, 66.5], color: "#33e6c4" },
     // The FLUX BRAWLER: a lump of liquid on the ground (a flux worker is the Hover Hauler instead: a worker is a duty). Its surface moves, so its sheet carries its own light.
     mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
@@ -155,7 +163,7 @@ function evolutionFor(f) {
     const role = f.role === "hybrid" ? "brawler" : f.role;
     // A follower on worker duty can only evolve into a worker form (and the other way round).
     const worker = f.duty === "worker";
-    for (const k in EVOLUTIONS) { const d = EVOLUTIONS[k]; if (d.element !== f.element) continue; if (worker ? d.duty === "worker" : d.role === role) return d; }
+    for (const k in EVOLUTIONS) { const d = EVOLUTIONS[k]; if (d.legacy || d.element !== f.element) continue; if (worker ? d.duty === "worker" : d.role === role) return d; }
     return null;
 }
 function evolvedDef(f) { return f && f.evolved ? EVOLUTIONS[f.evolved] || null : null; }
@@ -189,7 +197,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
-        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal") aegisBloom(f); else if (d.id === "caldera") eruption(f); else if (d.id === "maw") chomp(f);
+        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera") eruption(f); else if (d.id === "maw") chomp(f);
     }
 }
 function _evoFoes(x, y, r) {

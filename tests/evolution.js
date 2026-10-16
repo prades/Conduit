@@ -84,10 +84,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('toxic', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic camper waits');
         mk('toxic', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic worker waits (no worker form for it)');
     });
-    check('THE ASK: a CORE MAGE (the role id is still "sniper") becomes the PETAL AEGIS (design No. 120); a core brawler is still the Aegis Warden', () => {
+    check('THE ASK: a CORE MAGE (the role id is still "sniper") becomes the HORNSHELL (design No. 220, which replaced the Petal Aegis); a core brawler is still the Aegis Warden', () => {
         mk('core', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
-        same(r.evo, 'petal', 'its form'); same(r.tag, 'PETAL AEGIS', 'its tag'); same(r.role, 'sniper', 'its role id');
+        same(r.evo, 'hornshell', 'its form'); same(r.tag, 'HORNSHELL', 'its tag'); same(r.role, 'sniper', 'its role id');
+        ok(run('EVOLUTIONS.petal.legacy === true'), 'the Petal Aegis is no longer handed out'); same(run('evolutionFor({ isFollower: true, element: "core", role: "sniper" }).id'), 'hornshell', 'evolutionFor');
         mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'warden', 'the core brawler');
         mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core camper waits');
         mk('core', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core mage on worker duty is a worker first');
@@ -249,6 +250,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.slowB && r.sf <= 0.6 && r.sf > 0 && !r.farSlow && !r.apartSlow, 'the ones beside it slowed: ' + JSON.stringify(r)); ok(r.cd > 250, 'it did not wait'); ok(!r.loneCast, 'it bit at something out of reach');
     });
 
+    check('the HORNSHELL casts the same AEGIS BLOOM (a bolt into the nearest enemy and a shield on the worst-hurt ally)', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'hornshell'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.health = f.maxHealth;
+            spawnFollowerAtCrystal('fire'); const al = followers[1]; al.returningToCrystal = false; al.x = 21.5; al.y = 2; al.health = Math.round(al.maxHealth * 0.3); al.shielded = false; al.shieldAmount = 0;
+            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 24, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            frame++; f._sigCd = 1; evolutionTick(); const out = { dmg: 1e6 - p.health, shield: al.shielded ? al.shieldAmount : 0, cast: f._sigAt !== undefined }; p.dead = true; return out; })()`);
+        ok(r.cast && r.dmg > 0 && r.shield > 0, 'the hornshell did not cast: ' + JSON.stringify(r));
+    });
+
     check('THE ASK: SINGULARITY SHOT — a gravity round into the nearest enemy, dragging those round it in; a beetle is too heavy', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
             spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'serpent'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
@@ -389,19 +399,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw', 'hornshell']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
         ok(/js\/evolution\.js/.test(fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8')), 'not loaded by the game');
     });
     check('the pools of material are on a sheet of their own (rotshard, mimic), the same size as the body sheet', () => {
-        for (const id of ['rotshard', 'mimic']) {
+        for (const id of ['rotshard', 'mimic', 'maw']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '_g.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel', 'hornshell']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);

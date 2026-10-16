@@ -167,6 +167,6 @@ fx(216, "Irregular tentacles, conch jar.", () => _fatDragger(Object.assign({}, _
 fx(217, "Irregular tentacles, barrel jar.", () => _fatDragger(Object.assign({}, _fd, { irr: 5, prof: _JAR_BARREL, wide: 1.1, ridges: [0.4, 0.6], tents: 6, tentArc: 5.4, hornX: -0.08 })));
 fx(218, "Irregular tentacles, flat coil-shell jar.", () => _fatDragger(Object.assign({}, _fd, { irr: 6, prof: _JAR_DISC, size: 1.1, ridges: [0.15, 0.25, 0.35, 0.45], studs: 4, tilt: 1.52, tents: 6, tentArc: 5.4, hornX: 0.07 })));
 fx(219, "Irregular tentacles, five, thicker.", () => _fatDragger(Object.assign({}, _fd, { irr: 7, tents: 5, tentArc: 5.0, tr: 0.115, hornX: 0.06 })));
-fx(220, "Irregular tentacles, shell tipped up.", () => _fatDragger(Object.assign({}, _fd, { irr: 8, tilt: 1.15, gap: 0.55, tents: 6, tentArc: 5.4, hornX: -0.06 })));
+fx(220, "Irregular tentacles, shell tipped up.", () => _fatDragger(Object.assign({}, _fd, { S: 1.3, irr: 8, tilt: 1.15, gap: 0.55, tents: 6, tentArc: 5.4, hornX: -0.06 })));
 fx(221, "Irregular tentacles, long horn.", () => _fatDragger(Object.assign({}, _fd, { irr: 9, tents: 6, tentArc: 5.4, horn: 0.85, hornR: 0.075, hornX: 0.07 })));
 fx(222, "Irregular tentacles, eight, mixed thin and thick.", () => _fatDragger(Object.assign({}, _fd, { irr: 10, tents: 8, tentArc: 6.0, tn: 16, tr: 0.1, hornX: 0.06, horn: 0.55 })));
