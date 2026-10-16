@@ -44,7 +44,19 @@ function _slugReal(o) {
     const bead = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.9, 14, 12), new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.12, metalness: 0.3 })); bead.position.z = o.eyeR * 0.45; bead.scale.set(1, 1, 0.9); eye.add(bead);   // the eye: a small glossy black bead
     const gl = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.16, 6, 5), new T.MeshBasicMaterial({ color: 0xcfe9ff })); gl.position.set(o.eyeR * 0.3, o.eyeR * 0.35, o.eyeR * 1.2); eye.add(gl); sp.add(eye); hg2.add(sp); stalks.push({ sp, shaft, eye, s }); }
   // THE HAMMERHEAD: a wide flat bar across the front of the head, the neck narrow behind it, an optional notch at the front centre
-  let hammer = null; if (o.hammer) { const Hm = o.hammer, w = Hm.w, d = Hm.d, sh = new T.Shape(), nt = Hm.notch || 0;
+  const smoothHammerGeo = (Hm) => { const w = Hm.w, d = Hm.d, NX = 44, NZ = 14, thC = Hm.thC, thE = Hm.thE, fil = Hm.fillet, nl = Hm.neck, pos2 = [], idx2 = [], row = [];
+    const ssm = x => x * x * (3 - 2 * x);
+    for (let i = 0; i <= NX; i++) { const x = -w + 2 * w * (i / NX), ax = Math.abs(x) / w, sgn = Math.sign(x) || 1;
+      const lobe = d * 0.5 * Math.sqrt(Math.max(0, 1 - Math.pow(ax, 3))), zc = d * 0.5 + d * 0.16 * ssm(ax), neckBack = nl * d * Math.exp(-Math.pow(Math.abs(x) / fil, 2)) * 1.0;   // the lobes curve forward at the tips; the centre swells back into the neck
+      let zf = zc + lobe + 0.0, zb = Math.min(zc - lobe, zc - lobe + 0) - neckBack; zb = Math.min(zb, zc - lobe); if (Hm.notch) zf -= Hm.notch * d * Math.exp(-Math.pow(x / (w * 0.18), 2));
+      const tt = thE + (thC - thE) * Math.pow(1 - ax * ax, 1.6); row.push({ x, zf, zb, tt }); }
+    for (let i = 0; i <= NX; i++) { const R = row[i]; for (let j = 0; j <= NZ; j++) { const t = j / NZ, z = R.zb + (R.zf - R.zb) * t, dome = 0.025 * (1 - Math.pow(2 * t - 1, 2)); pos2.push(R.x, R.tt * 0.5 + dome, z); } for (let j = 0; j <= NZ; j++) { const t = j / NZ, z = R.zb + (R.zf - R.zb) * t; pos2.push(R.x, -R.tt * 0.5, z); } }
+    const per = 2 * (NZ + 1); for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) { const a = i * per + j, b2 = (i + 1) * per + j, c = i * per + j + 1, e = (i + 1) * per + j + 1; idx2.push(a, c, b2, c, e, b2); const a2 = a + NZ + 1, b3 = b2 + NZ + 1, c2 = c + NZ + 1, e2 = e + NZ + 1; idx2.push(a2, b3, c2, c2, b3, e2); }
+    for (let i = 0; i < NX; i++) for (const [j, flip] of [[0, 0], [NZ, 1]]) { const t0 = i * per + j, t1 = (i + 1) * per + j, b0 = t0 + NZ + 1, b1 = t1 + NZ + 1; if (flip) idx2.push(t0, t1, b0, t1, b1, b0); else idx2.push(t0, b0, t1, t1, b0, b1); }
+    for (const [i, flip] of [[0, 0], [NX, 1]]) for (let j = 0; j < NZ; j++) { const t0 = i * per + j, t1 = i * per + j + 1, b0 = t0 + NZ + 1, b1 = t1 + NZ + 1; if (flip) idx2.push(t0, b0, t1, t1, b0, b1); else idx2.push(t0, t1, b0, t1, b1, b0); }
+    const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos2, 3)); geo.setIndex(idx2); geo.computeVertexNormals(); return geo; };
+  let hammer = null; if (o.hammer && o.hammer.smooth) { const Hm = o.hammer, hm = G(), hmat = new T.MeshStandardMaterial({ color: 0x01020a, metalness: 0.05, roughness: 0.62, flatShading: false, side: T.DoubleSide }); hmat.envMapIntensity = 0.1; hm.add(new T.Mesh(smoothHammerGeo(Hm), hmat)); b.add(hm); hammer = { hm, Hm }; }
+  else if (o.hammer) { const Hm = o.hammer, w = Hm.w, d = Hm.d, sh = new T.Shape(), nt = Hm.notch || 0;
     const half = [[0.13, 0], [w * 0.72, 0.1 * d], [w, 0.34 * d], [w * 1.03, 0.62 * d], [w * 0.92, 0.9 * d], [w * 0.55, 0.96 * d], [w * 0.2, (0.92 - nt) * d], [0, (0.9 - nt) * d]];
     sh.moveTo(-0.13, 0); for (let i = 0; i < half.length; i++) sh.lineTo(-half[i][0] * (i ? 1 : 1) * -1 * -1 * 0 + half[half.length - 1 - i][0] * -1, half[half.length - 1 - i][1]);   // left side, from the front centre back to the neck
     // the outline built explicitly: left side then right side
@@ -96,7 +108,7 @@ function _slugReal(o) {
     const hd = pts[N - 1]; hg2.position.set(0, hd.y + rad[N - 1] * o.flat * 0.3, hd.z - 0.05); horn.rotation.x = o.hornTilt + 0.04 * Math.sin(ph * 2) + 0.2 * ac;
     stalks.forEach(K => { const base = new T.Vector3(K.s * 0.05, rad[N - 1] * 0.3, rad[N - 1] * 0.4), tip = new T.Vector3(K.s * o.stalkSep, rad[N - 1] * 0.3 + o.stalkLen * (1 + 0.05 * Math.sin(ph * 2 + K.s * 2)), rad[N - 1] * 0.4 + 0.16 + 0.1 * Math.sin(ph * 2 + K.s * 1.4) + 0.08 * ac); setLink(K.shaft, base, tip); K.eye.position.copy(tip); K.eye.rotation.set(0.15 * Math.sin(ph * 2 + K.s), K.s * -0.12, 0); });
     feelers.forEach(F => { F.f.position.set(F.s * rad[N - 1] * 0.5, -rad[N - 1] * 0.05, rad[N - 1] * 0.75); F.f.rotation.set(PI / 2 + 0.3 + 0.12 * Math.sin(ph * 3 + F.s), 0, F.s * 0.5); });
-    if (hammer) { const hd2 = pts[N - 1], Hm = hammer.Hm; hammer.hm.position.set(0.0, o.flat * hd2.y + (Hm.y || 0), hd2.z - Hm.d * 0.45 + 0.04 + 0.06 * ac); hammer.hm.rotation.y = 0.05 * Math.sin(ph * 2 - 1.2); hammer.hm.rotation.x = -0.04 * Math.sin(ph * 2 - 0.6) - 0.06 * ac; hg2.position.y += Hm.th * 0.5 + (Hm.y || 0) * 0.4; }
+    if (hammer) { const hd2 = pts[N - 1], Hm = hammer.Hm; hammer.hm.position.set(0.0, o.flat * hd2.y + (Hm.y || 0), hd2.z - (Hm.smooth ? Hm.d * (Hm.back || 0.55) : Hm.d * 0.45) + 0.04 + 0.06 * ac); hammer.hm.rotation.y = 0.05 * Math.sin(ph * 2 - 1.2); hammer.hm.rotation.x = -0.04 * Math.sin(ph * 2 - 0.6) - 0.06 * ac; hg2.position.y += (Hm.smooth ? Hm.thC * 0.5 : Hm.th * 0.5) + (Hm.y || 0) * 0.4; }
     foot.position.z = 0.01 + lunge * 0.4; L2.intensity = 0.5 + 0.4 * Math.sin(ph * 2) + 0.7 * ac; } };
 }
 const _rB = { len: 1.9, rad: 0.3, flat: 0.8, arch: 0.04, horn: 1.0, hornR: 0.11, hornW: 0.2, hornTilt: 0.34, stalkLen: 0.34, stalkSep: 0.26, stalkR: 0.02, eyeR: 0.036, mantle: 0.14, hexRows: 5, hexCols: 9, hexU0: 0.12, hexU1: 0.84, hexTh: 0.34, hexSize: 0.2, keel: true };
@@ -180,3 +192,8 @@ const _h456 = Object.assign({}, _u440, _f453, { horn: 0.36 });
 fx(457, "Hammerhead: a wide flat hammer across the front, the small horn on top.", () => _slugReal(Object.assign({}, _h456, { hammer: { w: 0.52, d: 0.3, th: 0.1, y: 0.0 } })));
 fx(458, "Hammerhead, extra wide and flat.", () => _slugReal(Object.assign({}, _h456, { hammer: { w: 0.72, d: 0.26, th: 0.075, y: 0.0 } })));
 fx(459, "Hammerhead with a notch at the front centre, like a real hammerhead shark, and a chunkier bar.", () => _slugReal(Object.assign({}, _h456, { hammer: { w: 0.6, d: 0.34, th: 0.13, y: 0.0, notch: 0.22 } })));
+
+// ── 458 with a smooth transition from the body into the hammer (Nos. 460–462) ──
+fx(460, "458's wide hammer, one smooth shape: a swollen centre merging into the head, thinning to rounded tips.", () => _slugReal(Object.assign({}, _h456, { hammer: { smooth: true, w: 0.72, d: 0.34, thC: 0.2, thE: 0.05, fillet: 0.16, neck: 0.5, back: 0.62 } })));
+fx(461, "A longer, wider blend: the hammer flows out of the neck over a longer, smoother curve.", () => _slugReal(Object.assign({}, _h456, { hammer: { smooth: true, w: 0.72, d: 0.4, thC: 0.22, thE: 0.045, fillet: 0.26, neck: 0.8, back: 0.66 } })));
+fx(462, "The smoothest: a long fillet and a thick centre, like a hammerhead's real head.", () => _slugReal(Object.assign({}, _h456, { hammer: { smooth: true, w: 0.72, d: 0.44, thC: 0.26, thE: 0.04, fillet: 0.34, neck: 1.05, back: 0.7, notch: 0.12 } })));
