@@ -97,3 +97,59 @@ fx(199, "Tentacle-dragger, shell tipped up behind it.", () => _tentacleDragger(O
 fx(200, "Tentacle-dragger, long legs spread wide.", () => _tentacleDragger(Object.assign({}, _td, { tentArc: 5.2, tn: 18, step: 0.08, spread: 2.2, out: 0.9, lift: 0.14 })));
 fx(201, "Tentacle-dragger, a tight bunch of legs.", () => _tentacleDragger(Object.assign({}, _td, { tentArc: 3.0, tents: 6, out: 0.25, spread: 0.6, tn: 12, horn: 0.7, hornTilt: 0.55 })));
 fx(202, "Tentacle-dragger, close behind, narwhal horn.", () => _tentacleDragger(Object.assign({}, _td, { gap: 0.45, horn: 0.9, hornTilt: 0.4, hornR: 0.075, tents: 6, tentArc: 4.0 })));
+
+// ── Fat, smooth tentacles (Nos. 203–212): each is ONE tapered tube (no beads, so no suction cups). ──
+function _taperTube(mat, N, S) {   // a tube of N rings of S sides whose path and radii are set every frame
+  const geo = new T.BufferGeometry(), pos = new Float32Array(N * S * 3), idx = [];
+  for (let i = 0; i < N - 1; i++) for (let j = 0; j < S; j++) { const a = i * S + j, b2 = i * S + (j + 1) % S, c = (i + 1) * S + j, d = (i + 1) * S + (j + 1) % S; idx.push(a, c, b2, b2, c, d); }
+  geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setIndex(idx);
+  const mesh = new T.Mesh(geo, mat); mesh.frustumCulled = false;
+  const tan = new T.Vector3(), up = new T.Vector3(), side = new T.Vector3(), nrm = new T.Vector3();
+  return { mesh, set(points, radii) {
+    for (let i = 0; i < N; i++) {
+      const p0 = points[Math.max(0, i - 1)], p1 = points[Math.min(N - 1, i + 1)]; tan.set(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z).normalize();
+      up.set(0, 1, 0); if (Math.abs(tan.y) > 0.95) up.set(1, 0, 0); side.crossVectors(tan, up).normalize(); nrm.crossVectors(side, tan).normalize();
+      for (let j = 0; j < S; j++) { const a = j / S * TAU, cx = Math.cos(a) * radii[i], cy = Math.sin(a) * radii[i];
+        pos[(i * S + j) * 3] = points[i].x + side.x * cx + nrm.x * cy; pos[(i * S + j) * 3 + 1] = points[i].y + side.y * cx + nrm.y * cy; pos[(i * S + j) * 3 + 2] = points[i].z + side.z * cx + nrm.z * cy; } }
+    geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); } };
+}
+function _fatDragger(o) {
+  const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S);
+  const sz = o.size, wide = o.wide || 1, jr = 0.52 * sz * wide, t = o.tilt, mouthLocal = sz * 0.46;
+  const jar = G(); jar.position.set(0, jr + 0.02, -o.gap); jar.rotation.set(t, o.yaw || 0, 0); b.add(jar);
+  const pts = o.prof.map(p => new T.Vector2(Math.max(0.0001, p[0] * sz * wide), p[1] * sz));
+  const shell = new T.Mesh(new T.LatheGeometry(pts, o.seg || 12), _gobBlack); shell.material.side = T.DoubleSide; shell.position.y = -sz * 0.5; jar.add(shell);
+  for (const ry of o.ridges || []) { const R = 0.52 * sz * wide, rg = new T.Mesh(new T.TorusGeometry(R * (1 - Math.abs(ry - 0.4) * 0.7), 0.012 * sz, 4, 14), M.crystal); rg.rotation.x = PI / 2; rg.position.y = -sz * 0.5 + ry * sz; jar.add(rg); }
+  for (let i = 0; i < (o.studs || 3); i++) { const a = 0.9 + i * 1.5, yy = -sz * 0.5 + sz * (0.34 + 0.12 * (i % 2)), rr = 0.5 * sz * wide, c = hexCrystal(0.05 * sz, 0.09 * sz, 0.12 * sz, M.crystal);
+    const h = G(); h.position.set(Math.sin(a) * rr, yy, Math.cos(a) * rr); h.rotation.y = a; c.rotation.x = PI / 2 - 0.2; c.position.z = 0.07 * sz; h.add(c); jar.add(h); }
+  const mat = _creatureMat(); mat.side = T.DoubleSide;
+  const horn = G(); b.add(horn); const hm = new T.Mesh(new T.ConeGeometry(o.hornR, o.horn, 6), M.crystal); hm.position.y = o.horn / 2; horn.add(hm); horn.add(cyl(o.hornR * 1.15, o.hornR * 1.15, 0.05, M.armor, 6));
+  const N = o.tn, tents = []; for (let i = 0; i < o.tents; i++) { const a = (o.tentCentre || PI) - o.tentArc / 2 + (o.tents > 1 ? i / (o.tents - 1) : 0.5) * o.tentArc; const tt = _taperTube(mat, N, o.sides || 7); b.add(tt.mesh);
+    tents.push({ tt, a, ph: i * (TAU / o.tents) * 1.3, pts: Array.from({ length: N }, () => new T.Vector3()), rad: new Array(N) }); }
+  const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.9, 0.3); b.add(L); LIGHTS.push(L);
+  const dir = new T.Vector3();
+  return { g, core: jr * (o.S || 1), update(tm, act) { const ph = 1.6 * tm, ac = act || 0, st = Math.sin(ph);
+    jar.position.z = -o.gap + 0.04 * st - 0.05 * ac; jar.rotation.z = 0.04 * Math.sin(ph + 1); jar.rotation.x = t + 0.03 * Math.cos(ph);
+    const mx = 0, my = jar.position.y + mouthLocal * Math.cos(jar.rotation.x), mz = jar.position.z + mouthLocal * Math.sin(jar.rotation.x);
+    horn.position.set(0, my - 0.02, mz - 0.05); horn.rotation.x = o.hornTilt + 0.05 * Math.sin(ph) + 0.3 * ac; horn.scale.y = 1 + 0.12 * ac;
+    for (const T0 of tents) { const sa = Math.sin(T0.a), ca = Math.cos(T0.a), rr = 0.17 * sz, lift = Math.max(0, Math.sin(ph + T0.ph)) * o.lift;
+      let px = mx + sa * rr, py = my + ca * rr * 0.9, pz = mz; dir.set(sa * o.out, ca * 0.4 - o.drop, 1).normalize();
+      for (let i = 0; i < N; i++) { const u = i / (N - 1), r = o.tr * (1 - 0.8 * Math.pow(u, 1.2)) + 0.012; T0.rad[i] = r;
+        T0.pts[i].set(px + 0.03 * Math.sin(ph + T0.ph + u * 2) * u, Math.max(r + 0.005, py) + lift * u, pz);
+        const stp = o.step * (1 - 0.45 * u); px += dir.x * stp; py += dir.y * stp; pz += dir.z * stp;
+        if (py <= r + 0.01) { py = r + 0.01; dir.y = Math.max(0, dir.y) * 0.2; } else dir.y -= o.grav * stp;
+        dir.x += sa * o.spread * stp; if (u > o.curlFrom) dir.y += o.curl * stp; dir.normalize(); }
+      T0.tt.set(T0.pts, T0.rad); } } };
+}
+const _fd = { tilt: 1.5, size: 1.0, gap: 0.6, hornR: 0.07, horn: 0.5, hornTilt: 0.7, prof: _JAR_ROUND, ridges: [0.3, 0.5, 0.68], studs: 3,
+  tents: 5, tentArc: 3.8, tentCentre: PI, tn: 16, tr: 0.1, step: 0.065, out: 0.55, drop: 0.5, grav: 1.6, spread: 1.2, curl: 4.0, curlFrom: 0.66, lift: 0.1 };
+fx(203, "Fat tentacles, round jar, five legs.", () => _fatDragger(Object.assign({}, _fd)));
+fx(204, "Fat tentacles, long horn.", () => _fatDragger(Object.assign({}, _fd, { horn: 0.85, hornR: 0.075 })));
+fx(205, "Fat tentacles, four very thick legs.", () => _fatDragger(Object.assign({}, _fd, { tents: 4, tentArc: 3.2, tr: 0.13, step: 0.07, horn: 0.5 })));
+fx(206, "Fat tentacles, conch jar.", () => _fatDragger(Object.assign({}, _fd, { prof: _JAR_CONCH, ridges: [0.2, 0.34, 0.48, 0.62, 0.76], studs: 4, tilt: 1.42, horn: 0.6 })));
+fx(207, "Fat tentacles, barrel jar, six legs.", () => _fatDragger(Object.assign({}, _fd, { prof: _JAR_BARREL, wide: 1.1, ridges: [0.4, 0.6], tents: 6, tentArc: 4.4, tr: 0.09, horn: 0.5 })));
+fx(208, "Fat tentacles, flat coil-shell jar.", () => _fatDragger(Object.assign({}, _fd, { prof: _JAR_DISC, size: 1.1, ridges: [0.15, 0.25, 0.35, 0.45], studs: 4, tilt: 1.52, horn: 0.55 })));
+fx(209, "Fat tentacles, shell tipped up behind.", () => _fatDragger(Object.assign({}, _fd, { tilt: 1.15, gap: 0.55, horn: 0.6 })));
+fx(210, "Fat tentacles, long and spread wide.", () => _fatDragger(Object.assign({}, _fd, { tentArc: 4.6, tn: 20, step: 0.08, spread: 2.0, out: 0.85, lift: 0.14, tr: 0.105 })));
+fx(211, "Fat tentacles, a tight bunch.", () => _fatDragger(Object.assign({}, _fd, { tentArc: 2.6, tents: 4, out: 0.25, spread: 0.6, horn: 0.7, hornTilt: 0.55 })));
+fx(212, "Fat tentacles, close behind, narwhal horn.", () => _fatDragger(Object.assign({}, _fd, { gap: 0.45, horn: 0.9, hornTilt: 0.4, hornR: 0.075, tents: 5, tentArc: 3.6 })));
