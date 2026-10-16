@@ -16,7 +16,14 @@ function _slugReal(o) {
     if (o.hexFill) { const fl = new T.Mesh(new T.CylinderGeometry(0.62, 0.62, 0.02, 6), edgeMat); fl.position.y = 0.05; hg.add(fl); }
     b.add(hg); hexes.push({ hg, u, th, j }); }
   // the head: spike, two long eye-stalks (a crystal rim round a black centre), two short feelers
-  const hg2 = G(); b.add(hg2); const horn = G(); hg2.add(horn); const hc = hexCrystal(o.hornR, o.horn * 0.8, o.horn * 0.4, _gemMatGloss); hc.position.y = o.horn * 0.4 + 0.03; horn.add(hc); horn.rotation.x = o.hornTilt;
+  const hg2 = G(); b.add(hg2); const horn = G(); hg2.add(horn); horn.rotation.x = o.hornTilt; const edgeL = new T.LineBasicMaterial({ color: 0x2a6a74, transparent: true, opacity: 0.9 });
+  const blade = (w, d, len, sides, curve) => { const geo = new T.ConeGeometry(w, len, sides, 6, false), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const y = p.getY(v) / len + 0.5; p.setZ(v, p.getZ(v) * d + (curve || 0) * y * y * len); } geo.translate(0, len / 2 + 0.03, 0); geo.computeVertexNormals(); const m = new T.Mesh(geo, _gemMatGloss), grp = G(); grp.add(m); grp.add(new T.LineSegments(new T.EdgesGeometry(geo, 20), edgeL)); return grp; };
+  const hs = o.hornStyle || 'blade';
+  if (hs === 'blade') horn.add(blade(o.hornW, 0.42, o.horn, 6, 0));                     // a broad flat blade: wide at the base, a needle tip
+  else if (hs === 'tusk') horn.add(blade(o.hornW * 0.95, 0.6, o.horn, 6, 0.22));          // broad, curving forward like a tusk
+  else if (hs === 'pyramid') horn.add(blade(o.hornW * 0.9, 0.9, o.horn, 4, 0));          // a broad four-sided pyramid
+  else if (hs === 'fin') { horn.add(blade(o.hornW * 1.35, 0.26, o.horn, 6, 0)); }        // a very wide, thin blade
+  else if (hs === 'twin') { horn.add(blade(o.hornW, 0.42, o.horn, 6, 0)); for (const sx of [-1, 1]) { const sb = blade(o.hornW * 0.55, 0.4, o.horn * 0.55, 6, 0); sb.position.set(sx * o.hornW * 1.05, 0, 0.02); sb.rotation.z = -sx * 0.42; horn.add(sb); } }   // a main blade with two smaller blades flaring from its base
   const stalks = []; for (const s of [-1, 1]) { const sp = G(), shaft = cyl(o.stalkR * 0.45, o.stalkR, 1, mat, 10); sp.add(shaft); const eye = G(); const col = hexCrystal(o.eyeR * 1.0, o.eyeR * 0.5, o.eyeR * 0.3, M.crystal); col.rotation.x = PI / 2; eye.add(col);   // a thin crystal collar at the tip of a tapering stalk
     const bead = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.9, 14, 12), new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.12, metalness: 0.3 })); bead.position.z = o.eyeR * 0.45; bead.scale.set(1, 1, 0.9); eye.add(bead);   // the eye: a small glossy black bead
     const gl = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.16, 6, 5), new T.MeshBasicMaterial({ color: 0xcfe9ff })); gl.position.set(o.eyeR * 0.3, o.eyeR * 0.35, o.eyeR * 1.2); eye.add(gl); sp.add(eye); hg2.add(sp); stalks.push({ sp, shaft, eye, s }); }
@@ -36,7 +43,7 @@ function _slugReal(o) {
     feelers.forEach(F => { F.f.position.set(F.s * rad[N - 1] * 0.5, -rad[N - 1] * 0.05, rad[N - 1] * 0.75); F.f.rotation.set(PI / 2 + 0.3 + 0.12 * Math.sin(ph * 3 + F.s), 0, F.s * 0.5); });
     foot.position.z = 0.01 + lunge * 0.4; L2.intensity = 0.5 + 0.4 * Math.sin(ph * 2) + 0.7 * ac; } };
 }
-const _rB = { len: 1.9, rad: 0.3, flat: 0.8, arch: 0.04, horn: 0.9, hornR: 0.11, hornTilt: 0.34, stalkLen: 0.34, stalkSep: 0.26, stalkR: 0.02, eyeR: 0.036, mantle: 0.14, hexRows: 5, hexCols: 9, hexU0: 0.12, hexU1: 0.84, hexTh: 0.34, hexSize: 0.2, keel: true };
+const _rB = { len: 1.9, rad: 0.3, flat: 0.8, arch: 0.04, horn: 1.0, hornR: 0.11, hornW: 0.2, hornTilt: 0.34, stalkLen: 0.34, stalkSep: 0.26, stalkR: 0.02, eyeR: 0.036, mantle: 0.14, hexRows: 5, hexCols: 9, hexU0: 0.12, hexU1: 0.84, hexTh: 0.34, hexSize: 0.2, keel: true };
 fx(410, "Realistic slug: blue body, honeycomb of black hexagon scutes with teal edges down its back.", () => _slugReal(Object.assign({}, _rB)));
 fx(411, "Realistic slug, large hexes: bigger, bolder scutes.", () => _slugReal(Object.assign({}, _rB, { hexRows: 3, hexCols: 6, hexTh: 0.5, hexSize: 0.34 })));
 fx(412, "Realistic slug, fine hexes: a tight honeycomb over most of the body.", () => _slugReal(Object.assign({}, _rB, { hexRows: 7, hexCols: 14, hexTh: 0.26, hexSize: 0.13, hexU0: 0.08 })));
@@ -45,3 +52,10 @@ fx(414, "Realistic slug, stout: a shorter, fatter body, big mantle.", () => _slu
 fx(415, "Realistic slug, long leopard slug: a stretched body, hexes along the whole length.", () => _slugReal(Object.assign({}, _rB, { len: 2.5, rad: 0.25, flat: 0.74, hexCols: 14, hexSize: 0.17, hexU0: 0.08 })));
 fx(416, "Realistic slug, blue-on-blue hexes: raised scutes in a darker blue, no black.", () => _slugReal(Object.assign({}, _rB, { hexMat: new T.MeshStandardMaterial({ color: 0x010a50, roughness: 0.5, flatShading: true }), hexSize: 0.21 })));
 fx(417, "Realistic slug, arched hunch: a raised back, a crouching slug.", () => _slugReal(Object.assign({}, _rB, { arch: 0.17, len: 1.7 })));
+
+// ── 410's slug with a sharper, broader horn (Nos. 418–422) ──
+fx(418, "Horn: a broad flat blade, wide at the base and a needle-sharp tip.", () => _slugReal(Object.assign({}, _rB, { hornStyle: 'blade', hornW: 0.2, horn: 1.05 })));
+fx(419, "Horn: a broad tusk curving forward.", () => _slugReal(Object.assign({}, _rB, { hornStyle: 'tusk', hornW: 0.2, horn: 1.05, hornTilt: 0.2 })));
+fx(420, "Horn: a broad four-sided pyramid.", () => _slugReal(Object.assign({}, _rB, { hornStyle: 'pyramid', hornW: 0.22, horn: 1.0 })));
+fx(421, "Horn: a very wide thin blade, like a sail.", () => _slugReal(Object.assign({}, _rB, { hornStyle: 'fin', hornW: 0.2, horn: 1.1 })));
+fx(422, "Horn: a main blade with two smaller blades flaring from its base.", () => _slugReal(Object.assign({}, _rB, { hornStyle: 'twin', hornW: 0.2, horn: 1.05 })));
