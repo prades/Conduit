@@ -393,6 +393,11 @@ function _hoodPyramid(o) {
   const L = new T.PointLight(0xffffff, 1.4, 3.2, 2); L.color.set(EL.color); L.position.set(0, dY, dz + 0.1); pv.add(L); LIGHTS.push(L);
   const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.07, 0.16, 0.22, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
   // IRREGULAR BLACK SHARDS GROWN FROM THE COAT: rooted in the pyramid's faces and ridges, each its own size, angle and shape
+  // CUTE extras: two little eyes by the diamond, stubby feet peeking under the hem, a bobble on the apex, a squash-and-stretch bounce
+  const cute = { eyes: [], feet: [] };
+  if (o.eyes) for (const sx of [-1, 1]) { const e = new T.Mesh(new T.SphereGeometry(o.eyeR || 0.05, 10, 8), M.glow); e.scale.set(0.8, 1.15, 0.5); e.position.set(sx * (o.eyeX || 0.17), dY + (o.eyeY || 0.02), dz + (o.eyeZ || 0.24)); pv.add(e); cute.eyes.push(e); }
+  if (o.feet) for (const [fx2, fz2] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) { const f = cbox(0.22, 0.17, 0.26, 0.06, _hoodBlack); f.position.set(fx2 * R * 0.45, 0.1, fz2 * R * 0.38); b.add(f); cute.feet.push({ f, fz2, fx2 }); }
+  if (o.bobble) { const bb = new T.Mesh(new T.SphereGeometry(0.075, 12, 10), _hoodBlack); bb.position.y = H + 0.06; pv.add(bb); }
   const jolts = [];   // the coat's shards, to be jolted
   if (o.attached) { const A = o.attached, UPV2 = new T.Vector3(0, 1, 0), faces = [PI / 2, PI, -PI / 2], A0 = R * Math.SQRT1_2, rn = (i, k) => _hz(i * 5 + 1, A.seed + k * 11, k);
     const shapeK = A.shape || 'cone', mkShard = (len, r, i) => { const geo = shapeK === 'hex' ? new T.CylinderGeometry(r * 0.3, r, len, 6, 1) : new T.ConeGeometry(r, len, 4 + Math.floor(rn(i, 40) * 3), 1), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const x = p.getX(v), y = p.getY(v), z = p.getZ(v), n = _hz(Math.round(x * 400) + i, Math.round(y * 400), Math.round(z * 400)); p.setXYZ(v, x * (0.7 + 0.6 * n) * (shapeK === 'blade' ? 2.4 : shapeK === 'needle' ? 0.5 : 1), y, z * (0.7 + 0.6 * (1 - n)) * (shapeK === 'blade' ? 0.3 : shapeK === 'needle' ? 0.5 : 1)); } geo.translate(0, len / 2, 0); geo.computeVertexNormals(); return new T.Mesh(geo, _hoodBlack); };
@@ -425,7 +430,10 @@ function _hoodPyramid(o) {
       J.m.scale.set(1 + 0.04 * pop * h1, 1 + (0.09 * pop + 0.2 * ac) * h2 + 0.02, 1 + 0.04 * pop * h1); } };
   return { g, core: (hv + dY) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
     if (o.jolt) jolt(ph, ac);
-    pv.position.y = hv + 0.03 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; d.rotation.y = ph * 0.7; dc.rotation.y = -ph * 0.7; d.position.y = dY + 0.02 * Math.sin(ph * 2); dc.position.y = d.position.y;
+    if (o.bounce) { const sq = Math.sin(ph * 2); pv.position.y = hv + 0.05 * Math.abs(Math.sin(ph)); pv.scale.set(1 - 0.035 * sq, 1 + 0.07 * sq, 1 - 0.035 * sq); pv.rotation.z = 0.04 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; }
+    else { pv.position.y = hv + 0.03 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; }
+    cute.eyes.forEach(e => e.scale.y = 1.15 * (Math.sin(ph * 2 + 1.3) > 0.93 ? 0.12 : 1) * (1 + 0.2 * ac));   // a blink
+    cute.feet.forEach(F => { F.f.position.z = F.fz2 * R * 0.38 + 0.05 * Math.sin(ph * 2 + (F.fx2 > 0 ? PI : 0) + (F.fz2 > 0 ? 0 : PI / 2)); F.f.position.y = 0.09 + 0.025 * Math.max(0, Math.sin(ph * 2 + (F.fx2 > 0 ? PI : 0))); }); d.rotation.y = ph * 0.7; dc.rotation.y = -ph * 0.7; d.position.y = dY + 0.02 * Math.sin(ph * 2); dc.position.y = d.position.y;
     dg.scale.setScalar(o.dR * (8 + 2 * Math.sin(ph * 3) + 5 * ac)); L.intensity = 1.4 + 0.4 * Math.sin(ph * 3) + 0.8 * ac;
     for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, hv + H * 0.55 + 0.06 * Math.sin(ph * 2 + s.s), 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); }
     for (const q of bsh) if (q.orbit) { const a = ph * 0.8 + q.ph; q.g.position.set(Math.sin(a) * q.rad, hv + H * q.hy + 0.05 * Math.sin(ph * 2 + q.ph), Math.cos(a) * q.rad * 0.7 + 0.05); q.g.rotation.set(0.15 * Math.sin(ph + q.ph), a, 0.2); } } };

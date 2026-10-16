@@ -60,3 +60,12 @@ fx(378, "Long thin needles, swaying together like grass in wind.", () => _hoodPy
 fx(379, "Flat black blades that fan open and closed.", () => _hoodPyramid(Object.assign({}, _hm, { motion: 'fan', attached: { n: 10, uMin: 0.1, uMax: 0.6, len: [0.26, 0.5], skew: 1, seed: 7, twin: 0.1, ridge: 0.45, fat: 1.6, shape: 'blade' } })));
 fx(380, "Black hex crystals growing and shrinking as if breathing.", () => _hoodPyramid(Object.assign({}, _hm, { motion: 'breathe', attached: { n: 13, uMin: 0.08, uMax: 0.7, len: [0.15, 0.42], skew: 1.2, seed: 9, twin: 0.5, ridge: 0.3, fat: 2.2, shape: 'hex' } })));
 fx(381, "Big and small mixed, a pulse running from the base up to the tips.", () => _hoodPyramid(Object.assign({}, _hm, { motion: 'sweep', attached: { n: 17, uMin: 0.04, uMax: 0.75, len: [0.08, 0.58], skew: 1.8, seed: 13, twin: 0.3, ridge: 0.25, fat: 2 } })));
+
+// ── 380, cuter (Nos. 382–386): chubbier, rounder, with a face and feet ──
+const _c380 = Object.assign({}, _hm, { motion: 'breathe', yaw: 0.35 });
+const _cA = (extra) => Object.assign({ n: 9, uMin: 0.08, uMax: 0.68, len: [0.1, 0.26], skew: 1, seed: 9, twin: 0.7, ridge: 0.3, fat: 3.2, shape: 'hex' }, extra || {});
+fx(382, "Chubby: a shorter, wider hood, short fat crystal nubs, a squash-and-stretch bounce.", () => _hoodPyramid(Object.assign({}, _c380, { H: 0.72, R: 0.9, dR: 0.25, trim: 0.026, bounce: true, attached: _cA() })));
+fx(383, "Peeking eyes: two big glowing eyes flanking the diamond that blink.", () => _hoodPyramid(Object.assign({}, _c380, { H: 0.78, R: 0.9, dR: 0.17, dY: 0.4, dZ: -0.02, trim: 0.026, bounce: true, eyes: true, eyeR: 0.09, eyeX: 0.26, eyeY: 0.0, eyeZ: 0.2, attached: _cA() })));
+fx(384, "Tiny feet: four chunky feet right under the hem, shuffling as it bounces.", () => _hoodPyramid(Object.assign({}, _c380, { H: 0.72, R: 0.9, hover: 0.2, dR: 0.25, trim: 0.026, bounce: true, feet: true, attached: _cA() })));
+fx(385, "Little tufts: the crystals in small bunches, and a round bobble on the apex.", () => _hoodPyramid(Object.assign({}, _c380, { H: 0.72, R: 0.9, dR: 0.25, trim: 0.026, bounce: true, bobble: true, attached: _cA({ n: 6, twin: 0.95, len: [0.12, 0.3], fat: 3 }) })));
+fx(386, "All of it: chubby, big eyes, feet, tufts, bobble and bounce.", () => _hoodPyramid(Object.assign({}, _c380, { H: 0.74, R: 0.92, hover: 0.2, dR: 0.17, dY: 0.4, dZ: -0.02, trim: 0.026, bounce: true, eyes: true, eyeR: 0.09, eyeX: 0.26, eyeY: 0.0, eyeZ: 0.2, feet: true, bobble: true, attached: _cA({ n: 6, twin: 0.95, len: [0.12, 0.3], fat: 3 }) })));
