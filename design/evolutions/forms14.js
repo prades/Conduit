@@ -392,10 +392,17 @@ function _hoodPyramid(o) {
   const dc = dm.core; dc.position.set(0, dY, dz); pv.add(dc); const dg = glowSprite(o.dR * 8); dg.position.set(0, dY, dz); pv.add(dg);
   const L = new T.PointLight(0xffffff, 1.4, 3.2, 2); L.color.set(EL.color); L.position.set(0, dY, dz + 0.1); pv.add(L); LIGHTS.push(L);
   const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.07, 0.16, 0.22, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
+  // exterior shards are BLACK, the coat's own material: orbiting the hood, as horns on its corners, a crown above the apex, or lying round its base
+  const bsh = [], blk = (r, h, t) => hexCrystal(r, h, t, _hoodBlack);
+  if (o.black === 'orbit') for (let i = 0; i < (o.blackN || 2); i++) { const gg = G(); gg.add(blk(0.07, 0.14, 0.24)); b.add(gg); bsh.push({ g: gg, orbit: true, ph: i * TAU / (o.blackN || 2), rad: o.shardR, hy: 0.5 }); }
+  if (o.black === 'horns') for (let k = 0; k < 4; k++) { const a = PI / 4 + k * PI / 2, hh = G(), c = blk(0.045, 0.1, 0.26); hh.add(c); hh.position.set(Math.sin(a) * R * 0.62, H * 0.28, Math.cos(a) * R * 0.62); hh.rotation.set(Math.cos(a) * 0.9, 0, -Math.sin(a) * 0.9); pv.add(hh); }
+  if (o.black === 'crown') { const c = blk(0.06, 0.12, 0.4); c.position.y = H + 0.28; pv.add(c); }
+  if (o.black === 'base') for (let k = 0; k < 7; k++) { const a = k * TAU / 7 + 0.3, c = blk(0.045 + 0.02 * _hz(k, 3, 1), 0.08 + 0.05 * _hz(k, 3, 2), 0.18 + 0.1 * _hz(k, 3, 3)), hh = G(); hh.add(c); hh.position.set(Math.sin(a) * R * 1.12, 0, Math.cos(a) * R * 1.12); hh.rotation.set(Math.cos(a) * 0.5, 0, -Math.sin(a) * 0.5); hh.position.y = 0.1; b.add(hh); }
   return { g, core: (hv + dY) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
     pv.position.y = hv + 0.03 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; d.rotation.y = ph * 0.7; dc.rotation.y = -ph * 0.7; d.position.y = dY + 0.02 * Math.sin(ph * 2); dc.position.y = d.position.y;
     dg.scale.setScalar(o.dR * (8 + 2 * Math.sin(ph * 3) + 5 * ac)); L.intensity = 1.4 + 0.4 * Math.sin(ph * 3) + 0.8 * ac;
-    for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, hv + H * 0.55 + 0.06 * Math.sin(ph * 2 + s.s), 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); } } };
+    for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, hv + H * 0.55 + 0.06 * Math.sin(ph * 2 + s.s), 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); }
+    for (const q of bsh) if (q.orbit) { const a = ph * 0.8 + q.ph; q.g.position.set(Math.sin(a) * q.rad, hv + H * q.hy + 0.05 * Math.sin(ph * 2 + q.ph), Math.cos(a) * q.rad * 0.7 + 0.05); q.g.rotation.set(0.15 * Math.sin(ph + q.ph), a, 0.2); } } };
 }
 const _hp = { yaw: 0.05, hover: 0.35, H: 1.0, R: 0.62, dR: 0.15, shardR: 0.72 };
 fx(293, "Hood pyramid, diamond inside.", () => _hoodPyramid(Object.assign({}, _hp)));
@@ -428,3 +435,12 @@ fx(313, "Drooping hood, arched brim, banded diamond.", () => _hoodPyramid(Object
 
 // The game version of No. 312: its open front faces the way it faces (yaw 0), scaled to fill a sprite cell.
 fx(314, "Drooping hood, arched brim, octahedron: the game sprite.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'octa', flapDrop: -0.12, flap: 0.38, yaw: 0, S: 1.45 })));
+
+// ── No exterior crystals, except black ones that match the coat (Nos. 315–320). The diamond sits wholly INSIDE the hollow. ──
+const _hi = Object.assign({}, _hp, { yaw: 0.6, R: 0.8, H: 1.0, tilt: 0.22, hover: 0.3, cut: 'octa', dR: 0.17, dY: 0.42, dZ: 0.02, flap: 0.36, flapDrop: -0.1, flapBow: 0.06 });
+fx(315, "Diamond wholly inside the hood, no exterior shards.", () => _hoodPyramid(Object.assign({}, _hi)));
+fx(316, "Two black shards orbiting the hood.", () => _hoodPyramid(Object.assign({}, _hi, { black: 'orbit', blackN: 2, shardR: 0.78 })));
+fx(317, "Four black shards orbiting.", () => _hoodPyramid(Object.assign({}, _hi, { black: 'orbit', blackN: 4, shardR: 0.82 })));
+fx(318, "Black shards as horns on the hood's corners.", () => _hoodPyramid(Object.assign({}, _hi, { black: 'horns' })));
+fx(319, "A black crown shard above the apex.", () => _hoodPyramid(Object.assign({}, _hi, { black: 'crown' })));
+fx(320, "Black shards lying round the base.", () => _hoodPyramid(Object.assign({}, _hi, { black: 'base' })));
