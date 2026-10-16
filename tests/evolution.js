@@ -55,8 +55,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a hybrid fights as a brawler');
         mk('flux', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux camper waits');
     });
-    check('THE ASK: a CORE BRAWLER becomes the AEGIS WARDEN (design No. 57); an ELECTRIC BRAWLER the PRISM HOOD (No. 312, which replaced the Storm Manta)', () => {
-        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'warden', 'core brawler');
+    check('THE ASK: a CORE BRAWLER becomes the HAMMER SLUG (design No. 467, which replaced the Aegis Warden); an ELECTRIC BRAWLER the PRISM HOOD (No. 388, which replaced the Storm Manta)', () => {
+        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'core brawler'); same(run('unitTypeLabel(__f)'), 'HAMMER SLUG', 'its tag'); ok(run('EVOLUTIONS.warden.legacy === true'), 'the Aegis Warden is no longer handed out');
         mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'prism', 'electric brawler');
         same(run('unitTypeLabel(__f)'), 'PRISM HOOD', 'its tag'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
         mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'reaver', 'the electric sniper is still the Reaver');
@@ -65,7 +65,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux brawler on worker duty');
         mk('flux', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux SNIPER on worker duty is a worker first');
         mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a flux brawler on the line is the Rift Mimic');
-        mk('core', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core brawler on worker duty is the Worm Vessel, not the Aegis Warden');
+        mk('core', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core brawler on worker duty is the Worm Vessel, not the Hammer Slug');
         mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'pod', 'an electric worker is the Dynamo Pod, not the Prism Hood');
         mk('flux', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'serpent', 'a flux sniper on the line is the Serpent');
     });
@@ -89,7 +89,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'hornshell', 'its form'); same(r.tag, 'HORNSHELL', 'its tag'); same(r.role, 'sniper', 'its role id');
         ok(run('EVOLUTIONS.petal.legacy === true'), 'the Petal Aegis is no longer handed out'); same(run('evolutionFor({ isFollower: true, element: "core", role: "sniper" }).id'), 'hornshell', 'evolutionFor');
-        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'warden', 'the core brawler');
+        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'the core brawler');
         mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core camper waits');
         mk('core', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core mage on worker duty is a worker first');
     });
@@ -299,6 +299,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.outside, 0, 'damage to one outside the blast');
         ok(r.allyShield > 0 && r.ownShield > 0 && !r.farShield, 'the shields: ' + JSON.stringify(r));
     });
+    check('the HAMMER SLUG casts the same AEGIS BURST (a blast that shoves enemies and shields allies) as the Aegis Warden did', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'hammerslug'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            spawnFollowerAtCrystal('fire'); const al = followers[1]; al.returningToCrystal = false; al.x = 21.5; al.y = 2; al.shielded = false; al.shieldAmount = 0;
+            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 21.2, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            const x0 = p.x; frame++; f._sigCd = 1; evolutionTick(); const out = { dmg: 1e6 - p.health, pushed: p.x - x0, shield: al.shielded ? al.shieldAmount : 0 }; p.dead = true; return out; })()`);
+        ok(r.dmg > 0 && r.pushed > 0.3 && r.shield > 0, 'the hammer slug did not burst: ' + JSON.stringify(r));
+    });
     check('THE ASK: STATIC RUSH — it dashes to the nearest enemy, hits it, shocks two more, and stuns them all', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'manta'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
@@ -446,7 +454,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
@@ -458,7 +466,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone', 'hammerslug']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);

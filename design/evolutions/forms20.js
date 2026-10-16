@@ -212,3 +212,6 @@ const _b460 = Object.assign({}, _h456, {});
 fx(466, "460, a rounder, puffier head: softer lobes, a thick rim, no thin edges.", () => _slugReal(Object.assign({}, _b460, { hammer: { smooth: true, w: 0.64, d: 0.42, thC: 0.22, thE: 0.11, fillet: 0.18, neck: 0.5, back: 0.6, pow: 2, tipFwd: 0.06 } })));
 fx(467, "460, with a round bobble at each tip of the head.", () => _slugReal(Object.assign({}, _b460, { hammer: { smooth: true, w: 0.62, d: 0.38, thC: 0.2, thE: 0.08, fillet: 0.18, neck: 0.5, back: 0.6, pow: 2.4, tipFwd: 0.04, bob: 0.1 } })));
 fx(468, "460, two round cheeks: a rounder head with a soft dip at the front centre.", () => _slugReal(Object.assign({}, _b460, { hammer: { smooth: true, w: 0.64, d: 0.44, thC: 0.24, thE: 0.12, fillet: 0.2, neck: 0.5, back: 0.6, pow: 1.9, tipFwd: 0.0, notch: 0.22 } })));
+
+// The game sprite of No. 467: the slug facing forward, sized for its cell.
+fx(469, "467, the game sprite.", () => _slugReal(Object.assign({}, _b460, { S: 1.3, hammer: { smooth: true, w: 0.62, d: 0.38, thC: 0.2, thE: 0.08, fillet: 0.18, neck: 0.5, back: 0.6, pow: 2.4, tipFwd: 0.04, bob: 0.1 } })));

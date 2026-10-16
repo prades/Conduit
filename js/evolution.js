@@ -22,7 +22,11 @@
 //          REAVER, ARC VOLLEY: with an enemy within REAVER_RANGE, every
 //          REAVER_EVERY frames it fans its blades and fires a charged arc
 //          (REAVER_MULT × its power) that jumps to REAVER_CHAIN more enemies.
-//          AEGIS WARDEN (the core brawler, No. 57), AEGIS BURST: with an enemy
+//          HAMMER SLUG (the CORE BRAWLER, design No. 467: a slug with a hammerhead and bobbles at its tips,
+//          a uniform hexagon tile cover either side of a spiked spine, a small horn) replaced the Aegis Warden
+//          for new evolutions and casts the same AEGIS BURST (the Aegis Warden stays defined, marked legacy,
+//          for followers already evolved into it).
+//          AEGIS WARDEN (the old core brawler, No. 57), AEGIS BURST: with an enemy
 //          within WARDEN_RADIUS, every WARDEN_EVERY frames its shells fly out in
 //          a blast (WARDEN_MULT × its power) that shoves enemies back and gives
 //          it and every ally round it a shield (WARDEN_SHIELD of max health).
@@ -131,7 +135,8 @@ const EVOLUTIONS = {
     // Its reactor is in its head, which moves with its facing: the sheet carries its own light.
     serpent:{ id: "serpent",name: "SERPENT",      element: "flux",     role: "sniper",  move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
               cell: 144, anchor: [72, 114.2], core: [72, 61], noGlow: true, color: "#bb66ff" },
-    warden: { id: "warden", name: "AEGIS WARDEN", element: "core",     role: "brawler", move: "AEGIS BURST",  sheet: "img/evo/warden.png",
+    // LEGACY: the first core brawler. New evolutions use the Hammer Slug; a follower already evolved into this keeps it.
+    warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", move: "AEGIS BURST",  sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
     // LEGACY: the first electric brawler. New evolutions use the Prism Hood; a follower already evolved into this keeps it.
     manta:  { id: "manta",  legacy: true, name: "STORM MANTA",  element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/manta.png",
@@ -149,6 +154,9 @@ const EVOLUTIONS = {
     // The ELECTRIC BRAWLER, design No. 312: a black hollow pyramid hood over a diamond. The diamond turns, so its sheet carries its own light.
     prism:  { id: "prism",  name: "PRISM HOOD",   element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/prism.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ffee33" },
+    // The CORE BRAWLER, design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
+    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "brawler", move: "AEGIS BURST", sheet: "img/evo/hammerslug.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 99.5], noGlow: true, color: "#33e6c4" },
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
     hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "AEGIS BLOOM", sheet: "img/evo/hornshell.png",
@@ -216,7 +224,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom" || d.id === "quillstone") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
-        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta" || d.id === "prism") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera") eruption(f); else if (d.id === "maw") chomp(f);
+        else if (d.id === "warden" || d.id === "hammerslug") aegisBurst(f); else if (d.id === "manta" || d.id === "prism") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera") eruption(f); else if (d.id === "maw") chomp(f);
     }
 }
 function _evoFoes(x, y, r) {
