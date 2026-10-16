@@ -43,6 +43,13 @@ function _porcupine(o) {
   const feet = []; for (let i = 0; i < 4; i++) { const fx = (i % 2 ? -1 : 1) * sx * 0.36, fz = (i < 2 ? 1 : -1) * sz * 0.36, ft = cbox(0.14, 0.1, 0.18, 0.03, _rockBlack); ft.position.set(fx, -cy + 0.07, fz); body.add(ft); feet.push(ft); }
   const mat = _redShardMat(o.glow), UPV2 = new T.Vector3(0, 1, 0), quills = [];
   const rn = (i, k) => _hz(i * 7 + 3, o.seed + k * 13, k);
+  const ants = [];
+  if (o.antennae) { const am = o.gem ? (o.glossy ? _gemMatGloss : _gemMatMatte) : _rockBlack; for (const sgn of [-1, 1]) { const phi = sgn * (o.antPhi || 0.3), polar = o.antPolar || 0.62, dirN = new T.Vector3(Math.sin(polar) * Math.sin(phi), Math.cos(polar), Math.sin(polar) * Math.cos(phi)).normalize();
+      let pos = new T.Vector3(dirN.x * sx * 0.9, dirN.y * sy * 0.9, dirN.z * sz * 0.9);
+      if (o.gem) { rock.updateMatrixWorld(true); const org = dirN.clone().multiplyScalar(4), wO = body.localToWorld(org.clone()), wC = body.localToWorld(new T.Vector3(0, 0, 0)); ray.set(wO, wC.sub(wO).normalize()); const hit = ray.intersectObject(hitMesh, false)[0]; if (hit) pos = body.worldToLocal(hit.point.clone()).addScaledVector(dirN, -0.03); }
+      const al = o.antLen || 0.24, ar = o.antR || 0.075, an = new T.Group(); const stem = new T.Mesh(new T.CylinderGeometry(ar * 0.78, ar, al, 8), am); stem.position.y = al / 2; an.add(stem);
+      const knob = new T.Mesh(new T.SphereGeometry(ar * 1.22, 10, 8), am); knob.position.y = al; an.add(knob);   // chubby, rounded tip
+      an.position.copy(pos); const dir = new T.Vector3(sgn * 0.28, 0.75, 0.62).normalize(); an.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), dir); body.add(an); ants.push({ g: an, q: an.quaternion.clone(), sgn }); } }
   const placed = o.place ? o.place() : null;
   if (placed) for (let i = 0; i < placed.length; i++) { const P = placed[i], dirN = new T.Vector3(Math.sin(P.polar) * Math.sin(P.phi), Math.cos(P.polar), Math.sin(P.polar) * Math.cos(P.phi)).normalize();
     let pos = new T.Vector3(dirN.x * sx * 0.9, dirN.y * sy * 0.9, dirN.z * sz * 0.9);
@@ -64,6 +71,7 @@ function _porcupine(o) {
   return { g, core: (cy + sy * 0.3) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
     body.position.y = cy + 0.012 * Math.sin(ph * 2) + 0.03 * ac; body.rotation.z = 0.035 * Math.sin(ph); body.rotation.x = 0.025 * Math.sin(ph * 2 + 1) - 0.12 * ac;   // a crawling waddle; it hunches when it attacks
     const q = new T.Quaternion(), e = new T.Euler(); for (const Q of quills) { e.set(0.05 * Math.sin(ph * 2 + Q.i) * (1 + 3 * ac), 0, 0.05 * Math.sin(ph * 3 + Q.i * 1.7) * (1 + 3 * ac)); q.setFromEuler(e); Q.m.quaternion.copy(Q.q).multiply(q); Q.m.scale.y = 1 + 0.25 * ac; }
+    for (const A of ants) { const e2 = new T.Euler(0.14 * Math.sin(ph * 2 + A.sgn) + 0.2 * ac, 0, 0.12 * Math.sin(ph * 3 + A.sgn * 2)); A.g.quaternion.copy(A.q).multiply(new T.Quaternion().setFromEuler(e2)); }   // the feelers sway, and prick up when it attacks
     feet.forEach((f, i) => { f.position.z = (i < 2 ? 1 : -1) * sz * 0.36 + 0.04 * Math.sin(ph + (i % 2 ? PI : 0)); }); } };
 }
 const _pc = { sx: 0.85, sy: 0.7, sz: 0.85, lump: 0.25, seed: 3, n: 36, len: [0.14, 0.42], skew: 1.2, spread: 0.7, back: 0.3, cover: 0.95, fat: 0.16, glow: 0.5 };
@@ -96,3 +104,12 @@ fx(350, "342, a mohawk: a line of shards along the spine, leaning back.", () => 
 fx(351, "342, one flank: a cluster of shards on one side, the other bare.", () => _porcupine(Object.assign({}, _pc, _g342, { place: () => [[0.5, 1.0, 0.62], [0.9, 0.6, 0.5], [0.9, 1.5, 0.44], [1.1, 1.0, 0.36], [0.6, 1.4, 0.5], [1.15, 0.4, 0.3]].map(([polar, phi, len]) => ({ polar, phi: phi + PI / 2 * 0.9, len, out: 0.9, up: 0.55 })) })));
 fx(352, "342, a spiky skirt: shards stick straight out round the girdle, two tiers.", () => _porcupine(Object.assign({}, _pc, _g342, { place: () => [..._ring(8, 1.15, k => 0.46, 1, 0.12, PI / 8)(), ..._ring(8, 0.78, k => 0.34, 1, 0.55, 0)()] })));
 fx(353, "342, a tall spray: three big shards up from the table, small ones round the edge.", () => _porcupine(Object.assign({}, _pc, _g342, { place: () => [{ polar: 0.15, phi: 0.5, len: 0.78, fat: 0.17, out: 0.1, up: 1 }, { polar: 0.2, phi: 2.6, len: 0.62, fat: 0.17, out: 0.2, up: 1 }, { polar: 0.22, phi: 4.7, len: 0.7, fat: 0.17, out: 0.2, up: 1 }, ..._ring(8, 0.95, k => 0.2, 0.9, 0.4, 0)()] })));
+
+// ── Two black chubby antennae at the front, the shell's own colour (Nos. 354–359) ──
+const _ant = { antennae: true, antLen: 0.24, antR: 0.075 };
+fx(354, "342 with two chubby black antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { n: 11, len: [0.3, 0.65], fat: 0.2, seed: 5, top: 1.2, cover: 0.9 })));
+fx(355, "Crown layout with antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { place: () => [{ polar: 0.02, phi: 0, len: 0.7, fat: 0.17, out: 0, up: 1 }, ..._ring(8, 0.62, k => 0.36 + 0.1 * (k % 2), 0.55, 0.8, PI / 8)().filter(P => Math.abs(Math.sin(P.phi / 2)) > 0.3 || Math.cos(P.phi) < 0.2)] })));
+fx(356, "Sea-urchin layout with antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { place: () => Array.from({ length: 8 }, (_, k) => ({ polar: 1.0, phi: k * PI / 4, len: [0.5, 0.4, 0.3, 0.42, 0.55, 0.42, 0.3, 0.4][k], out: 1, up: 0.35 })).filter((P, k) => k !== 0) })));
+fx(357, "Mohawk layout with antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { antPhi: 0.42, place: () => [0, 1, 2, 3, 4, 5].map(k => ({ polar: 0.15 + 0.1 * Math.abs(k - 2.5), phi: PI, len: [0.45, 0.6, 0.68, 0.58, 0.44, 0.3][k], out: 0.15, up: 1, back: 0.5 })) })));
+fx(358, "Spiky-skirt layout with antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { place: () => [..._ring(8, 1.15, k => 0.46, 1, 0.12, PI / 8)().filter(P => Math.cos(P.phi) < 0.8), ..._ring(8, 0.78, k => 0.34, 1, 0.55, 0)().filter(P => Math.cos(P.phi) < 0.5)] })));
+fx(359, "Tall-spray layout with antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { place: () => [{ polar: 0.15, phi: 2.2, len: 0.78, fat: 0.17, out: 0.1, up: 1 }, { polar: 0.2, phi: 3.5, len: 0.62, fat: 0.17, out: 0.2, up: 1 }, { polar: 0.22, phi: 4.9, len: 0.7, fat: 0.17, out: 0.2, up: 1 }, ..._ring(8, 0.95, k => 0.2, 0.9, 0.4, 0)().filter(P => Math.cos(P.phi) < 0.5)] })));
