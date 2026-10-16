@@ -434,14 +434,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('THE ASK: a follower respawns as the element it died as — unless that element has been dropped from the mix', () => {
         const back = (entry, pair) => run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ${JSON.stringify(pair)} };
             const out = []; for (let n = 0; n < 8; n++) { followers.length = 0; actors = actors.filter(a => !a.isFollower);
-                respawnQueue.push(Object.assign({ personality: 'stoic', timer: 1, hpStat: 20 }, ${JSON.stringify(entry)}, { level: 15, xp: xpForLevel(15) })); for (let i = 0; i < 6; i++) render();
-                const g = followers.find(x => !x.dead); out.push(g ? { el: g.element, evo: g.evolved || null } : null); }
+                respawnQueue.push(Object.assign({ personality: 'stoic', timer: 1, hpStat: 20 }, ${JSON.stringify(entry)}, { level: ${entry.level || 15}, xp: xpForLevel(${entry.level || 15}) })); for (let i = 0; i < 6; i++) render();
+                const g = followers.find(x => !x.dead); out.push(g ? { el: g.element, evo: g.evolved || null, lv: g.level, xp: g.xp } : null); }
             activeCrystalModulation = null; return out; })()`);
         const egg = back({ element: 'fire' }, ['fire', 'ice']);
         ok(egg.every(x => x && x.el === 'fire'), 'a fire follower, fire still in the mix, did not come back fire: ' + JSON.stringify(egg));
         const dropped = back({ element: 'fire' }, ['ice', 'toxic']);
         ok(dropped.every(x => x && (x.el === 'ice' || x.el === 'toxic')), 'a fire follower, fire dropped, should come back as one still in the mix: ' + JSON.stringify(dropped));
         ok(dropped.some(x => x.el === 'ice') && dropped.some(x => x.el === 'toxic'), 'it should pick from the whole mix (random): ' + JSON.stringify(dropped));
+        // THE ASK: a re-roll costs half its level (rounded down); keeping its element costs nothing
+        ok(egg.every(x => x.lv === 15), 'a follower that keeps its element keeps its level: ' + JSON.stringify(egg));
+        ok(dropped.every(x => x.lv === 7 && x.xp === 7 * 7 * 7), 'a re-rolled follower should be at half its level (15 -> 7), its XP at the start of that level: ' + JSON.stringify(dropped));
+        const lows = [1, 2, 5].map(L => back({ element: 'fire', level: L }, ['ice'])[0].lv);
+        ok(lows[0] === 1 && lows[1] === 1 && lows[2] === 2, 'half rounds down and never goes below 1: ' + JSON.stringify(lows));
         const evo = back({ element: 'electric', evolved: 'prism' }, ['electric', 'ice']);
         ok(evo.every(x => x && x.el === 'electric' && x.evo === 'prism'), 'an evolved follower, its element still in the mix, should keep its form: ' + JSON.stringify(evo));
         const shed = back({ element: 'electric', evolved: 'prism' }, ['ice']);

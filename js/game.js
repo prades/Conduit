@@ -4422,6 +4422,10 @@ function render() {
                     ? activeCrystalModulation.pair
                     : recruitElementPool();
                 const rElement = (entry.element && rPool.indexOf(entry.element) !== -1) ? entry.element : (rPool[Math.floor(Math.random()*rPool.length)] || entry.element || "fire");
+                // Its element left the mix, so it is RE-ROLLED, and re-rolling costs it half its level (rounded down, never below 1).
+                const _rerolled = !(entry.element && rPool.indexOf(entry.element) !== -1);
+                const _lvBack   = _rerolled && Number.isFinite(entry.level) ? Math.max(1, Math.floor(entry.level / 2)) : entry.level;
+                const _xpBack   = _rerolled && Number.isFinite(entry.level) ? xpForLevel(_lvBack) : entry.xp;
                 // An evolved follower keeps its form only while it is still that form's element; otherwise it comes back an egg
                 // (its level comes with it, so it evolves again, into its new element's form, within half a second).
                 const _evoWas     = entry.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[entry.evolved] : null;
@@ -4445,7 +4449,8 @@ function render() {
                 if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid });
                 if (_evo) npc.evolved = _evo.id;   // before its level, so the evolved stats apply
                 // Its level and XP (less what dying cost) — js/levels.js.
-                if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp, hpStat: entry.hpStat });
+                if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: _lvBack, xp: _xpBack, hpStat: entry.hpStat });
+                if (_rerolled && typeof floatingTexts !== "undefined") floatingTexts.push({ x: npc.x, y: npc.y - 1.4, text: "↻ " + String(npc.element).toUpperCase() + " · LV " + npc.level, color: "#ffd27a", life: 120, vy: -0.05, size: 11 });
                 if (entry.ghostphageLife) npc.health = 1;
                 // A worker comes back a worker (a toxic medic used to come back
                 // a fighter, and stop tending its clone, after every death).
