@@ -159,3 +159,9 @@ fx(450, "Uniform tiles: every tile the same near-black, a teal glow rippling thr
 fx(451, "Uniform tiles: every tile the same deep navy, a blue-white glow rippling through them.", () => _slugReal(Object.assign({}, _u440, { mosaic: _uz({ color: 0x02104a, hue: 0x2a70ff, base: 0.0, amp: 0.12, sharp: 3, metal: 0.2, rough: 0.5 }) })));
 fx(452, "Uniform tiles: every tile the same teal, brighter and dimmer as the wave passes.", () => _slugReal(Object.assign({}, _u440, { mosaic: _uz({ color: 0x011c20, hue: 0x00ccaa, base: 0.012, amp: 0.1, sharp: 2.5, metal: 0.15, rough: 0.5 }) })));
 fx(453, "Uniform tiles: bigger tiles, the same near-black with a teal ripple.", () => _slugReal(Object.assign({}, _u440, { mosaic: _uz({ color: 0x01020a, hue: 0x00ccaa, base: 0.0, amp: 0.13, sharp: 4, metal: 0.45, rough: 0.35 }, 0.115) })));
+
+// ── 453 with a smaller horn (Nos. 454–456) ──
+const _f453 = { mosaic: _uz({ color: 0x01020a, hue: 0x00ccaa, base: 0.0, amp: 0.13, sharp: 4, metal: 0.45, rough: 0.35 }, 0.115) };
+fx(454, "453, horn about two thirds the size.", () => _slugReal(Object.assign({}, _u440, _f453, { horn: 0.68 })));
+fx(455, "453, horn about half the size.", () => _slugReal(Object.assign({}, _u440, _f453, { horn: 0.52 })));
+fx(456, "453, a small horn, about a third the size.", () => _slugReal(Object.assign({}, _u440, _f453, { horn: 0.36 })));
