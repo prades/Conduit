@@ -27,7 +27,7 @@ function _slugReal(o) {
   const stalks = []; for (const s of [-1, 1]) { const sp = G(), shaft = cyl(o.stalkR * 0.45, o.stalkR, 1, mat, 10); sp.add(shaft); const eye = G(); const col = hexCrystal(o.eyeR * 1.0, o.eyeR * 0.5, o.eyeR * 0.3, M.crystal); col.rotation.x = PI / 2; eye.add(col);   // a thin crystal collar at the tip of a tapering stalk
     const bead = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.9, 14, 12), new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.12, metalness: 0.3 })); bead.position.z = o.eyeR * 0.45; bead.scale.set(1, 1, 0.9); eye.add(bead);   // the eye: a small glossy black bead
     const gl = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.16, 6, 5), new T.MeshBasicMaterial({ color: 0xcfe9ff })); gl.position.set(o.eyeR * 0.3, o.eyeR * 0.35, o.eyeR * 1.2); eye.add(gl); sp.add(eye); hg2.add(sp); stalks.push({ sp, shaft, eye, s }); }
-  const feelers = []; for (const s of [-1, 1]) { const f = new T.Mesh(new T.ConeGeometry(o.stalkR * 1.3, 0.18, 8), mat); hg2.add(f); feelers.push({ f, s }); }
+  const feelers = []; if (!o.noFeelers) for (const s of [-1, 1]) { const f = new T.Mesh(new T.ConeGeometry(o.stalkR * 1.3, 0.18, 8), mat); hg2.add(f); feelers.push({ f, s }); }
   const L2 = _lamp(b, 0.7, 0.6); const nrm = new T.Vector3(), up = new T.Vector3(0, 1, 0), q = new T.Quaternion(), tan = new T.Vector3();
   return { g, core: 0.4, update(t, act) { const ph = 1.6 * t, ac = act || 0, lunge = 0.25 * ac;
     for (let i = 0; i < N; i++) { const u = i / (N - 1), w = Math.sin(ph * 2 - u * 6.0) * (0.3 + 0.7 * (1 - u)); const r = prof(u); rad[i] = Math.max(0.01, r * (1 + 0.05 * w)); pts[i].set(0, Math.max(0.04, r * o.flat * 0.5 + 0.03 + o.arch * Math.sin(Math.PI * u) + 0.025 * w), -L / 2 + u * L + lunge * u); }
@@ -59,3 +59,9 @@ fx(419, "Horn: a broad tusk curving forward.", () => _slugReal(Object.assign({},
 fx(420, "Horn: a broad four-sided pyramid.", () => _slugReal(Object.assign({}, _rB, { hornStyle: 'pyramid', hornW: 0.22, horn: 1.0 })));
 fx(421, "Horn: a very wide thin blade, like a sail.", () => _slugReal(Object.assign({}, _rB, { hornStyle: 'fin', hornW: 0.2, horn: 1.1 })));
 fx(422, "Horn: a main blade with two smaller blades flaring from its base.", () => _slugReal(Object.assign({}, _rB, { hornStyle: 'twin', hornW: 0.2, horn: 1.05 })));
+
+// ── 420 with bigger eye shafts and no feelers ("teeth") (Nos. 423–425) ──
+const _r420 = Object.assign({}, _rB, { hornStyle: 'pyramid', hornW: 0.22, horn: 1.0, noFeelers: true });
+fx(423, "420: bigger eye shafts, no teeth.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.034, stalkLen: 0.46, stalkSep: 0.3, eyeR: 0.05 })));
+fx(424, "420: much bigger eye shafts.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.045, stalkLen: 0.56, stalkSep: 0.34, eyeR: 0.062 })));
+fx(425, "420: huge eye shafts.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.058, stalkLen: 0.68, stalkSep: 0.38, eyeR: 0.075 })));
