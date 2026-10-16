@@ -293,3 +293,64 @@ fx(279, "Square tentacles, tall shell.", () => _squareBrawler(Object.assign({}, 
 fx(280, "Square tentacles, low wide shell.", () => _squareBrawler(Object.assign({}, _sq, { H: 0.7, R: 0.82, hover: 0.36, seed: 17 })));
 fx(281, "Square tentacles, no shards, big fists.", () => _squareBrawler(Object.assign({}, _sq, { shards: false, armR: 0.15, seed: 19 })));
 fx(282, "Square tentacles, three giant ones.", () => _squareBrawler(Object.assign({}, _sq, { arms: 3, bigArms: 2, armR: 0.21, armLen: 0.95, armArc: 2.8, bands: 3, dR: 0.17, seed: 21 })));
+
+// ── Square wave (Nos. 283–292): the electric brawler's arms are conduits that run in a SQUARE-WAVE path, right-angle steps like a waveform on a scope, a dark steel
+// housing with a glowing core strip along its top, the wave travelling down the arm. Square-wave traces on the shell too. Harder, less cartoony. ──
+function _sqWaveBrawler(o) {
+  const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S);
+  const hv = o.hover, H = o.H, R = o.R, sy = hv + H / 2;
+  const shell = new T.Mesh(new T.ConeGeometry(R, H, 4, 1, true), _stormCloak); shell.rotation.y = PI / 4; shell.position.y = sy; b.add(shell);
+  _pyrEdges(b, 0.001, R, hv + H, hv, 0.03);
+  const hem = new T.Mesh(new T.TorusGeometry(R, 0.032, 4, 4), _boltSilver); hem.rotation.set(PI / 2, 0, PI / 4); hem.position.y = hv; b.add(hem);
+  const under = new T.Mesh(new T.ConeGeometry(R * 0.98, H * 0.98, 4, 1, true), new T.MeshBasicMaterial({ color: 0x010206, side: T.BackSide })); under.rotation.y = PI / 4; under.position.y = sy; b.add(under);
+  const coreMat = new T.MeshBasicMaterial({ color: new T.Color(EL.color).lerp(new T.Color(0xffffff), 0.3), toneMapped: false });
+  // square-wave traces etched on the front and right faces, and (option) the bolt armour
+  const ap = R * Math.SQRT1_2, phi = Math.atan(ap / H);
+  for (const az of [0, PI / 2]) { const fg = G(); fg.rotation.y = az; b.add(fg);
+    for (let j = 0; j < o.traces; j++) { const u = 0.18 + j * (0.6 / Math.max(1, o.traces - 1)), wFace = 2 * ap * (1 - u) * 0.82, n = Math.max(2, Math.round(wFace / o.traceStep)), amp = 0.03, tg = G(); tg.position.set(0, hv + H * u, ap * (1 - u) + 0.012); tg.rotation.x = -phi; fg.add(tg);
+      for (let k = 0; k < n; k++) { const x0 = -wFace / 2 + k * wFace / n, x1 = x0 + wFace / n, lv = (k % 2 ? 1 : -1) * amp;
+        const run = new T.Mesh(new T.BoxGeometry(x1 - x0 + 0.012, 0.012, 0.012), coreMat); run.position.set((x0 + x1) / 2, lv, 0); tg.add(run);
+        if (k) { const rs = new T.Mesh(new T.BoxGeometry(0.012, amp * 2 + 0.012, 0.012), coreMat); rs.position.set(x0, 0, 0); tg.add(rs); } } }
+    if (o.bolts) { const bl = boltArmour(H * 0.4, ap * 0.4, 0.03); bl.position.set(ap * 0.02, hv + H * 0.66, ap * 0.34 + 0.015); bl.rotation.set(-phi, 0, PI); fg.add(bl); } }
+  const apex = hexCrystal(0.045, 0.08, 0.13, M.crystal); apex.position.y = hv + H + 0.09; b.add(apex);
+  const dY = hv * 0.55, d = hexCrystal(o.dR * 1.1, o.dR * 0.7, o.dR * 1.7, M.crystal); d.position.y = dY; b.add(d); const dc = hexCrystal(o.dR * 0.55, o.dR * 0.4, o.dR * 1.0, M.glow); dc.position.y = dY; b.add(dc);
+  const dg = glowSprite(o.dR * 9); dg.position.y = dY; b.add(dg);
+  // the arms: pools of boxes (housing + core strip), repositioned each frame as the wave travels
+  const hous = _stormCloak.clone(); hous.color.set(0x070b1c); hous.metalness = 0.8; hous.roughness = 0.35;
+  const NB = o.boxes, arms = []; for (let i = 0; i < o.arms; i++) { const a = -o.armArc / 2 + (o.arms > 1 ? i / (o.arms - 1) : 0.5) * o.armArc + (o.armCentre || 0) + (_hz(i, o.seed, 1) - 0.5) * 0.3, pool = [];
+    for (let k = 0; k < NB; k++) { const hm = new T.Mesh(new T.BoxGeometry(1, 1, 1), hous), cm = new T.Mesh(new T.BoxGeometry(1, 1, 1), coreMat); b.add(hm); b.add(cm); pool.push({ hm, cm }); }
+    const plug = cbox(1, 1, 1, 0.1, coreMat); b.add(plug), sp = hexCrystal(0.03, 0.06, 0.1, M.crystal); b.add(sp);
+    arms.push({ a, pool, plug, sp, big: i < o.bigArms, ph: i * 1.3, len: o.armLen * (0.85 + 0.3 * _hz(i, o.seed, 2)) }); }
+  const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.08, 0.18, 0.24, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
+  const L = new T.PointLight(0xffffff, 0.6, 4, 2); L.color.set(EL.color); L.position.set(0, dY, 0.4); b.add(L); LIGHTS.push(L);
+  const dir = new T.Vector3(), P = new T.Vector3();
+  const setBox = (m, cx, cy, cz, sx, sy2, sz, yaw) => { m.visible = true; m.position.set(cx, cy, cz); m.rotation.set(0, yaw, 0); m.scale.set(sx, sy2, sz); };
+  return { g, core: dY * (o.S || 1) + 0.15, update(t, act) { const ph = 1.6 * t, ac = act || 0;
+    b.position.y = 0.025 * Math.sin(ph); shell.position.y = sy + 0.02 * Math.sin(ph * 2 + 1); d.rotation.y = ph * 0.6; dc.rotation.y = -ph * 0.6; dg.scale.setScalar(o.dR * (9 + 3 * Math.sin(ph * 3) + 5 * ac));
+    for (const A of arms) { const sa = Math.sin(A.a), ca = Math.cos(A.a); const fwd = (A.big ? 0.55 : 0.2) + 0.7 * ac * (A.big ? 1 : 0.5);
+      dir.set(sa * 0.9, 0, ca * 0.7 + fwd).normalize(); const yaw = Math.atan2(dir.x, dir.z), sdx = dir.z, sdz = -dir.x, L2 = A.len * (1 + 0.4 * ac * (A.big ? 1.3 : 1)), lam = o.lam, wph = -ph * o.speed * 2 + A.ph;
+      const bx = sa * R * 0.5, bz = ca * R * 0.5, y0 = hv * 0.55, th0 = o.armT * (A.big ? 1.3 : 1);
+      const yAt = s => Math.max(th0 * 0.5, y0 * (1 - Math.min(1, s / 0.38)) + th0 * 0.5 * Math.min(1, s / 0.38));
+      const ampAt = s => o.amp * (0.45 + 0.55 * Math.min(1, s / 0.4)) * (1 - 0.35 * s / L2), tAt = s => th0 * (1 - 0.45 * s / L2);
+      // breakpoints: where the wave steps (sin changes sign), within (0, L2)
+      const bp = [0]; for (let k = -2; k < 60; k++) { const s = lam * (k * PI + wph) / (2 * PI); if (s > 0.02 && s < L2 - 0.02) bp.push(s); } bp.push(L2); bp.sort((p, q) => p - q);
+      let u = 0; for (const e of A.pool) { e.hm.visible = false; e.cm.visible = false; }
+      const put = (cx, cy, cz, sx, sy2, sz, yw, topY) => { if (u >= NB) return; const e = A.pool[u++]; setBox(e.hm, cx, cy, cz, sx, sy2, sz, yw); setBox(e.cm, cx, cy + sy2 * 0.5 + 0.004, cz, sx * 0.4, 0.014, sz * 0.96, yw); };
+      for (let i = 0; i < bp.length - 1; i++) { const sa2 = bp[i], sb = bp[i + 1], mid = (sa2 + sb) / 2, lv = Math.sin(2 * PI * mid / lam - wph) >= 0 ? 1 : -1, off = lv * ampAt(mid), tt = tAt(mid);
+        put(bx + dir.x * mid + sdx * off, yAt(mid), bz + dir.z * mid + sdz * off, tt, tt, (sb - sa2) + tt, yaw);
+        if (i > 0) { const sS = bp[i], ao = ampAt(sS), t2 = tAt(sS); put(bx + dir.x * sS, yAt(sS), bz + dir.z * sS, t2, t2, 2 * ao + t2, yaw + PI / 2); } }
+      const sE = L2, offE = (Math.sin(2 * PI * sE / lam - wph) >= 0 ? 1 : -1) * ampAt(sE), pxE = bx + dir.x * sE + sdx * offE, pzE = bz + dir.z * sE + sdz * offE, tE = tAt(sE) * (1.6 + 0.6 * ac);
+      A.plug.position.set(pxE, yAt(sE), pzE); A.plug.rotation.y = yaw; A.plug.scale.set(tE, tE, tE * 1.2); A.sp.position.set(pxE + dir.x * 0.06, yAt(sE) + 0.04, pzE + dir.z * 0.06); A.sp.rotation.set(ph * 5 + A.ph, ph * 3, 0); A.sp.scale.setScalar(1 + 0.4 * Math.sin(ph * 6 + A.ph) + 0.8 * ac); }
+    for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, hv + H * 0.7 + 0.06 * Math.sin(ph * 2 + s.s) - 0.1 * ac, 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); } } };
+}
+const _sw = { hover: 0.42, H: 0.95, R: 0.62, dR: 0.13, arms: 5, bigArms: 2, armArc: 4.8, armCentre: 0, armLen: 1.05, armT: 0.075, amp: 0.15, lam: 0.42, speed: 1.0, boxes: 26, traces: 3, traceStep: 0.12, bolts: true, seed: 3, shards: true, shardR: 0.72 };
+fx(283, "Square-wave arms, five, bolt armour.", () => _sqWaveBrawler(Object.assign({}, _sw)));
+fx(284, "Square-wave arms, four thick conduits.", () => _sqWaveBrawler(Object.assign({}, _sw, { arms: 4, armT: 0.1, armArc: 3.6, armLen: 0.95, lam: 0.5, seed: 5 })));
+fx(285, "Square-wave arms, six, tight wave.", () => _sqWaveBrawler(Object.assign({}, _sw, { arms: 6, armT: 0.06, lam: 0.3, amp: 0.1, armArc: 5.2, boxes: 34, seed: 7 })));
+fx(286, "Square-wave arms, wide steps.", () => _sqWaveBrawler(Object.assign({}, _sw, { lam: 0.7, amp: 0.22, armLen: 1.2, seed: 9 })));
+fx(287, "Square-wave arms, no bolts, traces only.", () => _sqWaveBrawler(Object.assign({}, _sw, { bolts: false, traces: 4, traceStep: 0.09, seed: 11 })));
+fx(288, "Square-wave arms, fast wave, short.", () => _sqWaveBrawler(Object.assign({}, _sw, { speed: 2.0, armLen: 0.8, lam: 0.34, seed: 13 })));
+fx(289, "Square-wave arms, tall shell.", () => _sqWaveBrawler(Object.assign({}, _sw, { H: 1.25, R: 0.55, seed: 15 })));
+fx(290, "Square-wave arms, low wide shell.", () => _sqWaveBrawler(Object.assign({}, _sw, { H: 0.7, R: 0.82, hover: 0.36, seed: 17 })));
+fx(291, "Square-wave arms, no shards, heavy front pair.", () => _sqWaveBrawler(Object.assign({}, _sw, { shards: false, bigArms: 2, armT: 0.085, seed: 19 })));
+fx(292, "Square-wave arms, three giant conduits.", () => _sqWaveBrawler(Object.assign({}, _sw, { arms: 3, bigArms: 2, armT: 0.12, armLen: 0.95, armArc: 2.8, lam: 0.55, amp: 0.2, dR: 0.17, seed: 21 })));
