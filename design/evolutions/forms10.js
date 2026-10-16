@@ -34,9 +34,9 @@ function _iceMaw(o) {
   const cave = new T.Mesh(new T.IcosahedronGeometry(R * 0.93, 2), new T.MeshBasicMaterial({ color: new T.Color(EL.color).multiplyScalar(0.07), side: T.BackSide })); cave.scale.y = sy; b.add(cave);
   const floorGlow = new T.Mesh(new T.CircleGeometry(R * 0.7, 10), new T.MeshBasicMaterial({ color: new T.Color(EL.color).multiplyScalar(0.07) })); floorGlow.rotation.x = -PI / 2; floorGlow.position.set(0, 0.02, R * 0.25); b.add(floorGlow);
   for (let i = 0; i < 3; i++) { const sp = hexCrystal(0.05, 0.14 + 0.06 * i, 0.12, M.crystal); sp.position.set((i - 1) * 0.22, 0.1, R * 0.45 + 0.05 * i); sp.rotation.set(0.15 * (i - 1), 0, 0.2 * (i - 1)); b.add(sp); }
-  // the fangs hang from the upper lip; casting, they swing forward and down
+  // the fangs hang INSIDE the mouth, from its ceiling; casting, they swing forward and down
   const a = R * Math.sin(mAng), lipY = R * sy * 0.28 + a * 0.92, lipZ = R * 0.9;
-  const jaw = G(); jaw.position.set(0, lipY, lipZ - 0.1); b.add(jaw);
+  const jaw = G(); jaw.position.set(0, lipY - 0.04, R * 0.52); b.add(jaw);   // inside the cave, hanging from the ceiling of the mouth
   const fangs = []; for (const s of [-1, 1]) { const f = hexCrystal(o.fang, 0.1, o.fangH, M.crystal); f.position.set(s * a * 0.5, -(0.1 + o.fangH * 1.7) / 2 + 0.07, 0.05); f.rotation.z = PI + s * 0.18; jaw.add(f); fangs.push(f); }   // point down, a little inward
   const rub = _iceRubble(R, o.rubble || 12, o.seed || 3, o.rubbleColour); b.add(rub);
   const L = new T.PointLight(0xffffff, 0.5, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.5, R * 0.5); b.add(L); LIGHTS.push(L);
@@ -46,11 +46,11 @@ function _iceMaw(o) {
 // shade(cy, edge): cy = height up the dome (0..1), edge = how far past the mouth's rim this face is (radians).
 const _hexc = h => [((h >> 16) & 255) / 255, ((h >> 8) & 255) / 255, (h & 255) / 255];
 fx(145, "Ice maw, dark shell, frost rim.", () => { const dark = _hexc(0x010204), frost = _hexc(0x0e1830), top = _hexc(0x050a16);
-  return _iceMaw({ R: 0.95, sy: 1.0, mouth: 0.66, fang: 0.15, fangH: 0.42, seed: 3, rubble: 12, rubbleColour: 0x060a14,
+  return _iceMaw({ R: 0.95, sy: 1.0, mouth: 0.66, fang: 0.14, fangH: 0.36, seed: 3, rubble: 12, rubbleColour: 0x060a14,
     shade: (cy, e) => e < 0.3 ? frost : cy > 0.7 ? top : dark }); });
 fx(146, "Ice maw, pale frost shell.", () => { const pale = _hexc(0x0e1830), pale2 = _hexc(0x16223e);
-  return _iceMaw({ R: 0.95, sy: 1.0, mouth: 0.66, fang: 0.15, fangH: 0.42, seed: 5, rubble: 14, rubbleColour: 0x0c1428,
+  return _iceMaw({ R: 0.95, sy: 1.0, mouth: 0.66, fang: 0.14, fangH: 0.36, seed: 5, rubble: 14, rubbleColour: 0x0c1428,
     shade: (cy, e) => e < 0.3 ? pale2 : pale }); });
 fx(147, "Ice maw, dark below, frosted on top.", () => { const dark = _hexc(0x010204), mid = _hexc(0x060c1a), snow = _hexc(0x101c36);
-  return _iceMaw({ R: 0.95, sy: 1.02, mouth: 0.7, fang: 0.16, fangH: 0.46, seed: 7, rubble: 12, rubbleColour: 0x060c1a,
+  return _iceMaw({ R: 0.95, sy: 1.02, mouth: 0.7, fang: 0.15, fangH: 0.4, seed: 7, rubble: 12, rubbleColour: 0x060c1a,
     shade: (cy, e) => cy > 0.62 ? snow : cy > 0.32 ? mid : dark }); });
