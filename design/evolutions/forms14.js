@@ -142,3 +142,57 @@ fx(249, "Storm cloak, shards low.", () => _stormMage(Object.assign({}, _st, { sh
 fx(250, "Storm cloak, shards high by the hood.", () => _stormMage(Object.assign({}, _st, { shardR: 0.5, shardY: 1.2, vipers: 3, seed: 17 })));
 fx(251, "Storm cloak, long tail, high hover.", () => _stormMage(Object.assign({}, _st, { hover: 0.8, tail: 0.6, sy: 0.95, seed: 19 })));
 fx(252, "Storm cloak, bolts thrown back like a mane.", () => _stormMage(Object.assign({}, _st, { vipers: 5, back: 1.0, vlen: 0.95, vw: 0.3, fan: 0.5, seed: 21 })));
+
+// ── The pyramid brawler (Nos. 253–262): the electric BRAWLER. A pyramid helmet shelters a diamond crystal, which is its head and body; below it a
+// pyramid dress; shocking tentacle arms come off the dress and do the attacking. Glossy dark pyramids, silver edges and bolt armour, hovering. ──
+const _arcMat = () => new T.MeshBasicMaterial({ color: new T.Color(EL.color).lerp(new T.Color(0xffffff), 0.25), toneMapped: false, side: T.DoubleSide });
+function _pyrEdges(parent, rT, rB, yT, yB, th, mat) {   // silver edge bars along a 4-sided pyramid / frustum whose corners sit at 45 degrees
+  for (let k = 0; k < 4; k++) { const a = PI / 4 + k * PI / 2, bar = limb(th, mat || _boltSilver); setLink(bar, new T.Vector3(Math.sin(a) * rB, yB, Math.cos(a) * rB), new T.Vector3(Math.sin(a) * rT, yT, Math.cos(a) * rT)); parent.add(bar); }
+}
+function _pyramidBrawler(o) {
+  const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S);
+  const y0 = o.hover, sH = o.skirtH, yTop = y0 + sH, cY = yTop + o.crystalLift;
+  // the dress: a hollow four-sided frustum, wide at the hem; ragged by being cut into a few teeth at the bottom
+  const skirt = new T.Mesh(new T.CylinderGeometry(o.skirtTop, o.skirtBot, sH, 4, 1, true), _stormCloak); skirt.rotation.y = PI / 4; skirt.position.y = y0 + sH / 2; b.add(skirt);
+  _pyrEdges(b, o.skirtTop * 1.0, o.skirtBot * 1.0, yTop, y0, 0.022);
+  const hem = new T.Mesh(new T.TorusGeometry(o.skirtBot * 1.0, 0.02, 4, 4), _boltSilver); hem.rotation.set(PI / 2, 0, PI / 4); hem.position.y = y0; b.add(hem);
+  // the lightning bolt armour on the dress's front faces, and glowing seams
+  for (const s of [-1, 1]) { const ba = boltArmour(sH * 0.8, o.skirtBot * 0.5, 0.03); ba.position.set(s * o.skirtBot * 0.42, y0 + sH * 0.88, o.skirtBot * 0.5 + 0.02); ba.rotation.set(0.12, s * 0.5, PI + s * 0.12); b.add(ba); }
+  // the crystal: the creature's head and body, a diamond
+  const cr = hexCrystal(o.crystalR * 1.15, o.crystalR * 0.7, o.crystalR * 1.7, M.crystal); cr.position.y = cY; b.add(cr);   // a fat diamond
+  const core2 = hexCrystal(o.crystalR * 0.6, o.crystalR * 0.4, o.crystalR * 1.0, M.glow); core2.position.y = cY; b.add(core2); const cg = glowSprite(o.crystalR * 6); cg.position.y = cY; b.add(cg);
+  // the helmet: a four-sided pyramid over the crystal, open at the front so the crystal shows; silver edges; a pyramid frame
+  const hy = cY + o.helmGap, helm = new T.Mesh(new T.ConeGeometry(o.helmR, o.helmH, 4, 1, true, PI / 4, o.helmOpen ? 3 * PI / 2 : TAU), _stormCloak); helm.position.set(0, hy + o.helmH / 2, 0); b.add(helm);
+  const hc = G(); hc.position.y = hy; b.add(hc);
+  for (let k = 0; k < 4; k++) { const a = k * PI / 2 + (o.helmOpen ? 0 : 0); if (o.helmOpen && Math.abs(Math.sin(a - 0)) < 0.01 && Math.cos(a) > 0) continue; const ang = a, bar = limb(0.018, _boltSilver); setLink(bar, new T.Vector3(Math.sin(ang) * o.helmR, 0, Math.cos(ang) * o.helmR), new T.Vector3(0, o.helmH, 0)); hc.add(bar); }
+  const vb = new T.Mesh(new T.TorusGeometry(o.helmR * 0.7, 0.02, 4, 4), _boltSilver); vb.rotation.set(PI / 2, 0, PI / 4); vb.position.y = o.helmH * 0.0; hc.add(vb);
+  const tip = hexCrystal(0.035, 0.06, 0.1, M.crystal); tip.position.y = o.helmH + 0.06; hc.add(tip);
+  // the shocking arms: tapered tubes of electric light, each a jagged path that crackles; two big ones in front strike
+  const arms = []; const am = _arcMat(); for (let i = 0; i < o.arms; i++) { const a = -o.armArc / 2 + (o.arms > 1 ? i / (o.arms - 1) : 0.5) * o.armArc + (o.armCentre || 0) + (_hz(i, o.seed, 1) - 0.5) * 0.5; const tt = _taperTube(am, o.an, 5); b.add(tt.mesh);
+    const sp = hexCrystal(0.025, 0.05, 0.09, M.crystal); b.add(sp);
+    arms.push({ tt, sp, a, big: i < o.bigArms, ph: i * 1.7, len: o.armLen * (0.75 + 0.5 * _hz(i, o.seed, 2)), pts: Array.from({ length: o.an }, () => new T.Vector3()), rad: new Array(o.an) }); }
+  const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.08, 0.18, 0.24, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
+  const L = new T.PointLight(0xffffff, 0.5, 4, 2); L.color.set(EL.color); L.position.set(0, cY, 0.7); b.add(L); LIGHTS.push(L);
+  return { g, core: cY * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
+    b.position.y = 0.03 * Math.sin(ph); cr.rotation.y = ph * 0.5; core2.rotation.y = -ph * 0.5; helm.position.y = hy + o.helmH / 2 + 0.025 * Math.sin(ph * 2); hc.position.y = hy + 0.025 * Math.sin(ph * 2);
+    for (const A of arms) { const sa = Math.sin(A.a), ca = Math.cos(A.a), N = o.an, bx = sa * o.skirtBot * 0.75, by = y0 + sH * (A.big ? 0.62 : 0.3), bz = ca * o.skirtBot * 0.75;
+      // each arm leaves the dress, reaches out and forward, and lashes: a jagged path with a flickering zigzag, lengthening when it strikes
+      const reach = A.len * (1 + 0.55 * ac * (A.big ? 1.4 : 1)), fwd = (A.big ? 0.85 : 0.35) + 0.9 * ac * (A.big ? 1 : 0.5);
+      let px = bx, py = by, pz = bz, dx = sa * 0.8, dy = (A.big ? 0.15 : -0.15), dz = ca * 0.6 + fwd;
+      for (let k = 0; k < N; k++) { const u = k / (N - 1), zig = (k % 2 ? 1 : -1) * o.armAmp * (0.55 + 0.45 * Math.sin(ph * 4 + A.ph + k * 1.3)) * (0.4 + u), r = o.armR * (A.big ? 1.25 : 1) * (1 - 0.88 * Math.pow(u, 1.05)) + 0.006;
+        A.rad[k] = r; A.tt.mesh && A.pts[k].set(px + zig * Math.cos(A.a + 1.4), Math.max(0.02, py + zig * 0.4), pz + zig * Math.sin(A.a + 1.4));
+        const st = reach / N, Lh = Math.hypot(dx, dy, dz); px += dx / Lh * st; py += dy / Lh * st; pz += dz / Lh * st; dy -= o.armDroop * st; }
+      A.tt.set(A.pts, A.rad); const e = A.pts[N - 1]; A.sp.position.copy(e); A.sp.rotation.set(ph * 5 + A.ph, ph * 3, 0); A.sp.scale.setScalar(1 + 0.4 * Math.sin(ph * 6 + A.ph) + 0.8 * ac); }
+    for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, cY + 0.06 * Math.sin(ph * 2 + s.s) - 0.1 * ac, 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); } } };
+}
+const _pb = { hover: 0.42, skirtH: 0.62, skirtTop: 0.24, skirtBot: 0.62, crystalR: 0.15, crystalLift: 0.16, helmR: 0.36, helmH: 0.62, helmGap: 0.14, helmOpen: true, arms: 6, bigArms: 2, armArc: 4.6, armCentre: 0, an: 12, armLen: 0.95, armR: 0.055, armAmp: 0.07, armDroop: 0.35, seed: 3, shards: true, shardR: 0.7 };
+fx(253, "Pyramid brawler, six shock arms.", () => _pyramidBrawler(Object.assign({}, _pb)));
+fx(254, "Pyramid brawler, four heavy arms.", () => _pyramidBrawler(Object.assign({}, _pb, { arms: 4, bigArms: 2, armR: 0.075, armLen: 0.85, armArc: 3.4, seed: 5 })));
+fx(255, "Pyramid brawler, eight thin arms.", () => _pyramidBrawler(Object.assign({}, _pb, { arms: 8, bigArms: 2, armR: 0.04, armLen: 1.05, armArc: 5.4, an: 14, seed: 7 })));
+fx(256, "Pyramid brawler, tall pyramid helmet.", () => _pyramidBrawler(Object.assign({}, _pb, { helmR: 0.32, helmH: 0.95, helmGap: 0.12, seed: 9 })));
+fx(257, "Pyramid brawler, closed helmet, crystal glowing through the dress.", () => _pyramidBrawler(Object.assign({}, _pb, { helmOpen: false, helmGap: 0.04, crystalR: 0.17, helmR: 0.4, helmH: 0.7, seed: 11 })));
+fx(258, "Pyramid brawler, wide low dress.", () => _pyramidBrawler(Object.assign({}, _pb, { skirtBot: 0.82, skirtH: 0.5, skirtTop: 0.3, hover: 0.34, armLen: 1.05, seed: 13 })));
+fx(259, "Pyramid brawler, narrow tall dress.", () => _pyramidBrawler(Object.assign({}, _pb, { skirtBot: 0.46, skirtH: 0.85, skirtTop: 0.18, hover: 0.5, seed: 15 })));
+fx(260, "Pyramid brawler, big crystal.", () => _pyramidBrawler(Object.assign({}, _pb, { crystalR: 0.21, crystalLift: 0.2, helmR: 0.42, helmH: 0.68, helmGap: 0.18, seed: 17 })));
+fx(261, "Pyramid brawler, no shards, long lashing arms.", () => _pyramidBrawler(Object.assign({}, _pb, { shards: false, arms: 5, armLen: 1.3, an: 16, armAmp: 0.09, seed: 19 })));
+fx(262, "Pyramid brawler, high hover, arms hanging.", () => _pyramidBrawler(Object.assign({}, _pb, { hover: 0.75, armDroop: 0.9, armLen: 1.15, bigArms: 0, arms: 6, seed: 21 })));
