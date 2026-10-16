@@ -2,7 +2,7 @@
 // HONEYCOMB of hexagon scutes on its back. A black crystal spike leans forward from the head; the eyes are a crystal rim round black. The scutes ride the body as it crawls. ──
 function _slugReal(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.15);
-  const N = 30, SIDES = 18, L = o.len, mat = new T.MeshStandardMaterial({ color: o.blue || 0x04208f, emissive: o.glowBlue || 0x010824, emissiveIntensity: 1, roughness: 0.55, metalness: 0.04 }); mat.envMapIntensity = 0.2;
+  const N = 30, SIDES = 18, L = o.len, mat = new T.MeshStandardMaterial({ color: (o.mosaic && o.mosaic.uniform) ? 0x01041c : (o.blue || 0x04208f), emissive: o.glowBlue || 0x010824, emissiveIntensity: 1, roughness: 0.55, metalness: 0.04 }); mat.envMapIntensity = 0.2;
   const tube = _taperTube(mat, N, SIDES), body = tube.mesh; body.scale.y = o.flat; b.add(body); const pts = Array.from({ length: N }, () => new T.Vector3()), rad = new Array(N);
   // a real slug's outline: a blunt head, the body swelling behind it to the mantle, then a long taper to a point
   const prof = u => { if (u > 0.9) return o.rad * (0.62 + 3.8 * (1 - u)); const swell = Math.pow(Math.sin(Math.PI * (0.05 + 0.82 * Math.pow(u / 0.9, 0.85))), 0.7); const mantle = 1 + (o.mantle || 0.14) * Math.exp(-Math.pow((u - 0.66) / 0.12, 2)); return o.rad * (0.07 + 0.93 * swell) * mantle; };
@@ -17,14 +17,15 @@ function _slugReal(o) {
     b.add(hg); hexes.push({ hg, u, th, j, em }); }
   // THE MOSAIC: flat hexagon tiles packed over the whole body wherever the spines are not (the spine band down the middle is skipped), in blacks, navies, blues and a few teal tiles
   const tiles = [], rings = [], tileBins = [];
-  if (o.mosaic) { const MZ = o.mosaic, cell = MZ.cell, ds = cell * 0.87, nR = Math.floor((MZ.u1 - MZ.u0) * L / ds), tMat = {
+  if (o.mosaic) { const MZ = o.mosaic, cell = MZ.cell, ds = cell * 0.866, nR = Math.floor((MZ.u1 - MZ.u0) * L / ds), tMat = {
       black: new T.MeshStandardMaterial({ color: 0x000001, metalness: 0.3, roughness: 0.45, flatShading: true }), navy: new T.MeshStandardMaterial({ color: 0x020a50, metalness: 0.2, roughness: 0.5, flatShading: true }),
       blue: new T.MeshStandardMaterial({ color: 0x0a3cc8, metalness: 0.1, roughness: 0.5, flatShading: true }), dteal: new T.MeshStandardMaterial({ color: 0x044a58, emissive: 0x021c24, metalness: 0.2, roughness: 0.45, flatShading: true }) };
-    for (let bn = 0; bn < 12; bn++) tileBins.push(new T.MeshBasicMaterial({ color: new T.Color(EL.color), toneMapped: false }));
+    const UN = MZ.uniform, NB2 = UN ? 24 : 12;
+    for (let bn = 0; bn < NB2; bn++) tileBins.push(UN ? (() => { const tm2 = new T.MeshStandardMaterial({ color: UN.color, emissive: new T.Color(UN.hue), emissiveIntensity: 0, metalness: 0.05, roughness: 0.7, flatShading: true }); tm2.envMapIntensity = 0.08; return tm2; })() : new T.MeshBasicMaterial({ color: new T.Color(EL.color), toneMapped: false }));
     for (let k = 0; k < nR; k++) { const u = MZ.u0 + (k + 0.5) * ds / L, r0 = Math.max(0.03, prof(u)), ring = { u, k, tiles: [] }; rings.push(ring);
       for (let side = -1; side <= 1; side += 2) { for (let j = 0; ; j++) { const a = (MZ.skip + (j + 0.5 * (k % 2)) * cell), th = a / r0; if (th > (MZ.thMax || 2.3)) break; if (r0 < 0.04) break;
-          const rnd = _hz(k * 7 + j, side + 3, 11), cls = rnd < 0.3 ? 'black' : rnd < 0.55 ? 'navy' : rnd < 0.8 ? 'blue' : rnd < (0.8 + (MZ.dteal == null ? 0.12 : MZ.dteal)) ? 'dteal' : 'glow';
-          const tm = new T.Mesh(new T.CylinderGeometry(1, 1, 0.03, 6), cls === 'glow' ? tileBins[Math.min(11, Math.floor(u * 12))] : tMat[cls]); tm.rotation.y = 0; const tg = G(); tg.add(tm); tm.position.y = 0.012; b.add(tg); const T4 = { tg, th: side * th, k, u, cls, ring }; tiles.push(T4); ring.tiles.push(T4); } } } }
+          const rnd = _hz(k * 7 + j, side + 3, 11), cls = UN ? 'glow' : rnd < 0.3 ? 'black' : rnd < 0.55 ? 'navy' : rnd < 0.8 ? 'blue' : rnd < (0.8 + (MZ.dteal == null ? 0.12 : MZ.dteal)) ? 'dteal' : 'glow';
+          const tm = new T.Mesh(new T.CylinderGeometry(1, 1, 0.03, 6), cls === 'glow' ? tileBins[Math.min(NB2 - 1, Math.floor(((u - MZ.u0) / (MZ.u1 - MZ.u0)) * NB2))] : tMat[cls]); tm.rotation.y = 0; const tg = G(); tg.add(tm); tm.position.y = 0.012; b.add(tg); const T4 = { tg, th: side * th, k, u, cls, ring }; tiles.push(T4); ring.tiles.push(T4); } } } }
   // the head: spike, two long eye-stalks (a crystal rim round a black centre), two short feelers
   const hg2 = G(); b.add(hg2); const horn = G(); hg2.add(horn); horn.rotation.x = o.hornTilt; const edgeL = new T.LineBasicMaterial({ color: 0x2a6a74, transparent: true, opacity: 0.9 });
   const blade = (w, d, len, sides, curve) => { const geo = new T.ConeGeometry(w, len, sides, 6, false), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const y = p.getY(v) / len + 0.5; p.setZ(v, p.getZ(v) * d + (curve || 0) * y * y * len); } geo.translate(0, len / 2 + 0.03, 0); geo.computeVertexNormals(); const m = new T.Mesh(geo, _gemMatGloss), grp = G(); grp.add(m); grp.add(new T.LineSegments(new T.EdgesGeometry(geo, 20), edgeL)); return grp; };
@@ -77,11 +78,12 @@ function _slugReal(o) {
     for (const S of spikes) { const P = at(S.u), i2 = Math.min(N - 1, P.i + 1), sl = o.flat * (pts[i2].y - pts[P.i].y) / Math.max(0.001, pts[i2].z - pts[P.i].z), wv = Math.sin(ph * 2 - S.u * 7), K = o.spikes;
       const lean = (K.lean || 0.25) + 0.5 * Math.atan(sl) + 0.16 * wv - 0.2 * ac, out = S.x0 ? Math.sign(S.x0) * (K.splay || 0.3) : 0;
       S.sp.position.set(S.x0 * P.r * 0.55, o.flat * (P.y + P.r) - 0.025, P.z); S.sp.rotation.set(-lean, 0, -out + 0.06 * Math.sin(ph * 2 - S.u * 7 - 0.5)); S.sp.scale.set(1, 1 + 0.18 * wv + 0.35 * ac, 1); }
-    if (o.mosaic) { const MZ = o.mosaic, cell = MZ.cell; for (let rb = 0; rb < tileBins.length; rb++) { const wv = Math.max(0, 0.5 + 0.5 * Math.sin(ph * 2 - (rb + 0.5) / 12 * 7)), br = 0.18 + 1.1 * wv; tileBins[rb].color.setRGB(c0.r * br, c0.g * br, c0.b * br); }
+    if (o.mosaic) { const MZ = o.mosaic, cell = MZ.cell; const UN2 = MZ.uniform; for (let rb = 0; rb < tileBins.length; rb++) { const uu = MZ.u0 + (rb + 0.5) / tileBins.length * (MZ.u1 - MZ.u0), wv = Math.max(0, 0.5 + 0.5 * Math.sin(ph * 2 - uu * 7));
+        if (UN2) tileBins[rb].emissiveIntensity = (UN2.base || 0) + (UN2.amp || 0.6) * Math.pow(wv, UN2.sharp || 3) + 0.06 * ac; else { const br = 0.18 + 1.1 * wv; tileBins[rb].color.setRGB(c0.r * br, c0.g * br, c0.b * br); } }
       for (const R of rings) R.P = at(R.u);
       for (const T4 of tiles) { const P = T4.ring.P, sn = Math.sin(T4.th), cs = Math.cos(T4.th), w = Math.max(0, 0.5 + 0.5 * Math.sin(ph * 2 - T4.u * 7)), lift = (MZ.lift || 0.02) * w;
         T4.tg.position.set(sn * P.r, o.flat * (P.y + cs * P.r), P.z); nrm.set(sn, cs / o.flat, 0); const i2 = Math.min(N - 1, P.i + 1), sl = o.flat * (pts[i2].y - pts[P.i].y) / Math.max(0.001, pts[i2].z - pts[P.i].z); nrm.z = -sl * cs; nrm.normalize();
-        T4.tg.position.addScaledVector(nrm, lift - 0.004); q.setFromUnitVectors(up, nrm); T4.tg.quaternion.copy(q).multiply(new T.Quaternion().setFromAxisAngle(up, PI / 6)); T4.tg.scale.set(cell * 0.5 * 0.94, 1, cell * 0.5 * 0.94); } }
+        T4.tg.position.addScaledVector(nrm, lift - 0.004); q.setFromUnitVectors(up, nrm); T4.tg.quaternion.copy(q); T4.tg.scale.set(cell * 0.5774 * 0.97, 1, cell * 0.5774 * 0.97); } }   // a hexagon of flat-to-flat = cell, vertices along the body, so the rows lock together
     const k0 = at(0.5); keel.position.set(0, o.flat * (k0.y + k0.r) * 1.0, k0.z); keel.scale.z = L * 0.5 * (1 + 0.0); keel.visible = !!o.keel;
     const hd = pts[N - 1]; hg2.position.set(0, hd.y + rad[N - 1] * o.flat * 0.3, hd.z - 0.05); horn.rotation.x = o.hornTilt + 0.04 * Math.sin(ph * 2) + 0.2 * ac;
     stalks.forEach(K => { const base = new T.Vector3(K.s * 0.05, rad[N - 1] * 0.3, rad[N - 1] * 0.4), tip = new T.Vector3(K.s * o.stalkSep, rad[N - 1] * 0.3 + o.stalkLen * (1 + 0.05 * Math.sin(ph * 2 + K.s * 2)), rad[N - 1] * 0.4 + 0.16 + 0.1 * Math.sin(ph * 2 + K.s * 1.4) + 0.08 * ac); setLink(K.shaft, base, tip); K.eye.position.copy(tip); K.eye.rotation.set(0.15 * Math.sin(ph * 2 + K.s), K.s * -0.12, 0); });
@@ -149,3 +151,11 @@ fx(446, "Mosaic, horn: swept back over the head.", () => _slugReal(Object.assign
 fx(447, "Mosaic, horn: a fan of five graded spikes.", () => _slugReal(Object.assign({}, _m440, { hornStyle: 'fan', horn: 0.95 })));
 fx(448, "Mosaic, horn: two horns side by side.", () => _slugReal(Object.assign({}, _m440, { hornStyle: 'double', horn: 1.0 })));
 fx(449, "Mosaic, horn: a long slim lance.", () => _slugReal(Object.assign({}, _m440, { hornStyle: 'lance', horn: 1.0, hornTilt: 0.4 })));
+
+// ── One uniform tile cover either side of the spiked spine, and the first new horn (a bigger copy of the spine spikes) (Nos. 450–453) ──
+const _uz = (uniform, cell) => ({ cell: cell || 0.08, u0: 0.04, u1: 0.99, skip: 0.1, thMax: 2.3, lift: 0.018, uniform });
+const _u440 = Object.assign({}, _r420, { noEyes: true, noFeelers: true, hexRows: 0, hornStyle: 'spine', horn: 1.0, spikes: { n: 7, u0: 0.16, u1: 0.94, h: 0.62, base: 0.34, thin: 0.9, sides: 4, lean: 0.3 } });
+fx(450, "Uniform tiles: every tile the same near-black, a teal glow rippling through them.", () => _slugReal(Object.assign({}, _u440, { mosaic: _uz({ color: 0x01020a, hue: 0x00ccaa, base: 0.0, amp: 0.13, sharp: 4, metal: 0.45, rough: 0.35 }) })));
+fx(451, "Uniform tiles: every tile the same deep navy, a blue-white glow rippling through them.", () => _slugReal(Object.assign({}, _u440, { mosaic: _uz({ color: 0x02104a, hue: 0x2a70ff, base: 0.0, amp: 0.12, sharp: 3, metal: 0.2, rough: 0.5 }) })));
+fx(452, "Uniform tiles: every tile the same teal, brighter and dimmer as the wave passes.", () => _slugReal(Object.assign({}, _u440, { mosaic: _uz({ color: 0x011c20, hue: 0x00ccaa, base: 0.012, amp: 0.1, sharp: 2.5, metal: 0.15, rough: 0.5 }) })));
+fx(453, "Uniform tiles: bigger tiles, the same near-black with a teal ripple.", () => _slugReal(Object.assign({}, _u440, { mosaic: _uz({ color: 0x01020a, hue: 0x00ccaa, base: 0.0, amp: 0.13, sharp: 4, metal: 0.45, rough: 0.35 }, 0.115) })));
