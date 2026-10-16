@@ -77,3 +77,6 @@ fx(387, "383 with three hovering gems, two above one.", () => _hoodPyramid(Objec
 fx(388, "383 with three hovering gems, one above two.", () => _hoodPyramid(Object.assign({}, _c380, _b383, { triGems: 'up' })));
 fx(389, "386 (feet, tufts, bobble) with three hovering gems, two above one.", () => _hoodPyramid(Object.assign({}, _c380, _b386, { triGems: 'down' })));
 fx(390, "386 (feet, tufts, bobble) with three hovering gems, one above two.", () => _hoodPyramid(Object.assign({}, _c380, _b386, { triGems: 'up' })));
+
+// The game sprite of No. 388: the hood facing forward, scaled to fill its cell.
+fx(391, "388, the game sprite.", () => _hoodPyramid(Object.assign({}, _c380, _b383, { triGems: 'up', yaw: 0, S: 1.45 })));
