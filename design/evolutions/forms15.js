@@ -47,9 +47,8 @@ function _porcupine(o) {
   if (o.antennae) { const am = o.gem ? (o.glossy ? _gemMatGloss : _gemMatMatte) : _rockBlack; for (const sgn of [-1, 1]) { const phi = sgn * (o.antPhi || 0.3), polar = o.antPolar || 0.62, dirN = new T.Vector3(Math.sin(polar) * Math.sin(phi), Math.cos(polar), Math.sin(polar) * Math.cos(phi)).normalize();
       let pos = new T.Vector3(dirN.x * sx * 0.9, dirN.y * sy * 0.9, dirN.z * sz * 0.9);
       if (o.gem) { rock.updateMatrixWorld(true); const org = dirN.clone().multiplyScalar(4), wO = body.localToWorld(org.clone()), wC = body.localToWorld(new T.Vector3(0, 0, 0)); ray.set(wO, wC.sub(wO).normalize()); const hit = ray.intersectObject(hitMesh, false)[0]; if (hit) pos = body.worldToLocal(hit.point.clone()).addScaledVector(dirN, -0.03); }
-      const al = o.antLen || 0.24, ar = o.antR || 0.075, an = new T.Group(); const stem = new T.Mesh(new T.CylinderGeometry(ar * 0.78, ar, al, 8), am); stem.position.y = al / 2; an.add(stem);
-      const knob = new T.Mesh(new T.SphereGeometry(ar * 1.22, 10, 8), am); knob.position.y = al; an.add(knob);   // chubby, rounded tip
-      an.position.copy(pos); const dir = new T.Vector3(sgn * 0.28, 0.75, 0.62).normalize(); an.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), dir); body.add(an); ants.push({ g: an, q: an.quaternion.clone(), sgn }); } }
+      const al = o.antLen || 0.26, ar = o.antR || 0.11, an = new T.Group(); const sp = _quillShard(al, ar, 5, am, sgn > 0 ? 71 : 29); an.add(sp);   // a chubby little spike: a wide faceted base, a short taper, a point
+      an.position.copy(pos); const dir = new T.Vector3(sgn * 0.62, 0.85, 0.35).normalize(); an.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), dir); body.add(an); ants.push({ g: an, q: an.quaternion.clone(), sgn }); } }
   const placed = o.place ? o.place() : null;
   if (placed) for (let i = 0; i < placed.length; i++) { const P = placed[i], dirN = new T.Vector3(Math.sin(P.polar) * Math.sin(P.phi), Math.cos(P.polar), Math.sin(P.polar) * Math.cos(P.phi)).normalize();
     let pos = new T.Vector3(dirN.x * sx * 0.9, dirN.y * sy * 0.9, dirN.z * sz * 0.9);
@@ -106,7 +105,7 @@ fx(352, "342, a spiky skirt: shards stick straight out round the girdle, two tie
 fx(353, "342, a tall spray: three big shards up from the table, small ones round the edge.", () => _porcupine(Object.assign({}, _pc, _g342, { place: () => [{ polar: 0.15, phi: 0.5, len: 0.78, fat: 0.17, out: 0.1, up: 1 }, { polar: 0.2, phi: 2.6, len: 0.62, fat: 0.17, out: 0.2, up: 1 }, { polar: 0.22, phi: 4.7, len: 0.7, fat: 0.17, out: 0.2, up: 1 }, ..._ring(8, 0.95, k => 0.2, 0.9, 0.4, 0)()] })));
 
 // ── Two black chubby antennae at the front, the shell's own colour (Nos. 354–359) ──
-const _ant = { antennae: true, antLen: 0.24, antR: 0.075 };
+const _ant = { antennae: true, antLen: 0.36, antR: 0.15, antPhi: 0.4 };
 fx(354, "342 with two chubby black antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { n: 11, len: [0.3, 0.65], fat: 0.2, seed: 5, top: 1.2, cover: 0.9 })));
 fx(355, "Crown layout with antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { place: () => [{ polar: 0.02, phi: 0, len: 0.7, fat: 0.17, out: 0, up: 1 }, ..._ring(8, 0.62, k => 0.36 + 0.1 * (k % 2), 0.55, 0.8, PI / 8)().filter(P => Math.abs(Math.sin(P.phi / 2)) > 0.3 || Math.cos(P.phi) < 0.2)] })));
 fx(356, "Sea-urchin layout with antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { place: () => Array.from({ length: 8 }, (_, k) => ({ polar: 1.0, phi: k * PI / 4, len: [0.5, 0.4, 0.3, 0.42, 0.55, 0.42, 0.3, 0.4][k], out: 1, up: 0.35 })).filter((P, k) => k !== 0) })));
