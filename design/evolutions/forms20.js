@@ -65,3 +65,8 @@ const _r420 = Object.assign({}, _rB, { hornStyle: 'pyramid', hornW: 0.22, horn: 
 fx(423, "420: bigger eye shafts, no teeth.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.034, stalkLen: 0.46, stalkSep: 0.3, eyeR: 0.05 })));
 fx(424, "420: much bigger eye shafts.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.045, stalkLen: 0.56, stalkSep: 0.34, eyeR: 0.062 })));
 fx(425, "420: huge eye shafts.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.058, stalkLen: 0.68, stalkSep: 0.38, eyeR: 0.075 })));
+
+// ── 420 with THICK eye shafts, the length of 423 (Nos. 426–428) ──
+fx(426, "420: thick eye shafts.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.06, stalkLen: 0.46, stalkSep: 0.3, eyeR: 0.056 })));
+fx(427, "420: very thick eye shafts.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.078, stalkLen: 0.46, stalkSep: 0.3, eyeR: 0.062 })));
+fx(428, "420: chunky eye shafts, almost as thick as the eyes.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.096, stalkLen: 0.44, stalkSep: 0.3, eyeR: 0.066 })));
