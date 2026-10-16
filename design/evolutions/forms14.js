@@ -368,6 +368,12 @@ function _hoodPyramid(o) {
   const trim = o.silver ? _boltSilver : _hoodBlack;
   for (const k of [0, 1, 2, 3]) { const a = PI / 4 + k * PI / 2, bar = limb(o.trim || 0.022, trim); setLink(bar, new T.Vector3(Math.sin(a) * R, 0, Math.cos(a) * R), new T.Vector3(0, H, 0)); pv.add(bar); }
   for (const k of [0, 1, 2, 3]) { const a0 = PI / 4 + k * PI / 2, a1 = a0 + PI / 2; if (k === 3) continue; const p0 = new T.Vector3(Math.sin(a0) * R, 0, Math.cos(a0) * R), p1 = new T.Vector3(Math.sin(a1) * R, 0, Math.cos(a1) * R), bar = limb(o.trim || 0.022, trim); setLink(bar, p0, p1); pv.add(bar); }
+  // a drooping brim: the front face comes back as a flap hanging from the apex, its lower edge sagging to a point, so the top of the hollow is covered
+  if (o.flap) { const apex = new T.Vector3(0, H, 0), cL = new T.Vector3(-R * Math.SQRT1_2, 0, R * Math.SQRT1_2), cR = new T.Vector3(R * Math.SQRT1_2, 0, R * Math.SQRT1_2), f = o.flap;
+    const pL = apex.clone().lerp(cL, f), pR = apex.clone().lerp(cR, f), pM = pL.clone().lerp(pR, 0.5).add(new T.Vector3(0, -(o.flapDrop || 0.14), o.flapBow || 0.08));
+    pL.z += (o.flapBow || 0.08) * 0.4; pR.z += (o.flapBow || 0.08) * 0.4;
+    const fg = new T.BufferGeometry(); fg.setAttribute('position', new T.Float32BufferAttribute([apex.x, apex.y, apex.z, pL.x, pL.y, pL.z, pM.x, pM.y, pM.z, apex.x, apex.y, apex.z, pM.x, pM.y, pM.z, pR.x, pR.y, pR.z], 3)); fg.computeVertexNormals();
+    pv.add(new T.Mesh(fg, _hoodBlack)); const tb = limb(o.trim || 0.022, trim); setLink(tb, pL, pM); pv.add(tb); const tb2 = limb(o.trim || 0.022, trim); setLink(tb2, pM, pR); pv.add(tb2); }
   const tip = hexCrystal(0.04, 0.07, 0.12, M.crystal); tip.position.y = H + 0.08; if (o.tipCrystal) pv.add(tip);
   // the diamond inside, floating in the hollow, lit so it glows and lights the inner walls
   const dY = o.dY == null ? H * 0.34 : o.dY, dz = o.dZ == null ? 0.0 : o.dZ, d = hexCrystal(o.dR * 1.1, o.dR * 0.7, o.dR * 1.7, M.crystal); d.position.set(0, dY, dz); pv.add(d);
@@ -390,3 +396,11 @@ fx(299, "Hood pyramid, bowed forward.", () => _hoodPyramid(Object.assign({}, _hp
 fx(300, "Hood pyramid, two shards hovering.", () => _hoodPyramid(Object.assign({}, _hp, { shards: true, tipCrystal: true })));
 fx(301, "Hood pyramid, sitting on the ground.", () => _hoodPyramid(Object.assign({}, _hp, { hover: 0.02, H: 0.95, R: 0.7 })));
 fx(302, "Hood pyramid, thick black rim, big opening feel.", () => _hoodPyramid(Object.assign({}, _hp, { trim: 0.05, R: 0.7, H: 0.9, dR: 0.17 })));
+
+// ── 296 with the shell drooping over the top half of the diamond (Nos. 303–307) ──
+const _hd = Object.assign({}, _hp, { dR: 0.23, R: 0.7, H: 1.05, dY: 0.4, dZ: 0.05, hover: 0.36 });
+fx(303, "296, light droop.", () => _hoodPyramid(Object.assign({}, _hd, { tilt: 0.2, flap: 0.44, flapDrop: 0.1, flapBow: 0.06 })));
+fx(304, "296, medium droop.", () => _hoodPyramid(Object.assign({}, _hd, { tilt: 0.32, flap: 0.5, flapDrop: 0.12, flapBow: 0.08 })));
+fx(305, "296, heavy droop, hood pulled right down.", () => _hoodPyramid(Object.assign({}, _hd, { tilt: 0.42, flap: 0.55, flapDrop: 0.14, flapBow: 0.1, hover: 0.4 })));
+fx(306, "296, medium droop, silver edges.", () => _hoodPyramid(Object.assign({}, _hd, { tilt: 0.32, flap: 0.5, flapDrop: 0.12, flapBow: 0.08, silver: true, trim: 0.026 })));
+fx(307, "296, long pointed droop.", () => _hoodPyramid(Object.assign({}, _hd, { tilt: 0.28, flap: 0.46, flapDrop: 0.26, flapBow: 0.08 })));
