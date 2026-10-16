@@ -327,6 +327,22 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
     });
 
+    check('THE ASK: the PRISM HOOD\'s black shards TWITCH: its idle frames cycle fast, and faster still while it walks', () => {
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
+            spawnFollowerAtCrystal('electric'); const f = followers[0]; f.returningToCrystal = false; f.role = 'brawler'; f.evolved = 'prism'; f._moltAt = -1e9; f.x = 20; f.y = 2; f.dirX = 1; f.dirY = 0;
+            const d = EVOLUTIONS.prism, still = [], walk = [];
+            const colOf = () => { frame++; const fr = _evoFrame(f, d, frame); return fr.col; };
+            colOf(); for (let i = 0; i < 24; i++) still.push(colOf());
+            for (let i = 0; i < 24; i++) { f.x += 0.02; walk.push(colOf()); }
+            const changes = a => a.filter((c, i) => i && c !== a[i - 1]).length;
+            return { still: changes(still), walk: changes(walk), cols: [...new Set(still)].length, tw: !!d.twitch, cell: d.cell, kept: [...still, ...walk].every(c => c >= 0 && c < 8) }; })()`);
+        ok(r.tw && r.kept, 'it does not twitch: ' + JSON.stringify(r));
+        ok(r.still >= 6 && r.cols >= 6, 'standing still it should change frame every few steps: ' + JSON.stringify(r));
+        ok(r.walk > r.still, 'walking should twitch faster than standing: ' + JSON.stringify(r));
+        // the other forms keep their slow, smooth idle (one frame per 7 steps)
+        const slow = run(`(function(){ spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.evolved = 'bloom'; f._moltAt = -1e9; const cs = []; for (let i = 0; i < 14; i++) { frame++; cs.push(_evoFrame(f, EVOLUTIONS.bloom, frame).col); } return cs.filter((c, i) => i && c !== cs[i - 1]).length; })()`);
+        ok(slow <= 3, 'the others should not twitch: ' + slow);
+    });
     check('THE ASK: HEAVY HAUL — the hover hauler pays double shards, hauls faster and reaches further than a plain flux worker', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
             const mk = (evo) => { spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.duty = 'worker'; if (evo) f.evolved = 'hauler'; return f; };

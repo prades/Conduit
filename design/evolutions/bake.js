@@ -25,7 +25,7 @@ const JOBS = [
   { id: 'halo',   form: 90, color: '#ff3300', idleAct: 0.1, action: [0.6, 1.0] },
   // No. 101, the toxic sniper: the pool's shift loops over the idle period; its action is the recoil of a shot.
   // No. 314 (a game-ready No. 312), the electric brawler: a black hollow pyramid hood drooping over the top half of an octahedron diamond; its action frames bow the hood and flare the diamond.
-  { id: 'prism', form: 314, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true },
+  { id: 'prism', form: 331, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 220, the core mage: a black shell-jar dragged on its side by fat irregular tentacles, a shard horn at its mouth; the horn drops to aim in its action frames.
   { id: 'hornshell', form: 220, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 156, the ice brawler: a dome with a cave mouth; the rubble is its ground layer; its action frames are the bite (the fangs swing down), up and back.

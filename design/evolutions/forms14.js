@@ -393,21 +393,29 @@ function _hoodPyramid(o) {
   const L = new T.PointLight(0xffffff, 1.4, 3.2, 2); L.color.set(EL.color); L.position.set(0, dY, dz + 0.1); pv.add(L); LIGHTS.push(L);
   const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.07, 0.16, 0.22, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
   // IRREGULAR BLACK SHARDS GROWN FROM THE COAT: rooted in the pyramid's faces and ridges, each its own size, angle and shape
+  const jolts = [];   // the coat's shards, to be jolted
   if (o.attached) { const A = o.attached, UPV2 = new T.Vector3(0, 1, 0), faces = [PI / 2, PI, -PI / 2], A0 = R * Math.SQRT1_2, rn = (i, k) => _hz(i * 5 + 1, A.seed + k * 11, k);
     const mkShard = (len, r, i) => { const geo = new T.ConeGeometry(r, len, 4 + Math.floor(rn(i, 40) * 3), 1), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const x = p.getX(v), y = p.getY(v), z = p.getZ(v), n = _hz(Math.round(x * 400) + i, Math.round(y * 400), Math.round(z * 400)); p.setXYZ(v, x * (0.7 + 0.6 * n), y, z * (0.7 + 0.6 * (1 - n))); } geo.translate(0, len / 2, 0); geo.computeVertexNormals(); return new T.Mesh(geo, _hoodBlack); };
     for (let i = 0; i < A.n; i++) { const ridge = rn(i, 1) < (A.ridge || 0), u = A.uMin + (A.uMax - A.uMin) * rn(i, 2), len = A.len[0] + (A.len[1] - A.len[0]) * Math.pow(rn(i, 3), A.skew || 1), r = len * (0.16 + 0.14 * rn(i, 4)) * (A.fat || 1);
       let pos, nrm; if (ridge) { const a = [3 * PI / 4, 5 * PI / 4, PI / 4, -PI / 4][Math.floor(rn(i, 5) * (A.front ? 4 : 2))], rad = R * (1 - u); pos = new T.Vector3(Math.sin(a) * rad, u * H, Math.cos(a) * rad); nrm = new T.Vector3(Math.sin(a) * H * 0.7, A0 * 0.9, Math.cos(a) * H * 0.7).normalize(); }
       else { const az = faces[Math.floor(rn(i, 5) * faces.length)], a0 = A0 * (1 - u), t = (rn(i, 6) * 2 - 1) * a0 * 0.85, rv = new T.Vector3(Math.sin(az), 0, Math.cos(az)), lv = new T.Vector3(Math.cos(az), 0, -Math.sin(az));
         pos = rv.clone().multiplyScalar(a0).addScaledVector(lv, t).add(new T.Vector3(0, u * H, 0)); nrm = rv.clone().multiplyScalar(H).add(new T.Vector3(0, A0, 0)).normalize(); }
-      const dirv = nrm.clone().add(new T.Vector3((rn(i, 7) - 0.5) * 0.9, (rn(i, 8) - 0.35) * 0.7, (rn(i, 9) - 0.5) * 0.9)).normalize(), sh = mkShard(len, r, i); sh.position.copy(pos).addScaledVector(nrm, -0.03); sh.quaternion.setFromUnitVectors(UPV2, dirv); pv.add(sh);
-      if (rn(i, 10) < (A.twin || 0.3)) { const sh2 = mkShard(len * (0.45 + 0.2 * rn(i, 11)), r * 0.7, i + 100), d2 = dirv.clone().add(new T.Vector3((rn(i, 12) - 0.5) * 1.3, (rn(i, 13) - 0.5) * 1.0, (rn(i, 14) - 0.5) * 1.3)).normalize(); sh2.position.copy(sh.position).addScaledVector(nrm, 0.01); sh2.quaternion.setFromUnitVectors(UPV2, d2); pv.add(sh2); } } }
+      const dirv = nrm.clone().add(new T.Vector3((rn(i, 7) - 0.5) * 0.9, (rn(i, 8) - 0.35) * 0.7, (rn(i, 9) - 0.5) * 0.9)).normalize(), sh = mkShard(len, r, i); sh.position.copy(pos).addScaledVector(nrm, -0.03); sh.quaternion.setFromUnitVectors(UPV2, dirv); pv.add(sh); jolts.push({ m: sh, q: sh.quaternion.clone(), i: jolts.length });
+      if (rn(i, 10) < (A.twin || 0.3)) { const sh2 = mkShard(len * (0.45 + 0.2 * rn(i, 11)), r * 0.7, i + 100), d2 = dirv.clone().add(new T.Vector3((rn(i, 12) - 0.5) * 1.3, (rn(i, 13) - 0.5) * 1.0, (rn(i, 14) - 0.5) * 1.3)).normalize(); sh2.position.copy(sh.position).addScaledVector(nrm, 0.01); sh2.quaternion.setFromUnitVectors(UPV2, d2); pv.add(sh2); jolts.push({ m: sh2, q: sh2.quaternion.clone(), i: jolts.length }); } } }
   // exterior shards are BLACK, the coat's own material: orbiting the hood, as horns on its corners, a crown above the apex, or lying round its base
   const bsh = [], blk = (r, h, t) => hexCrystal(r, h, t, _hoodBlack);
   if (o.black === 'orbit') for (let i = 0; i < (o.blackN || 2); i++) { const gg = G(); gg.add(blk(0.07, 0.14, 0.24)); b.add(gg); bsh.push({ g: gg, orbit: true, ph: i * TAU / (o.blackN || 2), rad: o.shardR, hy: 0.5 }); }
   if (o.black === 'horns') for (let k = 0; k < 4; k++) { const a = PI / 4 + k * PI / 2, hh = G(), c = blk(0.045, 0.1, 0.26); hh.add(c); hh.position.set(Math.sin(a) * R * 0.62, H * 0.28, Math.cos(a) * R * 0.62); hh.rotation.set(Math.cos(a) * 0.9, 0, -Math.sin(a) * 0.9); pv.add(hh); }
   if (o.black === 'crown') { const c = blk(0.06, 0.12, 0.4); c.position.y = H + 0.28; pv.add(c); }
   if (o.black === 'base') for (let k = 0; k < 7; k++) { const a = k * TAU / 7 + 0.3, c = blk(0.045 + 0.02 * _hz(k, 3, 1), 0.08 + 0.05 * _hz(k, 3, 2), 0.18 + 0.1 * _hz(k, 3, 3)), hh = G(); hh.add(c); hh.position.set(Math.sin(a) * R * 1.12, 0, Math.cos(a) * R * 1.12); hh.rotation.set(Math.cos(a) * 0.5, 0, -Math.sin(a) * 0.5); hh.position.y = 0.1; b.add(hh); }
+  // LIGHTNING UNDER THE HOOD, as MOVEMENT: the black shards stay black but are shoved about from beneath: every beat each one snaps to a new angle and stretches
+  // in a jerk, some popping hard, the rest settling (a hash of the beat, so the 8 baked frames loop). No light, no flicker of colour.
+  const _qa = new T.Quaternion(), _qb = new T.Quaternion(), _ea = new T.Euler(), jolt = (ph, ac) => { const beat = Math.floor(ph / TAU * 8 + 0.0001) % 8;
+    for (const J of jolts) { const h1 = _hz(J.i * 7 + beat, 3, 1), h2 = _hz(J.i * 5, beat * 9 + 1, 2), h3 = _hz(J.i, beat * 3, 3), pop = h3 > 0.55 ? 1 : 0.25, k = (0.34 + 0.3 * ac) * pop;
+      _ea.set((h1 - 0.5) * 2 * k, (h2 - 0.5) * 2 * k * 0.6, (h3 - 0.5) * 2 * k); _qa.setFromEuler(_ea); J.m.quaternion.copy(J.q).multiply(_qa);
+      J.m.scale.set(1 + 0.25 * pop * h1, 1 + (0.45 * pop + 0.5 * ac) * h2 + 0.05, 1 + 0.25 * pop * h1); } };
   return { g, core: (hv + dY) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
+    if (o.jolt) jolt(ph, ac);
     pv.position.y = hv + 0.03 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; d.rotation.y = ph * 0.7; dc.rotation.y = -ph * 0.7; d.position.y = dY + 0.02 * Math.sin(ph * 2); dc.position.y = d.position.y;
     dg.scale.setScalar(o.dR * (8 + 2 * Math.sin(ph * 3) + 5 * ac)); L.intensity = 1.4 + 0.4 * Math.sin(ph * 3) + 0.8 * ac;
     for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, hv + H * 0.55 + 0.06 * Math.sin(ph * 2 + s.s), 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); }
@@ -468,3 +476,8 @@ const _h325 = { n: 7, uMin: 0.1, uMax: 0.6, len: [0.22, 0.5], skew: 0.8, seed: 1
 fx(327, "325, fatter shards.", () => _hoodPyramid(Object.assign({}, _ha, { attached: Object.assign({}, _h325, { fat: 1.8 }) })));
 fx(328, "325, much fatter shards.", () => _hoodPyramid(Object.assign({}, _ha, { attached: Object.assign({}, _h325, { fat: 2.5 }) })));
 fx(329, "325, chunky fat shards, slightly shorter.", () => _hoodPyramid(Object.assign({}, _ha, { attached: Object.assign({}, _h325, { fat: 3.0, len: [0.2, 0.42] }) })));
+
+// ── The game version of 325, fatter (as 328), its black shards jolting about as if lightning were under the hood ──
+const _h328 = { n: 7, uMin: 0.1, uMax: 0.6, len: [0.22, 0.5], skew: 0.8, seed: 11, twin: 0.2, ridge: 0.3, fat: 2.5 };
+fx(330, "Jolting coat: lightning under the hood, as movement (mock sheet).", () => _hoodPyramid(Object.assign({}, _ha, { attached: _h328, jolt: true })));
+fx(331, "Jolting coat: the game sprite.", () => _hoodPyramid(Object.assign({}, _ha, { attached: _h328, jolt: true, yaw: 0, S: 1.45 })));

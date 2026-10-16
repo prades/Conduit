@@ -83,7 +83,10 @@
 //          power in ice damage and is frozen stiff for MAW_STUN frames, and everything within
 //          MAW_SLOW_R of it is slowed to MAW_SLOW for MAW_SLOW_FRAMES.
 //          PRISM HOOD (the ELECTRIC BRAWLER, design No. 312: a hollow black pyramid whose front
-//          droops like a hood over the top half of an octahedron diamond), replaced the Storm Manta
+//          droops like a hood over the top half of an octahedron diamond, irregular black shards
+//          growing from its coat that TWITCH, as if lightning were under the hood: the shards stay
+//          black and move; each idle frame is a different jolt, cycled fast, faster still walking),
+//          replaced the Storm Manta
 //          for new evolutions and does the same STATIC RUSH (the Storm Manta stays defined, marked legacy,
 //          for followers already evolved into it).
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
@@ -137,7 +140,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png" },
     // The ELECTRIC BRAWLER, design No. 312: a black hollow pyramid hood over a diamond. The diamond turns, so its sheet carries its own light.
     prism:  { id: "prism",  name: "PRISM HOOD",   element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/prism.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 68.4], noGlow: true, color: "#ffee33" },
+              cell: 144, anchor: [72, 114.2], core: [72, 75.9], noGlow: true, color: "#ffee33", twitch: { idle: 3, walk: 2 } },
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
     hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "AEGIS BLOOM", sheet: "img/evo/hornshell.png",
@@ -507,6 +510,14 @@ function _evoFrame(f, d, f0) {
     const rise = m < EVO_MOLT ? 1 - Math.pow(1 - u, 3) : 1;
     const sigK = f._sigAt !== undefined ? (f0 - f._sigAt) / EVO_ACT_FRAMES : 9;
     let col = Math.floor(f0 / 7) % 8;
+    // TWITCH (the Prism Hood): its idle frames are not a smooth loop but eight different jolts of its shards, so they run fast, and faster still while it walks
+    if (d.twitch) {
+        if (f._evTf !== f0) {
+            const moved = f._evx !== undefined && Math.hypot(f.x - f._evx, f.y - f._evy) > 0.002;
+            f._evx = f.x; f._evy = f.y; f._evTf = f0; f._evT = (f._evT || 0) + 1 / (moved ? d.twitch.walk : d.twitch.idle);
+        }
+        col = Math.floor(f._evT || 0) % 8;
+    }
     if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
     else if (f.state === "attack") col = 8 + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));
     return { m, rise, sigK, col, row: _evoFacing(f), s: EVO_SCALE * (0.6 + 0.4 * rise) };
