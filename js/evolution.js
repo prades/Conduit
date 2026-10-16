@@ -74,6 +74,11 @@
 //          thick glowing worm looking out of it; a core follower on worker duty), REWIRE: it
 //          re-arms a downed pylon VESSEL_RATE× as fast, from VESSEL_REACH× as far, and walks to
 //          it VESSEL_SPEED× as fast (js/mass.js asks evoRepair).
+//          FROST MAW (the ICE BRAWLER, design No. 156: a dome of frosted shell with a cave
+//          for a mouth and two crystal fangs inside), CHOMP: with an enemy within MAW_RANGE,
+//          every MAW_EVERY frames the fangs slam down: the nearest enemy takes MAW_MULT × its
+//          power in ice damage and is frozen stiff for MAW_STUN frames, and everything within
+//          MAW_SLOW_R of it is slowed to MAW_SLOW for MAW_SLOW_FRAMES.
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
 //          sheets in img/evo/: 8 facings × 16 frames (8 idle, 8 action),
 //          seen from the game's own iso angle.
@@ -99,6 +104,7 @@ const MIMIC_RADIUS = 2.2, MIMIC_EVERY = 330, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5,
 const PETAL_RANGE = 6.5, PETAL_EVERY = 330, PETAL_MULT = 1.8, PETAL_SHIELD = 0.35, PETAL_ALLY_R = 7;
 const CALDERA_RADIUS = 2.4, CALDERA_EVERY = 330, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
 const VESSEL_RATE = 3, VESSEL_REACH = 2, VESSEL_SPEED = 1.4;
+const MAW_RANGE = 1.8, MAW_EVERY = 300, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
 const HAULER_SPEED = 1.5, HAULER_REACH = 2, HAULER_PAY = 2;
 const POD_RATE = 3, POD_REACH = 2, POD_SPEED = 1.4;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
@@ -118,6 +124,9 @@ const EVOLUTIONS = {
     // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
     halo:   { id: "halo",   name: "CINDER HALO",  element: "fire",     role: "sniper",  move: "HEXFIRE",      sheet: "img/evo/halo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
+    // The ICE BRAWLER: a dome with a cave mouth. Its rubble lies on the floor (the ground sheet), and the cave is its own light.
+    maw:    { id: "maw",    name: "FROST MAW",    element: "ice",      role: "brawler", move: "CHOMP",        sheet: "img/evo/maw.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png" },
     // The CORE WORKER (the pylon re-armer): a worker is a duty, so it comes from a core follower on worker duty. The worm moves, so the sheet carries its own light.
     vessel: { id: "vessel", name: "WORM VESSEL", element: "core",     duty: "worker",  move: "REWIRE",       sheet: "img/evo/vessel.png",
               cell: 144, anchor: [72, 114.2], core: [72, 52.6], noGlow: true, color: "#33e6c4" },
@@ -180,7 +189,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
-        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal") aegisBloom(f); else if (d.id === "caldera") eruption(f);
+        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal") aegisBloom(f); else if (d.id === "caldera") eruption(f); else if (d.id === "maw") chomp(f);
     }
 }
 function _evoFoes(x, y, r) {
@@ -325,6 +334,26 @@ function aegisBloom(f) {
     { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#33e6c4", radius: 0.6, life: 22 });
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "AEGIS BLOOM", color: "#66ffe0", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+
+// CHOMP: the fangs slam down on the nearest enemy: ice damage and frozen stiff; those beside it are slowed. True when it fired.
+function chomp(f) {
+    const foes = _evoFoes(f.x, f.y, MAW_RANGE);
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    applyDamage(tgt, (f.power || 10) * MAW_MULT, f, "ice");
+    tgt.hitStun = Math.max(tgt.hitStun || 0, MAW_STUN);
+    for (const a of _evoFoes(tgt.x, tgt.y, MAW_SLOW_R)) if (typeof applySlow === "function") applySlow(a, MAW_SLOW_FRAMES, MAW_SLOW);
+    { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    f._sigAt = f0; f._sigCd = MAW_EVERY;
+    if (typeof elementEffects !== "undefined") {
+        elementEffects.push({ type: "ring", x: tgt.x, y: tgt.y, radius: MAW_SLOW_R, color: "#9fe8ff", life: 36 });
+        elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#cff4ff", radius: 0.7, life: 24 });
+    }
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "CHOMP", color: "#bdf0ff", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 

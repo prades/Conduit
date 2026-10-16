@@ -101,8 +101,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
         ok(!/<strong>Sniper<\/strong>/.test(HTML) && /<strong>Mage<\/strong>/.test(HTML), 'the codex still describes a Sniper');
     });
+    check('THE ASK: an ICE BRAWLER becomes the FROST MAW (design No. 156); an ice mage or camper waits', () => {
+        mk('ice', 'brawler', 20); run(lvlUp);
+        const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
+        same(r.evo, 'maw', 'its form'); same(r.tag, 'FROST MAW', 'its tag'); same(r.role, 'brawler', 'its role');
+        mk('ice', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'maw', 'a hybrid fights as a brawler');
+        mk('ice', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'an ice worker waits (no worker form for it)');
+    });
     check('…and nobody else: not an ice brawler, an electric brawler — nor before level 20', () => {
-        for (const [el, role] of [['ice', 'brawler'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
+        for (const [el, role] of [['ice', 'sniper'], ['ice', 'camper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
         mk('fire', 'brawler', 19); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 19');
     });
     check('a follower already past level 20 (an old save) evolves on the next tick', () => {
@@ -113,8 +120,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nWHAT IT GAINS');
     check('THE ASK: health and power × EVOLVE_MULT — and they survive the next level-up', () => {
-        // The control is an ICE brawler, which has no form yet (a plain follower of the same stats); the twin is a fire brawler turned Bunker Bloom.
-        const r = run(`(function(){ mkTwin = (ev) => { spawnFollowerAtCrystal(ev ? 'fire' : 'ice'); const f = followers[followers.length - 1]; f.role = 'brawler';
+        // The control is an ICE camper, which has no form yet (a plain follower of the same stats); the twin is a fire brawler turned Bunker Bloom.
+        const r = run(`(function(){ mkTwin = (ev) => { spawnFollowerAtCrystal(ev ? 'fire' : 'ice'); const f = followers[followers.length - 1]; f.role = ev ? 'brawler' : 'camper';
                 f.base = { hp: 40, attack: 12, defense: 10, specialAttack: 10, accuracy: 10, will: 20, speed: 10 }; f.level = 22; f.xp = xpForLevel(22); if (ev) f.evolved = 'bloom'; _applyFollowerLevel(f, true); return f; };
             const a = mkTwin(false), b = mkTwin(true); b._moltAt = -1e9;
             const r1 = { hp: b.maxHealth / a.maxHealth, pw: b.power / a.power };
@@ -227,6 +234,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.a > 0 && r.b > 0 && r.a === r.b, 'both in the blast take the same: ' + JSON.stringify(r)); same(r.far, 0, 'damage outside the blast');
         ok(r.sa[0] >= run('CALDERA_SHRED_FRAMES') && r.sa[1] === 0.5 && r.sb[1] === 0.5, 'armour eaten (it takes double): ' + JSON.stringify(r));
         same(r.sfar, 0, 'armour eaten outside the blast'); ok(r.cd > 300, 'it did not wait'); ok(!r.loneCast, 'it erupted with nothing in reach');
+    });
+
+    check('THE ASK: CHOMP — the fangs slam down on the nearest enemy: ice damage, frozen stiff; the ones beside it slowed', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('ice'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'maw'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const a = mkP(21.2, 2), b = mkP(21.9, 2.8), far = mkP(24, 2), apart = mkP(21.2, 5);
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), far: d(far), stunA: a.hitStun || 0, stunB: b.hitStun || 0, slowA: a.slowed > 0, slowB: a.slowed > 0 && b.slowed > 0, sf: b.slowFactor, farSlow: far.slowed > 0, apartSlow: apart.slowed > 0, cd: f._sigCd };
+            [a, b, far, apart].forEach(p => p.dead = true);
+            const lone = mkP(23.5, 2); frame++; f._sigCd = 1; f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
+        ok(r.a > 0 && r.b === 0, 'one bite, into the nearest: ' + JSON.stringify(r)); ok(r.stunA >= 60 && r.stunB === 0, 'frozen stiff (only the one bitten): ' + JSON.stringify(r));
+        ok(r.slowB && r.sf <= 0.6 && r.sf > 0 && !r.farSlow && !r.apartSlow, 'the ones beside it slowed: ' + JSON.stringify(r)); ok(r.cd > 250, 'it did not wait'); ok(!r.loneCast, 'it bit at something out of reach');
     });
 
     check('THE ASK: SINGULARITY SHOT — a gravity round into the nearest enemy, dragging those round it in; a beetle is too heavy', () => {
@@ -369,7 +389,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
