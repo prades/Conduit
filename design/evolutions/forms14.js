@@ -358,6 +358,18 @@ fx(292, "Square-wave arms, three giant conduits.", () => _sqWaveBrawler(Object.a
 // ── The hood pyramid (Nos. 293–302): the electric brawler, stripped back. A solid black HOLLOW pyramid, open on its front face like a hood, and a diamond
 // crystal floating inside it, visible when the hood faces you. No lightning, no arms (for now). o.yaw only turns the mock-up sheet toward the camera. ──
 const _hoodBlack = new T.MeshStandardMaterial({ color: 0x030308, metalness: 0.85, roughness: 0.26, flatShading: true, side: T.DoubleSide }); _hoodBlack.envMapIntensity = 1.6;   // glossy black: its faces show as highlights
+// Diamond cuts: a faceted body with its facet lines drawn, and a glowing core inside it. r = size.
+function _facetLathe(pts, seg, r, mat) { const geo = new T.LatheGeometry(pts.map(p => new T.Vector2(Math.max(0.0001, p[0] * r), p[1] * r)), seg), g = G(); g.add(new T.Mesh(geo, mat || M.crystal)); g.add(new T.LineSegments(new T.EdgesGeometry(geo, 15), _edgeMat)); return g; }
+function _diamond(cut, r) {
+  const core = (pts, seg) => _facetLathe(pts.map(p => [p[0] * 0.55, p[1] * 0.55]), seg, r, M.glow);
+  if (cut === 'brilliant') { const P = [[0, -1.2], [1.0, 0], [0.98, 0.04], [0.7, 0.42], [0, 0.42]]; return { main: _facetLathe(P, 8, r), core: core(P, 8) }; }
+  if (cut === 'kite') { const P = [[0, -1.8], [0.5, -0.1], [0.5, 0.2], [0, 1.4]]; return { main: _facetLathe(P, 6, r), core: core(P, 6) }; }
+  if (cut === 'emerald') { const P = [[0, -0.95], [0.55, -0.7], [0.8, -0.35], [0.8, 0.25], [0.62, 0.5], [0.38, 0.65], [0, 0.65]]; return { main: _facetLathe(P, 8, r), core: core(P, 8) }; }
+  if (cut === 'ring') { const P = [[0, -1.6], [0.9, 0], [0, 1.6]], m = _facetLathe(P, 6, r), ring = new T.Mesh(new T.TorusGeometry(r * 1.0, r * 0.07, 4, 6), _boltSilver); ring.rotation.x = PI / 2; m.add(ring); return { main: m, core: core(P, 6) }; }
+  if (cut === 'cluster') { const m = G(); const c0 = hexCrystal(r * 0.8, r * 0.5, r * 1.5, M.crystal); m.add(c0); for (const [x, z, rz, sc] of [[-0.55, 0.05, 0.5, 0.6], [0.55, -0.05, -0.55, 0.6], [0.05, 0.4, 0.0, 0.5]]) { const c = hexCrystal(r * 0.8 * sc, r * 0.5 * sc, r * 1.5 * sc, M.crystal); c.position.set(x * r, -0.1 * r, z * r); c.rotation.z = rz; c.rotation.x = z > 0.2 ? 0.7 : 0; m.add(c); } return { main: m, core: hexCrystal(r * 0.4, r * 0.3, r * 0.8, M.glow) }; }
+  if (cut === 'octa') { const geo = new T.OctahedronGeometry(r * 1.2, 0), m = G(), mm = new T.Mesh(geo, M.crystal); mm.scale.y = 1.35; m.add(mm); const le = new T.LineSegments(new T.EdgesGeometry(geo), _edgeMat); le.scale.y = 1.35; m.add(le); const cm = new T.Mesh(geo, M.glow); cm.scale.set(0.5, 0.7, 0.5); return { main: m, core: cm }; }
+  return { main: hexCrystal(r * 1.1, r * 0.7, r * 1.7, M.crystal), core: hexCrystal(r * 0.55, r * 0.4, r * 1.0, M.glow) };
+}
 function _hoodPyramid(o) {
   const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S); b.rotation.y = o.yaw || 0;
   const hv = o.hover, H = o.H, R = o.R, tilt = o.tilt || 0;
@@ -376,8 +388,8 @@ function _hoodPyramid(o) {
     pv.add(new T.Mesh(fg, _hoodBlack)); const tb = limb(o.trim || 0.022, trim); setLink(tb, pL, pM); pv.add(tb); const tb2 = limb(o.trim || 0.022, trim); setLink(tb2, pM, pR); pv.add(tb2); }
   const tip = hexCrystal(0.04, 0.07, 0.12, M.crystal); tip.position.y = H + 0.08; if (o.tipCrystal) pv.add(tip);
   // the diamond inside, floating in the hollow, lit so it glows and lights the inner walls
-  const dY = o.dY == null ? H * 0.34 : o.dY, dz = o.dZ == null ? 0.0 : o.dZ, d = hexCrystal(o.dR * 1.1, o.dR * 0.7, o.dR * 1.7, M.crystal); d.position.set(0, dY, dz); pv.add(d);
-  const dc = hexCrystal(o.dR * 0.55, o.dR * 0.4, o.dR * 1.0, M.glow); dc.position.set(0, dY, dz); pv.add(dc); const dg = glowSprite(o.dR * 8); dg.position.set(0, dY, dz); pv.add(dg);
+  const dY = o.dY == null ? H * 0.34 : o.dY, dz = o.dZ == null ? 0.0 : o.dZ, dm = _diamond(o.cut, o.dR), d = dm.main; d.position.set(0, dY, dz); pv.add(d);
+  const dc = dm.core; dc.position.set(0, dY, dz); pv.add(dc); const dg = glowSprite(o.dR * 8); dg.position.set(0, dY, dz); pv.add(dg);
   const L = new T.PointLight(0xffffff, 1.4, 3.2, 2); L.color.set(EL.color); L.position.set(0, dY, dz + 0.1); pv.add(L); LIGHTS.push(L);
   const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.07, 0.16, 0.22, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
   return { g, core: (hv + dY) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
@@ -404,3 +416,12 @@ fx(304, "296, medium droop.", () => _hoodPyramid(Object.assign({}, _hd, { tilt: 
 fx(305, "296, heavy droop, hood pulled right down.", () => _hoodPyramid(Object.assign({}, _hd, { tilt: 0.42, flap: 0.55, flapDrop: 0.14, flapBow: 0.1, hover: 0.4 })));
 fx(306, "296, medium droop, silver edges.", () => _hoodPyramid(Object.assign({}, _hd, { tilt: 0.32, flap: 0.5, flapDrop: 0.12, flapBow: 0.08, silver: true, trim: 0.026 })));
 fx(307, "296, long pointed droop.", () => _hoodPyramid(Object.assign({}, _hd, { tilt: 0.28, flap: 0.46, flapDrop: 0.26, flapBow: 0.08 })));
+
+// ── Different diamond cuts under the drooping hood, more of the facets showing (Nos. 308–313) ──
+const _hc = Object.assign({}, _hd, { yaw: 0.6, tilt: 0.25, flap: 0.34, flapDrop: 0.06, flapBow: 0.06, dR: 0.27, dY: 0.56, dZ: 0.1, hover: 0.3 });   // turned to face the camera so the hollow and the stone show
+fx(308, "Drooping hood, brilliant-cut diamond.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'brilliant' })));
+fx(309, "Drooping hood, long kite-shaped diamond.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'kite', dR: 0.2, dY: 0.62 })));
+fx(310, "Drooping hood, step-cut (emerald) diamond.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'emerald' })));
+fx(311, "Drooping hood, a cluster of crystals.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'cluster', dR: 0.26 })));
+fx(312, "Drooping hood with an arched brim, octahedron.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'octa', flapDrop: -0.12, flap: 0.38 })));
+fx(313, "Drooping hood, arched brim, banded diamond.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'ring', flapDrop: -0.1, flap: 0.38, dR: 0.24 })));
