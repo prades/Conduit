@@ -52,3 +52,45 @@ fx(229, "Cloak, vipers thrown back like a mane.", () => _cloakMage(Object.assign
 fx(230, "Cloak, shards held lower, near the hem.", () => _cloakMage(Object.assign({}, _cb, { shardR: 0.62, shardY: 0.55, vipers: 4, seed: 17 })));
 fx(231, "Cloak, shards high, beside the hood.", () => _cloakMage(Object.assign({}, _cb, { shardR: 0.55, shardY: 1.5, vipers: 3, vlen: 0.95, seed: 19 })));
 fx(232, "Broad-shouldered cloak, six bolts.", () => _cloakMage(Object.assign({}, _cb, { hem: 0.62, shoulder: 0.38, waist: 0.28, vipers: 6, vlen: 0.8, fan: 0.4, vn: 10, vr: 0.055, seed: 21 })));
+
+// ── The Snorunt shape (Nos. 233–242): a small squat round body under a big pointed cone hood, stubby arms, the face in the hood's
+// opening. The lightning vipers rise from the back of the cone, and two shards hover close. ──
+function _snorMage(o) {
+  const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S);
+  const R = o.R, footH = o.foot, cy = footH + R * o.sy * 0.92;
+  const body = new T.Mesh(new T.IcosahedronGeometry(1, 1), _cloakMat); body.scale.set(R * (o.wide || 1), R * o.sy, R * (o.deep || 1)); body.position.y = cy; b.add(body);
+  for (const s of [-1, 1]) { const ft = new T.Mesh(new T.IcosahedronGeometry(1, 0), _cloakMat); ft.scale.set(R * 0.34, footH * 0.9, R * 0.42); ft.position.set(s * R * 0.42, footH * 0.5, R * 0.2); b.add(ft); }
+  const top = cy + R * o.sy * 0.78, hoodR = R * o.hoodW, hh = o.hoodH;
+  const hood = new T.Mesh(new T.ConeGeometry(hoodR, hh, o.seg || 8), _cloakMat); hood.position.set(0, top + hh / 2 - 0.1, -0.03); hood.rotation.x = -(o.hoodTilt || 0.12); b.add(hood);
+  const brim = new T.Mesh(new T.TorusGeometry(hoodR * 0.96, 0.025, 4, o.seg || 8), M.steel); brim.rotation.x = PI / 2 - 0.1; brim.position.set(0, top - 0.08, 0.0); b.add(brim);   // a silver rim to the hood
+  const face = sphere(hoodR * 0.62, new T.MeshBasicMaterial({ color: 0x000103 }), 10); face.scale.set(1, 0.8, 0.55); face.position.set(0, top + hh * 0.17, hoodR * 0.52); b.add(face);
+  const heart = hexCrystal(0.06, 0.12, 0.11, M.crystal); heart.position.set(0, top + hh * 0.17, hoodR * 0.7); b.add(heart);
+  for (const s of [-1, 1]) { const arm = new T.Mesh(new T.IcosahedronGeometry(1, 0), _cloakMat); arm.scale.set(R * 0.3, R * 0.42, R * 0.3); arm.position.set(s * R * 0.98 * (o.wide || 1), cy - R * 0.05 + (o.armUp || 0), R * 0.18); arm.rotation.z = s * -0.5; b.add(arm);
+    const hand = sphere(R * 0.17, M.steel, 7); hand.position.set(s * R * 1.12 * (o.wide || 1), cy - R * 0.32 + (o.armUp || 0), R * 0.3); b.add(hand); }
+  const chest = hexCrystal(0.06, 0.11, 0.1, M.crystal); chest.position.set(0, cy - R * 0.1, R * (o.deep || 1) * 0.96); b.add(chest);
+  for (const s of [-1, 1]) { const ed = cbox(0.012, R * 0.7, 0.018, 0.003, M.glow); ed.position.set(s * R * 0.22, cy + R * 0.12, R * (o.deep || 1) * 0.93); ed.rotation.z = s * -0.5; b.add(ed); }   // the silver V, small
+  const bolt = new T.MeshBasicMaterial({ color: new T.Color(EL.color).multiplyScalar(0.42), toneMapped: false }); const vipers = [];
+  for (let i = 0; i < o.vipers; i++) { const v = _viper(o, bolt, i); b.add(v.tt.mesh); b.add(v.head); vipers.push(v); }
+  const shards = []; for (const s of [-1, 1]) { const c = hexCrystal(0.09, 0.2, 0.27, M.crystal); const hg = G(); hg.add(c); b.add(hg); shards.push({ hg, s }); }
+  const L = new T.PointLight(0xffffff, 0.3, 4, 2); L.color.set(EL.color); L.position.set(0, top, 0.5); b.add(L); LIGHTS.push(L);
+  return { g, core: top * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
+    b.position.y = 0.02 * Math.abs(Math.sin(ph)); body.scale.set(R * (o.wide || 1) * (1 + 0.02 * Math.sin(ph * 2)), R * o.sy * (1 - 0.02 * Math.sin(ph * 2)), R * (o.deep || 1)); hood.rotation.z = 0.03 * Math.sin(ph);
+    for (const v of vipers) { const a = (v.i - (o.vipers - 1) / 2) * o.fan, N = o.vn, base = new T.Vector3(Math.sin(a) * 0.06, top + hh * 0.5, -hoodR * 0.55);
+      const len = o.vlen * (0.75 + 0.5 * _hz(v.i, o.seed, 1)) * (1 + 0.25 * ac); let px = base.x, py = base.y, pz = base.z, dx = Math.sin(a) * o.out, dy = 0.8, dz = -o.back - 0.5 + ac * 1.1;
+      for (let k = 0; k < N; k++) { const u = k / (N - 1), zig = (k % 2 ? 1 : -1) * o.amp * (0.5 + 0.5 * Math.sin(ph * 3 + v.i * 2 + k * 0.9)) * (1 - 0.3 * u), r = o.vr * (1 - 0.85 * Math.pow(u, 1.1)) + 0.004;
+        v.rad[k] = r; v.pts[k].set(px + zig * Math.cos(a + 1.2), py, pz + zig * Math.sin(a + 1.2) * 0.6);
+        const st = len / N, L2 = Math.hypot(dx, dy, dz); px += dx / L2 * st; py += dy / L2 * st; pz += dz / L2 * st; dx += Math.sin(a) * o.curl * st; dz += (o.lean + ac * 1.2) * st; dy -= o.bend * st; }
+      v.tt.set(v.pts, v.rad); const e = v.pts[N - 1], e2 = v.pts[N - 2]; v.head.position.copy(e); v.head.lookAt(e.x * 2 - e2.x, e.y * 2 - e2.y, e.z * 2 - e2.z); v.head.rotateX(PI / 2); }
+    for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.hg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, o.shardY + 0.06 * Math.sin(ph * 2 + s.s) - 0.1 * ac, 0.08 + 0.1 * Math.cos(a)); s.hg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); } } };
+}
+const _sb = { R: 0.42, sy: 0.9, foot: 0.1, hoodW: 1.12, hoodH: 0.95, hoodTilt: 0.12, seg: 8, vipers: 4, vn: 11, vr: 0.06, vlen: 0.8, fan: 0.5, out: 0.7, back: 0.2, lean: 0.9, curl: 0.5, bend: 0.2, amp: 0.06, seed: 3, shardR: 0.66, shardY: 0.62 };
+fx(233, "Snorunt-shaped mage, four vipers.", () => _snorMage(Object.assign({}, _sb)));
+fx(234, "Round little body, huge cone.", () => _snorMage(Object.assign({}, _sb, { R: 0.38, hoodW: 1.3, hoodH: 1.15, vipers: 4, seed: 5 })));
+fx(235, "Tall narrow cone.", () => _snorMage(Object.assign({}, _sb, { hoodW: 0.95, hoodH: 1.3, vipers: 3, vlen: 0.9, seed: 7 })));
+fx(236, "Wide body, arms out.", () => _snorMage(Object.assign({}, _sb, { wide: 1.2, armUp: 0.06, shardR: 0.74, vipers: 4, seed: 9 })));
+fx(237, "Two big vipers.", () => _snorMage(Object.assign({}, _sb, { vipers: 2, vlen: 0.9, vr: 0.09, fan: 1.0, out: 1.0, amp: 0.09, seed: 11 })));
+fx(238, "Five short vipers, a crown of bolts.", () => _snorMage(Object.assign({}, _sb, { vipers: 5, vlen: 0.62, vr: 0.05, fan: 0.4, seed: 13 })));
+fx(239, "Shards low, by the feet.", () => _snorMage(Object.assign({}, _sb, { shardR: 0.6, shardY: 0.3, seed: 15 })));
+fx(240, "Shards high, by the hood.", () => _snorMage(Object.assign({}, _sb, { shardR: 0.5, shardY: 1.1, vipers: 3, seed: 17 })));
+fx(241, "Pear-shaped body, thick-set cone.", () => _snorMage(Object.assign({}, _sb, { sy: 1.05, R: 0.45, hoodW: 1.0, hoodH: 0.9, wide: 1.1, vipers: 4, seed: 19 })));
+fx(242, "Small and cute: tiny body, bolts thrown back.", () => _snorMage(Object.assign({}, _sb, { R: 0.34, hoodH: 0.85, back: 0.7, lean: 0.2, vipers: 5, vlen: 0.75, shardR: 0.56, shardY: 0.55, seed: 21 })));
