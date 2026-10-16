@@ -354,3 +354,39 @@ fx(289, "Square-wave arms, tall shell.", () => _sqWaveBrawler(Object.assign({}, 
 fx(290, "Square-wave arms, low wide shell.", () => _sqWaveBrawler(Object.assign({}, _sw, { H: 0.7, R: 0.82, hover: 0.36, seed: 17 })));
 fx(291, "Square-wave arms, no shards, heavy front pair.", () => _sqWaveBrawler(Object.assign({}, _sw, { shards: false, bigArms: 2, armT: 0.085, seed: 19 })));
 fx(292, "Square-wave arms, three giant conduits.", () => _sqWaveBrawler(Object.assign({}, _sw, { arms: 3, bigArms: 2, armT: 0.12, armLen: 0.95, armArc: 2.8, lam: 0.55, amp: 0.2, dR: 0.17, seed: 21 })));
+
+// ── The hood pyramid (Nos. 293–302): the electric brawler, stripped back. A solid black HOLLOW pyramid, open on its front face like a hood, and a diamond
+// crystal floating inside it, visible when the hood faces you. No lightning, no arms (for now). o.yaw only turns the mock-up sheet toward the camera. ──
+const _hoodBlack = new T.MeshStandardMaterial({ color: 0x030308, metalness: 0.85, roughness: 0.26, flatShading: true, side: T.DoubleSide }); _hoodBlack.envMapIntensity = 1.6;   // glossy black: its faces show as highlights
+function _hoodPyramid(o) {
+  const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S); b.rotation.y = o.yaw || 0;
+  const hv = o.hover, H = o.H, R = o.R, tilt = o.tilt || 0;
+  const pv = G(); pv.rotation.x = tilt; pv.position.set(0, hv, 0); b.add(pv);   // tips forward a little, like a hood bowed toward you
+  // three faces: the front (+z) one is missing. A square pyramid cut into 3 segments of 90 degrees each.
+  const hood = new T.Mesh(new T.ConeGeometry(R, H, 3, 1, true, PI / 4, 3 * PI / 2), _hoodBlack); hood.position.y = H / 2; pv.add(hood);
+  // the open front's two edges, and the rim: dark steel, or silver
+  const trim = o.silver ? _boltSilver : _hoodBlack;
+  for (const k of [0, 1, 2, 3]) { const a = PI / 4 + k * PI / 2, bar = limb(o.trim || 0.022, trim); setLink(bar, new T.Vector3(Math.sin(a) * R, 0, Math.cos(a) * R), new T.Vector3(0, H, 0)); pv.add(bar); }
+  for (const k of [0, 1, 2, 3]) { const a0 = PI / 4 + k * PI / 2, a1 = a0 + PI / 2; if (k === 3) continue; const p0 = new T.Vector3(Math.sin(a0) * R, 0, Math.cos(a0) * R), p1 = new T.Vector3(Math.sin(a1) * R, 0, Math.cos(a1) * R), bar = limb(o.trim || 0.022, trim); setLink(bar, p0, p1); pv.add(bar); }
+  const tip = hexCrystal(0.04, 0.07, 0.12, M.crystal); tip.position.y = H + 0.08; if (o.tipCrystal) pv.add(tip);
+  // the diamond inside, floating in the hollow, lit so it glows and lights the inner walls
+  const dY = o.dY == null ? H * 0.34 : o.dY, dz = o.dZ == null ? 0.0 : o.dZ, d = hexCrystal(o.dR * 1.1, o.dR * 0.7, o.dR * 1.7, M.crystal); d.position.set(0, dY, dz); pv.add(d);
+  const dc = hexCrystal(o.dR * 0.55, o.dR * 0.4, o.dR * 1.0, M.glow); dc.position.set(0, dY, dz); pv.add(dc); const dg = glowSprite(o.dR * 8); dg.position.set(0, dY, dz); pv.add(dg);
+  const L = new T.PointLight(0xffffff, 1.4, 3.2, 2); L.color.set(EL.color); L.position.set(0, dY, dz + 0.1); pv.add(L); LIGHTS.push(L);
+  const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.07, 0.16, 0.22, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
+  return { g, core: (hv + dY) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
+    pv.position.y = hv + 0.03 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; d.rotation.y = ph * 0.7; dc.rotation.y = -ph * 0.7; d.position.y = dY + 0.02 * Math.sin(ph * 2); dc.position.y = d.position.y;
+    dg.scale.setScalar(o.dR * (8 + 2 * Math.sin(ph * 3) + 5 * ac)); L.intensity = 1.4 + 0.4 * Math.sin(ph * 3) + 0.8 * ac;
+    for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, hv + H * 0.55 + 0.06 * Math.sin(ph * 2 + s.s), 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); } } };
+}
+const _hp = { yaw: 0.05, hover: 0.35, H: 1.0, R: 0.62, dR: 0.15, shardR: 0.72 };
+fx(293, "Hood pyramid, diamond inside.", () => _hoodPyramid(Object.assign({}, _hp)));
+fx(294, "Tall hood pyramid.", () => _hoodPyramid(Object.assign({}, _hp, { H: 1.35, R: 0.55, dR: 0.15 })));
+fx(295, "Low wide hood pyramid.", () => _hoodPyramid(Object.assign({}, _hp, { H: 0.72, R: 0.82, hover: 0.3, dR: 0.18 })));
+fx(296, "Hood pyramid, big diamond.", () => _hoodPyramid(Object.assign({}, _hp, { dR: 0.23, R: 0.7, H: 1.05 })));
+fx(297, "Hood pyramid, small diamond deep inside.", () => _hoodPyramid(Object.assign({}, _hp, { dR: 0.11, dZ: -0.12 })));
+fx(298, "Hood pyramid, silver edges.", () => _hoodPyramid(Object.assign({}, _hp, { silver: true, trim: 0.026, tipCrystal: true })));
+fx(299, "Hood pyramid, bowed forward.", () => _hoodPyramid(Object.assign({}, _hp, { tilt: 0.22, H: 1.05, hover: 0.4 })));
+fx(300, "Hood pyramid, two shards hovering.", () => _hoodPyramid(Object.assign({}, _hp, { shards: true, tipCrystal: true })));
+fx(301, "Hood pyramid, sitting on the ground.", () => _hoodPyramid(Object.assign({}, _hp, { hover: 0.02, H: 0.95, R: 0.7 })));
+fx(302, "Hood pyramid, thick black rim, big opening feel.", () => _hoodPyramid(Object.assign({}, _hp, { trim: 0.05, R: 0.7, H: 0.9, dR: 0.17 })));
