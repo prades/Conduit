@@ -52,3 +52,11 @@ fx(376, "Petals: all four panels hinge open and shut in turn, rolling round the 
   const o = { hover: 0.34, R: 0.76, H: 1.0, dR: 0.21 }, B = _animBase(o);
   return { g: B.g, core: B.dY, update(t, act) { const ph = 1.6 * t, ac = act || 0; B.P.forEach((p, i) => { const w = 0.5 + 0.5 * Math.sin(ph - i * PI / 2); _hinge(p, 0.05 + 0.5 * w + 0.35 * ac); }); B.pv.position.y = 0.03 * Math.sin(ph); B.dgl.scale.setScalar(o.dR * (8 + 4 * Math.sin(ph) + 4 * ac)); _spin(B, ph, ac, o); } };
 });
+
+// ── The SAME hood pyramid (No. 312's hood, the diamond inside), with new spikes and new movement (Nos. 377–381) ──
+const _hm = Object.assign({}, _ha, { yaw: 0.35, jolt: true });
+fx(377, "Fat horns, a smooth ripple travelling round the hood.", () => _hoodPyramid(Object.assign({}, _hm, { motion: 'ripple', attached: { n: 8, uMin: 0.1, uMax: 0.62, len: [0.22, 0.5], skew: 0.8, seed: 11, twin: 0.2, ridge: 0.3, fat: 2.5 } })));
+fx(378, "Long thin needles, swaying together like grass in wind.", () => _hoodPyramid(Object.assign({}, _hm, { motion: 'sway', attached: { n: 26, uMin: 0.05, uMax: 0.8, len: [0.28, 0.62], skew: 1, seed: 5, twin: 0.1, ridge: 0.25, fat: 1.2, shape: 'needle' } })));
+fx(379, "Flat black blades that fan open and closed.", () => _hoodPyramid(Object.assign({}, _hm, { motion: 'fan', attached: { n: 10, uMin: 0.1, uMax: 0.6, len: [0.26, 0.5], skew: 1, seed: 7, twin: 0.1, ridge: 0.45, fat: 1.6, shape: 'blade' } })));
+fx(380, "Black hex crystals growing and shrinking as if breathing.", () => _hoodPyramid(Object.assign({}, _hm, { motion: 'breathe', attached: { n: 13, uMin: 0.08, uMax: 0.7, len: [0.15, 0.42], skew: 1.2, seed: 9, twin: 0.5, ridge: 0.3, fat: 2.2, shape: 'hex' } })));
+fx(381, "Big and small mixed, a pulse running from the base up to the tips.", () => _hoodPyramid(Object.assign({}, _hm, { motion: 'sweep', attached: { n: 17, uMin: 0.04, uMax: 0.75, len: [0.08, 0.58], skew: 1.8, seed: 13, twin: 0.3, ridge: 0.25, fat: 2 } })));
