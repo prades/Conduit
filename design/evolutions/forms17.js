@@ -69,3 +69,11 @@ fx(383, "Peeking eyes: two big glowing eyes flanking the diamond that blink.", (
 fx(384, "Tiny feet: four chunky feet right under the hem, shuffling as it bounces.", () => _hoodPyramid(Object.assign({}, _c380, { H: 0.72, R: 0.9, hover: 0.2, dR: 0.25, trim: 0.026, bounce: true, feet: true, attached: _cA() })));
 fx(385, "Little tufts: the crystals in small bunches, and a round bobble on the apex.", () => _hoodPyramid(Object.assign({}, _c380, { H: 0.72, R: 0.9, dR: 0.25, trim: 0.026, bounce: true, bobble: true, attached: _cA({ n: 6, twin: 0.95, len: [0.12, 0.3], fat: 3 }) })));
 fx(386, "All of it: chubby, big eyes, feet, tufts, bobble and bounce.", () => _hoodPyramid(Object.assign({}, _c380, { H: 0.74, R: 0.92, hover: 0.2, dR: 0.17, dY: 0.4, dZ: -0.02, trim: 0.026, bounce: true, eyes: true, eyeR: 0.09, eyeX: 0.26, eyeY: 0.0, eyeZ: 0.2, feet: true, bobble: true, attached: _cA({ n: 6, twin: 0.95, len: [0.12, 0.3], fat: 3 }) })));
+
+// ── 383 (and 386) with three gems in a triangle hovering in front of the face crystal in place of the two eyes (Nos. 387–390) ──
+const _b383 = { H: 0.78, R: 0.9, dR: 0.17, dY: 0.4, dZ: -0.02, trim: 0.026, bounce: true, attached: _cA() };
+const _b386 = { H: 0.74, R: 0.92, hover: 0.2, dR: 0.17, dY: 0.4, dZ: -0.02, trim: 0.026, bounce: true, feet: true, bobble: true, attached: _cA({ n: 6, twin: 0.95, len: [0.12, 0.3], fat: 3 }) };
+fx(387, "383 with three hovering gems, two above one.", () => _hoodPyramid(Object.assign({}, _c380, _b383, { triGems: 'down' })));
+fx(388, "383 with three hovering gems, one above two.", () => _hoodPyramid(Object.assign({}, _c380, _b383, { triGems: 'up' })));
+fx(389, "386 (feet, tufts, bobble) with three hovering gems, two above one.", () => _hoodPyramid(Object.assign({}, _c380, _b386, { triGems: 'down' })));
+fx(390, "386 (feet, tufts, bobble) with three hovering gems, one above two.", () => _hoodPyramid(Object.assign({}, _c380, _b386, { triGems: 'up' })));

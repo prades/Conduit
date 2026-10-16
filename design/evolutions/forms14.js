@@ -394,8 +394,11 @@ function _hoodPyramid(o) {
   const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.07, 0.16, 0.22, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
   // IRREGULAR BLACK SHARDS GROWN FROM THE COAT: rooted in the pyramid's faces and ridges, each its own size, angle and shape
   // CUTE extras: two little eyes by the diamond, stubby feet peeking under the hem, a bobble on the apex, a squash-and-stretch bounce
-  const cute = { eyes: [], feet: [] };
+  const cute = { eyes: [], feet: [], tri: [] };
   if (o.eyes) for (const sx of [-1, 1]) { const e = new T.Mesh(new T.SphereGeometry(o.eyeR || 0.05, 10, 8), M.glow); e.scale.set(0.8, 1.15, 0.5); e.position.set(sx * (o.eyeX || 0.17), dY + (o.eyeY || 0.02), dz + (o.eyeZ || 0.24)); pv.add(e); cute.eyes.push(e); }
+  // THREE GEMS in a triangle, hovering in front of the face crystal (o.triGems: 'down' = two above one, 'up' = one above two)
+  if (o.triGems) { const pts = o.triGems === 'down' ? [[-0.16, 0.09], [0.16, 0.09], [0, -0.13]] : [[0, 0.15], [-0.16, -0.07], [0.16, -0.07]], gz = dz + (o.dR || 0.2) * 1.9 + 0.12;
+    pts.forEach(([x, y], i) => { const gem = G(), dd = _diamond('octa', o.triR || 0.055); gem.add(dd.main); gem.add(dd.core); const gl = glowSprite((o.triR || 0.055) * 6); gem.add(gl); gem.position.set(x, dY + 0.02 + y, gz); pv.add(gem); cute.tri.push({ gem, x, y, i, gz, dd }); }); }
   if (o.feet) for (const [fx2, fz2] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) { const f = cbox(0.22, 0.17, 0.26, 0.06, _hoodBlack); f.position.set(fx2 * R * 0.45, 0.1, fz2 * R * 0.38); b.add(f); cute.feet.push({ f, fz2, fx2 }); }
   if (o.bobble) { const bb = new T.Mesh(new T.SphereGeometry(0.075, 12, 10), _hoodBlack); bb.position.y = H + 0.06; pv.add(bb); }
   const jolts = [];   // the coat's shards, to be jolted
@@ -432,6 +435,7 @@ function _hoodPyramid(o) {
     if (o.jolt) jolt(ph, ac);
     if (o.bounce) { const sq = Math.sin(ph * 2); pv.position.y = hv + 0.05 * Math.abs(Math.sin(ph)); pv.scale.set(1 - 0.035 * sq, 1 + 0.07 * sq, 1 - 0.035 * sq); pv.rotation.z = 0.04 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; }
     else { pv.position.y = hv + 0.03 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; }
+    cute.tri.forEach(T3 => { T3.gem.position.y = dY + 0.02 + T3.y + 0.025 * Math.sin(ph * 2 + T3.i * 2.1); T3.gem.position.z = T3.gz + 0.02 * Math.sin(ph + T3.i * 1.7) + 0.07 * ac; T3.gem.position.x = T3.x + 0.015 * Math.sin(ph * 1.5 + T3.i); T3.dd.main.rotation.y = ph * 1.2 + T3.i; T3.dd.core.rotation.y = -ph * 1.2 - T3.i; });   // they hover and bob out of step, turning slowly
     cute.eyes.forEach(e => e.scale.y = 1.15 * (Math.sin(ph * 2 + 1.3) > 0.93 ? 0.12 : 1) * (1 + 0.2 * ac));   // a blink
     cute.feet.forEach(F => { F.f.position.z = F.fz2 * R * 0.38 + 0.05 * Math.sin(ph * 2 + (F.fx2 > 0 ? PI : 0) + (F.fz2 > 0 ? 0 : PI / 2)); F.f.position.y = 0.09 + 0.025 * Math.max(0, Math.sin(ph * 2 + (F.fx2 > 0 ? PI : 0))); }); d.rotation.y = ph * 0.7; dc.rotation.y = -ph * 0.7; d.position.y = dY + 0.02 * Math.sin(ph * 2); dc.position.y = d.position.y;
     dg.scale.setScalar(o.dR * (8 + 2 * Math.sin(ph * 3) + 5 * ac)); L.intensity = 1.4 + 0.4 * Math.sin(ph * 3) + 0.8 * ac;
