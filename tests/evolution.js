@@ -35,12 +35,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     const lvlUp = `gainXp(__f, 5);`;
 
     console.log('\nWHO EVOLVES, AND WHEN');
-    check('THE ASK: a FIRE BRAWLER reaching level 20 becomes the BUNKER BLOOM, there and then', () => {
+    check('THE ASK: a FIRE BRAWLER reaching level 20 becomes the QUILLSTONE (design No. 354, which replaced the Bunker Bloom), there and then', () => {
         mk('fire', 'brawler', 20);
         const r = run(`(function(){ const before = !!__f.evolved; ${lvlUp} return { before, evo: __f.evolved, lv: __f.level, molt: __f._moltAt === frame, tag: unitTypeLabel(__f) }; })()`);
         ok(!r.before, 'evolved before level 20');
-        same(r.evo, 'bloom', 'its form'); same(r.lv, 20, 'level'); ok(r.molt, 'no molt started');
-        same(r.tag, 'BUNKER BLOOM', 'its tag');
+        same(r.evo, 'quillstone', 'its form'); same(r.lv, 20, 'level'); ok(r.molt, 'no molt started');
+        same(r.tag, 'QUILLSTONE', 'its tag'); ok(run('EVOLUTIONS.bloom.legacy === true'), 'the Bunker Bloom is no longer handed out');
     });
     check('THE ASK: an ELECTRIC SNIPER reaching level 20 becomes the REAVER', () => {
         mk('electric', 'sniper', 20); run(lvlUp);
@@ -73,7 +73,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('fire', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'halo', 'its form'); same(r.tag, 'CINDER HALO', 'its tag'); same(r.role, 'sniper', 'its role');
-        mk('fire', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'bloom', 'the fire brawler');
+        mk('fire', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'quillstone', 'the fire brawler');
         mk('fire', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire worker waits (no worker form for it)');
     });
     check('THE ASK: a TOXIC SNIPER becomes the ROTSHARD (design No. 101, the crystal eaten by its pool); a toxic BRAWLER the CALDERA (No. 140); campers and workers wait', () => {
@@ -116,7 +116,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('a follower already past level 20 (an old save) evolves on the next tick', () => {
         const r = run(`(function(){ spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.role = 'brawler'; f.level = 34; f.xp = xpForLevel(34); _applyFollowerLevel(f, true);
             frame = Math.ceil((frame + 1) / 30) * 30; evolutionTick(); return f.evolved; })()`);
-        same(r, 'bloom', 'its form');
+        same(r, 'quillstone', 'its form');
     });
 
     console.log('\nWHAT IT GAINS');
@@ -144,6 +144,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.near > 0 && r.burn, 'the close one: ' + JSON.stringify(r));
         same(r.far, 0, 'damage 4 tiles away');
         ok(r.cd > 300 && r.again === 0, 'it fired again at once: ' + JSON.stringify(r));
+    });
+    check('the QUILLSTONE casts the same ring of fire (named QUILL BURST) that the Bunker Bloom did', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; floatingTexts.length = 0;
+            spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'quillstone'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 20.8, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            frame++; f._sigCd = 1; evolutionTick(); const out = { dmg: 1e6 - p.health, burn: p.burning > 0, text: floatingTexts.map(t => t.text).join('|') }; p.dead = true; return out; })()`);
+        ok(r.dmg > 0 && r.burn, 'the quillstone did not burst: ' + JSON.stringify(r)); ok(/QUILL BURST/.test(r.text), 'its move is not named: ' + r.text);
     });
     check('THE ASK: ARC VOLLEY — a charged arc into the nearest enemy in range, jumping to the ones beside it', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
@@ -407,7 +414,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             followers.length = 0; actors = actors.filter(a => !a.isFollower);
             spawnFollowerFromSave(snap[0]); const g = followers[0];
             return { saved: snap[0].evolved, evo: g.evolved, hp: g.maxHealth, was: hp }; })()`);
-        same(r.saved, 'bloom', 'in the save'); same(r.evo, 'bloom', 'after loading'); same(r.hp, r.was, 'its health after loading');
+        same(r.saved, 'quillstone', 'in the save'); same(r.evo, 'quillstone', 'after loading'); same(r.hp, r.was, 'its health after loading');
     });
     check('it comes back from the dead as the same machine — its element and role too', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0;
@@ -423,7 +430,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw', 'hornshell', 'prism']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
@@ -435,7 +442,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel', 'hornshell', 'prism']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);

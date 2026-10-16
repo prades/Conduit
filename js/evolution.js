@@ -62,6 +62,10 @@
 //          HORNSHELL (the CORE MAGE, design No. 220: a black shell-jar on its side dragged along the ground by
 //          fat, irregular tentacles, a shard horn at its mouth) does the same AEGIS BLOOM as the Petal Aegis
 //          below, which it replaced (the Petal Aegis stays defined, marked legacy, for followers already evolved into it).
+//          QUILLSTONE (the FIRE BRAWLER, design No. 354: a pitch-black cut gem that crawls on little hidden
+//          feet, red shards growing out of it, its two front spikes black like the shell), replaced the Bunker
+//          Bloom for new evolutions and does the same ring of fire, called QUILL BURST (the Bunker Bloom
+//          stays defined, marked legacy, for followers already evolved into it).
 //          PETAL AEGIS (the old CORE MAGE, design No. 120: a rosette of plate-petals round a
 //          crystal; the role is called a mage to the player, its id is still "sniper"),
 //          AEGIS BLOOM: with an enemy within PETAL_RANGE, every PETAL_EVERY frames its petals
@@ -120,7 +124,8 @@ const POD_RATE = 3, POD_REACH = 2, POD_SPEED = 1.4;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
 
 const EVOLUTIONS = {
-    bloom:  { id: "bloom",  name: "BUNKER BLOOM", element: "fire",     role: "brawler", move: "PETAL BLAZE", sheet: "img/evo/bloom.png",
+    // LEGACY: the first fire brawler. New evolutions use the Quillstone; a follower already evolved into this keeps it.
+    bloom:  { id: "bloom",  legacy: true, name: "BUNKER BLOOM", element: "fire",     role: "brawler", move: "PETAL BLAZE", sheet: "img/evo/bloom.png",
               cell: 144, anchor: [72, 114.2], core: [72, 74.6] },
     reaver: { id: "reaver", name: "REAVER",       element: "electric", role: "sniper",  move: "ARC VOLLEY",  sheet: "img/evo/reaver.png",
               cell: 144, anchor: [72, 114.2], core: [72, 58.4] },
@@ -135,6 +140,10 @@ const EVOLUTIONS = {
     // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
     halo:   { id: "halo",   name: "CINDER HALO",  element: "fire",     role: "sniper",  move: "HEXFIRE",      sheet: "img/evo/halo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
+    // The FIRE BRAWLER, design No. 354 (its separate antennae dropped, the two front spikes black like the shell): a pitch-black cut gem that crawls on
+    // little hidden feet, red shards growing out of it. The quills sway, so its sheet carries its own light.
+    quillstone:{ id: "quillstone", name: "QUILLSTONE", element: "fire", role: "brawler", move: "QUILL BURST", sheet: "img/evo/quillstone.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 85], noGlow: true, color: "#ff5a1f" },
     // The ICE BRAWLER: a dome with a cave mouth. Its rubble lies on the floor (the ground sheet), and the cave is its own light.
     maw:    { id: "maw",    name: "FROST MAW",    element: "ice",      role: "brawler", move: "CHOMP",        sheet: "img/evo/maw.png",
               cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png" },
@@ -207,7 +216,7 @@ function evolutionTick() {
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
-        if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
+        if (d.id === "bloom" || d.id === "quillstone") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
         else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta" || d.id === "prism") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera") eruption(f); else if (d.id === "maw") chomp(f);
     }
 }
@@ -229,7 +238,7 @@ function petalBlaze(f) {
         elementEffects.push({ type: "fireShockwave", x: f.x, y: f.y, radius: BLOOM_RADIUS, life: 36, maxLife: 36 });
         elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#ff6622", radius: BLOOM_RADIUS * 0.7, life: 26 });
     }
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "PETAL BLAZE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: (evolvedDef(f) || {}).move || "PETAL BLAZE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 // ARC VOLLEY: a charged arc into the nearest enemy in range, jumping on. True when it fired.

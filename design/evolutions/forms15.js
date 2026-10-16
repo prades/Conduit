@@ -66,6 +66,7 @@ function _porcupine(o) {
     const sh = _quillShard(len, r, 4 + Math.floor(rn(i, 9) * 3), mat, i); sh.position.copy(pos); sh.quaternion.setFromUnitVectors(UPV2, dir); body.add(sh); quills.push({ m: sh, q: sh.quaternion.clone(), i }); }
   if (o.cracks) for (let k = 0; k < o.cracks; k++) { const a = rn(k, 20) * TAU, polar = 0.4 + 0.8 * rn(k, 21), c = cbox(0.02, 0.28 + 0.2 * rn(k, 22), 0.02, 0.004, M.glow), d = new T.Vector3(Math.sin(polar) * Math.sin(a), Math.cos(polar), Math.sin(polar) * Math.cos(a));
     c.position.set(d.x * sx * 0.97, d.y * sy * 0.97, d.z * sz * 0.97); c.quaternion.setFromUnitVectors(UPV2, d.clone().add(new T.Vector3(0.2, 0.0, 0.1)).normalize()); body.add(c); }
+  if (o.blackFront) { const shellMat = o.gem ? (o.glossy ? _gemMatGloss : _gemMatMatte) : _rockBlack; quills.slice().sort((p, q) => (q.m.position.z + 0.3 * Math.abs(q.m.position.x)) - (p.m.position.z + 0.3 * Math.abs(p.m.position.x)) - 0.0).slice(0, o.blackFront).forEach(Q => { Q.m.material = shellMat; Q.black = true; }); }   // the front-most spikes are the shell's own black
   const L = new T.PointLight(0xffffff, 0.35, 3, 2); L.color.set(EL.color); L.position.set(0, cy + sy, 0.3); b.add(L); LIGHTS.push(L);
   return { g, core: (cy + sy * 0.3) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
     body.position.y = cy + 0.012 * Math.sin(ph * 2) + 0.03 * ac; body.rotation.z = 0.035 * Math.sin(ph); body.rotation.x = 0.025 * Math.sin(ph * 2 + 1) - 0.12 * ac;   // a crawling waddle; it hunches when it attacks
@@ -112,3 +113,8 @@ fx(356, "Sea-urchin layout with antennae.", () => _porcupine(Object.assign({}, _
 fx(357, "Mohawk layout with antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { antPhi: 0.42, place: () => [0, 1, 2, 3, 4, 5].map(k => ({ polar: 0.15 + 0.1 * Math.abs(k - 2.5), phi: PI, len: [0.45, 0.6, 0.68, 0.58, 0.44, 0.3][k], out: 0.15, up: 1, back: 0.5 })) })));
 fx(358, "Spiky-skirt layout with antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { place: () => [..._ring(8, 1.15, k => 0.46, 1, 0.12, PI / 8)().filter(P => Math.cos(P.phi) < 0.8), ..._ring(8, 0.78, k => 0.34, 1, 0.55, 0)().filter(P => Math.cos(P.phi) < 0.5)] })));
 fx(359, "Tall-spray layout with antennae.", () => _porcupine(Object.assign({}, _pc, _g342, _ant, { place: () => [{ polar: 0.15, phi: 2.2, len: 0.78, fat: 0.17, out: 0.1, up: 1 }, { polar: 0.2, phi: 3.5, len: 0.62, fat: 0.17, out: 0.2, up: 1 }, { polar: 0.22, phi: 4.9, len: 0.7, fat: 0.17, out: 0.2, up: 1 }, ..._ring(8, 0.95, k => 0.2, 0.9, 0.4, 0)().filter(P => Math.cos(P.phi) < 0.5)] })));
+
+// ── The fire brawler (No. 360 on a sheet, 361 the game sprite): 354's gem and shards, with the separate antennae gone and the two FRONT spikes black like the shell ──
+const _fire354 = Object.assign({}, _pc, _g342, { n: 11, len: [0.3, 0.65], fat: 0.2, seed: 5, top: 1.2, cover: 0.9, blackFront: 2 });
+fx(360, "The fire brawler: the gem porcupine, front two spikes black.", () => _porcupine(Object.assign({}, _fire354)));
+fx(361, "The fire brawler, the game sprite.", () => _porcupine(Object.assign({}, _fire354, { S: 1.5 })));
