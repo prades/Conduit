@@ -55,10 +55,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a hybrid fights as a brawler');
         mk('flux', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux camper waits');
     });
-    check('THE ASK: a CORE BRAWLER becomes the AEGIS WARDEN (design No. 57); an ELECTRIC BRAWLER the STORM MANTA (No. 68)', () => {
+    check('THE ASK: a CORE BRAWLER becomes the AEGIS WARDEN (design No. 57); an ELECTRIC BRAWLER the PRISM HOOD (No. 312, which replaced the Storm Manta)', () => {
         mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'warden', 'core brawler');
-        mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'manta', 'electric brawler');
-        same(run('unitTypeLabel(__f)'), 'STORM MANTA', 'its tag');
+        mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'prism', 'electric brawler');
+        same(run('unitTypeLabel(__f)'), 'PRISM HOOD', 'its tag'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
         mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'reaver', 'the electric sniper is still the Reaver');
     });
     check('THE ASK: a FLUX WORKER becomes the HOVER HAULER (design No. 58) — a worker is a duty, not a role', () => {
@@ -66,7 +66,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux SNIPER on worker duty is a worker first');
         mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a flux brawler on the line is the Rift Mimic');
         mk('core', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core brawler on worker duty is the Worm Vessel, not the Aegis Warden');
-        mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'pod', 'an electric worker is the Dynamo Pod, not the Storm Manta');
+        mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'pod', 'an electric worker is the Dynamo Pod, not the Prism Hood');
         mk('flux', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'serpent', 'a flux sniper on the line is the Serpent');
     });
     check('THE ASK: a FIRE SNIPER becomes the CINDER HALO (design No. 90, the ring drone); a fire brawler is still the Bunker Bloom', () => {
@@ -319,6 +319,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const src = fs.readFileSync(path.join(ROOT, 'js/mass.js'), 'utf8');
         ok(/evoRepair\(actor\)/.test(src) && /_rv\.rate/.test(src) && /_rv\.reach/.test(src), 'the repair loop does not ask for the vessel\'s rate and reach');
     });
+    check('the PRISM HOOD runs the same STATIC RUSH (dash, shock, stun) as the Storm Manta did', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'prism'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            frame++; f._sigCd = 1; evolutionTick(); const out = { dist: Math.hypot(p.x - f.x, p.y - f.y), dmg: 1e6 - p.health, stun: p.hitStun >= MANTA_STUN }; p.dead = true; return out; })()`);
+        ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
+    });
+
     check('THE ASK: HEAVY HAUL — the hover hauler pays double shards, hauls faster and reaches further than a plain flux worker', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
             const mk = (evo) => { spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.duty = 'worker'; if (evo) f.evolved = 'hauler'; return f; };
@@ -399,7 +407,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw', 'hornshell']) {
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw', 'hornshell', 'prism']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
@@ -411,7 +419,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel', 'hornshell']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel', 'hornshell', 'prism']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);

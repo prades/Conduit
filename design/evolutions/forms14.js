@@ -357,7 +357,7 @@ fx(292, "Square-wave arms, three giant conduits.", () => _sqWaveBrawler(Object.a
 
 // ── The hood pyramid (Nos. 293–302): the electric brawler, stripped back. A solid black HOLLOW pyramid, open on its front face like a hood, and a diamond
 // crystal floating inside it, visible when the hood faces you. No lightning, no arms (for now). o.yaw only turns the mock-up sheet toward the camera. ──
-const _hoodBlack = new T.MeshStandardMaterial({ color: 0x030308, metalness: 0.85, roughness: 0.26, flatShading: true, side: T.DoubleSide }); _hoodBlack.envMapIntensity = 1.6;   // glossy black: its faces show as highlights
+const _hoodBlack = new T.MeshStandardMaterial({ color: 0x030308, metalness: 0.4, roughness: 0.5, flatShading: true, side: T.DoubleSide }); _hoodBlack.envMapIntensity = 0.45;   // glossy black: its faces show as highlights
 // Diamond cuts: a faceted body with its facet lines drawn, and a glowing core inside it. r = size.
 function _facetLathe(pts, seg, r, mat) { const geo = new T.LatheGeometry(pts.map(p => new T.Vector2(Math.max(0.0001, p[0] * r), p[1] * r)), seg), g = G(); g.add(new T.Mesh(geo, mat || M.crystal)); g.add(new T.LineSegments(new T.EdgesGeometry(geo, 15), _edgeMat)); return g; }
 function _diamond(cut, r) {
@@ -425,3 +425,6 @@ fx(310, "Drooping hood, step-cut (emerald) diamond.", () => _hoodPyramid(Object.
 fx(311, "Drooping hood, a cluster of crystals.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'cluster', dR: 0.26 })));
 fx(312, "Drooping hood with an arched brim, octahedron.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'octa', flapDrop: -0.12, flap: 0.38 })));
 fx(313, "Drooping hood, arched brim, banded diamond.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'ring', flapDrop: -0.1, flap: 0.38, dR: 0.24 })));
+
+// The game version of No. 312: its open front faces the way it faces (yaw 0), scaled to fill a sprite cell.
+fx(314, "Drooping hood, arched brim, octahedron: the game sprite.", () => _hoodPyramid(Object.assign({}, _hc, { cut: 'octa', flapDrop: -0.12, flap: 0.38, yaw: 0, S: 1.45 })));

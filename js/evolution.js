@@ -82,6 +82,10 @@
 //          every MAW_EVERY frames the fangs slam down: the nearest enemy takes MAW_MULT × its
 //          power in ice damage and is frozen stiff for MAW_STUN frames, and everything within
 //          MAW_SLOW_R of it is slowed to MAW_SLOW for MAW_SLOW_FRAMES.
+//          PRISM HOOD (the ELECTRIC BRAWLER, design No. 312: a hollow black pyramid whose front
+//          droops like a hood over the top half of an octahedron diamond), replaced the Storm Manta
+//          for new evolutions and does the same STATIC RUSH (the Storm Manta stays defined, marked legacy,
+//          for followers already evolved into it).
 //   LOOK   Baked from the 3D design models (design/evolutions/) into sprite
 //          sheets in img/evo/: 8 facings × 16 frames (8 idle, 8 action),
 //          seen from the game's own iso angle.
@@ -122,7 +126,8 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 61], noGlow: true, color: "#bb66ff" },
     warden: { id: "warden", name: "AEGIS WARDEN", element: "core",     role: "brawler", move: "AEGIS BURST",  sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
-    manta:  { id: "manta",  name: "STORM MANTA",  element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/manta.png",
+    // LEGACY: the first electric brawler. New evolutions use the Prism Hood; a follower already evolved into this keeps it.
+    manta:  { id: "manta",  legacy: true, name: "STORM MANTA",  element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/manta.png",
               cell: 144, anchor: [72, 114.2], core: [72, 57], noGlow: true, color: "#ffee33" },
     // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
     halo:   { id: "halo",   name: "CINDER HALO",  element: "fire",     role: "sniper",  move: "HEXFIRE",      sheet: "img/evo/halo.png",
@@ -130,6 +135,9 @@ const EVOLUTIONS = {
     // The ICE BRAWLER: a dome with a cave mouth. Its rubble lies on the floor (the ground sheet), and the cave is its own light.
     maw:    { id: "maw",    name: "FROST MAW",    element: "ice",      role: "brawler", move: "CHOMP",        sheet: "img/evo/maw.png",
               cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png" },
+    // The ELECTRIC BRAWLER, design No. 312: a black hollow pyramid hood over a diamond. The diamond turns, so its sheet carries its own light.
+    prism:  { id: "prism",  name: "PRISM HOOD",   element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/prism.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 68.4], noGlow: true, color: "#ffee33" },
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
     hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "AEGIS BLOOM", sheet: "img/evo/hornshell.png",
@@ -197,7 +205,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
-        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera") eruption(f); else if (d.id === "maw") chomp(f);
+        else if (d.id === "warden") aegisBurst(f); else if (d.id === "manta" || d.id === "prism") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera") eruption(f); else if (d.id === "maw") chomp(f);
     }
 }
 function _evoFoes(x, y, r) {
