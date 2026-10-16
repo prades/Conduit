@@ -43,7 +43,13 @@ function _porcupine(o) {
   const feet = []; for (let i = 0; i < 4; i++) { const fx = (i % 2 ? -1 : 1) * sx * 0.36, fz = (i < 2 ? 1 : -1) * sz * 0.36, ft = cbox(0.14, 0.1, 0.18, 0.03, _rockBlack); ft.position.set(fx, -cy + 0.07, fz); body.add(ft); feet.push(ft); }
   const mat = _redShardMat(o.glow), UPV2 = new T.Vector3(0, 1, 0), quills = [];
   const rn = (i, k) => _hz(i * 7 + 3, o.seed + k * 13, k);
-  for (let i = 0; i < o.n; i++) { const u = Math.pow(rn(i, 1), o.top || 1), phi = rn(i, 2) * TAU, up = Math.cos(u * PI * 0.5 * (o.cover || 0.95));
+  const placed = o.place ? o.place() : null;
+  if (placed) for (let i = 0; i < placed.length; i++) { const P = placed[i], dirN = new T.Vector3(Math.sin(P.polar) * Math.sin(P.phi), Math.cos(P.polar), Math.sin(P.polar) * Math.cos(P.phi)).normalize();
+    let pos = new T.Vector3(dirN.x * sx * 0.9, dirN.y * sy * 0.9, dirN.z * sz * 0.9);
+    if (o.gem) { rock.updateMatrixWorld(true); const org = dirN.clone().multiplyScalar(4), wO = body.localToWorld(org.clone()), wC = body.localToWorld(new T.Vector3(0, 0, 0)); ray.set(wO, wC.sub(wO).normalize()); const hit = ray.intersectObject(hitMesh, false)[0]; if (hit) pos = body.worldToLocal(hit.point.clone()).addScaledVector(dirN, -0.03); }
+    const dir = dirN.clone().multiplyScalar(P.out == null ? 0.6 : P.out).add(new T.Vector3(0, P.up == null ? 0.7 : P.up, -(P.back || 0))).normalize(), r = P.len * (P.fat || o.fat || 0.2);
+    const sh = _quillShard(P.len, r, P.sides || 5, mat, i + (o.seed || 0)); sh.position.copy(pos); sh.quaternion.setFromUnitVectors(UPV2, dir); body.add(sh); quills.push({ m: sh, q: sh.quaternion.clone(), i }); }
+  if (!placed) for (let i = 0; i < o.n; i++) { const u = Math.pow(rn(i, 1), o.top || 1), phi = rn(i, 2) * TAU, up = Math.cos(u * PI * 0.5 * (o.cover || 0.95));
     // a point on the rock's upper hemisphere (angle from the top: u*cover), the front-bias pushes some toward +z
     const polar = u * PI * 0.5 * (o.cover || 0.95) + 0.05, dirN = new T.Vector3(Math.sin(polar) * Math.sin(phi), Math.cos(polar), Math.sin(polar) * Math.cos(phi));
     if (o.back) dirN.z -= o.back * (0.4 + 0.6 * rn(i, 3)); dirN.normalize();
@@ -80,3 +86,13 @@ fx(344, "333 on a step-cut (emerald) black gem.", () => _porcupine(Object.assign
 fx(345, "333 on a tall pointed black gem.", () => _porcupine(Object.assign({}, _p333, { gem: 'kite', sx: 0.8, sy: 0.9, sz: 0.8, seg: 6, glossy: true, seed: 8 })));
 fx(346, "333 on a matte black cut gem.", () => _porcupine(Object.assign({}, _p333, { gem: 'rose', sx: 0.9, sy: 0.75, sz: 0.85, seg: 8, glossy: false, edges: 0x4a2a2a, seed: 9 })));
 fx(347, "333 on a cut gem split open, a red core inside.", () => _porcupine(Object.assign({}, _p333, { gem: 'open', sx: 0.95, sy: 0.85, sz: 0.9, seg: 8, glossy: true, seed: 10, cover: 0.8 })));
+
+// ── 342 with other shard layouts (Nos. 348–353): placed by the gem's own geometry (facets at phi = k*45 deg, corners between them), not scattered. ──
+const _g342 = { gem: 'rose', sx: 0.9, sy: 0.75, sz: 0.85, seg: 8, glossy: true, fat: 0.2 };
+const _ring = (n, polar, len, out, up, f0) => () => Array.from({ length: n }, (_, k) => ({ polar, phi: (f0 == null ? PI / n : f0) + k * TAU / n, len: len(k), out, up }));
+fx(348, "342, a crown: a ring of shards round the table and one big one in the middle.", () => _porcupine(Object.assign({}, _pc, _g342, { place: () => [{ polar: 0.02, phi: 0, len: 0.7, fat: 0.17, out: 0, up: 1 }, ..._ring(8, 0.62, k => 0.36 + 0.1 * (k % 2), 0.55, 0.8, PI / 8)()] })));
+fx(349, "342, a sea urchin: one shard out of every facet.", () => _porcupine(Object.assign({}, _pc, _g342, { place: () => Array.from({ length: 8 }, (_, k) => ({ polar: 1.0, phi: k * PI / 4, len: [0.5, 0.4, 0.3, 0.42, 0.55, 0.42, 0.3, 0.4][k], out: 1, up: 0.35 })) })));
+fx(350, "342, a mohawk: a line of shards along the spine, leaning back.", () => _porcupine(Object.assign({}, _pc, _g342, { place: () => [0, 1, 2, 3, 4, 5, 6].map(k => ({ polar: 0.25 + 0.1 * Math.abs(k - 3), phi: k < 3 ? 0 : PI, len: [0.3, 0.45, 0.6, 0.66, 0.55, 0.42, 0.3][k], out: 0.15, up: 1, back: 0.5 })).map((P, k) => (P.phi = PI, P.polar = 0.1 + 0.2 * Math.abs(k - 3), P.phi = k === 3 ? 0 : (k < 3 ? 0 : PI), P)) })));
+fx(351, "342, one flank: a cluster of shards on one side, the other bare.", () => _porcupine(Object.assign({}, _pc, _g342, { place: () => [[0.5, 1.0, 0.62], [0.9, 0.6, 0.5], [0.9, 1.5, 0.44], [1.1, 1.0, 0.36], [0.6, 1.4, 0.5], [1.15, 0.4, 0.3]].map(([polar, phi, len]) => ({ polar, phi: phi + PI / 2 * 0.9, len, out: 0.9, up: 0.55 })) })));
+fx(352, "342, a spiky skirt: shards stick straight out round the girdle, two tiers.", () => _porcupine(Object.assign({}, _pc, _g342, { place: () => [..._ring(8, 1.15, k => 0.46, 1, 0.12, PI / 8)(), ..._ring(8, 0.78, k => 0.34, 1, 0.55, 0)()] })));
+fx(353, "342, a tall spray: three big shards up from the table, small ones round the edge.", () => _porcupine(Object.assign({}, _pc, _g342, { place: () => [{ polar: 0.15, phi: 0.5, len: 0.78, fat: 0.17, out: 0.1, up: 1 }, { polar: 0.2, phi: 2.6, len: 0.62, fat: 0.17, out: 0.2, up: 1 }, { polar: 0.22, phi: 4.7, len: 0.7, fat: 0.17, out: 0.2, up: 1 }, ..._ring(8, 0.95, k => 0.2, 0.9, 0.4, 0)()] })));
