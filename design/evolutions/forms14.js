@@ -392,6 +392,15 @@ function _hoodPyramid(o) {
   const dc = dm.core; dc.position.set(0, dY, dz); pv.add(dc); const dg = glowSprite(o.dR * 8); dg.position.set(0, dY, dz); pv.add(dg);
   const L = new T.PointLight(0xffffff, 1.4, 3.2, 2); L.color.set(EL.color); L.position.set(0, dY, dz + 0.1); pv.add(L); LIGHTS.push(L);
   const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.07, 0.16, 0.22, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
+  // IRREGULAR BLACK SHARDS GROWN FROM THE COAT: rooted in the pyramid's faces and ridges, each its own size, angle and shape
+  if (o.attached) { const A = o.attached, UPV2 = new T.Vector3(0, 1, 0), faces = [PI / 2, PI, -PI / 2], A0 = R * Math.SQRT1_2, rn = (i, k) => _hz(i * 5 + 1, A.seed + k * 11, k);
+    const mkShard = (len, r, i) => { const geo = new T.ConeGeometry(r, len, 4 + Math.floor(rn(i, 40) * 3), 1), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const x = p.getX(v), y = p.getY(v), z = p.getZ(v), n = _hz(Math.round(x * 400) + i, Math.round(y * 400), Math.round(z * 400)); p.setXYZ(v, x * (0.7 + 0.6 * n), y, z * (0.7 + 0.6 * (1 - n))); } geo.translate(0, len / 2, 0); geo.computeVertexNormals(); return new T.Mesh(geo, _hoodBlack); };
+    for (let i = 0; i < A.n; i++) { const ridge = rn(i, 1) < (A.ridge || 0), u = A.uMin + (A.uMax - A.uMin) * rn(i, 2), len = A.len[0] + (A.len[1] - A.len[0]) * Math.pow(rn(i, 3), A.skew || 1), r = len * (0.16 + 0.14 * rn(i, 4));
+      let pos, nrm; if (ridge) { const a = [3 * PI / 4, 5 * PI / 4, PI / 4, -PI / 4][Math.floor(rn(i, 5) * (A.front ? 4 : 2))], rad = R * (1 - u); pos = new T.Vector3(Math.sin(a) * rad, u * H, Math.cos(a) * rad); nrm = new T.Vector3(Math.sin(a) * H * 0.7, A0 * 0.9, Math.cos(a) * H * 0.7).normalize(); }
+      else { const az = faces[Math.floor(rn(i, 5) * faces.length)], a0 = A0 * (1 - u), t = (rn(i, 6) * 2 - 1) * a0 * 0.85, rv = new T.Vector3(Math.sin(az), 0, Math.cos(az)), lv = new T.Vector3(Math.cos(az), 0, -Math.sin(az));
+        pos = rv.clone().multiplyScalar(a0).addScaledVector(lv, t).add(new T.Vector3(0, u * H, 0)); nrm = rv.clone().multiplyScalar(H).add(new T.Vector3(0, A0, 0)).normalize(); }
+      const dirv = nrm.clone().add(new T.Vector3((rn(i, 7) - 0.5) * 0.9, (rn(i, 8) - 0.35) * 0.7, (rn(i, 9) - 0.5) * 0.9)).normalize(), sh = mkShard(len, r, i); sh.position.copy(pos).addScaledVector(nrm, -0.03); sh.quaternion.setFromUnitVectors(UPV2, dirv); pv.add(sh);
+      if (rn(i, 10) < (A.twin || 0.3)) { const sh2 = mkShard(len * (0.45 + 0.2 * rn(i, 11)), r * 0.7, i + 100), d2 = dirv.clone().add(new T.Vector3((rn(i, 12) - 0.5) * 1.3, (rn(i, 13) - 0.5) * 1.0, (rn(i, 14) - 0.5) * 1.3)).normalize(); sh2.position.copy(sh.position).addScaledVector(nrm, 0.01); sh2.quaternion.setFromUnitVectors(UPV2, d2); pv.add(sh2); } } }
   // exterior shards are BLACK, the coat's own material: orbiting the hood, as horns on its corners, a crown above the apex, or lying round its base
   const bsh = [], blk = (r, h, t) => hexCrystal(r, h, t, _hoodBlack);
   if (o.black === 'orbit') for (let i = 0; i < (o.blackN || 2); i++) { const gg = G(); gg.add(blk(0.07, 0.14, 0.24)); b.add(gg); bsh.push({ g: gg, orbit: true, ph: i * TAU / (o.blackN || 2), rad: o.shardR, hy: 0.5 }); }
@@ -444,3 +453,12 @@ fx(317, "Four black shards orbiting.", () => _hoodPyramid(Object.assign({}, _hi,
 fx(318, "Black shards as horns on the hood's corners.", () => _hoodPyramid(Object.assign({}, _hi, { black: 'horns' })));
 fx(319, "A black crown shard above the apex.", () => _hoodPyramid(Object.assign({}, _hi, { black: 'crown' })));
 fx(320, "Black shards lying round the base.", () => _hoodPyramid(Object.assign({}, _hi, { black: 'base' })));
+
+// ── Irregular black shards grown out of the coat (Nos. 321–326) ──
+const _ha = Object.assign({}, _hi, { yaw: 0.1 });
+fx(321, "A few big irregular black shards from the coat.", () => _hoodPyramid(Object.assign({}, _ha, { attached: { n: 8, uMin: 0.08, uMax: 0.7, len: [0.12, 0.38], skew: 1.4, seed: 3, twin: 0.35 } })));
+fx(322, "Dense small black shards all over the coat.", () => _hoodPyramid(Object.assign({}, _ha, { attached: { n: 26, uMin: 0.05, uMax: 0.8, len: [0.05, 0.18], skew: 1, seed: 5, twin: 0.2 } })));
+fx(323, "Black spines along the ridges.", () => _hoodPyramid(Object.assign({}, _ha, { attached: { n: 12, ridge: 0.85, front: true, uMin: 0.05, uMax: 0.85, len: [0.1, 0.32], skew: 1.2, seed: 7, twin: 0.3 } })));
+fx(324, "A cluster of black shards at the lower rim.", () => _hoodPyramid(Object.assign({}, _ha, { attached: { n: 14, uMin: 0.0, uMax: 0.22, len: [0.1, 0.34], skew: 1, seed: 9, twin: 0.5 } })));
+fx(325, "Big black spikes along the back and sides.", () => _hoodPyramid(Object.assign({}, _ha, { attached: { n: 7, uMin: 0.1, uMax: 0.6, len: [0.22, 0.5], skew: 0.8, seed: 11, twin: 0.2, ridge: 0.3 } })));
+fx(326, "Mixed irregular growths: bunches and singles.", () => _hoodPyramid(Object.assign({}, _ha, { attached: { n: 16, uMin: 0.04, uMax: 0.75, len: [0.06, 0.36], skew: 1.6, seed: 13, twin: 0.6, ridge: 0.25 } })));
