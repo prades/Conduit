@@ -12,9 +12,9 @@ function _slugReal(o) {
   // hexagon scutes: a honeycomb of raised black plates over the back, each with a teal edge
   const hexes = [], HR = o.hexRows, HC = o.hexCols; const edgeMat = new T.MeshBasicMaterial({ color: new T.Color(EL.color), toneMapped: false }), hexMat = o.hexMat || _armB;
   for (let j = 0; j < HR; j++) for (let i = 0; i < HC; i++) { const u = o.hexU0 + (i + 0.5 * (j % 2)) / HC * (o.hexU1 - o.hexU0), th = (j - (HR - 1) / 2) * o.hexTh; if (u > o.hexU1 + 0.001) continue;
-    const hg = G(), plate = new T.Mesh(new T.CylinderGeometry(1, 1, 0.045, 6), hexMat); plate.position.y = 0.02; hg.add(plate); const ed = new T.Mesh(new T.TorusGeometry(0.9, 0.035, 4, 6), edgeMat); ed.rotation.x = PI / 2; ed.position.y = 0.046; hg.add(ed);
-    if (o.hexFill) { const fl = new T.Mesh(new T.CylinderGeometry(0.62, 0.62, 0.02, 6), edgeMat); fl.position.y = 0.05; hg.add(fl); }
-    b.add(hg); hexes.push({ hg, u, th, j }); }
+    const hg = G(), plate = new T.Mesh(new T.CylinderGeometry(1, 1, 0.045, 6), hexMat); plate.position.y = 0.02; hg.add(plate); const em = edgeMat.clone(); const ed = new T.Mesh(new T.TorusGeometry(0.9, 0.035, 4, 6), em); ed.rotation.x = PI / 2; ed.position.y = 0.046; hg.add(ed);
+    if (o.hexFill) { const fl = new T.Mesh(new T.CylinderGeometry(0.62, 0.62, 0.02, 6), em); fl.position.y = 0.05; hg.add(fl); }
+    b.add(hg); hexes.push({ hg, u, th, j, em }); }
   // the head: spike, two long eye-stalks (a crystal rim round a black centre), two short feelers
   const hg2 = G(); b.add(hg2); const horn = G(); hg2.add(horn); horn.rotation.x = o.hornTilt; const edgeL = new T.LineBasicMaterial({ color: 0x2a6a74, transparent: true, opacity: 0.9 });
   const blade = (w, d, len, sides, curve) => { const geo = new T.ConeGeometry(w, len, sides, 6, false), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const y = p.getY(v) / len + 0.5; p.setZ(v, p.getZ(v) * d + (curve || 0) * y * y * len); } geo.translate(0, len / 2 + 0.03, 0); geo.computeVertexNormals(); const m = new T.Mesh(geo, _gemMatGloss), grp = G(); grp.add(m); grp.add(new T.LineSegments(new T.EdgesGeometry(geo, 20), edgeL)); return grp; };
@@ -28,7 +28,7 @@ function _slugReal(o) {
     const bead = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.9, 14, 12), new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.12, metalness: 0.3 })); bead.position.z = o.eyeR * 0.45; bead.scale.set(1, 1, 0.9); eye.add(bead);   // the eye: a small glossy black bead
     const gl = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.16, 6, 5), new T.MeshBasicMaterial({ color: 0xcfe9ff })); gl.position.set(o.eyeR * 0.3, o.eyeR * 0.35, o.eyeR * 1.2); eye.add(gl); sp.add(eye); hg2.add(sp); stalks.push({ sp, shaft, eye, s }); }
   const feelers = []; if (!o.noFeelers) for (const s of [-1, 1]) { const f = new T.Mesh(new T.ConeGeometry(o.stalkR * 1.3, 0.18, 8), mat); hg2.add(f); feelers.push({ f, s }); }
-  const L2 = _lamp(b, 0.7, 0.6); const nrm = new T.Vector3(), up = new T.Vector3(0, 1, 0), q = new T.Quaternion(), tan = new T.Vector3();
+  const c0 = new T.Color(EL.color); const L2 = _lamp(b, 0.7, 0.6); const nrm = new T.Vector3(), up = new T.Vector3(0, 1, 0), q = new T.Quaternion(), tan = new T.Vector3();
   return { g, core: 0.4, update(t, act) { const ph = 1.6 * t, ac = act || 0, lunge = 0.25 * ac;
     for (let i = 0; i < N; i++) { const u = i / (N - 1), w = Math.sin(ph * 2 - u * 6.0) * (0.3 + 0.7 * (1 - u)); const r = prof(u); rad[i] = Math.max(0.01, r * (1 + 0.05 * w)); pts[i].set(0, Math.max(0.04, r * o.flat * 0.5 + 0.03 + o.arch * Math.sin(Math.PI * u) + 0.025 * w), -L / 2 + u * L + lunge * u); }
     tube.set(pts, rad);
@@ -36,7 +36,11 @@ function _slugReal(o) {
     for (const H of hexes) { const P = at(H.u), sn = Math.sin(H.th), cs = Math.cos(H.th), hs = Math.max(0.03, P.r * o.hexSize * (0.8 + 0.2 * cs));
       // the body is the tube squashed by o.flat in y, so a point on its skin is (r sin, flat * (centre + r cos)) and the outward normal is (sin, cos / flat)
       H.hg.position.set(sn * P.r, o.flat * (P.y + cs * P.r), P.z); nrm.set(sn, cs / o.flat, 0); const i2 = Math.min(N - 1, P.i + 1), sl = o.flat * (pts[i2].y - pts[P.i].y) / Math.max(0.001, pts[i2].z - pts[P.i].z); nrm.z = -sl * cs; nrm.normalize();
-      q.setFromUnitVectors(up, nrm); H.hg.quaternion.copy(q); H.hg.scale.set(hs, 1, hs); }
+      // THE WAVE: a swell runs down the scutes. w = 0..1 where the crest is; the plate rises off the skin, swells a little and its edge brightens at the crest
+      let w = 0; if (o.hexWave) { const W = o.hexWave, ph2 = ph * 2 * (W.speed || 1); w = Math.max(0, 0.5 + 0.5 * Math.sin(ph2 - H.u * (W.k || 7) - (W.diag || 0) * H.th)); if (W.sharp) w = Math.pow(w, W.sharp); }
+      const lift = (o.hexWave && o.hexWave.lift ? o.hexWave.lift : 0) * w, sw = 1 + (o.hexWave && o.hexWave.swell ? o.hexWave.swell : 0) * w; H.hg.position.addScaledVector(nrm, lift);
+      q.setFromUnitVectors(up, nrm); if (o.hexWave && o.hexWave.tilt) q.multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), o.hexWave.tilt * (w - 0.4))); H.hg.quaternion.copy(q); H.hg.scale.set(hs * sw, 1, hs * sw);
+      const br = o.hexWave ? (o.hexWave.dim == null ? 0.3 : o.hexWave.dim) + (1.15 - (o.hexWave.dim == null ? 0.3 : o.hexWave.dim)) * w : 1; H.em.color.setRGB(c0.r * br, c0.g * br, c0.b * br); }
     const k0 = at(0.5); keel.position.set(0, o.flat * (k0.y + k0.r) * 1.0, k0.z); keel.scale.z = L * 0.5 * (1 + 0.0); keel.visible = !!o.keel;
     const hd = pts[N - 1]; hg2.position.set(0, hd.y + rad[N - 1] * o.flat * 0.3, hd.z - 0.05); horn.rotation.x = o.hornTilt + 0.04 * Math.sin(ph * 2) + 0.2 * ac;
     stalks.forEach(K => { const base = new T.Vector3(K.s * 0.05, rad[N - 1] * 0.3, rad[N - 1] * 0.4), tip = new T.Vector3(K.s * o.stalkSep, rad[N - 1] * 0.3 + o.stalkLen * (1 + 0.05 * Math.sin(ph * 2 + K.s * 2)), rad[N - 1] * 0.4 + 0.16 + 0.1 * Math.sin(ph * 2 + K.s * 1.4) + 0.08 * ac); setLink(K.shaft, base, tip); K.eye.position.copy(tip); K.eye.rotation.set(0.15 * Math.sin(ph * 2 + K.s), K.s * -0.12, 0); });
@@ -70,3 +74,11 @@ fx(425, "420: huge eye shafts.", () => _slugReal(Object.assign({}, _r420, { stal
 fx(426, "420: thick eye shafts.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.06, stalkLen: 0.46, stalkSep: 0.3, eyeR: 0.056 })));
 fx(427, "420: very thick eye shafts.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.078, stalkLen: 0.46, stalkSep: 0.3, eyeR: 0.062 })));
 fx(428, "420: chunky eye shafts, almost as thick as the eyes.", () => _slugReal(Object.assign({}, _r420, { stalkR: 0.096, stalkLen: 0.44, stalkSep: 0.3, eyeR: 0.066 })));
+
+// ── The hexagon scutes with a wave (Nos. 429–433). Base: 420's horn, 426's eyes. ──
+const _wBase = Object.assign({}, _r420, { stalkR: 0.06, stalkLen: 0.46, stalkSep: 0.3, eyeR: 0.056 });
+fx(429, "Wave: the scutes rise and brighten in a ripple running down the back, in step with the crawl.", () => _slugReal(Object.assign({}, _wBase, { hexWave: { lift: 0.05, swell: 0.12, dim: 0.25, k: 7 } })));
+fx(430, "Wave, light only: the scutes stay flat and a bright swell of teal runs along them.", () => _slugReal(Object.assign({}, _wBase, { hexWave: { lift: 0, swell: 0, dim: 0.12, k: 7, sharp: 1.6 } })));
+fx(431, "Wave, big heave: the scutes lift high and tilt as the ripple passes, like a muscle.", () => _slugReal(Object.assign({}, _wBase, { hexWave: { lift: 0.1, swell: 0.18, tilt: 0.5, dim: 0.3, k: 6 } })));
+fx(432, "Wave, diagonal: the ripple runs across the back at an angle.", () => _slugReal(Object.assign({}, _wBase, { hexWave: { lift: 0.05, swell: 0.12, dim: 0.25, k: 5, diag: 2.2 } })));
+fx(433, "Wave, quick narrow pulses: several fast crests at once.", () => _slugReal(Object.assign({}, _wBase, { hexWave: { lift: 0.055, swell: 0.1, dim: 0.18, k: 14, sharp: 2, speed: 1.2 } })));
