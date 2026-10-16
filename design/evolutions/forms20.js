@@ -34,6 +34,10 @@ function _slugReal(o) {
     const edge = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: new T.Color(EL.color) })); edge.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(M2 * 3), 3)); edge.frustumCulled = false; b.add(edge);
     const rays = []; if (F.rays) for (let i = 0; i < F.rays; i++) { const rl = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: new T.Color(EL.color), transparent: true, opacity: 0.8 })); rl.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(6), 3)); rl.frustumCulled = false; b.add(rl); rays.push(rl); }
     fin = { F, M2, geo, pos, edge, rays }; }
+  // the SPIKED SPINE: a row of black faceted spikes rooted in the back, graded in size, each swaying with the crawl
+  const spikes = []; if (o.spikes) { const K = o.spikes, mk = (r, len, curve) => { const geo = new T.ConeGeometry(r, len, K.sides || 4, 5, false), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const y = p.getY(v) / len + 0.5; p.setX(v, p.getX(v) * (K.thin || 0.5)); p.setZ(v, p.getZ(v) + (curve || 0) * y * y * len); } geo.translate(0, len / 2, 0); geo.computeVertexNormals(); const g2 = G(); g2.add(new T.Mesh(geo, _gemMatGloss)); g2.add(new T.LineSegments(new T.EdgesGeometry(geo, 20), new T.LineBasicMaterial({ color: 0x2a6a74, transparent: true, opacity: 0.9 }))); return g2; };
+    for (let i = 0; i < K.n; i++) { const t2 = (i + 0.5) / K.n, u = K.u0 + (K.u1 - K.u0) * t2, sh = Math.pow(Math.sin(Math.PI * Math.pow(t2, K.skew || 1)), K.round || 0.7), len = Math.max(0.07, K.h * sh * (K.vary ? (0.8 + 0.4 * _hz(i, 3, 5)) : 1)), r = Math.max(0.03, len * (K.base || 0.3)), x0 = K.row ? (i % 2 ? 1 : -1) * K.row : 0;
+      const sp = mk(r, len, K.curve || 0); b.add(sp); spikes.push({ sp, u, x0, i, len }); } }
   const c0 = new T.Color(EL.color); const L2 = _lamp(b, 0.7, 0.6); const nrm = new T.Vector3(), up = new T.Vector3(0, 1, 0), q = new T.Quaternion(), tan = new T.Vector3();
   return { g, core: 0.4, update(t, act) { const ph = 1.6 * t, ac = act || 0, lunge = 0.25 * ac;
     for (let i = 0; i < N; i++) { const u = i / (N - 1), w = Math.sin(ph * 2 - u * 6.0) * (0.3 + 0.7 * (1 - u)); const r = prof(u); rad[i] = Math.max(0.01, r * (1 + 0.05 * w)); pts[i].set(0, Math.max(0.04, r * o.flat * 0.5 + 0.03 + o.arch * Math.sin(Math.PI * u) + 0.025 * w), -L / 2 + u * L + lunge * u); }
@@ -55,6 +59,9 @@ function _slugReal(o) {
         ep[i * 3] = swx; ep[i * 3 + 1] = by + h; ep[i * 3 + 2] = P.z + lag; }
       fin.geo.attributes.position.needsUpdate = true; fin.geo.computeVertexNormals(); fin.edge.geometry.attributes.position.needsUpdate = true;
       fin.rays.forEach((rl, k) => { const i = Math.round((k + 1) / (fin.rays.length + 1) * (fin.M2 - 1)), rp = rl.geometry.attributes.position.array; rp[0] = fin.pos[i * 6]; rp[1] = fin.pos[i * 6 + 1] + 0.005; rp[2] = fin.pos[i * 6 + 2]; rp[3] = fin.pos[i * 6 + 3]; rp[4] = fin.pos[i * 6 + 4] - 0.012; rp[5] = fin.pos[i * 6 + 5]; rl.geometry.attributes.position.needsUpdate = true; rl.visible = fin.pos[i * 6 + 4] - fin.pos[i * 6 + 1] > 0.06; }); }
+    for (const S of spikes) { const P = at(S.u), i2 = Math.min(N - 1, P.i + 1), sl = o.flat * (pts[i2].y - pts[P.i].y) / Math.max(0.001, pts[i2].z - pts[P.i].z), wv = Math.sin(ph * 2 - S.u * 7), K = o.spikes;
+      const lean = (K.lean || 0.25) + 0.5 * Math.atan(sl) + 0.16 * wv - 0.2 * ac, out = S.x0 ? Math.sign(S.x0) * (K.splay || 0.3) : 0;
+      S.sp.position.set(S.x0 * P.r * 0.55, o.flat * (P.y + P.r) - 0.025, P.z); S.sp.rotation.set(-lean, 0, -out + 0.06 * Math.sin(ph * 2 - S.u * 7 - 0.5)); S.sp.scale.set(1, 1 + 0.18 * wv + 0.35 * ac, 1); }
     const k0 = at(0.5); keel.position.set(0, o.flat * (k0.y + k0.r) * 1.0, k0.z); keel.scale.z = L * 0.5 * (1 + 0.0); keel.visible = !!o.keel;
     const hd = pts[N - 1]; hg2.position.set(0, hd.y + rad[N - 1] * o.flat * 0.3, hd.z - 0.05); horn.rotation.x = o.hornTilt + 0.04 * Math.sin(ph * 2) + 0.2 * ac;
     stalks.forEach(K => { const base = new T.Vector3(K.s * 0.05, rad[N - 1] * 0.3, rad[N - 1] * 0.4), tip = new T.Vector3(K.s * o.stalkSep, rad[N - 1] * 0.3 + o.stalkLen * (1 + 0.05 * Math.sin(ph * 2 + K.s * 2)), rad[N - 1] * 0.4 + 0.16 + 0.1 * Math.sin(ph * 2 + K.s * 1.4) + 0.08 * ac); setLink(K.shaft, base, tip); K.eye.position.copy(tip); K.eye.rotation.set(0.15 * Math.sin(ph * 2 + K.s), K.s * -0.12, 0); });
@@ -104,3 +111,11 @@ fx(435, "Dorsal fin: a taller sail, with teal rays through it.", () => _slugReal
 fx(436, "Dorsal fin: serrated, a saw-toothed crest like a row of blades.", () => _slugReal(Object.assign({}, _fBase, { fin: { h: 0.5, u0: 0.1, u1: 0.97, serr: 0.55, n: 56, round: 0.9 } })));
 fx(437, "Dorsal fin: low and very long, a crest from the horn to the tail tip.", () => _slugReal(Object.assign({}, _fBase, { fin: { h: 0.26, u0: 0.04, u1: 0.99, round: 0.6 } })));
 fx(438, "Dorsal fin: swept back, tallest toward the tail.", () => _slugReal(Object.assign({}, _fBase, { fin: { h: 0.55, u0: 0.1, u1: 0.99, skew: 1.7, round: 0.7, rays: 10 } })));
+
+// ── A spiked spine, no fin (Nos. 439–443). No eyes; hex scutes either side. ──
+const _sBase = Object.assign({}, _fBase);
+fx(439, "Spiked spine: a row of sharp black spikes down the back, tallest mid-body.", () => _slugReal(Object.assign({}, _sBase, { spikes: { n: 15, u0: 0.12, u1: 0.96, h: 0.5, base: 0.3, lean: 0.28 } })));
+fx(440, "Spiked spine: a few big broad horns, like the head horn repeated down the back.", () => _slugReal(Object.assign({}, _sBase, { spikes: { n: 7, u0: 0.16, u1: 0.94, h: 0.62, base: 0.34, thin: 0.9, sides: 4, lean: 0.3 } })));
+fx(441, "Spiked spine: dense small thorns, a tight ridge the whole length.", () => _slugReal(Object.assign({}, _sBase, { spikes: { n: 30, u0: 0.1, u1: 0.97, h: 0.3, base: 0.3, round: 0.6 } })));
+fx(442, "Spiked spine: a double row, spikes angling out to each side.", () => _slugReal(Object.assign({}, _sBase, { spikes: { n: 18, u0: 0.12, u1: 0.95, h: 0.42, base: 0.3, row: 0.28, splay: 0.34, lean: 0.25 } })));
+fx(443, "Spiked spine: swept back and growing toward the tail, curved like plates.", () => _slugReal(Object.assign({}, _sBase, { spikes: { n: 12, u0: 0.14, u1: 0.97, h: 0.62, base: 0.34, curve: 0.45, skew: 1.7, round: 0.6, lean: 0.55 } })));
