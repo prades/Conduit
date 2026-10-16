@@ -24,10 +24,16 @@ function _slugReal(o) {
   else if (hs === 'pyramid') horn.add(blade(o.hornW * 0.9, 0.9, o.horn, 4, 0));          // a broad four-sided pyramid
   else if (hs === 'fin') { horn.add(blade(o.hornW * 1.35, 0.26, o.horn, 6, 0)); }        // a very wide, thin blade
   else if (hs === 'twin') { horn.add(blade(o.hornW, 0.42, o.horn, 6, 0)); for (const sx of [-1, 1]) { const sb = blade(o.hornW * 0.55, 0.4, o.horn * 0.55, 6, 0); sb.position.set(sx * o.hornW * 1.05, 0, 0.02); sb.rotation.z = -sx * 0.42; horn.add(sb); } }   // a main blade with two smaller blades flaring from its base
-  const stalks = []; for (const s of [-1, 1]) { const sp = G(), shaft = cyl(o.stalkR * 0.45, o.stalkR, 1, mat, 10); sp.add(shaft); const eye = G(); const col = hexCrystal(o.eyeR * 1.0, o.eyeR * 0.5, o.eyeR * 0.3, M.crystal); col.rotation.x = PI / 2; eye.add(col);   // a thin crystal collar at the tip of a tapering stalk
+  const stalks = []; if (!o.noEyes) for (const s of [-1, 1]) { const sp = G(), shaft = cyl(o.stalkR * 0.45, o.stalkR, 1, mat, 10); sp.add(shaft); const eye = G(); const col = hexCrystal(o.eyeR * 1.0, o.eyeR * 0.5, o.eyeR * 0.3, M.crystal); col.rotation.x = PI / 2; eye.add(col);   // a thin crystal collar at the tip of a tapering stalk
     const bead = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.9, 14, 12), new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.12, metalness: 0.3 })); bead.position.z = o.eyeR * 0.45; bead.scale.set(1, 1, 0.9); eye.add(bead);   // the eye: a small glossy black bead
     const gl = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.16, 6, 5), new T.MeshBasicMaterial({ color: 0xcfe9ff })); gl.position.set(o.eyeR * 0.3, o.eyeR * 0.35, o.eyeR * 1.2); eye.add(gl); sp.add(eye); hg2.add(sp); stalks.push({ sp, shaft, eye, s }); }
   const feelers = []; if (!o.noFeelers) for (const s of [-1, 1]) { const f = new T.Mesh(new T.ConeGeometry(o.stalkR * 1.3, 0.18, 8), mat); hg2.add(f); feelers.push({ f, s }); }
+  // the DORSAL FIN: a long black membrane standing on the spine from behind the head to the tail, its crest following the body's wave
+  let fin = null; if (o.fin) { const F = o.fin, M2 = F.n || 70, pos = new Float32Array(M2 * 2 * 3), idx = []; for (let i = 0; i < M2 - 1; i++) { const a = i * 2, c = i * 2 + 1, d = i * 2 + 2, e = i * 2 + 3; idx.push(a, d, c, c, d, e); }
+    const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setIndex(idx); const fm = new T.Mesh(geo, new T.MeshStandardMaterial({ color: 0x010206, metalness: 0.45, roughness: 0.38, flatShading: true, side: T.DoubleSide })); fm.frustumCulled = false; b.add(fm);
+    const edge = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: new T.Color(EL.color) })); edge.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(M2 * 3), 3)); edge.frustumCulled = false; b.add(edge);
+    const rays = []; if (F.rays) for (let i = 0; i < F.rays; i++) { const rl = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: new T.Color(EL.color), transparent: true, opacity: 0.8 })); rl.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(6), 3)); rl.frustumCulled = false; b.add(rl); rays.push(rl); }
+    fin = { F, M2, geo, pos, edge, rays }; }
   const c0 = new T.Color(EL.color); const L2 = _lamp(b, 0.7, 0.6); const nrm = new T.Vector3(), up = new T.Vector3(0, 1, 0), q = new T.Quaternion(), tan = new T.Vector3();
   return { g, core: 0.4, update(t, act) { const ph = 1.6 * t, ac = act || 0, lunge = 0.25 * ac;
     for (let i = 0; i < N; i++) { const u = i / (N - 1), w = Math.sin(ph * 2 - u * 6.0) * (0.3 + 0.7 * (1 - u)); const r = prof(u); rad[i] = Math.max(0.01, r * (1 + 0.05 * w)); pts[i].set(0, Math.max(0.04, r * o.flat * 0.5 + 0.03 + o.arch * Math.sin(Math.PI * u) + 0.025 * w), -L / 2 + u * L + lunge * u); }
@@ -41,6 +47,14 @@ function _slugReal(o) {
       const lift = (o.hexWave && o.hexWave.lift ? o.hexWave.lift : 0) * w, sw = 1 + (o.hexWave && o.hexWave.swell ? o.hexWave.swell : 0) * w; H.hg.position.addScaledVector(nrm, lift);
       q.setFromUnitVectors(up, nrm); if (o.hexWave && o.hexWave.tilt) q.multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), o.hexWave.tilt * (w - 0.4))); H.hg.quaternion.copy(q); H.hg.scale.set(hs * sw, 1, hs * sw);
       const br = o.hexWave ? (o.hexWave.dim == null ? 0.3 : o.hexWave.dim) + (1.15 - (o.hexWave.dim == null ? 0.3 : o.hexWave.dim)) * w : 1; H.em.color.setRGB(c0.r * br, c0.g * br, c0.b * br); }
+    if (fin) { const F = fin.F, u0 = F.u0 == null ? 0.1 : F.u0, u1 = F.u1 == null ? 0.97 : F.u1, ep = fin.edge.geometry.attributes.position.array;
+      for (let i = 0; i < fin.M2; i++) { const t2 = i / (fin.M2 - 1), u = u0 + (u1 - u0) * t2, P = at(u); let shape = Math.pow(Math.sin(Math.PI * Math.pow(t2, F.skew || 1)), F.round || 0.8);
+        if (F.serr) shape *= (i % 2 ? 1 : 1 - F.serr);   // saw-tooth
+        const h = F.h * shape * (1 + 0.14 * Math.sin(ph * 2 - u * 7)) * (1 + 0.3 * ac), by = o.flat * (P.y + P.r) - 0.02, lag = -0.06 * Math.sin(ph * 2 - u * 7 - 0.6) - 0.05 * ac, swx = 0.035 * Math.sin(ph * 2 - u * 7 - 0.3);
+        fin.pos[i * 6] = 0; fin.pos[i * 6 + 1] = by; fin.pos[i * 6 + 2] = P.z; fin.pos[i * 6 + 3] = swx; fin.pos[i * 6 + 4] = by + h; fin.pos[i * 6 + 5] = P.z + lag;
+        ep[i * 3] = swx; ep[i * 3 + 1] = by + h; ep[i * 3 + 2] = P.z + lag; }
+      fin.geo.attributes.position.needsUpdate = true; fin.geo.computeVertexNormals(); fin.edge.geometry.attributes.position.needsUpdate = true;
+      fin.rays.forEach((rl, k) => { const i = Math.round((k + 1) / (fin.rays.length + 1) * (fin.M2 - 1)), rp = rl.geometry.attributes.position.array; rp[0] = fin.pos[i * 6]; rp[1] = fin.pos[i * 6 + 1] + 0.005; rp[2] = fin.pos[i * 6 + 2]; rp[3] = fin.pos[i * 6 + 3]; rp[4] = fin.pos[i * 6 + 4] - 0.012; rp[5] = fin.pos[i * 6 + 5]; rl.geometry.attributes.position.needsUpdate = true; rl.visible = fin.pos[i * 6 + 4] - fin.pos[i * 6 + 1] > 0.06; }); }
     const k0 = at(0.5); keel.position.set(0, o.flat * (k0.y + k0.r) * 1.0, k0.z); keel.scale.z = L * 0.5 * (1 + 0.0); keel.visible = !!o.keel;
     const hd = pts[N - 1]; hg2.position.set(0, hd.y + rad[N - 1] * o.flat * 0.3, hd.z - 0.05); horn.rotation.x = o.hornTilt + 0.04 * Math.sin(ph * 2) + 0.2 * ac;
     stalks.forEach(K => { const base = new T.Vector3(K.s * 0.05, rad[N - 1] * 0.3, rad[N - 1] * 0.4), tip = new T.Vector3(K.s * o.stalkSep, rad[N - 1] * 0.3 + o.stalkLen * (1 + 0.05 * Math.sin(ph * 2 + K.s * 2)), rad[N - 1] * 0.4 + 0.16 + 0.1 * Math.sin(ph * 2 + K.s * 1.4) + 0.08 * ac); setLink(K.shaft, base, tip); K.eye.position.copy(tip); K.eye.rotation.set(0.15 * Math.sin(ph * 2 + K.s), K.s * -0.12, 0); });
@@ -82,3 +96,11 @@ fx(430, "Wave, light only: the scutes stay flat and a bright swell of teal runs 
 fx(431, "Wave, big heave: the scutes lift high and tilt as the ripple passes, like a muscle.", () => _slugReal(Object.assign({}, _wBase, { hexWave: { lift: 0.1, swell: 0.18, tilt: 0.5, dim: 0.3, k: 6 } })));
 fx(432, "Wave, diagonal: the ripple runs across the back at an angle.", () => _slugReal(Object.assign({}, _wBase, { hexWave: { lift: 0.05, swell: 0.12, dim: 0.25, k: 5, diag: 2.2 } })));
 fx(433, "Wave, quick narrow pulses: several fast crests at once.", () => _slugReal(Object.assign({}, _wBase, { hexWave: { lift: 0.055, swell: 0.1, dim: 0.18, k: 14, sharp: 2, speed: 1.2 } })));
+
+// ── No eyes; a long fin down the spine (Nos. 434–438). Hex scutes sit either side of it (4 rows, so none on the centre line). ──
+const _fBase = Object.assign({}, _r420, { noEyes: true, noFeelers: true, hexRows: 4, hexTh: 0.4, hexWave: { lift: 0.04, swell: 0.1, dim: 0.25, k: 7 } });
+fx(434, "Dorsal fin: a long sail down the spine, tallest mid-body, tapering to both ends.", () => _slugReal(Object.assign({}, _fBase, { fin: { h: 0.42, u0: 0.1, u1: 0.97 } })));
+fx(435, "Dorsal fin: a taller sail, with teal rays through it.", () => _slugReal(Object.assign({}, _fBase, { fin: { h: 0.6, u0: 0.1, u1: 0.97, rays: 14 } })));
+fx(436, "Dorsal fin: serrated, a saw-toothed crest like a row of blades.", () => _slugReal(Object.assign({}, _fBase, { fin: { h: 0.5, u0: 0.1, u1: 0.97, serr: 0.55, n: 56, round: 0.9 } })));
+fx(437, "Dorsal fin: low and very long, a crest from the horn to the tail tip.", () => _slugReal(Object.assign({}, _fBase, { fin: { h: 0.26, u0: 0.04, u1: 0.99, round: 0.6 } })));
+fx(438, "Dorsal fin: swept back, tallest toward the tail.", () => _slugReal(Object.assign({}, _fBase, { fin: { h: 0.55, u0: 0.1, u1: 0.99, skew: 1.7, round: 0.7, rays: 10 } })));
