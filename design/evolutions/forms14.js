@@ -196,3 +196,47 @@ fx(259, "Pyramid brawler, narrow tall dress.", () => _pyramidBrawler(Object.assi
 fx(260, "Pyramid brawler, big crystal.", () => _pyramidBrawler(Object.assign({}, _pb, { crystalR: 0.21, crystalLift: 0.2, helmR: 0.42, helmH: 0.68, helmGap: 0.18, seed: 17 })));
 fx(261, "Pyramid brawler, no shards, long lashing arms.", () => _pyramidBrawler(Object.assign({}, _pb, { shards: false, arms: 5, armLen: 1.3, an: 16, armAmp: 0.09, seed: 19 })));
 fx(262, "Pyramid brawler, high hover, arms hanging.", () => _pyramidBrawler(Object.assign({}, _pb, { hover: 0.75, armDroop: 0.9, armLen: 1.15, bigArms: 0, arms: 6, seed: 21 })));
+
+// ── The pyramid shell (Nos. 263–272): the electric brawler, redone. One glossy pyramid SHELL raised off the floor; the diamond crystal hides
+// UNDER it, glowing in the gap; thick shocking arms push out from beneath the rim and walk and lash. ──
+function _shellBrawler(o) {
+  const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S);
+  const hv = o.hover, H = o.H, R = o.R, sy = hv + H / 2;
+  const shell = new T.Mesh(new T.ConeGeometry(R, H, 4, 1, true), _stormCloak); shell.rotation.y = PI / 4; shell.position.y = sy; b.add(shell);
+  _pyrEdges(b, 0.001, R, hv + H, hv, 0.026);
+  const hem = new T.Mesh(new T.TorusGeometry(R, 0.028, 4, 4), _boltSilver); hem.rotation.set(PI / 2, 0, PI / 4); hem.position.y = hv; b.add(hem);
+  // an inner ceiling so the underside is dark, not see-through
+  const under = new T.Mesh(new T.ConeGeometry(R * 0.98, H * 0.98, 4, 1, true), new T.MeshBasicMaterial({ color: 0x010206, side: T.BackSide })); under.rotation.y = PI / 4; under.position.y = sy; b.add(under);
+  for (const s of [-1, 1]) { const ba = boltArmour(H * 0.62, R * 0.36, 0.03); ba.position.set(s * R * 0.2, hv + H * 0.12, R * 0.34 + 0.02); ba.rotation.set(-0.35, s * 0.55, PI + s * 0.1); b.add(ba); }
+  const apex = hexCrystal(0.04, 0.07, 0.12, M.crystal); apex.position.y = hv + H + 0.08; b.add(apex);
+  // the diamond, hiding under the shell: it glows in the gap between the hem and the floor
+  const dY = hv * 0.55, d = hexCrystal(o.dR * 1.1, o.dR * 0.7, o.dR * 1.7, M.crystal); d.position.y = dY; b.add(d); const dc = hexCrystal(o.dR * 0.55, o.dR * 0.4, o.dR * 1.0, M.glow); dc.position.y = dY; b.add(dc);
+  const dg = glowSprite(o.dR * 9); dg.position.y = dY; b.add(dg);
+  // the thick shocking arms, from under the rim
+  const arms = []; const am = _arcMat(); for (let i = 0; i < o.arms; i++) { const a = -o.armArc / 2 + (o.arms > 1 ? i / (o.arms - 1) : 0.5) * o.armArc + (o.armCentre || 0) + (_hz(i, o.seed, 1) - 0.5) * 0.45; const tt = _taperTube(am, o.an, 6); b.add(tt.mesh);
+    const sp = hexCrystal(0.04, 0.08, 0.14, M.crystal); b.add(sp);
+    arms.push({ tt, sp, a, big: i < o.bigArms, ph: i * 1.9, len: o.armLen * (0.8 + 0.4 * _hz(i, o.seed, 2)), pts: Array.from({ length: o.an }, () => new T.Vector3()), rad: new Array(o.an) }); }
+  const shards = []; if (o.shards) for (const s of [-1, 1]) { const c = hexCrystal(0.08, 0.18, 0.24, M.crystal); const sg = G(); sg.add(c); b.add(sg); shards.push({ sg, s }); }
+  const L = new T.PointLight(0xffffff, 0.6, 4, 2); L.color.set(EL.color); L.position.set(0, dY, 0.4); b.add(L); LIGHTS.push(L);
+  return { g, core: dY * (o.S || 1) + 0.15, update(t, act) { const ph = 1.6 * t, ac = act || 0;
+    b.position.y = 0.025 * Math.sin(ph); shell.position.y = sy + 0.02 * Math.sin(ph * 2 + 1); d.rotation.y = ph * 0.6; dc.rotation.y = -ph * 0.6; dg.scale.setScalar(o.dR * (9 + 3 * Math.sin(ph * 3) + 5 * ac));
+    for (const A of arms) { const sa = Math.sin(A.a), ca = Math.cos(A.a), N = o.an, bx = sa * R * 0.55, by = hv * 0.5, bz = ca * R * 0.55;
+      const reach = A.len * (1 + 0.5 * ac * (A.big ? 1.4 : 1)), fwd = (A.big ? 0.8 : 0.3) + 0.9 * ac * (A.big ? 1 : 0.5);
+      let px = bx, py = by, pz = bz, dx = sa * 0.9, dy = -0.35 + (A.big ? 0.25 : 0), dz = ca * 0.7 + fwd;
+      for (let k = 0; k < N; k++) { const u = k / (N - 1), zig = (k % 2 ? 1 : -1) * o.armAmp * (0.5 + 0.5 * Math.sin(ph * 4 + A.ph + k * 1.3)) * (0.3 + u), r = o.armR * (A.big ? 1.25 : 1) * (1 - 0.86 * Math.pow(u, 1.0)) + 0.012;
+        A.rad[k] = r; A.pts[k].set(px + zig * Math.cos(A.a + 1.4), Math.max(r, py + zig * 0.3), pz + zig * Math.sin(A.a + 1.4));
+        const st = reach / N, Lh = Math.hypot(dx, dy, dz); px += dx / Lh * st; py += dy / Lh * st; pz += dz / Lh * st; if (py <= r + 0.02) { py = r + 0.02; dy = Math.max(0, dy) * 0.3; } else dy -= o.armDroop * st; }
+      A.tt.set(A.pts, A.rad); const e = A.pts[N - 1]; A.sp.position.copy(e); A.sp.rotation.set(ph * 5 + A.ph, ph * 3, 0); A.sp.scale.setScalar(1 + 0.4 * Math.sin(ph * 6 + A.ph) + 0.8 * ac); }
+    for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, hv + H * 0.7 + 0.06 * Math.sin(ph * 2 + s.s) - 0.1 * ac, 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); } } };
+}
+const _sbk = { hover: 0.4, H: 0.95, R: 0.62, dR: 0.13, arms: 5, bigArms: 2, armArc: 4.8, armCentre: 0, an: 11, armLen: 0.95, armR: 0.12, armAmp: 0.08, armDroop: 0.5, seed: 3, shards: true, shardR: 0.72 };
+fx(263, "Pyramid shell, five thick arms.", () => _shellBrawler(Object.assign({}, _sbk)));
+fx(264, "Pyramid shell, four very thick arms.", () => _shellBrawler(Object.assign({}, _sbk, { arms: 4, armR: 0.16, armLen: 0.85, armArc: 3.6, seed: 5 })));
+fx(265, "Pyramid shell, six arms.", () => _shellBrawler(Object.assign({}, _sbk, { arms: 6, armR: 0.1, armLen: 1.0, armArc: 5.2, seed: 7 })));
+fx(266, "Tall pyramid shell.", () => _shellBrawler(Object.assign({}, _sbk, { H: 1.3, R: 0.55, hover: 0.42, seed: 9 })));
+fx(267, "Low wide pyramid shell.", () => _shellBrawler(Object.assign({}, _sbk, { H: 0.68, R: 0.82, hover: 0.34, armLen: 1.1, seed: 11 })));
+fx(268, "Pyramid shell raised high, diamond showing.", () => _shellBrawler(Object.assign({}, _sbk, { hover: 0.62, dR: 0.17, seed: 13 })));
+fx(269, "Pyramid shell, long reaching arms.", () => _shellBrawler(Object.assign({}, _sbk, { armLen: 1.4, an: 14, armR: 0.1, armAmp: 0.1, seed: 15 })));
+fx(270, "Pyramid shell, no shards.", () => _shellBrawler(Object.assign({}, _sbk, { shards: false, arms: 5, seed: 17 })));
+fx(271, "Pyramid shell, arms spread wide, drooping.", () => _shellBrawler(Object.assign({}, _sbk, { armArc: 5.6, bigArms: 0, armDroop: 0.9, armLen: 1.05, seed: 19 })));
+fx(272, "Pyramid shell, big diamond, three giant arms.", () => _shellBrawler(Object.assign({}, _sbk, { arms: 3, bigArms: 2, armR: 0.2, armLen: 0.9, armArc: 2.8, dR: 0.18, hover: 0.5, seed: 21 })));
