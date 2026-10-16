@@ -15,6 +15,16 @@ function _slugReal(o) {
     const hg = G(), plate = new T.Mesh(new T.CylinderGeometry(1, 1, 0.045, 6), hexMat); plate.position.y = 0.02; hg.add(plate); const em = edgeMat.clone(); const ed = new T.Mesh(new T.TorusGeometry(0.9, 0.035, 4, 6), em); ed.rotation.x = PI / 2; ed.position.y = 0.046; hg.add(ed);
     if (o.hexFill) { const fl = new T.Mesh(new T.CylinderGeometry(0.62, 0.62, 0.02, 6), em); fl.position.y = 0.05; hg.add(fl); }
     b.add(hg); hexes.push({ hg, u, th, j, em }); }
+  // THE MOSAIC: flat hexagon tiles packed over the whole body wherever the spines are not (the spine band down the middle is skipped), in blacks, navies, blues and a few teal tiles
+  const tiles = [], rings = [], tileBins = [];
+  if (o.mosaic) { const MZ = o.mosaic, cell = MZ.cell, ds = cell * 0.87, nR = Math.floor((MZ.u1 - MZ.u0) * L / ds), tMat = {
+      black: new T.MeshStandardMaterial({ color: 0x000001, metalness: 0.3, roughness: 0.45, flatShading: true }), navy: new T.MeshStandardMaterial({ color: 0x020a50, metalness: 0.2, roughness: 0.5, flatShading: true }),
+      blue: new T.MeshStandardMaterial({ color: 0x0a3cc8, metalness: 0.1, roughness: 0.5, flatShading: true }), dteal: new T.MeshStandardMaterial({ color: 0x044a58, emissive: 0x021c24, metalness: 0.2, roughness: 0.45, flatShading: true }) };
+    for (let bn = 0; bn < 12; bn++) tileBins.push(new T.MeshBasicMaterial({ color: new T.Color(EL.color), toneMapped: false }));
+    for (let k = 0; k < nR; k++) { const u = MZ.u0 + (k + 0.5) * ds / L, r0 = Math.max(0.03, prof(u)), ring = { u, k, tiles: [] }; rings.push(ring);
+      for (let side = -1; side <= 1; side += 2) { for (let j = 0; ; j++) { const a = (MZ.skip + (j + 0.5 * (k % 2)) * cell), th = a / r0; if (th > (MZ.thMax || 2.3)) break; if (r0 < 0.04) break;
+          const rnd = _hz(k * 7 + j, side + 3, 11), cls = rnd < 0.3 ? 'black' : rnd < 0.55 ? 'navy' : rnd < 0.8 ? 'blue' : rnd < (0.8 + (MZ.dteal == null ? 0.12 : MZ.dteal)) ? 'dteal' : 'glow';
+          const tm = new T.Mesh(new T.CylinderGeometry(1, 1, 0.03, 6), cls === 'glow' ? tileBins[Math.min(11, Math.floor(u * 12))] : tMat[cls]); tm.rotation.y = 0; const tg = G(); tg.add(tm); tm.position.y = 0.012; b.add(tg); const T4 = { tg, th: side * th, k, u, cls, ring }; tiles.push(T4); ring.tiles.push(T4); } } } }
   // the head: spike, two long eye-stalks (a crystal rim round a black centre), two short feelers
   const hg2 = G(); b.add(hg2); const horn = G(); hg2.add(horn); horn.rotation.x = o.hornTilt; const edgeL = new T.LineBasicMaterial({ color: 0x2a6a74, transparent: true, opacity: 0.9 });
   const blade = (w, d, len, sides, curve) => { const geo = new T.ConeGeometry(w, len, sides, 6, false), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const y = p.getY(v) / len + 0.5; p.setZ(v, p.getZ(v) * d + (curve || 0) * y * y * len); } geo.translate(0, len / 2 + 0.03, 0); geo.computeVertexNormals(); const m = new T.Mesh(geo, _gemMatGloss), grp = G(); grp.add(m); grp.add(new T.LineSegments(new T.EdgesGeometry(geo, 20), edgeL)); return grp; };
@@ -23,6 +33,11 @@ function _slugReal(o) {
   else if (hs === 'tusk') horn.add(blade(o.hornW * 0.95, 0.6, o.horn, 6, 0.22));          // broad, curving forward like a tusk
   else if (hs === 'pyramid') horn.add(blade(o.hornW * 0.9, 0.9, o.horn, 4, 0));          // a broad four-sided pyramid
   else if (hs === 'fin') { horn.add(blade(o.hornW * 1.35, 0.26, o.horn, 6, 0)); }        // a very wide, thin blade
+  else if (hs === 'spine') horn.add(blade(o.horn * 0.34, 0.9, o.horn, 4, 0));            // a bigger copy of the spine spikes
+  else if (hs === 'lance') horn.add(blade(o.horn * 0.2, 0.7, o.horn * 1.3, 4, 0));        // long and slim, a lance
+  else if (hs === 'swept') horn.add(blade(o.horn * 0.32, 0.5, o.horn, 4, -0.5));          // broad, swept back over the head
+  else if (hs === 'fan') { for (const [x, sc, rz] of [[0, 1, 0], [-0.13, 0.7, 0.3], [0.13, 0.7, -0.3], [-0.24, 0.46, 0.55], [0.24, 0.46, -0.55]]) { const bb = blade(o.horn * 0.3 * sc, 0.7, o.horn * sc, 4, 0); bb.position.x = x; bb.rotation.z = rz; horn.add(bb); } }   // a fan of five graded spikes
+  else if (hs === 'double') { for (const sx of [-1, 1]) { const bb = blade(o.horn * 0.3, 0.7, o.horn * 0.9, 4, 0); bb.position.x = sx * o.horn * 0.16; bb.rotation.z = -sx * 0.22; horn.add(bb); } }   // two horns side by side
   else if (hs === 'twin') { horn.add(blade(o.hornW, 0.42, o.horn, 6, 0)); for (const sx of [-1, 1]) { const sb = blade(o.hornW * 0.55, 0.4, o.horn * 0.55, 6, 0); sb.position.set(sx * o.hornW * 1.05, 0, 0.02); sb.rotation.z = -sx * 0.42; horn.add(sb); } }   // a main blade with two smaller blades flaring from its base
   const stalks = []; if (!o.noEyes) for (const s of [-1, 1]) { const sp = G(), shaft = cyl(o.stalkR * 0.45, o.stalkR, 1, mat, 10); sp.add(shaft); const eye = G(); const col = hexCrystal(o.eyeR * 1.0, o.eyeR * 0.5, o.eyeR * 0.3, M.crystal); col.rotation.x = PI / 2; eye.add(col);   // a thin crystal collar at the tip of a tapering stalk
     const bead = new T.Mesh(new T.SphereGeometry(o.eyeR * 0.9, 14, 12), new T.MeshStandardMaterial({ color: 0x000000, roughness: 0.12, metalness: 0.3 })); bead.position.z = o.eyeR * 0.45; bead.scale.set(1, 1, 0.9); eye.add(bead);   // the eye: a small glossy black bead
@@ -62,6 +77,11 @@ function _slugReal(o) {
     for (const S of spikes) { const P = at(S.u), i2 = Math.min(N - 1, P.i + 1), sl = o.flat * (pts[i2].y - pts[P.i].y) / Math.max(0.001, pts[i2].z - pts[P.i].z), wv = Math.sin(ph * 2 - S.u * 7), K = o.spikes;
       const lean = (K.lean || 0.25) + 0.5 * Math.atan(sl) + 0.16 * wv - 0.2 * ac, out = S.x0 ? Math.sign(S.x0) * (K.splay || 0.3) : 0;
       S.sp.position.set(S.x0 * P.r * 0.55, o.flat * (P.y + P.r) - 0.025, P.z); S.sp.rotation.set(-lean, 0, -out + 0.06 * Math.sin(ph * 2 - S.u * 7 - 0.5)); S.sp.scale.set(1, 1 + 0.18 * wv + 0.35 * ac, 1); }
+    if (o.mosaic) { const MZ = o.mosaic, cell = MZ.cell; for (let rb = 0; rb < tileBins.length; rb++) { const wv = Math.max(0, 0.5 + 0.5 * Math.sin(ph * 2 - (rb + 0.5) / 12 * 7)), br = 0.18 + 1.1 * wv; tileBins[rb].color.setRGB(c0.r * br, c0.g * br, c0.b * br); }
+      for (const R of rings) R.P = at(R.u);
+      for (const T4 of tiles) { const P = T4.ring.P, sn = Math.sin(T4.th), cs = Math.cos(T4.th), w = Math.max(0, 0.5 + 0.5 * Math.sin(ph * 2 - T4.u * 7)), lift = (MZ.lift || 0.02) * w;
+        T4.tg.position.set(sn * P.r, o.flat * (P.y + cs * P.r), P.z); nrm.set(sn, cs / o.flat, 0); const i2 = Math.min(N - 1, P.i + 1), sl = o.flat * (pts[i2].y - pts[P.i].y) / Math.max(0.001, pts[i2].z - pts[P.i].z); nrm.z = -sl * cs; nrm.normalize();
+        T4.tg.position.addScaledVector(nrm, lift - 0.004); q.setFromUnitVectors(up, nrm); T4.tg.quaternion.copy(q).multiply(new T.Quaternion().setFromAxisAngle(up, PI / 6)); T4.tg.scale.set(cell * 0.5 * 0.94, 1, cell * 0.5 * 0.94); } }
     const k0 = at(0.5); keel.position.set(0, o.flat * (k0.y + k0.r) * 1.0, k0.z); keel.scale.z = L * 0.5 * (1 + 0.0); keel.visible = !!o.keel;
     const hd = pts[N - 1]; hg2.position.set(0, hd.y + rad[N - 1] * o.flat * 0.3, hd.z - 0.05); horn.rotation.x = o.hornTilt + 0.04 * Math.sin(ph * 2) + 0.2 * ac;
     stalks.forEach(K => { const base = new T.Vector3(K.s * 0.05, rad[N - 1] * 0.3, rad[N - 1] * 0.4), tip = new T.Vector3(K.s * o.stalkSep, rad[N - 1] * 0.3 + o.stalkLen * (1 + 0.05 * Math.sin(ph * 2 + K.s * 2)), rad[N - 1] * 0.4 + 0.16 + 0.1 * Math.sin(ph * 2 + K.s * 1.4) + 0.08 * ac); setLink(K.shaft, base, tip); K.eye.position.copy(tip); K.eye.rotation.set(0.15 * Math.sin(ph * 2 + K.s), K.s * -0.12, 0); });
@@ -119,3 +139,13 @@ fx(440, "Spiked spine: a few big broad horns, like the head horn repeated down t
 fx(441, "Spiked spine: dense small thorns, a tight ridge the whole length.", () => _slugReal(Object.assign({}, _sBase, { spikes: { n: 30, u0: 0.1, u1: 0.97, h: 0.3, base: 0.3, round: 0.6 } })));
 fx(442, "Spiked spine: a double row, spikes angling out to each side.", () => _slugReal(Object.assign({}, _sBase, { spikes: { n: 18, u0: 0.12, u1: 0.95, h: 0.42, base: 0.3, row: 0.28, splay: 0.34, lean: 0.25 } })));
 fx(443, "Spiked spine: swept back and growing toward the tail, curved like plates.", () => _slugReal(Object.assign({}, _sBase, { spikes: { n: 12, u0: 0.14, u1: 0.97, h: 0.62, base: 0.34, curve: 0.45, skew: 1.7, round: 0.6, lean: 0.55 } })));
+
+// ── 440 with a mosaic of hexagon tiles over the body wherever the spines are not, and a new horn (Nos. 444–449) ──
+const _mz = { cell: 0.075, u0: 0.04, u1: 0.99, skip: 0.1, thMax: 2.3, lift: 0.02 };
+const _m440 = Object.assign({}, _r420, { noEyes: true, noFeelers: true, hexRows: 0, mosaic: _mz, spikes: { n: 7, u0: 0.16, u1: 0.94, h: 0.62, base: 0.34, thin: 0.9, sides: 4, lean: 0.3 } });
+fx(444, "440 with the mosaic, the old horn.", () => _slugReal(Object.assign({}, _m440, { hornStyle: 'pyramid', hornW: 0.22, horn: 1.0 })));
+fx(445, "Mosaic, horn: a bigger copy of the spine spikes.", () => _slugReal(Object.assign({}, _m440, { hornStyle: 'spine', horn: 1.0 })));
+fx(446, "Mosaic, horn: swept back over the head.", () => _slugReal(Object.assign({}, _m440, { hornStyle: 'swept', horn: 1.0, hornTilt: 0.15 })));
+fx(447, "Mosaic, horn: a fan of five graded spikes.", () => _slugReal(Object.assign({}, _m440, { hornStyle: 'fan', horn: 0.95 })));
+fx(448, "Mosaic, horn: two horns side by side.", () => _slugReal(Object.assign({}, _m440, { hornStyle: 'double', horn: 1.0 })));
+fx(449, "Mosaic, horn: a long slim lance.", () => _slugReal(Object.assign({}, _m440, { hornStyle: 'lance', horn: 1.0, hornTilt: 0.4 })));
