@@ -411,9 +411,9 @@ function _hoodPyramid(o) {
   // LIGHTNING UNDER THE HOOD, as MOVEMENT: the black shards stay black but are shoved about from beneath: every beat each one snaps to a new angle and stretches
   // in a jerk, some popping hard, the rest settling (a hash of the beat, so the 8 baked frames loop). No light, no flicker of colour.
   const _qa = new T.Quaternion(), _qb = new T.Quaternion(), _ea = new T.Euler(), jolt = (ph, ac) => { const beat = Math.floor(ph / TAU * 8 + 0.0001) % 8;
-    for (const J of jolts) { const h1 = _hz(J.i * 7 + beat, 3, 1), h2 = _hz(J.i * 5, beat * 9 + 1, 2), h3 = _hz(J.i, beat * 3, 3), pop = h3 > 0.55 ? 1 : 0.25, k = (0.34 + 0.3 * ac) * pop;
+    for (const J of jolts) { const h1 = _hz(J.i * 7 + beat, 3, 1), h2 = _hz(J.i * 5, beat * 9 + 1, 2), h3 = _hz(J.i, beat * 3, 3), pop = h3 > 0.55 ? 1 : 0.4, k = (0.075 + 0.1 * ac) * pop;   // SUBTLE: a few degrees, not a jolt
       _ea.set((h1 - 0.5) * 2 * k, (h2 - 0.5) * 2 * k * 0.6, (h3 - 0.5) * 2 * k); _qa.setFromEuler(_ea); J.m.quaternion.copy(J.q).multiply(_qa);
-      J.m.scale.set(1 + 0.25 * pop * h1, 1 + (0.45 * pop + 0.5 * ac) * h2 + 0.05, 1 + 0.25 * pop * h1); } };
+      J.m.scale.set(1 + 0.04 * pop * h1, 1 + (0.09 * pop + 0.2 * ac) * h2 + 0.02, 1 + 0.04 * pop * h1); } };
   return { g, core: (hv + dY) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
     if (o.jolt) jolt(ph, ac);
     pv.position.y = hv + 0.03 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; d.rotation.y = ph * 0.7; dc.rotation.y = -ph * 0.7; d.position.y = dY + 0.02 * Math.sin(ph * 2); dc.position.y = d.position.y;
