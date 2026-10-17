@@ -7,7 +7,11 @@ function _starfish(o) {
   const disc = new T.Mesh(new T.IcosahedronGeometry(1, 1), _starMat); disc.scale.set(o.disc, o.disc * o.dh, o.disc); disc.position.y = o.disc * o.dh * 0.8; bodyG.add(disc);
   // the arms: a chain of overlapping beads thinning to a tip, each laid out along an S-curve that travels outward as it crawls
   const arms = []; for (let k = 0; k < o.n; k++) { const beads = [], nubs = []; for (let i = 0; i < o.beads; i++) { const bd = new T.Mesh(new T.IcosahedronGeometry(1, 0), _starMat); bodyG.add(bd); beads.push(bd); if (i % 3 === 2 && i < o.beads - 2) { const nb = new T.Mesh(new T.IcosahedronGeometry(1, 0), _starNub); bodyG.add(nb); nubs.push({ nb, i }); } } const sps = []; if (o.spikes) for (let i = 1; i < o.beads - 1; i++) { const Sp = o.spikes, big = (i + k) % Sp.cEvery === 0, small = !big && i % Sp.every === 0; if (!big && !small) continue; const pr = _prong(big ? Sp.cLen : Sp.len, big ? Sp.cR : Sp.r, big ? 'electric' : 'black', k * 31 + i); bodyG.add(pr); sps.push({ pr, i, big, side: (i % 2 ? 1 : -1) }); }
-    arms.push({ k, beads, nubs, sps }); }
+    const pat = []; if (o.pattern) { const Pt = o.pattern; for (let i = 1; i < o.beads - 1; i++) {
+        const sides = Pt.kind === 'ridge' ? [0] : [1, -1], lf = Pt.kind === 'alt' ? (i % 2 ? 1.0 : 0.55) : Pt.kind === 'triple' ? (i % 3 === 0 ? 1.0 : 0.5) : 1.0;
+        if (Pt.kind === 'triple' ? true : (i % Pt.every === 0)) sides.forEach(sd => { const sp = _clawShard(Pt.len * lf, Pt.r * (0.7 + 0.3 * lf), 0, k * 17 + i * 3 + sd + 4, 5); bodyG.add(sp); pat.push({ pr: sp, i, side: sd, lat: Pt.lat, rad: Pt.rad, fade: 1 }); });
+        if (Pt.shard && (i + k) % Pt.shard.every === 0) { const st = _prong(Pt.shard.len, Pt.shard.r, 'electric', k * 41 + i); bodyG.add(st); pat.push({ pr: st, i, side: 0, lat: 0, rad: 0.1, lit: true }); } } }
+    arms.push({ k, beads, nubs, sps, pat }); }
   // the crystal: hovering above, apart from the body
   const cg = G(); b.add(cg); const C = o.crystal;
   const mk = (r, h, sides) => { let geo = new T.CylinderGeometry(r * 0.01, r, h, sides, 1); geo.translate(0, h / 2, 0); return geo; };
@@ -29,6 +33,8 @@ function _starfish(o) {
         const r = o.armR * Math.pow(1 - u * 0.86, 0.9) + 0.012; bd.scale.set(r * 1.0, r * 0.72, r * 1.0); bd.position.set(ca * d + px * wave, r * 0.8 + lift, sa * d + pz * wave); });
       A.sps.forEach(P => { const bd = A.beads[P.i], u = P.i / (o.beads - 1), px2 = Math.sin(a0) , pz2 = Math.cos(a0), dir = V.set(px2 * 0.45 + px * 0.5 * P.side, 1.0, pz2 * 0.45 + pz * 0.5 * P.side).normalize(), lit = Math.max(0, Math.sin(ph * 2 - u * 5.5 + A.k * 0.9)), k2 = P.big ? 1 + 0.5 * lit + 0.5 * ac : 1;
         P.pr.position.set(bd.position.x, bd.position.y + bd.scale.y * 0.7, bd.position.z); P.pr.quaternion.setFromUnitVectors(Y3, dir); P.pr.scale.setScalar(k2 * (1 - 0.5 * u * (P.big ? 0.2 : 0.5))); if (P.pr.userData.tip) P.pr.userData.tip.scale.setScalar(1 + 0.6 * lit); });
+      A.pat.forEach(P => { const bd = A.beads[P.i], u = P.i / (o.beads - 1), dir = V.set(ca * P.rad + px * P.lat * P.side, 1.0, sa * P.rad + pz * P.lat * P.side).normalize(), lit = P.lit ? Math.max(0, Math.sin(ph * 2 - u * 5.5 + A.k * 0.9)) : 0;
+        P.pr.position.set(bd.position.x, bd.position.y + bd.scale.y * 0.65, bd.position.z); P.pr.quaternion.setFromUnitVectors(Y3, dir); P.pr.scale.setScalar((P.lit ? 1 + 0.6 * lit + 0.5 * ac : 1 + 0.1 * ac) * (1 - 0.45 * u)); if (P.pr.userData.tip) P.pr.userData.tip.scale.setScalar(1 + 0.6 * lit); });
       A.nubs.forEach(N => { const bd = A.beads[N.i], r = bd.scale.x * 0.55; N.nb.scale.setScalar(r * 0.45); N.nb.position.set(bd.position.x, bd.position.y + bd.scale.y * 0.85, bd.position.z); }); });
     // the crystal: hovering, turning slowly, leaning a little the way it steers
     if (o.embed) { cg.position.y = o.hover + bob; cg.rotation.y = 0; } else { cg.position.y = o.hover + 0.05 * Math.sin(ph * 2) + 0.12 * ac; cg.position.x = 0.05 * Math.sin(ph); cg.rotation.y = ph * 0.25; cg.rotation.z = 0.08 * Math.sin(ph); }
@@ -53,3 +59,12 @@ fx(611, "A crown of black spikes round the crystal where it is set in, and bigge
 fx(612, "A big faceted gem set in the middle of the body, long sharp black spikes up the arms each tipped with a lit crystal.", () => _starfish(Object.assign({}, _sfe, { crystal: { r: 0.18, diamond: true }, hover: 0.32, spikes: { every: 99, len: 0.2, r: 0.03, cEvery: 2, cLen: 0.3, cR: 0.045 } })));
 fx(613, "Short fat spiky arms like a sea urchin's, dense with crystals, the central crystal set deep.", () => _starfish(Object.assign({}, _sfe, { disc: 0.42, len: 0.62, armR: 0.22, beads: 14, spikes: { every: 2, len: 0.14, r: 0.04, cEvery: 3, cLen: 0.22, cR: 0.05 } })));
 fx(614, "Long squiggly arms with a crystal every few steps, the light running out along them, the body flat and dark.", () => _starfish(Object.assign({}, _sfe, { len: 1.0, wiggle: 0.3, waveK: 2.8, beads: 24, armR: 0.14, dh: 0.45, spikes: { every: 3, len: 0.11, r: 0.028, cEvery: 5, cLen: 0.2, cR: 0.04 } })));
+
+// ── A big head crystal, little light-up shards, and patterned black spines down the arms (Nos. 615–619) ──
+const _sfp = Object.assign({}, _sf, { embed: true, hover: 0.3, aura: { n: 0, r: 0.03, R: 0.3 }, crystal: { r: 0.21, h: 0.34 }, beads: 18, spikes: null,
+  pattern: { kind: 'pair', every: 2, len: 0.2, r: 0.04, lat: 0.9, rad: 0.15, shard: { every: 4, len: 0.1, r: 0.022 } } });
+fx(615, "A big crystal for a head. Down every arm: paired black spines in a regular row, and a little lit shard every fourth step.", () => _starfish(Object.assign({}, _sfp)));
+fx(616, "Long and short black spines alternating down the arms, swept out toward the tips, tiny lit shards between.", () => _starfish(Object.assign({}, _sfp, { pattern: { kind: 'alt', every: 1, len: 0.26, r: 0.04, lat: 0.9, rad: 0.5, shard: { every: 3, len: 0.09, r: 0.02 } } })));
+fx(617, "A single dorsal ridge of upright black spines down the middle of each arm, like a dragon's back, little lit shards in the gaps.", () => _starfish(Object.assign({}, _sfp, { pattern: { kind: 'ridge', every: 1, len: 0.17, r: 0.04, lat: 0, rad: 0.2, shard: { every: 3, len: 0.1, r: 0.022 } } })));
+fx(618, "Herringbone: the spines in V pairs, leaning back toward the body, a small lit shard between each.", () => _starfish(Object.assign({}, _sfp, { pattern: { kind: 'pair', every: 2, len: 0.2, r: 0.04, lat: 0.8, rad: -0.55, shard: { every: 2, len: 0.09, r: 0.02 } } })));
+fx(619, "A rhythm of three: one long spine, two short, repeating down each arm, the lit shards tiny and sparse.", () => _starfish(Object.assign({}, _sfp, { pattern: { kind: 'triple', every: 1, len: 0.28, r: 0.04, lat: 0.85, rad: 0.2, shard: { every: 6, len: 0.08, r: 0.02 } } })));
