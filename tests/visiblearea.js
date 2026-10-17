@@ -34,7 +34,7 @@ function probe(layoutH, visibleH, laterH) {
     const frames = laterH ? "setInterval(function(){ try { render(); } catch (e) {} }, 100);" : "";
     const later = laterH ? "setTimeout(function(){ window.__fakeVV.height = " + laterH + "; }, 4800);" : "";
     const script = "<script>window.addEventListener('load', function(){ " + frames + later + " setTimeout(function(){" +
-        " var r = function(id){ var e = document.getElementById(id); if (!e) return null; var b = e.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), shown: getComputedStyle(e).display !== 'none' }; };" +
+        " var r = function(id){ var e = document.getElementById(id); if (!e) return null; var b = e.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), left: Math.round(b.left), right: Math.round(b.right), shown: getComputedStyle(e).display !== 'none' }; };" +
         " var cs = getComputedStyle(document.documentElement);" +
         " var out = { vvBottom: cs.getPropertyValue('--vv-bottom'), vvh: cs.getPropertyValue('--vvh'), dock: r('topToggles'), tut: r('tutBtn'), canvasCss: [canvas.style.width, canvas.style.height], canvasPx: [canvas.width, canvas.height] };" +
         " var pre = document.createElement('pre'); pre.id = '__vv'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre); }, 6000); });</script></body>";
@@ -59,7 +59,10 @@ else {
             ok(parseInt(r.vvh) === 653, '--vvh ' + r.vvh); ok(r.canvasCss[1] === '653px', 'canvas css height ' + r.canvasCss[1]);
         });
         check('THE ASK: the bottom dock sits inside what is visible (it was below the screen)', () => ok(r.dock && r.dock.shown && r.dock.bottom <= 653, 'dock bottom ' + (r.dock && r.dock.bottom) + ' vs 653 visible'));
-        check('the tutorial button is inside what is visible and clear of the dock', () => ok(r.tut && r.tut.bottom <= 653 && r.tut.bottom <= r.dock.top, 'tutorial bottom ' + (r.tut && r.tut.bottom) + ', dock top ' + (r.dock && r.dock.top)));
+        check('the tutorial button (small, in the bottom-left corner) is inside what is visible and does not touch the dock', () => {
+            ok(r.tut && r.tut.bottom <= 653 && r.tut.bottom > 560, 'tutorial bottom ' + (r.tut && r.tut.bottom));
+            ok(r.tut.right <= r.dock.left || r.tut.bottom <= r.dock.top, 'the tutorial button overlaps the dock: right ' + r.tut.right + ' vs dock left ' + r.dock.left);
+        });
     }
     // THE REPORTED CASE: the browser reports a wrong size at load and corrects it a moment later with NO event (fixed for the player only after switching
     // away and back). Here the visible height changes 4.8s after load, past every load-time re-check, so only the frame loop's poll can catch it and nothing fires: the game has to notice.

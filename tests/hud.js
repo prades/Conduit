@@ -255,6 +255,12 @@ check('the DEV button is out of the player HUD', () => {
     const block = DEV.slice(at, at + 400);
     ok(!/top:"15px"/.test(block), 'the DEV button is still parked on the top HUD');
     ok(/bottom:/.test(block), 'the DEV button is not anchored to the bottom');
+    // And players do not see it at all: it is only added to the page when the address has ?dev ("remove the dev button").
+    ok(/if \(\/\[\?&\]dev\\b\/\.test\(\(typeof window[^\n]*\)\) document\.body\.appendChild\(devBtn\);/.test(DEV), 'the DEV button is still shown to every player');
+});
+
+check('the TUTORIAL button is small and tucked into the bottom-left corner', () => {
+    ok(/#tutBtn \{ left: 12px !important; right: auto !important;[^}]*font-size: 11px !important/.test(HTML), 'the tutorial button is not shrunk and moved');
 });
 
 check('the in-game index describes the bar the player is actually looking at', () => {

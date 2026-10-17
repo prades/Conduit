@@ -196,7 +196,8 @@ function initPreview() {
     Object.assign(devBtn.style,{position:"fixed",left:"15px",bottom:"15px",zIndex:"9999",
         background:"#111",color:"#0f8",border:"1px solid #0f8",padding:"6px 10px",fontFamily:"monospace",cursor:"pointer"});
     devBtn.onclick=toggleDevPreview;
-    document.body.appendChild(devBtn);
+    // REPORTED: "remove the dev button." Players never see it: it exists only when the page is opened with ?dev in its address.
+    if (/[?&]dev\b/.test((typeof window !== "undefined" && window.location && window.location.search) || "")) document.body.appendChild(devBtn);
 
     sliderContainer=document.createElement("div");
     panel.appendChild(sliderContainer);
