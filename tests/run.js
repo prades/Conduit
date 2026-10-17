@@ -35,6 +35,7 @@ const SUITES = [
     ['placing: zoom + hide UI', 'placingview.js'],
     ['visible area (iPad)',     'visiblearea.js'],
     ['command center',          'commandcenter.js'],
+    ['sliding toolbox',         'toolbox.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],

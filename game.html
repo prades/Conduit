@@ -709,6 +709,20 @@
     /* ── THE TUTORIAL BUTTON: small, quiet, tucked into the bottom-left corner (it is a one-time help, not a control) ── */
     #tutBtn { left: 12px !important; right: auto !important; bottom: calc(12px + var(--vv-bottom, 0px)) !important; font-size: 11px !important; padding: 5px 12px !important; letter-spacing: 1px !important; opacity: 0.5; transform: none !important; box-shadow: none !important; border-width: 1px !important; z-index: 5 !important; }
     #tutBtn:hover, #tutBtn:active, #tutBtn:focus-visible { opacity: 1; }
+
+    /* ── THE SLIDING TOOLBOX (js/toolbox.js): the dock slides down off the bottom edge, leaving a TOOLS handle; tap it or drag it up to slide the dock back ── */
+    #toolboxHandle { display: none; }
+    @media (min-width: 701px) {
+        #topToggles { transition: transform 0.3s cubic-bezier(0.2, 0.85, 0.25, 1); }
+        body.tb-closed #topToggles { transform: translateX(-50%) translateY(calc(100% + 14px)); }
+        #toolboxHandle { display: flex; align-items: center; justify-content: center; position: absolute; left: 50%; top: -32px; transform: translateX(-50%); width: 168px; height: 32px; padding: 0; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none;
+            font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 14px; letter-spacing: 1.5px; color: #fff; background: linear-gradient(180deg, rgba(14,22,46,0.95), rgba(5,8,18,0.97)); border: 2px solid #26324f; border-bottom: none; box-shadow: 0 0 14px rgba(25,230,193,0.25);
+            clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+        #toolboxHandle .tb-grip { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 36px; height: 3px; border-radius: 2px; background: var(--neo-teal); opacity: 0.8; }
+        #toolboxHandle .tb-label { margin-top: 6px; }
+        body.tb-closed #toolboxHandle { border-color: var(--neo-teal); box-shadow: 0 0 16px rgba(25,230,193,0.55); }
+        body.tb-closed #selChip { bottom: calc(52px + var(--vv-bottom, 0px)); }
+    }
 </style>
 
 </head>
@@ -1526,12 +1540,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-17v, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-17w, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-17v";
+window.__PAGE_BUILD = "2026-10-17w";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1567,55 +1581,56 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-17v"></script>
-<script src="js/icons.js?v=2026-10-17v"></script>
-<script src="js/rng.js?v=2026-10-17v"></script>
-<script src="js/traits.js?v=2026-10-17v"></script>
-<script src="js/elements.js?v=2026-10-17v"></script>
-<script src="js/combat.js?v=2026-10-17v"></script>
-<script src="js/species.js?v=2026-10-17v"></script>
-<script src="js/levels.js?v=2026-10-17v"></script>
-<script src="js/predator_randomizer.js?v=2026-10-17v"></script>
-<script src="js/mass.js?v=2026-10-17v"></script>
-<script src="js/infest.js?v=2026-10-17v"></script>
-<script src="js/power.js?v=2026-10-17v"></script>
-<script src="js/save.js?v=2026-10-17v"></script>
-<script src="js/camp.js?v=2026-10-17v"></script>
-<script src="js/wavedata.js?v=2026-10-17v"></script>
-<script src="js/helpers.js?v=2026-10-17v"></script>
-<script src="js/predator.js?v=2026-10-17v"></script>
-<script src="js/abilities.js?v=2026-10-17v"></script>
-<script src="js/world.js?v=2026-10-17v"></script>
-<script src="js/commands.js?v=2026-10-17v"></script>
-<script src="js/npc.js?v=2026-10-17v"></script>
-<script src="js/codex.js?v=2026-10-17v"></script>
-<script src="js/draw.js?v=2026-10-17v"></script>
-<script src="js/beetle3d.js?v=2026-10-17v"></script>
-<script src="js/bugs3d.js?v=2026-10-17v"></script>
-<script src="js/ui.js?v=2026-10-17v"></script>
-<script src="js/waves.js?v=2026-10-17v"></script>
-<script src="js/drops.js?v=2026-10-17v"></script>
-<script src="js/clone.js?v=2026-10-17v"></script>
-<script src="js/clonework.js?v=2026-10-17v"></script>
-<script src="js/broods.js?v=2026-10-17v"></script>
-<script src="js/raids.js?v=2026-10-17v"></script>
-<script src="js/ultra.js?v=2026-10-17v"></script>
-<script src="js/formations.js?v=2026-10-17v"></script>
-<script src="js/breakout.js?v=2026-10-17v"></script>
-<script src="js/nightraids.js?v=2026-10-17v"></script>
-<script src="js/bonds.js?v=2026-10-17v"></script>
-<script src="js/autoplay.js?v=2026-10-17v"></script>
-<script src="js/indexart.js?v=2026-10-17v"></script>
-<script src="js/modules.js?v=2026-10-17v"></script>
-<script src="js/shieldcells.js?v=2026-10-17v"></script>
-<script src="js/evolution.js?v=2026-10-17v"></script>
-<script src="js/buildmenu.js?v=2026-10-17v"></script>
-<script src="js/commandcenter.js?v=2026-10-17v"></script>
-<script src="js/radialmenu.js?v=2026-10-17v"></script>
-<script src="js/input.js?v=2026-10-17v"></script>
-<script src="js/game.js?v=2026-10-17v"></script>
-<script src="js/tutorial.js?v=2026-10-17v"></script>
-<script src="js/dev.js?v=2026-10-17v"></script>
+<script src="js/config.js?v=2026-10-17w"></script>
+<script src="js/icons.js?v=2026-10-17w"></script>
+<script src="js/rng.js?v=2026-10-17w"></script>
+<script src="js/traits.js?v=2026-10-17w"></script>
+<script src="js/elements.js?v=2026-10-17w"></script>
+<script src="js/combat.js?v=2026-10-17w"></script>
+<script src="js/species.js?v=2026-10-17w"></script>
+<script src="js/levels.js?v=2026-10-17w"></script>
+<script src="js/predator_randomizer.js?v=2026-10-17w"></script>
+<script src="js/mass.js?v=2026-10-17w"></script>
+<script src="js/infest.js?v=2026-10-17w"></script>
+<script src="js/power.js?v=2026-10-17w"></script>
+<script src="js/save.js?v=2026-10-17w"></script>
+<script src="js/camp.js?v=2026-10-17w"></script>
+<script src="js/wavedata.js?v=2026-10-17w"></script>
+<script src="js/helpers.js?v=2026-10-17w"></script>
+<script src="js/predator.js?v=2026-10-17w"></script>
+<script src="js/abilities.js?v=2026-10-17w"></script>
+<script src="js/world.js?v=2026-10-17w"></script>
+<script src="js/commands.js?v=2026-10-17w"></script>
+<script src="js/npc.js?v=2026-10-17w"></script>
+<script src="js/codex.js?v=2026-10-17w"></script>
+<script src="js/draw.js?v=2026-10-17w"></script>
+<script src="js/beetle3d.js?v=2026-10-17w"></script>
+<script src="js/bugs3d.js?v=2026-10-17w"></script>
+<script src="js/ui.js?v=2026-10-17w"></script>
+<script src="js/waves.js?v=2026-10-17w"></script>
+<script src="js/drops.js?v=2026-10-17w"></script>
+<script src="js/clone.js?v=2026-10-17w"></script>
+<script src="js/clonework.js?v=2026-10-17w"></script>
+<script src="js/broods.js?v=2026-10-17w"></script>
+<script src="js/raids.js?v=2026-10-17w"></script>
+<script src="js/ultra.js?v=2026-10-17w"></script>
+<script src="js/formations.js?v=2026-10-17w"></script>
+<script src="js/breakout.js?v=2026-10-17w"></script>
+<script src="js/nightraids.js?v=2026-10-17w"></script>
+<script src="js/bonds.js?v=2026-10-17w"></script>
+<script src="js/autoplay.js?v=2026-10-17w"></script>
+<script src="js/indexart.js?v=2026-10-17w"></script>
+<script src="js/modules.js?v=2026-10-17w"></script>
+<script src="js/shieldcells.js?v=2026-10-17w"></script>
+<script src="js/evolution.js?v=2026-10-17w"></script>
+<script src="js/buildmenu.js?v=2026-10-17w"></script>
+<script src="js/commandcenter.js?v=2026-10-17w"></script>
+<script src="js/toolbox.js?v=2026-10-17w"></script>
+<script src="js/radialmenu.js?v=2026-10-17w"></script>
+<script src="js/input.js?v=2026-10-17w"></script>
+<script src="js/game.js?v=2026-10-17w"></script>
+<script src="js/tutorial.js?v=2026-10-17w"></script>
+<script src="js/dev.js?v=2026-10-17w"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1668,7 +1683,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-17v"></script>
+<script src="js/init.js?v=2026-10-17w"></script>
 
 </body>
 </html>
