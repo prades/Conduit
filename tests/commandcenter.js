@@ -131,6 +131,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('RE-ROLL sends the selected followers back to the crystal (and out of the selection)', () => {
         run('ccSetSelection([__c])'); same(run('ccApplyReroll([__c])'), 1, 're-rolled'); same(run('__c.returningToCrystal'), true, 'walking home'); same(run('selectedUnits.size'), 0, 'out of the selection');
     });
+    check('THE REPORTED CASE: the ring is centred on the unit\'s feet, not a tile-height below it (it was off centre)', () => {
+        run('ccSetSelection([__a]); __a.x = 21; __a.y = 3; player.visualX = 20; player.visualY = 2;');
+        const r = run(`(function(){ const hits = []; const keep = ctx.ellipse; ctx.ellipse = (x, y, rx, ry) => hits.push([x, y, rx, ry]);
+            try { drawSelectedUnitRings(); } finally { ctx.ellipse = keep; }
+            const px = (__a.x - player.visualX - (__a.y - player.visualY)) * TILE_W + canvas.width / 2, py = (__a.x - player.visualX + (__a.y - player.visualY)) * TILE_H + canvas.height / 2;
+            return { hits, px, py, off: ccGroundOffset(__a), evolved: !!__a.evolved, tileH: TILE_H }; })()`);
+        ok(r.hits.length >= 2, 'no ring drawn'); same(Math.round(r.hits[0][0]), Math.round(r.px), 'x'); same(Math.round(r.hits[0][1]), Math.round(r.py + r.off), 'y');
+        ok(r.off < r.tileH / 4, 'the ring is ' + r.off + 'px below the draw point (a tile is ' + r.tileH + ')');
+        same(run('[ccGroundOffset({ evolved: "x" }), ccGroundOffset({ isClone: true }), ccGroundOffset({})].every(o => o >= 0 && o < TILE_H / 4)'), true, 'offsets');
+    });
     check('drawing the rings is safe with a selection (and a dead unit in it)', () => { run('ccSetSelection([__a, __b]); __b.dead = true; drawSelectedUnitRings(); __b.dead = false; ccClearSelection()'); });
 
     console.log('\nTHE QUICK RECRUIT');

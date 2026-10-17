@@ -134,17 +134,20 @@ function ccSelectionSummary() {
 function indexReplaced() { return true; }
 
 // ── a ring on the ground under each selected unit ──
+// Where a unit's feet are, below the point the game draws it at (px, py): an evolved form stands ON that point (its sprite's anchor and its shadow), an
+// egg's legs end about 18px below it, a clone's body sits a little below. The ring is centred there, not on the tile's middle (TILE_H lower).
+function ccGroundOffset(a) { return a && a.evolved ? 2 : a && a.isClone ? 4 : 0; }
 function drawSelectedUnitRings() {
     if (!selectedUnits.size || typeof ctx === "undefined" || typeof player === "undefined") return;
     const W = canvas.width / 2, H = canvas.height / 2, t = (typeof frame !== "undefined" ? frame : 0) * 0.08;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const a of selectedUnits) {
         if (!a || a.dead) continue;
-        const px = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + W, py = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + H + TILE_H;
+        const px = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + W, py = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + H + ccGroundOffset(a), rx = a.evolved ? 34 : 26, ry = a.evolved ? 15 : 12;
         if (px < -60 || px > canvas.width + 60 || py < -60 || py > canvas.height + 60) continue;
         // (no shadowBlur: the game keeps it off the canvas for speed. A wider, fainter ring under the sharp one gives the glow.)
-        ctx.lineWidth = 7; ctx.strokeStyle = "rgba(25,230,193,0.22)"; ctx.beginPath(); ctx.ellipse(px, py, 26, 12, 0, 0, Math.PI * 2); ctx.stroke();
-        ctx.lineWidth = 2.5; ctx.strokeStyle = "rgba(25,230,193," + (0.7 + 0.25 * Math.sin(t + a.x)) + ")"; ctx.beginPath(); ctx.ellipse(px, py, 26, 12, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 7; ctx.strokeStyle = "rgba(25,230,193,0.22)"; ctx.beginPath(); ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 2.5; ctx.strokeStyle = "rgba(25,230,193," + (0.7 + 0.25 * Math.sin(t + a.x)) + ")"; ctx.beginPath(); ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
     }
     ctx.restore();
 }
