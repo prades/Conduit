@@ -1,6 +1,26 @@
 // ── THE SAUCER · Nos. 661–: a sleek black flying-saucer body, a ring of lights that chase round its rim, and mechanical legs it walks on. ──
 const _saucerHull = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.15, roughness: 0.75, flatShading: true }); _saucerHull.envMapIntensity = 0.18;
 const _saucerLeg = new T.MeshStandardMaterial({ color: 0x030304, metalness: 0.3, roughness: 0.6, flatShading: true }); _saucerLeg.envMapIntensity = 0.4;
+function _curvyLeg(o, b) {   // a leg built as a chain of short segments laid along two curves (thigh, shin), with ribs, joint collars, an optional piston and a foot clamp
+  const M = o.curveSeg || 6, N = M * 2, segs = [], ribs = [], collars = [];
+  for (let i = 0; i < N; i++) { const sg = _bone(null, null, o.legR, o.legR * 0.8, _saucerLeg); b.add(sg); segs.push(sg); }
+  for (let i = 1; i < N; i += 3) { const rb = new T.Mesh(new T.CylinderGeometry(1, 1, 0.01, 8), _saucerLeg); b.add(rb); ribs.push({ rb, i }); }
+  for (let i = 0; i < 3; i++) { const cl = new T.Mesh(new T.CylinderGeometry(1, 1, 0.05, 8), _saucerHull); b.add(cl); collars.push(cl); }   // hip, knee, ankle
+  const piston = o.piston ? new T.Mesh(new T.CylinderGeometry(o.legR * 0.35, o.legR * 0.35, 1, 5), _saucerLeg) : null; if (piston) b.add(piston);
+  const foot = new T.Mesh(new T.SphereGeometry(o.legR * 1.6, 8, 6), _saucerLeg); foot.scale.y = 0.6; b.add(foot);
+  const pts = []; for (let i = 0; i <= N; i++) pts.push(new T.Vector3());
+  const bez = (a, c, d, u, out) => out.set((1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * c.x + u * u * d.x, (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * c.y + u * u * d.y, (1 - u) * (1 - u) * a.z + 2 * (1 - u) * u * c.z + u * u * d.z);
+  const c1 = new T.Vector3(), c2 = new T.Vector3(), up = new T.Vector3(0, 1, 0);
+  return { foot, set(hip, knee, ft, out) {
+    c1.copy(hip).add(knee).multiplyScalar(0.5).addScaledVector(out, o.bulge1); c2.copy(knee).add(ft).multiplyScalar(0.5).addScaledVector(out, o.bulge2);
+    for (let i = 0; i <= M; i++) bez(hip, c1, knee, i / M, pts[i]);
+    for (let i = 1; i <= M; i++) bez(knee, c2, ft, i / M, pts[M + i]);
+    for (let i = 0; i < N; i++) { _setBone(segs[i], pts[i], pts[i + 1]); const u = i / N, r = 1 - 0.55 * u; segs[i].scale.x = segs[i].scale.z = r; }
+    ribs.forEach(({ rb, i }) => { const d = new T.Vector3().subVectors(pts[Math.min(N, i + 1)], pts[Math.max(0, i - 1)]).normalize(); rb.position.copy(pts[i]); rb.quaternion.setFromUnitVectors(up, d); rb.scale.set(o.legR * 1.45 * (1 - 0.4 * i / N), 1, o.legR * 1.45 * (1 - 0.4 * i / N)); });
+    const cp = [pts[0], pts[M], pts[N]]; collars.forEach((cl, k) => { const a = pts[Math.max(0, [0, M, N][k] - 1)], bb = pts[Math.min(N, [0, M, N][k] + 1)], d = new T.Vector3().subVectors(bb, a).normalize(); cl.position.copy(cp[k]); cl.quaternion.setFromUnitVectors(up, d); const w = o.legR * (k === 1 ? 1.7 : 1.4); cl.scale.set(w, 1, w); });
+    if (piston) { const a = pts[1].clone().addScaledVector(out, -0.06), bb = pts[M + 1].clone().addScaledVector(out, -0.06); _setBone(piston, a, bb); }
+    foot.position.copy(ft); } };
+}
 function _saucer(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.3);
   const body = G(); b.add(body);
@@ -16,7 +36,7 @@ function _saucer(o) {
   const lamps = []; for (let i = 0; i < o.nLamps; i++) { const a = i * TAU / o.nLamps, mat = new T.MeshBasicMaterial({ color: 0x3a3000, toneMapped: false }), lp = new T.Mesh(new T.BoxGeometry(0.075, 0.05, 0.075), mat); lp.position.set(Math.sin(a) * R * 1.0, 0.145 * k, Math.cos(a) * R * 1.0); lp.rotation.y = a; body.add(lp); lamps.push({ lp, mat, i }); }
   const rimBand = new T.Mesh(new T.TorusGeometry(R * 0.985, 0.014, 4, o.segs || 24), _saucerLeg); rimBand.rotation.x = PI / 2; rimBand.position.y = 0.105 * k; body.add(rimBand);
   // the legs: hip under the disc, thigh, knee, shin, a round foot; the foot walks a loop and the leg follows it
-  const legs = []; for (let i = 0; i < o.legs; i++) { const a = i * TAU / o.legs + (o.legRot || 0), th = _bone(null, null, o.legR, o.legR * 0.8, _saucerLeg), sh = _bone(null, null, o.legR * 0.8, o.legR * 0.35, _saucerLeg), kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 1.2, 0), _saucerLeg), ft = new T.Mesh(new T.SphereGeometry(o.legR * 1.5, 8, 6), _saucerLeg); ft.scale.y = 0.6; b.add(th); b.add(sh); b.add(kn); b.add(ft); legs.push({ a, th, sh, kn, ft, ph: (o.legs === 3 ? i * TAU / 3 : (i % 2 ? PI : 0)) + (o.legPh || 0) }); }
+  const legs = []; for (let i = 0; i < o.legs; i++) { const a = i * TAU / o.legs + (o.legRot || 0); if (o.curved) { legs.push({ a, cv: _curvyLeg(o, b), ph: (o.legs === 3 ? i * TAU / 3 : (i % 2 ? PI : 0)) + (o.legPh || 0) }); continue; } const th = _bone(null, null, o.legR, o.legR * 0.8, _saucerLeg), sh = _bone(null, null, o.legR * 0.8, o.legR * 0.35, _saucerLeg), kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 1.2, 0), _saucerLeg), ft = new T.Mesh(new T.SphereGeometry(o.legR * 1.5, 8, 6), _saucerLeg); ft.scale.y = 0.6; b.add(th); b.add(sh); b.add(kn); b.add(ft); legs.push({ a, th, sh, kn, ft, ph: (o.legs === 3 ? i * TAU / 3 : (i % 2 ? PI : 0)) + (o.legPh || 0) }); }
   const L = new T.PointLight(0xffffff, 0.4, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.6, 0.4); b.add(L); LIGHTS.push(L);
   const glow = _glowPool(R * 0.8, 0.02); if (o.pool) b.add(glow.g);
   const U1 = new T.Vector3(), U2 = new T.Vector3(), U3 = new T.Vector3();
@@ -32,6 +52,7 @@ function _saucer(o) {
       const hip = U1.set(hx, hipY, hz), foot = U2.set(fx, fy, fz), A = o.legH * 0.6, Bn = o.legH * 0.68, d = hip.distanceTo(foot), c = Math.max(0.05, Math.min(A + Bn - 0.001, d)), kk = Math.acos(Math.max(-1, Math.min(1, (A * A + c * c - Bn * Bn) / (2 * A * c))));
       const mid = U3.copy(hip).add(foot).multiplyScalar(0.5), dir = new T.Vector3().subVectors(foot, hip).normalize(), out = new T.Vector3(Math.sin(Lg.a), 0.9, Math.cos(Lg.a)).normalize(); out.addScaledVector(dir, -out.dot(dir)).normalize();
       const knee = mid.clone().addScaledVector(out, Math.sin(kk) * A * 0.95);
+      if (Lg.cv) { Lg.cv.set(hip.clone(), knee.clone(), foot.clone(), out.clone()); return; }
       _setBone(Lg.th, hip, knee); _setBone(Lg.sh, knee, foot); Lg.kn.position.copy(knee); Lg.ft.position.copy(foot); }); } };
 }
 const _sc0 = { S: 1.3, R: 0.95, domeR: 0.3, nLamps: 16, chase: 8, legs: 4, legR: 0.045, legH: 0.8, hipH: 0.55, hipR: 0.6, footR: 1.05, stride: 0.14, lift: 0.14 };
@@ -40,3 +61,11 @@ fx(662, "A tripod lander: a wider, flatter saucer on three long jointed legs wit
 fx(663, "A spider saucer: six thin legs, a smaller disc, more of the insect about it.", () => _saucer(Object.assign({}, _sc0, { legs: 6, legR: 0.032, legH: 0.85, R: 0.85, hipR: 0.62, footR: 1.2, nLamps: 14, stride: 0.1 })));
 fx(664, "Low and heavy: short stout legs and a tractor glow on the ground beneath the disc.", () => _saucer(Object.assign({}, _sc0, { legH: 0.55, hipH: 0.4, legR: 0.07, stride: 0.1, lift: 0.1, pool: true, R: 1.0, sy: 1.2 })));
 fx(665, "Sleek and tall: a taller, more pointed lens hull and long slim legs, the lights in a fast chase.", () => _saucer(Object.assign({}, _sc0, { sy: 1.6, legH: 0.95, hipH: 0.75, legR: 0.038, chase: 16, nLamps: 20, R: 0.9, domeR: 0.26 })));
+
+// ── The legs curved, still mechanical (Nos. 666–670): each leg is a chain of ribbed segments along two arcs, with collars at hip, knee and ankle ──
+const _scv = Object.assign({}, _sc0, { curved: true, bulge1: 0.34, bulge2: -0.2, curveSeg: 9, legR: 0.045 });
+fx(666, "Curved mechanical legs: each a smooth bow out from the disc and back in to the foot, ribbed along its length, with collars at the hip, knee and ankle.", () => _saucer(Object.assign({}, _scv)));
+fx(667, "An S-curve: the thigh arcs up and out, the shin curls back in, with a piston rod running alongside.", () => _saucer(Object.assign({}, _scv, { bulge1: 0.46, bulge2: -0.4, piston: true, legH: 0.95, hipH: 0.66 })));
+fx(668, "Reverse knees, like a raptor's: the legs bend backward in a hook, thick and sprung, with a clamp for a foot.", () => _saucer(Object.assign({}, _scv, { bulge1: -0.3, bulge2: 0.45, legR: 0.05, legH: 0.9 })));
+fx(669, "Six thin curved legs, strongly arched like a spider's, many fine ribs.", () => _saucer(Object.assign({}, _scv, { legs: 6, legR: 0.03, bulge1: 0.5, bulge2: -0.22, curveSeg: 9, R: 0.85, hipR: 0.62, footR: 1.25, nLamps: 14, stride: 0.1 })));
+fx(670, "Heavy hydraulic legs: thick and gently curved, with an exposed piston along each and a lit knee.", () => _saucer(Object.assign({}, _scv, { legR: 0.065, bulge1: 0.22, bulge2: -0.12, piston: true, legH: 0.75, hipH: 0.52, sy: 1.2, R: 1.0, stride: 0.1 })));
