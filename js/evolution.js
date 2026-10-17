@@ -143,10 +143,10 @@ const EVOLUTIONS = {
     // LEGACY: the first flux mage. New evolutions use the Voidstar; a follower already evolved into this keeps it.
     serpent:{ id: "serpent", legacy: true, name: "SERPENT", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
               cell: 144, anchor: [72, 114.2], core: [72, 61], noGlow: true, color: "#bb66ff" },
-    // The FLUX ("void") MAGE, design No. 635: a dark spined starfish carrying an orb of violet fluid with a diamond floating in it. The diamond
+    // The FLUX ("void") MAGE, design No. 637: a dark spined starfish carrying a big orb of violet fluid with a diamond floating in it, held up by four thick claws. The diamond
     // turns and bubbles rise, so its sheet carries its own light.
     voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/voidstar.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 80.8], noGlow: true, color: "#bb66ff" },
+              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff" },
     // LEGACY: the first core brawler. New evolutions use the Hammer Slug; a follower already evolved into this keeps it.
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", move: "AEGIS BURST",  sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },

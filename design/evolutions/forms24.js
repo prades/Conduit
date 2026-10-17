@@ -125,3 +125,6 @@ fx(638, "A smaller orb, thicker fluid, lots of bubbles and a tumbling diamond, i
 
 // The game sprite of No. 635, the flux ("void") mage.
 fx(639, "635, the game sprite.", () => _starfish(Object.assign({}, _sfo, { orb: _vo().orb })));
+
+// The game sprite of No. 637 (the bigger orb and diamond on four thick claws), the flux ("void") mage, replacing 639.
+fx(640, "637, the game sprite.", () => _starfish(Object.assign({}, _sfo, { hover: 0.78, orb: _vo({ r: 0.34, dia: 0.15, bubbles: 7, cradle: { n: 4, len: 0.34, r: 0.055, curl: 1.1 } }).orb })));

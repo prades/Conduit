@@ -46,7 +46,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('electric', 'sniper', 20); run(lvlUp);
         same(run('__f.evolved'), 'thunderhead', 'its form'); same(run('unitTypeLabel(__f)'), 'THUNDERHEAD', 'its tag'); ok(run('EVOLUTIONS.reaver.legacy === true'), 'the Reaver is no longer handed out');
     });
-    check('THE ASK: a FLUX SNIPER (the void mage) reaching level 20 becomes the VOIDSTAR (design No. 635, which replaced the Serpent)', () => {
+    check('THE ASK: a FLUX SNIPER (the void mage) reaching level 20 becomes the VOIDSTAR (design No. 637, which replaced the Serpent)', () => {
         mk('flux', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f) })');
         same(r.evo, 'voidstar', 'its form'); same(r.tag, 'VOIDSTAR', 'its tag'); ok(run('EVOLUTIONS.serpent.legacy === true'), 'the Serpent is no longer handed out');
