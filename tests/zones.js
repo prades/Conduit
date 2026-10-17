@@ -1,4 +1,4 @@
-// THE ZONE REPORT (js/zones.js) AND THE ANALYTICS TAB (js/commandcenter.js).
+// THE ZONE REPORT (js/zones.js) AND THE ZONES TAB (js/commandcenter.js).
 //
 // REPORTED: "I want analytics to be in another tab at the bottom and it shows the status of each zone: if it's been cleared, what the network is and what
 // equipment is there. The player may choose to teleport to the different zones and may clear the broken equipment for an estimated fee."
@@ -127,8 +127,8 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
         const m = dom.match(/<pre id="__zn">([\s\S]*?)<\/pre>/), r = m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')) : null;
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (r) {
-            check('THE ASK: the tabs are in a bar at the BOTTOM of the menu (ROSTER, ANALYTICS), not the top', () => { same(r.footTabs.join(), 'ROSTER,ANALYTICS', 'foot tabs'); same(r.headTabs, 0, 'tabs left in the header'); });
-            check('ANALYTICS is a page of zone cards (no command panel), each with its status', () => { same(r.pageShown, 'block', 'page'); same(r.side, 'none', 'side panel'); ok(r.zones >= 4, 'zones ' + r.zones); same(r.names[0], 'HOME', 'first'); ok(r.statuses.includes('CLEARED') && r.statuses.includes('NEXT TARGET'), r.statuses.join()); });
+            check('THE ASK: the tabs are in a bar at the BOTTOM of the menu (ROSTER, ZONES), not the top', () => { same(r.footTabs.join(), 'ROSTER,ZONES', 'foot tabs'); same(r.headTabs, 0, 'tabs left in the header'); });
+            check('ZONES is a page of zone cards (no command panel), each with its status', () => { same(r.pageShown, 'block', 'page'); same(r.side, 'none', 'side panel'); ok(r.zones >= 4, 'zones ' + r.zones); same(r.names[0], 'HOME', 'first'); ok(r.statuses.includes('CLEARED') && r.statuses.includes('NEXT TARGET'), r.statuses.join()); });
             check('a card shows the network and the equipment and the broken count, and CLEAR BROKEN shows its estimate', () => { ok(/ELECTRIC T2/.test(r.z1text), 'network: ' + r.z1text); ok(/4 BATTERIES/.test(r.z1text), 'equipment'); ok(/WRECKED/.test(r.z1text) && /OFFLINE/.test(r.z1text), 'broken'); ok(/EST\. .8/.test(r.estimate), r.estimate); });
             check('THE ASK: the card has a crew line and SEND CREW (with who is free); sending puts the crew in the zone and offers RECALL', () => {
                 ok(/CREW/.test(r.crewLine0) && /NONE SENT/.test(r.crewLine0), 'crew line: ' + r.crewLine0); ok(/1 ANTS \+ 1 CORE FREE/.test(r.sendSub), r.sendSub);

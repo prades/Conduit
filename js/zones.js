@@ -6,7 +6,7 @@
 //
 // zoneReport() reads the world and answers for each zone: its STATUS (home, cleared, under attack, the next target, unexplored), whether you HOLD a nest
 // there, the NETWORK (the battery banks standing in it: element and tier), the POWER (a generator, the nests' charge), and the EQUIPMENT (turrets, wave
-// pylons, batteries, relays, Ultras, modules), with how much of it is BROKEN. The Command Center's ANALYTICS tab draws it (js/commandcenter.js).
+// pylons, batteries, relays, Ultras, modules), with how much of it is BROKEN. The Command Center's ZONES tab draws it (js/commandcenter.js).
 //
 // TELEPORT takes you, and the squad following you, to a nest you hold in that zone (commands.js teleportToNest; the ring's TELEPORT is the same move).
 // CLEAR BROKEN pays the fee to REMOVE the zone's broken equipment (wrecks and offline frames): the wreckage is gone and the tile is free to build on. It

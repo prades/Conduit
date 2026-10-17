@@ -56,7 +56,7 @@ else {
     check('the instrument ran', () => ok(r, 'the probe produced nothing'));
     if (r) {
         check('THE ASK: the dock has ONE button for it (no separate COMMAND or SQUAD buttons)', () => { ok(r.dock.includes('btnRoster'), 'no roster button: ' + r.dock); ok(!r.dock.includes('btnCommand') && !r.dock.includes('btnAnalytics'), 'still separate: ' + r.dock); });
-        check('the full-screen menu is the creature cards with the filter tabs at the top; its tabs are ROSTER and ANALYTICS (COMMAND is gone)', () => { same(r.tabs.join(), 'ROSTER,ANALYTICS', 'tabs'); same(r.cards, 4, 'cards'); ok(r.filters.includes('ALL') && r.filters.includes('ELECTRIC') && r.filters.includes('BRAWL'), 'filters ' + r.filters); });
+        check('the full-screen menu is the creature cards with the filter tabs at the top; its tabs are ROSTER and ZONES (COMMAND is gone)', () => { same(r.tabs.join(), 'ROSTER,ZONES', 'tabs'); same(r.cards, 4, 'cards'); ok(r.filters.includes('ALL') && r.filters.includes('ELECTRIC') && r.filters.includes('BRAWL'), 'filters ' + r.filters); });
         check('the command panel beside the cards carries the selection\'s orders AND the squad-wide orders', () => {
             for (const w of ['ATTACK STYLE', 'PLAY STYLE', 'STANCE', 'DUTY', 'SQUAD ORDERS', 'QUICK SELECT']) ok(r.side.some(t => t.indexOf(w) === 0), w + ' missing from the panel: ' + r.side);
             for (const b of ['EVERYONE', 'ALL TO WORK', 'ALL TO FIGHT', 'SWITCH ROLES', 'AGGRESSIVE']) ok(r.sideBtns.includes(b), b + ' missing');
@@ -66,7 +66,7 @@ else {
             same(r.everyone, true, 'EVERYONE'); same(r.selected, 4, 'selected'); ok(r.styles.split(',').every(s => s === 'aggressive'), 'styles ' + r.styles);
             ok(r.worked >= 1, 'ALL TO WORK did nothing: ' + r.worked); same(r.fought, 0, 'ALL TO FIGHT left workers');
         });
-        check('the analytics tab is a page of its own (no command panel)', () => { same(r.analytics, 'block', 'page'); same(r.sideOnAnalytics, 'none', 'side panel'); });
+        check('the zones tab is a page of its own (no command panel)', () => { same(r.analytics, 'block', 'page'); same(r.sideOnAnalytics, 'none', 'side panel'); });
     }
 }
 console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

@@ -187,8 +187,8 @@ function ccBuildFrame() {
     root.setAttribute("data-built", "1");
     const head = _ccEl("div", "cc-head"); head.appendChild(_ccEl("div", "cc-title", "COMMAND CENTER"));
     const tabs = _ccEl("div", "cc-tabs"); tabs.id = "ccTabs";
-    [["roster", "ROSTER"], ["squad", "ANALYTICS"]].forEach(t => { const b = _ccEl("button", "cc-tab", t[1]); b.setAttribute("data-tab", t[0]); _ccClick(b, () => { ccOpenTab = t[0]; ccRerollArmed = false; _ccCards.clear(); const g = document.getElementById("ccGrid"); if (g) g.textContent = ""; ccRender(); }); tabs.appendChild(b); });
-    // (the tabs live in a bar at the BOTTOM of the menu: ROSTER and ANALYTICS)
+    [["roster", "ROSTER"], ["squad", "ZONES"]].forEach(t => { const b = _ccEl("button", "cc-tab", t[1]); b.setAttribute("data-tab", t[0]); _ccClick(b, () => { ccOpenTab = t[0]; ccRerollArmed = false; _ccCards.clear(); const g = document.getElementById("ccGrid"); if (g) g.textContent = ""; ccRender(); }); tabs.appendChild(b); });
+    // (the tabs live in a bar at the BOTTOM of the menu: ROSTER and ZONES: the zone report, crews and build orders)
     // RECRUIT: a follower at the Crystal for RECRUIT_COST shards (clone.js recruitFollower), on the ROSTER tab only. It dims when the shards are short.
     const rec = _ccEl("button", "cc-recruit"); rec.id = "ccRecruit"; rec.appendChild(_ccEl("span", "cc-rl", "+ RECRUIT")); rec.appendChild(_ccEl("span", "cc-rs", ""));
     _ccClick(rec, () => { recruitPickerOpen(); }); head.appendChild(rec);
@@ -223,7 +223,7 @@ function ccRender() {
     grid.style.display = roster ? "grid" : "none"; filters.style.display = roster ? "flex" : "none"; page.style.display = roster ? "none" : "block";
     side.style.display = ccOpenTab === "squad" ? "none" : "flex";
     if (roster) { _ccDrawFilters(filters); _ccDrawGrid(grid); }
-    else { const sig = _ccAnalyticsSig(); if (sig !== _ccPageSig || !page.firstChild) { _ccPageSig = sig; const keep = page.scrollTop; page.textContent = ""; try { _ccDrawSquad(page); } catch (e) { /* never take the game down */ } page.scrollTop = keep; } }
+    else { const sig = _ccZonesSig(); if (sig !== _ccPageSig || !page.firstChild) { _ccPageSig = sig; const keep = page.scrollTop; page.textContent = ""; try { _ccDrawSquad(page); } catch (e) { /* never take the game down */ } page.scrollTop = keep; } }
     if (ccOpenTab !== "squad") { try { _ccDrawSide(side); } catch (e) {} }
     ccRefreshChip();
 }
@@ -346,8 +346,8 @@ function _ccDrawSquadOrders(side) {
     ]);
 }
 
-// ANALYTICS: the squad at a glance, then every zone: its status, network and equipment, with TELEPORT and CLEAR BROKEN (js/zones.js).
-function _ccAnalyticsSig() {
+// ZONES (the tab was ANALYTICS; it is zones, teleports, crews and orders now): the squad at a glance, then every zone: its status, network and equipment, with TELEPORT and CLEAR BROKEN (js/zones.js).
+function _ccZonesSig() {
     const rep = typeof zoneReport === "function" ? zoneReport() : [], st = radialSquadStats("all");
     return JSON.stringify([rep.map(z => [z.z, z.status, z.held, z.generator, z.energy, z.network.map(n => n.el + n.tier + n.batteries).join(), z.equipment, z.modules, z.broken, z.offline, z.here, z.crew, z.orders]), shardCount, typeof zoneFreeCrew === "function" ? zoneFreeCrew().total : 0, st.total, st.working, st.avgLevel, st.evolved]);
 }
