@@ -122,7 +122,8 @@ setTimeout(function () {
     if (!el) return 'missing';
     var r = el.getBoundingClientRect();
     var hit = document.elementFromPoint(r.x + r.width * fx, r.y + r.height * fy);
-    return hit ? (hit.id || hit.tagName) : 'nothing';
+    // a click on the button's own label or icon (a child) reaches the button, so it counts as the button
+    return hit ? (el.contains(hit) ? id : (hit.id || hit.tagName)) : 'nothing';
   }
   report.hits.ultWrap   = at('ultWrap', 0.2, 0.5);
   report.hits.siphonBtn = at('siphonBtn', 0.5, 0.5);

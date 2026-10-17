@@ -550,6 +550,57 @@
         #controlsMenu .cm-build-row { padding-left: 84px; }
         #controlsMenu .cm-build-row > .cm-build-label:first-child { margin-left: -84px; width: 78px; }
     }
+
+    /* ═══ NEO-FUTURE HUD SKIN (docs/UI-STYLE.md) ═══
+       The roster-poster look: big slanted slabs, big italic type, element-coloured glows. Everything below only RESTYLES the elements above;
+       ids, handlers and layout are untouched. Each slab is a skewed ::before behind its (unskewed) content. */
+    :root { --neo-teal: #19e6c1; --neo-gold: #ffe733; --neo-violet: #a64dff; --neo-ice: #8fe3ff; --neo-red: #ff4a1c; --neo-ink: #070b16; --neo-font: "DejaVu Sans", "Segoe UI", system-ui, sans-serif; }
+    #topHud { gap: 8px; padding: 12px 18px 0; }
+    #hudRow1 { gap: 14px; }
+    #shards, #zoneInfo, #padHud, #dnaHud, .top-btn, #ultWrap, #ui, #waveInfo { isolation: isolate; position: relative; }
+    #shards::before, #zoneInfo::before, .top-btn::before, #waveInfo::before {
+        content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-12deg); border-radius: 4px;
+        background: linear-gradient(180deg, #121a34, #080c1a); border: 2px solid var(--c, var(--neo-teal));
+        box-shadow: 0 0 14px var(--c, var(--neo-teal)), inset 0 0 12px rgba(0,0,0,0.6);
+    }
+    #shards, #zoneInfo, #waveInfo, .top-btn { background: none !important; border: none !important; border-radius: 0 !important; box-shadow: none; font-family: var(--neo-font); font-style: italic; font-weight: 900; }
+    #shards { --c: var(--neo-gold); color: #fff; font-size: 30px; padding: 8px 26px; letter-spacing: 0.5px; text-shadow: 0 0 14px var(--neo-gold); }
+    #zoneInfo { --c: var(--neo-teal); color: #fff !important; font-size: 24px !important; padding: 8px 26px !important; text-shadow: 0 0 12px var(--neo-teal); }
+    #padHud, #dnaHud { font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 18px !important; padding: 6px 16px !important; }
+    #ui { height: 40px; background: none !important; border: none !important; border-radius: 0 !important; overflow: visible; }
+    #ui::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-12deg); background: #05070f; border: 2px solid var(--neo-teal); box-shadow: 0 0 16px var(--neo-teal); }
+    #hp { position: absolute; inset: 3px 4px; width: auto; height: auto; transform: skewX(-12deg); background: linear-gradient(180deg, #54ffd9, #19b894); box-shadow: 0 0 14px var(--neo-teal); transform-origin: left; }
+    #ui::after { transform: skewX(-12deg); }
+    #ultWrap { height: 30px; background: none !important; border: none !important; border-radius: 0 !important; overflow: visible; }
+    #ultWrap::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-12deg); background: #05070f; border: 2px solid var(--neo-gold); box-shadow: 0 0 12px var(--neo-gold); }
+    #ult { position: absolute; inset: 3px 4px; width: auto; height: auto; transform: skewX(-12deg); transform-origin: left; background: linear-gradient(90deg, #6e4a08, var(--neo-gold)); }
+    #ultLabel { height: 30px; line-height: 30px; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 15px; letter-spacing: 1px; right: 34px; text-shadow: 0 0 6px #000; }
+    #siphonBtn { width: 32px; height: 30px; line-height: 30px; font-size: 18px; background: transparent; border: none; z-index: 2; }
+    #hudCentre { flex: 0 1 460px; }
+    #waveInfo { --c: var(--neo-teal); color: #fff; font-size: clamp(16px, 2.2vw, 24px); padding: 10px 40px; max-width: min(96%, 1000px); letter-spacing: 0.5px; text-shadow: 0 0 10px var(--neo-teal); }
+    #waveInfo.alarm { --c: var(--neo-red); color: #ffb09a; text-shadow: 0 0 12px var(--neo-red); }
+    #topToggles { gap: 16px; margin-top: 4px; }
+    .top-btn { color: #fff; font-size: 24px; letter-spacing: 0.5px; padding: 0 26px; height: 60px; min-width: 120px; gap: 10px; text-shadow: 0 0 10px var(--c, var(--neo-teal)); }
+    .top-btn svg { width: 30px; height: 30px; color: var(--c, var(--neo-teal)); }
+    .top-tag { font-size: 22px !important; font-family: var(--neo-font); font-style: italic; font-weight: 900; }
+    #btnSquad { --c: var(--neo-teal); } #btnBuild { --c: var(--neo-gold); } #btnAuto { --c: var(--neo-violet); } #btnCtrl { --c: var(--neo-ice); min-width: 80px; }
+    .top-btn.active::before { background: linear-gradient(180deg, var(--c), color-mix(in srgb, var(--c) 60%, #000)); }
+    .top-btn.active { color: #05070f; text-shadow: none; } .top-btn.active svg { color: #05070f; }
+    .top-btn.tut-wanted::before { animation: tutBtnPulse 1.1s ease-in-out infinite; }
+    #tutBtn { font-family: var(--neo-font) !important; font-style: italic; font-weight: 900 !important; font-size: 22px !important; letter-spacing: 1px !important; padding: 16px 34px !important; border-radius: 0 !important; transform: skewX(-12deg); border-width: 3px !important; box-shadow: 0 0 16px var(--neo-teal); }
+    @media (max-width: 900px) {
+        #topHud { padding: 8px 10px 0; gap: 6px; } #hudRow1 { gap: 8px; }
+        #shards { font-size: 22px; padding: 6px 16px; } #zoneInfo { font-size: 17px !important; padding: 6px 16px !important; } .top-tag { font-size: 16px !important; }
+        #ui { height: 32px; } #ultWrap { height: 24px; } #ultLabel { height: 24px; line-height: 24px; font-size: 12px; } #siphonBtn { height: 24px; line-height: 24px; width: 26px; font-size: 15px; }
+        #hudCentre { flex: 0 1 260px; } #waveInfo { font-size: 14px; padding: 7px 22px; }
+        #topToggles { gap: 10px; } .top-btn { height: 46px; font-size: 18px; padding: 0 16px; min-width: 84px; } .top-btn svg { width: 24px; height: 24px; } #btnCtrl { min-width: 54px; }
+        #tutBtn { font-size: 16px !important; padding: 10px 20px !important; }
+    }
+    @media (max-width: 560px) {
+        #hudRow1 { flex-wrap: wrap; row-gap: 6px; } #hudLeft { order: 1; } #hudRight { order: 2; } #hudCentre { order: 3; flex: 1 0 100%; }
+        #shards { font-size: 19px; padding: 5px 14px; } #zoneInfo { font-size: 15px !important; padding: 5px 14px !important; }
+        #waveInfo { font-size: 13px; padding: 6px 18px; } .top-btn { height: 42px; font-size: 16px; padding: 0 10px; min-width: 60px; gap: 6px; } .top-btn svg { width: 22px; height: 22px; } .top-tag { font-size: 15px !important; } #btnCtrl { min-width: 44px; } #topToggles { gap: 8px; }
+    }
 </style>
 
 </head>
@@ -1363,12 +1414,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-17m, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-17n, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-17m";
+window.__PAGE_BUILD = "2026-10-17n";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1404,53 +1455,53 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-17m"></script>
-<script src="js/icons.js?v=2026-10-17m"></script>
-<script src="js/rng.js?v=2026-10-17m"></script>
-<script src="js/traits.js?v=2026-10-17m"></script>
-<script src="js/elements.js?v=2026-10-17m"></script>
-<script src="js/combat.js?v=2026-10-17m"></script>
-<script src="js/species.js?v=2026-10-17m"></script>
-<script src="js/levels.js?v=2026-10-17m"></script>
-<script src="js/predator_randomizer.js?v=2026-10-17m"></script>
-<script src="js/mass.js?v=2026-10-17m"></script>
-<script src="js/infest.js?v=2026-10-17m"></script>
-<script src="js/power.js?v=2026-10-17m"></script>
-<script src="js/save.js?v=2026-10-17m"></script>
-<script src="js/camp.js?v=2026-10-17m"></script>
-<script src="js/wavedata.js?v=2026-10-17m"></script>
-<script src="js/helpers.js?v=2026-10-17m"></script>
-<script src="js/predator.js?v=2026-10-17m"></script>
-<script src="js/abilities.js?v=2026-10-17m"></script>
-<script src="js/world.js?v=2026-10-17m"></script>
-<script src="js/commands.js?v=2026-10-17m"></script>
-<script src="js/npc.js?v=2026-10-17m"></script>
-<script src="js/codex.js?v=2026-10-17m"></script>
-<script src="js/draw.js?v=2026-10-17m"></script>
-<script src="js/beetle3d.js?v=2026-10-17m"></script>
-<script src="js/bugs3d.js?v=2026-10-17m"></script>
-<script src="js/ui.js?v=2026-10-17m"></script>
-<script src="js/waves.js?v=2026-10-17m"></script>
-<script src="js/drops.js?v=2026-10-17m"></script>
-<script src="js/clone.js?v=2026-10-17m"></script>
-<script src="js/clonework.js?v=2026-10-17m"></script>
-<script src="js/broods.js?v=2026-10-17m"></script>
-<script src="js/raids.js?v=2026-10-17m"></script>
-<script src="js/ultra.js?v=2026-10-17m"></script>
-<script src="js/formations.js?v=2026-10-17m"></script>
-<script src="js/breakout.js?v=2026-10-17m"></script>
-<script src="js/nightraids.js?v=2026-10-17m"></script>
-<script src="js/bonds.js?v=2026-10-17m"></script>
-<script src="js/autoplay.js?v=2026-10-17m"></script>
-<script src="js/indexart.js?v=2026-10-17m"></script>
-<script src="js/modules.js?v=2026-10-17m"></script>
-<script src="js/shieldcells.js?v=2026-10-17m"></script>
-<script src="js/evolution.js?v=2026-10-17m"></script>
-<script src="js/buildmenu.js?v=2026-10-17m"></script>
-<script src="js/input.js?v=2026-10-17m"></script>
-<script src="js/game.js?v=2026-10-17m"></script>
-<script src="js/tutorial.js?v=2026-10-17m"></script>
-<script src="js/dev.js?v=2026-10-17m"></script>
+<script src="js/config.js?v=2026-10-17n"></script>
+<script src="js/icons.js?v=2026-10-17n"></script>
+<script src="js/rng.js?v=2026-10-17n"></script>
+<script src="js/traits.js?v=2026-10-17n"></script>
+<script src="js/elements.js?v=2026-10-17n"></script>
+<script src="js/combat.js?v=2026-10-17n"></script>
+<script src="js/species.js?v=2026-10-17n"></script>
+<script src="js/levels.js?v=2026-10-17n"></script>
+<script src="js/predator_randomizer.js?v=2026-10-17n"></script>
+<script src="js/mass.js?v=2026-10-17n"></script>
+<script src="js/infest.js?v=2026-10-17n"></script>
+<script src="js/power.js?v=2026-10-17n"></script>
+<script src="js/save.js?v=2026-10-17n"></script>
+<script src="js/camp.js?v=2026-10-17n"></script>
+<script src="js/wavedata.js?v=2026-10-17n"></script>
+<script src="js/helpers.js?v=2026-10-17n"></script>
+<script src="js/predator.js?v=2026-10-17n"></script>
+<script src="js/abilities.js?v=2026-10-17n"></script>
+<script src="js/world.js?v=2026-10-17n"></script>
+<script src="js/commands.js?v=2026-10-17n"></script>
+<script src="js/npc.js?v=2026-10-17n"></script>
+<script src="js/codex.js?v=2026-10-17n"></script>
+<script src="js/draw.js?v=2026-10-17n"></script>
+<script src="js/beetle3d.js?v=2026-10-17n"></script>
+<script src="js/bugs3d.js?v=2026-10-17n"></script>
+<script src="js/ui.js?v=2026-10-17n"></script>
+<script src="js/waves.js?v=2026-10-17n"></script>
+<script src="js/drops.js?v=2026-10-17n"></script>
+<script src="js/clone.js?v=2026-10-17n"></script>
+<script src="js/clonework.js?v=2026-10-17n"></script>
+<script src="js/broods.js?v=2026-10-17n"></script>
+<script src="js/raids.js?v=2026-10-17n"></script>
+<script src="js/ultra.js?v=2026-10-17n"></script>
+<script src="js/formations.js?v=2026-10-17n"></script>
+<script src="js/breakout.js?v=2026-10-17n"></script>
+<script src="js/nightraids.js?v=2026-10-17n"></script>
+<script src="js/bonds.js?v=2026-10-17n"></script>
+<script src="js/autoplay.js?v=2026-10-17n"></script>
+<script src="js/indexart.js?v=2026-10-17n"></script>
+<script src="js/modules.js?v=2026-10-17n"></script>
+<script src="js/shieldcells.js?v=2026-10-17n"></script>
+<script src="js/evolution.js?v=2026-10-17n"></script>
+<script src="js/buildmenu.js?v=2026-10-17n"></script>
+<script src="js/input.js?v=2026-10-17n"></script>
+<script src="js/game.js?v=2026-10-17n"></script>
+<script src="js/tutorial.js?v=2026-10-17n"></script>
+<script src="js/dev.js?v=2026-10-17n"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1503,7 +1554,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-17m"></script>
+<script src="js/init.js?v=2026-10-17n"></script>
 
 </body>
 </html>
