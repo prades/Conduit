@@ -7,7 +7,7 @@
 // readout in the middle, tilted in 3D. The ring round the readout is SEGMENTS (thick wedges, each a button) that turn like a rotary dial. Closed it is a small rugged pod that
 // names who your orders go to (ALL, an element's three letters, or SEL for selected cards) and how many. Tap it and it spins open. The segments are a MODULE: the tabs on the
 // lower bezel switch which module the dial runs (MINI_MODULES: COMMAND and ELEMENTS now; the table is where another would go):
-//     COMMAND   just four: HOLD / COME (the two field orders) / ROSTER (the full command center, where fight, work and roles are) / CRYSTAL (the element mix menu)
+//     COMMAND   just three: SEL / ALL (the dock's old squad button: orders go to the picked element, or to everyone), HOLD and COME (the two field orders). Fight, work and roles are in the roster
 //     ELEMENTS  ALL and the unlocked elements, the crystal's element selector: the one picked turns to the top (it replaces the dock's SEL button)
 // Whoever the orders go to: the selected roster cards if any, else the element picked, else everyone. The module you leave it on is remembered. A tap anywhere else, or the
 // readout, puts the dial away. Phones have the radial menu.
@@ -86,9 +86,9 @@ function _mcSegment(btn, lab, i, n) {
 const MINI_MODULES = [
     { id: "command", label: "COMMAND", tip: "Orders for the squad", items: () => {
         const out = [];
+        // the dock's old SEL / ALL button: orders go to the picked element (SEL) or to everyone (ALL)
+        out.push([squadMode === "all" ? "ALL" : "SEL", squadMode === "all" ? "#ffffff" : "#19e6c1", squadMode === "all", squadMode === "all" ? "Orders go to everyone: tap for the picked element only" : "Orders go to the picked element: tap for everyone", () => { if (typeof toggleSquad === "function") toggleSquad(); miniCmdRender(true); }, "scope"]);
         for (const o of MINI_CMD_ORDERS) out.push([o.label, o.col, false, (o.id === "follow" ? "FOLLOW ME: " : o.label + ": ") + "the " + miniCmdTarget().toLowerCase(), () => { miniCmdOrder(o.id); miniCmdRender(true); }, o.id]);
-        out.push(["ROST", "#8fe3ff", false, "The roster and command center", () => { miniCmdSetOpen(false); if (typeof ccToggleOpen === "function") ccToggleOpen("roster"); }, "roster"]);
-        out.push(["\u25c6", "#19e6c1", typeof crystalMenuOpen !== "undefined" && crystalMenuOpen, "The crystal menu: the element mix", () => { if (typeof dockCrystal === "function") dockCrystal(); miniCmdSetOpen(false); }, "crystal"]);
         return out; } },
     { id: "elements", label: "ELEMENTS", tip: "Pick who the orders go to", items: () => {
         const out = [], tot = {}; for (const f of (typeof followers !== "undefined" ? followers : [])) if (f && !f.dead) tot[f.element] = (tot[f.element] || 0) + 1;
