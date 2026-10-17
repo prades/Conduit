@@ -67,6 +67,10 @@ function networkSignalAnnounce(sig) {
     } else _sigSeen = sig.state;
 }
 
+// The zone plate's box on the page (the HUD is page elements over the canvas), or null.
+function _netZoneRect() {
+    try { const e = document.getElementById("zoneInfo"); if (!e) return null; const r = e.getBoundingClientRect(); return r.height > 0 && isFinite(r.bottom) && r.bottom < canvas.height * 0.5 ? r : null; } catch (err) { return null; }
+}
 let _hudPw = null, _hudPwAt = -Infinity, _hudSig = null;
 function drawNetworkStatusHUD() {
     if (typeof placingHidesUi === "function" && placingHidesUi()) return;
@@ -91,7 +95,9 @@ function drawNetworkStatusHUD() {
     const rows = narrow ? 0 : activeEls.length;
     const darkRows = narrow ? 0 : activeEls.filter(e => !(_netLit[e.id] > 0)).length;
     const H = HEAD + METER + (bs.count > 0 ? BAR : 0) + BAR + rows * ROW_H + darkRows * 12 + 8;
-    const X = canvas.width - W - 10, Y = uiTopSafe();
+    // Docked to the zone plate: hanging from its bottom edge, right edges together (it falls back to the HUD's bottom if the plate is not there).
+    const zr = narrow ? null : _netZoneRect();   // on a phone the zone plate sits above the bars, so the panel hangs from the whole HUD instead
+    const X = zr ? Math.max(8, Math.round(zr.right - W)) : canvas.width - W - 10, Y = zr ? Math.round(zr.bottom - 2) : uiTopSafe();
     const S = SIGNAL_STATES[sig.state];
 
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);

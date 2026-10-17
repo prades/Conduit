@@ -309,7 +309,6 @@ check('the fixture really measured something', () => {
     for (const run of runs) {
         const n = Object.keys(run.r.boxes).length;
         ok(n >= 7, `only ${n} HUD boxes were found at ${run.w}x${run.h} — the page did not boot`);
-        ok(run.r.boxes.waveInfo, `the objective banner is missing at ${run.w}x${run.h}`);
     }
 });
 
@@ -334,21 +333,9 @@ check('and nothing hangs off the edge of the screen', () => {
     ok(bad.length === 0, 'HUD pieces run off screen — ' + bad.join(', '));
 });
 
-check('THE ASK: the objective line is on top of nothing and under nothing', () => {
-    // This is the piece the screenshot showed buried. It gets its own check so
-    // a regression names it rather than hiding in a list.
-    const bad = [];
-    for (const run of runs) {
-        const w = run.r.boxes.waveInfo;
-        for (const [id, b] of Object.entries(run.r.boxes)) {
-            if (id === 'waveInfo') continue;
-            const ox = Math.min(w.x + w.w, b.x + b.w) - Math.max(w.x, b.x);
-            const oy = Math.min(w.y + w.h, b.y + b.h) - Math.max(w.y, b.y);
-            if (ox > 1 && oy > 1) bad.push(`${id} at ${run.w}x${run.h} (${run.kind})`);
-        }
-        ok(w.w > 40 && w.h > 10, `the banner collapsed at ${run.w}x${run.h}`);
-    }
-    ok(bad.length === 0, 'the wave information is covered by ' + bad.join(', '));
+check('THE ASK: the objective line under the bars is gone (it is hidden, and takes no room)', () => {
+    ok(/#waveInfo \{ display: none !important; \}/.test(HTML), 'the objective banner is not hidden');
+    for (const run of runs) ok(!run.r.boxes.waveInfo, `the objective banner is still on screen at ${run.w}x${run.h}`);
 });
 
 check('the ultimate caption stays inside its bar and clear of the switch', () => {

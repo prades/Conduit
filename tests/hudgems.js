@@ -94,10 +94,10 @@ function measure() {
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (r) {
             check('THE ASK: the crystals are built (three crystals × 12 animated faces) and the number is just the count', () => { same(r.polys, 36, 'faces'); same(r.anims, 108, 'animations (shape, colour, visibility each)'); same(r.count, '1250', 'the count'); });
-            check('THE ASK: a calm HUD shows the objective banner and no alarm triangle', () => { same(r.calm.cls, false, 'class'); same(r.calm.icon, 'none', 'triangle'); ok(r.calm.banner !== 'none', 'banner'); });
+            check('THE ASK: a calm HUD shows no alarm triangle (and the objective line under the bars is gone)', () => { same(r.calm.cls, false, 'class'); same(r.calm.icon, 'none', 'triangle'); same(r.calm.banner, 'none', 'banner'); });
             check('THE ASK: an alarm shows a triangle next to the zone and NO banner box', () => { same(r.alarm.cls, true, 'class'); same(r.alarm.icon, 'block', 'triangle shown'); same(r.alarm.banner, 'none', 'banner hidden'); });
             check('the triangle has no box round it', () => ok(r.iconBox.bg === 'rgba(0, 0, 0, 0)' && r.iconBox.border === '0px', JSON.stringify(r.iconBox)));
-            check('and clearing the alarm brings the banner back and removes the triangle', () => { same(r.cleared.cls, false, 'class'); same(r.cleared.icon, 'none', 'triangle'); ok(r.cleared.banner !== 'none', 'banner back'); });
+            check('and clearing the alarm removes the triangle', () => { same(r.cleared.cls, false, 'class'); same(r.cleared.icon, 'none', 'triangle'); });
         }
     }
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
