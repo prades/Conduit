@@ -50,6 +50,29 @@ function _sword(L, w, th, bend, jag, seed, E) {   // a sword that points along +
   }
   return g;
 }
+function _prong(len, r, mode, seed) {   // a sharp shard, base at the origin pointing +y: "electric" = bright and faceted, "black" = polished black with a lit tip
+  let geo = new T.ConeGeometry(r, len, 5, 1); const p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const k = 1 + 0.25 * (_hz(Math.round(p.getX(v) * 300) + seed, Math.round(p.getY(v) * 300), Math.round(p.getZ(v) * 300)) - 0.5); p.setX(v, p.getX(v) * k); p.setZ(v, p.getZ(v) * k); }
+  geo.translate(0, len / 2, 0); geo = geo.toNonIndexed(); geo.computeVertexNormals();
+  const g = G();
+  if (mode === 'black') { g.add(new T.Mesh(geo, _swordMat)); const tip = new T.Mesh(new T.OctahedronGeometry(r * 0.9, 0), new T.MeshBasicMaterial({ color: 0xfff2a0, toneMapped: false })); tip.position.y = len; tip.scale.y = 1.6; g.add(tip); g.userData.tip = tip; }
+  else g.add(new T.Mesh(_litFacets(geo), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })));
+  return g;
+}
+function _clumpArm(A, sx, seed) {   // an arm that is a solid clump (not a limb) bristling with sharp electric prongs, some long and thin like antennae
+  const g = G(), lump = G(); g.add(lump);
+  A.lumps.forEach((Lm, li) => { const geo = new T.IcosahedronGeometry(1, 1), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const x = p.getX(v), y = p.getY(v), z = p.getZ(v), n = 1 + 0.22 * (_hz(Math.round(x * 100) + seed + li, Math.round(y * 100), Math.round(z * 100)) - 0.5); p.setXYZ(v, x * n, y * n, z * n); } geo.computeVertexNormals();
+    const m = new T.Mesh(geo, _zigStone); m.scale.set(Lm[3], Lm[4], Lm[5]); m.position.set(Lm[0], Lm[1], Lm[2]); lump.add(m); });
+  const prongs = [], V = new T.Vector3(), Y = new T.Vector3(0, 1, 0);
+  A.prongs.forEach((Pr, i) => { const [az, el, len, r] = Pr, d = new T.Vector3(Math.sin(az) * Math.cos(el) * sx, Math.sin(el), Math.cos(az) * Math.cos(el)).normalize(), pr = _prong(len, r, A.mode, seed + i);
+    const base = d.clone().multiplyScalar(0.9).multiply(new T.Vector3(A.rx, A.ry, A.rz)); pr.position.copy(base); const q0 = new T.Quaternion().setFromUnitVectors(Y, d); pr.quaternion.copy(q0); lump.add(pr); prongs.push({ pr, q0, i, tip: pr.userData.tip }); });
+  const spark = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.95 })); spark.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(8 * 3), 3)); spark.frustumCulled = false; if (A.sparks) lump.add(spark);
+  const E = new T.Euler(), Q = new T.Quaternion();
+  g.userData.tick = (ph, ac) => { const f = Math.floor(ph * 9);
+    prongs.forEach(P => { E.set(0.12 * Math.sin(ph * 2 + P.i * 1.7 + seed) * (1 + ac), 0, 0.12 * Math.sin(ph * 3 + P.i * 2.3) * (1 + ac)); Q.setFromEuler(E); P.pr.quaternion.copy(P.q0).multiply(Q); P.pr.scale.setScalar(1 + 0.15 * ac + 0.05 * Math.sin(ph * 4 + P.i)); if (P.tip) P.tip.scale.setScalar(1 + 0.4 * Math.sin(ph * 5 + P.i) + 0.6 * ac); });
+    if (A.sparks) { const a = prongs[0], b = prongs[Math.min(prongs.length - 1, 1 + (f % 2))], pa = spark.geometry.attributes.position.array; const ta = new T.Vector3(0, A.prongs[0][2], 0).applyQuaternion(a.pr.quaternion).add(a.pr.position), tb = new T.Vector3(0, A.prongs[b.i][2], 0).applyQuaternion(b.pr.quaternion).add(b.pr.position);
+      spark.visible = ac > 0.2 || Math.sin(ph * 4 + seed) * Math.sin(ph * 7) > 0; for (let k = 0; k < 8; k++) { const u = k / 7, j = (_hz(k, seed, f) - 0.5) * 0.14 * Math.sin(u * PI), j2 = (_hz(k, seed + 3, f) - 0.5) * 0.14 * Math.sin(u * PI); pa[k * 3] = ta.x + (tb.x - ta.x) * u + j; pa[k * 3 + 1] = ta.y + (tb.y - ta.y) * u + j2; pa[k * 3 + 2] = ta.z + (tb.z - ta.z) * u; } spark.geometry.attributes.position.needsUpdate = true; } };
+  g.position.z = A.fwd || 0.35; return g;
+}
 function _zig(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.3);
   const gp = _glowPool(o.glowR, 0.02); b.add(gp.g);
@@ -62,7 +85,7 @@ function _zig(o) {
   const lamp = new T.Mesh(new T.OctahedronGeometry(o.lampR, 0), new T.MeshBasicMaterial({ color: o.dull ? 0x4a4024 : 0xfff2a0, toneMapped: false })); lamp.scale.y = 1.4; lamp.position.y = topY + o.lampR * 1.2; body.add(lamp);
   let slit = null; if (o.slit) { const t1 = o.tiers[o.slit.tier || 1]; slit = new T.Mesh(new T.BoxGeometry(t1[0] * 0.62, 0.035, 0.02), new T.MeshBasicMaterial({ color: o.dull ? 0x3d351c : 0xfff2a0, toneMapped: false })); const ty = o.tiers.slice(0, (o.slit.tier || 1)).reduce((a, q) => a + q[2] + 0.03, 0) + t1[2] * 0.55; slit.position.set(0, ty, t1[1] / 2 + 0.012); body.add(slit); }
   // the two arms: big shards that float ahead, apart from the body
-  const arms = []; for (const sx of [-1, 1]) { const A = o.arm, arm = G(); let ca = null; if (A.sword) { const sw = _sword(A.len, A.w, A.th, A.bend * sx, A.jag, sx + 5, A.elec); arm.add(sw); arm.userData.sw = sw; } else if (A.cicada) { ca = _cicadaArm(A, sx, sx + 3); arm.add(ca.grp); arm.scale.setScalar(A.size || 1); } else { const blade = _clawShard(A.len, A.r, A.bend * sx * -1, sx + 3, A.sides); blade.rotation.x = PI / 2; arm.add(blade); }
+  const arms = []; for (const sx of [-1, 1]) { const A = o.arm, arm = G(); let ca = null; if (A.clump) { const cl = _clumpArm(A, sx, sx + 9); arm.add(cl); arm.userData.sw = cl; } else if (A.sword) { const sw = _sword(A.len, A.w, A.th, A.bend * sx, A.jag, sx + 5, A.elec); arm.add(sw); arm.userData.sw = sw; } else if (A.cicada) { ca = _cicadaArm(A, sx, sx + 3); arm.add(ca.grp); arm.scale.setScalar(A.size || 1); } else { const blade = _clawShard(A.len, A.r, A.bend * sx * -1, sx + 3, A.sides); blade.rotation.x = PI / 2; arm.add(blade); }
     if (A.second && !A.cicada) { const b2 = _clawShard(A.len * 0.6, A.r * 0.7, -A.bend * sx * -1, sx + 7, A.sides); b2.rotation.x = PI / 2 - 0.35; b2.position.y = -0.12; arm.add(b2); }
     b.add(arm); arms.push({ arm, sx, ca }); }
   let tipArc = null; if (o.arm.elec && o.arm.elec.between) { tipArc = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.95 })); tipArc.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(12 * 3), 3)); tipArc.frustumCulled = false; b.add(tipArc); }
@@ -109,3 +132,13 @@ fx(596, "Lightning crawling along each blade, two bolts a side, the edges hot.",
 fx(597, "A glowing core down the middle of each black blade, pulsing, like a lit fuller.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { len: 1.2, w: 0.09, elec: { fuller: true, edge: true } }) })));
 fx(598, "A bolt jumping between the two sword tips across the front of the body.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { x: 0.62, toe: -0.12, elec: { edge: true, arcs: 1, between: true } }) })));
 fx(599, "Charged: a halo of plasma round each blade, a glowing core, bolts along it.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { len: 1.2, w: 0.09, elec: { fuller: true, edge: true, arcs: 1, halo: true } }) })));
+
+// ── Clump arms with electric prongs (Nos. 600–604): "cicada" arms made as a solid clump, not a limb, bristling with sharp electric shards that could be antennae ──
+const _clA = { clump: true, x: 0.78, y: 0.4, z: 0.0, reach: 0.3, toe: 0.1, fwd: 0.4, mode: 'electric', rx: 0.2, ry: 0.15, rz: 0.34,
+  lumps: [[0, 0, 0, 0.2, 0.15, 0.34]],
+  prongs: [[0.25, 0.25, 0.75, 0.025], [-0.15, 0.4, 0.7, 0.022], [0.55, 0.05, 0.62, 0.025], [0.0, 0.1, 0.9, 0.02], [0.9, 0.55, 0.22, 0.045], [-0.7, 0.6, 0.2, 0.045], [1.5, 0.0, 0.18, 0.05]] };
+fx(600, "Fat clump arms: a solid faceted lump each, with long thin electric prongs fanning forward like antennae and a few short sharp spikes.", () => _zig(Object.assign({}, _dz, { arm: _clA })));
+fx(601, "Spiked boulders: round heavy clumps with a crown of short sharp electric prongs all round, like a mace.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _clA, { lumps: [[0, 0, 0, 0.26, 0.24, 0.28]], rx: 0.26, ry: 0.24, rz: 0.28, prongs: [[0, 0.1, 0.34, 0.05], [1.05, 0.2, 0.3, 0.05], [-1.05, 0.2, 0.3, 0.05], [2.1, 0.1, 0.3, 0.05], [-2.1, 0.1, 0.3, 0.05], [0.5, 1.0, 0.3, 0.05], [-0.5, 1.0, 0.3, 0.05], [0.0, -0.9, 0.3, 0.05]] }) })));
+fx(602, "Angular fists: a wedge-shaped solid block each, two very long antenna prongs with a spark crackling between the tips.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _clA, { sparks: true, lumps: [[0, 0, 0, 0.18, 0.18, 0.3], [0, 0.06, 0.22, 0.12, 0.12, 0.16]], prongs: [[0.2, 0.3, 1.05, 0.02], [-0.2, 0.35, 1.0, 0.02], [0.8, 0.5, 0.3, 0.04], [-0.8, 0.5, 0.3, 0.04]] }) })));
+fx(603, "A bundle: several fused lumps with many fine antenna prongs fanning forward, a bristling cluster.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _clA, { lumps: [[0, 0, 0, 0.16, 0.14, 0.3], [0.1, 0.1, 0.12, 0.12, 0.12, 0.18], [-0.1, -0.05, 0.14, 0.1, 0.1, 0.16]], prongs: [[0.0, 0.2, 0.9, 0.016], [0.3, 0.3, 0.8, 0.016], [-0.3, 0.3, 0.8, 0.016], [0.55, 0.15, 0.7, 0.016], [-0.55, 0.15, 0.7, 0.016], [0.15, 0.55, 0.6, 0.018], [-0.15, 0.55, 0.6, 0.018], [0.8, 0.35, 0.5, 0.02]] }) })));
+fx(604, "Black prongs: the clump and its prongs polished black, only the tips electric, lit like sparks on antenna ends.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _clA, { mode: 'black', sparks: true }) })));
