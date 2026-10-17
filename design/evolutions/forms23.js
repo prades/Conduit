@@ -21,19 +21,34 @@ function _cicadaArm(A, sx, seed) {   // a cicada's fore-arm: a stout spined uppe
   if (A.tarsus) { const ts = _clawShard(A.tLen * 0.35, A.tR * 0.5, A.hook * -1.5, seed + 13, 4); ts.rotation.x = PI / 2; ts.position.z = A.tLen * 0.95; elbow.add(ts); }
   femur.add(elbow); grp.add(femur); return { grp, femur, elbow };
 }
+const _zigStone = new T.MeshStandardMaterial({ color: 0x08090c, metalness: 0.1, roughness: 0.95, flatShading: true }); _zigStone.envMapIntensity = 0.12;
+const _swordMat = new T.MeshStandardMaterial({ color: 0x050507, metalness: 0.85, roughness: 0.28, flatShading: true }); _swordMat.envMapIntensity = 1.6;
+function _sword(L, w, th, bend, jag, seed) {   // a sword that points along +z: a hilt at the origin (cross-guard, grip, pommel), a long diamond-section blade tapering to a point
+  const g = G(), rings = [[0.0, 1.0], [0.12, 1.0], [0.55, 0.9], [0.86, 0.55], [1.0, 0.0]], pos = [], idx = [];
+  rings.forEach(([u, k], i) => { const j = jag ? 1 + jag * (_hz(i, seed, 3) - 0.5) : 1, ww = w * k * j, tt = th * (k * 0.8 + 0.2), z = u * L, x = bend * u * u * L * 0.3;
+    pos.push(x + ww, 0, z, x, tt, z, x - ww, 0, z, x, -tt, z); });
+  for (let i = 0; i < rings.length - 1; i++) for (let k = 0; k < 4; k++) { const a = i * 4 + k, b = i * 4 + (k + 1) % 4, c = (i + 1) * 4 + k, d = (i + 1) * 4 + (k + 1) % 4; idx.push(a, c, b, b, c, d); }
+  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(new Float32Array(pos), 3)); geo.setIndex(idx); geo.computeVertexNormals();
+  const blade = new T.Mesh(geo.toNonIndexed(), _swordMat); blade.position.z = 0.0; blade.geometry.computeVertexNormals(); g.add(blade);
+  const eg = new T.EdgesGeometry(geo, 12), ep = eg.attributes.position, ec = new Float32Array(ep.count * 3); for (let v = 0; v < ep.count; v++) { const u = ep.getZ(v) / L; ec[v * 3] = ec[v * 3 + 1] = ec[v * 3 + 2] = (0.2 + 0.8 * Math.min(1, u * 1.3)) * (0.6 + 0.4 * _hz(Math.floor(v / 2), 3, 7)); }
+  eg.setAttribute('color', new T.BufferAttribute(ec, 3)); g.add(new T.LineSegments(eg, new T.LineBasicMaterial({ vertexColors: true, color: 0xd8deea, transparent: true, opacity: 0.55, blending: T.AdditiveBlending })));
+  const guard = new T.Mesh(new T.BoxGeometry(w * 3.4, th * 1.6, 0.05), _zigStone); guard.position.z = -0.01; g.add(guard);
+  const grip = new T.Mesh(new T.CylinderGeometry(th * 0.9, th * 0.9, 0.26, 6), _zigStone); grip.rotation.x = PI / 2; grip.position.z = -0.15; g.add(grip);
+  const pom = new T.Mesh(new T.OctahedronGeometry(th * 1.5, 0), _zigStone); pom.position.z = -0.31; g.add(pom); return g;
+}
 function _zig(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.3);
   const gp = _glowPool(o.glowR, 0.02); b.add(gp.g);
-  const body = G(); b.add(body); const lit = _zigLit();
+  const body = G(); b.add(body); const lit = _zigLit(), tierMat = o.dull ? _zigStone : _zigBlack;
   // the tiers, widest at the bottom; a lit band round the top edge of each step
-  let y = 0; const tiers = []; o.tiers.forEach((T0, i) => { const [w, d, h] = T0, bx = new T.Mesh(new T.BoxGeometry(w, h, d), _zigBlack); bx.position.y = y + h / 2; body.add(bx);
+  let y = 0; const tiers = []; o.tiers.forEach((T0, i) => { const [w, d, h] = T0, bx = new T.Mesh(new T.BoxGeometry(w, h, d), tierMat); bx.position.y = y + h / 2; body.add(bx);
     const band = new T.Mesh(new T.BoxGeometry(w + 0.012, 0.022, d + 0.012), lit); band.position.y = y + h + 0.012; body.add(band); tiers.push({ bx, band }); y += h + 0.03; });
   const topY = y;
   // a lamp on the roof, and (optionally) a lit slit across the front of the second step
-  const lamp = new T.Mesh(new T.OctahedronGeometry(o.lampR, 0), new T.MeshBasicMaterial({ color: 0xfff2a0, toneMapped: false })); lamp.scale.y = 1.4; lamp.position.y = topY + o.lampR * 1.2; body.add(lamp);
-  let slit = null; if (o.slit) { const t1 = o.tiers[o.slit.tier || 1]; slit = new T.Mesh(new T.BoxGeometry(t1[0] * 0.62, 0.035, 0.02), new T.MeshBasicMaterial({ color: 0xfff2a0, toneMapped: false })); const ty = o.tiers.slice(0, (o.slit.tier || 1)).reduce((a, q) => a + q[2] + 0.03, 0) + t1[2] * 0.55; slit.position.set(0, ty, t1[1] / 2 + 0.012); body.add(slit); }
+  const lamp = new T.Mesh(new T.OctahedronGeometry(o.lampR, 0), new T.MeshBasicMaterial({ color: o.dull ? 0x4a4024 : 0xfff2a0, toneMapped: false })); lamp.scale.y = 1.4; lamp.position.y = topY + o.lampR * 1.2; body.add(lamp);
+  let slit = null; if (o.slit) { const t1 = o.tiers[o.slit.tier || 1]; slit = new T.Mesh(new T.BoxGeometry(t1[0] * 0.62, 0.035, 0.02), new T.MeshBasicMaterial({ color: o.dull ? 0x3d351c : 0xfff2a0, toneMapped: false })); const ty = o.tiers.slice(0, (o.slit.tier || 1)).reduce((a, q) => a + q[2] + 0.03, 0) + t1[2] * 0.55; slit.position.set(0, ty, t1[1] / 2 + 0.012); body.add(slit); }
   // the two arms: big shards that float ahead, apart from the body
-  const arms = []; for (const sx of [-1, 1]) { const A = o.arm, arm = G(); let ca = null; if (A.cicada) { ca = _cicadaArm(A, sx, sx + 3); arm.add(ca.grp); arm.scale.setScalar(A.size || 1); } else { const blade = _clawShard(A.len, A.r, A.bend * sx * -1, sx + 3, A.sides); blade.rotation.x = PI / 2; arm.add(blade); }
+  const arms = []; for (const sx of [-1, 1]) { const A = o.arm, arm = G(); let ca = null; if (A.sword) { arm.add(_sword(A.len, A.w, A.th, A.bend * sx, A.jag, sx + 5)); } else if (A.cicada) { ca = _cicadaArm(A, sx, sx + 3); arm.add(ca.grp); arm.scale.setScalar(A.size || 1); } else { const blade = _clawShard(A.len, A.r, A.bend * sx * -1, sx + 3, A.sides); blade.rotation.x = PI / 2; arm.add(blade); }
     if (A.second && !A.cicada) { const b2 = _clawShard(A.len * 0.6, A.r * 0.7, -A.bend * sx * -1, sx + 7, A.sides); b2.rotation.x = PI / 2 - 0.35; b2.position.y = -0.12; arm.add(b2); }
     b.add(arm); arms.push({ arm, sx, ca }); }
   const L = new T.PointLight(0xffffff, 0.3, 3.5, 2); L.color.set(EL.color); L.position.set(0, topY + 0.4, 0.5); b.add(L); LIGHTS.push(L);
@@ -43,8 +58,8 @@ function _zig(o) {
     arms.forEach(A => { const a = A.arm; a.position.set(A.sx * o.arm.x, o.arm.y + 0.04 * Math.sin(ph * 2 + A.sx) + 0.1 * ac, o.arm.z + reach * (0.5 + 0.5 * pull) * 0.5 + 0.1 * Math.sin(ph + A.sx * 0.6)); a.rotation.set(0.05 * pull, A.sx * (o.arm.toe + 0.12 * Math.sin(ph * 2 + A.sx)), A.sx * (0.06 + 0.05 * Math.sin(ph)));
       if (A.ca) { const Q = o.arm; A.ca.femur.rotation.x = -(Q.lift + 0.22 * pull) - 0.15 * ac; A.ca.elbow.rotation.x = Q.fold + Q.flex * Math.sin(ph - 0.8) + 0.4 * ac; } });
     body.position.z = 0.1 * Math.sin(ph - 1.1) * (1 + 0.5 * ac) - 0.05 * ac; body.position.y = 0.012 * Math.abs(Math.sin(ph - 1.1)) - 0.03 * ac; body.rotation.x = -0.03 * Math.sin(ph - 1.1);
-    const glow = 0.45 + 0.35 * Math.sin(ph * 2) * Math.sin(ph) + 0.4 * ac; lit.emissive.copy(new T.Color(EL.color)).multiplyScalar(0.09 + 0.1 * glow); lamp.scale.setScalar(1 + 0.2 * Math.sin(ph * 3) + 0.4 * ac); lamp.scale.y *= 1.4;
-    gp.m.material.opacity = Math.max(0.15, Math.min(0.5, glow * 0.6)); gp.m.scale.setScalar(1 + 0.1 * Math.sin(ph * 2) + 0.2 * ac); L.intensity = 0.4 + 1.0 * glow; } };
+    const glow = 0.45 + 0.35 * Math.sin(ph * 2) * Math.sin(ph) + 0.4 * ac; lit.emissive.copy(new T.Color(EL.color)).multiplyScalar((0.09 + 0.1 * glow) * (o.dull ? 0.1 : 1)); lamp.scale.setScalar(1 + 0.2 * Math.sin(ph * 3) + 0.4 * ac); lamp.scale.y *= 1.4;
+    gp.m.material.opacity = Math.max(0.15, Math.min(0.5, glow * 0.6)) * (o.dull ? 0.45 : 1); gp.m.scale.setScalar(1 + 0.1 * Math.sin(ph * 2) + 0.2 * ac); L.intensity = 0.4 + 1.0 * glow; } };
 }
 const _zb = { glowR: 0.7, lampR: 0.07, S: 1.15, tiers: [[1.0, 0.8, 0.2], [0.8, 0.62, 0.2], [0.6, 0.44, 0.2], [0.38, 0.28, 0.2]], arm: { len: 0.8, r: 0.13, bend: 0.5, x: 0.74, y: 0.4, z: 0.3, reach: 0.3, toe: 0.2, sides: 6 }, slit: { tier: 1 } };
 fx(580, "A little ziggurat crab: a four-tier stepped body, a lit slit and a lamp on top, and two big blade arms floating ahead of it, not attached, hauling it along.", () => _zig(Object.assign({}, _zb)));
@@ -60,3 +75,12 @@ fx(586, "A big spined femur and a short stout hook folded back on it, like a cic
 fx(587, "Held high: the upper segments raised like a mantis, the hooks coming down in front.", () => _zig(Object.assign({}, _zb, { arm: Object.assign({}, _ca, { y: 0.62, lift: 0.75, fold: 1.6, flex: 0.4, tLen: 0.6 }) })));
 fx(588, "Rowing: both arms swung wide forward like oars, long thin lower segments.", () => _zig(Object.assign({}, _zb, { arm: Object.assign({}, _ca, { x: 0.9, toe: 0.45, fLen: 0.5, tLen: 0.75, tR: 0.06, hook: 0.5, lift: 0.1, fold: 0.4, flex: 0.5, spines: 3 }) })));
 fx(589, "Three big spines on the upper segment, and a tiny second claw at the tip of each hook.", () => _zig(Object.assign({}, _zb, { arm: Object.assign({}, _ca, { spines: 3, spineLen: 0.3, spineR: 0.05, tarsus: true, tLen: 0.5 }) })));
+
+// ── Swords, not claws, and a dull body (Nos. 590–594): the two floating arms are swords, hilts back, points forward, hauling the ziggurat; the body is stone, not bright ──
+const _zsw = { sword: true, len: 1.1, w: 0.075, th: 0.03, bend: 0, jag: 0, x: 0.78, y: 0.42, z: 0.0, reach: 0.34, toe: 0.08 };
+const _dz = Object.assign({}, _zb, { dull: true, glowR: 0.55, lampR: 0.05, slit: { tier: 1 } });
+fx(590, "Dull stone ziggurat, two floating swords beside it, hilts back and points forward, hauling it along.", () => _zig(Object.assign({}, _dz, { arm: _zsw })));
+fx(591, "Greatswords: broad heavy blades.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { len: 1.25, w: 0.12, th: 0.04 }) })));
+fx(592, "Curved blades, like sabres, the points swept inward.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { bend: 1.6, w: 0.08 }) })));
+fx(593, "The swords splay out in a V ahead of the body, wider and longer.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { x: 0.6, toe: 0.4, len: 1.3 }) })));
+fx(594, "Shard-swords: long blades with notched, uneven edges, like broken crystal.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { jag: 0.7, len: 1.2, w: 0.09 }) })));
