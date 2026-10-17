@@ -43,6 +43,7 @@ const SUITES = [
     ['clone card strip',        'clonecards.js'],
     ['unit info tab',           'unitinfo.js'],
     ['roster + command merged', 'ccmerge.js'],
+    ['zone report + analytics', 'zones.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],

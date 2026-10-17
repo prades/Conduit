@@ -154,6 +154,7 @@ function drawSelectedUnitRings() {
 }
 
 // ═════════ THE OVERLAY (DOM) ═════════
+let _ccPageSig = "";   // the analytics page is redrawn only when what it shows changes (a click is never lost to a redraw)
 let ccOpenTab = null, ccFilter = { element: null, role: null, duty: null, kind: null }, ccRerollArmed = false, _ccTimer = 0;
 const _ccCards = new Map();   // unit → its card element (updated in place, so a click is never lost to a redraw)
 
@@ -186,7 +187,7 @@ function ccBuildFrame() {
     const head = _ccEl("div", "cc-head"); head.appendChild(_ccEl("div", "cc-title", "COMMAND CENTER"));
     const tabs = _ccEl("div", "cc-tabs"); tabs.id = "ccTabs";
     [["roster", "ROSTER"], ["squad", "ANALYTICS"]].forEach(t => { const b = _ccEl("button", "cc-tab", t[1]); b.setAttribute("data-tab", t[0]); _ccClick(b, () => { ccOpenTab = t[0]; ccRerollArmed = false; _ccCards.clear(); const g = document.getElementById("ccGrid"); if (g) g.textContent = ""; ccRender(); }); tabs.appendChild(b); });
-    head.appendChild(tabs);
+    // (the tabs live in a bar at the BOTTOM of the menu: ROSTER and ANALYTICS)
     // RECRUIT: a follower at the Crystal for RECRUIT_COST shards (clone.js recruitFollower), on the ROSTER tab only. It dims when the shards are short.
     const rec = _ccEl("button", "cc-recruit"); rec.id = "ccRecruit"; rec.appendChild(_ccEl("span", "cc-rl", "+ RECRUIT")); rec.appendChild(_ccEl("span", "cc-rs", ""));
     _ccClick(rec, () => { recruitPickerOpen(); }); head.appendChild(rec);
@@ -198,6 +199,7 @@ function ccBuildFrame() {
     body.appendChild(main);
     const side = _ccEl("div", "cc-side"); side.id = "ccSide"; body.appendChild(side);
     root.appendChild(body);
+    const foot = _ccEl("div", "cc-foot"); foot.appendChild(tabs); root.appendChild(foot);
     window.addEventListener("keydown", e => { if (e && e.key === "Escape" && ccOpenTab) ccClose(); });
 }
 
@@ -220,7 +222,7 @@ function ccRender() {
     grid.style.display = roster ? "grid" : "none"; filters.style.display = roster ? "flex" : "none"; page.style.display = roster ? "none" : "block";
     side.style.display = ccOpenTab === "squad" ? "none" : "flex";
     if (roster) { _ccDrawFilters(filters); _ccDrawGrid(grid); }
-    else { page.textContent = ""; try { _ccDrawSquad(page); } catch (e) { /* never take the game down */ } }
+    else { const sig = _ccAnalyticsSig(); if (sig !== _ccPageSig || !page.firstChild) { _ccPageSig = sig; const keep = page.scrollTop; page.textContent = ""; try { _ccDrawSquad(page); } catch (e) { /* never take the game down */ } page.scrollTop = keep; } }
     if (ccOpenTab !== "squad") { try { _ccDrawSide(side); } catch (e) {} }
     ccRefreshChip();
 }
@@ -343,24 +345,56 @@ function _ccDrawSquadOrders(side) {
     ]);
 }
 
+// ANALYTICS: the squad at a glance, then every zone: its status, network and equipment, with TELEPORT and CLEAR BROKEN (js/zones.js).
+function _ccAnalyticsSig() {
+    const rep = typeof zoneReport === "function" ? zoneReport() : [], st = radialSquadStats("all");
+    return JSON.stringify([rep.map(z => [z.z, z.status, z.held, z.generator, z.energy, z.network.map(n => n.el + n.tier + n.batteries).join(), z.equipment, z.modules, z.broken, z.offline, z.here]), shardCount, st.total, st.working, st.avgLevel, st.evolved]);
+}
 function _ccDrawSquad(page) {
     const st = radialSquadStats("all");
-    page.appendChild(_ccEl("div", "cc-page-title", "SQUAD ANALYTICS"));
-    page.appendChild(_ccEl("div", "cc-sub2", st.total + " UNITS · " + st.working + " WORKING · AVERAGE LEVEL " + st.avgLevel + " · " + st.evolved + " EVOLVED"));
-    const tbl = _ccEl("div", "cc-table");
+    page.appendChild(_ccEl("div", "cc-page-title", "SQUAD"));
+    page.appendChild(_ccEl("div", "cc-sub2", st.total + " UNITS \u00b7 " + st.working + " WORKING \u00b7 AVERAGE LEVEL " + st.avgLevel + " \u00b7 " + st.evolved + " EVOLVED"));
+    const chips = _ccEl("div", "cc-row wrap");
     (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).forEach(el => {
         if (typeof unlockedElements !== "undefined" && !unlockedElements.has(el.id)) return;
-        const e = st.byElement[el.id] || { n: 0, hp: 0 }, row = _ccEl("div", "cc-trow" + (player.selectedElement === el.id ? " sel" : "")); row.style.setProperty("--c", el.color);
-        row.appendChild(_ccEl("span", "cc-tname", el.label)); row.appendChild(_ccEl("span", "cc-tcount", String(e.n)));
-        const bar = _ccEl("div", "cc-bar"), i = _ccEl("i"); i.style.width = Math.round(e.hp * 100) + "%"; bar.appendChild(i); row.appendChild(bar);
-        _ccClick(row, () => { radialSelectElement(el.id); ccSetSelection(ccUnits({ element: el.id })); ccRender(); }); tbl.appendChild(row);
+        const e = st.byElement[el.id] || { n: 0, hp: 0 }, c = _ccEl("button", "cc-chip click", el.label + "  " + e.n); c.style.setProperty("--c", el.color);
+        _ccClick(c, () => { radialSelectElement(el.id); ccSetSelection(ccUnits({ element: el.id })); ccOpenTab = "roster"; _ccCards.clear(); const g = document.getElementById("ccGrid"); if (g) g.textContent = ""; ccRender(); });
+        chips.appendChild(c);
     });
-    page.appendChild(tbl);
-    page.appendChild(_ccEl("div", "cc-sec", "ROLES"));
-    const chips = _ccEl("div", "cc-row wrap");
     [["BRAWLERS", st.roles.brawler, "#ff4a1c"], ["MAGES", st.roles.mage, "#a64dff"], ["TECHNICIANS", st.roles.technician, "#8fe3ff"], ["WORKERS", st.roles.worker, "#19e6c1"]].forEach(r => { const c = _ccEl("div", "cc-chip", r[0] + "  " + r[1]); c.style.setProperty("--c", r[2]); chips.appendChild(c); });
     page.appendChild(chips);
-    page.appendChild(_ccEl("div", "cc-note", "CLICK AN ELEMENT TO SELECT ALL OF ITS UNITS"));
+    page.appendChild(_ccEl("div", "cc-note", "TAP AN ELEMENT TO SELECT ALL OF ITS UNITS IN THE ROSTER"));
+    page.appendChild(_ccEl("div", "cc-page-title zones", "ZONES"));
+    if (typeof zoneReport !== "function") return;
+    const rep = zoneReport();
+    page.appendChild(_ccEl("div", "cc-sub2", "EVERY ZONE'S STATUS, NETWORK AND EQUIPMENT \u00b7 TELEPORT TO A ZONE YOU HOLD \u00b7 CLEAR ITS BROKEN EQUIPMENT FOR A FEE"));
+    for (const z of rep) page.appendChild(_ccZoneCard(z));
+}
+function _ccZoneCard(z) {
+    const card = _ccEl("div", "cc-zone" + (z.here ? " here" : "")); card.style.setProperty("--c", z.statusColour);
+    const head = _ccEl("div", "cz-head");
+    head.appendChild(_ccEl("div", "cz-name", z.name)); head.appendChild(_ccEl("div", "cz-status", z.statusLabel));
+    if (z.here) head.appendChild(_ccEl("div", "cz-here", "YOU ARE HERE"));
+    card.appendChild(head);
+    const body = _ccEl("div", "cz-body");
+    const line = (k, kids) => { const r = _ccEl("div", "cz-line"); r.appendChild(_ccEl("span", "cz-k", k)); const v = _ccEl("span", "cz-v"); kids.forEach(x => v.appendChild(x)); r.appendChild(v); body.appendChild(r); };
+    const chip = (text, col, cls) => { const c = _ccEl("span", "cz-chip" + (cls ? " " + cls : ""), text); if (col) c.style.setProperty("--c", col); return c; };
+    line("NEST", [chip(z.held ? "HELD" : z.z === 0 ? "NO PORTAL" : "NOT HELD", z.held ? "#19e6c1" : "#6a7aa0")]);
+    line("NETWORK", z.network.length ? z.network.map(n => chip(_ccElLabel(n.el) + " T" + n.tier + " \u00d7" + n.batteries, _ccColour(n.el))) : [chip(z.total ? "NO BANK \u2014 LINK 2 BATTERIES" : "NONE", "#6a7aa0")]);
+    line("POWER", [chip(z.generator ? "GENERATOR" : "NO GENERATOR", z.generator ? "#cdd6e0" : "#ff9966"), chip("NESTS " + z.energy + " / " + z.energyMax, "#5fe0c8")]);
+    const e = z.equipment, items = [["TURRET", "TURRETS", e.turrets, "#ff8a5c"], ["WAVE PYLON", "WAVE PYLONS", e.wave, "#a64dff"], ["BATTERY", "BATTERIES", e.batteries, "#ffd34d"], ["GENERATOR", "GENERATORS", e.generators, "#cdd6e0"], ["CONNECTOR", "CONNECTORS", e.connectors, "#ffd24a"], ["ULTRA", "ULTRAS", e.ultras, "#ffe733"], ["DORMANT PYLON", "DORMANT PYLONS", e.other, "#6a7aa0"]].filter(i => i[2] > 0).map(i => chip(i[2] + " " + (i[2] === 1 ? i[0] : i[1]), i[3]));
+    Object.keys(z.modules).forEach(k => items.push(chip(z.modules[k] + " " + k, "#19e6c1")));
+    line("EQUIPMENT", items.length ? items : [chip("NOTHING BUILT", "#6a7aa0")]);
+    if (z.broken || z.offline) line("BROKEN", [chip((z.broken ? z.broken + " WRECKED" : "") + (z.broken && z.offline ? " \u00b7 " : "") + (z.offline ? z.offline + " OFFLINE" : ""), "#ff4a1c", "bad")]);
+    card.appendChild(body);
+    const acts = _ccEl("div", "cz-acts");
+    const tp = _ccEl("button", "cz-btn" + (z.held ? "" : " dim"), "TELEPORT"); tp.style.setProperty("--c", "#8fe3ff"); if (!z.held) tp.appendChild(_ccEl("span", "cz-sub", z.z === 0 ? "NO PORTAL" : "HOLD A NEST HERE"));
+    _ccClick(tp, () => { if (zoneTeleport(z.z)) ccClose(); }); acts.appendChild(tp);
+    const fee = z.fee, can = fee > 0, cb = _ccEl("button", "cz-btn" + (can && shardCount >= fee ? "" : " dim"), "CLEAR BROKEN"); cb.style.setProperty("--c", "#ff4a1c");
+    cb.appendChild(_ccEl("span", "cz-sub", can ? "ESTIMATE \u25c6" + fee : "NOTHING BROKEN"));
+    _ccClick(cb, () => { zoneClearBroken(z.z); _ccPageSig = ""; ccRender(); }); acts.appendChild(cb);
+    card.appendChild(acts);
+    return card;
 }
 
 // A chip above the dock while anyone is selected: how many, and a way to let them go.

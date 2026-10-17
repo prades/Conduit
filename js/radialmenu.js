@@ -117,6 +117,7 @@ function radialRender() {
 function _radialDrawSquad(panel) {
     const st = radialSquadStats(radialFilter);
     panel.appendChild(_rEl("div", "rp-title", "SQUAD"));
+    { const z = _rEl("button", "rp-btn wide on", "ZONES \u00b7 TELEPORT \u00b7 REPAIR"); z.style.setProperty("--c", "#8fe3ff"); _rClick(z, () => { radialOpen = false; if (typeof radialRender === "function") radialRender(); if (typeof ccOpen === "function") ccOpen("squad"); }); panel.appendChild(z); }
     panel.appendChild(_rEl("div", "rp-sub", st.total + " UNITS · " + st.working + " WORKING · LV " + st.avgLevel));
     (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).forEach(el => {
         const e = st.byElement[el.id] || { n: 0, hp: 0 };
