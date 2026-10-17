@@ -64,11 +64,14 @@ function _tireBall(o) {
   const core = new T.Mesh(new T.IcosahedronGeometry(o.r * 0.97, 1), _btHull); frame.add(core);
   frame.scale.set(1, o.sy || 1, 1);
   // the tyre: rings of square tread blocks round the x axis; the rows sit on the sphere, wider rows at the equator
+  if (o.barrel) { const pts = []; for (let i = 0; i <= 12; i++) { const u = -1 + 2 * i / 12, xx = u * o.span * o.r * 1.12; pts.push(new T.Vector2(Math.max(0.001, o.r * 0.96 * (1 - o.barrel * u * u * 1.0)), xx)); } const bar = new T.Mesh(new T.LatheGeometry(pts, 24), _btHull); bar.rotation.z = PI / 2; frame.add(bar); core.visible = false; }
   const tyre = G(); frame.add(tyre); const blocks = [];
   const rows = o.rows, N = o.around, span = o.span;
-  for (let j = 0; j < rows; j++) { const xj = rows === 1 ? 0 : (-span + 2 * span * j / (rows - 1)) * o.r, rr = Math.sqrt(Math.max(0.01, o.r * o.r - xj * xj)), bw = (2 * span * o.r / Math.max(1, rows - 1)) * 0.92, bl = TAU * rr / N * 0.82, bh = o.tread;
-    for (let i = 0; i < N; i++) { const a = i * TAU / N + (j % 2 ? TAU / N / 2 : 0), bx = new T.Mesh(new T.BoxGeometry(bw, bh, bl), (i + j) % 3 === 0 ? _btHull : _btPanel);
-      const lean = Math.atan2(xj, rr); bx.position.set(xj * (1 + bh / o.r * 0.5), Math.cos(a) * (rr + bh * 0.5), Math.sin(a) * (rr + bh * 0.5)); bx.rotation.set(-a + PI / 2 * 0 , 0, 0); bx.rotation.x = a; bx.rotation.z = -lean * 0; tyre.add(bx); blocks.push(bx); } }
+  for (let j = 0; j < rows; j++) { const xj = rows === 1 ? 0 : (-span + 2 * span * j / (rows - 1)) * o.r, rr = o.barrel ? o.r * (1 - o.barrel * Math.pow(xj / (span * o.r + 1e-6), 2)) : Math.sqrt(Math.max(0.01, o.r * o.r - xj * xj)), bw = (2 * span * o.r / Math.max(1, rows - 1)) * 0.92, bl = TAU * rr / N * 0.82, bh = o.tread;
+    if (o.skipMid && j === (rows - 1) / 2) continue;
+    for (let i = 0; i < N; i++) { const a = i * TAU / N + (j % 2 && !o.noStagger ? TAU / N / 2 : 0), bx = new T.Mesh(new T.BoxGeometry(bw * (o.bwK || 1), bh, bl * (o.blK || 1)), (i + j) % 3 === 0 ? _btHull : _btPanel); if (o.chev) bx.rotation.order = 'XYZ';
+      const lean = Math.atan2(xj, rr); bx.position.set(xj * (1 + bh / o.r * 0.5), Math.cos(a) * (rr + bh * 0.5), Math.sin(a) * (rr + bh * 0.5)); bx.rotation.set(a, o.chev ? (xj < 0 ? 1 : -1) * o.chev : 0, 0); tyre.add(bx); blocks.push(bx); }
+    if (o.belt && j === Math.floor(rows / 2)) { /* a continuous belt band round the middle */ const bt = new T.Mesh(new T.TorusGeometry(rr + bh * 0.2, bh * 0.6, 5, 28), _btPanel); bt.rotation.y = PI / 2; bt.position.x = xj; tyre.add(bt); } }
   // two shell caps: curved armour plates over the ball's two sides (the hub of the tyre), standing proud, not turning
   const caps = []; for (const sx of [-1, 1]) { const cap = new T.Mesh(new T.SphereGeometry(o.r * o.capK, 18, 8, 0, TAU, 0, o.capA), _btPanel); cap.material = _btPanel; cap.rotation.z = -sx * PI / 2; cap.position.x = sx * o.r * 0.12; frame.add(cap);
     const ring = new T.Mesh(new T.TorusGeometry(o.r * o.capK * Math.sin(o.capA), 0.02, 4, 24), new T.MeshBasicMaterial({ color: ledOff.getHex(), toneMapped: false })); ring.rotation.y = PI / 2; ring.position.x = sx * (o.r * o.capK * Math.cos(o.capA) + o.r * 0.12); frame.add(ring); caps.push({ cap, ring });
@@ -78,7 +81,7 @@ function _tireBall(o) {
     const brow = new T.Mesh(new T.TorusGeometry(o.r * H.k * 0.95, 0.016, 4, 20), new T.MeshBasicMaterial({ color: ledOff.getHex(), toneMapped: false })); brow.rotation.x = PI / 2; brow.position.set(0, o.r * H.y - o.r * H.k * 0.1, o.r * H.z); frame.add(brow); caps.brow = brow; }
   if (o.belly) { const Bl = o.belly, bp = new T.Mesh(new T.SphereGeometry(o.r * 1.02, 18, 10, PI / 2 - Bl.w, 2 * Bl.w, PI / 2 - Bl.h, 2 * Bl.h), new T.MeshBasicMaterial({ color: Bl.col || 0x070510, side: T.DoubleSide, toneMapped: false })); const bk = (o.r + o.tread + 0.05) / (o.r * 1.02); bp.scale.set(bk, bk, bk); frame.add(bp); caps.belly = bp; }
   // the antennae: two rods forward over the top (or over the head), static jumping between the tips now and again
-  const ants = []; for (const sx of [-1, 1]) { const ag = G(); ag.position.set(sx * o.antX, headY, headZ); frame.add(ag);
+  const ants = []; for (const sx of [-1, 1]) { const ag = G(); if (o.antCaps) { const t = o.capA * (o.antT || 0.55), cr = o.r * o.capK; ag.position.set(sx * (o.r * 0.12 + cr * Math.cos(t)), cr * Math.sin(t) * 0.62, cr * Math.sin(t) * 0.78); } else ag.position.set(sx * o.antX, headY, headZ); frame.add(ag);
     const rod = new T.Mesh(new T.CylinderGeometry(0.012, 0.022, o.antL, 5, 1), _btHull); rod.geometry.translate(0, o.antL / 2, 0); rod.rotation.x = PI / 2 - o.antUp; rod.rotation.z = -sx * o.antSplay; ag.add(rod);
     const tip = new T.Mesh(new T.OctahedronGeometry(0.035, 0), new T.MeshBasicMaterial({ color: ledOn.getHex(), toneMapped: false })); tip.scale.y = 1.6; tip.position.set(0, o.antL, 0); rod.add(tip); ants.push({ ag, rod, tip, sx }); }
   const arc = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: ledOn.getHex(), transparent: true, opacity: 0.95 })); arc.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(10 * 3), 3)); arc.frustumCulled = false; frame.add(arc);
@@ -109,3 +112,11 @@ fx(713, "Rounder and chubbier, a squat head sunk into the shoulders, a bigger be
 fx(714, "A tall pear: a narrower head dome higher up, longer antennae, a smaller belly patch.", () => _tireBall(Object.assign({}, _tp, { head: { k: 0.36, y: 1.62, z: 0.1, sy: 1.05 }, belly: { w: 0.4, h: 0.5 }, antL: 0.9 })));
 fx(715, "A finer tread of many small square blocks on the pear, large smooth shoulder caps.", () => _tireBall(Object.assign({}, _tp, { rows: 7, around: 24, tread: 0.055, span: 0.64, capA: 0.64, capK: 1.04 })));
 fx(716, "A plain tyre with no belly patch, a head dome, the lit rings brighter, a static bolt every beat.", () => _tireBall(Object.assign({}, _tp, { belly: null, zaps: 4 })));
+
+// ── A different TREAD (Nos. 717–721): the tread blocks in a checker looked like scales or a belly, so: real tyre tread patterns ──
+const _tr0 = Object.assign({}, _tb0, { r: 0.62, noStagger: true, antCaps: true, antL: 0.85, antUp: 0.25, antSplay: 0.0 });   // the antennae grow out of the shell caps, one each side, forward; no head
+fx(717, "Tank-track bars: one full-width square bar after another all the way round, with gaps between, like the links of a track wrapped round a ball.", () => _tireBall(Object.assign({}, _tr0, { rows: 1, span: 0.66, around: 16, tread: 0.1, blK: 0.7, barrel: 0.18 })));
+fx(718, "Shoulder lugs: two bands of big square lugs at the outer edges and a smooth belt down the middle, like an off-road tyre.", () => _tireBall(Object.assign({}, _tr0, { rows: 3, span: 0.58, around: 14, tread: 0.12, skipMid: true, belt: true, bwK: 1.1, barrel: 0.12 })));
+fx(719, "Chevron treads: the bars angled in a V across the tyre, like a mud tyre's herringbone.", () => _tireBall(Object.assign({}, _tr0, { rows: 2, span: 0.5, around: 16, tread: 0.09, chev: 0.5, bwK: 1.45, blK: 0.6, barrel: 0.1 })));
+fx(720, "Wide square plates, few and deep: a handful of big flat slabs round the tyre like a paddle wheel.", () => _tireBall(Object.assign({}, _tr0, { rows: 1, span: 0.7, around: 9, tread: 0.17, blK: 0.65, barrel: 0.2 })));
+fx(721, "A smooth tyre with square grooves: a continuous dark tread band with a grid of thin raised square ribs, no separate blocks.", () => _tireBall(Object.assign({}, _tr0, { rows: 5, span: 0.6, around: 22, tread: 0.035, bwK: 1.08, blK: 1.08 })));
