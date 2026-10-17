@@ -1,6 +1,48 @@
 // ── THE ORB BRAWLER · the electric brawler, Nos. 727–: from the reference sheet: a sphere with an EXPOSED glowing diamond core, ONE sparse band of big square tread blocks rolling round its middle, curved segmented shell plates on each side with gaps that show the core, and two forward-slanted ear housings on top with lit faces and a bolt of static between them. ──
 const _obBlack = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.2, roughness: 0.8, flatShading: true }); _obBlack.envMapIntensity = 0.15;
 const _obTread = new T.MeshStandardMaterial({ color: 0x050507, metalness: 0.25, roughness: 0.7, flatShading: true }); _obTread.envMapIntensity = 0.25;
+function _bpod(o, sx, lit, dim, lc, frame, R) {   // one booster bracket: its housing, its nozzle(s), coil lights and ion stream(s); rear anchor at z = -len*0.62 for every kind
+  const B = o.boost, K = B.kind || 'barrel', bl = B.len, br = B.r, eg2 = G(); eg2.position.set(sx * o.earX, R + 0.02, o.earZ); eg2.rotation.set(-o.earTilt, 0, -sx * o.earSplay); frame.add(eg2);
+  const rearZ = -bl * 0.62, coils = [], plumes = [];
+  const addPlume = (x, y, rr, kk) => { [[1.0, 0.35], [0.55, 0.6]].forEach(([k, op], pi) => { const pl = new T.Mesh(new T.ConeGeometry(rr * k, B.plume * k * kk, 8, 1, true), new T.MeshBasicMaterial({ color: pi ? lit.clone().lerp(new T.Color(1, 1, 1), 0.5).getHex() : lc.getHex(), transparent: true, opacity: op, blending: T.AdditiveBlending, depthWrite: false, toneMapped: false, side: T.DoubleSide })); pl.rotation.x = -PI / 2; pl.position.set(x, y, rearZ - B.plume * k * kk * 0.5); eg2.add(pl); plumes.push({ pl, k, op, len: B.plume * k * kk }); }); };
+  const litMat = () => new T.MeshBasicMaterial({ color: lit.getHex(), toneMapped: false });
+  const ring = (z, rad, tube) => { const co = new T.Mesh(new T.TorusGeometry(rad, tube || 0.016, 4, 12), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); co.position.z = z; eg2.add(co); coils.push(co); return co; };
+  let face = new T.Mesh(new T.BoxGeometry(0.01, 0.01, 0.01), litMat()); face.visible = false; eg2.add(face);
+  if (K === 'barrel') {
+    const pts = [[br * 0.45, 0], [br * 0.8, bl * 0.12], [br, bl * 0.4], [br, bl * 0.8], [br * 0.7, bl], [0.001, bl * 1.02]].map(q => new T.Vector2(q[0], q[1] - bl / 2)), bar = new T.Mesh(new T.LatheGeometry(pts, 8), _obTread); bar.rotation.x = PI / 2; eg2.add(bar);
+    const bell = new T.Mesh(new T.CylinderGeometry(br * 0.72, br * 1.25, bl * 0.24, 8, 1, true), _obBlack); bell.rotation.x = PI / 2; bell.position.z = -bl * 0.52; bell.material.side = T.DoubleSide; eg2.add(bell);
+    const mouth = new T.Mesh(new T.CircleGeometry(br * 1.15, 8), litMat()); mouth.rotation.y = PI; mouth.position.z = rearZ; eg2.add(mouth);
+    for (let i = 0; i < B.coils; i++) ring(-bl * 0.3 + i * bl * 0.62 / Math.max(1, B.coils), br * 1.02);
+    for (const fy of [-1, 1]) { const fin = new T.Mesh(new T.BoxGeometry(0.014, br * 1.1, bl * 0.34), _obBlack); fin.position.set(fy * br * 0.95, 0, -bl * 0.3); eg2.add(fin); }
+    face = new T.Mesh(new T.BoxGeometry(br * 0.8, 0.012, bl * 0.45), litMat()); face.position.set(0, br * 0.98, bl * 0.12); eg2.add(face); addPlume(0, 0, br * 1.0, 1);
+  } else if (K === 'twin') {   // a fat pod with TWO small tail nozzles side by side
+    const bar = new T.Mesh(new T.CylinderGeometry(br * 0.7, br * 1.1, bl * 0.9, 6, 1), _obTread); bar.rotation.x = PI / 2; bar.position.z = 0; bar.scale.x = 1.3; eg2.add(bar);
+    for (const nx of [-1, 1]) { const nz = new T.Mesh(new T.CylinderGeometry(br * 0.34, br * 0.55, bl * 0.28, 6, 1, true), _obBlack); nz.rotation.x = PI / 2; nz.position.set(nx * br * 0.6, 0, -bl * 0.52); nz.material.side = T.DoubleSide; eg2.add(nz); const mo = new T.Mesh(new T.CircleGeometry(br * 0.5, 6), litMat()); mo.rotation.y = PI; mo.position.set(nx * br * 0.6, 0, rearZ); eg2.add(mo); addPlume(nx * br * 0.6, 0, br * 0.55, 0.9); }
+    for (let i = 0; i < 3; i++) { const bd = new T.Mesh(new T.BoxGeometry(br * 2.7, 0.014, 0.03), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); bd.position.set(0, br * 0.78, -bl * 0.25 + i * bl * 0.2); eg2.add(bd); coils.push(bd); }
+    face = new T.Mesh(new T.BoxGeometry(br * 1.6, 0.012, bl * 0.4), litMat()); face.position.set(0, br * 0.9, bl * 0.2); eg2.add(face);
+  } else if (K === 'cradle') {   // an open frame: a U-shaped cradle holding a slim thruster tube, struts and cross-braces showing
+    const tube = new T.Mesh(new T.CylinderGeometry(br * 0.55, br * 0.55, bl, 8, 1), _obTread); tube.rotation.x = PI / 2; eg2.add(tube);
+    for (const fx of [-1, 1]) { const rail = new T.Mesh(new T.BoxGeometry(0.03, 0.03, bl * 1.05), _obBlack); rail.position.set(fx * br * 1.2, -br * 0.4, 0); eg2.add(rail); const up = new T.Mesh(new T.BoxGeometry(0.03, br * 1.0, 0.03), _obBlack); up.position.set(fx * br * 1.2, 0, bl * 0.4); eg2.add(up); const up2 = up.clone(); up2.position.z = -bl * 0.3; eg2.add(up2); }
+    for (let i = 0; i < 3; i++) { const bar = new T.Mesh(new T.BoxGeometry(br * 2.5, 0.025, 0.025), _obBlack); bar.position.set(0, -br * 0.4, -bl * 0.4 + i * bl * 0.4); eg2.add(bar); }
+    const bell = new T.Mesh(new T.CylinderGeometry(br * 0.8, br * 1.5, bl * 0.3, 8, 1, true), _obBlack); bell.rotation.x = PI / 2; bell.position.z = -bl * 0.55; bell.material.side = T.DoubleSide; eg2.add(bell); const mo = new T.Mesh(new T.CircleGeometry(br * 1.4, 8), litMat()); mo.rotation.y = PI; mo.position.z = rearZ; eg2.add(mo);
+    for (let i = 0; i < B.coils; i++) ring(-bl * 0.3 + i * bl * 0.6 / Math.max(1, B.coils), br * 0.6, 0.02); addPlume(0, 0, br * 1.3, 1);
+  } else if (K === 'prism') {   // the reference's ear: a faceted slab housing with a big lit face, and a flat ion-grid disc for a nozzle
+    const slab = new T.Mesh(new T.BoxGeometry(br * 2.2, br * 1.3, bl), _obTread); eg2.add(slab); const wedge = new T.Mesh(new T.CylinderGeometry(br * 0.2, br * 1.1, bl * 0.25, 4, 1), _obBlack); wedge.rotation.x = PI / 2; wedge.rotation.z = PI / 4; wedge.position.z = bl * 0.62; eg2.add(wedge);
+    face = new T.Mesh(new T.BoxGeometry(br * 1.7, 0.014, bl * 0.8), litMat()); face.position.set(0, br * 0.66, 0); eg2.add(face);
+    const grid = new T.Mesh(new T.CircleGeometry(br * 1.0, 10), litMat()); grid.rotation.y = PI; grid.position.z = rearZ + 0.005; grid.scale.y = 0.75; eg2.add(grid); const gr = new T.Mesh(new T.TorusGeometry(br * 0.95, 0.02, 4, 10), _obBlack); gr.position.z = rearZ; gr.scale.y = 0.75; eg2.add(gr);
+    for (let i = 0; i < B.coils; i++) { const sl = new T.Mesh(new T.BoxGeometry(br * 2.3, 0.01, 0.025), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); sl.position.set(0, -br * 0.66, -bl * 0.3 + i * bl * 0.2); eg2.add(sl); coils.push(sl); } addPlume(0, 0, br * 0.95, 1);
+  } else if (K === 'ring') {   // an annular engine: a fat torus with a core cone, the ions streaming through the ring
+    const tor = new T.Mesh(new T.TorusGeometry(br * 1.2, br * 0.42, 6, 14), _obTread); tor.position.z = 0; eg2.add(tor); const cone = new T.Mesh(new T.ConeGeometry(br * 0.7, bl * 0.9, 8), _obBlack); cone.rotation.x = -PI / 2; cone.position.z = bl * 0.05; eg2.add(cone);
+    const hub = new T.Mesh(new T.OctahedronGeometry(br * 0.45, 0), litMat()); hub.position.z = -bl * 0.3; hub.scale.z = 1.5; eg2.add(hub); face = hub;
+    for (let i = 0; i < B.coils; i++) ring(-bl * 0.1 - i * 0.05, br * 1.2 + 0.02 * i, 0.014); const mo = new T.Mesh(new T.CircleGeometry(br * 1.1, 14), litMat()); mo.rotation.y = PI; mo.position.z = rearZ + 0.1; mo.material.transparent = true; mo.material.opacity = 0.5; eg2.add(mo); addPlume(0, 0, br * 1.3, 1);
+  } else if (K === 'fan') {   // a ducted fan: a cylinder with spinning blades at the rear and a lit ring round the duct
+    const duct = new T.Mesh(new T.CylinderGeometry(br * 1.1, br * 1.1, bl * 0.8, 10, 1, true), _obTread); duct.rotation.x = PI / 2; duct.material.side = T.DoubleSide; eg2.add(duct); const nose = new T.Mesh(new T.ConeGeometry(br * 0.9, bl * 0.3, 10), _obBlack); nose.rotation.x = PI / 2; nose.position.z = bl * 0.5; eg2.add(nose);
+    const fanG = G(); fanG.position.z = -bl * 0.2; eg2.add(fanG); for (let i = 0; i < 6; i++) { const bd = new T.Mesh(new T.BoxGeometry(br * 0.22, br * 1.0, 0.012), _obBlack); bd.position.y = 0; bd.rotation.z = i * TAU / 6; bd.geometry.translate(0, br * 0.55, 0); bd.rotation.x = 0.4; fanG.add(bd); } eg2.userData.fan = fanG;
+    ring(-bl * 0.4, br * 1.12, 0.02); ring(bl * 0.3, br * 1.12, 0.02); ring(-bl * 0.05, br * 1.12, 0.02); const mo = new T.Mesh(new T.CircleGeometry(br * 1.0, 12), litMat()); mo.material.transparent = true; mo.material.opacity = 0.45; mo.rotation.y = PI; mo.position.z = rearZ + 0.05; eg2.add(mo); addPlume(0, 0, br * 1.05, 1);
+  }
+  const exit = new T.Mesh(new T.OctahedronGeometry(0.03, 0), new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })); exit.position.set(0, 0, rearZ - B.plume * 0.35); eg2.add(exit);
+  return { eg2, face, tip: exit, sx, coils, plumes, boost: true };
+}
 function _orbBrawler(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.25);
   const lc = new T.Color(EL.color), lit = lc.clone().lerp(new T.Color(1, 1, 1), 0.35), dim = lc.clone().multiplyScalar(0.25);
@@ -28,17 +70,7 @@ function _orbBrawler(o) {
       const holder = G(); holder.rotation.z = -sx * PI / 2; holder.add(mesh); holder.position.x = sx * 0.04; frame.add(holder);
       const eg = new T.LineSegments(new T.EdgesGeometry(geo, 18), edgeMat); holder.add(eg); shells.push({ holder, mesh, k, sx }); }
   // the ears: two forward-slanted housings on top of the band, each with a lit face, and static between them
-  const ears = []; for (const sx of [-1, 1]) { if (o.boost) { const B = o.boost, eg2 = G(); eg2.position.set(sx * o.earX, R + 0.02, o.earZ); eg2.rotation.set(-o.earTilt, 0, -sx * o.earSplay); frame.add(eg2);
-      // the pod: a tapered barrel along z, nose forward; a flared nozzle at the rear; lit coil rings; two stub fins; an ion plume streaming back
-      const bl = B.len, br = B.r, pts = [[br * 0.45, 0], [br * 0.8, bl * 0.12], [br, bl * 0.4], [br, bl * 0.8], [br * 0.7, bl], [0.001, bl * 1.02]].map(q => new T.Vector2(q[0], q[1] - bl / 2)), bar = new T.Mesh(new T.LatheGeometry(pts, 8), _obTread); bar.rotation.x = PI / 2; bar.scale.z = 1; eg2.add(bar);
-      const bell = new T.Mesh(new T.CylinderGeometry(br * 0.72, br * 1.25, bl * 0.24, 8, 1, true), _obBlack); bell.rotation.x = PI / 2; bell.position.z = -bl * 0.5 - bl * 0.02; bell.material.side = T.DoubleSide; eg2.add(bell);
-      const mouth = new T.Mesh(new T.CircleGeometry(br * 1.15, 8), new T.MeshBasicMaterial({ color: lit.getHex(), toneMapped: false })); mouth.rotation.y = PI; mouth.position.z = -bl * 0.62; eg2.add(mouth);
-      const coils = []; for (let i = 0; i < B.coils; i++) { const cz = -bl * 0.3 + i * bl * 0.62 / Math.max(1, B.coils), co = new T.Mesh(new T.TorusGeometry(br * 1.02, 0.016, 4, 12), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); co.position.z = cz; eg2.add(co); coils.push(co); }
-      for (const fy of [-1, 1]) { const fin = new T.Mesh(new T.BoxGeometry(0.014, br * 1.1, bl * 0.34), _obBlack); fin.position.set(fy * br * 0.95, 0, -bl * 0.3); fin.rotation.z = fy * 0.0; eg2.add(fin); }
-      const face = new T.Mesh(new T.BoxGeometry(br * 0.8, 0.012, bl * 0.45), new T.MeshBasicMaterial({ color: lit.getHex(), toneMapped: false })); face.position.set(0, br * 0.98, bl * 0.12); eg2.add(face);
-      const plumes = []; [[1.0, 0.35], [0.55, 0.6]].forEach(([k, op], pi) => { const pl = new T.Mesh(new T.ConeGeometry(br * 1.0 * k, B.plume * k, 8, 1, true), new T.MeshBasicMaterial({ color: pi ? lit.clone().lerp(new T.Color(1, 1, 1), 0.5).getHex() : lc.getHex(), transparent: true, opacity: op, blending: T.AdditiveBlending, depthWrite: false, toneMapped: false, side: T.DoubleSide, opacity: op })); pl.rotation.x = -PI / 2; pl.position.z = -bl * 0.62 - B.plume * k * 0.5; eg2.add(pl); plumes.push({ pl, k, op, len: B.plume * k }); });
-      const exit = new T.Mesh(new T.OctahedronGeometry(0.03, 0), new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })); exit.position.set(0, 0, -bl * 0.62 - B.plume * 0.35); eg2.add(exit);
-      ears.push({ eg2, face, tip: exit, sx, coils, plumes, boost: true }); continue; }
+  const ears = []; for (const sx of [-1, 1]) { if (o.boost) { ears.push(_bpod(o, sx, lit, dim, lc, frame, R)); continue; }
     const eg2 = G(); eg2.position.set(sx * o.earX, R + o.tread + 0.02, o.earZ); eg2.rotation.set(-o.earTilt, 0, -sx * o.earSplay); frame.add(eg2);
     const hs = new T.Mesh(new T.BoxGeometry(o.earW, o.earH, o.earL), _obTread); hs.position.y = o.earH / 2; eg2.add(hs);
     const face = new T.Mesh(new T.BoxGeometry(o.earW * 0.7, 0.012, o.earL * 0.75), new T.MeshBasicMaterial({ color: lit.getHex(), toneMapped: false })); face.position.set(0, o.earH + 0.008, 0); eg2.add(face);
@@ -54,6 +86,7 @@ function _orbBrawler(o) {
     segs.forEach(S => { const on = (Math.sin(ph * 2 - S.a * 2) + 1) / 2; S.sg.material.color.copy(dim).lerp(lit, Math.min(1, on * 0.9 + 0.4 * ac)); });
     shells.forEach(S => { const s = 1 + 0.04 * ac; S.holder.scale.setScalar(s); S.holder.position.x = S.sx * (0.04 + 0.05 * ac); });
     ears.forEach(E => { E.face.material.color.copy(lit).multiplyScalar(0.7 + 0.3 * fk); E.tip.scale.setScalar(1 + 0.4 * Math.sin(ph * 5 + E.sx) + 0.8 * ac); });
+    ears.forEach(E => { if (E.boost && E.eg2.userData.fan) E.eg2.userData.fan.rotation.z = ph * 14 * (1 + 2 * ac); });
     ears.forEach(E => { if (!E.boost) return; E.plumes.forEach(P => { const fl = 0.85 + 0.15 * Math.sin(ph * 14 + P.k * 5 + E.sx) + 0.5 * ac; P.pl.scale.set(1 + 0.12 * Math.sin(ph * 11 + E.sx), fl, 1 + 0.12 * Math.sin(ph * 11 + E.sx)); P.pl.position.z = -(o.boost.len * 0.62) - P.len * fl * 0.5; P.pl.material.opacity = P.op * (0.7 + 0.3 * fk) + 0.2 * ac; }); E.coils.forEach((C, i) => C.material.color.copy(dim).lerp(lit, Math.min(1, (Math.sin(ph * 4 - i * 1.4) + 1) / 2 + 0.4 * ac))); E.tip.position.z = -(o.boost.len * 0.62) - o.boost.plume * 0.35 * (0.85 + 0.5 * ac); });
     const cyc = (ph / TAU * o.zaps) % 1, on = ac > 0.2 || cyc < 0.22, fr = Math.floor(ph * 12); arc.visible = on; arc2.visible = on && fr % 2 === 0;
     if (on) { ears[0].tip.getWorldPosition(wp); frame.worldToLocal(wp); const p0 = wp.clone(); ears[1].tip.getWorldPosition(wp); frame.worldToLocal(wp); const p1 = wp.clone();
@@ -81,3 +114,11 @@ fx(738, "Bigger, heavier pods with long ion streams, four coil rings, a lit face
 fx(739, "Splayed outward: the pods angled wide like a pair of vectored thrusters, medium streams.", () => _orbBrawler(Object.assign({}, _b733, { earSplay: 0.55, earX: 0.3, earTilt: 0.6, boost: { len: 0.76, r: 0.13, coils: 3, plume: 0.9 } })));
 fx(740, "Slim and tall, nearly upright like a pair of rocket stacks, long thin ion streams going straight down their backs.", () => _orbBrawler(Object.assign({}, _b733, { earTilt: 1.15, earSplay: 0.1, boost: { len: 0.9, r: 0.1, coils: 4, plume: 1.2 } })));
 fx(741, "Short, stubby pods with big nozzles and fat bright plumes, a bolt of static between the nozzles every beat.", () => _orbBrawler(Object.assign({}, _b733, { zaps: 4, boost: { len: 0.5, r: 0.16, coils: 2, plume: 0.8 } })));
+
+// ── 739's positions, different brackets (Nos. 742–746) ──
+const _p739 = Object.assign({}, _b733, { earSplay: 0.55, earX: 0.3, earTilt: 0.6 });
+fx(742, "739's positions with a fat pod and TWO small tail nozzles side by side, two ion streams from each.", () => _orbBrawler(Object.assign({}, _p739, { boost: { kind: 'twin', len: 0.74, r: 0.13, coils: 3, plume: 0.7 } })));
+fx(743, "An open frame: a slim thruster tube held in a U-shaped cradle, rails, struts and cross-braces showing.", () => _orbBrawler(Object.assign({}, _p739, { boost: { kind: 'cradle', len: 0.8, r: 0.1, coils: 3, plume: 0.8 } })));
+fx(744, "Faceted slab housings like your reference's ears, a big lit face on top and a flat lit ion grid for the nozzle.", () => _orbBrawler(Object.assign({}, _p739, { boost: { kind: 'prism', len: 0.7, r: 0.13, coils: 3, plume: 0.8 } })));
+fx(745, "An annular engine: a fat ring with a core cone and a glowing hub, the ions streaming out through the ring.", () => _orbBrawler(Object.assign({}, _p739, { boost: { kind: 'ring', len: 0.7, r: 0.12, coils: 3, plume: 0.8 } })));
+fx(746, "A ducted fan: a cylinder with spinning blades at the back, lit rings round the duct, an ion stream.", () => _orbBrawler(Object.assign({}, _p739, { boost: { kind: 'fan', len: 0.75, r: 0.12, coils: 3, plume: 0.8 } })));
