@@ -151,6 +151,7 @@ function _radialDrawRoster(panel) {
         const mid = _rEl("div", "rp-mid"); mid.appendChild(_rEl("div", "rp-cname", r.name)); mid.appendChild(_rEl("div", "rp-csub", ({ brawler: "BRAWL", mage: "MAGE", technician: "TECH", worker: "WORK" })[r.role] + " · LV " + r.level));
         const bar = _rEl("div", "rp-bar"), fill = _rEl("i"); fill.style.width = Math.round(r.hp * 100) + "%"; bar.appendChild(fill); mid.appendChild(bar); card.appendChild(mid);
         if (r.canWork) { const w = _rEl("button", "rp-btn small wide" + (r.working ? " on" : ""), "WORK"); w.style.setProperty("--c", "#19e6c1"); _rClick(w, () => { toggleFollowerDuty(r.f); radialRender(); }); mid.appendChild(w); }
+        { const inf = _rEl("button", "rp-btn small wide", "INFO"); inf.style.setProperty("--c", "#8fe3ff"); _rClick(inf, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(r.f); }); mid.appendChild(inf); }
         _rClick(card, () => { if (typeof ccToggle === "function") ccToggle(r.f); radialRender(); });   // tap a card: select it (the command pool, js/commandcenter.js)
         panel.appendChild(card);
     });

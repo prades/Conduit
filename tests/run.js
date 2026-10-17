@@ -41,6 +41,7 @@ const SUITES = [
     ['power build + switches',  'powerbuild.js'],
     ['recruit picker',          'recruitpicker.js'],
     ['clone card strip',        'clonecards.js'],
+    ['unit info tab',           'unitinfo.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],

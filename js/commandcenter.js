@@ -260,6 +260,8 @@ function _ccMakeCard(r) {
     const bar = _ccEl("div", "cc-bar"); bar.appendChild(_ccEl("i")); mid.appendChild(bar);
     mid.appendChild(_ccEl("div", "cc-tags")); card.appendChild(mid);
     card.appendChild(_ccEl("div", "cc-tick", "✓"));
+    // INFO on the card: this unit's attacks, jobs and stats (js/unitinfo.js). It does not select the card.
+    const inf = _ccEl("button", "cc-info", "INFO"); inf.setAttribute("aria-label", "Info"); _ccClick(inf, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(r.unit); }); card.appendChild(inf);
     _ccClick(card, () => { ccToggle(r.unit); ccRender(); });
     return card;
 }

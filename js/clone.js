@@ -244,6 +244,11 @@ function _clonesTabTap(ex, ey, PX) {
         if (ex>=sa.upX&&ex<=sa.upX+sa.upW&&ey>=sa.upY&&ey<=sa.upY+sa.upH) { _crystalScrollX=Math.max(0,_crystalScrollX-sa.rowH); return true; }
         if (ex>=sa.dnX&&ex<=sa.dnX+sa.dnW&&ey>=sa.dnY&&ey<=sa.dnY+sa.dnH) { _crystalScrollX+=sa.rowH; return true; }
     }
+    // INFO on a card: that clone type's attacks, job and numbers.
+    for (const opt of (window._cloneTabOpts || [])) {
+        if (typeof opt._ix !== "number") continue;
+        if (ex >= opt._ix && ex <= opt._ix + opt._iw && ey >= opt._iy && ey <= opt._iy + opt._ih) { if (typeof unitInfoOpenType === "function") unitInfoOpenType(opt.speciesName, opt.className); return true; }
+    }
     // DISMISS — frees a slot. Checked before the rows so it is never
     // swallowed by one.
     const db = window._cloneDismissBtn;
@@ -1036,6 +1041,16 @@ function _cloneCardActor(opt) {
     return a;
 }
 
+// The creature, in `g` at (cx, cy) at scale sc: the board's own drawing, without the bars, level tag and ally bracket that go over a creature there.
+function drawCloneArt(g, opt, cx, cy, sc) {
+    g.save(); g.translate(cx, cy); g.scale(sc, sc);
+    const _k = [_drawPredatorBars, drawHealthBar, typeof drawUnitTag === "function" ? drawUnitTag : null];
+    _drawPredatorBars = () => {}; drawHealthBar = () => {}; if (_k[2]) drawUnitTag = () => {};
+    try { drawNPC(_cloneCardActor(opt), 0, 0, g); } catch (e) { /* a picture must never take the menu down */ }
+    finally { _drawPredatorBars = _k[0]; drawHealthBar = _k[1]; if (_k[2]) drawUnitTag = _k[2]; }
+    g.restore();
+}
+
 // One player card: the creature on a speed-line wash in its colour, its class tag, its name, its numbers, the splices it needs and the CLONE button.
 // The button's bounds are recorded only when the whole button is inside the visible strip (a half-hidden one must not be pressable).
 function _drawCloneCard(opt, x, y, w, h, listX, listW, listY, listH) {
@@ -1050,18 +1065,17 @@ function _drawCloneCard(opt, x, y, w, h, listX, listW, listY, listH) {
     ctx.strokeStyle = sd.color + "22"; ctx.lineWidth = 2;
     for (let k = -2; k < 8; k++) { ctx.beginPath(); ctx.moveTo(ax + k * 30, ay + artH); ctx.lineTo(ax + k * 30 + 70, ay); ctx.stroke(); }
     if (!opt.ready) ctx.globalAlpha = 0.55;
-    ctx.save(); ctx.translate(ax + aw / 2, ay + artH * 0.7); const sc = Math.min(2.4, aw / 62); ctx.scale(sc, sc);
-    // (the bars, level tag and ally bracket that go over a creature on the board are not wanted on a picture)
-    const _k = [_drawPredatorBars, drawHealthBar, typeof drawUnitTag === "function" ? drawUnitTag : null];
-    _drawPredatorBars = () => {}; drawHealthBar = () => {}; if (_k[2]) drawUnitTag = () => {};
-    try { drawNPC(_cloneCardActor(opt), 0, 0, ctx); } catch (e) { /* a picture must never take the menu down */ }
-    finally { _drawPredatorBars = _k[0]; drawHealthBar = _k[1]; if (_k[2]) drawUnitTag = _k[2]; }
-    ctx.restore(); ctx.restore();
+    drawCloneArt(ctx, opt, ax + aw / 2, ay + artH * 0.7, Math.min(2.4, aw / 62));
+    ctx.restore();
     // the class tag, a slab top-left
     const tag = opt.className.toUpperCase();
     ctx.save(); ctx.font = uiFont(14); const tw = ctx.measureText(tag).width + 20; ctx.restore();
     uiSlab(ax + 4, ay + 4, tw, 24, sd.color, true);
     uiText(tag, ax + 4 + tw / 2, ay + 17, 14, UI_INK, "center", false);
+    // the INFO tab, top-right of the art: this clone's attacks, job and numbers (js/unitinfo.js)
+    const iw = 62, ih = 26, ix = ax + aw - iw - 4, iy = ay + 4;
+    uiButton({ x: ix, y: iy, w: iw, h: ih }, "INFO", UI_ICE, false, 14);
+    if (ix >= listX && ix + iw <= listX + listW && iy >= listY && iy + ih <= listY + listH) { opt._ix = ix; opt._iy = iy; opt._iw = iw; opt._ih = ih; }
     // name and numbers
     uiTextFit(opt.speciesName.toUpperCase(), x + 14, y + artH + 30, 24, opt.ready ? "#fff" : "#8a93a8", "left", w - 28);
     if (cl) {
@@ -1169,14 +1183,7 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
 // ── Tab: Info ─────────────────────────────────────────────
 // The GUIDE: the six ultimates as cards (one colour each), then the pylon rules as a list.
 function _drawInfoTab(PX, PY, PW, PH) {
-    const ultimates=[
-        {el:"fire",    name:"Nova Flare",   desc:"Ring of fire · burns all in 5 tiles"},
-        {el:"electric",name:"Overload",     desc:"Chain stun · 2s paralysis in 6 tiles"},
-        {el:"ice",     name:"Deep Freeze",  desc:"Force-freeze · huge 8-tile radius"},
-        {el:"flux",    name:"Dim. Rift",    desc:"Pull+push+disorient in 5 tiles"},
-        {el:"core",    name:"Bulwark",      desc:"Shield ALL followers + knockback ring"},
-        {el:"toxic",   name:"Plague Bloom", desc:"4 toxic clouds on random enemies"},
-    ];
+    const ultimates = ELEMENT_ULTIMATES;   // (js/unitinfo.js)
     const pylons=[
         {col:UI_TEAL,    text:"BUILD ("+PYLON_BUILD_COST+" shards) — place on any floor tile"},
         {col:UI_GOLD,    text:"UPGRADE — merge a follower into the pylon"},
