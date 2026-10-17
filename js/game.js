@@ -2194,8 +2194,11 @@ function render() {
     const _cellsNow = typeof shieldCells === "number" ? shieldCells : 0;
     if (shardCount !== _lastShardCount || _cellsNow !== _lastCellCount) {
         _lastShardCount = shardCount; _lastCellCount = _cellsNow;
-        shardUI.textContent = "Shards: " + shardCount + (_cellsNow > 0 ? "  \u2b21 " + _cellsNow : "");
+        shardUI.textContent = shardCount + (_cellsNow > 0 ? "  \u2b21 " + _cellsNow : "");
     }
+    // The ALARM is a red triangle beside the zone, not a banner (css: body.alarm-on). Only the change touches the page.
+    const _alarmOn = !!alertActive && gameState.phase !== "waveComplete";
+    if (_alarmOn !== _lastAlarmOn) { _lastAlarmOn = _alarmOn; if (document.body && document.body.classList) document.body.classList.toggle("alarm-on", _alarmOn); }
     // Zone indicator — cached element, update only on zone change
     const _pz = getZoneIndex(Math.floor(player.x));
     if (_pz !== _lastZoneIndex) {
@@ -2426,7 +2429,7 @@ function render() {
                         : t.shardReward;
                     shardCount += _pay;
                     saveShards();
-                    shardUI.textContent = "Shards: " + shardCount;
+                    shardUI.textContent = String(shardCount);
                     // Ammo used to come from the shop, which is gone. A hacked
                     // panel is the right source: it is an in-world act, panels
                     // reset every wave, and it keeps the weapon fed by going

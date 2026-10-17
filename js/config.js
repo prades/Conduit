@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-17w";
+const BUILD_VERSION = "2026-10-17x";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -259,7 +259,7 @@ const ultBar  = document.getElementById('ult');
 const ultWrap = document.getElementById('ultWrap');
 const ultLabel= document.getElementById('ultLabel');
 const siphonBtn = document.getElementById('siphonBtn');
-const shardUI = document.getElementById('shards');
+const shardUI = document.getElementById('shardCount');   // the NUMBER inside the shard gems (js/hudgems.js); the plate it replaced said "Shards: N"
 const waveUI  = document.getElementById('waveInfo');
 
 // Safe area inset at the bottom (for notch/home-bar devices)
@@ -386,6 +386,7 @@ let _lastUltState   = '';    // last ready/surging class written
 let _lastSiphonOn   = null;  // last siphon state written to siphonBtn
 let _lastShardCount = -1;    // last shard count written to shardUI
 let _lastCellCount  = -1;    // … and shield cells
+let _lastAlarmOn    = false;  // the alarm triangle's state (game.js)
 let _lastZoneIndex  = -999;  // last zone index written to zoneInfo
 let _zoneEl         = null;  // cached zoneInfo element (fetched once on first use)
 let _lastPadHudKey  = null;  // last value written to padHud (avoids DOM writes every frame)
