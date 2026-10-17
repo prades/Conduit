@@ -61,7 +61,7 @@ function findChromium() {
 // The HUD pieces that all have to be legible together. dnaHud and padHud are
 // hidden until they have something to say, so the probe reveals them — a box
 // that only appears mid-game is exactly the one nobody checks.
-const IDS = ['shards', 'ui', 'ultWrap', 'waveInfo', 'topToggles', 'zoneInfo',
+const IDS = ['shards', 'ui', 'ultWrap', 'waveInfo', 'topToggles', 'zoneInfo', 'miniCmd',
              'dnaHud', 'padHud', 'tutBtn', 'devBtn'];
 
 // The two longest lines the banner can produce — the worst case, not the
@@ -360,7 +360,7 @@ check('the ultimate bar, its switch and the toggles are all hit', () => {
         same(run.r.hits.ultWrap, 'ultWrap', `the ultimate bar is unclickable at ${run.w}`);
         same(run.r.hits.siphonBtn, 'siphonBtn', `the siphon switch is unclickable at ${run.w}`);
         if (run.r.topHidden) same(run.r.hits.radialHub, 'radialHub', `the radial menu hub is unclickable at ${run.w}`);   // a phone: the hub stands in for the buttons
-        else same(run.r.hits.btnSquad, 'btnSquad', `the SQUAD button is unclickable at ${run.w}`);
+        else if (run.w <= 700) same(run.r.hits.btnSquad, 'btnSquad', `the SQUAD button is unclickable at ${run.w}`);   // (on a tablet or desktop it lives in the mini radial)
     }
 });
 

@@ -51,6 +51,7 @@ function toolboxReveal(btn) {
     t.scrollLeft += (br.left + br.right) / 2 - (tr.left + tr.right) / 2; toolboxSync(); return true;
 }
 function toolboxTick() {
+    if (typeof miniCmdTick === "function") miniCmdTick();   // the mini command tab (js/minicmd.js)
     const t = typeof document !== "undefined" && document.querySelector ? document.querySelector("#dockScroll .top-btn.tut-wanted") : null;
     if (t) toolboxReveal(t);
     toolboxSync();

@@ -42,6 +42,7 @@ const SUITES = [
     ['recruit picker',          'recruitpicker.js'],
     ['clone card strip',        'clonecards.js'],
     ['unit info tab',           'unitinfo.js'],
+    ['mini command radial',     'minicmd.js'],
     ['roster + command merged', 'ccmerge.js'],
     ['zone report + analytics', 'zones.js'],
     ['zone crews + orders',     'zonecrew.js'],
