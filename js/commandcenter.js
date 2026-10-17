@@ -5,7 +5,8 @@
 // up the screen when accessing the roster and command center. I want the player to be able to select their creatures by clicking their card and
 // changing their attack and play style. This replaces the current index."
 //
-// The bottom dock (game.html #topToggles) now has ROSTER, COMMAND and SQUAD buttons. Each opens this full-screen overlay on its tab:
+// The bottom dock (game.html #topToggles) has ONE button, ROSTER, that opens this full-screen overlay (the old COMMAND page is merged into its right-hand
+// panel: "the command center and roster are really the same thing"). Its tabs:
 //
 //   ROSTER   every follower and clone as a CARD. Clicking a card selects it (click again to let it go); the right-hand panel then changes the
 //            whole selection at once: ATTACK STYLE (brawler / mage / technician), PLAY STYLE (defensive / balanced / aggressive), STANCE (follow me
@@ -162,7 +163,7 @@ function _ccColour(id) { const e = (typeof ELEMENTS !== "undefined" ? ELEMENTS :
 function _ccElLabel(id) { const e = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).find(x => x.id === id); return e ? e.label : String(id || "").toUpperCase(); }
 
 function ccOpen(tab) {
-    ccOpenTab = tab || "roster"; ccRerollArmed = false;
+    ccOpenTab = tab === "squad" ? "squad" : "roster";   // ("command" was a tab of its own: it is the roster's right-hand panel now) ccRerollArmed = false;
     const root = document.getElementById("ccRoot"); if (!root) return;
     root.classList.add("open"); document.body.classList.add("ccOpen");
     clearInterval(_ccTimer); _ccTimer = setInterval(ccRender, CC_REFRESH_MS);
@@ -184,7 +185,7 @@ function ccBuildFrame() {
     root.setAttribute("data-built", "1");
     const head = _ccEl("div", "cc-head"); head.appendChild(_ccEl("div", "cc-title", "COMMAND CENTER"));
     const tabs = _ccEl("div", "cc-tabs"); tabs.id = "ccTabs";
-    [["roster", "ROSTER"], ["command", "COMMAND"], ["squad", "SQUAD"]].forEach(t => { const b = _ccEl("button", "cc-tab", t[1]); b.setAttribute("data-tab", t[0]); _ccClick(b, () => { ccOpenTab = t[0]; ccRerollArmed = false; _ccCards.clear(); const g = document.getElementById("ccGrid"); if (g) g.textContent = ""; ccRender(); }); tabs.appendChild(b); });
+    [["roster", "ROSTER"], ["squad", "ANALYTICS"]].forEach(t => { const b = _ccEl("button", "cc-tab", t[1]); b.setAttribute("data-tab", t[0]); _ccClick(b, () => { ccOpenTab = t[0]; ccRerollArmed = false; _ccCards.clear(); const g = document.getElementById("ccGrid"); if (g) g.textContent = ""; ccRender(); }); tabs.appendChild(b); });
     head.appendChild(tabs);
     // RECRUIT: a follower at the Crystal for RECRUIT_COST shards (clone.js recruitFollower), on the ROSTER tab only. It dims when the shards are short.
     const rec = _ccEl("button", "cc-recruit"); rec.id = "ccRecruit"; rec.appendChild(_ccEl("span", "cc-rl", "+ RECRUIT")); rec.appendChild(_ccEl("span", "cc-rs", ""));
@@ -219,7 +220,7 @@ function ccRender() {
     grid.style.display = roster ? "grid" : "none"; filters.style.display = roster ? "flex" : "none"; page.style.display = roster ? "none" : "block";
     side.style.display = ccOpenTab === "squad" ? "none" : "flex";
     if (roster) { _ccDrawFilters(filters); _ccDrawGrid(grid); }
-    else { page.textContent = ""; try { if (ccOpenTab === "command") _ccDrawCommand(page); else _ccDrawSquad(page); } catch (e) { /* never take the game down */ } }
+    else { page.textContent = ""; try { _ccDrawSquad(page); } catch (e) { /* never take the game down */ } }
     if (ccOpenTab !== "squad") { try { _ccDrawSide(side); } catch (e) {} }
     ccRefreshChip();
 }
@@ -296,6 +297,7 @@ function _ccDrawSide(side) {
     const S = ccSelectionSummary();
     side.appendChild(_ccEl("div", "cc-sel-title", "SELECTED " + S.count));
     side.appendChild(_ccEl("div", "cc-sel-sub", S.count ? S.followers + " FOLLOWERS · " + S.clones + " CLONES · ORDERS IN THE WORLD GO TO THEM" : "CLICK A CARD TO SELECT IT"));
+    _ccQuickSelect(side);
     const sel = ccSelectionList();
     const sec = t => { const d = _ccEl("div", "cc-sec", t); side.appendChild(d); return d; };
     const row = () => { const d = _ccEl("div", "cc-row"); side.appendChild(d); return d; };
@@ -312,22 +314,28 @@ function _ccDrawSide(side) {
     sec("OTHER"); r = row();
     const rr = _ccBtn(ccRerollArmed ? "TAP AGAIN: RE-ROLL " + S.followers : "RE-ROLL", "#ff4a1c", ccRerollArmed, () => { if (!S.followers) return; if (!ccRerollArmed) ccRerollArmed = true; else { ccApplyReroll(sel); ccRerollArmed = false; } }, "wide", "BACK TO THE CRYSTAL, MADE AGAIN"); if (!S.followers) rr.disabled = true; r.appendChild(rr);
     r.appendChild(_ccBtn("CLEAR SELECTION", "#8aa0c8", false, () => { ccClearSelection(); ccRerollArmed = false; }, "wide", "BACK TO THE USUAL SQUAD"));
+    _ccDrawSquadOrders(side);
 }
 
-function _ccDrawCommand(page) {
-    page.appendChild(_ccEl("div", "cc-page-title", "SQUAD ORDERS"));
-    page.appendChild(_ccEl("div", "cc-sub2", (ccSelectionList().length ? ccSelectionList().length + " SELECTED RECEIVE WORLD ORDERS" : (typeof getCommandPool === "function" ? getCommandPool().filter(f => !f.dead).length : 0) + " IN THE COMMAND POOL")));
-    const grp = (t, kids) => { page.appendChild(_ccEl("div", "cc-sec", t)); const r = _ccEl("div", "cc-row wrap"); kids.forEach(k => r.appendChild(k)); page.appendChild(r); };
-    grp("WHO GETS WORLD ORDERS (WHEN NOBODY IS SELECTED)", [
-        _ccBtn("ALL ELEMENTS", "#19e6c1", squadMode === "all", () => radialSetScope(true), "wide", "THE WHOLE SQUAD"),
-        _ccBtn("SELECTED ELEMENT: " + _ccElLabel(player.selectedElement), "#19e6c1", squadMode !== "all", () => radialSetScope(false), "wide", "ONE ELEMENT"),
-    ]);
-    grp("PICK AN ELEMENT", (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(e => typeof unlockedElements !== "undefined" && unlockedElements.has(e.id)).map(el => _ccBtn(el.label, el.color, player.selectedElement === el.id, () => radialSelectElement(el.id), "small")));
+// QUICK SELECT: pick a whole group in one tap, at the top of the panel, so the orders under it are for them.
+function _ccQuickSelect(side) {
+    const grp = (t, kids) => { side.appendChild(_ccEl("div", "cc-sec", t)); const r = _ccEl("div", "cc-row wrap"); kids.forEach(k => r.appendChild(k)); side.appendChild(r); };
     grp("QUICK SELECT", [
         _ccBtn("EVERYONE", "#ffe733", false, () => ccSetSelection(ccUnits({})), "small"), _ccBtn("ALL FIGHTERS", "#ff4a1c", false, () => ccSetSelection(ccUnits({ duty: "fighter" })), "small"),
         _ccBtn("ALL WORKERS", "#00ccaa", false, () => ccSetSelection(ccUnits({ duty: "worker" })), "small"), _ccBtn("ALL BRAWLERS", "#ff4a1c", false, () => ccSetSelection(ccUnits({ role: "brawler" })), "small"),
         _ccBtn("ALL MAGES", "#a64dff", false, () => ccSetSelection(ccUnits({ role: "sniper" })), "small"), _ccBtn("ALL TECHNICIANS", "#8fe3ff", false, () => ccSetSelection(ccUnits({ role: "camper" })), "small"), _ccBtn("NOBODY", "#8aa0c8", false, () => ccClearSelection(), "small"),
     ]);
+}
+// The squad-wide orders (they were the COMMAND page): who world orders go to, quick selects, and orders for the whole pool. Appended to the side panel.
+function _ccDrawSquadOrders(side) {
+    side.appendChild(_ccEl("div", "cc-sel-title ccs", "SQUAD ORDERS"));
+    side.appendChild(_ccEl("div", "cc-sel-sub", (ccSelectionList().length ? ccSelectionList().length + " SELECTED RECEIVE WORLD ORDERS" : (typeof getCommandPool === "function" ? getCommandPool().filter(f => !f.dead).length : 0) + " IN THE COMMAND POOL")));
+    const grp = (t, kids) => { side.appendChild(_ccEl("div", "cc-sec", t)); const r = _ccEl("div", "cc-row wrap"); kids.forEach(k => r.appendChild(k)); side.appendChild(r); };
+    grp("WHO GETS WORLD ORDERS (WHEN NOBODY IS SELECTED)", [
+        _ccBtn("ALL ELEMENTS", "#19e6c1", squadMode === "all", () => radialSetScope(true), "wide", "THE WHOLE SQUAD"),
+        _ccBtn("SELECTED ELEMENT: " + _ccElLabel(player.selectedElement), "#19e6c1", squadMode !== "all", () => radialSetScope(false), "wide", "ONE ELEMENT"),
+    ]);
+    grp("PICK AN ELEMENT", (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(e => typeof unlockedElements !== "undefined" && unlockedElements.has(e.id)).map(el => _ccBtn(el.label, el.color, player.selectedElement === el.id, () => radialSelectElement(el.id), "small")));
     grp("COMMANDS FOR THE POOL", [
         _ccBtn("SWITCH ROLES", "#ffe733", false, () => cycleCommandPoolRoles(), "wide", "BRAWLER → MAGE → TECHNICIAN"),
         _ccBtn("ALL TO WORK", "#00ccaa", false, () => radialSetAllWork(true), "wide", "ELECTRIC, FLUX, CORE, TOXIC, ICE"),

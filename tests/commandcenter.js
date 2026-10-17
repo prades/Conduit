@@ -36,9 +36,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     squad();
 
     console.log('\nTHE PAGE');
-    check('the script is loaded, before the phone menu that shares its functions; the dock has ROSTER / COMMAND / SQUAD', () => {
+    check('the script is loaded, before the phone menu that shares its functions; the dock has ONE roster button', () => {
         ok(/js\/commandcenter\.js/.test(html), 'not loaded'); ok(html.indexOf('<script src="js/commandcenter.js') < html.indexOf('<script src="js/radialmenu.js'), 'loads after the phone menu');
-        for (const id of ['btnRoster', 'btnCommand', 'btnAnalytics']) ok(new RegExp('id="' + id + '"[^>]*ccToggleOpen').test(html), id + ' is not in the dock');
+        ok(/id="btnRoster"[^>]*ccToggleOpen\('roster'\)/.test(html), 'the roster button is not in the dock');
+        ok(!/id="btnCommand"/.test(html) && !/id="btnAnalytics"/.test(html), 'the dock still has separate COMMAND / SQUAD buttons (they are one menu now)');
         ok(/#ccRoot \{ display: none; position: fixed;[^}]*bottom: var\(--vv-bottom/.test(html), 'the overlay is not anchored to the visible area');
     });
     check('THE ASK: the old canvas index is REPLACED: not drawn and not tapped (call sites gate on indexReplaced)', () => {

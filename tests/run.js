@@ -42,6 +42,7 @@ const SUITES = [
     ['recruit picker',          'recruitpicker.js'],
     ['clone card strip',        'clonecards.js'],
     ['unit info tab',           'unitinfo.js'],
+    ['roster + command merged', 'ccmerge.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],

@@ -657,7 +657,7 @@
 
     /* ── THE COMMAND CENTER (js/commandcenter.js): the full-screen roster / command / squad menu opened from the dock ── */
     .dock-sep { align-self: stretch; width: 3px; margin: 8px 2px; background: linear-gradient(180deg, transparent, #26324f, transparent); transform: skewX(-12deg); }
-    #btnRoster { --c: var(--neo-violet); } #btnCommand { --c: var(--neo-gold); } #btnAnalytics { --c: var(--neo-teal); }
+    #btnRoster { --c: var(--neo-violet); }
     @media (max-width: 860px) and (min-width: 701px) {
         #topToggles .top-tag { display: none; } #topToggles .top-btn { padding: 0 12px; min-width: 52px; } #topToggles .top-btn svg { width: 26px; height: 26px; } #btnCtrl { min-width: 46px !important; } #topToggles .top-btn::after { content: attr(aria-label); display: none; }
     }
@@ -814,9 +814,7 @@
     <button id="btnBuild" class="top-btn" onclick="toggleBuild()" title="Build mode: off" aria-label="Build mode: off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.2 8.2 L19.8 19.8" stroke-width="2.4"/><path d="M10.4 5.2 L7.8 2.6 L2.6 7.8 L5.2 10.4 Z" fill="currentColor" stroke-width="1.2"/><path d="M14.6 9.4 L4.2 19.8" stroke-width="2.4"/><path d="M16.6 3.2 A4 4 0 1 0 20.8 7.4" stroke-width="2.8"/></svg><span class="top-tag">OFF</span></button>
     <button id="btnAuto" class="top-btn" onclick="toggleAutoplay()" title="Autoplay: off" aria-label="Autoplay: off"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="7" width="14" height="11" rx="3"/><rect x="11" y="3" width="2" height="4"/><circle cx="12" cy="3" r="1.6"/><circle cx="9.5" cy="12" r="1.6" fill="#000"/><circle cx="14.5" cy="12" r="1.6" fill="#000"/><rect x="2.5" y="10" width="2" height="5" rx="1"/><rect x="19.5" y="10" width="2" height="5" rx="1"/></svg><span class="top-tag">AUTO</span></button>
     <span class="dock-sep" aria-hidden="true"></span>
-    <button id="btnRoster" class="top-btn" onclick="ccToggleOpen('roster')" title="Roster: pick your creatures by their cards" aria-label="Roster"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span class="top-tag">ROSTER</span></button>
-    <button id="btnCommand" class="top-btn" onclick="ccToggleOpen('command')" title="Command center: squad orders" aria-label="Command center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg><span class="top-tag">COMMAND</span></button>
-    <button id="btnAnalytics" class="top-btn" onclick="ccToggleOpen('squad')" title="Squad analytics" aria-label="Squad analytics"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="12" width="4.5" height="9" rx="1"/><rect x="9.8" y="4" width="4.5" height="17" rx="1"/><rect x="16.5" y="8" width="4.5" height="13" rx="1"/></svg><span class="top-tag">SQUAD</span></button>
+    <button id="btnRoster" class="top-btn" onclick="ccToggleOpen('roster')" title="Roster and command center: pick your creatures by their cards and give them orders" aria-label="Roster and command center"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span class="top-tag">ROSTER</span></button>
     <span class="dock-sep" aria-hidden="true"></span>
     <button id="btnCrystal" class="top-btn" onclick="dockCrystal()" title="Crystal: the element mix and the guide" aria-label="Crystal"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 L19 9 L12 22 L5 9 Z"/><path d="M5 9 H19" stroke="#000" stroke-opacity="0.45" stroke-width="1.2"/></svg><span class="top-tag">CRYSTAL</span></button>
     <button id="btnClones" class="top-btn" onclick="dockClones()" title="Clones" aria-label="Clones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M7 3 C17 8 7 16 17 21"/><path d="M17 3 C7 8 17 16 7 21"/><path d="M9 7h6M9 17h6" stroke-width="1.8"/></svg><span class="top-tag">CLONES</span></button>
@@ -1610,12 +1608,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-17zj, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-17zk, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-17zj";
+window.__PAGE_BUILD = "2026-10-17zk";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1651,60 +1649,60 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-17zj"></script>
-<script src="js/icons.js?v=2026-10-17zj"></script>
-<script src="js/uikit.js?v=2026-10-17zj"></script>
-<script src="js/rng.js?v=2026-10-17zj"></script>
-<script src="js/traits.js?v=2026-10-17zj"></script>
-<script src="js/elements.js?v=2026-10-17zj"></script>
-<script src="js/combat.js?v=2026-10-17zj"></script>
-<script src="js/species.js?v=2026-10-17zj"></script>
-<script src="js/levels.js?v=2026-10-17zj"></script>
-<script src="js/predator_randomizer.js?v=2026-10-17zj"></script>
-<script src="js/mass.js?v=2026-10-17zj"></script>
-<script src="js/infest.js?v=2026-10-17zj"></script>
-<script src="js/power.js?v=2026-10-17zj"></script>
-<script src="js/save.js?v=2026-10-17zj"></script>
-<script src="js/camp.js?v=2026-10-17zj"></script>
-<script src="js/wavedata.js?v=2026-10-17zj"></script>
-<script src="js/helpers.js?v=2026-10-17zj"></script>
-<script src="js/predator.js?v=2026-10-17zj"></script>
-<script src="js/abilities.js?v=2026-10-17zj"></script>
-<script src="js/world.js?v=2026-10-17zj"></script>
-<script src="js/commands.js?v=2026-10-17zj"></script>
-<script src="js/npc.js?v=2026-10-17zj"></script>
-<script src="js/codex.js?v=2026-10-17zj"></script>
-<script src="js/draw.js?v=2026-10-17zj"></script>
-<script src="js/beetle3d.js?v=2026-10-17zj"></script>
-<script src="js/bugs3d.js?v=2026-10-17zj"></script>
-<script src="js/ui.js?v=2026-10-17zj"></script>
-<script src="js/waves.js?v=2026-10-17zj"></script>
-<script src="js/drops.js?v=2026-10-17zj"></script>
-<script src="js/clone.js?v=2026-10-17zj"></script>
-<script src="js/clonework.js?v=2026-10-17zj"></script>
-<script src="js/broods.js?v=2026-10-17zj"></script>
-<script src="js/raids.js?v=2026-10-17zj"></script>
-<script src="js/ultra.js?v=2026-10-17zj"></script>
-<script src="js/formations.js?v=2026-10-17zj"></script>
-<script src="js/breakout.js?v=2026-10-17zj"></script>
-<script src="js/nightraids.js?v=2026-10-17zj"></script>
-<script src="js/bonds.js?v=2026-10-17zj"></script>
-<script src="js/autoplay.js?v=2026-10-17zj"></script>
-<script src="js/indexart.js?v=2026-10-17zj"></script>
-<script src="js/modules.js?v=2026-10-17zj"></script>
-<script src="js/shieldcells.js?v=2026-10-17zj"></script>
-<script src="js/evolution.js?v=2026-10-17zj"></script>
-<script src="js/buildmenu.js?v=2026-10-17zj"></script>
-<script src="js/hudgems.js?v=2026-10-17zj"></script>
-<script src="js/nethud.js?v=2026-10-17zj"></script>
-<script src="js/commandcenter.js?v=2026-10-17zj"></script>
-<script src="js/unitinfo.js?v=2026-10-17zj"></script>
-<script src="js/toolbox.js?v=2026-10-17zj"></script>
-<script src="js/radialmenu.js?v=2026-10-17zj"></script>
-<script src="js/input.js?v=2026-10-17zj"></script>
-<script src="js/game.js?v=2026-10-17zj"></script>
-<script src="js/tutorial.js?v=2026-10-17zj"></script>
-<script src="js/dev.js?v=2026-10-17zj"></script>
+<script src="js/config.js?v=2026-10-17zk"></script>
+<script src="js/icons.js?v=2026-10-17zk"></script>
+<script src="js/uikit.js?v=2026-10-17zk"></script>
+<script src="js/rng.js?v=2026-10-17zk"></script>
+<script src="js/traits.js?v=2026-10-17zk"></script>
+<script src="js/elements.js?v=2026-10-17zk"></script>
+<script src="js/combat.js?v=2026-10-17zk"></script>
+<script src="js/species.js?v=2026-10-17zk"></script>
+<script src="js/levels.js?v=2026-10-17zk"></script>
+<script src="js/predator_randomizer.js?v=2026-10-17zk"></script>
+<script src="js/mass.js?v=2026-10-17zk"></script>
+<script src="js/infest.js?v=2026-10-17zk"></script>
+<script src="js/power.js?v=2026-10-17zk"></script>
+<script src="js/save.js?v=2026-10-17zk"></script>
+<script src="js/camp.js?v=2026-10-17zk"></script>
+<script src="js/wavedata.js?v=2026-10-17zk"></script>
+<script src="js/helpers.js?v=2026-10-17zk"></script>
+<script src="js/predator.js?v=2026-10-17zk"></script>
+<script src="js/abilities.js?v=2026-10-17zk"></script>
+<script src="js/world.js?v=2026-10-17zk"></script>
+<script src="js/commands.js?v=2026-10-17zk"></script>
+<script src="js/npc.js?v=2026-10-17zk"></script>
+<script src="js/codex.js?v=2026-10-17zk"></script>
+<script src="js/draw.js?v=2026-10-17zk"></script>
+<script src="js/beetle3d.js?v=2026-10-17zk"></script>
+<script src="js/bugs3d.js?v=2026-10-17zk"></script>
+<script src="js/ui.js?v=2026-10-17zk"></script>
+<script src="js/waves.js?v=2026-10-17zk"></script>
+<script src="js/drops.js?v=2026-10-17zk"></script>
+<script src="js/clone.js?v=2026-10-17zk"></script>
+<script src="js/clonework.js?v=2026-10-17zk"></script>
+<script src="js/broods.js?v=2026-10-17zk"></script>
+<script src="js/raids.js?v=2026-10-17zk"></script>
+<script src="js/ultra.js?v=2026-10-17zk"></script>
+<script src="js/formations.js?v=2026-10-17zk"></script>
+<script src="js/breakout.js?v=2026-10-17zk"></script>
+<script src="js/nightraids.js?v=2026-10-17zk"></script>
+<script src="js/bonds.js?v=2026-10-17zk"></script>
+<script src="js/autoplay.js?v=2026-10-17zk"></script>
+<script src="js/indexart.js?v=2026-10-17zk"></script>
+<script src="js/modules.js?v=2026-10-17zk"></script>
+<script src="js/shieldcells.js?v=2026-10-17zk"></script>
+<script src="js/evolution.js?v=2026-10-17zk"></script>
+<script src="js/buildmenu.js?v=2026-10-17zk"></script>
+<script src="js/hudgems.js?v=2026-10-17zk"></script>
+<script src="js/nethud.js?v=2026-10-17zk"></script>
+<script src="js/commandcenter.js?v=2026-10-17zk"></script>
+<script src="js/unitinfo.js?v=2026-10-17zk"></script>
+<script src="js/toolbox.js?v=2026-10-17zk"></script>
+<script src="js/radialmenu.js?v=2026-10-17zk"></script>
+<script src="js/input.js?v=2026-10-17zk"></script>
+<script src="js/game.js?v=2026-10-17zk"></script>
+<script src="js/tutorial.js?v=2026-10-17zk"></script>
+<script src="js/dev.js?v=2026-10-17zk"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1757,7 +1755,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-17zj"></script>
+<script src="js/init.js?v=2026-10-17zk"></script>
 
 </body>
 </html>
