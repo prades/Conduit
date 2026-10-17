@@ -47,6 +47,7 @@ function _saucer(o) {
   const belly = new T.Mesh(new T.TorusGeometry(R * 0.45, 0.025, 5, o.segs || 24), _saucerLeg); belly.rotation.x = PI / 2; belly.position.y = -0.0; body.add(belly);
   // the rim lights: a ring of small lamps; the lit ones chase round it
   const lamps = []; for (let i = 0; i < o.nLamps; i++) { const a = i * TAU / o.nLamps, mat = new T.MeshBasicMaterial({ color: 0x3a3000, toneMapped: false }), lp = new T.Mesh(new T.BoxGeometry(0.075, 0.05, 0.075), mat); lp.position.set(Math.sin(a) * R * 1.0, 0.145 * k, Math.cos(a) * R * 1.0); lp.rotation.y = a; body.add(lp); lamps.push({ lp, mat, i }); }
+  if (o.bellyBand) for (let i = 0; i < o.nLamps; i++) { const a = i * TAU / o.nLamps + TAU / o.nLamps / 2, mat = new T.MeshBasicMaterial({ color: 0x3a3000, toneMapped: false }), lp = new T.Mesh(new T.BoxGeometry(0.06, 0.04, 0.06), mat); lp.position.set(Math.sin(a) * R * 0.92, 0.075 * k, Math.cos(a) * R * 0.92); lp.rotation.y = a; body.add(lp); lamps.push({ lp, mat, i: i + 3 }); }
   const rimBand = new T.Mesh(new T.TorusGeometry(R * 0.985, 0.014, 4, o.segs || 24), _saucerLeg); rimBand.rotation.x = PI / 2; rimBand.position.y = 0.105 * k; body.add(rimBand);
   // the legs: hip under the disc, thigh, knee, shin, a round foot; the foot walks a loop and the leg follows it
   const legs = []; for (let i = 0; i < o.legs; i++) { const a = i * TAU / o.legs + (o.legRot || 0); if (o.curved) { legs.push({ a, cv: _curvyLeg(o, b), ph: (o.legs === 3 ? i * TAU / 3 : (i % 2 ? PI : 0)) + (o.legPh || 0) }); continue; } const th = _bone(null, null, o.legR, o.legR * 0.8, _saucerLeg), sh = _bone(null, null, o.legR * 0.8, o.legR * 0.35, _saucerLeg), kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 1.2, 0), _saucerLeg), ft = new T.Mesh(new T.SphereGeometry(o.legR * 1.5, 8, 6), _saucerLeg); ft.scale.y = 0.6; b.add(th); b.add(sh); b.add(kn); b.add(ft); legs.push({ a, th, sh, kn, ft, ph: (o.legs === 3 ? i * TAU / 3 : (i % 2 ? PI : 0)) + (o.legPh || 0) }); }
@@ -108,3 +109,11 @@ fx(682, "A faint glowing haze inside the glass, like a held breath of light.", (
 fx(683, "A small ball of plasma turning slowly in the middle of the glass, dim yellow, not a crystal.", () => _saucer(Object.assign({}, _sgl, { glass: { opacity: 0.3, plasma: true } })));
 fx(684, "An even bigger tall glass bubble, nearly a hemisphere, with eight frame ribs.", () => _saucer(Object.assign({}, _sgl, { domeR: 0.65, glass: { opacity: 0.28, tall: 1.0, ribs: 8, mist: true } })));
 fx(685, "A wide low glass canopy covering most of the top of the disc, thin frame, the dark deck visible.", () => _saucer(Object.assign({}, _sgl, { domeR: 0.78, glass: { opacity: 0.26, tall: 0.5, ribs: 6 } })));
+
+// ── 676 with the original dark centre and a TALLER disc (Nos. 686–690): a thicker, deeper hull; no glass ──
+const _stall = Object.assign({}, _sjag, { domeR: 0.34 });
+fx(686, "676 with the disc taller: a deeper lens hull, the dark dome kept, the legs lifted to match.", () => _saucer(Object.assign({}, _stall, { sy: 2.0, hipH: 0.55 })));
+fx(687, "Taller again: a fat, deep disc like a drum, the rim lights on a deeper band.", () => _saucer(Object.assign({}, _stall, { sy: 2.8, hipH: 0.66, domeR: 0.36 })));
+fx(688, "A tall, steep-sided hull, almost a cylinder with a sloped top and a taller dark dome.", () => _saucer(Object.assign({}, _stall, { sy: 3.2, hipH: 0.72, domeR: 0.34, R: 0.88 })));
+fx(689, "A deep hull with a second rim-light band low on its belly, as well as the top one.", () => _saucer(Object.assign({}, _stall, { sy: 2.4, hipH: 0.6, bellyBand: true })));
+fx(690, "Tall and slightly domed all over, an egg-like disc with the dark centre rising from it.", () => _saucer(Object.assign({}, _stall, { sy: 2.6, hipH: 0.64, domeR: 0.42, R: 0.92 })));
