@@ -42,9 +42,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.evo, 'quillstone', 'its form'); same(r.lv, 20, 'level'); ok(r.molt, 'no molt started');
         same(r.tag, 'QUILLSTONE', 'its tag'); ok(run('EVOLUTIONS.bloom.legacy === true'), 'the Bunker Bloom is no longer handed out');
     });
-    check('THE ASK: an ELECTRIC SNIPER reaching level 20 becomes the REAVER', () => {
+    check('THE ASK: an ELECTRIC SNIPER reaching its level becomes the THUNDERHEAD (design No. 541, which replaced the Reaver)', () => {
         mk('electric', 'sniper', 20); run(lvlUp);
-        same(run('__f.evolved'), 'reaver', 'its form');
+        same(run('__f.evolved'), 'thunderhead', 'its form'); same(run('unitTypeLabel(__f)'), 'THUNDERHEAD', 'its tag'); ok(run('EVOLUTIONS.reaver.legacy === true'), 'the Reaver is no longer handed out');
     });
     check('THE ASK: a FLUX SNIPER reaching level 20 becomes the SERPENT (design No. 15)', () => {
         mk('flux', 'sniper', 20); run(lvlUp);
@@ -59,7 +59,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'core brawler'); same(run('unitTypeLabel(__f)'), 'HAMMER SLUG', 'its tag'); ok(run('EVOLUTIONS.warden.legacy === true'), 'the Aegis Warden is no longer handed out');
         mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'prism', 'electric brawler');
         same(run('unitTypeLabel(__f)'), 'PRISM HOOD', 'its tag'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
-        mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'reaver', 'the electric sniper is still the Reaver');
+        mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'thunderhead', 'the electric sniper is the Thunderhead');
     });
     check('THE ASK: a FLUX WORKER becomes the HOVER HAULER (design No. 58) — a worker is a duty, not a role', () => {
         mk('flux', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux brawler on worker duty');
@@ -155,6 +155,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.dmg > 0 && r.burn, 'the quillstone did not burst: ' + JSON.stringify(r)); ok(/QUILL BURST/.test(r.text), 'its move is not named: ' + r.text);
     });
     check('THE ASK: ARC VOLLEY — a charged arc into the nearest enemy in range, jumping to the ones beside it', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
+            spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'thunderhead'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const a = mkP(24, 2), b = mkP(25.5, 2.5), c = mkP(26.8, 1.5), lone = mkP(32, 2), tooFar = mkP(20, 40);
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), c: d(c), lone: d(lone), arcs: (f._arcPts || []).length };
+            [a, b, c, lone, tooFar].forEach(p => p.dead = true); return out; })()`);
+        ok(r.a > r.b && r.b > 0 && r.c > 0, 'the arc and its jumps: ' + JSON.stringify(r));
+        same(r.lone, 0, 'damage to one out of reach of any jump');
+        same(r.arcs, 3, 'arcs drawn');
+    });
+
+    check('the legacy REAVER still fires ARC VOLLEY for a follower already evolved into it', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
             spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'reaver'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
@@ -426,7 +439,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const g = followers.find(x => !x.dead); activeCrystalModulation = null;
             return g ? { evo: g.evolved, el: g.element, role: g.role } : null; })()`);
         ok(r, 'it never respawned');
-        same(r.evo, 'reaver', 'its form'); same(r.el, 'electric', 'its element (electric is still in the mix)'); same(r.role, 'sniper', 'its role');
+        same(r.evo, 'thunderhead', 'its form'); same(r.el, 'electric', 'its element (electric is still in the mix)'); same(r.role, 'sniper', 'its role');
     });
 
     console.log('\nRESPAWN');
@@ -454,7 +467,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {
+        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
@@ -466,7 +479,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone', 'hammerslug']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone', 'hammerslug']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);

@@ -130,8 +130,13 @@ const EVOLUTIONS = {
     // LEGACY: the first fire brawler. New evolutions use the Quillstone; a follower already evolved into this keeps it.
     bloom:  { id: "bloom",  legacy: true, name: "BUNKER BLOOM", element: "fire",     role: "brawler", move: "PETAL BLAZE", sheet: "img/evo/bloom.png",
               cell: 144, anchor: [72, 114.2], core: [72, 74.6] },
-    reaver: { id: "reaver", name: "REAVER",       element: "electric", role: "sniper",  move: "ARC VOLLEY",  sheet: "img/evo/reaver.png",
+    // LEGACY: the first electric mage. New evolutions use the Thunderhead; a follower already evolved into this keeps it.
+    reaver: { id: "reaver", legacy: true, name: "REAVER", element: "electric", role: "sniper",  move: "ARC VOLLEY",  sheet: "img/evo/reaver.png",
               cell: 144, anchor: [72, 114.2], core: [72, 58.4] },
+    // The ELECTRIC MAGE ("sniper" in the code), design No. 541: a smooth cloud of dark gas over a flickering glow, a crown of black spikes,
+    // four glowing spikes circling its base and gas fins that ripple. The glow flickers, so its sheet carries its own light.
+    thunderhead: { id: "thunderhead", name: "THUNDERHEAD", element: "electric", role: "sniper", move: "ARC VOLLEY", sheet: "img/evo/thunderhead.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 78.3], noGlow: true, color: "#ffee33" },
     // Its reactor is in its head, which moves with its facing: the sheet carries its own light.
     serpent:{ id: "serpent",name: "SERPENT",      element: "flux",     role: "sniper",  move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
               cell: 144, anchor: [72, 114.2], core: [72, 61], noGlow: true, color: "#bb66ff" },
@@ -223,7 +228,7 @@ function evolutionTick() {
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
-        if (d.id === "bloom" || d.id === "quillstone") petalBlaze(f); else if (d.id === "reaver") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
+        if (d.id === "bloom" || d.id === "quillstone") petalBlaze(f); else if (d.id === "reaver" || d.id === "thunderhead") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
         else if (d.id === "warden" || d.id === "hammerslug") aegisBurst(f); else if (d.id === "manta" || d.id === "prism") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera") eruption(f); else if (d.id === "maw") chomp(f);
     }
 }

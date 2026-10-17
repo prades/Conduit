@@ -11,8 +11,11 @@ const fs = require('fs'), path = require('path');
 const THREE_DIR = process.argv[2], OUT = process.argv[3];
 const core = fs.readFileSync(path.join(__dirname, 'forms-core.js'), 'utf8');
 // forms2.js (helpers + Nos. 33-52), forms3.js (sentinels, robots, drones, Nos. 53-72) and forms4.js (ancient relics, Nos. 73-92), forms5.js (the corroded crystal, Nos. 93-103), forms6.js (the flux brawler, Nos. 104-115), forms7.js (the core mage, Nos. 116-125), forms8.js (the toxic brawler, Nos. 126-141), forms9.js (the core worker, Nos. 142-144), forms10.js (the ice maw, Nos. 145-157), forms11-13.js (the ammonite in its jar, Nos. 158-222), forms14.js (cloaks and pyramids, Nos. 223-331), forms15.js (the rock porcupine, Nos. 332-361) register FORMS2[no].
-const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8'), f4src = fs.readFileSync(path.join(__dirname, 'forms4.js'), 'utf8'), f5src = fs.readFileSync(path.join(__dirname, 'forms5.js'), 'utf8'), f6src = fs.readFileSync(path.join(__dirname, 'forms6.js'), 'utf8'), f7src = fs.readFileSync(path.join(__dirname, 'forms7.js'), 'utf8'), f8src = fs.readFileSync(path.join(__dirname, 'forms8.js'), 'utf8'), f9src = fs.readFileSync(path.join(__dirname, 'forms9.js'), 'utf8'), f10src = fs.readFileSync(path.join(__dirname, 'forms10.js'), 'utf8'), f11src = fs.readFileSync(path.join(__dirname, 'forms11.js'), 'utf8'), f12src = fs.readFileSync(path.join(__dirname, 'forms12.js'), 'utf8'), f13src = fs.readFileSync(path.join(__dirname, 'forms13.js'), 'utf8'), f14src = fs.readFileSync(path.join(__dirname, 'forms14.js'), 'utf8'), f15src = fs.readFileSync(path.join(__dirname, 'forms15.js'), 'utf8'), f16src = fs.readFileSync(path.join(__dirname, 'forms16.js'), 'utf8'), f17src = fs.readFileSync(path.join(__dirname, 'forms17.js'), 'utf8'), f18src = fs.readFileSync(path.join(__dirname, 'forms18.js'), 'utf8'), f19src = fs.readFileSync(path.join(__dirname, 'forms19.js'), 'utf8'), f20src = fs.readFileSync(path.join(__dirname, 'forms20.js'), 'utf8');
+const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8'), f4src = fs.readFileSync(path.join(__dirname, 'forms4.js'), 'utf8'), f5src = fs.readFileSync(path.join(__dirname, 'forms5.js'), 'utf8'), f6src = fs.readFileSync(path.join(__dirname, 'forms6.js'), 'utf8'), f7src = fs.readFileSync(path.join(__dirname, 'forms7.js'), 'utf8'), f8src = fs.readFileSync(path.join(__dirname, 'forms8.js'), 'utf8'), f9src = fs.readFileSync(path.join(__dirname, 'forms9.js'), 'utf8'), f10src = fs.readFileSync(path.join(__dirname, 'forms10.js'), 'utf8'), f11src = fs.readFileSync(path.join(__dirname, 'forms11.js'), 'utf8'), f12src = fs.readFileSync(path.join(__dirname, 'forms12.js'), 'utf8'), f13src = fs.readFileSync(path.join(__dirname, 'forms13.js'), 'utf8'), f14src = fs.readFileSync(path.join(__dirname, 'forms14.js'), 'utf8'), f15src = fs.readFileSync(path.join(__dirname, 'forms15.js'), 'utf8'), f16src = fs.readFileSync(path.join(__dirname, 'forms16.js'), 'utf8'), f17src = fs.readFileSync(path.join(__dirname, 'forms17.js'), 'utf8'), f18src = fs.readFileSync(path.join(__dirname, 'forms18.js'), 'utf8'), f19src = fs.readFileSync(path.join(__dirname, 'forms19.js'), 'utf8'), f20src = fs.readFileSync(path.join(__dirname, 'forms20.js'), 'utf8'), f21src = fs.readFileSync(path.join(__dirname, 'forms21.js'), 'utf8');
 const JOBS = [
+  // No. 543 (the game sprite of 541), the electric mage: a smooth cloud of dark gas over a flickering glow, a crown of black spikes, four glowing spikes circling its base, gas fins that ripple.
+  // One turn of the beat: the cloud swings rather than turns, and the four identical glowing spikes advance a quarter-turn a loop, so it closes; its action frames spark arcs between the crown spikes.
+  { id: 'thunderhead', form: 543, color: '#ffee33', idleAct: 0, action: [0, 1.0], pulse: true, keepSprites: true, glowNormal: true },
   { id: 'reaver', form: 'reaver', color: '#ffee33', idleAct: 0.3, action: [0.8, 1.0] },
   { id: 'bloom',  form: 'bunker', color: '#ff3300', idleAct: 0.2, action: [0.5, 1.0] },
   // The serpent's loop is one beat of 2.2 rad/s (period 2*PI/2.2); its action rears the head.
@@ -69,6 +72,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   ${f18src}
   ${f19src}
   ${f20src}
+  ${f21src}
   const out = {};
   const renderer = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, premultipliedAlpha: false });
   renderer.setPixelRatio(1); renderer.setSize(CELL * 2, CELL * 2, false);
@@ -98,7 +102,9 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
     const back = new T.DirectionalLight(0x6c8cff, 0.6); back.position.set(2, 1, -5); scene.add(back);
     const B = (typeof job.form === 'number' ? FORMS2 : FORMS)[job.form].build(); scene.add(B.g);
     // Glow sprites on a transparent sheet are left to the game (it draws its own glow at the reactor).
-    B.g.traverse(o => { if (o.isSprite || o.material === M.rotWash) o.visible = false; });   // (the pool's wide glow is for the mock sheets)
+    B.g.traverse(o => { if ((o.isSprite && !job.keepSprites) || o.material === M.rotWash) o.visible = false; });
+    // A form made of gas and light (job.glowNormal): the sheet is transparent, where additive light would vanish, so its glows are painted with ordinary blending.
+    if (job.glowNormal) B.g.traverse(o => { const ms = o.material ? [].concat(o.material) : []; ms.forEach(m => { if (m.blending === T.AdditiveBlending) { m.blending = T.NormalBlending; if (!m.map && o.isMesh) m.map = glowTex; m.needsUpdate = true; } }); });   // (the pool's wide glow is for the mock sheets)
     const gMeshes = [], bMeshes = []; B.g.traverse(o => { if (o.isMesh && o.visible) (isGround(o) ? gMeshes : bMeshes).push(o); });
     const cam = new T.OrthographicCamera(-HALF, HALF, HALF, -HALF, 0.1, 100);
     // 2:1 iso: on the (1, h, 1) diagonal, a ground step along x or z projects as (±1, 0.5) when sin(elevation) = 0.5.
