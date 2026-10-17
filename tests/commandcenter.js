@@ -135,11 +135,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE QUICK RECRUIT');
     // REPORTED: "I would really like a button near the command center or roster, so if the roster is looking slim the user can create a recruit rapidly."
-    check('THE ASK: RECRUIT is on the dock beside ROSTER, in the Command Center header, and at the top of the phone roster', () => {
-        ok(/id="btnRecruit"[^>]*onclick="recruitFollower\(\)"/.test(html), 'no dock button');
-        ok(html.indexOf('id="btnRoster"') < html.indexOf('id="btnRecruit"') && html.indexOf('id="btnRecruit"') < html.indexOf('id="btnCommand"'), 'not beside the roster');
-        const cc = fs.readFileSync(path.join(ROOT, 'js/commandcenter.js'), 'utf8'), rm = fs.readFileSync(path.join(ROOT, 'js/radialmenu.js'), 'utf8');
-        ok(/id = "ccRecruit"[\s\S]{0,200}recruitFollower\(\)/.test(cc), 'the Command Center has no recruit button'); ok(/RECRUIT \\u25c6[\s\S]{0,200}recruitFollower\(\)/.test(rm), 'the phone roster has no recruit button');
+    check('THE ASK: RECRUIT is in the roster (the Command Center, shown on its roster tab only; the phone roster) and nowhere else: not the dock, not the Crystal', () => {
+        ok(!/id="btnRecruit"/.test(html), 'the dock still has a recruit button');
+        const cc = fs.readFileSync(path.join(ROOT, 'js/commandcenter.js'), 'utf8'), rm = fs.readFileSync(path.join(ROOT, 'js/radialmenu.js'), 'utf8'), cl = fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8');
+        ok(/id = "ccRecruit"[\s\S]{0,200}recruitFollower\(\)/.test(cc), 'the Command Center has no recruit button'); ok(/rec\.style\.display = ccOpenTab === "roster"/.test(cc), 'it shows on other tabs');
+        ok(/RECRUIT \\u25c6[\s\S]{0,200}recruitFollower\(\)/.test(rm), 'the phone roster has no recruit button');
+        ok(!/id:"recruit"/.test(cl) && !/_drawRecruitTab/.test(cl) && !/_recruitBtnBounds/.test(cl), 'the Crystal still has a RECRUIT tab');
+        same(run('CTABS.map(t => t.id).join()'), 'modulation,info', 'the Crystal tabs');
     });
     check('a recruit costs RECRUIT_COST shards and a follower comes out at the Crystal', () => {
         run('followers.length = 0; shardCount = 100; floatingTexts.length = 0;');
@@ -155,7 +157,6 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         run('followers.length = 0; shardCount = 5; floatingTexts.length = 0;');
         same(run('recruitFollower()'), false, 'refused'); same(run('shardCount'), 5, 'spent'); same(run('followers.length'), 0, 'a follower appeared'); ok(run('floatingTexts.some(t => /NEED/.test(t.text))'), 'no reason said');
     });
-    check('the Crystal RECRUIT tab uses the same action', () => { ok(/recruitFollower\(\);/.test(fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8')), 'the tab has its own copy'); });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
     process.exit(failures ? 1 : 0);

@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-17ze";
+const BUILD_VERSION = "2026-10-17zf";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -1014,7 +1014,7 @@ let followerDutyMenu = null;
 
 // ── CRYSTAL MENU / BUILDS ─────────────────────────────────
 let crystalMenuOpen  = false;
-let crystalMenuTab   = "modulation";   // "modulation"|"info"|"recruit" — clones live on the HUD now
+let crystalMenuTab   = "modulation";   // "modulation"|"info" — clones live on the HUD now
 let crystalCloneSort = "species";  // "species"|"combat"|"defense"|"hp"|"specials"
 // Which elements new followers may come out as. A subset of the unlocked set —
 // the whole set means "any", one element means every recruit is that element.

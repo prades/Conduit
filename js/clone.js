@@ -641,7 +641,6 @@ let _crystalScrollY  = 0;                   // clone list scroll offset (px)
 const CTABS = [
     { id:"modulation", label:"ELEMENT MIX", color:"#aaddff" },
     { id:"info",       label:"GUIDE",       color:"#ffcc44" },
-    { id:"recruit",    label:"RECRUIT",    color:"#0f8"    },
 ];
 const CSORTS = [
     { id:"species",  label:"SPECIES"  },
@@ -651,14 +650,9 @@ const CSORTS = [
     { id:"specials", label:"SPECIALS" },
 ];
 
-// What new recruits draw from. This is the modulation slider's actual job —
-// until now _getModScheme() was only ever used to draw a label and swatches,
-// so the slider was decorative and recruits took any unlocked element.
-// Falls back to everything activated if the scheme somehow comes back empty,
-// because a recruit with no element is worse than an unmodulated one.
-// THE QUICK RECRUIT. "I would really like a button near the roster, so if the roster is looking slim the user can create a recruit rapidly." One
-// action for every place that offers it (the Command Center, the dock, the phone roster, the Crystal's RECRUIT tab): it costs RECRUIT_COST
-// shards and a follower comes out at the Crystal as an element of the current mix (the ELEMENT MIX tab).
+// THE QUICK RECRUIT. "I would really like a button near the roster, so if the roster is looking slim the user can create a recruit rapidly." It
+// costs RECRUIT_COST shards and a follower comes out at the Crystal as an element of the current mix (the ELEMENT MIX tab). It is offered in the
+// ROSTER only (the Command Center's roster tab and the phone roster): "that needs to be the only way", so the Crystal menu and the dock have none.
 const RECRUIT_COST = 30;
 function recruitFollower() {
     if (shardCount < RECRUIT_COST) { floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NEED " + RECRUIT_COST + " SHARDS", color: "#f44", life: 90, vy: -0.2 }); return false; }
@@ -668,6 +662,12 @@ function recruitFollower() {
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "FOLLOWER RECRUITED!", color: "#0f8", life: 100, vy: -0.2 });
     return true;
 }
+
+// What new recruits draw from. This is the modulation slider's actual job —
+// until now _getModScheme() was only ever used to draw a label and swatches,
+// so the slider was decorative and recruits took any unlocked element.
+// Falls back to everything activated if the scheme somehow comes back empty,
+// because a recruit with no element is worse than an unmodulated one.
 function recruitElementPool() {
     const scheme = _getModScheme();
     const ids = (scheme.elements || []).map(e => e.id).filter(id => unlockedElements.has(id));
@@ -951,7 +951,6 @@ function drawCrystalPanel() {
     switch(crystalMenuTab) {
         case "modulation": _drawModTab(PX, contentY, PW, contentH, scheme, cycleColor); break;
         case "info":       _drawInfoTab(PX, contentY, PW, contentH); break;
-        case "recruit":    _drawRecruitTab(PX, contentY, PW, contentH); break;
     }
     ctx.restore();
     ctx.restore();
@@ -1197,37 +1196,6 @@ function _drawInfoTab(PX, PY, PW, PH) {
     });
 }
 
-// ── Tab: Recruit ──────────────────────────────────────────
-// The crystal beside what a recruit can be, the price, and one big button.
-function _drawRecruitTab(PX, PY, PW, PH) {
-    const canAfford = shardCount >= RECRUIT_COST, wide = PW >= 540, pad = 22;
-    const pool = ELEMENTS.filter(e => unlockedElements.has(e.id));
-    let rx = PX + pad, rw = PW - pad * 2, top = PY + 10;
-    if (wide) {
-        const leftW = Math.round(PW * 0.34), R = Math.max(28, Math.min(90, Math.floor(leftW * 0.32), Math.floor((PH - 150) / 2)));
-        const cx = PX + leftW / 2, cy = PY + Math.max(8, Math.round((PH - (R * 2 + 90)) / 2)) + R;
-        _draw2DCrystal(cx, cy, R, pool.length ? pool[Math.floor((frame || 0) / 40) % pool.length].color : "#aaa");
-        uiText(RECRUIT_COST + " \u2726", cx, cy + R + 36, 38, canAfford ? UI_GOLD : UI_RED, "center");
-        uiCaptionFit("YOU HAVE " + shardCount, cx, cy + R + 70, "#8aa0c8", "center", 14, leftW - 20);
-        rx = PX + leftW + 6; rw = PW - leftW - 6 - pad;
-    }
-    uiText("RECRUIT FOLLOWER", rx + 4, top + 18, 28, UI_TEAL, "left");
-    uiCaptionFit("A follower of your current mix, at the Crystal", rx + 4, top + 50, "#8aa0c8", "left", 14, rw);
-    // what it can be
-    uiCaption("CAN COME OUT AS", rx + 4, top + 84, "#6a7aa0", "left", 13);
-    const cols = rw >= 360 ? 3 : 2, chH = 36, gap = 8, cw = Math.floor((rw - (cols - 1) * gap) / cols);
-    pool.forEach((el, i) => {
-        const x = rx + (i % cols) * (cw + gap), y = top + 100 + Math.floor(i / cols) * (chH + gap);
-        uiSlab(x, y, cw, chH, el.color, false, "#101830");
-        ctx.fillStyle = el.color; const gx = x + 20, gy = y + chH / 2; ctx.beginPath(); ctx.moveTo(gx, gy - 9); ctx.lineTo(gx + 7, gy); ctx.lineTo(gx, gy + 9); ctx.lineTo(gx - 7, gy); ctx.closePath(); ctx.fill();
-        uiTextFit(el.label.toUpperCase(), x + 36, y + chH / 2 + 1, 17, "#fff", "left", cw - 46);
-    });
-    // Button, at the foot
-    const btnH = Math.min(70, Math.max(48, PH * 0.14));
-    window._recruitBtnBounds = { x: rx, y: PY + PH - btnH - 18, w: rw, h: btnH };
-    uiButton(window._recruitBtnBounds, "SPAWN \u2014 " + RECRUIT_COST + " SHARDS", UI_TEAL, canAfford, 26, null, !canAfford);
-}
-
 // Every element still locked, in the ladder's order: what an earned unlock can be spent on (js/wavedata.js activatePendingElement).
 function _modChoices() {
     const order = typeof ELEMENT_LADDER !== "undefined" ? ELEMENT_LADDER : ELEMENTS.map(e => e.id);
@@ -1277,15 +1245,6 @@ function handleCrystalPanelInput(ex, ey, isDown) {
     // Outside panel → close
     if (ex<b.PX||ex>b.PX+b.PW||ey<b.contentY||ey>b.contentY+b.contentH) {
         crystalMenuOpen=false; return true;
-    }
-
-    // ── Tab-specific taps ─────────────────────────────────
-    if (crystalMenuTab==="recruit" && isDown) {
-        const rb = window._recruitBtnBounds;
-        if (rb && ex>=rb.x && ex<=rb.x+rb.w && ey>=rb.y && ey<=rb.y+rb.h) {
-            recruitFollower();
-            return true;
-        }
     }
 
     return true;

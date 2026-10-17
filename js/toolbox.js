@@ -52,9 +52,6 @@ function toolboxReveal(btn) {
     t.scrollLeft += (br.left + br.right) / 2 - (tr.left + tr.right) / 2; toolboxSync(); return true;
 }
 function toolboxTick() {
-    // RECRUIT dims while the shards are short of its price.
-    const rb = typeof document !== "undefined" && document.getElementById ? document.getElementById("btnRecruit") : null;
-    if (rb && rb.classList && typeof RECRUIT_COST !== "undefined") rb.classList.toggle("dim", shardCount < RECRUIT_COST);
     const t = typeof document !== "undefined" && document.querySelector ? document.querySelector("#dockScroll .top-btn.tut-wanted") : null;
     if (t) toolboxReveal(t);
     toolboxSync();

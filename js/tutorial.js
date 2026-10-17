@@ -335,7 +335,7 @@ const TUTS = [
         // ring is for things on the floor.
         id:    'crystal',
         title: 'OPEN THE CRYSTAL',
-        body:  'Tap the Crystal to open it. Inside are MODULATION (what your followers are made of), RECRUIT and CRAFT. The green portal on zone 0\'s back wall opens the same menu, so you can reach it from either end of home.',
+        body:  'Tap the Crystal to open it. ELEMENT MIX sets what your followers are made of. To call a new one, open the ROSTER and tap + RECRUIT. The green portal on zone 0\'s back wall opens the same menu.',
         icon:  '\u25c8',
         target: () => (typeof crystal !== 'undefined' && crystal) ? crystal : null,
         check: () => tutCrystalOpened,

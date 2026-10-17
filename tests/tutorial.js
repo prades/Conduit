@@ -833,7 +833,7 @@ check('the Crystal step exists and says TAP, not hold', () => {
     ok(!!s, 'there is no crystal step');
     ok(/\bTap\b/i.test(s.body), 'it does not tell the player to tap: ' + s.body);
     ok(!/hold/i.test(s.body), 'it tells the player to HOLD the Crystal, which does nothing');
-    ok(/MODULATION/.test(s.body) && /RECRUIT/.test(s.body),
+    ok(/ELEMENT MIX/.test(s.body) && /ROSTER/.test(s.body) && /RECRUIT/.test(s.body),
        'it does not say what is inside the Crystal');
     ok(!/CLONES/.test(s.body), 'it still says the clones are inside the Crystal');
 });
