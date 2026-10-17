@@ -727,7 +727,7 @@
     /* ── THE SLIDER TOOLBOX (js/toolbox.js): the dock is a strip you SLIDE sideways through (swipe, drag, wheel or the arrows); edges fade where more is hidden ── */
     #dockPrev, #dockNext { display: none; }
     @media (min-width: 701px) {
-        #topToggles { display: flex; align-items: center; gap: 6px; width: min(94vw, 880px); max-width: min(94vw, 880px); box-sizing: border-box; padding: 10px 10px; justify-content: center; }
+        #topToggles { display: flex; align-items: center; gap: 6px; width: min(calc(100vw - 260px), 880px); max-width: min(calc(100vw - 260px), 880px); box-sizing: border-box; padding: 10px 10px; justify-content: center; }
         #topToggles:not(.slides) { width: auto; }
         #dockScroll { display: flex; gap: 14px; flex: 0 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x; padding: 4px 10px; cursor: grab; overscroll-behavior-x: contain; }
         #dockScroll::-webkit-scrollbar { display: none; } #dockScroll.dragging { cursor: grabbing; scroll-snap-type: none; } #dockScroll > .top-btn { flex: none; scroll-snap-align: center; }
