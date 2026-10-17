@@ -50,6 +50,8 @@ function _walker(o) {
   // the puddle it walks through: flat on the floor, drifting behind its feet
   const pool = G(); pool.userData.ground = true; const pm = new T.Mesh(new T.ShapeGeometry(blobShape(o.poolR, o.seed || 3, 1, 0, 0, 0.9)), gm); pm.rotation.x = -PI / 2; pm.position.y = 0.01; pool.add(pm); b.add(pool);
   const puds = []; if (o.puddles) leaks.forEach(Lk => { const m = new T.Mesh(new T.ShapeGeometry(blobShape(0.2 * Lk.big, 5 + Lk.li, 1, 0, 0, 0)), gm); m.rotation.x = -PI / 2; m.position.set(Math.sin(Lk.az) * (o.rx + 0.05), 0.013, Math.cos(Lk.az) * (o.rz + 0.05)); pool.add(m); puds.push({ m, Lk }); });
+  // when it casts, goo bursts from the crater in a fan of blobs
+  const erupt = []; if (o.erupt) for (let i = 0; i < 7; i++) { const q = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(q); erupt.push({ q, a: i * TAU / 7 + 0.4, k: 0.7 + 0.5 * _hz(i, 4, 1) }); }
   const U1 = new T.Vector3(), U2 = new T.Vector3(), U3 = new T.Vector3();
   return { g, core: (o.legH + o.ry + o.vh * 0.5) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0, step = o.step * (1 + 0.3 * ac);
     body.position.y = hipY + 0.035 * Math.abs(Math.sin(ph)) * -1 + 0.02 * Math.sin(2 * ph) - 0.07 * ac; body.rotation.z = 0.04 * Math.sin(ph); body.rotation.x = 0.03 * Math.sin(2 * ph);
@@ -78,6 +80,7 @@ function _walker(o) {
       const u = ((ph / TAU) % 1 + 1) % 1, top = E.y - E.r * 1.05, rimY = 0.02, bot = -hipY + 0.03, run = Math.min(1, u * 1.5), sy = o.ry * (1 - 0.1 * ac), surf = y => o.rz * Math.sqrt(Math.max(0, 1 - (y / sy) * (y / sy))) + 0.025;
       eye.tear.forEach((q, k) => { const w = k / (eye.tear.length - 1), y = top - (top - rimY) * w * run; q.position.set(0, y, surf(y)); q.scale.setScalar((E.tearW || 0.034) * (0.5 + 0.8 * Math.sin(PI * Math.min(1, w * 0.9 + 0.1))) * (w <= 1 ? 1 : 0) * (run > w * 0.2 ? 1 : 0.2) + 0.001); q.scale.z *= 0.6; });
       const fall = u > 0.6 ? (u - 0.6) / 0.4 : 0; eye.tb.position.set(0, fall ? rimY - fall * (rimY - bot) : top - (top - rimY) * run, fall ? o.rz + 0.05 : surf(top - (top - rimY) * run)); eye.tb.scale.setScalar(E.tearW ? E.tearW * 1.5 : 0.05); }
+    erupt.forEach(E3 => { const topY = o.ry * 0.78 + o.vh, rise = ac * E3.k; E3.q.position.set(Math.sin(E3.a) * (o.rimR * 0.6 + 0.35 * rise), topY + 0.05 + 0.5 * rise * (1.2 - 0.6 * rise), Math.cos(E3.a) * (o.rimR * 0.6 + 0.35 * rise)); E3.q.scale.setScalar(0.001 + 0.07 * Math.sin(PI * Math.min(1, ac * 1.0)) * E3.k); });
     puds.forEach(P => { P.m.geometry.dispose(); P.m.geometry = new T.ShapeGeometry(blobShape(0.22 * P.Lk.big, 5 + P.Lk.li, 1, 0, 0, t)); });
     pm.geometry.dispose(); pm.geometry = new T.ShapeGeometry(blobShape(o.poolR, o.seed || 3, 1, 0, 0, t)); } };
 }
@@ -136,3 +139,6 @@ fx(575, "Thinner legs altogether, like stilts ending in pins.", () => _walker(Ob
 fx(576, "Thick thighs, a round knee joint, then a thin shin ending in a pin.", () => _walker(Object.assign({}, _p569, { plainLegs: false, legR: 0.09 })));
 fx(577, "Shorter pins: the body sits lower, the steps shorter.", () => _walker(Object.assign({}, _p569, { legH: 0.34, step: 0.13, lift: 0.1 })));
 fx(578, "Splayed pins: the legs set well out to the sides, like a crab on tiptoe.", () => _walker(Object.assign({}, _p569, { out: 0.28, step: 0.18 })));
+
+// The game sprite of No. 578 (the toxic brawler): the splayed pins; its action frames burst goo from the crater.
+fx(579, "578, the game sprite.", () => _walker(Object.assign({}, _p569, { out: 0.28, step: 0.18, erupt: true })));

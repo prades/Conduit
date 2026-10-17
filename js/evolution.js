@@ -76,8 +76,8 @@
 //          fan open: a bolt of core energy (PETAL_MULT × its power) into the nearest enemy,
 //          and a shield (PETAL_SHIELD of max health) on whichever ally within PETAL_ALLY_R
 //          is hurt worst (itself included), if its shield is lower than that.
-//          CALDERA (the TOXIC BRAWLER, design No. 140: a matte black volcano on four feet,
-//          goo bubbling in the crater), ERUPTION: with an enemy within CALDERA_RADIUS, every
+//          SEEPER (the TOXIC BRAWLER, design No. 578: a black volcano walking on four pins,
+//          goo oozing from its eye and flanks; it replaced the Caldera), ERUPTION: with an enemy within CALDERA_RADIUS, every
 //          CALDERA_EVERY frames it hunkers and the crater bursts: everything within
 //          CALDERA_RADIUS takes CALDERA_MULT × its power in toxic goo and has its armour
 //          eaten (it takes 1 / CALDERA_SHRED × damage for CALDERA_SHRED_FRAMES).
@@ -170,8 +170,13 @@ const EVOLUTIONS = {
     vessel: { id: "vessel", name: "WORM VESSEL", element: "core",     duty: "worker",  move: "REWIRE",       sheet: "img/evo/vessel.png",
               cell: 144, anchor: [72, 114.2], core: [72, 52.6], noGlow: true, color: "#33e6c4" },
     // The TOXIC BRAWLER: a matte black volcano on four feet. Its shell is black and its goo moves, so its sheet carries its own light.
-    caldera:{ id: "caldera", name: "CALDERA",     element: "toxic",    role: "brawler", move: "ERUPTION",     sheet: "img/evo/caldera.png",
+    // LEGACY: the first toxic brawler. New evolutions use the Seeper; a follower already evolved into this keeps it.
+    caldera:{ id: "caldera", legacy: true, name: "CALDERA", element: "toxic", role: "brawler", move: "ERUPTION", sheet: "img/evo/caldera.png",
               cell: 144, anchor: [72, 114.2], core: [72, 72], noGlow: true, color: "#66ff66" },
+    // The TOXIC BRAWLER, design No. 578: a black faceted shell with a cone on its back, walking on four splayed pins, one oozing eye, small leaks high
+    // on its flanks. The puddle it walks through lies on the floor (the ground sheet); the goo moves, so the sheet carries its own light.
+    seeper: { id: "seeper", name: "SEEPER",      element: "toxic",    role: "brawler", move: "ERUPTION",     sheet: "img/evo/seeper.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 67.9], noGlow: true, color: "#66ff66", ground: "img/evo/seeper_g.png" },
     // The CORE MAGE ("sniper" in the code): a rosette of plate-petals. The crystal at its middle is the reactor, so it keeps the shared glow.
     // LEGACY: the first core mage. New evolutions use the Hornshell; a follower already evolved into this keeps it.
     petal:  { id: "petal",  legacy: true, name: "PETAL AEGIS",  element: "core",     role: "sniper",  move: "AEGIS BLOOM",  sheet: "img/evo/petal.png",
@@ -229,7 +234,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom" || d.id === "quillstone") petalBlaze(f); else if (d.id === "reaver" || d.id === "thunderhead") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
-        else if (d.id === "warden" || d.id === "hammerslug") aegisBurst(f); else if (d.id === "manta" || d.id === "prism") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera") eruption(f); else if (d.id === "maw") chomp(f);
+        else if (d.id === "warden" || d.id === "hammerslug") aegisBurst(f); else if (d.id === "manta" || d.id === "prism") staticRush(f); else if (d.id === "halo") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera" || d.id === "seeper") eruption(f); else if (d.id === "maw") chomp(f);
     }
 }
 function _evoFoes(x, y, r) {
