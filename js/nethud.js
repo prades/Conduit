@@ -86,82 +86,78 @@ function drawNetworkStatusHUD() {
 
     const narrow = canvas.width < 600;
     const bs = pw.batteries || { count: 0 };
-    const W = narrow ? Math.min(canvas.width - 16, 260) : 300, PAD = 16;
-    const ROW_H = narrow ? 0 : 46, HEAD = 44, METER = 50, LINE = 44;
+    const W = narrow ? Math.min(canvas.width - 16, 230) : 236, PAD = 12, IW = W - PAD * 2 - 4;
+    const HEAD = 32, METER = 36, BAR = 24, ROW_H = 30;
     const rows = narrow ? 0 : activeEls.length;
-    const hint = Math.max(0, ...activeEls.map(e => networkStrength[e.id] || 0)) < 3;
-    const H = HEAD + METER + (bs.count > 0 ? LINE : 0) + LINE + rows * ROW_H + (hint && !narrow ? 30 : 8);
-    const X = canvas.width - W - 10, Y = narrow ? uiTopSafe() : uiTopSafe();
+    const darkRows = narrow ? 0 : activeEls.filter(e => !(_netLit[e.id] > 0)).length;
+    const H = HEAD + METER + (bs.count > 0 ? BAR : 0) + BAR + rows * ROW_H + darkRows * 12 + 8;
+    const X = canvas.width - W - 10, Y = uiTopSafe();
     const S = SIGNAL_STATES[sig.state];
 
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     uiPanel(X, Y, W, H, S.col);
 
     // Header: the name, and the state where you stand
-    uiText("NETWORK", X + PAD + 6, Y + HEAD / 2 + 2, 22, "#fff", "left", false);
-    ctx.font = uiFont(22); const titleW = ctx.measureText("NETWORK").width;
-    uiTextFit(S.label, X + W - PAD, Y + HEAD / 2 + 2, 22, S.col, "right", W - PAD * 2 - 6 - titleW - 14);
+    uiText("NETWORK", X + PAD + 6, Y + HEAD / 2 + 3, 18, "#fff", "left", false);
+    ctx.font = uiFont(18); const titleW = ctx.measureText("NETWORK").width;
+    uiTextFit(S.label, X + W - PAD, Y + HEAD / 2 + 3, 18, S.col, "right", W - PAD * 2 - 6 - titleW - 10);
 
     // The signal meter: eight slanted segments, lit by how much of the network reaches you
     const segs = 8, lit = sig.bank > 0 ? Math.round(segs * sig.local / sig.bank) : 0;
-    const mx = X + PAD + 4, my = Y + HEAD + 4, mw = W - PAD * 2 - 4, sw = Math.floor((mw - (segs - 1) * 4) / segs);
+    const mx = X + PAD + 4, my = Y + HEAD, sw = Math.floor((IW - (segs - 1) * 3) / segs);
     for (let i = 0; i < segs; i++) {
-        const x = mx + i * (sw + 4), on = i < lit;
-        ctx.beginPath(); ctx.moveTo(x + 5, my); ctx.lineTo(x + sw, my); ctx.lineTo(x + sw - 5, my + 16); ctx.lineTo(x, my + 16); ctx.closePath();
+        const x = mx + i * (sw + 3), on = i < lit;
+        ctx.beginPath(); ctx.moveTo(x + 4, my); ctx.lineTo(x + sw, my); ctx.lineTo(x + sw - 4, my + 11); ctx.lineTo(x, my + 11); ctx.closePath();
         ctx.fillStyle = on ? S.col : "#0c1224"; ctx.fill();
-        ctx.lineWidth = 1.5; ctx.strokeStyle = on ? S.col : "#2c3656"; ctx.stroke();
+        ctx.lineWidth = 1.2; ctx.strokeStyle = on ? S.col : "#2c3656"; ctx.stroke();
     }
     const where = sig.state === "offline" ? "LINK 2 BATTERIES OF ONE ELEMENT"
-                : sig.state === "none" ? "OUT OF RANGE · " + Math.round(sig.dist) + " TILES FROM THE BATTERIES"
-                : sig.state === "weak" ? "TIER " + NET_TIER_ROMAN[sig.local] + " HERE · " + Math.round(sig.dist) + " TILES OUT"
-                : "TIER " + NET_TIER_ROMAN[sig.local] + " HERE" + (sig.dist <= BANK_FULL_RANGE ? " · AT THE BATTERIES" : "");
-    uiCaptionFit(where, X + PAD + 4, my + 30, sig.state === "strong" ? "#8aa0c8" : S.col, "left", 12, W - PAD * 2);
+                : sig.state === "none" ? "OUT OF RANGE \u00b7 " + Math.round(sig.dist) + " TILES OUT"
+                : sig.state === "weak" ? "TIER " + NET_TIER_ROMAN[sig.local] + " HERE \u00b7 " + Math.round(sig.dist) + " TILES OUT"
+                : "TIER " + NET_TIER_ROMAN[sig.local] + " HERE" + (sig.dist <= BANK_FULL_RANGE ? " \u00b7 AT THE BATTERIES" : "");
+    uiCaptionFit(where, X + PAD + 4, my + 23, sig.state === "strong" ? "#8aa0c8" : S.col, "left", 11, IW);
     let y = Y + HEAD + METER;
 
+    // A bar with its reading inside it: one line each for the batteries and the nests.
+    const bar = (label, frac, fill, edge, right, rcol, lcol) => {
+        ctx.fillStyle = "#05070f"; ctx.fillRect(mx, y + 2, IW, BAR - 6);
+        ctx.fillStyle = fill; ctx.fillRect(mx, y + 2, IW * Math.max(0, Math.min(1, frac)), BAR - 6);
+        ctx.strokeStyle = edge; ctx.lineWidth = 1.5; ctx.strokeRect(mx, y + 2, IW, BAR - 6);
+        ctx.save(); ctx.font = uiMono(11); ctx.textBaseline = "middle"; ctx.fillStyle = lcol; ctx.textAlign = "left"; ctx.fillText(label, mx + 6, y + BAR / 2 - 1);
+        ctx.fillStyle = rcol; ctx.textAlign = "right"; ctx.fillText(right, mx + IW - 6, y + BAR / 2 - 1); ctx.restore();
+        y += BAR;
+    };
     // THE BATTERIES: what they hold and which way it is flowing — the power
     // the pylons actually run on (power.js).
     if (bs.count > 0) {
-        uiText("\u26a1 BATT " + bs.stored + " / " + bs.cap, X + PAD + 4, y + 12, 17, BATTERY_COLOR, "left", false);
         const net = bs.rateIn - bs.rateOut;
-        uiCaption((net >= 0 ? "▲ " : "▼ ") + Math.abs(net).toFixed(1) + "/s", X + W - PAD, y + 12, net >= 0.05 ? "#9fe8c0" : net <= -0.05 ? "#ff9a66" : "#6b7487", "right", 13);
-        ctx.fillStyle = "#05070f"; ctx.fillRect(X + PAD + 4, y + 26, W - PAD * 2 - 4, 8);
-        ctx.fillStyle = BATTERY_COLOR; ctx.fillRect(X + PAD + 4, y + 26, (W - PAD * 2 - 4) * (bs.cap ? bs.stored / bs.cap : 0), 8);
-        ctx.strokeStyle = "#5a4a1a"; ctx.lineWidth = 1.5; ctx.strokeRect(X + PAD + 4, y + 26, W - PAD * 2 - 4, 8);
-        y += LINE;
+        bar("\u26a1 BATT " + bs.stored + " / " + bs.cap, bs.cap ? bs.stored / bs.cap : 0, "rgba(255,211,77,0.55)", "#8a7020",
+            (net >= 0 ? "\u25b2 " : "\u25bc ") + Math.abs(net).toFixed(1) + "/s", net >= 0.05 ? "#9fe8c0" : net <= -0.05 ? "#ff9a66" : "#8a93a8", "#fff");
     }
     // The nests: what is left in them. Red the moment a pylon has gone dark, which is the only state the player has to act on.
     const tot = pw.pools.reduce((a, p) => a + p.energy, 0), cap = pw.pools.reduce((a, p) => a + p.max, 0), ok = pw.dark === 0;
-    uiText("NESTS " + tot + " / " + cap, X + PAD + 4, y + 12, 17, ok ? "#8fd" : "#ff5522", "left", false);
-    uiCaption(ok ? pw.drawing + " DRAWING" : pw.dark + " UNPOWERED", X + W - PAD, y + 12, ok ? "#6a7aa0" : "#ff5522", "right", 13);
-    ctx.fillStyle = "#05070f"; ctx.fillRect(X + PAD + 4, y + 26, W - PAD * 2 - 4, 8);
-    ctx.fillStyle = ok ? "#5fe0c8" : "#ff5522"; ctx.fillRect(X + PAD + 4, y + 26, (W - PAD * 2 - 4) * (cap ? tot / cap : 0), 8);
-    ctx.strokeStyle = "#2c3656"; ctx.lineWidth = 1.5; ctx.strokeRect(X + PAD + 4, y + 26, W - PAD * 2 - 4, 8);
-    y += LINE;
+    bar("NESTS " + tot + " / " + cap, cap ? tot / cap : 0, ok ? "rgba(95,224,200,0.45)" : "rgba(255,85,34,0.5)", ok ? "#2c6a60" : "#ff5522",
+        ok ? pw.drawing + " DRAWING" : pw.dark + " UNPOWERED", ok ? "#8aa0c8" : "#ff9a66", "#fff");
 
-    // One row per networked element: its name and effect, and three pips (outline: the tier built, fill: the tier you have here)
-    activeEls.forEach((elDef, i) => {
+    // One row per networked element: its icon and name, and three pips (outline: the tier built, fill: the tier you have here)
+    activeEls.forEach((elDef) => {
         if (narrow) return;
         const el = elDef.id, tier = networkStrength[el] || 0, here = (sig.tiers[el] !== undefined ? sig.tiers[el] : tier);
-        const ry = y + i * ROW_H;
-        // The element's icon (js/icons.js); a stripe until it has loaded.
-        if (!(typeof drawIcon === "function" && drawIcon(ctx, ELEMENT_ICON[el] || el, elDef.color, X + PAD + 12, ry + 21, 22))) { ctx.fillStyle = elDef.color; ctx.fillRect(X + PAD, ry + 6, 5, ROW_H - 14); }
         // A network with a tier but nothing lit is built but DARK — say so, or
         // the tier reads as a promise the pylons are not keeping.
-        const dark = !(_netLit[el] > 0);
-        uiText(elDef.label.toUpperCase(), X + PAD + 32, ry + 15, 18, elDef.color, "left", false);
-        uiCaptionFit(dark ? "NO POWER — CHARGE" : (here > 0 ? (NET_EFFECT_DESC[el] || [])[here] || "" : "no signal here"), X + PAD + 32, ry + 34, dark ? "#ff7755" : here < tier ? "#ffe733" : "#8aa0c8", "left", 12, W - PAD * 2 - 106);
+        const dark = !(_netLit[el] > 0), ry = y;
+        // The element's icon (js/icons.js); a stripe until it has loaded.
+        if (!(typeof drawIcon === "function" && drawIcon(ctx, ELEMENT_ICON[el] || el, elDef.color, mx + 10, ry + 15, 18))) { ctx.fillStyle = elDef.color; ctx.fillRect(mx, ry + 6, 4, ROW_H - 12); }
+        uiText(elDef.label.toUpperCase(), mx + 28, ry + 14, 15, elDef.color, "left", false);
         for (let p = 0; p < 3; p++) {
-            const px = X + W - PAD - 3 * 22 + p * 22, py = ry + 8;
-            ctx.beginPath(); ctx.moveTo(px + 4, py); ctx.lineTo(px + 18, py); ctx.lineTo(px + 14, py + 22); ctx.lineTo(px, py + 22); ctx.closePath();
+            const px = mx + IW - 3 * 17 + p * 17, py = ry + 6;
+            ctx.beginPath(); ctx.moveTo(px + 3, py); ctx.lineTo(px + 14, py); ctx.lineTo(px + 11, py + 17); ctx.lineTo(px, py + 17); ctx.closePath();
             if (p < here) { ctx.fillStyle = elDef.color; ctx.fill(); }
-            ctx.lineWidth = 2; ctx.strokeStyle = p < tier ? elDef.color : "#2c3656"; ctx.stroke();
+            ctx.lineWidth = 1.5; ctx.strokeStyle = p < tier ? elDef.color : "#2c3656"; ctx.stroke();
         }
+        y += ROW_H;
+        if (dark) { uiCaption("NO POWER \u2014 CHARGE", mx + 28, y + 2, "#ff7755", "left", 11); y += 12; }
+        else if (here < tier) { /* weaker here than built: the pips say it */ }
     });
-    y += rows * ROW_H;
-    // Hint when any tier < 3 (nudge player to extend)
-    if (hint && !narrow) {
-        const maxTier = Math.max(0, ...activeEls.map(e => networkStrength[e.id] || 0)), needed = maxTier === 0 ? 2 : maxTier === 1 ? 4 : 6;
-        uiCaptionFit(`Link batteries → Tier ${NET_TIER_ROMAN[maxTier + 1]} (need ${needed})`, X + W / 2, y + 10, "#6a7aa0", "center", 12, W - PAD * 2);
-    }
     ctx.restore();
 }
