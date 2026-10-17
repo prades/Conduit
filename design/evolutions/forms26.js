@@ -29,7 +29,7 @@ function _saucer(o) {
   const prof = [[0.0, 0.0], [R * 0.35, 0.02], [R * 0.9, 0.08 * k], [R, 0.13 * k], [R * 0.95, 0.18 * k], [R * 0.55, 0.27 * k], [R * 0.3, 0.3 * k], [0.0, 0.3 * k]].map(p => new T.Vector2(Math.max(0.0001, p[0]), p[1]));
   const hull = new T.Mesh(new T.LatheGeometry(prof, o.segs || 24), _saucerHull); body.add(hull);
   const dome = new T.Mesh(new T.SphereGeometry(o.domeR, 20, 10, 0, TAU, 0, PI / 2), _saucerHull); dome.scale.y = 0.75; dome.position.y = 0.29 * k; body.add(dome);
-  const beacon = new T.Mesh(_litFacets(new T.OctahedronGeometry(0.06, 0), 1), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); beacon.scale.y = 1.5; beacon.position.y = 0.29 * k + o.domeR * 0.75 + 0.07; body.add(beacon);
+  const beacon = new T.Mesh(_litFacets(new T.OctahedronGeometry(0.06, 0), 1), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); beacon.scale.y = 1.5; beacon.position.y = 0.29 * k + o.domeR * 0.75 + 0.07; if (o.beacon) body.add(beacon);   // (the dome's crystal is off: "no central crystal")
   // belly: a dark ring and a dim plate underneath
   const belly = new T.Mesh(new T.TorusGeometry(R * 0.45, 0.025, 5, o.segs || 24), _saucerLeg); belly.rotation.x = PI / 2; belly.position.y = -0.0; body.add(belly);
   // the rim lights: a ring of small lamps; the lit ones chase round it
