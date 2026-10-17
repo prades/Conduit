@@ -32,6 +32,7 @@ const SUITES = [
     ['electric panel hacking', 'panelhack.js'],
     ['enemy heals at nests',   'enemyheal.js'],
     ['phone radial menu',      'radialmenu.js'],
+    ['placing: zoom + hide UI', 'placingview.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],

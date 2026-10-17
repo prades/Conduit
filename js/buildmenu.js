@@ -560,12 +560,13 @@ function drawBuildGhost() {
         }
         ctx.globalAlpha = 1;
     }
-    ctx.font = "bold 10px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const _fs = Math.round(10 / (typeof viewZoom !== "undefined" ? viewZoom : 1));   // readable when zoomed out
+    ctx.font = "bold " + _fs + "px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const armed = _bmPointerType !== "mouse" && _bmArmedKey === t.x + "," + t.y;
     const label = !v.ok ? v.why : armed ? "TAP AGAIN: " + v.why : v.why;
     ctx.fillStyle = "rgba(0,0,0,0.7)"; const w = ctx.measureText(label).width + 10;
-    ctx.fillRect(s.x - w / 2, py + 2 * TILE_H + 4, w, 15);
-    ctx.fillStyle = v.ok ? "#fff" : "#f88"; ctx.fillText(label, s.x, py + 2 * TILE_H + 12);
+    ctx.fillRect(s.x - w / 2, py + 2 * TILE_H + 4, w, _fs * 1.5);
+    ctx.fillStyle = v.ok ? "#fff" : "#f88"; ctx.fillText(label, s.x, py + 2 * TILE_H + 4 + _fs * 0.75);
     ctx.restore();
 }
 
@@ -589,4 +590,41 @@ if (typeof window !== "undefined" && typeof window.addEventListener === "functio
     window.addEventListener("keydown", e => {
         if (e && e.key === "Escape" && buildMenuOpen && buildTool) setBuildTool(null);
     });
+}
+
+
+// ─────────────────────────────────────────────────────────
+//  PLACING: zoomed out, with the interface out of the way
+// ─────────────────────────────────────────────────────────
+// REPORTED: "on the build menu, on the phone especially, the user can see the entire battlefield or the entire zone whenever they're building
+// stuff. It would be really helpful if it zoomed out just for the time being, and also hid all of the UI stuff whenever an item or generator or
+// some other equipment is selected."
+// While a build tool is in hand (buildTool) the picture zooms out (PLACING_ZOOM_PHONE / PLACING_ZOOM) and every control is hidden: the HUD,
+// the radial menu, the dock, the build window and the other buttons. A small DONE chip stays, to put the tool down. Put the tool down and
+// everything comes back at normal size.
+const PLACING_ZOOM_PHONE = 0.45, PLACING_ZOOM = 0.7, PLACING_PHONE_W = 700;
+let _placingWas = false;
+function placingHidesUi() { return !!(buildMenuOpen && buildTool); }
+function placingZoom() { return (typeof window !== "undefined" && window.innerWidth <= PLACING_PHONE_W) ? PLACING_ZOOM_PHONE : PLACING_ZOOM; }
+// Once a frame: follows buildTool.
+function placingTick() {
+    const on = placingHidesUi();
+    if (on === _placingWas) { if (on && typeof viewZoom !== "undefined" && viewZoom !== placingZoom()) setViewZoom(placingZoom()); return; }
+    _placingWas = on;
+    if (typeof setViewZoom === "function") setViewZoom(on ? placingZoom() : 1);
+    if (typeof document !== "undefined" && document.body && document.body.classList) document.body.classList.toggle("placing", on);
+    _placeChipSync();
+}
+function _placeChipSync() {
+    if (typeof document === "undefined" || !document.body || !document.createElement) return;
+    let chip = document.getElementById("placeChip");
+    if (!chip) {
+        chip = document.createElement("div"); chip.id = "placeChip";
+        const lab = document.createElement("span"); lab.id = "placeChipLabel"; chip.appendChild(lab);
+        const done = document.createElement("button"); done.id = "placeChipDone"; done.textContent = "\u2715 DONE";
+        done.addEventListener("click", e => { e.stopPropagation(); setBuildTool(null); });
+        chip.appendChild(done); document.body.appendChild(chip);
+    }
+    const lab = document.getElementById("placeChipLabel");
+    if (lab) lab.textContent = buildTool ? buildTool.label + " \u00B7 TAP A TILE, TAP AGAIN TO BUILD" : "";
 }

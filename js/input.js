@@ -234,6 +234,7 @@ function ringHintTick() {
 }
 
 function handleLongHold(ex,ey) {
+    if (typeof placingHidesUi === "function" && placingHidesUi()) return;   // no ring while a build tool is in hand
     // The follower index takes its own long press: a row there is a GROUP, and
     // the duty switch belongs to it. Checked before anything else so the world
     // radial does not also open underneath the panel.
@@ -377,6 +378,12 @@ canvas.addEventListener('pointermove', e=>{
 canvas.addEventListener('pointerup', e=>{
     if (!gameState.running) { isPressing=false; return; } // block canvas input during buy screen
     const [upX,upY]=toCanvas(e.clientX,e.clientY);
+    // A build tool in hand: the interface is hidden (js/buildmenu.js placingHidesUi), so ONLY the ground takes a tap: the controls that were drawn
+    // there must not fire from where they used to be.
+    if (typeof placingHidesUi === "function" && placingHidesUi()) {
+        if (!touchMoved && !longHoldFired && !commandMode && !commandPendingTap && typeof handleBuildToolTap === "function" && handleBuildToolTap(upX, upY)) { isPressing=false; return; }
+        isPressing=false; return;
+    }
     // Crystal button tap — toggle panel open/close
     if (!touchMoved && Math.hypot(upX-_CRYSBTN.x, upY-_CRYSBTN.y) < _CRYSBTN.r+8) {
         crystalMenuOpen=!crystalMenuOpen; isPressing=false; return;

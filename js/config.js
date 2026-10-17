@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-17p";
+const BUILD_VERSION = "2026-10-17q";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -264,11 +264,14 @@ const waveUI  = document.getElementById('waveInfo');
 
 // Safe area inset at the bottom (for notch/home-bar devices)
 let SAFE_BOTTOM = 0;
+let viewZoom = 1;      // 1 = normal; < 1 = zoomed out (the build tool in hand)
 function resize() {
     // Use visualViewport dimensions when available (better mobile support)
     const vv = window.visualViewport;
-    canvas.width  = vv ? Math.round(vv.width)  : window.innerWidth;
-    canvas.height = vv ? Math.round(vv.height) : window.innerHeight;
+    // The picture is drawn on a canvas of (screen / viewZoom) pixels and shown at screen size by the css, so a viewZoom below 1 ZOOMS OUT: more of
+    // the world fits (js/buildmenu.js uses it while a build tool is in hand). toCanvas() in js/input.js already maps a touch back through that scale.
+    canvas.width  = Math.round((vv ? vv.width  : window.innerWidth)  / viewZoom);
+    canvas.height = Math.round((vv ? vv.height : window.innerHeight) / viewZoom);
     // Detect bottom safe-area via a temporary DOM element
     try {
         const _tmp = document.createElement('div');
@@ -281,6 +284,7 @@ function resize() {
 window.addEventListener('resize', resize);
 if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
 resize();
+function setViewZoom(z) { if (z === viewZoom) return; viewZoom = z; if (typeof _cachedRect !== 'undefined') _cachedRect = null; resize(); }
 
 // ── CONFIG ────────────────────────────────────────────────
 let cfg = {

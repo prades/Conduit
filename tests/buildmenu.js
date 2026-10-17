@@ -52,7 +52,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         return null; })()`);
     const tile = (x, y) => run(`(function(){ const t = getTile(${x}, ${y}); return { pillar: !!t.pillar && !t.destroyed, el: t.attackModeElement, attack: !!t.attackMode, wave: !!t.waveMode, battery: !!t.isBattery, gen: !!t.isGenerator, conn: !!t.isConnector, team: t.pillarTeam }; })()`);
     const pick = (tab, i) => run(`(function(){ buildMenuTab = '${tab}'; const c = _bmLayout().cells[${i}]; return handleBuildMenuTap(c.x + c.w / 2, c.y + c.h / 2); })()`);
-    const tapTile = (t, type) => run(`_bmPointerType = '${type || 'touch'}'; (function(){ const r = handleBuildToolTap(${t.sx}, ${t.sy}); render(); return r; })()`);
+    // The tile's screen position is read from the CURRENT camera at the moment of the tap, as a real touch is: while a tool is in hand the picture is
+    // zoomed out (js/buildmenu.js placingTick), so a position taken before an earlier render would be stale.
+    const tapTile = (t, type) => run(`_bmPointerType = '${type || 'touch'}'; (function(){ const s = buildTileToScreen(getTile(${t.x}, ${t.y})); const r = handleBuildToolTap(s.x, s.y); render(); return r; })()`);
 
     console.log('\nTHE WINDOW');
     check('THE ASK: the BUILD button opens the build window, and closes it', () => {

@@ -2100,6 +2100,7 @@ function gameLoop() {
 }
 
 function render() {
+    if (typeof placingTick === "function") placingTick();   // zoomed out and the interface away while a build tool is in hand (js/buildmenu.js)
     // AUTOPLAY presses NEXT WAVE itself — which has to be watched while paused.
     if (typeof autoplayWatch === "function") autoplayWatch();
     if (!gameState.running) { return; } // skip all logic while paused (buy screen, game over)
@@ -4535,6 +4536,9 @@ function render() {
     if (typeof drawUltraHints === "function") drawUltraHints();
     drawTutorialHighlight();
     drawFloatingTexts();
+    // While a build tool is in hand the interface is hidden (js/buildmenu.js placingHidesUi) so the whole zone can be seen.
+    const _hideUi = typeof placingHidesUi === "function" && placingHidesUi();
+    if (!_hideUi) {
     drawCrystalButton();
     // The clone bay first, then its button over it, so the button that
     // opened the bay (and closes it) is never dimmed by the bay's backdrop.
@@ -4555,6 +4559,7 @@ function render() {
     drawFollowerDutyMenu();
     drawSettingsPanel();
     drawCampMenu();
+    }
     updatePreview();
     perfFrameEnd();
 }
