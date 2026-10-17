@@ -101,3 +101,56 @@ fx(499, "Two rows of fins: eight shards, some pointing up and some out, like a s
 fx(500, "A crown of fins: five bigger shards leaning up and out round the top of the cloud.", () => _storm(Object.assign({}, _fin, { shards: 5, shardLen: 0.34, jut: { every: 1, r: 1.2, y: [0.65, 0.6, 0.7, 0.6, 0.65], len: 1.4 }, swirl: _finSw })));
 fx(501, "A ring of short fins level with the eye, all pointing straight out like a halo of spikes.", () => _storm(Object.assign({}, _fin, { shards: 7, jut: { every: 1, r: 1.3, y: [0.0, 0.05, -0.05, 0.0, 0.05, -0.05, 0.0], len: 1.3 }, swirl: _finSw })));
 fx(502, "Four big fins, a bigger eye: just a few chunky shards around the cloud.", () => _storm(Object.assign({}, _fin, { cloudR: 0.85, eye: { r: 0.24, y: -0.02, z: 0.8, cut: 'brilliant' }, shards: 4, shardLen: 0.34, shardR: 0.15, jut: { every: 1, r: 1.25, y: [0.25, 0.05, 0.3, 0.0], len: 1.5 }, swirl: _finSw })));
+
+// ── A solid body instead of a cloud (Nos. 503–507): matte black faceted critter hovering over the glow, one diamond eye, a crown of spikes leaning up and out (like No. 500), optional side wings ──
+const _bodyBlack = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.55, roughness: 0.32, flatShading: true }); _bodyBlack.envMapIntensity = 0.6;
+const _wingBlack = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.3, roughness: 0.55, flatShading: true, side: T.DoubleSide }); _wingBlack.envMapIntensity = 0.3;
+function _spike(len, r, seed) {   // a stubby polished black spike: a faceted frustum, glinting only along its crests
+  const geo = new T.CylinderGeometry(r * 0.12, r * 1.15, len, 6, 1), p = geo.attributes.position;
+  for (let v = 0; v < p.count; v++) { const x = p.getX(v), z = p.getZ(v), n = _hz(Math.round(x * 300), Math.round(p.getY(v) * 300) + seed, Math.round(z * 300)); p.setX(v, x * (0.75 + 0.5 * n)); p.setZ(v, z * (0.75 + 0.5 * (1 - n))); }
+  geo.translate(0, len / 2, 0); geo.computeVertexNormals();
+  const pm = new T.MeshStandardMaterial({ color: 0x000001, metalness: 0.9, roughness: 0.2, flatShading: true }); pm.envMapIntensity = 2.0;
+  const eg = new T.EdgesGeometry(geo, 20), ep = eg.attributes.position, ec = new Float32Array(ep.count * 3); let y0 = 1e9, y1 = -1e9; for (let v = 0; v < ep.count; v++) { y0 = Math.min(y0, ep.getY(v)); y1 = Math.max(y1, ep.getY(v)); }
+  for (let v = 0; v < ep.count; v++) { const u = (ep.getY(v) - y0) / Math.max(1e-6, y1 - y0), k = Math.pow(u, 1.2) * (0.5 + 0.5 * _hz(Math.floor(v / 2), 3, 5)); ec[v * 3] = ec[v * 3 + 1] = ec[v * 3 + 2] = k; }
+  eg.setAttribute('color', new T.BufferAttribute(ec, 3));
+  const gg = G(); gg.add(new T.Mesh(geo, pm)); gg.add(new T.LineSegments(eg, new T.LineBasicMaterial({ vertexColors: true, color: 0xe8f0ff, transparent: true, opacity: 0.6, blending: T.AdditiveBlending }))); return gg;
+}
+function _wingSeg(len, w0, w1, sweep) {   // a flat swept plate with a low ridge down the middle
+  const v = [0, 0, w0 / 2, 0, 0, -w0 / 2, len, 0, -w1 / 2 + sweep, len, 0, w1 / 2 + sweep, 0, 0.05, 0, len, 0.05, sweep], i = [0, 1, 4, 0, 4, 5, 0, 5, 3, 1, 2, 5, 1, 5, 4, 5, 2, 3];
+  // faces: front strip (0,1,ridge0)…; built as an explicit fan so flat shading shows a crease
+  const pos = [], idx = [[0, 1, 4], [0, 4, 5], [0, 5, 3], [1, 2, 5], [1, 5, 4], [5, 2, 3]]; idx.forEach(f => f.forEach(k => pos.push(v[k * 3], v[k * 3 + 1], v[k * 3 + 2])));
+  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(new Float32Array(pos), 3)); geo.computeVertexNormals(); return new T.Mesh(geo, _wingBlack);
+}
+function _critter(o) {
+  const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.15); const Y = o.Y, B = o.body;
+  const gp = _glowPool(o.glowR, 0.02); b.add(gp.g); const core = new T.Mesh(new T.CircleGeometry(o.glowR * 0.3, 24), new T.MeshBasicMaterial({ color: 0xfff4c0, transparent: true, opacity: 0.6, blending: T.AdditiveBlending, depthWrite: false, toneMapped: false })); core.rotation.x = -PI / 2; core.position.y = 0.03; b.add(core);
+  const hov = G(); hov.position.y = Y; hov.rotation.y = 0.55; b.add(hov);
+  const bm = new T.Mesh(new T.IcosahedronGeometry(1, 1), _bodyBlack); bm.scale.set(B[0], B[1], B[2]); hov.add(bm);
+  // the diamond eye: set in the front of the body, dark socket behind it
+  const E = o.eye, eg = G(), gem = new T.Mesh(_litFacets(new T.OctahedronGeometry(E.r, 0)), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); gem.scale.y = 1.35; eg.add(gem);
+  const sock = new T.Mesh(new T.OctahedronGeometry(E.r * 1.3, 0), new T.MeshBasicMaterial({ color: 0x000002 })); sock.scale.set(1, 1.35, 0.5); sock.position.z = -E.r * 0.15; eg.add(sock);
+  eg.position.set(0, E.y, B[2] * E.z); hov.add(eg);
+  // the crown: spikes round the top leaning up and out
+  const C = o.crown, spikes = []; for (let i = 0; i < C.n; i++) { const a = i * TAU / C.n + (C.rot || 0), len = C.len * (0.8 + 0.4 * _hz(i, o.seed, 8)), sp = _spike(len, C.r * (0.85 + 0.3 * _hz(i, o.seed, 9)), i), grp = G(); grp.add(sp);
+    const rr = C.ring * B[0], y = B[1] * C.h, dir = new T.Vector3(Math.sin(a) * C.lean, 1, Math.cos(a) * C.lean).normalize(); grp.position.set(Math.sin(a) * rr, y, Math.cos(a) * rr); grp.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), dir); hov.add(grp); spikes.push({ grp, i, s0: 1 }); }
+  // wings: two jointed plates a side, the outer one lagging the inner so a flap travels along it
+  const wings = []; if (o.wings) { const W = o.wings; for (const sx of [-1, 1]) { const root = G(); root.position.set(sx * B[0] * 0.82, W.y, W.z || 0); root.scale.x = sx; hov.add(root);
+      const inner = _wingSeg(W.len, W.w0, W.w1, W.sweep); root.add(inner); const joint = G(); joint.position.set(W.len, 0, W.sweep); root.add(joint); const outer = _wingSeg(W.len * 0.9, W.w1, W.w1 * 0.3, W.sweep * 0.6); joint.add(outer); wings.push({ root, joint, sx }); } }
+  const tail = o.tail ? new T.Mesh(new T.ConeGeometry(o.tail.r, o.tail.len, 5, 1), _bodyBlack) : null; if (tail) { tail.rotation.x = -PI / 2 - 0.25; tail.position.set(0, -B[1] * 0.2, -B[2] * 0.95 - o.tail.len * 0.4); hov.add(tail); }
+  const arms = []; if (o.arms) for (const sx of [-1, 1]) { const a = new T.Mesh(new T.IcosahedronGeometry(o.arms.r, 0), _bodyBlack); a.userData.sx = sx; hov.add(a); arms.push(a); }
+  const L = new T.PointLight(0xfff2a0, 1.0, 4, 2); L.position.set(0, 0.3, 0.6); b.add(L); LIGHTS.push(L);
+  return { g, core: Y * (o.S || 1.15), update(t, act) { const ph = 1.6 * t, ac = act || 0;
+    const fk = 0.55 + 0.25 * Math.sin(ph * 5) * Math.sin(ph * 3 + 1) + 0.2 * Math.sin(ph * 8 + 2) + 0.4 * ac; gp.m.material.opacity = Math.max(0.2, Math.min(0.62, fk * 0.7)); gp.m.scale.setScalar(1 + 0.1 * Math.sin(ph * 5) + 0.25 * ac); core.material.opacity = Math.max(0.25, Math.min(0.7, fk * 0.75)); core.scale.setScalar(0.9 + 0.2 * Math.sin(ph * 3 + 0.5)); L.intensity = 0.6 + 1.2 * fk;
+    hov.position.y = Y + 0.05 * Math.sin(ph) + 0.03 * ac; bm.scale.set(B[0] * (1 + 0.02 * Math.sin(ph)), B[1] * (1 + 0.03 * Math.sin(ph + 1) + 0.05 * ac), B[2] * (1 + 0.02 * Math.sin(ph)));
+    const blink = Math.sin(ph * 2 + 0.6) > 0.97 ? 0.15 : 1; eg.scale.set(1 + 0.12 * ac, blink * (1 + 0.12 * ac), 1 + 0.12 * ac); gem.rotation.y = 0.2 * Math.sin(ph * 0.8);
+    spikes.forEach(S => S.grp.scale.setScalar(1 + 0.08 * Math.sin(ph * 2 + S.i * 1.7) + 0.2 * ac));
+    wings.forEach(W => { const fl = (o.wings.flap || 0.3) * (1 + 0.5 * ac); W.root.rotation.z = fl * Math.sin(ph * 1.5) * 0.6 - 0.05; W.joint.rotation.z = fl * Math.sin(ph * 1.5 - 1.1); });
+    if (tail) tail.rotation.z = 0.2 * Math.sin(ph);
+    arms.forEach(a => { const sx = a.userData.sx; a.position.set(sx * (B[0] * 1.02 + o.arms.out), o.arms.y + 0.04 * Math.sin(ph * 1.3 + sx), B[2] * 0.25 + o.arms.fwd); a.rotation.y = ph * 0.3; }); } };
+}
+const _cr = { Y: 0.8, glowR: 0.55, seed: 3, eye: { r: 0.15, y: 0.05, z: 0.8 } };
+fx(503, "A little ray: a flat black faceted body, two jointed wing fins that ripple, a crown of spikes on its back, one diamond eye, a short tail.", () => _critter(Object.assign({}, _cr, { body: [0.58, 0.36, 0.5], crown: { n: 5, ring: 0.5, h: 0.78, len: 0.3, r: 0.13, lean: 0.9, rot: 0.3 }, wings: { len: 0.32, w0: 0.5, w1: 0.38, sweep: -0.12, y: -0.02, flap: 0.5 }, tail: { r: 0.07, len: 0.35 } })));
+fx(504, "A wider ray: broader, flatter body, longer wing fins, seven shorter spikes in the crown.", () => _critter(Object.assign({}, _cr, { body: [0.6, 0.3, 0.56], eye: { r: 0.16, y: 0.02, z: 0.84 }, crown: { n: 7, ring: 0.5, h: 0.8, len: 0.26, r: 0.11, lean: 0.9 }, wings: { len: 0.42, w0: 0.5, w1: 0.4, sweep: -0.18, y: -0.04, flap: 0.55 }, tail: { r: 0.06, len: 0.4 } })));
+fx(505, "A round little monkey-ish body: a plump faceted black ball, two stubby fists floating at its sides, a crown of spikes on top, one diamond eye.", () => _critter(Object.assign({}, _cr, { Y: 0.85, body: [0.5, 0.5, 0.46], crown: { n: 5, ring: 0.5, h: 0.85, len: 0.32, r: 0.14, lean: 0.9, rot: 0.3 }, arms: { r: 0.13, out: 0.18, y: -0.02, fwd: 0.1 } })));
+fx(506, "A taller, pear-shaped body with the crown standing more upright and two little fists.", () => _critter(Object.assign({}, _cr, { Y: 0.9, body: [0.42, 0.6, 0.42], eye: { r: 0.15, y: 0.06, z: 0.82 }, crown: { n: 5, ring: 0.45, h: 0.85, len: 0.34, r: 0.13, lean: 0.55, rot: 0.3 }, arms: { r: 0.12, out: 0.16, y: -0.1, fwd: 0.1 } })));
+fx(507, "Part ray, part ball: a round body with short wing-fin nubs at its sides and the crown on top.", () => _critter(Object.assign({}, _cr, { Y: 0.85, body: [0.5, 0.46, 0.46], crown: { n: 5, ring: 0.5, h: 0.84, len: 0.32, r: 0.14, lean: 0.9, rot: 0.3 }, wings: { len: 0.22, w0: 0.34, w1: 0.28, sweep: -0.08, y: 0.0, flap: 0.6 } })));
