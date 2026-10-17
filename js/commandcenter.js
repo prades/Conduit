@@ -166,6 +166,7 @@ function ccOpen(tab) {
     ccBuildFrame(); ccRender();
 }
 function ccClose() {
+    if (typeof recruitPickerClose === "function") recruitPickerClose();
     ccOpenTab = null; ccRerollArmed = false; clearInterval(_ccTimer); _ccTimer = 0;
     const root = document.getElementById("ccRoot"); if (root) root.classList.remove("open");
     if (document.body) document.body.classList.remove("ccOpen");
@@ -184,7 +185,7 @@ function ccBuildFrame() {
     head.appendChild(tabs);
     // RECRUIT: a follower at the Crystal for RECRUIT_COST shards (clone.js recruitFollower), on the ROSTER tab only. It dims when the shards are short.
     const rec = _ccEl("button", "cc-recruit"); rec.id = "ccRecruit"; rec.appendChild(_ccEl("span", "cc-rl", "+ RECRUIT")); rec.appendChild(_ccEl("span", "cc-rs", ""));
-    _ccClick(rec, () => { recruitFollower(); ccRender(); }); head.appendChild(rec);
+    _ccClick(rec, () => { recruitPickerOpen(); }); head.appendChild(rec);
     const x = _ccEl("button", "cc-close", "✕ CLOSE"); x.id = "ccClose"; _ccClick(x, ccClose); head.appendChild(x); root.appendChild(head);
     const body = _ccEl("div", "cc-body"); body.id = "ccBody";
     const main = _ccEl("div", "cc-main"); main.id = "ccMain"; main.appendChild(_ccEl("div", "cc-filters")); main.lastChild.id = "ccFilters";
@@ -368,3 +369,32 @@ function initCommandCenter() {
     ccRefreshChip();
 }
 try { initCommandCenter(); } catch (e) { /* no page (the test sandbox): the logic above still works */ }
+
+// ── THE RECRUIT PICKER ──
+// "It should bring up the element selection after clicking recruit." The + RECRUIT buttons (here and in the phone roster) open this: one card per
+// unlocked element, and RANDOM FROM MIX for a draw from the current mix. Picking one pays RECRUIT_COST and a follower of that element comes out at the
+// Crystal (clone.js recruitFollower); the picker closes. Tapping outside, or CANCEL, closes it without spending anything.
+function recruitPickerClose() { const r = document.getElementById("recruitPicker"); if (r && r.parentNode) r.parentNode.removeChild(r); }
+function recruitPickerOpen() {
+    recruitPickerClose();
+    const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost;
+    const root = _ccEl("div", "rp-pick"); root.id = "recruitPicker";
+    _ccClick(root, () => recruitPickerClose());
+    const card = _ccEl("div", "rpk-card"); _ccClick(card, e => { if (e && e.stopPropagation) e.stopPropagation(); });
+    card.appendChild(_ccEl("div", "rpk-title", "RECRUIT A FOLLOWER"));
+    card.appendChild(_ccEl("div", "rpk-sub", "\u25c6" + cost + " \u00b7 YOU HAVE \u25c6" + shardCount + (can ? " \u00b7 PICK AN ELEMENT" : " \u00b7 NOT ENOUGH SHARDS")));
+    const grid = _ccEl("div", "rpk-grid");
+    (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(e => unlockedElements.has(e.id)).forEach(el => {
+        const b = _ccEl("button", "rpk-el" + (can ? "" : " dim")); b.style.setProperty("--c", el.color);
+        b.appendChild(_ccEl("span", "rpk-gem", "\u25c6")); b.appendChild(_ccEl("span", "rpk-name", el.label.toUpperCase()));
+        _ccClick(b, e => { if (e && e.stopPropagation) e.stopPropagation(); recruitFollower(el.id); recruitPickerClose(); if (typeof ccRender === "function") ccRender(); if (typeof radialRender === "function") radialRender(); });
+        grid.appendChild(b);
+    });
+    card.appendChild(grid);
+    const row = _ccEl("div", "rpk-row");
+    const mix = _ccEl("button", "rpk-btn mix" + (can ? "" : " dim"), "RANDOM FROM MIX"); _ccClick(mix, e => { if (e && e.stopPropagation) e.stopPropagation(); recruitFollower(); recruitPickerClose(); if (typeof ccRender === "function") ccRender(); if (typeof radialRender === "function") radialRender(); });
+    const cancel = _ccEl("button", "rpk-btn", "CANCEL"); _ccClick(cancel, e => { if (e && e.stopPropagation) e.stopPropagation(); recruitPickerClose(); });
+    row.appendChild(mix); row.appendChild(cancel); card.appendChild(row);
+    root.appendChild(card); document.body.appendChild(root);
+    return root;
+}

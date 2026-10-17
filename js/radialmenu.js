@@ -142,7 +142,7 @@ function _radialDrawRoster(panel) {
     const rows = radialRosterRows();
     panel.appendChild(_rEl("div", "rp-title", "ROSTER"));
     panel.appendChild(_rEl("div", "rp-sub", rows.length + " FOLLOWERS"));
-    { const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, b = _rEl("button", "rp-btn wide" + (shardCount >= cost ? " on" : ""), "+ RECRUIT \u25c6" + cost); b.style.setProperty("--c", "#ffe733"); _rClick(b, () => { recruitFollower(); radialRender(); }); panel.appendChild(b); }
+    { const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, b = _rEl("button", "rp-btn wide" + (shardCount >= cost ? " on" : ""), "+ RECRUIT \u25c6" + cost); b.style.setProperty("--c", "#ffe733"); _rClick(b, () => { recruitPickerOpen(); }); panel.appendChild(b); }
     if (!rows.length) panel.appendChild(_rEl("div", "rp-sub", "NONE YET: RECRUIT ONE ABOVE"));
     rows.slice(0, 40).forEach(r => {
         const card = _rEl("div", "rp-card" + (typeof selectedUnits !== "undefined" && selectedUnits.has(r.f) ? " sel" : ""));

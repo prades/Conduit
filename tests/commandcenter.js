@@ -138,8 +138,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('THE ASK: RECRUIT is in the roster (the Command Center, shown on its roster tab only; the phone roster) and nowhere else: not the dock, not the Crystal', () => {
         ok(!/id="btnRecruit"/.test(html), 'the dock still has a recruit button');
         const cc = fs.readFileSync(path.join(ROOT, 'js/commandcenter.js'), 'utf8'), rm = fs.readFileSync(path.join(ROOT, 'js/radialmenu.js'), 'utf8'), cl = fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8');
-        ok(/id = "ccRecruit"[\s\S]{0,200}recruitFollower\(\)/.test(cc), 'the Command Center has no recruit button'); ok(/rec\.style\.display = ccOpenTab === "roster"/.test(cc), 'it shows on other tabs');
-        ok(/RECRUIT \\u25c6[\s\S]{0,200}recruitFollower\(\)/.test(rm), 'the phone roster has no recruit button');
+        ok(/id = "ccRecruit"[\s\S]{0,200}recruitPickerOpen\(\)/.test(cc), 'the Command Center has no recruit button'); ok(/rec\.style\.display = ccOpenTab === "roster"/.test(cc), 'it shows on other tabs');
+        ok(/RECRUIT \\u25c6[\s\S]{0,200}recruitPickerOpen\(\)/.test(rm), 'the phone roster has no recruit button');
         ok(!/id:"recruit"/.test(cl) && !/_drawRecruitTab/.test(cl) && !/_recruitBtnBounds/.test(cl), 'the Crystal still has a RECRUIT tab');
         same(run('CTABS.map(t => t.id).join()'), 'modulation,info', 'the Crystal tabs');
     });
@@ -152,6 +152,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         run('modulationMask = new Set(["ice"]); followers.length = 0; shardCount = 1000;');
         for (let i = 0; i < 8; i++) run('recruitFollower()');
         same(run('followers.filter(f => f.element === "ice").length'), 8, 'every recruit is ice'); run('modulationMask = new Set();');
+    });
+    check('THE ASK: a picked element is the element that comes out (a locked one falls back to the mix)', () => {
+        run('modulationMask = new Set(); followers.length = 0; shardCount = 500;');
+        run('recruitFollower("ice"); recruitFollower("ice"); recruitFollower("flux");');
+        same(run('followers.filter(f => f.element === "ice").length'), 2, 'ice'); same(run('followers.filter(f => f.element === "flux").length'), 1, 'flux');
+        run('unlockedElements.delete("toxic"); followers.length = 0; recruitFollower("toxic");'); ok(run('followers.length === 1 && followers[0].element !== "toxic"'), 'a locked element was recruited'); run('unlockedElements.add("toxic");');
     });
     check('short of the price it refuses, says so, and spends nothing', () => {
         run('followers.length = 0; shardCount = 5; floatingTexts.length = 0;');
