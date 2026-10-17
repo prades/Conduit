@@ -28,6 +28,8 @@
 //      turning into the shards the building needs; and by day, short of
 //      shards, one follower drains wall panels no further out than the next zone.
 //   6. WAVE CLEARED → NEXT WAVE, after a short pause to read the screen.
+//   7. ALWAYS → UNLOCK. An earned element unlock is spent at once on the ladder's next element (js/wavedata.js); it used to sit
+//      pending for ever, because the choosing happens on the Crystal's MODULATION tab, which autoplay never opens.
 const AUTOPLAY_THINK        = 45;
 const AUTOPLAY_HACK_TEAM    = 3;
 const AUTOPLAY_ULT_RANGE    = 4;
@@ -81,6 +83,7 @@ function autoplayTick() {
     if (!autoplayOn) return;
     if (frame % 15 === 0) _autoUltimates();
     if (frame % AUTOPLAY_THINK !== 0) return;
+    _autoUnlock();
     _autoWorkCrew();
     if (gameState.phase === "night" || alertActive) _autoFight();
     else _autoHack();
@@ -88,6 +91,11 @@ function autoplayTick() {
 }
 
 // ── helpers ──
+// Spend an earned unlock on the ladder's next element (the one it was earned for): autoplay does not open the Crystal.
+function _autoUnlock() {
+    if (typeof pendingElements === "undefined" || pendingElements.length === 0 || typeof activatePendingElement !== "function") return;
+    activatePendingElement(pendingElements[0]);
+}
 const _autoTile = (x, y) => (typeof worldTileMap !== "undefined" ? worldTileMap.get(x + "," + y) : null);
 function _autoFree(t) {
     return !!t && t.type === "floor" && !t.pillar && !t.nest && !t.nodeType && !t.capturable && t.y >= 0 && t.y <= 3;

@@ -173,6 +173,13 @@ function ok(c, m) { if (!c) throw new Error(m); }
             nextWave = keep; autoplayOn = false; gameState.phase = 'day'; gameState.running = true; return { first, after: called }; })()`);
         ok(r.first === 0 && r.after === 1, JSON.stringify(r));
     });
+    await check('THE FIX: on autoplay an earned element unlock is spent on its own (nobody opens the Crystal to choose)', () => {
+        const r = run(`(function(){ const keepU = unlockedElements, keepP = pendingElements; unlockedElements = new Set(['electric']); pendingElements = ['flux', 'fire']; autoplayOn = true;
+            frame = Math.ceil(frame / AUTOPLAY_THINK) * AUTOPLAY_THINK; autoplayTick(); const first = [...unlockedElements].sort().join(',');
+            frame += AUTOPLAY_THINK; autoplayTick(); const second = [...unlockedElements].sort().join(','), left = pendingElements.length;
+            autoplayOn = false; unlockedElements = keepU; pendingElements = keepP; return { first, second, left }; })()`);
+        ok(r.first === 'electric,flux' && r.second === 'electric,fire,flux' && r.left === 0, JSON.stringify(r));
+    });
     await check('it keeps about a quarter of the squad on the work crew, for shards', () => {
         fresh(8);
         const r = run(`(function(){ _autoWorkCrew(); return followers.filter(f => f.duty === 'worker').length; })()`);
