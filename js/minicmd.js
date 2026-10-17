@@ -3,14 +3,17 @@
 // ─────────────────────────────────────────────────────────
 // REPORTED: "Have the crystal menu at the bottom left always visible to switch elements or menu that's a mini command tab ... so that we can free up the SEL button
 // from the main bottom menu. Make it a small radial menu."
-// A small hub (it shows who your orders go to: ALL, an element, or the selected cards, and how many) that is never put away. Tap it and three rings fan out up and
-// to the right:
-//     inner   CRYSTAL (the element mix menu), ROSTER (the full command center), ROLE (brawler > mage > technician)
-//     middle  HOLD / FOLLOW / FIGHT / WORK: orders for whoever the world orders go to
-//     outer   ALL and the unlocked ELEMENTS: pick who the orders (and long-press commands) go to; this replaces the dock's SEL button
-// Whoever the orders go to: the selected roster cards if any, else the element picked, else everyone. A tap anywhere else puts the fan away. Phones have the radial menu.
+// ONE circle menu with two faces. A small hub (it names who your orders go to: ALL, an element, or the selected cards, and how many) is never put away. Tap it and ONE ring
+// fans out up and to the right, with a switch petal at its start that flips the ring between:
+//     COMMAND   HOLD / COME / FIGHT / WORK / ROLE (brawler > mage > technician) / ROSTER (the full command center) / CRYSTAL (the element mix menu)
+//     ELEMENTS  ALL and the unlocked elements: the crystal's element selector: pick who the orders (and long-press commands) go to; it replaces the dock's SEL button
+// Whoever the orders go to: the selected roster cards if any, else the element picked, else everyone. The face you leave it on is remembered. A tap anywhere else puts the ring away.
+// Phones have the radial menu.
 // (The dock's SEL button shows only during the tutorial, whose SQUAD lesson is about it.)
-let _miniCmdSig = "", _miniCmdOpen = false;
+const MINI_CMD_MODE_KEY = "conduit_minicmd_mode";
+let _miniCmdSig = "", _miniCmdOpen = false, _miniCmdMode = "command";
+try { if (localStorage.getItem(MINI_CMD_MODE_KEY) === "elements") _miniCmdMode = "elements"; } catch (e) {}
+function miniCmdSetMode(m) { _miniCmdMode = m === "elements" ? "elements" : "command"; try { localStorage.setItem(MINI_CMD_MODE_KEY, _miniCmdMode); } catch (e) {} miniCmdRender(true); }
 
 function miniCmdPool() { return typeof getCommandPool === "function" ? getCommandPool().filter(a => a && !a.dead) : []; }
 // Who the orders go to, in words.
@@ -23,7 +26,7 @@ function miniCmdTarget() {
 function miniCmdSignature() {
     const counts = typeof followers !== "undefined" ? followers.filter(f => f && !f.dead).length : 0;
     const tot = {}; for (const f of (typeof followers !== "undefined" ? followers : [])) if (f && !f.dead) tot[f.element] = (tot[f.element] || 0) + 1;
-    return [_miniCmdOpen, squadMode, player.selectedElement, typeof unlockedElements !== "undefined" ? [...unlockedElements].join() : "", JSON.stringify(tot), counts, miniCmdTarget(), typeof crystalMenuOpen !== "undefined" && crystalMenuOpen].join("|");
+    return [_miniCmdOpen, _miniCmdMode, squadMode, player.selectedElement, typeof unlockedElements !== "undefined" ? [...unlockedElements].join() : "", JSON.stringify(tot), counts, miniCmdTarget(), typeof crystalMenuOpen !== "undefined" && crystalMenuOpen].join("|");
 }
 function miniCmdSetOpen(o) { _miniCmdOpen = !!o; miniCmdRender(true); }
 function miniCmdSay(text, col) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color: col || "#19e6c1", life: 80, vy: -0.22, size: 12 }); }
@@ -44,7 +47,7 @@ function miniCmdSwitchRoles() { const n = miniCmdPool().filter(f => !f.evolved &
 function miniCmdPickElement(id) { if (id === "all") radialSetScope(true); else radialSelectElement(id); miniCmdRender(true); }
 
 function miniCmdEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("miniCmd") : null; }
-const MC_HUB = 56, MC_BTN = 38;
+const MC_HUB = 56, MC_BTN = 36, MC_RING = 190;
 // Who the hub names: SEL (cards selected), ALL, or the element's three letters; and its colour.
 function miniCmdWho() {
     if (typeof selectedUnits !== "undefined" && selectedUnits.size && ccSelectionList().length) return { label: "SEL", col: "#19e6c1" };
@@ -68,18 +71,20 @@ function miniCmdRender(force) {
         const b = click(el("button", "mc-pet" + (on ? " on" : ""), label), fn); b._col = col; b.title = tip; if (id) b.setAttribute("data-id", id); _mcPlace(b, ring, a0, a1, i, n); root.appendChild(b); return b;
     };
     if (_miniCmdOpen) {
-        const tot = {}; for (const f of (typeof followers !== "undefined" ? followers : [])) if (f && !f.dead) tot[f.element] = (tot[f.element] || 0) + 1;
-        // inner ring
-        const inner = [["\u25c6", "#19e6c1", typeof crystalMenuOpen !== "undefined" && crystalMenuOpen, "The crystal menu: the element mix", () => { if (typeof dockCrystal === "function") dockCrystal(); miniCmdSetOpen(false); }, "crystal"],
-                       ["ROST", "#8fe3ff", false, "The roster and command center", () => { miniCmdSetOpen(false); if (typeof ccToggleOpen === "function") ccToggleOpen("roster"); }, "roster"],
-                       ["ROLE", "#a64dff", false, "Switch role: brawler, mage, technician", () => { miniCmdSwitchRoles(); }, "role"]];
-        inner.forEach((p, i) => pet(p[0], p[1], p[2], p[3], p[4], 74, i, inner.length, -88, -4, p[5]));
-        // middle ring: the orders
-        MINI_CMD_ORDERS.forEach((o, i) => pet(o.label, o.col, false, (o.id === "follow" ? "FOLLOW ME: " : o.label + ": ") + "the " + miniCmdTarget().toLowerCase(), () => { miniCmdOrder(o.id); miniCmdRender(true); }, 122, i, MINI_CMD_ORDERS.length, -88, -4, o.id));
-        // outer ring: who they go to
-        const els = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(e => unlockedElements.has(e.id)), n = els.length + 1;
-        pet("ALL", "#ffffff", squadMode === "all", "Orders go to everyone", () => miniCmdPickElement("all"), 170, 0, n, -90, -2, "all");
-        els.forEach((e, i) => pet(e.label.slice(0, 3).toUpperCase(), e.color, squadMode !== "all" && player.selectedElement === e.id, e.label + ": " + (tot[e.id] || 0) + " followers", () => miniCmdPickElement(e.id), 170, i + 1, n, -90, -2, e.id));
+        const items = [];   // [label, colour, lit, tooltip, action, id]
+        const toElements = _miniCmdMode === "command";
+        items.push([toElements ? "ELEM" : "CMD", "#ffe733", false, toElements ? "Switch to the element selector" : "Switch to the commands", () => miniCmdSetMode(toElements ? "elements" : "command"), "mode"]);
+        if (_miniCmdMode === "command") {
+            for (const o of MINI_CMD_ORDERS) items.push([o.label, o.col, false, (o.id === "follow" ? "FOLLOW ME: " : o.label + ": ") + "the " + miniCmdTarget().toLowerCase(), () => { miniCmdOrder(o.id); miniCmdRender(true); }, o.id]);
+            items.push(["ROLE", "#a64dff", false, "Switch role: brawler, mage, technician", () => { miniCmdSwitchRoles(); }, "role"]);
+            items.push(["ROST", "#8fe3ff", false, "The roster and command center", () => { miniCmdSetOpen(false); if (typeof ccToggleOpen === "function") ccToggleOpen("roster"); }, "roster"]);
+            items.push(["\u25c6", "#19e6c1", typeof crystalMenuOpen !== "undefined" && crystalMenuOpen, "The crystal menu: the element mix", () => { if (typeof dockCrystal === "function") dockCrystal(); miniCmdSetOpen(false); }, "crystal"]);
+        } else {
+            const tot = {}; for (const f of (typeof followers !== "undefined" ? followers : [])) if (f && !f.dead) tot[f.element] = (tot[f.element] || 0) + 1;
+            items.push(["ALL", "#ffffff", squadMode === "all", "Orders go to everyone", () => miniCmdPickElement("all"), "all"]);
+            for (const e of (typeof ELEMENTS !== "undefined" ? ELEMENTS : [])) if (unlockedElements.has(e.id)) items.push([e.label.slice(0, 3).toUpperCase(), e.color, squadMode !== "all" && player.selectedElement === e.id, e.label + ": " + (tot[e.id] || 0) + " followers", () => miniCmdPickElement(e.id), e.id]);
+        }
+        items.forEach((p, i) => pet(p[0], p[1], p[2], p[3], p[4], MC_RING, i, items.length, -90, -2, p[5]));
     }
     // the hub
     const w = miniCmdWho(), n = miniCmdPool().length;

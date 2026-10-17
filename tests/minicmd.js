@@ -30,27 +30,33 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   out.hub = box('#mcHub'); out.root = box('#miniCmd'); var dock = $('#topToggles').getBoundingClientRect(); out.dockLeft = Math.round(dock.left); out.vh = innerHeight; out.vw = innerWidth;
   out.selShown = getComputedStyle($('#btnSquad')).display !== 'none'; out.hubText = $('#mcHub').textContent; out.petalsClosed = $$('#miniCmd .mc-pet').length;
   var pet = function(id){ return $('#miniCmd .mc-pet[data-id="' + id + '"]'); };
-  $('#mcHub').click(); out.open = { pets: $$('#miniCmd .mc-pet').map(function(b){ return b.getAttribute('data-id'); }), hubText: $('#mcHub').textContent };
-  out.inScreen = $$('#miniCmd .mc-pet').every(function(b){ var r = b.getBoundingClientRect(); return r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight; });
-  out.size = $$('#miniCmd .mc-pet').map(function(b){ return Math.round(b.getBoundingClientRect().width); }).join();
-  var rects = $$('#miniCmd .mc-pet').map(function(b){ return b.getBoundingClientRect(); }); out.overlap = 0; for (var i = 0; i < rects.length; i++) for (var j = i + 1; j < rects.length; j++) { var a = rects[i], c = rects[j]; if (Math.min(a.right, c.right) - Math.max(a.left, c.left) > 3 && Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top) > 3) out.overlap++; }
-  // switching who the orders go to
-  pet('ice').click(); out.ice = { el: player.selectedElement, mode: squadMode, on: pet('ice').classList.contains('on'), hub: $('#mcHub').textContent };
-  pet('all').click(); out.all = { mode: squadMode, on: pet('all').classList.contains('on'), hub: $('#mcHub').textContent };
-  pet('fire').click(); out.fireHub = $('#mcHub').title; pet('hold').click();
-  out.hold = followers.map(function(f){ return f.element + ':' + f.stance; }).join();
+  localStorage.removeItem('conduit_minicmd_mode');
+  $('#mcHub').click(); out.open = { pets: $$('#miniCmd .mc-pet').map(function(b){ return b.getAttribute('data-id'); }), hubText: $('#mcHub').textContent, mode: _miniCmdMode, switchLabel: pet('mode').textContent };
+  var ring = function(){ return $$('#miniCmd .mc-pet'); }, hubC = (function(){ var r = $('#mcHub').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })();
+  out.oneRing = (function(){ var rs = ring().map(function(b){ var r = b.getBoundingClientRect(); return Math.round(Math.hypot(r.left + r.width / 2 - hubC[0], r.top + r.height / 2 - hubC[1])); }); return Math.max.apply(null, rs) - Math.min.apply(null, rs); })();
+  var fit = function(){ return { inScreen: ring().every(function(b){ var r = b.getBoundingClientRect(); return r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight; }), size: ring().map(function(b){ return Math.round(b.getBoundingClientRect().width); }).join(), overlap: (function(){ var n = '', rs = ring().map(function(b){ return b.getBoundingClientRect(); }); for (var i = 0; i < rs.length; i++) for (var j = i + 1; j < rs.length; j++) { var a = rs[i], c = rs[j]; if (Math.hypot((a.left + a.width / 2) - (c.left + c.width / 2), (a.top + a.height / 2) - (c.top + c.height / 2)) < a.width - 1) n += ' ' + ring()[i].getAttribute('data-id') + '/' + ring()[j].getAttribute('data-id') + JSON.stringify([rs[i].left, rs[i].top, rs[j].left, rs[j].top].map(Math.round)); } return n; })() }; };
+  out.fitCmd = fit();
+  // the commands: they act on whoever the orders go to
+  pet('mode').click(); out.elementsFace = { pets: ring().map(function(b){ return b.getAttribute('data-id'); }), mode: _miniCmdMode, saved: localStorage.getItem('conduit_minicmd_mode'), switchLabel: pet('mode').textContent, oneRing: (function(){ var rs = ring().map(function(b){ var r = b.getBoundingClientRect(); return Math.round(Math.hypot(r.left + r.width / 2 - hubC[0], r.top + r.height / 2 - hubC[1])); }); return Math.max.apply(null, rs) - Math.min.apply(null, rs); })() }; out.fitEl = fit();
+  pet('ice').click(); out.ice = { el: player.selectedElement, mode: squadMode, on: pet('ice').classList.contains('on'), title: $('#mcHub').title };
+  pet('all').click(); out.all = { mode: squadMode, on: pet('all').classList.contains('on') };
+  pet('fire').click(); out.fireHub = $('#mcHub').title; out.stayEl = _miniCmdMode;
+  pet('mode').click(); out.backToCmd = { mode: _miniCmdMode, pets: ring().map(function(b){ return b.getAttribute('data-id'); }) };
+  pet('hold').click(); out.hold = followers.map(function(f){ return f.element + ':' + f.stance; }).join();
   pet('follow').click(); out.follow = followers.filter(function(f){ return f.element === 'fire'; }).map(function(f){ return f.stance; }).join();
-  pet('core').click(); pet('work').click(); out.work = followers.filter(function(f){ return f.duty === 'worker'; }).map(function(f){ return f.element; }).join();
+  pet('mode').click(); pet('core').click(); pet('mode').click(); pet('work').click(); out.work = followers.filter(function(f){ return f.duty === 'worker'; }).map(function(f){ return f.element; }).join();
   pet('fight').click(); out.fight = followers.filter(function(f){ return f.duty === 'worker'; }).length;
-  pet('electric').click(); var role0 = followers.find(function(f){ return f.element === 'electric'; }).role; pet('role').click(); out.role = [role0, followers.find(function(f){ return f.element === 'electric'; }).role];
+  pet('mode').click(); pet('electric').click(); pet('mode').click(); var role0 = followers.find(function(f){ return f.element === 'electric'; }).role; pet('role').click(); out.role = [role0, followers.find(function(f){ return f.element === 'electric'; }).role];
   // a selection of cards takes the orders instead
-  ccSetSelection([followers[0]]); miniCmdRender(true); out.selHub = $('#mcHub').title; pet('all').click(); pet('hold').click(); out.selHold = followers.map(function(f){ return f.stance; }).join(); pet('follow').click(); ccClearSelection(); miniCmdRender(true);
+  ccSetSelection([followers[0]]); miniCmdRender(true); out.selHub = $('#mcHub').title; pet('hold').click(); out.selHold = followers.map(function(f){ return f.stance; }).join(); pet('follow').click(); ccClearSelection(); miniCmdRender(true);
   out.stillOpen = !!pet('hold');
-  // the crystal and the roster close the fan
-  pet('crystal').click(); out.crystal = crystalMenuOpen; out.closedByCrystal = !pet('hold'); dockCrystal(); $('#mcHub').click(); pet('roster').click(); await wait(100); out.roster = ccOpenTab; out.hiddenInRoster = getComputedStyle($('#miniCmd')).display === 'none'; out.closedByRoster = true; ccClose(); await wait(50); out.backAfter = getComputedStyle($('#miniCmd')).display !== 'none'; out.fanAfterRoster = $$('#miniCmd .mc-pet').length;
+  // the crystal and the roster close the ring
+  pet('crystal').click(); out.crystal = crystalMenuOpen; out.closedByCrystal = !pet('hold'); dockCrystal(); $('#mcHub').click(); pet('roster').click(); await wait(100); out.roster = ccOpenTab; out.hiddenInRoster = getComputedStyle($('#miniCmd')).display === 'none'; ccClose(); await wait(50); out.backAfter = getComputedStyle($('#miniCmd')).display !== 'none'; out.ringAfterRoster = ring().length;
+  // the face is remembered across a re-open
+  $('#mcHub').click(); pet('mode').click(); $('#mcHub').click(); $('#mcHub').click(); out.remembered = _miniCmdMode;
   // a tap elsewhere puts it away; the hub puts it away
-  $('#mcHub').click(); out.reopened = $$('#miniCmd .mc-pet').length > 0; document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); out.awayByTap = $$('#miniCmd .mc-pet').length === 0;
-  $('#mcHub').click(); $('#mcHub').click(); out.awayByHub = $$('#miniCmd .mc-pet').length === 0;
+  out.reopened = ring().length > 0; document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); out.awayByTap = ring().length === 0;
+  $('#mcHub').click(); $('#mcHub').click(); out.awayByHub = ring().length === 0; miniCmdSetMode('command');
   // out of the way while a tool is in hand; the tutorial shows SEL and hides the radial
   document.body.classList.add('placing'); out.hiddenPlacing = getComputedStyle($('#miniCmd')).display === 'none'; document.body.classList.remove('placing');
   tutorialMode = true; miniCmdTick(); out.hiddenTut = getComputedStyle($('#miniCmd')).display === 'none'; out.selInTut = getComputedStyle($('#btnSquad')).display !== 'none'; tutorialMode = false; miniCmdTick(); out.selAfterTut = getComputedStyle($('#btnSquad')).display !== 'none';
@@ -74,16 +80,17 @@ else {
     if (r) {
         check('THE ASK: a small round hub at the bottom left, always there, clear of the dock', () => { ok(r.hub.shown && r.root.shown, 'hidden'); ok(r.hub.w <= 64 && r.hub.h <= 64, 'not small: ' + r.hub.w); ok(r.hub.x <= 20 && r.hub.y > r.vh * 0.5, 'not bottom left: ' + JSON.stringify(r.hub)); ok(r.hub.x + r.hub.w < r.dockLeft - 4, 'the hub overlaps the dock: ' + r.hub.x + '+' + r.hub.w + ' vs ' + r.dockLeft); ok(r.hub.y + r.hub.h <= r.vh, 'off the bottom'); same(r.petalsClosed, 0, 'petals while closed'); ok(/^ALL|^FIR|^ELE|^ICE|^COR|^SEL/.test(r.hubText), 'the hub does not name who orders go to: ' + r.hubText); });
         check('THE ASK: the dock no longer has the SEL button (the radial replaces it)', () => same(r.selShown, false, 'SEL still in the dock'));
-        check('tapping the hub fans out three rings: CRYSTAL / ROSTER / ROLE, HOLD / FOLLOW / FIGHT / WORK, and ALL + the unlocked elements', () => { same(r.open.pets.join(), 'crystal,roster,role,hold,follow,fight,work,all,fire,electric,ice,core', 'petals'); same(r.open.hubText, '\u2715', 'the hub becomes a close button'); });
-        check('every petal is on screen, finger-sized, and none overlaps another', () => { same(r.inScreen, true, 'a petal is off screen'); ok(r.size.split(',').every(w => +w >= 34), 'sizes ' + r.size); same(r.overlap, 0, 'overlapping petals'); });
-        check('THE ASK: an element petal switches who the orders go to (and the hub names it); ALL goes back to everyone', () => { same(r.ice.el, 'ice', 'element'); same(r.ice.mode, 'selected', 'mode'); same(r.ice.on, true, 'lit'); same(r.all.mode, 'all', 'all'); same(r.all.on, true, 'ALL lit'); ok(/FIRE 2/.test(r.fireHub), r.fireHub); });
-        check('HOLD / FOLLOW / FIGHT / WORK / ROLE act on the element picked, and on nobody else', () => {
-            same(r.hold, 'fire:hold,fire:hold,electric:follow,ice:follow,core:follow,core:follow', 'only the fire followers hold'); same(r.follow, 'follow,follow', 'follow again');
+        check('THE ASK: tapping the hub opens ONE ring, on its command face, with a switch petal (ELEM) at its start', () => { same(r.open.pets.join(), 'mode,hold,follow,fight,work,role,roster,crystal', 'command face'); same(r.open.mode, 'command', 'mode'); same(r.open.switchLabel, 'ELEM', 'switch'); same(r.open.hubText, '\u2715', 'the hub becomes a close button'); ok(r.oneRing <= 4, 'more than one ring: radii differ by ' + r.oneRing); });
+        check('the switch flips the same ring to the ELEMENT selector (ALL and the unlocked elements, switch now says CMD) and back', () => { same(r.elementsFace.pets.join(), 'mode,all,fire,electric,ice,core', 'element face'); same(r.elementsFace.mode, 'elements', 'mode'); same(r.elementsFace.switchLabel, 'CMD', 'switch'); ok(r.elementsFace.oneRing <= 4, 'one ring'); same(r.backToCmd.mode, 'command', 'back'); same(r.backToCmd.pets.join(), 'mode,hold,follow,fight,work,role,roster,crystal', 'back to the commands'); });
+        check('every petal on both faces is on screen, finger-sized and clear of the others', () => { for (const f of [r.fitCmd, r.fitEl]) { same(f.inScreen, true, 'a petal is off screen'); ok(f.size.split(',').every(w => +w >= 34), 'sizes ' + f.size); same(f.overlap, '', 'overlapping petals'); } });
+        check('THE ASK: an element petal switches who the orders go to (the hub names it); ALL goes back to everyone; the ring stays on the element face', () => { same(r.ice.el, 'ice', 'element'); same(r.ice.mode, 'selected', 'mode'); same(r.ice.on, true, 'lit'); same(r.all.mode, 'all', 'all'); same(r.all.on, true, 'ALL lit'); ok(/FIRE 2/.test(r.fireHub), r.fireHub); same(r.stayEl, 'elements', 'face'); });
+        check('HOLD / COME / FIGHT / WORK / ROLE act on the element picked, and on nobody else', () => {
+            same(r.hold, 'fire:hold,fire:hold,electric:follow,ice:follow,core:follow,core:follow', 'only the fire followers hold'); same(r.follow, 'follow,follow', 'come back');
             same(r.work, 'core,core', 'work went to the core followers'); same(r.fight, 0, 'FIGHT left workers'); ok(r.role[0] !== r.role[1], 'ROLE did not change: ' + r.role);
         });
-        check('selected cards take the orders instead of the element (the hub names them SELECTED), and the fan stays open for the next order', () => { ok(/SELECTED 1/.test(r.selHub), r.selHub); same(r.selHold, 'hold,follow,follow,follow,follow,follow', 'only the selected one held'); same(r.stillOpen, true, 'closed after an order'); });
-        check('CRYSTAL opens the crystal menu and ROSTER opens the command center, each putting the fan away (and the radial steps aside while the roster is open)', () => { same(r.crystal, true, 'crystal'); same(r.closedByCrystal, true, 'fan after crystal'); same(r.roster, 'roster', 'roster'); same(r.hiddenInRoster, true, 'in the roster'); same(r.backAfter, true, 'back after'); same(r.fanAfterRoster, 0, 'fan left open'); });
-        check('a tap anywhere else, or the hub again, puts the fan away', () => { same(r.reopened, true, 'did not reopen'); same(r.awayByTap, true, 'tap outside'); same(r.awayByHub, true, 'hub'); });
+        check('selected cards take the orders instead of the element, and the ring stays open for the next order', () => { ok(/SELECTED 1/.test(r.selHub), r.selHub); same(r.selHold, 'hold,follow,follow,follow,follow,follow', 'only the selected one held'); same(r.stillOpen, true, 'closed after an order'); });
+        check('CRYSTAL opens the crystal menu and ROSTER opens the command center, each putting the ring away (the radial steps aside while the roster is open)', () => { same(r.crystal, true, 'crystal'); same(r.closedByCrystal, true, 'ring after crystal'); same(r.roster, 'roster', 'roster'); same(r.hiddenInRoster, true, 'in the roster'); same(r.backAfter, true, 'back after'); same(r.ringAfterRoster, 0, 'ring left open'); });
+        check('the face you leave it on is remembered; a tap anywhere else, or the hub again, puts the ring away', () => { same(r.remembered, 'elements', 'remembered'); same(r.reopened, true, 'did not reopen'); same(r.awayByTap, true, 'tap outside'); same(r.awayByHub, true, 'hub'); });
         check('it is out of the way while a tool is in hand; in the tutorial the radial hides and the dock\'s SEL button comes back (its lesson), then goes again', () => { same(r.hiddenPlacing, true, 'placing'); same(r.hiddenTut, true, 'tutorial'); same(r.selInTut, true, 'SEL in the tutorial'); same(r.selAfterTut, false, 'SEL after the tutorial'); });
     }
     console.log('\nON A PHONE (500x800: the radial menu is the phone\'s)');
