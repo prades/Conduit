@@ -36,7 +36,7 @@
 //          enemy within MANTA_RANGE, every MANTA_EVERY frames it dashes to it,
 //          hits it (MANTA_MULT × its power) and shocks two more near it; all
 //          are stunned for a moment.
-//          VOID HAULER (the FLUX WORKER, once the hover hauler, now design No. 687: a flux follower on worker
+//          VOID HAULER (the FLUX WORKER, once the hover hauler, now design No. 689: a flux follower on worker
 //          duty, not a role), HEAVY HAUL: it hauls neutralised lumps
 //          HAULER_SPEED× as fast, picks them up from HAULER_REACH× as far, and
 //          each delivery pays HAULER_PAY× the shards (js/mass.js asks evoHaul).
@@ -207,10 +207,10 @@ const EVOLUTIONS = {
     // The electric WORKER (the neutraliser): a worker is a duty, so it comes from an electric follower on worker duty.
     pod:    { id: "pod",    name: "DYNAMO POD",   element: "electric", duty: "worker",  move: "RAPID DISCHARGE", sheet: "img/evo/pod.png",
               cell: 144, anchor: [72, 114.2], core: [72, 58], noGlow: true, color: "#ffee33" },
-    // The flux ("void") WORKER: no role of its own (a worker is a duty); it comes from a flux follower on worker duty. Design No. 687: a tall black
+    // The flux ("void") WORKER: no role of its own (a worker is a duty); it comes from a flux follower on worker duty. Design No. 689: a deep black
     // saucer on jagged-forearm bug legs, violet lights chasing round its rim (it was a hovering tank; the id stays "hauler", so saved followers keep it).
     hauler: { id: "hauler", name: "VOID HAULER", element: "flux",     duty: "worker",  move: "HEAVY HAUL",   sheet: "img/evo/hauler.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 82.6], noGlow: true, color: "#bb66ff" },
+              cell: 144, anchor: [72, 114.2], core: [72, 84.8], noGlow: true, color: "#bb66ff" },
 };
 // Which egg grows into which machine.
 function evolutionFor(f) {

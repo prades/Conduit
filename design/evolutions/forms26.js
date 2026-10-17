@@ -120,3 +120,6 @@ fx(690, "Tall and slightly domed all over, an egg-like disc with the dark centre
 
 // The game sprite of No. 687, the flux ("void") worker, in violet.
 fx(700, "687, the game sprite.", () => _saucer(Object.assign({}, _stall, { sy: 2.8, hipH: 0.66, domeR: 0.36, S: 1.0 })));
+
+// The game sprite of No. 689 (the deep hull with a second ring of lights on its belly), the flux ("void") worker, replacing 700.
+fx(701, "689, the game sprite.", () => _saucer(Object.assign({}, _stall, { sy: 2.4, hipH: 0.6, bellyBand: true, S: 1.0 })));

@@ -30,8 +30,8 @@ const JOBS = [
   { id: 'serpent', form: 's15', color: '#9933ff', idleAct: 0, action: [0.6, 1.0], period: 2 * Math.PI / 2.2 },
   // Design Nos. 57, 58, 68, 71 and 90 (numeric form = FORMS2[no]).
   { id: 'warden', form: 57, color: '#00ccaa', idleAct: 0.2, action: [0.62, 1.0] },
-  // No. 700 (the game sprite of 687), the flux ("void") worker: a tall black saucer on jagged-forearm bug legs, violet rim lights chasing round it; its action frames (hauling) speed the lights and crouch it, up and back.
-  { id: 'hauler', form: 700, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true },
+  // No. 701 (the game sprite of 689), the flux ("void") worker: a tall black saucer on jagged-forearm bug legs, violet rim lights chasing round it; its action frames (hauling) speed the lights and crouch it, up and back.
+  { id: 'hauler', form: 701, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true },
   { id: 'manta',  form: 68, color: '#ffee33', idleAct: 0.2, action: [0.55, 1.0] },
   { id: 'pod',    form: 71, color: '#ffee33', idleAct: 0.2, action: [0.55, 1.0] },
   { id: 'halo',   form: 90, color: '#ff3300', idleAct: 0.1, action: [0.6, 1.0] },

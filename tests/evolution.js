@@ -61,7 +61,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(run('unitTypeLabel(__f)'), 'VOLT RING', 'its tag'); ok(run('EVOLUTIONS.prism.legacy === true'), 'the Prism Hood design went to the fire mage'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
         mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'thunderhead', 'the electric sniper is the Thunderhead');
     });
-    check('THE ASK: a FLUX WORKER becomes the VOID HAULER (the saucer, design No. 687; once the hover hauler) — a worker is a duty, not a role', () => {
+    check('THE ASK: a FLUX WORKER becomes the VOID HAULER (the saucer, design No. 689; once the hover hauler) — a worker is a duty, not a role', () => {
         mk('flux', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux brawler on worker duty');
         mk('flux', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux SNIPER on worker duty is a worker first');
         mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a flux brawler on the line is the Rift Mimic');
