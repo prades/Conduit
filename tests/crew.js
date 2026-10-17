@@ -537,6 +537,9 @@ function uiEnv() {
         try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), ctx, { filename: rel }); }
         catch (e) { /* DOM-heavy init is noisy under stubs */ }
     }
+    // The old canvas index (ELEM / UNITS / CLONES) and its group duty menu are replaced in the game by the Command Center (js/commandcenter.js); the
+    // code is kept, and these tests exercise it directly with the replacement switched off.
+    vm.runInContext('indexReplaced = () => false;', ctx);
     return { sandbox, run: e => vm.runInContext(e, ctx) };
 }
 

@@ -68,7 +68,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('drawing: the canvas controls are skipped while placing', () => {
         const src = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
         ok(/const _hideUi = typeof placingHidesUi === "function" && placingHidesUi\(\);\s*if \(!_hideUi\) \{\s*drawCrystalButton\(\);/.test(src), 'the canvas UI is not skipped');
-        ok(/function render\(\) \{[^}]{0,400}if \(typeof placingTick === "function"\) placingTick\(\);/.test(src), 'placingTick is not called each frame');
+        ok(/function render\(\) \{[\s\S]{0,900}if \(typeof placingTick === "function"\) placingTick\(\);/.test(src), 'placingTick is not called each frame');
     });
     check('the page: the DOM controls are hidden while placing and a DONE chip stays', () => {
         const html = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');

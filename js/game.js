@@ -2100,6 +2100,7 @@ function gameLoop() {
 }
 
 function render() {
+    if (typeof ccPrune === "function" && typeof frame !== "undefined" && frame % 30 === 0) { ccPrune(); if (typeof ccRefreshChip === "function") ccRefreshChip(); }   // the dead leave the selection
     if (typeof checkVisibleArea === "function" && (typeof frame === "undefined" || frame % VISIBLE_AREA_POLL_FRAMES === 0)) checkVisibleArea();   // the browser's real visible size, polled (js/config.js)
     if (typeof placingTick === "function") placingTick();   // zoomed out and the interface away while a build tool is in hand (js/buildmenu.js)
     // AUTOPLAY presses NEXT WAVE itself — which has to be watched while paused.
@@ -2762,7 +2763,7 @@ function render() {
                 // Its level comes back with it, less some XP (js/levels.js).
                 base: a.base ? Object.assign({}, a.base, { hp: Math.max(1, newHp) }) : undefined,
                 level: a.level, xp: typeof xpAfterDeath === "function" ? xpAfterDeath(a) : a.xp,
-                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined });
+                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, playStyle: a.playStyle || undefined });
         }
         // Progression counts EVERY enemy killed, wanderers included — it is a
         // record of what you have fought, not of wave quotas. The wave counter
@@ -4451,6 +4452,7 @@ function render() {
                 };
                 // The same person back — same uid — but the bond did not survive.
                 if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid });
+                if (entry.playStyle) npc.playStyle = entry.playStyle;   // its play style (js/commandcenter.js)
                 if (_evo) npc.evolved = _evo.id;   // before its level, so the evolved stats apply
                 if (_rerolled || entry.evoWait) npc._evoOnLevelUp = true;   // re-rolled to another element: an egg again until it next levels up
                 // Its level and XP (less what dying cost) — js/levels.js.
@@ -4527,6 +4529,7 @@ function render() {
     // up with the interface.
     drawHoldLine();
     if (typeof drawBuildGhost === "function") drawBuildGhost();   // the build tool's ghost on the ground
+    if (typeof drawSelectedUnitRings === "function") drawSelectedUnitRings();   // the units picked in the Command Center
     if (typeof drawBonds === "function") drawBonds();
     // The power chain over the mending filament: the mending line is incidental,
     // the power is the thing the player is managing.
@@ -4548,7 +4551,7 @@ function render() {
     drawRadialMenu();
     drawCrystalPanel();
     drawGestureFeedback();
-    drawFollowerElementUI();
+    if (!(typeof indexReplaced === "function" && indexReplaced())) drawFollowerElementUI();   // the old ELEM / UNITS / CLONES index: replaced by the Command Center (js/commandcenter.js)
     if (typeof drawBuildMenu === "function") drawBuildMenu();     // the build window, under the modal panels
     drawElementPicker();
     drawPylonConfirm();
@@ -4557,7 +4560,7 @@ function render() {
     drawCampButton();
     drawAmmoChip();
     drawSettingsButton();
-    drawFollowerDutyMenu();
+    if (!(typeof indexReplaced === "function" && indexReplaced())) drawFollowerDutyMenu();
     drawSettingsPanel();
     drawCampMenu();
     }

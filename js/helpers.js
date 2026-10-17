@@ -854,6 +854,8 @@ function spawnFollowerAtCrystal(element) {
 //  SQUAD COMMAND POOL
 // ─────────────────────────────────────────────────────────
 function getCommandPool() {
+    // CARDS SELECTED in the Command Center (js/commandcenter.js): the selection IS the command pool while any of it is alive.
+    if (typeof selectedUnits !== "undefined" && selectedUnits.size) { const sel = [...selectedUnits].filter(a => a && !a.dead && a.team === "green"); if (sel.length) return sel; }
     if (uiTab === "clones") return actors.filter(a => a.isClone && !a.dead);
     if (squadMode === "all") return followers.filter(a => !a.dead);
     if (selectedRole)        return followers.filter(a => !a.dead && a.role === selectedRole);

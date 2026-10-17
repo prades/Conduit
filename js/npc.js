@@ -369,7 +369,7 @@ function updateRTSNPC(actor) {
 
         // ── BRAWLER: chase nearest enemy aggressively, circle when in range ──
         if (role === "brawler") {
-            if (nearestEnemy && nearestEnemyDist < 6) {
+            if (nearestEnemy && nearestEnemyDist < 6 * (typeof playReach === "function" ? playReach(actor) : 1)) {   // PLAY STYLE scales the reach (js/commandcenter.js)
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 // Floored: standing exactly on the target makes dist 0, and the
                 // orbit below divides by it. -dy/0 is NaN, and a NaN position
@@ -400,7 +400,7 @@ function updateRTSNPC(actor) {
             const SNIPER_PREFERRED = 4.0;
             const SNIPER_MIN       = 2.5;
 
-            if (nearestEnemy && nearestEnemyDist < 10) {
+            if (nearestEnemy && nearestEnemyDist < 10 * (typeof playReach === "function" ? playReach(actor) : 1)) {
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 // Floored for the same reason as the brawler's orbit: the
                 // back-off below runs for every dist under SNIPER_MIN, zero
@@ -446,7 +446,7 @@ function updateRTSNPC(actor) {
             const dxA=anchorX-actor.x, dyA=anchorY-actor.y;
             const distAnchor=Math.sqrt(dxA*dxA+dyA*dyA);
 
-            if (nearestEnemy && nearestEnemyDist < CAMPER_ENGAGE_RADIUS) {
+            if (nearestEnemy && nearestEnemyDist < CAMPER_ENGAGE_RADIUS * (typeof playReach === "function" ? playReach(actor) : 1)) {
                 // Enemy close enough — engage
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy);

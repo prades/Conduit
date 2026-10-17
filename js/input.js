@@ -238,7 +238,7 @@ function handleLongHold(ex,ey) {
     // The follower index takes its own long press: a row there is a GROUP, and
     // the duty switch belongs to it. Checked before anything else so the world
     // radial does not also open underneath the panel.
-    if (typeof openFollowerDutyMenu === "function" && openFollowerDutyMenu(ex, ey)) return;
+    if (!(typeof indexReplaced === "function" && indexReplaced()) && typeof openFollowerDutyMenu === "function" && openFollowerDutyMenu(ex, ey)) return;   // (the old index is replaced: js/commandcenter.js)
     // A long press on the build window is the window's, not the world's.
     if (typeof buildMenuHit === "function" && buildMenuHit(ex, ey)) return;
     commandMode=true; commandX=ex; commandY=ey;
@@ -417,9 +417,11 @@ canvas.addEventListener('pointerup', e=>{
     if (typeof handleBuildMenuTap === "function" && handleBuildMenuTap(upX, upY)) { isPressing=false; return; }
     // The group duty menu first: it sits beside the index, and the index's own
     // tap handler would otherwise take a press aimed at the menu.
+    if (!(typeof indexReplaced === "function" && indexReplaced())) {   // the old canvas index: replaced by the Command Center (js/commandcenter.js)
     if (typeof handleFollowerDutyMenuTap === "function"
         && handleFollowerDutyMenuTap(upX, upY)) { isPressing=false; return; }
     if (handleFollowerUIClick(upX, upY)) { isPressing=false; return; }
+    }
     // SHOP button tap
     if (!touchMoved && !alertActive && gameState.phase !== "night" && gameState.phase !== "waveComplete" && gameState.phase !== "gameOver"
         && Math.hypot(upX-_SHOPBTN.x, upY-_SHOPBTN.y) < _SHOPBTN.r+8) {
