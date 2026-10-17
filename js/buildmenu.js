@@ -69,6 +69,7 @@ const BUILD_MENU_TABS = [
     { id: "wave",    label: "WAVE" },
     { id: "power",   label: "POWER" },
     { id: "modules", label: "MODULES" },
+    { id: "kits",    label: "KITS" },
 ];
 // Big slabs (js/uikit.js): the cell is the picture, the name and the price; nothing is smaller than 12px.
 const _BM_CELL_W = 104, _BM_CELL_H = 108, _BM_GAP = 10, _BM_HEAD = 60, _BM_TABS = 48, _BM_STATUS = 38, _BM_PAD = 14;
@@ -90,6 +91,9 @@ function buildMenuItems(tab) {
         for (const e of els) out.push({ tab, kind: "battery", elId: e.id, label: e.label.toUpperCase(), sub: "BATTERY", icon: "battery", colour: e.color });
         if (!buildMenuSimple) out.push({ tab, kind: "connector", elId: typeof CONNECTOR_ID !== "undefined" ? CONNECTOR_ID : "connector", label: "CONNECTOR", sub: "RELAY", icon: "connector", colour: "#ffd24a" });
         out.push({ tab, kind: "generator", elId: typeof GENERATOR_ID !== "undefined" ? GENERATOR_ID : "generator", label: "GENERATOR", sub: "ZONE POWER", icon: "generator", colour: "#cdd6e0" });
+    } else if (tab === "kits" && typeof KITS !== "undefined") {
+        // The sixteen layout kits (js/kits.js): a whole zone layout in one placement.
+        for (const k of KITS) out.push({ tab, kind: "kit", id: k.id, elId: null, label: k.name, sub: kitPieceCount(k) + " PCS", icon: null, colour: KIT_FAMILY_COLOUR[k.family] || "#19e6c1", cost: kitCost(k) });
     } else if (tab === "modules" && typeof MODULE_DEFS !== "undefined") {
         // Modules (js/modules.js): structures that work while powered.
         for (const id of MODULE_IDS) { const d = MODULE_DEFS[id]; out.push({ tab, kind: "module", id, label: d.label, sub: "MODULE", icon: d.icon, colour: d.colour, cost: d.cost }); }
@@ -99,7 +103,7 @@ function buildMenuItems(tab) {
 function _bmIsRelayKind(kind) { return kind === "connector" || kind === "generator"; }
 // The level a tool builds at (a relay is always one).
 function buildToolLevel(tool) {
-    if (!tool || tool.kind === "demolish" || tool.kind === "camp" || tool.kind === "module" || _bmIsRelayKind(tool.kind)) return 1;
+    if (!tool || tool.kind === "demolish" || tool.kind === "camp" || tool.kind === "module" || tool.kind === "kit" || _bmIsRelayKind(tool.kind)) return 1;
     return buildLevel[tool.tab] || 1;
 }
 // The tiles one placement covers, from the tapped (north-west) tile.
@@ -114,13 +118,14 @@ function buildToolFootprint(tool, x, y) {
 }
 function buildToolCount(tool) { return buildToolFootprint(tool, 0, 0).length; }
 function buildToolCost(tool) {
+    if (tool && tool.kind === "kit") return kitCost(kitById(tool.id));
     if (tool && tool.kind === "module") return typeof MODULE_DEFS !== "undefined" && MODULE_DEFS[tool.id] ? MODULE_DEFS[tool.id].cost : 0;
     const n = buildToolCount(tool), lv = buildToolLevel(tool);
     return n * PYLON_BUILD_COST + (lv === 2 && tool.kind !== "battery" ? (typeof MK2_COST !== "undefined" ? MK2_COST : 15) : 0);
 }
 // What an item costs at its tab's current level.
 function buildItemCost(it) {
-    if (it.kind === "camp") return it.cost;
+    if (it.kind === "camp" || it.kind === "kit") return it.cost;
     return buildToolCost({ kind: it.kind, elId: it.elId, id: it.id, tab: it.tab });
 }
 function _bmTierAt(el, x, y) { return typeof networkTierAt === "function" ? networkTierAt(el, x, y) : 0; }
@@ -174,6 +179,7 @@ function _bmZoneLive() {
 }
 function buildItemState(it) {
     if (it.kind === "camp") return { ok: true };
+    if (it.kind === "kit") return kitElements(kitById(it.id)).length ? { ok: true } : { ok: false, why: "NO ELEMENT" };
     if (it.kind === "module") return !_bmZoneLive() ? { ok: false, why: "NO GENERATOR" } : buildGridLive("module") ? { ok: true } : { ok: false, why: "NO POWER" };
     if (typeof isPylonTypeUnlocked === "function" && !isPylonTypeUnlocked(it.elId)) return { ok: false, why: "LOCKED" };
     if (_bmIsRelayKind(it.kind)) return { ok: true };
@@ -187,11 +193,11 @@ function buildItemState(it) {
     return { ok: true };
 }
 function _bmLocked(it) {
-    if (it.kind === "camp" || it.kind === "module") return false;
+    if (it.kind === "camp" || it.kind === "module" || it.kind === "kit") return false;
     return typeof isPylonTypeUnlocked === "function" ? !isPylonTypeUnlocked(it.elId) : false;
 }
 function _bmOwned(it) { return it.kind === "camp" && typeof campBuildings !== "undefined" && campBuildings.has(it.id); }
-function _bmSame(a, b) { return !!a && !!b && a.kind === b.kind && a.elId === b.elId && (a.id || "") === (b.id || "") && (a.tab || "") === (b.tab || ""); }
+function _bmSame(a, b) { if (a && b && a.kind === "kit") return b.kind === "kit" && a.id === b.id; return !!a && !!b && a.kind === b.kind && a.elId === b.elId && (a.id || "") === (b.id || "") && (a.tab || "") === (b.tab || ""); }
 
 // ── Open / close ──────────────────────────────────────────
 function openBuildMenu() {
@@ -230,6 +236,7 @@ function setBuildTool(it) {
     if (!it) { buildTool = null; buildGhost = null; _bmArmedKey = null; return; }
     if (_bmSame(buildTool, it)) { buildTool = null; buildGhost = null; _bmArmedKey = null; return; }   // tap again: put it down
     buildTool = { tab: it.tab, kind: it.kind, elId: it.elId, id: it.id, label: it.label + (it.sub ? " " + it.sub : ""), colour: it.colour, icon: it.icon };
+    if (it.kind === "kit") { buildTool.label = it.label; buildTool.elId = kitDefaultElement(kitById(it.id)); }
     _bmArmedKey = null;
 }
 
@@ -276,6 +283,7 @@ function canBuildAt(t, tool) {
         return { ok: false, why: t && t.pillar && !t.destroyed ? "NOT YOURS" : "NO PYLON HERE" };
     }
     if (!t) return { ok: false, why: "NOTHING THERE" };
+    if (tool.kind === "kit") return kitToolVerdict(t, tool);
     const tiles = buildToolFootprint(tool, t.x, t.y).map(p => (typeof getTile === "function" ? getTile(p.x, p.y) : null));
     for (const q of tiles) { const why = _bmTileProblem(q); if (why) return { ok: false, why: tiles.length > 1 && q !== t ? "NO ROOM: " + why : why }; }
     // Every piece of tech needs a working generator in its zone (power.js).
@@ -318,6 +326,7 @@ function buildToolPlaceAt(t) {
     const v = canBuildAt(t, tool);
     if (!v.ok) { _bmSay("CAN'T BUILD: " + v.why, "#f66"); return false; }
     if (tool.kind === "demolish") return t._module ? removeModule(t._module, true) : demolishPylon(t);
+    if (tool.kind === "kit") return kitToolPlace(t, tool);
     if (tool.kind === "module") return !!placeModule(tool.id, t);
     const el = PYLON_PICKER_TYPES.find(e => e.id === tool.elId);
     if (!el) return false;
@@ -368,7 +377,8 @@ function _bmLayout() {
     // and the TUTORIAL button at the bottom stay clear of it.
     const narrow = canvas.width < 600;
     const W = Math.min(canvas.width - (narrow ? 70 : 16), 660);
-    const cw = narrow ? 84 : _BM_CELL_W, ch = narrow ? 96 : _BM_CELL_H;
+    const kitsTab = buildMenuTab === "kits";   // sixteen smaller cards, so the tab fits the screen
+    const cw = kitsTab ? (narrow ? 76 : 100) : narrow ? 84 : _BM_CELL_W, ch = kitsTab ? (narrow ? 64 : 76) : narrow ? 96 : _BM_CELL_H;
     const cols = Math.max(3, Math.floor((W - _BM_PAD * 2 + _BM_GAP) / (cw + _BM_GAP)));
     const items = buildMenuItems(buildMenuTab);
     const rows = Math.max(1, Math.ceil(items.length / cols));
@@ -482,6 +492,7 @@ function drawBuildMenu() {
         }
         // Items: picture, name, price — greyed when they cannot be had.
         for (const c of L.cells) {
+            if (c.it.kind === "kit") { drawKitCell(c, _bmSame(buildTool, c.it)); continue; }
             const it = c.it, owned = _bmOwned(it), sel = _bmSame(buildTool, it);
             const st = buildItemState(it), locked = !st.ok;
             const cost = buildItemCost(it), poor = !owned && shardCount < cost;
@@ -505,7 +516,7 @@ function drawBuildMenu() {
         }
         // Status line: what is in hand, and what to do with it.
         let msg, col = "#8aa0c8";
-        if (!buildTool) msg = buildMenuSimple ? "Pick a GENERATOR or a BATTERY, then tap the ground. You can switch it there." : buildMenuTab === "modules" ? "Modules work while powered, on the ground around them. Pick one." : "Pick something to build.";
+        if (!buildTool) msg = buildMenuTab === "kits" ? "A kit is a whole zone layout. Pick one, then SNAP TO NEST or tap where its generator goes." : buildMenuSimple ? "Pick a GENERATOR or a BATTERY, then tap the ground. You can switch it there." : buildMenuTab === "modules" ? "Modules work while powered, on the ground around them. Pick one." : "Pick something to build.";
         else {
             const g = buildGhost && typeof getTile === "function" ? getTile(buildGhost.x, buildGhost.y) : null;
             const v = g ? canBuildAt(g, buildTool) : null;
@@ -527,6 +538,7 @@ function drawBuildMenu() {
 // waits for the second tap.
 function drawBuildGhost() {
     if (!buildMenuOpen || !buildTool || !buildGhost) return;
+    if (buildTool.kind === "kit") { drawKitGhost(); return; }
     const t = typeof getTile === "function" ? getTile(buildGhost.x, buildGhost.y) : null;
     if (!t) return;
     const v = canBuildAt(t, buildTool);
@@ -611,6 +623,7 @@ function placingTick() {
 // level change here, without going back into the build window: the tool (BATTERY / GENERATOR / CONNECTOR), the battery's element, and its level.
 let _placeChipSig = null;
 function _placeChipSwitchSig() {
+    if (buildTool && buildTool.kind === "kit") return ["kit", buildTool.id, buildTool.elId, kitDir, typeof unlockedElements !== "undefined" ? unlockedElements.size : 0].join("|");
     if (!buildTool || buildTool.tab !== "power") return "";
     return [buildTool.kind, buildTool.elId, buildLevel.power, buildMenuSimple ? 1 : 0, typeof unlockedElements !== "undefined" ? unlockedElements.size : 0].join("|");
 }
@@ -662,6 +675,16 @@ function _placeChipSync() {
         const b = document.createElement("button"); b.className = "pc-btn" + (on ? " on" : "") + (dim ? " dim" : ""); b.textContent = label; b.setAttribute("style", "--c:" + col);
         b.addEventListener("click", e => { e.stopPropagation(); fn(); }); r.appendChild(b); return b;
     };
+    if (buildTool.kind === "kit") {
+        // A kit in hand: SNAP TO NEST (build it at the zone's nest), MIRROR (face the other way), and its element.
+        const kit = kitById(buildTool.id);
+        const r1 = row("tools");
+        btn(r1, "SNAP TO NEST", true, "#19e6c1", () => { kitSnapBuild(); });
+        btn(r1, kitDir > 0 ? "FACING FRONT \u25b6" : "\u25c0 MIRRORED", kitDir < 0, "#8fe3ff", () => { kitDir = -kitDir; _bmArmedKey = null; _placeChipSig = null; });
+        const r2 = row("els");
+        for (const e of kitElements(kit)) { const el = ELEMENTS.find(x => x.id === e); btn(r2, el.label.slice(0, 3).toUpperCase(), buildTool.elId === e, el.color, () => { buildTool.elId = e; _bmArmedKey = null; }); }
+        return;
+    }
     const items = buildMenuItems("power");
     // which tool: the battery, the generator, (the connector)
     const r1 = row("tools");

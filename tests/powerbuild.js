@@ -70,9 +70,9 @@ function findChromium() {
         ok(K.includes('generator') && K.includes('battery'), kinds); ok(!K.includes('connector'), 'the connector is offered: ' + kinds);
         same(run('_bmLayout().tabs.length'), 0, 'tabs'); ok(run('_bmLayout().levels.length') === 3, 'the level row (x1 / pod of four / pod of six) is missing');
     });
-    check('the full build window is untouched: all four tabs, the connector, demolish', () => {
+    check('the full build window is untouched: all five tabs, the connector, demolish', () => {
         run('closeBuildMenu(); buildMode = false; toggleBuild();');
-        same(run('buildMenuSimple'), false, 'simple'); same(run('_bmLayout().tabs.length'), 4, 'tabs'); ok(run('buildMenuItems("power")').some(i => i.kind === 'connector'), 'no connector');
+        same(run('buildMenuSimple'), false, 'simple'); same(run('_bmLayout().tabs.length'), 5, 'tabs'); ok(run('buildMenuItems("power")').some(i => i.kind === 'connector'), 'no connector');
         run('closeBuildMenu(); buildMode = false;');
     });
     check('tapping the panel again puts the power build away', () => {

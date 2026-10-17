@@ -46,6 +46,7 @@ const SUITES = [
     ['zone report + analytics', 'zones.js'],
     ['zone crews + orders',     'zonecrew.js'],
     ['layout kits (16)',        'kits.js'],
+    ['kits tab + ghost + snap', 'kitui.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],
