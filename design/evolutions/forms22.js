@@ -31,7 +31,8 @@ function _walker(o) {
   // a leak: a seam in the shell's flank, a swollen lobe where it breaks out, and a stream down to the floor with beads running along it
   const leaks = []; (o.leaks || []).forEach((lk, li) => { const az = lk.az, big = lk.size || 1, lobe = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm), seam = new T.Mesh(new T.BoxGeometry(0.022, 0.26, 0.022), gm), stream = new T.Mesh(new T.CylinderGeometry(1, 1.3, 1, 6), gm), beads = [];
     for (let k = 0; k < 3; k++) { const bd = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(bd); beads.push(bd); } body.add(lobe); if (!o.noSeam) body.add(seam); body.add(stream);
-    leaks.push({ az, big, lobe, seam, stream, beads, li }); });
+    const chain = []; for (let k = 0; k < 6; k++) { const q = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(q); chain.push(q); }
+    leaks.push({ az, big, lobe, seam, stream, beads, chain, h: lk.h == null ? 0.14 : lk.h, li }); });
   // the eye: one big round oozing eye on the shell (or the cone), a socket, a lid that droops, and a tear that runs from it
   let eye = null; if (o.eye) { const E = o.eye, eg = G(), eMat = new T.MeshStandardMaterial({ color: 0x041a08, emissive: new T.Color(EL.color).multiplyScalar(0.2), emissiveIntensity: 1.0, roughness: 1, metalness: 0 }); eMat.envMapIntensity = 0;
     const sock = new T.Mesh(new T.TorusGeometry(E.r * 1.1, E.r * 0.28, 6, 14), _obsidian); eg.add(sock);
@@ -65,11 +66,12 @@ function _walker(o) {
       const u = ((ph / TAU + O.i * 0.31) % 1 + 1) % 1, sag = 0.12 + 0.2 * u, dropY = y - 0.02 - (u < 0.8 ? sag : 0.32 * (u - 0.8) / 0.2 * 3);
       O.strand.position.set(px * 1.04, y - sag * 0.5, pz * 1.04); O.strand.scale.set(1, sag, 1) ; O.strand.scale.x = O.strand.scale.z = O.sz * 0.6;
       O.bead.position.set(px * 1.06, (u < 0.8 ? y - sag : y - 0.2 - (u - 0.8) * 4 * hipY * 0.8), pz * 1.06); O.bead.scale.setScalar(O.sz * (u < 0.8 ? 0.45 + 0.4 * u : 0.8 - 2 * (u - 0.8)) + 0.001); });
-    leaks.forEach(Lk => { const az = Lk.az, big = Lk.big, px = Math.sin(az) * o.rx * 0.97, pz = Math.cos(az) * o.rz * 0.97, y0 = 0.14, yb = -hipY + 0.03, flow = 1 + 0.2 * Math.sin(ph * 2 + Lk.li * 2) + 0.4 * ac, sw = 1 + 0.1 * Math.sin(ph * 2 + Lk.li);
-      Lk.lobe.position.set(px, y0, pz); Lk.lobe.scale.set(0.12 * big * sw, 0.15 * big * sw, 0.08 * big); Lk.lobe.rotation.y = az;
-      const dir = new T.Vector3(Math.sin(az) * Math.cos(1.0), Math.sin(1.0), Math.cos(az) * Math.cos(1.0)).normalize(); Lk.seam.position.set(px * 0.86, y0 + 0.17, pz * 0.86); Lk.seam.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), dir);
-      const sx = Math.sin(az) * (o.rx + 0.03), sz2 = Math.cos(az) * (o.rz + 0.03); Lk.stream.position.set(sx, (y0 + yb) / 2, sz2); Lk.stream.scale.set(0.017 * big * flow, y0 - yb, 0.009 * big * flow); Lk.stream.rotation.y = az;
-      Lk.beads.forEach((bd, k) => { const u = ((ph / TAU + k / 3 + Lk.li * 0.37) % 1 + 1) % 1; bd.position.set(sx, y0 - u * (y0 - yb), sz2); bd.scale.setScalar((0.03 + 0.016 * Math.sin(PI * u)) * big + 0.001); }); });
+    leaks.forEach(Lk => { const az = Lk.az, big = Lk.big, h = Lk.h, sy = o.ry * (1 - 0.1 * ac), sc = y => Math.sqrt(Math.max(0, 1 - (y / sy) * (y / sy))), ex = Math.sin(az), ez = Math.cos(az), yb = -hipY + 0.03, rimY = 0.02, sw = 1 + 0.1 * Math.sin(ph * 2 + Lk.li) + 0.2 * ac;
+      // a small swollen spot high on the flank, the goo creeping down the curve of the shell from it, then drops falling off the rim to the floor
+      Lk.lobe.position.set(ex * o.rx * 0.97 * sc(h), h, ez * o.rz * 0.97 * sc(h)); Lk.lobe.scale.set(0.1 * big * sw, 0.1 * big * sw, 0.06 * big); Lk.lobe.rotation.y = az; Lk.stream.visible = false; Lk.seam.visible = false;
+      const run = Math.min(1, (((ph / TAU + Lk.li * 0.37) % 1 + 1) % 1) * 2.2);
+      Lk.chain.forEach((q, k) => { const w = k / (Lk.chain.length - 1), y = h - (h - rimY) * w * run; q.position.set(ex * (o.rx * sc(y) + 0.02), y, ez * (o.rz * sc(y) + 0.02)); q.scale.setScalar(0.034 * big * (0.5 + 0.7 * Math.sin(PI * Math.min(1, w * 0.9 + 0.1))) + 0.001); });
+      Lk.beads.forEach((bd, k) => { const u = ((ph / TAU + k / 3 + Lk.li * 0.37) % 1 + 1) % 1; bd.position.set(ex * (o.rx + 0.03), rimY - u * (rimY - yb), ez * (o.rz + 0.03)); bd.scale.setScalar((0.026 + 0.012 * Math.sin(PI * u)) * big + 0.001); }); });
     if (eye) { const E = eye.E, blink = Math.sin(ph * 2 + 0.6) > 0.96 ? 1 : 0, droop = (E.lid == null ? 0.35 : E.lid) + 0.3 * blink + 0.1 * Math.sin(ph * 2), pulse = 1 + 0.06 * Math.sin(ph * 3) + 0.2 * ac;
       eye.orb.scale.setScalar(pulse); eye.lid.rotation.x = -PI / 2 + 0.2 + droop * 1.1 + 0.4 * 0; eye.eMat.emissive.copy(new T.Color(EL.color)).multiplyScalar(0.2 + 0.08 * Math.sin(ph * 3) + 0.2 * ac);
       // the tear hugs the shell: down the curve of the dome (z follows the shell's profile), thickest in the middle, then a bead falls off the rim to the floor
@@ -118,3 +120,11 @@ fx(565, "Rounded hooves.", () => _walker(Object.assign({}, _r559, { foot: 'hoof'
 fx(566, "Little toe-claws, pointing forward and down.", () => _walker(Object.assign({}, _r559, { foot: 'claw' })));
 fx(567, "No feet at all: each leg just ends in a rounded blunt tip.", () => _walker(Object.assign({}, _r559, { foot: 'ball' })));
 fx(568, "Round paws, a little wider than long.", () => _walker(Object.assign({}, _r559, { foot: 'paw' })));
+
+// ── 567 with smaller leaks set higher on the shell (Nos. 569–573) ──
+const _r567 = Object.assign({}, _r559, { foot: 'ball', puddles: false });
+fx(569, "567 with small leaks high on each flank: a little swollen spot, goo creeping down the shell, drops falling to the puddle.", () => _walker(Object.assign({}, _r567, { leaks: [{ az: PI / 2, size: 0.65, h: 0.2 }, { az: -PI / 2, size: 0.65, h: 0.2 }] })));
+fx(570, "Smaller still and a touch higher, right up near where the cone starts.", () => _walker(Object.assign({}, _r567, { leaks: [{ az: PI / 2, size: 0.45, h: 0.25 }, { az: -PI / 2, size: 0.45, h: 0.25 }] })));
+fx(571, "Small and high, set a little towards the front so they show from the front.", () => _walker(Object.assign({}, _r567, { leaks: [{ az: PI / 2 - 0.55, size: 0.65, h: 0.2 }, { az: -PI / 2 + 0.55, size: 0.65, h: 0.2 }] })));
+fx(572, "Small leaks, different heights on the two sides, so it's not symmetrical.", () => _walker(Object.assign({}, _r567, { leaks: [{ az: PI / 2, size: 0.7, h: 0.17 }, { az: -PI / 2, size: 0.5, h: 0.25 }] })));
+fx(573, "Small leaks high on the shoulders where the shell meets the cone, with a short creep.", () => _walker(Object.assign({}, _r567, { leaks: [{ az: PI / 2, size: 0.6, h: 0.27 }, { az: -PI / 2, size: 0.6, h: 0.27 }] })));
