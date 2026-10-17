@@ -172,6 +172,7 @@ function ccOpen(tab) {
 }
 function ccClose() {
     if (typeof recruitPickerClose === "function") recruitPickerClose();
+    buildOrderPickerClose();
     ccOpenTab = null; ccRerollArmed = false; clearInterval(_ccTimer); _ccTimer = 0;
     const root = document.getElementById("ccRoot"); if (root) root.classList.remove("open");
     if (document.body) document.body.classList.remove("ccOpen");
@@ -348,7 +349,7 @@ function _ccDrawSquadOrders(side) {
 // ANALYTICS: the squad at a glance, then every zone: its status, network and equipment, with TELEPORT and CLEAR BROKEN (js/zones.js).
 function _ccAnalyticsSig() {
     const rep = typeof zoneReport === "function" ? zoneReport() : [], st = radialSquadStats("all");
-    return JSON.stringify([rep.map(z => [z.z, z.status, z.held, z.generator, z.energy, z.network.map(n => n.el + n.tier + n.batteries).join(), z.equipment, z.modules, z.broken, z.offline, z.here]), shardCount, st.total, st.working, st.avgLevel, st.evolved]);
+    return JSON.stringify([rep.map(z => [z.z, z.status, z.held, z.generator, z.energy, z.network.map(n => n.el + n.tier + n.batteries).join(), z.equipment, z.modules, z.broken, z.offline, z.here, z.crew, z.orders]), shardCount, typeof zoneFreeCrew === "function" ? zoneFreeCrew().total : 0, st.total, st.working, st.avgLevel, st.evolved]);
 }
 function _ccDrawSquad(page) {
     const st = radialSquadStats("all");
@@ -386,10 +387,20 @@ function _ccZoneCard(z) {
     Object.keys(z.modules).forEach(k => items.push(chip(z.modules[k] + " " + k, "#19e6c1")));
     line("EQUIPMENT", items.length ? items : [chip("NOTHING BUILT", "#6a7aa0")]);
     if (z.broken || z.offline) line("BROKEN", [chip((z.broken ? z.broken + " WRECKED" : "") + (z.broken && z.offline ? " \u00b7 " : "") + (z.offline ? z.offline + " OFFLINE" : ""), "#ff4a1c", "bad")]);
+    // THE CREW and the BUILD ORDERS (js/zones.js)
+    line("CREW", z.crew.total ? [chip(z.crew.ants + " ANT" + (z.crew.ants === 1 ? "" : "S") + " \u00b7 " + z.crew.core + " CORE", "#8fe3ff")] : [chip("NONE SENT", "#6a7aa0")]);
+    const oc = z.orders.map((o, i) => { const c = chip(o.label + " \u00b7 " + o.status, i === 0 ? "#8fe3ff" : "#6a7aa0", "order"); c.title = "Click to cancel"; _ccClick(c, () => { zoneCancelOrder(z.z, i); _ccPageSig = ""; ccRender(); }); return c; });
+    const add = chip("+ ORDER", "#19e6c1", "add"); _ccClick(add, () => buildOrderPickerOpen(z.z)); oc.push(add);
+    line("ORDERS", oc);
     card.appendChild(body);
     const acts = _ccEl("div", "cz-acts");
     const tp = _ccEl("button", "cz-btn" + (z.held ? "" : " dim"), "TELEPORT"); tp.style.setProperty("--c", "#8fe3ff"); if (!z.held) tp.appendChild(_ccEl("span", "cz-sub", z.z === 0 ? "NO PORTAL" : "HOLD A NEST HERE"));
     _ccClick(tp, () => { if (zoneTeleport(z.z)) ccClose(); }); acts.appendChild(tp);
+    const free = typeof zoneFreeCrew === "function" ? zoneFreeCrew() : { total: 0, ants: 0, core: 0 };
+    const sc = _ccEl("button", "cz-btn" + (z.held && free.total ? "" : " dim"), "SEND CREW"); sc.style.setProperty("--c", "#19e6c1");
+    sc.appendChild(_ccEl("span", "cz-sub", !z.held ? "HOLD A NEST HERE" : free.total ? free.ants + " ANTS + " + free.core + " CORE FREE" : "NO FREE ANTS / CORE"));
+    _ccClick(sc, () => { zoneSendCrew(z.z); _ccPageSig = ""; ccRender(); }); acts.appendChild(sc);
+    if (z.crew.total) { const rc = _ccEl("button", "cz-btn", "RECALL CREW"); rc.style.setProperty("--c", "#ffe733"); rc.appendChild(_ccEl("span", "cz-sub", z.crew.total + " IN THE ZONE")); _ccClick(rc, () => { zoneRecallCrew(z.z); _ccPageSig = ""; ccRender(); }); acts.appendChild(rc); }
     const fee = z.fee, can = fee > 0, cb = _ccEl("button", "cz-btn" + (can && shardCount >= fee ? "" : " dim"), "CLEAR BROKEN"); cb.style.setProperty("--c", "#ff4a1c");
     cb.appendChild(_ccEl("span", "cz-sub", can ? "REMOVES WRECKS \u00b7 EST. \u25c6" + fee : "NOTHING BROKEN"));
     _ccClick(cb, () => { zoneClearBroken(z.z); _ccPageSig = ""; ccRender(); }); acts.appendChild(cb);
@@ -444,4 +455,32 @@ function recruitPickerOpen() {
     row.appendChild(mix); row.appendChild(cancel); card.appendChild(row);
     root.appendChild(card); document.body.appendChild(root);
     return root;
+}
+
+// ── THE BUILD ORDER PICKER ──
+// What to queue in a zone: a GENERATOR, a BATTERY (an element, and ×1 / a pod of four / a pod of six) or a TURRET (an element). It is added to the zone's
+// queue (js/zones.js zoneAddOrder); its cost is shown, and paid when the builders put it up.
+function buildOrderPickerClose() { const r = document.getElementById("orderPicker"); if (r && r.parentNode) r.parentNode.removeChild(r); }
+function buildOrderPickerOpen(z) {
+    buildOrderPickerClose();
+    const st = { kind: "battery", elId: null, level: 1 };
+    const els = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(e => unlockedElements.has(e.id)); st.elId = els.length ? els[0].id : "fire";
+    const root = _ccEl("div", "rp-pick"); root.id = "orderPicker"; root.classList.add("op"); _ccClick(root, () => buildOrderPickerClose());
+    const card = _ccEl("div", "rpk-card"); _ccClick(card, () => {});
+    card.appendChild(_ccEl("div", "rpk-title", "QUEUE A BUILD \u00b7 " + (z === 0 ? "HOME" : "ZONE " + z)));
+    const sub = _ccEl("div", "rpk-sub", ""); card.appendChild(sub);
+    const rows = _ccEl("div", "op-rows"); card.appendChild(rows);
+    const row = _ccEl("div", "rpk-row"); const add = _ccEl("button", "rpk-btn mix", "QUEUE IT"), cancel = _ccEl("button", "rpk-btn", "CANCEL"); row.appendChild(add); row.appendChild(cancel); card.appendChild(row);
+    const draw = () => {
+        rows.textContent = "";
+        const mk = (label, on, col, fn) => { const b = _ccEl("button", "rpk-el op-btn" + (on ? " on" : "")); b.style.setProperty("--c", col); b.appendChild(_ccEl("span", "rpk-name", label)); _ccClick(b, () => { fn(); draw(); }); return b; };
+        const r1 = _ccEl("div", "op-row"); [["generator", "GENERATOR"], ["battery", "BATTERY"], ["attack", "TURRET"]].forEach(k => r1.appendChild(mk(k[1], st.kind === k[0], "#ffe733", () => { st.kind = k[0]; if (k[0] !== "battery") st.level = 1; }))); rows.appendChild(r1);
+        if (st.kind !== "generator") { const r2 = _ccEl("div", "op-row"); els.forEach(e => r2.appendChild(mk(e.label.toUpperCase(), st.elId === e.id, e.color, () => { st.elId = e.id; }))); rows.appendChild(r2); }
+        if (st.kind === "battery") { const r3 = _ccEl("div", "op-row"); BUILD_LEVELS.power.forEach((l, i) => r3.appendChild(mk(l, st.level === i + 1, "#19e6c1", () => { st.level = i + 1; }))); rows.appendChild(r3); }
+        const o = { kind: st.kind, elId: st.kind === "generator" ? GENERATOR_ID : st.elId, level: st.level };
+        sub.textContent = "COSTS \u25c6" + zoneOrderCost(o) + " WHEN THE BUILDERS PUT IT UP \u00b7 NEEDS AN ANT CREW IN THE ZONE";
+    };
+    _ccClick(add, () => { zoneAddOrder(z, { kind: st.kind, elId: st.elId, level: st.level }); buildOrderPickerClose(); _ccPageSig = ""; ccRender(); });
+    _ccClick(cancel, () => buildOrderPickerClose());
+    draw(); root.appendChild(card); document.body.appendChild(root); return root;
 }

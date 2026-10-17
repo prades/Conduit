@@ -104,6 +104,18 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
           var before = shardCount, btn = Array.prototype.find.call(z1.querySelectorAll('.cz-btn'), function(b){ return /CLEAR BROKEN/.test(b.textContent); });
           out.estimate = btn.textContent; btn.click(); await wait(200); out.spent = before - shardCount; out.brokenAfter = zoneReport()[1].broken + zoneReport()[1].offline;
           out.z1after = document.querySelectorAll('#ccPage .cc-zone')[1].textContent;
+          // crew and orders on the card
+          var n1 = world.find(function(t){ return t.nest && !isHomePortal(t) && getZoneIndex(t.x) === 1; }); n1.nestHealth = 0; _ccPageSig = ''; spawnFollowerAtCrystal('core'); makeClone('ant', 'scout', 4, 2); await wait(600);
+          var card = function(i){ return document.querySelectorAll('#ccPage .cc-zone')[i]; };
+          var btnOf = function(c, re){ return Array.prototype.find.call(c.querySelectorAll('.cz-btn'), function(b){ return re.test(b.textContent); }); };
+          out.crewLine0 = card(1).textContent; out.sendSub = btnOf(card(1), /SEND CREW/).textContent;
+          btnOf(card(1), /SEND CREW/).click(); await wait(300); out.crew = zoneCrewSummary(1).total; out.crewLine1 = card(1).textContent; out.hasRecall = !!btnOf(card(1), /RECALL/);
+          var add = Array.prototype.find.call(card(1).querySelectorAll('.cz-chip.add'), function(){ return true; }); add.click(); await wait(100); out.picker = !!document.getElementById('orderPicker');
+          out.pickerRows = document.querySelectorAll('#orderPicker .op-row').length; out.pickerSub = document.querySelector('#orderPicker .rpk-sub').textContent;
+          Array.prototype.find.call(document.querySelectorAll('#orderPicker .op-btn'), function(b){ return /GENERATOR/.test(b.textContent); }).click(); out.pickerRowsGen = document.querySelectorAll('#orderPicker .op-row').length;
+          document.querySelector('#orderPicker .rpk-btn.mix').click(); await wait(300); out.queued = (zoneOrders[1] || []).length; out.orderChip = card(1).querySelector('.cz-chip.order') ? card(1).querySelector('.cz-chip.order').textContent : '';
+          card(1).querySelector('.cz-chip.order').click(); await wait(200); out.cancelled = (zoneOrders[1] || []).length;
+          btnOf(card(1), /RECALL/).click(); await wait(200); out.recalled = zoneCrewSummary(1).total;
           var tp = Array.prototype.find.call(document.querySelectorAll('#ccPage .cc-zone')[2].querySelectorAll('.cz-btn'), function(b){ return /TELEPORT/.test(b.textContent); }); out.tpDim = tp.classList.contains('dim');
           var pre = document.createElement('pre'); pre.id = '__zn'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
         }, 1500); });</script></body>`;
@@ -118,6 +130,14 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
             check('THE ASK: the tabs are in a bar at the BOTTOM of the menu (ROSTER, ANALYTICS), not the top', () => { same(r.footTabs.join(), 'ROSTER,ANALYTICS', 'foot tabs'); same(r.headTabs, 0, 'tabs left in the header'); });
             check('ANALYTICS is a page of zone cards (no command panel), each with its status', () => { same(r.pageShown, 'block', 'page'); same(r.side, 'none', 'side panel'); ok(r.zones >= 4, 'zones ' + r.zones); same(r.names[0], 'HOME', 'first'); ok(r.statuses.includes('CLEARED') && r.statuses.includes('NEXT TARGET'), r.statuses.join()); });
             check('a card shows the network and the equipment and the broken count, and CLEAR BROKEN shows its estimate', () => { ok(/ELECTRIC T2/.test(r.z1text), 'network: ' + r.z1text); ok(/4 BATTERIES/.test(r.z1text), 'equipment'); ok(/WRECKED/.test(r.z1text) && /OFFLINE/.test(r.z1text), 'broken'); ok(/EST\. .8/.test(r.estimate), r.estimate); });
+            check('THE ASK: the card has a crew line and SEND CREW (with who is free); sending puts the crew in the zone and offers RECALL', () => {
+                ok(/CREW/.test(r.crewLine0) && /NONE SENT/.test(r.crewLine0), 'crew line: ' + r.crewLine0); ok(/1 ANTS \+ 1 CORE FREE/.test(r.sendSub), r.sendSub);
+                same(r.crew, 2, 'crew'); ok(/1 ANT . 1 CORE/.test(r.crewLine1), r.crewLine1); same(r.hasRecall, true, 'recall');
+            });
+            check('THE ASK: + ORDER opens a picker (generator / battery / turret, element, level), QUEUE IT adds it to the zone, tapping the chip cancels it, RECALL sends the crew home', () => {
+                same(r.picker, true, 'picker'); ok(r.pickerRows >= 3, 'rows ' + r.pickerRows); ok(/COSTS/.test(r.pickerSub), r.pickerSub); same(r.pickerRowsGen, 1, 'a generator has no element or level');
+                same(r.queued, 1, 'queued'); ok(/GENERATOR/.test(r.orderChip), r.orderChip); same(r.cancelled, 0, 'cancelled'); same(r.recalled, 0, 'recalled');
+            });
             check('pressing CLEAR BROKEN pays the fee and the card updates; a zone with no held nest has TELEPORT dimmed', () => { same(r.spent, 8, 'spent'); same(r.brokenAfter, 0, 'broken after'); ok(/NOTHING BROKEN/.test(r.z1after), r.z1after); same(r.tpDim, true, 'teleport not dimmed'); });
         }
     }

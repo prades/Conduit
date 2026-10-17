@@ -602,6 +602,7 @@ function restartGame() {
     ELEMENTS.forEach(e=>{ networkStrength[e.id]=0; networkIntegrity[e.id]=0; _prevNetworkTiers[e.id]=0; });
     activeDayZones=3;exploredZones=new Set();
     clearCampBuildings();
+    if (typeof clearZoneOrders === "function") clearZoneOrders();
     if (typeof clearModules === "function") clearModules();
     if (typeof clearShieldCells === "function") clearShieldCells();
     crystal={ x:0,y:2,health:300,maxHealth:300,radius:0.8 };

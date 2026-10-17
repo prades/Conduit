@@ -78,8 +78,11 @@ function zoneInfo(z, pw) {
         equipment: eq, modules: mods, total: eq.turrets + eq.wave + eq.batteries + eq.generators + eq.connectors + eq.other,
         broken: br.wrecks.length, offline: br.frames.length, fee: br.wrecks.length * ZONE_FEE_WRECK + br.frames.length * ZONE_FEE_FRAME,
         here: typeof player !== "undefined" && getZoneIndex(Math.floor(player.x)) === z,
+        crew: zoneCrewSummary(z), orders: (zoneOrders[z] || []).map(o => ({ label: zoneOrderLabel(o), status: o.status || "QUEUED", cost: zoneOrderCost(o) })),
     };
 }
+// Who is free to be sent (for the SEND CREW button's sub-line).
+function zoneFreeCrew() { const c = zoneCrewCandidates(); return { ants: c.filter(_isAntBuilder).length, core: c.filter(_isCoreWorker).length, total: c.length }; }
 function zoneReport() {
     const pw = typeof powerStatus === "function" ? powerStatus() : null, out = [], n = _zoneCount();
     for (let z = 0; z < n; z++) out.push(zoneInfo(z, pw));
@@ -120,4 +123,133 @@ function zoneClearBroken(z) {
     if (typeof savePylons === "function") { try { savePylons(); } catch (e) {} }
     say(name + ": " + all.length + " BROKEN CLEARED \u2014 " + fee + " \u25c6", "#19e6c1");
     return all.length;
+}
+
+// ─────────────────────────────────────────────────────────
+//  REPAIR CREWS AND QUEUED BUILD ORDERS
+// ─────────────────────────────────────────────────────────
+// REPORTED: "I also want to be able to summon workers and builders to the area to fix stuff." Asked and answered: SEND CREW (free, real workers), queued
+// build orders, and crews go into a zone even under attack (at their own risk).
+//
+// SEND CREW: every free ANT clone (the builders: they rebuild wrecks, repair, and put up orders) and CORE follower (the re-armers) is teleported to a nest you
+// hold in that zone, put on work duty and told to hold a post there. Their own jobs (clonework.js, mass.js) then find what is broken within their reach
+// and fix it: ants stand a wreck up as an offline frame, core workers re-arm it. RECALL brings them back to you and off the crew.
+//
+// BUILD ORDERS: a zone's queue of things to build (a generator, a battery or pod of batteries, a turret). The ANT builders in the zone work through it one at a
+// time: the tile is picked where the build rules allow it (near the zone's power), it takes ORDER_BUILD_FRAMES of builder-work (more ants, faster), the shards
+// are paid when it goes up (the order waits while you are short), and it is built exactly as the build window would. They need no one to stand there.
+const ORDER_BUILD_FRAMES = 180;   // one builder's work for one order (a crew of three does it in a third of the time)
+const ORDER_MAX = 8;              // queued per zone
+const ORDER_KINDS = {
+    generator: { label: "GENERATOR", tab: "power" },
+    battery:   { label: "BATTERY",   tab: "power" },
+    attack:    { label: "TURRET",    tab: "turrets" },
+};
+let zoneOrders = {};              // z → [{ kind, elId, level, tile, progress, status }]
+function saveZoneOrders() { try { localStorage.setItem("conduit_zone_orders", JSON.stringify(Object.keys(zoneOrders).map(z => [z, zoneOrders[z].map(o => ({ kind: o.kind, elId: o.elId, level: o.level }))]))); } catch (e) {} }
+function loadZoneOrders() {
+    try { const r = JSON.parse(localStorage.getItem("conduit_zone_orders") || "[]"); zoneOrders = {}; for (const [z, list] of r) zoneOrders[z] = list.map(o => Object.assign({ progress: 0, status: "" }, o)); } catch (e) { zoneOrders = {}; }
+}
+function clearZoneOrders() { zoneOrders = {}; saveZoneOrders(); }
+loadZoneOrders();
+
+// ── the crew ──
+function _isAntBuilder(a) { return !!a && a.isClone && a.speciesName === "ant" && !a.dead && a.team === "green"; }
+function _isCoreWorker(a) { return !!a && a.isFollower && !a.isClone && a.element === "core" && !a.dead && a.team === "green"; }
+function zoneCrew(z) { return actors.filter(a => a.crewZone === z && !a.dead); }
+// Who could be sent: ant clones and core followers not already on a crew and not heading home to the Crystal.
+function zoneCrewCandidates() { return actors.filter(a => (_isAntBuilder(a) || _isCoreWorker(a)) && a.crewZone === undefined && !a.returningToCrystal && (!a.job || a.job.type === "move")); }
+function zoneCrewSummary(z) { const c = zoneCrew(z); return { ants: c.filter(_isAntBuilder).length, core: c.filter(_isCoreWorker).length, total: c.length }; }
+function zoneSendCrew(z) {
+    const say = (text, color) => floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color, life: 110, vy: -0.2, size: 12 }), name = z === 0 ? "HOME" : "ZONE " + z;
+    const nest = zoneTeleportNest(z);
+    if (!nest) { say("NO NEST HELD IN " + name + " TO SEND A CREW TO", "#f88"); return 0; }
+    const pick = zoneCrewCandidates();
+    if (!pick.length) { say("NO FREE ANT CLONES OR CORE WORKERS TO SEND", "#f88"); return 0; }
+    const to = teleportSpot(nest);
+    pick.forEach((a, i) => {
+        const ang = i / Math.max(1, pick.length) * Math.PI * 2, x = to.x + Math.cos(ang) * 1.4, y = Math.max(0.3, Math.min(2.8, to.y + Math.sin(ang) * 0.9));
+        a.x = a.lastX = x; a.y = a.lastY = y;
+        if (a.isClone) setCloneDuty(a, "worker"); else if (typeof setFollowerDuty === "function") setFollowerDuty(a, "worker", true);
+        const post = getTile(Math.round(x), Math.round(y)) || getTile(Math.round(to.x), 1);
+        a.job = post ? { type: "move", target: post } : null; a.stance = "hold"; a.crewZone = z; a.returningToCrystal = false;
+        if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x, y, color: "#8fe3ff", radius: 0.7, life: 24 });
+    });
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+    say(pick.length + " CREW SENT TO " + name, "#8fe3ff");
+    return pick.length;
+}
+// RECALL: the crew leaves its post, comes back to you and goes back on the line.
+function zoneRecallCrew(z) {
+    const crew = zoneCrew(z); if (!crew.length) { floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NO CREW IN " + (z === 0 ? "HOME" : "ZONE " + z), color: "#8aa0c8", life: 90, vy: -0.2, size: 12 }); return 0; }
+    crew.forEach((a, i) => {
+        const ang = i / Math.max(1, crew.length) * Math.PI * 2; a.x = a.lastX = player.x + Math.cos(ang) * 1.3; a.y = a.lastY = Math.max(0.3, Math.min(2.8, player.y + Math.sin(ang) * 0.9));
+        delete a.crewZone; a.job = null; a.stance = "follow"; if (a.isClone) setCloneDuty(a, "fighter"); else if (typeof setFollowerDuty === "function") setFollowerDuty(a, "fighter", true);
+    });
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: crew.length + " CREW RECALLED", color: "#8fe3ff", life: 100, vy: -0.2, size: 12 });
+    return crew.length;
+}
+
+// ── the orders ──
+function zoneOrderTool(o) { return { tab: ORDER_KINDS[o.kind].tab, kind: o.kind, elId: o.kind === "generator" ? GENERATOR_ID : o.elId, label: ORDER_KINDS[o.kind].label, colour: "#8fe3ff" }; }
+function _orderLevelKey(o) { return ORDER_KINDS[o.kind].tab; }
+// Run fn with the build level set to the order's (the build rules read the global), then put it back.
+function _withOrderLevel(o, fn) { const k = _orderLevelKey(o), was = buildLevel[k], wasTool = buildTool; buildLevel[k] = o.kind === "generator" ? 1 : (o.level || 1); try { return fn(zoneOrderTool(o)); } finally { buildLevel[k] = was; buildTool = wasTool; } }
+function zoneOrderCost(o) { return _withOrderLevel(o, tool => buildToolCost(tool)); }
+function zoneOrderLabel(o) {
+    const el = o.kind === "generator" ? "" : (ELEMENTS.find(e => e.id === o.elId) || { label: o.elId }).label.toUpperCase() + " ";
+    return el + ORDER_KINDS[o.kind].label + (o.kind === "battery" && o.level > 1 ? " " + BUILD_LEVELS.power[o.level - 1] : "");
+}
+function zoneAddOrder(z, o) {
+    const say = (text, color) => floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color, life: 100, vy: -0.2, size: 12 });
+    if (!ORDER_KINDS[o.kind]) return false;
+    if (o.kind !== "generator" && !isPylonTypeUnlocked(o.elId)) { say("THAT ELEMENT IS NOT UNLOCKED", "#f88"); return false; }
+    const list = zoneOrders[z] || (zoneOrders[z] = []);
+    if (list.length >= ORDER_MAX) { say("THE ORDER QUEUE IS FULL (" + ORDER_MAX + ")", "#f88"); return false; }
+    list.push({ kind: o.kind, elId: o.kind === "generator" ? GENERATOR_ID : o.elId, level: o.kind === "battery" ? (o.level || 1) : 1, progress: 0, status: "", tile: null });
+    saveZoneOrders(); return true;
+}
+function zoneCancelOrder(z, i) { const list = zoneOrders[z]; if (!list || !list[i]) return false; list.splice(i, 1); if (!list.length) delete zoneOrders[z]; saveZoneOrders(); return true; }
+// The tile an order would go on: the nearest the build rules accept to the zone's power (its generator, connectors and batteries; else its nest).
+function zoneOrderTile(z, o) {
+    const nest = zoneTeleportNest(z) || world.find(t => t.nest && getZoneIndex(t.x) === z);
+    let ax = nest ? nest.x : z * ZONE_LENGTH + ZONE_LENGTH / 2, ay = nest ? nest.y : 1.5, n = 0, sx = 0, sy = 0;
+    if (o.kind !== "generator") for (const t of world) if (t.pillar && !t.destroyed && t.pillarTeam === "green" && getZoneIndex(t.x) === z && (t.isGenerator || t.isConnector || t.isBattery)) { sx += t.x; sy += t.y; n++; }
+    if (n) { ax = sx / n; ay = sy / n; }
+    const cand = world.filter(t => t.type === "floor" && getZoneIndex(t.x) === z && t.y >= 0 && t.y <= 3).sort((a, b) => Math.hypot(a.x - ax, a.y - ay) - Math.hypot(b.x - ax, b.y - ay));
+    return _withOrderLevel(o, tool => {
+        let short = false;
+        for (let i = 0; i < Math.min(cand.length, 400); i++) {
+            const v = canBuildAt(cand[i], tool);
+            if (v.ok) return { tile: cand[i], why: null };
+            if (/^NEED \d+/.test(v.why)) short = true;
+        }
+        return { tile: null, why: short ? "WAITING FOR SHARDS" : "NO ROOM / NO POWER" };
+    });
+}
+function zoneOrderTick() {
+    if (((typeof frame !== "undefined" ? frame : 0) % 20) !== 0) return;
+    for (const zs of Object.keys(zoneOrders)) {
+        const z = +zs, list = zoneOrders[z]; if (!list || !list.length) continue;
+        const ants = zoneCrew(z).filter(_isAntBuilder).length;
+        if (!ants) { list.forEach(o => { o.status = "NO BUILDER IN THE ZONE"; }); continue; }
+        // The first order that can go ahead is worked on. One that cannot (no room, no power yet: a battery before its generator) is passed over, so it
+        // never blocks the ones behind it; one that only lacks shards holds the queue (you are saving for it).
+        for (let i = 0; i < list.length; i++) {
+            const o = list[i];
+            if (!o.tile) { const r = zoneOrderTile(z, o); if (!r.tile) { o.status = r.why; if (r.why === "WAITING FOR SHARDS") break; continue; } o.tile = r.tile; }
+            const cost = zoneOrderCost(o);
+            if (shardCount < cost) { o.status = "WAITING FOR SHARDS (\u25c6" + cost + ")"; break; }
+            o.progress += 20 * ants; o.status = "BUILDING " + Math.min(99, Math.round(100 * o.progress / ORDER_BUILD_FRAMES)) + "%";
+            if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: o.tile.x, y: o.tile.y, color: "#8fe3ff", radius: 0.5, life: 20 });
+            if (o.progress >= ORDER_BUILD_FRAMES) {
+                const done = _withOrderLevel(o, tool => { buildTool = tool; return canBuildAt(o.tile, tool).ok && buildToolPlaceAt(o.tile); });
+                if (done) { list.splice(i, 1); if (!list.length) delete zoneOrders[z]; saveZoneOrders(); }
+                else { o.tile = null; o.progress = 0; o.status = "RETRYING"; }   // the ground changed under it: pick again
+            }
+            break;
+        }
+        // the ones behind the one being built are queued
+        for (const o of list) if (!o.status || o.status === "RETRYING") o.status = "QUEUED";
+    }
 }

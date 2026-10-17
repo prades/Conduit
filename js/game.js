@@ -2136,6 +2136,7 @@ function render() {
     // ── PLAYER ULTIMATE ──
     tickArmySurge();
     siphonTick();
+    if (typeof zoneOrderTick === "function") zoneOrderTick();      // the crews' queued build orders (js/zones.js)
     if (typeof moduleTick === "function") moduleTick();   // med bays, force walls, overclock hubs (js/modules.js)
     const _ultInt = armySurgeTimer > 0
         ? Math.ceil(armySurgeTimer / 60)          // counting the surge down
