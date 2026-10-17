@@ -330,12 +330,19 @@ function handleLongHold(ex,ey) {
 }
 
 let _netPressed = false;   // the press began on the network panel
+let _cloneDrag = null;     // a press that began on the clone card strip: { x0, s0, moved } (it slides the strip; a drag never presses a card)
 canvas.addEventListener('pointerdown', e=>{
     if (!gameState.running) return;
     e.preventDefault(); canvas.setPointerCapture(e.pointerId);
     gesturePoints=[]; isPressing=true; longHoldFired=false; touchMoved=false;
     [pressX,pressY]=toCanvas(e.clientX,e.clientY); pressStartTime=performance.now();
 
+    // The clone card strip (js/clone.js): a press on it can become a slide.
+    _cloneDrag = null;
+    if (cloneMenuOpen && window._cloneTabBounds && window._cloneTabBounds.listW) {
+        const cb = window._cloneTabBounds;
+        if (pressX >= cb.listX && pressX <= cb.listX + cb.listW && pressY >= cb.listY && pressY <= cb.listY + cb.listH) { _cloneDrag = { x0: pressX, s0: _crystalScrollX, moved: false }; return; }
+    }
     // The network panel (js/nethud.js): a press on it is its own, so no ring or move order starts under it.
     if (!crystalMenuOpen && !cloneMenuOpen && !settingsPanelOpen && typeof netPanelHit === "function" && netPanelHit(pressX, pressY)) { _netPressed = true; isPressing = false; return; }
     _netPressed = false;
@@ -370,6 +377,7 @@ canvas.addEventListener('pointerdown', e=>{
 canvas.addEventListener('pointermove', e=>{
     if (!isPressing) return;
     [pointerX,pointerY]=toCanvas(e.clientX,e.clientY);
+    if (_cloneDrag) { const dx = pointerX - _cloneDrag.x0; if (Math.abs(dx) > 8) _cloneDrag.moved = true; if (_cloneDrag.moved) _crystalScrollX = Math.max(0, _cloneDrag.s0 - dx); return; }
 
     // From the press point while the first hold is down; from the drawn ring
     // once it is open and being tapped.
@@ -382,6 +390,8 @@ canvas.addEventListener('pointermove', e=>{
 canvas.addEventListener('pointerup', e=>{
     if (!gameState.running) { isPressing=false; return; } // block canvas input during buy screen
     const [upX,upY]=toCanvas(e.clientX,e.clientY);
+    // A slide on the clone card strip is not a tap on a card.
+    if (_cloneDrag) { const moved = _cloneDrag.moved; _cloneDrag = null; if (moved) { isPressing = false; return; } }
     // A tap on the network panel opens the simplified POWER BUILD (js/buildmenu.js openPowerBuild).
     if (_netPressed) { _netPressed = false; if (typeof netPanelHit === "function" && netPanelHit(upX, upY) && typeof openPowerBuild === "function") openPowerBuild(); isPressing = false; return; }
     // A build tool in hand: the interface is hidden (js/buildmenu.js placingHidesUi), so ONLY the ground takes a tap: the controls that were drawn
@@ -625,3 +635,9 @@ window.addEventListener("beforeunload", saveOnLeave);
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") saveOnLeave();
 });
+
+// The wheel slides the clone card strip sideways (a vertical roll too).
+canvas.addEventListener('wheel', e => {
+    if (!cloneMenuOpen || !window._cloneTabBounds || !window._cloneTabBounds.listW) return;
+    e.preventDefault(); _crystalScrollX = Math.max(0, _crystalScrollX + (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY));
+}, { passive: false });

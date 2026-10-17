@@ -287,7 +287,7 @@ async function ready() {
             actors.push(c);
         }
         cloneMenuOpen = true;
-        crystalCloneSort = 'species'; _crystalScrollY = 0;
+        crystalCloneSort = 'species'; _crystalScrollX = 0;
         drawCloneMenu();
         ${body || ''}
         const tab = window._cloneTabOpts || [];
@@ -394,13 +394,13 @@ async function ready() {
             const bad = [];
             for (const sort of CSORTS.map(s => s.id)) {
                 for (const scroll of [0, 60, 200, 600, 2000]) {
-                    crystalCloneSort = sort; _crystalScrollY = scroll;
+                    crystalCloneSort = sort; _crystalScrollX = scroll;
                     drawCloneMenu();
                     const cl = window._cloneTabBounds;
                     for (const o of (window._cloneTabOpts || [])) {
                         for (const [bx, by, bh] of [[o._bx, o._by, o._bh], [o._nbx, o._nby, o._nbh]]) {
                             if (typeof bx !== 'number') continue;
-                            if (by < cl.listY || by + bh > cl.listY + cl.listH)
+                            if (by < cl.listY || by + bh > cl.listY + cl.listH || bx < cl.listX || bx + (o._bw || o._nbw) > cl.listX + cl.listW)
                                 bad.push(sort + '@' + scroll + ' ' + o.key);
                         }
                     }
@@ -418,7 +418,7 @@ async function ready() {
         const r = C.run(`(function(){
             actors.length = 0; followers.length = 0; shardCount = 9999;
             setDNA({ ant_scout: 99 });
-            cloneMenuOpen = true; crystalCloneSort = CSORTS[0].id; _crystalScrollY = 0;
+            cloneMenuOpen = true; crystalCloneSort = CSORTS[0].id; _crystalScrollX = 0;
             const tapIt = () => { drawCloneMenu(); const o = (window._cloneTabOpts || []).find(o => o.key === 'ant_scout' && o.ready && typeof o._bx === 'number');
                 if (!o) return false; handleCloneMenuTap(o._bx + o._bw / 2, o._by + o._bh / 2); return true; };
             const made = [];

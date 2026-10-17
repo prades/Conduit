@@ -40,6 +40,7 @@ const SUITES = [
     ['network panel + signal',  'nethud.js'],
     ['power build + switches',  'powerbuild.js'],
     ['recruit picker',          'recruitpicker.js'],
+    ['clone card strip',        'clonecards.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],

@@ -236,13 +236,13 @@ function _clonesTabTap(ex, ey, PX) {
     if (ey >= cl.sortY && ey <= cl.sortY + cl.sortH) {
         for (let i = 0; i < CSORTS.length; i++) {
             const tx = PX + i * cl.sortW;
-            if (ex >= tx && ex <= tx + cl.sortW) { crystalCloneSort = CSORTS[i].id; _crystalScrollY = 0; return true; }
+            if (ex >= tx && ex <= tx + cl.sortW) { crystalCloneSort = CSORTS[i].id; _crystalScrollX = 0; return true; }
         }
     }
     const sa = window._cloneScrollArrows;
     if (sa) {
-        if (ex>=sa.upX&&ex<=sa.upX+sa.upW&&ey>=sa.upY&&ey<=sa.upY+sa.upH) { _crystalScrollY=Math.max(0,_crystalScrollY-sa.rowH); return true; }
-        if (ex>=sa.dnX&&ex<=sa.dnX+sa.dnW&&ey>=sa.dnY&&ey<=sa.dnY+sa.dnH) { _crystalScrollY+=sa.rowH; return true; }
+        if (ex>=sa.upX&&ex<=sa.upX+sa.upW&&ey>=sa.upY&&ey<=sa.upY+sa.upH) { _crystalScrollX=Math.max(0,_crystalScrollX-sa.rowH); return true; }
+        if (ex>=sa.dnX&&ex<=sa.dnX+sa.dnW&&ey>=sa.dnY&&ey<=sa.dnY+sa.dnH) { _crystalScrollX+=sa.rowH; return true; }
     }
     // DISMISS — frees a slot. Checked before the rows so it is never
     // swallowed by one.
@@ -635,7 +635,7 @@ function drawClonesBlob() {
 // ── State ─────────────────────────────────────────────────
 const _CRYSBTN  = { x: 0, y: 0, r: 22 };  // canvas button hit area
 let _crystalModPhase = 0;                   // color-cycle frame counter
-let _crystalScrollY  = 0;                   // clone list scroll offset (px)
+let _crystalScrollX  = 0;                   // the clone card strip's slide offset (px)
 
 // Tab definitions
 const CTABS = [
@@ -979,90 +979,110 @@ function _drawClonesTab(PX, PY, PW, PH) {
         window._cloneDismissBtn = { x: dx, y: dy, w: dw, h: dh };
     } else { window._cloneDismissBtn = null; }
 
-    const listY = hdrY + hdrH + 2;
+    const listY = hdrY + hdrH + 2, listX = PX + 8, listW = PW - 16;
     const listH = PH - (listY - PY);
     const opts  = _sortedCloneOptions(getCloneOptions(), crystalCloneSort);
-    const rowH  = 92;
 
     if (opts.length === 0) {
         const msg = capAtMax ? `Clone cap reached (${MAX_CLONES}/${MAX_CLONES})` : crystalCloneSort==="specials" ? "No clones with special attacks" : "No DNA splices available";
         uiText(msg, PX + PW / 2, listY + listH / 2, 22, "#6a7aa0", "center", false);
+        window._cloneTabOpts = []; window._cloneScrollArrows = null;
+        window._cloneTabBounds = { sortY:PY, sortH, sortW, listY, listH, listX, listW, rowH: 0 };
         return;
     }
 
-    const maxScroll = Math.max(0, opts.length*rowH - listH + 4);
-    _crystalScrollY = Math.max(0, Math.min(_crystalScrollY, maxScroll));
+    // THE CARD STRIP: one player card per clone type, slid sideways (drag, wheel, the arrows).
+    const cardW = Math.max(150, Math.min(196, Math.round(PW * 0.29))), gap = 12, step = cardW + gap;
+    const cardH = Math.max(210, Math.min(330, listH - 34)), cardY = listY + 4;
+    const total = opts.length * step - gap + 8;
+    const maxScroll = Math.max(0, total - listW);
+    _crystalScrollX = Math.max(0, Math.min(_crystalScrollX, maxScroll));
 
-    ctx.save(); ctx.beginPath(); ctx.rect(PX, listY, PW, listH); ctx.clip();
+    ctx.save(); ctx.beginPath(); ctx.rect(listX, listY, listW, listH); ctx.clip();
     opts.forEach((opt, i) => {
-        const rowY = listY + i*rowH - _crystalScrollY;
-        if (rowY+rowH < listY || rowY > listY+listH) return;
-        // The list is CLIPPED, so a partially-visible row draws its button
-        // outside the visible band — invisible, but the bounds were recorded
-        // anyway. A sweep of every sort mode and scroll position found sixteen
-        // buttons you could not see and could still press, buying a clone you
-        // never chose. Bounds are only recorded when the button itself is
-        // wholly inside the band.
-        const bw = 132, bh = 48, bx = PX + PW - 24 - bw, by2 = rowY + (rowH - bh) / 2;
-        const btnVisible = by2 >= listY && by2 + bh <= listY + listH;
-        const sd = SPECIES[opt.speciesName];
-        const cl = SPECIES[opt.speciesName]?.[opt.className];
-
-        uiSlab(PX + 12, rowY + 4, PW - 24, rowH - 8, opt.ready ? sd.color : "#2c3656", false, opt.ready ? "#13203a" : "#0c1224");
-        ctx.fillStyle = sd.color; ctx.fillRect(PX + 16, rowY + 12, 6, rowH - 24);
-        const nameMax = bx - (PX + 40) - 10;
-        uiTextFit(opt.speciesName.toUpperCase()+" "+opt.className.toUpperCase(), PX + 40, rowY + 24, 24, opt.ready ? "#fff" : "#6a7aa0", "left", nameMax);
-
-        if (cl) {
-            const parts=[`PWR ${cl.power||"?"}`, `HP ${cl.health||"?"}`];
-            if (cl.abdomenAttack||(cl.rangeDamage&&cl.rangeDamage>0)) {
-                if (opt.speciesName === "spider")  parts.push("\u25c8 WEB SHOT");
-                else if (opt.speciesName === "mantis") parts.push("\u25c8 AMBUSH");
-                else if (opt.speciesName === "moth")   parts.push("\u25c8 DUST");
-                else parts.push("\u25c8 SPECIAL");
-            }
-            uiCaption(parts.join("   "), PX + 40, rowY + 46, "#8aa0c8", "left", 14);
-        }
-
-        const prog = Math.min(1, opt.have/opt.needed), barW = Math.min(170, nameMax - 90);
-        ctx.fillStyle = "#05070f"; ctx.fillRect(PX + 40, rowY + 61, barW, 10);
-        ctx.fillStyle = opt.ready ? UI_TEAL : sd.color; ctx.fillRect(PX + 40, rowY + 61, barW * prog, 10);
-        ctx.strokeStyle = opt.ready ? UI_TEAL : "#2c3656"; ctx.lineWidth = 1.5; ctx.strokeRect(PX + 40, rowY + 61, barW, 10);
-        uiCaption(`${opt.have}/${opt.needed}`, PX + 40 + barW + 10, rowY + 66, "#8aa0c8", "left", 14);
-        uiCaption(`${opt.shardCost}\u2726`, bx + bw / 2, rowY + rowH - 9, shardCount >= opt.shardCost ? UI_GOLD : "#8a6a44", "center", 14);
-
-        if (opt.ready) {
-            uiButton({ x: bx, y: by2, w: bw, h: bh - 8 }, "CLONE", UI_TEAL, true, 22);
-            if (btnVisible) { opt._bx=bx; opt._by=by2; opt._bw=bw; opt._bh=bh - 8; }
-        } else {
-            // WHY NOT. A blocked row used to render dim with no button and no
-            // reason, so a player with four clones already out saw three
-            // affordable prices and nothing to press — "even though I have the
-            // money, I'm unable to buy the clone". The blocker goes where the
-            // button would have been.
-            uiButton({ x: bx, y: by2, w: bw, h: bh - 8 }, cloneBlockedLabel(opt), UI_RED, false, 13, null, true);
-            // Tappable, so the tap can EXPLAIN. Kept separate from _bx, which
-            // means "this can be bought".
-            if (btnVisible) { opt._nbx=bx; opt._nby=by2; opt._nbw=bw; opt._nbh=bh - 8; }
-        }
+        const cx = listX + 4 + i * step - _crystalScrollX;
+        if (cx + cardW < listX || cx > listX + listW) return;
+        _drawCloneCard(opt, cx, cardY, cardW, cardH, listX, listW, listY, listH);
     });
     ctx.restore();
 
-    // Scroll arrows
+    // The arrows, and where you are in the strip.
     if (maxScroll > 0) {
-        const arrW=64, arrH=34;
-        const up = { x: PX + PW / 2 - arrW - 6, y: listY + listH - arrH - 6, w: arrW, h: arrH }, dn = { x: PX + PW / 2 + 6, y: listY + listH - arrH - 6, w: arrW, h: arrH };
-        uiButton(up, "\u25b2", UI_TEAL, false, 18, null, _crystalScrollY <= 0);
-        uiButton(dn, "\u25bc", UI_TEAL, false, 18, null, _crystalScrollY >= maxScroll);
-        window._cloneScrollArrows={
-            upX:up.x, upY:up.y, upW:up.w, upH:up.h,
-            dnX:dn.x, dnY:dn.y, dnW:dn.w, dnH:dn.h,
-            rowH
-        };
-    } else { window._cloneScrollArrows=null; }
+        const aw = 46, ah = 70, ay = cardY + cardH / 2 - ah / 2;
+        const lf = { x: listX + 2, y: ay, w: aw, h: ah }, rt = { x: listX + listW - aw - 2, y: ay, w: aw, h: ah };
+        uiButton(lf, "\u25c0", UI_TEAL, false, 22, null, _crystalScrollX <= 0);
+        uiButton(rt, "\u25b6", UI_TEAL, false, 22, null, _crystalScrollX >= maxScroll);
+        window._cloneScrollArrows = { upX: lf.x, upY: lf.y, upW: lf.w, upH: lf.h, dnX: rt.x, dnY: rt.y, dnW: rt.w, dnH: rt.h, rowH: step, step };
+        const dots = Math.min(opts.length, 12), dw = 14, dg = 6, dx0 = PX + PW / 2 - (dots * (dw + dg) - dg) / 2, pos = maxScroll ? _crystalScrollX / maxScroll : 0;
+        for (let i = 0; i < dots; i++) { const on = Math.abs(i / Math.max(1, dots - 1) - pos) < 0.5 / Math.max(1, dots - 1) + 0.001; ctx.fillStyle = on ? UI_TEAL : "#26304f"; ctx.fillRect(dx0 + i * (dw + dg), listY + listH - 12, dw, 5); }
+        if (PW > 480) uiCaption("SLIDE FOR MORE \u00b7 " + opts.length + " OPTIONS", PX + PW - 22, listY + listH - 8, "#6a7aa0", "right", 11);
+    } else { window._cloneScrollArrows = null; }
 
     window._cloneTabOpts = opts;
-    window._cloneTabBounds = { sortY:PY, sortH, sortW, listY, listH, rowH };
+    window._cloneTabBounds = { sortY:PY, sortH, sortW, listY, listH, listX, listW, rowH: step, cardW };
+}
+
+// The creature on a card: the board's own drawing (drawNPC) of a clone of that species and class, walking on the spot. One actor per card, kept.
+let _cloneCardActors = {};
+function _cloneCardActor(opt) {
+    let a = _cloneCardActors[opt.key];
+    if (!a) {
+        const S = SPECIES[opt.speciesName], def = (typeof getClassDef === "function" ? getClassDef(S, opt.className) : S[opt.className]) || S.scout;
+        a = new Predator(opt.className, Object.assign({}, def, { color: S.color }), 0, 0);
+        a.team = "green"; a.isClone = true; a.speciesName = opt.speciesName; a.className = opt.className; a.dirX = 1; a.dirY = 0.35; a.hitFlash = 0; a.maxHealth = 0;   // (no health bar over a picture)
+        _cloneCardActors[opt.key] = a;
+    }
+    a.walkCycle = (frame || 0) * 0.15; a.dead = false;
+    return a;
+}
+
+// One player card: the creature on a speed-line wash in its colour, its class tag, its name, its numbers, the splices it needs and the CLONE button.
+// The button's bounds are recorded only when the whole button is inside the visible strip (a half-hidden one must not be pressable).
+function _drawCloneCard(opt, x, y, w, h, listX, listW, listY, listH) {
+    const sd = SPECIES[opt.speciesName], cl = SPECIES[opt.speciesName]?.[opt.className];
+    const col = opt.ready ? sd.color : "#3a4666";
+    uiSlab(x, y, w, h, col, false, "#0f1730", !opt.ready && false);
+    // the art window
+    const artH = Math.round(h * 0.46), ax = x + 8, ay = y + 8, aw = w - 16;
+    ctx.save(); ctx.beginPath(); ctx.rect(ax, ay, aw, artH); ctx.clip();
+    const g = ctx.createRadialGradient(ax + aw / 2, ay + artH * 0.6, 4, ax + aw / 2, ay + artH * 0.6, aw * 0.75);
+    g.addColorStop(0, sd.color + "55"); g.addColorStop(1, "#05070f"); ctx.fillStyle = g; ctx.fillRect(ax, ay, aw, artH);
+    ctx.strokeStyle = sd.color + "22"; ctx.lineWidth = 2;
+    for (let k = -2; k < 8; k++) { ctx.beginPath(); ctx.moveTo(ax + k * 30, ay + artH); ctx.lineTo(ax + k * 30 + 70, ay); ctx.stroke(); }
+    if (!opt.ready) ctx.globalAlpha = 0.55;
+    ctx.save(); ctx.translate(ax + aw / 2, ay + artH * 0.7); const sc = Math.min(2.4, aw / 62); ctx.scale(sc, sc);
+    // (the bars, level tag and ally bracket that go over a creature on the board are not wanted on a picture)
+    const _k = [_drawPredatorBars, drawHealthBar, typeof drawUnitTag === "function" ? drawUnitTag : null];
+    _drawPredatorBars = () => {}; drawHealthBar = () => {}; if (_k[2]) drawUnitTag = () => {};
+    try { drawNPC(_cloneCardActor(opt), 0, 0, ctx); } catch (e) { /* a picture must never take the menu down */ }
+    finally { _drawPredatorBars = _k[0]; drawHealthBar = _k[1]; if (_k[2]) drawUnitTag = _k[2]; }
+    ctx.restore(); ctx.restore();
+    // the class tag, a slab top-left
+    const tag = opt.className.toUpperCase();
+    ctx.save(); ctx.font = uiFont(14); const tw = ctx.measureText(tag).width + 20; ctx.restore();
+    uiSlab(ax + 4, ay + 4, tw, 24, sd.color, true);
+    uiText(tag, ax + 4 + tw / 2, ay + 17, 14, UI_INK, "center", false);
+    // name and numbers
+    uiTextFit(opt.speciesName.toUpperCase(), x + 14, y + artH + 30, 24, opt.ready ? "#fff" : "#8a93a8", "left", w - 28);
+    if (cl) {
+        const parts = [`PWR ${cl.power || "?"}`, `HP ${cl.health || "?"}`];
+        if (cl.abdomenAttack || (cl.rangeDamage && cl.rangeDamage > 0)) parts.push(opt.speciesName === "spider" ? "WEB" : opt.speciesName === "mantis" ? "AMBUSH" : opt.speciesName === "moth" ? "DUST" : "SPECIAL");
+        uiCaptionFit(parts.join("  "), x + 14, y + artH + 54, "#9fb0d0", "left", 13, w - 28);
+    }
+    // the splices
+    const prog = Math.min(1, opt.have / opt.needed), bx0 = x + 14, bw0 = w - 28, by0 = y + artH + 68;
+    ctx.fillStyle = "#05070f"; ctx.fillRect(bx0, by0, bw0, 10); ctx.fillStyle = opt.ready ? UI_TEAL : sd.color; ctx.fillRect(bx0, by0, bw0 * prog, 10);
+    ctx.strokeStyle = opt.ready ? UI_TEAL : "#2c3656"; ctx.lineWidth = 1.5; ctx.strokeRect(bx0, by0, bw0, 10);
+    uiCaption(`${opt.have}/${opt.needed} SPLICES`, bx0, by0 + 24, "#8aa0c8", "left", 11);
+    uiCaption(`${opt.shardCost}\u2726`, bx0 + bw0, by0 + 24, shardCount >= opt.shardCost ? UI_GOLD : "#8a6a44", "right", 13);
+    // the button
+    const bh = 44, bx = x + 10, by = y + h - bh - 10, bw = w - 20, vis = bx >= listX && bx + bw <= listX + listW && by >= listY && by + bh <= listY + listH;
+    if (opt.ready) { uiButton({ x: bx, y: by, w: bw, h: bh }, "CLONE", UI_TEAL, true, 22); if (vis) { opt._bx = bx; opt._by = by; opt._bw = bw; opt._bh = bh; } }
+    else {
+        // WHY NOT. A blocked card keeps the reason where the button would be, and a tap on it explains.
+        uiButton({ x: bx, y: by, w: bw, h: bh }, cloneBlockedLabel(opt), UI_RED, false, 13, null, true);
+        if (vis) { opt._nbx = bx; opt._nby = by; opt._nbw = bw; opt._nbh = bh; }
+    }
 }
 
 // ── Tab: Modulation ───────────────────────────────────────
@@ -1241,7 +1261,7 @@ function handleCrystalPanelInput(ex, ey, isDown) {
     for (let i=0;i<CTABS.length;i++) {
         const tx=b.PX+i*b.tabW;
         if (ex>=tx && ex<=tx+b.tabW && ey>=b.PY && ey<=b.PY+b.tabH) {
-            crystalMenuTab=CTABS[i].id; _crystalScrollY=0; return true;
+            crystalMenuTab=CTABS[i].id; _crystalScrollX=0; return true;
         }
     }
     // Outside panel → close
