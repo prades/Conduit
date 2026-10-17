@@ -2200,6 +2200,8 @@ function render() {
     // The ALARM is a red triangle beside the zone, not a banner (css: body.alarm-on). Only the change touches the page.
     const _alarmOn = !!alertActive && gameState.phase !== "waveComplete";
     if (_alarmOn !== _lastAlarmOn) { _lastAlarmOn = _alarmOn; if (document.body && document.body.classList) document.body.classList.toggle("alarm-on", _alarmOn); }
+    const _panelOpen = !!(crystalMenuOpen || cloneMenuOpen || settingsPanelOpen || (typeof buildMenuOpen !== "undefined" && buildMenuOpen));
+    if (_panelOpen !== _lastPanelOpen) { _lastPanelOpen = _panelOpen; if (document.body && document.body.classList) document.body.classList.toggle("panel-open", _panelOpen); }
     // Zone indicator — cached element, update only on zone change
     const _pz = getZoneIndex(Math.floor(player.x));
     if (_pz !== _lastZoneIndex) {

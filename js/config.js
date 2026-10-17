@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-17z";
+const BUILD_VERSION = "2026-10-17za";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -386,6 +386,7 @@ let _lastUltState   = '';    // last ready/surging class written
 let _lastSiphonOn   = null;  // last siphon state written to siphonBtn
 let _lastShardCount = -1;    // last shard count written to shardUI
 let _lastCellCount  = -1;    // … and shield cells
+let _lastPanelOpen  = false;  // a canvas panel (Crystal, Clone Bay, Settings, Build) is up: the tutorial button steps aside (game.js)
 let _lastAlarmOn    = false;  // the alarm triangle's state (game.js)
 let _lastZoneIndex  = -999;  // last zone index written to zoneInfo
 let _zoneEl         = null;  // cached zoneInfo element (fetched once on first use)

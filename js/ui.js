@@ -1037,6 +1037,8 @@ function handleFollowerUIClick(x,y) {
 // target that stows the weapon, so there is a way out that does not require
 // finding an enemy to long-press again.
 function drawAmmoChip() {
+    // Under an open panel it would sit across the panel's foot: not drawn, not tappable, while one is up.
+    if (crystalMenuOpen || cloneMenuOpen || settingsPanelOpen || (typeof buildMenuOpen !== "undefined" && buildMenuOpen)) { _ATKCHIP.w = 0; return; }
     const big = dockHasMenus(), w = big ? 200 : 150, h = big ? 40 : 32;
     // Centred, but never overlapping the follower panel on the left — on a
     // phone-width screen a centred chip lands right on top of it. Above the dock where there is one.

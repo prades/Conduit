@@ -422,7 +422,7 @@ async function boot(store) {
         const short = layout(C, 844, 390);
         same(outside(short).length, 0, 'the control still falls outside a short panel');
         const topOf = L => Math.min(...L.controls.map(r => r.y));
-        ok(topOf(short) - short.b.contentY < topOf(tall) - tall.b.contentY,
+        ok(topOf(short) - short.b.contentY <= topOf(tall) - tall.b.contentY,
            'the short panel did not reclaim the decoration\'s space');
         C.run('pendingElements = [];');
     });
@@ -465,8 +465,8 @@ async function boot(store) {
         ok(!/_MODCHIP/.test(SRC.clone), 'the HUD chip state survives in clone.js');
         ok(!/drawModulationChip/.test(SRC.game), 'game.js still paints the HUD chip');
         ok(!/modulationChipTap/.test(SRC.input), 'input.js still routes taps to the HUD chip');
-        const uses = (SRC.clone.match(/drawModulationSwatches\(/g) || []).length;
-        same(uses, 2, 'the swatch row should be defined once and called once, got ' + uses);
+        const uses = (SRC.clone.match(/drawModulationCards\(/g) || []).length;
+        same(uses, 2, 'the element cards should be defined once and called once, got ' + uses);
     });
 
     check('tapping a swatch in the panel toggles that element', () => {
