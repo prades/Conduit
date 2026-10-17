@@ -3,13 +3,14 @@
 // ─────────────────────────────────────────────────────────
 // REPORTED: "Have the crystal menu at the bottom left always visible to switch elements or menu that's a mini command tab ... so that we can free up the SEL button
 // from the main bottom menu. Make it a small radial menu."
-// A WATCH FACE, in the Neo Future style: a 3D bezel (lit metal, teal rim, a glass glint), sixty tick marks, a slow second hand. Closed it is a small watch at the bottom left
-// that names who your orders go to (ALL, an element's three letters, or SEL for selected cards) and how many. Tap it and the dial opens (a spin-in) to a full face: the centre
-// hub names the target, and seven buttons sit round the dial like complications. TWO DIAL TABS on the lower bezel, COMMAND and ELEMENTS, switch what the dial does:
+// A RUGGED, MODULAR SPORTS-WATCH DIAL (Neo Future, not a classic watch: no ticks, no hands, no little dials): a chunky octagonal matte bezel with hi-vis notches and a digital
+// readout in the middle, tilted in 3D. The ring round the readout is SEGMENTS (thick wedges, each a button) that turn like a rotary dial. Closed it is a small rugged pod that
+// names who your orders go to (ALL, an element's three letters, or SEL for selected cards) and how many. Tap it and it spins open. The segments are a MODULE: the tabs on the
+// lower bezel switch which module the dial runs (MINI_MODULES: COMMAND and ELEMENTS now; the table is where another would go):
 //     COMMAND   HOLD / COME / FIGHT / WORK / ROLE (brawler > mage > technician) / ROSTER (the full command center) / CRYSTAL (the element mix menu)
-//     ELEMENTS  ALL and the unlocked elements, the crystal's element selector: the hand swings to the one picked (it replaces the dock's SEL button)
-// Whoever the orders go to: the selected roster cards if any, else the element picked, else everyone. The tab you leave it on is remembered. A tap anywhere else, or the
-// centre hub, puts the dial away. Phones have the radial menu.
+//     ELEMENTS  ALL and the unlocked elements, the crystal's element selector: the one picked turns to the top (it replaces the dock's SEL button)
+// Whoever the orders go to: the selected roster cards if any, else the element picked, else everyone. The module you leave it on is remembered. A tap anywhere else, or the
+// readout, puts the dial away. Phones have the radial menu.
 // (The dock's SEL button shows only during the tutorial, whose SQUAD lesson is about it.)
 const MINI_CMD_MODE_KEY = "conduit_minicmd_mode";
 let _miniCmdSig = "", _miniCmdOpen = false, _miniCmdMode = "command";
@@ -57,27 +58,47 @@ function miniCmdWho() {
     const e = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).find(x => x.id === player.selectedElement);
     return { label: e ? e.label.slice(0, 3).toUpperCase() : "---", col: e ? e.color : "#8aa0c8" };
 }
-// The watch face itself (SVG, 210 units square; scaled by CSS): bezel, glass, ticks, rim, and the hand.
-function _mcFaceSVG(col, handAngle) {
-    let ticks = "";
-    for (let i = 0; i < 60; i++) {
-        const a = i * 6 * Math.PI / 180, major = i % 5 === 0, r0 = 93, r1 = major ? 85 : 89, x0 = MC_C + r0 * Math.sin(a), y0 = MC_C - r0 * Math.cos(a), x1 = MC_C + r1 * Math.sin(a), y1 = MC_C - r1 * Math.cos(a);
-        ticks += '<line x1="' + x0.toFixed(1) + '" y1="' + y0.toFixed(1) + '" x2="' + x1.toFixed(1) + '" y2="' + y1.toFixed(1) + '" stroke="' + (major ? "#19e6c1" : "#4a5a88") + '" stroke-width="' + (major ? 2.4 : 1) + '"/>';
-    }
+// The rugged face (SVG, 210 units square; scaled by CSS): a chunky octagonal bezel with hi-vis notches and corner guards, and a flat dark face.
+function _mcOct(r, rot) { let pts = ""; for (let i = 0; i < 8; i++) { const a = (rot + i * 45) * Math.PI / 180; pts += (MC_C + r * Math.sin(a)).toFixed(1) + "," + (MC_C - r * Math.cos(a)).toFixed(1) + " "; } return pts.trim(); }
+function _mcFaceSVG(col) {
+    let notches = "", guards = "";
+    for (let i = 0; i < 8; i++) { const a = (22.5 + i * 45) * Math.PI / 180, x = MC_C + 98 * Math.sin(a), y = MC_C - 98 * Math.cos(a); notches += '<rect x="' + (x - 7).toFixed(1) + '" y="' + (y - 2.5).toFixed(1) + '" width="14" height="5" rx="1.5" transform="rotate(' + (22.5 + i * 45 + 90) + " " + x.toFixed(1) + " " + y.toFixed(1) + ')" fill="' + (i % 2 ? col : "#ffe733") + '" opacity="0.95"/>'; }
+    for (let i = 0; i < 4; i++) { const a = (45 + i * 90) * Math.PI / 180, x = MC_C + 100 * Math.sin(a), y = MC_C - 100 * Math.cos(a); guards += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="9" fill="url(#mcRub)" stroke="#0a0e1a" stroke-width="2"/><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.6" fill="#05070d"/>'; }
     return '<svg class="mc-face" viewBox="0 0 ' + MC_D + " " + MC_D + '" aria-hidden="true">' +
-        '<defs><linearGradient id="mcBez" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7d8fc4"/><stop offset="0.22" stop-color="#1b2748"/><stop offset="0.55" stop-color="#070b18"/><stop offset="0.85" stop-color="#2c3b6c"/><stop offset="1" stop-color="#0c1226"/></linearGradient>' +
-        '<radialGradient id="mcFace" cx="0.34" cy="0.28" r="0.85"><stop offset="0" stop-color="#1c2c58"/><stop offset="0.6" stop-color="#0a1226"/><stop offset="1" stop-color="#03050d"/></radialGradient>' +
-        '<linearGradient id="mcGlass" x1="0" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/><stop offset="0.38" stop-color="#ffffff" stop-opacity="0.05"/><stop offset="0.39" stop-color="#ffffff" stop-opacity="0"/></linearGradient></defs>' +
-        '<circle cx="105" cy="105" r="103" fill="url(#mcBez)"/><circle cx="105" cy="105" r="99" fill="none" stroke="' + col + '" stroke-width="2.2" opacity="0.9"/><circle cx="105" cy="105" r="96" fill="#02040a" opacity="0.7"/>' +
-        '<circle cx="105" cy="105" r="94" fill="url(#mcFace)"/>' + ticks +
-        '<circle cx="105" cy="105" r="50" fill="none" stroke="#2a3a6c" stroke-width="1"/><circle cx="105" cy="105" r="34" fill="#070b18" stroke="' + col + '" stroke-width="1.5" opacity="0.95"/>' +
-        '<g class="mc-hand" style="transform-origin:105px 105px;transform:rotate(' + handAngle + 'deg)"><line x1="105" y1="105" x2="105" y2="16" stroke="' + col + '" stroke-width="2" stroke-linecap="round"/><polygon points="105,10 100,24 110,24" fill="' + col + '"/><line x1="105" y1="105" x2="105" y2="122" stroke="' + col + '" stroke-width="3" stroke-linecap="round"/></g>' +
-        '<ellipse cx="78" cy="58" rx="64" ry="46" transform="rotate(-32 105 105)" fill="url(#mcGlass)"/></svg>';
+        '<defs><linearGradient id="mcMat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2e3548"/><stop offset="0.5" stop-color="#0d111c"/><stop offset="1" stop-color="#232a3d"/></linearGradient><radialGradient id="mcRub" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#3a4258"/><stop offset="1" stop-color="#0b0f1a"/></radialGradient></defs>' +
+        '<polygon points="' + _mcOct(104, 22.5) + '" fill="url(#mcMat)" stroke="#05070d" stroke-width="3" stroke-linejoin="round"/>' +
+        '<polygon points="' + _mcOct(96, 22.5) + '" fill="#06080f" stroke="' + col + '" stroke-width="2.5" stroke-linejoin="round" opacity="0.95"/>' +
+        '<polygon points="' + _mcOct(92, 22.5) + '" fill="#090d18" stroke="#1a2238" stroke-width="1.5" stroke-linejoin="round"/>' + notches + guards + '</svg>';
 }
-function _mcPlace(btn, i, n) {
-    const a = (-90 + 360 * i / n) * Math.PI / 180;
-    btn.setAttribute("style", "left:" + Math.round(MC_C + MC_R * Math.cos(a) - MC_BTN / 2) + "px;top:" + Math.round(MC_C + MC_R * Math.sin(a) - MC_BTN / 2) + "px;" + (btn._col ? "--c:" + btn._col + ";" : "") + "animation-delay:" + (60 + i * 35) + "ms;");
+// A wedge of the ring (angles in degrees, 0 = up, clockwise; radii in dial units) as a css clip-path polygon: the button IS the wedge, so only the wedge takes the tap.
+function _mcWedge(a0, a1, r0, r1) {
+    const pt = (r, a) => { const t = a * Math.PI / 180; return ((MC_C + r * Math.sin(t)) / MC_D * 100).toFixed(2) + "% " + ((MC_C - r * Math.cos(t)) / MC_D * 100).toFixed(2) + "%"; }, steps = Math.max(3, Math.round((a1 - a0) / 6)), out = [];
+    for (let i = 0; i <= steps; i++) out.push(pt(r1, a0 + (a1 - a0) * i / steps));
+    for (let i = steps; i >= 0; i--) out.push(pt(r0, a0 + (a1 - a0) * i / steps));
+    return "polygon(" + out.join(",") + ")";
 }
+const MC_R0 = 40, MC_R1 = 88, MC_GAP = 5;   // the ring of segments: inner and outer radius, the gap between them (degrees)
+function _mcSegment(btn, lab, i, n) {
+    const span = 360 / n, a0 = i * span + MC_GAP / 2 - span / 2, a1 = i * span + span - MC_GAP / 2 - span / 2, mid = (a0 + a1) / 2 * Math.PI / 180, rm = (MC_R0 + MC_R1) / 2 + 2;
+    btn.setAttribute("style", "clip-path:" + _mcWedge(a0, a1, MC_R0, MC_R1) + ";" + (btn._col ? "--c:" + btn._col + ";" : "") + "animation-delay:" + (60 + i * 35) + "ms;");
+    const inner = btn.querySelector(".mc-in"); if (inner) inner.setAttribute("style", "clip-path:" + _mcWedge(a0 + 1.6, a1 - 1.6, MC_R0 + 3, MC_R1 - 3) + ";");
+    lab._x = Math.round(MC_C + rm * Math.sin(mid)); lab._y = Math.round(MC_C - rm * Math.cos(mid));
+}
+// THE MODULES the dial can run: each is the items round it ([label, colour, lit, tooltip, action, id]). The tabs on the bezel are made from this table.
+const MINI_MODULES = [
+    { id: "command", label: "COMMAND", tip: "Orders for the squad", items: () => {
+        const out = [];
+        for (const o of MINI_CMD_ORDERS) out.push([o.label, o.col, false, (o.id === "follow" ? "FOLLOW ME: " : o.label + ": ") + "the " + miniCmdTarget().toLowerCase(), () => { miniCmdOrder(o.id); miniCmdRender(true); }, o.id]);
+        out.push(["ROLE", "#a64dff", false, "Switch role: brawler, mage, technician", () => { miniCmdSwitchRoles(); }, "role"]);
+        out.push(["ROST", "#8fe3ff", false, "The roster and command center", () => { miniCmdSetOpen(false); if (typeof ccToggleOpen === "function") ccToggleOpen("roster"); }, "roster"]);
+        out.push(["\u25c6", "#19e6c1", typeof crystalMenuOpen !== "undefined" && crystalMenuOpen, "The crystal menu: the element mix", () => { if (typeof dockCrystal === "function") dockCrystal(); miniCmdSetOpen(false); }, "crystal"]);
+        return out; } },
+    { id: "elements", label: "ELEMENTS", tip: "Pick who the orders go to", items: () => {
+        const out = [], tot = {}; for (const f of (typeof followers !== "undefined" ? followers : [])) if (f && !f.dead) tot[f.element] = (tot[f.element] || 0) + 1;
+        out.push(["ALL", "#ffffff", squadMode === "all", "Orders go to everyone", () => miniCmdPickElement("all"), "all"]);
+        for (const e of (typeof ELEMENTS !== "undefined" ? ELEMENTS : [])) if (unlockedElements.has(e.id)) out.push([e.label.slice(0, 3).toUpperCase(), e.color, squadMode !== "all" && player.selectedElement === e.id, e.label + ": " + (tot[e.id] || 0) + " followers", () => miniCmdPickElement(e.id), e.id]);
+        return out; } },
+];
 function miniCmdRender(force) {
     const root = miniCmdEl(); if (!root || !root.appendChild) return;
     const sig = miniCmdSignature(); if (!force && sig === _miniCmdSig) return; _miniCmdSig = sig;
@@ -86,43 +107,33 @@ function miniCmdRender(force) {
     const w = miniCmdWho(), n = miniCmdPool().length;
     const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
     const click = (e, fn) => { e.addEventListener("click", ev => { ev.stopPropagation(); fn(ev); }); return e; };
-    // the items round the dial
-    const items = [];   // [label, colour, lit, tooltip, action, id]
-    if (_miniCmdOpen) {
-        if (_miniCmdMode === "command") {
-            for (const o of MINI_CMD_ORDERS) items.push([o.label, o.col, false, (o.id === "follow" ? "FOLLOW ME: " : o.label + ": ") + "the " + miniCmdTarget().toLowerCase(), () => { miniCmdOrder(o.id); miniCmdRender(true); }, o.id]);
-            items.push(["ROLE", "#a64dff", false, "Switch role: brawler, mage, technician", () => { miniCmdSwitchRoles(); }, "role"]);
-            items.push(["ROST", "#8fe3ff", false, "The roster and command center", () => { miniCmdSetOpen(false); if (typeof ccToggleOpen === "function") ccToggleOpen("roster"); }, "roster"]);
-            items.push(["\u25c6", "#19e6c1", typeof crystalMenuOpen !== "undefined" && crystalMenuOpen, "The crystal menu: the element mix", () => { if (typeof dockCrystal === "function") dockCrystal(); miniCmdSetOpen(false); }, "crystal"]);
-        } else {
-            const tot = {}; for (const f of (typeof followers !== "undefined" ? followers : [])) if (f && !f.dead) tot[f.element] = (tot[f.element] || 0) + 1;
-            items.push(["ALL", "#ffffff", squadMode === "all", "Orders go to everyone", () => miniCmdPickElement("all"), "all"]);
-            for (const e of (typeof ELEMENTS !== "undefined" ? ELEMENTS : [])) if (unlockedElements.has(e.id)) items.push([e.label.slice(0, 3).toUpperCase(), e.color, squadMode !== "all" && player.selectedElement === e.id, e.label + ": " + (tot[e.id] || 0) + " followers", () => miniCmdPickElement(e.id), e.id]);
-        }
-    }
-    // the hand: on the element face it points at the one picked; on the command face it sweeps
-    let hand = 0, sweep = _miniCmdMode === "command" || !_miniCmdOpen;
-    if (_miniCmdOpen && _miniCmdMode === "elements") { const k = items.findIndex(p => p[2]); hand = 0; }
-    const holder = el("div", "mc-holder"); holder.innerHTML = _mcFaceSVG(_miniCmdOpen ? w.col : w.col, hand);
+    const mod = MINI_MODULES.find(m => m.id === _miniCmdMode) || MINI_MODULES[0];
+    const items = _miniCmdOpen ? mod.items() : [];
+    const holder = el("div", "mc-holder"); holder.innerHTML = _mcFaceSVG(w.col);
     root.textContent = ""; root.appendChild(holder);
-    if (holder.classList && sweep) holder.classList.add("sweep");
-    // THE RING TURNS: on the element tab the picked element is brought to the top (12 o'clock) and the hand points up; the commands rest with the first at the top.
-    // Moving to another turn (a pick, or the other tab) spins the whole ring there (a css animation, from the old turn to the new); each label turns back so it stays upright.
+    // THE RING TURNS: on the element module the picked element is brought to the top (12 o'clock); the commands rest with the first at the top. Moving to another turn (a pick, or the other
+    // module) spins the whole ring there (a css animation from the old turn to the new); each label turns back so it stays upright.
     let rot = 0;
     if (_miniCmdOpen && _miniCmdMode === "elements") { const k = items.findIndex(p => p[2]); rot = k > 0 ? -360 * k / items.length : 0; }
     const from = wasOpen ? _mcRot : rot - 140, modeChanged = _mcLastMode !== _miniCmdMode; _mcLastMode = _miniCmdMode;
     _mcRot = rot;
     const ring = el("div", "mc-ring" + (from !== rot || modeChanged ? " spin" : ""));
     ring.setAttribute("style", "--r0:" + Math.round(from + (modeChanged && wasOpen ? 90 : 0)) + "deg;--r1:" + Math.round(rot) + "deg;transform:rotate(" + Math.round(rot) + "deg);");
-    items.forEach((p, i) => { const b = click(el("button", "mc-pet" + (p[2] ? " on" : "")), p[4]); const lab = el("span", "mc-pl", p[0]); lab.setAttribute("style", "transform:rotate(" + (-Math.round(rot)) + "deg);"); b.appendChild(lab); b._col = p[1]; b.title = p[3]; b.setAttribute("data-id", p[5]); _mcPlace(b, i, items.length); ring.appendChild(b); });
+    items.forEach((p, i) => {
+        const b = click(el("button", "mc-pet" + (p[2] ? " on" : "")), p[4]); b._col = p[1]; b.title = p[3]; b.setAttribute("data-id", p[5]);
+        b.appendChild(el("span", "mc-in"));
+        const lab = el("span", "mc-pl" + (p[0].length === 1 ? " glyph" : ""), p[0]); b.appendChild(lab);
+        _mcSegment(b, lab, i, items.length);
+        lab.setAttribute("style", "left:" + (lab._x - 24) + "px;top:" + (lab._y - 15) + "px;transform:rotate(" + (-Math.round(rot)) + "deg);");
+        ring.appendChild(b);
+    });
     root.appendChild(ring);
-    // the two dial tabs, on the lower bezel
-    if (_miniCmdOpen) {
-        [["command", "COMMAND"], ["elements", "ELEMENTS"]].forEach((t, i) => {
-            const b = click(el("button", "mc-tab" + (_miniCmdMode === t[0] ? " on" : ""), t[1]), () => miniCmdSetMode(t[0])); b.setAttribute("data-id", "tab-" + t[0]); b.title = t[0] === "command" ? "Orders for the squad" : "Pick who the orders go to"; root.appendChild(b);
-        });
-    }
-    // the hub: the whole closed watch, and the centre of the open dial
+    // the tabs on the lower bezel: one per module
+    if (_miniCmdOpen) MINI_MODULES.forEach((t, i) => {
+        const b = click(el("button", "mc-tab" + (_miniCmdMode === t.id ? " on" : ""), t.label), () => miniCmdSetMode(t.id)); b.setAttribute("data-id", "tab-" + t.id); b.title = t.tip;
+        b.setAttribute("style", "left:" + Math.round(MC_C - MINI_MODULES.length * 45 + i * 90 + 3) + "px;"); root.appendChild(b);
+    });
+    // the readout: the whole closed pod, and the centre of the open dial
     const hub = click(el("button", "mc-hub" + (_miniCmdOpen ? " open" : "")), () => miniCmdSetOpen(!_miniCmdOpen)); hub.id = "mcHub"; hub.setAttribute("style", "--c:" + w.col + ";"); hub.title = "Mini command: orders go to " + miniCmdTarget();
     hub.appendChild(el("span", "mc-hl", w.label)); hub.appendChild(el("span", "mc-hn", String(n)));
     root.appendChild(hub);
