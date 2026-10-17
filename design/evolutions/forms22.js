@@ -12,7 +12,8 @@ function _walker(o) {
   const belly = new T.Mesh(new T.CylinderGeometry(o.rx * 0.9, o.rx * 0.7, 0.12, 9), _blackGloss); belly.scale.z = o.rz / o.rx; belly.position.y = -0.04; body.add(belly);
   const vol = volcanoMesh(o.vr, o.vh, o.rimR, o.seed || 3, _obsidian, o.seg || 9); vol.position.y = o.ry * 0.78; body.add(vol);
   const gm = new T.MeshStandardMaterial({ color: 0x02100a, emissive: new T.Color(EL.color).multiplyScalar(0.07), emissiveIntensity: 1.0, roughness: 1, metalness: 0 }); gm.envMapIntensity = 0;   // darker than the volcano's own goo: it is a lot of it
-  const _g0 = _goo; _goo = () => gm; _drips(body, 0, o.ry * 0.78, 0, o.vr, o.vh, o.rimR, o.drips == null ? 3 : o.drips, o.seed || 3); const bub = _bubbling(body, 0, o.ry * 0.78 + o.vh * 0.86, 0, o.rimR * 0.92, 4, { noHeart: true, bubH: 0.16 }); _goo = _g0;
+  const _g0 = _goo; _goo = () => gm; _drips(body, 0, o.ry * 0.78, 0, o.vr, o.vh, o.rimR, o.drips == null ? 3 : o.drips, o.seed || 3); let bub = o.noBub ? () => {} : _bubbling(body, 0, o.ry * 0.78 + o.vh * 0.86, 0, o.rimR * 0.92, 4, { noHeart: true, bubH: 0.16 }); _goo = _g0;
+  if (o.noBub) { const cr = new T.Mesh(new T.CircleGeometry(o.rimR * 0.95, 10), gm); cr.rotation.x = -PI / 2; cr.position.y = o.ry * 0.78 + o.vh * 0.97; body.add(cr); }   // just a green crater, no bubbling
   // goo oozing out of the sides: swollen lobes bulging from under the shell's rim, sagging, each with a bead that gathers and falls
   const oozes = []; for (let i = 0; i < o.ooze; i++) { const a = (i + 0.5) * TAU / o.ooze + (_hz(i, o.seed || 3, 1) - 0.5) * 0.5, sz = o.oozeR * (0.7 + 0.6 * _hz(i, o.seed || 3, 2));
     const lobe = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); lobe.scale.set(sz * 1.1, sz * 1.2, sz * 0.8); body.add(lobe);
@@ -20,7 +21,7 @@ function _walker(o) {
     const bead = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(bead); oozes.push({ lobe, strand, bead, a, sz, i }); }
   // a leak: a seam in the shell's flank, a swollen lobe where it breaks out, and a stream down to the floor with beads running along it
   const leaks = []; (o.leaks || []).forEach((lk, li) => { const az = lk.az, big = lk.size || 1, lobe = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm), seam = new T.Mesh(new T.BoxGeometry(0.022, 0.26, 0.022), gm), stream = new T.Mesh(new T.CylinderGeometry(1, 1.3, 1, 6), gm), beads = [];
-    for (let k = 0; k < 3; k++) { const bd = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(bd); beads.push(bd); } body.add(lobe); body.add(seam); body.add(stream);
+    for (let k = 0; k < 3; k++) { const bd = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(bd); beads.push(bd); } body.add(lobe); if (!o.noSeam) body.add(seam); body.add(stream);
     leaks.push({ az, big, lobe, seam, stream, beads, li }); });
   // the eye: one big round oozing eye on the shell (or the cone), a socket, a lid that droops, and a tear that runs from it
   let eye = null; if (o.eye) { const E = o.eye, eg = G(), eMat = new T.MeshStandardMaterial({ color: 0x041a08, emissive: new T.Color(EL.color).multiplyScalar(0.2), emissiveIntensity: 1.0, roughness: 1, metalness: 0 }); eMat.envMapIntensity = 0;
@@ -32,8 +33,8 @@ function _walker(o) {
     const tb = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(tb); const tear = []; for (let k = 0; k < 9; k++) { const q = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(q); tear.push(q); }
     eye = { eg, orb, slit, lid, tear, tb, E, eMat }; }
   // the legs: hip on the shell's flank, thigh, knee, shin, foot; the foot walks an oval (back on the ground, forward in the air) and the leg follows
-  const legs = []; for (let i = 0; i < 4; i++) { const sx = i % 2 ? -1 : 1, sz = i < 2 ? 1 : -1, th = _bone(null, null, o.legR, o.legR * 0.8, _leg), sh = _bone(null, null, o.legR * 0.8, o.legR * 0.5, _leg), ft = new T.Mesh(new T.OctahedronGeometry(o.legR * 1.5, 0), _leg);
-    ft.scale.set(1.2, 0.55, 1.5); b.add(th); b.add(sh); b.add(ft); const kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 0.95, 0), gm); b.add(kn);
+  const legs = []; for (let i = 0; i < 4; i++) { const sx = i % 2 ? -1 : 1, sz = i < 2 ? 1 : -1, th = _bone(null, null, o.legR, o.legR * 0.8, _leg), sh = _bone(null, null, o.legR * 0.8, o.legR * 0.5, _leg), ft = new T.Mesh(o.plainLegs ? new T.BoxGeometry(o.legR * 2.4, o.legR * 1.2, o.legR * 3) : new T.OctahedronGeometry(o.legR * 1.5, 0), _leg);
+    ft.scale.set(o.plainLegs ? 1 : 1.2, o.plainLegs ? 1 : 0.55, o.plainLegs ? 1 : 1.5); b.add(th); b.add(sh); b.add(ft); const kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 0.95, 0), gm); if (!o.plainLegs) b.add(kn);
     legs.push({ sx, sz, th, sh, ft, kn, ph: (i === 0 || i === 3) ? 0 : PI }); }
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, o.ry + o.vh + 0.3, 0.5); b.add(L); LIGHTS.push(L);
   // the puddle it walks through: flat on the floor, drifting behind its feet
@@ -92,3 +93,11 @@ fx(555, "A heavier weeping eye: a fat tear from the eye down over the shell, the
 fx(556, "Little goo puddles where each leak lands, thicker legs, the tear down the shell.", () => _walker(Object.assign({}, _w551, { legR: 0.085, puddles: true, leaks: [{ az: PI / 2, size: 1.2 }, { az: -PI / 2, size: 1.2 }] })));
 fx(557, "Stubby, heavier legs and a lower shell: more weight, same eye and leaks, puddles under the leaks.", () => _walker(Object.assign({}, _w551, { legH: 0.36, legR: 0.1, ry: 0.3, puddles: true, step: 0.14, lift: 0.1, leaks: [{ az: PI / 2, size: 1.3 }, { az: -PI / 2, size: 1.3 }] })));
 fx(558, "A leak at the back as well as the sides, three streams in all, puddles, the sleepy eye weeping.", () => _walker(Object.assign({}, _w551, { legR: 0.085, puddles: true, eye: { y: 0.2, z: 0.58, r: 0.11, up: 0.25, lid: 0.75, tearW: 0.042 }, leaks: [{ az: PI / 2, size: 1.2 }, { az: -PI / 2, size: 1.0 }, { az: PI + 0.5, size: 0.9 }] })));
+
+// ── 556 simplified, like the other evolved followers (Nos. 559–563): fewer parts, bigger plain shapes ──
+const _s556 = Object.assign({}, _w551, { legR: 0.085, puddles: true, leaks: [{ az: PI / 2, size: 1.2 }, { az: -PI / 2, size: 1.2 }] });
+fx(559, "556 simpler: no bubbling crater or drips on the cone, no seams, plain legs with plain feet. The eye, the leaks and the puddles stay.", () => _walker(Object.assign({}, _s556, { noBub: true, drips: 0, noSeam: true, plainLegs: true, facets: 7, seg: 7 })));
+fx(560, "Simpler again: the leaks are just a fat lobe and one drip each, the eye has a single drop for its tear.", () => _walker(Object.assign({}, _s556, { noBub: true, drips: 0, noSeam: true, plainLegs: true, facets: 7, seg: 7, eye: { y: 0.2, z: 0.58, r: 0.11, up: 0.25, lid: 0.75, tearW: 0.012 }, puddles: false })));
+fx(561, "Simple and chunky: a lower, rounder shell, stubby plain legs, a short cone, the eye, one leak each side.", () => _walker(Object.assign({}, _s556, { noBub: true, drips: 0, noSeam: true, plainLegs: true, facets: 7, seg: 7, legH: 0.36, legR: 0.1, ry: 0.32, vh: 0.34, step: 0.14, lift: 0.1, puddles: false })));
+fx(562, "The simplest: shell, cone, eye and two leaks, with the puddle: nothing else.", () => _walker(Object.assign({}, _s556, { noBub: true, drips: 0, noSeam: true, plainLegs: true, facets: 6, seg: 6, puddles: false, eye: { y: 0.2, z: 0.58, r: 0.12, up: 0.25, lid: 0.6, tearW: 0.012 } })));
+fx(563, "Simple, with the green kept in the crater: a plain black cone glowing green at the top, plain legs, the eye and the two leaks.", () => _walker(Object.assign({}, _s556, { drips: 0, noSeam: true, plainLegs: true, facets: 7, seg: 7, puddles: false })));
