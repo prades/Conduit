@@ -190,7 +190,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE WINDOW IN THE PAGE');
     check('the window takes its own taps and long presses; the ground outside it is the tool\'s', () => {
-        const r = run(`(function(){ const L = _bmLayout(); return { inTap: handleBuildMenuTap(L.x + 4, L.y + L.h - 4), inHold: buildMenuHit(L.x + 4, L.y + 4),
+        const r = run(`(function(){ const L = _bmLayout(); _bmLast = L; return { inTap: handleBuildMenuTap(L.x + 4, L.y + L.h - 4), inHold: buildMenuHit(L.x + 4, L.y + 4),
             outTap: handleBuildMenuTap(L.x + 4, L.y - 30), outHold: buildMenuHit(L.x + 4, L.y - 30) }; })()`);
         ok(r.inTap && r.inHold && !r.outTap && !r.outHold, JSON.stringify(r));
     });

@@ -673,157 +673,49 @@ function handleOverlayPanelTap(tx, ty) {
 // ─────────────────────────────────────────────────────────
 //  SETTINGS PANEL  (canvas-drawn)
 // ─────────────────────────────────────────────────────────
-const _SP_W = 260, _SP_H = 290;
-// Row geometry shared by the draw and tap handlers so they cannot drift apart.
-const _SP_CODEX_Y = 82,  _SP_CODEX_H = 30;
-const _SP_GFX_Y   = 120, _SP_GFX_H   = 30;   // GRAPHICS: HIGH / LOW
-const _SP_PERF_Y  = 158, _SP_PERF_H  = 30;   // PERFORMANCE readout: ON / OFF
-const _SP_RESET_Y = 198, _SP_RESET_H = 36;
-const _SP_CLOSE_Y = 244, _SP_CLOSE_H = 30;
+// One layout for the draw and the tap handler, so they cannot drift apart. Rows are slab buttons (js/uikit.js).
+const _SP_ROW_H = 60, _SP_ROW_GAP = 12, _SP_HEAD = 84, _SP_PAD = 26;
+function _spLayout() {
+    const rows = settingsResetConfirm
+        ? [{ id: "yes", label: "YES \u2014 RESET", sub: "this cannot be undone", col: UI_RED, on: true }, { id: "cancel", label: "CANCEL", col: UI_TEAL }]
+        : [{ id: "codex", label: "PYLON CODEX", sub: "the rules, in one place", col: UI_TEAL },
+           { id: "gfx", label: "GRAPHICS: " + (gfxLow ? "LOW" : "HIGH"), col: UI_GOLD, on: gfxLow },
+           { id: "perf", label: "PERFORMANCE: " + (perfReadout ? "ON" : "OFF"), col: UI_ICE, on: perfReadout },
+           { id: "reset", label: "RESET GAME", sub: "clears all progress", col: UI_RED },
+           { id: "close", label: "CLOSE", col: "#6a7aa0" }];
+    const w = Math.min(canvas.width - 24, 460), h = _SP_HEAD + rows.length * (_SP_ROW_H + _SP_ROW_GAP) + _SP_PAD - _SP_ROW_GAP + 8;
+    const x = Math.round((canvas.width - w) / 2), top = uiTopSafe(), y = Math.max(top, Math.round((top + uiBottomSafe() - h) / 2));
+    rows.forEach((r, i) => { r.x = x + _SP_PAD; r.w = w - _SP_PAD * 2; r.y = y + _SP_HEAD + i * (_SP_ROW_H + _SP_ROW_GAP); r.h = _SP_ROW_H; });
+    return { x, y, w, h, rows, title: settingsResetConfirm ? "RESET EVERYTHING?" : "SETTINGS" };
+}
 
 function drawSettingsPanel() {
     if (!settingsPanelOpen) return;
-    const pw = _SP_W, ph = _SP_H;
-    const px = Math.round((canvas.width  - pw) / 2);
-    const py = Math.round((canvas.height - ph) / 2);
-
+    const L = _spLayout();
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-    // Backdrop blur overlay
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Panel background + border
-    ctx.fillStyle   = "rgba(4,14,10,0.97)";
-    ctx.strokeStyle = "#555"; ctx.lineWidth = 2;
-    _epRoundRect(px, py, pw, ph, 10);
-    ctx.fill(); ctx.stroke();
-
-    // Gear icon row
-    ctx.fillStyle = "#888"; ctx.font = "18px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText("⚙", px + pw/2, py + 28);
-
-    // Title
-    ctx.fillStyle = "#aaa"; ctx.font = "bold 12px monospace";
-    ctx.fillText("SETTINGS", px + pw/2, py + 52);
-
-    // Divider
-    ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(px + 16, py + 66); ctx.lineTo(px + pw - 16, py + 66); ctx.stroke();
-
-    if (!settingsResetConfirm) {
-        // ── PYLON CODEX button — the rules reference ──
-        const codexY = py + _SP_CODEX_Y;
-        ctx.fillStyle = "rgba(6,22,18,0.9)";
-        ctx.strokeStyle = "#0a8"; ctx.lineWidth = 1.5;
-        _epRoundRect(px + 20, codexY, pw - 40, _SP_CODEX_H, 6);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = "#0c9"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("PYLON CODEX", px + pw/2, codexY + _SP_CODEX_H/2);
-
-        // ── GRAPHICS and PERFORMANCE toggles ──
-        for (const [y, h, label, on, col] of [[_SP_GFX_Y, _SP_GFX_H, "GRAPHICS: " + (gfxLow ? "LOW" : "HIGH"), gfxLow, "#fd4"],
-                                              [_SP_PERF_Y, _SP_PERF_H, "PERFORMANCE: " + (perfReadout ? "ON" : "OFF"), perfReadout, "#8fd6ff"]]) {
-            ctx.fillStyle = on ? "rgba(30,30,10,0.9)" : "rgba(6,18,22,0.9)";
-            ctx.strokeStyle = on ? col : "#346"; ctx.lineWidth = 1.5;
-            _epRoundRect(px + 20, py + y, pw - 40, h, 6);
-            ctx.fill(); ctx.stroke();
-            ctx.fillStyle = on ? col : "#8ab"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(label, px + pw/2, py + y + h/2);
-        }
-
-        // ── RESET GAME button ──
-        const btnY = py + _SP_RESET_Y;
-        ctx.fillStyle = "rgba(30,8,8,0.9)";
-        ctx.strokeStyle = "#622"; ctx.lineWidth = 1.5;
-        _epRoundRect(px + 20, btnY, pw - 40, _SP_RESET_H, 6);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = "#c44"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("RESET GAME", px + pw/2, btnY + 15);
-        ctx.fillStyle = "#633"; ctx.font = "9px monospace";
-        ctx.fillText("clears all progress", px + pw/2, btnY + 28);
-
-        // ── CLOSE button ──
-        const closeY = py + _SP_CLOSE_Y;
-        ctx.fillStyle = "rgba(10,20,14,0.9)";
-        ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
-        _epRoundRect(px + 20, closeY, pw - 40, 30, 6);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = "#555"; ctx.font = "11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("CLOSE", px + pw/2, closeY + _SP_CLOSE_H/2);
-    } else {
-        // ── CONFIRMATION step ──
-        ctx.fillStyle = "#f44"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("RESET ALL PROGRESS?", px + pw/2, py + 86);
-        ctx.fillStyle = "#744"; ctx.font = "9px monospace";
-        ctx.fillText("This cannot be undone.", px + pw/2, py + 102);
-
-        // YES button
-        const yesY = py + 116;
-        ctx.fillStyle = "rgba(50,0,0,0.95)";
-        ctx.strokeStyle = "#f44"; ctx.lineWidth = 2;
-        _epRoundRect(px + 20, yesY, pw - 40, 30, 6);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = "#f44"; ctx.font = "bold 12px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("YES — RESET", px + pw/2, yesY + 15);
-
-        // CANCEL button
-        const cancelY = py + 154;
-        ctx.fillStyle = "rgba(10,20,14,0.9)";
-        ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
-        _epRoundRect(px + 20, cancelY, pw - 40, 28, 6);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = "#555"; ctx.font = "11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("CANCEL", px + pw/2, cancelY + 14);
-    }
-
+    uiBackdrop(0.72);
+    uiPanel(L.x, L.y, L.w, L.h, settingsResetConfirm ? UI_RED : UI_TEAL, L.title, 34);
+    for (const r of L.rows) uiButton(r, r.label, r.col, !!r.on, 24, r.sub);
     ctx.restore();
 }
 
 function _handleSettingsPanelTap(tx, ty) {
     if (!settingsPanelOpen) return false;
-    const pw = _SP_W, ph = _SP_H;
-    const px = Math.round((canvas.width  - pw) / 2);
-    const py = Math.round((canvas.height - ph) / 2);
-
+    const L = _spLayout();
     // Tap outside = close
-    if (tx < px || tx > px + pw || ty < py || ty > py + ph) {
-        settingsPanelOpen = false; settingsResetConfirm = false;
-        return true;
+    if (tx < L.x || tx > L.x + L.w || ty < L.y || ty > L.y + L.h) { settingsPanelOpen = false; settingsResetConfirm = false; return true; }
+    const hit = L.rows.find(r => tx >= r.x && tx <= r.x + r.w && ty >= r.y && ty < r.y + r.h);
+    if (!hit) return true;   // absorb all taps while open
+    switch (hit.id) {
+        case "codex":  openPylonCodex(); break;
+        case "gfx":    toggleGfxLow(); break;
+        case "perf":   togglePerfReadout(); break;
+        case "reset":  settingsResetConfirm = true; break;
+        case "close":  settingsPanelOpen = false; settingsResetConfirm = false; break;
+        case "yes":    settingsPanelOpen = false; settingsResetConfirm = false; restartGame(); break;
+        case "cancel": settingsResetConfirm = false; break;
     }
-
-    if (!settingsResetConfirm) {
-        const codexY = py + _SP_CODEX_Y;
-        const btnY   = py + _SP_RESET_Y;
-        const closeY = py + _SP_CLOSE_Y;
-        if (ty >= codexY && ty < codexY + _SP_CODEX_H) {
-            openPylonCodex();
-            return true;
-        }
-        if (ty >= py + _SP_GFX_Y && ty < py + _SP_GFX_Y + _SP_GFX_H) { toggleGfxLow(); return true; }
-        if (ty >= py + _SP_PERF_Y && ty < py + _SP_PERF_Y + _SP_PERF_H) { togglePerfReadout(); return true; }
-        if (ty >= btnY && ty < btnY + _SP_RESET_H) {
-            settingsResetConfirm = true;
-            return true;
-        }
-        if (ty >= closeY && ty < closeY + _SP_CLOSE_H) {
-            settingsPanelOpen = false; settingsResetConfirm = false;
-            return true;
-        }
-    } else {
-        const yesY    = py + 116;
-        const cancelY = py + 154;
-        if (ty >= yesY && ty < yesY + 30) {
-            settingsPanelOpen = false; settingsResetConfirm = false;
-            restartGame();
-            return true;
-        }
-        if (ty >= cancelY && ty < cancelY + 28) {
-            settingsResetConfirm = false;
-            return true;
-        }
-    }
-    return true; // absorb all taps while open
+    return true;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -1145,11 +1037,11 @@ function handleFollowerUIClick(x,y) {
 // target that stows the weapon, so there is a way out that does not require
 // finding an enemy to long-press again.
 function drawAmmoChip() {
-    const w = 128, h = 26;
+    const big = dockHasMenus(), w = big ? 200 : 150, h = big ? 40 : 32;
     // Centred, but never overlapping the follower panel on the left — on a
-    // phone-width screen a centred chip lands right on top of it.
+    // phone-width screen a centred chip lands right on top of it. Above the dock where there is one.
     const x = Math.round(Math.max(canvas.width / 2 - w / 2, _UI_X + _UI_W + 12));
-    const y = Math.round(canvas.height - 40 - (SAFE_BOTTOM || 0));
+    const y = dockHasMenus() ? Math.round(uiBottomSafe() - h) : Math.round(canvas.height - 56 - (SAFE_BOTTOM || 0));
     _ATKCHIP.x = x; _ATKCHIP.y = y; _ATKCHIP.w = w; _ATKCHIP.h = h;
 
     const armed = playerAttackMode;
@@ -1158,18 +1050,8 @@ function drawAmmoChip() {
 
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle   = armed ? `rgba(40,16,6,${0.88})` : "rgba(8,14,12,0.72)";
-    ctx.strokeStyle = armed ? (dry ? "#f55" : `rgba(255,140,60,${0.55 + pulse * 0.45})`)
-                            : "rgba(90,110,100,0.55)";
-    ctx.lineWidth = armed ? 2 : 1;
-    _epRoundRect(x, y, w, h, 6);
-    ctx.fill(); ctx.stroke();
-
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.font = "bold 10px monospace";
-    ctx.fillStyle = armed ? (dry ? "#f66" : "#ffb070") : "rgba(140,160,150,0.8)";
-    ctx.fillText(armed ? (dry ? "NO AMMO — TAP TO STOW" : "ARMED  ◆ " + playerAmmo)
-                       : "AMMO  ◆ " + playerAmmo,
-                 x + w / 2, y + h / 2);
+    const col = armed ? (dry ? UI_RED : "#ff9a3c") : "#6a7aa0";
+    ctx.globalAlpha = armed ? 0.7 + pulse * 0.3 : 0.85;
+    uiButton({ x, y, w, h }, armed ? (dry ? "NO AMMO \u2014 STOW" : "ARMED \u25c6 " + playerAmmo) : "AMMO \u25c6 " + playerAmmo, col, armed && !dry, big ? 18 : 14);
     ctx.restore();
 }

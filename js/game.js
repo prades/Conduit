@@ -4551,7 +4551,7 @@ function render() {
     // The clone bay first, then its button over it, so the button that
     // opened the bay (and closes it) is never dimmed by the bay's backdrop.
     drawCloneMenu();
-    drawClonesBlob();
+    if (!dockHasMenus()) drawClonesBlob();
     drawRadialMenu();
     drawCrystalPanel();
     drawGestureFeedback();
@@ -4560,10 +4560,9 @@ function render() {
     drawElementPicker();
     drawPylonConfirm();
     drawInfoPanel();
-    drawShopButton();
-    drawCampButton();
+    if (!dockHasMenus()) { drawShopButton(); drawCampButton(); }
     drawAmmoChip();
-    drawSettingsButton();
+    if (!dockHasMenus()) drawSettingsButton();
     if (!(typeof indexReplaced === "function" && indexReplaced())) drawFollowerDutyMenu();
     drawSettingsPanel();
     drawCampMenu();

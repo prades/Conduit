@@ -182,36 +182,30 @@ let _cloneBayFlash = null;
 // It used to be a tab inside the Crystal panel (and a second, simpler copy
 // here). Now it is one panel, opened ONLY from the DNA button on the HUD
 // (drawClonesBlob), showing the full clone bay: sort, scroll, cap, DISMISS.
-function _cloneBayGeometry() {
-    const PW = Math.min(430, canvas.width - 12);
+// One box for both panels (the Crystal and the Clone Bay): the tab bar on top, the content under it, between the HUD plates and the dock.
+function _panelBox() {
+    const PW = Math.min(660, canvas.width - 12);
     const PX = Math.round((canvas.width - PW) / 2);
-    const PY = 110, barH = 36, closeW = 34;
-    const contentY = PY + barH;
-    const contentH = Math.min(canvas.height - contentY - 8, 510);
-    return { PX, PY, PW, barH, closeW, closeX: PX + PW - closeW, contentY, contentH };
+    const PY = uiTopSafe(), tabH = 58, closeW = 64;
+    const contentY = PY + tabH;
+    const contentH = Math.max(120, Math.min(uiBottomSafe() - contentY, 600));
+    return { PX, PY, PW, tabH, closeW, contentY, contentH };
+}
+function _cloneBayGeometry() {
+    const g = _panelBox();
+    return { PX: g.PX, PY: g.PY, PW: g.PW, barH: g.tabH, closeW: g.closeW, closeX: g.PX + g.PW - g.closeW, contentY: g.contentY, contentH: g.contentH };
 }
 function drawCloneMenu() {
     if (!cloneMenuOpen) return;
     const g = _cloneBayGeometry();
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-    ctx.fillStyle = "rgba(1,0,7,0.92)";
-    ctx.fillRect(0, g.PY - 4, canvas.width, canvas.height - (g.PY - 4));
-    // Title bar
-    ctx.fillStyle = "rgba(0,40,30,0.75)"; ctx.fillRect(g.PX, g.PY, g.PW - g.closeW, g.barH);
-    ctx.fillStyle = "#00ccaa"; ctx.fillRect(g.PX + 1, g.PY + g.barH - 3, g.PW - g.closeW - 2, 3);
-    ctx.font = "bold 12px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    // The last summon, for a moment, in place of the title (the bay stays open).
+    uiBackdrop(0.78);
+    uiPanel(g.PX, g.PY, g.PW, g.barH + g.contentH, UI_TEAL);
+    // Title bar: the last summon, for a moment, in place of the title (the bay stays open).
     const _fl = _cloneBayFlash && (frame || 0) < _cloneBayFlash.until ? _cloneBayFlash : null;
-    ctx.fillStyle = _fl ? _fl.color : "#e8fff8";
-    ctx.fillText(_fl ? _fl.text + "  \u00b7  " + actors.filter(a => a.isClone && !a.dead).length + "/" + MAX_CLONES : "\u2687 CLONE BAY", g.PX + (g.PW - g.closeW) / 2, g.PY + g.barH / 2);
-    // Close
-    ctx.fillStyle = "rgba(55,0,0,0.65)"; ctx.fillRect(g.closeX, g.PY, g.closeW, g.barH);
-    ctx.strokeStyle = "#310"; ctx.lineWidth = 1; ctx.strokeRect(g.closeX, g.PY, g.closeW, g.barH);
-    ctx.fillStyle = "#f33"; ctx.font = "bold 16px monospace";
-    ctx.fillText("\u00d7", g.closeX + g.closeW / 2, g.PY + g.barH / 2);
-    // Content
-    ctx.fillStyle = "rgba(4,2,14,0.98)"; ctx.fillRect(g.PX, g.contentY, g.PW, g.contentH);
-    ctx.strokeStyle = "#141428"; ctx.strokeRect(g.PX, g.contentY, g.PW, g.contentH);
+    const title = _fl ? _fl.text + "  \u00b7  " + actors.filter(a => a.isClone && !a.dead).length + "/" + MAX_CLONES : "CLONE BAY";
+    uiTextFit(title, g.PX + 28, g.PY + g.barH / 2 + 2, 30, _fl ? _fl.color : UI_TEAL, "left", g.PW - g.closeW - 50);
+    uiButton({ x: g.closeX, y: g.PY + 8, w: g.closeW - 10, h: g.barH - 16 }, "\u2715", UI_RED, false, 24);
     ctx.save();
     ctx.beginPath(); ctx.rect(g.PX + 1, g.contentY + 1, g.PW - 2, g.contentH - 2); ctx.clip();
     _drawClonesTab(g.PX, g.contentY, g.PW, g.contentH);
@@ -646,10 +640,8 @@ let _crystalScrollY  = 0;                   // clone list scroll offset (px)
 // Tab definitions
 const CTABS = [
     { id:"modulation", label:"MODULATION", color:"#aaddff" },
-    { id:"status",     label:"STATUS",     color:"#4499ff" },
     { id:"info",       label:"INFO",       color:"#ffcc44" },
     { id:"recruit",    label:"RECRUIT",    color:"#0f8"    },
-    { id:"craft",      label:"CRAFT",      color:"#ff9944" },
 ];
 const CSORTS = [
     { id:"species",  label:"SPECIES"  },
@@ -758,18 +750,19 @@ function drawModulationSwatches(x, y, cell, gap, showLabels) {
         const sx = x + i * (cell + gap);
         const on = modulationIncludes(el.id);
         const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.06 + i * 0.9);
-        ctx.fillStyle = on ? el.color : "#10141c";
+        ctx.fillStyle = on ? el.color : "#0c1224";
         ctx.globalAlpha = on ? 0.55 + pulse * 0.45 : 1;
         ctx.fillRect(sx, y, cell, cell);
         ctx.globalAlpha = 1;
-        ctx.strokeStyle = on ? "#ffffff" : el.color + "55";
-        ctx.lineWidth = on ? 1.6 : 1;
+        if (on) { ctx.strokeStyle = el.color; ctx.globalAlpha = 0.25; ctx.lineWidth = 7; ctx.strokeRect(sx, y, cell, cell); ctx.globalAlpha = 1; }
+        ctx.strokeStyle = on ? "#ffffff" : el.color + "88";
+        ctx.lineWidth = on ? 3 : 2;
         ctx.strokeRect(sx + 0.5, y + 0.5, cell - 1, cell - 1);
         if (showLabels) {
-            ctx.fillStyle = on ? el.color : "#39404e";
-            ctx.font = "bold 7px monospace";
+            ctx.fillStyle = on ? el.color : "#6a7aa0";
+            ctx.font = uiMono(Math.max(11, Math.min(14, Math.round(cell * 0.28))));
             ctx.textAlign = "center"; ctx.textBaseline = "top";
-            ctx.fillText(el.label.slice(0, 3).toUpperCase(), sx + cell / 2, y + cell + 3);
+            ctx.fillText(el.label.slice(0, 3).toUpperCase(), sx + cell / 2, y + cell + 5);
         }
         rects.push({ id: el.id, x: sx, y, w: cell, h: cell });
     });
@@ -914,15 +907,10 @@ function _draw2DCrystal(cx, cy, R, color) {
 function drawCrystalPanel() {
     if (!crystalMenuOpen) return;
 
-    const PW  = Math.min(430, canvas.width - 12);
-    const PX  = Math.round((canvas.width - PW) / 2);
-    const PY  = 110;
-    const tabH = 36;
-    const closeW = 34;
+    const bx = _panelBox();
+    const { PX, PY, PW, tabH, closeW, contentY, contentH } = bx;
     const tabAreaW = PW - closeW;
     const tabW = Math.floor(tabAreaW / CTABS.length);
-    const contentY = PY + tabH;
-    const contentH = Math.min(canvas.height - contentY - 8, 510);
 
     // Advance modulation blink
     const scheme = _getModScheme();
@@ -932,46 +920,24 @@ function drawCrystalPanel() {
     const cycleColor = scheme.colors[cycleIdx] || "#888";
 
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-
-    // Semi-transparent overlay below top HUD
-    ctx.fillStyle = "rgba(1,0,7,0.92)";
-    ctx.fillRect(0, PY - 4, canvas.width, canvas.height - (PY - 4));
+    uiBackdrop(0.78);
+    const cur = CTABS.find(t => t.id === crystalMenuTab) || CTABS[0];
+    uiPanel(PX, PY, PW, tabH + contentH, cur.color);
 
     // ── Tab bar ───────────────────────────────────────────
-    CTABS.forEach((tab, i) => {
-        const tx = PX + i*tabW, ty = PY;
-        const act = crystalMenuTab === tab.id;
-        ctx.fillStyle = act ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.45)";
-        ctx.fillRect(tx, ty, tabW, tabH);
-        if (act) { ctx.fillStyle=tab.color; ctx.fillRect(tx+1, ty+tabH-3, tabW-2, 3); }
-        ctx.strokeStyle = act ? tab.color+"66" : "#1e1e30"; ctx.lineWidth=1;
-        ctx.strokeRect(tx, ty, tabW, tabH);
-        ctx.fillStyle = act ? "#fff" : "#4a5060";
-        ctx.font = `bold ${Math.min(9,Math.floor(tabW/6.2))}px monospace`;
-        ctx.textAlign="center"; ctx.textBaseline="middle";
-        ctx.fillText(tab.label, tx+tabW/2, ty+tabH/2);
-    });
-
+    CTABS.forEach((tab, i) => uiButton({ x: PX + i*tabW + 4, y: PY + 8, w: tabW - 6, h: tabH - 14 }, tab.label, tab.color, crystalMenuTab === tab.id, 15));
     // Close button
     const cx2 = PX + tabAreaW;
-    ctx.fillStyle="rgba(55,0,0,0.65)"; ctx.fillRect(cx2, PY, closeW, tabH);
-    ctx.strokeStyle="#310"; ctx.lineWidth=1; ctx.strokeRect(cx2, PY, closeW, tabH);
-    ctx.fillStyle="#f33"; ctx.font="bold 16px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText("×", cx2+closeW/2, PY+tabH/2);
+    uiButton({ x: cx2 + 4, y: PY + 8, w: closeW - 10, h: tabH - 14 }, "\u2715", UI_RED, false, 22);
 
     // ── Content area ──────────────────────────────────────
-    ctx.fillStyle="rgba(4,2,14,0.98)"; ctx.fillRect(PX, contentY, PW, contentH);
-    ctx.strokeStyle="#141428"; ctx.lineWidth=1; ctx.strokeRect(PX, contentY, PW, contentH);
-
     ctx.save();
     ctx.beginPath(); ctx.rect(PX+1, contentY+1, PW-2, contentH-2); ctx.clip();
 
     switch(crystalMenuTab) {
         case "modulation": _drawModTab(PX, contentY, PW, contentH, scheme, cycleColor); break;
-        case "status":     _drawStatusTab(PX, contentY, PW, contentH); break;
         case "info":       _drawInfoTab(PX, contentY, PW, contentH); break;
         case "recruit":    _drawRecruitTab(PX, contentY, PW, contentH); break;
-        case "craft":      _drawCraftTab(PX, contentY, PW, contentH); break;
     }
     ctx.restore();
     ctx.restore();
@@ -981,53 +947,31 @@ function drawCrystalPanel() {
 
 // ── Tab: Clone Bay ────────────────────────────────────────
 function _drawClonesTab(PX, PY, PW, PH) {
-    const sortH = 28;
-    const sortW = Math.floor(PW / CSORTS.length);
-    CSORTS.forEach((s, i) => {
-        const tx=PX+i*sortW, ty=PY;
-        const act = crystalCloneSort === s.id;
-        ctx.fillStyle = act ? "rgba(0,204,170,0.11)" : "rgba(0,0,0,0)";
-        ctx.fillRect(tx, ty, sortW, sortH);
-        if (act) { ctx.fillStyle="#00ccaa"; ctx.fillRect(tx+1, ty+sortH-2, sortW-2, 2); }
-        ctx.strokeStyle = act ? "#00ccaa66" : "#1c1c2a"; ctx.lineWidth=1; ctx.strokeRect(tx, ty, sortW, sortH);
-        ctx.fillStyle = act ? "#00ccaa" : "#3a4055";
-        ctx.font=`bold ${Math.min(9,Math.floor(sortW/5.5))}px monospace`;
-        ctx.textAlign="center"; ctx.textBaseline="middle";
-        ctx.fillText(s.label, tx+sortW/2, ty+sortH/2);
-    });
+    const sortH = 44, sortW = Math.floor(PW / CSORTS.length);
+    CSORTS.forEach((s, i) => uiButton({ x: PX + i * sortW + 4, y: PY + 2, w: sortW - 6, h: sortH - 6 }, s.label, UI_TEAL, crystalCloneSort === s.id, 15));
 
     // Clone cap indicator
     const liveClones = actors.filter(a => a.isClone && !a.dead).length;
-    const capY = PY + sortH + 4;
     const capAtMax = liveClones >= MAX_CLONES;
-    ctx.fillStyle = capAtMax ? "#ff4444" : "#3a5040";
-    ctx.font = "bold 9px monospace"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
-    ctx.fillText(`CLONES: ${liveClones}/${MAX_CLONES}`, PX+PW-8, capY+10);
+    const hdrY = PY + sortH + 4, hdrH = 40;
+    uiText("CLONES " + liveClones + "/" + MAX_CLONES, PX + 22, hdrY + hdrH / 2, 22, capAtMax ? UI_RED : "#fff", "left", false);
     // DISMISS — the only way to free a slot. Clones persist across waves, so
     // without this the cap filled once and stayed full for the rest of the
     // game, which is what made the whole menu look broken.
     if (liveClones > 0) {
-        const dw=54, dh=14, dx=PX+PW-8-dw-74, dy=capY-2;
-        ctx.fillStyle = capAtMax ? "#3a2030" : "#1c2028";
-        ctx.fillRect(dx,dy,dw,dh);
-        ctx.strokeStyle = capAtMax ? "#cc5577" : "#3a4055"; ctx.lineWidth=1;
-        ctx.strokeRect(dx,dy,dw,dh);
-        ctx.fillStyle = capAtMax ? "#ffaacc" : "#66708a";
-        ctx.font="bold 8px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
-        ctx.fillText("DISMISS", dx+dw/2, dy+dh/2);
-        window._cloneDismissBtn = { x:dx, y:dy, w:dw, h:dh };
-        ctx.textAlign="right"; ctx.textBaseline="alphabetic";
+        const dw = 140, dh = 34, dx = PX + PW - 22 - dw, dy = hdrY + (hdrH - dh) / 2;
+        uiButton({ x: dx, y: dy, w: dw, h: dh }, "DISMISS", capAtMax ? UI_RED : "#6a7aa0", capAtMax, 16);
+        window._cloneDismissBtn = { x: dx, y: dy, w: dw, h: dh };
     } else { window._cloneDismissBtn = null; }
 
-    const listY = PY + sortH + 18;
-    const listH = PH - sortH - 18;
+    const listY = hdrY + hdrH + 2;
+    const listH = PH - (listY - PY);
     const opts  = _sortedCloneOptions(getCloneOptions(), crystalCloneSort);
-    const rowH  = 54;
+    const rowH  = 92;
 
     if (opts.length === 0) {
-        ctx.fillStyle="#3a4055"; ctx.font="11px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
         const msg = capAtMax ? `Clone cap reached (${MAX_CLONES}/${MAX_CLONES})` : crystalCloneSort==="specials" ? "No clones with special attacks" : "No DNA splices available";
-        ctx.fillText(msg, PX+PW/2, listY+listH/2);
+        uiText(msg, PX + PW / 2, listY + listH / 2, 22, "#6a7aa0", "center", false);
         return;
     }
 
@@ -1044,83 +988,60 @@ function _drawClonesTab(PX, PY, PW, PH) {
         // buttons you could not see and could still press, buying a clone you
         // never chose. Bounds are only recorded when the button itself is
         // wholly inside the band.
-        const btnTop = rowY + 10, btnBot = rowY + 34;
-        const btnVisible = btnTop >= listY && btnBot <= listY + listH;
+        const bw = 132, bh = 48, bx = PX + PW - 24 - bw, by2 = rowY + (rowH - bh) / 2;
+        const btnVisible = by2 >= listY && by2 + bh <= listY + listH;
         const sd = SPECIES[opt.speciesName];
         const cl = SPECIES[opt.speciesName]?.[opt.className];
 
-        ctx.fillStyle = opt.ready ? "rgba(0,255,136,0.05)" : "rgba(255,255,255,0.015)";
-        ctx.fillRect(PX+5, rowY+2, PW-10, rowH-4);
-        ctx.strokeStyle = opt.ready ? "#0f844" : "#1c1c2a"; ctx.lineWidth=opt.ready?1:0.5;
-        ctx.strokeRect(PX+5, rowY+2, PW-10, rowH-4);
-
-        ctx.fillStyle=sd.color; ctx.beginPath(); ctx.arc(PX+19, rowY+rowH/2-2, 7, 0, Math.PI*2); ctx.fill();
-
-        ctx.fillStyle=opt.ready?"#ddeedd":"#5a6070"; ctx.font="bold 11px monospace"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
-        ctx.fillText(opt.speciesName.toUpperCase()+" "+opt.className.toUpperCase(), PX+32, rowY+17);
+        uiSlab(PX + 12, rowY + 4, PW - 24, rowH - 8, opt.ready ? sd.color : "#2c3656", false, opt.ready ? "#13203a" : "#0c1224");
+        ctx.fillStyle = sd.color; ctx.fillRect(PX + 16, rowY + 12, 6, rowH - 24);
+        const nameMax = bx - (PX + 40) - 10;
+        uiTextFit(opt.speciesName.toUpperCase()+" "+opt.className.toUpperCase(), PX + 40, rowY + 24, 24, opt.ready ? "#fff" : "#6a7aa0", "left", nameMax);
 
         if (cl) {
-            ctx.fillStyle="#3a4a50"; ctx.font="9px monospace";
-            const parts=[`PWR:${cl.power||"?"}`, `HP:${cl.health||"?"}`];
+            const parts=[`PWR ${cl.power||"?"}`, `HP ${cl.health||"?"}`];
             if (cl.abdomenAttack||(cl.rangeDamage&&cl.rangeDamage>0)) {
-                if (opt.speciesName === "spider")  parts.push("◈ WEB SHOT");
-                else if (opt.speciesName === "mantis") parts.push("◈ AMBUSH");
-                else if (opt.speciesName === "moth")   parts.push("◈ DUST");
-                else parts.push("◈ SPECIAL");
+                if (opt.speciesName === "spider")  parts.push("\u25c8 WEB SHOT");
+                else if (opt.speciesName === "mantis") parts.push("\u25c8 AMBUSH");
+                else if (opt.speciesName === "moth")   parts.push("\u25c8 DUST");
+                else parts.push("\u25c8 SPECIAL");
             }
-            ctx.fillText(parts.join("  "), PX+32, rowY+30);
+            uiCaption(parts.join("   "), PX + 40, rowY + 46, "#8aa0c8", "left", 14);
         }
 
-        const prog = Math.min(1, opt.have/opt.needed);
-        ctx.fillStyle="#0a0c10"; ctx.fillRect(PX+32, rowY+35, 120, 6);
-        ctx.fillStyle=opt.ready?"#0f8":sd.color; ctx.fillRect(PX+32, rowY+35, 120*prog, 6);
-        ctx.fillStyle="#3a4055"; ctx.font="9px monospace"; ctx.textBaseline="alphabetic";
-        ctx.fillText(`${opt.have}/${opt.needed} splices`, PX+32, rowY+50);
-        ctx.fillStyle = shardCount >= opt.shardCost ? "#ffee44" : "#775533";
-        ctx.textAlign="right";
-        ctx.fillText(`${opt.shardCost}✦`, PX+PW-54, rowY+50);
+        const prog = Math.min(1, opt.have/opt.needed), barW = Math.min(170, nameMax - 90);
+        ctx.fillStyle = "#05070f"; ctx.fillRect(PX + 40, rowY + 61, barW, 10);
+        ctx.fillStyle = opt.ready ? UI_TEAL : sd.color; ctx.fillRect(PX + 40, rowY + 61, barW * prog, 10);
+        ctx.strokeStyle = opt.ready ? UI_TEAL : "#2c3656"; ctx.lineWidth = 1.5; ctx.strokeRect(PX + 40, rowY + 61, barW, 10);
+        uiCaption(`${opt.have}/${opt.needed}`, PX + 40 + barW + 10, rowY + 66, "#8aa0c8", "left", 14);
+        uiCaption(`${opt.shardCost}\u2726`, bx + bw / 2, rowY + rowH - 9, shardCount >= opt.shardCost ? UI_GOLD : "#8a6a44", "center", 14);
 
         if (opt.ready) {
-            const bx=PX+PW-72, by2=rowY+10, bw=62, bh=24;
-            ctx.fillStyle="#0f8"; ctx.fillRect(bx,by2,bw,bh);
-            ctx.fillStyle="#001a0a"; ctx.font="bold 10px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
-            ctx.fillText("CLONE", bx+bw/2, by2+bh/2);
-            if (btnVisible) { opt._bx=bx; opt._by=by2; opt._bw=bw; opt._bh=bh; }
+            uiButton({ x: bx, y: by2, w: bw, h: bh - 8 }, "CLONE", UI_TEAL, true, 22);
+            if (btnVisible) { opt._bx=bx; opt._by=by2; opt._bw=bw; opt._bh=bh - 8; }
         } else {
             // WHY NOT. A blocked row used to render dim with no button and no
             // reason, so a player with four clones already out saw three
             // affordable prices and nothing to press — "even though I have the
             // money, I'm unable to buy the clone". The blocker goes where the
             // button would have been.
-            const bx=PX+PW-72, by2=rowY+10, bw=62, bh=24;
-            ctx.fillStyle="#2a1a1a"; ctx.fillRect(bx,by2,bw,bh);
-            ctx.strokeStyle="#553344"; ctx.lineWidth=1; ctx.strokeRect(bx,by2,bw,bh);
-            ctx.fillStyle="#cc7788"; ctx.font="bold 9px monospace";
-            ctx.textAlign="center"; ctx.textBaseline="middle";
-            ctx.fillText(cloneBlockedLabel(opt), bx+bw/2, by2+bh/2);
+            uiButton({ x: bx, y: by2, w: bw, h: bh - 8 }, cloneBlockedLabel(opt), UI_RED, false, 13, null, true);
             // Tappable, so the tap can EXPLAIN. Kept separate from _bx, which
             // means "this can be bought".
-            if (btnVisible) { opt._nbx=bx; opt._nby=by2; opt._nbw=bw; opt._nbh=bh; }
+            if (btnVisible) { opt._nbx=bx; opt._nby=by2; opt._nbw=bw; opt._nbh=bh - 8; }
         }
     });
     ctx.restore();
 
     // Scroll arrows
     if (maxScroll > 0) {
-        const arrW=28, arrH=20;
-        // Up arrow
-        ctx.fillStyle=_crystalScrollY>0?"rgba(0,255,136,0.18)":"rgba(30,30,50,0.5)";
-        ctx.fillRect(PX+PW/2-arrW/2, listY+2, arrW, arrH);
-        ctx.fillStyle=_crystalScrollY>0?"#0f8":"#334"; ctx.font="11px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
-        ctx.fillText("▲", PX+PW/2, listY+12);
-        // Down arrow
-        ctx.fillStyle=_crystalScrollY<maxScroll?"rgba(0,255,136,0.18)":"rgba(30,30,50,0.5)";
-        ctx.fillRect(PX+PW/2-arrW/2, listY+listH-arrH-2, arrW, arrH);
-        ctx.fillStyle=_crystalScrollY<maxScroll?"#0f8":"#334";
-        ctx.fillText("▼", PX+PW/2, listY+listH-12);
+        const arrW=64, arrH=34;
+        const up = { x: PX + PW / 2 - arrW - 6, y: listY + listH - arrH - 6, w: arrW, h: arrH }, dn = { x: PX + PW / 2 + 6, y: listY + listH - arrH - 6, w: arrW, h: arrH };
+        uiButton(up, "\u25b2", UI_TEAL, false, 18, null, _crystalScrollY <= 0);
+        uiButton(dn, "\u25bc", UI_TEAL, false, 18, null, _crystalScrollY >= maxScroll);
         window._cloneScrollArrows={
-            upX:PX+PW/2-arrW/2, upY:listY+2, upW:arrW, upH:arrH,
-            dnX:PX+PW/2-arrW/2, dnY:listY+listH-arrH-2, dnW:arrW, dnH:arrH,
+            upX:up.x, upY:up.y, upW:up.w, upH:up.h,
+            dnX:dn.x, dnY:dn.y, dnW:dn.w, dnH:dn.h,
             rowH
         };
     } else { window._cloneScrollArrows=null; }
@@ -1156,63 +1077,59 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
     // dismiss it that did not also change the mix.
     modulationDirty = false;
     const MID = PX + PW / 2;
-    const INSET = 14;
+    const INSET = 20;
     const INNER = PW - INSET * 2;
+    // A short panel (a phone on its side) shrinks the buttons and the type, not the control.
+    const k = Math.max(0.62, Math.min(1, PH / 520));
 
     // The swatch row is the control, so it decides its own size: as big as the
     // panel allows, never wider than it. Six elements on a phone fit because
     // the cell shrinks, not because the row is allowed to overflow.
     const n = normaliseModulationMask().length;
-    const gap = n > 6 ? 5 : 8;
+    const gap = n > 6 ? 6 : 10;
     const cell = n > 0
-        ? Math.max(16, Math.min(34, Math.floor((INNER - (n - 1) * gap) / n)))
+        ? Math.max(16, Math.min(Math.round(60 * k), Math.floor((INNER - (n - 1) * gap) / n)))
         : 0;
     const rowW = n > 0 ? n * cell + (n - 1) * gap : 0;
+    const labH = Math.round(30 * k), btnH = Math.round(44 * k);
 
     // The crystal, cycling through the colours that are actually in the mix.
     // This IS the readout — there is no separate label for what it is showing.
     //
     // It takes whatever height is left once everything that has to be readable
     // has had its share, and stands down entirely when there is not enough. In
-    // landscape on a phone the panel is 236px tall, and a crystal sized off the
+    // landscape on a phone the panel is short, and a crystal sized off the
     // panel height pushed the ACTIVATE button and the footer off the bottom:
     // the one decoration on the screen was crowding out the only control.
-    const fixedH = 36                                   // mix label + caption
-                 + cell + 30                            // the swatch row + labels
-                 + 30                                   // the two help lines
+    const fixedH = labH + 22                            // mix label + caption
+                 + cell + 26                            // the swatch row + labels
+                 + 40                                   // the two help lines
                  + (pendingElements.length > 0
-                        ? 16 + _modChoices().length * 22 + 16
-                        : 16)                           // activate list, or NEXT
-                 + 18;                                  // the modulator footer
+                        ? 30 + _modChoices().length * (btnH + 8) + 12
+                        : 26)                           // activate list, or NEXT
+                 + 24;                                  // the modulator footer
     const crystR = Math.max(0, Math.min(78, Math.floor((PH - fixedH - 46) / 2)));
     const crystY = PY + 22 + crystR;
     if (crystR >= 22) _draw2DCrystal(MID, crystY, crystR, cycleColor);
 
-    let y = (crystR >= 22 ? crystY + crystR + 24 : PY + 24);
+    let y = (crystR >= 22 ? crystY + crystR + 14 : PY + 10);
 
     // What the mix is, said once.
-    ctx.fillStyle = cycleColor;
-    ctx.font = "bold 13px monospace";
-    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-    ctx.fillText(scheme.label.toUpperCase(), MID, y);
-    y += 10;
-
-    ctx.fillStyle = "#49556a"; ctx.font = "9px monospace";
-    ctx.fillText("NEW FOLLOWERS COME OUT AS", MID, y + 10);
-    y += 26;
+    uiTextFit(scheme.label.toUpperCase(), MID, y + labH / 2, Math.round(30 * k), cycleColor, "center", INNER);
+    y += labH + 6;
+    uiCaption("NEW FOLLOWERS COME OUT AS", MID, y + 6, "#8aa0c8", "center", 14);
+    y += 22;
 
     // ── The control ───────────────────────────────────────
     window._modSwatchRects = drawModulationSwatches(
         Math.round(MID - rowW / 2), y, cell, gap, true);
-    // The swatches carry a 7px label UNDER them, drawn at cell + 3, so the next
-    // line clears the label rather than the squares.
-    y += cell + 30;
+    // The swatches carry a label UNDER them, so the next line clears the
+    // label rather than the squares.
+    y += cell + 26;
 
-    ctx.fillStyle = "#49556a"; ctx.font = "9px monospace";
-    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-    ctx.fillText("Tap an element to add it to the mix or drop it.", MID, y);
-    ctx.fillText("Followers take it at the Crystal, and again on respawn.", MID, y + 12);
-    y += 30;
+    uiCaptionFit("Tap an element to add it to the mix or drop it.", MID, y + 2, "#6a7aa0", "center", 13, INNER);
+    uiCaptionFit("Followers take it at the Crystal, and again on respawn.", MID, y + 20, "#6a7aa0", "center", 13, INNER);
+    y += 40;
 
     // ── PENDING ELEMENTS — earned in the tunnel, activated here ───────────
     // This is why the player walks back. An element earned by clearing a wave
@@ -1221,84 +1138,33 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
     if (pendingElements.length > 0) {
         // An unlock is earned; WHICH element it is is the player's pick. Every element still locked is offered.
         const choices = _modChoices();
-        ctx.fillStyle = "#ffcc44"; ctx.font = "bold 9px monospace";
-        ctx.fillText(pendingElements.length > 1 ? pendingElements.length + " UNLOCKS EARNED — CHOOSE" : "UNLOCK EARNED — CHOOSE AN ELEMENT", MID, y);
-        y += 8;
-        const bw = Math.min(200, INNER);
+        uiText(pendingElements.length > 1 ? pendingElements.length + " UNLOCKS EARNED — CHOOSE" : "UNLOCK EARNED — CHOOSE AN ELEMENT", MID, y + 6, Math.round(20 * k), UI_GOLD, "center");
+        y += 30;
+        const bw = Math.min(360, INNER);
         choices.forEach((id, i) => {
             const el = ELEMENTS.find(e => e.id === id);
             const col = el ? el.color : "#888";
-            const bx = Math.round(MID - bw / 2), by = y + i * 22, bh = 18;
+            const bx = Math.round(MID - bw / 2), by = y + i * (btnH + 8), bh = btnH;
             const pulse = 0.5 + 0.5 * Math.sin(_crystalModPhase * 0.09 + i);
-            ctx.fillStyle = col + "22"; ctx.fillRect(bx, by, bw, bh);
-            ctx.strokeStyle = col; ctx.globalAlpha = 0.5 + pulse * 0.5; ctx.lineWidth = 1;
-            ctx.strokeRect(bx, by, bw, bh); ctx.globalAlpha = 1;
-            ctx.fillStyle = col; ctx.font = "bold 10px monospace";
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText("◈ UNLOCK " + (el ? el.label : id.toUpperCase()),
-                         bx + bw / 2, by + bh / 2 + 1);
-            ctx.textBaseline = "alphabetic";
+            uiSlab(bx, by, bw, bh, col, false, "#13203a");
+            ctx.globalAlpha = 0.12 + pulse * 0.2; ctx.fillStyle = col; uiSlabPath(bx, by, bw, bh); ctx.fill(); ctx.globalAlpha = 1;
+            uiTextFit("\u25c8 UNLOCK " + (el ? el.label : id.toUpperCase()), bx + bw / 2, by + bh / 2 + 1, Math.round(22 * k), "#fff", "center", bw - 24);
             window._modActivateRects.push({ id, bx, by, bw, bh });
         });
-        y += choices.length * 22 + 16;
+        y += choices.length * (btnH + 8) + 12;
     } else {
         const next = nextWaveUnlock();
-        ctx.fillStyle = "#2a3040"; ctx.font = "9px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(next
-            ? "NEXT UNLOCK: YOUR PICK — CLEAR A WAVE"
-            : "ALL ELEMENTS ONLINE · " + lifetimeKills + " kills", MID, y);
-        y += 16;
+        uiCaptionFit(next
+            ? "NEXT UNLOCK: YOUR PICK \u2014 CLEAR A WAVE"
+            : "ALL ELEMENTS ONLINE \u00b7 " + lifetimeKills + " kills", MID, y + 6, "#8aa0c8", "center", 14, INNER);
+        y += 26;
     }
 
     // A boss modulator overrides the mix for the followers it touches, so it
     // belongs on this screen — one line, at the foot, out of the way.
-    ctx.fillStyle = "#2a3040"; ctx.font = "9px monospace"; ctx.textAlign = "center";
-    if (ownedModulators.length === 0) {
-        ctx.fillText("MODULATORS: none — defeat a boss to unlock", MID, y);
-    } else {
-        ctx.fillText("MODULATORS: " + ownedModulators.map(mod =>
-            ((ELEMENTS.find(e => e.id === mod.element) || {}).label || mod.element).toUpperCase()
-        ).join(" · "), MID, y);
-    }
-}
-
-// ── Tab: Status ───────────────────────────────────────────
-function _drawStatusTab(PX, PY, PW, PH) {
-    const brawlers=followers.filter(a=>!a.dead&&a.role==="brawler").length;
-    const snipers =followers.filter(a=>!a.dead&&a.role==="sniper").length;
-    const campers =followers.filter(a=>!a.dead&&a.role==="camper").length;
-    const ghosts  =followers.filter(a=>!a.dead&&a.ghostphageLife).length;
-    ctx.fillStyle="#4499ff"; ctx.font="bold 12px monospace"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
-    ctx.fillText("COLONY STATUS", PX+PW/2, PY+22);
-    const rows=[
-        ["Total Followers", followers.filter(a=>!a.dead).length, "#0f8"],
-        ["Brawlers",  brawlers, "#f88"],
-        ["Mages",     snipers,  "#88aaff"],
-        ["Technicians", campers, "#88ff88"],
-        ["Ghosts",    ghosts,   "#aaffee"],
-        ["Wave",      gameState.nightNumber, "#aaaaaa"],
-        ["Zone Depth",activeDayZones-1, "#ffcc44"],
-    ];
-    rows.forEach((r, i) => {
-        const ry=PY+36+i*22;
-        ctx.fillStyle=i%2===0?"rgba(20,20,35,0.5)":"rgba(0,0,0,0)";
-        ctx.fillRect(PX+8, ry-13, PW-16, 20);
-        ctx.fillStyle="#445060"; ctx.font="10px monospace"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
-        ctx.fillText(r[0], PX+16, ry);
-        ctx.fillStyle=r[2]; ctx.textAlign="right";
-        ctx.fillText(r[1], PX+PW-14, ry);
-    });
-    // Element breakdown
-    const elY = PY+46+rows.length*22;
-    ctx.fillStyle="#2e3a45"; ctx.font="9px monospace"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
-    ctx.fillText("ELEMENTS:", PX+14, elY);
-    let ex3=PX+80;
-    ELEMENTS.filter(e=>unlockedElements.has(e.id)).forEach(el=>{
-        const cnt=(followerByElement[el.id]||[]).filter(a=>!a.dead).length;
-        ctx.fillStyle=el.color; ctx.fillText(`${el.label.slice(0,3)}:${cnt}`, ex3, elY);
-        ex3+=50;
-    });
+    uiCaptionFit(ownedModulators.length === 0 ? "MODULATORS: none \u2014 defeat a boss to unlock"
+        : "MODULATORS: " + ownedModulators.map(mod => ((ELEMENTS.find(e => e.id === mod.element) || {}).label || mod.element).toUpperCase()).join(" \u00b7 "),
+        MID, y + 6, "#6a7aa0", "center", 13, INNER);
 }
 
 // ── Tab: Info ─────────────────────────────────────────────
@@ -1312,62 +1178,47 @@ function _drawInfoTab(PX, PY, PW, PH) {
         {el:"toxic",   name:"Plague Bloom", desc:"4 toxic clouds on random enemies"},
     ];
     const pylons=[
-        {col:"#0f8",    text:"BUILD ("+PYLON_BUILD_COST+" shards) — place on any floor tile"},
-        {col:"#ffcc44", text:"UPGRADE — merge a follower into the pylon"},
-        {col:"#88aaff", text:"WAVE/ATTACK — toggle pylon firing mode"},
-        {col:"#ff8844", text:"RECON — send squad to reconstruct a pylon"},
-        {col:"#cc66ff", text:"Crystal slowly refills all follower ultimates"},
-        {col:"#00ffcc", text:"Deeper zone pylons = faster charge rate"},
-        {col:"#ff4444", text:"Nest pod link grants bonus charge"},
+        {col:UI_TEAL,    text:"BUILD ("+PYLON_BUILD_COST+" shards) — place on any floor tile"},
+        {col:UI_GOLD,    text:"UPGRADE — merge a follower into the pylon"},
+        {col:"#a9b8ff",  text:"WAVE/ATTACK — toggle pylon firing mode"},
+        {col:"#ff9a6a",  text:"RECON — send squad to reconstruct a pylon"},
+        {col:"#cc88ff",  text:"Crystal slowly refills all follower ultimates"},
+        {col:"#5ffbe0",  text:"Deeper zone pylons = faster charge rate"},
+        {col:"#ff7a6a",  text:"Nest pod link grants bonus charge"},
     ];
-    ctx.fillStyle="#ffcc44"; ctx.font="bold 11px monospace"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
-    ctx.fillText("ULTIMATES — double-tap follower when fully charged", PX+PW/2, PY+17);
-    ultimates.forEach((r,i)=>{
-        const ry=PY+28+i*18;
-        if (i%2===0){ctx.fillStyle="rgba(20,18,8,0.5)"; ctx.fillRect(PX+6,ry-11,PW-12,18);}
+    const rowH = Math.max(24, Math.min(40, Math.floor((PH - 120) / (ultimates.length + pylons.length + 2))));
+    let y = PY + 8;
+    uiText("ULTIMATES", PX + 28, y + 14, 24, UI_GOLD, "left");
+    uiCaption("double-tap a follower when fully charged", PX + PW - 22, y + 14, "#8aa0c8", "right", 13);
+    y += 36;
+    ultimates.forEach((r) => {
         const el=ELEMENTS.find(e=>e.id===r.el);
         const col=el?el.color:"#fff";
-        ctx.fillStyle=col; ctx.font="bold 9px monospace"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
-        ctx.fillText(r.name, PX+10, ry);
-        ctx.fillStyle="#7a8090"; ctx.font="9px monospace";
-        ctx.fillText(r.desc, PX+100, ry);
+        ctx.fillStyle = col; ctx.fillRect(PX + 18, y + 4, 5, rowH - 8);
+        uiText(r.name.toUpperCase(), PX + 34, y + rowH / 2, Math.min(18, rowH * 0.55), col, "left", false);
+        uiCaption(r.desc, PX + Math.min(210, PW * 0.34), y + rowH / 2, "#9fb0d0", "left", 13);
+        y += rowH;
     });
-    const sep=PY+28+ultimates.length*18+8;
-    ctx.strokeStyle="#2d2200"; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(PX+8,sep); ctx.lineTo(PX+PW-8,sep); ctx.stroke();
-    ctx.fillStyle="#ffaa44"; ctx.font="bold 10px monospace"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
-    ctx.fillText("PYLON GUIDE", PX+PW/2, sep+14);
-    pylons.forEach((r,i)=>{
-        const ry=sep+22+i*15;
-        ctx.fillStyle=r.col; ctx.font="9px monospace"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
-        ctx.fillText("▸ "+r.text, PX+10, ry);
+    y += 8;
+    uiText("PYLON GUIDE", PX + 28, y + 14, 24, "#ffaa44", "left");
+    y += 36;
+    pylons.forEach((r) => {
+        uiCaption("\u25b8 " + r.text, PX + 24, y + rowH / 2 - 4, r.col, "left", 14);
+        y += rowH - 6;
     });
 }
 
 // ── Tab: Recruit ──────────────────────────────────────────
 function _drawRecruitTab(PX, PY, PW, PH) {
     const canAfford = shardCount >= 30;
-    ctx.textBaseline = "middle";
-
-    // Header
-    ctx.fillStyle = "#0f8"; ctx.font = "bold 12px monospace"; ctx.textAlign = "center";
-    ctx.fillText("RECRUIT FOLLOWER", PX + PW/2, PY + 22);
-
-    ctx.fillStyle = "#777"; ctx.font = "10px monospace";
-    ctx.fillText("Spawns a follower of a random unlocked element", PX + PW/2, PY + 44);
-
-    // Shard display
-    ctx.fillStyle = canAfford ? "#ff0" : "#f44"; ctx.font = "11px monospace";
-    ctx.fillText("Shards: " + shardCount + " / 30 needed", PX + PW/2, PY + 68);
+    uiText("RECRUIT FOLLOWER", PX + PW / 2, PY + 40, 32, UI_TEAL, "center");
+    uiCaption("Spawns a follower of a random unlocked element", PX + PW / 2, PY + 78, "#8aa0c8", "center", 14);
+    uiText("SHARDS  " + shardCount + " / 30", PX + PW / 2, PY + 118, 26, canAfford ? UI_GOLD : UI_RED, "center");
 
     // Button
-    const btnY = PY + 88, btnH = 36;
-    window._recruitBtnBounds = { x: PX + 20, y: btnY, w: PW - 40, h: btnH };
-    ctx.fillStyle = canAfford ? "rgba(0,60,20,0.95)" : "rgba(20,20,20,0.9)";
-    ctx.strokeStyle = canAfford ? "#0f8" : "#444"; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(PX + 20, btnY, PW - 40, btnH, 6); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = canAfford ? "#0f8" : "#555"; ctx.font = "bold 13px monospace"; ctx.textAlign = "center";
-    ctx.fillText("SPAWN FOLLOWER — 30 SHARDS", PX + PW/2, btnY + btnH/2);
+    const btnY = PY + 152, btnH = 70;
+    window._recruitBtnBounds = { x: PX + 28, y: btnY, w: PW - 56, h: btnH };
+    uiButton(window._recruitBtnBounds, "SPAWN FOLLOWER \u2014 30 SHARDS", UI_TEAL, canAfford, 26, null, !canAfford);
 }
 
 // Every element still locked, in the ladder's order: what an earned unlock can be spent on (js/wavedata.js activatePendingElement).
@@ -1438,125 +1289,5 @@ function handleCrystalPanelInput(ex, ey, isDown) {
         }
     }
 
-    if (crystalMenuTab==="craft" && isDown) {
-        const cb = window._craftBtnBounds;
-        if (cb) {
-            if (cb.craft && ex>=cb.craft.x && ex<=cb.craft.x+cb.craft.w && ey>=cb.craft.y && ey<=cb.craft.y+cb.craft.h) {
-                if (shardCount >= HEALTH_PAD_CRAFT_COST) {
-                    shardCount -= HEALTH_PAD_CRAFT_COST; saveShards();
-                    healthPads.push({ charges: HEALTH_PAD_MAX_CHARGES });
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"HEALTH PAD CRAFTED",color:"#ff9944",life:100,vy:-0.2});
-                } else {
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:`NEED ${HEALTH_PAD_CRAFT_COST} SHARDS`,color:"#f44",life:90,vy:-0.2});
-                }
-                return true;
-            }
-            if (cb.use && ex>=cb.use.x && ex<=cb.use.x+cb.use.w && ey>=cb.use.y && ey<=cb.use.y+cb.use.h) {
-                if (healthPads.length > 0 && health < PLAYER_HITS) {
-                    const pad = healthPads[0];
-                    health = Math.min(PLAYER_HITS, health + HEALTH_PAD_HEAL);
-                    pad.charges--;
-                    if (pad.charges <= 0) healthPads.shift();
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:`+${HEALTH_PAD_HEAL} HIT`,color:"#ff9944",life:100,vy:-0.2});
-                } else if (health >= PLAYER_HITS) {
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"ALL HITS LEFT",color:"#888",life:60,vy:-0.2});
-                } else {
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NO HEALTH PADS",color:"#f44",life:90,vy:-0.2});
-                }
-                return true;
-            }
-        }
-    }
-
     return true;
-}
-
-// ── Tab: Craft ─────────────────────────────────────────────
-function _drawCraftTab(PX, PY, PW, PH) {
-    const pad  = 14;
-    let   cy   = PY + pad;
-    const col  = "#ff9944";
-
-    ctx.font = "bold 12px monospace"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-
-    // ── Section: Health Pad ───────────────────────────────
-    ctx.fillStyle = col;
-    ctx.fillText("◈  HEALTH PAD", PX + pad, cy + 14);
-    cy += 24;
-
-    // Recipe info box
-    ctx.fillStyle = "rgba(255,153,68,0.07)";
-    ctx.fillRect(PX+pad, cy, PW-pad*2, 54);
-    ctx.strokeStyle = "rgba(255,153,68,0.25)"; ctx.lineWidth = 1;
-    ctx.strokeRect(PX+pad, cy, PW-pad*2, 54);
-
-    ctx.fillStyle = "#ccc"; ctx.font = "11px monospace";
-    ctx.fillText(`Recipe:  ${HEALTH_PAD_CRAFT_COST} Shards`, PX + pad + 8, cy + 16);
-    ctx.fillText(`Output:  1 pad  (${HEALTH_PAD_MAX_CHARGES} charges)`, PX + pad + 8, cy + 32);
-    ctx.fillText(`Effect:  +${HEALTH_PAD_HEAL} hit per charge`, PX + pad + 8, cy + 48);
-    cy += 62;
-
-    // Inventory display
-    ctx.fillStyle = "#aaa"; ctx.font = "11px monospace";
-    const totalCharges = healthPads.reduce((s,p) => s+p.charges, 0);
-    ctx.fillText(`Inventory: ${healthPads.length} pad${healthPads.length!==1?"s":""} — ${totalCharges} charge${totalCharges!==1?"s":""} remaining`, PX+pad, cy+13);
-    cy += 22;
-
-    // Individual pad charge bars
-    if (healthPads.length > 0) {
-        const barW = Math.floor((PW - pad*2 - (healthPads.length-1)*4) / Math.min(healthPads.length, 8));
-        healthPads.slice(0, 8).forEach((p, i) => {
-            const bx = PX + pad + i * (barW + 4);
-            const by = cy + 2;
-            const bh = 16;
-            const fill = p.charges / HEALTH_PAD_MAX_CHARGES;
-            ctx.fillStyle = "rgba(255,153,68,0.15)";
-            ctx.fillRect(bx, by, barW, bh);
-            ctx.fillStyle = fill > 0.66 ? "#ff9944" : fill > 0.33 ? "#ffcc44" : "#ff4444";
-            ctx.fillRect(bx, by, Math.round(barW * fill), bh);
-            ctx.strokeStyle = "rgba(255,153,68,0.4)"; ctx.lineWidth = 1;
-            ctx.strokeRect(bx, by, barW, bh);
-            ctx.fillStyle = "#fff"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
-            ctx.fillText(p.charges, bx + barW/2, by + bh - 3);
-            ctx.textAlign = "left";
-        });
-        if (healthPads.length > 8) {
-            ctx.fillStyle="#888"; ctx.font="10px monospace"; ctx.textAlign="center";
-            ctx.fillText(`+${healthPads.length-8} more`, PX+PW/2, cy+28);
-            ctx.textAlign="left";
-        }
-        cy += 28;
-    }
-    cy += 14;
-
-    // ── Buttons ───────────────────────────────────────────
-    const btnH = 36, btnW = Math.floor((PW - pad*2 - 8) / 2);
-    const canCraft = shardCount >= HEALTH_PAD_CRAFT_COST;
-    const canUse   = healthPads.length > 0 && health < PLAYER_HITS;
-
-    // CRAFT button
-    const craftX = PX + pad, craftY = cy;
-    ctx.fillStyle = canCraft ? "rgba(255,153,68,0.22)" : "rgba(60,40,20,0.5)";
-    ctx.fillRect(craftX, craftY, btnW, btnH);
-    ctx.strokeStyle = canCraft ? col : "#442200"; ctx.lineWidth = canCraft ? 2 : 1;
-    ctx.strokeRect(craftX, craftY, btnW, btnH);
-    ctx.fillStyle = canCraft ? col : "#664422";
-    ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(`CRAFT  (${HEALTH_PAD_CRAFT_COST}◈)`, craftX + btnW/2, craftY + btnH/2);
-
-    // USE button
-    const useX = PX + pad + btnW + 8, useY = cy;
-    ctx.fillStyle = canUse ? "rgba(68,255,136,0.15)" : "rgba(20,40,20,0.5)";
-    ctx.fillRect(useX, useY, btnW, btnH);
-    ctx.strokeStyle = canUse ? "#0f8" : "#133"; ctx.lineWidth = canUse ? 2 : 1;
-    ctx.strokeRect(useX, useY, btnW, btnH);
-    ctx.fillStyle = canUse ? "#0f8" : "#2a5530";
-    ctx.fillText("USE PAD", useX + btnW/2, useY + btnH/2);
-
-    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-
-    window._craftBtnBounds = {
-        craft: { x:craftX, y:craftY, w:btnW, h:btnH },
-        use:   { x:useX,   y:useY,   w:btnW, h:btnH }
-    };
 }

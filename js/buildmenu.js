@@ -61,7 +61,7 @@ const BUILD_LEVELS = {
     wave:    ["PYLON", "MK II", "FORMATION 2\u00d72"],
     power:   ["\u00d71", "POD \u00d74", "POD \u00d76"],
 };
-const _BM_LVL = 22;
+const _BM_LVL = 44;
 
 const BUILD_MENU_TABS = [
     { id: "turrets", label: "TURRETS" },
@@ -69,7 +69,8 @@ const BUILD_MENU_TABS = [
     { id: "power",   label: "POWER" },
     { id: "modules", label: "MODULES" },
 ];
-const _BM_CELL = 56, _BM_GAP = 6, _BM_HEAD = 26, _BM_TABS = 22, _BM_STATUS = 20;
+// Big slabs (js/uikit.js): the cell is the picture, the name and the price; nothing is smaller than 12px.
+const _BM_CELL_W = 104, _BM_CELL_H = 108, _BM_GAP = 10, _BM_HEAD = 60, _BM_TABS = 48, _BM_STATUS = 38, _BM_PAD = 14;
 const _CAMP_ICON = { command_node: "tier", dna_sequencer: "clone", fabricator: "worker",
                      power_conduit: "power", signal_relay: "connector", repair_station: "shield" };
 
@@ -352,30 +353,33 @@ function _bmLayout() {
     // On a narrow screen the right-hand column of round buttons (SET, SHOP …)
     // and the TUTORIAL button at the bottom stay clear of it.
     const narrow = canvas.width < 600;
-    const W = Math.min(canvas.width - (narrow ? 70 : 16), 480);
-    const cols = Math.max(3, Math.floor((W - _BM_GAP) / (_BM_CELL + _BM_GAP)));
+    const W = Math.min(canvas.width - (narrow ? 70 : 16), 660);
+    const cw = narrow ? 84 : _BM_CELL_W, ch = narrow ? 96 : _BM_CELL_H;
+    const cols = Math.max(3, Math.floor((W - _BM_PAD * 2 + _BM_GAP) / (cw + _BM_GAP)));
     const items = buildMenuItems(buildMenuTab);
     const rows = Math.max(1, Math.ceil(items.length / cols));
-    const gridH = rows * (_BM_CELL + _BM_GAP) + _BM_GAP;
+    const gridH = rows * (ch + _BM_GAP) + _BM_GAP;
     const hasLv = !!BUILD_LEVELS[buildMenuTab];
     const H = buildMenuMin ? _BM_HEAD : _BM_HEAD + _BM_TABS + (hasLv ? _BM_LVL : 0) + gridH + _BM_STATUS;
     const x = narrow ? 8 : Math.round((canvas.width - W) / 2);
-    const y = Math.round(canvas.height - (typeof SAFE_BOTTOM !== "undefined" ? SAFE_BOTTOM : 0) - (narrow ? 72 : 48) - H);
-    const head = { close: { x: x + W - 26, y: y + 3, w: 22, h: 20 },
-                   min:   { x: x + W - 52, y: y + 3, w: 22, h: 20 },
-                   demo:  { x: x + W - 140, y: y + 3, w: 84, h: 20 } };
+    const bottom = narrow ? canvas.height - (typeof SAFE_BOTTOM !== "undefined" ? SAFE_BOTTOM : 0) - 72 : uiBottomSafe();
+    const y = Math.round(bottom - H);
+    const bh = 40, by = y + (_BM_HEAD - bh) / 2;
+    const head = { close: { x: x + W - 56, y: by, w: 46, h: bh },
+                   min:   { x: x + W - 108, y: by, w: 46, h: bh },
+                   demo:  { x: x + W - 108 - 8 - (narrow ? 96 : 150), y: by, w: narrow ? 96 : 150, h: bh } };
     const tabs = [], cells = [], levels = [];
     const lvH = hasLv ? _BM_LVL : 0;
     if (!buildMenuMin) {
         if (hasLv) {
-            const lw = (W - 70) / 3;
-            BUILD_LEVELS[buildMenuTab].forEach((label, i) => levels.push({ n: i + 1, label, x: x + 64 + i * lw, y: y + _BM_HEAD + _BM_TABS, w: lw - 4, h: _BM_LVL - 4 }));
+            const lw = (W - _BM_PAD * 2 - 80) / 3;
+            BUILD_LEVELS[buildMenuTab].forEach((label, i) => levels.push({ n: i + 1, label, x: x + _BM_PAD + 80 + i * lw, y: y + _BM_HEAD + _BM_TABS + 2, w: lw - 6, h: _BM_LVL - 6 }));
         }
-        const tw = (W - 12) / BUILD_MENU_TABS.length;
-        BUILD_MENU_TABS.forEach((tb, i) => tabs.push({ tab: tb, x: x + 6 + i * tw, y: y + _BM_HEAD, w: tw - 2, h: _BM_TABS - 2 }));
-        const gx0 = x + Math.round((W - (cols * (_BM_CELL + _BM_GAP) - _BM_GAP)) / 2);
-        items.forEach((it, i) => cells.push({ it, x: gx0 + (i % cols) * (_BM_CELL + _BM_GAP),
-            y: y + _BM_HEAD + _BM_TABS + lvH + _BM_GAP + Math.floor(i / cols) * (_BM_CELL + _BM_GAP), w: _BM_CELL, h: _BM_CELL }));
+        const tw = (W - _BM_PAD * 2) / BUILD_MENU_TABS.length;
+        BUILD_MENU_TABS.forEach((tb, i) => tabs.push({ tab: tb, x: x + _BM_PAD + i * tw, y: y + _BM_HEAD, w: tw - 6, h: _BM_TABS - 6 }));
+        const gx0 = x + Math.round((W - (cols * (cw + _BM_GAP) - _BM_GAP)) / 2);
+        items.forEach((it, i) => cells.push({ it, x: gx0 + (i % cols) * (cw + _BM_GAP),
+            y: y + _BM_HEAD + _BM_TABS + lvH + _BM_GAP + Math.floor(i / cols) * (ch + _BM_GAP), w: cw, h: ch }));
     }
     return { x, y, w: W, h: H, head, tabs, cells, levels, statusY: y + H - _BM_STATUS / 2 - 2 };
 }
@@ -440,92 +444,60 @@ function drawBuildMenu() {
     const L = _bmLayout(); _bmLast = L;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     // The window
-    ctx.fillStyle = "rgba(6,10,16,0.94)"; ctx.strokeStyle = "#ffcc44"; ctx.lineWidth = 2;
-    _epRoundRect(L.x, L.y, L.w, L.h, 6); ctx.fill(); ctx.stroke();
+    uiPanel(L.x, L.y, L.w, L.h, UI_GOLD);
     // Title bar
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#ffcc44"; ctx.font = "bold 11px monospace"; ctx.textAlign = "left";
-    ctx.fillText("⚒ BUILD", L.x + 10, L.y + _BM_HEAD / 2);
-    ctx.fillStyle = "#9ab"; ctx.font = "10px monospace";
-    ctx.fillText("◆ " + shardCount, L.x + 72, L.y + _BM_HEAD / 2);
+    uiText("BUILD", L.x + (L.w > 360 ? 28 : 18), L.y + _BM_HEAD / 2 + 1, L.w > 360 ? 32 : 24, UI_GOLD, "left");
+    if (L.w > 360) uiText("\u25c6 " + shardCount, L.x + 150, L.y + _BM_HEAD / 2 + 1, 24, "#fff", "left", false);
     const demoOn = buildTool && buildTool.kind === "demolish";
-    const btn = (r, label, on, col) => {
-        ctx.fillStyle = on ? "rgba(255,102,68,0.25)" : "rgba(0,0,0,0.5)"; ctx.fillRect(r.x, r.y, r.w, r.h);
-        ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
-        ctx.fillStyle = col; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
-        ctx.fillText(label, r.x + r.w / 2, r.y + r.h / 2 + 1);
-    };
-    btn(L.head.demo, "✖ DEMOLISH", demoOn, "#ff6644");
-    btn(L.head.min, buildMenuMin ? "▴" : "▾", false, "#9ab");
-    btn(L.head.close, "✕", false, "#9ab");
+    uiButton(L.head.demo, L.w > 360 ? "DEMOLISH" : "DEMO", UI_RED, demoOn, L.w > 360 ? 18 : 15);
+    uiButton(L.head.min, buildMenuMin ? "\u25b4" : "\u25be", UI_ICE, false, 22);
+    uiButton(L.head.close, "\u2715", UI_RED, false, 22);
     if (!buildMenuMin) {
         // Tabs
-        for (const tb of L.tabs) {
-            const on = tb.tab.id === buildMenuTab;
-            ctx.fillStyle = on ? "rgba(255,204,68,0.18)" : "rgba(0,0,0,0.45)"; ctx.fillRect(tb.x, tb.y, tb.w, tb.h);
-            ctx.strokeStyle = on ? "#ffcc44" : "#345"; ctx.lineWidth = 1; ctx.strokeRect(tb.x + 0.5, tb.y + 0.5, tb.w - 1, tb.h - 1);
-            ctx.fillStyle = on ? "#ffcc44" : "#7a8a99"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
-            ctx.fillText(tb.tab.label, tb.x + tb.w / 2, tb.y + tb.h / 2 + 1);
-        }
+        for (const tb of L.tabs) uiButton(tb, tb.tab.label, UI_GOLD, tb.tab.id === buildMenuTab, 20);
         // Level: what one placement makes on this tab.
         if (L.levels.length) {
-            ctx.fillStyle = "#7a8a99"; ctx.font = "bold 9px monospace"; ctx.textAlign = "left";
-            ctx.fillText("LEVEL", L.x + 12, L.levels[0].y + L.levels[0].h / 2 + 1);
-            for (const lv of L.levels) {
-                const on = (buildLevel[buildMenuTab] || 1) === lv.n;
-                ctx.fillStyle = on ? "rgba(0,255,136,0.18)" : "rgba(0,0,0,0.45)"; ctx.fillRect(lv.x, lv.y, lv.w, lv.h);
-                ctx.strokeStyle = on ? "#0f8" : "#345"; ctx.lineWidth = on ? 2 : 1; ctx.strokeRect(lv.x + 0.5, lv.y + 0.5, lv.w - 1, lv.h - 1);
-                ctx.fillStyle = on ? "#0f8" : "#7a8a99"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
-                ctx.fillText(lv.n + "  " + lv.label, lv.x + lv.w / 2, lv.y + lv.h / 2 + 1);
-            }
+            uiText("LEVEL", L.x + 28, L.levels[0].y + L.levels[0].h / 2 + 1, 18, "#8aa0c8", "left", false);
+            for (const lv of L.levels) uiButton(lv, lv.n + "  " + lv.label, UI_TEAL, (buildLevel[buildMenuTab] || 1) === lv.n, 15);
         }
         // Items: picture, name, price — greyed when they cannot be had.
         for (const c of L.cells) {
             const it = c.it, owned = _bmOwned(it), sel = _bmSame(buildTool, it);
             const st = buildItemState(it), locked = !st.ok;
             const cost = buildItemCost(it), poor = !owned && shardCount < cost;
-            ctx.fillStyle = sel ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.55)"; ctx.fillRect(c.x, c.y, c.w, c.h);
-            ctx.strokeStyle = sel ? "#ffffff" : locked ? "#333" : it.colour; ctx.lineWidth = sel ? 2 : 1;
-            ctx.strokeRect(c.x + 0.5, c.y + 0.5, c.w - 1, c.h - 1);
+            uiSlab(c.x, c.y, c.w, c.h, sel ? "#ffffff" : it.colour, sel, sel ? null : "#101830", locked);
             ctx.globalAlpha = locked ? 0.3 : 1;
-            if (!(typeof drawIcon === "function" && drawIcon(ctx, it.icon, it.colour, c.x + c.w / 2, c.y + 18, 24))) {
-                ctx.fillStyle = it.colour; ctx.beginPath(); ctx.arc(c.x + c.w / 2, c.y + 18, 8, 0, Math.PI * 2); ctx.fill();
+            if (!(typeof drawIcon === "function" && drawIcon(ctx, it.icon, sel ? UI_INK : it.colour, c.x + c.w / 2, c.y + 32, 38))) {
+                ctx.fillStyle = sel ? UI_INK : it.colour; ctx.beginPath(); ctx.arc(c.x + c.w / 2, c.y + 32, 13, 0, Math.PI * 2); ctx.fill();
             }
-            ctx.fillStyle = "#dde"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center";
-            ctx.fillText(it.label.length > 10 ? it.label.slice(0, 9) + "…" : it.label, c.x + c.w / 2, c.y + 36);
-            ctx.font = "8px monospace";
+            ctx.globalAlpha = locked ? 0.55 : 1;
+            uiTextFit(it.label, c.x + c.w / 2, c.y + c.h - 40, 17, sel ? UI_INK : "#fff", "center", c.w - 14);
+            ctx.globalAlpha = 1;
             if (it.kind === "camp") {
-                ctx.fillStyle = owned ? "#0f8" : poor ? "#f66" : "#ffcc44";
-                ctx.fillText(owned ? "✓ BUILT" : "◆" + cost, c.x + c.w / 2, c.y + 47);
+                uiCaption(owned ? "\u2713 BUILT" : "\u25c6" + cost, c.x + c.w / 2, c.y + c.h - 17, sel ? UI_INK : owned ? "#19e6c1" : poor ? "#ff7a6a" : UI_GOLD, "center", 14);
             } else {
                 const lvName = BUILD_LEVELS[it.tab] && !_bmIsRelayKind(it.kind) && (buildLevel[it.tab] || 1) > 1
                     ? BUILD_LEVELS[it.tab][(buildLevel[it.tab] || 1) - 1].replace(" 2\u00d72", "") : it.sub;
-                ctx.globalAlpha = 1;
-                ctx.fillStyle = locked ? "#8a6a6a" : poor ? "#f66" : "#ffcc44";
                 // Short, to fit the cell; the full reason is said when it is tapped.
-                const shortWhy = { "NEEDS TIER I": "TIER I", "NEEDS TIER II": "TIER II", "NO FORMATION": "NO FORM" }[st.why] || st.why;
-                ctx.fillText(locked ? shortWhy : lvName + " \u25c6" + cost, c.x + c.w / 2, c.y + 47);
+                const shortWhy = { "NEEDS TIER I": "TIER I", "NEEDS TIER II": "TIER II", "NO FORMATION": "NO FORM", "NO GENERATOR": "NO GEN" }[st.why] || st.why;
+                uiCaptionFit(locked ? shortWhy : lvName + " \u25c6" + cost, c.x + c.w / 2, c.y + c.h - 17, sel ? UI_INK : locked ? "#b08a8a" : poor ? "#ff7a6a" : UI_GOLD, "center", 13, c.w - 10);
             }
-            ctx.globalAlpha = 1;
         }
         // Status line: what is in hand, and what to do with it.
-        let msg, col = "#9ab";
+        let msg, col = "#8aa0c8";
         if (!buildTool) msg = buildMenuTab === "modules" ? "Modules work while powered, on the ground around them. Pick one." : "Pick something to build.";
         else {
             const g = buildGhost && typeof getTile === "function" ? getTile(buildGhost.x, buildGhost.y) : null;
             const v = g ? canBuildAt(g, buildTool) : null;
             const how = _bmPointerType === "mouse" ? "click a tile" : "tap a tile, tap it again to build";
-            if (v && !v.ok) { msg = buildTool.label + " — CAN'T BUILD HERE: " + v.why; col = "#f66"; }
+            if (v && !v.ok) { msg = buildTool.label + " — CAN'T BUILD HERE: " + v.why; col = "#ff7a6a"; }
             else {
                 const lv = buildToolLevel(buildTool), lvName = BUILD_LEVELS[buildTool.tab] && !_bmIsRelayKind(buildTool.kind) ? " \u00b7 " + BUILD_LEVELS[buildTool.tab][lv - 1] : "";
                 msg = buildTool.label + lvName + (buildTool.kind === "demolish" ? " — " : " \u25c6" + buildToolCost(buildTool) + " — ") + how + ". Tap it again to stop.";
             }
-            if (!(v && !v.ok)) col = buildTool.colour || "#9ab";
+            if (!(v && !v.ok)) col = buildTool.colour || "#8aa0c8";
         }
-        ctx.fillStyle = col; ctx.font = "9px monospace"; ctx.textAlign = "center";
-        let m = msg; while (m.length > 8 && ctx.measureText(m).width > L.w - 16) m = m.slice(0, -2);
-        if (m !== msg) m = m.slice(0, -1) + "…";
-        ctx.fillText(m, L.x + L.w / 2, L.statusY);
+        uiCaptionFit(msg, L.x + L.w / 2, L.statusY, col, "center", 13, L.w - 28);
     }
     ctx.restore();
 }

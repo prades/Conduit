@@ -139,9 +139,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/#ui::after \{[^}]*33\.333%[^}]*66\.667%/.test(fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8')), 'no thirds on the bar');
         run(`health = PLAYER_HITS; _lastHpInt = -1; render();`);
     });
-    check('a health pad charge gives back one hit, up to three', () => {
+    check('a health pad charge is worth one hit (the crystal menu no longer crafts them)', () => {
         same(run('HEALTH_PAD_HEAL'), 1, 'HEALTH_PAD_HEAL');
-        ok(/health = Math\.min\(PLAYER_HITS, health \+ HEALTH_PAD_HEAL\)/.test(fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8')), 'pads heal past three');
     });
     check('an old save (health out of 100) loads as hits, never more than three', () => {
         const src = fs.readFileSync(path.join(ROOT, 'js/save.js'), 'utf8');

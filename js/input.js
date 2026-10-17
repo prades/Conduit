@@ -401,8 +401,8 @@ canvas.addEventListener('pointerup', e=>{
         setPlayerAttackMode(false); isPressing=false; return;
     }
 
-    // Blob button — tap opens clone menu
-    if (!touchMoved) {
+    // Blob button — tap opens clone menu (a phone only: the dock has it elsewhere)
+    if (!touchMoved && !dockHasMenus()) {
         const b=_BLOB;
         if (b && Math.hypot(upX-b.x, upY-b.y)<b.r+8) {
             cloneMenuOpen=!cloneMenuOpen; crystalMenuOpen=false; isPressing=false; return;
@@ -423,17 +423,17 @@ canvas.addEventListener('pointerup', e=>{
     if (handleFollowerUIClick(upX, upY)) { isPressing=false; return; }
     }
     // SHOP button tap
-    if (!touchMoved && !alertActive && gameState.phase !== "night" && gameState.phase !== "waveComplete" && gameState.phase !== "gameOver"
+    if (!touchMoved && !dockHasMenus() && !alertActive && gameState.phase !== "night" && gameState.phase !== "waveComplete" && gameState.phase !== "gameOver"
         && Math.hypot(upX-_SHOPBTN.x, upY-_SHOPBTN.y) < _SHOPBTN.r+8) {
         openMidGameShop(); isPressing=false; return;
     }
     // CAMP button tap — now the MODULES button: the build window on its MODULES tab
-    if (!touchMoved && Math.hypot(upX-_CAMPBTN.x, upY-_CAMPBTN.y) < _CAMPBTN.r+8) {
+    if (!touchMoved && !dockHasMenus() && Math.hypot(upX-_CAMPBTN.x, upY-_CAMPBTN.y) < _CAMPBTN.r+8) {
         if (typeof openModulesWindow === "function") openModulesWindow(); else campMenuOpen=!campMenuOpen;
         isPressing=false; return;
     }
     // SETTINGS button tap
-    if (!touchMoved && Math.hypot(upX-_SETTINGSBTN.x, upY-_SETTINGSBTN.y) < _SETTINGSBTN.r+8) {
+    if (!touchMoved && !dockHasMenus() && Math.hypot(upX-_SETTINGSBTN.x, upY-_SETTINGSBTN.y) < _SETTINGSBTN.r+8) {
         settingsPanelOpen=!settingsPanelOpen; settingsResetConfirm=false; isPressing=false; return;
     }
 

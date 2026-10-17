@@ -39,9 +39,13 @@ const run = s => vm.runInContext(s, ctxObj);
 function eq(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${b}, got ${a}`); }
 
 check('settings panel rows fit inside the panel', () => {
-    const h = run('_SP_H');
-    const bottom = run('_SP_CLOSE_Y + _SP_CLOSE_H');
-    if (bottom > h - 8) throw new Error(`close button bottom ${bottom} crowds panel height ${h}`);
+    for (const confirm of [false, true]) {
+        run('settingsResetConfirm = ' + confirm);
+        const L = run('_spLayout()'), last = L.rows[L.rows.length - 1];
+        if (last.y + last.h > L.y + L.h - 8) throw new Error(`last row bottom ${last.y + last.h} crowds panel bottom ${L.y + L.h}`);
+        if (L.rows.some(r => r.x < L.x || r.x + r.w > L.x + L.w)) throw new Error('a row sticks out of the panel');
+    }
+    run('settingsResetConfirm = false');
 });
 
 // ── Render order ──
