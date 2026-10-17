@@ -33,7 +33,15 @@ function _saucer(o) {
   // the disc: a lens, with a low dome on top (opaque dark metal: a hatch and a lamp, no glass)
   const prof = [[0.0, 0.0], [R * 0.35, 0.02], [R * 0.9, 0.08 * k], [R, 0.13 * k], [R * 0.95, 0.18 * k], [R * 0.55, 0.27 * k], [R * 0.3, 0.3 * k], [0.0, 0.3 * k]].map(p => new T.Vector2(Math.max(0.0001, p[0]), p[1]));
   const hull = new T.Mesh(new T.LatheGeometry(prof, o.segs || 24), _saucerHull); body.add(hull);
-  const dome = new T.Mesh(new T.SphereGeometry(o.domeR, 20, 10, 0, TAU, 0, PI / 2), _saucerHull); dome.scale.y = 0.75; dome.position.y = 0.29 * k; body.add(dome);
+  const gl = o.glass, dome = new T.Mesh(new T.SphereGeometry(o.domeR, 28, 14, 0, TAU, 0, PI / 2), gl ? new T.MeshStandardMaterial({ color: gl.col || 0x2a3a58, metalness: 0.0, roughness: 0.06, transparent: true, opacity: gl.opacity || 0.3, depthWrite: false }) : _saucerHull); if (gl) dome.material.envMapIntensity = 2.0; dome.scale.y = gl ? (gl.tall || 0.8) : 0.75; dome.position.y = 0.29 * k; dome.renderOrder = 6; body.add(dome);
+  // what shows through the glass: a dark inner deck with a ring of dim light, and a soft haze; nothing bright and no crystal
+  let haze = null, plasma = null; if (gl) { const deck = new T.Mesh(new T.CylinderGeometry(o.domeR * 0.97, o.domeR * 0.97, 0.03, 24), _saucerHull); deck.position.y = 0.29 * k + 0.02; body.add(deck);
+    const dring = new T.Mesh(new T.TorusGeometry(o.domeR * 0.8, 0.012, 4, 24), new T.MeshBasicMaterial({ color: 0x3a3000, toneMapped: false })); dring.rotation.x = PI / 2; dring.position.y = 0.29 * k + 0.04; body.add(dring); haze = dring;
+    if (gl.plasma) { plasma = new T.Mesh(new T.SphereGeometry(o.domeR * 0.42, 14, 10), new T.MeshBasicMaterial({ color: 0xffe27a, transparent: true, opacity: 0.35, depthWrite: false, toneMapped: false })); plasma.position.y = 0.29 * k + o.domeR * 0.32; plasma.renderOrder = 5; body.add(plasma); }
+    if (gl.mist) { const hs = glowSprite(o.domeR * 2.2); hs.material = hs.material.clone(); hs.material.opacity = 0.22; hs.position.y = 0.29 * k + o.domeR * 0.3; hs.renderOrder = 5; body.add(hs); haze = hs; }
+    // the dome's frame: a dark collar at its base and meridian ribs
+    const col = new T.Mesh(new T.TorusGeometry(o.domeR, 0.035, 6, 28), _saucerHull); col.rotation.x = PI / 2; col.position.y = 0.29 * k; body.add(col);
+    for (let i = 0; i < (gl.ribs == null ? 4 : gl.ribs); i++) { const a = i * PI / (gl.ribs == null ? 4 : gl.ribs), rib = new T.Mesh(new T.TorusGeometry(o.domeR * 1.005, 0.014, 4, 24, PI), _saucerHull); rib.scale.y = dome.scale.y; rib.rotation.y = a; rib.position.y = 0.29 * k; body.add(rib); } }
   const beacon = new T.Mesh(_litFacets(new T.OctahedronGeometry(0.06, 0), 1), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); beacon.scale.y = 1.5; beacon.position.y = 0.29 * k + o.domeR * 0.75 + 0.07; if (o.beacon) body.add(beacon);   // (the dome's crystal is off: "no central crystal")
   // belly: a dark ring and a dim plate underneath
   const belly = new T.Mesh(new T.TorusGeometry(R * 0.45, 0.025, 5, o.segs || 24), _saucerLeg); belly.rotation.x = PI / 2; belly.position.y = -0.0; body.add(belly);
@@ -50,6 +58,8 @@ function _saucer(o) {
     // chase: the pattern is "on, on, off, off" round the rim, advanced one lamp a step; the loop is a whole number of repeats so it closes
     const step = Math.floor(((ph / TAU) * o.chase) + 0.0001) , rate = 1 + 3 * ac;
     lamps.forEach(Lp => { const pos = (Lp.i + Math.floor(ph / TAU * o.chase * rate)) % 4, on = pos < 2 ? 1 : 0, lit = on * (0.7 + 0.3 * Math.sin(ph * 4 + Lp.i)) + 0.25 * ac; Lp.mat.color.setRGB(0.23 + 0.77 * lit, 0.19 + 0.78 * lit, 0.0 + 0.45 * lit * lit); });
+    if (plasma) { plasma.material.opacity = 0.25 + 0.15 * Math.sin(ph * 3) + 0.3 * ac; plasma.scale.setScalar(1 + 0.12 * Math.sin(ph * 2) + 0.3 * ac); plasma.rotation.y = ph; }
+    if (haze && haze.material && haze.material.opacity !== undefined && o.glass && o.glass.mist) haze.material.opacity = 0.16 + 0.1 * Math.sin(ph * 2) + 0.25 * ac;
     beacon.scale.setScalar(1 + 0.3 * Math.sin(ph * 3) + 0.6 * ac); beacon.scale.y *= 1.5; L.intensity = 0.4 + 0.8 * ac; if (o.pool) { glow.m.material.opacity = 0.2 + 0.2 * Math.sin(ph * 2) + 0.3 * ac; }
     const hipY = body.position.y + 0.02, stride = o.stride * (1 + 0.3 * ac), lift = o.lift;
     legs.forEach(Lg => { const cyc = ph + Lg.ph, hx = Math.sin(Lg.a) * R * o.hipR, hz = Math.cos(Lg.a) * R * o.hipR, fx0 = Math.sin(Lg.a) * R * o.footR, fz0 = Math.cos(Lg.a) * R * o.footR;
@@ -90,3 +100,11 @@ fx(677, "Longer, sparser spines: fewer but bigger blades along each forearm, lik
 fx(678, "Dense saw-teeth along the forearm: many small sharp teeth, a barbed look.", () => _saucer(Object.assign({}, _sjag, { jag: { n: 9, len: 0.12, r: 0.022, sweep: 0.5 } })));
 fx(679, "Six legs, each forearm jagged with medium spikes, a smaller saucer.", () => _saucer(Object.assign({}, _sjag, { legs: 6, R: 0.85, legR: 0.04, legH: 1.1, nLamps: 14, jag: { n: 5, len: 0.2, r: 0.03, sweep: 0.55 } })));
 fx(680, "Heavy: thick beetle legs, wide jagged forearms with large blunt-based spikes.", () => _saucer(Object.assign({}, _sjag, { legs: 6, legR: 0.06, legH: 0.9, kneeUp: 0.7, hipH: 0.34, sy: 1.2, jag: { n: 4, len: 0.24, r: 0.05, sweep: 0.5 } })));
+
+// ── A bigger centre with the glass exposed (Nos. 681–685): the dome grown large, clear glass over a dark inner deck, ribbed frame; the legs as 676 ──
+const _sgl = Object.assign({}, _sjag, { domeR: 0.52 });
+fx(681, "676 with the centre grown big: a large glass dome over a dark inner deck with a ring of dim light, a ribbed frame, nothing inside it.", () => _saucer(Object.assign({}, _sgl, { glass: { opacity: 0.3 } })));
+fx(682, "A faint glowing haze inside the glass, like a held breath of light.", () => _saucer(Object.assign({}, _sgl, { glass: { opacity: 0.3, mist: true } })));
+fx(683, "A small ball of plasma turning slowly in the middle of the glass, dim yellow, not a crystal.", () => _saucer(Object.assign({}, _sgl, { glass: { opacity: 0.3, plasma: true } })));
+fx(684, "An even bigger tall glass bubble, nearly a hemisphere, with eight frame ribs.", () => _saucer(Object.assign({}, _sgl, { domeR: 0.65, glass: { opacity: 0.28, tall: 1.0, ribs: 8, mist: true } })));
+fx(685, "A wide low glass canopy covering most of the top of the disc, thin frame, the dark deck visible.", () => _saucer(Object.assign({}, _sgl, { domeR: 0.78, glass: { opacity: 0.26, tall: 0.5, ribs: 6 } })));
