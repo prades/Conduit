@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-17q";
+const BUILD_VERSION = "2026-10-17r";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -272,6 +272,7 @@ function resize() {
     // the world fits (js/buildmenu.js uses it while a build tool is in hand). toCanvas() in js/input.js already maps a touch back through that scale.
     canvas.width  = Math.round((vv ? vv.width  : window.innerWidth)  / viewZoom);
     canvas.height = Math.round((vv ? vv.height : window.innerHeight) / viewZoom);
+    syncVisibleArea();
     // Detect bottom safe-area via a temporary DOM element
     try {
         const _tmp = document.createElement('div');
@@ -282,8 +283,22 @@ function resize() {
     } catch(e) { SAFE_BOTTOM = 0; }
 }
 window.addEventListener('resize', resize);
-if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+if (window.visualViewport) { window.visualViewport.addEventListener('resize', resize); window.visualViewport.addEventListener('scroll', () => syncVisibleArea()); }
 resize();
+// THE VISIBLE AREA. On an iPad (and any browser with its own bars) the layout viewport that position:fixed and 100dvh are measured against can be TALLER
+// than what is actually on screen, so everything anchored to the bottom (the dock, the tutorial button, the build chip) landed below the screen edge
+// ("it looks bad on my iPad"). The visual viewport is the truth: its size is published as --vvw / --vvh, and the gap between the layout viewport's bottom
+// and the visible bottom as --vv-bottom, which every bottom-anchored control adds to its own offset (game.html).
+function syncVisibleArea() {
+    try {
+        const vv = window.visualViewport, root = document.documentElement; if (!root || !root.style) return;
+        const lh = root.clientHeight || window.innerHeight, vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight, top = vv ? vv.offsetTop : 0;
+        root.style.setProperty("--vvw", Math.round(vw) + "px"); root.style.setProperty("--vvh", Math.round(vh) + "px");
+        root.style.setProperty("--vv-bottom", Math.max(0, Math.round(lh - (top + vh))) + "px");
+        // The canvas is shown at exactly the visible size (its pixel size follows viewZoom, below).
+        canvas.style.width = Math.round(vw) + "px"; canvas.style.height = Math.round(vh) + "px";
+    } catch (e) {}
+}
 function setViewZoom(z) { if (z === viewZoom) return; viewZoom = z; if (typeof _cachedRect !== 'undefined') _cachedRect = null; resize(); }
 
 // ── CONFIG ────────────────────────────────────────────────

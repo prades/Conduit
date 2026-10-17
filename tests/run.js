@@ -33,6 +33,7 @@ const SUITES = [
     ['enemy heals at nests',   'enemyheal.js'],
     ['phone radial menu',      'radialmenu.js'],
     ['placing: zoom + hide UI', 'placingview.js'],
+    ['visible area (iPad)',     'visiblearea.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],
