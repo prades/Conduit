@@ -78,6 +78,7 @@ function zoneInfo(z, pw) {
         equipment: eq, modules: mods, total: eq.turrets + eq.wave + eq.batteries + eq.generators + eq.connectors + eq.other,
         broken: br.wrecks.length, offline: br.frames.length, fee: br.wrecks.length * ZONE_FEE_WRECK + br.frames.length * ZONE_FEE_FRAME,
         here: typeof player !== "undefined" && getZoneIndex(Math.floor(player.x)) === z,
+        autoKit: (() => { const n = world.find(t => t.nest && t._autoKit && (z === 0 ? isHomePortal(t) : (!isHomePortal(t) && getZoneIndex(t.x) === z))); return n ? { name: kitById(n._autoKit.id).name, have: n._autoKit.have, total: n._autoKit.total, cls: n._autoKit.cls } : null; })(),
         crew: zoneCrewSummary(z), orders: (zoneOrders[z] || []).map(o => ({ label: zoneOrderLabel(o), status: o.status || "QUEUED", cost: zoneOrderCost(o) })),
     };
 }
@@ -139,16 +140,21 @@ function zoneClearBroken(z) {
 // time: the tile is picked where the build rules allow it (near the zone's power), it takes ORDER_BUILD_FRAMES of builder-work (more ants, faster), the shards
 // are paid when it goes up (the order waits while you are short), and it is built exactly as the build window would. They need no one to stand there.
 const ORDER_BUILD_FRAMES = 180;   // one builder's work for one order (a crew of three does it in a third of the time)
-const ORDER_MAX = 8;              // queued per zone
+const ORDER_MAX = 20;             // queued per zone (a whole FULL KIT is 17 pieces)
 const ORDER_KINDS = {
-    generator: { label: "GENERATOR", tab: "power" },
-    battery:   { label: "BATTERY",   tab: "power" },
-    attack:    { label: "TURRET",    tab: "turrets" },
+    generator:  { label: "GENERATOR", tab: "power" },
+    connector:  { label: "CONNECTOR", tab: "power" },
+    battery:    { label: "BATTERY",   tab: "power" },
+    attack:     { label: "TURRET",    tab: "turrets" },
+    support:    { label: "SUPPORT",   tab: "wave" },       // the pieces of a layout kit (js/kits.js) go in as exact-tile orders
+    disruption: { label: "WAVE",      tab: "wave" },
 };
 let zoneOrders = {};              // z → [{ kind, elId, level, tile, progress, status }]
-function saveZoneOrders() { try { localStorage.setItem("conduit_zone_orders", JSON.stringify(Object.keys(zoneOrders).map(z => [z, zoneOrders[z].map(o => ({ kind: o.kind, elId: o.elId, level: o.level }))]))); } catch (e) {} }
+function saveZoneOrders() { try { localStorage.setItem("conduit_zone_orders", JSON.stringify(Object.keys(zoneOrders).map(z => [z, zoneOrders[z].map(o => ({ kind: o.kind, elId: o.elId, level: o.level, kit: o.kit || null, at: o.fixed ? [o.fixed.x, o.fixed.y] : null }))]))); } catch (e) {} }
 function loadZoneOrders() {
-    try { const r = JSON.parse(localStorage.getItem("conduit_zone_orders") || "[]"); zoneOrders = {}; for (const [z, list] of r) zoneOrders[z] = list.map(o => Object.assign({ progress: 0, status: "" }, o)); } catch (e) { zoneOrders = {}; }
+    try { const r = JSON.parse(localStorage.getItem("conduit_zone_orders") || "[]"); zoneOrders = {};
+        for (const [z, list] of r) zoneOrders[z] = list.map(o => { const n = { kind: o.kind, elId: o.elId, level: o.level, kit: o.kit, progress: 0, status: "", tile: null }; if (o.at) { n.fixed = { x: o.at[0], y: o.at[1] }; } return n; });
+    } catch (e) { zoneOrders = {}; }
 }
 function clearZoneOrders() { zoneOrders = {}; saveZoneOrders(); }
 loadZoneOrders();
@@ -191,22 +197,23 @@ function zoneRecallCrew(z) {
 }
 
 // ── the orders ──
-function zoneOrderTool(o) { return { tab: ORDER_KINDS[o.kind].tab, kind: o.kind, elId: o.kind === "generator" ? GENERATOR_ID : o.elId, label: ORDER_KINDS[o.kind].label, colour: "#8fe3ff" }; }
+function zoneOrderTool(o) { return { tab: ORDER_KINDS[o.kind].tab, kind: o.kind, elId: o.kind === "generator" ? GENERATOR_ID : o.kind === "connector" ? CONNECTOR_ID : o.elId, label: ORDER_KINDS[o.kind].label, colour: "#8fe3ff" }; }
 function _orderLevelKey(o) { return ORDER_KINDS[o.kind].tab; }
 // Run fn with the build level set to the order's (the build rules read the global), then put it back.
-function _withOrderLevel(o, fn) { const k = _orderLevelKey(o), was = buildLevel[k], wasTool = buildTool; buildLevel[k] = o.kind === "generator" ? 1 : (o.level || 1); try { return fn(zoneOrderTool(o)); } finally { buildLevel[k] = was; buildTool = wasTool; } }
+function _withOrderLevel(o, fn) { const k = _orderLevelKey(o), was = buildLevel[k], wasTool = buildTool; buildLevel[k] = o.kind === "generator" || o.kind === "connector" ? 1 : (o.level || 1); try { return fn(zoneOrderTool(o)); } finally { buildLevel[k] = was; buildTool = wasTool; } }
 function zoneOrderCost(o) { return _withOrderLevel(o, tool => buildToolCost(tool)); }
 function zoneOrderLabel(o) {
-    const el = o.kind === "generator" ? "" : (ELEMENTS.find(e => e.id === o.elId) || { label: o.elId }).label.toUpperCase() + " ";
+    if (o.kit) { const k = kitById(o.kit); return (k ? k.name : "KIT") + " \u00b7 " + (o.kind === "generator" || o.kind === "connector" ? ORDER_KINDS[o.kind].label : ((ELEMENTS.find(e => e.id === o.elId) || { label: o.elId }).label.toUpperCase() + " " + ORDER_KINDS[o.kind].label)); }
+    const el = o.kind === "generator" || o.kind === "connector" ? "" : (ELEMENTS.find(e => e.id === o.elId) || { label: o.elId }).label.toUpperCase() + " ";
     return el + ORDER_KINDS[o.kind].label + (o.kind === "battery" && o.level > 1 ? " " + BUILD_LEVELS.power[o.level - 1] : "");
 }
 function zoneAddOrder(z, o) {
     const say = (text, color) => floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color, life: 100, vy: -0.2, size: 12 });
     if (!ORDER_KINDS[o.kind]) return false;
-    if (o.kind !== "generator" && !isPylonTypeUnlocked(o.elId)) { say("THAT ELEMENT IS NOT UNLOCKED", "#f88"); return false; }
+    if (o.kind !== "generator" && o.kind !== "connector" && !isPylonTypeUnlocked(o.elId)) { say("THAT ELEMENT IS NOT UNLOCKED", "#f88"); return false; }
     const list = zoneOrders[z] || (zoneOrders[z] = []);
     if (list.length >= ORDER_MAX) { say("THE ORDER QUEUE IS FULL (" + ORDER_MAX + ")", "#f88"); return false; }
-    list.push({ kind: o.kind, elId: o.kind === "generator" ? GENERATOR_ID : o.elId, level: o.kind === "battery" ? (o.level || 1) : 1, progress: 0, status: "", tile: null });
+    list.push({ kind: o.kind, elId: o.kind === "generator" ? GENERATOR_ID : o.kind === "connector" ? CONNECTOR_ID : o.elId, level: o.kind === "battery" ? (o.level || 1) : 1, progress: 0, status: "", tile: null, kit: o.kit || null, fixed: o.fixed || null });
     saveZoneOrders(); return true;
 }
 function zoneCancelOrder(z, i) { const list = zoneOrders[z]; if (!list || !list[i]) return false; list.splice(i, 1); if (!list.length) delete zoneOrders[z]; saveZoneOrders(); return true; }
@@ -237,7 +244,13 @@ function zoneOrderTick() {
         // never blocks the ones behind it; one that only lacks shards holds the queue (you are saving for it).
         for (let i = 0; i < list.length; i++) {
             const o = list[i];
+            if (!o.tile && o.fixed) o.tile = getTile(o.fixed.x, o.fixed.y);   // a kit's piece: its tile is fixed by the layout
             if (!o.tile) { const r = zoneOrderTile(z, o); if (!r.tile) { o.status = r.why; if (r.why === "WAITING FOR SHARDS") break; continue; } o.tile = r.tile; }
+            if (o.fixed) {
+                // It cannot go yet (the generator before it is not up and powered; the ground is taken): wait for it, and let the orders behind it be tried. Only shards hold the queue.
+                const v = _withOrderLevel(o, tool => canBuildAt(o.tile, tool));
+                if (!v.ok) { if (/^NEED \d+/.test(v.why)) { o.status = "WAITING FOR SHARDS (\u25c6" + zoneOrderCost(o) + ")"; break; } o.status = "WAITING: " + v.why; continue; }
+            }
             const cost = zoneOrderCost(o);
             if (shardCount < cost) { o.status = "WAITING FOR SHARDS (\u25c6" + cost + ")"; break; }
             o.progress += 20 * ants; o.status = "BUILDING " + Math.min(99, Math.round(100 * o.progress / ORDER_BUILD_FRAMES)) + "%";
@@ -245,11 +258,32 @@ function zoneOrderTick() {
             if (o.progress >= ORDER_BUILD_FRAMES) {
                 const done = _withOrderLevel(o, tool => { buildTool = tool; return canBuildAt(o.tile, tool).ok && buildToolPlaceAt(o.tile); });
                 if (done) { list.splice(i, 1); if (!list.length) delete zoneOrders[z]; saveZoneOrders(); }
-                else { o.tile = null; o.progress = 0; o.status = "RETRYING"; }   // the ground changed under it: pick again
+                else { o.tile = o.fixed ? null : null; o.progress = 0; o.status = "RETRYING"; }   // the ground changed under it: pick again
             }
             break;
         }
         // the ones behind the one being built are queued
         for (const o of list) if (!o.status || o.status === "RETRYING") o.status = "QUEUED";
     }
+}
+
+// ── KITS AS ORDERS ──
+// Queue a layout kit (js/kits.js) in a zone: every missing piece becomes an exact-tile order, in the kit's build order (generator first), for the zone's ant builders.
+// The placement is the one SNAP TO NEST would choose at the zone's nest. Returns how many orders it queued (0 and a message when it cannot).
+function zoneQueueKit(z, kitId, el) {
+    const say = (text, color) => floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color, life: 110, vy: -0.2, size: 12 });
+    const kit = kitById(kitId); if (!kit) return 0;
+    if (!kitElementOk(kit, el)) { say(kit.name + " DOES NOT TAKE " + String(el).toUpperCase(), "#f88"); return 0; }
+    const nest = zoneTeleportNest(z) || world.find(t => t.nest && (z === 0 ? isHomePortal(t) : (!isHomePortal(t) && getZoneIndex(t.x) === z)));
+    if (!nest) { say("NO NEST IN " + (z === 0 ? "HOME" : "ZONE " + z), "#f88"); return 0; }
+    const plan = kitFindPlacement(kit, el, nest);
+    if (!plan) { say("NO ROOM FOR " + kit.name, "#f88"); return 0; }
+    if (plan.blocked) { const r = plan.pieces.find(p => p.state === "blocked"); say(kit.name + ": " + plan.blocked + " BLOCKED \u2014 " + r.why, "#f66"); return 0; }
+    const missing = _kitBuildOrder(plan), list = zoneOrders[z] || (zoneOrders[z] = []);
+    if (!missing.length) { say(kit.name + " IS ALREADY BUILT IN THAT ZONE", "#8aa0c8"); if (!list.length) delete zoneOrders[z]; return 0; }
+    if (list.length + missing.length > ORDER_MAX) { say("THE QUEUE HAS ROOM FOR " + (ORDER_MAX - list.length) + " MORE (THIS NEEDS " + missing.length + ")", "#f88"); if (!list.length) delete zoneOrders[z]; return 0; }
+    const KIND = { G: "generator", C: "connector", B: "battery", T: "attack", S: "support", W: waveRole(el) };
+    for (const r of missing) list.push({ kind: KIND[r.piece.c], elId: r.piece.c === "G" ? GENERATOR_ID : r.piece.c === "C" ? CONNECTOR_ID : el, level: 1, progress: 0, status: "", tile: null, kit: kit.id, fixed: { x: r.x, y: r.y } });
+    saveZoneOrders(); say(kit.name + ": " + missing.length + " ORDERS QUEUED", "#8fe3ff");
+    return missing.length;
 }

@@ -349,7 +349,7 @@ function _ccDrawSquadOrders(side) {
 // ZONES (the tab was ANALYTICS; it is zones, teleports, crews and orders now): the squad at a glance, then every zone: its status, network and equipment, with TELEPORT and CLEAR BROKEN (js/zones.js).
 function _ccZonesSig() {
     const rep = typeof zoneReport === "function" ? zoneReport() : [], st = radialSquadStats("all");
-    return JSON.stringify([rep.map(z => [z.z, z.status, z.held, z.generator, z.energy, z.network.map(n => n.el + n.tier + n.batteries).join(), z.equipment, z.modules, z.broken, z.offline, z.here, z.crew, z.orders]), shardCount, typeof zoneFreeCrew === "function" ? zoneFreeCrew().total : 0, st.total, st.working, st.avgLevel, st.evolved]);
+    return JSON.stringify([rep.map(z => [z.z, z.status, z.held, z.generator, z.energy, z.network.map(n => n.el + n.tier + n.batteries).join(), z.equipment, z.modules, z.broken, z.offline, z.here, z.crew, z.orders, z.autoKit]), shardCount, typeof zoneFreeCrew === "function" ? zoneFreeCrew().total : 0, st.total, st.working, st.avgLevel, st.evolved]);
 }
 function _ccDrawSquad(page) {
     const st = radialSquadStats("all");
@@ -388,6 +388,7 @@ function _ccZoneCard(z) {
     line("EQUIPMENT", items.length ? items : [chip("NOTHING BUILT", "#6a7aa0")]);
     if (z.broken || z.offline) line("BROKEN", [chip((z.broken ? z.broken + " WRECKED" : "") + (z.broken && z.offline ? " \u00b7 " : "") + (z.offline ? z.offline + " OFFLINE" : ""), "#ff4a1c", "bad")]);
     // THE CREW and the BUILD ORDERS (js/zones.js)
+    if (z.autoKit) line("AUTO KIT", [chip(z.autoKit.name + " \u00b7 " + z.autoKit.have + " OF " + z.autoKit.total + " \u00b7 " + z.autoKit.cls.toUpperCase() + " ZONE", "#19e6c1")]);
     line("CREW", z.crew.total ? [chip(z.crew.ants + " ANT" + (z.crew.ants === 1 ? "" : "S") + " \u00b7 " + z.crew.core + " CORE", "#8fe3ff")] : [chip("NONE SENT", "#6a7aa0")]);
     const oc = z.orders.map((o, i) => { const c = chip(o.label + " \u00b7 " + o.status, i === 0 ? "#8fe3ff" : "#6a7aa0", "order"); c.title = "Click to cancel"; _ccClick(c, () => { zoneCancelOrder(z.z, i); _ccPageSig = ""; ccRender(); }); return c; });
     const add = chip("+ ORDER", "#19e6c1", "add"); _ccClick(add, () => buildOrderPickerOpen(z.z)); oc.push(add);
@@ -463,7 +464,7 @@ function recruitPickerOpen() {
 function buildOrderPickerClose() { const r = document.getElementById("orderPicker"); if (r && r.parentNode) r.parentNode.removeChild(r); }
 function buildOrderPickerOpen(z) {
     buildOrderPickerClose();
-    const st = { kind: "battery", elId: null, level: 1 };
+    const st = { mode: "piece", kind: "battery", elId: null, level: 1, kit: "strongpoint" };
     const els = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(e => unlockedElements.has(e.id)); st.elId = els.length ? els[0].id : "fire";
     const root = _ccEl("div", "rp-pick"); root.id = "orderPicker"; root.classList.add("op"); _ccClick(root, () => buildOrderPickerClose());
     const card = _ccEl("div", "rpk-card"); _ccClick(card, () => {});
@@ -474,13 +475,23 @@ function buildOrderPickerOpen(z) {
     const draw = () => {
         rows.textContent = "";
         const mk = (label, on, col, fn) => { const b = _ccEl("button", "rpk-el op-btn" + (on ? " on" : "")); b.style.setProperty("--c", col); b.appendChild(_ccEl("span", "rpk-name", label)); _ccClick(b, () => { fn(); draw(); }); return b; };
+        const r0 = _ccEl("div", "op-row"); [["piece", "ONE PIECE"], ["kit", "A LAYOUT KIT"]].forEach(m => r0.appendChild(mk(m[1], st.mode === m[0], "#8fe3ff", () => { st.mode = m[0]; }))); rows.appendChild(r0);
+        if (st.mode === "kit") {
+            const kit = kitById(st.kit), okEls = kitElements(kit);
+            if (okEls.indexOf(st.elId) < 0) st.elId = okEls[0] || st.elId;
+            const rk = _ccEl("div", "op-row kits"); KITS.forEach(k => rk.appendChild(mk(k.name, st.kit === k.id, KIT_FAMILY_COLOUR[k.family], () => { st.kit = k.id; }))); rows.appendChild(rk);
+            const re = _ccEl("div", "op-row"); okEls.forEach(id => { const e = ELEMENTS.find(x => x.id === id); re.appendChild(mk(e.label.toUpperCase(), st.elId === id, e.color, () => { st.elId = id; })); }); rows.appendChild(re);
+            const nest = zoneTeleportNest(z) || world.find(t => t.nest && (z === 0 ? isHomePortal(t) : (!isHomePortal(t) && getZoneIndex(t.x) === z))), plan = nest && okEls.length ? kitFindPlacement(kit, st.elId, nest) : null;
+            sub.textContent = !plan ? "NO ROOM OR NO NEST FOR " + kit.name : plan.blocked ? kit.name + ": " + plan.blocked + " PIECES BLOCKED (" + plan.pieces.find(p => p.state === "blocked").why + ")" : !plan.free ? kit.name + " IS ALREADY BUILT THERE" : kit.name + ": +" + plan.free + " PIECES \u00b7 \u25c6" + plan.cost + " WHEN PUT UP \u00b7 NEEDS AN ANT CREW IN THE ZONE";
+            return;
+        }
         const r1 = _ccEl("div", "op-row"); [["generator", "GENERATOR"], ["battery", "BATTERY"], ["attack", "TURRET"]].forEach(k => r1.appendChild(mk(k[1], st.kind === k[0], "#ffe733", () => { st.kind = k[0]; if (k[0] !== "battery") st.level = 1; }))); rows.appendChild(r1);
         if (st.kind !== "generator") { const r2 = _ccEl("div", "op-row"); els.forEach(e => r2.appendChild(mk(e.label.toUpperCase(), st.elId === e.id, e.color, () => { st.elId = e.id; }))); rows.appendChild(r2); }
         if (st.kind === "battery") { const r3 = _ccEl("div", "op-row"); BUILD_LEVELS.power.forEach((l, i) => r3.appendChild(mk(l, st.level === i + 1, "#19e6c1", () => { st.level = i + 1; }))); rows.appendChild(r3); }
         const o = { kind: st.kind, elId: st.kind === "generator" ? GENERATOR_ID : st.elId, level: st.level };
         sub.textContent = "COSTS \u25c6" + zoneOrderCost(o) + " WHEN THE BUILDERS PUT IT UP \u00b7 NEEDS AN ANT CREW IN THE ZONE";
     };
-    _ccClick(add, () => { zoneAddOrder(z, { kind: st.kind, elId: st.elId, level: st.level }); buildOrderPickerClose(); _ccPageSig = ""; ccRender(); });
+    _ccClick(add, () => { if (st.mode === "kit") zoneQueueKit(z, st.kit, st.elId); else zoneAddOrder(z, { kind: st.kind, elId: st.elId, level: st.level }); buildOrderPickerClose(); _ccPageSig = ""; ccRender(); });
     _ccClick(cancel, () => buildOrderPickerClose());
     draw(); root.appendChild(card); document.body.appendChild(root); return root;
 }

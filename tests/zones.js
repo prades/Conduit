@@ -115,6 +115,11 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
           Array.prototype.find.call(document.querySelectorAll('#orderPicker .op-btn'), function(b){ return /GENERATOR/.test(b.textContent); }).click(); out.pickerRowsGen = document.querySelectorAll('#orderPicker .op-row').length;
           document.querySelector('#orderPicker .rpk-btn.mix').click(); await wait(300); out.queued = (zoneOrders[1] || []).length; out.orderChip = card(1).querySelector('.cz-chip.order') ? card(1).querySelector('.cz-chip.order').textContent : '';
           card(1).querySelector('.cz-chip.order').click(); await wait(200); out.cancelled = (zoneOrders[1] || []).length;
+          // a whole layout kit as orders
+          Array.prototype.find.call(card(1).querySelectorAll('.cz-chip.add'), function(){ return true; }).click(); await wait(100);
+          Array.prototype.find.call(document.querySelectorAll('#orderPicker .op-btn'), function(b){ return /LAYOUT KIT/.test(b.textContent); }).click(); out.kitButtons = document.querySelectorAll('#orderPicker .op-row.kits .op-btn').length;
+          Array.prototype.find.call(document.querySelectorAll('#orderPicker .op-row.kits .op-btn'), function(b){ return b.textContent === 'OUTPOST'; }).click(); out.kitSub = document.querySelector('#orderPicker .rpk-sub').textContent;
+          document.querySelector('#orderPicker .rpk-btn.mix').click(); await wait(300); out.kitOrders = (zoneOrders[1] || []).length; out.kitChip = card(1).textContent; clearZoneOrders(); _ccPageSig = ''; await wait(500);
           btnOf(card(1), /RECALL/).click(); await wait(200); out.recalled = zoneCrewSummary(1).total;
           var tp = Array.prototype.find.call(document.querySelectorAll('#ccPage .cc-zone')[2].querySelectorAll('.cz-btn'), function(b){ return /TELEPORT/.test(b.textContent); }); out.tpDim = tp.classList.contains('dim');
           var pre = document.createElement('pre'); pre.id = '__zn'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -135,8 +140,9 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
                 same(r.crew, 2, 'crew'); ok(/1 ANT . 1 CORE/.test(r.crewLine1), r.crewLine1); same(r.hasRecall, true, 'recall');
             });
             check('THE ASK: + ORDER opens a picker (generator / battery / turret, element, level), QUEUE IT adds it to the zone, tapping the chip cancels it, RECALL sends the crew home', () => {
-                same(r.picker, true, 'picker'); ok(r.pickerRows >= 3, 'rows ' + r.pickerRows); ok(/COSTS/.test(r.pickerSub), r.pickerSub); same(r.pickerRowsGen, 1, 'a generator has no element or level');
+                same(r.picker, true, 'picker'); ok(r.pickerRows >= 4, 'rows (mode, kind, element, level) ' + r.pickerRows); ok(/COSTS/.test(r.pickerSub), r.pickerSub); same(r.pickerRowsGen, 2, 'a generator has no element or level (just the mode and kind rows)');
                 same(r.queued, 1, 'queued'); ok(/GENERATOR/.test(r.orderChip), r.orderChip); same(r.cancelled, 0, 'cancelled'); same(r.recalled, 0, 'recalled');
+                same(r.kitButtons, 16, 'the sixteen kits are pickable'); ok(/OUTPOST: \+5 PIECES/.test(r.kitSub), r.kitSub); same(r.kitOrders, 5, 'an OUTPOST queues five exact-tile orders'); ok(/OUTPOST \u00b7 GENERATOR/.test(r.kitChip), r.kitChip);
             });
             check('pressing CLEAR BROKEN pays the fee and the card updates; a zone with no held nest has TELEPORT dimmed', () => { same(r.spent, 8, 'spent'); same(r.brokenAfter, 0, 'broken after'); ok(/NOTHING BROKEN/.test(r.z1after), r.z1after); same(r.tpDim, true, 'teleport not dimmed'); });
         }

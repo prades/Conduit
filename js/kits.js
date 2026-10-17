@@ -75,8 +75,8 @@ const KITS = [
       blurb: "The STRONGPOINT with both guns upgraded to MK II.",
       map: [".BB", "GBB", "...TT"] },
     { id: "fullkit",      name: "FULL KIT",     family: "combined", needs: "form", target: { tier: 3, ultra: true, formation: true },
-      blurb: "A pod of six, an Ultra and a formation, with the lane left open between them: the most a zone needs.",
-      map: [".BBB.TT", "GBBB.TT", ".......WW", ".......WW"] },
+      blurb: "The most a zone needs: a pod of six, the two lane guns, an Ultra and a formation, with a way through left open.",
+      map: [".BBB.TT", "GBBB.TT", "...TT..WW", ".......WW"] },
 ];
 const KIT_FAMILIES = [["power", "POWER"], ["defence", "DEFENCE"], ["control", "CONTROL"], ["combined", "COMBINED"]];
 const KIT_KIND = { G: "generator", C: "connector", B: "battery", T: "attack", W: "wave", S: "support" };
@@ -172,15 +172,21 @@ function _kitHaveKind(t, p, el) {
     return !!t.waveMode;   // W, S
 }
 // Every piece of the kit on the ground at (x0, dir): its tile and whether it is already there ("have"), free to build ("free") or blocked (with the reason).
+// The generators of yours standing in a zone (a zone has exactly one: a second is the kind of equipment nobody needs).
+function kitZoneGenerators(zone) {
+    return (typeof world !== "undefined" ? world : []).filter(t => t.pillar && t.isGenerator && t.pillarTeam === "green" && !t.destroyed && getZoneIndex(t.x) === zone);
+}
 function kitPlan(kit, el, x0, dir, nest) {
     // Every piece must stand in the zone the generator does: tech in a zone with no generator of its own has no power (power.js zoneHasGenerator).
     const zone = typeof getZoneIndex === "function" ? getZoneIndex(nest ? nest.x : x0) : 0;
+    const zoneGens = kitZoneGenerators(zone);
     const pieces = kitPieces(kit).map(p => {
         const x = x0 + (dir || 1) * p.dx, t = _kitTile(x, p.dy), r = { piece: p, x, y: p.dy, tile: t, state: "free", why: null };
         if (t && getZoneIndex(x) !== zone) { r.state = "blocked"; r.why = "ACROSS THE ZONE LINE"; return r; }
         if (t && _kitHaveKind(t, p, el)) { r.state = "have"; if (p.mk2 && (t.mk || 0) < 2) r.mk2Missing = true; return r; }
         const why = typeof _bmTileProblem === "function" ? _bmTileProblem(t) : (t ? null : "NOTHING THERE");
         if (why) { r.state = "blocked"; r.why = why; return r; }
+        if (p.c === "G" && zoneGens.length) { r.state = "blocked"; r.why = "THE ZONE ALREADY HAS A GENERATOR (" + zoneGens[0].x + "," + zoneGens[0].y + ")"; return r; }
         if (p.c === "G" || p.c === "C") {
             if (typeof canPlaceGenerator === "function" && !canPlaceGenerator(t).ok) { r.state = "blocked"; r.why = "NEEDS A NEST WITHIN " + GENERATOR_NEST_RANGE; }
         }
@@ -194,11 +200,35 @@ function kitPlan(kit, el, x0, dir, nest) {
 // SNAP TO NEST: the placement round this nest with the fewest blocked pieces, then the most already built, then the least shifted from the nest.
 function kitFindPlacement(kit, el, nest) {
     let best = null, bs = -Infinity;
-    for (const dir of [1, -1]) for (const sx of [0, -1, 1, -2, 2, -3, 3]) {
-        const plan = kitPlan(kit, el, nest.x + sx, dir, nest), g = plan.pieces.find(p => p.piece.c === "G");
+    // Candidate generator columns: round the nest, and ON an existing generator of the zone's (the kit's generator then IS that one: a zone has only one).
+    const cand = [];
+    for (const dir of [1, -1]) for (const sx of [0, -1, 1, -2, 2, -3, 3]) cand.push([nest.x + sx, dir, Math.abs(sx)]);
+    for (const g of kitZoneGenerators(getZoneIndex(nest.x))) if (g.y === 1) for (const dir of [1, -1]) cand.push([g.x, dir, 0]);
+    for (const [x0, dir, shift] of cand) {
+        const plan = kitPlan(kit, el, x0, dir, nest), g = plan.pieces.find(p => p.piece.c === "G");
         if (g && g.tile && g.state === "free" && Math.hypot(g.tile.x - nest.x, g.tile.y - nest.y) > GENERATOR_NEST_RANGE) continue;
-        const s = -plan.blocked * 100 + plan.have * 10 - Math.abs(sx) - (dir < 0 ? 5 : 0);
+        const s = -plan.blocked * 100 + plan.have * 10 - shift - (dir < 0 ? 5 : 0);
         if (s > bs) { bs = s; best = plan; }
+    }
+    return best;
+}
+// ONE placement for several kits that share a layout (a ladder: OUTPOST, then STRONGPOINT, ...): fewest blocked pieces across all of them, then the most already built,
+// then the least shifted. So later kits land on the same tiles as the earlier ones and only add the difference; never a second, disjoint copy.
+function kitFindPlacementFor(kits, el, nest) {
+    const cand = [];
+    for (const dir of [1, -1]) for (const sx of [0, -1, 1, -2, 2, -3, 3]) cand.push([nest.x + sx, dir, Math.abs(sx)]);
+    for (const g of kitZoneGenerators(getZoneIndex(nest.x))) if (g.y === 1) for (const dir of [1, -1]) cand.push([g.x, dir, 0]);
+    let best = null, bs = -Infinity;
+    for (const [x0, dir, shift] of cand) {
+        let blocked = 0, have = 0, gOk = true;
+        for (const kit of kits) {
+            const plan = kitPlan(kit, el, x0, dir, nest); blocked += plan.blocked; have += plan.have;
+            const g = plan.pieces.find(p => p.piece.c === "G");
+            if (g && g.tile && g.state === "free" && Math.hypot(g.tile.x - nest.x, g.tile.y - nest.y) > GENERATOR_NEST_RANGE) gOk = false;
+        }
+        if (!gOk) continue;
+        const s = -blocked * 100 + have * 10 - shift - (dir < 0 ? 5 : 0);
+        if (s > bs) { bs = s; best = { x0, dir, blocked, have }; }
     }
     return best;
 }
@@ -231,3 +261,15 @@ function kitBuild(plan) {
 }
 // The next piece autoplay (or a crew) should build for this kit at this nest, or null when it is complete or cannot go on.
 function kitNextPiece(plan) { const o = _kitBuildOrder(plan); return o.length ? o[0] : null; }
+
+// One piece at a time (autoplay's pace): the next missing piece, built. Returns true when it built one.
+function kitBuildNext(plan) {
+    const r = kitNextPiece(plan); if (!r || shardCount < PYLON_BUILD_COST) return false;
+    const t = _kitTile(r.x, r.y), p = r.piece, el = plan.el;
+    if (!t || (typeof _bmTileProblem === "function" && _bmTileProblem(t))) return false;
+    const before = shardCount;
+    if (p.c === "G" || p.c === "C") _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === (p.c === "G" ? GENERATOR_ID : CONNECTOR_ID)), t, null);
+    else _executeBuildInstant(ELEMENTS.find(e => e.id === el), t, p.c === "B" ? "battery" : p.c === "T" ? "attack" : waveRole(el));
+    if (typeof _cacheAge !== "undefined") _cacheAge = -999;
+    return shardCount < before;
+}

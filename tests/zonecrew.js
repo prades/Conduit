@@ -30,6 +30,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const t = T(n.x + 2, 1); _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), t, 'attack'); t.destroyed = true; globalThis.__wreck = t; })();
         player.x = player.visualX = 3; player.y = player.visualY = 1.5; render();`);
     const frames = n => { for (let i = 0; i < n; i++) run('render()'); };
+    // Long runs: the crew is at its own risk by design, so keep the test about the orders: no hostile creature lives, and the crew is kept whole.
+    const safe = n => { for (let i = 0; i < n; i++) { if (i % 50 === 0) run('actors = actors.filter(a => !(a instanceof Predator) || a.team === "green"); actors.forEach(a => { if (a.isClone || a.isFollower) a.health = a.maxHealth; });'); run('render()'); } };
     const mkAnt = (x, y) => run(`(function(){ const c = makeClone('ant', 'scout', ${x}, ${y}); c.returningToCrystal = false; return actors.indexOf(c); })()`);
 
     group('SEND CREW');
@@ -67,30 +69,47 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('THE ASK: with the crew there, the builders put the order up on their own: a generator by the nest, paid for when it goes up', () => {
         run('zoneSendCrew(1);'); const before = run('shardCount'), gens = () => run('world.filter(t => t.pillar && t.isGenerator && getZoneIndex(t.x) === 1).length'); same(gens(), 0, 'fixture');
-        frames(700); same(gens(), 1, 'the generator was not built'); ok(run('shardCount') < before, 'no shards were spent'); same(run('(zoneOrders[1] || []).length'), 0, 'the order is still queued');
+        safe(700); same(gens(), 1, 'the generator was not built'); ok(run('shardCount') < before, 'no shards were spent'); same(run('(zoneOrders[1] || []).length'), 0, 'the order is still queued');
     });
     check('a battery order goes up too, on a tile the build rules accept, with the cost of its level', () => {
         const bats = () => run('world.filter(t => t.pillar && t.isBattery && getZoneIndex(t.x) === 1).length'); run('_cacheAge = -999;'); frames(30);
         same(run('zoneAddOrder(1, { kind: "battery", elId: "electric", level: 2 })'), true, 'added'); const cost = run('zoneOrderCost(zoneOrders[1][0])'); same(cost, 4 * run('PYLON_BUILD_COST'), 'a pod of four costs four');
-        const before = run('shardCount'); frames(1200); same(bats(), 4, 'the pod of four was not built'); same(before - run('shardCount'), cost, 'spent');
+        const before = run('shardCount'); safe(1200); same(bats(), 4, 'the pod of four was not built'); same(before - run('shardCount'), cost, 'spent');
     });
     check('an order that cannot go yet (a battery before any generator) does not block the ones behind it', () => {
         run('clearZoneOrders(); world.filter(t => t.pillar && getZoneIndex(t.x) === 1).forEach(t => clearPylon(t)); _cacheAge = -999; shardCount = 500;');
         run('zoneAddOrder(1, { kind: "battery", elId: "electric", level: 1 }); zoneAddOrder(1, { kind: "generator" });'); frames(40);
-        ok(/NO ROOM/.test(run('zoneOrders[1][0].status')), 'the battery was not held back: ' + run('zoneOrders[1][0].status')); frames(700);
-        same(run('world.filter(t => t.pillar && t.isGenerator && getZoneIndex(t.x) === 1).length'), 1, 'the generator behind it was not built'); frames(700);
+        ok(/NO ROOM/.test(run('zoneOrders[1][0].status')), 'the battery was not held back: ' + run('zoneOrders[1][0].status')); safe(700);
+        same(run('world.filter(t => t.pillar && t.isGenerator && getZoneIndex(t.x) === 1).length'), 1, 'the generator behind it was not built'); safe(700);
         same(run('(zoneOrders[1] || []).length'), 0, 'the battery went up once its generator did');
     });
     check('short of shards the order waits (and builds nothing), then goes up when there are shards', () => {
         run('shardCount = 0; zoneAddOrder(1, { kind: "battery", elId: "ice", level: 1 });'); const n = () => run('world.filter(t => t.pillar && t.isBattery && getZoneIndex(t.x) === 1).length'), n0 = n(); frames(300);
         same(n(), n0, 'built with no shards'); ok(/WAITING FOR SHARDS/.test(run('zoneOrders[1][0].status')), 'status ' + run('zoneOrders[1][0].status'));
-        run('shardCount = 100;'); frames(700); same(n(), n0 + 1, 'not built once there were shards');
+        run('shardCount = 100;'); safe(700); same(n(), n0 + 1, 'not built once there were shards');
     });
     check('orders can be cancelled, are capped, and are remembered (saved)', () => {
         run('shardCount = 0;'); run('zoneCancelOrder(1, 0); (zoneOrders[1] || []).length = 0; delete zoneOrders[1];');
-        for (let i = 0; i < 10; i++) run('zoneAddOrder(1, { kind: "battery", elId: "fire", level: 1 })'); same(run('zoneOrders[1].length'), run('ORDER_MAX'), 'cap');
+        for (let i = 0; i < 25; i++) run('zoneAddOrder(1, { kind: "battery", elId: "fire", level: 1 })'); same(run('zoneOrders[1].length'), run('ORDER_MAX'), 'cap');
         ok(/"battery"/.test(store.conduit_zone_orders || run('localStorage.getItem("conduit_zone_orders")') || ''), 'not saved'); same(run('zoneCancelOrder(1, 0)'), true, 'cancel'); same(run('zoneOrders[1].length'), run('ORDER_MAX') - 1, 'after cancel');
         run('clearZoneOrders();'); same(run('Object.keys(zoneOrders).length'), 0, 'clear');
+    });
+    check('THE ASK (kits as orders): a layout kit queued in a zone becomes exact-tile orders, generator first, and the ant builders put the whole kit up', () => {
+        run('clearZoneOrders(); world.filter(t => t.pillar && getZoneIndex(t.x) === 1).forEach(t => clearPylon(t)); _cacheAge = -999; shardCount = 500; unlockedElements.add("toxic");'); frames(5);
+        run('floatingTexts.length = 0;');
+        same(run('zoneQueueKit(1, "strongpoint", "fire")'), 7, 'queued'); const o = JSON.parse(run('JSON.stringify(zoneOrders[1].map(o => [o.kind, o.kit, !!o.fixed]))'));
+        same(o[0][0], 'generator', 'the generator is first'); ok(o.every(x => x[1] === 'strongpoint' && x[2]), 'orders: ' + JSON.stringify(o));
+        run('zoneSendCrew(1);'); frames(300); frames(2900);
+        const m = JSON.parse(run('JSON.stringify({ n: world.filter(t => t.pillar && getZoneIndex(t.x) === 1 && !t.destroyed).length, left: (zoneOrders[1] || []).length, tier: networkStrength.fire, bats: world.filter(t => t.pillar && t.isBattery && getZoneIndex(t.x) === 1).length, gens: world.filter(t => t.pillar && t.isGenerator && getZoneIndex(t.x) === 1).length, status: (zoneOrders[1] || []).map(o => o.status) })'));
+        same(m.left, 0, 'orders left ' + m.status.join('|')); same(m.n, 7, 'pieces'); same(m.bats, 4, 'batteries'); same(m.gens, 1, 'generators'); same(m.tier, 2, 'tier II');
+    });
+    check('a kit already built in the zone queues nothing; a bigger one queues only the difference', () => {
+        same(run('zoneQueueKit(1, "strongpoint", "fire")'), 0, 'again'); ok(run('floatingTexts.some(t => /ALREADY BUILT/.test(t.text))'), 'message');
+        same(run('zoneQueueKit(1, "ultranear", "fire")'), 2, 'the two extra guns'); run('clearZoneOrders();');
+    });
+    check('a kit that does not take the element, or has a blocked piece, queues nothing and says why', () => {
+        run('floatingTexts.length = 0;'); same(run('zoneQueueKit(1, "trap", "electric")'), 0, 'electric does not form'); ok(run('floatingTexts.some(t => /DOES NOT TAKE/.test(t.text))'), 'message');
+        same(run('zoneQueueKit(40, "outpost", "fire")'), 0, 'a zone with no nest'); run('clearZoneOrders();');
     });
     check('a locked element cannot be ordered', () => { run('unlockedElements.delete("toxic"); floatingTexts.length = 0;'); same(run('zoneAddOrder(1, { kind: "battery", elId: "toxic" })'), false, 'added'); ok(run('floatingTexts.some(t => /NOT UNLOCKED/.test(t.text))'), 'no reason'); });
     check('a restart clears the queue (waves.js)', () => ok(/clearZoneOrders\(\)/.test(rd('js/waves.js')), 'restartGame does not clear it'));

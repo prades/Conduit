@@ -15,13 +15,10 @@
 //      nest's hack spot and hacks it (followers can hack when ORDERED to:
 //      `hackOrder`, read in game.js).
 //   It NEVER moves your character — you stay free to go where you like.
-//   3. ALWAYS → BUILD, one pylon per think, while the shards last:
-//        a. a GENERATOR beside every nest you hold that has none,
-//        b. a CONNECTOR beside the frontier nest, reaching toward the next zone,
-//        c. THE BASE PLAN at each held nest (_autoGrowNetwork): two turrets,
-//           a bank of batteries (tier III), an ULTRA TURRET square, a
-//           FORMATION square (black hole / firewall / ice / toxic tower), and
-//           a couple of support pylons if shards are spare. Then it stops.
+//   3. ALWAYS → BUILD, one pylon per think, while the shards last, from the LAYOUT KITS (js/kits.js, docs/LAYOUT-KITS.md). Each held nest gets
+//      the kits its place calls for, one after the other, and then it stops: a REAR zone (far behind the front) a SKELETON then an OUTPOST, a MID zone an
+//      OUTPOST then a STRONGPOINT, the FRONT zone (the farthest you hold) up to an ULTRA NEAR and a formation TRAP, and a DEEP front zone (zone 3 on) a
+//      FULL KIT. Nothing is built that no kit asks for: no spare batteries, no loose pylons. MK II comes last, on shards to spare.
 //   4. ALWAYS → ULTIMATES. A follower with a full bar and an enemy within
 //      AUTOPLAY_ULT_RANGE fires it (the duo ultimate if its partner can).
 //   5. ALWAYS → WORK CREW. About a quarter of the squad works, so kills keep
@@ -33,12 +30,16 @@
 const AUTOPLAY_THINK        = 45;
 const AUTOPLAY_HACK_TEAM    = 3;
 const AUTOPLAY_ULT_RANGE    = 4;
-const AUTOPLAY_BATTERIES    = 6;    // a bank of batteries for tier III (BATTERY_TIER_SIZES)
-const AUTOPLAY_ACCESSORIES  = 2;    // support pylons per nest, once the plan is built …
-const AUTOPLAY_SPARE        = 40;   // … and only while this many shards are left over
+const AUTOPLAY_SPARE        = 40;   // MK II only while this many shards are left over
 const AUTOPLAY_FORM_ORDER   = ["toxic", "ice", "flux", "fire"];   // formation element, when the network's forms nothing
-const AUTOPLAY_FORM_BATTERIES = 4;  // a tier II bank for a formation of another element
-const AUTOPLAY_NET_RADIUS   = 9;    // tiles from its nest a network is counted and grown in
+// THE LADDER: the kits (js/kits.js ids) a zone gets, in order, by where it is. A kit already built (all its pieces there) is passed; the next one adds only the difference.
+const AUTOPLAY_LADDER = {
+    rear:  ["skeleton", "outpost"],
+    mid:   ["outpost", "strongpoint"],
+    front: ["outpost", "strongpoint", "ultranear", "trap"],
+    deep:  ["outpost", "strongpoint", "fullkit", "bastion"],   // (bastion only if no formation element can take the full kit)
+};
+const AUTOPLAY_DEEP_ZONE = 3;       // the front zone from here on is "deep"
 const AUTOPLAY_WORK_SHARE   = 0.25;
 const AUTOPLAY_NEXT_WAVE_MS = 1500;
 const AUTOPLAY_SHARD_LOW    = 40;   // below this, by day, the player siphons safe panels first
@@ -181,62 +182,8 @@ function _autoBuild() {
     if (shardCount < PYLON_BUILD_COST) return;
     const held = _autoHeldNests();
     const next = _autoNextNest();
-    const frontier = held[held.length - 1];
-    for (const nest of held) {
-        if (_autoEnsureRelay(nest, GENERATOR_ID, isGeneratorPylon, 0)) return;
-        if (_autoEnsureZoneGenerators(nest)) return;
-        if (nest === frontier && next && _autoEnsureRelay(nest, CONNECTOR_ID, isConnectorPylon, 1)) return;
-        if (_autoGrowNetwork(nest, next)) return;
-    }
-}
-// A relay of this kind within reach of the nest, or build one. `ahead` pushes
-// the connector toward the next zone.
-function _autoEnsureRelay(nest, id, isKind, ahead) {
-    const have = (typeof _pillarCache !== "undefined" ? _pillarCache : []).some(t => isKind(t) && t.pillarTeam === "green"
-        && Math.hypot(t.x - nest.x, t.y - nest.y) <= GENERATOR_NEST_RANGE);
-    if (have) return false;
-    const el = PYLON_PICKER_TYPES.find(e => e.id === id);
-    let best = null, bs = -Infinity;
-    for (let dx = -3; dx <= 5; dx++) for (let y = 1; y <= 3; y++) {
-        const t = _autoTile(nest.x + dx, y);
-        if (!_autoFree(t) || !canPlaceGenerator(t).ok) continue;
-        const s = (ahead ? dx : -Math.abs(dx - 1)) - Math.abs(y - 2) * 0.5;
-        if (s > bs) { bs = s; best = t; }
-    }
-    if (!best) return false;
-    _executeBuildInstant(el, best, null);
-    return true;
-}
-// Is there a generator of yours standing in this tile's zone? The plan only
-// builds where there is: tech in a zone with none does nothing (power.js).
-function _autoZoneOk(t) {
-    if (!t || typeof getZoneIndex !== "function") return true;
-    const z = getZoneIndex(Math.floor(t.x));
-    return (typeof _pillarCache !== "undefined" ? _pillarCache : []).some(g => isGeneratorPylon(g) && g.pillarTeam === "green" && !g.destroyed && getZoneIndex(Math.floor(g.x)) === z);
-}
-// Every zone needs its own generator (power.js zoneHasGenerator). A nest's
-// base plan reaches AUTOPLAY_NET_RADIUS round it, which can cross into the
-// next zone: give each zone it reaches a generator too, near the nest.
-function _autoEnsureZoneGenerators(nest) {
-    if (typeof getZoneIndex !== "function") return false;
-    const cache = typeof _pillarCache !== "undefined" ? _pillarCache : [];
-    const zones = new Set();
-    for (let x = Math.floor(nest.x - AUTOPLAY_NET_RADIUS); x <= Math.ceil(nest.x + AUTOPLAY_NET_RADIUS); x++) zones.add(getZoneIndex(x));
-    for (const z of zones) {
-        if (cache.some(t => isGeneratorPylon(t) && t.pillarTeam === "green" && !t.destroyed && getZoneIndex(Math.floor(t.x)) === z)) continue;
-        const el = PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID);
-        let best = null, bd = Infinity;
-        for (let dx = -GENERATOR_NEST_RANGE; dx <= GENERATOR_NEST_RANGE; dx++) for (let y = 1; y <= 3; y++) {
-            const t = _autoTile(nest.x + dx, y);
-            if (!t || getZoneIndex(Math.floor(t.x)) !== z || !_autoFree(t) || !canPlaceGenerator(t).ok) continue;
-            const d = Math.abs(dx) + Math.abs(y - 2);
-            if (d < bd) { bd = d; best = t; }
-        }
-        if (!best) continue;
-        _executeBuildInstant(el, best, null);
-        return true;
-    }
-    return false;
+    // The frontier first (it is where the fighting is), then back toward home.
+    for (const nest of held.slice().reverse()) if (_autoGrowNetwork(nest, next, held)) return;
 }
 // The element a held nest's network is built in: the one the squad has most
 // of (it is also what the hack team and fighters lean on), fixed once chosen.
@@ -248,126 +195,47 @@ function _autoNetworkElement(nest) {
     nest._autoEl = ranked[0] || [...unlockedElements][0] || "fire";
     return nest._autoEl;
 }
-// ── THE BASE PLAN at each held nest ──────────────────────
-// REPORTED: "reimagine the autoplay mode to reinforce building batteries and
-// ultra pylons when applicable, also create a fair number of other
-// accessories but not spammy." One build per think, in this order, and a
-// nest is FINISHED when its plan is — about seventeen structures, not a
-// carpet of pylons:
-//   1. two ATTACK TURRETS — the first two corners of the ULTRA square, so it
-//      has guns from the start;
-//   2. a BANK of AUTOPLAY_BATTERIES batteries of the network element — tier III;
-//   3. the other two corners: the four turrets fuse into an ULTRA TURRET;
-//   4. a square of four WAVE PYLONS of a formation element (flux, fire, ice
-//      or toxic — the network element if it is one) — a black hole, spinning
-//      firewall, ice generator or toxic tower;
-//   5. ACCESSORIES: AUTOPLAY_ACCESSORIES support pylons (electric haste, or
-//      core shields), only while shards stay above AUTOPLAY_SPARE;
-//   6. then MK II on its turrets and wave pylons, one at a time, on the same
-//      spare shards.
-// The two squares are claimed up front (nest._autoPlan) and kept clear of
-// everything else; the ultra takes the back rows so the front lane stays open.
-function _autoNear(nest) {
-    return (typeof _pillarCache !== "undefined" ? _pillarCache : []).filter(t => t.pillarTeam === "green" && !t.destroyed
-        && Math.hypot(t.x - nest.x, t.y - nest.y) <= AUTOPLAY_NET_RADIUS);
+// ── THE KIT LADDER at each held nest ──────────────────────
+// Where a nest stands in your line decides its ladder: the frontier (the farthest nest held) is the front (deep from zone AUTOPLAY_DEEP_ZONE), the one before
+// it the mid, the rest the rear.
+function _autoZoneClass(nest, held) {
+    const i = held.indexOf(nest), frontier = held[held.length - 1];
+    if (nest === frontier) return (nest.nestZone || 0) >= AUTOPLAY_DEEP_ZONE ? "deep" : "front";
+    return i === held.length - 2 ? "mid" : "rear";
 }
-function _autoSquareTiles(sq) {
-    return [[0, 0], [1, 0], [0, 1], [1, 1]].map(([dx, dy]) => _autoTile(sq.x0 + dx, sq.y0 + dy));
+// The element a zone's kits are built in: the network element, or the formation element if the ladder has a formation in it (a formation needs a bank of its own element).
+function _autoZoneElement(nest, cls) {
+    const net = _autoNetworkElement(nest);
+    if (!AUTOPLAY_LADDER[cls].some(id => kitById(id).needs === "form")) return net;
+    return _autoFormationElement(net) || net;
 }
-// Is this tile already what the square wants?
-function _autoTileIs(t, el, kind) {
-    if (!t || !t.pillar || t.destroyed || t.pillarTeam !== "green" || t.attackModeElement !== el) return false;
-    return kind === "attack" ? !!t.attackMode && !t.isBattery : !!t.waveMode;
-}
-// The best free 2x2 at this nest: every tile free, linked to what is already
-// there (so it is powered), rows `rows` preferred, leaning toward the next zone.
-function _autoFindSquare(nest, next, rows, reserved) {
-    const near = _autoNear(nest), anchors = near.length ? near : [nest];
-    const R = getPylonRange() - 0.15, dirX = next && next.x > nest.x ? 1 : 0;
-    let best = null, bs = -Infinity;
-    for (const y0 of [rows, rows === 0 ? 2 : 0, 1]) for (let dx = -4; dx <= 8; dx++) {
-        const sq = { x0: nest.x + dx, y0 }, tiles = _autoSquareTiles(sq);
-        if (!tiles.every(t => _autoFree(t) && _autoZoneOk(t) && !reserved.has(t.x + "," + t.y))) continue;
-        if (tiles.some(t => Math.hypot(t.x - nest.x, t.y - nest.y) > AUTOPLAY_NET_RADIUS)) continue;
-        if (!tiles.some(t => anchors.some(a => Math.hypot(a.x - t.x, a.y - t.y) <= R))) continue;
-        const s = (y0 === rows ? 10 : y0 === 1 ? 0 : 5) + dx * dirX * 0.4 - Math.abs(dx) * (1 - dirX) * 0.4;
-        if (s > bs) { bs = s; best = sq; }
-    }
-    return best;
-}
-// Build the next tile of the planned square, up to `upTo` of its four.
-function _autoSquareStep(nest, next, key, elId, kind, upTo, rows, reserved) {
-    const plan = nest._autoPlan || (nest._autoPlan = {});
-    let sq = plan[key];
-    // A square something else has taken a tile of is given up for another.
-    if (sq && !_autoSquareTiles(sq).every(t => t && (_autoFree(t) || _autoTileIs(t, elId, kind)))) sq = null;
-    if (!sq) { sq = _autoFindSquare(nest, next, rows, reserved); plan[key] = sq; if (!sq) return false; }
-    const tiles = _autoSquareTiles(sq);
-    tiles.forEach(t => reserved.add(t.x + "," + t.y));
-    if (tiles.filter(t => _autoTileIs(t, elId, kind)).length >= upTo) return false;
-    const t = tiles.find(t => _autoFree(t));
-    if (!t) return false;
-    _executeBuildInstant(ELEMENTS.find(e => e.id === elId), t, kind);
-    return true;
-}
-// One pylon linked to `anchors`, not crowding them, off the reserved squares.
-function _autoPlaceLinked(nest, next, elId, kind, anchors, reserved) {
-    const R = getPylonRange() - 0.15, dirX = next && next.x > nest.x ? 1 : 0;
-    let best = null, bs = -Infinity;
-    for (let dx = -4; dx <= 9; dx++) for (let y = 0; y <= 3; y++) {
-        const t = _autoTile(nest.x + dx, y);
-        if (!_autoFree(t) || !_autoZoneOk(t) || reserved.has(t.x + "," + t.y) || Math.hypot(t.x - nest.x, t.y - nest.y) > AUTOPLAY_NET_RADIUS) continue;
-        let link = false, crowd = false;
-        for (const a of anchors) { const d = Math.hypot(a.x - t.x, a.y - t.y); if (d <= R) link = true; if (d < 1.9) crowd = true; }
-        if (!link || crowd) continue;
-        const s = dx * dirX * 0.6 - Math.abs(y - 2) * 0.3 - Math.abs(dx) * (1 - dirX) * 0.3;
-        if (s > bs) { bs = s; best = t; }
-    }
-    if (!best) return false;
-    _executeBuildInstant(ELEMENTS.find(e => e.id === elId), best, kind);
-    return true;
-}
-// The element for the formation square: the network element if it forms
-// something, else the first unlocked one that does.
+// The element for a formation: the network element if it forms something, else the first unlocked one that does.
 function _autoFormationElement(elId) {
     const forms = typeof FORM_KINDS !== "undefined" ? Object.keys(FORM_KINDS) : [];
     if (forms.includes(elId)) return elId;
     return AUTOPLAY_FORM_ORDER.find(e => forms.includes(e) && unlockedElements.has(e)) || null;
 }
-function _autoGrowNetwork(nest, next) {
-    const elId = _autoNetworkElement(nest);
-    if (!ELEMENTS.find(e => e.id === elId)) return false;
-    const reserved = new Set();
-    // 1. Two guns: the first corners of the ultra square (back rows).
-    if (_autoSquareStep(nest, next, "ultra", elId, "attack", 2, 0, reserved)) return true;
-    // Claim the formation square early too, so the batteries leave it free.
-    const fel = _autoFormationElement(elId);
-    if (fel) { const plan = nest._autoPlan; if (!plan.form || !_autoSquareTiles(plan.form).every(t => t && (_autoFree(t) || _autoTileIs(t, fel, waveRole(fel))))) plan.form = _autoFindSquare(nest, next, 2, reserved); if (plan.form) _autoSquareTiles(plan.form).forEach(t => reserved.add(t.x + "," + t.y)); }
-    // 2. The battery bank, each one linked to the last.
-    const near = _autoNear(nest);
-    const bats = near.filter(t => t.isBattery && t.attackModeElement === elId);
-    if (bats.length < AUTOPLAY_BATTERIES) return _autoPlaceLinked(nest, next, elId, "battery", bats.length ? bats : near.length ? near : [nest], reserved);
-    // 3. The rest of the ultra square.
-    if (_autoSquareStep(nest, next, "ultra", elId, "attack", 4, 0, reserved)) return true;
-    // 4. The formation square — and, when it is another element than the
-    // network's, a small bank of that element beside it: a formation only
-    // works on a tier II network at its square (ULTRA_MIN_TIER in config.js).
-    if (fel && fel !== elId && nest._autoPlan.form) {
-        const fb = near.filter(t => t.isBattery && t.attackModeElement === fel);
-        if (fb.length < AUTOPLAY_FORM_BATTERIES)
-            return _autoPlaceLinked(nest, next, fel, "battery", fb.length ? fb : _autoSquareTiles(nest._autoPlan.form), reserved);
+// Build the next piece of the first kit on the nest's ladder that is not finished. Remembers which (nest._autoKit) for the ZONES tab.
+function _autoGrowNetwork(nest, next, held) {
+    const cls = _autoZoneClass(nest, held || _autoHeldNests()), el = _autoZoneElement(nest, cls);
+    if (!ELEMENTS.find(e => e.id === el)) return false;
+    let done = true;
+    // ONE layout for the whole ladder, so every kit lands on the same tiles as the one before it and only adds the difference.
+    const kits = AUTOPLAY_LADDER[cls].map(kitById).filter(k => k && kitElementOk(k, el));
+    const pos = kitFindPlacementFor(kits, el, nest);
+    if (!pos) return false;
+    for (const kit of kits) {
+        const id = kit.id, plan = kitPlan(kit, el, pos.x0, pos.dir, nest);
+        nest._autoKit = { id, el, cls, have: plan.have, total: kitPieceCount(kit), blocked: plan.blocked };
+        if (plan.blocked) continue;               // something is in the way: pass over this kit
+        if (!plan.free) continue;                  // finished
+        done = false;
+        if (kitBuildNext(plan)) return true;
+        return false;                              // the next piece cannot go (shards): wait, do not skip ahead
     }
-    if (fel && _autoSquareStep(nest, next, "form", fel, waveRole(fel), 4, 2, reserved)) return true;
-    // 5. A few accessories, only with shards to spare.
-    if (shardCount < PYLON_BUILD_COST + AUTOPLAY_SPARE) return false;
-    const sup = ["electric", "core"].find(e => unlockedElements.has(e));
-    if (sup) {
-        const have = near.filter(t => t.waveMode && t.attackModeElement === sup && !(t._wform || t._wformOf)).length;
-        if (have < AUTOPLAY_ACCESSORIES && _autoPlaceLinked(nest, next, sup, "support", near.length ? near : [nest], reserved)) return true;
-    }
-    // 6. MK II (commands.js): one pylon at a time, on its tier I network,
-    // still only with shards to spare.
+    // The ladder is built. MK II (commands.js): one pylon at a time, on its tier I network, still only with shards to spare.
     if (typeof mk2Blocker === "function" && shardCount >= MK2_COST + AUTOPLAY_SPARE) {
+        const near = (typeof _pillarCache !== "undefined" ? _pillarCache : []).filter(t => t.pillarTeam === "green" && !t.destroyed && getZoneIndex(t.x) === getZoneIndex(nest.x));
         const up = near.find(t => mk2Eligible(t) && !mk2Blocker(t));
         if (up) return upgradeToMk2(up);
     }

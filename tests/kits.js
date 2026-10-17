@@ -40,14 +40,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const bad = J('KITS.map(k => [k.id, kitValidate(k)]).filter(x => x[1].length)'); same(bad.length, 0, 'violations: ' + JSON.stringify(bad));
     });
     check('R1: the battery count is exactly the target tier\'s (0, 2, 4, 6): none spare', () => { for (const k of J('KITS.map(k => ({ id: k.id, b: kitPieces(k).filter(p => p.c === "B").length, t: k.target.tier }))')) same(k.b, [0, 2, 4, 6][k.t], k.id + ' batteries'); });
-    check('the sizes are what the plan said (3 to 15 pieces), the cost is ten a piece plus the MK II upgrades', () => {
+    check('the sizes are what the plan said (3 to 17 pieces), the cost is ten a piece plus the MK II upgrades', () => {
         const s = J('KITS.map(k => [k.id, kitPieceCount(k), kitCost(k)])'), by = Object.fromEntries(s.map(x => [x[0], x]));
-        same(by.skeleton[1], 3, 'skeleton'); same(by.outpost[1], 5, 'outpost'); same(by.strongpoint[1], 7, 'strongpoint'); same(by.bastion[1], 9, 'bastion'); same(by.fullkit[1], 15, 'fullkit'); same(by.hardened[2], 100, 'hardened (two MK II at 15)');
-        for (const [id, n, c] of s) ok(n >= 3 && n <= 15 && c >= n * 10, id + ' ' + n + '/' + c);
+        same(by.skeleton[1], 3, 'skeleton'); same(by.outpost[1], 5, 'outpost'); same(by.strongpoint[1], 7, 'strongpoint'); same(by.bastion[1], 9, 'bastion'); same(by.fullkit[1], 17, 'fullkit (the old autoplay plan: the most a zone needs)'); same(by.hardened[2], 100, 'hardened (two MK II at 15)');
+        for (const [id, n, c] of s) ok(n >= 3 && n <= 17 && c >= n * 10, id + ' ' + n + '/' + c);
     });
     check('they only get bigger up the chains: SKELETON in OUTPOST in STRONGPOINT in BASTION, and STRONGPOINT in ULTRA NEAR in SIEGE', () => {
         const has = (a, b) => run(`(function(){ const A = kitPieces(kitById("${a}")), B = new Set(kitPieces(kitById("${b}")).map(p => p.c + p.dx + "," + p.dy)); return A.every(p => B.has(p.c + p.dx + "," + p.dy)); })()`);
-        for (const [a, b] of [['skeleton', 'outpost'], ['outpost', 'strongpoint'], ['strongpoint', 'bastion'], ['strongpoint', 'ultranear'], ['ultranear', 'siege'], ['strongpoint', 'hardened'], ['ultrafront', 'fullkit']].slice(0, 6)) ok(has(a, b), a + ' is not inside ' + b);
+        for (const [a, b] of [['skeleton', 'outpost'], ['outpost', 'strongpoint'], ['strongpoint', 'bastion'], ['strongpoint', 'ultranear'], ['ultranear', 'siege'], ['strongpoint', 'hardened'], ['strongpoint', 'fullkit'], ['bastion', 'fullkit']]) ok(has(a, b), a + ' is not inside ' + b);
     });
 
     group('THE RULES CATCH EXAGGERATION (mutations)');
@@ -114,6 +114,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(p.ok, true, 'a clean placement exists'); same(p.zones.length, 1, 'zones the pieces stand in: ' + p.zones); ok(p.x0 < 0 || p.dir < 0, 'a 10-column kit cannot sit unshifted at the nest: ' + JSON.stringify(p));
         const q = J('(function(){ const pl = kitPlan(kitById("relayline"), "fire", __nest.x, 1, __nest); return { blocked: pl.blocked, why: pl.pieces.map(q => q.why).filter(Boolean) }; })()');
         ok(q.blocked >= 1 && q.why.includes('ACROSS THE ZONE LINE'), 'the unshifted plan should be blocked at the zone line: ' + JSON.stringify(q));
+    });
+    check('a zone has one generator: a kit aligns onto an existing one, and a kit whose generator would be a second is blocked', () => {
+        clearZone(); run('_executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), getTile(__nest.x + 2, 1), null); _cacheAge = -999;'); frames(2);
+        const p = J('(function(){ const pl = kitFindPlacement(kitById("outpost"), "fire", __nest); return { ok: pl.ok, have: pl.have, x0: pl.x0 - __nest.x, g: pl.pieces.find(q => q.piece.c === "G").state }; })()');
+        same(p.ok, true, 'a clean placement'); same(p.g, 'have', 'the generator is the existing one'); same(p.x0, 2, 'anchored on it');
+        const q = J('(function(){ const pl = kitPlan(kitById("outpost"), "fire", __nest.x, 1, __nest); const g = pl.pieces.find(q => q.piece.c === "G"); return { st: g.state, why: g.why }; })()');
+        same(q.st, 'blocked', 'a second generator was planned'); ok(/ALREADY HAS A GENERATOR/.test(q.why), q.why);
+        same(J('kitBuild(kitFindPlacement(kitById("outpost"), "fire", __nest)).built'), 4, 'the other four'); frames(3); same(run('world.filter(t => t.pillar && t.isGenerator && getZoneIndex(t.x) === 1).length'), 1, 'generators');
     });
     check('short of shards it builds what it can, in order (generator first), and says how many shards it still needs', () => {
         clearZone(); run('shardCount = 35;'); const r = J('kitBuild(kitFindPlacement(kitById("strongpoint"), "fire", __nest))'); same(r.built, 3, 'built'); ok(r.short > 0, 'no shortfall reported');

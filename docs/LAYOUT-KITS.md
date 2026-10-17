@@ -1,8 +1,10 @@
-# Zone equipment layouts: 16 kits (a plan)
+# Zone equipment layouts: 16 kits
 
 Asked: *"layouts for different equipment systems, that don't exaggerate unnecessary equipment. Plan a way to make 16 different variants of zone equipment layouts that make sense, used by the auto and available as build kits in the build menu in a separate tab."*
 
-This is a plan, nothing is built yet. It ends with the decisions I need from you.
+**Status: built.** js/kits.js (the sixteen kits, the rules, the placement engine), js/kitui.js and the KITS tab in the build menu (js/buildmenu.js), autoplay on the ladder (js/autoplay.js), and BUILD A LAYOUT KIT in the ZONES tab's order picker (js/zones.js). Tests: tests/kits.js (every kit built in the real game and measured), tests/kitui.js, tests/autoplay.js, tests/zonecrew.js.
+
+Decisions made: both the ghost and SNAP TO NEST; auto uses the ladder; 16 layouts each usable with any element it takes; no fixed size cap (the largest kit, FULL KIT, is 17 pieces because that is everything a zone needs, not because of a cap). Changes found while building: a kit must stay inside one zone (a piece across the line has no generator), so wide kits shift back from the nest; a zone has exactly one generator, so a kit aligns onto an existing one; FULL KIT includes the two lane guns so it is a superset of STRONGPOINT and BASTION.
 
 ## 1. What a kit is
 
@@ -24,7 +26,7 @@ These are checked by a validator (and a test) on every kit, so a new kit cannot 
 | R4 | One generator per zone. A connector only in the kit whose point is reach (RELAY LINE). |
 | R5 | Every piece is **powered and linked**: the graph of pieces is connected under the real link rules (3.05 tiles between pylons, a generator within 6 of a nest, a connector feeds 14). A kit that leaves a piece dark fails. |
 | R6 | The target is **achieved when built**: the network reads the tier it claims, an Ultra fuses, a formation forms (tier II needed, within 6 tiles of the bank). Simulated in the real game in the test. |
-| R7 | At most 17 pieces and 170 shards, and the layout fits the 4-row lane with the lane left open (a free row for walking). |
+| R7 | The layout fits the 4-row lane (10 columns) with a way through left open in every column. There is no piece cap: the rules above are what keep it honest. |
 
 ## 3. The 16 kits
 
@@ -130,7 +132,7 @@ y2 . . . S T
 
  14 SIEGE          11 pcs 110  tier II    an Ultra plus two more guns for a zone that is attacked every night
  15 HARDENED       7 pcs + 2 MK II  100   the STRONGPOINT with both turrets upgraded to MK II (they need a tier I network)
- 16 FULL KIT       17 pcs 170  tier III   what autoplay builds now: pod of six, Ultra, a formation, two supports. The ceiling: nothing bigger exists.
+ 16 FULL KIT       17 pcs 170  tier III   pod of six, the two lane guns, an Ultra and a formation (what autoplay used to build, without the supports).
 ```
 
 14 to 16 reuse the layouts above (their maps are the union of the kits they contain, positions unchanged).
@@ -173,7 +175,7 @@ The chosen kit is remembered per zone and shown on the zone card ("STRONGPOINT, 
 3. Autoplay on kits.
 4. ZONES tab: kit chip and BUILD KIT.
 
-## 8. Decisions I need
+## 8. Decisions (answered)
 
 1. **Size.** Keep every kit small (the ceiling is FULL KIT at 17 pieces, which is what autoplay builds today), or make the top end smaller?
 2. **Placing.** Ghost you place anywhere, snap-to-nest one tap, or both (recommended)?
