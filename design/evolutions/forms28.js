@@ -14,10 +14,12 @@ function _orbBrawler(o) {
   // a ring of small lit segments round the core (the inner machinery)
   const segs = []; for (let i = 0; i < 12; i++) { const a = i * TAU / 12, sg = new T.Mesh(new T.BoxGeometry(0.05, 0.05, R * 0.17), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); sg.position.set(0, Math.cos(a) * R * 0.66, Math.sin(a) * R * 0.66); sg.rotation.x = a; frame.add(sg); segs.push({ sg, a }); }
   // the tread band: a sparse ring of big square blocks round the middle (axle along x); two thin dark rims either side
+  // FLUSH (a true ball silhouette): a dark belt on the sphere's own surface round the equator, the tread blocks sunk into it with their faces level with the ball
+  if (o.flush) { const a = Math.asin(Math.min(0.95, (o.bandW / 2 + 0.05) / R)), belt = new T.Mesh(new T.SphereGeometry(R * 0.995, 28, 6, 0, TAU, PI / 2 - a, 2 * a), _obBlack); belt.rotation.z = PI / 2; belt.material.side = T.DoubleSide; frame.add(belt); }
   const band = G(); frame.add(band); const N = o.blocks;
-  for (let i = 0; i < N; i++) { const a = i * TAU / N, w = o.bandW, bl = TAU * R / N * 0.78, bx = new T.Mesh(new T.BoxGeometry(w, o.tread, bl), (i % 2) ? _obTread : _obBlack); bx.position.set(0, Math.cos(a) * (R + o.tread * 0.5), Math.sin(a) * (R + o.tread * 0.5)); bx.rotation.x = a; band.add(bx);
-    const stripe = new T.Mesh(new T.BoxGeometry(w * 0.55, 0.012, bl * 0.5), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); stripe.position.set(0, Math.cos(a) * (R + o.tread + 0.008), Math.sin(a) * (R + o.tread + 0.008)); stripe.rotation.x = a; if (o.stripes) band.add(stripe); }
-  for (const sx of [-1, 1]) { const rim = new T.Mesh(new T.TorusGeometry(R + 0.02, 0.035, 5, 32), _obBlack); rim.rotation.y = PI / 2; rim.position.x = sx * (o.bandW / 2 + 0.03); frame.add(rim); }
+  for (let i = 0; i < N; i++) { const a = i * TAU / N, w = o.bandW, bl = TAU * R / N * 0.78, bx = new T.Mesh(new T.BoxGeometry(w, o.tread, bl), (i % 2) ? _obTread : _obBlack); const rb = o.flush ? R - o.tread * 0.5 + 0.004 : R + o.tread * 0.5; bx.position.set(0, Math.cos(a) * rb, Math.sin(a) * rb); bx.rotation.x = a; band.add(bx);
+    const stripe = new T.Mesh(new T.BoxGeometry(w * 0.55, 0.012, bl * 0.5), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); const rs = o.flush ? R + 0.008 : R + o.tread + 0.008; stripe.position.set(0, Math.cos(a) * rs, Math.sin(a) * rs); stripe.rotation.x = a; if (o.stripes) band.add(stripe); }
+  for (const sx of [-1, 1]) { const rim = new T.Mesh(new T.TorusGeometry(o.flush ? R * 0.985 : R + 0.02, 0.03, 5, 32), _obBlack); rim.rotation.y = PI / 2; rim.position.x = sx * (o.bandW / 2 + 0.03); frame.add(rim); }
   // the shell plates: on each side, curved bowl segments with gaps between them, standing off the ball so the core and its light show
   const shells = []; const glass = o.glass ? new T.MeshStandardMaterial({ color: 0x120d03, metalness: 0.0, roughness: 0.12, transparent: true, opacity: o.glass, depthWrite: false, side: T.DoubleSide }) : null; if (glass) glass.envMapIntensity = 1.6;
   const edgeMat = new T.LineBasicMaterial({ color: lit.getHex(), transparent: true, opacity: 0.7, blending: T.AdditiveBlending });
@@ -51,3 +53,11 @@ fx(728, "The same in matte black: opaque shell plates edged in light, a wide ope
 fx(729, "Sparser, bigger tread: eight huge square blocks, two shell plates a side, a bigger core.", () => _orbBrawler(Object.assign({}, _ob0, { blocks: 8, tread: 0.18, bandW: 0.4, plates: 2, coreK: 0.55, glass: 0.4, shellT0: 0.7 })));
 fx(730, "More open: the plates thin and pulled apart so the core shows more, longer ears, a static bolt every beat.", () => _orbBrawler(Object.assign({}, _ob0, { plates: 4, shellT0: 0.7, shellT1: 1.2, glass: 0.4, earL: 0.55, earH: 0.24, zaps: 4 })));
 fx(731, "Armoured: the plates wrap further round, the core a glow in the gaps, thick short ears.", () => _orbBrawler(Object.assign({}, _ob0, { shellT0: 0.85, shellT1: 1.55, plates: 3, shellK: 1.06, coreK: 0.56, earW: 0.28, earL: 0.34, earH: 0.22, earTilt: 0.45 })));
+
+// ── A true ball silhouette (Nos. 732–736): less tread, flush with the sphere; the shell plates flush too; only the antenna brackets stand off ──
+const _fl = Object.assign({}, _ob0, { flush: true, blocks: 8, bandW: 0.24, tread: 0.1, shellK: 1.0, shellT0: 0.8, shellT1: 1.32, earW: 0.18, earH: 0.16, earL: 0.34, plates: 3 });
+fx(732, "A true ball: a smooth sphere, a slim band of eight flat tread blocks sunk flush round the middle, flush shell plates in smoked glass with the diamond showing, and only the two lit antenna brackets standing off the top.", () => _orbBrawler(Object.assign({}, _fl, { glass: 0.45 })));
+fx(733, "The same in matte black, a wide opening at each side showing the core.", () => _orbBrawler(Object.assign({}, _fl, { shellT0: 1.0, shellT1: 1.4, coreK: 0.55 })));
+fx(734, "Even less tread: six blocks, a thin belt, the ball almost smooth, the plates in glass.", () => _orbBrawler(Object.assign({}, _fl, { blocks: 6, bandW: 0.2, tread: 0.09, glass: 0.4, shellT0: 0.72 })));
+fx(735, "A smooth ball with the tread just a ring of eight lit studs, two plates a side, taller antenna brackets.", () => _orbBrawler(Object.assign({}, _fl, { blocks: 8, bandW: 0.12, tread: 0.08, plates: 2, glass: 0.42, earH: 0.22, earL: 0.4, earTilt: 0.7 })));
+fx(736, "Eight tread blocks on a slim belt, the brackets thick and short, a static bolt every beat.", () => _orbBrawler(Object.assign({}, _fl, { glass: 0.42, earW: 0.24, earH: 0.14, earL: 0.3, zaps: 4 })));
