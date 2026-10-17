@@ -191,3 +191,12 @@ fx(758, "The lit panel on the top face instead, broad and flat, bigger blocks.",
 fx(759, "Two stacked trapezoids: a big block and a smaller one on top of it, stepped.", () => _orbBrawler(Object.assign({}, _pt, { boost: Object.assign({}, _pt.boost, { second: true, H: 0.28 }) })));
 fx(760, "Chunky and short: very thick, nearly a wedge, heavy bevels, the lit face large.", () => _orbBrawler(Object.assign({}, _pt, { boost: Object.assign({}, _pt.boost, { L1: 0.46, L2: 0.24, H: 0.28, T: 0.38, bevel: 0.05, shear: 0.1 }) })));
 fx(761, "On a pivot: the trapezoid sits on a cylindrical hinge, so it can swing, a lit collar on the hinge, streaks at the back.", () => _orbBrawler(Object.assign({}, _pt, { boost: Object.assign({}, _pt.boost, { joint: true }) })));
+
+// ── 758 way smaller (Nos. 762–766) ──
+const _p758 = Object.assign({}, _pt, { boost: Object.assign({}, _pt.boost, { lit: 'top' }) });
+const _sm758 = k => Object.assign({}, _p758, { boost: Object.assign({}, _p758.boost, { L1: 0.58 * k, L2: 0.34 * k, H: 0.3 * k, T: 0.36 * k, shear: 0.06 * k, bevel: 0.03 * k, plume: 0.28 * k, len: 0.5 * k }) });
+fx(762, "758 at 60% of its size.", () => _orbBrawler(_sm758(0.6)));
+fx(763, "758 at 50%.", () => _orbBrawler(_sm758(0.5)));
+fx(764, "758 at 40%.", () => _orbBrawler(_sm758(0.4)));
+fx(765, "758 at 50%, set a little further back and wider apart on the ball.", () => _orbBrawler(Object.assign({}, _sm758(0.5), { earX: 0.34, earZ: -0.12 })));
+fx(766, "758 at 40%, the lit panels brighter and a touch more slant.", () => _orbBrawler(Object.assign({}, _sm758(0.4), { boost: Object.assign({}, _sm758(0.4).boost, { shear: 0.06 }) })));
