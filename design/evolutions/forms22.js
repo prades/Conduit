@@ -43,8 +43,8 @@ function _walker(o) {
     const tb = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(tb); const tear = []; for (let k = 0; k < 9; k++) { const q = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(q); tear.push(q); }
     eye = { eg, orb, slit, lid, tear, tb, E, eMat }; }
   // the legs: hip on the shell's flank, thigh, knee, shin, foot; the foot walks an oval (back on the ground, forward in the air) and the leg follows
-  const legs = []; for (let i = 0; i < 4; i++) { const sx = i % 2 ? -1 : 1, sz = i < 2 ? 1 : -1, th = _bone(null, null, o.legR, o.legR * 0.8, _leg), sh = _bone(null, null, o.legR * 0.8, o.legR * 0.5, _leg), ft = new T.Mesh(_footGeo(o), _leg);
-    if (!o.foot) ft.scale.set(o.plainLegs ? 1 : 1.2, o.plainLegs ? 1 : 0.55, o.plainLegs ? 1 : 1.5); b.add(th); b.add(sh); b.add(ft); const kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 0.95, 0), gm); if (!o.plainLegs) b.add(kn);
+  const legs = []; for (let i = 0; i < 4; i++) { const sx = i % 2 ? -1 : 1, sz = i < 2 ? 1 : -1, th = _bone(null, null, o.legR, o.legR * 0.8, _leg), sh = _bone(null, null, o.legR * 0.8, o.pin ? o.legR * 0.07 : o.legR * 0.5, _leg), ft = new T.Mesh(_footGeo(o), _leg);
+    if (o.pin) ft.visible = false; if (!o.foot) ft.scale.set(o.plainLegs ? 1 : 1.2, o.plainLegs ? 1 : 0.55, o.plainLegs ? 1 : 1.5); b.add(th); b.add(sh); b.add(ft); const kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 0.95, 0), gm); if (!o.plainLegs) b.add(kn);
     legs.push({ sx, sz, th, sh, ft, kn, ph: (i === 0 || i === 3) ? 0 : PI }); }
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, o.ry + o.vh + 0.3, 0.5); b.add(L); LIGHTS.push(L);
   // the puddle it walks through: flat on the floor, drifting behind its feet
@@ -54,7 +54,7 @@ function _walker(o) {
   return { g, core: (o.legH + o.ry + o.vh * 0.5) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0, step = o.step * (1 + 0.3 * ac);
     body.position.y = hipY + 0.035 * Math.abs(Math.sin(ph)) * -1 + 0.02 * Math.sin(2 * ph) - 0.07 * ac; body.rotation.z = 0.04 * Math.sin(ph); body.rotation.x = 0.03 * Math.sin(2 * ph);
     shell.scale.y = o.ry * (1 - 0.1 * ac); bub(t, ac);
-    legs.forEach(l => { const cyc = ph + l.ph, fz = l.sz * o.rz * 0.55 + step * Math.cos(cyc), lift = Math.max(0, Math.sin(cyc)) * o.lift, fx = l.sx * (o.rx * 0.95 + o.out), fy = 0.04 + lift;
+    legs.forEach(l => { const cyc = ph + l.ph, fz = l.sz * o.rz * 0.55 + step * Math.cos(cyc), lift = Math.max(0, Math.sin(cyc)) * o.lift, fx = l.sx * (o.rx * 0.95 + o.out), fy = (o.pin ? 0.0 : 0.04) + lift;
       const hip = U1.set(l.sx * o.rx * 0.74, hipY + 0.05 + body.position.y * 0 + 0.0, l.sz * o.rz * 0.5);   // hip (in the body's frame, roughly: the body bob is small)
       hip.y = body.position.y + 0.06; const foot = U2.set(fx, fy, fz);
       const d = hip.distanceTo(foot), A = o.legH * 0.62, Bn = o.legH * 0.62, c = Math.max(0.05, Math.min(A + Bn - 0.001, d)), k = Math.acos(Math.max(-1, Math.min(1, (A * A + c * c - Bn * Bn) / (2 * A * c))));
@@ -128,3 +128,11 @@ fx(570, "Smaller still and a touch higher, right up near where the cone starts."
 fx(571, "Small and high, set a little towards the front so they show from the front.", () => _walker(Object.assign({}, _r567, { leaks: [{ az: PI / 2 - 0.55, size: 0.65, h: 0.2 }, { az: -PI / 2 + 0.55, size: 0.65, h: 0.2 }] })));
 fx(572, "Small leaks, different heights on the two sides, so it's not symmetrical.", () => _walker(Object.assign({}, _r567, { leaks: [{ az: PI / 2, size: 0.7, h: 0.17 }, { az: -PI / 2, size: 0.5, h: 0.25 }] })));
 fx(573, "Small leaks high on the shoulders where the shell meets the cone, with a short creep.", () => _walker(Object.assign({}, _r567, { leaks: [{ az: PI / 2, size: 0.6, h: 0.27 }, { az: -PI / 2, size: 0.6, h: 0.27 }] })));
+
+// ── 569 on pins (Nos. 574–578): no feet, each leg tapers to a fine point ──
+const _p569 = Object.assign({}, _r567, { pin: true, leaks: [{ az: PI / 2, size: 0.65, h: 0.2 }, { az: -PI / 2, size: 0.65, h: 0.2 }] });
+fx(574, "569 on pins: the shin tapers all the way to a fine point, no foot.", () => _walker(Object.assign({}, _p569)));
+fx(575, "Thinner legs altogether, like stilts ending in pins.", () => _walker(Object.assign({}, _p569, { legR: 0.06, legH: 0.46 })));
+fx(576, "Thick thighs, a round knee joint, then a thin shin ending in a pin.", () => _walker(Object.assign({}, _p569, { plainLegs: false, legR: 0.09 })));
+fx(577, "Shorter pins: the body sits lower, the steps shorter.", () => _walker(Object.assign({}, _p569, { legH: 0.34, step: 0.13, lift: 0.1 })));
+fx(578, "Splayed pins: the legs set well out to the sides, like a crab on tiptoe.", () => _walker(Object.assign({}, _p569, { out: 0.28, step: 0.18 })));
