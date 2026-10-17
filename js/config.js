@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-17r";
+const BUILD_VERSION = "2026-10-17s";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -299,6 +299,19 @@ function syncVisibleArea() {
         canvas.style.width = Math.round(vw) + "px"; canvas.style.height = Math.round(vh) + "px";
     } catch (e) {}
 }
+// Safari (iPad especially) often reports the wrong size at load and corrects it a moment later WITHOUT a resize event (the player saw it fixed only after
+// switching away and back). So the visible area is also re-measured on every event that can mean it changed, shortly after load, and from the frame
+// loop (js/game.js render, every VISIBLE_AREA_POLL_FRAMES): the loop is the game's only clock, so there is no timer of its own.
+const VISIBLE_AREA_POLL_FRAMES = 30;
+let _vaKey = "";
+function checkVisibleArea() {
+    const vv = window.visualViewport, key = [window.innerWidth, window.innerHeight, vv ? Math.round(vv.width) : 0, vv ? Math.round(vv.height) : 0, vv ? Math.round(vv.offsetTop) : 0, document.documentElement ? document.documentElement.clientHeight : 0].join(",");
+    if (key === _vaKey) return false;
+    _vaKey = key; if (typeof _cachedRect !== "undefined") _cachedRect = null; resize(); return true;
+}
+["orientationchange", "pageshow", "focus"].forEach(ev => window.addEventListener(ev, () => { checkVisibleArea(); setTimeout(checkVisibleArea, 150); setTimeout(checkVisibleArea, 600); }));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { checkVisibleArea(); setTimeout(checkVisibleArea, 150); setTimeout(checkVisibleArea, 600); } });
+[50, 300, 800, 2000, 4000].forEach(ms => setTimeout(checkVisibleArea, ms));
 function setViewZoom(z) { if (z === viewZoom) return; viewZoom = z; if (typeof _cachedRect !== 'undefined') _cachedRect = null; resize(); }
 
 // ── CONFIG ────────────────────────────────────────────────

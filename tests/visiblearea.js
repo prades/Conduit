@@ -28,20 +28,23 @@ function findChromium() {
 }
 
 const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-function probe(layoutH, visibleH) {
-    let html = HTML.replace(/<head>/i, '<head><base href="file://' + ROOT + '/"><script>(function(){ var fake = { width: window.innerWidth, height: ' + visibleH + ', offsetTop: 0, offsetLeft: 0, scale: 1, addEventListener: function(){} }; Object.defineProperty(window, "visualViewport", { get: function(){ return fake; }, configurable: true }); })();</script>');
-    const script = `<script>window.addEventListener('load', function(){ setTimeout(function(){
-        var r = function(id){ var e = document.getElementById(id); if (!e) return null; var b = e.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), shown: getComputedStyle(e).display !== 'none' }; };
-        var cs = getComputedStyle(document.documentElement);
-        var out = { vvBottom: cs.getPropertyValue('--vv-bottom'), vvh: cs.getPropertyValue('--vvh'), dock: r('topToggles'), tut: r('tutBtn'), canvasCss: [canvas.style.width, canvas.style.height], canvasPx: [canvas.width, canvas.height] };
-        var pre = document.createElement('pre'); pre.id = '__vv'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre); }, 1200); });</script></body>`;
+function probe(layoutH, visibleH, laterH) {
+    let html = HTML.replace(/<head>/i, '<head><base href="file://' + ROOT + '/"><script>(function(){ var fake = { width: window.innerWidth, height: ' + visibleH + ', offsetTop: 0, offsetLeft: 0, scale: 1, addEventListener: function(){} }; Object.defineProperty(window, "visualViewport", { get: function(){ return fake; }, configurable: true }); window.__fakeVV = fake; })();</script>');
+    // (the headless dump runs no animation frames, so the probe drives the frame function itself, which is all the game's own loop does)
+    const frames = laterH ? "setInterval(function(){ try { render(); } catch (e) {} }, 100);" : "";
+    const later = laterH ? "setTimeout(function(){ window.__fakeVV.height = " + laterH + "; }, 4800);" : "";
+    const script = "<script>window.addEventListener('load', function(){ " + frames + later + " setTimeout(function(){" +
+        " var r = function(id){ var e = document.getElementById(id); if (!e) return null; var b = e.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), shown: getComputedStyle(e).display !== 'none' }; };" +
+        " var cs = getComputedStyle(document.documentElement);" +
+        " var out = { vvBottom: cs.getPropertyValue('--vv-bottom'), vvh: cs.getPropertyValue('--vvh'), dock: r('topToggles'), tut: r('tutBtn'), canvasCss: [canvas.style.width, canvas.style.height], canvasPx: [canvas.width, canvas.height] };" +
+        " var pre = document.createElement('pre'); pre.id = '__vv'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre); }, 6000); });</script></body>";
     return html.replace(/<\/body>/i, script);
 }
-function measure(w, layoutH, visibleH) {
+function measure(w, layoutH, visibleH, laterH) {
     const bin = findChromium(); if (!bin) return null;
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vv-')), file = path.join(dir, 'game.html'); fs.writeFileSync(file, probe(layoutH, visibleH));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vv-')), file = path.join(dir, 'game.html'); fs.writeFileSync(file, probe(layoutH, visibleH, laterH));
     let dom = '';
-    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + w + ',' + layoutH, '--virtual-time-budget=6000', '--dump-dom', 'file://' + file], { encoding: 'utf8', timeout: 60000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
+    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + w + ',' + layoutH, '--virtual-time-budget=12000', '--dump-dom', 'file://' + file], { encoding: 'utf8', timeout: 60000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
     const m = dom.match(/<pre id="__vv">([\s\S]*?)<\/pre>/); return m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')) : undefined;
 }
 
@@ -57,6 +60,13 @@ else {
         });
         check('THE ASK: the bottom dock sits inside what is visible (it was below the screen)', () => ok(r.dock && r.dock.shown && r.dock.bottom <= 653, 'dock bottom ' + (r.dock && r.dock.bottom) + ' vs 653 visible'));
         check('the tutorial button is inside what is visible and clear of the dock', () => ok(r.tut && r.tut.bottom <= 653 && r.tut.bottom <= r.dock.top, 'tutorial bottom ' + (r.tut && r.tut.bottom) + ', dock top ' + (r.dock && r.dock.top)));
+    }
+    // THE REPORTED CASE: the browser reports a wrong size at load and corrects it a moment later with NO event (fixed for the player only after switching
+    // away and back). Here the visible height changes 4.8s after load, past every load-time re-check, so only the frame loop's poll can catch it and nothing fires: the game has to notice.
+    const late = measure(1000, 800, 800, 600);
+    if (late) {
+        check('THE ASK: a size the browser corrects later, with no event, is picked up (it needed a task switch before)', () => ok(parseInt(late.vvh) === 600 && parseInt(late.vvBottom) === 200, '--vvh ' + late.vvh + ', --vv-bottom ' + late.vvBottom + ' (expected 600 / 200)'));
+        check('and the controls follow it: the dock is inside the corrected visible area', () => ok(late.dock && late.dock.bottom <= 600, 'dock bottom ' + (late.dock && late.dock.bottom) + ' vs 600'));
     }
     const same = measure(1000, 653, 653);
     if (same) check('when the layout and the visible area agree, nothing is offset', () => ok(parseInt(same.vvBottom) === 0, '--vv-bottom ' + same.vvBottom));

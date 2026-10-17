@@ -2100,6 +2100,7 @@ function gameLoop() {
 }
 
 function render() {
+    if (typeof checkVisibleArea === "function" && (typeof frame === "undefined" || frame % VISIBLE_AREA_POLL_FRAMES === 0)) checkVisibleArea();   // the browser's real visible size, polled (js/config.js)
     if (typeof placingTick === "function") placingTick();   // zoomed out and the interface away while a build tool is in hand (js/buildmenu.js)
     // AUTOPLAY presses NEXT WAVE itself — which has to be watched while paused.
     if (typeof autoplayWatch === "function") autoplayWatch();
