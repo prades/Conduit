@@ -565,6 +565,7 @@
     }
     #shards, #zoneInfo, #waveInfo, .top-btn { background: none !important; border: none !important; border-radius: 0 !important; box-shadow: none; font-family: var(--neo-font); font-style: italic; font-weight: 900; }
     #shards { --c: var(--neo-gold); color: #fff; font-size: 30px; padding: 8px 26px; letter-spacing: 0.5px; text-shadow: 0 0 14px var(--neo-gold); }
+    #zoneInfo { cursor: pointer; pointer-events: auto; touch-action: manipulation; } #zoneInfo::after { content: " \25BE"; font-size: 0.8em; opacity: 0.8; } #zoneInfo:hover { filter: brightness(1.2); }
     #zoneInfo { --c: var(--neo-teal); color: #fff !important; font-size: 24px !important; padding: 8px 26px !important; text-shadow: 0 0 12px var(--neo-teal); }
     #padHud, #dnaHud { font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 18px !important; padding: 6px 16px !important; }
     #ui { height: 40px; background: none !important; border: none !important; border-radius: 0 !important; overflow: visible; }
@@ -786,7 +787,7 @@
     /* ── THE ZONES PAGE and the bottom tab bar of the roster menu (js/commandcenter.js, js/zones.js) ── */
     #ccRoot .cc-foot { flex: none; display: flex; justify-content: center; padding-top: 12px; } #ccRoot .cc-foot .cc-tabs { flex: none; gap: 14px; }
     #ccRoot .cc-foot .cc-tab { font-size: 22px; padding: 12px 54px; min-width: 200px; }
-    #ccRoot .cc-head .cc-title { flex: 1; } #ccRoot .cc-page-title.zones { margin-top: 22px; } #ccRoot .cc-chip.click { cursor: pointer; font-family: var(--neo-font); }
+    #ccRoot .cc-head .cc-title { flex: none; } #ccRoot .cc-summary { flex: 1; font: 800 13px monospace; color: #8aa0c8; letter-spacing: 0.5px; } #ccRoot .cc-page-title.zones { margin-top: 22px; } #ccRoot .cc-chip.click { cursor: pointer; font-family: var(--neo-font); }
     #ccRoot .cc-zone { --c: #19e6c1; display: flex; gap: 16px; align-items: stretch; margin: 12px 0 0; padding: 12px 16px 12px 18px; border-left: 7px solid var(--c); background: linear-gradient(180deg, rgba(20,30,58,0.9), rgba(8,12,26,0.95)); } #ccRoot .cc-zone.here { box-shadow: inset 0 0 0 2px rgba(25,230,193,0.45); }
     #ccRoot .cz-head { flex: none; width: 150px; display: flex; flex-direction: column; gap: 6px; } #ccRoot .cz-name { font-size: 28px; font-style: italic; font-weight: 900; line-height: 1; } #ccRoot .cz-status { align-self: flex-start; font-size: 13px; font-style: italic; font-weight: 900; color: #05070f; background: var(--c); padding: 4px 10px; transform: skewX(-10deg); } #ccRoot .cz-here { font: 800 11px monospace; color: var(--neo-teal); }
     #ccRoot .cz-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; } #ccRoot .cz-line { display: flex; gap: 10px; align-items: baseline; } #ccRoot .cz-k { flex: none; width: 88px; font: 800 11px monospace; color: #8aa0c8; letter-spacing: 0.5px; } #ccRoot .cz-v { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -812,21 +813,6 @@
     #unitInfo .ui-head { display: flex; align-items: center; gap: 14px; flex: none; } #unitInfo .ui-art { width: 84px; height: 84px; flex: none; filter: drop-shadow(0 0 10px var(--c)); background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%); }
     #unitInfo .ui-ht { flex: 1; min-width: 0; } #unitInfo .ui-title { font-size: clamp(22px, 5vw, 32px); font-style: italic; font-weight: 900; color: var(--c); text-shadow: 0 0 12px var(--c); line-height: 1.05; overflow-wrap: anywhere; } #unitInfo .ui-sub { font: 700 14px monospace; color: #8aa0c8; margin-top: 4px; }
     #unitInfo .ui-close { flex: none; align-self: flex-start; font-family: var(--neo-font); font-weight: 900; font-size: 20px; color: #fff; background: #0a1022; border: 2px solid var(--neo-red); padding: 8px 16px; cursor: pointer; touch-action: manipulation; transform: skewX(-10deg); }
-    #unitInfo .ui-tabs { display: flex; gap: 8px; margin: 14px 0 12px; flex: none; } #unitInfo .ui-tab { flex: 1; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 18px; color: #fff; background: #0a1022; border: 2px solid var(--c); padding: 10px 6px; cursor: pointer; touch-action: manipulation; transform: skewX(-8deg); } #unitInfo .ui-tab.on { background: var(--c); color: #05070f; }
-    #unitInfo .ui-body { overflow-y: auto; flex: 1; min-height: 0; padding-right: 4px; -webkit-overflow-scrolling: touch; }
-    #unitInfo .ui-sec { margin-bottom: 14px; padding: 10px 14px 8px; background: rgba(255,255,255,0.04); border-left: 5px solid var(--c); } #unitInfo .ui-h { font-size: 19px; font-style: italic; font-weight: 900; color: var(--c); } #unitInfo .ui-note { font: 600 14px/1.4 monospace; color: #c4d0ea; margin: 4px 0 6px; }
-    #unitInfo .ui-row { display: flex; gap: 12px; padding: 5px 0; border-top: 1px solid rgba(255,255,255,0.07); font: 600 14px/1.35 monospace; } #unitInfo .ui-k { flex: none; width: 36%; color: #8aa0c8; font-weight: 800; } #unitInfo .ui-v { flex: 1; color: #fff; min-width: 0; overflow-wrap: anywhere; }
-    /* ── THE ZONES PAGE and the bottom tab bar of the roster menu (js/commandcenter.js, js/zones.js) ── */
-    #ccRoot .cc-foot { flex: none; display: flex; justify-content: center; padding-top: 12px; } #ccRoot .cc-foot .cc-tabs { flex: none; gap: 14px; }
-    #ccRoot .cc-foot .cc-tab { font-size: 22px; padding: 12px 54px; min-width: 200px; }
-    #ccRoot .cc-head .cc-title { flex: 1; } #ccRoot .cc-page-title.zones { margin-top: 22px; } #ccRoot .cc-chip.click { cursor: pointer; font-family: var(--neo-font); }
-    #ccRoot .cc-zone { --c: #19e6c1; display: flex; gap: 16px; align-items: stretch; margin: 12px 0 0; padding: 12px 16px 12px 18px; border-left: 7px solid var(--c); background: linear-gradient(180deg, rgba(20,30,58,0.9), rgba(8,12,26,0.95)); } #ccRoot .cc-zone.here { box-shadow: inset 0 0 0 2px rgba(25,230,193,0.45); }
-    #ccRoot .cz-head { flex: none; width: 150px; display: flex; flex-direction: column; gap: 6px; } #ccRoot .cz-name { font-size: 28px; font-style: italic; font-weight: 900; line-height: 1; } #ccRoot .cz-status { align-self: flex-start; font-size: 13px; font-style: italic; font-weight: 900; color: #05070f; background: var(--c); padding: 4px 10px; transform: skewX(-10deg); } #ccRoot .cz-here { font: 800 11px monospace; color: var(--neo-teal); }
-    #ccRoot .cz-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; } #ccRoot .cz-line { display: flex; gap: 10px; align-items: baseline; } #ccRoot .cz-k { flex: none; width: 88px; font: 800 11px monospace; color: #8aa0c8; letter-spacing: 0.5px; } #ccRoot .cz-v { display: flex; flex-wrap: wrap; gap: 5px; }
-    #ccRoot .cz-chip { --c: #8aa0c8; font: 900 12px monospace; color: #fff; padding: 3px 8px; border: 1.5px solid var(--c); background: rgba(5,7,15,0.7); } #ccRoot .cz-chip.bad { background: rgba(255,74,28,0.2); }
-    #ccRoot .cz-acts { flex: none; width: 170px; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
-    #ccRoot .cz-btn { --c: #19e6c1; display: flex; flex-direction: column; align-items: flex-start; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 16px; color: #fff; background: #0a1022; border: 2px solid var(--c); padding: 8px 12px; cursor: pointer; touch-action: manipulation; transform: skewX(-8deg); } #ccRoot .cz-btn:hover { background: var(--c); color: #05070f; } #ccRoot .cz-btn.dim { opacity: 0.4; } #ccRoot .cz-sub { font: 800 10px monospace; font-style: normal; color: #9fb0d0; margin-top: 2px; } #ccRoot .cz-btn:hover .cz-sub { color: #1a2233; }
-    @media (max-width: 700px) { #ccRoot .cc-zone { flex-direction: column; } #ccRoot .cz-head, #ccRoot .cz-acts { width: auto; flex-direction: row; flex-wrap: wrap; } #ccRoot .cz-acts .cz-btn { flex: 1; } #ccRoot .cc-foot .cc-tab { padding: 10px 26px; min-width: 0; font-size: 16px; } }
     #orderPicker .op-row.kits .rpk-el { flex: 1 1 22%; min-width: 0; font-size: 12px; padding: 6px 4px; min-height: 36px; } #orderPicker .op-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; } #orderPicker .op-row .rpk-el { flex: 1 1 0; min-width: 90px; justify-content: center; padding: 10px 8px; min-height: 48px; font-size: 16px; } #orderPicker .rpk-el.on { background: var(--c); color: #05070f; } #orderPicker .rpk-el.on .rpk-name { color: #05070f; }
     #ccRoot .cz-chip.order { cursor: pointer; } #ccRoot .cz-chip.order:hover { background: rgba(255,74,28,0.3); } #ccRoot .cz-chip.add { cursor: pointer; background: rgba(25,230,193,0.18); } #ccRoot .cz-chip.add:hover { background: var(--c); color: #05070f; }
 </style>
@@ -849,7 +835,7 @@
     </div>
     <div id="hudRight">
       <div id="padHud" style="display:none;color:#ff9944;font-size:12px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;"></div>
-      <div id="zoneLine"><span id="alarmIcon" role="img" aria-label="Alarm" title="Alarm"><svg viewBox="0 0 48 44" aria-hidden="true"><path d="M24 4 L45 40 H3 Z" fill="rgba(255,60,30,0.18)" stroke="#ff4a1c" stroke-width="4" stroke-linejoin="round"/><path d="M24 17 V28" stroke="#ff4a1c" stroke-width="4.5" stroke-linecap="round"/><circle cx="24" cy="34" r="2.7" fill="#ff4a1c"/></svg></span><div id="zoneInfo" style="color:#0f8;font-size:13px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;">Zone: Home</div></div>
+      <div id="zoneLine"><span id="alarmIcon" role="img" aria-label="Alarm" title="Alarm"><svg viewBox="0 0 48 44" aria-hidden="true"><path d="M24 4 L45 40 H3 Z" fill="rgba(255,60,30,0.18)" stroke="#ff4a1c" stroke-width="4" stroke-linejoin="round"/><path d="M24 17 V28" stroke="#ff4a1c" stroke-width="4.5" stroke-linecap="round"/><circle cx="24" cy="34" r="2.7" fill="#ff4a1c"/></svg></span><div id="zoneInfo" role="button" tabindex="0" onclick="ccToggleOpen('zones')" title="Zones: every zone's status, network and equipment; teleport, repair crews and build orders" style="color:#0f8;font-size:13px;font-weight:bold;background:rgba(0,0,0,0.8);padding:2px 8px;border-radius:4px;">Zone: Home</div></div>
     </div>
   </div>
   <div id="waveInfo">WAVE 1 — clear panels for shards</div>
@@ -1654,12 +1640,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-17zo, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-17zp, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-17zo";
+window.__PAGE_BUILD = "2026-10-17zp";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1695,63 +1681,63 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-17zo"></script>
-<script src="js/icons.js?v=2026-10-17zo"></script>
-<script src="js/uikit.js?v=2026-10-17zo"></script>
-<script src="js/rng.js?v=2026-10-17zo"></script>
-<script src="js/traits.js?v=2026-10-17zo"></script>
-<script src="js/elements.js?v=2026-10-17zo"></script>
-<script src="js/combat.js?v=2026-10-17zo"></script>
-<script src="js/species.js?v=2026-10-17zo"></script>
-<script src="js/levels.js?v=2026-10-17zo"></script>
-<script src="js/predator_randomizer.js?v=2026-10-17zo"></script>
-<script src="js/mass.js?v=2026-10-17zo"></script>
-<script src="js/infest.js?v=2026-10-17zo"></script>
-<script src="js/power.js?v=2026-10-17zo"></script>
-<script src="js/save.js?v=2026-10-17zo"></script>
-<script src="js/camp.js?v=2026-10-17zo"></script>
-<script src="js/wavedata.js?v=2026-10-17zo"></script>
-<script src="js/helpers.js?v=2026-10-17zo"></script>
-<script src="js/predator.js?v=2026-10-17zo"></script>
-<script src="js/abilities.js?v=2026-10-17zo"></script>
-<script src="js/world.js?v=2026-10-17zo"></script>
-<script src="js/commands.js?v=2026-10-17zo"></script>
-<script src="js/npc.js?v=2026-10-17zo"></script>
-<script src="js/codex.js?v=2026-10-17zo"></script>
-<script src="js/draw.js?v=2026-10-17zo"></script>
-<script src="js/beetle3d.js?v=2026-10-17zo"></script>
-<script src="js/bugs3d.js?v=2026-10-17zo"></script>
-<script src="js/ui.js?v=2026-10-17zo"></script>
-<script src="js/waves.js?v=2026-10-17zo"></script>
-<script src="js/drops.js?v=2026-10-17zo"></script>
-<script src="js/clone.js?v=2026-10-17zo"></script>
-<script src="js/clonework.js?v=2026-10-17zo"></script>
-<script src="js/broods.js?v=2026-10-17zo"></script>
-<script src="js/raids.js?v=2026-10-17zo"></script>
-<script src="js/ultra.js?v=2026-10-17zo"></script>
-<script src="js/formations.js?v=2026-10-17zo"></script>
-<script src="js/breakout.js?v=2026-10-17zo"></script>
-<script src="js/nightraids.js?v=2026-10-17zo"></script>
-<script src="js/bonds.js?v=2026-10-17zo"></script>
-<script src="js/autoplay.js?v=2026-10-17zo"></script>
-<script src="js/indexart.js?v=2026-10-17zo"></script>
-<script src="js/modules.js?v=2026-10-17zo"></script>
-<script src="js/shieldcells.js?v=2026-10-17zo"></script>
-<script src="js/evolution.js?v=2026-10-17zo"></script>
-<script src="js/buildmenu.js?v=2026-10-17zo"></script>
-<script src="js/hudgems.js?v=2026-10-17zo"></script>
-<script src="js/nethud.js?v=2026-10-17zo"></script>
-<script src="js/commandcenter.js?v=2026-10-17zo"></script>
-<script src="js/unitinfo.js?v=2026-10-17zo"></script>
-<script src="js/zones.js?v=2026-10-17zo"></script>
-<script src="js/kits.js?v=2026-10-17zo"></script>
-<script src="js/kitui.js?v=2026-10-17zo"></script>
-<script src="js/toolbox.js?v=2026-10-17zo"></script>
-<script src="js/radialmenu.js?v=2026-10-17zo"></script>
-<script src="js/input.js?v=2026-10-17zo"></script>
-<script src="js/game.js?v=2026-10-17zo"></script>
-<script src="js/tutorial.js?v=2026-10-17zo"></script>
-<script src="js/dev.js?v=2026-10-17zo"></script>
+<script src="js/config.js?v=2026-10-17zp"></script>
+<script src="js/icons.js?v=2026-10-17zp"></script>
+<script src="js/uikit.js?v=2026-10-17zp"></script>
+<script src="js/rng.js?v=2026-10-17zp"></script>
+<script src="js/traits.js?v=2026-10-17zp"></script>
+<script src="js/elements.js?v=2026-10-17zp"></script>
+<script src="js/combat.js?v=2026-10-17zp"></script>
+<script src="js/species.js?v=2026-10-17zp"></script>
+<script src="js/levels.js?v=2026-10-17zp"></script>
+<script src="js/predator_randomizer.js?v=2026-10-17zp"></script>
+<script src="js/mass.js?v=2026-10-17zp"></script>
+<script src="js/infest.js?v=2026-10-17zp"></script>
+<script src="js/power.js?v=2026-10-17zp"></script>
+<script src="js/save.js?v=2026-10-17zp"></script>
+<script src="js/camp.js?v=2026-10-17zp"></script>
+<script src="js/wavedata.js?v=2026-10-17zp"></script>
+<script src="js/helpers.js?v=2026-10-17zp"></script>
+<script src="js/predator.js?v=2026-10-17zp"></script>
+<script src="js/abilities.js?v=2026-10-17zp"></script>
+<script src="js/world.js?v=2026-10-17zp"></script>
+<script src="js/commands.js?v=2026-10-17zp"></script>
+<script src="js/npc.js?v=2026-10-17zp"></script>
+<script src="js/codex.js?v=2026-10-17zp"></script>
+<script src="js/draw.js?v=2026-10-17zp"></script>
+<script src="js/beetle3d.js?v=2026-10-17zp"></script>
+<script src="js/bugs3d.js?v=2026-10-17zp"></script>
+<script src="js/ui.js?v=2026-10-17zp"></script>
+<script src="js/waves.js?v=2026-10-17zp"></script>
+<script src="js/drops.js?v=2026-10-17zp"></script>
+<script src="js/clone.js?v=2026-10-17zp"></script>
+<script src="js/clonework.js?v=2026-10-17zp"></script>
+<script src="js/broods.js?v=2026-10-17zp"></script>
+<script src="js/raids.js?v=2026-10-17zp"></script>
+<script src="js/ultra.js?v=2026-10-17zp"></script>
+<script src="js/formations.js?v=2026-10-17zp"></script>
+<script src="js/breakout.js?v=2026-10-17zp"></script>
+<script src="js/nightraids.js?v=2026-10-17zp"></script>
+<script src="js/bonds.js?v=2026-10-17zp"></script>
+<script src="js/autoplay.js?v=2026-10-17zp"></script>
+<script src="js/indexart.js?v=2026-10-17zp"></script>
+<script src="js/modules.js?v=2026-10-17zp"></script>
+<script src="js/shieldcells.js?v=2026-10-17zp"></script>
+<script src="js/evolution.js?v=2026-10-17zp"></script>
+<script src="js/buildmenu.js?v=2026-10-17zp"></script>
+<script src="js/hudgems.js?v=2026-10-17zp"></script>
+<script src="js/nethud.js?v=2026-10-17zp"></script>
+<script src="js/commandcenter.js?v=2026-10-17zp"></script>
+<script src="js/unitinfo.js?v=2026-10-17zp"></script>
+<script src="js/zones.js?v=2026-10-17zp"></script>
+<script src="js/kits.js?v=2026-10-17zp"></script>
+<script src="js/kitui.js?v=2026-10-17zp"></script>
+<script src="js/toolbox.js?v=2026-10-17zp"></script>
+<script src="js/radialmenu.js?v=2026-10-17zp"></script>
+<script src="js/input.js?v=2026-10-17zp"></script>
+<script src="js/game.js?v=2026-10-17zp"></script>
+<script src="js/tutorial.js?v=2026-10-17zp"></script>
+<script src="js/dev.js?v=2026-10-17zp"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1804,7 +1790,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-17zo"></script>
+<script src="js/init.js?v=2026-10-17zp"></script>
 
 </body>
 </html>

@@ -95,8 +95,8 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
           var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
           ${BOARD}
           ccOpen('roster'); await wait(300);
-          out.footTabs = Array.prototype.map.call(document.querySelectorAll('.cc-foot #ccTabs .cc-tab'), function(t){ return t.textContent; }); out.headTabs = document.querySelectorAll('.cc-head .cc-tab').length;
-          document.querySelector('#ccTabs .cc-tab[data-tab="squad"]').click(); await wait(300);
+          out.footTabs = document.querySelectorAll('.cc-foot, #ccTabs, .cc-tab').length;
+          document.getElementById('zoneInfo').click(); await wait(300);
           var page = document.getElementById('ccPage'); out.pageShown = getComputedStyle(page).display; out.side = getComputedStyle(document.getElementById('ccSide')).display;
           out.zones = page.querySelectorAll('.cc-zone').length; out.names = Array.prototype.map.call(page.querySelectorAll('.cz-name'), function(n){ return n.textContent; });
           out.statuses = Array.prototype.map.call(page.querySelectorAll('.cz-status'), function(n){ return n.textContent; });
@@ -132,8 +132,8 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
         const m = dom.match(/<pre id="__zn">([\s\S]*?)<\/pre>/), r = m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')) : null;
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (r) {
-            check('THE ASK: the tabs are in a bar at the BOTTOM of the menu (ROSTER, ZONES), not the top', () => { same(r.footTabs.join(), 'ROSTER,ZONES', 'foot tabs'); same(r.headTabs, 0, 'tabs left in the header'); });
-            check('ZONES is a page of zone cards (no command panel), each with its status', () => { same(r.pageShown, 'block', 'page'); same(r.side, 'none', 'side panel'); ok(r.zones >= 4, 'zones ' + r.zones); same(r.names[0], 'HOME', 'first'); ok(r.statuses.includes('CLEARED') && r.statuses.includes('NEXT TARGET'), r.statuses.join()); });
+            check('THE ASK: the zones page is not a tab of the roster menu: it opens from the zone plate at the top, and the roster menu has no tab bar', () => { same(r.footTabs, 0, 'tab bar left in the menu'); });
+            check('the ZONES menu is a page of zone cards (no command panel), each with its status', () => { same(r.pageShown, 'block', 'page'); same(r.side, 'none', 'side panel'); ok(r.zones >= 4, 'zones ' + r.zones); same(r.names[0], 'HOME', 'first'); ok(r.statuses.includes('CLEARED') && r.statuses.includes('NEXT TARGET'), r.statuses.join()); });
             check('a card shows the network and the equipment and the broken count, and CLEAR BROKEN shows its estimate', () => { ok(/ELECTRIC T2/.test(r.z1text), 'network: ' + r.z1text); ok(/4 BATTERIES/.test(r.z1text), 'equipment'); ok(/WRECKED/.test(r.z1text) && /OFFLINE/.test(r.z1text), 'broken'); ok(/EST\. .8/.test(r.estimate), r.estimate); });
             check('THE ASK: the card has a crew line and SEND CREW (with who is free); sending puts the crew in the zone and offers RECALL', () => {
                 ok(/CREW/.test(r.crewLine0) && /NONE SENT/.test(r.crewLine0), 'crew line: ' + r.crewLine0); ok(/1 ANTS \+ 1 CORE FREE/.test(r.sendSub), r.sendSub);

@@ -164,7 +164,9 @@ function _ccColour(id) { const e = (typeof ELEMENTS !== "undefined" ? ELEMENTS :
 function _ccElLabel(id) { const e = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).find(x => x.id === id); return e ? e.label : String(id || "").toUpperCase(); }
 
 function ccOpen(tab) {
-    ccOpenTab = tab === "squad" ? "squad" : "roster";   // ("command" was a tab of its own: it is the roster's right-hand panel now) ccRerollArmed = false;
+    // Two menus share this overlay: the ROSTER (the creature cards and the command panel) and the ZONES page (opened from the zone plate at the top, js/zones.js).
+    // ("command" was a tab of its own: it is the roster's right-hand panel now; "squad" was the old analytics tab.)
+    ccOpenTab = tab === "zones" || tab === "squad" ? "zones" : "roster"; ccRerollArmed = false;
     const root = document.getElementById("ccRoot"); if (!root) return;
     root.classList.add("open"); document.body.classList.add("ccOpen");
     clearInterval(_ccTimer); _ccTimer = setInterval(ccRender, CC_REFRESH_MS);
@@ -180,15 +182,13 @@ function ccClose() {
     const grid = document.getElementById("ccGrid"); if (grid) grid.textContent = "";
     ccRefreshChip();
 }
-function ccToggleOpen(tab) { if (ccOpenTab === tab) ccClose(); else ccOpen(tab); }
+function ccToggleOpen(tab) { const want = tab === "squad" ? "zones" : tab === "zones" ? "zones" : "roster"; if (ccOpenTab === want) ccClose(); else ccOpen(want); }
 
 function ccBuildFrame() {
     const root = document.getElementById("ccRoot"); if (!root || root.getAttribute("data-built")) return;
     root.setAttribute("data-built", "1");
-    const head = _ccEl("div", "cc-head"); head.appendChild(_ccEl("div", "cc-title", "COMMAND CENTER"));
-    const tabs = _ccEl("div", "cc-tabs"); tabs.id = "ccTabs";
-    [["roster", "ROSTER"], ["squad", "ZONES"]].forEach(t => { const b = _ccEl("button", "cc-tab", t[1]); b.setAttribute("data-tab", t[0]); _ccClick(b, () => { ccOpenTab = t[0]; ccRerollArmed = false; _ccCards.clear(); const g = document.getElementById("ccGrid"); if (g) g.textContent = ""; ccRender(); }); tabs.appendChild(b); });
-    // (the tabs live in a bar at the BOTTOM of the menu: ROSTER and ZONES: the zone report, crews and build orders)
+    const head = _ccEl("div", "cc-head"); const ttl = _ccEl("div", "cc-title", "COMMAND CENTER"); ttl.id = "ccTitle"; head.appendChild(ttl);
+    const sum = _ccEl("div", "cc-summary"); sum.id = "ccSummary"; head.appendChild(sum);   // the squad at a glance, on the roster
     // RECRUIT: a follower at the Crystal for RECRUIT_COST shards (clone.js recruitFollower), on the ROSTER tab only. It dims when the shards are short.
     const rec = _ccEl("button", "cc-recruit"); rec.id = "ccRecruit"; rec.appendChild(_ccEl("span", "cc-rl", "+ RECRUIT")); rec.appendChild(_ccEl("span", "cc-rs", ""));
     _ccClick(rec, () => { recruitPickerOpen(); }); head.appendChild(rec);
@@ -200,7 +200,6 @@ function ccBuildFrame() {
     body.appendChild(main);
     const side = _ccEl("div", "cc-side"); side.id = "ccSide"; body.appendChild(side);
     root.appendChild(body);
-    const foot = _ccEl("div", "cc-foot"); foot.appendChild(tabs); root.appendChild(foot);
     window.addEventListener("keydown", e => { if (e && e.key === "Escape" && ccOpenTab) ccClose(); });
 }
 
@@ -216,15 +215,17 @@ function ccRender() {
     ccPrune();
     const rec = document.getElementById("ccRecruit");
     if (rec) { rec.style.display = ccOpenTab === "roster" ? "" : "none"; const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = "\u25c6" + cost; }
-    root.querySelectorAll("#ccTabs .cc-tab").forEach(t => t.classList.toggle("on", t.getAttribute("data-tab") === ccOpenTab));
+    const ttl = document.getElementById("ccTitle"); if (ttl) ttl.textContent = ccOpenTab === "zones" ? "ZONES" : "COMMAND CENTER";
+    const sum = document.getElementById("ccSummary");
+    if (sum) { sum.style.display = ccOpenTab === "roster" ? "" : "none"; if (ccOpenTab === "roster") { const st = radialSquadStats("all"); sum.textContent = st.total + " UNITS \u00b7 " + st.working + " WORKING \u00b7 AVG LEVEL " + st.avgLevel + " \u00b7 " + st.evolved + " EVOLVED"; } }
     const filters = document.getElementById("ccFilters"), grid = document.getElementById("ccGrid"), page = document.getElementById("ccPage"), side = document.getElementById("ccSide");
     if (!filters || !grid || !page || !side) return;
     const roster = ccOpenTab === "roster";
     grid.style.display = roster ? "grid" : "none"; filters.style.display = roster ? "flex" : "none"; page.style.display = roster ? "none" : "block";
-    side.style.display = ccOpenTab === "squad" ? "none" : "flex";
+    side.style.display = ccOpenTab === "zones" ? "none" : "flex";
     if (roster) { _ccDrawFilters(filters); _ccDrawGrid(grid); }
     else { const sig = _ccZonesSig(); if (sig !== _ccPageSig || !page.firstChild) { _ccPageSig = sig; const keep = page.scrollTop; page.textContent = ""; try { _ccDrawSquad(page); } catch (e) { /* never take the game down */ } page.scrollTop = keep; } }
-    if (ccOpenTab !== "squad") { try { _ccDrawSide(side); } catch (e) {} }
+    if (ccOpenTab !== "zones") { try { _ccDrawSide(side); } catch (e) {} }
     ccRefreshChip();
 }
 
@@ -352,20 +353,6 @@ function _ccZonesSig() {
     return JSON.stringify([rep.map(z => [z.z, z.status, z.held, z.generator, z.energy, z.network.map(n => n.el + n.tier + n.batteries).join(), z.equipment, z.modules, z.broken, z.offline, z.here, z.crew, z.orders, z.autoKit]), shardCount, typeof zoneFreeCrew === "function" ? zoneFreeCrew().total : 0, st.total, st.working, st.avgLevel, st.evolved]);
 }
 function _ccDrawSquad(page) {
-    const st = radialSquadStats("all");
-    page.appendChild(_ccEl("div", "cc-page-title", "SQUAD"));
-    page.appendChild(_ccEl("div", "cc-sub2", st.total + " UNITS \u00b7 " + st.working + " WORKING \u00b7 AVERAGE LEVEL " + st.avgLevel + " \u00b7 " + st.evolved + " EVOLVED"));
-    const chips = _ccEl("div", "cc-row wrap");
-    (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).forEach(el => {
-        if (typeof unlockedElements !== "undefined" && !unlockedElements.has(el.id)) return;
-        const e = st.byElement[el.id] || { n: 0, hp: 0 }, c = _ccEl("button", "cc-chip click", el.label + "  " + e.n); c.style.setProperty("--c", el.color);
-        _ccClick(c, () => { radialSelectElement(el.id); ccSetSelection(ccUnits({ element: el.id })); ccOpenTab = "roster"; _ccCards.clear(); const g = document.getElementById("ccGrid"); if (g) g.textContent = ""; ccRender(); });
-        chips.appendChild(c);
-    });
-    [["BRAWLERS", st.roles.brawler, "#ff4a1c"], ["MAGES", st.roles.mage, "#a64dff"], ["TECHNICIANS", st.roles.technician, "#8fe3ff"], ["WORKERS", st.roles.worker, "#19e6c1"]].forEach(r => { const c = _ccEl("div", "cc-chip", r[0] + "  " + r[1]); c.style.setProperty("--c", r[2]); chips.appendChild(c); });
-    page.appendChild(chips);
-    page.appendChild(_ccEl("div", "cc-note", "TAP AN ELEMENT TO SELECT ALL OF ITS UNITS IN THE ROSTER"));
-    page.appendChild(_ccEl("div", "cc-page-title zones", "ZONES"));
     if (typeof zoneReport !== "function") return;
     const rep = zoneReport();
     page.appendChild(_ccEl("div", "cc-sub2", "EVERY ZONE'S STATUS, NETWORK AND EQUIPMENT \u00b7 TELEPORT TO A ZONE YOU HOLD \u00b7 CLEAR ITS BROKEN EQUIPMENT FOR A FEE"));

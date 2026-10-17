@@ -49,7 +49,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   out.poor = { shards: shardCount, same: followers.length === n0, closed: !picker() };
   // on another tab the button is hidden; closing the Command Center takes the picker with it
   shardCount = 200; document.getElementById('ccRecruit').click(); await wait(50); ccClose(); out.closedWithCC = !picker();
-  ccOpen('squad'); await wait(100); out.otherTab = getComputedStyle(document.getElementById('ccRecruit')).display;
+  ccOpen('zones'); await wait(100); out.otherTab = getComputedStyle(document.getElementById('ccRecruit')).display;
   var pre = document.createElement('pre'); pre.id = '__rp'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 1500); });</script></body>`;
 function measure() {
