@@ -1181,7 +1181,7 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
                  + cell + 30                            // the swatch row + labels
                  + 30                                   // the two help lines
                  + (pendingElements.length > 0
-                        ? 16 + pendingElements.length * 22 + 16
+                        ? 16 + _modChoices().length * 22 + 16
                         : 16)                           // activate list, or NEXT
                  + 18;                                  // the modulator footer
     const crystR = Math.max(0, Math.min(78, Math.floor((PH - fixedH - 46) / 2)));
@@ -1219,11 +1219,13 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
     // does nothing until it is brought online here.
     window._modActivateRects = [];
     if (pendingElements.length > 0) {
+        // An unlock is earned; WHICH element it is is the player's pick. Every element still locked is offered.
+        const choices = _modChoices();
         ctx.fillStyle = "#ffcc44"; ctx.font = "bold 9px monospace";
-        ctx.fillText("EARNED — TAP TO ACTIVATE", MID, y);
+        ctx.fillText(pendingElements.length > 1 ? pendingElements.length + " UNLOCKS EARNED — CHOOSE" : "UNLOCK EARNED — CHOOSE AN ELEMENT", MID, y);
         y += 8;
         const bw = Math.min(200, INNER);
-        pendingElements.forEach((id, i) => {
+        choices.forEach((id, i) => {
             const el = ELEMENTS.find(e => e.id === id);
             const col = el ? el.color : "#888";
             const bx = Math.round(MID - bw / 2), by = y + i * 22, bh = 18;
@@ -1233,19 +1235,18 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
             ctx.strokeRect(bx, by, bw, bh); ctx.globalAlpha = 1;
             ctx.fillStyle = col; ctx.font = "bold 10px monospace";
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText("◈ ACTIVATE " + (el ? el.label : id.toUpperCase()),
+            ctx.fillText("◈ UNLOCK " + (el ? el.label : id.toUpperCase()),
                          bx + bw / 2, by + bh / 2 + 1);
             ctx.textBaseline = "alphabetic";
             window._modActivateRects.push({ id, bx, by, bw, bh });
         });
-        y += pendingElements.length * 22 + 16;
+        y += choices.length * 22 + 16;
     } else {
         const next = nextWaveUnlock();
         ctx.fillStyle = "#2a3040"; ctx.font = "9px monospace";
         ctx.textAlign = "center";
         ctx.fillText(next
-            ? "NEXT: " + ((ELEMENTS.find(e => e.id === next.element) || {}).label
-                          || next.element.toUpperCase()) + " — CLEAR A WAVE"
+            ? "NEXT UNLOCK: YOUR PICK — CLEAR A WAVE"
             : "ALL ELEMENTS ONLINE · " + lifetimeKills + " kills", MID, y);
         y += 16;
     }
@@ -1367,6 +1368,12 @@ function _drawRecruitTab(PX, PY, PW, PH) {
     ctx.beginPath(); ctx.roundRect(PX + 20, btnY, PW - 40, btnH, 6); ctx.fill(); ctx.stroke();
     ctx.fillStyle = canAfford ? "#0f8" : "#555"; ctx.font = "bold 13px monospace"; ctx.textAlign = "center";
     ctx.fillText("SPAWN FOLLOWER — 30 SHARDS", PX + PW/2, btnY + btnH/2);
+}
+
+// Every element still locked, in the ladder's order: what an earned unlock can be spent on (js/wavedata.js activatePendingElement).
+function _modChoices() {
+    const order = typeof ELEMENT_LADDER !== "undefined" ? ELEMENT_LADDER : ELEMENTS.map(e => e.id);
+    return order.filter(id => !unlockedElements.has(id) && ELEMENTS.some(e => e.id === id));
 }
 
 // ── Panel input handler ───────────────────────────────────

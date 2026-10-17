@@ -121,16 +121,24 @@ function noteWaveClearedForProgression() {
     const def = ELEMENTS.find(e => e.id === next.element);
     floatingTexts.push({
         x: canvas.width / 2, y: canvas.height / 2 - 90,
-        text: (def ? def.label : next.element.toUpperCase()) + " EARNED — ACTIVATE AT THE CRYSTAL",
-        color: def ? def.color : "#0f8", life: 260, vy: -0.16, size: 15,
+        text: "UNLOCK EARNED — CHOOSE AN ELEMENT AT THE CRYSTAL",
+        color: "#ffcc44", life: 260, vy: -0.16, size: 15,
     });
     return next.element;
 }
 
 // The deliberate act at the Crystal. Returns the element activated, or null.
+// THE PICK. A cleared wave earns an UNLOCK; which element it is is the player's choice. pendingElements is the list of unlocks
+// earned and not yet spent (each carries the next element of the ladder, as a default and to keep the count honest), and tapping
+// ANY locked element at the Crystal spends one: its own entry if it is the ladder's pick, otherwise the first one in the list.
 function activatePendingElement(elementId) {
-    const at = pendingElements.indexOf(elementId);
-    if (at < 0) return null;
+    if (typeof elementId !== "string" || unlockedElements.has(elementId)) return null;
+    let at = pendingElements.indexOf(elementId);
+    if (at < 0) {
+        // Not the ladder's pick: the player is choosing a different element, paying with an earned unlock.
+        if (pendingElements.length === 0 || !ELEMENTS.some(e => e.id === elementId)) return null;
+        at = 0;
+    }
     pendingElements.splice(at, 1);
     unlockedElements.add(elementId);
     saveUnlocks();

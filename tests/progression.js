@@ -214,7 +214,7 @@ check('earning is NOT activating — it does not go straight into the pool', () 
     ok(!env.sandbox.unlockedElements.has(ladder(env)[0]),
        'an earned element must not be usable before it is activated');
     same(env.sandbox.unlockSaves, 0, 'and must not be written as unlocked');
-    ok(env.sandbox.floatingTexts.some(t => /ACTIVATE AT THE CRYSTAL/.test(t.text)),
+    ok(env.sandbox.floatingTexts.some(t => /CHOOSE AN ELEMENT AT THE CRYSTAL/.test(t.text)),
        'the player should be told where to go');
 });
 
@@ -283,6 +283,29 @@ check('activating something you have not earned does nothing', () => {
     same(env.run('activatePendingElement')('fire'), null, 'already held');
     same(env.run('activatePendingElement')(undefined), null, 'nonsense');
     same(env.sandbox.unlockedElements.size, 2, 'nothing should have been granted');
+});
+
+check('THE ASK: the player PICKS which element an earned unlock becomes', () => {
+    const env = makeEnv(['electric']);
+    const L = ladder(env), pick = L[L.length - 1];                        // not the ladder's own next pick: the last one
+    clearWave(env);
+    same(env.sandbox.pendingElements.join(','), L[0], 'one unlock is earned, with the ladder\'s next element as its default');
+    same(env.run('activatePendingElement')(pick), pick, 'any locked element can be chosen');
+    ok(env.sandbox.unlockedElements.has(pick), 'the chosen element is online'); ok(!env.sandbox.unlockedElements.has(L[0]), 'and the default is NOT unlocked');
+    same(env.sandbox.pendingElements.length, 0, 'the unlock is spent');
+    same(env.run('activatePendingElement')(L[1]), null, 'a second pick needs a second unlock');
+    clearWave(env, 2);
+    ok(env.sandbox.pendingElements.length >= 1 && !env.sandbox.pendingElements.includes(pick), 'the next unlock is for something still locked, never the one already chosen: ' + env.sandbox.pendingElements);
+});
+
+check('an unlock spent on another element leaves the others pending in step', () => {
+    const env = makeEnv(['electric']);
+    const L = ladder(env);
+    clearWave(env, 2);                                                       // two unlocks: the first two of the ladder
+    same(env.sandbox.pendingElements.length, 2, 'two earned');
+    env.run('activatePendingElement')(L[3]);                                 // spend one on a different element
+    same(env.sandbox.pendingElements.length, 1, 'one left');
+    ok(env.sandbox.unlockedElements.has(L[3]), 'the pick is online');
 });
 
 check('an element is never earned twice', () => {
@@ -389,8 +412,8 @@ check('a boss modulator still overrides the modulation', () => {
     ok(at < NPC.indexOf('recruitElementPool()'), 'the modulator should be checked first');
 });
 
-check('the crystal offers an ACTIVATE control per pending element', () => {
-    ok(/EARNED — TAP TO ACTIVATE/.test(SRC.clone), 'the tab does not offer activation');
+check('the crystal offers an UNLOCK control for every locked element once one is earned', () => {
+    ok(/UNLOCK EARNED — CHOOSE AN ELEMENT/.test(SRC.clone), 'the tab does not offer the pick'); ok(/_modChoices\(\)/.test(SRC.clone), 'the pick does not list the locked elements');
     ok(/_modActivateRects/.test(SRC.clone), 'no hit targets for activation');
     ok(/activatePendingElement\(r\.id\)/.test(SRC.clone), 'tapping one does not activate it');
     // Checked before the swatches, or an ACTIVATE tap that happens to land on
