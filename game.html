@@ -816,14 +816,24 @@
     #unitInfo .ui-close { flex: none; align-self: flex-start; font-family: var(--neo-font); font-weight: 900; font-size: 20px; color: #fff; background: #0a1022; border: 2px solid var(--neo-red); padding: 8px 16px; cursor: pointer; touch-action: manipulation; transform: skewX(-10deg); }
     #orderPicker .op-row.kits .rpk-el { flex: 1 1 22%; min-width: 0; font-size: 12px; padding: 6px 4px; min-height: 36px; } #orderPicker .op-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; } #orderPicker .op-row .rpk-el { flex: 1 1 0; min-width: 90px; justify-content: center; padding: 10px 8px; min-height: 48px; font-size: 16px; } #orderPicker .rpk-el.on { background: var(--c); color: #05070f; } #orderPicker .rpk-el.on .rpk-name { color: #05070f; }
     #ccRoot .cz-chip.order { cursor: pointer; } #ccRoot .cz-chip.order:hover { background: rgba(255,74,28,0.3); } #ccRoot .cz-chip.add { cursor: pointer; background: rgba(25,230,193,0.18); } #ccRoot .cz-chip.add:hover { background: var(--c); color: #05070f; }
-    /* ── THE MINI COMMAND RADIAL (js/minicmd.js): a small hub at the bottom left that fans out, tablet and desktop ── */
+    /* ── THE MINI COMMAND WATCH (js/minicmd.js): a Neo Future 3D watch face at the bottom left; tablet and desktop ── */
     #miniCmd { display: none; }
     @media (min-width: 701px) {
-        #miniCmd { display: block; position: fixed; left: 14px; bottom: calc(54px + var(--vv-bottom, 0px)); width: 56px; height: 56px; z-index: 13; font-family: var(--neo-font); pointer-events: none; }
+        #miniCmd { display: block; position: fixed; left: 14px; bottom: calc(52px + var(--vv-bottom, 0px)); width: 62px; height: 62px; z-index: 13; font-family: var(--neo-font); pointer-events: none; transform-origin: 0 100%; transform: perspective(700px) rotateX(10deg) rotateY(-9deg); filter: drop-shadow(0 6px 10px rgba(0,0,0,0.7)) drop-shadow(0 0 10px rgba(25,230,193,0.35)); }
+        #miniCmd.open { width: 210px; height: 210px; bottom: calc(100px + var(--vv-bottom, 0px)); }
+        #miniCmd.opening { animation: mcOpen 0.45s cubic-bezier(0.2, 1.1, 0.3, 1); }
+        @keyframes mcOpen { from { transform: perspective(700px) rotateX(10deg) rotateY(-9deg) rotateZ(-70deg) scale(0.3); opacity: 0.2; } to { transform: perspective(700px) rotateX(10deg) rotateY(-9deg) rotateZ(0) scale(1); opacity: 1; } }
         #miniCmd.tut, body.placing #miniCmd, body.ccOpen #miniCmd, body.panel-open #miniCmd { display: none !important; }
-        #miniCmd .mc-hub { --c: #19e6c1; pointer-events: auto; position: absolute; left: 0; top: 0; width: 56px; height: 56px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; font-family: var(--neo-font); font-style: italic; font-weight: 900; color: #fff; background: #0a1022; border: 3px solid var(--c); box-shadow: 0 0 14px var(--c); cursor: pointer; touch-action: manipulation; padding: 0; }
-        #miniCmd .mc-hub .mc-hl { font-size: 14px; color: var(--c); } #miniCmd .mc-hub .mc-hn { font: 800 11px monospace; color: #fff; margin-top: 2px; } #miniCmd .mc-hub.open { background: var(--c); } #miniCmd .mc-hub.open .mc-hl { color: #05070f; font-size: 20px; }
-        #miniCmd .mc-pet { --c: #19e6c1; pointer-events: auto; position: absolute; width: 36px; height: 36px; border-radius: 50%; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 10px; letter-spacing: -0.5px; color: #fff; background: #0a1022; border: 2px solid var(--c); box-shadow: 0 0 8px rgba(0,0,0,0.6); cursor: pointer; touch-action: manipulation; padding: 0; } #miniCmd .mc-pet:hover, #miniCmd .mc-pet:active { background: var(--c); color: #05070f; } #miniCmd .mc-pet.on { background: var(--c); color: #05070f; box-shadow: 0 0 10px var(--c); }
+        #miniCmd .mc-holder { position: absolute; inset: 0; pointer-events: none; } #miniCmd .mc-face { width: 100%; height: 100%; display: block; }
+        #miniCmd .mc-hand { transition: transform 0.6s cubic-bezier(0.3, 1.4, 0.4, 1); } #miniCmd .mc-holder.sweep .mc-hand { animation: mcSweep 60s linear infinite; } @keyframes mcSweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        #miniCmd .mc-hub { --c: #19e6c1; pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 36%; height: 36%; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; font-family: var(--neo-font); font-style: italic; font-weight: 900; color: #fff; background: radial-gradient(circle at 35% 30%, #1d2c58, #05070f 75%); border: 2px solid var(--c); box-shadow: 0 0 12px var(--c), inset 0 0 10px rgba(0,0,0,0.8); cursor: pointer; touch-action: manipulation; padding: 0; }
+        #miniCmd .mc-hub .mc-hl { font-size: 15px; color: var(--c); text-shadow: 0 0 8px var(--c); } #miniCmd .mc-hub .mc-hn { font: 800 11px monospace; color: #fff; margin-top: 2px; }
+        #miniCmd:not(.open) .mc-hub { width: 78%; height: 78%; } #miniCmd:not(.open) .mc-hub .mc-hl { font-size: 13px; } #miniCmd:not(.open) .mc-hub .mc-hn { font-size: 10px; }
+        #miniCmd .mc-pet { --c: #19e6c1; pointer-events: auto; position: absolute; width: 40px; height: 40px; border-radius: 50%; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 11px; letter-spacing: -0.4px; color: #fff; background: radial-gradient(circle at 35% 28%, #26376a, #070b18 70%); border: 2px solid var(--c); box-shadow: 0 3px 6px rgba(0,0,0,0.7), inset 0 1px 2px rgba(255,255,255,0.25), 0 0 6px var(--c); cursor: pointer; touch-action: manipulation; padding: 0; animation: mcPop 0.32s cubic-bezier(0.2, 1.4, 0.3, 1) backwards; }
+        @keyframes mcPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        #miniCmd .mc-pet:hover, #miniCmd .mc-pet:active { background: var(--c); color: #05070f; } #miniCmd .mc-pet.on { background: var(--c); color: #05070f; box-shadow: 0 3px 6px rgba(0,0,0,0.7), 0 0 14px var(--c); }
+        #miniCmd .mc-tab { pointer-events: auto; position: absolute; top: 184px; width: 84px; height: 26px; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 11px; letter-spacing: 0.3px; color: #9fb0d0; background: linear-gradient(180deg, #1c2748, #070b18); border: 2px solid #3a4a78; cursor: pointer; touch-action: manipulation; padding: 0; transform: skewX(-12deg); box-shadow: 0 3px 6px rgba(0,0,0,0.7); } #miniCmd .mc-tab[data-id="tab-command"] { left: 16px; } #miniCmd .mc-tab[data-id="tab-elements"] { left: 106px; }
+        #miniCmd .mc-tab.on { color: #05070f; background: linear-gradient(180deg, #5ff7de, #19e6c1); border-color: #19e6c1; box-shadow: 0 0 12px #19e6c1; }
     }
 </style>
 
@@ -1650,12 +1660,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-17zr, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-17zs, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-17zr";
+window.__PAGE_BUILD = "2026-10-17zs";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1691,64 +1701,64 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-17zr"></script>
-<script src="js/icons.js?v=2026-10-17zr"></script>
-<script src="js/uikit.js?v=2026-10-17zr"></script>
-<script src="js/rng.js?v=2026-10-17zr"></script>
-<script src="js/traits.js?v=2026-10-17zr"></script>
-<script src="js/elements.js?v=2026-10-17zr"></script>
-<script src="js/combat.js?v=2026-10-17zr"></script>
-<script src="js/species.js?v=2026-10-17zr"></script>
-<script src="js/levels.js?v=2026-10-17zr"></script>
-<script src="js/predator_randomizer.js?v=2026-10-17zr"></script>
-<script src="js/mass.js?v=2026-10-17zr"></script>
-<script src="js/infest.js?v=2026-10-17zr"></script>
-<script src="js/power.js?v=2026-10-17zr"></script>
-<script src="js/save.js?v=2026-10-17zr"></script>
-<script src="js/camp.js?v=2026-10-17zr"></script>
-<script src="js/wavedata.js?v=2026-10-17zr"></script>
-<script src="js/helpers.js?v=2026-10-17zr"></script>
-<script src="js/predator.js?v=2026-10-17zr"></script>
-<script src="js/abilities.js?v=2026-10-17zr"></script>
-<script src="js/world.js?v=2026-10-17zr"></script>
-<script src="js/commands.js?v=2026-10-17zr"></script>
-<script src="js/npc.js?v=2026-10-17zr"></script>
-<script src="js/codex.js?v=2026-10-17zr"></script>
-<script src="js/draw.js?v=2026-10-17zr"></script>
-<script src="js/beetle3d.js?v=2026-10-17zr"></script>
-<script src="js/bugs3d.js?v=2026-10-17zr"></script>
-<script src="js/ui.js?v=2026-10-17zr"></script>
-<script src="js/waves.js?v=2026-10-17zr"></script>
-<script src="js/drops.js?v=2026-10-17zr"></script>
-<script src="js/clone.js?v=2026-10-17zr"></script>
-<script src="js/clonework.js?v=2026-10-17zr"></script>
-<script src="js/broods.js?v=2026-10-17zr"></script>
-<script src="js/raids.js?v=2026-10-17zr"></script>
-<script src="js/ultra.js?v=2026-10-17zr"></script>
-<script src="js/formations.js?v=2026-10-17zr"></script>
-<script src="js/breakout.js?v=2026-10-17zr"></script>
-<script src="js/nightraids.js?v=2026-10-17zr"></script>
-<script src="js/bonds.js?v=2026-10-17zr"></script>
-<script src="js/autoplay.js?v=2026-10-17zr"></script>
-<script src="js/indexart.js?v=2026-10-17zr"></script>
-<script src="js/modules.js?v=2026-10-17zr"></script>
-<script src="js/shieldcells.js?v=2026-10-17zr"></script>
-<script src="js/evolution.js?v=2026-10-17zr"></script>
-<script src="js/buildmenu.js?v=2026-10-17zr"></script>
-<script src="js/hudgems.js?v=2026-10-17zr"></script>
-<script src="js/nethud.js?v=2026-10-17zr"></script>
-<script src="js/commandcenter.js?v=2026-10-17zr"></script>
-<script src="js/unitinfo.js?v=2026-10-17zr"></script>
-<script src="js/zones.js?v=2026-10-17zr"></script>
-<script src="js/kits.js?v=2026-10-17zr"></script>
-<script src="js/kitui.js?v=2026-10-17zr"></script>
-<script src="js/toolbox.js?v=2026-10-17zr"></script>
-<script src="js/minicmd.js?v=2026-10-17zr"></script>
-<script src="js/radialmenu.js?v=2026-10-17zr"></script>
-<script src="js/input.js?v=2026-10-17zr"></script>
-<script src="js/game.js?v=2026-10-17zr"></script>
-<script src="js/tutorial.js?v=2026-10-17zr"></script>
-<script src="js/dev.js?v=2026-10-17zr"></script>
+<script src="js/config.js?v=2026-10-17zs"></script>
+<script src="js/icons.js?v=2026-10-17zs"></script>
+<script src="js/uikit.js?v=2026-10-17zs"></script>
+<script src="js/rng.js?v=2026-10-17zs"></script>
+<script src="js/traits.js?v=2026-10-17zs"></script>
+<script src="js/elements.js?v=2026-10-17zs"></script>
+<script src="js/combat.js?v=2026-10-17zs"></script>
+<script src="js/species.js?v=2026-10-17zs"></script>
+<script src="js/levels.js?v=2026-10-17zs"></script>
+<script src="js/predator_randomizer.js?v=2026-10-17zs"></script>
+<script src="js/mass.js?v=2026-10-17zs"></script>
+<script src="js/infest.js?v=2026-10-17zs"></script>
+<script src="js/power.js?v=2026-10-17zs"></script>
+<script src="js/save.js?v=2026-10-17zs"></script>
+<script src="js/camp.js?v=2026-10-17zs"></script>
+<script src="js/wavedata.js?v=2026-10-17zs"></script>
+<script src="js/helpers.js?v=2026-10-17zs"></script>
+<script src="js/predator.js?v=2026-10-17zs"></script>
+<script src="js/abilities.js?v=2026-10-17zs"></script>
+<script src="js/world.js?v=2026-10-17zs"></script>
+<script src="js/commands.js?v=2026-10-17zs"></script>
+<script src="js/npc.js?v=2026-10-17zs"></script>
+<script src="js/codex.js?v=2026-10-17zs"></script>
+<script src="js/draw.js?v=2026-10-17zs"></script>
+<script src="js/beetle3d.js?v=2026-10-17zs"></script>
+<script src="js/bugs3d.js?v=2026-10-17zs"></script>
+<script src="js/ui.js?v=2026-10-17zs"></script>
+<script src="js/waves.js?v=2026-10-17zs"></script>
+<script src="js/drops.js?v=2026-10-17zs"></script>
+<script src="js/clone.js?v=2026-10-17zs"></script>
+<script src="js/clonework.js?v=2026-10-17zs"></script>
+<script src="js/broods.js?v=2026-10-17zs"></script>
+<script src="js/raids.js?v=2026-10-17zs"></script>
+<script src="js/ultra.js?v=2026-10-17zs"></script>
+<script src="js/formations.js?v=2026-10-17zs"></script>
+<script src="js/breakout.js?v=2026-10-17zs"></script>
+<script src="js/nightraids.js?v=2026-10-17zs"></script>
+<script src="js/bonds.js?v=2026-10-17zs"></script>
+<script src="js/autoplay.js?v=2026-10-17zs"></script>
+<script src="js/indexart.js?v=2026-10-17zs"></script>
+<script src="js/modules.js?v=2026-10-17zs"></script>
+<script src="js/shieldcells.js?v=2026-10-17zs"></script>
+<script src="js/evolution.js?v=2026-10-17zs"></script>
+<script src="js/buildmenu.js?v=2026-10-17zs"></script>
+<script src="js/hudgems.js?v=2026-10-17zs"></script>
+<script src="js/nethud.js?v=2026-10-17zs"></script>
+<script src="js/commandcenter.js?v=2026-10-17zs"></script>
+<script src="js/unitinfo.js?v=2026-10-17zs"></script>
+<script src="js/zones.js?v=2026-10-17zs"></script>
+<script src="js/kits.js?v=2026-10-17zs"></script>
+<script src="js/kitui.js?v=2026-10-17zs"></script>
+<script src="js/toolbox.js?v=2026-10-17zs"></script>
+<script src="js/minicmd.js?v=2026-10-17zs"></script>
+<script src="js/radialmenu.js?v=2026-10-17zs"></script>
+<script src="js/input.js?v=2026-10-17zs"></script>
+<script src="js/game.js?v=2026-10-17zs"></script>
+<script src="js/tutorial.js?v=2026-10-17zs"></script>
+<script src="js/dev.js?v=2026-10-17zs"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1801,7 +1811,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-17zr"></script>
+<script src="js/init.js?v=2026-10-17zs"></script>
 
 </body>
 </html>
