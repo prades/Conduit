@@ -57,8 +57,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('THE ASK: a CORE BRAWLER becomes the HAMMER SLUG (design No. 467, which replaced the Aegis Warden); an ELECTRIC BRAWLER the PRISM HOOD (No. 388, which replaced the Storm Manta)', () => {
         mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'core brawler'); same(run('unitTypeLabel(__f)'), 'HAMMER SLUG', 'its tag'); ok(run('EVOLUTIONS.warden.legacy === true'), 'the Aegis Warden is no longer handed out');
-        mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'voltring', 'electric brawler');
-        same(run('unitTypeLabel(__f)'), 'VOLT RING', 'its tag'); ok(run('EVOLUTIONS.prism.legacy === true'), 'the Prism Hood design went to the fire mage'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
+        mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'staticorb', 'electric brawler');
+        same(run('unitTypeLabel(__f)'), 'STATIC ORB', 'its tag'); ok(run('EVOLUTIONS.prism.legacy === true'), 'the Prism Hood design went to the fire mage'); ok(run('EVOLUTIONS.voltring.legacy === true'), 'the Volt Ring placeholder is no longer handed out'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
         mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'thunderhead', 'the electric sniper is the Thunderhead');
     });
     check('THE ASK: a FLUX WORKER becomes the VOID HAULER (the saucer, design No. 689; once the hover hauler) — a worker is a duty, not a role', () => {
@@ -407,7 +407,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
     });
 
-    check('the VOLT RING (the electric brawler, a placeholder design) runs STATIC RUSH too', () => {
+    check('the STATIC ORB (the electric brawler) runs STATIC RUSH: dash, shock, stun', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'staticorb'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            frame++; f._sigCd = 1; evolutionTick(); const out = { dist: Math.hypot(p.x - f.x, p.y - f.y), dmg: 1e6 - p.health, stun: p.hitStun >= MANTA_STUN }; p.dead = true; return out; })()`);
+        ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
+    });
+
+    check('the legacy VOLT RING still runs STATIC RUSH', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'voltring'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
@@ -544,7 +552,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'voidstar', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'embercowl', 'rotshard', 'mimic', 'petal', 'caldera', 'seeper', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {
+        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'voidstar', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'staticorb', 'embercowl', 'rotshard', 'mimic', 'petal', 'caldera', 'seeper', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
@@ -556,7 +564,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'voidstar', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'embercowl', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone', 'hammerslug']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'voidstar', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'staticorb', 'embercowl', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone', 'hammerslug']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);

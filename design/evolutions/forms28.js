@@ -1,7 +1,9 @@
 // ── THE ORB BRAWLER · the electric brawler, Nos. 727–: from the reference sheet: a sphere with an EXPOSED glowing diamond core, ONE sparse band of big square tread blocks rolling round its middle, curved segmented shell plates on each side with gaps that show the core, and two forward-slanted ear housings on top with lit faces and a bolt of static between them. ──
-const _obBlack = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.2, roughness: 0.8, flatShading: true }); _obBlack.envMapIntensity = 0.15;
-const _obTread = new T.MeshStandardMaterial({ color: 0x050507, metalness: 0.25, roughness: 0.7, flatShading: true }); _obTread.envMapIntensity = 0.25;
-function _bpod(o, sx, lit, dim, lc, frame, R) {   // one booster bracket: its housing, its nozzle(s), coil lights and ion stream(s); rear anchor at z = -len*0.62 for every kind
+const _obBlackL = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.2, roughness: 0.8, flatShading: true }); _obBlackL.envMapIntensity = 0.15;
+const _obTreadL = new T.MeshStandardMaterial({ color: 0x050507, metalness: 0.25, roughness: 0.7, flatShading: true }); _obTreadL.envMapIntensity = 0.25;
+const _obBlackD = new T.MeshStandardMaterial({ color: 0x000001, metalness: 0.05, roughness: 1, flatShading: true }); _obBlackD.envMapIntensity = 0.04;
+const _obTreadD = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.05, roughness: 1, flatShading: true }); _obTreadD.envMapIntensity = 0.06;
+function _bpod(o, sx, lit, dim, lc, frame, R, _obBlack, _obTread) {   // one booster bracket: its housing, its nozzle(s), coil lights and ion stream(s); rear anchor at z = -len*0.62 for every kind
   const B = o.boost, K = B.kind || 'barrel', bl = B.len, br = B.r, eg2 = G(); eg2.position.set(sx * o.earX, R + 0.02, o.earZ); eg2.rotation.set(-o.earTilt, 0, -sx * o.earSplay); frame.add(eg2);
   const rearZ = K === 'trap' ? -B.L1 * 0.62 : K === 'strap' ? -B.T * 0.5 - 0.03 : K === 'drop' ? Math.sin(B.th1 * (B.back ? -1 : 1)) * (R + B.T * 0.4) : -bl * 0.62, coils = [], plumes = [];
   const addPlume = (x, y, rr, kk) => { [[1.0, 0.35], [0.55, 0.6]].forEach(([k, op], pi) => { const pl = new T.Mesh(new T.ConeGeometry(rr * k, B.plume * k * kk, 8, 1, true), new T.MeshBasicMaterial({ color: pi ? lit.clone().lerp(new T.Color(1, 1, 1), 0.5).getHex() : lc.getHex(), transparent: true, opacity: op, blending: T.AdditiveBlending, depthWrite: false, toneMapped: false, side: T.DoubleSide })); pl.rotation.x = -PI / 2; pl.position.set(x, y, rearZ - B.plume * k * kk * 0.5); eg2.add(pl); plumes.push({ pl, k, op, len: B.plume * k * kk }); }); };
@@ -114,13 +116,14 @@ function _bpod(o, sx, lit, dim, lc, frame, R) {   // one booster bracket: its ho
   return { eg2, face, tip: exit, sx, coils, plumes, boost: true, rz: rearZ };
 }
 function _orbBrawler(o) {
+  const _obBlack = o.dark ? _obBlackD : _obBlackL, _obTread = o.dark ? _obTreadD : _obTreadL;
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.25);
-  const lc = new T.Color(EL.color), lit = lc.clone().lerp(new T.Color(1, 1, 1), 0.35), dim = lc.clone().multiplyScalar(0.25);
+  const lc = new T.Color(EL.color), lit = lc.clone().lerp(new T.Color(1, 1, 1), o.dark ? 0.1 : 0.35).multiplyScalar(o.dark ? o.dark.lit : 1), dim = lc.clone().multiplyScalar(o.dark ? 0.14 : 0.25);
   const frame = G(); frame.position.y = o.r; b.add(frame);
   const R = o.r;
   // the exposed core: a big faceted diamond in the middle with a hot white heart and a soft haze, inside a dark inner ball
   const core = G(); frame.add(core);
-  const dm = new T.Mesh(_litFacets(new T.OctahedronGeometry(R * o.coreK, 0)), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); dm.scale.set(1, 1.35, 1); core.add(dm);
+  const dm = new T.Mesh(o.dark ? _shadeCrystal(_litFacets(new T.OctahedronGeometry(R * o.coreK, 0)), o.dark.core, true, -R * o.coreK * 1.35, R * o.coreK * 1.35) : _litFacets(new T.OctahedronGeometry(R * o.coreK, 0)), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); dm.scale.set(1, 1.35, 1); core.add(dm);
   const heart = new T.Mesh(new T.OctahedronGeometry(R * o.coreK * 0.4, 0), new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })); heart.scale.y = 1.35; core.add(heart);
   const haze = glowSprite(R * 2.4); haze.material = haze.material.clone(); haze.material.opacity = 0.4; haze.renderOrder = 3; frame.add(haze);
   // a ring of small lit segments round the core (the inner machinery)
@@ -140,7 +143,7 @@ function _orbBrawler(o) {
       const holder = G(); holder.rotation.z = -sx * PI / 2; holder.add(mesh); holder.position.x = sx * 0.04; frame.add(holder);
       const eg = new T.LineSegments(new T.EdgesGeometry(geo, 18), edgeMat); holder.add(eg); shells.push({ holder, mesh, k, sx }); }
   // the ears: two forward-slanted housings on top of the band, each with a lit face, and static between them
-  const ears = []; for (const sx of [-1, 1]) { if (o.boost) { ears.push(_bpod(o, sx, lit, dim, lc, frame, R)); continue; }
+  const ears = []; for (const sx of [-1, 1]) { if (o.boost) { ears.push(_bpod(o, sx, lit, dim, lc, frame, R, _obBlack, _obTread)); continue; }
     const eg2 = G(); eg2.position.set(sx * o.earX, R + o.tread + 0.02, o.earZ); eg2.rotation.set(-o.earTilt, 0, -sx * o.earSplay); frame.add(eg2);
     const hs = new T.Mesh(new T.BoxGeometry(o.earW, o.earH, o.earL), _obTread); hs.position.y = o.earH / 2; eg2.add(hs);
     const face = new T.Mesh(new T.BoxGeometry(o.earW * 0.7, 0.012, o.earL * 0.75), new T.MeshBasicMaterial({ color: lit.getHex(), toneMapped: false })); face.position.set(0, o.earH + 0.008, 0); eg2.add(face);
@@ -152,7 +155,7 @@ function _orbBrawler(o) {
   const wp = new T.Vector3();
   return { g, core: R * 1.0 * (o.S || 1.25), update(t, act) { const ph = 1.6 * t, ac = act || 0;
     band.rotation.x = -(ph / TAU) * (TAU / N) * o.turns * (1 + 1.2 * ac); frame.position.y = R + 0.012 * Math.sin(ph * 2) - 0.03 * ac; frame.position.z = 0.1 * ac; frame.rotation.x = 0.02 * Math.sin(ph) - 0.07 * ac;
-    const fk = 0.6 + 0.25 * Math.sin(ph * 3) * Math.sin(ph * 2 + 1) + 0.5 * ac; core.rotation.y = ph * 0.6; core.rotation.z = 0.1 * Math.sin(ph); heart.scale.setScalar(1 + 0.2 * Math.sin(ph * 4) + 0.5 * ac); heart.scale.y *= 1.35; haze.material.opacity = 0.3 + 0.25 * fk; pool.m.material.opacity = 0.15 + 0.2 * fk; L.intensity = 0.5 + 1.0 * fk;
+    const fk = 0.6 + 0.25 * Math.sin(ph * 3) * Math.sin(ph * 2 + 1) + 0.5 * ac; core.rotation.y = ph * 0.6; core.rotation.z = 0.1 * Math.sin(ph); heart.scale.setScalar(1 + 0.2 * Math.sin(ph * 4) + 0.5 * ac); heart.scale.y *= 1.35; haze.material.opacity = (0.3 + 0.25 * fk) * (o.dark ? o.dark.haze : 1); pool.m.material.opacity = (0.15 + 0.2 * fk) * (o.dark ? o.dark.haze : 1); L.intensity = (0.5 + 1.0 * fk) * (o.dark ? 0.6 : 1);
     segs.forEach(S => { const on = (Math.sin(ph * 2 - S.a * 2) + 1) / 2; S.sg.material.color.copy(dim).lerp(lit, Math.min(1, on * 0.9 + 0.4 * ac)); });
     shells.forEach(S => { const s = 1 + 0.04 * ac; S.holder.scale.setScalar(s); S.holder.position.x = S.sx * (0.04 + 0.05 * ac); });
     ears.forEach(E => { E.face.material.color.copy(lit).multiplyScalar(0.7 + 0.3 * fk); E.tip.scale.setScalar(1 + 0.4 * Math.sin(ph * 5 + E.sx) + 0.8 * ac); });
@@ -250,3 +253,8 @@ fx(781, "Splayed out over the shoulders and running down the back.", () => _orbB
 
 // The back-running trapezoids as seen from BEHIND (the same Nos. 777–781, the creature turned round): 782–786
 [777, 778, 779, 780, 781].forEach((n, i) => fx(782 + i, "No. " + n + " seen from behind.", () => { const B = FORMS2[n].build(); B.g.rotation.y = PI; return B; }));
+
+// ── 781 darker, and the game sprite (Nos. 790, 791): everything near-black, the core a deep amber, the lit panels and plumes dimmed ──
+const _obdk = { core: 1.0, lit: 0.8, haze: 0.95 };   // the FRAME is near-black; the diamond keeps its full brightness
+fx(790, "781 darker: near-black tread, plates and brackets, a deep amber core, dim lit panels, a faint haze.", () => _orbBrawler(Object.assign({}, _bk({ lean: 0.35, th1: 1.1 }), { earX: 0.34, dark: _obdk })));
+fx(791, "790, the game sprite (smaller).", () => _orbBrawler(Object.assign({}, _bk({ lean: 0.35, th1: 1.1 }), { earX: 0.34, dark: _obdk, S: 1.5 })));

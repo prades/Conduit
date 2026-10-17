@@ -170,9 +170,13 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ffee33" },
     // THE SWAP: the electric brawler and the fire mage traded designs ("I don't like the fire mage design, so we'll just have it there on the
     // electric as a placeholder"), each recoloured for its new element. Moves and roles stay with the slots.
-    // The ELECTRIC BRAWLER, for now the ring drone (design No. 90) in electric yellow, a PLACEHOLDER. Its ring turns, so its sheet carries its own light.
-    voltring:{ id: "voltring", name: "VOLT RING", element: "electric", role: "brawler", move: "STATIC RUSH", sheet: "img/evo/voltring.png",
+    // LEGACY: the ring-drone placeholder. New evolutions use the Static Orb; a follower already evolved into this keeps it.
+    voltring:{ id: "voltring", legacy: true, name: "VOLT RING", element: "electric", role: "brawler", move: "STATIC RUSH", sheet: "img/evo/voltring.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ffee33" },
+    // The ELECTRIC BRAWLER, design No. 781 (darkened): a near-black ball with an exposed amber diamond core, a slim tread band, open shell plates and a
+    // pair of long thick trapezoid brackets down its back, static arcing between them. The tread and core move, so its sheet carries its own light.
+    staticorb:{ id: "staticorb", name: "STATIC ORB", element: "electric", role: "brawler", move: "STATIC RUSH", sheet: "img/evo/staticorb.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 80.1], noGlow: true, color: "#ffe033" },
     // The FIRE MAGE ("sniper" in the code): the hooded pyramid with the hovering gems (design No. 391), recoloured for fire. The gems turn, so its sheet carries its own light.
     embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", sheet: "img/evo/embercowl.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f" },
@@ -252,7 +256,7 @@ function evolutionTick() {
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (d.id === "bloom" || d.id === "quillstone") petalBlaze(f); else if (d.id === "reaver" || d.id === "thunderhead") arcVolley(f); else if (d.id === "serpent" || d.id === "voidstar") singularityShot(f);
-        else if (d.id === "warden" || d.id === "hammerslug") aegisBurst(f); else if (d.id === "manta" || d.id === "prism" || d.id === "voltring") staticRush(f); else if (d.id === "halo" || d.id === "embercowl") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera" || d.id === "seeper") eruption(f); else if (d.id === "maw") chomp(f);
+        else if (d.id === "warden" || d.id === "hammerslug") aegisBurst(f); else if (d.id === "manta" || d.id === "prism" || d.id === "voltring" || d.id === "staticorb") staticRush(f); else if (d.id === "halo" || d.id === "embercowl") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera" || d.id === "seeper") eruption(f); else if (d.id === "maw") chomp(f);
     }
 }
 function _evoFoes(x, y, r) {
