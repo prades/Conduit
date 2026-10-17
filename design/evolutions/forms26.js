@@ -1,6 +1,6 @@
 // ── THE SAUCER · Nos. 661–: a sleek black flying-saucer body, a ring of lights that chase round its rim, and mechanical legs it walks on. ──
 const _saucerHull = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.15, roughness: 0.75, flatShading: true }); _saucerHull.envMapIntensity = 0.18;
-const _saucerLeg = new T.MeshStandardMaterial({ color: 0x030304, metalness: 0.3, roughness: 0.6, flatShading: true }); _saucerLeg.envMapIntensity = 0.4;
+const _saucerLeg = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.15, roughness: 0.75, flatShading: true }); _saucerLeg.envMapIntensity = 0.18;   // the same black as the hull
 function _curvyLeg(o, b) {   // a leg built as a chain of short segments laid along two curves (thigh, shin), with ribs, joint collars, an optional piston and a foot clamp
   const M = o.curveSeg || 6, N = M * 2, segs = [], ribs = [], collars = [];
   for (let i = 0; i < N; i++) { const sg = _bone(null, null, o.legR, o.legR * 0.8, _saucerLeg); b.add(sg); segs.push(sg); }
@@ -8,6 +8,9 @@ function _curvyLeg(o, b) {   // a leg built as a chain of short segments laid al
   for (let i = 0; i < 3; i++) { const cl = new T.Mesh(new T.CylinderGeometry(1, 1, 0.05, 8), _saucerHull); b.add(cl); collars.push(cl); }   // hip, knee, ankle
   const piston = o.piston ? new T.Mesh(new T.CylinderGeometry(o.legR * 0.35, o.legR * 0.35, 1, 5), _saucerLeg) : null; if (piston) b.add(piston);
   const foot = new T.Mesh(new T.SphereGeometry(o.legR * 1.6, 8, 6), _saucerLeg); foot.scale.y = 0.6; b.add(foot);
+  // JAGGED FOREARMS: a row of sharp black spikes along the shin (the forearm, below the knee), alternating sides and swept back, and a pair at the knee joint
+  const spikes = []; if (o.jag) { const J = o.jag; for (let k = 0; k < J.n; k++) { const sp = new T.Mesh(new T.ConeGeometry(J.r * (1 - 0.35 * k / J.n), J.len * (1.1 - 0.5 * k / J.n), 4, 1), _saucerLeg); sp.geometry.translate(0, J.len * 0.5, 0); b.add(sp); spikes.push({ sp, k, side: k % 2 ? 1 : -1, knee: false }); }
+    for (let k = 0; k < 2; k++) { const sp = new T.Mesh(new T.ConeGeometry(J.r * 1.5, J.len * 1.5, 4, 1), _saucerLeg); sp.geometry.translate(0, J.len * 0.75, 0); b.add(sp); spikes.push({ sp, k, side: k ? 1 : -1, knee: true }); } }
   const pts = []; for (let i = 0; i <= N; i++) pts.push(new T.Vector3());
   const bez = (a, c, d, u, out) => out.set((1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * c.x + u * u * d.x, (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * c.y + u * u * d.y, (1 - u) * (1 - u) * a.z + 2 * (1 - u) * u * c.z + u * u * d.z);
   const c1 = new T.Vector3(), c2 = new T.Vector3(), up = new T.Vector3(0, 1, 0);
@@ -19,6 +22,8 @@ function _curvyLeg(o, b) {   // a leg built as a chain of short segments laid al
     ribs.forEach(({ rb, i }) => { const d = new T.Vector3().subVectors(pts[Math.min(N, i + 1)], pts[Math.max(0, i - 1)]).normalize(); rb.position.copy(pts[i]); rb.quaternion.setFromUnitVectors(up, d); rb.scale.set(o.legR * 1.45 * (1 - 0.4 * i / N), 1, o.legR * 1.45 * (1 - 0.4 * i / N)); });
     const cp = [pts[0], pts[M], pts[N]]; collars.forEach((cl, k) => { const a = pts[Math.max(0, [0, M, N][k] - 1)], bb = pts[Math.min(N, [0, M, N][k] + 1)], d = new T.Vector3().subVectors(bb, a).normalize(); cl.position.copy(cp[k]); cl.quaternion.setFromUnitVectors(up, d); const w = o.legR * (k === 1 ? 1.7 : 1.4); cl.scale.set(w, 1, w); });
     if (piston) { const a = pts[1].clone().addScaledVector(out, -0.06), bb = pts[M + 1].clone().addScaledVector(out, -0.06); _setBone(piston, a, bb); }
+    spikes.forEach(Sk => { const J = o.jag, idx = Sk.knee ? M : M + 1 + Math.floor(Sk.k * (M - 1) / Math.max(1, J.n - 1)), i0 = Math.min(N, idx), a = pts[Math.max(0, i0 - 1)], bb = pts[Math.min(N, i0 + 1)], d = new T.Vector3().subVectors(bb, a).normalize(), side = new T.Vector3().crossVectors(d, up).normalize().multiplyScalar(Sk.side), dir = side.clone().multiplyScalar(0.8).addScaledVector(out, 0.5).addScaledVector(d, Sk.knee ? -0.2 : -(J.sweep == null ? 0.55 : J.sweep)).normalize();
+      Sk.sp.position.copy(pts[i0]); Sk.sp.quaternion.setFromUnitVectors(up, dir); });
     foot.position.copy(ft); } };
 }
 function _saucer(o) {
@@ -77,3 +82,11 @@ fx(672, "Six insect legs, a smaller saucer, the knees held high, a quick scuttli
 fx(673, "Eight spider legs, the knees arching very high, thin and long.", () => _saucer(Object.assign({}, _sbug, { legs: 8, R: 0.8, legR: 0.034, legH: 1.2, kneeUp: 1.2, footR: 1.4, nLamps: 12, stride: 0.08 })));
 fx(674, "Mantis legs: four, long, thin, the highest arch, the shins long and hooked at the ends.", () => _saucer(Object.assign({}, _sbug, { legR: 0.042, legH: 1.3, kneeUp: 1.3, footR: 1.2, hipH: 0.5, bulge2: 0.25 })));
 fx(675, "Beetle legs: six, thick, low arches and short shins, a heavy scuttling crawler.", () => _saucer(Object.assign({}, _sbug, { legs: 6, legR: 0.062, legH: 0.9, kneeUp: 0.7, footR: 1.25, hipH: 0.34, sy: 1.2, piston: true, stride: 0.1 })));
+
+// ── Legs the same black as the body, with jagged forearms (Nos. 676–680) ──
+const _sjag = Object.assign({}, _sbug, { jag: { n: 5, len: 0.2, r: 0.03, sweep: 0.55 } });
+fx(676, "Bug legs in the hull's own black, a row of sharp black spikes along each forearm (the shin below the knee), alternating sides and swept back, and a pair at the knee.", () => _saucer(Object.assign({}, _sjag)));
+fx(677, "Longer, sparser spines: fewer but bigger blades along each forearm, like a mantis's raptorial arm.", () => _saucer(Object.assign({}, _sjag, { jag: { n: 3, len: 0.34, r: 0.04, sweep: 0.7 }, legs: 4 })));
+fx(678, "Dense saw-teeth along the forearm: many small sharp teeth, a barbed look.", () => _saucer(Object.assign({}, _sjag, { jag: { n: 9, len: 0.12, r: 0.022, sweep: 0.5 } })));
+fx(679, "Six legs, each forearm jagged with medium spikes, a smaller saucer.", () => _saucer(Object.assign({}, _sjag, { legs: 6, R: 0.85, legR: 0.04, legH: 1.1, nLamps: 14, jag: { n: 5, len: 0.2, r: 0.03, sweep: 0.55 } })));
+fx(680, "Heavy: thick beetle legs, wide jagged forearms with large blunt-based spikes.", () => _saucer(Object.assign({}, _sjag, { legs: 6, legR: 0.06, legH: 0.9, kneeUp: 0.7, hipH: 0.34, sy: 1.2, jag: { n: 4, len: 0.24, r: 0.05, sweep: 0.5 } })));
