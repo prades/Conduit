@@ -373,7 +373,8 @@ function followerRosterSnapshot() {
         base:        a.base || undefined,
         level:       a.level,
         xp:          a.xp,
-        evolved:     a.evolved || undefined   // js/evolution.js
+        evolved:     a.evolved || undefined,   // js/evolution.js
+        evoWait:     a._evoOnLevelUp || undefined
     }));
 }
 function saveFollowerRoster() {
@@ -402,6 +403,7 @@ function spawnFollowerFromSave(entry) {
     if (typeof bondRestoreFields === "function") bondRestoreFields(npc, entry);
     // Evolved (js/evolution.js): set before its level, so the evolved stats apply.
     if (entry.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[entry.evolved]) npc.evolved = entry.evolved;
+    if (entry.evoWait && !npc.evolved) npc._evoOnLevelUp = true;   // an egg again until it next levels up (js/evolution.js)
     // Its level and XP (js/levels.js); an old save's stats are its level-5 base.
     if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp });
     // Back on the duty it was on (a worker stays a worker).

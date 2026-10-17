@@ -479,6 +479,25 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(shed.every(x => x && x.el === 'ice' && x.evo !== 'prism'), 'an evolved follower whose element was dropped comes back as another element, an egg, not its old form: ' + JSON.stringify(shed));
     });
 
+    check('THE ASK: a follower re-rolled to another element is an EGG again and evolves, into its new element\'s form, on its next level-up — not on the spot', () => {
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ['ice'] };
+            respawnQueue.push({ element: 'electric', evolved: 'prism', personality: 'stoic', timer: 1, hpStat: 20, level: 30, xp: xpForLevel(30) }); for (let i = 0; i < 6; i++) render();
+            const g = followers.find(x => !x.dead); const back = { el: g.element, evo: g.evolved || null, lv: g.level, wait: !!g._evoOnLevelUp };
+            g.role = 'brawler'; for (let i = 0; i < 120; i++) { frame++; evolutionTick(); }   // two seconds of ticks: it must still be an egg
+            const later = { evo: g.evolved || null };
+            gainXp(g, xpForLevel(g.level + 1) - g.xp + 1);   // its next level-up
+            const up = { evo: g.evolved || null, lv: g.level, wait: !!g._evoOnLevelUp, tag: unitTypeLabel(g) };
+            activeCrystalModulation = null; return { back, later, up }; })()`);
+        ok(r.back.el === 'ice' && r.back.evo === null && r.back.lv === 15 && r.back.wait, 'it should come back an ice egg at half its level, waiting: ' + JSON.stringify(r.back));
+        same(r.later.evo, null, 'still an egg two seconds later (level 15 is past the evolve level, but it waits for a level-up)');
+        same(r.up.evo, 'maw', 'its next level-up evolves it into the ice brawler'); ok(!r.up.wait, 'the wait is over once it has evolved');
+        // a follower that keeps its element, and one that had no form, are untouched by the wait
+        const kept = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ['electric'] };
+            respawnQueue.push({ element: 'electric', evolved: 'prism', personality: 'stoic', timer: 1, hpStat: 20, level: 30, xp: xpForLevel(30) }); for (let i = 0; i < 6; i++) render();
+            const g = followers.find(x => !x.dead); activeCrystalModulation = null; return { evo: g.evolved || null, wait: !!g._evoOnLevelUp, lv: g.level }; })()`);
+        same(kept.evo, 'prism', 'the same element keeps its form'); ok(!kept.wait && kept.lv === 30, 'and is not made to wait: ' + JSON.stringify(kept));
+    });
+
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
         for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'seeper', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {

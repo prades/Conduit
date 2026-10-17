@@ -13,6 +13,8 @@
 //          cracks, the glass bursts and its legs drop, and the machine rises
 //          out of it. It keeps that form for good: through death, the respawn
 //          queue and a reload, and its role is fixed (a role switch skips it).
+//   RE-ROLLED  A follower re-rolled to another element comes back an egg (its level halved) and does NOT evolve on the spot: it
+//          evolves, into its new element's form, on its next level-up (f._evoOnLevelUp; levels.js calls evoCheck on a level-up).
 //   STATS  Health and power × EVOLVE_MULT, applied where a follower's stats
 //          are derived (levels.js _applyFollowerLevel), so it survives every
 //          level-up and recompute.
@@ -211,7 +213,7 @@ function evoCheck(f) {
     if (!f || f.dead || !f.isFollower || f.evolved || f.team !== "green" || !((f.level || 0) >= EVOLVE_LEVEL)) return false;
     const d = evolutionFor(f);
     if (!d) return false;
-    f.evolved = d.id;
+    f.evolved = d.id; delete f._evoOnLevelUp;
     f._moltAt = typeof frame !== "undefined" ? frame : 0;
     f._sigCd = 90;
     if (typeof _applyFollowerLevel === "function") _applyFollowerLevel(f, false);
@@ -227,7 +229,7 @@ function evolutionTick() {
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const f of followers) {
         if (!f || f.dead) continue;
-        if (!f.evolved) { if (f0 % 30 === 0) evoCheck(f); continue; }
+        if (!f.evolved) { if (f0 % 30 === 0 && !f._evoOnLevelUp) evoCheck(f); continue; }   // (one re-rolled to another element waits for its next level-up)
         const d = evolvedDef(f); if (!d) continue;
         if (d.role && f.role !== d.role) f.role = d.role;   // its role is fixed
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
