@@ -76,8 +76,8 @@ if (r === null) console.log('  (no Chromium here: skipped)');
 else {
     check('the instrument ran', () => ok(r, 'the probe produced nothing'));
     if (r) {
-        check('every menu is in the strip: Crystal, Clones, Modules, Shop, Settings and the roster/command tools', () => {
-            for (const id of ['btnCrystal', 'btnClones', 'btnModules', 'btnShop', 'btnSettings', 'btnAuto']) ok(r.ids.includes(id), id + ' not in the strip: ' + r.ids.join(','));
+        check('every menu is in the strip: Crystal, Clones, Shop, Settings and the roster/command tools', () => {
+            ok(!r.ids.includes('btnModules'), 'there is still a MODULES button beside BUILD: modules are a tab of the build window'); for (const id of ['btnCrystal', 'btnClones', 'btnShop', 'btnSettings', 'btnAuto']) ok(r.ids.includes(id), id + ' not in the strip: ' + r.ids.join(','));
         });
         check('THE ASK: it has more items than fit, so it slides sideways (right room at the start, an arrow and a fade)', () => {
             ok(r.over, 'the strip does not overflow'); same(r.start.room.left, 0, 'nothing hidden on the left at the start'); ok(r.start.room.right > 0, 'nothing hidden on the right');
