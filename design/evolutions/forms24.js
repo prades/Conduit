@@ -1,0 +1,42 @@
+// ── THE CRYSTAL AND THE STARFISH · the electric brawler, Nos. 605–: a bulky black starfish that crawls on its squiggling arms, steered by a little electric crystal that hovers above it, NOT attached, with a small aura round it. ──
+const _starMat = new T.MeshStandardMaterial({ color: 0x020203, roughness: 1, metalness: 0, flatShading: true }); _starMat.envMapIntensity = 0.12;
+const _starNub = new T.MeshStandardMaterial({ color: 0x07070b, roughness: 0.9, metalness: 0.1, flatShading: true }); _starNub.envMapIntensity = 0.25;
+function _starfish(o) {
+  const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.3);
+  const bodyG = G(); b.add(bodyG);
+  const disc = new T.Mesh(new T.IcosahedronGeometry(1, 1), _starMat); disc.scale.set(o.disc, o.disc * o.dh, o.disc); disc.position.y = o.disc * o.dh * 0.8; bodyG.add(disc);
+  // the arms: a chain of overlapping beads thinning to a tip, each laid out along an S-curve that travels outward as it crawls
+  const arms = []; for (let k = 0; k < o.n; k++) { const beads = [], nubs = []; for (let i = 0; i < o.beads; i++) { const bd = new T.Mesh(new T.IcosahedronGeometry(1, 0), _starMat); bodyG.add(bd); beads.push(bd); if (i % 3 === 2 && i < o.beads - 2) { const nb = new T.Mesh(new T.IcosahedronGeometry(1, 0), _starNub); bodyG.add(nb); nubs.push({ nb, i }); } } arms.push({ k, beads, nubs }); }
+  // the crystal: hovering above, apart from the body
+  const cg = G(); b.add(cg); const C = o.crystal;
+  const mk = (r, h, sides) => { let geo = new T.CylinderGeometry(r * 0.01, r, h, sides, 1); geo.translate(0, h / 2, 0); return geo; };
+  const main = new T.Mesh(_litFacets(C.diamond ? new T.OctahedronGeometry(C.r, 0) : (() => { const gm = new T.CylinderGeometry(C.r, C.r, C.h, 6, 1); return gm.toNonIndexed(); })()), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); if (C.diamond) main.scale.y = 1.5; cg.add(main);
+  if (!C.diamond) { const top = new T.Mesh(_litFacets(new T.ConeGeometry(C.r, C.r * 1.1, 6, 1).toNonIndexed()), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); top.position.y = C.h / 2 + C.r * 0.55; cg.add(top); const bot = new T.Mesh(_litFacets(new T.ConeGeometry(C.r, C.r * 1.1, 6, 1).toNonIndexed()), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); bot.rotation.x = PI; bot.position.y = -C.h / 2 - C.r * 0.55; cg.add(bot); }
+  const core = new T.Mesh(new T.OctahedronGeometry(C.r * 0.4, 0), new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })); core.scale.y = 1.4; cg.add(core);
+  const halo = glowSprite(C.r * 6); halo.material = halo.material.clone(); halo.material.opacity = 0.3; cg.add(halo);
+  // the aura: a ring of tiny shards orbiting, and little arcs that flick out and fade
+  const sparks = []; for (let i = 0; i < o.aura.n; i++) { const sp = new T.Mesh(_litFacets(new T.OctahedronGeometry(o.aura.r, 0)), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); sp.scale.y = 1.6; cg.add(sp); sparks.push({ sp, a: i * TAU / o.aura.n }); }
+  let ring = null; if (o.aura.ring) { ring = new T.Mesh(new T.TorusGeometry(o.aura.R, 0.012, 4, 36), new T.MeshBasicMaterial({ color: 0xfff2a0, transparent: true, opacity: 0.5, toneMapped: false })); ring.rotation.x = PI / 2 + 0.25; cg.add(ring); }
+  const bolts = []; for (let i = 0; i < (o.aura.bolts || 0); i++) { const ln = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.95 })); ln.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(7 * 3), 3)); ln.frustumCulled = false; cg.add(ln); bolts.push(ln); }
+  const L = new T.PointLight(0xffffff, 0.5, 3.5, 2); L.color.set(EL.color); b.add(L); LIGHTS.push(L);
+  const V = new T.Vector3();
+  return { g, core: (o.hover) * (o.S || 1.3), update(t, act) { const ph = 1.6 * t, ac = act || 0;
+    const bob = 0.012 * Math.sin(ph * 2) - 0.04 * ac; bodyG.position.y = bob; disc.scale.set(o.disc * (1 + 0.03 * Math.sin(ph * 2)), o.disc * o.dh * (1 - 0.1 * ac), o.disc * (1 + 0.03 * Math.sin(ph * 2)));
+    arms.forEach(A => { const a0 = A.k * TAU / o.n + (o.yaw || 0), ca = Math.sin(a0), sa = Math.cos(a0), px = sa, pz = -ca;   // radial direction (sin, cos) and the side-step
+      A.beads.forEach((bd, i) => { const u = i / (o.beads - 1), d = o.disc * 0.6 + u * o.len, wave = o.wiggle * Math.sin(o.waveK * u * TAU * 0.5 - ph + A.k * 1.26) * (0.25 + u) * (1 + 0.6 * ac), lift = (o.lift * Math.max(0, Math.sin(ph + A.k * 2.51)) * Math.sin(Math.min(1, u * 1.2) * PI) + o.curl * u * u) * (1 + ac);
+        const r = o.armR * Math.pow(1 - u * 0.86, 0.9) + 0.012; bd.scale.set(r * 1.0, r * 0.72, r * 1.0); bd.position.set(ca * d + px * wave, r * 0.8 + lift, sa * d + pz * wave); });
+      A.nubs.forEach(N => { const bd = A.beads[N.i], r = bd.scale.x * 0.55; N.nb.scale.setScalar(r * 0.45); N.nb.position.set(bd.position.x, bd.position.y + bd.scale.y * 0.85, bd.position.z); }); });
+    // the crystal: hovering, turning slowly, leaning a little the way it steers
+    cg.position.y = o.hover + 0.05 * Math.sin(ph * 2) + 0.12 * ac; cg.position.x = 0.05 * Math.sin(ph); cg.rotation.y = ph * 0.25; cg.rotation.z = 0.08 * Math.sin(ph);
+    const flick = 0.55 + 0.25 * Math.sin(ph * 3) + 0.4 * ac; halo.material.opacity = 0.18 + 0.2 * flick; core.scale.setScalar(1 + 0.2 * Math.sin(ph * 4) + 0.5 * ac); core.scale.y *= 1.4; L.position.y = o.hover; L.intensity = 0.4 + 0.9 * flick;
+    sparks.forEach(S => { const a = S.a + ph * 0.25, R = o.aura.R * (1 + 0.1 * Math.sin(ph * 2 + S.a * 3)); S.sp.position.set(Math.sin(a) * R, 0.06 * Math.sin(ph * 2 + S.a * 2) + (o.aura.tilt || 0) * Math.cos(a) * R, Math.cos(a) * R); S.sp.rotation.set(a, a * 2, 0); S.sp.scale.setScalar(1 + 0.4 * ac); S.sp.scale.y = 1.6 * (1 + 0.4 * ac); });
+    if (ring) { ring.material.opacity = 0.3 + 0.25 * Math.sin(ph * 2) + 0.3 * ac; ring.scale.setScalar(1 + 0.08 * Math.sin(ph * 3) + 0.2 * ac); }
+    const fr = Math.floor(ph * 9); bolts.forEach((ln, i) => { const on = ac > 0.2 || Math.sin(ph * 3 + i * 2.2) * Math.sin(ph * 5 + i) > 0.15; ln.visible = on; if (!on) return; const pa = ln.geometry.attributes.position.array, ang = i * 2.1 + fr * 0.9, len = o.aura.R * (1.0 + 0.6 * _hz(i, fr, 3));
+      for (let k = 0; k < 7; k++) { const u = k / 6, j = (_hz(k, i + 7, fr) - 0.5) * 0.09 * Math.sin(u * PI); pa[k * 3] = Math.sin(ang) * len * u + j; pa[k * 3 + 1] = (_hz(i, 5, fr) - 0.5) * 0.5 * u + j; pa[k * 3 + 2] = Math.cos(ang) * len * u + j; } ln.geometry.attributes.position.needsUpdate = true; }); } };
+}
+const _sf = { S: 1.3, n: 5, disc: 0.36, dh: 0.55, beads: 18, len: 0.8, armR: 0.17, wiggle: 0.2, waveK: 2.2, lift: 0.08, curl: 0.0, yaw: 0.3, hover: 1.0, crystal: { r: 0.11, h: 0.26 }, aura: { n: 4, r: 0.035, R: 0.3 } };
+fx(605, "A bulky black starfish crawling on squiggling arms, and above it, not attached, a little electric crystal with tiny shards orbiting it.", () => _starfish(Object.assign({}, _sf)));
+fx(606, "The crystal as a diamond with a thin halo ring round it and three orbiting shards.", () => _starfish(Object.assign({}, _sf, { crystal: { r: 0.13, diamond: true }, aura: { n: 3, r: 0.04, R: 0.32, ring: true, tilt: 0.2 } })));
+fx(607, "A squigglier starfish: longer, curlier arms with big waves, the arm tips lifting.", () => _starfish(Object.assign({}, _sf, { len: 1.0, wiggle: 0.34, waveK: 3.0, curl: 0.18, beads: 22, armR: 0.15, lift: 0.1 })));
+fx(608, "Chunkier and more bulky, short fat arms, with little bolts flicking off the crystal as its aura.", () => _starfish(Object.assign({}, _sf, { disc: 0.42, len: 0.62, armR: 0.22, wiggle: 0.14, beads: 14, aura: { n: 3, r: 0.035, R: 0.28, bolts: 3 } })));
+fx(609, "A bigger crystal hovering higher, a wide ring and bolts round it, the starfish lower and flatter beneath it.", () => _starfish(Object.assign({}, _sf, { disc: 0.4, dh: 0.45, hover: 1.2, crystal: { r: 0.15, h: 0.34 }, aura: { n: 4, r: 0.04, R: 0.4, ring: true, bolts: 2, tilt: 0.15 } })));
