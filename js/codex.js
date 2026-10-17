@@ -24,7 +24,7 @@ const CODEX_GENERAL = [
     { t: 'Chains are fine. Links that would just close a loop are skipped, so the network stays a tree.' },
     null,
     { h: 'NETWORK TIERS' },
-    { t: 'The largest linked group of one element, turrets and wave pylons alike, sets its tier. Bigger network, stronger effect.' },
+    { t: 'The largest linked group of the batteries of one element sets its tier, and it fades 1 tier per 6 tiles from them.' },
     ['TIER I',   '2+ pylons', '#8fa'],
     ['TIER II',  '4+ pylons', '#8fa'],
     ['TIER III', '6+ pylons', '#8fa'],

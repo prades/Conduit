@@ -37,6 +37,7 @@ const SUITES = [
     ['command center',          'commandcenter.js'],
     ['sliding toolbox',         'toolbox.js'],
     ['shard gems + alarm',      'hudgems.js'],
+    ['network panel + signal',  'nethud.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],

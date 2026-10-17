@@ -65,7 +65,7 @@ const menu = HTML.slice(HTML.indexOf('<div id="controlsMenu">'), HTML.indexOf('<
         const UI = rd('js/ui.js'), G = rd('js/game.js');
         ok(/drawIcon\(ctx, ELEMENT_ICON\[el\.id\] \|\| el\.id, el\.color/.test(UI), 'the element panel does not use the icons');
         ok(/PYLON_KIND_ICON\[c\.it\.k\.id\]/.test(UI) && /drawIcon\(ctx, _icon, color/.test(UI), 'the build picker does not use the icons');
-        ok(/drawIcon\(ctx, ELEMENT_ICON\[el\] \|\| el, elDef\.color/.test(G), 'the network panel does not use the icons');
+        ok(/drawIcon\(ctx, ELEMENT_ICON\[el\] \|\| el, elDef\.color/.test(rd('js/nethud.js')), 'the network panel does not use the icons');
     });
 
     group('PICTURES');

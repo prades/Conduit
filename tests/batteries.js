@@ -143,7 +143,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const st = run('JSON.stringify(powerStatus().batteries)');
         const b = JSON.parse(st);
         ok(b.count === 2 && b.stored === 60 && b.cap === 2 * run('BATTERY_CAPACITY'), st);
-        const G = rd('js/game.js');
+        const G = rd('js/nethud.js');
         ok(/"\\u26a1 BATT " \+ bs\.stored \+ " \/ " \+ bs\.cap/.test(G), 'no battery row in the HUD');
         ok(/bs\.rateIn - bs\.rateOut/.test(G), 'the HUD does not show the flow');
     });
