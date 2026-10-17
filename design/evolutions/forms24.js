@@ -1,6 +1,10 @@
 // ── THE CRYSTAL AND THE STARFISH · the electric brawler, Nos. 605–: a bulky black starfish that crawls on its squiggling arms, steered by a little electric crystal that hovers above it, NOT attached, with a small aura round it. ──
 const _starMat = new T.MeshStandardMaterial({ color: 0x010102, roughness: 1, metalness: 0, flatShading: true }); _starMat.envMapIntensity = 0.04;
 const _starNub = new T.MeshStandardMaterial({ color: 0x030305, roughness: 1, metalness: 0, flatShading: true }); _starNub.envMapIntensity = 0.08;
+function _shadeCrystal(geo, dim, grad, yLo, yHi) {   // dim the crystal and (optionally) darken it toward the bottom, so it is a deep amber, not a pale slab
+  const col = geo.attributes.color, pos = geo.attributes.position; for (let i = 0; i < col.count; i++) { const u = yHi > yLo ? Math.max(0, Math.min(1, (pos.getY(i) - yLo) / (yHi - yLo))) : 1, k = dim * (grad ? 0.4 + 0.6 * u : 1); col.setXYZ(i, col.getX(i) * k, col.getY(i) * k * (0.92 + 0.08 * u), col.getZ(i) * k * (0.8 + 0.2 * u)); }
+  col.needsUpdate = true; return geo;
+}
 function _starfish(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.3);
   const bodyG = G(); b.add(bodyG);
@@ -15,8 +19,9 @@ function _starfish(o) {
   // the crystal: hovering above, apart from the body
   const cg = G(); b.add(cg); const C = o.crystal;
   const mk = (r, h, sides) => { let geo = new T.CylinderGeometry(r * 0.01, r, h, sides, 1); geo.translate(0, h / 2, 0); return geo; };
-  const main = new T.Mesh(_litFacets(C.diamond ? new T.OctahedronGeometry(C.r, 0) : (() => { const gm = new T.CylinderGeometry(C.r, C.r, C.h, 6, 1); return gm.toNonIndexed(); })()), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); if (C.diamond) main.scale.y = 1.5; cg.add(main);
-  if (!C.diamond) { const top = new T.Mesh(_litFacets(new T.ConeGeometry(C.r, C.r * 1.1, 6, 1).toNonIndexed()), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); top.position.y = C.h / 2 + C.r * 0.55; cg.add(top); const bot = new T.Mesh(_litFacets(new T.ConeGeometry(C.r, C.r * 1.1, 6, 1).toNonIndexed()), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); bot.rotation.x = PI; bot.position.y = -C.h / 2 - C.r * 0.55; cg.add(bot); }
+  const dm = C.dim || 1, gr = !!C.grad, yTop = C.diamond ? C.r * 1.5 : C.h / 2 + C.r * 1.1, yBot = C.diamond ? -C.r * 1.5 : -(C.h / 2 + C.r * 1.1);
+  const main = new T.Mesh(_shadeCrystal(_litFacets(C.diamond ? new T.OctahedronGeometry(C.r, 0) : (() => { const gm = new T.CylinderGeometry(C.r, C.r, C.h, 6, 1); return gm.toNonIndexed(); })()), dm, gr, yBot, yTop), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); if (C.diamond) main.scale.y = 1.5; cg.add(main);
+  if (!C.diamond) { const top = new T.Mesh(_shadeCrystal(_litFacets(new T.ConeGeometry(C.r, C.r * 1.1, 6, 1).toNonIndexed()), dm, false, 0, 1), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); top.position.y = C.h / 2 + C.r * 0.55; cg.add(top); const bot = new T.Mesh(_shadeCrystal(_litFacets(new T.ConeGeometry(C.r, C.r * 1.1, 6, 1).toNonIndexed()), dm * (gr ? 0.4 : 1), false, 0, 1), new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); bot.rotation.x = PI; bot.position.y = -C.h / 2 - C.r * 0.55; cg.add(bot); }
   const core = new T.Mesh(new T.OctahedronGeometry(C.r * 0.4, 0), new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })); core.scale.y = 1.4; cg.add(core);
   const halo = glowSprite(C.r * 6); halo.material = halo.material.clone(); halo.material.opacity = 0.3; cg.add(halo);
   // the aura: a ring of tiny shards orbiting, and little arcs that flick out and fade
@@ -41,7 +46,7 @@ function _starfish(o) {
       A.nubs.forEach(N => { const bd = A.beads[N.i], r = bd.scale.x * 0.55; N.nb.scale.setScalar(r * 0.45); N.nb.position.set(bd.position.x, bd.position.y + bd.scale.y * 0.85, bd.position.z); }); });
     // the crystal: hovering, turning slowly, leaning a little the way it steers
     if (o.embed) { cg.position.y = o.hover + bob; cg.rotation.y = 0; } else { cg.position.y = o.hover + 0.05 * Math.sin(ph * 2) + 0.12 * ac; cg.position.x = 0.05 * Math.sin(ph); cg.rotation.y = ph * 0.25; cg.rotation.z = 0.08 * Math.sin(ph); }
-    const flick = 0.55 + 0.25 * Math.sin(ph * 3) + 0.4 * ac; halo.material.opacity = 0.18 + 0.2 * flick; core.scale.setScalar(1 + 0.2 * Math.sin(ph * 4) + 0.5 * ac); core.scale.y *= 1.4; L.position.y = o.hover; L.intensity = 0.4 + 0.9 * flick;
+    const flick = 0.55 + 0.25 * Math.sin(ph * 3) + 0.4 * ac; halo.material.opacity = (0.18 + 0.2 * flick) * (C.haloK == null ? 1 : C.haloK); core.scale.setScalar(1 + 0.2 * Math.sin(ph * 4) + 0.5 * ac); core.scale.y *= 1.4; L.position.y = o.hover; L.intensity = 0.4 + 0.9 * flick;
     sparks.forEach(S => { const a = S.a + ph * 0.25, R = o.aura.R * (1 + 0.1 * Math.sin(ph * 2 + S.a * 3)); S.sp.position.set(Math.sin(a) * R, 0.06 * Math.sin(ph * 2 + S.a * 2) + (o.aura.tilt || 0) * Math.cos(a) * R, Math.cos(a) * R); S.sp.rotation.set(a, a * 2, 0); S.sp.scale.setScalar(1 + 0.4 * ac); S.sp.scale.y = 1.6 * (1 + 0.4 * ac); });
     if (ring) { ring.material.opacity = 0.3 + 0.25 * Math.sin(ph * 2) + 0.3 * ac; ring.scale.setScalar(1 + 0.08 * Math.sin(ph * 3) + 0.2 * ac); }
     const fr = Math.floor(ph * 9); bolts.forEach((ln, i) => { const on = ac > 0.2 || Math.sin(ph * 3 + i * 2.2) * Math.sin(ph * 5 + i) > 0.15; ln.visible = on; if (!on) return; const pa = ln.geometry.attributes.position.array, ang = i * 2.1 + fr * 0.9, len = o.aura.R * (1.0 + 0.6 * _hz(i, fr, 3));
@@ -80,3 +85,12 @@ fx(621, "Even rounder, like a puffy cookie: tiny stubby arms, a big crystal, lit
 fx(622, "With a little diamond eye on the front of its body under the big crystal, short plump arms.", () => _starfish(Object.assign({}, _sfc, { eye: { r: 0.07, y: 1.0, z: 0.9 }, crystal: { r: 0.2, h: 0.26 }, hover: 0.5 })));
 fx(623, "A bouncier waddle: the arms step in turn and the body squashes and stretches, the crystal with a few more sparkle shards.", () => _starfish(Object.assign({}, _sfc, { lift: 0.2, wiggle: 0.16, pattern: { kind: 'pair', every: 3, len: 0.1, r: 0.055, lat: 0.9, rad: 0.15, shard: { every: 2, len: 0.08, r: 0.026 } } })));
 fx(624, "A small body under a very big crystal, like a big head, tiny plump arms.", () => _starfish(Object.assign({}, _sfc, { disc: 0.36, len: 0.5, armR: 0.18, crystal: { r: 0.3, h: 0.3 }, hover: 0.55 })));
+
+// ── 622 worked on (Nos. 625–629): less cute, less light: a deeper amber crystal, longer arms, sharper patterned black spines, the diamond eye kept ──
+const _s622 = Object.assign({}, _sfc, { eye: { r: 0.075, y: 1.0, z: 0.9 }, crystal: { r: 0.19, h: 0.28, dim: 0.62, grad: true, haloK: 0.4 }, hover: 0.5, len: 0.82, armR: 0.185, beads: 14, wiggle: 0.2, waveK: 2.2, taper: 0.8, taperP: 0.8, bounce: false,
+  pattern: { kind: 'pair', every: 2, len: 0.16, r: 0.04, lat: 0.9, rad: 0.2, shard: { every: 5, len: 0.08, r: 0.022 } } });
+fx(625, "622 with a deep amber crystal, longer arms, paired black spines, the diamond eye kept: less cute, less light.", () => _starfish(Object.assign({}, _s622)));
+fx(626, "Darker still: the crystal a deep amber with a dim halo, the diamond eye a little bigger and narrower, a sharper look.", () => _starfish(Object.assign({}, _s622, { eye: { r: 0.09, y: 1.0, z: 0.9 }, crystal: { r: 0.19, h: 0.28, dim: 0.48, grad: true, haloK: 0.25 } })));
+fx(627, "A smaller faceted crystal, long squiggly arms, spines alternating long and short.", () => _starfish(Object.assign({}, _s622, { crystal: { r: 0.2, diamond: true, dim: 0.6, grad: true, haloK: 0.35 }, hover: 0.58, len: 0.95, beads: 16, wiggle: 0.26, pattern: { kind: 'alt', every: 1, len: 0.2, r: 0.04, lat: 0.9, rad: 0.45, shard: { every: 4, len: 0.08, r: 0.022 } } })));
+fx(628, "Heavier: thicker arms, denser spines, the crystal two-tone, dark at its base and bright only at the tip.", () => _starfish(Object.assign({}, _s622, { armR: 0.22, disc: 0.45, pattern: { kind: 'pair', every: 1, len: 0.15, r: 0.045, lat: 0.9, rad: 0.2, shard: { every: 4, len: 0.08, r: 0.024 } }, crystal: { r: 0.2, h: 0.3, dim: 0.7, grad: true, haloK: 0.3 } })));
+fx(629, "Sparser and sleeker: a flat dark body, long arms, a single dorsal ridge of spines, the amber crystal and the eye.", () => _starfish(Object.assign({}, _s622, { dh: 0.5, len: 0.95, beads: 16, pattern: { kind: 'ridge', every: 1, len: 0.15, r: 0.04, lat: 0, rad: 0.25, shard: { every: 4, len: 0.08, r: 0.022 } } })));
