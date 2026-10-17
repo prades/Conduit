@@ -49,8 +49,8 @@ function _saucer(o) {
     const hipY = body.position.y + 0.02, stride = o.stride * (1 + 0.3 * ac), lift = o.lift;
     legs.forEach(Lg => { const cyc = ph + Lg.ph, hx = Math.sin(Lg.a) * R * o.hipR, hz = Math.cos(Lg.a) * R * o.hipR, fx0 = Math.sin(Lg.a) * R * o.footR, fz0 = Math.cos(Lg.a) * R * o.footR;
       const fx = fx0, fz = fz0 + stride * Math.cos(cyc), fy = 0.03 + Math.max(0, Math.sin(cyc)) * lift;
-      const hip = U1.set(hx, hipY, hz), foot = U2.set(fx, fy, fz), A = o.legH * 0.6, Bn = o.legH * 0.68, d = hip.distanceTo(foot), c = Math.max(0.05, Math.min(A + Bn - 0.001, d)), kk = Math.acos(Math.max(-1, Math.min(1, (A * A + c * c - Bn * Bn) / (2 * A * c))));
-      const mid = U3.copy(hip).add(foot).multiplyScalar(0.5), dir = new T.Vector3().subVectors(foot, hip).normalize(), out = new T.Vector3(Math.sin(Lg.a), 0.9, Math.cos(Lg.a)).normalize(); out.addScaledVector(dir, -out.dot(dir)).normalize();
+      const hip = U1.set(hx, hipY + (o.hipUp || 0), hz), foot = U2.set(fx, fy, fz), A = o.legH * 0.6, Bn = o.legH * 0.68, d = hip.distanceTo(foot), c = Math.max(0.05, Math.min(A + Bn - 0.001, d)), kk = Math.acos(Math.max(-1, Math.min(1, (A * A + c * c - Bn * Bn) / (2 * A * c))));
+      const mid = U3.copy(hip).add(foot).multiplyScalar(0.5), dir = new T.Vector3().subVectors(foot, hip).normalize(), out = new T.Vector3(Math.sin(Lg.a) * (o.kneeOut == null ? 1 : o.kneeOut), o.kneeUp == null ? 0.9 : o.kneeUp, Math.cos(Lg.a) * (o.kneeOut == null ? 1 : o.kneeOut)).normalize(); out.addScaledVector(dir, -out.dot(dir)).normalize();
       const knee = mid.clone().addScaledVector(out, Math.sin(kk) * A * 0.95);
       if (Lg.cv) { Lg.cv.set(hip.clone(), knee.clone(), foot.clone(), out.clone()); return; }
       _setBone(Lg.th, hip, knee); _setBone(Lg.sh, knee, foot); Lg.kn.position.copy(knee); Lg.ft.position.copy(foot); }); } };
@@ -69,3 +69,11 @@ fx(667, "An S-curve: the thigh arcs up and out, the shin curls back in, with a p
 fx(668, "Reverse knees, like a raptor's: the legs bend backward in a hook, thick and sprung, with a clamp for a foot.", () => _saucer(Object.assign({}, _scv, { bulge1: -0.3, bulge2: 0.45, legR: 0.05, legH: 0.9 })));
 fx(669, "Six thin curved legs, strongly arched like a spider's, many fine ribs.", () => _saucer(Object.assign({}, _scv, { legs: 6, legR: 0.03, bulge1: 0.5, bulge2: -0.22, curveSeg: 9, R: 0.85, hipR: 0.62, footR: 1.25, nLamps: 14, stride: 0.1 })));
 fx(670, "Heavy hydraulic legs: thick and gently curved, with an exposed piston along each and a lit knee.", () => _saucer(Object.assign({}, _scv, { legR: 0.065, bulge1: 0.22, bulge2: -0.12, piston: true, legH: 0.75, hipH: 0.52, sy: 1.2, R: 1.0, stride: 0.1 })));
+
+// ── BUG LEGS (Nos. 671–675): up, then curved down, like an insect's: the hip on the rim, the knee raised high above the disc, the shin arching down to the ground ──
+const _sbug = Object.assign({}, _sc0, { S: 1.0, curved: true, curveSeg: 9, legR: 0.05, bulge1: 0.12, bulge2: 0.1, kneeUp: 1.0, kneeOut: 0.3, hipUp: 0.12, hipR: 0.92, footR: 1.3, legH: 1.15, hipH: 0.42, stride: 0.14, lift: 0.14 });
+fx(671, "Bug legs: four ribbed mechanical legs that rise up and out of the rim to a high knee above the disc, then curve down to the ground.", () => _saucer(Object.assign({}, _sbug)));
+fx(672, "Six insect legs, a smaller saucer, the knees held high, a quick scuttling gait.", () => _saucer(Object.assign({}, _sbug, { legs: 6, R: 0.85, legR: 0.04, legH: 1.1, footR: 1.3, nLamps: 14, stride: 0.1 })));
+fx(673, "Eight spider legs, the knees arching very high, thin and long.", () => _saucer(Object.assign({}, _sbug, { legs: 8, R: 0.8, legR: 0.034, legH: 1.2, kneeUp: 1.2, footR: 1.4, nLamps: 12, stride: 0.08 })));
+fx(674, "Mantis legs: four, long, thin, the highest arch, the shins long and hooked at the ends.", () => _saucer(Object.assign({}, _sbug, { legR: 0.042, legH: 1.3, kneeUp: 1.3, footR: 1.2, hipH: 0.5, bulge2: 0.25 })));
+fx(675, "Beetle legs: six, thick, low arches and short shins, a heavy scuttling crawler.", () => _saucer(Object.assign({}, _sbug, { legs: 6, legR: 0.062, legH: 0.9, kneeUp: 0.7, footR: 1.25, hipH: 0.34, sy: 1.2, piston: true, stride: 0.1 })));
