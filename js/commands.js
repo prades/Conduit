@@ -513,6 +513,18 @@ function closeInfoPanel() {
 }
 
 // ── COMMAND EXECUTION ─────────────────────────────────────
+// Cycle the role of every follower in the command pool: brawler → mage ("sniper") → technician ("camper"). An evolved follower's role is its
+// form's (js/evolution.js): it is skipped. Used by the radial menu's SWITCH ROLES and the long-press ring alike. Returns how many it changed.
+function cycleCommandPoolRoles() {
+    const roles=["brawler","sniper","camper"];
+    const pool=getCommandPool().filter(a=>!a.dead);
+    let n=0;
+    pool.forEach(f=>{ if (f.evolved) return; const i=roles.indexOf(f.role); f.role=roles[(i+1)%roles.length]; n++; });
+    if (pool.length>0)
+        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
+            text:"→ "+roleLabel((pool.find(f=>!f.evolved)||pool[0]).role),color:"#0f8",life:90,vy:-0.2});
+    return n;
+}
 function executeCommand() {
     commandMode=false; commandPendingTap=false;
     if (!selectedRadialAction) return;
@@ -643,14 +655,7 @@ function executeCommand() {
                 floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
                     text:"PYLON → "+(pylon.attackMode?"ATTACK":"WAVE")+" MODE",color:"#0f8",life:90,vy:-0.2});
             } else {
-                // Cycle follower roles in command pool
-                const roles=["brawler","sniper","camper"];
-                const pool=getCommandPool().filter(a=>!a.dead);
-                // An evolved follower's role is its form's (js/evolution.js): it is skipped.
-                pool.forEach(f=>{ if (f.evolved) return; const i=roles.indexOf(f.role); f.role=roles[(i+1)%roles.length]; });
-                if (pool.length>0)
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
-                        text:"→ "+roleLabel((pool.find(f=>!f.evolved)||pool[0]).role),color:"#0f8",life:90,vy:-0.2});
+                cycleCommandPoolRoles();
             }
             break;
         }

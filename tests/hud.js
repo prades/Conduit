@@ -128,6 +128,9 @@ setTimeout(function () {
   report.hits.ultWrap   = at('ultWrap', 0.2, 0.5);
   report.hits.siphonBtn = at('siphonBtn', 0.5, 0.5);
   report.hits.btnSquad  = at('btnSquad', 0.5, 0.5);
+  // On a phone (<= 700px) the top buttons are replaced by the radial menu's hub (js/radialmenu.js).
+  report.hits.radialHub = at('radialHub', 0.5, 0.5);
+  report.topHidden = getComputedStyle(document.getElementById('topToggles')).display === 'none';
   // ...and an empty corner of the column must NOT take them, or it swallows
   // taps meant for the world underneath.
   var hud = document.getElementById('topHud').getBoundingClientRect();
@@ -363,7 +366,8 @@ check('the ultimate bar, its switch and the toggles are all hit', () => {
     for (const run of runs) {
         same(run.r.hits.ultWrap, 'ultWrap', `the ultimate bar is unclickable at ${run.w}`);
         same(run.r.hits.siphonBtn, 'siphonBtn', `the siphon switch is unclickable at ${run.w}`);
-        same(run.r.hits.btnSquad, 'btnSquad', `the SQUAD button is unclickable at ${run.w}`);
+        if (run.r.topHidden) same(run.r.hits.radialHub, 'radialHub', `the radial menu hub is unclickable at ${run.w}`);   // a phone: the hub stands in for the buttons
+        else same(run.r.hits.btnSquad, 'btnSquad', `the SQUAD button is unclickable at ${run.w}`);
     }
 });
 
