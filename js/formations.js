@@ -36,8 +36,8 @@
 //     pylons and units however far it reaches.
 //   - TOXIC TOWER (toxic): "an ultra pylon for toxic that has exhaust and a
 //     dark vibe ... a thick tower with multiple levels and glowing exhaust
-//     coming from each layer ... boxy design." A squat four-level block
-//     tower of dark metal rises where the four meet; every level has lit
+//     coming from each layer ... boxy design." A squat one-level block
+//     tower of dark metal rises where the four meet (it had four levels; "make the toxic ultra pylons only one level" cut it to one); the level has lit
 //     grilles on its faces and vents glowing exhaust that cools to black
 //     smoke. Its fumes haze the floor for TT_RADIUS round it (painted per tile,
 //     like the frost): enemies in them are poisoned and their armour stripped;
@@ -433,7 +433,7 @@ function drawFireSpin(F, cx, cy) {
 // It RISES as the four pylons go into it (FORM_RISE frames from forming), and
 // carries the four's health as one bar.
 const FORM_RISE = 40;
-const FORM_BAR_Y = { blackhole: 46, firespin: 52, icegen: 84, toxtower: 128, shieldforge: 96 };
+const FORM_BAR_Y = { blackhole: 46, firespin: 52, icegen: 84, toxtower: 74, shieldforge: 96 };
 function formationHealth(F) {
     let h = 0, m = 0; for (const p of F.tiles) { h += Math.max(0, p.health || 0); m += p.maxHealth || 0; }
     return [h, m];
@@ -634,7 +634,7 @@ function drawToxicTower(F, cx, cy) {
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(cx, cy + 2, 40, 18, 0, 0, Math.PI * 2); ctx.fill();
     let y = cy;
-    const levels = [[30, 22], [27, 22], [24, 22], [21, 20]];
+    const levels = [[30, 36]];   // ONE level: "make the toxic ultra pylons only one level" (it was a four-level tower)
     levels.forEach(([hw, h], i) => {
         _toxBlock(cx, y, hw, h, TOP, LEFT, RIGHT);
         const hh = hw / 2, mid = y - h * 0.5;

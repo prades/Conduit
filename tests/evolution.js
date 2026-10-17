@@ -57,8 +57,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('THE ASK: a CORE BRAWLER becomes the HAMMER SLUG (design No. 467, which replaced the Aegis Warden); an ELECTRIC BRAWLER the PRISM HOOD (No. 388, which replaced the Storm Manta)', () => {
         mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'core brawler'); same(run('unitTypeLabel(__f)'), 'HAMMER SLUG', 'its tag'); ok(run('EVOLUTIONS.warden.legacy === true'), 'the Aegis Warden is no longer handed out');
-        mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'prism', 'electric brawler');
-        same(run('unitTypeLabel(__f)'), 'PRISM HOOD', 'its tag'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
+        mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'voltring', 'electric brawler');
+        same(run('unitTypeLabel(__f)'), 'VOLT RING', 'its tag'); ok(run('EVOLUTIONS.prism.legacy === true'), 'the Prism Hood design went to the fire mage'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
         mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'thunderhead', 'the electric sniper is the Thunderhead');
     });
     check('THE ASK: a FLUX WORKER becomes the HOVER HAULER (design No. 58) — a worker is a duty, not a role', () => {
@@ -72,7 +72,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('THE ASK: a FIRE SNIPER becomes the CINDER HALO (design No. 90, the ring drone); a fire brawler is still the Bunker Bloom', () => {
         mk('fire', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
-        same(r.evo, 'halo', 'its form'); same(r.tag, 'CINDER HALO', 'its tag'); same(r.role, 'sniper', 'its role');
+        same(r.evo, 'embercowl', 'its form'); same(r.tag, 'EMBER HOOD', 'its tag'); ok(run('EVOLUTIONS.halo.legacy === true'), 'the Cinder Halo design went to the electric brawler'); same(r.role, 'sniper', 'its role');
         mk('fire', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'quillstone', 'the fire brawler');
         mk('fire', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire worker waits (no worker form for it)');
     });
@@ -183,6 +183,25 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('THE ASK: HEXFIRE — the cinder halo fires six rounds at once, shared out among the nearest enemies, each setting its target burning', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'halo'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const fire = () => { frame++; f._sigCd = 1; evolutionTick(); };
+            const a = mkP(24, 2), b = mkP(25, 3), c = mkP(26, 1), far = mkP(40, 2);
+            fire();
+            const d = p => 1e6 - p.health, shot = d(a) + d(b) + d(c), per = f.power * HALO_MULT;
+            const out = { rounds: (f._arcPts || []).length, shot, per, a: d(a), b: d(b), c: d(c), far: d(far), burn: a.burning > 0 && b.burning > 0 && c.burning > 0, fan: f._arcFan, cd: f._sigCd };
+            [a, b, c, far].forEach(p => p.dead = true);
+            // Alone, all six go into the one.
+            const solo = mkP(24, 2); fire(); out.solo = d(solo); solo.dead = true; return out; })()`);
+        same(r.rounds, 6, 'six rounds');
+        ok(Math.abs(r.shot - 6 * r.per) < 1e-6 * r.shot + 1e-3, 'six rounds of damage in all: ' + JSON.stringify(r));
+        ok(r.a > 0 && r.b > 0 && r.c > 0 && r.burn, 'shared out among the three, burning: ' + JSON.stringify(r));
+        same(r.far, 0, 'damage 20 tiles away'); ok(r.fan, 'the rounds do not fan from the ring'); ok(r.cd > 300, 'it did not wait');
+        ok(Math.abs(r.solo - 6 * r.per) < 1e-3, 'alone, all six go into the one: ' + JSON.stringify(r));
+    });
+
+    check('the EMBER HOOD (the fire mage) fires HEXFIRE: six rounds at once', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'embercowl'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const fire = () => { frame++; f._sigCd = 1; evolutionTick(); };
             const a = mkP(24, 2), b = mkP(25, 3), c = mkP(26, 1), far = mkP(40, 2);
@@ -371,6 +390,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
     });
 
+    check('the VOLT RING (the electric brawler, a placeholder design) runs STATIC RUSH too', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+            spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'voltring'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            frame++; f._sigCd = 1; evolutionTick(); const out = { dist: Math.hypot(p.x - f.x, p.y - f.y), dmg: 1e6 - p.health, stun: p.hitStun >= MANTA_STUN }; p.dead = true; return out; })()`);
+        ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
+    });
+
     check('the PRISM HOOD animates smoothly like the others: one idle frame per 7 steps, no twitch', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.returningToCrystal = false; f.role = 'brawler'; f.evolved = 'prism'; f._moltAt = -1e9; f.x = 20; f.y = 2; f.dirX = 1; f.dirY = 0;
@@ -500,7 +527,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'rotshard', 'mimic', 'petal', 'caldera', 'seeper', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {
+        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'embercowl', 'rotshard', 'mimic', 'petal', 'caldera', 'seeper', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
@@ -512,7 +539,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone', 'hammerslug']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'embercowl', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone', 'hammerslug']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);

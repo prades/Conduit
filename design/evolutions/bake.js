@@ -13,6 +13,10 @@ const core = fs.readFileSync(path.join(__dirname, 'forms-core.js'), 'utf8');
 // forms2.js (helpers + Nos. 33-52), forms3.js (sentinels, robots, drones, Nos. 53-72) and forms4.js (ancient relics, Nos. 73-92), forms5.js (the corroded crystal, Nos. 93-103), forms6.js (the flux brawler, Nos. 104-115), forms7.js (the core mage, Nos. 116-125), forms8.js (the toxic brawler, Nos. 126-141), forms9.js (the core worker, Nos. 142-144), forms10.js (the ice maw, Nos. 145-157), forms11-13.js (the ammonite in its jar, Nos. 158-222), forms14.js (cloaks and pyramids, Nos. 223-331), forms15.js (the rock porcupine, Nos. 332-361) register FORMS2[no].
 const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8'), f4src = fs.readFileSync(path.join(__dirname, 'forms4.js'), 'utf8'), f5src = fs.readFileSync(path.join(__dirname, 'forms5.js'), 'utf8'), f6src = fs.readFileSync(path.join(__dirname, 'forms6.js'), 'utf8'), f7src = fs.readFileSync(path.join(__dirname, 'forms7.js'), 'utf8'), f8src = fs.readFileSync(path.join(__dirname, 'forms8.js'), 'utf8'), f9src = fs.readFileSync(path.join(__dirname, 'forms9.js'), 'utf8'), f10src = fs.readFileSync(path.join(__dirname, 'forms10.js'), 'utf8'), f11src = fs.readFileSync(path.join(__dirname, 'forms11.js'), 'utf8'), f12src = fs.readFileSync(path.join(__dirname, 'forms12.js'), 'utf8'), f13src = fs.readFileSync(path.join(__dirname, 'forms13.js'), 'utf8'), f14src = fs.readFileSync(path.join(__dirname, 'forms14.js'), 'utf8'), f15src = fs.readFileSync(path.join(__dirname, 'forms15.js'), 'utf8'), f16src = fs.readFileSync(path.join(__dirname, 'forms16.js'), 'utf8'), f17src = fs.readFileSync(path.join(__dirname, 'forms17.js'), 'utf8'), f18src = fs.readFileSync(path.join(__dirname, 'forms18.js'), 'utf8'), f19src = fs.readFileSync(path.join(__dirname, 'forms19.js'), 'utf8'), f20src = fs.readFileSync(path.join(__dirname, 'forms20.js'), 'utf8'), f21src = fs.readFileSync(path.join(__dirname, 'forms21.js'), 'utf8'), f22src = fs.readFileSync(path.join(__dirname, 'forms22.js'), 'utf8');
 const JOBS = [
+  // The electric and fire designs swapped. The ring drone (No. 90, the old fire mage) now stands in for the electric brawler, in electric yellow: a placeholder.
+  { id: 'voltring', form: 90, color: '#ffee33', idleAct: 0.1, action: [0.6, 1.0] },
+  // The hooded pyramid with the hovering gems (No. 391, the old electric brawler) is now the fire mage, in fire red.
+  { id: 'embercowl', form: 391, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, rim: '#ff6a3a' },   // (warm rim light: the hood reads as ember-black, not navy)
   // No. 579 (the game sprite of 578), the toxic brawler: a black faceted shell with a cone on its back on four splayed pins, one oozing eye, small leaks high on its flanks; the puddle it walks through is its ground sheet. Its action frames burst goo from the crater, up and back.
   { id: 'seeper', form: 579, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 543 (the game sprite of 541), the electric mage: a smooth cloud of dark gas over a flickering glow, a crown of black spikes, four glowing spikes circling its base, gas fins that ripple.
@@ -101,8 +105,8 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
     const key = new T.DirectionalLight(0xfff1e2, 2.4); key.position.set(3, 6, 4); scene.add(key);
     // Rim light from the side and low: from behind-above it sits exactly where an upward face mirrors
     // this fixed camera, and every top face blows out white.
-    const rim = new T.DirectionalLight(0x6c8cff, 1.3); rim.position.set(-5, 1.2, 1.5); scene.add(rim);
-    const back = new T.DirectionalLight(0x6c8cff, 0.6); back.position.set(2, 1, -5); scene.add(back);
+    const rim = new T.DirectionalLight(job.rim ? new T.Color(job.rim) : 0x6c8cff, 1.3); rim.position.set(-5, 1.2, 1.5); scene.add(rim);
+    const back = new T.DirectionalLight(job.rim ? new T.Color(job.rim) : 0x6c8cff, 0.6); back.position.set(2, 1, -5); scene.add(back);
     const B = (typeof job.form === 'number' ? FORMS2 : FORMS)[job.form].build(); scene.add(B.g);
     // Glow sprites on a transparent sheet are left to the game (it draws its own glow at the reactor).
     B.g.traverse(o => { if ((o.isSprite && !job.keepSprites) || o.material === M.rotWash) o.visible = false; });
