@@ -133,6 +133,30 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('drawing the rings is safe with a selection (and a dead unit in it)', () => { run('ccSetSelection([__a, __b]); __b.dead = true; drawSelectedUnitRings(); __b.dead = false; ccClearSelection()'); });
 
+    console.log('\nTHE QUICK RECRUIT');
+    // REPORTED: "I would really like a button near the command center or roster, so if the roster is looking slim the user can create a recruit rapidly."
+    check('THE ASK: RECRUIT is on the dock beside ROSTER, in the Command Center header, and at the top of the phone roster', () => {
+        ok(/id="btnRecruit"[^>]*onclick="recruitFollower\(\)"/.test(html), 'no dock button');
+        ok(html.indexOf('id="btnRoster"') < html.indexOf('id="btnRecruit"') && html.indexOf('id="btnRecruit"') < html.indexOf('id="btnCommand"'), 'not beside the roster');
+        const cc = fs.readFileSync(path.join(ROOT, 'js/commandcenter.js'), 'utf8'), rm = fs.readFileSync(path.join(ROOT, 'js/radialmenu.js'), 'utf8');
+        ok(/id = "ccRecruit"[\s\S]{0,200}recruitFollower\(\)/.test(cc), 'the Command Center has no recruit button'); ok(/RECRUIT \\u25c6[\s\S]{0,200}recruitFollower\(\)/.test(rm), 'the phone roster has no recruit button');
+    });
+    check('a recruit costs RECRUIT_COST shards and a follower comes out at the Crystal', () => {
+        run('followers.length = 0; shardCount = 100; floatingTexts.length = 0;');
+        same(run('recruitFollower()'), true, 'recruited'); same(run('shardCount'), 100 - run('RECRUIT_COST'), 'the price'); same(run('followers.filter(f => !f.dead).length'), 1, 'a new follower');
+        ok(run('floatingTexts.some(t => /RECRUITED/.test(t.text))'), 'no confirmation');
+    });
+    check('it comes out as an element of the current mix (ELEMENT MIX), not any unlocked one', () => {
+        run('modulationMask = new Set(["ice"]); followers.length = 0; shardCount = 1000;');
+        for (let i = 0; i < 8; i++) run('recruitFollower()');
+        same(run('followers.filter(f => f.element === "ice").length'), 8, 'every recruit is ice'); run('modulationMask = new Set();');
+    });
+    check('short of the price it refuses, says so, and spends nothing', () => {
+        run('followers.length = 0; shardCount = 5; floatingTexts.length = 0;');
+        same(run('recruitFollower()'), false, 'refused'); same(run('shardCount'), 5, 'spent'); same(run('followers.length'), 0, 'a follower appeared'); ok(run('floatingTexts.some(t => /NEED/.test(t.text))'), 'no reason said');
+    });
+    check('the Crystal RECRUIT tab uses the same action', () => { ok(/recruitFollower\(\);/.test(fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8')), 'the tab has its own copy'); });
+
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
     process.exit(failures ? 1 : 0);
 })();

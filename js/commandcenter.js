@@ -182,6 +182,9 @@ function ccBuildFrame() {
     const tabs = _ccEl("div", "cc-tabs"); tabs.id = "ccTabs";
     [["roster", "ROSTER"], ["command", "COMMAND"], ["squad", "SQUAD"]].forEach(t => { const b = _ccEl("button", "cc-tab", t[1]); b.setAttribute("data-tab", t[0]); _ccClick(b, () => { ccOpenTab = t[0]; ccRerollArmed = false; _ccCards.clear(); const g = document.getElementById("ccGrid"); if (g) g.textContent = ""; ccRender(); }); tabs.appendChild(b); });
     head.appendChild(tabs);
+    // RECRUIT: a follower at the Crystal for RECRUIT_COST shards, from any tab (clone.js recruitFollower). It dims when the shards are short.
+    const rec = _ccEl("button", "cc-recruit"); rec.id = "ccRecruit"; rec.appendChild(_ccEl("span", "cc-rl", "+ RECRUIT")); rec.appendChild(_ccEl("span", "cc-rs", ""));
+    _ccClick(rec, () => { recruitFollower(); ccRender(); }); head.appendChild(rec);
     const x = _ccEl("button", "cc-close", "✕ CLOSE"); x.id = "ccClose"; _ccClick(x, ccClose); head.appendChild(x); root.appendChild(head);
     const body = _ccEl("div", "cc-body"); body.id = "ccBody";
     const main = _ccEl("div", "cc-main"); main.id = "ccMain"; main.appendChild(_ccEl("div", "cc-filters")); main.lastChild.id = "ccFilters";
@@ -203,6 +206,8 @@ function _ccBtn(label, col, on, fn, cls, sub) {
 function ccRender() {
     const root = document.getElementById("ccRoot"); if (!root || !ccOpenTab) return;
     ccPrune();
+    const rec = document.getElementById("ccRecruit");
+    if (rec) { const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = "\u25c6" + cost; }
     root.querySelectorAll("#ccTabs .cc-tab").forEach(t => t.classList.toggle("on", t.getAttribute("data-tab") === ccOpenTab));
     const filters = document.getElementById("ccFilters"), grid = document.getElementById("ccGrid"), page = document.getElementById("ccPage"), side = document.getElementById("ccSide");
     if (!filters || !grid || !page || !side) return;
@@ -243,7 +248,7 @@ function _ccDrawGrid(grid) {
         if (card !== want) grid.insertBefore(card, want);
         prev = card;
     });
-    if (!rows.length) { if (!grid.querySelector(".cc-empty")) grid.appendChild(_ccEl("div", "cc-empty", "NOBODY HERE: RECRUIT FOLLOWERS AT THE CRYSTAL")); }
+    if (!rows.length) { if (!grid.querySelector(".cc-empty")) grid.appendChild(_ccEl("div", "cc-empty", "NOBODY HERE: TAP + RECRUIT ABOVE TO CALL A FOLLOWER")); }
     else { const e = grid.querySelector(".cc-empty"); if (e) e.remove(); }
 }
 function _ccMakeCard(r) {
