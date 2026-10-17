@@ -3,7 +3,7 @@ const _obBlack = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.2, r
 const _obTread = new T.MeshStandardMaterial({ color: 0x050507, metalness: 0.25, roughness: 0.7, flatShading: true }); _obTread.envMapIntensity = 0.25;
 function _bpod(o, sx, lit, dim, lc, frame, R) {   // one booster bracket: its housing, its nozzle(s), coil lights and ion stream(s); rear anchor at z = -len*0.62 for every kind
   const B = o.boost, K = B.kind || 'barrel', bl = B.len, br = B.r, eg2 = G(); eg2.position.set(sx * o.earX, R + 0.02, o.earZ); eg2.rotation.set(-o.earTilt, 0, -sx * o.earSplay); frame.add(eg2);
-  const rearZ = K === 'trap' ? -B.L1 * 0.62 : K === 'strap' ? -B.T * 0.5 - 0.03 : K === 'drop' ? Math.sin(B.th1) * (R + B.T * 0.4) : -bl * 0.62, coils = [], plumes = [];
+  const rearZ = K === 'trap' ? -B.L1 * 0.62 : K === 'strap' ? -B.T * 0.5 - 0.03 : K === 'drop' ? Math.sin(B.th1 * (B.back ? -1 : 1)) * (R + B.T * 0.4) : -bl * 0.62, coils = [], plumes = [];
   const addPlume = (x, y, rr, kk) => { [[1.0, 0.35], [0.55, 0.6]].forEach(([k, op], pi) => { const pl = new T.Mesh(new T.ConeGeometry(rr * k, B.plume * k * kk, 8, 1, true), new T.MeshBasicMaterial({ color: pi ? lit.clone().lerp(new T.Color(1, 1, 1), 0.5).getHex() : lc.getHex(), transparent: true, opacity: op, blending: T.AdditiveBlending, depthWrite: false, toneMapped: false, side: T.DoubleSide })); pl.rotation.x = -PI / 2; pl.position.set(x, y, rearZ - B.plume * k * kk * 0.5); eg2.add(pl); plumes.push({ pl, k, op, len: B.plume * k * kk }); }); };
   const litMat = () => new T.MeshBasicMaterial({ color: lit.getHex(), toneMapped: false });
   const ring = (z, rad, tube) => { const co = new T.Mesh(new T.TorusGeometry(rad, tube || 0.016, 4, 12), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); co.position.z = z; eg2.add(co); coils.push(co); return co; };
@@ -66,13 +66,13 @@ function _bpod(o, sx, lit, dim, lc, frame, R) {   // one booster bracket: its ho
       if (i > 0 && i < last) { const ln = new T.Mesh(new T.BoxGeometry(len * 0.5, 0.012, W * 1.02), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); ln.position.set(0, h * 0.5, 0); hold.add(ln); coils.push(ln); }
     }
   } else if (K === 'drop') {   // ONE thick trapezoid, longer: it starts at the top of the ball and runs DOWN its front, bent to follow the sphere, wide at the top and narrowing to the bottom
-    eg2.position.set(sx * o.earX, 0, 0); eg2.rotation.set(0, 0, -sx * (B.lean || 0)); const th0 = B.th0, th1 = B.th1, Wt = B.Wt, Wb = B.Wb, Tt = B.T, nSeg = 10;
+    eg2.position.set(sx * o.earX, 0, 0); eg2.rotation.set(0, 0, -sx * (B.lean || 0)); const dirK = B.back ? -1 : 1, th0 = B.th0 * dirK, th1 = B.th1 * dirK, Wt = B.Wt, Wb = B.Wb, Tt = B.T, nSeg = 10;
     const sh = new T.Shape(); sh.moveTo(-Wt / 2, 0); sh.lineTo(Wt / 2, 0); sh.lineTo(Wb / 2, 1); sh.lineTo(-Wb / 2, 1); sh.closePath();   // x = width, y = 0..1 along the run (top to bottom)
     const ex = new T.ExtrudeGeometry(sh, { depth: Tt, bevelEnabled: true, bevelThickness: B.bevel || 0.03, bevelSize: B.bevel || 0.03, bevelSegments: 1, steps: 1 });
     const pos = ex.attributes.position; for (let i = 0; i < pos.count; i++) { const x = pos.getX(i), yy = Math.max(0, Math.min(1, pos.getY(i))), zz = pos.getZ(i), th = th0 + (th1 - th0) * yy, rr = R * 0.99 + zz; pos.setXYZ(i, x, Math.cos(th) * rr, Math.sin(th) * rr); }
     ex.computeVertexNormals(); const bl2 = new T.Mesh(ex, _obTread); bl2.material = _obTread; eg2.add(bl2);
     // lit panel on the upper part, and vent slits low down
-    const fs = new T.Mesh(new T.BoxGeometry(Wt * 0.5, 0.016, 0.16), litMat()); fs.position.set(0, Math.cos(th0 + (th1 - th0) * 0.2) * (R + Tt + 0.035), Math.sin(th0 + (th1 - th0) * 0.2) * (R + Tt + 0.035)); fs.rotation.x = th0 + (th1 - th0) * 0.2 - PI / 2 * 0 ; face = fs; eg2.add(fs);
+    const fs = new T.Mesh(new T.BoxGeometry(Wt * 0.5, 0.016, 0.16), litMat()); fs.position.set(0, Math.cos(th0 + (th1 - th0) * 0.2) * (R + Tt + 0.035), Math.sin(th0 + (th1 - th0) * 0.2) * (R + Tt + 0.035)); fs.rotation.x = th0 + (th1 - th0) * 0.2; face = fs; eg2.add(fs);
     for (let k = 0; k < 3; k++) { const t2 = 0.45 + 0.17 * k, rr2 = R + Tt + 0.03, vs = new T.Mesh(new T.BoxGeometry((Wt + (Wb - Wt) * t2) * 0.55, 0.014, 0.024), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); const tt = th0 + (th1 - th0) * t2; vs.position.set(0, Math.cos(tt) * rr2, Math.sin(tt) * rr2); vs.rotation.x = tt; eg2.add(vs); coils.push(vs); }
     const tb = th1 + 0.02, rb = R + Tt * 0.4; for (let k = 0; k < 3; k++) addPlume((k - 1) * Wb * 0.28, Math.cos(tb) * rb, Wb * 0.16, 0.45);
     // plumes point back (−z) from the rear anchor: put the anchor at the bottom edge
@@ -239,3 +239,14 @@ fx(773, "Longer still, down past the middle of the ball.", () => _orbBrawler(Obj
 fx(774, "Wider and thicker: a broad plate, wide at the top, tapering to a blunt end.", () => _orbBrawler(Object.assign({}, _dp, { boost: Object.assign({}, _dp.boost, { Wt: 0.4, Wb: 0.22, T: 0.15, th1: 1.05 }) })));
 fx(775, "Sharper taper: wide at the shoulder and narrowing to a point near the bottom.", () => _orbBrawler(Object.assign({}, _dp, { boost: Object.assign({}, _dp.boost, { Wt: 0.34, Wb: 0.08, th1: 1.2 }) })));
 fx(776, "Further apart and angled out: the two plates splayed over the ball's shoulders and running down the front.", () => _orbBrawler(Object.assign({}, _dp, { earX: 0.34, boost: Object.assign({}, _dp.boost, { lean: 0.35, th1: 1.1 }) })));
+
+// ── The other way: the trapezoid runs down the BACK of the ball instead (Nos. 777–781) ──
+const _bk = b => Object.assign({}, _dp, { boost: Object.assign({}, _dp.boost, { back: true }, b) });
+fx(777, "The same long trapezoid, but running down the back of the ball instead of the front.", () => _orbBrawler(_bk({})));
+fx(778, "Longer, past the middle of the back.", () => _orbBrawler(_bk({ th1: 1.3 })));
+fx(779, "Wide thick plates, blunt ends.", () => _orbBrawler(_bk({ Wt: 0.4, Wb: 0.22, T: 0.15, th1: 1.05 })));
+fx(780, "Sharper taper down the back.", () => _orbBrawler(_bk({ Wt: 0.34, Wb: 0.08, th1: 1.2 })));
+fx(781, "Splayed out over the shoulders and running down the back.", () => _orbBrawler(Object.assign({}, _bk({ lean: 0.35, th1: 1.1 }), { earX: 0.34 })));
+
+// The back-running trapezoids as seen from BEHIND (the same Nos. 777–781, the creature turned round): 782–786
+[777, 778, 779, 780, 781].forEach((n, i) => fx(782 + i, "No. " + n + " seen from behind.", () => { const B = FORMS2[n].build(); B.g.rotation.y = PI; return B; }));
