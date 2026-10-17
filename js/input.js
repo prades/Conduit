@@ -329,12 +329,16 @@ function handleLongHold(ex,ey) {
     dragDX=0; dragDY=0;
 }
 
+let _netPressed = false;   // the press began on the network panel
 canvas.addEventListener('pointerdown', e=>{
     if (!gameState.running) return;
     e.preventDefault(); canvas.setPointerCapture(e.pointerId);
     gesturePoints=[]; isPressing=true; longHoldFired=false; touchMoved=false;
     [pressX,pressY]=toCanvas(e.clientX,e.clientY); pressStartTime=performance.now();
 
+    // The network panel (js/nethud.js): a press on it is its own, so no ring or move order starts under it.
+    if (!crystalMenuOpen && !cloneMenuOpen && !settingsPanelOpen && typeof netPanelHit === "function" && netPanelHit(pressX, pressY)) { _netPressed = true; isPressing = false; return; }
+    _netPressed = false;
     // Canvas overlay panels — absorb pointerdown so no game action triggers
     if (elementPickerOpen || infoPanelOpen || campMenuOpen || settingsPanelOpen
         || followerDutyMenu) return;
@@ -378,6 +382,8 @@ canvas.addEventListener('pointermove', e=>{
 canvas.addEventListener('pointerup', e=>{
     if (!gameState.running) { isPressing=false; return; } // block canvas input during buy screen
     const [upX,upY]=toCanvas(e.clientX,e.clientY);
+    // A tap on the network panel opens the simplified POWER BUILD (js/buildmenu.js openPowerBuild).
+    if (_netPressed) { _netPressed = false; if (typeof netPanelHit === "function" && netPanelHit(upX, upY) && typeof openPowerBuild === "function") openPowerBuild(); isPressing = false; return; }
     // A build tool in hand: the interface is hidden (js/buildmenu.js placingHidesUi), so ONLY the ground takes a tap: the controls that were drawn
     // there must not fire from where they used to be.
     if (typeof placingHidesUi === "function" && placingHidesUi()) {

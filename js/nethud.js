@@ -71,9 +71,12 @@ function networkSignalAnnounce(sig) {
 function _netZoneRect() {
     try { const e = document.getElementById("zoneInfo"); if (!e) return null; const r = e.getBoundingClientRect(); return r.height > 0 && isFinite(r.bottom) && r.bottom < canvas.height * 0.5 ? r : null; } catch (err) { return null; }
 }
+let _netPanelRect = null;   // where the panel was last drawn (for the tap)
 let _hudPw = null, _hudPwAt = -Infinity, _hudSig = null;
 function drawNetworkStatusHUD() {
+    _netPanelRect = null;
     if (typeof placingHidesUi === "function" && placingHidesUi()) return;
+    if (typeof tutorialMode !== "undefined" && tutorialMode) return;   // the tutorial teaches the ring and the old way
     const activeEls = ELEMENTS.filter(e => (networkStrength[e.id] || 0) > 0);
     // The readout is worked out a few times a second, not every frame: it
     // walks every pylon and battery, and numbers that change 60 times a
@@ -83,10 +86,7 @@ function drawNetworkStatusHUD() {
         _hudSig = networkSignalAt(player.x, player.y); networkSignalAnnounce(_hudSig);
     }
     const pw = _hudPw, sig = _hudSig;
-    // The grid line shows from the first pylon, before any network has formed —
-    // it is the thing the player is now budgeting, so it cannot wait for a
-    // resonance tier to appear first.
-    if (activeEls.length === 0 && pw.drawing === 0 && !(pw.batteries && pw.batteries.count)) return;
+    // (Always shown, even with nothing built: a tap on it is the way into the power build.)
 
     const narrow = canvas.width < 600;
     const bs = pw.batteries || { count: 0 };
@@ -94,7 +94,7 @@ function drawNetworkStatusHUD() {
     const HEAD = 32, METER = 36, BAR = 24, ROW_H = 30;
     const rows = narrow ? 0 : activeEls.length;
     const darkRows = narrow ? 0 : activeEls.filter(e => !(_netLit[e.id] > 0)).length;
-    const H = HEAD + METER + (bs.count > 0 ? BAR : 0) + BAR + rows * ROW_H + darkRows * 12 + 8;
+    const H = HEAD + METER + (bs.count > 0 ? BAR : 0) + BAR + rows * ROW_H + darkRows * 12 + 22;
     // Docked to the zone plate: hanging from its bottom edge, right edges together (it falls back to the HUD's bottom if the plate is not there).
     const zr = narrow ? null : _netZoneRect();   // on a phone the zone plate sits above the bars, so the panel hangs from the whole HUD instead
     const X = zr ? Math.max(8, Math.round(zr.right - W)) : canvas.width - W - 10, Y = zr ? Math.round(zr.bottom - 2) : uiTopSafe();
@@ -165,5 +165,11 @@ function drawNetworkStatusHUD() {
         if (dark) { uiCaption("NO POWER \u2014 CHARGE", mx + 28, y + 2, "#ff7755", "left", 11); y += 12; }
         else if (here < tier) { /* weaker here than built: the pips say it */ }
     });
+    // The way in: a tap on the panel opens the power build (and puts it away again).
+    const _open = typeof buildMenuOpen !== "undefined" && buildMenuOpen && buildMenuSimple;
+    uiCaptionFit(_open ? "\u25b8 TAP TO CLOSE POWER BUILD" : "\u25b8 TAP TO BUILD POWER", X + W / 2, Y + H - 12, _open ? UI_TEAL : "#8aa0c8", "center", 11, IW);
+    _netPanelRect = { x: X, y: Y, w: W, h: H };
     ctx.restore();
 }
+// Is a point on the network panel? (input.js: a tap on it opens the power build.)
+function netPanelHit(x, y) { const r = _netPanelRect; return !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }

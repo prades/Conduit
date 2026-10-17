@@ -50,6 +50,7 @@
 let buildMenuOpen = false;
 let buildMenuTab  = "turrets";
 let buildMenuMin  = false;
+let buildMenuSimple = false;   // the POWER BUILD window opened from the network panel (js/nethud.js): only the generator and the batteries
 let buildTool     = null;    // null | { kind, elId, label, colour } | { kind: "demolish" }
 let buildGhost    = null;    // { x, y } — the tile the tool is over
 let _bmArmedKey   = null;    // touch: the tile tapped once, waiting for the second tap
@@ -87,7 +88,7 @@ function buildMenuItems(tab) {
         }
     } else if (tab === "power") {
         for (const e of els) out.push({ tab, kind: "battery", elId: e.id, label: e.label.toUpperCase(), sub: "BATTERY", icon: "battery", colour: e.color });
-        out.push({ tab, kind: "connector", elId: typeof CONNECTOR_ID !== "undefined" ? CONNECTOR_ID : "connector", label: "CONNECTOR", sub: "RELAY", icon: "connector", colour: "#ffd24a" });
+        if (!buildMenuSimple) out.push({ tab, kind: "connector", elId: typeof CONNECTOR_ID !== "undefined" ? CONNECTOR_ID : "connector", label: "CONNECTOR", sub: "RELAY", icon: "connector", colour: "#ffd24a" });
         out.push({ tab, kind: "generator", elId: typeof GENERATOR_ID !== "undefined" ? GENERATOR_ID : "generator", label: "GENERATOR", sub: "ZONE POWER", icon: "generator", colour: "#cdd6e0" });
     } else if (tab === "modules" && typeof MODULE_DEFS !== "undefined") {
         // Modules (js/modules.js): structures that work while powered.
@@ -194,11 +195,11 @@ function _bmSame(a, b) { return !!a && !!b && a.kind === b.kind && a.elId === b.
 
 // ── Open / close ──────────────────────────────────────────
 function openBuildMenu() {
-    buildMenuOpen = true; buildMenuMin = false;
+    buildMenuOpen = true; buildMenuMin = false; buildMenuSimple = false;
     if (!buildMode) { buildMode = true; if (typeof updateBuildButton === "function") updateBuildButton(); }
 }
 function closeBuildMenu() {
-    buildMenuOpen = false; buildTool = null; buildGhost = null; _bmArmedKey = null;
+    buildMenuOpen = false; buildMenuSimple = false; buildTool = null; buildGhost = null; _bmArmedKey = null;
 }
 // Called whenever buildMode changes: the window follows the BUILD button. Not
 // during the tutorial, which teaches the ring and must not be covered.
@@ -211,6 +212,19 @@ function openModulesWindow() {
     buildMenuTab = "modules";
     if (!buildMenuOpen) openBuildMenu();
     buildMenuMin = false;
+}
+// THE POWER BUILD (a tap on the network panel): the build window cut down to the generator and the batteries, with their element and level
+// rows, and nothing else. Picking a battery zooms out as any tool does, and the chip there (_placeChipSync) switches battery, element and level.
+function openPowerBuild() {
+    if (typeof tutorialMode !== "undefined" && tutorialMode) return false;
+    if (typeof crystalMenuOpen !== "undefined") { crystalMenuOpen = false; }
+    if (typeof cloneMenuOpen !== "undefined") { cloneMenuOpen = false; }
+    if (typeof settingsPanelOpen !== "undefined") { settingsPanelOpen = false; }
+    if (buildMenuOpen && buildMenuSimple) { closeBuildMenu(); buildMode = false; if (typeof updateBuildButton === "function") updateBuildButton(); return true; }   // the panel again puts it away
+    buildMenuTab = "power";
+    openBuildMenu();
+    buildMenuSimple = true; buildTool = null; buildGhost = null; _bmArmedKey = null;
+    return true;
 }
 function setBuildTool(it) {
     if (!it) { buildTool = null; buildGhost = null; _bmArmedKey = null; return; }
@@ -360,7 +374,8 @@ function _bmLayout() {
     const rows = Math.max(1, Math.ceil(items.length / cols));
     const gridH = rows * (ch + _BM_GAP) + _BM_GAP;
     const hasLv = !!BUILD_LEVELS[buildMenuTab];
-    const H = buildMenuMin ? _BM_HEAD : _BM_HEAD + _BM_TABS + (hasLv ? _BM_LVL : 0) + gridH + _BM_STATUS;
+    const tabsH = buildMenuSimple ? 0 : _BM_TABS;
+    const H = buildMenuMin ? _BM_HEAD : _BM_HEAD + tabsH + (hasLv ? _BM_LVL : 0) + gridH + _BM_STATUS;
     const x = narrow ? 8 : Math.round((canvas.width - W) / 2);
     const bottom = narrow ? canvas.height - (typeof SAFE_BOTTOM !== "undefined" ? SAFE_BOTTOM : 0) - 72 : uiBottomSafe();
     const y = Math.round(bottom - H);
@@ -373,13 +388,13 @@ function _bmLayout() {
     if (!buildMenuMin) {
         if (hasLv) {
             const lw = (W - _BM_PAD * 2 - 80) / 3;
-            BUILD_LEVELS[buildMenuTab].forEach((label, i) => levels.push({ n: i + 1, label, x: x + _BM_PAD + 80 + i * lw, y: y + _BM_HEAD + _BM_TABS + 2, w: lw - 6, h: _BM_LVL - 6 }));
+            BUILD_LEVELS[buildMenuTab].forEach((label, i) => levels.push({ n: i + 1, label, x: x + _BM_PAD + 80 + i * lw, y: y + _BM_HEAD + tabsH + 2, w: lw - 6, h: _BM_LVL - 6 }));
         }
         const tw = (W - _BM_PAD * 2) / BUILD_MENU_TABS.length;
-        BUILD_MENU_TABS.forEach((tb, i) => tabs.push({ tab: tb, x: x + _BM_PAD + i * tw, y: y + _BM_HEAD, w: tw - 6, h: _BM_TABS - 6 }));
+        if (!buildMenuSimple) BUILD_MENU_TABS.forEach((tb, i) => tabs.push({ tab: tb, x: x + _BM_PAD + i * tw, y: y + _BM_HEAD, w: tw - 6, h: _BM_TABS - 6 }));
         const gx0 = x + Math.round((W - (cols * (cw + _BM_GAP) - _BM_GAP)) / 2);
         items.forEach((it, i) => cells.push({ it, x: gx0 + (i % cols) * (cw + _BM_GAP),
-            y: y + _BM_HEAD + _BM_TABS + lvH + _BM_GAP + Math.floor(i / cols) * (ch + _BM_GAP), w: cw, h: ch }));
+            y: y + _BM_HEAD + tabsH + lvH + _BM_GAP + Math.floor(i / cols) * (ch + _BM_GAP), w: cw, h: ch }));
     }
     return { x, y, w: W, h: H, head, tabs, cells, levels, statusY: y + H - _BM_STATUS / 2 - 2 };
 }
@@ -391,6 +406,15 @@ function buildMenuHit(x, y) {
     return _bmIn(L, x, y);
 }
 
+// Why an item cannot be had, in a sentence.
+function _bmWhy(it, st) {
+    return st.why === "NO GENERATOR" ? "NO GENERATOR IN THIS ZONE \u2014 BUILD ONE BY A HELD NEST FIRST"
+         : st.why === "NO POWER" ? "NO POWER \u2014 BUILD A GENERATOR BY A HELD NEST FIRST"
+         : st.why === "NEEDS TIER I" ? "MK II NEEDS A TIER I NETWORK \u2014 2 LINKED " + it.label + " BATTERIES"
+         : st.why === "NEEDS TIER II" ? (it.tab === "wave" ? "FORMATION" : "ULTRA") + " NEEDS A TIER II NETWORK \u2014 4 LINKED " + it.label + " BATTERIES"
+         : st.why;
+}
+
 // ── Taps on the window ────────────────────────────────────
 function handleBuildMenuTap(x, y) {
     if (!buildMenuOpen) return false;
@@ -398,7 +422,7 @@ function handleBuildMenuTap(x, y) {
     if (!_bmIn(L, x, y)) return false;
     if (_bmIn(L.head.close, x, y)) { buildMode = false; if (typeof updateBuildButton === "function") updateBuildButton(); closeBuildMenu(); return true; }
     if (_bmIn(L.head.min, x, y))   { buildMenuMin = !buildMenuMin; return true; }
-    if (_bmIn(L.head.demo, x, y))  {
+    if (!buildMenuSimple && _bmIn(L.head.demo, x, y))  {
         if (buildTool && buildTool.kind === "demolish") setBuildTool(null);
         else { buildTool = { kind: "demolish", label: "DEMOLISH", colour: "#ff6644" }; _bmArmedKey = null; }
         return true;
@@ -424,11 +448,7 @@ function handleBuildMenuTap(x, y) {
         if (_bmLocked(it)) { _bmSay(it.label + " IS NOT UNLOCKED YET", "#f88"); return true; }
         const st = buildItemState(it);
         if (!st.ok) {
-            _bmSay(it.label + ": " + (st.why === "NO GENERATOR" ? "NO GENERATOR IN THIS ZONE \u2014 BUILD ONE BY A HELD NEST FIRST"
-                                     : st.why === "NO POWER" ? "NO POWER \u2014 BUILD A GENERATOR BY A HELD NEST FIRST"
-                                     : st.why === "NEEDS TIER I" ? "MK II NEEDS A TIER I NETWORK \u2014 2 LINKED " + it.label + " BATTERIES"
-                                     : st.why === "NEEDS TIER II" ? (it.tab === "wave" ? "FORMATION" : "ULTRA") + " NEEDS A TIER II NETWORK \u2014 4 LINKED " + it.label + " BATTERIES"
-                                     : st.why), "#f88");
+            _bmSay(it.label + ": " + _bmWhy(it, st), "#f88");
             if (_bmSame(buildTool, it)) setBuildTool(null);
             return true;
         }
@@ -444,12 +464,12 @@ function drawBuildMenu() {
     const L = _bmLayout(); _bmLast = L;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     // The window
-    uiPanel(L.x, L.y, L.w, L.h, UI_GOLD);
+    uiPanel(L.x, L.y, L.w, L.h, buildMenuSimple ? UI_TEAL : UI_GOLD);
     // Title bar
-    uiText("BUILD", L.x + (L.w > 360 ? 28 : 18), L.y + _BM_HEAD / 2 + 1, L.w > 360 ? 32 : 24, UI_GOLD, "left");
-    if (L.w > 360) uiText("\u25c6 " + shardCount, L.x + 150, L.y + _BM_HEAD / 2 + 1, 24, "#fff", "left", false);
+    uiText(buildMenuSimple ? "POWER" : "BUILD", L.x + (L.w > 360 ? 28 : 18), L.y + _BM_HEAD / 2 + 1, L.w > 360 ? 32 : 24, buildMenuSimple ? UI_TEAL : UI_GOLD, "left");
+    if (L.w > 360) uiText("\u25c6 " + shardCount, L.x + (buildMenuSimple ? 170 : 150), L.y + _BM_HEAD / 2 + 1, 24, "#fff", "left", false);
     const demoOn = buildTool && buildTool.kind === "demolish";
-    uiButton(L.head.demo, L.w > 360 ? "DEMOLISH" : "DEMO", UI_RED, demoOn, L.w > 360 ? 18 : 15);
+    if (!buildMenuSimple) uiButton(L.head.demo, L.w > 360 ? "DEMOLISH" : "DEMO", UI_RED, demoOn, L.w > 360 ? 18 : 15);
     uiButton(L.head.min, buildMenuMin ? "\u25b4" : "\u25be", UI_ICE, false, 22);
     uiButton(L.head.close, "\u2715", UI_RED, false, 22);
     if (!buildMenuMin) {
@@ -485,7 +505,7 @@ function drawBuildMenu() {
         }
         // Status line: what is in hand, and what to do with it.
         let msg, col = "#8aa0c8";
-        if (!buildTool) msg = buildMenuTab === "modules" ? "Modules work while powered, on the ground around them. Pick one." : "Pick something to build.";
+        if (!buildTool) msg = buildMenuSimple ? "Pick a GENERATOR or a BATTERY, then tap the ground. You can switch it there." : buildMenuTab === "modules" ? "Modules work while powered, on the ground around them. Pick one." : "Pick something to build.";
         else {
             const g = buildGhost && typeof getTile === "function" ? getTile(buildGhost.x, buildGhost.y) : null;
             const v = g ? canBuildAt(g, buildTool) : null;
@@ -581,11 +601,38 @@ function placingZoom() { return (typeof window !== "undefined" && window.innerWi
 // Once a frame: follows buildTool.
 function placingTick() {
     const on = placingHidesUi();
-    if (on === _placingWas) { if (on && typeof viewZoom !== "undefined" && viewZoom !== placingZoom()) setViewZoom(placingZoom()); return; }
+    if (on === _placingWas) { if (on) { _placeChipSync(); if (typeof viewZoom !== "undefined" && viewZoom !== placingZoom()) setViewZoom(placingZoom()); } return; }
     _placingWas = on;
     if (typeof setViewZoom === "function") setViewZoom(on ? placingZoom() : 1);
     if (typeof document !== "undefined" && document.body && document.body.classList) document.body.classList.toggle("placing", on);
     _placeChipSync();
+}
+// The chip over the zoomed-out view. For a POWER tool (a battery, the generator, the connector) it also carries the switches, so the type and the
+// level change here, without going back into the build window: the tool (BATTERY / GENERATOR / CONNECTOR), the battery's element, and its level.
+let _placeChipSig = null;
+function _placeChipSwitchSig() {
+    if (!buildTool || buildTool.tab !== "power") return "";
+    return [buildTool.kind, buildTool.elId, buildLevel.power, buildMenuSimple ? 1 : 0, typeof unlockedElements !== "undefined" ? unlockedElements.size : 0].join("|");
+}
+// Switch the tool in hand to a power tool (keeps the level). A battery keeps its element when it has one.
+function placeSwitchTool(kind, elId) {
+    const items = buildMenuItems("power");
+    const keep = buildTool && buildTool.kind === "battery" ? buildTool.elId : null;
+    const it = items.find(i => i.kind === kind && (kind !== "battery" || i.elId === (elId || keep || i.elId)));
+    if (!it) return false;
+    const st = buildItemState(it);
+    if (!st.ok) { _bmSay(it.label + ": " + _bmWhy(it, st), "#f88"); return false; }
+    buildTool = { tab: it.tab, kind: it.kind, elId: it.elId, id: it.id, label: it.label + (it.sub ? " " + it.sub : ""), colour: it.colour, icon: it.icon };
+    _bmArmedKey = null;
+    return true;
+}
+// The battery level (x1, pod of four, pod of six). Refused, with the reason, when the tool in hand cannot be had at it.
+function placeSwitchLevel(n) {
+    const was = buildLevel.power;
+    buildLevel.power = n; _bmArmedKey = null;
+    const it = buildTool && buildMenuItems("power").find(i => _bmSame(i, buildTool));
+    if (it) { const st = buildItemState(it); if (!st.ok) { buildLevel.power = was; _bmSay(it.label + ": " + _bmWhy(it, st), "#f88"); return false; } }
+    return true;
 }
 function _placeChipSync() {
     if (typeof document === "undefined" || !document.body || !document.createElement) return;
@@ -595,8 +642,42 @@ function _placeChipSync() {
         const lab = document.createElement("span"); lab.id = "placeChipLabel"; chip.appendChild(lab);
         const done = document.createElement("button"); done.id = "placeChipDone"; done.textContent = "\u2715 DONE";
         done.addEventListener("click", e => { e.stopPropagation(); setBuildTool(null); });
-        chip.appendChild(done); document.body.appendChild(chip);
+        chip.appendChild(done);
+        const tools = document.createElement("div"); tools.id = "placeChipTools"; chip.appendChild(tools);
+        document.body.appendChild(chip);
     }
     const lab = document.getElementById("placeChipLabel");
-    if (lab) lab.textContent = buildTool ? buildTool.label + " \u00B7 TAP A TILE, TAP AGAIN TO BUILD" : "";
+    const cost = buildTool && buildTool.kind !== "demolish" ? " \u25c6" + buildToolCost(buildTool) : "";
+    const text = buildTool ? buildTool.label + cost + " \u00B7 TAP A TILE, TAP AGAIN TO BUILD" : "";
+    if (lab && lab.textContent !== text) lab.textContent = text;
+    const sig = _placeChipSwitchSig();
+    if (sig === _placeChipSig) return;
+    _placeChipSig = sig;
+    const tools = document.getElementById("placeChipTools");
+    if (!tools) return;
+    while (tools.firstChild) tools.removeChild(tools.firstChild);
+    if (!sig) return;
+    const row = (cls) => { const r = document.createElement("div"); r.className = "pc-row " + (cls || ""); tools.appendChild(r); return r; };
+    const btn = (r, label, on, col, fn, dim) => {
+        const b = document.createElement("button"); b.className = "pc-btn" + (on ? " on" : "") + (dim ? " dim" : ""); b.textContent = label; b.setAttribute("style", "--c:" + col);
+        b.addEventListener("click", e => { e.stopPropagation(); fn(); }); r.appendChild(b); return b;
+    };
+    const items = buildMenuItems("power");
+    // which tool: the battery, the generator, (the connector)
+    const r1 = row("tools");
+    for (const [kind, label, col] of [["battery", "BATTERY", "#ffd34d"], ["generator", "GENERATOR", "#cdd6e0"], ["connector", "CONNECTOR", "#ffd24a"]]) {
+        if (!items.some(i => i.kind === kind)) continue;
+        btn(r1, label, buildTool.kind === kind, col, () => placeSwitchTool(kind));
+    }
+    if (buildTool.kind === "battery") {
+        // which element
+        const r2 = row("els");
+        for (const it of items.filter(i => i.kind === "battery")) {
+            const st = buildItemState(it), locked = _bmLocked(it);
+            btn(r2, it.label.slice(0, 3), it.elId === buildTool.elId, it.colour, () => placeSwitchTool("battery", it.elId), locked || !st.ok);
+        }
+        // which level
+        const r3 = row("lvls");
+        BUILD_LEVELS.power.forEach((label, i) => btn(r3, label, (buildLevel.power || 1) === i + 1, "#19e6c1", () => placeSwitchLevel(i + 1)));
+    }
 }
