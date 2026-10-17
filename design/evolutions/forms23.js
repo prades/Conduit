@@ -23,7 +23,7 @@ function _cicadaArm(A, sx, seed) {   // a cicada's fore-arm: a stout spined uppe
 }
 const _zigStone = new T.MeshStandardMaterial({ color: 0x08090c, metalness: 0.1, roughness: 0.95, flatShading: true }); _zigStone.envMapIntensity = 0.12;
 const _swordMat = new T.MeshStandardMaterial({ color: 0x050507, metalness: 0.85, roughness: 0.28, flatShading: true }); _swordMat.envMapIntensity = 1.6;
-function _sword(L, w, th, bend, jag, seed) {   // a sword that points along +z: a hilt at the origin (cross-guard, grip, pommel), a long diamond-section blade tapering to a point
+function _sword(L, w, th, bend, jag, seed, E) {   // a sword that points along +z: a hilt at the origin (cross-guard, grip, pommel), a long diamond-section blade tapering to a point
   const g = G(), rings = [[0.0, 1.0], [0.12, 1.0], [0.55, 0.9], [0.86, 0.55], [1.0, 0.0]], pos = [], idx = [];
   rings.forEach(([u, k], i) => { const j = jag ? 1 + jag * (_hz(i, seed, 3) - 0.5) : 1, ww = w * k * j, tt = th * (k * 0.8 + 0.2), z = u * L, x = bend * u * u * L * 0.3;
     pos.push(x + ww, 0, z, x, tt, z, x - ww, 0, z, x, -tt, z); });
@@ -34,7 +34,21 @@ function _sword(L, w, th, bend, jag, seed) {   // a sword that points along +z: 
   eg.setAttribute('color', new T.BufferAttribute(ec, 3)); g.add(new T.LineSegments(eg, new T.LineBasicMaterial({ vertexColors: true, color: 0xd8deea, transparent: true, opacity: 0.55, blending: T.AdditiveBlending })));
   const guard = new T.Mesh(new T.BoxGeometry(w * 3.4, th * 1.6, 0.05), _zigStone); guard.position.z = -0.01; g.add(guard);
   const grip = new T.Mesh(new T.CylinderGeometry(th * 0.9, th * 0.9, 0.26, 6), _zigStone); grip.rotation.x = PI / 2; grip.position.z = -0.15; g.add(grip);
-  const pom = new T.Mesh(new T.OctahedronGeometry(th * 1.5, 0), _zigStone); pom.position.z = -0.31; g.add(pom); return g;
+  const pom = new T.Mesh(new T.OctahedronGeometry(th * 1.5, 0), _zigStone); pom.position.z = -0.31; g.add(pom);
+  // ELECTRIC: hot edges, a glowing fuller down the blade, lightning crawling along it, a halo of charge
+  if (E) {
+    const lines = g.children.filter(c => c.isLineSegments); if (E.edge) lines.forEach(l => { l.material.color.set(0xfff2a0); l.material.opacity = 1.0; });
+    let fuller = null; if (E.fuller) { fuller = new T.Mesh(new T.BoxGeometry(th * 0.5, th * 0.5, L * 0.72), new T.MeshBasicMaterial({ color: 0xfff2a0, toneMapped: false, transparent: true })); fuller.position.set(0, th * 0.55, L * 0.5); g.add(fuller); }
+    const arcs = []; for (let i = 0; i < (E.arcs || 0); i++) { const ln = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.95 })); ln.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(10 * 3), 3)); ln.frustumCulled = false; g.add(ln); arcs.push(ln); }
+    let halo = null; if (E.halo) { halo = glowSprite(L * 0.9); halo.material = halo.material.clone(); halo.material.opacity = 0.3; halo.position.z = L * 0.5; g.add(halo); }
+    g.userData.tick = (ph, ac) => { const f = Math.floor(ph * 9);
+      if (fuller) fuller.material.opacity = 0.55 + 0.35 * Math.sin(ph * 3 + seed) + 0.3 * ac;
+      if (halo) halo.material.opacity = 0.18 + 0.12 * Math.sin(ph * 3 + seed * 2) + 0.3 * ac;
+      arcs.forEach((ln, i) => { const on = ac > 0.2 || Math.sin(ph * 4 + seed + i * 2.1) * Math.sin(ph * 7 + i) > 0.1; ln.visible = on; if (!on) return; const pa = ln.geometry.attributes.position.array;
+        for (let k = 0; k < 10; k++) { const u = k / 9, z = 0.05 * L + u * 0.9 * L, j = (_hz(k, seed + i, f) - 0.5) * 0.16 * Math.sin(u * PI) * (1 + ac), j2 = (_hz(k, seed + i + 5, f) - 0.5) * 0.12 * Math.sin(u * PI); pa[k * 3] = j + (i ? 0.02 : -0.02); pa[k * 3 + 1] = th + 0.02 + j2; pa[k * 3 + 2] = z; }
+        ln.geometry.attributes.position.needsUpdate = true; }); };
+  }
+  return g;
 }
 function _zig(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.3);
@@ -48,15 +62,19 @@ function _zig(o) {
   const lamp = new T.Mesh(new T.OctahedronGeometry(o.lampR, 0), new T.MeshBasicMaterial({ color: o.dull ? 0x4a4024 : 0xfff2a0, toneMapped: false })); lamp.scale.y = 1.4; lamp.position.y = topY + o.lampR * 1.2; body.add(lamp);
   let slit = null; if (o.slit) { const t1 = o.tiers[o.slit.tier || 1]; slit = new T.Mesh(new T.BoxGeometry(t1[0] * 0.62, 0.035, 0.02), new T.MeshBasicMaterial({ color: o.dull ? 0x3d351c : 0xfff2a0, toneMapped: false })); const ty = o.tiers.slice(0, (o.slit.tier || 1)).reduce((a, q) => a + q[2] + 0.03, 0) + t1[2] * 0.55; slit.position.set(0, ty, t1[1] / 2 + 0.012); body.add(slit); }
   // the two arms: big shards that float ahead, apart from the body
-  const arms = []; for (const sx of [-1, 1]) { const A = o.arm, arm = G(); let ca = null; if (A.sword) { arm.add(_sword(A.len, A.w, A.th, A.bend * sx, A.jag, sx + 5)); } else if (A.cicada) { ca = _cicadaArm(A, sx, sx + 3); arm.add(ca.grp); arm.scale.setScalar(A.size || 1); } else { const blade = _clawShard(A.len, A.r, A.bend * sx * -1, sx + 3, A.sides); blade.rotation.x = PI / 2; arm.add(blade); }
+  const arms = []; for (const sx of [-1, 1]) { const A = o.arm, arm = G(); let ca = null; if (A.sword) { const sw = _sword(A.len, A.w, A.th, A.bend * sx, A.jag, sx + 5, A.elec); arm.add(sw); arm.userData.sw = sw; } else if (A.cicada) { ca = _cicadaArm(A, sx, sx + 3); arm.add(ca.grp); arm.scale.setScalar(A.size || 1); } else { const blade = _clawShard(A.len, A.r, A.bend * sx * -1, sx + 3, A.sides); blade.rotation.x = PI / 2; arm.add(blade); }
     if (A.second && !A.cicada) { const b2 = _clawShard(A.len * 0.6, A.r * 0.7, -A.bend * sx * -1, sx + 7, A.sides); b2.rotation.x = PI / 2 - 0.35; b2.position.y = -0.12; arm.add(b2); }
     b.add(arm); arms.push({ arm, sx, ca }); }
+  let tipArc = null; if (o.arm.elec && o.arm.elec.between) { tipArc = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.95 })); tipArc.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(12 * 3), 3)); tipArc.frustumCulled = false; b.add(tipArc); }
   const L = new T.PointLight(0xffffff, 0.3, 3.5, 2); L.color.set(EL.color); L.position.set(0, topY + 0.4, 0.5); b.add(L); LIGHTS.push(L);
   return { g, core: (topY * 0.6) * (o.S || 1.3), update(t, act) { const ph = 1.6 * t, ac = act || 0;
     const pull = Math.sin(ph), reach = o.arm.reach * (1 + 0.8 * ac);
     // the arms reach forward and haul; the body follows a beat behind, so it is dragged along; both settle again
     arms.forEach(A => { const a = A.arm; a.position.set(A.sx * o.arm.x, o.arm.y + 0.04 * Math.sin(ph * 2 + A.sx) + 0.1 * ac, o.arm.z + reach * (0.5 + 0.5 * pull) * 0.5 + 0.1 * Math.sin(ph + A.sx * 0.6)); a.rotation.set(0.05 * pull, A.sx * (o.arm.toe + 0.12 * Math.sin(ph * 2 + A.sx)), A.sx * (0.06 + 0.05 * Math.sin(ph)));
+      if (a.userData.sw && a.userData.sw.userData.tick) a.userData.sw.userData.tick(ph, ac);
       if (A.ca) { const Q = o.arm; A.ca.femur.rotation.x = -(Q.lift + 0.22 * pull) - 0.15 * ac; A.ca.elbow.rotation.x = Q.fold + Q.flex * Math.sin(ph - 0.8) + 0.4 * ac; } });
+    if (tipArc) { const fr = Math.floor(ph * 9), pa = tipArc.geometry.attributes.position.array, on = ac > 0.2 || Math.sin(ph * 3) > -0.3; tipArc.visible = on; const t0 = new T.Vector3(0, 0, o.arm.len).applyEuler(arms[0].arm.rotation).add(arms[0].arm.position), t1 = new T.Vector3(0, 0, o.arm.len).applyEuler(arms[1].arm.rotation).add(arms[1].arm.position);
+      for (let k = 0; k < 12; k++) { const u = k / 11, jx = (_hz(k, 3, fr) - 0.5) * 0.2 * Math.sin(u * PI), jy = (_hz(k, 9, fr) - 0.5) * 0.2 * Math.sin(u * PI); pa[k * 3] = t0.x + (t1.x - t0.x) * u + jx; pa[k * 3 + 1] = t0.y + (t1.y - t0.y) * u + jy + 0.1 * Math.sin(u * PI); pa[k * 3 + 2] = t0.z + (t1.z - t0.z) * u; } tipArc.geometry.attributes.position.needsUpdate = true; }
     body.position.z = 0.1 * Math.sin(ph - 1.1) * (1 + 0.5 * ac) - 0.05 * ac; body.position.y = 0.012 * Math.abs(Math.sin(ph - 1.1)) - 0.03 * ac; body.rotation.x = -0.03 * Math.sin(ph - 1.1);
     const glow = 0.45 + 0.35 * Math.sin(ph * 2) * Math.sin(ph) + 0.4 * ac; lit.emissive.copy(new T.Color(EL.color)).multiplyScalar((0.09 + 0.1 * glow) * (o.dull ? 0.1 : 1)); lamp.scale.setScalar(1 + 0.2 * Math.sin(ph * 3) + 0.4 * ac); lamp.scale.y *= 1.4;
     gp.m.material.opacity = Math.max(0.15, Math.min(0.5, glow * 0.6)) * (o.dull ? 0.45 : 1); gp.m.scale.setScalar(1 + 0.1 * Math.sin(ph * 2) + 0.2 * ac); L.intensity = 0.4 + 1.0 * glow; } };
@@ -84,3 +102,10 @@ fx(591, "Greatswords: broad heavy blades.", () => _zig(Object.assign({}, _dz, { 
 fx(592, "Curved blades, like sabres, the points swept inward.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { bend: 1.6, w: 0.08 }) })));
 fx(593, "The swords splay out in a V ahead of the body, wider and longer.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { x: 0.6, toe: 0.4, len: 1.3 }) })));
 fx(594, "Shard-swords: long blades with notched, uneven edges, like broken crystal.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { jag: 0.7, len: 1.2, w: 0.09 }) })));
+
+// ── ELECTRIC swords (Nos. 595–599) ──
+fx(595, "Electric swords: the edges white-hot, a charge flickering along each blade.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { elec: { edge: true, arcs: 1 } }) })));
+fx(596, "Lightning crawling along each blade, two bolts a side, the edges hot.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { elec: { edge: true, arcs: 2 } }) })));
+fx(597, "A glowing core down the middle of each black blade, pulsing, like a lit fuller.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { len: 1.2, w: 0.09, elec: { fuller: true, edge: true } }) })));
+fx(598, "A bolt jumping between the two sword tips across the front of the body.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { x: 0.62, toe: -0.12, elec: { edge: true, arcs: 1, between: true } }) })));
+fx(599, "Charged: a halo of plasma round each blade, a glowing core, bolts along it.", () => _zig(Object.assign({}, _dz, { arm: Object.assign({}, _zsw, { len: 1.2, w: 0.09, elec: { fuller: true, edge: true, arcs: 1, halo: true } }) })));
