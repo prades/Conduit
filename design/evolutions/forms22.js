@@ -5,6 +5,15 @@ function _bone(a, b, r0, r1, mat) {   // a tapered faceted bone from a to b (reb
   const m = new T.Mesh(new T.CylinderGeometry(r1, r0, 1, 6, 1), mat); m.userData.a = a; return m;
 }
 function _setBone(m, p0, p1) { const d = new T.Vector3().subVectors(p1, p0), L = d.length(); m.position.copy(p0).addScaledVector(d, 0.5); m.scale.set(1, L, 1); m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), d.normalize()); }
+function _footGeo(o) {   // the foot: never a block. pad = a flat round pad, hoof = a rounded hoof, claw = a toe-claw, ball = the leg just ends in a ball, paw = a round paw
+  const r = o.legR, f = o.foot;
+  if (f === 'pad') { const g = new T.SphereGeometry(r * 1.9, 12, 8); g.scale(1, 0.38, 1.25); return g; }
+  if (f === 'hoof') { const g = new T.CylinderGeometry(r * 1.3, r * 1.9, r * 1.6, 10, 1); return g; }
+  if (f === 'claw') { const g = new T.ConeGeometry(r * 1.3, r * 3.2, 7, 1); g.rotateX(PI / 2 + 0.5); g.translate(0, 0, r * 0.8); return g; }
+  if (f === 'ball') return new T.SphereGeometry(r * 1.25, 10, 8);
+  if (f === 'paw') { const g = new T.SphereGeometry(r * 1.7, 12, 8); g.scale(1.05, 0.62, 1.3); return g; }
+  return o.plainLegs ? new T.BoxGeometry(r * 2.4, r * 1.2, r * 3) : new T.OctahedronGeometry(r * 1.5, 0);
+}
 function _walker(o) {
   const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S);
   const body = G(); b.add(body); const hipY = o.legH;
@@ -33,8 +42,8 @@ function _walker(o) {
     const tb = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(tb); const tear = []; for (let k = 0; k < 9; k++) { const q = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(q); tear.push(q); }
     eye = { eg, orb, slit, lid, tear, tb, E, eMat }; }
   // the legs: hip on the shell's flank, thigh, knee, shin, foot; the foot walks an oval (back on the ground, forward in the air) and the leg follows
-  const legs = []; for (let i = 0; i < 4; i++) { const sx = i % 2 ? -1 : 1, sz = i < 2 ? 1 : -1, th = _bone(null, null, o.legR, o.legR * 0.8, _leg), sh = _bone(null, null, o.legR * 0.8, o.legR * 0.5, _leg), ft = new T.Mesh(o.plainLegs ? new T.BoxGeometry(o.legR * 2.4, o.legR * 1.2, o.legR * 3) : new T.OctahedronGeometry(o.legR * 1.5, 0), _leg);
-    ft.scale.set(o.plainLegs ? 1 : 1.2, o.plainLegs ? 1 : 0.55, o.plainLegs ? 1 : 1.5); b.add(th); b.add(sh); b.add(ft); const kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 0.95, 0), gm); if (!o.plainLegs) b.add(kn);
+  const legs = []; for (let i = 0; i < 4; i++) { const sx = i % 2 ? -1 : 1, sz = i < 2 ? 1 : -1, th = _bone(null, null, o.legR, o.legR * 0.8, _leg), sh = _bone(null, null, o.legR * 0.8, o.legR * 0.5, _leg), ft = new T.Mesh(_footGeo(o), _leg);
+    if (!o.foot) ft.scale.set(o.plainLegs ? 1 : 1.2, o.plainLegs ? 1 : 0.55, o.plainLegs ? 1 : 1.5); b.add(th); b.add(sh); b.add(ft); const kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 0.95, 0), gm); if (!o.plainLegs) b.add(kn);
     legs.push({ sx, sz, th, sh, ft, kn, ph: (i === 0 || i === 3) ? 0 : PI }); }
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, o.ry + o.vh + 0.3, 0.5); b.add(L); LIGHTS.push(L);
   // the puddle it walks through: flat on the floor, drifting behind its feet
@@ -101,3 +110,11 @@ fx(560, "Simpler again: the leaks are just a fat lobe and one drip each, the eye
 fx(561, "Simple and chunky: a lower, rounder shell, stubby plain legs, a short cone, the eye, one leak each side.", () => _walker(Object.assign({}, _s556, { noBub: true, drips: 0, noSeam: true, plainLegs: true, facets: 7, seg: 7, legH: 0.36, legR: 0.1, ry: 0.32, vh: 0.34, step: 0.14, lift: 0.1, puddles: false })));
 fx(562, "The simplest: shell, cone, eye and two leaks, with the puddle: nothing else.", () => _walker(Object.assign({}, _s556, { noBub: true, drips: 0, noSeam: true, plainLegs: true, facets: 6, seg: 6, puddles: false, eye: { y: 0.2, z: 0.58, r: 0.12, up: 0.25, lid: 0.6, tearW: 0.012 } })));
 fx(563, "Simple, with the green kept in the crater: a plain black cone glowing green at the top, plain legs, the eye and the two leaks.", () => _walker(Object.assign({}, _s556, { drips: 0, noSeam: true, plainLegs: true, facets: 7, seg: 7, puddles: false })));
+
+// ── 559 without the square feet (Nos. 564–568): every foot is rounded ──
+const _r559 = Object.assign({}, _s556, { noBub: true, drips: 0, noSeam: true, plainLegs: true, facets: 7, seg: 7 });
+fx(564, "559 with flat round pads for feet.", () => _walker(Object.assign({}, _r559, { foot: 'pad' })));
+fx(565, "Rounded hooves.", () => _walker(Object.assign({}, _r559, { foot: 'hoof' })));
+fx(566, "Little toe-claws, pointing forward and down.", () => _walker(Object.assign({}, _r559, { foot: 'claw' })));
+fx(567, "No feet at all: each leg just ends in a rounded blunt tip.", () => _walker(Object.assign({}, _r559, { foot: 'ball' })));
+fx(568, "Round paws, a little wider than long.", () => _walker(Object.assign({}, _r559, { foot: 'paw' })));
