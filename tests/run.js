@@ -45,6 +45,7 @@ const SUITES = [
     ['roster + command merged', 'ccmerge.js'],
     ['zone report + analytics', 'zones.js'],
     ['zone crews + orders',     'zonecrew.js'],
+    ['layout kits (16)',        'kits.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],

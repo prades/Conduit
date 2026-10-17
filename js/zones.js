@@ -65,7 +65,7 @@ function zoneInfo(z, pw) {
         if (!t.pillar || t.pillarTeam !== "green" || _zoneOf(t) !== z || t.destroyed) continue;
         if (t.isGenerator) eq.generators++; else if (t.isConnector) eq.connectors++; else if (t.isBattery) eq.batteries++;
         else if (t.attackMode) eq.turrets++; else if (t.waveMode) eq.wave++; else eq.other++;
-        if (t._ultra && t._ultra.front === t) eq.ultras++;
+        if (t._ultra) eq.ultras++;   // (set on the square's anchor tile: one per fused Ultra)
     }
     const mods = {};
     for (const m of (typeof modules !== "undefined" ? modules : [])) if (getZoneIndex(m.x) === z) { const d = MODULE_DEFS[m.kind]; const k = d ? d.label : m.kind; mods[k] = (mods[k] || 0) + 1; }
