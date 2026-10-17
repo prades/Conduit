@@ -140,8 +140,13 @@ const EVOLUTIONS = {
     thunderhead: { id: "thunderhead", name: "THUNDERHEAD", element: "electric", role: "sniper", move: "ARC VOLLEY", sheet: "img/evo/thunderhead.png",
               cell: 144, anchor: [72, 114.2], core: [72, 78.3], noGlow: true, color: "#ffee33" },
     // Its reactor is in its head, which moves with its facing: the sheet carries its own light.
-    serpent:{ id: "serpent",name: "SERPENT",      element: "flux",     role: "sniper",  move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
+    // LEGACY: the first flux mage. New evolutions use the Voidstar; a follower already evolved into this keeps it.
+    serpent:{ id: "serpent", legacy: true, name: "SERPENT", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
               cell: 144, anchor: [72, 114.2], core: [72, 61], noGlow: true, color: "#bb66ff" },
+    // The FLUX ("void") MAGE, design No. 635: a dark spined starfish carrying an orb of violet fluid with a diamond floating in it. The diamond
+    // turns and bubbles rise, so its sheet carries its own light.
+    voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/voidstar.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 80.8], noGlow: true, color: "#bb66ff" },
     // LEGACY: the first core brawler. New evolutions use the Hammer Slug; a follower already evolved into this keeps it.
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", move: "AEGIS BURST",  sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
@@ -245,7 +250,7 @@ function evolutionTick() {
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
-        if (d.id === "bloom" || d.id === "quillstone") petalBlaze(f); else if (d.id === "reaver" || d.id === "thunderhead") arcVolley(f); else if (d.id === "serpent") singularityShot(f);
+        if (d.id === "bloom" || d.id === "quillstone") petalBlaze(f); else if (d.id === "reaver" || d.id === "thunderhead") arcVolley(f); else if (d.id === "serpent" || d.id === "voidstar") singularityShot(f);
         else if (d.id === "warden" || d.id === "hammerslug") aegisBurst(f); else if (d.id === "manta" || d.id === "prism" || d.id === "voltring") staticRush(f); else if (d.id === "halo" || d.id === "embercowl") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera" || d.id === "seeper") eruption(f); else if (d.id === "maw") chomp(f);
     }
 }

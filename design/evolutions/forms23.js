@@ -2,6 +2,7 @@
 // ahead of it, NOT attached, pulling it along. Nothing else: no legs, no extra parts. ──
 const _zigBlack = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.5, roughness: 0.36, flatShading: true }); _zigBlack.envMapIntensity = 0.7;
 function _zigLit() { const m = new T.MeshStandardMaterial({ color: 0x0a0800, emissive: new T.Color(EL.color).multiplyScalar(0.11), emissiveIntensity: 1.0, roughness: 1, metalness: 0 }); m.envMapIntensity = 0; return m; }
+function _glintCol() { const hx = typeof EL !== 'undefined' && EL.color ? String(EL.color).toLowerCase() : '#ffee33'; if (hx === '#ffee33' || hx === '#ffe033') return 0xfff6b0; const c = new T.Color(hx); return new T.Color(0.55 + 0.45 * c.r, 0.55 + 0.45 * c.g, 0.55 + 0.45 * c.b).getHex(); }
 function _clawShard(len, r, bend, seed, sides) {   // a big polished-black blade: a faceted cone that curls at the tip, crests glinting
   const geo = new T.ConeGeometry(r, len, sides || 6, 6), p = geo.attributes.position;
   for (let v = 0; v < p.count; v++) { const y = p.getY(v), u = (y + len / 2) / len, k = 1 + 0.18 * (_hz(Math.round(p.getX(v) * 200) + seed, Math.round(y * 200), Math.round(p.getZ(v) * 200)) - 0.5); p.setX(v, p.getX(v) * k + bend * u * u * len * 0.5); p.setZ(v, p.getZ(v) * k); }
@@ -10,7 +11,7 @@ function _clawShard(len, r, bend, seed, sides) {   // a big polished-black blade
   const eg = new T.EdgesGeometry(geo, 25), ep = eg.attributes.position, ec = new Float32Array(ep.count * 3); let y0 = 1e9, y1 = -1e9; for (let v = 0; v < ep.count; v++) { y0 = Math.min(y0, ep.getY(v)); y1 = Math.max(y1, ep.getY(v)); }
   for (let v = 0; v < ep.count; v++) { const u = (ep.getY(v) - y0) / Math.max(1e-6, y1 - y0), k = (0.25 + 0.75 * u) * (0.55 + 0.45 * _hz(Math.floor(v / 2), 3, 5)); ec[v * 3] = ec[v * 3 + 1] = ec[v * 3 + 2] = k; }
   eg.setAttribute('color', new T.BufferAttribute(ec, 3));
-  const gg = G(); gg.add(new T.Mesh(geo, pm)); gg.add(new T.LineSegments(eg, new T.LineBasicMaterial({ vertexColors: true, color: 0xfff6b0, transparent: true, opacity: 0.8, blending: T.AdditiveBlending }))); return gg;
+  const gg = G(); gg.add(new T.Mesh(geo, pm)); gg.add(new T.LineSegments(eg, new T.LineBasicMaterial({ vertexColors: true, color: _glintCol(), transparent: true, opacity: 0.8, blending: T.AdditiveBlending }))); return gg;
 }
 function _cicadaArm(A, sx, seed) {   // a cicada's fore-arm: a stout spined upper segment, an elbow, a slimmer hooked lower segment. Not attached to anything.
   const grp = G(), femur = G(), elbow = G(), fm = _clawShard(A.fLen, A.fR, 0.0, seed, 6); fm.rotation.x = PI / 2; femur.add(fm);

@@ -115,3 +115,13 @@ fx(631, "The orb nestled low in the body, ringed by a collar of short black spik
 fx(632, "A bigger orb and a bigger diamond, held up by four thick curved claws.", () => _starfish(Object.assign({}, _sfo, { hover: 0.78, orb: { r: 0.34, dia: 0.15, bubbles: 7, glow: 0.3, opacity: 0.8, col: 0x3a2400, cradle: { n: 4, len: 0.34, r: 0.055, curl: 1.1 } } })));
 fx(633, "Carrying it properly: two of the arms raised and curled in to cradle the orb while the other three crawl.", () => _starfish(Object.assign({}, _sfo, { carry: { arms: [0, 1], rise: 0.4, inward: 0.18 }, orb: { r: 0.27, dia: 0.11, bubbles: 6, glow: 0.3, opacity: 0.8, col: 0x3a2400, cradle: null } })));
 fx(634, "A smaller orb, a thicker fluid with lots of bubbles and a diamond tumbling in it.", () => _starfish(Object.assign({}, _sfo, { orb: { r: 0.24, dia: 0.1, bubbles: 12, glow: 0.38, opacity: 0.88, col: 0x3a2400, cradle: { n: 6, len: 0.22, r: 0.04, curl: 0.9 } } })));
+
+// ── THE VOID MAGE (Nos. 635–638): the starfish with the orb of fluid and a diamond, as the flux ("void") mage: violet, the fluid a deep void with the diamond bright inside ──
+const _vo = (o2) => Object.assign({}, _sfo, { orb: Object.assign({}, _sfo.orb, { col: 0x1a0836, glow: 0.4, opacity: 0.85 }, o2) });
+fx(635, "The void mage: the spined starfish carrying an orb of deep violet fluid with a bright diamond floating in it.", () => _starfish(Object.assign({}, _sfo, { orb: _vo().orb })));
+fx(636, "Darker void: near-black fluid in the orb, the diamond and the halo glowing violet, bubbles dark and few.", () => _starfish(Object.assign({}, _sfo, { orb: _vo({ col: 0x07030f, glow: 0.3, opacity: 0.93, bubbles: 4 }).orb })));
+fx(637, "A bigger orb and diamond held up by four thick curved claws, in violet.", () => _starfish(Object.assign({}, _sfo, { hover: 0.78, orb: _vo({ r: 0.34, dia: 0.15, bubbles: 7, cradle: { n: 4, len: 0.34, r: 0.055, curl: 1.1 } }).orb })));
+fx(638, "A smaller orb, thicker fluid, lots of bubbles and a tumbling diamond, in violet.", () => _starfish(Object.assign({}, _sfo, { orb: _vo({ r: 0.24, dia: 0.1, bubbles: 12, opacity: 0.9 }).orb })));
+
+// The game sprite of No. 635, the flux ("void") mage.
+fx(639, "635, the game sprite.", () => _starfish(Object.assign({}, _sfo, { orb: _vo().orb })));

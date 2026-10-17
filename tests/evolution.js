@@ -46,10 +46,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('electric', 'sniper', 20); run(lvlUp);
         same(run('__f.evolved'), 'thunderhead', 'its form'); same(run('unitTypeLabel(__f)'), 'THUNDERHEAD', 'its tag'); ok(run('EVOLUTIONS.reaver.legacy === true'), 'the Reaver is no longer handed out');
     });
-    check('THE ASK: a FLUX SNIPER reaching level 20 becomes the SERPENT (design No. 15)', () => {
+    check('THE ASK: a FLUX SNIPER (the void mage) reaching level 20 becomes the VOIDSTAR (design No. 635, which replaced the Serpent)', () => {
         mk('flux', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f) })');
-        same(r.evo, 'serpent', 'its form'); same(r.tag, 'SERPENT', 'its tag');
+        same(r.evo, 'voidstar', 'its form'); same(r.tag, 'VOIDSTAR', 'its tag'); ok(run('EVOLUTIONS.serpent.legacy === true'), 'the Serpent is no longer handed out');
         mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a flux brawler is the Rift Mimic');
         same(run('unitTypeLabel(__f)'), 'RIFT MIMIC', 'its tag'); same(run('__f.role'), 'brawler', 'its role');
         mk('flux', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a hybrid fights as a brawler');
@@ -67,7 +67,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a flux brawler on the line is the Rift Mimic');
         mk('core', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core brawler on worker duty is the Worm Vessel, not the Hammer Slug');
         mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'pod', 'an electric worker is the Dynamo Pod, not the Prism Hood');
-        mk('flux', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'serpent', 'a flux sniper on the line is the Serpent');
+        mk('flux', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'voidstar', 'a flux sniper on the line is the Voidstar');
     });
     check('THE ASK: a FIRE SNIPER becomes the CINDER HALO (design No. 90, the ring drone); a fire brawler is still the Bunker Bloom', () => {
         mk('fire', 'sniper', 20); run(lvlUp);
@@ -314,7 +314,24 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.cast && r.dmg > 0 && r.shield > 0, 'the hornshell did not cast: ' + JSON.stringify(r));
     });
 
-    check('THE ASK: SINGULARITY SHOT — a gravity round into the nearest enemy, dragging those round it in; a beetle is too heavy', () => {
+    check('the VOIDSTAR (the void mage) fires SINGULARITY SHOT too', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
+            spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'voidstar'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const mkP = (sp, x, y) => { const S = SPECIES[sp], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const tgt = mkP('ant', 25, 2), mate = mkP('ant', 26.5, 2.5), beetle = mkP('beetle', 25.5, 1.2), apart = mkP('ant', 29, 2), tooFar = mkP('ant', 40, 2);
+            const m0 = Math.hypot(mate.x - tgt.x, mate.y - tgt.y), b0 = Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y);
+            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            const d = p => 1e6 - p.health, out = { tgt: d(tgt), mate: d(mate), mateIn: m0 - Math.hypot(mate.x - tgt.x, mate.y - tgt.y), beetleIn: b0 - Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y),
+                slowed: mate.slowed > 0, apartMoved: apart.x !== 29, cd: f._sigCd };
+            [tgt, mate, beetle, apart, tooFar].forEach(p => p.dead = true); return out; })()`);
+        ok(r.tgt > 0, 'no hit on the target: ' + JSON.stringify(r));
+        ok(r.mateIn > 0.5 && r.slowed, 'the one beside it was not dragged in and slowed: ' + JSON.stringify(r));
+        same(r.beetleIn, 0, 'a beetle was dragged');
+        ok(!r.apartMoved, 'one out of the pull\'s reach was moved');
+        ok(r.cd > 300, 'it did not wait: ' + r.cd);
+    });
+
+    check('the legacy SERPENT still fires SINGULARITY SHOT for a follower already evolved into it', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
             spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'serpent'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const mkP = (sp, x, y) => { const S = SPECIES[sp], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
@@ -527,7 +544,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'embercowl', 'rotshard', 'mimic', 'petal', 'caldera', 'seeper', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {
+        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'voidstar', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'embercowl', 'rotshard', 'mimic', 'petal', 'caldera', 'seeper', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
@@ -539,7 +556,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'embercowl', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone', 'hammerslug']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'voidstar', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'embercowl', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone', 'hammerslug']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);

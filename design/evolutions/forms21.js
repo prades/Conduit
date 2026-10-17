@@ -4,10 +4,12 @@ function _cloudSprite(dark) { const c = document.createElement('canvas'); c.widt
 function _cloudSoft(core) { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); for (let k = 0; k <= 8; k++) { const u = k / 8; gr.addColorStop(u, 'rgba(3,4,10,' + (core * (u < 0.4 ? 1 : 0.5 + 0.5 * Math.cos(PI * Math.min(1, (u - 0.4) / 0.6)))).toFixed(3) + ')'); } gr.addColorStop(1, 'rgba(3,4,10,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return new T.CanvasTexture(c); }   // a smooth gaussian puff with no visible rim
 const _cloudTex = _cloudSprite(false), _cloudTexDark = _cloudSprite(true), _cloudTexSoft = _cloudSoft(1.0);
 function _glowPool(R, y) { const g = G(); const m = new T.Mesh(new T.CircleGeometry(R, 40), new T.MeshBasicMaterial({ map: glowTex, color: 0xffd84a, transparent: true, opacity: 0.55, blending: T.AdditiveBlending, depthWrite: false, toneMapped: false })); m.rotation.x = -PI / 2; m.position.y = y; g.add(m); return { g, m }; }
+// The facet colours: the electric yellow it was built in, or (for a design in another element) the element's own colour, lit the same way.
+function _facetCol(k) { const hx = typeof EL !== 'undefined' && EL.color ? String(EL.color).toLowerCase() : '#ffee33'; if (hx === '#ffee33' || hx === '#ffe033') return [0.35 + 0.65 * k, 0.22 + 0.7 * k, 0.02 + 0.55 * k * k * k]; const c = new T.Color(hx), w = 0.55 * k * k * k, m = 0.25 + 0.75 * k; return [c.r * m + w, c.g * m + w, c.b * m + w]; }
 function _litFacets(geo) {   // flat-colour each facet from a fixed light so a gem reads as cut, whatever the studio does
   const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), n = new T.Vector3(), a = new T.Vector3(), b = new T.Vector3(), c = new T.Vector3(), Ld = new T.Vector3(-0.4, 0.7, 0.6).normalize();
   for (let i = 0; i < pos.count; i += 3) { a.fromBufferAttribute(pos, i); b.fromBufferAttribute(pos, i + 1); c.fromBufferAttribute(pos, i + 2); n.crossVectors(b.sub(a), c.sub(a)).normalize(); const k = 0.5 + 0.5 * n.dot(Ld);
-    for (let j = 0; j < 3; j++) { col[(i + j) * 3] = 0.35 + 0.65 * k; col[(i + j) * 3 + 1] = 0.22 + 0.7 * k; col[(i + j) * 3 + 2] = 0.02 + 0.55 * k * k * k; } }
+    const fc = _facetCol(k); for (let j = 0; j < 3; j++) { col[(i + j) * 3] = fc[0]; col[(i + j) * 3 + 1] = fc[1]; col[(i + j) * 3 + 2] = fc[2]; } }
   geo.setAttribute('color', new T.BufferAttribute(col, 3)); return geo;
 }
 function _storm(o) {
