@@ -62,6 +62,7 @@ function _tireBall(o) {
   const lc = new T.Color(EL.color), ledOff = lc.clone().multiplyScalar(0.18), ledOn = lc.clone().lerp(new T.Color(1, 1, 1), 0.4);
   const frame = G(); frame.position.y = o.r; b.add(frame);                       // sits on the ground; the tyre turns about the x axis inside it
   const core = new T.Mesh(new T.IcosahedronGeometry(o.r * 0.97, 1), _btHull); frame.add(core);
+  frame.scale.set(1, o.sy || 1, 1);
   // the tyre: rings of square tread blocks round the x axis; the rows sit on the sphere, wider rows at the equator
   const tyre = G(); frame.add(tyre); const blocks = [];
   const rows = o.rows, N = o.around, span = o.span;
@@ -72,8 +73,12 @@ function _tireBall(o) {
   const caps = []; for (const sx of [-1, 1]) { const cap = new T.Mesh(new T.SphereGeometry(o.r * o.capK, 18, 8, 0, TAU, 0, o.capA), _btPanel); cap.material = _btPanel; cap.rotation.z = -sx * PI / 2; cap.position.x = sx * o.r * 0.12; frame.add(cap);
     const ring = new T.Mesh(new T.TorusGeometry(o.r * o.capK * Math.sin(o.capA), 0.02, 4, 24), new T.MeshBasicMaterial({ color: ledOff.getHex(), toneMapped: false })); ring.rotation.y = PI / 2; ring.position.x = sx * (o.r * o.capK * Math.cos(o.capA) + o.r * 0.12); frame.add(ring); caps.push({ cap, ring });
     const hub = new T.Mesh(new T.CylinderGeometry(o.r * 0.14, o.r * 0.14, 0.05, 8), new T.MeshBasicMaterial({ color: ledOn.getHex(), toneMapped: false })); hub.rotation.z = PI / 2; hub.position.x = sx * (o.r * o.capK + o.r * 0.12 + 0.01); frame.add(hub); caps[caps.length - 1].hub = hub; }
-  // the antennae: two rods forward over the top, static jumping between the tips now and again
-  const ants = []; for (const sx of [-1, 1]) { const ag = G(); ag.position.set(sx * o.antX, o.r * 1.02 + 0.02, o.r * 0.25); frame.add(ag);
+  // PEAR BODY (a Dragonite-like plump shape): a smaller shell dome on top of the big round tyre as shoulders and head, and a soft belly panel on the front
+  let headY = o.r * 1.02 + 0.02, headZ = o.r * 0.25; if (o.head) { const H = o.head, hd = new T.Mesh(new T.IcosahedronGeometry(o.r * H.k, 1), _btPanel); hd.position.set(0, o.r * H.y, o.r * H.z); hd.scale.set(1, H.sy || 0.9, 1); frame.add(hd); headY = o.r * H.y + o.r * H.k * (H.sy || 0.9) * 0.9; headZ = o.r * H.z + o.r * H.k * 0.2;
+    const brow = new T.Mesh(new T.TorusGeometry(o.r * H.k * 0.95, 0.016, 4, 20), new T.MeshBasicMaterial({ color: ledOff.getHex(), toneMapped: false })); brow.rotation.x = PI / 2; brow.position.set(0, o.r * H.y - o.r * H.k * 0.1, o.r * H.z); frame.add(brow); caps.brow = brow; }
+  if (o.belly) { const Bl = o.belly, bp = new T.Mesh(new T.SphereGeometry(o.r * 1.02, 18, 10, PI / 2 - Bl.w, 2 * Bl.w, PI / 2 - Bl.h, 2 * Bl.h), new T.MeshBasicMaterial({ color: Bl.col || 0x070510, side: T.DoubleSide, toneMapped: false })); const bk = (o.r + o.tread + 0.05) / (o.r * 1.02); bp.scale.set(bk, bk, bk); frame.add(bp); caps.belly = bp; }
+  // the antennae: two rods forward over the top (or over the head), static jumping between the tips now and again
+  const ants = []; for (const sx of [-1, 1]) { const ag = G(); ag.position.set(sx * o.antX, headY, headZ); frame.add(ag);
     const rod = new T.Mesh(new T.CylinderGeometry(0.012, 0.022, o.antL, 5, 1), _btHull); rod.geometry.translate(0, o.antL / 2, 0); rod.rotation.x = PI / 2 - o.antUp; rod.rotation.z = -sx * o.antSplay; ag.add(rod);
     const tip = new T.Mesh(new T.OctahedronGeometry(0.035, 0), new T.MeshBasicMaterial({ color: ledOn.getHex(), toneMapped: false })); tip.scale.y = 1.6; tip.position.set(0, o.antL, 0); rod.add(tip); ants.push({ ag, rod, tip, sx }); }
   const arc = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: ledOn.getHex(), transparent: true, opacity: 0.95 })); arc.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(10 * 3), 3)); arc.frustumCulled = false; frame.add(arc);
@@ -96,3 +101,11 @@ fx(708, "Chunkier tread: bigger, deeper square blocks in fewer rows, wide shell 
 fx(709, "A finer tread of many small square blocks, small shell caps, long antennae.", () => _tireBall(Object.assign({}, _tb0, { rows: 7, around: 24, tread: 0.06, span: 0.66, capA: 0.5, antL: 1.0 })));
 fx(710, "A bigger ball, the tyre almost the whole sphere, the caps tiny hubs, the antennae splayed.", () => _tireBall(Object.assign({}, _tb0, { r: 0.72, rows: 7, around: 20, span: 0.8, capA: 0.38, antSplay: 0.3, antL: 0.9 })));
 fx(711, "A smaller ball with deep tread and big armoured shell caps like hubcaps, a static bolt every beat.", () => _tireBall(Object.assign({}, _tb0, { r: 0.52, rows: 3, around: 14, tread: 0.12, span: 0.5, capK: 1.08, capA: 0.78, zaps: 4 })));
+
+// ── The ball tire shaped like Dragonite's body (Nos. 712–716): a plump pear: a big round tyre for the belly, a smaller shell dome on top for shoulders and head with the two antennae on it, a soft belly panel on the front, shell caps for stubby arms ──
+const _tp = Object.assign({}, _tb0, { r: 0.66, rows: 5, around: 18, span: 0.6, tread: 0.08, capA: 0.5, capK: 1.0, antX: 0.14, antL: 0.7, antUp: 0.35, antSplay: 0.18, head: { k: 0.42, y: 1.45, z: 0.15 }, belly: { w: 0.5, h: 0.42 } });
+fx(712, "A plump pear: a big round black tyre with a soft belly panel, a smaller shell dome on top for the head with the two antennae, shell caps like stubby arms.", () => _tireBall(Object.assign({}, _tp)));
+fx(713, "Rounder and chubbier, a squat head sunk into the shoulders, a bigger belly patch.", () => _tireBall(Object.assign({}, _tp, { r: 0.72, sy: 0.92, head: { k: 0.4, y: 1.3, z: 0.2 }, belly: { w: 0.6, h: 0.5 }, antL: 0.6 })));
+fx(714, "A tall pear: a narrower head dome higher up, longer antennae, a smaller belly patch.", () => _tireBall(Object.assign({}, _tp, { head: { k: 0.36, y: 1.62, z: 0.1, sy: 1.05 }, belly: { w: 0.4, h: 0.5 }, antL: 0.9 })));
+fx(715, "A finer tread of many small square blocks on the pear, large smooth shoulder caps.", () => _tireBall(Object.assign({}, _tp, { rows: 7, around: 24, tread: 0.055, span: 0.64, capA: 0.64, capK: 1.04 })));
+fx(716, "A plain tyre with no belly patch, a head dome, the lit rings brighter, a static bolt every beat.", () => _tireBall(Object.assign({}, _tp, { belly: null, zaps: 4 })));
