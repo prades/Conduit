@@ -48,6 +48,7 @@ function miniCmdSwitchRoles() { const n = miniCmdPool().filter(f => !f.evolved &
 function miniCmdPickElement(id) { if (id === "all") radialSetScope(true); else radialSelectElement(id); miniCmdRender(true); }
 
 function miniCmdEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("miniCmd") : null; }
+let _mcRot = 0, _mcLastMode = "";   // the ring's turn: the picked element is turned to the top, like a rotary dial; the ring spins between turns
 const MC_D = 210, MC_C = 105, MC_R = 70, MC_BTN = 40;   // the open dial: its size, centre, the ring the buttons sit on, the button size
 // Who the hub names: SEL (cards selected), ALL, or the element's three letters; and its colour.
 function miniCmdWho() {
@@ -101,11 +102,20 @@ function miniCmdRender(force) {
     }
     // the hand: on the element face it points at the one picked; on the command face it sweeps
     let hand = 0, sweep = _miniCmdMode === "command" || !_miniCmdOpen;
-    if (_miniCmdOpen && _miniCmdMode === "elements") { const k = items.findIndex(p => p[2]); hand = k >= 0 ? 360 * k / items.length : 0; }
+    if (_miniCmdOpen && _miniCmdMode === "elements") { const k = items.findIndex(p => p[2]); hand = 0; }
     const holder = el("div", "mc-holder"); holder.innerHTML = _mcFaceSVG(_miniCmdOpen ? w.col : w.col, hand);
     root.textContent = ""; root.appendChild(holder);
     if (holder.classList && sweep) holder.classList.add("sweep");
-    items.forEach((p, i) => { const b = click(el("button", "mc-pet" + (p[2] ? " on" : ""), p[0]), p[4]); b._col = p[1]; b.title = p[3]; b.setAttribute("data-id", p[5]); _mcPlace(b, i, items.length); root.appendChild(b); });
+    // THE RING TURNS: on the element tab the picked element is brought to the top (12 o'clock) and the hand points up; the commands rest with the first at the top.
+    // Moving to another turn (a pick, or the other tab) spins the whole ring there (a css animation, from the old turn to the new); each label turns back so it stays upright.
+    let rot = 0;
+    if (_miniCmdOpen && _miniCmdMode === "elements") { const k = items.findIndex(p => p[2]); rot = k > 0 ? -360 * k / items.length : 0; }
+    const from = wasOpen ? _mcRot : rot - 140, modeChanged = _mcLastMode !== _miniCmdMode; _mcLastMode = _miniCmdMode;
+    _mcRot = rot;
+    const ring = el("div", "mc-ring" + (from !== rot || modeChanged ? " spin" : ""));
+    ring.setAttribute("style", "--r0:" + Math.round(from + (modeChanged && wasOpen ? 90 : 0)) + "deg;--r1:" + Math.round(rot) + "deg;transform:rotate(" + Math.round(rot) + "deg);");
+    items.forEach((p, i) => { const b = click(el("button", "mc-pet" + (p[2] ? " on" : "")), p[4]); const lab = el("span", "mc-pl", p[0]); lab.setAttribute("style", "transform:rotate(" + (-Math.round(rot)) + "deg);"); b.appendChild(lab); b._col = p[1]; b.title = p[3]; b.setAttribute("data-id", p[5]); _mcPlace(b, i, items.length); ring.appendChild(b); });
+    root.appendChild(ring);
     // the two dial tabs, on the lower bezel
     if (_miniCmdOpen) {
         [["command", "COMMAND"], ["elements", "ELEMENTS"]].forEach((t, i) => {
