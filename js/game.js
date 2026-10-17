@@ -2100,6 +2100,7 @@ function gameLoop() {
 }
 
 function render() {
+    if (typeof toolboxTick === "function" && typeof frame !== "undefined" && frame % 30 === 0) toolboxTick();   // the slider toolbox: edge fades, and the tutorial's button slid into view (js/toolbox.js)
     if (typeof ccPrune === "function" && typeof frame !== "undefined" && frame % 30 === 0) { ccPrune(); if (typeof ccRefreshChip === "function") ccRefreshChip(); }   // the dead leave the selection
     if (typeof checkVisibleArea === "function" && (typeof frame === "undefined" || frame % VISIBLE_AREA_POLL_FRAMES === 0)) checkVisibleArea();   // the browser's real visible size, polled (js/config.js)
     if (typeof placingTick === "function") placingTick();   // zoomed out and the interface away while a build tool is in hand (js/buildmenu.js)

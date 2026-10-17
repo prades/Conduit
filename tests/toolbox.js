@@ -1,8 +1,8 @@
-// THE SLIDING TOOLBOX (js/toolbox.js; the .tb-closed rules in game.html).
+// THE SLIDER TOOLBOX (js/toolbox.js; the #dockScroll strip in game.html).
 //
-// REPORTED: "make it a slider toolbox." The bottom dock slides down off the bottom edge, leaving a TOOLS handle; tap the handle or drag it up and
-// the dock slides back; swipe the dock down and it slides away. It is remembered, and it is held open while the tutorial points at one of its
-// buttons. This drives the real page in the real browser (pointer events on the real elements). If no browser is available it says so and passes.
+// REPORTED: "I meant you could slide through the different items horizontally." The bottom dock is a strip of tools that slides sideways:
+// swipe, mouse-drag, wheel, or the arrows at its ends. A drag never fires the button under it. Every menu (Crystal, Clones, Modules, Shop,
+// Settings) is in the strip. This drives the real page in the real browser. If no browser is available it says so and passes.
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -27,20 +27,32 @@ function findChromium() {
 }
 const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
-  var out = {}, h = document.getElementById('toolboxHandle'), dock = document.getElementById('topToggles');
+  var out = {}, bar = document.getElementById('topToggles'), tr = document.getElementById('dockScroll');
   var wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
-  var snap = function(){ return { open: toolboxOpen, cls: document.body.classList.contains('tb-closed'), top: Math.round(dock.getBoundingClientRect().top), vh: window.innerHeight, label: h.querySelector('.tb-label').textContent, saved: localStorage.getItem('tubecrawler_toolbox') }; };
-  var ptr = function(el, type, y){ el.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: 500, clientY: y, pointerId: 1 })); };
-  // (the headless dump paints no frames, so a css transition would never advance: the slide's END position is measured with the transition off)
-  dock.style.transition = 'none';
-  out.start = snap();
-  ptr(h, 'pointerdown', 600); ptr(h, 'pointerup', 600); await wait(700); out.afterTap = snap();
-  ptr(h, 'pointerdown', 600); ptr(h, 'pointerup', 600); await wait(700); out.afterTapAgain = snap();
-  ptr(h, 'pointerdown', 600); ptr(h, 'pointermove', 560); ptr(h, 'pointerup', 560); await wait(100); out.afterDragUpFromOpen = snap();
-  toolboxSet(false); ptr(h, 'pointerdown', 600); ptr(h, 'pointermove', 550); ptr(h, 'pointerup', 550); await wait(100); out.afterDragUp = snap();
-  var b = document.getElementById('btnAuto'); ptr(b, 'pointerdown', 500); ptr(b, 'pointermove', 560); ptr(b, 'pointerup', 560); await wait(100); out.afterSwipeDown = snap();
-  out.hasHandleInDock = dock.contains(h);
-  toolboxSet(false); tutorialMode = true; await wait(1500); out.heldOpenByTutorial = snap(); tutorialMode = false;
+  var snap = function(){ toolboxSync(); return { room: toolboxRoom(), cls: bar.className, sl: Math.round(tr.scrollLeft) }; };
+  var ptr = function(el, type, x){ el.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: 650, pointerId: 1, pointerType: 'mouse' })); };
+  out.ids = Array.prototype.map.call(tr.querySelectorAll('.top-btn'), function(b){ return b.id; });
+  out.start = snap(); out.over = tr.scrollWidth > tr.clientWidth;
+  out.prevVisible = getComputedStyle(document.getElementById('dockNext')).display !== 'none';
+  // a mouse drag to the left slides the strip, and does not click the button under it
+  var clicked = 0, b = document.getElementById('btnAuto'); b.addEventListener('click', function(){ clicked++; });
+  ptr(b, 'pointerdown', 500); ptr(b, 'pointermove', 400); ptr(b, 'pointermove', 300); ptr(b, 'pointerup', 300); b.click(); await wait(50);
+  out.afterDrag = snap(); out.dragClicks = clicked;
+  // a plain click still works
+  b.click(); out.plainClicks = clicked;
+  // the arrows
+  // (a smooth scroll needs painted frames, which the headless dump has none of: the arrows are checked by what they ask the strip to do)
+  var asked = []; tr.scrollBy = function(o){ asked.push(o.left); }; tr.scrollLeft = 0;
+  document.getElementById('dockNext').click(); document.getElementById('dockPrev').click(); out.asked = asked; delete tr.scrollBy;
+  // the wheel
+  tr.scrollLeft = 0; tr.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true })); await wait(50); out.afterWheel = snap();
+  // the menu items
+  crystalMenuOpen = false; dockCrystal(); out.crystal = crystalMenuOpen; dockCrystal();
+  settingsPanelOpen = false; dockSettings(); out.settings = settingsPanelOpen; dockSettings();
+  cloneMenuOpen = false; dockClones(); out.clones = cloneMenuOpen; dockClones();
+  // the tutorial pointing at a hidden button slides it into view
+  tr.scrollLeft = 0; var q = document.getElementById('btnSettings'); q.classList.add('tut-wanted'); toolboxTick(); await wait(50);
+  var a = q.getBoundingClientRect(), t = tr.getBoundingClientRect(); out.revealed = a.left >= t.left - 1 && a.right <= t.right + 1;
   var pre = document.createElement('pre'); pre.id = '__tb'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 1500); });</script></body>`;
 function measure(w, h) {
@@ -53,11 +65,10 @@ function measure(w, h) {
 }
 
 console.log('\nTHE PAGE');
-check('the script is loaded and the css slides the dock down and shows a handle (tablet and desktop only)', () => {
+check('the strip, its arrows and the script are in the page; phones do not get the dock', () => {
     ok(/js\/toolbox\.js/.test(HTML), 'not loaded');
-    ok(/body\.tb-closed #topToggles \{ transform: translateX\(-50%\) translateY\(calc\(100% \+ 14px\)\); \}/.test(HTML), 'a closed toolbox does not slide away');
-    ok(/@media \(min-width: 701px\) \{[\s\S]{0,400}#topToggles \{ transition: transform/.test(HTML), 'the slide is not animated');
-    ok(/#toolboxHandle \{ display: none; \}/.test(HTML), 'the handle shows on a phone');
+    for (const id of ['dockPrev', 'dockScroll', 'dockNext']) ok(new RegExp('id="' + id + '"').test(HTML), id + ' missing');
+    ok(/overflow-x: ?auto/.test(HTML), 'the strip does not scroll sideways');
 });
 console.log('\nTHE SLIDER (real browser, 1080x700)');
 const r = measure(1080, 700);
@@ -65,18 +76,21 @@ if (r === null) console.log('  (no Chromium here: skipped)');
 else {
     check('the instrument ran', () => ok(r, 'the probe produced nothing'));
     if (r) {
-        check('it starts open (or as it was left), with its handle inside the dock', () => { same(r.start.open, true, 'open at the start'); same(r.hasHandleInDock, true, 'handle in the dock'); ok(r.start.top < r.start.vh - 40, 'the dock is not on screen: ' + r.start.top); });
-        check('THE ASK: tapping the handle slides the toolbox away (off the bottom edge), tapping again slides it back', () => {
-            same(r.afterTap.open, false, 'closed by a tap'); ok(r.afterTap.cls && r.afterTap.top >= r.afterTap.vh - 2, 'the dock did not slide off the screen: ' + JSON.stringify(r.afterTap)); same(r.afterTap.label, '▲ TOOLS', 'handle label');
-            same(r.afterTapAgain.open, true, 'open again'); ok(r.afterTapAgain.top < r.afterTapAgain.vh - 40, 'the dock did not slide back');
+        check('every menu is in the strip: Crystal, Clones, Modules, Shop, Settings and the roster/command tools', () => {
+            for (const id of ['btnCrystal', 'btnClones', 'btnModules', 'btnShop', 'btnSettings', 'btnAuto']) ok(r.ids.includes(id), id + ' not in the strip: ' + r.ids.join(','));
         });
-        check('dragging the handle up opens it; dragging it down closes it', () => {
-            same(r.afterDragUp.open, true, 'a drag up opens the closed toolbox'); same(r.afterDragUpFromOpen.open, true, 'a drag up leaves an open one open');
+        check('THE ASK: it has more items than fit, so it slides sideways (right room at the start, an arrow and a fade)', () => {
+            ok(r.over, 'the strip does not overflow'); same(r.start.room.left, 0, 'nothing hidden on the left at the start'); ok(r.start.room.right > 0, 'nothing hidden on the right');
+            ok(/fade-r/.test(r.start.cls) && /slides/.test(r.start.cls), 'no fade/arrow on the right: ' + r.start.cls); ok(!/fade-l/.test(r.start.cls), 'left fade at the start');
         });
-        check('swiping down on the toolbox itself slides it away', () => same(r.afterSwipeDown.open, false, 'swipe down closes'));
-        check('it remembers how it was left', () => same(r.afterSwipeDown.saved, 'closed', 'saved state'));
-        check('it is held open while the tutorial is running (the tutorial points at its buttons)', () => same(r.heldOpenByTutorial.open, true, 'held open by the tutorial'));
+        check('dragging with the mouse slides it, and the drag does not click the button under it', () => {
+            ok(r.afterDrag.room.left > 0, 'the drag did not slide the strip'); ok(/fade-l/.test(r.afterDrag.cls), 'no left fade after sliding'); same(r.dragClicks, 0, 'the drag clicked the button');
+            same(r.plainClicks, 1, 'a plain click no longer works');
+        });
+        check('the arrows slide it each way', () => { same(r.asked.length, 2, 'the arrows did not slide the strip'); ok(r.asked[0] > 0 && r.asked[1] < 0, 'the arrows slide the wrong ways: ' + r.asked); });
+        check('the mouse wheel slides it sideways', () => ok(r.afterWheel.room.left > 0, 'the wheel did not slide it'));
+        check('the menu buttons open the game panels', () => { same(r.crystal, true, 'crystal'); same(r.settings, true, 'settings'); same(r.clones, true, 'clones'); });
+        check('the tutorial pointing at a hidden button slides it into view', () => same(r.revealed, true, 'button not revealed'));
     }
 }
-console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
-process.exit(failures ? 1 : 0);
+console.log(failures ? `\n${failures} failing` : '\nall passing'); process.exit(failures ? 1 : 0);

@@ -1,50 +1,87 @@
 // ─────────────────────────────────────────────────────────
-//  THE SLIDING TOOLBOX — the bottom dock as a drawer (tablet and desktop)
+//  THE SLIDER TOOLBOX — the bottom dock you slide sideways through (tablet and desktop)
 // ─────────────────────────────────────────────────────────
-// REPORTED: "make it a slider toolbox." The bottom dock (SEL / BUILD / AUTO / ROSTER / COMMAND / SQUAD / ?) now SLIDES: a small TOOLS handle sits on
-// the bottom edge; tap it, or drag it up, and the toolbox slides up; tap the handle again, or swipe the toolbox down, and it slides away, leaving the
-// whole screen to the game. It remembers how you left it. It is held open while the tutorial is asking for one of its buttons. (Phones have the radial
-// menu instead: this is for widths above 700px.)
-const TOOLBOX_KEY = "tubecrawler_toolbox";
-const TOOLBOX_SWIPE = 28;      // pixels of drag that count as a slide
-let toolboxOpen = true;
+// REPORTED: "I meant you could slide through the different items horizontally." The bottom dock (game.html #topToggles) is a strip of tools:
+// SEL, BUILD, AUTO | ROSTER, COMMAND, SQUAD | CRYSTAL, CLONES, MODULES, SHOP, SETTINGS | ?  There are more than fit, so the strip SLIDES:
+//   - swipe it on a touch screen (native scrolling, snapping to the items),
+//   - drag it with a mouse (click-and-drag; a drag never fires the button under it),
+//   - roll the mouse wheel over it (a vertical wheel slides it sideways),
+//   - or press the arrows at its ends. Where more is hidden an edge fades and an arrow shows.
+// The buttons that open the game's older canvas panels (Crystal, Clones, Shop, Settings, Modules) are here too, so every menu is in one place.
+// Phones use the radial menu instead (this is for widths above 700px).
+const TOOLBOX_DRAG = 6;           // pixels of mouse travel before a press is a drag, not a click
+const TOOLBOX_STEP = 0.7;         // an arrow slides this share of the visible width
 
-function toolboxSet(open, remember) {
-    toolboxOpen = !!open;
-    if (typeof document !== "undefined" && document.body && document.body.classList) document.body.classList.toggle("tb-closed", !toolboxOpen);
-    const h = typeof document !== "undefined" ? document.getElementById("toolboxHandle") : null;
-    if (h) { h.setAttribute("aria-expanded", toolboxOpen ? "true" : "false"); const l = h.querySelector(".tb-label"); if (l) l.textContent = toolboxOpen ? "▼ TOOLS" : "▲ TOOLS"; }
-    if (remember !== false) { try { localStorage.setItem(TOOLBOX_KEY, toolboxOpen ? "open" : "closed"); } catch (e) {} }
-    return toolboxOpen;
+// ── the buttons for the game's canvas panels (each is what the canvas button does) ──
+function dockCrystal()   { crystalMenuOpen = !crystalMenuOpen; if (crystalMenuOpen && typeof cloneMenuOpen !== "undefined") cloneMenuOpen = false; }
+function dockClones()    { cloneMenuOpen = !cloneMenuOpen; if (cloneMenuOpen) crystalMenuOpen = false; }
+function dockModules()   { if (typeof openModulesWindow === "function") openModulesWindow(); else campMenuOpen = !campMenuOpen; }
+function dockSettings()  { settingsPanelOpen = !settingsPanelOpen; settingsResetConfirm = false; }
+function dockShop() {
+    // The same conditions as the canvas SHOP button (input.js): not mid-alarm, not between waves.
+    if (alertActive || gameState.phase === "night" || gameState.phase === "waveComplete" || gameState.phase === "gameOver") {
+        if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 70, text: "THE SHOP IS CLOSED RIGHT NOW", color: "#f88", life: 90, vy: -0.2, size: 12 });
+        return false;
+    }
+    openMidGameShop(); return true;
 }
-function toolboxToggle() { return toolboxSet(!toolboxOpen); }
-// The tutorial points at BUILD / SEL with a pulse: it cannot be hidden then.
-function toolboxHeldOpen() {
-    if (typeof tutorialMode !== "undefined" && tutorialMode) return true;
-    return typeof document !== "undefined" && !!document.querySelector && !!document.querySelector("#topToggles .top-btn.tut-wanted");
+
+// ── the slider ──
+function toolboxEls() { return typeof document === "undefined" ? {} : { bar: document.getElementById("topToggles"), track: document.getElementById("dockScroll"), prev: document.getElementById("dockPrev"), next: document.getElementById("dockNext") }; }
+// How far the strip can slide each way (0 = nowhere).
+function toolboxRoom() {
+    const t = toolboxEls().track; if (!t) return { left: 0, right: 0 };
+    return { left: Math.max(0, Math.round(t.scrollLeft)), right: Math.max(0, Math.round(t.scrollWidth - t.clientWidth - t.scrollLeft)) };
 }
-function toolboxTick() { if (!toolboxOpen && toolboxHeldOpen()) toolboxSet(true, false); }
+// Edge fades and arrows follow how much is hidden on each side.
+function toolboxSync() {
+    const E = toolboxEls(); if (!E.bar || !E.bar.classList) return;
+    const r = toolboxRoom();
+    E.bar.classList.toggle("fade-l", r.left > 2); E.bar.classList.toggle("fade-r", r.right > 2); E.bar.classList.toggle("slides", r.left > 2 || r.right > 2 || (E.track.scrollWidth > E.track.clientWidth + 2));
+}
+function toolboxSlide(dir) {
+    const t = toolboxEls().track; if (!t) return;
+    const by = Math.max(120, Math.round(t.clientWidth * TOOLBOX_STEP)) * (dir < 0 ? -1 : 1);
+    if (t.scrollBy) { try { t.scrollBy({ left: by, behavior: "smooth" }); } catch (e) { t.scrollLeft += by; } } else t.scrollLeft += by;
+}
+// Bring one button into view (the tutorial uses this for the button it is pointing at).
+function toolboxReveal(btn) {
+    const t = toolboxEls().track; if (!t || !btn) return false;
+    const tr = t.getBoundingClientRect(), br = btn.getBoundingClientRect();
+    if (br.left >= tr.left && br.right <= tr.right) return false;
+    t.scrollLeft += (br.left + br.right) / 2 - (tr.left + tr.right) / 2; toolboxSync(); return true;
+}
+function toolboxTick() {
+    const t = typeof document !== "undefined" && document.querySelector ? document.querySelector("#dockScroll .top-btn.tut-wanted") : null;
+    if (t) toolboxReveal(t);
+    toolboxSync();
+}
 
 function initToolbox() {
     if (typeof document === "undefined" || !document.getElementById) return;
-    const dock = document.getElementById("topToggles"); if (!dock || document.getElementById("toolboxHandle")) return;
-    const h = document.createElement("button"); h.id = "toolboxHandle"; h.setAttribute("aria-controls", "topToggles");
-    const grip = document.createElement("span"); grip.className = "tb-grip"; h.appendChild(grip);
-    const lab = document.createElement("span"); lab.className = "tb-label"; lab.textContent = "▼ TOOLS"; h.appendChild(lab);
-    dock.appendChild(h);
-    // tap = toggle; drag up = open; drag down = close
-    let y0 = null, moved = false;
-    h.addEventListener("pointerdown", e => { y0 = e.clientY; moved = false; try { h.setPointerCapture(e.pointerId); } catch (x) {} });
-    h.addEventListener("pointermove", e => { if (y0 === null) return; const dy = e.clientY - y0; if (Math.abs(dy) >= TOOLBOX_SWIPE) { moved = true; toolboxSet(dy < 0); y0 = e.clientY; } });
-    h.addEventListener("pointerup", () => { if (y0 !== null && !moved) toolboxToggle(); y0 = null; });
-    h.addEventListener("pointercancel", () => { y0 = null; });
-    // a swipe down on the toolbox itself slides it away
-    let sy = null;
-    dock.addEventListener("pointerdown", e => { if (e.target === h || h.contains(e.target)) return; sy = e.clientY; });
-    dock.addEventListener("pointermove", e => { if (sy !== null && e.clientY - sy >= TOOLBOX_SWIPE * 1.5) { sy = null; toolboxSet(false); } });
-    dock.addEventListener("pointerup", () => { sy = null; });
-    let saved = null; try { saved = localStorage.getItem(TOOLBOX_KEY); } catch (e) {}
-    toolboxSet(saved !== "closed", false);
-    setInterval(toolboxTick, 400);
+    const E = toolboxEls(); if (!E.track || E.track._slider) return; E.track._slider = true;
+    // mouse drag: slide the strip; a real drag swallows the click that follows it
+    let x0 = null, s0 = 0, dragged = false;
+    E.track.addEventListener("pointerdown", e => { if (e.pointerType === "touch") return; x0 = e.clientX; s0 = E.track.scrollLeft; dragged = false; });
+    E.track.addEventListener("pointermove", e => {
+        if (x0 === null || e.pointerType === "touch") return;
+        const dx = e.clientX - x0;
+        if (!dragged && Math.abs(dx) >= TOOLBOX_DRAG) { dragged = true; E.track.classList.add("dragging"); try { E.track.setPointerCapture(e.pointerId); } catch (x) {} }
+        if (dragged) { E.track.scrollLeft = s0 - dx; toolboxSync(); }
+    });
+    const end = () => { if (x0 !== null) { x0 = null; E.track.classList.remove("dragging"); } };
+    E.track.addEventListener("pointerup", end); E.track.addEventListener("pointercancel", end); E.track.addEventListener("pointerleave", () => { if (!dragged) x0 = null; });
+    E.track.addEventListener("click", e => { if (dragged) { e.stopPropagation(); e.preventDefault(); dragged = false; } }, true);
+    // the wheel: a vertical roll slides it sideways (only while it has somewhere to go that way)
+    E.track.addEventListener("wheel", e => {
+        const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY, r = toolboxRoom();
+        if (!d || (d < 0 && !r.left) || (d > 0 && !r.right)) return;
+        e.preventDefault(); E.track.scrollLeft += d; toolboxSync();
+    }, { passive: false });
+    E.track.addEventListener("scroll", () => toolboxSync(), { passive: true });
+    if (E.prev) E.prev.addEventListener("click", ev => { ev.stopPropagation(); toolboxSlide(-1); });
+    if (E.next) E.next.addEventListener("click", ev => { ev.stopPropagation(); toolboxSlide(1); });
+    window.addEventListener("resize", toolboxSync);
+    toolboxSync(); [200, 800, 2000].forEach(ms => setTimeout(toolboxSync, ms));
 }
 try { initToolbox(); } catch (e) { /* no page (the test sandbox) */ }

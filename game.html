@@ -710,19 +710,6 @@
     #tutBtn { left: 12px !important; right: auto !important; bottom: calc(12px + var(--vv-bottom, 0px)) !important; font-size: 11px !important; padding: 5px 12px !important; letter-spacing: 1px !important; opacity: 0.5; transform: none !important; box-shadow: none !important; border-width: 1px !important; z-index: 5 !important; }
     #tutBtn:hover, #tutBtn:active, #tutBtn:focus-visible { opacity: 1; }
 
-    /* ── THE SLIDING TOOLBOX (js/toolbox.js): the dock slides down off the bottom edge, leaving a TOOLS handle; tap it or drag it up to slide the dock back ── */
-    #toolboxHandle { display: none; }
-    @media (min-width: 701px) {
-        #topToggles { transition: transform 0.3s cubic-bezier(0.2, 0.85, 0.25, 1); }
-        body.tb-closed #topToggles { transform: translateX(-50%) translateY(calc(100% + 14px)); }
-        #toolboxHandle { display: flex; align-items: center; justify-content: center; position: absolute; left: 50%; top: -32px; transform: translateX(-50%); width: 168px; height: 32px; padding: 0; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none;
-            font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 14px; letter-spacing: 1.5px; color: #fff; background: linear-gradient(180deg, rgba(14,22,46,0.95), rgba(5,8,18,0.97)); border: 2px solid #26324f; border-bottom: none; box-shadow: 0 0 14px rgba(25,230,193,0.25);
-            clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
-        #toolboxHandle .tb-grip { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 36px; height: 3px; border-radius: 2px; background: var(--neo-teal); opacity: 0.8; }
-        #toolboxHandle .tb-label { margin-top: 6px; }
-        body.tb-closed #toolboxHandle { border-color: var(--neo-teal); box-shadow: 0 0 16px rgba(25,230,193,0.55); }
-        body.tb-closed #selChip { bottom: calc(52px + var(--vv-bottom, 0px)); }
-    }
 
     /* ── THE SHARD GEMS and the ALARM TRIANGLE (js/hudgems.js; the alarm class is set from game.js) ── */
     #shards { display: flex; align-items: center; gap: 4px; padding: 0 !important; }
@@ -736,6 +723,22 @@
     body.alarm-on #alarmIcon { display: block; } body.alarm-on #waveInfo { display: none !important; }
     @media (max-width: 900px) { #shardGems { width: 72px; height: 44px; } #shardCount { font-size: 26px; } #alarmIcon { width: 36px; height: 33px; } }
     @media (max-width: 560px) { #shardGems { width: 58px; height: 36px; } #shardCount { font-size: 22px; } #alarmIcon { width: 30px; height: 28px; } }
+
+    /* ── THE SLIDER TOOLBOX (js/toolbox.js): the dock is a strip you SLIDE sideways through (swipe, drag, wheel or the arrows); edges fade where more is hidden ── */
+    #dockPrev, #dockNext { display: none; }
+    @media (min-width: 701px) {
+        #topToggles { display: flex; align-items: center; gap: 6px; width: min(94vw, 880px); max-width: min(94vw, 880px); box-sizing: border-box; padding: 10px 10px; justify-content: center; }
+        #topToggles:not(.slides) { width: auto; }
+        #dockScroll { display: flex; gap: 14px; flex: 0 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x; padding: 4px 10px; cursor: grab; overscroll-behavior-x: contain; }
+        #dockScroll::-webkit-scrollbar { display: none; } #dockScroll.dragging { cursor: grabbing; scroll-snap-type: none; } #dockScroll > .top-btn { flex: none; scroll-snap-align: center; }
+        #topToggles.slides #dockScroll { flex: 1 1 auto; }
+        #topToggles.fade-l.fade-r #dockScroll { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 34px, #000 calc(100% - 34px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 34px, #000 calc(100% - 34px), transparent 100%); }
+        #topToggles.fade-r:not(.fade-l) #dockScroll { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent 100%); mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent 100%); }
+        #topToggles.fade-l:not(.fade-r) #dockScroll { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 34px); mask-image: linear-gradient(90deg, transparent 0, #000 34px); }
+        .dock-arrow { flex: none; width: 34px; height: 54px; padding: 0; font-family: var(--neo-font); font-weight: 900; font-size: 30px; line-height: 1; color: #05070f; background: var(--neo-teal); border: none; cursor: pointer; touch-action: manipulation; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); box-shadow: 0 0 12px var(--neo-teal); }
+        #topToggles.fade-l #dockPrev, #topToggles.fade-r #dockNext { display: block; }
+        .dock-arrow:active { filter: brightness(1.2); }
+    }
 </style>
 
 </head>
@@ -761,6 +764,8 @@
   </div>
   <div id="waveInfo">WAVE 1 — clear panels for shards</div>
   <div id="topToggles">
+    <button id="dockPrev" class="dock-arrow" aria-label="Slide the toolbox left">‹</button>
+    <div id="dockScroll">
     <button id="btnSquad" class="top-btn" onclick="toggleSquad()" title="Squad: selected element only" aria-label="Squad: selected element only"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="7" r="3.6"/><path d="M5 21v-2.2a7 7 0 0 1 14 0V21z"/></svg><span class="top-tag">SEL</span></button>
     <button id="btnBuild" class="top-btn" onclick="toggleBuild()" title="Build mode: off" aria-label="Build mode: off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.2 8.2 L19.8 19.8" stroke-width="2.4"/><path d="M10.4 5.2 L7.8 2.6 L2.6 7.8 L5.2 10.4 Z" fill="currentColor" stroke-width="1.2"/><path d="M14.6 9.4 L4.2 19.8" stroke-width="2.4"/><path d="M16.6 3.2 A4 4 0 1 0 20.8 7.4" stroke-width="2.8"/></svg><span class="top-tag">OFF</span></button>
     <button id="btnAuto" class="top-btn" onclick="toggleAutoplay()" title="Autoplay: off" aria-label="Autoplay: off"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="7" width="14" height="11" rx="3"/><rect x="11" y="3" width="2" height="4"/><circle cx="12" cy="3" r="1.6"/><circle cx="9.5" cy="12" r="1.6" fill="#000"/><circle cx="14.5" cy="12" r="1.6" fill="#000"/><rect x="2.5" y="10" width="2" height="5" rx="1"/><rect x="19.5" y="10" width="2" height="5" rx="1"/></svg><span class="top-tag">AUTO</span></button>
@@ -768,8 +773,16 @@
     <button id="btnRoster" class="top-btn" onclick="ccToggleOpen('roster')" title="Roster: pick your creatures by their cards" aria-label="Roster"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span class="top-tag">ROSTER</span></button>
     <button id="btnCommand" class="top-btn" onclick="ccToggleOpen('command')" title="Command center: squad orders" aria-label="Command center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg><span class="top-tag">COMMAND</span></button>
     <button id="btnAnalytics" class="top-btn" onclick="ccToggleOpen('squad')" title="Squad analytics" aria-label="Squad analytics"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="12" width="4.5" height="9" rx="1"/><rect x="9.8" y="4" width="4.5" height="17" rx="1"/><rect x="16.5" y="8" width="4.5" height="13" rx="1"/></svg><span class="top-tag">SQUAD</span></button>
+    <span class="dock-sep" aria-hidden="true"></span>
+    <button id="btnCrystal" class="top-btn" onclick="dockCrystal()" title="Crystal: modulation and recruiting" aria-label="Crystal"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 L19 9 L12 22 L5 9 Z"/><path d="M5 9 H19" stroke="#000" stroke-opacity="0.45" stroke-width="1.2"/></svg><span class="top-tag">CRYSTAL</span></button>
+    <button id="btnClones" class="top-btn" onclick="dockClones()" title="Clones" aria-label="Clones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M7 3 C17 8 7 16 17 21"/><path d="M17 3 C7 8 17 16 7 21"/><path d="M9 7h6M9 17h6" stroke-width="1.8"/></svg><span class="top-tag">CLONES</span></button>
+    <button id="btnModules" class="top-btn" onclick="dockModules()" title="Modules" aria-label="Modules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 l6 3.5 v7 l-6 3.5 -6 -3.5 v-7 z"/><path d="M12 10.5 v6.5 M6 6.5 l6 3.5 6 -3.5" stroke-width="1.6"/></svg><span class="top-tag">MODULES</span></button>
+    <button id="btnShop" class="top-btn" onclick="dockShop()" title="Shop" aria-label="Shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h3l2.2 10.5h9.8L20 7H7"/><circle cx="9.5" cy="19" r="1.7" fill="currentColor"/><circle cx="17" cy="19" r="1.7" fill="currentColor"/></svg><span class="top-tag">SHOP</span></button>
+    <button id="btnSettings" class="top-btn" onclick="dockSettings()" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.4"/><path d="M12 2v3.2M12 18.8V22M2 12h3.2M18.8 12H22M4.9 4.9l2.3 2.3M16.8 16.8l2.3 2.3M19.1 4.9l-2.3 2.3M7.2 16.8l-2.3 2.3"/></svg><span class="top-tag">SETTINGS</span></button>
     <button id="btnCtrl"  class="top-btn" onclick="toggleControlsMenu()">?</button>
-</div>
+    </div>
+    <button id="dockNext" class="dock-arrow" aria-label="Slide the toolbox right">›</button>
+  </div>
 </div>
 <button id="tutBtn" onclick="startTutorial()" style="position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.85);border:2px solid #0f8;color:#0f8;font-family:monospace;font-size:13px;font-weight:bold;padding:10px 18px;border-radius:4px;letter-spacing:2px;cursor:pointer;z-index:200;touch-action:manipulation;">TUTORIAL</button>
 
@@ -1553,12 +1566,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-17x, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-17y, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-17x";
+window.__PAGE_BUILD = "2026-10-17y";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1594,57 +1607,57 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-17x"></script>
-<script src="js/icons.js?v=2026-10-17x"></script>
-<script src="js/rng.js?v=2026-10-17x"></script>
-<script src="js/traits.js?v=2026-10-17x"></script>
-<script src="js/elements.js?v=2026-10-17x"></script>
-<script src="js/combat.js?v=2026-10-17x"></script>
-<script src="js/species.js?v=2026-10-17x"></script>
-<script src="js/levels.js?v=2026-10-17x"></script>
-<script src="js/predator_randomizer.js?v=2026-10-17x"></script>
-<script src="js/mass.js?v=2026-10-17x"></script>
-<script src="js/infest.js?v=2026-10-17x"></script>
-<script src="js/power.js?v=2026-10-17x"></script>
-<script src="js/save.js?v=2026-10-17x"></script>
-<script src="js/camp.js?v=2026-10-17x"></script>
-<script src="js/wavedata.js?v=2026-10-17x"></script>
-<script src="js/helpers.js?v=2026-10-17x"></script>
-<script src="js/predator.js?v=2026-10-17x"></script>
-<script src="js/abilities.js?v=2026-10-17x"></script>
-<script src="js/world.js?v=2026-10-17x"></script>
-<script src="js/commands.js?v=2026-10-17x"></script>
-<script src="js/npc.js?v=2026-10-17x"></script>
-<script src="js/codex.js?v=2026-10-17x"></script>
-<script src="js/draw.js?v=2026-10-17x"></script>
-<script src="js/beetle3d.js?v=2026-10-17x"></script>
-<script src="js/bugs3d.js?v=2026-10-17x"></script>
-<script src="js/ui.js?v=2026-10-17x"></script>
-<script src="js/waves.js?v=2026-10-17x"></script>
-<script src="js/drops.js?v=2026-10-17x"></script>
-<script src="js/clone.js?v=2026-10-17x"></script>
-<script src="js/clonework.js?v=2026-10-17x"></script>
-<script src="js/broods.js?v=2026-10-17x"></script>
-<script src="js/raids.js?v=2026-10-17x"></script>
-<script src="js/ultra.js?v=2026-10-17x"></script>
-<script src="js/formations.js?v=2026-10-17x"></script>
-<script src="js/breakout.js?v=2026-10-17x"></script>
-<script src="js/nightraids.js?v=2026-10-17x"></script>
-<script src="js/bonds.js?v=2026-10-17x"></script>
-<script src="js/autoplay.js?v=2026-10-17x"></script>
-<script src="js/indexart.js?v=2026-10-17x"></script>
-<script src="js/modules.js?v=2026-10-17x"></script>
-<script src="js/shieldcells.js?v=2026-10-17x"></script>
-<script src="js/evolution.js?v=2026-10-17x"></script>
-<script src="js/buildmenu.js?v=2026-10-17x"></script>
-<script src="js/hudgems.js?v=2026-10-17x"></script>
-<script src="js/commandcenter.js?v=2026-10-17x"></script>
-<script src="js/toolbox.js?v=2026-10-17x"></script>
-<script src="js/radialmenu.js?v=2026-10-17x"></script>
-<script src="js/input.js?v=2026-10-17x"></script>
-<script src="js/game.js?v=2026-10-17x"></script>
-<script src="js/tutorial.js?v=2026-10-17x"></script>
-<script src="js/dev.js?v=2026-10-17x"></script>
+<script src="js/config.js?v=2026-10-17y"></script>
+<script src="js/icons.js?v=2026-10-17y"></script>
+<script src="js/rng.js?v=2026-10-17y"></script>
+<script src="js/traits.js?v=2026-10-17y"></script>
+<script src="js/elements.js?v=2026-10-17y"></script>
+<script src="js/combat.js?v=2026-10-17y"></script>
+<script src="js/species.js?v=2026-10-17y"></script>
+<script src="js/levels.js?v=2026-10-17y"></script>
+<script src="js/predator_randomizer.js?v=2026-10-17y"></script>
+<script src="js/mass.js?v=2026-10-17y"></script>
+<script src="js/infest.js?v=2026-10-17y"></script>
+<script src="js/power.js?v=2026-10-17y"></script>
+<script src="js/save.js?v=2026-10-17y"></script>
+<script src="js/camp.js?v=2026-10-17y"></script>
+<script src="js/wavedata.js?v=2026-10-17y"></script>
+<script src="js/helpers.js?v=2026-10-17y"></script>
+<script src="js/predator.js?v=2026-10-17y"></script>
+<script src="js/abilities.js?v=2026-10-17y"></script>
+<script src="js/world.js?v=2026-10-17y"></script>
+<script src="js/commands.js?v=2026-10-17y"></script>
+<script src="js/npc.js?v=2026-10-17y"></script>
+<script src="js/codex.js?v=2026-10-17y"></script>
+<script src="js/draw.js?v=2026-10-17y"></script>
+<script src="js/beetle3d.js?v=2026-10-17y"></script>
+<script src="js/bugs3d.js?v=2026-10-17y"></script>
+<script src="js/ui.js?v=2026-10-17y"></script>
+<script src="js/waves.js?v=2026-10-17y"></script>
+<script src="js/drops.js?v=2026-10-17y"></script>
+<script src="js/clone.js?v=2026-10-17y"></script>
+<script src="js/clonework.js?v=2026-10-17y"></script>
+<script src="js/broods.js?v=2026-10-17y"></script>
+<script src="js/raids.js?v=2026-10-17y"></script>
+<script src="js/ultra.js?v=2026-10-17y"></script>
+<script src="js/formations.js?v=2026-10-17y"></script>
+<script src="js/breakout.js?v=2026-10-17y"></script>
+<script src="js/nightraids.js?v=2026-10-17y"></script>
+<script src="js/bonds.js?v=2026-10-17y"></script>
+<script src="js/autoplay.js?v=2026-10-17y"></script>
+<script src="js/indexart.js?v=2026-10-17y"></script>
+<script src="js/modules.js?v=2026-10-17y"></script>
+<script src="js/shieldcells.js?v=2026-10-17y"></script>
+<script src="js/evolution.js?v=2026-10-17y"></script>
+<script src="js/buildmenu.js?v=2026-10-17y"></script>
+<script src="js/hudgems.js?v=2026-10-17y"></script>
+<script src="js/commandcenter.js?v=2026-10-17y"></script>
+<script src="js/toolbox.js?v=2026-10-17y"></script>
+<script src="js/radialmenu.js?v=2026-10-17y"></script>
+<script src="js/input.js?v=2026-10-17y"></script>
+<script src="js/game.js?v=2026-10-17y"></script>
+<script src="js/tutorial.js?v=2026-10-17y"></script>
+<script src="js/dev.js?v=2026-10-17y"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1697,7 +1710,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-17x"></script>
+<script src="js/init.js?v=2026-10-17y"></script>
 
 </body>
 </html>
