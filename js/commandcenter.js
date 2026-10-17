@@ -391,7 +391,7 @@ function _ccZoneCard(z) {
     const tp = _ccEl("button", "cz-btn" + (z.held ? "" : " dim"), "TELEPORT"); tp.style.setProperty("--c", "#8fe3ff"); if (!z.held) tp.appendChild(_ccEl("span", "cz-sub", z.z === 0 ? "NO PORTAL" : "HOLD A NEST HERE"));
     _ccClick(tp, () => { if (zoneTeleport(z.z)) ccClose(); }); acts.appendChild(tp);
     const fee = z.fee, can = fee > 0, cb = _ccEl("button", "cz-btn" + (can && shardCount >= fee ? "" : " dim"), "CLEAR BROKEN"); cb.style.setProperty("--c", "#ff4a1c");
-    cb.appendChild(_ccEl("span", "cz-sub", can ? "ESTIMATE \u25c6" + fee : "NOTHING BROKEN"));
+    cb.appendChild(_ccEl("span", "cz-sub", can ? "REMOVES WRECKS \u00b7 EST. \u25c6" + fee : "NOTHING BROKEN"));
     _ccClick(cb, () => { zoneClearBroken(z.z); _ccPageSig = ""; ccRender(); }); acts.appendChild(cb);
     card.appendChild(acts);
     return card;

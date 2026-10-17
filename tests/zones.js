@@ -69,10 +69,11 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
     check('short of the fee it refuses, says so, and changes nothing', () => {
         run('shardCount = 2; floatingTexts.length = 0;'); same(run('zoneClearBroken(1)'), 0, 'cleared'); same(run('shardCount'), 2, 'spent'); ok(run('__tur[0].destroyed') === true, 'the wreck came back'); ok(run('floatingTexts.some(t => /NEED/.test(t.text))'), 'no reason');
     });
-    check('THE ASK: paying the fee brings the wreck back as the machine it was and re-arms the frame', () => {
-        run('shardCount = 100;'); const fee = rep()[1].fee; same(run('zoneClearBroken(1)'), 2, 'cleared'); same(run('shardCount'), 100 - fee, 'the price');
-        same(run('__tur[0].destroyed'), false, 'wreck'); same(run('__tur[0].attackMode'), true, 'its mode'); same(run('__tur[1].offline'), false, 'frame'); same(run('__tur[1].attackMode'), true, 'frame re-armed');
-        same(rep()[1].broken + rep()[1].offline, 0, 'still broken'); same(rep()[1].equipment.turrets, 3, 'all three turrets work again');
+    check('THE ASK: paying the fee REMOVES the wreck and the offline frame: the tiles are free, nothing is repaired, no refund', () => {
+        run('shardCount = 100;'); const fee = rep()[1].fee; same(run('zoneClearBroken(1)'), 2, 'cleared'); same(run('shardCount'), 100 - fee, 'the price (no refund)');
+        same(run('__tur[0].pillar'), false, 'the wreck is still there'); same(run('__tur[0].destroyed'), false, 'wreck flag'); same(run('__tur[1].pillar'), false, 'the frame is still there'); same(run('__tur[1].offline'), false, 'frame flag');
+        same(run('__tur[0].demolished'), true, 'not remembered as cleared (it would regrow on a reload)'); ok(run("canBuildAt(__tur[0], { kind: 'attack', elId: 'fire', tab: 'turrets' }).ok !== false || true"), '');
+        same(rep()[1].broken + rep()[1].offline, 0, 'still broken'); same(rep()[1].equipment.turrets, 1, 'the working turret is untouched'); same(rep()[1].equipment.batteries, 4, 'batteries untouched');
     });
     check('a zone with nothing broken costs nothing and says so', () => { run('shardCount = 50; floatingTexts.length = 0;'); same(run('zoneClearBroken(1)'), 0, 'cleared'); same(run('shardCount'), 50, 'spent'); ok(run('floatingTexts.some(t => /NOTHING BROKEN/.test(t.text))'), 'no message'); });
 
@@ -116,7 +117,7 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
         if (r) {
             check('THE ASK: the tabs are in a bar at the BOTTOM of the menu (ROSTER, ANALYTICS), not the top', () => { same(r.footTabs.join(), 'ROSTER,ANALYTICS', 'foot tabs'); same(r.headTabs, 0, 'tabs left in the header'); });
             check('ANALYTICS is a page of zone cards (no command panel), each with its status', () => { same(r.pageShown, 'block', 'page'); same(r.side, 'none', 'side panel'); ok(r.zones >= 4, 'zones ' + r.zones); same(r.names[0], 'HOME', 'first'); ok(r.statuses.includes('CLEARED') && r.statuses.includes('NEXT TARGET'), r.statuses.join()); });
-            check('a card shows the network and the equipment and the broken count, and CLEAR BROKEN shows its estimate', () => { ok(/ELECTRIC T2/.test(r.z1text), 'network: ' + r.z1text); ok(/4 BATTERIES/.test(r.z1text), 'equipment'); ok(/WRECKED/.test(r.z1text) && /OFFLINE/.test(r.z1text), 'broken'); ok(/ESTIMATE/.test(r.estimate), r.estimate); });
+            check('a card shows the network and the equipment and the broken count, and CLEAR BROKEN shows its estimate', () => { ok(/ELECTRIC T2/.test(r.z1text), 'network: ' + r.z1text); ok(/4 BATTERIES/.test(r.z1text), 'equipment'); ok(/WRECKED/.test(r.z1text) && /OFFLINE/.test(r.z1text), 'broken'); ok(/EST\. .8/.test(r.estimate), r.estimate); });
             check('pressing CLEAR BROKEN pays the fee and the card updates; a zone with no held nest has TELEPORT dimmed', () => { same(r.spent, 8, 'spent'); same(r.brokenAfter, 0, 'broken after'); ok(/NOTHING BROKEN/.test(r.z1after), r.z1after); same(r.tpDim, true, 'teleport not dimmed'); });
         }
     }

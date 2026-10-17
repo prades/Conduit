@@ -9,10 +9,11 @@
 // pylons, batteries, relays, Ultras, modules), with how much of it is BROKEN. The Command Center's ANALYTICS tab draws it (js/commandcenter.js).
 //
 // TELEPORT takes you, and the squad following you, to a nest you hold in that zone (commands.js teleportToNest; the ring's TELEPORT is the same move).
-// CLEAR BROKEN pays the fee to bring the zone's broken equipment back at once instead of waiting for the repair crew (ants rebuild a wreck, a core
-// worker re-arms a frame): a wreck stands again as the machine it was, and an offline frame is re-armed. The fee is shown before it is paid.
-const ZONE_FEE_WRECK = 5;     // shards to bring a wrecked pylon back (half a new pylon: PYLON_BUILD_COST is 10)
-const ZONE_FEE_FRAME = 3;     // shards to re-arm an offline frame
+// CLEAR BROKEN pays the fee to REMOVE the zone's broken equipment (wrecks and offline frames): the wreckage is gone and the tile is free to build on. It
+// does not repair anything (the repair crew does that: ants rebuild a wreck, a core worker re-arms a frame; so does a builder you summon); it clears the
+// way. The fee is shown before it is paid, and there is no refund.
+const ZONE_FEE_WRECK = 5;     // shards to clear a wrecked pylon away (half a new pylon: PYLON_BUILD_COST is 10)
+const ZONE_FEE_FRAME = 3;     // shards to clear an offline frame away
 const ZONE_REPORT_MAX = 12;   // the most zones listed
 
 const ZONE_STATUS = {
@@ -93,19 +94,30 @@ function zoneTeleport(z) {
     if (getZoneIndex(Math.floor(player.x)) === z && Math.abs(player.x - teleportSpot(nest).x) < 2) { say("YOU ARE ALREADY THERE", "#8aa0c8"); return false; }
     return teleportToNest(nest);
 }
-// CLEAR BROKEN: pay the fee, and every wreck in the zone stands again as the machine it was, every offline frame is re-armed.
+// Take a pylon off the board entirely (the demolish's reset, without its refund and its banner): no wreck, the tile free, remembered so a reload does not regrow it.
+function clearPylon(t) {
+    for (const a of actors) if (a.job && a.job.target === t) a.job = null;
+    for (const o of world) if (o.connectedPylon === t) o.connectedPylon = null;
+    if (t.nestConnection) { t.nestConnection.connectedPylon = null; t.nestConnection = null; }
+    Object.assign(t, { pillar: false, destroyed: false, pillarTeam: null, health: 0,
+        attackMode: false, waveMode: false, attackModeElement: null, attackModeColor: null,
+        isGenerator: false, isConnector: false, isBattery: false, circuitOn: undefined, upgraded: false, mk: 0, seasoned: 0,
+        pendingUpgrade: false, upgradeFollower: null, chosenElement: null, chosenColor: null, chosenKind: null,
+        reconstructing: false, reconstructProgress: 0, waveTripped: false, powered: undefined,
+        powerSource: null, powerGen: null, waveAwake: undefined, _awakeUntil: undefined,
+        offline: false, _offline: null, rearmProgress: 0, pendingDestroy: false, demolished: true });
+}
+// CLEAR BROKEN: pay the fee, and every wreck and offline frame in the zone is cleared away. Returns how many.
 function zoneClearBroken(z) {
     const say = (text, color) => floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color, life: 110, vy: -0.2, size: 12 });
-    const br = zoneBroken(z), fee = br.wrecks.length * ZONE_FEE_WRECK + br.frames.length * ZONE_FEE_FRAME;
-    if (!br.wrecks.length && !br.frames.length) { say("NOTHING BROKEN IN " + (z === 0 ? "HOME" : "ZONE " + z), "#8aa0c8"); return 0; }
-    if (shardCount < fee) { say("NEED " + fee + " SHARDS TO CLEAR " + (z === 0 ? "HOME" : "ZONE " + z), "#f44"); return 0; }
+    const br = zoneBroken(z), fee = br.wrecks.length * ZONE_FEE_WRECK + br.frames.length * ZONE_FEE_FRAME, name = z === 0 ? "HOME" : "ZONE " + z;
+    if (!br.wrecks.length && !br.frames.length) { say("NOTHING BROKEN IN " + name, "#8aa0c8"); return 0; }
+    if (shardCount < fee) { say("NEED " + fee + " SHARDS TO CLEAR " + name, "#f44"); return 0; }
     shardCount -= fee; if (typeof saveShards === "function") saveShards();
-    let n = 0;
-    for (const t of br.wrecks) if (restoreBrokenPylon(t)) { n++; }
-    for (const t of br.frames) if (rearmPylon(t)) { n++; }
-    if (typeof _cacheAge !== "undefined") _cacheAge = -999;
+    const all = br.wrecks.concat(br.frames);
+    for (const t of all) { if (typeof elementEffects !== "undefined") for (let i = 0; i < 5; i++) elementEffects.push({ type: "impact", x: t.x + (Math.random() - 0.5) * 0.6, y: t.y + (Math.random() - 0.5) * 0.6, color: "#8aa0c8", radius: 0.4, life: 22 }); clearPylon(t); }
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
     if (typeof savePylons === "function") { try { savePylons(); } catch (e) {} }
-    for (const t of br.wrecks.concat(br.frames)) if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: "#19e6c1", radius: 0.5, life: 24 });
-    say((z === 0 ? "HOME" : "ZONE " + z) + ": " + n + " BROKEN CLEARED — " + fee + " ◆", "#19e6c1");
-    return n;
+    say(name + ": " + all.length + " BROKEN CLEARED \u2014 " + fee + " \u25c6", "#19e6c1");
+    return all.length;
 }
