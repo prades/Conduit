@@ -216,7 +216,9 @@ function followerWorkTick(actor) {
     // handler runs; it just no longer means "never work again".
     if (actor.job && actor.job.type !== 'move') return false;
 
-    if (actor.element === MASS_NEUTRALISER) return _workNeutralise(actor);
+    // ELECTRIC: bleed a charged lump if there is one; with none to bleed it HACKS WALL PANELS for shards (REPORTED: "make it to where the
+    // electric followers can hack the panels, and that's what they do for work when there's no shards").
+    if (actor.element === MASS_NEUTRALISER) { if (_workNeutralise(actor)) { actor.siphonOrder = null; return true; } return _workHackPanel(actor); }
     if (actor.element === MASS_HAULER)      return _workHaul(actor);
     if (actor.element === PYLON_REPAIRER)   return _workRepair(actor);
     if (actor.element === CLONE_MENDER)     return _workMendClone(actor);
@@ -259,6 +261,37 @@ function _workNeutralise(actor) {
         if (typeof awardWorkXp === 'function') awardWorkXp(actor, 'neutralise');   // js/levels.js
         floatingTexts.push({ x: m.x, y: m.y - 1, text: 'NEUTRALISED', color: '#ffee33', life: 50, vy: -0.06 });
     }
+    return true;
+}
+
+
+// ── ELECTRIC / HACK PANELS ─────────────────────────────────
+// An electric worker with no charged lump to bleed walks to the nearest wall panel it can hack safely and stands at it: the panel loop in
+// game.js counts a follower on a siphon order (siphonOrder) standing at its panel exactly as it counts the player, so the panel pays out
+// its shards to the player when the hack finishes. It skips decoys (a worker can tell which panels would trip an alarm), and spreads
+// out over panels rather than all queueing at one.
+const PANEL_HACK_SEEK = 22;      // how far an electric worker will go for a panel, in tiles
+function nearestHackablePanel(actor) {
+    if (typeof _wallPanelCache === 'undefined') return null;
+    let best = null, bd = Infinity;
+    const taken = new Set(); for (const f of followers) if (f !== actor && !f.dead && f.siphonOrder) taken.add(f.siphonOrder);
+    for (const t of _wallPanelCache) {
+        if (t.panelActivated) continue;
+        if (t.isDecoy && !(typeof zoneIsNeutralised === 'function' && zoneIsNeutralised(zoneOfTile(t)))) continue;
+        const d = Math.hypot(t.x - actor.x, t.y + 1 - actor.y) + (taken.has(t) ? 6 : 0);
+        if (d < bd && d < PANEL_HACK_SEEK) { bd = d; best = t; }
+    }
+    return best;
+}
+function _workHackPanel(actor) {
+    let t = actor.siphonOrder;
+    if (!t || t.panelActivated || !_wallPanelCache.includes(t)) { actor.siphonOrder = null; t = nearestHackablePanel(actor); }
+    if (!t) return false;
+    actor.siphonOrder = t;
+    const gx = t.x, gy = t.y + 1, d = Math.hypot(gx - actor.x, gy - actor.y);
+    if (d > 0.6) { _moveToward(actor, gx, gy, 1.1); actor.state = 'walking'; return true; }
+    actor.state = 'idle';
+    if (typeof elementEffects !== 'undefined' && (typeof frame !== 'undefined' ? frame : 0) % 10 === 0) elementEffects.push({ type: 'impact', x: t.x, y: t.y, color: '#ffee33', radius: 0.3, life: 14 });
     return true;
 }
 
@@ -654,7 +687,7 @@ function workerElementsLabel() {
 
 // What a given worker would actually do, for the UI to label.
 function workerJobLabel(element) {
-    if (element === MASS_NEUTRALISER) return 'NEUTRALISE';
+    if (element === MASS_NEUTRALISER) return 'NEUTRALISE / HACK';
     if (element === MASS_HAULER)      return 'HAUL';
     if (element === PYLON_REPAIRER)   return 'RE-ARM';
     if (element === CLONE_MENDER)     return 'TEND CLONE';

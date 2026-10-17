@@ -29,6 +29,7 @@ const SUITES = [
     ['save & refresh',         'persist.js'],
     ['player weapon',          'weapon.js'],
     ['charged mass',           'mass.js'],
+    ['electric panel hacking', 'panelhack.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],

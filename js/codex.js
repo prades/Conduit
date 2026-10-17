@@ -413,7 +413,7 @@ function renderWorkCrewIndex() {
         'nothing else has a job to do.</div>' +
 
         '<div class="cm-ability"><strong>1. Neutralise \u2014 ELECTRIC:</strong> stands on a charged lump and ' +
-        'bleeds the charge off over about <span class="cm-stat">' + secs + 's</span>. Until then it just crackles.</div>' +
+        'bleeds the charge off over about <span class="cm-stat">' + secs + 's</span>. Until then it just crackles. With no lump to bleed it <strong>hacks wall panels</strong> for shards instead (it skips decoys).</div>' +
         '<div class="cm-ability"><strong>2. Haul \u2014 FLUX:</strong> drags an inert lump to the nearest drop-off \u2014 ' +
         'the Crystal, or the wall nest of any zone you hold \u2014 where it pays out as shards. Kill the carrier and the lump drops where it fell.</div>' +
         '<div class="cm-ability"><strong>Re-arm \u2014 CORE:</strong> a pylon that loses its health is not gone, ' +
