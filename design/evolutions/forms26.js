@@ -46,8 +46,8 @@ function _saucer(o) {
   // belly: a dark ring and a dim plate underneath
   const belly = new T.Mesh(new T.TorusGeometry(R * 0.45, 0.025, 5, o.segs || 24), _saucerLeg); belly.rotation.x = PI / 2; belly.position.y = -0.0; body.add(belly);
   // the rim lights: a ring of small lamps; the lit ones chase round it
-  const lamps = []; for (let i = 0; i < o.nLamps; i++) { const a = i * TAU / o.nLamps, mat = new T.MeshBasicMaterial({ color: 0x3a3000, toneMapped: false }), lp = new T.Mesh(new T.BoxGeometry(0.075, 0.05, 0.075), mat); lp.position.set(Math.sin(a) * R * 1.0, 0.145 * k, Math.cos(a) * R * 1.0); lp.rotation.y = a; body.add(lp); lamps.push({ lp, mat, i }); }
-  if (o.bellyBand) for (let i = 0; i < o.nLamps; i++) { const a = i * TAU / o.nLamps + TAU / o.nLamps / 2, mat = new T.MeshBasicMaterial({ color: 0x3a3000, toneMapped: false }), lp = new T.Mesh(new T.BoxGeometry(0.06, 0.04, 0.06), mat); lp.position.set(Math.sin(a) * R * 0.92, 0.075 * k, Math.cos(a) * R * 0.92); lp.rotation.y = a; body.add(lp); lamps.push({ lp, mat, i: i + 3 }); }
+  const _lc = new T.Color(EL.color), _loff = _lc.clone().multiplyScalar(0.2), lamps = []; for (let i = 0; i < o.nLamps; i++) { const a = i * TAU / o.nLamps, mat = new T.MeshBasicMaterial({ color: _loff.getHex(), toneMapped: false }), lp = new T.Mesh(new T.BoxGeometry(0.075, 0.05, 0.075), mat); lp.position.set(Math.sin(a) * R * 1.0, 0.145 * k, Math.cos(a) * R * 1.0); lp.rotation.y = a; body.add(lp); lamps.push({ lp, mat, i }); }
+  if (o.bellyBand) for (let i = 0; i < o.nLamps; i++) { const a = i * TAU / o.nLamps + TAU / o.nLamps / 2, mat = new T.MeshBasicMaterial({ color: _loff.getHex(), toneMapped: false }), lp = new T.Mesh(new T.BoxGeometry(0.06, 0.04, 0.06), mat); lp.position.set(Math.sin(a) * R * 0.92, 0.075 * k, Math.cos(a) * R * 0.92); lp.rotation.y = a; body.add(lp); lamps.push({ lp, mat, i: i + 3 }); }
   const rimBand = new T.Mesh(new T.TorusGeometry(R * 0.985, 0.014, 4, o.segs || 24), _saucerLeg); rimBand.rotation.x = PI / 2; rimBand.position.y = 0.105 * k; body.add(rimBand);
   // the legs: hip under the disc, thigh, knee, shin, a round foot; the foot walks a loop and the leg follows it
   const legs = []; for (let i = 0; i < o.legs; i++) { const a = i * TAU / o.legs + (o.legRot || 0); if (o.curved) { legs.push({ a, cv: _curvyLeg(o, b), ph: (o.legs === 3 ? i * TAU / 3 : (i % 2 ? PI : 0)) + (o.legPh || 0) }); continue; } const th = _bone(null, null, o.legR, o.legR * 0.8, _saucerLeg), sh = _bone(null, null, o.legR * 0.8, o.legR * 0.35, _saucerLeg), kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 1.2, 0), _saucerLeg), ft = new T.Mesh(new T.SphereGeometry(o.legR * 1.5, 8, 6), _saucerLeg); ft.scale.y = 0.6; b.add(th); b.add(sh); b.add(kn); b.add(ft); legs.push({ a, th, sh, kn, ft, ph: (o.legs === 3 ? i * TAU / 3 : (i % 2 ? PI : 0)) + (o.legPh || 0) }); }
@@ -58,7 +58,7 @@ function _saucer(o) {
     body.position.y = o.hipH + 0.015 * Math.sin(ph * 2) - 0.05 * ac; body.rotation.z = 0.025 * Math.sin(ph); body.rotation.x = 0.03 * Math.sin(ph * 2) + 0.06 * ac;
     // chase: the pattern is "on, on, off, off" round the rim, advanced one lamp a step; the loop is a whole number of repeats so it closes
     const step = Math.floor(((ph / TAU) * o.chase) + 0.0001) , rate = 1 + 3 * ac;
-    lamps.forEach(Lp => { const pos = (Lp.i + Math.floor(ph / TAU * o.chase * rate)) % 4, on = pos < 2 ? 1 : 0, lit = on * (0.7 + 0.3 * Math.sin(ph * 4 + Lp.i)) + 0.25 * ac; Lp.mat.color.setRGB(0.23 + 0.77 * lit, 0.19 + 0.78 * lit, 0.0 + 0.45 * lit * lit); });
+    lamps.forEach(Lp => { const pos = (Lp.i + Math.floor(ph / TAU * o.chase * rate)) % 4, on = pos < 2 ? 1 : 0, lit = on * (0.7 + 0.3 * Math.sin(ph * 4 + Lp.i)) + 0.25 * ac; Lp.mat.color.copy(_loff).lerp(_lc.clone().lerp(new T.Color(1, 1, 1), 0.45), Math.min(1, lit)); });
     if (plasma) { plasma.material.opacity = 0.25 + 0.15 * Math.sin(ph * 3) + 0.3 * ac; plasma.scale.setScalar(1 + 0.12 * Math.sin(ph * 2) + 0.3 * ac); plasma.rotation.y = ph; }
     if (haze && haze.material && haze.material.opacity !== undefined && o.glass && o.glass.mist) haze.material.opacity = 0.16 + 0.1 * Math.sin(ph * 2) + 0.25 * ac;
     beacon.scale.setScalar(1 + 0.3 * Math.sin(ph * 3) + 0.6 * ac); beacon.scale.y *= 1.5; L.intensity = 0.4 + 0.8 * ac; if (o.pool) { glow.m.material.opacity = 0.2 + 0.2 * Math.sin(ph * 2) + 0.3 * ac; }
@@ -117,3 +117,6 @@ fx(687, "Taller again: a fat, deep disc like a drum, the rim lights on a deeper 
 fx(688, "A tall, steep-sided hull, almost a cylinder with a sloped top and a taller dark dome.", () => _saucer(Object.assign({}, _stall, { sy: 3.2, hipH: 0.72, domeR: 0.34, R: 0.88 })));
 fx(689, "A deep hull with a second rim-light band low on its belly, as well as the top one.", () => _saucer(Object.assign({}, _stall, { sy: 2.4, hipH: 0.6, bellyBand: true })));
 fx(690, "Tall and slightly domed all over, an egg-like disc with the dark centre rising from it.", () => _saucer(Object.assign({}, _stall, { sy: 2.6, hipH: 0.64, domeR: 0.42, R: 0.92 })));
+
+// The game sprite of No. 687, the flux ("void") worker, in violet.
+fx(700, "687, the game sprite.", () => _saucer(Object.assign({}, _stall, { sy: 2.8, hipH: 0.66, domeR: 0.36, S: 1.0 })));
