@@ -30,6 +30,7 @@ const SUITES = [
     ['player weapon',          'weapon.js'],
     ['charged mass',           'mass.js'],
     ['electric panel hacking', 'panelhack.js'],
+    ['enemy heals at nests',   'enemyheal.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
     ['tutorial',               'tutorial.js'],

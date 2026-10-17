@@ -493,7 +493,7 @@ class Predator {
         // ── RETREAT ──
         else if (this.state==="retreat") {
             if (this.health/this.maxHealth>0.75) { this.isRetreating=false; this.state="hunt"; return; }
-            const pillar=findNearestFriendlyPillar({team:"red",x:this.x,y:this.y});
+            const pillar=findNearestHealingNest(this);   // it heals at a NEST, not at pylons (js/helpers.js)
             if (pillar) {
                 const dx=pillar.x-this.x, dy=pillar.y-this.y, dist=Math.sqrt(dx*dx+dy*dy)||0.001;
                 this.dirX=dx/dist; this.dirY=dy/dist;

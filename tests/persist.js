@@ -246,7 +246,9 @@ function play(env) {
     sb.lastGenX = 44;
     sb.exploredZones = new Set([0, 1, 2]);
     const nest  = sb.world.find(t => t.nest);
-    const pylon = sb.world.find(t => t.pillar);
+    // (The world no longer scatters pylons at the start, so the fixture builds one.)
+    let pylon = sb.world.find(t => t.pillar);
+    if (!pylon) { pylon = sb.world.find(t => t.type === 'floor' && t.y === 3 && t.x >= 20); if (pylon) { pylon.pillar = true; pylon.pillarTeam = 'green'; pylon.destroyed = false; } }
     ok(nest && pylon, 'fixture needs a nest and a pylon');
     nest.nestHealth = 120;
     nest.connectedPylon = pylon; pylon.nestConnection = nest;
@@ -284,6 +286,9 @@ check('THE REPORTED CASE: a nest-to-pylon link survives the refresh', () => {
     const nest2  = b.sandbox.worldTileMap.get(`${nest.x},${nest.y}`);
     const pylon2 = b.sandbox.worldTileMap.get(`${pylon.x},${pylon.y}`);
     ok(nest2 && pylon2, 'tiles should exist at the same coordinates');
+    // (The world has no pylons of its own now, so the saved pylon is put back the way init.js does it, BEFORE the session is applied.)
+    // ... but applySession already ran above, so redo it with the pylon in place.
+    pylon2.pillar = true; pylon2.pillarTeam = 'green'; pylon2.destroyed = false; b.run('applySession(loadSession())');
     eq(nest2.connectedPylon, pylon2, 'nest should still point at its pylon');
     eq(pylon2.nestConnection, nest2, 'and the pylon back at the nest');
     eq(nest2.nestHealth, 120, 'partial nest damage should persist too');

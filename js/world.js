@@ -11,7 +11,10 @@ function generateSegment(startX) {
         const isNest = type === 'floor' && y === -1 && startX === zoneCenter;
         const tile = {
             x:startX, y, type,
-            pillar:(type==='floor'&&y>=3&&rnd()<cfg.pillarSpawnRate&&startX>=0),
+            // NO pylons at the start: the world used to scatter them over the ground (cfg.pillarSpawnRate), a mix of yours and the enemy's, and the
+            // enemy's healed it. ("Get rid of the pylons that spawn at the beginning.") The draw stays so the positional stream does not shift
+            // and rebuild a different world under every save; the ground just keeps none of the result.
+            pillar:(type==='floor'&&y>=3&&rnd()<cfg.pillarSpawnRate&&startX>=0)&&false,
             pillarTeam: rnd()>0.6?"green":"red",
             pillarCol:null,
             destroyed:false, health:20, maxHealth:20,

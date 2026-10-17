@@ -2855,6 +2855,8 @@ function render() {
     if (frame % 3 === 0) {
         pillarIndexFresh();
         for (const actor of actors) {
+            // THE ENEMY heals at its NESTS only ("enemies heal from the nests only"): never at a pylon, its own or one it took from you.
+            if (actor.team === "red") { if (enemyNearHealingNest(actor)) actor.health = Math.min(actor.maxHealth, actor.health + 0.15); continue; }
             // Pylons stand on whole tiles: only those within 1.2 can count.
             const x0 = Math.ceil(actor.x - 1.2), x1 = Math.floor(actor.x + 1.2);
             const y0 = Math.ceil(actor.y - 1.2), y1 = Math.floor(actor.y + 1.2);

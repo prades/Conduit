@@ -738,6 +738,29 @@ function findNearestFriendlyPillar(actor) {
     return best;
 }
 
+// WHERE THE ENEMY HEALS: at its NESTS, and nowhere else ("make it to where the enemies heal from the nests only"). The nearest nest that still
+// has health, or null. (It used to be the enemy's pylons, which now heal nobody.)
+const NEST_HEAL_RANGE = 2.2;     // tiles round a live nest within which an enemy mends
+function findNearestHealingNest(actor) {
+    let best = null, bd2 = Infinity;
+    const list = typeof _nestCache !== "undefined" ? _nestCache : [];
+    for (let i = 0; i < list.length; i++) {
+        const t = list[i]; if (!t.nest || !(t.nestHealth > 0)) continue;
+        const dx = t.x - actor.x, dy = t.y - actor.y, d2 = dx * dx + dy * dy;
+        if (d2 < bd2) { bd2 = d2; best = t; }
+    }
+    return best;
+}
+function enemyNearHealingNest(actor) {
+    const list = typeof _nestCache !== "undefined" ? _nestCache : [];
+    for (let i = 0; i < list.length; i++) {
+        const t = list[i]; if (!t.nest || !(t.nestHealth > 0)) continue;
+        const dx = t.x - actor.x, dy = t.y - actor.y;
+        if (dx * dx + dy * dy < NEST_HEAL_RANGE * NEST_HEAL_RANGE) return true;
+    }
+    return false;
+}
+
 function convertNPC(actor, newTeam) {
     actor.team = newTeam;
     actor.stance = "follow";

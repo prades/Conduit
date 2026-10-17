@@ -77,7 +77,7 @@ function marchAt(E, n, targetExpr, frames) {
         for (let i = 0; i < ${n}; i++) {
             const f = { x: target.x - 1 + (i % 3), y: 2, type: 'virus', team: 'green',
                         isFollower: true, dead: false, element: 'core', role: 'brawler',
-                        health: 40, maxHealth: 40, moveSpeed: 0.04, walkCycle: 0,
+                        health: 4000, maxHealth: 4000, moveSpeed: 0.04,   // (tough: the world has no starting pylons to heal a squad marching on a nest, and what is tested here is where they stand) walkCycle: 0,
                         currentWill: 5, stance: 'free',
                         stats: { will: 5, combat: 5, defense: 5, health: 40 } };
             actors.push(f); followers.push(f);
