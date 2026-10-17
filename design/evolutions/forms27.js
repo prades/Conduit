@@ -55,3 +55,44 @@ fx(703, "Chunkier: a bigger ball, wider treads and thicker shell plates, shorter
 fx(704, "Long treads under a smaller ball, like a tank, the antennae long and thin and splayed.", () => _ballTank(Object.assign({}, _bt0, { r: 0.44, tl: 1.5, links: 18, ballY: 0.66, antL: 0.95, antSplay: 0.25, antUp: 0.5 })));
 fx(705, "Tall shell plates that wrap higher round the ball like a cage, the antennae rising from between them.", () => _ballTank(Object.assign({}, _bt0, { shellK: 1.3, antX: 0.14, antY: 0.9, antUp: 0.9, antL: 0.8 })));
 fx(706, "A smaller, tighter ball nearly hidden by its treads and plates, the antennae the longest part, a static bolt every beat.", () => _ballTank(Object.assign({}, _bt0, { r: 0.4, tx: 0.5, tw: 0.3, th: 0.5, ballY: 0.62, shellK: 1.3, antL: 1.05, zaps: 4 })));
+
+// ── THE BALL TIRE (Nos. 707–711): the whole creature is a ball that is a TIRE: a sphere wrapped in square tread blocks that roll round the axle; two exterior shell caps on its sides complete the body; two forward antennae with static between the rods ──
+function _tireBall(o) {
+  const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.25);
+  const lc = new T.Color(EL.color), ledOff = lc.clone().multiplyScalar(0.18), ledOn = lc.clone().lerp(new T.Color(1, 1, 1), 0.4);
+  const frame = G(); frame.position.y = o.r; b.add(frame);                       // sits on the ground; the tyre turns about the x axis inside it
+  const core = new T.Mesh(new T.IcosahedronGeometry(o.r * 0.97, 1), _btHull); frame.add(core);
+  // the tyre: rings of square tread blocks round the x axis; the rows sit on the sphere, wider rows at the equator
+  const tyre = G(); frame.add(tyre); const blocks = [];
+  const rows = o.rows, N = o.around, span = o.span;
+  for (let j = 0; j < rows; j++) { const xj = rows === 1 ? 0 : (-span + 2 * span * j / (rows - 1)) * o.r, rr = Math.sqrt(Math.max(0.01, o.r * o.r - xj * xj)), bw = (2 * span * o.r / Math.max(1, rows - 1)) * 0.92, bl = TAU * rr / N * 0.82, bh = o.tread;
+    for (let i = 0; i < N; i++) { const a = i * TAU / N + (j % 2 ? TAU / N / 2 : 0), bx = new T.Mesh(new T.BoxGeometry(bw, bh, bl), (i + j) % 3 === 0 ? _btHull : _btPanel);
+      const lean = Math.atan2(xj, rr); bx.position.set(xj * (1 + bh / o.r * 0.5), Math.cos(a) * (rr + bh * 0.5), Math.sin(a) * (rr + bh * 0.5)); bx.rotation.set(-a + PI / 2 * 0 , 0, 0); bx.rotation.x = a; bx.rotation.z = -lean * 0; tyre.add(bx); blocks.push(bx); } }
+  // two shell caps: curved armour plates over the ball's two sides (the hub of the tyre), standing proud, not turning
+  const caps = []; for (const sx of [-1, 1]) { const cap = new T.Mesh(new T.SphereGeometry(o.r * o.capK, 18, 8, 0, TAU, 0, o.capA), _btPanel); cap.material = _btPanel; cap.rotation.z = -sx * PI / 2; cap.position.x = sx * o.r * 0.12; frame.add(cap);
+    const ring = new T.Mesh(new T.TorusGeometry(o.r * o.capK * Math.sin(o.capA), 0.02, 4, 24), new T.MeshBasicMaterial({ color: ledOff.getHex(), toneMapped: false })); ring.rotation.y = PI / 2; ring.position.x = sx * (o.r * o.capK * Math.cos(o.capA) + o.r * 0.12); frame.add(ring); caps.push({ cap, ring });
+    const hub = new T.Mesh(new T.CylinderGeometry(o.r * 0.14, o.r * 0.14, 0.05, 8), new T.MeshBasicMaterial({ color: ledOn.getHex(), toneMapped: false })); hub.rotation.z = PI / 2; hub.position.x = sx * (o.r * o.capK + o.r * 0.12 + 0.01); frame.add(hub); caps[caps.length - 1].hub = hub; }
+  // the antennae: two rods forward over the top, static jumping between the tips now and again
+  const ants = []; for (const sx of [-1, 1]) { const ag = G(); ag.position.set(sx * o.antX, o.r * 1.02 + 0.02, o.r * 0.25); frame.add(ag);
+    const rod = new T.Mesh(new T.CylinderGeometry(0.012, 0.022, o.antL, 5, 1), _btHull); rod.geometry.translate(0, o.antL / 2, 0); rod.rotation.x = PI / 2 - o.antUp; rod.rotation.z = -sx * o.antSplay; ag.add(rod);
+    const tip = new T.Mesh(new T.OctahedronGeometry(0.035, 0), new T.MeshBasicMaterial({ color: ledOn.getHex(), toneMapped: false })); tip.scale.y = 1.6; tip.position.set(0, o.antL, 0); rod.add(tip); ants.push({ ag, rod, tip, sx }); }
+  const arc = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: ledOn.getHex(), transparent: true, opacity: 0.95 })); arc.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(10 * 3), 3)); arc.frustumCulled = false; frame.add(arc);
+  const arc2 = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 })); arc2.geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(10 * 3), 3)); arc2.frustumCulled = false; frame.add(arc2);
+  const L = new T.PointLight(0xffffff, 0.4, 3.5, 2); L.color.set(EL.color); L.position.set(0, o.r * 1.2, o.r * 0.6); b.add(L); LIGHTS.push(L);
+  const wp = new T.Vector3();
+  return { g, core: o.r * 1.1 * (o.S || 1.25), update(t, act) { const ph = 1.6 * t, ac = act || 0;
+    // the tyre rolls round the axle: a whole number of block-widths per loop so it closes; faster when it attacks
+    const turns = o.turns * (1 + 1.2 * ac); tyre.rotation.x = -(ph / TAU) * (TAU / N) * turns * (o.turns >= 1 ? 1 : 1); frame.position.y = o.r + 0.012 * Math.sin(ph * 4 * 0 + ph * 2) - 0.03 * ac; frame.position.z = 0.1 * ac; frame.rotation.x = 0.02 * Math.sin(ph) - 0.07 * ac;
+    const glow = 0.5 + 0.3 * Math.sin(ph * 3) + 0.4 * ac; caps.forEach(C => { C.ring.material.color.copy(ledOff).lerp(ledOn, Math.min(1, glow)); C.hub.scale.set(1, 1 + 0.2 * Math.sin(ph * 4), 1); });
+    ants.forEach(A => { A.ag.rotation.z = A.sx * 0.05 * Math.sin(ph * 2 + A.sx); A.tip.scale.setScalar(1 + 0.4 * Math.sin(ph * 5 + A.sx) + 0.8 * ac); A.tip.scale.y *= 1.6; });
+    const cyc = (ph / TAU * o.zaps) % 1, on = ac > 0.2 || cyc < 0.22, fr = Math.floor(ph * 12); arc.visible = on; arc2.visible = on && fr % 2 === 0;
+    if (on) { const A0 = ants[0], A1 = ants[1]; A0.tip.getWorldPosition(wp); frame.worldToLocal(wp); const p0 = wp.clone(); A1.tip.getWorldPosition(wp); frame.worldToLocal(wp); const p1 = wp.clone();
+      [arc, arc2].forEach((ln, li) => { const pa = ln.geometry.attributes.position.array; for (let k = 0; k < 10; k++) { const u = k / 9, jx = (_hz(k, li + 3, fr) - 0.5) * 0.16 * Math.sin(u * PI) * (1 + ac), jy = (_hz(k, li + 9, fr) - 0.5) * 0.16 * Math.sin(u * PI) * (1 + ac); pa[k * 3] = p0.x + (p1.x - p0.x) * u + jx; pa[k * 3 + 1] = p0.y + (p1.y - p0.y) * u + jy; pa[k * 3 + 2] = p0.z + (p1.z - p0.z) * u; } ln.geometry.attributes.position.needsUpdate = true; }); }
+    L.intensity = 0.4 + 0.8 * (on ? 1 : 0.2) + 0.6 * ac; } };
+}
+const _tb0 = { S: 1.25, r: 0.62, rows: 5, around: 18, span: 0.62, tread: 0.09, capK: 1.0, capA: 0.62, antX: 0.17, antL: 0.8, antUp: 0.5, antSplay: 0.1, zaps: 2, turns: 1 };
+fx(707, "The whole creature a ball tyre: a black sphere wrapped in square tread blocks that roll round its axle, a shell cap on each side, and two forward antennae with static jumping between them now and again.", () => _tireBall(Object.assign({}, _tb0)));
+fx(708, "Chunkier tread: bigger, deeper square blocks in fewer rows, wide shell caps.", () => _tireBall(Object.assign({}, _tb0, { rows: 3, around: 14, tread: 0.14, span: 0.55, capA: 0.7 })));
+fx(709, "A finer tread of many small square blocks, small shell caps, long antennae.", () => _tireBall(Object.assign({}, _tb0, { rows: 7, around: 24, tread: 0.06, span: 0.66, capA: 0.5, antL: 1.0 })));
+fx(710, "A bigger ball, the tyre almost the whole sphere, the caps tiny hubs, the antennae splayed.", () => _tireBall(Object.assign({}, _tb0, { r: 0.72, rows: 7, around: 20, span: 0.8, capA: 0.38, antSplay: 0.3, antL: 0.9 })));
+fx(711, "A smaller ball with deep tread and big armoured shell caps like hubcaps, a static bolt every beat.", () => _tireBall(Object.assign({}, _tb0, { r: 0.52, rows: 3, around: 14, tread: 0.12, span: 0.5, capK: 1.08, capA: 0.78, zaps: 4 })));
