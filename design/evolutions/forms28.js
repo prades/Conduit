@@ -3,7 +3,7 @@ const _obBlack = new T.MeshStandardMaterial({ color: 0x010102, metalness: 0.2, r
 const _obTread = new T.MeshStandardMaterial({ color: 0x050507, metalness: 0.25, roughness: 0.7, flatShading: true }); _obTread.envMapIntensity = 0.25;
 function _bpod(o, sx, lit, dim, lc, frame, R) {   // one booster bracket: its housing, its nozzle(s), coil lights and ion stream(s); rear anchor at z = -len*0.62 for every kind
   const B = o.boost, K = B.kind || 'barrel', bl = B.len, br = B.r, eg2 = G(); eg2.position.set(sx * o.earX, R + 0.02, o.earZ); eg2.rotation.set(-o.earTilt, 0, -sx * o.earSplay); frame.add(eg2);
-  const rearZ = K === 'trap' ? -B.L1 * 0.62 : -bl * 0.62, coils = [], plumes = [];
+  const rearZ = K === 'trap' ? -B.L1 * 0.62 : K === 'strap' ? -B.T * 0.5 - 0.03 : -bl * 0.62, coils = [], plumes = [];
   const addPlume = (x, y, rr, kk) => { [[1.0, 0.35], [0.55, 0.6]].forEach(([k, op], pi) => { const pl = new T.Mesh(new T.ConeGeometry(rr * k, B.plume * k * kk, 8, 1, true), new T.MeshBasicMaterial({ color: pi ? lit.clone().lerp(new T.Color(1, 1, 1), 0.5).getHex() : lc.getHex(), transparent: true, opacity: op, blending: T.AdditiveBlending, depthWrite: false, toneMapped: false, side: T.DoubleSide })); pl.rotation.x = -PI / 2; pl.position.set(x, y, rearZ - B.plume * k * kk * 0.5); eg2.add(pl); plumes.push({ pl, k, op, len: B.plume * k * kk }); }); };
   const litMat = () => new T.MeshBasicMaterial({ color: lit.getHex(), toneMapped: false });
   const ring = (z, rad, tube) => { const co = new T.Mesh(new T.TorusGeometry(rad, tube || 0.016, 4, 12), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); co.position.z = z; eg2.add(co); coils.push(co); return co; };
@@ -54,6 +54,17 @@ function _bpod(o, sx, lit, dim, lc, frame, R) {   // one booster bracket: its ho
     for (let i = 0; i < 3; i++) { const vs = new T.Mesh(new T.BoxGeometry(Tt * 0.62, 0.024, 0.02), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); vs.position.set(0, H * (0.22 + 0.22 * i), -L1 / 2 + (L1 - L2) / 2 * (0.22 + 0.22 * i) - 0.015 + (sh * (0.22 + 0.22 * i)) ); eg2.add(vs); coils.push(vs); addPlume(0, H * (0.22 + 0.22 * i), Tt * 0.2, 0.55); }
     if (B.joint) { const jt = new T.Mesh(new T.CylinderGeometry(Tt * 0.42, Tt * 0.42, Tt * 1.15, 8), _obBlack); jt.rotation.z = PI / 2; jt.position.set(0, -0.02, 0); eg2.add(jt); const jl = new T.Mesh(new T.TorusGeometry(Tt * 0.43, 0.012, 4, 12), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); jl.rotation.y = PI / 2; jl.position.set(Tt * 0.58, -0.02, 0); eg2.add(jl); coils.push(jl); }
     if (B.second) { const g2 = new T.Shape(); g2.moveTo(-L2 * 0.5, 0); g2.lineTo(L2 * 0.5, 0); g2.lineTo(L2 * 0.32 + sh * 0.6, H * 0.5); g2.lineTo(-L2 * 0.32 + sh * 0.6, H * 0.5); g2.closePath(); const b2 = new T.Mesh(new T.ExtrudeGeometry(g2, { depth: Tt * 0.7, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 1 }), _obBlack); b2.geometry.translate(0, 0, -Tt * 0.35); b2.rotation.y = -PI / 2; b2.position.set(0, H + 0.04 + (B.bevel || 0.03), sh * 0.5); eg2.add(b2); }
+  } else if (K === 'strap') {   // THICK TRAPEZOID brackets that run DOWN the ball's flank: a chain of trapezoid blocks following the sphere from near the top down toward the equator, narrowing as they go
+    eg2.position.set(0, 0, o.earZ); eg2.rotation.set(0, 0, 0); eg2.position.y = 0;
+    const n = B.n, th0 = B.th0, th1 = B.th1, last = n - 1;
+    for (let i = 0; i < n; i++) { const th = th0 + (th1 - th0) * i / Math.max(1, last), u = i / Math.max(1, last), len = B.L0 * (1 - 0.35 * u), h = B.H0 * (1 - 0.25 * u), W = B.T * (1 - 0.3 * u);
+      const sh = new T.Shape(); sh.moveTo(-len / 2, 0); sh.lineTo(len / 2, 0); sh.lineTo(len * 0.36, h); sh.lineTo(-len * 0.36, h); sh.closePath();
+      const bk = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: W, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 1 }), (i % 2) ? _obBlack : _obTread); bk.geometry.translate(0, 0, -W / 2);
+      const hold = G(); hold.position.set(sx * Math.sin(th) * (R * 1.0), Math.cos(th) * (R * 1.0), 0); hold.rotation.z = -sx * th; hold.add(bk); eg2.add(hold);
+      if (i === 0) { const fp = new T.Mesh(new T.BoxGeometry(len * 0.55, 0.014, W * 0.7), litMat()); fp.position.set(0, h + 0.03, 0); hold.add(fp); face = fp; }
+      if (i === last) { for (let k = 0; k < 3; k++) { const vs = new T.Mesh(new T.BoxGeometry(len * 0.5, 0.02, 0.02), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); vs.position.set(0, h * (0.25 + 0.25 * k), -W / 2 - 0.012); hold.add(vs); coils.push(vs); const wp2 = new T.Vector3(0, h * (0.25 + 0.25 * k), 0); hold.localToWorld(wp2.clone()); addPlume(sx * Math.sin(th) * R + Math.cos(th) * sx * 0 * 0, Math.cos(th) * R + h * (0.25 + 0.25 * k) * Math.cos(th), len * 0.12, 0.5); } }
+      if (i > 0 && i < last) { const ln = new T.Mesh(new T.BoxGeometry(len * 0.5, 0.012, W * 1.02), new T.MeshBasicMaterial({ color: dim.getHex(), toneMapped: false })); ln.position.set(0, h * 0.5, 0); hold.add(ln); coils.push(ln); }
+    }
   } else if (K === 'needle') {   // a slim spear of a thruster: a long thin cone, three fins, a hot band, a long ion stream
     const nd = new T.Mesh(new T.ConeGeometry(br * 0.6, bl * 1.35, 8), _obTread); nd.rotation.x = PI / 2; nd.position.z = bl * 0.1; eg2.add(nd);
     for (let i = 0; i < 3; i++) { const fn = new T.Mesh(new T.BoxGeometry(0.012, br * 1.5, bl * 0.34), _obBlack); fn.rotation.z = i * TAU / 3; fn.geometry.translate(0, br * 0.9, 0); fn.position.z = -bl * 0.35; eg2.add(fn); }
@@ -88,7 +99,7 @@ function _bpod(o, sx, lit, dim, lc, frame, R) {   // one booster bracket: its ho
     ring(-bl * 0.4, br * 1.12, 0.02); ring(bl * 0.3, br * 1.12, 0.02); ring(-bl * 0.05, br * 1.12, 0.02); const mo = new T.Mesh(new T.CircleGeometry(br * 1.0, 12), litMat()); mo.material.transparent = true; mo.material.opacity = 0.45; mo.rotation.y = PI; mo.position.z = rearZ + 0.05; eg2.add(mo); addPlume(0, 0, br * 1.05, 1);
   }
   const exit = new T.Mesh(new T.OctahedronGeometry(0.03, 0), new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })); exit.position.set(0, 0, rearZ - B.plume * 0.35); if (K === 'coil') exit.position.set(0, bl * 1.1, 0); eg2.add(exit);
-  return { eg2, face, tip: exit, sx, coils, plumes, boost: true };
+  return { eg2, face, tip: exit, sx, coils, plumes, boost: true, rz: rearZ };
 }
 function _orbBrawler(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1.25);
@@ -134,7 +145,7 @@ function _orbBrawler(o) {
     shells.forEach(S => { const s = 1 + 0.04 * ac; S.holder.scale.setScalar(s); S.holder.position.x = S.sx * (0.04 + 0.05 * ac); });
     ears.forEach(E => { E.face.material.color.copy(lit).multiplyScalar(0.7 + 0.3 * fk); E.tip.scale.setScalar(1 + 0.4 * Math.sin(ph * 5 + E.sx) + 0.8 * ac); });
     ears.forEach(E => { if (E.boost && E.eg2.userData.fan) E.eg2.userData.fan.rotation.z = ph * 14 * (1 + 2 * ac); });
-    ears.forEach(E => { if (!E.boost) return; E.plumes.forEach(P => { const fl = 0.85 + 0.15 * Math.sin(ph * 14 + P.k * 5 + E.sx) + 0.5 * ac; P.pl.scale.set(1 + 0.12 * Math.sin(ph * 11 + E.sx), fl, 1 + 0.12 * Math.sin(ph * 11 + E.sx)); P.pl.position.z = ((o.boost.kind === 'trap') ? -o.boost.L1 * 0.62 : -(o.boost.len * 0.62)) - P.len * fl * 0.5; P.pl.material.opacity = P.op * (0.7 + 0.3 * fk) + 0.2 * ac; }); E.coils.forEach((C, i) => C.material.color.copy(dim).lerp(lit, Math.min(1, (Math.sin(ph * 4 - i * 1.4) + 1) / 2 + 0.4 * ac))); if ((o.boost.kind || 'barrel') !== 'coil') E.tip.position.z = ((o.boost.kind === 'trap') ? -o.boost.L1 * 0.62 : -(o.boost.len * 0.62)) - o.boost.plume * 0.35 * (0.85 + 0.5 * ac); });
+    ears.forEach(E => { if (!E.boost) return; E.plumes.forEach(P => { const fl = 0.85 + 0.15 * Math.sin(ph * 14 + P.k * 5 + E.sx) + 0.5 * ac; P.pl.scale.set(1 + 0.12 * Math.sin(ph * 11 + E.sx), fl, 1 + 0.12 * Math.sin(ph * 11 + E.sx)); P.pl.position.z = E.rz - P.len * fl * 0.5; P.pl.material.opacity = P.op * (0.7 + 0.3 * fk) + 0.2 * ac; }); E.coils.forEach((C, i) => C.material.color.copy(dim).lerp(lit, Math.min(1, (Math.sin(ph * 4 - i * 1.4) + 1) / 2 + 0.4 * ac))); if ((o.boost.kind || 'barrel') !== 'coil') E.tip.position.z = E.rz - o.boost.plume * 0.35 * (0.85 + 0.5 * ac); });
     const cyc = (ph / TAU * o.zaps) % 1, on = ac > 0.2 || cyc < 0.22, fr = Math.floor(ph * 12); arc.visible = on; arc2.visible = on && fr % 2 === 0;
     if (on) { ears[0].tip.getWorldPosition(wp); frame.worldToLocal(wp); const p0 = wp.clone(); ears[1].tip.getWorldPosition(wp); frame.worldToLocal(wp); const p1 = wp.clone();
       [arc, arc2].forEach((ln, li) => { const pa = ln.geometry.attributes.position.array; for (let k = 0; k < 10; k++) { const u = k / 9, jx = (_hz(k, li + 3, fr) - 0.5) * 0.16 * Math.sin(u * PI) * (1 + ac), jy = (_hz(k, li + 9, fr) - 0.5) * 0.16 * Math.sin(u * PI) * (1 + ac); pa[k * 3] = p0.x + (p1.x - p0.x) * u + jx; pa[k * 3 + 1] = p0.y + (p1.y - p0.y) * u + jy; pa[k * 3 + 2] = p0.z + (p1.z - p0.z) * u; } ln.geometry.attributes.position.needsUpdate = true; }); } } };
@@ -200,3 +211,11 @@ fx(763, "758 at 50%.", () => _orbBrawler(_sm758(0.5)));
 fx(764, "758 at 40%.", () => _orbBrawler(_sm758(0.4)));
 fx(765, "758 at 50%, set a little further back and wider apart on the ball.", () => _orbBrawler(Object.assign({}, _sm758(0.5), { earX: 0.34, earZ: -0.12 })));
 fx(766, "758 at 40%, the lit panels brighter and a touch more slant.", () => _orbBrawler(Object.assign({}, _sm758(0.4), { boost: Object.assign({}, _sm758(0.4).boost, { shear: 0.06 }) })));
+
+// ── The brackets extend further down his body (Nos. 767–771): a chain of thick trapezoid blocks running down each flank over the shell plates, small like 763 ──
+const _obst = Object.assign({}, _pt, { boost: { kind: 'strap', len: 0.5, n: 4, th0: 0.42, th1: 1.25, L0: 0.3, H0: 0.15, T: 0.2, plume: 0.14, coils: 3 } });
+fx(767, "The 763-sized brackets extended down each flank: four thick trapezoid blocks chained down the ball's side, narrowing as they go, a lit panel on the top one and ion slits on the lowest.", () => _orbBrawler(Object.assign({}, _obst)));
+fx(768, "Longer still: six blocks reaching right down to the equator.", () => _orbBrawler(Object.assign({}, _obst, { boost: Object.assign({}, _obst.boost, { n: 6, th1: 1.5, L0: 0.26 }) })));
+fx(769, "Fewer, bigger blocks: three chunky trapezoids that stop at the middle of the flank.", () => _orbBrawler(Object.assign({}, _obst, { boost: Object.assign({}, _obst.boost, { n: 3, th1: 1.05, L0: 0.36, H0: 0.18, T: 0.24 }) })));
+fx(770, "Starting higher, right at the top of the ball, running down a long way, thin and tall.", () => _orbBrawler(Object.assign({}, _obst, { boost: Object.assign({}, _obst.boost, { n: 5, th0: 0.2, th1: 1.3, L0: 0.22, H0: 0.14, T: 0.18 }) })));
+fx(771, "A heavy shoulder block at the top that steps down into three narrower blocks.", () => _orbBrawler(Object.assign({}, _obst, { boost: Object.assign({}, _obst.boost, { n: 4, th0: 0.4, th1: 1.2, L0: 0.38, H0: 0.2, T: 0.26 }) })));
