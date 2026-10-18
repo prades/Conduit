@@ -171,11 +171,11 @@ No other file changes: the picker, the perk screen, the INFO pages and the roste
 3. **Move choice** is **per follower, plus a squad setter** (INFO tab MOVE row, and "set move" for a selected group like roles).
 4. **Class moves** work **only while you are that class**; switch and a follower falls back to its form's default move (`evoMoveAllowed` already enforces it once `playerClassId()` exists).
 
-### Open (the new asks)
+### Answered (the new asks)
 
-5. **What does hacker skill do to the puzzle?** (a) more variables = harder and better gear, unlocked as the skill rises, or (b) more variables are *given*, so a higher skill makes it easier and faster.
-6. **Does gear persist?** Kept for good in the inventory, or it lasts until the next dawn.
-7. **Should a failed solve punish?** A lock-out only, or also an alarm chance.
+5. **Hacker skill:** more variables = **harder and better gear**. The skill unlocks the tiers (1, 2, then 3 unknown variables); you choose how hard to go, up to your level.
+6. **Gear** is **kept for good** in the inventory (8 slots) and carries across runs.
+7. **A wrong answer** costs a **lock-out of that panel and a small shard fee**; a decoy still trips its alarm as today.
 
 ## 9. Done so far
 
