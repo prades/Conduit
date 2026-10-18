@@ -77,7 +77,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('ABOVE THEIR HEADS, IN THE GAME\'S STYLE');
     check('THE ASK: a unit\'s plate has the level, the name AND a status chip over it (drawPlate called twice for your own units, once for an enemy)', () => {
         const r = J(`(function(){ __fresh(); const calls = []; const keep = drawPlate; drawPlate = (t, col, x, y, chip) => { calls.push([t, !!chip, y]); return true; };
-            const f = followers[0]; f.level = 6; drawUnitTag(f, 0, 100, ctx);
+            const f = followers[0]; f.level = 6; f.stance = 'hold'; f.job = { type: 'move', target: { x: f.x, y: f.y } }; drawUnitTag(f, 0, 100, ctx);   // (plain FOLLOWING has no chip any more: it is the usual state)
             const e = spawnPredatorForZone(1, { species: 'ant', className: 'scout' }); const n0 = calls.length; drawUnitTag(e, 0, 100, ctx); drawPlate = keep; return { calls, n0, nEnemy: calls.length - n0 }; })()`);
         same(r.calls[0][1], false, 'the name plate first'); ok(/^Lv 6 /.test(r.calls[0][0]), r.calls[0][0]); same(r.calls[1][1], true, 'a status chip'); ok(r.calls[1][2] < r.calls[0][2], 'the chip is above the plate'); same(r.nEnemy, 1, 'an enemy gets no status chip');
     });
