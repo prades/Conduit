@@ -496,16 +496,20 @@ async function boot(store) {
         ok(!/all elements/.test(body), 'the old size caption is still drawn');
     });
 
-    check('the crystal IS the readout, and shows the mix', () => {
-        // "Incorporating the crystal": it cycles through the colours actually
-        // in the mix, which is why no separate colour strip is needed.
+    check('the gem IS the readout, and shows the mix: still, a wedge per element, lit only for what is in the mix', () => {
         const at = SRC.clone.indexOf('function _drawModTab');
         const body = SRC.clone.slice(at, SRC.clone.indexOf('\n}\n', at));
-        ok(/_draw2DCrystal\(/.test(body), 'the crystal is gone from the modulation tab');
-        ok(/cycleColor/.test(body), 'the crystal is not driven by the mix colours');
-        // And the cycle colour comes from the mix, not from a fixed list.
-        const panel = SRC.clone.slice(SRC.clone.indexOf('function drawCrystalPanel'));
-        ok(/scheme\.colors\[cycleIdx\]/.test(panel), 'the cycle no longer reads the mix');
+        ok(/_drawMixGem\(/.test(body), 'the gem is gone from the modulation tab');
+        ok(!/cycleColor/.test(SRC.clone) && !/_crystalModPhase/.test(SRC.clone), 'the crystal still blinks through the mix colours');
+        const g0 = SRC.clone.indexOf('function _drawMixGem'), gem = SRC.clone.slice(g0, SRC.clone.indexOf('\n}\n', g0));
+        ok(!/frame/.test(gem), 'the gem moves'); ok(/modulationIncludes\(el\.id\)/.test(gem), 'the gem does not read the mix');
+        const c0 = SRC.clone.indexOf('function drawModulationCards'), cards = SRC.clone.slice(c0, SRC.clone.indexOf('\n}\n', c0));
+        ok(!/Math\.sin\(/.test(cards), 'the element cards pulse');
+    });
+    check('the Crystal is one page: no GUIDE tab, no tab bar', () => {
+        ok(!/GUIDE/.test(SRC.clone) && !/_drawInfoTab/.test(SRC.clone), 'the guide is still there');
+        const panel = SRC.clone.slice(SRC.clone.indexOf('function drawCrystalPanel'), SRC.clone.indexOf('function _drawModTab'));
+        ok(!/CTABS\.forEach/.test(panel), 'a tab bar is still drawn');
     });
 
     check('the crystal panel no longer draws a slider', () => {

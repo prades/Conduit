@@ -152,7 +152,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/id = "ccRecruit"[\s\S]{0,200}recruitDo\(\)/.test(cc), 'the Command Center has no recruit button'); ok(/rec\.style\.display = ccOpenTab === "roster"/.test(cc), 'it shows on other tabs');
         ok(/RECRUIT \\u25c6[\s\S]{0,200}recruitDo\(\)/.test(rm), 'the phone roster has no recruit button');
         ok(!/id:"recruit"/.test(cl) && !/_drawRecruitTab/.test(cl) && !/_recruitBtnBounds/.test(cl), 'the Crystal still has a RECRUIT tab');
-        same(run('CTABS.map(t => t.id).join()'), 'modulation,info', 'the Crystal tabs');
+        same(run('CTABS.map(t => t.id).join()'), 'modulation', 'the Crystal is one page now (the GUIDE tab is gone)');
     });
     check('a recruit costs RECRUIT_COST shards and a follower comes out at the Crystal', () => {
         run('followers.length = 0; shardCount = 100; floatingTexts.length = 0;');

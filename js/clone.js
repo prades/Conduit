@@ -639,13 +639,12 @@ function drawClonesBlob() {
 
 // ── State ─────────────────────────────────────────────────
 const _CRYSBTN  = { x: 0, y: 0, r: 22 };  // canvas button hit area
-let _crystalModPhase = 0;                   // color-cycle frame counter
 let _crystalScrollX  = 0;                   // the clone card strip's slide offset (px)
 
 // Tab definitions
+// The Crystal is one page now: the ELEMENT MIX. (It had a guide tab beside it, a list of the ultimates and the pylon rules that nobody needed there: the INFO tab on every unit has the real numbers.)
 const CTABS = [
-    { id:"modulation", label:"ELEMENT MIX", color:"#aaddff" },
-    { id:"info",       label:"GUIDE",       color:"#ffcc44" },
+    { id:"modulation", label:"ELEMENT MIX", color:"#8fe3ff" },
 ];
 const CSORTS = [
     { id:"species",  label:"SPECIES"  },
@@ -765,6 +764,8 @@ function modulationToggle(id) {
 // One card per element: a gem, its name and where it stands. A lit card is in the mix (tap to drop it); an unlocked dark one is out of the mix (tap to add
 // it); a locked one is an empty slot, or - once an unlock is earned - an UNLOCK button. Returns { swatches: [the toggles], picks: [the unlocks] }.
 function drawModulationCards(x, y, w, h, cols, gap, hot) {
+    // The look (reported: "I don't like the rest of the look of the menu either"): dark slabs, not solid blocks of colour. Each carries its element's icon, its name in white, a stripe and a
+    // tick in its colour when it is in the mix; one that is out of the mix is a dim outline; one not unlocked yet is dimmer still. Nothing pulses.
     const order = ELEMENTS.slice();
     const rows = Math.ceil(order.length / cols);
     const cw = Math.floor((w - (cols - 1) * gap) / cols), ch = Math.max(30, Math.min(84, Math.floor((h - (rows - 1) * gap) / rows)));
@@ -772,23 +773,25 @@ function drawModulationCards(x, y, w, h, cols, gap, hot) {
     order.forEach((el, i) => {
         const cx = x + (i % cols) * (cw + gap), cy = y + Math.floor(i / cols) * (ch + gap);
         const unlocked = unlockedElements.has(el.id), on = unlocked && modulationIncludes(el.id), pick = !unlocked && choices.indexOf(el.id) >= 0;
-        const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.09 + i);
-        const col = unlocked || pick ? el.color : "#3a4666";
-        uiSlab(cx, cy, cw, ch, pick ? UI_GOLD : col, on, null, !unlocked && !pick);
-        if (pick) { ctx.globalAlpha = 0.1 + pulse * 0.22; ctx.fillStyle = UI_GOLD; uiSlabPath(cx, cy, cw, ch); ctx.fill(); ctx.globalAlpha = 1; }
-        // the gem
-        const gx = cx + 14 + Math.min(14, ch * 0.3), gy = cy + ch / 2, gr = Math.min(15, ch * 0.3);
-        ctx.save(); if (!unlocked && !pick) ctx.globalAlpha = 0.4;
-        ctx.fillStyle = on ? UI_INK : col; ctx.beginPath(); ctx.moveTo(gx, gy - gr); ctx.lineTo(gx + gr * 0.8, gy); ctx.lineTo(gx, gy + gr); ctx.lineTo(gx - gr * 0.8, gy); ctx.closePath(); ctx.fill();
-        ctx.restore();
-        const tx = gx + gr + 10, tw = cx + cw - tx - 14, ink = on ? UI_INK : "#fff";
+        const col = pick ? UI_GOLD : on ? el.color : unlocked ? "#4a5678" : "#2a3350";
+        uiSlab(cx, cy, cw, ch, col, false, on ? "#18213f" : "#0e1428", !unlocked && !pick);
+        if (on || pick) { ctx.save(); ctx.globalAlpha = pick ? 0.14 : 0.2; ctx.fillStyle = pick ? UI_GOLD : el.color; uiSlabPath(cx, cy, cw, ch); ctx.fill(); ctx.restore(); }
+        if (on) { ctx.fillStyle = el.color; ctx.fillRect(cx + 4, cy + Math.round(ch * 0.2), 4, Math.round(ch * 0.6)); }
+        // the icon (js/icons.js); a plain diamond until it has loaded
+        const ir = Math.min(15, ch * 0.3), ix = cx + 18 + Math.min(14, ch * 0.3), iy = cy + ch / 2, icol = unlocked || pick ? el.color : "#3a4666";
+        if (!(typeof drawIcon === "function" && drawIcon(ctx, typeof ELEMENT_ICON !== "undefined" ? (ELEMENT_ICON[el.id] || el.id) : el.id, icol, ix, iy, Math.round(ir * 1.7)))) {
+            ctx.fillStyle = icol; ctx.beginPath(); ctx.moveTo(ix, iy - ir); ctx.lineTo(ix + ir * 0.8, iy); ctx.lineTo(ix, iy + ir); ctx.lineTo(ix - ir * 0.8, iy); ctx.closePath(); ctx.fill();
+        }
+        const tx = ix + ir + 10, tw = cx + cw - tx - 30, ink = on ? "#fff" : unlocked ? "#9fb0d4" : pick ? "#fff" : "#56648a";
         const name = el.label.toUpperCase();
         if (ch >= 54) {
-            uiTextFit(name, tx, cy + ch * 0.4, Math.min(24, ch * 0.4), unlocked || pick ? ink : "#56648a", "left", tw);
-            uiCaptionFit(pick ? "\u25c8 TAP TO UNLOCK" : !unlocked ? "LOCKED" : on ? "IN THE MIX" : "OUT OF THE MIX", tx, cy + ch * 0.76, pick ? UI_GOLD : on ? "#1a2233" : "#8aa0c8", "left", 13, tw);
+            uiTextFit(name, tx, cy + ch * 0.4, Math.min(24, ch * 0.4), ink, "left", tw);
+            uiCaptionFit(pick ? "\u25c8 TAP TO UNLOCK" : !unlocked ? "LOCKED" : on ? "IN THE MIX" : "OUT OF THE MIX", tx, cy + ch * 0.76, pick ? UI_GOLD : on ? el.color : "#6a7aa0", "left", 13, tw);
         } else {
-            uiTextFit(name + (pick ? "  \u25c8 UNLOCK" : !unlocked ? "  \u00b7 LOCKED" : on ? "" : "  \u00b7 OFF"), tx, cy + ch / 2 + 1, Math.min(20, ch * 0.45), unlocked || pick ? ink : "#56648a", "left", tw);
+            uiTextFit(name + (pick ? "  \u25c8 UNLOCK" : !unlocked ? "  \u00b7 LOCKED" : on ? "" : "  \u00b7 OFF"), tx, cy + ch / 2 + 1, Math.min(20, ch * 0.45), ink, "left", tw);
         }
+        // the tick: in the mix
+        if (on) { const kx = cx + cw - 22, ky = cy + ch / 2; ctx.save(); ctx.strokeStyle = el.color; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(kx - 6, ky); ctx.lineTo(kx - 1, ky + 5); ctx.lineTo(kx + 7, ky - 6); ctx.stroke(); ctx.restore(); }
         if (unlocked) swatches.push({ id: el.id, x: cx, y: cy, w: cw, h: ch });
         else if (pick) picks.push({ id: el.id, bx: cx, by: cy, bw: cw, bh: ch });
     });
@@ -884,44 +887,31 @@ function drawCrystalButton() {
     ctx.restore();
 }
 
-// ── 2D crystal visual (modulation tab) ───────────────────
-function _draw2DCrystal(cx, cy, R, color) {
-    let cr=150, cg=150, cb=255;
-    try {
-        const h=color.replace('#','');
-        if (h.length>=6){cr=parseInt(h.slice(0,2),16);cg=parseInt(h.slice(2,4),16);cb=parseInt(h.slice(4,6),16);}
-    } catch(e){}
-
-    const grd = ctx.createRadialGradient(cx,cy,0,cx,cy,R*1.35);
-    grd.addColorStop(0,`rgba(${cr},${cg},${cb},0.22)`);
-    grd.addColorStop(1,`rgba(${cr},${cg},${cb},0)`);
-    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(cx,cy,R*1.35,0,Math.PI*2); ctx.fill();
-
-    const tableR=R*0.52, tableY=cy-R*0.18, crownH=R*0.58, pavH=R*0.62, nF=8;
-    const ft=(frame||0)*0.014;
-    for (let i=0;i<nF;i++){
-        const a1=(i/nF)*Math.PI*2, a2=((i+1)/nF)*Math.PI*2;
-        const x1=cx+Math.cos(a1)*tableR, y1=tableY+Math.sin(a1)*tableR*0.33;
-        const x2=cx+Math.cos(a2)*tableR, y2=tableY+Math.sin(a2)*tableR*0.33;
-        const br=0.18+0.65*Math.abs(Math.sin(a1+ft));
-        ctx.fillStyle=`rgba(${Math.floor(cr*br)},${Math.floor(cg*br)},${Math.floor(cb*br)},0.92)`;
-        ctx.beginPath(); ctx.moveTo(cx,cy+pavH); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.closePath(); ctx.fill();
-        const brT=0.28+0.65*Math.abs(Math.cos(a1+ft));
-        ctx.fillStyle=`rgba(${Math.min(255,Math.floor(cr*brT+55))},${Math.min(255,Math.floor(cg*brT+38))},${Math.min(255,Math.floor(cb*brT+42))},0.93)`;
-        ctx.beginPath(); ctx.moveTo(cx,cy-crownH); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.closePath(); ctx.fill();
-    }
-    ctx.fillStyle=`rgba(${Math.min(255,cr+85)},${Math.min(255,cg+65)},${Math.min(255,cb+55)},0.72)`;
-    ctx.beginPath();
-    for(let i=0;i<=nF;i++){const a=(i/nF)*Math.PI*2;const x=cx+Math.cos(a)*tableR,y=tableY+Math.sin(a)*tableR*0.33;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle=`rgba(${Math.min(255,cr+110)},${Math.min(255,cg+90)},${Math.min(255,cb+90)},0.65)`;
-    ctx.lineWidth=1.5;
-    ctx.beginPath(); ctx.moveTo(cx,cy-crownH);
-    for(let i=0;i<=nF;i++){const a=(i/nF)*Math.PI*2;ctx.lineTo(cx+Math.cos(a)*tableR,tableY+Math.sin(a)*tableR*0.33);}
-    ctx.closePath(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx,cy+pavH);
-    for(let i=0;i<=nF;i++){const a=(i/nF)*Math.PI*2;ctx.lineTo(cx+Math.cos(a)*tableR,tableY+Math.sin(a)*tableR*0.33);}
-    ctx.closePath(); ctx.stroke();
+// ── The mix, as a gem (the ELEMENT MIX page) ─────────────
+// REPORTED: "change the way the shard looks in the crystal menu, I don't like how it's flashy, and I don't like the rest of the look of the menu either." It used to be a crystal that blinked
+// through the colours of the mix. Now it holds still: a cut gem seen from above, one wedge for each element (an outer bevel and an inner facet, lit from the top left). A wedge is in its
+// element's colour when that element is in the mix, a dim ghost of it when it is out, and dark when it is not unlocked yet, so the gem IS the mix at a glance. Nothing in it moves.
+function _mixShade(hex, k) {
+    const n = parseInt(String(hex).slice(1), 16), t = k < 0 ? 0 : 255, a = Math.abs(k);
+    const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.round(v + (t - v) * a));
+    return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+}
+function _drawMixGem(cx, cy, R) {
+    const n = ELEMENTS.length, r = R * 0.46, TAU = Math.PI * 2;
+    const pt = (rad, k) => { const a = (-90 - 180 / n + k * 360 / n) * Math.PI / 180; return [cx + rad * Math.cos(a), cy + rad * Math.sin(a)]; };
+    const glow = ctx.createRadialGradient(cx, cy, R * 0.3, cx, cy, R * 1.4); glow.addColorStop(0, "rgba(160,200,255,0.16)"); glow.addColorStop(1, "rgba(160,200,255,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, R * 1.4, 0, TAU); ctx.fill();
+    ELEMENTS.forEach((el, i) => {
+        const unlocked = unlockedElements.has(el.id), on = unlocked && modulationIncludes(el.id);
+        const o0 = pt(R, i), o1 = pt(R, i + 1), i0 = pt(r, i), i1 = pt(r, i + 1), mid = (-90 + i * 360 / n) * Math.PI / 180, lit = Math.cos(mid - (-135 * Math.PI / 180));
+        let outer, inner, edge;
+        if (on) { outer = _mixShade(el.color, 0.14 + 0.2 * lit); inner = _mixShade(el.color, -0.05 - 0.18 * (1 - lit) / 2); edge = "rgba(255,255,255,0.6)"; }
+        else if (unlocked) { outer = _mixShade(el.color, -0.72); inner = _mixShade(el.color, -0.8); edge = "rgba(255,255,255,0.16)"; }
+        else { outer = "#151b30"; inner = "#10152a"; edge = "rgba(255,255,255,0.08)"; }
+        ctx.fillStyle = outer; ctx.beginPath(); ctx.moveTo(o0[0], o0[1]); ctx.lineTo(o1[0], o1[1]); ctx.lineTo(i1[0], i1[1]); ctx.lineTo(i0[0], i0[1]); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = inner; ctx.beginPath(); ctx.moveTo(i0[0], i0[1]); ctx.lineTo(i1[0], i1[1]); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = edge; ctx.lineWidth = 1.2; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(o0[0], o0[1]); ctx.lineTo(o1[0], o1[1]); ctx.lineTo(i1[0], i1[1]); ctx.lineTo(cx, cy); ctx.lineTo(i0[0], i0[1]); ctx.closePath(); ctx.stroke();
+    });
 }
 
 // ── Main panel drawing ────────────────────────────────────
@@ -930,35 +920,22 @@ function drawCrystalPanel() {
 
     const bx = _panelBox();
     const { PX, PY, PW, tabH, closeW, contentY, contentH } = bx;
-    const tabAreaW = PW - closeW;
-    const tabW = Math.floor(tabAreaW / CTABS.length);
-
-    // Advance modulation blink
+    const tabAreaW = PW - closeW, tabW = tabAreaW;
     const scheme = _getModScheme();
-    const blinkRate = Math.max(5, 34 - scheme.size * 5);
-    _crystalModPhase++;
-    const cycleIdx = Math.floor(_crystalModPhase / blinkRate) % Math.max(1, scheme.colors.length);
-    const cycleColor = scheme.colors[cycleIdx] || "#888";
 
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
     uiBackdrop(0.78);
-    const cur = CTABS.find(t => t.id === crystalMenuTab) || CTABS[0];
-    uiPanel(PX, PY, PW, tabH + contentH, cur.color);
+    uiPanel(PX, PY, PW, tabH + contentH, CTABS[0].color);
 
-    // ── Tab bar ───────────────────────────────────────────
-    CTABS.forEach((tab, i) => uiButton({ x: PX + i*tabW + 4, y: PY + 8, w: tabW - 6, h: tabH - 14 }, tab.label, tab.color, crystalMenuTab === tab.id, 15));
-    // Close button
+    // ── Title bar: the name, and close ────────────────────
+    uiTextFit(CTABS[0].label, PX + 28, PY + tabH / 2 + 2, 30, "#fff", "left", tabAreaW - 40);
     const cx2 = PX + tabAreaW;
     uiButton({ x: cx2 + 4, y: PY + 8, w: closeW - 10, h: tabH - 14 }, "\u2715", UI_RED, false, 22);
 
     // ── Content area ──────────────────────────────────────
     ctx.save();
     ctx.beginPath(); ctx.rect(PX+1, contentY+1, PW-2, contentH-2); ctx.clip();
-
-    switch(crystalMenuTab) {
-        case "modulation": _drawModTab(PX, contentY, PW, contentH, scheme, cycleColor); break;
-        case "info":       _drawInfoTab(PX, contentY, PW, contentH); break;
-    }
+    _drawModTab(PX, contentY, PW, contentH, scheme);
     ctx.restore();
     ctx.restore();
 
@@ -1120,7 +1097,7 @@ function _drawCloneCard(opt, x, y, w, h, listX, listW, listY, listH) {
 // So: the crystal stays and becomes the readout — it already pulses through
 // the colours actually in the mix — and everything else that merely restated
 // the mix is gone. Under it, the swatch row, sized to fit rather than hoping.
-function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
+function _drawModTab(PX, PY, PW, PH, scheme) {
     // Looking at the control IS the decision. The prompt used to be clearable
     // only by toggling a swatch, so a player happy with their mix had no way to
     // dismiss it that did not also change the mix.
@@ -1130,20 +1107,16 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
     const nEl = ELEMENTS.length, cols = nEl > 6 ? 3 : 2, gap = 10;
     let gx, gy, gw, gh;
     if (wide) {
-        // THE CRYSTAL on the left is the readout (it cycles through the colours in the mix); the element cards are the control on the right.
+        // THE GEM on the left is the readout (a wedge for each element, lit when it is in the mix); the element cards are the control on the right.
         const leftW = Math.round(PW * 0.36), bodyH = PH - footH;
         const R = Math.max(26, Math.min(96, Math.floor(leftW * 0.34), Math.floor((bodyH - 150) / 2)));
         // the block (crystal, caption, name, pips) is centred in the column
-        const blockH = R * 2 + 16 + 26 + 40 + 30, top = PY + Math.max(8, Math.round((bodyH - blockH) / 2));
+        const blockH = R * 2 + 16 + 26 + 40 + 6, top = PY + Math.max(8, Math.round((bodyH - blockH) / 2));
         const cx = PX + leftW / 2, cy = top + R;
-        _draw2DCrystal(cx, cy, R, cycleColor);
-        uiCaptionFit("NEW FOLLOWERS COME OUT AS", cx, cy + R + 22, "#8aa0c8", "center", 13, leftW - 20);
-        uiTextFit(mixName, cx, cy + R + 54, 34, cycleColor, "center", leftW - 24);
-        // one pip per element: lit when unlocked
-        const pw = Math.min(26, Math.floor((leftW - 40) / nEl)), pg = 6, rowW = nEl * pw + (nEl - 1) * pg;
-        ELEMENTS.forEach((el, i) => { const px = cx - rowW / 2 + i * (pw + pg), py = cy + R + 84, on = unlockedElements.has(el.id);
-            ctx.fillStyle = on ? el.color : "#1a2240"; ctx.fillRect(px, py, pw, 8); if (!on) { ctx.strokeStyle = "#2c3656"; ctx.lineWidth = 1; ctx.strokeRect(px + 0.5, py + 0.5, pw - 1, 7); } });
-        uiCaptionFit(ELEMENTS.filter(e => unlockedElements.has(e.id)).length + " OF " + nEl + " ELEMENTS ONLINE", cx, cy + R + 106, "#6a7aa0", "center", 12, leftW - 20);
+        _drawMixGem(cx, cy, R);
+        uiCaptionFit("NEW FOLLOWERS COME OUT AS", cx, cy + R + 24, "#8aa0c8", "center", 13, leftW - 20);
+        uiTextFit(mixName, cx, cy + R + 56, 34, "#fff", "center", leftW - 24);
+        uiCaptionFit(ELEMENTS.filter(e => unlockedElements.has(e.id)).length + " OF " + nEl + " ELEMENTS ONLINE", cx, cy + R + 84, "#6a7aa0", "center", 12, leftW - 20);
         gx = PX + leftW + 6; gw = PW - leftW - 6 - pad; gy = PY + 50; gh = bodyH - 56;
         uiText("ELEMENTS", gx + 4, PY + 24, 22, "#fff", "left", false);
         uiCaption("tap to add or drop", PX + PW - pad, PY + 24, "#6a7aa0", "right", 13);
@@ -1151,11 +1124,11 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
         // A narrow screen: the crystal and the mix name sit in a band across the top (it stands down when the panel is short).
         const bandH = PH >= 440 ? 104 : 0;
         if (bandH) {
-            _draw2DCrystal(PX + 62, PY + bandH / 2, 38, cycleColor);
+            _drawMixGem(PX + 62, PY + bandH / 2, 38);
             uiCaptionFit("NEW FOLLOWERS COME OUT AS", PX + 112, PY + bandH / 2 - 20, "#8aa0c8", "left", 12, PW - 124);
-            uiTextFit(mixName, PX + 112, PY + bandH / 2 + 12, 32, cycleColor, "left", PW - 124);
+            uiTextFit(mixName, PX + 112, PY + bandH / 2 + 12, 32, "#fff", "left", PW - 124);
         } else {
-            uiTextFit("MIX: " + mixName, PX + PW / 2, PY + 22, 24, cycleColor, "center", PW - 24);
+            uiTextFit("MIX: " + mixName, PX + PW / 2, PY + 22, 24, "#fff", "center", PW - 24);
         }
         const top = bandH || 44;
         gx = PX + 10; gw = PW - 20; gy = PY + top; gh = PH - top - footH;
@@ -1175,54 +1148,8 @@ function _drawModTab(PX, PY, PW, PH, scheme, cycleColor) {
     else uiCaptionFit(next ? "NEXT UNLOCK: YOUR PICK \u2014 CLEAR A WAVE" : "ALL ELEMENTS ONLINE \u00b7 " + lifetimeKills + " kills", PX + PW / 2, fy, "#8aa0c8", "center", 14, PW - 30);
     // A boss modulator overrides the mix for the followers it touches, so it
     // belongs on this screen — one line, at the foot, out of the way.
-    uiCaptionFit(ownedModulators.length === 0 ? "MODULATORS: none \u2014 defeat a boss to unlock"
-        : "MODULATORS: " + ownedModulators.map(mod => ((ELEMENTS.find(e => e.id === mod.element) || {}).label || mod.element).toUpperCase()).join(" \u00b7 "),
+    if (ownedModulators.length > 0) uiCaptionFit("MODULATORS: " + ownedModulators.map(mod => ((ELEMENTS.find(e => e.id === mod.element) || {}).label || mod.element).toUpperCase()).join(" \u00b7 "),
         PX + PW / 2, fy + 22, "#6a7aa0", "center", 13, PW - 30);
-}
-
-// ── Tab: Info ─────────────────────────────────────────────
-// The GUIDE: the six ultimates as cards (one colour each), then the pylon rules as a list.
-function _drawInfoTab(PX, PY, PW, PH) {
-    const ultimates = ELEMENT_ULTIMATES;   // (js/unitinfo.js)
-    const pylons=[
-        {col:UI_TEAL,    text:"BUILD ("+PYLON_BUILD_COST+" shards) — place on any floor tile"},
-        {col:UI_GOLD,    text:"UPGRADE — merge a follower into the pylon"},
-        {col:"#a9b8ff",  text:"WAVE/ATTACK — toggle pylon firing mode"},
-        {col:"#ff9a6a",  text:"RECON — send squad to reconstruct a pylon"},
-        {col:"#cc88ff",  text:"Crystal slowly refills all follower ultimates"},
-        {col:"#5ffbe0",  text:"Deeper zone pylons = faster charge rate"},
-        {col:"#ff7a6a",  text:"Nest pod link grants bonus charge"},
-    ];
-    const cols = PW >= 540 ? 2 : 1, pad = 16, gap = 8, headH = 38;
-    const uRows = Math.ceil(ultimates.length / cols), tRows = Math.ceil(pylons.length / cols);
-    const avail = PH - headH * 2 - 20;
-    const uH = Math.max(34, Math.min(66, Math.floor(avail * 0.62 / uRows) - gap)), tH = Math.max(24, Math.min(34, Math.floor(avail * 0.38 / tRows) - 4));
-    const cw = Math.floor((PW - pad * 2 - (cols - 1) * gap) / cols);
-    let y = PY + 6;
-    uiText("ULTIMATES", PX + pad + 4, y + 16, 24, UI_GOLD, "left");
-    uiCaptionFit("double-tap a follower when fully charged", PX + PW - pad, y + 16, "#8aa0c8", "right", 13, PW * 0.5);
-    y += headH;
-    ultimates.forEach((r, i) => {
-        const el = ELEMENTS.find(e => e.id === r.el), col = el ? el.color : "#fff";
-        const x = PX + pad + (i % cols) * (cw + gap), yy = y + Math.floor(i / cols) * (uH + gap);
-        uiSlab(x, yy, cw, uH, col, false, "#101830");
-        ctx.fillStyle = col; ctx.fillRect(x + 6, yy + 7, 5, uH - 14);
-        if (uH >= 52) {
-            uiTextFit(r.name.toUpperCase(), x + 24, yy + uH * 0.34, 20, col, "left", cw - 40);
-            uiCaptionFit(r.desc, x + 24, yy + uH * 0.72, "#b4c2e0", "left", 13, cw - 40);
-        } else {
-            uiTextFit(r.name.toUpperCase(), x + 22, yy + uH / 2, 17, col, "left", Math.floor(cw * 0.36));
-            uiCaptionFit(r.desc, x + 22 + Math.floor(cw * 0.38), yy + uH / 2, "#b4c2e0", "left", 12, Math.floor(cw * 0.58) - 14);
-        }
-    });
-    y += uRows * (uH + gap) + 4;
-    uiText("PYLON GUIDE", PX + pad + 4, y + 16, 24, "#ffaa44", "left");
-    y += headH;
-    pylons.forEach((r, i) => {
-        const x = PX + pad + (i % cols) * (cw + gap), yy = y + Math.floor(i / cols) * (tH + 4);
-        ctx.fillStyle = r.col; ctx.fillRect(x, yy + 4, 4, tH - 8);
-        uiCaptionFit(r.text, x + 14, yy + tH / 2, r.col, "left", 14, cw - 20);
-    });
 }
 
 // Every element still locked, in the ladder's order: what an earned unlock can be spent on (js/wavedata.js activatePendingElement).
@@ -1263,13 +1190,6 @@ function handleCrystalPanelInput(ex, ey, isDown) {
     // Close button
     if (ex>=b.closeX && ex<=b.closeX+b.closeW && ey>=b.PY && ey<=b.PY+b.tabH) {
         crystalMenuOpen=false; return true;
-    }
-    // Tab bar
-    for (let i=0;i<CTABS.length;i++) {
-        const tx=b.PX+i*b.tabW;
-        if (ex>=tx && ex<=tx+b.tabW && ey>=b.PY && ey<=b.PY+b.tabH) {
-            crystalMenuTab=CTABS[i].id; _crystalScrollX=0; return true;
-        }
     }
     // Outside panel → close
     if (ex<b.PX||ex>b.PX+b.PW||ey<b.contentY||ey>b.contentY+b.contentH) {
