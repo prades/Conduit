@@ -155,7 +155,7 @@ f2(815, "THE PLAYER · high definition, angry: the same, with red eyes.", () => 
 // 'fluid' (glass, the lower third full of glowing liquid, a cluster of three crystals), 'capsule' (a taller glass capsule with black caps).
 const _pGlass2 = new T.MeshStandardMaterial({ color: 0xb4d8ff, transparent: true, opacity: 0.4, metalness: 0, roughness: 0.02, depthWrite: false }); _pGlass2.envMapIntensity = 1.8;
 const _pGlassF = new T.MeshStandardMaterial({ color: 0xb4d8ff, transparent: true, opacity: 0.42, metalness: 0, roughness: 0.04, depthWrite: false, flatShading: true }); _pGlassF.envMapIntensity = 1.6;
-function _eggG(kind) {
+function _eggG(kind, legStyle) {
   const g = G(), b = G(); g.add(b);
   const hipY = 0.5, hipR = 0.24, footR = 0.42, l1 = 0.34, l2 = 0.36, base = hipY + 0.06, bubbles = [];
   const collar = cyl(hipR + 0.05, hipR + 0.09, 0.12, _pPanel, 10); collar.position.y = hipY; b.add(collar); const lip = torus(hipR + 0.07, 0.018, M.glow, 14); lip.rotation.x = PI / 2; lip.position.y = hipY + 0.07; b.add(lip);
@@ -201,12 +201,16 @@ function _eggG(kind) {
   { const hi = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, toneMapped: false, depthWrite: false }), top = kind === 'capsule' ? base + 0.55 : base + 0.62, h = kind === 'capsule' ? 0.55 : 0.5;
     const s1 = new T.Mesh(new T.SphereGeometry(1, 10, 8), hi); s1.scale.set(0.018, h * 0.5, 0.008); s1.position.set(-0.2, top, 0.22); s1.rotation.set(0, 0.7, 0.12); b.add(s1);
     const s2 = new T.Mesh(new T.SphereGeometry(1, 8, 6), hi); s2.scale.set(0.014, h * 0.12, 0.007); s2.position.set(-0.25, top - h * 0.62, 0.12); s2.rotation.set(0, 0.9, 0.2); b.add(s2); }
-  // the legs: three jointed pins, hips on the collar, feet that glow
+  // the legs: the shell egg's three jointed pins (legStyle undefined), or one of the dark metal sets (_metalLegs)
+  let place;
+  if (legStyle) place = _metalLegs(b, legStyle, hipY, hipR);
+  else {
   const legs = [];
   for (let i = 0; i < 3; i++) { const ang = i * TAU / 3 + PI / 6, out = new T.Vector3(Math.sin(ang), 0.55, Math.cos(ang)).normalize(), hip = new T.Vector3(Math.sin(ang) * hipR, hipY - 0.02, Math.cos(ang) * hipR);
     const upper = _limb(b, 0.034, _pPeg), lower = _limb(b, 0.026, _pPeg), knee = sphere(0.045, _pPanel, 8), foot = sphere(0.04, M.glow, 8), nub = sphere(0.06, _pPanel, 8); nub.position.copy(hip); b.add(nub, knee, foot); legs.push({ out, hip, upper, lower, knee, foot, rest: new T.Vector3(Math.sin(ang) * footR, 0.03, Math.cos(ang) * footR), ph: i * 2 / 3 * PI }); }
-  const place = (walk, ph) => { for (const L of legs) { const lp = walk ? ph + L.ph : 0, f = L.rest.clone(); f.z += (walk ? Math.sin(lp) * 0.2 : 0); f.y += walk ? Math.max(0, Math.cos(lp)) * 0.16 : 0; const k = _ik(L.hip, f, l1, l2, L.out); L.upper.set(L.hip, k); L.lower.set(k, f); L.knee.position.copy(k); L.foot.position.copy(f); } };
+  place = (walk, ph) => { for (const L of legs) { const lp = walk ? ph + L.ph : 0, f = L.rest.clone(); f.z += (walk ? Math.sin(lp) * 0.2 : 0); f.y += walk ? Math.max(0, Math.cos(lp)) * 0.16 : 0; const k = _ik(L.hip, f, l1, l2, L.out); L.upper.set(L.hip, k); L.lower.set(k, f); L.knee.position.copy(k); L.foot.position.copy(f); } };
   place(false, 0);
+  }
   return { g, core: hipY + 0.6, update(t, act) { const walk = _isWalk(act), ph = _walkPh(act);
     b.position.y = walk ? Math.abs(Math.sin(ph * 2)) * 0.035 : bob(t, 0, 0.025); place(walk, ph);
     crystals.forEach((c, i) => { c.rotation.y = (walk ? ph * 0.5 : t * 1.6) + i * 1.7; });
@@ -219,3 +223,60 @@ f2(823, "THE EGG · ribbed glass: clear glass held in black ribs and rings, the 
 f2(824, "THE EGG · half shell: the lower half the near-black shell, the top clear glass with the crystal in it, a lit seam between.", () => _eggG('half'));
 f2(825, "THE EGG · fluid: clear glass, its lower third full of glowing liquid, a cluster of three crystals standing in it.", () => _eggG('fluid'));
 f2(826, "THE EGG · capsule: a taller clear glass capsule with black caps and a lit band, the crystal inside.", () => _eggG('capsule'));
+
+// ── DARK METAL LEGS · for the glass egg (Nos. 831–836: clear glass body, six leg sets) ───────────
+// The egg's legs redone in dark metal: faceted, tapered, jointed, with only a pinprick of lit trim at the joints. _metalLegs(b, style, hipY, hipR) builds one set into group b and returns place(walk, ph),
+// which poses it for a standing frame or a point in the walk cycle. style: 'insect' (armoured thigh and shin, a faceted knee, a pad foot), 'strut' (piston thighs, shin rods, cuffs, disc feet),
+// 'spider' (four thin plated legs ending in spikes), 'piston' (short heavy hydraulic legs with wide armoured feet), 'scythe' (bladed legs that curve out and down to a point),
+// 'crab' (six short plated legs, walking in two sets of three).
+const _pMetal = new T.MeshStandardMaterial({ color: 0x3a4152, metalness: 0.85, roughness: 0.36, flatShading: true }); _pMetal.envMapIntensity = 1.4;
+const _pMetalD = new T.MeshStandardMaterial({ color: 0x232836, metalness: 0.85, roughness: 0.4, flatShading: true }); _pMetalD.envMapIntensity = 1.1;
+const _pMetalL = new T.MeshStandardMaterial({ color: 0x5a6378, metalness: 0.9, roughness: 0.3, flatShading: true }); _pMetalL.envMapIntensity = 1.5;
+// A tapered bar between two points: r0 at a, r1 at b (called each frame from place).
+function _taper(parent, r0, r1, mat, seg) { const m = new T.Mesh(new T.CylinderGeometry(r1, r0, 1, seg || 6), mat || _pMetal); parent.add(m); const up = new T.Vector3(0, 1, 0), d = new T.Vector3();
+  return { m, set(a, b) { d.copy(b).sub(a); const L = d.length() || 1e-4; m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(up, d.divideScalar(L)); m.scale.set(1, L, 1); } }; }
+function _metalLegs(b, style, hipY, hipR) {
+  const cfg = { insect: { n: 3, l1: 0.34, l2: 0.4, footR: 0.46 }, strut: { n: 3, l1: 0.36, l2: 0.38, footR: 0.44 }, spider: { n: 4, l1: 0.3, l2: 0.42, footR: 0.55 }, piston: { n: 3, l1: 0.3, l2: 0.3, footR: 0.4 },
+    scythe: { n: 3, l1: 0.38, l2: 0.38, footR: 0.5 }, crab: { n: 6, l1: 0.2, l2: 0.3, footR: 0.5 } }[style] || { n: 3, l1: 0.34, l2: 0.4, footR: 0.46 };
+  const legs = [], pad = (r, h) => cyl(r, r * 1.15, h, _pMetalL, 10);
+  for (let i = 0; i < cfg.n; i++) {
+    const ang = cfg.n === 3 ? i * TAU / 3 + PI / 6 : cfg.n === 4 ? PI / 4 + i * PI / 2 : i * TAU / 6 + PI / 12, out = new T.Vector3(Math.sin(ang), 0.6, Math.cos(ang)).normalize();
+    const hip = new T.Vector3(Math.sin(ang) * (hipR + 0.02), hipY - 0.03, Math.cos(ang) * (hipR + 0.02));
+    const L = { ang, out, hip, rest: new T.Vector3(Math.sin(ang) * cfg.footR, 0.03, Math.cos(ang) * cfg.footR), ph: cfg.n === 6 ? (i % 2) * PI : cfg.n === 4 ? (i % 2) * PI : i * 2 / 3 * PI, parts: [] };
+    // the hip: a faceted armoured block on the collar, on every set
+    const hb = cbox(0.13, 0.11, 0.13, 0.03, _pMetalL); hb.position.copy(hip); hb.rotation.y = ang; b.add(hb);
+    if (style === 'insect') {
+      L.upper = _taper(b, 0.075, 0.055, _pMetal, 6); L.lower = _taper(b, 0.055, 0.022, _pMetalD, 6); L.knee = new T.Mesh(new T.OctahedronGeometry(0.075), _pMetalL); L.knee.scale.set(1, 0.8, 1); b.add(L.knee);
+      L.foot = pad(0.06, 0.04); b.add(L.foot); L.ring = torus(0.052, 0.008, M.glow, 10); b.add(L.ring);
+    } else if (style === 'strut') {
+      L.upper = _taper(b, 0.05, 0.05, _pMetal, 8); L.rod = _taper(b, 0.026, 0.026, _pMetalL, 6); L.lower = _taper(b, 0.03, 0.02, _pMetalD, 6); L.knee = torus(0.045, 0.02, _pMetalL, 8); L.knee.visible = true; b.add(L.knee);
+      L.foot = cyl(0.09, 0.1, 0.03, _pMetalL, 12); b.add(L.foot); L.ring = torus(0.09, 0.006, M.glow, 12); b.add(L.ring);
+    } else if (style === 'spider') {
+      L.upper = _taper(b, 0.05, 0.04, _pMetal, 5); L.lower = _taper(b, 0.04, 0.008, _pMetalD, 5); L.knee = new T.Mesh(new T.OctahedronGeometry(0.06), _pMetalL); b.add(L.knee);
+      L.plate = cbox(0.05, 0.12, 0.04, 0.012, _pMetalL); b.add(L.plate); L.foot = new T.Mesh(new T.ConeGeometry(0.02, 0.07, 5), _pMetalD); L.foot.rotation.x = PI; b.add(L.foot);
+    } else if (style === 'piston') {
+      L.upper = _taper(b, 0.075, 0.07, _pMetal, 8); L.rod = _taper(b, 0.04, 0.04, _pMetalL, 6); L.lower = _taper(b, 0.06, 0.05, _pMetal, 8); L.knee = cyl(0.07, 0.07, 0.07, _pMetalL, 8); b.add(L.knee);
+      L.foot = cyl(0.13, 0.15, 0.05, _pMetalL, 12); b.add(L.foot); L.ring = torus(0.12, 0.008, M.glow, 14); b.add(L.ring);
+    } else if (style === 'scythe') {
+      L.upper = _taper(b, 0.065, 0.04, _pMetal, 5); L.lower = _taper(b, 0.04, 0.006, _pMetalD, 5); L.knee = new T.Mesh(new T.OctahedronGeometry(0.05), _pMetalL); b.add(L.knee); L.foot = new T.Mesh(new T.SphereGeometry(0.01, 4, 3), _pMetalD); b.add(L.foot);
+    } else {   // crab
+      L.upper = _taper(b, 0.05, 0.04, _pMetal, 6); L.lower = _taper(b, 0.04, 0.016, _pMetalD, 6); L.knee = new T.Mesh(new T.OctahedronGeometry(0.058), _pMetalL); b.add(L.knee); L.plate = cbox(0.07, 0.04, 0.12, 0.012, _pMetalL); b.add(L.plate);
+      L.foot = new T.Mesh(new T.ConeGeometry(0.018, 0.06, 5), _pMetalD); L.foot.rotation.x = PI; b.add(L.foot);
+    }
+    legs.push(L);
+  }
+  return (walk, ph) => { for (const L of legs) {
+    const lp = walk ? ph + L.ph : 0, f = L.rest.clone(); f.z += walk ? Math.sin(lp) * 0.2 : 0; f.y += walk ? Math.max(0, Math.cos(lp)) * (style === 'piston' ? 0.12 : 0.17) : 0;
+    // the bladed set bends the other way (the knee up and out, the point down); the rest bend like a bird's wrist
+    const o = style === 'scythe' ? L.out.clone().multiplyScalar(1.6).add(V(0, 0.4, 0)).normalize() : L.out;
+    const k = _ik(L.hip, f, cfg.l1, cfg.l2, o);
+    L.upper.set(L.hip, k); if (L.rod) L.rod.set(L.hip, k.clone().lerp(L.hip, 0.4)); L.lower.set(k, f); L.knee.position.copy(k); if (L.plate) L.plate.position.copy(k).lerp(L.hip, 0.5); if (L.plate) L.plate.lookAt(k.clone().add(V(0, 1, 0)));
+    L.foot.position.copy(f).add(V(0, style === 'spider' || style === 'crab' ? 0.03 : 0.02, 0)); if (L.ring) L.ring.position.copy(L.foot.position).add(V(0, 0.02, 0)), L.ring.rotation.x = PI / 2;
+    if (style === 'strut' && L.knee) { L.knee.lookAt(L.hip); } } };
+}
+f2(831, "THE EGG · clear glass, legs one: insect, armoured thigh and shin with a faceted knee and a pad foot.", () => _eggG('clear', 'insect'));
+f2(832, "THE EGG · clear glass, legs two: struts, piston thighs, shin rods, cuffs and disc feet.", () => _eggG('clear', 'strut'));
+f2(833, "THE EGG · clear glass, legs three: spider, four thin plated legs ending in spikes.", () => _eggG('clear', 'spider'));
+f2(834, "THE EGG · clear glass, legs four: pistons, short heavy hydraulic legs with wide armoured feet.", () => _eggG('clear', 'piston'));
+f2(835, "THE EGG · clear glass, legs five: scythes, bladed legs curving out and down to a point.", () => _eggG('clear', 'scythe'));
+f2(836, "THE EGG · clear glass, legs six: crab, six short plated legs walking in two sets of three.", () => _eggG('clear', 'crab'));
