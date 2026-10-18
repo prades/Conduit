@@ -1,43 +1,21 @@
 // ─────────────────────────────────────────────────────────
-//  THE SHARD GEMS — the shard count as turning crystals (HUD, top left)
+//  THE SHARD ICON — a small gold crystal cluster beside the shard count (HUD, top left)
 // ─────────────────────────────────────────────────────────
-// REPORTED: "the shards count at the top could be a rotating series of crystals that has a number near or around it." The shards plate is gone: three
-// gold crystals turn beside the number (#shardGems, #shardCount in game.html). Each crystal is a hexagonal double pyramid; its six faces are SVG
-// polygons animated by SMIL (no script timer: the page's only clock stays the game loop). A hexagon looks the same every 60 degrees, so one 60-degree
-// turn of the faces loops seamlessly: each face carries the shape, the colour and the visibility of its angle, and the turn is a list of frames.
-const GEM_FRAMES = 14, GEM_TURN_SECONDS = 1.3;     // a 60-degree turn; a whole revolution is six of them (about 7.8s)
-function gemFace(cx, top, mid, bot, R, a0, half, lightK) {
-    // The faces of one pyramid (half: -1 the upper, +1 the lower) between meridians a and a + 60 degrees, seen from the side (orthographic).
-    const out = { pts: [], fill: [], vis: [] }, rad = d => d * Math.PI / 180;
-    for (let f = 0; f <= GEM_FRAMES; f++) {
-        const t = f / GEM_FRAMES, a = a0 + 60 * t, x1 = cx + R * Math.sin(rad(a)), x2 = cx + R * Math.sin(rad(a + 60)), apex = half < 0 ? top : bot;
-        const mid_a = a + 30, facing = Math.cos(rad(mid_a)), lit = Math.max(0, Math.cos(rad(mid_a - lightK)));
-        const L = (half < 0 ? 52 : 30) + 30 * lit;
-        out.pts.push(cx.toFixed(1) + "," + apex.toFixed(1) + " " + x1.toFixed(1) + "," + mid.toFixed(1) + " " + x2.toFixed(1) + "," + mid.toFixed(1));
-        out.fill.push("hsl(" + (half < 0 ? 50 : 41) + "," + (96 - 10 * (1 - lit)).toFixed(0) + "%," + L.toFixed(0) + "%)");
-        out.vis.push(facing > 0 ? "1" : "0");
-    }
-    return out;
-}
-function gemCrystal(svgNS, cx, top, bot, R, phase) {
-    const g = document.createElementNS(svgNS, "g"), mid = top + (bot - top) * 0.38;
-    for (let half = -1; half <= 1; half += 2) for (let k = 0; k < 6; k++) {
-        const face = gemFace(cx, top, mid, bot, R, k * 60 + phase, half, -35), poly = document.createElementNS(svgNS, "polygon");
-        poly.setAttribute("points", face.pts[0]); poly.setAttribute("fill", face.fill[0]); poly.setAttribute("stroke", "rgba(255,244,190,0.55)"); poly.setAttribute("stroke-width", "0.6"); poly.setAttribute("stroke-linejoin", "round");
-        const an = (name, vals, extra) => { const a = document.createElementNS(svgNS, "animate"); a.setAttribute("attributeName", name); a.setAttribute("values", vals.join(";")); a.setAttribute("dur", GEM_TURN_SECONDS + "s"); a.setAttribute("repeatCount", "indefinite"); if (extra) for (const e in extra) a.setAttribute(e, extra[e]); poly.appendChild(a); };
-        an("points", face.pts); an("fill", face.fill); an("opacity", face.vis, { calcMode: "discrete" });
-        g.appendChild(poly);
-    }
-    return g;
-}
+// REPORTED: "the shards count at the top could be a rotating series of crystals that has a number near or around it" (three gold crystals turned beside the number); later "change the shard icon
+// look on the main page UI, it looks bad". Picked from the options sheets (docs/images/shard-icons.png, shard-cluster.png): the crystal cluster, No. 3 "twin and chip": two tall hexagonal crystals and
+// a small chunky chip in front. It is one still SVG (#shardGems, #shardCount in game.html): no SMIL, no script timer, so it costs the frame loop nothing.
+const SHARD_ICON_SVG = (function () {
+    const P = (pts, fill) => '<polygon points="' + pts + '" fill="' + fill + '" stroke="rgba(255,248,200,0.6)" stroke-width="0.9" stroke-linejoin="round"/>';
+    // crystals are drawn in a 100 x 100 box with their base at (50,94); place() puts one where its base sits, at a scale and a lean (dim: darker, further back)
+    const place = (body, x, y, s, rot, dim) => '<g transform="translate(' + x + ' ' + y + ') rotate(' + rot + ') scale(' + s + ') translate(-50 -94)"' + (dim ? ' style="filter:brightness(' + dim + ')"' : '') + '>' + body + '</g>';
+    const tall = P("50,8 26,32 26,74 50,94", "#e0a210") + P("50,8 74,32 74,74 50,94", "#ffd84a") + P("50,8 26,32 50,40 74,32", "#fff4b0") + '<polygon points="33,40 39,37 39,72 33,68" fill="rgba(255,255,235,0.45)"/>';
+    const chunk = P("26,40 74,40 82,94 18,94", "#c98a08") + P("50,40 74,40 82,94 50,94", "#ffd23c") + P("26,40 50,18 82,28 74,40", "#fff4b0") + P("26,40 50,18 74,40 50,50", "#ffe680") + '<polygon points="30,50 36,48 38,84 32,86" fill="rgba(255,255,235,0.4)"/>';
+    return '<svg id="shardGemsSvg" viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="94" rx="30" ry="5" fill="rgba(0,0,0,0.45)"/>'
+        + place(tall, 36, 92, 0.86, -6, 0.88) + place(tall, 64, 94, 0.74, 9, 0) + place(chunk, 52, 96, 0.34, 0, 0) + '</svg>';
+})();
 function buildShardGems() {
     if (typeof document === "undefined" || !document.getElementById) return;
-    const host = document.getElementById("shardGems"); if (!host || !host.appendChild || host.firstChild) return;
-    const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("viewBox", "0 0 92 56"); svg.setAttribute("aria-hidden", "true"); svg.id = "shardGemsSvg";
-    // a big crystal in the middle, two smaller ones beside it, each a different distance round its turn
-    svg.appendChild(gemCrystal(NS, 18, 20, 54, 9, 20)); svg.appendChild(gemCrystal(NS, 72, 18, 54, 9.5, 40)); svg.appendChild(gemCrystal(NS, 45, 2, 54, 14, 0));
-    host.appendChild(svg);
-    try { if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches && svg.pauseAnimations) svg.pauseAnimations(); } catch (e) {}
+    const host = document.getElementById("shardGems"); if (!host || host.firstChild) return;
+    host.innerHTML = SHARD_ICON_SVG;
 }
 try { buildShardGems(); } catch (e) { /* no page (the test sandbox) */ }

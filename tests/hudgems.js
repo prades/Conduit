@@ -66,26 +66,16 @@ function measure() {
         ok(/const shardUI = document\.getElementById\('shardCount'\);/.test(cfg), 'shardUI is not the number element');
     });
 
-    console.log('\nTHE CRYSTAL TURN');
+    console.log('\nTHE ICON');
     const sb = makeBrowserSandbox({}), ctx = vm.createContext(sb);
     for (const rel of scriptOrder()) { try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), ctx, { filename: rel }); } catch (e) {} }
     const run = s => vm.runInContext(s, ctx);
-    check('a face is animated for a 60-degree turn in GEM_FRAMES steps', () => same(run('gemFace(18, 20, 33, 54, 9, 0, -1, -35).pts.length'), run('GEM_FRAMES') + 1, 'frames'));
-    check('THE TURN LOOPS SEAMLESSLY: at the end of the turn each face looks exactly like the next face at the start (shape, colour, visibility)', () => {
-        const same2 = run(`(function(){ let bad = 0; for (const half of [-1, 1]) for (let k = 0; k < 6; k++) {
-            const a = gemFace(18, 20, 33, 54, 9, k * 60, half, -35), b = gemFace(18, 20, 33, 54, 9, ((k + 1) % 6) * 60, half, -35), last = a.pts.length - 1;
-            if (a.pts[last] !== b.pts[0] || a.fill[last] !== b.fill[0] || a.vis[last] !== b.vis[0]) bad++; } return bad; })()`);
-        same(same2, 0, 'faces whose end does not meet the next face\'s start');
+    check('THE ASK: the icon is the crystal cluster "twin and chip": two tall crystals and a small chunk, one still SVG', () => {
+        const svg = run('SHARD_ICON_SVG'); same((svg.match(/<polygon/g) || []).length, 13, 'polygons');
+        ok(/viewBox="0 0 100 100"/.test(svg), 'viewBox'); ok(!/<animate|<script|setInterval/.test(svg), 'it is not still');
     });
-    check('only the faces turned towards you are shown, and a face turned away has no width to see', () => {
-        const r = run(`(function(){ let front = 0, back = 0; for (let k = 0; k < 6; k++) { const f = gemFace(18, 20, 33, 54, 9, k * 60, -1, -35); if (f.vis[0] === "1") front++; else back++; } return [front, back]; })()`);
-        same(r[0], 3, 'three faces face the viewer'); same(r[1], 3, 'and three face away');
-    });
-    check('the lit side is brighter than the shaded side', () => {
-        const hsl = f => parseInt(/(\d+)%\)$/.exec(f)[1]);
-        const L = run(`(function(){ const out = []; for (let k = 0; k < 6; k++) { const f = gemFace(18, 20, 33, 54, 9, k * 60, -1, -35); out.push(f.fill[0]); } return out; })()`).map(hsl);
-        ok(Math.max(...L) - Math.min(...L) >= 15, 'the faces are all the same brightness: ' + L);
-    });
+    check('it keeps the gold palette (no flashing colours: a fixed gold ramp)', () => { const svg = run('SHARD_ICON_SVG'); ok(/#ffd84a/.test(svg) && /#e0a210/.test(svg) && /#fff4b0/.test(svg), 'palette'); });
+    check('hudgems.js has no turning-gem code or timer left', () => { const src = fs.readFileSync(path.join(ROOT, 'js/hudgems.js'), 'utf8'); ok(!/gemFace|gemCrystal|GEM_FRAMES|createElementNS|setInterval|<animate/.test(src), 'old gem code remains'); });
 
     console.log('\nIN THE REAL PAGE (1080x700)');
     const r = measure();
@@ -93,7 +83,7 @@ function measure() {
     else {
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (r) {
-            check('THE ASK: the crystals are built (three crystals × 12 animated faces) and the number is just the count', () => { same(r.polys, 36, 'faces'); same(r.anims, 108, 'animations (shape, colour, visibility each)'); same(r.count, '1250', 'the count'); });
+            check('THE ASK: the icon is built (still, no animations) and the number is just the count', () => { same(r.polys, 13, 'polygons'); same(r.anims, 0, 'animations'); same(r.count, '1250', 'the count'); });
             check('THE ASK: a calm HUD shows no alarm triangle (and the objective line under the bars is gone)', () => { same(r.calm.cls, false, 'class'); same(r.calm.icon, 'none', 'triangle'); same(r.calm.banner, 'none', 'banner'); });
             check('THE ASK: an alarm shows a triangle next to the zone and NO banner box', () => { same(r.alarm.cls, true, 'class'); same(r.alarm.icon, 'block', 'triangle shown'); same(r.alarm.banner, 'none', 'banner hidden'); });
             check('the triangle has no box round it', () => ok(r.iconBox.bg === 'rgba(0, 0, 0, 0)' && r.iconBox.border === '0px', JSON.stringify(r.iconBox)));
