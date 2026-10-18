@@ -98,7 +98,7 @@ function gen(x, y, extra) {
 function pylon(x, y, extra) {
     return Object.assign({ x, y, pillar: true, destroyed: false, pillarTeam: 'green',
         health: 40, maxHealth: 80, isGenerator: false, attackMode: true, waveMode: false,
-        attackModeElement: 'fire', attackModeColor: '#ff3300' }, extra || {});
+        attackModeElement: 'core', attackModeColor: '#00ccaa' }, extra || {});
 }
 // Populate the caches the way the 60-frame world-cache block does.
 function place(env, tiles) {

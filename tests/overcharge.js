@@ -38,7 +38,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const home = world.find(t => isHomePortal(t));
         const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
         _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), T(home.x + 1, 2));
-        const tur = T(home.x + 3, 2); _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), tur, 'attack');
+        const tur = T(home.x + 3, 2); _executeBuildInstant(ELEMENTS.find(e => e.id === 'core'), tur, 'attack');
         const sup = T(home.x + 3, 0); _executeBuildInstant(ELEMENTS.find(e => e.id === 'electric'), sup, 'support');
         player.x = home.x - 12; player.y = 2;
         _cacheAge = -999; render();

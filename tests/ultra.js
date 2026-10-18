@@ -35,8 +35,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const els = ${JSON.stringify(els || [])};
         // The zone's generator: nothing in a zone works without one (tests/shieldcells.js).
         _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), T(home.x + 1, 3));
-        ${JSON.stringify(cells)}.forEach(([dx, dy], i) => _executeBuildInstant(ELEMENTS.find(e => e.id === (els[i] || 'fire')), T(X + dx, dy), 'attack'));
-        const counts = {}; els.forEach(e => counts[e] = (counts[e] || 0) + 1); const main = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || 'fire';
+        ${JSON.stringify(cells)}.forEach(([dx, dy], i) => _executeBuildInstant(ELEMENTS.find(e => e.id === (els[i] || 'core')), T(X + dx, dy), 'attack'));
+        const counts = {}; els.forEach(e => counts[e] = (counts[e] || 0) + 1); const main = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || 'core';
         for (let i = 0; i < ${bats === undefined ? 4 : bats}; i++) _executeBuildInstant(ELEMENTS.find(e => e.id === main), T(X + ${batAt || 0} - 2 + i * 2, 0), 'battery');
         _cacheAge = -999; render();
         globalThis.__X = X; globalThis.__T = T;
