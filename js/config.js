@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-18ab";
+const BUILD_VERSION = "2026-10-18ac";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -70,18 +70,18 @@ let modulationDirty = false;
 const PYLON_STYLE = "sentinel";
 // Sentinel's palette, named once so the wall panelling can be trimmed to match
 // rather than carrying its own separate greens.
-const SENTINEL_FRONT_ACTIVE = "#1a2030";
-const SENTINEL_FRONT_DORMANT= "#252830";
-const SENTINEL_RIGHT_ACTIVE = "#0d1520";
-const SENTINEL_RIGHT_DORMANT= "#181b20";
-const SENTINEL_TOP_ACTIVE   = "#2a3545";
-const SENTINEL_TOP_DORMANT  = "#343840";
-const SENTINEL_FRONT_UPGRADED= "#0d1825";
-const SENTINEL_RIGHT_UPGRADED= "#081018";
-const SENTINEL_TOP_UPGRADED  = "#1a2535";
-const SENTINEL_SLIT         = "#050508";
-const SENTINEL_ACCENT       = "#7fb8dc";   // the cool steel highlight
-const SENTINEL_ACCENT_DIM   = "#3d4d5e";
+const SENTINEL_FRONT_ACTIVE = "#3b362d";   // the amber old-tech lab palette (js/labwall.js): the same beige-black as the equipment standing out of the wall
+const SENTINEL_FRONT_DORMANT= "#2e2b24";
+const SENTINEL_RIGHT_ACTIVE = "#28251f";
+const SENTINEL_RIGHT_DORMANT= "#1f1d18";
+const SENTINEL_TOP_ACTIVE   = "#4e493c";
+const SENTINEL_TOP_DORMANT  = "#3e3a30";
+const SENTINEL_FRONT_UPGRADED= "#322c1f";
+const SENTINEL_RIGHT_UPGRADED= "#201b12";
+const SENTINEL_TOP_UPGRADED  = "#43392a";
+const SENTINEL_SLIT         = "#050402";
+const SENTINEL_ACCENT       = "#ffb43a";   // the amber highlight
+const SENTINEL_ACCENT_DIM   = "#7a6428";
 
 // ── GENERATOR PYLON ───────────────────────────────────────
 // A neutral pylon: no elemental zone, no tier, no network. It does two things

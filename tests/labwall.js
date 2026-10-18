@@ -27,13 +27,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const kinds = new Set(a.filter(Boolean).map(m => m.kind)); for (const k of ['server', 'server2', 'crt', 'crt2', 'bank', 'pipes', 'console', 'generator', 'chamber', 'console2', 'unit']) ok(kinds.has(k), 'no ' + k + ' on 300 tiles');
         ok(a.filter(Boolean).length >= 120, 'a bare wall: ' + a.filter(Boolean).length + ' of 300 tiles carry equipment');
     });
-    check('a big piece covers its pair of tiles: the second tile of it carries nothing of its own', () => {
+    check('a big piece covers its pair of tiles: part 1 on the first, part 2 (its other half) on the second', () => {
         const a = J('Array.from({ length: 200 }, (_, x) => labModuleAt(x))'); let n = 0;
-        a.forEach((m, x) => { if (m && m.span === 2 && m.kind !== 'unit') { n++; ok(x % 2 === 0, 'a big piece starts on an odd tile ' + x); same(a[x + 1], null, 'tile ' + (x + 1) + ' of a pair'); } });
+        a.forEach((m, x) => { if (m && m.span === 2 && m.kind !== 'unit' && m.part === 1) { n++; ok(x % 2 === 0, 'a big piece starts on an odd tile ' + x); ok(a[x + 1] && a[x + 1].part === 2 && a[x + 1].kind === m.kind, 'tile ' + (x + 1) + ' is not the second half of the pair'); } });
         ok(n >= 5, 'only ' + n + ' big pieces in 200 tiles');
     });
-    check('the power unit is ONE machine across two slots (its third and fourth tile, the second carrying nothing of its own); its other four tiles are ordinary equipment; a nest\'s vortex, a hackable panel and the camp are left alone', () => {
-        for (const z of [0, 1, 2]) { const o = run('wallUnitMachineOffset(' + z + ')'), x = z * 15 + 9 + o; const m = J('labModuleAt(' + x + ')'); same(m.kind, 'unit', 'zone ' + z + ' machine'); same(m.span, 2, 'span'); same(run('labModuleAt(' + (x + 1) + ')'), null, 'its second slot'); for (let i = 0; i < 6; i++) if (i !== o) ok(!J('labModuleAt(' + (z * 15 + 9 + i) + ')') || J('labModuleAt(' + (z * 15 + 9 + i) + ')').kind !== 'unit', 'a second machine in zone ' + z); }
+    check('the power unit is ONE machine across two slots (usually its third and fourth tile, one half on each); its other four tiles are ordinary equipment; a nest\'s vortex, a hackable panel and the camp are left alone', () => {
+        for (const z of [0, 1, 2]) { const o = run('wallUnitMachineOffset(' + z + ')'), x = z * 15 + 9 + o; const m = J('labModuleAt(' + x + ')'); same(m.kind, 'unit', 'zone ' + z + ' machine'); same(m.span, 2, 'span'); same(J('labModuleAt(' + (x + 1) + ')').part, 2, 'its second slot'); same(J('labModuleAt(' + x + ')').part, 1, 'its first slot'); for (let i = 0; i < 6; i++) if (i !== o && i !== o + 1) ok(!J('labModuleAt(' + (z * 15 + 9 + i) + ')') || J('labModuleAt(' + (z * 15 + 9 + i) + ')').kind !== 'unit', 'a second machine in zone ' + z); }
         const nx = run('world.find(t => t.nest && t.y === -1 && t.x > 0).x'); for (const d of [-1, 0, 1]) same(run('labModuleAt(' + (nx + d) + ')'), null, 'by the nest at ' + nx + '+' + d);
         same(run('labModuleAt(-3)'), null, 'the camp');
         run('_wallPanelMap = new Map([[40, { x: 40 }]]);'); same(run('labModuleAt(40)'), null, 'a hackable panel'); run('_wallPanelMap = new Map();');
@@ -44,6 +44,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok([1, 3].includes(run('wallUnitMachineOffset(0)')), 'offset ' + run('wallUnitMachineOffset(0)') + ' still covers the panel tile');
         ok(![0, 1].some(k => run('wallUnitMachineOffset(0)') + 9 + k === x), 'the machine covers the panel');
         run(`getTile(${x}, 0).nodeType = null; _wallPanelMap = new Map();`); same(run('wallUnitMachineOffset(0)'), 2, 'back to the third and fourth tile');
+    });
+
+    check('a two-tile piece is cut in two along the tile boundary, so each half sorts with its own tile and the floor in front cannot cover it', () => {
+        const r = J(`(function(){ const w = labSprite('generator'), a = labSprite('generator', '', 0, '', 1), b = labSprite('generator', '', 0, '', 2); return { whole: !!w, a: !!a, b: !!b, again: labSprite('generator', '', 0, '', 2) === b, size: a && b && a.width === b.width && a.height === b.height }; })()`);
+        ok(r.whole && r.a && r.b && r.again && r.size, JSON.stringify(r));
+        const g = rd('js/game.js'); ok(/labModuleAt\(t\.x\)\) drawList\.push\(\{ type: 'labmod'/.test(g), 'every tile with a half gets its own sorted item');
+        ok(/part === 2 \? tile\.x - 1 : tile\.x/.test(rd('js/labwall.js')), 'the second half is not stamped from the first tile\'s origin');
     });
 
     group('THE LOOK OF A CAPACITOR');

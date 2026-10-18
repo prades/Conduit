@@ -35,12 +35,13 @@ function _labBigAt(xe) {
     return h === 0 ? "generator" : h === 1 ? "chamber" : h === 2 ? "console2" : null;
 }
 const _LAB_SMALL = ["server", "crt", "bank", "server2", "pipes", "console", "crt2", null];
-// { kind, span } for the piece that STARTS on wall tile x ("covered" tiles and free-wall tiles give null).
+// { kind, span, part } for what stands on wall tile x: a one-tile piece, or part 1 / part 2 of a two-tile piece (a bare tile gives null). A two-tile piece is drawn in two halves, one with each tile, so that the floor tile in front of the
+// second half cannot paint over it (labSprite cuts the sprite along the tile boundary).
 function labModuleAt(x) {
     if (!labTileFree(x)) return null;
-    const mc = _labMachine(x); if (mc) return mc === 1 ? { kind: "unit", span: 2 } : null;
+    const mc = _labMachine(x); if (mc) return { kind: "unit", span: 2, part: mc };
     const xe = x - (((x % 2) + 2) % 2), big = _labBigAt(xe);
-    if (big) return x === xe ? { kind: big, span: 2 } : null;
+    if (big) return { kind: big, span: 2, part: x === xe ? 1 : 2 };
     const k = _LAB_SMALL[_labHash(x) % _LAB_SMALL.length];
     return k ? { kind: k, span: 1 } : null;
 }
@@ -147,17 +148,35 @@ function _labUnit(cells, tier, col) {
 }
 // ── the sprite cache ──
 const _labSprites = new Map();
-function labSprite(kind, state, tier, col) {
+function labSprite(kind, state, tier, col, part) {
+    if (part) return _labHalf(kind, state, tier, col, part);
     const key = kind + "|" + (state || "") + "|" + (tier || 0) + "|" + (col || "");
     if (_labSprites.has(key)) return _labSprites.get(key);
     let cv = null;
     try {
         const big = kind === "generator" || kind === "chamber" || kind === "console2" || kind === "unit";
-        cv = document.createElement("canvas"); cv.width = big ? LAB_W + 64 : LAB_W; cv.height = LAB_H;
+        cv = document.createElement("canvas"); cv.width = big ? LAB_W + 64 : LAB_W; cv.height = big ? LAB_H + 44 : LAB_H;   // a two-tile piece's right end stands lower on the screen: its sprite is taller, or its foot is cut off
         _lg = cv.getContext("2d"); _lox = LAB_OX; _loy = LAB_OY; _lseed = 17 + (key.length * 31 + kind.charCodeAt(0) * 7);
         if (kind === "unit") _labUnit(String(state).split(",").map(Number), tier || 0, col || "#ff4a1c"); else _LM[kind](0.07);
     } catch (e) { cv = null; }
     if (_labSprites.size >= 220) _labSprites.delete(_labSprites.keys().next().value);   // the unit's look changes with its charge: the old ones go
+    _labSprites.set(key, cv);
+    return cv;
+}
+// One half of a two-tile sprite: everything on one side of the vertical plane over the tile boundary (u = 1), which on the screen is the line x + 2y = s0 for the points that stand on the wall's foot.
+function _labHalf(kind, state, tier, col, part) {
+    const key = kind + "|" + (state || "") + "|" + (tier || 0) + "|" + (col || "") + "#" + part;
+    if (_labSprites.has(key)) return _labSprites.get(key);
+    const whole = labSprite(kind, state, tier, col);
+    let cv = null;
+    if (whole) try {
+        cv = document.createElement("canvas"); cv.width = whole.width; cv.height = whole.height;
+        const g = cv.getContext("2d"), s0 = LAB_OX + 2 * LAB_OY + 120;
+        g.beginPath(); if (part === 2) g.rect(0, 0, cv.width, cv.height);
+        g.moveTo(0, 0); g.lineTo(s0, 0); g.lineTo(0, s0 / 2); g.closePath();
+        g.clip(part === 2 ? "evenodd" : "nonzero"); g.drawImage(whole, 0, 0);
+    } catch (e) { cv = null; }
+    if (_labSprites.size >= 220) _labSprites.delete(_labSprites.keys().next().value);
     _labSprites.set(key, cv);
     return cv;
 }
@@ -179,8 +198,9 @@ function labUnitState(zone) {
 function drawLabModule(tile, amb) {
     const m = labModuleAt(tile.x); if (!m) return;
     let spr;
-    if (m.kind === "unit") { const u = labUnitState(Math.floor(tile.x / ZONE_LENGTH)); spr = labSprite("unit", u.cells.join(","), u.tier, u.col); } else spr = labSprite(m.kind);
+    if (m.kind === "unit") { const u = labUnitState(Math.floor(tile.x / ZONE_LENGTH)); spr = labSprite("unit", u.cells.join(","), u.tier, u.col, m.part); } else spr = labSprite(m.kind, "", 0, "", m.part);
     if (!spr) return;
-    const ox = (tile.x - player.visualX - (-1 - player.visualY)) * TILE_W + canvas.width / 2, oy = (tile.x - player.visualX + (-1 - player.visualY)) * TILE_H + canvas.height / 2;
+    const sx = m.part === 2 ? tile.x - 1 : tile.x;   // the sprite's origin is on the first tile of a two-tile piece
+    const ox = (sx - player.visualX - (-1 - player.visualY)) * TILE_W + canvas.width / 2, oy = (sx - player.visualX + (-1 - player.visualY)) * TILE_H + canvas.height / 2;
     ctx.save(); ctx.globalAlpha = Math.min(1, 0.32 + amb); ctx.drawImage(spr, ox - LAB_OX, oy - LAB_OY); ctx.restore();
 }

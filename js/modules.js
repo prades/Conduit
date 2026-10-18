@@ -285,14 +285,14 @@ function drawModule(m, px, py) {
     const rise = Math.min(1, (f - (m.bornAt || -1e9)) / 30);
     const h = 26 * rise, hw = 18, hd = 9;
     const top = cy - h;
-    const col = on ? def.colour : "#5a6470";
+    const col = on ? def.colour : "#6a6552";
     ctx.save();
     // A squat isometric block: two sides, a top.
-    ctx.fillStyle = "#1e2630";
+    ctx.fillStyle = "#2a2720";
     ctx.beginPath(); ctx.moveTo(px - hw, cy); ctx.lineTo(px, cy + hd); ctx.lineTo(px, top + hd); ctx.lineTo(px - hw, top); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#151b23";
+    ctx.fillStyle = "#1d1b16";
     ctx.beginPath(); ctx.moveTo(px, cy + hd); ctx.lineTo(px + hw, cy); ctx.lineTo(px + hw, top); ctx.lineTo(px, top + hd); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#2c3846";
+    ctx.fillStyle = "#3b362d";
     ctx.beginPath(); ctx.moveTo(px - hw, top); ctx.lineTo(px, top + hd); ctx.lineTo(px + hw, top); ctx.lineTo(px, top - hd); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.globalAlpha = on ? 0.9 : 0.5; ctx.stroke(); ctx.globalAlpha = 1;
     // Its emblem above it.
@@ -308,7 +308,7 @@ function drawModule(m, px, py) {
     if (!(typeof drawIcon === "function" && drawIcon(ctx, def.icon, col, px, top - (m.kind === "forcewall" ? 38 : 18), 18))) {
         ctx.fillStyle = col; ctx.beginPath(); ctx.arc(px, top - 16, 5, 0, Math.PI * 2); ctx.fill();
     }
-    if (!on) { ctx.fillStyle = "#f88"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center"; ctx.fillText(m.zoneDark ? "NO GENERATOR IN ZONE" : "NO POWER", px, cy + hd + 12); }
+    if (!on) { ctx.fillStyle = "#f88"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center"; ctx.fillText(m.zoneDark ? "NO POWER UNIT IN ZONE" : "NO POWER", px, cy + hd + 12); }
     ctx.restore();
 }
 // The areas and the wall, over the world (from the overlay pass, game.js).

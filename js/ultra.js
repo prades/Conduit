@@ -135,7 +135,7 @@ function ultraBlockTick() {
 // in the middle crowned with a ring, a rod at each corner (the four turrets it
 // was), and live arcs jumping from the crown to the rods — more of them as it
 // charges. Its round leaves from the crown, toward the target.
-const ULTRA_METAL = { top: "#2a3140", left: "#121720", right: "#1b212d", edge: "#4f5b74", chrome: "#a9bad2", dark: "#0b0e14" };
+const ULTRA_METAL = { top: "#3f3a2e", left: "#1b1913", right: "#27241c", edge: "#7a6a40", chrome: "#cdbb8a", dark: "#100e0a" };   // amber old-tech (js/labwall.js)
 const ULTRA_CROWN_Z = 90;           // px from the floor to the crown ring
 function _ultraRgba(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
 // A ground polygon extruded up by h: the faces toward you, then the top.

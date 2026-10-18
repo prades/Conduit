@@ -169,13 +169,11 @@ check('the sentinel palette is named once, not spelled out twice', () => {
     }
 });
 
-check('the palette values are the sentinel tower\'s own', () => {
-    // These are the literals the tower was drawn with before they were named;
-    // the point of the change was to reuse them, not to invent new ones.
-    eq(cfgStr('SENTINEL_FRONT_ACTIVE'), '#1a2030', 'front face');
-    eq(cfgStr('SENTINEL_RIGHT_ACTIVE'), '#0d1520', 'right face');
-    eq(cfgStr('SENTINEL_TOP_ACTIVE'),   '#2a3545', 'top face');
-    eq(cfgStr('SENTINEL_SLIT'),         '#050508', 'arrow slit');
+check('the palette values are the amber old-tech lab\'s (js/labwall.js): the beige-black of the equipment standing out of the wall', () => {
+    eq(cfgStr('SENTINEL_FRONT_ACTIVE'), '#3b362d', 'front face');
+    eq(cfgStr('SENTINEL_RIGHT_ACTIVE'), '#28251f', 'right face');
+    eq(cfgStr('SENTINEL_TOP_ACTIVE'),   '#4e493c', 'top face');
+    eq(cfgStr('SENTINEL_SLIT'),         '#050402', 'arrow slit');
 });
 
 check('the tower body draws from the named palette', () => {

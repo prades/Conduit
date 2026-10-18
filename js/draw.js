@@ -2193,7 +2193,7 @@ function _drawTowerBody(c, px, base, sFront, sRight, sTop, _isActive, slit) {
                         c.fillStyle=sRight; c.beginPath();
                         c.moveTo(m.x+m.w,base-48); c.lineTo(m.x+m.w+sD*0.5,base-48+sD*0.25);
                         c.lineTo(m.x+m.w+sD*0.5,base-52+sD*0.25); c.lineTo(m.x+m.w,base-52); c.closePath(); c.fill();
-                        c.fillStyle=_isActive?"#2a3040":"#303540";
+                        c.fillStyle=_isActive?"#37322a":"#3a362e";
                         c.fillRect(m.x-m.w,base-52,m.w*2,4);
                         c.fillStyle=sTop; c.beginPath();
                         c.moveTo(m.x-m.w,base-52); c.lineTo(m.x+m.w,base-52);
@@ -2227,7 +2227,7 @@ function drawSentinelTower(px, base, sFront, sRight, sTop, isActive, slit) {
 // down the side, with a bright scan line sweeping up them — the wave. The
 // network tier makes the sweep faster and the stripes brighter. Dark (no
 // power): grey stripes, no sweep. Chosen from design/monoliths.html.
-const WAVE_MONO_FACE = "#1b1624", WAVE_MONO_SIDE = "#0f0c15", WAVE_MONO_TOP = "#2a2236", WAVE_MONO_EDGE = "#5a3a86";
+const WAVE_MONO_FACE = "#2b261c", WAVE_MONO_SIDE = "#1a1710", WAVE_MONO_TOP = "#3f382a", WAVE_MONO_EDGE = "#c08a2a";   // amber old-tech (js/labwall.js)
 // Fewer, more distinct bars than the design sheet: at game size the sheet's
 // nine bars ran together into one block.
 const WAVE_MONO_BARS = [[0.2, 1.5], [0.4, 2.3], [0.61, 1.3], [0.8, 2.1]];
@@ -2515,9 +2515,9 @@ function _emplBlock(c, cx, by, hw, hd, h, front, side, top) {
     return { Lt, Ft, Rt, Bt };
 }
 function _drawEmplacement(c, px, base, col, dark) {
-    _emplBlock(c, px, base, 15, 7.5, 3, dark ? "#252a31" : "#2b3340", dark ? "#1a1e24" : "#1d232c", dark ? "#30353d" : "#3a4452");
-    const t = _emplBlock(c, px, base - 3, 10.5, 5.25, TURRET_L1_TOP - 3, dark ? "#2a2f37" : "#323b49", dark ? "#1d2127" : "#222a35", dark ? "#363b44" : "#465263");
-    c.strokeStyle = dark ? "#59606b" : col; c.globalAlpha = dark ? 0.6 : 0.85; c.lineWidth = 1.3; c.lineJoin = "round";
+    _emplBlock(c, px, base, 15, 7.5, 3, dark ? "#2e2b24" : "#37322a", dark ? "#1f1d18" : "#25221b", dark ? "#3a362e" : "#4a4538");
+    const t = _emplBlock(c, px, base - 3, 10.5, 5.25, TURRET_L1_TOP - 3, dark ? "#322f27" : "#3b362d", dark ? "#221f19" : "#28251f", dark ? "#3f3b32" : "#554e3a");
+    c.strokeStyle = dark ? "#6a6552" : col; c.globalAlpha = dark ? 0.6 : 0.85; c.lineWidth = 1.3; c.lineJoin = "round";
     c.beginPath(); c.moveTo(t.Lt[0], t.Lt[1]); c.lineTo(t.Ft[0], t.Ft[1]); c.lineTo(t.Rt[0], t.Rt[1]); c.lineTo(t.Bt[0], t.Bt[1]); c.closePath(); c.stroke();
     c.globalAlpha = 1;
 }
@@ -2575,7 +2575,7 @@ function drawPylonTurret(obj, px, topY, colour, dark) {
     // runic, stone. The prongs follow the aim in screen space; the depth axis
     // is squashed (uy * 0.55) so they read as lying in the ground plane.
     const ux = Math.cos(ang), uy = Math.sin(ang);   // already a screen-space angle
-    const stoneTop = dark ? "#3a3f48" : "#3a4352", stoneSide = dark ? "#2a2e35" : "#232a35", stoneDark = dark ? "#1e2228" : "#161b23";
+    const stoneTop = dark ? "#3e3a30" : "#4e493c", stoneSide = dark ? "#2a2720" : "#28251f", stoneDark = dark ? "#1c1a15" : "#171510";
     ctx.save();
     // Pivot block: a squat isometric stone.
     const pw = 8, pd = 4, ph = 5, pyb = cy + 4;
@@ -2595,7 +2595,7 @@ function drawPylonTurret(obj, px, topY, colour, dark) {
     // The bolt: a lit glyph-shaft between the prongs.
     ctx.beginPath(); ctx.moveTo(cx - ux * 4, cy - uy * 4); ctx.lineTo(bx - ux * 1, by - uy * 1);
     if (!dark) { ctx.strokeStyle = colour; ctx.globalAlpha = target ? 0.35 : 0.2; ctx.lineWidth = 6; ctx.stroke(); ctx.globalAlpha = 1; }
-    ctx.strokeStyle = dark ? "#59606b" : colour; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.strokeStyle = dark ? "#6a6552" : colour; ctx.lineWidth = 2.4; ctx.stroke();
     // A rune notch on the pivot.
     if (!dark) {
         ctx.strokeStyle = colour; ctx.lineWidth = 1; ctx.globalAlpha = 0.85;
