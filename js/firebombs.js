@@ -49,7 +49,7 @@ function throwFireBomb(x, y, dx, dy, dist, opts) {
     const o = opts || {}, len = Math.hypot(dx, dy) || 1, vz = 0.2, z0 = FIRE_MUZZLE_Z;
     const T = (vz + Math.sqrt(vz * vz + 2 * FIRE_GRAVITY * z0)) / FIRE_GRAVITY;   // frames until it first lands
     const sp = Math.max(0.02, dist) / T;
-    const b = { x, y, z: z0, vx: dx / len * sp, vy: dy / len * sp, vz, bounces: o.bounces === undefined ? FIRE_BOUNCES : o.bounces, dmg: o.dmg || 8, burn: o.burn || 3, big: !!o.big, src: o.src || null, life: 420, walls: 0, px: x, py: y };
+    const b = { x, y, z: z0, vx: dx / len * sp, vy: dy / len * sp, vz, bounces: o.bounces === undefined ? FIRE_BOUNCES : o.bounces, dmg: o.dmg || 8, burn: o.burn || 3, big: !!o.big, src: o.src || null, nestDmg: o.nestDmg || 0, life: 420, walls: 0, px: x, py: y };
     fireBombs.push(b); return b;
 }
 function _fireSplash(b) {
@@ -59,6 +59,7 @@ function _fireSplash(b) {
 }
 function _fireBurst(b) {
     _fireSplash(b);
+    if (b.nestDmg > 0 && typeof world !== "undefined") for (const t of world) { if (!t.nest || !(t.nestHealth > 0)) continue; if (Math.hypot(t.x - b.x, t.y - b.y) <= 2.6) { t.nestHealth = Math.max(0, t.nestHealth - b.nestDmg); if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: t.x, y: t.y - 0.5, text: "FIRE! -" + Math.round(b.nestDmg), color: "#ff5a1c", life: 40, vy: -0.06 }); if (t.nestHealth <= 0 && typeof saveNests === "function") saveNests(); } }
     igniteFireTile(b.x, b.y, b.burn);
     if (b.big) for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) igniteFireTile(b.x + ox, b.y + oy, b.burn);   // a plus of fire
     else if (Math.random() < 0.5) { const s = Math.random() < 0.5 ? 1 : -1; if (Math.random() < 0.5) igniteFireTile(b.x + s, b.y, b.burn); else igniteFireTile(b.x, b.y + s, b.burn); }
@@ -102,6 +103,31 @@ function fireBombsTick() {
             if (pt && typeof hurtPlayer === "function") hurtPlayer(Math.max(2, pt.dmg));
         }
     }
+}
+// ── FIRE FOLLOWERS ──
+// `n` bombs from a follower at a target, fanned `spread` radians apart, landing at (or just short of) it. `dmg` is each landing's splash; the little hit of the fire it leaves is a tenth of it.
+function throwFireBombsAt(actor, target, n, spread, dmg, nests) {
+    if (!actor || !target) return 0;
+    const dx = target.x - actor.x, dy = target.y - actor.y, d = Math.hypot(dx, dy) || 1, dist = Math.max(1.5, Math.min(8, d)), L = n > 1 ? spread : 0;
+    for (let i = 0; i < n; i++) {
+        const th = (i - (n - 1) / 2) * L, c = Math.cos(th), s = Math.sin(th);
+        throwFireBomb(actor.x, actor.y, (dx * c - dy * s) / d, (dx * s + dy * c) / d, dist, { dmg, burn: Math.max(2, Math.min(10, dmg * 0.1)), bounces: FIRE_BOUNCES - 1, src: actor, nestDmg: nests ? dmg * 2 : 0 });
+    }
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: actor.x, y: actor.y, color: "#ff7a1a", radius: 0.4, life: 10, element: "fire" });
+    actor.fireOrbitTimer = 30; return n;
+}
+// The move FIRE BOMBS (js/moves.js), for the evolved fire forms that can use it: three bombs fanned at the nearest foe in reach.
+const FIRE_BARRAGE_RANGE = 7, FIRE_BARRAGE_EVERY = 300;
+function fireBombBarrage(f) {
+    const foes = typeof _evoFoes === "function" ? _evoFoes(f.x, f.y, FIRE_BARRAGE_RANGE) : [];
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    throwFireBombsAt(f, foes[0], 3, 0.3, (f.power || 10) * 0.9, true);
+    f._sigAt = f0; f._sigCd = FIRE_BARRAGE_EVERY;
+    { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "FIRE BOMBS", color: "#ff8a3a", life: 50, vy: -0.06, size: 10 });
+    return true;
 }
 // ── FIRE TURRETS ──
 // The eight directions of the aim ring, as they look on the screen (the first is straight up, then clockwise), and the world direction each is.

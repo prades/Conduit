@@ -2774,7 +2774,7 @@ function render() {
                 // Its level comes back with it, less some XP (js/levels.js).
                 base: a.base ? Object.assign({}, a.base, { hp: Math.max(1, newHp) }) : undefined,
                 level: a.level, xp: typeof xpAfterDeath === "function" ? xpAfterDeath(a) : a.xp,
-                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, playStyle: a.playStyle || undefined, squadId: a.squadId || undefined });
+                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, playStyle: a.playStyle || undefined, squadId: a.squadId || undefined, move: a.move || undefined });
         }
         // Progression counts EVERY enemy killed, wanderers included — it is a
         // record of what you have fought, not of wave quotas. The wave counter
@@ -4467,6 +4467,7 @@ function render() {
                 if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid });
                 if (entry.playStyle) npc.playStyle = entry.playStyle;   // its play style (js/commandcenter.js)
                 if (entry.squadId) npc.squadId = entry.squadId;   // its roster squad (js/squads.js)
+                if (entry.move) npc.move = entry.move;   // the signature move it was given (js/moves.js)
                 if (_evo) npc.evolved = _evo.id;   // before its level, so the evolved stats apply
                 if (_rerolled || entry.evoWait) npc._evoOnLevelUp = true;   // re-rolled to another element: an egg again until it next levels up
                 // Its level and XP (less what dying cost) — js/levels.js.

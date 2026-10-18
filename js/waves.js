@@ -376,7 +376,8 @@ function followerRosterSnapshot() {
         evolved:     a.evolved || undefined,   // js/evolution.js
         evoWait:     a._evoOnLevelUp || undefined,
         playStyle:   a.playStyle || undefined,   // js/commandcenter.js
-        squadId:     a.squadId || undefined      // js/squads.js
+        squadId:     a.squadId || undefined,     // js/squads.js
+        move:        a.move || undefined         // the signature move it was given (js/moves.js)
     }));
 }
 function saveFollowerRoster() {
@@ -407,6 +408,7 @@ function spawnFollowerFromSave(entry) {
     if (entry.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[entry.evolved]) npc.evolved = entry.evolved;
     if (entry.evoWait && !npc.evolved) npc._evoOnLevelUp = true;
     if (entry.squadId) npc.squadId = entry.squadId;   // js/squads.js
+    if (entry.move) npc.move = entry.move;   // js/moves.js
     if (entry.playStyle) npc.playStyle = entry.playStyle;   // js/commandcenter.js   // an egg again until it next levels up (js/evolution.js)
     // Its level and XP (js/levels.js); an old save's stats are its level-5 base.
     if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp });

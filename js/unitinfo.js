@@ -38,6 +38,7 @@ const _uiX = n => n + "×";
 const MOVE_INFO = {
     "PETAL BLAZE":     () => [["REACH", BLOOM_RADIUS + " tiles"], ["EVERY", _uiSec(BLOOM_EVERY)], ["DAMAGE", _uiX(BLOOM_MULT) + " power"], ["EFFECT", "A ring of fire hits everything around it and sets it burning for " + _uiSec(BLOOM_BURN)]],
     "QUILL BURST":     () => MOVE_INFO["PETAL BLAZE"](),
+    "FIRE BOMBS":      () => [["REACH", FIRE_BARRAGE_RANGE + " tiles"], ["EVERY", _uiSec(FIRE_BARRAGE_EVERY)], ["BOMBS", "3, fanned"], ["EFFECT", "Three bombs lobbed at the nearest enemy: each lands, bounces up to " + (FIRE_BOUNCES - 1) + " times, splashes what it lands on and sets the ground burning for 10 to 15 seconds. The fire hurts everyone on it, your own side too."]],
     "ARC VOLLEY":      () => [["REACH", REAVER_RANGE + " tiles"], ["EVERY", _uiSec(REAVER_EVERY)], ["DAMAGE", _uiX(REAVER_MULT) + " power"], ["EFFECT", "A charged arc that jumps to " + REAVER_CHAIN + " more enemies"]],
     "SINGULARITY SHOT": () => [["REACH", SERPENT_RANGE + " tiles"], ["EVERY", _uiSec(SERPENT_EVERY)], ["DAMAGE", _uiX(SERPENT_MULT) + " power"], ["EFFECT", "Drags every enemy within " + SERPENT_PULL_R + " tiles of the target in and slows them (a beetle, a boss or a machine is too heavy to drag)"]],
     "AEGIS BURST":     () => [["REACH", WARDEN_RADIUS + " tiles"], ["EVERY", _uiSec(WARDEN_EVERY)], ["DAMAGE", _uiX(WARDEN_MULT) + " power"], ["EFFECT", "Shoves enemies back and shields itself and allies within " + WARDEN_ALLY_R + " tiles for " + Math.round(WARDEN_SHIELD * 100) + "% of max health"]],
@@ -68,7 +69,12 @@ function followerInfo(a) {
     // ATTACKS
     out.attacks.push({ h: "ATTACK STYLE · " + r.label, note: r.text, rows: ps ? [["PLAY STYLE", ps.label + " (" + ps.blurb.toLowerCase() + ")"], ["ENGAGE REACH", _uiX(ps.reach) + " its usual"]] : [] });
     if (ev && ev.duty === "worker") out.attacks.push({ h: "SIGNATURE", note: "A worker form: its move is a bonus to its job (see JOBS). It fights with the usual attack.", rows: [] });
-    else if (ev && MOVE_INFO[ev.move]) out.attacks.push({ h: "SIGNATURE · " + ev.move, note: ev.name, rows: MOVE_INFO[ev.move]() });
+    else if (ev && MOVE_INFO[ev.move]) {
+        const cur = typeof evoMoveOf === "function" ? evoMoveOf(a, ev) : null, mv = cur && MOVE_INFO[cur.name] ? cur : { name: ev.move }, ids = typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(a, ev, id)) : [];
+        out.attacks.push({ h: "SIGNATURE · " + mv.name, note: ev.name, rows: MOVE_INFO[mv.name]() });
+        // MORE THAN ONE MOVE: pick which it uses (js/moves.js; saved with the follower)
+        if (ids.length > 1) out.attacks.push({ h: "MOVE", note: "This form can use more than one move. Pick one:", choices: ids.map(id => ({ id, label: MOVES[id].name, on: cur ? cur.id === id : false })), unit: a });
+    }
     else {
         const f = typeof evolutionFor === "function" ? evolutionFor(a) : null;
         out.attacks.push({ h: "SIGNATURE", note: f ? "Evolves at level " + EVOLVE_LEVEL + " into the " + f.name + " (and gets ×" + EVOLVE_MULT + " health and power), with the move " + f.move + ":" : "No form for this element and role yet.", rows: f && MOVE_INFO[f.move] ? MOVE_INFO[f.move]() : [] });
@@ -115,6 +121,7 @@ function _uiRenderSections(body, secs) {
     for (const s of secs) {
         const sec = _uiEl("div", "ui-sec"); sec.appendChild(_uiEl("div", "ui-h", s.h));
         if (s.note) sec.appendChild(_uiEl("div", "ui-note", s.note));
+        if (s.choices) { const row = _uiEl("div", "ui-choices"); for (const c of s.choices) { const b = _uiEl("button", "ui-choice" + (c.on ? " on" : ""), c.label); b.addEventListener("click", ev => { ev.stopPropagation(); if (s.unit) { s.unit.move = c.id; s.unit._sigCd = Math.min(s.unit._sigCd || 0, 60); } if (typeof unitInfoOpen === "function") unitInfoOpen(s.unit, "attacks"); }); row.appendChild(b); } sec.appendChild(row); }
         for (const r of s.rows || []) { const row = _uiEl("div", "ui-row"); row.appendChild(_uiEl("span", "ui-k", r[0])); row.appendChild(_uiEl("span", "ui-v", r[1])); sec.appendChild(row); }
         body.appendChild(sec);
     }

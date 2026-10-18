@@ -33,6 +33,12 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   $('#aimRing .aim-auto').dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(30); out.auto = { aim: t.fireAim === undefined ? 'auto' : t.fireAim };
   out.tapElsewhere = fireAimTap(s[0] + 300, s[1] + 200);
   _aPylons[0].attackModeElement = 'ice'; out.iceTurret = fireAimTap(s[0], s[1]);
+  // the move chooser on a fire form's INFO tab
+  spawnFollowerAtCrystal('fire'); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.evolved = 'embercowl'; f._moltAt = -1e9;
+  unitInfoOpen(f); await wait(30);
+  var chips = $$('#unitInfo .ui-choice'); out.info = { chips: chips.map(function(c){ return c.textContent; }).join(), on: $('#unitInfo .ui-choice.on') ? $('#unitInfo .ui-choice.on').textContent : null, sig: ($$('#unitInfo .ui-h').map(function(h){ return h.textContent; }).filter(function(t){ return /SIGNATURE/.test(t); })[0]) };
+  chips[1].dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(50);
+  out.info2 = { move: f.move, on: $('#unitInfo .ui-choice.on') ? $('#unitInfo .ui-choice.on').textContent : null, sig: ($$('#unitInfo .ui-h').map(function(h){ return h.textContent; }).filter(function(t){ return /SIGNATURE/.test(t); })[0]) };
   var pre = document.createElement('pre'); pre.id = '__fb'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 1500); });</script></body>`;
 function measure() {
@@ -125,6 +131,38 @@ function measure() {
         const g = rd('js/game.js'); ok((g.match(/drawFireOnTile\(obj\.x, obj\.y, px, py\)/g) || []).length >= 2, 'floor tiles do not paint the fire'); ok(/drawFireBombs\(\); drawFireAims\(\)/.test(g), 'bombs not drawn'); ok(/fireBombsTick\(\)/.test(g), 'not ticked');
     });
 
+    group('FIRE FOLLOWERS');
+    check('a fire follower\'s SPECIAL is a pair of bouncing bombs at its target (it was a meteor), carrying the follower as their source and a bonus against nests', () => {
+        run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.returningToCrystal = false; __f.x = 8; __f.y = 1; globalThis.__tg = { x: 12, y: 1, dead: false };');
+        same(J('ELEMENT_ATTACKS.fire.special(__f, __tg).hit'), true, 'hit'); same(run('fireBombs.length'), 2, 'bombs'); ok(run('fireBombs.every(b => b.src === __f && b.nestDmg > 0 && b.vx > 0)'), 'source / nests / direction');
+        ok(!/type: "meteor"/.test(rd('js/elements.js').slice(rd('js/elements.js').indexOf('special(actor, target)'), rd('js/elements.js').indexOf('// ── ELECTRIC'))), 'the meteor is still there');
+        same(J('ELEMENT_ATTACKS.fire.special(__f, null).hit'), false, 'no target');
+    });
+    check('a bomb that bursts by a live nest hurts it (the meteor\'s fire bonus on nests)', () => {
+        run('__clear(); globalThis.__nest = world.find(t => t.nest) || (function(){ const t = getTile(14, 0); t.nest = true; t.nestHealth = 500; return t; })(); __nest.nestHealth = 500;');
+        run('globalThis.__b = throwFireBomb(__nest.x - 3, __nest.y + 0.5, 1, 0, 3, { dmg: 20, bounces: 0, nestDmg: 40 });'); for (let i = 0; i < 80 && run('fireBombs.indexOf(__b) >= 0'); i++) run('frame++; fireBombsTick();');
+        ok(run('__nest.nestHealth') < 500, 'the nest was not hurt: ' + run('__nest.nestHealth'));
+    });
+    check('FIRE BOMBS is a second move of the fire forms (their own move stays the default), three bombs fanned at the nearest foe in reach, then a cooldown', () => {
+        for (const id of ['bloom', 'quillstone', 'halo', 'embercowl']) { const ids = J('evoMoveIds(EVOLUTIONS.' + id + ')'); same(ids.length, 2, id + ' moves'); same(ids[1], 'bomb_lob', id + ' second'); ok(ids[0] !== 'bomb_lob', id + ': the default is not the bombs'); }
+        for (const id of ['maw', 'staticorb', 'seeper', 'voidstar']) ok(J('evoMoveIds(EVOLUTIONS.' + id + ')').indexOf('bomb_lob') < 0, id + ' got the fire move');
+        run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl"; __f.x = 8; __f.y = 1; __f.power = 20;');
+        same(run('MOVES.bomb_lob.fn(__f)'), false, 'with no foe'); same(run('fireBombs.length'), 0, 'bombs thrown at nothing');
+        run(`globalThis.__E = new Predator('scout', Object.assign({}, getClassDef(SPECIES[Object.keys(SPECIES)[0]], 'scout') || SPECIES[Object.keys(SPECIES)[0]].scout, { color: '#f00' }), 12, 1); __E.team = 'red'; __E.className = 'scout'; __E.state = 'hunt'; __E.provoked = true; actors.push(__E);`);
+        same(run('MOVES.bomb_lob.fn(__f)'), true, 'with a foe'); same(run('fireBombs.length'), 3, 'bombs'); same(run('__f._sigCd'), run('FIRE_BARRAGE_EVERY'), 'cooldown');
+    });
+    check('the chosen move is the one that fires, is kept with the follower through a respawn and a save, and is ignored once the form cannot use it', () => {
+        run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl";'); same(run('evoMoveOf(__f).id'), 'hexfire', 'default');
+        run('__f.move = "bomb_lob";'); same(run('evoMoveOf(__f).id'), 'bomb_lob', 'chosen'); run('__f.evolved = "maw";'); same(run('evoMoveOf(__f).id'), 'chomp', 'not for another form');
+        const g = rd('js/game.js') + rd('js/waves.js'); ok(/move: a\.move \|\| undefined/.test(g) && /npc\.move = entry\.move/.test(g) && /npc\.move = entry\.move/.test(rd('js/waves.js')), 'move not saved');
+    });
+    check('the INFO tab lists the form\'s moves with the current one lit (the data)', () => {
+        run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "quillstone";');
+        const sec = J('followerInfo(__f).attacks.find(s => s.h === "MOVE").choices.map(c => [c.label, c.on])'); same(JSON.stringify(sec), JSON.stringify([['QUILL BURST', true], ['FIRE BOMBS', false]]), 'choices');
+        run('__f.move = "bomb_lob";'); same(J('followerInfo(__f).attacks[1].h'), 'SIGNATURE \u00b7 FIRE BOMBS', 'the signature section follows the choice');
+        run('__f.evolved = "maw"; delete __f.move;'); same(run('followerInfo(__f).attacks.some(s => s.h === "MOVE")'), false, 'a form with one move has no chooser');
+    });
+
     group('THE AIM RING (real browser)');
     const r = measure();
     if (r === null) console.log('  (no Chromium here: skipped)');
@@ -134,6 +172,9 @@ function measure() {
             check('tapping a fire turret opens a ring of eight directions and AUTO (and the tap is spent); a pick sets the aim and closes it', () => {
                 same(r.ring0, false, 'open before'); same(r.tapOnTurret, true, 'tap'); same(r.ring.open, true, 'open'); same(r.ring.btns, 9, 'buttons'); same(r.ring.auto, true, 'AUTO lit at the start');
                 same(r.set.aim, 2, 'aim'); same(r.set.open, false, 'closed after the pick'); same(r.on, '2', 'the pick is lit when reopened'); same(r.auto.aim, 'auto', 'AUTO clears it');
+            });
+            check('on a fire form\'s INFO tab the moves are buttons: tap FIRE BOMBS and it is the move (and the page says so)', () => {
+                same(r.info.chips, 'HEXFIRE,FIRE BOMBS', 'chips'); same(r.info.on, 'HEXFIRE', 'lit'); ok(/HEXFIRE/.test(r.info.sig), 'signature ' + r.info.sig); same(r.info2.move, 'bomb_lob', 'chosen'); same(r.info2.on, 'FIRE BOMBS', 'lit after'); ok(/FIRE BOMBS/.test(r.info2.sig), 'signature after ' + r.info2.sig);
             });
             check('a tap elsewhere, or on a turret of another element, does nothing', () => { same(r.tapElsewhere, false, 'elsewhere'); same(r.iceTurret, false, 'an ice turret'); });
         }

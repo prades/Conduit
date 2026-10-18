@@ -91,41 +91,11 @@ const ELEMENT_ATTACKS = {
             return { hit: hits > 0 };
         },
         special(actor, target) {
-            // Meteor — AOE at target position
+            // FIRE BOMBS (js/firebombs.js, docs/FIRE-BOMBS.md): the special was a meteor on the target; it is now a pair of bouncing bombs lobbed at it. Each lands, bounces, splashes the hostile it lands on,
+            // sets the ground burning for 10 to 15 seconds, and hurts a live nest pod where it bursts (the meteor's 2x fire bonus on nests).
             if (!target) return { hit: false };
-            spawnElementEffect({
-                type: "meteor",
-                x: target.x, y: target.y,
-                color: "#ff3300",
-                radius: 2.0,
-                life: 45,
-                element: "fire"
-            });
-            actors.forEach(a => {
-                if (isHostileTarget(a)) {
-                    const dx=a.x-target.x, dy=a.y-target.y;
-                    if (dx*dx+dy*dy <= 4.0) { // 2.0²=4.0, no sqrt needed
-                        const dmg = (actor.stats?.specialAttack||10) * 0.9;
-                        applyElementalDamage(a, dmg, actor, "fire");
-                        if (Math.random() < ELEMENT_PROC_CHANCE.fire) {
-                            a.burning = 180;
-                            a.burnDamage = dmg * 0.1;
-                        }
-                    }
-                }
-            });
-            // Meteor bonus damage to nest pods within blast radius (2× multiplier)
-            world.forEach(t => {
-                if (!t.nest || t.nestHealth <= 0) return;
-                const _ntdx=t.x-target.x, _ntdy=t.y-target.y;
-                if (_ntdx*_ntdx+_ntdy*_ntdy <= 9.0) { // 3.0²=9.0
-                    const nestDmg = (actor.stats?.specialAttack||10) * 1.8;
-                    t.nestHealth = Math.max(0, t.nestHealth - nestDmg);
-                    floatingTexts.push({x:t.x,y:t.y-0.5,text:"METEOR! -"+Math.round(nestDmg),color:"#ff3300",life:45,vy:-0.08});
-                    if (t.nestHealth <= 0) saveNests();
-                }
-            });
-            return { hit: true };
+            if (typeof throwFireBombsAt === "function") { throwFireBombsAt(actor, target, 2, 0.16, (actor.stats?.specialAttack||10) * 0.7, true); return { hit: true }; }
+            return { hit: false };
         }
     },
 
