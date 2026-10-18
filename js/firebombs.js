@@ -26,12 +26,13 @@ let fireBombs = [];
 let fireTiles = new Map();         // "x,y" -> { x, y, until, born, dmg }
 
 // Light a tile: floor only, inside the lane, not under a pylon.
-function igniteFireTile(tx, ty, dmg) {
+// frames: how long it burns (default FIRE_BURN_MIN to FIRE_BURN_MAX, 10 to 15 seconds). onPillar: light the tile a pylon stands (stood) on.
+function igniteFireTile(tx, ty, dmg, frames, onPillar) {
     tx = Math.round(tx); ty = Math.round(ty);
     if (ty < FLOOR_Y_MIN || ty > FLOOR_Y_MAX) return false;
     const t = typeof getTile === "function" ? getTile(tx, ty) : null;
-    if (!t || (t.type && t.type.indexOf("wall") >= 0) || t.pillar) return false;
-    const f0 = typeof frame !== "undefined" ? frame : 0, until = f0 + FIRE_BURN_MIN + Math.floor(Math.random() * (FIRE_BURN_MAX - FIRE_BURN_MIN + 1)), key = tx + "," + ty, old = fireTiles.get(key);
+    if (!t || (t.type && t.type.indexOf("wall") >= 0) || (t.pillar && !onPillar)) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0, until = f0 + (frames || (FIRE_BURN_MIN + Math.floor(Math.random() * (FIRE_BURN_MAX - FIRE_BURN_MIN + 1)))), key = tx + "," + ty, old = fireTiles.get(key);
     if (old) { old.until = Math.max(old.until, until); old.dmg = Math.max(old.dmg, dmg || 3); return true; }
     if (fireTiles.size >= FIRE_BURN_CAP) fireTiles.delete(fireTiles.keys().next().value);
     fireTiles.set(key, { x: tx, y: ty, until, born: f0, dmg: dmg || 3 });
@@ -103,6 +104,20 @@ function fireBombsTick() {
             if (pt && typeof hurtPlayer === "function") hurtPlayer(Math.max(2, pt.dmg));
         }
     }
+}
+// ── A FIRE PYLON DESTROYED ──
+// ASKED: "when the fire pylon is destroyed, it causes a little fire. It takes a couple of seconds to go out, and obviously hurts everybody that touches it." Any pylon of fire (a turret, a battery, a wave
+// pylon) that is destroyed (game.js, where a wreck is made) lights its own tile and the four round it for FIRE_PYLON_BURN frames, a lot shorter than the bombs' ground fire: it is gone in a few seconds. The
+// same rule as every burning tile: everyone standing in it takes the little hit, your own side and you included.
+const FIRE_PYLON_BURN_MIN = 150, FIRE_PYLON_BURN_MAX = 240;   // 2.5 to 4 seconds
+function fireOnPylonDestroyed(p) {
+    if (!p || p.attackModeElement !== "fire") return false;
+    const dmg = 4, span = () => FIRE_PYLON_BURN_MIN + Math.floor(Math.random() * (FIRE_PYLON_BURN_MAX - FIRE_PYLON_BURN_MIN + 1));
+    igniteFireTile(p.x, p.y, dmg, span(), true);
+    for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) igniteFireTile(p.x + ox, p.y + oy, dmg, span());
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: p.x, y: p.y, color: "#ff7a1a", radius: 0.9, life: 18, element: "fire" });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: p.x, y: p.y - 0.8, text: "FIRE!", color: "#ff8a3a", life: 40, vy: -0.05, size: 11 });
+    return true;
 }
 // ── FIRE FOLLOWERS ──
 // `n` bombs from a follower at a target, fanned `spread` radians apart, landing at (or just short of) it. `dmg` is each landing's splash; the little hit of the fire it leaves is a tenth of it.

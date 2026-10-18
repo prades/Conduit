@@ -2834,6 +2834,7 @@ function render() {
     // ── PENDING PILLAR DESTRUCTION ──
     pendingPillarDestruction.forEach(p=>{
         if(p.destroyed)return; p.destroyed=true;
+        if (typeof fireOnPylonDestroyed === "function") fireOnPylonDestroyed(p);   // a fire pylon's wreck burns for a few seconds (js/firebombs.js)
         for(let i=0;i<6;i++) shards.push({x:p.x,y:p.y,z:1+Math.random(),vz:-0.05-Math.random()*0.05,color:p.pillarCol});
         // Clear any nest link pointing to this pylon
         world.forEach(obj=>{ if(obj.connectedPylon===p){ obj.connectedPylon=null; } });

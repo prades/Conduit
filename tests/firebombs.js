@@ -163,6 +163,23 @@ function measure() {
         run('__f.evolved = "maw"; delete __f.move;'); same(run('followerInfo(__f).attacks.some(s => s.h === "MOVE")'), false, 'a form with one move has no chooser');
     });
 
+    group('A FIRE PYLON DESTROYED');
+    check('THE ASK: a destroyed pylon of fire leaves a little fire (its tile and the four round it) that burns 2.5 to 4 seconds, and a pylon of another element leaves none', () => {
+        run('__clear(); frame = 5000; globalThis.__p = { x: 9, y: 1, attackModeElement: "fire", pillar: true };  getTile(9, 1).pillar = true;');
+        same(run('fireOnPylonDestroyed(__p)'), true, 'fire'); same(run('fireTiles.size'), 5, 'tiles'); const spans = J('[...fireTiles.values()].map(t => t.until - t.born)'); ok(spans.every(x => x >= 150 && x <= 240), 'burn time ' + spans);
+        ok(run('fireTiles.has("9,1")'), 'its own tile is not burning'); run('getTile(9, 1).pillar = false;');
+        run('__clear(); frame = 6000;'); same(run('fireOnPylonDestroyed({ x: 9, y: 1, attackModeElement: "ice" })'), false, 'ice'); same(run('fireTiles.size'), 0, 'ice left a fire'); same(run('fireOnPylonDestroyed(null)'), false, 'null');
+    });
+    check('it goes out in a few seconds, and everybody on it takes the little hit meanwhile: an enemy, your follower and you', () => {
+        run(`__clear(); frame = 6000; spawnFollowerAtCrystal('ice'); globalThis.__f = followers[followers.length - 1]; __f.returningToCrystal = false; __f.x = 9; __f.y = 1; __f.health = __f.maxHealth = 1000;
+            player.x = player.targetX = player.visualX = 10; player.y = 1; player.invuln = 0; health = 100; fireOnPylonDestroyed({ x: 9, y: 1, attackModeElement: 'fire' });`);
+        run('frame = 6030; fireBombsTick();'); ok(run('__f.health') < 1000, 'the follower on the fire was not hurt'); ok(run('health') < 100, 'you were not hurt (you stood on a neighbouring tile of it)');
+        run('frame = 6000 + 241 + 30; fireBombsTick();'); same(run('fireTiles.size'), 0, 'it has not gone out after four seconds');
+    });
+    check('the game lights it where a wreck is made (the pending destruction pass), only for fire', () => {
+        const g = rd('js/game.js'); const i = g.indexOf('if(p.destroyed)return; p.destroyed=true;'); ok(i > 0 && /fireOnPylonDestroyed\(p\)/.test(g.slice(i, i + 260)), 'the hook is not where the wreck is made');
+    });
+
     group('THE AIM RING (real browser)');
     const r = measure();
     if (r === null) console.log('  (no Chromium here: skipped)');
