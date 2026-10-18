@@ -88,6 +88,24 @@ const SETUP = `gameState.running = true; tutorialMode = false; zoneGenerated = (
         const s = J('buildTileToScreen(getTile(__nest.x, 1))'); same(run(`handleBuildToolTap(${s.x}, ${s.y})`), true, 'handled'); frames(3); same(run('world.filter(t => t.pillar && getZoneIndex(t.x) === 1).length'), 3, 'the skeleton stands'); });
     check('drawing the ghost and a card with a kit in hand is safe', () => { run('setBuildTool(buildMenuItems("kits").find(i => i.id === "fullkit")); buildTool.elId = "flux"; const t = getTile(__nest.x, 1); buildGhost = { x: t.x, y: t.y }; render(); drawBuildGhost(); drawBuildMenu();'); });
 
+    group('MOVING THE KIT (a zone that already has a generator, and nudging)');
+    check('THE ASK: an existing generator in the zone does not stop a kit being built anywhere else in it (the kit uses that generator, and none is built or paid for)', () => {
+        clear(); run('_executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), getTile(__nest.x + 2, 1), null); _cacheAge = -999;'); frames(3);
+        run('setBuildTool({ kind: "kit", id: "outpost", elId: "fire", colour: "#ff8a5c" }); buildMenuOpen = true;');
+        const at = run('__nest.x - 4'), v = J('(function(){ const t = getTile(' + at + ', 1); return kitToolVerdict(t, buildTool); })()'); same(v.ok, true, 'the verdict where the generator is not: ' + JSON.stringify(v));
+        same(J('kitToolPlan(buildTool, getTile(' + at + ', 1)).free'), 4, 'four pieces to build (no generator)'); const before = run('shardCount'); run('kitToolPlace(getTile(' + at + ', 1), buildTool);'); frames(3);
+        same(run('world.filter(t => t.pillar && t.isGenerator && getZoneIndex(t.x) === 1).length'), 1, 'a second generator was built'); same(before - run('shardCount'), 4 * run('PYLON_BUILD_COST'), 'the generator was charged for');
+    });
+    check('the ghost can be nudged a tile at a time (back / front along the lane, up / down across it) and starts at the player; BUILD HERE builds where it is', () => {
+        clear(); run('setBuildTool({ kind: "kit", id: "skeleton", elId: "fire", colour: "#ffd34d" }); buildMenuOpen = true; buildGhost = null; player.x = player.targetX = player.visualX = __nest.x + 3; player.y = player.targetY = player.visualY = 1.2;');
+        same(run('kitNudge(1, 0)'), true, 'nudge'); const g0 = J('buildGhost'); same(g0.x, run('__nest.x + 4'), 'x from the player'); same(g0.y, 1, 'y from the player');
+        run('kitNudge(0, 1); kitNudge(-1, 0);'); const g1 = J('buildGhost'); same(g1.x, g0.x - 1, 'back'); same(g1.y, 2, 'down');
+        same(run('kitNudge(0, -3)'), true, 'up'); ok(J('buildGhost').y <= 0, 'up three rows');
+        run('buildGhost = null;'); same(run('kitBuildHere()'), false, 'BUILD HERE with the ghost not placed is refused');
+        run('kitNudge(0, 0); buildGhost.x = __nest.x - 3; buildGhost.y = 1;'); const n0 = run('world.filter(t => t.pillar && getZoneIndex(t.x) === 1).length'); same(run('kitBuildHere()'), true, 'BUILD HERE built'); frames(2); ok(run('world.filter(t => t.pillar && getZoneIndex(t.x) === 1).length') > n0, 'nothing was built');
+    });
+    check('the chip has the four arrows and BUILD HERE for a kit in hand', () => { const b = rd('js/buildmenu.js'); ok(/kitNudge\(dx, dy\)/.test(b) && /"BUILD HERE"/.test(b) && /\\u25c0/.test(b) && /\\u25b2/.test(b), 'the chip is missing them'); });
+
     group('SNAP TO NEST');
     check('THE ASK (snap): one call builds the kit at the nest of the zone you stand in, shifted off the zone line if it is wide', () => {
         clear(); run('buildMenuOpen = true; setBuildTool(buildMenuItems("kits").find(i => i.id === "relayline")); buildTool.elId = "fire";');

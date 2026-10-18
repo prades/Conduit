@@ -115,12 +115,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const q = J('(function(){ const pl = kitPlan(kitById("relayline"), "fire", __nest.x, 1, __nest); return { blocked: pl.blocked, why: pl.pieces.map(q => q.why).filter(Boolean) }; })()');
         ok(q.blocked >= 1 && q.why.includes('ACROSS THE ZONE LINE'), 'the unshifted plan should be blocked at the zone line: ' + JSON.stringify(q));
     });
-    check('a zone has one generator: a kit aligns onto an existing one, and a kit whose generator would be a second is blocked', () => {
+    check('a zone has one generator: a kit placed ANYWHERE in the zone uses it (its own generator is not built or charged), so an existing generator never blocks a kit or pins it to one spot', () => {
         clearZone(); run('_executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), getTile(__nest.x + 2, 1), null); _cacheAge = -999;'); frames(2);
         const p = J('(function(){ const pl = kitFindPlacement(kitById("outpost"), "fire", __nest); return { ok: pl.ok, have: pl.have, x0: pl.x0 - __nest.x, g: pl.pieces.find(q => q.piece.c === "G").state }; })()');
         same(p.ok, true, 'a clean placement'); same(p.g, 'have', 'the generator is the existing one'); same(p.x0, 2, 'anchored on it');
         const q = J('(function(){ const pl = kitPlan(kitById("outpost"), "fire", __nest.x, 1, __nest); const g = pl.pieces.find(q => q.piece.c === "G"); return { st: g.state, why: g.why }; })()');
-        same(q.st, 'blocked', 'a second generator was planned'); ok(/ALREADY HAS A GENERATOR/.test(q.why), q.why);
+        same(q.st, 'have', 'a second generator was planned');
+        // and it can be moved around: three different spots in the zone all plan clean, none charged for a generator
+        for (const dx of [3, -4, -6]) { const pl = J('(function(){ const pl = kitPlan(kitById("outpost"), "fire", __nest.x + ' + dx + ', 1, __nest); return { blocked: pl.blocked, free: pl.free, g: pl.pieces.find(q => q.piece.c === "G").state }; })()'); same(pl.g, 'have', 'generator at shift ' + dx); same(pl.blocked, 0, 'blocked at shift ' + dx + ': ' + JSON.stringify(J('kitPlan(kitById("outpost"), "fire", __nest.x + ' + dx + ', 1, __nest).pieces.filter(q => q.state === "blocked").map(q => [q.piece.c, q.x, q.y, q.why])'))); same(pl.free, 4, 'free at shift ' + dx); }
         same(J('kitBuild(kitFindPlacement(kitById("outpost"), "fire", __nest)).built'), 4, 'the other four'); frames(3); same(run('world.filter(t => t.pillar && t.isGenerator && getZoneIndex(t.x) === 1).length'), 1, 'generators');
     });
     check('short of shards it builds what it can, in order (generator first), and says how many shards it still needs', () => {

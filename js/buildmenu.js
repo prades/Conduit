@@ -516,7 +516,7 @@ function drawBuildMenu() {
         }
         // Status line: what is in hand, and what to do with it.
         let msg, col = "#8aa0c8";
-        if (!buildTool) msg = buildMenuTab === "kits" ? "A kit is a whole zone layout. Pick one, then SNAP TO NEST or tap where its generator goes." : buildMenuSimple ? "Pick a GENERATOR or a BATTERY, then tap the ground. You can switch it there." : buildMenuTab === "modules" ? "Modules work while powered, on the ground around them. Pick one." : "Pick something to build.";
+        if (!buildTool) msg = buildMenuTab === "kits" ? "A kit is a whole zone layout. Pick one, then move it where you want (the ghost follows you; the arrows nudge it) and build it, or SNAP TO NEST." : buildMenuSimple ? "Pick a GENERATOR or a BATTERY, then tap the ground. You can switch it there." : buildMenuTab === "modules" ? "Modules work while powered, on the ground around them. Pick one." : "Pick something to build.";
         else {
             const g = buildGhost && typeof getTile === "function" ? getTile(buildGhost.x, buildGhost.y) : null;
             const v = g ? canBuildAt(g, buildTool) : null;
@@ -681,6 +681,10 @@ function _placeChipSync() {
         const r1 = row("tools");
         btn(r1, "SNAP TO NEST", true, "#19e6c1", () => { kitSnapBuild(); });
         btn(r1, kitDir > 0 ? "FACING FRONT \u25b6" : "\u25c0 MIRRORED", kitDir < 0, "#8fe3ff", () => { kitDir = -kitDir; _bmArmedKey = null; _placeChipSig = null; });
+        // MOVE IT: the arrows nudge the ghost a tile (back / front along the lane, up / down across it); BUILD HERE builds it where the ghost is
+        const r3 = row("tools");
+        for (const [lab, dx, dy] of [["\u25c0", -1, 0], ["\u25b6", 1, 0], ["\u25b2", 0, -1], ["\u25bc", 0, 1]]) btn(r3, lab, false, "#8fe3ff", () => { kitNudge(dx, dy); });
+        btn(r3, "BUILD HERE", true, "#ffd34d", () => { kitBuildHere(); });
         const r2 = row("els");
         for (const e of kitElements(kit)) { const el = ELEMENTS.find(x => x.id === e); btn(r2, el.label.slice(0, 3).toUpperCase(), buildTool.elId === e, el.color, () => { buildTool.elId = e; _bmArmedKey = null; }); }
         return;

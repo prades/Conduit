@@ -99,16 +99,8 @@ function generateSegment(startX) {
     // the holes on the ground or the floor any more." So a zone has exactly one
     // mouth now — the nest in its back wall — and the floor is floor.
 
-    // ── SIGNAL TOWER — zones 4+, placed at zone centre, y=1 ──
-    if (zoneIndex >= 4 && startX === zoneCenter) {
-        const stTile = world.find(t => t.x === startX && t.y === 1 && t.type === 'floor' && !t.nest && !t.nodeType);
-        if (stTile) {
-            stTile.nodeType = 'signal_tower';
-            stTile.capturable = true;
-            stTile.predatorOwned = true; // starts under predator control
-            signalTowers.push(stTile);
-        }
-    }
+    // (There used to be a SIGNAL TOWER here, zones 4 and up: a red antenna in the middle of the zone that gave the enemy territory until it was hacked. Removed: "those little red arrow things with a
+    // line through them in the middle of the zones". Nothing builds one any more; the code that reads signalTowers sees an empty list.)
 }
 
 // ─────────────────────────────────────────────────────────

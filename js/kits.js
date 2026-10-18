@@ -186,7 +186,9 @@ function kitPlan(kit, el, x0, dir, nest) {
         if (t && _kitHaveKind(t, p, el)) { r.state = "have"; if (p.mk2 && (t.mk || 0) < 2) r.mk2Missing = true; return r; }
         const why = typeof _bmTileProblem === "function" ? _bmTileProblem(t) : (t ? null : "NOTHING THERE");
         if (why) { r.state = "blocked"; r.why = why; return r; }
-        if (p.c === "G" && zoneGens.length) { r.state = "blocked"; r.why = "THE ZONE ALREADY HAS A GENERATOR (" + zoneGens[0].x + "," + zoneGens[0].y + ")"; return r; }
+        // A zone has one generator, and power reaches every piece in the zone from it (power.js zoneHasGenerator), so a kit placed ANYWHERE in a zone that has one simply uses it: the kit's own generator is
+        // not built (and not charged), it is "have" through the one that is there. (It used to be BLOCKED, which pinned every kit to the generator's own tile.)
+        if (p.c === "G" && zoneGens.length) { r.state = "have"; r.via = zoneGens[0]; return r; }
         if (p.c === "G" || p.c === "C") {
             if (typeof canPlaceGenerator === "function" && !canPlaceGenerator(t).ok) { r.state = "blocked"; r.why = "NEEDS A NEST WITHIN " + GENERATOR_NEST_RANGE; }
         }

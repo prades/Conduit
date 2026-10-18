@@ -40,6 +40,21 @@ function kitToolPlace(t, tool) {
     if (typeof elementEffects !== "undefined") for (const r of kitToolPlan(tool, t).pieces) elementEffects.push({ type: "impact", x: r.x + 0.5, y: r.y + 0.5, color: tool.colour || "#0f8", radius: 0.35, life: 20 });
     return res.built > 0;
 }
+// MOVE THE KIT (reported: "let me move around the kit rather than putting it in some default spot"): the ghost follows the pointer, and these nudge it a tile at a time (the chip's arrows: along the lane
+// and across it), which is how a touch screen, with no pointer to hover, places it exactly. BUILD HERE builds it where the ghost is (the second tap, as a button).
+function kitNudge(dx, dy) {
+    if (!buildTool || buildTool.kind !== "kit") return false;
+    const base = buildGhost || { x: Math.round(player.x), y: Math.max(FLOOR_Y_MIN, Math.min(FLOOR_Y_MAX, Math.round(player.y))) }, t = getTile(base.x + dx, base.y + dy);
+    if (!t) return false;
+    buildGhost = { x: t.x, y: t.y }; _bmArmedKey = null; return true;
+}
+function kitBuildHere() {
+    if (!buildTool || buildTool.kind !== "kit" || !buildGhost) { if (typeof _bmSay === "function") _bmSay("MOVE THE KIT FIRST: TAP THE GROUND OR USE THE ARROWS", "#8aa0c8"); return false; }
+    const t = getTile(buildGhost.x, buildGhost.y); if (!t) return false;
+    const v = kitToolVerdict(t, buildTool);
+    if (!v.ok) { _bmSay(kitById(buildTool.id).name + ": " + v.why, "#f88"); return false; }
+    return kitToolPlace(t, buildTool);
+}
 // SNAP TO NEST: at the held nest of the zone the player is in, wherever fits best (shifted or mirrored off a zone line or an obstacle).
 function kitSnapBuild() {
     if (!buildTool || buildTool.kind !== "kit") return false;
