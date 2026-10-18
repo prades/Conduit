@@ -37,6 +37,8 @@ const JOBS = [
   { id: 'egg_flux', form: 835, color: '#9933ff', idleAct: 0, action: [0, 1.0], brightCrystal: true },
   { id: 'egg_core', form: 835, color: '#00ccaa', idleAct: 0, action: [0, 1.0], brightCrystal: true },
   { id: 'egg_toxic', form: 835, color: '#66ff66', idleAct: 0, action: [0, 1.0], brightCrystal: true },
+  // The same egg before it has an element: the wild recruit you have not converted yet (grey crystal).
+  { id: 'egg_neutral', form: 835, color: '#b4bcc8', idleAct: 0, action: [0, 1.0], brightCrystal: true },
   // Nos. 801-803, the follower egg candidates (element colour here: fire); Nos. 811-813, the player candidates (circuit teal).
   { id: 'egg_pod', form: 801, color: '#ff5522', idleAct: 0, action: [0, 1.0] },
   { id: 'egg_shell', form: 802, color: '#ff5522', idleAct: 0, action: [0, 1.0] },

@@ -88,10 +88,17 @@ function _hdGlowStamp(el, col) {
     if (_hdGlow[el] === undefined) _hdGlow[el] = _hdStamp(32, 32, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, col); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); }) || false;
     return _hdGlow[el] || null;
 }
-// A follower that has not evolved (and is not a clone): its row from the way it faces, walking while its walk cycle moves.
+// A follower that has not evolved (and is not a clone), or a wild recruit that has not been converted yet (the same egg with a grey crystal, sheet egg_neutral): its row from the way it faces,
+// walking while its walk cycle moves.
+function hdEggSheet(f) {
+    if (!f || f.isClone || f.evolved) return null;
+    if (f.isFollower && HD_ELEMENTS.indexOf(f.element) >= 0) return "egg_" + f.element;
+    if (f.isNeutralRecruit && !f.isFollower) return "egg_neutral";
+    return null;
+}
 function drawHdEgg(f, px, py, g, flash) {
-    if (!f || !f.isFollower || f.isClone || f.evolved || HD_ELEMENTS.indexOf(f.element) < 0) return false;
-    const img = _hdImg("egg_" + f.element); if (!img) return false;
+    const key = hdEggSheet(f); if (!key) return false;
+    const img = _hdImg(key); if (!img) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0, wc = f.walkCycle || 0;
     if (f._hdWc !== undefined && Math.abs(wc - f._hdWc) > 1e-4) f._hdMoveAt = f0;
     f._hdWc = wc;
@@ -102,7 +109,7 @@ function drawHdEgg(f, px, py, g, flash) {
     const sh = _hdShadowStamp(); if (sh) g.drawImage(sh, px - 20, py - 8, 40, 18);
     _hdBlit(g, img, HD_BOX.egg, col, row, px, py + 2, s);
     // the crystal's glow, and white for a moment when it is hit
-    const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, gl = def ? _hdGlowStamp(f.element, def.color) : null;
+    const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, gl = def ? _hdGlowStamp(f.element, def.color) : _hdGlowStamp("neutral", "#b4bcc8");
     if (gl) { const cy = py + 2 - (HD_ANCHOR[1] - HD_EGG_CORE_Y) * s, a0 = g.globalAlpha; g.globalAlpha = a0 * (0.4 + 0.15 * Math.sin(f0 * 0.12)); g.drawImage(gl, px - 14, cy - 14, 28, 28); g.globalAlpha = a0; }
     if (flash) { const a0 = g.globalAlpha; g.globalAlpha = a0 * 0.5; _hdBlit(g, img, HD_BOX.egg, col, row, px, py + 2, s); g.globalAlpha = a0; }
     return true;
