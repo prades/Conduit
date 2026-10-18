@@ -38,7 +38,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
             t.powered = undefined; if (t.nest) { t.nestHealth = t.nestMaxHealth || 200; t.nestEnergy = undefined; } });
         const row = world.filter(t => t.type === 'floor' && t.y === 3 && t.x >= 4 && !t.nest && !t.nodeType).sort((a,b) => a.x - b.x);
         const o = ${JSON.stringify(opts || {})};
-        const base = { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999, attackModeElement: 'fire', attackModeColor: '#f50', attackPower: 12, attackRange: 2.5 };
+        const base = { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999, attackModeElement: 'core', attackModeColor: '#0cb', attackPower: 12, attackRange: 2.5 };
         Object.assign(row[0], base, { isGenerator: true, attackMode: true, attackModeElement: 'generator' });
         Object.assign(row[1], base, { attackMode: true });
         Object.assign(row[2], base, { waveMode: true });
@@ -171,7 +171,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
                 world.forEach(t => { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.circuitOn = undefined; t.waveTripped = false; t.nestConnection = null; if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });
                 Object.assign(row[0], { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999, isGenerator: true, attackMode: true, attackModeElement: 'generator' });
                 const t = row[1];
-                Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999, attackMode: true, attackModeElement: 'fire', attackPower: 20, attackRange: 2.5 });
+                Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 99999, maxHealth: 99999, attackMode: true, attackModeElement: 'core', attackPower: 20, attackRange: 2.5 });
                 actors.length = 0;
                 const S = SPECIES['ant']; const f = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), t.x + 1, t.y);
                 f.team = 'red'; f.health = 200; f.maxHealth = 200; actors.push(f);
@@ -183,7 +183,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     });
     await check('a network tier makes every round hit harder', () => {
         // The tier is the turret's own now (its distance from its bank: _tier).
-        const r = run(`(function(){ const t = { attackPower: 20, attackModeElement: 'fire' };
+        const r = run(`(function(){ const t = { attackPower: 20, attackModeElement: 'core' };
             t._tier = 0; const a = turretRoundDamage(t, null);
             t._tier = 3; const b = turretRoundDamage(t, null);
             return { a, b }; })()`);
@@ -236,7 +236,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
             const row = world.filter(t => t.type === 'floor' && t.y === 3 && t.x >= 4 && !t.nest && !t.nodeType).sort((a,b) => a.x - b.x);
             world.forEach(t => { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.waveTripped = false; t.nestConnection = null; });
             const t = row[3];
-            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 999, maxHealth: 999, attackMode: true, attackModeElement: 'fire', attackPower: 20, attackRange: 2.5, attackFireTimer: 0 });
+            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 999, maxHealth: 999, attackMode: true, attackModeElement: 'core', attackPower: 20, attackRange: 2.5, attackFireTimer: 0 });
             actors.length = 0; turretShots.length = 0;
             const S = SPECIES['ant']; const f = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), t.x + 1.5, t.y);
             f.team = 'red'; f.health = 5000; f.maxHealth = 5000; actors.push(f);
@@ -256,7 +256,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
             const row = world.filter(t => t.type === 'floor' && t.y === 3 && t.x >= 4 && !t.nest && !t.nodeType).sort((a,b) => a.x - b.x);
             world.forEach(t => { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; });
             const t = row[3];
-            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 999, maxHealth: 999, attackMode: true, attackModeElement: 'fire', attackFireTimer: 0 });
+            Object.assign(t, { pillar: true, destroyed: false, pillarTeam: 'green', health: 999, maxHealth: 999, attackMode: true, attackModeElement: 'core', attackFireTimer: 0 });
             delete t.attackRange; delete t.attackPower;               // an OLD save: neither was kept
             actors.length = 0; turretShots.length = 0;
             const S = SPECIES['ant']; const f = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), t.x + 1, t.y);
