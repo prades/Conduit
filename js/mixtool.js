@@ -57,25 +57,23 @@ function mixToolSignature() {
 function mixToolHTML() {
     const parts = mixToolParts(), pend = pendingElements.length > 0, choices = typeof _modChoices === "function" && pend ? _modChoices() : [];
     // A gold ! on the pod: an element unlock is waiting, or a new element has made the mix stale (RE-MODULATE). Opening the tool is the acknowledgement: it clears the second.
-    let h = '<button class="mt-pod" aria-label="Mix selector">' + _MT_GEM("#ffe733") + '<span>' + mixToolPodLabel() + '</span>' + ((pend || modulationDirty) && !crystalMenuOpen ? '<i class="mt-bang">!</i>' : '') + '</button>';
+    let h = '<button class="mt-pod" aria-label="Mix selector">' + _MT_GEM("#ffe733", 15) + '<span>' + mixToolPodLabel() + '</span>' + ((pend || modulationDirty) && !crystalMenuOpen ? '<i class="mt-bang">!</i>' : '') + '</button>';
     if (!crystalMenuOpen) return h;
     h += '<div class="mt-panel"><div class="mt-tabs"><button class="mt-tab' + (_mtTab === "mix" ? ' on' : '') + '" data-tab="mix">MIX</button><button class="mt-tab' + (_mtTab === "command" ? ' on' : '') + '" data-tab="command">COMMAND</button><button class="mt-x" data-act="close" aria-label="Close">✕</button></div>';
     if (_mtTab === "mix") {
-        const next = typeof nextWaveUnlock === "function" ? nextWaveUnlock() : null;
-        h += '<div class="mt-comb">';
+                h += '<div class="mt-comb">';
         ELEMENTS.forEach((e, i) => {
             const un = unlockedElements.has(e.id), on = un && modulationIncludes(e.id), pick = !un && choices.indexOf(e.id) >= 0, c = MT_CELLS[i % 6];
             h += '<button class="mt-hex' + (on ? ' on' : '') + (!un && !pick ? ' locked' : '') + (pick ? ' pick' : '') + '" data-id="' + e.id + '" style="--c:' + (pick ? '#ffe733' : e.color) + ';left:' + c[0] + '%;top:' + c[1] + '%"><span class="mt-hexin">'
-                + _MT_GEM(un || pick ? e.color : "#3a4666", 26) + '<b>' + (pick ? "UNLOCK" : un ? e.label.slice(0, 3).toUpperCase() : "LOCKED") + '</b></span></button>';
+                + _MT_GEM(un || pick ? e.color : "#3a4666", 18) + '<b>' + (pick ? "UNLOCK" : un ? e.label.slice(0, 3).toUpperCase() : "LOCKED") + '</b></span></button>';
         });
         h += '<button class="mt-hex mt-all' + (modulationUntouched() ? ' on' : '') + '" data-all="1" style="--c:#ffe733;left:50%;top:50%"><span class="mt-hexin"><b>ALL</b><em>' + parts.length + '</em></span></button></div>';
-        h += '<div class="mt-hint gold">' + (pend ? (pendingElements.length > 1 ? pendingElements.length + ' UNLOCKS EARNED — CHOOSE' : 'UNLOCK EARNED — CHOOSE AN ELEMENT') : next ? 'NEXT UNLOCK: YOUR PICK — CLEAR A WAVE' : 'ALL ELEMENTS ONLINE') + '</div>'
-            + '<div class="mt-hint">TAP A CELL TO PUT IT IN OR OUT · CENTRE: ALL</div>'
-            + '<div class="mt-hint dim">' + (modulationUntouched() ? 'EVERYONE COMES BACK AS THEY WERE' : 'A DROPPED ELEMENT RE-ROLLS FROM THE MIX WHEN IT FALLS') + '</div>';
+        // one line, and only when there is something to say: an unlock is waiting
+        if (pend) h += '<div class="mt-hint gold">' + (pendingElements.length > 1 ? pendingElements.length + ' UNLOCKS EARNED' : 'UNLOCK EARNED') + ' \u2014 TAP GOLD</div>';
     } else {
-        h += '<div class="mt-orders">' + MIXTOOL_ORDERS.map(o => '<button class="mt-ord" data-order="' + o.id + '" style="--c:' + o.col + '"><b>' + o.label + '</b><span>' + o.sub + '</span></button>').join('') + '</div>';
+        h += '<div class="mt-orders">' + MIXTOOL_ORDERS.map(o => '<button class="mt-ord" data-order="' + o.id + '" style="--c:' + o.col + '"><b>' + o.label + '</b></button>').join('') + '</div>';
         const sel = typeof selectedUnits !== "undefined" && selectedUnits.size && ccSelectionList().length;
-        h += '<div class="mt-hint">ORDERS GO TO: ' + mixToolTarget() + '</div><div class="mt-chips scope">';
+        h += '<div class="mt-hint">TO: ' + mixToolTarget() + '</div><div class="mt-chips scope">';
         h += '<button class="mt-chip' + (!sel && squadMode === "all" ? ' on' : '') + '" data-scope="all" style="--c:#fff"><span>ALL</span></button>';
         ELEMENTS.filter(e => unlockedElements.has(e.id)).forEach(e => { h += '<button class="mt-chip' + (!sel && squadMode !== "all" && player.selectedElement === e.id ? ' on' : '') + '" data-scope="' + e.id + '" style="--c:' + e.color + '">' + _MT_GEM(e.color) + '<span>' + e.label.slice(0, 3).toUpperCase() + '</span></button>'; });
         h += '</div>';

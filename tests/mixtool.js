@@ -118,7 +118,7 @@ function measure(w, h) {
             same(r.pickIce, 'ice,ice,ice', 'draws with only ice in the mix'); ok(/locked/.test(r.lockedCell) && /LOCKED/.test(r.lockedText), 'locked cell: ' + r.lockedCell + ' ' + r.lockedText); ok(/UNLOCK/.test(r.pick1 || ''), 'unlock cell: ' + r.pick1);
         });
         check(w + ': the COMMAND tab has HOLD and COME and the scope chips; HOLD stands the squad, COME brings it back', () => {
-            same(r.cmd.tab, 'command', 'tab'); ok(/HOLD/.test(r.cmd.orders[0]) && /COME/.test(r.cmd.orders[1]), 'orders ' + r.cmd.orders); same(r.cmd.scope, 4, 'ALL + three elements'); ok(/ORDERS GO TO/.test(r.cmd.hint), 'hint ' + r.cmd.hint);
+            same(r.cmd.tab, 'command', 'tab'); ok(/HOLD/.test(r.cmd.orders[0]) && /COME/.test(r.cmd.orders[1]), 'orders ' + r.cmd.orders); same(r.cmd.scope, 4, 'ALL + three elements'); ok(/TO: /.test(r.cmd.hint), 'hint ' + r.cmd.hint);
             same(r.hold, 'hold,hold', 'hold'); same(r.come, 'follow,follow', 'come');
         });
         check(w + ': the close button puts it away, and the Crystal flag opens it again', () => { same(r.closed.flag, false, 'flag'); same(r.closed.panel, false, 'panel'); same(r.byFlag, true, 'by flag'); });

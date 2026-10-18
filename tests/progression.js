@@ -416,11 +416,6 @@ check('the mix selector offers an UNLOCK chip for every locked element once one 
     ok(/pick \? "UNLOCK"/.test(MIXTOOL), 'the chip does not say UNLOCK');
 });
 
-check('the mix selector shows what is next when nothing is pending', () => {
-    ok(/nextWaveUnlock\(\)/.test(MIXTOOL), 'the tool does not show the next unlock');
-    ok(/CLEAR A WAVE/.test(MIXTOOL), 'it does not say how the next one is earned');
-});
-
 check('THE PROMPT: the pod says an element is waiting (a gold !), and stops once the tool is open', () => {
     ok(/\(pend \|\| modulationDirty\) && !crystalMenuOpen \? '<i class="mt-bang">!<\/i>'/.test(MIXTOOL), 'the pod does not prompt');
     ok(!/function drawCrystalButton/.test(SRC.clone), 'the canvas Crystal button is still there');
