@@ -199,12 +199,11 @@ No other file changes: the picker, the perk screen, the INFO pages and the roste
 
 ### Answered (the new asks)
 
-8. **Team gear (T4, T5)** goes in the **player's loadout slots** (2 T4, 1 T5), not on a unit.
-9. **The squad of 3 (T2)** is a **squad you set up in the roster**, not the nearest allies: see 4.3.
-
 5. **Hacker skill:** more variables = **harder and better gear**. The skill unlocks the tiers (1, 2, then 3 unknown variables); you choose how hard to go, up to your level.
 6. **Gear** is **kept for good** in the inventory (8 slots) and carries across runs. **Reworked:** it is individual gear in five tiers by reach (one follower, a squad of 3, an aura, the whole team, the whole team and you), see 4.2.
 7. **A wrong answer** costs a **lock-out of that panel and a small shard fee**; a decoy still trips its alarm as today.
+8. **Team gear (T4, T5)** goes in the **player's loadout slots** (2 T4, 1 T5), not on a unit.
+9. **The squad of 3 (T2)** is a **squad you set up in the roster**, not the nearest allies: see 4.3.
 
 ## 9. Done so far
 
