@@ -168,7 +168,6 @@ async function boot(store) {
         E.unlock(['fire', 'electric']);
         E.scheme();                       // a read, as laying out the tab does
         // And the draw itself: the control reads the mask on every frame.
-        E.run('crystalMenuOpen = true; crystalMenuTab = "modulation"; drawCrystalPanel();');
         same(E.maskNow().length, 0, 'a read must not freeze the mix into a choice');
         E.run('unlockedElements.add("toxic");');
         const s = E.scheme();
@@ -182,7 +181,6 @@ async function boot(store) {
         // "Any" has to LOOK like everything is on, or an empty mask reads as
         // nothing selected.
         E.unlock(['fire', 'electric', 'ice']);
-        E.run('crystalMenuOpen = true; crystalMenuTab = "modulation"; drawCrystalPanel();');
         same(E.maskNow().length, 0, 'fixture: the mask should still be untouched');
         same(E.scheme().size, 3, 'all three should read as in the mix');
     });
@@ -352,173 +350,6 @@ async function boot(store) {
     });
 
     // ─────────────────────────────────────────────────────
-    group('the control lives in the Crystal, and fits the panel');
-
-    // REPORTED: "the modulation tab isn't fully available — make the design
-    // simpler, incorporating the crystal, and removing the slider tool."
-    //
-    // The tab was two hand-placed columns split at 62% of the panel width, and
-    // the right one held the only control. On a 1024 tablet its heading was cut
-    // to "NEW FOLLOWERS COME OUT", the help text ended mid-word, and the fifth
-    // swatch was half outside the panel; on a phone the fifth was gone. With
-    // six elements unlocked the last one could not be tapped at all.
-    //
-    // There was also a SECOND copy of the swatch row floating at the
-    // bottom-right of the HUD — two controls for one setting, the floating one
-    // wedged between the radial buttons and the TUTORIAL button.
-
-    // Lay the panel out for real and hand back where the controls landed. The
-    // stubbed canvas does no painting, but the arithmetic that places things is
-    // the game's own, which is the part that was wrong.
-    function layout(env, w, h) {
-        env.run(`canvas.width = ${w}; canvas.height = ${h};`);
-        env.run('crystalMenuOpen = true; crystalMenuTab = "modulation"; drawCrystalPanel();');
-        return env.run(`(() => {
-            const b = window._cpBounds;
-            const sw = (window._modSwatchRects || []).map(r => ({t:"swatch",x:r.x,y:r.y,w:r.w,h:r.h}));
-            const ac = (window._modActivateRects || []).map(r => ({t:"activate",x:r.bx,y:r.by,w:r.bw,h:r.bh}));
-            return { b, controls: sw.concat(ac) };
-        })()`);
-    }
-    const outside = L => L.controls.filter(r =>
-        r.x < L.b.PX || r.x + r.w > L.b.PX + L.b.PW ||
-        r.y < L.b.contentY || r.y + r.h > L.b.contentY + L.b.contentH);
-
-    check('THE ASK: every swatch is inside the panel, at every screen size', () => {
-        const C = E;
-        // Six unlocked is the worst case — the most the row ever has to hold.
-        C.unlock(C.elementIds());
-        same(C.elementIds().length, 6, 'fixture: six elements should be the full set');
-        for (const [w, h] of [[1024, 768], [768, 1024], [390, 844], [844, 390], [360, 640], [260, 480]]) {
-            const L = layout(C, w, h);
-            same(L.controls.length, 6, `only ${L.controls.length} of 6 swatches at ${w}x${h}`);
-            same(outside(L).length, 0,
-                 `${outside(L).length} control(s) outside the panel at ${w}x${h}`);
-        }
-    });
-
-    check('and so is the ACTIVATE button for an earned element', () => {
-        const C = E;
-        C.unlock(['fire', 'electric', 'ice', 'flux', 'core']);
-        C.run('pendingElements = ["toxic"];');
-        for (const [w, h] of [[1024, 768], [390, 844], [844, 390]]) {
-            const L = layout(C, w, h);
-            const act = L.controls.filter(r => r.t === 'activate');
-            same(act.length, 1, `the ACTIVATE button is missing at ${w}x${h}`);
-            same(outside(L).length, 0, `something fell outside the panel at ${w}x${h}`);
-        }
-        C.run('pendingElements = [];');
-    });
-
-    check('a short panel drops the decoration, not the control', () => {
-        // Landscape on a phone leaves 236px of panel. A crystal sized off the
-        // panel height pushed the ACTIVATE button and the footer off the
-        // bottom: the one decoration on the screen crowded out the only
-        // control. It stands down instead.
-        const C = E;
-        C.unlock(C.elementIds());
-        C.run('pendingElements = ["toxic"];');
-        const tall = layout(C, 1024, 768);
-        const short = layout(C, 844, 390);
-        same(outside(short).length, 0, 'the control still falls outside a short panel');
-        const topOf = L => Math.min(...L.controls.map(r => r.y));
-        ok(topOf(short) - short.b.contentY <= topOf(tall) - tall.b.contentY,
-           'the short panel did not reclaim the decoration\'s space');
-        C.run('pendingElements = [];');
-    });
-
-    check('the row shrinks to fit rather than overflowing', () => {
-        // With the six elements the game ships, the row fits at full size on
-        // every real screen — the clamp does no work and a test that only used
-        // those six could not tell a fitting rule from a fixed one. The row's
-        // job is to fit whatever it is handed, so hand it more.
-        const C = E;
-        // ELEMENTS is a const, so the array is grown in place rather than
-        // rebound.
-        C.run(`ELEMENTS.push(...[1,2,3,4].map(i => (
-                   { id: "test" + i, label: "TEST" + i, color: "#888888" })));`);
-        C.unlock(C.elementIds());
-        same(C.elementIds().length, 10, 'fixture: ten elements should be unlocked');
-        for (const [w, h] of [[1024, 768], [390, 844], [360, 640]]) {
-            const L = layout(C, w, h);
-            same(L.controls.length, 10, `only ${L.controls.length} of 10 swatches at ${w}x${h}`);
-            same(outside(L).length, 0, `the row overflowed the panel at ${w}x${h}`);
-        }
-        C.run('ELEMENTS.length = ELEMENTS.length - 4;');
-        C.unlock(C.elementIds());
-    });
-
-    check('the swatches stay big enough to hit', () => {
-        const C = E;
-        C.unlock(C.elementIds());
-        for (const [w, h] of [[390, 844], [360, 640], [844, 390], [260, 480]]) {
-            const L = layout(C, w, h);
-            const cell = L.controls[0].w;
-            ok(cell >= 16, `a ${cell}px swatch at ${w}x${h} is too small for a finger`);
-        }
-    });
-
-    check('THE ASK: ONE control, not two', () => {
-        // A second copy on the HUD is a second place to read the mix from and a
-        // second place to keep in step.
-        ok(!/function drawModulationChip/.test(SRC.clone), 'the HUD chip is still drawn');
-        ok(!/_MODCHIP/.test(SRC.clone), 'the HUD chip state survives in clone.js');
-        ok(!/drawModulationChip/.test(SRC.game), 'game.js still paints the HUD chip');
-        ok(!/modulationChipTap/.test(SRC.input), 'input.js still routes taps to the HUD chip');
-        const uses = (SRC.clone.match(/drawModulationCards\(/g) || []).length;
-        same(uses, 2, 'the element cards should be defined once and called once, got ' + uses);
-    });
-
-    check('tapping a swatch in the panel toggles that element', () => {
-        const C = E;
-        C.unlock(['fire', 'electric', 'ice']);
-        C.mask(['fire']);
-        const L = layout(C, 1024, 768);
-        const r = C.run('(window._modSwatchRects || []).find(r => r.id === "ice")');
-        ok(!!r, 'no tap target for ice');
-        // The panel toggles on RELEASE, not press — a toggle that fires on
-        // press repeats for every move event while the finger is down.
-        same(C.run(`handleCrystalPanelInput(${r.x + r.w / 2}, ${r.y + r.h / 2}, false)`), true,
-             'the tap should be taken by the panel');
-        ok(C.maskNow().includes('ice'), 'ice should now be in the mix');
-        ok(L.controls.length === 3, 'fixture: three swatches should have been laid out');
-    });
-
-    check('THE ASK: the mix is stated ONCE, not three times', () => {
-        // The old tab said it under the crystal, again under the swatches, and
-        // again on the HUD chip — with a size caption ("all elements") and a
-        // strip of cycling colour chips saying it a fourth and fifth way.
-        const at = SRC.clone.indexOf('function _drawModTab');
-        const body = SRC.clone.slice(at, SRC.clone.indexOf('\n}\n', at));
-        ok(at > -1 && body.length > 400, 'the modulation tab could not be located');
-        const label = (body.match(/scheme\.label|sch\.label/g) || []).length;
-        same(label, 1, 'the mix label is drawn ' + label + ' times on one screen');
-        ok(!/all elements/.test(body), 'the old size caption is still drawn');
-    });
-
-    check('the gem IS the readout, and shows the mix: still, a wedge per element, lit only for what is in the mix', () => {
-        const at = SRC.clone.indexOf('function _drawModTab');
-        const body = SRC.clone.slice(at, SRC.clone.indexOf('\n}\n', at));
-        ok(/_drawMixGem\(/.test(body), 'the gem is gone from the modulation tab');
-        ok(!/cycleColor/.test(SRC.clone) && !/_crystalModPhase/.test(SRC.clone), 'the crystal still blinks through the mix colours');
-        const g0 = SRC.clone.indexOf('function _drawMixGem'), gem = SRC.clone.slice(g0, SRC.clone.indexOf('\n}\n', g0));
-        ok(!/frame/.test(gem), 'the gem moves'); ok(/modulationIncludes\(el\.id\)/.test(gem), 'the gem does not read the mix');
-        const c0 = SRC.clone.indexOf('function drawModulationCards'), cards = SRC.clone.slice(c0, SRC.clone.indexOf('\n}\n', c0));
-        ok(!/Math\.sin\(/.test(cards), 'the element cards pulse');
-    });
-    check('the Crystal is one page: no GUIDE tab, no tab bar', () => {
-        ok(!/GUIDE/.test(SRC.clone) && !/_drawInfoTab/.test(SRC.clone), 'the guide is still there');
-        const panel = SRC.clone.slice(SRC.clone.indexOf('function drawCrystalPanel'), SRC.clone.indexOf('function _drawModTab'));
-        ok(!/CTABS\.forEach/.test(panel), 'a tab bar is still drawn');
-    });
-
-    check('the crystal panel no longer draws a slider', () => {
-        ok(!/_crystalSliderTrack/.test(SRC.clone), 'the slider track is still published');
-        ok(!/_crystalSliderDrag/.test(SRC.clone), 'the slider drag flag survives in clone.js');
-        ok(!/_crystalSliderDrag/.test(SRC.input), 'input.js still has a slider drag branch');
-    });
-
-    // ─────────────────────────────────────────────────────
     group('it survives a refresh, and a reset clears it');
 
     await check('the mask round-trips through the save', async () => {
@@ -549,8 +380,8 @@ async function boot(store) {
         const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
         ok(!/bottom-right of the HUD/.test(HTML),
            'the index still sends the player to the HUD chip, which is gone');
-        ok(/MODULATION tab/.test(HTML), 'the index does not say where the control is');
-        ok(/at the Crystal/.test(HTML), 'the index does not say where followers take their element');
+        ok(/mix selector/.test(HTML), 'the index does not say where the control is');
+        ok(/Recruits take their element from the mix/.test(HTML), 'the index does not say where followers take their element');
         ok(/respawns/.test(HTML), 'the index does not mention re-modulation on respawn');
         ok(!/MODULATION slider/.test(HTML), 'the index still describes the slider');
         ok(!/tri-colour, bi-colour or mono/.test(HTML), 'the index still describes the old bands');

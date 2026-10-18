@@ -42,7 +42,7 @@ const SUITES = [
     ['recruit crystal',         'recruitcrystal.js'],
     ['clone card strip',        'clonecards.js'],
     ['unit info tab',           'unitinfo.js'],
-    ['mini command radial',     'minicmd.js'],
+    ['mix selector',            'mixtool.js'],
     ['unit status + hold fix',  'status.js'],
     ['3D player + egg sprites', 'hdsprites.js'],
     ['the moves table', 'moves.js'],

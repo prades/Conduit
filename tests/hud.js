@@ -61,7 +61,7 @@ function findChromium() {
 // The HUD pieces that all have to be legible together. dnaHud and padHud are
 // hidden until they have something to say, so the probe reveals them — a box
 // that only appears mid-game is exactly the one nobody checks.
-const IDS = ['shards', 'ui', 'ultWrap', 'waveInfo', 'topToggles', 'zoneInfo', 'miniCmd',
+const IDS = ['shards', 'ui', 'ultWrap', 'waveInfo', 'topToggles', 'zoneInfo', 'mixTool',
              'dnaHud', 'padHud', 'tutBtn', 'devBtn'];
 
 // The two longest lines the banner can produce — the worst case, not the

@@ -355,10 +355,8 @@ canvas.addEventListener('pointerdown', e=>{
 
     commandTarget=null;
 
-    // Crystal panel — forward pointerdown (for slider drag init) and block game input
-    if (crystalMenuOpen) { handleCrystalPanelInput(pressX, pressY, true); return; }
-    // Crystal button tap — toggle panel
-    if (Math.hypot(pressX-_CRYSBTN.x, pressY-_CRYSBTN.y) < _CRYSBTN.r+6) { return; }
+    // The mix selector (js/mixtool.js) is open: a press on the world is not a game action (its release puts the selector away)
+    if (crystalMenuOpen) return;
 
     const dx=pressX-canvas.width/2, dy=pressY-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
@@ -400,13 +398,9 @@ canvas.addEventListener('pointerup', e=>{
         if (!touchMoved && !longHoldFired && !commandMode && !commandPendingTap && typeof handleBuildToolTap === "function" && handleBuildToolTap(upX, upY)) { isPressing=false; return; }
         isPressing=false; return;
     }
-    // Crystal button tap — toggle panel open/close
-    if (!touchMoved && Math.hypot(upX-_CRYSBTN.x, upY-_CRYSBTN.y) < _CRYSBTN.r+8) {
-        crystalMenuOpen=!crystalMenuOpen; isPressing=false; return;
-    }
-    // Crystal panel tap/release
+    // The mix selector is open: a tap on the world puts it away (its own buttons are page elements and never reach here)
     if (crystalMenuOpen) {
-        handleCrystalPanelInput(upX, upY, false);
+        crystalMenuOpen=false;
         isPressing=false; return;
     }
 

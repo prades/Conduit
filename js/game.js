@@ -2100,7 +2100,8 @@ function gameLoop() {
 }
 
 function render() {
-    if (typeof toolboxTick === "function" && typeof frame !== "undefined" && frame % 30 === 0) toolboxTick();   // the slider toolbox: edge fades, and the tutorial's button slid into view (js/toolbox.js)
+    if (typeof toolboxTick === "function" && typeof frame !== "undefined" && frame % 30 === 0) toolboxTick();
+    if (typeof mixToolRender === "function" && typeof frame !== "undefined" && frame % 6 === 0) mixToolRender(false);   // the mix selector opens at once when a button or a tap on the Crystal sets its flag (js/mixtool.js)   // the slider toolbox: edge fades, and the tutorial's button slid into view (js/toolbox.js)
     if (typeof ccPrune === "function" && typeof frame !== "undefined" && frame % 30 === 0) { ccPrune(); if (typeof ccRefreshChip === "function") ccRefreshChip(); }   // the dead leave the selection
     if (typeof checkVisibleArea === "function" && (typeof frame === "undefined" || frame % VISIBLE_AREA_POLL_FRAMES === 0)) checkVisibleArea();   // the browser's real visible size, polled (js/config.js)
     if (typeof placingTick === "function") placingTick();   // zoomed out and the interface away while a build tool is in hand (js/buildmenu.js)
@@ -2201,7 +2202,7 @@ function render() {
     // The ALARM is a red triangle beside the zone, not a banner (css: body.alarm-on). Only the change touches the page.
     const _alarmOn = !!alertActive && gameState.phase !== "waveComplete";
     if (_alarmOn !== _lastAlarmOn) { _lastAlarmOn = _alarmOn; if (document.body && document.body.classList) document.body.classList.toggle("alarm-on", _alarmOn); }
-    const _panelOpen = !!(crystalMenuOpen || cloneMenuOpen || settingsPanelOpen || (typeof buildMenuOpen !== "undefined" && buildMenuOpen));
+    const _panelOpen = !!(cloneMenuOpen || settingsPanelOpen || (typeof buildMenuOpen !== "undefined" && buildMenuOpen));
     if (_panelOpen !== _lastPanelOpen) { _lastPanelOpen = _panelOpen; if (document.body && document.body.classList) document.body.classList.toggle("panel-open", _panelOpen); }
     // Zone indicator — cached element, update only on zone change
     const _pz = getZoneIndex(Math.floor(player.x));
@@ -4433,7 +4434,8 @@ function render() {
                 const rPool = activeCrystalModulation
                     ? activeCrystalModulation.pair
                     : recruitElementPool();
-                const rElement = (entry.element && rPool.indexOf(entry.element) !== -1) ? entry.element : (rPool[Math.floor(Math.random()*rPool.length)] || entry.element || "fire");
+                // (an even draw from the mix: js/clone.js modulationPick)
+                const rElement = (entry.element && rPool.indexOf(entry.element) !== -1) ? entry.element : ((activeCrystalModulation ? rPool[Math.floor(Math.random()*rPool.length)] : modulationPick()) || rPool[Math.floor(Math.random()*rPool.length)] || entry.element || "fire");
                 // Its element left the mix, so it is RE-ROLLED, and re-rolling costs it half its level (rounded down, never below 1).
                 const _rerolled = !(entry.element && rPool.indexOf(entry.element) !== -1);
                 const _lvBack   = _rerolled && Number.isFinite(entry.level) ? Math.max(1, Math.floor(entry.level / 2)) : entry.level;
@@ -4551,13 +4553,11 @@ function render() {
     // While a build tool is in hand the interface is hidden (js/buildmenu.js placingHidesUi) so the whole zone can be seen.
     const _hideUi = typeof placingHidesUi === "function" && placingHidesUi();
     if (!_hideUi) {
-    drawCrystalButton();
     // The clone bay first, then its button over it, so the button that
     // opened the bay (and closes it) is never dimmed by the bay's backdrop.
     drawCloneMenu();
     if (!dockHasMenus()) drawClonesBlob();
     drawRadialMenu();
-    drawCrystalPanel();
     drawGestureFeedback();
     if (!(typeof indexReplaced === "function" && indexReplaced())) drawFollowerElementUI();   // the old ELEM / UNITS / CLONES index: replaced by the Command Center (js/commandcenter.js)
     if (typeof drawBuildMenu === "function") drawBuildMenu();     // the build window, under the modal panels

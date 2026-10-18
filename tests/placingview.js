@@ -61,13 +61,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('taps: while placing, ONLY the ground takes a tap (the hidden controls cannot fire), and the long-press ring is off', () => {
         const src = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
-        const at = src.indexOf("canvas.addEventListener('pointerup'"), gate = src.indexOf('placingHidesUi()', at), crys = src.indexOf('Crystal button tap', at);
+        const at = src.indexOf("canvas.addEventListener('pointerup'"), gate = src.indexOf('placingHidesUi()', at), crys = src.indexOf('The mix selector is open: a tap', at);
         ok(at > 0 && gate > at && gate < crys, 'the tap handler does not gate on placing before the controls (the crystal button, the panels and the rest)');
         ok(/function handleLongHold\(ex,ey\) \{\s*if \(typeof placingHidesUi/.test(src), 'the long press still opens the ring while placing');
     });
     check('drawing: the canvas controls are skipped while placing', () => {
         const src = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
-        ok(/const _hideUi = typeof placingHidesUi === "function" && placingHidesUi\(\);\s*if \(!_hideUi\) \{\s*drawCrystalButton\(\);/.test(src), 'the canvas UI is not skipped');
+        ok(/const _hideUi = typeof placingHidesUi === "function" && placingHidesUi\(\);\s*if \(!_hideUi\) \{\s*(\/\/[^\n]*\n\s*)*drawCloneMenu\(\);/.test(src), 'the canvas UI is not skipped');
         ok(/function render\(\) \{[\s\S]{0,900}if \(typeof placingTick === "function"\) placingTick\(\);/.test(src), 'placingTick is not called each frame');
     });
     check('the page: the DOM controls are hidden while placing and a DONE chip stays', () => {

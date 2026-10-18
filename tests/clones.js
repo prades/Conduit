@@ -756,8 +756,7 @@ async function ready() {
     // "Make the clone menu only appear on the HUD — the button should be on the
     // HUD and look like a little rotating 3D DNA icon."
     check('the Crystal panel no longer has a clone tab', () => {
-        const ids = C.run('CTABS.map(t => t.id)');
-        ok(!ids.includes('clones'), 'the Crystal still has a CLONES tab: ' + ids);
+        ok(C.run('typeof CTABS') === 'undefined', 'the Crystal still has tabs (it is the mix selector now)');
         ok(!/case "clones":/.test(SRC.clone), 'the Crystal panel still draws the clone bay');
         ok(C.run('crystalMenuTab') !== 'clones', 'the Crystal still opens on the clone bay');
     });

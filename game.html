@@ -584,7 +584,7 @@
     .top-btn { color: #fff; font-size: 24px; letter-spacing: 0.5px; padding: 0 26px; height: 60px; min-width: 120px; gap: 10px; text-shadow: 0 0 10px var(--c, var(--neo-teal)); }
     .top-btn svg { width: 30px; height: 30px; color: var(--c, var(--neo-teal)); }
     .top-tag { font-size: 22px !important; font-family: var(--neo-font); font-style: italic; font-weight: 900; }
-    @media (min-width: 701px) { body:not(.tut-on) #btnSquad { display: none; } }   /* SEL lives in the mini command radial (js/minicmd.js); the tutorial's SQUAD lesson still uses the button */
+    @media (min-width: 701px) { body:not(.tut-on) #btnSquad { display: none; } }   /* SEL lives in the mix selector COMMAND tab (js/mixtool.js); the tutorial's SQUAD lesson still uses the button */
     #btnSquad { --c: var(--neo-teal); } #btnBuild { --c: var(--neo-gold); } #btnAuto { --c: var(--neo-violet); } #btnCtrl { --c: var(--neo-ice); min-width: 80px; }
     .top-btn.active::before { background: linear-gradient(180deg, var(--c), color-mix(in srgb, var(--c) 60%, #000)); }
     .top-btn.active { color: #05070f; text-shadow: none; } .top-btn.active svg { color: #05070f; }
@@ -847,27 +847,36 @@
     #unitInfo .ui-close { flex: none; align-self: flex-start; font-family: var(--neo-font); font-weight: 900; font-size: 20px; color: #fff; background: #0a1022; border: 2px solid var(--neo-red); padding: 8px 16px; cursor: pointer; touch-action: manipulation; transform: skewX(-10deg); }
     #orderPicker .op-row.kits .rpk-el { flex: 1 1 22%; min-width: 0; font-size: 12px; padding: 6px 4px; min-height: 36px; } #orderPicker .op-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; } #orderPicker .op-row .rpk-el { flex: 1 1 0; min-width: 90px; justify-content: center; padding: 10px 8px; min-height: 48px; font-size: 16px; } #orderPicker .rpk-el.on { background: var(--c); color: #05070f; } #orderPicker .rpk-el.on .rpk-name { color: #05070f; }
     #ccRoot .cz-chip.order { cursor: pointer; } #ccRoot .cz-chip.order:hover { background: rgba(255,74,28,0.3); } #ccRoot .cz-chip.add { cursor: pointer; background: rgba(25,230,193,0.18); } #ccRoot .cz-chip.add:hover { background: var(--c); color: #05070f; }
-    /* ── THE MINI COMMAND DIAL (js/minicmd.js): a rugged, modular sports-watch dial at the bottom left, Neo Future; tablet and desktop ── */
-    #miniCmd { display: none; }
-    @media (min-width: 701px) {
-        #miniCmd { display: block; position: fixed; left: 14px; bottom: calc(52px + var(--vv-bottom, 0px)); width: 62px; height: 62px; z-index: 13; font-family: var(--neo-font); pointer-events: none; transform-origin: 0 100%; transform: perspective(700px) rotateX(10deg) rotateY(-9deg); filter: drop-shadow(0 6px 10px rgba(0,0,0,0.75)) drop-shadow(0 0 8px rgba(25,230,193,0.3)); }
-        #miniCmd.open { width: 210px; height: 210px; bottom: calc(100px + var(--vv-bottom, 0px)); }
-        #miniCmd.opening { animation: mcOpen 0.45s cubic-bezier(0.2, 1.1, 0.3, 1); }
-        @keyframes mcOpen { from { transform: perspective(700px) rotateX(10deg) rotateY(-9deg) rotateZ(-70deg) scale(0.3); opacity: 0.2; } to { transform: perspective(700px) rotateX(10deg) rotateY(-9deg) rotateZ(0) scale(1); opacity: 1; } }
-        #miniCmd.tut, body.placing #miniCmd, body.ccOpen #miniCmd, body.panel-open #miniCmd { display: none !important; }
-        #miniCmd .mc-holder { position: absolute; inset: 0; pointer-events: none; } #miniCmd .mc-face { width: 100%; height: 100%; display: block; }
-        #miniCmd .mc-ring { position: absolute; inset: 0; pointer-events: none; transform-origin: 105px 105px; } #miniCmd .mc-ring.spin { animation: mcRing 0.7s cubic-bezier(0.25, 1.25, 0.35, 1); } @keyframes mcRing { from { transform: rotate(var(--r0)); } to { transform: rotate(var(--r1)); } }
-        #miniCmd .mc-pl { position: absolute; width: 48px; height: 30px; display: flex; align-items: center; justify-content: center; pointer-events: none; font-style: italic; font-weight: 900; font-size: 13px; letter-spacing: -0.4px; color: #fff; text-shadow: 0 1px 2px #000; } #miniCmd .mc-pl.glyph { font-size: 22px; } #miniCmd .mc-ring.spin .mc-pl { animation: mcUnspin 0.7s cubic-bezier(0.25, 1.25, 0.35, 1); } @keyframes mcUnspin { from { transform: rotate(calc(var(--r0) * -1)); } to { transform: rotate(calc(var(--r1) * -1)); } }
-        #miniCmd .mc-pet { --c: #19e6c1; pointer-events: auto; position: absolute; inset: 0; width: 100%; height: 100%; border: none; padding: 0; margin: 0; background: var(--c); cursor: pointer; touch-action: manipulation; animation: mcPop 0.32s cubic-bezier(0.2, 1.4, 0.3, 1) backwards; }
-        @keyframes mcPop { from { opacity: 0; filter: brightness(2.5); } to { opacity: 1; filter: none; } }
-        #miniCmd .mc-pet .mc-in { position: absolute; inset: 0; background: linear-gradient(180deg, #232c44, #0a0e1a); } #miniCmd .mc-pet:hover .mc-in, #miniCmd .mc-pet:active .mc-in { background: linear-gradient(180deg, color-mix(in srgb, var(--c) 55%, #000), color-mix(in srgb, var(--c) 30%, #000)); }
-        #miniCmd .mc-pet.on .mc-in { background: var(--c); } #miniCmd .mc-pet.on .mc-pl { color: #05070d; text-shadow: none; }
-        #miniCmd .mc-hub { --c: #19e6c1; pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 30%; height: 26%; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; font-family: var(--neo-font); font-style: italic; font-weight: 900; color: #fff; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 3px), linear-gradient(180deg, #0c1322, #02040a); border: 2px solid var(--c); box-shadow: 0 0 10px var(--c), inset 0 0 8px rgba(0,0,0,0.9); cursor: pointer; touch-action: manipulation; padding: 0; }
-        #miniCmd .mc-hub .mc-hl { font-size: 17px; color: var(--c); text-shadow: 0 0 8px var(--c); } #miniCmd .mc-hub .mc-hn { font: 800 12px monospace; color: #fff; margin-top: 3px; }
-        #miniCmd:not(.open) .mc-hub { width: 74%; height: 62%; } #miniCmd:not(.open) .mc-hub .mc-hl { font-size: 14px; } #miniCmd:not(.open) .mc-hub .mc-hn { font-size: 10px; }
-        #miniCmd .mc-tab { pointer-events: auto; position: absolute; top: 182px; width: 84px; height: 28px; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 11px; letter-spacing: 0.3px; color: #aab6d4; background: linear-gradient(180deg, #2a324a, #0a0e1a); border: 2px solid #4a5678; border-radius: 3px; cursor: pointer; touch-action: manipulation; padding: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.18); }
-        #miniCmd .mc-tab.on { color: #05070d; background: linear-gradient(180deg, #ffe733, #e2c400); border-color: #ffe733; box-shadow: 0 0 12px rgba(255,231,51,0.7), inset 0 1px 0 rgba(255,255,255,0.5); }
-    }
+    /* ── THE MIX SELECTOR (js/mixtool.js): the MIX BAR (docs/images/mix-selector.png No. 5); replaces the Crystal menu. Bottom left, above the tutorial button, at every size ── */
+    #mixTool { position: fixed; z-index: 13; left: 14px; bottom: calc(52px + var(--vv-bottom, 0px)); font-family: var(--neo-font); }
+    #mixTool .mt-pod { display: flex; align-items: center; gap: 6px; position: relative; padding: 8px 14px 8px 9px; font: italic 900 14px var(--neo-font); color: #fff; background: linear-gradient(180deg, #121a34, #080c1a); border: 2px solid #ffe733; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); cursor: pointer; touch-action: manipulation; box-shadow: 0 0 12px rgba(255,231,51,0.35); }
+    #mixTool .mt-pod:hover { background: #ffe733; color: #05070f; } #mixTool.open .mt-pod { border-color: #fff; box-shadow: 0 0 14px rgba(255,231,51,0.7); }
+    #mixTool .mt-bang { position: absolute; right: 8px; top: -2px; font: 900 15px monospace; color: #05070f; background: #ffe733; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; font-style: normal; }
+    #mixTool .mt-panel { position: absolute; left: 0; bottom: 52px; width: 400px; max-width: calc(100vw - 20px); box-sizing: border-box; padding: 10px 12px 12px; background: linear-gradient(180deg, rgba(15,23,48,0.97), rgba(5,7,15,0.98)); border: 2px solid #ffe733; box-shadow: 0 0 18px rgba(255,231,51,0.25); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+    #mixTool .mt-tabs { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
+    #mixTool .mt-tab { font: italic 900 14px var(--neo-font); padding: 6px 14px; color: #cfe0ff; background: #0b1226; border: 2px solid #19e6c1; cursor: pointer; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); touch-action: manipulation; }
+    #mixTool .mt-tab[data-tab="mix"] { border-color: #ffe733; } #mixTool .mt-tab.on { color: #05070f; background: #19e6c1; } #mixTool .mt-tab[data-tab="mix"].on { background: #ffe733; }
+    #mixTool .mt-x { margin-left: auto; width: 34px; height: 30px; font: 900 16px var(--neo-font); color: #fff; background: #0b1226; border: 2px solid #ff4a1c; cursor: pointer; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); }
+    #mixTool .mt-comb { position: relative; width: 250px; height: 270px; margin: 2px auto 0; max-width: 100%; }
+    #mixTool .mt-hex { --c: #fff; position: absolute; width: 82px; height: 94px; transform: translate(-50%, -50%); padding: 0; border: none; background: #34405f; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); cursor: pointer; touch-action: manipulation; }
+    #mixTool .mt-hexin { position: absolute; inset: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: #0b1226; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+    #mixTool .mt-hexin b { font: italic 900 13px var(--neo-font); color: #7d8cb0; } #mixTool .mt-hexin em { font: 900 12px monospace; font-style: normal; color: #a9bddf; }
+    #mixTool .mt-hex.on { background: var(--c); } #mixTool .mt-hex.on .mt-hexin { background: color-mix(in srgb, var(--c) 42%, #0b1226); } #mixTool .mt-hex.on .mt-hexin b { color: #fff; }
+    #mixTool .mt-hex:not(.locked):hover { background: var(--c); }
+    #mixTool .mt-hex.locked { cursor: not-allowed; background: #1d2540; } #mixTool .mt-hex.locked .mt-hexin b { color: #4a5678; font-size: 11px; }
+    #mixTool .mt-hex.pick { background: #ffe733; } #mixTool .mt-hex.pick .mt-hexin { background: rgba(255,231,51,0.16); } #mixTool .mt-hex.pick .mt-hexin b { color: #ffe733; font-size: 12px; }
+    #mixTool .mt-hex.mt-all { width: 70px; height: 80px; background: #ffe733; } #mixTool .mt-hex.mt-all .mt-hexin { background: #14192e; } #mixTool .mt-hex.mt-all .mt-hexin b { color: #ffe733; font-size: 17px; } #mixTool .mt-hex.mt-all.on .mt-hexin { background: color-mix(in srgb, #ffe733 22%, #14192e); }
+    #mixTool .mt-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    #mixTool .mt-chip { --c: #fff; display: flex; align-items: center; gap: 5px; padding: 5px 9px; font: italic 900 13px var(--neo-font); color: #7d8cb0; background: #0b1226; border: 2px solid #34405f; cursor: pointer; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); touch-action: manipulation; }
+    #mixTool .mt-chip.on { color: #fff; border-color: var(--c); background: color-mix(in srgb, var(--c) 24%, #0b1226); }
+    #mixTool .mt-chip em { font: 900 13px monospace; font-style: normal; color: var(--c); min-width: 10px; text-align: center; } #mixTool .mt-chip.locked { opacity: 0.5; cursor: not-allowed; } #mixTool .mt-chip.locked em { color: #3a4666; }
+    #mixTool .mt-chip.pick { color: #ffe733; border-color: #ffe733; background: rgba(255,231,51,0.12); } #mixTool .mt-chip.scope, #mixTool .mt-chips.scope .mt-chip { padding: 5px 8px; }
+    #mixTool .mt-hint { margin-top: 10px; font: 700 12px monospace; letter-spacing: 0.05em; color: #a9bddf; } #mixTool .mt-hint.dim { margin-top: 3px; color: #6a7aa0; } #mixTool .mt-hint.gold { color: #ffe733; }
+    #mixTool .mt-orders { display: flex; gap: 8px; } #mixTool .mt-ord { --c: #19e6c1; flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 6px; color: #fff; background: #0b1226; border: 2px solid var(--c); cursor: pointer; clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%); touch-action: manipulation; }
+    #mixTool .mt-ord b { font: italic 900 24px var(--neo-font); } #mixTool .mt-ord span { font: 700 12px monospace; color: #a9bddf; margin-top: 2px; } #mixTool .mt-ord:hover, #mixTool .mt-ord:active { background: var(--c); color: #05070f; } #mixTool .mt-ord:hover span, #mixTool .mt-ord:active span { color: #05070f; }
+    body.placing #mixTool, body.ccOpen #mixTool, body.panel-open #mixTool { display: none !important; }
+    @media (max-width: 700px) { #mixTool { left: 8px; } #mixTool .mt-panel { width: min(400px, calc(100vw - 16px)); } }
+</style>
 </style>
 
 </head>
@@ -910,7 +919,7 @@
     <button id="dockNext" class="dock-arrow" aria-label="Slide the toolbox right">›</button>
   </div>
 </div>
-<div id="miniCmd" aria-label="Mini command tab"></div>
+<div id="mixTool" aria-label="Mix selector"></div>
 <button id="tutBtn" onclick="startTutorial()" style="position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.85);border:2px solid #0f8;color:#0f8;font-family:monospace;font-size:13px;font-weight:bold;padding:10px 18px;border-radius:4px;letter-spacing:2px;cursor:pointer;z-index:200;touch-action:manipulation;">TUTORIAL</button>
 
 
@@ -1589,7 +1598,7 @@
 
       <div class="ctrl-title">PROGRESSION — A CLEARED WAVE EARNS, THE CRYSTAL ACTIVATES</div>
       <div class="ctrl-row cm-dim" style="margin-bottom:5px">You <strong>start with one</strong>: <span class="cm-stat">ELECTRIC</span>. Everything of an element &mdash; its followers, pylons, batteries, turrets and worker jobs &mdash; waits until you have it.</div>
-      <div class="ctrl-row cm-dim" style="margin-bottom:5px">There is no shop. <span class="cm-stat">Clear a wave, earn an element</span> &mdash; one unlock every two waves, and <strong>you pick which element</strong>. An unlock does nothing until you carry it back to the Crystal and choose an element on the MODULATION tab.</div>
+      <div class="ctrl-row cm-dim" style="margin-bottom:5px">There is no shop. <span class="cm-stat">Clear a wave, earn an element</span> &mdash; one unlock every two waves, and <strong>you pick which element</strong>. An unlock does nothing until you choose an element in the mix selector (the gold UNLOCK chip).</div>
       <div class="cm-shop-grid">
         <div class="cm-shop-item"><span class="label">FLUX</span><br><span class="cost">wave 2</span></div>
         <div class="cm-shop-item"><span class="label">FIRE</span><br><span class="cost">wave 4</span></div>
@@ -1605,7 +1614,7 @@
       <div class="ctrl-row cm-dim">The <span class="cm-stat">⌁</span> switch at the right end of the bar turns the siphon off. Wisps already in the air still land. There is no cost to leaving it on — the switch is there so you can quiet the effect down.</div>
       <div class="ctrl-row cm-dim" style="margin-top:4px">Kills are still counted — the Crystal shows your lifetime total — but they no longer earn anything.</div>
       <div class="ctrl-row cm-dim" style="margin-top:4px">Activating a new element makes your modulation stale, and both the Crystal button and the modulation chip flash <span class="cm-stat">RE-MODULATE</span>.</div>
-      <div class="ctrl-row"><span class="ctrl-key">MODULATION</span>What your followers are made of. It lives in one place: the <strong>Crystal's MODULATION tab</strong>. The crystal on that screen pulses through the colours actually in the mix, and the row of swatches under it is the control — tap one to add that element or drop it; at least one has to stay on. Followers take their element <strong>at the Crystal</strong> when a recruit reaches it. A follower that dies respawns as the <strong>same element</strong> it was &mdash; unless you have since dropped that element from the mix, in which case it is <strong>re-rolled</strong>: it comes back as one that is still on, at <strong>half its level</strong>, and an evolved one comes back as an <strong>egg</strong> that evolves into its new element's form on its next level-up &mdash; so re-modulating gradually re-colours the squad as the old elements fall.</div>
+      <div class="ctrl-row"><span class="ctrl-key">MODULATION</span>What your followers are made of. It lives in one place: the <strong>mix selector</strong>, the small MIX chip at the bottom left (the Crystal opens it too). Its MIX tab is a honeycomb of six cells, one for each element: <strong>tap a cell</strong> to add that element to the mix or drop it (a lit cell is in; at least one has to stay on), and the centre cell puts them all back. An untouched mix takes in every element you earn. Recruits take their element from the mix. A follower that dies respawns as the <strong>same element</strong> it was &mdash; unless you have since dropped that element from the mix, in which case it is <strong>re-rolled</strong>: it comes back as one that is still on, at <strong>half its level</strong>, and an evolved one comes back as an <strong>egg</strong> that evolves into its new element's form on its next level-up &mdash; so re-modulating gradually re-colours the squad as the old elements fall. The COMMAND tab holds the HOLD and COME orders and who they go to. <strong>RE-MODULATE</strong>: a gold ! on the chip tells you an element unlock is waiting.</div>
       <div class="ctrl-row cm-dim">An untouched mix means <span class="cm-stat">every element you have</span>, so an element you bring online is in the mix the moment it is activated and nothing nags you about it. The Crystal only asks you to <span class="cm-stat">RE-MODULATE</span> when a new element lands <strong>outside</strong> a mix you have narrowed by hand, and opening the tab puts that prompt down.</div>
 
       </details>
@@ -1693,12 +1702,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-18l, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-18n, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-18l";
+window.__PAGE_BUILD = "2026-10-18n";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1734,69 +1743,69 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-18l"></script>
-<script src="js/icons.js?v=2026-10-18l"></script>
-<script src="js/uikit.js?v=2026-10-18l"></script>
-<script src="js/rng.js?v=2026-10-18l"></script>
-<script src="js/traits.js?v=2026-10-18l"></script>
-<script src="js/elements.js?v=2026-10-18l"></script>
-<script src="js/combat.js?v=2026-10-18l"></script>
-<script src="js/species.js?v=2026-10-18l"></script>
-<script src="js/levels.js?v=2026-10-18l"></script>
-<script src="js/status.js?v=2026-10-18l"></script>
-<script src="js/predator_randomizer.js?v=2026-10-18l"></script>
-<script src="js/mass.js?v=2026-10-18l"></script>
-<script src="js/infest.js?v=2026-10-18l"></script>
-<script src="js/power.js?v=2026-10-18l"></script>
-<script src="js/save.js?v=2026-10-18l"></script>
-<script src="js/camp.js?v=2026-10-18l"></script>
-<script src="js/wavedata.js?v=2026-10-18l"></script>
-<script src="js/helpers.js?v=2026-10-18l"></script>
-<script src="js/predator.js?v=2026-10-18l"></script>
-<script src="js/abilities.js?v=2026-10-18l"></script>
-<script src="js/world.js?v=2026-10-18l"></script>
-<script src="js/commands.js?v=2026-10-18l"></script>
-<script src="js/npc.js?v=2026-10-18l"></script>
-<script src="js/codex.js?v=2026-10-18l"></script>
-<script src="js/draw.js?v=2026-10-18l"></script>
-<script src="js/beetle3d.js?v=2026-10-18l"></script>
-<script src="js/bugs3d.js?v=2026-10-18l"></script>
-<script src="js/ui.js?v=2026-10-18l"></script>
-<script src="js/waves.js?v=2026-10-18l"></script>
-<script src="js/drops.js?v=2026-10-18l"></script>
-<script src="js/clone.js?v=2026-10-18l"></script>
-<script src="js/clonework.js?v=2026-10-18l"></script>
-<script src="js/broods.js?v=2026-10-18l"></script>
-<script src="js/raids.js?v=2026-10-18l"></script>
-<script src="js/ultra.js?v=2026-10-18l"></script>
-<script src="js/formations.js?v=2026-10-18l"></script>
-<script src="js/breakout.js?v=2026-10-18l"></script>
-<script src="js/nightraids.js?v=2026-10-18l"></script>
-<script src="js/bonds.js?v=2026-10-18l"></script>
-<script src="js/autoplay.js?v=2026-10-18l"></script>
-<script src="js/indexart.js?v=2026-10-18l"></script>
-<script src="js/modules.js?v=2026-10-18l"></script>
-<script src="js/shieldcells.js?v=2026-10-18l"></script>
-<script src="js/evolution.js?v=2026-10-18l"></script>
-<script src="js/hdsprites.js?v=2026-10-18l"></script>
-<script src="js/moves.js?v=2026-10-18l"></script>
-<script src="js/squads.js?v=2026-10-18l"></script>
-<script src="js/recruitcrystal.js?v=2026-10-18l"></script>
-<script src="js/buildmenu.js?v=2026-10-18l"></script>
-<script src="js/hudgems.js?v=2026-10-18l"></script>
-<script src="js/nethud.js?v=2026-10-18l"></script>
-<script src="js/commandcenter.js?v=2026-10-18l"></script>
-<script src="js/unitinfo.js?v=2026-10-18l"></script>
-<script src="js/zones.js?v=2026-10-18l"></script>
-<script src="js/kits.js?v=2026-10-18l"></script>
-<script src="js/kitui.js?v=2026-10-18l"></script>
-<script src="js/toolbox.js?v=2026-10-18l"></script>
-<script src="js/minicmd.js?v=2026-10-18l"></script>
-<script src="js/radialmenu.js?v=2026-10-18l"></script>
-<script src="js/input.js?v=2026-10-18l"></script>
-<script src="js/game.js?v=2026-10-18l"></script>
-<script src="js/tutorial.js?v=2026-10-18l"></script>
-<script src="js/dev.js?v=2026-10-18l"></script>
+<script src="js/config.js?v=2026-10-18n"></script>
+<script src="js/icons.js?v=2026-10-18n"></script>
+<script src="js/uikit.js?v=2026-10-18n"></script>
+<script src="js/rng.js?v=2026-10-18n"></script>
+<script src="js/traits.js?v=2026-10-18n"></script>
+<script src="js/elements.js?v=2026-10-18n"></script>
+<script src="js/combat.js?v=2026-10-18n"></script>
+<script src="js/species.js?v=2026-10-18n"></script>
+<script src="js/levels.js?v=2026-10-18n"></script>
+<script src="js/status.js?v=2026-10-18n"></script>
+<script src="js/predator_randomizer.js?v=2026-10-18n"></script>
+<script src="js/mass.js?v=2026-10-18n"></script>
+<script src="js/infest.js?v=2026-10-18n"></script>
+<script src="js/power.js?v=2026-10-18n"></script>
+<script src="js/save.js?v=2026-10-18n"></script>
+<script src="js/camp.js?v=2026-10-18n"></script>
+<script src="js/wavedata.js?v=2026-10-18n"></script>
+<script src="js/helpers.js?v=2026-10-18n"></script>
+<script src="js/predator.js?v=2026-10-18n"></script>
+<script src="js/abilities.js?v=2026-10-18n"></script>
+<script src="js/world.js?v=2026-10-18n"></script>
+<script src="js/commands.js?v=2026-10-18n"></script>
+<script src="js/npc.js?v=2026-10-18n"></script>
+<script src="js/codex.js?v=2026-10-18n"></script>
+<script src="js/draw.js?v=2026-10-18n"></script>
+<script src="js/beetle3d.js?v=2026-10-18n"></script>
+<script src="js/bugs3d.js?v=2026-10-18n"></script>
+<script src="js/ui.js?v=2026-10-18n"></script>
+<script src="js/waves.js?v=2026-10-18n"></script>
+<script src="js/drops.js?v=2026-10-18n"></script>
+<script src="js/clone.js?v=2026-10-18n"></script>
+<script src="js/clonework.js?v=2026-10-18n"></script>
+<script src="js/broods.js?v=2026-10-18n"></script>
+<script src="js/raids.js?v=2026-10-18n"></script>
+<script src="js/ultra.js?v=2026-10-18n"></script>
+<script src="js/formations.js?v=2026-10-18n"></script>
+<script src="js/breakout.js?v=2026-10-18n"></script>
+<script src="js/nightraids.js?v=2026-10-18n"></script>
+<script src="js/bonds.js?v=2026-10-18n"></script>
+<script src="js/autoplay.js?v=2026-10-18n"></script>
+<script src="js/indexart.js?v=2026-10-18n"></script>
+<script src="js/modules.js?v=2026-10-18n"></script>
+<script src="js/shieldcells.js?v=2026-10-18n"></script>
+<script src="js/evolution.js?v=2026-10-18n"></script>
+<script src="js/hdsprites.js?v=2026-10-18n"></script>
+<script src="js/moves.js?v=2026-10-18n"></script>
+<script src="js/squads.js?v=2026-10-18n"></script>
+<script src="js/recruitcrystal.js?v=2026-10-18n"></script>
+<script src="js/buildmenu.js?v=2026-10-18n"></script>
+<script src="js/hudgems.js?v=2026-10-18n"></script>
+<script src="js/nethud.js?v=2026-10-18n"></script>
+<script src="js/commandcenter.js?v=2026-10-18n"></script>
+<script src="js/unitinfo.js?v=2026-10-18n"></script>
+<script src="js/zones.js?v=2026-10-18n"></script>
+<script src="js/kits.js?v=2026-10-18n"></script>
+<script src="js/kitui.js?v=2026-10-18n"></script>
+<script src="js/toolbox.js?v=2026-10-18n"></script>
+<script src="js/mixtool.js?v=2026-10-18n"></script>
+<script src="js/radialmenu.js?v=2026-10-18n"></script>
+<script src="js/input.js?v=2026-10-18n"></script>
+<script src="js/game.js?v=2026-10-18n"></script>
+<script src="js/tutorial.js?v=2026-10-18n"></script>
+<script src="js/dev.js?v=2026-10-18n"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1849,7 +1858,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-18l"></script>
+<script src="js/init.js?v=2026-10-18n"></script>
 
 </body>
 </html>

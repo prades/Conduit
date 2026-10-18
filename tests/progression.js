@@ -268,13 +268,10 @@ check('but one LEFT OUT of a narrowed mix does', () => {
 });
 
 check('and the prompt can be put down by looking at the control', () => {
-    // The only way to clear it used to be toggling a swatch. Opening the
-    // control is the acknowledgement — reading the mix IS the decision.
-    const at = SRC.clone.indexOf('function _drawModTab');
-    ok(at > -1, 'the modulation tab could not be located');
-    const head = SRC.clone.slice(at, SRC.clone.indexOf('const MID', at));
-    ok(/modulationDirty = false/.test(head),
-       'opening the modulation control does not clear the prompt');
+    // The only way to clear it used to be toggling a swatch. Opening the control is the acknowledgement: reading the mix IS the decision.
+    const MT = fs.readFileSync(path.join(ROOT, 'js/mixtool.js'), 'utf8');
+    ok(/function mixToolSetOpen\(o\) \{[^\n]*modulationDirty = false/.test(MT), 'opening the mix selector does not clear the prompt');
+    ok(/if \(crystalMenuOpen\) modulationDirty = false/.test(MT), 'the selector, opened by a flag, does not clear the prompt');
 });
 
 check('activating something you have not earned does nothing', () => {
@@ -412,29 +409,21 @@ check('a boss modulator still overrides the modulation', () => {
     ok(at < NPC.indexOf('recruitElementPool()'), 'the modulator should be checked first');
 });
 
-check('the crystal offers an UNLOCK control for every locked element once one is earned', () => {
-    ok(/UNLOCK EARNED — CHOOSE AN ELEMENT/.test(SRC.clone), 'the tab does not offer the pick'); ok(/_modChoices\(\)/.test(SRC.clone), 'the pick does not list the locked elements');
-    ok(/_modActivateRects/.test(SRC.clone), 'no hit targets for activation');
-    ok(/activatePendingElement\(r\.id\)/.test(SRC.clone), 'tapping one does not activate it');
-    // Checked before the swatches, or an ACTIVATE tap that happens to land on
-    // a swatch toggles the mix instead of bringing the element online.
-    ok(SRC.clone.indexOf('_modActivateRects||[]') < SRC.clone.indexOf('_modSwatchRects||[]'),
-       'the activate tap must be checked before the modulation swatches');
+const MIXTOOL = fs.readFileSync(path.join(ROOT, 'js/mixtool.js'), 'utf8');
+check('the mix selector offers an UNLOCK chip for every locked element once one is earned', () => {
+    ok(/UNLOCK EARNED/.test(MIXTOOL), 'the tool does not offer the pick'); ok(/_modChoices\(\)/.test(MIXTOOL), 'the pick does not list the locked elements');
+    ok(/activatePendingElement\(id\)/.test(MIXTOOL), 'tapping one does not activate it');
+    ok(/pick \? "UNLOCK"/.test(MIXTOOL), 'the chip does not say UNLOCK');
 });
 
-check('the crystal shows what is next when nothing is pending', () => {
-    ok(/nextWaveUnlock\(\)/.test(SRC.clone), 'the tab does not show the next unlock');
-    ok(/CLEAR A WAVE/.test(SRC.clone), 'it does not say how the next one is earned');
+check('the mix selector shows what is next when nothing is pending', () => {
+    ok(/nextWaveUnlock\(\)/.test(MIXTOOL), 'the tool does not show the next unlock');
+    ok(/CLEAR A WAVE/.test(MIXTOOL), 'it does not say how the next one is earned');
 });
 
-check('THE PROMPT: the crystal button says an element is waiting', () => {
-    const at = SRC.clone.indexOf('function drawCrystalButton');
-    const body = SRC.clone.slice(at, at + 2200);
-    ok(/pendingElements\.length > 0 \|\| modulationDirty/.test(body),
-       'the button does not prompt');
-    ok(/ELEMENT READY/.test(body), 'no prompt for a pending element');
-    ok(/RE-MODULATE/.test(body), 'no prompt for a stale modulation');
-    ok(/!crystalMenuOpen/.test(body), 'it should stop prompting once the menu is open');
+check('THE PROMPT: the pod says an element is waiting (a gold !), and stops once the tool is open', () => {
+    ok(/\(pend \|\| modulationDirty\) && !crystalMenuOpen \? '<i class="mt-bang">!<\/i>'/.test(MIXTOOL), 'the pod does not prompt');
+    ok(!/function drawCrystalButton/.test(SRC.clone), 'the canvas Crystal button is still there');
 });
 
 check('re-modulating clears the prompt', () => {

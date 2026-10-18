@@ -638,14 +638,8 @@ function drawClonesBlob() {
 // ─────────────────────────────────────────────────────────
 
 // ── State ─────────────────────────────────────────────────
-const _CRYSBTN  = { x: 0, y: 0, r: 22 };  // canvas button hit area
 let _crystalScrollX  = 0;                   // the clone card strip's slide offset (px)
 
-// Tab definitions
-// The Crystal is one page now: the ELEMENT MIX. (It had a guide tab beside it, a list of the ultimates and the pylon rules that nobody needed there: the INFO tab on every unit has the real numbers.)
-const CTABS = [
-    { id:"modulation", label:"ELEMENT MIX", color:"#8fe3ff" },
-];
 const CSORTS = [
     { id:"species",  label:"SPECIES"  },
     { id:"combat",   label:"COMBAT"   },
@@ -663,8 +657,7 @@ const RECRUIT_COST = 30;
 function recruitFollower(element) {
     if (shardCount < RECRUIT_COST) { floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NEED " + RECRUIT_COST + " SHARDS", color: "#f44", life: 90, vy: -0.2 }); return false; }
     shardCount -= RECRUIT_COST; saveShards();
-    const pool = recruitElementPool();
-    spawnFollowerAtCrystal(element && unlockedElements.has(element) ? element : pool[Math.floor(Math.random() * pool.length)] || "fire");
+    spawnFollowerAtCrystal(element && unlockedElements.has(element) ? element : modulationPick() || "fire");
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "FOLLOWER RECRUITED!", color: "#0f8", life: 100, vy: -0.2 });
     return true;
 }
@@ -758,44 +751,16 @@ function modulationToggle(id) {
     return true;
 }
 
-// One swatch per unlocked element: lit when it is in the mix, dark when it is
-// not. Shared by the Crystal panel and the HUD chip so the two cannot disagree
-// about what is on, and returns its hit rects so the caller can route taps.
-// One card per element: a gem, its name and where it stands. A lit card is in the mix (tap to drop it); an unlocked dark one is out of the mix (tap to add
-// it); a locked one is an empty slot, or - once an unlock is earned - an UNLOCK button. Returns { swatches: [the toggles], picks: [the unlocks] }.
-function drawModulationCards(x, y, w, h, cols, gap, hot) {
-    // The look (reported: "I don't like the rest of the look of the menu either"): dark slabs, not solid blocks of colour. Each carries its element's icon, its name in white, a stripe and a
-    // tick in its colour when it is in the mix; one that is out of the mix is a dim outline; one not unlocked yet is dimmer still. Nothing pulses.
-    const order = ELEMENTS.slice();
-    const rows = Math.ceil(order.length / cols);
-    const cw = Math.floor((w - (cols - 1) * gap) / cols), ch = Math.max(30, Math.min(84, Math.floor((h - (rows - 1) * gap) / rows)));
-    const swatches = [], picks = [], choices = pendingElements.length > 0 ? _modChoices() : [];
-    order.forEach((el, i) => {
-        const cx = x + (i % cols) * (cw + gap), cy = y + Math.floor(i / cols) * (ch + gap);
-        const unlocked = unlockedElements.has(el.id), on = unlocked && modulationIncludes(el.id), pick = !unlocked && choices.indexOf(el.id) >= 0;
-        const col = pick ? UI_GOLD : on ? el.color : unlocked ? "#4a5678" : "#2a3350";
-        uiSlab(cx, cy, cw, ch, col, false, on ? "#18213f" : "#0e1428", !unlocked && !pick);
-        if (on || pick) { ctx.save(); ctx.globalAlpha = pick ? 0.14 : 0.2; ctx.fillStyle = pick ? UI_GOLD : el.color; uiSlabPath(cx, cy, cw, ch); ctx.fill(); ctx.restore(); }
-        if (on) { ctx.fillStyle = el.color; ctx.fillRect(cx + 4, cy + Math.round(ch * 0.2), 4, Math.round(ch * 0.6)); }
-        // the icon (js/icons.js); a plain diamond until it has loaded
-        const ir = Math.min(15, ch * 0.3), ix = cx + 18 + Math.min(14, ch * 0.3), iy = cy + ch / 2, icol = unlocked || pick ? el.color : "#3a4666";
-        if (!(typeof drawIcon === "function" && drawIcon(ctx, typeof ELEMENT_ICON !== "undefined" ? (ELEMENT_ICON[el.id] || el.id) : el.id, icol, ix, iy, Math.round(ir * 1.7)))) {
-            ctx.fillStyle = icol; ctx.beginPath(); ctx.moveTo(ix, iy - ir); ctx.lineTo(ix + ir * 0.8, iy); ctx.lineTo(ix, iy + ir); ctx.lineTo(ix - ir * 0.8, iy); ctx.closePath(); ctx.fill();
-        }
-        const tx = ix + ir + 10, tw = cx + cw - tx - 30, ink = on ? "#fff" : unlocked ? "#9fb0d4" : pick ? "#fff" : "#56648a";
-        const name = el.label.toUpperCase();
-        if (ch >= 54) {
-            uiTextFit(name, tx, cy + ch * 0.4, Math.min(24, ch * 0.4), ink, "left", tw);
-            uiCaptionFit(pick ? "\u25c8 TAP TO UNLOCK" : !unlocked ? "LOCKED" : on ? "IN THE MIX" : "OUT OF THE MIX", tx, cy + ch * 0.76, pick ? UI_GOLD : on ? el.color : "#6a7aa0", "left", 13, tw);
-        } else {
-            uiTextFit(name + (pick ? "  \u25c8 UNLOCK" : !unlocked ? "  \u00b7 LOCKED" : on ? "" : "  \u00b7 OFF"), tx, cy + ch / 2 + 1, Math.min(20, ch * 0.45), ink, "left", tw);
-        }
-        // the tick: in the mix
-        if (on) { const kx = cx + cw - 22, ky = cy + ch / 2; ctx.save(); ctx.strokeStyle = el.color; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(kx - 6, ky); ctx.lineTo(kx - 1, ky + 5); ctx.lineTo(kx + 7, ky - 6); ctx.stroke(); ctx.restore(); }
-        if (unlocked) swatches.push({ id: el.id, x: cx, y: cy, w: cw, h: ch });
-        else if (pick) picks.push({ id: el.id, bx: cx, by: cy, bw: cw, bh: ch });
-    });
-    return { swatches, picks };
+// ── Drawing from the mix ──
+// A recruit, and a follower that has to be re-rolled after dying, draws an element evenly from what is in the mix. (A follower that dies keeps its element while that element is in the mix; one
+// whose element has been dropped comes back re-rolled from the mix, at half its level: js/game.js.)
+// The mix is untouched when the player has made no choice: every unlocked element is in it, and an element earned later joins it.
+function modulationUntouched() { return modulationMask.size === 0; }
+// One element drawn from the mix; null when nothing is unlocked.
+function modulationPick(rnd) {
+    const ids = ELEMENTS.filter(e => unlockedElements.has(e.id) && modulationIncludes(e.id)).map(e => e.id);
+    if (!ids.length) return null;
+    return ids[Math.min(ids.length - 1, Math.floor((typeof rnd === "number" ? rnd : Math.random()) * ids.length))];
 }
 
 // ── Sort clone options ────────────────────────────────────
@@ -814,133 +779,7 @@ function _sortedCloneOptions(opts, mode) {
     return copy; // "species" — natural order
 }
 
-// ── Modulation lives in the Crystal ───────────────────────
-// There used to be a second copy of the swatch row floating at the
-// bottom-right of the HUD. Two controls for one setting is two places to read
-// a mix from and two places to keep in step, and the floating one was a 112px
-// strip of 16px swatches wedged between the radial buttons and the TUTORIAL
-// button — the hardest place on the screen to hit. The Crystal's MODULATION
-// tab is the one control now; the Crystal button is how you reach it.
-
-// ── Animated crystal HUD button (top-center) ──────────────
-function drawCrystalButton() {
-    const bx = Math.round(canvas.width * 0.72), by = 52;
-    _CRYSBTN.x = bx; _CRYSBTN.y = by;
-    const t = (frame||0) * 0.022;
-    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-
-    // ── PROMPT ──
-    // An element earned in the tunnel is useless until it is activated here,
-    // and a new element makes whatever the slider was set to stale. Both are
-    // easy to miss, so the button itself says so rather than relying on a
-    // floating text the player may have walked away from.
-    if (!crystalMenuOpen && (pendingElements.length > 0 || modulationDirty)) {
-        const urgent = pendingElements.length > 0;
-        const pulse = 0.5 + 0.5 * Math.sin(t * 4.2);
-        const col = urgent ? "#ffcc44" : "#aaddff";
-        // Ring
-        ctx.strokeStyle = col; ctx.globalAlpha = 0.35 + pulse * 0.5; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(bx, by, 24 + pulse * 3, 0, Math.PI * 2); ctx.stroke();
-        ctx.globalAlpha = 1;
-        // Count badge for pending elements
-        if (urgent) {
-            ctx.fillStyle = col;
-            ctx.beginPath(); ctx.arc(bx + 15, by - 15, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#1a1206"; ctx.font = "bold 11px monospace";
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(String(pendingElements.length), bx + 15, by - 14);
-        }
-        // Label under the button
-        ctx.fillStyle = col; ctx.globalAlpha = 0.6 + pulse * 0.4;
-        ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-        ctx.fillText(urgent ? "ELEMENT READY" : "RE-MODULATE", bx, by + 32);
-        ctx.globalAlpha = 1;
-    }
-
-    // Outer glow when open
-    if (crystalMenuOpen) {
-        const pulse = 0.5 + 0.5*Math.sin(t*2.8);
-        const grd = ctx.createRadialGradient(bx, by, 0, bx, by, 34);
-        grd.addColorStop(0, `rgba(160,80,255,${0.28+pulse*0.18})`);
-        grd.addColorStop(1, "rgba(160,80,255,0)");
-        ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(bx, by, 34, 0, Math.PI*2); ctx.fill();
-    }
-
-    // Rotating hex gem — top crown + bottom pavilion facets
-    const R=16, nF=6, girY=by-2;
-    for (let i=0; i<nF; i++) {
-        const a1=t+(i/nF)*Math.PI*2, a2=t+((i+1)/nF)*Math.PI*2;
-        const x1=bx+Math.cos(a1)*R, y1=girY+Math.sin(a1)*R*0.38;
-        const x2=bx+Math.cos(a2)*R, y2=girY+Math.sin(a2)*R*0.38;
-        const br = 0.30 + 0.60*Math.abs(Math.cos(a1+t*0.45));
-        const r_=Math.floor(80+br*130), g_=Math.floor(18+br*38), b_=Math.floor(155+br*95);
-        ctx.fillStyle=`rgb(${r_},${g_},${b_})`;
-        ctx.beginPath(); ctx.moveTo(bx,by-15); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.closePath(); ctx.fill();
-        ctx.fillStyle=`rgb(${Math.floor(50+br*80)},${Math.floor(g_*0.35)},${Math.floor(110+br*80)})`;
-        ctx.beginPath(); ctx.moveTo(bx,by+11); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.closePath(); ctx.fill();
-    }
-    ctx.strokeStyle = crystalMenuOpen ? "rgba(235,200,255,0.85)" : "rgba(130,55,210,0.5)";
-    ctx.lineWidth=1;
-    ctx.beginPath();
-    for (let i=0;i<=nF;i++){const a=t+(i/nF)*Math.PI*2; i?ctx.lineTo(bx+Math.cos(a)*R,girY+Math.sin(a)*R*0.38):ctx.moveTo(bx+Math.cos(a)*R,girY+Math.sin(a)*R*0.38);}
-    ctx.stroke();
-    ctx.restore();
-}
-
-// ── The mix, as a gem (the ELEMENT MIX page) ─────────────
-// REPORTED: "change the way the shard looks in the crystal menu, I don't like how it's flashy, and I don't like the rest of the look of the menu either." It used to be a crystal that blinked
-// through the colours of the mix. Now it holds still: a cut gem seen from above, one wedge for each element (an outer bevel and an inner facet, lit from the top left). A wedge is in its
-// element's colour when that element is in the mix, a dim ghost of it when it is out, and dark when it is not unlocked yet, so the gem IS the mix at a glance. Nothing in it moves.
-function _mixShade(hex, k) {
-    const n = parseInt(String(hex).slice(1), 16), t = k < 0 ? 0 : 255, a = Math.abs(k);
-    const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.round(v + (t - v) * a));
-    return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
-}
-function _drawMixGem(cx, cy, R) {
-    const n = ELEMENTS.length, r = R * 0.46, TAU = Math.PI * 2;
-    const pt = (rad, k) => { const a = (-90 - 180 / n + k * 360 / n) * Math.PI / 180; return [cx + rad * Math.cos(a), cy + rad * Math.sin(a)]; };
-    const glow = ctx.createRadialGradient(cx, cy, R * 0.3, cx, cy, R * 1.4); glow.addColorStop(0, "rgba(160,200,255,0.16)"); glow.addColorStop(1, "rgba(160,200,255,0)");
-    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, R * 1.4, 0, TAU); ctx.fill();
-    ELEMENTS.forEach((el, i) => {
-        const unlocked = unlockedElements.has(el.id), on = unlocked && modulationIncludes(el.id);
-        const o0 = pt(R, i), o1 = pt(R, i + 1), i0 = pt(r, i), i1 = pt(r, i + 1), mid = (-90 + i * 360 / n) * Math.PI / 180, lit = Math.cos(mid - (-135 * Math.PI / 180));
-        let outer, inner, edge;
-        if (on) { outer = _mixShade(el.color, 0.14 + 0.2 * lit); inner = _mixShade(el.color, -0.05 - 0.18 * (1 - lit) / 2); edge = "rgba(255,255,255,0.6)"; }
-        else if (unlocked) { outer = _mixShade(el.color, -0.72); inner = _mixShade(el.color, -0.8); edge = "rgba(255,255,255,0.16)"; }
-        else { outer = "#151b30"; inner = "#10152a"; edge = "rgba(255,255,255,0.08)"; }
-        ctx.fillStyle = outer; ctx.beginPath(); ctx.moveTo(o0[0], o0[1]); ctx.lineTo(o1[0], o1[1]); ctx.lineTo(i1[0], i1[1]); ctx.lineTo(i0[0], i0[1]); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = inner; ctx.beginPath(); ctx.moveTo(i0[0], i0[1]); ctx.lineTo(i1[0], i1[1]); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = edge; ctx.lineWidth = 1.2; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(o0[0], o0[1]); ctx.lineTo(o1[0], o1[1]); ctx.lineTo(i1[0], i1[1]); ctx.lineTo(cx, cy); ctx.lineTo(i0[0], i0[1]); ctx.closePath(); ctx.stroke();
-    });
-}
-
-// ── Main panel drawing ────────────────────────────────────
-function drawCrystalPanel() {
-    if (!crystalMenuOpen) return;
-
-    const bx = _panelBox();
-    const { PX, PY, PW, tabH, closeW, contentY, contentH } = bx;
-    const tabAreaW = PW - closeW, tabW = tabAreaW;
-    const scheme = _getModScheme();
-
-    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-    uiBackdrop(0.78);
-    uiPanel(PX, PY, PW, tabH + contentH, CTABS[0].color);
-
-    // ── Title bar: the name, and close ────────────────────
-    uiTextFit(CTABS[0].label, PX + 28, PY + tabH / 2 + 2, 30, "#fff", "left", tabAreaW - 40);
-    const cx2 = PX + tabAreaW;
-    uiButton({ x: cx2 + 4, y: PY + 8, w: closeW - 10, h: tabH - 14 }, "\u2715", UI_RED, false, 22);
-
-    // ── Content area ──────────────────────────────────────
-    ctx.save();
-    ctx.beginPath(); ctx.rect(PX+1, contentY+1, PW-2, contentH-2); ctx.clip();
-    _drawModTab(PX, contentY, PW, contentH, scheme);
-    ctx.restore();
-    ctx.restore();
-
-    window._cpBounds = { PX, PY, PW, tabH, contentY, contentH, tabW, tabAreaW, closeX:cx2, closeW };
-}
+// ── The mix lives in the MIX SELECTOR (js/mixtool.js): the Crystal menu and its HUD button are gone ──
 
 // ── Tab: Clone Bay ────────────────────────────────────────
 function _drawClonesTab(PX, PY, PW, PH) {
@@ -1076,125 +915,9 @@ function _drawCloneCard(opt, x, y, w, h, listX, listW, listY, listH) {
     }
 }
 
-// ── Tab: Modulation ───────────────────────────────────────
-// ONE column, measured against the panel it is drawn in.
-//
-// REPORTED: "the modulation tab isn't fully available — make the design
-// simpler, incorporating the crystal, and remove the slider tool."
-//
-// It was two hand-placed columns split at 62% of the panel. The right column
-// held the only control and ran straight off the edge: on a 1024 tablet the
-// heading read "NEW FOLLOWERS COME OUT", the help text was cut mid-word, and
-// the fifth swatch was half outside the panel. On a phone the fifth was gone
-// entirely — with six elements unlocked the player could not reach the last
-// one at all.
-//
-// The left column was the old slider's leftovers: a decorative crystal, the
-// mix label, a size caption ("all elements") and a strip of colour chips that
-// cycled through the mix. Three of those four say the same thing as the swatch
-// row, and the mix label appeared three times on one screen.
-//
-// So: the crystal stays and becomes the readout — it already pulses through
-// the colours actually in the mix — and everything else that merely restated
-// the mix is gone. Under it, the swatch row, sized to fit rather than hoping.
-function _drawModTab(PX, PY, PW, PH, scheme) {
-    // Looking at the control IS the decision. The prompt used to be clearable
-    // only by toggling a swatch, so a player happy with their mix had no way to
-    // dismiss it that did not also change the mix.
-    modulationDirty = false;
-    const mixName = scheme.label.toUpperCase();   // what the mix is, said once
-    const wide = PW >= 540, pad = 18, footH = 50;
-    const nEl = ELEMENTS.length, cols = nEl > 6 ? 3 : 2, gap = 10;
-    let gx, gy, gw, gh;
-    if (wide) {
-        // THE GEM on the left is the readout (a wedge for each element, lit when it is in the mix); the element cards are the control on the right.
-        const leftW = Math.round(PW * 0.36), bodyH = PH - footH;
-        const R = Math.max(26, Math.min(96, Math.floor(leftW * 0.34), Math.floor((bodyH - 150) / 2)));
-        // the block (crystal, caption, name, pips) is centred in the column
-        const blockH = R * 2 + 16 + 26 + 40 + 6, top = PY + Math.max(8, Math.round((bodyH - blockH) / 2));
-        const cx = PX + leftW / 2, cy = top + R;
-        _drawMixGem(cx, cy, R);
-        uiCaptionFit("NEW FOLLOWERS COME OUT AS", cx, cy + R + 24, "#8aa0c8", "center", 13, leftW - 20);
-        uiTextFit(mixName, cx, cy + R + 56, 34, "#fff", "center", leftW - 24);
-        uiCaptionFit(ELEMENTS.filter(e => unlockedElements.has(e.id)).length + " OF " + nEl + " ELEMENTS ONLINE", cx, cy + R + 84, "#6a7aa0", "center", 12, leftW - 20);
-        gx = PX + leftW + 6; gw = PW - leftW - 6 - pad; gy = PY + 50; gh = bodyH - 56;
-        uiText("ELEMENTS", gx + 4, PY + 24, 22, "#fff", "left", false);
-        uiCaption("tap to add or drop", PX + PW - pad, PY + 24, "#6a7aa0", "right", 13);
-    } else {
-        // A narrow screen: the crystal and the mix name sit in a band across the top (it stands down when the panel is short).
-        const bandH = PH >= 440 ? 104 : 0;
-        if (bandH) {
-            _drawMixGem(PX + 62, PY + bandH / 2, 38);
-            uiCaptionFit("NEW FOLLOWERS COME OUT AS", PX + 112, PY + bandH / 2 - 20, "#8aa0c8", "left", 12, PW - 124);
-            uiTextFit(mixName, PX + 112, PY + bandH / 2 + 12, 32, "#fff", "left", PW - 124);
-        } else {
-            uiTextFit("MIX: " + mixName, PX + PW / 2, PY + 22, 24, "#fff", "center", PW - 24);
-        }
-        const top = bandH || 44;
-        gx = PX + 10; gw = PW - 20; gy = PY + top; gh = PH - top - footH;
-    }
-    const res = drawModulationCards(gx, gy, gw, Math.max(60, gh), cols, gap);
-    window._modSwatchRects = res.swatches;
-    // PENDING ELEMENTS — earned in the tunnel, activated here. This is why the
-    // player walks back: an element earned by clearing a wave does nothing
-    // until it is brought online here. Which one is the player's pick, so
-    // every element still locked is offered, as a card of the grid above.
-    window._modActivateRects = res.picks;
-
-    // The foot: what is coming, and what overrides the mix.
-    const fy = PY + PH - footH + 14;
-    const next = nextWaveUnlock();
-    if (pendingElements.length > 0) uiTextFit(pendingElements.length > 1 ? pendingElements.length + " UNLOCKS EARNED — CHOOSE" : "UNLOCK EARNED — CHOOSE AN ELEMENT", PX + PW / 2, fy, 18, UI_GOLD, "center", PW - 30);
-    else uiCaptionFit(next ? "NEXT UNLOCK: YOUR PICK \u2014 CLEAR A WAVE" : "ALL ELEMENTS ONLINE \u00b7 " + lifetimeKills + " kills", PX + PW / 2, fy, "#8aa0c8", "center", 14, PW - 30);
-    // A boss modulator overrides the mix for the followers it touches, so it
-    // belongs on this screen — one line, at the foot, out of the way.
-    if (ownedModulators.length > 0) uiCaptionFit("MODULATORS: " + ownedModulators.map(mod => ((ELEMENTS.find(e => e.id === mod.element) || {}).label || mod.element).toUpperCase()).join(" \u00b7 "),
-        PX + PW / 2, fy + 22, "#6a7aa0", "center", 13, PW - 30);
-}
-
 // Every element still locked, in the ladder's order: what an earned unlock can be spent on (js/wavedata.js activatePendingElement).
 function _modChoices() {
     const order = typeof ELEMENT_LADDER !== "undefined" ? ELEMENT_LADDER : ELEMENTS.map(e => e.id);
     return order.filter(id => !unlockedElements.has(id) && ELEMENTS.some(e => e.id === id));
 }
 
-// ── Panel input handler ───────────────────────────────────
-function handleCrystalPanelInput(ex, ey, isDown) {
-    if (!crystalMenuOpen) return false;
-    const b = window._cpBounds;
-    if (!b) return crystalMenuOpen;
-
-    // Activating a pending element — checked before the slider, so a tap on an
-    // ACTIVATE button is never swallowed as a slider drag.
-    if (crystalMenuTab==="modulation") {
-        for (const r of (window._modActivateRects||[])) {
-            if (ex>=r.bx && ex<=r.bx+r.bw && ey>=r.by && ey<=r.by+r.bh) {
-                activatePendingElement(r.id);
-                return true;
-            }
-        }
-    }
-
-    // Modulation swatches. Tapped on RELEASE, not on press: a toggle that
-    // fires on press repeats for every move event while the finger is down.
-    if (crystalMenuTab==="modulation" && !isDown) {
-        for (const r of (window._modSwatchRects||[])) {
-            if (ex>=r.x-4 && ex<=r.x+r.w+4 && ey>=r.y-4 && ey<=r.y+r.h+10) {
-                modulationToggle(r.id);
-                return true;
-            }
-        }
-    }
-    if (!isDown) { return crystalMenuOpen; }
-
-    // Close button
-    if (ex>=b.closeX && ex<=b.closeX+b.closeW && ey>=b.PY && ey<=b.PY+b.tabH) {
-        crystalMenuOpen=false; return true;
-    }
-    // Outside panel → close
-    if (ex<b.PX||ex>b.PX+b.PW||ey<b.contentY||ey>b.contentY+b.contentH) {
-        crystalMenuOpen=false; return true;
-    }
-
-    return true;
-}

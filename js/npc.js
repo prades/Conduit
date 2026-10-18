@@ -88,7 +88,7 @@ function updateRTSNPC(actor) {
                 actor.element = activeCrystalModulation.pair[Math.floor(Math.random()*activeCrystalModulation.pair.length)];
             } else {
                 const pool = recruitElementPool();
-                actor.element = pool[Math.floor(Math.random()*pool.length)] || "fire";
+                actor.element = modulationPick() || pool[Math.floor(Math.random()*pool.length)] || "fire";   // an even draw from the mix (js/clone.js)
             }
             if (!actor.combatTrait)  actor.combatTrait  = Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)];
             if (!actor.naturalTrait) actor.naturalTrait = Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)];
