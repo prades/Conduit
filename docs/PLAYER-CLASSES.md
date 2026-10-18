@@ -118,16 +118,32 @@ Today a wall panel is hacked by standing next to it for 2.5 s (`SIPHON_FRAMES`, 
 
 ### 4.2 Gear: what a solved panel pays
 
-A solved puzzle rolls **gear**, a tier higher the harder the puzzle. Gear is a table (`GEAR`) of items, each `{ id, name, slot, tier, stat | hook }`, using the same `classStat`/`classHook` machinery as perks, so gear costs no new engine:
+A solved puzzle pays **a piece of gear**. Gear is individual: a thing a unit *carries*, in two families.
 
-| Slot | What it powers | Examples |
-|---|---|---|
-| **SQUAD** (1 slot) | every follower and clone | DAMAGE CELL +10% damage; REGEN WEAVE +1 HP/s; OVERCLOCK COIL +8% speed; SHIELD MESH starts each night shielded |
-| **GUN** (barrel / magazine / core, the Gunmaster has more) | the player's weapon | LONG BARREL +range; EXTENDED MAG +12 ammo; ELEMENT CORE: shots carry the squad's commonest element; PIERCING ROUNDS go through one more target |
-| **PLAYER** (1 slot) | the player | SIPHON TAP +25% siphon rate; CRYSTAL LINK faster ultimate charge; DATA LEECH +hack XP |
+**FIELD GEAR: the tier is how far its effect reaches.**
 
-- **Kept in a small inventory** (8 slots) and equipped from a GEAR panel; lost never, replaced by choice. Whether gear persists across runs or lasts one night is open (§8).
-- **Quick hacks drop nothing**: gear is the reason to solve.
+| Tier | Reach | Carried by | Meaning |
+|---|---|---|---|
+| **T1** | **one follower** | that follower | the cheapest and most common; a personal upgrade |
+| **T2** | **a squad, up to 3** | a follower | the carrier plus its two nearest squad-mates (same crew or order, else nearest allies), refreshed every 30 frames |
+| **T3** | **an aura** | a follower | every ally and clone within 3 tiles of the carrier, while it lives |
+| **T4** | **the whole team** | the player's loadout | every follower and clone you own, wherever they are |
+| **T5** | **the whole team and you** | the player's loadout | the team, and the player's own stats (siphon, hack timer, gun) |
+
+Each piece is an **effect** (what it does) at a **tier** (where it reaches): the effect table is shared, so one definition of DAMAGE CELL gives five items. Effects: DAMAGE CELL (+damage), PLATING (damage taken down), REGEN WEAVE (HP per second), OVERCLOCK COIL (speed), WILL CELL (will refills faster), ELEMENT CORE (the unit's element hits harder), SIPHON TAP (siphon rate; T5 only touches the player, below T5 it is the carriers'), and so on. Strength grows with tier, but a bigger reach is weaker per unit (T1 is the strongest on its one unit), so a T1 on your best follower is still worth carrying.
+
+**GUN GEAR: the tier is the strength.** The player's weapon has barrel, magazine and core slots; a gun mod's tier 1 to 5 is how much it adds (LONG BARREL +range, EXTENDED MAG +ammo, ELEMENT CORE element shots, PIERCING ROUNDS, RAPID BOLT shorter cooldown). The Gunmaster has more slots.
+
+**Rules that keep it simple:**
+- A follower carries **1 field piece** (2 once evolved). T4 and T5 go in the **player's loadout** (2 T4 slots, 1 T5 slot), not on a unit, so the team effect does not vanish with one death.
+- **Same effect does not stack**: the strongest reach and tier applies to a unit once, so ten DAMAGE CELLs cannot add up. Different effects add.
+- **Aura (T3) and squad (T2)** are recomputed on a slow tick, not per frame (the frame loop is the only clock; one pass over the followers).
+- A follower that **dies** drops its gear back to the inventory.
+- **Kept for good** in an inventory of 8 (a perk or a gun mod slot raises it); it carries across runs.
+
+**What a puzzle pays.** The puzzle tier decides the gear tier: **1 unknown variable → T1, 2 → T2 (a T3 on a hard one), 3 → T3 (T4 on a hard one)**; a **T5** only from a 3-variable solved in under half the time, and only at HACK level 8 or more. A decoy pays nothing. Quick hacks drop no gear: gear is the reason to solve.
+
+**Where it shows.** A carried piece is a small pip on the unit's status chip (js/status.js) and a row on its INFO tab; an aura is a thin ring on the floor round the carrier; the GEAR panel (a dock slab) is the inventory, the equip slots on each follower, and the player loadout.
 
 ## 5. Build order (each is a commit, its own tests, a full green run)
 
@@ -144,7 +160,7 @@ A solved puzzle rolls **gear**, a tier higher the harder the puzzle. Gear is a t
 - **B1 Puzzle engine:** `makePuzzle(skill, rng)` pure, with a test that every problem has exactly one correct choice and integer answers, over thousands of seeds at every skill.
 - **B2 HACK skill:** XP, levels 1 to 10, saved.
 - **B3 Panel integration:** QUICK HACK / SOLVE at a panel, the modal, fail and decoy rules.
-- **B4 Gear:** `GEAR` table, inventory, equip panel, rolls by tier; SQUAD, PLAYER and GUN stats read through `classStat`.
+- **B4 Gear:** the `GEAR` effect table, the five tiers (one / squad of 3 / aura / team / team + player), the inventory, equip rules and the GEAR panel; tier reach recomputed on a slow tick. Tests: each tier reaches exactly who it should, same effect never stacks, a dead carrier's gear returns, T4/T5 survive a death.
 - **B5 Guns and mods:** `GUNS` and the gun mod slots (the Gunmaster's stage 6 depends on this).
 
 ## 6. Adding a class afterwards (the checklist)
@@ -174,7 +190,7 @@ No other file changes: the picker, the perk screen, the INFO pages and the roste
 ### Answered (the new asks)
 
 5. **Hacker skill:** more variables = **harder and better gear**. The skill unlocks the tiers (1, 2, then 3 unknown variables); you choose how hard to go, up to your level.
-6. **Gear** is **kept for good** in the inventory (8 slots) and carries across runs.
+6. **Gear** is **kept for good** in the inventory (8 slots) and carries across runs. **Reworked:** it is individual gear in five tiers by reach (one follower, a squad of 3, an aura, the whole team, the whole team and you), see 4.2.
 7. **A wrong answer** costs a **lock-out of that panel and a small shard fee**; a decoy still trips its alarm as today.
 
 ## 9. Done so far
