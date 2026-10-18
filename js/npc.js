@@ -351,15 +351,20 @@ function updateRTSNPC(actor) {
             actor._nearestEnemy = null;
             let nearestEnemyDist = Infinity;
             const _inReach = [];
-            actors.forEach(a => {
+            // THE BATTLE CONTROLS (js/mixtool.js): a unit told to RETREAT sees no enemy until its time is up, and with a FOCUS set it goes for that class of enemy first.
+            const _retreating = actor.retreatUntil > frame, _focus = typeof battleFocus !== "undefined" ? battleFocus : null;
+            let _focusBest = null, _focusD = Infinity;
+            if (!_retreating) actors.forEach(a => {
                 if (a instanceof Predator && a.team !== "green" && !a.isClone && !a.dead && !a.untargetable) {
                     // Skip predators that are wandering and haven't been provoked
                     if (a.state === "wander" && !a.provoked) return;
                     const dx=a.x-actor.x, dy=a.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
                     if (d < nearestEnemyDist) { nearestEnemyDist=d; actor._nearestEnemy=a; }
                     if (d < 6) _inReach.push(a);
+                    if (_focus && a.className === _focus && d < _focusD) { _focusD = d; _focusBest = a; }
                 }
             });
+            if (_focusBest && _focusD < BATTLE_FOCUS_REACH) actor._nearestEnemy = _focusBest;
             // OPPORTUNISTIC picks the weakest enemy in reach instead of the nearest.
             const _ct = actor.combatTrait && COMBAT_TRAITS[actor.combatTrait];
             if (_ct && _ct.onTargetSelect && _inReach.length) {

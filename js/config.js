@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-18o";
+const BUILD_VERSION = "2026-10-18p";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -1024,6 +1024,11 @@ let crystalCloneSort = "species";  // "species"|"combat"|"defense"|"hp"|"special
 // with a negative offset, indexed combos[-1] and crashed on combo.map.
 // A set of toggles has no such arithmetic to get wrong.
 let modulationMask = new Set();
+// THE BATTLE CONTROLS (js/mixtool.js): the enemy class your followers go for first (null = whoever is nearest), and how long a RETREAT keeps them out of the fight.
+let battleFocus = null;
+const BATTLE_FOCUS_CLASSES = ["striker", "tank", "scout", "boss"];
+const BATTLE_RETREAT_FRAMES = 360;   // six seconds
+const BATTLE_FOCUS_REACH = 10;        // tiles: a focus target further than this is not chased
 
 // ── PLAYER ULTIMATE ───────────────────────────────
 // One bar, the character's own, filled by killing and spent on an ARMY SURGE:

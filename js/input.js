@@ -356,7 +356,7 @@ canvas.addEventListener('pointerdown', e=>{
     commandTarget=null;
 
     // The mix selector (js/mixtool.js) is open: a press on the world is not a game action (its release puts the selector away)
-    if (crystalMenuOpen) return;
+    if (crystalMenuOpen && !(typeof mixToolWide === "function" && mixToolWide())) return;
 
     const dx=pressX-canvas.width/2, dy=pressY-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
@@ -399,7 +399,7 @@ canvas.addEventListener('pointerup', e=>{
         isPressing=false; return;
     }
     // The mix selector is open: a tap on the world puts it away (its own buttons are page elements and never reach here)
-    if (crystalMenuOpen) {
+    if (crystalMenuOpen && !(typeof mixToolWide === "function" && mixToolWide())) {
         crystalMenuOpen=false;
         isPressing=false; return;
     }

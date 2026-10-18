@@ -255,6 +255,7 @@ function evolutionTick() {
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
+        if (f.retreatUntil > f0) continue;   // told to RETREAT (js/mixtool.js): no signature moves until it is over
         const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;   // js/moves.js: the move it fires (a form's default until it is given another)
         if (mv && mv.fn) mv.fn(f);
     }

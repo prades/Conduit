@@ -1,5 +1,5 @@
-// THE MIX SELECTOR (js/mixtool.js): the small tool at the bottom left that replaced the Crystal menu. The mix is a honeycomb of six cells (tap one to put the element in or out, the centre puts them all
-// back), a locked element is a dark cell (a gold UNLOCK one when an unlock is earned), a second tab holds HOLD / COME and who they go to. Logic in the sandbox, the real DOM in the real browser (no Chromium: it says so and passes).
+// THE BATTLE TOOL (js/mixtool.js): the small tool at the bottom left that replaced the Crystal menu. Always open on a wide screen (a phone opens it from a chip). BATTLE tab: who the orders go to, RETREAT, HOLD,
+// COME, a posture, a target focus. MIX tab: a honeycomb of six cells (tap one to put the element in or out, the centre puts them all back), a locked element a dark cell (a gold UNLOCK one when an unlock is earned). Logic in the sandbox, the real DOM in the real browser (no Chromium: it says so and passes).
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -29,33 +29,40 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   tutorialMode = false; gameState.running = true; unlockedElements = new Set(['fire', 'electric', 'ice']); modulationMask = new Set(); modulationWeights = {}; followers.length = 0; crystalMenuOpen = false; pendingElements = [];
   var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
   mixToolRender(true); await wait(50);
-  out.pod = $('#mixTool .mt-pod') ? $('#mixTool .mt-pod').textContent : null; out.closedPanel = !!$('#mixTool .mt-panel');
-  var pr = $('#mixTool').getBoundingClientRect(), dock = document.getElementById('topToggles'), dr = dock ? dock.getBoundingClientRect() : null;
-  out.podBox = [Math.round(pr.left), Math.round(pr.top), Math.round(pr.right), Math.round(pr.bottom)]; out.dockLeft = dr && dr.width ? Math.round(dr.left) : null;
-  // the pod opens it (the flag is the Crystal's: crystalMenuOpen)
-  click($('#mixTool .mt-pod')); await wait(50);
-  out.open = { flag: crystalMenuOpen, panel: !!$('#mixTool .mt-panel'), tabs: $$('#mixTool .mt-tab').map(function(t){ return t.textContent; }), cells: $$('#mixTool .mt-hex:not(.mt-all)').length, centre: !!$('#mixTool .mt-all'), lit: $$('#mixTool .mt-hex.on:not(.mt-all)').length, locked: $$('#mixTool .mt-hex.locked').length };
-  // tap a cell: drop ELECTRIC; again: bring it back
-  click($('#mixTool .mt-hex[data-id="electric"]')); await wait(30); out.dropped = { on: $$('#mixTool .mt-hex.on:not(.mt-all)').length, mask: [...modulationMask].join(), pod: $('#mixTool .mt-pod').textContent, allLit: $('#mixTool .mt-all').classList.contains('on') };
+  var wide = innerWidth > 700; out.wide = wide;
+  var podBox = $('#mixTool .mt-pod') ? $('#mixTool .mt-pod').getBoundingClientRect() : null; out.podShown = !!podBox && podBox.width > 0; out.podText = $('#mixTool .mt-pod') ? $('#mixTool .mt-pod').textContent : null;
+  out.start = { panel: !!$('#mixTool .mt-panel'), tab: _mtTab, tabs: $$('#mixTool .mt-tab').map(function(t){ return t.textContent; }), x: $('#mixTool .mt-x') ? getComputedStyle($('#mixTool .mt-x')).display : null };
+  var pr = $('#mixTool').getBoundingClientRect(), dock = document.getElementById('topToggles'), dr = dock ? dock.getBoundingClientRect() : null, pn = $('#mixTool .mt-panel') ? $('#mixTool .mt-panel').getBoundingClientRect() : null;
+  out.dockOverlap = !!(pn && dr && dr.width && pn.right > dr.left && pn.left < dr.right && pn.bottom > dr.top && pn.top < dr.bottom); out.panelWidth = pn ? Math.round(pn.width) : 0;
+  if (!wide) { click($('#mixTool .mt-pod')); await wait(50); out.phoneOpen = { flag: crystalMenuOpen, panel: !!$('#mixTool .mt-panel') }; }
+  // BATTLE tab: the controls are there
+  mixToolSetTab('battle'); await wait(30); out.tabs = $$('#mixTool .mt-tab').map(function(t){ return t.textContent; });
+  out.battle = { retreat: !!$('#mixTool .mt-retreat'), orders: $$('#mixTool .mt-ord').map(function(o){ return o.textContent; }).join(), posture: $$('#mixTool .mt-seg3 button').map(function(b){ return b.textContent; }).join(), focus: $$('#mixTool [data-focus]').map(function(b){ return b.textContent; }).join(), who: $$('#mixTool [data-scope]').length };
+  ['fire', 'fire', 'ice'].forEach(function(el){ spawnFollowerAtCrystal(el); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.stance = 'hold'; f.job = { type: 'move', target: { x: f.x, y: f.y } }; });
+  squadMode = 'all'; mixToolRender(true); await wait(30);
+  click($('#mixTool [data-act=retreat]')); await wait(30);
+  out.retreat = { until: followers.map(function(f){ return f.retreatUntil > frame; }).join(), stance: followers.map(function(f){ return f.stance; }).join(), jobs: followers.map(function(f){ return !!f.job; }).join(), label: $('#mixTool .mt-retreat').textContent };
+  click($('#mixTool [data-order=hold]')); await wait(30); out.hold = followers.map(function(f){ return f.stance; }).join();
+  click($('#mixTool [data-order=follow]')); await wait(30); out.come = followers.map(function(f){ return f.stance; }).join();
+  click($('#mixTool [data-posture=aggressive]')); await wait(30); out.push = { styles: followers.map(function(f){ return f.playStyle; }).join(), on: $('#mixTool .mt-seg3 .on') ? $('#mixTool .mt-seg3 .on').textContent : null };
+  click($('#mixTool [data-posture=defensive]')); await wait(30); out.defend = followers.map(function(f){ return f.playStyle; }).join();
+  click($('#mixTool [data-focus=tank]')); await wait(30); out.focus = { v: battleFocus, on: $('#mixTool [data-focus].on') ? $('#mixTool [data-focus].on').textContent : null };
+  click($('#mixTool [data-focus=tank]')); await wait(30); out.focusOff = battleFocus;
+  click($('#mixTool [data-focus=boss]')); await wait(30); click($('#mixTool [data-focus=any]')); await wait(30); out.focusAny = battleFocus;
+  click($('#mixTool [data-scope=ice]')); await wait(30); out.scope = { mode: squadMode, el: player.selectedElement, who: $('#mixTool .mt-who .mt-chip.on') ? $('#mixTool .mt-who .mt-chip.on').getAttribute('data-scope') : null };
+  // MIX tab: the honeycomb
+  click($('#mixTool .mt-tab[data-tab="mix"]')); await wait(30);
+  out.open = { cells: $$('#mixTool .mt-hex:not(.mt-all)').length, centre: !!$('#mixTool .mt-all'), lit: $$('#mixTool .mt-hex.on:not(.mt-all)').length, locked: $$('#mixTool .mt-hex.locked').length };
+  click($('#mixTool .mt-hex[data-id="electric"]')); await wait(30); out.dropped = { on: $$('#mixTool .mt-hex.on:not(.mt-all)').length, mask: [...modulationMask].join(), allLit: $('#mixTool .mt-all').classList.contains('on') };
   click($('#mixTool .mt-hex[data-id="electric"]')); await wait(30); out.back = { on: $$('#mixTool .mt-hex.on:not(.mt-all)').length };
-  // the centre cell puts every element back
   click($('#mixTool .mt-hex[data-id="fire"]')); await wait(30); click($('#mixTool .mt-all')); await wait(30); out.all = { mask: modulationMask.size, on: $$('#mixTool .mt-hex.on:not(.mt-all)').length, centre: $('#mixTool .mt-all').classList.contains('on') };
-  // a draw comes from the mix: with only ICE in it every draw is ice
   modulationMask = new Set(['ice']); mixToolRender(true); out.pickIce = [modulationPick(0), modulationPick(0.5), modulationPick(0.999)].join(); modulationMask = new Set(); mixToolRender(true);
-  // locked cells: toxic is locked and says so; an earned unlock makes one a gold UNLOCK cell that activates it
   out.lockedCell = $('#mixTool .mt-hex[data-id="toxic"]').className; out.lockedText = $('#mixTool .mt-hex[data-id="toxic"]').textContent;
-  pendingElements = ['toxic']; mixToolRender(true); await wait(30);
-  var pk = $('#mixTool .mt-hex.pick'); out.pick1 = pk ? pk.textContent : null;
-  // the command tab
-  click($('#mixTool .mt-tab[data-tab="command"]')); await wait(30);
-  out.cmd = { tab: _mtTab, orders: $$('#mixTool .mt-ord').map(function(o){ return o.textContent; }), scope: $$('#mixTool .mt-chips.scope .mt-chip').length, hint: $('#mixTool .mt-hint').textContent };
-  ['fire', 'fire'].forEach(function(el){ spawnFollowerAtCrystal(el); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.stance = 'follow'; });
-  squadMode = 'all'; click($('#mixTool .mt-ord[data-order="hold"]')); await wait(30); out.hold = followers.map(function(f){ return f.stance; }).join();
-  click($('#mixTool .mt-ord[data-order="follow"]')); await wait(30); out.come = followers.map(function(f){ return f.stance; }).join();
-  // closing: the X, and a tap on the world (the canvas handler lowers the flag)
-  click($('#mixTool [data-act="close"]')); await wait(30); out.closed = { flag: crystalMenuOpen, panel: !!$('#mixTool .mt-panel') };
-  // the Crystal's flag opens it too (the dock's CRYSTAL button, a tap on the Crystal, the tutorial): within a few frames
-  crystalMenuOpen = true; mixToolRender(false); out.byFlag = !!$('#mixTool .mt-panel');
+  pendingElements = ['toxic']; mixToolRender(true); await wait(30); var pk = $('#mixTool .mt-hex.pick'); out.pick1 = pk ? pk.textContent : null; out.bang = !!$('#mixTool .mt-tab .mt-bang'); pendingElements = [];
+  // the Crystal's flag (the dock's CRYSTAL button, a tap on the Crystal, the tutorial): on a wide screen it shows the MIX tab and goes back down; on a phone it is "open"
+  mixToolSetTab('battle'); await wait(30); crystalMenuOpen = true; mixToolRender(false); await wait(30); out.byFlag = { tab: _mtTab, flag: crystalMenuOpen, panel: !!$('#mixTool .mt-panel') };
+  // a tap on the world must not close it on a wide screen (the canvas handler only lowers the flag on a phone)
+  if (wide) { out.stays = !!$('#mixTool .mt-panel'); } else { click($('#mixTool [data-act=close]')); await wait(30); out.closed = { flag: crystalMenuOpen, panel: !!$('#mixTool .mt-panel') }; }
   var pre = document.createElement('pre'); pre.id = '__mt'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 1500); });</script></body>`;
 function measure(w, h) {
@@ -97,31 +104,65 @@ function measure(w, h) {
     check('with nothing unlocked a draw is null (the caller falls back)', () => { run('unlockedElements = new Set();'); same(run('modulationPick()'), null, 'pick'); run('unlockedElements = new Set(["fire", "electric", "ice"]); modulationMask = new Set();'); });
     check('there is no ratio engine left (weights were dropped for on/off)', () => { ok(!/modulationWeight|MOD_WEIGHT_MAX/.test(rd('js/clone.js') + rd('js/save.js') + rd('js/config.js') + rd('js/mixtool.js')), 'weights remain'); });
 
+    group('THE BATTLE CONTROLS (the game\'s own rules)');
+    const env = (f) => run(f);
+    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(['fire', 'electric', 'ice']); zoneGenerated = () => true; ensureWorldTo(40);
+        globalThis.__mk = (cls, x, y) => { const S = SPECIES[Object.keys(SPECIES)[0]], def = (typeof getClassDef === 'function' ? getClassDef(S, cls) : S[cls]) || S.scout; const a = new Predator(cls, Object.assign({}, def, { color: S.color }), x, y); a.team = 'red'; a.className = cls; a.state = 'hunt'; a.provoked = true; a.x = x; a.y = y; actors.push(a); return a; };
+        globalThis.__fresh = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; battleFocus = null; squadMode = 'all'; selectedUnits.clear(); player.x = player.targetX = player.visualX = 8; player.y = player.targetY = player.visualY = 1;
+            spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = 'brawler'; f.x = 8.5; f.y = 1; f.stance = 'follow'; return f; };`);
+    const frames = n => { for (let i = 0; i < n; i++) run('render()'); };
+    check('FOCUS: with a class picked the follower goes for that class when one is in reach, and for the nearest otherwise', () => {
+        run('__fresh(); globalThis.__near = __mk("scout", 10, 1); globalThis.__far = __mk("striker", 14, 1);'); frames(20); same(run('followers[0]._nearestEnemy === __near'), true, 'default: the nearest');
+        run('battleFocus = "striker"; followers[0]._enemyCacheFrame = 0;'); frames(20); same(run('followers[0]._nearestEnemy === __far'), true, 'focus: the striker, though the scout is nearer');
+        run('battleFocus = "boss"; followers[0]._enemyCacheFrame = 0;'); frames(20); same(run('followers[0]._nearestEnemy === __near'), true, 'a class that is not there: the nearest');
+        run('battleFocus = "striker"; __far.x = 40; followers[0]._enemyCacheFrame = 0;'); frames(20); same(run('followers[0]._nearestEnemy === __near'), true, 'a focus target past BATTLE_FOCUS_REACH is not chased');
+    });
+    check('RETREAT: the picked units see no enemy and fire nothing for BATTLE_RETREAT_FRAMES, then fight again', () => {
+        run('__fresh(); globalThis.__e = __mk("striker", 10, 1);'); frames(20); same(run('followers[0]._nearestEnemy === __e'), true, 'fixture: it sees the enemy');
+        run('mixToolRetreat();'); same(run('followers[0].retreatUntil > frame'), true, 'marked'); same(run('followers[0].stance'), 'follow', 'stance');
+        frames(30); same(run('followers[0]._nearestEnemy'), null, 'it still sees the enemy while retreating');
+        run('frame += BATTLE_RETREAT_FRAMES + 5;'); frames(20); same(run('followers[0]._nearestEnemy === __e'), true, 'it does not fight again after the time');
+    });
+    check('RETREAT also holds back an evolved follower\'s signature move', () => { ok(/retreatUntil > f0/.test(rd('js/evolution.js')), 'evolutionTick does not stand down'); });
+    check('POSTURE sets the play style of the picked followers; with nobody it says so', () => {
+        run('__fresh();'); same(run('mixToolPosture("aggressive")'), 1, 'count'); same(run('followers[0].playStyle'), 'aggressive', 'style'); same(run('mixToolPostureNow()'), 'aggressive', 'now');
+        run('followers.length = 0; actors = actors.filter(a => !a.isFollower);'); same(run('mixToolPosture("defensive")'), 0, 'nobody'); same(run('mixToolRetreat()'), 0, 'nobody to retreat');
+    });
+
     group('THE TOOL (real browser)');
     for (const [w, h] of [[1100, 720], [500, 800]]) {
         const r = measure(w, h);
         if (r === null) { console.log('  (no Chromium here: skipped)'); break; }
         check(w + 'x' + h + ': the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (!r) continue;
-        check(w + ': the pod is a small chip, "MIX 3", with nothing open and no panel; it does not cover the dock', () => {
-            same(r.pod, 'MIX 3', 'pod'); same(r.closedPanel, false, 'panel while closed'); ok(r.podBox[2] - r.podBox[0] < 150, 'pod width ' + r.podBox);
-            if (r.dockLeft !== null && w >= 701) ok(r.podBox[2] <= r.dockLeft, 'the pod runs into the dock: ' + r.podBox + ' dock ' + r.dockLeft);
+        const wide = w > 700;
+        check(w + ': ' + (wide ? 'ALWAYS OPEN on a wide screen: the panel is there at the start, no pod, no close button, and it does not cover the dock' : 'on a phone it is a small MIX chip that opens it, and closes again'), () => {
+            if (wide) { same(r.start.panel, true, 'panel at the start'); same(r.podShown, false, 'a pod is shown'); same(r.start.x, 'none', 'a close button is shown'); same(r.dockOverlap, false, 'the panel runs into the dock'); ok(r.panelWidth <= 230, 'panel width ' + r.panelWidth); }
+            else { same(r.start.panel, false, 'panel while closed'); same(r.podShown, true, 'pod'); ok(/^MIX 3/.test(r.podText), 'pod ' + r.podText); same(r.phoneOpen.flag, true, 'flag'); same(r.phoneOpen.panel, true, 'panel after the tap'); same(r.closed.flag, false, 'close flag'); same(r.closed.panel, false, 'close panel'); }
         });
-        check(w + ': tapping the pod opens it (the Crystal flag): tabs MIX and COMMAND, six hex cells round a centre cell, the locked ones marked', () => {
-            same(r.open.flag, true, 'flag'); same(r.open.panel, true, 'panel'); same(r.open.tabs.slice(0, 2).join(), 'MIX,COMMAND', 'tabs'); same(r.open.cells, 6, 'cells'); same(r.open.centre, true, 'centre'); same(r.open.lit, 3, 'lit (the three unlocked)'); same(r.open.locked, 3, 'locked');
+        check(w + ': tabs BATTLE (the first) and MIX; the BATTLE tab has WHO, RETREAT, HOLD and COME, a posture and a target focus', () => {
+            same(r.tabs.slice(0, 2).join().replace(/!/g, ''), 'BATTLE,MIX', 'tabs'); same(r.battle.retreat, true, 'retreat'); ok(/HOLD,COME/.test(r.battle.orders), 'orders ' + r.battle.orders); same(r.battle.posture, 'DEFEND,STEADY,PUSH', 'posture'); same(r.battle.focus, 'ANY,STRIKER,TANK,SCOUT,BOSS', 'focus'); same(r.battle.who, 4, 'ALL + three elements');
         });
-        check(w + ': tapping a cell drops that element (the mix narrows, the centre goes dark) and again brings it back; the centre puts them all back', () => {
-            same(r.dropped.on, 2, 'lit cells after dropping'); ok(r.dropped.mask.indexOf('electric') < 0 && r.dropped.mask.indexOf('fire') >= 0, 'mask ' + r.dropped.mask); same(r.dropped.allLit, false, 'centre while narrowed'); same(r.back.on, 3, 'back');
+        check(w + ': RETREAT pulls the picked units off (stance follow, holds dropped, marked) and the button says so; HOLD stands them, COME brings them back', () => {
+            same(r.retreat.until, 'true,true,true', 'marked'); same(r.retreat.stance, 'follow,follow,follow', 'stance'); same(r.retreat.jobs, 'false,false,false', 'holds'); ok(/FALLING BACK/.test(r.retreat.label), 'label ' + r.retreat.label);
+            same(r.hold, 'hold,hold,hold', 'hold'); same(r.come, 'follow,follow,follow', 'come');
+        });
+        check(w + ': the posture sets the play style (the lit one is the squad\'s); the target focus toggles, ANY clears it; WHO narrows the orders to an element', () => {
+            same(r.push.styles, 'aggressive,aggressive,aggressive', 'push'); same(r.push.on, 'PUSH', 'lit'); same(r.defend, 'defensive,defensive,defensive', 'defend'); same(r.focus.v, 'tank', 'focus'); same(r.focus.on, 'TANK', 'lit'); same(r.focusOff, null, 'toggle off'); same(r.focusAny, null, 'ANY');
+            same(r.scope.mode, 'selected', 'mode'); same(r.scope.el, 'ice', 'element'); same(r.scope.who, 'ice', 'lit');
+        });
+        check(w + ': the MIX tab: six hex cells round a centre cell; tapping a cell drops an element (the centre goes dark) and again brings it back; the centre puts them all back', () => {
+            same(r.open.cells, 6, 'cells'); same(r.open.centre, true, 'centre'); same(r.open.lit, 3, 'lit'); same(r.open.locked, 3, 'locked');
+            same(r.dropped.on, 2, 'after dropping'); ok(r.dropped.mask.indexOf('electric') < 0 && r.dropped.mask.indexOf('fire') >= 0, 'mask ' + r.dropped.mask); same(r.dropped.allLit, false, 'centre while narrowed'); same(r.back.on, 3, 'back');
             same(r.all.mask, 0, 'ALL clears the mask'); same(r.all.on, 3, 'all lit'); same(r.all.centre, true, 'centre lit');
         });
-        check(w + ': a draw comes from the mix, a locked element is a dark cell, an earned unlock is a gold UNLOCK cell', () => {
-            same(r.pickIce, 'ice,ice,ice', 'draws with only ice in the mix'); ok(/locked/.test(r.lockedCell) && /LOCKED/.test(r.lockedText), 'locked cell: ' + r.lockedCell + ' ' + r.lockedText); ok(/UNLOCK/.test(r.pick1 || ''), 'unlock cell: ' + r.pick1);
+        check(w + ': a draw comes from the mix, a locked element is a dark cell, an earned unlock is a gold UNLOCK cell (and a gold ! on the tab)', () => {
+            same(r.pickIce, 'ice,ice,ice', 'draws with only ice in the mix'); ok(/locked/.test(r.lockedCell) && /LOCKED/.test(r.lockedText), 'locked cell: ' + r.lockedCell + ' ' + r.lockedText); ok(/UNLOCK/.test(r.pick1 || ''), 'unlock cell: ' + r.pick1); same(r.bang, true, 'the tab has no gold !');
         });
-        check(w + ': the COMMAND tab has HOLD and COME and the scope chips; HOLD stands the squad, COME brings it back', () => {
-            same(r.cmd.tab, 'command', 'tab'); ok(/HOLD/.test(r.cmd.orders[0]) && /COME/.test(r.cmd.orders[1]), 'orders ' + r.cmd.orders); same(r.cmd.scope, 4, 'ALL + three elements'); ok(/TO: /.test(r.cmd.hint), 'hint ' + r.cmd.hint);
-            same(r.hold, 'hold,hold', 'hold'); same(r.come, 'follow,follow', 'come');
+        check(w + ': the Crystal\'s flag ' + (wide ? 'shows the MIX tab and goes back down (the tool never closes)' : 'opens it'), () => {
+            if (wide) { same(r.byFlag.tab, 'mix', 'tab'); same(r.byFlag.flag, false, 'flag taken'); same(r.byFlag.panel, true, 'panel'); same(r.stays, true, 'it closed'); }
+            else { same(r.byFlag.flag, true, 'flag'); same(r.byFlag.panel, true, 'panel'); }
         });
-        check(w + ': the close button puts it away, and the Crystal flag opens it again', () => { same(r.closed.flag, false, 'flag'); same(r.closed.panel, false, 'panel'); same(r.byFlag, true, 'by flag'); });
     }
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
     process.exit(failures ? 1 : 0);
