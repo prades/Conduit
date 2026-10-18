@@ -77,17 +77,14 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const n = run(`(function(){ rebuildGeneratorLinks(); return _genLinks.length; })()`);
         ok(n === 0, 'an off generator still has ' + n + ' healing links');
     });
-    await check('the ring offers TURN ON / TURN OFF for a generator, by drag and by tap', () => {
-        ok(/TURN OFF/.test(rd('js/draw.js')) && /TURN ON/.test(rd('js/draw.js')), 'no labels');
-        ok(/isSwitchableRelay\(commandTarget\)/.test(rd('js/draw.js')) && /isSwitchableRelay\(commandTarget\)/.test(rd('js/input.js')),
-           'draw and tap paths do not agree');
-        ok(/isSwitchableRelay\(commandTarget\)[^\n]*toggleRelayCircuit/.test(rd('js/commands.js')), 'the command does not handle a generator');
+    await check('the ring no longer offers TURN ON / TURN OFF (generators are the wall unit now)', () => {
+        ok(!/TURN OFF/.test(rd('js/draw.js')) && !/toggle_circuit/.test(rd('js/commands.js')), 'the generator switch is still in the ring');
     });
-    await check('the command really flips a generator', () => {
+    await check('the command still flips a generator for the code that calls it', () => {
         board();
-        const r = run(`(function(){ commandTarget = __row[0]; selectedRadialAction = 'toggle_circuit'; commandFollowerTarget = null;
-            commandEnemyTarget = null; commandNestTarget = null; executeCommand(); return __row[0].circuitOn; })()`);
-        ok(r === false, 'executing toggle_circuit left it ' + r);
+        const r = run(`(function(){ toggleRelayCircuit(__row[0]); return __row[0].circuitOn; })()`);
+        ok(r === false, 'toggleRelayCircuit left it ' + r);
+        run(`toggleRelayCircuit(__row[0])`);
     });
     await check('the pylon says WHY it is dark', () => {
         board({ genOff: true });

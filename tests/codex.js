@@ -332,20 +332,15 @@ check('a dormant pylon is told what to do with it', () => {
         ok(text.includes(word), 'dormant text missing ' + word);
     }
 });
-check('the info panel still fits a small screen with the explanation added', () => {
-    // Panel height is 94 + rows*20; the pylon readout is six rows before this.
-    const MAX_ROWS = 25;
-    for (const el of ELEMENTS) {
-        const total = 6 + run('codexPylonRows')(el.id, 48, 2).length;
-        ok(total <= MAX_ROWS, `${el.id}: ${total} rows (${94 + total * 20}px), max ${MAX_ROWS}`);
-    }
-    const dormant = 6 + run('codexDormantPylonRows')(48).length;
-    ok(dormant <= MAX_ROWS, 'dormant: ' + dormant + ' rows');
+check('the info panel pages its rows rather than running off a small screen', () => {
+    // js/infodex.js splits a long page into pages that fit; the pylon readout links to the element's own page.
+    const ix = fs.readFileSync(path.join(ROOT, 'js/infodex.js'), 'utf8');
+    ok(/pages\.push\(\[\]\)/.test(ix) && /_infoPageNo/.test(ix), 'the panel does not page');
 });
 check('the info panel actually calls into the codex', () => {
-    const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
-    ok(/codexPylonRows\(el\.id/.test(ui), 'the pylon readout does not pull in the explanation');
-    ok(/codexDormantPylonRows\(/.test(ui), 'a dormant pylon gets no explanation');
+    const ix = fs.readFileSync(path.join(ROOT, 'js/infodex.js'), 'utf8');
+    ok(/codexElementRows\(/.test(ix) && /CODEX_ELEMENTS\[/.test(ix), 'the element pages are not reachable from the panel');
+    ok(/page: elId/.test(ix), 'the pylon readout does not link to its element network');
 });
 
 check('an unknown element degrades instead of throwing', () => {

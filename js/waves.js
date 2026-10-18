@@ -430,7 +430,7 @@ function resetTransientState() {
     crystalMenuOpen   = false;
     pylonConfirmOpen  = false; pylonConfirmEl   = null; pylonConfirmTarget = null;
     elementPickerOpen = false; elementPickerTarget = null;
-    infoPanelOpen     = false; infoPanelTarget = null; infoPanelPage = null;
+    infoPanelOpen     = false; infoPanelTarget = null; infoPanelPage = null; infoPanelSubject = null;
     commandMode       = false; commandPendingTap = false;
     commandTarget     = null; selectedRadialAction = null;
     playerAttackMode  = false; commandEnemyTarget = null; commandFollowerTarget = null;

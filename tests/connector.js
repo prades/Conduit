@@ -175,13 +175,10 @@ async function boot() {
         ok(/t\.isConnector = false/.test(rd('js/infest.js')), 'a converted connector would stay a connector');
     });
 
-    group('THE RING: the switch is offered, by drag and by tap');
+    group('THE RING: no circuit switch any more');
 
-    await check('the radial says OPEN/CLOSE CIRCUIT and both paths select toggle_circuit', () => {
-        ok(/OPEN CIRCUIT/.test(rd('js/draw.js')) && /CLOSE CIRCUIT/.test(rd('js/draw.js')), 'label missing');
-        ok(/"toggle_circuit"/.test(rd('js/draw.js')), 'the draw path never selects it');
-        ok(/"toggle_circuit"/.test(rd('js/input.js')), 'the tap path never selects it');
-        ok(/case "toggle_circuit"/.test(rd('js/commands.js')), 'the command is not handled');
+    await check('the ring no longer offers a circuit or generator switch', () => {
+        ok(!/toggle_circuit/.test(rd('js/draw.js')) && !/toggle_circuit/.test(rd('js/input.js')) && !/toggle_circuit/.test(rd('js/commands.js')), 'the circuit switch is still in the ring');
     });
 
     await check("THE REPORTED CASE: the giant reach ring is only drawn while that connector is selected", () => {

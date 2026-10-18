@@ -195,24 +195,16 @@ function drawRadialMenu() {
         if (rHov) selectedRadialAction="info";
     }
 
-    // ── LEFT = SWITCH / RECLAIM / CIRCUIT (context) ───────
+    // ── LEFT = RECLAIM / NEST / CONVERT (context) ─────────
+    // Only drawn when there is something to do: there is no catch-all switch any more.
     const lHov=dist>RADIAL_RADIUS*0.25&&Math.abs(angle)>Math.PI*3/4;
-    let leftLabel="SWITCH", leftAction="switch_context";
+    let leftLabel=null, leftAction=null;
     const isPylonSwitchable = isPylonTarget && (commandTarget.attackMode || commandTarget.waveMode);
     // An enemy pylon takes priority: RECLAIM is the only answer to a converted
     // one, and it is what kills the cocoon anchored to it.
     const isEnemyPylon = commandTarget && commandTarget.pillar && !commandTarget.destroyed
                          && commandTarget.health > 0 && commandTarget.pillarTeam === "red";
-    const isMyConnector = isPylonTarget && isSwitchableRelay(commandTarget) && commandTarget.pillarTeam === "green";
     if (isEnemyPylon) { leftLabel="RECLAIM"; leftAction="reconstruct"; }
-    // A connector has no attack/wave mode to switch — its left button is the
-    // circuit, and says what pressing it will DO.
-    else if (isMyConnector) {
-        // A generator is turned on and off; a connector has a circuit to open and close.
-        const _gen = isGeneratorPylon(commandTarget), _off = commandTarget.circuitOn === false;
-        leftLabel = _gen ? (_off ? "TURN ON" : "TURN OFF") : (_off ? "CLOSE CIRCUIT" : "OPEN CIRCUIT");
-        leftAction = "toggle_circuit";
-    }
     // A live nest has no order: you HACK it by standing in front of it. A nest
     // you hold links itself to nearby relays (autoLinkRelays). Out of build
     // mode its left button TELEPORTS you to your front nest (or home from the
@@ -220,18 +212,17 @@ function drawRadialMenu() {
     // the nest's power off and on (toggleNestPower in power.js).
     else if (!isPylonTarget && commandNestTarget && nestIsPowerSource(commandNestTarget)) {
         if (buildMode) { leftLabel = commandNestTarget.powerOff ? "NEST ON" : "NEST OFF"; leftAction = "toggle_nest"; }
-        else {
-            leftLabel = teleportLabel(commandNestTarget);
-            leftAction = teleportDestination(commandNestTarget) ? "teleport" : null;
-        }
+        else if (teleportDestination(commandNestTarget)) { leftLabel = teleportLabel(commandNestTarget); leftAction = "teleport"; }
     }
     // Your own attack turret or wave pylon: CONVERT opens a picker offering
     // the other kind (commands.js convert_pylon). The element is kept.
     else if (isPylonSwitchable && commandTarget.pillarTeam === "green" && !isRelayPylon(commandTarget)) {
         leftLabel = "CONVERT"; leftAction = "convert_pylon";
     }
-    drawRadialButton(commandX-RADIAL_RADIUS, commandY, leftLabel, lHov);
-    if (lHov) selectedRadialAction=leftAction;
+    if (leftLabel) {
+        drawRadialButton(commandX-RADIAL_RADIUS, commandY, leftLabel, lHov);
+        if (lHov) selectedRadialAction=leftAction;
+    }
 
     ctx.restore();
 }

@@ -50,3 +50,10 @@ The poster's drawing code is already the kit, so the plan is:
 2. Port one screen at a time, keeping each screen's hit-test rects, in this order: HUD → element roster → Crystal menu → build menu → the rest.
 3. Update the tests that assert on UI source text (`tests/progression.js`, `tests/hud.js`, `tests/ux.js` and others read the draw code) as each screen moves.
 4. Fonts: DejaVu Sans is what the poster used; the game would ship one italic display face (a webfont) so every device matches.
+
+## The INFO panel (js/infodex.js)
+
+The long-press ring's INFO opens a slab panel: the **readout** of what was pressed (pylon, power cell, nest, follower/clone or enemy), a button to read about its kind,
+and an **index** of everything in six tabs (BUILD, POWER, ALLIES, ENEMIES, ELEMENTS, RULES), one entry per slab with a description and numbers read from the game's own constants.
+A page taller than the panel is split into pages (the middle button), never scrolled. Adding a thing to the game: add one `add(...)` line to `infoEntries()`.
+The ring itself only draws an option that does something (no catch-all SWITCH, no generator on/off).

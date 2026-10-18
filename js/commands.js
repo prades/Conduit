@@ -491,8 +491,9 @@ function _sendMergeFollower(pylon, el) {
 }
 
 // ── INFO PANEL ────────────────────────────────────────────
-function openInfoPanel(targetTile) {
+function openInfoPanel(targetTile, subject) {
     infoPanelTarget = targetTile;
+    infoPanelSubject = subject || null;   // the follower, enemy or nest that was pressed (js/infodex.js)
     infoPanelOpen   = true;
     infoPanelPage   = null;      // always open on the target readout
 }
@@ -501,6 +502,7 @@ function openInfoPanel(targetTile) {
 // readable without having to stand next to something first.
 function openPylonCodex() {
     infoPanelTarget   = null;
+    infoPanelSubject  = null;
     infoPanelOpen     = true;
     infoPanelPage     = 'codex';
     settingsPanelOpen = false;
@@ -510,6 +512,7 @@ function closeInfoPanel() {
     infoPanelOpen   = false;
     infoPanelTarget = null;
     infoPanelPage   = null;
+    infoPanelSubject = null;
 }
 
 // ── COMMAND EXECUTION ─────────────────────────────────────
@@ -529,7 +532,8 @@ function executeCommand() {
     commandMode=false; commandPendingTap=false;
     if (!selectedRadialAction) return;
     if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
-    const isNestCmd = selectedRadialAction==="attack_nest"||selectedRadialAction==="toggle_nest"||selectedRadialAction==="overcharge"||selectedRadialAction==="teleport";
+    const isNestCmd = selectedRadialAction==="attack_nest"||selectedRadialAction==="toggle_nest"||selectedRadialAction==="overcharge"||selectedRadialAction==="teleport"
+                      || (selectedRadialAction==="info" && (commandEnemyTarget||commandFollowerTarget||commandNestTarget));   // an enemy or a unit can be pressed where there is no tile
     if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
     if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;
 
@@ -578,7 +582,7 @@ function executeCommand() {
         }
         // ── RIGHT: INFO ───────────────────────────────────
         case "info": {
-            openInfoPanel(commandTarget);
+            openInfoPanel(commandTarget, { follower: commandFollowerTarget, enemy: commandEnemyTarget, nest: commandNestTarget });
             break;
         }
         // ── ARM / STOW ───────────────────────────────────
@@ -627,10 +631,6 @@ function executeCommand() {
             if (commandNestTarget) overchargeNest(commandNestTarget);
             break;
         }
-        case "toggle_circuit": {
-            if (isSwitchableRelay(commandTarget) && commandTarget.pillarTeam === "green") toggleRelayCircuit(commandTarget);
-            break;
-        }
         case "reroll_follower": {
             if (commandFollowerTarget) startFollowerReroll(commandFollowerTarget);
             break;
@@ -642,21 +642,6 @@ function executeCommand() {
             const pylon = commandTarget;
             if (pylon && pylon.pillar && !pylon.destroyed && pylon.pillarTeam === "green" && !isRelayPylon(pylon)
                 && (pylon.attackMode || pylon.waveMode)) openElementPicker("convert", pylon);
-            break;
-        }
-        // ── LEFT: SWITCH (follower role) ─────────────────
-        case "switch_context": {
-            const pylon = commandTarget;
-            if (pylon && pylon.pillar && !pylon.destroyed && (pylon.attackMode || pylon.waveMode)) {
-                // Toggle attack ↔ wave
-                if (pylon.attackMode) { pylon.attackMode=false; pylon.waveMode=true; }
-                else                  { pylon.waveMode=false;   pylon.attackMode=true; }
-                pylon.waveTripped = false;   // a fresh switch is a fresh start
-                floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,
-                    text:"PYLON → "+(pylon.attackMode?"ATTACK":"WAVE")+" MODE",color:"#0f8",life:90,vy:-0.2});
-            } else {
-                cycleCommandPoolRoles();
-            }
             break;
         }
         // ── REMAINING LEGACY CASES (attack, reconstruct, etc.) ──

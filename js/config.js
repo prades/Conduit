@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-18ae";
+const BUILD_VERSION = "2026-10-18af";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -988,7 +988,8 @@ let pylonConfirmKind    = null;     // ...carried to the build confirmation
 // ── INFO PANEL (canvas-drawn) ─────────────────────────────
 let infoPanelOpen   = false;
 let infoPanelTarget = null;
-let infoPanelPage   = null;   // null = target readout | 'codex' | an element id
+let infoPanelPage   = null;   // null = the readout of what was pressed | 'codex' (the index) | 'e:<entry>' | an element id | 'rules' | 'infest' | 'combos'
+let infoPanelSubject = null;  // what the press hit besides the tile: { follower, enemy, nest }
 
 // ── DEV / PREVIEW ─────────────────────────────────────────
 let devMode = false;

@@ -476,7 +476,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
             spawnFollowerAtCrystal('electric'); const e = followers[0]; e.role = 'sniper'; e.evolved = 'reaver';
             spawnFollowerAtCrystal('fire'); const p = followers[1]; p.role = 'brawler';
-            selectedRole = null; squadMode = 'all'; commandTarget = { x: 5, y: 2 }; selectedRadialAction = 'switch_context'; executeCommand();
+            selectedRole = null; squadMode = 'all'; cycleCommandPoolRoles();
             return { e: e.role, p: p.role }; })()`);
         same(r.e, 'sniper', 'the evolved one'); same(r.p, 'sniper', 'the other one (brawler → sniper)');
     });

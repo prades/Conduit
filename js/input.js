@@ -551,7 +551,7 @@ canvas.addEventListener('pointerup', e=>{
                 // pylon, BUILD on an empty tile (see showTopBtn in drawRadialMenu).
                 // This used to read `buildMode ? !_isPyCmd : _isPyCmd`, which
                 // excluded exactly the UPGRADE case: tapping the UPGRADE button on
-                // a pylon fell through to switch_context and toggled the pylon's
+                // a pylon fell through to a catch-all and toggled the pylon's
                 // mode instead. It also fired build_upgrade with build mode OFF,
                 // where no top button is drawn at all.
                 // Own follower ring (mirrors its branch in drawRadialMenu).
@@ -583,17 +583,16 @@ canvas.addEventListener('pointerup', e=>{
                 // menu do nothing.
                 else if (relAngle > -Math.PI/4 && relAngle <  Math.PI/4) selectedRadialAction = "info";
                 // Left side. Mirrors drawRadialMenu's leftAction, enemy pylon first.
+                else if (Math.abs(relAngle) <= Math.PI*3/4) selectedRadialAction = null;   // top/bottom with nothing there
                 else if (_isPyCmd && commandTarget.pillarTeam === "red" && commandTarget.health > 0)
                                        selectedRadialAction = "reconstruct";
-                else if (_isPyCmd && isSwitchableRelay(commandTarget) && commandTarget.pillarTeam === "green")
-                                       selectedRadialAction = "toggle_circuit";
                 else if (!_isPyCmd && commandNestTarget && nestIsPowerSource(commandNestTarget))
                                        selectedRadialAction = buildMode ? "toggle_nest"
                                            : (teleportDestination(commandNestTarget) ? "teleport" : null);
                 else if (_isPyCmd && commandTarget.pillarTeam === "green" && !isRelayPylon(commandTarget)
                          && (commandTarget.attackMode || commandTarget.waveMode))
                                        selectedRadialAction = "convert_pylon";
-                else                   selectedRadialAction = "switch_context";
+                else                   selectedRadialAction = null;   // nothing is drawn on the left, so nothing is picked
             } else if (longHoldFired && !commandPendingTap) {
                 // User released right on the long-hold spot — menu just appeared.
                 // Keep it open so they can tap a button next.
