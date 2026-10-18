@@ -214,9 +214,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/const _seasonBonus = \(_seasonBonusCache\[el\] \|\| 1\.0\) \* _status\b/.test(rd('js/game.js')), 'wave links ignore status');
         ok(/st = Math\.max\(st, pylonStatusMult\(p\)\)/.test(rd('js/formations.js')), 'formations ignore status');
     });
-    await check('the ring offers it out of build mode on your turret, and the label says MK II', () => {
-        ok(/selectedRadialAction = "mk2"/.test(rd('js/draw.js')) && /selectedRadialAction = "mk2"/.test(rd('js/input.js')), 'no MK II button');
-        ok(/case "mk2":/.test(rd('js/commands.js')), 'the button does nothing');
+    await check('MK II is a button in your turret\'s INFO panel, and the label says MK II', () => {
+        ok(/act: "mk2"/.test(rd('js/infodex.js')) && /upgradeToMk2\(t\)/.test(rd('js/infodex.js')), 'no MK II button');
         ok(/pylonStatusLabel\(obj\)/.test(rd('js/game.js')), 'no status on the label');
     });
     await check('charge and MK II survive a save', () => {

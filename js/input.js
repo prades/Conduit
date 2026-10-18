@@ -560,7 +560,7 @@ canvas.addEventListener('pointerup', e=>{
                     if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4) {
                         if (_f.isClone) selectedRadialAction = "clone_duty";   // js/clonework.js
                         else if (canWorkMass(_f)) selectedRadialAction = "toggle_duty";
-                    } else if (relAngle > -Math.PI/4 && relAngle < Math.PI/4) selectedRadialAction = "info";
+                    } else if (relAngle > -Math.PI/4 && relAngle < Math.PI/4) selectedRadialAction = "roster_card";
                     else if (Math.abs(relAngle) > Math.PI*3/4 && canRerollFollower(_f)) selectedRadialAction = "reroll_follower";
                     commandPendingTap = false;
                     executeCommand(); commandTarget=null;
@@ -568,9 +568,8 @@ canvas.addEventListener('pointerup', e=>{
                     return;
                 }
                 if      (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && buildMode) selectedRadialAction = "build_upgrade";
-                // Top, build mode off, on your own turret or wave pylon: MK II.
-                else if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && _isPyCmd && typeof mk2Eligible === "function" && mk2Eligible(commandTarget))
-                                       selectedRadialAction = "mk2";
+                // Top, build mode off, on one of your own pylons: DESTROY (mirrors drawRadialMenu).
+                else if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && !buildMode && _isPyCmd && canDemolishPylon(commandTarget)) selectedRadialAction = "demolish";
                 // Top, build mode off, on a nest you hold: OVERCHARGE (mirrors drawRadialMenu).
                 else if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && !_isPyCmd && commandNestTarget && nestIsPowerSource(commandNestTarget))
                                        selectedRadialAction = "overcharge";
@@ -589,9 +588,6 @@ canvas.addEventListener('pointerup', e=>{
                 else if (!_isPyCmd && commandNestTarget && nestIsPowerSource(commandNestTarget))
                                        selectedRadialAction = buildMode ? "toggle_nest"
                                            : (teleportDestination(commandNestTarget) ? "teleport" : null);
-                else if (_isPyCmd && commandTarget.pillarTeam === "green" && !isRelayPylon(commandTarget)
-                         && (commandTarget.attackMode || commandTarget.waveMode))
-                                       selectedRadialAction = "convert_pylon";
                 else                   selectedRadialAction = null;   // nothing is drawn on the left, so nothing is picked
             } else if (longHoldFired && !commandPendingTap) {
                 // User released right on the long-hold spot — menu just appeared.

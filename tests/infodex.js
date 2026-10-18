@@ -145,10 +145,47 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         run(`commandMode = true; commandX = 200; commandY = 300; commandTarget = getTile(20, 1); commandTarget.pillar = false; commandFollowerTarget = null; commandEnemyTarget = null; commandNestTarget = null; buildMode = false; dragDX = -60; dragDY = 0; drawRadialMenu();`);
         same(run('selectedRadialAction'), null, 'picked on an empty left'); run('commandMode = false');
     });
-    check('the left still offers RECLAIM on an enemy pylon and CONVERT on your turret', () => {
-        pylon(); run(`commandMode = true; commandX = 200; commandY = 300; commandTarget = __p; commandFollowerTarget = null; commandEnemyTarget = null; commandNestTarget = null; buildMode = false; dragDX = -60; dragDY = 0; drawRadialMenu();`);
-        same(run('selectedRadialAction'), 'convert_pylon', 'my turret');
-        run(`__p.pillarTeam = 'red'; drawRadialMenu();`); same(run('selectedRadialAction'), 'reconstruct', 'enemy pylon'); run('__p.pillarTeam = "green"; commandMode = false');
+    check('the left still offers RECLAIM on an enemy pylon', () => {
+        pylon(); run(`__p.pillarTeam = 'red'; commandMode = true; commandX = 200; commandY = 300; commandTarget = __p; commandFollowerTarget = null; commandEnemyTarget = null; commandNestTarget = null; buildMode = false; dragDX = -60; dragDY = 0; drawRadialMenu();`);
+        same(run('selectedRadialAction'), 'reconstruct', 'enemy pylon'); run('__p.pillarTeam = "green"; commandMode = false');
+    });
+    const ringPick = (dx, dy) => { run(`commandMode = true; commandX = 200; commandY = 300; buildMode = false; dragDX = ${dx}; dragDY = ${dy}; drawRadialMenu();`); const a = run('selectedRadialAction'); run('commandMode = false'); return a; };
+
+    group('THE RING ON A TURRET: INFO, POSITION and DESTROY, nothing else');
+    check('your turret: INFO right, POSITION below, DESTROY above, nothing on the left (MK II and CONVERT moved into its INFO panel)', () => {
+        pylon(); run(`commandTarget = __p; commandFollowerTarget = null; commandEnemyTarget = null; commandNestTarget = null;`);
+        same(ringPick(60, 0), 'info', 'right'); same(ringPick(0, 60), 'position', 'down'); same(ringPick(0, -60), 'demolish', 'up'); same(ringPick(-60, 0), null, 'left');
+        ok(!/"mk2"|convert_pylon/.test(rd('js/draw.js') + rd('js/input.js') + rd('js/commands.js')), 'MK II / CONVERT are still on the ring');
+    });
+    check('the same by a release-tap (the tap path mirrors the drawn ring)', () => {
+        ok(/!buildMode && _isPyCmd && canDemolishPylon\(commandTarget\)\) selectedRadialAction = "demolish"/.test(rd('js/input.js')), 'the tap path has no DESTROY');
+    });
+    check('MK II and CONVERT are buttons in the turret\'s INFO panel', () => {
+        pylon(); run('shardCount = 500; networkStrength.fire = 1; __p.mk = 0; __p.upgraded = false'); open('__p');
+        const acts = J('_ipLayout()').placed.map(p => p.it.act).filter(Boolean); ok(acts.includes('convert'), JSON.stringify(acts));
+        if (run('mk2Eligible(__p)')) ok(acts.includes('mk2'), 'no MK II button: ' + JSON.stringify(acts));
+        run('closeInfoPanel()');
+    });
+    check('build mode keeps its own ring: UPGRADE up, DESTROY down, INFO right', () => {
+        pylon(); run(`buildMode = true; commandTarget = __p; commandFollowerTarget = null; commandEnemyTarget = null; commandNestTarget = null;`);
+        run('commandMode = true; commandX = 200; commandY = 300; dragDX = 0; dragDY = 60; drawRadialMenu();'); same(run('selectedRadialAction'), 'demolish', 'build-mode down'); run('commandMode = false; buildMode = false');
+    });
+
+    group('THE RING ON A FOLLOWER OR CLONE: ROSTER CARD instead of INFO');
+    check('a follower and a clone offer ROSTER CARD on the right, and it opens the roster on its card', () => {
+        run(`followers.length = 0; spawnFollowerAtCrystal('electric'); ccOpen = function (t) { globalThis.__ccTab = t; }; ccClose = function () {};`);
+        for (const key of ['followers[0]']) {
+            run(`commandTarget = null; commandEnemyTarget = null; commandNestTarget = null; commandFollowerTarget = ${key};`);
+            same(ringPick(60, 0), 'roster_card', 'right');
+            run(`commandMode = true; selectedRadialAction = 'roster_card'; executeCommand();`);
+            same(run('globalThis.__ccTab'), 'roster', 'the roster did not open'); same(run('ccSelectionList().length'), 1, 'not picked'); same(run('ccSelectionList()[0] === followers[0]'), true, 'wrong unit picked');
+            run('ccClose()');
+        }
+        ok(!/"info"/.test(rd('js/draw.js').split('// ── OWN FOLLOWER')[1].split('const isPylonTarget')[0]), 'a follower ring still has INFO');
+    });
+    check('an enemy still gets INFO (it has no roster card)', () => {
+        run(`commandFollowerTarget = null; commandNestTarget = null; commandTarget = null; commandEnemyTarget = { x: 3, y: 2, health: 5, maxHealth: 5, dead: false, speciesName: 'ant', className: 'scout' };`);
+        same(ringPick(60, 0), 'info', 'enemy'); run('commandEnemyTarget = null');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');

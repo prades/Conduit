@@ -220,6 +220,11 @@ function _ipReadout(chars) {
         if (typeof pylonPowerState === "function") { const ps = pylonPowerState(tile); P("POWER", ps.text, ps.colour); }
         if (el) { const tier = (typeof networkStrength !== "undefined" && networkStrength[el.id]) || 0; P("NETWORK", tier ? "TIER " + ["", "I", "II", "III"][tier] : "NONE", el.color); }
     } else out.push({ k: "text", t: "Nothing you can read about is here. Long-press a pylon, a nest, a unit or an enemy.", c: "#8aa0c8" });
+    // Your own turret or wave pylon: MK II and CONVERT live here now (they were on the long-press ring).
+    if (tile && tile.pillar && !tile.destroyed && tile.pillarTeam === "green" && !nest && !f && !S.enemy) {
+        if (typeof mk2Eligible === "function" && mk2Eligible(tile)) { const why = mk2Blocker(tile); out.push({ k: "nav", t: tile.mk >= 2 ? "MK II \u2713" : "BUY MK II  " + MK2_COST + "\u25c6", sub: why || "STRONGER BODY AND OUTPUT", c: UI_GOLD, act: "mk2", dim: !!why }); }
+        if ((tile.attackMode || tile.waveMode) && !isRelayPylon(tile)) out.push({ k: "nav", t: "CONVERT", sub: "TURRET \u21c4 WAVE PYLON, KEEPS ITS ELEMENT", c: UI_VIOLET, act: "convert" });
+    }
     const eid = infoEntryForSubject({ follower: f, enemy: S.enemy, nest }, tile);
     out.push({ k: "gap" });
     if (eid) { const e = infoEntry(eid); if (e) out.push({ k: "nav", t: "ABOUT: " + e.name, sub: e.sub, c: e.col, page: "e:" + eid }); }
@@ -309,7 +314,7 @@ function drawInfoPanel() {
             uiCaptionFit(it.b, L.ix + L.iw, cy, it.c || "#fff", "right", 14, L.iw - it.a.length * 8 - 12);
         } else if (it.k === "nav") {
             const r = { x: L.ix, y: p.y + 3, w: L.iw, h: p.h - 6 };
-            uiSlab(r.x, r.y, r.w, r.h, it.c || UI_TEAL, false);
+            uiSlab(r.x, r.y, r.w, r.h, it.c || UI_TEAL, false, null, it.dim);
             uiTextFit(it.t, r.x + 18, r.y + r.h * 0.36, 19, "#fff", "left", r.w - 60);
             if (it.sub) uiCaptionFit(String(it.sub).toUpperCase(), r.x + 18, r.y + r.h * 0.74, "#8aa0c8", "left", 12, r.w - 60);
             uiText("›", r.x + r.w - 22, r.y + r.h / 2, 24, it.c || UI_TEAL, "center");
@@ -333,6 +338,9 @@ function _handleInfoPanelTap(tx, ty) {
         return true;
     }
     for (const t of L.tabs) if (inR(t)) { _infoCat = t.id; _infoPageNo = 0; return true; }
-    for (const p of L.placed) if (p.it.k === "nav" && inR({ x: L.ix, y: p.y, w: L.iw, h: p.h })) { _ipGo(p.it.page); return true; }
+    for (const p of L.placed) if (p.it.k === "nav" && inR({ x: L.ix, y: p.y, w: L.iw, h: p.h })) {
+        if (p.it.act) { const t = infoPanelTarget; if (p.it.act === "mk2") { if (!p.it.dim) { closeInfoPanel(); upgradeToMk2(t); } else upgradeToMk2(t); } else if (p.it.act === "convert") { closeInfoPanel(); openElementPicker("convert", t); } return true; }
+        _ipGo(p.it.page); return true;
+    }
     return true;
 }

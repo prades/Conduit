@@ -97,8 +97,8 @@ function drawRadialMenu() {
         drawRadialButton(commandX, commandY-RADIAL_RADIUS, c.duty === "worker" ? "TO LINE" : job ? "TO WORK" : "NO JOB YET", cUp && (!!job || c.duty === "worker"));
         if (cUp) selectedRadialAction = "clone_duty";
         const cRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
-        drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", cRight);
-        if (cRight) selectedRadialAction = "info";
+        drawRadialButton(commandX+RADIAL_RADIUS, commandY, "ROSTER CARD", cRight);
+        if (cRight) selectedRadialAction = "roster_card";
         _radialCaption((c.speciesName || "").toUpperCase() + " CLONE \u00b7 " + (typeof cloneDutyLabel === "function" ? cloneDutyLabel(c) : "FIGHTER"), c.duty === "worker" ? "#19e6c1" : "#7dffb5");
         ctx.restore();
         return;
@@ -116,8 +116,8 @@ function drawRadialMenu() {
                                    : (f.iceBlock ? "THAW" : (isWorker ? "TO LINE" : "TO WORK")), fUp);
         if (fUp && eligible) selectedRadialAction = "toggle_duty";
         const fRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
-        drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", fRight);
-        if (fRight) selectedRadialAction = "info";
+        drawRadialButton(commandX+RADIAL_RADIUS, commandY, "ROSTER CARD", fRight);
+        if (fRight) selectedRadialAction = "roster_card";
         if (typeof canRerollFollower === "function" && canRerollFollower(f)) {
             const fLeft = dist>RADIAL_RADIUS*0.25&&Math.abs(angle)>Math.PI*3/4;
             drawRadialButton(commandX-RADIAL_RADIUS, commandY, "RE-ROLL", fLeft);
@@ -146,13 +146,12 @@ function drawRadialMenu() {
         if (tHov && canUp) selectedRadialAction="build_upgrade";
     }
 
-    // ── TOP (build mode OFF) = MK II on your own turret or wave pylon ──
-    // (upgradeToMk2 in commands.js). Says why when it cannot.
-    if (!buildMode && isPylonTarget && typeof mk2Eligible === "function" && mk2Eligible(commandTarget)) {
-        const mkHov = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
-        const why = mk2Blocker(commandTarget);
-        drawRadialButton(commandX, commandY-RADIAL_RADIUS, why ? (commandTarget.mk >= 2 ? "MK II \u2713" : why) : "MK II " + MK2_COST + "\u25c6", mkHov && !why);
-        if (mkHov) selectedRadialAction = "mk2";
+    // ── TOP (build mode OFF) = DESTROY on your own turret or wave pylon ──
+    // (MK II and CONVERT are buttons in its INFO panel now: js/infodex.js. The ring on a turret is INFO, POSITION and DESTROY.)
+    if (!buildMode && isPylonTarget && typeof canDemolishPylon === "function" && canDemolishPylon(commandTarget)) {
+        const xHov = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
+        drawRadialButton(commandX, commandY-RADIAL_RADIUS, "DESTROY +" + DEMOLISH_REFUND + "\u25c6", xHov);
+        if (xHov) selectedRadialAction = "demolish";
     }
 
     // ── TOP (build mode OFF) = OVERCHARGE on a nest you hold ──
@@ -195,11 +194,10 @@ function drawRadialMenu() {
         if (rHov) selectedRadialAction="info";
     }
 
-    // ── LEFT = RECLAIM / NEST / CONVERT (context) ─────────
+    // ── LEFT = RECLAIM / NEST (context) ─────────
     // Only drawn when there is something to do: there is no catch-all switch any more.
     const lHov=dist>RADIAL_RADIUS*0.25&&Math.abs(angle)>Math.PI*3/4;
     let leftLabel=null, leftAction=null;
-    const isPylonSwitchable = isPylonTarget && (commandTarget.attackMode || commandTarget.waveMode);
     // An enemy pylon takes priority: RECLAIM is the only answer to a converted
     // one, and it is what kills the cocoon anchored to it.
     const isEnemyPylon = commandTarget && commandTarget.pillar && !commandTarget.destroyed
@@ -213,11 +211,6 @@ function drawRadialMenu() {
     else if (!isPylonTarget && commandNestTarget && nestIsPowerSource(commandNestTarget)) {
         if (buildMode) { leftLabel = commandNestTarget.powerOff ? "NEST ON" : "NEST OFF"; leftAction = "toggle_nest"; }
         else if (teleportDestination(commandNestTarget)) { leftLabel = teleportLabel(commandNestTarget); leftAction = "teleport"; }
-    }
-    // Your own attack turret or wave pylon: CONVERT opens a picker offering
-    // the other kind (commands.js convert_pylon). The element is kept.
-    else if (isPylonSwitchable && commandTarget.pillarTeam === "green" && !isRelayPylon(commandTarget)) {
-        leftLabel = "CONVERT"; leftAction = "convert_pylon";
     }
     if (leftLabel) {
         drawRadialButton(commandX-RADIAL_RADIUS, commandY, leftLabel, lHov);

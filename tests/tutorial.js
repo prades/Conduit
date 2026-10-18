@@ -792,11 +792,11 @@ check('the upgrade step warns that UPGRADE needs BUILD mode', () => {
 });
 
 check('the switch step names the button that actually exists', () => {
-    // On your own pylon the ring's left button is CONVERT, and its picker
+    // On your own pylon CONVERT is a button in its INFO panel, and its picker
     // offers WAVE PYLON.
-    ok(/leftLabel = "CONVERT"/.test(DRAW), 'the left ring button on a pylon is no longer CONVERT');
+    ok(/act: "convert"/.test(fs.readFileSync(path.join(ROOT, 'js/infodex.js'), 'utf8')), 'the INFO panel has no CONVERT button');
     const s = makeEnv().run('TUTS').find(t => t.id === 'switch');
-    ok(/\bCONVERT\b/.test(s.body), 'the switch step does not name the CONVERT button');
+    ok(/\bCONVERT\b/.test(s.body) && /INFO/.test(s.body), 'the switch step does not say INFO, then CONVERT');
     ok(/SUPPORT/.test(s.body) && /DISRUPTION/.test(s.body), 'the switch step does not name the choice to make');
 });
 

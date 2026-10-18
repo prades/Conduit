@@ -182,6 +182,13 @@ function ccClose() {
     const grid = document.getElementById("ccGrid"); if (grid) grid.textContent = "";
     ccRefreshChip();
 }
+// The roster with this unit picked and its card in view (the long-press ring's ROSTER CARD).
+function ccShowUnit(u) {
+    if (!u || u.dead) return false;
+    ccSetSelection([u]); ccOpen("roster");
+    const card = _ccCards.get(u); if (card && card.scrollIntoView) card.scrollIntoView({ block: "center" });
+    return true;
+}
 function ccToggleOpen(tab) { const want = tab === "squad" ? "zones" : tab === "zones" ? "zones" : "roster"; if (ccOpenTab === want) ccClose(); else ccOpen(want); }
 
 function ccBuildFrame() {

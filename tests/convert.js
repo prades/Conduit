@@ -123,13 +123,12 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     group('CONVERT');
 
-    await check('THE ASK: the left ring button on your pylon is CONVERT', () => {
-        const DRAW = rd('js/draw.js'), INPUT = rd('js/input.js');
-        ok(/leftLabel = "CONVERT"; leftAction = "convert_pylon"/.test(DRAW), 'draw.js does not label it CONVERT');
-        ok(/selectedRadialAction = "convert_pylon"/.test(INPUT), 'the release-tap hit test does not mirror it');
-        const r = run(`__fresh(); commandTarget = __row[1]; selectedRadialAction = 'convert_pylon'; executeCommand();
-            ({ open: elementPickerOpen, mode: elementPickerMode })`);
-        ok(r.open && r.mode === 'convert', JSON.stringify(r));
+    await check('CONVERT is a button in the turret\'s INFO panel (it left the ring), and opens the convert picker', () => {
+        ok(!/convert_pylon/.test(rd('js/draw.js') + rd('js/input.js') + rd('js/commands.js')), 'the ring still has CONVERT');
+        ok(/act: "convert"/.test(rd('js/infodex.js')), 'no CONVERT button in the panel');
+        const r = run(`(function(){ __fresh(); openInfoPanel(__row[1], null); const L = _ipLayout(); const b = L.placed.find(p => p.it.act === 'convert'); if (!b) return { none: true };
+            _handleInfoPanelTap(L.ix + 20, b.y + 20); return { open: elementPickerOpen, mode: elementPickerMode, panel: infoPanelOpen }; })()`);
+        ok(r.open && r.mode === 'convert' && !r.panel, JSON.stringify(r));
     });
     await check('it offers the turret and the one role its element has, the current one marked', () => {
         const r = run(`__fresh(); openElementPicker('convert', __row[1]);

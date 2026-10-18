@@ -320,7 +320,7 @@ const TUTS = [
     {
         id:    'switch',
         title: 'CONVERT A PYLON',
-        body:  'Turn BUILD back off, then press and hold the marked pylon and pick CONVERT from the left of the ring. Choose its SUPPORT or DISRUPTION option: it stops shooting and waits, then wakes when an ally (support) or enemy (disruption) comes near.',
+        body:  'Turn BUILD back off, then press and hold the marked pylon, pick INFO, then press CONVERT. Choose its SUPPORT or DISRUPTION option: it stops shooting and waits, then wakes when an ally (support) or enemy (disruption) comes near.',
         icon:  '⇌',
         // This step asks for the opposite: flash BUILD while it is still on.
         wantsButton: () => (typeof buildMode !== 'undefined' && buildMode) ? 'btnBuild' : null,

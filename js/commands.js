@@ -533,6 +533,7 @@ function executeCommand() {
     if (!selectedRadialAction) return;
     if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
     const isNestCmd = selectedRadialAction==="attack_nest"||selectedRadialAction==="toggle_nest"||selectedRadialAction==="overcharge"||selectedRadialAction==="teleport"
+                      || selectedRadialAction==="roster_card"
                       || (selectedRadialAction==="info" && (commandEnemyTarget||commandFollowerTarget||commandNestTarget));   // an enemy or a unit can be pressed where there is no tile
     if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
     if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;
@@ -585,6 +586,11 @@ function executeCommand() {
             openInfoPanel(commandTarget, { follower: commandFollowerTarget, enemy: commandEnemyTarget, nest: commandNestTarget });
             break;
         }
+        // ── RIGHT on your follower or clone: its card in the roster (its INFO tab is on the card) ──
+        case "roster_card": {
+            if (commandFollowerTarget && typeof ccShowUnit === "function") ccShowUnit(commandFollowerTarget);
+            break;
+        }
         // ── ARM / STOW ───────────────────────────────────
         case "attack_mode": {
             setPlayerAttackMode(true);
@@ -623,25 +629,12 @@ function executeCommand() {
             break;
         }
         // ── TOP (build mode off): OVERCHARGE a nest's grid ──
-        case "mk2": {
-            if (commandTarget) upgradeToMk2(commandTarget);
-            break;
-        }
         case "overcharge": {
             if (commandNestTarget) overchargeNest(commandNestTarget);
             break;
         }
         case "reroll_follower": {
             if (commandFollowerTarget) startFollowerReroll(commandFollowerTarget);
-            break;
-        }
-        // ── LEFT: CONVERT (pylon mode) ───────────────────
-        // Opens the choice of what the pylon can become — ATTACK TURRET or
-        // WAVE PYLON — rather than flipping it blind.
-        case "convert_pylon": {
-            const pylon = commandTarget;
-            if (pylon && pylon.pillar && !pylon.destroyed && pylon.pillarTeam === "green" && !isRelayPylon(pylon)
-                && (pylon.attackMode || pylon.waveMode)) openElementPicker("convert", pylon);
             break;
         }
         // ── REMAINING LEGACY CASES (attack, reconstruct, etc.) ──
