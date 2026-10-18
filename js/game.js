@@ -1045,7 +1045,7 @@ function pylonNearDist(x, y) {
 // drawn once per light step into a sprite (_wallFaceSprite) and stamped.
 function _drawWallFaces(c, px, py, amb, glo, WH) {
     // Top face
-    c.fillStyle = `rgb(${14*amb+(6*glo)},${18*amb+(16*glo)},${28*amb+(38*glo)})`;
+    c.fillStyle = `rgb(${24*amb+(14*glo)},${21*amb+(10*glo)},${15*amb+(6*glo)})`;   // the lab wall (js/labwall.js): warm beige-black, not blue
     c.beginPath();
     c.moveTo(px,          py - WH);
     c.lineTo(px + TILE_W, py + TILE_H - WH);
@@ -1053,7 +1053,7 @@ function _drawWallFaces(c, px, py, amb, glo, WH) {
     c.lineTo(px - TILE_W, py + TILE_H - WH);
     c.fill();
     // South face — from W→S base up by WH
-    c.fillStyle = `rgb(${9*amb+(4*glo)},${12*amb+(12*glo)},${19*amb+(30*glo)})`;
+    c.fillStyle = `rgb(${16*amb+(8*glo)},${14*amb+(7*glo)},${10*amb+(4*glo)})`;
     c.beginPath();
     c.moveTo(px - TILE_W, py + TILE_H);
     c.lineTo(px,          py + 2*TILE_H);
@@ -1062,9 +1062,9 @@ function _drawWallFaces(c, px, py, amb, glo, WH) {
     c.fill();
     // 1. Conduit pipe along wall base (every tile)
     c.save();
-    c.globalAlpha=0.45*amb; c.strokeStyle="#0a1a14"; c.lineWidth=3;
+    c.globalAlpha=0.45*amb; c.strokeStyle="#1a1608"; c.lineWidth=3;
     c.beginPath(); c.moveTo(px-TILE_W,py+TILE_H-3); c.lineTo(px,py+2*TILE_H-3); c.stroke();
-    c.strokeStyle="#1a3a28"; c.lineWidth=1; c.globalAlpha=0.25*amb;
+    c.strokeStyle="#4a4020"; c.lineWidth=1; c.globalAlpha=0.25*amb;
     c.stroke(); c.restore();
 }
 const _wallFaceSprites = new Map();
@@ -1106,12 +1106,12 @@ function _wallTraceSprite(xi, WH) {
 // Draws the static traces into `g`, already in wall space; `amb` scales them.
 function _drawWallTraces(g, xi, WH, amb) {
     const rng = _mkCircuitRng(((xi * 0xDEAD + 0xBEEF) >>> 0));
-    const WPAL = ['#0f8','#0df','#0fa','#3fc','#0cf','#2fd','#1ee'];
+    const WPAL = ['#ffb43a','#ff8a2a','#ffd870','#d89a30','#ff7a3a','#e8a030','#ffc860'];
     const _ga = g.globalAlpha;
     g.lineCap = 'square'; g.lineJoin = 'miter';
     // ── Main horizontal bus lines — fixed heights, continuous across tiles ──
     const busY = [WH*0.18, WH*0.40, WH*0.65, WH*0.86];
-    const busC = ['#0f8', '#0df', '#0fa', '#2fd'];
+    const busC = ['#ffb43a', '#ff8a2a', '#d89a30', '#ffd870'];
     for (let bi = 0; bi < busY.length; bi++) {
         g.globalAlpha = amb * 0.20;
         g.strokeStyle = busC[bi];
@@ -3058,6 +3058,8 @@ function render() {
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
     // Modules (js/modules.js): structures on their tiles, sorted with the rest.
     if (typeof modules !== "undefined" && !_simGhost) for (const m of modules) if (visibleForDraw(m.x, m.y)) drawList.push({ type: 'module', x: m.x, y: m.y, module: m });
+    // The LAB WALL (js/labwall.js): equipment standing out of each back-wall tile, sorted just in front of its own wall tile so units walk in front of it.
+    if (!gfxLow && typeof labModuleAt === "function") { const _n = drawList.length; for (let i = 0; i < _n; i++) { const t = drawList[i]; if (t.type === 'wall_back' && t.y === -2 && labModuleAt(t.x)) drawList.push({ type: 'labmod', x: t.x, y: -1 + LAB_DEPTH, tile: t }); } }
     // Depth is x+y: a bigger sum draws lower and in front.
     //
     // A WALL NEST is the exception. Its vortex is painted across a four-tile
@@ -3094,6 +3096,9 @@ function render() {
         }
         else if (obj.type==='module') {
             drawModule(obj.module, px, py);
+        }
+        else if (obj.type==='labmod') {
+            drawLabModule(obj.tile, Math.max(0.1, 0.8 - Math.sqrt((obj.x - player.visualX) ** 2 + (obj.y - player.visualY) ** 2) / RENDER_DIST));
         }
         else if (obj.type==='npc') {
             drawNPC(obj.actor,px,py);
@@ -3970,7 +3975,7 @@ function render() {
                     // They were ~20 canvas calls a wall tile, every frame — the single
                     // biggest share of the frame in a built-up late game.
                     const busY = [WH*0.18, WH*0.40, WH*0.65, WH*0.86];
-                    const busC = ['#0f8', '#0df', '#0fa', '#2fd'];
+                    const busC = ['#ffb43a', '#ff8a2a', '#d89a30', '#ffd870'];
                     const _wspr = gfxLow ? null : _wallTraceSprite(Math.abs(Math.floor(obj.x)), WH);
                     if (gfxLow) { /* LOW graphics: no circuit traces on the wall */ }
                     else if (_wspr) {
@@ -4009,9 +4014,6 @@ function render() {
 
                     ctx.restore();
                 }
-
-                // The zone's POWER UNIT (js/wallunit.js): six panels set into the wall face
-                if (typeof drawWallUnitCell === "function") drawWallUnitCell(obj, px, py, amb);
 
                 // 2. Crevasses — jagged fracture on wall face
                 if (Math.sin(xi*43.7+11.3)>0.62) {
@@ -4081,7 +4083,7 @@ function render() {
                     obj.drip.y+=obj.drip.speed;
                     if (obj.drip.y>py+TILE_H*1.5) obj.drip.y=py+TILE_H-WH*0.7;
                     ctx.save();
-                    ctx.globalAlpha=0.28*amb; ctx.fillStyle="#003322";
+                    ctx.globalAlpha=0.28*amb; ctx.fillStyle="#3a2c0c";
                     ctx.beginPath(); ctx.ellipse(px-33,obj.drip.y,1.2,2.2,0,0,Math.PI*2); ctx.fill();
                     ctx.restore();
                 }

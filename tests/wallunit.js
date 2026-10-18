@@ -27,8 +27,8 @@ function findChromium() {
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
   tutorialMode = false; gameState.running = true; shardCount = 200; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; }));
-  player.x = player.targetX = player.visualX = 8; var tile = wallUnitTiles(0)[2], W = canvas.width / 2, H = canvas.height / 2;
-  var sx = (tile.x - player.visualX - (tile.y - player.visualY)) * TILE_W + W - TILE_W * 0.5, sy = (tile.x - player.visualX + (tile.y - player.visualY)) * TILE_H + H + TILE_H * 0.5 - 46;
+  player.x = player.targetX = player.visualX = 8; var W = canvas.width / 2, H = canvas.height / 2, mx = wallUnitX0(0) + 3;
+  var sx = (mx - player.visualX - (-1 - player.visualY)) * TILE_W + W - 14, sy = (mx - player.visualX + (-1 - player.visualY)) * TILE_H + H + 7 - 53;
   out.hit = !!wallUnitHit(sx, sy); out.miss = !wallUnitHit(sx + 400, sy + 300);
   out.tap = wallUnitTap(sx, sy); await wait(50); out.open = !!$('#wallUnit.open'); out.offline = ($('#wallUnit .wu-state') || {}).textContent; out.bootDisabled = !!($('#wallUnit [data-wu=boot]') || {}).disabled;
   var chip = $('#wallUnit [data-pick=ice]'); chip.dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(30);

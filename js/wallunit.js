@@ -5,8 +5,7 @@
 // upgrade." There are no batteries to place any more. A zone's back wall carries ONE power unit: six cells wide, at the zone's left end (WALL_UNIT_CELLS wall tiles, clear of the nest's vortex). It is dark until you
 // BOOT it (an element, and the price of two batteries); then UPGRADE it (to tier II, then III, two more cells each) and RECONFIGURE it to another element. Tap the unit to open its panel.
 // Its cells ARE batteries in every rule: each booted wall tile is a battery pylon of the unit's element (isBattery, charge, health), so the bank, the tier (2 / 4 / 6 cells = I / II / III), the reach, the charge
-// and the supply are exactly what they were (js/game.js banks, js/power.js). Only where they stand, and how they are bought, changed. The cells are drawn as panels set into the wall face (game.js calls
-// drawWallUnitCell), not as pylons.
+// and the supply are exactly what they were (js/game.js banks, js/power.js). Only where they stand, and how they are bought, changed. The cells are drawn as glass capacitors standing out of the wall (js/labwall.js), not as pylons.
 const WALL_UNIT_CELLS = 6;         // wall tiles in a unit: the six cells of a tier III bank
 const WALL_CELL_HP = 200;          // a cell's health (a floor pylon had 80): it is part of the wall
 const WALL_UNIT_OFFSET = 9;        // the unit stands at the FRONT of the zone's wall, beside the nest (x 7) and its vortex (x 8): the kits' guns, formations and Ultra squares sit within the bank's full-strength reach of it
@@ -16,6 +15,12 @@ function wallUnitTiles(zone) {
     const out = [], x0 = wallUnitX0(zone);
     for (let i = 0; i < WALL_UNIT_CELLS; i++) { const t = typeof getTile === "function" ? getTile(x0 + i, -2) : null; if (t && t.type === "wall_back") out.push(t); }
     return out;
+}
+// The machine (js/labwall.js) stands on two of the unit's six tiles: the third and fourth, unless a hackable wall panel is on one of them, when the nearest pair free of panels (panels are never moved or hidden).
+function wallUnitMachineOffset(zone) {
+    const x0 = wallUnitX0(zone), bad = o => [0, 1].some(k => { const t = typeof getTile === "function" ? getTile(x0 + o + k, 0) : null; return !!t && t.nodeType === "wall_panel"; });
+    for (const o of [2, 1, 3, 0, 4]) if (!bad(o)) return o;
+    return 2;
 }
 function isWallUnitTile(t) { if (!t || t.type !== "wall_back" || t.y !== -2 || t.x < 0) return false; const i = t.x % ZONE_LENGTH - WALL_UNIT_OFFSET; return i >= 0 && i < WALL_UNIT_CELLS; }
 function _wallCellLive(t) { return !!t && t.pillar && t.isBattery && !t.destroyed && t.pillarTeam === "green"; }
@@ -115,7 +120,8 @@ function wallCellHit(c, dmg) {
 }
 // A hunter's frame on a wall cell (called by infestTick): walk to the floor in front of it, then bash it. Returns true: it owns the frame.
 function wallUnitAssault(pred, c) {
-    const sx = c.x + 0.5, sy = c.y + 1.1, dx = sx - pred.x, dy = sy - pred.y, d = Math.hypot(dx, dy);
+    // it stands in front of the machine, whichever cell it is after (the cells are logical; the machine is on the unit's third and fourth tile)
+    const mx = wallUnitX0(wallUnitZoneOf(c)) + wallUnitMachineOffset(wallUnitZoneOf(c)), sx = Math.max(mx + 0.2, Math.min(mx + 1.8, c.x + 0.5)), sy = c.y + 1.1, dx = sx - pred.x, dy = sy - pred.y, d = Math.hypot(dx, dy);
     if (d > 0.9) {
         pred.x += (dx / d) * pred.moveSpeed * 0.8; pred.y += (dy / d) * pred.moveSpeed * 0.8;
         if (typeof faceToward === "function") faceToward(pred, c.x, c.y, 0.12);
@@ -155,48 +161,13 @@ function wallUnitRepair(zone) {
     _wallUnitDone(zone, "POWER CELLS REPAIRED (" + n + ")", "#7dffb5"); return true;
 }
 
-// ── DRAWING: a cell is a panel set into the wall face ──
-// Called by the wall tile's draw (game.js) with its corner (px, py) and the light (amb). Lies on the wall with the same shear the server racks use.
-function drawWallUnitCell(obj, px, py, amb) {
-    if (!isWallUnitTile(obj)) return;
-    const WH = 110, i = obj.x % ZONE_LENGTH - WALL_UNIT_OFFSET, zone = Math.floor(obj.x / ZONE_LENGTH), tier = wallUnitTier(zone), live = _wallCellLive(obj), wreck = obj.pillar && obj.isBattery && !live;
-    const el = live ? (ELEMENTS.find(e => e.id === obj.attackModeElement) || null) : null, col = el ? el.color : "#5a6a7a", f0 = typeof frame !== "undefined" ? frame : 0;
-    const bay = i < tier * 2;   // inside the unit's current size
-    const cx = px - TILE_W * 0.5, cy = py + TILE_H * 0.5 - WH * 0.42, w = 38, h = 58;
-    ctx.save(); ctx.transform(1, 0.5, 0, 1, cx, cy);
-    // the plate: dark metal with a bevelled frame, in line with the wall's panelling
-    ctx.globalAlpha = 0.92 * amb; ctx.fillStyle = "#070a0d"; ctx.fillRect(-w / 2, -h / 2, w, h);
-    ctx.globalAlpha = amb; ctx.lineWidth = live ? 2 : 1.2; ctx.strokeStyle = live ? col : wreck ? "#7a2a22" : bay ? "#6a8090" : "#2c3a46"; ctx.strokeRect(-w / 2 + 0.5, -h / 2 + 0.5, w - 1, h - 1);
-    ctx.globalAlpha = 0.5 * amb; ctx.strokeStyle = live ? col : "#33424e"; ctx.lineWidth = 1; ctx.strokeRect(-w / 2 + 4.5, -h / 2 + 4.5, w - 9, h - 9);
-    if (live) {
-        // the charge: a column that fills from the bottom, in the element's colour
-        const cap = typeof BATTERY_CAPACITY !== "undefined" ? BATTERY_CAPACITY : 120, fill = Math.max(0, Math.min(1, (obj.charge || 0) / cap)), ih = h - 14, ch = ih * fill;
-        ctx.globalAlpha = 0.28 * amb; ctx.fillStyle = col; ctx.fillRect(-w / 2 + 7, -h / 2 + 7, w - 14, ih);
-        ctx.globalAlpha = (0.85 + 0.1 * Math.sin(f0 * 0.08 + i)) * amb; ctx.fillStyle = col; ctx.fillRect(-w / 2 + 7, -h / 2 + 7 + ih - ch, w - 14, ch);
-        ctx.globalAlpha = 0.9 * amb; ctx.fillStyle = "#fff"; ctx.fillRect(-w / 2 + 7, -h / 2 + 7 + ih - ch - 1, w - 14, 1.5);   // the surface
-        // seams across the column, like cells in a pack
-        ctx.globalAlpha = 0.5 * amb; ctx.fillStyle = "#070a0d"; for (let k = 1; k < 4; k++) ctx.fillRect(-w / 2 + 7, -h / 2 + 7 + (ih / 4) * k - 0.5, w - 14, 1);
-        // hurt: darker, with a crack across it
-        const hp = Math.max(0, Math.min(1, (obj.health || 0) / (obj.maxHealth || WALL_CELL_HP)));
-        if (hp < 0.99) {
-            ctx.globalAlpha = (1 - hp) * 0.4 * amb; ctx.fillStyle = "#000"; ctx.fillRect(-w / 2, -h / 2, w, h);
-            ctx.globalAlpha = Math.min(1, (1 - hp) * 1.6) * amb; ctx.strokeStyle = "#0a0e12"; ctx.lineWidth = 1.5; ctx.beginPath();
-            ctx.moveTo(-w / 2 + 3, -h / 2 + 10 + i * 2); ctx.lineTo(-3, -2); ctx.lineTo(4, 6 + i); ctx.lineTo(w / 2 - 3, h / 2 - 12); ctx.stroke();
-        }
-    } else if (wreck) {
-        ctx.globalAlpha = 0.8 * amb; ctx.strokeStyle = "#c03a2a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-w / 2 + 6, -h / 2 + 8); ctx.lineTo(w / 2 - 6, h / 2 - 8); ctx.moveTo(w / 2 - 6, -h / 2 + 8); ctx.lineTo(-w / 2 + 6, h / 2 - 8); ctx.stroke();
-    } else {
-        // dark: a power glyph on the middle of the unit that says "boot me" when it is the part of the unit the zone can use; the rest are bays
-        ctx.globalAlpha = (bay ? 0.5 : 0.28) * amb; ctx.strokeStyle = "#8aa0b0"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(0, 2, 7, -Math.PI * 0.35, Math.PI * 1.35); ctx.moveTo(0, -9); ctx.lineTo(0, 1); ctx.stroke();
-    }
-    ctx.restore();
-}
 // ── THE PANEL: tap the unit ──
 function wallUnitHit(ex, ey) {
     const W = canvas.width / 2, H = canvas.height / 2, z0 = Math.floor(player.x / ZONE_LENGTH);
-    for (let z = Math.max(0, z0 - 1); z <= z0 + 1; z++) for (const t of wallUnitTiles(z)) {
-        const px = (t.x - player.visualX - (t.y - player.visualY)) * TILE_W + W, py = (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + H, cx = px - TILE_W * 0.5, cy = py + TILE_H * 0.5 - 110 * 0.42;
-        if (Math.abs(ex - cx) < TILE_W * 0.62 && Math.abs(ey - (cy + (ex - cx) * 0.5)) < 110 * 0.45) return { zone: z, x: cx, y: cy };
+    for (let z = Math.max(0, z0 - 1); z <= z0 + 1; z++) {
+        // the machine (js/labwall.js) stands out of the wall on the unit's third and fourth tile; its middle is where they meet, a little in and up
+        const x = wallUnitX0(z) + wallUnitMachineOffset(z) + 1, cx = (x - player.visualX - (-1 - player.visualY)) * TILE_W + W - 14, cy = (x - player.visualX + (-1 - player.visualY)) * TILE_H + H + 7 - 53;
+        if (Math.abs(ex - cx) < 66 && Math.abs(ey - cy) < 58) return { zone: z, x: cx, y: cy };
     }
     return null;
 }
