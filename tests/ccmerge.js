@@ -33,9 +33,9 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   out.tabs = document.querySelectorAll('#ccTabs, .cc-foot, .cc-tab').length; out.summary = document.getElementById('ccSummary').textContent; out.title = document.getElementById('ccTitle').textContent; out.cards = document.querySelectorAll('#ccGrid .cc-card').length; out.filters = txt('#ccFilters .cc-btn .cc-bl');
   out.side = txt('#ccSide .cc-sec, #ccSide .cc-sel-title'); out.sideBtns = txt('#ccSide .cc-btn .cc-bl');
   out.legacy = (ccOpen('command'), ccOpenTab);
-  // quick select, then guide the selection
-  var click = function(label){ var b = Array.prototype.find.call(document.querySelectorAll('#ccSide .cc-btn'), function(x){ var l = x.querySelector('.cc-bl'); return l && l.textContent === label; }); b.click(); return !!b; };
-  out.everyone = click('EVERYONE'); out.selected = selectedUnits.size;
+  // select what the filters show (left), then guide the selection (right)
+  var click = function(label){ var b = Array.prototype.find.call(document.querySelectorAll('#ccRoot .cc-btn'), function(x){ var l = x.querySelector('.cc-bl'); return l && l.textContent === label; }); b.click(); return !!b; };
+  out.everyone = click('SELECT SHOWN'); out.selected = selectedUnits.size;
   out.aggr = click('AGGRESSIVE'); out.styles = followers.map(function(f){ return f.playStyle; }).join();
   out.allWork = click('ALL TO WORK'); out.worked = followers.filter(function(f){ return f.duty === 'worker'; }).length;
   out.allFight = click('ALL TO FIGHT'); out.fought = followers.filter(function(f){ return f.duty === 'worker'; }).length;
@@ -59,12 +59,13 @@ else {
         check('THE ASK: the dock has ONE button for it (no separate COMMAND or SQUAD buttons)', () => { ok(r.dock.includes('btnRoster'), 'no roster button: ' + r.dock); ok(!r.dock.includes('btnCommand') && !r.dock.includes('btnAnalytics'), 'still separate: ' + r.dock); });
         check('the full-screen menu is the creature cards with the filter tabs at the top and a squad summary; it has no tab bar (ZONES is its own menu)', () => { same(r.tabs, 0, 'tabs left in the roster menu'); ok(/UNITS/.test(r.summary), 'no squad summary: ' + r.summary); same(r.title, 'COMMAND CENTER', 'title'); same(r.cards, 4, 'cards'); ok(r.filters.includes('ALL') && r.filters.includes('ELECTRIC') && r.filters.includes('BRAWL'), 'filters ' + r.filters); });
         check('the command panel beside the cards carries the selection\'s orders AND the squad-wide orders', () => {
-            for (const w of ['ATTACK STYLE', 'PLAY STYLE', 'STANCE', 'DUTY', 'SQUAD ORDERS', 'QUICK SELECT']) ok(r.side.some(t => t.indexOf(w) === 0), w + ' missing from the panel: ' + r.side);
-            for (const b of ['EVERYONE', 'ALL TO WORK', 'ALL TO FIGHT', 'SWITCH ROLES', 'AGGRESSIVE']) ok(r.sideBtns.includes(b), b + ' missing');
+            for (const w of ['ATTACK STYLE', 'PLAY STYLE', 'STANCE', 'DUTY', 'SQUAD ORDERS']) ok(r.side.some(t => t.indexOf(w) === 0), w + ' missing from the panel: ' + r.side);
+            for (const w of ['QUICK SELECT', 'PICK AN ELEMENT']) ok(!r.side.some(t => t.indexOf(w) === 0), w + ' is back in the panel');
+            for (const b of ['ALL TO WORK', 'ALL TO FIGHT', 'SWITCH ROLES', 'AGGRESSIVE']) ok(r.sideBtns.includes(b), b + ' missing');
         });
         check('opening the old "command" tab opens the roster', () => same(r.legacy, 'roster', 'tab'));
-        check('selecting and guiding works from the one panel: select everyone, set a play style, all to work, all to fight', () => {
-            same(r.everyone, true, 'EVERYONE'); same(r.selected, 4, 'selected'); ok(r.styles.split(',').every(s => s === 'aggressive'), 'styles ' + r.styles);
+        check('selecting and guiding works from the one panel: select what is shown, set a play style, all to work, all to fight', () => {
+            same(r.everyone, true, 'SELECT SHOWN'); same(r.selected, 4, 'selected'); ok(r.styles.split(',').every(s => s === 'aggressive'), 'styles ' + r.styles);
             ok(r.worked >= 1, 'ALL TO WORK did nothing: ' + r.worked); same(r.fought, 0, 'ALL TO FIGHT left workers');
         });
         check('THE ASK: the zone plate at the top opens the ZONES menu (no roster cards, no command panel, no recruit), and tapping it again closes it', () => {

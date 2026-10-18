@@ -327,7 +327,6 @@ function _ccDrawSide(side) {
     side.appendChild(_ccEl("div", "cc-sel-title", "SELECTED " + S.count));
     side.appendChild(_ccEl("div", "cc-sel-sub", S.count ? S.followers + " FOLLOWERS · " + S.clones + " CLONES · ORDERS IN THE WORLD GO TO THEM" : "CLICK A CARD TO SELECT IT"));
     }
-    _ccQuickSelect(side);
     const sel = ccSelectionList();
     _ccDrawSquadControls(side, sel);
     const sec = t => { const d = _ccEl("div", "cc-sec", t); side.appendChild(d); return d; };
@@ -401,16 +400,7 @@ function _ccDrawSquadControls(side, sel) {
         if (!fol.length || !joining || joining > room) return; r.appendChild(_ccBtn("ADD TO " + sq.id, sq.col, false, () => squadAssign(sq.id, fol), "small", sq.members.length + " OF " + SQUAD_MAX)); });
     if (inSq.length) r.appendChild(_ccBtn("LEAVE SQUAD", "#8aa0c8", false, () => squadLeave(inSq), "small"));
 }
-// QUICK SELECT: pick a whole group in one tap, at the top of the panel, so the orders under it are for them.
-function _ccQuickSelect(side) {
-    const grp = (t, kids) => { side.appendChild(_ccEl("div", "cc-sec", t)); const r = _ccEl("div", "cc-row wrap"); kids.forEach(k => r.appendChild(k)); side.appendChild(r); };
-    grp("QUICK SELECT", [
-        _ccBtn("EVERYONE", "#ffe733", false, () => ccSetSelection(ccUnits({})), "small"), _ccBtn("ALL FIGHTERS", "#ff4a1c", false, () => ccSetSelection(ccUnits({ duty: "fighter" })), "small"),
-        _ccBtn("ALL WORKERS", "#00ccaa", false, () => ccSetSelection(ccUnits({ duty: "worker" })), "small"), _ccBtn("ALL BRAWLERS", "#ff4a1c", false, () => ccSetSelection(ccUnits({ role: "brawler" })), "small"),
-        _ccBtn("ALL MAGES", "#a64dff", false, () => ccSetSelection(ccUnits({ role: "sniper" })), "small"), _ccBtn("ALL TECHNICIANS", "#8fe3ff", false, () => ccSetSelection(ccUnits({ role: "camper" })), "small"), _ccBtn("NOBODY", "#8aa0c8", false, () => ccClearSelection(), "small"),
-    ]);
-}
-// The squad-wide orders (they were the COMMAND page): who world orders go to, quick selects, and orders for the whole pool. Appended to the side panel.
+// The squad-wide orders (they were the COMMAND page): who world orders go to, and orders for the whole pool. Appended to the side panel.
 function _ccDrawSquadOrders(side) {
     side.appendChild(_ccEl("div", "cc-sel-title ccs", "SQUAD ORDERS"));
     side.appendChild(_ccEl("div", "cc-sel-sub", (ccSelectionList().length ? ccSelectionList().length + " SELECTED RECEIVE WORLD ORDERS" : (typeof getCommandPool === "function" ? getCommandPool().filter(f => !f.dead).length : 0) + " IN THE COMMAND POOL")));
@@ -419,7 +409,6 @@ function _ccDrawSquadOrders(side) {
         _ccBtn("ALL ELEMENTS", "#19e6c1", squadMode === "all", () => radialSetScope(true), "wide", "THE WHOLE SQUAD"),
         _ccBtn("SELECTED ELEMENT: " + _ccElLabel(player.selectedElement), "#19e6c1", squadMode !== "all", () => radialSetScope(false), "wide", "ONE ELEMENT"),
     ]);
-    grp("PICK AN ELEMENT", (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(e => typeof unlockedElements !== "undefined" && unlockedElements.has(e.id)).map(el => _ccBtn(el.label, el.color, player.selectedElement === el.id, () => radialSelectElement(el.id), "small")));
     grp("COMMANDS FOR THE POOL", [
         _ccBtn("SWITCH ROLES", "#ffe733", false, () => cycleCommandPoolRoles(), "wide", "BRAWLER → MAGE → TECHNICIAN"),
         _ccBtn("ALL TO WORK", "#00ccaa", false, () => radialSetAllWork(true), "wide", "ELECTRIC, FLUX, CORE, TOXIC, ICE"),
