@@ -145,11 +145,19 @@ function _radialDrawRoster(panel) {
     panel.appendChild(_rEl("div", "rp-sub", rows.length + " FOLLOWERS"));
     { const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, b = _rEl("button", "rp-btn wide" + (shardCount >= cost ? " on" : ""), "+ RECRUIT \u25c6" + cost); b.style.setProperty("--c", "#ffe733"); _rClick(b, () => { recruitPickerOpen(); }); panel.appendChild(b); }
     if (!rows.length) panel.appendChild(_rEl("div", "rp-sub", "NONE YET: RECRUIT ONE ABOVE"));
+    // ROSTER SQUADS (js/squads.js): a chip per squad selects it; MAKE SQUAD turns the selection (1 to 3) into one
+    if (typeof squadsLive === "function" && rows.length) {
+        const chips = _rEl("div", "rp-chips"), sel = typeof ccSelectionList === "function" ? ccSelectionList().filter(a => !a.isClone) : [];
+        squadsLive().forEach(sq => { const c = _rEl("button", "rp-btn small", "SQUAD " + sq.id + " \u00b7 " + sq.members.length); c.style.setProperty("--c", sq.col); _rClick(c, () => { squadSelect(sq.id); radialRender(); }); chips.appendChild(c); });
+        if (sel.length && sel.length <= SQUAD_MAX) { const m = _rEl("button", "rp-btn small on", "MAKE SQUAD"); m.style.setProperty("--c", "#19e6c1"); _rClick(m, () => { squadMake(sel); radialRender(); }); chips.appendChild(m); }
+        if (sel.some(a => squadOf(a))) { const l = _rEl("button", "rp-btn small", "LEAVE SQUAD"); l.style.setProperty("--c", "#8aa0c8"); _rClick(l, () => { squadLeave(sel); radialRender(); }); chips.appendChild(l); }
+        if (chips.childNodes.length) panel.appendChild(chips);
+    }
     rows.slice(0, 40).forEach(r => {
         const card = _rEl("div", "rp-card" + (typeof selectedUnits !== "undefined" && selectedUnits.has(r.f) ? " sel" : ""));
         card.style.setProperty("--c", _radialElementColour(r.element));
         const cv = _rEl("canvas", "rp-thumb"); cv.width = 44; cv.height = 44; cv.style.width = "36px"; cv.style.height = "36px"; _radialThumb(cv, r.f); card.appendChild(cv);
-        const mid = _rEl("div", "rp-mid"); mid.appendChild(_rEl("div", "rp-cname", r.name)); { const st = typeof unitStatus === "function" ? unitStatus(r.f) : null; if (st) { const c = _rEl("div", "rp-cstat", st.text); c.setAttribute("style", "--c:" + st.col + ";"); mid.appendChild(c); } } mid.appendChild(_rEl("div", "rp-csub", ({ brawler: "BRAWL", mage: "MAGE", technician: "TECH", worker: "WORK" })[r.role] + " · LV " + r.level));
+        const mid = _rEl("div", "rp-mid"); mid.appendChild(_rEl("div", "rp-cname", (typeof squadOf === "function" && squadOf(r.f) ? squadOf(r.f) + " \u00b7 " : "") + r.name)); { const st = typeof unitStatus === "function" ? unitStatus(r.f) : null; if (st) { const c = _rEl("div", "rp-cstat", st.text); c.setAttribute("style", "--c:" + st.col + ";"); mid.appendChild(c); } } mid.appendChild(_rEl("div", "rp-csub", ({ brawler: "BRAWL", mage: "MAGE", technician: "TECH", worker: "WORK" })[r.role] + " · LV " + r.level));
         const bar = _rEl("div", "rp-bar"), fill = _rEl("i"); fill.style.width = Math.round(r.hp * 100) + "%"; bar.appendChild(fill); mid.appendChild(bar); card.appendChild(mid);
         if (r.canWork) { const w = _rEl("button", "rp-btn small wide" + (r.working ? " on" : ""), "WORK"); w.style.setProperty("--c", "#19e6c1"); _rClick(w, () => { toggleFollowerDuty(r.f); radialRender(); }); mid.appendChild(w); }
         { const inf = _rEl("button", "rp-btn small wide", "INFO"); inf.style.setProperty("--c", "#8fe3ff"); _rClick(inf, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(r.f); }); mid.appendChild(inf); }

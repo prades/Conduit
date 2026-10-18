@@ -266,8 +266,9 @@ function drawUnitTag(a, cx, y, drawCtx) {
     const ally = a.team === "green" || a.isClone;
     // An enemy's tag is in its element's colour.
     const elDef = !ally && a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
-    const col = ally ? "#19e6c1" : a.isElite ? "#ffd866" : elDef ? elDef.color : "#ff8a6a";
-    const label = "Lv " + a.level + " " + unitTypeLabel(a);
+    const sq = ally && typeof squadOf === "function" ? squadOf(a) : null;   // a roster squad (js/squads.js): its colour and letter
+    const col = sq ? squadColour(sq) : ally ? "#19e6c1" : a.isElite ? "#ffd866" : elDef ? elDef.color : "#ff8a6a";
+    const label = (sq ? sq + " \u00b7 " : "") + "Lv " + a.level + " " + unitTypeLabel(a);
     if (typeof drawPlate === "function" && drawPlate(label, col, cx, y)) {
         const st = ally && typeof unitStatus === "function" ? unitStatus(a) : null;
         if (st) drawPlate(st.text, st.col, cx, y - 15, true);

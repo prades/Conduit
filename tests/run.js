@@ -46,6 +46,7 @@ const SUITES = [
     ['unit status + hold fix',  'status.js'],
     ['3D player + egg sprites', 'hdsprites.js'],
     ['the moves table', 'moves.js'],
+    ['roster squads', 'squads.js'],
     ['roster + command merged', 'ccmerge.js'],
     ['zone report + analytics', 'zones.js'],
     ['zone crews + orders',     'zonecrew.js'],

@@ -67,7 +67,7 @@ function ccRow(a) {
         unit: a, clone: !!a.isClone, element: a.element, hp, level: a.level || 1, evolved: !!a.evolved,
         name: typeof unitTypeLabel === "function" ? unitTypeLabel(a) : String(a.speciesName || a.element || "UNIT").toUpperCase(),
         role: a.isClone ? null : a.role, working: a.duty === "worker", holding: !!(a.job && a.job.type === "move") || a.stance === "hold",
-        playStyle: ps.id, selected: selectedUnits.has(a), status: typeof unitStatus === "function" ? unitStatus(a) : null,
+        squad: typeof squadOf === "function" ? squadOf(a) : null, playStyle: ps.id, selected: selectedUnits.has(a), status: typeof unitStatus === "function" ? unitStatus(a) : null,
         canWork: a.isClone ? (typeof canCloneWork === "function" && canCloneWork(a)) : (typeof canWorkMass === "function" && canWorkMass(a)),
     };
 }
@@ -195,6 +195,7 @@ function ccBuildFrame() {
     const x = _ccEl("button", "cc-close", "✕ CLOSE"); x.id = "ccClose"; _ccClick(x, ccClose); head.appendChild(x); root.appendChild(head);
     const body = _ccEl("div", "cc-body"); body.id = "ccBody";
     const main = _ccEl("div", "cc-main"); main.id = "ccMain"; main.appendChild(_ccEl("div", "cc-filters")); main.lastChild.id = "ccFilters";
+    const sqs = _ccEl("div", "cc-squads"); sqs.id = "ccSquads"; main.appendChild(sqs);   // roster squads (js/squads.js)
     const grid = _ccEl("div", "cc-grid"); grid.id = "ccGrid"; main.appendChild(grid);
     const page = _ccEl("div", "cc-page"); page.id = "ccPage"; main.appendChild(page);
     body.appendChild(main);
@@ -218,6 +219,7 @@ function ccRender() {
     const ttl = document.getElementById("ccTitle"); if (ttl) ttl.textContent = ccOpenTab === "zones" ? "ZONES" : "COMMAND CENTER";
     const sum = document.getElementById("ccSummary");
     if (sum) { sum.style.display = ccOpenTab === "roster" ? "" : "none"; if (ccOpenTab === "roster") { const st = radialSquadStats("all"); sum.textContent = st.total + " UNITS \u00b7 " + st.working + " WORKING \u00b7 AVG LEVEL " + st.avgLevel + " \u00b7 " + st.evolved + " EVOLVED"; } }
+    const sqBox = document.getElementById("ccSquads"); if (sqBox) { sqBox.style.display = ccOpenTab === "roster" ? "flex" : "none"; if (ccOpenTab === "roster") { try { _ccDrawSquads(sqBox); } catch (e) { /* never take the game down */ } } }
     const filters = document.getElementById("ccFilters"), grid = document.getElementById("ccGrid"), page = document.getElementById("ccPage"), side = document.getElementById("ccSide");
     if (!filters || !grid || !page || !side) return;
     const roster = ccOpenTab === "roster";
@@ -282,8 +284,9 @@ function _ccUpdateCard(card, r) {
     const tags = card.querySelector(".cc-tags"), want = [];
     if (!r.clone) want.push(({ brawler: "BRAWL", sniper: "MAGE", camper: "TECH" })[r.role] || "BRAWL");
     if (!r.clone) want.push(r.playStyle === "defensive" ? "DEF" : r.playStyle === "aggressive" ? "AGG" : "BAL");
+    if (r.squad) want.push("SQ " + r.squad);
     if (r.holding) want.push("HOLD"); if (r.working) want.push("WORK"); if (r.evolved) want.push("EVOLVED");
-    const sig = want.join("|"); if (tags._sig !== sig) { tags._sig = sig; tags.textContent = ""; want.forEach(w => tags.appendChild(_ccEl("span", "cc-tag " + w.toLowerCase(), w))); }
+    const sig = want.join("|"); if (tags._sig !== sig) { tags._sig = sig; tags.textContent = ""; want.forEach(w => { const t = _ccEl("span", "cc-tag " + (w.indexOf("SQ ") === 0 ? "sq" : w.toLowerCase()), w); if (w.indexOf("SQ ") === 0) { const c = squadColour(w.slice(3)); t.style.color = c; t.style.borderColor = c; } tags.appendChild(t); }); }
     const key = r.unit.evolved + "|" + r.unit.element; if (card._thumbKey !== key) { card._thumbKey = key; _ccThumb(card._cv, r.unit); }
     if (!card._thumbDone) { const d = r.unit.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[r.unit.evolved] : null; if (d && d._img && d._img.complete) { card._thumbDone = true; _ccThumb(card._cv, r.unit); } }
 }
@@ -304,6 +307,7 @@ function _ccDrawSide(side) {
     side.appendChild(_ccEl("div", "cc-sel-sub", S.count ? S.followers + " FOLLOWERS · " + S.clones + " CLONES · ORDERS IN THE WORLD GO TO THEM" : "CLICK A CARD TO SELECT IT"));
     _ccQuickSelect(side);
     const sel = ccSelectionList();
+    _ccDrawSquadControls(side, sel);
     const sec = t => { const d = _ccEl("div", "cc-sec", t); side.appendChild(d); return d; };
     const row = () => { const d = _ccEl("div", "cc-row"); side.appendChild(d); return d; };
     const dis = n => n === 0;
@@ -322,6 +326,31 @@ function _ccDrawSide(side) {
     _ccDrawSquadOrders(side);
 }
 
+// ROSTER SQUADS (js/squads.js): the strip above the cards, one chip per squad with its members, SELECT and DISBAND.
+function _ccDrawSquads(box) {
+    box.textContent = "";
+    const live = typeof squadsLive === "function" ? squadsLive() : [];
+    if (!live.length) { box.appendChild(_ccEl("div", "cc-sq-hint", "NO SQUADS YET \u00b7 SELECT UP TO 3 FOLLOWERS, THEN TAP MAKE SQUAD")); return; }
+    live.forEach(sq => {
+        const c = _ccEl("div", "cc-sq"); c.style.setProperty("--c", sq.col);
+        c.appendChild(_ccEl("div", "cc-sq-badge", sq.id));
+        const mem = _ccEl("div", "cc-sq-mem"); sq.members.forEach(m => { const l = _ccEl("div", "", (typeof unitTypeLabel === "function" ? unitTypeLabel(m) : "UNIT")); l.appendChild(_ccEl("i", "", " LV " + (m.level || 1))); mem.appendChild(l); }); c.appendChild(mem);
+        c.appendChild(_ccBtn("SELECT", sq.col, sq.members.length > 0 && sq.members.every(m => selectedUnits.has(m)), () => squadSelect(sq.id), "small"));
+        c.appendChild(_ccBtn("DISBAND", "#8aa0c8", false, () => squadDisband(sq.id), "small"));
+        box.appendChild(c);
+    });
+}
+// The side panel's squad controls for the selection: MAKE SQUAD, ADD TO a squad with room, LEAVE.
+function _ccDrawSquadControls(side, sel) {
+    if (typeof squadMake !== "function") return;
+    const fol = sel.filter(a => !a.isClone), inSq = fol.filter(a => squadOf(a));
+    side.appendChild(_ccEl("div", "cc-sec", "SQUADS (UP TO " + SQUAD_MAX + ")"));
+    const r = _ccEl("div", "cc-row wrap"); side.appendChild(r);
+    const mk = _ccBtn("MAKE SQUAD", "#19e6c1", false, () => squadMake(fol), "wide", fol.length ? fol.length + " SELECTED" : "SELECT FOLLOWERS"); if (!fol.length || fol.length > SQUAD_MAX) mk.disabled = true; r.appendChild(mk);
+    squadsLive().forEach(sq => { const room = SQUAD_MAX - sq.members.length, joining = fol.filter(a => a.squadId !== sq.id).length;
+        if (!fol.length || !joining || joining > room) return; r.appendChild(_ccBtn("ADD TO " + sq.id, sq.col, false, () => squadAssign(sq.id, fol), "small", sq.members.length + " OF " + SQUAD_MAX)); });
+    if (inSq.length) r.appendChild(_ccBtn("LEAVE SQUAD", "#8aa0c8", false, () => squadLeave(inSq), "small"));
+}
 // QUICK SELECT: pick a whole group in one tap, at the top of the panel, so the orders under it are for them.
 function _ccQuickSelect(side) {
     const grp = (t, kids) => { side.appendChild(_ccEl("div", "cc-sec", t)); const r = _ccEl("div", "cc-row wrap"); kids.forEach(k => r.appendChild(k)); side.appendChild(r); };

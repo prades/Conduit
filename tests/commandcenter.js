@@ -108,7 +108,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         run('__c.playStyle = "defensive"');
         const snap = run('JSON.stringify(followerRosterSnapshot())'); ok(/"playStyle":"defensive"/.test(snap), 'not in the roster save');
         const game = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8'), waves = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
-        ok(/playStyle: a\.playStyle \|\| undefined \}\);/.test(game) && /if \(entry\.playStyle\) npc\.playStyle = entry\.playStyle;/.test(game), 'a respawn loses it');
+        ok(/playStyle: a\.playStyle \|\| undefined(, squadId: a\.squadId \|\| undefined)? \}\);/.test(game) && /if \(entry\.playStyle\) npc\.playStyle = entry\.playStyle;/.test(game), 'a respawn loses it');
         ok(/if \(entry\.playStyle\) npc\.playStyle = entry\.playStyle;/.test(waves), 'a reload loses it'); run('__c.playStyle = undefined');
     });
 
