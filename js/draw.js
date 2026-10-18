@@ -2115,18 +2115,34 @@ const _labelCache = new Map();
 // The game's slab style for a name plate: a dark slanted slab with a colour bar at its left, the text in `color`. (js/levels.js drawUnitTag)
 const UNIT_FONT = 'italic 900 9px "DejaVu Sans","Segoe UI",system-ui,sans-serif';
 let _plateCache = new Map();
-function cachedPlate(text, color, chip) {
-    const key = (chip ? "c|" : "p|") + color + "|" + text;
+// The role emblems on a follower's plate (drawn in a 10x10 box at the origin): BRAWLER crossed blades, MAGE a spark, TECHNICIAN a gear.
+function _drawRoleEmblem(g, role, color) {
+    g.save(); g.fillStyle = color; g.strokeStyle = color; g.lineCap = "round";
+    if (role === "sniper") {   // MAGE: a four-point spark with a bright core
+        g.beginPath(); g.moveTo(5, 0); g.quadraticCurveTo(5.6, 4.4, 10, 5); g.quadraticCurveTo(5.6, 5.6, 5, 10); g.quadraticCurveTo(4.4, 5.6, 0, 5); g.quadraticCurveTo(4.4, 4.4, 5, 0); g.closePath(); g.fill();
+    } else if (role === "camper") {   // TECHNICIAN: a gear
+        g.lineWidth = 2; for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; g.beginPath(); g.moveTo(5 + Math.cos(a) * 2.6, 5 + Math.sin(a) * 2.6); g.lineTo(5 + Math.cos(a) * 4.8, 5 + Math.sin(a) * 4.8); g.stroke(); }
+        g.beginPath(); g.arc(5, 5, 3.3, 0, Math.PI * 2); g.fill(); g.globalCompositeOperation = "destination-out"; g.beginPath(); g.arc(5, 5, 1.4, 0, Math.PI * 2); g.fill();
+    } else {   // BRAWLER: crossed blades
+        g.lineWidth = 1.8; g.beginPath(); g.moveTo(1, 1); g.lineTo(9, 9); g.moveTo(9, 1); g.lineTo(1, 9); g.stroke();
+        g.lineWidth = 1.4; g.beginPath(); g.moveTo(1, 4); g.lineTo(4, 1); g.moveTo(9, 4); g.lineTo(6, 1); g.stroke();
+    }
+    g.restore();
+}
+function cachedPlate(text, color, chip, role) {
+    if (chip) role = null;
+    const key = (chip ? "c|" : "p|") + color + "|" + (role || "") + "|" + text;
     let e = _plateCache.get(key);
     if (!e) {
         const cv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null, g = cv && cv.getContext ? cv.getContext("2d") : null;
         if (!g || typeof g.measureText !== "function") return null;
-        g.font = UNIT_FONT; const tw = Math.ceil((g.measureText(text) || { width: text.length * 5.4 }).width), h = chip ? 12 : 13, w = tw + (chip ? 12 : 14), sk = 3;
+        g.font = UNIT_FONT; const tw = Math.ceil((g.measureText(text) || { width: text.length * 5.4 }).width), h = chip ? 12 : 13, w = tw + (chip ? 12 : 14) + (role ? 12 : 0), sk = 3;
         cv.width = (w + 2) * 2; cv.height = (h + 2) * 2; g.scale(2, 2); g.translate(1, 1);
         g.beginPath(); g.moveTo(sk, 0); g.lineTo(w, 0); g.lineTo(w - sk, h); g.lineTo(0, h); g.closePath();
         g.fillStyle = chip ? color : "rgba(5,7,15,0.9)"; g.fill(); g.lineWidth = 1; g.strokeStyle = chip ? "#05070f" : color; g.globalAlpha = chip ? 0.6 : 0.85; g.stroke(); g.globalAlpha = 1;
         if (!chip) { g.fillStyle = color; g.fillRect(sk + 0.5, 1, 2, h - 2); }
-        g.font = UNIT_FONT; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = chip ? "#05070f" : "#eafff6"; g.fillText(text, w / 2 + (chip ? 0 : 1.5), h / 2 + 0.5);
+        g.font = UNIT_FONT; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = chip ? "#05070f" : "#eafff6"; g.fillText(text, w / 2 + (chip ? 0 : 1.5) + (role ? 6 : 0), h / 2 + 0.5);
+        if (role) { g.save(); g.translate(sk + 5, (h - 10) / 2); _drawRoleEmblem(g, role, color); g.restore(); }
         e = { cv, w: w + 2, h: h + 2 };
         if (_plateCache.size > 400) _plateCache.clear();
         _plateCache.set(key, e);
@@ -2134,8 +2150,8 @@ function cachedPlate(text, color, chip) {
     return e;
 }
 // Draw a plate (or chip) centred at x with its BOTTOM edge at y.
-function drawPlate(text, color, x, y, chip) {
-    const e = cachedPlate(text, color, chip); if (!e) return false;
+function drawPlate(text, color, x, y, chip, role) {
+    const e = cachedPlate(text, color, chip, role); if (!e) return false;
     ctx.drawImage(e.cv, x - e.w / 2, y - e.h, e.w, e.h); return true;
 }
 function cachedText(text, font, color, x, y) {

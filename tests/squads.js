@@ -132,8 +132,8 @@ function measure() {
         run('squadDisband("A"); __box = __rec("cc-squads"); _ccDrawSquads(__box);'); same(J('__box.children.length'), 1, 'hint'); same(J('__box.children[0].className'), 'cc-sq-hint', 'the hint');
         run('_ccEl = __mk;');
     });
-    check('the name plate over a squad member carries its letter and colour', () => {
-        const src = rd('js/levels.js'); ok(/squadColour\(sq\)/.test(src) && src.indexOf('sq + " \\u00b7 "') >= 0, 'plate not tinted');
+    check('the name plate over a squad member carries its letter (its colour is the element\'s, with the role emblem)', () => {
+        const src = rd('js/levels.js'); ok(src.indexOf('sq + " \\u00b7 "') >= 0, 'no squad letter on the plate'); ok(/myEl\.color/.test(src), 'plate not in the element colour');
     });
 
     group('THE REAL FLOW (real browser)');

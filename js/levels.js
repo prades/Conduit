@@ -266,10 +266,13 @@ function drawUnitTag(a, cx, y, drawCtx) {
     const ally = a.team === "green" || a.isClone;
     // An enemy's tag is in its element's colour.
     const elDef = !ally && a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
-    const sq = ally && typeof squadOf === "function" ? squadOf(a) : null;   // a roster squad (js/squads.js): its colour and letter
-    const col = sq ? squadColour(sq) : ally ? "#19e6c1" : a.isElite ? "#ffd866" : elDef ? elDef.color : "#ff8a6a";
+    const sq = ally && typeof squadOf === "function" ? squadOf(a) : null;   // a roster squad (js/squads.js): its letter
+    // Your own units are in their ELEMENT's colour, and a follower carries its role's emblem: brawler, mage or technician.
+    const myEl = ally && a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
+    const col = myEl ? myEl.color : ally ? "#19e6c1" : a.isElite ? "#ffd866" : elDef ? elDef.color : "#ff8a6a";
+    const role = ally && !a.isClone && a.isFollower ? (a.role === "sniper" || a.role === "camper" ? a.role : "brawler") : null;
     const label = (sq ? sq + " \u00b7 " : "") + "Lv " + a.level + " " + unitTypeLabel(a);
-    if (typeof drawPlate === "function" && drawPlate(label, col, cx, y)) {
+    if (typeof drawPlate === "function" && drawPlate(label, col, cx, y, false, role)) {
         const st = ally && typeof unitStatus === "function" ? unitStatus(a) : null;
         if (st) drawPlate(st.text, st.col, cx, y - 15, true);
     } else cachedText(label, "bold 7px monospace", col, cx, y);

@@ -46,6 +46,8 @@ const SUITES = [
     ['fire bombs',              'firebombs.js'],
     ['wall power unit',         'wallunit.js'],
     ['lab wall equipment',      'labwall.js'],
+    ['INFO panel + ring',       'infodex.js'],
+    ['unit name plate',         'plate.js'],
     ['no signal towers',        'notower.js'],
     ['unit status + hold fix',  'status.js'],
     ['3D player + egg sprites', 'hdsprites.js'],
