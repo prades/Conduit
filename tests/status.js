@@ -31,16 +31,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('THE HANG');
     check('THE REPORTED CASE: a hold dropped for being hurt does not leave the unit stuck on "hold": it heals and follows again', () => {
-        run('__fresh(); miniCmdOrder("hold"); followers.forEach(f => f.health = f.maxHealth * 0.3);'); frames(40);
+        run('__fresh(); mixToolOrder("hold"); followers.forEach(f => f.health = f.maxHealth * 0.3);'); frames(40);
         const r = J('followers.map(f => [f.stance, !!f.job])'); for (const [st, job] of r) { same(st, 'follow', 'stance after the post was dropped'); same(job, false, 'job'); }
         run('followers.forEach(f => f.health = f.maxHealth); player.x = player.targetX = player.visualX = 16;'); frames(400);
         const d = J('followers.map(f => Math.round(Math.abs(f.x - player.x)))'); ok(d.every(x => x <= 5), 'they did not follow after healing: ' + d);
     });
     check('HOLD stands the squad where it is (even as the player walks away), and COME brings them back', () => {
-        run('__fresh(); miniCmdOrder("hold");'); frames(30); const x0 = J('followers.map(f => +f.x.toFixed(1))'); run('player.x = player.targetX = player.visualX = 16;'); frames(200);
+        run('__fresh(); mixToolOrder("hold");'); frames(30); const x0 = J('followers.map(f => +f.x.toFixed(1))'); run('player.x = player.targetX = player.visualX = 16;'); frames(200);
         same(JSON.stringify(J('followers.map(f => +f.x.toFixed(1))')), JSON.stringify(x0), 'they moved while holding');
         same(J('followers.every(f => f.stance === "hold" && f.job && f.job.type === "move")'), true, 'hold state');
-        run('miniCmdOrder("follow");'); frames(1100); const d = J('followers.map(f => Math.round(Math.abs(f.x - 16)))'); ok(d.every(x => x <= 5), 'COME did not bring them: ' + d);
+        run('mixToolOrder("follow");'); frames(1100); const d = J('followers.map(f => Math.round(Math.abs(f.x - 16)))'); ok(d.every(x => x <= 5), 'COME did not bring them: ' + d);
         same(J('followers.every(f => f.stance === "follow" && !f.job)'), true, 'follow state');
     });
     check('a hold with nothing to hold is dropped by the AI itself (any path that clears the job)', () => { run('__fresh(); followers[0].stance = "hold"; followers[0].job = null;'); frames(3); same(run('followers[0].stance'), 'follow', 'stance'); ok(/stance==="hold" && !actor\.job/.test(rd('js/npc.js')), 'the guard is gone'); });
