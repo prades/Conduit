@@ -36,9 +36,15 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   // select what the filters show (left), then guide the selection (right)
   var click = function(label){ var b = Array.prototype.find.call(document.querySelectorAll('#ccRoot .cc-btn'), function(x){ var l = x.querySelector('.cc-bl'); return l && l.textContent === label; }); b.click(); return !!b; };
   out.everyone = click('SELECT SHOWN'); out.selected = selectedUnits.size;
-  out.aggr = click('AGGRESSIVE'); out.styles = followers.map(function(f){ return f.playStyle; }).join();
+  var dd = function(k){ var b = Array.prototype.find.call(document.querySelectorAll('#ccSide .cc-dd'), function(x){ return x.querySelector('.cc-dd-k').textContent === k; }); b.click(); return !!b; };
+  out.side2 = txt('#ccSide .cc-sec, #ccSide .cc-sel-title'); out.dds = txt('#ccSide .cc-dd .cc-dd-k'); out.ddClosed = document.querySelectorAll('#ccSide .cc-dd-list').length;
+  dd('PLAY STYLE'); out.ddOpen = document.querySelectorAll('#ccSide .cc-dd-list').length; dd('STANCE'); out.ddOne = document.querySelectorAll('#ccSide .cc-dd-list').length; dd('PLAY STYLE');
+  out.aggr = click('AGGRESSIVE'); out.ddAfter = document.querySelectorAll('#ccSide .cc-dd-list').length; out.styles = followers.map(function(f){ return f.playStyle; }).join();
+  ccSetSelection([followers[0]]); ccRender(); out.one = { title: document.querySelector('#ccSide .cc-sel-title').textContent, stats: document.querySelectorAll('#ccSide .cc-stat').length, play: (Array.prototype.find.call(document.querySelectorAll('#ccSide .cc-dd'), function(x){ return x.querySelector('.cc-dd-k').textContent === 'PLAY STYLE'; }) || document.body).querySelector('.cc-dd-v') ? Array.prototype.find.call(document.querySelectorAll('#ccSide .cc-dd'), function(x){ return x.querySelector('.cc-dd-k').textContent === 'PLAY STYLE'; }).querySelector('.cc-dd-v').textContent : '', lists: document.querySelectorAll('#ccSide .cc-dd-list').length };
+  ccSetSelection(followers.slice()); ccRender();
+  ccSquadsOpen = true; ccRender(); out.sqwin = txt('#ccSquadWin .cc-sel-title, #ccSquadBody .cc-btn .cc-bl'); out.sqwinShown = getComputedStyle(document.getElementById('ccSquadWin')).display;
   out.allWork = click('ALL TO WORK'); out.worked = followers.filter(function(f){ return f.duty === 'worker'; }).length;
-  out.allFight = click('ALL TO FIGHT'); out.fought = followers.filter(function(f){ return f.duty === 'worker'; }).length;
+  out.allFight = click('ALL TO FIGHT'); ccSquadsOpen = false; ccRender(); out.sqwinHidden = getComputedStyle(document.getElementById('ccSquadWin')).display; out.fought = followers.filter(function(f){ return f.duty === 'worker'; }).length;
   ccClose(); await wait(100); document.getElementById('zoneInfo').click(); await wait(300); out.zonesTitle = document.getElementById('ccTitle').textContent; out.analytics = document.getElementById('ccPage').style.display; out.sideOnAnalytics = document.getElementById('ccSide').style.display; out.gridOnZones = document.getElementById('ccGrid').style.display; out.recruitOnZones = document.getElementById('ccRecruit').style.display; out.zoneCards = document.querySelectorAll('#ccPage .cc-zone').length; out.sumOnZones = document.getElementById('ccSummary').style.display;
   document.getElementById('zoneInfo').click(); await wait(100); out.closedByPlate = !document.getElementById('ccRoot').classList.contains('open'); out.zoneAttr = document.getElementById('zoneInfo').getAttribute('onclick');
   var pre = document.createElement('pre'); pre.id = '__mg'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -59,9 +65,15 @@ else {
         check('THE ASK: the dock has ONE button for it (no separate COMMAND or SQUAD buttons)', () => { ok(r.dock.includes('btnRoster'), 'no roster button: ' + r.dock); ok(!r.dock.includes('btnCommand') && !r.dock.includes('btnAnalytics'), 'still separate: ' + r.dock); });
         check('the full-screen menu is the creature cards with the filter tabs at the top and a squad summary; it has no tab bar (ZONES is its own menu)', () => { same(r.tabs, 0, 'tabs left in the roster menu'); ok(/UNITS/.test(r.summary), 'no squad summary: ' + r.summary); same(r.title, 'COMMAND CENTER', 'title'); same(r.cards, 4, 'cards'); ok(r.filters.includes('ALL') && r.filters.includes('ELECTRIC') && r.filters.includes('BRAWL'), 'filters ' + r.filters); });
         check('the command panel beside the cards carries the selection\'s orders AND the squad-wide orders', () => {
-            for (const w of ['ATTACK STYLE', 'PLAY STYLE', 'STANCE', 'DUTY', 'SQUAD ORDERS']) ok(r.side.some(t => t.indexOf(w) === 0), w + ' missing from the panel: ' + r.side);
-            for (const w of ['QUICK SELECT', 'PICK AN ELEMENT']) ok(!r.side.some(t => t.indexOf(w) === 0), w + ' is back in the panel');
-            for (const b of ['ALL TO WORK', 'ALL TO FIGHT', 'SWITCH ROLES', 'AGGRESSIVE']) ok(r.sideBtns.includes(b), b + ' missing');
+            ok(r.side.length === 1 && /NOTHING SELECTED/.test(r.side[0]), 'the empty panel is not just the hint: ' + r.side);
+            for (const w of ['ATTACK STYLE', 'PLAY STYLE', 'STANCE', 'DUTY']) ok(r.dds.includes(w), w + ' is not a drop-down row: ' + r.dds);
+            same(r.ddClosed, 0, 'the choices are showing before a row is tapped'); same(r.ddOpen, 1, 'tapping a row did not open its choices'); same(r.ddOne, 1, 'two drop-downs open at once'); same(r.ddAfter, 0, 'picking did not fold it shut');
+            for (const w of ['QUICK SELECT', 'PICK AN ELEMENT', 'SQUAD ORDERS']) ok(![...r.side, ...r.side2].some(t => t.indexOf(w) === 0), w + ' is in the roster panel');
+            for (const b of ['SQUADS', 'ALL TO WORK', 'ALL TO FIGHT', 'SWITCH ROLES']) ok(r.sqwin.includes(b) || b === 'SQUADS' && r.sqwin.includes('SQUADS'), b + ' missing from the squads window: ' + r.sqwin);
+            same(r.sqwinShown, 'flex', 'the squads window did not open'); same(r.sqwinHidden, 'none', 'and close');
+        });
+        check('one creature selected: its name, a stat index, and its play style shown as the current value (not all the options)', () => {
+            ok(/BRAWLER|MAGE|TECH/i.test(r.one.title), 'title ' + r.one.title); ok(r.one.stats >= 8, 'stat rows ' + r.one.stats); same(r.one.play, 'AGGRESSIVE', 'play style value'); same(r.one.lists, 0, 'choices showing');
         });
         check('opening the old "command" tab opens the roster', () => same(r.legacy, 'roster', 'tab'));
         check('selecting and guiding works from the one panel: select what is shown, set a play style, all to work, all to fight', () => {

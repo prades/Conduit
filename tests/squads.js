@@ -28,25 +28,28 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   tutorialMode = false; gameState.running = true; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; })); followers.length = 0; recruitChoice = 'mix';
   ['fire', 'ice', 'electric', 'flux'].forEach(function(el, i){ spawnFollowerAtCrystal(el); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = 'brawler'; f.level = 3 + i; });
   ccOpen('roster'); await wait(150);
-  var cards = function(){ return Array.prototype.slice.call(document.querySelectorAll('#ccGrid .cc-card')); }, btn = function(t){ return Array.prototype.find.call(document.querySelectorAll('#ccSide .cc-btn'), function(b){ return b.textContent.indexOf(t) === 0; }); };
-  out.hint = document.querySelector('#ccSquads .cc-sq-hint') ? document.querySelector('#ccSquads .cc-sq-hint').textContent : '';
+  var cards = function(){ return Array.prototype.slice.call(document.querySelectorAll('#ccGrid .cc-card')); }, btn = function(t){ return Array.prototype.find.call(document.querySelectorAll('#ccSquadBody .cc-btn'), function(b){ return b.textContent.indexOf(t) === 0; }); };
+  out.stripInRoster = !!document.getElementById('ccSquads'); out.sqBtn = !!document.getElementById('ccSquadsBtn'); out.winHidden = getComputedStyle(document.getElementById('ccSquadWin')).display;
+  document.getElementById('ccSquadsBtn').click(); await wait(50); out.winShown = getComputedStyle(document.getElementById('ccSquadWin')).display;
+  out.hint = document.querySelector('#ccSquadBody .cc-sq-hint') ? document.querySelector('#ccSquadBody .cc-sq-hint').textContent : '';
+  document.getElementById('ccSquadsBtn').click(); await wait(30);
   cards().slice(0, 3).forEach(function(c){ c.click(); }); await wait(50);
+  document.getElementById('ccSquadsBtn').click(); await wait(50);
   out.sel = selectedUnits.size; var mk = btn('MAKE SQUAD'); out.makeEnabled = !!mk && !mk.disabled; mk.click(); await wait(80);
   out.made = squadsLive().map(function(s){ return s.id + s.members.length; }).join();
-  out.chips = document.querySelectorAll('#ccSquads .cc-sq').length; out.sideTitleAfterMake = document.querySelector('#ccSide .cc-sel-title').textContent;
-  // the squad is selected after making it: its own menu shows at once
-  out.makeSelected = selectedUnits.size;
-  // let it go, then tap the chip to select it again
-  ccClearSelection(); ccRender(); await wait(30); out.titleCleared = document.querySelector('#ccSide .cc-sel-title').textContent;
-  document.querySelector('#ccSquads .cc-sq').click(); await wait(60);
-  out.afterChip = { sel: selectedUnits.size, title: document.querySelector('#ccSide .cc-sel-title').textContent, rows: document.querySelectorAll('#ccSide .cc-sqm-row').length, on: document.querySelectorAll('#ccSquads .cc-sq.on').length, disband: !!btn('DISBAND SQUAD') };
-  // tap the chip again: let go
-  document.querySelector('#ccSquads .cc-sq').click(); await wait(60); out.afterChip2 = selectedUnits.size;
-  // a redraw tick with nothing changed keeps the very same elements (a tap is never lost to a rebuild) and the panel's scroll
-  squadSelect('A'); ccRender(); var side = document.getElementById('ccSide'), strip = document.getElementById('ccSquads'), first = side.firstChild, chip = strip.firstChild; side.scrollTop = 0;
-  for (var i = 0; i < 5; i++) ccRender(); out.sameSide = side.firstChild === first; out.sameStrip = strip.firstChild === chip;
+  out.chips = document.querySelectorAll('#ccSquadBody .cc-sq').length; out.makeSelected = selectedUnits.size;
+  // the squad's members are listed in the window, and the card carries its letter
+  out.memberLines = document.querySelectorAll('#ccSquadBody .cc-sq-mem div').length; document.getElementById('ccSquadsBtn').click(); await wait(30); out.cardTag = !!document.querySelector('#ccGrid .cc-tag.sq');
+  // let it go, then tap the chip (in the window) to select it again
+  ccClearSelection(); ccRender(); document.getElementById('ccSquadsBtn').click(); await wait(30);
+  document.querySelector('#ccSquadBody .cc-sq').click(); await wait(60);
+  out.afterChip = { sel: selectedUnits.size, on: document.querySelectorAll('#ccSquadBody .cc-sq.on').length, disband: !!btn('DISBAND') };
+  document.querySelector('#ccSquadBody .cc-sq').click(); await wait(60); out.afterChip2 = selectedUnits.size;
+  // a redraw tick with nothing changed keeps the very same elements (a tap is never lost to a rebuild)
+  squadSelect('A'); ccRender(); var body = document.getElementById('ccSquadBody'), strip = body.firstChild, chip = strip.firstChild;
+  for (var i = 0; i < 5; i++) ccRender(); out.sameStrip = body.firstChild === strip && strip.firstChild === chip;
   // when something does change, it is redrawn
-  squadLeave([squadMembers('A')[0]]); ccRender(); out.redrawn = side.firstChild !== first && strip.firstChild !== chip;
+  squadLeave([squadMembers('A')[0]]); ccRender(); out.redrawn = body.firstChild !== strip;
   var pre = document.createElement('pre'); pre.id = '__sq'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 1500); });</script></body>`;
 function measure() {
@@ -118,7 +121,7 @@ function measure() {
 
     group('THE ROSTER');
     check('the Command Center draws the strip, MAKE SQUAD, and the squad tag on a card', () => {
-        const src = rd('js/commandcenter.js'); ok(/_ccDrawSquads\(sqBox\)/.test(src), 'no strip'); ok(/MAKE SQUAD/.test(src), 'no MAKE SQUAD'); ok(/"SQ " \+ r\.squad/.test(src), 'no card tag');
+        const src = rd('js/commandcenter.js'); ok(/_ccDrawSquads\(strip\)/.test(src), 'no strip'); ok(/MAKE SQUAD/.test(src), 'no MAKE SQUAD'); ok(/"SQ " \+ r\.squad/.test(src), 'no card tag');
     });
     check('the strip lists each squad with SELECT and DISBAND, and the hint when there are none', () => {
         // the test DOM is inert (appendChild does nothing), so the strip is drawn onto a recording element
@@ -139,14 +142,16 @@ function measure() {
     else {
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (r) {
-            check('with no squads the strip says how it works, in three steps', () => ok(/1\) TAP UP TO 3 CARDS/.test(r.hint) && /MAKE SQUAD/.test(r.hint) && /3\)/.test(r.hint), 'hint: ' + r.hint));
-            check('tapping cards then MAKE SQUAD makes SQUAD A, shows its chip, and the panel is the squad\'s menu straight away', () => {
-                same(r.sel, 3, 'selected'); same(r.makeEnabled, true, 'MAKE SQUAD enabled'); same(r.made, 'A3', 'squad'); same(r.chips, 1, 'chips'); same(r.sideTitleAfterMake, 'SQUAD A', 'panel title'); same(r.makeSelected, 3, 'still selected');
+            check('the roster has no squad strip any more: a SQUADS button opens a window instead, and it says how it works while there are none', () => {
+                same(r.stripInRoster, false, 'the strip is still in the roster'); same(r.sqBtn, true, 'no SQUADS button'); same(r.winHidden, 'none', 'open by itself'); same(r.winShown, 'flex', 'did not open'); ok(/SELECT UP TO 3/.test(r.hint) && /MAKE SQUAD/.test(r.hint), 'hint: ' + r.hint);
             });
-            check('letting go, then tapping the squad chip selects it again: SQUAD A, its three members, DISBAND; tapping again lets go', () => {
-                same(r.titleCleared, 'SELECTED 0', 'cleared'); same(r.afterChip.sel, 3, 'selected'); same(r.afterChip.title, 'SQUAD A', 'title'); same(r.afterChip.rows, 3, 'member rows'); same(r.afterChip.on, 1, 'lit chip'); same(r.afterChip.disband, true, 'DISBAND'); same(r.afterChip2, 0, 'let go');
+            check('selecting cards, then MAKE SQUAD in the window, makes SQUAD A with its chip and members; the card carries the letter', () => {
+                same(r.sel, 3, 'selected'); same(r.makeEnabled, true, 'MAKE SQUAD enabled'); same(r.made, 'A3', 'squad'); same(r.chips, 1, 'chips'); same(r.makeSelected, 3, 'still selected'); same(r.memberLines, 3, 'member lines'); same(r.cardTag, true, 'no SQ tag on a card');
             });
-            check('a redraw with nothing changed keeps the same elements (a tap is not lost to a rebuild); a change redraws', () => { same(r.sameSide, true, 'side rebuilt'); same(r.sameStrip, true, 'strip rebuilt'); same(r.redrawn, true, 'not redrawn on a change'); });
+            check('letting go, then tapping the squad chip selects it again, with DISBAND; tapping again lets go', () => {
+                same(r.afterChip.sel, 3, 'selected'); same(r.afterChip.on, 1, 'lit chip'); same(r.afterChip.disband, true, 'DISBAND'); same(r.afterChip2, 0, 'let go');
+            });
+            check('a redraw with nothing changed keeps the same elements (a tap is not lost to a rebuild); a change redraws', () => { same(r.sameStrip, true, 'window rebuilt'); same(r.redrawn, true, 'not redrawn on a change'); });
         }
     }
 
