@@ -125,7 +125,7 @@ A solved puzzle pays **a piece of gear**. Gear is individual: a thing a unit *ca
 | Tier | Reach | Carried by | Meaning |
 |---|---|---|---|
 | **T1** | **one follower** | that follower | the cheapest and most common; a personal upgrade |
-| **T2** | **a squad, up to 3** | a follower | the carrier plus its two nearest squad-mates (same crew or order, else nearest allies), refreshed every 30 frames |
+| **T2** | **a squad, up to 3** | a follower | every member of the **roster squad** the carrier belongs to (up to 3, §4.3); a carrier in no squad gets the effect for itself only, so build squads to get the value |
 | **T3** | **an aura** | a follower | every ally and clone within 3 tiles of the carrier, while it lives |
 | **T4** | **the whole team** | the player's loadout | every follower and clone you own, wherever they are |
 | **T5** | **the whole team and you** | the player's loadout | the team, and the player's own stats (siphon, hack timer, gun) |
@@ -137,13 +137,22 @@ Each piece is an **effect** (what it does) at a **tier** (where it reaches): the
 **Rules that keep it simple:**
 - A follower carries **1 field piece** (2 once evolved). T4 and T5 go in the **player's loadout** (2 T4 slots, 1 T5 slot), not on a unit, so the team effect does not vanish with one death.
 - **Same effect does not stack**: the strongest reach and tier applies to a unit once, so ten DAMAGE CELLs cannot add up. Different effects add.
-- **Aura (T3) and squad (T2)** are recomputed on a slow tick, not per frame (the frame loop is the only clock; one pass over the followers).
+- **Aura (T3)** is recomputed on a slow tick (every 30 frames), not per frame (the frame loop is the only clock; one pass over the followers). A **squad (T2)** needs no tick: it is the roster's own list, read when the gear is applied.
 - A follower that **dies** drops its gear back to the inventory.
 - **Kept for good** in an inventory of 8 (a perk or a gun mod slot raises it); it carries across runs.
 
 **What a puzzle pays.** The puzzle tier decides the gear tier: **1 unknown variable → T1, 2 → T2 (a T3 on a hard one), 3 → T3 (T4 on a hard one)**; a **T5** only from a 3-variable solved in under half the time, and only at HACK level 8 or more. A decoy pays nothing. Quick hacks drop no gear: gear is the reason to solve.
 
 **Where it shows.** A carried piece is a small pip on the unit's status chip (js/status.js) and a row on its INFO tab; an aura is a thin ring on the floor round the carrier; the GEAR panel (a dock slab) is the inventory, the equip slots on each follower, and the player loadout.
+
+### 4.3 Roster squads (what a T2 piece reaches)
+
+A **squad** is a small group you set up in the roster: up to **3 followers**, named (SQUAD A, B, C...) and coloured, a follower in at most one. It is a **new roster feature**, separate from the zone worker crews in js/zones.js (those are ants and core workers sent to build a zone). Squads are also useful on their own, so they ship with Track B's first step:
+
+- **Making one:** in the Command Center roster, select up to 3 cards and tap **MAKE SQUAD**; a squad strip across the top shows each squad with its members and the gear they share. Drag or tap a member to remove it; a dead member leaves the squad.
+- **Orders by squad:** a squad is a selection target (tap its strip to select all three, so HOLD, COME, MOVE and JOB work on it), and the mini dial's SEL scope can be a squad.
+- **Saved** with the followers (`f.squadId`), so a reload keeps them.
+- **Gear:** a T2 piece carried by any member applies to all current members. If the carrier leaves the squad, the effect leaves with it.
 
 ## 5. Build order (each is a commit, its own tests, a full green run)
 
@@ -160,6 +169,7 @@ Each piece is an **effect** (what it does) at a **tier** (where it reaches): the
 - **B1 Puzzle engine:** `makePuzzle(skill, rng)` pure, with a test that every problem has exactly one correct choice and integer answers, over thousands of seeds at every skill.
 - **B2 HACK skill:** XP, levels 1 to 10, saved.
 - **B3 Panel integration:** QUICK HACK / SOLVE at a panel, the modal, fail and decoy rules.
+- **B0 Roster squads** (up to 3, named, saved, selectable; the T2 gear reach and a feature on their own).
 - **B4 Gear:** the `GEAR` effect table, the five tiers (one / squad of 3 / aura / team / team + player), the inventory, equip rules and the GEAR panel; tier reach recomputed on a slow tick. Tests: each tier reaches exactly who it should, same effect never stacks, a dead carrier's gear returns, T4/T5 survive a death.
 - **B5 Guns and mods:** `GUNS` and the gun mod slots (the Gunmaster's stage 6 depends on this).
 
@@ -188,6 +198,9 @@ No other file changes: the picker, the perk screen, the INFO pages and the roste
 4. **Class moves** work **only while you are that class**; switch and a follower falls back to its form's default move (`evoMoveAllowed` already enforces it once `playerClassId()` exists).
 
 ### Answered (the new asks)
+
+8. **Team gear (T4, T5)** goes in the **player's loadout slots** (2 T4, 1 T5), not on a unit.
+9. **The squad of 3 (T2)** is a **squad you set up in the roster**, not the nearest allies: see 4.3.
 
 5. **Hacker skill:** more variables = **harder and better gear**. The skill unlocks the tiers (1, 2, then 3 unknown variables); you choose how hard to go, up to your level.
 6. **Gear** is **kept for good** in the inventory (8 slots) and carries across runs. **Reworked:** it is individual gear in five tiers by reach (one follower, a squad of 3, an aura, the whole team, the whole team and you), see 4.2.
