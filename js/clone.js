@@ -660,7 +660,7 @@ const CSORTS = [
 // as a draw from the current mix (the ELEMENT MIX tab). It is offered in the
 // ROSTER only (the Command Center's roster tab and the phone roster): "that needs to be the only way", so the Crystal menu and the dock have none.
 const RECRUIT_COST = 30;
-// `element`: the one the player picked (js/commandcenter.js recruitPickerOpen); none = a draw from the current mix.
+// `element`: the one the player picked (js/recruitcrystal.js recruitDo); none = a draw from the current mix.
 function recruitFollower(element) {
     if (shardCount < RECRUIT_COST) { floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NEED " + RECRUIT_COST + " SHARDS", color: "#f44", life: 90, vy: -0.2 }); return false; }
     shardCount -= RECRUIT_COST; saveShards();

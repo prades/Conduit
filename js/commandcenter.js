@@ -173,7 +173,6 @@ function ccOpen(tab) {
     ccBuildFrame(); ccRender();
 }
 function ccClose() {
-    if (typeof recruitPickerClose === "function") recruitPickerClose();
     buildOrderPickerClose();
     ccOpenTab = null; ccRerollArmed = false; clearInterval(_ccTimer); _ccTimer = 0;
     const root = document.getElementById("ccRoot"); if (root) root.classList.remove("open");
@@ -191,7 +190,8 @@ function ccBuildFrame() {
     const sum = _ccEl("div", "cc-summary"); sum.id = "ccSummary"; head.appendChild(sum);   // the squad at a glance, on the roster
     // RECRUIT: a follower at the Crystal for RECRUIT_COST shards (clone.js recruitFollower), on the ROSTER tab only. It dims when the shards are short.
     const rec = _ccEl("button", "cc-recruit"); rec.id = "ccRecruit"; rec.appendChild(_ccEl("span", "cc-rl", "+ RECRUIT")); rec.appendChild(_ccEl("span", "cc-rs", ""));
-    _ccClick(rec, () => { recruitPickerOpen(); }); head.appendChild(rec);
+    _ccClick(rec, () => { recruitDo(); });   // straight away, as picked on the crystal (js/recruitcrystal.js)
+    const rcx = recruitCrystalBuild(false); rcx.id = "ccRecruitCrystal"; head.appendChild(rcx); head.appendChild(rec);
     const x = _ccEl("button", "cc-close", "✕ CLOSE"); x.id = "ccClose"; _ccClick(x, ccClose); head.appendChild(x); root.appendChild(head);
     const body = _ccEl("div", "cc-body"); body.id = "ccBody";
     const main = _ccEl("div", "cc-main"); main.id = "ccMain"; main.appendChild(_ccEl("div", "cc-filters")); main.lastChild.id = "ccFilters";
@@ -215,6 +215,7 @@ function ccRender() {
     const root = document.getElementById("ccRoot"); if (!root || !ccOpenTab) return;
     ccPrune();
     const rec = document.getElementById("ccRecruit");
+    const rcx = document.getElementById("ccRecruitCrystal"); if (rcx) { rcx.style.display = ccOpenTab === "roster" ? "" : "none"; recruitCrystalUpdate(rcx); }
     if (rec) { rec.style.display = ccOpenTab === "roster" ? "" : "none"; const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = "\u25c6" + cost; }
     const ttl = document.getElementById("ccTitle"); if (ttl) ttl.textContent = ccOpenTab === "zones" ? "ZONES" : "COMMAND CENTER";
     const sum = document.getElementById("ccSummary");
@@ -445,35 +446,6 @@ function initCommandCenter() {
     ccRefreshChip();
 }
 try { initCommandCenter(); } catch (e) { /* no page (the test sandbox): the logic above still works */ }
-
-// ── THE RECRUIT PICKER ──
-// "It should bring up the element selection after clicking recruit." The + RECRUIT buttons (here and in the phone roster) open this: one card per
-// unlocked element, and RANDOM FROM MIX for a draw from the current mix. Picking one pays RECRUIT_COST and a follower of that element comes out at the
-// Crystal (clone.js recruitFollower); the picker closes. Tapping outside, or CANCEL, closes it without spending anything.
-function recruitPickerClose() { const r = document.getElementById("recruitPicker"); if (r && r.parentNode) r.parentNode.removeChild(r); }
-function recruitPickerOpen() {
-    recruitPickerClose();
-    const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost;
-    const root = _ccEl("div", "rp-pick"); root.id = "recruitPicker";
-    _ccClick(root, () => recruitPickerClose());
-    const card = _ccEl("div", "rpk-card"); _ccClick(card, e => { if (e && e.stopPropagation) e.stopPropagation(); });
-    card.appendChild(_ccEl("div", "rpk-title", "RECRUIT A FOLLOWER"));
-    card.appendChild(_ccEl("div", "rpk-sub", "\u25c6" + cost + " \u00b7 YOU HAVE \u25c6" + shardCount + (can ? " \u00b7 PICK AN ELEMENT" : " \u00b7 NOT ENOUGH SHARDS")));
-    const grid = _ccEl("div", "rpk-grid");
-    (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(e => unlockedElements.has(e.id)).forEach(el => {
-        const b = _ccEl("button", "rpk-el" + (can ? "" : " dim")); b.style.setProperty("--c", el.color);
-        b.appendChild(_ccEl("span", "rpk-gem", "\u25c6")); b.appendChild(_ccEl("span", "rpk-name", el.label.toUpperCase()));
-        _ccClick(b, e => { if (e && e.stopPropagation) e.stopPropagation(); recruitFollower(el.id); recruitPickerClose(); if (typeof ccRender === "function") ccRender(); if (typeof radialRender === "function") radialRender(); });
-        grid.appendChild(b);
-    });
-    card.appendChild(grid);
-    const row = _ccEl("div", "rpk-row");
-    const mix = _ccEl("button", "rpk-btn mix" + (can ? "" : " dim"), "RANDOM FROM MIX"); _ccClick(mix, e => { if (e && e.stopPropagation) e.stopPropagation(); recruitFollower(); recruitPickerClose(); if (typeof ccRender === "function") ccRender(); if (typeof radialRender === "function") radialRender(); });
-    const cancel = _ccEl("button", "rpk-btn", "CANCEL"); _ccClick(cancel, e => { if (e && e.stopPropagation) e.stopPropagation(); recruitPickerClose(); });
-    row.appendChild(mix); row.appendChild(cancel); card.appendChild(row);
-    root.appendChild(card); document.body.appendChild(root);
-    return root;
-}
 
 // ── THE BUILD ORDER PICKER ──
 // What to queue in a zone: a GENERATOR, a BATTERY (an element, and ×1 / a pod of four / a pod of six) or a TURRET (an element). It is added to the zone's

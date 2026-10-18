@@ -637,6 +637,7 @@
         #radialPanel .rp-row.sel { background: rgba(255,255,255,0.07); } #radialPanel .rp-name { color: #fff; font-size: 14px; font-style: italic; font-weight: 900; }
         #radialPanel .rp-count { color: var(--c); font-size: 20px; font-style: italic; font-weight: 900; line-height: 1; }
         #radialPanel .rp-bar { grid-column: 1 / -1; height: 9px; background: #05070f; border: 1px solid var(--c); } #radialPanel .rp-bar i { display: block; height: 100%; background: var(--c); }
+        #radialPanel .rp-rcx { display: flex; justify-content: center; padding: 2px 0 6px; }
         #radialPanel .rp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
         #radialPanel .rp-chip { color: #fff; font-size: 13px; font-style: italic; font-weight: 900; padding: 6px 10px; border: 2px solid var(--c); background: #0a1022; }
         #radialPanel .rp-btn { color: #fff; background: #0a1022; border: 2px solid var(--c); font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 14px; padding: 9px 12px; min-height: 40px; cursor: pointer; touch-action: manipulation; box-shadow: 0 0 8px var(--c); }
@@ -771,17 +772,33 @@
     #overlay .ovr-stat-val { font-size: 38px; font-style: italic; font-weight: 900; text-shadow: 0 0 12px currentColor; }
     #overlay .ovr-btn { font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 26px; letter-spacing: 1px; color: #fff; background: #0a1022; border: 3px solid var(--neo-teal); border-radius: 0; padding: 14px 54px; margin-top: 22px !important; min-height: 58px; transform: skewX(-12deg); box-shadow: 0 0 16px rgba(25,230,193,0.5); }
     #overlay .ovr-btn:hover, #overlay .ovr-btn:active { background: var(--neo-teal); color: #05070f; }
-    /* ── THE RECRUIT PICKER (js/commandcenter.js recruitPickerOpen): the element choice after + RECRUIT ── */
-    #recruitPicker, #orderPicker { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; background: rgba(2,4,12,0.78); font-family: var(--neo-font); color: #fff; padding: 12px; box-sizing: border-box; }
-    #recruitPicker .rpk-card, #orderPicker .rpk-card { position: relative; width: min(94vw, 560px); box-sizing: border-box; padding: 24px 26px 22px; background: linear-gradient(180deg, #0f1730, #060914); border: 3px solid var(--neo-gold); box-shadow: 0 0 24px rgba(255,231,51,0.45); }
-    #recruitPicker .rpk-title { font-size: clamp(24px, 5vw, 34px); font-style: italic; font-weight: 900; color: var(--neo-gold); text-shadow: 0 0 12px var(--neo-gold); }
-    #recruitPicker .rpk-sub { font: 700 14px monospace; color: #8aa0c8; margin: 6px 0 16px; }
-    #recruitPicker .rpk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-    #recruitPicker .rpk-el { --c: #19e6c1; display: flex; align-items: center; gap: 10px; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 20px; color: #fff; background: #0a1022; border: 2.5px solid var(--c); padding: 14px 14px; min-height: 58px; cursor: pointer; touch-action: manipulation; transform: skewX(-8deg); }
-    #recruitPicker .rpk-el > * { transform: skewX(8deg); } #recruitPicker .rpk-gem { color: var(--c); font-size: 22px; text-shadow: 0 0 10px var(--c); }
-    #recruitPicker .rpk-el:hover, #recruitPicker .rpk-el:active { background: var(--c); color: #05070f; } #recruitPicker .rpk-el:hover .rpk-gem, #recruitPicker .rpk-el:active .rpk-gem { color: #05070f; text-shadow: none; } #recruitPicker .dim { opacity: 0.45; }
-    #recruitPicker .rpk-row { display: flex; gap: 10px; margin-top: 14px; } #recruitPicker .rpk-btn { flex: 1; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 18px; color: #fff; background: #0a1022; border: 2.5px solid #6a7aa0; padding: 12px; min-height: 50px; cursor: pointer; touch-action: manipulation; transform: skewX(-8deg); }
-    #recruitPicker .rpk-btn.mix { border-color: var(--neo-gold); color: var(--neo-gold); } #recruitPicker .rpk-btn:hover { background: #162040; }
+    /* ── THE RECRUIT CRYSTAL (js/recruitcrystal.js): a hexagonal prism of CSS 3D faces, one facet per element; slow turn and bob, no flashing ── */
+    .rcx { --w: 32px; --pick: #ffe733; display: inline-flex; align-items: center; gap: 4px; font-family: var(--neo-font); }
+    .rcx.compact { --w: 22px; }
+    .rcx-stage { position: relative; width: calc(var(--w) * 2.9); height: calc(var(--w) * 3); margin: calc(var(--w) * -0.5) 0; perspective: calc(var(--w) * 9); flex: none; }
+    .rcx-stage::before { content: ""; position: absolute; inset: 8% 6% 14%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--pick) 38%, transparent), transparent 75%); }
+    .rcx-stage::after { content: ""; position: absolute; left: 22%; right: 22%; bottom: 3%; height: 9%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,0.55), transparent); }
+    .rcx-gem { position: absolute; inset: 0; transform-style: preserve-3d; transform: translateY(2%) rotateX(-14deg); animation: rcxBob 5s ease-in-out infinite; }
+    .rcx-turn { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; transform: rotateY(var(--ry, 0deg)); transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1); }
+    .rcx.mix .rcx-turn { transition: none; animation: rcxSpin 16s linear infinite; }
+    .rcx-col { position: absolute; left: calc(var(--w) / -2); top: 0; width: var(--w); height: 0; transform-style: preserve-3d; transform: rotateY(calc(var(--i) * 60deg)) translateZ(calc(var(--w) * 0.866)); }
+    .rcx-f { position: absolute; left: 0; width: 100%; cursor: pointer; backface-visibility: hidden; -webkit-backface-visibility: hidden; touch-action: manipulation; background: var(--c); }
+    .rcx-side { top: calc(var(--w) / -2); height: var(--w); background: linear-gradient(150deg, rgba(255,255,255,0.6), rgba(255,255,255,0) 38%), linear-gradient(0deg, rgba(0,0,0,0.38), rgba(0,0,0,0) 62%), var(--c); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55), inset 0 0 calc(var(--w) * 0.3) rgba(255,255,255,0.22); }
+    .rcx-top { top: calc(var(--w) * -1.593); height: calc(var(--w) * 1.093); transform-origin: 50% 100%; transform: rotateX(52.4deg); clip-path: polygon(50% 0, 100% 100%, 0 100%); background: linear-gradient(0deg, rgba(255,255,255,0.18), rgba(255,255,255,0.72)), var(--c); }
+    .rcx-bot { top: calc(var(--w) / 2); height: calc(var(--w) * 1.093); transform-origin: 50% 0; transform: rotateX(-52.4deg); clip-path: polygon(0 0, 100% 0, 50% 100%); background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.62)), var(--c); }
+    .rcx-col.locked .rcx-f { filter: grayscale(1) brightness(0.42); opacity: 0.9; }
+    .rcx-col.sel .rcx-side { filter: brightness(1.12) saturate(1.1); }
+    .rcx-arrow { width: 26px; height: 40px; font: 900 24px var(--neo-font); line-height: 1; color: #cfe0ff; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.22); cursor: pointer; padding: 0; touch-action: manipulation; transform: skewX(-8deg); }
+    .rcx-arrow:hover { color: #05070f; background: var(--pick); border-color: var(--pick); }
+    .rcx-label { display: flex; flex-direction: column; justify-content: center; min-width: 92px; margin-left: 4px; }
+    .rcx-name { font-style: italic; font-weight: 900; font-size: 22px; line-height: 1; letter-spacing: 0.5px; }
+    .rcx-cap { font: 700 12px monospace; color: #8aa0c8; letter-spacing: 0.08em; margin-top: 3px; }
+    .rcx.compact .rcx-arrow { width: 22px; height: 34px; } .rcx.compact .rcx-name { font-size: 18px; } .rcx.compact .rcx-label { min-width: 70px; }
+    @keyframes rcxSpin { to { transform: rotateY(360deg); } }
+    @keyframes rcxBob { 0%, 100% { transform: translateY(2%) rotateX(-14deg); } 50% { transform: translateY(-3%) rotateX(-14deg); } }
+    @media (prefers-reduced-motion: reduce) { .rcx-gem, .rcx.mix .rcx-turn { animation: none; } }
+    /* ── THE ORDER PICKER (js/commandcenter.js buildOrderPickerOpen); the recruit picker that shared these rules is gone ── */
+    #orderPicker { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; background: rgba(2,4,12,0.78); font-family: var(--neo-font); color: #fff; padding: 12px; box-sizing: border-box; }
     /* ── THE UNIT INFO (js/unitinfo.js): the INFO tab on every card ── */
     #ccRoot .cc-tags { padding-right: 64px; } #ccRoot .cc-info { position: absolute; right: 8px; bottom: 6px; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 12px; letter-spacing: 0.5px; color: #05070f; background: var(--neo-ice); border: none; padding: 4px 12px; cursor: pointer; touch-action: manipulation; transform: skewX(-10deg); } #ccRoot .cc-info:hover { background: #fff; }
     #unitInfo { position: fixed; inset: 0; z-index: 92; display: flex; align-items: center; justify-content: center; background: rgba(2,4,12,0.8); font-family: var(--neo-font); color: #fff; padding: 10px; box-sizing: border-box; }
@@ -1670,12 +1687,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-18e, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-18f, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-18e";
+window.__PAGE_BUILD = "2026-10-18f";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1711,68 +1728,69 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-18e"></script>
-<script src="js/icons.js?v=2026-10-18e"></script>
-<script src="js/uikit.js?v=2026-10-18e"></script>
-<script src="js/rng.js?v=2026-10-18e"></script>
-<script src="js/traits.js?v=2026-10-18e"></script>
-<script src="js/elements.js?v=2026-10-18e"></script>
-<script src="js/combat.js?v=2026-10-18e"></script>
-<script src="js/species.js?v=2026-10-18e"></script>
-<script src="js/levels.js?v=2026-10-18e"></script>
-<script src="js/status.js?v=2026-10-18e"></script>
-<script src="js/predator_randomizer.js?v=2026-10-18e"></script>
-<script src="js/mass.js?v=2026-10-18e"></script>
-<script src="js/infest.js?v=2026-10-18e"></script>
-<script src="js/power.js?v=2026-10-18e"></script>
-<script src="js/save.js?v=2026-10-18e"></script>
-<script src="js/camp.js?v=2026-10-18e"></script>
-<script src="js/wavedata.js?v=2026-10-18e"></script>
-<script src="js/helpers.js?v=2026-10-18e"></script>
-<script src="js/predator.js?v=2026-10-18e"></script>
-<script src="js/abilities.js?v=2026-10-18e"></script>
-<script src="js/world.js?v=2026-10-18e"></script>
-<script src="js/commands.js?v=2026-10-18e"></script>
-<script src="js/npc.js?v=2026-10-18e"></script>
-<script src="js/codex.js?v=2026-10-18e"></script>
-<script src="js/draw.js?v=2026-10-18e"></script>
-<script src="js/beetle3d.js?v=2026-10-18e"></script>
-<script src="js/bugs3d.js?v=2026-10-18e"></script>
-<script src="js/ui.js?v=2026-10-18e"></script>
-<script src="js/waves.js?v=2026-10-18e"></script>
-<script src="js/drops.js?v=2026-10-18e"></script>
-<script src="js/clone.js?v=2026-10-18e"></script>
-<script src="js/clonework.js?v=2026-10-18e"></script>
-<script src="js/broods.js?v=2026-10-18e"></script>
-<script src="js/raids.js?v=2026-10-18e"></script>
-<script src="js/ultra.js?v=2026-10-18e"></script>
-<script src="js/formations.js?v=2026-10-18e"></script>
-<script src="js/breakout.js?v=2026-10-18e"></script>
-<script src="js/nightraids.js?v=2026-10-18e"></script>
-<script src="js/bonds.js?v=2026-10-18e"></script>
-<script src="js/autoplay.js?v=2026-10-18e"></script>
-<script src="js/indexart.js?v=2026-10-18e"></script>
-<script src="js/modules.js?v=2026-10-18e"></script>
-<script src="js/shieldcells.js?v=2026-10-18e"></script>
-<script src="js/evolution.js?v=2026-10-18e"></script>
-<script src="js/hdsprites.js?v=2026-10-18e"></script>
-<script src="js/moves.js?v=2026-10-18e"></script>
-<script src="js/squads.js?v=2026-10-18e"></script>
-<script src="js/buildmenu.js?v=2026-10-18e"></script>
-<script src="js/hudgems.js?v=2026-10-18e"></script>
-<script src="js/nethud.js?v=2026-10-18e"></script>
-<script src="js/commandcenter.js?v=2026-10-18e"></script>
-<script src="js/unitinfo.js?v=2026-10-18e"></script>
-<script src="js/zones.js?v=2026-10-18e"></script>
-<script src="js/kits.js?v=2026-10-18e"></script>
-<script src="js/kitui.js?v=2026-10-18e"></script>
-<script src="js/toolbox.js?v=2026-10-18e"></script>
-<script src="js/minicmd.js?v=2026-10-18e"></script>
-<script src="js/radialmenu.js?v=2026-10-18e"></script>
-<script src="js/input.js?v=2026-10-18e"></script>
-<script src="js/game.js?v=2026-10-18e"></script>
-<script src="js/tutorial.js?v=2026-10-18e"></script>
-<script src="js/dev.js?v=2026-10-18e"></script>
+<script src="js/config.js?v=2026-10-18f"></script>
+<script src="js/icons.js?v=2026-10-18f"></script>
+<script src="js/uikit.js?v=2026-10-18f"></script>
+<script src="js/rng.js?v=2026-10-18f"></script>
+<script src="js/traits.js?v=2026-10-18f"></script>
+<script src="js/elements.js?v=2026-10-18f"></script>
+<script src="js/combat.js?v=2026-10-18f"></script>
+<script src="js/species.js?v=2026-10-18f"></script>
+<script src="js/levels.js?v=2026-10-18f"></script>
+<script src="js/status.js?v=2026-10-18f"></script>
+<script src="js/predator_randomizer.js?v=2026-10-18f"></script>
+<script src="js/mass.js?v=2026-10-18f"></script>
+<script src="js/infest.js?v=2026-10-18f"></script>
+<script src="js/power.js?v=2026-10-18f"></script>
+<script src="js/save.js?v=2026-10-18f"></script>
+<script src="js/camp.js?v=2026-10-18f"></script>
+<script src="js/wavedata.js?v=2026-10-18f"></script>
+<script src="js/helpers.js?v=2026-10-18f"></script>
+<script src="js/predator.js?v=2026-10-18f"></script>
+<script src="js/abilities.js?v=2026-10-18f"></script>
+<script src="js/world.js?v=2026-10-18f"></script>
+<script src="js/commands.js?v=2026-10-18f"></script>
+<script src="js/npc.js?v=2026-10-18f"></script>
+<script src="js/codex.js?v=2026-10-18f"></script>
+<script src="js/draw.js?v=2026-10-18f"></script>
+<script src="js/beetle3d.js?v=2026-10-18f"></script>
+<script src="js/bugs3d.js?v=2026-10-18f"></script>
+<script src="js/ui.js?v=2026-10-18f"></script>
+<script src="js/waves.js?v=2026-10-18f"></script>
+<script src="js/drops.js?v=2026-10-18f"></script>
+<script src="js/clone.js?v=2026-10-18f"></script>
+<script src="js/clonework.js?v=2026-10-18f"></script>
+<script src="js/broods.js?v=2026-10-18f"></script>
+<script src="js/raids.js?v=2026-10-18f"></script>
+<script src="js/ultra.js?v=2026-10-18f"></script>
+<script src="js/formations.js?v=2026-10-18f"></script>
+<script src="js/breakout.js?v=2026-10-18f"></script>
+<script src="js/nightraids.js?v=2026-10-18f"></script>
+<script src="js/bonds.js?v=2026-10-18f"></script>
+<script src="js/autoplay.js?v=2026-10-18f"></script>
+<script src="js/indexart.js?v=2026-10-18f"></script>
+<script src="js/modules.js?v=2026-10-18f"></script>
+<script src="js/shieldcells.js?v=2026-10-18f"></script>
+<script src="js/evolution.js?v=2026-10-18f"></script>
+<script src="js/hdsprites.js?v=2026-10-18f"></script>
+<script src="js/moves.js?v=2026-10-18f"></script>
+<script src="js/squads.js?v=2026-10-18f"></script>
+<script src="js/recruitcrystal.js?v=2026-10-18f"></script>
+<script src="js/buildmenu.js?v=2026-10-18f"></script>
+<script src="js/hudgems.js?v=2026-10-18f"></script>
+<script src="js/nethud.js?v=2026-10-18f"></script>
+<script src="js/commandcenter.js?v=2026-10-18f"></script>
+<script src="js/unitinfo.js?v=2026-10-18f"></script>
+<script src="js/zones.js?v=2026-10-18f"></script>
+<script src="js/kits.js?v=2026-10-18f"></script>
+<script src="js/kitui.js?v=2026-10-18f"></script>
+<script src="js/toolbox.js?v=2026-10-18f"></script>
+<script src="js/minicmd.js?v=2026-10-18f"></script>
+<script src="js/radialmenu.js?v=2026-10-18f"></script>
+<script src="js/input.js?v=2026-10-18f"></script>
+<script src="js/game.js?v=2026-10-18f"></script>
+<script src="js/tutorial.js?v=2026-10-18f"></script>
+<script src="js/dev.js?v=2026-10-18f"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1825,7 +1843,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-18e"></script>
+<script src="js/init.js?v=2026-10-18f"></script>
 
 </body>
 </html>

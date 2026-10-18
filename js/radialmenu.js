@@ -143,7 +143,9 @@ function _radialDrawRoster(panel) {
     const rows = radialRosterRows();
     panel.appendChild(_rEl("div", "rp-title", "ROSTER"));
     panel.appendChild(_rEl("div", "rp-sub", rows.length + " FOLLOWERS"));
-    { const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, b = _rEl("button", "rp-btn wide" + (shardCount >= cost ? " on" : ""), "+ RECRUIT \u25c6" + cost); b.style.setProperty("--c", "#ffe733"); _rClick(b, () => { recruitPickerOpen(); }); panel.appendChild(b); }
+    { const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, b = _rEl("button", "rp-btn wide" + (shardCount >= cost ? " on" : ""), "+ RECRUIT \u25c6" + cost); b.style.setProperty("--c", "#ffe733"); _rClick(b, () => { recruitDo(); });
+      if (typeof recruitCrystalBuild === "function") { const row = _rEl("div", "rp-rcx"); row.appendChild(recruitCrystalBuild(true)); panel.appendChild(row); }   // the crystal that picks the element (js/recruitcrystal.js)
+      panel.appendChild(b); }
     if (!rows.length) panel.appendChild(_rEl("div", "rp-sub", "NONE YET: RECRUIT ONE ABOVE"));
     // ROSTER SQUADS (js/squads.js): a chip per squad selects it; MAKE SQUAD turns the selection (1 to 3) into one
     if (typeof squadsLive === "function" && rows.length) {

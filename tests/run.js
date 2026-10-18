@@ -39,7 +39,7 @@ const SUITES = [
     ['shard gems + alarm',      'hudgems.js'],
     ['network panel + signal',  'nethud.js'],
     ['power build + switches',  'powerbuild.js'],
-    ['recruit picker',          'recruitpicker.js'],
+    ['recruit crystal',         'recruitcrystal.js'],
     ['clone card strip',        'clonecards.js'],
     ['unit info tab',           'unitinfo.js'],
     ['mini command radial',     'minicmd.js'],

@@ -149,8 +149,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('THE ASK: RECRUIT is in the roster (the Command Center, shown on its roster tab only; the phone roster) and nowhere else: not the dock, not the Crystal', () => {
         ok(!/id="btnRecruit"/.test(html), 'the dock still has a recruit button');
         const cc = fs.readFileSync(path.join(ROOT, 'js/commandcenter.js'), 'utf8'), rm = fs.readFileSync(path.join(ROOT, 'js/radialmenu.js'), 'utf8'), cl = fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8');
-        ok(/id = "ccRecruit"[\s\S]{0,200}recruitPickerOpen\(\)/.test(cc), 'the Command Center has no recruit button'); ok(/rec\.style\.display = ccOpenTab === "roster"/.test(cc), 'it shows on other tabs');
-        ok(/RECRUIT \\u25c6[\s\S]{0,200}recruitPickerOpen\(\)/.test(rm), 'the phone roster has no recruit button');
+        ok(/id = "ccRecruit"[\s\S]{0,200}recruitDo\(\)/.test(cc), 'the Command Center has no recruit button'); ok(/rec\.style\.display = ccOpenTab === "roster"/.test(cc), 'it shows on other tabs');
+        ok(/RECRUIT \\u25c6[\s\S]{0,200}recruitDo\(\)/.test(rm), 'the phone roster has no recruit button');
         ok(!/id:"recruit"/.test(cl) && !/_drawRecruitTab/.test(cl) && !/_recruitBtnBounds/.test(cl), 'the Crystal still has a RECRUIT tab');
         same(run('CTABS.map(t => t.id).join()'), 'modulation,info', 'the Crystal tabs');
     });
