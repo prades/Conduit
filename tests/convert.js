@@ -54,15 +54,14 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     await check('THE ASK: the first choice is attack, support, disruption, connector or generator', () => {
         const r = run(`__fresh(); openElementPicker('build', __row[0]); __labels()`);
-        // BATTERY joined the list when the network tier moved onto batteries.
-        ok(JSON.stringify(r) === JSON.stringify(['ATTACK TURRET', 'SUPPORT PYLON', 'DISRUPTION PYLON', 'BATTERY', 'CONNECTOR', 'GENERATOR']), JSON.stringify(r));
+        // BATTERY left the list again: batteries are the wall's power unit (js/wallunit.js).
+        ok(JSON.stringify(r) === JSON.stringify(['ATTACK TURRET', 'SUPPORT PYLON', 'DISRUPTION PYLON', 'CONNECTOR', 'GENERATOR']), JSON.stringify(r));
     });
-    await check('BATTERY asks for any element, and builds a battery of it', () => {
-        const r = run(`__fresh(); openElementPicker('build', __row[0]); __tap('BATTERY');
-            const st = { stage: elementPickerStage, kind: elementPickerKind, n: __labels().length };
-            _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), __row[0], elementPickerKind); closeElementPicker();
-            Object.assign(st, { bat: !!__row[0].isBattery, el: __row[0].attackModeElement, atk: !!__row[0].attackMode, wave: !!__row[0].waveMode }); st`);
-        ok(r.stage === 'element' && r.kind === 'battery' && r.n === 6, 'no element step: ' + JSON.stringify(r));
+    await check('the picker has no BATTERY: a battery is the wall power unit, and the engine still builds one when asked', () => {
+        const r = run(`__fresh(); openElementPicker('build', __row[0]); const has = __labels().includes('BATTERY'); closeElementPicker();
+            _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), __row[0], 'battery');
+            ({ has, bat: !!__row[0].isBattery, el: __row[0].attackModeElement, atk: !!__row[0].attackMode, wave: !!__row[0].waveMode })`);
+        ok(!r.has, 'BATTERY is still offered');
         ok(r.bat && r.el === 'fire' && !r.atk && !r.wave, 'not built as a battery: ' + JSON.stringify(r));
     });
     await check('support or disruption then asks for an element that does that job', () => {

@@ -397,7 +397,7 @@ const TUTS = [
         // next step can watch it fill.
         id:    'battery',
         title: 'BOOT THE POWER UNIT',
-        body:  'The batteries are one machine set into the zone\'s back wall. Tap the dark panels, pick an element and press BOOT. UPGRADE it later: its cells are batteries, and 2 / 4 / 6 of them make tier I / II / III.',
+        body:  'The batteries are one POWER UNIT set into the zone\'s back wall. Tap the dark panels, pick an element and press BOOT. UPGRADE it later: its cells are batteries, and 2 / 4 / 6 of them make tier I / II / III.',
         icon:  '\u25a5',
         target: () => (typeof wallUnitTiles === 'function' && wallUnitTiles(0)[2]) || tutNearestPylon(),
         check: () => world.some(t => t.pillar && t.isBattery && !t.destroyed),

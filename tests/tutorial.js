@@ -1104,7 +1104,7 @@ check('THE NEW WAY: power, then build a battery, then watch it charge, before th
     const tuts = env.run('TUTS'), body = id => tuts.find(s => s.id === id).body;
     ok(/CHARGE/.test(body('power')) && /BATTERY/.test(body('power')) && !/Each nest you have neutralised is a battery/.test(body('power')),
        'the power step does not teach nest \u2192 battery \u2192 pylon');
-    ok(/BATTERY/.test(body('battery')) && /UPGRADE/.test(body('battery')), 'it does not say how to build one');
+    ok(/power unit/i.test(body('battery')) && /boot/i.test(body('battery')) && /upgrade/i.test(body('battery')), 'it does not say how to boot the power unit');
     ok(/BATT/.test(body('charge')) && /MK II/.test(body('charge')), 'it does not point at the readout and MK II');
 });
 

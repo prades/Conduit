@@ -48,11 +48,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     console.log('\nTHE BLACK HOLE');
-    // A black hole needs a flux tier II network: a pod of four flux batteries first.
+    // A black hole needs a flux tier II network: the wall power unit booted as flux and upgraded once (four cells).
     const F = run(`(function(){ toggleBuild(); if (!buildMenuOpen) toggleBuild();
-        buildLevel.power = 2; buildMenuTab = 'power'; setBuildTool(buildMenuItems('power').find(i => i.kind === 'battery' && i.elId === 'flux'));
-        for (const t of world) { if (t.x >= 0 && canBuildAt(t).ok) { buildToolPlaceAt(t); break; } }
-        setBuildTool(null); buildLevel.power = 1; _cacheAge = -999; for (let i = 0; i < 31; i++) render();
+        shardCount = 900; wallUnitBoot(0, 'flux'); wallUnitUpgrade(0); _cacheAge = -999; for (let i = 0; i < 31; i++) render();
         buildLevel.wave = 3; buildMenuTab = 'wave';
         setBuildTool(buildMenuItems('wave').find(i => i.elId === 'flux'));
         let best = null; for (const t of world) { if (t.x >= 0 && canBuildAt(t).ok) { best = t; break; } }
