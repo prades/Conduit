@@ -154,6 +154,7 @@ function drawSelectedUnitRings() {
 }
 
 // ═════════ THE OVERLAY (DOM) ═════════
+let _ccSideSig = "", _ccSqSigS = "";   // the side panel and the squad strip are redrawn only when what they show changes: a redraw every tick lost taps and sent the panel back to its top
 let _ccPageSig = "";   // the analytics page is redrawn only when what it shows changes (a click is never lost to a redraw)
 let ccOpenTab = null, ccFilter = { element: null, role: null, duty: null, kind: null }, ccRerollArmed = false, _ccTimer = 0;
 const _ccCards = new Map();   // unit → its card element (updated in place, so a click is never lost to a redraw)
@@ -220,7 +221,7 @@ function ccRender() {
     const ttl = document.getElementById("ccTitle"); if (ttl) ttl.textContent = ccOpenTab === "zones" ? "ZONES" : "COMMAND CENTER";
     const sum = document.getElementById("ccSummary");
     if (sum) { sum.style.display = ccOpenTab === "roster" ? "" : "none"; if (ccOpenTab === "roster") { const st = radialSquadStats("all"); sum.textContent = st.total + " UNITS \u00b7 " + st.working + " WORKING \u00b7 AVG LEVEL " + st.avgLevel + " \u00b7 " + st.evolved + " EVOLVED"; } }
-    const sqBox = document.getElementById("ccSquads"); if (sqBox) { sqBox.style.display = ccOpenTab === "roster" ? "flex" : "none"; if (ccOpenTab === "roster") { try { _ccDrawSquads(sqBox); } catch (e) { /* never take the game down */ } } }
+    const sqBox = document.getElementById("ccSquads"); if (sqBox) { sqBox.style.display = ccOpenTab === "roster" ? "flex" : "none"; if (ccOpenTab === "roster") { const sg = _ccSqSig(); if (sg !== _ccSqSigS || !sqBox.firstChild) { _ccSqSigS = sg; try { _ccDrawSquads(sqBox); } catch (e) { /* never take the game down */ } } } }
     const filters = document.getElementById("ccFilters"), grid = document.getElementById("ccGrid"), page = document.getElementById("ccPage"), side = document.getElementById("ccSide");
     if (!filters || !grid || !page || !side) return;
     const roster = ccOpenTab === "roster";
@@ -228,7 +229,7 @@ function ccRender() {
     side.style.display = ccOpenTab === "zones" ? "none" : "flex";
     if (roster) { _ccDrawFilters(filters); _ccDrawGrid(grid); }
     else { const sig = _ccZonesSig(); if (sig !== _ccPageSig || !page.firstChild) { _ccPageSig = sig; const keep = page.scrollTop; page.textContent = ""; try { _ccDrawSquad(page); } catch (e) { /* never take the game down */ } page.scrollTop = keep; } }
-    if (ccOpenTab !== "zones") { try { _ccDrawSide(side); } catch (e) {} }
+    if (ccOpenTab !== "zones") { const sg = _ccSideSigNow(); if (sg !== _ccSideSig || !side.firstChild) { _ccSideSig = sg; const keep = side.scrollTop; try { _ccDrawSide(side); } catch (e) {} side.scrollTop = keep; } }
     ccRefreshChip();
 }
 
@@ -303,9 +304,18 @@ function _ccThumb(cv, f) {
 // The right-hand panel: what the SELECTION does.
 function _ccDrawSide(side) {
     side.textContent = "";
-    const S = ccSelectionSummary();
+    const S = ccSelectionSummary(), exactSq = _ccExactSquad(ccSelectionList());
+    if (exactSq) {
+        // the selection IS a squad: its own menu, with the members, then the orders below as for any selection
+        const col = squadColour(exactSq), mem = squadMembers(exactSq);
+        const t = _ccEl("div", "cc-sel-title", "SQUAD " + exactSq); t.style.color = col; t.style.textShadow = "0 0 12px " + col; side.appendChild(t);
+        side.appendChild(_ccEl("div", "cc-sel-sub", mem.length + " OF " + SQUAD_MAX + " \u00b7 ORDERS IN THE WORLD GO TO THE SQUAD \u00b7 GEAR FOR A SQUAD WILL REACH ALL OF THEM"));
+        const box = _ccEl("div", "cc-sqm"); mem.forEach(m => { const r = _ccEl("div", "cc-sqm-row"); r.style.setProperty("--c", _ccColour(m.element)); r.appendChild(_ccEl("span", "cc-sqm-n", (typeof unitTypeLabel === "function" ? unitTypeLabel(m) : "UNIT") + " \u00b7 LV " + (m.level || 1))); const st = typeof unitStatus === "function" ? unitStatus(m) : null; if (st) r.appendChild(_ccEl("span", "cc-sqm-s", st.text)); box.appendChild(r); }); side.appendChild(box);
+        const dr = _ccEl("div", "cc-row"); dr.appendChild(_ccBtn("DISBAND SQUAD", "#8aa0c8", false, () => squadDisband(exactSq), "wide")); side.appendChild(dr);
+    } else {
     side.appendChild(_ccEl("div", "cc-sel-title", "SELECTED " + S.count));
     side.appendChild(_ccEl("div", "cc-sel-sub", S.count ? S.followers + " FOLLOWERS · " + S.clones + " CLONES · ORDERS IN THE WORLD GO TO THEM" : "CLICK A CARD TO SELECT IT"));
+    }
     _ccQuickSelect(side);
     const sel = ccSelectionList();
     _ccDrawSquadControls(side, sel);
@@ -327,17 +337,37 @@ function _ccDrawSide(side) {
     _ccDrawSquadOrders(side);
 }
 
+// What the squad strip shows: each squad, its members and whether each is selected.
+function _ccSqSig() {
+    if (typeof squadsLive !== "function") return "";
+    return squadsLive().map(s => s.id + ":" + s.members.map(m => (m.level || 1) + (selectedUnits.has(m) ? "*" : "") + (m.evolved || "")).join(",")).join("|") + "#" + selectedUnits.size;
+}
+// Everything the side panel shows: the selection summary, the squads, the scope, the element, who would get world orders.
+function _ccSideSigNow() {
+    const pool = typeof getCommandPool === "function" ? getCommandPool().filter(f => !f.dead).length : 0;
+    return JSON.stringify(ccSelectionSummary()) + "|" + _ccSqSig() + "|" + squadMode + "|" + (typeof player !== "undefined" ? player.selectedElement : "") + "|" + ccRerollArmed + "|" + pool + "|" + (typeof unlockedElements !== "undefined" ? unlockedElements.size : 0);
+}
+// The squad the selection IS (every member of one squad and nobody else), else null.
+function _ccExactSquad(sel) {
+    if (typeof squadOf !== "function" || !sel.length || sel.some(a => a.isClone)) return null;
+    const id = squadOf(sel[0]); if (!id || sel.some(a => squadOf(a) !== id)) return null;
+    return squadMembers(id).length === sel.length ? id : null;
+}
 // ROSTER SQUADS (js/squads.js): the strip above the cards, one chip per squad with its members, SELECT and DISBAND.
 function _ccDrawSquads(box) {
     box.textContent = "";
     const live = typeof squadsLive === "function" ? squadsLive() : [];
-    if (!live.length) { box.appendChild(_ccEl("div", "cc-sq-hint", "NO SQUADS YET \u00b7 SELECT UP TO 3 FOLLOWERS, THEN TAP MAKE SQUAD")); return; }
+    if (!live.length) { box.appendChild(_ccEl("div", "cc-sq-hint", "SQUADS: 1) TAP UP TO 3 CARDS  2) TAP MAKE SQUAD (RIGHT)  3) TAP THE SQUAD HERE TO SELECT IT AGAIN")); return; }
     live.forEach(sq => {
         const c = _ccEl("div", "cc-sq"); c.style.setProperty("--c", sq.col);
         c.appendChild(_ccEl("div", "cc-sq-badge", sq.id));
         const mem = _ccEl("div", "cc-sq-mem"); sq.members.forEach(m => { const l = _ccEl("div", "", (typeof unitTypeLabel === "function" ? unitTypeLabel(m) : "UNIT")); l.appendChild(_ccEl("i", "", " LV " + (m.level || 1))); mem.appendChild(l); }); c.appendChild(mem);
-        c.appendChild(_ccBtn("SELECT", sq.col, sq.members.length > 0 && sq.members.every(m => selectedUnits.has(m)), () => squadSelect(sq.id), "small"));
-        c.appendChild(_ccBtn("DISBAND", "#8aa0c8", false, () => squadDisband(sq.id), "small"));
+        const on = sq.members.every(m => selectedUnits.has(m)) && selectedUnits.size === sq.members.length;
+        if (on) c.classList.add("on");
+        // the whole chip selects the squad (tap it again to let it go); DISBAND is the small button
+        _ccClick(c, () => { if (on) ccClearSelection(); else squadSelect(sq.id); ccRender(); });
+        c.appendChild(_ccBtn(on ? "SELECTED" : "SELECT", sq.col, on, () => { if (on) ccClearSelection(); else squadSelect(sq.id); }, "small"));
+        const dis = _ccBtn("DISBAND", "#8aa0c8", false, () => squadDisband(sq.id), "small"); c.appendChild(dis);
         box.appendChild(c);
     });
 }

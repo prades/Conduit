@@ -12,6 +12,53 @@ function check(name, fn) { try { fn(); console.log('  ok   ' + name); } catch (e
 function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 
+const os = require('os');
+const { execFileSync } = require('child_process');
+function findChromium() {
+    const fromEnv = process.env.CHROMIUM_PATH; if (fromEnv && fs.existsSync(fromEnv)) return fromEnv;
+    const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers'; let dirs = [];
+    try { dirs = fs.readdirSync(base); } catch (e) { return null; }
+    for (const d of dirs.filter(d => d.startsWith('chromium')).sort().reverse()) for (const rel of ['chrome-linux/chrome', 'chrome-linux/headless_shell']) { const p = path.join(base, d, rel); if (fs.existsSync(p)) return p; }
+    for (const p of ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome']) if (fs.existsSync(p)) return p;
+    return null;
+}
+// The real flow in the real page: tap cards, MAKE SQUAD, tap the squad chip, and the side panel becomes the squad's menu. Also that a redraw tick does not rebuild what has not changed.
+const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
+  var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+  tutorialMode = false; gameState.running = true; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; })); followers.length = 0; recruitChoice = 'mix';
+  ['fire', 'ice', 'electric', 'flux'].forEach(function(el, i){ spawnFollowerAtCrystal(el); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = 'brawler'; f.level = 3 + i; });
+  ccOpen('roster'); await wait(150);
+  var cards = function(){ return Array.prototype.slice.call(document.querySelectorAll('#ccGrid .cc-card')); }, btn = function(t){ return Array.prototype.find.call(document.querySelectorAll('#ccSide .cc-btn'), function(b){ return b.textContent.indexOf(t) === 0; }); };
+  out.hint = document.querySelector('#ccSquads .cc-sq-hint') ? document.querySelector('#ccSquads .cc-sq-hint').textContent : '';
+  cards().slice(0, 3).forEach(function(c){ c.click(); }); await wait(50);
+  out.sel = selectedUnits.size; var mk = btn('MAKE SQUAD'); out.makeEnabled = !!mk && !mk.disabled; mk.click(); await wait(80);
+  out.made = squadsLive().map(function(s){ return s.id + s.members.length; }).join();
+  out.chips = document.querySelectorAll('#ccSquads .cc-sq').length; out.sideTitleAfterMake = document.querySelector('#ccSide .cc-sel-title').textContent;
+  // the squad is selected after making it: its own menu shows at once
+  out.makeSelected = selectedUnits.size;
+  // let it go, then tap the chip to select it again
+  ccClearSelection(); ccRender(); await wait(30); out.titleCleared = document.querySelector('#ccSide .cc-sel-title').textContent;
+  document.querySelector('#ccSquads .cc-sq').click(); await wait(60);
+  out.afterChip = { sel: selectedUnits.size, title: document.querySelector('#ccSide .cc-sel-title').textContent, rows: document.querySelectorAll('#ccSide .cc-sqm-row').length, on: document.querySelectorAll('#ccSquads .cc-sq.on').length, disband: !!btn('DISBAND SQUAD') };
+  // tap the chip again: let go
+  document.querySelector('#ccSquads .cc-sq').click(); await wait(60); out.afterChip2 = selectedUnits.size;
+  // a redraw tick with nothing changed keeps the very same elements (a tap is never lost to a rebuild) and the panel's scroll
+  squadSelect('A'); ccRender(); var side = document.getElementById('ccSide'), strip = document.getElementById('ccSquads'), first = side.firstChild, chip = strip.firstChild; side.scrollTop = 0;
+  for (var i = 0; i < 5; i++) ccRender(); out.sameSide = side.firstChild === first; out.sameStrip = strip.firstChild === chip;
+  // when something does change, it is redrawn
+  squadLeave([squadMembers('A')[0]]); ccRender(); out.redrawn = side.firstChild !== first && strip.firstChild !== chip;
+  var pre = document.createElement('pre'); pre.id = '__sq'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
+}, 1500); });</script></body>`;
+function measure() {
+    const bin = findChromium(); if (!bin) return null;
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sq-')), file = path.join(dir, 'game.html');
+    fs.writeFileSync(file, rd('game.html').replace(/<head>/i, '<head><base href="file://' + ROOT + '/">').replace(/<\/body>/i, () => SCRIPT));
+    let dom = '';
+    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=1300,800', '--virtual-time-budget=14000', '--dump-dom', 'file://' + file], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 60000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
+    const m = dom.match(/<pre id="__sq">([\s\S]*?)<\/pre>/); return m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')) : undefined;
+}
+
 (async () => {
     const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
@@ -85,6 +132,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the name plate over a squad member carries its letter and colour', () => {
         const src = rd('js/levels.js'); ok(/squadColour\(sq\)/.test(src) && src.indexOf('sq + " \\u00b7 "') >= 0, 'plate not tinted');
     });
+
+    group('THE REAL FLOW (real browser)');
+    const r = measure();
+    if (r === null) console.log('  (no Chromium here: skipped)');
+    else {
+        check('the instrument ran', () => ok(r, 'the probe produced nothing'));
+        if (r) {
+            check('with no squads the strip says how it works, in three steps', () => ok(/1\) TAP UP TO 3 CARDS/.test(r.hint) && /MAKE SQUAD/.test(r.hint) && /3\)/.test(r.hint), 'hint: ' + r.hint));
+            check('tapping cards then MAKE SQUAD makes SQUAD A, shows its chip, and the panel is the squad\'s menu straight away', () => {
+                same(r.sel, 3, 'selected'); same(r.makeEnabled, true, 'MAKE SQUAD enabled'); same(r.made, 'A3', 'squad'); same(r.chips, 1, 'chips'); same(r.sideTitleAfterMake, 'SQUAD A', 'panel title'); same(r.makeSelected, 3, 'still selected');
+            });
+            check('letting go, then tapping the squad chip selects it again: SQUAD A, its three members, DISBAND; tapping again lets go', () => {
+                same(r.titleCleared, 'SELECTED 0', 'cleared'); same(r.afterChip.sel, 3, 'selected'); same(r.afterChip.title, 'SQUAD A', 'title'); same(r.afterChip.rows, 3, 'member rows'); same(r.afterChip.on, 1, 'lit chip'); same(r.afterChip.disband, true, 'DISBAND'); same(r.afterChip2, 0, 'let go');
+            });
+            check('a redraw with nothing changed keeps the same elements (a tap is not lost to a rebuild); a change redraws', () => { same(r.sameSide, true, 'side rebuilt'); same(r.sameStrip, true, 'strip rebuilt'); same(r.redrawn, true, 'not redrawn on a change'); });
+        }
+    }
 
     console.log(failures ? `\n${failures} FAILED` : '\nall ok');
     process.exit(failures ? 1 : 0);

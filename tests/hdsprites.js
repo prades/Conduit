@@ -16,9 +16,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 (async () => {
     group('THE SHEETS');
     const NAMES = ['player', 'player_angry', 'egg_fire', 'egg_electric', 'egg_ice', 'egg_flux', 'egg_core', 'egg_toxic'];
-    for (const n of NAMES) check(n + '.png is a 16 x 8 sheet of 144 px cells', () => {
-        const b = fs.readFileSync(path.join(ROOT, 'img/hd/' + n + '.png'));
-        same(b.slice(1, 4).toString(), 'PNG', 'signature'); same(b.readUInt32BE(16), 144 * 16, 'width'); same(b.readUInt32BE(20), 144 * 8, 'height');
+    for (const n of NAMES) check(n + '.png is a 16 x 8 sheet of cropped cells (HD_BOX), a fraction of the 10 MB the full cells decode to', () => {
+        const b = fs.readFileSync(path.join(ROOT, 'img/hd/' + n + '.png')), box = n.indexOf('egg') === 0 ? { cw: 58, ch: 85 } : { cw: 92, ch: 105 };
+        same(b.slice(1, 4).toString(), 'PNG', 'signature'); same(b.readUInt32BE(16), box.cw * 16, 'width'); same(b.readUInt32BE(20), box.ch * 8, 'height'); ok(b.readUInt32BE(16) * b.readUInt32BE(20) * 4 < 6e6, "decoded size over 6 MB");
     });
     check('game.html loads js/hdsprites.js', () => ok(/js\/hdsprites\.js\?v=/.test(rd('game.html')), 'no script tag'));
 
@@ -46,19 +46,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('THE PLAYER');
     check('with the sheet, drawPlayer draws one cell of it, and it is the player sheet (the angry one when it is angry)', () => {
         run('__draws.length = 0; player.angryTimer = 0; drawPlayer({ x: 300, y: 300 });');
-        const d = J('__draws'); same(d.length, 1, 'draws'); same(d[0][0], 'player', 'sheet'); same(d[0][3], 144, 'cell w');
+        const d = J('__draws'); same(d.length, 1, 'draws'); same(d[0][0], 'player', 'sheet'); same(d[0][3], 92, 'cell w');
         run('__draws.length = 0; player.angryTimer = 10; drawPlayer({ x: 300, y: 300 });'); same(J('__draws[0][0]'), 'player_angry', 'angry sheet');
     });
     check('it turns to the way it moves (row), and stands facing the camera before it has moved', () => {
         run('delete player._hdRow; delete player._hdAt; delete player._hdMoveAt; player.angryTimer = 0; player.visualX = 10; player.visualY = 10; frame = 100; __draws.length = 0; drawPlayer({ x: 300, y: 300 });');
-        same(J('__draws[0][2] / 144'), 1, 'row at rest');
-        run('frame = 101; player.visualX = 9.8; player.visualY = 10; __draws.length = 0; drawPlayer({ x: 300, y: 300 });'); same(J('__draws[0][2] / 144'), 4, 'row moving -x');
-        run('frame = 102; player.visualX = 9.6; player.visualY = 9.8; __draws.length = 0; drawPlayer({ x: 300, y: 300 });'); same(J('__draws[0][2] / 144'), 5, 'row moving -x -y');
-        ok(J('__draws[0][1] / 144') >= 8, 'a moving player plays the walk frames');
+        same(J('__draws[0][2] / 105'), 1, 'row at rest');
+        run('frame = 101; player.visualX = 9.8; player.visualY = 10; __draws.length = 0; drawPlayer({ x: 300, y: 300 });'); same(J('__draws[0][2] / 105'), 4, 'row moving -x');
+        run('frame = 102; player.visualX = 9.6; player.visualY = 9.8; __draws.length = 0; drawPlayer({ x: 300, y: 300 });'); same(J('__draws[0][2] / 105'), 5, 'row moving -x -y');
+        ok(J('__draws[0][1] / 92') >= 8, 'a moving player plays the walk frames');
     });
     check('it stops walking a few frames after it stops, and keeps its facing', () => {
         run('frame = 120; __draws.length = 0; drawPlayer({ x: 300, y: 300 });');
-        ok(J('__draws[0][1] / 144') < 8, 'still walking after it stopped'); same(J('__draws[0][2] / 144'), 5, 'facing kept');
+        ok(J('__draws[0][1] / 92') < 8, 'still walking after it stopped'); same(J('__draws[0][2] / 105'), 5, 'facing kept');
     });
     check('its vent still smokes (the puff comes from the cube, not from the old flat vent)', () => {
         run('smoke.length = 0; for (let f = 200; f < 260; f++) { frame = f; drawPlayer({ x: 300, y: 300 }); }');
@@ -79,9 +79,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('its row follows the way it faces and it walks while its walk cycle runs', () => {
         run(`followers.length = 0; globalThis.__f = ${egg('fire', 'f.dirX = -1; f.dirY = 0; f.walkCycle = 1;')}; frame = 500; __draws.length = 0; drawNPC(__f, 200, 200, ctx);`);
-        same(J('__draws.find(d => d[0] === "egg_fire")[2] / 144'), 4, 'row facing -x');
-        run('__f.walkCycle += 0.3; frame = 501; __draws.length = 0; drawNPC(__f, 200, 200, ctx);'); ok(J('__draws.find(d => d[0] === "egg_fire")[1] / 144') >= 8, 'not walking while its walk cycle moves');
-        run('frame = 540; __draws.length = 0; drawNPC(__f, 200, 200, ctx);'); ok(J('__draws.find(d => d[0] === "egg_fire")[1] / 144') < 8, 'still walking after it stood');
+        same(J('__draws.find(d => d[0] === "egg_fire")[2] / 85'), 4, 'row facing -x');
+        run('__f.walkCycle += 0.3; frame = 501; __draws.length = 0; drawNPC(__f, 200, 200, ctx);'); ok(J('__draws.find(d => d[0] === "egg_fire")[1] / 58') >= 8, 'not walking while its walk cycle moves');
+        run('frame = 540; __draws.length = 0; drawNPC(__f, 200, 200, ctx);'); ok(J('__draws.find(d => d[0] === "egg_fire")[1] / 58') < 8, 'still walking after it stood');
     });
     check('an evolved follower, a clone and an enemy virus are not drawn as the egg', () => {
         run(`followers.length = 0; globalThis.__f = ${egg('fire', 'f.evolved = "bloom";')}; __draws.length = 0;`); same(J('drawHdEgg(__f, 200, 200, ctx)'), false, 'evolved');

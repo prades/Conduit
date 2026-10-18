@@ -7,7 +7,14 @@
 //                comes out of its vent.
 //   THE EGG      "the shell": a faceted egg with glowing cracks on three pins, one sheet per element (img/hd/egg_<element>.png).
 // Until a sheet has arrived (or if it never does) the old flat drawing is used, so nothing is ever missing.
+// The sheets are CROPPED to the part of a cell the figure ever covers (img/hd: tools in design/evolutions/bake.js baked 144 px cells, mostly empty): a cell is HD_BOX[family].cw x .ch, cut from
+// the original cell at (ox, oy). Decoded they were ten times the memory; this is a fifth to a quarter of it.
 const HD_CELL = 144, HD_ANCHOR = [72, 114.18], HD_PX_PER_UNIT = 144 / 3.4;
+const HD_BOX = { player: { ox: 26, oy: 1, cw: 92, ch: 105 }, egg: { ox: 43, oy: 43, cw: 58, ch: 85 } };
+// Draw one frame (col, row) of a sheet with the figure's anchor at (ax, ay) on screen, at scale s.
+function _hdBlit(g, img, box, col, row, ax, ay, s) {
+    g.drawImage(img, col * box.cw, row * box.ch, box.cw, box.ch, ax - (HD_ANCHOR[0] - box.ox) * s, ay - (HD_ANCHOR[1] - box.oy) * s, box.cw * s, box.ch * s);
+}
 const HD_PLAYER_SCALE = 0.82, HD_EGG_SCALE = 1.0;
 const HD_ELEMENTS = ["fire", "electric", "ice", "flux", "core", "toxic"];
 const HD_EGG_CORE_Y = 73;          // where the crystal sits in an egg cell (the glow goes there)
@@ -57,13 +64,30 @@ function drawHdPlayer(p) {
     ctx.save();
     // the shadow on the floor, well under it: that gap is what makes it float
     ctx.fillStyle = "rgba(0,0,0,0.26)"; ctx.beginPath(); ctx.ellipse(p.x, p.y + 1, 26 * s, 10 * s, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.drawImage(img, hdCol(st.walking, st.f0) * HD_CELL, st.row * HD_CELL, HD_CELL, HD_CELL, p.x - HD_ANCHOR[0] * s, p.y + 2 - HD_ANCHOR[1] * s, HD_CELL * s, HD_CELL * s);
+    _hdBlit(ctx, img, HD_BOX.player, hdCol(st.walking, st.f0), st.row, p.x, p.y + 2, s);
     ctx.restore();
     if (frame % cfg.exhaustFrequency === 0) { const vo = hdVentOffset(st.row, s); smoke.push({ x: p.x + vo.x, y: p.y + vo.y, vx: 0.2 + Math.random() * 0.4, vy: -0.15 - Math.random() * 0.2, life: 1, size: 4 + Math.random() * 6 }); }
     return true;
 }
 
 // ── THE EGG ────────────────────────────────────────────────
+// The two things an egg is drawn with besides its sheet, as small cached stamps (a gradient built per egg per frame was most of the cost): the soft floor shadow, and the crystal's glow in
+// the element's colour (plain blending: switching to additive for every egg broke the batching of the canvas).
+let _hdShadow = null; const _hdGlow = {};
+function _hdStamp(w, h, draw) {
+    if (typeof document === "undefined" || !document.createElement) return null;
+    const c = document.createElement("canvas"); if (!c || !c.getContext) return null;
+    c.width = w; c.height = h; const g = c.getContext("2d"); if (!g || typeof g.createRadialGradient !== "function") return null;
+    draw(g, w, h); return c;
+}
+function _hdShadowStamp() {
+    if (_hdShadow === null) _hdShadow = _hdStamp(40, 18, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(0,0,0,0.42)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.save(); g.translate(0, h / 2); g.scale(1, h / w); g.translate(0, -w / 2); g.fillRect(0, 0, w, w); g.restore(); }) || false;
+    return _hdShadow || null;
+}
+function _hdGlowStamp(el, col) {
+    if (_hdGlow[el] === undefined) _hdGlow[el] = _hdStamp(32, 32, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, col); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); }) || false;
+    return _hdGlow[el] || null;
+}
 // A follower that has not evolved (and is not a clone): its row from the way it faces, walking while its walk cycle moves.
 function drawHdEgg(f, px, py, g, flash) {
     if (!f || !f.isFollower || f.isClone || f.evolved || HD_ELEMENTS.indexOf(f.element) < 0) return false;
@@ -75,16 +99,11 @@ function drawHdEgg(f, px, py, g, flash) {
     // it faces the way it last went (dirX, dirY); one that has not moved yet faces the camera
     const row = f.dirX || f.dirY ? hdRow(f.dirX || 0, f.dirY || 0) : 1;
     const col = hdCol(walking, f0 + ((f.x || 0) * 13 | 0));   // eggs do not all breathe together
-    g.save();
-    g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(px, py + 1, 15, 6, 0, 0, Math.PI * 2); g.fill();
-    g.drawImage(img, col * HD_CELL, row * HD_CELL, HD_CELL, HD_CELL, px - HD_ANCHOR[0] * s, py + 2 - HD_ANCHOR[1] * s, HD_CELL * s, HD_CELL * s);
-    // the crystal's glow, as for the evolved forms, and white for a moment when it is hit
-    const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, cy = py + 2 - (HD_ANCHOR[1] - HD_EGG_CORE_Y) * s;
-    g.globalCompositeOperation = "lighter";
-    const gr = g.createRadialGradient(px, cy, 0, px, cy, 14);
-    gr.addColorStop(0, def ? def.color : "#fff"); gr.addColorStop(1, "rgba(0,0,0,0)");
-    g.globalAlpha = 0.4 + 0.15 * Math.sin(f0 * 0.12); g.fillStyle = gr; g.beginPath(); g.arc(px, cy, 14, 0, Math.PI * 2); g.fill();
-    if (flash) { g.globalAlpha = 0.5; g.drawImage(img, col * HD_CELL, row * HD_CELL, HD_CELL, HD_CELL, px - HD_ANCHOR[0] * s, py + 2 - HD_ANCHOR[1] * s, HD_CELL * s, HD_CELL * s); }
-    g.restore();
+    const sh = _hdShadowStamp(); if (sh) g.drawImage(sh, px - 20, py - 8, 40, 18);
+    _hdBlit(g, img, HD_BOX.egg, col, row, px, py + 2, s);
+    // the crystal's glow, and white for a moment when it is hit
+    const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, gl = def ? _hdGlowStamp(f.element, def.color) : null;
+    if (gl) { const cy = py + 2 - (HD_ANCHOR[1] - HD_EGG_CORE_Y) * s, a0 = g.globalAlpha; g.globalAlpha = a0 * (0.4 + 0.15 * Math.sin(f0 * 0.12)); g.drawImage(gl, px - 14, cy - 14, 28, 28); g.globalAlpha = a0; }
+    if (flash) { const a0 = g.globalAlpha; g.globalAlpha = a0 * 0.5; _hdBlit(g, img, HD_BOX.egg, col, row, px, py + 2, s); g.globalAlpha = a0; }
     return true;
 }

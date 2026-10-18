@@ -27,30 +27,32 @@ const HTML = rd('game.html');
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
   tutorialMode = false; gameState.running = true; shardCount = 200; unlockedElements = new Set(['fire', 'electric', 'ice']); followers.length = 0; recruitChoice = 'mix';
+  var st = document.createElement('style'); st.textContent = '.rcx, .rcx * { transition: none !important; animation: none !important }'; document.head.appendChild(st);   // a headless dump paints no frames, so a transition would sit at its start
   ccOpen('roster'); await wait(150);
   var rc = document.getElementById('ccRecruitCrystal'), rec = document.getElementById('ccRecruit');
   out.present = !!rc && getComputedStyle(rc).display !== 'none'; out.noPicker = !document.getElementById('recruitPicker');
   out.nextTo = !!rc && rc.nextElementSibling === rec;
-  out.cols = rc.querySelectorAll('.rcx-col').length; out.locked = rc.querySelectorAll('.rcx-col.locked').length;
+  out.cols = rc.querySelectorAll('.rcx-seg').length; out.locked = rc.querySelectorAll('.rcx-seg.locked').length; out.arrows = rc.querySelectorAll('.rcx-arrow').length;
   var gemBox = rc.querySelector('.rcx-stage').getBoundingClientRect(); out.stage = [Math.round(gemBox.width), Math.round(gemBox.height)];
-  out.mixClass = rc.classList.contains('mix'); out.mixName = rc.querySelector('.rcx-name').textContent;
-  out.spinning = getComputedStyle(rc.querySelector('.rcx-turn')).animationName;
-  // a facet of an unlocked element selects it, and the crystal turns to it (fire is facet 0, ice facet 2)
-  rc.querySelector('.rcx-col[data-el="ice"] .rcx-side').click(); await wait(50);
-  out.ice = { name: rc.querySelector('.rcx-name').textContent, mix: rc.classList.contains('mix'), ry: rc.querySelector('.rcx-turn').style.getPropertyValue('--ry'), sel: rc.querySelectorAll('.rcx-col.sel').length, anim: getComputedStyle(rc.querySelector('.rcx-turn')).animationName };
-  // a locked facet does nothing
-  rc.querySelector('.rcx-col[data-el="toxic"] .rcx-side').click(); await wait(50); out.lockedClick = rc.querySelector('.rcx-name').textContent;
+  out.mixName = rc.querySelector('.rcx-name').textContent; out.mixSel = rc.querySelectorAll('.rcx-seg.sel, .rcx-mixg.sel').length;
+  var fil = function(sel){ return getComputedStyle(rc.querySelector(sel)).filter; };
+  out.mixFilter = fil('.rcx-seg[data-el="fire"]');
+  // tapping a colour picks it: that segment is lit (bright glow, lifted) and the other colours go dark
+  rc.querySelector('.rcx-seg[data-el="ice"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(300);
+  out.ice = { name: rc.querySelector('.rcx-name').textContent, mix: rc.classList.contains('mix'), sel: rc.querySelectorAll('.rcx-seg.sel').length, selIsIce: rc.querySelector('.rcx-seg.sel').getAttribute('data-el'), selFilter: fil('.rcx-seg.sel'), otherFilter: fil('.rcx-seg[data-el="fire"]'), lockedFilter: fil('.rcx-seg[data-el="toxic"]'), selTransform: getComputedStyle(rc.querySelector('.rcx-seg.sel')).transform };
+  // a locked colour does nothing
+  rc.querySelector('.rcx-seg[data-el="toxic"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(50); out.lockedClick = rc.querySelector('.rcx-name').textContent;
   // recruit: straight away, no window, the picked element, pays once
   var n0 = followers.length; rec.click(); await wait(80);
   out.recruit = { shards: shardCount, n: followers.length - n0, el: followers[followers.length - 1] && followers[followers.length - 1].element, picker: !!document.getElementById('recruitPicker') || !!document.querySelector('.rpk-card') };
-  // the arrows
-  rc.querySelectorAll('.rcx-arrow')[1].click(); await wait(30); out.next = rc.querySelector('.rcx-name').textContent; rc.querySelectorAll('.rcx-arrow')[0].click(); await wait(30); rc.querySelectorAll('.rcx-arrow')[0].click(); await wait(30); out.prev2 = rc.querySelector('.rcx-name').textContent;
+  // the middle of the gem is MIX
+  rc.querySelector('.rcx-mixg').dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(300); out.mixBack = { name: rc.querySelector('.rcx-name').textContent, mix: rc.classList.contains('mix'), sel: rc.querySelectorAll('.rcx-mixg.sel').length };
   // mix: the current mix
-  recruitSetChoice('mix'); modulationMask = new Set(['fire']); await wait(30); n0 = followers.length; rec.click(); await wait(80); out.mix = { el: followers[followers.length - 1].element, n: followers.length - n0 };
+  modulationMask = new Set(['fire']); await wait(30); n0 = followers.length; rec.click(); await wait(80); out.mix = { el: followers[followers.length - 1].element, n: followers.length - n0 };
   // short of the price: recruits nothing
   shardCount = 5; n0 = followers.length; rec.click(); await wait(80); out.poor = { shards: shardCount, n: followers.length - n0 };
   // an element unlocked later opens its facet
-  unlockedElements.add('toxic'); await wait(500); out.unlockedLater = rc.querySelectorAll('.rcx-col.locked').length;
+  unlockedElements.add('toxic'); await wait(500); out.unlockedLater = rc.querySelectorAll('.rcx-seg.locked').length;
   // other tab: hidden
   ccOpen('zones'); await wait(150); out.otherTab = getComputedStyle(rc).display;
   var pre = document.createElement('pre'); pre.id = '__rc'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -98,14 +100,17 @@ function measure() {
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (r) {
             check('THE ASK: the crystal is in the Command Center header right next to + RECRUIT, and no picker window exists', () => { same(r.present, true, 'present'); same(r.nextTo, true, 'next to recruit'); same(r.noPicker, true, 'a picker window'); });
-            check('it is compact (under 100 px each way) and has one facet per element, the locked ones marked', () => { same(r.cols, 6, 'facets'); same(r.locked, 3, 'locked (3 of 6 unlocked)'); ok(r.stage[0] <= 100 && r.stage[1] <= 100, 'stage ' + r.stage); });
-            check('MIX turns slowly (a CSS animation, nothing flashing); an element stops it on that facet', () => {
-                same(r.mixClass, true, 'mix class'); same(r.mixName, 'MIX', 'mix name'); same(r.spinning, 'rcxSpin', 'mix animation');
-                same(r.ice.name, 'ICE', 'name'); same(r.ice.mix, false, 'still mix'); same(r.ice.ry, '-120deg', 'turned to facet 2'); same(r.ice.sel, 1, 'selected facets'); same(r.ice.anim, 'none', 'still turning');
+            check('it is compact (under 100 px each way), one coloured segment per element with the locked ones marked, and no arrows to hunt for', () => { same(r.cols, 6, 'segments'); same(r.locked, 3, 'locked (3 of 6 unlocked)'); same(r.arrows, 0, 'arrows'); ok(r.stage[0] <= 100 && r.stage[1] <= 100, 'stage ' + r.stage); });
+            check('THE ASK: tapping a colour lights it up (bright, lifted) and every other colour goes dark, so the pick reads at a glance', () => {
+                same(r.mixName, 'MIX', 'default is mix'); ok(/brightness\(1\)/.test(r.mixFilter), 'in MIX every colour is lit: ' + r.mixFilter);
+                same(r.ice.name, 'ICE', 'name'); same(r.ice.mix, false, 'still mix'); same(r.ice.sel, 1, 'lit segments'); same(r.ice.selIsIce, 'ice', 'which');
+                ok(/brightness\(1\.18\)/.test(r.ice.selFilter) && /drop-shadow/.test(r.ice.selFilter), 'the picked one has no bright aura: ' + r.ice.selFilter);
+                ok(/brightness\(0\.48\)/.test(r.ice.otherFilter), 'the others are not dark: ' + r.ice.otherFilter); ok(r.ice.selTransform !== 'none', 'the picked one is not lifted');
+                ok(/grayscale/.test(r.ice.lockedFilter), 'a locked one is not grey: ' + r.ice.lockedFilter);
             });
-            check('a locked facet cannot be picked', () => same(r.lockedClick, 'ICE', 'a locked facet changed the choice'));
+            check('a locked colour cannot be picked', () => same(r.lockedClick, 'ICE', 'a locked colour changed the choice'));
             check('+ RECRUIT recruits the picked element straight away: no window, one price', () => { same(r.recruit.n, 1, 'recruited'); same(r.recruit.el, 'ice', 'element'); same(r.recruit.shards, 170, 'shards'); same(r.recruit.picker, false, 'a window'); });
-            check('the arrows move along the options', () => { same(r.next, 'MIX', 'next from ice (the last open one) wraps to MIX'); same(r.prev2, 'ELECTRIC', 'two back from MIX'); });
+            check('the middle of the gem is MIX, lit when picked', () => { same(r.mixBack.name, 'MIX', 'name'); same(r.mixBack.mix, true, 'class'); same(r.mixBack.sel, 1, 'the middle is not lit'); });
             check('MIX recruits from the current mix; short of shards recruits nothing', () => { same(r.mix.el, 'fire', 'mix'); same(r.mix.n, 1, 'one'); same(r.poor.n, 0, 'recruited when poor'); same(r.poor.shards, 5, 'spent when poor'); });
             check('an element unlocked later opens its facet; on another tab the crystal is hidden', () => { same(r.unlockedLater, 2, 'locked facets'); same(r.otherTab, 'none', 'shown on another tab'); });
         }
