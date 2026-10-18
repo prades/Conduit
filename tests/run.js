@@ -43,6 +43,7 @@ const SUITES = [
     ['clone card strip',        'clonecards.js'],
     ['unit info tab',           'unitinfo.js'],
     ['mix selector',            'mixtool.js'],
+    ['fire bombs',              'firebombs.js'],
     ['unit status + hold fix',  'status.js'],
     ['3D player + egg sprites', 'hdsprites.js'],
     ['the moves table', 'moves.js'],

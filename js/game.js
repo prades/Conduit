@@ -2729,12 +2729,15 @@ function render() {
         const _dmg = (_U ? ultraRoundDamage(t, nearest) : turretRoundDamage(t, nearest)) * (charged ? 1 : TURRET_PLAIN_MULT);
         if (_U) t._ultraTarget = nearest;
         const _el = _U ? _U.el : (t.attackModeElement || null);
+        // FIRE turrets lob a bouncing fire bomb (js/firebombs.js) instead of a straight round: down their aim, or at the nearest enemy on AUTO.
+        if (_el === "fire" && typeof fireTurretThrow === "function") { fireTurretThrow(t, nearest, _ox, _oy, _dmg, !!_U); return; }
         turretShots.push({ x: _ox, y: _oy, z: _U ? ULTRA_MUZZLE_Z : turretMuzzleZ(t), target: nearest, dmg: _dmg, charged,
                            el: _el, col: _U ? _U.col : (t.attackModeColor || "#0f8"), life: 120,
                            splash: _U ? ULTRA_SPLASH : 0, big: !!_U,
                            src: { x: _ox, y: _oy, team: "green", element: _el || "core" } });
     });
     turretShotsTick();
+    if (typeof fireBombsTick === "function") fireBombsTick();   // the bouncing fire bombs and the ground they burn (js/firebombs.js)
 
     // ── COMPLETE RECONSTRUCTION ──
     // A plain loop: this walks the whole world every frame.
@@ -3272,7 +3275,7 @@ function render() {
             const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
             const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
             // Home camp area — circuit board PCB style (x < 0 is behind the Crystal)
-            if (obj.x < 0) { drawCampFloor(obj, px, py, amb); drawCablesOnTile(obj, px, py); if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py); return; }
+            if (obj.x < 0) { drawCampFloor(obj, px, py, amb); drawCablesOnTile(obj, px, py); if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py); if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py); return; }
             // THE TILE IS A SPRITE. Fill, territory tint, four bevel edges and
             // the circuit traces were ~8 canvas paths per tile, ~125 tiles a
             // frame — the biggest single cost on screen. Its look depends only
@@ -3292,6 +3295,7 @@ function render() {
             if (_spr) ctx.drawImage(_spr, px - TILE_W - 1, py - 1);
             else _drawFloorTile(ctx, px, py, gameState.phase === "night", dist, "", _tq / FLOOR_TRACE_STEPS);
             if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py);   // pools of evolved followers lie on the floor
+            if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py);   // burning ground (js/firebombs.js)
             // Only the FRONT LINE: a 1 px edge where your ground meets the enemy's.
             // Which of its edges are a front line: worked out when the
             // territory changes (_territoryVer), not with two map lookups per
@@ -4526,6 +4530,7 @@ function render() {
         return !hit && p.life > 0;
     });
     drawTurretShots();
+    if (typeof drawFireBombs === "function") { drawFireBombs(); drawFireAims(); }   // fire bombs in flight, and the arrows on aimed fire turrets (js/firebombs.js)
 
     ctx.restore();
 

@@ -65,6 +65,7 @@ async function loadConfig() {
             tile.attackRange       = saved.attackRange || TURRET_RANGE;
             tile.attackPower       = saved.attackPower || TURRET_POWER;
             tile.seasoned          = saved.seasoned;
+            if (saved.fireAim !== undefined && saved.fireAim !== null) tile.fireAim = saved.fireAim;   // a fire turret's aim (js/firebombs.js)
             tile.upgraded          = saved.upgraded;
             tile.isGenerator       = !!saved.isGenerator;
             tile.isConnector       = !!saved.isConnector;

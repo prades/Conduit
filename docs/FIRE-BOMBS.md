@@ -2,7 +2,7 @@
 
 Asked: *"The fire element is mostly about little fire bombs that actually use projectile geometry and bounce off walls and off the ground a few times, perhaps as a special ability. The fire turrets shoot little fireballs that bounce off walls; you modify the direction of the fire turrets, and the fireballs burn the ground where they land. If you get touched by that fire you take a little hit of damage, like the other hazards on the map. The hazard stays on the map for 10 or 15 seconds."*
 
-**Status: plan.** Nothing here is built. It is four stages, each a commit with its own tests.
+**Status: stages 1 and 2 built (js/firebombs.js, tests/firebombs.js); 3 and 4 are the plan.** Four stages, each a commit with its own tests.
 
 ## 1. What the game has to build on
 
@@ -33,6 +33,11 @@ Asked: *"The fire element is mostly about little fire bombs that actually use pr
 
 ## 4. Decisions (answered)
 
-1. **Who is hurt by the fire on the ground?**
-2. **How is a turret aimed?**
-3. **Which fire things throw bombs first?**
+1. **Who is hurt by the fire on the ground?** **Everyone**, like the acid pools: enemies, your followers and you.
+2. **How is a turret aimed?** **Tap it** for a ring of eight directions and AUTO; saved on the turret.
+3. **Which fire things throw bombs first?** **Fire turrets**, then fire follower specials.
+
+## 5. Done so far
+
+- **Stage 1, the engine:** `fireBombs` (x, y, height, gravity, `FIRE_BOUNCES` = 3 ground bounces that keep 62% of their speed up, reflection off the lane's side walls and off wall and pylon tiles, a splash on the hostile where it lands) and `fireTiles` (burning ground 600 to 900 frames, a hit every 30 frames to everyone on it and to the player, refreshed rather than stacked, capped at 160 tiles), drawn by the floor tiles and above the world.
+- **Stage 2, the turrets:** a fire turret (or an Ultra of fire) throws a bomb in place of a straight round, at the nearest enemy on AUTO or down the aim you tapped in; the aim ring, the arrow on an aimed turret, and the save.

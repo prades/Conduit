@@ -37,6 +37,7 @@ function savePylons() {
             attackMode: !!t.attackMode, waveMode: !!t.waveMode,
             attackModeElement: t.attackModeElement || null,
             attackModeColor: t.attackModeColor || null,
+            fireAim: t.fireAim === undefined ? null : t.fireAim,   // a fire turret's aim (js/firebombs.js)
             // Without these a reloaded turret could never fire (see TURRET_RANGE).
             attackRange: t.attackRange || null, attackPower: t.attackPower || null,
             seasoned: t.seasoned || 0,

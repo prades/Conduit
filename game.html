@@ -876,6 +876,11 @@
     #mixTool .mt-hex.pick { background: #ffe733; } #mixTool .mt-hex.pick .mt-hexin { background: rgba(255,231,51,0.16); } #mixTool .mt-hex.pick .mt-hexin b { color: #ffe733; font-size: 9px; }
     #mixTool .mt-hex.mt-all { width: 47px; height: 54px; background: #ffe733; } #mixTool .mt-hex.mt-all .mt-hexin { background: #14192e; } #mixTool .mt-hex.mt-all .mt-hexin b { color: #ffe733; font-size: 12px; } #mixTool .mt-hex.mt-all.on .mt-hexin { background: color-mix(in srgb, #ffe733 22%, #14192e); }
     #mixTool .mt-hint { margin-top: 4px; font: 700 11px monospace; letter-spacing: 0.05em; color: #a9bddf; } #mixTool .mt-hint.gold { color: #ffe733; }
+    /* ── THE FIRE TURRET AIM RING (js/firebombs.js): tap a fire turret, pick one of eight directions or AUTO ── */
+    #aimRing { position: fixed; z-index: 14; width: 0; height: 0; display: none; } #aimRing.open { display: block; }
+    #aimRing .aim-b { position: absolute; transform: translate(-50%, -50%); width: 34px; height: 30px; padding: 0; font: italic 900 12px var(--neo-font); color: #ffd9a0; background: rgba(10,14,28,0.92); border: 2px solid #ff8a1c; cursor: pointer; clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%); touch-action: manipulation; }
+    #aimRing .aim-b i { display: inline-block; font-style: normal; font-size: 13px; } #aimRing .aim-b.on { color: #05070f; background: #ff8a1c; } #aimRing .aim-b:hover { background: #ffb15a; color: #05070f; }
+    #aimRing .aim-auto { left: 0; top: 0; width: 46px; } body.placing #aimRing { display: none !important; }
     body.placing #mixTool, body.ccOpen #mixTool, body.panel-open #mixTool { display: none !important; }
     @media (min-width: 701px) { #mixTool { bottom: calc(100px + var(--vv-bottom, 0px)); } #mixTool .mt-pod, #mixTool .mt-x { display: none; } #mixTool .mt-panel { position: static; } }
     @media (max-width: 700px) { #mixTool { left: 8px; } }
@@ -923,6 +928,7 @@
   </div>
 </div>
 <div id="mixTool" aria-label="Mix selector"></div>
+<div id="aimRing" aria-label="Aim the fire turret"></div>
 <button id="tutBtn" onclick="startTutorial()" style="position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.85);border:2px solid #0f8;color:#0f8;font-family:monospace;font-size:13px;font-weight:bold;padding:10px 18px;border-radius:4px;letter-spacing:2px;cursor:pointer;z-index:200;touch-action:manipulation;">TUTORIAL</button>
 
 
@@ -1705,12 +1711,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-18r, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-18s, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-18r";
+window.__PAGE_BUILD = "2026-10-18s";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1746,69 +1752,70 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-18r"></script>
-<script src="js/icons.js?v=2026-10-18r"></script>
-<script src="js/uikit.js?v=2026-10-18r"></script>
-<script src="js/rng.js?v=2026-10-18r"></script>
-<script src="js/traits.js?v=2026-10-18r"></script>
-<script src="js/elements.js?v=2026-10-18r"></script>
-<script src="js/combat.js?v=2026-10-18r"></script>
-<script src="js/species.js?v=2026-10-18r"></script>
-<script src="js/levels.js?v=2026-10-18r"></script>
-<script src="js/status.js?v=2026-10-18r"></script>
-<script src="js/predator_randomizer.js?v=2026-10-18r"></script>
-<script src="js/mass.js?v=2026-10-18r"></script>
-<script src="js/infest.js?v=2026-10-18r"></script>
-<script src="js/power.js?v=2026-10-18r"></script>
-<script src="js/save.js?v=2026-10-18r"></script>
-<script src="js/camp.js?v=2026-10-18r"></script>
-<script src="js/wavedata.js?v=2026-10-18r"></script>
-<script src="js/helpers.js?v=2026-10-18r"></script>
-<script src="js/predator.js?v=2026-10-18r"></script>
-<script src="js/abilities.js?v=2026-10-18r"></script>
-<script src="js/world.js?v=2026-10-18r"></script>
-<script src="js/commands.js?v=2026-10-18r"></script>
-<script src="js/npc.js?v=2026-10-18r"></script>
-<script src="js/codex.js?v=2026-10-18r"></script>
-<script src="js/draw.js?v=2026-10-18r"></script>
-<script src="js/beetle3d.js?v=2026-10-18r"></script>
-<script src="js/bugs3d.js?v=2026-10-18r"></script>
-<script src="js/ui.js?v=2026-10-18r"></script>
-<script src="js/waves.js?v=2026-10-18r"></script>
-<script src="js/drops.js?v=2026-10-18r"></script>
-<script src="js/clone.js?v=2026-10-18r"></script>
-<script src="js/clonework.js?v=2026-10-18r"></script>
-<script src="js/broods.js?v=2026-10-18r"></script>
-<script src="js/raids.js?v=2026-10-18r"></script>
-<script src="js/ultra.js?v=2026-10-18r"></script>
-<script src="js/formations.js?v=2026-10-18r"></script>
-<script src="js/breakout.js?v=2026-10-18r"></script>
-<script src="js/nightraids.js?v=2026-10-18r"></script>
-<script src="js/bonds.js?v=2026-10-18r"></script>
-<script src="js/autoplay.js?v=2026-10-18r"></script>
-<script src="js/indexart.js?v=2026-10-18r"></script>
-<script src="js/modules.js?v=2026-10-18r"></script>
-<script src="js/shieldcells.js?v=2026-10-18r"></script>
-<script src="js/evolution.js?v=2026-10-18r"></script>
-<script src="js/hdsprites.js?v=2026-10-18r"></script>
-<script src="js/moves.js?v=2026-10-18r"></script>
-<script src="js/squads.js?v=2026-10-18r"></script>
-<script src="js/recruitcrystal.js?v=2026-10-18r"></script>
-<script src="js/buildmenu.js?v=2026-10-18r"></script>
-<script src="js/hudgems.js?v=2026-10-18r"></script>
-<script src="js/nethud.js?v=2026-10-18r"></script>
-<script src="js/commandcenter.js?v=2026-10-18r"></script>
-<script src="js/unitinfo.js?v=2026-10-18r"></script>
-<script src="js/zones.js?v=2026-10-18r"></script>
-<script src="js/kits.js?v=2026-10-18r"></script>
-<script src="js/kitui.js?v=2026-10-18r"></script>
-<script src="js/toolbox.js?v=2026-10-18r"></script>
-<script src="js/mixtool.js?v=2026-10-18r"></script>
-<script src="js/radialmenu.js?v=2026-10-18r"></script>
-<script src="js/input.js?v=2026-10-18r"></script>
-<script src="js/game.js?v=2026-10-18r"></script>
-<script src="js/tutorial.js?v=2026-10-18r"></script>
-<script src="js/dev.js?v=2026-10-18r"></script>
+<script src="js/config.js?v=2026-10-18s"></script>
+<script src="js/icons.js?v=2026-10-18s"></script>
+<script src="js/uikit.js?v=2026-10-18s"></script>
+<script src="js/rng.js?v=2026-10-18s"></script>
+<script src="js/traits.js?v=2026-10-18s"></script>
+<script src="js/elements.js?v=2026-10-18s"></script>
+<script src="js/combat.js?v=2026-10-18s"></script>
+<script src="js/species.js?v=2026-10-18s"></script>
+<script src="js/levels.js?v=2026-10-18s"></script>
+<script src="js/status.js?v=2026-10-18s"></script>
+<script src="js/predator_randomizer.js?v=2026-10-18s"></script>
+<script src="js/mass.js?v=2026-10-18s"></script>
+<script src="js/infest.js?v=2026-10-18s"></script>
+<script src="js/power.js?v=2026-10-18s"></script>
+<script src="js/save.js?v=2026-10-18s"></script>
+<script src="js/camp.js?v=2026-10-18s"></script>
+<script src="js/wavedata.js?v=2026-10-18s"></script>
+<script src="js/helpers.js?v=2026-10-18s"></script>
+<script src="js/predator.js?v=2026-10-18s"></script>
+<script src="js/abilities.js?v=2026-10-18s"></script>
+<script src="js/world.js?v=2026-10-18s"></script>
+<script src="js/commands.js?v=2026-10-18s"></script>
+<script src="js/npc.js?v=2026-10-18s"></script>
+<script src="js/codex.js?v=2026-10-18s"></script>
+<script src="js/draw.js?v=2026-10-18s"></script>
+<script src="js/beetle3d.js?v=2026-10-18s"></script>
+<script src="js/bugs3d.js?v=2026-10-18s"></script>
+<script src="js/ui.js?v=2026-10-18s"></script>
+<script src="js/waves.js?v=2026-10-18s"></script>
+<script src="js/drops.js?v=2026-10-18s"></script>
+<script src="js/clone.js?v=2026-10-18s"></script>
+<script src="js/clonework.js?v=2026-10-18s"></script>
+<script src="js/broods.js?v=2026-10-18s"></script>
+<script src="js/raids.js?v=2026-10-18s"></script>
+<script src="js/ultra.js?v=2026-10-18s"></script>
+<script src="js/formations.js?v=2026-10-18s"></script>
+<script src="js/breakout.js?v=2026-10-18s"></script>
+<script src="js/nightraids.js?v=2026-10-18s"></script>
+<script src="js/bonds.js?v=2026-10-18s"></script>
+<script src="js/autoplay.js?v=2026-10-18s"></script>
+<script src="js/indexart.js?v=2026-10-18s"></script>
+<script src="js/modules.js?v=2026-10-18s"></script>
+<script src="js/shieldcells.js?v=2026-10-18s"></script>
+<script src="js/evolution.js?v=2026-10-18s"></script>
+<script src="js/hdsprites.js?v=2026-10-18s"></script>
+<script src="js/firebombs.js?v=2026-10-18s"></script>
+<script src="js/moves.js?v=2026-10-18s"></script>
+<script src="js/squads.js?v=2026-10-18s"></script>
+<script src="js/recruitcrystal.js?v=2026-10-18s"></script>
+<script src="js/buildmenu.js?v=2026-10-18s"></script>
+<script src="js/hudgems.js?v=2026-10-18s"></script>
+<script src="js/nethud.js?v=2026-10-18s"></script>
+<script src="js/commandcenter.js?v=2026-10-18s"></script>
+<script src="js/unitinfo.js?v=2026-10-18s"></script>
+<script src="js/zones.js?v=2026-10-18s"></script>
+<script src="js/kits.js?v=2026-10-18s"></script>
+<script src="js/kitui.js?v=2026-10-18s"></script>
+<script src="js/toolbox.js?v=2026-10-18s"></script>
+<script src="js/mixtool.js?v=2026-10-18s"></script>
+<script src="js/radialmenu.js?v=2026-10-18s"></script>
+<script src="js/input.js?v=2026-10-18s"></script>
+<script src="js/game.js?v=2026-10-18s"></script>
+<script src="js/tutorial.js?v=2026-10-18s"></script>
+<script src="js/dev.js?v=2026-10-18s"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1861,7 +1868,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-18r"></script>
+<script src="js/init.js?v=2026-10-18s"></script>
 
 </body>
 </html>

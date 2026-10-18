@@ -598,6 +598,7 @@ function restartGame() {
     playerUltimate=0; armySurgeTimer=0; _lastUltInt=-1; _lastUltState="";
     siphonEnabled=true; siphonWisps=[]; _lastSiphonOn=null; _siphonInRange=0;
     modulationMask=new Set(STARTING_ELEMENTS);
+    if (typeof fireBombs !== "undefined") { fireBombs = []; fireTiles = new Map(); }
     activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};
     _cacheAge=-999; _pillarCache=[]; _wPylons=[]; _aPylons=[]; _uPylons=[]; _wPylonPairs=[]; _pylonsWithPartner=new Set(); _capturableNodeCache=[];
     _genPylons=[]; _genLinks=[]; _conPylons=[];

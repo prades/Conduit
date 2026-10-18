@@ -171,6 +171,9 @@ const handleInput=(ex,ey)=>{
     // the game; it is the Crystal's doorway now.
     if (isTapNearHomePortal(ex,ey)) { crystalMenuOpen=true; return; }
 
+    // A tap on a FIRE TURRET opens its aim ring (js/firebombs.js) and is not a move order.
+    if (typeof fireAimTap === "function" && fireAimTap(ex, ey)) return;
+
     // ── PLAYER ATTACK ──
     // Only while armed. This used to fire on any tap that happened to land near
     // a predator, so brushing one while moving spent a shot at it.
