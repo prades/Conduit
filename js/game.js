@@ -1205,6 +1205,9 @@ function drawPowerChain() {
 
     for (const t of _pillarCache) {
         if (!needsPower(t) || !t.powerGen) continue;
+        // The wall's power unit is wired inside the wall: no cable runs from it across the floor (js/wallunit.js).
+        const _wallFed = q => typeof isWallUnitTile === "function" && isWallUnitTile(q);
+        if (_wallFed(t.powerGen) || _wallFed(t._supply)) continue;
         // ONE CABLE PER ULTRA OR FORMATION. "The ultra pylons still have
         // cables going to all 4 sides — make the ground look cleaner." The
         // four pylons it absorbed are one structure, so it takes one cable, at
@@ -1234,7 +1237,7 @@ function drawPowerChain() {
     if (typeof _batteryList !== "undefined") {
         const legs = new Map();
         for (const b of _batteryList) {
-            if (!_liveBattery(b) || !b.powerGen) continue;
+            if (!_liveBattery(b) || !b.powerGen || (typeof isWallUnitTile === "function" && isWallUnitTile(b))) continue;   // the unit's cells charge inside the wall: no cable
             const gen = _structureOf(b.powerGen);
             const k = gen.x + "," + gen.y + "|" + b.attackModeElement;
             const d = Math.hypot(b.x - gen.x, b.y - gen.y);

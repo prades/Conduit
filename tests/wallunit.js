@@ -27,7 +27,6 @@ function findChromium() {
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
   tutorialMode = false; gameState.running = true; shardCount = 200; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; }));
-  var g = world.find(function(t){ return t.type === 'floor' && t.x === Math.floor(player.x) + 3 && t.y === 3 && !t.nest && !t.nodeType; }); _executeBuildInstant(PYLON_PICKER_TYPES.find(function(e){ return e.id === GENERATOR_ID; }), g); _cacheAge = -999; render(); await wait(100);
   player.x = player.targetX = player.visualX = 8; var tile = wallUnitTiles(0)[2], W = canvas.width / 2, H = canvas.height / 2;
   var sx = (tile.x - player.visualX - (tile.y - player.visualY)) * TILE_W + W - TILE_W * 0.5, sy = (tile.x - player.visualX + (tile.y - player.visualY)) * TILE_H + H + TILE_H * 0.5 - 46;
   out.hit = !!wallUnitHit(sx, sy); out.miss = !wallUnitHit(sx + 400, sy + 300);
@@ -69,7 +68,7 @@ function measure() {
         player.x = player.targetX = player.visualX = home.x + 4; player.y = player.targetY = player.visualY = 2; _cacheAge = -999; render(); return true; })()`);
 
     group('THE UNIT: six wall tiles at the zone\'s left end');
-    fresh(true);
+    fresh(false);
     check('every zone has six wall tiles for its unit, in the back wall', () => {
         for (const z of [0, 1, 2]) { const ts = J(`wallUnitTiles(${z}).map(t => [t.x, t.y, t.type])`); same(ts.length, 6, 'tiles in zone ' + z); ok(ts.every(t => t[1] === -2 && t[2] === 'wall_back' && t[0] >= z * 15 + 9 && t[0] < z * 15 + 15), 'not the back wall: ' + JSON.stringify(ts)); }
     });
@@ -81,13 +80,13 @@ function measure() {
     check('a new unit is dark: tier 0, no cells, no element', () => { same(run('wallUnitTier(0)'), 0, 'tier'); same(run('wallUnitCells(0)'), 0, 'cells'); same(run('wallUnitElement(0)'), null, 'element'); });
 
     group('BOOT');
-    check('it needs a generator in the zone', () => { fresh(false); same(run("wallUnitBoot(0, 'fire')"), false, 'booted'); same(run('wallUnitCells(0)'), 0, 'cells'); });
+    check('it needs a nest of yours in the zone to draw on (no generator: there are none to build)', () => { fresh(false); same(run("wallUnitBoot(1, 'fire')"), false, 'booted in a zone with no held nest'); same(run('wallUnitCells(1)'), 0, 'cells'); same(run("wallUnitBoot(0, 'fire')"), true, 'booted at home, which has its portal'); });
     check('it needs the shards, and spends them: two batteries\' worth', () => {
-        fresh(true); run('shardCount = 5'); same(run("wallUnitBoot(0, 'fire')"), false, 'booted poor'); same(run('shardCount'), 5, 'spent');
+        fresh(false); run('shardCount = 5'); same(run("wallUnitBoot(0, 'fire')"), false, 'booted poor'); same(run('shardCount'), 5, 'spent');
         run('shardCount = 100'); same(run("wallUnitBoot(0, 'fire')"), true, 'booted'); same(run('shardCount'), 100 - 2 * J('PYLON_BUILD_COST'), 'price');
     });
     check('it comes up as tier I with two cells of the element', () => { same(run('wallUnitCells(0)'), 2, 'cells'); same(run('wallUnitTier(0)'), 1, 'tier'); same(run('wallUnitElement(0)'), 'fire', 'element'); });
-    check('it needs an element you have', () => { fresh(true); run("unlockedElements = new Set(['fire'])"); same(run("wallUnitBoot(0, 'ice')"), false, 'booted a locked element'); same(run("wallUnitBoot(0, 'fire')"), true, 'booted fire'); });
+    check('it needs an element you have', () => { fresh(false); run("unlockedElements = new Set(['fire'])"); same(run("wallUnitBoot(0, 'ice')"), false, 'booted a locked element'); same(run("wallUnitBoot(0, 'fire')"), true, 'booted fire'); });
     check('it cannot be booted twice', () => { same(run("wallUnitBoot(0, 'fire')"), false, 'again'); same(run('wallUnitCells(0)'), 2, 'cells'); });
 
     group('THE CELLS ARE BATTERIES');
@@ -110,14 +109,14 @@ function measure() {
     });
     check('tier III is the top: nothing more to buy', () => { run('shardCount = 100'); same(run('wallUnitUpgrade(0)'), false, 'past III'); same(run('shardCount'), 100, 'spent'); same(run('wallUnitCost(0)'), 0, 'cost'); });
     check('the network follows: six linked fire cells are tier III', () => { run('_cacheAge = -999; render();'); same(run('networkStrength.fire'), 3, 'network tier'); });
-    check('an upgrade needs the shards', () => { fresh(true); run("wallUnitBoot(0, 'fire'); shardCount = 3"); same(run('wallUnitUpgrade(0)'), false, 'upgraded poor'); same(run('wallUnitCells(0)'), 2, 'cells'); });
+    check('an upgrade needs the shards', () => { fresh(false); run("wallUnitBoot(0, 'fire'); shardCount = 3"); same(run('wallUnitUpgrade(0)'), false, 'upgraded poor'); same(run('wallUnitCells(0)'), 2, 'cells'); });
     check('reconfigure turns the whole unit to another element and empties it', () => {
         run('shardCount = 100; wallUnitTiles(0).forEach(t => { if (t.pillar) t.charge = 50; })'); same(run("wallUnitReconfigure(0, 'ice')"), true, 'reconfigured');
         same(run('wallUnitElement(0)'), 'ice', 'element'); ok(J('wallUnitTiles(0).filter(t => t.pillar).every(t => t.attackModeElement === "ice" && t.charge === 0)'), 'cells not all ice and empty');
         same(run('shardCount'), 100 - J('PYLON_BUILD_COST'), 'price');
     });
-    check('reconfigure to the same element, or a dark unit, does nothing', () => { same(run("wallUnitReconfigure(0, 'ice')"), false, 'same'); fresh(true); same(run("wallUnitReconfigure(0, 'ice')"), false, 'dark'); });
-    check('zones are separate: booting zone 0 leaves zone 1 dark', () => { fresh(true); run("wallUnitBoot(0, 'fire')"); same(run('wallUnitTier(1)'), 0, 'zone 1'); });
+    check('reconfigure to the same element, or a dark unit, does nothing', () => { same(run("wallUnitReconfigure(0, 'ice')"), false, 'same'); fresh(false); same(run("wallUnitReconfigure(0, 'ice')"), false, 'dark'); });
+    check('zones are separate: booting zone 0 leaves zone 1 dark', () => { fresh(false); run("wallUnitBoot(0, 'fire')"); same(run('wallUnitTier(1)'), 0, 'zone 1'); });
 
     group('NO BATTERIES ON THE FLOOR');
     check('the power tab of the build menu offers no battery', () => { const kinds = J('buildMenuItems("power").map(i => i.kind)'); ok(!kinds.includes('battery'), 'kinds: ' + kinds.join()); ok(kinds.includes('generator'), 'the generator is still there'); });
@@ -129,7 +128,7 @@ function measure() {
         p._infestSettle = 0; p.power = 10; p.x = 12.5; p.y = -0.5; p.maxHealth = p.health = 1e6; return p; })()`;
     const upTo = (n) => `(function(){ const t = wallUnitTiles(0); while (wallUnitCells(0) < ${n}) { if (wallUnitCells(0) === 0) wallUnitBoot(0, 'fire'); else wallUnitUpgrade(0); } _cacheAge = -999; render(); return wallUnitCells(0); })()`;
     check('a hunter walks to the wall in front of a booted cell and bashes it, and the cells beside it in its segment take half', () => {
-        fresh(true); run('shardCount = 999'); same(run(upTo(6)), 6, 'cells');
+        fresh(false); run('shardCount = 999'); same(run(upTo(6)), 6, 'cells');
         run(`globalThis.__h = ${HUNTER}; globalThis.__c = wallUnitTiles(0); __c.forEach(t => { t.health = t.maxHealth = 200; });`);
         for (let i = 0; i < 400 && J('__c.every(t => t.health >= 200)'); i++) run('frame++; infestTick(__h)');
         const hp = J('__c.map(t => t.health)'), hit = hp.findIndex(h => h < 200), seg = Math.floor(hit / 3);
@@ -166,9 +165,29 @@ function measure() {
         run('raidEatBattery({ maxHealth: 10, health: 10, power: 1, moveSpeed: 1, shardDrop: 5 }, __t)'); same(run('__t.destroyed'), true, 'eaten');
     });
 
+    group('THE UNIT IS THE ZONE\'S GENERATOR');
+    check('a booted unit powers its zone with no generator: the zone reads as powered and its nest is the source', () => {
+        fresh(false); run('shardCount = 999'); same(run('zoneHasGenerator(0)'), false, 'powered before booting'); run("wallUnitBoot(0, 'fire'); _cacheAge = -999; render();");
+        same(run('zoneHasGenerator(0)'), true, 'zone powered'); same(run('zoneHasGenerator(1)'), false, 'zone 1 is not');
+        same(run('_genPylons.length'), 0, 'a generator appeared');
+    });
+    check('a turret within reach of the unit is fed by its nest, with no generator, no connector and no cable', () => {
+        run(`(function(){ const home = world.find(t => isHomePortal(t)), t = world.find(q => q.type === 'floor' && q.x === home.x + 4 && q.y === 2 && !q.nest && !q.nodeType); _executeBuildInstant(ELEMENTS.find(e => e.id === 'fire'), t, 'attack'); globalThis.__tur = t; _cacheAge = -999; render(); render(); })()`);
+        const r = J('({ powered: __tur.powered, src: !!__tur.powerSource, home: __tur.powerSource && isHomePortal(__tur.powerSource), feeder: !!__tur.powerGen && isWallUnitTile(__tur.powerGen), dark: !!__tur.zoneDark })');
+        ok(r.powered && r.src && r.home && r.feeder && !r.dark, JSON.stringify(r));
+    });
+    check('a turret out of the unit\'s reach (and out of any link chain) is not fed', () => {
+        run(`(function(){ const home = world.find(t => isHomePortal(t)), t = world.find(q => q.type === 'floor' && q.x === home.x + 8 + 12 && q.y === 3 && !q.nest && !q.nodeType); globalThis.__far = t; })()`);
+        same(run('unitFeeding(__far)'), null, 'a cell reaches it');
+    });
+    check('the unit\'s cells charge from the nest with no generator', () => {
+        const r = J(`(function(){ const b = wallUnitTiles(0).find(t => t.pillar), n = b.powerSource; if (!n) return { route: false }; n.nestEnergy = nestEnergyMax(n); b.charge = 0; for (let i = 0; i < 100; i++) batteryChargeTick(); return { route: true, c: b.charge }; })()`);
+        ok(r.route && r.c > 5, JSON.stringify(r));
+    });
+
     group('A SAVE FROM BEFORE THE UNIT MOVED');
     check('cells saved at the zone start (x 0 to 5) move to the unit\'s tiles, element, charge and wreck intact', () => {
-        fresh(true); run('shardCount = 999');
+        fresh(false); run('shardCount = 999');
         run(`(function(){ const g = i => getTile(i, -2); const el = ELEMENTS.find(e => e.id === 'ice'); for (let i = 0; i < 4; i++) { _installWallCell(g(i), el); g(i).charge = 10 + i; } g(3).destroyed = true; g(3).health = 0; })()`);
         same(run('wallUnitMigrate()'), 4, 'moved');
         same(run('wallUnitCells(0)'), 4, 'cells in the unit'); same(run('wallUnitElement(0)'), 'ice', 'element'); same(run('wallUnitTiles(0)[2].charge'), 12, 'charge'); same(run('wallUnitTiles(0)[3].destroyed'), true, 'the wreck');

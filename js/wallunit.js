@@ -48,7 +48,7 @@ function wallUnitBoot(zone, elId) {
     const el = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).find(e => e.id === elId);
     if (!el || !unlockedElements.has(elId)) { _wallUnitSay("PICK AN ELEMENT YOU HAVE"); return false; }
     if (wallUnitCells(zone) > 0) { _wallUnitSay("ALREADY BOOTED"); return false; }
-    if (typeof zoneHasGenerator === "function" && !zoneHasGenerator(zone)) { _wallUnitSay("NO GENERATOR IN " + (zone === 0 ? "THE HOME ZONE" : "ZONE " + zone)); return false; }
+    if (typeof unitNest === "function" && !unitNest(zone)) { _wallUnitSay("NO NEST OF YOURS IN " + (zone === 0 ? "THE HOME ZONE" : "ZONE " + zone) + " TO DRAW ON"); return false; }
     const cost = wallUnitCost(zone); if (shardCount < cost) { _wallUnitSay("NEED " + cost + " SHARDS"); return false; }
     const tiles = wallUnitTiles(zone); if (tiles.length < 2) { _wallUnitSay("NO WALL HERE YET"); return false; }
     shardCount -= cost;
@@ -204,10 +204,10 @@ let _wuZone = null;
 function wallUnitEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("wallUnit") : null; }
 function wallUnitClose() { _wuZone = null; const r = wallUnitEl(); if (r) { r.innerHTML = ""; r.classList.remove("open"); } }
 function wallUnitHTML(zone) {
-    const tier = wallUnitTier(zone), eln = wallUnitElement(zone), el = ELEMENTS.find(e => e.id === eln), ch = wallUnitCharge(zone), cost = wallUnitCost(zone), gen = typeof zoneHasGenerator !== "function" || zoneHasGenerator(zone);
+    const tier = wallUnitTier(zone), eln = wallUnitElement(zone), el = ELEMENTS.find(e => e.id === eln), ch = wallUnitCharge(zone), cost = wallUnitCost(zone), gen = typeof unitNest !== "function" || !!unitNest(zone);
     let h = '<div class="wu-head"><b>POWER UNIT</b><span>' + (zone === 0 ? "HOME" : "ZONE " + zone) + '</span><button class="wu-x" data-wu="close" aria-label="Close">\u2715</button></div>';
     if (!tier) {
-        h += '<div class="wu-state off">OFFLINE</div>' + (gen ? '' : '<div class="wu-note">NEEDS A GENERATOR IN THIS ZONE</div>');
+        h += '<div class="wu-state off">OFFLINE</div>' + (gen ? '' : '<div class="wu-note">NEEDS A NEST OF YOURS IN THIS ZONE</div>');
         h += '<div class="wu-chips">' + ELEMENTS.filter(e => unlockedElements.has(e.id)).map(e => '<button class="wu-chip' + (_wuPick === e.id ? ' on' : '') + '" data-pick="' + e.id + '" style="--c:' + e.color + '">' + e.label.slice(0, 3).toUpperCase() + '</button>').join('') + '</div>';
         h += '<button class="wu-btn" data-wu="boot"' + (_wuPick && gen ? '' : ' disabled') + '>BOOT \u25c6' + cost + '</button>';
     } else {

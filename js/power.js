@@ -76,12 +76,10 @@ function nestEnergyTick() {
 // network links already use, rather than a new one to learn.
 function generatorFeeding(t) {
     if (!t || typeof _genPylons === "undefined") return null;
-    // The wall's POWER UNIT (js/wallunit.js) is wired into its zone's generator, however far along the lane that stands.
-    const wall = typeof isWallUnitTile === "function" && isWallUnitTile(t), r = getPylonRange();
-    let best = null, bestD = wall ? Infinity : r * r;
+    const r = getPylonRange();
+    let best = null, bestD = r * r;
     for (const gen of _genPylons) {
         if (gen === t) continue;
-        if (wall && zoneOfTile(gen) !== zoneOfTile(t)) continue;
         // A generator that has been switched off feeds nothing.
         if (gen.circuitOn === false) continue;
         const dx = gen.x - t.x, dy = gen.y - t.y;
@@ -342,11 +340,40 @@ function toggleConnectorCircuit(c) { return isConnectorPylon(c) ? toggleRelayCir
 
 // The feeder this pylon draws along and the pool behind it. A generator beside
 // it comes first; if that has nothing to give, a connector in reach is next.
+// ── THE WALL POWER UNIT IS THE ZONE'S GENERATOR (js/wallunit.js, docs/WALL-GRID.md) ──
+// ASKED: "do you think generators are really necessary? connectors?" (no): a zone's power is its power unit. A booted unit draws on the zone's own HELD NEST (the home portal in the home zone, a taken nest elsewhere) at any
+// distance, charges its cells from it, and feeds every pylon within BATTERY_SUPPLY_RANGE of one of its live cells (and, through them, the chain of linked pylons beyond). There is nothing to place: boot the unit. A generator
+// or connector from an older save still works until it is cleared (wallUnitMigrate).
+function unitCellLive(t) { return !!t && typeof isWallUnitTile === "function" && isWallUnitTile(t) && t.pillar && t.isBattery && !t.destroyed && t.health > 0 && t.pillarTeam === "green"; }
+// The held nest the zone's unit draws on, or null (no nest of yours in it yet).
+function unitNest(zone) {
+    const list = (typeof _nestCache !== "undefined" && _nestCache.length) ? _nestCache : world;
+    for (const n of list) if (n.nest && Math.floor(n.x / ZONE_LENGTH) === zone && nestIsPowerSource(n)) return n;
+    return null;
+}
+// The nearest live cell of the unit of this tile's zone within reach, or null.
+function unitFeeding(t) {
+    if (!t || typeof _batteryList === "undefined") return null;
+    const z = zoneOfTile(t), r2 = BATTERY_SUPPLY_RANGE * BATTERY_SUPPLY_RANGE;
+    let best = null, bestD = r2;
+    for (const c of _unitCells) {
+        if (zoneOfTile(c) !== z) continue;
+        const dx = c.x - t.x, dy = c.y - t.y, d2 = dx * dx + dy * dy;
+        if (d2 <= bestD) { bestD = d2; best = c; }
+    }
+    return best;
+}
+let _unitCells = [];   // the live cells of every unit, with the caches (recomputePower)
 function powerRoute(t) {
+    // A cell of the unit is routed straight to its zone's nest.
+    if (typeof isWallUnitTile === "function" && isWallUnitTile(t) && t.isBattery) return { feeder: t, source: unitNest(zoneOfTile(t)) };
     const gen = generatorFeeding(t);
     const gs = gen ? generatorSource(gen) : null;
     if (gs) return { feeder: gen, source: gs };
     const con = connectorFeeding(t);
+    if (con && connectorSource(con)) return { feeder: con, source: connectorSource(con) };
+    const cell = unitFeeding(t);
+    if (cell) { const n = unitNest(zoneOfTile(t)); if (n) return { feeder: cell, source: n }; }
     if (con) return { feeder: con, source: connectorSource(con) };
     return { feeder: gen, source: null };
 }
@@ -388,6 +415,9 @@ function _rebuildGenZones() {
         if (!generatorSource(g)) continue;
         _genZones.add(zoneOfTile(g));
     }
+    // a booted unit with a held nest to draw on powers its zone
+    _unitCells = (typeof _pillarCache !== "undefined" ? _pillarCache : []).filter(unitCellLive);
+    for (const c of _unitCells) { const z = zoneOfTile(c); if (!_genZones.has(z) && unitNest(z)) _genZones.add(z); }
 }
 function zoneHasGenerator(z) { return _genZones.has(z); }
 // Is this structure (a pylon, battery or module) in a zone a generator runs?
