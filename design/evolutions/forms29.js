@@ -148,3 +148,74 @@ function _playerHD(angry) {
 }
 f2(814, "THE PLAYER · high definition: the same black cube with its raked screen and green dash eyes, modelled: chamfered armour, bezel, bolts, a grille on the vent, four cables swaying to the floor.", () => _playerHD(false));
 f2(815, "THE PLAYER · high definition, angry: the same, with red eyes.", () => _playerHD(true));
+
+// ── THE EGG, WITH A CLEAR GLASS BODY · Nos. 821–826 ────────────────────────────────────
+// The shell egg (No. 802) liked, its body asked back as clear glass with the crystal showing inside. Same legs (three jointed pins with glowing feet), collar and lit lip; only the body changes.
+// kind: 'clear' (a smooth glass egg), 'facet' (a faceted glass egg with lit edges), 'ribbed' (glass between black ribs and rings), 'half' (a near-black lower shell, glass above),
+// 'fluid' (glass, the lower third full of glowing liquid, a cluster of three crystals), 'capsule' (a taller glass capsule with black caps).
+const _pGlass2 = new T.MeshStandardMaterial({ color: 0xb4d8ff, transparent: true, opacity: 0.4, metalness: 0, roughness: 0.02, depthWrite: false }); _pGlass2.envMapIntensity = 1.8;
+const _pGlassF = new T.MeshStandardMaterial({ color: 0xb4d8ff, transparent: true, opacity: 0.42, metalness: 0, roughness: 0.04, depthWrite: false, flatShading: true }); _pGlassF.envMapIntensity = 1.6;
+function _eggG(kind) {
+  const g = G(), b = G(); g.add(b);
+  const hipY = 0.5, hipR = 0.24, footR = 0.42, l1 = 0.34, l2 = 0.36, base = hipY + 0.06, bubbles = [];
+  const collar = cyl(hipR + 0.05, hipR + 0.09, 0.12, _pPanel, 10); collar.position.y = hipY; b.add(collar); const lip = torus(hipR + 0.07, 0.018, M.glow, 14); lip.rotation.x = PI / 2; lip.position.y = hipY + 0.07; b.add(lip);
+  const eggProf = (n, k) => { const p = []; for (let i = 0; i <= n; i++) { const a = i / n * PI; p.push(new T.Vector2(Math.sin(a) * (0.3 + 0.06 * Math.sin(a)) * k, 0.5 - Math.cos(a) * 0.5)); } return p; };
+  const egg = (prof, seg, mat, sy) => { const m = new T.Mesh(new T.LatheGeometry(prof, seg), mat); m.scale.set(1, sy || 1.2, 1); m.position.y = base; return m; };
+  let crystals = [];
+  const addCrystal = (r, h, tip, x, y, z, tilt) => { const c = crystalCore(r, h, tip, 0.12); c.position.set(x, y, z); if (tilt) c.rotation.z = tilt; b.add(c); crystals.push(c); return c; };
+  const bubs = (n, top) => { for (let i = 0; i < n; i++) { const s = sphere(0.02 + (i % 2) * 0.01, M.glow, 6); b.add(s); bubbles.push({ s, top }); } };
+  if (kind === 'clear') {
+    b.add(egg(eggProf(14, 1), 20, _pGlass2)); const ring = torus(0.318, 0.012, M.glow, 18); ring.rotation.x = PI / 2; ring.position.y = base + 0.62; b.add(ring);   // a thin lit hoop round the middle, seen through the glass
+    addCrystal(0.1, 0.22, 0.14, 0, base + 0.6, 0); bubs(5, 1.0);
+    const cap = cyl(0.07, 0.11, 0.05, _pPanel, 8); cap.position.y = base + 1.22; b.add(cap);
+  } else if (kind === 'facet') {
+    b.add(egg(eggProf(10, 1), 9, _pGlassF)); const eg = new T.LineSegments(new T.EdgesGeometry(new T.LatheGeometry(eggProf(10, 1), 9)), new T.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })); eg.scale.set(1, 1.2, 1); eg.position.y = base; b.add(eg);
+    addCrystal(0.1, 0.24, 0.15, 0, base + 0.6, 0); bubs(4, 1.0);
+    const hat = cyl(0.09, 0.13, 0.05, _pPanel, 8); hat.position.y = base + 1.22; b.add(hat);
+  } else if (kind === 'ribbed') {
+    b.add(egg(eggProf(14, 1), 20, _pGlass2));
+    for (const t of [0.2, 0.42, 0.66, 0.86]) { const a = t * PI, r = Math.sin(a) * (0.3 + 0.06 * Math.sin(a)) + 0.012, y = base + (0.5 - Math.cos(a) * 0.5) * 1.2; const ring = torus(r, 0.016, _pPanel, 20); ring.rotation.x = PI / 2; ring.position.y = y; b.add(ring); }
+    for (let i = 0; i < 3; i++) { const a = i * TAU / 3 + 0.5; const rib = G(); rib.rotation.y = a; b.add(rib); for (let s = 0; s < 10; s++) { const t0 = s / 10, t1 = (s + 1) / 10, p = t => { const q = t * PI; return [Math.sin(q) * (0.3 + 0.06 * Math.sin(q)) + 0.012, base + (0.5 - Math.cos(q) * 0.5) * 1.2]; }; const [x0, y0] = p(t0), [x1, y1] = p(t1); const seg = cbox(0.022, Math.hypot(x1 - x0, y1 - y0) + 0.006, 0.022, 0.005, _pPanel); seg.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0); seg.rotation.z = Math.atan2(x1 - x0, y1 - y0) * -1 + PI; rib.add(seg); } }
+    addCrystal(0.1, 0.24, 0.15, 0, base + 0.6, 0); bubs(4, 1.0);
+    const hat = cyl(0.08, 0.12, 0.06, _pPanel, 8); hat.position.y = base + 1.23; b.add(hat);
+  } else if (kind === 'half') {
+    const full = eggProf(14, 1), lower = full.slice(0, 8), upper = full.slice(7);
+    b.add(egg(lower, 20, _pBlack)); b.add(egg(upper, 20, _pGlass2));
+    const seamA = Math.PI * 7 / 14, sr = Math.sin(seamA) * (0.3 + 0.06 * Math.sin(seamA)) + 0.012; const seam = torus(sr, 0.02, M.glow, 20); seam.rotation.x = PI / 2; seam.position.y = base + (0.5 - Math.cos(seamA) * 0.5) * 1.2; b.add(seam);
+    addCrystal(0.1, 0.22, 0.14, 0, base + 0.74, 0); bubs(4, 1.05);
+    const hat = cyl(0.07, 0.11, 0.05, _pPanel, 8); hat.position.y = base + 1.22; b.add(hat);
+  } else if (kind === 'fluid') {
+    b.add(egg(eggProf(14, 1), 20, _pGlass2));
+    const full = eggProf(14, 0.93), liquid = full.slice(0, 6); liquid.push(new T.Vector2(0, liquid[liquid.length - 1].y)); const fl = new T.Mesh(new T.LatheGeometry(liquid, 18), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, toneMapped: false })); fl.material.color.copy(M.glow.color); fl.scale.set(1, 1.2, 1); fl.position.y = base; b.add(fl);
+    addCrystal(0.085, 0.2, 0.12, 0, base + 0.62, 0); addCrystal(0.055, 0.14, 0.09, 0.14, base + 0.5, 0.04, -0.35); addCrystal(0.05, 0.12, 0.08, -0.13, base + 0.52, -0.05, 0.4); bubs(6, 1.0);
+    const hat = cyl(0.07, 0.11, 0.05, _pPanel, 8); hat.position.y = base + 1.22; b.add(hat);
+  } else {   // capsule
+    const prof = []; const R = 0.27; for (let i = 0; i <= 5; i++) { const a = i / 5 * PI / 2; prof.push(new T.Vector2(Math.sin(a) * R, -Math.cos(a) * R)); } prof.push(new T.Vector2(R, 0.55)); for (let i = 0; i <= 5; i++) { const a = i / 5 * PI / 2; prof.push(new T.Vector2(Math.cos(a) * R, 0.55 + Math.sin(a) * R)); }
+    const cap = new T.Mesh(new T.LatheGeometry(prof, 20), _pGlass2); cap.position.y = base + R; b.add(cap);
+    const top = cyl(0.12, 0.2, 0.1, _pBlack, 10); top.position.y = base + R + 0.55 + R + 0.02; b.add(top); const bot = cyl(0.2, 0.15, 0.08, _pBlack, 10); bot.position.y = base + 0.02; b.add(bot);
+    const band = torus(R + 0.012, 0.016, M.glow, 20); band.rotation.x = PI / 2; band.position.y = base + R + 0.27; b.add(band);
+    addCrystal(0.1, 0.26, 0.15, 0, base + R + 0.3, 0); bubs(5, 1.1);
+    const fin = cyl(0.01, 0.05, 0.14, _pPanel, 6); fin.position.y = base + 1.38; b.add(fin);
+  }
+  // glass reads as glass by what shines on it: two bright streaks down its front, and a pale rim round its edge
+  { const hi = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, toneMapped: false, depthWrite: false }), top = kind === 'capsule' ? base + 0.55 : base + 0.62, h = kind === 'capsule' ? 0.55 : 0.5;
+    const s1 = new T.Mesh(new T.SphereGeometry(1, 10, 8), hi); s1.scale.set(0.018, h * 0.5, 0.008); s1.position.set(-0.2, top, 0.22); s1.rotation.set(0, 0.7, 0.12); b.add(s1);
+    const s2 = new T.Mesh(new T.SphereGeometry(1, 8, 6), hi); s2.scale.set(0.014, h * 0.12, 0.007); s2.position.set(-0.25, top - h * 0.62, 0.12); s2.rotation.set(0, 0.9, 0.2); b.add(s2); }
+  // the legs: three jointed pins, hips on the collar, feet that glow
+  const legs = [];
+  for (let i = 0; i < 3; i++) { const ang = i * TAU / 3 + PI / 6, out = new T.Vector3(Math.sin(ang), 0.55, Math.cos(ang)).normalize(), hip = new T.Vector3(Math.sin(ang) * hipR, hipY - 0.02, Math.cos(ang) * hipR);
+    const upper = _limb(b, 0.034, _pPeg), lower = _limb(b, 0.026, _pPeg), knee = sphere(0.045, _pPanel, 8), foot = sphere(0.04, M.glow, 8), nub = sphere(0.06, _pPanel, 8); nub.position.copy(hip); b.add(nub, knee, foot); legs.push({ out, hip, upper, lower, knee, foot, rest: new T.Vector3(Math.sin(ang) * footR, 0.03, Math.cos(ang) * footR), ph: i * 2 / 3 * PI }); }
+  const place = (walk, ph) => { for (const L of legs) { const lp = walk ? ph + L.ph : 0, f = L.rest.clone(); f.z += (walk ? Math.sin(lp) * 0.2 : 0); f.y += walk ? Math.max(0, Math.cos(lp)) * 0.16 : 0; const k = _ik(L.hip, f, l1, l2, L.out); L.upper.set(L.hip, k); L.lower.set(k, f); L.knee.position.copy(k); L.foot.position.copy(f); } };
+  place(false, 0);
+  return { g, core: hipY + 0.6, update(t, act) { const walk = _isWalk(act), ph = _walkPh(act);
+    b.position.y = walk ? Math.abs(Math.sin(ph * 2)) * 0.035 : bob(t, 0, 0.025); place(walk, ph);
+    crystals.forEach((c, i) => { c.rotation.y = (walk ? ph * 0.5 : t * 1.6) + i * 1.7; });
+    bubbles.forEach((o, i) => { const u = ((t * 0.35 + i / bubbles.length) % 1); o.s.position.set(Math.sin(i * 2.3 + u * 6) * 0.1, base + 0.15 + u * (o.top - 0.2) * 0.6, Math.cos(i * 1.7) * 0.1); o.s.scale.setScalar(Math.sin(u * PI) + 0.1); });
+  } };
+}
+f2(821, "THE EGG · clear glass: the shell egg's legs and collar, a smooth clear glass egg, the crystal turning inside it with bubbles rising.", () => _eggG('clear'));
+f2(822, "THE EGG · faceted glass: a clear egg cut into facets with lit edges, the crystal inside.", () => _eggG('facet'));
+f2(823, "THE EGG · ribbed glass: clear glass held in black ribs and rings, the crystal inside.", () => _eggG('ribbed'));
+f2(824, "THE EGG · half shell: the lower half the near-black shell, the top clear glass with the crystal in it, a lit seam between.", () => _eggG('half'));
+f2(825, "THE EGG · fluid: clear glass, its lower third full of glowing liquid, a cluster of three crystals standing in it.", () => _eggG('fluid'));
+f2(826, "THE EGG · capsule: a taller clear glass capsule with black caps and a lit band, the crystal inside.", () => _eggG('capsule'));

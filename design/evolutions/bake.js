@@ -13,6 +13,14 @@ const core = fs.readFileSync(path.join(__dirname, 'forms-core.js'), 'utf8');
 // forms2.js (helpers + Nos. 33-52), forms3.js (sentinels, robots, drones, Nos. 53-72) and forms4.js (ancient relics, Nos. 73-92), forms5.js (the corroded crystal, Nos. 93-103), forms6.js (the flux brawler, Nos. 104-115), forms7.js (the core mage, Nos. 116-125), forms8.js (the toxic brawler, Nos. 126-141), forms9.js (the core worker, Nos. 142-144), forms10.js (the ice maw, Nos. 145-157), forms11-13.js (the ammonite in its jar, Nos. 158-222), forms14.js (cloaks and pyramids, Nos. 223-331), forms15.js (the rock porcupine, Nos. 332-361) register FORMS2[no].
 const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8'), f4src = fs.readFileSync(path.join(__dirname, 'forms4.js'), 'utf8'), f5src = fs.readFileSync(path.join(__dirname, 'forms5.js'), 'utf8'), f6src = fs.readFileSync(path.join(__dirname, 'forms6.js'), 'utf8'), f7src = fs.readFileSync(path.join(__dirname, 'forms7.js'), 'utf8'), f8src = fs.readFileSync(path.join(__dirname, 'forms8.js'), 'utf8'), f9src = fs.readFileSync(path.join(__dirname, 'forms9.js'), 'utf8'), f10src = fs.readFileSync(path.join(__dirname, 'forms10.js'), 'utf8'), f11src = fs.readFileSync(path.join(__dirname, 'forms11.js'), 'utf8'), f12src = fs.readFileSync(path.join(__dirname, 'forms12.js'), 'utf8'), f13src = fs.readFileSync(path.join(__dirname, 'forms13.js'), 'utf8'), f14src = fs.readFileSync(path.join(__dirname, 'forms14.js'), 'utf8'), f15src = fs.readFileSync(path.join(__dirname, 'forms15.js'), 'utf8'), f16src = fs.readFileSync(path.join(__dirname, 'forms16.js'), 'utf8'), f17src = fs.readFileSync(path.join(__dirname, 'forms17.js'), 'utf8'), f18src = fs.readFileSync(path.join(__dirname, 'forms18.js'), 'utf8'), f19src = fs.readFileSync(path.join(__dirname, 'forms19.js'), 'utf8'), f20src = fs.readFileSync(path.join(__dirname, 'forms20.js'), 'utf8'), f21src = fs.readFileSync(path.join(__dirname, 'forms21.js'), 'utf8'), f22src = fs.readFileSync(path.join(__dirname, 'forms22.js'), 'utf8'), f23src = fs.readFileSync(path.join(__dirname, 'forms23.js'), 'utf8'), f24src = fs.readFileSync(path.join(__dirname, 'forms24.js'), 'utf8'), f25src = fs.readFileSync(path.join(__dirname, 'forms25.js'), 'utf8'), f26src = fs.readFileSync(path.join(__dirname, 'forms26.js'), 'utf8'), f27src = fs.readFileSync(path.join(__dirname, 'forms27.js'), 'utf8'), f28src = fs.readFileSync(path.join(__dirname, 'forms28.js'), 'utf8'), f29src = fs.readFileSync(path.join(__dirname, 'forms29.js'), 'utf8');
 const JOBS = [
+  // Nos. 821-826, the follower egg with a CLEAR GLASS body again (the shell egg's legs and collar, the element crystal inside): candidates.
+  { id: 'eg_clear',   form: 821, color: '#ff5522', idleAct: 0, action: [0, 1.0], brightCrystal: true },
+  { id: 'eg_facet',   form: 822, color: '#ff5522', idleAct: 0, action: [0, 1.0], brightCrystal: true },
+  { id: 'eg_ribbed',  form: 823, color: '#ff5522', idleAct: 0, action: [0, 1.0], brightCrystal: true },
+  { id: 'eg_half',    form: 824, color: '#ff5522', idleAct: 0, action: [0, 1.0], brightCrystal: true },
+  { id: 'eg_fluid',   form: 825, color: '#ff5522', idleAct: 0, action: [0, 1.0], brightCrystal: true },
+  { id: 'eg_capsule', form: 826, color: '#ff5522', idleAct: 0, action: [0, 1.0], brightCrystal: true },
+  { id: 'eg_clear_ice', form: 821, color: '#99ddff', idleAct: 0, action: [0, 1.0], brightCrystal: true },
   { id: 'player', form: 814, color: '#19e6c1', idleAct: 0, action: [0, 1.0], rim: '#8d95a8' },
   { id: 'player_angry', form: 815, color: '#19e6c1', idleAct: 0, action: [0, 1.0], rim: '#8d95a8' },
   { id: 'egg_fire', form: 802, color: '#ff3300', idleAct: 0, action: [0, 1.0] },
@@ -126,7 +134,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   const isGround = o => { for (let q = o; q; q = q.parent) if (q.userData && q.userData.ground) return true; return false; };
   for (const job of jobs) {
     sg.clearRect(0, 0, sheetCv.width, sheetCv.height); sgG.clearRect(0, 0, sheetG.width, sheetG.height);
-    EL = { color: job.color }; setElementColour(job.color); if (typeof job.form === 'number') { M.crystal.color.multiplyScalar(0.5); M.crystal.emissive.multiplyScalar(0.8); }
+    EL = { color: job.color }; setElementColour(job.color); if (typeof job.form === 'number' && !job.brightCrystal) { M.crystal.color.multiplyScalar(0.5); M.crystal.emissive.multiplyScalar(0.8); }
     const scene = new T.Scene(); scene.environment = env;
     scene.add(new T.HemisphereLight(0x7f8ea3, 0x050505, 0.45));
     const key = new T.DirectionalLight(0xfff1e2, 2.4); key.position.set(3, 6, 4); scene.add(key);
