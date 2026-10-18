@@ -246,14 +246,16 @@ function handleLongHold(ex,ey) {
     if (!(typeof indexReplaced === "function" && indexReplaced()) && typeof openFollowerDutyMenu === "function" && openFollowerDutyMenu(ex, ey)) return;   // (the old index is replaced: js/commandcenter.js)
     // A long press on the build window is the window's, not the world's.
     if (typeof buildMenuHit === "function" && buildMenuHit(ex, ey)) return;
+    // A long press on a zone's power unit (the machine in the back wall) opens its panel, like a tap.
+    if (typeof wallUnitTap === "function" && wallUnitTap(ex, ey)) return;
     commandMode=true; commandX=ex; commandY=ey;
     // KEEP THE RING ON SCREEN. A nest or the home portal on the back wall sits
     // under the top HUD, which hid the ring's top button (OVERCHARGE). The ring
     // is drawn clear of the HUD and the edges; a drag is still measured from
     // the press point, so releasing in place can never pick a button.
-    const _R = typeof RADIAL_RADIUS === "number" ? RADIAL_RADIUS : 60;
-    commandX = Math.max(_R + 40, Math.min(canvas.width - _R - 40, ex));
-    commandY = Math.max(_R + 140, Math.min(canvas.height - _R - 40, ey));
+    const _R = typeof RADIAL_RADIUS === "number" ? RADIAL_RADIUS : 60, _M = typeof radialMargins === "function" ? radialMargins() : { x: _R + 40, top: _R + 40, bottom: _R + 40 };
+    commandX = Math.max(_M.x, Math.min(canvas.width - _M.x, ex));
+    commandY = Math.max(140 + _M.top, Math.min(canvas.height - _M.bottom, ey));
     commandShiftX = commandX - ex; commandShiftY = commandY - ey;
     noteRingUsed();
     const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;

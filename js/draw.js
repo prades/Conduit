@@ -23,7 +23,26 @@ function drawHealthBar(x, y, width, height, health, maxHealth, drawCtx=ctx, ally
     if (pct>0) { drawCtx.fillStyle=col; slab(pct); drawCtx.fill(); }
 }
 
+// THE ORDER RING (the long press), in the game's layout style (docs/UI-STYLE.md): ASKED: "whenever I long hold press on something, it needs to be in that new style menu so that I can see it." The choices are big slanted
+// slabs with big italic type, spread out round the press point; the logic is unchanged (RADIAL_RADIUS and the drag angle still decide the choice), only where and how the choices are drawn moved.
+function _radialK() { return Math.max(0.62, Math.min(1, (typeof canvas !== "undefined" ? canvas.width : 900) / 900)); }
+// How far the slabs reach from the press point, so the ring can be kept on screen (input.js handleLongHold).
+function radialMargins() { const k = _radialK(); return { x: 118 * k + 100 * k, top: 78 * k + 36 * k, bottom: 78 * k + 80 * k }; }
+function _radialColour(label) {
+    if (/^(UPGRADE|BUILD|MK II|\u26a1 OVERCHARGE|OVERCHARGE)/.test(label)) return "#ffe733";
+    if (/^(INFO)/.test(label)) return "#8fe3ff";
+    if (/^(ATTACK|STOW|DESTROY|NOT YOURS|RECLAIM)/.test(label)) return "#ff4a1c";
+    if (/^(TO WORK|TO LINE|FIGHTER|THAW|RE-ROLL|NO JOB)/.test(label)) return "#a64dff";
+    return "#19e6c1";
+}
 function drawRadialButton(x, y, label, active) {
+    if (typeof uiButton === "function" && typeof uiFont === "function") {
+        const k = _radialK(), R = typeof RADIAL_RADIUS === "number" ? RADIAL_RADIUS : 60;
+        const cx = commandX + (x - commandX) / R * 118 * k, cy = commandY + (y - commandY) / R * 78 * k;
+        const size = Math.round(22 * k), h = 52 * k; ctx.save(); ctx.font = uiFont(size); const w = Math.max(132 * k, Math.min(canvas.width * 0.46, ctx.measureText(label).width + 44 * k)); ctx.restore();
+        uiButton({ x: cx - w / 2, y: cy - h / 2, w, h }, label, _radialColour(label), !!active, size);
+        return;
+    }
     ctx.fillStyle=active?"#0f8":"#055";
     ctx.beginPath(); ctx.arc(x,y,10,0,Math.PI*2); ctx.fill();
     ctx.fillStyle=active?"#fff":"#0f8";
@@ -33,13 +52,22 @@ function drawRadialButton(x, y, label, active) {
     ctx.shadowBlur=0;
 }
 
+// A caption under the ring (what it is for), in the layout style's caption type.
+function _radialCaption(text, col) { const k = _radialK(), y = commandY + 78 * k + 58 * k; if (typeof uiCaptionFit === "function") uiCaptionFit(text, commandX, y, col, "center", Math.round(16 * k), canvas.width * 0.8); else { ctx.fillStyle = col; ctx.font = "10px monospace"; ctx.textAlign = "center"; ctx.fillText(text, commandX, commandY + RADIAL_RADIUS + 18); } }
 function drawRadialMenu() {
     if (!commandMode) return;
     selectedRadialAction=null;
     const dist=Math.hypot(dragDX,dragDY), angle=Math.atan2(dragDY,dragDX);
     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+    if (typeof uiFont === "function") {
+        // the press point: a soft teal ring and a dot, where the finger is; the choices are the slabs round it
+        ctx.strokeStyle = "rgba(25,230,193,.55)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(commandX, commandY, 22, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = "rgba(25,230,193,.18)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(commandX, commandY, RADIAL_RADIUS * 0.9, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = "#19e6c1"; ctx.beginPath(); ctx.arc(commandX, commandY, 4, 0, Math.PI * 2); ctx.fill();
+    } else {
     ctx.strokeStyle="#0f8"; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(commandX,commandY,RADIAL_RADIUS,0,Math.PI*2); ctx.stroke();
+    }
 
     // ── ENEMY TARGET — combat menu instead of the build/position one ──
     // This is the only way to arm the weapon, so firing can never be triggered
@@ -53,9 +81,7 @@ function drawRadialMenu() {
         drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", eRight);
         if (eRight) selectedRadialAction = "info";
         // Ammo readout under the ring, so the cost of arming is visible here.
-        ctx.fillStyle = playerAmmo > 0 ? "#fa6" : "#f55";
-        ctx.font = "10px monospace"; ctx.textAlign = "center";
-        ctx.fillText("AMMO " + playerAmmo, commandX, commandY + RADIAL_RADIUS + 18);
+        _radialCaption("AMMO " + playerAmmo, playerAmmo > 0 ? "#ffb070" : "#ff7766");
         ctx.restore();
         return;
     }
@@ -73,10 +99,7 @@ function drawRadialMenu() {
         const cRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
         drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", cRight);
         if (cRight) selectedRadialAction = "info";
-        ctx.fillStyle = c.duty === "worker" ? "#0ca" : "#22ff88";
-        ctx.font = "10px monospace"; ctx.textAlign = "center";
-        ctx.fillText((c.speciesName || "").toUpperCase() + " CLONE \u00b7 " + (typeof cloneDutyLabel === "function" ? cloneDutyLabel(c) : "FIGHTER"),
-                     commandX, commandY + RADIAL_RADIUS + 18);
+        _radialCaption((c.speciesName || "").toUpperCase() + " CLONE \u00b7 " + (typeof cloneDutyLabel === "function" ? cloneDutyLabel(c) : "FIGHTER"), c.duty === "worker" ? "#19e6c1" : "#7dffb5");
         ctx.restore();
         return;
     }
@@ -100,13 +123,8 @@ function drawRadialMenu() {
             drawRadialButton(commandX-RADIAL_RADIUS, commandY, "RE-ROLL", fLeft);
             if (fLeft) selectedRadialAction = "reroll_follower";
         }
-        ctx.fillStyle = isWorker ? "#0ca" : "#0f8";
-        ctx.font = "10px monospace"; ctx.textAlign = "center";
         const jobLabel = (typeof workerJobLabel === "function" && workerJobLabel(f.element)) || "NO JOB";
-        ctx.fillText((f.element||"?").toUpperCase() + " \u00b7 " +
-                     (f.iceBlock ? "FROZEN BLOCK"
-                                 : (isWorker ? "WORKER: " + jobLabel : "FIGHTER")),
-                     commandX, commandY + RADIAL_RADIUS + 18);
+        _radialCaption((f.element||"?").toUpperCase() + " \u00b7 " + (f.iceBlock ? "FROZEN BLOCK" : (isWorker ? "WORKER: " + jobLabel : "FIGHTER")), isWorker ? "#19e6c1" : "#7dffb5");
         ctx.restore();
         return;
     }

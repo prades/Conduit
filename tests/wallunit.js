@@ -197,6 +197,15 @@ function measure() {
         ok(!/kind: "generator"/.test(rd('js/commandcenter.js').slice(rd('js/commandcenter.js').indexOf('function buildOrderPickerOpen'), rd('js/commandcenter.js').indexOf('function buildOrderPickerOpen') + 6000)), 'the order picker still offers a generator');
     });
 
+    group('THE LONG PRESS IS IN THE LAYOUT STYLE');
+    check('the order ring draws its choices as big slabs (uiButton, italic type), coloured by what they do, and keeps them on screen', () => {
+        const d = rd('js/draw.js'); ok(/function drawRadialButton[\s\S]{0,900}uiButton\(/.test(d), 'the ring still draws small circles and 12px mono'); ok(!/ctx\.font = "10px monospace"; ctx\.textAlign = "center";\s*\n\s*ctx\.fillText\("AMMO/.test(d), 'the ammo caption is still 10px mono');
+        same(run('_radialColour("INFO")'), '#8fe3ff', 'INFO'); same(run('_radialColour("MK II 15\\u25c6")'), '#ffe733', 'MK II'); same(run('_radialColour("ATTACK")'), '#ff4a1c', 'ATTACK'); same(run('_radialColour("TO WORK")'), '#a64dff', 'TO WORK'); same(run('_radialColour("POSITION")'), '#19e6c1', 'POSITION');
+        const m = J('radialMargins()'); ok(m.x >= 130 && m.top >= 90 && m.bottom >= 120, 'margins: ' + JSON.stringify(m));
+        const i = rd('js/input.js'); ok(/radialMargins\(\)/.test(i), 'the ring is not kept on screen by its slabs\' reach');
+    });
+    check('a long press on the power unit machine opens its panel, like a tap', () => { ok(/function handleLongHold[\s\S]{0,2500}wallUnitTap\(ex, ey\)/.test(rd('js/input.js')), 'handleLongHold does not look at the unit'); });
+
     group('A SAVE FROM BEFORE THE UNIT MOVED');
     check('cells saved at the zone start (x 0 to 5) move to the unit\'s tiles, element, charge and wreck intact', () => {
         fresh(false); run('shardCount = 999');
