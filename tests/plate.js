@@ -38,6 +38,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         run(`followers.length = 0; spawnFollowerAtCrystal('fire'); spawnFollowerAtCrystal('ice'); squadMake(followers.slice(0, 2));`);
         const c = J(`__tag(followers[0])`)[0]; ok(/^A · /.test(c.text), 'text: ' + c.text);
     });
+    check('QUIET: the plain FOLLOWING chip is not drawn; any other status still gets its chip', () => {
+        const base = "{ level: 4, team: 'green', isFollower: true, element: 'fire', role: 'brawler', x: 5, y: 2, health: 10, maxHealth: 10, job: ";
+        const plain = J(`__tag(Object.assign(${base}null }, { stance: 'follow' }))`); ok(!plain.some(c => c.chip && c.text === 'FOLLOWING'), 'the usual state still has a chip');
+        const post = J(`__tag(Object.assign(${base}{ type: 'move', target: { x: 5, y: 2 } } }, { stance: 'hold' }))`); ok(post.some(c => c.chip), 'a post has no chip: ' + JSON.stringify(post));
+    });
     check('every emblem draws, makes its own cached plate, and widens it to fit', () => {
         run('drawPlate = __draw; _plateCache.clear();');
         const w = r => { const e = run(`cachedPlate('Lv 3 FIRE BRAWLER', '#ff4a1c', false, ${r ? JSON.stringify(r) : 'null'})`); return e ? e.w : null; };

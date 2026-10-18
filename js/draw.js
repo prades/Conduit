@@ -2139,9 +2139,10 @@ function cachedPlate(text, color, chip, role) {
         g.font = UNIT_FONT; const tw = Math.ceil((g.measureText(text) || { width: text.length * 5.4 }).width), h = chip ? 12 : 13, w = tw + (chip ? 12 : 14) + (role ? 12 : 0), sk = 3;
         cv.width = (w + 2) * 2; cv.height = (h + 2) * 2; g.scale(2, 2); g.translate(1, 1);
         g.beginPath(); g.moveTo(sk, 0); g.lineTo(w, 0); g.lineTo(w - sk, h); g.lineTo(0, h); g.closePath();
-        g.fillStyle = chip ? color : "rgba(5,7,15,0.9)"; g.fill(); g.lineWidth = 1; g.strokeStyle = chip ? "#05070f" : color; g.globalAlpha = chip ? 0.6 : 0.85; g.stroke(); g.globalAlpha = 1;
-        if (!chip) { g.fillStyle = color; g.fillRect(sk + 0.5, 1, 2, h - 2); }
-        g.font = UNIT_FONT; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = chip ? "#05070f" : "#eafff6"; g.fillText(text, w / 2 + (chip ? 0 : 1.5) + (role ? 6 : 0), h / 2 + 0.5);
+        // QUIET: a dark slab with a hairline edge and a thin colour bar; the chip is the same dark slab with its colour on the edge and in the text
+        g.fillStyle = chip ? "rgba(5,7,15,0.78)" : "rgba(5,7,15,0.82)"; g.fill(); g.lineWidth = 1; g.strokeStyle = color; g.globalAlpha = chip ? 0.7 : 0.28; g.stroke(); g.globalAlpha = 1;
+        if (!chip) { g.fillStyle = color; g.fillRect(sk + 0.5, 1, 1.5, h - 2); }
+        g.font = UNIT_FONT; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = chip ? color : "#cfdde0"; g.fillText(text, w / 2 + (chip ? 0 : 1.5) + (role ? 6 : 0), h / 2 + 0.5);
         if (role) { g.save(); g.translate(sk + 5, (h - 10) / 2); _drawRoleEmblem(g, role, color); g.restore(); }
         e = { cv, w: w + 2, h: h + 2 };
         if (_plateCache.size > 400) _plateCache.clear();

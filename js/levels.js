@@ -274,6 +274,6 @@ function drawUnitTag(a, cx, y, drawCtx) {
     const label = (sq ? sq + " \u00b7 " : "") + "Lv " + a.level + " " + unitTypeLabel(a);
     if (typeof drawPlate === "function" && drawPlate(label, col, cx, y, false, role)) {
         const st = ally && typeof unitStatus === "function" ? unitStatus(a) : null;
-        if (st) drawPlate(st.text, st.col, cx, y - 15, true);
+        if (st && st.text !== "FOLLOWING") drawPlate(st.text, st.col, cx, y - 15, true);   // plain following is the usual state: no chip
     } else cachedText(label, "bold 7px monospace", col, cx, y);
 }
