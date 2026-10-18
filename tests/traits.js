@@ -41,7 +41,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
             p.state = 'hunt'; p.provoked = true; p.moveSpeed = 0; p.baseMoveSpeed = 0; actors.push(p); return p; };
         const out = {};
         ${setup}
-        for (let n = 0; n < ${frames || 1}; n++) { frame++; updateNPC(f); }
+        for (let n = 0; n < ${frames || 1}; n++) { frame++; updateNPC(f); if (typeof fireBombsTick === 'function') fireBombsTick(); }
         return Object.assign(out, { fx: f.x, fy: f.y, target: f._nearestEnemy ? f._nearestEnemy.id : null });
     })()`);
 
