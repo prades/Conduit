@@ -107,9 +107,9 @@ function measure(w, h) {
     group('THE BATTLE CONTROLS (the game\'s own rules)');
     const env = (f) => run(f);
     run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(['fire', 'electric', 'ice']); zoneGenerated = () => true; ensureWorldTo(40);
-        globalThis.__mk = (cls, x, y) => { const S = SPECIES[Object.keys(SPECIES)[0]], def = (typeof getClassDef === 'function' ? getClassDef(S, cls) : S[cls]) || S.scout; const a = new Predator(cls, Object.assign({}, def, { color: S.color }), x, y); a.team = 'red'; a.className = cls; a.state = 'hunt'; a.provoked = true; a.x = x; a.y = y; actors.push(a); return a; };
+        globalThis.__mk = (cls, x, y) => { const S = SPECIES[Object.keys(SPECIES)[0]], def = (typeof getClassDef === 'function' ? getClassDef(S, cls) : S[cls]) || S.scout; const a = new Predator(cls, Object.assign({}, def, { color: S.color }), x, y); a.team = 'red'; a.className = cls; a.state = 'hunt'; a.provoked = true; a.x = x; a.y = y; a.moveSpeed = 0; a.health = a.maxHealth = 1e7; actors.push(a); return a; };
         globalThis.__fresh = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; battleFocus = null; squadMode = 'all'; selectedUnits.clear(); player.x = player.targetX = player.visualX = 8; player.y = player.targetY = player.visualY = 1;
-            spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = 'brawler'; f.x = 8.5; f.y = 1; f.stance = 'follow'; return f; };`);
+            spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = 'brawler'; f.x = 8.5; f.y = 1; f.stance = 'follow'; f.health = f.maxHealth = 1e7; return f; };`);
     const frames = n => { for (let i = 0; i < n; i++) run('render()'); };
     check('FOCUS: with a class picked the follower goes for that class when one is in reach, and for the nearest otherwise', () => {
         run('__fresh(); globalThis.__near = __mk("scout", 10, 1); globalThis.__far = __mk("striker", 14, 1);'); frames(20); same(run('followers[0]._nearestEnemy === __near'), true, 'default: the nearest');

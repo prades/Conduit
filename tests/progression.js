@@ -271,7 +271,7 @@ check('and the prompt can be put down by looking at the control', () => {
     // The only way to clear it used to be toggling a swatch. Opening the control is the acknowledgement: reading the mix IS the decision.
     const MT = fs.readFileSync(path.join(ROOT, 'js/mixtool.js'), 'utf8');
     ok(/function mixToolSetOpen\(o\) \{[^\n]*modulationDirty = false/.test(MT), 'opening the mix selector does not clear the prompt');
-    ok(/if \(crystalMenuOpen\) modulationDirty = false/.test(MT), 'the selector, opened by a flag, does not clear the prompt');
+    ok(/mixToolIsOpen\(\) && _mtTab === "mix"\) modulationDirty = false/.test(MT), 'the selector, showing the mix, does not clear the prompt');
 });
 
 check('activating something you have not earned does nothing', () => {
@@ -416,8 +416,8 @@ check('the mix selector offers an UNLOCK chip for every locked element once one 
     ok(/pick \? "UNLOCK"/.test(MIXTOOL), 'the chip does not say UNLOCK');
 });
 
-check('THE PROMPT: the pod says an element is waiting (a gold !), and stops once the tool is open', () => {
-    ok(/\(pend \|\| modulationDirty\) && !crystalMenuOpen \? '<i class="mt-bang">!<\/i>'/.test(MIXTOOL), 'the pod does not prompt');
+check('THE PROMPT: the pod (and the MIX tab) say an element is waiting with a gold !, and the pod stops once the tool is open', () => {
+    ok(/\(pend \|\| modulationDirty\) \? '<i class="mt-bang">!<\/i>'/.test(MIXTOOL) && /\(bang && !open \? bang : ''\)/.test(MIXTOOL), 'the pod does not prompt');
     ok(!/function drawCrystalButton/.test(SRC.clone), 'the canvas Crystal button is still there');
 });
 

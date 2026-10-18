@@ -364,12 +364,13 @@ function updateRTSNPC(actor) {
                     if (_focus && a.className === _focus && d < _focusD) { _focusD = d; _focusBest = a; }
                 }
             });
-            if (_focusBest && _focusD < BATTLE_FOCUS_REACH) actor._nearestEnemy = _focusBest;
             // OPPORTUNISTIC picks the weakest enemy in reach instead of the nearest.
             const _ct = actor.combatTrait && COMBAT_TRAITS[actor.combatTrait];
             if (_ct && _ct.onTargetSelect && _inReach.length) {
                 actor._nearestEnemy = _ct.onTargetSelect(actor, _inReach) || actor._nearestEnemy;
             }
+            // the FOCUS wins over a trait's pick (OPPORTUNISTIC chose the weakest in reach, which was whichever class it happened to be)
+            if (_focusBest && _focusD < BATTLE_FOCUS_REACH) actor._nearestEnemy = _focusBest;
             actor._enemyCacheFrame = frame;
         }
         const nearestEnemy = actor._nearestEnemy;
