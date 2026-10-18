@@ -5,12 +5,12 @@
 // sprites. These two now are too: the same sheets (8 facings x 16 frames: 8 idle, 8 walk, 144 px cells, seen from the game's iso angle, drawn by js/evolution.js's rules).
 //   THE PLAYER   the same cube, modelled (img/hd/player.png, and player_angry.png with red eyes). It turns to the way it moves, walks while it moves, and the smoke still
 //                comes out of its vent.
-//   THE EGG      "the shell": a faceted egg with glowing cracks on three pins, one sheet per element (img/hd/egg_<element>.png).
+//   THE EGG      a clear glass egg with the element crystal turning inside it, on three dark metal scythe legs, one sheet per element (img/hd/egg_<element>.png; design/evolutions/forms29.js Nos. 821 and 835).
 // Until a sheet has arrived (or if it never does) the old flat drawing is used, so nothing is ever missing.
 // The sheets are CROPPED to the part of a cell the figure ever covers (img/hd: tools in design/evolutions/bake.js baked 144 px cells, mostly empty): a cell is HD_BOX[family].cw x .ch, cut from
 // the original cell at (ox, oy). Decoded they were ten times the memory; this is a fifth to a quarter of it.
 const HD_CELL = 144, HD_ANCHOR = [72, 114.18], HD_PX_PER_UNIT = 144 / 3.4;
-const HD_BOX = { player: { ox: 26, oy: 1, cw: 92, ch: 105 }, egg: { ox: 43, oy: 43, cw: 58, ch: 85 } };
+const HD_BOX = { player: { ox: 26, oy: 1, cw: 92, ch: 105 }, egg: { ox: 41, oy: 43, cw: 62, ch: 85 } };
 // Draw one frame (col, row) of a sheet with the figure's anchor at (ax, ay) on screen, at scale s.
 function _hdBlit(g, img, box, col, row, ax, ay, s) {
     g.drawImage(img, col * box.cw, row * box.ch, box.cw, box.ch, ax - (HD_ANCHOR[0] - box.ox) * s, ay - (HD_ANCHOR[1] - box.oy) * s, box.cw * s, box.ch * s);
