@@ -69,7 +69,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const s = state('attack', { team: 'red' }); ok(/NOT YOURS/.test(s.text), s.text);
     });
     await check('the INFO panel shows it', () => {
-        ok(/\["POWER", ps\.text, ps\.colour\]/.test(rd('js/ui.js')), 'the panel has no power row');
+        ok(/P\("POWER", ps\.text, ps\.colour\)/.test(rd('js/infodex.js')), 'the panel has no power row');
     });
 
     group('silent failures now speak');

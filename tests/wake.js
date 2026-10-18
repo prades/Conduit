@@ -73,7 +73,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     await check('THE ASK: a wave pylon is labelled by its role over its head, and in INFO', () => {
         const G = rd('js/game.js');
         ok(/const _title = obj\.waveMode && !isRelayPylon\(obj\) \? waveRoleLabel\(el0\)/.test(G), 'the label over the pylon is not the role');
-        ok(/waveRoleLabel\(targetTile\.attackModeElement\)/.test(rd('js/ui.js')), 'INFO does not name the role');
+        ok(/waveRoleLabel\(tile\.attackModeElement\)/.test(rd('js/infodex.js')), 'INFO does not name the role');
     });
 
     group('STANDBY UNTIL SOMEONE IS NEAR');

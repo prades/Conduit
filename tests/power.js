@@ -503,7 +503,7 @@ async function boot() {
     });
 
     check('switching back to attack clears the shut-off flag', () => {
-        ok(/pylon\.waveTripped = false/.test(fs.readFileSync(path.join(ROOT, 'js/commands.js'), 'utf8')),
+        ok(/_applyPylonKind[\s\S]{0,700}t\.waveTripped = false;\s*\}/.test(fs.readFileSync(path.join(ROOT, 'js/commands.js'), 'utf8')),
            'a fresh mode switch does not reset it');
     });
 
