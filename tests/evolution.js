@@ -601,7 +601,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('it is drawn in place of the egg (and the egg is drawn until the sheet has loaded)', () => {
         const src = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8');
-        ok(/drawEvolvedFollower\(actor, px, py, drawCtx\)\) \{\}\s*else if \(_figOpts\)/.test(src), 'the follower body does not hand an evolved one over');
+        ok(/drawEvolvedFollower\(actor, px, py, drawCtx\)\) \{\}\s*(else if \(_figOpts === null[^\n]*\n\s*)?else if \(_figOpts\)/.test(src), 'the follower body does not hand an evolved one over');
         const r = run(`(function(){ spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.evolved = 'bloom'; f._moltAt = -1e9;
             const drew = drawEvolvedFollower(f, 300, 300, ctx); drawNPC(f, 300, 300, ctx); f._moltAt = frame - 60; drawNPC(f, 300, 300, ctx); return drew; })()`);
         same(r, false, 'drawn with no sheet loaded');

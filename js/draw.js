@@ -1569,6 +1569,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     const _figOpts = _virusSpriteOk(actor) ? null : { bubbles: true };
     // EVOLVED (js/evolution.js): the machine it molted into, not the egg.
     if (typeof drawEvolvedFollower === "function" && drawEvolvedFollower(actor, px, py, drawCtx)) {}
+    else if (_figOpts === null && typeof drawHdEgg === "function" && drawHdEgg(actor, px, py, drawCtx, flash)) {}   // the 3D egg (js/hdsprites.js)
     else if (_figOpts) _drawVirusFigure(drawCtx, px, py, actor, flash, er, eg, eb, wc, _figOpts);
     else {
         // THE CACHED FIGURE. Legs and glass body come off a sprite keyed by
@@ -1749,6 +1750,7 @@ function _drawVirus(actor, px, py, drawCtx) {
 // ─────────────────────────────────────────────────────────
 function drawPlayer(p) {
     if (player.angryTimer>0) player.angryTimer--;
+    if (typeof drawHdPlayer === "function" && drawHdPlayer(p)) return;   // the 3D cube (js/hdsprites.js), once its sheet has arrived
     const bob=Math.sin(frame*cfg.bobSpeed)*cfg.bobAmount;
     let targetTilt=player.targetX>player.x?cfg.tiltIntensity:(player.targetX<player.x?-cfg.tiltIntensity:0);
     player.rotY+=((player.baseRot+targetTilt)-player.rotY)*cfg.rotationSmoothing;

@@ -101,3 +101,49 @@ function _player(opts) {
 f2(811, "THE PLAYER · the runner: the black cube in chamfered armour with lit seams, a green visor with two eye slits, a vent and an antenna, walking on two piston legs.", () => _player({ kind: 'runner' }));
 f2(812, "THE PLAYER · the hover cube: the same armoured cube floating on a thruster disc with a glowing ring, side fins with jets, a halo on the floor.", () => _player({ kind: 'hover' }));
 f2(813, "THE PLAYER · the mech: the cube as a torso on two legs, with stub arms swinging as it walks.", () => _player({ kind: 'mech' }));
+
+// ── THE PLAYER, HIGH DEFINITION · Nos. 814 (calm) and 815 (angry: red eyes) ──────────────────
+// No rework of the design the game draws today (a black cube, a raked screen with two green dashes for eyes, four black cables hanging to the floor, a vent on its right
+// flank that puffs smoke): the same thing, modelled. Chamfered armour, panel lines, bolts, a bezel round the screen, a grille on the vent, cables that sway as it floats.
+// The cube is large (about 1.5 units) because the player is the biggest thing on the lane: the 2D one is 52 px wide.
+function _playerHD(angry) {
+  const g = G(), b = G(); g.add(b);
+  const W = 1.5, H = 1.22, D = 1.3, cy = 1.52;
+  const eyeMat = new T.MeshBasicMaterial({ color: angry ? 0xff2222 : 0x00ff88, toneMapped: false });
+  const body = cbox(W, H, D, 0.09, _pBlack); body.position.y = cy; b.add(body);
+  // the top plate (the lighter face the 2D one shows), slightly proud, with two raised ribs
+  const top = cbox(W * 0.94, 0.04, D * 0.92, 0.015, _pPanel); top.position.y = cy + H / 2 + 0.005; b.add(top);
+  for (const x of [-1, 1]) { const rib = cbox(0.05, 0.035, D * 0.7, 0.01, _pBlack); rib.position.set(x * W * 0.22, cy + H / 2 + 0.03, -0.02); b.add(rib); }
+  // the front: a bezel, the dark screen, two dash eyes
+  const bez = cbox(W * 0.9, H * 0.82, 0.07, 0.025, _pPanel); bez.position.set(0, cy - 0.01, D / 2 + 0.02); b.add(bez);
+  const scr = cbox(W * 0.78, H * 0.68, 0.05, 0.02, new T.MeshStandardMaterial({ color: 0x010501, metalness: 0.85, roughness: 0.12 })); scr.position.set(0, cy - 0.01, D / 2 + 0.07); b.add(scr);
+  for (const s of [-1, 1]) { const e = cbox(W * 0.2, 0.1, 0.04, 0.045, eyeMat); e.position.set(s * W * 0.19 + (s > 0 ? 0.04 : -0.04), cy - 0.02 + (angry && s < 0 ? 0.05 : 0) - (angry && s > 0 ? 0.0 : 0), D / 2 + 0.11); e.rotation.z = angry ? s * -0.35 : 0; b.add(e); }
+  // bolts in the bezel corners
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) { const bo = cyl(0.03, 0.03, 0.04, _pPeg, 8); bo.rotation.x = PI / 2; bo.position.set(sx * W * 0.42, cy + sy * H * 0.37, D / 2 + 0.07); b.add(bo); }
+  // panel lines on both flanks and the back, and a lit seam round the lower edge
+  for (const s of [-1, 1]) {
+    const fl = cbox(0.04, H * 0.72, D * 0.74, 0.012, _pPanel); fl.position.set(s * (W / 2 + 0.005), cy, -0.04); b.add(fl);
+    for (const z of [-0.18, 0.2]) { const ln = cbox(0.012, H * 0.6, 0.02, 0.004, _pBlack); ln.position.set(s * (W / 2 + 0.03), cy, z); b.add(ln); }
+  }
+  const back = cbox(W * 0.8, H * 0.7, 0.05, 0.015, _pPanel); back.position.set(0, cy, -D / 2 - 0.005); b.add(back);
+  const seam = cbox(W * 0.96, 0.02, 0.02, 0.006, M.glow); seam.position.set(0, cy - H / 2 + 0.05, D / 2 + 0.03); b.add(seam);
+  // the vent on its right flank (+x): a grille with four slots and a short nozzle, where the smoke comes out
+  const vent = cbox(0.08, H * 0.34, D * 0.4, 0.02, _pPanel); vent.position.set(W / 2 + 0.05, cy - 0.04, D * 0.12); b.add(vent);
+  for (let i = 0; i < 4; i++) { const sl = cbox(0.03, 0.025, D * 0.32, 0.006, M.glow); sl.position.set(W / 2 + 0.1, cy - 0.17 + i * 0.1, D * 0.12); b.add(sl); }
+  const noz = cyl(0.06, 0.08, 0.1, _pPeg, 8); noz.rotation.z = PI / 2; noz.position.set(W / 2 + 0.12, cy + 0.2, D * 0.12); b.add(noz);
+  // four cables hanging from sockets under the cube, swaying
+  const cables = [];
+  for (let t = 0; t < 4; t++) {
+    const x = (t % 2 ? 1 : -1) * W * 0.22, z = (t < 2 ? -1 : 1) * D * 0.2, ring = cyl(0.075, 0.075, 0.05, _pPanel, 8); ring.position.set(x, cy - H / 2 - 0.01, z); b.add(ring);
+    const segs = []; for (let i = 0; i < 4; i++) { const s = _limb(b, 0.055 - i * 0.004, _pPeg, 6); segs.push(s); } cables.push({ x, z, segs, t });
+  }
+  const sway = (t, walk, ph) => { for (const c of cables) { let p = V(c.x, cy - H / 2, c.z); const n = c.segs.length, step = (cy - H / 2 - 0.04) / n;
+      for (let i = 0; i < n; i++) { const k = (i + 1) / n, a = Math.sin(t * 1.6 + c.t * 1.3 + i * 0.7) * 0.09 * k + (walk ? Math.sin(ph + c.t + i * 0.5) * 0.09 * k : 0), q = V(c.x + a, p.y - step, c.z + (walk ? Math.sin(ph * 0.5 + c.t) * 0.06 * k : 0)); c.segs[i].set(p, q); p = q; } } };
+  sway(0, false, 0);
+  return { g, core: cy, update(t, act) { const walk = _isWalk(act), ph = _walkPh(act);
+    b.position.y = walk ? Math.sin(ph * 2) * 0.03 + 0.02 : bob(t, 0, 0.045);
+    b.rotation.z = walk ? Math.sin(ph) * 0.02 : 0;
+    sway(t, walk, ph); } };
+}
+f2(814, "THE PLAYER · high definition: the same black cube with its raked screen and green dash eyes, modelled: chamfered armour, bezel, bolts, a grille on the vent, four cables swaying to the floor.", () => _playerHD(false));
+f2(815, "THE PLAYER · high definition, angry: the same, with red eyes.", () => _playerHD(true));

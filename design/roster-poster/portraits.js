@@ -6,10 +6,12 @@ const ROOT = path.join(__dirname, '../..'), OUT = process.argv[2] || '/tmp/portr
 const SIZE = 360;
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+  const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const p = await b.newPage({ viewport: { width: 900, height: 700 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + ROOT + '/game.html'); await p.waitForTimeout(2500);
+  // the player's and the egg's 3D sheets load on first use: ask for them and wait, or the first picture would be the flat fallback
+  await p.evaluate(() => { ['player', 'player_angry'].concat(['fire', 'electric', 'ice', 'flux', 'core', 'toxic'].map(e => 'egg_' + e)).forEach(k => _hdImg(k)); }); await p.waitForTimeout(1500);
   const ids = await p.evaluate(() => {
     window.__portraits = {};
     tutorialMode = false; gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;

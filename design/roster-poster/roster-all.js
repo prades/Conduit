@@ -85,7 +85,7 @@ const L = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); 
   slabTitle('MACHINES', 112, Y + 50, '#8fe3ff', 'WHAT THE THIEVES BUILD WITH THE SHARDS THEY STEAL AT A NEST'); Y += 120;
   { const CW = 500, CH = 300, X0 = 150; ['sentry', 'strider'].forEach((k, i) => { const x = X0 + i * (CW + 30), y = Y, m = META.machines[k]; wash(x, y, CW, CH, '#8fe3ff'); fit('m' + k, im['p:machine_' + k], 0, 0, 360, 360, x + 40, y + 24, CW - 80, CH - 110, 3, '#8fe3ff');
       nameplate(x, y, CW, CH, m.label, 'HP ' + m.hp + '  \\u00b7  PWR ' + m.power + (k === 'sentry' ? '  \\u00b7  BOLTED DOWN' : '  \\u00b7  DRAINS SHARDS'), '#8fe3ff', true); tag(x + 36, y + 14, 'MACHINE', '#8fe3ff'); frame(x, y, CW, CH, '#8fe3ff'); }); }
-  g.font = MONO('700', 26); g.fillStyle = '#5d7096'; g.fillText('THE PLAYER AND THE EGG ARE DRAWN BY THE GAME TODAY: THE NEXT STEP IS 3D SPRITES FOR THEM, LIKE THE EVOLUTIONS ABOVE', 150, H - 50);
+  g.font = MONO('700', 26); g.fillStyle = '#5d7096'; g.fillText('THE PLAYER AND THE EGG ARE 3D SPRITES NOW, LIKE THE EVOLUTIONS ABOVE', 150, H - 50);
   const vg = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
   window.__endY = Y; document.title = 'done';
 })();
