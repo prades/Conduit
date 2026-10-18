@@ -67,7 +67,7 @@ function ccRow(a) {
         unit: a, clone: !!a.isClone, element: a.element, hp, level: a.level || 1, evolved: !!a.evolved,
         name: typeof unitTypeLabel === "function" ? unitTypeLabel(a) : String(a.speciesName || a.element || "UNIT").toUpperCase(),
         role: a.isClone ? null : a.role, working: a.duty === "worker", holding: !!(a.job && a.job.type === "move") || a.stance === "hold",
-        playStyle: ps.id, selected: selectedUnits.has(a),
+        playStyle: ps.id, selected: selectedUnits.has(a), status: typeof unitStatus === "function" ? unitStatus(a) : null,
         canWork: a.isClone ? (typeof canCloneWork === "function" && canCloneWork(a)) : (typeof canWorkMass === "function" && canWorkMass(a)),
     };
 }
@@ -264,7 +264,7 @@ function _ccMakeCard(r) {
     const card = _ccEl("div", "cc-card"); card._unit = r.unit;
     const cv = _ccEl("canvas", "cc-thumb"); cv.width = 72; cv.height = 72; card.appendChild(cv); card._cv = cv;
     const mid = _ccEl("div", "cc-mid");
-    mid.appendChild(_ccEl("div", "cc-name")); mid.appendChild(_ccEl("div", "cc-sub"));
+    mid.appendChild(_ccEl("div", "cc-name")); mid.appendChild(_ccEl("div", "cc-sub")); mid.appendChild(_ccEl("div", "cc-status"));
     const bar = _ccEl("div", "cc-bar"); bar.appendChild(_ccEl("i")); mid.appendChild(bar);
     mid.appendChild(_ccEl("div", "cc-tags")); card.appendChild(mid);
     card.appendChild(_ccEl("div", "cc-tick", "✓"));
@@ -278,6 +278,7 @@ function _ccUpdateCard(card, r) {
     card.querySelector(".cc-name").textContent = r.name;
     card.querySelector(".cc-sub").textContent = (r.clone ? "CLONE" : _ccElLabel(r.element)) + " · LV " + r.level;
     card.querySelector(".cc-bar i").style.width = Math.round(r.hp * 100) + "%";
+    const st = card.querySelector(".cc-status"); if (st) { st.textContent = r.status ? r.status.text : ""; st.setAttribute("style", r.status ? "--c:" + r.status.col + ";" : "display:none;"); }
     const tags = card.querySelector(".cc-tags"), want = [];
     if (!r.clone) want.push(({ brawler: "BRAWL", sniper: "MAGE", camper: "TECH" })[r.role] || "BRAWL");
     if (!r.clone) want.push(r.playStyle === "defensive" ? "DEF" : r.playStyle === "aggressive" ? "AGG" : "BAL");

@@ -47,6 +47,10 @@ function updateRTSNPC(actor) {
     // A clone on work duty does its species' job (js/clonework.js).
     if (actor.isClone && actor.duty === "worker" && !actor.dead && typeof cloneWorkTick === "function" && cloneWorkTick(actor)) return;
 
+    // A HOLD is a standing move order (stance "hold" + job "move"). When the job is dropped (it was hurt below half and went to heal, its target tile went, a new order
+    // replaced it) the stance used to stay "hold" with nothing to hold: the unit stood there for good, ignoring COME and the player. No post, no hold.
+    if (actor.team==="green" && actor.stance==="hold" && !actor.job && !actor.hackOrder && !actor.siphonOrder) actor.stance="follow";
+
     // return to crystal
     if (!actor.dead&&actor.team==="green"&&actor.returningToCrystal) {
         const dx=crystal.x-actor.x, dy=crystal.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);

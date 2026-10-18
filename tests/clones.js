@@ -583,8 +583,8 @@ async function ready() {
         const ally = p.ops.filter(o => o.op === 'set:fillStyle').map(o => o.args[0]);
         // At half health the ordinary ramp is yellow — the same colour as the
         // enemy standing next to it, which is the whole complaint.
-        ok(enemy.some(c => /^#ff0/i.test(c)), 'fixture: a half-health enemy bar should be yellow: ' + enemy);
-        ok(!ally.some(c => /^#ff0/i.test(c)), 'the ally bar is still yellow at half health: ' + ally);
+        ok(enemy.some(c => /^#ffe/i.test(c)), 'fixture: a half-health enemy bar should be yellow: ' + enemy);
+        ok(!ally.some(c => /^#ffe/i.test(c)), 'the ally bar is still yellow at half health: ' + ally);
         ok(ally.some(c => /^#(1|2)[0-9a-f]c?/i.test(c) && c !== '#000'), 'the ally bar is not green: ' + ally);
     });
 
@@ -612,16 +612,16 @@ async function ready() {
         }
     });
 
-    check('the bar still SHRINKS, so length is still health', () => {
-        // Colour carrying ownership must not cost the health reading.
+    check('the bar still SHRINKS, so length is still health (the slanted fill is a polygon: its right edge moves)', () => {
         const p = painter();
-        const width = pct => {
+        const right = pct => {
             p.ops.length = 0;
             p.run(`drawHealthBar(0,0,36,5,${pct},100,ctx,true)`);
-            const fills = p.ops.filter(o => o.op === 'fillRect');
-            return fills.length > 1 ? fills[1].args[2] : null;
+            // the second path is the fill: its top-right corner is the second point (lineTo) after a moveTo
+            const idx = p.ops.map((o, i) => o.op === 'moveTo' ? i : -1).filter(i => i >= 0)[1];
+            return idx === undefined ? null : p.ops[idx + 1].args[0];
         };
-        const full = width(100), half = width(50);
+        const full = right(100), half = right(50);
         ok(full > half, `the bar does not shrink: ${full} at full, ${half} at half`);
     });
 
@@ -629,7 +629,7 @@ async function ready() {
         const DRAW = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8');
         ok(/_isAllyPred = actor\.team === "green" \|\| actor\.isClone/.test(DRAW),
            'the ally test changed shape');
-        ok(/drawHealthBar\(px-18, py-85, 36, 5, actor\.health, actor\.maxHealth, drawCtx, _isAllyPred\)/
+        ok(/drawHealthBar\(px-18, py-85, 36, \d, actor\.health, actor\.maxHealth, drawCtx, _isAllyPred\)/
             .test(DRAW), 'the predator bar is not told whether it is an ally');
     });
 

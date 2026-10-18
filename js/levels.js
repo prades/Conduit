@@ -258,14 +258,18 @@ function unitTypeLabel(a) {
     if (a.speciesName) return (a.element ? String(a.element).toUpperCase() + " " : "") + String(a.speciesName).toUpperCase() + " " + String(a.className || "").toUpperCase() + (a.isElite ? " ★" : "");
     return "";
 }
-// Drawn centred above a health bar whose top edge is at y. Off in a crowd of
-// identical labels? No — a level is worth reading; it is a cached stamp.
+// Drawn centred above a health bar whose top edge is at y: the name plate (level and kind; js/draw.js drawPlate), and over it, for your own units, a chip saying what they
+// are doing (js/status.js unitStatus). `y` is the bottom edge of the plate.
 function drawUnitTag(a, cx, y, drawCtx) {
     if (!a || !Number.isFinite(a.level) || (drawCtx && drawCtx !== ctx)) return;
     if (typeof cachedText !== "function") return;
     const ally = a.team === "green" || a.isClone;
     // An enemy's tag is in its element's colour.
     const elDef = !ally && a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
-    const col = ally ? "#bfffe0" : a.isElite ? "#ffd866" : elDef ? elDef.color : "#ffb0a0";
-    cachedText("Lv " + a.level + " " + unitTypeLabel(a), "bold 7px monospace", col, cx, y);
+    const col = ally ? "#19e6c1" : a.isElite ? "#ffd866" : elDef ? elDef.color : "#ff8a6a";
+    const label = "Lv " + a.level + " " + unitTypeLabel(a);
+    if (typeof drawPlate === "function" && drawPlate(label, col, cx, y)) {
+        const st = ally && typeof unitStatus === "function" ? unitStatus(a) : null;
+        if (st) drawPlate(st.text, st.col, cx, y - 15, true);
+    } else cachedText(label, "bold 7px monospace", col, cx, y);
 }

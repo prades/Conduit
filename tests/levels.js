@@ -200,8 +200,8 @@ async function boot(store) {
     check('THE ASK: level and kind over the bar — "Lv 5 FIRE BRAWLER", "Lv n ANT SCOUT", "Lv n ANT CLONE"', () => {
         const r = run(`(function(){ const f = ${FOL('aggressive', 12, 1)}; const p = spawnPredatorForZone(1, { species: 'ant', className: 'scout' }); p.dead = true;
             const c = makeClone('ant', 'scout', 5, 2); c.dead = true;
-            const said = []; const keep = cachedText; cachedText = (t) => said.push(t);
-            drawUnitTag(f, 0, 0, ctx); drawUnitTag(p, 0, 0, ctx); drawUnitTag(c, 0, 0, ctx); cachedText = keep;
+            const said = []; const keep = drawPlate; drawPlate = (t, col, x, y, chip) => { if (!chip) said.push(t); return true; };
+            drawUnitTag(f, 0, 0, ctx); drawUnitTag(p, 0, 0, ctx); drawUnitTag(c, 0, 0, ctx); drawPlate = keep;
             return { said, p: p.level, c: c.level, role: f.role.toUpperCase() }; })()`);
         same(r.said[0], 'Lv 5 FIRE ' + r.role, 'follower');
         // A predator names its element now (zone 1: electric).

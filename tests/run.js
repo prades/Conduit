@@ -43,6 +43,7 @@ const SUITES = [
     ['clone card strip',        'clonecards.js'],
     ['unit info tab',           'unitinfo.js'],
     ['mini command radial',     'minicmd.js'],
+    ['unit status + hold fix',  'status.js'],
     ['roster + command merged', 'ccmerge.js'],
     ['zone report + analytics', 'zones.js'],
     ['zone crews + orders',     'zonecrew.js'],

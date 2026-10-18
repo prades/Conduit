@@ -8,19 +8,19 @@
 // exactly like the enemy next to it. On the ally ramp the colour means WHOSE
 // IT IS and the length still means health, so a clone reads as yours across
 // the room at any health.
-function drawHealthBar(x, y, width, height, health, maxHealth, drawCtx=ctx, ally=false) {
+// THE STATUS BAR, in the game's layout style (docs/UI-STYLE.md): a slanted slab, dark, with a hi-vis outline and a segment of colour for the health. Whose it is reads from the
+// outline: teal for yours (ally === true), red for an enemy's (false), steel for a structure's (no flag). An enemy's fill runs hot (orange, yellow, red); yours stays in teals; a structure's ramps teal, yellow, red.
+function drawHealthBar(x, y, width, height, health, maxHealth, drawCtx=ctx, ally) {
     if (typeof health!=="number"||typeof maxHealth!=="number"||maxHealth<=0) return;
-    const pct=Math.max(0,Math.min(1,health/maxHealth));
-    const col = ally ? (pct>0.6?"#22ff88":pct>0.3?"#18c46a":"#0f7a44")
-                     : (pct>0.6?"#0f8":pct>0.3?"#ff0":"#f22");
-    drawCtx.fillStyle="#000"; drawCtx.fillRect(x,y,width,height);
-    drawCtx.fillStyle=col;    drawCtx.fillRect(x+1,y+1,(width-2)*pct,height-2);
-    if (ally) {
-        // A thin green outline, so the bar itself is the marker rather than
-        // relying on the bracket drawn separately around it.
-        drawCtx.strokeStyle="#22ff88"; drawCtx.lineWidth=1;
-        drawCtx.strokeRect(x+0.5,y+0.5,width-1,height-1);
-    }
+    const pct=Math.max(0,Math.min(1,health/maxHealth)), sk=Math.max(2,Math.min(5,Math.round(height*0.8))), run=width-sk;
+    const col = ally === false ? (pct>0.6?"#ff8a3c":pct>0.3?"#ffe733":"#ff3a2a")
+              : ally === true  ? (pct>0.6?"#19e6c1":pct>0.3?"#13b89a":"#0e8a74")   // colour means WHOSE: yours stays teal at every health, length is the health
+                               : (pct>0.6?"#19e6c1":pct>0.3?"#ffe733":"#ff4a1c");
+    const edge = ally === true ? "#19e6c1" : ally === false ? "#ff4a1c" : "#8aa0c8";
+    // (few canvas operations: the dark slab and its outline are one path; the fill is a second, left open for fill() to close)
+    const slab = (f) => { drawCtx.beginPath(); drawCtx.moveTo(x+sk, y); drawCtx.lineTo(x+sk+run*f, y); drawCtx.lineTo(x+run*f, y+height); drawCtx.lineTo(x, y+height); };
+    drawCtx.fillStyle="#05070f"; drawCtx.strokeStyle=edge; drawCtx.lineWidth=1.2; slab(1); drawCtx.closePath(); drawCtx.fill(); drawCtx.stroke();
+    if (pct>0) { drawCtx.fillStyle=col; slab(pct); drawCtx.fill(); }
 }
 
 function drawRadialButton(x, y, label, active) {
@@ -1086,22 +1086,10 @@ function _drawPredator(actor, px, py, drawCtx) {
 // shared by every body (the beetle's is js/beetle3d.js).
 function _drawPredatorBars(actor, px, py, drawCtx) {
     const _isAllyPred = actor.team === "green" || actor.isClone;
-    drawHealthBar(px-18, py-85, 36, 5, actor.health, actor.maxHealth, drawCtx, _isAllyPred);
-    // Its level and kind, over the bar (js/levels.js).
-    if (typeof drawUnitTag === "function") drawUnitTag(actor, px, py - (_isAllyPred ? 99 : 97), drawCtx);
+    drawHealthBar(px-18, py-85, 36, 6, actor.health, actor.maxHealth, drawCtx, _isAllyPred);
+    // Its level, kind and what it is doing, over the bar (js/levels.js).
+    if (typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 96, drawCtx);
     drawAbilityCharge(actor, px, py, drawCtx);
-    // Clone/ally: green bracket frame + diamond marker for identification
-    if (_isAllyPred) {
-        drawCtx.strokeStyle = "#0f8"; drawCtx.lineWidth = 1;
-        drawCtx.strokeRect(px - 20, py - 87, 40, 9);
-        drawCtx.save();
-        drawCtx.setTransform(1, 0, 0, 1, 0, 0);
-        drawCtx.fillStyle = "#0f8";
-        drawCtx.font = "bold 7px monospace";
-        drawCtx.textAlign = "center";
-        drawCtx.fillText("◆", px, py - 88);
-        drawCtx.restore();
-    }
     // Shield bar — blue, drawn above HP bar; drains on damage, no passive regen
     if (actor.shielded && actor.shieldAmount > 0) {
         actor._shieldMax = Math.max(actor._shieldMax || 0, actor.shieldAmount);
@@ -1505,9 +1493,9 @@ function _drawVirus(actor, px, py, drawCtx) {
     // How many were drawn last frame — the crowd test for the bubbles.
     if (_virusCountFrame !== frame) { _virusesOnScreen = _virusesCounting; _virusesCounting = 0; _virusCountFrame = frame; }
     _virusesCounting++;
-    drawHealthBar(px-14, py-75, 28, 4, actor.health, actor.maxHealth, drawCtx);
-    // Its level and kind, over the bar and the ultimate bar (js/levels.js).
-    if (typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 88, drawCtx);
+    drawHealthBar(px-14, py-76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green");
+    // Its level, kind and what it is doing, over the bar and the ultimate bar (js/levels.js).
+    if (typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 87, drawCtx);
     _drawFollowerShield(actor, px, py, drawCtx);
 
     // ── ULTIMATE CHARGE BAR ───────────────────────────────
@@ -1516,17 +1504,10 @@ function _drawVirus(actor, px, py, drawCtx) {
         const _ucFull = _uc >= 100;
         const _elDef = ELEMENTS.find(e => e.id === actor.element);
         const _elCol = _elDef ? _elDef.color : "#aaa";
-        // Background track
-        drawCtx.fillStyle = "#111";
-        drawCtx.fillRect(px - 14, py - 82, 28, 3);
-        // Filled portion — pulses white when full
-        if (_ucFull) {
-            const _pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.18);
-            drawCtx.fillStyle = _pulse > 0.5 ? "#ffffff" : _elCol;
-        } else {
-            drawCtx.fillStyle = _elCol;
-        }
-        drawCtx.fillRect(px - 13, py - 81, Math.floor(26 * (_uc / 100)), 1);
+        // A thin slanted slab, gold when it is full (the same style as the health bar under it)
+        const _ux = px - 14, _uy = py - 82, _uw = 28, _uh = 3, _us = 2, _slab = f => { drawCtx.beginPath(); drawCtx.moveTo(_ux + _us, _uy); drawCtx.lineTo(_ux + _us + (_uw - _us) * f, _uy); drawCtx.lineTo(_ux + (_uw - _us) * f, _uy + _uh); drawCtx.lineTo(_ux, _uy + _uh); };
+        drawCtx.fillStyle = _ucFull ? "#4a3f00" : "#05070f"; _slab(1); drawCtx.fill();
+        if (_uc > 0) { drawCtx.fillStyle = _ucFull ? (0.5 + 0.5 * Math.sin((frame || 0) * 0.18) > 0.5 ? "#ffffff" : "#ffe733") : _elCol; _slab(_uc / 100); drawCtx.fill(); }
         // "▲" ready indicator
         if (_ucFull) {
             drawCtx.save();
@@ -2127,6 +2108,32 @@ const PORTAL_COLOUR = "#2bff9b";
 // never change, so each (text, font, colour) is rendered once to a small
 // offscreen canvas and stamped with drawImage after that.
 const _labelCache = new Map();
+// The game's slab style for a name plate: a dark slanted slab with a colour bar at its left, the text in `color`. (js/levels.js drawUnitTag)
+const UNIT_FONT = 'italic 900 9px "DejaVu Sans","Segoe UI",system-ui,sans-serif';
+let _plateCache = new Map();
+function cachedPlate(text, color, chip) {
+    const key = (chip ? "c|" : "p|") + color + "|" + text;
+    let e = _plateCache.get(key);
+    if (!e) {
+        const cv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null, g = cv && cv.getContext ? cv.getContext("2d") : null;
+        if (!g || typeof g.measureText !== "function") return null;
+        g.font = UNIT_FONT; const tw = Math.ceil((g.measureText(text) || { width: text.length * 5.4 }).width), h = chip ? 12 : 13, w = tw + (chip ? 12 : 14), sk = 3;
+        cv.width = (w + 2) * 2; cv.height = (h + 2) * 2; g.scale(2, 2); g.translate(1, 1);
+        g.beginPath(); g.moveTo(sk, 0); g.lineTo(w, 0); g.lineTo(w - sk, h); g.lineTo(0, h); g.closePath();
+        g.fillStyle = chip ? color : "rgba(5,7,15,0.9)"; g.fill(); g.lineWidth = 1; g.strokeStyle = chip ? "#05070f" : color; g.globalAlpha = chip ? 0.6 : 0.85; g.stroke(); g.globalAlpha = 1;
+        if (!chip) { g.fillStyle = color; g.fillRect(sk + 0.5, 1, 2, h - 2); }
+        g.font = UNIT_FONT; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = chip ? "#05070f" : "#eafff6"; g.fillText(text, w / 2 + (chip ? 0 : 1.5), h / 2 + 0.5);
+        e = { cv, w: w + 2, h: h + 2 };
+        if (_plateCache.size > 400) _plateCache.clear();
+        _plateCache.set(key, e);
+    }
+    return e;
+}
+// Draw a plate (or chip) centred at x with its BOTTOM edge at y.
+function drawPlate(text, color, x, y, chip) {
+    const e = cachedPlate(text, color, chip); if (!e) return false;
+    ctx.drawImage(e.cv, x - e.w / 2, y - e.h, e.w, e.h); return true;
+}
 function cachedText(text, font, color, x, y) {
     if (!text) return;
     const key = font + "|" + color + "|" + text;

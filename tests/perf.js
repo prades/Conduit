@@ -474,7 +474,7 @@ const SCENE = `(function(){
     // of followers". Each follower was ~210 canvas operations a frame, drawn
     // stroke by stroke; the figure is now a sprite (_virusSprite), its
     // bubbles are dropped in a crowd, and its attack effects carry no blur.
-    const PER_FOLLOWER_BUDGET = 120;   // was ~250 before the sprites
+    const PER_FOLLOWER_BUDGET = 145;   // was ~250 before the sprites; 120 until the status bar, ultimate bar and name plate became slanted slabs with a status chip (docs/UI-STYLE.md)
     check(`each extra follower on screen costs fewer than ${PER_FOLLOWER_BUDGET} canvas operations`, () => {
         const frameOps = n => {
             E.run(`(function(){ followers.forEach(f => { f.dead = true; }); actors = actors.filter(a => !a.isFollower);
