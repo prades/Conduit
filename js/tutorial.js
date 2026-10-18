@@ -396,16 +396,10 @@ const TUTS = [
         // Build the thing that holds the charge. Beside the generator, so the
         // next step can watch it fill.
         id:    'battery',
-        title: 'BUILD A BATTERY',
-        body:  'With BUILD on, press and hold the marked pylon by your shield generator, pick UPGRADE and choose BATTERY as the kind, in any element. Linked batteries of one element also raise its network tier: 2 / 4 / 6 make tier I / II / III.',
+        title: 'BOOT THE POWER UNIT',
+        body:  'The batteries are one machine set into the zone\'s back wall. Tap the dark panels, pick an element and press BOOT. UPGRADE it later: its cells are batteries, and 2 / 4 / 6 of them make tier I / II / III.',
         icon:  '\u25a5',
-        wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
-        target: () => {
-            const plain = t => !t.isGenerator && !t.isConnector && !t.attackMode && !t.waveMode && !t.isBattery;
-            const r = typeof getPylonRange === 'function' ? getPylonRange() : 3;
-            const byGen = t => world.some(g => g.pillar && g.isGenerator && !g.destroyed && Math.hypot(g.x - t.x, g.y - t.y) <= r);
-            return tutNearestPylon(t => plain(t) && byGen(t)) || tutNearestPylon(plain) || tutNearestPylon();
-        },
+        target: () => (typeof wallUnitTiles === 'function' && wallUnitTiles(0)[2]) || tutNearestPylon(),
         check: () => world.some(t => t.pillar && t.isBattery && !t.destroyed),
     },
     {

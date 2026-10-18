@@ -150,7 +150,7 @@ function drawNetworkStatusHUD() {
         _netText((net >= 0 ? "\u25b2 " : "\u25bc ") + Math.abs(net).toFixed(1) + "/s", mx, Y + 92, 12, net >= 0.05 ? "#9fe8c0" : net <= -0.05 ? "#ff9a66" : "#8a93a8", "left", true);
     }
     // where you stand
-    const where = sig.state === "offline" ? "LINK 2 BATTERIES OF ONE ELEMENT"
+    const where = sig.state === "offline" ? "BOOT A POWER UNIT IN THE WALL"
                 : sig.state === "none" ? "OUT OF RANGE \u00b7 " + Math.round(sig.dist) + " TILES OUT"
                 : sig.state === "weak" ? "TIER " + NET_TIER_ROMAN[sig.local] + " HERE \u00b7 " + Math.round(sig.dist) + " TILES OUT"
                 : "TIER " + NET_TIER_ROMAN[sig.local] + " HERE" + (sig.dist <= BANK_FULL_RANGE ? " \u00b7 AT THE BATTERIES" : "");

@@ -21,7 +21,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 
 // A generator by the home portal, so a battery can be had (the power rule), then the page's own pieces.
-const SETUP = `gameState.running = true; tutorialMode = false; shardCount = 900; unlockedElements = new Set(ELEMENTS.map(e => e.id));
+const SETUP = `buildFloorBatteries = true; gameState.running = true; tutorialMode = false; shardCount = 900; unlockedElements = new Set(ELEMENTS.map(e => e.id));
     player.x = player.targetX = player.visualX = 10; player.y = player.targetY = player.visualY = 1.5; render();
     (function(){ const portal = world.find(t => isHomePortal(t));
         const g = world.find(t => t.type === 'floor' && !t.pillar && !t.nest && !t.nodeType && !t.capturable && t.x >= 0 && Math.abs(t.x - portal.x) <= 2 && t.y === 1);

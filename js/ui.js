@@ -196,7 +196,7 @@ function _epItems() {
     const t = elementPickerTarget;
     const kinds = elementPickerMode === "convert"
         ? PYLON_KINDS.filter(k => k.id === "attack" || (t && k.id === waveRole(t.attackModeElement)))
-        : PYLON_KINDS;
+        : PYLON_KINDS.filter(k => k.id !== "battery");   // batteries are the wall's power unit now (js/wallunit.js)
     return kinds.map(k => ({ kind: "type", k }));
 }
 function _epLayout() {

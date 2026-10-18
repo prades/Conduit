@@ -207,7 +207,7 @@ function _executeBuildInstant(el, t, kind) {
 // DESTROY. It is gone — no wreckage, the tile is free to build on — and you
 // get DEMOLISH_REFUND shards back. Nothing an enemy holds, nothing mid-build.
 function canDemolishPylon(t) {
-    return !!t && t.pillar && !t.destroyed && t.pillarTeam === "green" && !t.constructing;
+    return !!t && t.pillar && !t.destroyed && t.pillarTeam === "green" && !t.constructing && !(typeof isWallUnitTile === "function" && isWallUnitTile(t));   // the wall's power unit is not demolished
 }
 function demolishPylon(t) {
     if (!canDemolishPylon(t)) return false;

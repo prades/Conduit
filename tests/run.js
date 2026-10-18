@@ -44,6 +44,7 @@ const SUITES = [
     ['unit info tab',           'unitinfo.js'],
     ['mix selector',            'mixtool.js'],
     ['fire bombs',              'firebombs.js'],
+    ['wall power unit',         'wallunit.js'],
     ['no signal towers',        'notower.js'],
     ['unit status + hold fix',  'status.js'],
     ['3D player + egg sprites', 'hdsprites.js'],

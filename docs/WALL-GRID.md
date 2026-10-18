@@ -33,10 +33,12 @@ All the equipment is redrawn to match the wall: dark chamfered plates, the same 
 
 ## 5. Build order
 
-1. **The power unit:** the six wall tiles, the cells as batteries in every rule, the panel (BOOT, UPGRADE, RECONFIGURE), drawing it in the wall, saving, and the build menu no longer placing batteries.
+1. **The power unit (DONE, build 2026-10-18w):** the six wall tiles, the cells as batteries in every rule, the panel (BOOT, UPGRADE, RECONFIGURE), drawing it in the wall, saving, and the build menu no longer placing batteries.
 2. **Predators and the walls:** wall segments with health, the attack, a unit dark inside a wrecked segment, the repair.
 3. **The kits:** the `B` pieces out, the validator and tests rewritten, autoplay on the unit.
 4. **The look:** mock-ups, then the redraw.
+
+Notes on stage 1: the unit is wired into its zone's generator whatever the distance (power.js `generatorFeeding`); a wall cell cannot be demolished; the pylon kind picker and the build menu no longer offer a battery (`buildFloorBatteries` in js/buildmenu.js is the off switch the old placing tests turn on); the tutorial's battery step is "boot the power unit". Tests: tests/wallunit.js.
 
 ## 6. Decisions (answered)
 

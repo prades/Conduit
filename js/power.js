@@ -76,10 +76,12 @@ function nestEnergyTick() {
 // network links already use, rather than a new one to learn.
 function generatorFeeding(t) {
     if (!t || typeof _genPylons === "undefined") return null;
-    const r = getPylonRange();
-    let best = null, bestD = r * r;
+    // The wall's POWER UNIT (js/wallunit.js) is wired into its zone's generator, however far along the lane that stands.
+    const wall = typeof isWallUnitTile === "function" && isWallUnitTile(t), r = getPylonRange();
+    let best = null, bestD = wall ? Infinity : r * r;
     for (const gen of _genPylons) {
         if (gen === t) continue;
+        if (wall && zoneOfTile(gen) !== zoneOfTile(t)) continue;
         // A generator that has been switched off feeds nothing.
         if (gen.circuitOn === false) continue;
         const dx = gen.x - t.x, dy = gen.y - t.y;

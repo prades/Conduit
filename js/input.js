@@ -173,6 +173,8 @@ const handleInput=(ex,ey)=>{
 
     // A tap on a FIRE TURRET opens its aim ring (js/firebombs.js) and is not a move order.
     if (typeof fireAimTap === "function" && fireAimTap(ex, ey)) return;
+    // A tap on a zone's POWER UNIT in the back wall opens its panel (js/wallunit.js).
+    if (typeof wallUnitTap === "function" && wallUnitTap(ex, ey)) return;
 
     // ── PLAYER ATTACK ──
     // Only while armed. This used to fire on any tap that happened to land near

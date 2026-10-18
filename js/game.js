@@ -799,6 +799,7 @@ function cableScreen(o) {
 // bright when it is, and a busier cable carries more charges.
 function _drawPowerWire(from, to, flow, phase, colour) {
     const lit = flow > 0.02;
+    phase = ((phase % 1) + 1) % 1;   // a structure in the back wall (y < 0) gives a negative phase, which would put charges before the cable's start
     // The charges, as a function of the frame so they keep moving between
     // layings of the cable (refreshCableBeads).
     const beads = lit ? (fr => {
@@ -4004,6 +4005,9 @@ function render() {
 
                     ctx.restore();
                 }
+
+                // The zone's POWER UNIT (js/wallunit.js): six panels set into the wall face
+                if (typeof drawWallUnitCell === "function") drawWallUnitCell(obj, px, py, amb);
 
                 // 2. Crevasses — jagged fracture on wall face
                 if (Math.sin(xi*43.7+11.3)>0.62) {

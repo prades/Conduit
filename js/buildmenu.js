@@ -50,6 +50,7 @@
 let buildMenuOpen = false;
 let buildMenuTab  = "turrets";
 let buildMenuMin  = false;
+let buildFloorBatteries = false;   // OFF: a zone's batteries are the POWER UNIT in its back wall (js/wallunit.js), not a tool. The placing mechanism (pods, levels, the chip's battery switches) stays under it, and the tests that cover it turn it on
 let buildMenuSimple = false;   // the POWER BUILD window opened from the network panel (js/nethud.js): only the generator and the batteries
 let buildTool     = null;    // null | { kind, elId, label, colour } | { kind: "demolish" }
 let buildGhost    = null;    // { x, y } — the tile the tool is over
@@ -88,7 +89,8 @@ function buildMenuItems(tab) {
             out.push({ tab, kind: role, elId: e.id, label: e.label.toUpperCase(), sub: role === "support" ? "SUPPORT" : "DISRUPT", icon: ELEMENT_ICON[e.id] || e.id, colour: e.color });
         }
     } else if (tab === "power") {
-        for (const e of els) out.push({ tab, kind: "battery", elId: e.id, label: e.label.toUpperCase(), sub: "BATTERY", icon: "battery", colour: e.color });
+        // Batteries are the POWER UNIT set into each zone's back wall (js/wallunit.js): tap it to boot and upgrade it. Only the placing tests turn the old tool back on.
+        if (buildFloorBatteries) for (const e of els) out.push({ tab, kind: "battery", elId: e.id, label: e.label.toUpperCase(), sub: "BATTERY", icon: "battery", colour: e.color });
         if (!buildMenuSimple) out.push({ tab, kind: "connector", elId: typeof CONNECTOR_ID !== "undefined" ? CONNECTOR_ID : "connector", label: "CONNECTOR", sub: "RELAY", icon: "connector", colour: "#ffd24a" });
         out.push({ tab, kind: "generator", elId: typeof GENERATOR_ID !== "undefined" ? GENERATOR_ID : "generator", label: "GENERATOR", sub: "ZONE POWER", icon: "generator", colour: "#cdd6e0" });
     } else if (tab === "kits" && typeof KITS !== "undefined") {
