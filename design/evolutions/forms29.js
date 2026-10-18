@@ -108,7 +108,7 @@ f2(813, "THE PLAYER · the mech: the cube as a torso on two legs, with stub arms
 // The cube is large (about 1.5 units) because the player is the biggest thing on the lane: the 2D one is 52 px wide.
 function _playerHD(angry) {
   const g = G(), b = G(); g.add(b);
-  const W = 1.5, H = 1.22, D = 1.3, cy = 1.52;
+  const W = 1.5, H = 1.22, D = 1.3, cy = 1.75, HANG = 0.5;   // it FLOATS: the cube is well off the floor and the cables hang short, never touching it
   const eyeMat = new T.MeshBasicMaterial({ color: angry ? 0xff2222 : 0x00ff88, toneMapped: false });
   const body = cbox(W, H, D, 0.09, _pBlack); body.position.y = cy; b.add(body);
   // the top plate (the lighter face the 2D one shows), slightly proud, with two raised ribs
@@ -137,12 +137,13 @@ function _playerHD(angry) {
     const x = (t % 2 ? 1 : -1) * W * 0.22, z = (t < 2 ? -1 : 1) * D * 0.2, ring = cyl(0.075, 0.075, 0.05, _pPanel, 8); ring.position.set(x, cy - H / 2 - 0.01, z); b.add(ring);
     const segs = []; for (let i = 0; i < 4; i++) { const s = _limb(b, 0.055 - i * 0.004, _pPeg, 6); segs.push(s); } cables.push({ x, z, segs, t });
   }
-  const sway = (t, walk, ph) => { for (const c of cables) { let p = V(c.x, cy - H / 2, c.z); const n = c.segs.length, step = (cy - H / 2 - 0.04) / n;
-      for (let i = 0; i < n; i++) { const k = (i + 1) / n, a = Math.sin(t * 1.6 + c.t * 1.3 + i * 0.7) * 0.09 * k + (walk ? Math.sin(ph + c.t + i * 0.5) * 0.09 * k : 0), q = V(c.x + a, p.y - step, c.z + (walk ? Math.sin(ph * 0.5 + c.t) * 0.06 * k : 0)); c.segs[i].set(p, q); p = q; } } };
+  const sway = (t, walk, ph) => { for (const c of cables) { let p = V(c.x, cy - H / 2, c.z); const n = c.segs.length, step = HANG / n;
+      for (let i = 0; i < n; i++) { const k = (i + 1) / n, a = Math.sin(t * 1.6 + c.t * 1.3 + i * 0.7) * 0.09 * k + (walk ? Math.sin(ph + c.t + i * 0.5) * 0.05 * k : 0), q = V(c.x + a, p.y - step * (walk ? 0.93 : 1), c.z + (walk ? -0.16 * k + Math.sin(ph + c.t) * 0.04 * k : 0)); c.segs[i].set(p, q); p = q; } } };
   sway(0, false, 0);
   return { g, core: cy, update(t, act) { const walk = _isWalk(act), ph = _walkPh(act);
-    b.position.y = walk ? Math.sin(ph * 2) * 0.03 + 0.02 : bob(t, 0, 0.045);
-    b.rotation.z = walk ? Math.sin(ph) * 0.02 : 0;
+    // a hover, not a step: it rises and sinks slowly (a little quicker when it moves) and LEANS into the move, with no bounce at the feet
+    b.position.y = bob(t, 0, 0.07) + (walk ? Math.sin(ph) * 0.015 : 0);
+    const lean = walk ? 0.11 : 0.0; b.rotation.x = lean; b.position.z = -Math.sin(lean) * cy;
     sway(t, walk, ph); } };
 }
 f2(814, "THE PLAYER · high definition: the same black cube with its raked screen and green dash eyes, modelled: chamfered armour, bezel, bolts, a grille on the vent, four cables swaying to the floor.", () => _playerHD(false));

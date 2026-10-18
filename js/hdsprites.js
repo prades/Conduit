@@ -48,14 +48,15 @@ function hdPlayerState() {
 function hdVentOffset(row, s) {
     const phi = row * Math.PI / 4, lx = 0.8, lz = 0.16, wx = lx * Math.cos(phi) + lz * Math.sin(phi), wz = -lx * Math.sin(phi) + lz * Math.cos(phi);
     const k = HD_PX_PER_UNIT * Math.SQRT1_2 * s;
-    return { x: (wx - wz) * k, y: (wx + wz) * 0.5 * k - 1.72 * HD_PX_PER_UNIT * 0.866 * s };
+    return { x: (wx - wz) * k, y: (wx + wz) * 0.5 * k - 1.95 * HD_PX_PER_UNIT * 0.866 * s };
 }
 // Draws the player; false if the sheet is not there yet (the caller draws the flat one).
 function drawHdPlayer(p) {
     const img = _hdImg(player.angryTimer > 0 ? "player_angry" : "player"); if (!img) return false;
     const st = hdPlayerState(), s = HD_PLAYER_SCALE;
     ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(p.x, p.y + 1, 34 * s, 14 * s, 0, 0, Math.PI * 2); ctx.fill();
+    // the shadow on the floor, well under it: that gap is what makes it float
+    ctx.fillStyle = "rgba(0,0,0,0.26)"; ctx.beginPath(); ctx.ellipse(p.x, p.y + 1, 26 * s, 10 * s, 0, 0, Math.PI * 2); ctx.fill();
     ctx.drawImage(img, hdCol(st.walking, st.f0) * HD_CELL, st.row * HD_CELL, HD_CELL, HD_CELL, p.x - HD_ANCHOR[0] * s, p.y + 2 - HD_ANCHOR[1] * s, HD_CELL * s, HD_CELL * s);
     ctx.restore();
     if (frame % cfg.exhaustFrequency === 0) { const vo = hdVentOffset(st.row, s); smoke.push({ x: p.x + vo.x, y: p.y + vo.y, vx: 0.2 + Math.random() * 0.4, vy: -0.15 - Math.random() * 0.2, life: 1, size: 4 + Math.random() * 6 }); }
