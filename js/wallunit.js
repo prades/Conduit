@@ -74,6 +74,86 @@ function wallUnitReconfigure(zone, elId) {
     for (const t of wallUnitTiles(zone)) if (t.pillar && t.isBattery) { t.attackModeElement = el.id; t.attackModeColor = el.color; t.pillarCol = el.color; t.chosenElement = el.id; t.chosenColor = el.color; t.charge = 0; }
     _wallUnitDone(zone, "POWER UNIT — NOW " + el.label.toUpperCase(), el.color); return true;
 }
+// ── THE WALL UNDER ATTACK (docs/WALL-GRID.md stage 2) ──
+// ASKED: "have it to where the predators attack the walls". A HUNTER (js/infest.js) that picks a booted cell as its target walks to the floor in front of it and BASHES the wall segment: the cell it hits takes the
+// blow and the cells beside it in the same segment (WALL_SEG tiles) take half. A cell at no health is WRECKED: dark, its charge gone, out of the bank, so the unit loses a tier until it is repaired. A hunter does
+// not convert a wall cell as it would a pylon: the wall is damaged, not taken. Repair: an ant worker (clonework.js) mends a hurt cell and rebuilds a wrecked one live (no core worker needed), the REPAIR button
+// on the unit's panel does it for shards, and a hurt cell mends itself, slowly, when nothing has hit it for a few seconds. A thief that eats a battery (js/raids.js) wrecks a cell the same way.
+const WALL_SEG = 3;                // tiles in one wall segment (a unit is two)
+const WALL_BASH_FRAMES = 45;       // between a hunter's blows (PYLON_BASH_COOLDOWN)
+const WALL_SPLASH = 0.5;           // what the rest of the segment takes
+const WALL_REPAIR_COST = 5;        // shards to put one wrecked cell back from the panel
+const WALL_REGEN_EVERY = 30, WALL_REGEN_HP = 4, WALL_REGEN_AFTER = 240;
+function wallUnitZoneOf(t) { return Math.floor(t.x / ZONE_LENGTH); }
+function wallSegmentCells(t) {
+    const zone = wallUnitZoneOf(t), tiles = wallUnitTiles(zone), i = tiles.indexOf(t), s = Math.floor(i / WALL_SEG);
+    return tiles.filter((q, j) => Math.floor(j / WALL_SEG) === s && q.pillar && q.isBattery && q.pillarTeam === "green");
+}
+function wallUnitWrecked(zone) { return wallUnitTiles(zone).filter(t => t.pillar && t.isBattery && t.pillarTeam === "green" && t.destroyed).length; }
+function wallCellWreck(c) {
+    c.destroyed = true; c.health = 0; c.charge = 0; c.pendingDestroy = false;
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: c.x + 0.5, y: c.y + 1.2, color: "#ff5a3a", radius: 0.8, life: 24 });
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 5);
+}
+function wallCellRestore(c) {
+    c.destroyed = false; c.reconstructing = false; c.reconstructProgress = 0; c.pendingDestroy = false; c.health = c.maxHealth || WALL_CELL_HP; c.charge = 0;
+    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
+}
+// A blow on a cell: it and its segment. Returns the cells wrecked by it.
+function wallCellHit(c, dmg) {
+    if (!c || !c.pillar || !c.isBattery || c.destroyed) return [];
+    const wrecked = [], f = typeof frame !== "undefined" ? frame : 0;
+    for (const q of wallSegmentCells(c)) {
+        if (q.destroyed) continue;
+        q.health = Math.max(0, (q.health || 0) - (q === c ? dmg : dmg * WALL_SPLASH)); q._hitAt = f;
+        if (q.health <= 0) { wallCellWreck(q); wrecked.push(q); }
+    }
+    if (wrecked.length && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height * 0.28, text: "\u26a0 THE WALL IS BREACHED \u2014 POWER CELLS WRECKED IN " + (wallUnitZoneOf(c) === 0 ? "THE HOME ZONE" : "ZONE " + wallUnitZoneOf(c)), color: "#ff6a4a", life: 150, vy: 0, size: 13 });
+    return wrecked;
+}
+// A hunter's frame on a wall cell (called by infestTick): walk to the floor in front of it, then bash it. Returns true: it owns the frame.
+function wallUnitAssault(pred, c) {
+    const sx = c.x + 0.5, sy = c.y + 1.1, dx = sx - pred.x, dy = sy - pred.y, d = Math.hypot(dx, dy);
+    if (d > 0.9) {
+        pred.x += (dx / d) * pred.moveSpeed * 0.8; pred.y += (dy / d) * pred.moveSpeed * 0.8;
+        if (typeof faceToward === "function") faceToward(pred, c.x, c.y, 0.12);
+        pred.walkCycle += pred.moveSpeed * 40; pred.lastX = pred.x; pred.lastY = pred.y;
+        return true;
+    }
+    if (typeof faceToward === "function") faceToward(pred, c.x, c.y, 0.3);
+    pred._wallBash = (pred._wallBash || 0) - 1;
+    if (pred._wallBash > 0) return true;
+    pred._wallBash = WALL_BASH_FRAMES;
+    const f = typeof frame !== "undefined" ? frame : 0, z = wallUnitZoneOf(c);
+    if (!wallUnitAssault._warned) wallUnitAssault._warned = {};
+    if (f - (wallUnitAssault._warned[z] || -1e9) > 600 && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
+        wallUnitAssault._warned[z] = f;
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height * 0.28, text: "\u26a0 THE POWER UNIT IN " + (z === 0 ? "THE HOME ZONE" : "ZONE " + z) + " IS UNDER ATTACK", color: "#ff6a4a", life: 150, vy: 0, size: 13 });
+    }
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
+    wallCellHit(c, (pred.power || 1) * 0.8);
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: c.x + 0.5, y: c.y + 1.2, color: "#ff8800", radius: 0.5, life: 14 });
+    return true;
+}
+// A hurt cell mends itself, slowly, once nothing has hit it for a while.
+function wallUnitTick() {
+    const f = typeof frame !== "undefined" ? frame : 0; if (f % WALL_REGEN_EVERY) return;
+    const z0 = Math.floor(player.x / ZONE_LENGTH);
+    for (let z = Math.max(0, z0 - 1); z <= z0 + 1; z++) for (const t of wallUnitTiles(z)) {
+        if (!t.pillar || !t.isBattery || t.destroyed || t.health >= t.maxHealth || f - (t._hitAt || -1e9) < WALL_REGEN_AFTER) continue;
+        t.health = Math.min(t.maxHealth, t.health + WALL_REGEN_HP);
+    }
+}
+// REPAIR, from the panel: every wrecked cell the shards stretch to, put back live.
+function wallUnitRepair(zone) {
+    const w = wallUnitTiles(zone).filter(t => t.pillar && t.isBattery && t.pillarTeam === "green" && t.destroyed);
+    if (!w.length) return false;
+    let n = 0; for (const c of w) { if (shardCount < WALL_REPAIR_COST) break; shardCount -= WALL_REPAIR_COST; wallCellRestore(c); n++; }
+    if (!n) { _wallUnitSay("NEED " + WALL_REPAIR_COST + " SHARDS A CELL"); return false; }
+    _wallUnitDone(zone, "POWER CELLS REPAIRED (" + n + ")", "#7dffb5"); return true;
+}
+
 // ── DRAWING: a cell is a panel set into the wall face ──
 // Called by the wall tile's draw (game.js) with its corner (px, py) and the light (amb). Lies on the wall with the same shear the server racks use.
 function drawWallUnitCell(obj, px, py, amb) {
@@ -95,6 +175,13 @@ function drawWallUnitCell(obj, px, py, amb) {
         ctx.globalAlpha = 0.9 * amb; ctx.fillStyle = "#fff"; ctx.fillRect(-w / 2 + 7, -h / 2 + 7 + ih - ch - 1, w - 14, 1.5);   // the surface
         // seams across the column, like cells in a pack
         ctx.globalAlpha = 0.5 * amb; ctx.fillStyle = "#070a0d"; for (let k = 1; k < 4; k++) ctx.fillRect(-w / 2 + 7, -h / 2 + 7 + (ih / 4) * k - 0.5, w - 14, 1);
+        // hurt: darker, with a crack across it
+        const hp = Math.max(0, Math.min(1, (obj.health || 0) / (obj.maxHealth || WALL_CELL_HP)));
+        if (hp < 0.99) {
+            ctx.globalAlpha = (1 - hp) * 0.4 * amb; ctx.fillStyle = "#000"; ctx.fillRect(-w / 2, -h / 2, w, h);
+            ctx.globalAlpha = Math.min(1, (1 - hp) * 1.6) * amb; ctx.strokeStyle = "#0a0e12"; ctx.lineWidth = 1.5; ctx.beginPath();
+            ctx.moveTo(-w / 2 + 3, -h / 2 + 10 + i * 2); ctx.lineTo(-3, -2); ctx.lineTo(4, 6 + i); ctx.lineTo(w / 2 - 3, h / 2 - 12); ctx.stroke();
+        }
     } else if (wreck) {
         ctx.globalAlpha = 0.8 * amb; ctx.strokeStyle = "#c03a2a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-w / 2 + 6, -h / 2 + 8); ctx.lineTo(w / 2 - 6, h / 2 - 8); ctx.moveTo(w / 2 - 6, -h / 2 + 8); ctx.lineTo(-w / 2 + 6, h / 2 - 8); ctx.stroke();
     } else {
@@ -126,6 +213,8 @@ function wallUnitHTML(zone) {
         h += '<div class="wu-state" style="color:' + (el ? el.color : '#fff') + '">TIER ' + ["", "I", "II", "III"][tier] + ' \u00b7 ' + (el ? el.label.toUpperCase() : '') + '</div>';
         h += '<div class="wu-pips">' + [1, 2, 3].map(n => '<i class="' + (n <= tier ? 'on' : '') + '" style="--c:' + (el ? el.color : '#ffd34d') + '"></i>').join('') + '</div>';
         h += '<div class="wu-bar"><i style="width:' + (ch.cap ? Math.round(100 * ch.charge / ch.cap) : 0) + '%;background:' + (el ? el.color : '#ffd34d') + '"></i></div><div class="wu-note">' + ch.charge + ' / ' + ch.cap + '</div>';
+        const wr = wallUnitWrecked(zone);
+        if (wr) h += '<div class="wu-note" style="color:#ff6a4a">' + wr + ' CELL' + (wr > 1 ? 'S' : '') + ' WRECKED</div><button class="wu-btn" data-wu="repair">REPAIR \u25c6' + wr * WALL_REPAIR_COST + '</button>';
         h += tier < 3 ? '<button class="wu-btn" data-wu="upgrade">UPGRADE TO ' + ["", "II", "III"][tier] + ' \u25c6' + cost + '</button>' : '<div class="wu-note">FULLY UPGRADED</div>';
         h += '<div class="wu-note">RECONFIGURE \u25c6' + WALL_UNIT_RECONFIGURE_COST() + '</div><div class="wu-chips">' + ELEMENTS.filter(e => unlockedElements.has(e.id)).map(e => '<button class="wu-chip' + (eln === e.id ? ' on' : '') + '" data-re="' + e.id + '" style="--c:' + e.color + '">' + e.label.slice(0, 3).toUpperCase() + '</button>').join('') + '</div>';
     }
@@ -153,6 +242,7 @@ try {
             const pk = q("[data-pick]"); if (pk) { _wuPick = pk.getAttribute("data-pick"); wallUnitRender(); return; }
             const re = q("[data-re]"); if (re) { wallUnitReconfigure(_wuZone, re.getAttribute("data-re")); wallUnitRender(); return; }
             if (q("[data-wu=boot]")) { if (wallUnitBoot(_wuZone, _wuPick)) wallUnitRender(); return; }
+            if (q("[data-wu=repair]")) { wallUnitRepair(_wuZone); wallUnitRender(); return; }
             if (q("[data-wu=upgrade]")) { wallUnitUpgrade(_wuZone); wallUnitRender(); return; }
         });
         document.addEventListener("pointerdown", ev => { if (_wuZone !== null && !(ev.target && ev.target.closest && ev.target.closest("#wallUnit"))) wallUnitClose(); }, true);

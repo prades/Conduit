@@ -281,6 +281,8 @@ function infestTick(pred) {
     }
     const t = pred.infestTarget;
     if (!t) return false;   // nothing to do — fall through to ordinary wandering
+    // A cell of the wall's power unit is bashed, not converted (js/wallunit.js).
+    if (typeof isWallUnitTile === "function" && isWallUnitTile(t)) return wallUnitAssault(pred, t);
 
     const dx = t.x - pred.x, dy = t.y - pred.y;
     // NOT `|| 1`. That guard was there to avoid dividing by zero, but zero is

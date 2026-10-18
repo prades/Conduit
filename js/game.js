@@ -2738,6 +2738,7 @@ function render() {
                            src: { x: _ox, y: _oy, team: "green", element: _el || "core" } });
     });
     turretShotsTick();
+    if (typeof wallUnitTick === "function") wallUnitTick();   // a hurt power cell mends slowly (js/wallunit.js)
     if (typeof fireBombsTick === "function") fireBombsTick();   // the bouncing fire bombs and the ground they burn (js/firebombs.js)
 
     // ── COMPLETE RECONSTRUCTION ──

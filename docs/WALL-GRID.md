@@ -34,7 +34,7 @@ All the equipment is redrawn to match the wall: dark chamfered plates, the same 
 ## 5. Build order
 
 1. **The power unit (DONE, build 2026-10-18w):** the six wall tiles, the cells as batteries in every rule, the panel (BOOT, UPGRADE, RECONFIGURE), drawing it in the wall, saving, and the build menu no longer placing batteries.
-2. **Predators and the walls:** wall segments with health, the attack, a unit dark inside a wrecked segment, the repair.
+2. **Predators and the walls (DONE, build 2026-10-18x):** a hunter (js/infest.js) walks to the floor in front of a booted cell and bashes it; the cells beside it in its three-tile segment take half; a cell at no health is wrecked (dark, empty, out of the bank, so the unit drops a tier). Not converted: damaged, not taken. Repair: ants mend hurt cells and rebuild wrecked ones live, the panel's REPAIR button (5 shards a cell), and hurt cells slowly mend themselves. Thieves that eat a battery wreck a cell the same way. See js/wallunit.js.
 3. **The kits:** the `B` pieces out, the validator and tests rewritten, autoplay on the unit.
 4. **The look:** mock-ups, then the redraw.
 

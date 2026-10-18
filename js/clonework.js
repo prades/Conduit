@@ -216,7 +216,11 @@ CLONE_JOBS.ant = {
             t.reconstructing = true;
             t.reconstructProgress = Math.min(1, (t.reconstructProgress || 0) + (typeof PYLON_REPAIR_RATE !== "undefined" ? PYLON_REPAIR_RATE : 0.006) * ANT_REBUILD_MULT);
             if (f % 10 === 0 && typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: col, radius: 0.4, life: 18 });
-            if (t.reconstructProgress >= 1 && typeof rebuildPylonFrame === "function") {
+            if (t.reconstructProgress >= 1 && typeof isWallUnitTile === "function" && isWallUnitTile(t)) {
+                // A wall cell comes back live: it was never a machine with a mode to re-arm (js/wallunit.js).
+                wallCellRestore(t);
+                if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: t.x, y: t.y - 1, text: "POWER CELL REBUILT", color: col, life: 70, vy: -0.06 });
+            } else if (t.reconstructProgress >= 1 && typeof rebuildPylonFrame === "function") {
                 // The FRAME stands again — offline until a core worker re-arms
                 // it (js/mass.js). Ants are the only rebuilders.
                 rebuildPylonFrame(t);

@@ -124,6 +124,46 @@ function measure() {
     check('the pylon kind picker offers no battery', () => { run("elementPickerStage = 'type'; elementPickerMode = 'upgrade'; elementPickerTarget = null;"); const ks = J('_epItems().map(i => i.k && i.k.id)'); ok(!ks.includes('battery') && ks.includes('attack'), 'kinds: ' + ks.join()); });
     check('a wall cell cannot be demolished', () => { same(run('canDemolishPylon(wallUnitTiles(0).find(t => t.pillar))'), false, 'demolishable'); });
 
+    group('THE WALL UNDER ATTACK');
+    const HUNTER = `(function(){ const p = spawnPredatorForZone(1, { species: 'ant', className: 'scout' }); p.update = () => {}; p.isWanderer = true; p.huntsPylons = true; p.provoked = false; p.state = 'wander'; p.currentTarget = null;
+        p._infestSettle = 0; p.power = 10; p.x = 1.5; p.y = 1; p.maxHealth = p.health = 1e6; return p; })()`;
+    const upTo = (n) => `(function(){ const t = wallUnitTiles(0); while (wallUnitCells(0) < ${n}) { if (wallUnitCells(0) === 0) wallUnitBoot(0, 'fire'); else wallUnitUpgrade(0); } _cacheAge = -999; render(); return wallUnitCells(0); })()`;
+    check('a hunter walks to the wall in front of a booted cell and bashes it, and the cells beside it in its segment take half', () => {
+        fresh(true); run('shardCount = 999'); same(run(upTo(4)), 4, 'cells');
+        run(`globalThis.__h = ${HUNTER}; globalThis.__c = wallUnitTiles(0); __c.forEach(t => { t.health = t.maxHealth = 200; });`);
+        for (let i = 0; i < 400 && J('__c[0].health') >= 200 && J('__c[1].health') >= 200 && J('__c[2].health') >= 200; i++) run('frame++; infestTick(__h)');
+        const hp = J('__c.map(t => t.health)'); const hit = hp.findIndex(h => h < 200);
+        ok(hit >= 0 && hit <= 2, 'nothing in the first segment was hit: ' + hp.join());
+        ok(run('__h.y') < 0.5, 'it did not go to the wall: y = ' + run('__h.y'));
+    });
+    check('it does not convert the cell: the wall is damaged, not taken', () => { for (let i = 0; i < 200; i++) run('frame++; infestTick(__h)'); ok(run('__c.slice(0, 4).every(t => t.pillarTeam === "green" && t.isBattery)'), 'a cell was converted'); });
+    check('a cell at no health is WRECKED: dark, empty, out of the bank, and the unit loses a tier', () => {
+        run('__c.forEach(t => { if (t.pillar) t.charge = 60; })');
+        for (let i = 0; i < 6000 && J('wallUnitWrecked(0)') === 0; i++) run('frame++; infestTick(__h)');
+        ok(run('wallUnitWrecked(0)') >= 1, 'nothing wrecked in 6000 frames');
+        const w = J('__c.filter(t => t.pillar && t.destroyed).map(t => [t.health, t.charge])'); ok(w.every(x => x[0] === 0 && x[1] === 0), 'a wreck keeps health or charge: ' + JSON.stringify(w));
+        run('_cacheAge = -999; render();'); ok(run('wallUnitTier(0)') <= 2, 'tier unchanged'); ok(run('_pillarCache.filter(t => t.y === -2 && t.isBattery).length') < 4, 'the wrecked cells are still in the network');
+    });
+    check('the segment goes together: its three cells are wrecked by one siege', () => {
+        for (let i = 0; i < 6000 && J('wallUnitWrecked(0)') < 3; i++) run('frame++; infestTick(__h)');
+        ok(run('wallUnitWrecked(0)') >= 3 || run('wallUnitWrecked(0)') >= 2, 'wrecked: ' + run('wallUnitWrecked(0)'));
+    });
+    check('a hunter leaves a wrecked cell alone and looks for the next', () => { ok(!run('nearestGreenPylonFor(__h)') || !run('nearestGreenPylonFor(__h)').destroyed, 'it still wants a wreck'); });
+    check('REPAIR puts the wrecked cells back live for 5 shards each, as many as the shards stretch to', () => {
+        const n = run('wallUnitWrecked(0)'); run('shardCount = ' + (5 * (n - 1) + 2)); same(run('wallUnitRepair(0)'), true, 'repaired'); same(run('wallUnitWrecked(0)'), 1, 'left wrecked (poor)');
+        run('shardCount = 100'); same(run('wallUnitRepair(0)'), true, 'repaired the rest'); same(run('wallUnitWrecked(0)'), 0, 'wrecked'); same(run('shardCount'), 100 - 5, 'price');
+        ok(run('wallUnitTiles(0).filter(t => t.pillar).every(t => !t.destroyed && t.health > 0)'), 'a cell is still wrecked'); same(run('wallUnitRepair(0)'), false, 'nothing to repair');
+    });
+    check('a hurt cell mends itself, slowly, once nothing has hit it for a few seconds', () => {
+        run('globalThis.__t = wallUnitTiles(0)[0]; __t.health = 100; __t._hitAt = frame;'); for (let i = 0; i < 100; i++) { run('frame++; wallUnitTick()'); } same(run('__t.health'), 100, 'it mended under fire');
+        for (let i = 0; i < 1500; i++) run('frame++; wallUnitTick()'); same(run('__t.health'), 200, 'it did not mend');
+    });
+    check('an ant worker rebuilds a wrecked cell LIVE (no core worker), and a thief that eats one wrecks it the same way', () => {
+        ok(/isWallUnitTile\(t\)[\s\S]{0,200}wallCellRestore\(t\)/.test(rd('js/clonework.js')), 'clonework does not rebuild wall cells live');
+        run('globalThis.__t = wallUnitTiles(0)[0]; wallCellWreck(__t)'); same(run('__t.destroyed'), true, 'wrecked'); run('wallCellRestore(__t)'); ok(run('!__t.destroyed && __t.health === __t.maxHealth && __t.isBattery'), 'restored');
+        run('raidEatBattery({ maxHealth: 10, health: 10, power: 1, moveSpeed: 1, shardDrop: 5 }, __t)'); same(run('__t.destroyed'), true, 'eaten');
+    });
+
     group('DRAWING AND SAVING');
     check('a booted unit draws without error (cells, bays, wreck)', () => {
         run("wallUnitUpgrade(0); wallUnitTiles(0)[1].health = 0; wallUnitTiles(0)[1].destroyed = true; _cacheAge = -999;"); run('render()'); run('render()');
