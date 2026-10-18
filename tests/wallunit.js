@@ -28,7 +28,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
   tutorialMode = false; gameState.running = true; shardCount = 200; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; }));
   var g = world.find(function(t){ return t.type === 'floor' && t.x === Math.floor(player.x) + 3 && t.y === 3 && !t.nest && !t.nodeType; }); _executeBuildInstant(PYLON_PICKER_TYPES.find(function(e){ return e.id === GENERATOR_ID; }), g); _cacheAge = -999; render(); await wait(100);
-  var tile = wallUnitTiles(0)[2], W = canvas.width / 2, H = canvas.height / 2;
+  player.x = player.targetX = player.visualX = 8; var tile = wallUnitTiles(0)[2], W = canvas.width / 2, H = canvas.height / 2;
   var sx = (tile.x - player.visualX - (tile.y - player.visualY)) * TILE_W + W - TILE_W * 0.5, sy = (tile.x - player.visualX + (tile.y - player.visualY)) * TILE_H + H + TILE_H * 0.5 - 46;
   out.hit = !!wallUnitHit(sx, sy); out.miss = !wallUnitHit(sx + 400, sy + 300);
   out.tap = wallUnitTap(sx, sy); await wait(50); out.open = !!$('#wallUnit.open'); out.offline = ($('#wallUnit .wu-state') || {}).textContent; out.bootDisabled = !!($('#wallUnit [data-wu=boot]') || {}).disabled;
@@ -71,11 +71,11 @@ function measure() {
     group('THE UNIT: six wall tiles at the zone\'s left end');
     fresh(true);
     check('every zone has six wall tiles for its unit, in the back wall', () => {
-        for (const z of [0, 1, 2]) { const ts = J(`wallUnitTiles(${z}).map(t => [t.x, t.y, t.type])`); same(ts.length, 6, 'tiles in zone ' + z); ok(ts.every(t => t[1] === -2 && t[2] === 'wall_back' && t[0] >= z * 15 && t[0] < z * 15 + 6), 'not the back wall: ' + JSON.stringify(ts)); }
+        for (const z of [0, 1, 2]) { const ts = J(`wallUnitTiles(${z}).map(t => [t.x, t.y, t.type])`); same(ts.length, 6, 'tiles in zone ' + z); ok(ts.every(t => t[1] === -2 && t[2] === 'wall_back' && t[0] >= z * 15 + 9 && t[0] < z * 15 + 15), 'not the back wall: ' + JSON.stringify(ts)); }
     });
     check('isWallUnitTile knows its tiles and no others', () => {
         ok(run('isWallUnitTile(wallUnitTiles(1)[0]) && isWallUnitTile(wallUnitTiles(1)[5])'), 'unit tiles');
-        ok(!run('isWallUnitTile(getTile(1 * 15 + 6, -2))'), 'the seventh wall tile is not the unit');
+        ok(!run('isWallUnitTile(getTile(1 * 15 + 8, -2))') && !run('isWallUnitTile(getTile(1 * 15 + 2, -2))'), 'the wall tiles beside it (the vortex, the zone start) are not the unit');
         ok(!run('isWallUnitTile(getTile(0, 0))'), 'a floor tile is not the unit');
     });
     check('a new unit is dark: tier 0, no cells, no element', () => { same(run('wallUnitTier(0)'), 0, 'tier'); same(run('wallUnitCells(0)'), 0, 'cells'); same(run('wallUnitElement(0)'), null, 'element'); });
@@ -126,23 +126,25 @@ function measure() {
 
     group('THE WALL UNDER ATTACK');
     const HUNTER = `(function(){ const p = spawnPredatorForZone(1, { species: 'ant', className: 'scout' }); p.update = () => {}; p.isWanderer = true; p.huntsPylons = true; p.provoked = false; p.state = 'wander'; p.currentTarget = null;
-        p._infestSettle = 0; p.power = 10; p.x = 1.5; p.y = 1; p.maxHealth = p.health = 1e6; return p; })()`;
+        p._infestSettle = 0; p.power = 10; p.x = 12.5; p.y = -0.5; p.maxHealth = p.health = 1e6; return p; })()`;
     const upTo = (n) => `(function(){ const t = wallUnitTiles(0); while (wallUnitCells(0) < ${n}) { if (wallUnitCells(0) === 0) wallUnitBoot(0, 'fire'); else wallUnitUpgrade(0); } _cacheAge = -999; render(); return wallUnitCells(0); })()`;
     check('a hunter walks to the wall in front of a booted cell and bashes it, and the cells beside it in its segment take half', () => {
-        fresh(true); run('shardCount = 999'); same(run(upTo(4)), 4, 'cells');
+        fresh(true); run('shardCount = 999'); same(run(upTo(6)), 6, 'cells');
         run(`globalThis.__h = ${HUNTER}; globalThis.__c = wallUnitTiles(0); __c.forEach(t => { t.health = t.maxHealth = 200; });`);
-        for (let i = 0; i < 400 && J('__c[0].health') >= 200 && J('__c[1].health') >= 200 && J('__c[2].health') >= 200; i++) run('frame++; infestTick(__h)');
-        const hp = J('__c.map(t => t.health)'); const hit = hp.findIndex(h => h < 200);
-        ok(hit >= 0 && hit <= 2, 'nothing in the first segment was hit: ' + hp.join());
+        for (let i = 0; i < 400 && J('__c.every(t => t.health >= 200)'); i++) run('frame++; infestTick(__h)');
+        const hp = J('__c.map(t => t.health)'), hit = hp.findIndex(h => h < 200), seg = Math.floor(hit / 3);
+        ok(hit >= 0, 'nothing was hit: ' + hp.join());
+        const mates = hp.filter((h, i) => i !== hit && Math.floor(i / 3) === seg), others = hp.filter((h, i) => Math.floor(i / 3) !== seg);
+        ok(mates.every(h => Math.abs((200 - h) - (200 - hp[hit]) / 2) < 0.01), 'the segment-mates did not take half: ' + hp.join()); ok(others.every(h => h === 200), 'the other segment was hit: ' + hp.join());
         ok(run('__h.y') < 0.5, 'it did not go to the wall: y = ' + run('__h.y'));
     });
-    check('it does not convert the cell: the wall is damaged, not taken', () => { for (let i = 0; i < 200; i++) run('frame++; infestTick(__h)'); ok(run('__c.slice(0, 4).every(t => t.pillarTeam === "green" && t.isBattery)'), 'a cell was converted'); });
+    check('it does not convert the cell: the wall is damaged, not taken', () => { for (let i = 0; i < 200; i++) run('frame++; infestTick(__h)'); ok(run('__c.every(t => t.pillarTeam === "green" && t.isBattery)'), 'a cell was converted'); });
     check('a cell at no health is WRECKED: dark, empty, out of the bank, and the unit loses a tier', () => {
         run('__c.forEach(t => { if (t.pillar) t.charge = 60; })');
         for (let i = 0; i < 6000 && J('wallUnitWrecked(0)') === 0; i++) run('frame++; infestTick(__h)');
         ok(run('wallUnitWrecked(0)') >= 1, 'nothing wrecked in 6000 frames');
         const w = J('__c.filter(t => t.pillar && t.destroyed).map(t => [t.health, t.charge])'); ok(w.every(x => x[0] === 0 && x[1] === 0), 'a wreck keeps health or charge: ' + JSON.stringify(w));
-        run('_cacheAge = -999; render();'); ok(run('wallUnitTier(0)') <= 2, 'tier unchanged'); ok(run('_pillarCache.filter(t => t.y === -2 && t.isBattery).length') < 4, 'the wrecked cells are still in the network');
+        run('_cacheAge = -999; render();'); ok(run('networkStrength.fire') < 3, 'the network tier did not fall: ' + run('networkStrength.fire')); ok(run('_pillarCache.filter(t => t.y === -2 && t.isBattery).length') < 6, 'the wrecked cells are still in the network');
     });
     check('the segment goes together: its three cells are wrecked by one siege', () => {
         for (let i = 0; i < 6000 && J('wallUnitWrecked(0)') < 3; i++) run('frame++; infestTick(__h)');
@@ -164,13 +166,22 @@ function measure() {
         run('raidEatBattery({ maxHealth: 10, health: 10, power: 1, moveSpeed: 1, shardDrop: 5 }, __t)'); same(run('__t.destroyed'), true, 'eaten');
     });
 
+    group('A SAVE FROM BEFORE THE UNIT MOVED');
+    check('cells saved at the zone start (x 0 to 5) move to the unit\'s tiles, element, charge and wreck intact', () => {
+        fresh(true); run('shardCount = 999');
+        run(`(function(){ const g = i => getTile(i, -2); const el = ELEMENTS.find(e => e.id === 'ice'); for (let i = 0; i < 4; i++) { _installWallCell(g(i), el); g(i).charge = 10 + i; } g(3).destroyed = true; g(3).health = 0; })()`);
+        same(run('wallUnitMigrate()'), 4, 'moved');
+        same(run('wallUnitCells(0)'), 4, 'cells in the unit'); same(run('wallUnitElement(0)'), 'ice', 'element'); same(run('wallUnitTiles(0)[2].charge'), 12, 'charge'); same(run('wallUnitTiles(0)[3].destroyed'), true, 'the wreck');
+        ok(run('[0, 1, 2, 3].every(i => !getTile(i, -2).pillar)'), 'the old tiles still hold cells'); same(run('wallUnitMigrate()'), 0, 'nothing more to move');
+    });
+
     group('DRAWING AND SAVING');
     check('a booted unit draws without error (cells, bays, wreck)', () => {
         run("wallUnitUpgrade(0); wallUnitTiles(0)[1].health = 0; wallUnitTiles(0)[1].destroyed = true; _cacheAge = -999;"); run('render()'); run('render()');
     });
     check('the cells are saved with their tile, and the tile exists to restore on', () => {
         run('savePylons()'); const saved = JSON.parse(run("localStorage.getItem('tubecrawler_pylons')")); const w = saved.filter(s => s.y === -2 && s.isBattery);
-        ok(w.length >= 2, 'wall cells in the save: ' + w.length); ok(w.every(s => s.attackModeElement === 'fire'), 'element lost'); ok(run('worldTileMap.get("0,-2")') !== undefined, 'no tile to restore on');
+        ok(w.length >= 2, 'wall cells in the save: ' + w.length); ok(w.every(s => s.attackModeElement === run('wallUnitElement(0)')), 'element lost'); ok(run('worldTileMap.get("0,-2")') !== undefined, 'no tile to restore on');
     });
 
     group('IN THE PAGE: tap the unit, boot it, upgrade it, reconfigure it');

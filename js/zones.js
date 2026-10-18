@@ -282,7 +282,7 @@ function zoneQueueKit(z, kitId, el) {
     const missing = _kitBuildOrder(plan), list = zoneOrders[z] || (zoneOrders[z] = []);
     if (!missing.length) { say(kit.name + " IS ALREADY BUILT IN THAT ZONE", "#8aa0c8"); if (!list.length) delete zoneOrders[z]; return 0; }
     if (list.length + missing.length > ORDER_MAX) { say("THE QUEUE HAS ROOM FOR " + (ORDER_MAX - list.length) + " MORE (THIS NEEDS " + missing.length + ")", "#f88"); if (!list.length) delete zoneOrders[z]; return 0; }
-    const KIND = { G: "generator", C: "connector", B: "battery", T: "attack", S: "support", W: waveRole(el) };
+    const KIND = { G: "generator", C: "connector", T: "attack", S: "support", W: waveRole(el) };
     for (const r of missing) list.push({ kind: KIND[r.piece.c], elId: r.piece.c === "G" ? GENERATOR_ID : r.piece.c === "C" ? CONNECTOR_ID : el, level: 1, progress: 0, status: "", tile: null, kit: kit.id, fixed: { x: r.x, y: r.y } });
     saveZoneOrders(); say(kit.name + ": " + missing.length + " ORDERS QUEUED", "#8fe3ff");
     return missing.length;

@@ -70,22 +70,22 @@ const SETUP = `gameState.running = true; tutorialMode = false; zoneGenerated = (
     group('THE GHOST AND THE TAP');
     check('the ghost verdict: clean ground is OK with the price, a blocked piece says so (and where the kit would go changes the answer)', () => {
         clear(); run('buildMenuOpen = true; setBuildTool(buildMenuItems("kits").find(i => i.id === "outpost")); buildTool.elId = "fire";');
-        const good = J('(function(){ const x = __nest.x; const v = canBuildAt(getTile(x, 1), buildTool); return v; })()'); ok(good.ok, JSON.stringify(good)); ok(/\+5 PCS .50/.test(good.why), good.why);
+        const good = J('(function(){ const x = __nest.x; const v = canBuildAt(getTile(x, 1), buildTool); return v; })()'); ok(good.ok, JSON.stringify(good)); ok(/\+3 PCS .30/.test(good.why), good.why);
         const bad = J('(function(){ const v = canBuildAt(getTile(__nest.x + 6, 1), buildTool); return v; })()'); ok(!bad.ok && /BLOCKED|ZONE/.test(bad.why) || bad.ok, JSON.stringify(bad));
         run('shardCount = 10;'); ok(/NEED/.test(J('canBuildAt(getTile(__nest.x, 1), buildTool)').why), 'no shortfall'); run('shardCount = 600;');
     });
     check('THE ASK (ghost): a tap on a tile builds the whole layout there and charges its price, once; a second tap says it is already built', () => {
         clear(); run('buildMenuOpen = true; setBuildTool(buildMenuItems("kits").find(i => i.id === "outpost")); buildTool.elId = "fire";');
         const r = J('(function(){ const t = getTile(__nest.x, 1); const before = shardCount; const ok = buildToolPlaceAt(t); return { ok, spent: before - shardCount, n: world.filter(t => t.pillar && getZoneIndex(t.x) === 1).length }; })()');
-        same(r.ok, true, 'built'); same(r.spent, 50, 'spent'); same(r.n, 5, 'pieces'); frames(60);
+        same(r.ok, true, 'built'); same(r.spent, 30, 'spent'); same(r.n, 3, 'pieces'); frames(60);
         same(run('canBuildAt(getTile(__nest.x, 1), buildTool).ok'), false, 'a second tap'); ok(/ALREADY/.test(run('canBuildAt(getTile(__nest.x, 1), buildTool).why')), 'message');
     });
     check('a kit tapped over a smaller one adds only the difference (and charges only that)', () => {
         run('setBuildTool(null); setBuildTool(buildMenuItems("kits").find(i => i.id === "strongpoint")); buildTool.elId = "fire"; shardCount = 600;');
-        const r = J('(function(){ const t = getTile(__nest.x, 1); const v = canBuildAt(t, buildTool), before = shardCount; buildToolPlaceAt(t); return { why: v.why, spent: before - shardCount }; })()'); same(r.spent, 20, 'spent'); ok(/\+2 PCS .20/.test(r.why), r.why);
+        const r = J('(function(){ const t = getTile(__nest.x, 1); const v = canBuildAt(t, buildTool), before = shardCount; buildToolPlaceAt(t); return { why: v.why, spent: before - shardCount }; })()'); same(r.spent, 10, 'spent'); ok(/\+1 PCS .10/.test(r.why), r.why);
     });
     check('the tap handler routes a world tap to the kit (handleBuildToolTap) like any tool', () => { clear(); run('buildMenuOpen = true; setBuildTool(buildMenuItems("kits").find(i => i.id === "skeleton")); buildTool.elId = "fire"; _bmPointerType = "mouse";');
-        const s = J('buildTileToScreen(getTile(__nest.x, 1))'); same(run(`handleBuildToolTap(${s.x}, ${s.y})`), true, 'handled'); frames(3); same(run('world.filter(t => t.pillar && getZoneIndex(t.x) === 1).length'), 3, 'the skeleton stands'); });
+        const s = J('buildTileToScreen(getTile(__nest.x, 1))'); same(run(`handleBuildToolTap(${s.x}, ${s.y})`), true, 'handled'); frames(3); same(run('world.filter(t => t.pillar && getZoneIndex(t.x) === 1).length'), 1, 'the skeleton stands'); });
     check('drawing the ghost and a card with a kit in hand is safe', () => { run('setBuildTool(buildMenuItems("kits").find(i => i.id === "fullkit")); buildTool.elId = "flux"; const t = getTile(__nest.x, 1); buildGhost = { x: t.x, y: t.y }; render(); drawBuildGhost(); drawBuildMenu();'); });
 
     group('MOVING THE KIT (a zone that already has a generator, and nudging)');
@@ -93,8 +93,8 @@ const SETUP = `gameState.running = true; tutorialMode = false; zoneGenerated = (
         clear(); run('_executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), getTile(__nest.x + 2, 1), null); _cacheAge = -999;'); frames(3);
         run('setBuildTool({ kind: "kit", id: "outpost", elId: "fire", colour: "#ff8a5c" }); buildMenuOpen = true;');
         const at = run('__nest.x - 4'), v = J('(function(){ const t = getTile(' + at + ', 1); return kitToolVerdict(t, buildTool); })()'); same(v.ok, true, 'the verdict where the generator is not: ' + JSON.stringify(v));
-        same(J('kitToolPlan(buildTool, getTile(' + at + ', 1)).free'), 4, 'four pieces to build (no generator)'); const before = run('shardCount'); run('kitToolPlace(getTile(' + at + ', 1), buildTool);'); frames(3);
-        same(run('world.filter(t => t.pillar && t.isGenerator && getZoneIndex(t.x) === 1).length'), 1, 'a second generator was built'); same(before - run('shardCount'), 4 * run('PYLON_BUILD_COST'), 'the generator was charged for');
+        same(J('kitToolPlan(buildTool, getTile(' + at + ', 1)).free'), 2, 'two pieces to build (no generator)'); const before = run('shardCount'); run('kitToolPlace(getTile(' + at + ', 1), buildTool);'); frames(3);
+        same(run('world.filter(t => t.pillar && t.isGenerator && getZoneIndex(t.x) === 1).length'), 1, 'a second generator was built'); same(before - run('shardCount'), 2 * run('PYLON_BUILD_COST'), 'the generator was charged for');
     });
     check('the ghost can be nudged a tile at a time (back / front along the lane, up / down across it) and starts at the player; BUILD HERE builds where it is', () => {
         clear(); run('setBuildTool({ kind: "kit", id: "skeleton", elId: "fire", colour: "#ffd34d" }); buildMenuOpen = true; buildGhost = null; player.x = player.targetX = player.visualX = __nest.x + 3; player.y = player.targetY = player.visualY = 1.2;');
@@ -109,12 +109,12 @@ const SETUP = `gameState.running = true; tutorialMode = false; zoneGenerated = (
     group('SNAP TO NEST');
     check('THE ASK (snap): one call builds the kit at the nest of the zone you stand in, shifted off the zone line if it is wide', () => {
         clear(); run('buildMenuOpen = true; setBuildTool(buildMenuItems("kits").find(i => i.id === "relayline")); buildTool.elId = "fire";');
-        same(run('kitSnapBuild()'), true, 'built'); frames(60); same(run('world.filter(t => t.pillar && getZoneIndex(t.x) === 1).length'), 6, 'all six in the zone'); same(run('world.filter(t => t.pillar && getZoneIndex(t.x) !== 1 && t.pillarTeam === "green").length'), 0, 'a piece over the zone line');
+        same(run('kitSnapBuild()'), true, 'built'); frames(60); same(run('world.filter(t => t.pillar && getZoneIndex(t.x) === 1).length'), 5, 'all five in the zone'); same(run('world.filter(t => t.pillar && getZoneIndex(t.x) !== 1 && t.pillarTeam === "green").length'), 0, 'a piece over the zone line');
     });
     check('snapping again says it is already built; short of shards it builds what it can and says how short', () => {
         run('floatingTexts.length = 0;'); same(run('kitSnapBuild()'), false, 'again'); ok(run('floatingTexts.some(t => /ALREADY BUILT/.test(t.text))'), 'message');
-        clear(); run('setBuildTool(buildMenuItems("kits").find(i => i.id === "strongpoint")); buildTool.elId = "fire"; shardCount = 45; floatingTexts.length = 0;'); run('kitSnapBuild()'); ok(run('floatingTexts.some(t => /SHORT/.test(t.text))'), 'no shortfall said');
-        same(run('world.filter(t => t.pillar && getZoneIndex(t.x) === 1).length'), 4, 'built what it could');
+        clear(); run('setBuildTool(buildMenuItems("kits").find(i => i.id === "strongpoint")); buildTool.elId = "fire"; shardCount = 25; floatingTexts.length = 0;'); run('kitSnapBuild()'); ok(run('floatingTexts.some(t => /SHORT/.test(t.text))'), 'no shortfall said');
+        same(run('world.filter(t => t.pillar && getZoneIndex(t.x) === 1).length'), 2, 'built what it could');
     });
     check('in a zone with no nest it says so', () => { clear(); run('setBuildTool(buildMenuItems("kits")[0]); player.x = player.visualX = -30; floatingTexts.length = 0;'); same(run('kitSnapBuild()'), false, 'built'); ok(run('floatingTexts.length > 0'), 'no message'); run('player.x = player.visualX = __nest.x + 3;'); });
 
@@ -143,9 +143,9 @@ const SETUP = `gameState.running = true; tutorialMode = false; zoneGenerated = (
         const m = dom.match(/<pre id="__ku">([\s\S]*?)<\/pre>/), r = m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')) : null;
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (r) {
-            check('zoomed out, the chip has SNAP TO NEST, MIRROR and the elements the kit takes; the label carries the price', () => { same(r.placing, true, 'placing'); ok(r.tools[0] === 'SNAP TO NEST' && /FACING|MIRROR/.test(r.tools[1]), r.tools); same(r.els.length, 6, 'elements'); ok(/◆70/.test(r.label), r.label); });
+            check('zoomed out, the chip has SNAP TO NEST, MIRROR and the elements the kit takes; the label carries the price', () => { same(r.placing, true, 'placing'); ok(r.tools[0] === 'SNAP TO NEST' && /FACING|MIRROR/.test(r.tools[1]), r.tools); same(r.els.length, 6, 'elements'); ok(/◆40/.test(r.label), r.label); });
             check('tapping an element switches the kit\'s element; MIRROR toggles its direction', () => { same(r.el, 'ice', 'element'); same(r.dir0, 1, 'start'); same(r.dir1, -1, 'mirrored'); ok(/MIRRORED/.test(r.mirrorLabel), r.mirrorLabel); same(r.dir2, 1, 'back'); });
-            check('THE ASK: SNAP TO NEST in the chip builds the kit and keeps it in hand for the next zone', () => { same(r.built, 7, 'pieces'); same(r.spent, 70, 'spent'); same(r.tool, true, 'tool put down'); });
+            check('THE ASK: SNAP TO NEST in the chip builds the kit and keeps it in hand for the next zone', () => { same(r.built, 4, 'pieces'); same(r.spent, 40, 'spent'); same(r.tool, true, 'tool put down'); });
         }
     }
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

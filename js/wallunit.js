@@ -9,14 +9,15 @@
 // drawWallUnitCell), not as pylons.
 const WALL_UNIT_CELLS = 6;         // wall tiles in a unit: the six cells of a tier III bank
 const WALL_CELL_HP = 200;          // a cell's health (a floor pylon had 80): it is part of the wall
-function wallUnitX0(zone) { return zone * ZONE_LENGTH; }
+const WALL_UNIT_OFFSET = 9;        // the unit stands at the FRONT of the zone's wall, beside the nest (x 7) and its vortex (x 8): the kits' guns, formations and Ultra squares sit within the bank's full-strength reach of it
+function wallUnitX0(zone) { return zone * ZONE_LENGTH + WALL_UNIT_OFFSET; }
 // The unit's wall tiles in a zone, left to right (those that exist yet).
 function wallUnitTiles(zone) {
     const out = [], x0 = wallUnitX0(zone);
     for (let i = 0; i < WALL_UNIT_CELLS; i++) { const t = typeof getTile === "function" ? getTile(x0 + i, -2) : null; if (t && t.type === "wall_back") out.push(t); }
     return out;
 }
-function isWallUnitTile(t) { return !!t && t.type === "wall_back" && t.y === -2 && t.x >= 0 && ((t.x % ZONE_LENGTH) + ZONE_LENGTH) % ZONE_LENGTH < WALL_UNIT_CELLS; }
+function isWallUnitTile(t) { if (!t || t.type !== "wall_back" || t.y !== -2 || t.x < 0) return false; const i = t.x % ZONE_LENGTH - WALL_UNIT_OFFSET; return i >= 0 && i < WALL_UNIT_CELLS; }
 function _wallCellLive(t) { return !!t && t.pillar && t.isBattery && !t.destroyed && t.pillarTeam === "green"; }
 // Booted cells (live or wrecked): the unit's level in cells, 0 / 2 / 4 / 6.
 function wallUnitCells(zone) { return wallUnitTiles(zone).filter(t => t.pillar && t.isBattery && t.pillarTeam === "green").length; }
@@ -158,7 +159,7 @@ function wallUnitRepair(zone) {
 // Called by the wall tile's draw (game.js) with its corner (px, py) and the light (amb). Lies on the wall with the same shear the server racks use.
 function drawWallUnitCell(obj, px, py, amb) {
     if (!isWallUnitTile(obj)) return;
-    const WH = 110, i = ((obj.x % ZONE_LENGTH) + ZONE_LENGTH) % ZONE_LENGTH, zone = Math.floor(obj.x / ZONE_LENGTH), tier = wallUnitTier(zone), live = _wallCellLive(obj), wreck = obj.pillar && obj.isBattery && !live;
+    const WH = 110, i = obj.x % ZONE_LENGTH - WALL_UNIT_OFFSET, zone = Math.floor(obj.x / ZONE_LENGTH), tier = wallUnitTier(zone), live = _wallCellLive(obj), wreck = obj.pillar && obj.isBattery && !live;
     const el = live ? (ELEMENTS.find(e => e.id === obj.attackModeElement) || null) : null, col = el ? el.color : "#5a6a7a", f0 = typeof frame !== "undefined" ? frame : 0;
     const bay = i < tier * 2;   // inside the unit's current size
     const cx = px - TILE_W * 0.5, cy = py + TILE_H * 0.5 - WH * 0.42, w = 38, h = 58;
@@ -227,6 +228,20 @@ function wallUnitOpen(zone, sx, sy) {
     _wuZone = zone; if (!wallUnitTier(zone)) _wuPick = unlockedElements.has(_wuPick) ? _wuPick : (typeof player !== "undefined" && unlockedElements.has(player.selectedElement) ? player.selectedElement : null);
     let cx = sx, cy = sy; try { const b = canvas.getBoundingClientRect(); cx = b.left + sx * b.width / canvas.width; cy = b.top + sy * b.height / canvas.height; } catch (e) {}
     r.style.left = Math.max(8, Math.min((typeof innerWidth === "number" ? innerWidth : 800) - 190, cx - 90)) + "px"; r.style.top = Math.max(8, cy + 44) + "px"; r.classList.add("open"); wallUnitRender(); return true;
+}
+// A save from before the unit moved (build 2026-10-18x and earlier: x 0 to 5 of the zone) is carried over: each cell there moves to the same place in the unit's new tiles.
+function wallUnitMigrate() {
+    if (typeof world === "undefined") return 0;
+    let moved = 0;
+    for (const old of world.filter(t => t.type === "wall_back" && t.y === -2 && t.pillar && t.isBattery && t.pillarTeam === "green" && t.x >= 0 && t.x % ZONE_LENGTH < WALL_UNIT_OFFSET && t.x % ZONE_LENGTH < WALL_UNIT_CELLS)) {
+        const zone = Math.floor(old.x / ZONE_LENGTH), now = getTile(wallUnitX0(zone) + old.x % ZONE_LENGTH, -2);
+        if (!now || now.pillar) continue;
+        for (const k of ["pillar", "pillarTeam", "pillarCol", "health", "maxHealth", "destroyed", "attackModeElement", "attackModeColor", "chosenElement", "chosenColor", "attackRange", "attackPower", "isBattery", "charge", "circuitOn", "mk", "upgraded", "pylonStyle", "_wallCell"]) now[k] = old[k];
+        old.pillar = false; old.isBattery = false; old.pillarTeam = null; old.attackModeElement = null; old.attackModeColor = null; old.charge = 0; old.destroyed = false; old._wallCell = false;
+        moved++;
+    }
+    if (moved && typeof _cacheAge !== "undefined") _cacheAge = -999;
+    return moved;
 }
 // A tap at screen (ex, ey): on the unit it opens the panel (and the tap is spent).
 function wallUnitTap(ex, ey) {

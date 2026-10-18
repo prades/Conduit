@@ -18,7 +18,8 @@
 //   3. ALWAYS → BUILD, one pylon per think, while the shards last, from the LAYOUT KITS (js/kits.js, docs/LAYOUT-KITS.md). Each held nest gets
 //      the kits its place calls for, one after the other, and then it stops: a REAR zone (far behind the front) a SKELETON then an OUTPOST, a MID zone an
 //      OUTPOST then a STRONGPOINT, the FRONT zone (the farthest you hold) up to an ULTRA NEAR and a formation TRAP, and a DEEP front zone (zone 3 on) a
-//      FULL KIT. Nothing is built that no kit asks for: no spare batteries, no loose pylons. MK II comes last, on shards to spare.
+//      FULL KIT. Nothing is built that no kit asks for: no loose pylons. The kits build no batteries: once the zone's generator stands, autoplay boots the POWER UNIT in the zone's wall and upgrades it to the tier the
+//      ladder needs (js/wallunit.js: the same functions as the unit's panel), before the guns. MK II comes last, on shards to spare.
 //   4. ALWAYS → ULTIMATES. A follower with a full bar and an enemy within
 //      AUTOPLAY_ULT_RANGE fires it (the duo ultimate if its partner can).
 //   5. ALWAYS → WORK CREW. About a quarter of the squad works, so kills keep
@@ -215,6 +216,17 @@ function _autoFormationElement(elId) {
     if (forms.includes(elId)) return elId;
     return AUTOPLAY_FORM_ORDER.find(e => forms.includes(e) && unlockedElements.has(e)) || null;
 }
+// The zone's power unit (js/wallunit.js): booted in the zone's element and upgraded to the tier the ladder asks for, once the generator stands. true: it did a step; false: it must wait for shards; null: nothing to do.
+function _autoPowerUnit(nest, el, need) {
+    if (typeof wallUnitTier !== "function") return null;
+    const zone = getZoneIndex(nest.x);
+    if (!zoneHasGenerator(zone)) return null;                       // the generator first: nothing is powered without it
+    const have = wallUnitTier(zone), cur = wallUnitElement(zone);
+    if (have === 0) return shardCount < wallUnitCost(zone) ? false : wallUnitBoot(zone, el);
+    if (cur !== el && unlockedElements.has(el)) return shardCount < WALL_UNIT_RECONFIGURE_COST() ? false : wallUnitReconfigure(zone, el);
+    if (have < need) return shardCount < wallUnitCost(zone) ? false : wallUnitUpgrade(zone);
+    return null;
+}
 // Build the next piece of the first kit on the nest's ladder that is not finished. Remembers which (nest._autoKit) for the ZONES tab.
 function _autoGrowNetwork(nest, next, held) {
     const cls = _autoZoneClass(nest, held || _autoHeldNests()), el = _autoZoneElement(nest, cls);
@@ -224,6 +236,8 @@ function _autoGrowNetwork(nest, next, held) {
     const kits = AUTOPLAY_LADDER[cls].map(kitById).filter(k => k && kitElementOk(k, el));
     const pos = kitFindPlacementFor(kits, el, nest);
     if (!pos) return false;
+    const unit = _autoPowerUnit(nest, el, Math.max(1, ...kits.map(k => k.target.tier)));
+    if (unit !== null) return unit;
     for (const kit of kits) {
         const id = kit.id, plan = kitPlan(kit, el, pos.x0, pos.dir, nest);
         nest._autoKit = { id, el, cls, have: plan.have, total: kitPieceCount(kit), blocked: plan.blocked };

@@ -495,7 +495,7 @@ try { initCommandCenter(); } catch (e) { /* no page (the test sandbox): the logi
 function buildOrderPickerClose() { const r = document.getElementById("orderPicker"); if (r && r.parentNode) r.parentNode.removeChild(r); }
 function buildOrderPickerOpen(z) {
     buildOrderPickerClose();
-    const st = { mode: "piece", kind: "battery", elId: null, level: 1, kit: "strongpoint" };
+    const st = { mode: "piece", kind: "attack", elId: null, level: 1, kit: "strongpoint" };
     const els = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(e => unlockedElements.has(e.id)); st.elId = els.length ? els[0].id : "fire";
     const root = _ccEl("div", "rp-pick"); root.id = "orderPicker"; root.classList.add("op"); _ccClick(root, () => buildOrderPickerClose());
     const card = _ccEl("div", "rpk-card"); _ccClick(card, () => {});
@@ -516,7 +516,7 @@ function buildOrderPickerOpen(z) {
             sub.textContent = !plan ? "NO ROOM OR NO NEST FOR " + kit.name : plan.blocked ? kit.name + ": " + plan.blocked + " PIECES BLOCKED (" + plan.pieces.find(p => p.state === "blocked").why + ")" : !plan.free ? kit.name + " IS ALREADY BUILT THERE" : kit.name + ": +" + plan.free + " PIECES \u00b7 \u25c6" + plan.cost + " WHEN PUT UP \u00b7 NEEDS AN ANT CREW IN THE ZONE";
             return;
         }
-        const r1 = _ccEl("div", "op-row"); [["generator", "GENERATOR"], ["battery", "BATTERY"], ["attack", "TURRET"]].forEach(k => r1.appendChild(mk(k[1], st.kind === k[0], "#ffe733", () => { st.kind = k[0]; if (k[0] !== "battery") st.level = 1; }))); rows.appendChild(r1);
+        const r1 = _ccEl("div", "op-row"); [["generator", "GENERATOR"], ["attack", "TURRET"]].forEach(k => r1.appendChild(mk(k[1], st.kind === k[0], "#ffe733", () => { st.kind = k[0]; if (k[0] !== "battery") st.level = 1; }))); rows.appendChild(r1);
         if (st.kind !== "generator") { const r2 = _ccEl("div", "op-row"); els.forEach(e => r2.appendChild(mk(e.label.toUpperCase(), st.elId === e.id, e.color, () => { st.elId = e.id; }))); rows.appendChild(r2); }
         if (st.kind === "battery") { const r3 = _ccEl("div", "op-row"); BUILD_LEVELS.power.forEach((l, i) => r3.appendChild(mk(l, st.level === i + 1, "#19e6c1", () => { st.level = i + 1; }))); rows.appendChild(r3); }
         const o = { kind: st.kind, elId: st.kind === "generator" ? GENERATOR_ID : st.elId, level: st.level };

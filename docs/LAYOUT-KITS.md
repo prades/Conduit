@@ -2,7 +2,7 @@
 
 Asked: *"layouts for different equipment systems, that don't exaggerate unnecessary equipment. Plan a way to make 16 different variants of zone equipment layouts that make sense, used by the auto and available as build kits in the build menu in a separate tab."*
 
-**Status: built.** js/kits.js (the sixteen kits, the rules, the placement engine), js/kitui.js and the KITS tab in the build menu (js/buildmenu.js), autoplay on the ladder (js/autoplay.js), and BUILD A LAYOUT KIT in the ZONES tab's order picker (js/zones.js). Tests: tests/kits.js (every kit built in the real game and measured), tests/kitui.js, tests/autoplay.js, tests/zonecrew.js.
+**Status: built, then reworked for the wall power unit (build 2026-10-18y): the kits build NO batteries.** The batteries are the power unit in each zone's back wall (js/wallunit.js, docs/WALL-GRID.md); a kit names the unit tier it needs (`target.tier`), builds, and what needs the tier goes live when the unit is booted and upgraded (by hand, or by autoplay). Because the bank no longer links the pieces, kits that reach the front are fed by a connector (the relay kits: RELAY LINE, ULTRA FRONT, TRAP, CHOKE), and the lane guns sit within link range of the generator. Below, the rules and the kit list are as they are now; where the sections after the kit list still say 'battery' or give old piece counts, the kit list and js/kits.js are right. js/kits.js (the sixteen kits, the rules, the placement engine), js/kitui.js and the KITS tab in the build menu (js/buildmenu.js), autoplay on the ladder (js/autoplay.js), and BUILD A LAYOUT KIT in the ZONES tab's order picker (js/zones.js). Tests: tests/kits.js (every kit built in the real game and measured), tests/kitui.js, tests/autoplay.js, tests/zonecrew.js.
 
 Decisions made: both the ghost and SNAP TO NEST; auto uses the ladder; 16 layouts each usable with any element it takes; no fixed size cap (the largest kit, FULL KIT, is 17 pieces because that is everything a zone needs, not because of a cap). Changes found while building: a kit must stay inside one zone (a piece across the line has no generator), so wide kits shift back from the nest; a zone has exactly one generator, so a kit aligns onto an existing one; FULL KIT includes the two lane guns so it is a superset of STRONGPOINT and BASTION.
 
@@ -11,7 +11,7 @@ Decisions made: both the ghost and SNAP TO NEST; auto uses the ladder; 16 layout
 A **kit** is a small, fixed pattern of equipment for one zone, written once as data and used three ways: placed by the player (a KITS tab in the build menu), placed by autoplay, and queued as build orders for a crew (the ZONES tab).
 
 - Coordinates are **(dx, dy) from the zone's held nest**: dx runs toward the front (the next zone, where the enemy comes from), dy is the lane row 0..3. A kit can be mirrored if the nest has room on only one side.
-- Each piece names a **kind** and an **element slot**, not an element: `G` generator, `C` connector, `B` battery, `T` turret, `W` wave pylon, `S` support pylon. Slots are `NET` (the zone's network element: batteries and turrets), `FORM` (the formation element) and `AUX` (support). So one layout covers every element: 16 layouts x the unlocked elements is the real number of variants.
+- Each piece names a **kind** and an **element slot**, not an element: `G` generator, `C` connector, `T` turret, `W` wave pylon, `S` support pylon. Slots are `NET` (the zone's network element: batteries and turrets), `FORM` (the formation element) and `AUX` (support). So one layout covers every element: 16 layouts x the unlocked elements is the real number of variants.
 - A kit has a **target** (the tier its battery bank reaches, whether an Ultra or a formation forms) and a **budget** (pieces and shards).
 
 ## 2. The rules that stop it exaggerating
@@ -20,122 +20,137 @@ These are checked by a validator (and a test) on every kit, so a new kit cannot 
 
 | Rule | Meaning |
 |---|---|
-| R1 | Batteries are exactly the number the target tier needs: 0, 2 (tier I), 4 (tier II) or 6 (tier III). No spare battery. |
+| R1 | A kit builds no batteries (the wall's power unit is the bank) and names a target tier, 1 to 3. |
 | R2 | Every turret has a job: a lane gun, or one of the four turrets of an Ultra square. At most 4 free turrets, plus an Ultra's 4. |
 | R3 | A wave pylon exists only as one of the 4 of a formation square, or as one of at most 2 supports. Never loose. |
 | R4 | One generator per zone. A connector only in the kit whose point is reach (RELAY LINE). |
 | R5 | Every piece is **powered and linked**: the graph of pieces is connected under the real link rules (3.05 tiles between pylons, a generator within 6 of a nest, a connector feeds 14). A kit that leaves a piece dark fails. |
-| R6 | The target is **achieved when built**: the network reads the tier it claims, an Ultra fuses, a formation forms (tier II needed, within 6 tiles of the bank). Simulated in the real game in the test. |
+| R6 | The target is asked for, not paid for: an Ultra and a formation need unit tier II, MK II tier I. The kit builds; the unit tier is the player's (or autoplay's) to boot and upgrade. |
 | R7 | The layout fits the 4-row lane (10 columns) with a way through left open in every column. There is no piece cap: the rules above are what keep it honest. |
 
 ## 3. The 16 kits
 
-Legend on the 4-row lane, nest on the left: `G` generator, `B` battery, `T` turret, `W` wave pylon, `S` support, `C` connector, `.` empty. dx 0 is at the nest.
-
-All kits share the same **core**, so a kit is always a superset of a smaller one and the builder only adds the difference (this is what lets auto *upgrade* a zone instead of rebuilding it). The generator is `G(0,1)`; batteries fill in the order `(1,1) (2,1)` then `(1,0) (2,0)` then `(3,0) (3,1)`.
-
-### Power: hold a zone cheaply (4)
+Legend on the 4-row lane, nest on the left, dx 0 at the nest: `G` generator, `C` connector, `T` turret, `W` wave pylon, `S` support, `.` empty. Each kit is a superset of the smaller one it grows from (SKELETON in OUTPOST in STRONGPOINT in BASTION; STRONGPOINT in ULTRA NEAR in SIEGE; STRONGPOINT in HARDENED and FULL KIT), so a zone is upgraded by adding the difference.
 
 ```
- 1 SKELETON        3 pcs  30   tier I     power only, for a cleared zone with nothing to defend
-   0 1 2 3
+SKELETON  1 pcs  10  tier I   Power only: just the generator. For a cleared zone with nothing to defend; boot the power unit in the wall and it holds the zone.
+y0 .
+y1 G
+y2 .
+```
+
+```
+OUTPOST  3 pcs  30  tier I   The minimum that fights back: a generator and two guns, on a tier I power unit.
 y0 . . . .
-y1 G B B .
-y2 . . . .
+y1 G . . .
+y2 . . T T
+```
 
- 2 OUTPOST         5 pcs  50   tier I     the minimum that fights back
-   0 1 2 3
+```
+STRONGPOINT  4 pcs  40  tier II   Three guns on a tier II power unit: MK II turrets and formations become possible.
 y0 . . . .
-y1 G B B .
-y2 . T T .
-
- 3 STRONGPOINT     7 pcs  70   tier II    a pod of four: MK II turrets and formations become possible
-   0 1 2 3
-y0 . B B .
-y1 G B B .
-y2 . T T .
-
- 4 BASTION         9 pcs  90   tier III   a pod of six: full-strength network over the widest area
-   0 1 2 3
-y0 . B B B
-y1 G B B B
-y2 . T T .
+y1 G . . .
+y2 . . T T
+y3 . . . T
 ```
 
-### Defence: guns (5)
+```
+BASTION  5 pcs  50  tier III   Four guns on a tier III power unit: the strongest network, over the widest area.
+y0 . . . . .
+y1 G . . . .
+y2 . . T T T
+y3 . . . T .
+```
 
 ```
- 5 RELAY LINE      6 pcs  60   tier I     a connector near the nest feeds a forward post (14 tiles) with no chain of pylons
-   0 1 2 3 4 5 6 7 8 9
+RELAY LINE  5 pcs  50  tier I   A connector by the nest feeds a forward post of three guns with no chain of pylons between.
 y0 . . . . . . . . T .
-y1 G C . . . . . . B B
+y1 G C . . . . . . T .
 y2 . . . . . . . . T .
+```
 
- 6 GUN LINE        7 pcs  70   tier I     four guns across the lane at one column: even fire, no gaps
-   0 1 2 3 4
-y0 . . . . T
-y1 G B B . T
-y2 . . . . T
-y3 . . . . T
+```
+GUN LINE  5 pcs  50  tier I   Four guns in a diagonal line across the lane: even fire, and a way through left open.
+y0 . . . . T .
+y1 G . . T . .
+y2 . . . . T .
+y3 . . . . . T
+```
 
- 7 CROSSFIRE       7 pcs  70   tier I     guns staggered on the outer rows: covers the walls without blocking the lane
-   0 1 2 3 4 5
-y0 . . . T . T
-y1 G B B . . .
+```
+CROSSFIRE  5 pcs  50  tier I   Guns staggered on the outer rows: they cover the walls and leave the lane open.
+y0 . . T . T .
+y1 G . . . . .
 y2 . . . . . .
-y3 . . . T . T
+y3 . . T . T .
+```
 
- 8 ULTRA NEAR      9 pcs  90   tier II    pod of four + a 2x2 of turrets that fuse into an Ultra, close to the nest
-   0 1 2 3 4 5
-y0 . B B . . .
-y1 G B B . T T
-y2 . . . . T T
+```
+ULTRA NEAR  5 pcs  50  tier II   The STRONGPOINT with one more gun: a 2x2 that fuses into an Ultra turret, close to the nest.
+y0 . . . .
+y1 G . . .
+y2 . . T T
+y3 . . T T
+```
 
- 9 ULTRA FRONT     9 pcs  90   tier II    the same Ultra, forward at the zone's entrance (the bank stays within 6 tiles so it still fuses)
-   0 1 2 3 4 5 6 7 8
-y0 . . . B B . . . .
-y1 G . . B B . . T T
+```
+ULTRA FRONT  6 pcs  60  tier II   The same Ultra at the zone's entrance, fed by a connector so it still fuses.
+y0 . . . . . . . . .
+y1 G C . . . . . T T
 y2 . . . . . . . T T
 ```
 
-### Control: formations (3, each takes any formation element)
-
-Formation element (flux black hole, fire spinning wall, ice generator, toxic tower, core shield forge) is chosen at placement, so each of these is five concrete kits. Each needs a tier II bank of the **formation** element, so the bank is the same element as the square.
+```
+TRAP  6 pcs  60  tier II   A formation mid-lane (black hole, firewall, ice generator, toxic tower, shield forge), fed by a connector: it catches what walks through.
+y0 . . . . . . .
+y1 G C . . . W W
+y2 . . . . . W W
+```
 
 ```
- 10 TRAP           9 pcs  90   tier II    formation mid-lane: catches what is walking through
-   0 1 2 3 4 5 6
-y0 . B B . . . .
-y1 G B B . W W .
-y2 . . . . W W .
-
- 11 CHOKE          9 pcs  90   tier II    formation at the entrance, bank behind it: stops them before the guns
-   0 1 2 3 4 5 6 7 8
-y0 . . . B B . . . .
-y1 G . . B B . . W W
+CHOKE  6 pcs  60  tier II   A formation at the entrance, fed by a connector: it stops them before the guns.
+y0 . . . . . . . . .
+y1 G C . . . . . W W
 y2 . . . . . . . W W
-
- 12 HOME GUARD     9 pcs  90   tier II    formation beside the generator, for zones that get raided from the side
-   0 1 2 3 4
-y0 . B B W W
-y1 G B B W W
 ```
 
-### Combined (4)
-
 ```
- 13 SUPPORT NET    7 pcs  70   tier I     2 guns + 2 support pylons (electric haste or core shields) that work on the squad standing in the lane
-   0 1 2 3 4
-y0 . . . S .
-y1 G B B . T
-y2 . . . S T
-
- 14 SIEGE          11 pcs 110  tier II    an Ultra plus two more guns for a zone that is attacked every night
- 15 HARDENED       7 pcs + 2 MK II  100   the STRONGPOINT with both turrets upgraded to MK II (they need a tier I network)
- 16 FULL KIT       17 pcs 170  tier III   pod of six, the two lane guns, an Ultra and a formation (what autoplay used to build, without the supports).
+HOME GUARD  5 pcs  50  tier II   A formation beside the generator, for a zone raided from the side.
+y0 . . . .
+y1 G . W W
+y2 . . W W
 ```
 
-14 to 16 reuse the layouts above (their maps are the union of the kits they contain, positions unchanged).
+```
+SUPPORT NET  5 pcs  50  tier I   Two guns and two support pylons (haste or shields) that work on the squad standing in the lane.
+y0 . . S .
+y1 G . T .
+y2 . . S T
+```
+
+```
+SIEGE  7 pcs  70  tier II   An Ultra and two more guns forward of it, for a zone attacked every night.
+y0 . . . . . . .
+y1 G . . . . . T
+y2 . . T T . T .
+y3 . . T T . . .
+```
+
+```
+HARDENED  4 pcs  85  tier II (MK II)   The STRONGPOINT with all three guns upgraded to MK II.
+y0 . . . .
+y1 G . . .
+y2 . . T T
+y3 . . . T
+```
+
+```
+FULL KIT  13 pcs  130  tier III   The most a zone needs: four lane guns, an Ultra and a formation, with a way through left open; on a tier III power unit.
+y0 . . . . . T T . .
+y1 G . . . . T T . .
+y2 . . T T T . . W W
+y3 . . . T . . . W W
+```
 
 ## 4. How the player uses them (build menu, new KITS tab)
 

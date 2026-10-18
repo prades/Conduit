@@ -139,10 +139,10 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
                 ok(/CREW/.test(r.crewLine0) && /NONE SENT/.test(r.crewLine0), 'crew line: ' + r.crewLine0); ok(/1 ANTS \+ 1 CORE FREE/.test(r.sendSub), r.sendSub);
                 same(r.crew, 2, 'crew'); ok(/1 ANT . 1 CORE/.test(r.crewLine1), r.crewLine1); same(r.hasRecall, true, 'recall');
             });
-            check('THE ASK: + ORDER opens a picker (generator / battery / turret, element, level), QUEUE IT adds it to the zone, tapping the chip cancels it, RECALL sends the crew home', () => {
-                same(r.picker, true, 'picker'); ok(r.pickerRows >= 4, 'rows (mode, kind, element, level) ' + r.pickerRows); ok(/COSTS/.test(r.pickerSub), r.pickerSub); same(r.pickerRowsGen, 2, 'a generator has no element or level (just the mode and kind rows)');
+            check('THE ASK: + ORDER opens a picker (generator / turret, element), QUEUE IT adds it to the zone, tapping the chip cancels it, RECALL sends the crew home', () => {
+                same(r.picker, true, 'picker'); ok(r.pickerRows >= 3, 'rows (mode, kind, element) ' + r.pickerRows); ok(/COSTS/.test(r.pickerSub), r.pickerSub); same(r.pickerRowsGen, 2, 'a generator has no element or level (just the mode and kind rows)');
                 same(r.queued, 1, 'queued'); ok(/GENERATOR/.test(r.orderChip), r.orderChip); same(r.cancelled, 0, 'cancelled'); same(r.recalled, 0, 'recalled');
-                same(r.kitButtons, 16, 'the sixteen kits are pickable'); ok(/OUTPOST: \+5 PIECES/.test(r.kitSub), r.kitSub); same(r.kitOrders, 5, 'an OUTPOST queues five exact-tile orders'); ok(/OUTPOST \u00b7 GENERATOR/.test(r.kitChip), r.kitChip);
+                same(r.kitButtons, 16, 'the sixteen kits are pickable'); ok(/OUTPOST: \+3 PIECES/.test(r.kitSub), r.kitSub); same(r.kitOrders, 3, 'an OUTPOST queues three exact-tile orders'); ok(/OUTPOST \u00b7 GENERATOR/.test(r.kitChip), r.kitChip);
             });
             check('pressing CLEAR BROKEN pays the fee and the card updates; a zone with no held nest has TELEPORT dimmed', () => { same(r.spent, 8, 'spent'); same(r.brokenAfter, 0, 'broken after'); ok(/NOTHING BROKEN/.test(r.z1after), r.z1after); same(r.tpDim, true, 'teleport not dimmed'); });
         }

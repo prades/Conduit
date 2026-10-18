@@ -6,7 +6,7 @@
 // blocked, and why). Tap where its generator should go (touch: tap, tap again), or press SNAP TO NEST in the chip to build it at the held nest of the zone you are in.
 // A kit placed over a smaller one only adds the difference.
 const KIT_FAMILY_COLOUR = { power: "#ffd34d", defence: "#ff8a5c", control: "#a64dff", combined: "#19e6c1" };
-const KIT_PIECE_COLOUR = { G: "#cdd6e0", C: "#ffd24a", B: "#ffd34d", T: "#ff8a5c", W: "#a64dff", S: "#19e6c1" };
+const KIT_PIECE_COLOUR = { G: "#cdd6e0", C: "#ffd24a", T: "#ff8a5c", W: "#a64dff", S: "#19e6c1" };
 let kitDir = 1;   // +1 builds toward the front; -1 mirrors it (the chip's MIRROR)
 
 // The element a kit starts with: the one most of your squad is (as autoplay chooses), if the kit takes it; else the first it takes.
@@ -30,12 +30,13 @@ function kitToolVerdict(t, tool) {
     if (plan.blocked) { const r = plan.pieces.find(p => p.state === "blocked"); return { ok: false, why: plan.blocked + " BLOCKED: " + r.why }; }
     if (!plan.free && !plan.pieces.some(p => p.mk2Missing)) return { ok: false, why: "ALREADY BUILT HERE" };
     if (shardCount < plan.cost) return { ok: false, why: "NEED ◆" + plan.cost };
-    return { ok: true, why: "+" + plan.free + " PCS ◆" + plan.cost };
+    return { ok: true, why: "+" + plan.free + " PCS ◆" + plan.cost + (plan.unit.short ? " · NEEDS UNIT TIER " + ["", "I", "II", "III"][plan.unit.need] : "") };
 }
 // The tap that builds it.
 function kitToolPlace(t, tool) {
-    const res = kitBuild(kitToolPlan(tool, t)), kit = kitById(tool.id);
+    const plan0 = kitToolPlan(tool, t), res = kitBuild(plan0), kit = kitById(tool.id);
     if (res.built) _bmSay(kit.name + ": " + res.built + " BUILT" + (res.short ? " · " + res.short + " ◆ SHORT" : ""), tool.colour || "#19e6c1");
+    if (res.built && plan0.unit.short) _bmSay(kitUnitSay(plan0.unit), "#ffd34d");   // the kit stands, and waits for the power unit in the wall
     else if (res.blocked.length) _bmSay(kit.name + ": " + res.blocked[0], "#f66");
     if (typeof elementEffects !== "undefined") for (const r of kitToolPlan(tool, t).pieces) elementEffects.push({ type: "impact", x: r.x + 0.5, y: r.y + 0.5, color: tool.colour || "#0f8", radius: 0.35, life: 20 });
     return res.built > 0;
@@ -67,6 +68,7 @@ function kitSnapBuild() {
     if (!plan.free && !plan.pieces.some(p => p.mk2Missing)) { _bmSay(kit.name + " IS ALREADY BUILT HERE", "#8aa0c8"); return false; }
     const res = kitBuild(plan);
     _bmSay(kit.name + ": " + res.built + " BUILT" + (res.short ? " · " + res.short + " ◆ SHORT" : "") + (res.mk2Wait ? " · MK II WAITS FOR THE NETWORK" : ""), res.short ? "#f88" : (buildTool.colour || "#19e6c1"));
+    if (res.built && plan.unit.short) _bmSay(kitUnitSay(plan.unit), "#ffd34d");
     return res.built > 0;
 }
 
@@ -79,7 +81,7 @@ function drawKitCell(c, sel) {
     ctx.fillStyle = "rgba(255,255,255," + (sel ? 0.15 : 0.05) + ")"; ctx.fillRect(mx - 1, my - 1, ts * 10 + 2, ts * 4 + 2);
     for (const p of kitPieces(k)) { ctx.fillStyle = sel ? UI_INK : KIT_PIECE_COLOUR[p.c]; ctx.fillRect(mx + p.dx * ts + 0.5, my + p.dy * ts + 0.5, ts - 1.5, ts - 1.5); }
     uiTextFit(k.name, c.x + c.w / 2, c.y + 6 + ts * 4 + 15, 14, sel ? UI_INK : "#fff", "center", c.w - 8);
-    uiCaptionFit(N + " PCS · ◆" + kitCost(k), c.x + c.w / 2, c.y + c.h - 11, sel ? UI_INK : shardCount < kitCost(k) ? "#ff7a6a" : UI_GOLD, "center", 11, c.w - 6);
+    uiCaptionFit(N + " PCS · TIER " + ["", "I", "II", "III"][k.target.tier] + " · ◆" + kitCost(k), c.x + c.w / 2, c.y + c.h - 11, sel ? UI_INK : shardCount < kitCost(k) ? "#ff7a6a" : UI_GOLD, "center", 11, c.w - 6);
 }
 
 // ── the ghost: every piece of the layout on the ground ──
