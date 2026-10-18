@@ -125,17 +125,16 @@ function _fireScr(x, y, z) { const W = canvas.width / 2, H = canvas.height / 2; 
 function drawFireOnTile(tx, ty, px, py) {
     if (!fireTiles.size) return;
     const t = fireTiles.get(tx + "," + ty); if (!t) return;
-    const f0 = typeof frame !== "undefined" ? frame : 0, left = t.until - f0, a = Math.min(1, left / FIRE_BURN_FADE), seed = (tx * 7 + ty * 13) & 15, fl = 0.5 + 0.5 * Math.sin(f0 * 0.2 + seed);
+    // SUBTLE (reported: "make the fire more subtle"): a soft ember glow on the floor, edges feathered by a smaller inner diamond, and two or three small low flames that flicker; nothing solid or bright.
+    const f0 = typeof frame !== "undefined" ? frame : 0, left = t.until - f0, a = Math.min(1, left / FIRE_BURN_FADE), seed = (tx * 7 + ty * 13) & 15, fl = 0.5 + 0.5 * Math.sin(f0 * 0.17 + seed);
     ctx.save();
-    ctx.beginPath(); ctx.moveTo(px, py + 3); ctx.lineTo(px + TILE_W - 3, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H - 3); ctx.lineTo(px - TILE_W + 3, py + TILE_H); ctx.closePath();
-    ctx.globalAlpha = a * (0.4 + 0.12 * fl); ctx.fillStyle = "#ff5a14"; ctx.fill();
-    // flames: three tongues that flicker, each a little triangle rising from the floor
-    ctx.globalAlpha = a * 0.9;
+    const cx = px, cy = py + TILE_H, g = ctx.createRadialGradient(cx, cy, 2, cx, cy, TILE_W * 0.95); g.addColorStop(0, "rgba(255,120,40," + (0.3 * a * (0.8 + 0.2 * fl)).toFixed(3) + ")"); g.addColorStop(1, "rgba(255,90,20,0)");
+    ctx.beginPath(); ctx.moveTo(px, py + 2); ctx.lineTo(px + TILE_W - 2, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H - 2); ctx.lineTo(px - TILE_W + 2, py + TILE_H); ctx.closePath(); ctx.fillStyle = g; ctx.fill();
+    // a few small flames, low and translucent
     for (let k = 0; k < 3; k++) {
-        const ph = f0 * 0.15 + seed + k * 2.1, bx = px + (k - 1) * TILE_W * 0.45 + Math.sin(ph * 0.7) * 3, by = py + TILE_H + (k % 2 ? 6 : -4), h = 12 + 8 * (0.5 + 0.5 * Math.sin(ph)), w = 6 + 2 * Math.sin(ph * 1.3);
-        const sw = Math.sin(ph * 1.9) * 3;
-        ctx.fillStyle = k === 1 ? "#ffd04a" : "#ff8a1c"; ctx.beginPath(); ctx.moveTo(bx - w, by); ctx.quadraticCurveTo(bx - w * 0.7, by - h * 0.55, bx + sw, by - h); ctx.quadraticCurveTo(bx + w * 0.7, by - h * 0.5, bx + w, by); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = "#fff0a0"; ctx.globalAlpha = a * 0.7; ctx.beginPath(); ctx.moveTo(bx - w * 0.45, by); ctx.quadraticCurveTo(bx - w * 0.2, by - h * 0.35, bx + sw * 0.6, by - h * 0.62); ctx.quadraticCurveTo(bx + w * 0.3, by - h * 0.3, bx + w * 0.45, by); ctx.closePath(); ctx.fill(); ctx.globalAlpha = a * 0.9;
+        const ph = f0 * 0.13 + seed + k * 2.3, bx = px + (k - 1) * TILE_W * 0.4 + Math.sin(ph * 0.6) * 2, by = py + TILE_H + (k % 2 ? 5 : -3), h = 6 + 4 * (0.5 + 0.5 * Math.sin(ph)), w = 3 + Math.sin(ph * 1.3), sw = Math.sin(ph * 1.7) * 2;
+        ctx.globalAlpha = a * 0.5; ctx.fillStyle = "#ff7a2a"; ctx.beginPath(); ctx.moveTo(bx - w, by); ctx.quadraticCurveTo(bx - w * 0.6, by - h * 0.5, bx + sw, by - h); ctx.quadraticCurveTo(bx + w * 0.6, by - h * 0.45, bx + w, by); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = a * 0.4; ctx.fillStyle = "#ffd27a"; ctx.beginPath(); ctx.moveTo(bx - w * 0.4, by); ctx.quadraticCurveTo(bx, by - h * 0.55, bx + sw * 0.5, by - h * 0.6); ctx.quadraticCurveTo(bx + w * 0.3, by - h * 0.25, bx + w * 0.4, by); ctx.closePath(); ctx.fill();
     }
     ctx.restore();
 }
@@ -143,15 +142,15 @@ function drawFireBombs() {
     if (!fireBombs.length) return;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const b of fireBombs) {
-        const [gx, gy] = _fireScr(b.x, b.y, 0), [sx, sy] = _fireScr(b.x, b.y, b.z), r = b.big ? 7 : 5;
+        const [gx, gy] = _fireScr(b.x, b.y, 0), [sx, sy] = _fireScr(b.x, b.y, b.z), r = b.big ? 5.5 : 4;
         // its shadow on the floor shrinks as it rises
         ctx.globalAlpha = 0.35 / (1 + b.z); ctx.fillStyle = "#000"; ctx.beginPath(); ctx.ellipse(gx, gy, r * 1.6 / (1 + b.z * 0.5), r * 0.7 / (1 + b.z * 0.5), 0, 0, Math.PI * 2); ctx.fill();
         // a short trail, a glow, a hot core
         const [tx, ty] = _fireScr(b.px, b.py, Math.max(0, b.z - b.vz));
-        ctx.globalAlpha = 0.5; ctx.strokeStyle = "#ff7a1a"; ctx.lineWidth = r * 1.2; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(sx, sy); ctx.stroke();
-        ctx.globalAlpha = 0.4; ctx.fillStyle = "#ff6a10"; ctx.beginPath(); ctx.arc(sx, sy, r * 1.9, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 1; ctx.fillStyle = "#ff8a1c"; ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#ffe08a"; ctx.beginPath(); ctx.arc(sx, sy, r * 0.5, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.3; ctx.strokeStyle = "#ff7a1a"; ctx.lineWidth = r * 1.1; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(sx, sy); ctx.stroke();
+        ctx.globalAlpha = 0.22; ctx.fillStyle = "#ff6a10"; ctx.beginPath(); ctx.arc(sx, sy, r * 1.8, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.9; ctx.fillStyle = "#ff8a1c"; ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#ffe08a"; ctx.beginPath(); ctx.arc(sx, sy, r * 0.45, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
 }
