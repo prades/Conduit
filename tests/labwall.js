@@ -62,10 +62,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('DRAWN IN THE DEPTH-SORTED PASS');
-    check('each visible wall tile with a piece is drawn once a frame, and none when the graphics are low', () => {
+    check('each visible wall tile with a piece is drawn once a frame, on low graphics too (one stamp a tile)', () => {
         run('globalThis.__n = 0; globalThis.__o = drawLabModule; drawLabModule = function (t, a) { __n++; return __o(t, a); }; render();');
         const n = run('__n'); ok(n >= 3, 'only ' + n + ' pieces drawn');
-        run('gfxLow = true; __n = 0; render();'); same(run('__n'), 0, 'pieces drawn on low graphics'); run('gfxLow = false; drawLabModule = __o;');
+        run('gfxLow = true; __n = 0; render();'); ok(run('__n') >= 3, 'pieces not drawn on low graphics'); run('gfxLow = false; drawLabModule = __o;');
+        ok(/"js\/labwall.js": "labModuleAt"/.test(rd('game.html')) && /"js\/wallunit.js": "wallUnitTier"/.test(rd('game.html')), 'the boot check does not know the lab wall files: a missing one would leave a plain wall with no word of why');
     });
     check('the drawn list sorts a piece just in front of its wall tile (and behind the floor row in front of it)', () => {
         const g = rd('js/game.js'); ok(/type: 'labmod', x: t\.x, y: -1 \+ LAB_DEPTH/.test(g), 'the labmod item is not sorted at y = -1 + LAB_DEPTH'); ok(/else if \(obj\.type==='labmod'\)/.test(g), 'the draw branch is missing');

@@ -3059,7 +3059,7 @@ function render() {
     // Modules (js/modules.js): structures on their tiles, sorted with the rest.
     if (typeof modules !== "undefined" && !_simGhost) for (const m of modules) if (visibleForDraw(m.x, m.y)) drawList.push({ type: 'module', x: m.x, y: m.y, module: m });
     // The LAB WALL (js/labwall.js): equipment standing out of each back-wall tile, sorted just in front of its own wall tile so units walk in front of it.
-    if (!gfxLow && typeof labModuleAt === "function") { const _n = drawList.length; for (let i = 0; i < _n; i++) { const t = drawList[i]; if (t.type === 'wall_back' && t.y === -2 && labModuleAt(t.x)) drawList.push({ type: 'labmod', x: t.x, y: -1 + LAB_DEPTH, tile: t }); } }
+    if (typeof labModuleAt === "function") { const _n = drawList.length; for (let i = 0; i < _n; i++) { const t = drawList[i]; if (t.type === 'wall_back' && t.y === -2 && labModuleAt(t.x)) drawList.push({ type: 'labmod', x: t.x, y: -1 + LAB_DEPTH, tile: t }); } }
     // Depth is x+y: a bigger sum draws lower and in front.
     //
     // A WALL NEST is the exception. Its vortex is painted across a four-tile
