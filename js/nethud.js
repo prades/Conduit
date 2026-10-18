@@ -13,9 +13,9 @@
 //   OFFLINE    no bank yet (link 2 batteries of one element)
 // A change is said once on the screen ("SIGNAL WEAK", "NO SIGNAL", "SIGNAL RESTORED").
 //
-// The panel (right side, under the HUD plates): the state, a segmented signal meter, the BATT line (charge, and which way it is flowing), the NESTS
-// line (what the nests hold, and how many pylons are drawing or dark), and one row per networked element with three pips: the outline is the tier
-// the bank was built to, the fill is the tier you have where you stand.
+// The panel (right side, under the HUD plates, with no box): a dial (the signal as segments round the outside, the battery charge as a ring inside, the tier you have in the middle), the state,
+// the BATT line (charge, and which way it is flowing), where you stand, the NESTS line (what the nests hold, and how many pylons are drawing or dark) and one row per networked element with
+// three pips: the outline is the tier the bank was built to, the fill is the tier you have where you stand.
 const SIGNAL_STATES = {
     strong:  { label: "STRONG",    col: "#19e6c1" },
     weak:    { label: "WEAK",      col: "#ffe733" },
@@ -73,6 +73,42 @@ function _netZoneRect() {
 }
 let _netPanelRect = null;   // where the panel was last drawn (for the tap)
 let _hudPw = null, _hudPwAt = -Infinity, _hudSig = null;
+// BOXLESS (reported: "I don't think the network really needs a box ... a layout that's boxless, and make one or two of the status bars radial, not all, and keep the Smash Bros neo-futuristic vibe"):
+// no panel behind it. Text carries a dark outline instead so it reads over the floor; one DIAL carries two readings as rings (the signal, as 24 slanted segments round the outside; the battery
+// charge as a smooth gold ring inside it, a tier numeral in the middle); the nests stay a thin straight bar and each element a row of pips, so only the dial is radial.
+function _netText(text, x, y, size, col, align, mono) {
+    ctx.save(); ctx.font = mono ? uiMono(size) : uiFont(size); ctx.textAlign = align || "left"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(3, size * 0.3); ctx.strokeStyle = "rgba(4,6,14,0.92)"; ctx.strokeText(text, x, y);
+    ctx.fillStyle = col; ctx.fillText(text, x, y); ctx.restore();
+}
+// The same, shrunk until it fits maxW.
+function _netTextFit(text, x, y, size, col, align, maxW, mono) {
+    ctx.save(); ctx.font = mono ? uiMono(size) : uiFont(size); const w = ctx.measureText(text).width; ctx.restore();
+    _netText(text, x, y, w > maxW ? Math.max(9, Math.floor(size * maxW / w)) : size, col, align, mono);
+}
+// The dial: outer ring = signal (24 slanted segments, lit by how much of the network reaches you), inner ring = battery charge, middle = the tier you have here.
+function _netDial(cx, cy, sig, bs, S) {
+    const TAU = Math.PI * 2, top = -Math.PI / 2, R1 = 40, R2 = 28, SEGS = 24, seg = TAU * R1 / SEGS;
+    // a soft dark pool behind it, so the rings read over any floor (a glow, not a box)
+    const g = ctx.createRadialGradient(cx, cy, R2 * 0.4, cx, cy, R1 + 18); g.addColorStop(0, "rgba(4,6,14,0.62)"); g.addColorStop(0.75, "rgba(4,6,14,0.38)"); g.addColorStop(1, "rgba(4,6,14,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R1 + 18, 0, TAU); ctx.fill();
+    ctx.save(); ctx.lineCap = "butt";
+    // the signal: a dashed track, then the same dashes lit round to the fraction that reaches you
+    ctx.lineWidth = 9; ctx.setLineDash([seg * 0.78, seg * 0.22]);
+    ctx.strokeStyle = "rgba(14,22,46,0.85)"; ctx.beginPath(); ctx.arc(cx, cy, R1, top, top + TAU); ctx.stroke();
+    const frac = sig.bank > 0 ? sig.local / sig.bank : 0, lit = Math.round(SEGS * frac);
+    if (lit > 0) { ctx.strokeStyle = S.col; ctx.beginPath(); ctx.arc(cx, cy, R1, top, top + lit * TAU / SEGS); ctx.stroke(); }
+    ctx.setLineDash([]);
+    // the battery: a smooth ring inside it
+    ctx.lineWidth = 5; ctx.strokeStyle = "rgba(14,22,46,0.85)"; ctx.beginPath(); ctx.arc(cx, cy, R2, 0, TAU); ctx.stroke();
+    const bf = bs.count > 0 && bs.cap ? Math.max(0, Math.min(1, bs.stored / bs.cap)) : 0;
+    if (bf > 0) { ctx.strokeStyle = "#ffd34d"; ctx.beginPath(); ctx.arc(cx, cy, R2, top, top + bf * TAU); ctx.stroke(); }
+    // two thin guide rings: the dial's edge and the inside of the battery ring
+    ctx.lineWidth = 1.5; ctx.strokeStyle = S.col; ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.arc(cx, cy, R1 + 6.5, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.arc(cx, cy, R2 - 5, 0, TAU); ctx.stroke();
+    ctx.restore();
+    _netText(sig.local > 0 ? NET_TIER_ROMAN[sig.local] : "\u2013", cx, cy + 1, 22, sig.local > 0 ? "#fff" : S.col, "center");
+}
 function drawNetworkStatusHUD() {
     _netPanelRect = null;
     if (typeof placingHidesUi === "function" && placingHidesUi()) return;
@@ -90,84 +126,71 @@ function drawNetworkStatusHUD() {
 
     const narrow = canvas.width < 600;
     const bs = pw.batteries || { count: 0 };
-    const W = narrow ? Math.min(canvas.width - 16, 230) : 236, PAD = 12, IW = W - PAD * 2 - 4;
-    const HEAD = 32, METER = 36, BAR = 24, ROW_H = 30;
+    const W = narrow ? Math.min(canvas.width - 16, 230) : 236, IW = W - 8;
+    const DIAL = 104, WHERE = 20, NEST = 30, ROW_H = 30;
     const rows = narrow ? 0 : activeEls.length;
     const darkRows = narrow ? 0 : activeEls.filter(e => !(_netLit[e.id] > 0)).length;
-    const H = HEAD + METER + (bs.count > 0 ? BAR : 0) + BAR + rows * ROW_H + darkRows * 12 + 22;
+    const H = DIAL + WHERE + NEST + rows * ROW_H + darkRows * 12 + 22;
     // Docked to the zone plate: hanging from its bottom edge, right edges together (it falls back to the HUD's bottom if the plate is not there).
     const zr = narrow ? null : _netZoneRect();   // on a phone the zone plate sits above the bars, so the panel hangs from the whole HUD instead
     const X = zr ? Math.max(8, Math.round(zr.right - W)) : canvas.width - W - 10, Y = zr ? Math.round(zr.bottom - 2) : uiTopSafe();
-    const S = SIGNAL_STATES[sig.state];
+    const S = SIGNAL_STATES[sig.state], mx = X + 4, right = X + W - 4;
 
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    uiPanel(X, Y, W, H, S.col);
-
-    // Header: the name, and the state where you stand
-    uiText("NETWORK", X + PAD + 6, Y + HEAD / 2 + 3, 18, "#fff", "left", false);
-    ctx.font = uiFont(18); const titleW = ctx.measureText("NETWORK").width;
-    uiTextFit(S.label, X + W - PAD, Y + HEAD / 2 + 3, 18, S.col, "right", W - PAD * 2 - 6 - titleW - 10);
-
-    // The signal meter: eight slanted segments, lit by how much of the network reaches you
-    const segs = 8, lit = sig.bank > 0 ? Math.round(segs * sig.local / sig.bank) : 0;
-    const mx = X + PAD + 4, my = Y + HEAD, sw = Math.floor((IW - (segs - 1) * 3) / segs);
-    for (let i = 0; i < segs; i++) {
-        const x = mx + i * (sw + 3), on = i < lit;
-        ctx.beginPath(); ctx.moveTo(x + 4, my); ctx.lineTo(x + sw, my); ctx.lineTo(x + sw - 4, my + 11); ctx.lineTo(x, my + 11); ctx.closePath();
-        ctx.fillStyle = on ? S.col : "#0c1224"; ctx.fill();
-        ctx.lineWidth = 1.2; ctx.strokeStyle = on ? S.col : "#2c3656"; ctx.stroke();
+    // The dial on the right; the name, the state and the battery on its left.
+    const dcx = right - 52, dcy = Y + DIAL / 2, lw = dcx - 52 - mx;
+    _netDial(dcx, dcy, sig, bs, S);
+    _netText("NETWORK", mx, Y + 16, 15, "#cfe0ff", "left");
+    ctx.save(); ctx.fillStyle = S.col; ctx.beginPath(); ctx.moveTo(mx + 6, Y + 28); ctx.lineTo(mx + Math.min(lw, 118), Y + 28); ctx.lineTo(mx + Math.min(lw, 118) - 5, Y + 31); ctx.lineTo(mx + 1, Y + 31); ctx.closePath(); ctx.fill(); ctx.restore();   // the slanted accent under the name, in the state's colour
+    _netTextFit(S.label, mx, Y + 51, 26, S.col, "left", lw);
+    // THE BATTERIES: what they hold and which way it is flowing: the power the pylons actually run on (power.js). The gold ring is the same charge.
+    if (bs.count > 0) {
+        const net = bs.rateIn - bs.rateOut;
+        _netTextFit("\u26a1 BATT " + bs.stored + " / " + bs.cap, mx, Y + 76, 13, "#ffd34d", "left", lw, true);
+        _netText((net >= 0 ? "\u25b2 " : "\u25bc ") + Math.abs(net).toFixed(1) + "/s", mx, Y + 92, 12, net >= 0.05 ? "#9fe8c0" : net <= -0.05 ? "#ff9a66" : "#8a93a8", "left", true);
     }
+    // where you stand
     const where = sig.state === "offline" ? "LINK 2 BATTERIES OF ONE ELEMENT"
                 : sig.state === "none" ? "OUT OF RANGE \u00b7 " + Math.round(sig.dist) + " TILES OUT"
                 : sig.state === "weak" ? "TIER " + NET_TIER_ROMAN[sig.local] + " HERE \u00b7 " + Math.round(sig.dist) + " TILES OUT"
                 : "TIER " + NET_TIER_ROMAN[sig.local] + " HERE" + (sig.dist <= BANK_FULL_RANGE ? " \u00b7 AT THE BATTERIES" : "");
-    uiCaptionFit(where, X + PAD + 4, my + 23, sig.state === "strong" ? "#8aa0c8" : S.col, "left", 11, IW);
-    let y = Y + HEAD + METER;
+    let y = Y + DIAL;
+    _netTextFit(where, mx, y + 8, 12, sig.state === "strong" ? "#a9bddf" : S.col, "left", IW, true);
+    y += WHERE;
 
-    // A bar with its reading inside it: one line each for the batteries and the nests.
-    const bar = (label, frac, fill, edge, right, rcol, lcol) => {
-        ctx.fillStyle = "#05070f"; ctx.fillRect(mx, y + 2, IW, BAR - 6);
-        ctx.fillStyle = fill; ctx.fillRect(mx, y + 2, IW * Math.max(0, Math.min(1, frac)), BAR - 6);
-        ctx.strokeStyle = edge; ctx.lineWidth = 1.5; ctx.strokeRect(mx, y + 2, IW, BAR - 6);
-        ctx.save(); ctx.font = uiMono(11); ctx.textBaseline = "middle"; ctx.fillStyle = lcol; ctx.textAlign = "left"; ctx.fillText(label, mx + 6, y + BAR / 2 - 1);
-        ctx.fillStyle = rcol; ctx.textAlign = "right"; ctx.fillText(right, mx + IW - 6, y + BAR / 2 - 1); ctx.restore();
-        y += BAR;
-    };
-    // THE BATTERIES: what they hold and which way it is flowing — the power
-    // the pylons actually run on (power.js).
-    if (bs.count > 0) {
-        const net = bs.rateIn - bs.rateOut;
-        bar("\u26a1 BATT " + bs.stored + " / " + bs.cap, bs.cap ? bs.stored / bs.cap : 0, "rgba(255,211,77,0.55)", "#8a7020",
-            (net >= 0 ? "\u25b2 " : "\u25bc ") + Math.abs(net).toFixed(1) + "/s", net >= 0.05 ? "#9fe8c0" : net <= -0.05 ? "#ff9a66" : "#8a93a8", "#fff");
-    }
-    // The nests: what is left in them. Red the moment a pylon has gone dark, which is the only state the player has to act on.
+    // THE NESTS: what is left in them, a thin straight bar under the line. Red the moment a pylon has gone dark, which is the only state the player has to act on.
     const tot = pw.pools.reduce((a, p) => a + p.energy, 0), cap = pw.pools.reduce((a, p) => a + p.max, 0), ok = pw.dark === 0;
-    bar("NESTS " + tot + " / " + cap, cap ? tot / cap : 0, ok ? "rgba(95,224,200,0.45)" : "rgba(255,85,34,0.5)", ok ? "#2c6a60" : "#ff5522",
-        ok ? pw.drawing + " DRAWING" : pw.dark + " UNPOWERED", ok ? "#8aa0c8" : "#ff9a66", "#fff");
+    _netText("NESTS " + tot + " / " + cap, mx, y + 8, 13, "#fff", "left", true);
+    _netText(ok ? pw.drawing + " DRAWING" : pw.dark + " UNPOWERED", right, y + 8, 12, ok ? "#a9bddf" : "#ff9a66", "right", true);
+    { const nf = cap ? Math.max(0, Math.min(1, tot / cap)) : 0, col = ok ? "#5fe0c8" : "#ff5522", by = y + 19, bw = IW;
+      ctx.beginPath(); ctx.moveTo(mx + 4, by); ctx.lineTo(mx + bw, by); ctx.lineTo(mx + bw - 3, by + 5); ctx.lineTo(mx, by + 5); ctx.closePath(); ctx.fillStyle = "rgba(4,6,14,0.7)"; ctx.fill();
+      if (nf > 0) { const w = bw * nf; ctx.beginPath(); ctx.moveTo(mx + 4, by); ctx.lineTo(mx + w, by); ctx.lineTo(mx + w - 3, by + 5); ctx.lineTo(mx, by + 5); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); }
+      ctx.lineWidth = 1; ctx.strokeStyle = col; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(mx + 4, by); ctx.lineTo(mx + bw, by); ctx.lineTo(mx + bw - 3, by + 5); ctx.lineTo(mx, by + 5); ctx.closePath(); ctx.stroke(); ctx.globalAlpha = 1; }
+    y += NEST;
 
     // One row per networked element: its icon and name, and three pips (outline: the tier built, fill: the tier you have here)
     activeEls.forEach((elDef) => {
         if (narrow) return;
         const el = elDef.id, tier = networkStrength[el] || 0, here = (sig.tiers[el] !== undefined ? sig.tiers[el] : tier);
-        // A network with a tier but nothing lit is built but DARK — say so, or
+        // A network with a tier but nothing lit is built but DARK: say so, or
         // the tier reads as a promise the pylons are not keeping.
         const dark = !(_netLit[el] > 0), ry = y;
         // The element's icon (js/icons.js); a stripe until it has loaded.
         if (!(typeof drawIcon === "function" && drawIcon(ctx, ELEMENT_ICON[el] || el, elDef.color, mx + 10, ry + 15, 18))) { ctx.fillStyle = elDef.color; ctx.fillRect(mx, ry + 6, 4, ROW_H - 12); }
-        uiText(elDef.label.toUpperCase(), mx + 28, ry + 14, 15, elDef.color, "left", false);
+        _netText(elDef.label.toUpperCase(), mx + 28, ry + 14, 15, elDef.color, "left");
         for (let p = 0; p < 3; p++) {
-            const px = mx + IW - 3 * 17 + p * 17, py = ry + 6;
+            const px = right - 3 * 17 + p * 17, py = ry + 6;
             ctx.beginPath(); ctx.moveTo(px + 3, py); ctx.lineTo(px + 14, py); ctx.lineTo(px + 11, py + 17); ctx.lineTo(px, py + 17); ctx.closePath();
+            ctx.fillStyle = "rgba(4,6,14,0.6)"; ctx.fill();
             if (p < here) { ctx.fillStyle = elDef.color; ctx.fill(); }
-            ctx.lineWidth = 1.5; ctx.strokeStyle = p < tier ? elDef.color : "#2c3656"; ctx.stroke();
+            ctx.lineWidth = 1.5; ctx.strokeStyle = p < tier ? elDef.color : "#3a4668"; ctx.stroke();
         }
         y += ROW_H;
-        if (dark) { uiCaption("NO POWER \u2014 CHARGE", mx + 28, y + 2, "#ff7755", "left", 11); y += 12; }
-        else if (here < tier) { /* weaker here than built: the pips say it */ }
+        if (dark) { _netText("NO POWER \u2014 CHARGE", mx + 28, y + 2, 11, "#ff7755", "left", true); y += 12; }
     });
     // The way in: a tap on the panel opens the power build (and puts it away again).
     const _open = typeof buildMenuOpen !== "undefined" && buildMenuOpen && buildMenuSimple;
-    uiCaptionFit(_open ? "\u25b8 TAP TO CLOSE POWER BUILD" : "\u25b8 TAP TO BUILD POWER", X + W / 2, Y + H - 12, _open ? UI_TEAL : "#8aa0c8", "center", 11, IW);
+    _netTextFit(_open ? "\u25b8 TAP TO CLOSE POWER BUILD" : "\u25b8 TAP TO BUILD POWER", X + W / 2, Y + H - 10, 11, _open ? UI_TEAL : "#a9bddf", "center", IW, true);
     _netPanelRect = { x: X, y: Y, w: W, h: H };
     ctx.restore();
 }
