@@ -30,9 +30,11 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   ccOpen('roster'); await wait(150);
   var rc = document.getElementById('ccRecruitCrystal'), rec = document.getElementById('ccRecruit');
   out.present = !!rc && getComputedStyle(rc).display !== 'none'; out.noPicker = !document.getElementById('recruitPicker');
-  out.nextTo = !!rc && rc.nextElementSibling === rec;
+  out.nextTo = !!rc && !!rc.nextElementSibling && rc.nextElementSibling.id === 'ccShards' && rc.nextElementSibling.nextElementSibling === rec;   // the crystal, the shard total, then RECRUIT
   out.cols = rc.querySelectorAll('.rcx-col').length; out.locked = rc.querySelectorAll('.rcx-col.locked').length;
   var gemBox = rc.querySelector('.rcx-stage').getBoundingClientRect(); out.stage = [Math.round(gemBox.width), Math.round(gemBox.height)];
+  var shd = function(){ var e = document.getElementById('ccShards'); return e ? { n: e.querySelector('.cc-sh-n').textContent, c: e.querySelector('.cc-sh-c').textContent, short: e.classList.contains('short'), nextTo: e.nextElementSibling === rec } : null; };
+  out.shards0 = shd();
   out.mixClass = rc.classList.contains('mix'); out.mixName = rc.querySelector('.rcx-name').textContent;
   out.spinning = getComputedStyle(rc.querySelector('.rcx-turn')).animationName;
   // a facet of an unlocked element selects it, and the crystal turns to it (fire is facet 0, ice facet 2)
@@ -43,12 +45,13 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   // recruit: straight away, no window, the picked element, pays once
   var n0 = followers.length; rec.click(); await wait(80);
   out.recruit = { shards: shardCount, n: followers.length - n0, el: followers[followers.length - 1] && followers[followers.length - 1].element, picker: !!document.getElementById('recruitPicker') || !!document.querySelector('.rpk-card') };
+  out.shardsAfter = shd();
   // the arrows
   rc.querySelectorAll('.rcx-arrow')[1].click(); await wait(30); out.next = rc.querySelector('.rcx-name').textContent; rc.querySelectorAll('.rcx-arrow')[0].click(); await wait(30); rc.querySelectorAll('.rcx-arrow')[0].click(); await wait(30); out.prev2 = rc.querySelector('.rcx-name').textContent;
   // mix: the current mix
   recruitSetChoice('mix'); modulationMask = new Set(['fire']); await wait(30); n0 = followers.length; rec.click(); await wait(80); out.mix = { el: followers[followers.length - 1].element, n: followers.length - n0 };
   // short of the price: recruits nothing
-  shardCount = 5; n0 = followers.length; rec.click(); await wait(80); out.poor = { shards: shardCount, n: followers.length - n0 };
+  shardCount = 5; n0 = followers.length; rec.click(); await wait(80); out.poor = { shards: shardCount, n: followers.length - n0, readout: shd() };
   // an element unlocked later opens its facet
   unlockedElements.add('toxic'); await wait(500); out.unlockedLater = rc.querySelectorAll('.rcx-col.locked').length;
   // other tab: hidden
@@ -105,6 +108,11 @@ function measure() {
             });
             check('a locked facet cannot be picked', () => same(r.lockedClick, 'ICE', 'a locked facet changed the choice'));
             check('+ RECRUIT recruits the picked element straight away: no window, one price', () => { same(r.recruit.n, 1, 'recruited'); same(r.recruit.el, 'ice', 'element'); same(r.recruit.shards, 170, 'shards'); same(r.recruit.picker, false, 'a window'); });
+            check('THE ASK: the Command Center shows the shard total beside RECRUIT, with the price and how many you can afford; it follows a recruit and goes red when short', () => {
+                same(r.shards0.n, '\u25c6 200', 'total'); same(r.shards0.c, '30 EACH \u00b7 6 AFFORDABLE', 'price line'); same(r.shards0.short, false, 'red when rich'); same(r.shards0.nextTo, true, 'next to the recruit button');
+                same(r.shardsAfter.n, '\u25c6 170', 'after a recruit'); same(r.shardsAfter.c, '30 EACH \u00b7 5 AFFORDABLE', 'afford after');
+                same(r.poor.readout.n, '\u25c6 5', 'when poor'); same(r.poor.readout.c, 'NEED 25 MORE', 'need'); same(r.poor.readout.short, true, 'red when short');
+            });
             check('the arrows move along the options', () => { same(r.next, 'MIX', 'next from ice (the last open one) wraps to MIX'); same(r.prev2, 'ELECTRIC', 'two back from MIX'); });
             check('MIX recruits from the current mix; short of shards recruits nothing', () => { same(r.mix.el, 'fire', 'mix'); same(r.mix.n, 1, 'one'); same(r.poor.n, 0, 'recruited when poor'); same(r.poor.shards, 5, 'spent when poor'); });
             check('an element unlocked later opens its facet; on another tab the crystal is hidden', () => { same(r.unlockedLater, 2, 'locked facets'); same(r.otherTab, 'none', 'shown on another tab'); });

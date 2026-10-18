@@ -187,12 +187,15 @@ function ccToggleOpen(tab) { const want = tab === "squad" ? "zones" : tab === "z
 function ccBuildFrame() {
     const root = document.getElementById("ccRoot"); if (!root || root.getAttribute("data-built")) return;
     root.setAttribute("data-built", "1");
-    const head = _ccEl("div", "cc-head"); const ttl = _ccEl("div", "cc-title", "COMMAND CENTER"); ttl.id = "ccTitle"; head.appendChild(ttl);
-    const sum = _ccEl("div", "cc-summary"); sum.id = "ccSummary"; head.appendChild(sum);   // the squad at a glance, on the roster
+    const head = _ccEl("div", "cc-head"); const tb = _ccEl("div", "cc-titlebox"); const ttl = _ccEl("div", "cc-title", "COMMAND CENTER"); ttl.id = "ccTitle"; tb.appendChild(ttl);
+    const sum = _ccEl("div", "cc-summary"); sum.id = "ccSummary"; tb.appendChild(sum); head.appendChild(tb);   // the squad at a glance, under the title, on the roster
     // RECRUIT: a follower at the Crystal for RECRUIT_COST shards (clone.js recruitFollower), on the ROSTER tab only. It dims when the shards are short.
     const rec = _ccEl("button", "cc-recruit"); rec.id = "ccRecruit"; rec.appendChild(_ccEl("span", "cc-rl", "+ RECRUIT")); rec.appendChild(_ccEl("span", "cc-rs", ""));
     _ccClick(rec, () => { recruitDo(); });   // straight away, as picked on the crystal (js/recruitcrystal.js)
-    const rcx = recruitCrystalBuild(false); rcx.id = "ccRecruitCrystal"; head.appendChild(rcx); head.appendChild(rec);
+    const rcx = recruitCrystalBuild(false); rcx.id = "ccRecruitCrystal"; head.appendChild(rcx);
+    // THE SHARD TOTAL, so a recruit is never a shot in the dark: what you have, what a recruit costs, how many you can afford (red when you cannot afford one)
+    const sh = _ccEl("div", "cc-shards"); sh.id = "ccShards"; sh.appendChild(_ccEl("div", "cc-sh-n")); sh.appendChild(_ccEl("div", "cc-sh-c")); head.appendChild(sh);
+    head.appendChild(rec);
     const x = _ccEl("button", "cc-close", "✕ CLOSE"); x.id = "ccClose"; _ccClick(x, ccClose); head.appendChild(x); root.appendChild(head);
     const body = _ccEl("div", "cc-body"); body.id = "ccBody";
     const main = _ccEl("div", "cc-main"); main.id = "ccMain"; main.appendChild(_ccEl("div", "cc-filters")); main.lastChild.id = "ccFilters";
@@ -217,6 +220,7 @@ function ccRender() {
     ccPrune();
     const rec = document.getElementById("ccRecruit");
     const rcx = document.getElementById("ccRecruitCrystal"); if (rcx) { rcx.style.display = ccOpenTab === "roster" ? "" : "none"; recruitCrystalUpdate(rcx); }
+    const shp = document.getElementById("ccShards"); if (shp) { shp.style.display = ccOpenTab === "roster" ? "" : "none"; ccShardsUpdate(shp); }
     if (rec) { rec.style.display = ccOpenTab === "roster" ? "" : "none"; const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = "\u25c6" + cost; }
     const ttl = document.getElementById("ccTitle"); if (ttl) ttl.textContent = ccOpenTab === "zones" ? "ZONES" : "COMMAND CENTER";
     const sum = document.getElementById("ccSummary");
@@ -337,6 +341,14 @@ function _ccDrawSide(side) {
     _ccDrawSquadOrders(side);
 }
 
+// The shard readout beside RECRUIT: "◆ 200" and "30 PER RECRUIT · 6 AFFORDABLE" (or "NEED 10 MORE" in red).
+function ccShardsUpdate(el) {
+    const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, n = Math.floor(have / cost);
+    const sig = have + "|" + cost; if (el._sig === sig) return; el._sig = sig;
+    el.classList.toggle("short", have < cost);
+    el.querySelector(".cc-sh-n").textContent = "\u25c6 " + have;
+    el.querySelector(".cc-sh-c").textContent = have < cost ? "NEED " + (cost - have) + " MORE" : cost + " EACH \u00b7 " + n + " AFFORDABLE";
+}
 // What the squad strip shows: each squad, its members and whether each is selected.
 function _ccSqSig() {
     if (typeof squadsLive !== "function") return "";

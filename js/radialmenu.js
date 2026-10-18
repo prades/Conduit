@@ -145,6 +145,7 @@ function _radialDrawRoster(panel) {
     panel.appendChild(_rEl("div", "rp-sub", rows.length + " FOLLOWERS"));
     { const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, b = _rEl("button", "rp-btn wide" + (shardCount >= cost ? " on" : ""), "+ RECRUIT \u25c6" + cost); b.style.setProperty("--c", "#ffe733"); _rClick(b, () => { recruitDo(); });
       if (typeof recruitCrystalBuild === "function") { const row = _rEl("div", "rp-rcx"); row.appendChild(recruitCrystalBuild(true)); panel.appendChild(row); }   // the crystal that picks the element (js/recruitcrystal.js)
+      { const have = typeof shardCount !== "undefined" ? shardCount : 0, n = _rEl("div", "rp-sub", "\u25c6 " + have + (have < cost ? " \u00b7 NEED " + (cost - have) + " MORE" : " \u00b7 " + Math.floor(have / cost) + " AFFORDABLE")); if (have < cost) n.style.color = "#ff8a6a"; panel.appendChild(n); }
       panel.appendChild(b); }
     if (!rows.length) panel.appendChild(_rEl("div", "rp-sub", "NONE YET: RECRUIT ONE ABOVE"));
     // ROSTER SQUADS (js/squads.js): a chip per squad selects it; MAKE SQUAD turns the selection (1 to 3) into one
