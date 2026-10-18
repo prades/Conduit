@@ -207,4 +207,6 @@ No other file changes: the picker, the perk screen, the INFO pages and the roste
 
 ## 9. Done so far
 
+- **B0 Roster squads (built):** js/squads.js, the strip and MAKE SQUAD / ADD / LEAVE in the Command Center, squad chips on the phone roster, the squad letter and colour on the name plate, saved as `squadId` with each follower; `squadReach(unit)` is what tier 2 gear will read. Tests: tests/squads.js.
+
 - **Stage 0 (built):** `MOVES` in js/moves.js, `evoMoveIds / evoMoveAllowed / evoMoveOf`, and `evolutionTick` fires `evoMoveOf(f).fn(f)` instead of the if/else chain. Each form's default is the move it always had (tests/moves.js compares every form with the old chain). A form can already list several moves (`EVOLUTIONS[id].moves`), and a class-only move is already blocked for other classes; nothing uses either yet.
