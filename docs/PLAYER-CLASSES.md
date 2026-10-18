@@ -2,7 +2,7 @@
 
 Asked: *"Make a clear path to add player classes and class specific ultimates and perks like a character progression system, and make way for follower evolution attack move selection, and add niche attacks that only specific playable character classes have access to."*
 
-**Status: plan. Nothing here is built.** Stage 0 changes no behaviour; every later stage is one commit with its own test suite, like the kits.
+**Status: stage 0 built (js/moves.js, tests/moves.js); stages 1 to 6 are the plan.** Stage 0 changes no behaviour; every later stage is one commit with its own test suite, like the kits. Decisions are in §8.
 
 ## 1. What the game has today (and what is in the way)
 
@@ -116,9 +116,13 @@ No other file changes: the picker, the perk screen, the INFO pages and the roste
 - **Performance:** `classStat` is a lookup into a table rebuilt when a perk is bought, not a loop over perks each frame (the frame loop is the only clock; no new timers).
 - **Scope:** Stage 0–2 change no gameplay. A class that is not finished is simply not in the picker.
 
-## 8. Decisions needed
+## 8. Decisions (answered)
 
-1. **When is the class chosen?** At the start of a run (locked for the run), or switchable at the crystal between nights (progression per class)?
-2. **Is progression per run or permanent?** Perks and XP reset each run, or the player level persists across runs?
-3. **Move choice:** pick per follower, or per evolution form for the whole squad (all QUILLSTONES use the same move)?
-4. **Class moves:** only usable when you are that class (they vanish if you switch), or learned for good once unlocked?
+1. **When is the class chosen?** Picked at the start and **switchable at the crystal between nights**; each class keeps its own level and perks.
+2. **Progression** is **permanent** (saved per class, `conduit_player`), with a free respec between nights.
+3. **Move choice** is **per follower, plus a squad setter** (INFO tab MOVE row, and "set move" for a selected group like roles).
+4. **Class moves** work **only while you are that class**; switch and a follower falls back to its form's default move (`evoMoveAllowed` already enforces it once `playerClassId()` exists).
+
+## 9. Done so far
+
+- **Stage 0 (built):** `MOVES` in js/moves.js, `evoMoveIds / evoMoveAllowed / evoMoveOf`, and `evolutionTick` fires `evoMoveOf(f).fn(f)` instead of the if/else chain. Each form's default is the move it always had (tests/moves.js compares every form with the old chain). A form can already list several moves (`EVOLUTIONS[id].moves`), and a class-only move is already blocked for other classes; nothing uses either yet.

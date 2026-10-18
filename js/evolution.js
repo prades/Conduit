@@ -255,8 +255,8 @@ function evolutionTick() {
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
-        if (d.id === "bloom" || d.id === "quillstone") petalBlaze(f); else if (d.id === "reaver" || d.id === "thunderhead") arcVolley(f); else if (d.id === "serpent" || d.id === "voidstar") singularityShot(f);
-        else if (d.id === "warden" || d.id === "hammerslug") aegisBurst(f); else if (d.id === "manta" || d.id === "prism" || d.id === "voltring" || d.id === "staticorb") staticRush(f); else if (d.id === "halo" || d.id === "embercowl") hexfire(f); else if (d.id === "rotshard") corrodeShot(f); else if (d.id === "mimic") gravitySlam(f); else if (d.id === "petal" || d.id === "hornshell") aegisBloom(f); else if (d.id === "caldera" || d.id === "seeper") eruption(f); else if (d.id === "maw") chomp(f);
+        const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;   // js/moves.js: the move it fires (a form's default until it is given another)
+        if (mv && mv.fn) mv.fn(f);
     }
 }
 function _evoFoes(x, y, r) {
