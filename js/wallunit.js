@@ -243,6 +243,23 @@ function wallUnitMigrate() {
     if (moved && typeof _cacheAge !== "undefined") _cacheAge = -999;
     return moved;
 }
+function wallUnitIsOpen() { const r = wallUnitEl(); return !!(r && r.classList && r.classList.contains("open")); }
+// The network panel's tap: the panel of the unit of the zone you stand in, in the corner under the panel; the same tap puts it away.
+function wallUnitToggleHere() {
+    const zone = Math.floor(player.x / ZONE_LENGTH);
+    if (wallUnitIsOpen() && _wuZone === zone) { wallUnitClose(); return true; }
+    const r = wallUnitEl(); if (!r) return false;
+    _wuZone = zone; if (!wallUnitTier(zone)) _wuPick = unlockedElements.has(_wuPick) ? _wuPick : (unlockedElements.has(player.selectedElement) ? player.selectedElement : null);
+    r.style.left = Math.max(8, (typeof innerWidth === "number" ? innerWidth : 800) - 196) + "px"; r.style.top = "270px"; r.classList.add("open"); wallUnitRender(); return true;
+}
+// Generators and connectors are gone (the unit is both): the ones in a save are demolished, each refunded as any demolish is, and their zones run on the unit once it is booted.
+function legacyPowerClear() {
+    if (typeof world === "undefined" || typeof demolishPylon !== "function") return 0;
+    let n = 0;
+    for (const t of world.filter(q => q.pillar && q.pillarTeam === "green" && (q.isGenerator || q.isConnector))) { t.constructing = false; if (demolishPylon(t)) n++; }
+    if (n && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height * 0.3, text: "GENERATORS ARE GONE \u2014 BOOT THE POWER UNIT IN THE WALL (REFUNDED " + n + ")", color: "#ffd34d", life: 260, vy: 0, size: 13 });
+    return n;
+}
 // A tap at screen (ex, ey): on the unit it opens the panel (and the tap is spent).
 function wallUnitTap(ex, ey) {
     const r = wallUnitEl(); if (r && r.classList && r.classList.contains("open")) wallUnitClose();

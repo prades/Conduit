@@ -52,10 +52,10 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     group('BUILD: KIND FIRST, THEN ELEMENT');
 
-    await check('THE ASK: the first choice is attack, support, disruption, connector or generator', () => {
+    await check('THE ASK: the first choice is attack, support or disruption (no battery, connector or generator: the power unit in the wall is all three)', () => {
         const r = run(`__fresh(); openElementPicker('build', __row[0]); __labels()`);
         // BATTERY left the list again: batteries are the wall's power unit (js/wallunit.js).
-        ok(JSON.stringify(r) === JSON.stringify(['ATTACK TURRET', 'SUPPORT PYLON', 'DISRUPTION PYLON', 'CONNECTOR', 'GENERATOR']), JSON.stringify(r));
+        ok(JSON.stringify(r) === JSON.stringify(['ATTACK TURRET', 'SUPPORT PYLON', 'DISRUPTION PYLON']), JSON.stringify(r));
     });
     await check('the picker has no BATTERY: a battery is the wall power unit, and the engine still builds one when asked', () => {
         const r = run(`__fresh(); openElementPicker('build', __row[0]); const has = __labels().includes('BATTERY'); closeElementPicker();
@@ -88,11 +88,11 @@ function ok(c, m) { if (!c) throw new Error(m); }
             ({ wave: __row[0].waveMode, attack: __row[0].attackMode })`);
         ok(r.attack && !r.wave, JSON.stringify(r));
     });
-    await check('connector and generator skip the element step', () => {
-        const r = scene(`__fresh();
+    await check('connector and generator skip the element step (the old placing, switched on by buildFloorBatteries)', () => {
+        const r = scene(`buildFloorBatteries = true; __fresh();
             const near = world.find(t => t.type === 'floor' && !t.pillar && !t.nest && canPlaceGenerator(t).ok);
             openElementPicker('build', near); __tap('GENERATOR');
-            ({ picker: elementPickerOpen, confirm: pylonConfirmOpen, el: pylonConfirmEl && pylonConfirmEl.id, gen: GENERATOR_ID })`);
+            ({ picker: (buildFloorBatteries = false, elementPickerOpen), confirm: pylonConfirmOpen, el: pylonConfirmEl && pylonConfirmEl.id, gen: GENERATOR_ID })`);
         ok(!r.picker && r.confirm && r.el === r.gen, JSON.stringify(r));
     });
     await check('BACK returns to the kind step', () => {

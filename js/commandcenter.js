@@ -442,7 +442,7 @@ function _ccZoneCard(z) {
     const chip = (text, col, cls) => { const c = _ccEl("span", "cz-chip" + (cls ? " " + cls : ""), text); if (col) c.style.setProperty("--c", col); return c; };
     line("NEST", [chip(z.held ? "HELD" : z.z === 0 ? "NO PORTAL" : "NOT HELD", z.held ? "#19e6c1" : "#6a7aa0")]);
     line("NETWORK", z.network.length ? z.network.map(n => chip(_ccElLabel(n.el) + " T" + n.tier + " \u00d7" + n.batteries, _ccColour(n.el))) : [chip(z.total ? "NO BANK \u2014 LINK 2 BATTERIES" : "NONE", "#6a7aa0")]);
-    line("POWER", [chip(z.generator ? "GENERATOR" : "NO GENERATOR", z.generator ? "#cdd6e0" : "#ff9966"), chip("NESTS " + z.energy + " / " + z.energyMax, "#5fe0c8")]);
+    line("POWER", [chip(z.generator ? "POWER UNIT" : "NO POWER UNIT", z.generator ? "#cdd6e0" : "#ff9966"), chip("NESTS " + z.energy + " / " + z.energyMax, "#5fe0c8")]);
     const e = z.equipment, items = [["TURRET", "TURRETS", e.turrets, "#ff8a5c"], ["WAVE PYLON", "WAVE PYLONS", e.wave, "#a64dff"], ["BATTERY", "BATTERIES", e.batteries, "#ffd34d"], ["GENERATOR", "GENERATORS", e.generators, "#cdd6e0"], ["CONNECTOR", "CONNECTORS", e.connectors, "#ffd24a"], ["ULTRA", "ULTRAS", e.ultras, "#ffe733"], ["DORMANT PYLON", "DORMANT PYLONS", e.other, "#6a7aa0"]].filter(i => i[2] > 0).map(i => chip(i[2] + " " + (i[2] === 1 ? i[0] : i[1]), i[3]));
     Object.keys(z.modules).forEach(k => items.push(chip(z.modules[k] + " " + k, "#19e6c1")));
     line("EQUIPMENT", items.length ? items : [chip("NOTHING BUILT", "#6a7aa0")]);
@@ -516,7 +516,7 @@ function buildOrderPickerOpen(z) {
             sub.textContent = !plan ? "NO ROOM OR NO NEST FOR " + kit.name : plan.blocked ? kit.name + ": " + plan.blocked + " PIECES BLOCKED (" + plan.pieces.find(p => p.state === "blocked").why + ")" : !plan.free ? kit.name + " IS ALREADY BUILT THERE" : kit.name + ": +" + plan.free + " PIECES \u00b7 \u25c6" + plan.cost + " WHEN PUT UP \u00b7 NEEDS AN ANT CREW IN THE ZONE";
             return;
         }
-        const r1 = _ccEl("div", "op-row"); [["generator", "GENERATOR"], ["attack", "TURRET"]].forEach(k => r1.appendChild(mk(k[1], st.kind === k[0], "#ffe733", () => { st.kind = k[0]; if (k[0] !== "battery") st.level = 1; }))); rows.appendChild(r1);
+        const r1 = _ccEl("div", "op-row"); [["attack", "TURRET"]].forEach(k => r1.appendChild(mk(k[1], st.kind === k[0], "#ffe733", () => { st.kind = k[0]; if (k[0] !== "battery") st.level = 1; }))); rows.appendChild(r1);
         if (st.kind !== "generator") { const r2 = _ccEl("div", "op-row"); els.forEach(e => r2.appendChild(mk(e.label.toUpperCase(), st.elId === e.id, e.color, () => { st.elId = e.id; }))); rows.appendChild(r2); }
         if (st.kind === "battery") { const r3 = _ccEl("div", "op-row"); BUILD_LEVELS.power.forEach((l, i) => r3.appendChild(mk(l, st.level === i + 1, "#19e6c1", () => { st.level = i + 1; }))); rows.appendChild(r3); }
         const o = { kind: st.kind, elId: st.kind === "generator" ? GENERATOR_ID : st.elId, level: st.level };

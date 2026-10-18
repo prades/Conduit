@@ -16,10 +16,10 @@
 //      `hackOrder`, read in game.js).
 //   It NEVER moves your character — you stay free to go where you like.
 //   3. ALWAYS → BUILD, one pylon per think, while the shards last, from the LAYOUT KITS (js/kits.js, docs/LAYOUT-KITS.md). Each held nest gets
-//      the kits its place calls for, one after the other, and then it stops: a REAR zone (far behind the front) a SKELETON then an OUTPOST, a MID zone an
+//      the kits its place calls for, one after the other, and then it stops: a REAR zone (far behind the front) a PICKET then an OUTPOST, a MID zone an
 //      OUTPOST then a STRONGPOINT, the FRONT zone (the farthest you hold) up to an ULTRA NEAR and a formation TRAP, and a DEEP front zone (zone 3 on) a
-//      FULL KIT. Nothing is built that no kit asks for: no loose pylons. The kits build no batteries: once the zone's generator stands, autoplay boots the POWER UNIT in the zone's wall and upgrades it to the tier the
-//      ladder needs (js/wallunit.js: the same functions as the unit's panel), before the guns. MK II comes last, on shards to spare.
+//      FULL KIT. Nothing is built that no kit asks for: no loose pylons. The kits build no batteries: autoplay boots the POWER UNIT in the zone's wall and upgrades it to the tier the
+//      ladder needs (js/wallunit.js: the same functions as the unit's panel), before the guns: the unit is the zone's generator. MK II comes last, on shards to spare.
 //   4. ALWAYS → ULTIMATES. A follower with a full bar and an enemy within
 //      AUTOPLAY_ULT_RANGE fires it (the duo ultimate if its partner can).
 //   5. ALWAYS → WORK CREW. About a quarter of the squad works, so kills keep
@@ -35,7 +35,7 @@ const AUTOPLAY_SPARE        = 40;   // MK II only while this many shards are lef
 const AUTOPLAY_FORM_ORDER   = ["toxic", "ice", "flux", "fire"];   // formation element, when the network's forms nothing
 // THE LADDER: the kits (js/kits.js ids) a zone gets, in order, by where it is. A kit already built (all its pieces there) is passed; the next one adds only the difference.
 const AUTOPLAY_LADDER = {
-    rear:  ["skeleton", "outpost"],
+    rear:  ["picket", "outpost"],
     mid:   ["outpost", "strongpoint"],
     front: ["outpost", "strongpoint", "ultranear", "trap"],
     deep:  ["outpost", "strongpoint", "fullkit", "bastion"],   // (bastion only if no formation element can take the full kit)
@@ -216,11 +216,11 @@ function _autoFormationElement(elId) {
     if (forms.includes(elId)) return elId;
     return AUTOPLAY_FORM_ORDER.find(e => forms.includes(e) && unlockedElements.has(e)) || null;
 }
-// The zone's power unit (js/wallunit.js): booted in the zone's element and upgraded to the tier the ladder asks for, once the generator stands. true: it did a step; false: it must wait for shards; null: nothing to do.
+// The zone's power unit (js/wallunit.js): booted in the zone's element and upgraded to the tier the ladder asks for, once the zone has a nest of yours to draw on. It is the first thing built. true: it did a step; false: it must wait for shards; null: nothing to do.
 function _autoPowerUnit(nest, el, need) {
     if (typeof wallUnitTier !== "function") return null;
     const zone = getZoneIndex(nest.x);
-    if (!zoneHasGenerator(zone)) return null;                       // the generator first: nothing is powered without it
+    if (!unitNest(zone)) return null;                              // no nest of yours here to draw on yet
     const have = wallUnitTier(zone), cur = wallUnitElement(zone);
     if (have === 0) return shardCount < wallUnitCost(zone) ? false : wallUnitBoot(zone, el);
     if (cur !== el && unlockedElements.has(el)) return shardCount < WALL_UNIT_RECONFIGURE_COST() ? false : wallUnitReconfigure(zone, el);

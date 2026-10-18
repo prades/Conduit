@@ -16,8 +16,8 @@
 //   R1 a kit builds no batteries (the wall's power unit is the bank)
 //   R2 every turret has a job: a lane gun (at most 4) or one of an Ultra square's four
 //   R3 a wave pylon is one of a formation's four, or one of at most two supports; never loose
-//   R4 one generator; a connector only in the kit whose point is reach
-//   R5 every piece is linked and powered: connected to the generator under the real link rules
+//   R4 a kit has no generator or connector: the power unit in the wall is both (js/wallunit.js)
+//   R5 every piece is powered: within the unit's reach (BATTERY_SUPPLY_RANGE) of it, checked on the ground when a kit is placed (kitPlan)
 //   R6 the target is asked for, not paid for: an Ultra, a formation and MK II name the unit tier they need
 //   R7 the lane stays open: no column is blocked from row 0 to row 3, and the kit fits 4 rows x 10 columns
 const KIT_LINK = 3.05;           // tiles between linked pylons (config.js getPylonRange without the relay and the heart)
@@ -26,60 +26,60 @@ const KIT_ROWS = 4, KIT_COLS = 10;
 // needs: "any" element; "form" an element with a formation (flux, fire, ice, toxic, core); "support" an element whose wave pylons support (electric, core).
 const KITS = [
     // ── POWER: hold a zone cheaply ──
-    { id: "skeleton",     name: "SKELETON",     family: "power",    needs: "any", target: { tier: 1 },
-      blurb: "Power only: just the generator. For a cleared zone with nothing to defend; boot the power unit in the wall and it holds the zone.",
-      map: [".", "G", "."] },
+    { id: "picket",       name: "PICKET",       family: "power",    needs: "any", target: { tier: 1 },
+      blurb: "One gun: for a cleared zone that needs a little watching. Boot the power unit in the wall and it holds the zone.",
+      map: [".", ".", "..T"] },
     { id: "outpost",      name: "OUTPOST",      family: "power",    needs: "any", target: { tier: 1 },
-      blurb: "The minimum that fights back: a generator and two guns, on a tier I power unit.",
-      map: [".", "G", "..TT"] },
+      blurb: "The minimum that fights back: two guns, on a tier I power unit.",
+      map: [".", ".", "..TT"] },
     { id: "strongpoint",  name: "STRONGPOINT",  family: "power",    needs: "any", target: { tier: 2 },
       blurb: "Three guns on a tier II power unit: MK II turrets and formations become possible.",
-      map: [".", "G", "..TT", "...T"] },
+      map: [".", ".", "..TT", "...T"] },
     { id: "bastion",      name: "BASTION",      family: "power",    needs: "any", target: { tier: 3 },
       blurb: "Four guns on a tier III power unit: the strongest network, over the widest area.",
-      map: [".", "G", "..TTT", "...T"] },
+      map: [".", ".", "..TTT", "...T"] },
     // ── DEFENCE: guns ──
-    { id: "relayline",    name: "RELAY LINE",   family: "defence",  needs: "any", target: { tier: 1 }, relay: true,
-      blurb: "A connector by the nest feeds a forward post of three guns with no chain of pylons between.",
-      map: ["........T.", "GC......T.", "........T."] },
+    { id: "relayline",    name: "FORWARD POST", family: "defence",  needs: "any", target: { tier: 1 },
+      blurb: "Three guns in a column at the zone's front, out where the enemy comes in.",
+      map: ["........T.", "........T.", "........T."] },
     { id: "gunline",      name: "GUN LINE",     family: "defence",  needs: "any", target: { tier: 1 },
       blurb: "Four guns in a diagonal line across the lane: even fire, and a way through left open.",
-      map: ["....T", "G..T", "....T", ".....T"] },
+      map: ["....T", "...T", "....T", ".....T"] },
     { id: "crossfire",    name: "CROSSFIRE",    family: "defence",  needs: "any", target: { tier: 1 },
       blurb: "Guns staggered on the outer rows: they cover the walls and leave the lane open.",
-      map: ["..T.T.", "G.....", "......", "..T.T"] },
+      map: ["..T.T.", ".....", "......", "..T.T"] },
     { id: "ultranear",    name: "ULTRA NEAR",   family: "defence",  needs: "any", target: { tier: 2, ultra: true },
       blurb: "The STRONGPOINT with one more gun: a 2x2 that fuses into an Ultra turret, close to the nest.",
-      map: [".", "G", "..TT", "..TT"] },
-    { id: "ultrafront",   name: "ULTRA FRONT",  family: "defence",  needs: "any", target: { tier: 2, ultra: true }, relay: true,
-      blurb: "The same Ultra at the zone's entrance, fed by a connector so it still fuses.",
-      map: [".", "GC.....TT", ".......TT"] },
+      map: [".", ".", "..TT", "..TT"] },
+    { id: "ultrafront",   name: "ULTRA FRONT",  family: "defence",  needs: "any", target: { tier: 2, ultra: true },
+      blurb: "The same Ultra at the zone's entrance.",
+      map: [".", ".......TT", ".......TT"] },
     // ── CONTROL: formations (any element that forms one) ──
-    { id: "trap",         name: "TRAP",         family: "control",  needs: "form", target: { tier: 2, formation: true }, relay: true,
-      blurb: "A formation mid-lane (black hole, firewall, ice generator, toxic tower, shield forge), fed by a connector: it catches what walks through.",
-      map: [".", "GC...WW", ".....WW"] },
-    { id: "choke",        name: "CHOKE",        family: "control",  needs: "form", target: { tier: 2, formation: true }, relay: true,
-      blurb: "A formation at the entrance, fed by a connector: it stops them before the guns.",
-      map: [".", "GC.....WW", ".......WW"] },
+    { id: "trap",         name: "TRAP",         family: "control",  needs: "form", target: { tier: 2, formation: true },
+      blurb: "A formation mid-lane (black hole, firewall, ice generator, toxic tower, shield forge): it catches what walks through.",
+      map: [".", ".....WW", ".....WW"] },
+    { id: "choke",        name: "CHOKE",        family: "control",  needs: "form", target: { tier: 2, formation: true },
+      blurb: "A formation at the entrance: it stops them before the guns.",
+      map: [".", ".......WW", ".......WW"] },
     { id: "homeguard",    name: "HOME GUARD",   family: "control",  needs: "form", target: { tier: 2, formation: true },
-      blurb: "A formation beside the generator, for a zone raided from the side.",
-      map: [".", "G.WW", "..WW"] },
+      blurb: "A formation beside the nest, for a zone raided from the side.",
+      map: [".", "..WW", "..WW"] },
     // ── COMBINED ──
     { id: "supportnet",   name: "SUPPORT NET",  family: "combined", needs: "support", target: { tier: 1, support: true },
       blurb: "Two guns and two support pylons (haste or shields) that work on the squad standing in the lane.",
-      map: ["..S.", "G.T.", "..ST"] },
+      map: ["..S.", "..T.", "..ST"] },
     { id: "siege",        name: "SIEGE",        family: "combined", needs: "any", target: { tier: 2, ultra: true },
       blurb: "An Ultra and two more guns forward of it, for a zone attacked every night.",
-      map: [".", "G.....T", "..TT.T", "..TT"] },
+      map: [".", "......T", "..TT.T", "..TT"] },
     { id: "hardened",     name: "HARDENED",     family: "combined", needs: "any", target: { tier: 2 }, mk2: ["T"],
       blurb: "The STRONGPOINT with all three guns upgraded to MK II.",
-      map: [".", "G", "..TT", "...T"] },
+      map: [".", ".", "..TT", "...T"] },
     { id: "fullkit",      name: "FULL KIT",     family: "combined", needs: "form", target: { tier: 3, ultra: true, formation: true },
       blurb: "The most a zone needs: four lane guns, an Ultra and a formation, with a way through left open; on a tier III power unit.",
-      map: [".....TT", "G....TT", "..TTT..WW", "...T...WW"] },
+      map: [".....TT", ".....TT", "..TTT..WW", "...T...WW"] },
 ];
 const KIT_FAMILIES = [["power", "POWER"], ["defence", "DEFENCE"], ["control", "CONTROL"], ["combined", "COMBINED"]];
-const KIT_KIND = { G: "generator", C: "connector", T: "attack", W: "wave", S: "support" };
+const KIT_KIND = { T: "attack", W: "wave", S: "support" };
 
 function kitById(id) { return KITS.find(k => k.id === id) || null; }
 // The pieces of a kit: [{ dx, dy, c (the map character), kind, mk2 }].
@@ -112,7 +112,7 @@ function _kitSquares(kit, c) {
 // The rules. Returns the list of violations (empty when the kit is sound).
 function kitValidate(kit) {
     const bad = [], P = kitPieces(kit), n = c => P.filter(p => p.c === c);
-    const tier = kit.target.tier, tur = n("T"), wav = n("W"), sup = n("S"), gens = n("G"), cons = n("C");
+    const tier = kit.target.tier, tur = n("T"), wav = n("W"), sup = n("S");
     // R1 no batteries: the wall's power unit is the bank
     if (kit.map.some(r => /B/.test(r))) bad.push("R1: a battery in the map (the power unit in the wall is the bank)");
     if (!(tier >= 1 && tier <= 3)) bad.push("R1: a target tier of " + tier + " (1, 2 or 3)");
@@ -130,21 +130,15 @@ function kitValidate(kit) {
     if (!kit.target.formation && wav.length) bad.push("R3: a formation nothing asked for");
     if (sup.length > 2) bad.push("R3: " + sup.length + " supports (at most 2)");
     if (!!kit.target.support !== !!sup.length) bad.push("R3: supports and the support target disagree");
-    // R4 one generator; a connector only where the kit is about reach
-    if (gens.length !== 1) bad.push("R4: " + gens.length + " generators (exactly 1)");
-    if (cons.length && !kit.relay) bad.push("R4: a connector in a kit that is not about reach");
-    if (kit.relay && cons.length !== 1) bad.push("R4: a relay kit needs exactly one connector");
+    // R4 no generator or connector
+    if (kit.map.some(r => /[GC]/.test(r)) || kit.relay) bad.push("R4: a generator or connector in a kit (the power unit in the wall is both)");
     // R7 the footprint: 4 rows x 10 columns, one piece a tile, the lane open
     const seen = new Set();
     for (const p of P) { if (p.dy < 0 || p.dy >= KIT_ROWS || p.dx < 0 || p.dx >= KIT_COLS) bad.push("R7: a piece off the grid at " + p.dx + "," + p.dy); const k = p.dx + "," + p.dy; if (seen.has(k)) bad.push("R7: two pieces on " + k); seen.add(k); }
     const width = Math.max(...P.map(p => p.dx)) + 1;
     for (let x = 0; x < width; x++) { let used = 0; for (let y = 0; y < KIT_ROWS; y++) if (seen.has(x + "," + y)) used++; if (used >= KIT_ROWS) bad.push("R7: column " + x + " is blocked from wall to wall"); }
-    // R5 every piece is linked to the generator (pylons within KIT_LINK of each other; a connector feeds every piece within 14)
-    if (gens.length === 1) {
-        const g = gens[0], reach = new Set([g.dx + "," + g.dy]), queue = [g], d = (a, b) => Math.hypot(a.dx - b.dx, a.dy - b.dy);
-        while (queue.length) { const a = queue.pop(); for (const b of P) { const k = b.dx + "," + b.dy; if (reach.has(k)) continue; if (d(a, b) <= KIT_LINK || (a.c === "C" && d(a, b) <= 14)) { reach.add(k); queue.push(b); } } }
-        for (const p of P) if (!reach.has(p.dx + "," + p.dy)) bad.push("R5: the " + KIT_KIND[p.c] + " at " + p.dx + "," + p.dy + " is not linked to the generator");
-    }
+    // R5 every piece is within the unit's reach of where the unit stands (its cells are at dx 2 to 7 of the nest, in the wall, row -2)
+    for (const p of P) if (Math.min(...[2, 3, 4, 5, 6, 7].map(cx => Math.hypot(p.dx - cx, p.dy + 2))) > 12) bad.push("R5: the " + KIT_KIND[p.c] + " at " + p.dx + "," + p.dy + " is out of the power unit's reach");
     // R6 what the target needs: an Ultra and a formation need tier II, MK II tier I
     if ((kit.target.ultra || kit.target.formation || kit.mk2) && tier < (kit.mk2 && !kit.target.ultra && !kit.target.formation ? 1 : 2)) bad.push("R6: the target needs a higher tier than " + tier);
     if (kit.mk2 && kit.mk2.some(c => c !== "T")) bad.push("R2: only turrets are upgraded to MK II");
@@ -154,38 +148,28 @@ function kitValidate(kit) {
 // ─────────────────────────────────────────────────────────
 //  PLACING A KIT
 // ─────────────────────────────────────────────────────────
-// A kit goes where its generator sits: tile x = x0 + dir * dx, tile y = dy (the lane rows). x0 is the nest's x for SNAP TO NEST, or the tile the player points
+// A kit goes by its anchor column: tile x = x0 + dir * dx, tile y = dy (the lane rows). x0 is the nest's x for SNAP TO NEST, or the tile the player points
 // at for the ghost. dir is +1 (toward the front) or -1 (mirrored, for a nest with room on the other side only).
 function _kitTile(x, y) { return typeof getTile === "function" ? getTile(x, y) : null; }
 function _kitHaveKind(t, p, el) {
     if (!t || !t.pillar || t.destroyed || t.pillarTeam !== "green" || t.offline) return false;
-    if (p.c === "G") return !!t.isGenerator;
-    if (p.c === "C") return !!t.isConnector;
     if (t.attackModeElement !== el) return false;
     if (p.c === "T") return !!t.attackMode && !t.isBattery && !t.isGenerator && !t.isConnector;
     return !!t.waveMode;   // W, S
 }
 // Every piece of the kit on the ground at (x0, dir): its tile and whether it is already there ("have"), free to build ("free") or blocked (with the reason).
-// The generators of yours standing in a zone (a zone has exactly one: a second is the kind of equipment nobody needs).
-function kitZoneGenerators(zone) {
-    return (typeof world !== "undefined" ? world : []).filter(t => t.pillar && t.isGenerator && t.pillarTeam === "green" && !t.destroyed && getZoneIndex(t.x) === zone);
-}
 function kitPlan(kit, el, x0, dir, nest) {
-    // Every piece must stand in the zone the generator does: tech in a zone with no generator of its own has no power (power.js zoneHasGenerator).
+    // Every piece must stand in the zone of the nest: tech in a zone with no power unit of its own has no power (power.js zoneHasGenerator).
     const zone = typeof getZoneIndex === "function" ? getZoneIndex(nest ? nest.x : x0) : 0;
-    const zoneGens = kitZoneGenerators(zone);
+    const unitTiles = typeof wallUnitTiles === "function" ? wallUnitTiles(zone) : [];
     const pieces = kitPieces(kit).map(p => {
         const x = x0 + (dir || 1) * p.dx, t = _kitTile(x, p.dy), r = { piece: p, x, y: p.dy, tile: t, state: "free", why: null };
         if (t && getZoneIndex(x) !== zone) { r.state = "blocked"; r.why = "ACROSS THE ZONE LINE"; return r; }
         if (t && _kitHaveKind(t, p, el)) { r.state = "have"; if (p.mk2 && (t.mk || 0) < 2) r.mk2Missing = true; return r; }
         const why = typeof _bmTileProblem === "function" ? _bmTileProblem(t) : (t ? null : "NOTHING THERE");
         if (why) { r.state = "blocked"; r.why = why; return r; }
-        // A zone has one generator, and power reaches every piece in the zone from it (power.js zoneHasGenerator), so a kit placed ANYWHERE in a zone that has one simply uses it: the kit's own generator is
-        // not built (and not charged), it is "have" through the one that is there. (It used to be BLOCKED, which pinned every kit to the generator's own tile.)
-        if (p.c === "G" && zoneGens.length) { r.state = "have"; r.via = zoneGens[0]; return r; }
-        if (p.c === "G" || p.c === "C") {
-            if (typeof canPlaceGenerator === "function" && !canPlaceGenerator(t).ok) { r.state = "blocked"; r.why = "NEEDS A NEST WITHIN " + GENERATOR_NEST_RANGE; }
-        }
+        // Every piece must be within the power unit's reach (its cells are in the wall at the front of the zone).
+        if (unitTiles.length && !unitTiles.some(u => Math.hypot(u.x - x, u.y - p.dy) <= BATTERY_SUPPLY_RANGE)) { r.state = "blocked"; r.why = "OUT OF THE POWER UNIT'S REACH"; return r; }
         return r;
     });
     const count = s => pieces.filter(p => p.state === s).length, free = pieces.filter(p => p.state === "free");
@@ -203,13 +187,11 @@ function kitUnitSay(u) { return u.have < 1 ? "BOOT THE POWER UNIT IN THE WALL (T
 // SNAP TO NEST: the placement round this nest with the fewest blocked pieces, then the most already built, then the least shifted from the nest.
 function kitFindPlacement(kit, el, nest) {
     let best = null, bs = -Infinity;
-    // Candidate generator columns: round the nest, and ON an existing generator of the zone's (the kit's generator then IS that one: a zone has only one).
+    // Candidate anchor columns: round the nest.
     const cand = [];
     for (const dir of [1, -1]) for (const sx of [0, -1, 1, -2, 2, -3, 3]) cand.push([nest.x + sx, dir, Math.abs(sx)]);
-    for (const g of kitZoneGenerators(getZoneIndex(nest.x))) if (g.y === 1) for (const dir of [1, -1]) cand.push([g.x, dir, 0]);
     for (const [x0, dir, shift] of cand) {
-        const plan = kitPlan(kit, el, x0, dir, nest), g = plan.pieces.find(p => p.piece.c === "G");
-        if (g && g.tile && g.state === "free" && Math.hypot(g.tile.x - nest.x, g.tile.y - nest.y) > GENERATOR_NEST_RANGE) continue;
+        const plan = kitPlan(kit, el, x0, dir, nest);
         const s = -plan.blocked * 100 + plan.have * 10 - shift - (dir < 0 ? 5 : 0);
         if (s > bs) { bs = s; best = plan; }
     }
@@ -220,24 +202,20 @@ function kitFindPlacement(kit, el, nest) {
 function kitFindPlacementFor(kits, el, nest) {
     const cand = [];
     for (const dir of [1, -1]) for (const sx of [0, -1, 1, -2, 2, -3, 3]) cand.push([nest.x + sx, dir, Math.abs(sx)]);
-    for (const g of kitZoneGenerators(getZoneIndex(nest.x))) if (g.y === 1) for (const dir of [1, -1]) cand.push([g.x, dir, 0]);
     let best = null, bs = -Infinity;
     for (const [x0, dir, shift] of cand) {
-        let blocked = 0, have = 0, gOk = true;
+        let blocked = 0, have = 0;
         for (const kit of kits) {
             const plan = kitPlan(kit, el, x0, dir, nest); blocked += plan.blocked; have += plan.have;
-            const g = plan.pieces.find(p => p.piece.c === "G");
-            if (g && g.tile && g.state === "free" && Math.hypot(g.tile.x - nest.x, g.tile.y - nest.y) > GENERATOR_NEST_RANGE) gOk = false;
         }
-        if (!gOk) continue;
         const s = -blocked * 100 + have * 10 - shift - (dir < 0 ? 5 : 0);
         if (s > bs) { bs = s; best = { x0, dir, blocked, have }; }
     }
     return best;
 }
-// The order a kit is built in: the generator first (everything is powered through it), then the connector, the bank in the map's own order, then the rest.
+// The order a kit is built in: guns, then wave pylons, then supports, each in the map's own order.
 function _kitBuildOrder(plan) {
-    const rank = { G: 0, C: 1, T: 3, W: 4, S: 5 };
+    const rank = { T: 3, W: 4, S: 5 };
     return plan.pieces.filter(p => p.state === "free").sort((a, b) => (rank[a.piece.c] - rank[b.piece.c]) || (a.piece.dx - b.piece.dx) || (a.piece.dy - b.piece.dy));
 }
 // Build what is missing, in order, until the shards run out. Returns { built, short (shards still needed), blocked: [reasons], mk2 }.
@@ -251,8 +229,7 @@ function kitBuild(plan) {
         if (why) { reasons.push(p.c + " at " + r.x + "," + r.y + ": " + why); continue; }
         if (shardCount < PYLON_BUILD_COST) { short += PYLON_BUILD_COST; continue; }
         const before = shardCount;
-        if (p.c === "G" || p.c === "C") _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === (p.c === "G" ? GENERATOR_ID : CONNECTOR_ID)), t, null);
-        else _executeBuildInstant(ELEMENTS.find(e => e.id === el), t, p.c === "T" ? "attack" : waveRole(el));
+        _executeBuildInstant(ELEMENTS.find(e => e.id === el), t, p.c === "T" ? "attack" : waveRole(el));
         if (shardCount < before) built.push(r); else reasons.push(p.c + " at " + r.x + "," + r.y + ": refused");
     }
     if (typeof _cacheAge !== "undefined") _cacheAge = -999;
@@ -271,8 +248,7 @@ function kitBuildNext(plan) {
     const t = _kitTile(r.x, r.y), p = r.piece, el = plan.el;
     if (!t || (typeof _bmTileProblem === "function" && _bmTileProblem(t))) return false;
     const before = shardCount;
-    if (p.c === "G" || p.c === "C") _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === (p.c === "G" ? GENERATOR_ID : CONNECTOR_ID)), t, null);
-    else _executeBuildInstant(ELEMENTS.find(e => e.id === el), t, p.c === "T" ? "attack" : waveRole(el));
+    _executeBuildInstant(ELEMENTS.find(e => e.id === el), t, p.c === "T" ? "attack" : waveRole(el));
     if (typeof _cacheAge !== "undefined") _cacheAge = -999;
     return shardCount < before;
 }

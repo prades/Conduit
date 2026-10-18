@@ -46,7 +46,7 @@ function findChromium() {
     console.log('\nTHE NETWORK PANEL IS THE WAY IN');
     check('the panel is drawn from the start (nothing built yet) and says it can be tapped', () => {
         run('_hudPw = null; const said = []; const keep = ctx.fillText; ctx.fillText = t => said.push(String(t)); try { drawNetworkStatusHUD(); } finally { ctx.fillText = keep; } window.__said = said;');
-        ok(run('!!_netPanelRect'), 'the panel was not drawn'); ok(run('__said').some(t => /TAP TO BUILD POWER/.test(t)), 'no hint: ' + JSON.stringify(run('__said')));
+        ok(run('!!_netPanelRect'), 'the panel was not drawn'); ok(run('__said').some(t => /TAP FOR THE POWER UNIT/.test(t)), 'no hint: ' + JSON.stringify(run('__said')));
     });
     check('a point on the panel hits it; a point off it does not', () => {
         const r = run('_netPanelRect');

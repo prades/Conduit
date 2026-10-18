@@ -843,39 +843,9 @@ check('and it names the home portal as the other way in', () => {
     ok(/portal/i.test(s.body), 'the crystal step does not mention the portal');
 });
 
-check('the generator step does NOT promise a connect step', () => {
-    // The mechanic the request described does not exist, and teaching it would
-    // leave the player hunting for a button.
-    const env = makeEnv();
-    const gen  = env.run('TUTS').find(t => t.id === 'generator');
-    const aura = env.run('TUTS').find(t => t.id === 'aura');
-    ok(!!gen, 'there is no generator step');
-    ok(/UPGRADE/.test(gen.body), 'it does not say a generator is an UPGRADE choice');
-    ok(/GENERATOR/.test(gen.body), 'it does not name the GENERATOR option');
-    ok(/links itself|nothing to connect/i.test(aura.body),
-       'nothing tells the player the generator links itself');
-});
-
-check('the generator step quotes the REAL placement range', () => {
-    const env = makeEnv();
-    const s = env.run('TUTS').find(t => t.id === 'generator');
-    const range = env.run('GENERATOR_NEST_RANGE');
-    ok(new RegExp('\\b' + range + ' tiles').test(s.body),
-       `it should say ${range} tiles: ` + s.body);
-    ok(/NEST/i.test(s.body), 'it does not say the range is measured to a nest');
-});
-
-check('it flashes BUILD, because UPGRADE only shows in build mode', () => {
-    const env = makeEnv();
-    const s = env.run('TUTS').find(t => t.id === 'generator');
-    ok(typeof s.wantsButton === 'function', 'the generator step flashes no button');
-    env.run('buildMode = false');
-    eq(env.run('TUTS.find(t=>t.id==="generator").wantsButton()'), 'btnBuild',
-       'it should flash BUILD while build mode is off');
-    env.run('buildMode = true');
-    eq(env.run('TUTS.find(t=>t.id==="generator").wantsButton()'), null,
-       'it should stop flashing once build mode is on');
-    env.run('buildMode = false');
+check('there is no generator step and no connector or circuit step: the power unit in the wall is the zone\'s generator', () => {
+    const ids = stepIds(makeEnv());
+    for (const id of ['generator', 'connector', 'circuit']) ok(ids.indexOf(id) < 0, 'a ' + id + ' step is still taught');
 });
 
 check('the aura step explains the shield field', () => {
@@ -964,11 +934,10 @@ check('the new steps sit before READY and after the basics', () => {
     const ids = stepIds(makeEnv());
     const at = id => ids.indexOf(id);
     ok(at('crystal') > at('hold'), 'the Crystal step comes before the hold is taught');
-    ok(at('generator') > at('upgrade'), 'the generator comes before UPGRADE is taught');
-    ok(at('aura') > at('generator'), 'the aura is explained before the generator exists');
+    ok(at('aura') > at('clone'), 'the shield cells are explained after the clone step');
     ok(at('ready') === ids.length - 1, 'READY is no longer last');
     ok(at('clone') > at('crystal'), 'the clone step comes before the Crystal is opened');
-    for (const id of ['crystal', 'clone', 'generator', 'aura', 'work']) {
+    for (const id of ['crystal', 'clone', 'aura', 'work']) {
         ok(at(id) < at('ready'), id + ' comes after the closing step');
     }
 });
@@ -1085,22 +1054,22 @@ check('a fresh start clears the previous run\'s progress', () => {
     eq(env.run('tutHeldOpen'), false, 'hold flag survived a restart');
 });
 
-group('the power lessons: nests, connector, circuit, and killing with pylons');
+group('the power lessons: nests, the power unit, and killing with pylons');
 
 check('the new steps sit after the aura and before READY, in order', () => {
     const env = makeEnv();
     const ids = stepIds(env);
     const at = id => ids.indexOf(id);
-    for (const id of ['power', 'connector', 'circuit', 'pylonkill']) ok(at(id) > -1, 'no ' + id + ' step');
-    ok(at('aura') < at('power') && at('power') < at('connector') && at('connector') < at('circuit')
-       && at('circuit') < at('pylonkill') && at('pylonkill') < at('ready'), 'steps are out of order: ' + ids);
+    for (const id of ['power', 'battery', 'charge', 'pylonkill']) ok(at(id) > -1, 'no ' + id + ' step');
+    ok(at('aura') < at('power') && at('power') < at('battery') && at('battery') < at('charge')
+       && at('charge') < at('pylonkill') && at('pylonkill') < at('ready'), 'steps are out of order: ' + ids);
 });
 
-check('THE NEW WAY: power, then build a battery, then watch it charge, before the connector', () => {
+check('THE NEW WAY: power, then boot the power unit, then watch it charge, before the pylon kill', () => {
     const env = makeEnv();
     const ids = stepIds(env);
     const at = id => ids.indexOf(id);
-    ok(at('power') < at('battery') && at('battery') < at('charge') && at('charge') < at('connector'), 'out of order: ' + ids);
+    ok(at('power') < at('battery') && at('battery') < at('charge') && at('charge') < at('pylonkill'), 'out of order: ' + ids);
     const tuts = env.run('TUTS'), body = id => tuts.find(s => s.id === id).body;
     ok(/CHARGE/.test(body('power')) && /BATTERY/.test(body('power')) && !/Each nest you have neutralised is a battery/.test(body('power')),
        'the power step does not teach nest \u2192 battery \u2192 pylon');
@@ -1123,39 +1092,6 @@ check('THE ASK: building a battery completes that step, and charge completes the
     b.charge = 12;
     env.run('tutorialTick()');
     ok(env.run('TUTS[tutorialStep].id') !== 'charge', 'it charged and the step did not advance');
-});
-
-check('the connector step quotes the REAL reach and placement range', () => {
-    const body = makeEnv().run('TUTS').find(s => s.id === 'connector').body;
-    ok(body.includes(String(makeEnv().run('CONNECTOR_RANGE'))), 'it does not state the connector range');
-    ok(body.includes(String(makeEnv().run('GENERATOR_NEST_RANGE'))), 'it does not state the nest range');
-    ok(/CONNECTOR/.test(body) && /UPGRADE/.test(body), 'it does not say how to build one');
-});
-
-check('THE ASK: building a connector completes that step', () => {
-    const env = populate(makeEnv());
-    env.run('startTutorial()');
-    gotoStep(env, 'connector');
-    env.run('tutorialTick()');
-    eq(env.run('TUTS[tutorialStep].id'), 'connector', 'completed with no connector');
-    env.sandbox.world.find(t => t.pillar).isConnector = true;
-    env.run('tutorialTick()');
-    ok(env.run('TUTS[tutorialStep].id') !== 'connector', 'a connector existed and the step did not advance');
-});
-
-check('the circuit step needs the circuit OPENED and then CLOSED again', () => {
-    const env = populate(makeEnv());
-    const c = env.sandbox.world.find(t => t.pillar); c.isConnector = true; c.circuitOn = true;
-    env.run('startTutorial()');
-    gotoStep(env, 'circuit');
-    env.run('tutorialTick()');
-    eq(env.run('TUTS[tutorialStep].id'), 'circuit', 'completed untouched');
-    c.circuitOn = false; env.sandbox.c = c; env.run('tutorialNoteCircuit(c)');
-    env.run('tutorialTick()');
-    eq(env.run('TUTS[tutorialStep].id'), 'circuit', 'completed with the circuit left open');
-    c.circuitOn = true;
-    env.run('tutorialTick()');
-    ok(env.run('TUTS[tutorialStep].id') !== 'circuit', 'closing it again did not finish the step');
 });
 
 check('the game reports a circuit switch to the tutorial', () => {

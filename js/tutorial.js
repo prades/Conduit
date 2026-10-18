@@ -356,28 +356,12 @@ const TUTS = [
         check: () => tutCloned,
     },
     {
-        // A generator is an UPGRADE choice, not a building of its own, and the
-        // placement rule is the whole reason it needs explaining: it has to be
-        // near a NEST. The green portal at home counts as one, which is why
-        // this step can be finished without leaving zone 0.
-        id:    'generator',
-        title: 'BUILD A GENERATOR',
-        body:  'Turn BUILD on, hold the marked pylon, pick UPGRADE and choose GENERATOR. Every zone needs one: nothing in a zone works without it. It must stand within ' + GENERATOR_NEST_RANGE + ' tiles of a NEST — the green portal at home counts.',
-        icon:  '\u2699',
-        wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
-        // A pylon that could actually take one, so the marker never points at a
-        // tile the game would refuse.
-        target: () => tutPlainPylon(),
-        check: () => world.some(t => t.pillar && t.isGenerator && !t.destroyed),
-    },
-    {
-        // What the generator is FOR. No action to perform — it is already true
-        // the moment the generator exists — so it reads and moves on.
+        // What the power unit's shield cells are FOR. No action to perform, so it reads and moves on.
         id:    'aura',
         title: 'SHIELD CELLS',
-        body:  'The generator links itself to the pylons near it and powers its zone. SHIELDS are CORE tech: a powered CORE wave pylon drops SHIELD CELLS (four make a SHIELD FORGE) — walk over them. A follower with no shield spends one; it takes every hit until it breaks.',
+        body:  'The power unit in the wall feeds every pylon in its zone. SHIELDS are CORE tech: a powered CORE wave pylon drops SHIELD CELLS (four make a SHIELD FORGE) — walk over them. A follower with no shield spends one; it takes every hit until it breaks.',
         icon:  '\u25ce',
-        target: () => tutNearestPylon(t => t.isGenerator) || tutNearestPylon(),
+        target: () => tutNearestPylon(),
         check: () => tutorialTimer > 300,   // ~5s to read it
     },
     {
@@ -393,7 +377,7 @@ const TUTS = [
         check: () => tutorialTimer > 420,   // ~7s to read it
     },
     {
-        // Build the thing that holds the charge. Beside the generator, so the
+        // Boot the machine that holds the charge, so the
         // next step can watch it fill.
         id:    'battery',
         title: 'BOOT THE POWER UNIT',
@@ -412,33 +396,11 @@ const TUTS = [
         check: () => world.some(t => t.pillar && t.isBattery && (t.charge || 0) >= 10) || tutorialTimer > 900,
     },
     {
-        // The new relay. Same placement rule as the generator, a very different
-        // reach: it is what carries power out to the far zones.
-        id:    'connector',
-        title: 'BUILD A CONNECTOR PYLON',
-        body:  'A CONNECTOR is a long-range relay. With BUILD on, hold a plain pylon, pick UPGRADE and choose CONNECTOR as the kind (within ' + GENERATOR_NEST_RANGE + ' tiles of a nest). It powers EVERY pylon within ' + CONNECTOR_RANGE + ' tiles, so one can light a far-off zone.',
-        icon:  '\u2301',
-        wantsButton: () => (typeof buildMode !== 'undefined' && !buildMode) ? 'btnBuild' : null,
-        target: () => tutPlainPylon(),
-        check: () => world.some(t => t.pillar && t.isConnector && !t.destroyed),
-    },
-    {
-        // The switch. Latched on the OPEN, and finished when it is closed again,
-        // so the connector is left feeding power for the next step.
-        id:    'circuit',
-        title: 'THE CIRCUIT SWITCH',
-        body:  'Press and hold your connector: the left button says OPEN CIRCUIT. Open it and every pylon it feeds goes dark at once. Then CLOSE CIRCUIT to bring the whole group back. Use it to power up a group for a fight and cut it off while you rest.',
-        icon:  '\u23fb',
-        target: () => tutNearestPylon(t => t.isConnector) || tutNearestPylon(),
-        check: () => tutCircuitOpened &&
-                     world.some(t => t.pillar && t.isConnector && !t.destroyed && t.circuitOn !== false),
-    },
-    {
         // The goal of all of it. A bug is sent to the first powered turret, and
         // the step ends when the PYLONS kill it.
         id:    'pylonkill',
         title: 'KILL WITH YOUR PYLONS',
-        body:  'Pylons fight for you. An ATTACK pylon shoots enemies near it \u2014 harder with a generator feeding it, but it fires either way. Keep one element turret and let the bug sent to it die to your pylons. Need a pylon? BUILD costs ' + PYLON_BUILD_COST + ' shards.',
+        body:  'Pylons fight for you. An ATTACK pylon shoots enemies near it \u2014 charged by the power unit, but it fires either way. Keep one element turret and let the bug sent to it die to your pylons. Need a pylon? BUILD costs ' + PYLON_BUILD_COST + ' shards.',
         icon:  '\u2694',
         // Sends a bug to the turret \u2014 a fixed number, never endless.
         tick: () => {

@@ -112,7 +112,7 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
           btnOf(card(1), /SEND CREW/).click(); await wait(300); out.crew = zoneCrewSummary(1).total; out.crewLine1 = card(1).textContent; out.hasRecall = !!btnOf(card(1), /RECALL/);
           var add = Array.prototype.find.call(card(1).querySelectorAll('.cz-chip.add'), function(){ return true; }); add.click(); await wait(100); out.picker = !!document.getElementById('orderPicker');
           out.pickerRows = document.querySelectorAll('#orderPicker .op-row').length; out.pickerSub = document.querySelector('#orderPicker .rpk-sub').textContent;
-          Array.prototype.find.call(document.querySelectorAll('#orderPicker .op-btn'), function(b){ return /GENERATOR/.test(b.textContent); }).click(); out.pickerRowsGen = document.querySelectorAll('#orderPicker .op-row').length;
+          Array.prototype.find.call(document.querySelectorAll('#orderPicker .op-btn'), function(b){ return /TURRET/.test(b.textContent); }).click(); out.pickerRowsGen = document.querySelectorAll('#orderPicker .op-row').length;
           document.querySelector('#orderPicker .rpk-btn.mix').click(); await wait(300); out.queued = (zoneOrders[1] || []).length; out.orderChip = card(1).querySelector('.cz-chip.order') ? card(1).querySelector('.cz-chip.order').textContent : '';
           card(1).querySelector('.cz-chip.order').click(); await wait(200); out.cancelled = (zoneOrders[1] || []).length;
           // a whole layout kit as orders
@@ -140,9 +140,9 @@ const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = (
                 same(r.crew, 2, 'crew'); ok(/1 ANT . 1 CORE/.test(r.crewLine1), r.crewLine1); same(r.hasRecall, true, 'recall');
             });
             check('THE ASK: + ORDER opens a picker (generator / turret, element), QUEUE IT adds it to the zone, tapping the chip cancels it, RECALL sends the crew home', () => {
-                same(r.picker, true, 'picker'); ok(r.pickerRows >= 3, 'rows (mode, kind, element) ' + r.pickerRows); ok(/COSTS/.test(r.pickerSub), r.pickerSub); same(r.pickerRowsGen, 2, 'a generator has no element or level (just the mode and kind rows)');
-                same(r.queued, 1, 'queued'); ok(/GENERATOR/.test(r.orderChip), r.orderChip); same(r.cancelled, 0, 'cancelled'); same(r.recalled, 0, 'recalled');
-                same(r.kitButtons, 16, 'the sixteen kits are pickable'); ok(/OUTPOST: \+3 PIECES/.test(r.kitSub), r.kitSub); same(r.kitOrders, 3, 'an OUTPOST queues three exact-tile orders'); ok(/OUTPOST \u00b7 GENERATOR/.test(r.kitChip), r.kitChip);
+                same(r.picker, true, 'picker'); ok(r.pickerRows >= 3, 'rows (mode, kind, element) ' + r.pickerRows); ok(/COSTS/.test(r.pickerSub), r.pickerSub); same(r.pickerRowsGen, 3, 'the picker: mode, kind (a turret: there is no generator, battery or connector to order) and element');
+                same(r.queued, 1, 'queued'); ok(/TURRET/.test(r.orderChip), r.orderChip); same(r.cancelled, 0, 'cancelled'); same(r.recalled, 0, 'recalled');
+                same(r.kitButtons, 16, 'the sixteen kits are pickable'); ok(/OUTPOST: \+2 PIECES/.test(r.kitSub), r.kitSub); same(r.kitOrders, 2, 'an OUTPOST queues two exact-tile orders'); ok(/OUTPOST/.test(r.kitChip), r.kitChip);
             });
             check('pressing CLEAR BROKEN pays the fee and the card updates; a zone with no held nest has TELEPORT dimmed', () => { same(r.spent, 8, 'spent'); same(r.brokenAfter, 0, 'broken after'); ok(/NOTHING BROKEN/.test(r.z1after), r.z1after); same(r.tpDim, true, 'teleport not dimmed'); });
         }

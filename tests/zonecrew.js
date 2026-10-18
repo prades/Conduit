@@ -96,12 +96,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('THE ASK (kits as orders): a layout kit queued in a zone becomes exact-tile orders, generator first, and the ant builders put the whole kit up', () => {
         run('clearZoneOrders(); world.filter(t => t.pillar && getZoneIndex(t.x) === 1).forEach(t => clearPylon(t)); _cacheAge = -999; shardCount = 500; unlockedElements.add("toxic");'); frames(5);
+        run('wallUnitBoot(1, "fire"); _cacheAge = -999;'); frames(5);   // the zone\'s power unit: the ants build only where there is power
         run('floatingTexts.length = 0;');
-        same(run('zoneQueueKit(1, "strongpoint", "fire")'), 4, 'queued'); const o = JSON.parse(run('JSON.stringify(zoneOrders[1].map(o => [o.kind, o.kit, !!o.fixed]))'));
-        same(o[0][0], 'generator', 'the generator is first'); ok(o.every(x => x[1] === 'strongpoint' && x[2]), 'orders: ' + JSON.stringify(o));
+        same(run('zoneQueueKit(1, "strongpoint", "fire")'), 3, 'queued'); const o = JSON.parse(run('JSON.stringify(zoneOrders[1].map(o => [o.kind, o.kit, !!o.fixed]))'));
+        same(o[0][0], 'attack', 'a gun is first (there is no generator)'); ok(o.every(x => x[1] === 'strongpoint' && x[2]), 'orders: ' + JSON.stringify(o));
         run('zoneSendCrew(1);'); frames(300); frames(2900);
         const m = JSON.parse(run('JSON.stringify({ n: world.filter(t => t.pillar && getZoneIndex(t.x) === 1 && !t.destroyed).length, left: (zoneOrders[1] || []).length, tier: networkStrength.fire, bats: world.filter(t => t.pillar && t.isBattery && getZoneIndex(t.x) === 1).length, gens: world.filter(t => t.pillar && t.isGenerator && getZoneIndex(t.x) === 1).length, status: (zoneOrders[1] || []).map(o => o.status) })'));
-        same(m.left, 0, 'orders left ' + m.status.join('|')); same(m.n, 4, 'pieces'); same(m.bats, 0, 'batteries (the kit builds none: the power unit in the wall is the bank)'); same(m.gens, 1, 'generators');
+        same(m.left, 0, 'orders left ' + m.status.join('|')); same(m.n, 5, 'pieces (three guns and the unit\'s two cells)'); same(m.bats, 2, 'batteries (the kit builds none: the unit\'s two cells are the bank)'); same(m.gens, 0, 'generators (there are none)');
     });
     check('a kit already built in the zone queues nothing; a bigger one queues only the difference', () => {
         same(run('zoneQueueKit(1, "strongpoint", "fire")'), 0, 'again'); ok(run('floatingTexts.some(t => /ALREADY BUILT/.test(t.text))'), 'message');

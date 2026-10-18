@@ -50,7 +50,7 @@
 let buildMenuOpen = false;
 let buildMenuTab  = "turrets";
 let buildMenuMin  = false;
-let buildFloorBatteries = false;   // OFF: a zone's batteries are the POWER UNIT in its back wall (js/wallunit.js), not a tool. The placing mechanism (pods, levels, the chip's battery switches) stays under it, and the tests that cover it turn it on
+let buildFloorBatteries = false;   // OFF: a zone's batteries are the POWER UNIT in its back wall (js/wallunit.js), not a tool, and the unit is the zone's generator, so there is no generator or connector to place either: the POWER tab is gone. The placing mechanism (pods, levels, the chip's switches, the generator and connector) stays under this flag, and the tests that cover it turn it on
 let buildMenuSimple = false;   // the POWER BUILD window opened from the network panel (js/nethud.js): only the generator and the batteries
 let buildTool     = null;    // null | { kind, elId, label, colour } | { kind: "demolish" }
 let buildGhost    = null;    // { x, y } — the tile the tool is over
@@ -65,7 +65,7 @@ const BUILD_LEVELS = {
 };
 const _BM_LVL = 44;
 
-const BUILD_MENU_TABS = [
+const BUILD_MENU_TABS_ALL = [
     { id: "turrets", label: "TURRETS" },
     { id: "wave",    label: "WAVE" },
     { id: "power",   label: "POWER" },
@@ -90,9 +90,11 @@ function buildMenuItems(tab) {
         }
     } else if (tab === "power") {
         // Batteries are the POWER UNIT set into each zone's back wall (js/wallunit.js): tap it to boot and upgrade it. Only the placing tests turn the old tool back on.
-        if (buildFloorBatteries) for (const e of els) out.push({ tab, kind: "battery", elId: e.id, label: e.label.toUpperCase(), sub: "BATTERY", icon: "battery", colour: e.color });
-        if (!buildMenuSimple) out.push({ tab, kind: "connector", elId: typeof CONNECTOR_ID !== "undefined" ? CONNECTOR_ID : "connector", label: "CONNECTOR", sub: "RELAY", icon: "connector", colour: "#ffd24a" });
-        out.push({ tab, kind: "generator", elId: typeof GENERATOR_ID !== "undefined" ? GENERATOR_ID : "generator", label: "GENERATOR", sub: "ZONE POWER", icon: "generator", colour: "#cdd6e0" });
+        if (buildFloorBatteries) {
+            for (const e of els) out.push({ tab, kind: "battery", elId: e.id, label: e.label.toUpperCase(), sub: "BATTERY", icon: "battery", colour: e.color });
+            if (!buildMenuSimple) out.push({ tab, kind: "connector", elId: typeof CONNECTOR_ID !== "undefined" ? CONNECTOR_ID : "connector", label: "CONNECTOR", sub: "RELAY", icon: "connector", colour: "#ffd24a" });
+            out.push({ tab, kind: "generator", elId: typeof GENERATOR_ID !== "undefined" ? GENERATOR_ID : "generator", label: "GENERATOR", sub: "ZONE POWER", icon: "generator", colour: "#cdd6e0" });
+        }
     } else if (tab === "kits" && typeof KITS !== "undefined") {
         // The sixteen layout kits (js/kits.js): a whole zone layout in one placement.
         for (const k of KITS) out.push({ tab, kind: "kit", id: k.id, elId: null, label: k.name, sub: kitPieceCount(k) + " PCS", icon: null, colour: KIT_FAMILY_COLOUR[k.family] || "#19e6c1", cost: kitCost(k) });
@@ -215,6 +217,9 @@ function syncBuildMenu() {
     if (buildMode && !(typeof tutorialMode !== "undefined" && tutorialMode)) { if (!buildMenuOpen) openBuildMenu(); }
     else if (!buildMode) closeBuildMenu();
 }
+// The tabs shown: no POWER tab unless the old power placing is switched on (buildFloorBatteries).
+function buildMenuTabs() { return buildFloorBatteries ? BUILD_MENU_TABS_ALL : BUILD_MENU_TABS_ALL.filter(t => t.id !== "power"); }
+const BUILD_MENU_TABS = BUILD_MENU_TABS_ALL;
 // The MODULES button (the old CAMP button) and the home node open the window here.
 function openModulesWindow() {
     buildMenuTab = "modules";
@@ -224,6 +229,8 @@ function openModulesWindow() {
 // THE POWER BUILD (a tap on the network panel): the build window cut down to the generator and the batteries, with their element and level
 // rows, and nothing else. Picking a battery zooms out as any tool does, and the chip there (_placeChipSync) switches battery, element and level.
 function openPowerBuild() {
+    // A tap on the network panel opens the power unit's panel for the zone you are in (js/wallunit.js): that is the power build now.
+    if (!buildFloorBatteries) return typeof wallUnitToggleHere === "function" ? wallUnitToggleHere() : false;
     if (typeof tutorialMode !== "undefined" && tutorialMode) return false;
     if (typeof crystalMenuOpen !== "undefined") { crystalMenuOpen = false; }
     if (typeof cloneMenuOpen !== "undefined") { cloneMenuOpen = false; }
@@ -291,7 +298,7 @@ function canBuildAt(t, tool) {
     // Every piece of tech needs a working generator in its zone (power.js).
     if (!_bmIsRelayKind(tool.kind) && typeof zoneHasGenerator === "function" && typeof getZoneIndex === "function") {
         const z = getZoneIndex(Math.floor(t.x));
-        if (!zoneHasGenerator(z)) return { ok: false, why: "NO GENERATOR IN " + (z === 0 ? "THE HOME ZONE" : "ZONE " + z) };
+        if (!zoneHasGenerator(z)) return { ok: false, why: "NO POWER UNIT IN " + (z === 0 ? "THE HOME ZONE" : "ZONE " + z) + ": BOOT IT" };
     }
     if (tool.kind === "module") {
         if (!buildPowerAt(t.x, t.y, "module")) return { ok: false, why: "NO POWER HERE" };
@@ -402,8 +409,8 @@ function _bmLayout() {
             const lw = (W - _BM_PAD * 2 - 80) / 3;
             BUILD_LEVELS[buildMenuTab].forEach((label, i) => levels.push({ n: i + 1, label, x: x + _BM_PAD + 80 + i * lw, y: y + _BM_HEAD + tabsH + 2, w: lw - 6, h: _BM_LVL - 6 }));
         }
-        const tw = (W - _BM_PAD * 2) / BUILD_MENU_TABS.length;
-        if (!buildMenuSimple) BUILD_MENU_TABS.forEach((tb, i) => tabs.push({ tab: tb, x: x + _BM_PAD + i * tw, y: y + _BM_HEAD, w: tw - 6, h: _BM_TABS - 6 }));
+        const tw = (W - _BM_PAD * 2) / buildMenuTabs().length;
+        if (!buildMenuSimple) buildMenuTabs().forEach((tb, i) => tabs.push({ tab: tb, x: x + _BM_PAD + i * tw, y: y + _BM_HEAD, w: tw - 6, h: _BM_TABS - 6 }));
         const gx0 = x + Math.round((W - (cols * (cw + _BM_GAP) - _BM_GAP)) / 2);
         items.forEach((it, i) => cells.push({ it, x: gx0 + (i % cols) * (cw + _BM_GAP),
             y: y + _BM_HEAD + tabsH + lvH + _BM_GAP + Math.floor(i / cols) * (ch + _BM_GAP), w: cw, h: ch }));
@@ -420,8 +427,8 @@ function buildMenuHit(x, y) {
 
 // Why an item cannot be had, in a sentence.
 function _bmWhy(it, st) {
-    return st.why === "NO GENERATOR" ? "NO GENERATOR IN THIS ZONE \u2014 BUILD ONE BY A HELD NEST FIRST"
-         : st.why === "NO POWER" ? "NO POWER \u2014 BUILD A GENERATOR BY A HELD NEST FIRST"
+    return st.why === "NO GENERATOR" ? "NO POWER UNIT IN THIS ZONE \u2014 BOOT IT IN THE WALL FIRST"
+         : st.why === "NO POWER" ? "NO POWER \u2014 BOOT THE POWER UNIT IN THE WALL FIRST"
          : st.why === "NEEDS TIER I" ? "MK II NEEDS A TIER I NETWORK \u2014 2 LINKED " + it.label + " BATTERIES"
          : st.why === "NEEDS TIER II" ? (it.tab === "wave" ? "FORMATION" : "ULTRA") + " NEEDS A TIER II NETWORK \u2014 4 LINKED " + it.label + " BATTERIES"
          : st.why;
@@ -512,7 +519,7 @@ function drawBuildMenu() {
                 const lvName = BUILD_LEVELS[it.tab] && !_bmIsRelayKind(it.kind) && (buildLevel[it.tab] || 1) > 1
                     ? BUILD_LEVELS[it.tab][(buildLevel[it.tab] || 1) - 1].replace(" 2\u00d72", "") : it.sub;
                 // Short, to fit the cell; the full reason is said when it is tapped.
-                const shortWhy = { "NEEDS TIER I": "TIER I", "NEEDS TIER II": "TIER II", "NO FORMATION": "NO FORM", "NO GENERATOR": "NO GEN" }[st.why] || st.why;
+                const shortWhy = { "NEEDS TIER I": "TIER I", "NEEDS TIER II": "TIER II", "NO FORMATION": "NO FORM", "NO GENERATOR": "NO UNIT" }[st.why] || st.why;
                 uiCaptionFit(locked ? shortWhy : lvName + " \u25c6" + cost, c.x + c.w / 2, c.y + c.h - 17, sel ? UI_INK : locked ? "#b08a8a" : poor ? "#ff7a6a" : UI_GOLD, "center", 13, c.w - 10);
             }
         }

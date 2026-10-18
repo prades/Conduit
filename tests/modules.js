@@ -70,7 +70,7 @@ const PLACE = (kind, x, y) => `(function(){ toggleBuild(); if (!buildMenuOpen) t
             const t = world.find(t => t.type === 'floor' && !t.pillar && !t.nest && !t.nodeType && t.x > __g.x + 12 && t.x < __g.x + 20 && t.y === 2);
             return canBuildAt(t, tool).why; })()`);
         // Far off it is another zone, with no generator of its own (tests/shieldcells.js).
-        ok(/^(NO POWER HERE|NO GENERATOR IN ZONE \d+)$/.test(far), 'far from the grid: ' + far);
+        ok(/^(NO POWER HERE|NO POWER UNIT IN ZONE \d+: BOOT IT)$/.test(far), 'far from the grid: ' + far);
         const m = run(`modules[0]`);
         same(run(`canBuildAt(getTile(${m.x}, ${m.y}), { tab: 'modules', kind: 'module', id: 'overclock' }).why`), 'OCCUPIED', 'on a module');
         const s0 = run('shardCount');

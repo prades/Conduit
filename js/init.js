@@ -77,6 +77,7 @@ async function loadConfig() {
             tile._offline          = saved.offline || null;
         });
     }
+    if (typeof legacyPowerClear === "function") legacyPowerClear();   // generators and connectors from an older save are cleared (js/wallunit.js)
     if (typeof wallUnitMigrate === "function") wallUnitMigrate();   // a unit saved where it used to stand moves to where it stands now (js/wallunit.js)
     // Nests always generate at full health, so the ones already taken are
     // re-killed here. See applyNests in save.js — one rule, one place.

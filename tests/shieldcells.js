@@ -96,19 +96,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { live: _liveBattery(b), bp: b.powered, m: m.powered, md: !!m.zoneDark }; })()`);
         ok(!r.live && r.bp === false && !r.m && r.md, JSON.stringify(r));
     });
-    check('THE ASK: the build window greys tech out where the zone has no generator', () => {
+    check('THE ASK: the build window greys tech out where the zone has no power (no generator, no booted power unit)', () => {
         const r = run(`(function(){
             const zx = (getZoneIndex(__home.x) + 3) * ZONE_LENGTH + 4;
             player.x = player.targetX = player.visualX = zx; player.y = player.targetY = player.visualY = 2;
-            const items = buildMenuItems('turrets').concat(buildMenuItems('power'));
-            const out = { turret: buildItemState(items.find(i => i.kind === 'attack')).why || 'ok', gen: buildItemState(items.find(i => i.kind === 'generator')).ok,
+            const items = buildMenuItems('turrets');
+            const out = { turret: buildItemState(items.find(i => i.kind === 'attack')).why || 'ok',
                           tile: canBuildAt(__T(zx, 2), { tab: 'turrets', kind: 'attack', elId: 'fire' }).why };
             player.x = player.targetX = player.visualX = __home.x + 2;
             out.home = buildItemState(buildMenuItems('turrets').find(i => i.kind === 'attack')).why || 'ok';
             return out; })()`);
         same(r.turret, 'NO GENERATOR', 'a turret, standing in a zone with none');
-        same(r.gen, true, 'the generator itself is never greyed for it');
-        ok(/^NO GENERATOR IN ZONE \d+$/.test(r.tile), 'placing one there: ' + r.tile);
+        ok(/^NO POWER UNIT IN ZONE \d+: BOOT IT$/.test(r.tile), 'placing one there: ' + r.tile);
         ok(r.home !== 'NO GENERATOR', 'greyed in the zone that has one: ' + r.home);
     });
 

@@ -340,7 +340,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const n0 = r2('floatingTexts.length');
             r2(`(function(){ buildMenuTab = 'turrets'; const c = _bmLayout().cells[0]; handleBuildMenuTap(c.x + 5, c.y + 5); })()`);
             same(r2('buildTool'), null, 'tool');
-            ok(r2(`floatingTexts.slice(${n0}).some(t => /BUILD ONE BY A HELD NEST|BUILD A GENERATOR/.test(t.text))`), 'it did not say how');
+            ok(r2(`floatingTexts.slice(${n0}).some(t => /BOOT THE POWER UNIT|BOOT IT IN THE WALL/.test(t.text))`), 'it did not say how');
         });
         check('THE ASK: once a generator draws on a held nest, they light up — near it, not far away', () => {
             r2(`(function(){ const portal = world.find(t => isHomePortal(t));

@@ -119,7 +119,7 @@ function measure() {
     check('zones are separate: booting zone 0 leaves zone 1 dark', () => { fresh(false); run("wallUnitBoot(0, 'fire')"); same(run('wallUnitTier(1)'), 0, 'zone 1'); });
 
     group('NO BATTERIES ON THE FLOOR');
-    check('the power tab of the build menu offers no battery', () => { const kinds = J('buildMenuItems("power").map(i => i.kind)'); ok(!kinds.includes('battery'), 'kinds: ' + kinds.join()); ok(kinds.includes('generator'), 'the generator is still there'); });
+    check('the build menu has no POWER tab: no battery, generator or connector to place', () => { const kinds = J('buildMenuItems("power").map(i => i.kind)'); ok(!kinds.includes('battery') && !kinds.includes('generator') && !kinds.includes('connector'), 'kinds: ' + kinds.join()); ok(!J('buildMenuTabs().map(t => t.id)').includes('power'), 'the POWER tab is still there'); });
     check('the pylon kind picker offers no battery', () => { run("elementPickerStage = 'type'; elementPickerMode = 'upgrade'; elementPickerTarget = null;"); const ks = J('_epItems().map(i => i.k && i.k.id)'); ok(!ks.includes('battery') && ks.includes('attack'), 'kinds: ' + ks.join()); });
     check('a wall cell cannot be demolished', () => { same(run('canDemolishPylon(wallUnitTiles(0).find(t => t.pillar))'), false, 'demolishable'); });
 
@@ -183,6 +183,18 @@ function measure() {
     check('the unit\'s cells charge from the nest with no generator', () => {
         const r = J(`(function(){ const b = wallUnitTiles(0).find(t => t.pillar), n = b.powerSource; if (!n) return { route: false }; n.nestEnergy = nestEnergyMax(n); b.charge = 0; for (let i = 0; i < 100; i++) batteryChargeTick(); return { route: true, c: b.charge }; })()`);
         ok(r.route && r.c > 5, JSON.stringify(r));
+    });
+
+    group('NO GENERATORS, NO CONNECTORS');
+    check('a generator or connector from an older save is demolished and refunded when the game loads (legacyPowerClear)', () => {
+        fresh(true); run(`(function(){ const home = world.find(t => isHomePortal(t)), T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
+            _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === CONNECTOR_ID), T(home.x + 5, 2)); shardCount = 100; _cacheAge = -999; render(); })()`);
+        same(run('world.filter(t => t.pillar && (t.isGenerator || t.isConnector)).length'), 2, 'fixture: a generator and a connector');
+        same(run('legacyPowerClear()'), 2, 'cleared'); same(run('world.filter(t => t.pillar && (t.isGenerator || t.isConnector)).length'), 0, 'left standing'); same(run('shardCount'), 100 + 2 * run('DEMOLISH_REFUND'), 'refund');
+    });
+    check('nothing in the game offers one: no generator or connector in the build menu, the picker, the kits or the zone orders', () => {
+        ok(!/GENERATOR/.test(J('KITS.map(k => k.map.join("")).join("")')), 'a kit has a G'); ok(J('KITS.every(k => !/[GC]/.test(k.map.join("")))'), 'a kit has a G or C');
+        ok(!/kind: "generator"/.test(rd('js/commandcenter.js').slice(rd('js/commandcenter.js').indexOf('function buildOrderPickerOpen'), rd('js/commandcenter.js').indexOf('function buildOrderPickerOpen') + 6000)), 'the order picker still offers a generator');
     });
 
     group('A SAVE FROM BEFORE THE UNIT MOVED');

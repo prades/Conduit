@@ -94,49 +94,49 @@ function ok(c, m) { if (!c) throw new Error(m); }
                  form: (_formations.find(f => near.includes(f)) || { _wform: {} })._wform.kind || null,
                  formOn: _formations.some(f => near.includes(f) && formationActive(f._wform)),
                  loose: near.filter(t => t.waveMode && !(t._wform || t._wformOf)).length, guns: near.filter(t => t.attackMode && !t.isBattery && !t.isGenerator).length }; })()`);
-    await check('THE ASK: it builds from the layout kits, generator first, one pylon a think (not a carpet of pylons)', () => {
+    await check('THE ASK: it builds from the layout kits, the power unit first, one step a think (not a carpet of pylons)', () => {
         fresh(6);
-        const first = run(`(function(){ _autoBuild(); const t = world.filter(t => t.pillar && t.pillarTeam === 'green'); return { n: t.length, gen: t.some(x => x.isGenerator) }; })()`);
-        ok(first.n === 1 && first.gen, 'the first build should be the generator: ' + JSON.stringify(first));
+        const first = run(`(function(){ _autoBuild(); const t = world.filter(t => t.pillar && t.pillarTeam === 'green'); return { n: t.length, unit: t.every(x => x.isBattery && x.y === -2), gen: t.some(x => x.isGenerator) }; })()`);
+        ok(first.n === 2 && first.unit && !first.gen, 'the first build should boot the power unit (its two cells in the wall): ' + JSON.stringify(first));
     });
     await check('THE ASK: at the frontier nest it climbs the ladder (OUTPOST, STRONGPOINT, ULTRA NEAR, a formation TRAP) and then STOPS: nothing spare, nothing loose', () => {
         fresh(6);
         const r = plan(60);
-        ok(r.gens === 1, 'generators: ' + r.gens);
+        ok(r.gens === 0, 'generators (there are none): ' + r.gens);
         ok(r.el === 'core', 'the network should be in the commonest squad element: ' + r.el);
         ok(r.tier === 2 && r.bats === 4, 'the power unit upgraded to four cells (tier II) is what the ladder needs: ' + JSON.stringify(r));
         ok(r.ultra && r.ultraEl === r.el, 'no ultra turret of the network element: ' + JSON.stringify(r));
         ok(r.form === 'shieldforge' && r.formOn, 'no working formation (core forms a SHIELD FORGE): ' + JSON.stringify(r));
-        ok(r.n === 14 && r.loose === 0 && r.cons === 1, 'exactly the kits and the unit and nothing else (G + connector + 4 guns + 4 wave pylons = 10, the unit\'s 4 cells, no loose pylon): ' + JSON.stringify(r));
+        ok(r.n === 12 && r.loose === 0 && r.cons === 0, 'exactly the kits and the unit and nothing else (4 guns + 4 wave pylons = 8, the unit\'s 4 cells, no generator, no connector, no loose pylon): ' + JSON.stringify(r));
         const again = plan(40); ok(again.n === r.n, 'it kept building after the ladder was done: ' + r.n + ' -> ' + again.n);
     });
-    await check('the ladder is by place: front gets the most, mid an outpost and a strongpoint, rear a skeleton and an outpost; deep zones aim for a FULL KIT', () => {
+    await check('the ladder is by place: front gets the most, mid an outpost and a strongpoint, rear a picket and an outpost; deep zones aim for a FULL KIT', () => {
         const r = run(`(function(){ const a = { nestZone: 1 }, b = { nestZone: 2 }, c = { nestZone: 3 }, d = { nestZone: 4 };
             return { front: _autoZoneClass(b, [a, b]), mid: _autoZoneClass(a, [a, b]), rear: _autoZoneClass(a, [a, b, c, d].slice(0, 3).concat([d]).map((x, i) => i === 0 ? a : x)), deep: _autoZoneClass(d, [a, b, c, d]),
                      ladders: Object.keys(AUTOPLAY_LADDER).map(k => k + ':' + AUTOPLAY_LADDER[k].join('>')) }; })()`);
         ok(r.front === 'front' && r.mid === 'mid' && r.rear === 'rear' && r.deep === 'deep', JSON.stringify(r));
-        ok(/rear:skeleton>outpost/.test(r.ladders.join()) && /front:outpost>strongpoint>ultranear>trap/.test(r.ladders.join()) && /deep:outpost>strongpoint>fullkit/.test(r.ladders.join()), r.ladders.join(' '));
+        ok(/rear:picket>outpost/.test(r.ladders.join()) && /front:outpost>strongpoint>ultranear>trap/.test(r.ladders.join()) && /deep:outpost>strongpoint>fullkit/.test(r.ladders.join()), r.ladders.join(' '));
     });
-    await check('a deep zone builds the FULL KIT: thirteen pieces and a tier III unit (six cells), an Ultra and a formation, and stops', () => {
+    await check('a deep zone builds the FULL KIT: twelve pieces and a tier III unit (six cells), an Ultra and a formation, and stops', () => {
         fresh(6);
         const r = run(`(function(){ shardCount = 900; const n = world.find(t => t.nest && !isHomePortal(t) && getZoneIndex(t.x) === ${3}); n.nestHealth = 0; _nestCache = world.filter(t => t.nest);
             for (let i = 0; i < 40; i++) { _autoGrowNetwork(n, null, [n]); _cacheAge = -999; render(); }
             const near = world.filter(t => t.pillar && !t.destroyed && t.pillarTeam === 'green' && getZoneIndex(t.x) === 3), el = n._autoKit.el;
             return { n: near.length, bats: near.filter(t => t.isBattery).length, tier: networkStrength[el], ultra: near.some(t => t._ultra), form: near.some(t => t._wform), gens: near.filter(t => t.isGenerator).length, kit: n._autoKit.id }; })()`);
-        ok(r.n === 19 && r.bats === 6 && r.tier === 3 && r.ultra && r.form && r.gens === 1, JSON.stringify(r));
+        ok(r.n === 18 && r.bats === 6 && r.tier === 3 && r.ultra && r.form && r.gens === 0, JSON.stringify(r));
     });
     await check('short of shards it WAITS on the next piece (it does not skip ahead to something cheaper) and keeps nothing it cannot afford', () => {
         fresh(6);
         run('shardCount = 25');
         const r = plan(40);
-        ok(r.n === 1 && r.gens === 1, 'with 25 shards: the generator, then it waits for the unit (20): ' + JSON.stringify(r));
+        ok(r.n === 2 && r.bats === 2, 'with 25 shards: the unit (20) boots, then it waits for the next gun: ' + JSON.stringify(r));
     });
     await check('MK II comes last, and only with shards to spare', () => {
         fresh(6); run('shardCount = 150'); plan(80);
         const same0 = run('world.filter(t => t.pillar && (t.mk || 0) >= 2).length'); ok(same0 === 0, 'MK II on a tight budget: ' + same0);
         run('shardCount = 500; for (let i = 0; i < 12; i++) { _autoBuild(); _cacheAge = -999; render(); }');
         ok(run('world.filter(t => t.pillar && (t.mk || 0) >= 2).length') > 0, 'no MK II with 500 shards to spare');
-        const n = run('world.filter(t => t.pillar).length'); ok(n === 14, 'MK II added pylons: ' + n);
+        const n = run('world.filter(t => t.pillar).length'); ok(n === 12, 'MK II added pylons: ' + n);
     });
     await check('it stops when the shards run out', () => {
         fresh(2);

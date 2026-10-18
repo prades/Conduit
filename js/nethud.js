@@ -150,7 +150,7 @@ function drawNetworkStatusHUD() {
         _netText((net >= 0 ? "\u25b2 " : "\u25bc ") + Math.abs(net).toFixed(1) + "/s", mx, Y + 92, 12, net >= 0.05 ? "#9fe8c0" : net <= -0.05 ? "#ff9a66" : "#8a93a8", "left", true);
     }
     // where you stand
-    const where = sig.state === "offline" ? "BOOT A POWER UNIT IN THE WALL"
+    const where = sig.state === "offline" ? "TAP HERE TO BOOT THE POWER UNIT"
                 : sig.state === "none" ? "OUT OF RANGE \u00b7 " + Math.round(sig.dist) + " TILES OUT"
                 : sig.state === "weak" ? "TIER " + NET_TIER_ROMAN[sig.local] + " HERE \u00b7 " + Math.round(sig.dist) + " TILES OUT"
                 : "TIER " + NET_TIER_ROMAN[sig.local] + " HERE" + (sig.dist <= BANK_FULL_RANGE ? " \u00b7 AT THE BATTERIES" : "");
@@ -189,8 +189,8 @@ function drawNetworkStatusHUD() {
         if (dark) { _netText("NO POWER \u2014 CHARGE", mx + 28, y + 2, 11, "#ff7755", "left", true); y += 12; }
     });
     // The way in: a tap on the panel opens the power build (and puts it away again).
-    const _open = typeof buildMenuOpen !== "undefined" && buildMenuOpen && buildMenuSimple;
-    _netTextFit(_open ? "\u25b8 TAP TO CLOSE POWER BUILD" : "\u25b8 TAP TO BUILD POWER", X + W / 2, Y + H - 10, 11, _open ? UI_TEAL : "#a9bddf", "center", IW, true);
+    const _open = typeof wallUnitIsOpen === "function" ? wallUnitIsOpen() : (typeof buildMenuOpen !== "undefined" && buildMenuOpen && buildMenuSimple);
+    _netTextFit(_open ? "\u25b8 TAP TO CLOSE THE POWER UNIT" : "\u25b8 TAP FOR THE POWER UNIT", X + W / 2, Y + H - 10, 11, _open ? UI_TEAL : "#a9bddf", "center", IW, true);
     _netPanelRect = { x: X, y: Y, w: W, h: H };
     ctx.restore();
 }
