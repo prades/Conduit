@@ -169,8 +169,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(r.length === 2 && /4 NETWORKS UP/.test(r[0]), JSON.stringify(r));
         ok(r[1].length <= 40, 'too long for a phone: ' + r[1]);
     });
-    await check('a pylon shows its full label only near you or while held', () => {
-        ok(/const _near = \(Math\.abs\(obj\.x-player\.x\)<=PYLON_LABEL_NEAR/.test(rd('js/game.js')), 'labels are not gated on distance');
+    await check('a pylon shows its label only while held, inspected or building (no longer by distance: the battlefield is bare)', () => {
+        ok(/const _near = pylonLabelsOn\(obj\);/.test(rd('js/game.js')), 'labels are not gated on pylonLabelsOn');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

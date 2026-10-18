@@ -592,9 +592,9 @@ function drawCampFloor(obj, px, py, amb) {
     else {
     let tR, tG, tB;
     if (isNight) {
-        tR = (22 * amb + 38 * glo) | 0;
-        tG = (14 * amb + 10 * glo) | 0;
-        tB = (16 * amb +  6 * glo) | 0;
+        tR = (14 * amb + 12 * glo) | 0;
+        tG = (18 * amb + 14 * glo) | 0;
+        tB = (30 * amb + 26 * glo) | 0;
     } else {
         tR = (16 * amb +  8 * glo) | 0;
         tG = (26 * amb + 20 * glo) | 0;
@@ -610,7 +610,7 @@ function drawCampFloor(obj, px, py, amb) {
     ctx.fill();
 
     // ── Steel panel bevel — matching regular floor edges ──
-    ctx.strokeStyle = isNight ? `rgba(80,45,30,${0.5 * amb})` : `rgba(80,130,180,${0.55 * amb})`;
+    ctx.strokeStyle = isNight ? `rgba(70,95,140,${0.45 * amb})` : `rgba(80,130,180,${0.55 * amb})`;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(px, py + 1); ctx.lineTo(px - TILE_W + 1, py + TILE_H); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(px, py + 1); ctx.lineTo(px + TILE_W - 1, py + TILE_H); ctx.stroke();

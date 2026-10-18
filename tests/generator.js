@@ -495,8 +495,8 @@ check('a generator holds no wave network', () => {
 check('the colour lookup covers the generator', () => {
     // ELEMENTS.find would return undefined for "generator" and fall back to
     // the default green, so it would not read as neutral.
-    ok(/PYLON_PICKER_TYPES\.find\(e=>e\.id===obj\.attackModeElement\)/.test(GAME),
-       'the network highlight still looks the colour up in ELEMENTS');
+    // (The lit tile under a pylon, which also did this lookup, is gone: the equipment stands on the bare floor.)
+    ok(!/NETWORK NODE TILE HIGHLIGHT/.test(GAME), 'the lit tile under a pylon is back');
     ok(/PYLON_PICKER_TYPES\.find\(e=>e\.id===p\.attackModeElement\)/.test(NPC),
        'the merge path still looks the colour up in ELEMENTS');
 });

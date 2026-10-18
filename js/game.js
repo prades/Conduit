@@ -899,12 +899,12 @@ const FLOOR_SPRITE_CAP  = 700;
 let _floorSprites = new Map();
 function _drawFloorTile(c, px, py, isNight, dist, territory, fade) {
     const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
-    // Day: Dexter's Lab steel-blue/teal panels. Night: Dark steel with warm red-orange ambience.
+    // Day: Dexter's Lab steel-blue/teal panels. Night: the same steel, darker and cooler (it was a warm red-orange glow round you: "make the alarm phase lighting not so dramatic").
     let tR, tG, tB;
     if (isNight) {
-        tR = (22*amb + 38*glo)|0;
-        tG = (14*amb + 10*glo)|0;
-        tB = (16*amb +  6*glo)|0;
+        tR = (14*amb + 12*glo)|0;
+        tG = (18*amb + 14*glo)|0;
+        tB = (30*amb + 26*glo)|0;
     } else {
         tR = (16*amb +  8*glo)|0;
         tG = (26*amb + 20*glo)|0;
@@ -927,7 +927,7 @@ function _drawFloorTile(c, px, py, isNight, dist, territory, fade) {
 
     // ── Steel panel bevel — highlight top two edges, shadow bottom two ──
     // Top-left edge highlight
-    c.strokeStyle = isNight ? `rgba(80,45,30,${0.5*amb})` : `rgba(80,130,180,${0.55*amb})`;
+    c.strokeStyle = isNight ? `rgba(70,95,140,${0.45*amb})` : `rgba(80,130,180,${0.55*amb})`;
     c.lineWidth = 1;
     c.beginPath(); c.moveTo(px,py+1); c.lineTo(px-TILE_W+1,py+TILE_H); c.stroke();
     // Top-right edge highlight
@@ -1475,6 +1475,8 @@ let _netLit = {};
 let _batteryLinks = [];   // { a, b, el } battery to battery, laid as cables
 let _batteryBanks = [];   // { el, tier, members } — each linked group of one element's batteries
 const COMBO_LABEL_NEAR = 4;
+// A pylon's names and numbers float over it only while you hold or inspect it, or while you build: otherwise the battlefield is bare ("there is other clutter on the battlefield").
+function pylonLabelsOn(o) { return (typeof commandMode !== "undefined" && commandMode && commandTarget === o) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen && typeof infoPanelTarget !== "undefined" && infoPanelTarget === o) || (typeof buildMode !== "undefined" && buildMode); }
 const PYLON_LABEL_NEAR = 4;   // tiles: a pylon's full label shows only this close to you   // tiles: a combo link names itself only this close to you   // lit pylons per element, for the network HUD (see the tier count)
 function rebuildComboLinks() {
     _comboLinks = [];
@@ -3059,7 +3061,7 @@ function render() {
     // Modules (js/modules.js): structures on their tiles, sorted with the rest.
     if (typeof modules !== "undefined" && !_simGhost) for (const m of modules) if (visibleForDraw(m.x, m.y)) drawList.push({ type: 'module', x: m.x, y: m.y, module: m });
     // The LAB WALL (js/labwall.js): equipment standing out of each back-wall tile, sorted just in front of its own wall tile so units walk in front of it.
-    if (typeof labModuleAt === "function") { const _n = drawList.length; for (let i = 0; i < _n; i++) { const t = drawList[i]; if (t.type === 'wall_back' && t.y === -2 && labModuleAt(t.x)) drawList.push({ type: 'labmod', x: t.x, y: -1 + LAB_DEPTH, tile: t }); } }
+    if (typeof labModuleAt === "function") { const _n = drawList.length; for (let i = 0; i < _n; i++) { const t = drawList[i]; if (t.type === 'wall_back' && t.y === -2 && (labModuleAt(t.x) || labBulbAt(t.x))) drawList.push({ type: 'labmod', x: t.x, y: -1 + LAB_DEPTH, tile: t }); } }
     // Depth is x+y: a bigger sum draws lower and in front.
     //
     // A WALL NEST is the exception. Its vortex is painted across a four-tile
@@ -3674,22 +3676,7 @@ function render() {
                 ctx.restore();
             }
 
-            // ── NETWORK NODE TILE HIGHLIGHT ──
-            if (obj.pillar&&!obj.destroyed&&obj.pillarTeam==="green"&&obj.health>0&&obj.attackModeElement) {
-                const _gelDef = PYLON_PICKER_TYPES.find(e=>e.id===obj.attackModeElement);
-                const _gCol = _gelDef ? _gelDef.color : "#0f8";
-                const _gpulse = 0.5+0.5*Math.sin((frame||0)*0.07+obj.x*0.8+obj.y*0.5);
-                // Stamped from a sprite per colour (_tileGlowSprite), its pulse as
-                // the alpha: it was a fill and two strokes in a save/restore under
-                // every pylon tile, every frame.
-                const _tg = _tileGlowSprite(_gCol);
-                if (_tg) {
-                    const _ga = ctx.globalAlpha;
-                    ctx.globalAlpha = _ga * (0.45 + _gpulse * 0.55);
-                    ctx.drawImage(_tg, px - TILE_W - 5, py - 5);
-                    ctx.globalAlpha = _ga;
-                }
-            }
+            // (No lit tile under a pylon any more: the equipment stands on the bare floor.)
 
             // ── BROKEN PYLON ──
             // A pylon that loses its health keeps its tile, its element and its
@@ -3724,7 +3711,7 @@ function render() {
                     ctx.stroke();
                 }
                 // Label only for the player's own wreckage — theirs to fix
-                if (obj.pillarTeam === "green") {
+                if (obj.pillarTeam === "green" && pylonLabelsOn(obj)) {
                     ctx.fillStyle = `rgba(0,204,170,${0.55 + 0.35 * Math.sin(frame * 0.08)})`;
                     ctx.font = "bold 8px monospace"; ctx.textAlign = "center";
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -3833,7 +3820,7 @@ function render() {
                 if (obj.isBattery) {
                     // Its name and its element's tier, only near you or held.
                     const _bt = pylonNetworkTier(obj), _bc = obj.attackModeColor || BATTERY_COLOR;
-                    const _bNear = (Math.abs(obj.x-player.x)<=PYLON_LABEL_NEAR && Math.abs(obj.y-player.y)<=PYLON_LABEL_NEAR) || (commandMode && commandTarget===obj);
+                    const _bNear = pylonLabelsOn(obj);
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                     // Its charge, always: a gold gauge over it, the number when near.
                     const _bf = batteryCharge(obj) / BATTERY_CAPACITY, _bChg = batteryCharging(obj);
@@ -3895,8 +3882,7 @@ function render() {
                     // The full two-line label only near you or while held
                     // (Conduit effects plan, "Pylon labels"); elsewhere just
                     // the tier, small.
-                    const _near = (Math.abs(obj.x-player.x)<=PYLON_LABEL_NEAR && Math.abs(obj.y-player.y)<=PYLON_LABEL_NEAR)
-                                  || (commandMode && commandTarget===obj);
+                    const _near = pylonLabelsOn(obj);
                     ctx.save(); ctx.setTransform(1,0,0,1,0,0);
                     // Its STATUS (config.js): MK II or upgraded, and what it multiplies.
                     const _st = pylonStatusLabel(obj), _mk = (obj.mk||0) >= 2;
@@ -3906,9 +3892,6 @@ function render() {
                         ctx.globalAlpha=_asleep?0.45:0.7;
                         cachedText(_sub, "7px monospace", _acol, px, _orbY-3);
                         if (_st) { ctx.globalAlpha=0.95; cachedText((_mk ? "\u25c6 " : "") + _st + " \u00d7" + pylonStatusMult(obj) + " DMG", "bold 7px monospace", _mk ? "#ffd34d" : "#7ff", px, _orbY-21); }
-                    } else if (_lblTier>0 || _mk) {
-                        ctx.globalAlpha=_asleep?0.45:0.8;
-                        cachedText((_mk ? "\u25c6" : "") + (_lblTier>0 ? ["I","II","III"][_lblTier-1] : ""), "bold 8px monospace", _mk ? "#ffd34d" : _acol, px, _orbY-6);
                     }
                     ctx.restore();
                     // Seasoned gold bands at base

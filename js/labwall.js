@@ -46,6 +46,48 @@ function labModuleAt(x) {
     return k ? { kind: k, span: 1 } : null;
 }
 
+// ── SHIP LIGHTS ──
+// ASKED: "make 3D light bulbs on the walls blink: they look like ship lights". About one wall tile in six carries a caged bulb on a bracket high on the wall (above the low equipment, never over a tall piece), amber, white or red,
+// each on its own rhythm: steady, a slow blink, a fast blink, or a double flash. While an alarm runs the red ones all blink together. The housing and the bulb are baked (labBulbSprite: lit and dark); the glow is a stamped halo.
+const _LAB_BULB_COLS = ["#ffb43a", "#fff2d0", "#ff3a2a"], _LAB_BULB_Z = 98;
+function labBulbAt(x) {
+    if (!labTileFree(x) || _labIsUnit(x)) return null;
+    const h = _labHash(x * 7 + 3); if (h % 3 !== 0) return null;
+    const m = labModuleAt(x); if (m && ["unit", "generator", "chamber", "console2", "server", "bank", "pipes"].indexOf(m.kind) >= 0) return null;
+    const k = _labHash(x * 13 + 5); return { col: _LAB_BULB_COLS[k % 3], mode: (k >>> 4) % 4, phase: (k >>> 8) % 120 };
+}
+// Is it lit at this frame? (alarm = true: the red ones flash together)
+function labBulbOn(b, f, alarm) {
+    if (alarm && b.col === _LAB_BULB_COLS[2]) return f % 30 < 15;
+    const t = (f + b.phase) % 120;
+    return b.mode === 0 ? true : b.mode === 1 ? t < 60 : b.mode === 2 ? t % 40 < 20 : (t < 10 || (t >= 20 && t < 30));
+}
+function labBulbSprite(col, on) {
+    const key = "bulb|" + col + "|" + (on ? 1 : 0); if (_labSprites.has(key)) return _labSprites.get(key);
+    let cv = null;
+    try {
+        cv = document.createElement("canvas"); cv.width = 44; cv.height = 56; const g = cv.getContext("2d"), cx = 22, cy = 24;
+        // the bracket and the wall plate
+        g.fillStyle = "#15130d"; g.fillRect(cx - 9, cy + 12, 18, 9); g.fillStyle = "#3a352a"; g.fillRect(cx - 9, cy + 12, 18, 3); g.strokeStyle = "rgba(0,0,0,.9)"; g.lineWidth = 1.2; g.strokeRect(cx - 9, cy + 12, 18, 9);
+        g.fillStyle = "#2c2920"; g.fillRect(cx - 5, cy + 6, 10, 8); g.strokeRect(cx - 5, cy + 6, 10, 8);   // the socket
+        // the glass bulb: a sphere, bright when lit
+        const gr = g.createRadialGradient(cx - 4, cy - 4, 1, cx, cy, 12); if (on) { gr.addColorStop(0, "#ffffff"); gr.addColorStop(.35, col); gr.addColorStop(1, _lhex(col, .55)); } else { gr.addColorStop(0, "#6a6a62"); gr.addColorStop(1, "#1c1b18"); }
+        g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, 11, 0, 7); g.fill(); g.strokeStyle = "rgba(0,0,0,.85)"; g.lineWidth = 1.4; g.stroke();
+        g.fillStyle = "rgba(255,255,255,.55)"; g.beginPath(); g.ellipse(cx - 4, cy - 5, 3.2, 2, -.6, 0, 7); g.fill();
+        // the cage: bars over the bulb and two rings
+        g.strokeStyle = "#0b0a07"; g.lineWidth = 2.4; for (const k of [-1, 0, 1]) { g.beginPath(); g.moveTo(cx + k * 5, cy + 7); g.quadraticCurveTo(cx + k * 14, cy - 2, cx + k * 3, cy - 13); g.stroke(); }
+        g.beginPath(); g.ellipse(cx, cy + 4, 11, 3.6, 0, 0, Math.PI); g.stroke(); g.beginPath(); g.ellipse(cx, cy - 8, 6, 2.2, 0, 0, Math.PI); g.stroke();
+        g.strokeStyle = "#6a6350"; g.lineWidth = 1.1; for (const k of [-1, 0, 1]) { g.beginPath(); g.moveTo(cx + k * 5, cy + 7); g.quadraticCurveTo(cx + k * 14, cy - 2, cx + k * 3, cy - 13); g.stroke(); }
+        g.fillStyle = "#2c2920"; g.fillRect(cx - 4, cy - 15, 8, 3); g.strokeRect(cx - 4, cy - 15, 8, 3);
+    } catch (e) { cv = null; }
+    _labSprites.set(key, cv); return cv;
+}
+function labHaloSprite(col) {
+    const key = "halo|" + col; if (_labSprites.has(key)) return _labSprites.get(key);
+    let cv = null;
+    try { cv = document.createElement("canvas"); cv.width = cv.height = 96; const g = cv.getContext("2d"), gr = g.createRadialGradient(48, 48, 2, 48, 48, 46); gr.addColorStop(0, col); gr.addColorStop(.25, col); gr.addColorStop(1, "rgba(0,0,0,0)"); g.globalAlpha = .55; g.fillStyle = gr; g.fillRect(0, 0, 96, 96); } catch (e) { cv = null; }
+    _labSprites.set(key, cv); return cv;
+}
 // ── the painter (everything below draws into a sprite) ──
 let _lg = null, _lox = 0, _loy = 0, _lseed = 1;
 function _lrnd() { _lseed = (_lseed * 16807) % 2147483647; return (_lseed - 1) / 2147483646; }
@@ -180,6 +222,15 @@ function _labHalf(kind, state, tier, col, part) {
     _labSprites.set(key, cv);
     return cv;
 }
+// A ship light on the wall plane at the middle of the tile, high up.
+function drawLabBulb(tile, b, amb) {
+    const f = typeof frame !== "undefined" ? frame : 0, alarm = typeof alertActive !== "undefined" && !!alertActive, on = labBulbOn(b, f, alarm), spr = labBulbSprite(b.col, on); if (!spr) return;
+    const ox = (tile.x - player.visualX - (-1 - player.visualY)) * TILE_W + canvas.width / 2, oy = (tile.x - player.visualX + (-1 - player.visualY)) * TILE_H + canvas.height / 2;
+    const bx = ox + (0.5 - 0.08) * 60, by = oy + (0.5 + 0.08) * 30 - _LAB_BULB_Z;
+    ctx.save(); ctx.globalAlpha = Math.min(1, 0.4 + amb); ctx.drawImage(spr, bx - 22, by - 24);
+    if (on) { const h = labHaloSprite(b.col); if (h) { ctx.globalAlpha = Math.min(1, 0.35 + amb * 0.8); ctx.drawImage(h, bx - 48, by - 48 - 2); } }
+    ctx.restore();
+}
 // What a cell of the unit looks like now: { st: 'live' | 'bay' | 'wreck', fill 0..LAB_FILL_STEPS, col }.
 function labCellLook(tile) {
     if (!tile || !tile.pillar || !tile.isBattery) return { st: "bay", fill: 0, col: "" };
@@ -196,7 +247,9 @@ function labUnitState(zone) {
 }
 // Called by the depth-sorted pass for a 'labmod' item standing in front of wall tile `tile` (js/game.js).
 function drawLabModule(tile, amb) {
-    const m = labModuleAt(tile.x); if (!m) return;
+    const m = labModuleAt(tile.x), bulb = (!m || m.part !== 2) ? labBulbAt(tile.x) : null;
+    if (bulb) drawLabBulb(tile, bulb, amb);
+    if (!m) return;
     let spr;
     if (m.kind === "unit") { const u = labUnitState(Math.floor(tile.x / ZONE_LENGTH)); spr = labSprite("unit", u.cells.join(","), u.tier, u.col, m.part); } else spr = labSprite(m.kind, "", 0, "", m.part);
     if (!spr) return;

@@ -236,11 +236,12 @@ function _drawUltraBody(t, cx, cy) {
     // Combined health and the name, over its (scaled) crown.
     const crownY = cy - ULTRA_CROWN_Z * ULTRA_SCALE;
     const [h, m] = ultraHealth(t);
-    if (typeof drawHealthBar === "function") drawHealthBar(cx - 24, crownY - 22, 48, 5, h, m);
+    if (typeof drawHealthBar === "function" && (h < m || (typeof pylonLabelsOn === "function" && pylonLabelsOn(t)))) drawHealthBar(cx - 24, crownY - 22, 48, 5, h, m);
     c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
     const tier = typeof networkTierAt === "function" ? networkTierAt(U.el, U.cx, U.cy) : 0;
     const label = "ULTRA · " + U.el.toUpperCase() + (tier > 0 ? [" T-I", " T-II", " T-III"][tier - 1] : "");
-    if (typeof cachedText === "function") cachedText(label, "bold 10px monospace", col, cx, crownY - 28);
+    if (!(typeof pylonLabelsOn === "function" && pylonLabelsOn(t))) { /* no name over an Ultra unless you hold it or build */ }
+    else if (typeof cachedText === "function") cachedText(label, "bold 10px monospace", col, cx, crownY - 28);
     else { c.fillStyle = col; c.font = "bold 10px monospace"; c.textAlign = "center"; c.fillText(label, cx, crownY - 28); }
     c.restore();
 }

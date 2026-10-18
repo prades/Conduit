@@ -49,7 +49,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('a two-tile piece is cut in two along the tile boundary, so each half sorts with its own tile and the floor in front cannot cover it', () => {
         const r = J(`(function(){ const w = labSprite('generator'), a = labSprite('generator', '', 0, '', 1), b = labSprite('generator', '', 0, '', 2); return { whole: !!w, a: !!a, b: !!b, again: labSprite('generator', '', 0, '', 2) === b, size: a && b && a.width === b.width && a.height === b.height }; })()`);
         ok(r.whole && r.a && r.b && r.again && r.size, JSON.stringify(r));
-        const g = rd('js/game.js'); ok(/labModuleAt\(t\.x\)\) drawList\.push\(\{ type: 'labmod'/.test(g), 'every tile with a half gets its own sorted item');
+        const g = rd('js/game.js'); ok(/\(labModuleAt\(t\.x\) \|\| labBulbAt\(t\.x\)\)\) drawList\.push\(\{ type: 'labmod'/.test(g), 'every tile with a half (or a ship light) gets its own sorted item');
         ok(/part === 2 \? tile\.x - 1 : tile\.x/.test(rd('js/labwall.js')), 'the second half is not stamped from the first tile\'s origin');
     });
 
@@ -80,6 +80,29 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('the old flat unit panel is gone: the wall tile draws no panel of its own', () => { ok(!/drawWallUnitCell/.test(rd('js/game.js')) && !/function drawWallUnitCell/.test(rd('js/wallunit.js')), 'drawWallUnitCell is still there'); });
     check('the wall is warm: no blue wall face, amber buses', () => { const g = rd('js/game.js'); ok(/const busC = \['#ffb43a'/.test(g) && /WPAL = \['#ffb43a'/.test(g), 'the traces are not amber'); });
+
+    group('SHIP LIGHTS, BARE TILES, A QUIETER NIGHT');
+    check('some wall tiles carry a caged bulb, never over a tall piece, the unit or a nest\'s vortex', () => {
+        const a = J('Array.from({ length: 800 }, (_, x) => labBulbAt(x))'), n = a.filter(Boolean).length; ok(n >= 30 && n <= 300, 'bulbs on 800 tiles: ' + n);
+        for (let x = 0; x < 800; x++) { if (!a[x]) continue; const m = J('labModuleAt(' + x + ')'); ok(!m || !['unit', 'generator', 'chamber', 'console2', 'server', 'bank', 'pipes'].includes(m.kind), 'a bulb over a ' + (m && m.kind) + ' at ' + x); }
+        same(run('labBulbAt(-2)'), null, 'the camp'); const nx = run('world.find(t => t.nest && t.y === -1 && t.x > 0).x'); same(run('labBulbAt(' + nx + ')'), null, 'by the nest');
+        ok(new Set(a.filter(Boolean).map(b => b.col)).size === 3 && new Set(a.filter(Boolean).map(b => b.mode)).size === 4, 'all three colours and four rhythms are used');
+    });
+    check('the rhythms: steady stays lit, slow and fast blink, double flashes twice; an alarm flashes the red ones together', () => {
+        const on = (mode, f, col, alarm) => run(`labBulbOn({ col: ${JSON.stringify(col || '#ffb43a')}, mode: ${mode}, phase: 0 }, ${f}, ${!!alarm})`);
+        ok([0, 30, 77, 119].every(f => on(0, f)), 'steady'); ok(on(1, 10) && !on(1, 70), 'slow'); ok(on(2, 5) && !on(2, 25) && on(2, 45), 'fast');
+        ok(on(3, 5) && !on(3, 15) && on(3, 25) && !on(3, 60), 'double'); ok(on(0, 5, '#ff3a2a', true) && !on(0, 20, '#ff3a2a', true), 'red flashes together in an alarm'); ok(on(0, 20, '#ffb43a', true), 'amber ignores the alarm');
+    });
+    check('a bulb is drawn lit or dark (two baked sprites) with a halo when lit', () => { const r = J(`({ on: !!labBulbSprite('#ffb43a', true), off: !!labBulbSprite('#ffb43a', false), halo: !!labHaloSprite('#ffb43a'), same: labBulbSprite('#ffb43a', true) === labBulbSprite('#ffb43a', true) })`); ok(r.on && r.off && r.halo && r.same, JSON.stringify(r)); });
+    check('the lit tile under a pylon is gone, and a pylon\'s names show only when you hold it, inspect it or build', () => {
+        const g = rd('js/game.js'); ok(!/NETWORK NODE TILE HIGHLIGHT/.test(g) || /No lit tile under a pylon/.test(g), 'the tile highlight is still drawn'); ok(!/_tileGlowSprite\(_gCol\)/.test(g), 'the tile glow is still stamped');
+        const x = run('pylonLabelsOn({})'); same(x, false, 'labels on for a pylon nobody holds'); run('buildMode = true;'); same(run('pylonLabelsOn({})'), true, 'labels while building'); run('buildMode = false;');
+        run('commandMode = true; commandTarget = __k = {};'); same(run('pylonLabelsOn(__k)'), true, 'labels on the held pylon'); same(run('pylonLabelsOn({})'), false, 'labels on another pylon'); run('commandMode = false; commandTarget = null;');
+    });
+    check('the night floor is cooler and darker, not a red-orange glow', () => {
+        const src = rd('js/game.js'), m = src.match(/if \(isNight\) \{\s*tR = \(([\d.]+)\*amb \+ ([\d.]+)\*glo\)\|0;\s*tG = \(([\d.]+)\*amb \+ ([\d.]+)\*glo\)\|0;\s*tB = \(([\d.]+)\*amb \+ ([\d.]+)\*glo\)\|0;/);
+        ok(m, 'could not read the night colours'); const [r0, r1, g0, g1, b0, b1] = m.slice(1).map(Number); ok(b0 > r0 && b1 > r1 && r1 <= 14, 'night is still red-orange: ' + m.slice(1).join(','));
+    });
 
     console.log(failures ? `\n${failures} FAILED` : '\nall passing');
     process.exit(failures ? 1 : 0);
