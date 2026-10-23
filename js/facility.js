@@ -116,7 +116,7 @@ function _facilityBuild(ex) {
     const ramps = (M.ramps || []).concat(ex.ramps || []).map(r => {
         const o = r.centre ? Object.assign({}, r, { centre: _facP(r.centre), r_inner: r.r_inner / s, r_outer: r.r_outer / s }) : Object.assign({}, r);
         if (r.zone) { const a = _facP([r.zone.rect[0], r.zone.rect[1]]), b = _facP([r.zone.rect[2], r.zone.rect[3]]); const bl = r.between_levels || [0, 0];
-            o.zone = { x0: Math.min(a[0], b[0]), y0: Math.min(a[1], b[1]), x1: Math.max(a[0], b[0]), y1: Math.max(a[1], b[1]), axis: r.zone.axis, c0: one(r.zone.c0), c1: one(r.zone.c1), hA: levelH.get(bl[0]) || 0, hB: levelH.get(bl[1]) || 0 }; }
+            o.zone = { x0: Math.min(a[0], b[0]), y0: Math.min(a[1], b[1]), x1: Math.max(a[0], b[0]), y1: Math.max(a[1], b[1]), axis: r.zone.axis, c0: one(r.zone.c0), c1: one(r.zone.c1), steps: r.zone.steps | 0, hA: levelH.get(bl[0]) || 0, hB: levelH.get(bl[1]) || 0 }; }
         return o; });
     const candRamps = ((M.candidates && M.candidates.ramps) || []).map(r => Object.assign({}, r, { at: _facP(r.at) }));
     // bounding boxes, so a query only looks at the walls and rooms near it (the validator walks thousands of steps)
@@ -185,7 +185,8 @@ function facilityHeightAt(x, y, F) {
     F = F || facilityGet();
     for (const r of F.ramps) {
         const z = r.zone; if (!z || x < z.x0 || x > z.x1 || y < z.y0 || y > z.y1) continue;
-        const v = z.axis === "x" ? x : y, t = Math.max(0, Math.min(1, (v - z.c0) / ((z.c1 - z.c0) || 1)));
+        const v = z.axis === "x" ? x : y; let t = Math.max(0, Math.min(1, (v - z.c0) / ((z.c1 - z.c0) || 1)));
+        if (z.steps) t = Math.round(t * z.steps) / z.steps;   // a staircase: flat treads, not a slope
         return z.hA + (z.hB - z.hA) * t;
     }
     const room = facilityRoomAt(x, y, F); return room ? (F.levelH.get(room.level) || 0) : 0;
@@ -294,6 +295,7 @@ function facilityValidate(F) {
         if (!r.zone) { if (r.shape !== "curved" || r.id !== "r_teleport_stairs") if (!(r.zone)) warnings.push("ramp " + r.id + " has no zone: it draws no slope"); continue; }
         const z = r.zone;
         if (!(z.hA !== z.hB)) errors.push("ramp " + r.id + " joins two levels of the same height");
+        if (z.steps && (z.steps < 1 || z.steps > Math.abs(z.c1 - z.c0))) errors.push("ramp " + r.id + " has " + z.steps + " steps over " + Math.abs(z.c1 - z.c0).toFixed(1) + " tiles");
         if (Math.abs(z.c1 - z.c0) < 0.5) errors.push("ramp " + r.id + " slopes over less than half a tile");
         const inside = (id) => { const rm = F.byId.get(id); return !!rm && !(z.x1 < rm.bb[0] || z.x0 > rm.bb[2] || z.y1 < rm.bb[1] || z.y0 > rm.bb[3]); };
         for (const id of (r.rooms || [])) if (!inside(id)) errors.push("ramp " + r.id + "'s slope does not reach " + id);

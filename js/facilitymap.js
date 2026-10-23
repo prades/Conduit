@@ -186,11 +186,11 @@ const FACILITY_MAP = {
     ramps: [
         // `zone` is where the floor slopes: a rectangle, the axis it slopes along, and the two coordinates at which the height equals between_levels[0] and between_levels[1] (sketch pixels).
         { id: "r_arena_steps", rooms: ["lab_hallway", "arena"], shape: "steps", between_levels: [0, -1], descends_toward: "arena", position_status: "approximate",
-          zone: { rect: [360, 715, 450, 810], axis: "y", c0: 725, c1: 800 },
-          note: "A short flight of steps down from the main hallway into the arena, at the arena's door (a little drop)." },
+          zone: { rect: [360, 715, 450, 810], axis: "y", c0: 725, c1: 800, steps: 3 },
+          note: "A little staircase (3 steps) down from the main hallway into the arena, at the arena's door." },
         { id: "r_deck_door_steps", rooms: ["teleport_room_1", "observation_deck"], shape: "steps", between_levels: [0, 1], descends_toward: "teleport_room_1", position_status: "approximate",
-          zone: { rect: [235, 715, 305, 830], axis: "y", c0: 725, c1: 800 },
-          note: "A flight of steps UP from Teleport Room 1 onto the raised Observation Deck, at the deck's door." },
+          zone: { rect: [235, 715, 305, 830], axis: "y", c0: 725, c1: 800, steps: 3 },
+          note: "A little staircase (3 steps) UP from Teleport Room 1 onto the raised Observation Deck, at the deck's door." },
         { id: "r_teleport_stairs", rooms: ["teleport_stair_room", "lab_hallway"], shape: "curved", centre: [945, 660], r_inner: 20, r_outer: 50, from_deg: 90, to_deg: 270,
           between_levels: [1, 0], descends_toward: "lab_hallway", position_status: "approximate",
           zone: { rect: [870, 600, 945, 760], axis: "x", c0: 940, c1: 880 },

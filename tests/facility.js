@@ -311,16 +311,20 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const arena = F.byId.get('arena'), deck = F.byId.get('observation_deck'), hall = F.byId.get('lab_hallway');
             out.arena = facilityHeightAt((arena.bb[0] + arena.bb[2]) / 2, (arena.bb[1] + arena.bb[3]) / 2 + 6, F); out.deck = facilityHeightAt((deck.bb[0] + deck.bb[2]) / 2, (deck.bb[1] + deck.bb[3]) / 2, F);
             out.hz = [hz('arena'), hz('observation_deck'), hz('lab_hallway')];
-            out.ramps = F.ramps.filter(q => q.zone).map(q => { const z = q.zone, pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, v = z.c0 + (z.c1 - z.c0) * t, x = z.axis === 'x' ? v : (z.x0 + z.x1) / 2, y = z.axis === 'x' ? (z.y0 + z.y1) / 2 : v; pts.push(facilityHeightAt(x, y, F)); } let worst = 0; for (let i = 1; i < pts.length; i++) worst = Math.max(worst, Math.abs(pts[i] - pts[i - 1])); return { id: q.id, a: pts[0], b: pts[40], hA: z.hA, hB: z.hB, step: worst }; });
+            out.ramps = F.ramps.filter(q => q.zone).map(q => { const z = q.zone, pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, v = z.c0 + (z.c1 - z.c0) * t, x = z.axis === 'x' ? v : (z.x0 + z.x1) / 2, y = z.axis === 'x' ? (z.y0 + z.y1) / 2 : v; pts.push(facilityHeightAt(x, y, F)); } let worst = 0; for (let i = 1; i < pts.length; i++) worst = Math.max(worst, Math.abs(pts[i] - pts[i - 1])); return { id: q.id, a: pts[0], b: pts[40], hA: z.hA, hB: z.hB, step: worst, steps: z.steps, levels: Array.from(new Set(pts.map(v => v.toFixed(6)))).length, mono: pts.every((v, i) => !i || (z.hB > z.hA ? v >= pts[i - 1] - 1e-9 : v <= pts[i - 1] + 1e-9)) }; });
             return out; })()`);
         same(r.arena, r.hz[0], 'arena floor'); same(r.deck, r.hz[1], 'deck floor');
         ok(r.ramps.length === 3, 'ramps with zones: ' + r.ramps.length);
-        for (const q of r.ramps) { ok(Math.abs(q.a - q.hA) < 1e-9 && Math.abs(q.b - q.hB) < 1e-9, q.id + ' does not start and end at its two levels'); ok(q.step <= Math.abs(q.hB - q.hA) / 40 * 1.5 + 1e-9, q.id + ' jumps instead of sloping: ' + q.step); }
+        for (const q of r.ramps) { ok(Math.abs(q.a - q.hA) < 1e-9 && Math.abs(q.b - q.hB) < 1e-9, q.id + ' does not start and end at its two levels'); if (q.steps) { ok(q.mono && q.levels === q.steps + 1, q.id + ' is not ' + q.steps + ' clean treads: ' + q.levels + ' levels'); } else ok(q.step <= Math.abs(q.hB - q.hA) / 40 * 1.5 + 1e-9, q.id + ' jumps instead of sloping: ' + q.step); }
     });
     check('the arena door steps down and the deck door steps up, and each connection across levels names its ramp', () => {
         const M = J('FACILITY_MAP'), r = J(`(function(){ const F = facilityGet(), A = __door('door_arena_hallway', F), D = __door('door_teleport_1_deck', F); const hh = (m, d) => [facilityHeightAt(m.mx - (m.h ? 0 : d), m.my - (m.h ? d : 0), F), facilityHeightAt(m.mx + (m.h ? 0 : d), m.my + (m.h ? d : 0), F)]; return { a: hh(A, 4), d: hh(D, 4) }; })()`);
         const lo = Math.min(...r.a), hi = Math.max(...r.a); ok(lo < 0 && hi >= -1e-9 && hi - lo > 0.1, 'no drop at the arena door ' + r.a.join()); ok(Math.max(...r.d) > 0.1, 'no rise at the deck door ' + r.d.join());
         same(M.connections.find(c => c.id === 'conn_arena_hallway').ramp, 'r_arena_steps', 'arena ramp'); same(M.connections.find(c => c.id === 'conn_teleport_1_deck').ramp, 'r_deck_door_steps', 'deck ramp');
+    });
+    check('the two door ramps are little staircases with a riser prism per tread tile, a flat tread under each; the curved stair stays smooth', () => {
+        const M = J('FACILITY_MAP'), n = id => M.ramps.find(r => r.id === id).zone.steps | 0; ok(n('r_arena_steps') >= 2 && n('r_deck_door_steps') >= 2, 'no steps'); same(n('r_teleport_stairs'), 0, 'the curved stair is stepped');
+        const src = rd('js/facilityplay.js'); ok(/fp: "stair"/.test(src) && /fp === "stair"/.test(src), 'no stair item drawn');
     });
     check('the validator rejects a level with no height and a ramp zone that is not a proper rectangle', () => {
         const r = J(`(function(){ const M = FACILITY_MAP, lv = M.levels.slice(), rp = M.ramps[0].zone; M.levels = lv.filter(l => l.id !== -1); let a; try { a = facilityValidate(facilityBuild({})).errors; } catch (e) { a = [String(e)]; } M.levels = lv;

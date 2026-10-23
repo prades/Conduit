@@ -187,6 +187,10 @@ function measure() {
     });
 
     group('THE DRAWING: walls, glass, doors, props and fixtures in the game\'s own draw list');
+    check('the two door staircases draw a riser prism per tread tile: raised treads in the hallway side and the arena side, each with a height', () => {
+        const r = J(`(function(){ const it = _fp.items.filter(i => i.fp === 'stair'); return { n: it.length, bad: it.filter(i => !(i.h > 0) || i.base == null).length, rooms: Array.from(new Set(it.map(i => (facilityRoomAt(i.x, i.y, _fp.F) || {}).id))).sort() }; })()`);
+        ok(r.n >= 6, 'treads drawn: ' + r.n); same(r.bad, 0, 'a tread with no height'); ok(r.rooms.length >= 2, 'treads in ' + r.rooms.join()); ok(typeof run('_fpDrawProp') === 'function', 'draw');
+    });
     check('every kind of static item exists and is drawn: wall pieces (solid, rock, glass), doors, prop cells (desk, truck, vats, tank) and the two fixtures', () => {
         const k = J(`(function(){ const c = {}; for (const it of _fp.items) { const key = it.fp + ':' + (it.kind || (it.door === undefined ? '' : 'door')); c[key] = (c[key] || 0) + 1; } return c; })()`);
         for (const key of ['wall:wall', 'wall:rock', 'wall:glass', 'prop:reception_desk', 'prop:semi_truck', 'prop:liquid_reserve', 'prop:tank', 'prop:computer_desk', 'prop:server_rack', 'prop:lab_bench', 'prop:fume_hood', 'prop:test_chamber', 'fixture:power_pack_area', 'fixture:wall_sign']) ok(k[key] > 0, key + ' missing: ' + JSON.stringify(Object.keys(k)));

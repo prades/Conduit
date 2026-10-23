@@ -239,6 +239,13 @@ function _fpPlaceStatics(F) {
             items.push({ type: "fp", fp: "prop", base: facilityLiftPx(x, y), x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id, sy: !cells.has(x + "," + (y + 1)), sx: !cells.has((x + 1) + "," + y), top: !cells.has(x + "," + (y - 1)), seed: _fpHash(x, y) });
         }
     }
+    for (const r of F.ramps) {   // a staircase: one prism per tread tile, from the lower floor up to the tread (the risers the camera sees)
+        const z = r.zone; if (!z || !z.steps) continue; const lo = Math.min(z.hA, z.hB);
+        for (let x = Math.ceil(z.x0 - 0.5); x <= z.x1 - 0.5; x++) for (let y = Math.ceil(z.y0 - 0.5); y <= z.y1 - 0.5; y++) {
+            const h = facilityHeightAt(x, y, F); if (h - lo < 0.02) continue;
+            items.push({ type: "fp", fp: "stair", x, y, base: lo * FP_ELEV_PX, h: (h - lo) * FP_ELEV_PX, sx: true, sy: true });
+        }
+    }
     for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", base: facilityRoomHeight(f.room, F) * FP_ELEV_PX, x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
     _fp.items = items;
 }
@@ -271,7 +278,7 @@ const FP_WALL = { wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall: ["#26324f
 function drawFacilityItem(it) {
     _fpBase = it.base || 0;
     ctx.save();
-    if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it);
+    if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "stair") _fpPrism(it, it.h, "#5d6f93", "#2b3550", "#222b43", "rgba(180,220,255,0.5)");
     ctx.restore();
 }
 function _fpDrawWall(it) {

@@ -61,8 +61,8 @@ Enter from the MAP view (**PLAY**) or with `?facilityplay` in the URL; **FACILIT
 
 ## Elevation (drawing only)
 
-`levels` in the map give each level a height in tiles: the arena is sunken (-0.7), the ground is 0, the observation deck and catwalks are raised (1.6). A `ramp` may carry a `zone` (a rectangle, the axis it slopes along, and the two coordinates where the height equals `between_levels[0]` and `[1]`); `facilityHeightAt(x, y)` returns the room's height, or the slope inside a zone. Every connection across levels names its ramp (validated), and the validator rejects a level with no height or a bad zone.
+`levels` in the map give each level a height in tiles: the arena is sunken (-0.7), the ground is 0, the observation deck and catwalks are raised (1.6). A `ramp` may carry a `zone` (a rectangle, the axis it slopes along, and the two coordinates where the height equals `between_levels[0]` and `[1]`); `facilityHeightAt(x, y)` returns the room's height, or the slope inside a zone. A zone with `steps: N` is a little staircase: the height is quantised into N flat treads, and each tread tile draws a prism from the lower floor up to the tread (so the risers show). The arena door has 3 steps down, the deck door 3 steps up; the curved stair room staircase stays smooth. Every connection across levels names its ramp (validated), and the validator rejects a level with no height or a bad zone.
 
 Movement stays flat. Only drawing is lifted: floors, actors and facility items rise by `height * 34 px`, the camera rides the player's floor, taps are corrected for the lift (`facilityPickLift`), and a wall is drawn up to the higher of the two floors it separates. All lift hooks are guarded by `facilityPlay`, so the strip game never lifts.
 
-Known limits: effects, projectiles and health bars still use the flat projection (they sit a little off on a sloped floor); the floor beside a flight of steps shows the dark void behind it rather than a riser face.
+Known limits: effects, projectiles and health bars still use the flat projection (they sit a little off on a sloped floor).
