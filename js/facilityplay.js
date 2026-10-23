@@ -15,7 +15,8 @@
 
 let facilityPlay = false;
 let _fp = null;
-const FP_BODY = 0.3;              // tiles: how far a body keeps from a wall
+const FP_BODY = 0.3;              // tiles: how far a body keeps from a wall (what the walls enforce)
+const FP_PLAN = 0.45;             // tiles: how far a PLANNED path keeps from a wall: wider than the body, so a route never grazes a corner or a door post the walls would then snag it on
 const FP_PLAYER_SPEED = 0.13;     // tiles a frame
 const FP_WALL_H = 74;             // px: how tall a wall stands on screen
 const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", bathroom: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a" };
@@ -41,19 +42,20 @@ function _fpBuildWorld(F) {
 
 // ── navigation: A* over tile centres, with line-of-sight smoothing ──
 function _fpLos(x0, y0, x1, y1) {
-    const F = _fp.F, d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / 0.25));
+    const F = _fp.P, d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / 0.25));
     for (let i = 1; i <= n; i++) { const t = i / n; if (!facilityWalkable(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, F)) return false; }
     return facilityCanStep(x0, y0, x1, y1, F);
 }
+function facilityLosFrom(x0, y0, x1, y1) { return !_fp || _fpLos(x0, y0, x1, y1); }
 function _fpNearestCell(x, y) {
-    const c = _fp.cells, rx = Math.round(x), ry = Math.round(y);
+    const c = _fp.cellsP, rx = Math.round(x), ry = Math.round(y);
     if (c.has(rx + "," + ry)) return [rx, ry];
     for (let r = 1; r <= 4; r++) { let best = null, bd = Infinity; for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) { if (c.has((rx + dx) + "," + (ry + dy))) { const d = (rx + dx - x) ** 2 + (ry + dy - y) ** 2; if (d < bd) { bd = d; best = [rx + dx, ry + dy]; } } } if (best) return best; }
     return null;
 }
 function _fpEdgeOk(ax, ay, bx, by) {
-    if (!_fp.cells.has(bx + "," + by)) return false;
-    if (ax !== bx && ay !== by && !(_fp.cells.has(bx + "," + ay) && _fp.cells.has(ax + "," + by))) return false;   // no cutting a corner
+    if (!_fp.cellsP.has(bx + "," + by)) return false;
+    if (ax !== bx && ay !== by && !(_fp.cellsP.has(bx + "," + ay) && _fp.cellsP.has(ax + "," + by))) return false;   // no cutting a corner
     const k = ax + "," + ay + ">" + bx + "," + by; let v = _fp.edges.get(k);
     if (v === undefined) { v = _fpLos(ax, ay, bx, by); _fp.edges.set(k, v); }   // sampled, so a diagonal cannot slip through a wall's corner
     return v;
@@ -87,15 +89,57 @@ function facilityPath(x0, y0, x1, y1) {
     while (i < pts.length - 1) { let j = pts.length - 1; while (j > i + 1 && !_fpLos(pts[i][0], pts[i][1], pts[j][0], pts[j][1])) j--; out.push(pts[j]); i = j; }
     return out;
 }
-// Where should a mover at (x,y) head, to get to (tx,ty)? The target itself if it can see it, else the next waypoint round the wall.
+// Where should a mover head, to get to (tx,ty)? The target itself if it can see it, else the next waypoint round the wall. The route is replanned when the goal moves to another
+// cell, when it is 40 frames old, or when the next waypoint has dropped out of sight; waypoints are dropped as the mover reaches them.
 function facilitySteer(a, tx, ty) {
     if (!_fp) return [tx, ty];
     if (_fpLos(a.x, a.y, tx, ty)) { a._fpPath = null; return [tx, ty]; }
     const gk = Math.round(tx) + "," + Math.round(ty), f = typeof frame !== "undefined" ? frame : 0;
-    if (!a._fpPath || a._fpGoal !== gk || f - (a._fpAt || 0) > 45) { a._fpPath = facilityPath(a.x, a.y, tx, ty); a._fpGoal = gk; a._fpAt = f; }
-    const p = a._fpPath; if (!p || !p.length) return [tx, ty];
-    while (p.length > 1 && Math.hypot(p[0][0] - a.x, p[0][1] - a.y) < 0.4) p.shift();
+    let p = a._fpPath;
+    if (!p || !p.length || a._fpGoal !== gk || f - (a._fpAt || 0) > 40 || !_fpLos(a.x, a.y, p[0][0], p[0][1])) { p = a._fpPath = facilityPath(a.x, a.y, tx, ty); a._fpGoal = gk; a._fpAt = f; }
+    if (!p || !p.length) return [tx, ty];
+    // a waypoint is passed only when the one after it is in sight (or the unit is on it): turning early cut the corner inside the planning margin and snagged on the wall
+    while (p.length > 1) { const d = Math.hypot(p[0][0] - a.x, p[0][1] - a.y); if (d < 0.12 || (d < 0.6 && _fpLos(a.x, a.y, p[1][0], p[1][1]))) p.shift(); else break; }
     return p[0];
+}
+// THE NAVIGATION LAYER. The AI (follow, fight, jobs, return, hold) walks in straight lines toward whatever it wants; the facility has walls. After each unit has moved, this works out WHAT it
+// was heading for (the goal its step points at best: you, the crystal, its job's target, its enemy, a foe or friend nearby) and, if walls stand between it and that goal, takes the same
+// length of step along the planned route instead. A step with a clear line to its goal, a step that points at nothing, a flee or a lunge are left as the AI made them.
+function _fpGoals(a) {
+    const gs = [player]; if (crystal) gs.push(crystal);
+    if (a.job && a.job.target && Number.isFinite(a.job.target.x)) gs.push(a.job.target);
+    if (a._nearestEnemy && !a._nearestEnemy.dead) gs.push(a._nearestEnemy);
+    if (a.hackOrder && Number.isFinite(a.hackOrder.x)) gs.push(a.hackOrder);
+    const foes = a.team === "green" ? actors : followers;   // the nearest of the other side, within a chase
+    let nb = null, nd = 144; for (const o of foes) { if (!o || o.dead || o === a || (a.team === "green" ? o.team === "green" : false)) continue; const d = (o.x - a.x) ** 2 + (o.y - a.y) ** 2; if (d < nd) { nd = d; nb = o; } }
+    if (nb) gs.push(nb);
+    return gs;
+}
+function facilityReroute(a, px, py) {
+    if (!_fp || !a || a.dead) return;
+    const dx = a.x - px, dy = a.y - py, d = Math.hypot(dx, dy);
+    if (d < 1e-4 || d > 1.5) return;
+    let best = null, bc = 0.88;
+    for (const g of _fpGoals(a)) { if (!g || !Number.isFinite(g.x)) continue; const gx = g.x - px, gy = g.y - py, gl = Math.hypot(gx, gy); if (gl < 0.6) continue; const c = (dx * gx + dy * gy) / (d * gl); if (c > bc) { bc = c; best = g; } }
+    if (!best || _fpLos(px, py, best.x, best.y)) return;
+    const sx = a.x, sy = a.y; a.x = px; a.y = py; const w = facilitySteer(a, best.x, best.y); a.x = sx; a.y = sy;
+    const wx = w[0] - px, wy = w[1] - py, wl = Math.hypot(wx, wy); if (wl < 1e-6) return;
+    a.x = px + wx / wl * d; a.y = py + wy / wl * d;
+}
+// The facility is big: a squad walking at its strip speed would be a minute behind you. A follower or clone far from you (and not on an order of its own) hurries, up to about three times, and eases back to its own speed as it closes in.
+function facilityCatchUp(a, px, py) {
+    if (!_fp || !a || a.team !== "green" || a.dead || a.job || a.returningToCrystal || a.duty === "worker" || a.role === "camper") return;
+    const d = Math.hypot(player.x - a.x, player.y - a.y); if (d <= 6) return;
+    const k = Math.min(3.2, 1 + (d - 6) / 5); a.x = px + (a.x - px) * k; a.y = py + (a.y - py) * k;
+}
+// A unit that keeps being put back (it is trying to go somewhere and the walls say no) for a second: replan; for two: move it onto the nearest open cell of its route.
+function _fpUnstick(a, px, py, intended) {
+    const moved = Math.hypot(a.x - px, a.y - py);
+    if (intended > 0.004 && moved < intended * 0.25) {
+        a._fpStuck = (a._fpStuck || 0) + 1;
+        if (a._fpStuck === 40) { a._fpPath = null; a._fpAt = 0; }
+        if (a._fpStuck >= 100) { const c = _fpNearestCell(a.x, a.y); if (c) { a.x = c[0]; a.y = c[1]; } a._fpStuck = 0; a._fpPath = null; }
+    } else if (moved > intended * 0.6) a._fpStuck = 0;
 }
 // A mover that moved from (px,py) to (a.x,a.y): back it up, or slide it along the wall.
 function facilityConstrain(a, px, py) {
@@ -137,9 +181,11 @@ function facilityPlayStart() {
     facilityPlay = true;
     if (typeof facilityDebugSet === "function") facilityDebugSet(false);
     const F = facilityBuild({ snap: true, margin: FP_BODY });
-    _fp = { F, cells: null, edges: new Map(), paths: new Map() };
+    const P = facilityBuild({ snap: true, margin: FP_PLAN });   // the planning copy: the same map, a wider margin
+    _fp = { F, P, cells: null, cellsP: null, edges: new Map(), paths: new Map() };
     restartGame();                                   // the full state reset (its storage writes are off, and generateSegment does nothing now)
     _fp.cells = _fpBuildWorld(F);
+    _fp.cellsP = new Map(); for (const [k, c] of _fp.cells) if (facilityWalkable(c[0], c[1], P)) _fp.cellsP.set(k, c);
     // the crystal in its chamber, the player beside it, a small squad
     const ob = F.byId.get("crystal_chamber").objects.find(o => o.id === "crystal");
     const cx = Math.round(ob.at[0]), cy = Math.round(ob.at[1]);

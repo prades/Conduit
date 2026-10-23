@@ -126,6 +126,41 @@ function measure() {
         ok(r.toDoor < 3.2, 'it heads for ' + r.w + ', ' + r.toDoor.toFixed(1) + ' from the door'); same(r.straight[0], 18, 'same-room target x'); same(r.straight[1], 22, 'same-room target y');
     });
 
+    group('THE NAVIGATION LAYER: followers walk the route, not a straight line into a wall');
+    const squad = (roles, traits) => run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower && !a.isFacilityTest); const roles = ${JSON.stringify(roles)}, traits = ${JSON.stringify(traits || [])};
+        roles.forEach((r, i) => { spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.stance = 'follow'; f.role = r; f.job = null; f.duty = 'fighter'; f.naturalTrait = traits[i] || f.naturalTrait; f.wanderRadius = undefined; f.x = 16 + i * 0.7; f.y = 22 + (i % 2); f._fpPath = null; f._fpStuck = 0; });
+        player.x = player.targetX = player.visualX = 30; player.y = player.targetY = player.visualY = 40; player.fpPath = null; frame = 100; })()`);
+    const walk = (frames) => J(`(function(){ const log = followers.map(() => []), wall = [0, 0, 0]; for (let t = 0; t < ${frames}; t++) { frame++; followers.forEach((f, i) => { updateNPC(f); if (!facilityRoomAt(f.x, f.y, _fp.F)) wall[i]++; if (t % 20 === 0) log[i].push([f.x, f.y]); }); }
+        return { wall, end: followers.map(f => [f.x, f.y, (facilityRoomAt(f.x, f.y, _fp.F) || {}).id, Math.hypot(f.x - player.x, f.y - player.y)]), log }; })()`);
+    check('three followers (two brawlers and a mage) in the chamber reach a player in the arena: through the door, along the hallway, in by the arena door; never outside the floor', () => {
+        squad(['brawler', 'sniper', 'brawler']); const r = walk(5000);
+        same(r.wall.join(), '0,0,0', 'frames spent outside every room'); for (const e of r.end) { ok(e[3] < 6.5, 'a follower ended ' + e[3].toFixed(1) + ' tiles from you, in ' + e[2]); }
+    });
+    check('a follower with the EMPATHETIC lean does not aim at a spot behind a wall (the group\'s centre was inside the lab) and still gets to you', () => {
+        squad(['brawler', 'brawler', 'brawler'], ['empathetic', 'empathetic', 'empathetic']); const r = walk(5000);
+        same(r.wall.join(), '0,0,0', 'outside the floor'); for (const e of r.end) ok(e[3] < 6.5, 'ended ' + e[3].toFixed(1) + ' from you in ' + e[2]);
+    });
+    check('no follower oscillates or stalls on the way: in every 40-frame window while it is far from you it makes real progress', () => {
+        squad(['brawler', 'sniper', 'brawler']);
+        const r = J(`(function(){ let worst = 99, prev = followers.map(f => [f.x, f.y]); const stalls = [0, 0, 0]; for (let t = 1; t <= 3000; t++) { frame++; followers.forEach(f => updateNPC(f)); if (t % 40 === 0) { followers.forEach((f, i) => { const d = Math.hypot(f.x - player.x, f.y - player.y), m = Math.hypot(f.x - prev[i][0], f.y - prev[i][1]); if (d > 9 && m < 0.35) stalls[i]++; prev[i] = [f.x, f.y]; }); } } return stalls; })()`);
+        same(r.join(), '0,0,0', 'stalled windows per follower');
+    });
+    check('planned routes keep clear of every wall (the planning margin is wider than the body margin), so a unit never grazes a corner or a door post it would then snag on', () => {
+        ok(/const FP_PLAN = 0\.45/.test(rd('js/facilityplay.js')) && /const FP_BODY = 0\.3/.test(rd('js/facilityplay.js')), 'margins');
+        const r = J(`(function(){ const p = facilityPath(17, 22, 30, 40); let min = 9, prev = [17, 22]; for (const q of p) { for (let t = 0; t <= 1; t += 0.05) { const x = prev[0] + (q[0] - prev[0]) * t, y = prev[1] + (q[1] - prev[1]) * t; for (const w of _fp.F.walls) min = Math.min(min, _facSegPointDist(w.a, w.b, x, y)); } prev = q; } return { n: p.length, min }; })()`);
+        ok(r.n >= 4, 'route of ' + r.n); ok(r.min >= 0.44, 'the route passes ' + r.min.toFixed(2) + ' from a wall');
+    });
+    check('a follower far from you hurries (up to about three times its speed) and is back to its own speed once close; a follower on an order of its own, a technician on its post and a worker do not hurry', () => {
+        const r = J(`(function(){ const mk = (x, y, ex) => { const a = Object.assign({ x, y, team: 'green', dead: false }, ex || {}); return a; }; const step = (a) => { const px = a.x, py = a.y; a.x += 0.03; facilityCatchUp(a, px, py); return a.x - px; };
+            player.x = 30; player.y = 40; return { far: step(mk(18, 22)), near: step(mk(28, 39)), job: step(mk(18, 22, { job: { type: 'move' } })), camper: step(mk(18, 22, { role: 'camper' })), worker: step(mk(18, 22, { duty: 'worker' })), enemy: step(mk(18, 22, { team: 'red' })) }; })()`);
+        ok(r.far > 0.075 && r.far <= 0.03 * 3.2 + 1e-9, 'far ' + r.far); same(Math.round(r.near * 1000), 30, 'near'); for (const k of ['job', 'camper', 'worker', 'enemy']) same(Math.round(r[k] * 1000), 30, k + ' hurried');
+    });
+    check('the AI\'s own straight step is left alone when it can see where it is going, or when it is not heading for anything (a flee)', () => {
+        const r = J(`(function(){ const a = { x: 32, y: 42, team: 'green', dead: false, job: null }; player.x = 32; player.y = 47; const px = a.x, py = a.y; a.x = px; a.y = py + 0.04; const bx = a.x, by = a.y; facilityReroute(a, px, py);
+            const f = { x: 18, y: 22, team: 'green', dead: false }; const fx = 18, fy = 22; f.x = fx - 0.03; f.y = fy; const cx = f.x; facilityReroute(f, fx, fy); return { seen: [a.x === bx, a.y === by], flee: f.x === cx }; })()`);
+        same(r.seen.join(), 'true,true', 'a step with a clear line was rerouted'); same(r.flee, true, 'a flee was rerouted');
+    });
+
     group('THE HOOKS: the strip game is untouched and the facility\'s are guarded');
     check('every hook into the strip code is behind the facilityPlay flag, so with it off nothing changes', () => {
         const need = { 'js/world.js': [/generateSegment\(startX\) \{\s*\n\s*if \(typeof facilityPlay/, /ensureWorldTo\(x\) \{[\s\S]{0,120}facilityPlay/], 'js/game.js': [/facilityPlay\) facilityPlayerStep\(\)/, /facilityDrawItems\(drawList\)/, /obj\.type==='fp'/], 'js/helpers.js': [/clampToFloor\(a\) \{[\s\S]{0,160}facilityPlay/], 'js/npc.js': [/_walkStep[\s\S]{0,200}facilitySteer/, /facilityConstrain\(actor, _fpx, _fpy\)/], 'js/mass.js': [/_moveToward[\s\S]{0,200}facilitySteer/], 'js/predator.js': [/CORRIDOR BOUNDS[\s\S]{0,160}facilityPlay/], 'js/input.js': [/facilityWalkTo\(gx, gy\)/] };

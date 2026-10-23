@@ -440,7 +440,8 @@ function updateRTSNPC(actor) {
                 }
             } else {
                 const dx=player.x-actor.x, dy=player.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-                if (dist > FOLLOW_STOP + 1.5) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+                if (typeof facilityPlay !== "undefined" && facilityPlay) followPlayer(actor);   // the facility: the route round the walls, not a straight line (js/facilityplay.js)
+                else if (dist > FOLLOW_STOP + 1.5) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
             }
             return;
         }
@@ -506,8 +507,11 @@ function followPlayer(actor) {
             if (Math.hypot(o.x - actor.x, o.y - actor.y) <= EMPATHETIC_RANGE) { sx += o.x; sy += o.y; n++; }
         }
         if (n > 0) { tx = tx * 0.4 + (sx / n) * 0.6; ty = ty * 0.4 + (sy / n) * 0.6; }
+        // The facility: leaning toward the group must not pick a spot behind a wall (inside the lab, say), so a lean only counts where you can see it from where you stand.
+        if (typeof facilityPlay !== "undefined" && facilityPlay && !facilityLosFrom(player.x, player.y, tx, ty)) { tx = player.x; ty = player.y; }
     }
-    if (typeof facilityPlay !== "undefined" && facilityPlay) { const w = facilitySteer(actor, tx, ty), d0 = Math.hypot(tx - actor.x, ty - actor.y); if (d0 > stop) { tx = w[0]; ty = w[1]; } }   // round the facility's walls
+    // The facility: a wall between you and a follower means it is NOT near you however close it measures, so it keeps walking the route until it can see you.
+    if (typeof facilityPlay !== "undefined" && facilityPlay) { const w = facilitySteer(actor, tx, ty), d0 = Math.hypot(tx - actor.x, ty - actor.y), seen = !actor._fpPath; if (!seen) { tx = w[0]; ty = w[1]; stop = 0.04; } else if (d0 > stop) { tx = w[0]; ty = w[1]; } }
     const dx = tx - actor.x, dy = ty - actor.y, dist = Math.hypot(dx, dy);
     if (dist > stop) { actor.x += (dx / dist) * actor.moveSpeed; actor.y += (dy / dist) * actor.moveSpeed; }
 }
@@ -542,5 +546,5 @@ function updateNPC(actor) {
             if (_moved > 0.001) actor.walkCycle = (actor.walkCycle||0) + actor.moveSpeed * 40;
         }
     }
-    if (typeof facilityPlay !== "undefined" && facilityPlay) facilityConstrain(actor, _fpx, _fpy);
+    if (typeof facilityPlay !== "undefined" && facilityPlay) { const _ix = actor.x, _iy = actor.y; facilityReroute(actor, _fpx, _fpy); facilityCatchUp(actor, _fpx, _fpy); facilityConstrain(actor, _fpx, _fpy); _fpUnstick(actor, _fpx, _fpy, Math.hypot(_ix - _fpx, _iy - _fpy)); }   // route round the facility's walls (js/facilityplay.js)
 }
