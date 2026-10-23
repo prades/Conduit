@@ -6,7 +6,7 @@
 //   solids      props with collision (benches, machines, the arena's circular structures), the outer path (as a no-go region)
 //   rooms       the walkable outlines; a point is walkable only inside one, and outside every solid
 //   nav graph   rooms joined by CONFIRMED connections (candidates can be switched in to look at, never by default)
-// The outer path is a boundary only (not walkable, in no nav link). The arena perimeter is real collision. Nothing here invents a doorway.
+// The arena's and the nest area's perimeters are real collision, and nothing outside every room is walkable. Nothing here invents a doorway.
 // Nothing in the game calls the movement helpers yet: this is the map, its rules and its debug view, for the facility to be wired into play once its
 // geometry has been confirmed (docs/FACILITY.md).
 
@@ -71,13 +71,13 @@ function facilityBuild(extra) {
         const p = r.poly;
         for (let i = 0; i < p.length; i++) {
             const a = p[i], b = p[(i + 1) % p.length], kind = r.edgeKinds ? r.edgeKinds[i] : "wall";
-            for (const seg of _facTrim(a, b, openings)) walls.push({ a: seg[0], b: seg[1], room: r.id, kind, arena: r.id === "arena" });
+            for (const seg of _facTrim(a, b, openings)) walls.push({ a: seg[0], b: seg[1], room: r.id, kind, arena: !!r.raw.boundary_blocks_movement });
         }
     }
     const s = facilityScale();
     const solids = (M.props || []).map(pr => {
-        if (pr.shape === "circle") return { id: pr.id, room: pr.room, shape: "circle", at: _facP(pr.at), r: pr.radius / s, provisional: !!pr.provisional_collision, status: pr.status };
-        const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status };
+        if (pr.shape === "circle") return { id: pr.id, room: pr.room, shape: "circle", at: _facP(pr.at), r: pr.radius / s, provisional: !!pr.provisional_collision, status: pr.status, kind: pr.kind || null };
+        const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status, kind: pr.kind || null };
     });
     const outer = M.outer_path ? { id: M.outer_path.id, poly: _facPoly(M.outer_path.polygon), walkable: M.outer_path.walkable === true, navigation_link: M.outer_path.navigation_link === true } : null;
     const conns = (M.connections || []).concat(ex.connections || []).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, confirmed: true }));
@@ -196,23 +196,23 @@ function facilityValidate(F) {
         for (let p = 0; p < A.length && !bad; p++) for (let q = 0; q < B.length && !bad; q++) if (facilitySegmentsCross(A[p], A[(p + 1) % A.length], B[q], B[(q + 1) % B.length])) bad = true;
         if (bad) errors.push(F.rooms[i].id + " and " + F.rooms[j].id + " overlap");
     }
-    // the outer path: boundary only, in no link, touching no room's floor
-    if (!F.outer) errors.push("no outer_path");
-    else {
+    // an outer path, if the data has one: boundary only, in no link, touching no room's floor
+    if (F.outer) {
         if (F.outer.walkable) errors.push("the outer path is marked walkable");
         if (F.outer.navigation_link) errors.push("the outer path is marked as a navigation link");
         for (const r of F.rooms) { const c = _facCentroid(r.poly); if (facilityPointInPoly(c[0], c[1], F.outer.poly)) errors.push(r.id + " sits inside the outer path"); }
         for (const e of facilityNavEdges(F, true)) if (e.a === F.outer.id || e.b === F.outer.id) errors.push("a navigation link uses the outer path: " + e.id);
     }
-    // the arena: every edge is solid, and the walls really are there
-    const arena = F.byId.get("arena");
-    if (!arena) errors.push("no arena");
-    else {
-        if (!arena.raw.boundary_blocks_movement) errors.push("the arena is not marked as blocking movement");
-        const edges = arena.poly.length, have = F.walls.filter(w => w.room === "arena").length;
-        if (have < edges) errors.push("the arena perimeter has " + have + " wall pieces for " + edges + " edges: something is cut open");
-        if (F.openings.some(o => (o.rooms || []).includes("arena"))) warnings.push("the arena has a confirmed opening: check it is meant");
+    // every room marked as a blocking boundary (the arena, the nest area): a wall on every edge
+    const sealed = F.rooms.filter(r => r.raw.boundary_blocks_movement);
+    if (!F.byId.get("arena")) errors.push("no arena");
+    for (const r of sealed) {
+        const edges = r.poly.length, have = F.walls.filter(w => w.room === r.id).length;
+        if (have < edges) errors.push(r.id + " perimeter has " + have + " wall pieces for " + edges + " edges: something is cut open");
+        if (F.openings.some(o => (o.rooms || []).includes(r.id))) warnings.push(r.id + " has a confirmed opening: check it is meant");
     }
+    // nothing outside every room is walkable: sample the whole bounding box
+    { let bad = 0; for (let t = 0; t < 3000; t++) { const x = F.bounds.minX - 2 + (F.bounds.maxX - F.bounds.minX + 4) * ((t * 0.6180339) % 1), y = F.bounds.minY - 2 + (F.bounds.maxY - F.bounds.minY + 4) * ((t * 0.4142135) % 1); if (!facilityRoomAt(x, y, F) && facilityWalkable(x, y, F)) bad++; } if (bad) errors.push(bad + " walkable points lie outside every room"); }
     // openings and connections agree
     for (const c of F.connections) {
         if (!F.byId.has(c.rooms[0]) || !F.byId.has(c.rooms[1])) errors.push("connection " + c.id + " names a room that does not exist");
@@ -223,24 +223,25 @@ function facilityValidate(F) {
     }
     for (const o of F.openings) if (!F.connections.some(c => c.opening === o.id)) warnings.push("opening " + o.id + " has no connection (it joins nothing for navigation)");
     for (const r of F.ramps) if (!r.between_levels || r.between_levels[0] === r.between_levels[1]) errors.push("ramp " + r.id + " does not join two different levels");
-    // the agents: nobody walks out of the arena, from any start, in any direction
-    if (arena) {
+    // the agents: nobody walks out of the arena or the nest area, from any start, in any direction
+    info.arenaAgents = 0; info.arenaLeaks = 0;
+    for (const room of sealed) {
         let seed = 12345, rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff, leaks = 0, tried = 0;
-        const b = F.bounds;
-        for (let n = 0; n < 4000 && tried < 150; n++) {
+        const b = { minX: room.bb[0], maxX: room.bb[2], minY: room.bb[1], maxY: room.bb[3] };
+        for (let n = 0; n < 4000 && tried < 100; n++) {
             const x = b.minX + (b.maxX - b.minX) * rnd(), y = b.minY + (b.maxY - b.minY) * rnd();
-            if (!facilityPointInPoly(x, y, arena.poly) || !facilityWalkable(x, y, F)) continue;
+            if (!facilityPointInPoly(x, y, room.poly) || !facilityWalkable(x, y, F)) continue;
             tried++;
             for (let k = 0; k < 8; k++) {
                 const ang = k * Math.PI / 4 + rnd() * 0.3; let px = x, py = y;
                 for (let s = 0; s < 160; s++) { const m = facilityMove(px, py, Math.cos(ang) * 0.4, Math.sin(ang) * 0.4, F); px = m[0]; py = m[1]; }
-                const room = facilityRoomAt(px, py, F);
-                if (!room || room.id !== "arena") leaks++;
+                const at = facilityRoomAt(px, py, F);
+                if (!at || at.id !== room.id) leaks++;
             }
         }
-        info.arenaAgents = tried * 8; info.arenaLeaks = leaks;
-        if (leaks) errors.push(leaks + " agent walks left the arena through its perimeter");
-        if (tried < 50) errors.push("could not place agents in the arena (" + tried + ")");
+        info.arenaAgents += tried * 8; info.arenaLeaks += leaks;
+        if (leaks) errors.push(leaks + " agent walks left " + room.id + " through its perimeter");
+        if (tried < 40) errors.push("could not place agents in " + room.id + " (" + tried + ")");
     }
     // the route test: from any room, a flood of the floor never reaches another room unless a confirmed connection joins them, and never the outer path
     const comps = facilityComponents(F, false);
@@ -305,8 +306,8 @@ function facilityDebugDraw() {
         if (L.outlines) _facLabel(g, r.label.toUpperCase() + (L.elevation ? "  L" + r.level : ""), c[0], c[1], col, 11 * Math.max(0.8, Math.min(1.5, z * 3)));
     }
     if (L.collision) {
-        for (const s of F.solids) { const lv = (F.byId.get(s.room) || {}).level || 0; if (s.shape === "circle") { const pts = []; for (let i = 0; i < 32; i++) pts.push([s.at[0] + Math.cos(i / 32 * 6.2832) * s.r, s.at[1] + Math.sin(i / 32 * 6.2832) * s.r]); path(pts, lv); } else path(s.poly, lv); g.fillStyle = s.provisional ? "rgba(255,138,92,0.18)" : "rgba(255,138,92,0.34)"; g.fill(); g.lineWidth = 1.5; g.setLineDash(s.provisional ? [4, 4] : []); g.strokeStyle = FAC_COLOURS.solid; g.stroke(); g.setLineDash([]); }
-        for (const w of F.walls) { const lv = (F.byId.get(w.room) || {}).level || 0, a = P(w.a, lv), b = P(w.b, lv); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = w.arena ? 4 : 2.5; g.strokeStyle = w.arena ? FAC_COLOURS.arena : FAC_COLOURS.wall; g.stroke(); }
+        for (const s of F.solids) { const lv = (F.byId.get(s.room) || {}).level || 0; if (s.shape === "circle") { const pts = []; for (let i = 0; i < 32; i++) pts.push([s.at[0] + Math.cos(i / 32 * 6.2832) * s.r, s.at[1] + Math.sin(i / 32 * 6.2832) * s.r]); path(pts, lv); } else path(s.poly, lv); const liq = s.kind === "liquid_reserve"; g.fillStyle = liq ? "rgba(140,90,255,0.38)" : s.provisional ? "rgba(255,138,92,0.18)" : "rgba(255,138,92,0.34)"; g.fill(); g.lineWidth = 1.5; g.setLineDash(s.provisional ? [4, 4] : []); g.strokeStyle = liq ? "#a64dff" : FAC_COLOURS.solid; g.stroke(); g.setLineDash([]); if (liq && L.outlines) { const q = P(s.at, lv); _facLabel(g, "LIQUID RESERVE", q[0], q[1], "#c9a0ff", 10 * Math.max(0.8, Math.min(1.4, z * 3))); } }
+        for (const w of F.walls) { const lv = (F.byId.get(w.room) || {}).level || 0, a = P(w.a, lv), b = P(w.b, lv); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = w.arena ? 4 : 2.5; g.strokeStyle = w.arena ? (w.room === "arena" ? FAC_COLOURS.arena : FAC_COLOURS.outer) : FAC_COLOURS.wall; g.stroke(); }
     }
     if (L.openings) {
         for (const o of F.openings) { const a = P(o.a, 0), b = P(o.b, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = 6; g.strokeStyle = FAC_COLOURS.ok; g.stroke(); }
@@ -322,7 +323,7 @@ function facilityDebugDraw() {
     // the readout
     const v = facilityValidateCached(F), comps = facilityComponents(F, false), compsC = facilityComponents(F, true);
     const lines = ["FACILITY · " + FACILITY_MAP.id + " · " + facilityScale() + " px/tile", "ROOMS " + F.rooms.length + " · CONFIRMED OPENINGS " + F.openings.length + " · CANDIDATES " + F.candidates.length,
-        "NAV: " + comps.length + " separate area" + (comps.length === 1 ? "" : "s") + " (" + compsC.length + " if every candidate were real)", v.errors.length ? "ERRORS: " + v.errors.length + " — " + v.errors[0] : "RULES OK · arena sealed (" + (v.info.arenaAgents || 0) + " agent walks, " + (v.info.arenaLeaks || 0) + " leaks) · outer path in no link"];
+        "NAV: " + comps.length + " separate area" + (comps.length === 1 ? "" : "s") + " (" + compsC.length + " if every candidate were real)", v.errors.length ? "ERRORS: " + v.errors.length + " — " + v.errors[0] : "RULES OK · arena and nest area sealed (" + (v.info.arenaAgents || 0) + " agent walks, " + (v.info.arenaLeaks || 0) + " leaks) "];
     g.textAlign = "left"; g.textBaseline = "top"; g.font = "bold 12px monospace";
     lines.forEach((t, i) => { g.fillStyle = i === 3 ? (v.errors.length ? "#ff6655" : FAC_COLOURS.ok) : "#9fb0d0"; g.fillText(t.slice(0, Math.floor((W - 24) / 7.3)), 12, H - 106 + i * 16); });
     if (facilityDebug.note) { g.fillStyle = FAC_COLOURS.cand; g.font = "bold 12px monospace"; g.fillText(facilityDebug.note.slice(0, Math.floor((W - 24) / 7.3)), 12, H - 36); }

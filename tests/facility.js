@@ -24,7 +24,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the map is data: every room is an explicit polygon with an id, a level and a status; ids are unique', () => {
         const M = J('FACILITY_MAP'); same(new Set(M.rooms.map(r => r.id)).size, M.rooms.length, 'duplicate ids');
         for (const r of M.rooms) { ok(r.polygon.length >= 3 && r.polygon.every(p => p.length === 2), r.id + ' outline'); ok(typeof r.level === 'number' && r.status, r.id + ' level/status'); }
-        for (const id of ['crystal_chamber', 'experiment_lab', 'teleport_room', 'observation_deck', 'arena', 'catwalks', 'nest_area']) ok(M.rooms.some(r => r.id === id), id + ' missing');
+        for (const id of ['crystal_chamber', 'experiment_lab', 'teleport_room_1', 'teleport_room_2', 'observation_deck', 'arena', 'catwalks', 'nest_area']) ok(M.rooms.some(r => r.id === id), id + ' missing');
         ok(M.scale.px_per_tile > 0, 'no scale');
     });
     check('NOTHING IS INVENTED: no opening, connection or ramp is confirmed; what the sketch suggests is only a flagged candidate', () => {
@@ -57,31 +57,41 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return out; })()`);
         ok(r.walls >= r.edges, 'only ' + r.walls + ' wall pieces for ' + r.edges + ' edges'); same(r.crossed, 0, 'steps through the perimeter (of ' + r.tested + ')');
     });
-    check('1200 agent walks from inside the arena, in every direction, never leave it', () => { const v = J('facilityValidateCached()'); ok(v.info.arenaAgents >= 800, 'only ' + v.info.arenaAgents + ' walks'); same(v.info.arenaLeaks, 0, 'leaks'); });
-    check('the arena\'s circular structures and machine are solid (provisionally), so no one walks through them', () => {
-        const r = J(`(function(){ const F = facilityGet(); return F.solids.filter(s => s.room === 'arena').map(s => [s.id, !facilityWalkable(s.at ? s.at[0] : (s.poly[0][0] + s.poly[2][0]) / 2, s.at ? s.at[1] : (s.poly[0][1] + s.poly[2][1]) / 2)]); })()`);
-        ok(r.length >= 3 && r.every(x => x[1]), JSON.stringify(r));
+    check('agent walks from inside the arena, in every direction, never leave it', () => { const v = J('facilityValidateCached()'); ok(v.info.arenaAgents >= 1200, 'only ' + v.info.arenaAgents + ' walks'); same(v.info.arenaLeaks, 0, 'leaks'); });
+    check('the two circular structures are giant liquid reserves: solid tanks nobody walks through', () => {
+        const M = J('FACILITY_MAP'), t = M.props.filter(p => p.shape === 'circle' && p.room === 'arena'); same(t.length, 2, 'reserves');
+        ok(t.every(p => p.kind === 'liquid_reserve' && !p.provisional_collision), 'not marked as solid liquid reserves');
+        const r = J(`(function(){ const F = facilityGet(); return F.solids.filter(s => s.kind === 'liquid_reserve').map(s => [s.id, !facilityWalkable(s.at[0], s.at[1]), !facilityWalkable(s.at[0] + s.r * 0.9, s.at[1]), facilityCanStep(s.at[0] - s.r - 0.5, s.at[1], s.at[0] + s.r + 0.5, s.at[1])]); })()`);
+        ok(r.length === 2 && r.every(x => x[1] && x[2] && x[3] === false), JSON.stringify(r));
     });
     check('an agent exactly on a wall line cannot slip along it into the next room', () => {
         const r = J(`(function(){ const F = facilityGet(), w = F.walls.find(w => w.room === 'arena' && w.kind === 'railing_wall'); const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2; return [facilityWalkable(mx, my), facilityCanStep(mx, my, mx + 1, my)]; })()`);
         same(r[0], false, 'a point on a wall is walkable');
     });
 
-    group('THE OUTER PATH');
-    check('it is drawn but not walkable: no point of the band is walkable and no step into it is allowed', () => {
-        const r = J(`(function(){ const F = facilityGet(), P = F.outer.poly; let inBand = 0, walk = 0, step = 0;
-            for (let t = 0; t < 4000; t++) { const x = F.bounds.minX + (F.bounds.maxX - F.bounds.minX) * ((t * 0.6180339) % 1), y = F.bounds.minY + (F.bounds.maxY - F.bounds.minY) * ((t * 0.4142135) % 1);
-                if (!facilityPointInPoly(x, y, P)) continue; inBand++; if (facilityWalkable(x, y)) walk++; if (facilityCanStep(x - 0.1, y, x, y) || facilityCanStep(x, y - 0.1, x, y)) step++; }
-            return { flag: F.outer.walkable, link: F.outer.navigation_link, inBand, walk, step }; })()`);
-        same(r.flag, false, 'walkable flag'); same(r.link, false, 'navigation flag'); ok(r.inBand > 200, 'sampled ' + r.inBand); same(r.walk, 0, 'walkable points'); same(r.step, 0, 'steps into it');
+    group('THE NEST AREA: one open room, its drawn edges are its walls');
+    check('it is one open rectangle (the sketch\'s long double lines are its outside edges, not tunnels): a flood from its centre covers all of it', () => {
+        const M = J('FACILITY_MAP'), N = M.rooms.find(r => r.id === 'nest_area'); same(N.polygon.length, 4, 'corners'); ok(N.edge_kinds.every(k => /^outer_wall/.test(k)), 'edge kinds ' + N.edge_kinds);
+        same(M.outer_path, null, 'a separate outer path is still in the data');
+        const r = J(`(function(){ const F = facilityGet(), N = F.byId.get('nest_area'), c = [(N.bb[0] + N.bb[2]) / 2, (N.bb[1] + N.bb[3]) / 2], cells = facilityFlood(c[0], c[1], F, 0.5), area = (N.bb[2] - N.bb[0]) * (N.bb[3] - N.bb[1]); return { cells: cells.length, expect: area / 0.25, allIn: cells.every(q => facilityRoomAt(q[0], q[1]).id === 'nest_area') }; })()`);
+        ok(r.cells > r.expect * 0.95, 'the flood covered ' + r.cells + ' of about ' + r.expect + ' cells: something is blocking the room'); same(r.allIn, true, 'the flood left the room');
     });
-    check('no navigation link uses it, confirmed or candidate, and a flood from every room never reaches it', () => {
-        const r = J(`(function(){ const F = facilityGet(); return { edges: facilityNavEdges(F, true).filter(e => /outer/.test(e.a + e.b)).length, rooms: F.rooms.some(x => /outer/.test(x.id)) }; })()`);
-        same(r.edges, 0, 'edges'); same(r.rooms, false, 'a room named outer path'); same(J('facilityValidateCached()').errors.length, 0, 'the validator flagged a flood into it');
+    check('every edge is a wall: a body cannot cross any of them in either direction, and nothing outside every room is walkable', () => {
+        const r = J(`(function(){ const F = facilityGet(), N = F.byId.get('nest_area'); let crossed = 0, tested = 0;
+            for (let i = 0; i < N.poly.length; i++) { const a = N.poly[i], b = N.poly[(i + 1) % N.poly.length], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy), nx = -dy / l, ny = dx / l, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+                for (const s of [1, -1]) { tested++; if (facilityCanStep(mx - nx * 0.6 * s, my - ny * 0.6 * s, mx + nx * 0.6 * s, my + ny * 0.6 * s)) crossed++; } }
+            let outside = 0; for (let t = 0; t < 4000; t++) { const x = F.bounds.minX + (F.bounds.maxX - F.bounds.minX) * ((t * 0.6180339) % 1), y = F.bounds.minY + (F.bounds.maxY - F.bounds.minY) * ((t * 0.4142135) % 1); if (!facilityRoomAt(x, y) && facilityWalkable(x, y)) outside++; }
+            return { crossed, tested, outside }; })()`);
+        same(r.crossed, 0, 'steps through the nest area\'s edge (of ' + r.tested + ')'); same(r.outside, 0, 'walkable points outside every room');
     });
+    check('agents walking from inside the nest area never leave it (the validator walks them, like the arena)', () => { const v = J('facilityValidateCached()'); same(v.info.arenaLeaks, 0, 'leaks'); same(v.errors.length, 0, v.errors.join(' | ')); });
     check('the nest area is walled in: nothing walks from the arena to it (no entrance is confirmed)', () => {
-        const r = J(`(function(){ const F = facilityGet(), A = F.byId.get('arena'), N = F.byId.get('nest_area'); return [facilityReachable('arena', 'nest_area', F, false), facilityReachable('arena', 'nest_area', F, true)]; })()`);
+        const r = J(`(function(){ const F = facilityGet(); return [facilityReachable('arena', 'nest_area', F, false), facilityReachable('arena', 'nest_area', F, true)]; })()`);
         same(r[0], false, 'reachable with confirmed links'); same(r[1], true, 'the candidate would join them (so it is flagged, not hidden)');
+    });
+    check('the teleport is a feature for later: two placeholder rooms and no teleport object in the data', () => {
+        const M = J('FACILITY_MAP'); ok(M.rooms.some(r => r.id === 'teleport_room_1' && /Room 1/.test(r.label)) && M.rooms.some(r => r.id === 'teleport_room_2' && /Room 2/.test(r.label)), 'rooms');
+        ok(!M.rooms.some(r => (r.objects || []).some(o => /teleport/.test(o.type))), 'a teleport object is in the data');
     });
 
     group('NAVIGATION: only confirmed openings join rooms');
@@ -98,7 +108,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.errs.length, 0, r.errs.join(' | ')); ok(r.walls[1] >= r.walls[0], 'the wall was not cut');
     });
     check('a connection between two levels needs a ramp, and an opening with no connection is flagged', () => {
-        const r = J(`(function(){ const F = facilityBuild({ openings: [{ id: 't_open', a: [255, 700], b: [300, 700], rooms: ['left_side_room', 'observation_deck'] }], connections: [{ id: 't_conn', rooms: ['left_side_room', 'observation_deck'], opening: 't_open' }] }); const v = facilityValidate(F);
+        const r = J(`(function(){ const F = facilityBuild({ openings: [{ id: 't_open', a: [255, 700], b: [300, 700], rooms: ['teleport_room_1', 'observation_deck'] }], connections: [{ id: 't_conn', rooms: ['teleport_room_1', 'observation_deck'], opening: 't_open' }] }); const v = facilityValidate(F);
             const F2 = facilityBuild({ openings: [{ id: 'lone', a: [255, 700], b: [300, 700] }] }); return { errs: v.errors, warns: facilityValidate(F2).warnings }; })()`);
         ok(r.errs.some(e => /no ramp/.test(e)), 'a level jump with no ramp passed: ' + r.errs.join(' | ')); ok(r.warns.some(w => /lone/.test(w)), 'an opening with no connection was not flagged');
     });
