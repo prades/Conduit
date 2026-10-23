@@ -142,6 +142,12 @@ function _fpRockSides(items) {
         if (it.fp !== "wall" || it.kind !== "rock") continue;
         const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
         const face = facilityRoomAt(it.x + nx * 0.4, it.y + ny * 0.4, _fp.F); it.back = !!face && face.id === it.room; it.lit = nx > ny ? 1 : 0.8; it.depth = it.x + it.y + 0.02;   // (after a steel wall on the same line)
+        it.cap = null;
+        if (it.back) {   // the CAP: the rock's top surface runs back, away from the camera, to the next wall (the hallway's) or, for a thin spur, a little way (a burrow with a rock roof)
+            let t = 0.3, room = null; for (; t <= 4.2; t += 0.2) { const q = facilityRoomAt(it.x - nx * t, it.y - ny * t, _fp.F); if (q) { room = q; break; } }
+            if (room) { let lo = t - 0.2, hi = t; for (let i = 0; i < 4; i++) { const mid = (lo + hi) / 2; if (facilityRoomAt(it.x - nx * mid, it.y - ny * mid, _fp.F)) hi = mid; else lo = mid; } const d = hi, same = room.id === it.room;
+                if (d >= 0.15 || same) it.cap = { d: same ? Math.min(d, 0.5) : d, nx, ny, zb: same ? null : facilityRoomHeight(room.id, _fp.F) * FP_ELEV_PX - (it.base || 0) + FP_WALL_H }; }
+        }
     }
 }
 // the heights (px) of a rock wall piece at its two ends and its middle: a ragged skyline, the same for every piece at the same place
@@ -157,6 +163,16 @@ function _fpDrawRock(it, H) {
     if (!back) { const g = ctx.createLinearGradient(0, by, 0, by + FP_ROCK_DOWN); g.addColorStop(0, _fpShade("#5a4638", lit)); g.addColorStop(1, "#050403"); _fpQuad([a0, b0, P(1, -FP_ROCK_DOWN), P(0, -FP_ROCK_DOWN)], g, null); }   // the cliff below it
     const g = ctx.createLinearGradient(0, ty, 0, by); if (back) { g.addColorStop(0, "#1d1511"); g.addColorStop(0.22, _fpShade("#3a2c22", lit)); g.addColorStop(1, _fpShade("#5a4638", lit)); } else { g.addColorStop(0, _fpShade("#4a3a2e", lit)); g.addColorStop(1, _fpShade("#5a4638", lit)); }   // (a back wall's top is in shadow: it overhangs)
     _fpQuad([a0, b0, b1, m1, a1], g, "rgba(5,7,15,0.5)", 1);
+    if (it.cap) {   // the 3-D cap: the top of the rock, a flat rock roof running back to the wall behind it
+        const c = it.cap, back = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u - c.nx * c.d, it.a[1] + (it.b[1] - it.a[1]) * u - c.ny * c.d, z === null ? 0 : z), zb = c.zb === null ? null : c.zb;
+        const A1 = back(0, zb === null ? ha : zb), M1 = back(0.5, zb === null ? hm : zb), B1 = back(1, zb === null ? hb : zb), lip = [a1, m1, b1];
+        const cg = ctx.createLinearGradient(0, Math.min(A1[1], B1[1]), 0, Math.max(a1[1], b1[1])); cg.addColorStop(0, _fpShade("#4a382c", lit)); cg.addColorStop(1, _fpShade("#7a6250", lit));
+        _fpQuad([a1, m1, b1, B1, M1, A1], cg, _fpShade("#6a5242", lit), 1);
+        const cs = _fpHash(Math.round(it.a[0] * 2), Math.round(it.a[1] * 2));
+        for (let k = 0; k < 3; k++) { const u = ((cs >>> (k * 5)) % 80 + 10) / 100, v = 0.25 + ((cs >>> (k * 4 + 2)) % 50) / 100, p0 = [a1[0] + (b1[0] - a1[0]) * u, a1[1] + (b1[1] - a1[1]) * u], p1 = [A1[0] + (B1[0] - A1[0]) * u, A1[1] + (B1[1] - A1[1]) * u];
+            ctx.fillStyle = "rgba(0,0,0,0.16)"; ctx.beginPath(); ctx.ellipse(p0[0] + (p1[0] - p0[0]) * v, p0[1] + (p1[1] - p0[1]) * v, 5 + k * 2, 2.5 + k, 0, 0, 6.2832); ctx.fill(); }   // pits and pebbles on the roof
+        ctx.strokeStyle = "rgba(10,6,4,0.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(A1[0], A1[1]); ctx.lineTo(M1[0], M1[1]); ctx.lineTo(B1[0], B1[1]); ctx.stroke();   // where the roof meets the wall behind
+    }
     const zTop = Math.max(ha, hm, hb), zLow = Math.min(ha, hm, hb), seed = _fpHash(Math.round(it.a[0] * 2), Math.round(it.a[1] * 2));
     for (let k = 0; k * 36 < zTop; k++) { const z = k * 36 + _fpHash(k, 7) % 12; if (z > zLow - 4) continue; _fpQuad([P(0, z), P(1, z), P(1, z + 3), P(0, z + 3)], "rgba(0,0,0,0.3)", null); _fpQuad([P(0, z + 3), P(1, z + 3), P(1, z + 5), P(0, z + 5)], "rgba(255,230,200,0.07)", null); }   // strata
     const cap = Math.max(20, zLow - 20);
