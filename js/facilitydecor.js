@@ -133,10 +133,46 @@ function _fpDrawFill(it) {
     if (spr) ctx.drawImage(spr, c[0] - TILE_W - 1, c[1] - TILE_H - 1); else { ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill(); }
     const ops = _fp.floorOps && _fp.floorOps.get(it.key); if (ops) _fpDrawOps(ops, c[0], c[1], it.key);
 }
-// How far a wall in front of the player is cut down: 0 (full height) beyond 3.2 tiles or behind the player, 1 (a low parapet) within 2. Opaque, never see-through.
-function _fpCut(x, y) {
-    if (x + y <= player.visualX + player.visualY + 0.2) return 0;
-    return Math.max(0, Math.min(1, (3.2 - Math.hypot(x - player.visualX, y - player.visualY)) / 1.2));
+// THE CUTAWAY: a wall is drawn at the height that does not cover the player standing behind it on screen: cut down (opaque, never see-through) just enough, to a low parapet when it is close, and
+// back to full height as the player gets further from it or to one side of it. a, b are the wall's ends; H its full height; the player's feet are at the middle of the screen.
+function _fpWallCutH(a, b, H) {
+    const A = _fpP(a[0], a[1], 0), B = _fpP(b[0], b[1], 0), fx = canvas.width / 2, fy = canvas.height / 2 + TILE_H;
+    const lo = Math.min(A[0], B[0]), hi = Math.max(A[0], B[0]), dxo = fx < lo ? lo - fx : fx > hi ? fx - hi : 0, w = Math.max(0, Math.min(1, 1 - (dxo - 30) / 150)); if (w <= 0) return H;   // (full cut within 30 px of the player's column, easing back to full height over 150 px more)
+    const t = hi - lo > 1e-6 ? Math.max(0, Math.min(1, (fx - A[0]) / (B[0] - A[0]))) : 0.5, by = A[1] + (B[1] - A[1]) * t;
+    if (by < fy - 4) return H;   // its base is above the player's feet on screen: it is behind him
+    const keep = Math.max(22, by - fy - 10); if (keep >= H) return H;
+    return H - (H - keep) * w;
+}
+
+// ROCK: a wall of kind rock is a rock formation, not a thin wall. One the camera sees the arena in front of (a BACK wall: the north rock) towers off the top of the screen while the player is
+// in the arena, fading to black where the ceiling cuts it off, so nothing behind it can be seen (with the player outside, in the hallway, it drops to a wall's height so it never curtains off the hallway). One the arena is behind (a FRONT wall: the south and east rock) cannot be tall (it would hide the arena), so it keeps a craggy
+// 70-110 px skyline and the rock carries on DOWN below its base, fading to black, so the void beyond it is rock too.
+const FP_ROCK_DOWN = 170;
+function _fpRockSides(items) {
+    for (const it of items) {
+        if (it.fp !== "wall" || it.kind !== "rock") continue;
+        const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+        const face = facilityRoomAt(it.x + nx * 0.4, it.y + ny * 0.4, _fp.F); it.back = !!face && face.id === it.room; it.lit = nx > ny ? 1 : 0.8; it.depth = it.x + it.y + 0.02;   // (after a steel wall on the same line)
+    }
+}
+function _fpDrawRock(it, H) {
+    const ext = H - FP_WALL_H, back = !!it.back, lit = it.lit || 1;
+    const inside = _fp.pr === it.room, A0 = _fpP(it.a[0], it.a[1], 0), B0 = _fpP(it.b[0], it.b[1], 0);
+    let ha, hb; if (back && inside) { ha = hb = _fpWallCutH(it.a, it.b, Math.max(A0[1], B0[1]) + 160); }   // up past the top of the screen
+    else if (back) { ha = hb = _fpWallCutH(it.a, it.b, ext + 74); }
+    else { const jag = p => 70 + (_fpHash(Math.round(p[0] * 2), Math.round(p[1] * 2)) % 40); ha = ext + jag(it.a); hb = ext + jag(it.b); const c = _fpWallCutH(it.a, it.b, Math.max(ha, hb)); ha = Math.min(ha, c); hb = Math.min(hb, c); }
+    const P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z), top = u => ha + (hb - ha) * u;
+    const a0 = P(0, 0), b0 = P(1, 0), a1 = P(0, ha), b1 = P(1, hb), ty = Math.min(a1[1], b1[1]), by = Math.max(a0[1], b0[1]);
+    if (!back) { const g = ctx.createLinearGradient(0, by, 0, by + FP_ROCK_DOWN); g.addColorStop(0, _fpShade("#5a4638", lit)); g.addColorStop(1, "#050403"); _fpQuad([a0, b0, P(1, -FP_ROCK_DOWN), P(0, -FP_ROCK_DOWN)], g, null); }   // the cliff below it
+    const tall = back && inside, g = ctx.createLinearGradient(0, tall ? 0 : ty, 0, by); if (tall) { g.addColorStop(0, "#050403"); g.addColorStop(0.55, _fpShade("#2a1f18", lit)); g.addColorStop(1, _fpShade("#5a4638", lit)); } else if (back) { g.addColorStop(0, _fpShade("#4a3a2e", lit)); g.addColorStop(1, _fpShade("#5a4638", lit)); } else { g.addColorStop(0, _fpShade("#4a3a2e", lit)); g.addColorStop(1, _fpShade("#5a4638", lit)); }
+    _fpQuad([a0, b0, b1, a1], g, "rgba(5,7,15,0.5)", 1);
+    const zTop = Math.max(ha, hb), seed = _fpHash(Math.round(it.a[0] * 2), Math.round(it.a[1] * 2));
+    for (let k = 0; k * 36 < Math.min(zTop, 520) + 40; k++) { const z = k * 36 + _fpHash(k, 7) % 12; if (z > Math.min(ha, hb) - 2) continue; _fpQuad([P(0, z), P(1, z), P(1, z + 3), P(0, z + 3)], "rgba(0,0,0,0.3)", null); _fpQuad([P(0, z + 3), P(1, z + 3), P(1, z + 5), P(0, z + 5)], "rgba(255,230,200,0.07)", null); }   // strata
+    const cap = Math.max(20, Math.min(ha, hb) - 20);
+    for (let s2 = 0; s2 < 4; s2++) { const h = _fpHash(seed, s2 + 3), u = ((h >>> 3) % 80) / 100 + 0.1, z = 8 + ((h >>> 9) % 100) / 100 * Math.min(cap, 220), w = 0.12 + ((h >>> 5) % 6) / 100, hh = 12 + (h % 16);   // boulders
+        _fpQuad([P(u - w, z), P(u + w, z + 2), P(u + w * 0.8, z + hh), P(u, z + hh + 4), P(u - w * 0.8, z + hh - 2)], "rgba(255,235,210,0.10)", "rgba(0,0,0,0.25)", 1); }
+    for (let s2 = 0; s2 < 2; s2++) { const u = (((seed >>> (s2 * 4)) % 90) + 5) / 100; ctx.strokeStyle = "rgba(0,0,0,0.22)"; ctx.lineWidth = 1; const p = P(u, 0), q = P(u, Math.min(top(u), 200)); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
+    if (!tall) { ctx.strokeStyle = "rgba(190,150,120,0.6)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke(); }
 }
 
 // Called by every facility floor tile from the game's own tile draw: px, py are the tile's top-left corner as for the tile sprite.
@@ -311,9 +347,6 @@ const FP_WALL_KINDS = {
         for (let k = 0; k < 6; k++) { const p = _fpWP(it, 0.08 + k * 0.15 + ((it.seed >>> k) % 5) * 0.01, 4 + ((it.seed >>> (k + 2)) % 4) * 7); ctx.fillStyle = k & 1 ? "rgba(70,140,70,0.75)" : "rgba(50,110,60,0.75)"; ctx.beginPath(); ctx.ellipse(p[0], p[1], 8 + (k % 3) * 3, 4 + (k % 2) * 2, 0, 0, 6.2832); ctx.fill();
             if ((it.seed + k) % 4 === 0) { ctx.fillStyle = "rgba(150,255,180," + (0.5 + 0.3 * Math.sin(f * 0.05 + k)) + ")"; ctx.beginPath(); ctx.arc(p[0] + 2, p[1] - 3, 1.6, 0, 6.2832); ctx.fill(); } }
     },
-    stalactite: (it, f) => {   // rock teeth hanging from the top of the wall
-        const n = Math.max(3, Math.round(Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) * 1.4)); for (let k = 0; k < n; k++) { const u = (k + 0.5) / n, w = 0.4 / n, l = 8 + ((it.seed >>> (k % 20)) + k * 5) % 16; _fpQuad([_fpWP(it, u - w, 74), _fpWP(it, u + w, 74), _fpWP(it, u + w * 0.15, 74 - l), _fpWP(it, u - w * 0.15, 74 - l)], "#4a3a2c", "rgba(5,7,15,0.4)", 1); _fpQuad([_fpWP(it, u, 74), _fpWP(it, u + w, 74), _fpWP(it, u + w * 0.15, 74 - l)], "rgba(255,255,255,0.08)", null); }
-    },
     bulbs: (it, f) => {   // a string of coloured bulbs sagging along the top of the wall
         const n = Math.max(4, Math.round(Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) * 1.6)), cols = ["#ff4a3a", "#ffd34d", "#6dff5a", "#6adfff", "#d94aff"]; ctx.strokeStyle = "#1a1d26"; ctx.lineWidth = 1.5; ctx.beginPath(); for (let k = 0; k <= n; k++) { const u = k / n, p = _fpWP(it, u, 68 - Math.sin(u * 3.1416) * 7); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.stroke();
         for (let k = 0; k <= n; k++) { const u = k / n, p = _fpWP(it, u, 68 - Math.sin(u * 3.1416) * 7 - 2), on = (Math.floor(f / 24) + k + it.seed) % 6 !== 0; ctx.fillStyle = on ? cols[(k + it.seed) % 5] : "#2a2e3a"; ctx.beginPath(); ctx.arc(p[0], p[1], 2.4, 0, 6.2832); ctx.fill(); if (on) { ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = _fpRgba(cols[(k + it.seed) % 5], 0.18); ctx.beginPath(); ctx.arc(p[0], p[1], 7, 0, 6.2832); ctx.fill(); ctx.globalCompositeOperation = "source-over"; } }
@@ -322,7 +355,7 @@ const FP_WALL_KINDS = {
         const z1 = it.z || 70; for (let k = 0; k < 7; k++) _fpWQuad(it, 0.05, 0.95, z1 - 3 - k * 5, z1 - 1 - k * 5, "#b8b098", "rgba(60,50,30,0.5)", 1);
     },
 };
-function _fpDrawWDecor(it) { if (_fpCut(it.x, it.y) > 0.15) return; const fn = FP_WALL_KINDS[it.kind]; if (fn) fn(it, _fpFrame()); }   // (decor on a wall that is cut down is not drawn)
+function _fpDrawWDecor(it) { if (_fpWallCutH(it.a, it.b, FP_WALL_H) < 70) return; const fn = FP_WALL_KINDS[it.kind]; if (fn) fn(it, _fpFrame()); }   // (decor on a wall that is cut down is not drawn)
 
 // ═════════════ FURNITURE ═════════════
 // Returns true if it drew the kind. `it` is one tile of a solid prop (sx / sy: whether its +x / +y face is exposed, as for the desks).

@@ -346,7 +346,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('every kind of decor and furniture in the data has drawing code, and every id is unique', () => {
         const M = J('FACILITY_MAP'), src = rd('js/facilitydecor.js'), play = rd('js/facilityplay.js');
-        const wall = new Set(['poster', 'vent', 'pipe', 'wall_light', 'screen', 'board', 'whiteboard', 'exit_sign', 'clock', 'graffiti', 'panel', 'banner', 'mirror', 'shelf', 'sign', 'hazard_sign', 'cable_run', 'window_blind', 'crack', 'vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'ladder', 'scoreboard', 'plate', 'moss', 'stalactite', 'bulbs']);
+        const wall = new Set(['poster', 'vent', 'pipe', 'wall_light', 'screen', 'board', 'whiteboard', 'exit_sign', 'clock', 'graffiti', 'panel', 'banner', 'mirror', 'shelf', 'sign', 'hazard_sign', 'cable_run', 'window_blind', 'crack', 'vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'ladder', 'scoreboard', 'plate', 'moss', 'bulbs']);
         const missing = []; for (const d of M.decor) { if (wall.has(d.kind)) { if (!new RegExp('\\b' + d.kind + ':\\s*\\(it, f\\)').test(src)) missing.push(d.kind); } else if (!new RegExp('k === "' + d.kind + '"').test(src)) missing.push(d.kind); }
         for (const p of M.props) if (p.kind && !new RegExp('(kind|k) === "' + p.kind + '"').test(src + play)) missing.push(p.kind);
         same(Array.from(new Set(missing)).join(), '', 'kinds with no drawing code');
@@ -369,7 +369,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the arena\'s rock walls and the catwalks are detailed: decor on the rock faces (diagonal walls, on the line itself), on the outside faces of the south and east rock, and on the catwalk walls; the catwalks carry furniture', () => {
         const M = J('FACILITY_MAP'), A = M.decor.filter(d => d.room === 'arena' && d.a && d.b && d.kind !== 'lane'), K = M.decor.filter(d => d.room === 'catwalks');
         ok(A.length >= 40, 'arena wall decor: ' + A.length); ok(A.filter(d => d.a[0] !== d.b[0] && d.a[1] !== d.b[1]).length >= 25, 'diagonal rock decor'); ok(A.filter(d => d.outside).length >= 12, 'outside-face decor: ' + A.filter(d => d.outside).length);
-        ok(new Set(A.map(d => d.kind)).size >= 12, 'arena decor kinds: ' + new Set(A.map(d => d.kind)).size); for (const k of ['stalactite', 'vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'scoreboard', 'bulbs', 'moss', 'crack']) ok(A.some(d => d.kind === k), 'no ' + k + ' on the arena walls');
+        ok(new Set(A.map(d => d.kind)).size >= 12, 'arena decor kinds: ' + new Set(A.map(d => d.kind)).size); for (const k of ['vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'scoreboard', 'bulbs', 'moss', 'crack']) ok(A.some(d => d.kind === k), 'no ' + k + ' on the arena walls');
         ok(K.length >= 40, 'catwalk decor: ' + K.length); ok(K.filter(d => d.outside).length >= 8, 'catwalk outside faces'); ok(M.props.filter(p => p.room === 'catwalks').length >= 12, 'catwalk furniture: ' + M.props.filter(p => p.room === 'catwalks').length);
         for (const k of ['speaker', 'floodlight', 'spool', 'generator', 'scaffold', 'console', 'chair', 'toolbox']) ok(M.props.some(p => p.room === 'catwalks' && p.kind === k), 'no ' + k + ' on the catwalks');
     });

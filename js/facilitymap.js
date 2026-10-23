@@ -231,7 +231,7 @@ const FACILITY_MAP = {
     ],
 
     // DECOR: paint and light, not solid. Floor kinds: rug, hazard, lane, arrows, cables, ring, stain / puddle / scorch, papers / debris, light, tint. Wall kinds (drawn flat on the wall between a and b, on its visible +y / +x face,
-    // so `room` is the room on that side): poster, vent, pipe, wall_light, screen, board, whiteboard, exit_sign, clock, graffiti, panel, banner, mirror, shelf, sign, hazard_sign, cable_run, window_blind, crack, vein, beam, chain, claw, ooze_drip, lamp, ladder, scoreboard, plate, moss, stalactite, bulbs. A decor entry on a diagonal wall gives its a and b on the line itself; `outside: true` puts it on the camera-facing face of a wall whose room is BEHIND it (the arena's south and east rock).
+    // so `room` is the room on that side): poster, vent, pipe, wall_light, screen, board, whiteboard, exit_sign, clock, graffiti, panel, banner, mirror, shelf, sign, hazard_sign, cable_run, window_blind, crack, vein, beam, chain, claw, ooze_drip, lamp, ladder, scoreboard, plate, moss, bulbs. A decor entry on a diagonal wall gives its a and b on the line itself; `outside: true` puts it on the camera-facing face of a wall whose room is BEHIND it (the arena's south and east rock).
     // Positions are sketch pixels (a tile is 20 px; a cell k is [20k-10, 20k+10]).
     decor: [
         { id: "ring_1", room: "crystal_chamber", kind: "ring", at: [250, 330], radius: 68, colour: "#6adfff", a: 0.75, w: 3, glow: true },
@@ -485,12 +485,6 @@ const FACILITY_MAP = {
         { id: "banner_3", room: "arena", kind: "banner", a: [450, 770], b: [490, 770], colour: "#8a1f2a" },
         { id: "wall_light_16", room: "arena", kind: "wall_light", a: [490, 770], b: [530, 770], h: 1, colour: "#ffe9a0" },
         { id: "hazard_sign_8", room: "arena", kind: "hazard_sign", a: [510, 770], b: [530, 770] },
-        { id: "stalactite_1", room: "arena", kind: "stalactite", a: [550.0, 810.0], b: [610.0, 830.0] },
-        { id: "stalactite_2", room: "arena", kind: "stalactite", a: [610.0, 830.0], b: [690.0, 810.0] },
-        { id: "stalactite_3", room: "arena", kind: "stalactite", a: [690.0, 810.0], b: [710.0, 770.0] },
-        { id: "stalactite_4", room: "arena", kind: "stalactite", a: [710.0, 770.0], b: [770.0, 810.0] },
-        { id: "stalactite_5", room: "arena", kind: "stalactite", a: [770.0, 810.0], b: [930.0, 790.0] },
-        { id: "stalactite_6", room: "arena", kind: "stalactite", a: [930.0, 790.0], b: [1010.0, 810.0] },
         { id: "moss_1", room: "arena", kind: "moss", a: [553.0, 811.0], b: [580.0, 820.0] },
         { id: "crack_1", room: "arena", kind: "crack", a: [580.0, 820.0], b: [607.0, 829.0] },
         { id: "lamp_1", room: "arena", kind: "lamp", a: [645.2, 821.2], b: [654.8, 818.8], h: 1 },

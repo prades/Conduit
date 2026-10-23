@@ -201,7 +201,7 @@ function facilityHeightAt(x, y, F) {
 function facilityRoomHeight(id, F) { F = F || facilityGet(); const r = F.byId.get(id); return r ? (F.levelH.get(r.level) || 0) : 0; }
 
 // the kinds of decor that hang on a wall (the rest lie on the floor)
-const FAC_WALL_DECOR = new Set(["poster", "vent", "pipe", "wall_light", "screen", "board", "whiteboard", "exit_sign", "clock", "graffiti", "panel", "banner", "mirror", "shelf", "sign", "hazard_sign", "cable_run", "window_blind", "crack", "vein", "beam", "chain", "claw", "ooze_drip", "lamp", "ladder", "scoreboard", "plate", "moss", "stalactite", "bulbs"]);
+const FAC_WALL_DECOR = new Set(["poster", "vent", "pipe", "wall_light", "screen", "board", "whiteboard", "exit_sign", "clock", "graffiti", "panel", "banner", "mirror", "shelf", "sign", "hazard_sign", "cable_run", "window_blind", "crack", "vein", "beam", "chain", "claw", "ooze_drip", "lamp", "ladder", "scoreboard", "plate", "moss", "bulbs"]);
 
 // The dressing (floors and decor): floors name a room, floor decor lies inside its room, wall decor is flat on a real solid wall, on the side of it that the camera sees, and (but for signs over a door) not across a doorway.
 function facilityValidateDressing(F) {
