@@ -252,7 +252,7 @@ function _fpPlaceStatics(F) {
     _fp.floorOps = _fpFloorBuild(F);                     // the floors' coverings and decals, cut into tiles
     for (const it of _fpFillItems()) items.push(it);     // floor that runs in under the walls (no black where a wall meets the floor)
     _fpSkirts(items);                                    // a wall above a lower floor reaches down to it
-    _fp.items = items; _fpRockSides(items);              // which rock walls are formations the arena is in front of, and which are behind
+    _fp.items = items; _fpRockSides(items); _fpScaffoldMarks(items);   // which rock walls are formations the arena is in front of, and which are behind; which walls are scaffolding
     _fp.items = items;
 }
 function facilityDrawItems(drawList) {
@@ -299,6 +299,8 @@ function _fpDrawWall(it) {
     const glass = it.kind === "glass", c = FP_WALL[it.kind] || FP_WALL.wall, H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0));
     // a wall is always drawn at its full height, whatever the player is doing: it never fades, shrinks or reacts when the player comes close
     if (it.kind === "rock") return _fpDrawRock(it, H);   // rock formations (js/facilitydecor.js)
+    if (it.scaffold) return _fpDrawRail(it);                   // the catwalks: an open deck with a rail, not a room (js/facilitydecor.js)
+    if (it.support) return _fpDrawSupport(it, H - FP_WALL_H);  // the arena's frame under the deck: open steel, you see through it
     const Hd = H;   // walls never react to the player
     if (!glass && facilityStyleRoom(it.room)) return _fpStyleWall(it, Hd);   // (the crystal laboratory style)
     const a0 = _fpP(it.a[0], it.a[1], 0), b0 = _fpP(it.b[0], it.b[1], 0), a1 = _fpP(it.a[0], it.a[1], Hd), b1 = _fpP(it.b[0], it.b[1], Hd);

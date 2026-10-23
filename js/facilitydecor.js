@@ -142,7 +142,7 @@ function _fpRockSides(items) {
         if (it.fp !== "wall" || it.kind !== "rock") continue;
         const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
         const face = facilityRoomAt(it.x + nx * 0.4, it.y + ny * 0.4, _fp.F); it.back = !!face && face.id === it.room; it.lit = nx > ny ? 1 : 0.8; it.depth = it.x + it.y + 0.02;   // (after a steel wall on the same line)
-        it.cap = null;
+        it.cap = it.back ? null : { d: 1.0, nx, ny, zb: null };   // a front wall's cap is the thickness of the rock, 1 tile, running back toward the arena
         if (it.back) {   // the CAP: the rock's top surface runs back, away from the camera, to the next wall (the hallway's) or, for a thin spur, a little way (a burrow with a rock roof)
             let t = 0.3, room = null; for (; t <= 4.2; t += 0.2) { const q = facilityRoomAt(it.x - nx * t, it.y - ny * t, _fp.F); if (q) { room = q; break; } }
             if (room) { let lo = t - 0.2, hi = t; for (let i = 0; i < 4; i++) { const mid = (lo + hi) / 2; if (facilityRoomAt(it.x - nx * mid, it.y - ny * mid, _fp.F)) hi = mid; else lo = mid; } const d = hi, same = room.id === it.room;
@@ -181,6 +181,44 @@ function _fpDrawRock(it, H) {
     for (let s2 = 0; s2 < 2; s2++) { const u = (((seed >>> (s2 * 4)) % 90) + 5) / 100, zh = zLow - 6; ctx.strokeStyle = "rgba(0,0,0,0.22)"; ctx.lineWidth = 1; const p = P(u, 0), q = P(u, Math.min(zh, 120)); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
     ctx.strokeStyle = back ? "rgba(150,115,90,0.55)" : "rgba(190,150,120,0.6)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(m1[0], m1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();   // the rocky lip
 }
+
+// SCAFFOLDING: the catwalks are not a room but an open steel deck at the top of the arena, on legs, with railings. (The map still has their walls: they are the collision, and they are drawn as railings.)
+//   - a wall piece of a room whose `structure` is "scaffold" is drawn as a deck edge with a rail (and legs down to the arena floor); the arena's own railing wall under the deck's west edge is the open
+//     frame that holds the deck up (posts every two tiles, beams, X braces), so you see through it.
+function _fpScaffoldMarks(items) {
+    for (const it of items) {
+        if (it.fp !== "wall") continue; const rm = _fp.F.byId.get(it.room);
+        it.scaffold = !!rm && rm.raw.structure === "scaffold"; it.support = it.kind === "railing_wall";
+        if (it.scaffold) {   // legs under every edge but the one that is held up by the arena's frame (the arena is behind it)
+            const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+            const behind = facilityRoomAt(it.x - nx * 0.4, it.y - ny * 0.4, _fp.F); it.legs = !(behind && behind.id === "arena"); it.legH = (it.base || 0) - facilityRoomHeight("arena", _fp.F) * FP_ELEV_PX;
+        }
+    }
+}
+const FP_STEEL = { post: "#8a93a6", beam: "#9aa6bc", brace: "#5a6a8a", dark: "#46506a", ink: "#171b26", rail: "#ffd34d" };
+// an open steel frame along a wall piece between heights z0 (low) and z1 (high): posts every 2 tiles, a beam at every band, X braces between the posts
+function _fpDrawFrame(it, z0, z1) {
+    const ax = it.a[0], ay = it.a[1], dx = it.b[0] - ax, dy = it.b[1] - ay, horiz = Math.abs(dx) >= Math.abs(dy), sa = horiz ? ax : ay, sb = horiz ? it.b[0] : it.b[1], lo = Math.min(sa, sb), hi = Math.max(sa, sb);
+    if (z1 - z0 < 12) return;
+    const P = (sv, z) => { const u = (sv - sa) / ((sb - sa) || 1); return _fpP(ax + dx * u, ay + dy * u, z); }, n = Math.max(1, Math.round((z1 - z0) / 56)), bh = (z1 - z0) / n, line = (p, q, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); };
+    for (let k = 0; k <= n; k++) { const z = z0 + k * bh; line(P(lo, z), P(hi, z), FP_STEEL.ink, 5); line(P(lo, z), P(hi, z), k === n ? FP_STEEL.beam : FP_STEEL.brace, 3); }   // beams
+    for (let j = Math.floor(lo / 2); j * 2 <= hi + 1e-6; j++) {   // each two-tile bay: X braces, then the posts at its ends
+        const s0 = Math.max(lo, j * 2), s1 = Math.min(hi, j * 2 + 2); if (s1 - s0 < 1e-6) continue;
+        for (let k = 0; k < n; k++) { const dir = ((j + k) & 1) ? 1 : -1, zf = (sv) => { const t = (sv - j * 2) / 2; return z0 + k * bh + (dir > 0 ? t : 1 - t) * bh; }; line(P(s0, zf(s0)), P(s1, zf(s1)), FP_STEEL.brace, 2); }
+    }
+    for (let m = Math.ceil(lo / 2) * 2; m <= hi + 1e-6; m += 2) { line(P(m, z0), P(m, z1), FP_STEEL.ink, 7); line(P(m, z0), P(m, z1), FP_STEEL.post, 4); }
+}
+// the deck's edge: a fascia, a kickboard, a post every tile and two rails; legs under it where the arena's frame is not
+function _fpDrawRail(it) {
+    const ax = it.a[0], ay = it.a[1], dx = it.b[0] - ax, dy = it.b[1] - ay, horiz = Math.abs(dx) >= Math.abs(dy), sa = horiz ? ax : ay, sb = horiz ? it.b[0] : it.b[1], lo = Math.min(sa, sb), hi = Math.max(sa, sb);
+    const P = (sv, z) => { const u = (sv - sa) / ((sb - sa) || 1); return _fpP(ax + dx * u, ay + dy * u, z); }, line = (p, q, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); };
+    _fpQuad([P(lo, -10), P(hi, -10), P(hi, 0), P(lo, 0)], FP_STEEL.dark, FP_STEEL.ink, 1.5);   // the deck's fascia
+    _fpQuad([P(lo, 0), P(hi, 0), P(hi, 6), P(lo, 6)], "#3a4258", null);                          // the kickboard
+    for (const [z, col, w] of [[36, FP_STEEL.rail, 3.5], [20, FP_STEEL.post, 2.5]]) { line(P(lo, z), P(hi, z), FP_STEEL.ink, w + 2.5); line(P(lo, z), P(hi, z), col, w); }
+    for (let m = Math.ceil(lo - 1e-6); m <= hi + 1e-6; m++) { line(P(m, 0), P(m, 38), FP_STEEL.ink, 6); line(P(m, 0), P(m, 38), FP_STEEL.post, 3.5); }   // posts
+    if (it.legs && it.legH > 20) _fpDrawFrame(it, -it.legH, -10);
+}
+function _fpDrawSupport(it, ext) { _fpDrawFrame(it, 0, ext); }
 
 // Called by every facility floor tile from the game's own tile draw: px, py are the tile's top-left corner as for the tile sprite.
 // A tile's static marks are painted ONCE into a small sprite (cut to the tile's diamond) and stamped each frame; only the light (which flickers) is painted live.
@@ -366,7 +404,7 @@ function _fpDrawWDecor(it) { const fn = (facilityStyleRoom(it.room) && FP_STYLE_
 
 // ═════════════ FURNITURE ═════════════
 // Returns true if it drew the kind. `it` is one tile of a solid prop (sx / sy: whether its +x / +y face is exposed, as for the desks).
-const FP_SMALL_PROPS = new Set(["plant", "cooler", "bin", "barrel", "beanbag", "telescope", "floodlight", "cart", "teleporter", "table", "pingpong", "rail", "spool", "toolbox", "chair", "scaffold"]);
+const FP_SMALL_PROPS = new Set(["plant", "cooler", "bin", "barrel", "beanbag", "telescope", "floodlight", "cart", "teleporter", "table", "pingpong", "rail", "spool", "toolbox", "chair"]);
 function _fpDecorProp(it) {
     const k = it.kind, f = _fpFrame(), seed = it.seed || 0, x = it.x, y = it.y;
     if (FP_SMALL_PROPS.has(k)) {   // the floor the piece stands on (its tile is solid, so the tile itself is not drawn)
@@ -459,10 +497,6 @@ function _fpDecorProp(it) {
     } else if (k === "chair") {   // a swivel chair: a seat, a backrest, a star base
         const b = _fpP(x, y, 0), t = _fpP(x, y, 20); ctx.strokeStyle = "#1a1d26"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.lineTo(t[0], t[1]); for (const a of [0, 1.26, 2.5, 3.8, 5.0]) { ctx.moveTo(b[0], b[1]); ctx.lineTo(b[0] + Math.cos(a) * 11, b[1] + Math.sin(a) * 5); } ctx.stroke();
         _fpBox(x - 0.28, y - 0.28, x + 0.28, y + 0.28, 18, 23, "#3a4a6a", "#26324a", "#1c2538"); _fpBox(x - 0.28, y - 0.3, x + 0.28, y - 0.18, 23, 44, "#33425e", "#222c42", "#19212f");
-    } else if (k === "scaffold") {   // a steel scaffold frame: four posts, cross braces and a plank deck
-        const P = _fpP; for (const [a, b] of [[-0.45, -0.45], [0.45, -0.45], [0.45, 0.45], [-0.45, 0.45]]) { const p = P(x + a, y + b, 0), q = P(x + a, y + b, 70); ctx.strokeStyle = "#8a93a6"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
-        for (const z of [20, 46]) { const a = P(x - 0.45, y + 0.45, z), b = P(x + 0.45, y + 0.45, z), c = P(x + 0.45, y - 0.45, z); ctx.strokeStyle = "#6e7686"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.stroke(); }
-        const a = P(x - 0.45, y + 0.45, 6), b = P(x + 0.45, y + 0.45, 46); ctx.strokeStyle = "#6e7686"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); _fpBox(x - 0.5, y - 0.5, x + 0.5, y + 0.5, 68, 72, "#9a7a4a", "#6a5030", "#54401f");
     } else return false;
     return true;
 }
