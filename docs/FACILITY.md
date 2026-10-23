@@ -13,8 +13,8 @@ navigation, validates it, and draws the debug view. Edit the data file to change
 - **Teleport Room 1 / 2** are placeholders for a teleport feature to be added later; no teleport object is in the data.
 - **Every door is a sliding access door** (`door_type`); a confirmed opening is one.
 - The zone to the right of the arena (the **catwalks**) is `blocked_off_for_now`: not being developed; the player can reach its edge, not enter.
-- `openings`, `connections`, `ramps`: **confirmed only.** So far: the **Teleport Stair Room** (raised, leads to Teleport Room 2 through a sliding access door) and its **curved staircase leading DOWN to the hallway** that passes the experiment lab (`r_teleport_stairs`, levels 1 to 0, an open stair mouth with no door). Their positions on the walls are approximate. Every other room is sealed.
-- The experiment lab's gridded floor is both the lab and the hallway past it (not split yet).
+- `openings`, `connections`, `ramps`: **confirmed only.** So far: a **sliding door from the Crystal Chamber onto the hallway** (on their shared wall, near its middle), and the **Teleport Stair Room** (raised, leads to Teleport Room 2 through a sliding access door) and its **curved staircase leading DOWN to the hallway** that passes the experiment lab (`r_teleport_stairs`, levels 1 to 0, an open stair mouth with no door). Their positions on the walls are approximate. Every other room is sealed.
+- The experiment lab's gridded floor is both the lab and the hallway past it (not split yet). The lab bench was pulled in from the walls so the hallway runs all the way round it (at least 2.5 tiles wide on every side).
 - `candidates`: what the sketch suggests (14 connections, 4 ramps/stairs) with the evidence. They do nothing until moved into the lists above by hand.
 - `levels`: ground < raised (observation deck, catwalks). Heights are unknown.
 - `external_exits`: arrows leaving the map (further dungeons, front entrance, further nests) and the BLOCKED PATH. None is a connection.

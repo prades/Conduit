@@ -9,7 +9,7 @@
 //
 // RULES (from the spec):
 //   - a room's outline is an explicit polygon; every edge of it is a wall unless a CONFIRMED opening is cut into it;
-//   - `openings` and `connections` hold ONLY what is confirmed (so far just the stair room's two openings). Everything the sketch merely suggests is in
+//   - `openings` and `connections` hold ONLY what is confirmed (so far the stair room's two openings and the Crystal Chamber's door to the hallway). Everything the sketch merely suggests is in
 //     `candidates` with the evidence, and does nothing until it is moved into `openings` + `connections` by hand;
 //   - the nest area is one open room; the long lines round it are its outside edges (walls). Nothing outside every room is walkable;
 //   - the arena's perimeter is solid wall / rock and blocks movement;
@@ -70,7 +70,8 @@ const FACILITY_MAP = {
     // Solid things standing in a room. Collision is on for all of them; the arena's two circular structures are giant reserves of ooze or liquid (solid tanks).
     props: [
         { id: "front_office_bench", room: "front_office", shape: "rect", rect: [475, 385, 735, 470], status: "approximate" },
-        { id: "lab_bench", room: "experiment_lab", shape: "rect", rect: [380, 512, 745, 628], status: "approximate" },
+        { id: "lab_bench", room: "experiment_lab", shape: "rect", rect: [430, 530, 735, 615], status: "approximate",
+          note: "Pulled in from the walls (it was drawn almost touching the lab's west wall) so the hallway runs all the way round it: about 2.7 tiles on the north and west, 4 on the south." },
         { id: "lab_tank", room: "experiment_lab", shape: "circle", at: [740, 570], radius: 30, status: "approximate" },
         { id: "arena_truck", room: "arena", shape: "rect", rect: [420, 790, 500, 1010], status: "traced", kind: "semi_truck", cargo: [{ type: "missile", count: 3 }],
           note: "A semi-truck carrying three missiles, parked along the arena's west side. Solid." },
@@ -89,12 +90,15 @@ const FACILITY_MAP = {
     // CONFIRMED only. An opening is a gap cut into the walls along the segment a -> b; a connection says which two rooms it joins (and the ramp, if their levels differ).
     // The stair room: confirmed by the user. The positions on the walls are APPROXIMATE (centred on the shared wall) until checked in the debug view.
     openings: [
+        { id: "door_crystal_hallway", a: [400, 476], b: [400, 508], rooms: ["crystal_chamber", "experiment_lab"], position_status: "approximate",
+          note: "A sliding access door from the Crystal Chamber onto the hallway that passes the experiment lab (on the shared wall, near its middle)." },
         { id: "open_stair_mouth", a: [815, 610], b: [815, 690], rooms: ["teleport_stair_room", "experiment_lab"], door: null, position_status: "approximate",
           note: "The open foot of the curved staircase, onto the hallway. No door." },
         { id: "door_stair_teleport_2", a: [890, 625], b: [890, 665], rooms: ["teleport_stair_room", "teleport_room_2"], position_status: "approximate",
           note: "A sliding access door between the stair room and Teleport Room 2." },
     ],
     connections: [
+        { id: "conn_crystal_hallway", rooms: ["crystal_chamber", "experiment_lab"], opening: "door_crystal_hallway" },
         { id: "conn_stair_hallway", rooms: ["teleport_stair_room", "experiment_lab"], opening: "open_stair_mouth", ramp: "r_teleport_stairs" },
         { id: "conn_stair_teleport_2", rooms: ["teleport_stair_room", "teleport_room_2"], opening: "door_stair_teleport_2" },
     ],
@@ -138,7 +142,7 @@ const FACILITY_MAP = {
 
     unresolved: [
         "The scale: px_per_tile is a first guess, to be calibrated in the game",
-        "Every other door (they will be sliding access doors): only the stair room's two openings are confirmed, and their positions on the walls are approximate",
+        "Every other door (they will be sliding access doors): only the Crystal Chamber's door and the stair room's two openings are confirmed, and their positions on the walls are approximate",
         "Elevation heights (only the ORDER ground < raised is known) and every ramp or stair",
         "What the two liquid reserves contain (ooze or another liquid), and whether the stairs lead onto their rims",
         "The zone to the right of the arena (the catwalks) is blocked off for now and not being developed",
