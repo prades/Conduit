@@ -34,3 +34,7 @@ Saturated colour is for crystal energy and things you use; everything else is a 
 ## Status and how to extend
 
 Only the Crystal Chamber uses it (`FP_STYLE_ROOMS`). Once the palette, materials, edge definition and lighting are approved, the rest of the facility is switched over room by room: add the room to `FP_STYLE_ROOMS`, then give the kinds that room has (furniture, wall decor) a styled version in `_fpStyleProp` / `FP_STYLE_WALL` (kinds without one still draw as before). Rooms keep their identity through layout, equipment, lighting and accent colour, not a different style.
+
+## The crystal's pad machine
+
+The crystal rests in a round pad machine and is hooked up to the ceiling (`_fpStyleRig`, one item drawn just before the crystal in every styled room that has the objective): a raised round pad on the floor (bold outline, neon cyan and violet rings, segment seams, a glowing emitter, four clamps), a matching round machine up in the ceiling (its struts run off the top of the frame, where the ceiling cuts the view), three posts joining them on the side away from the camera, energy lines with travelling pulses running down from the ceiling machine to the crystal, and rings rising off the pad as a hover field. It is drawing only: the crystal is where it was.

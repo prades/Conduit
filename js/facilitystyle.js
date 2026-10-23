@@ -240,3 +240,35 @@ function _fpStyleProp(it) {
     } else return false;
     return true;
 }
+
+// ── the crystal's pad machine ──
+// The crystal rests in a round pad machine on the floor and is hooked up to the ceiling: a matching round machine up in the ceiling, tied to the pad by three posts behind the crystal and by energy
+// lines that run down to it. Drawn as one item just before the crystal, in every styled room that has the objective.
+function _fpStyleRigs(F) {
+    const out = [];
+    for (const r of F.rooms) { if (!facilityStyleRoom(r.id)) continue; const ob = (r.objects || []).find(o => o.type === "objective"); if (!ob) continue; const x = Math.round(ob.at[0]), y = Math.round(ob.at[1]); out.push({ type: "fp", fp: "rig", x, y, room: r.id, base: facilityRoomHeight(r.id, F) * FP_ELEV_PX, depth: x + y - 0.3 }); }
+    return out;
+}
+function _fpStyleRig(it) {
+    const f = _fpFrame(), cx = typeof crystal !== "undefined" && crystal && typeof crystal.x === "number" ? crystal.x : it.x, cy = typeof crystal !== "undefined" && crystal && typeof crystal.y === "number" ? crystal.y : it.y, R = 1.5, zc = 230, P = _fpP;
+    const line = (p, q, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }, ring = (x, y, z, r, col, w) => { const c = P(x, y, z); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.ellipse(c[0], c[1], r * TILE_W * 1.4142, r * TILE_H * 1.4142, 0, 0, 6.2832); ctx.stroke(); };
+    // 1. the ceiling machine: two struts running up out of the frame, a round housing with a lit neon ring and a core
+    for (const [dx, dy] of [[-0.8, -0.8], [0.8, 0.8]]) _fpStyleCyl(cx + dx, cy + dy, 0.13, zc + 12, zc + 330, FP_PAL.teal, FP_PAL.tealLit, FP_PAL.tealLit, 3);
+    _fpStyleCyl(cx, cy, R, zc, zc + 14, FP_PAL.teal, FP_PAL.tealLit, FP_PAL.caseLit, 4);
+    ring(cx, cy, zc + 14, R * 0.72, FP_PAL.cyan, 3); ring(cx, cy, zc + 14, R * 0.42, FP_PAL.violet, 3); _fpDisc(cx, cy, zc + 14, R * 0.2, "#12323a", FP_PAL.ink); const cc = P(cx, cy, zc + 14); _fpGlow(cc[0], cc[1], 46, FP_PAL.cyan, 0.3);
+    // 2. three posts from the pad up to the ceiling machine, on the side away from the camera
+    for (const a of [Math.PI, Math.PI * 1.25, Math.PI * 1.5]) { const px = cx + Math.cos(a) * R * 0.92, py = cy + Math.sin(a) * R * 0.92; _fpStyleCyl(px, py, 0.1, 9, zc, FP_PAL.tealLit, FP_PAL.cap, FP_PAL.cap, 3); for (const z of [60, 120, 180]) { const c0 = P(px, py, z); ctx.fillStyle = FP_PAL.cyan; ctx.fillRect(c0[0] - 6, c0[1] - 2, 12, 4); } }
+    // 3. the energy lines: from the ceiling machine down to the crystal, with a pulse running down each
+    const tip = P(cx, cy, 64);
+    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4, top = P(cx + Math.cos(a) * R * 0.5, cy + Math.sin(a) * R * 0.5, zc + 14), t = ((f * 0.012) + i * 0.25) % 1;
+        line(top, tip, "rgba(49,232,255,0.28)", 6); line(top, tip, FP_PAL.cyan, 2.5); const px = top[0] + (tip[0] - top[0]) * t, py = top[1] + (tip[1] - top[1]) * t; ctx.fillStyle = FP_PAL.white; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 6.2832); ctx.fill(); _fpGlow(px, py, 12, FP_PAL.cyan, 0.5); }
+    // 4. the pad: a raised round machine under the crystal, a bold outline, neon rings, an emitter, four clamps
+    _fpDisc(cx + 0.12, cy + 0.12, 0, R + 0.1, "rgba(27,54,64,0.18)", null);
+    _fpStyleCyl(cx, cy, R, 0, 10, FP_PAL.tealLit, FP_PAL.cap, FP_PAL.caseLit, 4);
+    _fpDisc(cx, cy, 10, R * 0.84, FP_PAL.wallLit, FP_PAL.ink); ring(cx, cy, 10, R * 0.72, FP_PAL.cyan, 3.5); ring(cx, cy, 10, R * 0.5, FP_PAL.violet, 3);
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + f * 0.004, p0 = P(cx + Math.cos(a) * R * 0.5, cy + Math.sin(a) * R * 0.5, 10), p1 = P(cx + Math.cos(a) * R * 0.72, cy + Math.sin(a) * R * 0.72, 10); line(p0, p1, "rgba(22,48,58,0.55)", 2); }   // the segment seams between the rings
+    _fpDisc(cx, cy, 10, R * 0.26, "#12323a", FP_PAL.ink); const pc = P(cx, cy, 10), pul = 0.7 + 0.3 * Math.sin(f * 0.06); _fpGlow(pc[0], pc[1], 50, FP_PAL.cyan, 0.35 * pul);
+    for (const a of [0.7, 2.27, 3.84, 5.41]) _fpStyleCyl(cx + Math.cos(a) * R * 0.96, cy + Math.sin(a) * R * 0.96, 0.11, 10, 15, FP_PAL.teal, FP_PAL.tealLit, FP_PAL.cyan, 2.5);
+    // 5. the hover field: rings rising off the pad, fading as they climb to the crystal
+    for (let i = 0; i < 3; i++) { const t = ((f * 0.01) + i / 3) % 1; ring(cx, cy, 12 + t * 44, R * (0.55 - t * 0.15), _fpRgba(FP_PAL.cyan, 0.7 * (1 - t)), 2.5); }
+}
