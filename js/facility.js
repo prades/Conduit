@@ -33,6 +33,7 @@ function facilitySegmentsCross(a, b, c, d) {
     const d3 = _facCross(c[0], c[1], d[0], d[1], a[0], a[1]), d4 = _facCross(c[0], c[1], d[0], d[1], b[0], b[1]);
     return ((d1 > FAC_EPS && d2 < -FAC_EPS) || (d1 < -FAC_EPS && d2 > FAC_EPS)) && ((d3 > FAC_EPS && d4 < -FAC_EPS) || (d3 < -FAC_EPS && d4 > FAC_EPS));
 }
+function _facDistToLine(a, b, p) { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return Math.abs((p[0] - a[0]) * dy - (p[1] - a[1]) * dx) / l; }
 function _facSegPointDist(a, b, x, y) {
     const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy;
     const t = l2 ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / l2)) : 0;
@@ -64,7 +65,8 @@ function _facTrim(a, b, openings) {
 // `extra` lets a test (or the debug view) add openings/connections WITHOUT touching the authored data: { openings: [...], connections: [...] }.
 function facilityBuild(extra) {
     const M = FACILITY_MAP, ex = extra || {};
-    const openings = (M.openings || []).concat(ex.openings || []).map(o => ({ id: o.id, a: _facP(o.a), b: _facP(o.b), rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door") }));
+    const closed = ex.closed || [];   // rooms whose openings are CLOSED in this copy (the validator's sealed-room test)
+    const openings = (M.openings || []).concat(ex.openings || []).filter(o => !closed.some(id => (o.rooms || []).includes(id))).map(o => ({ id: o.id, a: _facP(o.a), b: _facP(o.b), rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door") }));
     const rooms = M.rooms.map(r => ({ id: r.id, label: r.label, level: r.level, status: r.status, poly: _facPoly(r.polygon), edgeKinds: r.edge_kinds || null, boundary: r.boundary_type || null, objects: (r.objects || []).map(o => Object.assign({}, o, { at: _facP(o.at) })), raw: r }));
     const walls = [];
     for (const r of rooms) {
@@ -76,7 +78,21 @@ function facilityBuild(extra) {
     }
     // windows: glass stretches of wall. They stay in `walls` (solid to movement); a piece lying on a window is marked so the debug view can draw it as glass.
     const windows = (M.windows || []).map(w => ({ id: w.id, a: _facP(w.a), b: _facP(w.b), rooms: w.rooms || [] }));
-    for (const wl of walls) for (const w of windows) if ((!w.rooms.length || w.rooms.includes(wl.room)) && _facSegPointDist(w.a, w.b, wl.a[0], wl.a[1]) < 0.03 && _facSegPointDist(w.a, w.b, wl.b[0], wl.b[1]) < 0.03) { wl.window = w.id; break; }
+    // Split any wall piece a window only partly covers, so the glass part is its own piece (a long wall can be glass along one stretch only).
+    for (let i = walls.length - 1; i >= 0; i--) {
+        const wl = walls[i], dx = wl.b[0] - wl.a[0], dy = wl.b[1] - wl.a[1], len = Math.hypot(dx, dy) || 1;
+        for (const w of windows) {
+            if (w.rooms.length && !w.rooms.includes(wl.room)) continue;
+            if (_facDistToLine(wl.a, wl.b, w.a) > 0.05 || _facDistToLine(wl.a, wl.b, w.b) > 0.05) continue;
+            let t0 = ((w.a[0] - wl.a[0]) * dx + (w.a[1] - wl.a[1]) * dy) / (len * len), t1 = ((w.b[0] - wl.a[0]) * dx + (w.b[1] - wl.a[1]) * dy) / (len * len);
+            if (t0 > t1) [t0, t1] = [t1, t0]; t0 = Math.max(0, t0); t1 = Math.min(1, t1); if ((t1 - t0) * len < 0.02) continue;
+            const at = t => [wl.a[0] + dx * t, wl.a[1] + dy * t], parts = [];
+            if (t0 > 1e-6) parts.push(Object.assign({}, wl, { a: at(0), b: at(t0), window: undefined }));
+            parts.push(Object.assign({}, wl, { a: at(t0), b: at(t1), window: w.id }));
+            if (t1 < 1 - 1e-6) parts.push(Object.assign({}, wl, { a: at(t1), b: at(1), window: undefined }));
+            walls.splice(i, 1, ...parts); break;
+        }
+    }
     const fixtures = (M.fixtures || []).map(f => ({ id: f.id, type: f.type, room: f.room, edge: f.edge, a: _facP(f.a), b: _facP(f.b), status: f.status, note: f.note }));
     const s = facilityScale();
     const solids = (M.props || []).map(pr => {
@@ -84,7 +100,7 @@ function facilityBuild(extra) {
         const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status, kind: pr.kind || null, cargo: pr.cargo || null };
     });
     const outer = M.outer_path ? { id: M.outer_path.id, poly: _facPoly(M.outer_path.polygon), walkable: M.outer_path.walkable === true, navigation_link: M.outer_path.navigation_link === true } : null;
-    const conns = (M.connections || []).concat(ex.connections || []).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, confirmed: true }));
+    const conns = (M.connections || []).concat(ex.connections || []).filter(c => !c.opening || openings.some(o => o.id === c.opening)).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, confirmed: true }));
     const cands = ((M.candidates && M.candidates.connections) || []).map(c => ({ id: c.id, rooms: c.rooms, at: _facP(c.at), evidence: c.evidence, ramp: c.ramp_candidate || null, confirmed: false }));
     const ramps = (M.ramps || []).concat(ex.ramps || []).map(r => r.centre ? Object.assign({}, r, { centre: _facP(r.centre), r_inner: r.r_inner / s, r_outer: r.r_outer / s }) : r);
     const candRamps = ((M.candidates && M.candidates.ramps) || []).map(r => Object.assign({}, r, { at: _facP(r.at) }));
@@ -248,21 +264,22 @@ function facilityValidate(F) {
     // the agents: nobody walks out of the arena or the nest area through a WALL, from any start, in any direction (a confirmed door is the one way out)
     info.arenaAgents = 0; info.arenaLeaks = 0;
     for (const room of sealed) {
+        const Fs = facilityBuild({ closed: [room.id] });   // this room's doors shut: the walls alone must hold every agent in
         let seed = 12345, rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff, leaks = 0, tried = 0;
-        const b = { minX: room.bb[0], maxX: room.bb[2], minY: room.bb[1], maxY: room.bb[3] }, allowed = (facilityComponents(F, false).find(g => g.includes(room.id)) || [room.id]);
+        const rs = Fs.byId.get(room.id), b = { minX: rs.bb[0], maxX: rs.bb[2], minY: rs.bb[1], maxY: rs.bb[3] };
         for (let n = 0; n < 4000 && tried < 100; n++) {
             const x = b.minX + (b.maxX - b.minX) * rnd(), y = b.minY + (b.maxY - b.minY) * rnd();
-            if (!facilityPointInPoly(x, y, room.poly) || !facilityWalkable(x, y, F)) continue;
+            if (!facilityPointInPoly(x, y, rs.poly) || !facilityWalkable(x, y, Fs)) continue;
             tried++;
             for (let k = 0; k < 8; k++) {
                 const ang = k * Math.PI / 4 + rnd() * 0.3; let px = x, py = y;
-                for (let s = 0; s < 160; s++) { const m = facilityMove(px, py, Math.cos(ang) * 0.4, Math.sin(ang) * 0.4, F); px = m[0]; py = m[1]; }
-                const at = facilityRoomAt(px, py, F);
-                if (!at || !(allowed.includes(at.id))) leaks++;
+                for (let s = 0; s < 160; s++) { const m = facilityMove(px, py, Math.cos(ang) * 0.4, Math.sin(ang) * 0.4, Fs); px = m[0]; py = m[1]; }
+                const at = facilityRoomAt(px, py, Fs);
+                if (!at || at.id !== room.id) leaks++;
             }
         }
         info.arenaAgents += tried * 8; info.arenaLeaks += leaks;
-        if (leaks) errors.push(leaks + " agent walks left " + room.id + " through its perimeter");
+        if (leaks) errors.push(leaks + " agent walks left " + room.id + " through its walls");
         if (tried < 40) errors.push("could not place agents in " + room.id + " (" + tried + ")");
     }
     // the route test: from any room, a flood of the floor never reaches another room unless a confirmed connection joins them, and never the outer path

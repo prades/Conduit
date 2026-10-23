@@ -16,13 +16,14 @@ A **rundown facility that used to be a 2010s tech startup's headquarters**. The 
 - **Teleport Room 1 / 2** are placeholders for a teleport feature to be added later; no teleport object is in the data.
 - **Every door is a sliding access door** (`door_type`); a confirmed opening is one.
 - The zone to the right of the arena (the **catwalks**) is `blocked_off_for_now`: not being developed; the player can reach its edge, not enter.
-- `openings`, `connections`, `ramps`: **confirmed only.** So far (all wall positions approximate until checked in the MAP view):
-  - the **arena's door** at its top-left corner onto the **hallway** (`lab_hallway`), which runs round the lab and ends at a **sliding door into the Crystal Chamber**;
+- `openings`, `connections`, `ramps`: **confirmed only.** All doors are sliding access doors; wall positions are approximate until checked in the MAP view:
+  - **Crystal Chamber ↔ Teleport Room 1**, and **Teleport Room 1 ↔ Observation Deck** (the deck is treated as ground level for now, so no ramp is needed);
+  - the **Front Lobby** has **two doors to the hallway, one each side of the reception desk**; the **Bathroom** (the old unlabelled room) has a door to the lobby and a door to the hallway;
+  - the **glass Show Room** has a door in its west glass onto the hallway;
+  - the **arena's door** at its top-left corner onto the hallway, which runs round the lab and ends at a **door into the Crystal Chamber**;
   - the **Teleport Stair Room** (raised, door to Teleport Room 2) and its **curved staircase down to the hallway** (an open stair mouth, no door);
-  - the **lobby's door** to the hallway, past the reception desk;
-  - the **narrow passage** (`lab_passage`) joining the **Experiment Lab** to **Teleport Room 1** through two sliding doors.
-  Every other room is sealed.
-- `fixtures`: wall-mounted things (the Crystal Chamber's power pack area, the lobby's big sign), on a named edge of a room, validated to sit on that wall and clear of every doorway. `wall_material` (`solid` / `glass`) per room is checked against the `windows`.
+  - the **narrow passage** (`lab_passage`) joining the **Experiment Lab** to **Teleport Room 1** through two doors (the lab's only way in).
+  The catwalks (blocked off) and the nest area are the only rooms with no door.
 - **The lab is windowed off:** the Experiment Lab is an enclosed room inside the gridded floor; its walls facing the hallway are `windows` (glass: see-through, solid to movement). Its only way out is the passage to Teleport Room 1. **The nook where the Crystal Chamber, the hallway and the lab passage met is gone:** Teleport Room 1 took it in as a tidy alcove, so the hallway's north-west end is a clean dead end at the chamber's door. (A purpose-made nook for turrets can be carved there later.) The hallway is a **C** (the lab and passage cut the ring open on the west): arena door, east side, north side, chamber door. The hallway is at least 2.5 tiles wide on every side of the lab.
 - `candidates`: what the sketch suggests (14 connections, 4 ramps/stairs) with the evidence. They do nothing until moved into the lists above by hand.
 - `levels`: ground < raised (observation deck, catwalks). Heights are unknown.

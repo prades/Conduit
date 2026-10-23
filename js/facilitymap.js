@@ -9,7 +9,7 @@
 //
 // RULES (from the spec):
 //   - a room's outline is an explicit polygon; every edge of it is a wall unless a CONFIRMED opening is cut into it;
-//   - `openings` and `connections` hold ONLY what is confirmed (so far the stair room's two openings, the Crystal Chamber's door, the arena's door to the hallway, the lobby's door to the hallway, and the lab's passage to Teleport Room 1). Everything the sketch merely suggests is in
+//   - `openings` and `connections` hold ONLY what is confirmed (see the lists below). Everything the sketch merely suggests is in
 //     `candidates` with the evidence, and does nothing until it is moved into `openings` + `connections` by hand;
 //   - the nest area is one open room; the long lines round it are its outside edges (walls). Nothing outside every room is walkable;
 //   - the arena's perimeter is solid wall / rock and blocks movement;
@@ -37,11 +37,12 @@ const FACILITY_MAP = {
           dressing: "The big headquarters lobby: a BIG SIGN on the north wall and a reception desk area that leads through to the hallway at the back (which looks onto the experiment lab). Rundown 2010s startup.",
           note: "The sketch's faint 'FRONT OFFICE', now the Front Lobby. An arrow points in at the top-left: an entrance from outside is indicated but not drawn as an opening.",
           polygon: [[405, 322], [790, 322], [790, 470], [405, 470]] },
-        { id: "upper_annex", label: "Unlabelled room beside the show room", level: 0, status: "unconfirmed", name_confirmed: false,
-          polygon: [[795, 330], [875, 330], [875, 460], [795, 460]] },
+        { id: "bathroom", label: "Bathroom", level: 0, status: "approximate", wall_material: "solid",
+          note: "The sketch's unlabelled room beside the show room: a bathroom. It has a door to the Front Lobby and a door to the hallway.",
+          polygon: [[790, 330], [875, 330], [875, 470], [790, 470]] },
         { id: "show_room", label: "Show Room", level: 0, status: "traced", wall_material: "glass",
           contents: "A glass case showcasing a bunch of different products. BLANK for now: nothing is placed in it yet.",
-          polygon: [[880, 335], [1035, 335], [1035, 600], [880, 600]] },
+          polygon: [[875, 335], [1035, 335], [1035, 600], [875, 600]] },
         { id: "lab_hallway", label: "Hallway past the Experiment Lab", level: 0, status: "approximate",
           note: "The gridded floor round the lab: it runs from the arena's top-left corner up the lab's west side, along its north edge and down its east side, ending at the Crystal Chamber's door. The lab (and the passage to Teleport Room 1) cuts the ring open on the west, so this is a C, not a closed loop. Its north-west end is a clean dead end at the Crystal Chamber's door (the old nook there now belongs to Teleport Room 1).",
           polygon: [[400, 470], [875, 470], [875, 600], [815, 600], [815, 700], [370, 700], [370, 615], [430, 615], [430, 625], [750, 625], [750, 525], [430, 525], [400, 525]] },
@@ -57,9 +58,9 @@ const FACILITY_MAP = {
         { id: "teleport_room_2", label: "Teleport Room 2", level: 1, status: "traced", wall_material: "solid",
           note: "The sketch's labelled TELEPORT. Raised: reached from the stair room, whose staircase leads down to the hallway. The teleport itself is a feature to be added later: the room is a placeholder for it.",
           polygon: [[890, 600], [1035, 600], [1035, 730], [890, 730]] },
-        { id: "observation_deck", label: "Observation Deck", level: 1, status: "traced",
-          note: "Raised by the look of it (steps drawn along its west side). Height unknown.",
-          polygon: [[240, 710], [385, 710], [385, 1105], [240, 1105]] },
+        { id: "observation_deck", label: "Observation Deck", level: 0, status: "traced",
+          note: "Steps are drawn along its west side (seating or a raised floor: unconfirmed). It is treated as ground level for now so its door to Teleport Room 1 needs no ramp; change `level` if it is raised.",
+          polygon: [[240, 700], [385, 700], [385, 1105], [240, 1105]] },
         { id: "catwalks", label: "Catwalks", level: 1, status: "traced", development: "blocked_off_for_now",
           note: "The zone to the right of the arena. It is BLOCKED OFF for now (not being developed): the player can walk up to it, not into it. Raised walkway with railing posts along its west side. Height unknown.",
           polygon: [[950, 750], [1045, 750], [1045, 1150], [950, 1150]] },
@@ -98,9 +99,9 @@ const FACILITY_MAP = {
         { id: "lab_window_north", a: [430, 525], b: [750, 525], rooms: ["experiment_lab", "lab_hallway"] },
         { id: "lab_window_east", a: [750, 525], b: [750, 625], rooms: ["experiment_lab", "lab_hallway"] },
         { id: "lab_window_south", a: [750, 625], b: [430, 625], rooms: ["experiment_lab", "lab_hallway"] },
-        { id: "show_window_north", a: [880, 335], b: [1035, 335], rooms: ["show_room"] },
+        { id: "show_window_north", a: [875, 335], b: [1035, 335], rooms: ["show_room"] },
         { id: "show_window_east", a: [1035, 335], b: [1035, 600], rooms: ["show_room"] },
-        { id: "show_window_west", a: [880, 600], b: [880, 335], rooms: ["show_room"] },
+        { id: "show_window_west", a: [875, 600], b: [875, 470], rooms: ["show_room"] },   // the hallway side only: its north part is the bathroom's wall
         { id: "lab_window_west_lower", a: [430, 615], b: [430, 625], rooms: ["experiment_lab", "lab_hallway"] },
     ],
 
@@ -119,8 +120,20 @@ const FACILITY_MAP = {
     // CONFIRMED only. An opening is a gap cut into the walls along the segment a -> b; a connection says which two rooms it joins (and the ramp, if their levels differ).
     // The stair room: confirmed by the user. The positions on the walls are APPROXIMATE (centred on the shared wall) until checked in the debug view.
     openings: [
-        { id: "door_lobby_hallway", a: [748, 470], b: [788, 470], rooms: ["front_lobby", "lab_hallway"], position_status: "approximate",
-          note: "A sliding access door from the reception desk area through to the hallway at the back, just past the desk's east end." },
+        { id: "door_chamber_teleport_1", a: [285, 515], b: [325, 515], rooms: ["crystal_chamber", "teleport_room_1"], position_status: "approximate",
+          note: "A sliding access door between the Crystal Chamber and Teleport Room 1 (at the notch the sketch shows in their dividing wall)." },
+        { id: "door_teleport_1_deck", a: [310, 700], b: [350, 700], rooms: ["teleport_room_1", "observation_deck"], position_status: "approximate",
+          note: "A sliding access door between Teleport Room 1 and the Observation Deck (at the notch at the top of the deck)." },
+        { id: "door_lobby_hallway_west", a: [415, 470], b: [455, 470], rooms: ["front_lobby", "lab_hallway"], position_status: "approximate",
+          note: "The lobby's west sliding door to the hallway at the back, on the near side of the reception desk." },
+        { id: "door_lobby_hallway_east", a: [748, 470], b: [788, 470], rooms: ["front_lobby", "lab_hallway"], position_status: "approximate",
+          note: "The lobby's east sliding door to the hallway at the back, just past the reception desk's east end." },
+        { id: "door_bathroom_lobby", a: [790, 375], b: [790, 415], rooms: ["bathroom", "front_lobby"], position_status: "approximate",
+          note: "The bathroom's sliding door to the Front Lobby." },
+        { id: "door_bathroom_hallway", a: [820, 470], b: [850, 470], rooms: ["bathroom", "lab_hallway"], position_status: "approximate",
+          note: "The bathroom's sliding door to the hallway." },
+        { id: "door_showroom_hallway", a: [875, 510], b: [875, 550], rooms: ["show_room", "lab_hallway"], position_status: "approximate",
+          note: "A sliding access door in the show room's glass west wall onto the hallway." },
         { id: "door_arena_hallway", a: [400, 700], b: [440, 700], rooms: ["arena", "lab_hallway"], position_status: "approximate",
           note: "A sliding access door from the arena's top-left corner onto the hallway that circles round the lab into the Crystal Chamber." },
         { id: "door_passage_teleport_1", a: [370, 578], b: [370, 612], rooms: ["lab_passage", "teleport_room_1"], position_status: "approximate",
@@ -135,7 +148,13 @@ const FACILITY_MAP = {
           note: "A sliding access door between the stair room and Teleport Room 2." },
     ],
     connections: [
-        { id: "conn_lobby_hallway", rooms: ["front_lobby", "lab_hallway"], opening: "door_lobby_hallway" },
+        { id: "conn_chamber_teleport_1", rooms: ["crystal_chamber", "teleport_room_1"], opening: "door_chamber_teleport_1" },
+        { id: "conn_teleport_1_deck", rooms: ["teleport_room_1", "observation_deck"], opening: "door_teleport_1_deck" },
+        { id: "conn_lobby_hallway_west", rooms: ["front_lobby", "lab_hallway"], opening: "door_lobby_hallway_west" },
+        { id: "conn_lobby_hallway_east", rooms: ["front_lobby", "lab_hallway"], opening: "door_lobby_hallway_east" },
+        { id: "conn_bathroom_lobby", rooms: ["bathroom", "front_lobby"], opening: "door_bathroom_lobby" },
+        { id: "conn_bathroom_hallway", rooms: ["bathroom", "lab_hallway"], opening: "door_bathroom_hallway" },
+        { id: "conn_showroom_hallway", rooms: ["show_room", "lab_hallway"], opening: "door_showroom_hallway" },
         { id: "conn_arena_hallway", rooms: ["arena", "lab_hallway"], opening: "door_arena_hallway" },
         { id: "conn_lab_passage", rooms: ["experiment_lab", "lab_passage"], opening: "door_lab_passage" },
         { id: "conn_passage_teleport_1", rooms: ["lab_passage", "teleport_room_1"], opening: "door_passage_teleport_1" },
@@ -152,15 +171,10 @@ const FACILITY_MAP = {
     // What the sketch SUGGESTS and the user has not confirmed. None of these is a gap, a link or a ramp until it is moved above.
     candidates: {
         connections: [
-            { id: "c_crystal_left", rooms: ["crystal_chamber", "teleport_room_1"], at: [300, 515], evidence: "a notch in the dividing wall" },
             { id: "c_crystal_lobby", rooms: ["crystal_chamber", "front_lobby"], at: [400, 400], evidence: "the stepped wall between them" },
-            { id: "c_annex_lobby", rooms: ["upper_annex", "front_lobby"], at: [792, 400], evidence: "the annex's west wall is drawn broken" },
-            { id: "c_annex_lab", rooms: ["upper_annex", "lab_hallway"], at: [835, 465], evidence: "the annex's door-like stalls open toward the lab" },
-            { id: "c_show_lab", rooms: ["show_room", "lab_hallway"], at: [878, 540], evidence: "the show room's west wall meets the lab's grid" },
             { id: "c_teleport_catwalks", rooms: ["teleport_room_2", "catwalks"], at: [990, 745], evidence: "the catwalks begin right under the teleport room" },
             { id: "c_catwalks_arena", rooms: ["catwalks", "arena"], at: [945, 900], evidence: "railing posts along the catwalks' west side" },
             { id: "c_deck_arena", rooms: ["observation_deck", "arena"], at: [385, 800], evidence: "the deck wall is drawn with breaks" },
-            { id: "c_deck_left", rooms: ["observation_deck", "teleport_room_1"], at: [355, 705], evidence: "a notch at the top of the deck" },
             { id: "c_arena_nest", rooms: ["arena", "nest_area"], at: [470, 1180], evidence: "an arrow points from 'FURTHER NESTS' down into the nest area; no opening is drawn" },
         ],
         ramps: [
@@ -180,13 +194,13 @@ const FACILITY_MAP = {
 
     unresolved: [
         "The scale: px_per_tile is a first guess, to be calibrated in the game",
-        "Every other door (they will be sliding access doors): only the Crystal Chamber's door, the stair room's two openings, the arena's door, the lobby's door and the lab passage's two doors are confirmed, and their positions on the walls are approximate",
+        "Every other door (they will be sliding access doors): the doors listed under `openings` are confirmed and their positions on the walls are approximate",
         "Elevation heights (only the ORDER ground < raised is known) and every ramp or stair",
         "What the two liquid reserves contain (ooze or another liquid), and whether the stairs lead onto their rims",
         "The zone to the right of the arena (the catwalks) is blocked off for now and not being developed",
         "Whether the nest area has any entrance from the arena (the arrow points down into it), and whether its bottom edge is closed",
         "The teleport feature itself (to be added later): Teleport Room 1 and 2 are placeholders",
-        "The unlabelled room beside the show room; what goes in the show room (blank for now); the lobby sign's wording; where exactly the power pack sits on the chamber wall",
+        "What goes in the show room (blank for now); the lobby sign's wording; where exactly the power pack sits on the chamber wall",
         "The CARRIER NPC drawn beside the map is a creature design, not map geometry: it is not part of this file",
     ],
 };
