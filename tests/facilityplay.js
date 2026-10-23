@@ -189,7 +189,7 @@ function measure() {
     group('THE DRAWING: walls, glass, doors, props and fixtures in the game\'s own draw list');
     check('every kind of static item exists and is drawn: wall pieces (solid, rock, glass), doors, prop cells (desk, truck, vats, tank) and the two fixtures', () => {
         const k = J(`(function(){ const c = {}; for (const it of _fp.items) { const key = it.fp + ':' + (it.kind || (it.door === undefined ? '' : 'door')); c[key] = (c[key] || 0) + 1; } return c; })()`);
-        for (const key of ['wall:wall', 'wall:rock', 'wall:glass', 'prop:reception_desk', 'prop:semi_truck', 'prop:liquid_reserve', 'prop:tank', 'fixture:power_pack_area', 'fixture:wall_sign']) ok(k[key] > 0, key + ' missing: ' + JSON.stringify(Object.keys(k)));
+        for (const key of ['wall:wall', 'wall:rock', 'wall:glass', 'prop:reception_desk', 'prop:semi_truck', 'prop:liquid_reserve', 'prop:tank', 'prop:computer_desk', 'prop:server_rack', 'prop:lab_bench', 'prop:fume_hood', 'prop:test_chamber', 'fixture:power_pack_area', 'fixture:wall_sign']) ok(k[key] > 0, key + ' missing: ' + JSON.stringify(Object.keys(k)));
         ok(Object.keys(k).some(x => /^door/.test(x)), 'no doors'); ok(k['wall:glass'] >= 20, 'little glass: ' + k['wall:glass']); same(J('_fp.items.filter(i => i.fp === \'door\').length'), 13, 'doors drawn');
         for (const fn of ['_fpDrawWall', '_fpDrawDoor', '_fpDrawProp', '_fpDrawFixture']) ok(typeof run(fn) === 'function', fn);
     });
@@ -197,6 +197,24 @@ function measure() {
         run('facilityPlay = true; canvas.width = 800; canvas.height = 600;'); const n = J('(function(){ let n = 0; for (const it of _fp.items) { if (visibleForDraw(it.x, it.y)) { drawFacilityItem(it); n++; } } return n; })()'); ok(n > 20, 'only ' + n + ' items on screen');
         const a = J(`(function(){ const it = _fp.items.find(i => i.fp === 'wall' && i.kind === 'wall' && i.x + i.y > player.visualX + player.visualY + 0.5 && Math.hypot(i.x - player.visualX, i.y - player.visualY) < 3); let alpha = null; const keep = ctx.fillStyle; if (!it) return null; return { found: true }; })()`);
         ok(/dist < 3\.2 \? Math\.max\(0\.22/.test(rd('js/facilityplay.js')), 'no see-through rule');
+    });
+
+    check('every piece of furniture draws (computer desks with monitors, server racks, lab benches with glassware, the fume hood, the glass test chambers), and a window draws its sill, glass, rail and mullions', () => {
+        run('facilityPlay = true; canvas.width = 1280; canvas.height = 860; player.x = player.visualX = __PT.lab[0]; player.y = player.visualY = __PT.lab[1]; frame = 300;');
+        const r = J(`(function(){ const seen = {}; let drawn = 0, glass = 0; for (const it of _fp.items) { if (it.fp === 'prop') { const k = it.kind; if (seen[k] && seen[k] > 12) continue; seen[k] = (seen[k] || 0) + 1; drawFacilityItem(it); drawn++; } else if (it.fp === 'wall' && it.kind === 'glass' && glass < 40) { drawFacilityItem(it); glass++; drawn++; } } return { kinds: Object.keys(seen).sort(), drawn, glass }; })()`);
+        for (const k of ['computer_desk', 'server_rack', 'lab_bench', 'fume_hood', 'test_chamber', 'reception_desk', 'semi_truck', 'liquid_reserve', 'tank']) ok(r.kinds.includes(k), k + ' was not drawn'); ok(r.glass >= 20, 'little glass drawn');
+        const src = rd('js/facilityplay.js'); ok(/a mullion post/.test(src) && /the sill/.test(src) && /the top rail/.test(src) && /a reflection streak/.test(src), 'the window frame is not drawn');
+    });
+    check('each prop cell hides the faces its neighbours cover: a long desk draws its two outer faces, not every cell\'s (cheaper, and no seams)', () => {
+        const r = J(`(function(){ const d = _fp.items.filter(i => i.id === 'computers_1'), inner = d.filter(i => !i.sy && !i.sx).length, edge = d.filter(i => i.sy || i.sx).length; return { n: d.length, inner, edge }; })()`);
+        ok(r.n >= 4 && r.edge >= 2, 'the desk row has ' + r.n + ' cells and ' + r.edge + ' with a visible face');
+    });
+    check('a tap on a computer desk, a server rack, a lab bench or a test chamber walks you NEXT to it, never onto it', () => {
+        for (const id of ['computers_2', 'racks_west', 'lab_bench_north', 'chamber_1']) {
+            run('player.fpPath = null; player.x = player.targetX = player.visualX = __PT.hallN[0]; player.y = player.targetY = player.visualY = __PT.hallN[1];');
+            const r = J(`(function(){ const it = _fp.items.find(i => i.fp === 'prop' && i.id === '${id}'), ok = facilityWalkTo(it.x, it.y), end = player.fpPath && player.fpPath.length ? player.fpPath[player.fpPath.length - 1] : null; return { ok, end, onIt: end ? !!facilitySolidAt(end[0], end[1], _fp.F) : null, walkable: end ? facilityWalkable(end[0], end[1], _fp.F) : null }; })()`);
+            if (r.ok) { same(r.onIt, false, id + ': the walk ends inside it'); same(r.walkable, true, id + ': the walk ends off the floor'); }
+        }
     });
 
     group('THE REAL PAGE');

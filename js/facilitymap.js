@@ -37,7 +37,7 @@ const FACILITY_MAP = {
         { id: "front_lobby", label: "Front Lobby", level: 0, status: "approximate",
           dressing: "The big headquarters lobby: a BIG SIGN on the north wall and a reception desk area that leads through to the hallway at the back (which looks onto the experiment lab). Rundown 2010s startup.",
           note: "The sketch's faint 'FRONT OFFICE', now the Front Lobby. An arrow points in at the top-left: an entrance from outside is indicated but not drawn as an opening.",
-          polygon: [[380, 262], [824, 262], [824, 410], [380, 410]] },
+          polygon: [[380, 222], [824, 222], [824, 410], [380, 410]] },
         { id: "bathroom", label: "Bathroom", level: 0, status: "approximate", wall_material: "solid",
           note: "The sketch's unlabelled room beside the show room: a bathroom. It has a door to the Front Lobby and a door to the hallway.",
           polygon: [[824, 270], [930, 270], [930, 410], [824, 410]] },
@@ -83,7 +83,23 @@ const FACILITY_MAP = {
     props: [
         { id: "lobby_desk", room: "front_lobby", shape: "rect", rect: [475, 325, 735, 410], status: "approximate", kind: "reception_desk",
           note: "The reception desk area. It leads through (past its east end) to the hallway at the back." },
-        { id: "lab_tank", room: "experiment_lab", shape: "circle", at: [715, 575], radius: 25, status: "approximate" },
+        { id: "lab_tank", room: "experiment_lab", shape: "circle", at: [715, 575], radius: 25, status: "approximate", kind: "tank" },
+
+        // ── THE COMPUTER LAB (the Front Lobby's floor, beside the reception desk): rows of computer desks along the north wall and server racks down the west and east walls.
+        //    Everything stands clear of the doors, the reception desk and the bathroom door, so the lobby stays walkable. (Placed in the amber old-tech look of the lab wall.)
+        { id: "computers_1", room: "front_lobby", shape: "rect", rect: [420, 222, 520, 252], status: "placed", kind: "computer_desk", note: "A row of computer desks with monitors, facing the aisle." },
+        { id: "computers_2", room: "front_lobby", shape: "rect", rect: [545, 222, 665, 252], status: "placed", kind: "computer_desk" },
+        { id: "computers_3", room: "front_lobby", shape: "rect", rect: [690, 222, 790, 252], status: "placed", kind: "computer_desk" },
+        { id: "racks_west", room: "front_lobby", shape: "rect", rect: [380, 262, 410, 378], status: "placed", kind: "server_rack", note: "Server racks down the west wall." },
+        { id: "racks_east", room: "front_lobby", shape: "rect", rect: [794, 222, 824, 296], status: "placed", kind: "server_rack", note: "Server racks in the north-east corner (the bathroom door below them stays clear)." },
+
+        // ── THE SCIENCE LAB (the Experiment Lab): benches along the north and south walls, a fume hood, glass test chambers beside the big tank. A two-and-a-half tile aisle runs between the benches
+        //    from the passage door to the tank.
+        { id: "lab_bench_north", room: "experiment_lab", shape: "rect", rect: [450, 530, 610, 560], status: "placed", kind: "lab_bench", note: "A long bench: microscope, glassware, sample racks." },
+        { id: "lab_hood", room: "experiment_lab", shape: "rect", rect: [630, 530, 690, 560], status: "placed", kind: "fume_hood", note: "A fume hood on the north wall." },
+        { id: "lab_bench_south", room: "experiment_lab", shape: "rect", rect: [450, 612, 610, 640], status: "placed", kind: "lab_bench" },
+        { id: "chamber_1", room: "experiment_lab", shape: "circle", at: [668, 622], radius: 17, status: "placed", kind: "test_chamber", note: "A glass test chamber." },
+        { id: "chamber_2", room: "experiment_lab", shape: "circle", at: [708, 624], radius: 15, status: "placed", kind: "test_chamber" },
         { id: "arena_truck", room: "arena", shape: "rect", rect: [410, 850, 500, 1070], status: "traced", kind: "semi_truck", cargo: [{ type: "missile", count: 3 }],
           note: "A semi-truck carrying three missiles, parked along the arena's west side. Solid." },
         { id: "arena_structure_01", room: "arena", shape: "circle", at: [824, 905], radius: 45, status: "traced", kind: "liquid_reserve", contents: "ooze_or_liquid (type to be decided)",
@@ -100,6 +116,7 @@ const FACILITY_MAP = {
         { id: "lab_window_north", a: [430, 530], b: [750, 530], rooms: ["experiment_lab", "lab_hallway"] },
         { id: "lab_window_east", a: [750, 530], b: [750, 640], rooms: ["experiment_lab", "lab_hallway"] },
         { id: "lab_window_south", a: [750, 640], b: [430, 640], rooms: ["experiment_lab", "lab_hallway"] },
+        { id: "deck_window_arena", a: [340, 760], b: [340, 1165], rooms: ["observation_deck", "arena"] },   // the observation deck looks down into the arena through glass (solid to movement like every window)
         { id: "show_window_north", a: [930, 275], b: [1090, 275], rooms: ["show_room"] },
         { id: "show_window_east", a: [1090, 275], b: [1090, 600], rooms: ["show_room"] },
         { id: "show_window_west", a: [930, 600], b: [930, 410], rooms: ["show_room"] },   // the hallway side only: its north part is the bathroom's wall
@@ -114,7 +131,7 @@ const FACILITY_MAP = {
     fixtures: [
         { id: "power_pack_area", type: "power_pack_area", room: "crystal_chamber", edge: 0, a: [275, 262], b: [360, 262], status: "approximate",
           note: "The power / battery pack area on the Crystal Chamber's north wall (somewhere on the wall: this is a first placement). The wall power unit's cells and machine go here." },
-        { id: "lobby_sign", type: "wall_sign", room: "front_lobby", edge: 0, a: [520, 262], b: [680, 262], status: "approximate",
+        { id: "lobby_sign", type: "wall_sign", room: "front_lobby", edge: 0, a: [520, 222], b: [680, 222], status: "approximate",
           note: "The big headquarters sign over the lobby. Its wording is not decided." },
     ],
 

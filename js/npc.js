@@ -507,8 +507,8 @@ function followPlayer(actor) {
             if (Math.hypot(o.x - actor.x, o.y - actor.y) <= EMPATHETIC_RANGE) { sx += o.x; sy += o.y; n++; }
         }
         if (n > 0) { tx = tx * 0.4 + (sx / n) * 0.6; ty = ty * 0.4 + (sy / n) * 0.6; }
-        // The facility: leaning toward the group must not pick a spot behind a wall (inside the lab, say), so a lean only counts where you can see it from where you stand.
-        if (typeof facilityPlay !== "undefined" && facilityPlay && !facilityLosFrom(player.x, player.y, tx, ty)) { tx = player.x; ty = player.y; }
+        // The facility: leaning toward the group must not pick a spot behind a wall (inside the lab, say), so a lean only counts where you can see it from where you stand, and only once it is near you.
+        if (typeof facilityPlay !== "undefined" && facilityPlay && (!facilityLosFrom(player.x, player.y, tx, ty) || Math.hypot(player.x - actor.x, player.y - actor.y) > 8)) { tx = player.x; ty = player.y; }   // (and a lean only counts when it is already close: a far group otherwise sits together and never comes to you)
     }
     // The facility: a wall between you and a follower means it is NOT near you however close it measures, so it keeps walking the route until it can see you.
     if (typeof facilityPlay !== "undefined" && facilityPlay) { const w = facilitySteer(actor, tx, ty), d0 = Math.hypot(tx - actor.x, ty - actor.y), seen = !actor._fpPath; if (!seen) { tx = w[0]; ty = w[1]; stop = 0.04; } else if (d0 > stop) { tx = w[0]; ty = w[1]; } }

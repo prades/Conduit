@@ -169,7 +169,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the lab has windows on every side that faces the hallway, drawn as glass, and they are solid like walls', () => {
         const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(); const glass = F.walls.filter(w => w.window); let through = 0; for (const w of glass) { const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2, dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], l = Math.hypot(dx, dy), nx = -dy / l, ny = dx / l; if (facilityCanStep(mx - nx * 0.6, my - ny * 0.6, mx + nx * 0.6, my + ny * 0.6)) through++; }
             return { n: glass.length, rooms: Array.from(new Set(glass.map(w => w.room))).sort(), ids: Array.from(new Set(glass.map(w => w.window))).sort(), through, windows: F.windows.length }; })()`);
-        ok(r.n >= 4, 'only ' + r.n + ' window pieces'); same(r.through, 0, 'a body walked through a window'); same(r.ids.filter(x => /^lab_/.test(x)).length, 4, 'lab windows ' + r.ids); same(r.windows, 7, 'compiled windows (four on the lab, three on the show room)'); ok(/window/.test(rd('js/facility.js')) && /143,227,255/.test(rd('js/facility.js')), 'windows are not drawn as glass');
+        ok(r.n >= 4, 'only ' + r.n + ' window pieces'); same(r.through, 0, 'a body walked through a window'); same(r.ids.filter(x => /^lab_/.test(x)).length, 4, 'lab windows ' + r.ids); same(r.windows, 8, 'compiled windows (four on the lab, three on the show room, one on the observation deck)'); ok(/window/.test(rd('js/facility.js')) && /143,227,255/.test(rd('js/facility.js')), 'windows are not drawn as glass');
     });
     check('the lab\'s ONLY door is the narrow passage: with the passage shut nothing reaches it, and a flood from inside it never leaves it', () => {
         const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(), C = facilityBuild({ closed: ['lab_passage'] }); const L0 = F.byId.get('experiment_lab'), cells = facilityFlood((L0.bb[0] + L0.bb[2]) / 2, (L0.bb[1] + L0.bb[3]) / 2, C);
@@ -255,6 +255,35 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ const F = facilityGet(), pairs = new Set(F.connections.map(c => c.rooms.slice().sort().join('|'))); let overlap = 0; for (let i = 0; i < F.openings.length; i++) for (let j = i + 1; j < F.openings.length; j++) { const a = F.openings[i], b = F.openings[j]; if (Math.hypot((a.a[0] + a.b[0]) / 2 - (b.a[0] + b.b[0]) / 2, (a.a[1] + a.b[1]) / 2 - (b.a[1] + b.b[1]) / 2) < 1.2) overlap++; }
             return { dupes: F.candidates.filter(c => pairs.has(c.rooms.slice().sort().join('|'))).map(c => c.id), overlap }; })()`);
         same(r.dupes.length, 0, 'candidates already confirmed: ' + r.dupes.join()); same(r.overlap, 0, 'two doors overlap');
+    });
+
+    group('FURNITURE: a computer lab in the lobby, science lab equipment in the lab, and glass');
+    check('the Front Lobby is a computer lab (rows of computer desks, server racks) and the Experiment Lab a science lab (benches, a fume hood, glass test chambers beside the tank); every piece is solid', () => {
+        const M = J('FACILITY_MAP'), count = (room, kind) => M.props.filter(p => p.room === room && p.kind === kind).length;
+        ok(count('front_lobby', 'computer_desk') >= 3, 'computer desks'); ok(count('front_lobby', 'server_rack') >= 2, 'server racks'); ok(count('front_lobby', 'reception_desk') === 1, 'the reception desk');
+        ok(count('experiment_lab', 'lab_bench') >= 2, 'lab benches'); same(count('experiment_lab', 'fume_hood'), 1, 'fume hood'); ok(count('experiment_lab', 'test_chamber') >= 2, 'test chambers'); ok(M.props.some(p => p.id === 'lab_tank'), 'the big tank');
+        const bad = J(`(function(){ const F = facilityGet(); return F.solids.filter(s => ['computer_desk', 'server_rack', 'lab_bench', 'fume_hood', 'test_chamber'].includes(s.kind)).filter(s => { const c = s.shape === 'circle' ? s.at : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2]; return facilityWalkable(c[0], c[1], F); }).map(s => s.id); })()`);
+        same(bad.length, 0, 'walkable pieces of furniture: ' + bad.join());
+    });
+    check('nothing stands in a doorway: every door has two clear tiles of floor on each side of it, and no piece of furniture touches a door\'s span', () => {
+        const r = J(`(function(){ const F = facilityGet(), bad = []; for (const o of F.openings) { const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2, h = Math.abs(o.a[1] - o.b[1]) < 1e-6, half = Math.hypot(o.a[0] - o.b[0], o.a[1] - o.b[1]) / 2;
+            for (const side of [-1, 1]) for (const along of [-half + 0.6, 0, half - 0.6]) for (const dist of [1, 2]) { const x = h ? mx + along : mx + side * dist, y = h ? my + side * dist : my + along; if (!facilityWalkable(x, y, F)) bad.push(o.id + '@' + side + ',' + along.toFixed(1) + ',' + dist); } } return bad; })()`);
+        same(r.length, 0, 'blocked in front of a door: ' + r.slice(0, 6).join(' '));
+    });
+    check('the lobby stays walkable: from the west door round the computer desks and the reception desk to the east door and the bathroom door, all inside the lobby', () => {
+        const r = J(`(function(){ const F = facilityBuild({ closed: ['front_lobby'] }), W = __door('door_lobby_hallway_west'), E = __door('door_lobby_hallway_east'), B = __door('door_bathroom_lobby'), cells = facilityFlood(W.mx + 2, W.my - 3, F), rooms = new Set(), has = (x, y) => cells.some(q => Math.hypot(q[0] - x, q[1] - y) < 1.1);   // (the lobby's doors shut, so the flood is the lobby's own floor)
+            for (const q of cells) rooms.add(facilityRoomAt(q[0], q[1], F).id); return { east: has(E.mx, E.my - 3), bath: has(B.mx - 3, B.my), rooms: Array.from(rooms), n: cells.length }; })()`);
+        same(r.east, true, 'the east door is cut off'); same(r.bath, true, 'the bathroom door is cut off'); same(r.rooms.join(), 'front_lobby', 'the flood left the lobby'); ok(r.n > 150, 'only ' + r.n + ' cells of lobby floor');
+    });
+    check('the lab stays walkable: from the passage door along the aisle between the benches to the tank end, and in front of the fume hood', () => {
+        const r = J(`(function(){ const F = facilityBuild({ closed: ['experiment_lab'] }), D = __door('door_lab_passage'), hood = F.solids.find(s => s.id === 'lab_hood'), tank = F.solids.find(s => s.id === 'lab_tank'), cells = facilityFlood(D.mx + 2, D.my, F), has = (x, y) => cells.some(q => Math.hypot(q[0] - x, q[1] - y) < 1.1), rooms = new Set(cells.map(q => facilityRoomAt(q[0], q[1], F).id));
+            return { hood: has((hood.bb[0] + hood.bb[2]) / 2, hood.bb[3] + 1.5), tank: has(tank.at[0] - tank.r - 1.5, tank.at[1]), rooms: Array.from(rooms), aisle: has((F.byId.get('experiment_lab').bb[0] + F.byId.get('experiment_lab').bb[2]) / 2, (F.byId.get('experiment_lab').bb[1] + F.byId.get('experiment_lab').bb[3]) / 2) }; })()`);
+        same(r.hood, true, 'cannot reach the fume hood'); same(r.tank, true, 'cannot reach the tank end'); same(r.aisle, true, 'the aisle is blocked'); same(r.rooms.join(), 'experiment_lab', 'the flood left the lab');
+    });
+    check('the observation deck looks onto the arena through glass: the whole shared wall is a window on both sides, solid to movement, and the arena is still sealed', () => {
+        const r = J(`(function(){ const F = facilityGet(), w = F.windows.find(x => x.id === 'deck_window_arena'), pieces = F.walls.filter(x => x.window === 'deck_window_arena'), rooms = Array.from(new Set(pieces.map(x => x.room))).sort(); const D = F.byId.get('observation_deck'), y = (D.bb[1] + D.bb[3]) / 2, x = D.bb[2];
+            return { rooms, n: pieces.length, through: facilityCanStep(x - 2, y, x + 2, y, F), back: facilityCanStep(x + 2, y, x - 2, y, F), len: Math.hypot(w.a[0] - w.b[0], w.a[1] - w.b[1]) }; })()`);
+        same(r.rooms.join(), 'arena,observation_deck', 'glass on both sides'); ok(r.n >= 1 && r.len > 15, 'glass pieces ' + r.n); same(r.through, false, 'walked through the deck window'); same(r.back, false, 'walked back through it'); same(J('facilityValidateCached().errors.length'), 0, 'the validator is unhappy');
     });
 
     group('DOORS AND THE BLOCKED ZONE');

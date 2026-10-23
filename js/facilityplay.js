@@ -219,15 +219,20 @@ function _fpPlaceStatics(F) {
         const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy), n = Math.max(1, Math.ceil(len / seg));
         for (let i = 0; i < n; i++) {
             const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n];
-            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, room: w.room });
+            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, room: w.room, i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2) });
         }
     }
     for (const o of F.openings) { items.push({ type: "fp", fp: "door", x: (o.a[0] + o.b[0]) / 2, y: (o.a[1] + o.b[1]) / 2, a: o.a, b: o.b, door: o.door }); }
     for (const s of F.solids) {
-        const box = s.bb;
+        const box = s.bb, cells = new Set();
         for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) {
-            const inside = s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly);
-            if (inside) items.push({ type: "fp", fp: "prop", x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id });
+            if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) cells.add(x + "," + y);
+        }
+        if (s.shape === "circle" && !cells.size) cells.add(Math.round(s.at[0]) + "," + Math.round(s.at[1]));   // a small chamber is at least one cell
+        for (const k of cells) {
+            const [x, y] = k.split(",").map(Number);
+            // sides are drawn only where no neighbour hides them: the faces toward +y (lower left) and +x (lower right)
+            items.push({ type: "fp", fp: "prop", x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id, sy: !cells.has(x + "," + (y + 1)), sx: !cells.has((x + 1) + "," + y), top: !cells.has(x + "," + (y - 1)), seed: _fpHash(x, y) });
         }
     }
     for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
@@ -257,8 +262,14 @@ function _fpDrawWall(it) {
     ctx.globalAlpha = wd > pd + 0.2 && dist < 3.2 ? Math.max(0.22, dist / 3.2 * 0.55) : 1;
     const a0 = _fpP(it.a[0], it.a[1], 0), b0 = _fpP(it.b[0], it.b[1], 0), a1 = _fpP(it.a[0], it.a[1], H), b1 = _fpP(it.b[0], it.b[1], H);
     if (glass) {
-        _fpQuad([a0, b0, b1, a1], "rgba(120,220,255,0.20)", "rgba(143,227,255,0.55)", 1.5);
-        ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(a0[0] + (b0[0] - a0[0]) * 0.2, a0[1] + (b0[1] - a0[1]) * 0.2); ctx.lineTo(a1[0] + (b1[0] - a1[0]) * 0.55, a1[1] + (b1[1] - a1[1]) * 0.55); ctx.stroke();
+        // a window: a solid sill below, glass above with a faint reflection, a top rail, and a mullion post every two tiles
+        const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t], sa = _fpP(it.a[0], it.a[1], 14), sb = _fpP(it.b[0], it.b[1], 14), ta = _fpP(it.a[0], it.a[1], H - 7), tb = _fpP(it.b[0], it.b[1], H - 7);
+        _fpQuad([a0, b0, sb, sa], "#2c3a52", "rgba(5,7,15,0.6)", 1);                                           // the sill
+        _fpQuad([sa, sb, tb, ta], "rgba(120,220,255,0.20)", null);                                              // the glass
+        ctx.fillStyle = "rgba(255,255,255,0.10)"; const q1 = lerp(sa, sb, 0.25), q2 = lerp(sa, sb, 0.5), r1 = lerp(ta, tb, 0.25), r2 = lerp(ta, tb, 0.5); ctx.beginPath(); ctx.moveTo(q1[0], q1[1]); ctx.lineTo(q2[0], q2[1]); ctx.lineTo(r2[0], r2[1]); ctx.lineTo(r1[0], r1[1]); ctx.closePath(); ctx.fill();   // a reflection streak
+        ctx.strokeStyle = "rgba(143,227,255,0.8)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sa[0], sa[1]); ctx.lineTo(sb[0], sb[1]); ctx.moveTo(ta[0], ta[1]); ctx.lineTo(tb[0], tb[1]); ctx.stroke();
+        _fpQuad([ta, tb, b1, a1], "#2c3a52", "rgba(5,7,15,0.6)", 1);                                           // the top rail
+        if (it.i === 0 && Math.round(it.along) % 2 === 0 || it.i % 4 === 0) { ctx.strokeStyle = "#c9d6f0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.stroke(); }   // a mullion post
         return;
     }
     const g = ctx.createLinearGradient(0, a1[1], 0, a0[1]); g.addColorStop(0, c[0]); g.addColorStop(1, c[1]);
@@ -276,17 +287,63 @@ function _fpDrawDoor(it) {
         _fpQuad([pa, pb, b0, pa0], "rgba(25,230,193,0.18)", glow, 1.5);
     }
 }
-function _fpDrawProp(it) {
-    const kind = it.kind, tank = kind === "liquid_reserve" || kind === "tank";
-    const h = kind === "reception_desk" ? 36 : kind === "semi_truck" ? 52 : tank ? 78 : 40;
-    const top = kind === "reception_desk" ? "#8a6a3a" : kind === "semi_truck" ? "#7a8aa8" : kind === "liquid_reserve" ? "#7a4acf" : tank ? "#3acfa0" : "#6a7a9a", side = kind === "reception_desk" ? "#5a4224" : kind === "semi_truck" ? "#4a566e" : kind === "liquid_reserve" ? "#4a2a8a" : tank ? "#1f8a6a" : "#3e4a64";
+function _fpHash(x, y) { return ((Math.imul(x | 0, 73856093) ^ Math.imul(y | 0, 19349663)) >>> 0); }
+// One tile-sized prism: a top and the two sides the camera can see (only where no neighbouring cell of the same prop hides them).
+function _fpPrism(it, h, top, sideY, sideX, rim) {
     const x = it.x, y = it.y, c = [_fpP(x - 0.5, y - 0.5, h), _fpP(x + 0.5, y - 0.5, h), _fpP(x + 0.5, y + 0.5, h), _fpP(x - 0.5, y + 0.5, h)], b = [_fpP(x - 0.5, y - 0.5, 0), _fpP(x + 0.5, y - 0.5, 0), _fpP(x + 0.5, y + 0.5, 0), _fpP(x - 0.5, y + 0.5, 0)];
-    _fpQuad([c[3], c[2], b[2], b[3]], side, "rgba(5,7,15,0.5)", 1);        // the face toward the lower left
-    _fpQuad([c[2], c[1], b[1], b[2]], side, "rgba(5,7,15,0.5)", 1); ctx.fillStyle = "rgba(0,0,0,0.22)"; ctx.fill();
-    _fpQuad(c, top, "rgba(255,255,255,0.25)", 1);
-    if (tank) { const cx = c[0][0] / 2 + c[2][0] / 2, cy = (c[0][1] + c[2][1]) / 2; ctx.fillStyle = "rgba(255,255,255," + (0.12 + 0.06 * Math.sin((typeof frame !== "undefined" ? frame : 0) * 0.05 + x)) + ")"; ctx.beginPath(); ctx.ellipse(cx, cy, 18, 8, 0, 0, 6.2832); ctx.fill(); }
-    if (kind === "semi_truck" && it.cargo) {   // three missiles on the bed: drawn on every fourth cell
-        if (Math.round(x * 3 + y * 5) % 4 === 0) { const q = _fpP(x, y, h + 6); ctx.fillStyle = "#d8dce8"; ctx.beginPath(); ctx.ellipse(q[0], q[1], 14, 6, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "#ff4a1c"; ctx.beginPath(); ctx.ellipse(q[0] + 8, q[1] - 1, 6, 4, 0, 0, 6.2832); ctx.fill(); }
+    if (it.sy) _fpQuad([c[3], c[2], b[2], b[3]], sideY, "rgba(5,7,15,0.55)", 1);
+    if (it.sx) _fpQuad([c[2], c[1], b[1], b[2]], sideX, "rgba(5,7,15,0.55)", 1);
+    _fpQuad(c, top, rim || "rgba(255,255,255,0.22)", 1);
+    return { c, b };
+}
+// A flat rectangle standing on the +y face of a prism (the side that faces the lower left): u 0..1 across, z0..z1 up. Used for screens, glass fronts, LED strips.
+function _fpFaceY(it, u0, u1, z0, z1, fill, stroke) { const y = it.y + 0.5, x0 = it.x - 0.5 + u0, x1 = it.x - 0.5 + u1; _fpQuad([_fpP(x0, y, z0), _fpP(x1, y, z0), _fpP(x1, y, z1), _fpP(x0, y, z1)], fill, stroke, 1); }
+function _fpFaceX(it, u0, u1, z0, z1, fill, stroke) { const x = it.x + 0.5, y0 = it.y - 0.5 + u0, y1 = it.y - 0.5 + u1; _fpQuad([_fpP(x, y0, z0), _fpP(x, y1, z0), _fpP(x, y1, z1), _fpP(x, y0, z1)], fill, stroke, 1); }
+const FP_AMBER = "#ffb347";
+function _fpDrawProp(it) {
+    const kind = it.kind, seed = it.seed || 0, f = typeof frame !== "undefined" ? frame : 0;
+    if (kind === "computer_desk") {
+        _fpPrism(it, 30, "#8f7f5e", "#5a4a32", "#46391f");
+        if (it.sy) {   // a keyboard on every cell, and a monitor on every third: a dark screen with an amber glow, facing the aisle
+            const k = _fpP(it.x, it.y + 0.2, 31); ctx.fillStyle = "#cdbf9a"; ctx.fillRect(k[0] - 9, k[1] - 2, 18, 4);
+            if (seed % 3 === 0) {
+                _fpFaceY(it, 0.1, 0.9, 34, 62, "#0b1016", "#c9bfa0"); _fpFaceY(it, 0.18, 0.82, 38, 58, "rgba(255,179,71," + (0.55 + 0.2 * Math.sin(f * 0.04 + seed)) + ")", null);
+                const t = _fpP(it.x, it.y + 0.5, 33); ctx.fillStyle = "#2b2f38"; ctx.fillRect(t[0] - 6, t[1] - 3, 12, 3);
+            }
+        }
+    } else if (kind === "server_rack") {
+        _fpPrism(it, 66, "#4a505e", "#1f232d", "#171a23");
+        const blink = (n) => (Math.floor(f / 18 + seed + n * 5) % 5 === 0);
+        if (it.sy) for (let k = 0; k < 4; k++) _fpFaceY(it, 0.12, 0.88, 8 + k * 13, 15 + k * 13, "rgba(255,255,255,0.05)", "rgba(200,210,230,0.25)"), _fpFaceY(it, 0.7, 0.8, 10 + k * 13, 13 + k * 13, blink(k) ? "#ff5a3a" : FP_AMBER, null);
+        if (it.sx) for (let k = 0; k < 4; k++) _fpFaceX(it, 0.15, 0.85, 8 + k * 13, 15 + k * 13, "rgba(255,255,255,0.04)", "rgba(200,210,230,0.2)");
+    } else if (kind === "lab_bench") {
+        _fpPrism(it, 34, "#a9b8c6", "#5f7184", "#4a5a6c", "rgba(255,255,255,0.4)");
+        const m = seed % 7, top = _fpP(it.x, it.y, 35);
+        if (m === 0) { ctx.fillStyle = "rgba(120,230,255,0.75)"; ctx.fillRect(top[0] - 4, top[1] - 12, 8, 12); ctx.fillStyle = "rgba(160,255,200,0.8)"; ctx.fillRect(top[0] - 4, top[1] - 6, 8, 6); }                   // a beaker
+        else if (m === 2) { ctx.fillStyle = "#ffb347"; ctx.beginPath(); ctx.ellipse(top[0], top[1] - 6, 7, 6, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.fillRect(top[0] - 2, top[1] - 16, 4, 8); }   // a flask
+        else if (m === 4) { ctx.fillStyle = "#23303c"; ctx.fillRect(top[0] - 6, top[1] - 16, 12, 12); ctx.fillStyle = "#8fe3ff"; ctx.fillRect(top[0] - 2, top[1] - 20, 4, 6); }   // a microscope
+        else if (m === 5) { ctx.fillStyle = "#3b4d5e"; ctx.fillRect(top[0] - 9, top[1] - 8, 18, 6); for (let k = 0; k < 4; k++) { ctx.fillStyle = ["#ff6a4a", "#6dff5a", "#8fe3ff", "#ffe733"][k]; ctx.fillRect(top[0] - 8 + k * 4.5, top[1] - 14, 3, 6); } }   // a sample rack
+    } else if (kind === "fume_hood") {
+        _fpPrism(it, 72, "#7a8c9a", "#4a5864", "#3a4650");
+        if (it.sy) { _fpFaceY(it, 0.1, 0.9, 12, 56, "rgba(130,225,255,0.28)", "rgba(220,245,255,0.7)"); _fpFaceY(it, 0.1, 0.9, 56, 66, "#2a3640", null); }
+    } else if (kind === "test_chamber") {
+        const hue = [["#6dff5a", "rgba(109,255,90,0.55)"], ["#ffb347", "rgba(255,179,71,0.55)"], ["#a64dff", "rgba(166,77,255,0.55)"]][(it.id === "chamber_2" ? 1 : 0)];
+        _fpPrism(it, 6, "#2a3440", "#202a34", "#1a222b");                         // the base
+        // the glass cylinder, drawn as a tall prism: liquid below, empty glass above, a bright cap
+        const lq = (h0, h1, col) => { const x = it.x, y = it.y, a = _fpP(x - 0.38, y + 0.38, h0), b = _fpP(x + 0.38, y + 0.38, h0), c2 = _fpP(x + 0.38, y + 0.38, h1), d = _fpP(x - 0.38, y + 0.38, h1), e = _fpP(x + 0.38, y - 0.38, h0), g = _fpP(x + 0.38, y - 0.38, h1); _fpQuad([a, b, c2, d], col, "rgba(220,245,255,0.6)", 1); _fpQuad([b, e, g, c2], col, "rgba(220,245,255,0.4)", 1); };
+        lq(6, 52, hue[1]); lq(52, 78, "rgba(140,225,255,0.22)");
+        const t = _fpP(it.x, it.y, 78); ctx.fillStyle = "rgba(220,245,255,0.55)"; ctx.beginPath(); ctx.ellipse(t[0], t[1], 12, 6, 0, 0, 6.2832); ctx.fill();
+        for (let k = 0; k < 2; k++) { const bt = _fpP(it.x + (k ? 0.12 : -0.1), it.y + 0.05, 14 + ((f * 0.6 + seed * 7 + k * 25) % 34)); ctx.fillStyle = "rgba(255,255,255,0.65)"; ctx.beginPath(); ctx.arc(bt[0], bt[1], 1.8, 0, 6.2832); ctx.fill(); }   // bubbles
+    } else if (kind === "reception_desk") {
+        _fpPrism(it, 36, "#8a6a3a", "#5a4224", "#463318");
+    } else if (kind === "semi_truck") {
+        _fpPrism(it, 52, "#7a8aa8", "#4a566e", "#3a455c");
+        if (it.cargo && Math.round(it.x * 3 + it.y * 5) % 4 === 0) { const q = _fpP(it.x, it.y, 58); ctx.fillStyle = "#d8dce8"; ctx.beginPath(); ctx.ellipse(q[0], q[1], 14, 6, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "#ff4a1c"; ctx.beginPath(); ctx.ellipse(q[0] + 8, q[1] - 1, 6, 4, 0, 0, 6.2832); ctx.fill(); }
+    } else {   // liquid reserves, the lab's big tank, anything else
+        const tank = kind === "liquid_reserve" || kind === "tank", liq = kind === "liquid_reserve";
+        const h = tank ? 78 : 40, top = liq ? "#7a4acf" : tank ? "#3acfa0" : "#6a7a9a", sy = liq ? "#4a2a8a" : tank ? "#1f8a6a" : "#3e4a64";
+        const pr = _fpPrism(it, h, top, sy, sy); ctx.fillStyle = "rgba(0,0,0,0.2)"; if (it.sx) { _fpQuad([pr.c[2], pr.c[1], pr.b[1], pr.b[2]], "rgba(0,0,0,0.22)", null); }
+        if (tank) { const c = _fpP(it.x, it.y, h); ctx.fillStyle = "rgba(255,255,255," + (0.12 + 0.06 * Math.sin(f * 0.05 + it.x)) + ")"; ctx.beginPath(); ctx.ellipse(c[0], c[1], 18, 8, 0, 0, 6.2832); ctx.fill(); }
     }
 }
 function _fpDrawFixture(it) {

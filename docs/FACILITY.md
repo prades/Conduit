@@ -8,6 +8,12 @@ navigation, validates it, and draws the debug view. Edit the data file to change
 ## Theme
 A **rundown facility that used to be a 2010s tech startup's headquarters**. The **Front Lobby** is the big-headquarters entrance: a big sign on its north wall and a reception desk area that leads (through a sliding door past the desk's east end) to the hallway at the back, which looks onto the glass Experiment Lab. The **Show Room** is a glass case showcasing a range of products (blank for now). The **Crystal Chamber** and both **Teleport Rooms** are walled off (solid, no glass). The Crystal Chamber has the **power / battery pack area** on its north wall.
 
+## Furniture and glass
+- **Computer lab = the Front Lobby:** rows of computer desks (keyboards, amber-screened monitors) along the north wall and server racks (blinking amber/red LEDs) down the west wall and in the north-east corner, beside the reception desk. The lobby was made two tiles taller to fit the rows; the doors, the bathroom door and a walkable aisle all stay clear.
+- **Science lab = the Experiment Lab:** a long bench on each of the north and south walls (steel tops with beakers, flasks, a microscope and sample racks), a fume hood with a glass front, two glass test chambers (liquid, bubbles) beside the big tank, and a 2.5-tile aisle between the benches from the passage door to the tank.
+- **Glass windows:** a window now draws a solid sill, glass with a reflection streak, a top rail and a mullion post every two tiles. The **Observation Deck** looks down into the arena through glass on its whole east wall (solid to movement, like every window). Everything is drawn procedurally in the amber old-tech look of the lab wall (`_fpDrawProp`, `_fpDrawWall`); no image files.
+- Props are data (`props` in `facilitymap.js`: `kind`, `rect` / `circle`): add a piece by adding a line. A new `kind` needs a drawing in `_fpDrawProp`.
+
 ## Data (`FACILITY_MAP`)
 - Coordinates are **sketch pixels** (the photo, origin top-left). `scale.px_per_tile` (20) turns them into world tiles: calibrating is one number. The **main hallway round the lab is 6 tiles wide** (120 px), matching the strip's lane and wide enough to fight in: the lab keeps its size and every other room was pushed outward to make room for it (the passage to Teleport Room 1 is 2 tiles wide and 6 long). The sketch grid is not a tile size.
 - `rooms`: explicit polygons with a `level` and a `status` (`traced` / `approximate` / `unconfirmed`). Every edge is a wall unless a CONFIRMED opening is cut into it.
