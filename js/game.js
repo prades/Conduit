@@ -1908,7 +1908,7 @@ function rebuildPylonPairs() {
 // why a wall nest is not simply x+y.
 const NEST_DRAW_BIAS = 1.01;   // just past the last wall tile of its own face
 function drawDepthOf(o) {
-    if (o.type === 'fp' && o.depth !== undefined) return o.depth;   // facility wall decor sorts just after the wall pieces under it (js/facilitydecor.js)
+    if ((o.type === 'fp' || o.type === 'crystal') && o.depth !== undefined) return o.depth;   // facility wall decor sorts just after the wall pieces under it; the crystal after its pad (js/facilitydecor.js, js/facilitystyle.js)
     const d = o.x + o.y;
     if (o.type === 'module') return d + 0.1;   // over its own floor tile, which shares its depth
     // An enemy standing in a black hole's vortex is drawn over it, not under

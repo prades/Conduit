@@ -260,6 +260,7 @@ function facilityDrawItems(drawList) {
     if (!_fp || !_fp.items) return;
     _fpCam = facilityLiftPx(player.visualX, player.visualY);   // the camera rides the player's floor
     for (const it of _fp.items) if (visibleForDraw(it.x, it.y)) drawList.push(it);
+    if (_fp.crystalDepth !== undefined) for (const o of drawList) if (o.type === "crystal") o.depth = _fp.crystalDepth;   // the crystal is drawn after the pad machine it rests in
 }
 
 // ── height: the floors rise and fall (drawing only: movement is flat) ──
@@ -285,7 +286,7 @@ const FP_WALL = { wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall: ["#26324f
 function drawFacilityItem(it) {
     _fpBase = it.base || 0;
     ctx.save();
-    if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "stair") _fpPrism(it, it.h, "#5d6f93", "#2b3550", "#222b43", "rgba(180,220,255,0.5)");
+    if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpPrism(it, it.h, "#5d6f93", "#2b3550", "#222b43", "rgba(180,220,255,0.5)");
     ctx.restore();
 }
 // A wall whose camera-facing side looks onto a LOWER floor (the pocket of floor behind the arena's rock, a fill cell) reaches down to it, so no gap shows under it.
