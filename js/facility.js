@@ -76,7 +76,8 @@ function facilityBuild(extra) {
     }
     // windows: glass stretches of wall. They stay in `walls` (solid to movement); a piece lying on a window is marked so the debug view can draw it as glass.
     const windows = (M.windows || []).map(w => ({ id: w.id, a: _facP(w.a), b: _facP(w.b), rooms: w.rooms || [] }));
-    for (const wl of walls) for (const w of windows) if (_facSegPointDist(w.a, w.b, wl.a[0], wl.a[1]) < 0.03 && _facSegPointDist(w.a, w.b, wl.b[0], wl.b[1]) < 0.03) { wl.window = w.id; break; }
+    for (const wl of walls) for (const w of windows) if ((!w.rooms.length || w.rooms.includes(wl.room)) && _facSegPointDist(w.a, w.b, wl.a[0], wl.a[1]) < 0.03 && _facSegPointDist(w.a, w.b, wl.b[0], wl.b[1]) < 0.03) { wl.window = w.id; break; }
+    const fixtures = (M.fixtures || []).map(f => ({ id: f.id, type: f.type, room: f.room, edge: f.edge, a: _facP(f.a), b: _facP(f.b), status: f.status, note: f.note }));
     const s = facilityScale();
     const solids = (M.props || []).map(pr => {
         if (pr.shape === "circle") return { id: pr.id, room: pr.room, shape: "circle", at: _facP(pr.at), r: pr.radius / s, cargo: pr.cargo || null, provisional: !!pr.provisional_collision, status: pr.status, kind: pr.kind || null };
@@ -95,7 +96,7 @@ function facilityBuild(extra) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { rooms, walls, windows, solids, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { rooms, walls, windows, fixtures, solids, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -221,6 +222,19 @@ function facilityValidate(F) {
         for (const id of w.rooms) { const room = F.byId.get(id); if (!room) { errors.push("window " + w.id + " names a room that does not exist"); continue; } let on = false; for (let i = 0; i < room.poly.length; i++) { const a = room.poly[i], b = room.poly[(i + 1) % room.poly.length]; if (_facSegPointDist(a, b, w.a[0], w.a[1]) < 0.05 && _facSegPointDist(a, b, w.b[0], w.b[1]) < 0.05) on = true; } if (!on) errors.push("window " + w.id + " is not on a wall of " + id); }
         if (!F.walls.some(wl => wl.window === w.id)) errors.push("window " + w.id + " has no wall under it");
     }
+    // wall fixtures sit on the wall of their room, on the named edge, and not across a doorway
+    for (const f of F.fixtures) {
+        const room = F.byId.get(f.room); if (!room) { errors.push("fixture " + f.id + " names a room that does not exist"); continue; }
+        const a = room.poly[f.edge], b = room.poly[(f.edge + 1) % room.poly.length];
+        if (!a || _facSegPointDist(a, b, f.a[0], f.a[1]) > 0.05 || _facSegPointDist(a, b, f.b[0], f.b[1]) > 0.05) errors.push("fixture " + f.id + " is not on edge " + f.edge + " of " + f.room);
+        for (const o of F.openings) if (_facSegPointDist(o.a, o.b, (f.a[0] + f.b[0]) / 2, (f.a[1] + f.b[1]) / 2) < 0.6 || _facSegPointDist(f.a, f.b, (o.a[0] + o.b[0]) / 2, (o.a[1] + o.b[1]) / 2) < 0.1) errors.push("fixture " + f.id + " sits across the opening " + o.id);
+    }
+    // wall material: a solid (walled-off) room has no glass on its own walls; a glass room has some
+    for (const r of F.rooms) {
+        const glass = F.walls.filter(w => w.room === r.id && w.window).length;
+        if (r.raw.wall_material === "solid" && glass) errors.push(r.id + " is walled off (solid) but has " + glass + " glass wall pieces");
+        if (r.raw.wall_material === "glass" && !glass) errors.push(r.id + " is a glass room but has no glass walls");
+    }
     // openings and connections agree
     for (const c of F.connections) {
         if (!F.byId.has(c.rooms[0]) || !F.byId.has(c.rooms[1])) errors.push("connection " + c.id + " names a room that does not exist");
@@ -318,6 +332,9 @@ function facilityDebugDraw() {
         for (const s of F.solids) if (s.kind === "semi_truck" && L.outlines) { const lv = (F.byId.get(s.room) || {}).level || 0, q = P(_facCentroid(s.poly), lv); _facLabel(g, "SEMI TRUCK \u00b7 " + (s.cargo ? s.cargo.map(c => c.count + " " + c.type.toUpperCase() + "S").join(", ") : ""), q[0], q[1], "#ffb48a", 9 * Math.max(0.8, Math.min(1.4, z * 3))); }
         for (const w of F.walls.filter(x => x.window)) { const lv = (F.byId.get(w.room) || {}).level || 0, a = P(w.a, lv), b = P(w.b, lv); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = 6; g.strokeStyle = "rgba(143,227,255,0.45)"; g.setLineDash([3, 4]); g.stroke(); g.setLineDash([]); }
         for (const w of F.walls) { const lv = (F.byId.get(w.room) || {}).level || 0, a = P(w.a, lv), b = P(w.b, lv); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = w.arena ? 4 : 2.5; g.strokeStyle = w.arena ? (w.room === "arena" ? FAC_COLOURS.arena : FAC_COLOURS.outer) : FAC_COLOURS.wall; g.stroke(); }
+    }
+    if (L.collision || L.outlines) {
+        for (const f of F.fixtures) { const lv = (F.byId.get(f.room) || {}).level || 0, a = P(f.a, lv), b = P(f.b, lv), c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = 7; g.strokeStyle = f.type === "power_pack_area" ? "#ffd34d" : "#ff9ad5"; g.stroke(); _facLabel(g, f.type === "power_pack_area" ? "POWER PACK AREA" : f.type === "wall_sign" ? "BIG SIGN" : f.id.toUpperCase(), c[0], c[1] - 9, f.type === "power_pack_area" ? "#ffd34d" : "#ff9ad5", 9 * Math.max(0.8, Math.min(1.4, z * 3))); facilityDebug._hits.push({ x: c[0], y: c[1], text: f.id.toUpperCase() + " \u2014 " + (f.note || "") }); }
     }
     if (L.openings) {
         for (const o of F.openings) { const a = P(o.a, 0), b = P(o.b, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = 6; g.strokeStyle = FAC_COLOURS.ok; g.stroke(); }

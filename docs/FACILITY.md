@@ -5,6 +5,9 @@
 Source: the hand-drawn top-down floor plan and `conduit_facility_map_spec.json`. The plan is traced into `js/facilitymap.js` (data only); `js/facility.js` compiles it into collision and
 navigation, validates it, and draws the debug view. Edit the data file to change the facility; no gameplay code names a room or a coordinate.
 
+## Theme
+A **rundown facility that used to be a 2010s tech startup's headquarters**. The **Front Lobby** is the big-headquarters entrance: a big sign on its north wall and a reception desk area that leads (through a sliding door past the desk's east end) to the hallway at the back, which looks onto the glass Experiment Lab. The **Show Room** is a glass case showcasing a range of products (blank for now). The **Crystal Chamber** and both **Teleport Rooms** are walled off (solid, no glass). The Crystal Chamber has the **power / battery pack area** on its north wall.
+
 ## Data (`FACILITY_MAP`)
 - Coordinates are **sketch pixels** (the photo, origin top-left). `scale.px_per_tile` (first guess: 20) turns them into world tiles: calibrating is one number. The sketch grid is not a tile size.
 - `rooms`: explicit polygons with a `level` and a `status` (`traced` / `approximate` / `unconfirmed`). Every edge is a wall unless a CONFIRMED opening is cut into it.
@@ -16,8 +19,10 @@ navigation, validates it, and draws the debug view. Edit the data file to change
 - `openings`, `connections`, `ramps`: **confirmed only.** So far (all wall positions approximate until checked in the MAP view):
   - the **arena's door** at its top-left corner onto the **hallway** (`lab_hallway`), which runs round the lab and ends at a **sliding door into the Crystal Chamber**;
   - the **Teleport Stair Room** (raised, door to Teleport Room 2) and its **curved staircase down to the hallway** (an open stair mouth, no door);
+  - the **lobby's door** to the hallway, past the reception desk;
   - the **narrow passage** (`lab_passage`) joining the **Experiment Lab** to **Teleport Room 1** through two sliding doors.
   Every other room is sealed.
+- `fixtures`: wall-mounted things (the Crystal Chamber's power pack area, the lobby's big sign), on a named edge of a room, validated to sit on that wall and clear of every doorway. `wall_material` (`solid` / `glass`) per room is checked against the `windows`.
 - **The lab is windowed off:** the Experiment Lab is an enclosed room inside the gridded floor; its walls facing the hallway are `windows` (glass: see-through, solid to movement). Its only way out is the passage to Teleport Room 1. The hallway is a **C** (the lab and passage cut the ring open on the west): arena door, east side, north side, chamber door. The hallway is at least 2.5 tiles wide on every side of the lab.
 - `candidates`: what the sketch suggests (14 connections, 4 ramps/stairs) with the evidence. They do nothing until moved into the lists above by hand.
 - `levels`: ground < raised (observation deck, catwalks). Heights are unknown.
