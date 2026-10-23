@@ -2505,11 +2505,14 @@ function render() {
     if (shake>0) { ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake); shake*=0.9; }
 
     // ── CAMERA FOLLOW ──
+    if (typeof facilityPlay !== "undefined" && facilityPlay) facilityPlayerStep();   // the facility: a path of waypoints and real walls (js/facilityplay.js)
+    else {
     player.x+=(player.targetX-player.x)*cfg.playerSpeed;
     player.y+=(player.targetY-player.y)*cfg.playerSpeed;
     player.y = Math.max(PLAYER_Y_MIN, Math.min(FLOOR_Y_MAX, player.y));
     player.visualX+=(player.x-player.visualX)*0.15;
     player.visualY+=(player.y-player.visualY)*0.15;
+    }
 
     // ── CHARGED MASS ──
     updateChargedMass();
@@ -2530,7 +2533,7 @@ function render() {
     const _fl = followers.slice().sort((p, q) => p.x - q.x);
     for (let _i = 0; _i < _fl.length; _i++) {
         for (let _j = _i+1; _j < _fl.length; _j++) {
-            const _a = _fl[_i], _b = _fl[_j];
+            const _a = _fl[_i], _b = _fl[_j], _ax0 = _a.x, _ay0 = _a.y, _bx0 = _b.x, _by0 = _b.y;
             if (_b.x - _a.x >= FOLLOWER_SEP) break;
             // A frozen block is terrain, not a unit in the crowd: it neither
             // gives ground to a follower nor jostles one. iceBlockTick below
@@ -2547,7 +2550,7 @@ function render() {
             // per-actor clamp in updateNPC, so without this a crowd pressed up
             // against the back row pushed itself straight through the wall —
             // one follower stayed put, a squad did not.
-            clampToFloor(_a); clampToFloor(_b);
+            if (typeof facilityPlay !== "undefined" && facilityPlay) { facilityConstrain(_a, _ax0, _ay0); facilityConstrain(_b, _bx0, _by0); } else { clampToFloor(_a); clampToFloor(_b); }
         }
     }
 
@@ -3041,6 +3044,7 @@ function render() {
     // the crystal is a fixed landmark other code expects in the list.
     perfDrawStart();   // the logic is done; from here on it is drawing
     let drawList=visibleTilesForDraw();
+    if (typeof facilityPlay !== "undefined" && facilityPlay) facilityDrawItems(drawList);   // walls, props, doors and fixtures (js/facilityplay.js)
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     shards.forEach(s=>{ if(visibleForDraw(s.x,s.y)) drawList.push({type:'shard',x:s.x,y:s.y,shard:s}); });
     chargedMass.forEach(m=>{ if(visibleForDraw(m.x,m.y)) drawList.push({type:'mass',x:m.x,y:m.y,mass:m}); });
@@ -3090,6 +3094,9 @@ function render() {
         }
         else if (obj.type==='module') {
             drawModule(obj.module, px, py);
+        }
+        else if (obj.type==='fp') {
+            drawFacilityItem(obj);
         }
         else if (obj.type==='labmod') {
             drawLabModule(obj.tile, Math.max(0.1, 0.8 - Math.sqrt((obj.x - player.visualX) ** 2 + (obj.y - player.visualY) ** 2) / RENDER_DIST));

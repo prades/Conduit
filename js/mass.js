@@ -227,6 +227,7 @@ function followerWorkTick(actor) {
 }
 
 function _moveToward(actor, tx, ty, speedMult) {
+    if (typeof facilityPlay !== "undefined" && facilityPlay) { const w = facilitySteer(actor, tx, ty); tx = w[0]; ty = w[1]; }   // round the facility's walls (js/facilityplay.js)
     const dx = tx - actor.x, dy = ty - actor.y;
     const d  = Math.hypot(dx, dy);
     if (d < 1e-6) return 0;

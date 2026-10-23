@@ -1,6 +1,6 @@
 # The permanent facility (authored map)
 
-**Status: traced and validated, shown in a debug view, NOT yet wired into play.** The game still runs on the zone strip until the geometry below is confirmed.
+**Status: traced, validated, shown in a debug view, and WALKABLE (stage 1 of the wiring, `js/facilityplay.js`).** The zone strip game is untouched; the facility is a separate play mode (see *Play* below) that the strip's systems move onto one at a time.
 
 Source: the hand-drawn top-down floor plan and `conduit_facility_map_spec.json`. The plan is traced into `js/facilitymap.js` (data only); `js/facility.js` compiles it into collision and
 navigation, validates it, and draws the debug view. Edit the data file to change the facility; no gameplay code names a room or a coordinate.
@@ -42,3 +42,12 @@ pink, the nest area's edges grey-blue, liquid reserves violet), OPENINGS (`?` = 
 ## To confirm before it is wired into play
 see `FACILITY_MAP.unresolved`: the scale, every doorway, elevation heights and ramps, what the liquid reserves contain and whether their stairs lead to a rim, the nest area's entrances and bottom wall, the room names.
 Then: re-home zones, nests, the power unit, spawns, hunters and saves onto the rooms (decisions for each), and replace the row-clamp movement bounds with `facilityMove`.
+
+## Play (stage 1: a walkable facility)
+Enter from the MAP view (**PLAY**) or with `?facilityplay` in the URL; **FACILITY · EXIT** (top left) reloads into the strip game. A facility session writes nothing to the save (storage writes are switched off for it), so the strip game's save is exactly as it was.
+- **World:** one floor tile per walkable cell, from the **snapped** copy of the map (`facilityBuild({ snap: true })`: every corner moved onto the tile grid, doors at least two tiles wide; the authored data is never changed). The strip's world generation does nothing while it is on.
+- **Movement:** a tap finds a path through the doors (A\* over tile centres, smoothed by line of sight); the player follows its waypoints; **every mover** (player, followers, clones, enemies) goes through `facilityConstrain`, so walls, glass, the desk, the truck and the vats hold; followers and clones steer round walls to the next waypoint (`facilitySteer`, hooked into `followPlayer`, `_walkStep` and `_moveToward`). A body keeps 0.3 tiles from a wall.
+- **Drawing:** wall pieces (solid, rock, glass), sliding-door frames, prop cells (desk, semi-truck with its missiles, liquid vats, the lab tank) and the two wall fixtures are depth-sorted into the game's own draw list; a wall between the camera and the player turns see-through.
+- **Spawn:** you and three followers start in the Crystal Chamber beside the crystal. Three ants wander the arena as a combat/wall test (they are not the facility's enemies).
+- **Not running yet (they come over one at a time):** zones, nests, waves and enemy spawning, the wall power unit, build/zone kits on the facility, saves, the day/night clock. Each needs a decision about where it lives in the facility.
+- **Known rough edges:** no per-room floor look yet; enemies chase straight (they slide along walls rather than path); jobs that walk (work, haul) only steer round walls where they use the shared step helpers.

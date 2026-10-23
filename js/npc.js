@@ -7,6 +7,7 @@
 // node, over to a pylon to heal) return before the shared walk-cycle block
 // below, and changed x and y and nothing else — the unit glided on still legs.
 function _walkStep(actor, dx, dy, dist) {
+    if (typeof facilityPlay !== "undefined" && facilityPlay) { const w = facilitySteer(actor, actor.x + dx, actor.y + dy), sx = w[0] - actor.x, sy = w[1] - actor.y, sd = Math.hypot(sx, sy); if (sd > 1e-6) { dx = sx; dy = sy; dist = sd; } }   // round the facility's walls
     actor.x += (dx / dist) * actor.moveSpeed; actor.y += (dy / dist) * actor.moveSpeed;
     actor.walkCycle = (actor.walkCycle || 0) + actor.moveSpeed * 40;
     actor.dirX = dx / dist; actor.dirY = dy / dist;
@@ -506,11 +507,13 @@ function followPlayer(actor) {
         }
         if (n > 0) { tx = tx * 0.4 + (sx / n) * 0.6; ty = ty * 0.4 + (sy / n) * 0.6; }
     }
+    if (typeof facilityPlay !== "undefined" && facilityPlay) { const w = facilitySteer(actor, tx, ty), d0 = Math.hypot(tx - actor.x, ty - actor.y); if (d0 > stop) { tx = w[0]; ty = w[1]; } }   // round the facility's walls
     const dx = tx - actor.x, dy = ty - actor.y, dist = Math.hypot(dx, dy);
     if (dist > stop) { actor.x += (dx / dist) * actor.moveSpeed; actor.y += (dy / dist) * actor.moveSpeed; }
 }
 
 function updateNPC(actor) {
+    const _fpx = actor.x, _fpy = actor.y;   // for the facility's walls (js/facilityplay.js)
     if (actor instanceof Predator && actor.team !== "green") {
         actor.update();
     } else {
@@ -539,4 +542,5 @@ function updateNPC(actor) {
             if (_moved > 0.001) actor.walkCycle = (actor.walkCycle||0) + actor.moveSpeed * 40;
         }
     }
+    if (typeof facilityPlay !== "undefined" && facilityPlay) facilityConstrain(actor, _fpx, _fpy);
 }

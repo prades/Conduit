@@ -250,6 +250,7 @@ function canHackNestFrom(nest, x, y) {
 // further still, which is why it took a squad rather than one follower.
 function clampToFloor(a) {
     if (!a) return a;
+    if (typeof facilityPlay !== "undefined" && facilityPlay) return a;   // the facility's walls are enforced by facilityConstrain
     if (a.y < FLOOR_Y_MIN) a.y = FLOOR_Y_MIN;
     else if (a.y > FLOOR_Y_MAX) a.y = FLOOR_Y_MAX;
     return a;
@@ -326,9 +327,12 @@ function hurtPlayer(amount, shakeAmt, source) {
         const kl = Math.hypot(kx, ky);
         if (kl < 1e-3) { kx = -1; ky = 0; } else { kx /= kl; ky /= kl; }
         // Both where you are and where you were walking: the camera slides you back.
+        if (typeof facilityPlay !== "undefined" && facilityPlay) { const _kx = player.x, _ky = player.y; player.x += kx * PLAYER_KNOCKBACK; player.y += ky * PLAYER_KNOCKBACK; facilityConstrain(player, _kx, _ky); player.targetX = player.x; player.targetY = player.y; player.fpPath = null; }
+        else {
         player.x += kx * PLAYER_KNOCKBACK; player.targetX += kx * PLAYER_KNOCKBACK;
         player.y = Math.max(PLAYER_Y_MIN, Math.min(FLOOR_Y_MAX, player.y + ky * PLAYER_KNOCKBACK));
         player.targetY = Math.max(PLAYER_Y_MIN, Math.min(FLOOR_Y_MAX, player.targetY + ky * PLAYER_KNOCKBACK));
+        }
     }
     shake = Math.max(shake, shakeAmt || 4);
     if (health > 0 && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {

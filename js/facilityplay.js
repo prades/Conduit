@@ -1,0 +1,263 @@
+// ─────────────────────────────────────────────────────────
+//  FACILITY PLAY — the authored facility (js/facility.js) as a place you can walk
+// ─────────────────────────────────────────────────────────
+// STAGE 1: a walkable facility. Enter it from the MAP view (PLAY) or with ?facilityplay in the URL. You start in the Crystal Chamber with a small squad; you, your followers and
+// your clones walk the real rooms: walls, glass, the desk, the truck and the liquid vats block, the sliding doors let you through, and tapping the floor finds a path through the doors.
+// The zone strip's own systems (zones, nests, waves, the wall power unit, spawning, saves) are NOT running here yet: they come over one at a time. The strip game is untouched:
+// a facility session writes nothing to the save (storage writes are switched off for it), and leaving it reloads the page into the strip game.
+//
+// How it hooks in (each hook is a guarded one-liner where the strip code already decides the thing):
+//   world         the floor tiles are built from the facility's rooms (generateSegment / ensureWorldTo do nothing while it is on)
+//   movement      facilityConstrain puts any mover back if it would cross a wall; the player follows a path of waypoints (facilityPlayerStep)
+//   steering      a follower walking toward a target around a wall steers to the next waypoint (_walkStep, _moveToward, followPlayer)
+//   drawing       wall pieces, prop cells, doors and fixtures are depth-sorted into the game's own draw list (facilityDrawItems / drawFacilityItem)
+// The geometry is the SNAPPED copy (facilityBuild({ snap: true })): every wall runs along tile edges, so a floor tile is wholly inside or outside a room.
+
+let facilityPlay = false;
+let _fp = null;
+const FP_BODY = 0.3;              // tiles: how far a body keeps from a wall
+const FP_PLAYER_SPEED = 0.13;     // tiles a frame
+const FP_WALL_H = 74;             // px: how tall a wall stands on screen
+const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", bathroom: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a" };
+
+// ── the world ──
+function _fpFloorTile(x, y, room) {
+    return {
+        x, y, type: "floor", pillar: false, pillarTeam: "red", pillarCol: "#e02020", destroyed: false, health: 20, maxHealth: 20, converting: false, pendingDestroy: false,
+        pylonStyle: typeof PYLON_STYLE !== "undefined" ? PYLON_STYLE : "sentinel", upgraded: false, pulseTimer: 0, reconstructing: false, reconstructProgress: 0, workers: [],
+        nest: false, nestHealth: 0, nestMaxHealth: 200, nestZone: -1, nestPulse: 0, nodeType: null, capturable: false, captureProgress: 0, capturingFollowers: [], captured: false, territory: null,
+        facility: true, room,
+    };
+}
+function _fpBuildWorld(F) {
+    world = []; worldTileMap = new Map(); const cells = new Map();
+    for (let x = Math.floor(F.bounds.minX); x <= Math.ceil(F.bounds.maxX); x++) for (let y = Math.floor(F.bounds.minY); y <= Math.ceil(F.bounds.maxY); y++) {
+        if (!facilityWalkable(x, y, F)) continue;
+        const room = facilityRoomAt(x, y, F), t = _fpFloorTile(x, y, room.id);
+        world.push(t); worldTileMap.set(x + "," + y, t); cells.set(x + "," + y, [x, y]);
+    }
+    return cells;
+}
+
+// ── navigation: A* over tile centres, with line-of-sight smoothing ──
+function _fpLos(x0, y0, x1, y1) {
+    const F = _fp.F, d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / 0.25));
+    for (let i = 1; i <= n; i++) { const t = i / n; if (!facilityWalkable(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, F)) return false; }
+    return facilityCanStep(x0, y0, x1, y1, F);
+}
+function _fpNearestCell(x, y) {
+    const c = _fp.cells, rx = Math.round(x), ry = Math.round(y);
+    if (c.has(rx + "," + ry)) return [rx, ry];
+    for (let r = 1; r <= 4; r++) { let best = null, bd = Infinity; for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) { if (c.has((rx + dx) + "," + (ry + dy))) { const d = (rx + dx - x) ** 2 + (ry + dy - y) ** 2; if (d < bd) { bd = d; best = [rx + dx, ry + dy]; } } } if (best) return best; }
+    return null;
+}
+function _fpEdgeOk(ax, ay, bx, by) {
+    if (!_fp.cells.has(bx + "," + by)) return false;
+    if (ax !== bx && ay !== by && !(_fp.cells.has(bx + "," + ay) && _fp.cells.has(ax + "," + by))) return false;   // no cutting a corner
+    const k = ax + "," + ay + ">" + bx + "," + by; let v = _fp.edges.get(k);
+    if (v === undefined) { v = _fpLos(ax, ay, bx, by); _fp.edges.set(k, v); }   // sampled, so a diagonal cannot slip through a wall's corner
+    return v;
+}
+// The cells from (x0,y0) to (x1,y1), or null if there is no way.
+function _fpCellPath(sx, sy, gx, gy) {
+    const key = sx + "," + sy + ">" + gx + "," + gy; if (_fp.paths.has(key)) return _fp.paths.get(key);
+    const open = [[0, sx, sy]], g = new Map([[sx + "," + sy, 0]]), from = new Map(), done = new Set();
+    const pop = () => { let bi = 0; for (let i = 1; i < open.length; i++) if (open[i][0] < open[bi][0]) bi = i; return open.splice(bi, 1)[0]; };
+    let found = false;
+    while (open.length) {
+        const [, x, y] = pop(), k = x + "," + y; if (done.has(k)) continue; done.add(k);
+        if (x === gx && y === gy) { found = true; break; }
+        for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+            if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (done.has(nk) || !_fpEdgeOk(x, y, nx, ny)) continue;
+            const ng = g.get(k) + (dx && dy ? 1.4142 : 1); if (g.has(nk) && g.get(nk) <= ng) continue;
+            g.set(nk, ng); from.set(nk, k); open.push([ng + Math.hypot(gx - nx, gy - ny), nx, ny]);
+        }
+    }
+    let out = null;
+    if (found) { out = []; let k = gx + "," + gy; while (k) { const [x, y] = k.split(",").map(Number); out.push([x, y]); k = from.get(k); } out.reverse(); }
+    if (_fp.paths.size > 600) _fp.paths.clear();
+    _fp.paths.set(key, out); return out;
+}
+// Waypoints from the mover's exact position to the exact target: the cell path pulled tight wherever the line of sight allows it.
+function facilityPath(x0, y0, x1, y1) {
+    if (!_fp) return null;
+    const s = _fpNearestCell(x0, y0), e = _fpNearestCell(x1, y1); if (!s || !e) return null;
+    const cp = _fpCellPath(s[0], s[1], e[0], e[1]); if (!cp) return null;
+    const pts = [[x0, y0]].concat(cp).concat([[x1, y1]]), out = []; let i = 0;   // (the start cell's centre too: the mover is rarely exactly on it, and a door's edge is tight)
+    while (i < pts.length - 1) { let j = pts.length - 1; while (j > i + 1 && !_fpLos(pts[i][0], pts[i][1], pts[j][0], pts[j][1])) j--; out.push(pts[j]); i = j; }
+    return out;
+}
+// Where should a mover at (x,y) head, to get to (tx,ty)? The target itself if it can see it, else the next waypoint round the wall.
+function facilitySteer(a, tx, ty) {
+    if (!_fp) return [tx, ty];
+    if (_fpLos(a.x, a.y, tx, ty)) { a._fpPath = null; return [tx, ty]; }
+    const gk = Math.round(tx) + "," + Math.round(ty), f = typeof frame !== "undefined" ? frame : 0;
+    if (!a._fpPath || a._fpGoal !== gk || f - (a._fpAt || 0) > 45) { a._fpPath = facilityPath(a.x, a.y, tx, ty); a._fpGoal = gk; a._fpAt = f; }
+    const p = a._fpPath; if (!p || !p.length) return [tx, ty];
+    while (p.length > 1 && Math.hypot(p[0][0] - a.x, p[0][1] - a.y) < 0.4) p.shift();
+    return p[0];
+}
+// A mover that moved from (px,py) to (a.x,a.y): back it up, or slide it along the wall.
+function facilityConstrain(a, px, py) {
+    if (!_fp || !a) return a;
+    if (facilityWalkable(a.x, a.y, _fp.F) && facilityCanStep(px, py, a.x, a.y, _fp.F)) return a;
+    if (facilityWalkable(a.x, py, _fp.F) && facilityCanStep(px, py, a.x, py, _fp.F)) { a.y = py; return a; }
+    if (facilityWalkable(px, a.y, _fp.F) && facilityCanStep(px, py, px, a.y, _fp.F)) { a.x = px; return a; }
+    if (facilityWalkable(px, py, _fp.F)) { a.x = px; a.y = py; return a; }
+    const c = _fpNearestCell(px, py); if (c) { a.x = c[0]; a.y = c[1]; }   // it was somewhere impossible (a spawn on a wall): onto the nearest floor
+    return a;
+}
+
+// ── the player ──
+function facilityWalkTo(gx, gy) {
+    if (!_fp) return false;
+    const c = _fpNearestCell(gx, gy); if (!c || Math.hypot(c[0] - gx, c[1] - gy) > 1.6) return false;
+    const p = facilityPath(player.x, player.y, c[0], c[1]); if (!p) return false;
+    player.fpPath = p; player.targetX = c[0]; player.targetY = c[1]; return true;
+}
+function facilityPlayerStep() {
+    const px = player.x, py = player.y;
+    const p = player.fpPath;
+    if (p && p.length) {
+        const w = p[0], d = Math.hypot(w[0] - player.x, w[1] - player.y);
+        if (d <= FP_PLAYER_SPEED) { player.x = w[0]; player.y = w[1]; p.shift(); } else { player.x += (w[0] - player.x) / d * FP_PLAYER_SPEED; player.y += (w[1] - player.y) / d * FP_PLAYER_SPEED; }
+    }
+    facilityConstrain(player, px, py);
+    if (!p || !p.length) { player.targetX = player.x; player.targetY = player.y; }
+    player.visualX += (player.x - player.visualX) * 0.2; player.visualY += (player.y - player.visualY) * 0.2;
+}
+
+// ── start / stop ──
+function _fpNoStorage() {
+    try { if (typeof Storage !== "undefined" && Storage.prototype) { Storage.prototype.setItem = function () {}; Storage.prototype.removeItem = function () {}; } } catch (e) {}
+}
+function facilityPlayStart() {
+    if (facilityPlay) return true;
+    _fpNoStorage();                                  // nothing of this session is saved: the strip game's save is left exactly as it was
+    facilityPlay = true;
+    if (typeof facilityDebugSet === "function") facilityDebugSet(false);
+    const F = facilityBuild({ snap: true, margin: FP_BODY });
+    _fp = { F, cells: null, edges: new Map(), paths: new Map() };
+    restartGame();                                   // the full state reset (its storage writes are off, and generateSegment does nothing now)
+    _fp.cells = _fpBuildWorld(F);
+    // the crystal in its chamber, the player beside it, a small squad
+    const ob = F.byId.get("crystal_chamber").objects.find(o => o.id === "crystal");
+    const cx = Math.round(ob.at[0]), cy = Math.round(ob.at[1]);
+    crystal.x = cx; crystal.y = cy;
+    player.x = player.targetX = player.visualX = cx + 2; player.y = player.targetY = player.visualY = cy + 1; player.fpPath = null;
+    for (const el of ["electric", "core", "fire"]) { if (typeof spawnFollowerAtCrystal === "function") spawnFollowerAtCrystal(el); }
+    for (const f of followers) { f.x = cx + 1 + Math.random(); f.y = cy + 2 + Math.random(); f.returningToCrystal = false; }
+    _fpPlaceStatics(F);
+    _fpSpawnTestEnemies(F);
+    if (typeof updateObjectiveUI === "function") updateObjectiveUI();
+    document.body.classList && document.body.classList.add("facility-play");
+    return true;
+}
+function facilityPlayStop() { try { location.reload(); } catch (e) {} }
+
+// STAGE 1 has no spawning of its own yet (no nests, no waves), so a few ants wander the arena to try combat and the walls on: they are a test, not the facility's enemies.
+function _fpSpawnTestEnemies(F) {
+    if (typeof spawnPredatorForZone !== "function") return;
+    const spots = [[30, 40], [34, 44], [28, 46]];
+    for (const [x, y] of spots) {
+        const before = actors.length; try { spawnPredatorForZone(1, { species: "ant", className: "scout" }); } catch (e) { continue; }
+        const p = actors[actors.length - 1]; if (actors.length > before && p) { p.x = x; p.y = y; p.state = "wander"; p.isFacilityTest = true; }
+    }
+}
+
+// ── the static things to draw: wall pieces, prop cells, doors, fixtures ──
+function _fpPlaceStatics(F) {
+    const items = [], seg = 0.5;
+    for (const w of F.walls) {
+        const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy), n = Math.max(1, Math.ceil(len / seg));
+        for (let i = 0; i < n; i++) {
+            const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n];
+            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, room: w.room });
+        }
+    }
+    for (const o of F.openings) { items.push({ type: "fp", fp: "door", x: (o.a[0] + o.b[0]) / 2, y: (o.a[1] + o.b[1]) / 2, a: o.a, b: o.b, door: o.door }); }
+    for (const s of F.solids) {
+        const box = s.bb;
+        for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) {
+            const inside = s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly);
+            if (inside) items.push({ type: "fp", fp: "prop", x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id });
+        }
+    }
+    for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
+    _fp.items = items;
+}
+function facilityDrawItems(drawList) {
+    if (!_fp || !_fp.items) return;
+    for (const it of _fp.items) if (visibleForDraw(it.x, it.y)) drawList.push(it);
+}
+
+// ── drawing ──
+function _fpP(x, y, z) { return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (z || 0)]; }
+function _fpQuad(pts, fill, stroke, lw) {
+    ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.lineWidth = lw || 1; ctx.strokeStyle = stroke; ctx.stroke(); }
+}
+const FP_WALL = { wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall_provisional: ["#26324f", "#1a2340", "#8fa6d8"], rock: ["#4a3a30", "#2e241e", "#9a7a62"], railing_wall: ["#3a4258", "#262d40", "#ffd34d"], deck_wall: ["#3a3f52", "#262a3a", "#8fa6d8"] };
+function drawFacilityItem(it) {
+    ctx.save();
+    if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it);
+    ctx.restore();
+}
+function _fpDrawWall(it) {
+    const glass = it.kind === "glass", c = FP_WALL[it.kind] || FP_WALL.wall, H = glass ? FP_WALL_H : FP_WALL_H;
+    // a wall in front of the player (nearer the camera) goes see-through, so nothing is hidden behind it
+    const pd = player.visualX + player.visualY, wd = it.x + it.y, dist = Math.hypot(it.x - player.visualX, it.y - player.visualY);
+    ctx.globalAlpha = wd > pd + 0.2 && dist < 3.2 ? Math.max(0.22, dist / 3.2 * 0.55) : 1;
+    const a0 = _fpP(it.a[0], it.a[1], 0), b0 = _fpP(it.b[0], it.b[1], 0), a1 = _fpP(it.a[0], it.a[1], H), b1 = _fpP(it.b[0], it.b[1], H);
+    if (glass) {
+        _fpQuad([a0, b0, b1, a1], "rgba(120,220,255,0.20)", "rgba(143,227,255,0.55)", 1.5);
+        ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(a0[0] + (b0[0] - a0[0]) * 0.2, a0[1] + (b0[1] - a0[1]) * 0.2); ctx.lineTo(a1[0] + (b1[0] - a1[0]) * 0.55, a1[1] + (b1[1] - a1[1]) * 0.55); ctx.stroke();
+        return;
+    }
+    const g = ctx.createLinearGradient(0, a1[1], 0, a0[1]); g.addColorStop(0, c[0]); g.addColorStop(1, c[1]);
+    _fpQuad([a0, b0, b1, a1], g, "rgba(5,7,15,0.6)", 1);
+    ctx.strokeStyle = c[2]; ctx.globalAlpha *= 0.85; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();
+}
+function _fpDrawDoor(it) {
+    // two posts and a lintel round the gap, with a sliding panel drawn open (it never blocks: a sliding door is always open for the squad)
+    const H = FP_WALL_H, a0 = _fpP(it.a[0], it.a[1], 0), b0 = _fpP(it.b[0], it.b[1], 0), a1 = _fpP(it.a[0], it.a[1], H), b1 = _fpP(it.b[0], it.b[1], H);
+    const near = Math.hypot(it.x - player.visualX, it.y - player.visualY) < 3.4, glow = it.door ? "#19e6c1" : "#ffe733";
+    for (const [p0, p1] of [[a0, a1], [b0, b1]]) { ctx.strokeStyle = "#c9d6f0"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); }
+    ctx.strokeStyle = glow; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();
+    if (it.door) {   // the panel, slid back to one side
+        const k = near ? 0.18 : 0.5, pa = [a1[0] + (b1[0] - a1[0]) * (1 - k), a1[1] + (b1[1] - a1[1]) * (1 - k)], pb = b1, pa0 = [a0[0] + (b0[0] - a0[0]) * (1 - k), a0[1] + (b0[1] - a0[1]) * (1 - k)];
+        _fpQuad([pa, pb, b0, pa0], "rgba(25,230,193,0.18)", glow, 1.5);
+    }
+}
+function _fpDrawProp(it) {
+    const kind = it.kind, tank = kind === "liquid_reserve" || kind === "tank";
+    const h = kind === "reception_desk" ? 36 : kind === "semi_truck" ? 52 : tank ? 78 : 40;
+    const top = kind === "reception_desk" ? "#8a6a3a" : kind === "semi_truck" ? "#7a8aa8" : kind === "liquid_reserve" ? "#7a4acf" : tank ? "#3acfa0" : "#6a7a9a", side = kind === "reception_desk" ? "#5a4224" : kind === "semi_truck" ? "#4a566e" : kind === "liquid_reserve" ? "#4a2a8a" : tank ? "#1f8a6a" : "#3e4a64";
+    const x = it.x, y = it.y, c = [_fpP(x - 0.5, y - 0.5, h), _fpP(x + 0.5, y - 0.5, h), _fpP(x + 0.5, y + 0.5, h), _fpP(x - 0.5, y + 0.5, h)], b = [_fpP(x - 0.5, y - 0.5, 0), _fpP(x + 0.5, y - 0.5, 0), _fpP(x + 0.5, y + 0.5, 0), _fpP(x - 0.5, y + 0.5, 0)];
+    _fpQuad([c[3], c[2], b[2], b[3]], side, "rgba(5,7,15,0.5)", 1);        // the face toward the lower left
+    _fpQuad([c[2], c[1], b[1], b[2]], side, "rgba(5,7,15,0.5)", 1); ctx.fillStyle = "rgba(0,0,0,0.22)"; ctx.fill();
+    _fpQuad(c, top, "rgba(255,255,255,0.25)", 1);
+    if (tank) { const cx = c[0][0] / 2 + c[2][0] / 2, cy = (c[0][1] + c[2][1]) / 2; ctx.fillStyle = "rgba(255,255,255," + (0.12 + 0.06 * Math.sin((typeof frame !== "undefined" ? frame : 0) * 0.05 + x)) + ")"; ctx.beginPath(); ctx.ellipse(cx, cy, 18, 8, 0, 0, 6.2832); ctx.fill(); }
+    if (kind === "semi_truck" && it.cargo) {   // three missiles on the bed: drawn on every fourth cell
+        if (Math.round(x * 3 + y * 5) % 4 === 0) { const q = _fpP(x, y, h + 6); ctx.fillStyle = "#d8dce8"; ctx.beginPath(); ctx.ellipse(q[0], q[1], 14, 6, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "#ff4a1c"; ctx.beginPath(); ctx.ellipse(q[0] + 8, q[1] - 1, 6, 4, 0, 0, 6.2832); ctx.fill(); }
+    }
+}
+function _fpDrawFixture(it) {
+    const power = it.kind === "power_pack_area", z0 = 18, z1 = power ? 58 : 66, a0 = _fpP(it.a[0], it.a[1], z0), b0 = _fpP(it.b[0], it.b[1], z0), a1 = _fpP(it.a[0], it.a[1], z1), b1 = _fpP(it.b[0], it.b[1], z1);
+    _fpQuad([a0, b0, b1, a1], power ? "#3a2f10" : "#2a1030", power ? "#ffd34d" : "#ff9ad5", 2);
+    const n = power ? 4 : 0;   // battery cells on the power pack area
+    for (let i = 0; i < n; i++) { const t0 = (i + 0.15) / n, t1 = (i + 0.85) / n, lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]; _fpQuad([lerp(a0, b0, t0), lerp(a0, b0, t1), lerp(a1, b1, t1), lerp(a1, b1, t0)], "rgba(255,211,77,0.35)", "#ffd34d", 1); }
+}
+
+// ── the controls: a small chip to leave, and the PLAY entry ──
+function facilityPlayChip() {
+    if (typeof document === "undefined" || !document.createElement || !document.body) return;
+    let c = document.getElementById("facilityPlayChip"); if (c) return;
+    c = document.createElement("button"); c.id = "facilityPlayChip"; c.textContent = "FACILITY · EXIT"; c.addEventListener("click", () => facilityPlayStop()); document.body.appendChild(c);
+}
+function initFacilityPlay() {
+    if (typeof window === "undefined" || !window.addEventListener) return;
+    facilityPlayChip();
+    try { if (/[?&]facilityplay\b/.test((window.location && window.location.search) || "")) setTimeout(() => { try { facilityPlayStart(); } catch (e) { console.error(e); } }, 800); } catch (e) {}
+}
+try { initFacilityPlay(); } catch (e) { /* no page (the test sandbox) */ }

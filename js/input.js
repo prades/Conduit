@@ -188,7 +188,8 @@ const handleInput=(ex,ey)=>{
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
-    if (t&&!t.type.includes('wall')) { player.targetX=gx; player.targetY=gy; }
+    if (typeof facilityPlay !== "undefined" && facilityPlay) facilityWalkTo(gx, gy);   // a path through the facility's doors (js/facilityplay.js)
+    else if (t&&!t.type.includes('wall')) { player.targetX=gx; player.targetY=gy; }
     player.selectedFollower=null;
 };
 

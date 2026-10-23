@@ -14,7 +14,10 @@ const FAC_EPS = 1e-6;
 let _facility = null, _facilitySig = "";
 
 function facilityScale() { return (FACILITY_MAP.scale && FACILITY_MAP.scale.px_per_tile) || 20; }
-function _facP(pt) { const s = facilityScale(); return [pt[0] / s, pt[1] / s]; }
+// SNAP (play): every corner is moved onto the tile grid (a tile's centre is an integer, so its edges are at k + 0.5), so a wall always runs along tile edges and a floor tile is
+// wholly inside or outside a room. The authored data is never changed; this only affects the copy built with { snap: true }.
+let _facSnap = false;
+function _facP(pt) { const s = facilityScale(); let x = pt[0] / s, y = pt[1] / s; if (_facSnap) { x = Math.round(x - 0.5) + 0.5; y = Math.round(y - 0.5) + 0.5; } return [x, y]; }
 function _facPoly(poly) { return poly.map(_facP); }
 
 // ── geometry ──
@@ -64,9 +67,14 @@ function _facTrim(a, b, openings) {
 // ── compile ──
 // `extra` lets a test (or the debug view) add openings/connections WITHOUT touching the authored data: { openings: [...], connections: [...] }.
 function facilityBuild(extra) {
-    const M = FACILITY_MAP, ex = extra || {};
+    const ex = extra || {}; _facSnap = !!ex.snap;
+    try { return _facilityBuild(ex); } finally { _facSnap = false; }
+}
+function _facilityBuild(ex) {
+    const M = FACILITY_MAP;
     const closed = ex.closed || [];   // rooms whose openings are CLOSED in this copy (the validator's sealed-room test)
-    const openings = (M.openings || []).concat(ex.openings || []).filter(o => !closed.some(id => (o.rooms || []).includes(id))).map(o => ({ id: o.id, a: _facP(o.a), b: _facP(o.b), rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door") }));
+    const widen = (o) => { const pa = _facP(o.a), pb = _facP(o.b), l = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]); if (_facSnap && l > 0 && l < 2) { pb[0] = pa[0] + (pb[0] - pa[0]) / l * 2; pb[1] = pa[1] + (pb[1] - pa[1]) / l * 2; } return [pa, pb]; };   // a door is at least two tiles wide on the grid
+    const openings = (M.openings || []).concat(ex.openings || []).filter(o => !closed.some(id => (o.rooms || []).includes(id))).map(o => { const [wa, wb] = widen(o); return { id: o.id, a: wa, b: wb, rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door") }; });
     const rooms = M.rooms.map(r => ({ id: r.id, label: r.label, level: r.level, status: r.status, poly: _facPoly(r.polygon), edgeKinds: r.edge_kinds || null, boundary: r.boundary_type || null, objects: (r.objects || []).map(o => Object.assign({}, o, { at: _facP(o.at) })), raw: r }));
     const walls = [];
     for (const r of rooms) {
@@ -112,7 +120,7 @@ function facilityBuild(extra) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { rooms, walls, windows, fixtures, solids, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, rooms, walls, windows, fixtures, solids, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -139,7 +147,7 @@ const FAC_WALL_MARGIN = 0.02;
 function facilityWalkable(x, y, F) {
     F = F || facilityGet();
     if (!facilityRoomAt(x, y, F) || facilitySolidAt(x, y, F)) return false;
-    for (const w of F.walls) if (_facIn(x, y, w.bb, FAC_WALL_MARGIN) && _facSegPointDist(w.a, w.b, x, y) < FAC_WALL_MARGIN) return false;
+    for (const w of F.walls) if (_facIn(x, y, w.bb, F.margin) && _facSegPointDist(w.a, w.b, x, y) < F.margin) return false;
     return true;
 }
 // Can a body go in a straight line from (x0,y0) to (x1,y1)? No if it ends somewhere unwalkable, crosses any wall, or cuts through a solid.
@@ -395,6 +403,7 @@ function facilityDebugBuild() {
     const mk = (label, fn, id) => { const b = document.createElement("button"); b.textContent = label; if (id) b.setAttribute("data-layer", id); b.addEventListener("click", ev => { ev.stopPropagation(); fn(b); facilityDebugRender(); }); bar.appendChild(b); return b; };
     [["outlines", "OUTLINES"], ["collision", "COLLISION"], ["openings", "OPENINGS"], ["elevation", "ELEVATION"], ["nav", "NAV"]].forEach(([id, label]) => mk(label, () => { facilityDebug.layers[id] = !facilityDebug.layers[id]; }, id));
     mk("FIT", () => { facilityDebug.fitted = false; }); mk("+", () => { facilityDebug.cam.z *= 1.25; }); mk("−", () => { facilityDebug.cam.z /= 1.25; });
+    mk("\u25b6 PLAY", () => { facilityDebugSet(false); if (typeof facilityPlayStart === "function") facilityPlayStart(); }).className = "fd-play";   // walk it (js/facilityplay.js)
     const x = mk("✕ CLOSE", () => facilityDebugSet(false)); x.className = "fd-close";
     // pan (drag), zoom (wheel, pinch), and a tap on a ? or R shows its evidence
     const ptr = new Map(); let moved = 0, pinch = 0;

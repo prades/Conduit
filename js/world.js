@@ -2,6 +2,7 @@
 //  WORLD GENERATION
 // ─────────────────────────────────────────────────────────
 function generateSegment(startX) {
+    if (typeof facilityPlay !== "undefined" && facilityPlay) return;   // the facility's floor is built from its rooms (js/facilityplay.js)
     // One deterministic stream per segment — see js/rng.js.
     const rnd = segmentRng(startX);
     const zoneIndex = Math.floor(startX / ZONE_LENGTH);
@@ -128,6 +129,7 @@ function generateSegment(startX) {
 // So the marker is not settable any more. You ask for ground, and you get it.
 function ensureWorldTo(x) {
     if (!Number.isFinite(x)) return 0;
+    if (typeof facilityPlay !== "undefined" && facilityPlay) return 0;
     let built = 0;
     // Bounded so a corrupt save cannot hang the boot on a 10-million-column
     // loop. Far past anything the game itself can reach.

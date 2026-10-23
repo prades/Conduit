@@ -543,8 +543,10 @@ class Predator {
         }
 
         // ── CORRIDOR BOUNDS — clamp to walkable floor interior (y 0–3, x ≥ 0) ──
+        if (!(typeof facilityPlay !== "undefined" && facilityPlay)) {
         this.y = Math.max(0, Math.min(3, this.y));
         this.x = Math.max(0, this.x);
+        }
 
         if (this.state==="hunt"||this.state==="wander") this.walkCycle+=this.moveSpeed*40;
 
