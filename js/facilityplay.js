@@ -63,16 +63,17 @@ function _fpEdgeOk(ax, ay, bx, by) {
 // The cells from (x0,y0) to (x1,y1), or null if there is no way.
 function _fpCellPath(sx, sy, gx, gy) {
     const key = sx + "," + sy + ">" + gx + "," + gy; if (_fp.paths.has(key)) return _fp.paths.get(key);
-    const open = [[0, sx, sy]], g = new Map([[sx + "," + sy, 0]]), from = new Map(), done = new Set();
-    const pop = () => { let bi = 0; for (let i = 1; i < open.length; i++) if (open[i][0] < open[bi][0]) bi = i; return open.splice(bi, 1)[0]; };
+    const heap = [[0, sx, sy]], g = new Map([[sx + "," + sy, 0]]), from = new Map(), done = new Set();
+    const push = (n) => { heap.push(n); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+    const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { let l = 2 * i + 1, r = l + 1, m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
     let found = false;
-    while (open.length) {
+    while (heap.length) {
         const [, x, y] = pop(), k = x + "," + y; if (done.has(k)) continue; done.add(k);
         if (x === gx && y === gy) { found = true; break; }
         for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
             if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (done.has(nk) || !_fpEdgeOk(x, y, nx, ny)) continue;
             const ng = g.get(k) + (dx && dy ? 1.4142 : 1); if (g.has(nk) && g.get(nk) <= ng) continue;
-            g.set(nk, ng); from.set(nk, k); open.push([ng + Math.hypot(gx - nx, gy - ny), nx, ny]);
+            g.set(nk, ng); from.set(nk, k); push([ng + 1.05 * Math.hypot(gx - nx, gy - ny), nx, ny]);   // (a slightly greedy heuristic: a route on a map this size need not be the very shortest)
         }
     }
     let out = null;
@@ -126,11 +127,11 @@ function facilityReroute(a, px, py) {
     const wx = w[0] - px, wy = w[1] - py, wl = Math.hypot(wx, wy); if (wl < 1e-6) return;
     a.x = px + wx / wl * d; a.y = py + wy / wl * d;
 }
-// The facility is big: a squad walking at its strip speed would be a minute behind you. A follower or clone far from you (and not on an order of its own) hurries, up to about three times, and eases back to its own speed as it closes in.
+// The facility is big: a squad walking at its strip speed would be a minute behind you. A follower or clone far from you (and not on an order of its own) hurries, up to about four times, and eases back to its own speed as it closes in.
 function facilityCatchUp(a, px, py) {
     if (!_fp || !a || a.team !== "green" || a.dead || a.job || a.returningToCrystal || a.duty === "worker" || a.role === "camper") return;
-    const d = Math.hypot(player.x - a.x, player.y - a.y); if (d <= 6) return;
-    const k = Math.min(3.2, 1 + (d - 6) / 5); a.x = px + (a.x - px) * k; a.y = py + (a.y - py) * k;
+    const d = Math.hypot(player.x - a.x, player.y - a.y); if (d <= 8) return;
+    const k = Math.min(4, 1 + (d - 8) / 6); a.x = px + (a.x - px) * k; a.y = py + (a.y - py) * k;
 }
 // A unit that keeps being put back (it is trying to go somewhere and the walls say no) for a second: replan; for two: move it onto the nearest open cell of its route.
 function _fpUnstick(a, px, py, intended) {

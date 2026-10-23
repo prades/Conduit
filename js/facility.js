@@ -192,7 +192,7 @@ function facilityReachable(from, to, F, withCandidates) { return facilityCompone
 
 // Flood-fill the walkable floor on a fine grid, stepping only where facilityCanStep allows: what can an agent actually reach from a start point?
 function facilityFlood(sx, sy, F, cell) {
-    F = F || facilityGet(); cell = cell || 0.5;
+    F = F || facilityGet(); cell = cell || (facilityScale() <= 12 ? 1 : 0.5);   // a cell is about half a metre of the sketch's floor either way
     const key = (i, j) => i + "," + j, seen = new Set(), q = [[Math.round(sx / cell), Math.round(sy / cell)]], cells = [];
     if (!facilityWalkable(q[0][0] * cell, q[0][1] * cell, F)) return cells;
     seen.add(key(q[0][0], q[0][1]));
@@ -281,7 +281,7 @@ function facilityValidate(F) {
             tried++;
             for (let k = 0; k < 8; k++) {
                 const ang = k * Math.PI / 4 + rnd() * 0.3; let px = x, py = y;
-                for (let s = 0; s < 160; s++) { const m = facilityMove(px, py, Math.cos(ang) * 0.4, Math.sin(ang) * 0.4, Fs); px = m[0]; py = m[1]; }
+                for (let s = 0; s < 160; s++) { const m = facilityMove(px, py, Math.cos(ang) * 0.6, Math.sin(ang) * 0.6, Fs); px = m[0]; py = m[1]; }
                 const at = facilityRoomAt(px, py, Fs);
                 if (!at || at.id !== room.id) leaks++;
             }
@@ -298,7 +298,7 @@ function facilityValidate(F) {
         { const at = facilityRoomAt(c[0], c[1], F); if (at && at.id === r.id && facilityWalkable(c[0], c[1], F)) start = c; }   // (the centroid of a C-shaped room can lie in another room)
         if (!start) for (let t = 0; t < 400 && !start; t++) { const x = F.bounds.minX + (F.bounds.maxX - F.bounds.minX) * ((t * 0.6180339) % 1), y = F.bounds.minY + (F.bounds.maxY - F.bounds.minY) * ((t * 0.4142135) % 1); const rr = facilityRoomAt(x, y, F); if (rr && rr.id === r.id && facilityWalkable(x, y, F)) start = [x, y]; }
         if (!start) { warnings.push(r.id + ": no walkable floor found to test"); continue; }
-        const cells = facilityFlood(start[0], start[1], F, 0.5), reached = new Set();
+        const cells = facilityFlood(start[0], start[1], F), reached = new Set();
         for (const q of cells) { const rr = facilityRoomAt(q[0], q[1], F); if (rr) reached.add(rr.id); else errors.push(r.id + ": a flood reached a cell outside every room"); if (F.outer && facilityPointInPoly(q[0], q[1], F.outer.poly)) errors.push(r.id + ": a flood reached the outer path"); }
         const comp = comps.find(g => g.includes(r.id)) || [r.id];
         for (const id of reached) if (!comp.includes(id)) errors.push(r.id + " can walk into " + id + " with no confirmed connection");
