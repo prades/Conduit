@@ -258,7 +258,6 @@ function _fpPlaceStatics(F) {
 function facilityDrawItems(drawList) {
     if (!_fp || !_fp.items) return;
     _fpCam = facilityLiftPx(player.visualX, player.visualY);   // the camera rides the player's floor
-    const pr = facilityRoomAt(player.visualX, player.visualY, _fp.F); _fp.pr = pr ? pr.id : null;   // the room the player is in (the arena's rock towers only while the player is inside it)
     for (const it of _fp.items) if (visibleForDraw(it.x, it.y)) drawList.push(it);
 }
 
@@ -298,9 +297,9 @@ function _fpSkirts(items) {
 }
 function _fpDrawWall(it) {
     const glass = it.kind === "glass", c = FP_WALL[it.kind] || FP_WALL.wall, H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0));
-    // a wall in front of the player (nearer the camera) is cut down to a low parapet so nothing is hidden behind it: opaque, never see-through (glass is left as it is)
+    // a wall is always drawn at its full height, whatever the player is doing: it never fades, shrinks or reacts when the player comes close
     if (it.kind === "rock") return _fpDrawRock(it, H);   // rock formations (js/facilitydecor.js)
-    const Hd = glass ? H : _fpWallCutH(it.a, it.b, H);
+    const Hd = H;   // walls never react to the player
     if (!glass && facilityStyleRoom(it.room)) return _fpStyleWall(it, Hd);   // (the crystal laboratory style)
     const a0 = _fpP(it.a[0], it.a[1], 0), b0 = _fpP(it.b[0], it.b[1], 0), a1 = _fpP(it.a[0], it.a[1], Hd), b1 = _fpP(it.b[0], it.b[1], Hd);
     if (glass) {
@@ -392,7 +391,6 @@ function _fpDrawProp(it) {
     }
 }
 function _fpDrawFixture(it) {
-    if (_fpWallCutH(it.a, it.b, FP_WALL_H) < 70) return;   // (a fixture on a wall that is cut down is not drawn)
     if (facilityStyleRoom(it.room)) return _fpStyleFixture(it);
     const power = it.kind === "power_pack_area", z0 = 18, z1 = power ? 58 : 66, a0 = _fpP(it.a[0], it.a[1], z0), b0 = _fpP(it.b[0], it.b[1], z0), a1 = _fpP(it.a[0], it.a[1], z1), b1 = _fpP(it.b[0], it.b[1], z1);
     _fpQuad([a0, b0, b1, a1], power ? "#3a2f10" : "#2a1030", power ? "#ffd34d" : "#ff9ad5", 2);

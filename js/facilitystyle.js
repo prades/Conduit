@@ -80,7 +80,7 @@ function _fpStylePillars(F) {
     return items;
 }
 function _fpStylePillar(it) {
-    const H = _fpWallCutH([it.x, it.y], [it.x, it.y], FP_WALL_H + 4), w = 0.13;
+    const H = FP_WALL_H + 4, w = 0.13;
     _fpSBox(it.x - w, it.y - w, it.x + w, it.y + w, 0, H, FP_PAL.cap, _fpShade(FP_PAL.wallDark, 0.92), FP_PAL.caseLit, 2);
     if (H > 30) { const p = _fpP(it.x, it.y + w, 24), q = _fpP(it.x + w, it.y, 24); ctx.strokeStyle = FP_PAL.cyan; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p[0] - 1, p[1]); ctx.lineTo(q[0] + 1, q[1]); ctx.stroke(); }
 }
