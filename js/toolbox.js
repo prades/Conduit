@@ -2,7 +2,7 @@
 //  THE SLIDER TOOLBOX — the bottom dock you slide sideways through (tablet and desktop)
 // ─────────────────────────────────────────────────────────
 // REPORTED: "I meant you could slide through the different items horizontally." The bottom dock (game.html #topToggles) is a strip of tools:
-// SEL, BUILD, AUTO | ROSTER, COMMAND, SQUAD | CRYSTAL, CLONES, SHOP, SETTINGS | ?  There are more than fit, so the strip SLIDES:
+// SEL, BUILD, AUTO | ROSTER, COMMAND, SQUAD | CLONES, SHOP, SETTINGS | ?  There are more than fit, so the strip SLIDES:
 //   - swipe it on a touch screen (native scrolling, snapping to the items),
 //   - drag it with a mouse (click-and-drag; a drag never fires the button under it),
 //   - roll the mouse wheel over it (a vertical wheel slides it sideways),
@@ -13,7 +13,6 @@ const TOOLBOX_DRAG = 6;           // pixels of mouse travel before a press is a 
 const TOOLBOX_STEP = 0.7;         // an arrow slides this share of the visible width
 
 // ── the buttons for the game's canvas panels (each is what the canvas button does) ──
-function dockCrystal()   { crystalMenuOpen = !crystalMenuOpen; if (crystalMenuOpen && typeof cloneMenuOpen !== "undefined") cloneMenuOpen = false; }
 function dockClones()    { cloneMenuOpen = !cloneMenuOpen; if (cloneMenuOpen) crystalMenuOpen = false; }
 function dockSettings()  { settingsPanelOpen = !settingsPanelOpen; settingsResetConfirm = false; }
 function dockShop() {

@@ -47,7 +47,6 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   // the wheel
   tr.scrollLeft = 0; tr.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true })); await wait(50); out.afterWheel = snap();
   // the menu items
-  crystalMenuOpen = false; dockCrystal(); out.crystal = crystalMenuOpen; dockCrystal();
   settingsPanelOpen = false; dockSettings(); out.settings = settingsPanelOpen; dockSettings();
   cloneMenuOpen = false; dockClones(); out.clones = cloneMenuOpen; dockClones();
   // a hidden button can be slid into view
@@ -77,7 +76,7 @@ else {
     check('the instrument ran', () => ok(r, 'the probe produced nothing'));
     if (r) {
         check('every menu is in the strip: Crystal, Clones, Shop, Settings and the roster/command tools', () => {
-            ok(!r.ids.includes('btnModules'), 'there is still a MODULES button beside BUILD: modules are a tab of the build window'); for (const id of ['btnCrystal', 'btnClones', 'btnShop', 'btnSettings', 'btnAuto']) ok(r.ids.includes(id), id + ' not in the strip: ' + r.ids.join(','));
+            ok(!r.ids.includes('btnModules'), 'there is still a MODULES button beside BUILD: modules are a tab of the build window'); for (const id of ['btnClones', 'btnShop', 'btnSettings', 'btnAuto']) ok(r.ids.includes(id), id + ' not in the strip: ' + r.ids.join(',')); ok(!r.ids.includes('btnCrystal'), 'the Crystal button is still in the dock: it is a tab in the bottom-left tool now');
         });
         check('THE ASK: it has more items than fit, so it slides sideways (right room at the start, an arrow and a fade)', () => {
             ok(r.over, 'the strip does not overflow'); same(r.start.room.left, 0, 'nothing hidden on the left at the start'); ok(r.start.room.right > 0, 'nothing hidden on the right');
@@ -89,7 +88,7 @@ else {
         });
         check('the arrows slide it each way', () => { same(r.asked.length, 2, 'the arrows did not slide the strip'); ok(r.asked[0] > 0 && r.asked[1] < 0, 'the arrows slide the wrong ways: ' + r.asked); });
         check('the mouse wheel slides it sideways', () => ok(r.afterWheel.room.left > 0, 'the wheel did not slide it'));
-        check('the menu buttons open the game panels', () => { same(r.crystal, true, 'crystal'); same(r.settings, true, 'settings'); same(r.clones, true, 'clones'); });
+        check('the menu buttons open the game panels', () => { same(r.settings, true, 'settings'); same(r.clones, true, 'clones'); });
         check('a hidden button can be slid into view', () => same(r.revealed, true, 'button not revealed'));
     }
 }

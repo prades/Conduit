@@ -138,10 +138,10 @@ function measure(w, h) {
         const wide = w > 700;
         check(w + ': ' + (wide ? 'ALWAYS OPEN on a wide screen: the panel is there at the start, no pod, no close button, and it does not cover the dock' : 'on a phone it is a small MIX chip that opens it, and closes again'), () => {
             if (wide) { same(r.start.panel, true, 'panel at the start'); same(r.podShown, false, 'a pod is shown'); same(r.start.x, 'none', 'a close button is shown'); same(r.dockOverlap, false, 'the panel runs into the dock'); ok(r.panelWidth <= 230, 'panel width ' + r.panelWidth); }
-            else { same(r.start.panel, false, 'panel while closed'); same(r.podShown, true, 'pod'); ok(/^MIX 3/.test(r.podText), 'pod ' + r.podText); same(r.phoneOpen.flag, true, 'flag'); same(r.phoneOpen.panel, true, 'panel after the tap'); same(r.closed.flag, false, 'close flag'); same(r.closed.panel, false, 'close panel'); }
+            else { same(r.start.panel, false, 'panel while closed'); same(r.podShown, true, 'pod'); ok(/^CRYSTAL 3/.test(r.podText), 'pod ' + r.podText); same(r.phoneOpen.flag, true, 'flag'); same(r.phoneOpen.panel, true, 'panel after the tap'); same(r.closed.flag, false, 'close flag'); same(r.closed.panel, false, 'close panel'); }
         });
-        check(w + ': tabs BATTLE (the first) and MIX; the BATTLE tab has WHO, RETREAT, HOLD and COME, a posture and a target focus', () => {
-            same(r.tabs.slice(0, 2).join().replace(/!/g, ''), 'BATTLE,MIX', 'tabs'); same(r.battle.retreat, true, 'retreat'); ok(/HOLD,COME/.test(r.battle.orders), 'orders ' + r.battle.orders); same(r.battle.posture, 'DEFEND,STEADY,PUSH', 'posture'); same(r.battle.focus, 'ANY,STRIKER,TANK,SCOUT,BOSS', 'focus'); same(r.battle.who, 4, 'ALL + three elements');
+        check(w + ': tabs BATTLE (the first) and CRYSTAL; the BATTLE tab has WHO, RETREAT, HOLD and COME, a posture and a target focus', () => {
+            same(r.tabs.slice(0, 2).join().replace(/!/g, ''), 'BATTLE,CRYSTAL', 'tabs'); same(r.battle.retreat, true, 'retreat'); ok(/HOLD,COME/.test(r.battle.orders), 'orders ' + r.battle.orders); same(r.battle.posture, 'DEFEND,STEADY,PUSH', 'posture'); same(r.battle.focus, 'ANY,STRIKER,TANK,SCOUT,BOSS', 'focus'); same(r.battle.who, 4, 'ALL + three elements');
         });
         check(w + ': RETREAT pulls the picked units off (stance follow, holds dropped, marked) and the button says so; HOLD stands them, COME brings them back', () => {
             same(r.retreat.until, 'true,true,true', 'marked'); same(r.retreat.stance, 'follow,follow,follow', 'stance'); same(r.retreat.jobs, 'false,false,false', 'holds'); ok(/FALLING BACK/.test(r.retreat.label), 'label ' + r.retreat.label);
