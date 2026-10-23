@@ -58,3 +58,11 @@ Enter from the MAP view (**PLAY**) or with `?facilityplay` in the URL; **FACILIT
 - **Spawn:** you and three followers start in the Crystal Chamber beside the crystal. Three ants wander the arena as a combat/wall test (they are not the facility's enemies).
 - **Not running yet (they come over one at a time):** zones, nests, waves and enemy spawning, the wall power unit, build/zone kits on the facility, saves, the day/night clock. Each needs a decision about where it lives in the facility.
 - **Known rough edges:** no per-room floor look yet; enemies chase straight (they slide along walls rather than path); jobs that walk (work, haul) only steer round walls where they use the shared step helpers.
+
+## Elevation (drawing only)
+
+`levels` in the map give each level a height in tiles: the arena is sunken (-0.7), the ground is 0, the observation deck and catwalks are raised (1.6). A `ramp` may carry a `zone` (a rectangle, the axis it slopes along, and the two coordinates where the height equals `between_levels[0]` and `[1]`); `facilityHeightAt(x, y)` returns the room's height, or the slope inside a zone. Every connection across levels names its ramp (validated), and the validator rejects a level with no height or a bad zone.
+
+Movement stays flat. Only drawing is lifted: floors, actors and facility items rise by `height * 34 px`, the camera rides the player's floor, taps are corrected for the lift (`facilityPickLift`), and a wall is drawn up to the higher of the two floors it separates. All lift hooks are guarded by `facilityPlay`, so the strip game never lifts.
+
+Known limits: effects, projectiles and health bars still use the flat projection (they sit a little off on a sloped floor); the floor beside a flight of steps shows the dark void behind it rather than a riser face.

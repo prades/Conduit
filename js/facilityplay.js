@@ -18,6 +18,7 @@ let _fp = null;
 const FP_BODY = 0.3;              // tiles: how far a body keeps from a wall (what the walls enforce)
 const FP_PLAN = 0.45;             // tiles: how far a PLANNED path keeps from a wall: wider than the body, so a route never grazes a corner or a door post the walls would then snag it on
 const FP_PLAYER_SPEED = 0.13;     // tiles a frame
+const FP_ELEV_PX = 34;            // px of screen height per tile of height (the map's levels: js/facilitymap.js)
 const FP_WALL_H = 74;             // px: how tall a wall stands on screen
 const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", bathroom: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a" };
 
@@ -219,10 +220,13 @@ function _fpPlaceStatics(F) {
         const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy), n = Math.max(1, Math.ceil(len / seg));
         for (let i = 0; i < n; i++) {
             const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n];
-            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, room: w.room, i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2) });
+            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, room: w.room, i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
         }
     }
-    for (const o of F.openings) { items.push({ type: "fp", fp: "door", x: (o.a[0] + o.b[0]) / 2, y: (o.a[1] + o.b[1]) / 2, a: o.a, b: o.b, door: o.door }); }
+    // a wall between two floors of different heights stands from its own floor up past the HIGHER floor, so a step down is a retaining wall and not a gap
+    const at = new Map(); for (const it of items) { if (it.fp !== "wall") continue; const k = Math.round(it.x * 4) + "," + Math.round(it.y * 4); if (!at.has(k)) at.set(k, []); at.get(k).push(it); }
+    for (const list of at.values()) for (const it of list) { let top = it.base; for (const o of list) if (o !== it && o.room !== it.room && o.base > top) top = o.base; it.base2 = top; }
+    for (const o of F.openings) { const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2; items.push({ type: "fp", fp: "door", x: mx, y: my, a: o.a, b: o.b, door: o.door, base: facilityLiftPx(mx, my) }); }
     for (const s of F.solids) {
         const box = s.bb, cells = new Set();
         for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) {
@@ -232,31 +236,46 @@ function _fpPlaceStatics(F) {
         for (const k of cells) {
             const [x, y] = k.split(",").map(Number);
             // sides are drawn only where no neighbour hides them: the faces toward +y (lower left) and +x (lower right)
-            items.push({ type: "fp", fp: "prop", x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id, sy: !cells.has(x + "," + (y + 1)), sx: !cells.has((x + 1) + "," + y), top: !cells.has(x + "," + (y - 1)), seed: _fpHash(x, y) });
+            items.push({ type: "fp", fp: "prop", base: facilityLiftPx(x, y), x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id, sy: !cells.has(x + "," + (y + 1)), sx: !cells.has((x + 1) + "," + y), top: !cells.has(x + "," + (y - 1)), seed: _fpHash(x, y) });
         }
     }
-    for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
+    for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", base: facilityRoomHeight(f.room, F) * FP_ELEV_PX, x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
     _fp.items = items;
 }
 function facilityDrawItems(drawList) {
     if (!_fp || !_fp.items) return;
+    _fpCam = facilityLiftPx(player.visualX, player.visualY);   // the camera rides the player's floor
     for (const it of _fp.items) if (visibleForDraw(it.x, it.y)) drawList.push(it);
 }
 
+// ── height: the floors rise and fall (drawing only: movement is flat) ──
+// The arena is sunk a little below the hallway, the observation deck and the catwalks stand above it, and a short flight of steps joins each at its door. Every drawn thing is lifted by the
+// height of the floor under it relative to the camera, which follows the player's floor, so the player stays at the centre of the screen as the ground goes up and down.
+let _fpCam = 0, _fpBase = 0;
+function facilityLiftPx(x, y) { return _fp ? facilityHeightAt(x, y, _fp.F) * FP_ELEV_PX : 0; }
+function facilityLiftRel(x, y) { return facilityLiftPx(x, y) - _fpCam; }
+// What to add to a screen y so a tap lands on the tile DRAWN there (the tile's own lift moves it up the screen): found by trying the tile under the tap and correcting.
+function facilityPickLift(ex, ey) {
+    let lift = 0; for (let i = 0; i < 4; i++) { const dx = ex - canvas.width / 2, dy = ey + lift - canvas.height / 2 - TILE_H, gx = Math.round((dy / TILE_H + dx / TILE_W) / 2 + player.visualX), gy = Math.round((dy / TILE_H - dx / TILE_W) / 2 + player.visualY); lift = facilityLiftRel(gx, gy); }
+    return lift;
+}
+
 // ── drawing ──
-function _fpP(x, y, z) { return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (z || 0)]; }
+// A point at height z above the current item's floor (_fpBase, in px of height), on screen.
+function _fpP(x, y, z) { return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (z || 0) - (_fpBase - _fpCam)]; }
 function _fpQuad(pts, fill, stroke, lw) {
     ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
     if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.lineWidth = lw || 1; ctx.strokeStyle = stroke; ctx.stroke(); }
 }
 const FP_WALL = { wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall_provisional: ["#26324f", "#1a2340", "#8fa6d8"], rock: ["#4a3a30", "#2e241e", "#9a7a62"], railing_wall: ["#3a4258", "#262d40", "#ffd34d"], deck_wall: ["#3a3f52", "#262a3a", "#8fa6d8"] };
 function drawFacilityItem(it) {
+    _fpBase = it.base || 0;
     ctx.save();
     if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it);
     ctx.restore();
 }
 function _fpDrawWall(it) {
-    const glass = it.kind === "glass", c = FP_WALL[it.kind] || FP_WALL.wall, H = glass ? FP_WALL_H : FP_WALL_H;
+    const glass = it.kind === "glass", c = FP_WALL[it.kind] || FP_WALL.wall, H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0));
     // a wall in front of the player (nearer the camera) goes see-through, so nothing is hidden behind it
     const pd = player.visualX + player.visualY, wd = it.x + it.y, dist = Math.hypot(it.x - player.visualX, it.y - player.visualY);
     ctx.globalAlpha = wd > pd + 0.2 && dist < 3.2 ? Math.max(0.22, dist / 3.2 * 0.55) : 1;

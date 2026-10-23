@@ -249,7 +249,7 @@ function setBuildTool(it) {
 
 // ── Where a tile is ───────────────────────────────────────
 function _bmTileAt(ex, ey) {
-    const dx = ex - canvas.width / 2, dy = ey - canvas.height / 2 - TILE_H;
+    const dx = ex - canvas.width / 2, dy = ey + (typeof facilityPlay !== "undefined" && facilityPlay ? facilityPickLift(ex, ey) : 0) - canvas.height / 2 - TILE_H;
     const gx = Math.round((dy / TILE_H + dx / TILE_W) / 2 + player.visualX);
     const gy = Math.round((dy / TILE_H - dx / TILE_W) / 2 + player.visualY);
     return typeof getTile === "function" ? getTile(gx, gy) : null;

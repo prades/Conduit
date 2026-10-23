@@ -33,7 +33,7 @@ const PICK_RADIUS = 45;
 // menu — and so to thaw it — was to tap the empty air above it.
 function followerPickPoint(f) {
     const px = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
-    const py = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2;
+    const py = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2 - (typeof facilityPlay !== "undefined" && facilityPlay ? facilityLiftRel(f.x, f.y) : 0);
     if (f.iceBlock) {
         return { x: px, y: py + TILE_H - (TILE_H * ICE_BLOCK_H_MULT) / 2 };
     }
@@ -87,7 +87,7 @@ function findEnemyAtScreen(ex, ey) {
     for (const a of actors) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
         const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
-        const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
+        const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H - (typeof facilityPlay !== "undefined" && facilityPlay ? facilityLiftRel(a.x, a.y) : 0);
         const d = Math.hypot(ex - apx, ey - (apy - 55));
         if (d < bestD) { bestD = d; best = a; }
     }
@@ -98,7 +98,7 @@ function enemyPickDistance(ex, ey) {
     for (const a of actors) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
         const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
-        const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
+        const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H - (typeof facilityPlay !== "undefined" && facilityPlay ? facilityLiftRel(a.x, a.y) : 0);
         const d = Math.hypot(ex - apx, ey - (apy - 55));
         if (d < bestD) bestD = d;
     }
@@ -184,7 +184,7 @@ const handleInput=(ex,ey)=>{
     }
 
     // Movement is never locked — there is no stun any more.
-    const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;
+    const dx=ex-canvas.width/2, dy=ey+(typeof facilityPlay !== "undefined" && facilityPlay ? facilityPickLift(ex, ey) : 0)-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
@@ -257,7 +257,7 @@ function handleLongHold(ex,ey) {
     commandY = Math.max(140 + _M.top, Math.min(canvas.height - _M.bottom, ey));
     commandShiftX = commandX - ex; commandShiftY = commandY - ey;
     noteRingUsed();
-    const dx=ex-canvas.width/2, dy=ey-canvas.height/2-TILE_H;
+    const dx=ex-canvas.width/2, dy=ey+(typeof facilityPlay !== "undefined" && facilityPlay ? facilityPickLift(ex, ey) : 0)-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
@@ -364,7 +364,7 @@ canvas.addEventListener('pointerdown', e=>{
     // The mix selector (js/mixtool.js) is open: a press on the world is not a game action (its release puts the selector away)
     if (crystalMenuOpen && !(typeof mixToolWide === "function" && mixToolWide())) return;
 
-    const dx=pressX-canvas.width/2, dy=pressY-canvas.height/2-TILE_H;
+    const dx=pressX-canvas.width/2, dy=pressY+(typeof facilityPlay !== "undefined" && facilityPlay ? facilityPickLift(pressX, pressY) : 0)-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);

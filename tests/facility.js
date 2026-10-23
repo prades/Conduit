@@ -35,7 +35,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(M.scale.px_per_tile > 0, 'no scale');
     });
     check('NOTHING IS INVENTED: only what the user confirmed is a connection (the doors the user listed, and the stair room\'s opening, door and staircase); the rest the sketch suggests is a flagged candidate', () => {
-        const M = J('FACILITY_MAP'); same(M.openings.map(o => o.id).sort().join(), 'door_arena_hallway,door_bathroom_hallway,door_bathroom_lobby,door_chamber_teleport_1,door_crystal_hallway,door_lab_passage,door_lobby_hallway_east,door_lobby_hallway_west,door_passage_teleport_1,door_showroom_hallway,door_stair_teleport_2,door_teleport_1_deck,open_stair_mouth', 'openings'); same(M.connections.length, 13, 'connections'); same(M.ramps.map(x => x.id).join(), 'r_teleport_stairs', 'ramps');
+        const M = J('FACILITY_MAP'); same(M.openings.map(o => o.id).sort().join(), 'door_arena_hallway,door_bathroom_hallway,door_bathroom_lobby,door_chamber_teleport_1,door_crystal_hallway,door_lab_passage,door_lobby_hallway_east,door_lobby_hallway_west,door_passage_teleport_1,door_showroom_hallway,door_stair_teleport_2,door_teleport_1_deck,open_stair_mouth', 'openings'); same(M.connections.length, 13, 'connections'); same(M.ramps.map(x => x.id).join(), 'r_arena_steps,r_deck_door_steps,r_teleport_stairs', 'ramps');
         for (const o of M.openings) same(o.position_status, 'approximate', o.id + ' position');
         ok(M.candidates.connections.length >= 3 && M.candidates.ramps.length >= 1, 'candidates were not recorded');
         for (const c of M.candidates.connections) { ok(c.rooms.every(id => M.rooms.some(r => r.id === id)), c.id + ' names a missing room'); ok(c.evidence, c.id + ' has no evidence'); ok(!c.rooms.includes('outer_path'), c.id + ' uses the outer path'); }
@@ -124,7 +124,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(f.length, 1, 'a flood left the catwalks: ' + f.join());
     });
     check('a confirmed opening (added to a COPY, not the data) cuts the wall, lets a body through; the arena\'s other walls and the catwalks stay shut', () => {
-        const r = J(`(function(){ const sc = facilityScale(), base = facilityGet(), D = base.byId.get('observation_deck'), xw = D.bb[2], ym = (D.bb[1] + D.bb[3]) / 2 + 3; const F = facilityBuild({ openings: [{ id: 't_open', a: [xw * sc, (ym - 1.5) * sc], b: [xw * sc, (ym + 1.5) * sc], rooms: ['observation_deck', 'arena'] }], connections: [{ id: 't_conn', rooms: ['observation_deck', 'arena'], opening: 't_open' }] });
+        const r = J(`(function(){ const sc = facilityScale(), base = facilityGet(), D = base.byId.get('observation_deck'), xw = D.bb[2], ym = (D.bb[1] + D.bb[3]) / 2 + 3; const F = facilityBuild({ openings: [{ id: 't_open', a: [xw * sc, (ym - 1.5) * sc], b: [xw * sc, (ym + 1.5) * sc], rooms: ['observation_deck', 'arena'] }], connections: [{ id: 't_conn', rooms: ['observation_deck', 'arena'], opening: 't_open', ramp: 'r_arena_steps' }] });
             const y = ym, x0 = xw - 1.5, x1 = xw + 1.5;
             return { through: facilityCanStep(x0, y, x1, y, F), before: facilityCanStep(x0, y, x1, y, base), above: facilityCanStep(x0, D.bb[1] + 3, x1, D.bb[1] + 3, F), catwalks: facilityReachable('observation_deck', 'catwalks', F, false), nest: facilityReachable('observation_deck', 'nest_area', F, false), errs: facilityValidate(F).errors, walls: [base.walls.length, F.walls.length] }; })()`);
         same(r.before, false, 'the authored data has a gap it should not'); same(r.through, true, 'the opening does not let a body through'); same(r.above, false, 'the wall above the opening is open'); same(r.catwalks, false, 'the catwalks opened'); same(r.nest, false, 'the nest area opened');
@@ -138,7 +138,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('THE STAIR ROOM: leads to Teleport Room 2; a curved staircase goes down to the hallway');
     check('the stair room is raised with Teleport Room 2, and the staircase is a curved ramp from level 1 down to the hallway round the lab', () => {
-        const M = J('FACILITY_MAP'), S = M.rooms.find(r => r.id === 'teleport_stair_room'), T = M.rooms.find(r => r.id === 'teleport_room_2'), L = M.rooms.find(r => r.id === 'lab_hallway'), R = M.ramps[0];
+        const M = J('FACILITY_MAP'), S = M.rooms.find(r => r.id === 'teleport_stair_room'), T = M.rooms.find(r => r.id === 'teleport_room_2'), L = M.rooms.find(r => r.id === 'lab_hallway'), R = M.ramps.find(x => x.id === 'r_teleport_stairs');
         ok(S && S.level === 1 && T.level === 1 && L.level === 0, 'levels'); same(R.shape, 'curved', 'shape'); same(R.between_levels.join(), '1,0', 'direction'); same(R.descends_toward, 'lab_hallway', 'down toward'); ok(R.r_outer > R.r_inner && R.to_deg - R.from_deg >= 90, 'not an arc');
         same(M.connections.find(c => c.id === 'conn_stair_hallway').ramp, 'r_teleport_stairs', 'the stair connection names its ramp');
     });
@@ -296,6 +296,39 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the zone to the right (the catwalks) is blocked off for now: marked so, in no connection, with its exits not walkable', () => {
         const M = J('FACILITY_MAP'), c = M.rooms.find(r => r.id === 'catwalks'); same(c.development, 'blocked_off_for_now', 'marker'); ok(!M.connections.some(x => x.rooms.includes('catwalks')), 'a confirmed connection into it');
         ok(M.external_exits.filter(e => e.room === 'catwalks').every(e => !e.walkable), 'an exit is walkable'); same(J('facilityReachable(\'arena\', \'catwalks\', null, false)'), false, 'reachable');
+    });
+
+    group('ELEVATION: the arena is sunken, the observation deck is raised, with steps at their doors (drawing only)');
+    check('levels carry heights: the arena is below the ground floor, the deck and catwalks above it, and every room\'s level has one', () => {
+        const M = J('FACILITY_MAP'), H = {}; for (const l of M.levels) H[l.id] = l.height;
+        ok(H[-1] < 0 && H[0] === 0 && H[1] > 0, 'heights ' + JSON.stringify(H)); const lv = id => M.rooms.find(r => r.id === id).level;
+        same(lv('arena'), -1, 'arena'); same(lv('observation_deck'), 1, 'deck'); same(lv('catwalks'), 1, 'catwalks'); same(lv('lab_hallway'), 0, 'hallway');
+        ok(M.rooms.every(r => H[r.level] !== undefined), 'a room has a level with no height');
+        ok(H[1] - H[0] > 0.5 && -H[-1] < H[1] - H[0], 'the drop should be small and the deck a bigger rise than it');
+    });
+    check('the floor height is exact in the middle of a room and slopes continuously through each ramp zone', () => {
+        const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(), out = {}; const hz = id => facilityRoomHeight(id, F);
+            const arena = F.byId.get('arena'), deck = F.byId.get('observation_deck'), hall = F.byId.get('lab_hallway');
+            out.arena = facilityHeightAt((arena.bb[0] + arena.bb[2]) / 2, (arena.bb[1] + arena.bb[3]) / 2 + 6, F); out.deck = facilityHeightAt((deck.bb[0] + deck.bb[2]) / 2, (deck.bb[1] + deck.bb[3]) / 2, F);
+            out.hz = [hz('arena'), hz('observation_deck'), hz('lab_hallway')];
+            out.ramps = F.ramps.filter(q => q.zone).map(q => { const z = q.zone, pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, v = z.c0 + (z.c1 - z.c0) * t, x = z.axis === 'x' ? v : (z.x0 + z.x1) / 2, y = z.axis === 'x' ? (z.y0 + z.y1) / 2 : v; pts.push(facilityHeightAt(x, y, F)); } let worst = 0; for (let i = 1; i < pts.length; i++) worst = Math.max(worst, Math.abs(pts[i] - pts[i - 1])); return { id: q.id, a: pts[0], b: pts[40], hA: z.hA, hB: z.hB, step: worst }; });
+            return out; })()`);
+        same(r.arena, r.hz[0], 'arena floor'); same(r.deck, r.hz[1], 'deck floor');
+        ok(r.ramps.length === 3, 'ramps with zones: ' + r.ramps.length);
+        for (const q of r.ramps) { ok(Math.abs(q.a - q.hA) < 1e-9 && Math.abs(q.b - q.hB) < 1e-9, q.id + ' does not start and end at its two levels'); ok(q.step <= Math.abs(q.hB - q.hA) / 40 * 1.5 + 1e-9, q.id + ' jumps instead of sloping: ' + q.step); }
+    });
+    check('the arena door steps down and the deck door steps up, and each connection across levels names its ramp', () => {
+        const M = J('FACILITY_MAP'), r = J(`(function(){ const F = facilityGet(), A = __door('door_arena_hallway', F), D = __door('door_teleport_1_deck', F); const hh = (m, d) => [facilityHeightAt(m.mx - (m.h ? 0 : d), m.my - (m.h ? d : 0), F), facilityHeightAt(m.mx + (m.h ? 0 : d), m.my + (m.h ? d : 0), F)]; return { a: hh(A, 4), d: hh(D, 4) }; })()`);
+        const lo = Math.min(...r.a), hi = Math.max(...r.a); ok(lo < 0 && hi >= -1e-9 && hi - lo > 0.1, 'no drop at the arena door ' + r.a.join()); ok(Math.max(...r.d) > 0.1, 'no rise at the deck door ' + r.d.join());
+        same(M.connections.find(c => c.id === 'conn_arena_hallway').ramp, 'r_arena_steps', 'arena ramp'); same(M.connections.find(c => c.id === 'conn_teleport_1_deck').ramp, 'r_deck_door_steps', 'deck ramp');
+    });
+    check('the validator rejects a level with no height and a ramp zone that is not a proper rectangle', () => {
+        const r = J(`(function(){ const M = FACILITY_MAP, lv = M.levels.slice(), rp = M.ramps[0].zone; M.levels = lv.filter(l => l.id !== -1); let a; try { a = facilityValidate(facilityBuild({})).errors; } catch (e) { a = [String(e)]; } M.levels = lv;
+            const keep = rp.rect; M.ramps[0].zone.rect = [10, 10, 5, 5]; let b; try { b = facilityValidate(facilityBuild({})).errors; } catch (e) { b = [String(e)]; } M.ramps[0].zone.rect = keep; return { a, b, ok: facilityValidate(facilityBuild({})).errors }; })()`);
+        ok(r.a.length > 0, 'a level with no height passed'); ok(r.b.length > 0, 'an inside-out ramp zone passed'); same(r.ok.length, 0, 'the data stopped validating after the probe: ' + r.ok.join(' | '));
+    });
+    check('the lift hooks in the strip game are all guarded by facilityPlay, so the strip game never lifts', () => {
+        for (const f of ['js/game.js', 'js/input.js', 'js/buildmenu.js']) { const lines = rd(f).split('\n').filter(l => /facilityLiftRel|facilityPickLift|facilityLiftPx/.test(l)); ok(lines.length > 0, f + ' has no lift hook'); for (const l of lines) ok(/facilityPlay/.test(l), f + ' has an unguarded lift: ' + l.trim().slice(0, 100)); }
     });
 
     group('THE DEBUG VIEW');

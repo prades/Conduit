@@ -22,9 +22,12 @@ const FACILITY_MAP = {
     // THE THEME: a rundown facility that used to be a 2010s tech startup's headquarters (big-lobby, glass-and-product vibe, now decayed).
     theme: { era: "2010s tech startup headquarters", condition: "rundown" },
     // Elevation: separate metadata from the outlines. Heights are unknown (the sketch is flat), so only the ORDER is recorded.
+    // `height` is in tiles above the ground floor (the hallway). The arena is sunk a little below it; the observation deck and the catwalks stand well above the arena. Heights are for DRAWING
+    // (the floor, walls and units rise and fall with them); movement is still flat, and the only way between two heights is a ramp below.
     levels: [
-        { id: 0, label: "ground" },
-        { id: 1, label: "raised", height_status: "unknown: needs a value in tiles" },
+        { id: -1, label: "sunken", height: -0.7 },
+        { id: 0, label: "ground", height: 0 },
+        { id: 1, label: "raised", height: 1.6 },
     ],
 
     rooms: [
@@ -59,13 +62,13 @@ const FACILITY_MAP = {
         { id: "teleport_room_2", label: "Teleport Room 2", level: 1, status: "traced", wall_material: "solid",
           note: "The sketch's labelled TELEPORT. Raised: reached from the stair room, whose staircase leads down to the hallway. The teleport itself is a feature to be added later: the room is a placeholder for it.",
           polygon: [[945, 600], [1090, 600], [1090, 790], [945, 790]] },
-        { id: "observation_deck", label: "Observation Deck", level: 0, status: "traced",
-          note: "Steps are drawn along its west side (seating or a raised floor: unconfirmed). It is treated as ground level for now so its door to Teleport Room 1 needs no ramp; change `level` if it is raised.",
+        { id: "observation_deck", label: "Observation Deck", level: 1, status: "traced",
+          note: "Steps are drawn along its west side (seating or a raised floor: unconfirmed). It is RAISED above the arena (it looks down into it through glass) and is reached from Teleport Room 1 by a short flight of steps at its door.",
           polygon: [[180, 760], [340, 760], [340, 1165], [180, 1165]] },
         { id: "catwalks", label: "Catwalks", level: 1, status: "traced", development: "blocked_off_for_now",
           note: "The zone to the right of the arena. It is BLOCKED OFF for now (not being developed): the player can walk up to it, not into it. Raised walkway with railing posts along its west side. Height unknown.",
           polygon: [[1005, 810], [1100, 810], [1100, 1210], [1005, 1210]] },
-        { id: "arena", label: "Arena", level: 0, status: "traced",
+        { id: "arena", label: "Arena", level: -1, status: "traced",
           boundary_type: "solid_walls_or_rock_formations", boundary_blocks_movement: true,
           // The floor outline, clockwise from the top-left. Every edge is solid; `edge_kinds[i]` is the edge from point i to point i+1.
           polygon: [[340, 760], [530, 760], [545, 805], [600, 825], [690, 805], [715, 778], [778, 808], [935, 795], [1000, 810],
@@ -167,13 +170,13 @@ const FACILITY_MAP = {
     ],
     connections: [
         { id: "conn_chamber_teleport_1", rooms: ["crystal_chamber", "teleport_room_1"], opening: "door_chamber_teleport_1" },
-        { id: "conn_teleport_1_deck", rooms: ["teleport_room_1", "observation_deck"], opening: "door_teleport_1_deck" },
+        { id: "conn_teleport_1_deck", rooms: ["teleport_room_1", "observation_deck"], opening: "door_teleport_1_deck", ramp: "r_deck_door_steps" },
         { id: "conn_lobby_hallway_west", rooms: ["front_lobby", "lab_hallway"], opening: "door_lobby_hallway_west" },
         { id: "conn_lobby_hallway_east", rooms: ["front_lobby", "lab_hallway"], opening: "door_lobby_hallway_east" },
         { id: "conn_bathroom_lobby", rooms: ["bathroom", "front_lobby"], opening: "door_bathroom_lobby" },
         { id: "conn_bathroom_hallway", rooms: ["bathroom", "lab_hallway"], opening: "door_bathroom_hallway" },
         { id: "conn_showroom_hallway", rooms: ["show_room", "lab_hallway"], opening: "door_showroom_hallway" },
-        { id: "conn_arena_hallway", rooms: ["arena", "lab_hallway"], opening: "door_arena_hallway" },
+        { id: "conn_arena_hallway", rooms: ["arena", "lab_hallway"], opening: "door_arena_hallway", ramp: "r_arena_steps" },
         { id: "conn_lab_passage", rooms: ["experiment_lab", "lab_passage"], opening: "door_lab_passage" },
         { id: "conn_passage_teleport_1", rooms: ["lab_passage", "teleport_room_1"], opening: "door_passage_teleport_1" },
         { id: "conn_crystal_hallway", rooms: ["crystal_chamber", "lab_hallway"], opening: "door_crystal_hallway" },
@@ -181,8 +184,16 @@ const FACILITY_MAP = {
         { id: "conn_stair_teleport_2", rooms: ["teleport_stair_room", "teleport_room_2"], opening: "door_stair_teleport_2" },
     ],
     ramps: [
+        // `zone` is where the floor slopes: a rectangle, the axis it slopes along, and the two coordinates at which the height equals between_levels[0] and between_levels[1] (sketch pixels).
+        { id: "r_arena_steps", rooms: ["lab_hallway", "arena"], shape: "steps", between_levels: [0, -1], descends_toward: "arena", position_status: "approximate",
+          zone: { rect: [360, 715, 450, 810], axis: "y", c0: 725, c1: 800 },
+          note: "A short flight of steps down from the main hallway into the arena, at the arena's door (a little drop)." },
+        { id: "r_deck_door_steps", rooms: ["teleport_room_1", "observation_deck"], shape: "steps", between_levels: [0, 1], descends_toward: "teleport_room_1", position_status: "approximate",
+          zone: { rect: [235, 715, 305, 830], axis: "y", c0: 725, c1: 800 },
+          note: "A flight of steps UP from Teleport Room 1 onto the raised Observation Deck, at the deck's door." },
         { id: "r_teleport_stairs", rooms: ["teleport_stair_room", "lab_hallway"], shape: "curved", centre: [945, 660], r_inner: 20, r_outer: 50, from_deg: 90, to_deg: 270,
           between_levels: [1, 0], descends_toward: "lab_hallway", position_status: "approximate",
+          zone: { rect: [870, 600, 945, 760], axis: "x", c0: 940, c1: 880 },
           note: "A rounded (curved) staircase leading DOWN from the stair room to the hallway that passes the experiment lab." },
     ],
 
@@ -198,7 +209,6 @@ const FACILITY_MAP = {
         ramps: [
             { id: "r_structure_01_stairs", at: [745, 905], between_levels: [0, 1], evidence: "stairs up the side of the upper liquid reserve (to its rim?)" },
             { id: "r_structure_02_stairs", at: [759, 1060], between_levels: [0, 1], evidence: "stairs up the side of the lower liquid reserve (to its rim?)" },
-            { id: "r_deck_steps", at: [202, 960], between_levels: [0, 1], evidence: "hatched steps along the observation deck's west edge" },
         ],
     },
 

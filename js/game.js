@@ -3087,7 +3087,8 @@ function render() {
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
         const px=(obj.x-player.visualX-(obj.y-player.visualY))*TILE_W+canvas.width/2;
-        const py=(obj.x-player.visualX+(obj.y-player.visualY))*TILE_H+canvas.height/2;
+        let py=(obj.x-player.visualX+(obj.y-player.visualY))*TILE_H+canvas.height/2;
+        if (typeof facilityPlay !== "undefined" && facilityPlay && obj.type !== 'fp') py -= facilityLiftRel(obj.x, obj.y);   // the facility's floors rise and fall (js/facilityplay.js)
 
         if (obj.type==='player') {
             drawPlayer({x:px,y:py});

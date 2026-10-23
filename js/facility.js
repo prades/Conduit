@@ -110,7 +110,14 @@ function _facilityBuild(ex) {
     const outer = M.outer_path ? { id: M.outer_path.id, poly: _facPoly(M.outer_path.polygon), walkable: M.outer_path.walkable === true, navigation_link: M.outer_path.navigation_link === true } : null;
     const conns = (M.connections || []).concat(ex.connections || []).filter(c => !c.opening || openings.some(o => o.id === c.opening)).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, confirmed: true }));
     const cands = ((M.candidates && M.candidates.connections) || []).map(c => ({ id: c.id, rooms: c.rooms, at: _facP(c.at), evidence: c.evidence, ramp: c.ramp_candidate || null, confirmed: false }));
-    const ramps = (M.ramps || []).concat(ex.ramps || []).map(r => r.centre ? Object.assign({}, r, { centre: _facP(r.centre), r_inner: r.r_inner / s, r_outer: r.r_outer / s }) : r);
+    // heights: tiles above the ground floor, per level; a ramp's zone is where the floor slopes between the heights of the two levels it joins
+    const levelH = new Map((M.levels || []).map(l => [l.id, l.height || 0]));
+    const one = (v) => { let t = v / s; if (_facSnap) t = Math.round(t - 0.5) + 0.5; return t; };
+    const ramps = (M.ramps || []).concat(ex.ramps || []).map(r => {
+        const o = r.centre ? Object.assign({}, r, { centre: _facP(r.centre), r_inner: r.r_inner / s, r_outer: r.r_outer / s }) : Object.assign({}, r);
+        if (r.zone) { const a = _facP([r.zone.rect[0], r.zone.rect[1]]), b = _facP([r.zone.rect[2], r.zone.rect[3]]); const bl = r.between_levels || [0, 0];
+            o.zone = { x0: Math.min(a[0], b[0]), y0: Math.min(a[1], b[1]), x1: Math.max(a[0], b[0]), y1: Math.max(a[1], b[1]), axis: r.zone.axis, c0: one(r.zone.c0), c1: one(r.zone.c1), hA: levelH.get(bl[0]) || 0, hB: levelH.get(bl[1]) || 0 }; }
+        return o; });
     const candRamps = ((M.candidates && M.candidates.ramps) || []).map(r => Object.assign({}, r, { at: _facP(r.at) }));
     // bounding boxes, so a query only looks at the walls and rooms near it (the validator walks thousands of steps)
     const bbox = pts => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const q of pts) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); } return [x0, y0, x1, y1]; };
@@ -120,7 +127,7 @@ function _facilityBuild(ex) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, rooms, walls, windows, fixtures, solids, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, solids, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -172,6 +179,18 @@ function facilityMove(x, y, dx, dy, F) {
     if (dy && facilityCanStep(x, y, x, y + dy, F)) return [x, y + dy];
     return [x, y];
 }
+
+// HEIGHT: tiles above the ground floor at a point: the floor's level, or a slope between two levels inside a ramp's zone. (Drawing only: movement is flat.)
+function facilityHeightAt(x, y, F) {
+    F = F || facilityGet();
+    for (const r of F.ramps) {
+        const z = r.zone; if (!z || x < z.x0 || x > z.x1 || y < z.y0 || y > z.y1) continue;
+        const v = z.axis === "x" ? x : y, t = Math.max(0, Math.min(1, (v - z.c0) / ((z.c1 - z.c0) || 1)));
+        return z.hA + (z.hB - z.hA) * t;
+    }
+    const room = facilityRoomAt(x, y, F); return room ? (F.levelH.get(room.level) || 0) : 0;
+}
+function facilityRoomHeight(id, F) { F = F || facilityGet(); const r = F.byId.get(id); return r ? (F.levelH.get(r.level) || 0) : 0; }
 
 // ── navigation ──
 // Nodes are rooms; edges are CONFIRMED connections. `withCandidates` adds the unconfirmed ones (to see what they would join), never the default.
@@ -269,6 +288,16 @@ function facilityValidate(F) {
     }
     for (const o of F.openings) if (!F.connections.some(c => c.opening === o.id)) warnings.push("opening " + o.id + " has no connection (it joins nothing for navigation)");
     for (const r of F.ramps) if (!r.between_levels || r.between_levels[0] === r.between_levels[1]) errors.push("ramp " + r.id + " does not join two different levels");
+    // every level a room stands on has a height; a ramp's slope runs between the heights of the two levels it joins, inside the two rooms it joins
+    for (const room of F.rooms) if (!F.levelH.has(room.level)) errors.push(room.id + " is on level " + room.level + ", which has no height");
+    for (const r of F.ramps) {
+        if (!r.zone) { if (r.shape !== "curved" || r.id !== "r_teleport_stairs") if (!(r.zone)) warnings.push("ramp " + r.id + " has no zone: it draws no slope"); continue; }
+        const z = r.zone;
+        if (!(z.hA !== z.hB)) errors.push("ramp " + r.id + " joins two levels of the same height");
+        if (Math.abs(z.c1 - z.c0) < 0.5) errors.push("ramp " + r.id + " slopes over less than half a tile");
+        const inside = (id) => { const rm = F.byId.get(id); return !!rm && !(z.x1 < rm.bb[0] || z.x0 > rm.bb[2] || z.y1 < rm.bb[1] || z.y0 > rm.bb[3]); };
+        for (const id of (r.rooms || [])) if (!inside(id)) errors.push("ramp " + r.id + "'s slope does not reach " + id);
+    }
     // the agents: nobody walks out of the arena or the nest area through a WALL, from any start, in any direction (a confirmed door is the one way out)
     info.arenaAgents = 0; info.arenaLeaks = 0;
     for (const room of sealed) {
@@ -318,15 +347,17 @@ function _facCentroid(poly) { let x = 0, y = 0; for (const p of poly) { x += p[0
 // Layers: OUTLINES (rooms, the outer path), COLLISION (walls, solids), OPENINGS (confirmed gaps, and the candidates as ?), ELEVATION (raised rooms lifted),
 // NAV (the connection graph: solid green = confirmed, dashed amber = candidate, and what is joined). Toggle: the MAP button on the dock, F3, or ?facility in the URL.
 const facilityDebug = { on: false, layers: { outlines: true, collision: true, openings: true, elevation: true, nav: true }, cam: { x: 0, y: 0, z: 1 }, note: "", fitted: false, _hits: [] };
-const FAC_ELEV_PX = 26;   // how far a raised room is lifted on screen (per level)
+const FAC_ELEV_PX = 34;   // how far a room is lifted on screen per tile of height
 const FAC_COLOURS = { ground: "#19e6c1", raised: "#ffe733", solid: "#ff8a5c", wall: "#ff4a1c", arena: "#ff2d95", outer: "#8a94b8", cand: "#ffb020", ok: "#6dff5a" };
 
 function _facTW() { return typeof TILE_W === "number" ? TILE_W : 64; }
 function _facTH() { return typeof TILE_H === "number" ? TILE_H : 32; }
 // world (tiles) + level -> screen px
+// a level (or a level part-way between two, on a stair) in screen pixels of height
+function _facLevelPx(F, level) { level = level || 0; const lo = Math.floor(level), hi = Math.ceil(level), a = F.levelH.get(lo) || 0, b = F.levelH.get(hi) || 0; return (a + (b - a) * (level - lo)) * FAC_ELEV_PX; }
 function _facProject(x, y, level, W, H) {
     const c = facilityDebug.cam, F = facilityGet(), cx = (F.bounds.minX + F.bounds.maxX) / 2 + c.x, cy = (F.bounds.minY + F.bounds.maxY) / 2 + c.y, z = c.z;
-    return [(x - cx - (y - cy)) * _facTW() * z + W / 2, (x - cx + (y - cy)) * _facTH() * z + H / 2 - (facilityDebug.layers.elevation ? (level || 0) * FAC_ELEV_PX * z : 0)];
+    return [(x - cx - (y - cy)) * _facTW() * z + W / 2, (x - cx + (y - cy)) * _facTH() * z + H / 2 - (facilityDebug.layers.elevation ? _facLevelPx(F, level) * z : 0)];
 }
 function facilityFit(W, H) {
     const F = facilityGet(), b = F.bounds; let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
