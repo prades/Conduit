@@ -85,6 +85,7 @@ function _fpFloorBuild(F) {
             for (let i = 0; i + 1 < d.path.length; i++) { const a = d.path[i], b = d.path[i + 1]; _fpSeg(map, a[0], a[1], b[0], b[1], { c: "rgba(8,10,14,0.9)", w: 4 }, F); _fpSeg(map, a[0], a[1], b[0], b[1], { c: _fpRgba(col === "#ffffff" ? "#ffb347" : col, 0.55), w: 1 }, F); }
         } else if (k === "ring") {   // a painted ring (a pad, a circle of light): short segments round it
             const R = d.radius, steps = Math.max(24, Math.round(R * 14));
+            if (sty && d.glow) for (let x = Math.floor(d.at[0] - R); x <= Math.ceil(d.at[0] + R); x++) for (let y = Math.floor(d.at[1] - R); y <= Math.ceil(d.at[1] + R); y++) if (Math.hypot(x - d.at[0], y - d.at[1]) < R - 0.35 && _fp.cells.has(x + "," + y)) _fpCellOps(map, x, y).push({ t: "G", c: col, a: 0.16 });   // a flat glowing pad inside a glow ring
             for (let i = 0; i < steps; i++) { if (d.dashed && (i & 1)) continue; const a0 = i / steps * 6.2832, a1 = (i + 1) / steps * 6.2832; _fpSeg(map, d.at[0] + Math.cos(a0) * R, d.at[1] + Math.sin(a0) * R, d.at[0] + Math.cos(a1) * R, d.at[1] + Math.sin(a1) * R, { c: _fpRgba(col, d.a || 0.7), w: d.w || 2, glow: !!d.glow }, F); }
         } else if (k === "arrows") {   // chevrons along a line, pointing from a to b
             const a = d.a, b = d.b, len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len, n = Math.max(1, Math.floor(len / 1.6));

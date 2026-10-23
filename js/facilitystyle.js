@@ -16,7 +16,7 @@
 // Which rooms use it is FP_STYLE_ROOMS: the prototype is the Crystal Chamber alone.
 
 const FP_PAL = {
-    ink: "#1b3640", cap: "#e8f3f6", wallLit: "#b5ccd4", wallDark: "#93b0ba", wallBase: "#70939f", floorA: "#cadde1", floorB: "#bcd2d8", seam: "#8fb6bf",
+    ink: "#16303a", cap: "#f1f8fa", wallLit: "#c6dae1", wallDark: "#a3c0ca", wallBase: "#3d93a0", floorA: "#d8e8ec", floorB: "#b4cdd5", seam: "#8fb6bf",
     teal: "#4f9aa0", tealLit: "#6cb3bb", tealDark: "#2f6a73", case: "#a9c4cc", caseLit: "#dbeaee",
     cyan: "#31e8ff", blue: "#3a7bff", violet: "#9a5cff", amber: "#f2b13a", white: "#eaffff", leaf: "#4fa58a",
 };
@@ -32,7 +32,7 @@ function _fpStyleCol(kind, col) {
 const FP_STYLE_FLOOR = {
     base: FP_PAL.floorA, alt: FP_PAL.floorB, a: 1,
     mark: (h, o, x, y) => {
-        o.push({ t: "L", c: "rgba(111,150,160,0.55)", w: 1, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(111,150,160,0.55)", w: 1, p: [-0.5, -0.5, -0.5, 0.5] });
+        o.push({ t: "L", c: "rgba(61,120,135,0.5)", w: 2, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(61,120,135,0.5)", w: 2, p: [-0.5, -0.5, -0.5, 0.5] });
         if ((x & 3) === 0) o.push({ t: "L", c: "rgba(49,232,255,0.22)", w: 5, p: [-0.5, -0.5, -0.5, 0.5] }, { t: "L", c: "rgba(49,232,255,0.95)", w: 2, p: [-0.5, -0.5, -0.5, 0.5] });   // a neon seam every fourth tile line
         if ((y & 3) === 0) o.push({ t: "L", c: "rgba(49,232,255,0.22)", w: 5, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(49,232,255,0.95)", w: 2, p: [-0.5, -0.5, 0.5, -0.5] });
         if (h % 19 === 0) o.push({ t: "C", c: "rgba(105,135,125,0.18)", u: ((h >>> 3) % 7 - 3) / 10, v: ((h >>> 6) % 7 - 3) / 10, r: 0.22 });   // a faint discoloration
@@ -42,7 +42,7 @@ const FP_STYLE_FLOOR = {
 // ── shapes ──
 function _fpFill(pts, col, edge, lw) { _fpQuad(pts, col, edge || col, lw || 1); }   // a smooth fill (the stroke is the fill colour, so neighbours leave no hairline)
 function _fpSBox(x0, y0, x1, y1, z0, z1, top, sideY, sideX, lw) {   // a toon box: three flat faces separated by VALUE, one bold ink outline round the SILHOUETTE only, a white shine on the lit top edges
-    const P = _fpP, t = [P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1)], b = [P(x0, y0, z0), P(x1, y0, z0), P(x1, y1, z0), P(x0, y1, z0)], ink = FP_PAL.ink, w = lw || 3;
+    const P = _fpP, t = [P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1)], b = [P(x0, y0, z0), P(x1, y0, z0), P(x1, y1, z0), P(x0, y1, z0)], ink = FP_PAL.ink, w = lw || 3.5;
     _fpQuad([t[3], t[2], b[2], b[3]], sideY, sideY, 1); _fpQuad([t[2], t[1], b[1], b[2]], sideX, sideX, 1); _fpQuad(t, top, top, 1);
     ctx.lineJoin = "round"; ctx.lineCap = "round";
     ctx.strokeStyle = "rgba(27,54,64,0.35)"; ctx.lineWidth = Math.max(1.5, w * 0.5); ctx.beginPath(); ctx.moveTo(t[2][0], t[2][1]); ctx.lineTo(b[2][0], b[2][1]); ctx.stroke();   // the front corner crease
@@ -84,7 +84,7 @@ function _fpStyleWall(it, Hd) {
     }
     if (Hd >= 26) { const p = P(0, wain), q = P(1, wain); ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = "rgba(49,232,255,0.16)"; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = FP_PAL.cyan; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }   // the neon seam
-    const t0 = P(0, Hd), t1 = P(1, Hd), s0 = P(0, 0), s1 = P(1, 0); ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 3.5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.stroke();
+    const t0 = P(0, Hd), t1 = P(1, Hd), s0 = P(0, 0), s1 = P(1, 0); ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 4.5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.stroke();
     ctx.globalAlpha = 0.85; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]); ctx.stroke(); ctx.globalAlpha = 1; ctx.lineCap = "butt";
 }
 // a post at every corner of a styled room (the same corner treatment everywhere)
