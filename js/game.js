@@ -3044,7 +3044,6 @@ function render() {
     // the crystal is a fixed landmark other code expects in the list.
     perfDrawStart();   // the logic is done; from here on it is drawing
     let drawList=visibleTilesForDraw();
-    if (typeof facilityPlay !== "undefined" && facilityPlay) facilityDrawItems(drawList);   // walls, props, doors and fixtures (js/facilityplay.js)
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     shards.forEach(s=>{ if(visibleForDraw(s.x,s.y)) drawList.push({type:'shard',x:s.x,y:s.y,shard:s}); });
     chargedMass.forEach(m=>{ if(visibleForDraw(m.x,m.y)) drawList.push({type:'mass',x:m.x,y:m.y,mass:m}); });
@@ -3054,6 +3053,7 @@ function render() {
     if (!_simGhost) actors.forEach(a=>{ if(visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });
     groundItems.forEach(g=>{ if(visibleForDraw(g.x,g.y)) drawList.push({type:'groundItem',x:g.x,y:g.y,item:g}); });
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
+    if (typeof facilityPlay !== "undefined" && facilityPlay) facilityDrawItems(drawList);   // walls, props, doors and fixtures (js/facilityplay.js)
     // Modules (js/modules.js): structures on their tiles, sorted with the rest.
     if (typeof modules !== "undefined" && !_simGhost) for (const m of modules) if (visibleForDraw(m.x, m.y)) drawList.push({ type: 'module', x: m.x, y: m.y, module: m });
     // The LAB WALL (js/labwall.js): equipment standing out of each back-wall tile, sorted just in front of its own wall tile so units walk in front of it.
