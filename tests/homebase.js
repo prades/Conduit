@@ -250,7 +250,7 @@ async function ready() {
 
     check('the portal and the aura are documented', () => {
         ok(/HOME PORTAL/i.test(HTML), 'the index does not mention the home portal');
-        ok(/shield generator/i.test(HTML), 'nor the shield generator');
+        ok(/power unit/i.test(HTML), 'nor the wall power unit');
         ok(/network tier/i.test(HTML), 'nor the network tier');
     });
 
