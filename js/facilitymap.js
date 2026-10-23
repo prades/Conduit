@@ -46,8 +46,8 @@ const FACILITY_MAP = {
         { id: "observation_deck", label: "Observation Deck", level: 1, status: "traced",
           note: "Raised by the look of it (steps drawn along its west side). Height unknown.",
           polygon: [[240, 710], [385, 710], [385, 1105], [240, 1105]] },
-        { id: "catwalks", label: "Catwalks", level: 1, status: "traced",
-          note: "Raised walkway with railing posts along its west side. Height unknown.",
+        { id: "catwalks", label: "Catwalks", level: 1, status: "traced", development: "blocked_off_for_now",
+          note: "The zone to the right of the arena. It is BLOCKED OFF for now (not being developed): the player can walk up to it, not into it. Raised walkway with railing posts along its west side. Height unknown.",
           polygon: [[950, 750], [1045, 750], [1045, 1150], [950, 1150]] },
         { id: "arena", label: "Arena", level: 0, status: "traced",
           boundary_type: "solid_walls_or_rock_formations", boundary_blocks_movement: true,
@@ -68,16 +68,19 @@ const FACILITY_MAP = {
         { id: "front_office_bench", room: "front_office", shape: "rect", rect: [475, 385, 735, 470], status: "approximate" },
         { id: "lab_bench", room: "experiment_lab", shape: "rect", rect: [380, 512, 745, 628], status: "approximate" },
         { id: "lab_tank", room: "experiment_lab", shape: "circle", at: [740, 570], radius: 30, status: "approximate" },
-        { id: "arena_machine", room: "arena", shape: "rect", rect: [420, 790, 500, 1010], status: "unconfirmed",
-          note: "A capsule-shaped machine on the arena's west side; not labelled." },
-        { id: "arena_structure_01", room: "arena", shape: "circle", at: [810, 845], radius: 90, status: "traced", kind: "liquid_reserve", contents: "ooze_or_liquid (type to be decided)",
-          note: "A giant reserve of ooze or liquid. Solid. Stairs are drawn on its west side." },
-        { id: "arena_structure_02", room: "arena", shape: "circle", at: [850, 1010], radius: 88, status: "traced", kind: "liquid_reserve", contents: "ooze_or_liquid (type to be decided)",
-          note: "A giant reserve of ooze or liquid. Solid. Stairs are drawn on its west side." },
+        { id: "arena_truck", room: "arena", shape: "rect", rect: [420, 790, 500, 1010], status: "traced", kind: "semi_truck", cargo: [{ type: "missile", count: 3 }],
+          note: "A semi-truck carrying three missiles, parked along the arena's west side. Solid." },
+        { id: "arena_structure_01", room: "arena", shape: "circle", at: [790, 845], radius: 45, status: "traced", kind: "liquid_reserve", contents: "ooze_or_liquid (type to be decided)",
+          note: "A giant reserve of ooze or liquid. Solid, but sized to leave walkways round it (about 3 tiles between the two, 5 to the right-hand wall): the player walks between them toward the zone on the right. Stairs are drawn on its west side." },
+        { id: "arena_structure_02", room: "arena", shape: "circle", at: [800, 1000], radius: 45, status: "traced", kind: "liquid_reserve", contents: "ooze_or_liquid (type to be decided)",
+          note: "A giant reserve of ooze or liquid. Solid, with walkways round it. Stairs are drawn on its west side." },
     ],
 
     // (There is no separate outer path: the long lines round the nest area are that room's outside edges, drawn as its walls. Anything outside every room is not walkable.)
     outer_path: null,
+
+    // EVERY DOOR in the facility is a sliding access door. A confirmed opening below is one (its `door` defaults to this).
+    door_type: "sliding_access_door",
 
     // CONFIRMED only. An opening is a gap cut into the walls along the segment a -> b; a connection says which two rooms it joins (and the ramp, if their levels differ).
     openings: [],
@@ -104,8 +107,8 @@ const FACILITY_MAP = {
         ],
         ramps: [
             { id: "r_lab_teleport_stairs", at: [840, 650], between_levels: [0, 0], evidence: "curved stair between the lab and the teleport room (same level as far as the sketch shows)" },
-            { id: "r_structure_01_stairs", at: [752, 885], between_levels: [0, 1], evidence: "stairs up the side of the upper liquid reserve (to its rim?)" },
-            { id: "r_structure_02_stairs", at: [790, 1010], between_levels: [0, 1], evidence: "stairs up the side of the lower liquid reserve (to its rim?)" },
+            { id: "r_structure_01_stairs", at: [745, 845], between_levels: [0, 1], evidence: "stairs up the side of the upper liquid reserve (to its rim?)" },
+            { id: "r_structure_02_stairs", at: [755, 1000], between_levels: [0, 1], evidence: "stairs up the side of the lower liquid reserve (to its rim?)" },
             { id: "r_deck_steps", at: [262, 900], between_levels: [0, 1], evidence: "hatched steps along the observation deck's west edge" },
         ],
     },
@@ -120,9 +123,10 @@ const FACILITY_MAP = {
 
     unresolved: [
         "The scale: px_per_tile is a first guess, to be calibrated in the game",
-        "Every doorway / opening: none is confirmed, so every room is currently sealed (see candidates.connections)",
+        "Every door (they will be sliding access doors): none is confirmed, so every room is currently sealed (see candidates.connections)",
         "Elevation heights (only the ORDER ground < raised is known) and every ramp or stair",
-        "What the two liquid reserves contain (ooze or another liquid), whether the stairs lead onto their rims, and the arena's machine",
+        "What the two liquid reserves contain (ooze or another liquid), and whether the stairs lead onto their rims",
+        "The zone to the right of the arena (the catwalks) is blocked off for now and not being developed",
         "Whether the nest area has any entrance from the arena (the arrow points down into it), and whether its bottom edge is closed",
         "The teleport feature itself (to be added later): Teleport Room 1 and 2 are placeholders",
         "The names of the faint 'FRONT OFFICE' and the unlabelled rooms",

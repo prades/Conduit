@@ -8,9 +8,11 @@ navigation, validates it, and draws the debug view. Edit the data file to change
 ## Data (`FACILITY_MAP`)
 - Coordinates are **sketch pixels** (the photo, origin top-left). `scale.px_per_tile` (first guess: 20) turns them into world tiles: calibrating is one number. The sketch grid is not a tile size.
 - `rooms`: explicit polygons with a `level` and a `status` (`traced` / `approximate` / `unconfirmed`). Every edge is a wall unless a CONFIRMED opening is cut into it.
-- `props`: solid things in rooms (benches, the arena machine, and the two circular structures, which are **giant reserves of ooze or liquid**: solid tanks, stairs drawn on their west sides).
+- `props`: solid things in rooms (benches; the arena's **semi-truck carrying three missiles**; and the two circular structures, which are **giant reserves of ooze or liquid**: solid tanks, deliberately small enough to leave walkways: about 3 tiles between them and 5 to the right-hand side, tested).
 - The **nest area is one completely open room**; the long double lines in the sketch are its outside edges (its walls), not tunnels or a path. Its bottom wall is provisional (the sketch stops drawing). Nothing outside every room is walkable. (`outer_path` is still supported by the logic for a separate boundary band, and is `null` now.)
 - **Teleport Room 1 / 2** are placeholders for a teleport feature to be added later; no teleport object is in the data.
+- **Every door is a sliding access door** (`door_type`); a confirmed opening is one.
+- The zone to the right of the arena (the **catwalks**) is `blocked_off_for_now`: not being developed; the player can reach its edge, not enter.
 - `openings`, `connections`, `ramps`: **confirmed only, and all three are empty.** Nothing has been confirmed, so every room is sealed.
 - `candidates`: what the sketch suggests (14 connections, 4 ramps/stairs) with the evidence. They do nothing until moved into the lists above by hand.
 - `levels`: ground < raised (observation deck, catwalks). Heights are unknown.

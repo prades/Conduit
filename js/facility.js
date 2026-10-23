@@ -64,7 +64,7 @@ function _facTrim(a, b, openings) {
 // `extra` lets a test (or the debug view) add openings/connections WITHOUT touching the authored data: { openings: [...], connections: [...] }.
 function facilityBuild(extra) {
     const M = FACILITY_MAP, ex = extra || {};
-    const openings = (M.openings || []).concat(ex.openings || []).map(o => ({ id: o.id, a: _facP(o.a), b: _facP(o.b), rooms: o.rooms || [] }));
+    const openings = (M.openings || []).concat(ex.openings || []).map(o => ({ id: o.id, a: _facP(o.a), b: _facP(o.b), rooms: o.rooms || [], door: o.door || M.door_type || "sliding_access_door" }));
     const rooms = M.rooms.map(r => ({ id: r.id, label: r.label, level: r.level, status: r.status, poly: _facPoly(r.polygon), edgeKinds: r.edge_kinds || null, boundary: r.boundary_type || null, objects: (r.objects || []).map(o => Object.assign({}, o, { at: _facP(o.at) })), raw: r }));
     const walls = [];
     for (const r of rooms) {
@@ -76,8 +76,8 @@ function facilityBuild(extra) {
     }
     const s = facilityScale();
     const solids = (M.props || []).map(pr => {
-        if (pr.shape === "circle") return { id: pr.id, room: pr.room, shape: "circle", at: _facP(pr.at), r: pr.radius / s, provisional: !!pr.provisional_collision, status: pr.status, kind: pr.kind || null };
-        const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status, kind: pr.kind || null };
+        if (pr.shape === "circle") return { id: pr.id, room: pr.room, shape: "circle", at: _facP(pr.at), r: pr.radius / s, cargo: pr.cargo || null, provisional: !!pr.provisional_collision, status: pr.status, kind: pr.kind || null };
+        const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status, kind: pr.kind || null, cargo: pr.cargo || null };
     });
     const outer = M.outer_path ? { id: M.outer_path.id, poly: _facPoly(M.outer_path.polygon), walkable: M.outer_path.walkable === true, navigation_link: M.outer_path.navigation_link === true } : null;
     const conns = (M.connections || []).concat(ex.connections || []).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, confirmed: true }));
@@ -303,15 +303,16 @@ function facilityDebugDraw() {
         if (L.elevation && r.level) { for (let i = 0; i < r.poly.length; i++) { const a = r.poly[i], b = r.poly[(i + 1) % r.poly.length], a0 = P(a, 0), b0 = P(b, 0), a1 = P(a, r.level), b1 = P(b, r.level); g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.lineTo(a1[0], a1[1]); g.closePath(); g.fillStyle = "rgba(255,231,51,0.10)"; g.fill(); } }
         if (L.outlines) { path(r.poly, r.level); g.fillStyle = r.id === "arena" ? "rgba(255,45,149,0.08)" : r.level && L.elevation ? "rgba(255,231,51,0.12)" : "rgba(25,230,193,0.09)"; g.fill(); g.lineWidth = 2; g.strokeStyle = col; g.stroke(); }
         const c = P(_facCentroid(r.poly), r.level);
-        if (L.outlines) _facLabel(g, r.label.toUpperCase() + (L.elevation ? "  L" + r.level : ""), c[0], c[1], col, 11 * Math.max(0.8, Math.min(1.5, z * 3)));
+        if (L.outlines) _facLabel(g, r.label.toUpperCase() + (L.elevation ? "  L" + r.level : "") + (r.raw.development === "blocked_off_for_now" ? " \u00b7 BLOCKED OFF" : ""), c[0], c[1], col, 11 * Math.max(0.8, Math.min(1.5, z * 3)));
     }
     if (L.collision) {
         for (const s of F.solids) { const lv = (F.byId.get(s.room) || {}).level || 0; if (s.shape === "circle") { const pts = []; for (let i = 0; i < 32; i++) pts.push([s.at[0] + Math.cos(i / 32 * 6.2832) * s.r, s.at[1] + Math.sin(i / 32 * 6.2832) * s.r]); path(pts, lv); } else path(s.poly, lv); const liq = s.kind === "liquid_reserve"; g.fillStyle = liq ? "rgba(140,90,255,0.38)" : s.provisional ? "rgba(255,138,92,0.18)" : "rgba(255,138,92,0.34)"; g.fill(); g.lineWidth = 1.5; g.setLineDash(s.provisional ? [4, 4] : []); g.strokeStyle = liq ? "#a64dff" : FAC_COLOURS.solid; g.stroke(); g.setLineDash([]); if (liq && L.outlines) { const q = P(s.at, lv); _facLabel(g, "LIQUID RESERVE", q[0], q[1], "#c9a0ff", 10 * Math.max(0.8, Math.min(1.4, z * 3))); } }
+        for (const s of F.solids) if (s.kind === "semi_truck" && L.outlines) { const lv = (F.byId.get(s.room) || {}).level || 0, q = P(_facCentroid(s.poly), lv); _facLabel(g, "SEMI TRUCK \u00b7 " + (s.cargo ? s.cargo.map(c => c.count + " " + c.type.toUpperCase() + "S").join(", ") : ""), q[0], q[1], "#ffb48a", 9 * Math.max(0.8, Math.min(1.4, z * 3))); }
         for (const w of F.walls) { const lv = (F.byId.get(w.room) || {}).level || 0, a = P(w.a, lv), b = P(w.b, lv); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = w.arena ? 4 : 2.5; g.strokeStyle = w.arena ? (w.room === "arena" ? FAC_COLOURS.arena : FAC_COLOURS.outer) : FAC_COLOURS.wall; g.stroke(); }
     }
     if (L.openings) {
         for (const o of F.openings) { const a = P(o.a, 0), b = P(o.b, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = 6; g.strokeStyle = FAC_COLOURS.ok; g.stroke(); }
-        for (const c of F.candidates) { const lv = Math.max(...c.rooms.map(id => (F.byId.get(id) || {}).level || 0)), q = P(c.at, lv); g.beginPath(); g.arc(q[0], q[1], 8, 0, 6.2832); g.fillStyle = "rgba(255,176,32,0.25)"; g.fill(); g.lineWidth = 2; g.strokeStyle = FAC_COLOURS.cand; g.stroke(); g.fillStyle = FAC_COLOURS.cand; g.font = "bold 11px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", q[0], q[1] + 0.5); facilityDebug._hits.push({ x: q[0], y: q[1], text: c.rooms.join(" ↔ ").toUpperCase() + " — UNCONFIRMED: " + c.evidence }); }
+        for (const c of F.candidates) { const lv = Math.max(...c.rooms.map(id => (F.byId.get(id) || {}).level || 0)), q = P(c.at, lv); g.beginPath(); g.arc(q[0], q[1], 8, 0, 6.2832); g.fillStyle = "rgba(255,176,32,0.25)"; g.fill(); g.lineWidth = 2; g.strokeStyle = FAC_COLOURS.cand; g.stroke(); g.fillStyle = FAC_COLOURS.cand; g.font = "bold 11px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", q[0], q[1] + 0.5); facilityDebug._hits.push({ x: q[0], y: q[1], text: c.rooms.join(" ↔ ").toUpperCase() + " — CANDIDATE SLIDING DOOR, UNCONFIRMED: " + c.evidence }); }
         for (const r of F.candidateRamps) { const q = P(r.at, 0); g.strokeStyle = FAC_COLOURS.cand; g.lineWidth = 2; g.strokeRect(q[0] - 7, q[1] - 7, 14, 14); g.fillStyle = FAC_COLOURS.cand; g.font = "bold 10px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("R", q[0], q[1] + 0.5); facilityDebug._hits.push({ x: q[0], y: q[1], text: "RAMP / STAIR? " + r.evidence + " (levels " + r.between_levels.join("→") + ")" }); }
         for (const e of F.exits) { const q = P(e.at, 0); g.fillStyle = e.blocked ? FAC_COLOURS.wall : FAC_COLOURS.outer; g.font = "bold 10px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(e.blocked ? "✖" : "→", q[0], q[1]); facilityDebug._hits.push({ x: q[0], y: q[1], text: e.id.toUpperCase() + " — " + e.note + " (not a connection)" }); }
     }

@@ -64,6 +64,20 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ const F = facilityGet(); return F.solids.filter(s => s.kind === 'liquid_reserve').map(s => [s.id, !facilityWalkable(s.at[0], s.at[1]), !facilityWalkable(s.at[0] + s.r * 0.9, s.at[1]), facilityCanStep(s.at[0] - s.r - 0.5, s.at[1], s.at[0] + s.r + 0.5, s.at[1])]); })()`);
         ok(r.length === 2 && r.every(x => x[1] && x[2] && x[3] === false), JSON.stringify(r));
     });
+    check('THE VATS LEAVE ROOM: a body walks from the arena\'s west side, between the two vats and past them to the right-hand edge', () => {
+        const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(), V = F.solids.filter(s => s.kind === 'liquid_reserve'), A = F.byId.get('arena');
+            const gap = (a, b) => Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]) - a.r - b.r;
+            let wall = Infinity; for (const v of V) for (let i = 0; i < A.poly.length; i++) wall = Math.min(wall, _facSegPointDist(A.poly[i], A.poly[(i + 1) % A.poly.length], v.at[0], v.at[1]) - v.r);
+            const cells = facilityFlood(600 / sc, 900 / sc, F, 0.5), has = (px, py) => cells.some(q => Math.hypot(q[0] - px / sc, q[1] - py / sc) < 0.6);
+            return { between: gap(V[0], V[1]), wall, eastOfVats: has(890, 925), betweenVats: has(795, 922), eastEdge: has(925, 925), top: has(790, 790), south: has(800, 1062), radius: V.map(v => v.r) }; })()`);
+        ok(r.between >= 3, 'only ' + r.between.toFixed(1) + ' tiles between the vats'); ok(r.wall >= 1.8, 'a vat is ' + r.wall.toFixed(1) + ' tiles from the arena wall'); ok(r.radius.every(x => x <= 2.5), 'the vats are still huge: radius ' + r.radius);
+        same(r.betweenVats, true, 'cannot walk between the vats'); same(r.eastOfVats, true, 'cannot reach the right-hand side'); same(r.eastEdge, true, 'cannot reach the right-hand edge');
+    });
+    check('the arena\'s machine is a semi-truck carrying three missiles, and it is solid', () => {
+        const M = J('FACILITY_MAP'), t = M.props.find(p => p.kind === 'semi_truck'); ok(t && t.room === 'arena', 'no semi-truck'); same(t.cargo.length, 1, 'cargo lines'); same(t.cargo[0].type, 'missile', 'cargo'); same(t.cargo[0].count, 3, 'missiles');
+        same(J(`(function(){ const s = facilityGet().solids.find(x => x.kind === 'semi_truck'); return !facilityWalkable((s.poly[0][0] + s.poly[2][0]) / 2, (s.poly[0][1] + s.poly[2][1]) / 2); })()`), true, 'a body can stand in the truck');
+        ok(!M.props.some(p => p.id === 'arena_machine'), 'the old unlabelled machine is still there');
+    });
     check('an agent exactly on a wall line cannot slip along it into the next room', () => {
         const r = J(`(function(){ const F = facilityGet(), w = F.walls.find(w => w.room === 'arena' && w.kind === 'railing_wall'); const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2; return [facilityWalkable(mx, my), facilityCanStep(mx, my, mx + 1, my)]; })()`);
         same(r[0], false, 'a point on a wall is walkable');
@@ -111,6 +125,17 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ const F = facilityBuild({ openings: [{ id: 't_open', a: [255, 700], b: [300, 700], rooms: ['teleport_room_1', 'observation_deck'] }], connections: [{ id: 't_conn', rooms: ['teleport_room_1', 'observation_deck'], opening: 't_open' }] }); const v = facilityValidate(F);
             const F2 = facilityBuild({ openings: [{ id: 'lone', a: [255, 700], b: [300, 700] }] }); return { errs: v.errors, warns: facilityValidate(F2).warnings }; })()`);
         ok(r.errs.some(e => /no ramp/.test(e)), 'a level jump with no ramp passed: ' + r.errs.join(' | ')); ok(r.warns.some(w => /lone/.test(w)), 'an opening with no connection was not flagged');
+    });
+
+    group('DOORS AND THE BLOCKED ZONE');
+    check('every door is a sliding access door: the map says so, and a confirmed opening carries it', () => {
+        same(J('FACILITY_MAP.door_type'), 'sliding_access_door', 'door type');
+        const o = J(`facilityBuild({ openings: [{ id: 'd', a: [760, 470], b: [785, 470], rooms: ['front_office', 'experiment_lab'] }] }).openings[0].door`); same(o, 'sliding_access_door', 'compiled opening');
+        ok(/SLIDING DOOR/.test(rd('js/facility.js')), 'the debug view does not call a candidate a door');
+    });
+    check('the zone to the right (the catwalks) is blocked off for now: marked so, in no connection, with its exits not walkable', () => {
+        const M = J('FACILITY_MAP'), c = M.rooms.find(r => r.id === 'catwalks'); same(c.development, 'blocked_off_for_now', 'marker'); same(M.connections.length, 0, 'a confirmed connection into it');
+        ok(M.external_exits.filter(e => e.room === 'catwalks').every(e => !e.walkable), 'an exit is walkable'); same(J('facilityReachable(\'arena\', \'catwalks\', null, false)'), false, 'reachable');
     });
 
     group('THE DEBUG VIEW');
