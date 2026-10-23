@@ -210,7 +210,8 @@
     #facilityDebug.open { display: block; } #facilityDebug canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
     #facilityDebug .fd-bar { position: absolute; left: 8px; right: 8px; top: 8px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
     #facilityDebug .fd-bar button { pointer-events: auto; font: italic 900 13px var(--neo-font); color: #8aa0c8; background: #0a1022; border: 2px solid #2a3a66; padding: 7px 12px; cursor: pointer; touch-action: manipulation; }
-    #facilityDebug .fd-bar button.on { color: #05070f; background: #19e6c1; border-color: #19e6c1; } #facilityDebug .fd-bar .fd-close { margin-left: auto; color: #fff; border-color: #ff4a1c; }
+    #facilityDebug .fd-bar button.on { color: #05070f; background: #19e6c1; border-color: #19e6c1; } @media (max-width: 700px) { #facilityDebug .fd-bar button { font-size: 11px; padding: 5px 8px; } }
+    #facilityDebug .fd-bar .fd-close { margin-left: auto; color: #fff; border-color: #ff4a1c; }
     /* ── CONTROLS / INFO MENU ── */
     #controlsMenu {
         display: none; position: fixed; top: 50%; left: 50%;

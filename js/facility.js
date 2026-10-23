@@ -283,7 +283,7 @@ function _facProject(x, y, level, W, H) {
 function facilityFit(W, H) {
     const F = facilityGet(), b = F.bounds; let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const [x, y] of [[b.minX, b.minY], [b.maxX, b.minY], [b.maxX, b.maxY], [b.minX, b.maxY]]) { const sx = (x - y) * _facTW(), sy = (x + y) * _facTH(); minX = Math.min(minX, sx); maxX = Math.max(maxX, sx); minY = Math.min(minY, sy); maxY = Math.max(maxY, sy); }
-    facilityDebug.cam = { x: 0, y: 0, z: Math.max(0.05, Math.min((W * 0.94) / (maxX - minX), (H - 150) / (maxY - minY))) }; facilityDebug.fitted = true;
+    facilityDebug.cam = { x: 0, y: 0, z: Math.max(0.05, Math.min((W * 0.94) / (maxX - minX), (H - 190) / (maxY - minY))) }; facilityDebug.fitted = true;
 }
 
 function facilityDebugDraw() {
@@ -324,8 +324,8 @@ function facilityDebugDraw() {
     const lines = ["FACILITY · " + FACILITY_MAP.id + " · " + facilityScale() + " px/tile", "ROOMS " + F.rooms.length + " · CONFIRMED OPENINGS " + F.openings.length + " · CANDIDATES " + F.candidates.length,
         "NAV: " + comps.length + " separate area" + (comps.length === 1 ? "" : "s") + " (" + compsC.length + " if every candidate were real)", v.errors.length ? "ERRORS: " + v.errors.length + " — " + v.errors[0] : "RULES OK · arena sealed (" + (v.info.arenaAgents || 0) + " agent walks, " + (v.info.arenaLeaks || 0) + " leaks) · outer path in no link"];
     g.textAlign = "left"; g.textBaseline = "top"; g.font = "bold 12px monospace";
-    lines.forEach((t, i) => { g.fillStyle = i === 3 ? (v.errors.length ? "#ff6655" : FAC_COLOURS.ok) : "#9fb0d0"; g.fillText(t, 12, 58 + i * 16); });
-    if (facilityDebug.note) { g.fillStyle = FAC_COLOURS.cand; g.font = "bold 12px monospace"; g.fillText(facilityDebug.note.slice(0, Math.floor(W / 7.3)), 12, H - 28); }
+    lines.forEach((t, i) => { g.fillStyle = i === 3 ? (v.errors.length ? "#ff6655" : FAC_COLOURS.ok) : "#9fb0d0"; g.fillText(t.slice(0, Math.floor((W - 24) / 7.3)), 12, H - 106 + i * 16); });
+    if (facilityDebug.note) { g.fillStyle = FAC_COLOURS.cand; g.font = "bold 12px monospace"; g.fillText(facilityDebug.note.slice(0, Math.floor((W - 24) / 7.3)), 12, H - 36); }
 }
 function _facCentroidOfBand(poly) { const b = poly.reduce((m, p) => ({ x0: Math.min(m.x0, p[0]), x1: Math.max(m.x1, p[0]), y0: Math.min(m.y0, p[1]), y1: Math.max(m.y1, p[1]) }), { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity }); return [(b.x0 + b.x1) / 2, b.y0 + 2.2]; }
 function _facLabel(g, text, x, y, col, size) {
