@@ -222,6 +222,20 @@ function measure() {
         ok(r.back >= 5 && r.front >= 5, 'back ' + r.back + ', front ' + r.front); same(r.noDepth, 0, 'rock sorts with its steel wall'); same(r.prIn, 'arena', 'the player room (inside)'); same(r.prOut, 'lab_hallway', 'the player room (outside)'); same(r.errIn, null, 'rock threw inside'); same(r.errOut, null, 'rock threw outside'); ok(r.gradients >= 10, 'rock gradients: ' + r.gradients);
         const src = rd('js/facilitydecor.js'); ok(/_fp\.pr === it\.room/.test(src) && /Math\.max\(A0\[1\], B0\[1\]\) \+ 160/.test(src) && /FP_ROCK_DOWN/.test(src), 'the rock towers/cliff rules are not in the drawing code');
     });
+    check('THE CRYSTAL LAB STYLE (prototype): only the Crystal Chamber is restyled, from one palette; the other rooms keep their look, and the map is untouched', () => {
+        const src = rd('js/facilitystyle.js'); ok(/FP_STYLE_ROOMS = new Set\(\["crystal_chamber"\]\)/.test(src), 'the prototype is not limited to the Crystal Chamber');
+        const r = J(`(function(){ const rooms = Array.from(FP_STYLE_ROOMS), pal = Object.keys(FP_PAL), pill = _fp.items.filter(i => i.fp === 'pillar'), op = (room, x, y) => { const a = _fp.floorOps.get(x + ',' + y); return a ? a[0].c : null; };
+            const cr = _fp.F.byId.get('crystal_chamber'), cell = [Math.round(cr.bb[0] + 3), Math.round(cr.bb[1] + 3)], lob = _fp.F.byId.get('front_lobby');
+            return { rooms, pal, pillars: pill.length, pillarRooms: Array.from(new Set(pill.map(i => i.room))), chamberFloor: op('c', cell[0], cell[1]), lobbyFloor: op('l', Math.round(lob.bb[0] + 5), Math.round(lob.bb[1] + 3)), styled: _fp.items.filter(i => facilityStyleRoom(i.room)).map(i => i.fp).filter((v, i, a) => a.indexOf(v) === i).sort() }; })()`);
+        same(r.rooms.join(), 'crystal_chamber', 'styled rooms'); for (const k of ['ink', 'cap', 'wallLit', 'wallDark', 'wallBase', 'floorA', 'floorB', 'cyan', 'blue', 'violet', 'amber', 'teal']) ok(r.pal.includes(k), 'palette lacks ' + k);
+        same(r.pillars, 4, 'a post at each corner of the chamber'); same(r.pillarRooms.join(), 'crystal_chamber', 'posts outside the styled room');
+        ok(/^rgba\(20[0-9],2[0-9][0-9],2[0-9][0-9],1\)$/.test(r.chamberFloor) || /rgba\(\d+,\d+,\d+,1\)/.test(r.chamberFloor), 'the styled floor is not an opaque pale tile: ' + r.chamberFloor); ok(!/,1\)$/.test(r.lobbyFloor || ''), 'the lobby floor changed: ' + r.lobbyFloor);
+        for (const k of ['wall', 'prop', 'fixture', 'wdecor']) ok(r.styled.includes(k), 'no styled ' + k);
+        const draw = J(`(function(){ canvas.width = 1280; canvas.height = 860; facilityPlay = true; frame = 77; const cr = _fp.F.byId.get('crystal_chamber'); player.x = player.visualX = cr.bb[0] + 4; player.y = player.visualY = cr.bb[1] + 5; facilityDrawItems([]); let n = 0, err = null;
+            for (const it of _fp.items) { if (!(facilityStyleRoom(it.room) || (it.rooms && it.rooms.some(facilityStyleRoom)) || it.fp === 'pillar')) continue; try { _fpBase = it.base || 0; drawFacilityItem(it); n++; } catch (e) { err = it.fp + ':' + it.kind + ' ' + e.message; break; } } return { n, err }; })()`);
+        same(draw.err, null, 'a styled item threw'); ok(draw.n > 60, 'styled items drawn: ' + draw.n);
+        same(J("FACILITY_MAP.rooms.length"), 14, 'rooms'); same(J("FACILITY_MAP.openings.length"), 13, 'openings'); ok(!/FACILITY_MAP|facilityCanStep|facilityWalkable|facilityMove/.test(src), 'the style reads or changes the map or the movement');
+    });
     check('no holes: the floor runs in under every wall of the arena (cells the rock edge only partly covers, and the pocket behind the north rock), so no black shows where a wall meets the floor', () => {
         const r = J(`(function(){ const F = _fp.F, covered = (x, y) => { const k = Math.round(x) + ',' + Math.round(y); return _fp.cells.has(k) || _fp.fills.has(k) || F.solids.some(s => s.shape === 'circle' ? Math.hypot(Math.round(x) - s.at[0], Math.round(y) - s.at[1]) < s.r : facilityPointInPoly(Math.round(x), Math.round(y), s.poly)); };
             let front = 0, frontBad = 0, back = 0, backBad = 0, n = 0;

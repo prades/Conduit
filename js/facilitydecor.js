@@ -59,21 +59,21 @@ function _fpFloorBuild(F) {
     const fills = _fpFillCells(F, solid); _fp.fills = fills;
     const cellsAll = new Map(_fp.cells); for (const k of solid) { const [x, y] = k.split(",").map(Number); if (facilityRoomAt(x, y, F)) cellsAll.set(k, [x, y]); } for (const [k, f] of fills) cellsAll.set(k, [f.x, f.y]);
     for (const [k, c] of cellsAll) {
-        const room = fills.has(k) ? F.byId.get(fills.get(k).room) : facilityRoomAt(c[0], c[1], F), f = room && style.get(room.id), S = f && FP_FLOOR_STYLES[f.style]; if (!S) continue;
+        const room = fills.has(k) ? F.byId.get(fills.get(k).room) : facilityRoomAt(c[0], c[1], F), f = room && style.get(room.id), sty = !!room && facilityStyleRoom(room.id), S = sty ? FP_STYLE_FLOOR : (f && FP_FLOOR_STYLES[f.style]); if (!S) continue;
         const h = _fpHash(c[0], c[1]), o = _fpCellOps(solid.has(k) ? under : map, c[0], c[1]), alt = S.alt && ((c[0] + c[1]) & 1);
-        o.push({ t: "D", c: _fpRgba(alt ? S.alt : (f.colour || S.base), (S.a || 0.5) * (0.82 + (h % 7) * 0.05)) });
-        S.mark(h, o);
+        o.push({ t: "D", c: _fpRgba(alt ? S.alt : ((!sty && f.colour) || S.base), (S.a || 0.5) * (sty ? 1 : 0.82 + (h % 7) * 0.05)) });
+        S.mark(h, o, c[0], c[1]);
     }
     // 2. what lies on it
     const rect = (r, fn) => { for (let x = Math.ceil(r[0] - 0.5); x <= r[2] - 0.5; x++) for (let y = Math.ceil(r[1] - 0.5); y <= r[3] - 0.5; y++) if (_fp.cells.has(x + "," + y)) fn(x, y, _fpCellOps(map, x, y), r); };
     for (const d of (F.decor || [])) {
-        const col = d.colour || "#ffffff", k = d.kind; if (FAC_WALL_DECOR.has(k)) continue;   // (wall decor is drawn as items; "plate" is both a wall patch and a floor style)
+        let col = d.colour || "#ffffff"; const k = d.kind; if (FAC_WALL_DECOR.has(k)) continue; const sty = facilityStyleRoom(d.room); if (sty) col = _fpStyleCol(k, col);   // (a styled room's decals are brought into its palette)   // (wall decor is drawn as items; "plate" is both a wall patch and a floor style)
         if (k === "rug") {   // a rectangle with a border two strokes wide
             rect(d.rect, (x, y, o, r) => { o.push({ t: "D", c: _fpRgba(col, 0.6), k: 0.0 });
                 if (x - 0.5 < r[0] + 0.01) o.push({ t: "L", c: _fpRgba(d.border || "#ffd34d", 0.8), w: 2, p: [-0.42, -0.42, -0.42, 0.42] }); if (y - 0.5 < r[1] + 0.01) o.push({ t: "L", c: _fpRgba(d.border || "#ffd34d", 0.8), w: 2, p: [-0.42, -0.42, 0.42, -0.42] });
                 if (x + 0.5 > r[2] - 0.01) o.push({ t: "L", c: _fpRgba(d.border || "#ffd34d", 0.8), w: 2, p: [0.42, -0.42, 0.42, 0.42] }); if (y + 0.5 > r[3] - 0.01) o.push({ t: "L", c: _fpRgba(d.border || "#ffd34d", 0.8), w: 2, p: [-0.42, 0.42, 0.42, 0.42] }); });
         } else if (k === "hazard") {   // yellow and black bands across a threshold
-            rect(d.rect, (x, y, o) => { for (let i = 0; i < 4; i++) { const u0 = -0.5 + i * 0.25; o.push({ t: "P", c: i & 1 ? "rgba(20,20,24,0.78)" : _fpRgba(col === "#ffffff" ? "#ffd21a" : col, 0.8), p: [u0, -0.5, u0 + 0.25, -0.5, u0 + 0.25, 0.5, u0, 0.5] }); } });
+            rect(d.rect, (x, y, o) => { for (let i = 0; i < 4; i++) { const u0 = -0.5 + i * 0.25; o.push({ t: "P", c: i & 1 ? (sty ? "rgba(112,147,159,0.85)" : "rgba(20,20,24,0.78)") : _fpRgba(col === "#ffffff" ? "#ffd21a" : col, sty ? 0.92 : 0.8), p: [u0, -0.5, u0 + 0.25, -0.5, u0 + 0.25, 0.5, u0, 0.5] }); } });
         } else if (k === "plate" || k === "grate" || k === "panel_floor") {
             rect(d.rect, (x, y, o) => { const S = FP_FLOOR_STYLES[k === "grate" ? "grate" : "plate"], h = _fpHash(x, y); o.push({ t: "D", c: _fpRgba(S.base, 0.85) }); S.mark(h, o); });
         } else if (k === "tint") {   // a plain wash of colour over a rectangle: a puddle of light, a painted zone
@@ -93,7 +93,7 @@ function _fpFloorBuild(F) {
         } else if (k === "stain" || k === "puddle" || k === "scorch") {   // an irregular mark: a few overlapping blots
             const R = d.radius, seed = _fpHash(Math.round(d.at[0] * 7), Math.round(d.at[1] * 7)), n = 5 + (seed % 4);
             for (let i = 0; i < n; i++) { const a = ((seed >>> i) % 628) / 100, rr = ((seed >>> (i + 3)) % 100) / 100 * R * 0.7, bx = d.at[0] + Math.cos(a) * rr, by = d.at[1] + Math.sin(a) * rr, br = R * (0.32 + ((seed >>> (i + 5)) % 40) / 100), cx = Math.round(bx), cy = Math.round(by);
-                for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { const tx = cx + dx, ty = cy + dy; if (!_fp.cells.has(tx + "," + ty) || Math.hypot(bx - tx, by - ty) > br + 0.75) continue; _fpCellOps(map, tx, ty).push({ t: "C", c: _fpRgba(col, k === "puddle" ? 0.38 : k === "scorch" ? 0.38 : 0.34), u: bx - tx, v: by - ty, r: br, shine: k === "puddle" }); } }
+                for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { const tx = cx + dx, ty = cy + dy; if (!_fp.cells.has(tx + "," + ty) || Math.hypot(bx - tx, by - ty) > br + 0.75) continue; _fpCellOps(map, tx, ty).push({ t: "C", c: _fpRgba(col, (k === "puddle" ? 0.38 : k === "scorch" ? 0.38 : 0.34) * (sty ? 0.55 : 1)), u: bx - tx, v: by - ty, r: br, shine: k === "puddle" }); } }
         } else if (k === "papers" || k === "debris") {   // scattered sheets (or rubble)
             const seed = _fpHash(Math.round(d.at[0] * 5), Math.round(d.at[1] * 5)), n = d.n || 5;
             for (let i = 0; i < n; i++) { const bx = d.at[0] + (((seed >>> i) % 21) - 10) / 10 * (d.radius || 1), by = d.at[1] + (((seed >>> (i + 4)) % 21) - 10) / 10 * (d.radius || 1), cx = Math.round(bx), cy = Math.round(by); if (!_fp.cells.has(cx + "," + cy)) continue;
@@ -222,7 +222,7 @@ function _fpWallPlace(F) {
     for (const d of (F.decor || [])) {
         if (!FP_WALL_KINDS[d.kind]) continue;
         const a = d.a, b = d.b, h = Math.abs(a[1] - b[1]) < 1e-6, end = a[0] + a[1] > b[0] + b[1] ? a : b, mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-        items.push({ type: "fp", fp: "wdecor", kind: d.kind, x: mid[0], y: mid[1], a, b, colour: d.colour, text: d.text, z: d.z, h: d.h, id: d.id, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + (h ? 0.3 : 0.3), seed: _fpHash(Math.round(mid[0] * 4), Math.round(mid[1] * 4)) });
+        items.push({ type: "fp", fp: "wdecor", room: d.room, kind: d.kind, x: mid[0], y: mid[1], a, b, colour: d.colour, text: d.text, z: d.z, h: d.h, id: d.id, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + (h ? 0.3 : 0.3), seed: _fpHash(Math.round(mid[0] * 4), Math.round(mid[1] * 4)) });
     }
     return items;
 }
@@ -355,7 +355,7 @@ const FP_WALL_KINDS = {
         const z1 = it.z || 70; for (let k = 0; k < 7; k++) _fpWQuad(it, 0.05, 0.95, z1 - 3 - k * 5, z1 - 1 - k * 5, "#b8b098", "rgba(60,50,30,0.5)", 1);
     },
 };
-function _fpDrawWDecor(it) { if (_fpWallCutH(it.a, it.b, FP_WALL_H) < 70) return; const fn = FP_WALL_KINDS[it.kind]; if (fn) fn(it, _fpFrame()); }   // (decor on a wall that is cut down is not drawn)
+function _fpDrawWDecor(it) { if (_fpWallCutH(it.a, it.b, FP_WALL_H) < 70) return; const fn = (facilityStyleRoom(it.room) && FP_STYLE_WALL[it.kind]) || FP_WALL_KINDS[it.kind]; if (fn) fn(it, _fpFrame()); }   // (decor on a wall that is cut down is not drawn)
 
 // ═════════════ FURNITURE ═════════════
 // Returns true if it drew the kind. `it` is one tile of a solid prop (sx / sy: whether its +x / +y face is exposed, as for the desks).
@@ -366,6 +366,7 @@ function _fpDecorProp(it) {
         const c = _fpP(x, y, 0); ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill();
         ctx.strokeStyle = "rgba(60,90,140,0.25)"; ctx.lineWidth = 1; ctx.stroke(); const u = _fp.underOps && _fp.underOps.get(x + "," + y); if (u) _fpDrawOps(u, c[0], c[1], "u" + x + "," + y);
     }
+    if (facilityStyleRoom(it.room) && _fpStyleProp(it)) return true;   // (the crystal laboratory style: js/facilitystyle.js)
     if (k === "plant") {   // a potted plant: a pot, then fronds (dead and brown if the seed says)
         const dead = seed % 3 === 0; _fpBox(x - 0.28, y - 0.28, x + 0.28, y + 0.28, 0, 16, "#6a3a22", "#8a4a2a", "#6e3a20");
         const cols = dead ? ["#7a6a3a", "#5a4a28", "#8a7a46"] : ["#2f9a4a", "#1f7a3a", "#4ab85a"]; for (let i = 0; i < 7; i++) { const a = i * 0.9 + seed, b = _fpP(x, y, 16), dx = Math.cos(a) * (10 + (i % 3) * 3), dy = -18 - (i % 4) * 7; ctx.strokeStyle = cols[i % 3]; ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.quadraticCurveTo(b[0] + dx, b[1] + dy, b[0] + dx * 1.5, b[1] + dy * 0.7 + 6); ctx.stroke(); } ctx.lineCap = "butt";

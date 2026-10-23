@@ -1,0 +1,35 @@
+# The Crystal Laboratory style (prototype: the Crystal Chamber)
+
+A bright, clean, cartoon-inspired lab with a slightly eerie edge: big simple shapes, smooth matte surfaces, a controlled cool palette, a few saturated crystal accents, glowing neon seams and a little wear. It changes only HOW things are drawn (`js/facilitystyle.js`). The map, wall positions, doors, collision, navigation, catwalks and elevations are untouched, and nothing is invented: it restyles what is already there.
+
+Before / after (the Crystal Chamber): `docs/style/crystal-lab-prototype-before.png`, `docs/style/crystal-lab-prototype-after.png`.
+
+## Palette (`FP_PAL`)
+
+| Role | Colour | Use |
+|---|---|---|
+| ink | `#1b3640` | the one outline colour (deep teal, never black) |
+| cap | `#e8f3f6` | wall caps, post tops, case lids |
+| wall lit / dark | `#b5ccd4` / `#93b0ba` | the +x face is the lit one, the +y face the darker one |
+| wall base | `#70939f` | the wainscot band |
+| floor A / B | `#cadde1` / `#bcd2d8` | pale two-tone tiles |
+| teal / lit / dark | `#4f9aa0` / `#6cb3bb` / `#2f6a73` | machinery bodies, pipes, pots |
+| case | `#a9c4cc` / `#dbeaee` | storage cases, console tops |
+| cyan | `#31e8ff` | crystal energy, neon seams, screens (emissive) |
+| electric blue | `#3a7bff` | second energy colour |
+| violet | `#9a5cff` | crystal shards, accents |
+| amber | `#f2b13a` | the one warning colour (hazard signs and stripes) |
+
+Saturated colour is for crystal energy and things you use; everything else is a cool gray or muted teal.
+
+## Rules
+
+- **Shapes.** Plain boxes and cylinders: a lit top, a lit +x side, a darker +y side. Value separates surfaces; outlines only where a silhouette needs them (2 px on wall tops and posts, 1.5 px on furniture), none between adjacent wall pieces.
+- **Walls.** Three bands (darker base, body, light cap); a neon seam where the base meets the body; a faint panel join every two tiles; a post at every room corner; an ink line along the top edge. Wear: a rare muted discoloration, a rare rust streak.
+- **Floors.** Pale two-tone tiles with fine seams; a neon seam on every fourth tile line; decals (rings, cables, stripes, stains) keep their place and are recoloured into the palette; stains are fainter.
+- **Light.** Emissive only on energy sources and interactive things (the crystal, power cells, generator core, screens, seams, door lintels). No reflections, no ambient occlusion, no texture noise.
+- **Equipment.** The generator is the crystal-powered machine: a glowing core behind glass and a violet shard on top; the wall power pack is four charging capsules under a shard; consoles have a dark glass top lit from within; cases are pale with a cyan latch; drums have a violet band.
+
+## Status and how to extend
+
+Only the Crystal Chamber uses it (`FP_STYLE_ROOMS`). Once the palette, materials, edge definition and lighting are approved, the rest of the facility is switched over room by room: add the room to `FP_STYLE_ROOMS`, then give the kinds that room has (furniture, wall decor) a styled version in `_fpStyleProp` / `FP_STYLE_WALL` (kinds without one still draw as before). Rooms keep their identity through layout, equipment, lighting and accent colour, not a different style.
