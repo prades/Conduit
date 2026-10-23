@@ -895,6 +895,55 @@
     body.placing #mixTool, body.ccOpen #mixTool, body.panel-open #mixTool { display: none !important; }
     @media (min-width: 701px) { #mixTool { bottom: calc(100px + var(--vv-bottom, 0px)); } #mixTool .mt-pod, #mixTool .mt-x { display: none; } #mixTool .mt-panel { position: static; } }
     @media (max-width: 700px) { #mixTool { left: 8px; } }
+    /* ═══ THE GAME INDEX, NEO-FUTURISTIC BLUE ═══
+       The ? panel in the layout style: a deep-navy slab with a blue glow, italic headings, slanted tabs and chips. Blue is the accent; element colours stay as they are.
+       (Overrides the older green terminal look above it; every selector keeps its #controlsMenu prefix so the cascade is plain.) */
+    #controlsMenu { --bx: #3da8ff; --bx-ice: #8fe3ff; --bx-deep: #070d1f; --bx-line: #1d3566; --bx-text: #c9daf5;
+        font-family: var(--neo-font); color: var(--bx-text); border: 2.5px solid var(--bx); border-radius: 0;
+        background: linear-gradient(165deg, rgba(14,26,58,0.985) 0%, rgba(7,12,28,0.985) 55%, rgba(4,7,18,0.99) 100%);
+        box-shadow: 0 0 0 1px rgba(61,168,255,0.22), 0 0 30px rgba(61,168,255,0.38), inset 0 0 60px rgba(61,168,255,0.06);
+        clip-path: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px); padding: 18px 22px; }
+    #controlsMenu::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+        background: repeating-linear-gradient(115deg, transparent 0 46px, rgba(61,168,255,0.05) 46px 48px); }
+    #controlsMenu > * { position: relative; }
+    #controlsMenu.minimized { clip-path: none; }
+    #cm-title { font: italic 900 22px var(--neo-font); letter-spacing: 1.5px; color: var(--bx-ice); text-shadow: 0 0 14px var(--bx); }
+    #cm-minimize, #cm-close { font: italic 900 14px var(--neo-font); width: 38px; height: 30px; border-radius: 0; clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%); background: rgba(61,168,255,0.14); border: none; color: var(--bx-ice); box-shadow: inset 0 0 0 2px var(--bx); }
+    #cm-close { color: #ff8a6a; box-shadow: inset 0 0 0 2px #ff4a1c; background: rgba(255,74,28,0.14); }
+    #cm-minimize:hover { background: var(--bx); color: #05070f; } #cm-close:hover { background: #ff4a1c; color: #05070f; }
+    #controlsMenu .cm-tabs { gap: 6px; border-bottom: 2px solid rgba(61,168,255,0.35); padding-bottom: 10px; margin-bottom: 12px; }
+    #controlsMenu .cm-tab { font: italic 900 12px var(--neo-font); letter-spacing: 0.04em; color: #8fb4e8; background: linear-gradient(180deg, #121c3c, #080d20); border: 2px solid var(--bx-line); border-radius: 0;
+        padding: 7px 12px 7px 10px; min-height: 34px; clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%); }
+    #controlsMenu .cm-tab:hover:not(.active) { color: #fff; border-color: var(--bx); }
+    #controlsMenu .cm-tab.active { color: #05070f; background: var(--bx); border-color: var(--bx); box-shadow: 0 0 14px rgba(61,168,255,0.6); }
+    #controlsMenu .cm-body { padding-right: 8px; } #controlsMenu .cm-body::-webkit-scrollbar { width: 6px; } #controlsMenu .cm-body::-webkit-scrollbar-track { background: #070d1f; } #controlsMenu .cm-body::-webkit-scrollbar-thumb { background: var(--bx); border-radius: 0; }
+    #controlsMenu .ctrl-title, #controlsMenu .ix-h { font: italic 900 14px var(--neo-font); letter-spacing: 1.2px; color: var(--bx-ice); margin: 16px 0 7px; padding: 3px 0 3px 10px; border-left: 4px solid var(--bx); background: linear-gradient(90deg, rgba(61,168,255,0.16), transparent 70%); }
+    #controlsMenu .ctrl-row, #controlsMenu .cm-build-row { font-size: 0.8rem; color: var(--bx-text); line-height: 1.5; }
+    #controlsMenu .ctrl-key { display: inline-block; min-width: 26px; padding: 0 6px; font: italic 900 0.85rem var(--neo-font); color: #ffe733; background: rgba(61,168,255,0.14); border: 1px solid var(--bx); clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%); }
+    #controlsMenu .cm-build-label, #controlsMenu .cm-perk-name { font: italic 900 0.78rem var(--neo-font); color: var(--bx-ice); }
+    #controlsMenu .cm-stat { color: #ffe733; font-weight: 700; } #controlsMenu .cm-dim { color: #7f95c0; font-size: 0.76rem; }
+    #controlsMenu .cm-hr { border-top: 1px solid var(--bx-line); }
+    #controlsMenu .ix-lede { font-size: 0.86rem; color: #dbe8ff; background: linear-gradient(90deg, rgba(61,168,255,0.16), rgba(61,168,255,0.03)); border: none; border-left: 4px solid var(--bx); border-radius: 0; padding: 10px 14px; }
+    #controlsMenu .ix-lede strong, #controlsMenu .cm-intro-box strong, #controlsMenu .cm-section-note strong, #controlsMenu .cm-crystal-box strong, #controlsMenu .cm-perk-block .perk-title { color: var(--bx-ice); }
+    #controlsMenu .ix-card, #controlsMenu .ix-step, #controlsMenu .cm-shop-item, #controlsMenu .cm-clone-cell, #controlsMenu .cm-intro-box, #controlsMenu .cm-crystal-box, #controlsMenu .cm-perk-block, #controlsMenu .cm-section-note {
+        background: linear-gradient(180deg, rgba(20,34,72,0.7), rgba(8,13,30,0.85)); border: 1px solid var(--bx-line); border-radius: 0; color: var(--bx-text); }
+    #controlsMenu .ix-card { border-top: 3px solid var(--c, var(--bx)); } #controlsMenu .ix-card-h { font: italic 900 0.8rem var(--neo-font); color: var(--c, var(--bx-ice)); } #controlsMenu .ix-card-b strong { color: #fff; }
+    #controlsMenu .ix-step > b { background: var(--bx); color: #05070f; border-radius: 0; clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%); }
+    #controlsMenu .ix-chips span { color: #ffe733; border: 1px solid #6a5a10; background: rgba(255,231,51,0.06); border-radius: 0; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); padding: 0 8px; }
+    #controlsMenu .cm-ability, #controlsMenu .cm-ult, #controlsMenu .cm-proc, #controlsMenu .cm-tip, #controlsMenu .cm-formula, #controlsMenu .cm-hazard, #controlsMenu .cm-counter, #controlsMenu .cm-ult-block, #controlsMenu .cm-matchup-box, #controlsMenu .cm-follower-role, #controlsMenu .cm-phase {
+        background: rgba(61,168,255,0.07); border-radius: 0; color: #d3e1fa; }
+    #controlsMenu .cm-ability { border-left: 3px solid #ffe733; } #controlsMenu .cm-ult, #controlsMenu .cm-ult-block { border-left: 3px solid var(--bx); } #controlsMenu .cm-proc { border-left: 3px solid var(--bx-ice); }
+    #controlsMenu .cm-ult-block .ult-name, #controlsMenu .cm-perk-block .perk-val, #controlsMenu .cm-shop-item .label { color: var(--bx-ice); } #controlsMenu .cm-ult-block .ult-body { color: #c4d7f7; }
+    #controlsMenu .cm-personality-table th, #controlsMenu .cm-clone-table th, #controlsMenu .cm-species-table th, #controlsMenu .cm-stat-abbr, #controlsMenu .cm-clone-cell .sp { color: var(--bx-ice); border-bottom-color: var(--bx-line); }
+    #controlsMenu .cm-personality-table td, #controlsMenu .cm-clone-table td, #controlsMenu .cm-species-table td { color: var(--bx-text); border-bottom-color: #14264d; }
+    #controlsMenu details.cm-more { margin: 10px 0; border: 1px solid var(--bx-line); background: rgba(8,13,30,0.5); }
+    #controlsMenu details.cm-more > summary { cursor: pointer; padding: 8px 12px; font: italic 900 0.82rem var(--neo-font); letter-spacing: 0.04em; color: var(--bx-ice); background: linear-gradient(90deg, rgba(61,168,255,0.18), transparent); list-style: none; }
+    #controlsMenu details.cm-more > summary::before { content: "\25B8  "; color: var(--bx); } #controlsMenu details.cm-more[open] > summary::before { content: "\25BE  "; }
+    #controlsMenu details.cm-more > .cm-more-body, #controlsMenu details.cm-more > div { padding: 4px 12px 10px; }
+    #controlsMenu .ix-step strong, #controlsMenu .ix-card-b b { color: var(--bx-ice); }
+    #controlsMenu .ovr-btn, #controlsMenu button[onclick*="toggleControlsMenu"]:not(#cm-close) { font: italic 900 16px var(--neo-font); letter-spacing: 1px; color: #fff; background: linear-gradient(180deg, #16295a, #0a1432); border: 2px solid var(--bx); border-radius: 0; clip-path: polygon(2.5% 0, 100% 0, 97.5% 100%, 0 100%); font-size: 16px !important; padding: 9px 0 !important; cursor: pointer; touch-action: manipulation; }
+    #controlsMenu .ovr-btn:hover { background: var(--bx); color: #05070f; }
+    @media (max-width: 700px) { #controlsMenu { padding: 14px 14px; clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px); } #controlsMenu .cm-tab { font-size: 11px; padding: 6px 9px 6px 8px; } #cm-title { font-size: 18px; } }
 </style>
 </style>
 
@@ -969,7 +1018,7 @@
 
     <!-- ── START ── -->
     <div id="cmStart" class="cm-section active">
-<div class="ix-lede"><strong>Conduit</strong> in one line: take the zones of a living circuit board one by one, build and power a network of pylons to hold them, and keep the <strong>Crystal</strong> alive through every night.</div><div class="ix-h"><i class="ix-i" data-icon="crystal" data-col="#0f8" data-size="16"></i><span>HOW A RUN GOES</span></div><div class="ix-steps"><div class="ix-step"><b>1</b><i class="ix-i" data-icon="follower" data-col="#0f8" data-size="22"></i><div><strong>Gather a squad</strong><br>Walk up to a wandering entity and it joins you. Followers fight for you and respawn at the Crystal.</div></div><div class="ix-step"><b>2</b><i class="ix-i" data-icon="shard" data-col="#7fffd4" data-size="22"></i><div><strong>Earn shards</strong><br>Stand by a wall panel to hack it for shards and ammo. Kills drop shards and DNA too.</div></div><div class="ix-step"><b>3</b><i class="ix-i" data-icon="pylon" data-col="#0f8" data-size="22"></i><div><strong>Build pylons</strong><br>Tap BUILD to open the build window, pick a turret, wave pylon or battery, then tap a tile (tap it again to build). A pylon is 10 shards.</div></div><div class="ix-step"><b>4</b><i class="ix-i" data-icon="power" data-col="#8fd6ff" data-size="22"></i><div><strong>Power them</strong><br>A shield generator by a nest you hold carries its power; batteries store it; pylons spend it.</div></div><div class="ix-step"><b>5</b><i class="ix-i" data-icon="nest" data-col="#ff5522" data-size="22"></i><div><strong>Take the next zone</strong><br>Stand in the lit patch in front of its nest for 3 s. That raises its alarm: clear the wave and the zone is yours.</div></div><div class="ix-step"><b>6</b><i class="ix-i" data-icon="night" data-col="#aab8ff" data-size="22"></i><div><strong>Survive the night</strong><br>At night the alarm brings everything. The Crystal has 300 HP &mdash; if it falls, the run is over.</div></div></div><div class="cm-day-night"><div class="cm-phase day"><strong>&#9728; DAY</strong>Build, hack panels, recruit, take nests. Thieves come for your shards on quiet days.</div><div class="cm-phase night"><strong>&#9790; NIGHT</strong>The alarm raises the zones: kill the quota to clear the wave. From night 3 every night has a siege twist.</div></div><div class="ix-h"><i class="ix-i" data-icon="controls" data-col="#0ff" data-size="16"></i><span>THE THREE MOVES</span></div><div class="ix-grid"><div class="ix-card" style="--c:#0ff"><div class="ix-card-h"><i class="ix-i" data-icon="controls" data-col="#0ff"></i>TAP</div><div class="ix-card-b">Walk somewhere, or hack a wall panel.</div></div><div class="ix-card" style="--c:#ff0"><div class="ix-card-h"><i class="ix-i" data-icon="controls" data-col="#ff0"></i>LONG-PRESS</div><div class="ix-card-b">Opens a ring of orders for whatever you pressed &mdash; every command lives there.</div></div><div class="ix-card" style="--c:#f84"><div class="ix-card-h"><i class="ix-i" data-icon="controls" data-col="#f84"></i>CIRCLE</div><div class="ix-card-b">Draw round enemies to send your squad at them.</div></div></div><details class="cm-more"><summary>In detail &mdash; autoplay</summary><div class="ctrl-title">&#129302; AUTOPLAY</div>
+<div class="ix-lede"><strong>Conduit</strong> in one line: take the zones of a living circuit board one by one, build and power a network of pylons to hold them, and keep the <strong>Crystal</strong> alive through every night.</div><div class="ix-h"><i class="ix-i" data-icon="crystal" data-col="#0f8" data-size="16"></i><span>HOW A RUN GOES</span></div><div class="ix-steps"><div class="ix-step"><b>1</b><i class="ix-i" data-icon="follower" data-col="#0f8" data-size="22"></i><div><strong>Gather a squad</strong><br>Walk up to a wandering entity and it joins you. Followers fight for you and respawn at the Crystal.</div></div><div class="ix-step"><b>2</b><i class="ix-i" data-icon="shard" data-col="#7fffd4" data-size="22"></i><div><strong>Earn shards</strong><br>Stand by a wall panel to hack it for shards and ammo. Kills drop shards and DNA too.</div></div><div class="ix-step"><b>3</b><i class="ix-i" data-icon="pylon" data-col="#0f8" data-size="22"></i><div><strong>Build pylons</strong><br>Tap BUILD to open the build window, pick a turret, wave pylon or battery, then tap a tile (tap it again to build). A pylon is 10 shards.</div></div><div class="ix-step"><b>4</b><i class="ix-i" data-icon="power" data-col="#8fd6ff" data-size="22"></i><div><strong>Power them</strong><br>Hold the zone&rsquo;s nest, then BOOT the power unit in the back wall (tap it). Its cells store the power; pylons spend it.</div></div><div class="ix-step"><b>5</b><i class="ix-i" data-icon="nest" data-col="#ff5522" data-size="22"></i><div><strong>Take the next zone</strong><br>Stand in the lit patch in front of its nest for 3 s. That raises its alarm: clear the wave and the zone is yours.</div></div><div class="ix-step"><b>6</b><i class="ix-i" data-icon="night" data-col="#aab8ff" data-size="22"></i><div><strong>Survive the night</strong><br>At night the alarm brings everything. The Crystal has 300 HP &mdash; if it falls, the run is over.</div></div></div><div class="cm-day-night"><div class="cm-phase day"><strong>&#9728; DAY</strong>Build, hack panels, recruit, take nests. Thieves come for your shards on quiet days.</div><div class="cm-phase night"><strong>&#9790; NIGHT</strong>The alarm raises the zones: kill the quota to clear the wave. From night 3 every night has a siege twist.</div></div><div class="ix-h"><i class="ix-i" data-icon="controls" data-col="#0ff" data-size="16"></i><span>THE THREE MOVES</span></div><div class="ix-grid"><div class="ix-card" style="--c:#0ff"><div class="ix-card-h"><i class="ix-i" data-icon="controls" data-col="#0ff"></i>TAP</div><div class="ix-card-b">Walk somewhere, or hack a wall panel.</div></div><div class="ix-card" style="--c:#ff0"><div class="ix-card-h"><i class="ix-i" data-icon="controls" data-col="#ff0"></i>LONG-PRESS</div><div class="ix-card-b">Opens a ring of orders for whatever you pressed &mdash; every command lives there.</div></div><div class="ix-card" style="--c:#f84"><div class="ix-card-h"><i class="ix-i" data-icon="controls" data-col="#f84"></i>CIRCLE</div><div class="ix-card-b">Draw round enemies to send your squad at them.</div></div></div><details class="cm-more"><summary>In detail &mdash; autoplay</summary><div class="ctrl-title">&#129302; AUTOPLAY</div>
       <div class="ctrl-row cm-dim">The robot button on the top bar hands the game to your squad. Every second or so it follows a short list: <strong>at night</strong> everyone fights the enemies around the alarm; <strong>by day</strong> a team of <span class="cm-stat">3</span> walks to the next nest and <strong>hacks it</strong> (followers can hack when ordered to), and when shards run low one follower drains a wall panel; <strong>always</strong> it spends shards &mdash; a generator at every nest you hold, a connector at the frontier reaching toward the next zone, and a <strong>base plan</strong> at each nest in the squad&rsquo;s commonest element: two turrets first, a bank of <span class="cm-stat">6</span> <strong>batteries</strong> (tier III), the other two turrets so the four fuse into an <strong>ULTRA TURRET</strong>, a square of four wave pylons that makes a <strong>formation</strong> (black hole, spinning firewall, ice generator or toxic tower) with a bank of <span class="cm-stat">4</span> batteries of its element beside it when that is not the network element (both need tier II), and &mdash; only with shards to spare &mdash; <span class="cm-stat">2</span> support pylons, then <strong>MK II</strong> on its pylons one at a time. Then that nest is finished; fires any full ultimate with an enemy close (the duo if a partner can); keeps about a quarter of the squad on the work crew for shards; and presses NEXT WAVE itself. It <strong>never moves your character</strong> &mdash; go wherever you like while the squad plays. Tap it again to take back control &mdash; its orders are cleared.</div>
       </details>
     </div>
@@ -981,7 +1030,7 @@
       <div class="ctrl-row"><span class="ctrl-key">○</span> Circle (no enemies) → Recall all followers</div>
       <div class="ctrl-row"><span class="ctrl-key">│</span> Vertical line → Hold line — followers stop advancing</div>
       <div class="ctrl-row"><span class="ctrl-key">→</span> Drag follower → enemy → That follower attacks target</div>
-      <div class="ctrl-row"><span class="ctrl-key">⌀</span> <strong>Long press</strong> anything → its radial menu. <strong>Every order lives here</strong> &mdash; the ring changes with what you press: a bug (ATTACK / STOW your weapon), your follower (TO WORK / TO LINE / RE-ROLL), a pylon (UPGRADE, CONVERT), a generator (TURN ON / OFF), a connector (OPEN / CLOSE CIRCUIT)</div>
+      <div class="ctrl-row"><span class="ctrl-key">⌀</span> <strong>Long press</strong> anything → its radial menu. <strong>Every order lives here</strong> &mdash; the ring changes with what you press: a bug (ATTACK / STOW your weapon), your follower or clone (TO WORK / TO LINE / ROSTER CARD), your turret (INFO / POSITION / DESTROY), a nest you hold (OVERCHARGE / TELEPORT)</div>
       <div class="ctrl-row"><span class="ctrl-key">▤</span> Long press a row in the <strong>follower index</strong> (bottom left) → order that whole group to work or back to the line, or <strong>RE-ROLL ALL</strong> of them at the Crystal (tap twice)</div>
       <div class="ctrl-row"><span class="ctrl-key">·</span> Tap the floor → walk there. Tap a wall panel → hack it for shards and ammo</div>
       <div class="ctrl-row"><span class="ctrl-key">✦✦</span> Double-tap follower → Fire ultimate (when charged)</div>
@@ -1719,12 +1768,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-23g, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-23h, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-23g";
+window.__PAGE_BUILD = "2026-10-23h";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1760,74 +1809,74 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-23g"></script>
-<script src="js/icons.js?v=2026-10-23g"></script>
-<script src="js/uikit.js?v=2026-10-23g"></script>
-<script src="js/rng.js?v=2026-10-23g"></script>
-<script src="js/traits.js?v=2026-10-23g"></script>
-<script src="js/elements.js?v=2026-10-23g"></script>
-<script src="js/combat.js?v=2026-10-23g"></script>
-<script src="js/species.js?v=2026-10-23g"></script>
-<script src="js/levels.js?v=2026-10-23g"></script>
-<script src="js/status.js?v=2026-10-23g"></script>
-<script src="js/predator_randomizer.js?v=2026-10-23g"></script>
-<script src="js/mass.js?v=2026-10-23g"></script>
-<script src="js/infest.js?v=2026-10-23g"></script>
-<script src="js/power.js?v=2026-10-23g"></script>
-<script src="js/save.js?v=2026-10-23g"></script>
-<script src="js/camp.js?v=2026-10-23g"></script>
-<script src="js/wavedata.js?v=2026-10-23g"></script>
-<script src="js/helpers.js?v=2026-10-23g"></script>
-<script src="js/predator.js?v=2026-10-23g"></script>
-<script src="js/abilities.js?v=2026-10-23g"></script>
-<script src="js/world.js?v=2026-10-23g"></script>
-<script src="js/commands.js?v=2026-10-23g"></script>
-<script src="js/npc.js?v=2026-10-23g"></script>
-<script src="js/codex.js?v=2026-10-23g"></script>
-<script src="js/draw.js?v=2026-10-23g"></script>
-<script src="js/beetle3d.js?v=2026-10-23g"></script>
-<script src="js/bugs3d.js?v=2026-10-23g"></script>
-<script src="js/ui.js?v=2026-10-23g"></script>
-<script src="js/waves.js?v=2026-10-23g"></script>
-<script src="js/drops.js?v=2026-10-23g"></script>
-<script src="js/clone.js?v=2026-10-23g"></script>
-<script src="js/clonework.js?v=2026-10-23g"></script>
-<script src="js/broods.js?v=2026-10-23g"></script>
-<script src="js/raids.js?v=2026-10-23g"></script>
-<script src="js/ultra.js?v=2026-10-23g"></script>
-<script src="js/formations.js?v=2026-10-23g"></script>
-<script src="js/breakout.js?v=2026-10-23g"></script>
-<script src="js/nightraids.js?v=2026-10-23g"></script>
-<script src="js/bonds.js?v=2026-10-23g"></script>
-<script src="js/autoplay.js?v=2026-10-23g"></script>
-<script src="js/indexart.js?v=2026-10-23g"></script>
-<script src="js/modules.js?v=2026-10-23g"></script>
-<script src="js/shieldcells.js?v=2026-10-23g"></script>
-<script src="js/evolution.js?v=2026-10-23g"></script>
-<script src="js/hdsprites.js?v=2026-10-23g"></script>
-<script src="js/firebombs.js?v=2026-10-23g"></script>
-<script src="js/wallunit.js?v=2026-10-23g"></script>
-<script src="js/labwall.js?v=2026-10-23g"></script>
-<script src="js/moves.js?v=2026-10-23g"></script>
-<script src="js/squads.js?v=2026-10-23g"></script>
-<script src="js/recruitcrystal.js?v=2026-10-23g"></script>
-<script src="js/buildmenu.js?v=2026-10-23g"></script>
-<script src="js/hudgems.js?v=2026-10-23g"></script>
-<script src="js/nethud.js?v=2026-10-23g"></script>
-<script src="js/commandcenter.js?v=2026-10-23g"></script>
-<script src="js/unitinfo.js?v=2026-10-23g"></script>
-<script src="js/infodex.js?v=2026-10-23g"></script>
-<script src="js/facilitymap.js?v=2026-10-23g"></script>
-<script src="js/facility.js?v=2026-10-23g"></script>
-<script src="js/zones.js?v=2026-10-23g"></script>
-<script src="js/kits.js?v=2026-10-23g"></script>
-<script src="js/kitui.js?v=2026-10-23g"></script>
-<script src="js/toolbox.js?v=2026-10-23g"></script>
-<script src="js/mixtool.js?v=2026-10-23g"></script>
-<script src="js/radialmenu.js?v=2026-10-23g"></script>
-<script src="js/input.js?v=2026-10-23g"></script>
-<script src="js/game.js?v=2026-10-23g"></script>
-<script src="js/dev.js?v=2026-10-23g"></script>
+<script src="js/config.js?v=2026-10-23h"></script>
+<script src="js/icons.js?v=2026-10-23h"></script>
+<script src="js/uikit.js?v=2026-10-23h"></script>
+<script src="js/rng.js?v=2026-10-23h"></script>
+<script src="js/traits.js?v=2026-10-23h"></script>
+<script src="js/elements.js?v=2026-10-23h"></script>
+<script src="js/combat.js?v=2026-10-23h"></script>
+<script src="js/species.js?v=2026-10-23h"></script>
+<script src="js/levels.js?v=2026-10-23h"></script>
+<script src="js/status.js?v=2026-10-23h"></script>
+<script src="js/predator_randomizer.js?v=2026-10-23h"></script>
+<script src="js/mass.js?v=2026-10-23h"></script>
+<script src="js/infest.js?v=2026-10-23h"></script>
+<script src="js/power.js?v=2026-10-23h"></script>
+<script src="js/save.js?v=2026-10-23h"></script>
+<script src="js/camp.js?v=2026-10-23h"></script>
+<script src="js/wavedata.js?v=2026-10-23h"></script>
+<script src="js/helpers.js?v=2026-10-23h"></script>
+<script src="js/predator.js?v=2026-10-23h"></script>
+<script src="js/abilities.js?v=2026-10-23h"></script>
+<script src="js/world.js?v=2026-10-23h"></script>
+<script src="js/commands.js?v=2026-10-23h"></script>
+<script src="js/npc.js?v=2026-10-23h"></script>
+<script src="js/codex.js?v=2026-10-23h"></script>
+<script src="js/draw.js?v=2026-10-23h"></script>
+<script src="js/beetle3d.js?v=2026-10-23h"></script>
+<script src="js/bugs3d.js?v=2026-10-23h"></script>
+<script src="js/ui.js?v=2026-10-23h"></script>
+<script src="js/waves.js?v=2026-10-23h"></script>
+<script src="js/drops.js?v=2026-10-23h"></script>
+<script src="js/clone.js?v=2026-10-23h"></script>
+<script src="js/clonework.js?v=2026-10-23h"></script>
+<script src="js/broods.js?v=2026-10-23h"></script>
+<script src="js/raids.js?v=2026-10-23h"></script>
+<script src="js/ultra.js?v=2026-10-23h"></script>
+<script src="js/formations.js?v=2026-10-23h"></script>
+<script src="js/breakout.js?v=2026-10-23h"></script>
+<script src="js/nightraids.js?v=2026-10-23h"></script>
+<script src="js/bonds.js?v=2026-10-23h"></script>
+<script src="js/autoplay.js?v=2026-10-23h"></script>
+<script src="js/indexart.js?v=2026-10-23h"></script>
+<script src="js/modules.js?v=2026-10-23h"></script>
+<script src="js/shieldcells.js?v=2026-10-23h"></script>
+<script src="js/evolution.js?v=2026-10-23h"></script>
+<script src="js/hdsprites.js?v=2026-10-23h"></script>
+<script src="js/firebombs.js?v=2026-10-23h"></script>
+<script src="js/wallunit.js?v=2026-10-23h"></script>
+<script src="js/labwall.js?v=2026-10-23h"></script>
+<script src="js/moves.js?v=2026-10-23h"></script>
+<script src="js/squads.js?v=2026-10-23h"></script>
+<script src="js/recruitcrystal.js?v=2026-10-23h"></script>
+<script src="js/buildmenu.js?v=2026-10-23h"></script>
+<script src="js/hudgems.js?v=2026-10-23h"></script>
+<script src="js/nethud.js?v=2026-10-23h"></script>
+<script src="js/commandcenter.js?v=2026-10-23h"></script>
+<script src="js/unitinfo.js?v=2026-10-23h"></script>
+<script src="js/infodex.js?v=2026-10-23h"></script>
+<script src="js/facilitymap.js?v=2026-10-23h"></script>
+<script src="js/facility.js?v=2026-10-23h"></script>
+<script src="js/zones.js?v=2026-10-23h"></script>
+<script src="js/kits.js?v=2026-10-23h"></script>
+<script src="js/kitui.js?v=2026-10-23h"></script>
+<script src="js/toolbox.js?v=2026-10-23h"></script>
+<script src="js/mixtool.js?v=2026-10-23h"></script>
+<script src="js/radialmenu.js?v=2026-10-23h"></script>
+<script src="js/input.js?v=2026-10-23h"></script>
+<script src="js/game.js?v=2026-10-23h"></script>
+<script src="js/dev.js?v=2026-10-23h"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1880,7 +1929,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-23g"></script>
+<script src="js/init.js?v=2026-10-23h"></script>
 
 </body>
 </html>

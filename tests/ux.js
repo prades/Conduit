@@ -193,7 +193,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     const HTML = rd('game.html');
     await check('every ring is named, and the stale claims are gone', () => {
-        for (const w of ['ATTACK', 'RE-ROLL', 'TO WORK', 'OPEN / CLOSE CIRCUIT', 'follower index', 'BUILD mode ignores units'])
+        for (const w of ['ATTACK', 'RE-ROLL', 'TO WORK', 'ROSTER CARD', 'follower index', 'BUILD mode ignores units'])
             ok(HTML.includes(w), 'the index does not mention ' + w);
         ok(!/LEFT — Switch role \/ Destroy nest/.test(HTML), 'the index still lists Destroy nest');
         ok(!/Fire &amp; Electric start/.test(HTML), 'the index still says only two elements start unlocked');
