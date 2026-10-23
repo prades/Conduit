@@ -26,7 +26,7 @@ function findChromium() {
 }
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
-  tutorialMode = false; gameState.running = true; shardCount = 200; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; }));
+  gameState.running = true; shardCount = 200; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; }));
   player.x = player.targetX = player.visualX = 8; var W = canvas.width / 2, H = canvas.height / 2, mx = wallUnitX0(0) + 3;
   var sx = (mx - player.visualX - (-1 - player.visualY)) * TILE_W + W - 14, sy = (mx - player.visualX + (-1 - player.visualY)) * TILE_H + H + 7 - 53;
   out.hit = !!wallUnitHit(sx, sy); out.miss = !wallUnitHit(sx + 400, sy + 300);
@@ -58,7 +58,7 @@ function measure() {
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(40);`);
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(40);`);
     // a clean slate: no pylons, a generator by home when asked, plenty of shards
     const fresh = gen => run(`(function(){
         world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isConnector = false; t.isBattery = false; t.attackModeElement = null; t.charge = 0; t.mk = 0; t.upgraded = false; t._wallCell = false; } if (t.nest) { t.powerOff = false; t.nestEnergy = undefined; } });

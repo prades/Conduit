@@ -25,7 +25,7 @@ function findChromium() {
 // The real flow in the real page: tap cards, MAKE SQUAD, tap the squad chip, and the side panel becomes the squad's menu. Also that a redraw tick does not rebuild what has not changed.
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
-  tutorialMode = false; gameState.running = true; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; })); followers.length = 0; recruitChoice = 'mix';
+  gameState.running = true; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; })); followers.length = 0; recruitChoice = 'mix';
   ['fire', 'ice', 'electric', 'flux'].forEach(function(el, i){ spawnFollowerAtCrystal(el); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = 'brawler'; f.level = 3 + i; });
   ccOpen('roster'); await wait(150);
   var cards = function(){ return Array.prototype.slice.call(document.querySelectorAll('#ccGrid .cc-card')); }, btn = function(t){ return Array.prototype.find.call(document.querySelectorAll('#ccSquadBody .cc-btn'), function(b){ return b.textContent.indexOf(t) === 0; }); };
@@ -68,7 +68,7 @@ function measure() {
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id));
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id));
         globalThis.__fresh = n => { followers.length = 0; actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); selectedUnits.clear(); floatingTexts.length = 0;
             const els = ['fire', 'ice', 'electric', 'flux', 'core', 'toxic', 'fire']; for (let i = 0; i < n; i++) { spawnFollowerAtCrystal(els[i % els.length]); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.x = 6 + i; f.y = 1; } };`);
 

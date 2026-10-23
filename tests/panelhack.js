@@ -25,7 +25,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(4 * ZONE_LENGTH); player.x = 20; player.y = 2; gameState.phase = 'day';`);
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(4 * ZONE_LENGTH); player.x = 20; player.y = 2; gameState.phase = 'day';`);
 
     // One safe panel near the player, a worker of the given element standing a few tiles from it, nothing else about.
     const setup = (el, opts) => run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower && !(a instanceof Predator)); chargedMass.length = 0; frame += 7;

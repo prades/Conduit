@@ -22,7 +22,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
+    run('gameState.running = true; ');
     // Record what a draw call does to the canvas: full-screen fills, filled
     // shapes, the widest stroke.
     run(`globalThis.__rec = function(fn){ const r = { fullFills: 0, fills: 0, maxLine: 0, ellipses: 0 }; const keep = {};

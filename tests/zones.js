@@ -24,7 +24,7 @@ function findChromium() {
     return null;
 }
 // The board: zone 1 holds a tier II electric bank (4 batteries) and three fire turrets, one wrecked and one offline; zone 2 two ice batteries.
-const BOARD = `gameState.running = true; tutorialMode = false; zoneGenerated = () => true; shardCount = 300; unlockedElements = new Set(ELEMENTS.map(e => e.id));
+const BOARD = `gameState.running = true; zoneGenerated = () => true; shardCount = 300; unlockedElements = new Set(ELEMENTS.map(e => e.id));
     gameState.highestZoneCleared = 2; activeDayZones = 4; for (let z = 0; z <= 4; z++) ensureWorldTo((z + 1) * ZONE_LENGTH);
     world.forEach(t => { if (t.pillar) { t.pillar = false; t.isBattery = false; t.attackMode = false; t.waveMode = false; t.attackModeElement = null; } });
     (function(){ const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType && !t.pillar), el = id => ELEMENTS.find(e => e.id === id);

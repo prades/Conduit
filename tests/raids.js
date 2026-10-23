@@ -23,7 +23,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
+    run('gameState.running = true; ');
     run('unlockedElements = new Set(ELEMENTS.map(e => e.id));'); // A late game: every element held (the ladder unlocks them two waves apart).
     run('ensureWorldTo(8 * ZONE_LENGTH)');
 

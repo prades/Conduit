@@ -62,7 +62,7 @@ function findChromium() {
 // hidden until they have something to say, so the probe reveals them — a box
 // that only appears mid-game is exactly the one nobody checks.
 const IDS = ['shards', 'ui', 'ultWrap', 'waveInfo', 'topToggles', 'zoneInfo', 'mixTool',
-             'dnaHud', 'padHud', 'tutBtn', 'devBtn'];
+             'dnaHud', 'padHud', 'devBtn'];
 
 // The two longest lines the banner can produce — the worst case, not the
 // opening one. Anything shorter has slack these do not.
@@ -257,10 +257,6 @@ check('the DEV button is out of the player HUD', () => {
     ok(/bottom:/.test(block), 'the DEV button is not anchored to the bottom');
     // And players do not see it at all: it is only added to the page when the address has ?dev ("remove the dev button").
     ok(/if \(\/\[\?&\]dev\\b\/\.test\(\(typeof window[^\n]*\)\) document\.body\.appendChild\(devBtn\);/.test(DEV), 'the DEV button is still shown to every player');
-});
-
-check('the TUTORIAL button is small and tucked into the bottom-left corner', () => {
-    ok(/#tutBtn \{ left: 12px !important; right: auto !important;[^}]*font-size: 11px !important/.test(HTML), 'the tutorial button is not shrunk and moved');
 });
 
 check('the in-game index describes the bar the player is actually looking at', () => {

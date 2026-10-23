@@ -82,7 +82,7 @@ function rollInfestSettle(pred) {
 // else leaves your pylons alone. A pylon that is on and hurting a predator is
 // dealt with by the bash in Predator.update (pylonAggro), not by this search.
 function nearestGreenPylonFor(pred) {
-    if (!pred || !pred.huntsPylons || pred.isTutorialFoe) return null;
+    if (!pred || !pred.huntsPylons) return null;
     let best = null, bestD = INFEST_SEEK_RANGE;
     for (const t of world) {
         if (!t.pillar || t.destroyed || t.health <= 0) continue;
@@ -222,7 +222,7 @@ function payIntoWallNest(nest, amount, pred) {
 }
 function nestFetchTick(pred) {
     // Only the HAULERS carry: zone 2's beetles (js/broods.js).
-    if (pred.isTutorialFoe || !pred.hauler) return false;
+    if (!pred.hauler) return false;
     // Carrying: take it to the wall nest.
     if (pred.nestMass > 0) {
         const nest = pred._nestTarget;

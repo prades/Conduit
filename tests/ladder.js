@@ -25,7 +25,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false; ensureWorldTo(8 * ZONE_LENGTH); siegeToday = null;');
+    run('gameState.running = true; ensureWorldTo(8 * ZONE_LENGTH); siegeToday = null;');
     // What a wave sends, sampled: { "ant.nymph": share, "ant.scout": … } by species and nymph-or-not.
     const sample = (wave, zone, n) => run(`(function(){ const out = {}; for (let i = 0; i < ${n || 3000}; i++) { const p = ladderPick(${wave}, ${zone || 1});
         const k = p.className === 'nymph' ? 'nymph' : p.species; out[k] = (out[k] || 0) + 1 / ${n || 3000}; } return out; })()`);

@@ -21,7 +21,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id));');
+    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id));');
 
     // Turrets at the listed offsets from (home.x + 4, 0), elements by index.
     // `bats`: batteries of the square's element along the back row, for its

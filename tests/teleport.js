@@ -21,7 +21,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false; ensureWorldTo(6 * ZONE_LENGTH);');
+    run('gameState.running = true; ensureWorldTo(6 * ZONE_LENGTH);');
 
     // You hold zones 1..held; the rest are live.
     const hold = held => run(`(function(){

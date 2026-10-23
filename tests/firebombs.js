@@ -25,7 +25,7 @@ function findChromium() {
 }
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
-  tutorialMode = false; gameState.running = true; _aPylons.length = 0; var t = { x: player.x + 2, y: player.y + 1, attackModeElement: 'fire', attackRange: 8 }; _aPylons.push(t);
+  gameState.running = true; _aPylons.length = 0; var t = { x: player.x + 2, y: player.y + 1, attackModeElement: 'fire', attackRange: 8 }; _aPylons.push(t);
   var s = _fireScr(t.x, t.y, 0.7); out.ring0 = !!$('#aimRing.open');
   out.tapOnTurret = fireAimTap(s[0], s[1]); out.ring = { open: !!$('#aimRing.open'), btns: $$('#aimRing .aim-b').length, auto: !!$('#aimRing .aim-auto.on') };
   $$('#aimRing .aim-b[data-aim="2"]')[0].dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(30); out.set = { aim: t.fireAim, open: !!$('#aimRing.open') };
@@ -57,7 +57,7 @@ function measure() {
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id)); zoneGenerated = () => true; ensureWorldTo(40);
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); zoneGenerated = () => true; ensureWorldTo(40);
         globalThis.__clear = () => { fireBombs.length = 0; fireTiles.clear(); actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; floatingTexts.length = 0; player.x = player.targetX = player.visualX = 3; player.y = player.targetY = player.visualY = 1; health = 100; player.invuln = 0; };
         globalThis.__land = (b, n) => { const out = []; let was = 0; for (let i = 0; i < (n || 600) && fireBombs.indexOf(b) >= 0; i++) { const z0 = b.z; frame++; fireBombsTick(); if (fireBombs.indexOf(b) >= 0 && b.z === 0) out.push([+b.x.toFixed(2), +b.y.toFixed(2)]); else if (fireBombs.indexOf(b) < 0) out.push('burst'); } return out; };`);
     run('__clear();');

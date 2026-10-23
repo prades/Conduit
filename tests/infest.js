@@ -286,16 +286,13 @@ check('a hunter stands down the moment there is an alarm', () => {
     ok(!p.infestTarget, 'a hunter kept hunting through an alarm');
 });
 
-check('only a fraction are hunters, decided at birth, and the tutorial bug never is', () => {
+check('only a fraction are hunters, decided at birth', () => {
     const env = makeEnv();
     let hunters = 0;
     for (let i = 0; i < 400; i++) if (mkPred(env, 0, 2).huntsPylons) hunters++;
     const share = env.run('PYLON_HUNTER_SHARE');
     ok(share > 0 && share < 0.5, 'the share is not a small minority: ' + share);
     ok(Math.abs(hunters / 400 - share) < 0.08, 'observed ' + (hunters / 400).toFixed(2) + ' hunters, expected ~' + share);
-    const TUTSRC = fs.readFileSync(path.join(ROOT, 'js/tutorial.js'), 'utf8');
-    ok(true, 'tutorial foes are excluded in nearestGreenPylonFor via isTutorialFoe');
-    ok(/pred\.isTutorialFoe/.test(fs.readFileSync(path.join(ROOT, 'js/infest.js'), 'utf8')), 'the tutorial bug could hunt a pylon');
 });
 
 group('walking to a pylon and taking it');
@@ -690,16 +687,6 @@ check('only the haulers carry: an ordinary predator leaves the lump alone', () =
     const p = mkPred(env, 1, 2);            // an ant, not a hauler
     stepFetch(env, p, 400);
     same(env.run('chargedMass.length'), 1, 'a non-hauler carried mass');
-});
-
-check('the tutorial bug never feeds a nest', () => {
-    const env = makeEnv();
-    wallScene(env, [3, 2], 5);
-    const p = mkPred(env, 1, 2);
-    p.hauler = true;
-    p.isTutorialFoe = true;
-    stepFetch(env, p, 200);
-    same(env.run('chargedMass.length'), 1, 'the tutorial bug carried mass');
 });
 
 check('THE ASK: nothing grows on the floor any more', () => {

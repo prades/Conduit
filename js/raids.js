@@ -84,7 +84,6 @@ function _liveEnemyNests() {
 function raidQuiet() {
     if (typeof gameState === "undefined" || !gameState.running || gameState.phase !== "day") return false;
     if (typeof alertActive !== "undefined" && alertActive) return false;
-    if (typeof tutorialMode !== "undefined" && tutorialMode) return false;
     // They raid once you hold ground — and have batteries for them to eat.
     return _heldNests().length > 0 && raidBatteries().length > 0;
 }

@@ -22,7 +22,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
-    run(`gameState.running = true; tutorialMode = false; zoneGenerated = () => true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); for (let z = 0; z <= 2; z++) ensureWorldTo((z + 1) * ZONE_LENGTH);
+    run(`gameState.running = true; zoneGenerated = () => true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); for (let z = 0; z <= 2; z++) ensureWorldTo((z + 1) * ZONE_LENGTH);
         globalThis.__fresh = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone); followers.length = 0; squadMode = 'all'; player.x = player.targetX = player.visualX = 8; player.y = player.targetY = player.visualY = 1.5;
             ['fire', 'ice', 'electric'].forEach((el, i) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = 'brawler'; f.x = 7 + i * 0.6; f.y = 1.5; }); render(); };
         __fresh();`);

@@ -23,7 +23,7 @@ function findChromium() {
     for (const p of ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome']) if (fs.existsSync(p)) return p;
     return null;
 }
-const SETUP = `gameState.running = true; tutorialMode = false; zoneGenerated = () => true; shardCount = 600; unlockedElements = new Set(ELEMENTS.map(e => e.id));
+const SETUP = `gameState.running = true; zoneGenerated = () => true; shardCount = 600; unlockedElements = new Set(ELEMENTS.map(e => e.id));
     gameState.highestZoneCleared = 1; activeDayZones = 3; for (let z = 0; z <= 3; z++) ensureWorldTo((z + 1) * ZONE_LENGTH);
     world.forEach(t => { if (t.pillar) { t.pillar = false; t.isBattery = false; t.attackMode = false; t.waveMode = false; t.attackModeElement = null; } });
     actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;

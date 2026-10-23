@@ -64,7 +64,7 @@ sandbox.__counting = new Proxy({}, {
     },
     set(t, k, v) { t[k] = v; return true; },
 });
-run(`gameState.running = true; if (typeof tutorialMode !== 'undefined') tutorialMode = false;
+run(`gameState.running = true; 
      ctx = __counting;`);
 for (let i = 0; i < 30; i++) run('render();');   // settle the scene
 

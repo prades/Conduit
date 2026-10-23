@@ -29,7 +29,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${b}, got 
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; tutorialMode = false;
+    run(`gameState.running = true; 
          actors = actors.filter(a => !a.isClone);
          makeClone('ant', 'scout', crystal.x + 3, 2); makeClone('ant', 'striker', crystal.x + 4, 2);
          makeClone('beetle', 'scout', crystal.x + 5, 2);

@@ -24,7 +24,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(4 * ZONE_LENGTH); player.x = 20; player.y = 2; gameState.nightNumber = 1;`);
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(4 * ZONE_LENGTH); player.x = 20; player.y = 2; gameState.nightNumber = 1;`);
     // A worker of this element, a fresh follower with no job and no one else about.
     const worker = (el, duty) => run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower && !(a instanceof Predator)); chargedMass.length = 0; frame += 7;
         spawnFollowerAtCrystal('${el}'); const f = followers[0]; f.returningToCrystal = false; f.duty = ${duty === false ? 'null' : "'worker'"}; f.job = null; f.stance = 'follow'; f.x = 20; f.y = 2; f.moveSpeed = 0.05;

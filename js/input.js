@@ -157,7 +157,6 @@ function firePlayerShot(foe) {
 
 function setPlayerAttackMode(on) {
     playerAttackMode = !!on;
-    if (on && typeof tutorialNoteArm === "function") tutorialNoteArm();
     floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
         text: playerAttackMode ? "ARMED — tap enemies to fire" : "WEAPON STOWED",
         color: playerAttackMode ? "#ff8844" : "#889", life:110, vy:-0.25, size:13});
@@ -221,7 +220,7 @@ function isTapNearHomePortal(ex, ey) {
 
 // ── THE LONG-PRESS HINT ──────────────────────────────────
 // Every order in the game lives in a ring you open with a long press, and
-// nothing on screen said so: someone who skipped the tutorial never found
+// nothing on screen said so: a new player never found
 // ATTACK, TO WORK, RE-ROLL or the circuit switch. Until the ring has been
 // opened once, ever, a tip floats up every RING_HINT_FRAMES.
 const RING_HINT_FRAMES = 2400;   // 40 seconds
@@ -233,7 +232,6 @@ function noteRingUsed() {
 }
 function ringHintTick() {
     if (_ringUsed || frame <= 0 || frame % RING_HINT_FRAMES !== 0) return;
-    if (typeof tutorialMode !== "undefined" && tutorialMode) return;
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 60,
         text: "TIP: PRESS AND HOLD A UNIT, PYLON OR BUG FOR ORDERS", color: "#0df", life: 220, vy: -0.05, size: 12 });
 }

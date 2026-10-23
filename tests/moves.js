@@ -44,7 +44,7 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'petalBlaze', reaver: 'arcVolley'
     });
     check('the worker forms have nothing to fire', () => { for (const id of ['vessel', 'pod', 'hauler']) same(run(`(function(){ const m = evoMoveOf({ evolved: ${JSON.stringify(id)} }); return m && m.fn ? 'fires' : 'none'; })()`), 'none', id); });
     check('evolutionTick fires the form\'s move, once its cooldown is up', () => {
-        run(`gameState.running = true; tutorialMode = false; followers.length = 0; spawnFollowerAtCrystal('fire'); globalThis.__f = followers[followers.length - 1]; __f.evolved = 'quillstone'; __f._moltAt = -1e9; __f._sigCd = 0;
+        run(`gameState.running = true; followers.length = 0; spawnFollowerAtCrystal('fire'); globalThis.__f = followers[followers.length - 1]; __f.evolved = 'quillstone'; __f._moltAt = -1e9; __f._sigCd = 0;
              globalThis.__fired = 0; globalThis.__keep = MOVES.quill_burst.fn; MOVES.quill_burst.fn = f => { __fired++; f._sigCd = 100; return true; }; evolutionTick();`);
         same(J('__fired'), 1, 'fired'); run('evolutionTick();'); same(J('__fired'), 1, 'fired again with its cooldown up'); run('MOVES.quill_burst.fn = __keep;');
     });

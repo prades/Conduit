@@ -31,7 +31,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     // (and tests/connector.js); it is stood in for here.
     run('zoneGenerated = () => true;');
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
+    run('gameState.running = true; ');
 
     // A generator by home, then `n` electric pylons two tiles apart heading
     // away from it, built the way the player builds them. Runs `frames`.

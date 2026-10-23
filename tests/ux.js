@@ -174,7 +174,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     const hintFrames = () => run('RING_HINT_FRAMES');
     await check('the tip appears on the interval while the ring is unused', () => {
         const n = run(`(function(){ _ringUsed = false; floatingTexts.length = 0; frame = ${hintFrames()};
-            tutorialMode = false; ringHintTick(); return floatingTexts.filter(f => /PRESS AND HOLD/.test(f.text)).length; })()`);
+            ringHintTick(); return floatingTexts.filter(f => /PRESS AND HOLD/.test(f.text)).length; })()`);
         ok(n === 1, 'expected one tip, got ' + n);
     });
     await check('it stays quiet between intervals', () => {
@@ -187,11 +187,6 @@ function ok(c, m) { if (!c) throw new Error(m); }
             ringHintTick(); return [_ringUsed, floatingTexts.length]; })()`);
         ok(n[0] === true && n[1] === 0, JSON.stringify(n));
         ok(/noteRingUsed\(\);\s*\n\s*const dx/.test(rd('js/input.js')), 'a long press does not record that the ring was used');
-    });
-    await check('no tip during the tutorial', () => {
-        const n = run(`(function(){ _ringUsed = false; tutorialMode = true; floatingTexts.length = 0; frame = ${hintFrames()};
-            ringHintTick(); tutorialMode = false; return floatingTexts.length; })()`);
-        ok(n === 0, 'a tip appeared over the tutorial');
     });
 
     group('the index describes the real rings');

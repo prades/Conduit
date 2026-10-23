@@ -26,7 +26,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; tutorialMode = false; ensureWorldTo(12 * ZONE_LENGTH); render();`);
+    run(`gameState.running = true; ensureWorldTo(12 * ZONE_LENGTH); render();`);
     const fresh = `health = PLAYER_HITS; player.invuln = 0;`;
 
     console.log('\nTHE COUNT');

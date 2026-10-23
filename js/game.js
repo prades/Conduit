@@ -1850,7 +1850,7 @@ function shieldGenHuntTick() {
     let n = 0;
     for (const a of actors) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone || a.pylonAggro) continue;
-        if (a.isMachine || a.raider || a.isGrub || a.isBrood || a.isTutorialFoe || a.untargetable) continue;
+        if (a.isMachine || a.raider || a.isGrub || a.isBrood || a.untargetable) continue;
         if (a._genHunter === undefined) a._genHunter = Math.random() < SHIELD_GEN_HUNT_SHARE;
         if (!a._genHunter) continue;
         let best = null, bd = r2;
@@ -2107,7 +2107,7 @@ function gameLoop() {
 
 function render() {
     if (typeof toolboxTick === "function" && typeof frame !== "undefined" && frame % 30 === 0) toolboxTick();
-    if (typeof mixToolRender === "function" && typeof frame !== "undefined" && frame % 6 === 0) mixToolRender(false);   // the mix selector opens at once when a button or a tap on the Crystal sets its flag (js/mixtool.js)   // the slider toolbox: edge fades, and the tutorial's button slid into view (js/toolbox.js)
+    if (typeof mixToolRender === "function" && typeof frame !== "undefined" && frame % 6 === 0) mixToolRender(false);   // the mix selector opens at once when a button or a tap on the Crystal sets its flag (js/mixtool.js)
     if (typeof ccPrune === "function" && typeof frame !== "undefined" && frame % 30 === 0) { ccPrune(); if (typeof ccRefreshChip === "function") ccRefreshChip(); }   // the dead leave the selection
     if (typeof checkVisibleArea === "function" && (typeof frame === "undefined" || frame % VISIBLE_AREA_POLL_FRAMES === 0)) checkVisibleArea();   // the browser's real visible size, polled (js/config.js)
     if (typeof placingTick === "function") placingTick();   // zoomed out and the interface away while a build tool is in hand (js/buildmenu.js)
@@ -2125,8 +2125,6 @@ function render() {
         }
     }
 
-    // ── TUTORIAL TICK ──
-    if (typeof tutorialMode !== 'undefined' && tutorialMode) tutorialTick();
     if (typeof ringHintTick === 'function') ringHintTick();
 
     // Health is a count of hits (PLAYER_HITS); it does not decay — a health pad restores one.
@@ -2731,7 +2729,6 @@ function render() {
         // A battery in reach pays first (BATTERY_SUPPLY_RANGE), then the nest.
         const charged = _surged || payForShot(t);
         t.charged = charged;
-        nearest._shotByPylon = true;   // the tutorial's "kill with your pylons" step reads this
         t._lastShotFrame = frame;      // the turret's muzzle flash reads this
         const _dmg = (_U ? ultraRoundDamage(t, nearest) : turretRoundDamage(t, nearest)) * (charged ? 1 : TURRET_PLAIN_MULT);
         if (_U) t._ultraTarget = nearest;
@@ -2828,12 +2825,6 @@ function render() {
             }
         }
     });
-    // Last look at the dead before they are swept — the tutorial's kill step
-    // cannot poll for a corpse, because tutorialTick() ran earlier this frame
-    // and the sweep below happens before it runs again.
-    if (typeof tutorialMode !== "undefined" && tutorialMode) {
-        actors.forEach(a=>{ if(a.dead) tutorialNoteKill(a); });
-    }
     actors=actors.filter(a=>!a.dead);
     const _prevFL=followers.length;
     followers=followers.filter(a=>!a.dead&&a.team==="green");
@@ -4549,7 +4540,6 @@ function render() {
     drawConversionBars();
     if (typeof drawRaidOverlay === "function") drawRaidOverlay();
     if (typeof drawUltraHints === "function") drawUltraHints();
-    drawTutorialHighlight();
     drawFloatingTexts();
     // While a build tool is in hand the interface is hidden (js/buildmenu.js placingHidesUi) so the whole zone can be seen.
     const _hideUi = typeof placingHidesUi === "function" && placingHidesUi();

@@ -318,7 +318,6 @@ function rallyDestination(fight) {
 }
 function followerRallyTick() {
     if (frame % RALLY_EVERY !== 0) return 0;
-    if (typeof tutorialMode !== "undefined" && tutorialMode) return 0;
     const fight = rallyFight();
     if (!fight) return 0;
     const dest = rallyDestination(fight);

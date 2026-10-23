@@ -25,7 +25,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(2 * ZONE_LENGTH); player.x = 20; player.y = 2;`);
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(2 * ZONE_LENGTH); player.x = 20; player.y = 2;`);
     const innerW = run('window.innerWidth');
     const setW = w => run(`window.innerWidth = ${w}; if (window.visualViewport) window.visualViewport = undefined;`);
 
@@ -72,7 +72,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('the page: the DOM controls are hidden while placing and a DONE chip stays', () => {
         const html = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-        ok(/body\.placing #topHud, body\.placing #topToggles, body\.placing #radialRoot, body\.placing #tutBtn \{ display: none !important; \}/.test(html), 'the DOM controls are not hidden');
+        ok(/body\.placing #topHud, body\.placing #topToggles, body\.placing #radialRoot \{ display: none !important; \}/.test(html), 'the DOM controls are not hidden');
         ok(/body\.placing #placeChip \{ display: flex/.test(html), 'no DONE chip');
     });
     check('the tool is still placed by the ground tap (handleBuildToolTap) while zoomed: taps go through the scaled canvas', () => {

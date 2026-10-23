@@ -31,7 +31,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; tutorialMode = false; shardCount = 3000; unlockedElements = new Set(ELEMENTS.map(e => e.id));
+    run(`gameState.running = true; shardCount = 3000; unlockedElements = new Set(ELEMENTS.map(e => e.id));
          player.x = player.targetX = player.visualX = 9; player.y = player.targetY = player.visualY = 1.5; render();
          const portal = world.find(t => isHomePortal(t));
          const g = world.find(t => t.type === 'floor' && !t.pillar && !t.nest && !t.nodeType && t.x >= 0 && Math.abs(t.x - portal.x) <= 2 && t.y === 1);

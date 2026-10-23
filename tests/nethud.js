@@ -26,7 +26,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     const run = e => vm.runInContext(e, ctx);
     run('zoneGenerated = () => true;');
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
+    run('gameState.running = true; ');
 
     // Six electric batteries in a row (a tier III bank), or none.
     const bank = (n) => run(`(function(){

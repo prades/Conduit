@@ -18,7 +18,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(60); _nestCache = world.filter(t => t.nest); player.x = player.targetX = player.visualX = 8; player.y = player.targetY = player.visualY = 1.5; render();`);
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(60); _nestCache = world.filter(t => t.nest); player.x = player.targetX = player.visualX = 8; player.y = player.targetY = player.visualY = 1.5; render();`);
 
     group('WHICH PIECE STANDS WHERE');
     check('every wall tile in the lane has a piece or a bare wall, and the layout never changes', () => {

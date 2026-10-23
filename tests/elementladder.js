@@ -29,7 +29,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; tutorialMode = false; ensureWorldTo(300); render();`);
+    run(`gameState.running = true; ensureWorldTo(300); render();`);
 
     console.log('\nA NEW GAME');
     check('THE ASK: you start with ELECTRIC only — and its tech only', () => {

@@ -36,7 +36,7 @@ async function boot(store) {
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; if (typeof tutorialMode !== 'undefined') tutorialMode = false;
+    run(`gameState.running = true; 
          unlockedElements = new Set(ELEMENTS.map(e => e.id));`);
     return run;
 }

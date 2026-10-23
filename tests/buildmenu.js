@@ -31,7 +31,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`buildFloorBatteries = true; gameState.running = true; tutorialMode = false; shardCount = 500;
+    run(`buildFloorBatteries = true; gameState.running = true; shardCount = 500;
          unlockedElements = new Set(ELEMENTS.map(e => e.id));
          player.x = player.targetX = player.visualX = 10; player.y = player.targetY = player.visualY = 1.5;
          render();`);
@@ -62,11 +62,6 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(run('buildMenuOpen && buildMode'), 'BUILD did not open the window');
         run('toggleBuild();');
         ok(run('!buildMenuOpen && !buildMode && buildTool === null'), 'BUILD again did not close it and drop the tool');
-    });
-    check('…but not during the tutorial, which teaches the ring', () => {
-        run('tutorialMode = true; toggleBuild();');
-        ok(run('buildMode && !buildMenuOpen'), 'the window opened over the tutorial');
-        run('toggleBuild(); tutorialMode = false;');
     });
     check('THE ASK: tabs of things with their pictures and prices — everything the picker can build', () => {
         const t = run(`(function(){ const k = tab => buildMenuItems(tab).map(i => i.kind + ':' + (i.elId || i.id));
@@ -328,7 +323,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         for (const rel of scriptOrder()) { try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), c2, { filename: rel }); } catch (e) {} }
         for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
         const r2 = src => vm.runInContext(src, c2);
-        r2(`buildFloorBatteries = true; gameState.running = true; tutorialMode = false; shardCount = 500; unlockedElements = new Set(ELEMENTS.map(e => e.id));
+        r2(`buildFloorBatteries = true; gameState.running = true; shardCount = 500; unlockedElements = new Set(ELEMENTS.map(e => e.id));
             player.x = player.targetX = player.visualX = 10; player.y = player.targetY = player.visualY = 1.5; render(); toggleBuild();`);
         check('THE ASK: with no grid, turrets, wave pylons and batteries are greyed — relays are not', () => {
             const st = r2(`['turrets','wave','power'].flatMap(tb => buildMenuItems(tb)).map(i => i.kind + ':' + buildItemState(i).ok)`);

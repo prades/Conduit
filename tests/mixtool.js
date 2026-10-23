@@ -26,7 +26,7 @@ function findChromium() {
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
   var st = document.createElement('style'); st.textContent = '#mixTool, #mixTool * { transition: none !important; animation: none !important }'; document.head.appendChild(st);
-  tutorialMode = false; gameState.running = true; unlockedElements = new Set(['fire', 'electric', 'ice']); modulationMask = new Set(); modulationWeights = {}; followers.length = 0; crystalMenuOpen = false; pendingElements = [];
+  gameState.running = true; unlockedElements = new Set(['fire', 'electric', 'ice']); modulationMask = new Set(); modulationWeights = {}; followers.length = 0; crystalMenuOpen = false; pendingElements = [];
   var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
   mixToolRender(true); await wait(50);
   var wide = innerWidth > 700; out.wide = wide;
@@ -59,7 +59,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   modulationMask = new Set(['ice']); mixToolRender(true); out.pickIce = [modulationPick(0), modulationPick(0.5), modulationPick(0.999)].join(); modulationMask = new Set(); mixToolRender(true);
   out.lockedCell = $('#mixTool .mt-hex[data-id="toxic"]').className; out.lockedText = $('#mixTool .mt-hex[data-id="toxic"]').textContent;
   pendingElements = ['toxic']; mixToolRender(true); await wait(30); var pk = $('#mixTool .mt-hex.pick'); out.pick1 = pk ? pk.textContent : null; out.bang = !!$('#mixTool .mt-tab .mt-bang'); pendingElements = [];
-  // the Crystal's flag (the dock's CRYSTAL button, a tap on the Crystal, the tutorial): on a wide screen it shows the MIX tab and goes back down; on a phone it is "open"
+  // the Crystal's flag (the dock's CRYSTAL button, a tap on the Crystal): on a wide screen it shows the MIX tab and goes back down; on a phone it is "open"
   mixToolSetTab('battle'); await wait(30); crystalMenuOpen = true; mixToolRender(false); await wait(30); out.byFlag = { tab: _mtTab, flag: crystalMenuOpen, panel: !!$('#mixTool .mt-panel') };
   // a tap on the world must not close it on a wide screen (the canvas handler only lowers the flag on a phone)
   if (wide) { out.stays = !!$('#mixTool .mt-panel'); } else { click($('#mixTool [data-act=close]')); await wait(30); out.closed = { flag: crystalMenuOpen, panel: !!$('#mixTool .mt-panel') }; }
@@ -106,7 +106,7 @@ function measure(w, h) {
 
     group('THE BATTLE CONTROLS (the game\'s own rules)');
     const env = (f) => run(f);
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(['fire', 'electric', 'ice']); zoneGenerated = () => true; ensureWorldTo(40);
+    run(`gameState.running = true; unlockedElements = new Set(['fire', 'electric', 'ice']); zoneGenerated = () => true; ensureWorldTo(40);
         globalThis.__mk = (cls, x, y) => { const S = SPECIES[Object.keys(SPECIES)[0]], def = (typeof getClassDef === 'function' ? getClassDef(S, cls) : S[cls]) || S.scout; const a = new Predator(cls, Object.assign({}, def, { color: S.color }), x, y); a.team = 'red'; a.className = cls; a.state = 'hunt'; a.provoked = true; a.x = x; a.y = y; a.moveSpeed = 0; a.health = a.maxHealth = 1e7; actors.push(a); return a; };
         globalThis.__fresh = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; battleFocus = null; squadMode = 'all'; selectedUnits.clear(); player.x = player.targetX = player.visualX = 8; player.y = player.targetY = player.visualY = 1;
             spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = 'brawler'; f.x = 8.5; f.y = 1; f.stance = 'follow'; f.health = f.maxHealth = 1e7; return f; };`);

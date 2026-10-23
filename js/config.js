@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-18ak";
+const BUILD_VERSION = "2026-10-23a";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -286,7 +286,7 @@ window.addEventListener('resize', resize);
 if (window.visualViewport) { window.visualViewport.addEventListener('resize', resize); window.visualViewport.addEventListener('scroll', () => syncVisibleArea()); }
 resize();
 // THE VISIBLE AREA. On an iPad (and any browser with its own bars) the layout viewport that position:fixed and 100dvh are measured against can be TALLER
-// than what is actually on screen, so everything anchored to the bottom (the dock, the tutorial button, the build chip) landed below the screen edge
+// than what is actually on screen, so everything anchored to the bottom (the dock, the build chip) landed below the screen edge
 // ("it looks bad on my iPad"). The visual viewport is the truth: its size is published as --vvw / --vvh, and the gap between the layout viewport's bottom
 // and the visible bottom as --vv-bottom, which every bottom-anchored control adds to its own offset (game.html).
 function syncVisibleArea() {
@@ -386,7 +386,7 @@ let _lastUltState   = '';    // last ready/surging class written
 let _lastSiphonOn   = null;  // last siphon state written to siphonBtn
 let _lastShardCount = -1;    // last shard count written to shardUI
 let _lastCellCount  = -1;    // … and shield cells
-let _lastPanelOpen  = false;  // a canvas panel (Crystal, Clone Bay, Settings, Build) is up: the tutorial button steps aside (game.js)
+let _lastPanelOpen  = false;  // a canvas panel (Crystal, Clone Bay, Settings, Build) is up: 
 let _lastAlarmOn    = false;  // the alarm triangle's state (game.js)
 let _lastZoneIndex  = -999;  // last zone index written to zoneInfo
 let _zoneEl         = null;  // cached zoneInfo element (fetched once on first use)

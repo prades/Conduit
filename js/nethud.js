@@ -112,7 +112,6 @@ function _netDial(cx, cy, sig, bs, S) {
 function drawNetworkStatusHUD() {
     _netPanelRect = null;
     if (typeof placingHidesUi === "function" && placingHidesUi()) return;
-    if (typeof tutorialMode !== "undefined" && tutorialMode) return;   // the tutorial teaches the ring and the old way
     const activeEls = ELEMENTS.filter(e => (networkStrength[e.id] || 0) > 0);
     // The readout is worked out a few times a second, not every frame: it
     // walks every pylon and battery, and numbers that change 60 times a

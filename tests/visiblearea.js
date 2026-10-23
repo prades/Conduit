@@ -1,6 +1,6 @@
 // THE VISIBLE AREA (js/config.js syncVisibleArea; the --vv-bottom offsets in game.html).
 //
-// REPORTED, with an iPad screenshot: "it looks bad on my iPad." The bottom of the page was off the screen: the dock, the tutorial button and the
+// REPORTED, with an iPad screenshot: "it looks bad on my iPad." The bottom of the page was off the screen: the dock and the
 // element list were cut off. position:fixed and 100dvh are measured against the LAYOUT viewport, which on a tablet browser with its own bars can be
 // taller than what is visible; the VISUAL viewport is the truth. The game now publishes it (--vvw / --vvh) and the gap (--vv-bottom), and every
 // bottom-anchored control adds that gap. This drives the real browser: a window 800px tall whose visual viewport says only 653px are visible.
@@ -36,7 +36,7 @@ function probe(layoutH, visibleH, laterH) {
     const script = "<script>window.addEventListener('load', function(){ " + frames + later + " setTimeout(function(){" +
         " var r = function(id){ var e = document.getElementById(id); if (!e) return null; var b = e.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), left: Math.round(b.left), right: Math.round(b.right), shown: getComputedStyle(e).display !== 'none' }; };" +
         " var cs = getComputedStyle(document.documentElement);" +
-        " var out = { vvBottom: cs.getPropertyValue('--vv-bottom'), vvh: cs.getPropertyValue('--vvh'), dock: r('topToggles'), tut: r('tutBtn'), canvasCss: [canvas.style.width, canvas.style.height], canvasPx: [canvas.width, canvas.height] };" +
+        " var out = { vvBottom: cs.getPropertyValue('--vv-bottom'), vvh: cs.getPropertyValue('--vvh'), dock: r('topToggles'), canvasCss: [canvas.style.width, canvas.style.height], canvasPx: [canvas.width, canvas.height] };" +
         " var pre = document.createElement('pre'); pre.id = '__vv'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre); }, 6000); });</script></body>";
     return html.replace(/<\/body>/i, script);
 }
@@ -59,10 +59,6 @@ else {
             ok(parseInt(r.vvh) === 653, '--vvh ' + r.vvh); ok(r.canvasCss[1] === '653px', 'canvas css height ' + r.canvasCss[1]);
         });
         check('THE ASK: the bottom dock sits inside what is visible (it was below the screen)', () => ok(r.dock && r.dock.shown && r.dock.bottom <= 653, 'dock bottom ' + (r.dock && r.dock.bottom) + ' vs 653 visible'));
-        check('the tutorial button (small, in the bottom-left corner) is inside what is visible and does not touch the dock', () => {
-            ok(r.tut && r.tut.bottom <= 653 && r.tut.bottom > 560, 'tutorial bottom ' + (r.tut && r.tut.bottom));
-            ok(r.tut.right <= r.dock.left || r.tut.bottom <= r.dock.top, 'the tutorial button overlaps the dock: right ' + r.tut.right + ' vs dock left ' + r.dock.left);
-        });
     }
     // THE REPORTED CASE: the browser reports a wrong size at load and corrects it a moment later with NO event (fixed for the player only after switching
     // away and back). Here the visible height changes 4.8s after load, past every load-time re-check, so only the frame loop's poll can catch it and nothing fires: the game has to notice.

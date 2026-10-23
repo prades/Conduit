@@ -24,7 +24,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
+    run('gameState.running = true; ');
     // The same scout made in zone `z`, `n` times; its health/power and how many hunt pylons.
     const made = (z, n) => run(`(function(){ let hp = 0, pw = 0, hunt = 0, lv = 0;
         for (let i = 0; i < ${n}; i++) { const S = SPECIES.ant; const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 0, 0);

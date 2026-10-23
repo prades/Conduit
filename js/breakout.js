@@ -25,7 +25,7 @@ const BREAKOUT_TICK       = 20;    // frames between element hand-outs
 function breakoutOn() { return typeof siegeIs === "function" && siegeIs("breakout"); }
 function _breakoutEligible(a) {
     return a instanceof Predator && !a.dead && a.team !== "green" && !a.isClone && !a.isMachine
-        && !a.isGrub && !a.isTutorialFoe && !(a.isNeutralRecruit);
+        && !a.isGrub && !(a.isNeutralRecruit);
 }
 
 // Once a frame from the game loop: hand out elements during a breakout, take

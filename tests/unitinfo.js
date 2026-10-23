@@ -30,7 +30,7 @@ function findChromium() {
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id)); followers.length = 0;
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); followers.length = 0;
          globalThis.__mk = (el, role, lv, evo, duty) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.role = role; f.level = lv; f.evolved = evo || null; f.duty = duty || null; return f; };`);
     const sec = (info, tab, h) => info[tab].find(s => s.h.indexOf(h) === 0);
     const rowOf = (s, k) => (s.rows.find(r => r[0] === k) || [])[1];
@@ -86,7 +86,7 @@ function findChromium() {
     else {
         const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
           var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
-          tutorialMode = false; gameState.running = true; shardCount = 900; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; })); followers.length = 0;
+          gameState.running = true; shardCount = 900; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; })); followers.length = 0;
           ['electric', 'fire', 'core'].forEach(function(el){ spawnFollowerAtCrystal(el); followers[followers.length - 1].returningToCrystal = false; });
           ccOpen('roster'); await wait(400);
           var btns = document.querySelectorAll('#ccGrid .cc-card .cc-info'); out.cards = document.querySelectorAll('#ccGrid .cc-card').length; out.infos = btns.length;

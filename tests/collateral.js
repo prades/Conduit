@@ -34,7 +34,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; tutorialMode = false; shardCount = 3000; unlockedElements = new Set(ELEMENTS.map(e => e.id));
+    run(`gameState.running = true; shardCount = 3000; unlockedElements = new Set(ELEMENTS.map(e => e.id));
          ensureWorldTo(60); player.x = player.targetX = player.visualX = 22; player.y = player.targetY = player.visualY = 1.5; render();`);
 
     // A fresh turret (or battery) of yours at (x, y), at full health.

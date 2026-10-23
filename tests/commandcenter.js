@@ -28,7 +28,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
     const html = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(2 * ZONE_LENGTH); player.x = 20; player.y = 2;`);
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(2 * ZONE_LENGTH); player.x = 20; player.y = 2;`);
     // A known squad: electric mage (evolved), electric brawler, flux brawler, core mage (plain, on the work crew).
     const squad = () => run(`followers.length = 0; actors = actors.filter(a => !a.isFollower && !(a instanceof Predator)); ccClearSelection();
         const mk = (el, role, evo, lv, duty) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = role; f.level = lv; f.x = 20; f.y = 2; f.job = null; f.stance = 'follow'; f.playStyle = undefined; if (evo) { f.evolved = evo; f._moltAt = -1e9; } if (duty) f.duty = 'worker'; return f; };

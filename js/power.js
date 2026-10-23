@@ -327,7 +327,6 @@ function toggleRelayCircuit(r) {
     // The wave and attack lists are rebuilt on the 60-frame cache; a switch
     // should land now, not a second later.
     if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
-    if (typeof tutorialNoteCircuit === "function") tutorialNoteCircuit(r);
     const gen = isGeneratorPylon(r);
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
         text: r.circuitOn ? (gen ? "GENERATOR ON \u2014 POWER FLOWING" : "CIRCUIT CLOSED \u2014 POWER FLOWING")

@@ -50,8 +50,8 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   crystalMenuOpen = false; dockCrystal(); out.crystal = crystalMenuOpen; dockCrystal();
   settingsPanelOpen = false; dockSettings(); out.settings = settingsPanelOpen; dockSettings();
   cloneMenuOpen = false; dockClones(); out.clones = cloneMenuOpen; dockClones();
-  // the tutorial pointing at a hidden button slides it into view
-  tr.scrollLeft = 0; var q = document.getElementById('btnSettings'); q.classList.add('tut-wanted'); toolboxTick(); await wait(50);
+  // a hidden button can be slid into view
+  tr.scrollLeft = 0; var q = document.getElementById('btnSettings'); toolboxReveal(q); await wait(50);
   var a = q.getBoundingClientRect(), t = tr.getBoundingClientRect(); out.revealed = a.left >= t.left - 1 && a.right <= t.right + 1;
   var pre = document.createElement('pre'); pre.id = '__tb'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 1500); });</script></body>`;
@@ -90,7 +90,7 @@ else {
         check('the arrows slide it each way', () => { same(r.asked.length, 2, 'the arrows did not slide the strip'); ok(r.asked[0] > 0 && r.asked[1] < 0, 'the arrows slide the wrong ways: ' + r.asked); });
         check('the mouse wheel slides it sideways', () => ok(r.afterWheel.room.left > 0, 'the wheel did not slide it'));
         check('the menu buttons open the game panels', () => { same(r.crystal, true, 'crystal'); same(r.settings, true, 'settings'); same(r.clones, true, 'clones'); });
-        check('the tutorial pointing at a hidden button slides it into view', () => same(r.revealed, true, 'button not revealed'));
+        check('a hidden button can be slid into view', () => same(r.revealed, true, 'button not revealed'));
     }
 }
 console.log(failures ? `\n${failures} failing` : '\nall passing'); process.exit(failures ? 1 : 0);

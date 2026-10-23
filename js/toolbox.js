@@ -43,7 +43,7 @@ function toolboxSlide(dir) {
     const by = Math.max(120, Math.round(t.clientWidth * TOOLBOX_STEP)) * (dir < 0 ? -1 : 1);
     if (t.scrollBy) { try { t.scrollBy({ left: by, behavior: "smooth" }); } catch (e) { t.scrollLeft += by; } } else t.scrollLeft += by;
 }
-// Bring one button into view (the tutorial uses this for the button it is pointing at).
+// Bring one button into view.
 function toolboxReveal(btn) {
     const t = toolboxEls().track; if (!t || !btn) return false;
     const tr = t.getBoundingClientRect(), br = btn.getBoundingClientRect();
@@ -52,8 +52,6 @@ function toolboxReveal(btn) {
 }
 function toolboxTick() {
     if (typeof mixToolTick === "function") mixToolTick();   // the mix selector (js/mixtool.js)
-    const t = typeof document !== "undefined" && document.querySelector ? document.querySelector("#dockScroll .top-btn.tut-wanted") : null;
-    if (t) toolboxReveal(t);
     toolboxSync();
 }
 

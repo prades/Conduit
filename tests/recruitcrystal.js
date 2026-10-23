@@ -26,7 +26,7 @@ function findChromium() {
 const HTML = rd('game.html');
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
-  tutorialMode = false; gameState.running = true; shardCount = 200; unlockedElements = new Set(['fire', 'electric', 'ice']); followers.length = 0; recruitChoice = 'mix';
+  gameState.running = true; shardCount = 200; unlockedElements = new Set(['fire', 'electric', 'ice']); followers.length = 0; recruitChoice = 'mix';
   ccOpen('roster'); await wait(150);
   var rc = document.getElementById('ccRecruitCrystal'), rec = document.getElementById('ccRecruit');
   out.present = !!rc && getComputedStyle(rc).display !== 'none'; out.noPicker = !document.getElementById('recruitPicker');

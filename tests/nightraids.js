@@ -26,7 +26,7 @@ async function boot() {
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(10 * ZONE_LENGTH);
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(10 * ZONE_LENGTH);
          // Zones 1 and 2 are yours; the night's alarm is in zone 3.
          neutraliseZone(1); neutraliseZone(2); gameState.highestZoneCleared = 2; gameState.nightNumber = 4;
          player.x = player.targetX = player.visualX = 20; player.y = player.targetY = player.visualY = 1.5;

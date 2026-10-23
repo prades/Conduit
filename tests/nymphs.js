@@ -19,7 +19,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
+    run('gameState.running = true; ');
     const kill = cls => run(`(function(){
         const S = SPECIES.ant, def = Object.assign({}, getClassDef(S, ${JSON.stringify(cls)}), { color: S.color });
         const p = new Predator(${JSON.stringify(cls)}, def, crystal.x + 6, 2);

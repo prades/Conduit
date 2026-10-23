@@ -25,7 +25,7 @@ function findChromium() {
 const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
-  tutorialMode = false; gameState.running = true; shardCount = 500; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; })); followers.length = 0;
+  gameState.running = true; shardCount = 500; unlockedElements = new Set(ELEMENTS.map(function(e){ return e.id; })); followers.length = 0;
   ['electric', 'fire', 'core', 'flux'].forEach(function(el){ spawnFollowerAtCrystal(el); followers[followers.length - 1].returningToCrystal = false; });
   out.dock = Array.prototype.map.call(document.querySelectorAll('#dockScroll .top-btn'), function(b){ return b.id; });
   ccToggleOpen('roster'); await wait(300);

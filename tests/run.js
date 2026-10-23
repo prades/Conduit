@@ -60,7 +60,6 @@ const SUITES = [
     ['kits tab + ghost + snap', 'kitui.js'],
     ['pylon aggro',            'pylonaggro.js'],
     ['reset game',             'reset.js'],
-    ['tutorial',               'tutorial.js'],
     ['no player stun',         'stun.js'],
     ['progression',            'progression.js'],
     ['modulation',             'modulation.js'],

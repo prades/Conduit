@@ -21,7 +21,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
-    run(`gameState.running = true; tutorialMode = false; zoneGenerated = () => true; shardCount = 500; unlockedElements = new Set(ELEMENTS.map(e => e.id));
+    run(`gameState.running = true; zoneGenerated = () => true; shardCount = 500; unlockedElements = new Set(ELEMENTS.map(e => e.id));
         gameState.highestZoneCleared = 2; activeDayZones = 4; for (let z = 0; z <= 4; z++) ensureWorldTo((z + 1) * ZONE_LENGTH);
         world.forEach(t => { if (t.pillar) { t.pillar = false; t.isBattery = false; t.attackMode = false; t.waveMode = false; t.attackModeElement = null; } });
         actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;

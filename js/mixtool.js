@@ -11,7 +11,7 @@
 //   MIX TAB      six hex cells round a centre hex, one for each element. TAP A CELL to put the element in the mix or take it out (a lit cell is in; at least one has to stay). The centre hex puts them
 //                ALL back. A locked element is a dark cell; one you have earned the unlock for is a gold UNLOCK cell (how an earned element is brought online). Recruits, and a follower that dies after its
 //                element was dropped (it comes back re-rolled, at half its level), draw from the mix (js/clone.js modulationPick); one whose element is still in the mix comes back as it was.
-// The Crystal's flag is how everything else opens it: the dock's CRYSTAL button, a tap on the Crystal or the home portal, the tutorial. On a wide screen the flag is taken (it shows the MIX tab and
+// The Crystal's flag is how everything else opens it: the dock's CRYSTAL button, a tap on the Crystal or the home portal. On a wide screen the flag is taken (it shows the MIX tab and
 // goes back down); on a phone it is "the tool is open".
 const MIXTOOL_TAB_KEY = "conduit_mixtool_tab";
 let _mtTab = "battle", _mtSig = "";
@@ -113,16 +113,14 @@ function mixToolHTML() {
 }
 function mixToolRender(force) {
     const root = mixToolEl(); if (!root) return;
-    // On a wide screen the tool is always open, so the Crystal's flag (the dock's CRYSTAL button, a tap on the Crystal, the tutorial) is a request to SHOW THE MIX: take it and put it back down.
-    if (crystalMenuOpen && mixToolWide()) { crystalMenuOpen = false; _mtTab = "mix"; modulationDirty = false; try { localStorage.setItem(MIXTOOL_TAB_KEY, _mtTab); } catch (e) {} if (typeof tutCrystalOpened !== "undefined") tutCrystalOpened = true; force = true; }
+    // On a wide screen the tool is always open, so the Crystal's flag (the dock's CRYSTAL button, a tap on the Crystal) is a request to SHOW THE MIX: take it and put it back down.
+    if (crystalMenuOpen && mixToolWide()) { crystalMenuOpen = false; _mtTab = "mix"; modulationDirty = false; try { localStorage.setItem(MIXTOOL_TAB_KEY, _mtTab); } catch (e) {} force = true; }
     const sig = mixToolSignature(); if (!force && sig === _mtSig) return; _mtSig = sig;
     if (mixToolIsOpen() && _mtTab === "mix") modulationDirty = false;   // looking at the mix is the acknowledgement of a RE-MODULATE prompt
     root.innerHTML = mixToolHTML(); if (root.classList) root.classList.toggle("open", mixToolIsOpen());
 }
 function mixToolTick() {
     const root = mixToolEl(); if (!root) return;
-    const tut = typeof tutorialMode !== "undefined" && tutorialMode;
-    if (document.body && document.body.classList) document.body.classList.toggle("tut-on", !!tut);   // the dock's SEL button shows while the tutorial teaches it
     mixToolRender(false);
 }
 

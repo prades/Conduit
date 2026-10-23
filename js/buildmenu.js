@@ -211,10 +211,9 @@ function openBuildMenu() {
 function closeBuildMenu() {
     buildMenuOpen = false; buildMenuSimple = false; buildTool = null; buildGhost = null; _bmArmedKey = null;
 }
-// Called whenever buildMode changes: the window follows the BUILD button. Not
-// during the tutorial, which teaches the ring and must not be covered.
+// Called whenever buildMode changes: the window follows the BUILD button.
 function syncBuildMenu() {
-    if (buildMode && !(typeof tutorialMode !== "undefined" && tutorialMode)) { if (!buildMenuOpen) openBuildMenu(); }
+    if (buildMode) { if (!buildMenuOpen) openBuildMenu(); }
     else if (!buildMode) closeBuildMenu();
 }
 // The tabs shown: no POWER tab unless the old power placing is switched on (buildFloorBatteries).
@@ -231,7 +230,6 @@ function openModulesWindow() {
 function openPowerBuild() {
     // A tap on the network panel opens the power unit's panel for the zone you are in (js/wallunit.js): that is the power build now.
     if (!buildFloorBatteries) return typeof wallUnitToggleHere === "function" ? wallUnitToggleHere() : false;
-    if (typeof tutorialMode !== "undefined" && tutorialMode) return false;
     if (typeof crystalMenuOpen !== "undefined") { crystalMenuOpen = false; }
     if (typeof cloneMenuOpen !== "undefined") { cloneMenuOpen = false; }
     if (typeof settingsPanelOpen !== "undefined") { settingsPanelOpen = false; }

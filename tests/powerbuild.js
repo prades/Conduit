@@ -21,7 +21,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 
 // A generator by the home portal, so a battery can be had (the power rule), then the page's own pieces.
-const SETUP = `buildFloorBatteries = true; gameState.running = true; tutorialMode = false; shardCount = 900; unlockedElements = new Set(ELEMENTS.map(e => e.id));
+const SETUP = `buildFloorBatteries = true; gameState.running = true; shardCount = 900; unlockedElements = new Set(ELEMENTS.map(e => e.id));
     player.x = player.targetX = player.visualX = 10; player.y = player.targetY = player.visualY = 1.5; render();
     (function(){ const portal = world.find(t => isHomePortal(t));
         const g = world.find(t => t.type === 'floor' && !t.pillar && !t.nest && !t.nodeType && !t.capturable && t.x >= 0 && Math.abs(t.x - portal.x) <= 2 && t.y === 1);
@@ -57,8 +57,8 @@ function findChromium() {
         ok(/netPanelHit\(pressX, pressY\)\) \{ _netPressed = true; isPressing = false; return; \}/.test(src), 'the press is not claimed by the panel');
         ok(/if \(_netPressed\) \{ _netPressed = false; if \(typeof netPanelHit === "function" && netPanelHit\(upX, upY\)[^}]*openPowerBuild\(\)/.test(src), 'the release does not open the power build');
     });
-    check('it is not drawn during the tutorial, nor while a tool is in hand (the interface is hidden then)', () => {
-        run('tutorialMode = true; _hudPw = null; drawNetworkStatusHUD();'); same(run('_netPanelRect'), null, 'drawn in the tutorial'); run('tutorialMode = false;');
+    check('it is not drawn while a tool is in hand (the interface is hidden then)', () => {
+        ok(/placingHidesUi\(\)\) return;/.test(rd('js/nethud.js')), 'drawn while a tool is in hand');
     });
 
     console.log('\nTHE SIMPLIFIED BUILD');
@@ -78,7 +78,6 @@ function findChromium() {
     check('tapping the panel again puts the power build away', () => {
         run('openPowerBuild();'); run('openPowerBuild();'); ok(run('!buildMenuOpen && !buildMenuSimple && !buildMode'), 'still open');
     });
-    check('it does not open during the tutorial', () => { run('tutorialMode = true;'); same(run('openPowerBuild()'), false, 'opened'); run('tutorialMode = false;'); });
     check('picking a battery in it is the tool in hand, so the view zooms out and the interface hides', () => {
         run('openPowerBuild();');
         run('(function(){ const c = _bmLayout().cells.find(c => c.it.kind === "battery"); handleBuildMenuTap(c.x + c.w / 2, c.y + c.h / 2); })(); placingTick();');

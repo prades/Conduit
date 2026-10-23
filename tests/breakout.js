@@ -21,7 +21,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
+    run('gameState.running = true; ');
     const foe = (el) => `(function(){ const S = SPECIES.ant, q = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 5, 2); q.team = 'red'; q.health = q.maxHealth = 1e6; ${el ? `q.element = '${el}';` : ''} actors.push(q); return q; })()`;
     const hit = (el, targetEl) => run(`(function(){ actors.length = 0; const q = ${foe(targetEl)};
         applyDamage(q, 100, { team: 'green', x: 0, y: 0 }, ${el ? `'${el}'` : 'null'}); return 1e6 - q.health; })()`);

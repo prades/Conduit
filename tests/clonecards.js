@@ -25,7 +25,7 @@ const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8'), CLONE = fs.r
 
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
-  tutorialMode = false; gameState.running = true; shardCount = 9999; actors.length = 0; followers.length = 0;
+  gameState.running = true; shardCount = 9999; actors.length = 0; followers.length = 0;
   var inv = {}; ['ant','beetle','mantis','scorpion','spider','moth'].forEach(function(s){ ['scout','striker','tank'].forEach(function(c){ inv[s + '_' + c] = 99; }); }); setDNA(inv);
   canvas.setPointerCapture = function(){}; canvas.releasePointerCapture = function(){};
   cloneMenuOpen = true; crystalCloneSort = 'species'; _crystalScrollX = 0; render(); render();

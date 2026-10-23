@@ -20,7 +20,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; if (typeof tutorialMode !== "undefined") tutorialMode = false;');
+    run('gameState.running = true; ');
     // A fire turret of yours on a free floor tile near home.
     const build = () => run(`(function(){ shardCount = 100; const home = world.find(t => isHomePortal(t));
         const t = world.find(o => o.type === 'floor' && o.x === home.x + 4 && o.y === 2 && !o.nest && !o.nodeType);

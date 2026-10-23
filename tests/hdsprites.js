@@ -41,7 +41,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     run(`globalThis.__draws = []; globalThis.__img = k => ({ k, complete: true, naturalWidth: 2304 });
         _hdImg = k => __img(k);
         ctx.drawImage = (im, ...a) => __draws.push([im.k, ...a]);
-        gameState.running = true; tutorialMode = false;`);
+        gameState.running = true; `);
 
     group('THE PLAYER');
     check('with the sheet, drawPlayer draws one cell of it, and it is the player sheet (the angry one when it is angry)', () => {

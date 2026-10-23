@@ -18,7 +18,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run(`gameState.running = true; tutorialMode = false; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(60); _nestCache = world.filter(t => t.nest); canvas.width = 390; canvas.height = 760;`);
+    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(60); _nestCache = world.filter(t => t.nest); canvas.width = 390; canvas.height = 760;`);
     const pylon = () => run(`(function(){ const t = getTile(20, 3); t.pillar = true; t.pillarTeam = 'green'; t.destroyed = false; t.health = t.maxHealth = 80; t.attackMode = true; t.waveMode = false; t.attackModeElement = 'fire'; return (globalThis.__p = t); })()`);
     const open = (tile, sub) => { run('globalThis.__sub = ' + (sub || 'null')); run(`openInfoPanel(${tile}, __sub)`); };
     const tap = (x, y) => run(`_handleInfoPanelTap(${x}, ${y})`);
