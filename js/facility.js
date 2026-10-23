@@ -74,6 +74,9 @@ function facilityBuild(extra) {
             for (const seg of _facTrim(a, b, openings)) walls.push({ a: seg[0], b: seg[1], room: r.id, kind, arena: !!r.raw.boundary_blocks_movement });
         }
     }
+    // windows: glass stretches of wall. They stay in `walls` (solid to movement); a piece lying on a window is marked so the debug view can draw it as glass.
+    const windows = (M.windows || []).map(w => ({ id: w.id, a: _facP(w.a), b: _facP(w.b), rooms: w.rooms || [] }));
+    for (const wl of walls) for (const w of windows) if (_facSegPointDist(w.a, w.b, wl.a[0], wl.a[1]) < 0.03 && _facSegPointDist(w.a, w.b, wl.b[0], wl.b[1]) < 0.03) { wl.window = w.id; break; }
     const s = facilityScale();
     const solids = (M.props || []).map(pr => {
         if (pr.shape === "circle") return { id: pr.id, room: pr.room, shape: "circle", at: _facP(pr.at), r: pr.radius / s, cargo: pr.cargo || null, provisional: !!pr.provisional_collision, status: pr.status, kind: pr.kind || null };
@@ -92,7 +95,7 @@ function facilityBuild(extra) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { rooms, walls, solids, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { rooms, walls, windows, solids, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -209,10 +212,15 @@ function facilityValidate(F) {
     for (const r of sealed) {
         const edges = r.poly.length, have = F.walls.filter(w => w.room === r.id).length;
         if (have < edges) errors.push(r.id + " perimeter has " + have + " wall pieces for " + edges + " edges: something is cut open");
-        if (F.openings.some(o => (o.rooms || []).includes(r.id))) warnings.push(r.id + " has a confirmed opening: check it is meant");
+        for (const o of F.openings) if ((o.rooms || []).includes(r.id) && !F.connections.some(c => c.opening === o.id)) warnings.push(r.id + " has an opening with no connection: check it is meant");
     }
     // nothing outside every room is walkable: sample the whole bounding box
     { let bad = 0; for (let t = 0; t < 3000; t++) { const x = F.bounds.minX - 2 + (F.bounds.maxX - F.bounds.minX + 4) * ((t * 0.6180339) % 1), y = F.bounds.minY - 2 + (F.bounds.maxY - F.bounds.minY + 4) * ((t * 0.4142135) % 1); if (!facilityRoomAt(x, y, F) && facilityWalkable(x, y, F)) bad++; } if (bad) errors.push(bad + " walkable points lie outside every room"); }
+    // windows lie on the walls of the rooms they name
+    for (const w of F.windows) {
+        for (const id of w.rooms) { const room = F.byId.get(id); if (!room) { errors.push("window " + w.id + " names a room that does not exist"); continue; } let on = false; for (let i = 0; i < room.poly.length; i++) { const a = room.poly[i], b = room.poly[(i + 1) % room.poly.length]; if (_facSegPointDist(a, b, w.a[0], w.a[1]) < 0.05 && _facSegPointDist(a, b, w.b[0], w.b[1]) < 0.05) on = true; } if (!on) errors.push("window " + w.id + " is not on a wall of " + id); }
+        if (!F.walls.some(wl => wl.window === w.id)) errors.push("window " + w.id + " has no wall under it");
+    }
     // openings and connections agree
     for (const c of F.connections) {
         if (!F.byId.has(c.rooms[0]) || !F.byId.has(c.rooms[1])) errors.push("connection " + c.id + " names a room that does not exist");
@@ -223,11 +231,11 @@ function facilityValidate(F) {
     }
     for (const o of F.openings) if (!F.connections.some(c => c.opening === o.id)) warnings.push("opening " + o.id + " has no connection (it joins nothing for navigation)");
     for (const r of F.ramps) if (!r.between_levels || r.between_levels[0] === r.between_levels[1]) errors.push("ramp " + r.id + " does not join two different levels");
-    // the agents: nobody walks out of the arena or the nest area, from any start, in any direction
+    // the agents: nobody walks out of the arena or the nest area through a WALL, from any start, in any direction (a confirmed door is the one way out)
     info.arenaAgents = 0; info.arenaLeaks = 0;
     for (const room of sealed) {
         let seed = 12345, rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff, leaks = 0, tried = 0;
-        const b = { minX: room.bb[0], maxX: room.bb[2], minY: room.bb[1], maxY: room.bb[3] };
+        const b = { minX: room.bb[0], maxX: room.bb[2], minY: room.bb[1], maxY: room.bb[3] }, allowed = (facilityComponents(F, false).find(g => g.includes(room.id)) || [room.id]);
         for (let n = 0; n < 4000 && tried < 100; n++) {
             const x = b.minX + (b.maxX - b.minX) * rnd(), y = b.minY + (b.maxY - b.minY) * rnd();
             if (!facilityPointInPoly(x, y, room.poly) || !facilityWalkable(x, y, F)) continue;
@@ -236,7 +244,7 @@ function facilityValidate(F) {
                 const ang = k * Math.PI / 4 + rnd() * 0.3; let px = x, py = y;
                 for (let s = 0; s < 160; s++) { const m = facilityMove(px, py, Math.cos(ang) * 0.4, Math.sin(ang) * 0.4, F); px = m[0]; py = m[1]; }
                 const at = facilityRoomAt(px, py, F);
-                if (!at || at.id !== room.id) leaks++;
+                if (!at || !(allowed.includes(at.id))) leaks++;
             }
         }
         info.arenaAgents += tried * 8; info.arenaLeaks += leaks;
@@ -248,8 +256,8 @@ function facilityValidate(F) {
     info.rooms = F.rooms.length; info.confirmedOpenings = F.openings.length; info.confirmedConnections = F.connections.length; info.candidates = F.candidates.length; info.navComponents = comps.length;
     for (const r of F.rooms) {
         let start = null; const c = _facCentroid(r.poly);
-        if (facilityWalkable(c[0], c[1], F)) start = c;
-        else for (let t = 0; t < 400 && !start; t++) { const x = F.bounds.minX + (F.bounds.maxX - F.bounds.minX) * ((t * 0.6180339) % 1), y = F.bounds.minY + (F.bounds.maxY - F.bounds.minY) * ((t * 0.4142135) % 1); const rr = facilityRoomAt(x, y, F); if (rr && rr.id === r.id && facilityWalkable(x, y, F)) start = [x, y]; }
+        { const at = facilityRoomAt(c[0], c[1], F); if (at && at.id === r.id && facilityWalkable(c[0], c[1], F)) start = c; }   // (the centroid of a C-shaped room can lie in another room)
+        if (!start) for (let t = 0; t < 400 && !start; t++) { const x = F.bounds.minX + (F.bounds.maxX - F.bounds.minX) * ((t * 0.6180339) % 1), y = F.bounds.minY + (F.bounds.maxY - F.bounds.minY) * ((t * 0.4142135) % 1); const rr = facilityRoomAt(x, y, F); if (rr && rr.id === r.id && facilityWalkable(x, y, F)) start = [x, y]; }
         if (!start) { warnings.push(r.id + ": no walkable floor found to test"); continue; }
         const cells = facilityFlood(start[0], start[1], F, 0.5), reached = new Set();
         for (const q of cells) { const rr = facilityRoomAt(q[0], q[1], F); if (rr) reached.add(rr.id); else errors.push(r.id + ": a flood reached a cell outside every room"); if (F.outer && facilityPointInPoly(q[0], q[1], F.outer.poly)) errors.push(r.id + ": a flood reached the outer path"); }
@@ -308,6 +316,7 @@ function facilityDebugDraw() {
     if (L.collision) {
         for (const s of F.solids) { const lv = (F.byId.get(s.room) || {}).level || 0; if (s.shape === "circle") { const pts = []; for (let i = 0; i < 32; i++) pts.push([s.at[0] + Math.cos(i / 32 * 6.2832) * s.r, s.at[1] + Math.sin(i / 32 * 6.2832) * s.r]); path(pts, lv); } else path(s.poly, lv); const liq = s.kind === "liquid_reserve"; g.fillStyle = liq ? "rgba(140,90,255,0.38)" : s.provisional ? "rgba(255,138,92,0.18)" : "rgba(255,138,92,0.34)"; g.fill(); g.lineWidth = 1.5; g.setLineDash(s.provisional ? [4, 4] : []); g.strokeStyle = liq ? "#a64dff" : FAC_COLOURS.solid; g.stroke(); g.setLineDash([]); if (liq && L.outlines) { const q = P(s.at, lv); _facLabel(g, "LIQUID RESERVE", q[0], q[1], "#c9a0ff", 10 * Math.max(0.8, Math.min(1.4, z * 3))); } }
         for (const s of F.solids) if (s.kind === "semi_truck" && L.outlines) { const lv = (F.byId.get(s.room) || {}).level || 0, q = P(_facCentroid(s.poly), lv); _facLabel(g, "SEMI TRUCK \u00b7 " + (s.cargo ? s.cargo.map(c => c.count + " " + c.type.toUpperCase() + "S").join(", ") : ""), q[0], q[1], "#ffb48a", 9 * Math.max(0.8, Math.min(1.4, z * 3))); }
+        for (const w of F.walls.filter(x => x.window)) { const lv = (F.byId.get(w.room) || {}).level || 0, a = P(w.a, lv), b = P(w.b, lv); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = 6; g.strokeStyle = "rgba(143,227,255,0.45)"; g.setLineDash([3, 4]); g.stroke(); g.setLineDash([]); }
         for (const w of F.walls) { const lv = (F.byId.get(w.room) || {}).level || 0, a = P(w.a, lv), b = P(w.b, lv); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = w.arena ? 4 : 2.5; g.strokeStyle = w.arena ? (w.room === "arena" ? FAC_COLOURS.arena : FAC_COLOURS.outer) : FAC_COLOURS.wall; g.stroke(); }
     }
     if (L.openings) {

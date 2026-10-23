@@ -27,8 +27,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         for (const id of ['crystal_chamber', 'experiment_lab', 'teleport_room_1', 'teleport_room_2', 'observation_deck', 'arena', 'catwalks', 'nest_area']) ok(M.rooms.some(r => r.id === id), id + ' missing');
         ok(M.scale.px_per_tile > 0, 'no scale');
     });
-    check('NOTHING IS INVENTED: only what the user confirmed is a connection (the Crystal Chamber\'s door, the stair room\'s two openings and its staircase); the rest the sketch suggests is a flagged candidate', () => {
-        const M = J('FACILITY_MAP'); same(M.openings.map(o => o.id).join(), 'door_crystal_hallway,open_stair_mouth,door_stair_teleport_2', 'openings'); same(M.connections.map(c => c.id).join(), 'conn_crystal_hallway,conn_stair_hallway,conn_stair_teleport_2', 'connections'); same(M.ramps.map(x => x.id).join(), 'r_teleport_stairs', 'ramps');
+    check('NOTHING IS INVENTED: only what the user confirmed is a connection (the arena\'s and the Crystal Chamber\'s doors to the hallway, the lab passage\'s two doors, and the stair room\'s opening, door and staircase); the rest the sketch suggests is a flagged candidate', () => {
+        const M = J('FACILITY_MAP'); same(M.openings.map(o => o.id).join(), 'door_arena_hallway,door_passage_teleport_1,door_lab_passage,door_crystal_hallway,open_stair_mouth,door_stair_teleport_2', 'openings'); same(M.connections.map(c => c.id).join(), 'conn_arena_hallway,conn_lab_passage,conn_passage_teleport_1,conn_crystal_hallway,conn_stair_hallway,conn_stair_teleport_2', 'connections'); same(M.ramps.map(x => x.id).join(), 'r_teleport_stairs', 'ramps');
         for (const o of M.openings) same(o.position_status, 'approximate', o.id + ' position');
         ok(M.candidates.connections.length >= 10 && M.candidates.ramps.length >= 1, 'candidates were not recorded');
         for (const c of M.candidates.connections) { ok(c.rooms.every(id => M.rooms.some(r => r.id === id)), c.id + ' names a missing room'); ok(c.evidence, c.id + ' has no evidence'); ok(!c.rooms.includes('outer_path'), c.id + ' uses the outer path'); }
@@ -46,7 +46,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('VALIDATION');
     check('the authored map passes every rule: no overlaps, an outer path in no link, a sealed arena, no unconfirmed route', () => {
         const v = J('facilityValidateCached()'); same(v.errors.length, 0, 'errors: ' + v.errors.join(' | '));
-        same(v.info.rooms, 12, 'rooms'); same(v.info.navComponents, 9, 'twelve rooms, four of them joined through the hallway: nine areas');
+        same(v.info.rooms, 14, 'rooms'); same(v.info.navComponents, 8, 'fourteen rooms: five joined through the hallway, three joined through the lab passage, six alone: eight areas');
         ok(v.warnings.some(w => /unconfirmed/.test(w)), 'the candidates are not reported'); ok(v.warnings.some(w => /^unresolved/.test(w)), 'unresolved items are not reported');
     });
 
@@ -111,15 +111,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('NAVIGATION: only confirmed openings join rooms');
     check('only the confirmed links join rooms: the unconfirmed candidates are listed but never walked', () => {
-        same(J('facilityComponents(null, false).length'), 9, 'areas'); same(J('facilityComponents(null, true).length'), 1, 'areas if every candidate were real');
+        same(J('facilityComponents(null, false).length'), 8, 'areas'); same(J('facilityComponents(null, true).length'), 1, 'areas if every candidate were real');
         const f = J(`(function(){ const F = facilityGet(), c = facilityFlood(F.byId.get('show_room').poly[0][0] + 2, F.byId.get('show_room').poly[0][1] + 2, F, 0.5); return Array.from(new Set(c.map(q => facilityRoomAt(q[0], q[1]).id))); })()`);
         same(f.length, 1, 'a flood left the show room: ' + f.join());
     });
     check('a confirmed opening (added to a COPY, not the data) cuts the wall, lets a body through, and joins the rooms; the arena stays sealed', () => {
-        const r = J(`(function(){ const F = facilityBuild({ openings: [{ id: 't_open', a: [760, 470], b: [785, 470], rooms: ['front_office', 'experiment_lab'] }], connections: [{ id: 't_conn', rooms: ['front_office', 'experiment_lab'], opening: 't_open' }] });
+        const r = J(`(function(){ const F = facilityBuild({ openings: [{ id: 't_open', a: [760, 470], b: [785, 470], rooms: ['front_office', 'lab_hallway'] }], connections: [{ id: 't_conn', rooms: ['front_office', 'lab_hallway'], opening: 't_open' }] });
             const x = 772 / facilityScale(), y0 = 455 / facilityScale(), y1 = 490 / facilityScale(), base = facilityGet();
-            return { through: facilityCanStep(x, y0, x, y1, F), before: facilityCanStep(x, y0, x, y1, base), joined: facilityReachable('front_office', 'experiment_lab', F, false), lab: facilityReachable('front_office', 'arena', F, false), errs: facilityValidate(F).errors, walls: [base.walls.length, F.walls.length] }; })()`);
-        same(r.before, false, 'the authored data has a gap it should not'); same(r.through, true, 'the opening does not let a body through'); same(r.joined, true, 'not joined'); same(r.lab, false, 'the opening joined more than it should');
+            return { through: facilityCanStep(x, y0, x, y1, F), before: facilityCanStep(x, y0, x, y1, base), joined: facilityReachable('front_office', 'lab_hallway', F, false), lab: facilityReachable('front_office', 'nest_area', F, false), errs: facilityValidate(F).errors, walls: [base.walls.length, F.walls.length] }; })()`);
+        same(r.before, false, 'the authored data has a gap it should not'); same(r.through, true, 'the opening does not let a body through'); same(r.joined, true, 'not joined'); same(r.lab, false, 'the opening joined more than it should'); same(J(`facilityReachable('front_office', 'experiment_lab', facilityBuild({ openings: [{ id: 't_open', a: [760, 470], b: [785, 470] }], connections: [{ id: 't_conn', rooms: ['front_office', 'lab_hallway'], opening: 't_open' }] }), false)`), false, 'the windowed-off lab became reachable');
         same(r.errs.length, 0, r.errs.join(' | ')); ok(r.walls[1] >= r.walls[0], 'the wall was not cut');
     });
     check('a connection between two levels needs a ramp, and an opening with no connection is flagged', () => {
@@ -129,9 +129,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE STAIR ROOM: leads to Teleport Room 2; a curved staircase goes down to the hallway');
-    check('the stair room is raised with Teleport Room 2, and the staircase is a curved ramp from level 1 down to the hallway (the experiment lab\'s floor)', () => {
-        const M = J('FACILITY_MAP'), S = M.rooms.find(r => r.id === 'teleport_stair_room'), T = M.rooms.find(r => r.id === 'teleport_room_2'), L = M.rooms.find(r => r.id === 'experiment_lab'), R = M.ramps[0];
-        ok(S && S.level === 1 && T.level === 1 && L.level === 0, 'levels'); same(R.shape, 'curved', 'shape'); same(R.between_levels.join(), '1,0', 'direction'); same(R.descends_toward, 'experiment_lab', 'down toward'); ok(R.r_outer > R.r_inner && R.to_deg - R.from_deg >= 90, 'not an arc');
+    check('the stair room is raised with Teleport Room 2, and the staircase is a curved ramp from level 1 down to the hallway round the lab', () => {
+        const M = J('FACILITY_MAP'), S = M.rooms.find(r => r.id === 'teleport_stair_room'), T = M.rooms.find(r => r.id === 'teleport_room_2'), L = M.rooms.find(r => r.id === 'lab_hallway'), R = M.ramps[0];
+        ok(S && S.level === 1 && T.level === 1 && L.level === 0, 'levels'); same(R.shape, 'curved', 'shape'); same(R.between_levels.join(), '1,0', 'direction'); same(R.descends_toward, 'lab_hallway', 'down toward'); ok(R.r_outer > R.r_inner && R.to_deg - R.from_deg >= 90, 'not an arc');
         same(M.connections.find(c => c.id === 'conn_stair_hallway').ramp, 'r_teleport_stairs', 'the stair connection names its ramp');
     });
     check('a body walks from the hallway, up the stair mouth, through the stair room and its sliding door into Teleport Room 2 (and back), and no further', () => {
@@ -139,25 +139,45 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const hall = p(780, 650), room = p(850, 650), tele = p(960, 650), cells = facilityFlood(hall[0], hall[1], F, 0.5), ids = Array.from(new Set(cells.map(q => facilityRoomAt(q[0], q[1]).id)));
             return { ids: ids.sort(), mouth: facilityCanStep(780 / sc, 650 / sc, 850 / sc, 650 / sc), door: facilityCanStep(850 / sc, 645 / sc, 960 / sc, 645 / sc), wallAboveDoor: facilityCanStep(850 / sc, 610 / sc, 960 / sc, 610 / sc), wallBelowMouth: facilityCanStep(780 / sc, 695 / sc, 850 / sc, 695 / sc) }; })()`);
         same(r.mouth, true, 'the staircase foot does not let a body onto the stairs'); same(r.door, true, 'the sliding door does not let a body into Teleport Room 2'); same(r.wallAboveDoor, false, 'the wall beside the door is open'); same(r.wallBelowMouth, false, 'the wall beside the stair mouth is open');
-        ok(r.ids.includes('teleport_stair_room') && r.ids.includes('teleport_room_2') && r.ids.includes('experiment_lab'), 'the flood reached ' + r.ids); ok(!r.ids.some(id => ['arena', 'catwalks', 'show_room', 'front_office', 'observation_deck'].includes(id)), 'the flood went too far: ' + r.ids);
+        ok(r.ids.includes('teleport_stair_room') && r.ids.includes('teleport_room_2') && r.ids.includes('lab_hallway'), 'the flood reached ' + r.ids); ok(!r.ids.some(id => ['catwalks', 'show_room', 'front_office', 'observation_deck', 'experiment_lab', 'lab_passage', 'teleport_room_1'].includes(id)), 'the flood went too far: ' + r.ids);
     });
     check('the debug view draws the stair as stepped arcs and its tap text names it', () => { ok(/rp\.centre/.test(rd('js/facility.js')) && /from_deg/.test(rd('js/facility.js')), 'no curved ramp drawing'); run('facilityDebug.on = true; facilityDebugDraw(); facilityDebug.on = false;'); });
 
     group('THE CRYSTAL CHAMBER\'S DOOR AND THE HALLWAY');
     check('a sliding access door joins the Crystal Chamber to the hallway past the experiment lab: a body walks through it, the wall beside it holds', () => {
         const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(), D = F.openings.find(o => o.id === 'door_crystal_hallway'), cn = F.connections.find(c => c.id === 'conn_crystal_hallway');
-            const y = 492 / sc; return { door: D.door, rooms: cn.rooms.join(), through: facilityCanStep(380 / sc, y, 420 / sc, y), back: facilityCanStep(420 / sc, y, 380 / sc, y), wallAbove: facilityCanStep(380 / sc, 440 / sc, 420 / sc, 440 / sc), wallBelow: facilityCanStep(380 / sc, 512 / sc, 420 / sc, 512 / sc), joined: facilityReachable('crystal_chamber', 'experiment_lab', F, false), notArena: facilityReachable('crystal_chamber', 'arena', F, false) }; })()`);
-        same(r.door, 'sliding_access_door', 'door type'); same(r.rooms, 'crystal_chamber,experiment_lab', 'rooms'); same(r.through, true, 'cannot walk through'); same(r.back, true, 'cannot walk back'); same(r.joined, true, 'not joined'); same(r.notArena, false, 'it joined the arena too');
+            const y = 492 / sc; return { door: D.door, rooms: cn.rooms.join(), through: facilityCanStep(380 / sc, y, 420 / sc, y), back: facilityCanStep(420 / sc, y, 380 / sc, y), wallAbove: facilityCanStep(380 / sc, 440 / sc, 420 / sc, 440 / sc), wallBelow: facilityCanStep(380 / sc, 512 / sc, 420 / sc, 512 / sc), joined: facilityReachable('crystal_chamber', 'lab_hallway', F, false), notArena: facilityReachable('crystal_chamber', 'catwalks', F, false) }; })()`);
+        same(r.door, 'sliding_access_door', 'door type'); same(r.rooms, 'crystal_chamber,lab_hallway', 'rooms'); same(r.through, true, 'cannot walk through'); same(r.back, true, 'cannot walk back'); same(r.joined, true, 'not joined'); same(r.notArena, false, 'it joined the catwalks too');
         same(r.wallAbove, false, 'the wall above the door is open'); same(r.wallBelow, false, 'the wall below the door is open');
     });
-    check('THE HALLWAY IS WIDER: it runs all the way round the lab bench, at least 2.5 tiles wide on every side, and a body can walk the full loop', () => {
-        const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(), B = F.solids.find(s => s.id === 'lab_bench'), L = F.byId.get('experiment_lab'), T = F.solids.find(s => s.id === 'lab_tank');
-            const x0 = B.poly[0][0], y0 = B.poly[0][1], x1 = B.poly[2][0], y1 = B.poly[2][1], lx0 = 400 / sc, ly0 = 470 / sc, lx1 = 875 / sc, ly1 = 700 / sc;
-            const gaps = { north: y0 - ly0, south: ly1 - y1, west: x0 - 375 / sc, tank: Math.hypot(T.at[0] - x1, 0) - T.r };
+    check('THE HALLWAY IS WIDE ENOUGH: at least 2.5 tiles round the lab on every side, and a body walks it from the Crystal Chamber\'s door to the arena\'s door', () => {
+        const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(), L = F.byId.get('experiment_lab'), H = F.byId.get('lab_hallway');
+            const gaps = { north: L.bb[1] - H.bb[1], south: H.bb[3] - L.bb[3], west: L.bb[0] - H.bb[0], east: 815 / sc - L.bb[2] };
             const cells = facilityFlood(420 / sc, 490 / sc, F, 0.5), has = (px, py) => cells.some(q => Math.hypot(q[0] - px / sc, q[1] - py / sc) < 0.6);
-            return { gaps, nw: has(405, 495), sw: has(405, 660), se: has(800, 660), ne: has(800, 495), west: has(400, 575), south: has(580, 665), north: has(580, 495) }; })()`);
-        ok(r.gaps.north >= 2.5 && r.gaps.south >= 2.5 && r.gaps.west >= 2.5, 'the hallway is too narrow: ' + JSON.stringify(r.gaps)); for (const k of ['nw', 'sw', 'se', 'ne', 'west', 'south', 'north']) same(r[k], true, 'cannot reach the hallway\'s ' + k + ' side from the door');
+            return { gaps, nw: has(395 + 15, 495), north: has(580, 495), ne: has(800, 495), east: has(790, 580), se: has(790, 660), south: has(580, 665), sw: has(400, 660), arenaDoor: has(420, 690) }; })()`);
+        ok(r.gaps.north >= 2.5 && r.gaps.south >= 2.5 && r.gaps.west >= 2.5 && r.gaps.east >= 2.5, 'the hallway is too narrow: ' + JSON.stringify(r.gaps)); for (const k of ['nw', 'north', 'ne', 'east', 'se', 'south', 'sw', 'arenaDoor']) same(r[k], true, 'cannot reach the hallway\'s ' + k + ' side from the Crystal Chamber\'s door');
     });
+
+    group('THE EXPERIMENT LAB: windowed off, joined to Teleport Room 1 by a narrow passage');
+    check('the lab has windows on every side that faces the hallway, drawn as glass, and they are solid like walls', () => {
+        const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(); const glass = F.walls.filter(w => w.window); let through = 0; for (const w of glass) { const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2, dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], l = Math.hypot(dx, dy), nx = -dy / l, ny = dx / l; if (facilityCanStep(mx - nx * 0.6, my - ny * 0.6, mx + nx * 0.6, my + ny * 0.6)) through++; }
+            return { n: glass.length, rooms: Array.from(new Set(glass.map(w => w.room))).sort(), ids: Array.from(new Set(glass.map(w => w.window))).sort(), through, windows: F.windows.length }; })()`);
+        ok(r.n >= 5, 'only ' + r.n + ' window pieces'); same(r.through, 0, 'a body walked through a window'); ok(r.ids.length === 5, 'windows ' + r.ids); same(r.windows, 5, 'compiled windows'); ok(/window/.test(rd('js/facility.js')) && /143,227,255/.test(rd('js/facility.js')), 'windows are not drawn as glass');
+    });
+    check('the lab is not reachable from the hallway: its only way in is the narrow passage from Teleport Room 1 (a flood from the lab never leaves those three rooms)', () => {
+        same(J("facilityReachable('lab_hallway', 'experiment_lab', null, false)"), false, 'hallway reaches the lab'); same(J("facilityReachable('experiment_lab', 'teleport_room_1', null, false)"), true, 'lab does not reach Teleport Room 1');
+        const ids = J(`(function(){ const F = facilityGet(), sc = facilityScale(), c = facilityFlood(600 / sc, 575 / sc, F, 0.5); return Array.from(new Set(c.map(q => facilityRoomAt(q[0], q[1]).id))).sort(); })()`); same(ids.join(), 'experiment_lab,lab_passage,teleport_room_1', 'rooms a body in the lab can reach');
+    });
+    check('the passage is narrow (about 2 tiles wide), runs from the lab\'s west wall to Teleport Room 1, and both ends are sliding doors', () => {
+        const r = J(`(function(){ const F = facilityGet(), P = F.byId.get('lab_passage'), W = F.openings.filter(o => /passage/.test(o.id)); return { w: P.bb[3] - P.bb[1], len: P.bb[2] - P.bb[0], doors: W.map(o => o.door) }; })()`);
+        ok(r.w >= 1.5 && r.w <= 2.5, 'passage width ' + r.w); ok(r.len >= 2, 'length ' + r.len); same(r.doors.length, 2, 'doors'); ok(r.doors.every(d => d === 'sliding_access_door'), r.doors.join());
+    });
+    check('the hallway runs from the arena round the lab into the Crystal Chamber: arena to chamber is one walk, and the lab\'s passage is not part of it', () => {
+        same(J("facilityReachable('arena', 'crystal_chamber', null, false)"), true, 'arena to chamber'); same(J("facilityReachable('arena', 'experiment_lab', null, false)"), false, 'arena to lab');
+        const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(), cells = facilityFlood(520 / sc, 680 / sc, F, 0.5); return { rooms: Array.from(new Set(cells.map(q => facilityRoomAt(q[0], q[1]).id))).sort() }; })()`);
+        ok(r.rooms.includes('arena') && r.rooms.includes('crystal_chamber') && r.rooms.includes('lab_hallway'), 'a body from the arena reached ' + r.rooms); ok(!r.rooms.includes('experiment_lab') && !r.rooms.includes('lab_passage'), 'it got into the lab: ' + r.rooms);
+    });
+    check('the arena\'s door is the one way out of it: agent walks leave only into rooms the confirmed doors reach', () => { const v = J('facilityValidateCached()'); same(v.info.arenaLeaks, 0, 'illegal leaks'); ok(v.info.arenaAgents >= 1200, 'agents ' + v.info.arenaAgents); });
 
     group('DOORS AND THE BLOCKED ZONE');
     check('every door is a sliding access door: the map says so, and a confirmed opening carries it', () => {
