@@ -3308,9 +3308,9 @@ function render() {
             const _spr = _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), "", _tq);
             if (_spr) ctx.drawImage(_spr, px - TILE_W - 1, py - 1);
             else _drawFloorTile(ctx, px, py, gameState.phase === "night", dist, "", _tq / FLOOR_TRACE_STEPS);
-            if (typeof facilityPlay !== "undefined" && facilityPlay) facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
             if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py);   // pools of evolved followers lie on the floor
             if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py);   // burning ground (js/firebombs.js)
+            if (typeof facilityPlay !== "undefined" && facilityPlay) facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
             // Only the FRONT LINE: a 1 px edge where your ground meets the enemy's.
             // Which of its edges are a front line: worked out when the
             // territory changes (_territoryVer), not with two map lookups per
