@@ -64,7 +64,7 @@ function _facTrim(a, b, openings) {
 // `extra` lets a test (or the debug view) add openings/connections WITHOUT touching the authored data: { openings: [...], connections: [...] }.
 function facilityBuild(extra) {
     const M = FACILITY_MAP, ex = extra || {};
-    const openings = (M.openings || []).concat(ex.openings || []).map(o => ({ id: o.id, a: _facP(o.a), b: _facP(o.b), rooms: o.rooms || [], door: o.door || M.door_type || "sliding_access_door" }));
+    const openings = (M.openings || []).concat(ex.openings || []).map(o => ({ id: o.id, a: _facP(o.a), b: _facP(o.b), rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door") }));
     const rooms = M.rooms.map(r => ({ id: r.id, label: r.label, level: r.level, status: r.status, poly: _facPoly(r.polygon), edgeKinds: r.edge_kinds || null, boundary: r.boundary_type || null, objects: (r.objects || []).map(o => Object.assign({}, o, { at: _facP(o.at) })), raw: r }));
     const walls = [];
     for (const r of rooms) {
@@ -82,7 +82,7 @@ function facilityBuild(extra) {
     const outer = M.outer_path ? { id: M.outer_path.id, poly: _facPoly(M.outer_path.polygon), walkable: M.outer_path.walkable === true, navigation_link: M.outer_path.navigation_link === true } : null;
     const conns = (M.connections || []).concat(ex.connections || []).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, confirmed: true }));
     const cands = ((M.candidates && M.candidates.connections) || []).map(c => ({ id: c.id, rooms: c.rooms, at: _facP(c.at), evidence: c.evidence, ramp: c.ramp_candidate || null, confirmed: false }));
-    const ramps = (M.ramps || []).concat(ex.ramps || []);
+    const ramps = (M.ramps || []).concat(ex.ramps || []).map(r => r.centre ? Object.assign({}, r, { centre: _facP(r.centre), r_inner: r.r_inner / s, r_outer: r.r_outer / s }) : r);
     const candRamps = ((M.candidates && M.candidates.ramps) || []).map(r => Object.assign({}, r, { at: _facP(r.at) }));
     // bounding boxes, so a query only looks at the walls and rooms near it (the validator walks thousands of steps)
     const bbox = pts => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const q of pts) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); } return [x0, y0, x1, y1]; };
@@ -313,6 +313,14 @@ function facilityDebugDraw() {
     if (L.openings) {
         for (const o of F.openings) { const a = P(o.a, 0), b = P(o.b, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = 6; g.strokeStyle = FAC_COLOURS.ok; g.stroke(); }
         for (const c of F.candidates) { const lv = Math.max(...c.rooms.map(id => (F.byId.get(id) || {}).level || 0)), q = P(c.at, lv); g.beginPath(); g.arc(q[0], q[1], 8, 0, 6.2832); g.fillStyle = "rgba(255,176,32,0.25)"; g.fill(); g.lineWidth = 2; g.strokeStyle = FAC_COLOURS.cand; g.stroke(); g.fillStyle = FAC_COLOURS.cand; g.font = "bold 11px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", q[0], q[1] + 0.5); facilityDebug._hits.push({ x: q[0], y: q[1], text: c.rooms.join(" ↔ ").toUpperCase() + " — CANDIDATE SLIDING DOOR, UNCONFIRMED: " + c.evidence }); }
+        // confirmed ramps: a curved staircase is drawn as stepped arcs, the low end heavier, with an arrow down
+        for (const rp of F.ramps) {
+            if (!rp.centre) continue; const from = (F.byId.get(rp.rooms[0]) || {}).level || 0, to = (F.byId.get(rp.rooms[1]) || {}).level || 0, steps = 8;
+            for (let k = 0; k <= steps; k++) { const rad = rp.r_inner + (rp.r_outer - rp.r_inner) * k / steps, pts = [];
+                for (let d = 0; d <= 12; d++) { const a = (rp.from_deg + (rp.to_deg - rp.from_deg) * d / 12) * Math.PI / 180, lv = from + (to - from) * k / steps; pts.push(_facProject(rp.centre[0] + Math.cos(a) * rad, rp.centre[1] + Math.sin(a) * rad, lv, W, H)); }
+                g.beginPath(); pts.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.lineWidth = k === steps ? 3 : 1.5; g.strokeStyle = FAC_COLOURS.ok; g.stroke(); }
+            const m = _facProject(rp.centre[0] + Math.cos(Math.PI) * (rp.r_inner + rp.r_outer) / 2, rp.centre[1], to, W, H); facilityDebug._hits.push({ x: m[0], y: m[1], text: rp.id.toUpperCase() + " \u2014 " + rp.note });
+        }
         for (const r of F.candidateRamps) { const q = P(r.at, 0); g.strokeStyle = FAC_COLOURS.cand; g.lineWidth = 2; g.strokeRect(q[0] - 7, q[1] - 7, 14, 14); g.fillStyle = FAC_COLOURS.cand; g.font = "bold 10px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("R", q[0], q[1] + 0.5); facilityDebug._hits.push({ x: q[0], y: q[1], text: "RAMP / STAIR? " + r.evidence + " (levels " + r.between_levels.join("→") + ")" }); }
         for (const e of F.exits) { const q = P(e.at, 0); g.fillStyle = e.blocked ? FAC_COLOURS.wall : FAC_COLOURS.outer; g.font = "bold 10px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(e.blocked ? "✖" : "→", q[0], q[1]); facilityDebug._hits.push({ x: q[0], y: q[1], text: e.id.toUpperCase() + " — " + e.note + " (not a connection)" }); }
     }

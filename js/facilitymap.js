@@ -9,7 +9,7 @@
 //
 // RULES (from the spec):
 //   - a room's outline is an explicit polygon; every edge of it is a wall unless a CONFIRMED opening is cut into it;
-//   - `openings` and `connections` hold ONLY what is confirmed (both are empty: nothing has been confirmed yet). Everything the sketch merely suggests is in
+//   - `openings` and `connections` hold ONLY what is confirmed (so far just the stair room's two openings). Everything the sketch merely suggests is in
 //     `candidates` with the evidence, and does nothing until it is moved into `openings` + `connections` by hand;
 //   - the nest area is one open room; the long lines round it are its outside edges (walls). Nothing outside every room is walkable;
 //   - the arena's perimeter is solid wall / rock and blocks movement;
@@ -39,9 +39,13 @@ const FACILITY_MAP = {
         { id: "show_room", label: "Show Room", level: 0, status: "traced",
           polygon: [[880, 335], [1035, 335], [1035, 600], [880, 600]] },
         { id: "experiment_lab", label: "Experiment Lab", level: 0, status: "traced",
-          polygon: [[400, 470], [875, 470], [875, 700], [375, 700], [370, 515], [400, 515]] },
-        { id: "teleport_room_2", label: "Teleport Room 2", level: 0, status: "traced",
-          note: "The sketch's labelled TELEPORT. The teleport itself is a feature to be added later: the room is a placeholder for it.",
+          note: "The gridded floor: the lab itself and the HALLWAY that passes by it (not split into two rooms yet).",
+          polygon: [[400, 470], [875, 470], [875, 600], [815, 600], [815, 700], [375, 700], [370, 515], [400, 515]] },
+        { id: "teleport_stair_room", label: "Teleport Stair Room", level: 1, status: "approximate", name_confirmed: false,
+          note: "The room that leads to Teleport Room 2: a curved staircase in it leads DOWN to the hallway past the experiment lab. Footprint and name are first guesses.",
+          polygon: [[815, 600], [890, 600], [890, 700], [815, 700]] },
+        { id: "teleport_room_2", label: "Teleport Room 2", level: 1, status: "traced",
+          note: "The sketch's labelled TELEPORT. Raised: reached from the stair room, whose staircase leads down to the hallway. The teleport itself is a feature to be added later: the room is a placeholder for it.",
           polygon: [[890, 600], [1035, 600], [1035, 730], [890, 730]] },
         { id: "observation_deck", label: "Observation Deck", level: 1, status: "traced",
           note: "Raised by the look of it (steps drawn along its west side). Height unknown.",
@@ -83,9 +87,22 @@ const FACILITY_MAP = {
     door_type: "sliding_access_door",
 
     // CONFIRMED only. An opening is a gap cut into the walls along the segment a -> b; a connection says which two rooms it joins (and the ramp, if their levels differ).
-    openings: [],
-    connections: [],
-    ramps: [],
+    // The stair room: confirmed by the user. The positions on the walls are APPROXIMATE (centred on the shared wall) until checked in the debug view.
+    openings: [
+        { id: "open_stair_mouth", a: [815, 610], b: [815, 690], rooms: ["teleport_stair_room", "experiment_lab"], door: null, position_status: "approximate",
+          note: "The open foot of the curved staircase, onto the hallway. No door." },
+        { id: "door_stair_teleport_2", a: [890, 625], b: [890, 665], rooms: ["teleport_stair_room", "teleport_room_2"], position_status: "approximate",
+          note: "A sliding access door between the stair room and Teleport Room 2." },
+    ],
+    connections: [
+        { id: "conn_stair_hallway", rooms: ["teleport_stair_room", "experiment_lab"], opening: "open_stair_mouth", ramp: "r_teleport_stairs" },
+        { id: "conn_stair_teleport_2", rooms: ["teleport_stair_room", "teleport_room_2"], opening: "door_stair_teleport_2" },
+    ],
+    ramps: [
+        { id: "r_teleport_stairs", rooms: ["teleport_stair_room", "experiment_lab"], shape: "curved", centre: [890, 650], r_inner: 20, r_outer: 50, from_deg: 90, to_deg: 270,
+          between_levels: [1, 0], descends_toward: "experiment_lab", position_status: "approximate",
+          note: "A rounded (curved) staircase leading DOWN from the stair room to the hallway that passes the experiment lab." },
+    ],
 
     // What the sketch SUGGESTS and the user has not confirmed. None of these is a gap, a link or a ramp until it is moved above.
     candidates: {
@@ -97,7 +114,6 @@ const FACILITY_MAP = {
             { id: "c_annex_office", rooms: ["upper_annex", "front_office"], at: [792, 400], evidence: "the annex's west wall is drawn broken" },
             { id: "c_annex_lab", rooms: ["upper_annex", "experiment_lab"], at: [835, 465], evidence: "the annex's door-like stalls open toward the lab" },
             { id: "c_show_lab", rooms: ["show_room", "experiment_lab"], at: [878, 540], evidence: "the show room's west wall meets the lab's grid" },
-            { id: "c_lab_teleport", rooms: ["experiment_lab", "teleport_room_2"], at: [870, 650], evidence: "a curved stair drawn between them", ramp_candidate: "r_lab_teleport_stairs" },
             { id: "c_lab_arena", rooms: ["experiment_lab", "arena"], at: [460, 705], evidence: "the lab's grid spills into rubble at the arena's top-left" },
             { id: "c_teleport_catwalks", rooms: ["teleport_room_2", "catwalks"], at: [990, 745], evidence: "the catwalks begin right under the teleport room" },
             { id: "c_catwalks_arena", rooms: ["catwalks", "arena"], at: [945, 900], evidence: "railing posts along the catwalks' west side" },
@@ -106,7 +122,6 @@ const FACILITY_MAP = {
             { id: "c_arena_nest", rooms: ["arena", "nest_area"], at: [470, 1180], evidence: "an arrow points from 'FURTHER NESTS' down into the nest area; no opening is drawn" },
         ],
         ramps: [
-            { id: "r_lab_teleport_stairs", at: [840, 650], between_levels: [0, 0], evidence: "curved stair between the lab and the teleport room (same level as far as the sketch shows)" },
             { id: "r_structure_01_stairs", at: [745, 845], between_levels: [0, 1], evidence: "stairs up the side of the upper liquid reserve (to its rim?)" },
             { id: "r_structure_02_stairs", at: [755, 1000], between_levels: [0, 1], evidence: "stairs up the side of the lower liquid reserve (to its rim?)" },
             { id: "r_deck_steps", at: [262, 900], between_levels: [0, 1], evidence: "hatched steps along the observation deck's west edge" },
@@ -123,7 +138,7 @@ const FACILITY_MAP = {
 
     unresolved: [
         "The scale: px_per_tile is a first guess, to be calibrated in the game",
-        "Every door (they will be sliding access doors): none is confirmed, so every room is currently sealed (see candidates.connections)",
+        "Every other door (they will be sliding access doors): only the stair room's two openings are confirmed, and their positions on the walls are approximate",
         "Elevation heights (only the ORDER ground < raised is known) and every ramp or stair",
         "What the two liquid reserves contain (ooze or another liquid), and whether the stairs lead onto their rims",
         "The zone to the right of the arena (the catwalks) is blocked off for now and not being developed",
