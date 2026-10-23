@@ -301,10 +301,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('ELEVATION: the arena is sunken, the observation deck is raised, with steps at their doors (drawing only)');
     check('levels carry heights: the arena is below the ground floor, the deck and catwalks above it, and every room\'s level has one', () => {
         const M = J('FACILITY_MAP'), H = {}; for (const l of M.levels) H[l.id] = l.height;
-        ok(H[-1] < 0 && H[0] === 0 && H[1] > 0, 'heights ' + JSON.stringify(H)); const lv = id => M.rooms.find(r => r.id === id).level;
-        same(lv('arena'), -1, 'arena'); same(lv('observation_deck'), 1, 'deck'); same(lv('catwalks'), 1, 'catwalks'); same(lv('lab_hallway'), 0, 'hallway');
+        ok(H[-1] < 0 && H[0] === 0 && H[1] > 0 && H[2] > H[1], 'heights ' + JSON.stringify(H)); const lv = id => M.rooms.find(r => r.id === id).level;
+        same(lv('arena'), -1, 'arena'); same(lv('observation_deck'), 2, 'deck'); same(lv('catwalks'), 2, 'catwalks'); same(lv('lab_hallway'), 0, 'hallway');
         ok(M.rooms.every(r => H[r.level] !== undefined), 'a room has a level with no height');
-        ok(H[1] - H[0] > 0.5 && -H[-1] < H[1] - H[0], 'the drop should be small and the deck a bigger rise than it');
+        ok(-H[-1] >= 1.5 && H[2] - H[0] >= 3 && H[2] - H[0] > -H[-1], 'the drop into the arena and the rise to the deck should be drastic, the deck the higher spike');
     });
     check('the floor height is exact in the middle of a room and slopes continuously through each ramp zone', () => {
         const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(), out = {}; const hz = id => facilityRoomHeight(id, F);

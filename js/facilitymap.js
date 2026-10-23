@@ -25,9 +25,10 @@ const FACILITY_MAP = {
     // `height` is in tiles above the ground floor (the hallway). The arena is sunk a little below it; the observation deck and the catwalks stand well above the arena. Heights are for DRAWING
     // (the floor, walls and units rise and fall with them); movement is still flat, and the only way between two heights is a ramp below.
     levels: [
-        { id: -1, label: "sunken", height: -0.7 },
+        { id: -1, label: "sunken", height: -1.8 },
         { id: 0, label: "ground", height: 0 },
         { id: 1, label: "raised", height: 1.6 },
+        { id: 2, label: "high", height: 3.2 },
     ],
 
     rooms: [
@@ -62,10 +63,10 @@ const FACILITY_MAP = {
         { id: "teleport_room_2", label: "Teleport Room 2", level: 1, status: "traced", wall_material: "solid",
           note: "The sketch's labelled TELEPORT. Raised: reached from the stair room, whose staircase leads down to the hallway. The teleport itself is a feature to be added later: the room is a placeholder for it.",
           polygon: [[945, 600], [1090, 600], [1090, 790], [945, 790]] },
-        { id: "observation_deck", label: "Observation Deck", level: 1, status: "traced",
+        { id: "observation_deck", label: "Observation Deck", level: 2, status: "traced",
           note: "Steps are drawn along its west side (seating or a raised floor: unconfirmed). It is RAISED above the arena (it looks down into it through glass) and is reached from Teleport Room 1 by a short flight of steps at its door.",
           polygon: [[180, 760], [340, 760], [340, 1165], [180, 1165]] },
-        { id: "catwalks", label: "Catwalks", level: 1, status: "traced", development: "blocked_off_for_now",
+        { id: "catwalks", label: "Catwalks", level: 2, status: "traced", development: "blocked_off_for_now",
           note: "The zone to the right of the arena. It is BLOCKED OFF for now (not being developed): the player can walk up to it, not into it. Raised walkway with railing posts along its west side. Height unknown.",
           polygon: [[1005, 810], [1100, 810], [1100, 1210], [1005, 1210]] },
         { id: "arena", label: "Arena", level: -1, status: "traced",
@@ -186,11 +187,11 @@ const FACILITY_MAP = {
     ramps: [
         // `zone` is where the floor slopes: a rectangle, the axis it slopes along, and the two coordinates at which the height equals between_levels[0] and between_levels[1] (sketch pixels).
         { id: "r_arena_steps", rooms: ["lab_hallway", "arena"], shape: "steps", between_levels: [0, -1], descends_toward: "arena", position_status: "approximate",
-          zone: { rect: [360, 715, 450, 810], axis: "y", c0: 725, c1: 800, steps: 3 },
-          note: "A little staircase (3 steps) down from the main hallway into the arena, at the arena's door." },
-        { id: "r_deck_door_steps", rooms: ["teleport_room_1", "observation_deck"], shape: "steps", between_levels: [0, 1], descends_toward: "teleport_room_1", position_status: "approximate",
-          zone: { rect: [235, 715, 305, 830], axis: "y", c0: 725, c1: 800, steps: 3 },
-          note: "A little staircase (3 steps) UP from Teleport Room 1 onto the raised Observation Deck, at the deck's door." },
+          zone: { rect: [360, 715, 450, 835], axis: "y", c0: 725, c1: 825, steps: 5 },
+          note: "A staircase (5 steps) down from the main hallway into the arena, at the arena's door." },
+        { id: "r_deck_door_steps", rooms: ["teleport_room_1", "observation_deck"], shape: "steps", between_levels: [0, 2], descends_toward: "teleport_room_1", position_status: "approximate",
+          zone: { rect: [235, 715, 305, 835], axis: "y", c0: 725, c1: 825, steps: 5 },
+          note: "A staircase (5 steps) UP from Teleport Room 1 onto the raised Observation Deck, at the deck's door." },
         { id: "r_teleport_stairs", rooms: ["teleport_stair_room", "lab_hallway"], shape: "curved", centre: [945, 660], r_inner: 20, r_outer: 50, from_deg: 90, to_deg: 270,
           between_levels: [1, 0], descends_toward: "lab_hallway", position_status: "approximate",
           zone: { rect: [870, 600, 945, 760], axis: "x", c0: 940, c1: 880 },
