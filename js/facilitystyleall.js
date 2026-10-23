@@ -28,20 +28,12 @@ function _fpAcc(id) { return _fpRoomStyle(id).acc; }
 
 // the floor of a room: its two tiles, fine seams, and a NEON SEAM in the room's accent on every fourth tile line (the arena's and the catwalks' are quieter)
 function _fpStyleFloorFor(id) {
-    const R = _fpRoomStyle(id), dark = !!R.dark, neon = dark ? 0 : id === "catwalks" ? 0.55 : 0.95, ac = R.acc, rgb = (h) => { const n = parseInt(h.slice(1), 16); return (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255); };
-    return { base: R.fa, alt: R.fb, a: 1, mark: (h, o, x, y) => {
-        if (dark) {   // matte packed earth and stone: dull seams, a few pits and pebbles, no sheen, no neon
-            o.push({ t: "L", c: "rgba(20,16,14,0.45)", w: 2, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(20,16,14,0.45)", w: 2, p: [-0.5, -0.5, -0.5, 0.5] });
-            if (h % 3 === 0) o.push({ t: "C", c: "rgba(20,16,14,0.3)", u: ((h >>> 2) % 9 - 4) / 10, v: ((h >>> 5) % 9 - 4) / 10, r: 0.07 + (h % 4) * 0.02 });
-            if (h % 5 === 0) o.push({ t: "C", c: "rgba(120,108,96,0.28)", u: ((h >>> 4) % 9 - 4) / 10, v: ((h >>> 7) % 9 - 4) / 10, r: 0.05 });
-            if (h % 11 === 0) o.push({ t: "L", c: "rgba(15,12,10,0.5)", w: 2, p: [-0.35, -0.2, -0.05, 0.1] }, { t: "L", c: "rgba(15,12,10,0.5)", w: 2, p: [-0.05, 0.1, 0.25, 0.35] });
-            return;
-        }
-        o.push({ t: "L", c: "rgba(61,120,135,0.5)", w: 2, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(61,120,135,0.5)", w: 2, p: [-0.5, -0.5, -0.5, 0.5] });
-        if ((x & 3) === 0) o.push({ t: "L", c: "rgba(" + rgb(ac) + ",0.22)", w: 5, p: [-0.5, -0.5, -0.5, 0.5] }, { t: "L", c: "rgba(" + rgb(ac) + "," + neon + ")", w: 2, p: [-0.5, -0.5, -0.5, 0.5] });
-        if ((y & 3) === 0) o.push({ t: "L", c: "rgba(" + rgb(ac) + ",0.22)", w: 5, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(" + rgb(ac) + "," + neon + ")", w: 2, p: [-0.5, -0.5, 0.5, -0.5] });
-        if (id === "catwalks") o.push({ t: "L", c: "rgba(20,40,50,0.35)", w: 2, p: [-0.5, 0, 0.5, 0] });   // the deck's grating: a slot through every tile
-        if (h % 19 === 0) o.push({ t: "C", c: "rgba(105,135,125,0.18)", u: ((h >>> 3) % 7 - 3) / 10, v: ((h >>> 6) % 7 - 3) / 10, r: 0.22 });   // a faint discoloration
+    const R = _fpRoomStyle(id), dark = !!R.dark;
+    // a SIMPLE floor: one flat tone per room (no checker), faint tile lines, and (only in the dark earth floors) a few pits. No neon seams and no hazard stripes on floors.
+    return { base: R.fa, alt: null, a: 1, mark: (h, o, x, y) => {
+        if (dark) { if (h % 4 === 0) o.push({ t: "C", c: "rgba(20,16,14,0.28)", u: ((h >>> 2) % 9 - 4) / 10, v: ((h >>> 5) % 9 - 4) / 10, r: 0.06 + (h % 4) * 0.02 }); if (h % 13 === 0) o.push({ t: "L", c: "rgba(15,12,10,0.4)", w: 2, p: [-0.35, -0.2, -0.05, 0.1] }, { t: "L", c: "rgba(15,12,10,0.4)", w: 2, p: [-0.05, 0.1, 0.25, 0.35] }); return; }
+        o.push({ t: "L", c: "rgba(61,120,135,0.2)", w: 1, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(61,120,135,0.2)", w: 1, p: [-0.5, -0.5, -0.5, 0.5] });
+        if (h % 19 === 0) o.push({ t: "C", c: "rgba(105,135,125,0.14)", u: ((h >>> 3) % 7 - 3) / 10, v: ((h >>> 6) % 7 - 3) / 10, r: 0.22 });   // a faint discoloration
     } };
 }
 

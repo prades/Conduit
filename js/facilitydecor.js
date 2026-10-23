@@ -67,7 +67,8 @@ function _fpFloorBuild(F) {
     // 2. what lies on it
     const rect = (r, fn) => { for (let x = Math.ceil(r[0] - 0.5); x <= r[2] - 0.5; x++) for (let y = Math.ceil(r[1] - 0.5); y <= r[3] - 0.5; y++) if (_fp.cells.has(x + "," + y)) fn(x, y, _fpCellOps(map, x, y), r); };
     for (const d of (F.decor || [])) {
-        let col = d.colour || "#ffffff"; const k = d.kind; if (FAC_WALL_DECOR.has(k)) continue; const sty = facilityStyleRoom(d.room); if (sty && !_fpRoomStyle(d.room).dark) col = _fpStyleCol(k, col);   // (a dark room, the arena, keeps its own muted colours)   // (a styled room's decals are brought into its palette)   // (wall decor is drawn as items; "plate" is both a wall patch and a floor style)
+        let col = d.colour || "#ffffff"; const k = d.kind; if (FAC_WALL_DECOR.has(k)) continue; if ((k === "hazard" || k === "lane" || k === "arrows") && facilityStyleRoom(d.room)) continue;   // (the style has a simple floor: no caution stripes, lane lines or arrows)
+        const sty = facilityStyleRoom(d.room); if (sty && !_fpRoomStyle(d.room).dark) col = _fpStyleCol(k, col);   // (a dark room, the arena, keeps its own muted colours)   // (a styled room's decals are brought into its palette)   // (wall decor is drawn as items; "plate" is both a wall patch and a floor style)
         if (k === "rug") {   // a rectangle with a border two strokes wide
             rect(d.rect, (x, y, o, r) => { o.push({ t: "D", c: _fpRgba(col, 0.6), k: 0.0 });
                 if (x - 0.5 < r[0] + 0.01) o.push({ t: "L", c: _fpRgba(d.border || "#ffd34d", 0.8), w: 2, p: [-0.42, -0.42, -0.42, 0.42] }); if (y - 0.5 < r[1] + 0.01) o.push({ t: "L", c: _fpRgba(d.border || "#ffd34d", 0.8), w: 2, p: [-0.42, -0.42, 0.42, -0.42] });
