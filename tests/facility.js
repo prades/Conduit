@@ -346,7 +346,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('every kind of decor and furniture in the data has drawing code, and every id is unique', () => {
         const M = J('FACILITY_MAP'), src = rd('js/facilitydecor.js'), play = rd('js/facilityplay.js');
-        const wall = new Set(['poster', 'vent', 'pipe', 'wall_light', 'screen', 'board', 'whiteboard', 'exit_sign', 'clock', 'graffiti', 'panel', 'banner', 'mirror', 'shelf', 'sign', 'hazard_sign', 'cable_run', 'window_blind']);
+        const wall = new Set(['poster', 'vent', 'pipe', 'wall_light', 'screen', 'board', 'whiteboard', 'exit_sign', 'clock', 'graffiti', 'panel', 'banner', 'mirror', 'shelf', 'sign', 'hazard_sign', 'cable_run', 'window_blind', 'crack', 'vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'ladder', 'scoreboard', 'plate', 'moss', 'stalactite', 'bulbs']);
         const missing = []; for (const d of M.decor) { if (wall.has(d.kind)) { if (!new RegExp('\\b' + d.kind + ':\\s*\\(it, f\\)').test(src)) missing.push(d.kind); } else if (!new RegExp('k === "' + d.kind + '"').test(src)) missing.push(d.kind); }
         for (const p of M.props) if (p.kind && !new RegExp('(kind|k) === "' + p.kind + '"').test(src + play)) missing.push(p.kind);
         same(Array.from(new Set(missing)).join(), '', 'kinds with no drawing code');
@@ -359,10 +359,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             { id: 'x_not_wall', room: 'front_lobby', kind: 'poster', a: [510, 330], b: [550, 330] },
             { id: 'x_over_door', room: 'lab_hallway', kind: 'vent', a: [410, 410], b: [450, 410] },
             { id: 'x_outside', room: 'crystal_chamber', kind: 'stain', at: [1500, 1500], radius: 20, colour: '#000000' },
-            { id: 'x_rug_leaves', room: 'bathroom', kind: 'rug', rect: [800, 270, 1100, 410], colour: '#ffffff' }];
+            { id: 'x_rug_leaves', room: 'bathroom', kind: 'rug', rect: [800, 270, 1100, 410], colour: '#ffffff' },
+            { id: 'x_hidden_diag', room: 'arena', kind: 'crack', a: [530, 770], b: [550, 810] },
+            { id: 'x_outside_but_front', room: 'arena', kind: 'crack', outside: true, a: [610, 828], b: [680, 812] }];
             const out = {}; for (const b of bad) { M.decor = [b]; let e; try { e = facilityValidateDressing(facilityBuild({ snap: true, margin: 0.3 })); } catch (err) { e = [String(err)]; } out[b.id] = e.length; }
             M.decor = keep; out.good = facilityValidateDressing(facilityBuild({ snap: true, margin: 0.3 })).length; return out; })()`);
-        for (const id of ['x_wrong_side', 'x_on_glass', 'x_not_wall', 'x_over_door', 'x_outside', 'x_rug_leaves']) ok(r[id] > 0, id + ' passed'); same(r.good, 0, 'the real data stopped validating after the probe');
+        for (const id of ['x_wrong_side', 'x_on_glass', 'x_not_wall', 'x_over_door', 'x_outside', 'x_rug_leaves', 'x_hidden_diag', 'x_outside_but_front']) ok(r[id] > 0, id + ' passed'); same(r.good, 0, 'the real data stopped validating after the probe');
+    });
+    check('the arena\'s rock walls and the catwalks are detailed: decor on the rock faces (diagonal walls, on the line itself), on the outside faces of the south and east rock, and on the catwalk walls; the catwalks carry furniture', () => {
+        const M = J('FACILITY_MAP'), A = M.decor.filter(d => d.room === 'arena' && d.a && d.b && d.kind !== 'lane'), K = M.decor.filter(d => d.room === 'catwalks');
+        ok(A.length >= 40, 'arena wall decor: ' + A.length); ok(A.filter(d => d.a[0] !== d.b[0] && d.a[1] !== d.b[1]).length >= 25, 'diagonal rock decor'); ok(A.filter(d => d.outside).length >= 12, 'outside-face decor: ' + A.filter(d => d.outside).length);
+        ok(new Set(A.map(d => d.kind)).size >= 12, 'arena decor kinds: ' + new Set(A.map(d => d.kind)).size); for (const k of ['stalactite', 'vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'scoreboard', 'bulbs', 'moss', 'crack']) ok(A.some(d => d.kind === k), 'no ' + k + ' on the arena walls');
+        ok(K.length >= 40, 'catwalk decor: ' + K.length); ok(K.filter(d => d.outside).length >= 8, 'catwalk outside faces'); ok(M.props.filter(p => p.room === 'catwalks').length >= 12, 'catwalk furniture: ' + M.props.filter(p => p.room === 'catwalks').length);
+        for (const k of ['speaker', 'floodlight', 'spool', 'generator', 'scaffold', 'console', 'chair', 'toolbox']) ok(M.props.some(p => p.room === 'catwalks' && p.kind === k), 'no ' + k + ' on the catwalks');
     });
     check('the furniture never walls anything off: from the crystal you can walk to nearly every floor tile of every room, so a prop never seals a pocket or a door', () => {
         const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }), cr = F.byId.get('crystal_chamber').objects[0].at, fl = facilityFlood(Math.round(cr[0]) + 2, Math.round(cr[1]) + 1, F), reach = new Set(fl.map(c => Math.round(c[0]) + ',' + Math.round(c[1]))), tot = {}, got = {};

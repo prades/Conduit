@@ -66,7 +66,7 @@ function _fpFloorBuild(F) {
     // 2. what lies on it
     const rect = (r, fn) => { for (let x = Math.ceil(r[0] - 0.5); x <= r[2] - 0.5; x++) for (let y = Math.ceil(r[1] - 0.5); y <= r[3] - 0.5; y++) if (_fp.cells.has(x + "," + y)) fn(x, y, _fpCellOps(map, x, y), r); };
     for (const d of (F.decor || [])) {
-        const col = d.colour || "#ffffff", k = d.kind;
+        const col = d.colour || "#ffffff", k = d.kind; if (FAC_WALL_DECOR.has(k)) continue;   // (wall decor is drawn as items; "plate" is both a wall patch and a floor style)
         if (k === "rug") {   // a rectangle with a border two strokes wide
             rect(d.rect, (x, y, o, r) => { o.push({ t: "D", c: _fpRgba(col, 0.6), k: 0.0 });
                 if (x - 0.5 < r[0] + 0.01) o.push({ t: "L", c: _fpRgba(d.border || "#ffd34d", 0.8), w: 2, p: [-0.42, -0.42, -0.42, 0.42] }); if (y - 0.5 < r[1] + 0.01) o.push({ t: "L", c: _fpRgba(d.border || "#ffd34d", 0.8), w: 2, p: [-0.42, -0.42, 0.42, -0.42] });
@@ -228,6 +228,62 @@ const FP_WALL_KINDS = {
     cable_run: (it, f) => {   // cables looping down a wall
         for (let k = 0; k < 3; k++) { const u0 = 0.15 + k * 0.28, p = _fpWP(it, u0, 74), q = _fpWP(it, u0 + 0.04, 30 + k * 8), m = _fpWP(it, u0 + 0.14, 20 + k * 8); ctx.strokeStyle = k & 1 ? "#2a2e3a" : "#3a2a2a"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.quadraticCurveTo(q[0], q[1] - 8, m[0], m[1]); ctx.stroke(); }
     },
+    // ── rock, steel and cave dressing (the arena's walls and the catwalks) ──
+    crack: (it, f) => {   // a jagged crack running down the wall
+        const n = 2 + it.seed % 2; for (let k = 0; k < n; k++) { let u = 0.12 + (k + ((it.seed >>> k) % 4) * 0.1) * 0.28, z = 70 - (it.seed >>> (k + 2)) % 12; const pts = [[u, z]]; for (let i = 0; i < 6; i++) { u += (((it.seed >>> (i + k)) % 7) - 3) * 0.012; z -= 8 + ((it.seed >>> (i + 2)) % 6); pts.push([u, Math.max(2, z)]); }
+            for (const [col, w, du] of [["rgba(0,0,0,0.75)", 2, 0], ["rgba(255,235,200,0.18)", 1, 0.008]]) { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); pts.forEach((q, i) => { const p = _fpWP(it, q[0] + du, q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); } }
+    },
+    vein: (it, f) => {   // a glowing mineral vein wandering across the rock, with a branch
+        const c = it.colour || "#6adfff", pul = 0.55 + 0.35 * Math.sin(f * 0.04 + it.seed), z0 = it.z || 26; let u = 0.04, z = z0 + (it.seed % 20); const pts = [[u, z]]; for (let i = 0; i < 9; i++) { u += 0.1; z += (((it.seed >>> i) % 9) - 4) * 2.4; pts.push([Math.min(0.97, u), Math.max(6, Math.min(66, z))]); }
+        const path = (a) => { ctx.beginPath(); a.forEach((q, i) => { const p = _fpWP(it, q[0], q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); };
+        ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = _fpRgba(c, 0.14 * pul); ctx.lineWidth = 8; path(pts); ctx.globalCompositeOperation = "source-over"; ctx.strokeStyle = _fpRgba(c, 0.9 * pul); ctx.lineWidth = 2; path(pts);
+        const br = pts.slice(4, 7).map((q, i) => [q[0] + i * 0.05, q[1] - 6 - i * 7]); ctx.lineWidth = 1.5; path([pts[4]].concat(br));
+    },
+    beam: (it, f) => {   // a timber support: two posts, a lintel and a cross brace
+        const H = 74; for (const u of [0.04, 0.93]) _fpWQuad(it, u, u + 0.04, 0, H, "#6a4a2c", "rgba(5,7,15,0.55)", 1); _fpWQuad(it, 0.02, 0.98, H - 9, H - 2, "#7a5a36", "rgba(5,7,15,0.55)", 1);
+        _fpWLine(it, 0.08, 6, 0.93, H - 9, "#5a3e24", 3); _fpWLine(it, 0.93, 6, 0.08, H - 9, "rgba(90,62,36,0.6)", 2); for (const u of [0.05, 0.94]) for (const z of [14, 40]) { const p = _fpWP(it, u + 0.02, z); ctx.fillStyle = "#c9b890"; ctx.fillRect(p[0] - 1.5, p[1] - 1.5, 3, 3); }
+    },
+    chain: (it, f) => {   // hanging chains: links alternating, swaying a little, ending in a hook
+        const n = 2 + it.seed % 2; for (let k = 0; k < n; k++) { const u = 0.15 + k * 0.3, len = 26 + ((it.seed >>> k) % 22), sway = Math.sin(f * 0.03 + it.seed + k) * 2; for (let l = 0; l < len / 5; l++) { const p = _fpWP(it, u + sway * 0.002 * l, 74 - l * 5); ctx.strokeStyle = l & 1 ? "#8a93a6" : "#5a6272"; ctx.lineWidth = 2; ctx.beginPath(); if (l & 1) ctx.ellipse(p[0], p[1], 1.5, 3, 0, 0, 6.2832); else ctx.ellipse(p[0], p[1], 3, 1.5, 0, 0, 6.2832); ctx.stroke(); }
+            const h = _fpWP(it, u, 74 - len); ctx.strokeStyle = "#b8c0d0"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(h[0], h[1] + 3, 4, 0, 3.6); ctx.stroke(); }
+    },
+    claw: (it, f) => {   // four deep gouges: something very large lives here
+        const z0 = it.z || 22; for (let k = 0; k < 4; k++) { const u = 0.3 + k * 0.07; _fpWLine(it, u, z0 + 40 - k * 2, u + 0.1, z0, "rgba(0,0,0,0.7)", 3); _fpWLine(it, u + 0.006, z0 + 40 - k * 2, u + 0.106, z0, "rgba(255,225,190,0.35)", 1); }
+    },
+    ooze_drip: (it, f) => {   // streaks of ooze running down the wall, a bead sliding down each
+        const c = it.colour || "#8a4aff"; for (let k = 0; k < 4; k++) { const u = 0.12 + k * 0.22 + ((it.seed >>> k) % 5) * 0.01, len = 20 + ((it.seed >>> (k + 1)) % 40), top = 74 - ((it.seed >>> k) % 8);
+            _fpWQuad(it, u, u + 0.035, top - len, top, _fpRgba(c, 0.42), null); const p = _fpWP(it, u + 0.0175, top - len); ctx.fillStyle = _fpRgba(c, 0.6); ctx.beginPath(); ctx.arc(p[0], p[1], 3, 0, 6.2832); ctx.fill();
+            const ph = ((f * 0.6 + k * 17 + it.seed) % 60) / 60, b = _fpWP(it, u + 0.0175, top - len * ph); ctx.fillStyle = _fpRgba(c, 0.85); ctx.beginPath(); ctx.arc(b[0], b[1], 2, 0, 6.2832); ctx.fill(); }
+    },
+    lamp: (it, f) => {   // a caged work lamp on a bracket, with a glare
+        const c = it.colour || "#ffe9a0", fl = it.h ? (0.55 + 0.45 * Math.sin(f * 0.13 + it.seed) * (Math.sin(f * 0.019 + it.seed) > 0.05 ? 1 : 0.15)) : 1, z = it.z || 52, p = _fpWP(it, 0.5, z);
+        ctx.strokeStyle = "#3a4050"; ctx.lineWidth = 3; ctx.beginPath(); const q = _fpWP(it, 0.5, z - 12); ctx.moveTo(q[0], q[1]); ctx.lineTo(p[0], p[1]); ctx.stroke();
+        ctx.fillStyle = "#1d222c"; ctx.fillRect(p[0] - 9, p[1] - 8, 18, 14); ctx.fillStyle = _fpRgba(c, 0.55 + 0.45 * Math.max(0, fl)); ctx.fillRect(p[0] - 7, p[1] - 6, 14, 10); ctx.strokeStyle = "rgba(10,12,18,0.8)"; ctx.lineWidth = 1; for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(p[0] + i * 4, p[1] - 6); ctx.lineTo(p[0] + i * 4, p[1] + 4); ctx.stroke(); }
+        ctx.globalCompositeOperation = "lighter"; const g = ctx.createRadialGradient(p[0], p[1], 2, p[0], p[1], 46); g.addColorStop(0, _fpRgba(c, 0.5 * Math.max(0, fl))); g.addColorStop(1, _fpRgba(c, 0)); ctx.fillStyle = g; ctx.fillRect(p[0] - 46, p[1] - 46, 92, 92); ctx.globalCompositeOperation = "source-over";
+    },
+    ladder: (it, f) => {   // a steel ladder bolted to the wall
+        _fpWQuad(it, 0.3, 0.335, 0, 70, "#7d8aa6", "rgba(5,7,15,0.5)", 1); _fpWQuad(it, 0.665, 0.7, 0, 70, "#7d8aa6", "rgba(5,7,15,0.5)", 1); for (let z = 8; z < 70; z += 9) _fpWLine(it, 0.31, z, 0.69, z, "#aab6cc", 2);
+    },
+    scoreboard: (it, f) => {   // the arena scoreboard: a title bar and two lit counters ticking over
+        const z0 = it.z || 22, c = it.colour || "#ff4a3a"; _fpWQuad(it, 0.03, 0.97, z0, z0 + 46, "#0a0c12", "rgba(200,210,235,0.6)", 2); _fpWQuad(it, 0.08, 0.92, z0 + 36, z0 + 42, _fpRgba(c, 0.7 + 0.2 * Math.sin(f * 0.05)), null);
+        for (let side = 0; side < 2; side++) for (let d = 0; d < 3; d++) { const u0 = 0.1 + side * 0.44 + d * 0.12, on = ((Math.floor(f / 40) + d * 3 + side * 5 + it.seed) % 4) > 0; _fpWQuad(it, u0, u0 + 0.09, z0 + 6, z0 + 30, on ? _fpRgba(c, 0.85) : _fpRgba(c, 0.18), null); _fpWQuad(it, u0 + 0.02, u0 + 0.07, z0 + 16, z0 + 20, "#0a0c12", null); }
+        _fpWQuad(it, 0.47, 0.53, z0 + 14, z0 + 22, _fpRgba("#ffd34d", 0.8), null);
+    },
+    plate: (it, f) => {   // a riveted, rusty metal patch bolted over the rock
+        const z0 = it.z || 18, hh = it.h || 36; _fpWQuad(it, 0.06, 0.94, z0, z0 + hh, "#6a5a4a", "rgba(5,7,15,0.55)", 1.5); _fpWQuad(it, 0.06, 0.94, z0 + hh - 8, z0 + hh, "rgba(160,90,40,0.5)", null); _fpWLine(it, 0.06, z0 + hh * 0.5, 0.94, z0 + hh * 0.5, "rgba(10,10,12,0.4)", 1);
+        for (const u of [0.1, 0.9]) for (const z of [z0 + 4, z0 + hh - 4]) { const p = _fpWP(it, u, z); ctx.fillStyle = "#c9b890"; ctx.beginPath(); ctx.arc(p[0], p[1], 1.6, 0, 6.2832); ctx.fill(); }
+    },
+    moss: (it, f) => {   // patches of moss and fungus in the damp low part of the wall
+        for (let k = 0; k < 6; k++) { const p = _fpWP(it, 0.08 + k * 0.15 + ((it.seed >>> k) % 5) * 0.01, 4 + ((it.seed >>> (k + 2)) % 4) * 7); ctx.fillStyle = k & 1 ? "rgba(70,140,70,0.75)" : "rgba(50,110,60,0.75)"; ctx.beginPath(); ctx.ellipse(p[0], p[1], 8 + (k % 3) * 3, 4 + (k % 2) * 2, 0, 0, 6.2832); ctx.fill();
+            if ((it.seed + k) % 4 === 0) { ctx.fillStyle = "rgba(150,255,180," + (0.5 + 0.3 * Math.sin(f * 0.05 + k)) + ")"; ctx.beginPath(); ctx.arc(p[0] + 2, p[1] - 3, 1.6, 0, 6.2832); ctx.fill(); } }
+    },
+    stalactite: (it, f) => {   // rock teeth hanging from the top of the wall
+        const n = Math.max(3, Math.round(Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) * 1.4)); for (let k = 0; k < n; k++) { const u = (k + 0.5) / n, w = 0.4 / n, l = 8 + ((it.seed >>> (k % 20)) + k * 5) % 16; _fpQuad([_fpWP(it, u - w, 74), _fpWP(it, u + w, 74), _fpWP(it, u + w * 0.15, 74 - l), _fpWP(it, u - w * 0.15, 74 - l)], "#4a3a2c", "rgba(5,7,15,0.4)", 1); _fpQuad([_fpWP(it, u, 74), _fpWP(it, u + w, 74), _fpWP(it, u + w * 0.15, 74 - l)], "rgba(255,255,255,0.08)", null); }
+    },
+    bulbs: (it, f) => {   // a string of coloured bulbs sagging along the top of the wall
+        const n = Math.max(4, Math.round(Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) * 1.6)), cols = ["#ff4a3a", "#ffd34d", "#6dff5a", "#6adfff", "#d94aff"]; ctx.strokeStyle = "#1a1d26"; ctx.lineWidth = 1.5; ctx.beginPath(); for (let k = 0; k <= n; k++) { const u = k / n, p = _fpWP(it, u, 68 - Math.sin(u * 3.1416) * 7); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.stroke();
+        for (let k = 0; k <= n; k++) { const u = k / n, p = _fpWP(it, u, 68 - Math.sin(u * 3.1416) * 7 - 2), on = (Math.floor(f / 24) + k + it.seed) % 6 !== 0; ctx.fillStyle = on ? cols[(k + it.seed) % 5] : "#2a2e3a"; ctx.beginPath(); ctx.arc(p[0], p[1], 2.4, 0, 6.2832); ctx.fill(); if (on) { ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = _fpRgba(cols[(k + it.seed) % 5], 0.18); ctx.beginPath(); ctx.arc(p[0], p[1], 7, 0, 6.2832); ctx.fill(); ctx.globalCompositeOperation = "source-over"; } }
+    },
     window_blind: (it, f) => {   // hanging window blinds
         const z1 = it.z || 70; for (let k = 0; k < 7; k++) _fpWQuad(it, 0.05, 0.95, z1 - 3 - k * 5, z1 - 1 - k * 5, "#b8b098", "rgba(60,50,30,0.5)", 1);
     },
@@ -236,7 +292,7 @@ function _fpDrawWDecor(it) { const fn = FP_WALL_KINDS[it.kind]; if (fn) fn(it, _
 
 // ═════════════ FURNITURE ═════════════
 // Returns true if it drew the kind. `it` is one tile of a solid prop (sx / sy: whether its +x / +y face is exposed, as for the desks).
-const FP_SMALL_PROPS = new Set(["plant", "cooler", "bin", "barrel", "beanbag", "telescope", "floodlight", "cart", "teleporter", "table", "pingpong", "rail"]);
+const FP_SMALL_PROPS = new Set(["plant", "cooler", "bin", "barrel", "beanbag", "telescope", "floodlight", "cart", "teleporter", "table", "pingpong", "rail", "spool", "toolbox", "chair", "scaffold"]);
 function _fpDecorProp(it) {
     const k = it.kind, f = _fpFrame(), seed = it.seed || 0, x = it.x, y = it.y;
     if (FP_SMALL_PROPS.has(k)) {   // the floor the piece stands on (its tile is solid, so the tile itself is not drawn)
@@ -317,6 +373,21 @@ function _fpDecorProp(it) {
         const c = _fpP(x, y, 6); ctx.fillStyle = ["#d94a6a", "#4ab8d9", "#e0b83a", "#6ad94a"][seed % 4]; ctx.beginPath(); ctx.ellipse(c[0], c[1], 20, 12, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,255,255,0.2)"; ctx.beginPath(); ctx.ellipse(c[0] - 4, c[1] - 4, 10, 5, 0, 0, 6.2832); ctx.fill();
     } else if (k === "cart") {   // a lab trolley: two shelves of glassware on wheels
         _fpBox(x - 0.4, y - 0.25, x + 0.4, y + 0.25, 0, 3, "#2a303c", "#1d222c", "#161a22"); _fpBox(x - 0.4, y - 0.25, x + 0.4, y + 0.25, 24, 27, "#cfd8e0", "#8e9eae", "#6e7e8e"); const t = _fpP(x, y, 27); ctx.fillStyle = "rgba(120,230,255,0.7)"; ctx.fillRect(t[0] - 9, t[1] - 9, 5, 9); ctx.fillStyle = "rgba(160,255,150,0.7)"; ctx.fillRect(t[0] + 2, t[1] - 7, 5, 7);
+    } else if (k === "speaker") {   // a PA speaker stack: a cabinet with two cones and a horn on top
+        _fpPrism(it, 52, "#2a2e38", "#1b1e26", "#15171e"); if (it.sy) { for (const [u, z, r] of [[0.5, 14, 0.32], [0.5, 36, 0.24]]) { const c = _fpP(x, y + 0.5, z); ctx.fillStyle = "#0b0c10"; ctx.beginPath(); ctx.ellipse(c[0], c[1], 14 * r / 0.32 * 0.9, 9 * r / 0.32 * 0.9, 0, 0, 6.2832); ctx.fill(); ctx.strokeStyle = "rgba(160,170,190,0.55)"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.fillStyle = "#3a3f4c"; ctx.beginPath(); ctx.ellipse(c[0], c[1], 5, 3, 0, 0, 6.2832); ctx.fill(); } }
+        const h = _fpP(x, y, 56); ctx.fillStyle = "#4a505e"; ctx.beginPath(); ctx.moveTo(h[0] - 9, h[1]); ctx.lineTo(h[0] + 9, h[1]); ctx.lineTo(h[0] + 14, h[1] - 10); ctx.lineTo(h[0] - 14, h[1] - 10); ctx.closePath(); ctx.fill();
+    } else if (k === "spool") {   // a cable drum on its side
+        const c0 = _fpP(x, y, 0), c1 = _fpP(x, y, 26), rx = TILE_W * 0.42, ry = TILE_H * 0.42; ctx.fillStyle = "#6a4a2c"; ctx.beginPath(); ctx.ellipse(c0[0], c0[1], rx, ry, 0, 0, 3.1416); ctx.lineTo(c1[0] - rx, c1[1]); ctx.ellipse(c1[0], c1[1], rx, ry, 0, 3.1416, 0, true); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#8a6a40"; ctx.beginPath(); ctx.ellipse(c1[0], c1[1], rx, ry, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = seed % 2 ? "#d94a3a" : "#e0b83a"; ctx.beginPath(); ctx.ellipse(c1[0], c1[1], rx * 0.62, ry * 0.62, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "#2a1c10"; ctx.beginPath(); ctx.ellipse(c1[0], c1[1], rx * 0.18, ry * 0.18, 0, 0, 6.2832); ctx.fill();
+    } else if (k === "toolbox") {   // a red steel toolbox with a lid and a handle
+        _fpBox(x - 0.32, y - 0.22, x + 0.32, y + 0.22, 0, 14, "#c0392b", "#8a281e", "#6e1f17", "rgba(255,200,190,0.35)"); const h = _fpP(x, y, 14); ctx.strokeStyle = "#2a2e38"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(h[0] - 7, h[1]); ctx.lineTo(h[0] - 5, h[1] - 6); ctx.lineTo(h[0] + 5, h[1] - 6); ctx.lineTo(h[0] + 7, h[1]); ctx.stroke();
+    } else if (k === "chair") {   // a swivel chair: a seat, a backrest, a star base
+        const b = _fpP(x, y, 0), t = _fpP(x, y, 20); ctx.strokeStyle = "#1a1d26"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.lineTo(t[0], t[1]); for (const a of [0, 1.26, 2.5, 3.8, 5.0]) { ctx.moveTo(b[0], b[1]); ctx.lineTo(b[0] + Math.cos(a) * 11, b[1] + Math.sin(a) * 5); } ctx.stroke();
+        _fpBox(x - 0.28, y - 0.28, x + 0.28, y + 0.28, 18, 23, "#3a4a6a", "#26324a", "#1c2538"); _fpBox(x - 0.28, y - 0.3, x + 0.28, y - 0.18, 23, 44, "#33425e", "#222c42", "#19212f");
+    } else if (k === "scaffold") {   // a steel scaffold frame: four posts, cross braces and a plank deck
+        const P = _fpP; for (const [a, b] of [[-0.45, -0.45], [0.45, -0.45], [0.45, 0.45], [-0.45, 0.45]]) { const p = P(x + a, y + b, 0), q = P(x + a, y + b, 70); ctx.strokeStyle = "#8a93a6"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
+        for (const z of [20, 46]) { const a = P(x - 0.45, y + 0.45, z), b = P(x + 0.45, y + 0.45, z), c = P(x + 0.45, y - 0.45, z); ctx.strokeStyle = "#6e7686"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.stroke(); }
+        const a = P(x - 0.45, y + 0.45, 6), b = P(x + 0.45, y + 0.45, 46); ctx.strokeStyle = "#6e7686"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); _fpBox(x - 0.5, y - 0.5, x + 0.5, y + 0.5, 68, 72, "#9a7a4a", "#6a5030", "#54401f");
     } else return false;
     return true;
 }

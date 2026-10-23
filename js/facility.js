@@ -106,7 +106,8 @@ function _facilityBuild(ex) {
     // the dressing: floor coverings and decor (paint and light), compiled to tiles; positions are snapped like every other point
     const floors = (M.floors || []).map(f => ({ room: f.room, style: f.style, colour: f.colour || null }));
     const rawP = p => [p[0] / facilityScale(), p[1] / facilityScale()];   // floor decor is not snapped to the grid (a ring or a cable can lie across it); wall decor and rugs are, to lie on an edge / fill whole tiles
-    const decor = (M.decor || []).map(d => { const o = Object.assign({}, d), wall = FAC_WALL_DECOR.has(d.kind), pt = wall ? _facP : rawP; for (const k of ["at", "a", "b"]) if (Array.isArray(d[k])) o[k] = pt(d[k]);   // (a ring or a light also has a number `a`: its alpha)
+    const decor = (M.decor || []).map(d => { const o = Object.assign({}, d), wall = FAC_WALL_DECOR.has(d.kind), axis = d.a && d.b && (Math.abs(d.a[0] - d.b[0]) < 1e-6 || Math.abs(d.a[1] - d.b[1]) < 1e-6), pt = wall && axis ? _facP : rawP;   // (decor on a diagonal wall is given on the line itself, not snapped)
+        for (const k of ["at", "a", "b"]) if (Array.isArray(d[k])) o[k] = pt(d[k]);   // (a ring or a light also has a number `a`: its alpha)
         if (d.rect) { const a = _facP([d.rect[0], d.rect[1]]), b = _facP([d.rect[2], d.rect[3]]); o.rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; }
         if (d.path) o.path = d.path.map(pt); if (d.radius) o.radius = d.radius / s; return o; });
     const solids = (M.props || []).map(pr => {
@@ -200,7 +201,7 @@ function facilityHeightAt(x, y, F) {
 function facilityRoomHeight(id, F) { F = F || facilityGet(); const r = F.byId.get(id); return r ? (F.levelH.get(r.level) || 0) : 0; }
 
 // the kinds of decor that hang on a wall (the rest lie on the floor)
-const FAC_WALL_DECOR = new Set(["poster", "vent", "pipe", "wall_light", "screen", "board", "whiteboard", "exit_sign", "clock", "graffiti", "panel", "banner", "mirror", "shelf", "sign", "hazard_sign", "cable_run", "window_blind"]);
+const FAC_WALL_DECOR = new Set(["poster", "vent", "pipe", "wall_light", "screen", "board", "whiteboard", "exit_sign", "clock", "graffiti", "panel", "banner", "mirror", "shelf", "sign", "hazard_sign", "cable_run", "window_blind", "crack", "vein", "beam", "chain", "claw", "ooze_drip", "lamp", "ladder", "scoreboard", "plate", "moss", "stalactite", "bulbs"]);
 
 // The dressing (floors and decor): floors name a room, floor decor lies inside its room, wall decor is flat on a real solid wall, on the side of it that the camera sees, and (but for signs over a door) not across a doorway.
 function facilityValidateDressing(F) {
@@ -212,11 +213,11 @@ function facilityValidateDressing(F) {
         const room = F.byId.get(d.room); if (!room) { errors.push("decor " + d.id + " names a room that does not exist"); continue; }
         if (FAC_WALL_DECOR.has(d.kind)) {
             if (!d.a || !d.b) { errors.push("wall decor " + d.id + " has no a and b"); continue; }
-            const h = Math.abs(d.a[1] - d.b[1]) < 1e-6, v = Math.abs(d.a[0] - d.b[0]) < 1e-6; if (!h && !v) { errors.push("wall decor " + d.id + " is not along a wall (horizontal or vertical)"); continue; }
-            const mx = (d.a[0] + d.b[0]) / 2, my = (d.a[1] + d.b[1]) / 2, nx = h ? 0 : 0.4, ny = h ? 0.4 : 0;
-            const at = facilityRoomAt(mx + nx, my + ny, F), behind = facilityRoomAt(mx - nx, my - ny, F);
-            if (!at || at.id !== d.room) errors.push("wall decor " + d.id + " does not face " + d.room + " (the side of a wall the camera sees is its +y / +x side)");
-            if (behind && behind.id === d.room) errors.push("wall decor " + d.id + " is not on a wall of " + d.room);
+            const dx = d.b[0] - d.a[0], dy = d.b[1] - d.a[1], L = Math.hypot(dx, dy); if (L < 0.3) { errors.push("wall decor " + d.id + " is too short"); continue; }
+            let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }   // the side of the wall the camera sees (towards larger x + y)
+            const mx = (d.a[0] + d.b[0]) / 2, my = (d.a[1] + d.b[1]) / 2, front = facilityRoomAt(mx + nx * 0.4, my + ny * 0.4, F), behind = facilityRoomAt(mx - nx * 0.4, my - ny * 0.4, F);
+            if (d.outside) { if (!behind || behind.id !== d.room) errors.push("wall decor " + d.id + " is flagged outside but " + d.room + " is not behind that wall"); }
+            else { if (!front || front.id !== d.room) errors.push("wall decor " + d.id + " does not face " + d.room + " (the side of a wall the camera sees is its +y / +x side)"); if (behind && behind.id === d.room) errors.push("wall decor " + d.id + " is not on a wall of " + d.room); }
             if (!FAC_OVER_DOOR.has(d.kind) && !F.walls.some(w => !w.window && _facSegPointDist(w.a, w.b, mx, my) < 0.06)) errors.push("wall decor " + d.id + " is not on a solid wall (it is across a gap or glass)");
             if (!FAC_OVER_DOOR.has(d.kind)) for (const o of F.openings) if (_facSegPointDist(d.a, d.b, (o.a[0] + o.b[0]) / 2, (o.a[1] + o.b[1]) / 2) < 0.1 || _facSegPointDist(o.a, o.b, mx, my) < 0.6) errors.push("wall decor " + d.id + " (" + d.kind + ") is across the opening " + o.id);
         } else if (d.rect) {

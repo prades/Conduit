@@ -195,7 +195,7 @@ function measure() {
         const r = J(`(function(){ let tot = 0, got = 0; for (const [k, c] of _fp.cells) { const room = facilityRoomAt(c[0], c[1], _fp.F); if (room.id === 'nest_area') continue; tot++; if (_fp.floorOps.has(k)) got++; }
             const wd = _fp.items.filter(i => i.fp === 'wdecor'), small = _fp.items.filter(i => i.fp === 'prop' && FP_SMALL_PROPS.has(i.kind)); const bare = small.filter(i => !_fp.underOps.has(i.x + ',' + i.y)).length;
             return { tot, got, wd: wd.length, kinds: Array.from(new Set(wd.map(i => i.kind))).length, noDepth: wd.filter(i => !(i.depth > 0)).length, small: small.length, bare }; })()`);
-        ok(r.got / r.tot > 0.97, 'floor marks on ' + r.got + ' of ' + r.tot + ' tiles'); ok(r.wd >= 90, 'wall decor items: ' + r.wd); ok(r.kinds >= 14, 'wall decor kinds: ' + r.kinds); same(r.noDepth, 0, 'wall decor with no depth');
+        ok(r.got / r.tot > 0.97, 'floor marks on ' + r.got + ' of ' + r.tot + ' tiles'); ok(r.wd >= 170, 'wall decor items: ' + r.wd); ok(r.kinds >= 24, 'wall decor kinds: ' + r.kinds); same(r.noDepth, 0, 'wall decor with no depth');
         ok(r.small >= 20, 'small props: ' + r.small); same(r.bare, 0, 'a small prop with no floor under it (a black tile would show)');
         same(J(`drawDepthOf({ type: 'fp', x: 3, y: 4, depth: 9.5 })`), 9.5, 'the depth hook'); same(J(`drawDepthOf({ type: 'fp', x: 3, y: 4 })`), 7, 'an fp item with no depth keeps x + y');
     });
@@ -204,8 +204,8 @@ function measure() {
         const r = J(`(function(){ const seenW = {}, seenP = {}; let n = 0, err = null; for (const it of _fp.items) { try { if (it.fp === 'wdecor') { if ((seenW[it.kind] = (seenW[it.kind] || 0) + 1) > 3) continue; drawFacilityItem(it); n++; } else if (it.fp === 'prop') { if ((seenP[it.kind] = (seenP[it.kind] || 0) + 1) > 3) continue; drawFacilityItem(it); n++; } } catch (e) { err = it.fp + ':' + it.kind + ' ' + e.message; break; } }
             let floors = 0; try { for (const [k, ops] of _fp.floorOps) { if (floors++ > 400) break; const [x, y] = k.split(',').map(Number); facilityDrawFloorOn({ x, y }, 600, 400); } } catch (e) { err = 'floor ' + e.message; }
             let sprites = _fp.spr.size; return { n, err, w: Object.keys(seenW).length, p: Object.keys(seenP).sort(), sprites }; })()`);
-        same(r.err, null, 'a draw threw'); ok(r.w >= 14, 'wall decor kinds drawn: ' + r.w); ok(r.n > 60, 'drawn: ' + r.n);
-        for (const k of ['plant', 'vending', 'cooler', 'couch', 'table', 'pingpong', 'crate', 'crate_stack', 'barrel', 'locker', 'cabinet', 'bin', 'sink', 'stall', 'barrier', 'generator', 'console', 'display_case', 'telescope', 'floodlight', 'teleporter', 'beanbag', 'cart']) ok(r.p.includes(k), k + ' was not drawn');
+        same(r.err, null, 'a draw threw'); ok(r.w >= 24, 'wall decor kinds drawn: ' + r.w); ok(r.n > 60, 'drawn: ' + r.n);
+        for (const k of ['plant', 'vending', 'cooler', 'couch', 'table', 'pingpong', 'crate', 'crate_stack', 'barrel', 'locker', 'cabinet', 'bin', 'sink', 'stall', 'barrier', 'generator', 'console', 'display_case', 'telescope', 'floodlight', 'teleporter', 'beanbag', 'cart', 'speaker', 'spool', 'toolbox', 'chair', 'scaffold']) ok(r.p.includes(k), k + ' was not drawn');
         ok(r.sprites > 100, 'floor sprites cached: ' + r.sprites);
     });
     check('the floor hook and the sort hook are guarded: the strip game never paints a facility floor or reads a facility depth', () => {
