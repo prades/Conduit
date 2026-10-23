@@ -2,7 +2,7 @@
 
 A bright, clean, cartoon-inspired lab with a slightly eerie edge: big simple shapes, smooth matte surfaces, a controlled cool palette, a few saturated crystal accents, glowing neon seams and a little wear. It changes only HOW things are drawn (`js/facilitystyle.js`). The map, wall positions, doors, collision, navigation, catwalks and elevations are untouched, and nothing is invented: it restyles what is already there.
 
-Before / after (the Crystal Chamber): `docs/style/crystal-lab-prototype-before.png`, `docs/style/crystal-lab-prototype-after.png`.
+Before / after (the Crystal Chamber): `docs/style/crystal-lab-prototype-before.png`, `docs/style/crystal-lab-prototype-after.png`; the refined version (bold outlines, 3-D computers): `docs/style/crystal-lab-refined.png`.
 
 ## Palette (`FP_PAL`)
 
@@ -24,7 +24,8 @@ Saturated colour is for crystal energy and things you use; everything else is a 
 
 ## Rules
 
-- **Shapes.** Plain boxes and cylinders: a lit top, a lit +x side, a darker +y side. Value separates surfaces; outlines only where a silhouette needs them (2 px on wall tops and posts, 1.5 px on furniture), none between adjacent wall pieces.
+- **Shapes and outlines (refined; reference Dexter's Laboratory and The Powerpuff Girls).** Chunky boxes and cylinders: a lit top, a lit +x side, a darker +y side, a white shine along the lit top edges, a flat toon shadow on the floor. One BOLD ink outline (3-3.5 px, round joins) round the silhouette of every solid, wall top and post; the faces inside a solid are separated by value, never by outlines, and there are none between adjacent wall pieces.
+- **Computers.** 3-D equipment, not flat panels: a cabinet with big knobs and lamps, a CRT monitor with a thick bezel on a neck with a glowing screen and a shine, a keyboard slab, and a tape drive with two turning reels. The Crystal Chamber's console bank (three units) stands against the west wall facing into the room, where the camera can see their fronts (it used to be against the east wall, where the wall hid everything but the tops).
 - **Walls.** Three bands (darker base, body, light cap); a neon seam where the base meets the body; a faint panel join every two tiles; a post at every room corner; an ink line along the top edge. Wear: a rare muted discoloration, a rare rust streak.
 - **Floors.** Pale two-tone tiles with fine seams; a neon seam on every fourth tile line; decals (rings, cables, stripes, stains) keep their place and are recoloured into the palette; stains are fainter.
 - **Light.** Emissive only on energy sources and interactive things (the crystal, power cells, generator core, screens, seams, door lintels). No reflections, no ambient occlusion, no texture noise.
