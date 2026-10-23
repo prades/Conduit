@@ -192,9 +192,14 @@ function _fpStyleComputer(it) {
         ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(a[0] + 6, a[1] + 5); ctx.lineTo(a[0] + 18, a[1] + 14); ctx.lineTo(b[0] - 18, b[1] + 14); ctx.lineTo(b[0] - 6, b[1] + 5); ctx.stroke();
         if (front) face(0.2, 0.8, 28, 38, "rgba(10,30,38,0.55)", null);
     } else {         // a monitor on a plinth: a chunky rounded back, a rounded bezel plate, a flat rounded screen with one shine; and a real keyboard in front
-        const wf = 0.3, wb = 0.12, pul = 0.8 + 0.2 * Math.sin(f * 0.05 + seed);
-        rbox(-0.36, 0.36, -0.34, 0.14, 26, 32, FP_PAL.case, FP_PAL.wallDark, FP_PAL.case, 0.1, 3.5, false);              // the plinth the monitor stands on
+        const wf = 0.12, wb = 0.0, pul = 0.8 + 0.2 * Math.sin(f * 0.05 + seed);
+        rbox(-0.36, 0.36, -0.34, 0.06, 26, 32, FP_PAL.case, FP_PAL.wallDark, FP_PAL.case, 0.1, 3.5, false);              // the plinth the monitor stands on
         rbox(-0.4, 0.4, -0.36, wb, 32, 58, FP_PAL.caseLit, FP_PAL.case, _fpShade(FP_PAL.caseLit, 0.93), 0.13, 3.5, false);   // the back: a plain chunky box with rounded corners, like the cabinet
+        const sd = (w, z) => pt(0.4, w, z), seam = (w0, z0, w1, z1, col, lw) => { const p0 = sd(w0, z0), p1 = sd(w1, z1); ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); };
+        _fpQuad([sd(-0.28, 36), sd(-0.06, 36), sd(-0.06, 55), sd(-0.28, 55)], "rgba(27,54,64,0.1)", "rgba(27,54,64,0.55)", 2);   // THE SIDE PANEL: an inset panel with vent slats and a knob (the side the camera sees)
+        for (let i = 0; i < 4; i++) seam(-0.24, 40 + i * 3.6, -0.1, 40 + i * 3.6, "rgba(27,54,64,0.6)", 2);
+        const kn = sd(-0.17, 51.5); ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(kn[0], kn[1], 2.6, 0, 6.2832); ctx.fill(); ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 2; ctx.stroke();
+        seam(-0.33, 34, -0.33, 56, "rgba(27,54,64,0.35)", 1.5);   // a panel join near the back
         const tl = pt(-0.4, wb, 58), tr = pt(0.4, wb, 58), fl = pt(-0.4, wf, 58), fr = pt(0.4, wf, 58);
         _fpQuad([tl, tr, fr, fl], FP_PAL.cap, FP_PAL.cap, 1);   // the thin top of the bezel slab
         _fpQuad(_fpRRectPts(pt, -0.4, 0.4, 31, 58, 0.11, 7, wf), FP_PAL.caseLit, FP_PAL.ink, 3.5);   // the bezel: a rounded plate
