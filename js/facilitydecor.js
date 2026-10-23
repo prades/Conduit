@@ -59,7 +59,7 @@ function _fpFloorBuild(F) {
     const fills = _fpFillCells(F, solid); _fp.fills = fills;
     const cellsAll = new Map(_fp.cells); for (const k of solid) { const [x, y] = k.split(",").map(Number); if (facilityRoomAt(x, y, F)) cellsAll.set(k, [x, y]); } for (const [k, f] of fills) cellsAll.set(k, [f.x, f.y]);
     for (const [k, c] of cellsAll) {
-        const room = fills.has(k) ? F.byId.get(fills.get(k).room) : facilityRoomAt(c[0], c[1], F), f = room && style.get(room.id), sty = !!room && facilityStyleRoom(room.id), S = sty ? FP_STYLE_FLOOR : (f && FP_FLOOR_STYLES[f.style]); if (!S) continue;
+        const room = fills.has(k) ? F.byId.get(fills.get(k).room) : facilityRoomAt(c[0], c[1], F), f = room && style.get(room.id), sty = !!room && facilityStyleRoom(room.id), S = sty ? _fpStyleFloorFor(room.id) : (f && FP_FLOOR_STYLES[f.style]); if (!S) continue;
         const h = _fpHash(c[0], c[1]), o = _fpCellOps(solid.has(k) ? under : map, c[0], c[1]), alt = S.alt && ((c[0] + c[1]) & 1);
         o.push({ t: "D", c: _fpRgba(alt ? S.alt : ((!sty && f.colour) || S.base), (S.a || 0.5) * (sty ? 1 : 0.82 + (h % 7) * 0.05)) });
         S.mark(h, o, c[0], c[1]);
@@ -67,7 +67,7 @@ function _fpFloorBuild(F) {
     // 2. what lies on it
     const rect = (r, fn) => { for (let x = Math.ceil(r[0] - 0.5); x <= r[2] - 0.5; x++) for (let y = Math.ceil(r[1] - 0.5); y <= r[3] - 0.5; y++) if (_fp.cells.has(x + "," + y)) fn(x, y, _fpCellOps(map, x, y), r); };
     for (const d of (F.decor || [])) {
-        let col = d.colour || "#ffffff"; const k = d.kind; if (FAC_WALL_DECOR.has(k)) continue; const sty = facilityStyleRoom(d.room); if (sty) col = _fpStyleCol(k, col);   // (a styled room's decals are brought into its palette)   // (wall decor is drawn as items; "plate" is both a wall patch and a floor style)
+        let col = d.colour || "#ffffff"; const k = d.kind; if (FAC_WALL_DECOR.has(k)) continue; const sty = facilityStyleRoom(d.room); if (sty && !_fpRoomStyle(d.room).dark) col = _fpStyleCol(k, col);   // (a dark room, the arena, keeps its own muted colours)   // (a styled room's decals are brought into its palette)   // (wall decor is drawn as items; "plate" is both a wall patch and a floor style)
         if (k === "rug") {   // a rectangle with a border two strokes wide
             rect(d.rect, (x, y, o, r) => { o.push({ t: "D", c: _fpRgba(col, 0.6), k: 0.0 });
                 if (x - 0.5 < r[0] + 0.01) o.push({ t: "L", c: _fpRgba(d.border || "#ffd34d", 0.8), w: 2, p: [-0.42, -0.42, -0.42, 0.42] }); if (y - 0.5 < r[1] + 0.01) o.push({ t: "L", c: _fpRgba(d.border || "#ffd34d", 0.8), w: 2, p: [-0.42, -0.42, 0.42, -0.42] });
@@ -161,26 +161,26 @@ function _fpDrawRock(it, H) {
     const back = !!it.back, lit = it.lit || 1, hs = _fpRockHeights(it, H), ha = hs[0], hm = hs[1], hb = hs[2];
     const P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z);
     const a0 = P(0, 0), b0 = P(1, 0), a1 = P(0, ha), m1 = P(0.5, hm), b1 = P(1, hb), ty = Math.min(a1[1], m1[1], b1[1]), by = Math.max(a0[1], b0[1]);
-    if (!back) { const g = ctx.createLinearGradient(0, by, 0, by + FP_ROCK_DOWN); g.addColorStop(0, _fpShade("#5a4638", lit)); g.addColorStop(1, "#050403"); _fpQuad([a0, b0, P(1, -FP_ROCK_DOWN), P(0, -FP_ROCK_DOWN)], g, null); }   // the cliff below it
-    const g = ctx.createLinearGradient(0, ty, 0, by); if (back) { g.addColorStop(0, "#1d1511"); g.addColorStop(0.22, _fpShade("#3a2c22", lit)); g.addColorStop(1, _fpShade("#5a4638", lit)); } else { g.addColorStop(0, _fpShade("#4a3a2e", lit)); g.addColorStop(1, _fpShade("#5a4638", lit)); }   // (a back wall's top is in shadow: it overhangs)
-    _fpQuad([a0, b0, b1, m1, a1], g, "rgba(5,7,15,0.5)", 1);
+    if (!back) { const g = ctx.createLinearGradient(0, by, 0, by + FP_ROCK_DOWN); g.addColorStop(0, _fpShade("#4a413b", lit)); g.addColorStop(1, "#0e0b0a"); _fpQuad([a0, b0, P(1, -FP_ROCK_DOWN), P(0, -FP_ROCK_DOWN)], g, null); }   // the cliff below it
+    const g = ctx.createLinearGradient(0, ty, 0, by); if (back) { g.addColorStop(0, "#1c1714"); g.addColorStop(0.22, _fpShade("#38302b", lit)); g.addColorStop(1, _fpShade("#4a413b", lit)); } else { g.addColorStop(0, _fpShade("#403731", lit)); g.addColorStop(1, _fpShade("#4a413b", lit)); }   // (a back wall's top is in shadow: it overhangs)
+    _fpQuad([a0, b0, b1, m1, a1], g, g, 1);
     if (it.cap) {   // the 3-D cap: the top of the rock, a flat rock roof running back to the wall behind it
         const c = it.cap, back = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u - c.nx * c.d, it.a[1] + (it.b[1] - it.a[1]) * u - c.ny * c.d, z === null ? 0 : z), zb = c.zb === null ? null : c.zb;
         const A1 = back(0, zb === null ? ha : zb), M1 = back(0.5, zb === null ? hm : zb), B1 = back(1, zb === null ? hb : zb), lip = [a1, m1, b1];
-        const cg = ctx.createLinearGradient(0, Math.min(A1[1], B1[1]), 0, Math.max(a1[1], b1[1])); cg.addColorStop(0, _fpShade("#4a382c", lit)); cg.addColorStop(1, _fpShade("#7a6250", lit));
-        _fpQuad([a1, m1, b1, B1, M1, A1], cg, _fpShade("#6a5242", lit), 1);
+        const cg = ctx.createLinearGradient(0, Math.min(A1[1], B1[1]), 0, Math.max(a1[1], b1[1])); cg.addColorStop(0, _fpShade("#352d28", lit)); cg.addColorStop(1, _fpShade("#5a4f47", lit));
+        _fpQuad([a1, m1, b1, B1, M1, A1], cg, cg, 1);
         const cs = _fpHash(Math.round(it.a[0] * 2), Math.round(it.a[1] * 2));
         for (let k = 0; k < 3; k++) { const u = ((cs >>> (k * 5)) % 80 + 10) / 100, v = 0.25 + ((cs >>> (k * 4 + 2)) % 50) / 100, p0 = [a1[0] + (b1[0] - a1[0]) * u, a1[1] + (b1[1] - a1[1]) * u], p1 = [A1[0] + (B1[0] - A1[0]) * u, A1[1] + (B1[1] - A1[1]) * u];
-            ctx.fillStyle = "rgba(0,0,0,0.16)"; ctx.beginPath(); ctx.ellipse(p0[0] + (p1[0] - p0[0]) * v, p0[1] + (p1[1] - p0[1]) * v, 5 + k * 2, 2.5 + k, 0, 0, 6.2832); ctx.fill(); }   // pits and pebbles on the roof
-        ctx.strokeStyle = "rgba(10,6,4,0.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(A1[0], A1[1]); ctx.lineTo(M1[0], M1[1]); ctx.lineTo(B1[0], B1[1]); ctx.stroke();   // where the roof meets the wall behind
+            ctx.fillStyle = "rgba(0,0,0,0.2)"; ctx.beginPath(); ctx.ellipse(p0[0] + (p1[0] - p0[0]) * v, p0[1] + (p1[1] - p0[1]) * v, 5 + k * 2, 2.5 + k, 0, 0, 6.2832); ctx.fill(); }   // pits and pebbles on the roof
+        ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(A1[0], A1[1]); ctx.lineTo(M1[0], M1[1]); ctx.lineTo(B1[0], B1[1]); ctx.stroke();   // where the roof meets the wall behind
     }
     const zTop = Math.max(ha, hm, hb), zLow = Math.min(ha, hm, hb), seed = _fpHash(Math.round(it.a[0] * 2), Math.round(it.a[1] * 2));
-    for (let k = 0; k * 36 < zTop; k++) { const z = k * 36 + _fpHash(k, 7) % 12; if (z > zLow - 4) continue; _fpQuad([P(0, z), P(1, z), P(1, z + 3), P(0, z + 3)], "rgba(0,0,0,0.3)", null); _fpQuad([P(0, z + 3), P(1, z + 3), P(1, z + 5), P(0, z + 5)], "rgba(255,230,200,0.07)", null); }   // strata
+    for (let k = 0; k * 36 < zTop; k++) { const z = k * 36 + _fpHash(k, 7) % 12; if (z > zLow - 4) continue; _fpQuad([P(0, z), P(1, z), P(1, z + 3), P(0, z + 3)], "rgba(0,0,0,0.3)", null); _fpQuad([P(0, z + 3), P(1, z + 3), P(1, z + 5), P(0, z + 5)], "rgba(255,240,220,0.06)", null); }   // strata
     const cap = Math.max(20, zLow - 20);
     for (let s2 = 0; s2 < 4; s2++) { const h = _fpHash(seed, s2 + 3), u = ((h >>> 3) % 80) / 100 + 0.1, z = 8 + ((h >>> 9) % 100) / 100 * Math.min(cap, 120), w = 0.12 + ((h >>> 5) % 6) / 100, hh = 12 + (h % 16);   // boulders
-        _fpQuad([P(u - w, z), P(u + w, z + 2), P(u + w * 0.8, z + hh), P(u, z + hh + 4), P(u - w * 0.8, z + hh - 2)], "rgba(255,235,210,0.10)", "rgba(0,0,0,0.25)", 1); }
-    for (let s2 = 0; s2 < 2; s2++) { const u = (((seed >>> (s2 * 4)) % 90) + 5) / 100, zh = zLow - 6; ctx.strokeStyle = "rgba(0,0,0,0.22)"; ctx.lineWidth = 1; const p = P(u, 0), q = P(u, Math.min(zh, 120)); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
-    ctx.strokeStyle = back ? "rgba(150,115,90,0.55)" : "rgba(190,150,120,0.6)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(m1[0], m1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();   // the rocky lip
+        _fpQuad([P(u - w, z), P(u + w, z + 2), P(u + w * 0.8, z + hh), P(u, z + hh + 4), P(u - w * 0.8, z + hh - 2)], "rgba(255,240,220,0.07)", null); }
+    for (let s2 = 0; s2 < 2; s2++) { const u = (((seed >>> (s2 * 4)) % 90) + 5) / 100, zh = zLow - 6; ctx.strokeStyle = "rgba(0,0,0,0.35)"; ctx.lineWidth = 2; const p = P(u, 0), q = P(u, Math.min(zh, 120)); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
+    ctx.lineJoin = "round"; ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(m1[0], m1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke(); ctx.strokeStyle = "#7a6c60"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] + 2); ctx.lineTo(m1[0], m1[1] + 2); ctx.lineTo(b1[0], b1[1] + 2); ctx.stroke(); ctx.lineJoin = "miter";   // the rocky lip: an ink outline with a pale edge
 }
 
 // SCAFFOLDING: the catwalks are not a room but an open steel deck at the top of the arena, on legs, with railings. (The map still has their walls: they are the collision, and they are drawn as railings.)
@@ -196,7 +196,7 @@ function _fpScaffoldMarks(items) {
         }
     }
 }
-const FP_STEEL = { post: "#8a93a6", beam: "#9aa6bc", brace: "#5a6a8a", dark: "#46506a", ink: "#171b26", rail: "#ffd34d" };
+const FP_STEEL = { post: "#b8cad2", beam: "#d6e4e9", brace: "#7f98a4", dark: "#4b6772", ink: "#16303a", rail: "#f2b13a" };
 // an open steel frame along a wall piece between heights z0 (low) and z1 (high): posts every 2 tiles, a beam at every band, X braces between the posts
 function _fpDrawFrame(it, z0, z1) {
     const ax = it.a[0], ay = it.a[1], dx = it.b[0] - ax, dy = it.b[1] - ay, horiz = Math.abs(dx) >= Math.abs(dy), sa = horiz ? ax : ay, sb = horiz ? it.b[0] : it.b[1], lo = Math.min(sa, sb), hi = Math.max(sa, sb);
