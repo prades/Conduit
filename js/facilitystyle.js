@@ -53,6 +53,27 @@ function _fpSBox(x0, y0, x1, y1, z0, z1, top, sideY, sideX, lw) {   // a toon bo
 }
 // a flat toon shadow on the floor under a piece of equipment
 function _fpFootShadow(x, y, w) { const P = _fpP; _fpQuad([P(x - w + 0.12, y - w + 0.12, 0), P(x + w + 0.12, y - w + 0.12, 0), P(x + w + 0.12, y + w + 0.12, 0), P(x - w + 0.12, y + w + 0.12, 0)], "rgba(27,54,64,0.16)", null); }
+// a toon box with rounded vertical corners (a chamfered footprint): flat faces separated by value, one bold silhouette outline, a shine along the lit top edge
+function _fpRBox(x0, y0, x1, y1, z0, z1, top, sideY, sideX, c, lw) {
+    const P = _fpP, w = lw || 3.5, ink = FP_PAL.ink, fp = [[x0 + c, y0], [x1 - c, y0], [x1, y0 + c], [x1, y1 - c], [x1 - c, y1], [x0 + c, y1], [x0, y1 - c], [x0, y0 + c]];
+    const mixc = (a, b) => { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16); return "rgb(" + (((A >> 16) + (B >> 16)) >> 1) + "," + ((((A >> 8) & 255) + ((B >> 8) & 255)) >> 1) + "," + (((A & 255) + (B & 255)) >> 1) + ")"; };
+    const faces = [[2, sideX], [3, mixc(sideX, sideY)], [4, sideY]];   // the +x face, the rounded front corner, the +y face
+    const lo = (i, z) => P(fp[i][0], fp[i][1], z), nxt = i => (i + 1) % 8;
+    for (const [i, col] of faces) _fpQuad([lo(i, z1), lo(nxt(i), z1), lo(nxt(i), z0), lo(i, z0)], col, col, 1);
+    _fpQuad(fp.map((q, i) => lo(i, z1)), top, top, 1);
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(255,255,255,0.75)"; ctx.lineWidth = Math.max(1.5, w * 0.5); ctx.beginPath(); [5, 4, 3, 2].forEach((i, k) => { const q = lo(i, z1); k ? ctx.lineTo(q[0], q[1] + 1) : ctx.moveTo(q[0] + 1, q[1] + 1); }); ctx.stroke();   // the shine
+    ctx.strokeStyle = ink; ctx.lineWidth = w; ctx.beginPath(); fp.forEach((q, i) => { const t = lo(i, z1); i ? ctx.lineTo(t[0], t[1]) : ctx.moveTo(t[0], t[1]); }); ctx.closePath(); ctx.stroke();   // the top outline
+    ctx.beginPath(); [5, 4, 3, 2, 1].forEach((i, k) => { const q = lo(i, z0); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.stroke();                                                         // the base
+    for (const i of [5, 1]) { const a = lo(i, z1), b = lo(i, z0); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }                                                                  // the two silhouette sides
+    ctx.lineJoin = "miter"; ctx.lineCap = "butt";
+}
+// a rounded rectangle as a polygon in a vertical plane: u across, z up, at depth w, corners cut by ru (across) and rz (up)
+function _fpRRectPts(pt, u0, u1, z0, z1, ru, rz, w) {
+    const out = [], arc = (uc, zc, a0) => { for (let k = 0; k <= 4; k++) { const a = a0 + k * Math.PI / 8; out.push(pt(uc + Math.cos(a) * ru, w, zc + Math.sin(a) * rz)); } };
+    arc(u1 - ru, z1 - rz, -Math.PI / 2 * 0); arc(u0 + ru, z1 - rz, Math.PI / 2); arc(u0 + ru, z0 + rz, Math.PI); arc(u1 - ru, z0 + rz, Math.PI * 1.5);
+    return out;
+}
 function _fpDial(x, y, r, f, seed, col) {   // a big round gauge: bezel, face, ticks, a needle that wanders
     ctx.fillStyle = FP_PAL.ink; ctx.beginPath(); ctx.arc(x, y, r + 2.5, 0, 6.2832); ctx.fill(); ctx.fillStyle = FP_PAL.cap; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill();
     ctx.strokeStyle = FP_PAL.tealDark; ctx.lineWidth = 1.5; for (let i = 0; i < 7; i++) { const a = 3.6 + i * 0.35; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r * 0.62, y + Math.sin(a) * r * 0.62); ctx.lineTo(x + Math.cos(a) * r * 0.9, y + Math.sin(a) * r * 0.9); ctx.stroke(); }
@@ -150,28 +171,34 @@ function _fpStyleReel(x, y, z, r, f, seed, col) {   // a tape reel lying flat: a
 function _fpStyleComputer(it) {
     const x = it.x, y = it.y, f = _fpFrame(), seed = it.seed || 0, v = ((Math.round(y) % 3) + 3) % 3, acc = v === 2 ? FP_PAL.violet : FP_PAL.cyan, fx = x < 14;   // a bank against the west wall faces east (+x); one against the north wall faces south (+y)
     const W = (u, w) => fx ? [x + w, y + u] : [x + u, y + w], pt = (u, w, z) => { const q = W(u, w); return _fpP(q[0], q[1], z); }, face = (u0, u1, z0, z1, fill, stroke) => fx ? _fpFaceX(it, u0, u1, z0, z1, fill, stroke) : _fpFaceY(it, u0, u1, z0, z1, fill, stroke), front = fx ? it.sx : it.sy;
-    const box = (u0, u1, w0, w1, z0, z1, top, sy, sx, lw) => { const a = W(u0, w0), b = W(u1, w1); return _fpSBox(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1]), z0, z1, top, sy, sx, lw); };
+    const rect = (u0, u1, w0, w1) => { const a = W(u0, w0), b = W(u1, w1); return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; };
+    const rbox = (u0, u1, w0, w1, z0, z1, top, sy, sx, c, lw) => { const r = rect(u0, u1, w0, w1); _fpRBox(r[0], r[1], r[2], r[3], z0, z1, top, sy, sx, c, lw); };
     _fpFootShadow(x, y, 0.5);
-    box(-0.5, 0.5, -0.5, 0.5, 0, 26, FP_PAL.caseLit, FP_PAL.case, _fpShade(FP_PAL.caseLit, 0.93), 3);   // the cabinet
+    rbox(-0.5, 0.5, -0.5, 0.5, 0, 26, FP_PAL.caseLit, FP_PAL.case, _fpShade(FP_PAL.caseLit, 0.93), 0.1, 3.5);   // the cabinet, its vertical corners softly rounded
     if (front) {   // its front: a vent slot, three big knobs, a row of lamps
         face(0.12, 0.88, 14, 21, "#12323a", null); for (let i = 0; i < 4; i++) face(0.16 + i * 0.2, 0.28 + i * 0.2, 16, 19, "rgba(49,232,255,0.5)", null);
-        for (let i = 0; i < 3; i++) { const c = pt(-0.28 + i * 0.28, 0.5, 7); ctx.fillStyle = [FP_PAL.amber, acc, FP_PAL.violet][i]; ctx.beginPath(); ctx.arc(c[0], c[1], 3.4, 0, 6.2832); ctx.fill(); ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 2; ctx.stroke(); }
+        for (let i = 0; i < 3; i++) { const c = pt(-0.28 + i * 0.28, 0.5, 7); ctx.fillStyle = [FP_PAL.amber, acc, FP_PAL.violet][i]; ctx.beginPath(); ctx.arc(c[0], c[1], 3.6, 0, 6.2832); ctx.fill(); ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 2.5; ctx.stroke(); }
     }
-    if (v === 1) {   // the tape drive: a raised block with two reels and a strip of tape between them
-        box(-0.42, 0.42, -0.4, 0.4, 26, 40, FP_PAL.tealLit, FP_PAL.teal, FP_PAL.tealLit, 3);
+    if (v === 1) {   // the tape drive: a rounded block with two reels and a strip of tape between them
+        rbox(-0.42, 0.42, -0.4, 0.4, 26, 40, FP_PAL.tealLit, FP_PAL.teal, FP_PAL.tealLit, 0.14, 3.5);
         const r0 = W(-0.2, 0), r1 = W(0.2, 0), a = _fpStyleReel(r0[0], r0[1], 40, 0.19, f, seed & 1, acc), b = _fpStyleReel(r1[0], r1[1], 40, 0.19, f, 0, FP_PAL.violet);
         ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(a[0] + 6, a[1] + 5); ctx.lineTo(a[0] + 18, a[1] + 14); ctx.lineTo(b[0] - 18, b[1] + 14); ctx.lineTo(b[0] - 6, b[1] + 5); ctx.stroke();
         if (front) face(0.2, 0.8, 28, 38, "rgba(10,30,38,0.55)", null);
-    } else {         // the monitor: a chunky CRT on a neck, a thick bezel, a glowing screen with a shine, a keyboard slab in front
-        box(-0.22, 0.22, -0.18, 0.18, 26, 31, FP_PAL.tealDark, FP_PAL.tealDark, FP_PAL.teal, 2.5);
-        box(-0.4, 0.4, -0.3, 0.3, 31, 58, FP_PAL.caseLit, FP_PAL.case, _fpShade(FP_PAL.caseLit, 0.93), 3.5);
-        const zs = 36, ze = 54, wf = 0.3, pul = 0.8 + 0.2 * Math.sin(f * 0.05 + seed);
-        const q = [pt(-0.34, wf, zs), pt(0.34, wf, zs), pt(0.34, wf, ze), pt(-0.34, wf, ze)]; _fpQuad(q, FP_PAL.ink, FP_PAL.ink, 1);
-        _fpQuad([pt(-0.29, wf, zs + 3), pt(0.29, wf, zs + 3), pt(0.29, wf, ze - 3), pt(-0.29, wf, ze - 3)], _fpRgba(acc, 0.3 + 0.2 * pul), _fpRgba(acc, 0), 1);
-        for (let i = 0; i < 4; i++) { const zz = zs + 5 + i * 3.2, w = 0.12 + 0.14 * (0.5 + 0.5 * Math.sin(f * 0.04 + i * 1.7 + seed)), p0 = pt(-0.25, wf, zz), p1 = pt(-0.25 + w * 2, wf, zz); ctx.strokeStyle = FP_PAL.white; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); }
-        const s0 = pt(-0.27, wf, ze - 4), s1 = pt(-0.1, wf, ze - 12); ctx.strokeStyle = "rgba(255,255,255,0.7)"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]); ctx.stroke();   // the shine
-        _fpGlow((q[0][0] + q[1][0]) / 2, (q[0][1] + q[3][1]) / 2, 34, acc, 0.22 * pul);
-        box(-0.34, 0.34, 0.12, 0.46, 26, 29, FP_PAL.cap, FP_PAL.wallLit, FP_PAL.cap, 2.5);   // the keyboard
+    } else {         // the CRT: a rounded tube that swells behind the bezel and tapers away, a rounded bezel, a curved glass screen
+        const zc = 44.5, wf = 0.3, wb = 0.12, pul = 0.8 + 0.2 * Math.sin(f * 0.05 + seed);
+        rbox(-0.18, 0.18, -0.14, 0.14, 26, 33, FP_PAL.tealDark, FP_PAL.tealDark, FP_PAL.teal, 0.05, 2.5);   // the neck
+        const slice = (w, ru, rz, col, edge, lw) => { const poly = []; for (let k = 0; k < 28; k++) { const th = k / 28 * 6.2832; poly.push(pt(Math.cos(th) * ru, w, zc + Math.sin(th) * rz)); } _fpQuad(poly, col, edge, lw); };
+        const N = 5; for (let i = 0; i < N; i++) { const t = i / (N - 1), w = -0.44 + t * (wb + 0.44), bulge = Math.sin(Math.min(1, t * 1.15) * 3.1416 * 0.6 + 0.25), ru = 0.1 + 0.24 * bulge, rz = 4 + 8 * bulge, col = _fpShade(FP_PAL.caseLit, 0.8 + 0.2 * t); slice(w, ru, rz, col, i === 0 ? FP_PAL.ink : col, i === 0 ? 3 : 1); }   // the tube: smooth round slices, back to front, one outline round its back
+        const top = pt(0, wb, 59), tl = pt(-0.4, wb, 58), tr = pt(0.4, wb, 58), fl = pt(-0.4, wf, 58), fr = pt(0.4, wf, 58);
+        _fpQuad([tl, tr, fr, fl], FP_PAL.cap, FP_PAL.cap, 1);   // the thin top of the bezel slab
+        const bez = _fpRRectPts(pt, -0.4, 0.4, 31, 58, 0.11, 7, wf); _fpQuad(bez, FP_PAL.caseLit, FP_PAL.ink, 3.5);                                   // the bezel: a rounded plate
+        const scr = _fpRRectPts(pt, -0.3, 0.3, 35, 54, 0.12, 8, wf); _fpQuad(scr, FP_PAL.ink, FP_PAL.ink, 1);
+        const cs = pt(0, wf, 44.5), g = ctx.createRadialGradient(cs[0], cs[1], 2, cs[0], cs[1], 24); g.addColorStop(0, _fpRgba(acc, 0.6 + 0.2 * pul)); g.addColorStop(1, _fpRgba(acc, 0.34));   // a tube screen: bright in the middle, dark at the rim
+        const scr2 = _fpRRectPts(pt, -0.27, 0.27, 37, 52, 0.12, 7, wf); _fpQuad(scr2, g, null);
+        for (let i = 0; i < 2; i++) { const zz = 41 + i * 4.5, w = 0.12 + 0.14 * (0.5 + 0.5 * Math.sin(f * 0.04 + i * 1.7 + seed)), p0 = pt(-0.2, wf, zz), p1 = pt(-0.2 + w * 2, wf, zz); ctx.strokeStyle = FP_PAL.white; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); }
+        ctx.strokeStyle = "rgba(255,255,255,0.7)"; ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.beginPath(); const hl = pt(-0.22, wf, 49), hm = pt(-0.2, wf, 51.5), hr = pt(-0.1, wf, 51.5); ctx.moveTo(hl[0], hl[1]); ctx.quadraticCurveTo(hm[0], hm[1], hr[0], hr[1]); ctx.stroke(); ctx.lineCap = "butt";   // the curved shine on the glass
+        _fpGlow(cs[0], cs[1], 36, acc, 0.2 * pul);
+        rbox(-0.34, 0.34, 0.12, 0.46, 26, 29, FP_PAL.cap, FP_PAL.wallLit, FP_PAL.cap, 0.08, 2.5);   // the keyboard
         for (let i = 0; i < 5; i++) { const c = pt(-0.24 + i * 0.12, 0.3, 29.5); ctx.fillStyle = i === 2 ? acc : FP_PAL.wallDark; ctx.fillRect(c[0] - 2, c[1] - 1, 4, 2.4); }
     }
 }

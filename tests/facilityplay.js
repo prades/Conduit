@@ -241,7 +241,7 @@ function measure() {
         same(draw.err, null, 'a styled item threw'); ok(draw.n > 60, 'styled items drawn: ' + draw.n);
         const comp = J(`(function(){ const cs = _fp.items.filter(i => i.fp === 'prop' && i.kind === 'console' && i.room === 'crystal_chamber'); return { n: cs.length, x: Array.from(new Set(cs.map(i => i.x))), ys: cs.map(i => i.y).sort() }; })()`);
         same(comp.n, 3, 'the console bank is three units'); same(comp.x.length, 1, 'the bank is in a line'); ok(comp.x[0] <= 12, 'the bank faces the camera: it stands against the west wall, not the east wall that hides it: x ' + comp.x[0]);
-        ok(/_fpStyleComputer/.test(src) && /_fpStyleReel/.test(src) && /lineJoin = "round"/.test(src) && /w = lw \|\| 3/.test(src), 'the computers, reels or bold outlines are missing');
+        ok(/_fpRBox/.test(src) && /_fpRRectPts/.test(src) && /createRadialGradient\(cs\[0\]/.test(src) && /the tube: smooth round slices/.test(src), 'the rounded cabinet corners, the CRT tube or the curved screen are missing'); ok(/_fpStyleComputer/.test(src) && /_fpStyleReel/.test(src) && /lineJoin = "round"/.test(src) && /w = lw \|\| 3/.test(src), 'the computers, reels or bold outlines are missing');
         same(J("FACILITY_MAP.rooms.length"), 14, 'rooms'); same(J("FACILITY_MAP.openings.length"), 13, 'openings'); ok(!/FACILITY_MAP|facilityCanStep|facilityWalkable|facilityMove/.test(src), 'the style reads or changes the map or the movement');
     });
     check('the catwalks are scaffolding: every wall piece of the catwalks is an open deck edge with a rail (and legs where the arena\'s frame is not), the arena\'s railing wall is an open steel frame, and nothing about them is a solid wall', () => {
