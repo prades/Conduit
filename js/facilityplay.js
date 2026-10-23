@@ -247,6 +247,8 @@ function _fpPlaceStatics(F) {
         }
     }
     for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", base: facilityRoomHeight(f.room, F) * FP_ELEV_PX, x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
+    for (const it of _fpWallPlace(F)) items.push(it);   // wall decor (js/facilitydecor.js)
+    _fp.floorOps = _fpFloorBuild(F);                     // the floors' coverings and decals, cut into tiles
     _fp.items = items;
 }
 function facilityDrawItems(drawList) {
@@ -278,7 +280,7 @@ const FP_WALL = { wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall: ["#26324f
 function drawFacilityItem(it) {
     _fpBase = it.base || 0;
     ctx.save();
-    if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "stair") _fpPrism(it, it.h, "#5d6f93", "#2b3550", "#222b43", "rgba(180,220,255,0.5)");
+    if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "stair") _fpPrism(it, it.h, "#5d6f93", "#2b3550", "#222b43", "rgba(180,220,255,0.5)");
     ctx.restore();
 }
 function _fpDrawWall(it) {
@@ -328,6 +330,7 @@ function _fpFaceX(it, u0, u1, z0, z1, fill, stroke) { const x = it.x + 0.5, y0 =
 const FP_AMBER = "#ffb347";
 function _fpDrawProp(it) {
     const kind = it.kind, seed = it.seed || 0, f = typeof frame !== "undefined" ? frame : 0;
+    if (_fpDecorProp(it)) return;   // the dressing's furniture (js/facilitydecor.js)
     if (kind === "computer_desk") {
         _fpPrism(it, 30, "#8f7f5e", "#5a4a32", "#46391f");
         if (it.sy) {   // a keyboard on every cell, and a monitor on every third: a dark screen with an amber glow, facing the aisle

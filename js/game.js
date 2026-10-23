@@ -1908,6 +1908,7 @@ function rebuildPylonPairs() {
 // why a wall nest is not simply x+y.
 const NEST_DRAW_BIAS = 1.01;   // just past the last wall tile of its own face
 function drawDepthOf(o) {
+    if (o.type === 'fp' && o.depth !== undefined) return o.depth;   // facility wall decor sorts just after the wall pieces under it (js/facilitydecor.js)
     const d = o.x + o.y;
     if (o.type === 'module') return d + 0.1;   // over its own floor tile, which shares its depth
     // An enemy standing in a black hole's vortex is drawn over it, not under
@@ -3307,6 +3308,7 @@ function render() {
             const _spr = _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), "", _tq);
             if (_spr) ctx.drawImage(_spr, px - TILE_W - 1, py - 1);
             else _drawFloorTile(ctx, px, py, gameState.phase === "night", dist, "", _tq / FLOOR_TRACE_STEPS);
+            if (typeof facilityPlay !== "undefined" && facilityPlay) facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
             if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py);   // pools of evolved followers lie on the floor
             if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py);   // burning ground (js/firebombs.js)
             // Only the FRONT LINE: a 1 px edge where your ground meets the enemy's.

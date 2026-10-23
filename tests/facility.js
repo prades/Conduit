@@ -47,7 +47,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(rd('js/facilitymap.js').indexOf('function ') < 0, 'logic in the data file');
     });
     check('the strip game reaches the facility only through guarded facilityPlay hooks (js/facilityplay.js is the one file that uses the map and its movement helpers)', () => {
-        for (const f of fs.readdirSync(path.join(ROOT, 'js'))) if (f !== 'facility.js' && f !== 'facilitymap.js' && f !== 'facilityplay.js') ok(!/facilityCanStep|facilityMove|facilityWalkable|FACILITY_MAP/.test(rd('js/' + f)), f + ' uses the facility');
+        for (const f of fs.readdirSync(path.join(ROOT, 'js'))) if (f !== 'facility.js' && f !== 'facilitymap.js' && f !== 'facilityplay.js' && f !== 'facilitydecor.js') ok(!/facilityCanStep|facilityMove|facilityWalkable|FACILITY_MAP/.test(rd('js/' + f)), f + ' uses the facility');
     });
 
     group('VALIDATION');
@@ -217,9 +217,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.doors.every(d => d === 'sliding_access_door'), r.doors.join()); ok(r.west[0] <= r.west[1] + 0.5 && r.east[0] >= r.east[1] - 0.5, 'the doors are not on both sides of the desk: ' + JSON.stringify([r.west, r.east])); same(r.wmid.fwd, true, 'the west door does not work'); same(r.emid.fwd, true, 'the east door does not work'); same(r.wmid.back, true, 'cannot come back');
         same(r.wallW, false, 'a wall between the west door and the desk is open'); same(r.wallE, false, 'a wall between the east door and the desk is open'); same(r.desk, true, 'the desk is walkable');
     });
-    check('the show room is a glass case (blank for now): glass on its north, east and hallway-side west walls, nothing inside it, and one sliding door in the glass to the hallway', () => {
-        const M = J('FACILITY_MAP'), S = M.rooms.find(r => r.id === 'show_room'); same(S.wall_material, 'glass', 'material'); ok(/BLANK/.test(S.contents), 'not marked blank');
-        ok(!M.props.some(p => p.room === 'show_room') && !(S.objects || []).length, 'something is placed in the show room');
+    check('the show room is a glass case of display cases: glass on its north, east and hallway-side west walls, only display cases and plants inside it, and one sliding door in the glass to the hallway', () => {
+        const M = J('FACILITY_MAP'), S = M.rooms.find(r => r.id === 'show_room'); same(S.wall_material, 'glass', 'material'); ok(/display cases/.test(S.contents), 'contents not described');
+        ok(M.props.filter(p => p.room === 'show_room' && p.kind === 'display_case').length === 3 && M.props.filter(p => p.room === 'show_room').every(p => p.kind === 'display_case' || p.kind === 'plant') && !(S.objects || []).length, 'the show room holds something besides its display cases and plants');
         const w = J(`(function(){ const F = facilityGet(); return Array.from(new Set(F.walls.filter(x => x.room === 'show_room' && x.window).map(x => x.window))).sort(); })()`); same(w.join(), 'show_window_east,show_window_north,show_window_west', 'its windows');
         const d = J(`(function(){ const F = facilityGet(), D = F.openings.find(o => o.id === 'door_showroom_hallway'); return { door: D.door, rooms: D.rooms.join(), conns: F.connections.filter(c => c.rooms.includes('show_room')).length, through: __cross('door_showroom_hallway', 0).fwd, glass: __cross('door_showroom_hallway', 1).fwd || __cross('door_showroom_hallway', -1).fwd, glassPieces: F.walls.filter(x => x.room === 'show_room' && x.window === 'show_window_west').length }; })()`);
         same(d.door, 'sliding_access_door', 'door'); same(d.rooms, 'show_room,lab_hallway', 'rooms'); same(d.conns, 1, 'the show room has more than the one door'); same(d.through, true, 'cannot walk through the door'); same(d.glass, false, 'the glass beside the door is open'); ok(d.glassPieces >= 2, 'the door did not leave glass on both sides of it: ' + d.glassPieces);
@@ -333,6 +333,43 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('the lift hooks in the strip game are all guarded by facilityPlay, so the strip game never lifts', () => {
         for (const f of ['js/game.js', 'js/input.js', 'js/buildmenu.js']) { const lines = rd(f).split('\n').filter(l => /facilityLiftRel|facilityPickLift|facilityLiftPx/.test(l)); ok(lines.length > 0, f + ' has no lift hook'); for (const l of lines) ok(/facilityPlay/.test(l), f + ' has an unguarded lift: ' + l.trim().slice(0, 100)); }
+    });
+
+    group('THE DRESSING: floors, decor and furniture fill the rooms out (paint and light, plus solid pieces)');
+    check('every room you can walk in has a floor covering from the known styles, and the decor and furniture are plentiful', () => {
+        const M = J('FACILITY_MAP'), src = rd('js/facilitydecor.js'), styles = ['carpet', 'plate', 'tile', 'labtile', 'concrete', 'grate', 'polished', 'wood', 'sand'];
+        for (const st of styles) ok(new RegExp('\\b' + st + ':\\s+\\{ base').test(src), st + ' is not a floor style in the drawing code');
+        const dressed = new Set(M.floors.map(f => f.room)); for (const f of M.floors) ok(styles.includes(f.style), f.room + ' has the unknown floor ' + f.style);
+        for (const r of M.rooms) if (r.id !== 'nest_area') ok(dressed.has(r.id), r.id + ' has no floor covering');
+        ok(M.decor.length >= 200, 'decor: ' + M.decor.length); const dressing = M.props.filter(p => !/^(lobby_desk|lab_tank|computers_|racks_|lab_bench_|lab_hood|chamber_|arena_)/.test(p.id)); ok(dressing.length >= 60, 'dressing props: ' + dressing.length);
+        for (const r of M.rooms) if (r.id !== 'nest_area') ok(M.decor.filter(d => d.room === r.id).length >= 4, r.id + ' has little decor');
+    });
+    check('every kind of decor and furniture in the data has drawing code, and every id is unique', () => {
+        const M = J('FACILITY_MAP'), src = rd('js/facilitydecor.js'), play = rd('js/facilityplay.js');
+        const wall = new Set(['poster', 'vent', 'pipe', 'wall_light', 'screen', 'board', 'whiteboard', 'exit_sign', 'clock', 'graffiti', 'panel', 'banner', 'mirror', 'shelf', 'sign', 'hazard_sign', 'cable_run', 'window_blind']);
+        const missing = []; for (const d of M.decor) { if (wall.has(d.kind)) { if (!new RegExp('\\b' + d.kind + ':\\s*\\(it, f\\)').test(src)) missing.push(d.kind); } else if (!new RegExp('k === "' + d.kind + '"').test(src)) missing.push(d.kind); }
+        for (const p of M.props) if (p.kind && !new RegExp('(kind|k) === "' + p.kind + '"').test(src + play)) missing.push(p.kind);
+        same(Array.from(new Set(missing)).join(), '', 'kinds with no drawing code');
+        const ids = M.decor.map(d => d.id).concat(M.props.map(p => p.id)); same(new Set(ids).size, ids.length, 'duplicate ids');
+    });
+    check('the dressing validates on the snapped copy the game plays on: wall decor is on a real solid wall, on the side the camera sees, and floor decor lies inside its room', () => {
+        const r = J(`(function(){ const M = FACILITY_MAP, keep = M.decor, bad = [
+            { id: 'x_wrong_side', room: 'front_lobby', kind: 'poster', a: [410, 410], b: [450, 410] },
+            { id: 'x_on_glass', room: 'experiment_lab', kind: 'poster', a: [470, 530], b: [510, 530] },
+            { id: 'x_not_wall', room: 'front_lobby', kind: 'poster', a: [510, 330], b: [550, 330] },
+            { id: 'x_over_door', room: 'lab_hallway', kind: 'vent', a: [410, 410], b: [450, 410] },
+            { id: 'x_outside', room: 'crystal_chamber', kind: 'stain', at: [1500, 1500], radius: 20, colour: '#000000' },
+            { id: 'x_rug_leaves', room: 'bathroom', kind: 'rug', rect: [800, 270, 1100, 410], colour: '#ffffff' }];
+            const out = {}; for (const b of bad) { M.decor = [b]; let e; try { e = facilityValidateDressing(facilityBuild({ snap: true, margin: 0.3 })); } catch (err) { e = [String(err)]; } out[b.id] = e.length; }
+            M.decor = keep; out.good = facilityValidateDressing(facilityBuild({ snap: true, margin: 0.3 })).length; return out; })()`);
+        for (const id of ['x_wrong_side', 'x_on_glass', 'x_not_wall', 'x_over_door', 'x_outside', 'x_rug_leaves']) ok(r[id] > 0, id + ' passed'); same(r.good, 0, 'the real data stopped validating after the probe');
+    });
+    check('the furniture never walls anything off: from the crystal you can walk to nearly every floor tile of every room, so a prop never seals a pocket or a door', () => {
+        const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }), cr = F.byId.get('crystal_chamber').objects[0].at, fl = facilityFlood(Math.round(cr[0]) + 2, Math.round(cr[1]) + 1, F), reach = new Set(fl.map(c => Math.round(c[0]) + ',' + Math.round(c[1]))), tot = {}, got = {};
+            for (let x = Math.floor(F.bounds.minX); x <= Math.ceil(F.bounds.maxX); x++) for (let y = Math.floor(F.bounds.minY); y <= Math.ceil(F.bounds.maxY); y++) { if (!facilityWalkable(x, y, F)) continue; const room = facilityRoomAt(x, y, F); if (!room || room.id === 'nest_area' || room.id === 'catwalks') continue; tot[room.id] = (tot[room.id] || 0) + 1; if (reach.has(x + ',' + y)) got[room.id] = (got[room.id] || 0) + 1; }
+            const out = {}; for (const id in tot) out[id] = (got[id] || 0) / tot[id]; return out; })()`);
+        for (const id in r) ok(r[id] >= 0.9, id + ': only ' + Math.round(r[id] * 100) + '% of its floor is reachable from the crystal');
+        ok(Object.keys(r).length >= 11, 'rooms checked: ' + Object.keys(r).length);
     });
 
     group('THE DEBUG VIEW');
