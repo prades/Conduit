@@ -48,6 +48,7 @@ const SUITES = [
     ['lab wall equipment',      'labwall.js'],
     ['INFO panel + ring',       'infodex.js'],
     ['unit name plate',         'plate.js'],
+    ['facility map',            'facility.js'],
     ['no signal towers',        'notower.js'],
     ['unit status + hold fix',  'status.js'],
     ['3D player + egg sprites', 'hdsprites.js'],
