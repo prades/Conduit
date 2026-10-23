@@ -187,8 +187,7 @@ function _fpStyleComputer(it) {
     } else {         // the CRT: a rounded tube that swells behind the bezel and tapers away, a rounded bezel, a curved glass screen
         const zc = 44.5, wf = 0.3, wb = 0.12, pul = 0.8 + 0.2 * Math.sin(f * 0.05 + seed);
         rbox(-0.18, 0.18, -0.14, 0.14, 26, 33, FP_PAL.tealDark, FP_PAL.tealDark, FP_PAL.teal, 0.05, 2.5);   // the neck
-        const slice = (w, ru, rz, col, edge, lw) => { const poly = []; for (let k = 0; k < 28; k++) { const th = k / 28 * 6.2832; poly.push(pt(Math.cos(th) * ru, w, zc + Math.sin(th) * rz)); } _fpQuad(poly, col, edge, lw); };
-        const N = 5; for (let i = 0; i < N; i++) { const t = i / (N - 1), w = -0.44 + t * (wb + 0.44), bulge = Math.sin(Math.min(1, t * 1.15) * 3.1416 * 0.6 + 0.25), ru = 0.1 + 0.24 * bulge, rz = 4 + 8 * bulge, col = _fpShade(FP_PAL.caseLit, 0.8 + 0.2 * t); slice(w, ru, rz, col, i === 0 ? FP_PAL.ink : col, i === 0 ? 3 : 1); }   // the tube: smooth round slices, back to front, one outline round its back
+        rbox(-0.32, 0.32, -0.36, wb, 33, 56, FP_PAL.caseLit, FP_PAL.case, _fpShade(FP_PAL.caseLit, 0.93), 0.13, 3.5);   // the back: a plain chunky box with rounded corners, like the cabinet
         const top = pt(0, wb, 59), tl = pt(-0.4, wb, 58), tr = pt(0.4, wb, 58), fl = pt(-0.4, wf, 58), fr = pt(0.4, wf, 58);
         _fpQuad([tl, tr, fr, fl], FP_PAL.cap, FP_PAL.cap, 1);   // the thin top of the bezel slab
         const bez = _fpRRectPts(pt, -0.4, 0.4, 31, 58, 0.11, 7, wf); _fpQuad(bez, FP_PAL.caseLit, FP_PAL.ink, 3.5);                                   // the bezel: a rounded plate
