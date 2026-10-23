@@ -213,16 +213,32 @@ function measure() {
         for (const f of ['js/world.js', 'js/npc.js', 'js/input.js', 'js/buildmenu.js', 'js/mass.js', 'js/helpers.js', 'js/predator.js']) ok(!/facilityDrawFloorOn|_fpDecorProp/.test(rd(f)), f + ' uses the dressing');
         ok(/<script src="js\/facilitydecor\.js/.test(rd('game.html')), 'the dressing is not loaded by the page');
     });
+    check('no holes: the floor runs in under every wall of the arena (cells the rock edge only partly covers, and the pocket behind the north rock), so no black shows where a wall meets the floor', () => {
+        const r = J(`(function(){ const F = _fp.F, covered = (x, y) => { const k = Math.round(x) + ',' + Math.round(y); return _fp.cells.has(k) || _fp.fills.has(k) || F.solids.some(s => s.shape === 'circle' ? Math.hypot(Math.round(x) - s.at[0], Math.round(y) - s.at[1]) < s.r : facilityPointInPoly(Math.round(x), Math.round(y), s.poly)); };
+            let front = 0, frontBad = 0, back = 0, backBad = 0, n = 0;
+            for (const w of F.walls) { if (w.room !== 'arena' || w.window) continue; const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy); let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+                const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2, vis = facilityRoomAt(mx + nx * 0.4, my + ny * 0.4, F) && facilityRoomAt(mx + nx * 0.4, my + ny * 0.4, F).id === 'arena';
+                for (let t = 0.1; t < 1; t += 0.2) { const px = w.a[0] + dx * t, py = w.a[1] + dy * t; const inx = vis ? 1 : -1, ix = px + nx * 0.3 * inx, iy = py + ny * 0.3 * inx; if (facilityRoomAt(ix, iy, F)) { front++; if (!covered(ix, iy)) frontBad++; }
+                    if (vis && w.kind === 'rock') { back++; const bx = px - nx * 0.45, by = py - ny * 0.45; if (!facilityRoomAt(bx, by, F) && !covered(bx, by)) backBad++; } n++; } }
+            const pocket = Array.from(_fp.fills.values()).filter(f => f.room === 'arena' && !facilityRoomAt(f.x, f.y, F)).length, partial = Array.from(_fp.fills.values()).filter(f => facilityRoomAt(f.x, f.y, F)).length;
+            return { front, frontBad, back, backBad, pocket, partial, fills: _fp.fills.size, items: _fp.items.filter(i => i.fp === 'fill').length, walkable: Array.from(_fp.fills.keys()).filter(k => _fp.cells.has(k)).length, drops: _fp.items.filter(i => i.fp === 'wall' && i.drop > 0).length }; })()`);
+        ok(r.front > 40, 'wall points checked: ' + r.front); same(r.frontBad, 0, 'floor missing right in front of an arena wall'); same(r.backBad, 0, 'floor missing right behind the arena\'s north rock');
+        ok(r.partial >= 4, 'partly covered cells filled: ' + r.partial); ok(r.pocket >= 8, 'pocket cells behind the rock: ' + r.pocket); same(r.items, r.fills, 'a fill cell with no item'); same(r.walkable, 0, 'a fill cell is also a walkable cell');
+        ok(r.drops >= 3, 'wall pieces with a skirt down to the lower pocket floor: ' + r.drops);
+        run('facilityPlay = true; canvas.width = 1280; canvas.height = 860; frame = 12;'); same(J(`(function(){ let n = 0, err = null; for (const it of _fp.items) if (it.fp === 'fill' && n < 60) { try { drawFacilityItem(it); n++; } catch (e) { err = e.message; break; } } return err; })()`), null, 'a fill tile threw when drawn');
+    });
     check('every kind of static item exists and is drawn: wall pieces (solid, rock, glass), doors, prop cells (desk, truck, vats, tank) and the two fixtures', () => {
         const k = J(`(function(){ const c = {}; for (const it of _fp.items) { const key = it.fp + ':' + (it.kind || (it.door === undefined ? '' : 'door')); c[key] = (c[key] || 0) + 1; } return c; })()`);
         for (const key of ['wall:wall', 'wall:rock', 'wall:glass', 'prop:reception_desk', 'prop:semi_truck', 'prop:liquid_reserve', 'prop:tank', 'prop:computer_desk', 'prop:server_rack', 'prop:lab_bench', 'prop:fume_hood', 'prop:test_chamber', 'fixture:power_pack_area', 'fixture:wall_sign']) ok(k[key] > 0, key + ' missing: ' + JSON.stringify(Object.keys(k)));
         ok(Object.keys(k).some(x => /^door/.test(x)), 'no doors'); ok(k['wall:glass'] >= 20, 'little glass: ' + k['wall:glass']); same(J('_fp.items.filter(i => i.fp === \'door\').length'), 13, 'doors drawn');
         for (const fn of ['_fpDrawWall', '_fpDrawDoor', '_fpDrawProp', '_fpDrawFixture']) ok(typeof run(fn) === 'function', fn);
     });
-    check('they draw without throwing, and a wall between the camera and the player turns see-through', () => {
+    check('they draw without throwing, and a wall between the camera and the player is cut down to a low parapet (never translucent)', () => {
         run('facilityPlay = true; canvas.width = 800; canvas.height = 600;'); const n = J('(function(){ let n = 0; for (const it of _fp.items) { if (visibleForDraw(it.x, it.y)) { drawFacilityItem(it); n++; } } return n; })()'); ok(n > 20, 'only ' + n + ' items on screen');
         const a = J(`(function(){ const it = _fp.items.find(i => i.fp === 'wall' && i.kind === 'wall' && i.x + i.y > player.visualX + player.visualY + 0.5 && Math.hypot(i.x - player.visualX, i.y - player.visualY) < 3); let alpha = null; const keep = ctx.fillStyle; if (!it) return null; return { found: true }; })()`);
-        ok(/dist < 3\.2 \? Math\.max\(0\.22/.test(rd('js/facilityplay.js')), 'no see-through rule');
+        const src = rd('js/facilityplay.js'); ok(/_fpCut\(it\.x, it\.y\)/.test(src) && !/Math\.max\(0\.22/.test(src) && !/ctx\.globalAlpha = wd/.test(src), 'walls still fade, or are not cut down');
+        const c = J(`(function(){ player.visualX = 30; player.visualY = 30; return { front: _fpCut(31, 31), farFront: _fpCut(36, 36), behind: _fpCut(28, 28), side: _fpCut(34, 26), edge: _fpCut(31.5, 31.5) }; })()`);
+        same(c.front, 1, 'a wall right in front is not cut'); same(c.farFront, 0, 'a far wall is cut'); same(c.behind, 0, 'a wall behind is cut'); same(c.side, 0, 'a wall beside (not in front) is cut'); ok(c.edge > 0 && c.edge < 1, 'the cut is not gradual: ' + c.edge);
     });
 
     check('every piece of furniture draws (computer desks with monitors, server racks, lab benches with glassware, the fume hood, the glass test chambers), and a window draws its sill, glass, rail and mullions', () => {

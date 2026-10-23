@@ -56,9 +56,10 @@ function _fpFloorBuild(F) {
     // 1. the room's own floor
     const style = new Map(); for (const f of (F.floors || [])) style.set(f.room, f);
     const under = new Map();   // the floor under a solid cell: a small piece of furniture stands on it, and a bare black tile would show
-    const cellsAll = new Map(_fp.cells); for (const k of solid) { const [x, y] = k.split(",").map(Number); if (facilityRoomAt(x, y, F)) cellsAll.set(k, [x, y]); }
+    const fills = _fpFillCells(F, solid); _fp.fills = fills;
+    const cellsAll = new Map(_fp.cells); for (const k of solid) { const [x, y] = k.split(",").map(Number); if (facilityRoomAt(x, y, F)) cellsAll.set(k, [x, y]); } for (const [k, f] of fills) cellsAll.set(k, [f.x, f.y]);
     for (const [k, c] of cellsAll) {
-        const room = facilityRoomAt(c[0], c[1], F), f = room && style.get(room.id), S = f && FP_FLOOR_STYLES[f.style]; if (!S) continue;
+        const room = fills.has(k) ? F.byId.get(fills.get(k).room) : facilityRoomAt(c[0], c[1], F), f = room && style.get(room.id), S = f && FP_FLOOR_STYLES[f.style]; if (!S) continue;
         const h = _fpHash(c[0], c[1]), o = _fpCellOps(solid.has(k) ? under : map, c[0], c[1]), alt = S.alt && ((c[0] + c[1]) & 1);
         o.push({ t: "D", c: _fpRgba(alt ? S.alt : (f.colour || S.base), (S.a || 0.5) * (0.82 + (h % 7) * 0.05)) });
         S.mark(h, o);
@@ -105,6 +106,39 @@ function _fpFloorBuild(F) {
     _fp.underOps = under; _fp.spr = new Map();
     return map;
 }
+// FILL CELLS: floor that is not walkable but must be there, so no black shows where a wall meets the floor. A cell that a room only partly covers (the arena's rock edge is diagonal) gets
+// the room's floor, which runs in under the wall and is hidden by it; and the pocket of void behind the arena's north rock (between the rock teeth and the hallway) gets the arena's floor too.
+// (Only walls the camera sees the arena in front of are filled behind: the void beyond the south and east rock is in front of those walls and stays empty.)
+function _fpFillCells(F, solid) {
+    const out = new Map(), have = _fp.cells, b = F.bounds, PX = FP_ELEV_PX;
+    for (let x = Math.floor(b.minX) - 1; x <= Math.ceil(b.maxX) + 1; x++) for (let y = Math.floor(b.minY) - 1; y <= Math.ceil(b.maxY) + 1; y++) {
+        const k = x + "," + y; if (have.has(k) || solid.has(k)) continue;
+        for (const [dx, dy] of [[0, 0], [0.3, 0.3], [-0.3, 0.3], [0.3, -0.3], [-0.3, -0.3]]) { const r = facilityRoomAt(x + dx, y + dy, F); if (r) { out.set(k, { x, y, room: r.id, base: facilityHeightAt(x + dx, y + dy, F) * PX }); break; } }
+    }
+    for (const w of F.walls) {
+        if (w.room !== "arena" || w.kind !== "rock" || w.window) continue;
+        const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L; let nx = uy, ny = -ux; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+        const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2, face = facilityRoomAt(mx + nx * 0.4, my + ny * 0.4, F); if (!face || face.id !== "arena") continue;   // the camera sees the arena in front of this wall
+        for (let x = Math.floor(Math.min(w.a[0], w.b[0]) - 3.5); x <= Math.ceil(Math.max(w.a[0], w.b[0]) + 3.5); x++) for (let y = Math.floor(Math.min(w.a[1], w.b[1]) - 3.5); y <= Math.ceil(Math.max(w.a[1], w.b[1]) + 3.5); y++) {
+            const k = x + "," + y; if (have.has(k) || solid.has(k) || out.has(k) || facilityRoomAt(x, y, F)) continue;
+            const t = (x - w.a[0]) * ux + (y - w.a[1]) * uy, sd = -((x - mx) * nx + (y - my) * ny); if (t > -0.5 && t < L + 0.5 && sd > 0 && sd <= 3) out.set(k, { x, y, room: "arena", base: facilityRoomHeight("arena", F) * PX });
+        }
+    }
+    return out;
+}
+function _fpFillItems() { const items = []; for (const [k, f] of _fp.fills) items.push({ type: "fp", fp: "fill", x: f.x, y: f.y, base: f.base, depth: f.x + f.y - 1.5, room: f.room, key: k }); return items; }
+function _fpDrawFill(it) {
+    const c = _fpP(it.x, it.y, 0), dist = Math.hypot(it.x - player.visualX, it.y - player.visualY);
+    const spr = typeof _floorTileSprite === "function" ? _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), "", 0) : null;
+    if (spr) ctx.drawImage(spr, c[0] - TILE_W - 1, c[1] - TILE_H - 1); else { ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill(); }
+    const ops = _fp.floorOps && _fp.floorOps.get(it.key); if (ops) _fpDrawOps(ops, c[0], c[1], it.key);
+}
+// How far a wall in front of the player is cut down: 0 (full height) beyond 3.2 tiles or behind the player, 1 (a low parapet) within 2. Opaque, never see-through.
+function _fpCut(x, y) {
+    if (x + y <= player.visualX + player.visualY + 0.2) return 0;
+    return Math.max(0, Math.min(1, (3.2 - Math.hypot(x - player.visualX, y - player.visualY)) / 1.2));
+}
+
 // Called by every facility floor tile from the game's own tile draw: px, py are the tile's top-left corner as for the tile sprite.
 // A tile's static marks are painted ONCE into a small sprite (cut to the tile's diamond) and stamped each frame; only the light (which flickers) is painted live.
 function facilityDrawFloorOn(obj, px, py) {
@@ -288,7 +322,7 @@ const FP_WALL_KINDS = {
         const z1 = it.z || 70; for (let k = 0; k < 7; k++) _fpWQuad(it, 0.05, 0.95, z1 - 3 - k * 5, z1 - 1 - k * 5, "#b8b098", "rgba(60,50,30,0.5)", 1);
     },
 };
-function _fpDrawWDecor(it) { const fn = FP_WALL_KINDS[it.kind]; if (fn) fn(it, _fpFrame()); }
+function _fpDrawWDecor(it) { if (_fpCut(it.x, it.y) > 0.15) return; const fn = FP_WALL_KINDS[it.kind]; if (fn) fn(it, _fpFrame()); }   // (decor on a wall that is cut down is not drawn)
 
 // ═════════════ FURNITURE ═════════════
 // Returns true if it drew the kind. `it` is one tile of a solid prop (sx / sy: whether its +x / +y face is exposed, as for the desks).

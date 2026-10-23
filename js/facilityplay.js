@@ -249,6 +249,8 @@ function _fpPlaceStatics(F) {
     for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", base: facilityRoomHeight(f.room, F) * FP_ELEV_PX, x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
     for (const it of _fpWallPlace(F)) items.push(it);   // wall decor (js/facilitydecor.js)
     _fp.floorOps = _fpFloorBuild(F);                     // the floors' coverings and decals, cut into tiles
+    for (const it of _fpFillItems()) items.push(it);     // floor that runs in under the walls (no black where a wall meets the floor)
+    _fpSkirts(items);                                    // a wall above a lower floor reaches down to it
     _fp.items = items;
 }
 function facilityDrawItems(drawList) {
@@ -280,15 +282,22 @@ const FP_WALL = { wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall: ["#26324f
 function drawFacilityItem(it) {
     _fpBase = it.base || 0;
     ctx.save();
-    if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "stair") _fpPrism(it, it.h, "#5d6f93", "#2b3550", "#222b43", "rgba(180,220,255,0.5)");
+    if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "stair") _fpPrism(it, it.h, "#5d6f93", "#2b3550", "#222b43", "rgba(180,220,255,0.5)");
     ctx.restore();
+}
+// A wall whose camera-facing side looks onto a LOWER floor (the pocket of floor behind the arena's rock, a fill cell) reaches down to it, so no gap shows under it.
+function _fpSkirts(items) {
+    for (const it of items) {
+        if (it.fp !== "wall" || it.kind === "glass") continue;
+        const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+        const f = _fp.fills.get(Math.round(it.x + nx * 0.7) + "," + Math.round(it.y + ny * 0.7)); if (f && f.base < (it.base || 0) - 1) it.drop = (it.base || 0) - f.base;
+    }
 }
 function _fpDrawWall(it) {
     const glass = it.kind === "glass", c = FP_WALL[it.kind] || FP_WALL.wall, H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0));
-    // a wall in front of the player (nearer the camera) goes see-through, so nothing is hidden behind it
-    const pd = player.visualX + player.visualY, wd = it.x + it.y, dist = Math.hypot(it.x - player.visualX, it.y - player.visualY);
-    ctx.globalAlpha = wd > pd + 0.2 && dist < 3.2 ? Math.max(0.22, dist / 3.2 * 0.55) : 1;
-    const a0 = _fpP(it.a[0], it.a[1], 0), b0 = _fpP(it.b[0], it.b[1], 0), a1 = _fpP(it.a[0], it.a[1], H), b1 = _fpP(it.b[0], it.b[1], H);
+    // a wall in front of the player (nearer the camera) is cut down to a low parapet so nothing is hidden behind it: opaque, never see-through (glass is left as it is)
+    const cut = glass ? 0 : _fpCut(it.x, it.y), Hd = H - (FP_WALL_H - 22) * cut;
+    const a0 = _fpP(it.a[0], it.a[1], 0), b0 = _fpP(it.b[0], it.b[1], 0), a1 = _fpP(it.a[0], it.a[1], Hd), b1 = _fpP(it.b[0], it.b[1], Hd);
     if (glass) {
         // a window: a solid sill below, glass above with a faint reflection, a top rail, and a mullion post every two tiles
         const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t], sa = _fpP(it.a[0], it.a[1], 14), sb = _fpP(it.b[0], it.b[1], 14), ta = _fpP(it.a[0], it.a[1], H - 7), tb = _fpP(it.b[0], it.b[1], H - 7);
@@ -301,8 +310,9 @@ function _fpDrawWall(it) {
         return;
     }
     const g = ctx.createLinearGradient(0, a1[1], 0, a0[1]); g.addColorStop(0, c[0]); g.addColorStop(1, c[1]);
+    if (it.drop > 0) _fpQuad([_fpP(it.a[0], it.a[1], -it.drop), _fpP(it.b[0], it.b[1], -it.drop), b0, a0], c[1], "rgba(5,7,15,0.6)", 1);   // the skirt: down to the lower floor beside it
     _fpQuad([a0, b0, b1, a1], g, "rgba(5,7,15,0.6)", 1);
-    ctx.strokeStyle = c[2]; ctx.globalAlpha *= 0.85; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();
+    ctx.strokeStyle = c[2]; ctx.globalAlpha = 0.85; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();
 }
 function _fpDrawDoor(it) {
     // two posts and a lintel round the gap, with a sliding panel drawn open (it never blocks: a sliding door is always open for the squad)
@@ -376,6 +386,7 @@ function _fpDrawProp(it) {
     }
 }
 function _fpDrawFixture(it) {
+    if (_fpCut(it.x, it.y) > 0.15) return;   // (a fixture on a wall that is cut down is not drawn)
     const power = it.kind === "power_pack_area", z0 = 18, z1 = power ? 58 : 66, a0 = _fpP(it.a[0], it.a[1], z0), b0 = _fpP(it.b[0], it.b[1], z0), a1 = _fpP(it.a[0], it.a[1], z1), b1 = _fpP(it.b[0], it.b[1], z1);
     _fpQuad([a0, b0, b1, a1], power ? "#3a2f10" : "#2a1030", power ? "#ffd34d" : "#ff9ad5", 2);
     const n = power ? 4 : 0;   // battery cells on the power pack area
