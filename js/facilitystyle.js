@@ -376,6 +376,7 @@ function _fpItemLight(it) {
     if (it.fp === "door") return Math.max(...(it.rooms || []).map(_fpRoomLight), 0);
     if (it.fp === "wall") return _fpRoomLight(it.lroom || it.room);
     if (it.fp === "stair") return _fpRoomLight(it.room || "lab_hallway");
+    if (it.fp === "pillar") { if (it.lt === undefined) { const ids = new Set(); for (const [dx, dy] of [[0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]]) { const r = facilityRoomAt(it.x + dx, it.y + dy, _fp.F); if (r) ids.add(r.id); } it.lt = Array.from(ids); } return Math.max(_fpRoomLight(it.room), ...it.lt.map(_fpRoomLight)); }   // a corner post takes the light of the brightest room round it
     if (it.fp === "rig" || it.fp === "rigpad" || it.fp === "fill") return 1;   // (the fill tile darkens itself)
     return _fpRoomLight(it.room);
 }

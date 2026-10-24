@@ -217,7 +217,8 @@ function _fpSpawnTestEnemies(F) {
 // the room whose light a wall piece takes: the room on its camera-facing side (the face you see), else its own room
 function _fpWallLightRoom(w, a, b, F) {
     const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
-    const r = facilityRoomAt((a[0] + b[0]) / 2 + nx * 0.4, (a[1] + b[1]) / 2 + ny * 0.4, F); return r ? r.id : w.room;
+    for (const t of [0.4, 0.9, 1.5, 2.2, 3.0]) { const r = facilityRoomAt((a[0] + b[0]) / 2 + nx * t, (a[1] + b[1]) / 2 + ny * t, F); if (r) return r.id; }   // (the room that shows its face; the pocket of void behind the arena's rock belongs to the arena)
+    return w.room;
 }
 function _fpPlaceStatics(F) {
     const items = [], seg = 0.5;

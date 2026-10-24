@@ -150,10 +150,10 @@ function _fpRockSides(items) {
         const wd = (px, py) => { let d = 9; for (const e of _fp.glassEnds) d = Math.min(d, Math.hypot(px - e[0], py - e[1])); return Math.max(0, 1 - d / 1.5); };
         it.dk = _fp.glassEnds.length ? [wd(it.a[0], it.a[1]), wd((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), wd(it.b[0], it.b[1])] : null; if (it.dk && !(it.dk[0] || it.dk[1] || it.dk[2])) it.dk = null;
         it.cap = it.back ? null : { d: 1.0, nx, ny, zb: null };   // a front wall's cap is the thickness of the rock, 1 tile, running back toward the arena
-        if (it.back) {   // the CAP: the rock's top surface runs back, away from the camera, to the next wall (the hallway's) or, for a thin spur, a little way (a burrow with a rock roof)
-            let t = 0.3, room = null; for (; t <= 4.2; t += 0.2) { const q = facilityRoomAt(it.x - nx * t, it.y - ny * t, _fp.F); if (q) { room = q; break; } }
-            if (room) { let lo = t - 0.2, hi = t; for (let i = 0; i < 4; i++) { const mid = (lo + hi) / 2; if (facilityRoomAt(it.x - nx * mid, it.y - ny * mid, _fp.F)) hi = mid; else lo = mid; } const d = hi, same = room.id === it.room;
-                if (d >= 0.15 || same) it.cap = { d: same ? Math.min(d, 0.5) : d, nx, ny, zb: same ? null : facilityRoomHeight(room.id, _fp.F) * FP_ELEV_PX - (it.base || 0) + FP_WALL_H }; }
+        if (it.back) {   // the CAP: the rock's top surface is ONE roof running back (north, away from the camera) from the rock to the wall behind it; each end finds its own distance, so neighbouring pieces share an edge and the roof is smooth
+            const march = (px, py) => { for (let t = 0.1; t <= 4.2; t += 0.2) { const q = facilityRoomAt(px, py - t, _fp.F); if (q) { let lo = Math.max(0, t - 0.2), hi = t; for (let i = 0; i < 4; i++) { const mid = (lo + hi) / 2; if (facilityRoomAt(px, py - mid, _fp.F)) hi = mid; else lo = mid; } return { d: hi, room: q }; } } return null; };
+            const ea = march(it.a[0], it.a[1]), eb = march(it.b[0], it.b[1]), em = march((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), ref = em || ea || eb;
+            if (ref) { const same = ref.room.id === it.room, da = ea ? (same ? Math.min(ea.d, 0.5) : ea.d) : ref.d, db = eb ? (same ? Math.min(eb.d, 0.5) : eb.d) : ref.d; if (Math.max(da, db) >= 0.15 || same) it.cap = { da, db, zb: same ? null : facilityRoomHeight(ref.room.id, _fp.F) * FP_ELEV_PX - (it.base || 0) + FP_WALL_H }; }
         }
     }
 }
@@ -175,7 +175,7 @@ function _fpDrawRock(it, H) {
     const g = ctx.createLinearGradient(0, ty, 0, by); if (back) { g.addColorStop(0, "#1c1714"); g.addColorStop(0.22, _fpShade("#38302b", lit)); g.addColorStop(1, _fpShade("#4a413b", lit)); } else { g.addColorStop(0, _fpShade("#403731", lit)); g.addColorStop(1, _fpShade("#4a413b", lit)); }   // (a back wall's top is in shadow: it overhangs)
     _fpQuad([a0, b0, b1, m1, a1], g, g, 1);
     if (it.cap) {   // the 3-D cap: the top of the rock, a flat rock roof running back to the wall behind it
-        const c = it.cap, back = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u - c.nx * c.d, it.a[1] + (it.b[1] - it.a[1]) * u - c.ny * c.d, z === null ? 0 : z), zb = c.zb === null ? null : c.zb;
+        const c = it.cap, back = (u, z) => c.da === undefined ? _fpP(it.a[0] + (it.b[0] - it.a[0]) * u - c.nx * c.d, it.a[1] + (it.b[1] - it.a[1]) * u - c.ny * c.d, z === null ? 0 : z) : _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u - (c.da + (c.db - c.da) * u), z === null ? 0 : z), zb = c.zb === null ? null : c.zb;
         const A1 = back(0, zb === null ? ha : zb), M1 = back(0.5, zb === null ? hm : zb), B1 = back(1, zb === null ? hb : zb), lip = [a1, m1, b1];
         const cg = ctx.createLinearGradient(0, Math.min(A1[1], B1[1]), 0, Math.max(a1[1], b1[1])); cg.addColorStop(0, _fpShade("#352d28", lit)); cg.addColorStop(1, _fpShade("#5a4f47", lit));
         _fpQuad([a1, m1, b1, B1, M1, A1], cg, cg, 1);
