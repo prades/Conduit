@@ -343,14 +343,15 @@ var FP_DARK = 0.82, FP_POOL = 0.7, FP_POOL_R = 3.6, FP_LIGHT_EASE = 0.12;
 function _fpLightKey(id) { return id === "teleport_stair_room" ? "lab_hallway" : id; }
 function _fpLightUpdate(F) {
     _fp.light = _fp.light || new Map(); _fp.pool = _fp.pool || new Map();
-    const pr = facilityRoomAt(player.visualX, player.visualY, F), here = pr ? _fpLightKey(pr.id) : (_fp.lastRoom || null); if (here) _fp.lastRoom = here;
-    for (const r of F.rooms) { const k = _fpLightKey(r.id), v = k === here ? 1 : 0, cur = _fp.light.has(k) ? _fp.light.get(k) : v; if (r.id === k || !_fp.light.has(k)) _fp.light.set(k, Math.abs(v - cur) < 0.01 ? v : cur + (v - cur) * FP_LIGHT_EASE); }
+    const pr = facilityRoomAt(player.visualX, player.visualY, F), here = pr ? _fpLightKey(pr.id) : (_fp.lastRoom || null); if (here) _fp.lastRoom = here; _fp.here = here;
+    const bo = facilityBlackout();   // (a blackout: a room is lit, and a door throws a pool, only once it has power: js/facilitytutorial.js)
+    for (const r of F.rooms) { const k = _fpLightKey(r.id), v = k === here && (!bo || _fpPowered(k)) ? 1 : 0, cur = _fp.light.has(k) ? _fp.light.get(k) : v; if (r.id === k || !_fp.light.has(k)) _fp.light.set(k, Math.abs(v - cur) < 0.01 ? v : cur + (v - cur) * FP_LIGHT_EASE); }
     const pools = [];
     if (!_fp.openings) { _fp.openings = F.openings.map(o => ({ id: o.id, x: (o.a[0] + o.b[0]) / 2, y: (o.a[1] + o.b[1]) / 2, rooms: (F.connections.find(c => c.opening === o.id) || { rooms: o.rooms || [] }).rooms.map(_fpLightKey), ramp: F.connections.some(c => c.opening === o.id && c.ramp) })); _fp.doorItems = new Map(_fp.items.filter(i => i.fp === "door").map(i => [i.id, i])); }
     for (const o of _fp.openings) {
         const di = _fp.doorItems.get(o.id), want = o.ramp ? 1 : (di && di.st && (di.st.open || 0) >= 0.5 ? 1 : 0), cur = _fp.pool.get(o.id) || 0, v = Math.abs(want - cur) < 0.01 ? want : cur + (want - cur) * FP_LIGHT_EASE; _fp.pool.set(o.id, v);
         // a doorway with no door (a stairway) always glows softly on both sides, near or far; a door throws light only when it is open and the room on one side is lit
-        if (v > 0.02 && (o.ramp || o.rooms.some(k => (_fp.light.get(k) || 0) > 0.5))) pools.push({ x: o.x, y: o.y, s: v, rooms: o.rooms, r: o.ramp ? 5.2 : FP_POOL_R, k: o.ramp ? 0.55 : FP_POOL });
+        if (v > 0.02 && (o.rooms.some(k => (!bo || _fpPowered(k)) && (o.ramp || (_fp.light.get(k) || 0) > 0.5)))) pools.push({ x: o.x, y: o.y, s: v, rooms: o.rooms, r: o.ramp ? 5.2 : FP_POOL_R, k: o.ramp ? 0.55 : FP_POOL });
     }
     _fp.pools = pools;
 }
@@ -361,10 +362,10 @@ function _fpPoolAt(x, y, k) {
 }
 function _fpTileLight(x, y, roomId) {
     const k = _fpLightKey(roomId), v = (_fp.light && _fp.light.get(k)) || 0; if (v > 0.98) return v;
-    return Math.max(v, _fpPoolAt(x, y, k));
+    return Math.max(v, _fpPoolAt(x, y, k), _fpExtraLight(x, y, [k]));   // (and, in a blackout, the monitor lamp and the emergency lights)
 }
 function _fpRoomLight(roomId) { return (_fp.light && _fp.light.get(_fpLightKey(roomId))) || 0; }
-function _fpDarkFill(pts, lv) { const a = FP_DARK * (1 - lv); if (a < 0.02) return; ctx.fillStyle = "rgba(6,11,22," + a.toFixed(3) + ")"; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill(); }
+function _fpDarkFill(pts, lv) { const a = _fpDarkAmt() * (1 - lv); if (a < 0.02) return; ctx.fillStyle = "rgba(6,11,22," + a.toFixed(3) + ")"; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill(); }
 function _fpDarkTile(cx, cy, lv) { const e = 1.2; _fpDarkFill([[cx, cy - TILE_H - e], [cx + TILE_W + e, cy], [cx, cy + TILE_H + e], [cx - TILE_W - e, cy]], lv); }
 // THE DIMMED PEN: an unlit room's things are drawn through a stand-in for the canvas context that darkens every colour it is given (toward the night blue), so each item keeps its exact shape and
 // its own place in the depth order. (A screen-wide dark layer, a canvas filter and per-item shadow shapes were all tried: they bleed onto, or show seams against, the rooms in front.)
@@ -397,7 +398,7 @@ function _fpDimCtx(real, k) {
 // the light level that applies to a facility item (the room that shows its face)
 function _fpItemLight(it) {
     const lv = _fpItemRoomLight(it); if (lv > 0.98 || it.fp === "rig" || it.fp === "rigpad" || it.fp === "fill") return lv;
-    const k = _fpLightKey(it.lroom || it.room || (it.rooms && it.rooms[0])); return Math.max(lv, _fpPoolAt(it.x, it.y, k));   // (near a stairway or an open door, things share its light)
+    const k = _fpLightKey(it.lroom || it.room || (it.rooms && it.rooms[0])); return Math.max(lv, _fpPoolAt(it.x, it.y, k), _fpExtraLight(it.x, it.y, it.rooms ? it.rooms.map(_fpLightKey) : [k]));   // (near a stairway or an open door, things share its light; in a blackout the monitor lamp and the emergency lights add theirs)
 }
 function _fpItemRoomLight(it) {
     if (it.fp === "door") return Math.max(...(it.rooms || []).map(_fpRoomLight), 0);

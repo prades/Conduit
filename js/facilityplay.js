@@ -199,6 +199,7 @@ function facilityPlayStart() {
     for (const el of ["electric", "core", "fire"]) { if (typeof spawnFollowerAtCrystal === "function") spawnFollowerAtCrystal(el); }
     for (const f of followers) { f.x = cx + 1 + Math.random(); f.y = cy + 2 + Math.random(); f.returningToCrystal = false; }
     _fpPlaceStatics(F);
+    if (typeof facilityTutorialStart === "function") facilityTutorialStart(F);   // the tutorial opens in a blackout (js/facilitytutorial.js)
     _fpSpawnTestEnemies(F);
     if (typeof updateObjectiveUI === "function") updateObjectiveUI();
     document.body.classList && document.body.classList.add("facility-play");
@@ -293,6 +294,7 @@ function facilityDrawItems(drawList) {
     if (!_fp || !_fp.items) return;
     _fpCam = facilityLiftPx(player.visualX, player.visualY);   // the camera rides the player's floor
     if (typeof _fpLightUpdate === "function") _fpLightUpdate(_fp.F);   // the rooms' light levels and the pools at open doors
+    if (typeof facilityTutorialTick === "function") facilityTutorialTick();
     for (const it of _fp.items) if (visibleForDraw(it.x, it.y) && (it.fp !== "wall" || _fpWallOnScreen(it))) drawList.push(it);
     if (_fp.crystalDepth !== undefined) for (const o of drawList) if (o.type === "crystal") o.depth = _fp.crystalDepth;   // the crystal is drawn after the pad machine it rests in
 }
@@ -321,7 +323,7 @@ function drawFacilityItem(it) {
     _fpBase = it.base || 0;
     const lv = (typeof _fpItemLight === "function" && _fp.light) ? _fpItemLight(it) : 1, real = ctx;
     if (lv < 0.12 && (it.fp === "wdecor" || it.fp === "fixture")) return;   // (posters and signs in a dark room are all but invisible: not drawn)
-    if (lv < 0.98 && typeof CanvasRenderingContext2D !== "undefined" && real instanceof CanvasRenderingContext2D) ctx = _fpDimCtx(real, 1 - FP_DARK * (1 - lv));   // (not on the null context of a simulation-only step): an unlit room's things are drawn through the dimmed pen (js/facilitystyle.js)
+    if (lv < 0.98 && typeof CanvasRenderingContext2D !== "undefined" && real instanceof CanvasRenderingContext2D) ctx = _fpDimCtx(real, 1 - _fpDarkAmt() * (1 - lv));   // (not on the null context of a simulation-only step): an unlit room's things are drawn through the dimmed pen (js/facilitystyle.js)
     ctx.save();
     try {
         if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it);

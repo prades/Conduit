@@ -3104,6 +3104,7 @@ function render() {
             drawLabModule(obj.tile, Math.max(0.1, 0.8 - Math.sqrt((obj.x - player.visualX) ** 2 + (obj.y - player.visualY) ** 2) / RENDER_DIST));
         }
         else if (obj.type==='npc') {
+            if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityEnemyGlow === "function") facilityEnemyGlow(obj.actor, px, py);   // an enemy in a blackout shows a hostile glow on the floor under it (js/facilitytutorial.js)
             drawNPC(obj.actor,px,py);
             if (obj.actor.nestMass) drawPredatorNestMass(obj.actor, px, py + TILE_H);
             if (obj.actor.raider) drawThiefTag(obj.actor, px, py + TILE_H);
@@ -4528,6 +4529,7 @@ function render() {
     });
     drawTurretShots();
     if (typeof drawFireBombs === "function") { drawFireBombs(); drawFireAims(); }   // fire bombs in flight, and the arrows on aimed fire turrets (js/firebombs.js)
+    if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityDrawLampGlow === "function") facilityDrawLampGlow();   // the monitor lamp's colour in a blackout (js/facilitytutorial.js)
 
     ctx.restore();
 
