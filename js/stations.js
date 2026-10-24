@@ -23,7 +23,7 @@ const STATION_KINDS = {
         use: () => ({ ok: true, msg: "SAMPLES SEQUENCED — A SAMPLE NOW RAISES A FOLLOWER TWO LEVELS" }) },
     relay: { name: "POWER RELAY", classes: null, dynamic: true },
     charger: { name: "CHARGING STATION", classes: null, cooldown: 5400, powered: true,
-        use: () => { const was = playerAmmo; playerAmmo = PLAYER_AMMO_MAX; let cell = 0; if (playerClassId === "technomancer") cell = invAdd("power_cell", 1); _fp.chargerReady = frame + 5400; return { ok: true, msg: "CHARGED \u2014 " + (PLAYER_AMMO_MAX - was) + " ROUNDS" + (cell ? ", +1 POWER CELL" : "") }; } },
+        use: () => { const was = playerAmmo; playerAmmo = PLAYER_AMMO_MAX; let cell = 0; if (playerClassKey === "technomancer") cell = invAdd("power_cell", 1); _fp.chargerReady = frame + 5400; return { ok: true, msg: "CHARGED \u2014 " + (PLAYER_AMMO_MAX - was) + " ROUNDS" + (cell ? ", +1 POWER CELL" : "") }; } },
 };
 const STATION_RANGE = 1.8;
 
@@ -44,7 +44,7 @@ function stationNearest() { let best = null, bd = STATION_RANGE; for (const s of
 // can the player use it now? { ok, why }
 function stationCan(s) {
     const k = STATION_KINDS[s.kind], now = typeof frame !== "undefined" ? frame : 0;
-    if (!playerClassId) return { ok: false, why: "CHOOSE A CLASS FIRST" };
+    if (!playerClassKey) return { ok: false, why: "CHOOSE A CLASS FIRST" };
     if (s.kind === "relay") return relayCan(s);
     if (k.powered && !facilityFeedOn(s.prop)) return { ok: false, why: "NO POWER \u2014 REPAIR THE HALLWAY RELAY" };
     if (k.powered && _fp.chargerReady > now) return { ok: false, why: "CHARGING \u2014 " + Math.ceil((_fp.chargerReady - now) / 60) + " S" };
@@ -92,7 +92,7 @@ function _stApproach(s) { return typeof facilityApproachTile === "function" ? fa
 
 // the ring on the floor round a station: its class's colour and pulsing for the class that can use it, a dim grey for everyone else
 function _fpDrawStation(it) {
-    const k = STATION_KINDS[it.kind], rel = it.kind === "relay" ? _fp.relays[it.id] : null, mine = playerClassId && classAllows(k.classes), done = (k.once && classHas(k.perk)) || !!(rel && rel.online), live = (mine || !k.classes) && !done, col = done ? (rel ? "#43e0a8" : "#5a6a8a") : !k.classes ? (rel ? "#ffb347" : "#31e8ff") : mine ? classColour(k.classes[0]) : "#4a5675", f = _fpFrame(), pul = 0.6 + 0.4 * Math.sin(f * 0.07 + it.seed), b = it.bb, e = 0.12;
+    const k = STATION_KINDS[it.kind], rel = it.kind === "relay" ? _fp.relays[it.id] : null, mine = playerClassKey && classAllows(k.classes), done = (k.once && classHas(k.perk)) || !!(rel && rel.online), live = (mine || !k.classes) && !done, col = done ? (rel ? "#43e0a8" : "#5a6a8a") : !k.classes ? (rel ? "#ffb347" : "#31e8ff") : mine ? classColour(k.classes[0]) : "#4a5675", f = _fpFrame(), pul = 0.6 + 0.4 * Math.sin(f * 0.07 + it.seed), b = it.bb, e = 0.12;
     const pts = [_fpP(b[0] - e, b[1] - e, 0), _fpP(b[2] + e, b[1] - e, 0), _fpP(b[2] + e, b[3] + e, 0), _fpP(b[0] - e, b[3] + e, 0)];
     ctx.save(); ctx.lineJoin = "round"; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
     ctx.globalAlpha = (live ? 0.35 : 0.2) * (live ? pul : 1); ctx.fillStyle = col; ctx.fill(); ctx.globalAlpha = live ? 0.55 + 0.4 * pul : 0.5; ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.stroke(); ctx.restore();
@@ -103,7 +103,7 @@ function _fpDrawStation(it) {
 function _stPlate() { const W = canvas.width, H = canvas.height; return { x: Math.round(W / 2 - 190), y: Math.round(H / 2 + 74), w: 380, h: 56 }; }
 function facilityDrawStationPrompt() {
     const s = _fp && _fp.stationNear; if (!s || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || typeof uiButton !== "function") return;
-    const k = STATION_KINDS[s.kind], can = stationCan(s), r = _stPlate(), mine = playerClassId && classAllows(k.classes), col = !k.classes ? (s.kind === "relay" ? "#ffb347" : "#31e8ff") : mine ? classColour(k.classes[0]) : "#6d7fa6";
+    const k = STATION_KINDS[s.kind], can = stationCan(s), r = _stPlate(), mine = playerClassKey && classAllows(k.classes), col = !k.classes ? (s.kind === "relay" ? "#ffb347" : "#31e8ff") : mine ? classColour(k.classes[0]) : "#6d7fa6";
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const nm = s.kind === "relay" ? _relayName(s) : k.name, verb = s.kind === "relay" ? relayVerb(s, can) : k.verb;
     uiButton(r, can.ok ? verb : can.done ? nm + " \u2014 DONE" : nm, col, false, can.ok ? 16 : 15, can.ok ? nm + "   \u00b7   TAP OR PRESS E" : can.why, !can.ok);
@@ -192,7 +192,7 @@ function facilityRelayTick() {
         const near = Math.hypot(Math.max(c.bb[0] - player.visualX, 0, player.visualX - c.bb[2]), Math.max(c.bb[1] - player.visualY, 0, player.visualY - c.bb[3]));
         if (near > STATION_RANGE + 0.6) { _fp.channel = null; invSay("REPAIR INTERRUPTED", false); }
         else if (frame - c.t0 >= c.frames) relayComplete(c);
-    } else if (playerClassId && CLASS_RULES.relay.auto.includes(playerClassId) && (!player.fpPath || !player.fpPath.length)) {
+    } else if (playerClassKey && CLASS_RULES.relay.auto.includes(playerClassKey) && (!player.fpPath || !player.fpPath.length)) {
         const s = _fp.stationNear; if (s && s.kind === "relay" && relayCan(s).ok) relayStart(s);
     }
     facilitySentryTick();

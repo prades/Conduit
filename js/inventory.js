@@ -66,7 +66,7 @@ function invReset() { if (typeof classPerks !== "undefined") classPerks = new Se
 function invCanUse(id) {
     const d = itemDef(id); if (!d) return { ok: false, why: "UNKNOWN ITEM" };
     if (!invHas(id)) return { ok: false, why: "NONE IN THE PACK" };
-    if (!classAllows(d.classes)) return { ok: false, why: playerClassId ? "ONLY A " + d.classes.map(className).join(" / ") + " CAN USE THIS" : "CHOOSE A CLASS FIRST" };
+    if (!classAllows(d.classes)) return { ok: false, why: playerClassKey ? "ONLY A " + d.classes.map(className).join(" / ") + " CAN USE THIS" : "CHOOSE A CLASS FIRST" };
     return { ok: true };
 }
 function invUse(id) {

@@ -2,7 +2,7 @@
 
 Asked: *"Make a clear path to add player classes and class specific ultimates and perks like a character progression system, and make way for follower evolution attack move selection, and add niche attacks that only specific playable character classes have access to."*
 
-**Status: stage 0 built (js/moves.js, tests/moves.js); stages 1 to 6 are the plan.** Stage 0 changes no behaviour; every later stage is one commit with its own test suite, like the kits. Decisions are in §8.
+**Status: stage 0 built (js/moves.js, tests/moves.js); the facility tutorial (docs/TUTORIAL.md) built the first rows of the registry in js/classes.js (GUNSLINGER, TECHNOMANCER, MUTATOR) with `classStat`, `CLASS_RULES` and perks earned at stations; stages 1 to 6 of this plan are otherwise still the plan.** Stage 0 changes no behaviour; every later stage is one commit with its own test suite, like the kits. Decisions are in §8.
 
 ## 1. What the game has today (and what is in the way)
 

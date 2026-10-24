@@ -44,12 +44,13 @@ function facilityTutorialStart(F) {
     _fp.tut = { blackout: !off, powered: new Set(), sources: src, said: false, boostUntil: 0 };
     facilityPickupsStart(F);
     if (typeof facilityStationsStart === "function") facilityStationsStart(F);
+    if (typeof facilityDirectorStart === "function") facilityDirectorStart();
     return _fp.tut;
 }
 // the player's side of the tutorial: an empty pack and no class yet. The class picker opens (a Gunslinger, a Technomancer or a Mutator), unless the URL names one (?class=technomancer).
 function facilityTutorialClass() {
     if (typeof invReset !== "function") return;
-    invReset(); playerClassId = null; classPickerOpen = false; if (typeof invButtonShow === "function") invButtonShow(true);
+    invReset(); playerClassKey = null; classPickerOpen = false; if (typeof invButtonShow === "function") invButtonShow(true);
     const m = /[?&]class=(\w+)/.exec((typeof window !== "undefined" && window.location && window.location.search) || "");
     if (m && CLASSES[m[1]]) classSet(m[1]); else classPickerOpen = true;
 }
@@ -92,6 +93,7 @@ function facilityTutorialTick() {
     facilityPickupTick();
     if (typeof facilityStationTick === "function") facilityStationTick();
     if (typeof facilityRelayTick === "function") facilityRelayTick();
+    if (typeof facilityDirectorTick === "function") facilityDirectorTick();
     const T = _fp && _fp.tut; if (!T || T.said || !T.blackout || (typeof frame !== "undefined" ? frame : 0) < 60) return;
     T.said = true;
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
@@ -180,4 +182,5 @@ function facilityDrawOverlay() {
     if (typeof facilityDrawCctv === "function") facilityDrawCctv();
     if (typeof facilityDrawRelays === "function") facilityDrawRelays();
     if (typeof facilityDrawStationPrompt === "function") facilityDrawStationPrompt();
+    if (typeof facilityDrawObjective === "function") facilityDrawObjective();
 }

@@ -20,7 +20,7 @@ The tutorial is an extension of the facility mode (`?facilityplay`, docs/FACILIT
 
 ### Conflicts to settle before phase 3
 
-1. **"Maintain the three existing player classes"** names classes that are not in the project. Phases 3 to 5 depend on them (class-restricted equipment, who can repair a relay, who uses biological samples). Nothing has been invented. A decision is needed: build the three (Gunslinger, Technomancer, Mutator) as the first rows of the planned class registry in docs/PLAYER-CLASSES.md (the registry is data, so they would sit beside the planned classes), or map them onto planned classes.
+1. **(Settled: the three classes were built as rows of the registry; see phase 4.)** "Maintain the three existing player classes" named classes that were not in the project. Phases 3 to 5 depend on them (class-restricted equipment, who can repair a relay, who uses biological samples). Nothing has been invented. A decision is needed: build the three (Gunslinger, Technomancer, Mutator) as the first rows of the planned class registry in docs/PLAYER-CLASSES.md (the registry is data, so they would sit beside the planned classes), or map them onto planned classes.
 2. **Relays and the existing power system.** The strip game's relays are pylons on a lane with nests and batteries; the facility needs relay *stations* in rooms. Phase 5 should add a thin facility layer (a relay station object, a room's power set, `facilityPower(room, on)`, which phase 2 already provides) that the strip game's power code can feed, not a second power simulation.
 3. **The old tube-lane HUD** ("NETWORK OFFLINE", "TAP HERE TO BOOT THE POWER UNIT") is still shown in the facility; the tutorial will have to reuse or hide it in phase 5.
 
@@ -30,10 +30,10 @@ The tutorial is an extension of the facility mode (`?facilityplay`, docs/FACILIT
 |---|---|---|
 | 1 | Inspect, report, plan | this file |
 | 2 | **Tutorial blackout** | done (below) |
-| 3 | Inventory: a data-driven `ITEMS` table, a window with icons, names, descriptions, inspection, categories, quantities, tools and consumables, class restrictions; 3 to 5 items working end to end (collect, show, inspect, use) before any more | waits for the class decision |
-| 4 | Class-specific progression: the three classes as data, and the items and rooms each uses (the Security Room and Armory for the Gunslinger, relays for the Technomancer, samples for the Mutator); restrictions configurable | waits for the class decision |
-| 5 | Relay stations that need an item or a capability, click to repair, power the room's lights, a charging station and defences; `facilityPower(room, true)` is the hook already built | |
-| 6 | Followers and the Crystal defence: teach recruiting and positioning with the existing systems, a manageable first assault | |
+| 3 | Inventory: a data-driven `ITEMS` table, a window with icons, names, descriptions, inspection, categories, quantities, tools and consumables, class restrictions; items working end to end (collect, show, inspect, use) | **done** |
+| 4 | Class-specific progression: the three classes as data, and the stations, items and rooms each uses; restrictions configurable | **done** |
+| 5 | Relay stations that need an item or a capability, click to repair, power the room's lights, a charging station and defences | **done** |
+| 6 | Followers and the Crystal defence: teach recruiting and positioning with the existing systems, a manageable first assault | **done** |
 
 ## Phase 2: the tutorial blackout (done)
 
@@ -51,3 +51,53 @@ The tutorial is an extension of the facility mode (`?facilityplay`, docs/FACILIT
 **Tests.** Six checks in tests/facilityplay.js: it starts in a blackout with nothing powered, 20 floodlights (8 or more in the hallway reaching 90% of it, 9 or more in the arena), the exit signs and the designated lights; the player's own room is dark, and the lamp is dim, smooth, follows the player and lights nothing in another room; the lamp is the visor's green (and red when angry) and is drawn only in a blackout; powering one room lights it only while the player is in it, a door throws its pool only from a powered room, powering everything ends the blackout and the ordinary rule returns; enemies get the glow only when hostile, alive and in the dark, and only with the blackout on; the message is said once. The existing lighting, door, wall and speed checks pass unchanged with the blackout off, the real-page walk through two doors passes with it on, the facility data checks pass with the new floodlights, and a 173,000-step random walk through the facility finds no wall or floodlight to walk through.
 
 **Known issues.** The lamp is a circle, not a cone (the player has no facing). The glow under an enemy is a flat ellipse and does not follow the floor's height on the steps. A wall piece is lit as a whole from its middle, so a long wall at the edge of a light changes in one step. The lamp's wash is drawn over the scene (so it also tints a wall standing in front of the player). Phase 3 needs the class decision above.
+
+## Phase 3: the pack (done)
+
+**What it does.** `js/classes.js` holds the three classes as data (Gunslinger, Technomancer, Mutator: name, colour, tagline, rooms, start kit, skills) and `CLASS_RULES`: any class may *carry* another class's gear, only the right class may *use* it (both switches are data). The tutorial opens on a class picker (or takes `?class=technomancer`). `js/inventory.js` holds a data-driven `ITEMS` table (name, category, type, stack, colour, icon, class restriction, description, lore, stats, `use`) and the pack window: press **I** (or the PACK button), tabs (ALL, GEAR, TOOLS, PARTS, SAMPLES), item cells with quantity and a LOCKED chip for gear your class cannot use, an item page with INSPECT (the lore and the numbers) and USE. A new item is one row, an icon and a `use`.
+
+| Item | For | What it really does |
+|---|---|---|
+| Ammo pack | anyone | +10 rounds in the gun (kept when the gun is full) |
+| Flare | Gunslinger | lights the ground where you stand, 6.5 tiles, for 30 seconds (a real light in the blackout) |
+| Power cell | Technomancer | overcharges the monitor lamp for a minute; it is also what a relay repair costs (phase 5) |
+| Mutagen sample | Mutator | raises the nearest follower within 8 tiles a level (and so toward evolution) |
+| Relay kit | anyone | a reusable tool: lets any class repair a relay (phase 5) |
+
+**Supplies.** Nine supply cases stand in the rooms each class works in (`pickups` in js/facilitymap.js; the Armory and Security Room for the Gunslinger, the labs and Teleport Room 1 for the Technomancer, the lab and the Crystal Chamber for the Mutator, the kit in the Chamber). Each shows its item's icon over a beacon, so it can be found in the dark; walking over one takes it (a case that will not fit stays).
+
+## Phase 4: class stations and perks (done)
+
+A **station** is a prop the player can use (`stations` in js/facilitymap.js, `STATION_KINDS` in js/stations.js): walk up and press **E**, tap the plate that appears, or tap the station (the player walks there first). Its ring shows in the class's colour for the class that can use it and dim for everyone else, who are refused with the reason. Each class earns a **perk** (`CLASS_PERKS`, read through `classStat(name, base)` as docs/PLAYER-CLASSES.md plans, so the rest of the game needs no class code):
+
+| Class | Station | Perk | Effect |
+|---|---|---|---|
+| Gunslinger | Armory weapon locker | Service rifle | shots hit 60% harder and 25% faster (the player's shot reads `classStat`) |
+| Gunslinger | Security Room console | CCTV sweeps | every enemy in the facility is marked (a diamond, an arrow at the screen's edge) for 25 s, then a 60 s cooldown |
+| Technomancer | Teleport Room 1 console | Tuned lamp | the lamp reaches 25% further, an overcharge lasts 50% longer |
+| Mutator | a test chamber in the lab | Sequenced samples | costs a sample; afterwards a sample raises a follower two levels |
+
+The pack shows the class, its rank (1, plus one per perk) and the perks.
+
+## Phase 5: the electrical network (done)
+
+Three **relays** (`relays` in js/facilitymap.js) stand broken: the Crystal Chamber's (feeds two sentries that guard the door), the hallway's (powers the hallway and the stair room; feeds a sentry and the charging station) and the lobby's (powers the lobby and the Security Room). A relay is a station: a repair runs with a progress bar over the box and needs **either a skill or a part**, a rule in `CLASS_RULES.relay` (js/classes.js):
+
+- a class with the `repair` skill (the Technomancer): **one power cell**, under two seconds, and it **starts by itself** when they stand at a broken relay with a cell and keep still;
+- anyone else: the **relay kit** (found in the Crystal Chamber) and **two power cells**, five seconds, started by tapping the relay. This is the explicit design rule that lets the other classes restore a relay at all (their cells are spent by the relay, they do not use them).
+
+A repair that is walked away from stops (nothing is spent). When a relay comes online: its rooms have power (`facilityPower`: the blackout lifts there, they are lit while you are in them, open doors throw pools), the box turns green with a turning ring, a ring of light and a flash spread from it, the screen says POWER RESTORED, the sentries it feeds shoot the nearest enemy within 9 tiles (8 damage every 50 frames, through the strip's own projectiles), and the hallway's charging station refills your gun (a Technomancer also gets a cell; 90 s cooldown). All three relays do not end the blackout: the other rooms stay dark. Adding an electrical room is a `relays` row and a prop.
+
+## Phase 6: followers and the Crystal defence (done)
+
+`js/tutorial.js` is a short list of objectives (`TUT_STEPS`) with a plate under the FACILITY · EXIT tab: find supplies; earn your class's perk; restore the Crystal Chamber's relay; **recruit** a follower (the roster's + RECRUIT, 30 shards: `recruitFollower`); **post** two followers near the Crystal (the roster's HOLD: `a.stance`); **defend the Crystal**; evolve a follower. It uses the strip's systems and builds no new ones: recruits are `recruitFollower`, levels are `gainXp`, evolution is `evolutionTick` at level 10, the enemies are the strip's ants hunting the Crystal under an alarm.
+
+- The tutorial's followers (the three you start with and every recruit) are **level 9**, and the assault's enemies level 8, so one assault takes a follower to the evolution level.
+- **The assault**: a 20 second countdown, then four scouts from the east end of the hallway, then 25 seconds later three strikers. The alarm is up while they live. A wounded enemy that runs is made to press on. A Crystal below 15% is saved: the enemies are called off, it is mended to 60% and the assault comes again. After a minute past the last wave, what is left is called off ("THE REST FLED"). Beating it pays every follower 400 XP (`gainXp`), and the fighting earns more; followers that reach level 10 evolve as they always do.
+- The tutorial finishes when a follower has evolved, and says so once.
+
+A scripted run through every step (collect, perk, relay, recruit, hold, the assault, evolution) with a Technomancer and a Gunslinger finishes with two evolved followers and the Crystal untouched at full health.
+
+**Files added or changed in phases 3 to 6.** js/classes.js, js/inventory.js, js/stations.js, js/tutorial.js (new); js/facilitytutorial.js, js/facilityplay.js, js/facilitystyle.js, js/facilitystyleall.js, js/facilitydecor.js (none), js/facility.js, js/facilitygrow.js, js/facilitymap.js (pickups, stations, relays, relay/sentry/charger props), js/game.js, js/ui.js, js/input.js (the pack, the picker, stations, the shot reads `classStat`), game.html, tests/facility.js, tests/facilityplay.js.
+
+**Known issues.** The tutorial's enemies bleed 0.01 HP a frame like every enemy in the strip, so a wounded one that keeps away can die on its own, without giving a kill's XP (the assault's reward covers it). A prop (a floodlight, a sentry) in an enemy's straight path can hold it for a moment until its unstick logic replans; the spawn rows keep clear of them. The relays' sentries use the strip's follower projectiles, so they do not credit XP to anyone. The first assault is tuned by feel (two waves, level 8) and not yet by play-testing with a real player: `TUT` in js/tutorial.js is the table to change.

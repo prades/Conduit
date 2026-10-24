@@ -39,21 +39,23 @@ function classStat(name, base) {
 }
 function classHas(perk) { return classPerks.has(perk); }
 // a class's rank: 1 to start, one more for each of its perks earned (the tutorial has one perk to earn at a time per class: docs/TUTORIAL.md)
-function classRank() { let n = 1; for (const id of classPerks) if (CLASS_PERKS[id] && CLASS_PERKS[id].cls === playerClassId) n++; return n; }
-function classPerkList() { return Array.from(classPerks).map(id => CLASS_PERKS[id]).filter(p => p && p.cls === playerClassId); }
-function classGrant(perk) { const p = CLASS_PERKS[perk]; if (!p || p.cls !== playerClassId || classPerks.has(perk)) return false; classPerks.add(perk); return true; }
+function classRank() { let n = 1; for (const id of classPerks) if (CLASS_PERKS[id] && CLASS_PERKS[id].cls === playerClassKey) n++; return n; }
+function classPerkList() { return Array.from(classPerks).map(id => CLASS_PERKS[id]).filter(p => p && p.cls === playerClassKey); }
+function classGrant(perk) { const p = CLASS_PERKS[perk]; if (!p || p.cls !== playerClassKey || classPerks.has(perk)) return false; classPerks.add(perk); return true; }
 
-let playerClassId = null;
-function playerClass() { return playerClassId ? CLASSES[playerClassId] || null : null; }
+let playerClassKey = null;
+// js/moves.js (docs/PLAYER-CLASSES.md, stage 0) asks the class through a function, `playerClassId()`: a move with `classes` is open only to those. The class is held in playerClassKey.
+function playerClassId() { return playerClassKey; }
+function playerClass() { return playerClassKey ? CLASSES[playerClassKey] || null : null; }
 // choose the class (once per run): the start kit goes in the pack
 function classSet(id) {
-    if (!CLASSES[id] || playerClassId) return false;
-    playerClassId = id;
+    if (!CLASSES[id] || playerClassKey) return false;
+    playerClassKey = id;
     if (typeof invAdd === "function") for (const [item, n] of CLASSES[id].startKit) invAdd(item, n);
     return true;
 }
 // the class a thing is reserved for ([] or none = every class)
-function classAllows(classes, id) { return !classes || !classes.length || classes.includes(id || playerClassId) || (CLASS_RULES.useOthers && !!(id || playerClassId)); }
+function classAllows(classes, id) { return !classes || !classes.length || classes.includes(id || playerClassKey) || (CLASS_RULES.useOthers && !!(id || playerClassKey)); }
 function classCanCarry(classes) { return CLASS_RULES.carryOthers || classAllows(classes); }
 function className(id) { return CLASSES[id] ? CLASSES[id].name : String(id).toUpperCase(); }
 function classColour(id) { return CLASSES[id] ? CLASSES[id].colour : "#8aa0c8"; }
