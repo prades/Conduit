@@ -271,7 +271,7 @@ function _fpWallPlace(F) {
     for (const d of (F.decor || [])) {
         if (!FP_WALL_KINDS[d.kind]) continue;
         const a = d.a, b = d.b, h = Math.abs(a[1] - b[1]) < 1e-6, end = a[0] + a[1] > b[0] + b[1] ? a : b, mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-        items.push({ type: "fp", fp: "wdecor", room: d.room, kind: d.kind, x: mid[0], y: mid[1], a, b, colour: d.colour, text: d.text, z: d.z, h: d.h, id: d.id, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + (h ? 0.3 : 0.3), seed: _fpHash(Math.round(mid[0] * 4), Math.round(mid[1] * 4)) });
+        items.push({ type: "fp", fp: "wdecor", room: d.room, kind: d.kind, x: mid[0], y: mid[1], a, b, colour: d.colour, text: d.text, z: d.z, h: d.h, id: d.id, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + 0.02, seed: _fpHash(Math.round(mid[0] * 4), Math.round(mid[1] * 4)) });
     }
     return items;
 }
