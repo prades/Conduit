@@ -110,3 +110,7 @@ The cliff face is a continuous cavern wall of stacked rock ledges (strata). Ever
 ### Speed
 
 The hallway draws about twice the wall pieces of the arena, so it was the slow place. Walls are now drawn with flat fills and no outline pass (each band runs a hair past both ends so neighbours overlap), one fewer composited glow stroke per piece, per-room colour strings built once, and a wall whose real extent (`_fpWallBounds`) cannot touch the screen is not drawn at all (`_fpWallOnScreen`, called from `facilityDrawItems`). Posters and signs in a dark room are skipped. Measured in a software-rendered browser (a rough guide only): the hallway went from about 12.7 to 16 frames a second, the lobby from 20.7 to 25. A per-piece sprite cache was tried and removed: it was no faster and used about 100 MB. Wall pieces stay 0.5 tile long on purpose: longer ones sort wrongly against units standing at a wall.
+
+### Heights
+
+Walls stand `FP_WALL_H` = 122 px (they were 74); doors stand `FP_DOOR_H` = 108 px, about two tiles, with the wall continuing above them as a header (three bands and the ink line, drawn by the door). Decor that hangs near the top of a wall (pipes, wall lights, exit signs, banners, bulbs, cables, chains, drips, cracks, blinds, lamps, clocks, vents) rises with it (`FP_HIGH_DECOR`, `FP_WALL_X`); the rock stands the same amount higher. Posts, doors and walls all read their height from these constants, so one number changes them.

@@ -19,7 +19,9 @@ const FP_BODY = 0.3;              // tiles: how far a body keeps from a wall (wh
 const FP_PLAN = 0.45;             // tiles: how far a PLANNED path keeps from a wall: wider than the body, so a route never grazes a corner or a door post the walls would then snag it on
 const FP_PLAYER_SPEED = 0.13;     // tiles a frame
 const FP_ELEV_PX = 34;            // px of screen height per tile of height (the map's levels: js/facilitymap.js)
-const FP_WALL_H = 74;             // px: how tall a wall stands on screen
+const FP_WALL_H = 122;            // px: how tall a wall stands on screen (a door is FP_DOOR_H: two tiles; the wall above it is a header)
+const FP_DOOR_H = 108;            // px: how tall a door is
+const FP_WALL_X = FP_WALL_H - 74; // px: how much taller the walls are than when the decor was laid out
 const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", bathroom: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a" };
 
 // ── the world ──

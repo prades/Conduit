@@ -137,7 +137,7 @@ function _fpDoorNear(x, y) {
     return d;
 }
 function _fpStyleDoor(it) {
-    const acc = _fpAcc((it.rooms || [])[0]), H = FP_WALL_H - 4, A = FP_PAL, S = FP_STEEL_DOOR, P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z);
+    const acc = _fpAcc((it.rooms || [])[0]), H = FP_DOOR_H, A = FP_PAL, S = FP_STEEL_DOOR, P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z);
     // how far open: eased towards open when a unit is within 2.6 tiles, shut again beyond 3.4
     const near = _fpDoorNear(it.x, it.y), want = near < 2.6 ? 1 : near > 3.4 ? 0 : (it.open >= 0.5 ? 1 : 0); it.open = (it.open || 0) + (want - (it.open || 0)) * 0.2; if (Math.abs(want - it.open) < 0.01) it.open = want;
     const o = it.open, f = _fpFrame(), q = it.door ? 1 : 0, fw = 0.06;   // fw: the frame post, as a fraction of the span
@@ -163,6 +163,11 @@ function _fpStyleDoor(it) {
     for (const u of [0, 1 - fw]) { const p0 = P(u, 0), p1 = P(u + fw, 0), p2 = P(u + fw, H), p3 = P(u, H); _fpFill([p0, p1, p2, p3], A.cap, A.ink, 3.5); }
     _fpFill([P(0, H - 8), P(1, H - 8), P(1, H + 4), P(0, H + 4)], A.tealLit, A.ink, 3.5);
     const lamp = P(0.5, H - 2), on = o > 0.5; ctx.fillStyle = on ? acc : A.amber; ctx.beginPath(); ctx.arc(lamp[0], lamp[1], 4, 0, 6.2832); ctx.fill(); ctx.strokeStyle = A.ink; ctx.lineWidth = 2.5; ctx.stroke();
+    // the HEADER: the wall continues above the door, from its lintel to the top of the wall (the same three bands, the ink line along its top)
+    { const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+      const lit = nx > ny, zb = H + 4, zt = FP_WALL_H, capH = Math.min(8, zt - zb);
+      if (zt > zb) { _fpFlat([P(-0.02, zb), P(1.02, zb), P(1.02, zt - capH), P(-0.02, zt - capH)], lit ? A.wallLit : A.wallDark); _fpFlat([P(-0.02, zt - capH), P(1.02, zt - capH), P(1.02, zt), P(-0.02, zt)], A.cap);
+        const t0 = P(0, zt), t1 = P(1, zt); ctx.strokeStyle = A.ink; ctx.lineWidth = 4.5; ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.stroke(); } }
     ctx.lineJoin = "miter"; ctx.lineCap = "butt";
 }
 

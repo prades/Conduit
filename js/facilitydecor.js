@@ -164,8 +164,8 @@ function _fpRockHeights(it, H) {
 }
 function _fpRockHeightsBase(it, H) {
     const ext = H - FP_WALL_H, j = (x, y, m) => _fpHash(Math.round(x * 4), Math.round(y * 4)) % m, mx = (it.a[0] + it.b[0]) / 2, my = (it.a[1] + it.b[1]) / 2;
-    if (it.back) return [ext + 120 + j(it.a[0], it.a[1], 40), ext + 120 + j(mx, my, 50), ext + 120 + j(it.b[0], it.b[1], 40)];
-    return [ext + 70 + j(it.a[0], it.a[1], 40), ext + 70 + j(mx, my, 60), ext + 70 + j(it.b[0], it.b[1], 40)];
+    if (it.back) return [ext + 120 + FP_WALL_X + j(it.a[0], it.a[1], 40), ext + 120 + FP_WALL_X + j(mx, my, 50), ext + 120 + FP_WALL_X + j(it.b[0], it.b[1], 40)];
+    return [ext + 70 + FP_WALL_X + j(it.a[0], it.a[1], 40), ext + 70 + FP_WALL_X + j(mx, my, 60), ext + 70 + FP_WALL_X + j(it.b[0], it.b[1], 40)];
 }
 function _fpDrawRock(it, H) {
     const back = !!it.back, lit = it.lit || 1, hs = _fpRockHeights(it, H), ha = hs[0], hm = hs[1], hb = hs[2];
@@ -310,7 +310,8 @@ function _fpWallPlace(F) {
     }
     return items;
 }
-function _fpWP(it, u, z) { return _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z); }
+const FP_HIGH_DECOR = new Set(["pipe", "wall_light", "exit_sign", "banner", "bulbs", "cable_run", "chain", "ooze_drip", "crack", "window_blind", "lamp", "clock", "vent"]);   // the kinds that hang near the top of the wall: they rise with it
+function _fpWP(it, u, z) { return _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z + (FP_HIGH_DECOR.has(it.kind) ? FP_WALL_X : 0)); }
 function _fpWQuad(it, u0, u1, z0, z1, fill, stroke, lw) { _fpQuad([_fpWP(it, u0, z0), _fpWP(it, u1, z0), _fpWP(it, u1, z1), _fpWP(it, u0, z1)], fill, stroke, lw); }
 function _fpWLine(it, u0, z0, u1, z1, col, w) { const p = _fpWP(it, u0, z0), q = _fpWP(it, u1, z1); ctx.strokeStyle = col; ctx.lineWidth = w || 1; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
 const FP_WALL_KINDS = {
@@ -394,7 +395,7 @@ const FP_WALL_KINDS = {
         const br = pts.slice(4, 7).map((q, i) => [q[0] + i * 0.05, q[1] - 6 - i * 7]); ctx.lineWidth = 1.5; path([pts[4]].concat(br));
     },
     beam: (it, f) => {   // a timber support: two posts, a lintel and a cross brace
-        const H = 74; for (const u of [0.04, 0.93]) _fpWQuad(it, u, u + 0.04, 0, H, "#6a4a2c", "rgba(5,7,15,0.55)", 1); _fpWQuad(it, 0.02, 0.98, H - 9, H - 2, "#7a5a36", "rgba(5,7,15,0.55)", 1);
+        const H = FP_WALL_H; for (const u of [0.04, 0.93]) _fpWQuad(it, u, u + 0.04, 0, H, "#6a4a2c", "rgba(5,7,15,0.55)", 1); _fpWQuad(it, 0.02, 0.98, H - 9, H - 2, "#7a5a36", "rgba(5,7,15,0.55)", 1);
         _fpWLine(it, 0.08, 6, 0.93, H - 9, "#5a3e24", 3); _fpWLine(it, 0.93, 6, 0.08, H - 9, "rgba(90,62,36,0.6)", 2); for (const u of [0.05, 0.94]) for (const z of [14, 40]) { const p = _fpWP(it, u + 0.02, z); ctx.fillStyle = "#c9b890"; ctx.fillRect(p[0] - 1.5, p[1] - 1.5, 3, 3); }
     },
     chain: (it, f) => {   // hanging chains: links alternating, swaying a little, ending in a hook
