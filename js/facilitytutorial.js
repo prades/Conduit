@@ -95,6 +95,7 @@ function facilityTutorialTick() {
     if (typeof facilityStationTick === "function") facilityStationTick();
     if (typeof facilityRelayTick === "function") facilityRelayTick();
     if (typeof facilityDirectorTick === "function") facilityDirectorTick();
+    if (typeof facilityGearTick === "function") facilityGearTick();
     const T = _fp && _fp.tut; if (!T || T.said || !T.blackout || (typeof frame !== "undefined" ? frame : 0) < 60) return;
     T.said = true;
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {

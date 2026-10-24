@@ -229,6 +229,7 @@ const FACILITY_MAP = {
         { id: "floodlight_arena_4", room: "arena", shape: "rect", rect: [970, 1010, 990, 1030], status: "placed", kind: "floodlight" },
         { id: "floodlight_arena_5", room: "arena", shape: "rect", rect: [370, 870, 390, 890], status: "placed", kind: "floodlight" },
         // ── THE ELECTRICAL NETWORK (docs/TUTORIAL.md, phase 5): relay boxes against the walls, the sentries and the charging station they feed. Everything starts dead: the relays are broken. ──
+        { id: "mech_bay", room: "show_room", shape: "rect", rect: [970, 390, 1010, 430], status: "placed", kind: "mech_bay", note: "The mech bay: a build pad in the show room where the Technomancer assembles the four-legged spider mech." },
         { id: "relay_chamber_box", room: "crystal_chamber", shape: "rect", rect: [350, 350, 370, 370], status: "placed", kind: "relay", note: "The Crystal Chamber's relay, in the north-east corner." },
         { id: "sentry_chamber_1", room: "crystal_chamber", shape: "rect", rect: [330, 430, 350, 450], status: "placed", kind: "sentry", note: "An automatic sentry guarding the chamber's door." },
         { id: "sentry_chamber_2", room: "crystal_chamber", shape: "rect", rect: [290, 470, 310, 490], status: "placed", kind: "sentry" },
@@ -265,8 +266,9 @@ const FACILITY_MAP = {
         { id: "pk_chamber_kit", room: "crystal_chamber", at: [260, 440], items: [["relay_kit", 1]], note: "A relay kit in the Crystal Chamber: with two power cells, anyone can splice a relay with it." },
         { id: "pk_armory_flare", room: "armory", at: [240, 1100], items: [["flare", 2]], class: "gunslinger", note: "Flares in the Armory (Gunslinger)." },
         { id: "pk_armory_flare_2", room: "armory", at: [320, 1080], items: [["flare", 2]], class: "gunslinger", note: "More flares in the Armory (Gunslinger)." },
-        { id: "pk_tele_cell", room: "teleport_room_1", at: [260, 620], items: [["power_cell", 1]], class: "technomancer", note: "A cell beside the teleporters (Technomancer)." },
-        { id: "pk_tele_cell_2", room: "teleport_room_1", at: [260, 680], items: [["power_cell", 2]], class: "technomancer", note: "Cells by the console (Technomancer)." },
+        { id: "pk_tele_legs", room: "teleport_room_1", at: [260, 620], items: [["mech_leg", 2]], class: "technomancer", note: "Two spider-mech legs beside the teleporters (Technomancer)." },
+        { id: "pk_tele_legs_2", room: "teleport_room_1", at: [260, 680], items: [["mech_leg", 2]], class: "technomancer", note: "Two more legs by the console (Technomancer)." },
+        { id: "pk_show_core", room: "show_room", at: [1060, 520], items: [["mech_core", 1]], class: "technomancer", note: "A mech core, left among the show room's exhibits (Technomancer)." },
         { id: "pk_lab_mutagen", room: "experiment_lab", at: [500, 580], items: [["mutagen_sample", 2]], class: "mutator", note: "Samples in the lab (Mutator)." },
         { id: "pk_chamber_mutagen", room: "crystal_chamber", at: [280, 400], items: [["mutagen_sample", 1]], class: "mutator", note: "A sample left by the crystal (Mutator)." },
         { id: "pk_chamber_mutagen_2", room: "crystal_chamber", at: [320, 320], items: [["mutagen_sample", 1]], class: "mutator", note: "Another sample in the chamber (Mutator)." },
@@ -280,6 +282,7 @@ const FACILITY_MAP = {
         { id: "st_tune_bench", room: "teleport_room_1", prop: "console_2", kind: "tune_bench" },
         { id: "st_sequencer", room: "experiment_lab", prop: "chamber_1", kind: "sequencer" },
         { id: "st_charger", room: "lab_hallway", prop: "charger_hall", kind: "charger" },
+        { id: "st_mech_bay", room: "show_room", prop: "mech_bay", kind: "mech_bay" },
     ],
 
     // RELAYS: the electrical network (docs/TUTORIAL.md, phase 5). Each is a prop (a relay box) that the player repairs at (a station of kind "relay"). When one comes online the rooms it `powers` have power (the blackout lifts there), and what it `feeds` (props: sentries, the charging station) works.

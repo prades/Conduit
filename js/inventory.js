@@ -42,8 +42,18 @@ const ITEMS = {
         lore: "A grey case of clamps, a soldering stylus and a laminated card of wiring colours. The Technomancer does not need one. Everyone else does.",
         stats: ["EFFECT  LETS YOU REPAIR A RELAY", "COST  2 POWER CELLS, 5 SECONDS", "A TECHNOMANCER NEEDS 1 CELL AND NO KIT", "NOT USED UP"],
         use: () => { const s = typeof stationNearest === "function" ? stationNearest() : null; if (!s || s.kind !== "relay") return { ok: false, why: "USE IT AT A BROKEN RELAY" }; const r = stationUse(s); return r.ok ? { ok: true, msg: r.msg } : { ok: false, why: r.why }; } },
+    mech_leg: { id: "mech_leg", name: "MECH LEG", cat: "part", type: "component", stack: 4, col: "#31e8ff", icon: "leg", classes: ["technomancer"],
+        desc: "One articulated leg for a spider mech. You need four, and the core.",
+        lore: "Titanium and braided cable, jointed twice, still smelling of machine oil. Somebody was building something with long legs.",
+        stats: ["NEEDED  4 LEGS AND A CORE", "BUILT AT  THE MECH BAY, SHOW ROOM", "USED UP BY THE BUILD"],
+        use: () => ({ ok: false, why: "BUILD IT AT THE MECH BAY IN THE SHOW ROOM" }) },
+    mech_core: { id: "mech_core", name: "MECH CORE", cat: "part", type: "component", stack: 1, col: "#31e8ff", icon: "core", classes: ["technomancer"],
+        desc: "The brain and reactor of a spider mech. It goes in the middle of four legs.",
+        lore: "A hexagonal housing humming faintly through its casing. A label reads: DO NOT DROP. Then, in marker: PLEASE.",
+        stats: ["NEEDED  4 LEGS AND A CORE", "BUILT AT  THE MECH BAY, SHOW ROOM", "USED UP BY THE BUILD"],
+        use: () => ({ ok: false, why: "BUILD IT AT THE MECH BAY IN THE SHOW ROOM" }) },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit"];
+const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core"];
 
 // ── the pack ──
 let playerInv = {};
@@ -119,6 +129,14 @@ const INV_ICONS = {
         c.fillStyle = "#2b2f3a"; c.strokeStyle = col; c.lineWidth = Math.max(2, s * 0.05); c.beginPath(); c.rect(x - s * 0.36, y - s * 0.12, s * 0.72, s * 0.44); c.fill(); c.stroke();
         c.beginPath(); c.moveTo(x - s * 0.14, y - s * 0.12); c.lineTo(x - s * 0.14, y - s * 0.26); c.lineTo(x + s * 0.14, y - s * 0.26); c.lineTo(x + s * 0.14, y - s * 0.12); c.stroke();
         c.fillStyle = col; c.beginPath(); c.moveTo(x + s * 0.04, y - s * 0.02); c.lineTo(x - s * 0.1, y + s * 0.12); c.lineTo(x, y + s * 0.12); c.lineTo(x - s * 0.04, y + s * 0.26); c.lineTo(x + s * 0.12, y + s * 0.08); c.lineTo(x + s * 0.02, y + s * 0.08); c.closePath(); c.fill();
+    },
+    leg: (c, x, y, s, col) => {
+        c.strokeStyle = "#0b1a20"; c.lineCap = "round"; c.lineJoin = "round"; c.lineWidth = Math.max(5, s * 0.16); c.beginPath(); c.moveTo(x - s * 0.3, y + s * 0.3); c.lineTo(x - s * 0.05, y - s * 0.22); c.lineTo(x + s * 0.3, y - s * 0.02); c.stroke();
+        c.strokeStyle = col; c.lineWidth = Math.max(2.5, s * 0.08); c.stroke(); c.fillStyle = "#e8f6ff"; c.beginPath(); c.arc(x - s * 0.05, y - s * 0.22, s * 0.07, 0, 6.2832); c.fill();
+    },
+    core: (c, x, y, s, col) => {
+        c.fillStyle = "#12323a"; c.strokeStyle = col; c.lineWidth = Math.max(2, s * 0.05); c.beginPath(); for (let i = 0; i < 6; i++) { const a = i * 1.0472 + 0.5236; c.lineTo(x + Math.cos(a) * s * 0.34, y + Math.sin(a) * s * 0.34); } c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = col; c.beginPath(); c.arc(x, y, s * 0.13, 0, 6.2832); c.fill(); c.globalAlpha = 0.5; c.beginPath(); c.arc(x, y, s * 0.2, 0, 6.2832); c.stroke(); c.globalAlpha = 1;
     },
 };
 function invDrawIcon(id, x, y, s, t) { const d = itemDef(id); if (!d || typeof ctx === "undefined") return; ctx.save(); (INV_ICONS[d.icon] || INV_ICONS.ammo)(ctx, x, y, s, d.col, t || 0); ctx.restore(); }

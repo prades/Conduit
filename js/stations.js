@@ -13,14 +13,17 @@
 //   STATION_KINDS[kind] = { name, verb, classes, perk, once, cost, cooldown, use }
 
 const STATION_KINDS = {
-    weapon_locker: { name: "WEAPON LOCKER", verb: "REQUISITION THE SERVICE RIFLE", classes: ["gunslinger"], perk: "rifle", once: true,
-        use: () => { invAdd("ammo_pack", 2); return { ok: true, msg: "SERVICE RIFLE — SHOTS HIT 60% HARDER, 25% FASTER" }; } },
+    weapon_locker: { name: "WEAPON LOCKER", verb: "TAKE THE MACHINE GUN", classes: ["gunslinger"], perk: "machinegun", once: true,
+        use: () => { invAdd("ammo_pack", 4); return { ok: true, msg: "MACHINE GUN \u2014 IN YOUR TENTACLES: FOUR TIMES THE FIRE" }; } },
     cctv: { name: "SECURITY CONSOLE", verb: "RUN A CCTV SWEEP", classes: ["gunslinger"], perk: "cctv", cooldown: 3600,
         use: () => { _fp.cctvUntil = frame + 1500; return { ok: true, msg: "CCTV SWEEP — ENEMIES MARKED FOR 25 SECONDS" }; } },
     tune_bench: { name: "TUNING CONSOLE", verb: "TUNE YOUR MONITOR LAMP", classes: ["technomancer"], perk: "tuned", once: true,
         use: () => ({ ok: true, msg: "LAMP TUNED — 25% FURTHER, OVERCHARGES LAST 50% LONGER" }) },
     sequencer: { name: "SEQUENCER", verb: "SEQUENCE A MUTAGEN SAMPLE", classes: ["mutator"], perk: "sequenced", once: true, cost: [["mutagen_sample", 1]],
-        use: () => ({ ok: true, msg: "SAMPLES SEQUENCED — A SAMPLE NOW RAISES A FOLLOWER TWO LEVELS" }) },
+        use: () => ({ ok: true, msg: "SAMPLES SEQUENCED \u2014 A SAMPLE NOW RAISES A FOLLOWER ONE LEVEL MORE" }) },
+    // the mech bay (the show room): the Technomancer builds the spider mech here from four legs and a core. A BUILD takes seven seconds at the pad (a progress bar; walk away and it stops, nothing is spent), and the mech is theirs for good.
+    mech_bay: { name: "MECH BAY", verb: "BUILD THE SPIDER MECH", classes: ["technomancer"], perk: "mech", once: true, cost: [["mech_leg", 4], ["mech_core", 1]], build: 420,
+        use: () => ({ ok: true, msg: "THE SPIDER MECH IS BUILT" }) },
     relay: { name: "POWER RELAY", classes: null, dynamic: true },
     charger: { name: "CHARGING STATION", classes: null, cooldown: 5400, powered: true,
         use: () => { const was = playerAmmo; playerAmmo = PLAYER_AMMO_MAX; let cell = 0; if (playerClassKey === "technomancer") cell = invAdd("power_cell", 1); _fp.chargerReady = frame + 5400; return { ok: true, msg: "CHARGED \u2014 " + (PLAYER_AMMO_MAX - was) + " ROUNDS" + (cell ? ", +1 POWER CELL" : "") }; } },
@@ -50,6 +53,7 @@ function stationCan(s) {
     if (k.powered && _fp.chargerReady > now) return { ok: false, why: "CHARGING \u2014 " + Math.ceil((_fp.chargerReady - now) / 60) + " S" };
     if (!classAllows(k.classes)) return { ok: false, why: "ONLY A " + k.classes.map(className).join(" / ") + " CAN USE THIS" };
     if (k.once && classHas(k.perk)) return { ok: false, why: "ALREADY DONE", done: true };
+    if (k.build && _fp.channel && _fp.channel.station === s.id) return { ok: false, why: "BUILDING \u2014 " + Math.min(99, Math.floor((frame - _fp.channel.t0) / _fp.channel.frames * 100)) + "%" };
     if (k.cooldown && _fp.cctvReadyAt > now && s.kind === "cctv") return { ok: false, why: "CAMERAS RESETTING — " + Math.ceil((_fp.cctvReadyAt - now) / 60) + " S" };
     for (const [id, n] of (k.cost || [])) if (!invHas(id, n)) return { ok: false, why: "NEEDS " + n + " " + itemDef(id).name };
     return { ok: true };
@@ -59,6 +63,7 @@ function stationUse(s) {
     const k = STATION_KINDS[s.kind], can = stationCan(s); if (!can.ok) { invSay(can.why, false); return can; }
     if (stationDist(s) > STATION_RANGE + 0.6) { invSay("TOO FAR AWAY", false); return { ok: false, why: "TOO FAR AWAY" }; }
     if (s.kind === "relay") return relayStart(s);
+    if (k.build) return buildStart(s);
     for (const [id, n] of (k.cost || [])) invRemove(id, n);
     const r = k.use(s), first = !classHas(k.perk), got = classGrant(k.perk);
     if (k.cooldown) _fp.cctvReadyAt = frame + k.cooldown;
@@ -192,8 +197,8 @@ function facilityRelayTick() {
     const c = _fp.channel;
     if (c) {
         const near = Math.hypot(Math.max(c.bb[0] - player.visualX, 0, player.visualX - c.bb[2]), Math.max(c.bb[1] - player.visualY, 0, player.visualY - c.bb[3]));
-        if (near > STATION_RANGE + 0.6) { _fp.channel = null; invSay("REPAIR INTERRUPTED", false); }
-        else if (frame - c.t0 >= c.frames) relayComplete(c);
+        if (near > STATION_RANGE + 0.6) { _fp.channel = null; invSay(c.station ? "BUILD INTERRUPTED" : "REPAIR INTERRUPTED", false); }
+        else if (frame - c.t0 >= c.frames) { if (c.station) buildComplete(c); else relayComplete(c); }
     } else if (playerClassKey && CLASS_RULES.relay.auto.includes(playerClassKey) && (!player.fpPath || !player.fpPath.length)) {
         const s = _fp.stationNear; if (s && s.kind === "relay" && relayCan(s).ok) relayStart(s);
     }
@@ -217,7 +222,7 @@ function facilityDrawRelays() {
     if (!_fp || !_fp.relays) return;
     const c = _fp.channel, W = canvas.width, H = canvas.height;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (c) { const p = _stScreen({ x: c.x, y: c.y }), k = Math.min(1, (frame - c.t0) / c.frames), w = 90, x = p.x - w / 2, y = p.y - 66; ctx.fillStyle = "rgba(5,7,15,0.85)"; ctx.fillRect(x - 3, y - 3, w + 6, 14); ctx.fillStyle = c.mode === "skill" ? "#31e8ff" : "#ffb347"; ctx.fillRect(x, y, w * k, 8); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.strokeRect(x - 3, y - 3, w + 6, 14); }
+    if (c) { const p = _stScreen({ x: c.x, y: c.y }), k = Math.min(1, (frame - c.t0) / c.frames), w = 90, x = p.x - w / 2, y = p.y - 66; ctx.fillStyle = "rgba(5,7,15,0.85)"; ctx.fillRect(x - 3, y - 3, w + 6, 14); ctx.fillStyle = c.station ? "#ffe733" : c.mode === "skill" ? "#31e8ff" : "#ffb347"; ctx.fillRect(x, y, w * k, 8); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.strokeRect(x - 3, y - 3, w + 6, 14); }
     const g = _fp.surge;
     if (g) {
         const t = (frame - g.t0) / 90;
@@ -231,4 +236,21 @@ function facilityDrawRelays() {
         }
     }
     ctx.restore();
+}
+
+// THE BUILD (the mech bay): the cost is checked when it starts and paid when it is done
+function buildStart(s) {
+    const can = stationCan(s); if (!can.ok) { invSay(can.why, false); return can; }
+    const k = STATION_KINDS[s.kind]; if (_fp.channel) return { ok: false, why: "BUSY" };
+    _fp.channel = { station: s.id, kind: s.kind, t0: frame, frames: k.build, cost: k.cost, x: s.x, y: s.y, bb: s.bb };
+    invSay("BUILDING THE SPIDER MECH\u2026 STAY AT THE PAD", true);
+    return { ok: true, msg: "BUILD STARTED", channel: true };
+}
+function buildComplete(c) {
+    _fp.channel = null; const s = _fp.stations.find(q => q.id === c.station), k = STATION_KINDS[c.kind];
+    for (const [id, n] of c.cost) if (!invHas(id, n)) { invSay("YOU NO LONGER HAVE THE PARTS", false); return false; }
+    for (const [id, n] of c.cost) invRemove(id, n);
+    const r = k.use(s), got = classGrant(k.perk); _fp.surge = { x: c.x, y: c.y, t0: frame, rooms: [] };
+    invSay(r.msg + (got ? "   \u25b2 RANK " + classRank() : ""), true);
+    return true;
 }

@@ -169,7 +169,8 @@ function facilityPlayerStep() {
     const p = player.fpPath;
     if (p && p.length) {
         const w = p[0], d = Math.hypot(w[0] - player.x, w[1] - player.y);
-        if (d <= FP_PLAYER_SPEED) { player.x = w[0]; player.y = w[1]; p.shift(); } else { player.x += (w[0] - player.x) / d * FP_PLAYER_SPEED; player.y += (w[1] - player.y) / d * FP_PLAYER_SPEED; }
+        const sp = FP_PLAYER_SPEED * (typeof classStat === "function" ? classStat("playerSpeed", 1) : 1);   // (the spider mech is faster: js/classes.js)
+        if (d <= sp) { player.x = w[0]; player.y = w[1]; p.shift(); } else { player.x += (w[0] - player.x) / d * sp; player.y += (w[1] - player.y) / d * sp; }
     }
     facilityConstrain(player, px, py);
     if (!p || !p.length) { player.targetX = player.x; player.targetY = player.y; }

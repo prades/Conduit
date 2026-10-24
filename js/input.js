@@ -150,7 +150,7 @@ function firePlayerShot(foe) {
         typeof classStat === "function" ? classStat("shotDamage", 10) : 10, 5,
         null
     );
-    playerAmmo = Math.max(0, playerAmmo - 1); playerShotsFired++;
+    playerAmmo = Math.max(0, playerAmmo - 1); playerShotsFired++; player.gunShotAt = typeof frame !== "undefined" ? frame : 0;   // (the gunslinger's machine gun fires: js/playergear.js)
     saveAmmo();
     player.attackCooldown = typeof classStat === "function" ? Math.round(classStat("shotCooldown", 45)) : 45;
     return true;

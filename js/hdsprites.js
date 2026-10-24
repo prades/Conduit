@@ -10,10 +10,14 @@
 // The sheets are CROPPED to the part of a cell the figure ever covers (img/hd: tools in design/evolutions/bake.js baked 144 px cells, mostly empty): a cell is HD_BOX[family].cw x .ch, cut from
 // the original cell at (ox, oy). Decoded they were ten times the memory; this is a fifth to a quarter of it.
 const HD_CELL = 144, HD_ANCHOR = [72, 114.18], HD_PX_PER_UNIT = 144 / 3.4;
-const HD_BOX = { player: { ox: 26, oy: 1, cw: 92, ch: 105 }, egg: { ox: 41, oy: 43, cw: 62, ch: 85 } };
+const HD_BOX = { player: { ox: 26, oy: 1, cw: 92, ch: 105 }, egg: { ox: 41, oy: 43, cw: 62, ch: 85 },
+    // the player with its class gear (design/evolutions/forms30.js): baked in 186 px cells over 4.4 units (the same pixels per unit), so each has its own anchor (ax, ay) in the original cell
+    player_gun: { ox: 17, oy: 23, cw: 152, ch: 127, ax: 93, ay: 135.1 }, player_gun_aim: { ox: 4, oy: 23, cw: 178, ch: 103, ax: 93, ay: 135.1 },
+    player_mech: { ox: 16, oy: 27, cw: 154, ch: 144, ax: 93, ay: 135.1 }, player_coat: { ox: 36, oy: 20, cw: 114, ch: 115, ax: 93, ay: 135.1 } };
 // Draw one frame (col, row) of a sheet with the figure's anchor at (ax, ay) on screen, at scale s.
 function _hdBlit(g, img, box, col, row, ax, ay, s) {
-    g.drawImage(img, col * box.cw, row * box.ch, box.cw, box.ch, ax - (HD_ANCHOR[0] - box.ox) * s, ay - (HD_ANCHOR[1] - box.oy) * s, box.cw * s, box.ch * s);
+    const an = box.ax === undefined ? HD_ANCHOR : [box.ax, box.ay];
+    g.drawImage(img, col * box.cw, row * box.ch, box.cw, box.ch, ax - (an[0] - box.ox) * s, ay - (an[1] - box.oy) * s, box.cw * s, box.ch * s);
 }
 const HD_PLAYER_SCALE = 0.82, HD_EGG_SCALE = 1.0;
 const HD_ELEMENTS = ["fire", "electric", "ice", "flux", "core", "toxic"];
@@ -59,12 +63,16 @@ function hdVentOffset(row, s) {
 }
 // Draws the player; false if the sheet is not there yet (the caller draws the flat one).
 function drawHdPlayer(p) {
-    const img = _hdImg(player.angryTimer > 0 ? "player_angry" : "player"); if (!img) return false;
-    const st = hdPlayerState(), s = HD_PLAYER_SCALE;
+    const st = hdPlayerState(), s = HD_PLAYER_SCALE, gear = typeof playerGearSheet === "function" ? playerGearSheet(st.walking) : null;
+    let key = gear ? gear.key : null, img = key ? _hdImg(key) : null;   // the class gear's own sheet (js/playergear.js), until it has arrived the plain one
+    if (!img) { key = player.angryTimer > 0 ? "player_angry" : "player"; img = _hdImg(key); }
+    if (!img) return false;
+    if (gear) st.row = playerGearFacing(st.row);   // (the gunslinger turns the gun on the enemy it has locked)
+    const walking = img && key === (gear && gear.key) ? gear.action : st.walking;
     ctx.save();
     // the shadow on the floor, well under it: that gap is what makes it float
-    ctx.fillStyle = "rgba(0,0,0,0.26)"; ctx.beginPath(); ctx.ellipse(p.x, p.y + 1, 26 * s, 10 * s, 0, 0, Math.PI * 2); ctx.fill();
-    _hdBlit(ctx, img, HD_BOX.player, hdCol(st.walking, st.f0), st.row, p.x, p.y + 2, s);
+    ctx.fillStyle = "rgba(0,0,0,0.26)"; ctx.beginPath(); ctx.ellipse(p.x, p.y + 1, 26 * s * (key === "player_mech" ? 1.3 : 1), 10 * s * (key === "player_mech" ? 1.3 : 1), 0, 0, Math.PI * 2); ctx.fill();
+    _hdBlit(ctx, img, HD_BOX[key] || HD_BOX.player, hdCol(walking, st.f0), st.row, p.x, p.y + 2, s);
     ctx.restore();
     if (frame % cfg.exhaustFrequency === 0) { const vo = hdVentOffset(st.row, s); smoke.push({ x: p.x + vo.x, y: p.y + vo.y, vx: 0.2 + Math.random() * 0.4, vy: -0.15 - Math.random() * 0.2, life: 1, size: 4 + Math.random() * 6 }); }
     return true;

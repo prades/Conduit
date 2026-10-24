@@ -26,10 +26,12 @@ const CLASS_RULES = { carryOthers: true, useOthers: false, relay: { skill: "repa
 // PERKS: what a class earns at its stations (js/stations.js). The game asks classStat(name, base) for a number, as docs/PLAYER-CLASSES.md plans: each owned perk may multiply (mul) or add to it.
 //   cls        the class that can earn it    name / desc   what the pack shows     stat   { statName: { mul | add } }
 const CLASS_PERKS = {
-    rifle:     { id: "rifle", cls: "gunslinger", name: "SERVICE RIFLE", desc: "Your shots hit 60% harder and come 25% faster.", stat: { shotDamage: { mul: 1.6 }, shotCooldown: { mul: 0.75 } } },
+    machinegun: { id: "machinegun", cls: "gunslinger", name: "MACHINE GUN", desc: "A big machine gun in your tentacles: it fires four times as fast (each round hits a little softer), and you stand tall on them to hold it.", stat: { shotDamage: { mul: 0.8 }, shotCooldown: { mul: 0.25 } } },
     cctv:      { id: "cctv", cls: "gunslinger", name: "CCTV SWEEPS", desc: "The Security Room's cameras mark every enemy in the facility for 25 seconds.", stat: {} },
+    mech:      { id: "mech", cls: "technomancer", name: "SPIDER MECH", desc: "A four-legged spider mech you built in the show room: you ride it, 40% faster, and its headlamps light 30% further.", stat: { playerSpeed: { mul: 1.4 }, lampReach: { mul: 1.3 } } },
     tuned:     { id: "tuned", cls: "technomancer", name: "TUNED LAMP", desc: "Your monitor lamp reaches 25% further and an overcharge lasts 50% longer.", stat: { lampReach: { mul: 1.25 }, boostFrames: { mul: 1.5 } } },
-    sequenced: { id: "sequenced", cls: "mutator", name: "SEQUENCED SAMPLES", desc: "A mutagen sample raises a follower two levels, not one.", stat: { mutagenLevels: { add: 1 } } },
+    labcoat:   { id: "labcoat", cls: "mutator", name: "LAB COAT AND GOGGLES", desc: "You put them on in the experiment lab and keep them for good: a mutagen sample raises a follower two levels, not one.", stat: { mutagenLevels: { add: 1 } } },
+    sequenced: { id: "sequenced", cls: "mutator", name: "SEQUENCED SAMPLES", desc: "A sequenced sample raises a follower one level more again.", stat: { mutagenLevels: { add: 1 } } },
 };
 let classPerks = new Set();
 function classStat(name, base) {
@@ -38,6 +40,8 @@ function classStat(name, base) {
     return v;
 }
 function classHas(perk) { return classPerks.has(perk); }
+// the gear each class is known by (drawn on the player: js/playergear.js), and the perk that is it
+const CLASS_SIGNATURE = { gunslinger: "machinegun", technomancer: "mech", mutator: "labcoat" };
 // a class's rank: 1 to start, one more for each of its perks earned (the tutorial has one perk to earn at a time per class: docs/TUTORIAL.md)
 function classRank() { let n = 1; for (const id of classPerks) if (CLASS_PERKS[id] && CLASS_PERKS[id].cls === playerClassKey) n++; return n; }
 function classPerkList() { return Array.from(classPerks).map(id => CLASS_PERKS[id]).filter(p => p && p.cls === playerClassKey); }
