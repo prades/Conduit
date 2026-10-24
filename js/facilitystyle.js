@@ -330,15 +330,19 @@ function _fpLightUpdate(F) {
     if (!_fp.openings) { _fp.openings = F.openings.map(o => ({ id: o.id, x: (o.a[0] + o.b[0]) / 2, y: (o.a[1] + o.b[1]) / 2, rooms: (F.connections.find(c => c.opening === o.id) || { rooms: o.rooms || [] }).rooms.map(_fpLightKey), ramp: F.connections.some(c => c.opening === o.id && c.ramp) })); _fp.doorItems = new Map(_fp.items.filter(i => i.fp === "door").map(i => [i.id, i])); }
     for (const o of _fp.openings) {
         const di = _fp.doorItems.get(o.id), want = o.ramp ? 1 : (di && (di.open || 0) >= 0.5 ? 1 : 0), cur = _fp.pool.get(o.id) || 0, v = Math.abs(want - cur) < 0.01 ? want : cur + (want - cur) * FP_LIGHT_EASE; _fp.pool.set(o.id, v);
-        if (v > 0.02 && o.rooms.some(k => (_fp.light.get(k) || 0) > 0.5)) pools.push({ x: o.x, y: o.y, s: v, rooms: o.rooms });   // a door only throws light when the room on one side is lit
+        // a doorway with no door (a stairway) always glows softly on both sides, near or far; a door throws light only when it is open and the room on one side is lit
+        if (v > 0.02 && (o.ramp || o.rooms.some(k => (_fp.light.get(k) || 0) > 0.5))) pools.push({ x: o.x, y: o.y, s: v, rooms: o.rooms, r: o.ramp ? 5.2 : FP_POOL_R, k: o.ramp ? 0.55 : FP_POOL });
     }
     _fp.pools = pools;
 }
 // how lit a floor tile is: its room's level, or (ground only) the pool of light from an open door near it
-function _fpTileLight(x, y, roomId) {
-    const k = _fpLightKey(roomId); let v = (_fp.light && _fp.light.get(k)) || 0; if (v > 0.98) return v;
-    const ps = _fp.pools; if (ps) for (const p of ps) { if (!p.rooms.includes(k)) continue; const d = Math.hypot(x - p.x, y - p.y); if (d < FP_POOL_R) v = Math.max(v, p.s * FP_POOL * (1 - d / FP_POOL_R)); }
+function _fpPoolAt(x, y, k) {
+    let v = 0; const ps = _fp.pools; if (ps) for (const p of ps) { if (k !== null && !p.rooms.includes(k)) continue; const d = Math.hypot(x - p.x, y - p.y); if (d < p.r) v = Math.max(v, p.s * p.k * (1 - d / p.r)); }
     return v;
+}
+function _fpTileLight(x, y, roomId) {
+    const k = _fpLightKey(roomId), v = (_fp.light && _fp.light.get(k)) || 0; if (v > 0.98) return v;
+    return Math.max(v, _fpPoolAt(x, y, k));
 }
 function _fpRoomLight(roomId) { return (_fp.light && _fp.light.get(_fpLightKey(roomId))) || 0; }
 function _fpDarkFill(pts, lv) { const a = FP_DARK * (1 - lv); if (a < 0.02) return; ctx.fillStyle = "rgba(6,11,22," + a.toFixed(3) + ")"; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill(); }
@@ -373,6 +377,10 @@ function _fpDimCtx(real, k) {
 }
 // the light level that applies to a facility item (the room that shows its face)
 function _fpItemLight(it) {
+    const lv = _fpItemRoomLight(it); if (lv > 0.98 || it.fp === "rig" || it.fp === "rigpad" || it.fp === "fill") return lv;
+    const k = _fpLightKey(it.lroom || it.room || (it.rooms && it.rooms[0])); return Math.max(lv, _fpPoolAt(it.x, it.y, k));   // (near a stairway or an open door, things share its light)
+}
+function _fpItemRoomLight(it) {
     if (it.fp === "door") return Math.max(...(it.rooms || []).map(_fpRoomLight), 0);
     if (it.fp === "wall") return _fpRoomLight(it.lroom || it.room);
     if (it.fp === "stair") return _fpRoomLight(it.room || "lab_hallway");

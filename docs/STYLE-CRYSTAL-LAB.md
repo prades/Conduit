@@ -55,3 +55,5 @@ Lighting is PER ITEM (js/facilitystyle.js), in each item's own place in the dept
 - floor tiles are darkened by their own tile level.
 
 Levels: the room the player stands in is lit completely; every other room is dark. The stair room counts as part of the hallway (no change of light on the stairs). When a door is open (a unit is near it; a stairway counts as always open) the room beyond gets a pool of light on the GROUND only, near the door (about 3.6 tiles, strongest at the door); walls and props there stay dark. The room lights up completely only when the player steps onto one of its tiles. Levels and pools ease (12% a frame). The crystal's rig and the simulation-only null context are never dimmed.
+
+A doorway with no door (the arena steps, the deck steps and the stair mouth) always glows softly on both sides (a pool about 5 tiles across, 55% at the opening), whether the player is near or far, and the steps, walls and props near it share the glow (`_fpPoolAt`, `_fpItemLight`).
