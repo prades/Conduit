@@ -12,11 +12,13 @@ const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs'), path = require('path');
 const THREE_DIR = process.argv[2], WANT = (process.argv[3] || 'all').split(',');
 const ROOT = path.join(__dirname, '..', '..'), MODELS = path.join(__dirname, 'models'), OUT = path.join(__dirname, 'out');
-const fams = fs.readdirSync(MODELS).filter(f => f.endsWith('.js')).map(f => f.slice(0, -3)).filter(f => WANT.includes('all') || WANT.includes(f));
+const files = fs.readdirSync(MODELS).filter(f => f.endsWith('.js')).sort();
+const shared = files.filter(f => f.startsWith('_'));   // _style.js and the like: shared helpers, loaded before every family, never baked themselves
+const fams = files.filter(f => !f.startsWith('_')).map(f => f.slice(0, -3)).filter(f => WANT.includes('all') || WANT.includes(f));
 const core = fs.readFileSync(path.join(__dirname, '..', 'evolutions', 'forms-core.js'), 'utf8');
 const f29 = fs.readFileSync(path.join(__dirname, '..', 'evolutions', 'forms29.js'), 'utf8');
 const f2 = fs.readFileSync(path.join(__dirname, '..', 'evolutions', 'forms2.js'), 'utf8');
-const modelSrc = fams.map(f => fs.readFileSync(path.join(MODELS, f + '.js'), 'utf8')).join('\n');
+const modelSrc = shared.concat(fams.map(f => f + '.js')).map(f => fs.readFileSync(path.join(MODELS, f), 'utf8')).join('\n');
 const PX = 60 / Math.sin(Math.PI / 4), UH = PX * Math.cos(Math.asin(0.5));
 
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>

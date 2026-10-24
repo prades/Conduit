@@ -177,8 +177,10 @@ function facilityClassItemsEnter(classId) {
 function _fpDrawPickup(it) {
     if (it.taken) return;
     const f = _fpFrame(), first = it.items[0][0], d = typeof itemDef === "function" ? itemDef(first) : null, col = d ? d.col : "#ffe9a0", bob = Math.sin(f * 0.06 + it.seed) * 3, A = FP_PAL;
+    if (!(typeof facilityCaseSprite === "function" && facilityCaseSprite(it))) {   // (the 3D case, js/propsprites.js, else the flat box)
     _fpSBox(it.x - 0.3, it.y - 0.3, it.x + 0.3, it.y + 0.3, 0, 13, A.caseLit, A.case, A.cap, 3);   // the case
     _fpSBox(it.x - 0.31, it.y - 0.31, it.x + 0.31, it.y + 0.31, 8, 11, col, _fpShade(col, 0.7), _fpShade(col, 0.88), 2);   // a coloured band round it
+    }
     if (it.arrive !== undefined && f - it.arrive < 90) { const k = (f - it.arrive) / 90, top = _fpP(it.x, it.y, 260), bot = _fpP(it.x, it.y, 0); ctx.save(); ctx.globalCompositeOperation = "lighter"; const g = ctx.createLinearGradient(0, top[1], 0, bot[1]); g.addColorStop(0, _fpRgba(col, 0)); g.addColorStop(1, _fpRgba(col, 0.7 * (1 - k))); ctx.fillStyle = g; const w = 16 * (1 - k * 0.6); ctx.fillRect(bot[0] - w, top[1], w * 2, bot[1] - top[1]); ctx.restore(); }   // (the column of light it arrives in)
     const c = _fpP(it.x, it.y, 40 + bob); if (typeof invDrawIcon === "function") invDrawIcon(first, c[0], c[1], 30, f);
     const g = _fpP(it.x, it.y, 18); _fpGlow(g[0], g[1], 34 + Math.sin(f * 0.08 + it.seed) * 4, col, 0.34);

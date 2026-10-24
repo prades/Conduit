@@ -453,7 +453,6 @@ function _fpFloorUnder(it) {
 function _fpDecorProp(it) {
     const k = it.kind, f = _fpFrame(), seed = it.seed || 0, x = it.x, y = it.y;
     if (FP_SMALL_PROPS.has(k)) _fpFloorUnder(it);   // the floor the piece stands on (its tile is solid, so the tile itself is not drawn)
-    if (typeof facilityPropSpriteDraw === "function" && facilityPropSpriteDraw(it)) return true;   // a plant or a sentry in 3D (js/propsprites.js)
     if (facilityStyleRoom(it.room) && _fpStyleProp(it)) return true;   // (the crystal laboratory style: js/facilitystyle.js)
     if (k === "plant") {   // a potted plant: a pot, then fronds (dead and brown if the seed says)
         const dead = seed % 3 === 0; _fpBox(x - 0.28, y - 0.28, x + 0.28, y + 0.28, 0, 16, "#6a3a22", "#8a4a2a", "#6e3a20");

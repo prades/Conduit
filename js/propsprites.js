@@ -4,6 +4,7 @@
 // The sentry turrets, the potted plants, the arena's missile truck and liquid tanks, the lab's tank and the catwalk bridges are modelled in 3D (design/props/models/*.js) and baked to sprite sheets
 // (design/props/bake_props.js -> img/props/<family>.png, with where everything is in js/propatlas.js) in the game's own iso projection and scale: one world unit of the model is one tile, so a sprite is simply
 // placed with the model's origin (the middle of its footprint, on the floor) at the prop's centre. This file draws them; a prop whose sheet has not arrived is drawn the old, flat way (nothing is ever missing).
+//   (every other kind of prop is a sprite too: see PS_FAMILY for the sheets and the variant names.)
 //   plant        one tile. Healthy (p0..p3, by the prop's seed) or dead and brown (d0, d1: the old rule, a third of them).
 //   sentry       one tile. 16 variants a00..a15 for where the head aims (the old `aim`, rounded to 22.5 degrees); the status lamp (cyan when fed, a blinking red when not) and the muzzle flash are painted on its marks.
 //   truck, tank  big. The prop is a set of one-tile CELLS (the items the game sorts by depth); each cell draws the whole sprite clipped to its own tile's column, so a unit walking round them goes in front of the
@@ -46,9 +47,58 @@ function _psCentre(id) {
     return _fp._psc.get(id) || null;
 }
 
-// the small props: called by the furniture drawing (js/facilitydecor.js) once the floor under it is down; true when it drew the prop
-function facilityPropSpriteDraw(it) {
-    const k = it.kind, f = typeof frame !== "undefined" ? frame : 0, seed = it.seed || 0;
+// ── which sheet a kind of prop is on, and which variant of it a given prop is ──
+// The sheets (design/props/models/<family>.js): office (the desks, consoles, server racks), lounge (the sofas, tables, vending machines...), lab (benches, the fume hood, test chambers, the generator...), tech (teleporters,
+// relays, the charger, the mech bay, lockers, cabinets, display cases, the telescope), cargo (crates, barrels, floodlights, barriers, the supply case), plant, sentry, truck, tank, bridge.
+// A variant is named  kind[.WxH|.rNN][.on|.off][.sN]  : the size of the prop in tiles (WxH along x and y; rNN a round prop's radius in hundredths), its state (a relay or the charger: online or not), and a look (s0, s1...:
+// a prop picks one by its id, so a row of crates is not a row of the same crate). The most specific variant that exists is used: a kind with one model for every size is just `kind`.
+const PS_FAMILY = {
+    reception_desk: "office", computer_desk: "office", desk: "office", console: "office", server_rack: "office",
+    couch: "lounge", table: "lounge", beanbag: "lounge", pingpong: "lounge", vending: "lounge", cooler: "lounge", bin: "lounge", chair: "lounge",
+    lab_bench: "lab", fume_hood: "lab", test_chamber: "lab", cart: "lab", generator: "lab", toolbox: "lab", speaker: "lab", spool: "lab",
+    teleporter: "tech", charger: "tech", relay: "tech", mech_bay: "tech", locker: "tech", cabinet: "tech", display_case: "tech", telescope: "tech",
+    crate: "cargo", crate_stack: "cargo", barrel: "cargo", floodlight: "cargo", barrier: "cargo",
+    plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
+};
+const _psIndex = {};
+function _psNames(fam) {   // the variants of a sheet, parsed: { kind: [{ name, dims, state, style }] }
+    if (_psIndex[fam]) return _psIndex[fam];
+    const out = {}, A = typeof PROP_ATLAS !== "undefined" ? PROP_ATLAS[fam] : null;
+    if (A) for (const name of Object.keys(A.cells)) {
+        const t = name.split("."), e = { name, dims: null, state: null, style: null }; for (const x of t.slice(1)) { if (/^(\d+x\d+|r\d+)$/.test(x)) e.dims = x; else if (x === "on" || x === "off") e.state = x; else if (/^s\d+$/.test(x)) e.style = +x.slice(1); }
+        (out[t[0]] = out[t[0]] || []).push(e);
+    }
+    return (_psIndex[fam] = out);
+}
+function _psResolve(fam, kind, dims, state, seed) {
+    let c = _psNames(fam)[kind]; if (!c || !c.length) return null;
+    const pick = (list, key, want) => { const exact = list.filter(e => e[key] === want); return exact.length ? exact : list.filter(e => e[key] === null).length ? list.filter(e => e[key] === null) : list; };
+    c = pick(c, "dims", dims); c = pick(c, "state", state);
+    const styled = c.filter(e => e.style !== null).sort((a, b) => a.style - b.style); return styled.length ? styled[seed % styled.length].name : c[0].name;
+}
+function _psHash(str) { let h = 7; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
+function _psSolid(id) {
+    if (!_fp._pss) { _fp._pss = new Map(); for (const s of _fp.F.solids) { const w = s.shape === "circle" ? 0 : Math.round(s.bb[2] - s.bb[0]), l = s.shape === "circle" ? 0 : Math.round(s.bb[3] - s.bb[1]); _fp._pss.set(s.id, { c: s.shape === "circle" ? [s.at[0], s.at[1]] : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], dims: s.shape === "circle" ? "r" + Math.round(s.r * 100) : w + "x" + l, multi: s.shape === "circle" || w > 1 || l > 1 }); } }
+    return _fp._pss.get(id) || null;
+}
+
+// a soft contact shadow on the floor under every cell of a prop (a pre-rendered stamp: the sprites carry no ground shadow), drawn between the floor and the sprite
+let _psShadowC = null;
+function _psShadowStamp() {
+    if (_psShadowC !== null) return _psShadowC || null;
+    try { const c = document.createElement("canvas"); c.width = 128; c.height = 64; const g = c.getContext("2d"), gr = g.createRadialGradient(64, 32, 4, 64, 32, 64); gr.addColorStop(0, "rgba(4,8,18,0.5)"); gr.addColorStop(0.55, "rgba(4,8,18,0.28)"); gr.addColorStop(1, "rgba(4,8,18,0)");
+        g.save(); g.translate(0, 32); g.scale(1, 0.5); g.translate(0, -32); g.fillStyle = gr; g.fillRect(0, -32, 128, 128); g.restore(); _psShadowC = c; } catch (e) { _psShadowC = false; }
+    return _psShadowC || null;
+}
+function _psShadow(it) { const st = _psShadowStamp(); if (!st) return; const p = _fpP(it.x, it.y, 0), a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * 0.9; ctx.drawImage(st, p[0] - 66, p[1] - 33, 132, 66); ctx.globalAlpha = a0; }
+
+// draw one cell of a prop from its sprite (the start of the prop drawing, js/facilityplay.js _fpDrawProp): true when it drew it (the floor under it first: a solid tile is not drawn by itself), false to let the flat drawing do it
+function facilitySpriteDraw(it) {
+    const k = it.kind, fam = PS_FAMILY[k]; if (!fam) return false;
+    if (k === "bridge") return !!_psBlit("bridge", it.variant, it.x, it.y);
+    if (!_psImg(fam)) return false;
+    const f = typeof frame !== "undefined" ? frame : 0, S = _psSolid(it.id), seed = _psHash(String(it.id));
+    if (!it.spriteOnly) { _fpFloorUnder(it); _psShadow(it); }   // (a rim cell is ordinary floor, drawn already)
     if (k === "plant") { const dead = seed % 3 === 0; return !!_psBlit("plant", dead ? "d" + (seed % 2) : "p" + (seed % 4), it.x, it.y); }
     if (k === "sentry") {
         const on = typeof facilityFeedOn === "function" && facilityFeedOn(it.id), step = ((Math.round((it.aim || 0) / (Math.PI * 2 / PS.aimSteps)) % PS.aimSteps) + PS.aimSteps) % PS.aimSteps;
@@ -58,17 +108,15 @@ function facilityPropSpriteDraw(it) {
         if (mz && it.flash > 0 && typeof _fpGlow === "function") _fpGlow(r[0] + mz[0], r[1] + mz[1], 28, "#7ff2ff", 0.8);
         return true;
     }
-    return false;
+    if (!S) return false;
+    if (k === "semi_truck") return !!_psBlit("truck", "truck", S.c[0], S.c[1], [it.x, it.y]);
+    if (k === "liquid_reserve" || k === "tank") return !!_psBlit("tank", k === "tank" ? "lab" : "reserve", S.c[0], S.c[1], [it.x, it.y]);
+    const state = k === "relay" ? (typeof relayOnline === "function" && relayOnline(it.id) ? "on" : "off") : k === "charger" ? (typeof facilityFeedOn === "function" && facilityFeedOn(it.id) ? "on" : "off") : null;
+    const name = _psResolve(fam, k, S.dims, state, seed); if (!name) return false;
+    return !!_psBlit(fam, name, S.c[0], S.c[1], S.multi ? [it.x, it.y] : null);
 }
-// the big props and the bridges (the start of the prop drawing, js/facilityplay.js _fpDrawProp): true when it drew the cell
-function facilityBigSpriteDraw(it) {
-    const k = it.kind;
-    if ((k === "semi_truck" || k === "liquid_reserve" || k === "tank") && !it.spriteOnly && _psImg(k === "semi_truck" ? "truck" : "tank")) _fpFloorUnder(it);   // the floor under each of its solid cells (a solid tile is not drawn; a rim cell's floor is the ordinary floor), then the sprite over it
-    if (k === "semi_truck") { const c = _psCentre(it.id); return !!(c && _psBlit("truck", "truck", c[0], c[1], [it.x, it.y])); }
-    if (k === "liquid_reserve" || k === "tank") { const c = _psCentre(it.id); return !!(c && _psBlit("tank", k === "tank" ? "lab" : "reserve", c[0], c[1], [it.x, it.y])); }
-    if (k === "bridge") return !!_psBlit("bridge", it.variant, it.x, it.y);
-    return false;
-}
+// the supply case on the floor (js/facilitytutorial.js _fpDrawPickup): its sprite, if it has arrived; false for the flat box
+function facilityCaseSprite(it) { const fam = "cargo"; if (!_psImg(fam)) return false; const name = _psResolve(fam, "case", null, null, _psHash(String(it.id))); return !!(name && _psBlit(fam, name, it.x, it.y)); }
 // is this one of the sprite-only cells (a tank's rim) that is nothing without its sprite?
 function facilitySpriteOnly(it) { return !!it.spriteOnly; }
 

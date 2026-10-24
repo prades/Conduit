@@ -432,7 +432,7 @@ function _fpFaceX(it, u0, u1, z0, z1, fill, stroke) { const x = it.x + 0.5, y0 =
 const FP_AMBER = "#ffb347";
 function _fpDrawProp(it) {
     const kind = it.kind, seed = it.seed || 0, f = typeof frame !== "undefined" ? frame : 0;
-    if (typeof facilityBigSpriteDraw === "function") { if (facilityBigSpriteDraw(it)) return; if (it.spriteOnly || kind === "bridge") return; }   // the 3D truck, tanks and bridges (js/propsprites.js); a rim cell or a bridge piece is nothing without its sprite
+    if (typeof facilitySpriteDraw === "function") { if (facilitySpriteDraw(it)) return; if (it.spriteOnly || kind === "bridge") return; }   // every prop in 3D (js/propsprites.js); a rim cell or a bridge piece is nothing without its sprite
     if (_fpDecorProp(it)) return;   // the dressing's furniture (js/facilitydecor.js)
     if (kind === "computer_desk") {
         _fpPrism(it, 30, "#8f7f5e", "#5a4a32", "#46391f");
