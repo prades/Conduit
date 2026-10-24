@@ -144,14 +144,14 @@ function _coatBand(parent, o) {
     geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); } };
 }
 function _mutator() {
-  const p = _playerHD(false, { skipCables: [0, 1, 2, 3] }), g = p.g, b = p.b, cy = 1.75, W = 1.5, H = 1.22, D = 1.3;
+  const p = _playerHD(false, { hang: 1.1, cableScale: 1.6 }), g = p.g, b = p.b, cy = 1.75, W = 1.5, H = 1.22, D = 1.3;
   const a = W / 2 + 0.1, bb = D / 2 + 0.1;
-  const skirt = _coatBand(b, { phi0: 0.78, phi1: 2 * PI - 0.78, top: cy + 0.2, hem: 0.8, flare: 0.18, folds: 11, ripple: 0.05, a, b: bb });
+  const skirt = _coatBand(b, { phi0: 0.78, phi1: 2 * PI - 0.78, top: cy + 0.2, hem: 0.92, flare: 0.18, folds: 11, ripple: 0.05, a, b: bb });
   const collar = _coatBand(b, { phi0: 1.35, phi1: 2 * PI - 1.35, top: cy + H / 2 + 0.1, hem: cy + 0.05, flare: 0.05, folds: 5, ripple: 0.02, a: a - 0.0, b: bb - 0.02, mat: _gClothDk });
   // the front edges of the coat: a lapel on each side, turned back from the cube's front corners
   for (const s of [-1, 1]) { const lap = plate([[0, 0], [0.34, 0.1], [0.3, -0.62], [0.06, -0.78], [0, -0.5]], 0.025, 0.004, _gCloth); lap.position.set(s * (W / 2 + 0.04), cy + 0.14, D / 2 - 0.02); lap.rotation.y = s * 0.7 + (s < 0 ? PI : 0); lap.scale.x = 1; b.add(lap); }
   // pockets, stains and the vial of mutagen
-  const at = (phi, v, off) => { const r = (skirt.radius(phi, a, bb) * (1 + 0.18 * Math.pow(v, 1.4)) + (off || 0)), y = cy + 0.2 - (cy + 0.2 - 0.8) * v; return V(r * Math.sin(phi), y, r * Math.cos(phi)); };
+  const at = (phi, v, off) => { const r = (skirt.radius(phi, a, bb) * (1 + 0.18 * Math.pow(v, 1.4)) + (off || 0)), y = cy + 0.2 - (cy + 0.2 - 0.92) * v; return V(r * Math.sin(phi), y, r * Math.cos(phi)); };
   for (const [phi, v] of [[0.95, 0.5], [-0.95 + 2 * PI, 0.5]]) { const pk = cbox(0.28, 0.2, 0.03, 0.01, _gClothDk); const q = at(phi, v, 0.02); pk.position.copy(q); pk.rotation.y = phi; b.add(pk); }
   { const q = at(2 * PI - 0.95, 0.4, 0.05); const vial = cyl(0.04, 0.04, 0.26, _gVial, 8); vial.position.set(q.x, q.y + 0.17, q.z); vial.rotation.y = 0; b.add(vial); const gl = cyl(0.05, 0.05, 0.28, _pGlass, 8); gl.position.copy(vial.position); b.add(gl); }
   for (const [phi, v, r] of [[0.98, 0.78, 0.09], [2 * PI - 1.2, 0.62, 0.07], [PI + 0.5, 0.7, 0.1]]) { const st = new T.Mesh(new T.CircleGeometry(r, 9), _gStain), q = at(phi, v, 0.02); st.position.copy(q); st.rotation.y = phi; b.add(st); }
@@ -168,4 +168,4 @@ function _mutator() {
   }
   return { g, core: cy, update(t, act) { p.update(t, act); const walk = _isWalk(act), ph = _walkPh(act); skirt.update(t, walk, ph); collar.update(t, walk, ph); } };
 }
-f2(843, "THE MUTATOR · a draped white lab coat (open at the front, flared hem, collar, lapels, pockets, stains, a vial of mutagen) and safety goggles pushed up on the cube's brow.", () => _mutator());
+f2(843, "THE MUTATOR · a draped white lab coat (open at the front, the four tentacles hanging out under its hem, flared hem, collar, lapels, pockets, stains, a vial of mutagen) and safety goggles pushed up on the cube's brow.", () => _mutator());

@@ -107,9 +107,9 @@ f2(813, "THE PLAYER · the mech: the cube as a torso on two legs, with stub arms
 // flank that puffs smoke): the same thing, modelled. Chamfered armour, panel lines, bolts, a bezel round the screen, a grille on the vent, cables that sway as it floats.
 // The cube is large (about 1.5 units) because the player is the biggest thing on the lane: the 2D one is 52 px wide.
 function _playerHD(angry, opts) {
-  opts = opts || {};   // opts.skipCables: the cables (0..3) that are not hung (the class gear uses them as tentacles: forms30.js)
+  opts = opts || {};   // opts.skipCables: the cables (0..3) that are not hung (the class gear uses them as tentacles: forms30.js); opts.hang: how far they hang (0.5); opts.cableScale: their thickness (1)
   const g = G(), b = G(); g.add(b);
-  const W = 1.5, H = 1.22, D = 1.3, cy = 1.75, HANG = 0.5;   // it FLOATS: the cube is well off the floor and the cables hang short, never touching it
+  const W = 1.5, H = 1.22, D = 1.3, cy = 1.75, HANG = opts.hang || 0.5, CK = opts.cableScale || 1;   // it FLOATS: the cube is well off the floor and the cables hang short, never touching it
   const eyeMat = new T.MeshBasicMaterial({ color: angry ? 0xff2222 : 0x00ff88, toneMapped: false });
   const body = cbox(W, H, D, 0.09, _pBlack); body.position.y = cy; b.add(body);
   // the top plate (the lighter face the 2D one shows), slightly proud, with two raised ribs
@@ -137,7 +137,7 @@ function _playerHD(angry, opts) {
   for (let t = 0; t < 4; t++) {
     const x = (t % 2 ? 1 : -1) * W * 0.22, z = (t < 2 ? -1 : 1) * D * 0.2, ring = cyl(0.075, 0.075, 0.05, _pPanel, 8); ring.position.set(x, cy - H / 2 - 0.01, z); b.add(ring);
     if ((opts.skipCables || []).includes(t)) continue;
-    const segs = []; for (let i = 0; i < 4; i++) { const s = _limb(b, 0.055 - i * 0.004, _pPeg, 6); segs.push(s); } cables.push({ x, z, segs, t });
+    const segs = []; for (let i = 0; i < 4; i++) { const s = _limb(b, (0.055 - i * 0.004) * CK, _pPeg, 6); segs.push(s); } cables.push({ x, z, segs, t });
   }
   const sway = (t, walk, ph) => { for (const c of cables) { let p = V(c.x, cy - H / 2, c.z); const n = c.segs.length, step = HANG / n;
       for (let i = 0; i < n; i++) { const k = (i + 1) / n, a = Math.sin(t * 1.6 + c.t * 1.3 + i * 0.7) * 0.09 * k + (walk ? Math.sin(ph + c.t + i * 0.5) * 0.05 * k : 0), q = V(c.x + a, p.y - step * (walk ? 0.93 : 1), c.z + (walk ? -0.16 * k + Math.sin(ph + c.t) * 0.04 * k : 0)); c.segs[i].set(p, q); p = q; } } };
