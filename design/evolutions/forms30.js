@@ -109,7 +109,7 @@ function _mech() {
   // four legs: a hip on each corner, a thigh up and out to a knee, a shin down to a foot pad
   const legs = [];
   for (const [fx, fz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
-    const th = _limb(g, 0.14, _gHull, 8), sn = _limb(g, 0.11, _gHull, 8), kn = new T.Mesh(new T.SphereGeometry(0.19, 10, 8), _gHullLt), ring = torus(0.15, 0.026, _gCyan, 14), ft = cyl(0.19, 0.24, 0.09, _gHullLt, 10), fr = torus(0.19, 0.024, _gCyan, 14), hp = new T.Mesh(new T.SphereGeometry(0.2, 10, 8), _gHullLt);
+    const th = _limb(g, 0.14, _gHull, 8), sn = _limb(g, 0.11, _gHull, 8), kn = new T.Mesh(new T.SphereGeometry(0.19, 10, 8), _gHullLt), ring = torus(0.15, 0.026, _gCyan, 14), ft = new T.Mesh(new T.ConeGeometry(0.12, 0.52, 10), M.steel), fr = torus(0.12, 0.024, _gCyan, 14), hp = new T.Mesh(new T.SphereGeometry(0.2, 10, 8), _gHullLt);
     g.add(kn); g.add(ring); g.add(ft); g.add(fr); g.add(hp);
     legs.push({ fx, fz, th, sn, kn, ring, ft, fr, hp });
   }
@@ -121,7 +121,7 @@ function _mech() {
       const gp = ph + ((L.fx * L.fz) > 0 ? 0 : PI), s = Math.sin(gp), lift = walk ? Math.max(0, s) * 0.3 : 0, dz = walk ? -Math.cos(gp) * 0.3 : 0;
       const hip = V(L.fx * 0.66, 0.96 - sink, L.fz * 0.6), foot = V(L.fx * 0.9, 0.08 + lift, L.fz * 0.8 + dz), knee = _ik(hip, foot, 0.7, 0.95, V(L.fx * 0.4, 1.3, L.fz * 0.4).normalize());
       L.th.set(hip, knee); L.sn.set(knee, foot); L.kn.position.copy(knee); L.ring.position.copy(knee); L.ring.lookAt(knee.clone().add(V(L.fx, 0, 0)));
-      L.ft.position.set(foot.x, foot.y - 0.02, foot.z); L.fr.position.set(foot.x, foot.y + 0.03, foot.z); L.fr.rotation.x = PI / 2; L.hp.position.copy(hip);
+      L.ft.position.set(foot.x, foot.y + 0.18, foot.z); L.ft.rotation.x = PI; L.fr.position.set(foot.x, foot.y + 0.4, foot.z); L.fr.rotation.x = PI / 2; L.hp.position.copy(hip);
     }
   } };
 }
