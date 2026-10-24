@@ -115,17 +115,7 @@ function _fpStyleWall(it, Hd) {
     ctx.strokeStyle = "rgba(22,48,58,0.85)"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]); ctx.stroke(); ctx.lineCap = "butt";
 }
 // a post at every corner of a styled room (the same corner treatment everywhere)
-function _fpStylePillars(F) {
-    // A post is only where a wall just STOPS (a free end, with nothing continuing from it): the wall's own end cap. Where two walls meet at a corner, or a wall runs through, the walls join cleanly and there is no post.
-    const items = [], seen = new Set(), eq = (a, b) => Math.abs(a - b) < 0.02;
-    const freeEnd = (x, y) => {
-        const dirs = []; for (const w of F.walls) for (const [p, q] of [[w.a, w.b], [w.b, w.a]]) if (eq(p[0], x) && eq(p[1], y)) { const L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1; dirs.push([(q[0] - p[0]) / L, (q[1] - p[1]) / L]); }
-        if (!dirs.length) return false; return dirs.every(d => Math.hypot(d[0] - dirs[0][0], d[1] - dirs[0][1]) < 0.2);   // every piece that meets here leaves on the same side
-    };
-    for (const r of F.rooms) { if (!facilityStyleRoom(r.id) || r.id === "arena" || r.id === "catwalks" || r.id === "nest_area") continue; for (const v of r.poly) { const k = v[0] + "," + v[1]; if (seen.has(k)) continue; seen.add(k); if (!freeEnd(v[0], v[1])) continue; items.push({ type: "fp", fp: "pillar", x: v[0], y: v[1], room: r.id, base: facilityRoomHeight(r.id, F) * FP_ELEV_PX, depth: v[0] + v[1] + 0.5 }); } }
-    // wall ends that are not room corners (where a window or a door opening stops a wall) are the doors' and the glass's own frames: no post
-    return items;
-}
+function _fpStylePillars(F) { return []; }   // no posts: walls join at corners and simply end where they end (a post at a wall end read as a random column)
 function _fpStylePillar(it) {
     // the end cap of a wall: ONE whole column, flush with the wall (the wall's own height and colours), one outline, nothing stacked
     const H = FP_WALL_H, w = 0.1, A = FP_PAL;

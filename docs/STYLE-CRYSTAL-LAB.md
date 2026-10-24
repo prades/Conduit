@@ -60,4 +60,4 @@ A doorway with no door (the arena steps, the deck steps and the stair mouth) alw
 
 ## Posts
 
-Where two walls meet at a corner, or a wall runs through, the walls simply join (no post). A post is only the end cap of a wall that just stops (a free end with nothing continuing from it): one flush box, the wall's own height, pale cap, one outline. Doors and glass have their own frames. (`_fpStylePillars` finds the free ends from the wall pieces.)
+There are none. Walls join cleanly where two meet and simply end where they end (doors and glass have their own frames). The stair mouth is open the full width of the stair room, so no stub of wall stands beside the steps.

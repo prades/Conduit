@@ -608,7 +608,7 @@ const FACILITY_MAP = {
           note: "A sliding access door between the lab and the narrow passage." },
         { id: "door_crystal_hallway", a: [370, 422], b: [370, 486], rooms: ["crystal_chamber", "lab_hallway"], position_status: "approximate",
           note: "A sliding access door from the Crystal Chamber onto the hallway that passes the experiment lab (on the shared wall, near its middle)." },
-        { id: "open_stair_mouth", a: [870, 610], b: [870, 740], rooms: ["teleport_stair_room", "lab_hallway"], door: null, position_status: "approximate",
+        { id: "open_stair_mouth", a: [870, 610], b: [870, 760], rooms: ["teleport_stair_room", "lab_hallway"], door: null, position_status: "approximate",
           note: "The open foot of the curved staircase, onto the hallway. No door." },
         { id: "door_stair_teleport_2", a: [945, 660], b: [945, 700], rooms: ["teleport_stair_room", "teleport_room_2"], position_status: "approximate",
           note: "A sliding access door between the stair room and Teleport Room 2." },
