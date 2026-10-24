@@ -19,7 +19,9 @@ const CLASSES = {
         rooms: ["experiment_lab", "crystal_chamber"], startKit: [["mutagen_sample", 1]], skills: ["bio"] },
 };
 const CLASS_ORDER = ["gunslinger", "technomancer", "mutator"];
-const CLASS_RULES = { carryOthers: true, useOthers: false };
+// relay: how a relay is repaired (js/stations.js). A class with the `skill` repairs with `skillCells` power cells in `skillFrames`, and the classes named in `auto` start the repair by themselves when they stand at a broken relay with the cells and keep still;
+// anyone else needs the `kit` (an item) and `kitCells` cells and takes `kitFrames`. The kit is the explicit rule that lets the other classes restore a relay at all: their cells are spent by the relay, not used by them.
+const CLASS_RULES = { carryOthers: true, useOthers: false, relay: { skill: "repair", skillCells: 1, skillFrames: 100, auto: ["technomancer"], kit: "relay_kit", kitCells: 2, kitFrames: 300 } };
 
 // PERKS: what a class earns at its stations (js/stations.js). The game asks classStat(name, base) for a number, as docs/PLAYER-CLASSES.md plans: each owned perk may multiply (mul) or add to it.
 //   cls        the class that can earn it    name / desc   what the pack shows     stat   { statName: { mul | add } }

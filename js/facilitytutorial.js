@@ -91,6 +91,7 @@ function _fpExtraLight(x, y, keys) {
 function facilityTutorialTick() {
     facilityPickupTick();
     if (typeof facilityStationTick === "function") facilityStationTick();
+    if (typeof facilityRelayTick === "function") facilityRelayTick();
     const T = _fp && _fp.tut; if (!T || T.said || !T.blackout || (typeof frame !== "undefined" ? frame : 0) < 60) return;
     T.said = true;
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
@@ -177,5 +178,6 @@ function facilityPickupTick() {
 function facilityDrawOverlay() {
     facilityDrawLampGlow(); facilityDrawFlares();
     if (typeof facilityDrawCctv === "function") facilityDrawCctv();
+    if (typeof facilityDrawRelays === "function") facilityDrawRelays();
     if (typeof facilityDrawStationPrompt === "function") facilityDrawStationPrompt();
 }

@@ -137,6 +137,28 @@ function _fpStylePropMore(it) {
         _fpSBox(x - 0.28, y - 0.28, x + 0.28, y + 0.28, 18, 23, A.tealLit, A.teal, A.tealLit, 3); _fpSBox(x - 0.28, y - 0.3, x + 0.28, y - 0.18, 23, 44, A.tealLit, A.teal, A.tealLit, 3);
     } else if (k === "desk") { _fpSPrism(it, 28, A.cap, A.case, A.caseLit, 3.5);
     } else if (k === "pallet") { _fpSPrism(it, 26, A.caseLit, A.case, A.cap, 3.5);
+    } else if (k === "relay") {   // a relay box: a grey cabinet with a screen and a lamp. Broken: a dark screen, a blinking red lamp, a spark now and then. Online: a pulse on the screen, a green lamp, a glow and a ring turning on top (js/stations.js)
+        const R = _fp.F.relays.find(r => r.prop === it.id), on = !!R && relayOnline(R.id);
+        _fpSPrism(it, 58, A.caseLit, A.case, _fpShade(A.caseLit, 0.93), 3.5);
+        if (it.sy) {
+            _fpFaceY(it, 0.1, 0.9, 12, 50, A.ink, null); _fpFaceY(it, 0.16, 0.84, 16, 46, on ? "#0d3a33" : "#0a1a20", null);
+            if (on) { for (let i = 0; i < 6; i++) _fpFaceY(it, 0.2 + i * 0.1, 0.27 + i * 0.1, 22, 24 + 12 * (0.5 + 0.5 * Math.sin(f * 0.1 + i * 1.1)), "rgba(120,255,190,0.9)", null); }
+            else if ((f + seed * 7) % 90 < 5) { const c = P(x, y + 0.5, 34); ctx.strokeStyle = "#ffe08a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(c[0] - 8, c[1] - 8); ctx.lineTo(c[0] - 1, c[1] - 1); ctx.lineTo(c[0] - 5, c[1] + 2); ctx.lineTo(c[0] + 7, c[1] + 9); ctx.stroke(); }
+            _fpFaceY(it, 0.4, 0.6, 50, 54, on ? "#43e0a8" : ((Math.floor(f / 24) + seed) % 2 ? "#ff4a3a" : "#5a1d16"), null);
+        }
+        if (on) { for (let i = 0; i < 2; i++) { const z = 66 + i * 8, c = P(x, y, z), rr = 12 - i * 3; ctx.strokeStyle = A.ink; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(c[0], c[1], rr, rr * 0.45, 0, 0, 6.2832); ctx.stroke(); ctx.strokeStyle = _fpRgba("#31e8ff", 0.6 + 0.4 * Math.sin(f * 0.09 + i * 2)); ctx.lineWidth = 2.5; ctx.stroke(); } const g = P(x, y, 60); _fpGlow(g[0], g[1], 44, "#43e0a8", 0.26 + 0.08 * Math.sin(f * 0.06)); }
+    } else if (k === "sentry") {   // an automatic sentry: a post, an armoured head that turns to its target, a barrel. Dead: a dark lamp. Fed: a cyan lamp, a muzzle flash when it fires
+        const on = typeof facilityFeedOn === "function" && facilityFeedOn(it.id), ang = it.aim || 0, c0 = P(x, y, 0), c1 = P(x, y, 30), hd = P(x, y, 40);
+        _fpStyleCyl(x, y, 0.3, 0, 8, A.tealDark, A.teal, A.tealLit, 3);
+        ctx.strokeStyle = A.ink; ctx.lineWidth = 8; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(c0[0], c0[1] - 6); ctx.lineTo(c1[0], c1[1]); ctx.stroke(); ctx.strokeStyle = A.tealLit; ctx.lineWidth = 4; ctx.stroke();
+        const bx = P(x + Math.cos(ang) * 0.62, y + Math.sin(ang) * 0.62, 40); ctx.strokeStyle = A.ink; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(hd[0], hd[1]); ctx.lineTo(bx[0], bx[1]); ctx.stroke(); ctx.strokeStyle = A.caseLit; ctx.lineWidth = 3.5; ctx.stroke(); ctx.lineCap = "butt";
+        _fpBlob(hd[0], hd[1] - 2, 13, 11, A.caseLit, 3); ctx.fillStyle = on ? "#31e8ff" : ((Math.floor(f / 30) + seed) % 3 ? "#3a1410" : "#ff4a3a"); ctx.beginPath(); ctx.arc(hd[0] - 3, hd[1] - 4, 3, 0, 6.2832); ctx.fill();
+        if (it.flash > 0) { _fpGlow(bx[0], bx[1], 28, "#7ff2ff", 0.8); } else if (on) _fpGlow(hd[0], hd[1], 22, "#31e8ff", 0.14);
+    } else if (k === "charger") {   // a charging station: a cabinet with a bay and a bolt. Fed: the bay is lit mint; dead: dark
+        const on = typeof facilityFeedOn === "function" && facilityFeedOn(it.id);
+        _fpSPrism(it, 46, A.caseLit, A.case, _fpShade(A.caseLit, 0.93), 3.5);
+        if (it.sy) { _fpFaceY(it, 0.12, 0.88, 8, 38, A.ink, null); _fpFaceY(it, 0.18, 0.82, 11, 35, on ? _fpRgba("#43e0a8", 0.55 + 0.2 * Math.sin(f * 0.08)) : "#0a1a20", null); const c = P(x, y + 0.5, 24); ctx.fillStyle = on ? "#eafff6" : "#2a3a42"; ctx.beginPath(); ctx.moveTo(c[0] + 2, c[1] - 9); ctx.lineTo(c[0] - 5, c[1] + 1); ctx.lineTo(c[0] - 1, c[1] + 1); ctx.lineTo(c[0] - 3, c[1] + 9); ctx.lineTo(c[0] + 5, c[1] - 2); ctx.lineTo(c[0] + 1, c[1] - 2); ctx.closePath(); ctx.fill(); }
+        if (on) { const g = P(x, y, 30); _fpGlow(g[0], g[1], 34, "#43e0a8", 0.2); }
     } else if (k === "rail") { return false;
     } else return false;
     return true;

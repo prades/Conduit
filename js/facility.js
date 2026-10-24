@@ -115,6 +115,7 @@ function _facilityBuild(ex) {
         const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status, kind: pr.kind || null, cargo: pr.cargo || null };
     });
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), note: p.note }));   // (a tile's middle, not snapped)
+    const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, prop: r.prop, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));
     const stations = (M.stations || []).map(st => ({ id: st.id, room: st.room, prop: st.prop, kind: st.kind }));
     const outer = M.outer_path ? { id: M.outer_path.id, poly: _facPoly(M.outer_path.polygon), walkable: M.outer_path.walkable === true, navigation_link: M.outer_path.navigation_link === true } : null;
     const conns = (M.connections || []).concat(ex.connections || []).filter(c => !c.opening || openings.some(o => o.id === c.opening)).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, confirmed: true }));
@@ -136,7 +137,7 @@ function _facilityBuild(ex) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, stations, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, stations, relays, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -235,6 +236,11 @@ function facilityValidateDressing(F) {
         else if (F.snapped && !facilityWalkable(p.at[0], p.at[1], F)) errors.push("pickup " + p.id + " is not on a tile a body can stand on");
         if (!p.items.length) errors.push("pickup " + p.id + " holds nothing");
         if (typeof ITEMS !== "undefined") for (const it of p.items) if (!ITEMS[it[0]] || !(it[1] > 0)) errors.push("pickup " + p.id + " holds " + it[0] + ", which is not an item");
+    }
+    for (const r of (F.relays || [])) {   // a relay is a relay box of its room, powering rooms that exist and feeding props that exist
+        const pr = F.solids.find(p => p.id === r.prop); if (!pr) errors.push("relay " + r.id + " names a prop that does not exist"); else if (pr.room !== r.room || pr.kind !== "relay") errors.push("relay " + r.id + ": " + r.prop + " is not a relay box of " + r.room);
+        if (!r.powers.length) errors.push("relay " + r.id + " powers nothing"); for (const id of r.powers) if (!F.byId.has(id)) errors.push("relay " + r.id + " powers " + id + ", which is not a room");
+        for (const id of r.feeds) if (!F.solids.some(p => p.id === id)) errors.push("relay " + r.id + " feeds " + id + ", which is not a prop");
     }
     for (const st of (F.stations || [])) {   // a station is a prop of its room, and (when the kinds are loaded) a known kind
         const pr = F.solids.find(p => p.id === st.prop); if (!pr) errors.push("station " + st.id + " names a prop that does not exist"); else if (pr.room !== st.room) errors.push("station " + st.id + ": " + st.prop + " is not in " + st.room);

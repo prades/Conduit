@@ -37,8 +37,13 @@ const ITEMS = {
         lore: "Cloudy, warm and faintly alive. The Mutator reads it like a letter from a creature that has not been born yet.",
         stats: ["EFFECT  +1 FOLLOWER LEVEL (+2 ONCE SEQUENCED)", "RANGE  8 TILES", "A FORM EVOLVES AT LEVEL " + (typeof EVOLVE_LEVEL === "number" ? EVOLVE_LEVEL : 10)],
         use: () => invFeedFollower() },
+    relay_kit: { id: "relay_kit", name: "RELAY KIT", cat: "tool", type: "tool", stack: 1, col: "#ffb347", icon: "kit", classes: null,
+        desc: "Splicing tools for a dead relay. Any class can repair with it, slowly, using two power cells.",
+        lore: "A grey case of clamps, a soldering stylus and a laminated card of wiring colours. The Technomancer does not need one. Everyone else does.",
+        stats: ["EFFECT  LETS YOU REPAIR A RELAY", "COST  2 POWER CELLS, 5 SECONDS", "A TECHNOMANCER NEEDS 1 CELL AND NO KIT", "NOT USED UP"],
+        use: () => { const s = typeof stationNearest === "function" ? stationNearest() : null; if (!s || s.kind !== "relay") return { ok: false, why: "USE IT AT A BROKEN RELAY" }; const r = stationUse(s); return r.ok ? { ok: true, msg: r.msg } : { ok: false, why: r.why }; } },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample"];
+const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit"];
 
 // ── the pack ──
 let playerInv = {};
@@ -109,6 +114,11 @@ const INV_ICONS = {
         c.beginPath(); c.moveTo(x - s * 0.07, y - s * 0.34); c.lineTo(x - s * 0.07, y - s * 0.12); c.lineTo(x - s * 0.24, y + s * 0.2); c.quadraticCurveTo(x - s * 0.26, y + s * 0.32, x - s * 0.12, y + s * 0.32); c.lineTo(x + s * 0.12, y + s * 0.32); c.quadraticCurveTo(x + s * 0.26, y + s * 0.32, x + s * 0.24, y + s * 0.2); c.lineTo(x + s * 0.07, y - s * 0.12); c.lineTo(x + s * 0.07, y - s * 0.34); c.closePath(); c.fill(); c.stroke();
         c.fillStyle = col; c.globalAlpha = 0.85; c.beginPath(); c.ellipse(x, y + s * 0.2, s * 0.14, s * 0.07, 0, 0, 6.2832); c.fill(); c.globalAlpha = 1; c.fillRect(x - s * 0.1, y - s * 0.38, s * 0.2, s * 0.06);
         c.fillStyle = "#e9c8ff"; c.beginPath(); c.arc(x - s * 0.04, y + s * 0.06, s * 0.03, 0, 6.2832); c.arc(x + s * 0.06, y + s * 0.14, s * 0.02, 0, 6.2832); c.fill();
+    },
+    kit: (c, x, y, s, col) => {
+        c.fillStyle = "#2b2f3a"; c.strokeStyle = col; c.lineWidth = Math.max(2, s * 0.05); c.beginPath(); c.rect(x - s * 0.36, y - s * 0.12, s * 0.72, s * 0.44); c.fill(); c.stroke();
+        c.beginPath(); c.moveTo(x - s * 0.14, y - s * 0.12); c.lineTo(x - s * 0.14, y - s * 0.26); c.lineTo(x + s * 0.14, y - s * 0.26); c.lineTo(x + s * 0.14, y - s * 0.12); c.stroke();
+        c.fillStyle = col; c.beginPath(); c.moveTo(x + s * 0.04, y - s * 0.02); c.lineTo(x - s * 0.1, y + s * 0.12); c.lineTo(x, y + s * 0.12); c.lineTo(x - s * 0.04, y + s * 0.26); c.lineTo(x + s * 0.12, y + s * 0.08); c.lineTo(x + s * 0.02, y + s * 0.08); c.closePath(); c.fill();
     },
 };
 function invDrawIcon(id, x, y, s, t) { const d = itemDef(id); if (!d || typeof ctx === "undefined") return; ctx.save(); (INV_ICONS[d.icon] || INV_ICONS.ammo)(ctx, x, y, s, d.col, t || 0); ctx.restore(); }

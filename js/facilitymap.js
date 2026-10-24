@@ -228,6 +228,14 @@ const FACILITY_MAP = {
         { id: "floodlight_arena_3", room: "arena", shape: "rect", rect: [370, 970, 390, 990], status: "placed", kind: "floodlight" },
         { id: "floodlight_arena_4", room: "arena", shape: "rect", rect: [970, 1010, 990, 1030], status: "placed", kind: "floodlight" },
         { id: "floodlight_arena_5", room: "arena", shape: "rect", rect: [370, 870, 390, 890], status: "placed", kind: "floodlight" },
+        // ── THE ELECTRICAL NETWORK (docs/TUTORIAL.md, phase 5): relay boxes against the walls, the sentries and the charging station they feed. Everything starts dead: the relays are broken. ──
+        { id: "relay_chamber_box", room: "crystal_chamber", shape: "rect", rect: [350, 350, 370, 370], status: "placed", kind: "relay", note: "The Crystal Chamber's relay, in the north-east corner." },
+        { id: "sentry_chamber_1", room: "crystal_chamber", shape: "rect", rect: [330, 430, 350, 450], status: "placed", kind: "sentry", note: "An automatic sentry guarding the chamber's door." },
+        { id: "sentry_chamber_2", room: "crystal_chamber", shape: "rect", rect: [290, 470, 310, 490], status: "placed", kind: "sentry" },
+        { id: "relay_hall_box", room: "lab_hallway", shape: "rect", rect: [630, 410, 650, 430], status: "placed", kind: "relay", note: "The hallway's relay, on its north wall." },
+        { id: "sentry_hall", room: "lab_hallway", shape: "rect", rect: [750, 490, 770, 510], status: "placed", kind: "sentry", note: "A sentry on the hallway's north-east corner." },
+        { id: "charger_hall", room: "lab_hallway", shape: "rect", rect: [390, 630, 410, 650], status: "placed", kind: "charger", note: "A charging station: it refills your ammunition once the hallway has power." },
+        { id: "relay_lobby_box", room: "front_lobby", shape: "rect", rect: [390, 230, 410, 250], status: "placed", kind: "relay", note: "The Front Lobby's relay, which also feeds the Security Room." },
         // ── THE ARMORY (x 190-350, y 950-1150): a terminal and a workbench in the middle, crates in the corners, lockers and barrels along the south wall; the door's landing (x 310-350, y 1070-1110) stays clear ──
         { id: "armory_terminal", room: "armory", shape: "rect", rect: [190, 1030, 210, 1070], status: "placed", kind: "computer_desk", note: "The inventory terminal." },
         { id: "armory_bench", room: "armory", shape: "rect", rect: [230, 1030, 290, 1050], status: "placed", kind: "desk", note: "The workbench." },
@@ -257,6 +265,8 @@ const FACILITY_MAP = {
         { id: "pk_lab_mutagen", room: "experiment_lab", at: [500, 580], items: [["mutagen_sample", 2]], note: "Samples in the lab." },
         { id: "pk_tele_cell", room: "teleport_room_1", at: [260, 620], items: [["power_cell", 1]], note: "A cell beside the teleporters." },
         { id: "pk_chamber_mutagen", room: "crystal_chamber", at: [280, 400], items: [["mutagen_sample", 1]], note: "A sample left by the crystal." },
+        { id: "pk_chamber_kit", room: "crystal_chamber", at: [260, 440], items: [["relay_kit", 1]], note: "A relay kit in the Crystal Chamber: any class can splice a relay with it, slowly and with two cells." },
+        { id: "pk_lobby_cell", room: "front_lobby", at: [700, 280], items: [["power_cell", 1]], note: "A cell among the lobby's computers." },
     ],
 
     // STATIONS: a piece of furniture the player can USE (docs/TUTORIAL.md, phase 4). `prop` is the id of a prop above and `kind` a row of STATION_KINDS in js/stations.js (what it does, who may use it). Each class has one in the
@@ -266,6 +276,14 @@ const FACILITY_MAP = {
         { id: "st_security_console", room: "security_room", prop: "sec_desk", kind: "cctv" },
         { id: "st_tune_bench", room: "teleport_room_1", prop: "console_2", kind: "tune_bench" },
         { id: "st_sequencer", room: "experiment_lab", prop: "chamber_1", kind: "sequencer" },
+        { id: "st_charger", room: "lab_hallway", prop: "charger_hall", kind: "charger" },
+    ],
+
+    // RELAYS: the electrical network (docs/TUTORIAL.md, phase 5). Each is a prop (a relay box) that the player repairs at (a station of kind "relay"). When one comes online the rooms it `powers` have power (the blackout lifts there), and what it `feeds` (props: sentries, the charging station) works.
+    relays: [
+        { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", prop: "relay_chamber_box", powers: ["crystal_chamber"], feeds: ["sentry_chamber_1", "sentry_chamber_2"] },
+        { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", prop: "relay_hall_box", powers: ["lab_hallway", "teleport_stair_room"], feeds: ["sentry_hall", "charger_hall"] },
+        { id: "relay_lobby", name: "LOBBY RELAY", room: "front_lobby", prop: "relay_lobby_box", powers: ["front_lobby", "security_room"], feeds: [] },
     ],
 
     // FLOORS: each room's floor covering (js/facilitydecor.js draws it over the tile). Styles: carpet, plate, tile, labtile, concrete, grate, polished, wood, sand.
