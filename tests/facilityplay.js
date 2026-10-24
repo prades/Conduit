@@ -194,8 +194,9 @@ function measure() {
     check('the dressing: every walkable tile outside the nest area has floor marks, a small prop gets the floor under it, and wall decor is in the draw list with a depth that sorts it after its wall', () => {
         const r = J(`(function(){ let tot = 0, got = 0; for (const [k, c] of _fp.cells) { const room = facilityRoomAt(c[0], c[1], _fp.F); if (room.id === 'nest_area') continue; tot++; if (_fp.floorOps.has(k)) got++; }
             const wd = _fp.items.filter(i => i.fp === 'wdecor'), small = _fp.items.filter(i => i.fp === 'prop' && FP_SMALL_PROPS.has(i.kind)); const bare = small.filter(i => !_fp.underOps.has(i.x + ',' + i.y)).length;
-            return { tot, got, wd: wd.length, kinds: Array.from(new Set(wd.map(i => i.kind))).length, noDepth: wd.filter(i => !(i.depth > 0)).length, small: small.length, bare }; })()`);
-        ok(r.got / r.tot > 0.97, 'floor marks on ' + r.got + ' of ' + r.tot + ' tiles'); ok(r.wd >= 120, 'wall decor items: ' + r.wd); ok(r.kinds >= 24, 'wall decor kinds: ' + r.kinds); same(r.noDepth, 0, 'wall decor with no depth');
+            let badG = 0; for (const ops of _fp.floorOps.values()) for (const o of ops) if (o.t === 'G' && !(o.a >= 0 && (!o.fl || o.fl > 0))) badG++;
+            return { tot, got, badG, wd: wd.length, kinds: Array.from(new Set(wd.map(i => i.kind))).length, noDepth: wd.filter(i => !(i.depth > 0)).length, small: small.length, bare }; })()`);
+        same(r.badG, 0, 'a floor light with a strength that is not a number (it would paint the floor in whatever colour was last used)'); ok(r.got / r.tot > 0.97, 'floor marks on ' + r.got + ' of ' + r.tot + ' tiles'); ok(r.wd >= 120, 'wall decor items: ' + r.wd); ok(r.kinds >= 24, 'wall decor kinds: ' + r.kinds); same(r.noDepth, 0, 'wall decor with no depth');
         ok(r.small >= 20, 'small props: ' + r.small); same(r.bare, 0, 'a small prop with no floor under it (a black tile would show)');
         same(J(`drawDepthOf({ type: 'fp', x: 3, y: 4, depth: 9.5 })`), 9.5, 'the depth hook'); same(J(`drawDepthOf({ type: 'fp', x: 3, y: 4 })`), 7, 'an fp item with no depth keeps x + y');
     });
