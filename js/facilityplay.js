@@ -326,6 +326,8 @@ function _fpSkirts(items) {
         if (it.fp !== "wall" || it.kind === "glass") continue;
         const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
         const f = _fp.fills.get(Math.round(it.x + nx * 0.7) + "," + Math.round(it.y + ny * 0.7)); if (f && f.base < (it.base || 0) - 1) it.drop = (it.base || 0) - f.base;
+        // a wall standing at a flight of steps (the tunnel's sides) reaches down to the sloping floor beside it, so it never hangs in the air above the steps
+        const lo = Math.min(facilityHeightAt(it.a[0], it.a[1], _fp.F), facilityHeightAt(it.b[0], it.b[1], _fp.F), facilityHeightAt(it.x, it.y, _fp.F)) * FP_ELEV_PX; if ((it.base || 0) - lo > 2) it.drop = Math.max(it.drop || 0, (it.base || 0) - lo);
     }
 }
 function _fpDrawWall(it) {
