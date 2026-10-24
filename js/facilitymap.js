@@ -230,7 +230,7 @@ const FACILITY_MAP = {
         { id: "floodlight_arena_5", room: "arena", shape: "rect", rect: [370, 870, 390, 890], status: "placed", kind: "floodlight" },
         // ── THE ELECTRICAL NETWORK (docs/TUTORIAL.md, phase 5): relay boxes against the walls, the sentries and the charging station they feed. Everything starts dead: the relays are broken. ──
         { id: "mech_bay", room: "show_room", shape: "rect", rect: [970, 390, 1010, 430], status: "placed", kind: "mech_bay", note: "The mech bay: a build pad in the show room where the Technomancer assembles the four-legged spider mech." },
-        { id: "relay_chamber_box", room: "crystal_chamber", shape: "rect", rect: [350, 350, 370, 370], status: "placed", kind: "relay", note: "The Crystal Chamber's relay, in the north-east corner." },
+        { id: "relay_chamber_box", room: "crystal_chamber", shape: "rect", rect: [310, 290, 330, 310], status: "placed", kind: "relay", note: "The Crystal Chamber's relay, on the north wall beside the crystal, in plain view from the door." },
         { id: "sentry_chamber_1", room: "crystal_chamber", shape: "rect", rect: [330, 430, 350, 450], status: "placed", kind: "sentry", note: "An automatic sentry guarding the chamber's door." },
         { id: "sentry_chamber_2", room: "crystal_chamber", shape: "rect", rect: [290, 470, 310, 490], status: "placed", kind: "sentry" },
         { id: "relay_hall_box", room: "lab_hallway", shape: "rect", rect: [630, 410, 650, 430], status: "placed", kind: "relay", note: "The hallway's relay, on its north wall." },
