@@ -61,3 +61,7 @@ A doorway with no door (the arena steps, the deck steps and the stair mouth) alw
 ## Posts
 
 There are none. Walls join cleanly where two meet and simply end where they end (doors and glass have their own frames). The stair mouth is open the full width of the stair room, so no stub of wall stands beside the steps.
+
+## Wall thickness
+
+Each styled wall piece (and each door's header) has a slab on top, `FP_WALL_T` = 0.4 tile deep, running back from the visible face (`_fpWallTop`): a pale top with an ink line along its back edge. The fill stops short of both edges so neighbouring pieces never cover each other's ink lines. It is drawing only; collision is unchanged.

@@ -217,6 +217,22 @@ function _fpSpawnTestEnemies(F) {
 
 // ── the static things to draw: wall pieces, prop cells, doors, fixtures ──
 // the room whose light a wall piece takes: the room on its camera-facing side (the face you see), else its own room
+// a door's header slab runs over the tunnel: towards the side that is walkable
+function _fpDoorOut(o, F) {
+    const dx = o.b[0] - o.a[0], dy = o.b[1] - o.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+    const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2; return facilityWalkable(mx + nx * 0.6, my + ny * 0.6, F) && !facilityWalkable(mx - nx * 0.6, my - ny * 0.6, F) ? 1 : -1;
+}
+// which way a wall's thickness runs from this piece: +1 towards the camera (the room is behind the face the camera sees: a south or east wall), -1 away from it (a north or west wall)
+function _fpWallOut(w, a, b, F) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+    const r = facilityRoomAt((a[0] + b[0]) / 2 - nx * 0.4, (a[1] + b[1]) / 2 - ny * 0.4, F); return r && r.id === w.room ? 1 : -1;
+}
+// a south or east wall piece whose band has another room's wall on the far side: its face is never seen (the neighbour's face stands in front of it), so only its slab is drawn
+function _fpWallBand(w, a, b, F) {
+    if (_fpWallOut(w, a, b, F) !== 1) return false;
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, r = facilityRoomAt(mx + nx * 1.5, my + ny * 1.5, F), q = facilityRoomAt(mx + nx * 0.5, my + ny * 0.5, F); return !!r && r.id !== w.room && !q;
+}
 function _fpWallLightRoom(w, a, b, F) {
     const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
     for (const t of [0.4, 0.9, 1.5, 2.2, 3.0]) { const r = facilityRoomAt((a[0] + b[0]) / 2 + nx * t, (a[1] + b[1]) / 2 + ny * t, F); if (r) return r.id; }   // (the room that shows its face; the pocket of void behind the arena's rock belongs to the arena)
@@ -228,7 +244,7 @@ function _fpPlaceStatics(F) {
         const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy), n = Math.max(1, Math.ceil(len / seg));
         for (let i = 0; i < n; i++) {
             const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n];
-            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, win: w.window || null, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
+            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, win: w.window || null, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), out: _fpWallOut(w, a, b, F), nbBand: _fpWallBand(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
         }
     }
     // a wall between two floors of different heights stands from its own floor up past the HIGHER floor, so a step down is a retaining wall and not a gap
@@ -236,7 +252,7 @@ function _fpPlaceStatics(F) {
     for (const list of at.values()) for (const it of list) { let top = it.base; for (const o of list) if (o !== it && o.room !== it.room && o.base > top) top = o.base; it.base2 = top; }
     for (const o of F.openings) { if (F.connections.some(c => c.opening === o.id && c.ramp)) continue;   // a stairway has no door: the steps run through the gap (the arena door, the deck door, the stair mouth)
         const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2, st = { open: 0 }, base = facilityLiftPx(mx, my);
-        for (const [part, d] of [["a", o.a[0] + o.a[1]], ["b", o.b[0] + o.b[1]], ["m", Math.max(o.a[0] + o.a[1], o.b[0] + o.b[1]) + 0.88]]) items.push({ type: "fp", fp: "door", part, st, id: o.id, depth: d + 0.02, x: mx, y: my, a: o.a, b: o.b, door: o.door, rooms: o.rooms, base }); }
+        for (const [part, d] of [["a", o.a[0] + o.a[1]], ["b", o.b[0] + o.b[1]], ["m", Math.max(o.a[0] + o.a[1], o.b[0] + o.b[1]) + 0.88]]) items.push({ type: "fp", fp: "door", part, st, out: _fpDoorOut(o, F), id: o.id, depth: d + 0.02, x: mx, y: my, a: o.a, b: o.b, door: o.door, rooms: o.rooms, base }); }
     for (const s of F.solids) {
         const box = s.bb, cells = new Set();
         for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) {

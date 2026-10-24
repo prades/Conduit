@@ -71,7 +71,7 @@ function measure() {
     });
     check('the authored data is untouched by snapping, and the unsnapped map is still the one the debug view draws', () => {
         const a = J('JSON.stringify(FACILITY_MAP).length'), b = J('(facilityBuild({ snap: true }), JSON.stringify(FACILITY_MAP).length)'); same(a, b, 'the data changed');
-        const F = J(`(function(){ const F = facilityGet(); return { snapped: F.snapped, corner: F.byId.get('crystal_chamber').poly[0] }; })()`); same(F.snapped, false, 'the shared map is snapped'); same(F.corner[0], 9.25, 'an authored corner moved');
+        const F = J(`(function(){ const F = facilityGet(); return { snapped: F.snapped, corner: F.byId.get('crystal_chamber').poly[0] }; })()`); same(F.snapped, false, 'the shared map is snapped'); same(F.corner[0], 8.25, 'an authored corner moved (the Crystal Chamber slid one tile west when the building was spaced out for its thick walls)');
     });
 
     check('THE SCALE: the main hallway round the Experiment Lab is exactly SIX tiles wide on every side on the grid the game plays on (matching the strip\'s lane), and the narrow passage is two', () => {
@@ -312,7 +312,7 @@ function measure() {
         ok(!/facilityDrawLighting/.test(rd('js/game.js')), 'a screen-wide lighting layer is back');
     });
     check('walls take the light of the room that shows their face (not the room that owns the edge), so a wall in front is never darkened by the room behind it', () => {
-        const r = J(`(function(){ const w = _fp.items.filter(i => i.fp === 'wall'), diff = w.filter(i => i.lroom && i.lroom !== i.room); const lobbySouth = w.find(i => i.room === 'front_lobby' && Math.abs(i.a[1] - 20.5) < 0.01 && Math.abs(i.b[1] - 20.5) < 0.01); return { all: w.length, none: w.filter(i => !i.lroom).length, diff: diff.length, lobbySouth: lobbySouth && lobbySouth.lroom }; })()`);
+        const r = J(`(function(){ const w = _fp.items.filter(i => i.fp === 'wall'), diff = w.filter(i => i.lroom && i.lroom !== i.room); const lobbySouth = w.find(i => i.room === 'front_lobby' && Math.abs(i.a[1] - 19.5) < 0.01 && Math.abs(i.b[1] - 19.5) < 0.01); return { all: w.length, none: w.filter(i => !i.lroom).length, diff: diff.length, lobbySouth: lobbySouth && lobbySouth.lroom }; })()`);
         same(r.none, 0, 'a wall with no light room'); ok(r.diff > 20, 'walls facing the next room: ' + r.diff); same(r.lobbySouth, 'lab_hallway', 'the lobby south wall shows its face to the hallway');
     });
     check('the arena rock beside the ends of the observation deck glass rises to the deck wall top, tapering back to its own height: no gap between the deck and the rock', () => {
@@ -339,6 +339,21 @@ function measure() {
         same(J('_fp.items.filter(i => i.fp === \'pillar\').length'), 0, 'a post is drawn');
         const r = J(`(function(){ const F = _fp.F, o = F.openings.find(o => o.id === 'open_stair_mouth'), room = F.byId.get('teleport_stair_room'); return { a: o.a, b: o.b, room: room.bb, stub: F.walls.filter(w => Math.abs(w.a[0] - o.a[0]) < 0.01 && Math.abs(w.b[0] - o.a[0]) < 0.01 && w.room === 'teleport_stair_room').length }; })()`);
         ok(Math.abs(r.b[1] - r.room[3]) < 0.6 && Math.abs(r.a[1] - r.room[1]) < 0.6, 'the stair mouth does not span the stair room: ' + JSON.stringify([r.a, r.b, r.room])); same(r.stub, 0, 'a stub of wall beside the stair mouth');
+    });
+    check('walls are thick: the building is spaced out so every wall between two rooms is a one-tile band, and each styled wall piece draws a slab over its band (north and west walls away from the camera, south and east walls towards it)', () => {
+        const st = rd('js/facilitystyle.js'); ok(/const FP_WALL_T = 1\.0/.test(st) && /function _fpWallTop/.test(st) && (st.match(/_fpWallTop\(/g) || []).length >= 3 && /it\.nbBand\) return/.test(st), 'the thick top is missing');
+        const r = J(`(function(){ const F = _fp.F, walls = _fp.items.filter(i => i.fp === 'wall'); const outs = { front: walls.filter(i => i.out === 1).length, back: walls.filter(i => i.out === -1).length, band: walls.filter(i => i.nbBand).length };
+            // every band between two rooms is exactly one tile: probe across each shared-wall pair
+            const bad = []; for (const w of walls) { if (!w.nbBand) continue; const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < 0) { nx = -nx; ny = -ny; } const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2; const a = facilityRoomAt(mx + nx * 0.5, my + ny * 0.5, F), b = facilityRoomAt(mx + nx * 1.5, my + ny * 1.5, F); if (a || !b || facilityRoomAt(mx + nx * 0.01 - nx * 0.01, my, F) === undefined) bad.push(w.room + '>' + (b && b.id)); }
+            const cr = F.byId.get('crystal_chamber'), t1 = F.byId.get('teleport_room_1'), lobby = F.byId.get('front_lobby'), hall = F.byId.get('lab_hallway'), bath = F.byId.get('bathroom'), show = F.byId.get('show_room');
+            return { outs, bad: bad.length, gapChamberTele: t1.bb[1] - 25.5 + (cr.bb[3] === 25.5 ? 0 : 0), lobbyHall: hall.bb[1] - lobby.bb[3], hallW: hall.bb[2] - hall.bb[0], bathHall: bath.bb[3] }; })()`);
+        ok(r.outs.front > 100 && r.outs.back > 100 && r.outs.band > 20, 'walls: ' + JSON.stringify(r.outs)); same(r.bad, 0, 'a band that is not one tile');
+    });
+    check('the building keeps its rooms\' sizes: the hallway is still six tiles wide, the lab, the arena and every room are as large as the sketch, and each solid shared wall is exactly one tile thick', () => {
+        const r = J(`(function(){ const F = facilityGet(), bb = id => F.byId.get(id).bb; const run = (axis, fixed, from, to) => { let best = 0, cur = 0; for (let v = from; v <= to; v += 0.05) { const r = axis === 'y' ? facilityRoomAt(fixed, v, F) : facilityRoomAt(v, fixed, F); if (!r) { cur += 0.05; best = Math.max(best, cur); } else cur = 0; } return Math.round(best * 10) / 10; };
+            return { lobbyHall: run('y', 30, 15, 24), chamberTele: run('y', 12.5, 20, 30), lobbyBath: run('x', 18, 38, 44), bathShow: run('x', 16, 44, 50), deckTele: run('y', 9.9, 36, 42), showTele2: run('y', 52, 28, 34), lab: [bb('experiment_lab')[2] - bb('experiment_lab')[0], bb('experiment_lab')[3] - bb('experiment_lab')[1]], hallWest: bb('lab_hallway')[0] }; })()`);
+        for (const k of ['lobbyHall', 'chamberTele', 'lobbyBath', 'bathShow', 'deckTele', 'showTele2']) ok(Math.abs(r[k] - 1) < 0.2, k + ': the wall is ' + r[k] + ' tiles thick'); same(r.lab.join(), '16,5.5', 'the lab keeps its size');
+        ok(/js\/facilitygrow\.js/.test(rd('game.html')) && /FACILITY_MAP\._grown|_grown/.test(rd('js/facilitygrow.js')), 'the spacing pass is not loaded');
     });
     check('no holes: the floor runs in under every wall of the arena (cells the rock edge only partly covers, and the pocket behind the north rock), so no black shows where a wall meets the floor', () => {
         const r = J(`(function(){ const F = _fp.F, covered = (x, y) => { const k = Math.round(x) + ',' + Math.round(y); return _fp.cells.has(k) || _fp.fills.has(k) || F.solids.some(s => s.shape === 'circle' ? Math.hypot(Math.round(x) - s.at[0], Math.round(y) - s.at[1]) < s.r : facilityPointInPoly(Math.round(x), Math.round(y), s.poly)); };

@@ -290,7 +290,9 @@ function facilityValidate(F) {
     const sealed = F.rooms.filter(r => r.raw.boundary_blocks_movement);
     if (!F.byId.get("arena")) errors.push("no arena");
     for (const r of sealed) {
-        const edges = r.poly.length, have = F.walls.filter(w => w.room === r.id).length;
+        // (an edge that is a door's end, a tunnel's mouth, is open by design: a one-tile wall thickness is cut through the room's outline)
+        let open = 0; for (let i = 0; i < r.poly.length; i++) { const p = r.poly[i], q = r.poly[(i + 1) % r.poly.length]; if (F.openings.some(o => o.rooms.includes(r.id) && _facSegPointDist(o.a, o.b, p[0], p[1]) < 0.06 && _facSegPointDist(o.a, o.b, q[0], q[1]) < 0.06)) open++; }
+        const edges = r.poly.length - open, have = F.walls.filter(w => w.room === r.id).length;
         if (have < edges) errors.push(r.id + " perimeter has " + have + " wall pieces for " + edges + " edges: something is cut open");
         for (const o of F.openings) if ((o.rooms || []).includes(r.id) && !F.connections.some(c => c.opening === o.id)) warnings.push(r.id + " has an opening with no connection: check it is meant");
     }

@@ -47,7 +47,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(rd('js/facilitymap.js').indexOf('function ') < 0, 'logic in the data file');
     });
     check('the strip game reaches the facility only through guarded facilityPlay hooks (js/facilityplay.js is the one file that uses the map and its movement helpers)', () => {
-        for (const f of fs.readdirSync(path.join(ROOT, 'js'))) if (f !== 'facility.js' && f !== 'facilitymap.js' && f !== 'facilityplay.js' && f !== 'facilitydecor.js') ok(!/facilityCanStep|facilityMove|facilityWalkable|FACILITY_MAP/.test(rd('js/' + f)), f + ' uses the facility');
+        for (const f of fs.readdirSync(path.join(ROOT, 'js'))) if (f !== 'facility.js' && f !== 'facilitymap.js' && f !== 'facilityplay.js' && f !== 'facilitydecor.js' && f !== 'facilitygrow.js') ok(!/facilityCanStep|facilityMove|facilityWalkable|FACILITY_MAP/.test(rd('js/' + f)), f + ' uses the facility');
     });
 
     group('VALIDATION');
@@ -59,7 +59,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('THE ARENA');
     check('every arena edge is a real wall segment, and a body cannot cross any of them in either direction', () => {
-        const r = J(`(function(){ const F = facilityGet(), A = F.byId.get('arena'), out = { edges: A.poly.length, walls: F.walls.filter(w => w.room === 'arena').length, crossed: 0, tested: 0 };
+        const r = J(`(function(){ const F = facilityGet(), A = F.byId.get('arena'), out = { edges: A.poly.length - A.poly.filter((p, i) => { const q = A.poly[(i + 1) % A.poly.length]; return F.openings.some(o => o.rooms.includes('arena') && _facSegPointDist(o.a, o.b, p[0], p[1]) < 0.06 && _facSegPointDist(o.a, o.b, q[0], q[1]) < 0.06); }).length, walls: F.walls.filter(w => w.room === 'arena').length, crossed: 0, tested: 0 };
             for (let i = 0; i < A.poly.length; i++) { const a = A.poly[i], b = A.poly[(i + 1) % A.poly.length], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy), nx = -dy / l, ny = dx / l, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
                 if (F.openings.some(o => Math.hypot((o.a[0] + o.b[0]) / 2 - mx, (o.a[1] + o.b[1]) / 2 - my) < 3)) continue;   // the arena's door is in this edge
                 for (const s of [1, -1]) { const x0 = mx - nx * 0.6 * s, y0 = my - ny * 0.6 * s, x1 = mx + nx * 0.6 * s, y1 = my + ny * 0.6 * s; out.tested++; if (facilityCanStep(x0, y0, x1, y1)) out.crossed++; } }
@@ -187,10 +187,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the arena\'s door is the one way out of it: agent walks leave only into rooms the confirmed doors reach', () => { const v = J('facilityValidateCached()'); same(v.info.arenaLeaks, 0, 'illegal leaks'); ok(v.info.arenaAgents >= 1200, 'agents ' + v.info.arenaAgents); });
 
     group('THE NOOK IS GONE: where the Crystal Chamber, the hallway and the lab passage meet');
-    check('the corner is one tidy alcove of Teleport Room 1, not a dead-end pocket of the hallway', () => {
+    check('the nook is gone for good: the corner north-west of the lab is outside every room (the walls are one tile thick now, and Teleport Room 1 no longer reaches the lab)', () => {
         const r = J(`(function(){ const sc = facilityScale(), at = (x, y) => (facilityRoomAt(x / sc, y / sc) || {}).id;
-            return { nook: at(400, 548), nookEast: at(420, 548), corridor: at(400, 470), hallNW: at(390, 470), lab: at(430, 548) }; })()`);
-        same(r.nook, 'teleport_room_1', 'the nook cell is in ' + r.nook); same(r.nookEast, 'teleport_room_1', 'the nook\'s east half is in ' + r.nookEast); same(r.corridor, 'lab_hallway', 'the corridor north of the lab'); same(r.hallNW, 'lab_hallway', 'the hallway\'s north-west end');
+            return { nook: at(400, 548), corridor: at(400, 470), hallNW: at(390, 470), lab: at(430, 548), tele1East: at(300, 530) }; })()`);
+        same(r.nook, undefined, 'the nook cell is in ' + r.nook); same(r.corridor, 'lab_hallway', 'the corridor north of the lab'); same(r.hallNW, 'lab_hallway', 'the hallway\'s north-west end'); same(r.tele1East, 'teleport_room_1', 'Teleport Room 1');
     });
     check('the hallway\'s north-west end is a clean dead end at the Crystal Chamber\'s door: with Teleport Room 1\'s doors shut, a body walks from the door to the far end and no pocket opens off it', () => {
         const r = J(`(function(){ const sc = facilityScale(), C = facilityBuild({ closed: ['teleport_room_1'] }), P = __hp(), cd = __door('door_crystal_hallway', C), cells = facilityFlood(P.nw[0], P.nw[1], C), has = (x, y) => cells.some(q => Math.hypot(q[0] - x, q[1] - y) < 1.1);
@@ -271,7 +271,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.length, 0, 'blocked in front of a door: ' + r.slice(0, 6).join(' '));
     });
     check('the lobby stays walkable: from the west door round the computer desks and the reception desk to the east door and the bathroom door, all inside the lobby', () => {
-        const r = J(`(function(){ const F = facilityBuild({ closed: ['front_lobby'] }), W = __door('door_lobby_hallway_west'), E = __door('door_lobby_hallway_east'), B = __door('door_bathroom_lobby'), cells = facilityFlood(W.mx + 2, W.my - 3, F), rooms = new Set(), has = (x, y) => cells.some(q => Math.hypot(q[0] - x, q[1] - y) < 1.1);   // (the lobby's doors shut, so the flood is the lobby's own floor)
+        const r = J(`(function(){ const F = facilityBuild({ closed: ['front_lobby'] }), W = __door('door_lobby_hallway_west'), E = __door('door_lobby_hallway_east'), B = __door('door_bathroom_lobby'), cells = facilityFlood(W.mx - 1, W.my - 3, F), rooms = new Set(), has = (x, y) => cells.some(q => Math.hypot(q[0] - x, q[1] - y) < 1.1);   // (the lobby's doors shut, so the flood is the lobby's own floor)
             for (const q of cells) rooms.add(facilityRoomAt(q[0], q[1], F).id); return { east: has(E.mx, E.my - 3), bath: has(B.mx - 3, B.my), rooms: Array.from(rooms), n: cells.length }; })()`);
         same(r.east, true, 'the east door is cut off'); same(r.bath, true, 'the bathroom door is cut off'); same(r.rooms.join(), 'front_lobby', 'the flood left the lobby'); ok(r.n > 150, 'only ' + r.n + ' cells of lobby floor');
     });

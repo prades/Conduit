@@ -4,6 +4,8 @@
 // Source of truth: the hand-drawn top-down floor plan (the clipboard photo) and conduit_facility_map_spec.json. Edit THIS file to change the facility; nothing in
 // the game code names a room or a coordinate.
 //
+// NOTE: this file is the SKETCH layout (rooms touch). js/facilitygrow.js runs at load and spaces the building out so every wall between rooms is a one-tile band; the built map is what the game and the tests see.
+//
 // UNITS. Every coordinate here is in SKETCH PIXELS: the photo's pixels, origin top-left, x right, y down (the photo is 1500 x 2000). `scale.px_per_tile` turns them
 // into world tiles, so calibrating the facility against the game is ONE number. The sketch's grid is a visual guide only and does not define it.
 //
