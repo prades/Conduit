@@ -21,7 +21,8 @@ const FP_PLAYER_SPEED = 0.13;     // tiles a frame
 const FP_ELEV_PX = 34;            // px of screen height per tile of height (the map's levels: js/facilitymap.js)
 const FP_WALL_H = 122;            // px: how tall a wall stands on screen (a door is FP_DOOR_H: two tiles; the wall above it is a header)
 const FP_DOOR_H = 108;            // px: how tall a door is
-const FP_WALL_X = FP_WALL_H - 74; // px: how much taller the walls are than when the decor was laid out
+const FP_WALL_X = FP_WALL_H - 74;
+const FP_WALL_T = 1.0;            // tiles: a wall's thickness = the gap the building was spaced out by (js/facilitygrow.js) // px: how much taller the walls are than when the decor was laid out
 const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", bathroom: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a" };
 
 // ── the world ──
@@ -233,6 +234,12 @@ function _fpWallBand(w, a, b, F) {
     const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
     const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, r = facilityRoomAt(mx + nx * 1.5, my + ny * 1.5, F), q = facilityRoomAt(mx + nx * 0.5, my + ny * 0.5, F); return !!r && r.id !== w.room && !q;
 }
+// whether a wall's slab has an ink line along its far edge: only where that edge is the boundary of the whole top (a room beyond it, or open air beyond the band), never across another slab
+function _fpWallInk(w, a, b, F) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+    const o = _fpWallOut(w, a, b, F), mx = (a[0] + b[0]) / 2 + nx * o * FP_WALL_T, my = (a[1] + b[1]) / 2 + ny * o * FP_WALL_T;
+    return !!facilityRoomAt(mx + nx * o * 0.5, my + ny * o * 0.5, F) || !facilityRoomAt(mx + nx * o * 1.5, my + ny * o * 1.5, F);
+}
 function _fpWallLightRoom(w, a, b, F) {
     const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
     for (const t of [0.4, 0.9, 1.5, 2.2, 3.0]) { const r = facilityRoomAt((a[0] + b[0]) / 2 + nx * t, (a[1] + b[1]) / 2 + ny * t, F); if (r) return r.id; }   // (the room that shows its face; the pocket of void behind the arena's rock belongs to the arena)
@@ -244,7 +251,7 @@ function _fpPlaceStatics(F) {
         const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy), n = Math.max(1, Math.ceil(len / seg));
         for (let i = 0; i < n; i++) {
             const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n];
-            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, win: w.window || null, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), out: _fpWallOut(w, a, b, F), nbBand: _fpWallBand(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
+            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, win: w.window || null, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), out: _fpWallOut(w, a, b, F), nbBand: _fpWallBand(w, a, b, F), inkBack: _fpWallInk(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
         }
     }
     // a wall between two floors of different heights stands from its own floor up past the HIGHER floor, so a step down is a retaining wall and not a gap

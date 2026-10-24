@@ -89,7 +89,6 @@ function _fpCrystal(x, y, h, w, col, f, seed) {   // a faceted crystal shard sta
 }
 
 // ── walls ──
-const FP_WALL_T = 1.0;   // tiles: the wall's thickness = the gap the building was spaced out by (js/facilitygrow.js)   // tiles: how thick a wall looks (drawing only)
 // per-room colour strings, built once (the wall is drawn hundreds of times a frame)
 const _fpRoomCol = new Map();
 function _fpRoomCols(id) {
@@ -97,15 +96,16 @@ function _fpRoomCols(id) {
     c = { wainLit: RS.wain, wainDark: _fpShade(RS.wain, 0.9), skirt: _fpShade(RS.wain, 0.8), acc: RS.acc }; _fpRoomCol.set(id, c); return c;
 }
 function _fpFlat(pts, col) { ctx.fillStyle = col; ctx.beginPath(); for (let i = 0; i < pts.length; i++) i ? ctx.lineTo(pts[i][0], pts[i][1]) : ctx.moveTo(pts[0][0], pts[0][1]); ctx.closePath(); ctx.fill(); }   // a flat fill: no outline pass
-function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out) {   // the thick top of a wall: a slab FP_WALL_T deep over the band, running from the piece towards the other side of the wall (out: +1 towards the camera, -1 away). It runs half a tile past both ends, so pieces and corners overlap and leave no hole; the ink line along its far edge is wide enough for its outer half to show past a neighbour's fill
-    const t = FP_WALL_T, L = Math.hypot(bx - ax, by - ay) || 1, ex = (bx - ax) / L * 0.5, ey = (by - ay) / L * 0.5, Q = (x, y) => _fpP(x, y, Hd), mx = nx * (out || -1), my = ny * (out || -1);
+function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out, ink) {   // the thick top of a wall: a slab FP_WALL_T deep over the band, running from the piece towards the other side of the wall (out: +1 towards the camera, -1 away). It runs half a tile past both ends (not on a short piece, a tunnel's side, which is exactly the band's width and must not poke into the rooms either side), so pieces and corners overlap and leave no hole; the ink line along its far edge is wide enough for its outer half to show past a neighbour's fill
+    const t = FP_WALL_T, L = Math.hypot(bx - ax, by - ay) || 1, e = L < 1.6 ? 0 : 0.5, ex = (bx - ax) / L * e, ey = (by - ay) / L * e, Q = (x, y) => _fpP(x, y, Hd), mx = nx * (out || -1), my = ny * (out || -1);
     _fpFlat([Q(ax - ex, ay - ey), Q(bx + ex, by + ey), Q(bx + ex + mx * t, by + ey + my * t), Q(ax - ex + mx * t, ay - ey + my * t)], FP_PAL.cap);
+    if (ink === false) return;
     const q0 = Q(ax - ex + mx * t, ay - ey + my * t), q1 = Q(bx + ex + mx * t, by + ey + my * t); ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 4; ctx.lineCap = "butt"; ctx.beginPath(); ctx.moveTo(q0[0], q0[1]); ctx.lineTo(q1[0], q1[1]); ctx.stroke();
 }
 function _fpStyleWall(it, Hd) {
     const ax = it.a[0], ay = it.a[1], bx = it.b[0], by = it.b[1], dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
     const P = (u, z) => _fpP(ax + dx * u, ay + dy * u, z), lit = nx > ny, body = lit ? FP_PAL.wallLit : FP_PAL.wallDark, wain = Math.min(24, Hd), capH = Math.min(8, Math.max(0, Hd - wain)), RC = _fpRoomCols(it.room), U0 = -0.02, U1 = 1.02;   // (each band runs a hair past both ends, so neighbours overlap and leave no seam: no outline pass needed)
-    _fpWallTop(ax, ay, bx, by, nx, ny, Hd, it.out);   // the wall's thickness: a slab over the band (the building is spaced out for it)
+    _fpWallTop(ax, ay, bx, by, nx, ny, Hd, it.out, it.inkBack);   // the wall's thickness: a slab over the band (the building is spaced out for it)
     if (it.nbBand) return;   // (only the slab: the neighbouring room's own wall face stands in front of this one)
     if (it.drop > 0) _fpFlat([P(U0, -it.drop), P(U1, -it.drop), P(U1, 0), P(U0, 0)], RC.skirt);   // a skirt down to a lower floor beside the wall
     _fpFlat([P(U0, 0), P(U1, 0), P(U1, wain), P(U0, wain)], lit ? RC.wainLit : RC.wainDark);
