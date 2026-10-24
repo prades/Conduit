@@ -213,6 +213,16 @@ function facilitySpotNear(x, y, r0, r1) {
     for (const [k, c] of _fp.cellsP) { const d = Math.hypot(c[0] - x, c[1] - y); if (d < r0 || d > r1) continue; const rm = facilityRoomAt(c[0], c[1], _fp.F); if (here && (!rm || rm.id !== here.id)) continue; const sc = Math.abs(d - (r0 + r1) / 2) + Math.max(0, (x + y) - (c[0] + c[1])) * 0.6; if (sc < bd) { bd = sc; best = [c[0], c[1]]; } }
     return best;
 }
+// a walkable tile in a named room, `r0`..`r1` from (x, y) (the middle of that band by preference; the room's tile nearest it when none is in the band); null if the room has no floor
+function facilitySpotIn(roomId, x, y, r0, r1) {
+    let best = null, bs = 1e9, near = null, nd = 1e9;
+    for (const [k, c] of _fp.cellsP) {
+        const rm = facilityRoomAt(c[0], c[1], _fp.F); if (!rm || rm.id !== roomId) continue;
+        const d = Math.hypot(c[0] - x, c[1] - y); if (d < nd) { nd = d; near = [c[0], c[1]]; }
+        if (d < r0 || d > r1) continue; const sc = Math.abs(d - (r0 + r1) / 2); if (sc < bs) { bs = sc; best = [c[0], c[1]]; }
+    }
+    return best || near;
+}
 // a walkable tile within `range` of a box (a prop a unit wants to use), the one nearest the player; null if there is none
 function facilityApproachTile(b, range) {
     let best = null, bd = 1e9;

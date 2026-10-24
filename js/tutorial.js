@@ -44,14 +44,14 @@ const TUT_CLASS_STEP = { id: "perk", title: "GET YOUR GEAR", text: () => ({ guns
     hint: () => ({ gunslinger: "WALK UP TO THE GLOWING LOCKER AND PRESS E (OR TAP IT). THE GUN IS BIG: YOU STAND TALL ON YOUR TENTACLES TO HOLD IT.", technomancer: "COLLECT 4 MECH LEGS (TELEPORT ROOM 1) AND THE CORE (SHOW ROOM), THEN STAND AT THE PAD AND PRESS E.", mutator: "THE LAB COAT AND SAFETY GOGGLES GO ON BY THEMSELVES WHEN YOU WALK IN, AND YOU KEEP THEM." }[playerClassKey] || ""), done: () => !!CLASS_SIGNATURE[playerClassKey] && classHas(CLASS_SIGNATURE[playerClassKey]) };
 
 // THE GUN LESSON: a stray ant (level 3, plenty of health, grazing) is put in view; the objective is to shoot it three times with the player's own gun. The player is given the training rounds, and the ant is taken away when the lesson is done.
-const TUT_GUN = { shots: 3, rounds: 8, level: 3, health: 400, respawns: 4, near: [4, 6] };
+const TUT_GUN = { shots: 3, rounds: 8, level: 3, health: 400, respawns: 4, room: "lab_hallway", near: [6, 14], size: 2.2 };   // (it wanders in the main hallway, and is big: easy to see and to hit)
 function tutStray() { return actors.find(a => a && a.tutStray && !a.dead) || null; }
 function tutGunShots() { const S = _fp.tut.script; return Math.max(0, playerShotsFired - (S.gunBase === undefined ? playerShotsFired : S.gunBase)); }
 function tutGunDone() { const S = _fp.tut.script; if (S.gunBase === undefined) { S.gunBase = playerShotsFired; S.strays = 0; } return tutGunShots() >= TUT_GUN.shots; }
 function tutGunText() {
     const n = tutGunShots(), left = TUT_GUN.shots - n, st = tutStray();
-    if (!st) return "A STRAY ANT IS COMING OUT OF THE DARK\u2026";
-    return (playerAttackMode ? "YOUR GUN IS ARMED. SHOOT THE STRAY ANT" : "ARM YOUR GUN ON THE STRAY ANT NEARBY") + ": " + n + "/" + TUT_GUN.shots + " SHOTS.";
+    if (!st) return "A BIG STRAY ANT IS COMING INTO THE MAIN HALLWAY\u2026";
+    return (playerAttackMode ? "YOUR GUN IS ARMED. SHOOT THE STRAY ANT" : "ARM YOUR GUN ON THE BIG STRAY ANT IN THE MAIN HALLWAY") + ": " + n + "/" + TUT_GUN.shots + " SHOTS.";
 }
 function tutGunTick() {
     const S = _fp.tut.script, st = TUT_STEPS[S.step];
@@ -59,9 +59,9 @@ function tutGunTick() {
         if (S.gunBase === undefined) tutGunDone();
         if (playerAmmo < TUT_GUN.rounds) playerAmmo = TUT_GUN.rounds;   // (the training rounds)
         if (!tutStray() && S.strays < TUT_GUN.respawns) {
-            const spot = typeof facilitySpotNear === "function" ? facilitySpotNear(player.visualX, player.visualY, TUT_GUN.near[0], TUT_GUN.near[1]) : null;
+            const spot = typeof facilitySpotIn === "function" ? facilitySpotIn(TUT_GUN.room, player.visualX, player.visualY, TUT_GUN.near[0], TUT_GUN.near[1]) : null;
             if (spot) { let p = null; try { p = spawnPredatorForZone(1, { species: "ant", className: "scout" }); } catch (e) { p = null; }
-                if (p) { p.x = spot[0]; p.y = spot[1]; p.level = TUT_GUN.level; if (typeof _applyPredLevel === "function") _applyPredLevel(p, true); p.maxHealth = p.health = TUT_GUN.health; p.state = "wander"; p.tutStray = true; S.strays++; _tutSay("stray" + S.strays, "A STRAY ANT WANDERS IN. THIS IS YOUR TARGET.", "#ffb347"); } }
+                if (p) { p.x = spot[0]; p.y = spot[1]; p.level = TUT_GUN.level; if (typeof _applyPredLevel === "function") _applyPredLevel(p, true); p.maxHealth = p.health = TUT_GUN.health; if (p.dimensions) { p.dimensions.width = Math.round(p.dimensions.width * TUT_GUN.size); p.dimensions.height = Math.round(p.dimensions.height * TUT_GUN.size); } p.state = "wander"; p.tutStray = true; S.strays++; _tutSay("stray" + S.strays, "A BIG STRAY ANT WANDERS INTO THE MAIN HALLWAY. THIS IS YOUR TARGET.", "#ffb347"); } }
         }
     } else if (S.gunBase !== undefined) { const s = tutStray(); if (s) { s.dead = true; s._xpGiven = true; } }   // (the lesson is over: the stray goes)
 }
