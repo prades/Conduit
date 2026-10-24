@@ -1,9 +1,9 @@
-// A contact sheet of a family's baked sprites, for looking at them: node design/props/preview.js <family> [out.png] [scale]
+// A contact sheet of a family's baked sprites, for looking at them: node design/props/preview.js <family> [out.png] [scale] [name-prefix,name-prefix...]
 // Each variant is drawn on a floor diamond (its footprint: 1 tile = the 60 x 30 px diamond at the anchor) over a mid-grey backdrop, with its name; the anchor point is marked with a small red cross.
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..', '..'), fam = process.argv[2], out = process.argv[3] || path.join(__dirname, 'out', 'preview_' + fam + '.png'), SC = +process.argv[4] || 1;
-const meta = JSON.parse(fs.readFileSync(path.join(__dirname, 'out', fam + '.json'), 'utf8')), cells = Object.entries(meta.cells);
+const meta = JSON.parse(fs.readFileSync(path.join(__dirname, 'out', fam + '.json'), 'utf8')), ONLY = process.argv[5] ? process.argv[5].split(',') : null, cells = Object.entries(meta.cells).filter(([n]) => !ONLY || ONLY.some(o => n.startsWith(o)));
 (async () => {
   const b = await chromium.launch({ args: ['--allow-file-access-from-files', '--no-sandbox'] }); const pg = await b.newPage();
   const html = `<body style="margin:0;background:#3a4252"><canvas id=c></canvas><script>

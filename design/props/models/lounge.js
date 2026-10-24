@@ -26,7 +26,7 @@
 
   // ═══════════════ the couch ═══════════════
   function couch(style) {
-    const g = G(), P = style === 0 ? { seat: '#4f86e0', back: '#6f9ff0', dark: '#2c58b0', pil: '#9a5cff' } : { seat: '#8f63ee', back: '#ab85f6', dark: '#5f3dbb', pil: '#31c8e0' };
+    const g = G(), P = style === 0 ? { seat: '#356bc8', back: '#4f82da', dark: '#1f4396', pil: '#9a5cff' } : { seat: '#7448d8', back: '#8d66ea', dark: '#4a2aa8', pil: '#31c8e0' };
     const seatM = fab(P.seat), backM = fab(P.back), darkM = fab(P.dark), piping = MT.teal;
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {            // four tapered steel legs, splayed a little
       const l = cyl(0.034, 0.022, px(7), MT.steel, 10); add(g, l, sx * 1.31, px(3.5), sz * 0.36); l.rotation.z = -sx * 0.1; l.rotation.x = sz * 0.1;
@@ -64,7 +64,7 @@
     add(g, S.box(0.06, px(1.2), 0.72, MT.steel, 0.01), 0.8, px(18), 0); add(g, S.box(0.06, px(1.2), 0.72, MT.steel, 0.01), -0.8, px(18), 0);
     add(g, S.box(1.5, px(1.6), 0.64, MT.laminateDk, 0.015), 0, px(8), 0);                                                                          // a low shelf
     add(g, S.box(1.9, px(2.2), 0.9, MT.graphite, 0.03), 0, px(20.3), 0);                                                                           // the top's frame
-    add(g, S.box(1.82, px(2.4), 0.82, MT.glassTint, 0.02), 0, px(21.7), 0);                                                                        // tinted glass inset
+    add(g, S.box(1.82, px(2.4), 0.82, S.std('#3d8c9a', 0.1, 0.12), 0.02), 0, px(21.7), 0);                                                                        // tinted glass inset
     add(g, S.box(1.84, px(0.5), 0.84, MT.cyanDim, 0.005), 0, px(20.4), 0.0).scale.set(1, 0.4, 1);                                                  // (a faint lit edge under the glass)
     const topY = px(23);
     // on it: a tablet, two mugs, a pot plant, a stack of magazines
@@ -82,7 +82,7 @@
   }
 
   // ═══════════════ the beanbag ═══════════════
-  const BEAN = ['#2fc6e0', '#9a5cff', '#f2b13a', '#43d9a8'];
+  const BEAN = ['#1fa4c0', '#8446e4', '#dc961a', '#2cb98c'];
   function beanbag(style) {
     const g = G(), R = 0.41, geo = new T.SphereGeometry(R, 40, 26), pos = geo.attributes.position, r = rng(style + 3);
     const lobes = [[0.7, 0.08], [2.4, 0.06], [4.1, 0.05]];
@@ -142,9 +142,9 @@
 
   // ═══════════════ the vending machines ═══════════════
   const VEND = [
-    { name: 'SNAX', trim: '#f2b13a', body: '#2a3038', glowBack: '#ffe9b0', items: ['#e0402a', '#f2b13a', '#f7d36a', '#c97a2a', '#8a4a1a'], shape: 'box', shelf: 4 },
-    { name: 'COLD', trim: '#31c8e0', body: '#dbeaee', glowBack: '#cdf4ff', items: ['#31c8e0', '#3a7bff', '#43d9a8', '#f1f8fa', '#e24a3a'], shape: 'can', shelf: 4 },
-    { name: 'GADGETS', trim: '#9a5cff', body: '#1c2027', glowBack: '#e0d0ff', items: ['#9a5cff', '#31e8ff', '#eaffff', '#3a7bff', '#f2b13a'], shape: 'slab', shelf: 5 },
+    { name: 'SNAX', trim: '#f2b13a', body: '#566174', glowBack: '#ffe9b0', items: ['#e0402a', '#f2b13a', '#f7d36a', '#c97a2a', '#8a4a1a'], shape: 'box', shelf: 4 },
+    { name: 'COLD', trim: '#31c8e0', body: '#c4d6dc', glowBack: '#cdf4ff', items: ['#31c8e0', '#3a7bff', '#43d9a8', '#f1f8fa', '#e24a3a'], shape: 'can', shelf: 4 },
+    { name: 'GADGETS', trim: '#9a5cff', body: '#414768', glowBack: '#e0d0ff', items: ['#9a5cff', '#31e8ff', '#eaffff', '#3a7bff', '#f2b13a'], shape: 'slab', shelf: 5 },
   ];
   function sign(name, w, h, trim, dark) {
     return lit(tex(256, 64, (c, W, H) => { c.fillStyle = dark ? '#0a0d12' : '#10151c'; c.fillRect(0, 0, W, H); c.fillStyle = trim; c.fillRect(0, H - 8, W, 8); c.fillRect(0, 0, W, 4); c.font = 'bold 34px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#ffffff'; c.fillText(name, W / 2, H / 2 - 2); c.fillStyle = trim; c.fillRect(14, H / 2 - 2, 26, 4); c.fillRect(W - 40, H / 2 - 2, 26, 4); }), 1);
@@ -157,7 +157,7 @@
     const bodyM = S.std(P.body, 0.45, 0.4), trimM = S.std(P.trim, 0.3, 0.4), glowTrim = basic(P.trim, 0.95);
     add(g, S.box(W, H, D, bodyM, 0.04), 0, H / 2 + px(2), 0);                                                         // the body
     for (const sx of [-1, 1]) add(g, S.box(0.07, px(2), 0.07, MT.graphite, 0.01), sx * (W / 2 - 0.08), px(1), D / 2 - 0.1), add(g, S.box(0.07, px(2), 0.07, MT.graphite, 0.01), sx * (W / 2 - 0.08), px(1), -D / 2 + 0.1);
-    add(g, S.box(W + 0.03, px(2.2), D + 0.03, MT.graphite, 0.015), 0, H + px(2.4), 0);                                    // the top cap
+    add(g, S.box(W + 0.03, px(2.2), D + 0.03, MT.steelDk, 0.015), 0, H + px(2.4), 0);                                    // the top cap
     add(g, S.box(W - 0.06, px(0.7), 0.02, glowTrim, 0.003), 0, H + px(0.2), D / 2 + 0.006);                              // a lit trim line under the cap
     const zF = D / 2;
     // the header sign (lit)
@@ -204,7 +204,7 @@
     add(g, S.box(0.2, px(1.6), 0.02, MT.cap, 0.005), 0, px(14.5), zF + 0.063);                                                           // PUSH
     // the +x face: a lit side panel and vents (the unit may stand against a west wall, so this face is its front too)
     const xF = W / 2;
-    const sp = add(g, decal(D - 0.16, px(54), sideLogo(P)), xF + 0.008, px(38), 0); sp.rotation.y = PI / 2;
+    const sp = add(g, decal(D - 0.16, px(54), sideLogo(P)), xF + 0.02, px(38), 0); sp.rotation.y = PI / 2;
     const sf = add(g, S.box(0.02, px(56), D - 0.12, MT.graphite, 0.004), xF + 0.002, px(38), 0);
     for (let i = 0; i < 5; i++) add(g, S.box(0.02, px(0.9), D - 0.3, MT.steelDk, 0.003), xF + 0.012, px(7 + i * 2.2), 0);
     return { g };
@@ -253,6 +253,7 @@
     const fl = add(g, S.box(0.4, px(2.2), 0.012, MT.steelDk, 0.003), 0, px(31.2), 0.248); fl.rotation.x = 0.22;                       // the swing flap
     add(g, S.box(0.14, px(0.8), 0.02, basic(P.band, 0.85), 0.004), 0, px(34), 0.2);                                                // a lit tip on the lid
     add(g, S.box(0.1, px(2), 0.04, MT.steelDk, 0.006), -0.18, px(2.4), 0.25); add(g, S.box(0.12, px(1), 0.1, MT.graphite, 0.006), -0.18, px(1.0), 0.28);   // a foot pedal
+    g.scale.setScalar(1.12);
     return { g };
   }
 
@@ -262,8 +263,7 @@
     for (let i = 0; i < 5; i++) {                                                                                                  // the five-star base and its castors
       const a = i * PI * 2 / 5 + 0.3, ex = Math.cos(a) * 0.27, ez = Math.sin(a) * 0.27, sp = G(); sp.position.set(0, px(7.2), 0); sp.rotation.y = -a;
       sp.add(at(S.box(0.29, px(1.5), 0.045, MT.graphite, 0.008), 0.14, px(-1.2), 0)); g.add(sp);
-      const w = G(); w.position.set(ex, px(2.2), ez); w.add(at(cyl(0.028, 0.028, px(3.2), MT.rubber, 10), 0, 0, 0).rotateX(PI / 2));
-      w.children[0].rotation.set(0, 0, 0); const wheel = cyl(0.028, 0.028, 0.03, MT.rubber, 10); wheel.rotation.z = PI / 2; wheel.rotation.y = -a; w.children.length = 0; w.add(wheel); w.add(at(S.box(0.02, px(2), 0.02, MT.steel, 0.003), 0, px(1.6), 0)); g.add(w);
+      const w = G(); w.position.set(ex, px(2.2), ez); const wheel = cyl(0.028, 0.028, 0.03, MT.rubber, 10); wheel.rotation.z = PI / 2; wheel.rotation.y = -a; w.add(wheel); w.add(at(S.box(0.02, px(2), 0.02, MT.steel, 0.003), 0, px(1.6), 0)); g.add(w);
     }
     add(g, cyl(0.06, 0.07, px(5), MT.graphite, 14), 0, px(8.4), 0);                                                                // the hub
     add(g, cyl(0.032, 0.032, px(9), MT.steel, 12), 0, px(14.5), 0); add(g, cyl(0.048, 0.048, px(5), MT.graphite, 12), 0, px(11), 0);   // the gas strut
@@ -280,11 +280,12 @@
       add(g, S.box(0.04, px(1.4), 0.04, MT.steelDk, 0.005), sx * 0.24, px(22.8), 0.06);
     }
     add(g, cyl(0.026, 0.026, 0.07, MT.steel, 8), 0.23, px(19.4), 0.0).rotation.z = PI / 2;                                         // a height lever
+    g.scale.setScalar(1.18);
     return { g };
   }
 
   const VARIANTS = ['couch.3x1.s0', 'couch.3x1.s1', 'table', 'beanbag.s0', 'beanbag.s1', 'beanbag.s2', 'beanbag.s3', 'pingpong', 'vending.1x1.s0', 'vending.1x1.s1', 'vending.1x1.s2', 'vending.2x1', 'cooler', 'bin.s0', 'bin.s1', 'chair'];
-  PROPS.lounge = { variants: VARIANTS, canvas: [900, 600], exposure: 0.95, build(name) {
+  PROPS.lounge = { variants: VARIANTS, canvas: [900, 600], exposure: 0.85, build(name) {
     const s = name.match(/\.s(\d)$/); const si = s ? +s[1] : 0;
     if (name.startsWith('couch')) return couch(si);
     if (name === 'table') return table();
