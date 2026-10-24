@@ -145,6 +145,10 @@ function _fpRockSides(items) {
         if (it.fp !== "wall" || it.kind !== "rock") continue;
         const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
         const face = facilityRoomAt(it.x + nx * 0.4, it.y + ny * 0.4, _fp.F); it.back = !!face && face.id === it.room; it.lit = nx > ny ? 1 : 0.8; it.depth = it.x + it.y + 0.02;   // (after a steel wall on the same line)
+        // the rock beside the ends of the observation deck's glass rises to the deck's wall top, so no gap shows between the deck and the rock (it tapers back to its own height within 1.5 tiles)
+        if (!_fp.glassEnds) { const D = _fp.F.byId.get("observation_deck"), A = _fp.F.byId.get("arena"); _fp.glassEnds = D && A ? [[D.bb[2], D.bb[1]], [D.bb[2], D.bb[3]]] : []; _fp.deckRise = D && A ? (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + FP_WALL_H + 6 : 0; }
+        const wd = (px, py) => { let d = 9; for (const e of _fp.glassEnds) d = Math.min(d, Math.hypot(px - e[0], py - e[1])); return Math.max(0, 1 - d / 1.5); };
+        it.dk = _fp.glassEnds.length ? [wd(it.a[0], it.a[1]), wd((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), wd(it.b[0], it.b[1])] : null; if (it.dk && !(it.dk[0] || it.dk[1] || it.dk[2])) it.dk = null;
         it.cap = it.back ? null : { d: 1.0, nx, ny, zb: null };   // a front wall's cap is the thickness of the rock, 1 tile, running back toward the arena
         if (it.back) {   // the CAP: the rock's top surface runs back, away from the camera, to the next wall (the hallway's) or, for a thin spur, a little way (a burrow with a rock roof)
             let t = 0.3, room = null; for (; t <= 4.2; t += 0.2) { const q = facilityRoomAt(it.x - nx * t, it.y - ny * t, _fp.F); if (q) { room = q; break; } }
@@ -155,6 +159,10 @@ function _fpRockSides(items) {
 }
 // the heights (px) of a rock wall piece at its two ends and its middle: a ragged skyline, the same for every piece at the same place
 function _fpRockHeights(it, H) {
+    const hs = _fpRockHeightsBase(it, H); if (!it.dk) return hs;
+    const top = _fp.deckRise + 14 + _fpHash(Math.round(it.a[0] * 4), Math.round(it.a[1] * 4)) % 12; return hs.map((h, i) => h + Math.max(0, top - h) * it.dk[i]);   // rock beside the deck's glass rises to the deck's wall top
+}
+function _fpRockHeightsBase(it, H) {
     const ext = H - FP_WALL_H, j = (x, y, m) => _fpHash(Math.round(x * 4), Math.round(y * 4)) % m, mx = (it.a[0] + it.b[0]) / 2, my = (it.a[1] + it.b[1]) / 2;
     if (it.back) return [ext + 120 + j(it.a[0], it.a[1], 40), ext + 120 + j(mx, my, 50), ext + 120 + j(it.b[0], it.b[1], 40)];
     return [ext + 70 + j(it.a[0], it.a[1], 40), ext + 70 + j(mx, my, 60), ext + 70 + j(it.b[0], it.b[1], 40)];
@@ -222,6 +230,20 @@ function _fpDrawRail(it) {
     if (it.legs && it.legH > 20) _fpDrawFrame(it, -it.legH, -10);
 }
 function _fpDrawSupport(it, ext) { _fpDrawFrame(it, 0, ext); }
+
+// THE DECK'S CLIFF: the observation deck is raised above the arena and looks down into it through glass. Below that glass the arena's own pane of the window is drawn as a THICK ROCK FACE instead (the deck is
+// cut into the rock): from the arena floor up to the underside of the deck, with strata, boulders, cracks, a dark foot and a lit lip under the deck. It is drawn per wall piece, so it runs the whole length.
+function _fpDrawDeckCliff(it) {
+    const rise = (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + 4;
+    const P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z), a0 = P(0, 0), b0 = P(1, 0), a1 = P(0, rise), b1 = P(1, rise), seed = _fpHash(Math.round(it.a[0] * 4), Math.round(it.a[1] * 4));
+    const g = ctx.createLinearGradient(0, Math.min(a1[1], b1[1]), 0, Math.max(a0[1], b0[1])); g.addColorStop(0, "#5a4f47"); g.addColorStop(0.15, "#4a413b"); g.addColorStop(1, "#231e1b");
+    _fpQuad([a0, b0, b1, a1], g, g, 1);
+    for (let z = 22 + seed % 14; z < rise - 6; z += 30 + (_fpHash(z, seed) % 10)) { _fpQuad([P(0, z), P(1, z), P(1, z + 3), P(0, z + 3)], "rgba(0,0,0,0.32)", null); _fpQuad([P(0, z + 3), P(1, z + 3), P(1, z + 5), P(0, z + 5)], "rgba(255,240,220,0.06)", null); }   // strata
+    for (let k = 0; k < 3; k++) { const h = _fpHash(seed, k + 5), u = ((h >>> 3) % 70) / 100 + 0.12, z = 14 + ((h >>> 8) % 100) / 100 * (rise - 60), w = 0.14 + ((h >>> 5) % 5) / 100, hh = 14 + (h % 16);   // boulders
+        _fpQuad([P(u - w, z), P(u + w, z + 2), P(u + w * 0.8, z + hh), P(u, z + hh + 4), P(u - w * 0.8, z + hh - 2)], "rgba(255,240,220,0.08)", "rgba(0,0,0,0.3)", 1.5); }
+    ctx.strokeStyle = "rgba(0,0,0,0.38)"; ctx.lineWidth = 2; const cu = ((seed >>> 6) % 80 + 10) / 100, c0 = P(cu, rise - 4), c1 = P(cu + 0.06, rise * 0.45), c2 = P(cu - 0.03, 8); ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(c1[0], c1[1]); ctx.lineTo(c2[0], c2[1]); ctx.stroke();   // a crack
+    ctx.lineJoin = "round"; ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke(); ctx.strokeStyle = "#7a6c60"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] + 2.5); ctx.lineTo(b1[0], b1[1] + 2.5); ctx.stroke(); ctx.lineJoin = "miter";   // the lip under the deck
+}
 
 // Called by every facility floor tile from the game's own tile draw: px, py are the tile's top-left corner as for the tile sprite.
 // A tile's static marks are painted ONCE into a small sprite (cut to the tile's diamond) and stamped each frame; only the light (which flickers) is painted live.

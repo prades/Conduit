@@ -100,3 +100,7 @@ The catwalks are not a room but an open steel deck at the top of the arena's eas
 - each wall piece of the catwalks is drawn as a deck edge: a fascia under the floor, a kickboard, a post every tile and two rails (yellow top rail), not a solid wall; so there is no wall decor on them (it was removed);
 - legs: an open frame (posts every two tiles, beams, X braces) runs down from every deck edge to the arena floor, except the west edge, which the arena's own `railing_wall` carries: that wall is drawn as the same open frame from the arena floor up to the deck, so you see through it;
 - the deck's floor, lanes, light and furniture are unchanged. The catwalks are still blocked off for now.
+
+### The deck's cliff and the rock beside it
+
+The observation deck is cut into the rock: the arena's own pane of the deck window (the lower glass the arena owns, seen below the deck's glass) is drawn as a THICK ROCK FACE (`_fpDrawDeckCliff`), from the arena floor up to the underside of the deck, with strata, boulders, a crack and a lit lip under the deck. The arena rock at each end of the window rises to the deck's wall top (`it.dk`, tapering back within 1.5 tiles), so there is no gap between the deck and the rock.

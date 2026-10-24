@@ -225,7 +225,7 @@ function _fpPlaceStatics(F) {
         const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy), n = Math.max(1, Math.ceil(len / seg));
         for (let i = 0; i < n; i++) {
             const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n];
-            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
+            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, win: w.window || null, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
         }
     }
     // a wall between two floors of different heights stands from its own floor up past the HIGHER floor, so a step down is a retaining wall and not a gap
@@ -315,6 +315,7 @@ function _fpDrawWall(it) {
     if (it.support) return _fpDrawSupport(it, H - FP_WALL_H);  // the arena's frame under the deck: open steel, you see through it
     const Hd = H;   // walls never react to the player
     if (!glass && facilityStyleRoom(it.room)) return _fpStyleWall(it, Hd);   // (the crystal laboratory style)
+    if (it.win === "deck_window_arena" && it.room === "arena") return _fpDrawDeckCliff(it);   // the deck stands on a thick rock cliff (js/facilitydecor.js)
     if (glass && facilityStyleRoom(it.room)) return _fpStyleGlass(it, H);
     const a0 = _fpP(it.a[0], it.a[1], 0), b0 = _fpP(it.b[0], it.b[1], 0), a1 = _fpP(it.a[0], it.a[1], Hd), b1 = _fpP(it.b[0], it.b[1], Hd);
     if (glass) {
