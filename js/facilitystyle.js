@@ -116,16 +116,20 @@ function _fpStyleWall(it, Hd) {
 }
 // a post at every corner of a styled room (the same corner treatment everywhere)
 function _fpStylePillars(F) {
-    const items = [];
-    for (const r of F.rooms) { if (!facilityStyleRoom(r.id) || r.id === "arena" || r.id === "catwalks" || r.id === "nest_area") continue; for (const v of r.poly) items.push({ type: "fp", fp: "pillar", x: v[0], y: v[1], room: r.id, base: facilityRoomHeight(r.id, F) * FP_ELEV_PX, depth: v[0] + v[1] + 0.5 }); }
-    const seen = new Set(); return items.filter(i => { const k = i.x + "," + i.y; if (seen.has(k)) return false; seen.add(k); return true; });   // (one post per corner, even where two rooms share it)
+    // A post is only where a wall just STOPS (a free end, with nothing continuing from it): the wall's own end cap. Where two walls meet at a corner, or a wall runs through, the walls join cleanly and there is no post.
+    const items = [], seen = new Set(), eq = (a, b) => Math.abs(a - b) < 0.02;
+    const freeEnd = (x, y) => {
+        const dirs = []; for (const w of F.walls) for (const [p, q] of [[w.a, w.b], [w.b, w.a]]) if (eq(p[0], x) && eq(p[1], y)) { const L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1; dirs.push([(q[0] - p[0]) / L, (q[1] - p[1]) / L]); }
+        if (!dirs.length) return false; return dirs.every(d => Math.hypot(d[0] - dirs[0][0], d[1] - dirs[0][1]) < 0.2);   // every piece that meets here leaves on the same side
+    };
+    for (const r of F.rooms) { if (!facilityStyleRoom(r.id) || r.id === "arena" || r.id === "catwalks" || r.id === "nest_area") continue; for (const v of r.poly) { const k = v[0] + "," + v[1]; if (seen.has(k)) continue; seen.add(k); if (!freeEnd(v[0], v[1])) continue; items.push({ type: "fp", fp: "pillar", x: v[0], y: v[1], room: r.id, base: facilityRoomHeight(r.id, F) * FP_ELEV_PX, depth: v[0] + v[1] + 0.5 }); } }
+    // wall ends that are not room corners (where a window or a door opening stops a wall) are the doors' and the glass's own frames: no post
+    return items;
 }
 function _fpStylePillar(it) {
-    // ONE whole column: a single toon box from the floor to a cap, both visible faces in the same pale family (a lit side and a slightly darker one), one bold outline round its silhouette, one unbroken
-    // highlight down its lit edge, and a thin neon line down its front corner; nothing stacked or banded
-    const H = FP_WALL_H + 8, w = 0.17, A = FP_PAL, R = _fpRoomStyle(it.room);   // (it stands a little above the wall: a column, not a stub)
-    _fpSBox(it.x - w, it.y - w, it.x + w, it.y + w, 0, H, A.cap, A.wallLit, A.caseLit, 3.5);
-    const c0 = _fpP(it.x + w, it.y + w, 5), c1 = _fpP(it.x + w, it.y + w, H - 9); ctx.strokeStyle = R.acc; ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(c1[0], c1[1]); ctx.stroke(); ctx.lineCap = "butt";   // the neon line down the front corner
+    // the end cap of a wall: ONE whole column, flush with the wall (the wall's own height and colours), one outline, nothing stacked
+    const H = FP_WALL_H, w = 0.1, A = FP_PAL;
+    _fpSBox(it.x - w, it.y - w, it.x + w, it.y + w, 0, H, A.cap, A.wallLit, A.caseLit, 3);
 }
 
 // ── doors: cartoony steel access doors ──
