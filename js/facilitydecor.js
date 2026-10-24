@@ -153,7 +153,7 @@ function _fpRockSides(items) {
         if (it.back) {   // the CAP: the rock's top surface is ONE roof running back (north, away from the camera) from the rock to the wall behind it; each end finds its own distance, so neighbouring pieces share an edge and the roof is smooth
             const march = (px, py) => { for (let t = 0.1; t <= 4.2; t += 0.2) { const q = facilityRoomAt(px, py - t, _fp.F); if (q) { let lo = Math.max(0, t - 0.2), hi = t; for (let i = 0; i < 4; i++) { const mid = (lo + hi) / 2; if (facilityRoomAt(px, py - mid, _fp.F)) hi = mid; else lo = mid; } return { d: hi, room: q }; } } return null; };
             const ea = march(it.a[0], it.a[1]), eb = march(it.b[0], it.b[1]), em = march((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), ref = em || ea || eb;
-            if (ref) { const same = ref.room.id === it.room, da = ea ? (same ? Math.min(ea.d, 0.5) : ea.d) : ref.d, db = eb ? (same ? Math.min(eb.d, 0.5) : eb.d) : ref.d; if (Math.max(da, db) >= 0.15 || same) it.cap = { da, db, zb: same ? null : facilityRoomHeight(ref.room.id, _fp.F) * FP_ELEV_PX - (it.base || 0) + FP_WALL_H }; }
+            if (ref) { const same = ref.room.id === it.room, da = ea ? (same ? Math.min(ea.d, 0.5) : ea.d) : ref.d, db = eb ? (same ? Math.min(eb.d, 0.5) : eb.d) : ref.d; if (Math.max(da, db) >= 0.15 || same) it.cap = { da, db, zb: null }; }   // (the roof is flat at the rock's own height, so the wall behind it and its corner posts rise above it)
         }
     }
 }
