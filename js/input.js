@@ -134,6 +134,7 @@ function followerPickDistance(ex, ey) {
     return bestD;
 }
 
+let playerShotsFired = 0;   // shots the player has fired (the tutorial's gun lesson counts them: js/tutorial.js)
 function firePlayerShot(foe) {
     if (!foe || foe.dead) return false;
     if (playerAmmo <= 0) {
@@ -149,7 +150,7 @@ function firePlayerShot(foe) {
         typeof classStat === "function" ? classStat("shotDamage", 10) : 10, 5,
         null
     );
-    playerAmmo = Math.max(0, playerAmmo - 1);
+    playerAmmo = Math.max(0, playerAmmo - 1); playerShotsFired++;
     saveAmmo();
     player.attackCooldown = typeof classStat === "function" ? Math.round(classStat("shotCooldown", 45)) : 45;
     return true;

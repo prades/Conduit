@@ -33,7 +33,9 @@ const TUT_STEPS = [
         hint: () => "A RECRUIT ARRIVES AT THE CRYSTAL AND FOLLOWS YOU.", done: () => followers.filter(f => f && !f.dead).length > _fp.tut.script.baseFollowers },
     { id: "position", title: "POST YOUR FOLLOWERS", text: () => "POST TWO FOLLOWERS NEAR THE CRYSTAL: SELECT THEM AND PRESS HOLD.",
         hint: () => "HOLD STANDS A FOLLOWER WHERE IT IS. COME CALLS IT BACK. THEY FIGHT ANYTHING THAT COMES.", done: () => tutHeld() >= TUT.holdNeeded },
-    { id: "assault", title: "DEFEND THE CRYSTAL", text: () => tutAssaultText(), hint: () => "FOLLOWERS FIGHT AND GAIN LEVELS. AT LEVEL 10 A FOLLOWER EVOLVES. THE SENTRIES HELP IF THEIR RELAY IS ON.", done: () => !!_fp.tut.script.assault && _fp.tut.script.assault.over },
+    { id: "gun", title: "FIRE YOUR GUN", text: () => tutGunText(),
+        hint: () => playerAttackMode ? "CLICK IT AS OFTEN AS YOU LIKE, OR HOLD YOUR FINGER ON IT TO KEEP FIRING. EACH SHOT COSTS A ROUND." : "LONG-PRESS THE ANT UNTIL THE RING OPENS, THEN SLIDE TO ATTACK. THAT ARMS YOUR GUN AND LOCKS ON TO IT.", done: () => tutGunDone() },
+    { id: "assault", title: "DEFEND THE CRYSTAL", text: () => tutAssaultText(), hint: () => "FOLLOWERS FIGHT AND GAIN LEVELS (LEVEL 10: EVOLUTION). YOU CAN SHOOT TOO: LONG-PRESS AN ENEMY, ATTACK, THEN CLICK OR HOLD. THE SENTRIES HELP IF THEIR RELAY IS ON.", done: () => !!_fp.tut.script.assault && _fp.tut.script.assault.over },
     { id: "evolve", title: "EVOLVE A FOLLOWER", text: () => "A FOLLOWER EVOLVES AT LEVEL " + EVOLVE_LEVEL + ".", hint: () => "KEEP IT FIGHTING.", done: () => followers.some(f => f && f.evolved) },
 ];
 
@@ -41,6 +43,28 @@ const TUT_STEPS = [
 const TUT_CLASS_STEP = { id: "perk", title: "EARN YOUR PERK", text: () => ({ gunslinger: "USE THE WEAPON LOCKER IN THE ARMORY.", technomancer: "USE THE TUNING CONSOLE IN TELEPORT ROOM 1.", mutator: "TAKE A SAMPLE TO THE SEQUENCER IN THE LAB." }[playerClassKey] || ""),
     hint: () => "THE SUPPLIES FOR YOUR CLASS HAVE ARRIVED. WALK UP TO THE GLOWING STATION AND PRESS E (OR TAP IT).", done: () => classRank() > 1 };
 
+// THE GUN LESSON: a stray ant (level 3, plenty of health, grazing) is put in view; the objective is to shoot it three times with the player's own gun. The player is given the training rounds, and the ant is taken away when the lesson is done.
+const TUT_GUN = { shots: 3, rounds: 8, level: 3, health: 400, respawns: 4, near: [4, 6] };
+function tutStray() { return actors.find(a => a && a.tutStray && !a.dead) || null; }
+function tutGunShots() { const S = _fp.tut.script; return Math.max(0, playerShotsFired - (S.gunBase === undefined ? playerShotsFired : S.gunBase)); }
+function tutGunDone() { const S = _fp.tut.script; if (S.gunBase === undefined) { S.gunBase = playerShotsFired; S.strays = 0; } return tutGunShots() >= TUT_GUN.shots; }
+function tutGunText() {
+    const n = tutGunShots(), left = TUT_GUN.shots - n, st = tutStray();
+    if (!st) return "A STRAY ANT IS COMING OUT OF THE DARK\u2026";
+    return (playerAttackMode ? "YOUR GUN IS ARMED. SHOOT THE STRAY ANT" : "ARM YOUR GUN ON THE STRAY ANT NEARBY") + ": " + n + "/" + TUT_GUN.shots + " SHOTS.";
+}
+function tutGunTick() {
+    const S = _fp.tut.script, st = TUT_STEPS[S.step];
+    if (st && st.id === "gun") {
+        if (S.gunBase === undefined) tutGunDone();
+        if (playerAmmo < TUT_GUN.rounds) playerAmmo = TUT_GUN.rounds;   // (the training rounds)
+        if (!tutStray() && S.strays < TUT_GUN.respawns) {
+            const spot = typeof facilitySpotNear === "function" ? facilitySpotNear(player.visualX, player.visualY, TUT_GUN.near[0], TUT_GUN.near[1]) : null;
+            if (spot) { let p = null; try { p = spawnPredatorForZone(1, { species: "ant", className: "scout" }); } catch (e) { p = null; }
+                if (p) { p.x = spot[0]; p.y = spot[1]; p.level = TUT_GUN.level; if (typeof _applyPredLevel === "function") _applyPredLevel(p, true); p.maxHealth = p.health = TUT_GUN.health; p.state = "wander"; p.tutStray = true; S.strays++; _tutSay("stray" + S.strays, "A STRAY ANT WANDERS IN. THIS IS YOUR TARGET.", "#ffb347"); } }
+        }
+    } else if (S.gunBase !== undefined) { const s = tutStray(); if (s) { s.dead = true; s._xpGiven = true; } }   // (the lesson is over: the stray goes)
+}
 function tutTaken() { return _fp.items.filter(i => i.fp === "pickup" && i.taken).length; }
 function tutHeld() { let n = 0; for (const f of followers) if (f && !f.dead && f.stance === "hold" && Math.hypot(f.x - crystal.x, f.y - crystal.y) <= TUT.holdRange) n++; return n; }
 function tutAssaultText() {
@@ -83,7 +107,7 @@ function _tutSay(key, text, col) { const S = _fp.tut.script; if (S.said[key]) re
 // each frame
 function facilityDirectorTick() {
     const S = _fp && _fp.tut && _fp.tut.script; if (!S) return;
-    tutLevelFollowers();
+    tutLevelFollowers(); tutGunTick();
     while (S.step < TUT_STEPS.length && TUT_STEPS[S.step].id !== "assault" && TUT_STEPS[S.step].done()) S.step++;
     const st = TUT_STEPS[S.step];
     if (st && st.id === "assault") {

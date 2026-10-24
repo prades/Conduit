@@ -206,6 +206,12 @@ function facilityPlayStart() {
     document.body.classList && document.body.classList.add("facility-play");
     return true;
 }
+// a walkable tile of the player's own room, between r0 and r1 tiles from (x, y) (a spot to put something where the player can see it); null if there is none
+function facilitySpotNear(x, y, r0, r1) {
+    const here = facilityRoomAt(x, y, _fp.F); let best = null, bd = 1e9;
+    for (const [k, c] of _fp.cellsP) { const d = Math.hypot(c[0] - x, c[1] - y); if (d < r0 || d > r1) continue; const rm = facilityRoomAt(c[0], c[1], _fp.F); if (here && (!rm || rm.id !== here.id)) continue; const sc = Math.abs(d - (r0 + r1) / 2) + Math.max(0, (x + y) - (c[0] + c[1])) * 0.6; if (sc < bd) { bd = sc; best = [c[0], c[1]]; } }
+    return best;
+}
 // a walkable tile within `range` of a box (a prop a unit wants to use), the one nearest the player; null if there is none
 function facilityApproachTile(b, range) {
     let best = null, bd = 1e9;
