@@ -170,35 +170,51 @@ function _fpStyleDoor(it) {
     // how far open: eased towards open when a unit is within 2.6 tiles, shut again beyond 3.4
     if (part === "m") { const near = _fpDoorNear(it.x, it.y), want = near < 2.6 ? 1 : near > 3.4 ? 0 : (it.st.open >= 0.5 ? 1 : 0); it.st.open = (it.st.open || 0) + (want - (it.st.open || 0)) * 0.2; if (Math.abs(want - it.st.open) < 0.01) it.st.open = want; }
     const o = it.st.open, f = _fpFrame(), q = it.door ? 1 : 0, fw = 0.06;   // fw: the frame post, as a fraction of the span
-    const line = (p0, p1, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); };
+    const edge = (u0, z0, u1, z1, col, w) => _fpEdge(P(u0, z0), P(u1, z1), col, w);
     ctx.lineJoin = "round"; ctx.lineCap = "round";
     if (part === "m" && q) for (const side of [0, 1]) {   // each panel slides toward its own post: its inner edge goes from the middle (closed) to the post (open)
-        const edge = side ? 0.5 + (0.5 - fw) * o : 0.5 - (0.5 - fw) * o, outer = side ? 1 - fw : fw, u0 = Math.min(edge, outer), u1 = Math.max(edge, outer);
-        if (u1 - u0 < 0.012) continue;
-        _fpFill([P(u0, 0), P(u1, 0), P(u1, H - 8), P(u0, H - 8)], S.mid, S.mid);
-        _fpFill([P(u0, H * 0.46), P(u1, H * 0.46), P(u1, H - 8), P(u0, H - 8)], S.lit, S.lit);                                  // the lit upper half
+        const e = side ? 0.5 + (0.5 - fw) * o : 0.5 - (0.5 - fw) * o, outer = side ? 1 - fw : fw, u0 = Math.min(e, outer), u1 = Math.max(e, outer), Ht = H - 8, w = u1 - u0;
+        if (w < 0.012) continue;
+        // the leaf: brushed steel, shaded darker at the foot and lighter at the top (one gradient in the door's own frame)
+        _fpFill([P(u0, 0), P(u1, 0), P(u1, Ht), P(u0, Ht)], S.mid, S.mid);
+        _fpWallGrad(it, u0, u1, 0, Ht, [[0, "rgba(10,30,40,0.34)"], [0.14, "rgba(10,30,40,0.08)"], [0.55, "rgba(255,255,255,0.0)"], [1, "rgba(255,255,255,0.20)"]]);
         _fpFill([P(u0, 0), P(u1, 0), P(u1, 12), P(u0, 12)], S.dark, S.dark);                                                       // the kick plate
-        for (const z of [26, 50]) line(P(u0, z), P(u1, z), S.rib, 2.5);                                                            // ribs
-        if (u1 - u0 > 0.1) { const wu0 = u0 + (u1 - u0) * 0.2, wu1 = u0 + (u1 - u0) * 0.8; _fpFill([P(wu0, 36), P(wu1, 36), P(wu1, 46), P(wu0, 46)], "#12323a", A.ink, 2.5); _fpFill([P(wu0 + 0.01, 38), P(wu1 - 0.01, 38), P(wu1 - 0.01, 44), P(wu0 + 0.01, 44)], _fpRgba(acc, 0.35), "rgba(0,0,0,0)"); }   // a window slit
-        const lead = side ? u0 : u1;                                                                                              // the hazard-striped lead edge
-        for (let i = 0; i < 8; i++) { const z0 = i * (H - 8) / 8, z1 = (i + 1) * (H - 8) / 8, du = 0.045 * (side ? 1 : -1); _fpFill([P(lead, z0), P(lead + du, z0), P(lead + du, z1), P(lead, z1)], i & 1 ? A.amber : A.ink, "rgba(0,0,0,0)"); }
-        for (const z of [8, H - 14]) { const r = P((u0 + u1) / 2, z); ctx.fillStyle = S.dark; ctx.beginPath(); ctx.arc(r[0], r[1], 1.8, 0, 6.2832); ctx.fill(); }   // rivets
-        _fpShine(P(u0 + 0.01, H - 12)[0], P(u0 + 0.01, H - 12)[1], P(u0 + 0.01 + (u1 - u0) * 0.35, H - 12)[0], P(u0 + 0.01 + (u1 - u0) * 0.35, H - 12)[1]);
-        const t = P(u0, H - 8), t2 = P(u1, H - 8), b0 = P(u0, 0), b1 = P(u1, 0);
-        ctx.strokeStyle = A.ink; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(t[0], t[1]); ctx.lineTo(t2[0], t2[1]); ctx.lineTo(b1[0], b1[1]); ctx.closePath(); ctx.stroke();   // the panel's bold outline
+        edge(u0, 12, u1, 12, "rgba(255,255,255,0.3)", 1.2);
+        if (w > 0.09) {
+            // two recessed insets: a shadow along their top and left edges, a light along their bottom and right (they are pressed IN)
+            for (const [z0, z1] of [[18, 44], [52, Ht - 12]]) { const i0 = u0 + w * 0.12, i1 = u1 - w * 0.12; if (z1 - z0 < 8) continue;
+                _fpFill([P(i0, z0), P(i1, z0), P(i1, z1), P(i0, z1)], "rgba(10,30,40,0.10)", "rgba(0,0,0,0)");
+                edge(i0, z1, i1, z1, "rgba(10,30,40,0.38)", 1.4); edge(i0, z0, i0, z1, "rgba(10,30,40,0.28)", 1.2); edge(i0, z0, i1, z0, "rgba(255,255,255,0.4)", 1.2); edge(i1, z0, i1, z1, "rgba(255,255,255,0.28)", 1.2); }
+            // the vision panel: dark tinted glass in a pale frame, with a streak of reflection and a lit line of the room's colour under it
+            const wu0 = u0 + w * 0.2, wu1 = u0 + w * 0.8; _fpFill([P(wu0, 56), P(wu1, 56), P(wu1, 70), P(wu0, 70)], "#12323a", "rgba(0,0,0,0)"); _fpFill([P(wu0 + 0.012, 58), P(wu1 - 0.012, 58), P(wu1 - 0.012, 68), P(wu0 + 0.012, 68)], _fpRgba(acc, 0.32), "rgba(0,0,0,0)");
+            _fpFill([P(wu0 + (wu1 - wu0) * 0.15, 58), P(wu0 + (wu1 - wu0) * 0.35, 58), P(wu0 + (wu1 - wu0) * 0.5, 68), P(wu0 + (wu1 - wu0) * 0.3, 68)], "rgba(255,255,255,0.22)", "rgba(0,0,0,0)");
+            edge(wu0, 70, wu1, 70, "rgba(10,30,40,0.5)", 1.4); edge(wu0, 56, wu1, 56, FP_EDGE.light, 1.2); edge(wu0, 56, wu0, 70, "rgba(10,30,40,0.35)", 1.1); edge(wu1, 56, wu1, 70, FP_EDGE.lightSoft, 1.1);
+        }
+        const lead = side ? u0 : u1, du = 0.045 * (side ? 1 : -1);                                                               // the hazard-striped lead edge: a rubber seal and bevelled stripes
+        for (let i = 0; i < 8; i++) { const z0 = i * Ht / 8, z1 = (i + 1) * Ht / 8; _fpFill([P(lead, z0), P(lead + du, z0), P(lead + du, z1), P(lead, z1)], i & 1 ? A.amber : "#26343b", "rgba(0,0,0,0)"); }
+        _fpWallGrad(it, Math.min(lead, lead + du), Math.max(lead, lead + du), 0, Ht, [[0, "rgba(10,30,40,0.25)"], [1, "rgba(255,255,255,0.12)"]]);
+        for (const z of [8, Ht - 12]) { const r = P((u0 + u1) / 2, z); ctx.fillStyle = "rgba(60,78,88,0.8)"; ctx.beginPath(); ctx.arc(r[0], r[1], 1.5, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,255,255,0.45)"; ctx.beginPath(); ctx.arc(r[0] - 0.5, r[1] - 0.6, 0.7, 0, 6.2832); ctx.fill(); }   // screws
+        // the leaf's edges: a light bevel on top and on the leading edge, a soft crease round the rest
+        edge(u0, Ht, u1, Ht, FP_EDGE.light, 1.6); edge(u0, 0, u1, 0, "rgba(10,30,40,0.5)", 1.8); edge(u0, 0, u0, Ht, side ? FP_EDGE.lightSoft : "rgba(10,30,40,0.35)", 1.3); edge(u1, 0, u1, Ht, side ? "rgba(10,30,40,0.35)" : FP_EDGE.lightSoft, 1.3);
     }
-    if (part === "m" && q && o < 0.02) { const m0 = P(0.5, 0), m1 = P(0.5, H - 8); line(m0, m1, A.ink, 4); }   // the seam where the panels meet
-    // the frame: two thick posts, a lintel with the status lamp
-    for (const u of (part === "a" ? [0] : part === "b" ? [1 - fw] : [])) { const p0 = P(u, 0), p1 = P(u + fw, 0), p2 = P(u + fw, H), p3 = P(u, H); _fpFill([p0, p1, p2, p3], A.cap, A.ink, 3.5); }
+    if (part === "m" && q && o < 0.02) { edge(0.5, 0, 0.5, H - 8, "rgba(10,30,40,0.55)", 2.2); edge(0.5 + 0.008, 0, 0.5 + 0.008, H - 8, "rgba(255,255,255,0.3)", 1); }   // the gap where the panels meet
+    if (part === "m" && q) _fpWallGrad(it, fw, 1 - fw, 0, 5, [[0, "rgba(10,30,40,0.0)"], [1, "rgba(10,30,40,0.0)"]]);
+    // the frame: two thick posts (a light left edge, a shaded right one), a lintel with an emissive status strip and the lamp
+    for (const u of (part === "a" ? [0] : part === "b" ? [1 - fw] : [])) { _fpFill([P(u, 0), P(u + fw, 0), P(u + fw, H), P(u, H)], A.cap, A.cap); _fpWallGrad(it, u, u + fw, 0, H, [[0, "rgba(10,30,40,0.30)"], [0.2, "rgba(10,30,40,0.06)"], [1, "rgba(10,30,40,0.0)"]]);
+        edge(u, 0, u, H, FP_EDGE.light, 1.4); edge(u + fw, 0, u + fw, H, "rgba(10,30,40,0.4)", 1.6); edge(u, H, u + fw, H, FP_EDGE.light, 1.2); }
     if (part !== "m") { ctx.lineJoin = "miter"; ctx.lineCap = "butt"; return; }
-    _fpFill([P(0, H - 8), P(1, H - 8), P(1, H + 4), P(0, H + 4)], A.tealLit, A.ink, 3.5);
-    const lamp = P(0.5, H - 2), on = o > 0.5; ctx.fillStyle = on ? acc : A.amber; ctx.beginPath(); ctx.arc(lamp[0], lamp[1], 4, 0, 6.2832); ctx.fill(); ctx.strokeStyle = A.ink; ctx.lineWidth = 2.5; ctx.stroke();
-    // the HEADER: the wall continues above the door, from its lintel to the top of the wall (the same three bands, the ink line along its top)
+    _fpFill([P(0, H - 8), P(1, H - 8), P(1, H + 4), P(0, H + 4)], A.tealLit, A.tealLit);   // the lintel
+    _fpWallGrad(it, 0, 1, H - 8, H + 4, [[0, "rgba(10,30,40,0.26)"], [1, "rgba(255,255,255,0.14)"]]);
+    edge(0, H + 4, 1, H + 4, FP_EDGE.light, 1.4); edge(0, H - 8, 1, H - 8, "rgba(10,30,40,0.5)", 1.6);
+    { const on = o > 0.5, sc = on ? acc : A.amber; edge(0.06, H - 2, 0.94, H - 2, _fpRgba(sc, 0.25), 4.5); edge(0.06, H - 2, 0.94, H - 2, sc, 1.6); }   // the status strip: the room's colour when open, amber shut
+    const lamp = P(0.5, H - 2), on = o > 0.5; ctx.fillStyle = on ? acc : A.amber; ctx.beginPath(); ctx.arc(lamp[0], lamp[1], 3.2, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.beginPath(); ctx.arc(lamp[0] - 0.9, lamp[1] - 1, 1.1, 0, 6.2832); ctx.fill();
+    // the HEADER: the wall continues above the door, from its lintel to the top of the wall (the same bands as the wall beside it)
     { const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
       const lit = nx > ny, zb = H + 4, zt = FP_WALL_H, capH = Math.min(8, zt - zb);
       if (zt > zb) { _fpFlat([P(-0.02, zb), P(1.02, zb), P(1.02, zt - capH), P(-0.02, zt - capH)], lit ? A.wallLit : A.wallDark); _fpFlat([P(-0.02, zt - capH), P(1.02, zt - capH), P(1.02, zt), P(-0.02, zt)], A.cap);
+        _fpWallGrad(it, 0, 1, zb, zt - capH, [[0, "rgba(10,30,40,0.16)"], [0.3, "rgba(10,30,40,0.0)"], [1, "rgba(10,30,40,0.14)"]]);
         _fpWallTop(it.a[0], it.a[1], it.b[0], it.b[1], nx, ny, zt, it.out);
-        const t0 = P(0, zt), t1 = P(1, zt); ctx.strokeStyle = A.ink; ctx.lineWidth = 4.5; ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.stroke(); } }
+        edge(0, zt, 1, zt, FP_EDGE.light, 1.5); edge(0, zt - capH, 1, zt - capH, "rgba(8,26,34,0.3)", 1.3); } }
     ctx.lineJoin = "miter"; ctx.lineCap = "butt";
 }
 

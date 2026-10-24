@@ -15,7 +15,7 @@
   const deg = a => a * PI / 180;
   // materials of this family
   const L = {
-    steel: std('#aeb8c4', 0.92, 0.3), steelDk: std('#5d6874', 0.85, 0.38), chrome: std('#e4ebf2', 1, 0.14), dark: std('#14181e', 0.5, 0.55), graphite: MT.graphite, rubber: MT.rubber,
+    steel: std('#aeb8c4', 0.92, 0.3), capTop: std('#a8b3c0', 0.3, 0.42), steelDk: std('#5d6874', 0.85, 0.38), chrome: std('#e4ebf2', 1, 0.14), dark: std('#14181e', 0.5, 0.55), graphite: MT.graphite, rubber: MT.rubber,
     top: std('#f3f8fa', 0.04, 0.34), laminate: MT.laminate, laminateDk: std('#b8d0d6', 0.05, 0.5), teal: MT.teal, tealDk: MT.tealDk, tealLit: MT.tealLit, amber: MT.amber,
     redPaint: std('#c8402c', 0.35, 0.42), orange: std('#e07a1f', 0.1, 0.6), olive: std('#4a5a3a', 0.25, 0.6), oliveDk: std('#2f3a28', 0.25, 0.65), yellow: std('#f2b13a', 0.3, 0.45),
     wood: std('#9a7440', 0.05, 0.72), woodDk: std('#6a4a24', 0.05, 0.8), woodLt: std('#b48a52', 0.05, 0.7), plastic: std('#e9eff2', 0.05, 0.5), blueBin: std('#3a7bff', 0.1, 0.55), label: std('#fff6d0', 0, 0.8),
@@ -145,8 +145,8 @@
     for (let i = 0; i < 4; i++) S(g, 0.04, [G_.green, G_.green, G_.amber, G_.red][i], -0.05 + i * 0.13, P(EY1 + 7.4), ZF + 0.06); { const d = cyl(0.1, 0.1, 0.04, L.chrome, 16); d.rotation.x = PI / 2; d.position.set(0.7, P(EY1 + 5.5), ZF + 0.06); g.add(d); const n = cyl(0.012, 0.012, 0.045, G_.cyan, 6); n.rotation.x = PI / 2; n.position.set(0.7, P(EY1 + 6.1), ZF + 0.075); g.add(n); }
     for (const sx of [1.08, 1.28]) { const sl = new T.Mesh(new T.PlaneGeometry(0.1, P(5)), G_.mint); sl.position.set(sx, P(EY1 + 5.5), ZF + 0.056); g.add(sl); }
     // the canopy and the duct
-    const cp = new T.Mesh(new T.CylinderGeometry(0.24, 1.0, P(18), 4, 1), L.laminateDk); cp.rotation.y = PI / 4; cp.scale.set(2.04, 1, 1.33); cp.position.set(0, P(EY1 + 11 + 9), 0); g.add(cp); B(g, [-X + 0.02, X - 0.02], [EY1 + 11, EY1 + 12.4], [ZB - 0.0, ZF + 0.0], L.teal, 0.006);
-    const duct = cyl(0.27, 0.27, P(34), L.steel, 24); duct.position.set(0, P(EY1 + 29 + 17), 0); g.add(duct); for (const yy of [EY1 + 32, EY1 + 46]) { const fl = cyl(0.33, 0.33, P(2.2), L.steelDk, 24); fl.position.set(0, P(yy), 0); g.add(fl); for (let i = 0; i < 12; i++) { const a = i * PI / 6, b = cyl(0.014, 0.014, P(2.8), L.chrome, 6); b.position.set(Math.cos(a) * 0.3, P(yy), Math.sin(a) * 0.3); g.add(b); } }
+    const cg = G(); cg.scale.set(2.04, 1, 1.33); cg.position.set(0, P(EY1 + 11 + 9), 0); g.add(cg); const cp = new T.Mesh(new T.CylinderGeometry(0.24, 1.0, P(18), 4, 1), L.laminateDk); cp.rotation.y = PI / 4; cg.add(cp); B(g, [-X + 0.02, X - 0.02], [EY1 + 11, EY1 + 12.4], [ZB - 0.0, ZF + 0.0], L.teal, 0.006);
+    const duct = cyl(0.27, 0.27, P(34), L.capTop, 24); duct.position.set(0, P(EY1 + 29 + 17), 0); g.add(duct); for (const yy of [EY1 + 32, EY1 + 46]) { const fl = cyl(0.33, 0.33, P(2.2), L.steelDk, 24); fl.position.set(0, P(yy), 0); g.add(fl); for (let i = 0; i < 12; i++) { const a = i * PI / 6, b = cyl(0.014, 0.014, P(2.8), L.chrome, 6); b.position.set(Math.cos(a) * 0.3, P(yy), Math.sin(a) * 0.3); g.add(b); } }
     { const damp = new T.Mesh(new T.CylinderGeometry(0.014, 0.014, 0.62, 8), L.chrome); damp.rotation.z = PI / 2; damp.position.set(0, P(EY1 + 39), 0); g.add(damp); const lv = cbox(0.04, 0.2, 0.025, 0.004, L.redPaint); lv.position.set(0.3, P(EY1 + 39), 0.3); g.add(lv); }
     { const cw = new T.Mesh(new T.ConeGeometry(0.36, P(8), 24), L.steelDk); cw.position.set(0, P(EY1 + 63 + 4), 0); g.add(cw); const cr2 = cyl(0.3, 0.3, P(1.4), L.steel, 24); cr2.position.set(0, P(EY1 + 63), 0); g.add(cr2); }
     // the base: a hazard strip along the foot and a label
@@ -174,7 +174,7 @@
     for (const yy of [y0 + 0.5, y1 - 0.5]) { const r = new T.Mesh(new T.TorusGeometry(gR, 0.02, 6, 40), hot); r.rotation.x = PI / 2; r.position.y = P(yy); g.add(r); }
     for (const [th, w, op] of [[deg(40), 0.07, 0.42], [deg(58), 0.03, 0.4], [deg(-12), 0.04, 0.3]]) { const hl = new T.Mesh(new T.PlaneGeometry(w, P(y1 - y0 - 8)), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: op, depthWrite: false, toneMapped: false })); const w2 = G(); w2.rotation.y = -th; hl.position.set(gR + 0.006, P((y0 + y1) / 2), 0); hl.rotation.y = PI / 2; w2.add(hl); hl.renderOrder = 4; g.add(w2); }
     for (let i = 0; i < 4; i++) { const th = deg(45 + i * 90), x = Math.cos(th) * (R - 0.06), z = Math.sin(th) * (R - 0.06); const r = cyl(0.026, 0.026, P(y1 - y0 + 4), L.steel, 8); r.position.set(x, P((y0 + y1 + 4) / 2), z); g.add(r); }
-    Cy(g, R - 0.03, y1, y1 + 4, L.steel, 0, 0, 40, R - 0.05); Cy(g, R - 0.12, y1 + 4, y1 + 8, L.chrome, 0, 0, 40, R - 0.2); for (let k = 0; k < 8; k++) { const a = k * PI / 4; rod(g, [Math.cos(a) * 0.12, P(y1 + 8.2), Math.sin(a) * 0.12], [Math.cos(a) * (R - 0.22), P(y1 + 8.2), Math.sin(a) * (R - 0.22)], 0.012, L.steelDk, 6); } const cr = new T.Mesh(new T.TorusGeometry(R - 0.04, 0.02, 6, 40), L.chrome); cr.rotation.x = PI / 2; cr.position.y = P(y1 + 2); g.add(cr);
+    Cy(g, R - 0.03, y1, y1 + 4, L.capTop, 0, 0, 40, R - 0.05); Cy(g, R - 0.12, y1 + 4, y1 + 8, L.capTop, 0, 0, 40, R - 0.2); for (let k = 0; k < 8; k++) { const a = k * PI / 4; rod(g, [Math.cos(a) * 0.12, P(y1 + 8.2), Math.sin(a) * 0.12], [Math.cos(a) * (R - 0.22), P(y1 + 8.2), Math.sin(a) * (R - 0.22)], 0.012, L.steelDk, 6); } const cr = new T.Mesh(new T.TorusGeometry(R - 0.04, 0.02, 6, 40), L.chrome); cr.rotation.x = PI / 2; cr.position.y = P(y1 + 2); g.add(cr);
     for (const [th, hh] of [[deg(35), 14], [deg(150), 9], [deg(-60), 11]]) { const x = Math.cos(th) * (R * 0.5), z = Math.sin(th) * (R * 0.5); rod(g, [x, P(y1 + 8), z], [x, P(y1 + 8 + hh), z], 0.04, L.steel, 10); const el = S(g, 0.055, L.steel, x, P(y1 + 8 + hh), z); }
     { const tt = tube([[Math.cos(deg(35)) * R * 0.5, P(y1 + 22), Math.sin(deg(35)) * R * 0.5], [R * 0.7, P(y1 + 26), R * 0.4], [R * 0.9, P(y1 + 16), R * 0.7], [R * 0.95, P(y1 - 4), R * 0.7]], 0.024, L.rubber); g.add(tt); }
     { const a = deg(62), x = Math.cos(a) * (R * 0.55), z = Math.sin(a) * (R * 0.55); const d = cyl(0.11, 0.11, 0.05, L.chrome, 20); d.position.set(x, P(y1 + 12), z); d.rotation.x = PI / 2 - 0.6; g.add(d); const f = cyl(0.085, 0.085, 0.052, grad('#ffffff', '#c8d8e0'), 20); f.position.copy(d.position); f.rotation.copy(d.rotation); f.position.y += 0.002; g.add(f); }
@@ -261,13 +261,13 @@
 
   // ───────────── THE SPEAKER ─────────────
   const speaker = () => {
-    const g = G();
+    const g0 = G(), g = G(); g.scale.setScalar(1.32); g0.add(g);
     // the tripod: three splayed legs, a centre column with a collar and a mounting stub
-    for (let i = 0; i < 3; i++) { const a = deg(30 + i * 120 + 8), x = Math.cos(a) * 0.4, z = Math.sin(a) * 0.4; rod(g, [x, P(1), z], [Math.cos(a) * 0.05, P(36), Math.sin(a) * 0.05], 0.02, L.graphite, 8); S(g, 0.03, L.rubber, x, P(0.8), z); }
+    for (let i = 0; i < 3; i++) { const a = deg(30 + i * 120 + 8), x = Math.cos(a) * 0.33, z = Math.sin(a) * 0.33; rod(g, [x, P(1), z], [Math.cos(a) * 0.05, P(36), Math.sin(a) * 0.05], 0.02, L.graphite, 8); S(g, 0.03, L.rubber, x, P(0.8), z); }
     Cy(g, 0.032, 22, 62, L.steel, 0, 0, 10); Cy(g, 0.05, 34, 37, L.graphite, 0, 0, 12); const kn = cyl(0.04, 0.04, 0.04, L.redPaint, 10); kn.rotation.z = PI / 2; kn.position.set(0.07, P(35.5), 0); g.add(kn);
     // the cabinet, tilted a little down towards the camera: a trapezoid box with a perforated grille, a woofer cone, a horn tweeter, a handle and a lamp
     const sp = G(); sp.position.set(0, P(78), 0.0); sp.rotation.set(0.12, 0.62, 0); g.add(sp);
-    B(sp, [-0.3, 0.3], [-20, 20], [-0.22, 0.18], std('#2c3642', 0.45, 0.45), 0.04); B(sp, [-0.31, 0.31], [-21, -18.4], [-0.23, 0.19], L.steelDk, 0.02); B(sp, [-0.31, 0.31], [18.4, 21], [-0.23, 0.19], L.steelDk, 0.02);
+    B(sp, [-0.3, 0.3], [-20, 20], [-0.22, 0.18], std('#3f5568', 0.4, 0.45), 0.04); B(sp, [-0.31, 0.31], [-21, -18.4], [-0.23, 0.19], L.steelDk, 0.02); B(sp, [-0.31, 0.31], [18.4, 21], [-0.23, 0.19], L.steelDk, 0.02);
     B(sp, [-0.25, 0.25], [-16, 16], [0.17, 0.21], L.steelDk, 0.014);
     for (let r = 0; r < 14; r++) for (let c = 0; c < 8; c++) { const d = cyl(0.012, 0.012, 0.012, L.dark, 6); d.rotation.x = PI / 2; d.position.set(-0.2 + c * 0.057, P(-14 + r * 2.15) , 0.212); if ((r * 7 + c) % 1 === 0) sp.add(d); }
     { const wr = new T.Mesh(new T.TorusGeometry(0.17, 0.02, 8, 28), L.chrome); wr.position.set(0, P(-6), 0.212); sp.add(wr); const cone = new T.Mesh(new T.ConeGeometry(0.15, 0.1, 22, 1, true), L.rubber); cone.rotation.x = -PI / 2; cone.position.set(0, P(-6), 0.19); cone.material = L.rubber; sp.add(cone); const dust = new T.Mesh(new T.SphereGeometry(0.05, 12, 8, 0, TAU, 0, PI / 2), L.steelDk); dust.rotation.x = PI / 2; dust.position.set(0, P(-6), 0.214); sp.add(dust); }
@@ -275,8 +275,8 @@
     S(sp, 0.016, G_.red, 0.22, P(16.4), 0.2); const hd = tube([[-0.12, P(20), 0], [-0.12, P(24), 0], [0.12, P(24), 0], [0.12, P(20), 0]], 0.016, L.rubber); sp.add(hd); const lg = new T.Mesh(new T.PlaneGeometry(0.1, P(1.8)), G_.cyan); lg.position.set(0.18, P(-17.2), 0.214); sp.add(lg);
     const side = new T.Mesh(new T.PlaneGeometry(0.4, P(30)), grad('#2a3a44', '#10181e')); side.rotation.y = PI / 2; side.position.set(0.305, 0, -0.02); sp.add(side); for (let i = 0; i < 3; i++) B(sp, [0.3, 0.32], [-16 + i * 11, -13.4 + i * 11], [-0.12, 0.1], L.steelDk, 0.004);
     // the lead
-    { const cb = tube([[-0.28, P(70), -0.2], [-0.45, P(40), -0.3], [-0.38, P(6), -0.2], [-0.2, P(0.8), 0.1], [0.1, P(0.8), 0.3]], 0.018, L.rubber); g.add(cb); }
-    return { g };
+    { const cb = tube([[-0.28, P(70), -0.2], [-0.4, P(40), -0.25], [-0.33, P(6), -0.18], [-0.2, P(0.8), 0.1], [0.1, P(0.8), 0.25]], 0.018, L.rubber); g.add(cb); }
+    return { g: g0 };
   };
 
   // ───────────── THE CABLE DRUM ─────────────

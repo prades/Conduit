@@ -26,9 +26,9 @@
 
   // ═════════ CRATES ═════════
   const STYLES = {
-    s0: { h: 38, body: S.std('#74855a', 0.1, 0.78), lid: S.std('#667650', 0.15, 0.75), trim: S.std('#3e4636', 0.7, 0.45), lat: mt.steel, ink: '#f0eab0', txt: ['MIL-SUPPLY', '7.62 x 51'], kind: 'plywood' },
-    s1: { h: 42, body: S.std('#86aab6', 0.4, 0.5), lid: S.std('#7499a6', 0.45, 0.45), trim: S.std('#3f5560', 0.7, 0.45), lat: mt.steel, ink: '#f2fbff', txt: ['PARTS', 'B-14'], kind: 'ribbed' },
-    s2: { h: 34, body: S.std('#69737f', 0.45, 0.55), lid: S.std('#5a646f', 0.5, 0.5), trim: S.std('#2b3038', 0.75, 0.45), lat: mt.steel, ink: '#ffd34d', txt: ['CAUTION', 'HEAVY'], kind: 'hazard' },
+    s0: { panel: S.std('#8a9b6c', 0.1, 0.75), h: 38, body: S.std('#74855a', 0.1, 0.78), lid: S.std('#667650', 0.15, 0.75), trim: S.std('#3e4636', 0.7, 0.45), lat: mt.steel, ink: '#f0eab0', txt: ['MIL-SUPPLY', '7.62 x 51'], kind: 'plywood' },
+    s1: { panel: S.std('#9cc0cc', 0.4, 0.45), h: 42, body: S.std('#86aab6', 0.4, 0.5), lid: S.std('#7499a6', 0.45, 0.45), trim: S.std('#3f5560', 0.7, 0.45), lat: mt.steel, ink: '#f2fbff', txt: ['PARTS', 'B-14'], kind: 'ribbed' },
+    s2: { panel: S.std('#7a8591', 0.45, 0.5), h: 34, body: S.std('#69737f', 0.45, 0.55), lid: S.std('#5a646f', 0.5, 0.5), trim: S.std('#2b3038', 0.75, 0.45), lat: mt.steel, ink: '#ffd34d', txt: ['CAUTION', 'HEAVY'], kind: 'hazard' },
     s3: { h: 44, body: S.std('#e6f0f3', 0.05, 0.5), lid: S.std('#d6e4e8', 0.05, 0.5), trim: S.std('#9fb4bb', 0.5, 0.45), lat: S.std('#7f949c', 0.8, 0.4), ink: '#2a3a40', txt: ['MED / SUPPLY', ''], kind: 'med' },
   };
   function crate(st, w, d, hpx) {
@@ -36,7 +36,7 @@
     g.add(at(cbox(w + 0.02, rail, d + 0.02, 0.012, st.trim), 0, rail / 2, 0));                                            // the base rail
     g.add(at(cbox(w, bodyH, d, 0.018, st.body), 0, rail + bodyH / 2, 0));                                                // the body
     g.add(at(cbox(w + 0.045, lidH, d + 0.045, 0.02, st.lid), 0, H - lidH / 2, 0));                                      // the lid, a little proud
-    g.add(at(cbox(w * 0.9, px(1.2), d * 0.9, 0.006, st.trim), 0, H + px(0.5), 0));                                       // a raised panel on the lid
+    g.add(at(cbox(w * 0.9, px(1.2), d * 0.9, 0.006, st.panel || st.lid), 0, H + px(0.5), 0));                                // a raised panel on the lid
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(at(cbox(0.075, H - px(1), 0.075, 0.015, st.trim), sx * (xf - 0.012), H / 2, sz * (zf - 0.012)));   // the corner posts
     for (const y of [rail + bodyH * 0.18, rail + bodyH * 0.82]) { g.add(at(cbox(w, px(2.4), 0.022, 0.006, st.trim), 0, y, zf + 0.008)); g.add(at(cbox(0.022, px(2.4), d, 0.006, st.trim), xf + 0.008, y, 0)); }   // the rails
     if (st.kind === 'plywood') {   // plank grooves and a diagonal brace
@@ -132,33 +132,30 @@
 
   // ═════════ THE FLOODLIGHT ═════════
   function floodlight() {
-    const g = G(), steel = mt.steel, dk = mt.graphite, conc = S.std('#8d9aa2', 0.05, 0.85), yel = S.std('#d7ae22', 0.2, 0.6), MH = px(112);
-    g.add(at(cbox(0.9, px(4), 0.9, 0.02, dk), 0, px(2), 0));                                              // the base plate
+    const g = G(), steel = mt.steel, dk = S.std('#4a525e', 0.8, 0.45), plate = S.std('#6b7683', 0.7, 0.45), conc = S.std('#a2aeb6', 0.05, 0.85), yel = S.std('#e0b422', 0.2, 0.6), blk = S.std('#2a2f37', 0.7, 0.5), MH = px(112);
+    g.add(at(cbox(0.9, px(4), 0.9, 0.02, plate), 0, px(2), 0));                                              // the base plate
     for (const [x, z] of [[-0.38, -0.38], [0.38, -0.38], [-0.38, 0.38], [0.38, 0.38]]) g.add(at(cyl(0.04, 0.04, px(2.4), steel, 8), x, px(5), z));   // its bolts
-    for (let i = 0; i < 6; i++) g.add(at(cbox(0.1, px(0.8), 0.05, 0.004, i % 2 ? dk : yel), -0.3 + i * 0.12, px(4.4), 0.43));   // hazard stripes along +z
-    for (let i = 0; i < 6; i++) g.add(at(cbox(0.05, px(0.8), 0.1, 0.004, i % 2 ? dk : yel), 0.43, px(4.4), -0.3 + i * 0.12));  // and +x
+    for (let i = 0; i < 6; i++) g.add(at(cbox(0.1, px(0.8), 0.05, 0.004, i % 2 ? blk : yel), -0.3 + i * 0.12, px(4.4), 0.43));   // hazard stripes along +z
+    for (let i = 0; i < 6; i++) g.add(at(cbox(0.05, px(0.8), 0.1, 0.004, i % 2 ? blk : yel), 0.43, px(4.4), -0.3 + i * 0.12));  // and +x
     g.add(at(cbox(0.34, px(11), 0.5, 0.02, conc), -0.18, px(9.5), -0.05)); g.add(at(cbox(0.3, px(8), 0.34, 0.02, conc), 0.2, px(8), -0.3));   // concrete counterweights
-    g.add(at(cbox(0.26, px(9), 0.26, 0.02, S.std('#3a4048', 0.8, 0.45)), 0, px(10.5), 0));              // the mast socket
-    g.add(at(cyl(0.062, 0.075, MH * 0.5, steel, 12), 0, px(10) + MH * 0.25, 0));                         // the mast: a thick lower tube
-    g.add(at(cyl(0.045, 0.058, MH * 0.5, steel, 12), 0, px(10) + MH * 0.75, 0));                        // and a thinner upper one
-    g.add(at(cyl(0.075, 0.075, px(3), dk, 12), 0, px(10) + MH * 0.5, 0));                                // the joint collar
-    // stays: two thin guy rods from the mast to the plate (the camera side)
-    rod(g, V(0, px(10) + MH * 0.46, 0), V(0.4, px(5), 0.0), 0.012, steel); rod(g, V(0, px(10) + MH * 0.46, 0), V(0.0, px(5), 0.4), 0.012, steel);
-    // a cable from a junction box at the foot, up the mast
-    g.add(at(cbox(0.14, px(7), 0.1, 0.01, dk), -0.1, px(6), 0.27)); rod(g, V(-0.1, px(8), 0.27), V(0.0, px(30), 0.07), 0.014, mt.rubber); rod(g, V(0.0, px(30), 0.07), V(0.0, px(10) + MH * 0.92, 0.06), 0.014, mt.rubber);
-    // the lamp head: a yoke on top of the mast, a frame holding six lamps (very bright emissive), a hood over them; turned to face the camera side (+x,+z) and tipped down a little
+    g.add(at(cbox(0.28, px(9), 0.28, 0.02, dk), 0, px(10.5), 0));                                           // the mast socket
+    g.add(at(cyl(0.075, 0.09, MH * 0.5, steel, 12), 0, px(10) + MH * 0.25, 0));                             // the mast: a thick lower tube
+    g.add(at(cyl(0.056, 0.072, MH * 0.5, steel, 12), 0, px(10) + MH * 0.75, 0));                           // and a thinner upper one
+    g.add(at(cyl(0.09, 0.09, px(3), blk, 12), 0, px(10) + MH * 0.5, 0));                                    // the joint collar
+    rod(g, V(0, px(10) + MH * 0.46, 0), V(0.4, px(5), 0.0), 0.014, steel); rod(g, V(0, px(10) + MH * 0.46, 0), V(0.0, px(5), 0.4), 0.014, steel);   // two stays
+    g.add(at(cbox(0.14, px(7), 0.1, 0.01, blk), -0.1, px(6), 0.27)); rod(g, V(-0.1, px(8), 0.27), V(0.0, px(30), 0.07), 0.016, mt.rubber); rod(g, V(0.0, px(30), 0.07), V(0.0, px(10) + MH * 0.92, 0.07), 0.016, mt.rubber);   // a cable up the mast
+    // the lamp head: a yoke on the mast, a frame holding six big lamps in two rows (very bright emissive), a short hood; turned to face the camera side (+x,+z), tipped down a little
     const top = px(10) + MH, head = G(); head.position.set(0, top, 0); head.rotation.y = PI / 4; g.add(head);
-    head.add(at(cbox(0.1, px(8), 0.1, 0.01, dk), 0, px(2), 0));                                          // the yoke post
-    head.add(at(cbox(0.82, px(2.5), 0.08, 0.01, dk), 0, px(6.5), -0.01));                                // the yoke bar
-    const lamp = G(); lamp.position.set(0, px(15), 0.04); lamp.rotation.x = 0.28; head.add(lamp);
-    lamp.add(at(cbox(0.78, px(20), 0.12, 0.02, dk), 0, 0, 0));                                           // the lamp frame
-    lamp.add(at(cbox(0.84, px(3.4), 0.2, 0.015, S.std('#2f353d', 0.8, 0.45)), 0, px(11.5), 0.04));       // the hood
-    for (const sx of [-0.2, 0, 0.2]) for (const sy of [-1, 1]) {
-      const bz = cyl(0.1, 0.1, 0.03, steel, 18); bz.rotation.x = PI / 2; lamp.add(at(bz, sx, sy * px(4.8), 0.07));
-      const lens = cyl(0.082, 0.082, 0.02, S.glow('#f4ffff', 1.5), 18); lens.rotation.x = PI / 2; lamp.add(at(lens, sx, sy * px(4.8), 0.088));
-      const halo = flatTorus(torus(0.09, 0.006, dk, 18)); halo.rotation.x = 0; lamp.add(at(halo, sx, sy * px(4.8), 0.088));
+    head.add(at(cbox(0.12, px(9), 0.12, 0.01, blk), 0, px(3), 0));                                          // the yoke post
+    const lamp = G(); lamp.position.set(0, px(16), 0.02); lamp.rotation.x = 0.1; head.add(lamp);
+    lamp.add(at(cbox(0.96, px(26), 0.14, 0.02, blk), 0, 0, 0));                                             // the lamp frame
+    lamp.add(at(cbox(1.0, px(2.6), 0.24, 0.015, plate), 0, px(14), 0.05));                                  // the hood: a short peak
+    for (const sx of [-0.3, 0, 0.3]) for (const sy of [-1, 1]) {
+      const bz = cyl(0.108, 0.108, 0.03, steel, 20); bz.rotation.x = PI / 2; lamp.add(at(bz, sx, sy * 0.125, 0.085));
+      const lens = cyl(0.086, 0.086, 0.024, S.glow('#f4ffff', 1.6), 20); lens.rotation.x = PI / 2; lamp.add(at(lens, sx, sy * 0.125, 0.1));
     }
-    lamp.add(rx(at(cyl(0.02, 0.02, 0.05, mt.cyan, 8), -0.34, px(8.5), 0.07), PI / 2));           // a status light
+    lamp.add(at(cbox(0.9, px(1.6), 0.02, 0.004, steel), 0, 0, 0.078));                                      // a cross bar between the rows
+    lamp.add(rx(at(cyl(0.022, 0.022, 0.05, mt.cyan, 8), -0.42, px(11.5), 0.085), PI / 2));                  // a status light
     return { g };
   }
 
@@ -170,7 +167,7 @@
     for (const x of [-0.5, 0.5]) {
       g.add(at(side(prof, 0.9, 0.012, conc), x, 0, 0));
       // the upper part painted: a hazard band along the +z face, and a cap strip
-      g.add(at(cbox(0.9, px(9), 0.02, 0.004, hz), x, px(27), 0.118)); g.add(at(cbox(0.9, px(2.4), 0.26, 0.01, concDk), x, H - px(0.8), 0));
+      g.add(at(cbox(0.9, px(8), 0.022, 0.004, hz), x, px(27.5), 0.135)); g.add(at(cbox(0.9, px(2.4), 0.26, 0.01, concDk), x, H - px(0.8), 0));
       for (const dz of [-1, 1]) g.add(at(cbox(0.8, px(2.2), 0.02, 0.004, concDk), x, px(10), dz * 0.2 + 0.02 * dz));   // a skirt groove
       g.add(at(cbox(0.9, px(2.6), 0.6, 0.01, concDk), x, px(1.3), 0));                                                // the foot
     }
@@ -198,7 +195,7 @@
     // a carry handle on top: two feet and a bar
     for (const z of [-0.13, 0.13]) g.add(at(cbox(0.04, px(3.4), 0.03, 0.006, rubber), 0.0, H + px(1.2), z)); g.add(at(cbox(0.05, px(1.6), 0.3, 0.012, rubber), 0.0, H + px(3.6), 0));
     // the glowing strip across the lid (and two slits on the +z face): emissive, so it reads in a blackout
-    g.add(at(cbox(W * 0.72, px(1.2), 0.07, 0.004, strip), -0.02, H + px(0.3) - px(0.4), D * 0.2));
+    g.add(at(cbox(W * 0.74, px(1.6), 0.1, 0.004, strip), -0.02, H + px(0.2), D * 0.16));
     g.add(at(cbox(W * 0.72, px(0.9), 0.012, 0.003, stripDim), 0, H * 0.84, D / 2 + 0.008)); g.add(at(cbox(0.012, px(0.9), D * 0.6, 0.003, stripDim), W / 2 + 0.008, H * 0.84, 0));
     // the stencil: a white cross in a square on the +z face, a short code on the +x
     const zc = decal(0.28, 0.2, (c, cw, ch) => { c.strokeStyle = '#e8f2f4'; c.lineWidth = 6; c.strokeRect(cw * 0.04, ch * 0.06, cw * 0.92, ch * 0.88); stencilCross(c, cw / 2, ch / 2, ch * 0.32, '#e8f2f4'); }); g.add(onZ(zc, -0.04, H * 0.38, D / 2 + 0.0225));
