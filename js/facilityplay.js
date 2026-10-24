@@ -235,7 +235,8 @@ function _fpPlaceStatics(F) {
     const at = new Map(); for (const it of items) { if (it.fp !== "wall") continue; const k = Math.round(it.x * 4) + "," + Math.round(it.y * 4); if (!at.has(k)) at.set(k, []); at.get(k).push(it); }
     for (const list of at.values()) for (const it of list) { let top = it.base; for (const o of list) if (o !== it && o.room !== it.room && o.base > top) top = o.base; it.base2 = top; }
     for (const o of F.openings) { if (F.connections.some(c => c.opening === o.id && c.ramp)) continue;   // a stairway has no door: the steps run through the gap (the arena door, the deck door, the stair mouth)
-        const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2; items.push({ type: "fp", fp: "door", id: o.id, depth: Math.max(o.a[0] + o.a[1], o.b[0] + o.b[1]) + 0.9, x: mx, y: my, a: o.a, b: o.b, door: o.door, rooms: o.rooms, base: facilityLiftPx(mx, my) }); }
+        const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2, st = { open: 0 }, base = facilityLiftPx(mx, my);
+        for (const [part, d] of [["a", o.a[0] + o.a[1]], ["b", o.b[0] + o.b[1]], ["m", Math.max(o.a[0] + o.a[1], o.b[0] + o.b[1]) + 0.88]]) items.push({ type: "fp", fp: "door", part, st, id: o.id, depth: d + 0.02, x: mx, y: my, a: o.a, b: o.b, door: o.door, rooms: o.rooms, base }); }
     for (const s of F.solids) {
         const box = s.bb, cells = new Set();
         for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) {

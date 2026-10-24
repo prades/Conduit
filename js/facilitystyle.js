@@ -138,12 +138,13 @@ function _fpDoorNear(x, y) {
 }
 function _fpStyleDoor(it) {
     const acc = _fpAcc((it.rooms || [])[0]), H = FP_DOOR_H, A = FP_PAL, S = FP_STEEL_DOOR, P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z);
+    const part = it.part || "m"; it.st = it.st || { open: 0 };   // a door is three items sorted separately (the two jambs at their own ends, the rest at the middle), so a unit in the gap is never covered by a jamb that is behind it and a neighbouring wall piece never clips the frame
     // how far open: eased towards open when a unit is within 2.6 tiles, shut again beyond 3.4
-    const near = _fpDoorNear(it.x, it.y), want = near < 2.6 ? 1 : near > 3.4 ? 0 : (it.open >= 0.5 ? 1 : 0); it.open = (it.open || 0) + (want - (it.open || 0)) * 0.2; if (Math.abs(want - it.open) < 0.01) it.open = want;
-    const o = it.open, f = _fpFrame(), q = it.door ? 1 : 0, fw = 0.06;   // fw: the frame post, as a fraction of the span
+    if (part === "m") { const near = _fpDoorNear(it.x, it.y), want = near < 2.6 ? 1 : near > 3.4 ? 0 : (it.st.open >= 0.5 ? 1 : 0); it.st.open = (it.st.open || 0) + (want - (it.st.open || 0)) * 0.2; if (Math.abs(want - it.st.open) < 0.01) it.st.open = want; }
+    const o = it.st.open, f = _fpFrame(), q = it.door ? 1 : 0, fw = 0.06;   // fw: the frame post, as a fraction of the span
     const line = (p0, p1, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); };
     ctx.lineJoin = "round"; ctx.lineCap = "round";
-    if (q) for (const side of [0, 1]) {   // each panel slides toward its own post: its inner edge goes from the middle (closed) to the post (open)
+    if (part === "m" && q) for (const side of [0, 1]) {   // each panel slides toward its own post: its inner edge goes from the middle (closed) to the post (open)
         const edge = side ? 0.5 + (0.5 - fw) * o : 0.5 - (0.5 - fw) * o, outer = side ? 1 - fw : fw, u0 = Math.min(edge, outer), u1 = Math.max(edge, outer);
         if (u1 - u0 < 0.012) continue;
         _fpFill([P(u0, 0), P(u1, 0), P(u1, H - 8), P(u0, H - 8)], S.mid, S.mid);
@@ -158,9 +159,10 @@ function _fpStyleDoor(it) {
         const t = P(u0, H - 8), t2 = P(u1, H - 8), b0 = P(u0, 0), b1 = P(u1, 0);
         ctx.strokeStyle = A.ink; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(t[0], t[1]); ctx.lineTo(t2[0], t2[1]); ctx.lineTo(b1[0], b1[1]); ctx.closePath(); ctx.stroke();   // the panel's bold outline
     }
-    if (q && o < 0.02) { const m0 = P(0.5, 0), m1 = P(0.5, H - 8); line(m0, m1, A.ink, 4); }   // the seam where the panels meet
+    if (part === "m" && q && o < 0.02) { const m0 = P(0.5, 0), m1 = P(0.5, H - 8); line(m0, m1, A.ink, 4); }   // the seam where the panels meet
     // the frame: two thick posts, a lintel with the status lamp
-    for (const u of [0, 1 - fw]) { const p0 = P(u, 0), p1 = P(u + fw, 0), p2 = P(u + fw, H), p3 = P(u, H); _fpFill([p0, p1, p2, p3], A.cap, A.ink, 3.5); }
+    for (const u of (part === "a" ? [0] : part === "b" ? [1 - fw] : [])) { const p0 = P(u, 0), p1 = P(u + fw, 0), p2 = P(u + fw, H), p3 = P(u, H); _fpFill([p0, p1, p2, p3], A.cap, A.ink, 3.5); }
+    if (part !== "m") { ctx.lineJoin = "miter"; ctx.lineCap = "butt"; return; }
     _fpFill([P(0, H - 8), P(1, H - 8), P(1, H + 4), P(0, H + 4)], A.tealLit, A.ink, 3.5);
     const lamp = P(0.5, H - 2), on = o > 0.5; ctx.fillStyle = on ? acc : A.amber; ctx.beginPath(); ctx.arc(lamp[0], lamp[1], 4, 0, 6.2832); ctx.fill(); ctx.strokeStyle = A.ink; ctx.lineWidth = 2.5; ctx.stroke();
     // the HEADER: the wall continues above the door, from its lintel to the top of the wall (the same three bands, the ink line along its top)
@@ -341,7 +343,7 @@ function _fpLightUpdate(F) {
     const pools = [];
     if (!_fp.openings) { _fp.openings = F.openings.map(o => ({ id: o.id, x: (o.a[0] + o.b[0]) / 2, y: (o.a[1] + o.b[1]) / 2, rooms: (F.connections.find(c => c.opening === o.id) || { rooms: o.rooms || [] }).rooms.map(_fpLightKey), ramp: F.connections.some(c => c.opening === o.id && c.ramp) })); _fp.doorItems = new Map(_fp.items.filter(i => i.fp === "door").map(i => [i.id, i])); }
     for (const o of _fp.openings) {
-        const di = _fp.doorItems.get(o.id), want = o.ramp ? 1 : (di && (di.open || 0) >= 0.5 ? 1 : 0), cur = _fp.pool.get(o.id) || 0, v = Math.abs(want - cur) < 0.01 ? want : cur + (want - cur) * FP_LIGHT_EASE; _fp.pool.set(o.id, v);
+        const di = _fp.doorItems.get(o.id), want = o.ramp ? 1 : (di && di.st && (di.st.open || 0) >= 0.5 ? 1 : 0), cur = _fp.pool.get(o.id) || 0, v = Math.abs(want - cur) < 0.01 ? want : cur + (want - cur) * FP_LIGHT_EASE; _fp.pool.set(o.id, v);
         // a doorway with no door (a stairway) always glows softly on both sides, near or far; a door throws light only when it is open and the room on one side is lit
         if (v > 0.02 && (o.ramp || o.rooms.some(k => (_fp.light.get(k) || 0) > 0.5))) pools.push({ x: o.x, y: o.y, s: v, rooms: o.rooms, r: o.ramp ? 5.2 : FP_POOL_R, k: o.ramp ? 0.55 : FP_POOL });
     }
