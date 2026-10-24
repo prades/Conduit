@@ -246,6 +246,19 @@ const FACILITY_MAP = {
         { id: "armory_locker_d", room: "armory", shape: "rect", rect: [250, 1130, 270, 1150], status: "placed", kind: "locker" },
     ],
 
+    // PICKUPS: supply cases standing on the floor, for the tutorial (docs/TUTORIAL.md). `at` is the middle of a tile (sketch pixels: 20 to a tile); `items` is [[item id, how many], ...] from the ITEMS table in
+    // js/inventory.js. The player walks over one to take what it holds. Each class's gear is in the rooms its class works in (CLASSES in js/classes.js): the Gunslinger's in the Armory and the Security Room,
+    // the Technomancer's in the labs and Teleport Room 1, the Mutator's in the lab and the Crystal Chamber. Any class can carry any of it; only the right class can use it.
+    pickups: [
+        { id: "pk_armory_ammo", room: "armory", at: [280, 1020], items: [["ammo_pack", 2]], note: "Ammunition in the Armory." },
+        { id: "pk_armory_flare", room: "armory", at: [240, 1100], items: [["flare", 2]], note: "Flares in the Armory." },
+        { id: "pk_security_cache", room: "security_room", at: [880, 360], items: [["ammo_pack", 1], ["flare", 1]], note: "A drawer's worth in the Security Room." },
+        { id: "pk_lab_cells", room: "experiment_lab", at: [620, 580], items: [["power_cell", 2]], note: "Charged cells on the lab bench." },
+        { id: "pk_lab_mutagen", room: "experiment_lab", at: [500, 580], items: [["mutagen_sample", 2]], note: "Samples in the lab." },
+        { id: "pk_tele_cell", room: "teleport_room_1", at: [260, 620], items: [["power_cell", 1]], note: "A cell beside the teleporters." },
+        { id: "pk_chamber_mutagen", room: "crystal_chamber", at: [280, 400], items: [["mutagen_sample", 1]], note: "A sample left by the crystal." },
+    ],
+
     // FLOORS: each room's floor covering (js/facilitydecor.js draws it over the tile). Styles: carpet, plate, tile, labtile, concrete, grate, polished, wood, sand.
     floors: [
         { room: "crystal_chamber", style: "plate", colour: "#2a4458" },

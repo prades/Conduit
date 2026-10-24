@@ -50,6 +50,7 @@
         if (d.id === "debris_2") d.at = [310, 530];
     }
     for (const f of (M.fixtures || [])) { const t = sh(f.room); f.a = mv(f.a, t); f.b = mv(f.b, t); }
+    for (const p of (M.pickups || [])) p.at = mv(p.at, sh(p.room));
     for (const e of (M.external_exits || [])) e.at = mv(e.at, sh(e.room));
     for (const c of ((M.candidates && M.candidates.connections) || [])) c.at = mv(c.at, sh(c.rooms[0]));
     for (const c of ((M.candidates && M.candidates.ramps) || [])) c.at = mv(c.at, [0, 1]);

@@ -2207,7 +2207,7 @@ function render() {
     // The ALARM is a red triangle beside the zone, not a banner (css: body.alarm-on). Only the change touches the page.
     const _alarmOn = !!alertActive && gameState.phase !== "waveComplete";
     if (_alarmOn !== _lastAlarmOn) { _lastAlarmOn = _alarmOn; if (document.body && document.body.classList) document.body.classList.toggle("alarm-on", _alarmOn); }
-    const _panelOpen = !!(cloneMenuOpen || settingsPanelOpen || infoPanelOpen || (typeof buildMenuOpen !== "undefined" && buildMenuOpen));
+    const _panelOpen = !!(cloneMenuOpen || settingsPanelOpen || infoPanelOpen || (typeof buildMenuOpen !== "undefined" && buildMenuOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen));
     if (document.body && document.body.classList && document.body.classList.contains("info-open") !== !!infoPanelOpen) document.body.classList.toggle("info-open", !!infoPanelOpen);
     if (_panelOpen !== _lastPanelOpen) { _lastPanelOpen = _panelOpen; if (document.body && document.body.classList) document.body.classList.toggle("panel-open", _panelOpen); }
     // Zone indicator — cached element, update only on zone change
@@ -4529,7 +4529,7 @@ function render() {
     });
     drawTurretShots();
     if (typeof drawFireBombs === "function") { drawFireBombs(); drawFireAims(); }   // fire bombs in flight, and the arrows on aimed fire turrets (js/firebombs.js)
-    if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityDrawLampGlow === "function") facilityDrawLampGlow();   // the monitor lamp's colour in a blackout (js/facilitytutorial.js)
+    if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityDrawLampGlow === "function") { facilityDrawLampGlow(); if (typeof facilityDrawFlares === "function") facilityDrawFlares(); }   // the monitor lamp's colour and the flares in a blackout (js/facilitytutorial.js)
 
     ctx.restore();
 
@@ -4567,6 +4567,7 @@ function render() {
     drawElementPicker();
     drawPylonConfirm();
     drawInfoPanel();
+    if (typeof drawInvPanel === "function") { drawInvPanel(); drawClassPicker(); }   // the pack and the class picker (js/inventory.js, js/classes.js)
     if (!dockHasMenus() && !infoPanelOpen) { drawShopButton(); drawCampButton(); }
     drawAmmoChip();
     if (!dockHasMenus() && !infoPanelOpen) drawSettingsButton();

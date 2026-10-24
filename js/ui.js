@@ -423,6 +423,8 @@ function _handlePylonConfirmTap(tx, ty) {
 
 // Central overlay tap dispatcher — call from pointerup handler
 function handleOverlayPanelTap(tx, ty) {
+    if (typeof classPickerOpen !== "undefined" && classPickerOpen) return _handleClassPickerTap(tx, ty);   // the class picker, then the pack (js/classes.js, js/inventory.js)
+    if (typeof invPanelOpen !== "undefined" && invPanelOpen) return _handleInvPanelTap(tx, ty);
     if (pylonConfirmOpen)  return _handlePylonConfirmTap(tx, ty);
     if (elementPickerOpen) return _handleElementPickerTap(tx, ty);
     if (infoPanelOpen)     return _handleInfoPanelTap(tx, ty);

@@ -18,6 +18,8 @@
 const FP_TUT = {
     dark: 0.95,                  // an unlit thing in a blackout loses this much of its light (FP_DARK is 0.82 in an ordinary dark room)
     lampR: 4.8, lampCore: 0.8, lampK: 0.55,   // the monitor lamp: its brightest (lampK, a dim light) within lampCore tiles, fading to nothing at lampR
+    boost: 2, boostReach: 1.45, boostK: 1.55,   // an overcharged lamp (a power cell): wider and brighter
+    flareR: 6.5, flareK: 0.9, flareFrames: 1800, flareRgb: "255,106,74",   // a flare: its light, how long it burns, its colour
     lampRgb: "0,255,136", lampAngryRgb: "255,34,34", lampGlow: 0.13,   // its colour is the visor's (the green eye-lines of the monitor face, red when the player is angry), and how strongly it tints what it lights
     floodR: 7, floodK: 0.8,    // a floodlight
     exitR: 2.4, exitK: 0.4,      // an exit sign's green emergency glow
@@ -39,9 +41,18 @@ function facilityTutorialStart(F) {
         else if (d.kind === "light" && FP_TUT.lights[d.id] && d.at) src.push({ x: d.at[0], y: d.at[1], r: Math.min(d.radius, FP_TUT.lightMax), k: FP_TUT.lights[d.id], room: key(d.room), what: d.id });
     }
     const off = /[?&]power=on\b/.test((typeof window !== "undefined" && window.location && window.location.search) || "");
-    _fp.tut = { blackout: !off, powered: new Set(), sources: src, said: false };
+    _fp.tut = { blackout: !off, powered: new Set(), sources: src, said: false, boostUntil: 0 };
+    facilityPickupsStart(F);
     return _fp.tut;
 }
+// the player's side of the tutorial: an empty pack and no class yet. The class picker opens (a Gunslinger, a Technomancer or a Mutator), unless the URL names one (?class=technomancer).
+function facilityTutorialClass() {
+    if (typeof invReset !== "function") return;
+    invReset(); playerClassId = null; classPickerOpen = false; if (typeof invButtonShow === "function") invButtonShow(true);
+    const m = /[?&]class=(\w+)/.exec((typeof window !== "undefined" && window.location && window.location.search) || "");
+    if (m && CLASSES[m[1]]) classSet(m[1]); else classPickerOpen = true;
+}
+
 // power a room on or off (the stair room is the hallway's); "all" is every room. A blackout ends by itself when every room has power.
 function facilityPower(roomId, on) {
     if (!facilityBlackout()) return false;
@@ -53,10 +64,11 @@ function facilityPower(roomId, on) {
 function facilityBlackoutSet(on) { if (_fp && _fp.tut) _fp.tut.blackout = !!on; }
 
 // the lamp's light on a spot (0 to 1): full near the player, a smooth fall to nothing at lampR
+function _fpLampBoost() { const T = _fp && _fp.tut; return T && T.boostUntil > (typeof frame !== "undefined" ? frame : 0) ? FP_TUT.boost : 1; }   // a power cell overcharges the lamp (facilityLampBoost)
 function _fpLampAt(x, y) {
-    const d = Math.hypot(x - player.visualX, y - player.visualY); if (d >= FP_TUT.lampR) return 0;
-    const t = d <= FP_TUT.lampCore ? 1 : 1 - (d - FP_TUT.lampCore) / (FP_TUT.lampR - FP_TUT.lampCore);
-    return FP_TUT.lampK * Math.pow(t * t * (3 - 2 * t), 1.3);
+    const b = _fpLampBoost(), R = FP_TUT.lampR * (b > 1 ? FP_TUT.boostReach : 1), d = Math.hypot(x - player.visualX, y - player.visualY); if (d >= R) return 0;
+    const t = d <= FP_TUT.lampCore ? 1 : 1 - (d - FP_TUT.lampCore) / (R - FP_TUT.lampCore);
+    return Math.min(1, FP_TUT.lampK * (b > 1 ? FP_TUT.boostK : 1) * Math.pow(t * t * (3 - 2 * t), 1.3));
 }
 // the extra light a thing at (x, y) gets in a blackout: the lamp, when it belongs to the room the player is in (or stands at its edge); the emergency lights, when it belongs to their room. `keys` are
 // the light keys of the room(s) the thing shows to.
@@ -64,7 +76,9 @@ function _fpExtraLight(x, y, keys) {
     if (!facilityBlackout()) return 0;
     let v = 0;
     if (keys && _fp.here && (keys.includes(_fp.here) || Math.hypot(x - player.visualX, y - player.visualY) < 1.2)) v = _fpLampAt(x, y);
+    const now = typeof frame !== "undefined" ? frame : 0;
     for (const s of _fp.tut.sources) {
+        if (s.until && s.until < now) continue;
         if (keys && !keys.includes(s.room)) continue;
         const d = Math.hypot(x - s.x, y - s.y); if (d >= s.r) continue;
         const t = 1 - d / s.r; v = Math.max(v, s.k * t * (2 - t));
@@ -74,6 +88,7 @@ function _fpExtraLight(x, y, keys) {
 
 // each frame (from facilityDrawItems): say what is going on, once
 function facilityTutorialTick() {
+    facilityPickupTick();
     const T = _fp && _fp.tut; if (!T || T.said || !T.blackout || (typeof frame !== "undefined" ? frame : 0) < 60) return;
     T.said = true;
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
@@ -102,4 +117,56 @@ function facilityDrawLampGlow() {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = "lighter"; ctx.translate(cx, cy); ctx.scale(1, TILE_H / TILE_W);
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx), a = FP_TUT.lampGlow; g.addColorStop(0, "rgba(" + rgb + "," + a + ")"); g.addColorStop(0.45, "rgba(" + rgb + "," + (a * 0.5).toFixed(3) + ")"); g.addColorStop(1, "rgba(" + rgb + ",0)");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, 6.2832); ctx.fill(); ctx.restore();
+}
+
+// ── items that act on the light ──
+// a flare: a lit source on the spot where the player stands, in the room they are in, for flareFrames
+function facilityFlare() {
+    if (!_fp || !_fp.tut || !_fp.here) return false;
+    const now = typeof frame !== "undefined" ? frame : 0, T = _fp.tut;
+    T.sources = T.sources.filter(s => !s.until || s.until >= now);
+    T.sources.push({ x: player.visualX, y: player.visualY, r: FP_TUT.flareR, k: FP_TUT.flareK, room: _fp.here, what: "flare", until: now + FP_TUT.flareFrames, born: now });
+    return true;
+}
+function facilityLampBoost(frames) { if (!_fp || !_fp.tut) return false; _fp.tut.boostUntil = (typeof frame !== "undefined" ? frame : 0) + frames; return true; }
+// the flares' glow on the ground, after the scene like the lamp's
+function facilityDrawFlares() {
+    const T = _fp && _fp.tut; if (!T || typeof ctx === "undefined") return; const now = typeof frame !== "undefined" ? frame : 0;
+    for (const s of T.sources) {
+        if (s.what !== "flare" || s.until < now) continue;
+        const fade = Math.min(1, (s.until - now) / 120, (now - s.born) / 12 + 0.2), fl = 0.8 + 0.2 * Math.sin(now * 0.31 + s.x), px = (s.x - player.visualX - (s.y - player.visualY)) * TILE_W + canvas.width / 2, py = (s.x - player.visualX + (s.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = "lighter"; ctx.translate(px, py); ctx.scale(1, TILE_H / TILE_W);
+        const R = s.r * TILE_W * 1.4142 * 0.8, g = ctx.createRadialGradient(0, 0, 0, 0, 0, R); g.addColorStop(0, "rgba(" + FP_TUT.flareRgb + "," + (0.3 * fade * fl).toFixed(3) + ")"); g.addColorStop(0.35, "rgba(" + FP_TUT.flareRgb + "," + (0.12 * fade).toFixed(3) + ")"); g.addColorStop(1, "rgba(" + FP_TUT.flareRgb + ",0)");
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.2832); ctx.fill(); ctx.restore();
+        ctx.save(); ctx.fillStyle = "#fff2c8"; ctx.beginPath(); ctx.arc(px, py - 6, 3.2 * fl, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,150,80,0.9)"; ctx.beginPath(); ctx.moveTo(px - 3, py - 4); ctx.lineTo(px, py - 14 - 3 * fl); ctx.lineTo(px + 3, py - 4); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+}
+
+// ── pickups: the supply cases (F.pickups, js/facilitymap.js) ──
+// Each is a low case with a beacon and the first item's icon floating over it, so it can be found in the dark. Walk over one to take what it holds; a case whose items will not all fit stays where it is.
+const FP_PICK_R = 1.25;
+function facilityPickupsStart(F) {
+    if (!_fp || !_fp.items) return;
+    _fp.items = _fp.items.filter(i => i.fp !== "pickup");
+    for (const p of (F.pickups || [])) _fp.items.push({ type: "fp", fp: "pickup", id: p.id, room: p.room, x: p.at[0], y: p.at[1], depth: p.at[0] + p.at[1], base: facilityRoomHeight(p.room, F) * FP_ELEV_PX, items: p.items.map(i => i.slice()), taken: false, seed: _fpHash(Math.round(p.at[0] * 3), Math.round(p.at[1] * 5)) });
+}
+function _fpDrawPickup(it) {
+    if (it.taken) return;
+    const f = _fpFrame(), first = it.items[0][0], d = typeof itemDef === "function" ? itemDef(first) : null, col = d ? d.col : "#ffe9a0", bob = Math.sin(f * 0.06 + it.seed) * 3, A = FP_PAL;
+    _fpSBox(it.x - 0.3, it.y - 0.3, it.x + 0.3, it.y + 0.3, 0, 13, A.caseLit, A.case, A.cap, 3);   // the case
+    _fpSBox(it.x - 0.31, it.y - 0.31, it.x + 0.31, it.y + 0.31, 8, 11, col, _fpShade(col, 0.7), _fpShade(col, 0.88), 2);   // a coloured band round it
+    const c = _fpP(it.x, it.y, 40 + bob); if (typeof invDrawIcon === "function") invDrawIcon(first, c[0], c[1], 30, f);
+    const g = _fpP(it.x, it.y, 18); _fpGlow(g[0], g[1], 34 + Math.sin(f * 0.08 + it.seed) * 4, col, 0.34);
+    if (it.items.length > 1) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(c[0] + 14, c[1] - 11, 3, 0, 6.2832); ctx.fill(); }
+}
+// each frame: take what the player walks over
+function facilityPickupTick() {
+    if (!_fp || !_fp.items || typeof invAdd !== "function") return;
+    for (const it of _fp.items) {
+        if (it.fp !== "pickup" || it.taken) continue;
+        if (Math.hypot(it.x - player.visualX, it.y - player.visualY) > FP_PICK_R) continue;
+        if (!it.items.every(([id, n]) => invRoom(id) >= n)) { if (!it.said) { it.said = true; invSay("YOUR PACK IS FULL OF THAT", false); } continue; }
+        for (const [id, n] of it.items) { invAdd(id, n); const d = itemDef(id); if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 100 - 20 * it.items.indexOf(it.items.find(q => q[0] === id)), text: "+" + n + " " + d.name + (classAllows(d.classes) ? "" : "  (" + d.classes.map(className).join(" / ") + " ONLY)"), color: d.col, life: 110, vy: -0.1, size: 13 }); }
+        it.taken = true;
+    }
 }

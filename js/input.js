@@ -354,6 +354,7 @@ canvas.addEventListener('pointerdown', e=>{
     _netPressed = false;
     // Canvas overlay panels — absorb pointerdown so no game action triggers
     if (elementPickerOpen || infoPanelOpen || campMenuOpen || settingsPanelOpen
+        || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen)
         || followerDutyMenu) return;
 
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
