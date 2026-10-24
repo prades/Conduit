@@ -317,7 +317,7 @@ function _fpStyleRigPad(it) {
 // ── room lighting: a room you are not in is not lit up ──
 // The room the player stands in is fully lit; a room joined to it by an OPEN door (or by steps) gets a little spill; every other room lies in the dark. The levels ease, so a room fades up as you
 // walk in and down as you leave. It is drawn once a frame, after the world and before the HUD: a dark layer with a hole cut for each lit room (its floor and the height of its walls).
-const FP_DARK = 0.62, FP_SPILL = 0.4, FP_LIGHT_EASE = 0.12;
+var FP_DARK = 0.62, FP_SPILL = 0.4, FP_LIGHT_EASE = 0.12;
 function _fpRoomTargets(F) {
     const t = new Map(); for (const r of F.rooms) t.set(r.id, 0);
     const pr = facilityRoomAt(player.visualX, player.visualY, F); const here = pr ? pr.id : (_fp.lastRoom || null); if (here) _fp.lastRoom = here; if (!here) return t;
@@ -340,14 +340,26 @@ function facilityDrawLighting() {
     const keepB = _fpBase; g.globalCompositeOperation = "destination-out";
     for (const r of F.rooms) {
         const lv = _fp.light.get(r.id) || 0; if (lv < 0.02) continue;
-        _fpBase = facilityRoomHeight(r.id, F) * FP_ELEV_PX; const wallH = r.id === "arena" ? 240 : r.id === "catwalks" ? 130 : 100; g.fillStyle = "rgba(0,0,0," + lv + ")";
+        _fpBase = facilityRoomHeight(r.id, F) * FP_ELEV_PX; const wallH = r.id === "arena" ? 240 : r.id === "catwalks" ? 52 : FP_WALL_H + 2;   // (exactly as tall as the walls: no lit band above them) g.fillStyle = "rgba(0,0,0," + lv + ")";
         const tracePoly = (zTop) => { g.beginPath(); r.poly.forEach((v, i) => { const p = _fpP(v[0], v[1], zTop); i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); g.fill(); };
         tracePoly(0);   // the floor
         for (let i = 0; i < r.poly.length; i++) { const a = r.poly[i], b = r.poly[(i + 1) % r.poly.length];
             // only the walls whose camera-facing side is THIS room (the north and west walls, which rise over its own floor): a wall on its south or east edge shows its face to the room beyond, and rises over that room's pixels
             const ex = b[0] - a[0], ey = b[1] - a[1], el = Math.hypot(ex, ey) || 1; let nx = ey / el, ny = -ex / el; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
             if (!facilityPointInPoly((a[0] + b[0]) / 2 + nx * 0.4, (a[1] + b[1]) / 2 + ny * 0.4, r.poly)) continue;
-            const a0 = _fpP(a[0], a[1], 0), b0 = _fpP(b[0], b[1], 0), a1 = _fpP(a[0], a[1], wallH), b1 = _fpP(b[0], b[1], wallH); g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.lineTo(a1[0], a1[1]); g.closePath(); g.fill(); }   // its walls that face it, up to their tops
+            const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, glass = F.walls.some(w => w.window && _facSegPointDist(w.a, w.b, mx, my) < 0.08), hh = glass ? 16 : wallH;   // a glass wall lights only its sill: the room behind it is not lit
+            const a0 = _fpP(a[0], a[1], 0), b0 = _fpP(b[0], b[1], 0), a1 = _fpP(a[0], a[1], hh), b1 = _fpP(b[0], b[1], hh); g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.lineTo(a1[0], a1[1]); g.closePath(); g.fill(); }   // its walls that face it, up to their tops
+    }
+    // the walls of a room that is NOT lit stay dark even where a lit room's floor shows behind or beside them (the arena's rock rises over the hallway's pixels, and a lab's glass over the hallway's floor): dark them again, over the holes, full height, glass included
+    g.globalCompositeOperation = "source-over";
+    for (const r of F.rooms) {
+        const lv = _fp.light.get(r.id) || 0; if (lv > 0.98) continue;
+        _fpBase = facilityRoomHeight(r.id, F) * FP_ELEV_PX; const wallH = r.id === "arena" ? 240 : r.id === "catwalks" ? 52 : FP_WALL_H + 2; g.fillStyle = "rgba(6,11,22," + (FP_DARK * (1 - lv)) + ")";
+        for (let i = 0; i < r.poly.length; i++) {
+            const a = r.poly[i], b = r.poly[(i + 1) % r.poly.length], ex = b[0] - a[0], ey = b[1] - a[1], el = Math.hypot(ex, ey) || 1; let nx = ey / el, ny = -ex / el; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+            if (!facilityPointInPoly((a[0] + b[0]) / 2 + nx * 0.4, (a[1] + b[1]) / 2 + ny * 0.4, r.poly)) continue;
+            const a0 = _fpP(a[0], a[1], 0), b0 = _fpP(b[0], b[1], 0), a1 = _fpP(a[0], a[1], wallH), b1 = _fpP(b[0], b[1], wallH); g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.lineTo(a1[0], a1[1]); g.closePath(); g.fill();
+        }
     }
     _fpBase = keepB; ctx.drawImage(_fp.lcv, 0, 0);
 }
