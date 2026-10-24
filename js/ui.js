@@ -424,6 +424,7 @@ function _handlePylonConfirmTap(tx, ty) {
 // Central overlay tap dispatcher — call from pointerup handler
 function handleOverlayPanelTap(tx, ty) {
     if (typeof classPickerOpen !== "undefined" && classPickerOpen) return _handleClassPickerTap(tx, ty);   // the class picker, then the pack (js/classes.js, js/inventory.js)
+    if (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) return _handleArmoryTap(tx, ty);
     if (typeof invPanelOpen !== "undefined" && invPanelOpen) return _handleInvPanelTap(tx, ty);
     if (pylonConfirmOpen)  return _handlePylonConfirmTap(tx, ty);
     if (elementPickerOpen) return _handleElementPickerTap(tx, ty);
@@ -809,13 +810,13 @@ function drawAmmoChip() {
     _ATKCHIP.x = x; _ATKCHIP.y = y; _ATKCHIP.w = w; _ATKCHIP.h = h;
 
     const armed = playerAttackMode;
-    const dry   = playerAmmo <= 0;
+    const hud = typeof weaponHud === "function" ? weaponHud() : null, dry = hud ? hud.dry : playerAmmo <= 0;
     const pulse = 0.65 + 0.35 * Math.sin((frame || 0) * 0.09);
 
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const col = armed ? (dry ? UI_RED : "#ff9a3c") : "#6a7aa0";
     ctx.globalAlpha = armed ? 0.7 + pulse * 0.3 : 0.85;
-    uiButton({ x, y, w, h }, armed ? (dry ? "NO AMMO \u2014 STOW" : "ARMED \u25c6 " + playerAmmo) : "AMMO \u25c6 " + playerAmmo, col, armed && !dry, big ? 18 : 14);
+    uiButton({ x, y, w, h }, hud ? hud.text : (armed ? (dry ? "NO AMMO \u2014 STOW" : "ARMED \u25c6 " + playerAmmo) : "AMMO \u25c6 " + playerAmmo), col, armed && !dry, big ? 18 : 14);
     ctx.restore();
 }

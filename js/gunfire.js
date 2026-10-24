@@ -41,7 +41,7 @@ function gunTick() {
     if (player.attackCooldown <= 0 && (held || gunHold.pending)) {
         const foe = gunTargetAt(gunHold.x, gunHold.y) || (held ? playerLockTarget : null);
         if (foe) {
-            if (playerAmmo <= 0) { firePlayerShot(foe); gunHold = null; return; }   // (says OUT OF AMMO once, and the hold ends)
+            if (typeof weaponDry === "function" ? weaponDry() : playerAmmo <= 0) { firePlayerShot(foe); gunHold = null; return; }   // (says OUT OF AMMO once, and the hold ends)
             if (firePlayerShot(foe)) gunHold.pending = false;
         } else if (!held) gunHold.pending = false;
     }

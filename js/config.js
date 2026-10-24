@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-26p";
+const BUILD_VERSION = "2026-10-26q";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -389,6 +389,7 @@ let _lastCellCount  = -1;    // … and shield cells
 let _lastPanelOpen  = false;  // a canvas panel (Crystal, Clone Bay, Settings, Build) is up: 
 let _lastAlarmOn    = false;  // the alarm triangle's state (game.js)
 let _lastZoneIndex  = -999;  // last zone index written to zoneInfo
+let _lastZoneName   = null;  // the room name last written to it in the facility (js/facilitynet.js)
 let _zoneEl         = null;  // cached zoneInfo element (fetched once on first use)
 let _lastPadHudKey  = null;  // last value written to padHud (avoids DOM writes every frame)
 let _padHudEl       = null;  // cached padHud element

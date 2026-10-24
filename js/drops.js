@@ -2,6 +2,7 @@
 //  PREDATOR DEATH DROPS
 // ─────────────────────────────────────────────────────────
 function onPredatorDeath(predator) {
+    if (typeof facilityScrapDrop === "function") facilityScrapDrop(predator);   // the facility: a case of scrap metal where it fell (js/facilityspawn.js)
     const px = (predator.x - player.visualX - (predator.y - player.visualY)) * TILE_W + canvas.width/2;
     const py = (predator.x - player.visualX + (predator.y - player.visualY)) * TILE_H + canvas.height/2;
 

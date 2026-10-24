@@ -52,8 +52,18 @@ const ITEMS = {
         lore: "A hexagonal housing humming faintly through its casing. A label reads: DO NOT DROP. Then, in marker: PLEASE.",
         stats: ["NEEDED  4 LEGS AND A CORE", "BUILT AT  THE MECH BAY, SHOW ROOM", "USED UP BY THE BUILD"],
         use: () => ({ ok: false, why: "BUILD IT AT THE MECH BAY IN THE SHOW ROOM" }) },
+    scrap_metal: { id: "scrap_metal", name: "SCRAP METAL", cat: "part", type: "component", stack: 30, col: "#9aa4b4", icon: "scrap", classes: null,
+        desc: "Bent plate and torn casing off the things that live in the arena. The Armory's terminal turns it into ammunition and upgrades.",
+        lore: "Whatever the arena's creatures are made of, it is mostly good steel. Somebody in the Armory will pay for it in rounds.",
+        stats: ["2 SCRAP = 1 AMMO PACK", "UPGRADES AND ASSEMBLES WEAPONS", "AT  THE ARMORY TERMINAL (NEEDS ITS RELAY ONLINE)", "DROPPED BY THE ARENA'S CREATURES"],
+        use: () => ({ ok: false, why: "TAKE IT TO THE ARMORY TERMINAL" }) },
+    fuel_cell: { id: "fuel_cell", name: "FUEL CELL", cat: "part", type: "component", stack: 6, col: "#5dffb0", icon: "fuel", classes: null,
+        desc: "A sealed canister of reactor fuel. A laser rifle loads one by itself when it runs dry: 12 charges.",
+        lore: "A glass-and-steel canister with a green glow that does not flicker. The label says THIS SIDE UP and, underneath, in a different hand, YES REALLY.",
+        stats: ["LOADED INTO  THE LASER RIFLE", "EACH CELL  12 CHARGES", "FOUND IN  THE COMPUTER LAB, ONCE ITS POWER IS BACK"],
+        use: () => ({ ok: false, why: "THE LASER RIFLE LOADS IT BY ITSELF" }) },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core"];
+const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell"];
 
 // ── the pack ──
 let playerInv = {};
@@ -71,7 +81,7 @@ function invAdd(id, n) {
 }
 function invRemove(id, n) { n = Math.floor(n === undefined ? 1 : n); if (!invHas(id, n)) return false; playerInv[id] -= n; if (playerInv[id] <= 0) { delete playerInv[id]; if (_invSel === id) _invSel = null; } return true; }
 function invItems(cat) { return ITEM_ORDER.filter(id => invCount(id) > 0 && (!cat || cat === "all" || itemDef(id).cat === cat)); }
-function invReset() { if (typeof classPerks !== "undefined") classPerks = new Set(); playerInv = {}; _invSel = null; _invInspect = false; _invMsg = null; invPanelOpen = false; }
+function invReset() { if (typeof classPerks !== "undefined") classPerks = new Set(); if (typeof weaponReset === "function") weaponReset(); playerInv = {}; _invSel = null; _invInspect = false; _invMsg = null; invPanelOpen = false; }
 // can the player use it? { ok, why }: the class rule first, then what the item itself needs
 function invCanUse(id) {
     const d = itemDef(id); if (!d) return { ok: false, why: "UNKNOWN ITEM" };
@@ -102,6 +112,19 @@ function invFeedFollower() {
 
 // ── the icons: each draws centred on (x, y) in a box of `s` pixels (t is a slow clock for the inspect page's shine) ──
 const INV_ICONS = {
+    scrap: (c, x, y, s, col) => {
+        c.lineJoin = "round"; c.lineWidth = Math.max(2, s * 0.05); c.strokeStyle = col;
+        c.fillStyle = "#3b414c"; c.beginPath(); c.moveTo(x - s * 0.34, y + s * 0.08); c.lineTo(x - s * 0.1, y - s * 0.28); c.lineTo(x + s * 0.14, y - s * 0.12); c.lineTo(x + s * 0.06, y + s * 0.2); c.lineTo(x - s * 0.22, y + s * 0.3); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = "#59606d"; c.beginPath(); c.moveTo(x - s * 0.02, y + s * 0.02); c.lineTo(x + s * 0.3, y - s * 0.16); c.lineTo(x + s * 0.36, y + s * 0.18); c.lineTo(x + s * 0.12, y + s * 0.3); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = "#1a1d24"; c.beginPath(); c.arc(x - s * 0.12, y + s * 0.08, s * 0.045, 0, 6.2832); c.arc(x + s * 0.22, y + s * 0.08, s * 0.035, 0, 6.2832); c.fill();
+    },
+    fuel: (c, x, y, s, col) => {
+        c.lineWidth = Math.max(2, s * 0.05); c.strokeStyle = col; c.fillStyle = "rgba(93,255,176,0.16)";
+        c.beginPath(); c.rect(x - s * 0.17, y - s * 0.26, s * 0.34, s * 0.6); c.fill(); c.stroke();
+        c.fillStyle = col; c.globalAlpha = 0.85; c.fillRect(x - s * 0.13, y - s * 0.02, s * 0.26, s * 0.3); c.globalAlpha = 1;
+        c.fillStyle = "#3b414c"; c.fillRect(x - s * 0.21, y - s * 0.34, s * 0.42, s * 0.1); c.fillRect(x - s * 0.21, y + s * 0.32, s * 0.42, s * 0.08);
+        c.fillStyle = "#e8fff4"; c.fillRect(x - s * 0.09, y - s * 0.16, s * 0.04, s * 0.22);
+    },
     ammo: (c, x, y, s, col) => {
         c.fillStyle = "#2a2018"; c.strokeStyle = col; c.lineWidth = Math.max(2, s * 0.05); c.beginPath(); c.rect(x - s * 0.34, y - s * 0.12, s * 0.68, s * 0.42); c.fill(); c.stroke();
         for (let i = 0; i < 4; i++) { const bx = x - s * 0.26 + i * s * 0.17; c.fillStyle = "#f2d27a"; c.fillRect(bx, y - s * 0.34, s * 0.1, s * 0.24); c.fillStyle = "#c58b45"; c.fillRect(bx, y - s * 0.34, s * 0.1, s * 0.07); }

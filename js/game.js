@@ -2208,15 +2208,21 @@ function render() {
     // The ALARM is a red triangle beside the zone, not a banner (css: body.alarm-on). Only the change touches the page.
     const _alarmOn = !!alertActive && gameState.phase !== "waveComplete";
     if (_alarmOn !== _lastAlarmOn) { _lastAlarmOn = _alarmOn; if (document.body && document.body.classList) document.body.classList.toggle("alarm-on", _alarmOn); }
-    const _panelOpen = !!(cloneMenuOpen || settingsPanelOpen || infoPanelOpen || (typeof buildMenuOpen !== "undefined" && buildMenuOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen));
+    const _panelOpen = !!(cloneMenuOpen || settingsPanelOpen || infoPanelOpen || (typeof buildMenuOpen !== "undefined" && buildMenuOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen));
     if (document.body && document.body.classList && document.body.classList.contains("info-open") !== !!infoPanelOpen) document.body.classList.toggle("info-open", !!infoPanelOpen);
     if (_panelOpen !== _lastPanelOpen) { _lastPanelOpen = _panelOpen; if (document.body && document.body.classList) document.body.classList.toggle("panel-open", _panelOpen); }
     // Zone indicator — cached element, update only on zone change
+    // In the facility the tag names the room the player is in (js/facilitynet.js); in the classic game it is the zone
+    const _fpz = typeof facilityZoneName === "function" ? facilityZoneName() : null;
+    if (_fpz !== null) {
+        if (_fpz !== _lastZoneName) { _lastZoneName = _fpz; if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo"); if (_zoneEl) _zoneEl.textContent = _fpz; }
+    } else {
     const _pz = getZoneIndex(Math.floor(player.x));
     if (_pz !== _lastZoneIndex) {
         _lastZoneIndex = _pz;
         if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo");
         if (_zoneEl) _zoneEl.textContent = _pz === 0 ? "Zone: Home" : "Zone: " + _pz;
+    }
     }
     // Health pad HUD — show pad count and total charges
     {
@@ -4568,7 +4574,7 @@ function render() {
     drawElementPicker();
     drawPylonConfirm();
     drawInfoPanel();
-    if (typeof drawInvPanel === "function") { drawInvPanel(); drawClassPicker(); }   // the pack and the class picker (js/inventory.js, js/classes.js)
+    if (typeof drawInvPanel === "function") { drawInvPanel(); drawClassPicker(); if (typeof drawArmoryPanel === "function") drawArmoryPanel(); }   // the pack and the class picker (js/inventory.js, js/classes.js)
     if (!dockHasMenus() && !infoPanelOpen) { drawShopButton(); drawCampButton(); }
     drawAmmoChip();
     if (typeof drawLockReticle === "function") drawLockReticle();   // the lock-on's corners (js/gunfire.js)

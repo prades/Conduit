@@ -13,6 +13,7 @@ const HD_CELL = 144, HD_ANCHOR = [72, 114.18], HD_PX_PER_UNIT = 144 / 3.4;
 const HD_BOX = { player: { ox: 26, oy: 1, cw: 92, ch: 105 }, egg: { ox: 41, oy: 43, cw: 62, ch: 85 },
     // the player with its class gear (design/evolutions/forms30.js): baked in 186 px cells over 4.4 units (the same pixels per unit), so each has its own anchor (ax, ay) in the original cell
     player_gun: { ox: 17, oy: 23, cw: 152, ch: 127, ax: 93, ay: 135.1 }, player_gun_aim: { ox: 4, oy: 23, cw: 178, ch: 103, ax: 93, ay: 135.1 },
+    player_laser: { ox: 14, oy: 23, cw: 158, ch: 128, ax: 93, ay: 135.1 }, player_laser_aim: { ox: 1, oy: 23, cw: 184, ch: 103, ax: 93, ay: 135.1 },
     player_mech: { ox: 16, oy: 27, cw: 154, ch: 139, ax: 93, ay: 135.1 }, player_coat: { ox: 36, oy: 20, cw: 114, ch: 129, ax: 93, ay: 135.1 } };
 // Draw one frame (col, row) of a sheet with the figure's anchor at (ax, ay) on screen, at scale s.
 function _hdBlit(g, img, box, col, row, ax, ay, s) {

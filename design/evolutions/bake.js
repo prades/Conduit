@@ -33,6 +33,8 @@ const JOBS = [
   // Nos. 840-843, the player with its class gear (js/playergear.js): the Gunslinger's machine gun (carried low, and raised to fire), the Technomancer's spider mech, the Mutator's lab coat.
   { id: 'player_gun', form: 840, color: '#19e6c1', idleAct: 0, action: [0, 1.0], rim: '#8d95a8' },
   { id: 'player_gun_aim', form: 841, color: '#19e6c1', idleAct: 0, action: [0, 1.0], rim: '#8d95a8' },
+  { id: 'player_laser', form: 844, color: '#19e6c1', idleAct: 0, action: [0, 1.0], rim: '#8d95a8' },
+  { id: 'player_laser_aim', form: 845, color: '#19e6c1', idleAct: 0, action: [0, 1.0], rim: '#8d95a8' },
   { id: 'player_mech', form: 842, color: '#19e6c1', idleAct: 0, action: [0, 1.0], rim: '#8d95a8' },
   { id: 'player_coat', form: 843, color: '#19e6c1', idleAct: 0, action: [0, 1.0], rim: '#8d95a8' },
   // The follower egg as shipped: the clear glass body (No. 821) on the dark metal scythe legs (No. 835).

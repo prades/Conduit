@@ -81,7 +81,7 @@ function drawRadialMenu() {
         drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", eRight);
         if (eRight) selectedRadialAction = "info";
         // Ammo readout under the ring, so the cost of arming is visible here.
-        _radialCaption("AMMO " + playerAmmo, playerAmmo > 0 ? "#ffb070" : "#ff7766");
+        { const _h = typeof weaponHud === "function" ? weaponHud() : null; _radialCaption(_h ? _h.short : "AMMO " + playerAmmo, _h ? (_h.dry ? "#ff7766" : "#ffb070") : (playerAmmo > 0 ? "#ffb070" : "#ff7766")); }
         ctx.restore();
         return;
     }

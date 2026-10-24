@@ -137,6 +137,7 @@ function followerPickDistance(ex, ey) {
 let playerShotsFired = 0;   // shots the player has fired (the tutorial's gun lesson counts them: js/tutorial.js)
 function firePlayerShot(foe) {
     if (!foe || foe.dead) return false;
+    if (typeof playerWeapon !== "undefined" && playerWeapon === "laser" && typeof fireLaserShot === "function") return fireLaserShot(foe);   // the laser rifle: fuel cells, a beam (js/weapons.js)
     if (playerAmmo <= 0) {
         floatingTexts.push({x:canvas.width/2, y:canvas.height/2-60,
             text:"OUT OF AMMO", color:"#ff5555", life:90, vy:-0.25, size:13});
@@ -147,12 +148,12 @@ function firePlayerShot(foe) {
         { x: player.x, y: player.y, element: player.selectedElement },
         foe,
         elDef ? elDef.color : "#ffffff",
-        typeof classStat === "function" ? classStat("shotDamage", 10) : 10, 5,
+        typeof weaponDamage === "function" ? weaponDamage() : 10, 5,
         null
     );
     playerAmmo = Math.max(0, playerAmmo - 1); playerShotsFired++; player.gunShotAt = typeof frame !== "undefined" ? frame : 0;   // (the gunslinger's machine gun fires: js/playergear.js)
     saveAmmo();
-    player.attackCooldown = typeof classStat === "function" ? Math.round(classStat("shotCooldown", 45)) : 45;
+    player.attackCooldown = typeof weaponCooldown === "function" ? weaponCooldown() : 45;
     return true;
 }
 
@@ -359,7 +360,7 @@ canvas.addEventListener('pointerdown', e=>{
     _netPressed = false;
     // Canvas overlay panels — absorb pointerdown so no game action triggers
     if (elementPickerOpen || infoPanelOpen || campMenuOpen || settingsPanelOpen
-        || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen)
+        || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen)
         || followerDutyMenu) return;
 
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press

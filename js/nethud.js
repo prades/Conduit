@@ -111,6 +111,7 @@ function _netDial(cx, cy, sig, bs, S) {
 }
 function drawNetworkStatusHUD() {
     _netPanelRect = null;
+    if (typeof facilityPlay !== "undefined" && facilityPlay && typeof drawFacilityNetworkHUD === "function") { drawFacilityNetworkHUD(); return; }   // the facility's own grid (js/facilitynet.js)
     if (typeof placingHidesUi === "function" && placingHidesUi()) return;
     const activeEls = ELEMENTS.filter(e => (networkStrength[e.id] || 0) > 0);
     // The readout is worked out a few times a second, not every frame: it

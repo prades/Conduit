@@ -209,7 +209,7 @@ function facilityPlayStart() {
     if (typeof facilityTutorialStart === "function") facilityTutorialStart(F);   // the tutorial opens in a blackout (js/facilitytutorial.js)
     if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
     if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)
-    _fpSpawnTestEnemies(F);
+    if (typeof facilitySpawnInitial === "function") facilitySpawnInitial(); else _fpSpawnTestEnemies(F);   // the arena's creatures (js/facilityspawn.js)
     if (typeof updateObjectiveUI === "function") updateObjectiveUI();
     document.body.classList && document.body.classList.add("facility-play");
     _fp.saveReady = true;                            // from here the game is saved as it goes

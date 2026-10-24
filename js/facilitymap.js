@@ -237,6 +237,9 @@ const FACILITY_MAP = {
         { id: "sentry_hall", room: "lab_hallway", shape: "rect", rect: [750, 490, 770, 510], status: "placed", kind: "sentry", note: "A sentry on the hallway's north-east corner." },
         { id: "charger_hall", room: "lab_hallway", shape: "rect", rect: [390, 630, 410, 650], status: "placed", kind: "charger", note: "A charging station: it refills your ammunition once the hallway has power." },
         { id: "relay_lobby_box", room: "front_lobby", shape: "rect", rect: [390, 230, 410, 250], status: "placed", kind: "relay", note: "The Front Lobby's relay, which also feeds the Security Room." },
+        { id: "relay_lab_box", room: "experiment_lab", shape: "rect", rect: [610, 530, 630, 550], status: "placed", kind: "relay", note: "The lab's relay, in the gap in the north bench line." },
+        { id: "relay_show_box", room: "show_room", shape: "rect", rect: [1070, 310, 1090, 330], status: "placed", kind: "relay", note: "The show room's relay, on its east wall." },
+        { id: "relay_armory_box", room: "armory", shape: "rect", rect: [190, 1090, 210, 1110], status: "placed", kind: "relay", note: "The armory's relay, on its west wall: it feeds the armory, the arena and everything below the deck." },
         // ── THE ARMORY (x 190-350, y 950-1150): a terminal and a workbench in the middle, crates in the corners, lockers and barrels along the south wall; the door's landing (x 310-350, y 1070-1110) stays clear ──
         { id: "armory_terminal", room: "armory", shape: "rect", rect: [190, 1030, 210, 1070], status: "placed", kind: "computer_desk", note: "The inventory terminal." },
         { id: "armory_bench", room: "armory", shape: "rect", rect: [230, 1030, 290, 1050], status: "placed", kind: "desk", note: "The workbench." },
@@ -263,6 +266,15 @@ const FACILITY_MAP = {
         { id: "pk_security_cache", room: "security_room", at: [880, 360], items: [["ammo_pack", 1]], note: "A drawer's worth of ammunition in the Security Room." },
         { id: "pk_lab_cells", room: "experiment_lab", at: [620, 580], items: [["power_cell", 2]], note: "Charged cells on the lab bench." },
         { id: "pk_lobby_cell", room: "front_lobby", at: [700, 280], items: [["power_cell", 1]], note: "A cell among the lobby's computers." },
+        // FUEL CELLS: the laser rifle's fuel, in the computer lab (the Front Lobby). A case with `needs` is not in the facility until that relay is online: then it arrives, in a column of light.
+        { id: "pk_lobby_fuel_1", room: "front_lobby", at: [460, 260], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells beside the west server racks (once the lobby has power)." },
+        { id: "pk_lobby_fuel_2", room: "front_lobby", at: [640, 300], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells on the lobby floor, by the reception desk." },
+        { id: "pk_lobby_fuel_3", room: "front_lobby", at: [780, 260], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells beside the east server racks." },
+        { id: "pk_security_cell", room: "security_room", at: [900, 330], items: [["power_cell", 1]], note: "A spare cell in the Security Room's drawers." },
+        { id: "pk_hall_cell", room: "lab_hallway", at: [650, 450], items: [["power_cell", 1]], note: "A cell on the hallway floor." },
+        { id: "pk_show_cells", room: "show_room", at: [1010, 320], items: [["power_cell", 2]], note: "Two cells among the show room's exhibits." },
+        { id: "pk_armory_cell", room: "armory", at: [250, 990], items: [["power_cell", 1]], note: "A cell in the Armory." },
+        { id: "pk_arena_cells", room: "arena", at: [700, 880], items: [["power_cell", 2]], note: "Two cells left in the arena." },
         { id: "pk_chamber_kit", room: "crystal_chamber", at: [260, 440], items: [["relay_kit", 1]], note: "A relay kit in the Crystal Chamber: with two power cells, anyone can splice a relay with it." },
         { id: "pk_armory_flare", room: "armory", at: [240, 1100], items: [["flare", 2]], class: "gunslinger", note: "Flares in the Armory (Gunslinger)." },
         { id: "pk_armory_flare_2", room: "armory", at: [320, 1080], items: [["flare", 2]], class: "gunslinger", note: "More flares in the Armory (Gunslinger)." },
@@ -283,6 +295,7 @@ const FACILITY_MAP = {
         { id: "st_sequencer", room: "experiment_lab", prop: "chamber_1", kind: "sequencer" },
         { id: "st_charger", room: "lab_hallway", prop: "charger_hall", kind: "charger" },
         { id: "st_mech_bay", room: "show_room", prop: "mech_bay", kind: "mech_bay" },
+        { id: "st_armory_terminal", room: "armory", prop: "armory_terminal", kind: "armory_terminal" },
     ],
 
     // RELAYS: the electrical network (docs/TUTORIAL.md, phase 5). Each is a prop (a relay box) that the player repairs at (a station of kind "relay"). When one comes online the rooms it `powers` have power (the blackout lifts there), and what it `feeds` (props: sentries, the charging station) works.
@@ -290,6 +303,9 @@ const FACILITY_MAP = {
         { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", prop: "relay_chamber_box", powers: ["crystal_chamber"], feeds: ["sentry_chamber_1", "sentry_chamber_2"] },
         { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", prop: "relay_hall_box", powers: ["lab_hallway", "teleport_stair_room"], feeds: ["sentry_hall", "charger_hall"] },
         { id: "relay_lobby", name: "LOBBY RELAY", room: "front_lobby", prop: "relay_lobby_box", powers: ["front_lobby", "security_room"], feeds: [] },
+        { id: "relay_lab", name: "LAB RELAY", room: "experiment_lab", prop: "relay_lab_box", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2"], feeds: [] },
+        { id: "relay_show", name: "SHOW ROOM RELAY", room: "show_room", prop: "relay_show_box", powers: ["show_room"], feeds: [] },
+        { id: "relay_armory", name: "ARMORY RELAY", room: "armory", prop: "relay_armory_box", powers: ["armory", "arena", "observation_deck", "catwalks", "nest_area"], feeds: [] },
     ],
 
     // FLOORS: each room's floor covering (js/facilitydecor.js draws it over the tile). Styles: carpet, plate, tile, labtile, concrete, grate, polished, wood, sand.

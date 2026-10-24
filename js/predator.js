@@ -324,6 +324,8 @@ class Predator {
         if (this.state==="wander") {
             if (!this.wanderTarget||this.wanderTimer<=0) {
                 const angle=Math.random()*Math.PI*2, radius=3+Math.random()*5;
+                if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityWanderTarget === "function") this.wanderTarget=facilityWanderTarget(this);   // the facility is not a strip: a spot of its room (js/facilityspawn.js)
+                else
                 this.wanderTarget={ x:this.x+Math.cos(angle)*radius, y:Math.max(0,Math.min(3,this.y+Math.sin(angle)*radius)) };
                 this.wanderTimer=90+Math.random()*120;
             }

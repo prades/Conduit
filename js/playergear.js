@@ -2,29 +2,35 @@
 //  THE CLASS GEAR, SEEN ON THE PLAYER (docs/TUTORIAL.md, "Class gear")
 // ─────────────────────────────────────────────────────────
 // Each class has one signature perk (CLASS_SIGNATURE, js/classes.js) and owning it changes how the player looks. The gear is modelled onto the same cube (design/evolutions/forms30.js, Nos. 840-843) and baked
-// to a sheet of its own like the cube's (img/hd/player_gun.png, player_gun_aim.png, player_mech.png, player_coat.png: 8 facings x 8 idle + 8 action frames): the player is drawn from that sheet in place of
+// to a sheet of its own like the cube's (img/hd/player_gun.png, player_gun_aim.png, player_laser.png, player_laser_aim.png (the laser rifle), player_mech.png, player_coat.png: 8 facings x 8 idle + 8 action frames): the player is drawn from that sheet in place of
 // the plain one (js/hdsprites.js drawHdPlayer asks playerGearSheet). The sheets are wider than the cube's (186 px cells over 4.4 units: the same pixels per unit), so each has its own box and anchor in HD_BOX.
+//   THE GUN IN HAND  (js/weapons.js) the machine gun (the Gunslinger's, from the Armory locker) or the laser rifle (assembled at the Armory terminal): whichever is equipped is what is drawn.
 //   GUNSLINGER   the armory's machine gun. The cube still floats; two of its tentacles carry the gun low at its left side, and when the weapon is ARMED (js/input.js setPlayerAttackMode) they pull it up level beside
 //                the screen, looking down the sights; the action frames are firing (recoil, muzzle flash), shown for a few frames after each shot. It turns to the enemy that is locked (js/gunfire.js).
 //   TECHNOMANCER the four-legged spider mech built in the show room: an armoured walker with the cube seated in it, walking when the player moves.
 //   MUTATOR      a lab coat and safety goggles, put on in the experiment lab on the way through the teleport room and the passage (a trail of rooms), and kept for good.
-const GEAR = { trail: ["teleport_room_1", "lab_passage", "experiment_lab"], fireFrames: 14, sheets: { machinegun: "player_gun", mech: "player_mech", labcoat: "player_coat" } };
+const GEAR = { trail: ["teleport_room_1", "lab_passage", "experiment_lab"], fireFrames: 14, sheets: { machinegun: "player_gun", laser: "player_laser", mech: "player_mech", labcoat: "player_coat" }, aimed: { machinegun: "player_gun_aim", laser: "player_laser_aim" } };
 
-// the signature perk the player owns, or null
-function playerGear() { const id = typeof playerClassKey !== "undefined" && playerClassKey ? CLASS_SIGNATURE[playerClassKey] : null; return id && classHas(id) ? id : null; }
+// what the player is seen with: the class's body gear (the mech, the coat) if it owns it, else the gun in hand if it has a sheet (the machine gun or the laser rifle: js/weapons.js), else nothing
+function playerGear() {
+    const id = typeof playerClassKey !== "undefined" && playerClassKey ? CLASS_SIGNATURE[playerClassKey] : null;
+    if (id && (id === "mech" || id === "labcoat") && classHas(id)) return id;
+    if (typeof playerWeapon !== "undefined" && GEAR.aimed[playerWeapon] && weaponHas(playerWeapon)) return playerWeapon;
+    return null;
+}
 // the sheet to draw the player from, and whether its action frames play (walking, or for the armed gun firing); null with no gear
 function playerGearSheet(walking) {
     const g = playerGear(); if (!g) return null;
-    if (g === "machinegun") {
+    if (GEAR.aimed[g]) {
         const armed = typeof playerAttackMode !== "undefined" && playerAttackMode, f0 = typeof frame !== "undefined" ? frame : 0, firing = armed && f0 - (player.gunShotAt === undefined ? -999 : player.gunShotAt) < GEAR.fireFrames;
-        return { key: armed ? "player_gun_aim" : "player_gun", action: armed ? firing : walking };
+        return { key: armed ? GEAR.aimed[g] : GEAR.sheets[g], action: armed ? firing : walking };
     }
     return { key: GEAR.sheets[g], action: walking };
 }
 
 // the Gunslinger turns the gun on the enemy it has locked
 function playerGearFacing(row) {
-    if (playerGear() !== "machinegun" || typeof playerLockTarget === "undefined" || !playerLockTarget || playerLockTarget.dead) return row;
+    if (!GEAR.aimed[playerGear()] || typeof playerLockTarget === "undefined" || !playerLockTarget || playerLockTarget.dead) return row;
     return hdRow(playerLockTarget.x - player.x, playerLockTarget.y - player.y);
 }
 

@@ -14,7 +14,9 @@
 
 const STATION_KINDS = {
     weapon_locker: { name: "WEAPON LOCKER", verb: "TAKE THE MACHINE GUN", classes: ["gunslinger"], perk: "machinegun", once: true,
-        use: () => { invAdd("ammo_pack", 4); return { ok: true, msg: "MACHINE GUN \u2014 IN YOUR TENTACLES: FOUR TIMES THE FIRE" }; } },
+        use: () => { invAdd("ammo_pack", 4); return { ok: true, msg: "MACHINE GUN \u2014 IN YOUR TENTACLES: FOUR TIMES THE FIRE", equip: "machinegun" }; } },
+    // the armory terminal (js/weapons.js): scrap into ammunition, equip, upgrade and assemble weapons. It needs the Armory's relay online.
+    armory_terminal: { name: "ARMORY TERMINAL", verb: "OPEN THE WEAPON BENCH", classes: null, panel: true, needsRelay: "relay_armory" },
     cctv: { name: "SECURITY CONSOLE", verb: "RUN A CCTV SWEEP", classes: ["gunslinger"], perk: "cctv", cooldown: 3600,
         use: () => { _fp.cctvUntil = frame + 1500; return { ok: true, msg: "CCTV SWEEP — ENEMIES MARKED FOR 25 SECONDS" }; } },
     tune_bench: { name: "TUNING CONSOLE", verb: "TUNE YOUR MONITOR LAMP", classes: ["technomancer"], perk: "tuned", once: true,
@@ -49,6 +51,7 @@ function stationCan(s) {
     const k = STATION_KINDS[s.kind], now = typeof frame !== "undefined" ? frame : 0;
     if (s.kind === "relay") return relayCan(s);
     if (k.classes && !playerClassKey) return { ok: false, why: "CLASSES COME AFTER THE TUTORIAL" };
+    if (k.needsRelay && !relayOnline(k.needsRelay)) return { ok: false, why: "NO POWER \u2014 REPAIR THE ARMORY RELAY" };
     if (k.powered && !facilityFeedOn(s.prop)) return { ok: false, why: "NO POWER \u2014 REPAIR THE HALLWAY RELAY" };
     if (k.powered && _fp.chargerReady > now) return { ok: false, why: "CHARGING \u2014 " + Math.ceil((_fp.chargerReady - now) / 60) + " S" };
     if (!classAllows(k.classes)) return { ok: false, why: "ONLY A " + k.classes.map(className).join(" / ") + " CAN USE THIS" };
@@ -64,9 +67,11 @@ function stationUse(s) {
     if (stationDist(s) > STATION_RANGE + 0.6) { invSay("TOO FAR AWAY", false); return { ok: false, why: "TOO FAR AWAY" }; }
     if (s.kind === "relay") return relayStart(s);
     if (k.build) return buildStart(s);
+    if (k.panel) { if (typeof armoryOpenNow === "function") armoryOpenNow(); return { ok: true, msg: "", panel: true }; }
     for (const [id, n] of (k.cost || [])) invRemove(id, n);
     const r = k.use(s), first = !classHas(k.perk), got = classGrant(k.perk);
     if (k.cooldown) _fp.cctvReadyAt = frame + k.cooldown;
+    if (r.equip && typeof weaponEquip === "function") weaponEquip(r.equip);   // (a weapon taken is a weapon in hand)
     invSay(r.msg + (got ? "   ▲ RANK " + classRank() : ""), true);
     return Object.assign({ perk: got ? k.perk : null, first }, r);
 }
@@ -188,6 +193,7 @@ function relayComplete(c) {
     for (const [id, n] of c.cost) invRemove(id, n);
     R.online = true; for (const room of d.powers) facilityPower(room, true);
     _fp.surge = { x: c.x, y: c.y, t0: frame, rooms: d.powers.slice() };
+    if (typeof facilityNeedsEnter === "function") facilityNeedsEnter(c.relay);   // what waited for this relay arrives (the computer lab's fuel cells)
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 140, text: "◈ POWER RESTORED — " + d.name, color: "#9dffb6", life: 260, vy: -0.05, size: 16 });
     return true;
 }

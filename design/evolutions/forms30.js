@@ -19,6 +19,9 @@ const _gStain = new T.MeshStandardMaterial({ color: 0x6f8a3a, metalness: 0, roug
 const _gVial = new T.MeshBasicMaterial({ color: 0x7dff6b, toneMapped: false });
 const _gLens = new T.MeshStandardMaterial({ color: 0x9be8ff, metalness: 0.1, roughness: 0.08, transparent: true, opacity: 0.72, emissive: 0x2a8fb0, emissiveIntensity: 0.6 });
 const _gTent = new T.MeshStandardMaterial({ color: 0x3b4658, metalness: 0.35, roughness: 0.4 }); _gTent.envMapIntensity = 0.6;
+const _gFuel = new T.MeshBasicMaterial({ color: 0x5dffc8, toneMapped: false });
+const _gFuelGlass = new T.MeshStandardMaterial({ color: 0xcfeeff, metalness: 0, roughness: 0.05, transparent: true, opacity: 0.35, depthWrite: false });
+const _gLaserLens = new T.MeshBasicMaterial({ color: 0xcaffff, toneMapped: false });
 const _gStrap = new T.MeshStandardMaterial({ color: 0x2a2f3a, metalness: 0.1, roughness: 0.85 });
 
 function _put(parent, m, v) { m.position.copy(v); parent.add(m); return m; }
@@ -64,20 +67,57 @@ function _machineGun() {
   return { g, flash };
 }
 
+// ── the laser rifle: the same placement as the machine gun (rear end at the origin, muzzle towards +z, about 2.1 long), but a sleek energy rifle: an open barrel frame with glowing cyan coils round a cyan core rod,
+// a scope on the rail, and a glass canister of fuel cell slotted into the receiver's outer side (the cell it takes: js/inventory.js fuel_cell) ──
+function _laserRifle() {
+  const g = G(), add = (m, x, y, z) => { m.position.set(x, y, z); g.add(m); return m; };
+  add(cbox(0.26, 0.3, 0.34, 0.05, _gGunDk), 0, -0.02, 0.17);                                    // the stock
+  add(cbox(0.32, 0.34, 0.9, 0.05, _gGun), 0, 0, 0.62);                                          // the receiver
+  add(cbox(0.2, 0.1, 0.5, 0.03, _gGunDk), 0, 0.2, 0.5);                                         // the top cover
+  add(cbox(0.12, 0.05, 0.85, 0.015, _gGunDk), 0, 0.26, 0.78);                                   // the rail
+  const sc = add(cyl(0.06, 0.07, 0.42, _gGunDk, 10), 0, 0.34, 0.85); sc.rotation.x = PI / 2;   // the scope
+  add(cyl(0.065, 0.065, 0.03, _gCyan, 10), 0, 0.34, 1.07).rotation.x = PI / 2;
+  add(cbox(0.03, 0.14, 0.03, 0.008, _gGunDk), 0, 0.3, 0.7);
+  add(cbox(0.025, 0.2, 0.5, 0.008, _gCyan), 0.17, 0.02, 0.62);                                  // a cyan stripe down the inner side
+  // the fuel cell canister on the outer (-x) side: dark caps, a glass tube, a glowing core
+  const cx = -0.27, cz = 0.62;
+  const gl = add(cyl(0.12, 0.12, 0.56, _gFuelGlass, 14), cx, 0.0, cz); gl.rotation.x = PI / 2;
+  const co = add(cyl(0.07, 0.07, 0.5, _gFuel, 12), cx, 0.0, cz); co.rotation.x = PI / 2;
+  for (const dz of [-0.3, 0.3]) { const cp = add(cyl(0.135, 0.135, 0.06, _gGunDk, 14), cx, 0.0, cz + dz); cp.rotation.x = PI / 2; }
+  add(cbox(0.09, 0.05, 0.4, 0.012, _gGunDk), -0.2, 0.12, cz);                                   // the clip that holds it
+  // the barrel: an open frame, a cyan core rod, coils
+  add(cbox(0.2, 0.2, 0.3, 0.04, _gGun), 0, 0.03, 1.2);                                          // the emitter housing
+  const rod = add(cyl(0.035, 0.035, 1.0, _gCyan, 8), 0, 0.04, 1.6); rod.rotation.x = PI / 2;
+  for (const x of [-1, 1]) add(cbox(0.03, 0.03, 0.85, 0.008, _gGunDk), x * 0.1, 0.04, 1.55);
+  for (const z of [1.4, 1.62, 1.84]) { add(torus(0.11, 0.04, _gGun, 16), 0, 0.04, z); add(torus(0.113, 0.015, _gCyan, 16), 0, 0.04, z + 0.06); }
+  add(cbox(0.15, 0.15, 0.16, 0.03, _gGunDk), 0, 0.04, 2.0);                                     // the emitter tip
+  add(torus(0.085, 0.025, _gCyan, 14), 0, 0.04, 2.1);
+  const ln = add(cyl(0.055, 0.055, 0.03, _gLaserLens, 12), 0, 0.04, 2.12); ln.rotation.x = PI / 2;
+  add(cbox(0.09, 0.3, 0.11, 0.02, _gGunDk), 0, -0.3, 0.36);                                     // the pistol grip
+  add(cbox(0.08, 0.22, 0.09, 0.02, _gGunDk), 0, -0.2, 1.1);                                     // the fore-grip
+  add(cbox(0.05, 0.1, 0.22, 0.015, _gGunDk), 0, -0.18, 0.62);                                   // the trigger guard
+  const flash = G(); {
+    const beam = new T.Mesh(new T.CylinderGeometry(0.04, 0.04, 0.45, 8), new T.MeshBasicMaterial({ color: 0xbffbff, toneMapped: false })); beam.rotation.x = PI / 2; beam.position.z = 0.25; flash.add(beam);
+    const halo = new T.Mesh(new T.CylinderGeometry(0.09, 0.09, 0.4, 8, 1, true), new T.MeshBasicMaterial({ color: 0x31e8ff, transparent: true, opacity: 0.55, toneMapped: false, depthWrite: false, side: T.DoubleSide })); halo.rotation.x = PI / 2; halo.position.z = 0.22; flash.add(halo);
+    const fc = new T.Mesh(new T.SphereGeometry(0.15, 8, 6), new T.MeshBasicMaterial({ color: 0xeaffff, toneMapped: false })); flash.add(fc); }
+  flash.position.set(0, 0.04, 2.14); flash.visible = false; g.add(flash);
+  return { g, flash };
+}
+
 // ── 840 / 841: THE GUNSLINGER ──
 // The gun hangs off the cube's left flank (the vent is on the right). Two of the four cables (the left pair) are its tentacles: they reach out and up round the pistol grip and the fore-grip.
-function _gunslinger(aim) {
+function _gunslinger(aim, kind) {
   const p = _playerHD(false, { skipCables: [0, 2] }), g = p.g, b = p.b, cy = 1.75, H = 1.22;
-  const gun = _machineGun(); b.add(gun.g);
+  const laser = kind === 'laser', gun = laser ? _laserRifle() : _machineGun(); b.add(gun.g);
   const tR = _tentacle(b, 6, 0.12, 0.07), tF = _tentacle(b, 6, 0.12, 0.065);
   const rootR = V(-0.33, cy - H / 2 - 0.02, -0.26), rootF = V(-0.33, cy - H / 2 - 0.02, 0.26);
   return { g, core: cy, update(t, act) {
     p.update(t, act); const walk = _isWalk(act), ph = _walkPh(act);
-    const fire = aim && walk, i = Math.floor(act * 8) % 8, kick = fire ? (i % 2 === 0 ? 0.08 : 0.0) + 0.02 : 0;
+    const fire = aim && walk, i = Math.floor(act * 8) % 8, kick = fire ? (i % 2 === 0 ? (laser ? 0.03 : 0.08) : 0.0) + (laser ? 0.01 : 0.02) : 0;
     // carried low and tilted down at the muzzle; aimed it is raised level beside the screen
     const gy = aim ? cy + 0.02 : cy - 0.56 + Math.sin(t * 1.6) * 0.015 + (walk ? Math.sin(ph * 2) * 0.03 : 0), gx = -0.9, gz = -0.5 - kick, tilt = aim ? 0 : 0.2;
     gun.g.position.set(gx, gy, gz); gun.g.rotation.set(tilt, 0, 0); gun.g.updateMatrixWorld(true);
-    gun.flash.visible = fire && i % 2 === 0;
+    gun.flash.visible = fire && (laser || i % 2 === 0);   // (the laser's beam holds on every firing frame)
     // the grips in the cube's frame
     const grip = gun.g.localToWorld(V(0.0, -0.42, 0.36)), fore = gun.g.localToWorld(V(0.0, -0.3, 1.1));
     const toB = w => b.worldToLocal(w.clone());
@@ -87,6 +127,8 @@ function _gunslinger(aim) {
   } };
 }
 f2(840, "THE GUNSLINGER · the cube still floats, two of its cables long tentacles that carry a big belt-fed machine gun low at its left side.", () => _gunslinger(false));
+f2(844, "THE GUNSLINGER, laser rifle · the cube still floats, two tentacles carry a sleek laser rifle low at its left side: cyan coils round a core rod, a scope, a glass fuel cell slotted into the receiver.", () => _gunslinger(false, 'laser'));
+f2(845, "THE GUNSLINGER, laser rifle, aiming · the tentacles have raised the laser rifle level beside the screen; the action frames fire it (a bright cyan beam at the emitter, a light kick).", () => _gunslinger(true, 'laser'));
 f2(841, "THE GUNSLINGER, aiming · the tentacles have pulled the machine gun up level beside the screen, looking down the sights; the action frames fire it (recoil, muzzle flash).", () => _gunslinger(true));
 
 // ── 842: THE SPIDER MECH ──
