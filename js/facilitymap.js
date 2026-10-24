@@ -592,7 +592,7 @@ const FACILITY_MAP = {
           note: "A sliding access door between Teleport Room 1 and the Observation Deck (at the notch at the top of the deck)." },
         { id: "door_lobby_hallway_west", a: [400, 410], b: [455, 410], rooms: ["front_lobby", "lab_hallway"], position_status: "approximate",
           note: "The lobby's west sliding door to the hallway at the back, on the near side of the reception desk." },
-        { id: "door_lobby_hallway_east", a: [748, 410], b: [820, 410], rooms: ["front_lobby", "lab_hallway"], position_status: "approximate",
+        { id: "door_lobby_hallway_east", a: [770, 410], b: [810, 410], rooms: ["front_lobby", "lab_hallway"], position_status: "approximate",
           note: "The lobby's east sliding door to the hallway at the back, just past the reception desk's east end." },
         { id: "door_bathroom_lobby", a: [824, 315], b: [824, 355], rooms: ["bathroom", "front_lobby"], position_status: "approximate",
           note: "The bathroom's sliding door to the Front Lobby." },
@@ -610,7 +610,7 @@ const FACILITY_MAP = {
           note: "A sliding access door from the Crystal Chamber onto the hallway that passes the experiment lab (on the shared wall, near its middle)." },
         { id: "open_stair_mouth", a: [870, 610], b: [870, 740], rooms: ["teleport_stair_room", "lab_hallway"], door: null, position_status: "approximate",
           note: "The open foot of the curved staircase, onto the hallway. No door." },
-        { id: "door_stair_teleport_2", a: [945, 625], b: [945, 690], rooms: ["teleport_stair_room", "teleport_room_2"], position_status: "approximate",
+        { id: "door_stair_teleport_2", a: [945, 660], b: [945, 700], rooms: ["teleport_stair_room", "teleport_room_2"], position_status: "approximate",
           note: "A sliding access door between the stair room and Teleport Room 2." },
     ],
     connections: [
