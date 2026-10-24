@@ -117,13 +117,15 @@ function _fpStyleWall(it, Hd) {
 // a post at every corner of a styled room (the same corner treatment everywhere)
 function _fpStylePillars(F) {
     const items = [];
-    for (const r of F.rooms) { if (!facilityStyleRoom(r.id) || r.id === "arena" || r.id === "catwalks" || r.id === "nest_area") continue; for (const v of r.poly) items.push({ type: "fp", fp: "pillar", x: v[0], y: v[1], room: r.id, base: facilityRoomHeight(r.id, F) * FP_ELEV_PX, depth: v[0] + v[1] + 0.15 }); }
-    return items;
+    for (const r of F.rooms) { if (!facilityStyleRoom(r.id) || r.id === "arena" || r.id === "catwalks" || r.id === "nest_area") continue; for (const v of r.poly) items.push({ type: "fp", fp: "pillar", x: v[0], y: v[1], room: r.id, base: facilityRoomHeight(r.id, F) * FP_ELEV_PX, depth: v[0] + v[1] + 0.5 }); }
+    const seen = new Set(); return items.filter(i => { const k = i.x + "," + i.y; if (seen.has(k)) return false; seen.add(k); return true; });   // (one post per corner, even where two rooms share it)
 }
 function _fpStylePillar(it) {
-    const H = FP_WALL_H + 4, w = 0.17;
-    _fpSBox(it.x - w, it.y - w, it.x + w, it.y + w, 0, H, FP_PAL.cap, _fpShade(FP_PAL.wallDark, 0.92), FP_PAL.caseLit, 3.5);
-    if (H > 30) { const p = _fpP(it.x, it.y + w, 24), q = _fpP(it.x + w, it.y, 24); ctx.strokeStyle = _fpAcc(it.room); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p[0] - 1, p[1]); ctx.lineTo(q[0] + 1, q[1]); ctx.stroke(); }
+    // ONE whole column: a single toon box from the floor to a cap, both visible faces in the same pale family (a lit side and a slightly darker one), one bold outline round its silhouette, one unbroken
+    // highlight down its lit edge, and a thin neon line down its front corner; nothing stacked or banded
+    const H = FP_WALL_H + 8, w = 0.17, A = FP_PAL, R = _fpRoomStyle(it.room);   // (it stands a little above the wall: a column, not a stub)
+    _fpSBox(it.x - w, it.y - w, it.x + w, it.y + w, 0, H, A.cap, A.wallLit, A.caseLit, 3.5);
+    const c0 = _fpP(it.x + w, it.y + w, 5), c1 = _fpP(it.x + w, it.y + w, H - 9); ctx.strokeStyle = R.acc; ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(c1[0], c1[1]); ctx.stroke(); ctx.lineCap = "butt";   // the neon line down the front corner
 }
 
 // ── doors: cartoony steel access doors ──
