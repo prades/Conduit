@@ -15,7 +15,7 @@
 
 let facilityPlay = false;
 let _fp = null;
-const FP_BODY = 0.3;              // tiles: how far a body keeps from a wall (what the walls enforce)
+const FP_BODY = 0.4;              // tiles: how far a body keeps from a wall (what the walls enforce)
 const FP_PLAN = 0.45;             // tiles: how far a PLANNED path keeps from a wall: wider than the body, so a route never grazes a corner or a door post the walls would then snag it on
 const FP_PLAYER_SPEED = 0.13;     // tiles a frame
 const FP_ELEV_PX = 34;            // px of screen height per tile of height (the map's levels: js/facilitymap.js)

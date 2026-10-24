@@ -162,7 +162,7 @@ function measure() {
         same(r.join(), '0,0,0', 'stalled windows per follower');
     });
     check('planned routes keep clear of every wall (the planning margin is wider than the body margin), so a unit never grazes a corner or a door post it would then snag on', () => {
-        ok(/const FP_PLAN = 0\.45/.test(rd('js/facilityplay.js')) && /const FP_BODY = 0\.3/.test(rd('js/facilityplay.js')), 'margins');
+        ok(/const FP_PLAN = 0\.45/.test(rd('js/facilityplay.js')) && /const FP_BODY = 0\.4/.test(rd('js/facilityplay.js')), 'margins');
         const r = J(`(function(){ const c0 = __PT.chamber, a0 = __PT.arena, p = facilityPath(c0[0], c0[1], a0[0], a0[1]); let min = 9, prev = [c0[0], c0[1]]; for (const q of p) { for (let t = 0; t <= 1; t += 0.05) { const x = prev[0] + (q[0] - prev[0]) * t, y = prev[1] + (q[1] - prev[1]) * t; for (const w of _fp.F.walls) min = Math.min(min, _facSegPointDist(w.a, w.b, x, y)); } prev = q; } return { n: p.length, min }; })()`);
         ok(r.n >= 4, 'route of ' + r.n); ok(r.min >= 0.3, 'the route passes ' + r.min.toFixed(2) + ' from a wall: inside the body margin');   // (planned at 0.45; the line-of-sight sampling lets a long diagonal dip a little under it, never under the body's 0.3)
     });
