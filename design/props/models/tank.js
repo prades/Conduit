@@ -10,7 +10,7 @@
   const tkBasic = c => new T.MeshBasicMaterial({ color: tkCol(c), toneMapped: false });
   const TK = {
     steel: tkStd(0x5a6a76, 0.7, 0.5), steel2: tkStd(0x4a5864, 0.7, 0.55), steel3: tkStd(0x546471, 0.7, 0.5), steelLt: tkStd(0x93a6b8, 0.75, 0.4, 0.9), dark: tkStd(0x20272f, 0.6, 0.6, 0.3), pipe: tkStd(0x7a8c9c, 0.65, 0.42, 0.8),
-    pipeDk: tkStd(0x44525e, 0.65, 0.5), brass: tkStd(0xb8923f, 1, 0.36, 0.9), wheel: tkStd(0xd24a35, 0.5, 0.45, 0.6), rubber: tkStd(0x14171c, 0.2, 0.8, 0.2), white: tkStd(0xdfe6ee, 0.1, 0.5, 0.5), stain: tkStd(0x2a2f36, 0.3, 0.9, 0.2),
+    pipeDk: tkStd(0x44525e, 0.65, 0.5), brass: tkStd(0xb8923f, 1, 0.36, 0.9), wheel: tkStd(0xd24a35, 0.5, 0.45, 0.6), rubber: tkStd(0x14171c, 0.2, 0.8, 0.2), recess: tkStd(0x080b10, 0, 1, 0.05), white: tkStd(0xdfe6ee, 0.1, 0.5, 0.5), stain: tkStd(0x2a2f36, 0.3, 0.9, 0.2),
     vio: tkBasic(0xa64dff), vio2: tkBasic(0x7a30d8), vioHot: tkBasic(0xe0b8ff), teal: tkBasic(0x31e8ff), amber: tkBasic(0xffb347), mint: tkBasic(0x2fd4a0), mintHot: tkBasic(0xb8ffe6),
     glass: new T.MeshStandardMaterial({ color: tkCol(0xc8d4ff), transparent: true, opacity: 0.2, metalness: 0, roughness: 0.04, depthWrite: false, side: T.DoubleSide }),
     glassMint: new T.MeshStandardMaterial({ color: tkCol(0xbfffe9), transparent: true, opacity: 0.17, metalness: 0, roughness: 0.04, depthWrite: false, side: T.DoubleSide }),
@@ -91,7 +91,7 @@
     radial(deg(58), w => {
       const y0 = base + px(36), wh = px(104), wx = R + 0.03;
       const fr = cbox(0.08, wh + 0.14, 0.7, 0.014, TK.steelLt); fr.position.set(wx, y0 + wh / 2, 0); w.add(fr);
-      const rec = cbox(0.03, wh, 0.5, 0.004, TK.dark); rec.position.set(wx + 0.05, y0 + wh / 2, 0); w.add(rec);
+      const rec = cbox(0.03, wh, 0.5, 0.004, TK.recess); rec.position.set(wx + 0.05, y0 + wh / 2, 0); w.add(rec);
       const lh = wh * 0.64, liq = cbox(0.02, lh, 0.46, 0.003, TK.vio2); liq.position.set(wx + 0.062, y0 + lh / 2, 0); w.add(liq);
       const upper = cbox(0.021, lh * 0.5, 0.46, 0.003, TK.vio); upper.position.set(wx + 0.064, y0 + lh * 0.75, 0); w.add(upper);
       const men = cbox(0.024, px(2.2), 0.46, 0.002, TK.vioHot); men.position.set(wx + 0.07, y0 + lh, 0); w.add(men);

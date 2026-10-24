@@ -63,7 +63,7 @@ function facilityPropSpriteDraw(it) {
 // the big props and the bridges (the start of the prop drawing, js/facilityplay.js _fpDrawProp): true when it drew the cell
 function facilityBigSpriteDraw(it) {
     const k = it.kind;
-    if ((k === "semi_truck" || k === "liquid_reserve" || k === "tank") && _psImg(k === "semi_truck" ? "truck" : "tank")) _fpFloorUnder(it);   // the floor under each of its cells (the solid tile is not drawn), then the sprite over it
+    if ((k === "semi_truck" || k === "liquid_reserve" || k === "tank") && !it.spriteOnly && _psImg(k === "semi_truck" ? "truck" : "tank")) _fpFloorUnder(it);   // the floor under each of its solid cells (a solid tile is not drawn; a rim cell's floor is the ordinary floor), then the sprite over it
     if (k === "semi_truck") { const c = _psCentre(it.id); return !!(c && _psBlit("truck", "truck", c[0], c[1], [it.x, it.y])); }
     if (k === "liquid_reserve" || k === "tank") { const c = _psCentre(it.id); return !!(c && _psBlit("tank", k === "tank" ? "lab" : "reserve", c[0], c[1], [it.x, it.y])); }
     if (k === "bridge") return !!_psBlit("bridge", it.variant, it.x, it.y);
