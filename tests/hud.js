@@ -162,7 +162,7 @@ function measure(chrome, dir, w, h, line) {
         '--headless', '--disable-gpu', '--no-sandbox', '--mute-audio',
         '--allow-file-access-from-files', '--hide-scrollbars',
         `--window-size=${w},${h}`, '--virtual-time-budget=6000',
-        '--dump-dom', 'file://' + file,
+        '--dump-dom', 'file://' + file + '?classic',
     ], { encoding: 'utf8', maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'ignore'] });
     const m = dom.match(/<pre id="HUDPROBE">([\s\S]*?)<\/pre>/);
     if (!m) throw new Error(`the page never reported at ${w}x${h} — it did not boot`);

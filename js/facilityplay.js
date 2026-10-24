@@ -178,12 +178,16 @@ function facilityPlayerStep() {
 }
 
 // ── start / stop ──
+// the facility writes only its own keys (js/facilitysave.js: its save and the choice of game): everything else the classic game saves is left exactly as it was
+const FP_STORE_OK = /^conduit_(fp_|mode$)/;
+let _fpStoreFiltered = false;
 function _fpNoStorage() {
-    try { if (typeof Storage !== "undefined" && Storage.prototype) { Storage.prototype.setItem = function () {}; Storage.prototype.removeItem = function () {}; } } catch (e) {}
+    if (_fpStoreFiltered) return;
+    try { if (typeof Storage !== "undefined" && Storage.prototype) { _fpStoreFiltered = true; const set = Storage.prototype.setItem, rm = Storage.prototype.removeItem; Storage.prototype.setItem = function (k, v) { if (FP_STORE_OK.test(String(k))) return set.call(this, k, v); }; Storage.prototype.removeItem = function (k) { if (FP_STORE_OK.test(String(k))) return rm.call(this, k); }; } } catch (e) {}
 }
 function facilityPlayStart() {
     if (facilityPlay) return true;
-    _fpNoStorage();                                  // nothing of this session is saved: the strip game's save is left exactly as it was
+    _fpNoStorage();                                  // only the facility's own save is written: the classic game's save is left exactly as it was
     facilityPlay = true;
     if (typeof facilityDebugSet === "function") facilityDebugSet(false);
     const F = facilityBuild({ snap: true, margin: FP_BODY });
@@ -197,16 +201,22 @@ function facilityPlayStart() {
     const cx = Math.round(ob.at[0]), cy = Math.round(ob.at[1]);
     crystal.x = cx; crystal.y = cy;
     player.x = player.targetX = player.visualX = cx + 2; player.y = player.targetY = player.visualY = cy + 1; player.fpPath = null;
-    for (const el of ["electric", "core", "fire"]) { if (typeof spawnFollowerAtCrystal === "function") spawnFollowerAtCrystal(el); }
+    const saved = typeof facilitySaveLoad === "function" ? facilitySaveLoad() : null;   // a game left earlier (js/facilitysave.js): its followers come back, else the three to start
+    if (saved && saved.followers && saved.followers.length && typeof spawnFollowerFromSave === "function") saved.followers.forEach(e => spawnFollowerFromSave(e));
+    else for (const el of ["electric", "core", "fire"]) { if (typeof spawnFollowerAtCrystal === "function") spawnFollowerAtCrystal(el); }
     for (const f of followers) { f.x = cx + 1 + Math.random(); f.y = cy + 2 + Math.random(); f.returningToCrystal = false; }
     _fpPlaceStatics(F);
     if (typeof facilityTutorialStart === "function") facilityTutorialStart(F);   // the tutorial opens in a blackout (js/facilitytutorial.js)
     if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
+    if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)
     _fpSpawnTestEnemies(F);
     if (typeof updateObjectiveUI === "function") updateObjectiveUI();
     document.body.classList && document.body.classList.add("facility-play");
+    _fp.saveReady = true;                            // from here the game is saved as it goes
     return true;
 }
+// is this a spot a unit can stand on (js/facilitysave.js puts the player back where they were left)
+function facilityStandOk(x, y) { return !!(_fp && _fp.F) && facilityWalkable(Math.round(x), Math.round(y), _fp.F); }
 // a walkable tile of the player's own room, between r0 and r1 tiles from (x, y) (a spot to put something where the player can see it); null if there is none
 function facilitySpotNear(x, y, r0, r1) {
     const here = facilityRoomAt(x, y, _fp.F); let best = null, bd = 1e9;
@@ -232,7 +242,8 @@ function facilityApproachTile(b, range) {
     }
     return best;
 }
-function facilityPlayStop() { try { location.reload(); } catch (e) {} }
+// leaving the facility is going to the classic game (js/facilitysave.js remembers the choice)
+function facilityPlayStop() { if (typeof facilitySwitchGame === "function") facilitySwitchGame("classic"); else { try { location.reload(); } catch (e) {} } }
 
 // STAGE 1 has no spawning of its own yet (no nests, no waves), so a few ants wander the arena to try combat and the walls on: they are a test, not the facility's enemies.
 function _fpSpawnTestEnemies(F) {
@@ -473,15 +484,24 @@ function _fpDrawFixture(it) {
     for (let i = 0; i < n; i++) { const t0 = (i + 0.15) / n, t1 = (i + 0.85) / n, lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]; _fpQuad([lerp(a0, b0, t0), lerp(a0, b0, t1), lerp(a1, b1, t1), lerp(a1, b1, t0)], "rgba(255,211,77,0.35)", "#ffd34d", 1); }
 }
 
-// ── the controls: a small chip to leave, and the PLAY entry ──
+// ── the controls: chips to change game, and the PLAY entry ──
+// In the facility: CLASSIC GAME (go to the old game) and NEW GAME (throw the save away, after asking). In the classic game: FACILITY (go back).
 function facilityPlayChip() {
     if (typeof document === "undefined" || !document.createElement || !document.body) return;
-    let c = document.getElementById("facilityPlayChip"); if (c) return;
-    c = document.createElement("button"); c.id = "facilityPlayChip"; c.textContent = "FACILITY · EXIT"; c.addEventListener("click", () => facilityPlayStop()); document.body.appendChild(c);
+    if (document.getElementById("facilityPlayChip")) return;
+    const classic = typeof facilityMode === "function" && facilityMode() === "classic";
+    const mk = (id, text, fn) => { const c = document.createElement("button"); c.id = id; c.textContent = text; c.addEventListener("click", fn); document.body.appendChild(c); return c; };
+    if (classic) { mk("facilityPlayChip", "\u25b6 FACILITY", () => facilitySwitchGame("facility")); document.body.classList.add("classic-chip"); }
+    else {
+        mk("facilityPlayChip", "CLASSIC GAME \u25b8", () => facilityPlayStop());
+        mk("facilityNewChip", "NEW GAME", () => { let ok = true; try { ok = typeof confirm !== "function" || confirm("Start a new facility game? Your saved progress will be lost."); } catch (e) {} if (ok) facilityNewGame(); });
+    }
 }
 function initFacilityPlay() {
     if (typeof window === "undefined" || !window.addEventListener) return;
+    const mode = typeof facilityMode === "function" ? facilityMode() : (/[?&]facilityplay\b/.test((window.location && window.location.search) || "") ? "facility" : "classic");
+    if (mode === "facility") _fpNoStorage();   // before the page boots: the classic game's save is not written to while the facility is what is played
     facilityPlayChip();
-    try { if (/[?&]facilityplay\b/.test((window.location && window.location.search) || "")) setTimeout(() => { try { facilityPlayStart(); } catch (e) { console.error(e); } }, 800); } catch (e) {}
+    if (mode === "facility") try { setTimeout(() => { try { facilityPlayStart(); } catch (e) { console.error(e); } }, 800); } catch (e) {}
 }
 try { initFacilityPlay(); } catch (e) { /* no page (the test sandbox) */ }

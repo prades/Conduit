@@ -62,7 +62,7 @@ function makeBrowserSandbox(store = {}) {
         innerWidth: 900, innerHeight: 700,
         performance: { now: () => 0 },
         navigator: { hardwareConcurrency: 8, userAgent: 'node', maxTouchPoints: 0 },
-        location: { search: '', href: 'http://localhost/game.html', hash: '' },   // a browser always has one (dev.js reads ?dev)
+        location: { search: '?classic', href: 'http://localhost/game.html', hash: '' },   // a browser always has one (dev.js reads ?dev)
         // No config files on disk here, and the game already handles that.
         fetch: () => Promise.resolve({ ok: false, json: () => Promise.resolve({}) }),
         localStorage: {

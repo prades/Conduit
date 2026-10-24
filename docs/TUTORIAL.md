@@ -124,3 +124,19 @@ Each class earns a **signature piece of gear** (`CLASS_SIGNATURE` in js/classes.
 - **Mutator — the lab coat and goggles.** Put on by walking **from Teleport Room 1 through the passage into the Experiment Lab**, in that order (any other walk starts again), and **kept for good**. A draped white coat open at the front, the four tentacles hanging out under its hem, with a collar, lapels, pockets, stains and a vial of mutagen, and safety goggles pushed up on the brow. A mutagen sample raises a follower two levels (`mutagenLevels` +1); the sequencer's perk adds one more.
 
 **Known issues.** The gear sheets have no angry (red-eyed) variant: the plain cube's `player_angry` sheet is not used while gear is worn. Each sheet decodes to about 9–10 MB, loaded only when its gear is owned. The sheets are baked at 186 px cells over 4.4 units to hold the mech and the gun inside the cell at every facing.
+
+## Saving, and the two games (revision)
+
+**The facility is the game now.** The page opens the pre-made map and its tutorial by default. The old strip game is the **CLASSIC GAME**: the chip top left (CLASSIC GAME ▸) switches to it, and in the classic game a chip (▶ FACILITY) switches back. The choice is remembered (`conduit_mode` in localStorage); `?classic` in the address forces the classic game for that visit, `?facilityplay` the facility. A switch is a page reload.
+
+**The two games keep separate saves.** The classic game keeps its own keys (`tubecrawler_*`, and the rest), exactly as before, and the facility never writes them: while the facility is played, `Storage.setItem` / `removeItem` let through only `conduit_fp_*` and `conduit_mode` (js/facilityplay.js `FP_STORE_OK`, installed before the page boots). The facility keeps one key, **`conduit_fp_save`** (js/facilitysave.js).
+
+**What the facility saves:** the class and its perks, the pack and the ammunition (and shots fired, which the gun lesson counts), which supply cases have been taken, which relays are online (their rooms are powered again, silently, and the blackout ends as usual when every room has power), how far through the tutorial the player is (the director's step, what it has already said, the followers it started with, the gun lesson's baseline), the followers (the strip's own roster record: level, XP, evolution, traits; if none were saved the three to start are made), the Crystal's health, and where the player stood (if it is still floor). It is written every three seconds while playing and when the page is hidden or closed.
+
+**What it does not save:** the enemies (an assault in progress starts again with its countdown), a repair or a mech build in progress (begun again; nothing was spent), cooldowns, the lamp's overcharge, the stances of the followers. A save that cannot be read, or is of another version, is ignored.
+
+**Items are obtained or not:** a case taken stays taken after a refresh, and the class's own cases are in the facility again once the class is (the ones taken are gone). A game left at the class picker (tutorial done, no class chosen) opens the picker again.
+
+**NEW GAME** (the chip beside CLASSIC GAME) asks first, then throws the save away and opens a fresh facility.
+
+**Tests.** Every suite that loads the real page for the classic game now opens `game.html?classic` (the sandbox's `window.location.search` is `?classic` too).

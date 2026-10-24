@@ -29,7 +29,7 @@ const PT_JS = `globalThis.__PT = (function () { const F = _fp.F, R = id => F.byI
 // The real page: enter the facility, walk through two doors and back, and check the strip's save was not touched.
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
-  try { localStorage.setItem('conduit_probe_save', 'kept'); out.saveBefore = localStorage.getItem('conduit_probe_save'); } catch (e) { out.saveErr = String(e); }
+  try { localStorage.setItem('conduit_fp_probe', 'kept'); out.saveBefore = localStorage.getItem('conduit_fp_probe'); localStorage.setItem('tubecrawler_probe', 'x'); out.classicBlocked = localStorage.getItem('tubecrawler_probe'); localStorage.setItem('conduit_mode', 'facility'); out.modeKept = localStorage.getItem('conduit_mode'); } catch (e) { out.saveErr = String(e); }
   facilityPlayStart(); await wait(300); ${PT_JS}
   out.on = facilityPlay; out.tiles = world.length; out.followers = followers.length; out.bodyClass = document.body.classList.contains('facility-play');
   var room = function(){ var r = facilityRoomAt(player.x, player.y, _fp.F); return r && r.id; };
@@ -40,8 +40,8 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   out.intoGlass = facilityWalkTo(__PT.lab[0], __PT.lab[1]);   // the lab interior: reachable only the long way round, and never through its glass
   out.glassPath = player.fpPath ? player.fpPath.length : 0;
   out.noWall = !facilityWalkTo(__PT.outside[0], __PT.outside[1]);
-  try { localStorage.setItem('conduit_probe_save', 'changed'); } catch (e) {}
-  out.saveAfter = localStorage.getItem('conduit_probe_save');
+  try { localStorage.setItem('conduit_fp_probe', 'changed'); localStorage.removeItem('tubecrawler_probe'); } catch (e) {}
+  out.saveAfter = localStorage.getItem('conduit_fp_probe'); out.mode = typeof facilityMode === 'function' && facilityMode(); out.saved = typeof facilitySaveLoad === 'function'; out.chip = !!document.getElementById('facilityPlayChip') && !!document.getElementById('facilityNewChip');
   out.stop = typeof facilityPlayStop;
   var pre = document.createElement('pre'); pre.id = '__fp'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 1500); });</script></body>`;
@@ -183,8 +183,8 @@ function measure() {
         const need = { 'js/world.js': [/generateSegment\(startX\) \{\s*\n\s*if \(typeof facilityPlay/, /ensureWorldTo\(x\) \{[\s\S]{0,120}facilityPlay/], 'js/game.js': [/facilityPlay\) facilityPlayerStep\(\)/, /facilityDrawItems\(drawList\)/, /obj\.type==='fp'/], 'js/helpers.js': [/clampToFloor\(a\) \{[\s\S]{0,160}facilityPlay/], 'js/npc.js': [/_walkStep[\s\S]{0,200}facilitySteer/, /facilityConstrain\(actor, _fpx, _fpy\)/], 'js/mass.js': [/_moveToward[\s\S]{0,200}facilitySteer/], 'js/predator.js': [/CORRIDOR BOUNDS[\s\S]{0,160}facilityPlay/], 'js/input.js': [/facilityWalkTo\(gx, gy\)/] };
         for (const f of Object.keys(need)) for (const re of need[f]) ok(re.test(rd(f)), f + ' has no guarded hook ' + re);
     });
-    check('a facility session writes nothing to the save: storage writes are switched off, and leaving reloads the page into the strip game', () => {
-        const src = rd('js/facilityplay.js'); ok(/Storage\.prototype\.setItem = function \(\) \{\}/.test(src) && /Storage\.prototype\.removeItem = function \(\) \{\}/.test(src), 'writes are not switched off'); ok(/_fpNoStorage\(\);\s*\/\/[^\n]*\n\s*facilityPlay = true;[\s\S]*restartGame\(\)/.test(src), 'storage is switched off after the reset can clear it'); ok(/function facilityPlayStop\(\) \{ try \{ location\.reload\(\)/.test(src), 'no reload on exit');
+    check('a facility session writes only its own keys to storage, and leaving goes to the classic game', () => {
+        const src = rd('js/facilityplay.js'); ok(/Storage\.prototype\.setItem = function \(k, v\) \{ if \(FP_STORE_OK\.test/.test(src) && /Storage\.prototype\.removeItem = function \(k\) \{ if \(FP_STORE_OK\.test/.test(src) && /FP_STORE_OK = \/\^conduit_\(fp_\|mode\$\)\//.test(src), 'writes are not limited to the facility\'s own keys'); ok(/_fpNoStorage\(\);\s*\/\/[^\n]*\n\s*facilityPlay = true;[\s\S]*restartGame\(\)/.test(src), 'storage is switched off after the reset can clear it'); ok(/function facilityPlayStop\(\) \{ if \(typeof facilitySwitchGame === "function"\) facilitySwitchGame\("classic"\)/.test(src), 'leaving does not go to the classic game');
     });
 
     group('THE DRAWING: walls, glass, doors, props and fixtures in the game\'s own draw list');
@@ -754,6 +754,48 @@ function measure() {
         const hd = rd('js/hdsprites.js'), fs2 = require('fs'); for (const k of ['player_gun', 'player_gun_aim', 'player_mech', 'player_coat']) { const m = hd.match(new RegExp(k + ': \\{ ox: (\\d+), oy: (\\d+), cw: (\\d+), ch: (\\d+)')); ok(m, k + ' has no box'); const b = fs2.readFileSync(path.join(ROOT, 'img/hd/' + k + '.png')); same(b.readUInt32BE(16), +m[3] * 16, k + ' sheet width'); same(b.readUInt32BE(20), +m[4] * 8, k + ' sheet height'); }
     });
 
+    group('SAVING, AND THE TWO GAMES');
+    check('the facility saves as it goes and puts the game back as it was left: class and perks, the pack, ammunition, the cases taken, relays online (their rooms powered), the tutorial\'s step and what it has said, the followers, the Crystal, and where the player stood', () => {
+        const r = J(`(function(){ canvas.width = 1280; canvas.height = 860; facilityPlay = true; const o = {}; localStorage.removeItem('conduit_fp_save');
+            facilityTutorialStart(_fp.F); invReset(); playerClassKey = null; const F = _fp.F; _fp.saveReady = true; for (const f of followers) f.dead = true; followers.length = 0; respawnQueue.length = 0; for (const el of ['electric', 'core', 'fire']) spawnFollowerAtCrystal(el);
+            for (const it of _fp.items.filter(i => i.fp === 'pickup').slice(0, 3)) { player.x = player.visualX = it.x; player.y = player.visualY = it.y; facilityPickupTick(); } o.taken = _fp.items.filter(i => i.fp === 'pickup' && i.taken).map(i => i.id).sort().join();
+            const R = _fp.relays.relay_chamber; R.online = true; for (const rm of _relayDef('relay_chamber').powers) facilityPower(rm, true);
+            const S = _fp.tut.script; S.step = TUT_STEPS.length; S.doneAt = 9; S.said.complete = true; S.kills = 4; classChoose('mutator', true); classGrant('labcoat'); invAdd('mutagen_sample', 2); playerAmmo = 17; playerShotsFired = 5; crystal.health = Math.round(crystal.maxHealth * 0.5);
+            for (const f of followers) { f.level = 11; }
+            const wp = facilitySpotNear(player.visualX, player.visualY, 3, 8) || [player.x, player.y]; player.x = player.visualX = wp[0]; player.y = player.visualY = wp[1];
+            o.wrote = facilitySaveWrite(); const raw = localStorage.getItem('conduit_fp_save'); o.size = raw.length; const d = facilitySaveLoad(); o.d = [d.v, d.cls, d.perks.join(), d.taken.length, d.relays.join(), d.script.step, d.followers.length, d.ammo];
+            const want = { inv: JSON.stringify(playerInv), at: [Math.round(player.x * 100), Math.round(player.y * 100)], hp: crystal.health };
+            // a fresh facility, then the saved game put back over it
+            facilityTutorialStart(F); invReset(); playerClassKey = null; _fp.saveReady = false; player.x = player.visualX = 1; player.y = player.visualY = 1; for (const f of followers) f.level = 5; crystal.health = crystal.maxHealth; playerAmmo = 3;
+            o.fresh = [playerClassKey, classPerks.size, _fp.items.filter(i => i.fp === 'pickup' && i.taken).length, relayOnline('relay_chamber'), _fp.tut.script.step];
+            { const sv = facilitySaveLoad(); for (const f of followers) f.dead = true; followers.length = 0; sv.followers.forEach(e => spawnFollowerFromSave(e)); o.lv = followers.map(f => f.level).join(); o.applied = facilitySaveApply(sv); }
+            o.back = [playerClassKey, Array.from(classPerks).join(), JSON.stringify(playerInv) === want.inv, playerAmmo, playerShotsFired, _fp.items.filter(i => i.fp === 'pickup' && i.taken).map(i => i.id).sort().join() === o.taken, relayOnline('relay_chamber'), _fp.tut.powered.has('crystal_chamber'), _fp.tut.script.step === TUT_STEPS.length, _fp.tut.script.said.complete === true, _fp.tut.script.kills, crystal.health === want.hp, [Math.round(player.x * 100), Math.round(player.y * 100)].join() === want.at.join(), classPickerOpen, followers.length];
+            o.cases = _fp.items.filter(i => i.fp === 'pickup' && i.cls === 'mutator').length; o.assault = _fp.tut.script.assault;
+            // a game left at the class picker (tutorial done, no class yet) opens the picker again
+            facilityTutorialStart(F); invReset(); playerClassKey = null; _fp.saveReady = true; _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; classPickerOpen = false; facilitySaveWrite(); facilityTutorialStart(F); invReset(); playerClassKey = null; _fp.saveReady = false; facilitySaveApply(facilitySaveLoad()); o.picker = [classPickerOpen, playerClassKey];
+            // an unreadable or other-version save is ignored; clearing removes it
+            localStorage.setItem('conduit_fp_save', '{nonsense'); o.bad = facilitySaveLoad(); localStorage.setItem('conduit_fp_save', JSON.stringify({ v: 99 })); o.old = facilitySaveLoad(); o.none = facilitySaveApply(null);
+            _fp.saveReady = true; facilitySaveWrite(); o.again = !!facilitySaveLoad(); facilitySaveClear(); o.cleared = [facilitySaveLoad(), _fp.saveReady];
+            // the autosave: once now, then not again until the interval has gone by
+            _fp.saveReady = true; _fp.saveAt = undefined; _fp.saveLast = null; frame = 5000; localStorage.removeItem('conduit_fp_save'); facilitySaveTick(); o.tick1 = !!localStorage.getItem('conduit_fp_save'); localStorage.removeItem('conduit_fp_save'); _fp.saveLast = null; frame = 5100; facilitySaveTick(); o.tick2 = !!localStorage.getItem('conduit_fp_save'); frame = 5000 + FS.every + 1; facilitySaveTick(); o.tick3 = !!localStorage.getItem('conduit_fp_save');
+            localStorage.removeItem('conduit_fp_save'); invReset(); classPerks = new Set(); playerClassKey = null; return o; })()`);
+        same(r.wrote, true, 'saving'); ok(r.size > 200, 'the save is tiny: ' + r.size); same(r.d.slice(0, 2).join(), '1,mutator', 'version, class'); same(r.d[2], 'labcoat', 'perks'); same(r.d[3], 3, 'cases taken'); same(r.d[4], 'relay_chamber', 'relays'); same(r.d[5], 7, 'the step'); ok(r.d[6] >= 3, 'followers'); same(r.d[7], 17, 'ammo');
+        same(r.fresh.join(), ',0,0,false,0', 'the fresh facility is not fresh'); same(r.applied, true, 'applying'); same(r.back.slice(0, 2).join(), 'mutator,labcoat', 'class and perks'); same(r.back.slice(2).join(), 'true,17,5,true,true,true,true,true,4,true,true,false,' + r.back[14], 'what came back: ' + r.back.join()); ok(r.back[14] >= 3, 'followers came back'); same(r.lv, '11,11,11', 'the followers\' levels'); same(r.cases, 3, 'the Mutator\'s cases are in the facility'); same(r.assault, null, 'an assault in progress is not carried over');
+        same(r.picker.join(), 'true,', 'the class picker is not open again'); same(r.bad, null, 'unreadable save'); same(r.old, null, 'other-version save'); same(r.none, false, 'applying nothing'); same(r.again, true, 'saving again'); same(r.cleared.join(), ',false', 'clearing');
+        same(r.tick1, true, 'the first autosave'); same(r.tick2, false, 'an autosave inside the interval'); same(r.tick3, true, 'an autosave after the interval');
+    });
+    check('the page opens the facility by default and the old game is the CLASSIC GAME one chip away: the choice is remembered (conduit_mode), ?classic forces it, the facility\'s only writes are conduit_fp_* and conduit_mode, NEW GAME asks first, and the saved followers are used instead of the three to start', () => {
+        const src = rd('js/facilitysave.js') + rd('js/facilityplay.js');
+        ok(/function facilityMode\(\)/.test(src) && /\?&\]classic/.test(src) && /conduit_mode/.test(src) && /return[^;]*=== "classic" \? "classic" : "facility"/.test(src), 'the mode is not read as facility by default');
+        ok(/mk\("facilityPlayChip", "CLASSIC GAME/.test(src) && /mk\("facilityNewChip", "NEW GAME"[^\n]*confirm\(/.test(src) && /mk\("facilityPlayChip", "\\u25b6 FACILITY"/.test(src), 'the chips');
+        ok(/if \(mode === "facility"\) _fpNoStorage\(\);/.test(src) && /if \(mode === "facility"\) try \{ setTimeout/.test(src), 'the facility is not what the page starts, or storage is filtered too late');
+        ok(/facilitySaveLoad\(\)/.test(rd('js/facilityplay.js')) && /saved\.followers\.forEach\(e => spawnFollowerFromSave\(e\)\)/.test(src) && /_fp\.saveReady = true/.test(rd('js/facilityplay.js')), 'the saved followers or the save-ready flag');
+        ok(/facilitySaveTick\(\)/.test(rd('js/facilitytutorial.js')) && /js\/facilitysave\.js/.test(rd('game.html')) && rd('game.html').indexOf('js/facilitysave.js') < rd('game.html').indexOf('js/facilityplay.js'), 'the save is not wired in or loads after the play file');
+        ok(/pagehide/.test(src) && /beforeunload/.test(src) && /visibilitychange/.test(src), 'no save when the page is hidden or closed');
+        const w = J(`(function(){ const keep = window.location.search; const o = {}; window.location.search = '?classic'; o.c = facilityMode(); window.location.search = ''; localStorage.removeItem('conduit_mode'); o.d = facilityMode(); localStorage.setItem('conduit_mode', 'classic'); o.m = facilityMode(); window.location.search = '?facilityplay'; o.f = facilityMode(); localStorage.removeItem('conduit_mode'); window.location.search = keep; return o; })()`);
+        same(w.c, 'classic', '?classic'); same(w.d, 'facility', 'the default'); same(w.m, 'classic', 'the remembered choice'); same(w.f, 'facility', '?facilityplay');
+    });
+
     group('THE REAL PAGE');
     const r = measure();
     if (r === null) console.log('  (no Chromium here: skipped)');
@@ -763,7 +805,7 @@ function measure() {
             check('entering in the real page: the facility is on, the body class is set, the world and squad are there', () => { same(r.on, true, 'on'); ok(r.tiles > 1500, 'tiles ' + r.tiles); same(r.followers, 3, 'followers'); same(r.bodyClass, true, 'body class'); same(r.start, 'crystal_chamber', 'start room'); });
             check('walking in the real page: chamber to hallway to arena through the real doors', () => { same(r.toHall, true, 'path to the hallway'); same(r.hall, 'lab_hallway', 'hall'); same(r.toArena, true, 'path to the arena'); same(r.arena, 'arena', 'arena'); same(r.stop, 'function', 'no way out'); });
             check('a tap outside the building walks nowhere; a tap inside the windowed lab finds the long way round', () => { same(r.noWall, true, 'outside was walkable'); ok(r.intoGlass === true && r.glassPath >= 3, 'lab path ' + r.glassPath); });
-            check('a save written before entering is still there after a write inside the facility (storage writes are off)', () => { same(r.saveBefore, 'kept', 'before'); same(r.saveAfter, 'kept', 'the facility session wrote to storage'); });
+            check('the facility writes only its own keys (conduit_fp_*, conduit_mode): the classic game\'s keys are never written while the facility is played, and the page opens the facility by default with its two chips', () => { same(r.saveBefore, 'kept', 'its own key'); same(r.saveAfter, 'changed', 'its own key was not written'); same(r.classicBlocked, null, 'a classic key was written'); same(r.modeKept, 'facility', 'the choice of game'); same(r.mode, 'facility', 'the default game'); same(r.chip, true, 'the chips'); });
         }
     }
 

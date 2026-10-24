@@ -110,7 +110,7 @@ function findChromium() {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ui-')), file = path.join(dir, 'game.html');
         fs.writeFileSync(file, rd('game.html').replace(/<head>/i, '<head><base href="file://' + ROOT + '/">').replace(/<\/body>/i, SCRIPT));
         let dom = '';
-        try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=1100,760', '--virtual-time-budget=14000', '--dump-dom', 'file://' + file], { encoding: 'utf8', timeout: 90000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
+        try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=1100,760', '--virtual-time-budget=14000', '--dump-dom', 'file://' + file + '?classic'], { encoding: 'utf8', timeout: 90000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
         try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
         const m = dom.match(/<pre id="__ui">([\s\S]*?)<\/pre>/), r = m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')) : null;
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));

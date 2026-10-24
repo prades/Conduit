@@ -44,7 +44,7 @@ function measure(w, layoutH, visibleH, laterH) {
     const bin = findChromium(); if (!bin) return null;
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vv-')), file = path.join(dir, 'game.html'); fs.writeFileSync(file, probe(layoutH, visibleH, laterH));
     let dom = '';
-    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + w + ',' + layoutH, '--virtual-time-budget=12000', '--dump-dom', 'file://' + file], { encoding: 'utf8', timeout: 60000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
+    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + w + ',' + layoutH, '--virtual-time-budget=12000', '--dump-dom', 'file://' + file + '?classic'], { encoding: 'utf8', timeout: 60000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
     const m = dom.match(/<pre id="__vv">([\s\S]*?)<\/pre>/); return m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')) : undefined;
 }
 
