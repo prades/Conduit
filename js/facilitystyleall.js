@@ -13,7 +13,8 @@ const FP_ROOM_STYLE = {
     teleport_room_2:     { acc: FP_ACC.violet, wain: "#7a62c0", fa: "#e0dcf0", fb: "#bfb8de" },
     teleport_stair_room: { acc: FP_ACC.blue,   wain: "#4a7fb0", fa: "#d9e6f2", fb: "#b6cbe0" },
     front_lobby:         { acc: FP_ACC.blue,   wain: "#4a7fb0", fa: "#dde6ee", fb: "#bccbd9" },
-    bathroom:            { acc: FP_ACC.cyan,   wain: "#3aa59a", fa: "#d3ecec", fb: "#aed6d6" },
+    security_room:       { acc: FP_ACC.blue,   wain: "#3a5a82", fa: "#c6d0dd", fb: "#a5b3c6" },
+    armory:              { acc: FP_ACC.amber,  wain: "#7a7048", fa: "#cbc6b2", fb: "#aca691" },
     show_room:           { acc: FP_ACC.violet, wain: "#7a62c0", fa: "#e4e2f2", fb: "#c6c3de" },
     lab_hallway:         { acc: FP_ACC.cyan,   wain: "#3d93a0", fa: "#d6e0e3", fb: "#b2c2c8" },
     experiment_lab:      { acc: FP_ACC.mint,   wain: "#2fa383", fa: "#dff0ea", fb: "#b9d9cd" },
@@ -117,6 +118,7 @@ function _fpStylePropMore(it) {
         _fpSPrism(it, 66, A.tealLit, A.teal, A.tealLit, 3.5); if (it.sy) for (let i = 0; i < 2; i++) { _fpFaceY(it, 0.04 + i * 0.5, 0.46 + i * 0.5, 4, 62, "rgba(255,255,255,0.1)", "rgba(10,30,38,0.7)"); _fpFaceY(it, 0.1 + i * 0.5, 0.4 + i * 0.5, 50, 55, "rgba(10,30,38,0.65)", null); _fpFaceY(it, 0.38 + i * 0.5, 0.42 + i * 0.5, 28, 36, A.cap, null); }
     } else if (k === "cabinet") {   // a cabinet: three drawers with handles
         _fpSPrism(it, 46, A.caseLit, A.case, A.cap, 3.5); if (it.sy) for (let r = 0; r < 3; r++) { _fpFaceY(it, 0.06, 0.94, 3 + r * 14, 15 + r * 14, "rgba(255,255,255,0.06)", "rgba(27,54,64,0.55)"); _fpFaceY(it, 0.4, 0.6, 8 + r * 14, 10 + r * 14, A.tealDark, null); }
+        if (it.sx) for (let r = 0; r < 3; r++) { _fpFaceX(it, 0.06, 0.94, 3 + r * 14, 15 + r * 14, "rgba(255,255,255,0.06)", "rgba(27,54,64,0.55)"); _fpFaceX(it, 0.4, 0.6, 8 + r * 14, 10 + r * 14, A.tealDark, null); }   // (a run of cabinets along a wall shows its drawers on the side the camera sees)
     } else if (k === "speaker") {   // a PA speaker stack: a dark cabinet with two cones
         _fpSPrism(it, 52, A.tealLit, A.tealDark, _fpShade(A.tealDark, 1.15), 3.5); if (it.sy) for (const [z, r] of [[14, 1], [36, 0.75]]) { const c = P(x, y + 0.5, z); _fpBlob(c[0], c[1], 13 * r, 8.5 * r, A.ink, 2.5); ctx.strokeStyle = acc; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(c[0], c[1], 8 * r, 5 * r, 0, 0, 6.2832); ctx.stroke(); }
     } else if (k === "spool") {   // a cable drum on its side
@@ -192,3 +194,53 @@ Object.assign(FP_STYLE_WALL, {
     screen: (it, f) => { const z0 = it.z || 34, c = it.colour && it.colour !== "#6dff5a" ? _fpStyleCol("x", it.colour) : _fpAcc(it.room); _fpWQuad(it, 0.08, 0.92, z0, z0 + 28, _FPW.tealDark, _FPW.ink, 3); _fpWQuad(it, 0.14, 0.86, z0 + 4, z0 + 24, "#0d2a33", null); for (let k = 0; k < 6; k++) { const hh = 3 + 12 * (0.5 + 0.5 * Math.sin(f * 0.04 + k * 1.3 + it.seed)); _fpWQuad(it, 0.2 + k * 0.1, 0.27 + k * 0.1, z0 + 5, z0 + 5 + hh, k & 1 ? _FPW.blue : c, null); } },
     wall_light: (it, f) => { const z = it.z || 62, c = _fpAcc(it.room), fl = it.h ? (0.6 + 0.4 * Math.sin(f * 0.1 + it.seed) * (Math.sin(f * 0.017 + it.seed) > 0.1 ? 1 : 0.3)) : 1; _fpWQuad(it, 0.05, 0.95, z, z + 5, _FPW.tealDark, _FPW.ink, 2.5); _fpWQuad(it, 0.09, 0.91, z + 1, z + 4, _fpRgba(_FPW.white, 0.6 + 0.4 * Math.max(0, fl)), null); ctx.globalCompositeOperation = "lighter"; _fpWQuad(it, 0, 1, z - 20, z + 4, _fpRgba(c, 0.07 * Math.max(0, fl)), null); ctx.globalCompositeOperation = "source-over"; },
 });
+
+// ── the Security Room's wall of camera feeds, the arena's garage doors and the armory's weapon racks ──
+Object.assign(FP_STYLE_WALL, {
+    // a bank of TV monitors: a steel frame, three rows of bezelled screens, each showing a camera feed (a corridor, a room, a map grid, snow) with a blinking REC lamp and a scan line rolling down it
+    monitor_bank: (it, f) => {
+        const L = Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]), cols = Math.max(1, Math.round(L / 0.95)), rows = 3, z0 = 32, hh = 26, gap = 3, feed = ["#0c3140", "#12324a", "#183a30", "#2a3340", "#0e2a38"];
+        _fpWQuad(it, 0.005, 0.995, z0 - 4, z0 + rows * (hh + gap) + 1, _FPW.tealDark, _FPW.ink, 3.5);   // the frame the monitors are bolted in
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+            const u0 = (c + 0.07) / cols, u1 = (c + 0.93) / cols, za = z0 + r * (hh + gap), zb = za + hh, k = (it.seed + r * 5 + c * 3) % 7, off = k === 6 && Math.floor(f / 90 + r + c) % 3 === 0;
+            _fpWQuad(it, u0, u1, za, zb, "#1a2330", _FPW.ink, 2.5);   // the bezel
+            const a0 = u0 + (u1 - u0) * 0.08, a1 = u1 - (u1 - u0) * 0.08, ya = za + 3, yb = zb - 3;
+            if (off) { _fpWQuad(it, a0, a1, ya, yb, "#0a0e14", null); continue; }
+            _fpWQuad(it, a0, a1, ya, yb, feed[k % 5], null);
+            const ua = (x) => a0 + (a1 - a0) * x, za2 = (y) => ya + (yb - ya) * y;
+            if (k === 0 || k === 5) { _fpWLine(it, ua(0.08), za2(0.1), ua(0.4), za2(0.5), "rgba(200,235,245,0.55)", 1.5); _fpWLine(it, ua(0.92), za2(0.1), ua(0.6), za2(0.5), "rgba(200,235,245,0.55)", 1.5); _fpWQuad(it, ua(0.4), ua(0.6), za2(0.5), za2(0.85), "rgba(200,235,245,0.2)", null); }   // a corridor
+            else if (k === 1) { _fpWLine(it, ua(0.04), za2(0.55), ua(0.96), za2(0.55), "rgba(200,235,245,0.5)", 1.5); _fpWQuad(it, ua(0.2), ua(0.45), za2(0.55), za2(0.85), "rgba(255,190,90,0.45)", null); _fpWQuad(it, ua(0.62), ua(0.8), za2(0.55), za2(0.7), "rgba(200,235,245,0.35)", null); }   // a room with a desk and a door
+            else if (k === 2) { for (let g = 1; g < 4; g++) { _fpWLine(it, ua(g / 4), za2(0.05), ua(g / 4), za2(0.95), "rgba(110,255,160,0.35)", 1); _fpWLine(it, ua(0.05), za2(g / 4), ua(0.95), za2(g / 4), "rgba(110,255,160,0.35)", 1); } const bx = 0.2 + ((f * 0.01 + it.seed + c) % 0.6); _fpWQuad(it, ua(bx), ua(bx + 0.08), za2(0.4), za2(0.55), "rgba(255,120,90,0.9)", null); }   // a map grid with a blip
+            else if (k === 3) { for (let g = 0; g < 4; g++) { const sy = (Math.floor(f / 3) * 7 + g * 11 + c * 5 + r * 3) % 20 / 20; _fpWQuad(it, ua(0.03), ua(0.97), za2(sy * 0.85), za2(sy * 0.85 + 0.1), "rgba(230,240,245,0.4)", null); } }   // snow
+            else { _fpWQuad(it, ua(0.1), ua(0.9), za2(0.62), za2(0.9), "rgba(200,235,245,0.22)", null); _fpWQuad(it, ua(0.3), ua(0.5), za2(0.25), za2(0.62), "rgba(200,235,245,0.4)", null); }   // a figure in a hall
+            const sy = ((f * 0.8 + it.seed * 9 + r * 17 + c * 11) % 60) / 60; if (sy < 1) _fpWQuad(it, a0, a1, ya + (yb - ya) * sy * 0.9, ya + (yb - ya) * (sy * 0.9 + 0.1), "rgba(255,255,255,0.1)", null);   // the scan line
+            if (Math.floor(f / 24 + c + r) % 2 === 0) { const p = _fpWP(it, ua(0.1), za2(0.88)); ctx.fillStyle = "#ff4a3a"; ctx.beginPath(); ctx.arc(p[0], p[1], 1.8, 0, 6.2832); ctx.fill(); }   // REC
+        }
+        const m = _fpWP(it, 0.5, z0 + rows * (hh + gap) * 0.5); _fpGlow(m[0], m[1], 24 + L * 14, "#6adfff", 0.1);
+    },
+    // a roll-up garage door set into the wall: a steel frame, a hazard-striped header, ribbed slats, a row of small lit windows, a handle and a lamp over it
+    garage_door: (it, f) => {
+        const S = FP_STEEL_DOOR, H = 96, n = 9, sh = (H - 14) / n;
+        _fpWQuad(it, 0, 1, 0, H + 6, _FPW.tealDark, _FPW.ink, 4);   // the frame
+        for (let k = 0; k < n; k++) { const za = 2 + k * sh, zb = za + sh; _fpWQuad(it, 0.05, 0.95, za, zb, k & 1 ? S.mid : S.lit, _FPW.ink, 1.8); _fpWLine(it, 0.05, zb - 1.5, 0.95, zb - 1.5, S.rib, 1.5); }   // the slats
+        const wz0 = 2 + 6 * sh + 3, wz1 = wz0 + sh - 6, wn = Math.max(3, Math.round(Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) * 1.4)); for (let k = 0; k < wn; k++) { const u0 = 0.12 + k * (0.76 / wn), u1 = u0 + 0.76 / wn * 0.7; _fpWQuad(it, u0, u1, wz0, wz1, "#12323a", _FPW.ink, 1.5); _fpWQuad(it, u0 + 0.01, u1 - 0.01, wz0 + 1.5, wz1 - 1.5, _fpRgba(_FPW.amber, 0.3 + 0.1 * Math.sin(f * 0.05 + k + it.seed)), null); }   // lit windows
+        const hz = H - 12; for (let k = 0; k < 12; k++) _fpWQuad(it, 0.05 + k * 0.075, 0.05 + (k + 1) * 0.075, hz, hz + 10, k & 1 ? _FPW.ink : _FPW.amber, null);   // the hazard stripe
+        _fpWQuad(it, 0.05, 0.95, hz, hz + 10, null, _FPW.ink, 2);
+        _fpWQuad(it, 0.44, 0.56, 6, 10, _FPW.amber, _FPW.ink, 1.5);   // the handle bar
+        for (const u of [0.03, 0.97]) _fpWLine(it, u, 0, u, H + 4, S.dark, 3);   // the guide rails
+        const lp = _fpWP(it, 0.5, H + 14); ctx.fillStyle = Math.floor(f / 40 + it.seed) % 6 ? _FPW.amber : S.dark; ctx.beginPath(); ctx.arc(lp[0], lp[1], 3.2, 0, 6.2832); ctx.fill(); ctx.strokeStyle = _FPW.ink; ctx.lineWidth = 2; ctx.stroke();
+    },
+    // a rack of rifles on the wall: a dark board, two rails, a rifle in each slot (barrel, receiver, a wooden stock) and a status lamp
+    gun_rack: (it, f) => {
+        const L = Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]), n = Math.max(2, Math.round(L * 1.7));
+        _fpWQuad(it, 0.03, 0.97, 30, 104, "#232b38", _FPW.ink, 3.5);
+        for (const z of [48, 88]) _fpWQuad(it, 0.03, 0.97, z, z + 4, _FPW.tealLit, _FPW.ink, 2);
+        for (let k = 0; k < n; k++) {
+            const u = 0.1 + (k + 0.5) * 0.8 / n, lean = ((it.seed >>> k) % 3 - 1) * 0.004;
+            _fpWLine(it, u + lean, 96, u - lean, 40, _FPW.ink, 5.5); _fpWLine(it, u + lean, 96, u - lean, 40, "#7a8797", 2.5);   // the barrel and receiver
+            _fpWQuad(it, u - 0.022, u + 0.022, 36, 56, "#8a5a34", _FPW.ink, 2); _fpWQuad(it, u - 0.012, u + 0.016, 62, 70, "#2a313c", _FPW.ink, 1.5);   // the stock, the magazine
+        }
+        const lp = _fpWP(it, 0.07, 100); ctx.fillStyle = Math.floor(f / 30 + it.seed) % 5 ? "#43e0a8" : _FPW.amber; ctx.beginPath(); ctx.arc(lp[0], lp[1], 2.4, 0, 6.2832); ctx.fill();
+    },
+});
+for (const k of ["monitor_bank", "garage_door", "gun_rack"]) FP_WALL_KINDS[k] = FP_STYLE_WALL[k];   // (these exist only in the style: every room is styled, and this makes them wall decor the dressing places)

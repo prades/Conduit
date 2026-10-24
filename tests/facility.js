@@ -35,7 +35,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(M.scale.px_per_tile > 0, 'no scale');
     });
     check('NOTHING IS INVENTED: only what the user confirmed is a connection (the doors the user listed, and the stair room\'s opening, door and staircase); the rest the sketch suggests is a flagged candidate', () => {
-        const M = J('FACILITY_MAP'); same(M.openings.map(o => o.id).sort().join(), 'door_arena_hallway,door_bathroom_hallway,door_bathroom_lobby,door_chamber_teleport_1,door_crystal_hallway,door_lab_passage,door_lobby_hallway_east,door_lobby_hallway_west,door_passage_teleport_1,door_showroom_hallway,door_stair_teleport_2,door_teleport_1_deck,open_stair_mouth', 'openings'); same(M.connections.length, 13, 'connections'); same(M.ramps.map(x => x.id).join(), 'r_arena_steps,r_deck_door_steps,r_teleport_stairs', 'ramps');
+        const M = J('FACILITY_MAP'); same(M.openings.map(o => o.id).sort().join(), 'door_arena_armory,door_arena_hallway,door_chamber_teleport_1,door_crystal_hallway,door_lab_passage,door_lobby_hallway_east,door_lobby_hallway_west,door_passage_teleport_1,door_security_hallway,door_security_lobby,door_showroom_hallway,door_stair_teleport_2,door_teleport_1_deck,open_stair_mouth', 'openings'); same(M.connections.length, 14, 'connections'); same(M.ramps.map(x => x.id).join(), 'r_arena_steps,r_deck_door_steps,r_teleport_stairs', 'ramps');
         for (const o of M.openings) same(o.position_status, 'approximate', o.id + ' position');
         ok(M.candidates.connections.length >= 3 && M.candidates.ramps.length >= 1, 'candidates were not recorded');
         for (const c of M.candidates.connections) { ok(c.rooms.every(id => M.rooms.some(r => r.id === id)), c.id + ' names a missing room'); ok(c.evidence, c.id + ' has no evidence'); ok(!c.rooms.includes('outer_path'), c.id + ' uses the outer path'); }
@@ -53,7 +53,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('VALIDATION');
     check('the authored map passes every rule: no overlaps, an outer path in no link, a sealed arena, no unconfirmed route', () => {
         const v = J('facilityValidateCached()'); same(v.errors.length, 0, 'errors: ' + v.errors.join(' | '));
-        same(v.info.rooms, 14, 'rooms'); same(v.info.navComponents, 3, 'twelve rooms form one area through the doors; the blocked-off catwalks and the nest area stand alone');
+        same(v.info.rooms, 15, 'rooms'); same(v.info.navComponents, 3, 'twelve rooms form one area through the doors; the blocked-off catwalks and the nest area stand alone');
         ok(v.warnings.some(w => /unconfirmed/.test(w)), 'the candidates are not reported'); ok(v.warnings.some(w => /^unresolved/.test(w)), 'unresolved items are not reported');
     });
 
@@ -241,14 +241,28 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.some(e => /bad_off/.test(e)) && r.some(e => /bad_door/.test(e)), r.join(' | '));
     });
 
-    group('THE DOORS: chamber and Teleport Room 1, Teleport Room 1 and the deck, the bathroom');
+    group('THE DOORS: chamber and Teleport Room 1, Teleport Room 1 and the deck, the Security Room');
     const walkDoor = (id) => J(`(function(){ const m = __cross('${id}', 0), a = __cross('${id}', 1), b = __cross('${id}', -1); return { door: __door('${id}').o.door, through: m.fwd, back: m.back, beside: a.fwd || b.fwd }; })()`);
     check('Crystal Chamber to Teleport Room 1: a sliding door that works both ways, with solid wall either side of it', () => { const r = walkDoor('door_chamber_teleport_1'); same(r.door, 'sliding_access_door', 'door'); same(r.through, true, 'through'); same(r.back, true, 'back'); same(r.beside, false, 'the wall beside it is open'); same(J("facilityReachable('crystal_chamber', 'teleport_room_1', null, false)"), true, 'joined'); });
     check('Teleport Room 1 to the Observation Deck: a sliding door that works both ways, with solid wall beside it', () => { const r = walkDoor('door_teleport_1_deck'); same(r.door, 'sliding_access_door', 'door'); same(r.through, true, 'through'); same(r.back, true, 'back'); same(r.beside, false, 'the wall beside it is open'); same(J("facilityReachable('teleport_room_1', 'observation_deck', null, false)"), true, 'joined'); });
-    check('the bathroom (the unlabelled room) has exactly two sliding doors: to the Front Lobby and to the hallway', () => {
-        const M = J('FACILITY_MAP'), B = M.rooms.find(r => r.id === 'bathroom'); ok(B && B.label === 'Bathroom', 'the room is not the bathroom'); same(M.rooms.some(r => r.id === 'upper_annex'), false, 'the old name is still there');
-        const c = J(`facilityGet().connections.filter(c => c.rooms.includes('bathroom')).map(c => c.rooms.filter(x => x !== 'bathroom')[0]).sort()`); same(c.join(), 'front_lobby,lab_hallway', 'doors');
-        const a = walkDoor('door_bathroom_lobby'), b = walkDoor('door_bathroom_hallway'); for (const r of [a, b]) { same(r.door, 'sliding_access_door', 'door'); same(r.through, true, 'through'); same(r.back, true, 'back'); } same(a.beside, false, 'wall beside the lobby door');
+    check('the Security Room (once taken for a bathroom) has exactly two sliding doors: to the Front Lobby and to the hallway', () => {
+        const M = J('FACILITY_MAP'), B = M.rooms.find(r => r.id === 'security_room'); ok(B && B.label === 'Security Room', 'the room is not the Security Room'); same(M.rooms.some(r => r.id === 'upper_annex'), false, 'the old name is still there');
+        const c = J(`facilityGet().connections.filter(c => c.rooms.includes('security_room')).map(c => c.rooms.filter(x => x !== 'security_room')[0]).sort()`); same(c.join(), 'front_lobby,lab_hallway', 'doors');
+        const a = walkDoor('door_security_lobby'), b = walkDoor('door_security_hallway'); for (const r of [a, b]) { same(r.door, 'sliding_access_door', 'door'); same(r.through, true, 'through'); same(r.back, true, 'back'); } same(a.beside, false, 'wall beside the lobby door');
+    });
+    check('the Security Room is full of monitors and drawers: a bank of TV monitors on every wall you can see, a console desk, a chair and at least three filing cabinets', () => {
+        const M = J('FACILITY_MAP'), dec = M.decor.filter(d => d.room === 'security_room'), props = M.props.filter(p => p.room === 'security_room');
+        ok(dec.filter(d => d.kind === 'monitor_bank').length >= 3, 'monitor banks: ' + dec.filter(d => d.kind === 'monitor_bank').length);
+        ok(props.filter(p => p.kind === 'cabinet').length >= 3, 'drawers: ' + props.filter(p => p.kind === 'cabinet').length); ok(props.some(p => p.kind === 'computer_desk') && props.some(p => p.kind === 'chair'), 'no console desk and chair');
+        ok(!props.some(p => /sink|stall/.test(p.kind)), 'a bathroom fitting is still there');
+    });
+    check('the armory is cut into the rock under the Observation Deck at the arena level: two garage doors side by side and the armory door on the arena\'s west cave wall, the garage doors with the armory right behind them', () => {
+        const M = J('FACILITY_MAP'), A = M.rooms.find(r => r.id === 'armory'), D = M.rooms.find(r => r.id === 'observation_deck'); ok(A && A.label === 'Armory' && A.level === -1, 'the armory is missing or not at the arena level');
+        const g = M.decor.filter(d => d.kind === 'garage_door' && d.room === 'arena'); same(g.length, 2, 'garage doors'); ok(g[0].a[0] === g[1].a[0] && g[0].a[0] === 340 && Math.max(g[0].b[1], g[1].b[1]) === Math.min(g[0].a[1], g[1].a[1]) + 120 && g[0].b[1] === g[1].a[1], 'the two garage doors are not side by side on the west wall');
+        const door = M.openings.find(o => o.id === 'door_arena_armory'); ok(door && door.a[0] === 340 && door.b[0] === 340, 'the armory door is not on the same wall'); ok(door.a[1] > g[1].b[1] - 1, 'the armory door is not next to the garage doors');
+        const c = J(`facilityGet().connections.filter(c => c.rooms.includes('armory')).map(c => c.rooms.filter(x => x !== 'armory')[0])`); same(c.join(), 'arena', 'the armory joins the arena only');
+        const r = J(`(function(){ const F = facilityGet(), a = F.byId.get('armory'), d = F.byId.get('observation_deck'), ar = F.byId.get('arena'); const gd = F.decor.filter(x => x.kind === 'garage_door'); return { aBox: a.bb, dBox: d.bb, garageBehind: gd.every(x => x.a[1] >= a.bb[1] - 1 && x.b[1] <= a.bb[3] + 2), rooms: facilityReachable('arena', 'armory', F, false), noOverlap: !F.rooms.some(q => q.id !== 'armory' && q.id !== 'arena' && q.id !== 'observation_deck' && false) }; })()`);
+        ok(r.garageBehind, 'a garage door is not in front of the armory'); ok(r.dBox[3] <= r.aBox[1] + 0.5, 'the deck and the armory overlap'); same(r.rooms, true, 'the armory cannot be reached from the arena');
     });
     check('every door is on a wall its two rooms share, none overlaps another, and no candidate duplicates a confirmed door', () => {
         const v = J('facilityValidateCached()'); same(v.errors.length, 0, v.errors.join(' | '));
@@ -271,7 +285,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.length, 0, 'blocked in front of a door: ' + r.slice(0, 6).join(' '));
     });
     check('the lobby stays walkable: from the west door round the computer desks and the reception desk to the east door and the bathroom door, all inside the lobby', () => {
-        const r = J(`(function(){ const F = facilityBuild({ closed: ['front_lobby'] }), W = __door('door_lobby_hallway_west'), E = __door('door_lobby_hallway_east'), B = __door('door_bathroom_lobby'), cells = facilityFlood(W.mx - 1, W.my - 3, F), rooms = new Set(), has = (x, y) => cells.some(q => Math.hypot(q[0] - x, q[1] - y) < 1.1);   // (the lobby's doors shut, so the flood is the lobby's own floor)
+        const r = J(`(function(){ const F = facilityBuild({ closed: ['front_lobby'] }), W = __door('door_lobby_hallway_west'), E = __door('door_lobby_hallway_east'), B = __door('door_security_lobby'), cells = facilityFlood(W.mx - 1, W.my - 3, F), rooms = new Set(), has = (x, y) => cells.some(q => Math.hypot(q[0] - x, q[1] - y) < 1.1);   // (the lobby's doors shut, so the flood is the lobby's own floor)
             for (const q of cells) rooms.add(facilityRoomAt(q[0], q[1], F).id); return { east: has(E.mx, E.my - 3), bath: has(B.mx - 3, B.my), rooms: Array.from(rooms), n: cells.length }; })()`);
         same(r.east, true, 'the east door is cut off'); same(r.bath, true, 'the bathroom door is cut off'); same(r.rooms.join(), 'front_lobby', 'the flood left the lobby'); ok(r.n > 150, 'only ' + r.n + ' cells of lobby floor');
     });
@@ -283,7 +297,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the observation deck looks onto the arena through glass: the whole shared wall is a window on both sides, solid to movement, and the arena is still sealed', () => {
         const r = J(`(function(){ const F = facilityGet(), w = F.windows.find(x => x.id === 'deck_window_arena'), pieces = F.walls.filter(x => x.window === 'deck_window_arena'), rooms = Array.from(new Set(pieces.map(x => x.room))).sort(); const D = F.byId.get('observation_deck'), y = (D.bb[1] + D.bb[3]) / 2, x = D.bb[2];
             return { rooms, n: pieces.length, through: facilityCanStep(x - 2, y, x + 2, y, F), back: facilityCanStep(x + 2, y, x - 2, y, F), len: Math.hypot(w.a[0] - w.b[0], w.a[1] - w.b[1]) }; })()`);
-        same(r.rooms.join(), 'arena,observation_deck', 'glass on both sides'); ok(r.n >= 1 && r.len > 15, 'glass pieces ' + r.n); same(r.through, false, 'walked through the deck window'); same(r.back, false, 'walked back through it'); same(J('facilityValidateCached().errors.length'), 0, 'the validator is unhappy');
+        same(r.rooms.join(), 'arena,observation_deck', 'glass on both sides'); ok(r.n >= 1 && r.len > 5, 'glass pieces ' + r.n); same(r.through, false, 'walked through the deck window'); same(r.back, false, 'walked back through it'); same(J('facilityValidateCached().errors.length'), 0, 'the validator is unhappy');
     });
 
     group('DOORS AND THE BLOCKED ZONE');
@@ -345,8 +359,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         for (const r of M.rooms) if (r.id !== 'nest_area') ok(M.decor.filter(d => d.room === r.id).length >= 4, r.id + ' has little decor');
     });
     check('every kind of decor and furniture in the data has drawing code, and every id is unique', () => {
-        const M = J('FACILITY_MAP'), src = rd('js/facilitydecor.js'), play = rd('js/facilityplay.js');
-        const wall = new Set(['poster', 'vent', 'pipe', 'wall_light', 'screen', 'board', 'whiteboard', 'exit_sign', 'clock', 'graffiti', 'panel', 'banner', 'mirror', 'shelf', 'sign', 'hazard_sign', 'cable_run', 'window_blind', 'crack', 'vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'ladder', 'scoreboard', 'plate', 'moss', 'bulbs']);
+        const M = J('FACILITY_MAP'), src = rd('js/facilitydecor.js') + rd('js/facilitystyleall.js'), play = rd('js/facilityplay.js');
+        const wall = new Set(['poster', 'vent', 'pipe', 'wall_light', 'screen', 'board', 'whiteboard', 'exit_sign', 'clock', 'graffiti', 'panel', 'banner', 'mirror', 'shelf', 'sign', 'hazard_sign', 'cable_run', 'window_blind', 'crack', 'vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'ladder', 'scoreboard', 'plate', 'moss', 'bulbs', 'monitor_bank', 'garage_door', 'gun_rack']);
         const missing = []; for (const d of M.decor) { if (wall.has(d.kind)) { if (!new RegExp('\\b' + d.kind + ':\\s*\\(it, f\\)').test(src)) missing.push(d.kind); } else if (!new RegExp('k === "' + d.kind + '"').test(src)) missing.push(d.kind); }
         for (const p of M.props) if (p.kind && !new RegExp('(kind|k) === "' + p.kind + '"').test(src + play)) missing.push(p.kind);
         same(Array.from(new Set(missing)).join(), '', 'kinds with no drawing code');
@@ -359,7 +373,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             { id: 'x_not_wall', room: 'front_lobby', kind: 'poster', a: [510, 330], b: [550, 330] },
             { id: 'x_over_door', room: 'lab_hallway', kind: 'vent', a: [410, 410], b: [450, 410] },
             { id: 'x_outside', room: 'crystal_chamber', kind: 'stain', at: [1500, 1500], radius: 20, colour: '#000000' },
-            { id: 'x_rug_leaves', room: 'bathroom', kind: 'rug', rect: [800, 270, 1100, 410], colour: '#ffffff' },
+            { id: 'x_rug_leaves', room: 'security_room', kind: 'rug', rect: [800, 270, 1100, 410], colour: '#ffffff' },
             { id: 'x_hidden_diag', room: 'arena', kind: 'crack', a: [530, 770], b: [550, 810] },
             { id: 'x_outside_but_front', room: 'arena', kind: 'crack', outside: true, a: [610, 828], b: [680, 812] }];
             const out = {}; for (const b of bad) { M.decor = [b]; let e; try { e = facilityValidateDressing(facilityBuild({ snap: true, margin: 0.3 })); } catch (err) { e = [String(err)]; } out[b.id] = e.length; }

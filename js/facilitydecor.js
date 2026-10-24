@@ -146,7 +146,7 @@ function _fpRockSides(items) {
         const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
         const face = facilityRoomAt(it.x + nx * 0.4, it.y + ny * 0.4, _fp.F); it.back = !!face && face.id === it.room; it.lit = nx > ny ? 1 : 0.8; it.depth = it.x + it.y + 0.02;   // (after a steel wall on the same line)
         // the rock beside the ends of the observation deck's glass rises to the deck's wall top, so no gap shows between the deck and the rock (it tapers back to its own height within 1.5 tiles)
-        if (!_fp.glassEnds) { const W = _fp.F.windows.find(w => w.id === "deck_window_arena"), A = _fp.F.byId.get("arena"), D = _fp.F.byId.get("observation_deck"); _fp.glassEnds = W ? [W.a, W.b] : []; _fp.deckRise = D && A ? (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + FP_WALL_H + 6 : 0; }
+        if (!_fp.glassEnds) { const Ws = _fp.F.windows.filter(w => /^deck_window_arena/.test(w.id)), A = _fp.F.byId.get("arena"), D = _fp.F.byId.get("observation_deck"); _fp.glassEnds = Ws.reduce((l, w) => l.concat([w.a, w.b]), []); _fp.deckRise = D && A ? (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + FP_WALL_H + 6 : 0; }
         const wd = (px, py) => { let d = 9; for (const e of _fp.glassEnds) d = Math.min(d, Math.hypot(px - e[0], py - e[1])); return Math.max(0, 1 - d / 1.5); };
         it.dk = _fp.glassEnds.length ? [wd(it.a[0], it.a[1]), wd((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), wd(it.b[0], it.b[1])] : null; if (it.dk && !(it.dk[0] || it.dk[1] || it.dk[2])) it.dk = null;
         it.cap = it.back ? null : { d: 1.0, nx, ny, zb: null };   // a front wall's cap is the thickness of the rock, 1 tile, running back toward the arena
@@ -549,7 +549,7 @@ function _fpWallBounds(it) {
     if (it.kind === "rock") { const hs = _fpRockHeights(it, H); zhi = Math.max(hs[0], hs[1], hs[2]) + 12; if (!it.back) zlo = -FP_ROCK_DOWN - 6; if (it.cap) { const d = Math.max(it.cap.da === undefined ? it.cap.d : it.cap.da, it.cap.db === undefined ? 0 : it.cap.db); pts.push([it.a[0], it.a[1] - d], [it.b[0], it.b[1] - d]); if (it.cap.zb) zhi = Math.max(zhi, it.cap.zb + 8); } }
     else if (it.scaffold) { zlo = -(it.legs ? (it.legH || 0) : 10) - 14; zhi = 50; }
     else if (it.support) { zlo = -8; zhi = H - FP_WALL_H + 10; }
-    else if (it.win === "deck_window_arena" && it.room === "arena") { const rise = (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + 4; zlo = -8; zhi = rise + 12; mx = 46; my = 30; pts.push([it.a[0] + 0.5, it.a[1]], [it.b[0] + 0.5, it.b[1]]); }
+    else if (/^deck_window_arena/.test(it.win || "") && it.room === "arena") { const rise = (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + 4; zlo = -8; zhi = rise + 12; mx = 46; my = 30; pts.push([it.a[0] + 0.5, it.a[1]], [it.b[0] + 0.5, it.b[1]]); }
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     for (const q of pts) for (const z of [zlo, zhi]) { const sx = (q[0] - it.x - (q[1] - it.y)) * TILE_W, sy = (q[0] - it.x + q[1] - it.y) * TILE_H - z; if (sx < x0) x0 = sx; if (sx > x1) x1 = sx; if (sy < y0) y0 = sy; if (sy > y1) y1 = sy; }
     return [Math.floor(x0 - mx), Math.floor(y0 - my), Math.ceil(x1 + mx), Math.ceil(y1 + my)];   // relative to the piece's ground anchor (screen of (it.x, it.y, 0))

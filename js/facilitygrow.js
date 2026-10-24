@@ -16,7 +16,7 @@
 
     // how far each room slides, in tiles: [x, y]. The hallway, the lab and the passage hold their ground (the hub); the others move away from them.
     const SHIFT = {
-        crystal_chamber: [-1, -1], teleport_room_1: [-1, 0], front_lobby: [-1, -1], bathroom: [0, -1], show_room: [1, 0],
+        crystal_chamber: [-1, -1], teleport_room_1: [-1, 0], front_lobby: [-1, -1], security_room: [0, -1], show_room: [1, 0], armory: [-1, 2],
         teleport_stair_room: [0, 1], teleport_room_2: [1, 1], observation_deck: [0, 1], catwalks: [0, 1], arena: [0, 1], nest_area: [0, 1],
     };
     const sh = (id) => SHIFT[id] || [0, 0];
@@ -57,7 +57,7 @@
     // windows: the show room's glass moves with it; the deck's glass with the deck and the arena; the lab's lower west pane now looks onto the shorter hallway corner
     for (const w of M.windows) {
         if (/^show_/.test(w.id)) { w.a = mv(w.a, [1, 0]); w.b = mv(w.b, [1, 0]); }
-        else if (w.id === "deck_window_arena") { w.a = mv(w.a, [0, 1]); w.b = mv(w.b, [0, 1]); }
+        else if (/^deck_window_arena/.test(w.id)) { w.a = mv(w.a, [0, 1]); w.b = mv(w.b, [0, 1]); }
         else if (w.id === "lab_window_west_lower") { w.a = [430, 630]; w.b = [430, 640]; }
     }
 
@@ -67,12 +67,13 @@
         door_teleport_1_deck: { a: [230, 760], b: [270, 760], via: "observation_deck", s: [0, 1] },
         door_lobby_hallway_west: { a: [400, 410], b: [455, 410], via: "front_lobby", s: [0, -1] },
         door_lobby_hallway_east: { a: [750, 410], b: [790, 410], via: "front_lobby", s: [0, -1] },
-        door_bathroom_lobby: { a: [824, 295], b: [824, 335], via: "front_lobby", s: [-1, 0] },
-        door_bathroom_hallway: { a: [875, 410], b: [905, 410], via: "bathroom", s: [0, -1] },
+        door_security_lobby: { a: [824, 295], b: [824, 335], via: "front_lobby", s: [-1, 0] },
+        door_security_hallway: { a: [875, 410], b: [905, 410], via: "security_room", s: [0, -1] },
         door_showroom_hallway: { a: [950, 490], b: [950, 550] },
         door_arena_hallway: { a: [370, 760], b: [440, 760], via: "arena", s: [0, 1] },
         door_passage_teleport_1: { a: [310, 565], b: [310, 605], via: "teleport_room_1", s: [-1, 0] },
         door_lab_passage: { a: [430, 565], b: [430, 605], via: "lab_passage", s: [-1, 0] },
+        door_arena_armory: { a: [340, 1110], b: [340, 1150], via: "armory", s: [-1, 0] },
         door_crystal_hallway: { a: [370, 430], b: [370, 470], via: "crystal_chamber", s: [-1, 0] },
         open_stair_mouth: { a: [870, 630], b: [870, 760] },
         door_stair_teleport_2: { a: [965, 680], b: [965, 720], via: "teleport_stair_room", s: [-1, 0] },
