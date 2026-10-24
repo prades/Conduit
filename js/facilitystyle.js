@@ -317,7 +317,7 @@ function _fpStyleRigPad(it) {
 // ── room lighting: a room you are not in is not lit up ──
 // The room the player stands in is fully lit; a room joined to it by an OPEN door (or by steps) gets a little spill; every other room lies in the dark. The levels ease, so a room fades up as you
 // walk in and down as you leave. It is drawn once a frame, after the world and before the HUD: a dark layer with a hole cut for each lit room (its floor and the height of its walls).
-var FP_DARK = 0.62, FP_SPILL = 0.4, FP_LIGHT_EASE = 0.12;
+var FP_DARK = 0.82, FP_SPILL = 0.4, FP_LIGHT_EASE = 0.12;
 function _fpRoomTargets(F) {
     const t = new Map(); for (const r of F.rooms) t.set(r.id, 0);
     const pr = facilityRoomAt(player.visualX, player.visualY, F); const here = pr ? pr.id : (_fp.lastRoom || null); if (here) _fp.lastRoom = here; if (!here) return t;
