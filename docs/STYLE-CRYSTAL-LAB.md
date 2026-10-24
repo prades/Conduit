@@ -46,3 +46,7 @@ The crystal rests in a round pad machine and is hooked up to the ceiling (`_fpSt
 ## Doors
 
 Every door is a cartoony steel access door (`_fpStyleDoor`): two chunky steel panels with a bold outline, ribs, rivets, a window slit tinted with the room's accent and a hazard-striped lead edge, in a thick pale frame under a lintel with a status lamp (amber shut, the room's accent open). They CLOSE across the gap when nothing is near and slide back into the frame when the player, a follower or an enemy comes within about 2.6 tiles (eased; shut again beyond 3.4). It is only how they look: a sliding access door never blocks, so movement and navigation are unchanged.
+
+## Lighting: a room you are not in is not lit up
+
+`facilityDrawLighting` (js/facilitystyle.js) draws a dark layer over the world once a frame, with a hole cut for each lit room (its floor and its walls up to their tops). The room the player is in is fully lit; a room joined to it by steps or an OPEN door gets a 40% spill (doors open when a unit is near); every other room lies in the dark (62% dark layer). Levels ease at 12% a frame, so a room fades up as you walk in and fades down as you leave. Units in a dark room are dimmed with it. The doorway itself no longer draws a dark gap or a glow: it just shows the floor and the room beyond.

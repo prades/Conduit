@@ -136,8 +136,6 @@ function _fpStyleDoor(it) {
     const o = it.open, f = _fpFrame(), q = it.door ? 1 : 0, fw = 0.06;   // fw: the frame post, as a fraction of the span
     const line = (p0, p1, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); };
     ctx.lineJoin = "round"; ctx.lineCap = "round";
-    // the dark gap behind the panels
-    if (o > 0.02) _fpFill([P(fw, 0), P(1 - fw, 0), P(1 - fw, H - 8), P(fw, H - 8)], "rgba(12,30,38,0.55)", "rgba(0,0,0,0)");
     if (q) for (const side of [0, 1]) {   // each panel slides toward its own post: its inner edge goes from the middle (closed) to the post (open)
         const edge = side ? 0.5 + (0.5 - fw) * o : 0.5 - (0.5 - fw) * o, outer = side ? 1 - fw : fw, u0 = Math.min(edge, outer), u1 = Math.max(edge, outer);
         if (u1 - u0 < 0.012) continue;
@@ -157,7 +155,7 @@ function _fpStyleDoor(it) {
     // the frame: two thick posts, a lintel with the status lamp
     for (const u of [0, 1 - fw]) { const p0 = P(u, 0), p1 = P(u + fw, 0), p2 = P(u + fw, H), p3 = P(u, H); _fpFill([p0, p1, p2, p3], A.cap, A.ink, 3.5); }
     _fpFill([P(0, H - 8), P(1, H - 8), P(1, H + 4), P(0, H + 4)], A.tealLit, A.ink, 3.5);
-    const lamp = P(0.5, H - 2), on = o > 0.5; ctx.fillStyle = on ? acc : A.amber; ctx.beginPath(); ctx.arc(lamp[0], lamp[1], 4, 0, 6.2832); ctx.fill(); ctx.strokeStyle = A.ink; ctx.lineWidth = 2.5; ctx.stroke(); _fpGlow(lamp[0], lamp[1], 20, on ? acc : A.amber, 0.35 + 0.1 * Math.sin(f * 0.1));
+    const lamp = P(0.5, H - 2), on = o > 0.5; ctx.fillStyle = on ? acc : A.amber; ctx.beginPath(); ctx.arc(lamp[0], lamp[1], 4, 0, 6.2832); ctx.fill(); ctx.strokeStyle = A.ink; ctx.lineWidth = 2.5; ctx.stroke();
     ctx.lineJoin = "miter"; ctx.lineCap = "butt";
 }
 
@@ -314,4 +312,42 @@ function _fpStyleRigPad(it) {
     for (const a of [0.7, 2.27, 3.84, 5.41]) _fpStyleCyl(cx + Math.cos(a) * R * 0.96, cy + Math.sin(a) * R * 0.96, 0.11, 10, 15, FP_PAL.teal, FP_PAL.tealLit, FP_PAL.cyan, 2.5);
     // 5. the hover field: rings rising off the pad, fading as they climb to the crystal
     for (let i = 0; i < 3; i++) { const t = ((f * 0.01) + i / 3) % 1; ring(cx, cy, 12 + t * 44, R * (0.55 - t * 0.15), _fpRgba(FP_PAL.cyan, 0.7 * (1 - t)), 2.5); }
+}
+
+// ── room lighting: a room you are not in is not lit up ──
+// The room the player stands in is fully lit; a room joined to it by an OPEN door (or by steps) gets a little spill; every other room lies in the dark. The levels ease, so a room fades up as you
+// walk in and down as you leave. It is drawn once a frame, after the world and before the HUD: a dark layer with a hole cut for each lit room (its floor and the height of its walls).
+const FP_DARK = 0.62, FP_SPILL = 0.4, FP_LIGHT_EASE = 0.12;
+function _fpRoomTargets(F) {
+    const t = new Map(); for (const r of F.rooms) t.set(r.id, 0);
+    const pr = facilityRoomAt(player.visualX, player.visualY, F); const here = pr ? pr.id : (_fp.lastRoom || null); if (here) _fp.lastRoom = here; if (!here) return t;
+    t.set(here, 1);
+    const opened = new Map(); for (const it of _fp.items) if (it.fp === "door" && it.id) opened.set(it.id, (it.open || 0) > 0.3);
+    for (const c of F.connections) {
+        if (!c.rooms.includes(here)) continue; const other = c.rooms[0] === here ? c.rooms[1] : c.rooms[0], open = c.ramp ? true : (opened.get(c.opening) === true);
+        if (open && t.get(other) < FP_SPILL) t.set(other, FP_SPILL);
+    }
+    return t;
+}
+function facilityDrawLighting() {
+    if (!_fp || !_fp.F || typeof document === "undefined") return;
+    const F = _fp.F, W = canvas.width, Hh = canvas.height;
+    if (!_fp.lcv || _fp.lcv.width !== W || _fp.lcv.height !== Hh) { _fp.lcv = document.createElement("canvas"); _fp.lcv.width = W; _fp.lcv.height = Hh; _fp.lctx = _fp.lcv.getContext("2d"); }
+    const g = _fp.lctx; if (!g || !g.fillRect) return;
+    const tg = _fpRoomTargets(F); _fp.light = _fp.light || new Map();
+    for (const [id, v] of tg) { const cur = _fp.light.has(id) ? _fp.light.get(id) : v; _fp.light.set(id, Math.abs(v - cur) < 0.01 ? v : cur + (v - cur) * FP_LIGHT_EASE); }
+    g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, W, Hh); g.fillStyle = "rgba(6,11,22," + FP_DARK + ")"; g.fillRect(0, 0, W, Hh);
+    const keepB = _fpBase; g.globalCompositeOperation = "destination-out";
+    for (const r of F.rooms) {
+        const lv = _fp.light.get(r.id) || 0; if (lv < 0.02) continue;
+        _fpBase = facilityRoomHeight(r.id, F) * FP_ELEV_PX; const wallH = r.id === "arena" ? 240 : r.id === "catwalks" ? 130 : 100; g.fillStyle = "rgba(0,0,0," + lv + ")";
+        const tracePoly = (zTop) => { g.beginPath(); r.poly.forEach((v, i) => { const p = _fpP(v[0], v[1], zTop); i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); g.fill(); };
+        tracePoly(0);   // the floor
+        for (let i = 0; i < r.poly.length; i++) { const a = r.poly[i], b = r.poly[(i + 1) % r.poly.length];
+            // only the walls whose camera-facing side is THIS room (the north and west walls, which rise over its own floor): a wall on its south or east edge shows its face to the room beyond, and rises over that room's pixels
+            const ex = b[0] - a[0], ey = b[1] - a[1], el = Math.hypot(ex, ey) || 1; let nx = ey / el, ny = -ex / el; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+            if (!facilityPointInPoly((a[0] + b[0]) / 2 + nx * 0.4, (a[1] + b[1]) / 2 + ny * 0.4, r.poly)) continue;
+            const a0 = _fpP(a[0], a[1], 0), b0 = _fpP(b[0], b[1], 0), a1 = _fpP(a[0], a[1], wallH), b1 = _fpP(b[0], b[1], wallH); g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.lineTo(a1[0], a1[1]); g.closePath(); g.fill(); }   // its walls that face it, up to their tops
+    }
+    _fpBase = keepB; ctx.drawImage(_fp.lcv, 0, 0);
 }
