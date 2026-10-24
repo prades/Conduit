@@ -104,3 +104,5 @@ The catwalks are not a room but an open steel deck at the top of the arena's eas
 ### The deck's cliff and the rock beside it
 
 The observation deck is cut into the rock: the arena's own pane of the deck window (the lower glass the arena owns, seen below the deck's glass) is drawn as a THICK ROCK FACE (`_fpDrawDeckCliff`), from the arena floor up to the underside of the deck, with strata, boulders, a crack and a lit lip under the deck. The arena rock at each end of the window rises to the deck's wall top (`it.dk`, tapering back within 1.5 tiles), so there is no gap between the deck and the rock.
+
+The cliff face is 3-D: a dark strata face with cavities (dark pits with a lit lower lip) and a crust of lumps and ledges standing out of it toward the camera (five-sided, low-poly: lit tops, mid sides, one flat lit facet, a shadow beneath), layered up the face, with a heavier overhang under the deck's lip and rubble at the foot. The lumps come from the wall piece's position, so they are the same every frame.

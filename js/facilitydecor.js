@@ -234,15 +234,34 @@ function _fpDrawSupport(it, ext) { _fpDrawFrame(it, 0, ext); }
 // THE DECK'S CLIFF: the observation deck is raised above the arena and looks down into it through glass. Below that glass the arena's own pane of the window is drawn as a THICK ROCK FACE instead (the deck is
 // cut into the rock): from the arena floor up to the underside of the deck, with strata, boulders, cracks, a dark foot and a lit lip under the deck. It is drawn per wall piece, so it runs the whole length.
 function _fpDrawDeckCliff(it) {
-    const rise = (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + 4;
-    const P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z), a0 = P(0, 0), b0 = P(1, 0), a1 = P(0, rise), b1 = P(1, rise), seed = _fpHash(Math.round(it.a[0] * 4), Math.round(it.a[1] * 4));
-    const g = ctx.createLinearGradient(0, Math.min(a1[1], b1[1]), 0, Math.max(a0[1], b0[1])); g.addColorStop(0, "#5a4f47"); g.addColorStop(0.15, "#4a413b"); g.addColorStop(1, "#231e1b");
+    const rise = (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + 4, x0 = it.a[0], ya = it.a[1], yb = it.b[1], P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z), seed = _fpHash(Math.round(ya * 4), 3);
+    const a0 = P(0, 0), b0 = P(1, 0), a1 = P(0, rise), b1 = P(1, rise), Q = (y, z, dx) => _fpP(x0 + dx, y, z), ylo = Math.min(ya, yb), yspan = Math.abs(yb - ya), rnd = (k) => (_fpHash(seed, k * 7 + 1) % 1000) / 1000;
+    // 1. the back face: dark, irregular strata
+    const g = ctx.createLinearGradient(0, Math.min(a1[1], b1[1]), 0, Math.max(a0[1], b0[1])); g.addColorStop(0, "#5a4e45"); g.addColorStop(0.5, "#463d35"); g.addColorStop(1, "#1f1a16");
     _fpQuad([a0, b0, b1, a1], g, g, 1);
-    for (let z = 22 + seed % 14; z < rise - 6; z += 30 + (_fpHash(z, seed) % 10)) { _fpQuad([P(0, z), P(1, z), P(1, z + 3), P(0, z + 3)], "rgba(0,0,0,0.32)", null); _fpQuad([P(0, z + 3), P(1, z + 3), P(1, z + 5), P(0, z + 5)], "rgba(255,240,220,0.06)", null); }   // strata
-    for (let k = 0; k < 3; k++) { const h = _fpHash(seed, k + 5), u = ((h >>> 3) % 70) / 100 + 0.12, z = 14 + ((h >>> 8) % 100) / 100 * (rise - 60), w = 0.14 + ((h >>> 5) % 5) / 100, hh = 14 + (h % 16);   // boulders
-        _fpQuad([P(u - w, z), P(u + w, z + 2), P(u + w * 0.8, z + hh), P(u, z + hh + 4), P(u - w * 0.8, z + hh - 2)], "rgba(255,240,220,0.08)", "rgba(0,0,0,0.3)", 1.5); }
-    ctx.strokeStyle = "rgba(0,0,0,0.38)"; ctx.lineWidth = 2; const cu = ((seed >>> 6) % 80 + 10) / 100, c0 = P(cu, rise - 4), c1 = P(cu + 0.06, rise * 0.45), c2 = P(cu - 0.03, 8); ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(c1[0], c1[1]); ctx.lineTo(c2[0], c2[1]); ctx.stroke();   // a crack
-    ctx.lineJoin = "round"; ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke(); ctx.strokeStyle = "#7a6c60"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] + 2.5); ctx.lineTo(b1[0], b1[1] + 2.5); ctx.stroke(); ctx.lineJoin = "miter";   // the lip under the deck
+    for (let z = 20 + seed % 20; z < rise - 4; z += 44 + (_fpHash(z, seed) % 20)) { const w = 0.15 * ((_fpHash(z, seed + 2) % 3) - 1); _fpQuad([Q(ylo, z, 0), Q(ylo + yspan, z + w, 0), Q(ylo + yspan, z + w + 3, 0), Q(ylo, z + 3, 0)], "rgba(0,0,0,0.3)", null); }
+    // 2. cavities: dark pits with a lit lower lip
+    for (let k = 0; k < 1; k++) {
+        const yc = ylo + yspan * (0.3 + 0.4 * rnd(20 + k)), zc = 24 + rnd(30 + k) * (rise - 70), wy = 0.12 + 0.1 * rnd(40 + k), wz = 9 + 12 * rnd(50 + k), pts = [];
+        for (let i = 0; i < 5; i++) { const th = (i + 0.3) / 5 * 6.2832, j = 0.8 + 0.4 * rnd(60 + k * 9 + i); pts.push(Q(yc + Math.cos(th) * wy * j, zc + Math.sin(th) * wz * j, 0)); }
+        _fpQuad(pts, "#0b0908", "rgba(0,0,0,0.6)", 2); const rim = pts.slice(2, 4); ctx.strokeStyle = "rgba(150,130,112,0.55)"; ctx.lineWidth = 2; ctx.beginPath(); rim.forEach((q, i) => i ? ctx.lineTo(q[0], q[1] + 1.5) : ctx.moveTo(q[0], q[1] + 1.5)); ctx.stroke();
+    }
+    // 3. the 3-D crust: lumps and ledges standing out of the face toward the camera (lit tops, mid sides, a shadow beneath), the biggest hanging under the deck's lip
+    const lump = (yc, zc, wy, wz, d, tone) => {
+        const n = 5, back = [], front = [];
+        for (let i = 0; i < n; i++) { const th = (i + 0.3) / n * 6.2832, j = 0.8 + 0.4 * ((_fpHash(Math.round(yc * 50) + i, Math.round(zc)) % 100) / 100), yy = yc + Math.cos(th) * wy * j, zz = zc + Math.sin(th) * wz * j; back.push(Q(yy, zz, 0)); front.push(Q(yy, zz, d)); }
+        const sh = Q(yc, zc - wz * 0.9, 0); ctx.fillStyle = "rgba(0,0,0,0.34)"; ctx.beginPath(); ctx.ellipse(sh[0] + 3, sh[1] + 5, (wy * 1.25) * TILE_W * 1.4, wz * 0.28 + 3, 0, 0, 6.2832); ctx.fill();   // the shadow it throws below
+        for (let i = 0; i < n; i++) { const j = (i + 1) % n, th = (i + 0.8) / n * 6.2832, nz = Math.sin(th), lit = nz > 0.2, dark = nz < -0.45; if (dark) continue;   // (the undersides face away from the camera)
+            _fpQuad([back[i], back[j], front[j], front[i]], lit ? _fpShade(tone, 1.35) : _fpShade(tone, 0.85), "rgba(10,7,5,0.35)", 1); }
+        _fpQuad(front, tone, "rgba(10,7,5,0.8)", 2.5);
+        _fpQuad([front[0], front[1], front[2], [(front[2][0] + front[3][0]) / 2, (front[2][1] + front[3][1]) / 2], [(front[0][0] + front[4][0]) / 2, (front[0][1] + front[4][1]) / 2]], _fpShade(tone, 1.18), null);   // one flat lit facet on the front
+    };
+    const tones = ["#5b4f46", "#64574d", "#52473e", "#6a5d52"];
+    const body = 2; for (let k = 0; k < body; k++) { const yc = ylo + yspan * (0.34 + 0.32 * rnd(70 + k)), zc = 36 + (0.1 + 0.5 * k) * (rise - 100) + rnd(80 + k) * 20; lump(yc, zc, 0.22 + 0.04 * rnd(100 + k), 12 + 8 * rnd(110 + k), 0.12 + 0.14 * rnd(120 + k), tones[k % 4]); }   // wide ledges, layered up the face
+    { const yc = ylo + yspan * (0.3 + 0.4 * rnd(130)), zc = rise - 20 - rnd(140) * 10; lump(yc, zc, 0.24, 12 + 5 * rnd(160), 0.2 + 0.12 * rnd(170), "#52473d"); }   // the overhanging crust under the lip
+    if (rnd(180) > 0.7) { const yc = ylo + yspan * (0.3 + 0.4 * rnd(181)); lump(yc, 8, 0.22, 7, 0.16, "#4f453c"); }   // rubble at the foot
+    // 4. the lip under the deck
+    ctx.lineJoin = "round"; ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke(); ctx.strokeStyle = "#7a6c60"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] + 2.5); ctx.lineTo(b1[0], b1[1] + 2.5); ctx.stroke(); ctx.lineJoin = "miter";
 }
 
 // Called by every facility floor tile from the game's own tile draw: px, py are the tile's top-left corner as for the tile sprite.
