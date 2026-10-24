@@ -35,7 +35,7 @@ const ITEMS = {
     mutagen_sample: { id: "mutagen_sample", name: "MUTAGEN SAMPLE", cat: "sample", type: "consumable", stack: 6, col: "#c06bff", icon: "vial", classes: ["mutator"],
         desc: "A vial of unstable DNA. Feed it to a follower to push it up a level.",
         lore: "Cloudy, warm and faintly alive. The Mutator reads it like a letter from a creature that has not been born yet.",
-        stats: ["EFFECT  +1 FOLLOWER LEVEL", "RANGE  8 TILES", "A FORM EVOLVES AT LEVEL " + (typeof EVOLVE_LEVEL === "number" ? EVOLVE_LEVEL : 10)],
+        stats: ["EFFECT  +1 FOLLOWER LEVEL (+2 ONCE SEQUENCED)", "RANGE  8 TILES", "A FORM EVOLVES AT LEVEL " + (typeof EVOLVE_LEVEL === "number" ? EVOLVE_LEVEL : 10)],
         use: () => invFeedFollower() },
 };
 const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample"];
@@ -56,7 +56,7 @@ function invAdd(id, n) {
 }
 function invRemove(id, n) { n = Math.floor(n === undefined ? 1 : n); if (!invHas(id, n)) return false; playerInv[id] -= n; if (playerInv[id] <= 0) { delete playerInv[id]; if (_invSel === id) _invSel = null; } return true; }
 function invItems(cat) { return ITEM_ORDER.filter(id => invCount(id) > 0 && (!cat || cat === "all" || itemDef(id).cat === cat)); }
-function invReset() { playerInv = {}; _invSel = null; _invInspect = false; _invMsg = null; invPanelOpen = false; }
+function invReset() { if (typeof classPerks !== "undefined") classPerks = new Set(); playerInv = {}; _invSel = null; _invInspect = false; _invMsg = null; invPanelOpen = false; }
 // can the player use it? { ok, why }: the class rule first, then what the item itself needs
 function invCanUse(id) {
     const d = itemDef(id); if (!d) return { ok: false, why: "UNKNOWN ITEM" };
@@ -80,9 +80,9 @@ function invFeedFollower() {
     let best = null, bd = 8;
     for (const f of followers) { if (!f || f.dead || f.team !== "green" || !Number.isFinite(f.level) || f.level >= LEVEL_CAP) continue; const d = Math.hypot(f.x - player.visualX, f.y - player.visualY); if (d < bd) { bd = d; best = f; } }
     if (!best) return { ok: false, why: "NO FOLLOWER WITHIN 8 TILES" };
-    const need = xpForLevel(best.level + 1) - (Number.isFinite(best.xp) ? best.xp : xpForLevel(best.level));
-    gainXp(best, Math.max(1, need));
-    return { ok: true, msg: ((best.name || best.speciesName || "FOLLOWER") + "").toUpperCase() + " ▲ LEVEL " + best.level };
+    const levels = Math.max(1, Math.round(typeof classStat === "function" ? classStat("mutagenLevels", 1) : 1)), from = best.level;
+    for (let i = 0; i < levels && best.level < LEVEL_CAP; i++) { const need = xpForLevel(best.level + 1) - (Number.isFinite(best.xp) ? best.xp : xpForLevel(best.level)); gainXp(best, Math.max(1, need)); }
+    return { ok: true, msg: ((best.name || best.speciesName || "FOLLOWER") + "").toUpperCase() + " ▲ LEVEL " + best.level + (best.level - from > 1 ? "  (+" + (best.level - from) + ")" : "") };
 }
 
 // ── the icons: each draws centred on (x, y) in a box of `s` pixels (t is a slow clock for the inspect page's shine) ──
@@ -138,7 +138,7 @@ function drawInvPanel() {
     const L = _ivLayout(), pc = playerClass(), col = pc ? pc.colour : UI_TEAL, f = typeof frame !== "undefined" ? frame : 0;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     uiBackdrop(0.6); uiPanel(L.px, L.py, L.pw, L.ph, col);
-    uiText("PACK", L.px + 26, L.py + 32, 28, col, "left"); if (pc) uiCaption(pc.name, L.px + 124, L.py + 33, pc.colour, "left", 15);
+    uiText("PACK", L.px + 26, L.py + 32, 28, col, "left"); if (pc) { uiCaption(pc.name + "  \u00b7  RANK " + classRank(), L.px + 124, L.py + 26, pc.colour, "left", 14); const pl = classPerkList(); uiCaptionFit(pl.length ? pl.map(q => q.name).join("  \u00b7  ") : "NO PERKS YET: FIND YOUR CLASS'S STATION", L.px + 124, L.py + 44, pl.length ? "#9dffb6" : "#6d7fa6", "left", 11, L.pw - 300); }
     uiButton(L.close, "CLOSE", UI_RED, false, 16);
     for (const t of L.tabs) uiButton(t, t.label, col, t.on, 15);
     // the items

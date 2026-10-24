@@ -4529,7 +4529,7 @@ function render() {
     });
     drawTurretShots();
     if (typeof drawFireBombs === "function") { drawFireBombs(); drawFireAims(); }   // fire bombs in flight, and the arrows on aimed fire turrets (js/firebombs.js)
-    if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityDrawLampGlow === "function") { facilityDrawLampGlow(); if (typeof facilityDrawFlares === "function") facilityDrawFlares(); }   // the monitor lamp's colour and the flares in a blackout (js/facilitytutorial.js)
+    if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityDrawOverlay === "function") facilityDrawOverlay();   // the monitor lamp's colour, flares, CCTV marks and the station plate (js/facilitytutorial.js)
 
     ctx.restore();
 

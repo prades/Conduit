@@ -21,6 +21,26 @@ const CLASSES = {
 const CLASS_ORDER = ["gunslinger", "technomancer", "mutator"];
 const CLASS_RULES = { carryOthers: true, useOthers: false };
 
+// PERKS: what a class earns at its stations (js/stations.js). The game asks classStat(name, base) for a number, as docs/PLAYER-CLASSES.md plans: each owned perk may multiply (mul) or add to it.
+//   cls        the class that can earn it    name / desc   what the pack shows     stat   { statName: { mul | add } }
+const CLASS_PERKS = {
+    rifle:     { id: "rifle", cls: "gunslinger", name: "SERVICE RIFLE", desc: "Your shots hit 60% harder and come 25% faster.", stat: { shotDamage: { mul: 1.6 }, shotCooldown: { mul: 0.75 } } },
+    cctv:      { id: "cctv", cls: "gunslinger", name: "CCTV SWEEPS", desc: "The Security Room's cameras mark every enemy in the facility for 25 seconds.", stat: {} },
+    tuned:     { id: "tuned", cls: "technomancer", name: "TUNED LAMP", desc: "Your monitor lamp reaches 25% further and an overcharge lasts 50% longer.", stat: { lampReach: { mul: 1.25 }, boostFrames: { mul: 1.5 } } },
+    sequenced: { id: "sequenced", cls: "mutator", name: "SEQUENCED SAMPLES", desc: "A mutagen sample raises a follower two levels, not one.", stat: { mutagenLevels: { add: 1 } } },
+};
+let classPerks = new Set();
+function classStat(name, base) {
+    let v = base;
+    for (const id of classPerks) { const p = CLASS_PERKS[id], s = p && p.stat && p.stat[name]; if (!s) continue; if (s.mul) v *= s.mul; if (s.add) v += s.add; }
+    return v;
+}
+function classHas(perk) { return classPerks.has(perk); }
+// a class's rank: 1 to start, one more for each of its perks earned (the tutorial has one perk to earn at a time per class: docs/TUTORIAL.md)
+function classRank() { let n = 1; for (const id of classPerks) if (CLASS_PERKS[id] && CLASS_PERKS[id].cls === playerClassId) n++; return n; }
+function classPerkList() { return Array.from(classPerks).map(id => CLASS_PERKS[id]).filter(p => p && p.cls === playerClassId); }
+function classGrant(perk) { const p = CLASS_PERKS[perk]; if (!p || p.cls !== playerClassId || classPerks.has(perk)) return false; classPerks.add(perk); return true; }
+
 let playerClassId = null;
 function playerClass() { return playerClassId ? CLASSES[playerClassId] || null : null; }
 // choose the class (once per run): the start kit goes in the pack

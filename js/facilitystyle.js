@@ -397,7 +397,7 @@ function _fpDimCtx(real, k) {
 }
 // the light level that applies to a facility item (the room that shows its face)
 function _fpItemLight(it) {
-    if (it.fp === "pickup") return 0.8;   // (a supply case is lit by its own beacon: it can be found in the dark)
+    if (it.fp === "pickup" || it.fp === "station") return 0.8;   // (a supply case is lit by its own beacon: it can be found in the dark)
     const lv = _fpItemRoomLight(it); if (lv > 0.98 || it.fp === "rig" || it.fp === "rigpad" || it.fp === "fill") return lv;
     const k = _fpLightKey(it.lroom || it.room || (it.rooms && it.rooms[0])); return Math.max(lv, _fpPoolAt(it.x, it.y, k), _fpExtraLight(it.x, it.y, it.rooms ? it.rooms.map(_fpLightKey) : [k]));   // (near a stairway or an open door, things share its light; in a blackout the monitor lamp and the emergency lights add theirs)
 }

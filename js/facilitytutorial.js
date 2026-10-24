@@ -43,6 +43,7 @@ function facilityTutorialStart(F) {
     const off = /[?&]power=on\b/.test((typeof window !== "undefined" && window.location && window.location.search) || "");
     _fp.tut = { blackout: !off, powered: new Set(), sources: src, said: false, boostUntil: 0 };
     facilityPickupsStart(F);
+    if (typeof facilityStationsStart === "function") facilityStationsStart(F);
     return _fp.tut;
 }
 // the player's side of the tutorial: an empty pack and no class yet. The class picker opens (a Gunslinger, a Technomancer or a Mutator), unless the URL names one (?class=technomancer).
@@ -66,7 +67,7 @@ function facilityBlackoutSet(on) { if (_fp && _fp.tut) _fp.tut.blackout = !!on; 
 // the lamp's light on a spot (0 to 1): full near the player, a smooth fall to nothing at lampR
 function _fpLampBoost() { const T = _fp && _fp.tut; return T && T.boostUntil > (typeof frame !== "undefined" ? frame : 0) ? FP_TUT.boost : 1; }   // a power cell overcharges the lamp (facilityLampBoost)
 function _fpLampAt(x, y) {
-    const b = _fpLampBoost(), R = FP_TUT.lampR * (b > 1 ? FP_TUT.boostReach : 1), d = Math.hypot(x - player.visualX, y - player.visualY); if (d >= R) return 0;
+    const b = _fpLampBoost(), R = FP_TUT.lampR * (b > 1 ? FP_TUT.boostReach : 1) * (typeof classStat === "function" ? classStat("lampReach", 1) : 1), d = Math.hypot(x - player.visualX, y - player.visualY); if (d >= R) return 0;
     const t = d <= FP_TUT.lampCore ? 1 : 1 - (d - FP_TUT.lampCore) / (R - FP_TUT.lampCore);
     return Math.min(1, FP_TUT.lampK * (b > 1 ? FP_TUT.boostK : 1) * Math.pow(t * t * (3 - 2 * t), 1.3));
 }
@@ -89,6 +90,7 @@ function _fpExtraLight(x, y, keys) {
 // each frame (from facilityDrawItems): say what is going on, once
 function facilityTutorialTick() {
     facilityPickupTick();
+    if (typeof facilityStationTick === "function") facilityStationTick();
     const T = _fp && _fp.tut; if (!T || T.said || !T.blackout || (typeof frame !== "undefined" ? frame : 0) < 60) return;
     T.said = true;
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
@@ -128,7 +130,7 @@ function facilityFlare() {
     T.sources.push({ x: player.visualX, y: player.visualY, r: FP_TUT.flareR, k: FP_TUT.flareK, room: _fp.here, what: "flare", until: now + FP_TUT.flareFrames, born: now });
     return true;
 }
-function facilityLampBoost(frames) { if (!_fp || !_fp.tut) return false; _fp.tut.boostUntil = (typeof frame !== "undefined" ? frame : 0) + frames; return true; }
+function facilityLampBoost(frames) { if (!_fp || !_fp.tut) return false; _fp.tut.boostUntil = (typeof frame !== "undefined" ? frame : 0) + Math.round(frames * (typeof classStat === "function" ? classStat("boostFrames", 1) : 1)); return true; }
 // the flares' glow on the ground, after the scene like the lamp's
 function facilityDrawFlares() {
     const T = _fp && _fp.tut; if (!T || typeof ctx === "undefined") return; const now = typeof frame !== "undefined" ? frame : 0;
@@ -169,4 +171,11 @@ function facilityPickupTick() {
         for (const [id, n] of it.items) { invAdd(id, n); const d = itemDef(id); if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 100 - 20 * it.items.indexOf(it.items.find(q => q[0] === id)), text: "+" + n + " " + d.name + (classAllows(d.classes) ? "" : "  (" + d.classes.map(className).join(" / ") + " ONLY)"), color: d.col, life: 110, vy: -0.1, size: 13 }); }
         it.taken = true;
     }
+}
+
+// everything the tutorial paints over the scene, in screen space: the lamp's colour, the flares, a CCTV sweep's markers, the plate of the station in range
+function facilityDrawOverlay() {
+    facilityDrawLampGlow(); facilityDrawFlares();
+    if (typeof facilityDrawCctv === "function") facilityDrawCctv();
+    if (typeof facilityDrawStationPrompt === "function") facilityDrawStationPrompt();
 }

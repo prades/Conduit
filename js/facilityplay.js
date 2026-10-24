@@ -206,6 +206,15 @@ function facilityPlayStart() {
     document.body.classList && document.body.classList.add("facility-play");
     return true;
 }
+// a walkable tile within `range` of a box (a prop a unit wants to use), the one nearest the player; null if there is none
+function facilityApproachTile(b, range) {
+    let best = null, bd = 1e9;
+    for (let x = Math.floor(b[0]) - 1; x <= Math.ceil(b[2]) + 1; x++) for (let y = Math.floor(b[1]) - 1; y <= Math.ceil(b[3]) + 1; y++) {
+        if (!facilityWalkable(x, y, _fp.F)) continue; const dx = Math.max(b[0] - x, 0, x - b[2]), dy = Math.max(b[1] - y, 0, y - b[3]); if (Math.hypot(dx, dy) > range) continue;
+        const d = Math.hypot(x - player.visualX, y - player.visualY); if (d < bd) { bd = d; best = [x, y]; }
+    }
+    return best;
+}
 function facilityPlayStop() { try { location.reload(); } catch (e) {} }
 
 // STAGE 1 has no spawning of its own yet (no nests, no waves), so a few ants wander the arena to try combat and the walls on: they are a test, not the facility's enemies.
@@ -327,7 +336,7 @@ function drawFacilityItem(it) {
     if (lv < 0.98 && typeof CanvasRenderingContext2D !== "undefined" && real instanceof CanvasRenderingContext2D) ctx = _fpDimCtx(real, 1 - _fpDarkAmt() * (1 - lv));   // (not on the null context of a simulation-only step): an unlit room's things are drawn through the dimmed pen (js/facilitystyle.js)
     ctx.save();
     try {
-        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it);
+        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it);
     } finally { ctx.restore(); ctx = real; }
 }
 // A wall whose camera-facing side looks onto a LOWER floor (the pocket of floor behind the arena's rock, a fill cell) reaches down to it, so no gap shows under it.

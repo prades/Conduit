@@ -259,6 +259,15 @@ const FACILITY_MAP = {
         { id: "pk_chamber_mutagen", room: "crystal_chamber", at: [280, 400], items: [["mutagen_sample", 1]], note: "A sample left by the crystal." },
     ],
 
+    // STATIONS: a piece of furniture the player can USE (docs/TUTORIAL.md, phase 4). `prop` is the id of a prop above and `kind` a row of STATION_KINDS in js/stations.js (what it does, who may use it). Each class has one in the
+    // rooms it works in: the Armory's locker and the Security Room's console for the Gunslinger, the console in Teleport Room 1 for the Technomancer, a test chamber in the lab for the Mutator.
+    stations: [
+        { id: "st_armory_locker", room: "armory", prop: "armory_locker_b", kind: "weapon_locker" },
+        { id: "st_security_console", room: "security_room", prop: "sec_desk", kind: "cctv" },
+        { id: "st_tune_bench", room: "teleport_room_1", prop: "console_2", kind: "tune_bench" },
+        { id: "st_sequencer", room: "experiment_lab", prop: "chamber_1", kind: "sequencer" },
+    ],
+
     // FLOORS: each room's floor covering (js/facilitydecor.js draws it over the tile). Styles: carpet, plate, tile, labtile, concrete, grate, polished, wood, sand.
     floors: [
         { room: "crystal_chamber", style: "plate", colour: "#2a4458" },

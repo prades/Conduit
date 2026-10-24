@@ -146,12 +146,12 @@ function firePlayerShot(foe) {
         { x: player.x, y: player.y, element: player.selectedElement },
         foe,
         elDef ? elDef.color : "#ffffff",
-        10, 5,
+        typeof classStat === "function" ? classStat("shotDamage", 10) : 10, 5,
         null
     );
     playerAmmo = Math.max(0, playerAmmo - 1);
     saveAmmo();
-    player.attackCooldown = 45;
+    player.attackCooldown = typeof classStat === "function" ? Math.round(classStat("shotCooldown", 45)) : 45;
     return true;
 }
 
@@ -174,6 +174,9 @@ const handleInput=(ex,ey)=>{
     if (typeof fireAimTap === "function" && fireAimTap(ex, ey)) return;
     // A tap on a zone's POWER UNIT in the back wall opens its panel (js/wallunit.js).
     if (typeof wallUnitTap === "function" && wallUnitTap(ex, ey)) return;
+
+    // A tap on a class station (or its plate) uses it (js/stations.js).
+    if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityStationTap === "function" && facilityStationTap(ex, ey)) return;
 
     // ── PLAYER ATTACK ──
     // Only while armed. This used to fire on any tap that happened to land near
