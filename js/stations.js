@@ -39,13 +39,13 @@ function facilityStationsStart(F) {
     facilityRelaysStart(F);
 }
 function stationDist(s) { const dx = Math.max(s.bb[0] - player.visualX, 0, player.visualX - s.bb[2]), dy = Math.max(s.bb[1] - player.visualY, 0, player.visualY - s.bb[3]); return Math.hypot(dx, dy); }
-function stationNearest() { let best = null, bd = STATION_RANGE; for (const s of (_fp && _fp.stations) || []) { const d = stationDist(s); if (d < bd) { bd = d; best = s; } } return best; }
+function stationNearest() { let best = null, bd = STATION_RANGE; for (const s of (_fp && _fp.stations) || []) { if (STATION_KINDS[s.kind].classes && !playerClassKey) continue; const d = stationDist(s); if (d < bd) { bd = d; best = s; } } return best; }
 
 // can the player use it now? { ok, why }
 function stationCan(s) {
     const k = STATION_KINDS[s.kind], now = typeof frame !== "undefined" ? frame : 0;
-    if (!playerClassKey) return { ok: false, why: "CHOOSE A CLASS FIRST" };
     if (s.kind === "relay") return relayCan(s);
+    if (k.classes && !playerClassKey) return { ok: false, why: "CLASSES COME AFTER THE TUTORIAL" };
     if (k.powered && !facilityFeedOn(s.prop)) return { ok: false, why: "NO POWER \u2014 REPAIR THE HALLWAY RELAY" };
     if (k.powered && _fp.chargerReady > now) return { ok: false, why: "CHARGING \u2014 " + Math.ceil((_fp.chargerReady - now) / 60) + " S" };
     if (!classAllows(k.classes)) return { ok: false, why: "ONLY A " + k.classes.map(className).join(" / ") + " CAN USE THIS" };
@@ -79,6 +79,7 @@ function facilityStationTap(ex, ey) {
     const r = _stPlate();
     if (_fp.stationNear && r && ex >= r.x && ex <= r.x + r.w && ey >= r.y && ey <= r.y + r.h) { stationUse(_fp.stationNear); return true; }
     for (const s of _fp.stations) {
+        if (STATION_KINDS[s.kind].classes && !playerClassKey) continue;   // (a class's station is not there for you until you have a class)
         const p = _stScreen(s); if (Math.hypot(ex - p.x, ey - p.y) > 46) continue;
         if (stationDist(s) <= STATION_RANGE) stationUse(s);
         else { const g = _stApproach(s); if (g && typeof facilityWalkTo === "function") { facilityWalkTo(g[0], g[1]); _fp.stationGoal = s.id; } }
@@ -92,6 +93,7 @@ function _stApproach(s) { return typeof facilityApproachTile === "function" ? fa
 
 // the ring on the floor round a station: its class's colour and pulsing for the class that can use it, a dim grey for everyone else
 function _fpDrawStation(it) {
+    if (STATION_KINDS[it.kind].classes && !playerClassKey) return;   // (no ring: the tutorial has no classes)
     const k = STATION_KINDS[it.kind], rel = it.kind === "relay" ? _fp.relays[it.id] : null, mine = playerClassKey && classAllows(k.classes), done = (k.once && classHas(k.perk)) || !!(rel && rel.online), live = (mine || !k.classes) && !done, col = done ? (rel ? "#43e0a8" : "#5a6a8a") : !k.classes ? (rel ? "#ffb347" : "#31e8ff") : mine ? classColour(k.classes[0]) : "#4a5675", f = _fpFrame(), pul = 0.6 + 0.4 * Math.sin(f * 0.07 + it.seed), b = it.bb, e = 0.12;
     const pts = [_fpP(b[0] - e, b[1] - e, 0), _fpP(b[2] + e, b[1] - e, 0), _fpP(b[2] + e, b[3] + e, 0), _fpP(b[0] - e, b[3] + e, 0)];
     ctx.save(); ctx.lineJoin = "round"; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
@@ -154,9 +156,9 @@ function facilityFeedOn(propId) {
 }
 // what a repair would take for this player: { ok, mode, cost, frames } or { ok: false, why }
 function relayPlan() {
-    const R = CLASS_RULES.relay, cls = playerClass(); if (!cls) return { ok: false, why: "CHOOSE A CLASS FIRST" };
+    const R = CLASS_RULES.relay, cls = playerClass();   // (no class, as in the tutorial: the kit and two cells, like every class without the skill)
     let plan;
-    if (cls.skills.includes(R.skill)) plan = { mode: "skill", cost: [["power_cell", R.skillCells]], frames: R.skillFrames };
+    if (cls && cls.skills.includes(R.skill)) plan = { mode: "skill", cost: [["power_cell", R.skillCells]], frames: R.skillFrames };
     else if (invHas(R.kit)) plan = { mode: "kit", cost: [["power_cell", R.kitCells]], frames: R.kitFrames };
     else return { ok: false, why: "NEEDS A RELAY KIT (OR A TECHNOMANCER)" };
     for (const [id, n] of plan.cost) if (!invHas(id, n)) return { ok: false, why: "NEEDS " + n + " " + itemDef(id).name + (n > 1 ? "S" : ""), plan };

@@ -47,12 +47,13 @@ function facilityTutorialStart(F) {
     if (typeof facilityDirectorStart === "function") facilityDirectorStart();
     return _fp.tut;
 }
-// the player's side of the tutorial: an empty pack and no class yet. The class picker opens (a Gunslinger, a Technomancer or a Mutator), unless the URL names one (?class=technomancer).
+// the player's side of the tutorial: an empty pack and NO CLASS. Classes are given when the tutorial is finished, and only then (js/tutorial.js opens the class picker); until a class is chosen the cases for a class
+// are not in the facility. (For development, ?class=technomancer names a class from the start, and its cases are in the facility from the start.)
 function facilityTutorialClass() {
     if (typeof invReset !== "function") return;
     invReset(); playerClassKey = null; classPickerOpen = false; if (typeof invButtonShow === "function") invButtonShow(true);
     const m = /[?&]class=(\w+)/.exec((typeof window !== "undefined" && window.location && window.location.search) || "");
-    if (m && CLASSES[m[1]]) classSet(m[1]); else classPickerOpen = true;
+    if (m && CLASSES[m[1]]) classChoose(m[1], true);
 }
 
 // power a room on or off (the stair room is the hallway's); "all" is every room. A blackout ends by itself when every room has power.
@@ -153,13 +154,22 @@ const FP_PICK_R = 1.25;
 function facilityPickupsStart(F) {
     if (!_fp || !_fp.items) return;
     _fp.items = _fp.items.filter(i => i.fp !== "pickup");
-    for (const p of (F.pickups || [])) _fp.items.push({ type: "fp", fp: "pickup", id: p.id, room: p.room, x: p.at[0], y: p.at[1], depth: p.at[0] + p.at[1], base: facilityRoomHeight(p.room, F) * FP_ELEV_PX, items: p.items.map(i => i.slice()), taken: false, seed: _fpHash(Math.round(p.at[0] * 3), Math.round(p.at[1] * 5)) });
+    for (const p of (F.pickups || [])) if (!p.class) _fp.items.push(_fpPickupItem(p));   // (the cases for a class are not here until that class is chosen: facilityClassItemsEnter)
+}
+function _fpPickupItem(p) { return { type: "fp", fp: "pickup", id: p.id, room: p.room, x: p.at[0], y: p.at[1], depth: p.at[0] + p.at[1], base: facilityRoomHeight(p.room, _fp.F) * FP_ELEV_PX, items: p.items.map(i => i.slice()), cls: p.class || null, taken: false, seed: _fpHash(Math.round(p.at[0] * 3), Math.round(p.at[1] * 5)) }; }
+// a class has been chosen: the cases for that class (and only that class) enter the facility, each arriving in a column of light
+function facilityClassItemsEnter(classId) {
+    if (!_fp || !_fp.items) return 0;
+    let n = 0; for (const p of (_fp.F.pickups || [])) { if (p.class !== classId || _fp.items.some(i => i.fp === "pickup" && i.id === p.id)) continue; const it = _fpPickupItem(p); it.arrive = _fpFrame(); _fp.items.push(it); n++; }
+    if (n && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 105, text: "\u25c8 SUPPLIES FOR YOUR CLASS HAVE ARRIVED: " + n + " CASES", color: classColour(classId), life: 300, vy: -0.04, size: 14 });
+    return n;
 }
 function _fpDrawPickup(it) {
     if (it.taken) return;
     const f = _fpFrame(), first = it.items[0][0], d = typeof itemDef === "function" ? itemDef(first) : null, col = d ? d.col : "#ffe9a0", bob = Math.sin(f * 0.06 + it.seed) * 3, A = FP_PAL;
     _fpSBox(it.x - 0.3, it.y - 0.3, it.x + 0.3, it.y + 0.3, 0, 13, A.caseLit, A.case, A.cap, 3);   // the case
     _fpSBox(it.x - 0.31, it.y - 0.31, it.x + 0.31, it.y + 0.31, 8, 11, col, _fpShade(col, 0.7), _fpShade(col, 0.88), 2);   // a coloured band round it
+    if (it.arrive !== undefined && f - it.arrive < 90) { const k = (f - it.arrive) / 90, top = _fpP(it.x, it.y, 260), bot = _fpP(it.x, it.y, 0); ctx.save(); ctx.globalCompositeOperation = "lighter"; const g = ctx.createLinearGradient(0, top[1], 0, bot[1]); g.addColorStop(0, _fpRgba(col, 0)); g.addColorStop(1, _fpRgba(col, 0.7 * (1 - k))); ctx.fillStyle = g; const w = 16 * (1 - k * 0.6); ctx.fillRect(bot[0] - w, top[1], w * 2, bot[1] - top[1]); ctx.restore(); }   // (the column of light it arrives in)
     const c = _fpP(it.x, it.y, 40 + bob); if (typeof invDrawIcon === "function") invDrawIcon(first, c[0], c[1], 30, f);
     const g = _fpP(it.x, it.y, 18); _fpGlow(g[0], g[1], 34 + Math.sin(f * 0.08 + it.seed) * 4, col, 0.34);
     if (it.items.length > 1) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(c[0] + 14, c[1] - 11, 3, 0, 6.2832); ctx.fill(); }

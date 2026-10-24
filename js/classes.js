@@ -60,7 +60,7 @@ function classCanCarry(classes) { return CLASS_RULES.carryOthers || classAllows(
 function className(id) { return CLASSES[id] ? CLASSES[id].name : String(id).toUpperCase(); }
 function classColour(id) { return CLASSES[id] ? CLASSES[id].colour : "#8aa0c8"; }
 
-// ── the class picker: the first screen of the tutorial ──
+// ── the class picker: the screen that follows the tutorial (js/tutorial.js opens it when the last objective is done) ──
 let classPickerOpen = false;
 function classPickerOpenNow() { classPickerOpen = true; }
 function _cpLayout() {
@@ -75,7 +75,7 @@ function drawClassPicker() {
     if (!classPickerOpen) return;
     const L = _cpLayout();
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); uiBackdrop(0.78); uiPanel(L.px, L.py, L.pw, L.ph, UI_TEAL);
-    uiTextFit("CHOOSE YOUR CLASS", L.px + L.pw / 2, L.py + 36, 30, UI_TEAL, "center", L.pw - 60); uiCaptionFit("THE FACILITY IS IN A BLACKOUT. WHAT YOU ARE DECIDES WHAT YOU CAN USE.", L.px + L.pw / 2, L.py + 62, "#8aa0c8", "center", 13, L.pw - 40);
+    uiTextFit("TUTORIAL COMPLETE \u2014 CHOOSE YOUR CLASS", L.px + L.pw / 2, L.py + 36, 28, UI_TEAL, "center", L.pw - 60); uiCaptionFit("WHAT YOU ARE DECIDES WHAT YOU CAN USE. THE SUPPLIES FOR YOUR CLASS ARRIVE ONCE YOU CHOOSE.", L.px + L.pw / 2, L.py + 62, "#8aa0c8", "center", 13, L.pw - 40);
     for (const c of L.cards) {
         const k = CLASSES[c.id]; uiSlab(c.x, c.y, c.w, c.h, k.colour, false, "#0d1530");
         const small = c.h < 150, cx = c.x + 16, tw = c.w - 32;
@@ -94,9 +94,10 @@ function _handleClassPickerTap(tx, ty) {
     return true;   // (absorbs every tap: the class is chosen first)
 }
 // the choice: set the class, close the picker, say so
-function classChoose(id) {
+function classChoose(id, quiet) {
     if (!classSet(id)) return false;
     classPickerOpen = false;
-    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: CLASSES[id].name + " — PRESS I FOR YOUR PACK", color: CLASSES[id].colour, life: 220, vy: -0.05, size: 15 });
+    if (typeof facilityClassItemsEnter === "function") facilityClassItemsEnter(id);   // the class's cases enter the facility (js/facilitytutorial.js)
+    if (!quiet && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: CLASSES[id].name + " — PRESS I FOR YOUR PACK", color: CLASSES[id].colour, life: 220, vy: -0.05, size: 15 });
     return true;
 }
