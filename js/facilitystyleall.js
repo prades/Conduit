@@ -142,15 +142,14 @@ function _fpStylePropMore(it) {
 
 // ── glass: a pale sill, a tinted pane with shine streaks, a rail on top with an ink line, posts every two tiles, a neon seam along the sill ──
 function _fpStyleGlass(it, H) {
-    const ax = it.a[0], ay = it.a[1], dx = it.b[0] - ax, dy = it.b[1] - ay, P = (u, z) => _fpP(ax + dx * u, ay + dy * u, z), acc = _fpAcc(it.room), A = FP_PAL, sill = 14, rail = H - 7;
-    _fpFill([P(0, 0), P(1, 0), P(1, sill), P(0, sill)], A.caseLit);
-    _fpFill([P(0, sill), P(1, sill), P(1, rail), P(0, rail)], "rgba(150,230,242,0.22)", "rgba(150,230,242,0)");
-    _fpFill([P(0.2, sill), P(0.32, sill), P(0.44, rail), P(0.32, rail)], "rgba(255,255,255,0.18)", "rgba(255,255,255,0)");   // a shine streak
-    _fpFill([P(0, rail), P(1, rail), P(1, H), P(0, H)], A.cap);
+    const ax = it.a[0], ay = it.a[1], dx = it.b[0] - ax, dy = it.b[1] - ay, P = (u, z) => _fpP(ax + dx * u, ay + dy * u, z), acc = _fpRoomCols(it.room).acc, A = FP_PAL, sill = 14, rail = H - 7, U0 = -0.02, U1 = 1.02;
+    _fpFlat([P(U0, 0), P(U1, 0), P(U1, sill), P(U0, sill)], A.caseLit);
+    _fpFlat([P(U0, sill), P(U1, sill), P(U1, rail), P(U0, rail)], "rgba(150,230,242,0.22)");
+    _fpFlat([P(0.2, sill), P(0.32, sill), P(0.44, rail), P(0.32, rail)], "rgba(255,255,255,0.18)");   // a shine streak
+    _fpFlat([P(U0, rail), P(U1, rail), P(U1, H), P(U0, H)], A.cap);
     const s0 = P(0, sill), s1 = P(1, sill), t0 = P(0, H), t1 = P(1, H), b0 = P(0, 0), b1 = P(1, 0); ctx.lineCap = "round";
-    ctx.strokeStyle = _fpRgba(acc, 0.2); ctx.lineWidth = 6; ctx.globalCompositeOperation = "lighter"; ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]); ctx.stroke(); ctx.globalCompositeOperation = "source-over";
     ctx.strokeStyle = acc; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]); ctx.stroke();                                        // the neon seam
-    ctx.strokeStyle = A.ink; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.stroke(); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();
+    ctx.strokeStyle = A.ink; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();   // (the rail's top and the sill's foot in one stroke)
     if (it.i === 0 && Math.round(it.along) % 2 === 0 || it.i % 4 === 0) { ctx.strokeStyle = A.ink; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(t0[0], t0[1]); ctx.stroke(); ctx.strokeStyle = A.cap; ctx.lineWidth = 3; ctx.stroke(); }   // a post
     ctx.lineCap = "butt";
 }

@@ -89,23 +89,30 @@ function _fpCrystal(x, y, h, w, col, f, seed) {   // a faceted crystal shard sta
 }
 
 // ── walls ──
+// per-room colour strings, built once (the wall is drawn hundreds of times a frame)
+const _fpRoomCol = new Map();
+function _fpRoomCols(id) {
+    let c = _fpRoomCol.get(id); if (c) return c; const RS = _fpRoomStyle(id);
+    c = { wainLit: RS.wain, wainDark: _fpShade(RS.wain, 0.9), skirt: _fpShade(RS.wain, 0.8), acc: RS.acc }; _fpRoomCol.set(id, c); return c;
+}
+function _fpFlat(pts, col) { ctx.fillStyle = col; ctx.beginPath(); for (let i = 0; i < pts.length; i++) i ? ctx.lineTo(pts[i][0], pts[i][1]) : ctx.moveTo(pts[0][0], pts[0][1]); ctx.closePath(); ctx.fill(); }   // a flat fill: no outline pass
 function _fpStyleWall(it, Hd) {
     const ax = it.a[0], ay = it.a[1], bx = it.b[0], by = it.b[1], dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
-    const P = (u, z) => _fpP(ax + dx * u, ay + dy * u, z), lit = nx > ny, body = lit ? FP_PAL.wallLit : FP_PAL.wallDark, wain = Math.min(24, Hd), capH = Math.min(8, Math.max(0, Hd - wain)), RS = _fpRoomStyle(it.room), acc = RS.acc, rgb = ((n) => (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255))(parseInt(acc.slice(1), 16));
-    if (it.drop > 0) _fpFill([P(0, -it.drop), P(1, -it.drop), P(1, 0), P(0, 0)], _fpShade(RS.wain, 0.8));   // a skirt down to a lower floor beside the wall
-    _fpFill([P(0, 0), P(1, 0), P(1, wain), P(0, wain)], lit ? RS.wain : _fpShade(RS.wain, 0.9));
-    if (Hd > wain) _fpFill([P(0, wain), P(1, wain), P(1, Hd - capH), P(0, Hd - capH)], body);
-    if (capH > 0) _fpFill([P(0, Hd - capH), P(1, Hd - capH), P(1, Hd), P(0, Hd)], FP_PAL.cap);
+    const P = (u, z) => _fpP(ax + dx * u, ay + dy * u, z), lit = nx > ny, body = lit ? FP_PAL.wallLit : FP_PAL.wallDark, wain = Math.min(24, Hd), capH = Math.min(8, Math.max(0, Hd - wain)), RC = _fpRoomCols(it.room), U0 = -0.02, U1 = 1.02;   // (each band runs a hair past both ends, so neighbours overlap and leave no seam: no outline pass needed)
+    if (it.drop > 0) _fpFlat([P(U0, -it.drop), P(U1, -it.drop), P(U1, 0), P(U0, 0)], RC.skirt);   // a skirt down to a lower floor beside the wall
+    _fpFlat([P(U0, 0), P(U1, 0), P(U1, wain), P(U0, wain)], lit ? RC.wainLit : RC.wainDark);
+    if (Hd > wain) _fpFlat([P(U0, wain), P(U1, wain), P(U1, Hd - capH), P(U0, Hd - capH)], body);
+    if (capH > 0) _fpFlat([P(U0, Hd - capH), P(U1, Hd - capH), P(U1, Hd), P(U0, Hd)], FP_PAL.cap);
     const h = _fpHash(Math.round(ax * 2), Math.round(ay * 2));
     if (Hd > wain + 10) {
-        if (h % 9 === 0) _fpFill([P(0.1, wain), P(0.9, wain), P(0.8, wain + 14 + h % 10), P(0.2, wain + 12)], "rgba(115,140,128,0.16)", "rgba(115,140,128,0)");   // a discoloration
-        if (h % 13 === 1) _fpFill([P(0.4, Hd - capH), P(0.46, Hd - capH), P(0.45, wain + 4), P(0.41, wain + 4)], "rgba(176,132,108,0.24)", "rgba(176,132,108,0)");     // a rust streak
+        if (h % 9 === 0) _fpFlat([P(0.1, wain), P(0.9, wain), P(0.8, wain + 14 + h % 10), P(0.2, wain + 12)], "rgba(115,140,128,0.16)");   // a discoloration
+        if (h % 13 === 1) _fpFlat([P(0.4, Hd - capH), P(0.46, Hd - capH), P(0.45, wain + 4), P(0.41, wain + 4)], "rgba(176,132,108,0.24)");     // a rust streak
         const sa = Math.floor((ax + ay) / 2), sb = Math.floor((bx + by) / 2); if (sa !== sb) { const u = (((sa > sb ? sa : sb) * 2) - (ax + ay)) / ((bx + by) - (ax + ay) || 1); if (u > 0 && u < 1) { const p = P(u, wain), q = P(u, Hd - capH); ctx.strokeStyle = "rgba(27,54,64,0.28)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); } }   // a panel join every two tiles
     }
-    if (Hd >= 26) { const p = P(0, wain), q = P(1, wain); ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = "rgba(" + rgb + ",0.16)"; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); ctx.globalCompositeOperation = "source-over";
-        ctx.strokeStyle = acc; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }   // the neon seam
-    const t0 = P(0, Hd), t1 = P(1, Hd), s0 = P(0, 0), s1 = P(1, 0); ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 4.5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.stroke();
-    ctx.globalAlpha = 0.85; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]); ctx.stroke(); ctx.globalAlpha = 1; ctx.lineCap = "butt";
+    ctx.lineCap = "round";
+    if (Hd >= 26) { const p = P(0, wain), q = P(1, wain); ctx.strokeStyle = RC.acc; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }   // the neon seam
+    const t0 = P(0, Hd), t1 = P(1, Hd), s0 = P(0, 0), s1 = P(1, 0); ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 4.5; ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.stroke();
+    ctx.strokeStyle = "rgba(22,48,58,0.85)"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]); ctx.stroke(); ctx.lineCap = "butt";
 }
 // a post at every corner of a styled room (the same corner treatment everywhere)
 function _fpStylePillars(F) {

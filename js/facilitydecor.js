@@ -539,3 +539,22 @@ function _fpDecorProp(it) {
     } else return false;
     return true;
 }
+
+// ═════════════ OFF-SCREEN CULLING FOR WALLS ═════════════
+// The anchor test (visibleForDraw) keeps a wall whose tall picture is far off the screen. A wall's real extent is worked out from its shape (once), and one that cannot touch the screen is skipped.
+function _fpWallBounds(it) {
+    const H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0)); let zlo = -(it.drop || 0) - 6, zhi = H + 10, mx = 14, my = 14;
+    const pts = [[it.a[0], it.a[1]], [it.b[0], it.b[1]]];
+    if (it.kind === "rock") { const hs = _fpRockHeights(it, H); zhi = Math.max(hs[0], hs[1], hs[2]) + 12; if (!it.back) zlo = -FP_ROCK_DOWN - 6; if (it.cap) { const d = Math.max(it.cap.da === undefined ? it.cap.d : it.cap.da, it.cap.db === undefined ? 0 : it.cap.db); pts.push([it.a[0], it.a[1] - d], [it.b[0], it.b[1] - d]); if (it.cap.zb) zhi = Math.max(zhi, it.cap.zb + 8); } }
+    else if (it.scaffold) { zlo = -(it.legs ? (it.legH || 0) : 10) - 14; zhi = 50; }
+    else if (it.support) { zlo = -8; zhi = H - FP_WALL_H + 10; }
+    else if (it.win === "deck_window_arena" && it.room === "arena") { const rise = (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + 4; zlo = -8; zhi = rise + 12; mx = 46; my = 30; pts.push([it.a[0] + 0.5, it.a[1]], [it.b[0] + 0.5, it.b[1]]); }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const q of pts) for (const z of [zlo, zhi]) { const sx = (q[0] - it.x - (q[1] - it.y)) * TILE_W, sy = (q[0] - it.x + q[1] - it.y) * TILE_H - z; if (sx < x0) x0 = sx; if (sx > x1) x1 = sx; if (sy < y0) y0 = sy; if (sy > y1) y1 = sy; }
+    return [Math.floor(x0 - mx), Math.floor(y0 - my), Math.ceil(x1 + mx), Math.ceil(y1 + my)];   // relative to the piece's ground anchor (screen of (it.x, it.y, 0))
+}
+
+function _fpWallOnScreen(it) {
+    const b = it.bb || (it.bb = _fpWallBounds(it)); _fpBase = it.base || 0; const a = _fpP(it.x, it.y, 0);
+    return a[0] + b[2] > 0 && a[0] + b[0] < canvas.width && a[1] + b[3] > 0 && a[1] + b[1] < canvas.height;
+}

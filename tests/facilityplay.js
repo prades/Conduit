@@ -326,6 +326,15 @@ function measure() {
         ok(r.n >= 30, 'window pieces on the arena side: ' + r.n); ok(r.span >= 17, 'the cliff does not run the whole window: ' + r.span); same(r.err, null, 'the cliff threw'); ok(r.grads >= r.n, 'every piece draws a rock gradient: ' + r.grads); ok(r.rise > 150, 'the rise: ' + r.rise);
         ok(/function _fpDrawDeckCliff/.test(rd('js/facilitydecor.js')) && /the ledges, lowest first/.test(rd('js/facilitydecor.js')) && /one set of ledges/.test(rd('js/facilitydecor.js')) && /_fpDrawDeckCliff\(it\)/.test(rd('js/facilityplay.js')), 'the cliff drawing is missing');
     });
+    check('speed: off-screen walls are not drawn, a wall piece is drawn with flat fills (no outline pass), and posters and signs in a dark room are skipped', () => {
+        const r = J(`(function(){ canvas.width = 1280; canvas.height = 860; facilityPlay = true; const cr = _fp.F.byId.get('crystal_chamber'); player.x = player.visualX = cr.bb[0] + 4; player.y = player.visualY = cr.bb[1] + 5; _fpCam = facilityLiftPx(player.visualX, player.visualY);
+            const walls = _fp.items.filter(i => i.fp === 'wall'), on = walls.filter(i => _fpWallOnScreen(i)).length, dl = []; facilityDrawItems(dl); const inList = dl.filter(i => i.fp === 'wall').length;
+            const far = walls.find(i => Math.hypot(i.x - player.visualX, i.y - player.visualY) > 40); const here = walls.find(i => Math.hypot(i.x - player.visualX, i.y - player.visualY) < 6);
+            return { all: walls.length, on, inList, farOn: far ? _fpWallOnScreen(far) : null, hereOn: here ? _fpWallOnScreen(here) : null }; })()`);
+        ok(r.on < r.all * 0.5, 'too many walls kept: ' + r.on + ' of ' + r.all); ok(r.inList <= r.on + 2, 'the draw list has walls that are not on screen: ' + r.inList + ' vs ' + r.on); same(r.farOn, false, 'a far wall is kept'); same(r.hereOn, true, 'a near wall is culled');
+        const st = rd('js/facilitystyle.js'), gl = rd('js/facilitystyleall.js'); ok(/function _fpFlat/.test(st) && /_fpFlat\(\[P\(U0, 0\)/.test(st) && /_fpFlat\(\[P\(U0, 0\), P\(U1, 0\)/.test(gl), 'the walls are not drawn with flat fills'); ok(!/globalCompositeOperation = "lighter"; ctx\.strokeStyle = "rgba\(" \+ rgb/.test(st), 'the wall still draws a composited glow');
+        ok(/lv < 0\.12 && \(it\.fp === "wdecor" \|\| it\.fp === "fixture"\)/.test(rd('js/facilityplay.js')), 'decor in a dark room is still drawn');
+    });
     check('no holes: the floor runs in under every wall of the arena (cells the rock edge only partly covers, and the pocket behind the north rock), so no black shows where a wall meets the floor', () => {
         const r = J(`(function(){ const F = _fp.F, covered = (x, y) => { const k = Math.round(x) + ',' + Math.round(y); return _fp.cells.has(k) || _fp.fills.has(k) || F.solids.some(s => s.shape === 'circle' ? Math.hypot(Math.round(x) - s.at[0], Math.round(y) - s.at[1]) < s.r : facilityPointInPoly(Math.round(x), Math.round(y), s.poly)); };
             let front = 0, frontBad = 0, back = 0, backBad = 0, n = 0;
@@ -350,10 +359,10 @@ function measure() {
         run('facilityPlay = true; canvas.width = 800; canvas.height = 600;'); const n = J('(function(){ let n = 0; for (const it of _fp.items) { if (visibleForDraw(it.x, it.y)) { drawFacilityItem(it); n++; } } return n; })()'); ok(n > 20, 'only ' + n + ' items on screen');
         const a = J(`(function(){ const it = _fp.items.find(i => i.fp === 'wall' && i.kind === 'wall' && i.x + i.y > player.visualX + player.visualY + 0.5 && Math.hypot(i.x - player.visualX, i.y - player.visualY) < 3); let alpha = null; const keep = ctx.fillStyle; if (!it) return null; return { found: true }; })()`);
         const src = rd('js/facilityplay.js'); ok(!/_fpWallCutH|_fpCut\b/.test(src + rd('js/facilitydecor.js') + rd('js/facilitystyle.js')) && !/Math\.max\(0\.22/.test(src) && !/ctx\.globalAlpha = wd/.test(src), 'walls still react to the player (cut down or fade)');
-        const h = J(`(function(){ canvas.width = 1280; canvas.height = 860; const w = _fp.items.find(i => i.fp === 'wall' && i.kind === 'wall' && !i.base2 && !i.drop), keep = _fpQuad, out = []; let got = null;
-            _fpQuad = function (pts) { if (got === null) got = pts[0][1] - pts[3][1]; return keep.apply(this, arguments); };
+        const h = J(`(function(){ canvas.width = 1280; canvas.height = 860; const w = _fp.items.find(i => i.fp === 'wall' && i.kind === 'wall' && !i.base2 && !i.drop), keep = _fpFlat, out = []; let got = null;
+            _fpFlat = function (pts) { if (got === null) got = pts[0][1] - pts[3][1]; return keep.apply(this, arguments); };
             for (const [dx, dy] of [[0, 0], [0.4, 0.4], [-0.6, 2.5], [3, 5], [9, 9]]) { player.visualX = w.x + dx; player.visualY = w.y + dy; _fpBase = w.base || 0; _fpCam = _fpBase; got = null; _fpDrawWall(w); out.push(got); }
-            _fpQuad = keep; return out; })()`);
+            _fpFlat = keep; return out; })()`);
         ok(h.length === 5 && h[0] > 0 && h.every(v => Math.abs(v - h[0]) < 1e-6), 'a wall changed height as the player moved: ' + h.join());
     });
 
