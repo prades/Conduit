@@ -4363,8 +4363,6 @@ function render() {
         }
     });
 
-    if (typeof facilityPlay !== "undefined" && facilityPlay) facilityDrawLighting();   // a room the player is not in is not lit up (js/facilitystyle.js)
-
     drawComboLinks();
 
     // ── PYLON NETWORK LINKS (drawWaveLinks) ──

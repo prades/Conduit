@@ -49,4 +49,9 @@ Every door is a cartoony steel access door (`_fpStyleDoor`): two chunky steel pa
 
 ## Lighting: a room you are not in is not lit up
 
-`facilityDrawLighting` (js/facilitystyle.js) draws a dark layer over the world once a frame, with a hole cut for each lit room (its floor and its walls up to their tops). The room the player is in is fully lit; a room joined to it by steps or an OPEN door gets a 40% spill (doors open when a unit is near); every other room lies in the dark (82% dark layer). Levels ease at 12% a frame, so a room fades up as you walk in and fades down as you leave. Units in a dark room are dimmed with it. The doorway itself no longer draws a dark gap or a glow: it just shows the floor and the room beyond.
+Lighting is PER ITEM (js/facilitystyle.js), in each item's own place in the depth order, so a wall or prop in front is never darkened by a room behind it (the earlier screen-wide dark layer bled into rooms in front):
+- an unlit room's walls, glass, doors, props, posts, fixtures and decor are drawn through a dimmed pen (`_fpDimCtx`): a stand-in for the canvas context, built once, that darkens every colour toward the night blue (82% dark), so each item keeps its exact shape;
+- a wall takes the light of the room that shows its FACE (the room on its camera-facing side), not the room that owns the edge: the lobby's south wall is lit or dark with the hallway;
+- floor tiles are darkened by their own tile level.
+
+Levels: the room the player stands in is lit completely; every other room is dark. The stair room counts as part of the hallway (no change of light on the stairs). When a door is open (a unit is near it; a stairway counts as always open) the room beyond gets a pool of light on the GROUND only, near the door (about 3.6 tiles, strongest at the door); walls and props there stay dark. The room lights up completely only when the player steps onto one of its tiles. Levels and pools ease (12% a frame). The crystal's rig and the simulation-only null context are never dimmed.

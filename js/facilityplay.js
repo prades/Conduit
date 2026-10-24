@@ -214,13 +214,18 @@ function _fpSpawnTestEnemies(F) {
 }
 
 // ── the static things to draw: wall pieces, prop cells, doors, fixtures ──
+// the room whose light a wall piece takes: the room on its camera-facing side (the face you see), else its own room
+function _fpWallLightRoom(w, a, b, F) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+    const r = facilityRoomAt((a[0] + b[0]) / 2 + nx * 0.4, (a[1] + b[1]) / 2 + ny * 0.4, F); return r ? r.id : w.room;
+}
 function _fpPlaceStatics(F) {
     const items = [], seg = 0.5;
     for (const w of F.walls) {
         const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy), n = Math.max(1, Math.ceil(len / seg));
         for (let i = 0; i < n; i++) {
             const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n];
-            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, room: w.room, i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
+            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
         }
     }
     // a wall between two floors of different heights stands from its own floor up past the HIGHER floor, so a step down is a retaining wall and not a gap
@@ -244,7 +249,7 @@ function _fpPlaceStatics(F) {
         const z = r.zone; if (!z || !z.steps) continue; const lo = Math.min(z.hA, z.hB);
         for (let x = Math.ceil(z.x0 - 0.5); x <= z.x1 - 0.5; x++) for (let y = Math.ceil(z.y0 - 0.5); y <= z.y1 - 0.5; y++) {
             const h = facilityHeightAt(x, y, F); if (h - lo < 0.02) continue;
-            items.push({ type: "fp", fp: "stair", x, y, base: lo * FP_ELEV_PX, h: (h - lo) * FP_ELEV_PX, sx: true, sy: true });
+            items.push({ type: "fp", fp: "stair", room: (facilityRoomAt(x, y, F) || {}).id, x, y, base: lo * FP_ELEV_PX, h: (h - lo) * FP_ELEV_PX, sx: true, sy: true });
         }
     }
     for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", room: f.room, base: facilityRoomHeight(f.room, F) * FP_ELEV_PX, x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
@@ -260,6 +265,7 @@ function _fpPlaceStatics(F) {
 function facilityDrawItems(drawList) {
     if (!_fp || !_fp.items) return;
     _fpCam = facilityLiftPx(player.visualX, player.visualY);   // the camera rides the player's floor
+    if (typeof _fpLightUpdate === "function") _fpLightUpdate(_fp.F);   // the rooms' light levels and the pools at open doors
     for (const it of _fp.items) if (visibleForDraw(it.x, it.y)) drawList.push(it);
     if (_fp.crystalDepth !== undefined) for (const o of drawList) if (o.type === "crystal") o.depth = _fp.crystalDepth;   // the crystal is drawn after the pad machine it rests in
 }
@@ -286,9 +292,12 @@ function _fpQuad(pts, fill, stroke, lw) {
 const FP_WALL = { wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall_provisional: ["#26324f", "#1a2340", "#8fa6d8"], rock: ["#4a3a30", "#2e241e", "#9a7a62"], railing_wall: ["#3a4258", "#262d40", "#ffd34d"], deck_wall: ["#3a3f52", "#262a3a", "#8fa6d8"] };
 function drawFacilityItem(it) {
     _fpBase = it.base || 0;
+    const lv = (typeof _fpItemLight === "function" && _fp.light) ? _fpItemLight(it) : 1, real = ctx;
+    if (lv < 0.98 && typeof CanvasRenderingContext2D !== "undefined" && real instanceof CanvasRenderingContext2D) ctx = _fpDimCtx(real, 1 - FP_DARK * (1 - lv));   // (not on the null context of a simulation-only step)   // an unlit room's things are drawn through the dimmed pen (js/facilitystyle.js)
     ctx.save();
-    if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it);
-    ctx.restore();
+    try {
+        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it);
+    } finally { ctx.restore(); ctx = real; }
 }
 // A wall whose camera-facing side looks onto a LOWER floor (the pocket of floor behind the arena's rock, a fill cell) reaches down to it, so no gap shows under it.
 function _fpSkirts(items) {

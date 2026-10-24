@@ -315,51 +315,67 @@ function _fpStyleRigPad(it) {
 }
 
 // ── room lighting: a room you are not in is not lit up ──
-// The room the player stands in is fully lit; a room joined to it by an OPEN door (or by steps) gets a little spill; every other room lies in the dark. The levels ease, so a room fades up as you
-// walk in and down as you leave. It is drawn once a frame, after the world and before the HUD: a dark layer with a hole cut for each lit room (its floor and the height of its walls).
-var FP_DARK = 0.82, FP_SPILL = 0.4, FP_LIGHT_EASE = 0.12;
-function _fpRoomTargets(F) {
-    const t = new Map(); for (const r of F.rooms) t.set(r.id, 0);
-    const pr = facilityRoomAt(player.visualX, player.visualY, F); const here = pr ? pr.id : (_fp.lastRoom || null); if (here) _fp.lastRoom = here; if (!here) return t;
-    t.set(here, 1);
-    const opened = new Map(); for (const it of _fp.items) if (it.fp === "door" && it.id) opened.set(it.id, (it.open || 0) > 0.3);
-    for (const c of F.connections) {
-        if (!c.rooms.includes(here)) continue; const other = c.rooms[0] === here ? c.rooms[1] : c.rooms[0], open = c.ramp ? true : (opened.get(c.opening) === true);
-        if (open && t.get(other) < FP_SPILL) t.set(other, FP_SPILL);
+// Lighting is PER ITEM, in the item's own depth order (not a layer over the screen), so a wall or prop in front is never darkened by a room behind it:
+//   - every wall piece, door, prop, post, fixture and decor is darkened right after it is drawn, by the light level of the room that shows its face (the room on its camera-facing side);
+//   - every floor tile is darkened by its own tile level.
+// Levels: the room the player stands in is fully lit (the stair room counts as part of the hallway: no change of light on the stairs); every other room is dark. When a door is OPEN (a unit is near it,
+// or it is a stairway) the room beyond it is lit on the GROUND only, in a pool near the door; it lights up completely only when the player steps on one of its tiles. Levels ease.
+var FP_DARK = 0.82, FP_POOL = 0.7, FP_POOL_R = 3.6, FP_LIGHT_EASE = 0.12;
+function _fpLightKey(id) { return id === "teleport_stair_room" ? "lab_hallway" : id; }
+function _fpLightUpdate(F) {
+    _fp.light = _fp.light || new Map(); _fp.pool = _fp.pool || new Map();
+    const pr = facilityRoomAt(player.visualX, player.visualY, F), here = pr ? _fpLightKey(pr.id) : (_fp.lastRoom || null); if (here) _fp.lastRoom = here;
+    for (const r of F.rooms) { const k = _fpLightKey(r.id), v = k === here ? 1 : 0, cur = _fp.light.has(k) ? _fp.light.get(k) : v; if (r.id === k || !_fp.light.has(k)) _fp.light.set(k, Math.abs(v - cur) < 0.01 ? v : cur + (v - cur) * FP_LIGHT_EASE); }
+    const pools = [];
+    if (!_fp.openings) { _fp.openings = F.openings.map(o => ({ id: o.id, x: (o.a[0] + o.b[0]) / 2, y: (o.a[1] + o.b[1]) / 2, rooms: (F.connections.find(c => c.opening === o.id) || { rooms: o.rooms || [] }).rooms.map(_fpLightKey), ramp: F.connections.some(c => c.opening === o.id && c.ramp) })); _fp.doorItems = new Map(_fp.items.filter(i => i.fp === "door").map(i => [i.id, i])); }
+    for (const o of _fp.openings) {
+        const di = _fp.doorItems.get(o.id), want = o.ramp ? 1 : (di && (di.open || 0) >= 0.5 ? 1 : 0), cur = _fp.pool.get(o.id) || 0, v = Math.abs(want - cur) < 0.01 ? want : cur + (want - cur) * FP_LIGHT_EASE; _fp.pool.set(o.id, v);
+        if (v > 0.02 && o.rooms.some(k => (_fp.light.get(k) || 0) > 0.5)) pools.push({ x: o.x, y: o.y, s: v, rooms: o.rooms });   // a door only throws light when the room on one side is lit
     }
-    return t;
+    _fp.pools = pools;
 }
-function facilityDrawLighting() {
-    if (!_fp || !_fp.F || typeof document === "undefined") return;
-    const F = _fp.F, W = canvas.width, Hh = canvas.height;
-    if (!_fp.lcv || _fp.lcv.width !== W || _fp.lcv.height !== Hh) { _fp.lcv = document.createElement("canvas"); _fp.lcv.width = W; _fp.lcv.height = Hh; _fp.lctx = _fp.lcv.getContext("2d"); }
-    const g = _fp.lctx; if (!g || !g.fillRect) return;
-    const tg = _fpRoomTargets(F); _fp.light = _fp.light || new Map();
-    for (const [id, v] of tg) { const cur = _fp.light.has(id) ? _fp.light.get(id) : v; _fp.light.set(id, Math.abs(v - cur) < 0.01 ? v : cur + (v - cur) * FP_LIGHT_EASE); }
-    g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, W, Hh); g.fillStyle = "rgba(6,11,22," + FP_DARK + ")"; g.fillRect(0, 0, W, Hh);
-    const keepB = _fpBase; g.globalCompositeOperation = "destination-out";
-    for (const r of F.rooms) {
-        const lv = _fp.light.get(r.id) || 0; if (lv < 0.02) continue;
-        _fpBase = facilityRoomHeight(r.id, F) * FP_ELEV_PX; const wallH = r.id === "arena" ? 240 : r.id === "catwalks" ? 52 : FP_WALL_H + 2;   // (exactly as tall as the walls: no lit band above them) g.fillStyle = "rgba(0,0,0," + lv + ")";
-        const tracePoly = (zTop) => { g.beginPath(); r.poly.forEach((v, i) => { const p = _fpP(v[0], v[1], zTop); i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); g.fill(); };
-        tracePoly(0);   // the floor
-        for (let i = 0; i < r.poly.length; i++) { const a = r.poly[i], b = r.poly[(i + 1) % r.poly.length];
-            // only the walls whose camera-facing side is THIS room (the north and west walls, which rise over its own floor): a wall on its south or east edge shows its face to the room beyond, and rises over that room's pixels
-            const ex = b[0] - a[0], ey = b[1] - a[1], el = Math.hypot(ex, ey) || 1; let nx = ey / el, ny = -ex / el; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
-            if (!facilityPointInPoly((a[0] + b[0]) / 2 + nx * 0.4, (a[1] + b[1]) / 2 + ny * 0.4, r.poly)) continue;
-            const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, glass = F.walls.some(w => w.window && _facSegPointDist(w.a, w.b, mx, my) < 0.08), hh = glass ? 16 : wallH;   // a glass wall lights only its sill: the room behind it is not lit
-            const a0 = _fpP(a[0], a[1], 0), b0 = _fpP(b[0], b[1], 0), a1 = _fpP(a[0], a[1], hh), b1 = _fpP(b[0], b[1], hh); g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.lineTo(a1[0], a1[1]); g.closePath(); g.fill(); }   // its walls that face it, up to their tops
-    }
-    // the walls of a room that is NOT lit stay dark even where a lit room's floor shows behind or beside them (the arena's rock rises over the hallway's pixels, and a lab's glass over the hallway's floor): dark them again, over the holes, full height, glass included
-    g.globalCompositeOperation = "source-over";
-    for (const r of F.rooms) {
-        const lv = _fp.light.get(r.id) || 0; if (lv > 0.98) continue;
-        _fpBase = facilityRoomHeight(r.id, F) * FP_ELEV_PX; const wallH = r.id === "arena" ? 240 : r.id === "catwalks" ? 52 : FP_WALL_H + 2; g.fillStyle = "rgba(6,11,22," + (FP_DARK * (1 - lv)) + ")";
-        for (let i = 0; i < r.poly.length; i++) {
-            const a = r.poly[i], b = r.poly[(i + 1) % r.poly.length], ex = b[0] - a[0], ey = b[1] - a[1], el = Math.hypot(ex, ey) || 1; let nx = ey / el, ny = -ex / el; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
-            if (!facilityPointInPoly((a[0] + b[0]) / 2 + nx * 0.4, (a[1] + b[1]) / 2 + ny * 0.4, r.poly)) continue;
-            const a0 = _fpP(a[0], a[1], 0), b0 = _fpP(b[0], b[1], 0), a1 = _fpP(a[0], a[1], wallH), b1 = _fpP(b[0], b[1], wallH); g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.lineTo(a1[0], a1[1]); g.closePath(); g.fill();
+// how lit a floor tile is: its room's level, or (ground only) the pool of light from an open door near it
+function _fpTileLight(x, y, roomId) {
+    const k = _fpLightKey(roomId); let v = (_fp.light && _fp.light.get(k)) || 0; if (v > 0.98) return v;
+    const ps = _fp.pools; if (ps) for (const p of ps) { if (!p.rooms.includes(k)) continue; const d = Math.hypot(x - p.x, y - p.y); if (d < FP_POOL_R) v = Math.max(v, p.s * FP_POOL * (1 - d / FP_POOL_R)); }
+    return v;
+}
+function _fpRoomLight(roomId) { return (_fp.light && _fp.light.get(_fpLightKey(roomId))) || 0; }
+function _fpDarkFill(pts, lv) { const a = FP_DARK * (1 - lv); if (a < 0.02) return; ctx.fillStyle = "rgba(6,11,22," + a.toFixed(3) + ")"; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill(); }
+function _fpDarkTile(cx, cy, lv) { const e = 1.2; _fpDarkFill([[cx, cy - TILE_H - e], [cx + TILE_W + e, cy], [cx, cy + TILE_H + e], [cx - TILE_W - e, cy]], lv); }
+// THE DIMMED PEN: an unlit room's things are drawn through a stand-in for the canvas context that darkens every colour it is given (toward the night blue), so each item keeps its exact shape and
+// its own place in the depth order. (A screen-wide dark layer, a canvas filter and per-item shadow shapes were all tried: they bleed onto, or show seams against, the rooms in front.)
+const _fpDimCache = new Map();
+function _fpDimColour(c, k) {
+    if (typeof c !== "string") return c; const key = k + c, hit = _fpDimCache.get(key); if (hit) return hit;
+    let r, g, b, a = 1, m;
+    if ((m = /^#([0-9a-f]{6})$/i.exec(c))) { const n = parseInt(m[1], 16); r = n >> 16; g = (n >> 8) & 255; b = n & 255; }
+    else if ((m = /^#([0-9a-f]{3})$/i.exec(c))) { const n = parseInt(m[1], 16); r = ((n >> 8) & 15) * 17; g = ((n >> 4) & 15) * 17; b = (n & 15) * 17; }
+    else if ((m = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/i.exec(c))) { r = +m[1]; g = +m[2]; b = +m[3]; a = m[4] === undefined ? 1 : +m[4]; }
+    else return c;
+    const out = "rgba(" + Math.round(r * k + 6 * (1 - k)) + "," + Math.round(g * k + 11 * (1 - k)) + "," + Math.round(b * k + 22 * (1 - k)) + "," + a + ")"; if (_fpDimCache.size > 4000) _fpDimCache.clear(); _fpDimCache.set(key, out); return out;
+}
+// (built once per real context: every method bound once, every property forwarded, the colour setters darkening by the current factor `_k`)
+let _fpDimW = null, _fpDimFor = null;
+function _fpDimCtx(real, k) {
+    if (_fpDimFor !== real) {
+        const w = { _k: 1 }; _fpDimFor = real;
+        const wrapGrad = (g) => { const add = g.addColorStop; g.addColorStop = function (o, c) { return add.call(g, o, _fpDimColour(c, w._k)); }; return g; };
+        for (let o = Object.getPrototypeOf(real); o && o !== Object.prototype; o = Object.getPrototypeOf(o)) for (const n of Object.getOwnPropertyNames(o)) {
+            if (n === "constructor" || n in w) continue; const d = Object.getOwnPropertyDescriptor(o, n);
+            if (typeof d.value === "function") { const f = d.value.bind(real); w[n] = (n === "createLinearGradient" || n === "createRadialGradient") ? (...a) => wrapGrad(f(...a)) : f; }
+            else if (n === "fillStyle" || n === "strokeStyle") Object.defineProperty(w, n, { get: () => real[n], set: (v) => { real[n] = _fpDimColour(v, w._k); } });
+            else Object.defineProperty(w, n, { get: () => real[n], set: (v) => { real[n] = v; } });
         }
+        _fpDimW = w;
     }
-    _fpBase = keepB; ctx.drawImage(_fp.lcv, 0, 0);
+    _fpDimW._k = k; return _fpDimW;
+}
+// the light level that applies to a facility item (the room that shows its face)
+function _fpItemLight(it) {
+    if (it.fp === "door") return Math.max(...(it.rooms || []).map(_fpRoomLight), 0);
+    if (it.fp === "wall") return _fpRoomLight(it.lroom || it.room);
+    if (it.fp === "stair") return _fpRoomLight(it.room || "lab_hallway");
+    if (it.fp === "rig" || it.fp === "rigpad" || it.fp === "fill") return 1;   // (the fill tile darkens itself)
+    return _fpRoomLight(it.room);
 }

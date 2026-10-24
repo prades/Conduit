@@ -134,6 +134,7 @@ function _fpDrawFill(it) {
     const spr = typeof _floorTileSprite === "function" ? _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), "", 0) : null;
     if (spr) ctx.drawImage(spr, c[0] - TILE_W - 1, c[1] - TILE_H - 1); else { ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill(); }
     const ops = _fp.floorOps && _fp.floorOps.get(it.key); if (ops) _fpDrawOps(ops, c[0], c[1], it.key);
+    if (typeof _fpTileLight === "function") { const lv = _fpTileLight(it.x, it.y, it.room); if (lv < 0.98) _fpDarkTile(c[0], c[1], lv); }
 }
 // ROCK: a wall of kind rock is a rock formation, not a thin wall: a brown face with strata, boulders and cracks, and a ragged rocky top edge. Nothing here depends on where the player is: walls
 // never react to the player. A BACK wall (the camera sees the arena in front of it: the north rock) stands 120-170 px with a ragged skyline and a shadowed, overhanging top; a FRONT wall (the arena is
@@ -228,6 +229,7 @@ function facilityDrawFloorOn(obj, px, py) {
     if (!_fp || !_fp.floorOps) return;
     const key = obj.x + "," + obj.y, ops = _fp.floorOps.get(key); if (!ops) return;
     _fpDrawOps(ops, px, py + TILE_H, key);
+    if (typeof _fpTileLight === "function" && obj.room) { const lv = _fpTileLight(obj.x, obj.y, obj.room); if (lv < 0.98) _fpDarkTile(px, py + TILE_H, lv); }   // the tile's light: its room's, or a pool from an open door (js/facilitystyle.js)
 }
 // (cx, cy) is the middle of the tile on screen; key names the tile's cached sprite
 function _fpDrawOps(ops, cx, cy, key) {
@@ -411,7 +413,7 @@ function _fpDecorProp(it) {
     const k = it.kind, f = _fpFrame(), seed = it.seed || 0, x = it.x, y = it.y;
     if (FP_SMALL_PROPS.has(k)) {   // the floor the piece stands on (its tile is solid, so the tile itself is not drawn)
         const c = _fpP(x, y, 0); ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = "rgba(60,90,140,0.25)"; ctx.lineWidth = 1; ctx.stroke(); const u = _fp.underOps && _fp.underOps.get(x + "," + y); if (u) _fpDrawOps(u, c[0], c[1], "u" + x + "," + y);
+        ctx.strokeStyle = "rgba(60,90,140,0.25)"; ctx.lineWidth = 1; ctx.stroke(); const u = _fp.underOps && _fp.underOps.get(x + "," + y); if (u) _fpDrawOps(u, c[0], c[1], "u" + x + "," + y); if (typeof _fpTileLight === "function") _fpDarkTile(c[0], c[1], _fpTileLight(x, y, it.room));
     }
     if (facilityStyleRoom(it.room) && _fpStyleProp(it)) return true;   // (the crystal laboratory style: js/facilitystyle.js)
     if (k === "plant") {   // a potted plant: a pot, then fronds (dead and brown if the seed says)
