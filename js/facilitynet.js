@@ -5,7 +5,7 @@
 //   THE ZONE TAG ("Zone: Home" in the classic game) names the room the player is in, at each moment (a doorway keeps the room just left).
 //   THE NETWORK PANEL (the dial and the lines under it) is the power grid: each RELAY is one ZONE of the facility (the rooms it feeds), and a zone is online once its relay is repaired. The dial's outer ring is the
 //   zones online (24 segments lit by the fraction), its inner ring the ROOMS that have power again, the middle "online / zones". The state is OFFLINE (no zone), PARTIAL (some) or ONLINE (all, and the blackout is over);
-//   below it are the line for the room the player stands in (powered or not) and one row per relay. It is not tapped: the classic game's power build is not part of the facility.
+//   below it is one line for the room the player stands in (it has power or it has none). It is not tapped: the classic game's power build is not part of the facility.
 // Both read the same data as the rest of the facility: F.relays (js/facilitymap.js), relayOnline (js/stations.js) and the powered rooms (_fp.tut.powered, js/facilitytutorial.js).
 const FP_ROOM_TAG = {
     crystal_chamber: "Crystal Chamber", teleport_room_1: "Teleport Room 1", front_lobby: "Computer Lab", security_room: "Security Room", show_room: "Show Room", lab_hallway: "Main Hallway",
@@ -51,7 +51,7 @@ function drawFacilityNetworkHUD() {
     _netPanelRect = null;
     if (typeof placingHidesUi === "function" && placingHidesUi()) return;
     const N = facilityNetState(), S = FP_NET_STATES[N.state], narrow = canvas.width < 600;
-    const W = narrow ? Math.min(canvas.width - 16, 230) : 236, IW = W - 8, DIAL = 104, WHERE = 20, BAR = 30, ROW_H = 20, rows = narrow ? 0 : N.zones.length, H = DIAL + WHERE + BAR + rows * ROW_H + 10;
+    const W = narrow ? Math.min(canvas.width - 16, 230) : 236, IW = W - 8, DIAL = 104, H = DIAL + 24;
     const zr = narrow ? null : _netZoneRect(), X = zr ? Math.max(8, Math.round(zr.right - W)) : canvas.width - W - 10, Y = zr ? Math.round(zr.bottom - 2) : uiTopSafe(), mx = X + 4, right = X + W - 4;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const dcx = right - 52, dcy = Y + DIAL / 2, lw = dcx - 52 - mx;
@@ -59,25 +59,11 @@ function drawFacilityNetworkHUD() {
     _netText("NETWORK", mx, Y + 16, 15, "#cfe0ff", "left");
     ctx.save(); ctx.fillStyle = S.col; ctx.beginPath(); ctx.moveTo(mx + 6, Y + 28); ctx.lineTo(mx + Math.min(lw, 118), Y + 28); ctx.lineTo(mx + Math.min(lw, 118) - 5, Y + 31); ctx.lineTo(mx + 1, Y + 31); ctx.closePath(); ctx.globalAlpha = 0.9; ctx.fill(); ctx.restore();
     _netTextFit(S.label, mx, Y + 51, 26, S.col, "left", lw);
-    _netTextFit("⚡ ROOMS " + N.powered + " / " + N.rooms, mx, Y + 76, 13, "#ffd34d", "left", lw, true);
+    _netTextFit("\u26a1 ROOMS " + N.powered + " / " + N.rooms, mx, Y + 76, 13, "#ffd34d", "left", lw, true);
     _netText("ZONES " + N.on + " / " + N.zones.length, mx, Y + 92, 12, N.on ? "#9fe8c0" : "#8a93a8", "left", true);
-    // where you stand
-    let y = Y + DIAL;
-    const here = N.here ? facilityRoomName(N.here).toUpperCase() : "";
-    _netTextFit(here ? here + " · " + (N.herePowered ? "POWERED" : "NO POWER") : "ALL ZONES DOWN", mx, y + 8, 12, N.herePowered ? "#a9bddf" : "#ff9a66", "left", IW, true);
-    y += WHERE;
-    // the bar: zones online
-    { const nf = N.zones.length ? N.on / N.zones.length : 0, col = nf >= 1 ? "#5fe0c8" : "#ffe733", by = y + 14, bw = IW;
-      ctx.beginPath(); ctx.moveTo(mx + 4, by); ctx.lineTo(mx + bw, by); ctx.lineTo(mx + bw - 3, by + 5); ctx.lineTo(mx, by + 5); ctx.closePath(); ctx.fillStyle = "rgba(4,6,14,0.7)"; ctx.fill();
-      if (nf > 0) { const w = bw * nf; ctx.beginPath(); ctx.moveTo(mx + 4, by); ctx.lineTo(mx + w, by); ctx.lineTo(mx + w - 3, by + 5); ctx.lineTo(mx, by + 5); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); }
-      ctx.lineWidth = 1; ctx.strokeStyle = col; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(mx + 4, by); ctx.lineTo(mx + bw, by); ctx.lineTo(mx + bw - 3, by + 5); ctx.lineTo(mx, by + 5); ctx.closePath(); ctx.stroke(); ctx.globalAlpha = 1; }
-    y += BAR;
-    // one row per zone
-    if (!narrow) for (const z of N.zones) {
-        _netTextFit(z.name, mx + 14, y + 8, 12, z.on ? "#e8f0ff" : "#8a93a8", "left", IW - 70, true);
-        ctx.fillStyle = z.on ? "#5fe0c8" : "#ff5522"; ctx.beginPath(); ctx.arc(mx + 5, y + 8, 3.5, 0, 6.2832); ctx.fill();
-        _netText(z.on ? "ONLINE" : "DOWN", right, y + 8, 11, z.on ? "#9fe8c0" : "#ff9a66", "right", true);
-        y += ROW_H;
-    }
+    // the room you are in, and whether it has power: one line (the tag above names the room, this says its state)
+    const col = N.here ? (N.herePowered ? "#5fe0c8" : "#ff7755") : "#8a93a8";
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(mx + 5, Y + DIAL + 10, 4, 0, 6.2832); ctx.fill();
+    _netTextFit(N.here ? (N.herePowered ? "THIS ROOM HAS POWER" : "THIS ROOM HAS NO POWER") : "NO POWER ANYWHERE", mx + 15, Y + DIAL + 10, 12, col, "left", IW - 16, true);
     ctx.restore();
 }
