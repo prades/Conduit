@@ -444,13 +444,16 @@ function _fpDrawWDecor(it) { const fn = (facilityStyleRoom(it.room) && FP_STYLE_
 
 // ═════════════ FURNITURE ═════════════
 // Returns true if it drew the kind. `it` is one tile of a solid prop (sx / sy: whether its +x / +y face is exposed, as for the desks).
-const FP_SMALL_PROPS = new Set(["plant", "cooler", "bin", "barrel", "beanbag", "telescope", "floodlight", "cart", "teleporter", "table", "pingpong", "rail", "spool", "toolbox", "chair"]);
+const FP_SMALL_PROPS = new Set(["sentry", "plant", "cooler", "bin", "barrel", "beanbag", "telescope", "floodlight", "cart", "teleporter", "table", "pingpong", "rail", "spool", "toolbox", "chair"]);
+// the floor under a solid piece (its own tile is solid, so the tile itself is not drawn): the plain floor, the decals that lie under props, and the room's darkness
+function _fpFloorUnder(it) {
+    const x = it.x, y = it.y, c = _fpP(x, y, 0); ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "rgba(60,90,140,0.25)"; ctx.lineWidth = 1; ctx.stroke(); const u = _fp.underOps && _fp.underOps.get(x + "," + y); if (u) _fpDrawOps(u, c[0], c[1], "u" + x + "," + y); if (typeof _fpTileLight === "function") _fpDarkTile(c[0], c[1], _fpTileLight(x, y, it.room));
+}
 function _fpDecorProp(it) {
     const k = it.kind, f = _fpFrame(), seed = it.seed || 0, x = it.x, y = it.y;
-    if (FP_SMALL_PROPS.has(k)) {   // the floor the piece stands on (its tile is solid, so the tile itself is not drawn)
-        const c = _fpP(x, y, 0); ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = "rgba(60,90,140,0.25)"; ctx.lineWidth = 1; ctx.stroke(); const u = _fp.underOps && _fp.underOps.get(x + "," + y); if (u) _fpDrawOps(u, c[0], c[1], "u" + x + "," + y); if (typeof _fpTileLight === "function") _fpDarkTile(c[0], c[1], _fpTileLight(x, y, it.room));
-    }
+    if (FP_SMALL_PROPS.has(k)) _fpFloorUnder(it);   // the floor the piece stands on (its tile is solid, so the tile itself is not drawn)
+    if (typeof facilityPropSpriteDraw === "function" && facilityPropSpriteDraw(it)) return true;   // a plant or a sentry in 3D (js/propsprites.js)
     if (facilityStyleRoom(it.room) && _fpStyleProp(it)) return true;   // (the crystal laboratory style: js/facilitystyle.js)
     if (k === "plant") {   // a potted plant: a pot, then fronds (dead and brown if the seed says)
         const dead = seed % 3 === 0; _fpBox(x - 0.28, y - 0.28, x + 0.28, y + 0.28, 0, 16, "#6a3a22", "#8a4a2a", "#6e3a20");

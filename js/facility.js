@@ -114,6 +114,7 @@ function _facilityBuild(ex) {
         if (pr.shape === "circle") return { id: pr.id, room: pr.room, shape: "circle", at: _facP(pr.at), r: pr.radius / s, cargo: pr.cargo || null, provisional: !!pr.provisional_collision, status: pr.status, kind: pr.kind || null };
         const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status, kind: pr.kind || null, cargo: pr.cargo || null };
     });
+    const bridges = (M.bridges || []).map(b => ({ id: b.id, from: b.from, to: b.to, note: b.note }));
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there)
     const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, prop: r.prop, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));
     const stations = (M.stations || []).map(st => ({ id: st.id, room: st.room, prop: st.prop, kind: st.kind }));
@@ -137,7 +138,7 @@ function _facilityBuild(ex) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, stations, relays, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, bridges, stations, relays, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -230,6 +231,7 @@ function facilityValidateDressing(F) {
         else if (d.path || (d.a && d.b)) { for (const c of (d.path || [d.a, d.b])) { const r = facilityRoomAt(c[0], c[1], F); if (!r || r.id !== d.room) { errors.push("floor decor " + d.id + " (" + d.kind + ") leaves " + d.room); break; } } }
     }
     // the pickups: a known room, a tile of that room's floor that a body can stand on, items that exist (when the item table is loaded)
+    for (const b of (F.bridges || [])) { const t = F.solids.find(s => s.id === b.from); if (!t || t.shape !== "circle") errors.push("bridge " + b.id + " starts at " + b.from + ", which is not a round prop"); if (!F.byId.get(b.to)) errors.push("bridge " + b.id + " ends at " + b.to + ", which is not a room"); }
     for (const p of (F.pickups || [])) {
         const rm = F.byId.get(p.room); if (!rm) { errors.push("pickup " + p.id + " names a room that does not exist"); continue; }
         const r = facilityRoomAt(p.at[0], p.at[1], F); if (!r || r.id !== p.room) errors.push("pickup " + p.id + " is not in " + p.room);

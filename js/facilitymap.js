@@ -286,6 +286,12 @@ const FACILITY_MAP = {
         { id: "pk_chamber_mutagen_2", room: "crystal_chamber", at: [320, 320], items: [["mutagen_sample", 1]], class: "mutator", note: "Another sample in the chamber (Mutator)." },
     ],
 
+    // BRIDGES: a footbridge from a liquid tank's top to the catwalks' deck (js/propsprites.js draws it, in 3D, at the deck's height: it is decoration, not floor to walk on). `from` is a prop (a circle), `to` a room.
+    bridges: [
+        { id: "bridge_1", from: "arena_structure_01", to: "catwalks", note: "From the north tank's top to the catwalks' deck." },
+        { id: "bridge_2", from: "arena_structure_02", to: "catwalks", note: "From the south tank's top to the catwalks' deck." },
+    ],
+
     // STATIONS: a piece of furniture the player can USE (docs/TUTORIAL.md, phase 4). `prop` is the id of a prop above and `kind` a row of STATION_KINDS in js/stations.js (what it does, who may use it). Each class has one in the
     // rooms it works in: the Armory's locker and the Security Room's console for the Gunslinger, the console in Teleport Room 1 for the Technomancer, a test chamber in the lab for the Mutator.
     stations: [

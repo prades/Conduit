@@ -311,6 +311,7 @@ function _fpPlaceStatics(F) {
             items.push({ type: "fp", fp: "prop", room: s.room, base: facilityLiftPx(x, y), x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id, sy: !cells.has(x + "," + (y + 1)), sx: !cells.has((x + 1) + "," + y), top: !cells.has(x + "," + (y - 1)), lf: !cells.has((x - 1) + "," + y), seed: _fpHash(x, y) });
         }
     }
+    if (typeof _psRimItems === "function") { for (const it of _psRimItems(F, items)) items.push(it); for (const it of _psBridgeItems(F)) items.push(it); }   // the 3D tanks' rim cells and the catwalk bridges (js/propsprites.js)
     for (const r of F.ramps) {   // a staircase: one prism per tread tile, from the lower floor up to the tread (the risers the camera sees)
         const z = r.zone; if (!z || !z.steps) continue; const lo = Math.min(z.hA, z.hB);
         for (let x = Math.ceil(z.x0 - 0.5); x <= z.x1 - 0.5; x++) for (let y = Math.ceil(z.y0 - 0.5); y <= z.y1 - 0.5; y++) {
@@ -431,6 +432,7 @@ function _fpFaceX(it, u0, u1, z0, z1, fill, stroke) { const x = it.x + 0.5, y0 =
 const FP_AMBER = "#ffb347";
 function _fpDrawProp(it) {
     const kind = it.kind, seed = it.seed || 0, f = typeof frame !== "undefined" ? frame : 0;
+    if (typeof facilityBigSpriteDraw === "function") { if (facilityBigSpriteDraw(it)) return; if (it.spriteOnly || kind === "bridge") return; }   // the 3D truck, tanks and bridges (js/propsprites.js); a rim cell or a bridge piece is nothing without its sprite
     if (_fpDecorProp(it)) return;   // the dressing's furniture (js/facilitydecor.js)
     if (kind === "computer_desk") {
         _fpPrism(it, 30, "#8f7f5e", "#5a4a32", "#46391f");
