@@ -226,7 +226,8 @@ function _fpPlaceStatics(F) {
     // a wall between two floors of different heights stands from its own floor up past the HIGHER floor, so a step down is a retaining wall and not a gap
     const at = new Map(); for (const it of items) { if (it.fp !== "wall") continue; const k = Math.round(it.x * 4) + "," + Math.round(it.y * 4); if (!at.has(k)) at.set(k, []); at.get(k).push(it); }
     for (const list of at.values()) for (const it of list) { let top = it.base; for (const o of list) if (o !== it && o.room !== it.room && o.base > top) top = o.base; it.base2 = top; }
-    for (const o of F.openings) { const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2; items.push({ type: "fp", fp: "door", x: mx, y: my, a: o.a, b: o.b, door: o.door, rooms: o.rooms, base: facilityLiftPx(mx, my) }); }
+    for (const o of F.openings) { if (F.connections.some(c => c.opening === o.id && c.ramp)) continue;   // a stairway has no door: the steps run through the gap (the arena door, the deck door, the stair mouth)
+        const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2; items.push({ type: "fp", fp: "door", x: mx, y: my, a: o.a, b: o.b, door: o.door, rooms: o.rooms, base: facilityLiftPx(mx, my) }); }
     for (const s of F.solids) {
         const box = s.bb, cells = new Set();
         for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) {

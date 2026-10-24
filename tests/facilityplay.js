@@ -281,8 +281,13 @@ function measure() {
         const r = J(`(function(){ canvas.width = 1280; canvas.height = 860; facilityPlay = true; const d = _fp.items.find(i => i.fp === 'door' && i.door), far = d.y + 12; followers.length = 0; actors.length = 0; player.x = player.visualX = d.x; player.y = player.visualY = far; let err = null; const out = {};
             try { for (let i = 0; i < 40; i++) { _fpBase = d.base || 0; drawFacilityItem(d); } out.closed = d.open; player.x = player.visualX = d.x; player.y = player.visualY = d.y + 1; for (let i = 0; i < 40; i++) { _fpBase = d.base || 0; drawFacilityItem(d); } out.opened = d.open; player.y = player.visualY = far; for (let i = 0; i < 40; i++) { _fpBase = d.base || 0; drawFacilityItem(d); } out.shut = d.open; } catch (e) { err = e.message; }
             out.err = err; out.walk = _fp.items.filter(i => i.fp === 'door').length; return out; })()`);
-        same(r.err, null, 'a door threw'); same(r.closed, 0, 'a door is not shut with nothing near'); same(r.opened, 1, 'a door does not open for a unit'); same(r.shut, 0, 'a door does not close again'); same(r.walk, 13, 'doors');
+        same(r.err, null, 'a door threw'); same(r.closed, 0, 'a door is not shut with nothing near'); same(r.opened, 1, 'a door does not open for a unit'); same(r.shut, 0, 'a door does not close again'); same(r.walk, 10, 'doors (13 openings minus the three stairways)');
         const src = rd('js/facilitystyle.js'); ok(/cartoony steel access doors/.test(src) && /FP_STEEL_DOOR/.test(src) && /the hazard-striped lead edge/.test(src) && /a window slit/.test(src) && /status lamp/.test(src), 'the steel door drawing is missing');
+    });
+    check('no doorway on a stairway: the arena door, the deck door and the stair mouth draw no door (the steps run through the gap), and every other opening does', () => {
+        const r = J(`(function(){ const F = _fp.F, ramped = F.openings.filter(o => F.connections.some(c => c.opening === o.id && c.ramp)).map(o => o.id).sort(), drawn = _fp.items.filter(i => i.fp === 'door'), at = o => drawn.some(d => Math.abs(d.x - (o.a[0] + o.b[0]) / 2) < 0.01 && Math.abs(d.y - (o.a[1] + o.b[1]) / 2) < 0.01);
+            return { ramped, rampedDrawn: F.openings.filter(o => F.connections.some(c => c.opening === o.id && c.ramp) && at(o)).length, othersMissing: F.openings.filter(o => !F.connections.some(c => c.opening === o.id && c.ramp) && !at(o)).length }; })()`);
+        same(r.ramped.join(), 'door_arena_hallway,door_teleport_1_deck,open_stair_mouth', 'the stairway openings'); same(r.rampedDrawn, 0, 'a door is drawn on a stairway'); same(r.othersMissing, 0, 'a real door is missing');
     });
     check('no holes: the floor runs in under every wall of the arena (cells the rock edge only partly covers, and the pocket behind the north rock), so no black shows where a wall meets the floor', () => {
         const r = J(`(function(){ const F = _fp.F, covered = (x, y) => { const k = Math.round(x) + ',' + Math.round(y); return _fp.cells.has(k) || _fp.fills.has(k) || F.solids.some(s => s.shape === 'circle' ? Math.hypot(Math.round(x) - s.at[0], Math.round(y) - s.at[1]) < s.r : facilityPointInPoly(Math.round(x), Math.round(y), s.poly)); };
@@ -301,7 +306,7 @@ function measure() {
     check('every kind of static item exists and is drawn: wall pieces (solid, rock, glass), doors, prop cells (desk, truck, vats, tank) and the two fixtures', () => {
         const k = J(`(function(){ const c = {}; for (const it of _fp.items) { const key = it.fp + ':' + (it.kind || (it.door === undefined ? '' : 'door')); c[key] = (c[key] || 0) + 1; } return c; })()`);
         for (const key of ['wall:wall', 'wall:rock', 'wall:glass', 'prop:reception_desk', 'prop:semi_truck', 'prop:liquid_reserve', 'prop:tank', 'prop:computer_desk', 'prop:server_rack', 'prop:lab_bench', 'prop:fume_hood', 'prop:test_chamber', 'fixture:power_pack_area', 'fixture:wall_sign']) ok(k[key] > 0, key + ' missing: ' + JSON.stringify(Object.keys(k)));
-        ok(Object.keys(k).some(x => /^door/.test(x)), 'no doors'); ok(k['wall:glass'] >= 20, 'little glass: ' + k['wall:glass']); same(J('_fp.items.filter(i => i.fp === \'door\').length'), 13, 'doors drawn');
+        ok(Object.keys(k).some(x => /^door/.test(x)), 'no doors'); ok(k['wall:glass'] >= 20, 'little glass: ' + k['wall:glass']); same(J('_fp.items.filter(i => i.fp === \'door\').length'), 10, 'doors drawn (not on a stairway)');
         for (const fn of ['_fpDrawWall', '_fpDrawDoor', '_fpDrawProp', '_fpDrawFixture']) ok(typeof run(fn) === 'function', fn);
     });
     check('they draw without throwing, and a wall between the camera and the player is cut down to a low parapet (never translucent)', () => {
