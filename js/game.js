@@ -2120,7 +2120,7 @@ function render() {
     frame++;
 
     // ── LONG HOLD DETECT ──
-    if (isPressing&&!longHoldFired&&!touchMoved) {
+    if (isPressing&&!longHoldFired&&!touchMoved&&!_gunPressed) {
         if (performance.now()-pressStartTime>LONG_HOLD_MS) {
             longHoldFired=true; handleLongHold(pressX,pressY);
         }
@@ -2198,6 +2198,7 @@ function render() {
 
     // ── PLAYER ATTACK COOLDOWN ──
     if (player.attackCooldown > 0) player.attackCooldown--;
+    if (typeof gunTick === "function") gunTick();   // click or hold to fire: js/gunfire.js
     // Shards, and your SHIELD CELLS beside them once you have any (js/shieldcells.js).
     const _cellsNow = typeof shieldCells === "number" ? shieldCells : 0;
     if (shardCount !== _lastShardCount || _cellsNow !== _lastCellCount) {
@@ -4570,6 +4571,7 @@ function render() {
     if (typeof drawInvPanel === "function") { drawInvPanel(); drawClassPicker(); }   // the pack and the class picker (js/inventory.js, js/classes.js)
     if (!dockHasMenus() && !infoPanelOpen) { drawShopButton(); drawCampButton(); }
     drawAmmoChip();
+    if (typeof drawLockReticle === "function") drawLockReticle();   // the lock-on's corners (js/gunfire.js)
     if (!dockHasMenus() && !infoPanelOpen) drawSettingsButton();
     if (!(typeof indexReplaced === "function" && indexReplaced())) drawFollowerDutyMenu();
     drawSettingsPanel();

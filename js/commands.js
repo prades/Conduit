@@ -594,8 +594,8 @@ function executeCommand() {
         case "attack_mode": {
             setPlayerAttackMode(true);
             // Fire straight away at whatever was long-pressed, so arming is one
-            // gesture rather than two.
-            if (commandEnemyTarget && !commandEnemyTarget.dead) firePlayerShot(commandEnemyTarget);
+            // gesture rather than two, and lock on to it: click it as often as you like, or hold (js/gunfire.js).
+            if (commandEnemyTarget && !commandEnemyTarget.dead) { if (typeof gunLock === "function") gunLock(commandEnemyTarget); firePlayerShot(commandEnemyTarget); }
             break;
         }
         case "stow_weapon": {

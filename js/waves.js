@@ -433,7 +433,7 @@ function resetTransientState() {
     infoPanelOpen     = false; infoPanelTarget = null; infoPanelPage = null; infoPanelSubject = null;
     commandMode       = false; commandPendingTap = false;
     commandTarget     = null; selectedRadialAction = null;
-    playerAttackMode  = false; commandEnemyTarget = null; commandFollowerTarget = null;
+    playerAttackMode  = false; if (typeof gunStow === "function") gunStow(); commandEnemyTarget = null; commandFollowerTarget = null;
     // Charged mass STAYS on the floor between waves. It used to be wiped here,
     // so every lump you had not hauled home yet — the whole point of the
     // electric/flux chain — vanished the moment the round turned over, and the

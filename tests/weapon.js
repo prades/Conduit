@@ -226,8 +226,8 @@ check('both radial actions are handled', () => {
 });
 check('arming fires at the enemy that was long-pressed', () => {
     const at = CMD.indexOf('case "attack_mode"');
-    const body = CMD.slice(at, at + 400);
-    ok(/firePlayerShot\(commandEnemyTarget\)/.test(body), 'arming should also take the shot');
+    const body = CMD.slice(at, at + 800);
+    ok(/firePlayerShot\(commandEnemyTarget\)/.test(body), 'arming should also take the shot'); ok(/gunLock\(commandEnemyTarget\)/.test(body), 'arming should also lock on to it (js/gunfire.js: click or hold to keep firing)');
 });
 check('THE SHOP IS GONE: ammo comes from hacking a panel', () => {
     // The shop sold ammo; with it removed that was the only source, which

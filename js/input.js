@@ -156,9 +156,9 @@ function firePlayerShot(foe) {
 }
 
 function setPlayerAttackMode(on) {
-    playerAttackMode = !!on;
+    playerAttackMode = !!on; if (!on && typeof gunStow === "function") gunStow();   // (putting the gun away ends the lock: js/gunfire.js)
     floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
-        text: playerAttackMode ? "ARMED — tap enemies to fire" : "WEAPON STOWED",
+        text: playerAttackMode ? "ARMED — tap or hold on an enemy to fire" : "WEAPON STOWED",
         color: playerAttackMode ? "#ff8844" : "#889", life:110, vy:-0.25, size:13});
 }
 
@@ -338,6 +338,7 @@ function handleLongHold(ex,ey) {
     dragDX=0; dragDY=0;
 }
 
+let _gunPressed = false;   // the press began on an enemy while armed: it is the gun's (js/gunfire.js)
 let _netPressed = false;   // the press began on the network panel
 let _cloneDrag = null;     // a press that began on the clone card strip: { x0, s0, moved } (it slides the strip; a drag never presses a card)
 canvas.addEventListener('pointerdown', e=>{
@@ -362,6 +363,9 @@ canvas.addEventListener('pointerdown', e=>{
 
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
     if (commandPendingTap) return;
+
+    // THE GUN (js/gunfire.js): armed, a press that lands on an enemy is a shot (and holding it keeps firing): no ring, no move order
+    _gunPressed = false; if (typeof gunPress === "function" && gunPress(pressX, pressY)) { _gunPressed = true; return; }
 
     commandTarget=null;
 
@@ -392,10 +396,12 @@ canvas.addEventListener('pointermove', e=>{
     const _ox = commandPendingTap ? 0 : commandShiftX, _oy = commandPendingTap ? 0 : commandShiftY;
     dragDX=pointerX-(commandX-_ox); dragDY=pointerY-(commandY-_oy);
     gesturePoints.push({x:pointerX,y:pointerY});
+    if (_gunPressed && typeof gunMove === "function") { gunMove(pointerX, pointerY); return; }
     if (Math.sqrt((pointerX-pressX)**2+(pointerY-pressY)**2)>22) touchMoved=true;
 });
 
 canvas.addEventListener('pointerup', e=>{
+    if (_gunPressed) { _gunPressed = false; if (typeof gunRelease === "function") gunRelease(); isPressing = false; return; }   // the gun's press ends here (js/gunfire.js)
     if (!gameState.running) { isPressing=false; return; } // block canvas input during buy screen
     const [upX,upY]=toCanvas(e.clientX,e.clientY);
     // A slide on the clone card strip is not a tap on a card.
