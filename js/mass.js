@@ -707,6 +707,7 @@ function releaseStandingPost(actor) {
     if (!actor) return false;
     if (actor.job && actor.job.type === 'move') actor.job = null;
     if (actor.stance === 'hold') actor.stance = 'follow';
+    if (actor.post) { actor.post = null; actor._patrol = null; }   // (a room held, js/party.js: a follower given other work lets it go)
     return true;
 }
 
@@ -722,6 +723,7 @@ function setFollowerDuty(actor, duty, quiet) {
     }
     actor.duty = duty;
     releaseStandingPost(actor);
+    if (duty !== 'worker' && typeof partyAdmit === "function") partyAdmit(actor);   // back on the line: the squad takes it if it has room, else it holds the room it is in (js/party.js)
     if (duty !== 'worker') {
         // Drop anything in hand when pulled back to the line.
         if (actor.carryingMass) {

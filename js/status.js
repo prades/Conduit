@@ -13,6 +13,11 @@ const STATUS_JOBS = {
 const STATUS_WORK = { electric: "NEUTRALISING", flux: "HAULING", core: "RE-ARMING", toxic: "TENDING", ice: "ICE BLOCK" };
 function _st(text, k) { return { text, col: STATUS_COL[k] || "#19e6c1" }; }
 function unitStatus(a) {
+    const st = _unitStatus(a);
+    if (st && a && a.post && typeof partyRoomName === "function") st.room = partyRoomName(a.post).toUpperCase();   // the room it holds (js/party.js): the roster card says it
+    return st;
+}
+function _unitStatus(a) {
     if (!a || a.dead || a.team !== "green" || !(a.isFollower || a.isClone)) return null;
     if (a.returningToCrystal) return _st("RETURNING", "away");
     if (a.hackOrder) return _st("HACKING", "order");
@@ -26,7 +31,8 @@ function unitStatus(a) {
     }
     const foe = a._nearestEnemy || a._guardEnemy;
     if (foe && !foe.dead && Math.hypot(foe.x - a.x, foe.y - a.y) < 9) return _st("FIGHTING", "fight");
+    if (a.post) return _st("HOLDING", "hold");
     if (a.stance === "hold") return _st("HOLDING", "hold");
-    if (!a.isClone && a.role === "camper") return _st("ON POST", "hold");
+    if (!a.isClone && a.role === "camper" && !(typeof partyOn === "function" && partyOn())) return _st("ON POST", "hold");   // (in the facility a technician follows the squad like the rest)
     return _st("FOLLOWING", "follow");
 }

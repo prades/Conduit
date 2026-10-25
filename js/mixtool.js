@@ -52,11 +52,11 @@ function mixToolTarget(pool) {
 function mixToolOrder(id) {
     const o = MIXTOOL_ORDERS.find(x => x.id === id), pool = mixToolPool();
     if (!o || !pool.length) { mixToolSay("NOBODY TO ORDER", "#8aa0c8"); return 0; }
-    const n = o.run(pool); mixToolSay(o.label + " · " + n + " OF " + pool.length, o.col); return n;
+    const n = o.run(pool); if (!(typeof partyOn === "function" && partyOn())) mixToolSay(o.label + " · " + n + " OF " + pool.length, o.col); return n;   // (in the facility HOLD and COME say what they did themselves: which room, or SQUAD FULL, js/party.js)
 }
 // RETREAT: the picked units break off. For BATTLE_RETREAT_FRAMES they see no enemy (npc.js) and fire no signature move (evolution.js); they fall back to the player, who is where they follow.
 function mixToolRetreat() {
-    const pool = mixToolPool().filter(a => !a.isClone); if (!pool.length) { mixToolSay("NOBODY TO PULL BACK", "#8aa0c8"); return 0; }
+    const pool = mixToolPool().filter(a => !a.isClone && !a.post); if (!pool.length) { mixToolSay("NOBODY TO PULL BACK", "#8aa0c8"); return 0; }   // (not a follower holding a room: it is not in the fight)
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of pool) { a.retreatUntil = f0 + BATTLE_RETREAT_FRAMES; a.attackOrder = null; if (a.job && a.job.type === "move") a.job = null; a.stance = "follow"; a._nearestEnemy = null; a._enemyCacheFrame = 0; }
     mixToolSay("RETREAT \u00b7 " + pool.length + " FALLING BACK", "#ff7755"); mixToolRender(true); return pool.length;
@@ -85,7 +85,7 @@ function mixToolAttack(foe) {
     foe = foe || mixToolFoe(); if (!foe || foe.dead) { mixToolSay("NOTHING TO ATTACK", "#8aa0c8"); return 0; }
     const pool = mixToolAttackPool(); if (!pool.length) { mixToolSay("NOBODY TO SEND", "#8aa0c8"); return 0; }
     const f0 = typeof frame !== "undefined" ? frame : 0;
-    for (const a of pool) { a.attackOrder = { target: foe, until: f0 + BATTLE_ATTACK_FRAMES }; a.retreatUntil = 0; if (a.job && a.job.type === "move") a.job = null; a.stance = "follow"; a._nearestEnemy = foe; a._enemyCacheFrame = f0; }
+    for (const a of pool) { a.attackOrder = { target: foe, until: f0 + BATTLE_ATTACK_FRAMES }; a.retreatUntil = 0; if (a.job && a.job.type === "move") a.job = null; if (!a.post) a.stance = "follow"; a._nearestEnemy = foe; a._enemyCacheFrame = f0; }   // (a follower holding a room goes, and goes back to its round afterwards)
     mixToolSay("ATTACK \u00b7 " + pool.length + " AT " + (typeof targetName === "function" ? targetName(foe) : "IT"), "#ff7755"); mixToolRender(true); return pool.length;
 }
 const _mtEsc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));

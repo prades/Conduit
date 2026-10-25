@@ -377,6 +377,7 @@ function followerRosterSnapshot() {
         evoWait:     a._evoOnLevelUp || undefined,
         playStyle:   a.playStyle || undefined,   // js/commandcenter.js
         squadId:     a.squadId || undefined,     // js/squads.js
+        post:        a.post || undefined,        // the room it holds (js/party.js)
         move:        a.move || undefined         // the signature move it was given (js/moves.js)
     }));
 }
@@ -414,9 +415,11 @@ function spawnFollowerFromSave(entry) {
     if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp });
     // Back on the duty it was on (a worker stays a worker).
     if (entry.duty === "worker" && (typeof canWorkMass !== "function" || canWorkMass(npc))) npc.duty = "worker";
+    if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }   // the room it holds (js/party.js)
     actors.push(npc); followers.push(npc);
     if(!followerByElement[npc.element]) followerByElement[npc.element]=[];
     followerByElement[npc.element].push(npc);
+    if (typeof partyAdmit === "function") partyAdmit(npc);   // (more than the squad's three come back posted where they are)
 }
 
 // Every menu, gesture and dangling target reference that must not survive

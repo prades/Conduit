@@ -800,6 +800,8 @@ function handleFollowerUIClick(x,y) {
 // target that stows the weapon, so there is a way out that does not require
 // finding an enemy to long-press again.
 function drawAmmoChip() {
+    // The facility shows the ammunition as a small icon with its count beside the round button at the top left (js/targeting.js _tgAmmoIcon), which is also what a tap puts the gun away with.
+    if (typeof facilityPlay !== "undefined" && facilityPlay) return;
     // Under an open panel it would sit across the panel's foot: not drawn, not tappable, while one is up.
     if (crystalMenuOpen || cloneMenuOpen || settingsPanelOpen || infoPanelOpen || (typeof buildMenuOpen !== "undefined" && buildMenuOpen)) { _ATKCHIP.w = 0; return; }
     const big = dockHasMenus(), w = big ? 200 : 150, h = big ? 40 : 32;

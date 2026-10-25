@@ -94,6 +94,7 @@ function measure(w, h) {
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); squadMode = "selected"; facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');
     const MODE_AT_START = run('squadMode'), ELEMENT_IDS = J('ELEMENTS.map(e => e.id)');
+    run('partyOn = () => false;');   // (the squad of three and the rooms followers hold have their own tests, tests/party.js: these are about the attack order, with every follower following)
     // the fixtures: the player at a spot with a clear view, creatures that cannot move (so they stay where they are put) and cannot die, a squad
     run(`globalThis.__open = (() => { const offs = [[2, 1], [-2, 3], [5, 0], [0, 6], [4, 4], [7, 1], [10, 1], [3, 12]]; for (const c of _fp.cellsP.values()) if (offs.every(d => _fpLos(c[0], c[1], c[0] + d[0], c[1] + d[1]) && facilityWalkable(c[0] + d[0], c[1] + d[1], _fp.F))) return c; return null; })();
         globalThis.__mk = (dx, dy, o) => { spawnPredatorForZone(1, { species: 'ant', className: 'scout' }); const a = actors[actors.length - 1]; a.x = player.visualX + dx; a.y = player.visualY + dy; a.team = 'red'; a.dead = false; a.level = 3; a.moveSpeed = 0; a.baseMoveSpeed = 0; a.health = a.maxHealth = 1e7; a.state = (o && o.calm) ? 'wander' : 'hunt'; a.provoked = !(o && o.calm); return a; };

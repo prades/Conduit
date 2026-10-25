@@ -143,18 +143,48 @@ function _tgGun(x, y, col) {
 }
 function drawTargetUI() {
     _tgDial = null; if (!targetOn() || typeof ctx === "undefined") return;
-    const a = targetCurrent(); if (!a) return;
-    if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen)) return;
+    if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen)) { _ATKCHIP.w = 0; return; }
+    const a = targetCurrent(); if (!a) { _tgAmmoDraw(); return; }   // (no creature: the ammunition is still there, where the button comes up)
     const f = typeof frame !== "undefined" ? frame : 0, p = _tgScreen(a), age = f - _acquireAt;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (age >= 0 && age < TARGET.acquire) { const k = age / TARGET.acquire; _tgCorners(p, 60 - 34 * k, 10, k > 0.7 ? "#ff4a3a" : "#ffb347", 3, 0.95); }   // locking on: the corners close in (then drawLockReticle's red ones stay)
     ctx.restore();
     _tgDialDraw(a, f);
 }
+// where the round button comes up, at the top left under the objective's plate (a phone has the menu hub at the left edge, halfway down: the button goes beside it); the ammunition icon shares it
+function _tgAnchor() {
+    const W = canvas.width, narrow = W < 600, R = narrow ? 40 : 52, left = typeof dockHasMenus === "function" && !dockHasMenus() ? 78 : 18, top = typeof _fpObjBottom === "number" && _fpObjBottom > 0 ? _fpObjBottom + 12 : 196;
+    return { W, narrow, R, left, top, x: left + R, y: Math.min(top + R + 4, canvas.height - R - 130) };
+}
+// THE AMMUNITION, subtle (ASKED: "move the information where it says ammo or armed up where the old little index UI shows up for the predators [...] make it subtle, like an icon with ammo and have a number on it"):
+// a small cartridge (the laser's fuel: a cell) with the count beside it, in a faint pill, where the round button comes up: under the button's name with a creature locked, in the button's place with none. It is a quiet
+// blue-grey, amber and breathing a little while the gun is armed, red when it is empty. It was a big chip, AMMO / ARMED, at the bottom of the screen; like it, a tap on it while armed puts the gun away.
+function _tgCartridge(cx, cy, col) {
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(cx - 3, cy + 1); ctx.lineTo(cx - 3, cy - 3); ctx.quadraticCurveTo(cx - 3, cy - 7, cx, cy - 8); ctx.quadraticCurveTo(cx + 3, cy - 7, cx + 3, cy - 3); ctx.lineTo(cx + 3, cy + 1); ctx.closePath(); ctx.fill();   // the bullet
+    ctx.fillRect(cx - 3.5, cy + 2, 7, 6); ctx.fillStyle = "rgba(6,10,24,0.45)"; ctx.fillRect(cx - 3.5, cy + 1, 7, 1.2);                                                                                                       // the case, and where it joins the bullet
+}
+function _tgFuelCell(cx, cy, col) {
+    ctx.fillStyle = col; ctx.fillRect(cx - 2, cy - 8, 4, 2); ctx.fillRect(cx - 4, cy - 6, 8, 14);                                  // the nub and the body
+    ctx.fillStyle = "rgba(6,10,24,0.75)"; ctx.beginPath(); ctx.moveTo(cx + 1, cy - 4); ctx.lineTo(cx - 2, cy + 1); ctx.lineTo(cx, cy + 1); ctx.lineTo(cx - 1, cy + 6); ctx.lineTo(cx + 2, cy); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();   // a bolt on it
+}
+// x: the pill's left edge, y: its middle. Sets the tap area (_ATKCHIP) while the gun is armed.
+function _tgAmmoIcon(x, y, alpha) {
+    const h = typeof weaponHud === "function" ? weaponHud() : null; if (!h) { _ATKCHIP.w = 0; return; }
+    const armed = typeof playerAttackMode !== "undefined" && playerAttackMode, dry = !!h.dry, f = typeof frame !== "undefined" ? frame : 0, col = dry ? "#ff7766" : armed ? "#ffb070" : "#b8c8e8";
+    const txt = String(h.n) + (h.cells ? " +" + h.cells : ""), hh = 22;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = alpha * (armed && !dry ? 0.82 + 0.18 * Math.sin(f * 0.09) : 0.9); ctx.font = uiMono(13);
+    const w = 29 + ctx.measureText(txt).width;
+    ctx.fillStyle = "rgba(6,10,24,0.6)"; ctx.strokeStyle = armed || dry ? col : "rgba(138,160,200,0.4)"; ctx.lineWidth = 1;
+    ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y - hh / 2, w, hh, 11); else ctx.rect(x, y - hh / 2, w, hh); ctx.fill(); ctx.stroke();
+    if (h.kind === "fuel") _tgFuelCell(x + 12, y, col); else _tgCartridge(x + 12, y, col);
+    ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txt, x + 24, y + 1);
+    ctx.restore();
+    if (armed) { _ATKCHIP.x = x - 4; _ATKCHIP.y = y - hh / 2 - 4; _ATKCHIP.w = w + 8; _ATKCHIP.h = hh + 8; } else _ATKCHIP.w = 0;
+}
+function _tgAmmoDraw() { const A = _tgAnchor(); _tgAmmoIcon(A.left - 4, A.top + 12, 1); }
 function _tgDialDraw(a, f) {
-    if (typeof uiSlab !== "function") return;
-    // (a phone has the menu hub at the left edge, halfway down: the dial goes beside it)
-    const W = canvas.width, narrow = W < 600, R = narrow ? 40 : 52, left = typeof dockHasMenus === "function" && !dockHasMenus() ? 78 : 18, x = left + R, top = typeof _fpObjBottom === "number" && _fpObjBottom > 0 ? _fpObjBottom + 12 : 196, y = Math.min(top + R + 4, canvas.height - R - 130), col = _tgColour(a);
+    if (typeof uiSlab !== "function") { _ATKCHIP.w = 0; return; }
+    const { W, narrow, R, left, x, y } = _tgAnchor(), col = _tgColour(a);
     const held = typeof gunHold !== "undefined" && gunHold && gunHold.button && !gunHold.released, dry = typeof weaponDry === "function" ? weaponDry() : false, cool = (player.attackCooldown || 0) > 0;
     const pop = Math.max(0, Math.min(1, (f - _acquireAt) / TARGET.pop)), ease = 1 - Math.pow(1 - pop, 3), s = 0.55 + 0.45 * ease + (held ? 0.04 * Math.sin(f * 0.7) : 0);
     const hp = Math.max(0, a.health), mx = Math.max(1, a.maxHealth || a.health || 1), hf = Math.min(1, hp / mx);
@@ -176,12 +206,12 @@ function _tgDialDraw(a, f) {
     ctx.fillStyle = infoOpen ? "#8fe3ff" : "#0b1226"; ctx.beginPath(); ctx.arc(ix, iy, ir, 0, 6.2832); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#8fe3ff"; ctx.stroke();
     ctx.fillStyle = infoOpen ? "#05070f" : "#8fe3ff"; ctx.font = uiFont(narrow ? 13 : 15); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("i", ix, iy + 1);
     ctx.restore();
-    // what it is, and the ammunition, under it (not scaled: it must read)
+    // what it is under it, and the ammunition (the small icon) under that (not scaled: it must read)
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = ease;
     const lx = left - 4, nw = Math.min(230, W - lx - 8);
     uiCaptionFit(targetName(a), lx, y + R + 16, "#ffd9a0", "left", 12, nw);
-    const h = typeof weaponHud === "function" ? weaponHud() : null; if (h) uiCaptionFit(h.short + (dry ? "  ·  EMPTY" : "  ·  CLICK OR HOLD"), lx, y + R + 32, dry ? "#ff7766" : "#8aa0c8", "left", 11, nw);
     ctx.restore();
+    _tgAmmoIcon(lx, y + R + 36, ease);
     _tgDial = { x, y, r: R, ix, iy, ir };
     if (infoOpen) _tgInfo(a, x, y, R, col);
 }

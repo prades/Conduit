@@ -85,6 +85,7 @@ function facilitySaveApply(d) {
     // where the player stood (if that is still floor), and the followers with them
     const at = d.at; if (at && Number.isFinite(at[0]) && Number.isFinite(at[1]) && facilityStandOk(at[0], at[1])) { player.x = player.targetX = player.visualX = at[0]; player.y = player.targetY = player.visualY = at[1]; player.fpPath = null; }
     for (const f of followers) { f.x = player.x + (Math.random() - 0.5) * 1.2; f.y = player.y + (Math.random() - 0.5) * 1.2; f.returningToCrystal = false; }
+    if (typeof partyPlacePosted === "function") partyPlacePosted();   // the followers that held rooms are in them again (js/party.js)
     if (typeof updateObjectiveUI === "function") updateObjectiveUI();
     return true;
 }

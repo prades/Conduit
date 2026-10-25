@@ -43,6 +43,7 @@ const SUITES = [
     ['unit info tab',           'unitinfo.js'],
     ['mix selector',            'mixtool.js'],
     ['enemy card: no ELEMENTS tab in the facility, tap the card to send the squad', 'enemycard.js'],
+    ['squad of three, rooms the rest hold, the ammunition icon', 'party.js'],
     ['fire bombs',              'firebombs.js'],
     ['wall power unit',         'wallunit.js'],
     ['lab wall equipment',      'labwall.js'],

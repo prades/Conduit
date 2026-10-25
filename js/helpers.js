@@ -853,6 +853,7 @@ function spawnFollowerAtCrystal(element, type) {
     followers.push(npc);
     followerByElement[element] = followerByElement[element]||[];
     followerByElement[element].push(npc);
+    if (typeof partyAdmit === "function") partyAdmit(npc);   // the facility: the squad takes it if it has room, else it is posted where it is (js/party.js)
 }
 
 // ─────────────────────────────────────────────────────────
@@ -862,9 +863,11 @@ function getCommandPool() {
     // CARDS SELECTED in the Command Center (js/commandcenter.js): the selection IS the command pool while any of it is alive.
     if (typeof selectedUnits !== "undefined" && selectedUnits.size) { const sel = [...selectedUnits].filter(a => a && !a.dead && a.team === "green"); if (sel.length) return sel; }
     if (uiTab === "clones") return actors.filter(a => a.isClone && !a.dead);
-    if (squadMode === "all") return followers.filter(a => !a.dead);
-    if (selectedRole)        return followers.filter(a => !a.dead && a.role === selectedRole);
-    return (followerByElement[player.selectedElement] || []).filter(a => !a.dead);
+    // The facility (js/party.js): the orders reach the SQUAD, not the followers holding rooms (select those in the roster to order them).
+    const live = typeof partyOn === "function" && partyOn() ? (a => !a.dead && !a.post) : (a => !a.dead);
+    if (squadMode === "all") return followers.filter(live);
+    if (selectedRole)        return followers.filter(a => live(a) && a.role === selectedRole);
+    return (followerByElement[player.selectedElement] || []).filter(live);
 }
 
 // ─────────────────────────────────────────────────────────

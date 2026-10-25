@@ -33,9 +33,10 @@ function facilityFollowerSpotTake(s) {
     if (typeof spawnFollowerAtCrystal !== "function") return null;
     spawnFollowerAtCrystal(s.element, s.type);
     const f = followers[followers.length - 1]; if (!f) return null;
-    f.x = s.x; f.y = s.y; f.returningToCrystal = false; f.stance = "follow"; f.convertFlash = 30; f.fromSpot = s.id;
+    f.x = s.x; f.y = s.y; f.returningToCrystal = false; f.convertFlash = 30; f.fromSpot = s.id;
+    if (f.post) f.post = s.room; else f.stance = "follow";   // (the squad was full: it holds the room the egg was in, js/party.js)
     const def = ELEMENTS.find(e => e.id === s.element);
-    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: roleLabel(s.type) + " · " + (def ? def.label : String(s.element).toUpperCase()) + " JOINED!", color: def ? def.color : "#fff", life: 120, vy: -0.2, size: 14 });
+    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: roleLabel(s.type) + " · " + (def ? def.label : String(s.element).toUpperCase()) + (f.post ? " HOLDS THE " + partyRoomName(f.post).toUpperCase() : " JOINED!"), color: def ? def.color : "#fff", life: 120, vy: -0.2, size: 14 });
     return f;
 }
 // each frame (from facilityTutorialTick)

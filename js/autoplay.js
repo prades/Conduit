@@ -118,7 +118,7 @@ function _autoFight() {
     const foes = actors.filter(a => isHostileTarget(a) && !a.isWanderer && Math.abs(a.x - src.x) < 12)
                        .sort((a, b) => Math.hypot(a.x - src.x, a.y - src.y) - Math.hypot(b.x - src.x, b.y - src.y));
     if (!foes.length) return;
-    const free = followers.filter(f => !f.dead && f.duty !== "worker" && (!f.job || f._autoJob && f.job.type === "attack" && (!f.job.target || f.job.target.dead)));
+    const free = followers.filter(f => !f.dead && !f.post && f.duty !== "worker" && (!f.job || f._autoJob && f.job.type === "attack" && (!f.job.target || f.job.target.dead)));   // (not a follower holding a room: js/party.js)
     free.forEach((f, i) => { f.job = { type: "attack", target: foes[i % foes.length] }; f._autoJob = true; });
 }
 

@@ -140,7 +140,7 @@ function facilitySteer(a, tx, ty) {
 // was heading for (the goal its step points at best: you, the crystal, its job's target, its enemy, a foe or friend nearby) and, if walls stand between it and that goal, takes the same
 // length of step along the planned route instead. A step with a clear line to its goal, a step that points at nothing, a flee or a lunge are left as the AI made them.
 function _fpGoals(a) {
-    const gs = [player]; if (crystal) gs.push(crystal);
+    const gs = a.post ? [] : [player]; if (crystal && !a.post) gs.push(crystal);   // (a posted follower's round is its own: the player and the Crystal are not what it is walking to)
     if (a.job && a.job.target && Number.isFinite(a.job.target.x)) gs.push(a.job.target);
     if (a._nearestEnemy && !a._nearestEnemy.dead) gs.push(a._nearestEnemy);
     if (a.hackOrder && Number.isFinite(a.hackOrder.x)) gs.push(a.hackOrder);
@@ -167,7 +167,7 @@ function facilityReroute(a, px, py) {
 }
 // The facility is big: a squad walking at its strip speed would be a minute behind you. A follower or clone far from you (and not on an order of its own) hurries, up to about four times, and eases back to its own speed as it closes in.
 function facilityCatchUp(a, px, py) {
-    if (!_fp || !a || a.team !== "green" || a.dead || a.job || a.returningToCrystal || a.duty === "worker" || a.role === "camper") return;
+    if (!_fp || !a || a.team !== "green" || a.dead || a.job || a.post || a.returningToCrystal || a.duty === "worker" || (a.role === "camper" && !(typeof partyOn === "function" && partyOn()))) return;   // (a posted follower holds its room; a technician in the squad hurries after you like the rest)
     const d = Math.hypot(player.x - a.x, player.y - a.y); if (d <= 8) return;
     const k = Math.min(4, 1 + (d - 8) / 6); a.x = px + (a.x - px) * k; a.y = py + (a.y - py) * k;
 }

@@ -67,8 +67,8 @@ function weaponDry() { const w = weaponDef(); return w.kind === "fuel" ? laserCh
 // the HUD's words: { text, dry }
 function weaponHud() {
     const w = weaponDef(), armed = typeof playerAttackMode !== "undefined" && playerAttackMode;
-    if (w.kind === "fuel") { const cells = invCount("fuel_cell"), dry = laserCharge <= 0 && cells <= 0, t = laserCharge + (cells ? " +" + cells + "▣" : ""); return { text: (armed ? (dry ? "NO FUEL — STOW" : "LASER ◆ " + t) : "FUEL ◆ " + t), dry, short: "FUEL " + t }; }
-    const dry = playerAmmo <= 0; return { text: armed ? (dry ? "NO AMMO — STOW" : "ARMED ◆ " + playerAmmo) : "AMMO ◆ " + playerAmmo, dry, short: "AMMO " + playerAmmo };
+    if (w.kind === "fuel") { const cells = invCount("fuel_cell"), dry = laserCharge <= 0 && cells <= 0, t = laserCharge + (cells ? " +" + cells + "▣" : ""); return { text: (armed ? (dry ? "NO FUEL — STOW" : "LASER ◆ " + t) : "FUEL ◆ " + t), dry, short: "FUEL " + t, kind: "fuel", n: laserCharge, cells }; }
+    const dry = playerAmmo <= 0; return { text: armed ? (dry ? "NO AMMO — STOW" : "ARMED ◆ " + playerAmmo) : "AMMO ◆ " + playerAmmo, dry, short: "AMMO " + playerAmmo, kind: "ammo", n: playerAmmo, cells: 0 };   // (kind, n and cells: what the little icon in the facility shows, js/targeting.js drawAmmoIcon)
 }
 
 // ── the laser: a hit at once, through what is behind ──

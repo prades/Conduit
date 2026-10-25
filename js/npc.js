@@ -6,10 +6,11 @@
 // Crystal, a recruit to a pylon to heal, out to a POSITION, onto a capture
 // node, over to a pylon to heal) return before the shared walk-cycle block
 // below, and changed x and y and nothing else — the unit glided on still legs.
-function _walkStep(actor, dx, dy, dist) {
+function _walkStep(actor, dx, dy, dist, pace) {   // pace: a share of its speed (a posted follower's round is a stroll), 1 when not given
     if (typeof facilityPlay !== "undefined" && facilityPlay) { const w = facilitySteer(actor, actor.x + dx, actor.y + dy), sx = w[0] - actor.x, sy = w[1] - actor.y, sd = Math.hypot(sx, sy); if (sd > 1e-6) { dx = sx; dy = sy; dist = sd; } }   // round the facility's walls
-    actor.x += (dx / dist) * actor.moveSpeed; actor.y += (dy / dist) * actor.moveSpeed;
-    actor.walkCycle = (actor.walkCycle || 0) + actor.moveSpeed * 40;
+    const k = pace || 1;
+    actor.x += (dx / dist) * actor.moveSpeed * k; actor.y += (dy / dist) * actor.moveSpeed * k;
+    actor.walkCycle = (actor.walkCycle || 0) + actor.moveSpeed * 40 * k;
     actor.dirX = dx / dist; actor.dirY = dy / dist;
     actor.lastX = actor.x; actor.lastY = actor.y;
 }
@@ -50,7 +51,7 @@ function updateRTSNPC(actor) {
 
     // A HOLD is a standing move order (stance "hold" + job "move"). When the job is dropped (it was hurt below half and went to heal, its target tile went, a new order
     // replaced it) the stance used to stay "hold" with nothing to hold: the unit stood there for good, ignoring COME and the player. No post, no hold.
-    if (actor.team==="green" && actor.stance==="hold" && !actor.job && !actor.hackOrder && !actor.siphonOrder) actor.stance="follow";
+    if (actor.team==="green" && actor.stance==="hold" && !actor.job && !actor.hackOrder && !actor.siphonOrder && !actor.post) actor.stance="follow";   // (a post, js/party.js, is a hold with no job: it holds a room)
 
     // return to crystal
     if (!actor.dead&&actor.team==="green"&&actor.returningToCrystal) {
@@ -100,6 +101,7 @@ function updateRTSNPC(actor) {
             followers.push(actor);
             if (!followerByElement[actor.element]) followerByElement[actor.element]=[];
             followerByElement[actor.element].push(actor);
+            if (typeof partyAdmit === "function") partyAdmit(actor);   // (js/party.js)
         }
         return;
     }
@@ -325,7 +327,7 @@ function updateRTSNPC(actor) {
     actor.lastX=actor.x; actor.lastY=actor.y;
 
     // ── ROLE-DRIVEN MOVEMENT ──────────────────────────────
-    if (actor.team==="green" && (actor.stance||"follow")==="follow") {
+    if (actor.team==="green" && ((actor.stance||"follow")==="follow" || actor.post)) {
 
         // Acid avoidance — applied before role movement so it always wins
         for (const h of environmentalHazards) {
@@ -358,10 +360,12 @@ function updateRTSNPC(actor) {
             // THE BATTLE CONTROLS (js/mixtool.js): a unit told to RETREAT sees no enemy until its time is up, and with a FOCUS set it goes for that class of enemy first.
             const _retreating = actor.retreatUntil > frame, _focus = typeof battleFocus !== "undefined" ? battleFocus : null;
             let _focusBest = null, _focusD = Infinity;
+            const _room = actor.post || null;   // a POSTED follower (js/party.js) fights what is in its room, and nothing outside it
             if (!_retreating) actors.forEach(a => {
                 if (a instanceof Predator && a.team !== "green" && !a.isClone && !a.dead && !a.untargetable) {
                     // Skip predators that are wandering and haven't been provoked
                     if (a.state === "wander" && !a.provoked) return;
+                    if (_room && partyRoomAt(a.x, a.y) !== _room) return;
                     const dx=a.x-actor.x, dy=a.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
                     if (d < nearestEnemyDist) { nearestEnemyDist=d; actor._nearestEnemy=a; }
                     if (d < 6) _inReach.push(a);
@@ -404,8 +408,8 @@ function updateRTSNPC(actor) {
                     followerAttack(actor, nearestEnemy);
                 }
             } else {
-                // No nearby enemy — follow player
-                followPlayer(actor);
+                // No nearby enemy — follow player (a posted follower walks its room's round instead: js/party.js)
+                if (actor.post) partyPatrol(actor); else followPlayer(actor);
             }
             return;
         }
@@ -445,7 +449,8 @@ function updateRTSNPC(actor) {
                 }
             } else {
                 const dx=player.x-actor.x, dy=player.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-                if (typeof facilityPlay !== "undefined" && facilityPlay) followPlayer(actor);   // the facility: the route round the walls, not a straight line (js/facilityplay.js)
+                if (actor.post) partyPatrol(actor);   // (posted: its room's round, js/party.js)
+                else if (typeof facilityPlay !== "undefined" && facilityPlay) followPlayer(actor);   // the facility: the route round the walls, not a straight line (js/facilityplay.js)
                 else if (dist > FOLLOW_STOP + 1.5) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
             }
             return;
@@ -453,7 +458,8 @@ function updateRTSNPC(actor) {
 
         // ── CAMPER: anchor to nearest friendly pylon or crystal, engage short range only ──
         if (role === "camper") {
-            const CAMPER_ENGAGE_RADIUS = 2.5;
+            const _party = typeof partyOn === "function" && partyOn();   // the facility: a technician follows the squad's player, or walks its room's round when posted, like the others; it is not tied to the Crystal
+            const CAMPER_ENGAGE_RADIUS = _party ? 4 : 2.5;
 
             // Find anchor point — nearest friendly pylon or crystal
             const pillar = findNearestFriendlyPillar(actor);
@@ -473,6 +479,8 @@ function updateRTSNPC(actor) {
                 } else {
                     followerAttack(actor, nearestEnemy);
                 }
+            } else if (_party) {
+                if (actor.post) partyPatrol(actor); else followPlayer(actor);
             } else if (distAnchor > 1.0) {
                 // Return to anchor
                 actor.x+=(dxA/distAnchor)*actor.moveSpeed;

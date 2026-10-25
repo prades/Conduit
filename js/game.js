@@ -2111,6 +2111,7 @@ function gameLoop() {
 function render() {
     if (typeof toolboxTick === "function" && typeof frame !== "undefined" && frame % 30 === 0) toolboxTick();
     if (typeof mixToolRender === "function" && typeof frame !== "undefined" && frame % 6 === 0) mixToolRender(false);   // the mix selector opens at once when a button or a tap on the Crystal sets its flag (js/mixtool.js)
+    if (typeof partyTick === "function" && typeof frame !== "undefined" && frame % 6 === 0) partyTick();   // the squad of three and its bar (js/party.js)
     if (typeof ccPrune === "function" && typeof frame !== "undefined" && frame % 30 === 0) { ccPrune(); if (typeof ccRefreshChip === "function") ccRefreshChip(); }   // the dead leave the selection
     if (typeof checkVisibleArea === "function" && (typeof frame === "undefined" || frame % VISIBLE_AREA_POLL_FRAMES === 0)) checkVisibleArea();   // the browser's real visible size, polled (js/config.js)
     if (typeof placingTick === "function") placingTick();   // zoomed out and the interface away while a build tool is in hand (js/buildmenu.js)
@@ -2793,7 +2794,7 @@ function render() {
                 // Its level comes back with it, less some XP (js/levels.js).
                 base: a.base ? Object.assign({}, a.base, { hp: Math.max(1, newHp) }) : undefined,
                 level: a.level, xp: typeof xpAfterDeath === "function" ? xpAfterDeath(a) : a.xp,
-                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, playStyle: a.playStyle || undefined, squadId: a.squadId || undefined, move: a.move || undefined });
+                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, post: a.post || undefined, playStyle: a.playStyle || undefined, squadId: a.squadId || undefined, move: a.move || undefined });
         }
         // Progression counts EVERY enemy killed, wanderers included — it is a
         // record of what you have fought, not of wave quotas. The wave counter
@@ -4487,9 +4488,11 @@ function render() {
                 // A worker comes back a worker (a toxic medic used to come back
                 // a fighter, and stop tending its clone, after every death).
                 if (entry.duty === "worker" && (typeof canWorkMass !== "function" || canWorkMass(npc))) npc.duty = "worker";
+                if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }   // a follower that held a room goes back to it (js/party.js)
                 actors.push(npc); followers.push(npc);
                 if(!followerByElement[rElement]) followerByElement[rElement]=[];
                 followerByElement[rElement].push(npc);
+                if (typeof partyAdmit === "function") partyAdmit(npc);   // (the squad's slot may have been taken while it was gone: then it is posted where it stands)
             }
             respawnQueue.splice(i,1);
         }

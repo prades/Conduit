@@ -88,6 +88,10 @@ function ccApplyPlayStyle(units, id) {
 }
 // Stance: HOLD stands each unit where it is (a standing post, like the move order); FOLLOW lets it go back to following you.
 function ccApplyStance(units, stance) {
+    if (typeof partyOn === "function" && partyOn()) return partyApplyStance(units, stance);   // the facility: HOLD posts each follower in the room it is in, FOLLOW calls it back to the squad (js/party.js)
+    return _ccApplyStanceUnits(units, stance);
+}
+function _ccApplyStanceUnits(units, stance) {
     let n = 0;
     for (const a of units) {
         if (!a || a.dead) continue;
@@ -234,7 +238,7 @@ function ccRender() {
     if (rec) { rec.style.display = ccOpenTab === "roster" ? "" : "none"; const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = "\u25c6" + cost; }
     const ttl = document.getElementById("ccTitle"); if (ttl) ttl.textContent = ccOpenTab === "zones" ? "ZONES" : "COMMAND CENTER";
     const sum = document.getElementById("ccSummary");
-    if (sum) { sum.style.display = ccOpenTab === "roster" ? "" : "none"; if (ccOpenTab === "roster") { const st = radialSquadStats("all"); sum.textContent = st.total + " UNITS \u00b7 " + st.working + " WORKING \u00b7 AVG LEVEL " + st.avgLevel + " \u00b7 " + st.evolved + " EVOLVED"; } }
+    if (sum) { sum.style.display = ccOpenTab === "roster" ? "" : "none"; if (ccOpenTab === "roster") { const st = radialSquadStats("all"), pt = typeof partyOn === "function" && partyOn(); sum.textContent = pt ? "SQUAD " + partyMembers().length + "/" + PARTY.max + " \u00b7 " + partyPosted().length + " POSTED \u00b7 " + st.total + " UNITS \u00b7 " + st.working + " WORKING" : st.total + " UNITS \u00b7 " + st.working + " WORKING \u00b7 AVG LEVEL " + st.avgLevel + " \u00b7 " + st.evolved + " EVOLVED"; } }   // (the facility: how full the squad is, and who holds rooms)
     const sqBtn = document.getElementById("ccSquadsBtn"); if (sqBtn) { sqBtn.style.display = ccOpenTab === "roster" ? "" : "none"; sqBtn.classList.toggle("on", ccSquadsOpen); }
     const sqWin = document.getElementById("ccSquadWin"); if (sqWin) {
         const show = ccOpenTab === "roster" && ccSquadsOpen; sqWin.style.display = show ? "flex" : "none";
@@ -302,12 +306,12 @@ function _ccUpdateCard(card, r) {
     card.querySelector(".cc-name").textContent = r.name;
     card.querySelector(".cc-sub").textContent = (r.clone ? "CLONE" : _ccElLabel(r.element)) + " · LV " + r.level;
     card.querySelector(".cc-bar i").style.width = Math.round(r.hp * 100) + "%";
-    const st = card.querySelector(".cc-status"); if (st) { st.textContent = r.status ? r.status.text : ""; st.setAttribute("style", r.status ? "--c:" + r.status.col + ";" : "display:none;"); }
+    const st = card.querySelector(".cc-status"); if (st) { st.textContent = r.status ? r.status.text + (r.status.room ? " \u00b7 " + r.status.room : "") : ""; st.setAttribute("style", r.status ? "--c:" + r.status.col + ";" : "display:none;"); }   // (a follower holding a room says which)
     const tags = card.querySelector(".cc-tags"), want = [];
     if (!r.clone) want.push(({ brawler: "BRAWL", sniper: "MAGE", camper: "TECH" })[r.role] || "BRAWL");
     if (!r.clone) want.push(r.playStyle === "defensive" ? "DEF" : r.playStyle === "aggressive" ? "AGG" : "BAL");
     if (r.squad) want.push("SQ " + r.squad);
-    if (r.holding) want.push("HOLD"); if (r.working) want.push("WORK"); if (r.evolved) want.push("EVOLVED");
+    if (r.unit.post) want.push("POST"); else if (r.holding) want.push("HOLD"); if (r.working) want.push("WORK"); if (r.evolved) want.push("EVOLVED");
     const sig = want.join("|"); if (tags._sig !== sig) { tags._sig = sig; tags.textContent = ""; want.forEach(w => { const t = _ccEl("span", "cc-tag " + (w.indexOf("SQ ") === 0 ? "sq" : w.toLowerCase()), w); if (w.indexOf("SQ ") === 0) { const c = squadColour(w.slice(3)); t.style.color = c; t.style.borderColor = c; } tags.appendChild(t); }); }
     const key = r.unit.evolved + "|" + r.unit.element; if (card._thumbKey !== key) { card._thumbKey = key; _ccThumb(card._cv, r.unit); }
     if (!card._thumbDone) { const d = r.unit.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[r.unit.evolved] : null; if (d && d._img && d._img.complete) { card._thumbDone = true; _ccThumb(card._cv, r.unit); } }
@@ -370,8 +374,9 @@ function _ccDrawSide(side) {
         _ccDropdown(side, "play", "PLAY STYLE", mixed(S.playStyle) ? "MIXED" : (lab(PLAY_STYLES, S.playStyle) || "\u2014"), "#ffe733",
             PLAY_STYLES.map(x => ({ label: x.label, col: "#ffe733", sub: x.blurb, on: S.playStyle === x.id, fn: () => ccApplyPlayStyle(sel, x.id) })));
     }
-    _ccDropdown(side, "stance", "STANCE", mixed(S.stance) ? "MIXED" : S.stance === "hold" ? "HOLD HERE" : "FOLLOW ME", "#19e6c1",
-        [["FOLLOW ME", "follow", "#19e6c1", "GOES WHERE YOU GO"], ["HOLD HERE", "hold", "#8fe3ff", "STANDS ITS GROUND"]].map(x => ({ label: x[0], col: x[2], sub: x[3], on: S.stance === x[1], fn: () => ccApplyStance(sel, x[1]) })));
+    const _pt = typeof partyOn === "function" && partyOn();   // the facility: HOLD posts a follower in the room it is in (it walks that room's round and fights what is in it); FOLLOW ME puts it in the squad, which has room for three
+    _ccDropdown(side, "stance", "STANCE", mixed(S.stance) ? "MIXED" : S.stance === "hold" ? (_pt ? "HOLD THIS ROOM" : "HOLD HERE") : "FOLLOW ME", "#19e6c1",
+        [["FOLLOW ME", "follow", "#19e6c1", _pt ? "JOINS THE SQUAD OF " + PARTY.max : "GOES WHERE YOU GO"], [_pt ? "HOLD THIS ROOM" : "HOLD HERE", "hold", "#8fe3ff", _pt ? "PATROLS IT, FIGHTS IN IT" : "STANDS ITS GROUND"]].map(x => ({ label: x[0], col: x[2], sub: x[3], on: S.stance === x[1], fn: () => ccApplyStance(sel, x[1]) })));
     _ccDropdown(side, "duty", "DUTY", mixed(S.duty) ? "MIXED" : S.duty === "worker" ? "WORK" : "FIGHT", "#ff4a1c",
         [["FIGHT", "fighter", "#ff4a1c", "ON THE LINE"], ["WORK", "worker", "#00ccaa", S.canWork + " OF " + S.count + " CAN WORK"]].map(x => ({ label: x[0], col: x[2], sub: x[3], on: S.duty === x[1], fn: () => ccApplyDuty(sel, x[1]) })));
     const row = _ccEl("div", "cc-row"); side.appendChild(row);
