@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-27f";
+const BUILD_VERSION = "2026-10-27g";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -1017,6 +1017,9 @@ let battleFocus = null;
 const BATTLE_FOCUS_CLASSES = ["striker", "tank", "scout", "boss"];
 const BATTLE_RETREAT_FRAMES = 360;   // six seconds
 const BATTLE_FOCUS_REACH = 10;        // tiles: a focus target further than this is not chased
+// AN ATTACK ORDER (the enemy card in the battle tool, js/mixtool.js): the picked units go for that ONE creature, whatever is nearer, until it is dead, this long has passed, it is further from you than the leash (you have moved on), or they are given another order.
+const BATTLE_ATTACK_FRAMES = 1800;    // thirty seconds
+const BATTLE_ATTACK_LEASH = 22;       // tiles from the player
 
 // ── PLAYER ULTIMATE ───────────────────────────────
 // One bar, the character's own, filled by killing and spent on an ARMY SURGE:

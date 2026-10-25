@@ -42,6 +42,7 @@ const SUITES = [
     ['clone card strip',        'clonecards.js'],
     ['unit info tab',           'unitinfo.js'],
     ['mix selector',            'mixtool.js'],
+    ['enemy card: no ELEMENTS tab in the facility, tap the card to send the squad', 'enemycard.js'],
     ['fire bombs',              'firebombs.js'],
     ['wall power unit',         'wallunit.js'],
     ['lab wall equipment',      'labwall.js'],

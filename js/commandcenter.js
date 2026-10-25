@@ -91,8 +91,8 @@ function ccApplyStance(units, stance) {
     let n = 0;
     for (const a of units) {
         if (!a || a.dead) continue;
-        if (stance === "hold") { if (a.duty === "worker") continue; a.job = { type: "move", target: { x: a.x, y: a.y } }; a.stance = "hold"; n++; }
-        else if (stance === "follow") { if (a.job && a.job.type === "move") a.job = null; a.stance = "follow"; n++; }
+        if (stance === "hold") { if (a.duty === "worker") continue; a.attackOrder = null; a.job = { type: "move", target: { x: a.x, y: a.y } }; a.stance = "hold"; n++; }
+        else if (stance === "follow") { a.attackOrder = null; if (a.job && a.job.type === "move") a.job = null; a.stance = "follow"; n++; }   // (either one ends an ATTACK order from the enemy card, js/mixtool.js)
     }
     return n;
 }

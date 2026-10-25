@@ -347,7 +347,10 @@ function updateRTSNPC(actor) {
 
         // Find nearest enemy — cache result for 8 frames to avoid per-frame full scan.
         // Followers ignore wandering (un-provoked) predators; only engage hostile ones.
-        if (!actor._enemyCacheFrame || frame - actor._enemyCacheFrame >= 8 ||
+        // AN ATTACK ORDER (the enemy card, js/mixtool.js): a unit sent at one creature goes for THAT one, whatever is nearer and whether it is calm or not, and chases it however far it is (up to the leash).
+        const _ord = attackOrderTarget(actor);
+        if (_ord) { actor._nearestEnemy = _ord; actor._enemyCacheFrame = frame; }
+        else if (!actor._enemyCacheFrame || frame - actor._enemyCacheFrame >= 8 ||
             actor._nearestEnemy?.dead) {
             actor._nearestEnemy = null;
             let nearestEnemyDist = Infinity;
@@ -377,10 +380,11 @@ function updateRTSNPC(actor) {
         const nearestEnemy = actor._nearestEnemy;
         const nearestEnemyDist = nearestEnemy
             ? Math.hypot(nearestEnemy.x - actor.x, nearestEnemy.y - actor.y) : Infinity;
+        const _reach = _ord ? 1e3 : (typeof playReach === "function" ? playReach(actor) : 1);   // PLAY STYLE scales how far a unit goes after an enemy (js/commandcenter.js); one sent at a creature goes the whole way
 
         // ── BRAWLER: chase nearest enemy aggressively, circle when in range ──
         if (role === "brawler") {
-            if (nearestEnemy && nearestEnemyDist < 6 * (typeof playReach === "function" ? playReach(actor) : 1)) {   // PLAY STYLE scales the reach (js/commandcenter.js)
+            if (nearestEnemy && nearestEnemyDist < 6 * _reach) {
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 // Floored: standing exactly on the target makes dist 0, and the
                 // orbit below divides by it. -dy/0 is NaN, and a NaN position
@@ -411,7 +415,7 @@ function updateRTSNPC(actor) {
             const SNIPER_PREFERRED = 4.0;
             const SNIPER_MIN       = 2.5;
 
-            if (nearestEnemy && nearestEnemyDist < 10 * (typeof playReach === "function" ? playReach(actor) : 1)) {
+            if (nearestEnemy && nearestEnemyDist < 10 * _reach) {
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 // Floored for the same reason as the brawler's orbit: the
                 // back-off below runs for every dist under SNIPER_MIN, zero
@@ -422,8 +426,9 @@ function updateRTSNPC(actor) {
                     actor.x-=(dx/dist)*actor.moveSpeed*1.2;
                     actor.y-=(dy/dist)*actor.moveSpeed*1.2;
                 } else if (dist > SNIPER_PREFERRED) {
-                    actor.x+=(dx/dist)*actor.moveSpeed*0.6;
-                    actor.y+=(dy/dist)*actor.moveSpeed*0.6;
+                    const _sp = _ord && dist > SNIPER_PREFERRED + 2 ? 1 : 0.6;   // (a creature it was sent at, far off: at its full pace)
+                    actor.x+=(dx/dist)*actor.moveSpeed*_sp;
+                    actor.y+=(dy/dist)*actor.moveSpeed*_sp;
                 } else {
                     // In sweet spot — fire ranged projectile
                     if (!actor.attackCooldown) actor.attackCooldown = 0;
@@ -458,7 +463,7 @@ function updateRTSNPC(actor) {
             const dxA=anchorX-actor.x, dyA=anchorY-actor.y;
             const distAnchor=Math.sqrt(dxA*dxA+dyA*dyA);
 
-            if (nearestEnemy && nearestEnemyDist < CAMPER_ENGAGE_RADIUS * (typeof playReach === "function" ? playReach(actor) : 1)) {
+            if (nearestEnemy && nearestEnemyDist < CAMPER_ENGAGE_RADIUS * _reach) {
                 // Enemy close enough — engage
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy);
@@ -488,6 +493,14 @@ function updateRTSNPC(actor) {
     actor.x+=(actor.x+d.x-actor.x)*actor.moveSpeed;
     actor.y+=(actor.y+d.y-actor.y)*actor.moveSpeed;
     actor.moveCooldown=60;
+}
+
+// The creature a unit was sent at (the enemy card, js/mixtool.js), or null; the order ends here when it is dead, its time is up, it is too far from the player or the unit was told to RETREAT.
+function attackOrderTarget(actor) {
+    const o = actor.attackOrder; if (!o) return null;
+    const t = o.target;
+    if (!t || t.dead || t.team === "green" || t.untargetable || frame > o.until || actor.retreatUntil > frame || Math.hypot(t.x - player.x, t.y - player.y) > BATTLE_ATTACK_LEASH) { actor.attackOrder = null; return null; }
+    return t;
 }
 
 // Following the player with the NATURAL traits applied:

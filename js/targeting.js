@@ -16,6 +16,8 @@ let lockManual = false;         // the player chose the target by tapping it: ke
 let _acquireAt = -1000;         // the frame the current target was locked (the pop-in, the closing corners)
 let standDown = false;          // the player stowed the gun (the ammunition chip): no auto-lock until no creature is in range, or one is tapped
 let infoOpen = false;           // the INFO card is up
+let _ixSubject = null;          // the creature the enemy card in the bottom-left tool is for (js/mixtool.js)
+const _tgIds = new WeakMap(); let _tgIdN = 0;
 let _targetPressed = false;     // the press is the targeting's (input.js starts no ring, move or long-hold under it)
 let _tgBtnDown = null;          // { kind: "info" | "switch", x, y }
 let _tgDial = null;             // where the dial was drawn: { x, y, r, ix, iy, ir }
@@ -38,7 +40,7 @@ function targetNearest() {
 function targetSet(foe, manual) {
     if (!targetLive(foe)) return false;
     if (typeof gunLock === "function") gunLock(foe); setPlayerAttackMode(true, true);
-    lockManual = !!manual; standDown = false; _acquireAt = typeof frame !== "undefined" ? frame : 0; _tgRefresh(); return true;
+    lockManual = !!manual; standDown = false; _acquireAt = typeof frame !== "undefined" ? frame : 0; _ixSubject = foe; _tgRefresh(); return true;
 }
 function targetDrop() {
     if (typeof gunStow === "function") gunStow(); if (typeof playerAttackMode !== "undefined" && playerAttackMode) setPlayerAttackMode(false, true);
@@ -48,10 +50,23 @@ function targetDrop() {
 function targetStand() { if (!targetOn()) return; standDown = true; lockManual = false; infoOpen = false; _tgRefresh(); }
 function _tgRefresh() { if (typeof mixToolRender === "function") mixToolRender(false); }
 
+// THE ENEMY CARD'S CREATURE (js/mixtool.js): the one the gun is locked on (the dial at the top left and the card are always one creature), else the one the card already had while it is still near and in sight, else the nearest in range that can be seen
+// (so it does not jump about, and it is there with the gun put away).
+function targetIndexSubject() { return targetOn() && targetLive(_ixSubject) ? _ixSubject : null; }
+function targetIndexId(a) { if (!a) return 0; let n = _tgIds.get(a); if (!n) _tgIds.set(a, n = ++_tgIdN); return n; }
+function _tgIndexUpdate() {
+    let cur = _ixSubject;
+    if (cur && (!targetLive(cur) || _tgDist(cur) > TARGET.keep || (!_tgSees(cur) && _tgDist(cur) > 3))) cur = null;
+    const next = targetCurrent() || cur || targetNearest();
+    if (next !== _ixSubject) { _ixSubject = next; _tgRefresh(); }
+}
 // each frame (game.js, after the gun)
 function targetTick() {
-    if (!targetOn() || (typeof gameState !== "undefined" && !gameState.running)) return;
+    if (!targetOn() || (typeof gameState !== "undefined" && !gameState.running)) { if (_ixSubject) { _ixSubject = null; _tgRefresh(); } return; }
     const f = typeof frame !== "undefined" ? frame : 0; if (f % TARGET.every !== 0) return;
+    _targetLockTick(); _tgIndexUpdate();
+}
+function _targetLockTick() {
     if (standDown) { if (!targetNearest()) standDown = false; return; }
     let cur = targetCurrent();
     if (cur && (_tgDist(cur) > (lockManual ? TARGET.manualKeep : TARGET.keep) || (!lockManual && !_tgSees(cur) && _tgDist(cur) > 3))) { cur = null; if (typeof gunStow === "function") gunStow(); }
@@ -102,6 +117,14 @@ function targetPortrait(a) {
         } finally { a.dirX = dx; a.dirY = dy; }
     } catch (e) { c = null; }
     return (_tgPortraits[key] = c);
+}
+
+// the same picture as a data URL, for the enemy card in the page (js/mixtool.js)
+const _tgPortraitURLs = {};
+function targetPortraitURL(a) {
+    const c = targetPortrait(a); if (!c) return ""; const key = [a.speciesName, a.className, a.color, a.element, a.isElite ? 1 : 0].join("|");
+    if (_tgPortraitURLs[key] === undefined) { try { _tgPortraitURLs[key] = c.toDataURL("image/png"); } catch (e) { _tgPortraitURLs[key] = ""; } }
+    return _tgPortraitURLs[key];
 }
 
 // ── drawing ──
@@ -174,6 +197,15 @@ function targetInfoLines(a) {
         "HEALTH " + hp + " / " + mx + "   BITE " + pw + "   SPEED " + sp,
         TARGET_NOTES.species[a.speciesName] || "", TARGET_NOTES.cls[a.className] || "",
     ].filter(Boolean);
+}
+// what the enemy card shows (js/mixtool.js): its name (and the shorter title for the card) and colour, level and class, health and the two numbers that matter
+function targetCardInfo(a) {
+    const hp = Math.ceil(Math.max(0, a.health || 0)), mx = Math.max(1, Math.ceil(a.maxHealth || a.health || 1)), el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
+    return {
+        name: targetName(a), title: a.speciesName ? (String(a.speciesName) + " " + String(a.className || "")).trim().toUpperCase() + (a.isElite ? " \u2605" : "") : targetName(a),   // (the card's name line: the kind, without the element, which is on the line under it in its colour)
+        col: _tgColour(a), level: Number.isFinite(a.level) ? a.level : null, cls: String(a.className || "").toUpperCase(), element: el ? el.label.toUpperCase() : "", hp, max: mx, frac: Math.max(0, Math.min(1, hp / mx)),
+        bite: Number.isFinite(a.power) ? Math.round(a.power * 10) / 10 : null, speed: Number.isFinite(a.moveSpeed) ? Math.round(a.moveSpeed * 1000) / 10 : null,
+    };
 }
 function _tgInfo(a, x, y, R, col) {
     const W = canvas.width, w = Math.min(320, W - (x + R + 24) - 8), lines = targetInfoLines(a), h = 36 + lines.length * 17 + 6;

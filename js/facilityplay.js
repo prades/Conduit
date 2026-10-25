@@ -230,6 +230,7 @@ function facilityPlayStart() {
     if (_fp.gfxSaved === "low") gfxLow = true; else if (_fp.gfxSaved === "high") gfxLow = false;   // (a slow device was found slow before, or the player chose: js/propsprites.js)
     restartGame();                                   // the full state reset (its storage writes are off, and generateSegment does nothing now)
     unlockedElements = new Set(ELEMENTS.map(e => e.id));   // ASKED: "make the crystal have access to all the colors from the beginning": all six are online from the first frame (the classic game keeps its ladder)
+    squadMode = "all";   // the battle tool's orders (RETREAT, HOLD, COME, and the enemy card's ATTACK) go to EVERYONE until the player narrows them (WHO, or selected roster cards); there is no element to "start" with here, and the old default was whichever element came first
     _fp.cells = _fpBuildWorld(F);
     _fp.cellsP = new Map(); for (const [k, c] of _fp.cells) if (facilityWalkable(c[0], c[1], P)) _fp.cellsP.set(k, c);
     // the crystal in its chamber, the player beside it, a small squad

@@ -56,15 +56,20 @@ function updateStatusEffects() {
 
         // ── KNOCKBACK VELOCITY — decays each frame, gives smooth animated push ──
         if (actor.kbVX || actor.kbVY) {
+            const _kx = actor.x, _ky = actor.y;
             actor.x += actor.kbVX || 0;
             actor.y += actor.kbVY || 0;
             actor.kbVX = (actor.kbVX || 0) * 0.72;
             actor.kbVY = (actor.kbVY || 0) * 0.72;
             if (Math.abs(actor.kbVX) < 0.001) actor.kbVX = 0;
             if (Math.abs(actor.kbVY) < 0.001) actor.kbVY = 0;
-            // Keep within corridor bounds
-            actor.y = Math.max(0, Math.min(3, actor.y));
-            actor.x = Math.max(0, actor.x);
+            // Keep within corridor bounds. The facility has no corridor: a push goes as far as its walls let it (facilityConstrain puts a unit back where it was when a wall is in the way). The strip's four rows threw
+            // a creature that was knocked back (a core follower's BASH, a flux pull) out of the building, to y = 3, and it walked back through the void; that is the creature an attack order sends the squad at.
+            if (typeof facilityPlay !== "undefined" && facilityPlay) { if (typeof facilityConstrain === "function") facilityConstrain(actor, _kx, _ky); }
+            else {
+                actor.y = Math.max(0, Math.min(3, actor.y));
+                actor.x = Math.max(0, actor.x);
+            }
         }
 
         // ── EMP GLOW (electric ultimate hit marker) ──

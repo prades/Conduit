@@ -19,6 +19,7 @@ function unitStatus(a) {
     if (a.siphonOrder) return _st("SIPHONING", "order");
     if (a.job && STATUS_JOBS[a.job.type]) { const j = STATUS_JOBS[a.job.type]; return _st(j[0], j[1]); }
     if (a.isHealing) return _st("HEALING", "heal");
+    if (a.attackOrder && a.attackOrder.target && !a.attackOrder.target.dead && (a.stance || "follow") === "follow" && (typeof frame === "undefined" || frame <= a.attackOrder.until)) return _st("ATTACKING", "fight");   // sent at one creature from the enemy card (js/mixtool.js)
     if (a.duty === "worker") {
         if (a.isClone) { const j = typeof cloneJob === "function" ? cloneJob(a) : null; return _st(j ? String(j.label).toUpperCase() : "WORKING", "work"); }
         return _st(a.crewZone !== undefined ? "CREW · ZONE " + a.crewZone : STATUS_WORK[a.element] || "WORKING", "work");
