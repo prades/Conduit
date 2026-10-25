@@ -37,18 +37,13 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   if (!wide) { click($('#mixTool .mt-pod')); await wait(50); out.phoneOpen = { flag: crystalMenuOpen, panel: !!$('#mixTool .mt-panel') }; }
   // BATTLE tab: the controls are there
   mixToolSetTab('battle'); await wait(30); out.tabs = $$('#mixTool .mt-tab').map(function(t){ return t.textContent; });
-  out.battle = { retreat: !!$('#mixTool .mt-retreat'), orders: $$('#mixTool .mt-ord').map(function(o){ return o.textContent; }).join(), posture: $$('#mixTool .mt-seg3 button').map(function(b){ return b.textContent; }).join(), focus: $$('#mixTool [data-focus]').map(function(b){ return b.textContent; }).join(), who: $$('#mixTool [data-scope]').length };
+  out.battle = { retreat: !!$('#mixTool .mt-retreat'), orders: $$('#mixTool .mt-ord').map(function(o){ return o.textContent; }).join(), gone: !!$('#mixTool .mt-seg3') || !!$('#mixTool [data-focus]'), who: $$('#mixTool [data-scope]').length };
   ['fire', 'fire', 'ice'].forEach(function(el){ spawnFollowerAtCrystal(el); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.stance = 'hold'; f.job = { type: 'move', target: { x: f.x, y: f.y } }; });
   squadMode = 'all'; mixToolRender(true); await wait(30);
   click($('#mixTool [data-act=retreat]')); await wait(30);
   out.retreat = { until: followers.map(function(f){ return f.retreatUntil > frame; }).join(), stance: followers.map(function(f){ return f.stance; }).join(), jobs: followers.map(function(f){ return !!f.job; }).join(), label: $('#mixTool .mt-retreat').textContent };
   click($('#mixTool [data-order=hold]')); await wait(30); out.hold = followers.map(function(f){ return f.stance; }).join();
   click($('#mixTool [data-order=follow]')); await wait(30); out.come = followers.map(function(f){ return f.stance; }).join();
-  click($('#mixTool [data-posture=aggressive]')); await wait(30); out.push = { styles: followers.map(function(f){ return f.playStyle; }).join(), on: $('#mixTool .mt-seg3 .on') ? $('#mixTool .mt-seg3 .on').textContent : null };
-  click($('#mixTool [data-posture=defensive]')); await wait(30); out.defend = followers.map(function(f){ return f.playStyle; }).join();
-  click($('#mixTool [data-focus=tank]')); await wait(30); out.focus = { v: battleFocus, on: $('#mixTool [data-focus].on') ? $('#mixTool [data-focus].on').textContent : null };
-  click($('#mixTool [data-focus=tank]')); await wait(30); out.focusOff = battleFocus;
-  click($('#mixTool [data-focus=boss]')); await wait(30); click($('#mixTool [data-focus=any]')); await wait(30); out.focusAny = battleFocus;
   click($('#mixTool [data-scope=ice]')); await wait(30); out.scope = { mode: squadMode, el: player.selectedElement, who: $('#mixTool .mt-who .mt-chip.on') ? $('#mixTool .mt-who .mt-chip.on').getAttribute('data-scope') : null };
   // MIX tab: the honeycomb
   click($('#mixTool .mt-tab[data-tab="mix"]')); await wait(30);
@@ -141,16 +136,15 @@ function measure(w, h) {
             else { same(r.start.panel, false, 'panel while closed'); same(r.podShown, true, 'pod'); ok(/^CRYSTAL 3/.test(r.podText), 'pod ' + r.podText); same(r.phoneOpen.flag, true, 'flag'); same(r.phoneOpen.panel, true, 'panel after the tap'); same(r.closed.flag, false, 'close flag'); same(r.closed.panel, false, 'close panel'); }
         });
         check(w + ': tabs BATTLE (the first) and CRYSTAL; the BATTLE tab has WHO, RETREAT, HOLD and COME, a posture and a target focus', () => {
-            same(r.tabs.slice(0, 2).join().replace(/!/g, ''), 'BATTLE,CRYSTAL', 'tabs'); same(r.battle.retreat, true, 'retreat'); ok(/HOLD,COME/.test(r.battle.orders), 'orders ' + r.battle.orders); same(r.battle.posture, 'DEFEND,STEADY,PUSH', 'posture'); same(r.battle.focus, 'ANY,STRIKER,TANK,SCOUT,BOSS', 'focus'); same(r.battle.who, 4, 'ALL + three elements');
+            same(r.tabs.slice(0, 2).join().replace(/!/g, ''), 'BATTLE,CRYSTAL', 'tabs'); same(r.battle.retreat, true, 'retreat'); ok(/HOLD,COME/.test(r.battle.orders), 'orders ' + r.battle.orders); same(r.battle.gone, false, 'the posture and focus rows are gone'); same(r.battle.who, 4, 'ALL + three elements (the element selector stays)');
         });
         check(w + ': RETREAT pulls the picked units off (stance follow, holds dropped, marked) and the button says so; HOLD stands them, COME brings them back', () => {
             same(r.retreat.until, 'true,true,true', 'marked'); same(r.retreat.stance, 'follow,follow,follow', 'stance'); same(r.retreat.jobs, 'false,false,false', 'holds'); ok(/FALLING BACK/.test(r.retreat.label), 'label ' + r.retreat.label);
             same(r.hold, 'hold,hold,hold', 'hold'); same(r.come, 'follow,follow,follow', 'come');
         });
-        check(w + ': the posture sets the play style (the lit one is the squad\'s); the target focus toggles, ANY clears it; WHO narrows the orders to an element', () => {
-            same(r.push.styles, 'aggressive,aggressive,aggressive', 'push'); same(r.push.on, 'PUSH', 'lit'); same(r.defend, 'defensive,defensive,defensive', 'defend'); same(r.focus.v, 'tank', 'focus'); same(r.focus.on, 'TANK', 'lit'); same(r.focusOff, null, 'toggle off'); same(r.focusAny, null, 'ANY');
+        check(w + ': WHO narrows the orders to an element (the element selector)', () => {
             same(r.scope.mode, 'selected', 'mode'); same(r.scope.el, 'ice', 'element'); same(r.scope.who, 'ice', 'lit');
-        });
+    });
         check(w + ': the MIX tab: six hex cells round a centre cell; tapping a cell drops an element (the centre goes dark) and again brings it back; the centre puts them all back', () => {
             same(r.open.cells, 6, 'cells'); same(r.open.centre, true, 'centre'); same(r.open.lit, 3, 'lit'); same(r.open.locked, 3, 'locked');
             same(r.dropped.on, 2, 'after dropping'); ok(r.dropped.mask.indexOf('electric') < 0 && r.dropped.mask.indexOf('fire') >= 0, 'mask ' + r.dropped.mask); same(r.dropped.allLit, false, 'centre while narrowed'); same(r.back.on, 3, 'back');

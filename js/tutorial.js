@@ -34,8 +34,8 @@ const TUT_STEPS = [
     { id: "position", title: "POST YOUR FOLLOWERS", text: () => "POST TWO FOLLOWERS NEAR THE CRYSTAL: SELECT THEM AND PRESS HOLD.",
         hint: () => "HOLD STANDS A FOLLOWER WHERE IT IS. COME CALLS IT BACK. THEY FIGHT ANYTHING THAT COMES.", done: () => tutHeld() >= TUT.holdNeeded },
     { id: "gun", title: "FIRE YOUR GUN", text: () => tutGunText(),
-        hint: () => playerAttackMode ? "CLICK IT AS OFTEN AS YOU LIKE, OR HOLD YOUR FINGER ON IT TO KEEP FIRING. EACH SHOT COSTS A ROUND." : "LONG-PRESS THE ANT UNTIL THE RING OPENS, THEN SLIDE TO ATTACK. THAT ARMS YOUR GUN AND LOCKS ON TO IT.", done: () => tutGunDone() },
-    { id: "assault", title: "DEFEND THE CRYSTAL", text: () => tutAssaultText(), hint: () => "FOLLOWERS FIGHT AND GAIN LEVELS (LEVEL 10: EVOLUTION). YOU CAN SHOOT TOO: LONG-PRESS AN ENEMY, ATTACK, THEN CLICK OR HOLD. THE SENTRIES HELP IF THEIR RELAY IS ON.", done: () => !!_fp.tut.script.assault && _fp.tut.script.assault.over },
+        hint: () => playerAttackMode ? "CLICK THE ROUND BUTTON AT THE TOP LEFT FOR A SHOT, OR HOLD IT TO KEEP FIRING. EACH SHOT COSTS A ROUND. TAP ANOTHER CREATURE TO SWITCH TARGETS." : "GET CLOSE TO THE ANT: YOUR GUN TAKES AIM BY ITSELF, AND A ROUND BUTTON WITH THE ANT'S PICTURE APPEARS AT THE TOP LEFT.", done: () => tutGunDone() },
+    { id: "assault", title: "DEFEND THE CRYSTAL", text: () => tutAssaultText(), hint: () => "FOLLOWERS FIGHT AND GAIN LEVELS (LEVEL 10: EVOLUTION). YOU CAN SHOOT TOO: THE GUN LOCKS ON TO THE NEAREST ENEMY; CLICK THE ROUND BUTTON OR HOLD IT. THE SENTRIES HELP IF THEIR RELAY IS ON.", done: () => !!_fp.tut.script.assault && _fp.tut.script.assault.over },
     { id: "evolve", title: "EVOLVE A FOLLOWER", text: () => "A FOLLOWER EVOLVES AT LEVEL " + EVOLVE_LEVEL + ".", hint: () => "KEEP IT FIGHTING.", done: () => followers.some(f => f && f.evolved) },
 ];
 
@@ -51,7 +51,7 @@ function tutGunDone() { const S = _fp.tut.script; if (S.gunBase === undefined) {
 function tutGunText() {
     const n = tutGunShots(), left = TUT_GUN.shots - n, st = tutStray();
     if (!st) return "A BIG STRAY ANT IS COMING INTO THE MAIN HALLWAY\u2026";
-    return (playerAttackMode ? "YOUR GUN IS ARMED. SHOOT THE STRAY ANT" : "ARM YOUR GUN ON THE BIG STRAY ANT IN THE MAIN HALLWAY") + ": " + n + "/" + TUT_GUN.shots + " SHOTS.";
+    return (playerAttackMode ? "YOUR GUN HAS TAKEN AIM. SHOOT THE STRAY ANT" : "GO CLOSE TO THE BIG STRAY ANT IN THE MAIN HALLWAY") + ": " + n + "/" + TUT_GUN.shots + " SHOTS.";
 }
 function tutGunTick() {
     const S = _fp.tut.script, st = TUT_STEPS[S.step];
@@ -136,7 +136,9 @@ function facilityDirectorTick() {
 function tutSpawnedBefore(A) { let n = 0; for (let i = 0; i < A.wave; i++) n += TUT.waves[i].who.length; return n; }
 
 // the objective plate: top left, under the FACILITY · EXIT tab. The tutorial's seven steps; then (once a class is chosen) the class's own; then a closing line.
+let _fpObjBottom = 0;   // where the objective plate ends on screen (0: not drawn): the enemy index card (js/targeting.js) goes under it
 function facilityDrawObjective() {
+    _fpObjBottom = 0;
     const S = _fp && _fp.tut && _fp.tut.script; if (!S || typeof uiSlab !== "function" || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen)) return;
     const W = canvas.width, tutDone = S.step >= TUT_STEPS.length, pc = playerClass(), w = Math.min(W - 24, 350), x = 12, y = 158;
     let title, body, hint = "", col = pc ? pc.colour : UI_TEAL;
@@ -145,6 +147,7 @@ function facilityDrawObjective() {
     else if (!TUT_CLASS_STEP.done()) { title = pc.name + "  ·  " + TUT_CLASS_STEP.title; body = TUT_CLASS_STEP.text(); hint = TUT_CLASS_STEP.hint(); }
     else { title = pc.name + "  ·  RANK " + classRank(); body = "YOU RESTORED POWER, RAISED AN ARMY AND HELD THE CRYSTAL. YOUR CLASS IS YOURS."; col = "#9dffb6"; }
     const chars = Math.max(18, Math.floor((w - 28) / 8)), lines = codexWrap(body, chars).slice(0, 3), hl = hint ? codexWrap(hint, chars).slice(0, 3) : [], h = 44 + lines.length * 17 + (hl.length ? hl.length * 15 + 8 : 0);
+    _fpObjBottom = y + h;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); uiSlab(x, y, w, h, col, false, "#0b1226");
     uiTextFit(title, x + 16, y + 20, 15, col, "left", w - 30);
     let yy = y + 42; for (const l of lines) { uiCaptionFit(l, x + 16, yy, "#e8f0ff", "left", 12, w - 28); yy += 17; }

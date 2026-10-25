@@ -2120,7 +2120,7 @@ function render() {
     frame++;
 
     // ── LONG HOLD DETECT ──
-    if (isPressing&&!longHoldFired&&!touchMoved&&!_gunPressed) {
+    if (isPressing&&!longHoldFired&&!touchMoved&&!_gunPressed&&!_targetPressed) {
         if (performance.now()-pressStartTime>LONG_HOLD_MS) {
             longHoldFired=true; handleLongHold(pressX,pressY);
         }
@@ -2199,6 +2199,7 @@ function render() {
     // ── PLAYER ATTACK COOLDOWN ──
     if (player.attackCooldown > 0) player.attackCooldown--;
     if (typeof gunTick === "function") gunTick();   // click or hold to fire: js/gunfire.js
+    if (typeof targetTick === "function") targetTick();   // the aim meter and the selection: js/targeting.js
     // Shards, and your SHIELD CELLS beside them once you have any (js/shieldcells.js).
     const _cellsNow = typeof shieldCells === "number" ? shieldCells : 0;
     if (shardCount !== _lastShardCount || _cellsNow !== _lastCellCount) {
@@ -4578,6 +4579,7 @@ function render() {
     if (!dockHasMenus() && !infoPanelOpen) { drawShopButton(); drawCampButton(); }
     drawAmmoChip();
     if (typeof drawLockReticle === "function") drawLockReticle();   // the lock-on's corners (js/gunfire.js)
+    if (typeof drawTargetUI === "function") drawTargetUI();   // the selection, the aim meter and the index card (js/targeting.js)
     if (!dockHasMenus() && !infoPanelOpen) drawSettingsButton();
     if (!(typeof indexReplaced === "function" && indexReplaced())) drawFollowerDutyMenu();
     drawSettingsPanel();

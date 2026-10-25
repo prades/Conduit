@@ -10,7 +10,7 @@
 
 const GUN = { lockPick: 90, buffer: 30 };   // how far (px) from a locked enemy still counts as on it; the least time (frames) a click made while the gun cycles is kept (it is kept until the gun is ready)
 let playerLockTarget = null;                // the enemy the player locked on (the ring's ATTACK), or null
-let gunHold = null;                         // a press that began on an enemy while armed: { x, y, pending, released, until }
+let gunHold = null;                         // a press that began on an enemy while armed: { x, y, pending, released, until }; button: true when it is the targeting dial's (js/targeting.js), which fires at the locked enemy wherever the finger is
 
 function _gunScreen(a) { return { x: (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width / 2, y: (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityLiftRel === "function" ? facilityLiftRel(a.x, a.y) : 0) - 55 }; }
 function _gunLive(a) { return !!a && !a.dead && a.team !== "green" && !a.isClone; }
@@ -30,7 +30,7 @@ function gunPress(ex, ey) {
     gunTick();   // (a ready gun fires on the press itself)
     return true;
 }
-function gunMove(ex, ey) { if (gunHold) { gunHold.x = ex; gunHold.y = ey; } }
+function gunMove(ex, ey) { if (gunHold && !gunHold.button) { gunHold.x = ex; gunHold.y = ey; } }
 function gunRelease() { if (gunHold) { gunHold.released = true; gunHold.until = (typeof frame !== "undefined" ? frame : 0) + Math.max(GUN.buffer, (player.attackCooldown || 0) + 3); } }
 // each frame, after the gun's cooldown has ticked
 function gunTick() {
@@ -39,7 +39,7 @@ function gunTick() {
     if (!playerAttackMode) { gunHold = null; return; }
     const now = typeof frame !== "undefined" ? frame : 0, held = !gunHold.released;
     if (player.attackCooldown <= 0 && (held || gunHold.pending)) {
-        const foe = gunTargetAt(gunHold.x, gunHold.y) || (held ? playerLockTarget : null);
+        const foe = gunHold.button ? playerLockTarget : gunTargetAt(gunHold.x, gunHold.y) || (held ? playerLockTarget : null);
         if (foe) {
             if (typeof weaponDry === "function" ? weaponDry() : playerAmmo <= 0) { firePlayerShot(foe); gunHold = null; return; }   // (says OUT OF AMMO once, and the hold ends)
             if (firePlayerShot(foe)) gunHold.pending = false;

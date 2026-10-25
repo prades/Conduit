@@ -5,9 +5,8 @@
 // No. 2, the honeycomb. Then: "the menu should stay open, it shouldn't close unless it's on mobile. This menu is for quick, decisive decisions in battle, like withdrawing from the fight, selecting certain
 // types to attack. Not too much, not too boxy."
 //   ON A TABLET OR DESKTOP it is always open (no pod, no close button, a tap on the world never puts it away). On a PHONE it is a CRYSTAL chip that opens it (the Crystal's flag, crystalMenuOpen).
-//   BATTLE TAB   WHO the orders go to (ALL or one element; selected roster cards win), RETREAT (the picked units break off and fall back to you for six seconds: they see no enemy and fire no signature
-//                move), HOLD and COME, a POSTURE (DEFEND / STEADY / PUSH: the play style, how far each goes after an enemy), and a TARGET focus: STRIKER / TANK / SCOUT / BOSS makes your followers go for
-//                that class of enemy first when one is within reach (npc.js), ANY puts it back to whoever is nearest.
+//   BATTLE TAB   WHO the orders go to (ALL or one element: the ELEMENT SELECTOR; selected roster cards win), RETREAT (the picked units break off and fall back to you for six seconds: they see no enemy and fire
+//                no signature move), HOLD and COME. (It used to carry a POSTURE and a TARGET focus too: the functions are still here, the rows are gone: docs/TUTORIAL.md, "Targeting".)
 //   MIX TAB      six hex cells round a centre hex, one for each element. TAP A CELL to put the element in the mix or take it out (a lit cell is in; at least one has to stay). The centre hex puts them
 //                ALL back. A locked element is a dark cell; one you have earned the unlock for is a gold UNLOCK cell (how an earned element is brought online). Recruits, and a follower that dies after its
 //                element was dropped (it comes back re-rolled, at half its level), draw from the mix (js/clone.js modulationPick); one whose element is still in the mix comes back as it was.
@@ -105,9 +104,6 @@ function mixToolHTML() {
         h += '</div>';
         h += '<button class="mt-retreat' + (going ? ' going' : '') + '" data-act="retreat"><b>' + (going ? 'FALLING BACK' : 'RETREAT') + '</b></button>';
         h += '<div class="mt-orders">' + MIXTOOL_ORDERS.map(o => '<button class="mt-ord" data-order="' + o.id + '" style="--c:' + o.col + '"><b>' + o.label + '</b></button>').join('') + '</div>';
-        h += '<div class="mt-seg3">' + MIXTOOL_POSTURES.map(x => '<button class="' + (post === x[0] ? 'on' : post === "mixed" ? 'mix' : '') + '" data-posture="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>';
-        h += '<div class="mt-who"><span class="mt-lab">AIM</span><button class="mt-chip' + (!battleFocus ? ' on' : '') + '" data-focus="any" style="--c:#fff"><span>ANY</span></button>'
-            + BATTLE_FOCUS_CLASSES.map(c => '<button class="mt-chip' + (battleFocus === c ? ' on' : '') + '" data-focus="' + c + '" style="--c:#ff8a5c"><span>' + c.toUpperCase() + '</span></button>').join('') + '</div>';
     }
     return h + '</div>';
 }
