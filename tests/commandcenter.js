@@ -159,16 +159,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(run('recruitFollower()'), true, 'recruited'); same(run('shardCount'), 100 - run('RECRUIT_COST'), 'the price'); same(run('followers.filter(f => !f.dead).length'), 1, 'a new follower');
         ok(run('floatingTexts.some(t => /RECRUITED/.test(t.text))'), 'no confirmation');
     });
-    check('it comes out as an element of the current mix (ELEMENT MIX), not any unlocked one', () => {
-        run('modulationMask = new Set(["ice"]); followers.length = 0; shardCount = 1000;');
-        for (let i = 0; i < 8; i++) run('recruitFollower()');
-        same(run('followers.filter(f => f.element === "ice").length'), 8, 'every recruit is ice'); run('modulationMask = new Set();');
+    check('a recruit is a draw, as a follower found in the world is: its type (brawler, mage or technician: an even draw) and its element (an even draw of those online) come with it, the toast says what came out, and the player has no say in either', () => {
+        run('followers.length = 0; actors = actors.filter(a => !a.isFollower); shardCount = 100000; unlockedElements = new Set(["fire", "electric", "ice"]); floatingTexts.length = 0;');
+        const r = JSON.parse(run(`JSON.stringify((function(){ const roles = {}, els = {}, pairs = {}; for (let i = 0; i < 240; i++) { recruitFollower(); const f = followers[followers.length - 1]; roles[f.role] = (roles[f.role] || 0) + 1; els[f.element] = (els[f.element] || 0) + 1; pairs[f.role + '/' + f.element] = 1; }
+            const f = followers[followers.length - 1]; const ok = FOLLOWER_TYPES[f.role] && assignRole(f.stats) === f.role && FOLLOWER_TYPES[f.role].personalities.indexOf(f.personality) >= 0; return { roles, els, pairs: Object.keys(pairs).length, ok, toast: floatingTexts.filter(t => /RECRUITED/.test(t.text)).slice(-1)[0].text }; })())`));
+        for (const k of ['brawler', 'sniper', 'camper']) ok(r.roles[k] > 50, k + ' came out ' + (r.roles[k] || 0) + ' times in 240: ' + JSON.stringify(r.roles)); same(Object.keys(r.roles).length, 3, 'a role that is not one of the three: ' + JSON.stringify(r.roles));
+        for (const k of ['fire', 'electric', 'ice']) ok(r.els[k] > 50, k + ' came out ' + (r.els[k] || 0) + ' times: ' + JSON.stringify(r.els)); same(Object.keys(r.els).length, 3, 'an element that is not online: ' + JSON.stringify(r.els)); same(r.pairs, 9, 'not every type came with every element');
+        same(r.ok, true, 'a follower\'s role is not the one its personality gives'); ok(/(BRAWLER|MAGE|TECHNICIAN) \u00b7 (FIRE|ELECTRIC|ICE) RECRUITED!/.test(r.toast), 'the toast does not say what came out: ' + r.toast);
+        run('followers.length = 0; actors = actors.filter(a => !a.isFollower); unlockedElements = new Set(ELEMENTS.map(e => e.id));');
     });
-    check('THE ASK: a picked element is the element that comes out (a locked one falls back to the mix)', () => {
-        run('modulationMask = new Set(); followers.length = 0; shardCount = 500;');
-        run('recruitFollower("ice"); recruitFollower("ice"); recruitFollower("flux");');
-        same(run('followers.filter(f => f.element === "ice").length'), 2, 'ice'); same(run('followers.filter(f => f.element === "flux").length'), 1, 'flux');
-        run('unlockedElements.delete("toxic"); followers.length = 0; recruitFollower("toxic");'); ok(run('followers.length === 1 && followers[0].element !== "toxic"'), 'a locked element was recruited'); run('unlockedElements.add("toxic");');
+    check('a scripted recruit can ask for a type and an element (a locked element falls back to a draw); nothing in the UI does: the Crystal has no recruit chooser and no element mix', () => {
+        run('followers.length = 0; actors = actors.filter(a => !a.isFollower); shardCount = 500; unlockedElements = new Set(["fire", "electric", "ice"]);');
+        run('recruitFollower("camper", "ice"); recruitFollower("sniper", "ice"); recruitFollower("brawler", "flux");');
+        same(run('followers.filter(f => f.element === "ice" && f.role === "camper").length'), 1, 'a technician made of ice'); same(run('followers.filter(f => f.element === "ice" && f.role === "sniper").length'), 1, 'a mage made of ice');
+        ok(run('followers.length === 3 && followers[2].role === "brawler" && followers[2].element !== "flux"'), 'a locked element was recruited');
+        run('unlockedElements = new Set(ELEMENTS.map(e => e.id));');
+        for (const f of ['js/commandcenter.js', 'js/radialmenu.js', 'js/clone.js']) ok(!/recruitCrystal|recruitChoice|modulationToggle|modulationMask/.test(fs.readFileSync(path.join(ROOT, f), 'utf8')), f + ' still has a recruit chooser or an element mix');
+        ok(!fs.existsSync(path.join(ROOT, 'js/recruitcrystal.js')), 'the recruit crystal file is still there'); ok(!/recruitcrystal/.test(fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8')), 'game.html still loads it');
     });
     check('short of the price it refuses, says so, and spends nothing', () => {
         run('followers.length = 0; shardCount = 5; floatingTexts.length = 0;');

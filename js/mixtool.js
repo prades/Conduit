@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────
-//  THE BATTLE TOOL — quick decisions in a fight, and the element mix: one small tool at the bottom left (it replaced the Crystal menu and the old dial)
+//  THE BATTLE TOOL — quick decisions in a fight, and the elements online: one small tool at the bottom left (it replaced the Crystal menu and the old dial)
 // ─────────────────────────────────────────────────────────
 // REPORTED: "I kind of just wanted to replace the crystal menu with this little selector tool, so that you can have a mix of elements for spawning the right followers." Look: docs/images/mix-selector.png
 // No. 2, the honeycomb. Then: "the menu should stay open, it shouldn't close unless it's on mobile. This menu is for quick, decisive decisions in battle, like withdrawing from the fight, selecting certain
@@ -7,29 +7,26 @@
 //   ON A TABLET OR DESKTOP it is always open (no pod, no close button, a tap on the world never puts it away). On a PHONE it is a CRYSTAL chip that opens it (the Crystal's flag, crystalMenuOpen).
 //   BATTLE TAB   WHO the orders go to (ALL or one element: the ELEMENT SELECTOR; selected roster cards win), RETREAT (the picked units break off and fall back to you for six seconds: they see no enemy and fire
 //                no signature move), HOLD and COME. (It used to carry a POSTURE and a TARGET focus too: the functions are still here, the rows are gone: docs/TUTORIAL.md, "Targeting".)
-//   MIX TAB      six hex cells round a centre hex, one for each element. TAP A CELL to put the element in the mix or take it out (a lit cell is in; at least one has to stay). The centre hex puts them
-//                ALL back. A locked element is a dark cell; one you have earned the unlock for is a gold UNLOCK cell (how an earned element is brought online). Recruits, and a follower that dies after its
-//                element was dropped (it comes back re-rolled, at half its level), draw from the mix (js/clone.js modulationPick); one whose element is still in the mix comes back as it was.
-// The Crystal's flag is how everything else opens it: a tap on the Crystal or the home portal. On a wide screen the flag is taken (it shows the MIX tab and
+//   ELEMENTS TAB six hex cells round a centre hex, one for each element: a lit cell is an element that is online, a dark one is locked, and one you have earned the unlock for is a gold UNLOCK cell (tap it:
+//                that is how an earned element is brought online). There is no mix to narrow: every element online makes followers (an even draw, js/clone.js modulationPick), and what a follower IS
+//                (a brawler, a mage, a technician) is how it was found: the player does not choose it (js/species.js FOLLOWER_TYPES).
+// The Crystal's flag is how everything else opens it: a tap on the Crystal or the home portal. On a wide screen the flag is taken (it shows the ELEMENTS tab and
 // goes back down); on a phone it is "the tool is open".
 const MIXTOOL_TAB_KEY = "conduit_mixtool_tab";
 let _mtTab = "battle", _mtSig = "";
-try { if (localStorage.getItem(MIXTOOL_TAB_KEY) === "mix") _mtTab = "mix"; } catch (e) {}
+try { const v = localStorage.getItem(MIXTOOL_TAB_KEY); if (v === "mix" || v === "elements") _mtTab = "elements"; } catch (e) {}
 // A wide screen keeps the tool open for good; a phone opens and closes it.
 function mixToolWide() { return typeof innerWidth === "number" ? innerWidth > 700 : true; }
 function mixToolIsOpen() { return mixToolWide() || !!crystalMenuOpen; }
 
 function mixToolEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("mixTool") : null; }
-function mixToolSetTab(t) { _mtTab = t === "mix" ? "mix" : "battle"; try { localStorage.setItem(MIXTOOL_TAB_KEY, _mtTab); } catch (e) {} mixToolRender(true); }
-function mixToolSetOpen(o) { if (mixToolWide()) return; crystalMenuOpen = !!o; if (o) modulationDirty = false; if (o && typeof cloneMenuOpen !== "undefined") cloneMenuOpen = false; mixToolRender(true); }
+function mixToolSetTab(t) { _mtTab = t === "elements" ? "elements" : "battle"; try { localStorage.setItem(MIXTOOL_TAB_KEY, _mtTab); } catch (e) {} mixToolRender(true); }
+function mixToolSetOpen(o) { if (mixToolWide()) return; crystalMenuOpen = !!o; if (o && typeof cloneMenuOpen !== "undefined") cloneMenuOpen = false; mixToolRender(true); }
 function mixToolSay(text, col) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color: col || "#19e6c1", life: 90, vy: -0.25, size: 12 }); }
 
-// The elements in the mix, in the cells' order.
-function mixToolParts() { return ELEMENTS.filter(e => unlockedElements.has(e.id) && modulationIncludes(e.id)); }
+// The elements online, in the cells' order.
+function mixToolParts() { return ELEMENTS.filter(e => unlockedElements.has(e.id)); }
 function mixToolPodLabel() { const p = mixToolParts(); return "CRYSTAL " + (p.length === 1 ? p[0].label.slice(0, 3).toUpperCase() : p.length); }
-// ALL: every unlocked element back in the mix (an empty mask is "any").
-function mixToolAll() { modulationMask = new Set(); modulationDirty = false; if (typeof saveProgress === "function") saveProgress(); mixToolSay("ALL ELEMENTS IN THE MIX", "#ffe733"); mixToolRender(true); }
-
 // ── the field orders (the dial's old COMMAND module) ──
 const MIXTOOL_ORDERS = [
     { id: "hold",   label: "HOLD", sub: "STAND HERE",   col: "#8fe3ff", run: p => ccApplyStance(p, "hold") },
@@ -77,23 +74,23 @@ const MT_CELLS = [[50, 18.9], [79.2, 34.4], [79.2, 65.6], [50, 81.1], [20.8, 65.
 function mixToolSignature() {
     const tot = typeof followers !== "undefined" ? followers.filter(f => f && !f.dead).length : 0;
     const f0 = typeof frame !== "undefined" ? frame : 0, pool = mixToolPool();
-    return [mixToolIsOpen(), _mtTab, [...modulationMask].join(), [...unlockedElements].join(), pendingElements.length, !!modulationDirty, squadMode, player.selectedElement, mixToolTarget(), tot, battleFocus, mixToolPostureNow(), pool.some(a => a.retreatUntil > f0)].join("|");
+    return [mixToolIsOpen(), _mtTab, [...unlockedElements].join(), pendingElements.length, squadMode, player.selectedElement, mixToolTarget(), tot, battleFocus, mixToolPostureNow(), pool.some(a => a.retreatUntil > f0)].join("|");
 }
 function mixToolHTML() {
     const parts = mixToolParts(), pend = pendingElements.length > 0, choices = typeof _modChoices === "function" && pend ? _modChoices() : [], open = mixToolIsOpen();
-    const f0 = typeof frame !== "undefined" ? frame : 0, bang = (pend || modulationDirty) ? '<i class="mt-bang">!</i>' : '';
-    // On a phone the pod: a gold ! on it when an element unlock is waiting, or a new element has made the mix stale (RE-MODULATE). Opening the tool is the acknowledgement: it clears the second.
-    let h = '<button class="mt-pod" aria-label="Mix selector">' + _MT_GEM("#ffe733", 15) + '<span>' + mixToolPodLabel() + '</span>' + (bang && !open ? bang : '') + '</button>';
+    const f0 = typeof frame !== "undefined" ? frame : 0, bang = pend ? '<i class="mt-bang">!</i>' : '';
+    // On a phone the pod: a gold ! on it when an element unlock is waiting.
+    let h = '<button class="mt-pod" aria-label="Battle orders and elements">' + _MT_GEM("#ffe733", 15) + '<span>' + mixToolPodLabel() + '</span>' + (bang && !open ? bang : '') + '</button>';
     if (!open) return h;
-    h += '<div class="mt-panel"><div class="mt-tabs"><button class="mt-tab' + (_mtTab === "battle" ? ' on' : '') + '" data-tab="battle">BATTLE</button><button class="mt-tab' + (_mtTab === "mix" ? ' on' : '') + '" data-tab="mix">' + _MT_GEM("#ffe733", 15) + 'CRYSTAL' + bang + '</button><button class="mt-x" data-act="close" aria-label="Close">\u2715</button></div>';
-    if (_mtTab === "mix") {
+    h += '<div class="mt-panel"><div class="mt-tabs"><button class="mt-tab' + (_mtTab === "battle" ? ' on' : '') + '" data-tab="battle">BATTLE</button><button class="mt-tab' + (_mtTab === "elements" ? ' on' : '') + '" data-tab="elements">' + _MT_GEM("#ffe733", 15) + 'ELEMENTS' + bang + '</button><button class="mt-x" data-act="close" aria-label="Close">\u2715</button></div>';
+    if (_mtTab === "elements") {
         h += '<div class="mt-comb">';
         ELEMENTS.forEach((e, i) => {
-            const un = unlockedElements.has(e.id), on = un && modulationIncludes(e.id), pick = !un && choices.indexOf(e.id) >= 0, c = MT_CELLS[i % 6];
+            const un = unlockedElements.has(e.id), on = un, pick = !un && choices.indexOf(e.id) >= 0, c = MT_CELLS[i % 6];
             h += '<button class="mt-hex' + (on ? ' on' : '') + (!un && !pick ? ' locked' : '') + (pick ? ' pick' : '') + '" data-id="' + e.id + '" style="--c:' + (pick ? '#ffe733' : e.color) + ';left:' + c[0] + '%;top:' + c[1] + '%"><span class="mt-hexin">'
                 + _MT_GEM(un || pick ? e.color : "#3a4666", 18) + '<b>' + (pick ? "UNLOCK" : un ? e.label.slice(0, 3).toUpperCase() : "LOCKED") + '</b></span></button>';
         });
-        h += '<button class="mt-hex mt-all' + (modulationUntouched() ? ' on' : '') + '" data-all="1" style="--c:#ffe733;left:50%;top:50%"><span class="mt-hexin"><b>ALL</b><em>' + parts.length + '</em></span></button></div>';
+        h += '<span class="mt-hex mt-all on" style="--c:#ffe733;left:50%;top:50%"><span class="mt-hexin"><b>' + parts.length + '</b><em>ONLINE</em></span></span></div>';
         // one line, and only when there is something to say: an unlock is waiting
         if (pend) h += '<div class="mt-hint gold">' + (pendingElements.length > 1 ? pendingElements.length + ' UNLOCKS EARNED' : 'UNLOCK EARNED') + ' \u2014 TAP GOLD</div>';
     } else {
@@ -109,10 +106,9 @@ function mixToolHTML() {
 }
 function mixToolRender(force) {
     const root = mixToolEl(); if (!root) return;
-    // On a wide screen the tool is always open, so the Crystal's flag (a tap on the Crystal) is a request to SHOW THE MIX: take it and put it back down.
-    if (crystalMenuOpen && mixToolWide()) { crystalMenuOpen = false; _mtTab = "mix"; modulationDirty = false; try { localStorage.setItem(MIXTOOL_TAB_KEY, _mtTab); } catch (e) {} force = true; }
+    // On a wide screen the tool is always open, so the Crystal's flag (a tap on the Crystal) is a request to SHOW THE ELEMENTS: take it and put it back down.
+    if (crystalMenuOpen && mixToolWide()) { crystalMenuOpen = false; _mtTab = "elements"; try { localStorage.setItem(MIXTOOL_TAB_KEY, _mtTab); } catch (e) {} force = true; }
     const sig = mixToolSignature(); if (!force && sig === _mtSig) return; _mtSig = sig;
-    if (mixToolIsOpen() && _mtTab === "mix") modulationDirty = false;   // looking at the mix is the acknowledgement of a RE-MODULATE prompt
     root.innerHTML = mixToolHTML(); if (root.classList) root.classList.toggle("open", mixToolIsOpen());
 }
 function mixToolTick() {
@@ -132,14 +128,13 @@ function mixToolClick(ev) {
     const po = q("[data-posture]"); if (po) { mixToolPosture(po.getAttribute("data-posture")); return; }
     const fo = q("[data-focus]"); if (fo) { mixToolFocus(fo.getAttribute("data-focus")); return; }
     const sc = q("[data-scope]"); if (sc) { mixToolScope(sc.getAttribute("data-scope")); return; }
-    if (q("[data-all]")) { mixToolAll(); return; }
     const cell = q(".mt-hex[data-id]");
     if (cell) {
         const id = cell.getAttribute("data-id");
         if (!unlockedElements.has(id)) {
             if (pendingElements.length > 0 && typeof _modChoices === "function" && _modChoices().indexOf(id) >= 0 && typeof activatePendingElement === "function") activatePendingElement(id);
             else { const e = ELEMENTS.find(x => x.id === id); mixToolSay((e ? e.label.toUpperCase() : "") + " IS LOCKED", "#8aa0c8"); }
-        } else modulationToggle(id);
+        }
         mixToolRender(true);
     }
 }

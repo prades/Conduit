@@ -30,7 +30,7 @@ const TUT_STEPS = [
     { id: "relay", title: "RESTORE THE RELAY", text: () => "REPAIR THE CRYSTAL CHAMBER'S RELAY (ITS NORTH-EAST CORNER).",
         hint: () => "YOU NEED THE RELAY KIT (A CASE IN THE CHAMBER) AND 2 POWER CELLS. TAP THE RELAY AND STAY AT IT.", done: () => relayOnline("relay_chamber") },
     { id: "recruit", title: "RECRUIT A FOLLOWER", text: () => "OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: 30 SHARDS.",
-        hint: () => "A RECRUIT ARRIVES AT THE CRYSTAL AND FOLLOWS YOU.", done: () => followers.filter(f => f && !f.dead).length > _fp.tut.script.baseFollowers },
+        hint: () => "IT ARRIVES AT THE CRYSTAL AS A BRAWLER, A MAGE OR A TECHNICIAN, MADE OF ONE OF YOUR ELEMENTS, AND FOLLOWS YOU. YOU CANNOT CHANGE WHAT IT IS: EVOLVE IT TO MAKE IT BETTER.", done: () => followers.filter(f => f && !f.dead).length > _fp.tut.script.baseFollowers },
     { id: "position", title: "POST YOUR FOLLOWERS", text: () => "POST TWO FOLLOWERS NEAR THE CRYSTAL: SELECT THEM AND PRESS HOLD.",
         hint: () => "HOLD STANDS A FOLLOWER WHERE IT IS. COME CALLS IT BACK. THEY FIGHT ANYTHING THAT COMES.", done: () => tutHeld() >= TUT.holdNeeded },
     { id: "gun", title: "FIRE YOUR GUN", text: () => tutGunText(),

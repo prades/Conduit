@@ -648,117 +648,38 @@ const CSORTS = [
     { id:"specials", label:"SPECIALS" },
 ];
 
-// THE QUICK RECRUIT. "I would really like a button near the roster, so if the roster is looking slim the user can create a recruit rapidly." It
-// costs RECRUIT_COST shards and a follower comes out at the Crystal as the element the player picks (the picker the + RECRUIT button opens), or
-// as a draw from the current mix (the ELEMENT MIX tab). It is offered in the
-// ROSTER only (the Command Center's roster tab and the phone roster): "that needs to be the only way", so the Crystal menu and the dock have none.
+// THE QUICK RECRUIT. "I would really like a button near the roster, so if the roster is looking slim the user can create a recruit rapidly." It costs RECRUIT_COST shards and a follower comes out at the
+// Crystal as it was found: a BRAWLER, a MAGE or a TECHNICIAN (FOLLOWER_TYPES, js/species.js: an even draw of the three) made of one of the elements brought online (an even draw, modulationPick below). The player does
+// not choose either, and cannot change them afterwards ("they have their class already and you just have to evolve them to make them better": js/evolution.js); the toast says what came out.
+// It is offered in the ROSTER only (the Command Center's roster tab and the phone roster): "that needs to be the only way", so the Crystal menu and the dock have none.
 const RECRUIT_COST = 30;
-// `element`: the one the player picked (js/recruitcrystal.js recruitDo); none = a draw from the current mix.
-function recruitFollower(element) {
+// The type of a recruit that is not asked for one: an even draw of the three.
+function recruitDrawType() { return FOLLOWER_TYPE_ORDER[Math.floor(Math.random() * FOLLOWER_TYPE_ORDER.length)]; }
+// `type`, `element`: for a test or a scripted recruit; none is a draw.
+function recruitFollower(type, element) {
     if (shardCount < RECRUIT_COST) { floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NEED " + RECRUIT_COST + " SHARDS", color: "#f44", life: 90, vy: -0.2 }); return false; }
     shardCount -= RECRUIT_COST; saveShards();
-    spawnFollowerAtCrystal(element && unlockedElements.has(element) ? element : modulationPick() || "fire");
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "FOLLOWER RECRUITED!", color: "#0f8", life: 100, vy: -0.2 });
+    const t = FOLLOWER_TYPES[type] ? type : recruitDrawType(), e = element && unlockedElements.has(element) ? element : modulationPick() || "fire";
+    spawnFollowerAtCrystal(e, t);
+    const def = ELEMENTS.find(x => x.id === e);
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: roleLabel(t) + " \u00b7 " + (def ? def.label.toUpperCase() : String(e).toUpperCase()) + " RECRUITED!", color: FOLLOWER_TYPES[t].colour, life: 120, vy: -0.2 });
     return true;
 }
+// The + RECRUIT button: recruit, and bring the roster up to date.
+function recruitDo() {
+    const ok = recruitFollower();
+    if (typeof ccRender === "function") ccRender();
+    if (typeof radialRender === "function") radialRender();
+    return ok;
+}
 
-// What new recruits draw from. This is the modulation slider's actual job —
-// until now _getModScheme() was only ever used to draw a label and swatches,
-// so the slider was decorative and recruits took any unlocked element.
-// Falls back to everything activated if the scheme somehow comes back empty,
-// because a recruit with no element is worse than an unmodulated one.
+// What new followers draw their element from: everything brought online (an unlock earned at a cleared wave and chosen at the Crystal, js/wavedata.js). There is no mix to narrow any more.
 function recruitElementPool() {
-    const scheme = _getModScheme();
-    const ids = (scheme.elements || []).map(e => e.id).filter(id => unlockedElements.has(id));
-    return ids.length ? ids : [...unlockedElements];
+    return ELEMENTS.filter(e => unlockedElements.has(e.id)).map(e => e.id);
 }
-
-// ── Modulation: which elements new followers come out as ──
-//
-// The mask is the single source of truth. Everything else — the label, the
-// swatches, the HUD chip, recruitElementPool — reads it through here.
-//
-// It replaced a 0..1 slider that indexed a generated list of element
-// combinations. With exactly two elements unlocked (fire and electric, the
-// starting pair) a slider value in the 0.25..0.55 band skipped the TRI branch,
-// which wants n >= 3, and fell into the BI branch where (s - 0.55) is negative:
-// Math.floor gave -1, combos[-1] was undefined, and combo.map threw. A set of
-// toggles has no such arithmetic to get wrong.
-//
-// The mask is kept honest on every read rather than only on write: elements
-// come online mid-run, a reset relocks them, and a saved mask can name an
-// element this save has not earned. An empty mask means "any", which is also
-// the starting state, so a player who has never opened the control still gets a
-// sensible mix.
-function normaliseModulationMask() {
-    // Prune only. Filling an empty mask with every unlocked element and KEEPING
-    // it turned the implicit "any" into an explicit list the first time
-    // anything read it — so a player who never opened the control had their mix
-    // frozen to fire and electric, and every element earned afterwards was
-    // silently left out. An empty mask stays empty and means "any".
-    for (const id of [...modulationMask]) {
-        if (!unlockedElements.has(id)) modulationMask.delete(id);
-    }
-    return ELEMENTS.filter(e => unlockedElements.has(e.id));
-}
-
-// What is actually in the mix: the mask, or everything when the player has
-// made no choice. One place, so the scheme, the swatches and the recruit pool
-// cannot disagree about what an empty mask means.
-function modulationIncludes(id) {
-    return modulationMask.size === 0 ? unlockedElements.has(id) : modulationMask.has(id);
-}
-
-function _getModScheme() {
-    const unlocked = normaliseModulationMask();
-    if (unlocked.length === 0) return { colors:["#888"], elements:[], size:0, label:"NONE" };
-    const on = unlocked.filter(e => modulationIncludes(e.id));
-    const size = on.length;
-    // The label says what it does rather than naming a band: every recruit is
-    // one element, or the mix it draws from.
-    const label = size === unlocked.length ? "ALL \u00d7" + size
-                : size === 1               ? on[0].label
-                : on.map(e => e.label.slice(0, 3)).join("\u00b7");
-    return { colors: on.map(e => e.color), elements: on, size, label };
-}
-
-// Toggling is the only way the mask changes. It refuses to switch the last
-// element off: an empty mask reads as "any", so emptying it by tapping would
-// silently do the opposite of what the tap looks like.
-function modulationToggle(id) {
-    const unlocked = normaliseModulationMask();
-    if (!unlockedElements.has(id)) return false;
-    // The first tap turns "any" into an explicit list before narrowing it, so
-    // tapping a lit swatch drops that one element rather than inverting the
-    // whole mix.
-    if (modulationMask.size === 0) for (const e of unlocked) modulationMask.add(e.id);
-    if (modulationMask.has(id)) {
-        if (modulationMask.size <= 1) {
-            floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
-                text: "AT LEAST ONE ELEMENT", color: "#f88", life: 90, vy: -0.25, size: 11 });
-            return false;
-        }
-        modulationMask.delete(id);
-    } else {
-        modulationMask.add(id);
-    }
-    modulationDirty = false;        // they have modulated; the prompt can rest
-    if (typeof saveProgress === "function") saveProgress();
-    const el = ELEMENTS.find(e => e.id === id);
-    floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 96,
-        text: "MODULATION \u2014 " + _getModScheme().label,
-        color: el ? el.color : "#aaddff", life: 80, vy: -0.22, size: 11 });
-    return true;
-}
-
-// ── Drawing from the mix ──
-// A recruit, and a follower that has to be re-rolled after dying, draws an element evenly from what is in the mix. (A follower that dies keeps its element while that element is in the mix; one
-// whose element has been dropped comes back re-rolled from the mix, at half its level: js/game.js.)
-// The mix is untouched when the player has made no choice: every unlocked element is in it, and an element earned later joins it.
-function modulationUntouched() { return modulationMask.size === 0; }
-// One element drawn from the mix; null when nothing is unlocked.
+// One element, evenly from those brought online; null when nothing is.
 function modulationPick(rnd) {
-    const ids = ELEMENTS.filter(e => unlockedElements.has(e.id) && modulationIncludes(e.id)).map(e => e.id);
+    const ids = recruitElementPool();
     if (!ids.length) return null;
     return ids[Math.min(ids.length - 1, Math.floor((typeof rnd === "number" ? rnd : Math.random()) * ids.length))];
 }
@@ -779,7 +700,6 @@ function _sortedCloneOptions(opts, mode) {
     return copy; // "species" — natural order
 }
 
-// ── The mix lives in the MIX SELECTOR (js/mixtool.js): the Crystal menu and its HUD button are gone ──
 
 // ── Tab: Clone Bay ────────────────────────────────────────
 function _drawClonesTab(PX, PY, PW, PH) {

@@ -744,8 +744,8 @@ function setFollowerDuty(actor, duty, quiet) {
     return true;
 }
 
-// RE-ROLL: send a follower back to the crystal to be made again. Clones and
-// ghost-phages are summoned, not recruited, so they have nothing to re-roll.
+// RE-ROLL: send a follower back to the crystal to be made again. It keeps what it IS, its type and its element ("they have their class already": the player cannot change them); what is made
+// again is its personality (within the type), its stats, its traits and its perk. Clones and ghost-phages are summoned, not recruited, so they have nothing to re-roll.
 function canRerollFollower(actor) {
     return !!actor && !actor.dead && actor.team === 'green' && actor.isFollower
         && !actor.isClone && !actor.ghostphageLife && !actor.returningToCrystal;
@@ -767,6 +767,8 @@ function startFollowerReroll(actor, quiet) {
     if (list) { const li = list.indexOf(actor); if (li >= 0) list.splice(li, 1); }
     actor.isFollower = false;
     actor.returningToCrystal = true;
+    actor.wantType = typeof FOLLOWER_TYPES !== "undefined" && FOLLOWER_TYPES[actor.role] ? actor.role : null;   // (the arrival block in npc.js makes it that type, and keeps the element)
+    actor.keepElement = actor.element;
     actor.personality = null;
     actor.combatTrait = null;
     actor.naturalTrait = null;

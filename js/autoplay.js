@@ -27,7 +27,7 @@
 //      shards, one follower drains wall panels no further out than the next zone.
 //   6. WAVE CLEARED → NEXT WAVE, after a short pause to read the screen.
 //   7. ALWAYS → UNLOCK. An earned element unlock is spent at once on the ladder's next element (js/wavedata.js); it used to sit
-//      pending for ever, because the choosing happens on the Crystal's MODULATION tab, which autoplay never opens.
+//      pending for ever, because the choosing happens on the Crystal's ELEMENTS tab, which autoplay never opens.
 const AUTOPLAY_THINK        = 45;
 const AUTOPLAY_HACK_TEAM    = 3;
 const AUTOPLAY_ULT_RANGE    = 4;

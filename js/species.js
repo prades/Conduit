@@ -38,6 +38,21 @@ function applyPersonality(personalityKey) {
     };
 }
 
+// THE FOLLOWER TYPES. What a follower IS (its role) comes from its personality's stat block (assignRole below): aggressive and wild are BRAWLERS, cautious and cunning are MAGES (the code's
+// "sniper"), stoic is the TECHNICIAN (the code's "camper"). A follower has its type and its element when it is found (or recruited at the Crystal, js/clone.js: a draw), and keeps them: the player can neither
+// choose nor change them, and makes a follower better by evolving it (js/evolution.js). The ids are the roles', which saves and tests know them by; the label is roleLabel (js/config.js).
+const FOLLOWER_TYPES = {
+    brawler: { id: "brawler", colour: "#ff6a3d", personalities: ["aggressive", "wild"] },
+    sniper:  { id: "sniper",  colour: "#b46bff", personalities: ["cautious", "cunning"] },
+    camper:  { id: "camper",  colour: "#19e6c1", personalities: ["stoic"] },
+};
+const FOLLOWER_TYPE_ORDER = ["brawler", "sniper", "camper"];
+// A personality of the type (random among its few), or any personality when the type is none of the three.
+function personalityForType(type) {
+    const t = FOLLOWER_TYPES[type]; if (!t) return PERSONALITY_KEYS[Math.floor(Math.random() * PERSONALITY_KEYS.length)];
+    return t.personalities[Math.floor(Math.random() * t.personalities.length)];
+}
+
 // Role is derived automatically from stat branch dominance
 // Physical branch: hp + defense + attack + speed
 // Magic branch:    specialAttack + accuracy + will

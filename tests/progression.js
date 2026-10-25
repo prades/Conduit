@@ -94,10 +94,8 @@ function makeEnv(starting) {
         gameState: { nightNumber: 0 },
         pendingElements: [],
         lifetimeKills: 0,
-        modulationDirty: false,
         // Activation now asks whether the new element is already in the mix
         // before it prompts, so the mix has to be here. Empty means "any".
-        modulationMask: new Set(),
         unlockSaves: 0, progressSaves: 0,
         // Read out of config.js rather than written here: the wave ladder is
         // "every element that is not a starting one", so a fixture that
@@ -110,10 +108,6 @@ function makeEnv(starting) {
     sandbox.saveProgress = () => { sandbox.progressSaves++; };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
-    // The real predicate, not a stand-in: what "already in the mix" means is
-    // the whole question this fixture now asks.
-    vm.runInContext(fnSource('js/clone.js', 'modulationIncludes'), ctx,
-                    { filename: 'clone.js:modulationIncludes' });
     const from = SRC.wavedata.indexOf('const WAVE_UNLOCK_ORDER');
     const at   = SRC.wavedata.indexOf('function activatePendingElement', from);
     if (from < 0 || at < 0) { console.log('  FAIL could not find the progression block'); process.exit(1); }
@@ -237,41 +231,15 @@ check('activating at the crystal brings it online', () => {
 // lit anyway, and the only thing that cleared it was toggling a swatch, which
 // takes an element OUT of the mix. The ring stayed lit for the rest of the
 // game, and the one way to dismiss it made the squad worse.
-check('THE ASK: an element that lands IN the mix does not nag', () => {
+check('an element activated at the Crystal is simply online: no mix to narrow, no prompt to re-modulate', () => {
     const env = makeEnv();
-    clearWave(env);
-    same(env.sandbox.modulationMask.size, 0, 'fixture: the mix should start untouched');
-    const el = ladder(env)[0];
-    env.run('activatePendingElement')(el);
-    same(env.run(`modulationIncludes(${JSON.stringify(el)})`), true,
-         'fixture: an untouched mix should already include it');
-    same(env.sandbox.modulationDirty, false,
-         'the prompt lit for an element that was already in the mix');
-    ok(!env.sandbox.floatingTexts.some(t => /RE-MODULATE/.test(t.text)),
-       'it told the player to re-modulate when there was nothing to decide');
-    ok(env.sandbox.floatingTexts.some(t => /IN THE MIX/.test(t.text)),
-       'it does not say the new element is already in the mix');
-});
-
-check('but one LEFT OUT of a narrowed mix does', () => {
-    const env = makeEnv();
-    // Narrow the mix by hand, so the new element genuinely is not in it.
-    env.run('modulationMask.add("fire")');
     clearWave(env);
     const el = ladder(env)[0];
     env.run('activatePendingElement')(el);
-    same(env.run(`modulationIncludes(${JSON.stringify(el)})`), false,
-         'fixture: a narrowed mix should not include it');
-    same(env.sandbox.modulationDirty, true, 'a genuinely stale mix is not flagged');
-    ok(env.sandbox.floatingTexts.some(t => /RE-MODULATE/.test(t.text)),
-       'the player should be prompted');
-});
-
-check('and the prompt can be put down by looking at the control', () => {
-    // The only way to clear it used to be toggling a swatch. Opening the control is the acknowledgement: reading the mix IS the decision.
-    const MT = fs.readFileSync(path.join(ROOT, 'js/mixtool.js'), 'utf8');
-    ok(/function mixToolSetOpen\(o\) \{[^\n]*modulationDirty = false/.test(MT), 'opening the mix selector does not clear the prompt');
-    ok(/mixToolIsOpen\(\) && _mtTab === "mix"\) modulationDirty = false/.test(MT), 'the selector, showing the mix, does not clear the prompt');
+    ok(env.sandbox.unlockedElements.has(el), 'it did not come online');
+    ok(!env.sandbox.floatingTexts.some(t => /RE-MODULATE|IN THE MIX/.test(t.text)), 'it still talks of a mix');
+    ok(env.sandbox.floatingTexts.some(t => new RegExp(el.toUpperCase() + '|ONLINE', 'i').test(t.text) && /ONLINE/.test(t.text)), 'it does not say the element is online');
+    ok(!/modulationDirty|modulationMask|modulationIncludes|modulationToggle/.test(SRC.clone + SRC.wavedata + SRC.waves + fs.readFileSync(path.join(ROOT, 'js/mixtool.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'js/save.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8')), 'a piece of the element mix is still in the code');
 });
 
 check('activating something you have not earned does nothing', () => {
@@ -384,25 +352,20 @@ check('progress is saved as it is made', () => {
 
 group('the crystal is where it happens');
 
-check('the modulation actually drives recruits now', () => {
-    // _getModScheme() only ever fed a label and swatches; recruits took any
-    // unlocked element regardless of how the crystal was modulated.
-    ok(/function recruitElementPool/.test(SRC.clone), 'no recruit pool from the scheme');
+check('recruits take an even draw of the elements brought online (there is no mix to set)', () => {
+    ok(/function recruitElementPool/.test(SRC.clone), 'no recruit pool');
     const NPC = fs.readFileSync(path.join(ROOT, 'js/npc.js'), 'utf8');
-    ok(/recruitElementPool\(\)/.test(NPC), 'recruits do not use the modulation pool');
-    ok(!/const pool = \[\.\.\.unlockedElements\];/.test(NPC),
-       'recruits still ignore the modulation and take any unlocked element');
+    ok(/recruitElementPool\(\)/.test(NPC), 'recruits do not use the pool');
+    ok(!/const pool = \[\.\.\.unlockedElements\];/.test(NPC), 'recruits take an unordered pick of the unlocked set');
 });
 
-check('the pool never comes back empty', () => {
-    // A recruit with no element is worse than an unmodulated one.
+check('the pool is exactly what is online, in the elements\' order, and a draw is null only when nothing is', () => {
     const at = SRC.clone.indexOf('function recruitElementPool');
-    const body = SRC.clone.slice(at, at + 500);
-    ok(/ids\.length \? ids : \[\.\.\.unlockedElements\]/.test(body), 'no fallback for an empty scheme');
-    ok(/unlockedElements\.has\(id\)/.test(body), 'the pool should only offer activated elements');
+    const body = SRC.clone.slice(at, at + 300);
+    ok(/ELEMENTS\.filter\(e => unlockedElements\.has\(e\.id\)\)/.test(body), 'the pool should only offer activated elements');
 });
 
-check('a boss modulator still overrides the modulation', () => {
+check('a boss modulator still overrides the draw', () => {
     const NPC = fs.readFileSync(path.join(ROOT, 'js/npc.js'), 'utf8');
     const at = NPC.indexOf('if (activeCrystalModulation) {');
     ok(at > -1, 'the boss modulator override is gone');
@@ -416,14 +379,9 @@ check('the mix selector offers an UNLOCK chip for every locked element once one 
     ok(/pick \? "UNLOCK"/.test(MIXTOOL), 'the chip does not say UNLOCK');
 });
 
-check('THE PROMPT: the pod (and the MIX tab) say an element is waiting with a gold !, and the pod stops once the tool is open', () => {
-    ok(/\(pend \|\| modulationDirty\) \? '<i class="mt-bang">!<\/i>'/.test(MIXTOOL) && /\(bang && !open \? bang : ''\)/.test(MIXTOOL), 'the pod does not prompt');
+check('THE PROMPT: the pod (and the ELEMENTS tab) say an element is waiting with a gold !, and the pod stops once the tool is open', () => {
+    ok(/bang = pend \? '<i class="mt-bang">!<\/i>'/.test(MIXTOOL) && /\(bang && !open \? bang : ''\)/.test(MIXTOOL), 'the pod does not prompt');
     ok(!/function drawCrystalButton/.test(SRC.clone), 'the canvas Crystal button is still there');
-});
-
-check('re-modulating clears the prompt', () => {
-    ok(/modulationDirty = false;\s*\/\/ they have modulated/.test(SRC.clone),
-       'changing the modulation does not clear the stale flag');
 });
 
 group('it survives a refresh, and a reset clears it');
@@ -457,10 +415,8 @@ check('progress is kept out of the session blob', () => {
 
 check('a reset clears it all', () => {
     ok(/clearProgress\(\)/.test(SRC.waves), 'restartGame does not clear progress');
-    ok(/pendingElements=\[\]; lifetimeKills=0; modulationDirty=false;/.test(SRC.waves),
+    ok(/pendingElements=\[\]; lifetimeKills=0;/.test(SRC.waves),
        'restartGame leaves progression state behind');
-    ok(/modulationMask=new Set\(STARTING_ELEMENTS\);/.test(SRC.waves),
-       'restartGame leaves the modulation where it was');
 });
 
 check('every enemy killed counts, wanderers included', () => {
@@ -756,26 +712,6 @@ check('the kill counter updates the banner through the shared builder', () => {
         const before = G.unlocked().length;
         for (const id of G.pending().slice()) G.run(`activatePendingElement(${JSON.stringify(id)});`);
         ok(G.unlocked().length > before, 'the activated element should be online');
-        // In the running game the mix has never been narrowed, so the new
-        // element is already in it and there is nothing to prompt about.
-        same(G.run('modulationMask.size'), 0, 'fixture: the mix should be untouched here');
-        same(G.run('modulationDirty'), false,
-             'the prompt lit although the new element was already in the mix');
-    });
-
-    check('narrowing the mix first DOES flag it, in the running game', () => {
-        const H2 = G;
-        H2.run('modulationMask.clear(); modulationMask.add("electric"); modulationDirty = false;');
-        H2.run('gameState.nightNumber = 4; noteWaveClearedForProgression();');
-        const pend = H2.pending();
-        if (pend.length === 0) {
-            // The ladder is spent in this fixture — say so rather than passing
-            // on an empty loop.
-            same(H2.run('nextWaveUnlock()'), null, 'nothing pending and the ladder is not spent');
-            return;
-        }
-        H2.run(`activatePendingElement(${JSON.stringify(pend[0])});`);
-        same(H2.run('modulationDirty'), true, 'an element left out of the mix did not flag it');
     });
 
     check('the earned element survives a refresh before it is activated', () => {

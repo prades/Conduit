@@ -30,8 +30,8 @@ function _reclaimRefusal(text) {
 // This used to be `followerByElement[player.selectedElement]` and nothing else,
 // which made RECLAIM depend on the element TAB the player happened to have
 // open. For the first round that is invisible — you start on fire and your
-// first recruits are fire. After that the Crystal's modulation hands out
-// something else, so the squad is ICE while the tab still says FIRE, the pool
+// first recruits are fire. After that a recruit is an even draw of the elements online
+// (js/clone.js), so it may be something else, so the squad is ICE while the tab still says FIRE, the pool
 // comes back empty, and RECLAIM silently does nothing for the rest of the game.
 //
 // So: the selected element first, because that is what the player is looking

@@ -63,7 +63,8 @@ function updateRTSNPC(actor) {
             actor.isFollower = true;
             // Assign identity at crystal if not yet assigned
             if (!actor.personality) {
-                actor.personality = PERSONALITY_KEYS[Math.floor(Math.random()*PERSONALITY_KEYS.length)];
+                actor.personality = personalityForType(actor.wantType);   // (a re-roll asks for a type: js/mass.js; a find is a draw)
+                actor.wantType    = null;
                 actor.stats       = applyPersonality(actor.personality);
                 actor.role        = assignRole(actor.stats);
                 actor.currentWill = actor.stats.will;
@@ -80,16 +81,15 @@ function updateRTSNPC(actor) {
             // a little behind that zone's predators.
             if (!Number.isFinite(actor.level) && typeof initFollowerLevel === "function")
                 initFollowerLevel(actor, { level: recruitLevel(Number.isFinite(actor.spawnKey) && typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(actor.spawnKey)) : undefined) });
-            // Always reassign element at crystal — world-spawn element is stale/irrelevant
-            // The modulation slider decides the pool. It used to draw a label
-            // and a row of swatches and nothing read the result — recruits just
-            // took a random unlocked element regardless of where the slider sat.
-            // A boss modulator still overrides it.
-            if (activeCrystalModulation) {
+            // A follower that is made again keeps its element (js/mass.js startFollowerReroll); one that is found or recruited takes an even draw of the elements brought online (its element in the world is
+            // stale and irrelevant). The player does not choose it: the Crystal has no element mix to set. (A boss modulator still overrides it.)
+            if (actor.keepElement) {
+                actor.element = actor.keepElement; actor.keepElement = null;
+            } else if (activeCrystalModulation) {
                 actor.element = activeCrystalModulation.pair[Math.floor(Math.random()*activeCrystalModulation.pair.length)];
             } else {
                 const pool = recruitElementPool();
-                actor.element = modulationPick() || pool[Math.floor(Math.random()*pool.length)] || "fire";   // an even draw from the mix (js/clone.js)
+                actor.element = modulationPick() || pool[Math.floor(Math.random()*pool.length)] || "fire";   // an even draw (js/clone.js)
             }
             if (!actor.combatTrait)  actor.combatTrait  = Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)];
             if (!actor.naturalTrait) actor.naturalTrait = Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)];

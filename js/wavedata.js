@@ -66,8 +66,7 @@ let zoneRespawnTimers = {}; // zoneIndex -> frames until respawn
 //  Two steps on purpose. Clearing a wave EARNS an element; it sits pending
 //  until you walk back to the Crystal and activate it. That makes the Crystal
 //  somewhere you return to rather than a thing you defend, and it is what gives
-//  the modulation chip something to chew on: a new element arrives, the mix
-//  goes stale, and you decide what your followers are made of next.
+//  the choice of which element comes online next: you decide at the Crystal.
 //
 //  This replaced a kill ladder (25 / 60 / 110 / 180 lifetime kills). Kills are
 //  still counted — they are the record of what you have fought, and the Crystal
@@ -143,17 +142,10 @@ function activatePendingElement(elementId) {
     unlockedElements.add(elementId);
     saveUnlocks();
     saveProgress();
-    // Only stale if the new element is NOT in the mix. A player who has never
-    // narrowed the mix has an empty mask, which means "any", so the element
-    // just activated is already in it — there is nothing to decide, nothing to
-    // prompt about, and telling them to re-modulate would be a lie.
-    const inMix = modulationIncludes(elementId);
-    if (!inMix) modulationDirty = true;
     const def = ELEMENTS.find(e => e.id === elementId);
     floatingTexts.push({
         x: canvas.width / 2, y: canvas.height / 2 - 70,
-        text: (def ? def.label : elementId.toUpperCase())
-              + (inMix ? " ONLINE — IN THE MIX" : " ONLINE — RE-MODULATE THE CRYSTAL"),
+        text: (def ? def.label : elementId.toUpperCase()) + " ONLINE — NEW FOLLOWERS CAN BE MADE OF IT",
         color: def ? def.color : "#0f8", life: 260, vy: -0.16, size: 15,
     });
     return elementId;

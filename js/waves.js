@@ -596,10 +596,9 @@ function restartGame() {
     shardCount = STARTING_SHARDS; saveShards();
     try { localStorage.removeItem('tubecrawler_followers'); } catch(e) {}
     unlockedElements=new Set(STARTING_ELEMENTS);
-    pendingElements=[]; lifetimeKills=0; modulationDirty=false;
+    pendingElements=[]; lifetimeKills=0;
     playerUltimate=0; armySurgeTimer=0; _lastUltInt=-1; _lastUltState="";
     siphonEnabled=true; siphonWisps=[]; _lastSiphonOn=null; _siphonInRange=0;
-    modulationMask=new Set(STARTING_ELEMENTS);
     if (typeof fireBombs !== "undefined") { fireBombs = []; fireTiles = new Map(); }
     activePredator=null;predatorRespawnTimer=0;zonePredators={};zoneRespawnTimers={};
     _cacheAge=-999; _pillarCache=[]; _wPylons=[]; _aPylons=[]; _uPylons=[]; _wPylonPairs=[]; _pylonsWithPartner=new Set(); _capturableNodeCache=[];

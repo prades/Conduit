@@ -813,7 +813,8 @@ function recallFollowers() {
     followers.forEach(a => { a.job=null; a.stance="follow"; });
 }
 
-function spawnFollowerAtCrystal(element) {
+// `type`: the role it is made as (FOLLOWER_TYPES, js/species.js); none is a draw, as a follower found in the world is.
+function spawnFollowerAtCrystal(element, type) {
     if (!element) {
         if (activeCrystalModulation) {
             const pair = activeCrystalModulation.pair;
@@ -824,7 +825,7 @@ function spawnFollowerAtCrystal(element) {
         }
     }
     const def         = NPC_TYPES["virus"];
-    const personality = PERSONALITY_KEYS[Math.floor(Math.random() * PERSONALITY_KEYS.length)];
+    const personality = personalityForType(type);
     const stats       = applyPersonality(personality);
     const role        = assignRole(stats);
     const npc = {

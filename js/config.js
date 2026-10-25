@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-26w";
+const BUILD_VERSION = "2026-10-26x";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -51,17 +51,6 @@ let pendingElements = [];
 // Every enemy killed this game. Cumulative and one-way — it is what earns
 // elements, so it persists.
 let lifetimeKills = 0;
-// Set when a newly activated element is LEFT OUT of the mix, so the game can
-// prompt the player that there is something to decide.
-//
-// It used to be set on every activation, including the usual case where the
-// player has never narrowed the mix — an empty mask means "any", so the new
-// element was already in it and there was nothing to re-modulate. The prompt
-// lit anyway, and the only thing that cleared it was toggling a swatch, which
-// would have taken an element OUT of the mix. So the ring stayed on for the
-// rest of the game and the one way to dismiss it made the squad worse.
-// Cleared by re-modulating, or by opening the control and seeing the mix.
-let modulationDirty = false;
 
 // ── PYLON LOOK ────────────────────────────────────────────
 // One design for every pylon and every upgrade. There used to be six random
@@ -1016,16 +1005,8 @@ let followerDutyMenu = null;
 
 // ── CRYSTAL MENU / BUILDS ─────────────────────────────────
 let crystalMenuOpen  = false;
-let crystalMenuTab   = "modulation";   // the Crystal is one page (the ELEMENT MIX); clones live on the HUD
+let crystalMenuTab   = "modulation";   // (the Crystal menu is gone: its page is the ELEMENTS tab of the battle tool, js/mixtool.js); clones live on the HUD
 let crystalCloneSort = "species";  // "species"|"combat"|"defense"|"hp"|"specials"
-// Which elements new followers may come out as. A subset of the unlocked set —
-// the whole set means "any", one element means every recruit is that element.
-// This replaced a 0..1 slider that indexed into a generated list of element
-// combinations: with exactly two elements unlocked (fire and electric, the
-// starting pair) a slider value in the TRI band fell through to the BI branch
-// with a negative offset, indexed combos[-1] and crashed on combo.map.
-// A set of toggles has no such arithmetic to get wrong.
-let modulationMask = new Set();
 // THE BATTLE CONTROLS (js/mixtool.js): the enemy class your followers go for first (null = whoever is nearest), and how long a RETREAT keeps them out of the fight.
 let battleFocus = null;
 const BATTLE_FOCUS_CLASSES = ["striker", "tank", "scout", "boss"];

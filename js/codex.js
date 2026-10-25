@@ -404,8 +404,10 @@ function renderWorkCrewIndex() {
         'whichever of the two is nearer your finger wins the ring.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Re-roll</span>' +
         'Long-press a follower \u2192 radial LEFT \u2192 <strong>RE-ROLL</strong>. It drops what it ' +
-        'carries, walks back to the Crystal and comes out as a new recruit: element drawn from the ' +
-        'modulation pool again, with freshly rolled stats, role and traits. Clones cannot be re-rolled.</div>' +
+        'carries, walks back to the Crystal and comes out made again: new stats, traits and perk, but it ' +
+        'stays the same type (a brawler, a mage or a technician) and the same element \u2014 a follower has ' +
+        'its class when it is found and you cannot change it; you make it better by evolving it. ' +
+        'Clones cannot be re-rolled.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Fighters</span>' +
         'Behave exactly as before. Every follower starts as one.</div>' +
         '<div class="cm-build-row"><span class="cm-build-label">Workers</span>' +

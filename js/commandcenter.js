@@ -199,8 +199,7 @@ function ccBuildFrame() {
     const sum = _ccEl("div", "cc-summary"); sum.id = "ccSummary"; tb.appendChild(sum); head.appendChild(tb);   // the squad at a glance, under the title, on the roster
     // RECRUIT: a follower at the Crystal for RECRUIT_COST shards (clone.js recruitFollower), on the ROSTER tab only. It dims when the shards are short.
     const rec = _ccEl("button", "cc-recruit"); rec.id = "ccRecruit"; rec.appendChild(_ccEl("span", "cc-rl", "+ RECRUIT")); rec.appendChild(_ccEl("span", "cc-rs", ""));
-    _ccClick(rec, () => { recruitDo(); });   // straight away, as picked on the crystal (js/recruitcrystal.js)
-    const rcx = recruitCrystalBuild(false); rcx.id = "ccRecruitCrystal"; head.appendChild(rcx);
+    _ccClick(rec, () => { recruitDo(); });   // a follower at the Crystal: its type and its element are whatever it turns out to be (js/clone.js)
     // THE SHARD TOTAL, so a recruit is never a shot in the dark: what you have, what a recruit costs, how many you can afford (red when you cannot afford one)
     const sh = _ccEl("div", "cc-shards"); sh.id = "ccShards"; sh.appendChild(_ccEl("div", "cc-sh-n")); sh.appendChild(_ccEl("div", "cc-sh-c")); head.appendChild(sh);
     head.appendChild(rec);
@@ -231,7 +230,6 @@ function ccRender() {
     const root = document.getElementById("ccRoot"); if (!root || !ccOpenTab) return;
     ccPrune();
     const rec = document.getElementById("ccRecruit");
-    const rcx = document.getElementById("ccRecruitCrystal"); if (rcx) { rcx.style.display = ccOpenTab === "roster" ? "" : "none"; recruitCrystalUpdate(rcx); }
     const shp = document.getElementById("ccShards"); if (shp) { shp.style.display = ccOpenTab === "roster" ? "" : "none"; ccShardsUpdate(shp); }
     if (rec) { rec.style.display = ccOpenTab === "roster" ? "" : "none"; const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = "\u25c6" + cost; }
     const ttl = document.getElementById("ccTitle"); if (ttl) ttl.textContent = ccOpenTab === "zones" ? "ZONES" : "COMMAND CENTER";
