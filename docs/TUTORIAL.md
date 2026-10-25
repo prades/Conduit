@@ -233,3 +233,6 @@ The Armory (the weapon locker, the terminal, the relay, its supply cases) is now
 ## The arena's generator (revision)
 
 A new sheet of the 3D props, **power** (`design/props/models/power.js`): the arena's large electrical generator (`main_generator.7x3`), standing against the arena's north service wall in a bay cut back from the rock (docs/FACILITY.md, "The generator bay"). It is a prop only for now: solid, lit by its own glow, not part of the power network.
+
+## The website's background
+The landing page (`index.html`) shows the facility behind it, dark, with evolved followers now and again walking the halls and searching its rooms: `game.html?attract` (js/attract.js; the design is in docs/FACILITY.md, "The website's background"). It is the same facility and the same followers, with no one playing and nothing saved; the game itself is unchanged and opens as before.

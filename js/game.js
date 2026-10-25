@@ -2089,6 +2089,7 @@ function gameLoop() {
     // Paused (buy screen, game over), or back from another tab: no debt.
     if (!gameState.running || dt > 1000) { _simDebt = 0; render(); return; }
     _simDebt += dt;
+    if (typeof attractSkip === "function" && attractSkip(now)) return;   // the website's background draws every other frame; the steps it skipped are run with the next one (js/attract.js)
     // Rounded, not floored: a 60 Hz screen's refreshes jitter either side of
     // 16.7 ms, and flooring would turn that jitter into 0-step / 2-step stutter.
     let steps = Math.round(_simDebt / SIM_STEP_MS);
@@ -2629,7 +2630,7 @@ function render() {
             // During alarm: spawn up to (zone depth + 2) predators in the alarm zone;
             // higher zones maintain 1 wanderer; non-alarm day keeps 1 wanderer per zone.
             const maxPredators = isAlarmZone ? (2 + z + (typeof siegeIs === "function" && siegeIs("swarm") ? SIEGE_SWARM_CAP : 0)) : 1;
-            if (alivePredators.length < maxPredators) {
+            if (alivePredators.length < maxPredators && !(typeof attractOn === "function" && attractOn())) {   // (the website's background is empty of creatures: js/attract.js)
                 if (!zoneRespawnTimers[z]) zoneRespawnTimers[z] = 0;
                 if (zoneRespawnTimers[z] > 0) {
                     zoneRespawnTimers[z]--;
@@ -3100,7 +3101,7 @@ function render() {
         if (typeof facilityPlay !== "undefined" && facilityPlay && obj.type !== 'fp') py -= facilityLiftRel(obj.x, obj.y);   // the facility's floors rise and fall (js/facilityplay.js)
 
         if (obj.type==='player') {
-            drawPlayer({x:px,y:py});
+            if (!(typeof attractOn === "function" && attractOn())) drawPlayer({x:px,y:py});   // (the website's background has no one standing in it: the player is only its camera, js/attract.js)
         }
         else if (obj.type==='module') {
             drawModule(obj.module, px, py);

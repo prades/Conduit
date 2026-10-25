@@ -64,6 +64,7 @@ const SUITES = [
     ['no player stun',         'stun.js'],
     ['progression',            'progression.js'],
     ['follower types',          'followertypes.js'],
+    ['attract screen (website background)', 'attract.js'],
     ['ultimate + pylon cost',  'ultimate.js'],
     ['generator pylon',        'generator.js'],
     ['pylon look',             'pylonlook.js'],

@@ -31,7 +31,7 @@ const FP_TUT = {
 
 function facilityBlackout() { return !!(typeof _fp !== "undefined" && _fp && _fp.tut && _fp.tut.blackout); }
 function _fpPowered(key) { return !facilityBlackout() || _fp.tut.powered.has(key); }
-function _fpDarkAmt() { return facilityBlackout() ? FP_TUT.dark : FP_DARK; }
+function _fpDarkAmt() { return facilityBlackout() ? FP_TUT.dark : (typeof attractOn === "function" && attractOn() ? ATTRACT.dark : FP_DARK); }
 
 function facilityTutorialStart(F) {
     const key = (id) => (typeof _fpLightKey === "function" ? _fpLightKey(id) : id), src = [];
@@ -91,6 +91,7 @@ function _fpExtraLight(x, y, keys) {
 
 // each frame (from facilityDrawItems): say what is going on, once
 function facilityTutorialTick() {
+    if (typeof attractOn === "function" && attractOn()) { attractTick(); return; }   // the website's background: no pickups, stations, portals, relays, director, save or creatures (js/attract.js)
     facilityPickupTick();
     if (typeof facilityStationTick === "function") facilityStationTick();
     if (typeof facilityPortalTick === "function") facilityPortalTick();
@@ -202,6 +203,7 @@ function facilityPickupTick() {
 
 // everything the tutorial paints over the scene, in screen space: the lamp's colour, the flares, a CCTV sweep's markers, the plate of the station in range
 function facilityDrawOverlay() {
+    if (typeof attractOn === "function" && attractOn()) return;   // (nothing is written over the picture)
     facilityDrawLampGlow(); facilityDrawFlares(); if (typeof facilityDrawBeams === "function") facilityDrawBeams();
     if (typeof facilityDrawCctv === "function") facilityDrawCctv();
     if (typeof facilityDrawRelays === "function") facilityDrawRelays();

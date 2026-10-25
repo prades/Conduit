@@ -1495,9 +1495,10 @@ function _drawVirus(actor, px, py, drawCtx) {
     // How many were drawn last frame — the crowd test for the bubbles.
     if (_virusCountFrame !== frame) { _virusesOnScreen = _virusesCounting; _virusesCounting = 0; _virusCountFrame = frame; }
     _virusesCounting++;
-    drawHealthBar(px-14, py-76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green");
+    const _bare = typeof attractOn === "function" && attractOn();   // (the website's background: a searcher wears no bar and no name, js/attract.js)
+    if (!_bare) drawHealthBar(px-14, py-76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green");
     // Its level, kind and what it is doing, over the bar and the ultimate bar (js/levels.js).
-    if (typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 87, drawCtx);
+    if (!_bare && typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 87, drawCtx);
     _drawFollowerShield(actor, px, py, drawCtx);
 
     // ── ULTIMATE CHARGE BAR ───────────────────────────────

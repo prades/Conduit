@@ -15,10 +15,22 @@
       overflow-x: hidden;
     }
 
-    /* Three.js canvas fills the hero */
-    #bg-canvas {
-      position: fixed; inset: 0; z-index: 0;
+    /* The live background: the Conduit facility (game.html?attract) in an iframe that takes no clicks, under a scrim that keeps the text readable */
+    #bg {
+      position: fixed; inset: 0; z-index: 0; overflow: hidden;
       pointer-events: none;
+      background: radial-gradient(ellipse at 50% 35%, #0b1626 0%, #040810 72%);
+    }
+    #bg iframe {
+      position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+      opacity: 0; transition: opacity 3.5s ease;
+    }
+    #bg.ready iframe { opacity: 0.9; }
+    #bg::after {
+      content: ""; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 50% 45%, rgba(4,8,16,0.2) 0%, rgba(4,8,16,0.6) 100%),
+        linear-gradient(rgba(4,8,16,0.3), rgba(4,8,16,0.05) 40%, rgba(4,8,16,0.45));
     }
 
     .content { position: relative; z-index: 1; }
@@ -212,7 +224,8 @@
 </head>
 <body>
 
-<canvas id="bg-canvas"></canvas>
+<!-- the live background (see the script at the end): a dark gradient until the facility is showing -->
+<div id="bg"></div>
 
 <div class="content">
 
@@ -296,252 +309,26 @@
 
 </div>
 
-<!-- ── Three.js Background — Stonehenge ── -->
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"
+<!-- ── Background: the Conduit facility, dark, with followers searching its halls (game.html?attract, js/attract.js) ── -->
+<script>
+(function () {
+  // The facility is loaded after the page has painted, and only for a visitor who has not asked for less: reduced motion or a data saver keeps the dark gradient.
+  var bg = document.getElementById('bg'), mq = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)'), net = navigator.connection || {};
+  if ((mq && mq.matches) || net.saveData) return;
+  var frame = null, giveUp = null;
+  function start() {
+    frame = document.createElement('iframe');
+    frame.src = 'game.html?attract';
+    frame.title = ''; frame.setAttribute('aria-hidden', 'true'); frame.tabIndex = -1; frame.inert = true;
+    bg.appendChild(frame);
+    giveUp = setTimeout(function () { if (!bg.classList.contains('ready')) { frame.remove(); frame = null; } }, 45000);   // never showed: the gradient stays
   }
-}
-</script>
-
-<script type="module">
-import * as THREE from 'three';
-
-const canvas   = document.getElementById('bg-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(innerWidth, innerHeight);
-
-const scene = new THREE.Scene();
-scene.fog   = new THREE.FogExp2(0x020508, 0.011);
-
-const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 300);
-
-// ── Materials ────────────────────────────────────────────────────────────────
-const stoneMat  = new THREE.MeshPhongMaterial({ color: 0x514438, specular: 0x141010, shininess: 7 });
-const groundMat = new THREE.MeshPhongMaterial({ color: 0x060c04 });
-
-// ── Ground ───────────────────────────────────────────────────────────────────
-const ground = new THREE.Mesh(new THREE.CircleGeometry(130, 72), groundMat);
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
-
-// Earthwork embankment ring (subtle raised ring)
-const bank = new THREE.Mesh(
-  new THREE.RingGeometry(20, 23.5, 72),
-  new THREE.MeshPhongMaterial({ color: 0x0d1508, side: THREE.DoubleSide })
-);
-bank.rotation.x = -Math.PI / 2;
-bank.position.y = 0.02;
-scene.add(bank);
-
-// ── Stone factory ────────────────────────────────────────────────────────────
-function addStone(w, h, d, x, y, z, ry = 0, rx = 0, rz = 0) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), stoneMat);
-  m.position.set(x, y, z);
-  m.rotation.set(rx, ry, rz);
-  scene.add(m);
-  return m;
-}
-
-// ── Outer Sarsen Circle ──────────────────────────────────────────────────────
-// 30 evenly-spaced slots, radius 15. Uprights 2.1 × 4.5 × 1.0.
-// Lintels connect adjacent standing pairs.
-const SARSEN_R = 15, N_SLOTS = 30;
-const UP_W = 2.1, UP_H = 4.5, UP_D = 1.0;
-const LIN_H = 1.0, LIN_D = 1.0;
-
-// Standing slots (loosely based on surviving + plausible reconstruction)
-const standing = new Set([0,1, 3,4, 5,6, 7,8, 10,11, 14,15, 16,17, 22,23, 24,25, 27,28, 29]);
-
-for (const i of standing) {
-  const a    = (i / N_SLOTS) * Math.PI * 2;
-  const tilt = (Math.sin(i * 7.3) - 0.5) * 0.07; // deterministic lean
-  addStone(UP_W, UP_H, UP_D,
-    Math.cos(a) * SARSEN_R,  UP_H / 2,  Math.sin(a) * SARSEN_R,
-    a + Math.PI / 2,  0,  tilt
-  );
-}
-
-// Lintels for intact pairs
-for (const [i, j] of [[0,1],[3,4],[5,6],[7,8],[14,15],[16,17],[22,23],[27,28]]) {
-  if (!standing.has(i) || !standing.has(j)) continue;
-  const a1 = (i / N_SLOTS) * Math.PI * 2;
-  const a2 = (j / N_SLOTS) * Math.PI * 2;
-  const mid = (a1 + a2) / 2;
-  const x1 = Math.cos(a1) * SARSEN_R, z1 = Math.sin(a1) * SARSEN_R;
-  const x2 = Math.cos(a2) * SARSEN_R, z2 = Math.sin(a2) * SARSEN_R;
-  const chord = Math.sqrt((x2 - x1) ** 2 + (z2 - z1) ** 2) + 0.3;
-  addStone(chord, LIN_H, LIN_D,
-    Math.cos(mid) * SARSEN_R,  UP_H + LIN_H / 2,  Math.sin(mid) * SARSEN_R,
-    mid + Math.PI / 2
-  );
-}
-
-// ── Inner Bluestone Circle ────────────────────────────────────────────────────
-// ~60 original stones, radius 10, only ~40% still standing
-const BLUE_R = 10, BLUE_N = 22;
-for (let i = 0; i < BLUE_N; i++) {
-  if ((i * 3 + 1) % 5 === 0) continue; // deterministic gaps
-  const a    = (i / BLUE_N) * Math.PI * 2;
-  const tilt = (Math.sin(i * 4.1) - 0.5) * 0.12;
-  addStone(0.95, 2.4, 0.65,
-    Math.cos(a) * BLUE_R,  1.2,  Math.sin(a) * BLUE_R,
-    a + Math.PI / 2,  0,  tilt
-  );
-}
-
-// ── Inner Horseshoe Trilithons ────────────────────────────────────────────────
-// 5 trilithons in a horseshoe, opening northeast. Centre trilithon tallest.
-const triDefs = [
-  { deg: 210, h: 6.5 },
-  { deg: 240, h: 7.2 },
-  { deg: 270, h: 8.0 },  // Great Trilithon
-  { deg: 300, h: 7.2 },
-  { deg: 330, h: 6.5 },
-];
-const TRI_R = 7.5, TRI_SEP = 1.55, TRI_W = 1.8, TRI_D = 1.2;
-
-for (const { deg, h } of triDefs) {
-  const a    = (deg * Math.PI) / 180;
-  const perp = a + Math.PI / 2;
-  const cx   = Math.cos(a) * TRI_R;
-  const cz   = Math.sin(a) * TRI_R;
-
-  // Two uprights
-  for (const s of [-1, 1]) {
-    addStone(TRI_W, h, TRI_D,
-      cx + Math.cos(perp) * TRI_SEP * s,  h / 2,  cz + Math.sin(perp) * TRI_SEP * s,
-      a + Math.PI / 2
-    );
-  }
-  // Lintel
-  const linH = 1.3, linSpan = TRI_SEP * 2 + TRI_W + 0.25;
-  addStone(linSpan, linH, TRI_D,  cx,  h + linH / 2,  cz,  a + Math.PI / 2);
-}
-
-// ── Feature Stones ────────────────────────────────────────────────────────────
-// Altar stone (flat, centre)
-addStone(1.6, 0.42, 4.8,  0, 0.21, 0,  0.15);
-
-// Heel Stone (standing, northeast, slight lean)
-addStone(1.6, 5.0, 1.8,  24, 2.5, -2,  0.08, 0, -0.19);
-
-// Slaughter Stone (mostly horizontal, near entrance)
-addStone(4.8, 0.85, 1.1,  19.5, 0.42, 3.5,  0.5);
-
-// Station stones (four compass points just inside bank)
-for (const [sx, sz] of [[17.5,-8],[-17.5,8],[8,17.5],[-8,-17.5]]) {
-  addStone(1.4, 1.8, 1.0,  sx, 0.9, sz);
-}
-
-// ── Fallen Stones ─────────────────────────────────────────────────────────────
-for (const [x, z, ry] of [[-13, 5, 1.2],[5, 14, -0.4],[11, -9, 2.1],[-6, -13, 0.7]]) {
-  addStone(4.4, 0.88, 1.05,  x, 0.44, z,  ry);
-}
-
-// ── Stars ─────────────────────────────────────────────────────────────────────
-const STARS = 2800;
-const sPts  = new Float32Array(STARS * 3);
-for (let i = 0; i < STARS; i++) {
-  const th = Math.random() * Math.PI * 2;
-  const ph = Math.acos(1 - Math.random());
-  const r  = 130 + Math.random() * 70;
-  sPts[i*3]   = r * Math.sin(ph) * Math.cos(th);
-  sPts[i*3+1] = Math.abs(r * Math.cos(ph)) + 10;
-  sPts[i*3+2] = r * Math.sin(ph) * Math.sin(th);
-}
-const starGeo = new THREE.BufferGeometry();
-starGeo.setAttribute('position', new THREE.BufferAttribute(sPts, 3));
-scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
-  color: 0xbbccee, size: 0.3, transparent: true, opacity: 0.8, sizeAttenuation: true,
-})));
-
-// ── Ritual Fire Embers ────────────────────────────────────────────────────────
-const EMBERS = 320;
-const ePos   = new Float32Array(EMBERS * 3);
-const eSpd   = new Float32Array(EMBERS);
-const eCol   = new Float32Array(EMBERS * 3);
-
-for (let i = 0; i < EMBERS; i++) {
-  const r = Math.random() * 2.2;
-  const a = Math.random() * Math.PI * 2;
-  ePos[i*3]   = Math.cos(a) * r;
-  ePos[i*3+1] = Math.random() * 10;
-  ePos[i*3+2] = Math.sin(a) * r;
-  eSpd[i]     = 0.35 + Math.random() * 0.9;
-  const t     = Math.random();
-  eCol[i*3]   = 1.0;  eCol[i*3+1] = 0.18 + t * 0.45;  eCol[i*3+2] = 0.0;
-}
-
-const eGeo = new THREE.BufferGeometry();
-eGeo.setAttribute('position', new THREE.BufferAttribute(ePos, 3));
-eGeo.setAttribute('color',    new THREE.BufferAttribute(eCol, 3));
-const embers = new THREE.Points(eGeo, new THREE.PointsMaterial({
-  size: 0.2, vertexColors: true, transparent: true, opacity: 0.85, sizeAttenuation: true,
-}));
-scene.add(embers);
-
-// ── Lighting ──────────────────────────────────────────────────────────────────
-scene.add(new THREE.AmbientLight(0x1a2035, 3.5));
-
-const moon = new THREE.DirectionalLight(0x7799bb, 2.8);
-moon.position.set(-45, 65, -35);
-scene.add(moon);
-
-const fire = new THREE.PointLight(0xff6610, 5.5, 30);
-fire.position.set(0, 1.5, 0);
-scene.add(fire);
-
-const rim = new THREE.DirectionalLight(0x223366, 0.9);
-rim.position.set(35, 25, 40);
-scene.add(rim);
-
-// ── Animate ───────────────────────────────────────────────────────────────────
-const clock = new THREE.Clock();
-
-function animate() {
-  requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
-
-  // Camera spirals around Stonehenge: orbit + gentle radius & height oscillation
-  const orbitAngle = t * 0.095;
-  const radius     = 42 + Math.sin(t * 0.06) * 9;
-  const height     = 15 + Math.sin(t * 0.11) * 7;
-
-  camera.position.set(
-    Math.cos(orbitAngle) * radius,
-    height,
-    Math.sin(orbitAngle) * radius
-  );
-  camera.lookAt(0, 3.5, 0);
-
-  // Flickering fire
-  fire.intensity  = 5.0 + Math.sin(t * 6.8) * 0.8 + Math.sin(t * 14.1) * 0.4;
-  fire.color.setHSL(0.07 + Math.sin(t * 2.9) * 0.015, 1.0, 0.55);
-
-  // Rising embers
-  for (let i = 0; i < EMBERS; i++) {
-    ePos[i*3+1] += eSpd[i] * 0.013;
-    ePos[i*3]   += (Math.sin(t * 0.7 + i) - 0.5) * 0.005;
-    ePos[i*3+2] += (Math.cos(t * 0.9 + i) - 0.5) * 0.005;
-    if (ePos[i*3+1] > 13) {
-      const r = Math.random() * 1.8, a = Math.random() * Math.PI * 2;
-      ePos[i*3] = Math.cos(a) * r;  ePos[i*3+1] = 0;  ePos[i*3+2] = Math.sin(a) * r;
-    }
-  }
-  eGeo.attributes.position.needsUpdate = true;
-
-  renderer.render(scene, camera);
-}
-animate();
-
-window.addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
+  window.addEventListener('message', function (e) {
+    if (frame && e.source === frame.contentWindow && e.data && e.data.conduit === 'attract-ready') { clearTimeout(giveUp); bg.classList.add('ready'); }
+  });
+  function later() { (window.requestIdleCallback || function (f) { setTimeout(f, 600); })(start, { timeout: 2500 }); }
+  if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
+})();
 </script>
 
 </body>

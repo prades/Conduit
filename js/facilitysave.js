@@ -14,6 +14,7 @@ const FS = { key: "conduit_fp_save", mode: "conduit_mode", version: 1, every: 18
 function _fsSearch() { return typeof window !== "undefined" && window.location ? window.location.search || "" : ""; }
 // which game the page opens: "facility" (the default) or "classic"
 function facilityMode() {
+    if (typeof attractOn === "function" && attractOn()) return "facility";   // (the website's background: js/attract.js)
     if (/[?&]classic\b/.test(_fsSearch())) return "classic";
     if (/[?&]facilityplay\b/.test(_fsSearch())) return "facility";
     try { return typeof localStorage !== "undefined" && localStorage.getItem(FS.mode) === "classic" ? "classic" : "facility"; } catch (e) { return "facility"; }
@@ -26,6 +27,7 @@ function facilitySwitchGame(m) {
 }
 
 function facilitySaveLoad() {
+    if (typeof attractOn === "function" && attractOn()) return null;   // (the background starts a fresh facility and keeps nothing)
     try { const d = JSON.parse(localStorage.getItem(FS.key) || "null"); return d && d.v === FS.version ? d : null; } catch (e) { return null; }
 }
 function facilitySaveCollect() {

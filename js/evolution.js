@@ -578,6 +578,7 @@ function drawEvolvedFollower(f, px, py, g) {
     const col = d.color || (d.element === "fire" ? "#ff5a1f" : d.element === "flux" ? "#bb66ff" : "#ffee33");
     const fr = _evoFrame(f, d, f0), rise = fr.rise, sigK = fr.sigK, s = fr.s;
     g.save();
+    if (f._fade !== undefined) g.globalAlpha *= f._fade;   // (a searcher in the website's background fades out as it goes: js/attract.js)
     // its shadow (a form with a pool of its own stands in that: see GROUND above)
     if (!d.ground) { g.fillStyle = "rgba(0,0,0,0.4)"; g.beginPath(); g.ellipse(px, py, 22 * rise, 9 * rise, 0, 0, Math.PI * 2); g.fill(); }
     const C = d.cell;

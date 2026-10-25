@@ -217,7 +217,7 @@ const FP_STORE_OK = /^conduit_(fp_|mode$)/;
 let _fpStoreFiltered = false;
 function _fpNoStorage() {
     if (_fpStoreFiltered) return;
-    try { if (typeof Storage !== "undefined" && Storage.prototype) { _fpStoreFiltered = true; const set = Storage.prototype.setItem, rm = Storage.prototype.removeItem; Storage.prototype.setItem = function (k, v) { if (FP_STORE_OK.test(String(k))) return set.call(this, k, v); }; Storage.prototype.removeItem = function (k) { if (FP_STORE_OK.test(String(k))) return rm.call(this, k); }; } } catch (e) {}
+    try { if (typeof Storage !== "undefined" && Storage.prototype) { _fpStoreFiltered = true; const set = Storage.prototype.setItem, rm = Storage.prototype.removeItem; const ok = k => FP_STORE_OK.test(String(k)) && !(typeof attractOn === "function" && attractOn()); Storage.prototype.setItem = function (k, v) { if (ok(k)) return set.call(this, k, v); }; Storage.prototype.removeItem = function (k) { if (ok(k)) return rm.call(this, k); }; } } catch (e) {}
 }
 function facilityPlayStart() {
     if (facilityPlay) return true;
@@ -235,20 +235,23 @@ function facilityPlayStart() {
     const cx = Math.round(ob.at[0]), cy = Math.round(ob.at[1]);
     crystal.x = cx; crystal.y = cy;
     player.x = player.targetX = player.visualX = cx + 2; player.y = player.targetY = player.visualY = cy + 1; player.fpPath = null;
+    const away = typeof attractOn === "function" && attractOn();   // the website's background (js/attract.js): no saved game, no squad, no tutorial, no creatures
     const saved = typeof facilitySaveLoad === "function" ? facilitySaveLoad() : null;   // a game left earlier (js/facilitysave.js): its followers come back, else the three to start
     if (saved && saved.followers && saved.followers.length && typeof spawnFollowerFromSave === "function") saved.followers.forEach(e => spawnFollowerFromSave(e));
-    else for (const el of ["electric", "core", "fire"]) { if (typeof spawnFollowerAtCrystal === "function") spawnFollowerAtCrystal(el); }
+    else if (!away) for (const el of ["electric", "core", "fire"]) { if (typeof spawnFollowerAtCrystal === "function") spawnFollowerAtCrystal(el); }
     for (const f of followers) { f.x = cx + 1 + Math.random(); f.y = cy + 2 + Math.random(); f.returningToCrystal = false; }
     _fpPlaceStatics(F);
     if (typeof facilityPortalsStart === "function") facilityPortalsStart(F);   // the doorways into the interiors (js/facilityportals.js)
     if (typeof facilityTutorialStart === "function") facilityTutorialStart(F);   // the tutorial opens in a blackout (js/facilitytutorial.js)
-    if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
+    if (away) facilityBlackoutSet(false);
+    else if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
     if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)
-    if (typeof facilitySpawnInitial === "function") facilitySpawnInitial(); else _fpSpawnTestEnemies(F);   // the arena's creatures (js/facilityspawn.js)
+    if (away) attractStart(F);                       // the background: the camera, and the searchers that come now and again (js/attract.js)
+    else if (typeof facilitySpawnInitial === "function") facilitySpawnInitial(); else _fpSpawnTestEnemies(F);   // the arena's creatures (js/facilityspawn.js)
     if (typeof updateObjectiveUI === "function") updateObjectiveUI();
     document.body.classList && document.body.classList.add("facility-play");
     if (typeof facilityPropsPreload === "function") facilityPropsPreload();   // the 3D prop sheets start loading now (js/propsprites.js)
-    _fp.saveReady = true;                            // from here the game is saved as it goes
+    _fp.saveReady = !away;                           // from here the game is saved as it goes (the background keeps nothing)
     return true;
 }
 // is this a spot a unit can stand on (js/facilitysave.js puts the player back where they were left)
@@ -526,7 +529,7 @@ function _fpDrawFixture(it) {
 // In the facility: CLASSIC GAME (go to the old game) and NEW GAME (throw the save away, after asking). In the classic game: FACILITY (go back).
 function facilityPlayChip() {
     if (typeof document === "undefined" || !document.createElement || !document.body) return;
-    if (document.getElementById("facilityPlayChip")) return;
+    if (document.getElementById("facilityPlayChip") || (typeof attractOn === "function" && attractOn())) return;
     const classic = typeof facilityMode === "function" && facilityMode() === "classic";
     const mk = (id, text, fn) => { const c = document.createElement("button"); c.id = id; c.textContent = text; c.addEventListener("click", fn); document.body.appendChild(c); return c; };
     if (classic) { mk("facilityPlayChip", "\u25b6 FACILITY", () => facilitySwitchGame("facility")); document.body.classList.add("classic-chip"); }

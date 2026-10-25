@@ -615,10 +615,11 @@ if (typeof window !== "undefined" && typeof window.addEventListener === "functio
 // everything comes back at normal size.
 const PLACING_ZOOM_PHONE = 0.45, PLACING_ZOOM = 0.7, PLACING_PHONE_W = 700;
 let _placingWas = false;
-function placingHidesUi() { return !!(buildMenuOpen && buildTool); }
+function placingHidesUi() { return !!(buildMenuOpen && buildTool) || (typeof attractOn === "function" && attractOn()); }   // (and the website's background, js/attract.js, which has no interface at all)
 function placingZoom() { return (typeof window !== "undefined" && window.innerWidth <= PLACING_PHONE_W) ? PLACING_ZOOM_PHONE : PLACING_ZOOM; }
 // Once a frame: follows buildTool.
 function placingTick() {
+    if (typeof attractOn === "function" && attractOn()) return;   // (the website's background sets its own zoom)
     const on = placingHidesUi();
     if (on === _placingWas) { if (on) { _placeChipSync(); if (typeof viewZoom !== "undefined" && viewZoom !== placingZoom()) setViewZoom(placingZoom()); } return; }
     _placingWas = on;
