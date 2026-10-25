@@ -30,10 +30,15 @@ function _fpAcc(id) { return _fpRoomStyle(id).acc; }
 // the floor of a room: its two tiles, fine seams, and a NEON SEAM in the room's accent on every fourth tile line (the arena's and the catwalks' are quieter)
 function _fpStyleFloorFor(id) {
     const R = _fpRoomStyle(id), dark = !!R.dark;
-    // a SIMPLE floor: one flat tone per room (no checker), faint tile lines, and (only in the dark earth floors) a few pits. No neon seams and no hazard stripes on floors.
-    return { base: R.fa, alt: null, a: 1, mark: (h, o, x, y) => {
-        if (dark) { if (h % 4 === 0) o.push({ t: "C", c: "rgba(20,16,14,0.28)", u: ((h >>> 2) % 9 - 4) / 10, v: ((h >>> 5) % 9 - 4) / 10, r: 0.06 + (h % 4) * 0.02 }); if (h % 13 === 0) o.push({ t: "L", c: "rgba(15,12,10,0.4)", w: 2, p: [-0.35, -0.2, -0.05, 0.1] }, { t: "L", c: "rgba(15,12,10,0.4)", w: 2, p: [-0.05, 0.1, 0.25, 0.35] }); return; }
-        o.push({ t: "L", c: "rgba(61,120,135,0.2)", w: 1, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(61,120,135,0.2)", w: 1, p: [-0.5, -0.5, -0.5, 0.5] });
+    // a SIMPLE floor: one tone per room with a very slight variation from tile to tile, a lit bevel on the far edges and a soft shadow on the near ones (so each tile reads as a panel, with no dark seam), a sheen that is lighter towards the far
+    // corner, and, in the dark earth floors, a few pits. The walls darken the floor along their foot (js/facilitydecor.js _fpFloorBuild, the "A" marks). No neon seams and no hazard stripes on floors.
+    return { base: R.fa, alt: null, a: 1, ao: dark ? 0.7 : 1, mark: (h, o, x, y) => {
+        const j = (h % 5) - 2; if (j) o.push({ t: "D", c: j > 0 ? "rgba(255,255,255," + (j * 0.014).toFixed(3) + ")" : "rgba(8,26,34," + (-j * 0.014).toFixed(3) + ")" });   // a hair of tone variation
+        if (dark) { o.push({ t: "S", a: 0.04, b: 0.07 }); if (h % 4 === 0) o.push({ t: "C", c: "rgba(20,16,14,0.28)", u: ((h >>> 2) % 9 - 4) / 10, v: ((h >>> 5) % 9 - 4) / 10, r: 0.06 + (h % 4) * 0.02 }); if (h % 13 === 0) o.push({ t: "L", c: "rgba(15,12,10,0.4)", w: 2, p: [-0.35, -0.2, -0.05, 0.1] }, { t: "L", c: "rgba(15,12,10,0.4)", w: 2, p: [-0.05, 0.1, 0.25, 0.35] }); o.push({ t: "L", c: "rgba(255,240,220,0.07)", w: 1, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(255,240,220,0.07)", w: 1, p: [-0.5, -0.5, -0.5, 0.5] }, { t: "L", c: "rgba(8,6,4,0.18)", w: 1, p: [0.5, -0.5, 0.5, 0.5] }, { t: "L", c: "rgba(8,6,4,0.18)", w: 1, p: [-0.5, 0.5, 0.5, 0.5] }); return; }
+        o.push({ t: "S", a: 0.08, b: 0.06 });
+        o.push({ t: "L", c: "rgba(255,255,255,0.5)", w: 1.5, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(255,255,255,0.5)", w: 1.5, p: [-0.5, -0.5, -0.5, 0.5] });   // the lit far edges
+        o.push({ t: "L", c: "rgba(61,120,135,0.2)", w: 1.5, p: [0.5, -0.5, 0.5, 0.5] }, { t: "L", c: "rgba(61,120,135,0.2)", w: 1.5, p: [-0.5, 0.5, 0.5, 0.5] });   // the shaded near edges
+        if (h % 7 === 0) o.push({ t: "P", c: "rgba(255,255,255,0.09)", p: [-0.34, 0.12, -0.06, -0.16, 0.04, -0.06, -0.24, 0.22] });   // a streak of reflected light
         if (h % 19 === 0) o.push({ t: "C", c: "rgba(105,135,125,0.14)", u: ((h >>> 3) % 7 - 3) / 10, v: ((h >>> 6) % 7 - 3) / 10, r: 0.22 });   // a faint discoloration
     } };
 }
@@ -171,19 +176,38 @@ function _fpStylePropMore(it) {
 
 // ── glass: a pale sill, a tinted pane with shine streaks, a rail on top with an ink line, posts every two tiles, a neon seam along the sill ──
 function _fpStyleGlass(it, H) {
-    const ax = it.a[0], ay = it.a[1], dx = it.b[0] - ax, dy = it.b[1] - ay, P = (u, z) => _fpP(ax + dx * u, ay + dy * u, z), acc = _fpRoomCols(it.room).acc, A = FP_PAL, sill = 14, rail = H - 7, U0 = -0.02, U1 = 1.02;
-    _fpFlat([P(U0, 0), P(U1, 0), P(U1, sill), P(U0, sill)], A.caseLit);
-    _fpFlat([P(U0, sill), P(U1, sill), P(U1, rail), P(U0, rail)], "rgba(150,230,242,0.22)");
-    _fpFlat([P(0.2, sill), P(0.32, sill), P(0.44, rail), P(0.32, rail)], "rgba(255,255,255,0.18)");   // a shine streak
-    _fpFlat([P(U0, rail), P(U1, rail), P(U1, H), P(U0, H)], A.cap);
-    const s0 = P(0, sill), s1 = P(1, sill), t0 = P(0, H), t1 = P(1, H), b0 = P(0, 0), b1 = P(1, 0); ctx.lineCap = "round";
-    ctx.strokeStyle = acc; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]); ctx.stroke();                                        // the neon seam
-    ctx.strokeStyle = A.ink; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();   // (the rail's top and the sill's foot in one stroke)
-    if (it.i === 0 && Math.round(it.along) % 2 === 0 || it.i % 4 === 0) { ctx.strokeStyle = A.ink; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(t0[0], t0[1]); ctx.stroke(); ctx.strokeStyle = A.cap; ctx.lineWidth = 3; ctx.stroke(); }   // a post
+    const ax = it.a[0], ay = it.a[1], bx = it.b[0], by = it.b[1], A = FP_PAL, acc = _fpRoomCols(it.room).acc, sill = 14, rail = H - 7, h = _fpHash(Math.round(ax * 2), Math.round(ay * 2));
+    const a0 = _fpP(ax, ay, 0), b0 = _fpP(bx, by, 0), X0 = a0[0], Y0 = a0[1], DX = b0[0] - X0, DY = b0[1] - Y0;   // a point at (u along the piece, z up) is (X0 + DX u, Y0 + DY u - z)
+    const band = (u0, u1, z0, z1, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(X0 + DX * u0, Y0 + DY * u0 - z0); ctx.lineTo(X0 + DX * u1, Y0 + DY * u1 - z0); ctx.lineTo(X0 + DX * u1, Y0 + DY * u1 - z1); ctx.lineTo(X0 + DX * u0, Y0 + DY * u0 - z1); ctx.closePath(); ctx.fill(); };
+    const seg = z => { ctx.moveTo(X0, Y0 - z); ctx.lineTo(X0 + DX, Y0 + DY - z); };
+    { const P = (u, z) => [X0 + DX * u, Y0 + DY * u - z], U0 = -0.02, U1 = 1.02; _fpFlat([P(U0, 0), P(U1, 0), P(U1, sill), P(U0, sill)], A.caseLit); }   // the sill: a pale solid band, darker at the floor (a flat fill)
+    band(-0.02, 1.02, sill, rail, "rgba(150,230,242,0.2)");                       // the glass: a pale tint, lighter near the top and deeper near the sill, with a streak or two of reflected light
+    band(-0.02, 1.02, rail, H, A.cap);                                            // the top rail: a pale steel band
+    _fpWallGrad(it, 0, 1, 0, sill, FP_GS.gsill, "gsill"); _fpWallGrad(it, 0, 1, sill, rail, FP_GS.gglass, "gglass" + rail); _fpWallGrad(it, 0, 1, rail, H, FP_GS.grail, "grail" + H);
+    if (h % 3 !== 1) { ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.beginPath(); ctx.moveTo(X0 + DX * 0.2, Y0 + DY * 0.2 - sill); ctx.lineTo(X0 + DX * 0.32, Y0 + DY * 0.32 - sill); ctx.lineTo(X0 + DX * 0.46, Y0 + DY * 0.46 - rail); ctx.lineTo(X0 + DX * 0.34, Y0 + DY * 0.34 - rail); ctx.closePath(); ctx.fill(); }
+    if (h % 5 === 0) { ctx.fillStyle = "rgba(255,255,255,0.1)"; ctx.beginPath(); ctx.moveTo(X0 + DX * 0.58, Y0 + DY * 0.58 - sill); ctx.lineTo(X0 + DX * 0.64, Y0 + DY * 0.64 - sill); ctx.lineTo(X0 + DX * 0.74, Y0 + DY * 0.74 - rail); ctx.lineTo(X0 + DX * 0.68, Y0 + DY * 0.68 - rail); ctx.closePath(); ctx.fill(); }
+    ctx.lineCap = "round";
+    ctx.strokeStyle = FP_EDGE.light; ctx.lineWidth = 1.5; ctx.beginPath(); seg(H); ctx.stroke();                                                                                       // the rail's lit top edge
+    ctx.strokeStyle = "rgba(10,30,40,0.36)"; ctx.lineWidth = 1.3; ctx.beginPath(); seg(rail); seg(sill); ctx.stroke();                                                                   // creases under the rail and above the sill
+    ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 1; ctx.beginPath(); seg(sill + 1.5); ctx.stroke();
+    const ac = _fpRoomCols(it.room); ctx.strokeStyle = ac.accGlow || (ac.accGlow = _fpRgba(acc, 0.22)); ctx.lineWidth = 4.5; ctx.beginPath(); seg(sill - 2); ctx.stroke(); ctx.strokeStyle = acc; ctx.lineWidth = 1.6; ctx.beginPath(); seg(sill - 2); ctx.stroke();   // the accent strip along the sill (a light)
+    ctx.strokeStyle = "rgba(8,26,34,0.5)"; ctx.lineWidth = 2; ctx.beginPath(); seg(0); ctx.stroke();                                                                                      // the foot
+    if (it.i === 0 && Math.round(it.along) % 2 === 0 || it.i % 4 === 0) { ctx.strokeStyle = "rgba(10,30,40,0.4)"; ctx.lineWidth = 5.5; ctx.beginPath(); ctx.moveTo(X0, Y0); ctx.lineTo(X0, Y0 - H); ctx.stroke(); ctx.strokeStyle = A.cap; ctx.lineWidth = 3.6; ctx.stroke(); ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X0 - 1, Y0); ctx.lineTo(X0 - 1, Y0 - H); ctx.stroke(); }   // a steel mullion post: a shaded side, a pale face, a lit edge
     ctx.lineCap = "butt";
 }
-// ── the steps at a door: toon treads, a lit nosing ──
-function _fpStyleStair(it) { _fpSBox(it.x - 0.5, it.y - 0.5, it.x + 0.5, it.y + 0.5, 0, it.h, FP_PAL.caseLit, FP_PAL.teal, FP_PAL.tealLit, 3); const t = _fpP(it.x, it.y + 0.5, it.h), u = _fpP(it.x + 0.5, it.y + 0.5, it.h); ctx.strokeStyle = _fpAcc(it.room || "lab_hallway"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(_fpP(it.x - 0.5, it.y + 0.5, it.h)[0], _fpP(it.x - 0.5, it.y + 0.5, it.h)[1] + 1); ctx.lineTo(u[0], u[1] + 1); ctx.stroke(); }
+// ── the steps at a door: treads with a lit nosing, soft-shaded faces and a dark crease where they meet the floor ──
+function _fpStyleStair(it) {
+    const x = it.x, y = it.y, h = it.h, P = _fpP, A = FP_PAL, acc = _fpAcc(it.room || "lab_hallway"), t = [P(x - 0.5, y - 0.5, h), P(x + 0.5, y - 0.5, h), P(x + 0.5, y + 0.5, h), P(x - 0.5, y + 0.5, h)], b2 = [P(x - 0.5, y + 0.5, 0), P(x + 0.5, y + 0.5, 0), P(x + 0.5, y - 0.5, 0)];
+    _fpFlat([t[3], t[2], b2[1], b2[0]], A.teal); _fpFlat([t[2], t[1], b2[2], b2[1]], A.tealLit); _fpFlat(t, A.caseLit);
+    if (h > 6) { const f = Math.min(0.5, 14 / h), q = (p0, p1, q0, q1) => [[p0[0] + (q0[0] - p0[0]) * (1 - f), p0[1] + (q0[1] - p0[1]) * (1 - f)], [p1[0] + (q1[0] - p1[0]) * (1 - f), p1[1] + (q1[1] - p1[1]) * (1 - f)], q1, q0]; _fpFlat(q(t[3], t[2], b2[0], b2[1]), "rgba(8,26,34,0.24)"); _fpFlat(q(t[2], t[1], b2[1], b2[2]), "rgba(8,26,34,0.24)"); }   // each riser darker towards the floor (the lower part of the face)
+    ctx.lineCap = "round";
+    ctx.strokeStyle = _fpRgba(acc, 0.28); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(t[3][0], t[3][1] + 2.6); ctx.lineTo(t[2][0], t[2][1] + 2.6); ctx.stroke();   // the lit nosing along the front edge (soft glow under it)
+    ctx.strokeStyle = acc; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(t[3][0], t[3][1]); ctx.lineTo(t[2][0], t[2][1]); ctx.stroke();
+    ctx.strokeStyle = FP_EDGE.light; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(t[2][0], t[2][1]); ctx.lineTo(t[1][0], t[1][1]); ctx.stroke();   // the tread's lit edges
+    ctx.strokeStyle = FP_EDGE.lightSoft; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(t[0][0], t[0][1]); ctx.lineTo(t[3][0], t[3][1]); ctx.moveTo(t[0][0], t[0][1]); ctx.lineTo(t[1][0], t[1][1]); ctx.stroke();
+    ctx.strokeStyle = "rgba(10,30,40,0.3)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(t[2][0], t[2][1]); ctx.lineTo(b2[1][0], b2[1][1]); ctx.stroke();   // the front corner crease
+    ctx.strokeStyle = "rgba(8,26,34,0.45)"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(b2[0][0], b2[0][1]); ctx.lineTo(b2[1][0], b2[1][1]); ctx.lineTo(b2[2][0], b2[2][1]); ctx.stroke(); ctx.lineCap = "butt";   // where it meets the floor
+}
 
 // ── wall decor in the style: flat shapes, one ink outline, the room's accent for lights and screens ──
 const _FPW = FP_PAL;

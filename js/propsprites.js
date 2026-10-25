@@ -17,7 +17,8 @@ function _psImg(fam) {
     if (_psImgs[fam] !== undefined) { const e = _psImgs[fam]; return e && e.complete && e.naturalWidth ? e : null; }
     _psImgs[fam] = null;
     if (typeof document === "undefined" || !document.createElement || typeof PROP_ATLAS === "undefined" || !PROP_ATLAS[fam]) return null;
-    const im = document.createElement("img"); im.onload = () => { _psImgs[fam] = im; };
+    const im = document.createElement("img"); im.onload = () => { _psImgs[fam] = im; };   // (decoded off the main thread, so the first frame that draws it does not stall)
+    im.decoding = "async";
     im.src = "img/props/" + fam + ".png" + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
     _psImgs[fam] = im; return null;
 }
@@ -26,19 +27,62 @@ function _psSil(fam, img) {
     if (_psSils[fam]) return _psSils[fam];
     try { const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; const g = c.getContext("2d"); g.drawImage(img, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = PS.dark; g.fillRect(0, 0, c.width, c.height); return (_psSils[fam] = c); } catch (e) { return (_psSils[fam] = img); }
 }
+// start loading every sheet (the facility opens: so a prop is never seen in its flat drawing for a moment before its sprite arrives)
+function facilityPropsPreload() { if (typeof PROP_ATLAS !== "undefined") for (const fam of Object.keys(PROP_ATLAS)) _psImg(fam); }
 function _psCell(fam, name) { const A = typeof PROP_ATLAS !== "undefined" ? PROP_ATLAS[fam] : null; return A && A.cells[name] ? A.cells[name] : null; }
-// draw one sprite with the model's origin at world (x, y) on the current item's floor; `clip` (a cell's x, y) cuts it to that tile's column. Returns the sprite's top-left on screen, or null (not drawn).
+// ONE CELL'S SLICE of a big sprite: the pixels of the sprite that lie in the column of one tile (the diamond on the floor and the same lifted as high as the sprite goes), cut once and kept, so a multi-cell prop is drawn
+// with plain drawImage of small canvases and no clip per cell per frame (a clip and its restore were a fifth of the frame). ox, oy: where the cell is from the prop's centre, in tiles. Returns { cv, sil, dx, dy } (the
+// canvas, its dark silhouette when it was first needed, and where its top-left is from the cell's ground point) or null when nothing of the sprite is in that column.
+const _psSlices = new Map();
+function _psSlice(fam, name, ox, oy, img, c) {
+    const key = fam + "|" + name + "|" + ox + "|" + oy; let sl = _psSlices.get(key); if (sl !== undefined) return sl;
+    if (_psSlices.size > 900) _psSlices.clear();   // (a bound on the memory: they are cut again when needed)
+    sl = null;
+    try {
+        const cx = c.ax + (ox - oy) * TILE_W, cy = c.ay + (ox + oy) * TILE_H, H = c.ay + 6;   // the cell's ground point in the sprite's own pixels, and how high the column goes
+        const x0 = Math.max(0, Math.floor(cx - TILE_W)), x1 = Math.min(c.w, Math.ceil(cx + TILE_W)), y0 = Math.max(0, Math.floor(cy - TILE_H - H)), y1 = Math.min(c.h, Math.ceil(cy + TILE_H));
+        if (x1 > x0 && y1 > y0) {
+            const cv = document.createElement("canvas"); cv.width = x1 - x0; cv.height = y1 - y0; const g = cv.getContext("2d");
+            g.beginPath(); g.moveTo(cx - TILE_W - x0, cy - y0); g.lineTo(cx - TILE_W - x0, cy - H - y0); g.lineTo(cx - x0, cy - TILE_H - H - y0); g.lineTo(cx + TILE_W - x0, cy - H - y0); g.lineTo(cx + TILE_W - x0, cy - y0); g.lineTo(cx - x0, cy + TILE_H - y0); g.closePath(); g.clip();
+            g.drawImage(img, c.x + x0, c.y + y0, x1 - x0, y1 - y0, 0, 0, x1 - x0, y1 - y0);
+            // cut to what is in it
+            const d = g.getImageData(0, 0, cv.width, cv.height).data; let a0 = cv.width, b0 = cv.height, a1 = -1, b1 = -1;
+            for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) if (d[(y * cv.width + x) * 4 + 3] > 6) { if (x < a0) a0 = x; if (x > a1) a1 = x; if (y < b0) b0 = y; if (y > b1) b1 = y; }
+            if (a1 >= 0) { const w = a1 - a0 + 1, h = b1 - b0 + 1, o = document.createElement("canvas"); o.width = w; o.height = h; o.getContext("2d").drawImage(cv, a0, b0, w, h, 0, 0, w, h); sl = { cv: o, sil: null, dx: x0 + a0 - cx, dy: y0 + b0 - cy }; }
+        }
+    } catch (e) { sl = null; }
+    _psSlices.set(key, sl); return sl;
+}
+function _psSliceSil(sl) {
+    if (sl.sil) return sl.sil;
+    try { const c = document.createElement("canvas"); c.width = sl.cv.width; c.height = sl.cv.height; const g = c.getContext("2d"); g.drawImage(sl.cv, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = PS.dark; g.fillRect(0, 0, c.width, c.height); return (sl.sil = c); } catch (e) { return (sl.sil = sl.cv); }
+}
+// THE LIGHT: a prop in a dim room is its dark silhouette with the lit sprite over it at the room's light level k (the dimmed pen's factor, ctx._k). Drawing both every frame doubles the work of every prop in the dark
+// (which is most of them), so: nearly dark (k < 0.1) is the silhouette alone, and between it is composed once per light level (k rounded to a twelfth) into a small canvas that is then drawn as one image.
+const PS_DIM_STEPS = 12;
+function _psDimmed(cv, src, sx, sy, sw, sh, sil, bucket, store) {   // store: the object that keeps this canvas's dimmed versions by bucket
+    let d = store[bucket]; if (d) return d;
+    try { const c = document.createElement("canvas"); c.width = sw; c.height = sh; const g = c.getContext("2d"); g.drawImage(sil, sx, sy, sw, sh, 0, 0, sw, sh); g.globalAlpha = bucket / PS_DIM_STEPS; g.drawImage(src, sx, sy, sw, sh, 0, 0, sw, sh); d = store[bucket] = c; } catch (e) { d = store[bucket] = null; }
+    return d;
+}
+// draw one sprite with the model's origin at world (x, y) on the current item's floor; `clip` (a cell's x, y) draws only that tile's column of it. Returns the sprite's top-left on screen, or null (not drawn).
 function _psBlit(fam, name, x, y, clip) {
     const img = _psImg(fam), c = _psCell(fam, name); if (!img || !c) return null;
-    const p = _fpP(x, y, 0), dx = p[0] - c.ax, dy = p[1] - c.ay, k = ctx._k === undefined ? 1 : ctx._k;
-    ctx.save();
-    if (clip) {   // the tile's column: its diamond on the floor, and the same lifted as high as the sprite goes
-        const H = c.ay + 6, X = clip[0], Y = clip[1], P = (u, v, z) => _fpP(X + u, Y + v, z), w0 = P(-0.5, 0.5, 0), w1 = P(-0.5, 0.5, H), n1 = P(-0.5, -0.5, H), e1 = P(0.5, -0.5, H), e0 = P(0.5, -0.5, 0), s0 = P(0.5, 0.5, 0);
-        ctx.beginPath(); ctx.moveTo(w0[0], w0[1]); ctx.lineTo(w1[0], w1[1]); ctx.lineTo(n1[0], n1[1]); ctx.lineTo(e1[0], e1[1]); ctx.lineTo(e0[0], e0[1]); ctx.lineTo(s0[0], s0[1]); ctx.closePath(); ctx.clip();
+    const k = ctx._k === undefined ? 1 : ctx._k, bucket = k < 0.1 ? 0 : Math.min(PS_DIM_STEPS, Math.round(k * PS_DIM_STEPS));
+    if (clip) {
+        const sl = _psSlice(fam, name, Math.round((clip[0] - x) * 100) / 100, Math.round((clip[1] - y) * 100) / 100, img, c), g = _fpP(clip[0], clip[1], 0);
+        if (sl) {
+            const px = g[0] + sl.dx, py = g[1] + sl.dy;
+            if (bucket >= PS_DIM_STEPS) ctx.drawImage(sl.cv, px, py);
+            else if (bucket === 0) ctx.drawImage(_psSliceSil(sl), px, py);
+            else { sl.dim = sl.dim || {}; const d = _psDimmed(sl.cv, sl.cv, 0, 0, sl.cv.width, sl.cv.height, _psSliceSil(sl), bucket, sl.dim); ctx.drawImage(d || sl.cv, px, py); }
+        }
+        const p = _fpP(x, y, 0); return [p[0] - c.ax, p[1] - c.ay, c];
     }
-    if (k < 0.98) { ctx.drawImage(_psSil(fam, img), c.x, c.y, c.w, c.h, dx, dy, c.w, c.h); ctx.globalAlpha = Math.max(0, k); }
-    ctx.drawImage(img, c.x, c.y, c.w, c.h, dx, dy, c.w, c.h);
-    ctx.restore();
+    const p = _fpP(x, y, 0), dx = p[0] - c.ax, dy = p[1] - c.ay;
+    if (bucket >= PS_DIM_STEPS) ctx.drawImage(img, c.x, c.y, c.w, c.h, dx, dy, c.w, c.h);
+    else if (bucket === 0) ctx.drawImage(_psSil(fam, img), c.x, c.y, c.w, c.h, dx, dy, c.w, c.h);
+    else { c.dim = c.dim || {}; const d = _psDimmed(null, img, c.x, c.y, c.w, c.h, _psSil(fam, img), bucket, c.dim); if (d) ctx.drawImage(d, dx, dy); else ctx.drawImage(img, c.x, c.y, c.w, c.h, dx, dy, c.w, c.h); }
     return [dx, dy, c];
 }
 // where a prop is: its centre (a circle's middle, else the middle of its box)
@@ -76,9 +120,11 @@ function _psResolve(fam, kind, dims, state, seed) {
     c = pick(c, "dims", dims); c = pick(c, "state", state);
     const styled = c.filter(e => e.style !== null).sort((a, b) => a.style - b.style); return styled.length ? styled[seed % styled.length].name : c[0].name;
 }
+// is a cell of a multi-cell prop on its outline (where a shadow is seen)
+function _psEdgeCell(S, it) { if (S.round) return Math.hypot(it.x - S.c[0], it.y - S.c[1]) > S.round - 1.1; const b = S.bb; return it.x - 0.5 <= b[0] + 0.01 || it.x + 0.5 >= b[2] - 0.01 || it.y - 0.5 <= b[1] + 0.01 || it.y + 0.5 >= b[3] - 0.01; }
 function _psHash(str) { let h = 7; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
 function _psSolid(id) {
-    if (!_fp._pss) { _fp._pss = new Map(); for (const s of _fp.F.solids) { const w = s.shape === "circle" ? 0 : Math.round(s.bb[2] - s.bb[0]), l = s.shape === "circle" ? 0 : Math.round(s.bb[3] - s.bb[1]); _fp._pss.set(s.id, { c: s.shape === "circle" ? [s.at[0], s.at[1]] : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], dims: s.shape === "circle" ? "r" + Math.round(s.r * 100) : w + "x" + l, multi: s.shape === "circle" || w > 1 || l > 1 }); } }
+    if (!_fp._pss) { _fp._pss = new Map(); for (const s of _fp.F.solids) { const w = s.shape === "circle" ? 0 : Math.round(s.bb[2] - s.bb[0]), l = s.shape === "circle" ? 0 : Math.round(s.bb[3] - s.bb[1]); _fp._pss.set(s.id, { c: s.shape === "circle" ? [s.at[0], s.at[1]] : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], dims: s.shape === "circle" ? "r" + Math.round(s.r * 100) : w + "x" + l, multi: s.shape === "circle" || w > 1 || l > 1, bb: s.bb, round: s.shape === "circle" ? s.r : 0 }); } }
     return _fp._pss.get(id) || null;
 }
 
@@ -98,7 +144,7 @@ function facilitySpriteDraw(it) {
     if (k === "bridge") return !!_psBlit("bridge", it.variant, it.x, it.y);
     if (!_psImg(fam)) return false;
     const f = typeof frame !== "undefined" ? frame : 0, S = _psSolid(it.id), seed = _psHash(String(it.id));
-    if (!it.spriteOnly) { _fpFloorUnder(it); _psShadow(it); }   // (a rim cell is ordinary floor, drawn already)
+    if (!it.spriteOnly) { _fpFloorUnder(it); if (!S || !S.multi || _psEdgeCell(S, it)) _psShadow(it); }   // (the shadow only on the cells at the prop's edge: the others are under the sprite)   // (a rim cell is ordinary floor, drawn already)
     if (k === "plant") { const dead = seed % 3 === 0; return !!_psBlit("plant", dead ? "d" + (seed % 2) : "p" + (seed % 4), it.x, it.y); }
     if (k === "sentry") {
         const on = typeof facilityFeedOn === "function" && facilityFeedOn(it.id), step = ((Math.round((it.aim || 0) / (Math.PI * 2 / PS.aimSteps)) % PS.aimSteps) + PS.aimSteps) % PS.aimSteps;

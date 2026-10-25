@@ -50,19 +50,30 @@ function _fpSeg(map, x0, y0, x1, y1, op, F) {
         }
     }
 }
+// which edges of which floor tiles a wall stands on ("x,y,N|W|S|E": N is the tile's far-right edge on screen, W its far-left, S its near-left, E its near-right): the floor there is darkened (ambient occlusion)
+function _fpWallEdges(F) {
+    const E = new Set(), r = Math.round;
+    for (const w of F.walls) {
+        const ax = w.a[0], ay = w.a[1], bx = w.b[0], by = w.b[1];
+        if (Math.abs(ay - by) < 1e-6) { for (let x = r(Math.min(ax, bx) + 0.5); x <= r(Math.max(ax, bx) - 0.5); x++) { E.add(x + "," + r(ay - 0.5) + ",S"); E.add(x + "," + r(ay + 0.5) + ",N"); } }
+        else if (Math.abs(ax - bx) < 1e-6) { for (let y = r(Math.min(ay, by) + 0.5); y <= r(Math.max(ay, by) - 0.5); y++) { E.add(r(ax - 0.5) + "," + y + ",E"); E.add(r(ax + 0.5) + "," + y + ",W"); } }
+    }
+    return E;
+}
 function _fpFloorBuild(F) {
     const map = new Map(), solid = new Set();
     for (const s of F.solids) { const box = s.bb; for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) solid.add(x + "," + y); }
     // 1. the room's own floor
     const style = new Map(); for (const f of (F.floors || [])) style.set(f.room, f);
     const under = new Map();   // the floor under a solid cell: a small piece of furniture stands on it, and a bare black tile would show
-    const fills = _fpFillCells(F, solid); _fp.fills = fills;
+    const fills = _fpFillCells(F, solid); _fp.fills = fills; const wallEdges = _fpWallEdges(F);
     const cellsAll = new Map(_fp.cells); for (const k of solid) { const [x, y] = k.split(",").map(Number); if (facilityRoomAt(x, y, F)) cellsAll.set(k, [x, y]); } for (const [k, f] of fills) cellsAll.set(k, [f.x, f.y]);
     for (const [k, c] of cellsAll) {
         const room = fills.has(k) ? F.byId.get(fills.get(k).room) : facilityRoomAt(c[0], c[1], F), f = room && style.get(room.id), sty = !!room && facilityStyleRoom(room.id), S = sty ? _fpStyleFloorFor(room.id) : (f && FP_FLOOR_STYLES[f.style]); if (!S) continue;
         const h = _fpHash(c[0], c[1]), o = _fpCellOps(solid.has(k) ? under : map, c[0], c[1]), alt = S.alt && ((c[0] + c[1]) & 1);
-        o.push({ t: "D", c: _fpRgba(alt ? S.alt : ((!sty && f.colour) || S.base), (S.a || 0.5) * (sty ? 1 : 0.82 + (h % 7) * 0.05)) });
+        o.push({ t: "D", c: _fpRgba(alt ? S.alt : ((!sty && f.colour) || S.base), (S.a || 0.5) * (sty ? 1 : 0.82 + (h % 7) * 0.05)), x: sty && (S.a || 0.5) >= 1 });   // (x: an opaque base: painted a hair wide, so it covers the fringe of the tile under it)
         S.mark(h, o, c[0], c[1]);
+        if (sty) for (const e of "NWSE") if (wallEdges.has(c[0] + "," + c[1] + "," + e)) o.push({ t: "A", e, a: (e === "N" || e === "W" ? 0.34 : 0.16) * (S.ao === undefined ? 1 : S.ao) });   // ambient darkening where a wall meets the floor
     }
     // 2. what lies on it
     const rect = (r, fn) => { for (let x = Math.ceil(r[0] - 0.5); x <= r[2] - 0.5; x++) for (let y = Math.ceil(r[1] - 0.5); y <= r[3] - 0.5; y++) if (_fp.cells.has(x + "," + y)) fn(x, y, _fpCellOps(map, x, y), r); };
@@ -182,15 +193,16 @@ function _fpDrawRock(it, H) {
         const cs = _fpHash(Math.round(it.a[0] * 2), Math.round(it.a[1] * 2));
         for (let k = 0; k < 3; k++) { const u = ((cs >>> (k * 5)) % 80 + 10) / 100, v = 0.25 + ((cs >>> (k * 4 + 2)) % 50) / 100, p0 = [a1[0] + (b1[0] - a1[0]) * u, a1[1] + (b1[1] - a1[1]) * u], p1 = [A1[0] + (B1[0] - A1[0]) * u, A1[1] + (B1[1] - A1[1]) * u];
             ctx.fillStyle = "rgba(0,0,0,0.2)"; ctx.beginPath(); ctx.ellipse(p0[0] + (p1[0] - p0[0]) * v, p0[1] + (p1[1] - p0[1]) * v, 5 + k * 2, 2.5 + k, 0, 0, 6.2832); ctx.fill(); }   // pits and pebbles on the roof
-        ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(A1[0], A1[1]); ctx.lineTo(M1[0], M1[1]); ctx.lineTo(B1[0], B1[1]); ctx.stroke();   // where the roof meets the wall behind
+        ctx.strokeStyle = "rgba(10,6,4,0.55)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(A1[0], A1[1]); ctx.lineTo(M1[0], M1[1]); ctx.lineTo(B1[0], B1[1]); ctx.stroke();   // where the roof meets the wall behind: a dark crease
     }
+    _fpWallGrad(it, 0, 1, 0, 26, back ? FP_GS.foot : FP_GS.footSoft, back ? "rockfoot" : "rockfoot2");   // the foot of the rock: dark where it meets the floor
     const zTop = Math.max(ha, hm, hb), zLow = Math.min(ha, hm, hb), seed = _fpHash(Math.round(it.a[0] * 2), Math.round(it.a[1] * 2));
     for (let k = 0; k * 36 < zTop; k++) { const z = k * 36 + _fpHash(k, 7) % 12; if (z > zLow - 4) continue; _fpQuad([P(0, z), P(1, z), P(1, z + 3), P(0, z + 3)], "rgba(0,0,0,0.3)", null); _fpQuad([P(0, z + 3), P(1, z + 3), P(1, z + 5), P(0, z + 5)], "rgba(255,240,220,0.06)", null); }   // strata
     const cap = Math.max(20, zLow - 20);
     for (let s2 = 0; s2 < 4; s2++) { const h = _fpHash(seed, s2 + 3), u = ((h >>> 3) % 80) / 100 + 0.1, z = 8 + ((h >>> 9) % 100) / 100 * Math.min(cap, 120), w = 0.12 + ((h >>> 5) % 6) / 100, hh = 12 + (h % 16);   // boulders
         _fpQuad([P(u - w, z), P(u + w, z + 2), P(u + w * 0.8, z + hh), P(u, z + hh + 4), P(u - w * 0.8, z + hh - 2)], "rgba(255,240,220,0.07)", null); }
     for (let s2 = 0; s2 < 2; s2++) { const u = (((seed >>> (s2 * 4)) % 90) + 5) / 100, zh = zLow - 6; ctx.strokeStyle = "rgba(0,0,0,0.35)"; ctx.lineWidth = 2; const p = P(u, 0), q = P(u, Math.min(zh, 120)); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
-    ctx.lineJoin = "round"; ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(m1[0], m1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke(); ctx.strokeStyle = "#7a6c60"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] + 2); ctx.lineTo(m1[0], m1[1] + 2); ctx.lineTo(b1[0], b1[1] + 2); ctx.stroke(); ctx.lineJoin = "miter";   // the rocky lip: an ink outline with a pale edge
+    ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(10,6,4,0.6)"; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] - 1); ctx.lineTo(m1[0], m1[1] - 1); ctx.lineTo(b1[0], b1[1] - 1); ctx.stroke(); ctx.strokeStyle = "rgba(255,236,212," + (0.3 * lit).toFixed(3) + ")"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] + 1.5); ctx.lineTo(m1[0], m1[1] + 1.5); ctx.lineTo(b1[0], b1[1] + 1.5); ctx.stroke(); ctx.lineJoin = "miter";   // the rocky lip: a dark crease with a pale lit edge under it
 }
 
 // SCAFFOLDING: the catwalks are not a room but an open steel deck at the top of the arena, on legs, with railings. (The map still has their walls: they are the collision, and they are drawn as railings.)
@@ -207,26 +219,46 @@ function _fpScaffoldMarks(items) {
     }
 }
 const FP_STEEL = { post: "#b8cad2", beam: "#d6e4e9", brace: "#7f98a4", dark: "#4b6772", ink: "#16303a", rail: "#f2b13a" };
-// an open steel frame along a wall piece between heights z0 (low) and z1 (high): posts every 2 tiles, a beam at every band, X braces between the posts
+// an open steel frame along a wall piece between heights z0 (low) and z1 (high): posts every 2 tiles, a beam at every band, X braces between the posts. Round steel, lit from above: each member is a shaded under-stroke, the
+// steel itself and a thin highlight along its lit side, so it reads as a bar and not as a drawn line.
 function _fpDrawFrame(it, z0, z1) {
     const ax = it.a[0], ay = it.a[1], dx = it.b[0] - ax, dy = it.b[1] - ay, horiz = Math.abs(dx) >= Math.abs(dy), sa = horiz ? ax : ay, sb = horiz ? it.b[0] : it.b[1], lo = Math.min(sa, sb), hi = Math.max(sa, sb);
     if (z1 - z0 < 12) return;
-    const P = (sv, z) => { const u = (sv - sa) / ((sb - sa) || 1); return _fpP(ax + dx * u, ay + dy * u, z); }, n = Math.max(1, Math.round((z1 - z0) / 56)), bh = (z1 - z0) / n, line = (p, q, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); };
-    for (let k = 0; k <= n; k++) { const z = z0 + k * bh; line(P(lo, z), P(hi, z), FP_STEEL.ink, 5); line(P(lo, z), P(hi, z), k === n ? FP_STEEL.beam : FP_STEEL.brace, 3); }   // beams
-    for (let j = Math.floor(lo / 2); j * 2 <= hi + 1e-6; j++) {   // each two-tile bay: X braces, then the posts at its ends
-        const s0 = Math.max(lo, j * 2), s1 = Math.min(hi, j * 2 + 2); if (s1 - s0 < 1e-6) continue;
-        for (let k = 0; k < n; k++) { const dir = ((j + k) & 1) ? 1 : -1, zf = (sv) => { const t = (sv - j * 2) / 2; return z0 + k * bh + (dir > 0 ? t : 1 - t) * bh; }; line(P(s0, zf(s0)), P(s1, zf(s1)), FP_STEEL.brace, 2); }
-    }
-    for (let m = Math.ceil(lo / 2) * 2; m <= hi + 1e-6; m += 2) { line(P(m, z0), P(m, z1), FP_STEEL.ink, 7); line(P(m, z0), P(m, z1), FP_STEEL.post, 4); }
+    const a0 = _fpP(ax, ay, 0), b0 = _fpP(it.b[0], it.b[1], 0), X0 = a0[0], Y0 = a0[1], DX = b0[0] - X0, DY = b0[1] - Y0, K = 1 / ((sb - sa) || 1);   // a point at (s along the wall, z up) is (X0 + DX u, Y0 + DY u - z), u = (s - sa) K
+    const mv = (sv, z, ox, oy) => ctx.moveTo(X0 + DX * (sv - sa) * K + (ox || 0), Y0 + DY * (sv - sa) * K - z + (oy || 0)), ln = (sv, z, ox, oy) => ctx.lineTo(X0 + DX * (sv - sa) * K + (ox || 0), Y0 + DY * (sv - sa) * K - z + (oy || 0));
+    const n = Math.max(1, Math.round((z1 - z0) / 56)), bh = (z1 - z0) / n, stroke = (col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.stroke(); };
+    ctx.lineCap = "round";
+    // beams: a shaded under-stroke, the steel, a thin highlight: each in one stroke for every beam
+    ctx.beginPath(); for (let k = 0; k <= n; k++) { mv(lo, z0 + k * bh, 0, 2); ln(hi, z0 + k * bh, 0, 2); } stroke("rgba(8,26,34,0.28)", 4);
+    ctx.beginPath(); for (let k = 0; k < n; k++) { mv(lo, z0 + k * bh); ln(hi, z0 + k * bh); } stroke(FP_STEEL.brace, 3);
+    ctx.beginPath(); mv(lo, z1); ln(hi, z1); stroke(FP_STEEL.beam, 3);
+    ctx.beginPath(); for (let k = 0; k <= n; k++) { mv(lo, z0 + k * bh, 0, -0.8); ln(hi, z0 + k * bh, 0, -0.8); } stroke("rgba(255,255,255,0.4)", 1);
+    // each two-tile bay: X braces (a shadow under them, the steel)
+    ctx.beginPath(); for (let j = Math.floor(lo / 2); j * 2 <= hi + 1e-6; j++) { const s0 = Math.max(lo, j * 2), s1 = Math.min(hi, j * 2 + 2); if (s1 - s0 < 1e-6) continue; for (let k = 0; k < n; k++) { const dir = ((j + k) & 1) ? 1 : -1, zf = sv => { const t = (sv - j * 2) / 2; return z0 + k * bh + (dir > 0 ? t : 1 - t) * bh; }; mv(s0, zf(s0)); ln(s1, zf(s1)); } }
+    ctx.save(); ctx.strokeStyle = "rgba(8,26,34,0.22)"; ctx.lineWidth = 3.2; ctx.stroke(); ctx.strokeStyle = FP_STEEL.brace; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+    // posts: a shaded side, the steel, a lit edge
+    ctx.beginPath(); for (let m = Math.ceil(lo / 2) * 2; m <= hi + 1e-6; m += 2) { mv(m, z0, 1.8); ln(m, z1, 1.8); } stroke("rgba(8,26,34,0.4)", 3.4);
+    ctx.beginPath(); for (let m = Math.ceil(lo / 2) * 2; m <= hi + 1e-6; m += 2) { mv(m, z0); ln(m, z1); } stroke(FP_STEEL.post, 4);
+    ctx.beginPath(); for (let m = Math.ceil(lo / 2) * 2; m <= hi + 1e-6; m += 2) { mv(m, z0, -1.1); ln(m, z1, -1.1); } stroke("rgba(255,255,255,0.5)", 1.2);
+    ctx.lineCap = "butt";
 }
 // the deck's edge: a fascia, a kickboard, a post every tile and two rails; legs under it where the arena's frame is not
 function _fpDrawRail(it) {
     const ax = it.a[0], ay = it.a[1], dx = it.b[0] - ax, dy = it.b[1] - ay, horiz = Math.abs(dx) >= Math.abs(dy), sa = horiz ? ax : ay, sb = horiz ? it.b[0] : it.b[1], lo = Math.min(sa, sb), hi = Math.max(sa, sb);
-    const P = (sv, z) => { const u = (sv - sa) / ((sb - sa) || 1); return _fpP(ax + dx * u, ay + dy * u, z); }, line = (p, q, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); };
-    _fpQuad([P(lo, -10), P(hi, -10), P(hi, 0), P(lo, 0)], FP_STEEL.dark, FP_STEEL.ink, 1.5);   // the deck's fascia
-    _fpQuad([P(lo, 0), P(hi, 0), P(hi, 6), P(lo, 6)], "#3a4258", null);                          // the kickboard
-    for (const [z, col, w] of [[36, FP_STEEL.rail, 3.5], [20, FP_STEEL.post, 2.5]]) { line(P(lo, z), P(hi, z), FP_STEEL.ink, w + 2.5); line(P(lo, z), P(hi, z), col, w); }
-    for (let m = Math.ceil(lo - 1e-6); m <= hi + 1e-6; m++) { line(P(m, 0), P(m, 38), FP_STEEL.ink, 6); line(P(m, 0), P(m, 38), FP_STEEL.post, 3.5); }   // posts
+    const P = (sv, z) => { const u = (sv - sa) / ((sb - sa) || 1); return _fpP(ax + dx * u, ay + dy * u, z); };
+    const a0 = _fpP(ax, ay, 0), b0 = _fpP(it.b[0], it.b[1], 0), X0 = a0[0], Y0 = a0[1], DX = b0[0] - X0, DY = b0[1] - Y0, K = 1 / ((sb - sa) || 1);
+    const mv = (sv, z, ox, oy) => ctx.moveTo(X0 + DX * (sv - sa) * K + (ox || 0), Y0 + DY * (sv - sa) * K - z + (oy || 0)), ln = (sv, z, ox, oy) => ctx.lineTo(X0 + DX * (sv - sa) * K + (ox || 0), Y0 + DY * (sv - sa) * K - z + (oy || 0)), stroke = (col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.stroke(); };
+    _fpQuad([P(lo, -10), P(hi, -10), P(hi, 0), P(lo, 0)], FP_STEEL.dark, null);   // the deck's fascia
+    _fpWallGrad(it, 0, 1, -10, 0, FP_GS.fascia, "fascia");
+    _fpQuad([P(lo, 0), P(hi, 0), P(hi, 6), P(lo, 6)], "#3a4258", null);            // the kickboard
+    ctx.lineCap = "round"; ctx.beginPath(); mv(lo, 0); ln(hi, 0); stroke("rgba(255,255,255,0.4)", 1.2); ctx.beginPath(); mv(lo, -10); ln(hi, -10); stroke("rgba(8,26,34,0.45)", 1.6);
+    ctx.beginPath(); mv(lo, 36, 0, 2); ln(hi, 36, 0, 2); mv(lo, 20, 0, 2); ln(hi, 20, 0, 2); stroke("rgba(8,26,34,0.3)", 5);          // the rails: a shade under each, the metal, a highlight on top
+    ctx.beginPath(); mv(lo, 36); ln(hi, 36); stroke(FP_STEEL.rail, 3.5); ctx.beginPath(); mv(lo, 20); ln(hi, 20); stroke(FP_STEEL.post, 2.5);
+    ctx.beginPath(); mv(lo, 36, 0, -1); ln(hi, 36, 0, -1); mv(lo, 20, 0, -0.8); ln(hi, 20, 0, -0.8); stroke("rgba(255,255,255,0.4)", 1);
+    ctx.beginPath(); for (let m = Math.ceil(lo - 1e-6); m <= hi + 1e-6; m++) { mv(m, 0, 1.4); ln(m, 38, 1.4); } stroke("rgba(8,26,34,0.4)", 3.4);   // posts
+    ctx.beginPath(); for (let m = Math.ceil(lo - 1e-6); m <= hi + 1e-6; m++) { mv(m, 0); ln(m, 38); } stroke(FP_STEEL.post, 3.2);
+    ctx.beginPath(); for (let m = Math.ceil(lo - 1e-6); m <= hi + 1e-6; m++) { mv(m, 0, -0.9); ln(m, 38, -0.9); } stroke("rgba(255,255,255,0.5)", 1);
+    ctx.lineCap = "butt";
     if (it.legs && it.legH > 20) _fpDrawFrame(it, -it.legH, -10);
 }
 function _fpDrawSupport(it, ext) { _fpDrawFrame(it, 0, ext); }
@@ -255,7 +287,8 @@ function _fpDrawDeckCliff(it) {
     { const bd = bands[bands.length - 1], d = 0.05 + 0.2 * Math.pow(sm(ymid, bd.k), 1.3), c = Q(ymid, bd.z0, d), y1 = Q(ymid - 0.14, bd.z0, d), y2 = Q(ymid + 0.14, bd.z0, d), tip = Q(ymid, bd.z0 - 12 - 10 * hv(bd.k, 140), d); ctx.fillStyle = "#3d352e"; ctx.beginPath(); ctx.moveTo(y1[0], y1[1]); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(y2[0], y2[1]); ctx.closePath(); ctx.fill(); ctx.fillStyle = "rgba(255,240,220,0.12)"; ctx.beginPath(); ctx.moveTo(y1[0], y1[1]); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(c[0], c[1]); ctx.closePath(); ctx.fill(); }
     if (hv(Math.round(ymid * 2), 150) > 0.6) { const r = Q(ymid, 3, 0.2); ctx.fillStyle = "#5a4f46"; ctx.beginPath(); ctx.ellipse(r[0], r[1], 9, 4.5, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(r[0] + 2, r[1] + 3, 10, 3, 0, 0, 6.2832); ctx.fill(); }
     // 4. the lip under the deck
-    ctx.lineJoin = "round"; ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke(); ctx.strokeStyle = "#7a6c60"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] + 2.5); ctx.lineTo(b1[0], b1[1] + 2.5); ctx.stroke(); ctx.lineJoin = "miter";
+    ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(10,6,4,0.6)"; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] - 1); ctx.lineTo(b1[0], b1[1] - 1); ctx.stroke(); ctx.strokeStyle = "rgba(255,236,212,0.3)"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] + 2); ctx.lineTo(b1[0], b1[1] + 2); ctx.stroke(); ctx.lineJoin = "miter";
+    _fpWallGrad(it, 0, 1, 0, 22, FP_GS.foot, "cliffoot");   // the cliff's foot
 }
 
 // Called by every facility floor tile from the game's own tile draw: px, py are the tile's top-left corner as for the tile sprite.
@@ -268,23 +301,23 @@ function facilityDrawFloorOn(obj, px, py) {
 }
 // (cx, cy) is the middle of the tile on screen; key names the tile's cached sprite
 function _fpDrawOps(ops, cx, cy, key) {
-    const W = TILE_W, H = TILE_H;
+    const W = TILE_W, H = TILE_H, EX = 2, EY = 1;   // (the sprite has a margin: an opaque base is painted EX px wider and EY px higher than the tile, over the fringe of the tile sprite under it)
     let spr = _fp.spr.get(key);
     if (spr === undefined) {   // not painted yet: paint it (null if there is no canvas to paint on, as in the tests)
         spr = null;
         try {
             if (typeof document !== "undefined" && document.createElement) {
-                const c = document.createElement("canvas"); c.width = W * 2 + 2; c.height = H * 2 + 2; const g = c.getContext("2d");
-                if (g && g.clip) { g.beginPath(); g.moveTo(W + 1, 1); g.lineTo(W * 2 + 1, H + 1); g.lineTo(W + 1, H * 2 + 1); g.lineTo(1, H + 1); g.closePath(); g.clip(); _fpPaintOps(g, ops, W + 1, H + 1, true); spr = c; }
+                const c = document.createElement("canvas"); c.width = W * 2 + 2 + EX * 2; c.height = H * 2 + 2 + EY * 2; const g = c.getContext("2d"), wide = !!(ops[0] && ops[0].t === "D" && ops[0].x), ex = wide ? EX : 0, ey = wide ? EY : 0, mx = W + 1 + EX, my = H + 1 + EY;
+                if (g && g.clip) { g.beginPath(); g.moveTo(mx, my - H - ey); g.lineTo(mx + W + ex, my); g.lineTo(mx, my + H + ey); g.lineTo(mx - W - ex, my); g.closePath(); g.clip(); _fpPaintOps(g, ops, mx, my, true, wide ? [ex, ey] : null); spr = c; }
             }
         } catch (e) { spr = null; }
         _fp.spr.set(key, spr);
     }
-    if (spr) ctx.drawImage(spr, cx - W - 1, cy - H - 1); else { ctx.save(); ctx.beginPath(); ctx.moveTo(cx, cy - H); ctx.lineTo(cx + W, cy); ctx.lineTo(cx, cy + H); ctx.lineTo(cx - W, cy); ctx.closePath(); ctx.clip(); _fpPaintOps(ctx, ops, cx, cy, true); ctx.restore(); }
+    if (spr) ctx.drawImage(spr, cx - W - 1 - EX, cy - H - 1 - EY); else { ctx.save(); ctx.beginPath(); ctx.moveTo(cx, cy - H); ctx.lineTo(cx + W, cy); ctx.lineTo(cx, cy + H); ctx.lineTo(cx - W, cy); ctx.closePath(); ctx.clip(); _fpPaintOps(ctx, ops, cx, cy, true); ctx.restore(); }
     for (let i = 0; i < ops.length; i++) if (ops[i].t === "G" && ops[i].fl) _fpPaintOps(ctx, [ops[i]], cx, cy, false);
 }
 // staticPass: paint the marks (not the light); otherwise only the light
-function _fpPaintOps(g, ops, cx, cy, staticPass) {
+function _fpPaintOps(g, ops, cx, cy, staticPass, wide) {
     const W = TILE_W, H = TILE_H, f = _fpFrame();
     const X = (u, v) => cx + (u - v) * W, Y = (u, v) => cy + (u + v) * H;
     for (let i = 0; i < ops.length; i++) {
@@ -292,7 +325,16 @@ function _fpPaintOps(g, ops, cx, cy, staticPass) {
         if (t === "G" && !o.fl) { if (!staticPass) continue; g.fillStyle = _fpRgba(o.c, o.a * 0.8); g.beginPath(); g.moveTo(cx, cy - H); g.lineTo(cx + W, cy); g.lineTo(cx, cy + H); g.lineTo(cx - W, cy); g.closePath(); g.fill(); continue; }   // a steady light is baked into the sprite as a warm wash
         if (t === "G") { if (staticPass) continue; const fl = o.fl ? 0.7 + 0.3 * Math.sin(f * 0.07 * o.fl + o.fl * 3) * (Math.sin(f * 0.013 * o.fl) > 0.2 ? 1 : 0.4) : 1; g.globalCompositeOperation = "lighter"; g.fillStyle = _fpRgba(o.c, o.a * fl); g.beginPath(); g.moveTo(cx, cy - H); g.lineTo(cx + W, cy); g.lineTo(cx, cy + H); g.lineTo(cx - W, cy); g.closePath(); g.fill(); g.globalCompositeOperation = "source-over"; continue; }
         if (!staticPass) continue;
-        if (t === "D") { g.fillStyle = o.c; g.beginPath(); g.moveTo(cx, cy - H); g.lineTo(cx + W, cy); g.lineTo(cx, cy + H); g.lineTo(cx - W, cy); g.closePath(); g.fill(); }
+        if (t === "D") { const ex = wide && o.x ? wide[0] : 0, ey = wide && o.x ? wide[1] : 0; g.fillStyle = o.c; g.beginPath(); g.moveTo(cx, cy - H - ey); g.lineTo(cx + W + ex, cy); g.lineTo(cx, cy + H + ey); g.lineTo(cx - W - ex, cy); g.closePath(); g.fill(); }
+        else if (t === "A") {   // ambient darkening along one edge: a gradient in the tile's own (u, v) frame, so its lines run parallel to the edge, from the edge in over 0.55 tile
+            const e = o.e, d = 0.55, v0 = e === "N" ? -0.5 : e === "S" ? 0.5 : 0, u0 = e === "W" ? -0.5 : e === "E" ? 0.5 : 0, alongV = e === "N" || e === "S", s = e === "N" || e === "W" ? 1 : -1;
+            g.save(); g.transform(W, H, -W, H, cx, cy); const gr = alongV ? g.createLinearGradient(0, v0, 0, v0 + s * d) : g.createLinearGradient(u0, 0, u0 + s * d, 0);
+            gr.addColorStop(0, "rgba(8,26,34," + o.a + ")"); gr.addColorStop(1, "rgba(8,26,34,0)"); g.fillStyle = gr;
+            if (alongV) g.fillRect(-0.5, s > 0 ? v0 : v0 - d, 1, d); else g.fillRect(s > 0 ? u0 : u0 - d, -0.5, d, 1);
+            g.restore(); }
+        else if (t === "S") {   // a sheen: lighter towards the far corner, a little darker at the near one (the light is up and behind)
+            const gr = g.createLinearGradient(0, cy - H, 0, cy + H); gr.addColorStop(0, "rgba(255,255,255," + o.a + ")"); gr.addColorStop(0.55, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(8,26,34," + (o.b === undefined ? o.a : o.b) + ")");
+            g.fillStyle = gr; g.beginPath(); g.moveTo(cx, cy - H); g.lineTo(cx + W, cy); g.lineTo(cx, cy + H); g.lineTo(cx - W, cy); g.closePath(); g.fill(); }
         else if (t === "L") { g.strokeStyle = o.c; g.lineWidth = o.w || 1; g.beginPath(); g.moveTo(X(o.p[0], o.p[1]), Y(o.p[0], o.p[1])); g.lineTo(X(o.p[2], o.p[3]), Y(o.p[2], o.p[3])); g.stroke(); }
         else if (t === "P") { g.fillStyle = o.c; g.beginPath(); for (let j = 0; j < o.p.length; j += 2) j ? g.lineTo(X(o.p[j], o.p[j + 1]), Y(o.p[j], o.p[j + 1])) : g.moveTo(X(o.p[0], o.p[1]), Y(o.p[0], o.p[1])); g.closePath(); g.fill(); }
         else if (t === "C") { g.fillStyle = o.c; g.beginPath(); g.ellipse(X(o.u, o.v), Y(o.u, o.v), o.r * W * 1.4142, o.r * H * 1.4142, 0, 0, 6.2832); g.fill(); if (o.shine) { g.fillStyle = "rgba(255,255,255,0.12)"; g.beginPath(); g.ellipse(X(o.u - o.r * 0.25, o.v - o.r * 0.25), Y(o.u - o.r * 0.25, o.v - o.r * 0.25), o.r * W * 0.5, o.r * H * 0.5, 0, 0, 6.2832); g.fill(); } }
@@ -312,7 +354,11 @@ function _fpWallPlace(F) {
 }
 const FP_HIGH_DECOR = new Set(["pipe", "wall_light", "exit_sign", "banner", "bulbs", "cable_run", "chain", "ooze_drip", "crack", "window_blind", "lamp", "clock", "vent"]);   // the kinds that hang near the top of the wall: they rise with it
 function _fpWP(it, u, z) { return _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z + (FP_HIGH_DECOR.has(it.kind) ? FP_WALL_X : 0)); }
-function _fpWQuad(it, u0, u1, z0, z1, fill, stroke, lw) { _fpQuad([_fpWP(it, u0, z0), _fpWP(it, u1, z0), _fpWP(it, u1, z1), _fpWP(it, u0, z1)], fill, stroke, lw); }
+function _fpWQuad(it, u0, u1, z0, z1, fill, stroke, lw) {
+    const pts = [_fpWP(it, u0, z0), _fpWP(it, u1, z0), _fpWP(it, u1, z1), _fpWP(it, u0, z1)];
+    if (stroke === FP_PAL.ink && lw >= 2) { _fpQuad(pts.map(p => [p[0] + 1.5, p[1] + 2]), "rgba(8,26,34,0.14)", null); _fpQuad(pts, fill, FP_EDGE.darker, Math.max(1, lw * 0.4)); _fpEdge(pts[3], pts[2], FP_EDGE.lightSoft, 1); return; }   // a framed thing on the wall: a soft shadow under it, a thin dark edge, a lit top edge (not a bold ink outline)
+    _fpQuad(pts, fill, stroke, lw);
+}
 function _fpWLine(it, u0, z0, u1, z1, col, w) { const p = _fpWP(it, u0, z0), q = _fpWP(it, u1, z1); ctx.strokeStyle = col; ctx.lineWidth = w || 1; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
 const FP_WALL_KINDS = {
     poster: (it, f) => {   // a framed poster: a faded print, a title bar, a few lines of text

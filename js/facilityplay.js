@@ -212,6 +212,7 @@ function facilityPlayStart() {
     if (typeof facilitySpawnInitial === "function") facilitySpawnInitial(); else _fpSpawnTestEnemies(F);   // the arena's creatures (js/facilityspawn.js)
     if (typeof updateObjectiveUI === "function") updateObjectiveUI();
     document.body.classList && document.body.classList.add("facility-play");
+    if (typeof facilityPropsPreload === "function") facilityPropsPreload();   // the 3D prop sheets start loading now (js/propsprites.js)
     _fp.saveReady = true;                            // from here the game is saved as it goes
     return true;
 }

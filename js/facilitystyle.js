@@ -34,6 +34,7 @@ function _fpStyleCol(kind, col) {
     return col;
 }
 // ── shapes ──
+function _fpFillSoft(pts, col, edge, lw) { if (edge === FP_PAL.ink) { _fpQuad(pts, col, FP_EDGE.darker, Math.max(1, (lw || 1) * 0.4)); } else _fpQuad(pts, col, edge || col, lw || 1); }   // _fpFill, with the ink edge of the flat style softened (architecture: signs and wall units)
 function _fpFill(pts, col, edge, lw) { _fpQuad(pts, col, edge || col, lw || 1); }   // a smooth fill (the stroke is the fill colour, so neighbours leave no hairline)
 function _fpSBox(x0, y0, x1, y1, z0, z1, top, sideY, sideX, lw) {   // a toon box: three flat faces separated by VALUE, one bold ink outline round the SILHOUETTE only, a white shine on the lit top edges
     const P = _fpP, t = [P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1)], b = [P(x0, y0, z0), P(x1, y0, z0), P(x1, y1, z0), P(x0, y1, z0)], ink = FP_PAL.ink, w = lw || 3.5;
@@ -103,12 +104,29 @@ const FP_EDGE = { dark: "rgba(14,36,46,0.5)", darker: "rgba(14,36,46,0.7)", ligh
 // a stroke between two points
 function _fpEdge(p, q, col, w) { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
 // a band of a wall piece (or a door: anything with a and b) filled with a VERTICAL gradient that follows the wall's slope: drawn in the piece's own frame (u along it, z up in px), so neighbouring pieces' gradients
-// meet exactly. stops: [[t, colour], ...] with t from the band's bottom (0) to its top (1).
-function _fpWallGrad(it, u0, u1, z0, z1, stops) {
+// meet exactly. stops: [[t, colour], ...] with t from the band's bottom (0) to its top (1). The gradient lives in that frame, so it does not depend on where the piece is: ONE gradient object is made per `key` (a string
+// naming the stops and the heights) and reused by every piece and every frame (made on the real context, never the dimmed pen, so its colours are not darkened: it is a shading overlay).
+const _fpGradCache = new Map();
+function _fpWallGrad(it, u0, u1, z0, z1, stops, key) {
+    let g = key !== undefined ? _fpGradCache.get(key) : undefined;
+    if (!g) { const c = ctx._k !== undefined && typeof _fpDimFor !== "undefined" && _fpDimFor ? _fpDimFor : ctx; g = c.createLinearGradient(0, z0, 0, z1); for (let i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]); if (key !== undefined) _fpGradCache.set(key, g); }
     const a = _fpP(it.a[0], it.a[1], 0), b = _fpP(it.b[0], it.b[1], 0);
-    ctx.save(); ctx.transform(b[0] - a[0], b[1] - a[1], 0, -1, a[0], a[1]);
-    const g = ctx.createLinearGradient(0, z0, 0, z1); for (let i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]);
-    ctx.fillStyle = g; ctx.fillRect(u0, z0, u1 - u0, z1 - z0); ctx.restore();
+    ctx.save(); ctx.transform(b[0] - a[0], b[1] - a[1], 0, -1, a[0], a[1]); ctx.fillStyle = g; ctx.fillRect(u0, z0, u1 - u0, z1 - z0); ctx.restore();
+}
+// shading stops used again and again (constants: nothing is allocated per piece)
+const FP_GS = {
+    leaf: [[0, "rgba(10,30,40,0.34)"], [0.14, "rgba(10,30,40,0.08)"], [0.55, "rgba(255,255,255,0.0)"], [1, "rgba(255,255,255,0.20)"]], seal: [[0, "rgba(10,30,40,0.25)"], [1, "rgba(255,255,255,0.12)"]],
+    post: [[0, "rgba(10,30,40,0.30)"], [0.2, "rgba(10,30,40,0.06)"], [1, "rgba(10,30,40,0.0)"]], lintel: [[0, "rgba(10,30,40,0.26)"], [1, "rgba(255,255,255,0.14)"]],
+    gsill: [[0, FP_EDGE.ao + "0.30)"], [0.5, FP_EDGE.ao + "0.06)"], [1, "rgba(255,255,255,0.10)"]], gglass: [[0, "rgba(20,70,90,0.14)"], [0.55, "rgba(20,70,90,0.0)"], [1, "rgba(220,250,255,0.14)"]], grail: [[0, "rgba(10,30,40,0.18)"], [1, "rgba(10,30,40,0.0)"]],
+    foot: [[0, "rgba(0,0,0,0.4)"], [1, "rgba(0,0,0,0)"]], footSoft: [[0, "rgba(0,0,0,0.3)"], [1, "rgba(0,0,0,0)"]], fascia: [[0, "rgba(8,26,34,0.35)"], [1, "rgba(255,255,255,0.1)"]],
+};
+// the stops of a wall face's shading, for a wall of this height (one gradient covers the wainscot and the wall above it): darker at the floor, a lighter rail, a shadow under the chair rail and one under the cap
+const _fpWallStopsCache = new Map();
+function _fpWallStops(top, wain) {
+    const k = top + "|" + wain; let r = _fpWallStopsCache.get(k); if (r) return r;
+    const t = z => Math.max(0, Math.min(1, z / top)), ao = a => FP_EDGE.ao + a + ")", st = [[0, ao(0.34)], [t(5), ao(0.18)], [t(Math.min(14, wain)), ao(0.06)]];
+    if (top > wain + 6) { st.push([t(wain) - 0.0005, "rgba(255,255,255,0.05)"], [t(wain), ao(0.12)], [t(wain + (top - wain) * 0.16), ao(0.02)], [t(wain + (top - wain) * 0.78), "rgba(255,255,255,0)"], [1, ao(0.16)]); } else st.push([1, "rgba(255,255,255,0.05)"]);
+    return _fpWallStopsCache.set(k, r = { stops: st, key: "ws" + k }).get(k);
 }
 function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out, ink) {   // the thick top of a wall: a slab FP_WALL_T deep over the band, running from the piece towards the other side of the wall (out: +1 towards the camera, -1 away). It runs half a tile past both ends (not on a short piece, a tunnel's side, where it would stick out), so the slab of a corner or of a row of pieces is continuous. A soft crease along its far edge (where `ink` allows: the boundary of the whole top), a light bevel along the edge towards the room.
     const t = FP_WALL_T, L = Math.hypot(bx - ax, by - ay) || 1, e = L < 1.6 ? 0 : 0.5, ex = (bx - ax) / L * e, ey = (by - ay) / L * e, Q = (x, y) => _fpP(x, y, Hd), mx = nx * (out || -1), my = ny * (out || -1);
@@ -120,31 +138,37 @@ function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out, ink) {   // the thick top o
 }
 function _fpStyleWall(it, Hd) {
     const ax = it.a[0], ay = it.a[1], bx = it.b[0], by = it.b[1], dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
-    const P = (u, z) => _fpP(ax + dx * u, ay + dy * u, z), lit = nx > ny, body = lit ? FP_PAL.wallLit : FP_PAL.wallDark, wain = Math.min(24, Hd), capH = Math.min(8, Math.max(0, Hd - wain)), RC = _fpRoomCols(it.room), U0 = -0.02, U1 = 1.02;   // (each base band runs a hair past both ends, so neighbours overlap and leave no seam; the shading over it does not)
+    const lit = nx > ny, wain = Math.min(24, Hd), capH = Math.min(8, Math.max(0, Hd - wain)), RC = _fpRoomCols(it.room), zb = Hd - capH;
     _fpWallTop(ax, ay, bx, by, nx, ny, Hd, it.out, it.inkBack);   // the wall's thickness: a slab over the band (the building is spaced out for it)
     if (it.nbBand) return;   // (only the slab: the neighbouring room's own wall face stands in front of this one)
-    if (it.drop > 0) { _fpFlat([P(U0, -it.drop), P(U1, -it.drop), P(U1, 0), P(U0, 0)], RC.skirt); _fpWallGrad(it, 0, 1, -it.drop, 0, [[0, FP_EDGE.ao + "0.35)"], [1, FP_EDGE.ao + "0.05)"]]); }   // a skirt down to a lower floor beside the wall
-    // the wainscot: a recessed teal panel band with a skirting board at the floor and a chair rail on top
-    _fpFlat([P(U0, 0), P(U1, 0), P(U1, wain), P(U0, wain)], lit ? RC.wainLit : RC.wainDark);
-    if (wain > 8) _fpWallGrad(it, 0, 1, 0, wain, [[0, FP_EDGE.ao + "0.34)"], [0.3, FP_EDGE.ao + "0.1)"], [1, "rgba(255,255,255,0.06)"]]);   // darker at the floor, a little lighter up at the rail
-    if (Hd > wain) _fpFlat([P(U0, wain), P(U1, wain), P(U1, Hd - capH), P(U0, Hd - capH)], body);
-    if (Hd > wain + 6) _fpWallGrad(it, 0, 1, wain, Hd - capH, [[0, FP_EDGE.ao + "0.12)"], [0.16, FP_EDGE.ao + "0.02)"], [0.78, "rgba(255,255,255,0.0)"], [1, FP_EDGE.ao + "0.16)"]]);   // the wall face: a shadow under the chair rail and one under the cap
-    if (capH > 0) _fpFlat([P(U0, Hd - capH), P(U1, Hd - capH), P(U1, Hd), P(U0, Hd)], FP_PAL.cap);
+    // the piece's frame on screen: a point at (u along the piece, z up) is (X0 + DX u, Y0 + DY u - z): no arrays per point
+    const a0 = _fpP(ax, ay, 0), b0 = _fpP(bx, by, 0), X0 = a0[0], Y0 = a0[1], DX = b0[0] - X0, DY = b0[1] - Y0;
+    // (each base band runs a hair past both ends, so neighbours overlap and leave no seam; the shading over it does not)
+    const band = (u0, u1, z0, z1, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(X0 + DX * u0, Y0 + DY * u0 - z0); ctx.lineTo(X0 + DX * u1, Y0 + DY * u1 - z0); ctx.lineTo(X0 + DX * u1, Y0 + DY * u1 - z1); ctx.lineTo(X0 + DX * u0, Y0 + DY * u0 - z1); ctx.closePath(); ctx.fill(); };
+    const seg = z => { ctx.moveTo(X0, Y0 - z); ctx.lineTo(X0 + DX, Y0 + DY - z); };
+    if (it.drop > 0) { band(-0.02, 1.02, -it.drop, 0, RC.skirt); _fpWallGrad(it, 0, 1, -it.drop, 0, FP_GS.foot, "skirt" + it.drop); }   // a skirt down to a lower floor beside the wall
+    const P = (u, z) => [X0 + DX * u, Y0 + DY * u - z], U0 = -0.02, U1 = 1.02;
+    _fpFlat([P(U0, 0), P(U1, 0), P(U1, wain), P(U0, wain)], lit ? RC.wainLit : RC.wainDark);     // the wainscot: a recessed teal band with a skirting board at the floor and a chair rail on top (a flat fill: no outline pass)
+    if (Hd > wain) band(-0.02, 1.02, wain, zb, lit ? FP_PAL.wallLit : FP_PAL.wallDark);           // the wall face
+    if (capH > 0) band(-0.02, 1.02, zb, Hd, FP_PAL.cap);                                          // the cap
+    { const W = _fpWallStops(zb, wain); _fpWallGrad(it, 0, 1, 0, zb, W.stops, W.key); }           // the shading over the wainscot and the face: one gradient
     const h = _fpHash(Math.round(ax * 2), Math.round(ay * 2));
     if (Hd > wain + 10) {
-        if (h % 9 === 0) _fpFlat([P(0.1, wain), P(0.9, wain), P(0.8, wain + 14 + h % 10), P(0.2, wain + 12)], "rgba(115,140,128,0.16)");   // a discoloration
-        if (h % 13 === 1) _fpFlat([P(0.4, Hd - capH), P(0.46, Hd - capH), P(0.45, wain + 4), P(0.41, wain + 4)], "rgba(176,132,108,0.24)");     // a rust streak
+        if (h % 9 === 0) band(0.1, 0.9, wain, wain + 13 + h % 10, "rgba(115,140,128,0.16)");   // a discoloration
+        if (h % 13 === 1) band(0.4, 0.46, wain + 4, zb, "rgba(176,132,108,0.24)");             // a rust streak
         // a panel joint at every tile: a dark crease and a light edge beside it (a recessed seam)
-        const sa = Math.floor((ax + ay) / 2), sb = Math.floor((bx + by) / 2); if (sa !== sb) { const u = (((sa > sb ? sa : sb) * 2) - (ax + ay)) / ((bx + by) - (ax + ay) || 1); if (u > 0 && u < 1) { const p = P(u, wain + 1), q = P(u, Hd - capH), p2 = P(Math.min(1, u + 0.035), wain + 1), q2 = P(Math.min(1, u + 0.035), Hd - capH); _fpEdge(p, q, "rgba(22,48,58,0.30)", 1.2); _fpEdge(p2, q2, lit ? FP_EDGE.lightSoft : "rgba(255,255,255,0.16)", 1); } }
+        const sa = Math.floor((ax + ay) / 2), sb = Math.floor((bx + by) / 2); if (sa !== sb) { const u = (((sa > sb ? sa : sb) * 2) - (ax + ay)) / ((bx + by) - (ax + ay) || 1); if (u > 0 && u < 1) { const u2 = Math.min(1, u + 0.035);
+            ctx.lineCap = "butt"; ctx.strokeStyle = "rgba(22,48,58,0.30)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(X0 + DX * u, Y0 + DY * u - wain - 1); ctx.lineTo(X0 + DX * u, Y0 + DY * u - zb); ctx.stroke();
+            ctx.strokeStyle = lit ? FP_EDGE.lightSoft : "rgba(255,255,255,0.16)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X0 + DX * u2, Y0 + DY * u2 - wain - 1); ctx.lineTo(X0 + DX * u2, Y0 + DY * u2 - zb); ctx.stroke(); } }
     }
     ctx.lineCap = "round";
-    // the trims: a light rail along the top of the wainscot with a crease under it, the skirting board's top edge, the cap's lower edge
-    if (wain > 8) { _fpEdge(P(0, wain), P(1, wain), FP_EDGE.light, 1.6); _fpEdge(P(0, wain - 2), P(1, wain - 2), "rgba(8,26,34,0.32)", 1.4); _fpEdge(P(0, 5), P(1, 5), "rgba(8,26,34,0.28)", 1.2); _fpEdge(P(0, 6.5), P(1, 6.5), "rgba(255,255,255,0.16)", 1); }
-    if (capH > 0) { _fpEdge(P(0, Hd - capH), P(1, Hd - capH), "rgba(8,26,34,0.3)", 1.4); _fpEdge(P(0, Hd - capH + 1.5), P(1, Hd - capH + 1.5), FP_EDGE.lightSoft, 1); }
+    // the trims, batched by colour: lit edges (the chair rail, the top edge), creases (under the rail, at the skirting board, under the cap), soft lights (above the skirting board, on the cap's lower edge)
+    ctx.strokeStyle = FP_EDGE.light; ctx.lineWidth = 1.5; ctx.beginPath(); if (wain > 8) seg(wain); seg(Hd); ctx.stroke();
+    ctx.strokeStyle = "rgba(8,26,34,0.3)"; ctx.lineWidth = 1.3; ctx.beginPath(); if (wain > 8) { seg(wain - 2); seg(5); } if (capH > 0) seg(zb); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 1; ctx.beginPath(); if (wain > 8) seg(6.5); if (capH > 0) seg(zb + 1.5); ctx.stroke();
     // the accent: a thin lit strip in the room's colour (a soft wide glow under a bright core: it is a light)
-    if (Hd >= 26) { const p = P(0, wain + 3), q = P(1, wain + 3); _fpEdge(p, q, _fpRgba(RC.acc, 0.2), 5); _fpEdge(p, q, RC.acc, 1.8); }
-    _fpEdge(P(0, Hd), P(1, Hd), FP_EDGE.light, 1.5);              // the top edge: a light bevel
-    _fpEdge(P(0, 0), P(1, 0), "rgba(8,26,34,0.55)", 2); ctx.lineCap = "butt";   // the foot: a dark contact line
+    if (Hd >= 26) { ctx.strokeStyle = RC.accGlow || (RC.accGlow = _fpRgba(RC.acc, 0.2)); ctx.lineWidth = 5; ctx.beginPath(); seg(wain + 3); ctx.stroke(); ctx.strokeStyle = RC.acc; ctx.lineWidth = 1.8; ctx.beginPath(); seg(wain + 3); ctx.stroke(); }
+    ctx.strokeStyle = "rgba(8,26,34,0.55)"; ctx.lineWidth = 2; ctx.beginPath(); seg(0); ctx.stroke(); ctx.lineCap = "butt";   // the foot: a dark contact line
 }
 // a post at every corner of a styled room (the same corner treatment everywhere)
 function _fpStylePillars(F) { return []; }   // no posts: walls join at corners and simply end where they end (a post at a wall end read as a random column)
@@ -177,7 +201,7 @@ function _fpStyleDoor(it) {
         if (w < 0.012) continue;
         // the leaf: brushed steel, shaded darker at the foot and lighter at the top (one gradient in the door's own frame)
         _fpFill([P(u0, 0), P(u1, 0), P(u1, Ht), P(u0, Ht)], S.mid, S.mid);
-        _fpWallGrad(it, u0, u1, 0, Ht, [[0, "rgba(10,30,40,0.34)"], [0.14, "rgba(10,30,40,0.08)"], [0.55, "rgba(255,255,255,0.0)"], [1, "rgba(255,255,255,0.20)"]]);
+        _fpWallGrad(it, u0, u1, 0, Ht, FP_GS.leaf, "leaf" + Ht);
         _fpFill([P(u0, 0), P(u1, 0), P(u1, 12), P(u0, 12)], S.dark, S.dark);                                                       // the kick plate
         edge(u0, 12, u1, 12, "rgba(255,255,255,0.3)", 1.2);
         if (w > 0.09) {
@@ -185,26 +209,25 @@ function _fpStyleDoor(it) {
             for (const [z0, z1] of [[18, 44], [52, Ht - 12]]) { const i0 = u0 + w * 0.12, i1 = u1 - w * 0.12; if (z1 - z0 < 8) continue;
                 _fpFill([P(i0, z0), P(i1, z0), P(i1, z1), P(i0, z1)], "rgba(10,30,40,0.10)", "rgba(0,0,0,0)");
                 edge(i0, z1, i1, z1, "rgba(10,30,40,0.38)", 1.4); edge(i0, z0, i0, z1, "rgba(10,30,40,0.28)", 1.2); edge(i0, z0, i1, z0, "rgba(255,255,255,0.4)", 1.2); edge(i1, z0, i1, z1, "rgba(255,255,255,0.28)", 1.2); }
-            // the vision panel: dark tinted glass in a pale frame, with a streak of reflection and a lit line of the room's colour under it
+            // the vision panel (a window slit): dark tinted glass in a pale frame, with a streak of reflection and a lit line of the room's colour under it
             const wu0 = u0 + w * 0.2, wu1 = u0 + w * 0.8; _fpFill([P(wu0, 56), P(wu1, 56), P(wu1, 70), P(wu0, 70)], "#12323a", "rgba(0,0,0,0)"); _fpFill([P(wu0 + 0.012, 58), P(wu1 - 0.012, 58), P(wu1 - 0.012, 68), P(wu0 + 0.012, 68)], _fpRgba(acc, 0.32), "rgba(0,0,0,0)");
             _fpFill([P(wu0 + (wu1 - wu0) * 0.15, 58), P(wu0 + (wu1 - wu0) * 0.35, 58), P(wu0 + (wu1 - wu0) * 0.5, 68), P(wu0 + (wu1 - wu0) * 0.3, 68)], "rgba(255,255,255,0.22)", "rgba(0,0,0,0)");
             edge(wu0, 70, wu1, 70, "rgba(10,30,40,0.5)", 1.4); edge(wu0, 56, wu1, 56, FP_EDGE.light, 1.2); edge(wu0, 56, wu0, 70, "rgba(10,30,40,0.35)", 1.1); edge(wu1, 56, wu1, 70, FP_EDGE.lightSoft, 1.1);
         }
         const lead = side ? u0 : u1, du = 0.045 * (side ? 1 : -1);                                                               // the hazard-striped lead edge: a rubber seal and bevelled stripes
         for (let i = 0; i < 8; i++) { const z0 = i * Ht / 8, z1 = (i + 1) * Ht / 8; _fpFill([P(lead, z0), P(lead + du, z0), P(lead + du, z1), P(lead, z1)], i & 1 ? A.amber : "#26343b", "rgba(0,0,0,0)"); }
-        _fpWallGrad(it, Math.min(lead, lead + du), Math.max(lead, lead + du), 0, Ht, [[0, "rgba(10,30,40,0.25)"], [1, "rgba(255,255,255,0.12)"]]);
+        _fpWallGrad(it, Math.min(lead, lead + du), Math.max(lead, lead + du), 0, Ht, FP_GS.seal, "seal" + Ht);
         for (const z of [8, Ht - 12]) { const r = P((u0 + u1) / 2, z); ctx.fillStyle = "rgba(60,78,88,0.8)"; ctx.beginPath(); ctx.arc(r[0], r[1], 1.5, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,255,255,0.45)"; ctx.beginPath(); ctx.arc(r[0] - 0.5, r[1] - 0.6, 0.7, 0, 6.2832); ctx.fill(); }   // screws
         // the leaf's edges: a light bevel on top and on the leading edge, a soft crease round the rest
         edge(u0, Ht, u1, Ht, FP_EDGE.light, 1.6); edge(u0, 0, u1, 0, "rgba(10,30,40,0.5)", 1.8); edge(u0, 0, u0, Ht, side ? FP_EDGE.lightSoft : "rgba(10,30,40,0.35)", 1.3); edge(u1, 0, u1, Ht, side ? "rgba(10,30,40,0.35)" : FP_EDGE.lightSoft, 1.3);
     }
     if (part === "m" && q && o < 0.02) { edge(0.5, 0, 0.5, H - 8, "rgba(10,30,40,0.55)", 2.2); edge(0.5 + 0.008, 0, 0.5 + 0.008, H - 8, "rgba(255,255,255,0.3)", 1); }   // the gap where the panels meet
-    if (part === "m" && q) _fpWallGrad(it, fw, 1 - fw, 0, 5, [[0, "rgba(10,30,40,0.0)"], [1, "rgba(10,30,40,0.0)"]]);
     // the frame: two thick posts (a light left edge, a shaded right one), a lintel with an emissive status strip and the lamp
-    for (const u of (part === "a" ? [0] : part === "b" ? [1 - fw] : [])) { _fpFill([P(u, 0), P(u + fw, 0), P(u + fw, H), P(u, H)], A.cap, A.cap); _fpWallGrad(it, u, u + fw, 0, H, [[0, "rgba(10,30,40,0.30)"], [0.2, "rgba(10,30,40,0.06)"], [1, "rgba(10,30,40,0.0)"]]);
+    for (const u of (part === "a" ? [0] : part === "b" ? [1 - fw] : [])) { _fpFill([P(u, 0), P(u + fw, 0), P(u + fw, H), P(u, H)], A.cap, A.cap); _fpWallGrad(it, u, u + fw, 0, H, FP_GS.post, "post" + H);
         edge(u, 0, u, H, FP_EDGE.light, 1.4); edge(u + fw, 0, u + fw, H, "rgba(10,30,40,0.4)", 1.6); edge(u, H, u + fw, H, FP_EDGE.light, 1.2); }
     if (part !== "m") { ctx.lineJoin = "miter"; ctx.lineCap = "butt"; return; }
     _fpFill([P(0, H - 8), P(1, H - 8), P(1, H + 4), P(0, H + 4)], A.tealLit, A.tealLit);   // the lintel
-    _fpWallGrad(it, 0, 1, H - 8, H + 4, [[0, "rgba(10,30,40,0.26)"], [1, "rgba(255,255,255,0.14)"]]);
+    _fpWallGrad(it, 0, 1, H - 8, H + 4, FP_GS.lintel, "lintel" + H);
     edge(0, H + 4, 1, H + 4, FP_EDGE.light, 1.4); edge(0, H - 8, 1, H - 8, "rgba(10,30,40,0.5)", 1.6);
     { const on = o > 0.5, sc = on ? acc : A.amber; edge(0.06, H - 2, 0.94, H - 2, _fpRgba(sc, 0.25), 4.5); edge(0.06, H - 2, 0.94, H - 2, sc, 1.6); }   // the status strip: the room's colour when open, amber shut
     const lamp = P(0.5, H - 2), on = o > 0.5; ctx.fillStyle = on ? acc : A.amber; ctx.beginPath(); ctx.arc(lamp[0], lamp[1], 3.2, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.beginPath(); ctx.arc(lamp[0] - 0.9, lamp[1] - 1, 1.1, 0, 6.2832); ctx.fill();
@@ -212,7 +235,6 @@ function _fpStyleDoor(it) {
     { const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
       const lit = nx > ny, zb = H + 4, zt = FP_WALL_H, capH = Math.min(8, zt - zb);
       if (zt > zb) { _fpFlat([P(-0.02, zb), P(1.02, zb), P(1.02, zt - capH), P(-0.02, zt - capH)], lit ? A.wallLit : A.wallDark); _fpFlat([P(-0.02, zt - capH), P(1.02, zt - capH), P(1.02, zt), P(-0.02, zt)], A.cap);
-        _fpWallGrad(it, 0, 1, zb, zt - capH, [[0, "rgba(10,30,40,0.16)"], [0.3, "rgba(10,30,40,0.0)"], [1, "rgba(10,30,40,0.14)"]]);
         _fpWallTop(it.a[0], it.a[1], it.b[0], it.b[1], nx, ny, zt, it.out);
         edge(0, zt, 1, zt, FP_EDGE.light, 1.5); edge(0, zt - capH, 1, zt - capH, "rgba(8,26,34,0.3)", 1.3); } }
     ctx.lineJoin = "miter"; ctx.lineCap = "butt";
@@ -222,16 +244,16 @@ function _fpStyleDoor(it) {
 function _fpStyleFixture(it) {
     if (it.kind !== "power_pack_area") {   // a lettered wall sign: a pale board in an ink frame with bars of the room's accent and a crystal (the wording is not decided)
         const P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z), acc = _fpAcc(it.room), f = _fpFrame();
-        _fpFill([P(0, 24), P(1, 24), P(1, 64), P(0, 64)], FP_PAL.ink, FP_PAL.ink, 4); _fpFill([P(0.02, 27), P(0.98, 27), P(0.98, 61), P(0.02, 61)], FP_PAL.cap, FP_PAL.ink, 2.5);
-        for (let i = 0; i < 6; i++) _fpFill([P(0.2 + i * 0.1, 36), P(0.27 + i * 0.1, 36), P(0.27 + i * 0.1, 52), P(0.2 + i * 0.1, 52)], _fpRgba(acc, 0.85 + 0.1 * Math.sin(f * 0.04 + i)), "rgba(0,0,0,0)");
+        _fpFillSoft([P(0, 24), P(1, 24), P(1, 64), P(0, 64)], FP_PAL.ink, FP_PAL.ink, 4); _fpFillSoft([P(0.02, 27), P(0.98, 27), P(0.98, 61), P(0.02, 61)], FP_PAL.cap, FP_PAL.ink, 2.5);
+        for (let i = 0; i < 6; i++) _fpFillSoft([P(0.2 + i * 0.1, 36), P(0.27 + i * 0.1, 36), P(0.27 + i * 0.1, 52), P(0.2 + i * 0.1, 52)], _fpRgba(acc, 0.85 + 0.1 * Math.sin(f * 0.04 + i)), "rgba(0,0,0,0)");
         const c = P(0.08, 44); _fpCrystal(c[0], c[1] + 10, 18, 6, acc, f, 1); return;
     }
     const f = _fpFrame(), z0 = 16, z1 = 62, P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z);
-    _fpFill([P(0, z0), P(1, z0), P(1, z1), P(0, z1)], FP_PAL.tealDark, FP_PAL.ink, 3.5);
-    _fpFill([P(0.03, z0 + 3), P(0.97, z0 + 3), P(0.97, z1 - 12), P(0.03, z1 - 12)], "#12323a", FP_PAL.ink, 2.5);
+    _fpFillSoft([P(0, z0), P(1, z0), P(1, z1), P(0, z1)], FP_PAL.tealDark, FP_PAL.ink, 3.5);
+    _fpFillSoft([P(0.03, z0 + 3), P(0.97, z0 + 3), P(0.97, z1 - 12), P(0.03, z1 - 12)], "#12323a", FP_PAL.ink, 2.5);
     const n = 4;   // the cells: tall capsules, charged from the bottom, cyan to blue, each pulsing in turn
     for (let i = 0; i < n; i++) { const u0 = 0.08 + i * 0.225, u1 = u0 + 0.17, ch = 0.55 + 0.4 * (0.5 + 0.5 * Math.sin(f * 0.03 + i * 1.7)), zt = z0 + 7 + (z1 - 12 - z0 - 10) * ch;
-        _fpFill([P(u0, z0 + 7), P(u1, z0 + 7), P(u1, z1 - 15), P(u0, z1 - 15)], "rgba(9,22,28,0.9)", "rgba(120,200,210,0.6)", 1); _fpFill([P(u0 + 0.01, z0 + 8), P(u1 - 0.01, z0 + 8), P(u1 - 0.01, zt), P(u0 + 0.01, zt)], i & 1 ? FP_PAL.blue : FP_PAL.cyan, "rgba(0,0,0,0)");
+        _fpFillSoft([P(u0, z0 + 7), P(u1, z0 + 7), P(u1, z1 - 15), P(u0, z1 - 15)], "rgba(9,22,28,0.9)", "rgba(120,200,210,0.6)", 1); _fpFillSoft([P(u0 + 0.01, z0 + 8), P(u1 - 0.01, z0 + 8), P(u1 - 0.01, zt), P(u0 + 0.01, zt)], i & 1 ? FP_PAL.blue : FP_PAL.cyan, "rgba(0,0,0,0)");
         const c = P((u0 + u1) / 2, zt); _fpGlow(c[0], c[1], 22, i & 1 ? FP_PAL.blue : FP_PAL.cyan, 0.3); }
     const c = P(0.5, z1 - 5); _fpCrystal(c[0], c[1] + 6, 13, 6, FP_PAL.violet, f, 3);   // a crystal shard on the header: this unit is crystal powered
     const p = P(0, z0 + 2), q = P(1, z0 + 2); ctx.strokeStyle = FP_PAL.cyan; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
