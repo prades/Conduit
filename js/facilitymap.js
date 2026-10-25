@@ -313,6 +313,18 @@ const FACILITY_MAP = {
         { id: "pk_chamber_mutagen_2", room: "crystal_chamber", at: [320, 320], items: [["mutagen_sample", 1]], class: "mutator", note: "Another sample in the chamber (Mutator)." },
     ],
 
+    // FOLLOWER SPOTS (js/followerspots.js): a place where a follower waits, in its egg, as one thing and nothing else: its `type` (brawler, sniper = the MAGE, camper = the TECHNICIAN) and its `element` are fixed,
+    // and so is where it is. Walk up to it and it joins, there, as that type and that element; the spot fills again with another of the same after a delay. `at` is the middle of a tile (sketch pixels: 20 to a tile).
+    // Six spots, one of each element, two of each type, none in the arena.
+    followerSpots: [
+        { id: "spot_lobby",    room: "front_lobby",     at: [790, 370],  type: "brawler", element: "fire",     note: "A fire brawler in the computer lab, behind the east server racks." },
+        { id: "spot_show",     room: "show_room",       at: [970, 490],  type: "sniper",  element: "ice",      note: "An ice mage among the show room's exhibits." },
+        { id: "spot_deck",     room: "observation_deck", at: [250, 830], type: "camper",  element: "core",     note: "A core technician on the observation deck." },
+        { id: "spot_tele_1",   room: "teleport_room_1", at: [250, 630],  type: "brawler", element: "electric", note: "An electric brawler beside the teleporters." },
+        { id: "spot_tele_2",   room: "teleport_room_2", at: [1010, 690], type: "camper",  element: "flux",     note: "A flux technician in the second teleport room." },
+        { id: "spot_hall",     room: "lab_hallway",     at: [810, 670],  type: "sniper",  element: "toxic",    note: "A toxic mage in the hallway's east end." },
+    ],
+
     // BRIDGES: a footbridge from a liquid tank's top to the catwalks' deck (js/propsprites.js draws it, in 3D, at the deck's height: it is decoration, not floor to walk on). `from` is a prop (a circle), `to` a room.
     bridges: [
         { id: "bridge_1", from: "arena_structure_01", to: "catwalks", note: "From the north tank's top to the catwalks' deck." },

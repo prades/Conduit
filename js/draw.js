@@ -1495,7 +1495,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     // How many were drawn last frame — the crowd test for the bubbles.
     if (_virusCountFrame !== frame) { _virusesOnScreen = _virusesCounting; _virusesCounting = 0; _virusCountFrame = frame; }
     _virusesCounting++;
-    const _bare = typeof attractOn === "function" && attractOn();   // (the website's background: a searcher wears no bar and no name, js/attract.js)
+    const _bare = actor.fpSpot || (typeof attractOn === "function" && attractOn());   // (the website's background: a searcher wears no bar and no name, js/attract.js; nor does an egg waiting on a follower spot, js/followerspots.js, which has a label of its own)
     if (!_bare) drawHealthBar(px-14, py-76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green");
     // Its level, kind and what it is doing, over the bar and the ultimate bar (js/levels.js).
     if (!_bare && typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 87, drawCtx);

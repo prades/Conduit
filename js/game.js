@@ -2902,7 +2902,7 @@ function render() {
 
     // ── PROXIMITY CONVERSION — virus NPCs join team when player walks close ──
     actors.forEach(a => {
-        if (a.dead || !a.isNeutralRecruit || a.team !== "red" || a instanceof Predator) return;
+        if (a.dead || !a.isNeutralRecruit || a.team !== "red" || a instanceof Predator || a.fpSpot) return;   // (a follower spot's egg joins where it is: js/followerspots.js)
         if (a.spawnProtection > 0) return;
         if (Math.hypot(player.x - a.x, player.y - a.y) < 1.5) convertNPC(a, "green");
     });

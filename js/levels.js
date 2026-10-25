@@ -82,6 +82,9 @@ function levelledStats(base, L) {
     for (const s of LEVELLED_STATS) if (typeof base[s] === "number") out[s] = Math.max(1, Math.round(base[s] * k));
     return out;
 }
+// ASKED: "give the followers a little bit extra health." Every follower's health is this much above what its level and personality give it (applied where the stats are derived, so it holds through
+// every level-up, evolution, re-roll and reload). Its attack is not touched.
+const FOLLOWER_HP_MULT = 1.25;
 // Set up a follower's level from its creation stats (taken as its BASE), or
 // from a saved/queued entry carrying { base, level, xp }. `fresh`: full health.
 function initFollowerLevel(npc, entry) {
@@ -96,6 +99,7 @@ function initFollowerLevel(npc, entry) {
 function _applyFollowerLevel(npc, fresh) {
     const was = npc.maxHealth || 0;
     npc.stats = levelledStats(npc.base, npc.level);
+    npc.stats.hp = Math.round(npc.stats.hp * FOLLOWER_HP_MULT);
     // An EVOLVED follower (js/evolution.js) is tougher and hits harder, for good.
     if (npc.evolved && typeof EVOLVE_MULT === "number") { npc.stats.hp = Math.round(npc.stats.hp * EVOLVE_MULT); npc.stats.attack = Math.round(npc.stats.attack * EVOLVE_MULT); }
     npc.maxHealth = npc.stats.hp;

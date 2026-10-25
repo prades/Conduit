@@ -94,6 +94,7 @@ function facilityTutorialTick() {
     if (typeof attractOn === "function" && attractOn()) { attractTick(); return; }   // the website's background: no pickups, stations, portals, relays, director, save or creatures (js/attract.js)
     facilityPickupTick();
     if (typeof facilityStationTick === "function") facilityStationTick();
+    if (typeof facilityFollowerSpotsTick === "function") facilityFollowerSpotsTick();
     if (typeof facilityPortalTick === "function") facilityPortalTick();
     if (typeof facilityRelayTick === "function") facilityRelayTick();
     if (typeof facilityDirectorTick === "function") facilityDirectorTick();
@@ -111,7 +112,7 @@ function facilityTutorialTick() {
 
 // a hostile glow under an enemy that is standing in the dark: a soft ember-red pool and a pulse, fainter the more light there is where it stands. Drawn under the unit, never over it.
 function facilityEnemyGlow(a, px, py) {
-    if (!facilityBlackout() || !a || a.dead || a.team !== "red" || typeof ctx === "undefined") return;
+    if (!facilityBlackout() || !a || a.dead || a.team !== "red" || a.isNeutralRecruit || typeof ctx === "undefined") return;   // (an egg waiting on a follower spot is nobody's enemy: js/followerspots.js)
     const lit = _fpTileLight(Math.round(a.x), Math.round(a.y), _fpRoomKeyAt(a.x, a.y));   // how lit the floor under it is (the lamp, an emergency light, a lit room)
     const k = 1 - Math.min(1, lit * 2); if (k < 0.05) return;   // (gone where there is half light or more)
     const f = typeof frame !== "undefined" ? frame : 0, pul = 0.75 + 0.25 * Math.sin(f * 0.09 + (a.x * 3 + a.y * 5)), cy = py + TILE_H;

@@ -116,6 +116,7 @@ function _facilityBuild(ex) {
     });
     const bridges = (M.bridges || []).map(b => ({ id: b.id, from: b.from, to: b.to, note: b.note }));
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there)
+    const followerSpots = (M.followerSpots || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), type: p.type, element: p.element, note: p.note }));   // (a tile's middle, not snapped, like a pickup)
     const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, prop: r.prop, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));
     const stations = (M.stations || []).map(st => ({ id: st.id, room: st.room, prop: st.prop, kind: st.kind }));
     // portals (js/facilityportals.js): the doorway's floor as a box of whole tiles, and where you stand when you come out of the other end (a tile's middle: snapped to the floor when it is used)
@@ -141,7 +142,7 @@ function _facilityBuild(ex) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, followerSpots, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -262,6 +263,16 @@ function facilityValidateDressing(F) {
         if (p.class && typeof CLASSES !== "undefined" && !CLASSES[p.class]) errors.push("pickup " + p.id + " is for " + p.class + ", which is not a class");
         if (p.needs && !(F.relays || []).some(r => r.id === p.needs)) errors.push("pickup " + p.id + " waits for " + p.needs + ", which is not a relay");
         if (typeof ITEMS !== "undefined") for (const it of p.items) if (!ITEMS[it[0]] || !(it[1] > 0)) errors.push("pickup " + p.id + " holds " + it[0] + ", which is not an item");
+    }
+    // the follower spots: a known room, a tile of that room's floor a body can stand on with room round it, a type and an element a follower can be, at most one per tile, and none where the arena's creatures walk
+    for (const p of (F.followerSpots || [])) {
+        const rm = F.byId.get(p.room); if (!rm) { errors.push("follower spot " + p.id + " names a room that does not exist"); continue; }
+        const r = facilityRoomAt(p.at[0], p.at[1], F); if (!r || r.id !== p.room) errors.push("follower spot " + p.id + " is not in " + p.room);
+        else if (F.snapped && !facilityWalkable(p.at[0], p.at[1], F)) errors.push("follower spot " + p.id + " is not on a tile a body can stand on");
+        if (p.room === "arena") errors.push("follower spot " + p.id + " is in the arena, where the creatures are");
+        if (typeof FOLLOWER_TYPES !== "undefined" && !FOLLOWER_TYPES[p.type]) errors.push("follower spot " + p.id + " is a " + p.type + ", which is not a follower type");
+        if (typeof ELEMENTS !== "undefined" && !ELEMENTS.some(e => e.id === p.element)) errors.push("follower spot " + p.id + " is " + p.element + ", which is not an element");
+        if ((F.followerSpots || []).some(q => q !== p && Math.hypot(q.at[0] - p.at[0], q.at[1] - p.at[1]) < 3)) errors.push("follower spot " + p.id + " is within three tiles of another");
     }
     for (const r of (F.relays || [])) {   // a relay is a relay box of its room, powering rooms that exist and feeding props that exist
         const pr = F.solids.find(p => p.id === r.prop); if (!pr) errors.push("relay " + r.id + " names a prop that does not exist"); else if (pr.room !== r.room || pr.kind !== "relay") errors.push("relay " + r.id + ": " + r.prop + " is not a relay box of " + r.room);
