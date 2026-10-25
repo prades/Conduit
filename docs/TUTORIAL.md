@@ -228,7 +228,7 @@ ASKED: "remove the ability to change the crystal element modulation [...] it sho
 
 ## The Armory is an interior (revision)
 
-The Armory (the weapon locker, the terminal, the relay, its supply cases) is now under the Observation Deck, in a part of the map of its own (docs/FACILITY.md, "Interiors and portals"): the stairwell door in the alcove in the deck's west wall goes down to it, the one in its north wall goes back up. Nothing in it changed but its place (the crates moved out of the way of the stairs) and the way in: the supplies hint and the Gunslinger's gear objective say where it is, and the squad comes down with you.
+The Armory (the weapon locker, the terminal, the relay, its supply cases) is now under the Observation Deck, in a part of the map of its own (docs/FACILITY.md, "Interiors and portals"): the stairwell door in the alcove in the deck's west wall goes down to it (and its north wall's right-hand alcove goes back up), and the steel door in the alcove in the arena's west wall, just south of the garage doors, is the second way in (the left-hand alcove in its north wall leads back out to the arena). Nothing in it changed but its place (the crates moved out of the way of the stairs) and the way in: the supplies hint and the Gunslinger's gear objective say where it is, and the squad comes down with you.
 
 ## The arena's generator (revision)
 

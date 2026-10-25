@@ -82,7 +82,9 @@ function _pFollowScan() {
         if (!a || a.dead || a.team !== "green") continue;
         a._fpPortalGoal = null; if (!_pCarries(a) || (a._fpPortalAt && frame - a._fpPortalAt < 90)) continue;
         const ac = _pComp(a.x, a.y); if (ac === undefined || ac === pc) continue;
-        for (const p of _fp.portals) { if (_pComp(p.x, p.y) !== ac) continue; const q = facilityPortal(p.to); if (q && _pComp(q.ax, q.ay) === pc) { a._fpPortalGoal = p.id; break; } }
+        let best = null, bd = 1e9;   // the nearest doorway on its own floor that comes out on the player's
+        for (const p of _fp.portals) { if (_pComp(p.x, p.y) !== ac) continue; const q = facilityPortal(p.to); if (q && _pComp(q.ax, q.ay) === pc) { const d = Math.hypot(p.x - a.x, p.y - a.y); if (d < bd) { bd = d; best = p; } } }
+        if (best) a._fpPortalGoal = best.id;
     }
 }
 // the point a follower walks to while it is going through a doorway (js/npc.js followPlayer), or null
@@ -101,7 +103,7 @@ function facilityDrawPortals() {
     if (P.phase === "idle") {
         for (const p of _fp.portals) {
             const d = Math.hypot(p.x - player.visualX, p.y - player.visualY); if (d > 9 || (typeof invPanelOpen !== "undefined" && invPanelOpen)) continue;
-            const s = _stScreen({ x: p.x, y: p.y }), a = Math.min(1, (9 - d) / 4), col = p.up ? "#ffb347" : "#8fe3ff", txt = (p.up ? "▲ " : "▼ ") + String(p.label || "").toUpperCase();
+            const s = _stScreen({ x: p.x, y: p.y }), a = Math.min(1, (9 - d) / 4), col = p.up || p.kind === "door" ? "#ffb347" : "#8fe3ff", txt = (p.kind === "door" ? "▶ " : p.up ? "▲ " : "▼ ") + String(p.label || "").toUpperCase();
             ctx.globalAlpha = a; ctx.font = (typeof uiFont === "function" ? uiFont(15) : "bold 15px sans-serif"); ctx.textAlign = "center"; ctx.textBaseline = "middle";
             const w = ctx.measureText(txt).width + 22, y = s.y - 92 + Math.sin(f * 0.07 + p.x) * 3;
             ctx.fillStyle = "rgba(5,8,18,0.82)"; ctx.fillRect(s.x - w / 2, y - 13, w, 26); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.strokeRect(s.x - w / 2 + 1, y - 12, w - 2, 24); ctx.fillStyle = col; ctx.fillText(txt, s.x, y + 1);

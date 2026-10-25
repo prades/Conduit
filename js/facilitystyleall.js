@@ -296,12 +296,18 @@ Object.assign(FP_STYLE_WALL, {
 });
 for (const k of ["monitor_bank", "garage_door", "gun_rack"]) FP_WALL_KINDS[k] = FP_STYLE_WALL[k];
 // a PORTAL DOOR (js/facilityportals.js): the end of an alcove, a heavy steel stairwell door standing ajar on a dark flight of steps going down (or up), a lit chevron over it pointing the way and a hazard stripe at its foot.
-// Stepping into the alcove goes through it. `colour` is the lit sign's.
+// With `flat` it is a level doorway instead of stairs: a steel sliding door with its two leaves drawn back from a dark gap, a lit lamp strip over it, no steps. Stepping into the alcove goes through it. `colour` is the lit sign's.
 Object.assign(FP_STYLE_WALL, {
     portal_door: (it, f) => {
         const S = FP_STEEL_DOOR, H = 86, col = it.colour || _FPW.amber, pul = 0.65 + 0.35 * Math.sin(f * 0.07 + it.seed), up = it.up;
         _fpWQuad(it, 0.02, 0.98, 0, H + 14, _FPW.tealDark, _FPW.ink, 4);   // the frame, with a header slab for the sign
         _fpWQuad(it, 0.09, 0.91, 3, H, "#04070d", _FPW.ink, 2);            // the dark stairwell
+        if (it.flat) {
+            for (const [u0, u1, c] of [[0.09, 0.36, S.mid], [0.64, 0.91, S.lit]]) { _fpWQuad(it, u0, u1, 3, H, c, _FPW.ink, 2.5); for (let k = 0; k < 5; k++) _fpWLine(it, u0 + 0.012, 12 + k * 15, u1 - 0.012, 12 + k * 15, S.rib, 1.6); _fpWQuad(it, u0 + 0.03, u1 - 0.03, H - 24, H - 10, "#12323a", _FPW.ink, 1.5); }   // the two leaves, drawn back, each with a little window
+            for (let k = 0; k < 10; k++) _fpWQuad(it, 0.09 + k * 0.082, 0.09 + (k + 1) * 0.082, 3, 11, k & 1 ? _FPW.ink : _FPW.amber, null);
+            const gl = _fpWP(it, 0.5, H + 7), g2 = _fpWP(it, 0.5, 30); ctx.fillStyle = _fpRgba(col, 0.55 + 0.45 * pul); const a = _fpWP(it, 0.2, H + 6), b2 = _fpWP(it, 0.8, H + 6); ctx.lineCap = "round"; ctx.strokeStyle = _fpRgba(col, 0.55 + 0.45 * pul); ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b2[0], b2[1]); ctx.stroke(); _fpGlow(gl[0], gl[1], 34, col, 0.22 * pul); _fpGlow(g2[0], g2[1], 26, col, 0.08 * pul);
+            return;
+        }
         for (let k = 0; k < 5; k++) { const z = 6 + k * 13, w = 0.2 - k * 0.012; _fpWQuad(it, 0.5 - w, 0.5 + w, z, z + 6, _fpRgba("#8fa0b4", 0.1 + 0.06 * k), null); _fpWQuad(it, 0.5 - w, 0.5 + w, z + 6, z + 10, "rgba(0,0,0,0.35)", null); }   // the steps going away
         for (const [u0, u1, c] of [[0.09, 0.3, S.mid], [0.7, 0.91, S.lit]]) { _fpWQuad(it, u0, u1, 3, H, c, _FPW.ink, 2.5); for (let k = 0; k < 4; k++) _fpWLine(it, u0 + 0.012, 16 + k * 18, u1 - 0.012, 16 + k * 18, S.rib, 1.6); }   // the two leaves, standing open
         for (let k = 0; k < 10; k++) _fpWQuad(it, 0.09 + k * 0.082, 0.09 + (k + 1) * 0.082, 3, 11, k & 1 ? _FPW.ink : _FPW.amber, null);   // the hazard stripe at the foot

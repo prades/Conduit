@@ -70,9 +70,9 @@ const FACILITY_MAP = {
           // an ALCOVE in the west wall (two tiles wide, one deep, at y 870 to 910): the doorway down to the Armory, which lies under the deck (see `interiors` and `portals` below)
           polygon: [[180, 760], [340, 760], [340, 950], [180, 950], [180, 910], [160, 910], [160, 870], [180, 870]] },
         { id: "armory", label: "Armory", level: -1, status: "placed", wall_material: "solid", interior: true,
-          note: "The armory, UNDER the Observation Deck, at the arena's floor level: a room can't sit under another on a flat plan, so it is an INTERIOR: it is drawn here, under the deck, and built in a part of the map of its own (`interiors`). You go down to it through the alcove in the deck's west wall and come back up by the alcove in its own north wall (`portals`). Weapon racks on the walls, lockers, ammunition crates and a workbench.",
-          // an ALCOVE in the north wall (two tiles wide, one deep, at x 290 to 330): the doorway back up to the deck
-          polygon: [[180, 950], [290, 950], [290, 930], [330, 930], [330, 950], [340, 950], [340, 1150], [180, 1150]] },
+          note: "The armory, UNDER the Observation Deck, at the arena's floor level: a room can't sit under another on a flat plan, so it is an INTERIOR: it is drawn here, under the deck, and built in a part of the map of its own (`interiors`). There are two ways in, each a pair of doorways (`portals`): down the stairs from the alcove in the deck's west wall, and through the steel door in the alcove in the arena's west cave wall (where the armory's own door used to be); inside, two alcoves in its north wall lead back out. Weapon racks on the walls, lockers, ammunition crates and a workbench.",
+          // two ALCOVES in the north wall (each two tiles wide and one deep): at x 200 to 240 the doorway to the arena (a steel door), at x 290 to 330 the stairs back up to the deck
+          polygon: [[180, 950], [200, 950], [200, 930], [240, 930], [240, 950], [290, 950], [290, 930], [330, 930], [330, 950], [340, 950], [340, 1150], [180, 1150]] },
         { id: "catwalks", label: "Catwalks", level: 2, status: "traced", development: "blocked_off_for_now",
           structure: "scaffold",
           note: "The zone to the right of the arena: NOT a room but scaffolding at the top of the arena, an open steel deck with railings on legs along its east edge. It is BLOCKED OFF for now (not being developed): the player can walk up to it, not into it.",
@@ -83,9 +83,11 @@ const FACILITY_MAP = {
           // THE GENERATOR BAY: the lobe of rock that pushed into the arena's north side (it ran down to y 825 between x 545 and 715) is cut back to the hallway's south wall, a flat service wall of plain wall 175 px (nearly nine tiles)
           // long, so the big generator (`main_generator`, below: seven tiles) stands against it with room to walk round
           polygon: [[340, 760], [540, 760], [715, 760], [778, 808], [935, 795], [1000, 810],
-                    [1000, 1180], [805, 1155], [640, 1135], [560, 1138], [520, 1180], [440, 1215], [380, 1190], [340, 1165], [340, 950]],
+                    // THE ARMORY DOOR: an ALCOVE in the west cave wall just south of the two garage doors, where the Armory's own door used to be (two tiles wide at y 1090 to 1130, one deep): the doorway into the Armory
+                    // from the arena (a portal: the Armory is an interior, see `interiors`). Its three sides are plain wall, built into the rock.
+                    [1000, 1180], [805, 1155], [640, 1135], [560, 1138], [520, 1180], [440, 1215], [380, 1190], [340, 1165], [340, 1130], [320, 1130], [320, 1090], [340, 1090], [340, 950]],
           edge_kinds: ["rock", "wall", "rock", "rock", "rock", "railing_wall",
-                       "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "deck_wall"] },
+                       "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "wall", "wall", "wall", "rock", "deck_wall"] },
         { id: "nest_area", label: "Nest area", level: 0, status: "approximate",
           boundary_type: "outer_edge", boundary_blocks_movement: true,
           note: "One completely open room. The long double lines in the sketch are its OUTSIDE EDGES (walls), not tunnels or a path. The sketch stops drawing at the bottom, so the bottom wall is provisional.",
@@ -102,6 +104,10 @@ const FACILITY_MAP = {
     // PORTALS come in pairs. `rect` is the doorway's floor (the alcove's end: stepping into it takes you through), `arrive` a spot of the same room in front of the doorway, where you are put when you come out of the OTHER end,
     // `to` the portal at the other end, `label` what the other end is, shown over the doorway. Each pair also has a connection in `connections` (portal: ...), so the rooms count as joined.
     portals: [
+        { id: "portal_arena_armory", room: "arena", rect: [320, 1090, 340, 1130], arrive: [385, 1110], to: "portal_armory_arena", label: "ARMORY", kind: "door",
+          note: "The Armory's steel door onto the arena, in an alcove in the west cave wall just south of the two garage doors." },
+        { id: "portal_armory_arena", room: "armory", rect: [200, 930, 240, 950], arrive: [220, 985], to: "portal_arena_armory", label: "ARENA", kind: "door",
+          note: "The steel door back out to the arena, in an alcove in the armory's north wall." },
         { id: "portal_deck_armory", room: "observation_deck", rect: [160, 870, 180, 910], arrive: [230, 890], to: "portal_armory_deck", label: "ARMORY", kind: "stairs_down",
           note: "The stairs down to the Armory, in an alcove in the deck's west wall." },
         { id: "portal_armory_deck", room: "armory", rect: [290, 930, 330, 950], arrive: [310, 980], to: "portal_deck_armory", label: "OBSERVATION DECK", kind: "stairs_up",
@@ -670,7 +676,8 @@ const FACILITY_MAP = {
         { id: "garage_1", room: "arena", kind: "garage_door", a: [340, 950], b: [340, 1010], note: "The first of two garage doors. Shut: scenery, not an opening (the vehicle bay the semi-truck came out of)." },
         { id: "garage_2", room: "arena", kind: "garage_door", a: [340, 1010], b: [340, 1070], note: "The second garage door, right next to the first." },
         // ── the armory inside: weapon racks on the north and west walls, the stairs up beside them, a hazard stripe at the foot of the stairs, a pool of amber light ──
-        { id: "gun_rack_1", room: "armory", kind: "gun_rack", a: [190, 950], b: [250, 950] },
+        { id: "armory_arena_door", room: "armory", kind: "portal_door", a: [200, 930], b: [240, 930], colour: "#ffb347", flat: true },
+        { id: "arena_armory_door", room: "arena", kind: "portal_door", a: [320, 1090], b: [320, 1130], colour: "#ffb347", flat: true },
         { id: "armory_light_wall", room: "armory", kind: "wall_light", a: [250, 950], b: [270, 950], colour: "#ffe9a0" },
         { id: "gun_rack_2", room: "armory", kind: "gun_rack", a: [270, 950], b: [290, 950] },
         { id: "armory_stairs_door", room: "armory", kind: "portal_door", a: [290, 930], b: [330, 930], colour: "#ffb347", up: true },
@@ -681,6 +688,7 @@ const FACILITY_MAP = {
         { id: "armory_light_1", room: "armory", kind: "light", at: [270, 1040], radius: 100, colour: "#ffd9a0", a: 0.22 },
         { id: "armory_light_2", room: "armory", kind: "light", at: [330, 1090], radius: 60, colour: "#ff6a4a", a: 0.12, flicker: true },
         { id: "armory_hazard", room: "armory", kind: "hazard", rect: [290, 950, 330, 970] },
+        { id: "armory_hazard_door", room: "armory", kind: "hazard", rect: [200, 950, 240, 970] },
         { id: "armory_stain", room: "armory", kind: "stain", at: [250, 1110], radius: 14, colour: "#1a1008" },
         { id: "armory_debris", room: "armory", kind: "debris", at: [230, 990], radius: 14, n: 4 },
     ],
@@ -757,6 +765,7 @@ const FACILITY_MAP = {
         { id: "conn_stair_hallway", rooms: ["teleport_stair_room", "lab_hallway"], opening: "open_stair_mouth", ramp: "r_teleport_stairs" },
         { id: "conn_stair_teleport_2", rooms: ["teleport_stair_room", "teleport_room_2"], opening: "door_stair_teleport_2" },
         { id: "conn_deck_armory", rooms: ["observation_deck", "armory"], portal: "portal_deck_armory" },
+        { id: "conn_arena_armory", rooms: ["arena", "armory"], portal: "portal_arena_armory" },
     ],
     ramps: [
         // `zone` is where the floor slopes: a rectangle, the axis it slopes along, and the two coordinates at which the height equals between_levels[0] and between_levels[1] (sketch pixels).
