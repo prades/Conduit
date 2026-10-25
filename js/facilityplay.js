@@ -371,6 +371,11 @@ function _fpPlaceStatics(F) {
     _fp.items = items; _fpRockSides(items); _fpScaffoldMarks(items);   // which rock walls are formations the arena is in front of, and which are behind; which walls are scaffolding
     _fp.items = items;
 }
+// a TALL item (the Crystal's crown and its struts, 640 px up) is on screen while its foot is anywhere from just above the top of the screen to `tall` px below the bottom (visibleForDraw only allows 210)
+function _fpTallVisible(it) {
+    const dx = it.x - player.visualX, dy = it.y - player.visualY, px = (dx - dy) * TILE_W + canvas.width / 2; if (px < -DRAW_CULL_SIDE || px > canvas.width + DRAW_CULL_SIDE) return false;
+    const py = (dx + dy) * TILE_H + canvas.height / 2; return py >= -DRAW_CULL_TOP && py <= canvas.height + it.tall;
+}
 function facilityDrawItems(drawList) {
     if (!_fp || !_fp.items) return;
     _fpCam = facilityLiftPx(player.visualX, player.visualY);   // the camera rides the player's floor (input and targeting read it: it is kept in a step with no picture)
@@ -378,7 +383,7 @@ function facilityDrawItems(drawList) {
     if (typeof _fpLightUpdate === "function") _fpLightUpdate(_fp.F);   // the rooms' light levels and the pools at open doors
     if (typeof facilityTutorialTick === "function") facilityTutorialTick();
     if (typeof _simGhost !== "undefined" && _simGhost) return;   // a step with no picture draws nothing: no item is added to the draw list (see render(), js/game.js)
-    for (const it of _fp.items) if (visibleForDraw(it.x, it.y) && (it.fp !== "wall" || _fpWallOnScreen(it))) drawList.push(it);
+    for (const it of _fp.items) if ((visibleForDraw(it.x, it.y) || (it.tall && _fpTallVisible(it))) && (it.fp !== "wall" || _fpWallOnScreen(it))) drawList.push(it);
     if (_fp.crystalDepth !== undefined) for (const o of drawList) if (o.type === "crystal") o.depth = _fp.crystalDepth;   // the crystal is drawn after the pad machine it rests in
 }
 

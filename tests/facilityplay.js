@@ -237,6 +237,24 @@ function measure() {
         same(r.n, 21, 'cells of the generator drawn'); same(r.dims.join('x'), '7x3', 'its footprint'); same(r.fam, 'power', 'its sheet'); same(r.variant, 'main_generator.7x3', 'its variant'); ok(r.cell && r.cell[0] > 300 && r.cell[1] > 250, 'its sprite is ' + JSON.stringify(r.cell)); same(r.cell && r.cell[2], false, 'the sprite touches the edge of its canvas'); same(r.solid, true, 'the generator is walkable'); same(r.err, null, 'drawing a cell threw');
         ok(fs.statSync(path.join(ROOT, 'img/props/power.png')).size < 2500000, 'the sheet is too big');
     });
+    check('the Crystal\'s pad and crown are 3D sprites (the crystalpad sheet: a pad and a rig, neither touching the edge of its canvas, with the marks the live light is placed on), drawn with their live light in every graphics level, the flat drawing until the sheet has arrived, and the tall crown is kept while any of it can be on screen', () => {
+        const r = J(`(function(){ canvas.width = 1280; canvas.height = 860; facilityPlay = true; const A = PROP_ATLAS.crystalpad, o = { pad: A && A.cells.pad, rig: A && A.cells.rig, err: null, calls: { pad: 0, rig: 0 } };
+            const rig = _fp.items.find(i => i.fp === 'rig'), pad = _fp.items.find(i => i.fp === 'rigpad'); o.tall = rig && rig.tall; o.hasItems = !!(rig && pad);
+            const keepImg = _psImgs.crystalpad, keepBlit = _psBlit, keepLow = gfxLow; const p0 = [player.x, player.y, player.visualX, player.visualY], f0 = frame;
+            player.x = player.visualX = rig.x; player.y = player.visualY = rig.y + 4;
+            try {
+                _psBlit = function (fam, name, x, y, clip) { if (fam === 'crystalpad') o.calls[name]++; return keepBlit(fam, name, x, y, clip); };
+                for (const [img, low] of [[null, false], [{ complete: true, naturalWidth: 662 }, false], [{ complete: true, naturalWidth: 662 }, true]]) { _psImgs.crystalpad = img; gfxLow = low; for (const k of [0, 17, 211]) { frame = f0 + k; _fpBase = rig.base || 0; drawFacilityItem(rig); drawFacilityItem(pad); } }
+            } catch (e) { o.err = e.message; } finally { _psBlit = keepBlit; _psImgs.crystalpad = keepImg; gfxLow = keepLow; }
+            // the crown stays in the draw list while its foot is up to its height below the bottom of the screen; the pad (a floor-high item) does not
+            const inList = (dy) => { player.visualX = rig.x - dy / 2; player.visualY = rig.y - dy / 2; const l = []; facilityDrawItems(l); return [l.includes(rig), l.includes(pad)]; };
+            o.near = inList(2); o.low = inList(2 * (canvas.height / 2 + 400) / TILE_H / 2); o.gone = inList(2 * (canvas.height / 2 + 760) / TILE_H / 2);
+            player.x = p0[0]; player.y = p0[1]; player.visualX = p0[2]; player.visualY = p0[3]; frame = f0 + 300; return o; })()`);
+        ok(r.hasItems, 'the crystal chamber has its crown and its pad'); same(r.err, null, 'drawing the pad or the crown threw'); ok(r.pad && r.pad.w > 250 && r.pad.h > 100, 'the pad sprite is ' + JSON.stringify(r.pad && [r.pad.w, r.pad.h])); ok(r.rig && r.rig.h > 450, 'the crown\'s sprite is ' + JSON.stringify(r.rig && [r.rig.w, r.rig.h]));
+        same(r.pad.edge, false, 'the pad touches its canvas\'s edge'); same(r.rig.edge, false, 'the crown touches its canvas\'s edge'); ok(r.pad.marks.well && r.pad.marks.tip && r.rig.marks.core, 'the marks the live light needs'); same(r.calls.pad, 6, 'the pad drew its sprite in the two sheet-loaded runs (three frames each)'); same(r.calls.rig, 6, 'and so did the crown');
+        same(r.tall, 640, 'the crown is a tall item'); same(r.near[0] && r.near[1], true, 'both in the list when the chamber is in view'); same(r.low[0], true, 'the crown is kept with its foot 400 px under the screen'); same(r.low[1], false, 'the floor-high pad is not'); same(r.gone[0], false, 'the crown goes when all of it is off the screen');
+        ok(fs.statSync(path.join(ROOT, 'img/props/crystalpad.png')).size < 400000, 'the sheet is too big'); ok(fs.existsSync(path.join(ROOT, 'design/props/models/crystalpad.js')), 'the model is in the repository');
+    });
     group('NPC FLOW: creatures walk the route, routes are kept, and the checks are cheap');
     check('the bucket index gives exactly the answers of the full scans: room, solid, walkable and step, over thousands of random points and steps on both maps', () => {
         const r = J(`(function(){ let seed = 20261025; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296; const o = { bad: [0, 0, 0, 0], n: 0 };
@@ -1124,7 +1142,7 @@ function measure() {
             for (const s of _fp.F.solids) { const k = s.kind || (s.shape === 'circle' ? 'tank' : 'bench'), fam = PS_FAMILY[k]; if (!fam) { o.unmapped.push(s.id + ':' + k); continue; } const S = _psSolid(s.id); const states = k === 'relay' || k === 'charger' ? ['on', 'off'] : [null];
                 for (const st of states) { let n = null; if (k === 'plant') n = 'plant'; else if (k === 'sentry') n = 'a00'; else if (k === 'semi_truck') n = 'truck'; else if (k === 'liquid_reserve' || k === 'tank') n = 'tank'; else n = _psResolve(fam, k, S.dims, st, _psHash(String(s.id))); if (!n) o.missing.push(s.id + ' (' + k + ' ' + S.dims + ' ' + st + ')'); else o.names[n] = 1; } }
             o.fams = Object.keys(PROP_ATLAS).sort().join(); o.caseSprite = !!_psResolve('cargo', 'case', null, null, 1); return o; })()`);
-        same(r.unmapped.join(), '', 'a kind of prop with no sheet'); same(r.missing.join(' | '), '', 'a prop with no sprite'); same(r.fams, 'bridge,cargo,lab,lounge,office,plant,power,sentry,tank,tech,truck', 'the sheets'); same(r.caseSprite, true, 'the supply case has no sprite');
+        same(r.unmapped.join(), '', 'a kind of prop with no sheet'); same(r.missing.join(' | '), '', 'a prop with no sprite'); same(r.fams, 'bridge,cargo,crystalpad,lab,lounge,office,plant,power,sentry,tank,tech,truck', 'the sheets'); same(r.caseSprite, true, 'the supply case has no sprite');
         const A = J('PROP_ATLAS'); for (const fam of Object.keys(A)) { const b = fs.readFileSync(path.join(ROOT, 'img/props/' + fam + '.png')); same(b.readUInt32BE(16), A[fam].sheet[0], fam + ' sheet width'); same(b.readUInt32BE(20), A[fam].sheet[1], fam + ' sheet height'); ok(b.length < 3e6, fam + ' sheet is over 3 MB'); for (const [n, c] of Object.entries(A[fam].cells)) { same(!!c.edge, false, fam + '/' + n + ' touches its canvas edge'); ok(c.x + c.w <= A[fam].sheet[0] && c.y + c.h <= A[fam].sheet[1], fam + '/' + n + ' is outside its sheet'); } }
     });
     check('a slow device and the LOW graphics setting: LOW draws no contact shadows and no soft glows, and the game drops to LOW by itself (once, for the session) after three readings under 28 frames a second', () => {

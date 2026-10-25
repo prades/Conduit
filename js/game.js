@@ -3176,7 +3176,7 @@ function render() {
             const rs = (v, m) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${v * m})`;
 
             const cx  = px;
-            const gy  = py - 52 + bob;              // gem centre
+            const gy  = py - 52 - (typeof facilityPlay !== "undefined" && facilityPlay ? 12 : 0) + bob;   // gem centre (a dozen px higher over the facility's taller pad, js/facilitystyle.js FP_PAD)
             const rx  = 27, ry = 13.5;               // equator radii (2:1 iso)
             const topY = 42, botY = 32;              // apex heights
 
