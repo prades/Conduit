@@ -31,9 +31,10 @@ function _psSil(fam, img) {
 // no soft glows: the settings window's GRAPHICS switch does the same by hand). It never goes back by itself, so it cannot flicker between the two.
 // The answer is REMEMBERED ("conduit_fp_gfx": "low", js/facilityplay.js reads it when the facility opens), so a slow device is not slow for its first twelve seconds after every refresh; choosing HIGH in Settings is remembered too, and then
 // the game never switches it by itself.
+// (Read ONCE, when the facility opens, and kept in _fp.gfxSaved: a storage read in a step that runs sixty times a second, and three times that on a slow device, is a cost of its own.)
 function facilityGfxSaved() { try { return localStorage.getItem("conduit_fp_gfx"); } catch (e) { return null; } }
 function facilityPerfTick() {
-    if (typeof gfxLow === "undefined" || gfxLow || typeof _perf === "undefined" || !_fp || facilityGfxSaved() === "high") return;
+    if (typeof gfxLow === "undefined" || gfxLow || typeof _perf === "undefined" || !_fp || _fp.gfxSaved === "high") return;
     const f = typeof frame !== "undefined" ? frame : 0; if (f < 420 || f % 90 !== 0) return;
     _fp.slow = (_fp.slow || 0) + (_perf.fps > 0 && _perf.fps < 28 ? 1 : -(_fp.slow || 0));
     if (_fp.slow >= 3) { gfxLow = true; try { localStorage.setItem("conduit_fp_gfx", "low"); } catch (e) {} if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 150, text: "SLOW DEVICE \u2014 GRAPHICS SET TO LOW", color: "#ffb347", life: 240, vy: -0.04, size: 14 }); }

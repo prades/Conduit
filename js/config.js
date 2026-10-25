@@ -4,7 +4,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-27c";
+const BUILD_VERSION = "2026-10-27d";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -253,14 +253,19 @@ const waveUI  = document.getElementById('waveInfo');
 
 // Safe area inset at the bottom (for notch/home-bar devices)
 let SAFE_BOTTOM = 0;
+let resizeCount = 0;   // how many times the canvas has been sized (the PERFORMANCE readout shows it: a number that keeps climbing is a browser firing resize events)
 let viewZoom = 1;      // 1 = normal; < 1 = zoomed out (the build tool in hand)
 function resize() {
     // Use visualViewport dimensions when available (better mobile support)
     const vv = window.visualViewport;
     // The picture is drawn on a canvas of (screen / viewZoom) pixels and shown at screen size by the css, so a viewZoom below 1 ZOOMS OUT: more of
     // the world fits (js/buildmenu.js uses it while a build tool is in hand). toCanvas() in js/input.js already maps a touch back through that scale.
-    canvas.width  = Math.round((vv ? vv.width  : window.innerWidth)  / viewZoom);
-    canvas.height = Math.round((vv ? vv.height : window.innerHeight) / viewZoom);
+    // Assigning a canvas's width or height (even to the size it already has) clears it and throws away its backing store, which the browser then has to build again: so it is only done when the size really changed (a
+    // browser that fires visualViewport 'resize' events while nothing has moved would otherwise rebuild the picture's memory over and over).
+    const cw = Math.round((vv ? vv.width : window.innerWidth) / viewZoom), ch = Math.round((vv ? vv.height : window.innerHeight) / viewZoom);
+    resizeCount++;
+    if (canvas.width !== cw) canvas.width = cw;
+    if (canvas.height !== ch) canvas.height = ch;
     syncVisibleArea();
     // Detect bottom safe-area via a temporary DOM element
     try {
@@ -1072,7 +1077,7 @@ let settingsPanelOpen    = false;
 // goes, measured on the device itself. Both are remembered.
 let gfxLow = false, perfReadout = false;
 try { gfxLow = localStorage.getItem("conduit_gfx") === "low"; perfReadout = localStorage.getItem("conduit_perf") === "1"; } catch (e) {}
-function toggleGfxLow() { gfxLow = !gfxLow; try { localStorage.setItem("conduit_gfx", gfxLow ? "low" : "high"); localStorage.setItem("conduit_fp_gfx", gfxLow ? "low" : "high"); } catch (e) {}   // (the facility keeps its own key: it writes none of the classic game's)
+function toggleGfxLow() { gfxLow = !gfxLow; try { localStorage.setItem("conduit_gfx", gfxLow ? "low" : "high"); localStorage.setItem("conduit_fp_gfx", gfxLow ? "low" : "high"); if (typeof _fp !== "undefined" && _fp) _fp.gfxSaved = gfxLow ? "low" : "high"; } catch (e) {}   // (the facility keeps its own key: it writes none of the classic game's)
     if (gfxLow) { smoke.length = 0; fragments.length = 0; } }
 function togglePerfReadout() { perfReadout = !perfReadout; try { localStorage.setItem("conduit_perf", perfReadout ? "1" : "0"); } catch (e) {} }
 let settingsResetConfirm = false;   // true = showing "ARE YOU SURE?" step

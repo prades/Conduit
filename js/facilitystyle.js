@@ -189,11 +189,20 @@ function _fpDoorNear(x, y) {
     if (typeof actors !== "undefined") for (const a of actors) { if (a.dead) continue; const q = Math.hypot(x - a.x, y - a.y); if (q < d) d = q; }
     return d;
 }
+// How far open each door is: eased towards open when a unit is within 2.6 tiles, shut again beyond 3.4. Once a STEP (from facilityDrawItems), drawn or not, and for every door whether it is on screen or not
+// (it was in the door's draw function, so it ran once a drawn frame, and only for a door in view: on a slow device doors and the pools of light they throw were four times slower).
+function facilityDoorsTick() {
+    if (!_fp || !_fp.items) return;
+    if (_fp.doorMidsOf !== _fp.items) { _fp.doorMidsOf = _fp.items; _fp.doorMids = _fp.items.filter(i => i.fp === "door" && i.part === "m"); }
+    for (const it of _fp.doorMids) {
+        const st = it.st || (it.st = { open: 0 }), near = _fpDoorNear(it.x, it.y), want = near < 2.6 ? 1 : near > 3.4 ? 0 : (st.open >= 0.5 ? 1 : 0);
+        st.open = (st.open || 0) + (want - (st.open || 0)) * 0.2; if (Math.abs(want - st.open) < 0.01) st.open = want;
+    }
+}
 function _fpStyleDoor(it) {
     const acc = _fpAcc((it.rooms || [])[0]), H = FP_DOOR_H, A = FP_PAL, S = FP_STEEL_DOOR, P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z);
     const part = it.part || "m"; it.st = it.st || { open: 0 };   // a door is three items sorted separately (the two jambs at their own ends, the rest at the middle), so a unit in the gap is never covered by a jamb that is behind it and a neighbouring wall piece never clips the frame
-    // how far open: eased towards open when a unit is within 2.6 tiles, shut again beyond 3.4
-    if (part === "m") { const near = _fpDoorNear(it.x, it.y), want = near < 2.6 ? 1 : near > 3.4 ? 0 : (it.st.open >= 0.5 ? 1 : 0); it.st.open = (it.st.open || 0) + (want - (it.st.open || 0)) * 0.2; if (Math.abs(want - it.st.open) < 0.01) it.st.open = want; }
+    // how far open is it.st.open, eased once a step by facilityDoorsTick (not here: a step with no picture draws no door)
     const o = it.st.open, f = _fpFrame(), q = it.door ? 1 : 0, fw = 0.06;   // fw: the frame post, as a fraction of the span
     const edge = (u0, z0, u1, z1, col, w) => _fpEdge(P(u0, z0), P(u1, z1), col, w);
     ctx.lineJoin = "round"; ctx.lineCap = "round";

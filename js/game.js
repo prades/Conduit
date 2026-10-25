@@ -2102,6 +2102,7 @@ function gameLoop() {
         if (!gameState.running) return;
         if (_perfNow() - now > SIM_BUDGET_MS) { _simDebt = 0; break; }
     }
+    _perf.ghost += (Math.max(0, _perfNow() - now) - _perf.ghost) * 0.05;   // (the readout's 'catch-up': the steps with no picture that this refresh owed)
     _simStep(true);
     _simStepsCount++;
     if (now - _simStepsAt >= 1000) { _simStepsShown = Math.round(_simStepsCount * 1000 / Math.max(1, now - _simStepsAt)); _simStepsCount = 0; _simStepsAt = now; }
@@ -3053,7 +3054,10 @@ function render() {
     // player and the crystal are never culled: the player IS the camera, and
     // the crystal is a fixed landmark other code expects in the list.
     perfDrawStart();   // the logic is done; from here on it is drawing
-    let drawList=visibleTilesForDraw();
+    // A step with NO PICTURE (gameLoop, js/game.js: a device that is behind runs several a frame) in the facility draws no floor tile and no item: the walls, doors, props and floors were ~7 ms of drawing into a null context, three
+    // times a frame at 15 fps, which made the frame longer and so owed more of them. Nothing in them is logic (audited): the facility's per-step logic (the light, the tick, the doors) runs in facilityDrawItems (js/facilityplay.js).
+    const _fpGhost = _simGhost && typeof facilityPlay !== "undefined" && facilityPlay;
+    let drawList=_fpGhost?[]:visibleTilesForDraw();
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     shards.forEach(s=>{ if(visibleForDraw(s.x,s.y)) drawList.push({type:'shard',x:s.x,y:s.y,shard:s}); });
     chargedMass.forEach(m=>{ if(visibleForDraw(m.x,m.y)) drawList.push({type:'mass',x:m.x,y:m.y,mass:m}); });
@@ -3089,10 +3093,10 @@ function render() {
     // The cables are laid before anything is drawn, and each floor tile draws
     // its own pieces, so they lie on the ground under everything standing there.
     // (Laid again only when the base changes; the charges move every frame.)
-    layAllCablesCached();
+    if (!_fpGhost) layAllCablesCached();
 
     // The pools of material evolved followers stand in (js/evolution.js GROUND): painted by the floor tiles below.
-    if (typeof evoGroundBegin === "function") evoGroundBegin();
+    if (!_fpGhost && typeof evoGroundBegin === "function") evoGroundBegin();
 
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
@@ -4595,7 +4599,7 @@ function render() {
 // per frame (smoothed), the worst frame in the last second, and how much is
 // on the map. The browser's own painting happens after the frame, so a low
 // FPS with small logic and draw times points at the painting, not the game.
-const _perf = { last: 0, fps: 0, logic: 0, draw: 0, worst: 0, shownWorst: 0, winAt: 0, t0: 0, tDraw: 0 };
+const _perf = { last: 0, fps: 0, logic: 0, draw: 0, ghost: 0, worst: 0, shownWorst: 0, winAt: 0, t0: 0, tDraw: 0 };   // (ghost: what the steps with no picture cost a refresh)
 function _perfNow() { return (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now(); }
 function perfFrameStart() {
     if (_simGhost) return;       // a step with no picture is not a frame
@@ -4615,14 +4619,19 @@ function perfFrameEnd() {
     if (perfReadout) drawPerfReadout();
 }
 function drawPerfReadout() {
+    // Where a frame goes: the game's logic and the drawing of the step that is shown, the steps with no picture a slow refresh owes, and the rest (the browser painting, the page's own controls, waiting for the screen).
+    const gap = _perf.fps > 0 ? 1000 / _perf.fps : 0, other = Math.max(0, gap - _perf.logic - _perf.draw - _perf.ghost), fpOn = typeof facilityPlay !== "undefined" && facilityPlay;
     const lines = [
         "FPS " + Math.round(_perf.fps) + "   GAME " + (_simStepsShown || "-") + "/s   GFX " + (gfxLow ? "LOW" : "HIGH"),
-        "logic " + _perf.logic.toFixed(1) + " ms   draw " + _perf.draw.toFixed(1) + " ms",
+        "frame " + gap.toFixed(0) + " ms = logic " + _perf.logic.toFixed(1) + " + draw " + _perf.draw.toFixed(1),
+        "      + catch-up " + _perf.ghost.toFixed(1) + " + browser " + other.toFixed(1),
+        "steps/frame " + (_simStepsShown && _perf.fps ? (_simStepsShown / _perf.fps).toFixed(1) : "-") + "   canvas " + canvas.width + "x" + canvas.height + "  (" + resizeCount + " sizings)",
+        (fpOn ? (typeof facilityBlackout === "function" && facilityBlackout() ? "DARK" : "LIT") + "   " + (typeof facilityZoneName === "function" ? facilityZoneName() : "") : "classic"),
         "worst frame " + _perf.shownWorst.toFixed(0) + " ms",
         "units " + actors.length + "   pylons " + _pillarCache.length + "   tiles " + world.length,
     ];
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const x = 8, y = 96, w = 214, h = 12 * lines.length + 10;
+    const x = 8, y = 96, w = 252, h = 12 * lines.length + 10;
     ctx.fillStyle = "rgba(0,0,0,0.78)"; ctx.fillRect(x, y, w, h);
     ctx.strokeStyle = _perf.fps >= 50 ? "#0f8" : _perf.fps >= 30 ? "#fd4" : "#f64"; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     ctx.font = "10px monospace"; ctx.textAlign = "left"; ctx.textBaseline = "top";
