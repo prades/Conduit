@@ -439,7 +439,9 @@ function _fpTileLight(x, y, roomId) {
 }
 function _fpRoomLight(roomId) { return (_fp.light && _fp.light.get(_fpLightKey(roomId))) || 0; }
 function _fpDarkFill(pts, lv) { const a = _fpDarkAmt() * (1 - lv); if (a < 0.02) return; ctx.fillStyle = "rgba(6,11,22," + a.toFixed(3) + ")"; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill(); }
-function _fpDarkTile(cx, cy, lv) { const e = 1.2; _fpDarkFill([[cx, cy - TILE_H - e], [cx + TILE_W + e, cy], [cx, cy + TILE_H + e], [cx - TILE_W - e, cy]], lv); }
+// An unlit tile's dark covers the tile's opaque base (FP_BASE_EX / FP_BASE_EY, js/facilitydecor.js) and a little more: measured on an unlit pale floor at twice the pixel density, a margin of 1.2 px left a bright dotted line on every tile edge (the base's
+// antialiased fringe, uncovered); 0.4 px beyond the base in x and 0.3 in y covers it and leaves a barely darker hair between tiles (more doubles the dark where two tiles overlap).
+function _fpDarkTile(cx, cy, lv) { const ex = FP_BASE_EX + 0.4, ey = FP_BASE_EY + 0.3; _fpDarkFill([[cx, cy - TILE_H - ey], [cx + TILE_W + ex, cy], [cx, cy + TILE_H + ey], [cx - TILE_W - ex, cy]], lv); }
 // THE DIMMED PEN: an unlit room's things are drawn through a stand-in for the canvas context that darkens every colour it is given (toward the night blue), so each item keeps its exact shape and
 // its own place in the depth order. (A screen-wide dark layer, a canvas filter and per-item shadow shapes were all tried: they bleed onto, or show seams against, the rooms in front.)
 const _fpDimCache = new Map();

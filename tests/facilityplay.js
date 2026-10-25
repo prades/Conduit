@@ -449,6 +449,14 @@ function measure() {
         const src = rd('js/game.js'); ok(/const _fpGhost = _simGhost && typeof facilityPlay !== "undefined" && facilityPlay;\s*let drawList=_fpGhost\?\[\]:visibleTilesForDraw\(\);/.test(src), 'render() builds no tile list in a facility step with no picture'); ok(/if \(!_fpGhost\) layAllCablesCached\(\);/.test(src) && /if \(!_fpGhost && typeof evoGroundBegin === "function"\) evoGroundBegin\(\);/.test(src), 'nor the cables or the ground pools');
         ok(/_simGhost\) return;\s*\/\/ a step with no picture draws nothing/.test(rd('js/facilityplay.js')), 'facilityDrawItems stops before the items'); ok(!/it\.st\.open = \(it\.st\.open \|\| 0\) \+/.test(rd('js/facilitystyle.js').split('function _fpStyleDoor')[1] || ''), 'the door\'s draw no longer eases it');
     });
+    check('an unlit floor tile\'s dark covers the tile\'s whole opaque base and a little more (a margin of 1.2 px left the base\'s antialiased fringe bright: a dotted white grid on every unlit floor, worst on a high-density screen)', () => {
+        const r = J(`(function(){ let pts = null; const keep = _fpDarkFill; _fpDarkFill = function (p, lv) { pts = p; }; try { _fpDarkTile(100, 100, 0); } finally { _fpDarkFill = keep; } return { pts, ex: FP_BASE_EX, ey: FP_BASE_EY, W: TILE_W, H: TILE_H }; })()`);
+        ok(r.pts && r.pts.length === 4, 'a diamond'); const [top, right, bottom, left] = r.pts;
+        ok(right[0] - 100 >= r.W + r.ex + 0.25 && 100 - left[0] >= r.W + r.ex + 0.25, 'wide enough: the base is ' + r.ex + ' px wider than the tile, the dark must reach past that (' + (right[0] - 100 - r.W) + ')');
+        ok(100 - top[1] >= r.H + r.ey + 0.2 && bottom[1] - 100 >= r.H + r.ey + 0.2, 'high enough (' + (100 - top[1] - r.H) + ' beyond the tile, the base is ' + r.ey + ')');
+        ok(right[0] - 100 - r.W <= r.ex + 1.2 && 100 - top[1] - r.H <= r.ey + 1.2, 'but not so wide that two tiles darken their shared edge twice (a dark line between tiles)');
+        const src = rd('js/facilitydecor.js'); ok(/const FP_BASE_EX = 2, FP_BASE_EY = 1;/.test(src) && /EX = FP_BASE_EX, EY = FP_BASE_EY;/.test(src), 'the base and the dark share their constants');
+    });
     check('no doorway on a stairway: the arena door, the deck door and the stair mouth draw no door (the steps run through the gap), and every other opening does', () => {
         const r = J(`(function(){ const F = _fp.F, ramped = F.openings.filter(o => F.connections.some(c => c.opening === o.id && c.ramp)).map(o => o.id).sort(), drawn = _fp.items.filter(i => i.fp === 'door' && i.part === 'm'), at = o => drawn.some(d => Math.abs(d.x - (o.a[0] + o.b[0]) / 2) < 0.01 && Math.abs(d.y - (o.a[1] + o.b[1]) / 2) < 0.01);
             return { ramped, rampedDrawn: F.openings.filter(o => F.connections.some(c => c.opening === o.id && c.ramp) && at(o)).length, othersMissing: F.openings.filter(o => !F.connections.some(c => c.opening === o.id && c.ramp) && !at(o)).length }; })()`);

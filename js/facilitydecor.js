@@ -300,8 +300,11 @@ function facilityDrawFloorOn(obj, px, py) {
     if (typeof _fpTileLight === "function" && obj.room) { const lv = _fpTileLight(obj.x, obj.y, obj.room); if (lv < 0.98) _fpDarkTile(px, py + TILE_H, lv); }   // the tile's light: its room's, or a pool from an open door (js/facilitystyle.js)
 }
 // (cx, cy) is the middle of the tile on screen; key names the tile's cached sprite
+// The opaque base of a floor tile is painted this many pixels wider (EX) and higher (EY) than the tile's diamond, over the fringe of the tile sprite under it and so that two tiles overlap and no hair of the ground shows between them.
+// The DARK of an unlit tile (js/facilitystyle.js _fpDarkTile) must cover that whole base, and a hair more for its antialiased edge, or the base's fringe stays bright along every edge of every tile: a dotted white grid on an unlit floor.
+const FP_BASE_EX = 2, FP_BASE_EY = 1;
 function _fpDrawOps(ops, cx, cy, key) {
-    const W = TILE_W, H = TILE_H, EX = 2, EY = 1;   // (the sprite has a margin: an opaque base is painted EX px wider and EY px higher than the tile, over the fringe of the tile sprite under it)
+    const W = TILE_W, H = TILE_H, EX = FP_BASE_EX, EY = FP_BASE_EY;
     let spr = _fp.spr.get(key);
     if (spr === undefined) {   // not painted yet: paint it (null if there is no canvas to paint on, as in the tests)
         spr = null;
