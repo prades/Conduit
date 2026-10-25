@@ -29,11 +29,14 @@ function _psSil(fam, img) {
 }
 // A SLOW DEVICE: if the game keeps running under 28 frames a second (three readings in a row, a second and a half apart, once it has settled), the graphics go to LOW for the session (no contact shadows,
 // no soft glows: the settings window's GRAPHICS switch does the same by hand). It never goes back by itself, so it cannot flicker between the two.
+// The answer is REMEMBERED ("conduit_fp_gfx": "low", js/facilityplay.js reads it when the facility opens), so a slow device is not slow for its first twelve seconds after every refresh; choosing HIGH in Settings is remembered too, and then
+// the game never switches it by itself.
+function facilityGfxSaved() { try { return localStorage.getItem("conduit_fp_gfx"); } catch (e) { return null; } }
 function facilityPerfTick() {
-    if (typeof gfxLow === "undefined" || gfxLow || typeof _perf === "undefined" || !_fp) return;
+    if (typeof gfxLow === "undefined" || gfxLow || typeof _perf === "undefined" || !_fp || facilityGfxSaved() === "high") return;
     const f = typeof frame !== "undefined" ? frame : 0; if (f < 420 || f % 90 !== 0) return;
     _fp.slow = (_fp.slow || 0) + (_perf.fps > 0 && _perf.fps < 28 ? 1 : -(_fp.slow || 0));
-    if (_fp.slow >= 3) { gfxLow = true; if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 150, text: "SLOW DEVICE \u2014 GRAPHICS SET TO LOW", color: "#ffb347", life: 240, vy: -0.04, size: 14 }); }
+    if (_fp.slow >= 3) { gfxLow = true; try { localStorage.setItem("conduit_fp_gfx", "low"); } catch (e) {} if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 150, text: "SLOW DEVICE \u2014 GRAPHICS SET TO LOW", color: "#ffb347", life: 240, vy: -0.04, size: 14 }); }
 }
 // start loading every sheet (the facility opens: so a prop is never seen in its flat drawing for a moment before its sprite arrives)
 function facilityPropsPreload() { if (typeof PROP_ATLAS !== "undefined") for (const fam of Object.keys(PROP_ATLAS)) _psImg(fam); }

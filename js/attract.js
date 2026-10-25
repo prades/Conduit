@@ -25,11 +25,13 @@ const ATTRACT = {
 };
 
 let _atSearch = null, _atFlag = false, _at = null, _atDrawAt = 0;
-function attractOn() {
+// Asked about a few thousand times a frame (every dimmed item and floor tile), so the address is read ONCE (reading location.search builds a string each time, and is slow in Safari); a page's address does not change
+// without a reload. attractRefresh() reads it again (the tests change the address).
+function attractRefresh() {
     const s = typeof window !== "undefined" && window.location ? window.location.search || "" : "";
-    if (s !== _atSearch) { _atSearch = s; _atFlag = /[?&]attract\b/.test(s); }
-    return _atFlag;
+    _atSearch = s; _atFlag = /[?&]attract\b/.test(s); return _atFlag;
 }
+function attractOn() { return _atSearch === null ? attractRefresh() : _atFlag; }
 // the page's rules apply from the first paint, before the game has built anything
 try { if (attractOn() && typeof document !== "undefined" && document.documentElement) document.documentElement.classList.add("attract"); } catch (e) {}
 

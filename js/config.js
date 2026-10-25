@@ -1072,7 +1072,8 @@ let settingsPanelOpen    = false;
 // goes, measured on the device itself. Both are remembered.
 let gfxLow = false, perfReadout = false;
 try { gfxLow = localStorage.getItem("conduit_gfx") === "low"; perfReadout = localStorage.getItem("conduit_perf") === "1"; } catch (e) {}
-function toggleGfxLow() { gfxLow = !gfxLow; try { localStorage.setItem("conduit_gfx", gfxLow ? "low" : "high"); } catch (e) {} if (gfxLow) { smoke.length = 0; fragments.length = 0; } }
+function toggleGfxLow() { gfxLow = !gfxLow; try { localStorage.setItem("conduit_gfx", gfxLow ? "low" : "high"); localStorage.setItem("conduit_fp_gfx", gfxLow ? "low" : "high"); } catch (e) {}   // (the facility keeps its own key: it writes none of the classic game's)
+    if (gfxLow) { smoke.length = 0; fragments.length = 0; } }
 function togglePerfReadout() { perfReadout = !perfReadout; try { localStorage.setItem("conduit_perf", perfReadout ? "1" : "0"); } catch (e) {} }
 let settingsResetConfirm = false;   // true = showing "ARE YOU SURE?" step
 

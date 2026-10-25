@@ -228,6 +228,7 @@ function facilityPlayStart() {
     const P = facilityBuild({ snap: true, margin: FP_PLAN });   // the planning copy: the same map, a wider margin
     _fp = { F, P, cells: null, cellsP: null, edges: new Map(), paths: new Map() };
     restartGame();                                   // the full state reset (its storage writes are off, and generateSegment does nothing now)
+    { const g = typeof facilityGfxSaved === "function" ? facilityGfxSaved() : null; if (g === "low") gfxLow = true; else if (g === "high") gfxLow = false; }   // (a slow device was found slow before, or the player chose: js/propsprites.js)
     unlockedElements = new Set(ELEMENTS.map(e => e.id));   // ASKED: "make the crystal have access to all the colors from the beginning": all six are online from the first frame (the classic game keeps its ladder)
     _fp.cells = _fpBuildWorld(F);
     _fp.cellsP = new Map(); for (const [k, c] of _fp.cells) if (facilityWalkable(c[0], c[1], P)) _fp.cellsP.set(k, c);

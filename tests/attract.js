@@ -77,27 +77,27 @@ function measure() {
 
     group('THE FLAG: ?attract, and nothing else, switches it on');
     check('attractOn follows the address, and the page opens the facility whatever game it last had, with no saved game', () => {
-        run("window.location.search = ''"); same(run('attractOn()'), false, 'off by default');
-        run("window.location.search = '?classic'"); same(run('attractOn()'), false, 'off for ?classic'); same(run('facilityMode()'), 'classic', 'classic still opens classic');
-        run("window.location.search = '?attract'"); same(run('attractOn()'), true, 'on for ?attract'); same(run('facilityMode()'), 'facility', 'the facility');
+        run("window.location.search = ''; attractRefresh();"); same(run('attractOn()'), false, 'off by default');
+        run("window.location.search = '?classic'; attractRefresh();"); same(run('attractOn()'), false, 'off for ?classic'); same(run('facilityMode()'), 'classic', 'classic still opens classic');
+        run("window.location.search = '?attract'; attractRefresh();"); same(run('attractOn()'), true, 'on for ?attract'); same(run('facilityMode()'), 'facility', 'the facility');
         run("localStorage.setItem('conduit_mode', 'classic'); localStorage.setItem('conduit_fp_save', JSON.stringify({ v: FS.version, followers: [] }))");
         same(run('facilityMode()'), 'facility', 'a visitor who last played the classic game still sees the facility'); same(run('facilitySaveLoad()'), null, 'a visitor\'s saved game is not loaded');
-        run("window.location.search = '?attract&classic'"); same(run('attractOn()'), true, 'on beside other flags');
-        run("window.location.search = '?attractive'"); same(run('attractOn()'), false, 'a word that only begins with it is not it');
-        run("window.location.search = ''"); same(run('facilityMode()'), 'classic', 'off again: the saved choice rules again'); same(run('facilitySaveLoad() !== null'), true, 'and the saved game loads again');
+        run("window.location.search = '?attract&classic'; attractRefresh();"); same(run('attractOn()'), true, 'on beside other flags');
+        run("window.location.search = '?attractive'; attractRefresh();"); same(run('attractOn()'), false, 'a word that only begins with it is not it');
+        run("window.location.search = ''; attractRefresh();"); same(run('facilityMode()'), 'classic', 'off again: the saved choice rules again'); same(run('facilitySaveLoad() !== null'), true, 'and the saved game loads again');
         run("localStorage.removeItem('conduit_mode'); localStorage.removeItem('conduit_fp_save')");
     });
     check('in ?attract the canvas interface is hidden, the build zoom is left alone, no chip is added, and the dark is the background\'s own', () => {
-        run("window.location.search = '?attract'");
+        run("window.location.search = '?attract'; attractRefresh();");
         same(run('placingHidesUi()'), true, 'no interface'); same(run('facilityBlackout()'), false, 'no blackout'); same(run('_fpDarkAmt()'), J('ATTRACT.dark'), 'its dark');
         run('viewZoom = 1.3; placingTick();'); same(run('viewZoom'), 1.3, 'placingTick leaves the zoom');
-        run("window.location.search = ''");
+        run("window.location.search = ''; attractRefresh();");
         same(run('placingHidesUi()'), false, 'off: the interface is back'); same(run('_fpDarkAmt()'), 0.82, 'off: the ordinary dark'); run('viewZoom = 1;');
     });
     check('the frame pace: a frame is drawn at most every 30 ms when it is on, and always when it is off', () => {
-        run("window.location.search = '?attract'; _atDrawAt = 0;");
+        run("window.location.search = '?attract'; attractRefresh();; _atDrawAt = 0;");
         same(run('attractSkip(1000)'), false, 'the first is drawn'); same(run('attractSkip(1016)'), true, '16 ms later is skipped'); same(run('attractSkip(1029)'), true, '29 ms later is skipped'); same(run('attractSkip(1033)'), false, '33 ms is drawn');
-        run("window.location.search = ''"); same(run('attractSkip(1034)'), false, 'off: never skipped');
+        run("window.location.search = ''; attractRefresh();"); same(run('attractSkip(1034)'), false, 'off: never skipped');
     });
 
     group('THE HOOKS: each is guarded, and the page is built for it');
