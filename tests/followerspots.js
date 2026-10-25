@@ -21,19 +21,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     run('gameState.running = true;');
 
     group('THE DATA: a few spots, each a fixed type and a fixed element');
-    check('six spots, one of each element and two of each type, each in a room with floor under it, none in the arena, none within three tiles of another; the map passes every rule', () => {
+    check('seven spots, every element on at least one and every type on at least two, each in a room with floor under it, two of them in the arena, none within three tiles of another; the map passes every rule', () => {
         const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }), v = facilityValidate(F); return { errors: v.errors, spots: F.followerSpots.map(p => [p.id, p.room, p.type, p.element, !!facilityRoomAt(p.at[0], p.at[1], F) && facilityRoomAt(p.at[0], p.at[1], F).id === p.room, facilityWalkable(p.at[0], p.at[1], F)]) }; })()`);
-        same(r.errors.length, 0, r.errors.join(' | ')); same(r.spots.length, 6, 'spots'); same([...new Set(r.spots.map(s => s[3]))].sort().join(), 'core,electric,fire,flux,ice,toxic', 'one of each element');
-        for (const t of ['brawler', 'sniper', 'camper']) same(r.spots.filter(s => s[2] === t).length, 2, 'spots of type ' + t);
-        for (const s of r.spots) { ok(s[4] && s[5], s[0] + ' is not on floor of ' + s[1]); ok(s[1] !== 'arena', s[0] + ' is in the arena'); }
-        same(new Set(r.spots.map(s => s[1])).size >= 5, true, 'spread over at least five rooms');
+        same(r.errors.length, 0, r.errors.join(' | ')); same(r.spots.length, 7, 'spots'); same([...new Set(r.spots.map(s => s[3]))].sort().join(), 'core,electric,fire,flux,ice,toxic', 'every element');
+        for (const t of ['brawler', 'sniper', 'camper']) ok(r.spots.filter(s => s[2] === t).length >= 2, 'spots of type ' + t);
+        for (const s of r.spots) ok(s[4] && s[5], s[0] + ' is not on floor of ' + s[1]);
+        same(r.spots.filter(s => s[1] === 'arena').length, 2, 'two in the arena'); same(new Set(r.spots.map(s => s[1])).size, 6, 'spread over six rooms');
     });
-    check('the validator refuses a spot in the arena, with a type or element that does not exist, in no room, or beside another', () => {
+    check('the validator refuses a spot with a type or element that does not exist, in no room, or beside another (and lets one stand in the arena)', () => {
         const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }), a = F.followerSpots[0], keep = F.followerSpots.slice(), out = [];
             const errs = (spots) => { F.followerSpots = spots; return facilityValidate(F).errors.join(' | '); };
-            out.push(errs([Object.assign({}, a, { type: 'tank' })])); out.push(errs([Object.assign({}, a, { element: 'mud' })])); out.push(errs([Object.assign({}, a, { room: 'nowhere' })])); out.push(errs([Object.assign({}, a, { room: 'arena' })]));
+            out.push(errs([Object.assign({}, a, { type: 'tank' })])); out.push(errs([Object.assign({}, a, { element: 'mud' })])); out.push(errs([Object.assign({}, a, { room: 'nowhere' })])); out.push(errs([keep.find(q => q.room === 'arena')]));
             out.push(errs([a, Object.assign({}, a, { id: 'dup' })])); out.push(errs(keep)); return out; })()`);
-        ok(/not a follower type/.test(r[0]), 'a type that is not one'); ok(/not an element/.test(r[1]), 'an element that is not one'); ok(/does not exist/.test(r[2]), 'a room that is not one'); ok(/arena/.test(r[3]), 'the arena'); ok(/within three tiles/.test(r[4]), 'two on one tile'); same(r[5], '', 'the real ones pass');
+        ok(/not a follower type/.test(r[0]), 'a type that is not one'); ok(/not an element/.test(r[1]), 'an element that is not one'); ok(/does not exist/.test(r[2]), 'a room that is not one'); same(r[3], '', 'the arena is allowed'); ok(/within three tiles/.test(r[4]), 'two on one tile'); same(r[5], '', 'the real ones pass');
     });
 
     group('THE CRYSTAL: every element online from the start, and followers a little sturdier');
@@ -42,12 +42,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(J('[...unlockedElements].sort()').join(), 'core,electric,fire,flux,ice,toxic', 'online'); same(J('recruitElementPool().slice().sort()').join(), 'core,electric,fire,flux,ice,toxic', 'the pool a recruit is drawn from');
         const seen = J(`(function(){ const s = new Set(); for (let i = 0; i < 400; i++) s.add(recruitElementPool()[Math.floor(Math.random() * recruitElementPool().length)]); return [...s].sort(); })()`); same(seen.length, 6, 'a draw reaches all six');
     });
-    check('a follower has FOLLOWER_HP_MULT times the health its level and personality give it, through level-ups and evolution, and its attack is as it was', () => {
+    check('a follower has FOLLOWER_HP_MULT times the max health its level and personality give it (the hp stat itself is not changed), through level-ups and evolution, and its attack is as it was', () => {
         const r = J(`(function(){ const o = { mult: FOLLOWER_HP_MULT }; followers.length = 0; spawnFollowerAtCrystal('fire', 'brawler'); const f = followers[0], base = levelledStats(f.base, f.level);
             o.hp = f.maxHealth; o.want = Math.round(base.hp * FOLLOWER_HP_MULT); o.health = f.health; o.attack = f.power; o.baseAttack = base.attack;
             f.level = 6; _applyFollowerLevel(f, true); const b6 = levelledStats(f.base, 6); o.hp6 = f.maxHealth; o.want6 = Math.round(b6.hp * FOLLOWER_HP_MULT);
-            f.evolved = 'quillstone'; _applyFollowerLevel(f, true); o.hpEvo = f.maxHealth; o.wantEvo = Math.round(Math.round(b6.hp * FOLLOWER_HP_MULT) * EVOLVE_MULT); return o; })()`);
-        same(r.mult, 1.25, 'a little extra: a quarter'); same(r.hp, r.want, 'level one'); same(r.health, r.hp, 'full health'); same(r.attack, r.baseAttack, 'attack untouched'); same(r.hp6, r.want6, 'after a level-up'); same(r.hpEvo, r.wantEvo, 'evolved: the evolution comes on top');
+            f.evolved = 'quillstone'; _applyFollowerLevel(f, true); o.hpEvo = f.maxHealth; o.wantEvo = Math.round(Math.round(b6.hp * EVOLVE_MULT) * FOLLOWER_HP_MULT); o.stat = f.stats.hp; o.statWant = Math.round(b6.hp * EVOLVE_MULT); return o; })()`);
+        same(r.mult, 1.25, 'a little extra: a quarter'); same(r.hp, r.want, 'level one'); same(r.health, r.hp, 'full health'); same(r.attack, r.baseAttack, 'attack untouched'); same(r.hp6, r.want6, 'after a level-up'); same(r.hpEvo, r.wantEvo, 'evolved: the evolution comes on top'); same(r.stat, r.statWant, 'the hp STAT is not touched by the bonus');
         run('followers.length = 0; actors = actors.filter(a => !a.isFollower);');
     });
 
@@ -55,7 +55,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the spots start full: an egg of each type and element on each, neutral, still, nobody\'s target, with its pad as an item of the floor', () => {
         run('frame = 10; facilityFollowerSpotsTick();');
         const r = J(`(function(){ return { spots: _fp.spots.map(s => [s.id, !!s.egg, s.egg && s.egg.element === s.element, s.egg && s.egg.role === s.type, s.egg && s.egg.isNeutralRecruit, s.egg && s.egg.team, s.egg && s.egg.x === s.x && s.egg.y === s.y, s.egg && actors.includes(s.egg)]), items: _fp.items.filter(i => i.fp === 'spot').length, hostile: actors.filter(a => isHostileTarget(a) && a.fpSpot).length }; })()`);
-        same(r.items, 6, 'pads'); same(r.hostile, 0, 'an egg is nobody\'s enemy'); for (const s of r.spots) { ok(s[1] && s[2] && s[3] && s[4] && s[7], s[0] + ' is not a full spot: ' + s); same(s[5], 'red', 'neutral'); same(s[6], true, 'on its spot'); }
+        same(r.items, 7, 'pads'); same(r.hostile, 0, 'an egg is nobody\'s enemy'); for (const s of r.spots) { ok(s[1] && s[2] && s[3] && s[4] && s[7], s[0] + ' is not a full spot: ' + s); same(s[5], 'red', 'neutral'); same(s[6], true, 'on its spot'); }
     });
     check('eggs stay where they are and are not walked home by the strip\'s walk-up conversion: the player beside one converts nothing but takes it by the spot\'s rule', () => {
         const r = J(`(function(){ const s = _fp.spots[1], e = s.egg, n = followers.length; player.x = s.x + 1.8; player.y = s.y; for (let i = 0; i < 30; i++) { frame++; facilityFollowerSpotsTick(); const nn = followers.length; if (nn !== n) return { early: true }; }
@@ -87,7 +87,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ frame = 20000; const s = _fp.spots[3]; if (s.egg) { actors.splice(actors.indexOf(s.egg), 1); s.egg = null; } s.readyAt = frame + 1234; const snap = followerSpotsSnapshot(), saved = facilitySaveCollect();
             const o = { snap: snap[s.id], full: Object.keys(snap).length, collected: saved.spots[s.id] };
             s.readyAt = 0; followerSpotsApply({ [s.id]: 777, nonsense: 5 }); o.applied = s.readyAt - frame; o.egg = !!s.egg; followerSpotsApply({ [s.id]: 1e9 }); o.capped = s.readyAt - frame; followerSpotsApply(null); return o; })()`);
-        same(r.snap, 1234, 'the delay'); same(r.collected, 1234, 'in the save'); ok(r.full >= 1 && r.full <= 6, 'only empty spots are saved: ' + r.full); same(r.applied, 777, 'put back'); same(r.egg, false, 'no egg meanwhile'); same(r.capped, 5400, 'never longer than a refill');
+        same(r.snap, 1234, 'the delay'); same(r.collected, 1234, 'in the save'); ok(r.full >= 1 && r.full <= 7, 'only empty spots are saved: ' + r.full); same(r.applied, 777, 'put back'); same(r.egg, false, 'no egg meanwhile'); same(r.capped, 5400, 'never longer than a refill');
         ok(/followerSpotsApply\(d\.spots\)/.test(rd('js/facilitysave.js')), 'a loaded game applies it');
     });
 

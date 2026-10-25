@@ -107,7 +107,7 @@ function measure() {
         ok(/away \? attractRoomLight\(k, here\)/.test(rd('js/facilitystyle.js')) && /if \(away\) attractPools\(pools\)/.test(rd('js/facilitystyle.js')), 'the light');
         ok(/if \(!\(typeof attractOn === "function" && attractOn\(\)\)\) drawPlayer\(\{x:px,y:py\}\)/.test(rd('js/game.js')), 'the hidden player'); ok(/attractSkip\(now\)\) return;/.test(rd('js/game.js')), 'the pace'); ok(/maxPredators && !\(typeof attractOn === "function" && attractOn\(\)\)\) \{/.test(rd('js/game.js')), 'no zone creature');
         ok(/if \(away\) attractStart\(F\)/.test(rd('js/facilityplay.js')) && /_fp\.saveReady = !away/.test(rd('js/facilityplay.js')), 'the start and the save');
-        ok(/const _bare = typeof attractOn === "function" && attractOn\(\)/.test(rd('js/draw.js')), 'no bar or name over a searcher');
+        ok(/const _bare = actor\.fpSpot \|\| \(typeof attractOn === "function" && attractOn\(\)\)/.test(rd('js/draw.js')), 'no bar or name over a searcher');
         const order = require('./domstub.js').scriptOrder(); ok(order.indexOf('js/attract.js') > 0 && order.indexOf('js/attract.js') < order.indexOf('js/facilitysave.js'), 'attract.js comes before facilitysave.js');
     });
     check('game.html shows nothing but the picture in ?attract, from the first paint', () => {

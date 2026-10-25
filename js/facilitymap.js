@@ -315,14 +315,16 @@ const FACILITY_MAP = {
 
     // FOLLOWER SPOTS (js/followerspots.js): a place where a follower waits, in its egg, as one thing and nothing else: its `type` (brawler, sniper = the MAGE, camper = the TECHNICIAN) and its `element` are fixed,
     // and so is where it is. Walk up to it and it joins, there, as that type and that element; the spot fills again with another of the same after a delay. `at` is the middle of a tile (sketch pixels: 20 to a tile).
-    // Six spots, one of each element, two of each type, none in the arena.
+    // Seven spots, in the places the player marked on the facility's outline view: the computer lab's north-east corner, the show room's north end, the observation deck, the experiment lab, the second teleport
+    // room, and two in the arena (its west end by the Armory's steel door, and its middle). Every element has one; core has two.
     followerSpots: [
-        { id: "spot_lobby",    room: "front_lobby",     at: [790, 370],  type: "brawler", element: "fire",     note: "A fire brawler in the computer lab, behind the east server racks." },
-        { id: "spot_show",     room: "show_room",       at: [970, 490],  type: "sniper",  element: "ice",      note: "An ice mage among the show room's exhibits." },
-        { id: "spot_deck",     room: "observation_deck", at: [250, 830], type: "camper",  element: "core",     note: "A core technician on the observation deck." },
-        { id: "spot_tele_1",   room: "teleport_room_1", at: [250, 630],  type: "brawler", element: "electric", note: "An electric brawler beside the teleporters." },
-        { id: "spot_tele_2",   room: "teleport_room_2", at: [1010, 690], type: "camper",  element: "flux",     note: "A flux technician in the second teleport room." },
-        { id: "spot_hall",     room: "lab_hallway",     at: [810, 670],  type: "sniper",  element: "toxic",    note: "A toxic mage in the hallway's east end." },
+        { id: "spot_lobby",   room: "front_lobby",      at: [770, 330],  type: "brawler", element: "fire",     note: "A fire brawler in the computer lab's north-east corner." },
+        { id: "spot_show",    room: "show_room",        at: [1030, 310], type: "sniper",  element: "ice",      note: "An ice mage at the show room's north end." },
+        { id: "spot_deck",    room: "observation_deck", at: [250, 850],  type: "camper",  element: "core",     note: "A core technician on the observation deck." },
+        { id: "spot_lab",     room: "experiment_lab",   at: [650, 590],  type: "sniper",  element: "toxic",    note: "A toxic mage in the experiment lab." },
+        { id: "spot_tele_2",  room: "teleport_room_2",  at: [1030, 710], type: "camper",  element: "flux",     note: "A flux technician in the second teleport room." },
+        { id: "spot_arena_w", room: "arena",            at: [390, 1110], type: "brawler", element: "electric", note: "An electric brawler at the arena's west end, by the Armory's steel door." },
+        { id: "spot_arena_c", room: "arena",            at: [750, 850],  type: "brawler", element: "core",     note: "A core brawler in the middle of the arena." },
     ],
 
     // BRIDGES: a footbridge from a liquid tank's top to the catwalks' deck (js/propsprites.js draws it, in 3D, at the deck's height: it is decoration, not floor to walk on). `from` is a prop (a circle), `to` a room.

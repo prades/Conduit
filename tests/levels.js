@@ -52,12 +52,12 @@ async function boot(store) {
     });
 
     console.log('\nFOLLOWERS (base stats × personality, then the level)');
-    check('THE ASK: a new follower is level 5 with exactly its personality\'s stats — nothing changes for it', () => {
+    check('THE ASK: a new follower is level 5 with exactly its personality\'s stats — nothing changes for it but its max health, a quarter up', () => {
         const r = run(`(function(){ const f = ${FOL('aggressive', 12, 1)};
             return { lv: f.level, xp: f.xp, st: f.stats, base: applyPersonality('aggressive'), hp: f.maxHealth, pw: f.power }; })()`);
         same(r.lv, 5, 'level'); same(r.xp, 125, 'xp');
         same(JSON.stringify(r.st), JSON.stringify(r.base), 'stats');
-        same(r.hp, r.base.hp, 'max health'); same(r.pw, r.base.attack, 'power');
+        same(r.hp, Math.round(r.base.hp * run('FOLLOWER_HP_MULT')), 'max health (the hp stat, and a quarter more: FOLLOWER_HP_MULT)'); same(r.pw, r.base.attack, 'power');
     });
     check('THE ASK: gaining levels raises every levelled stat in proportion — but not its walking speed or its role', () => {
         const r = run(`(function(){ const f = ${FOL('cunning', 12, 1)}; f.element = 'ice'; /* a fire sniper evolves at 20 (x1.25, js/evolution.js); ice has no form */ const sp = f.moveSpeed, role = f.role, b = Object.assign({}, f.base);
@@ -67,7 +67,7 @@ async function boot(store) {
         same(r.lv, 20, 'level');
         same(r.atk, Math.round(r.b.attack * 2), 'attack at 20 (×2)');
         same(r.def, Math.round(r.b.defense * 2), 'defense at 20');
-        same(r.hp, Math.round(r.b.hp * 2), 'max hp at 20');
+        same(r.hp, Math.round(Math.round(r.b.hp * 2) * run('FOLLOWER_HP_MULT')), 'max hp at 20 (x2, and a quarter more: FOLLOWER_HP_MULT)');
         same(r.health, r.h0 + (r.hp - r.m0), 'the new max health is added to its current health');
         same(r.sp2, r.sp, 'walking speed'); same(r.role2, r.role, 'role'); same(r.speed, r.b.speed, 'the speed stat');
     });

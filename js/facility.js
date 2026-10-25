@@ -264,12 +264,11 @@ function facilityValidateDressing(F) {
         if (p.needs && !(F.relays || []).some(r => r.id === p.needs)) errors.push("pickup " + p.id + " waits for " + p.needs + ", which is not a relay");
         if (typeof ITEMS !== "undefined") for (const it of p.items) if (!ITEMS[it[0]] || !(it[1] > 0)) errors.push("pickup " + p.id + " holds " + it[0] + ", which is not an item");
     }
-    // the follower spots: a known room, a tile of that room's floor a body can stand on with room round it, a type and an element a follower can be, at most one per tile, and none where the arena's creatures walk
+    // the follower spots: a known room, a tile of that room's floor a body can stand on with room round it, a type and an element a follower can be, and none within three tiles of another
     for (const p of (F.followerSpots || [])) {
         const rm = F.byId.get(p.room); if (!rm) { errors.push("follower spot " + p.id + " names a room that does not exist"); continue; }
         const r = facilityRoomAt(p.at[0], p.at[1], F); if (!r || r.id !== p.room) errors.push("follower spot " + p.id + " is not in " + p.room);
         else if (F.snapped && !facilityWalkable(p.at[0], p.at[1], F)) errors.push("follower spot " + p.id + " is not on a tile a body can stand on");
-        if (p.room === "arena") errors.push("follower spot " + p.id + " is in the arena, where the creatures are");
         if (typeof FOLLOWER_TYPES !== "undefined" && !FOLLOWER_TYPES[p.type]) errors.push("follower spot " + p.id + " is a " + p.type + ", which is not a follower type");
         if (typeof ELEMENTS !== "undefined" && !ELEMENTS.some(e => e.id === p.element)) errors.push("follower spot " + p.id + " is " + p.element + ", which is not an element");
         if ((F.followerSpots || []).some(q => q !== p && Math.hypot(q.at[0] - p.at[0], q.at[1] - p.at[1]) < 3)) errors.push("follower spot " + p.id + " is within three tiles of another");

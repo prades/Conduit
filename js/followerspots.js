@@ -2,7 +2,7 @@
 //  FOLLOWER SPOTS: a follower waits in its egg where it is, as one type and one element, and the spot fills again
 // ─────────────────────────────────────────────────────────
 // ASKED: "put a few spots where the followers exist and will respawn there, and they'll have a fixed type and a fixed element." Asked what "respawn" meant: "the spot refills after a delay".
-// A spot (FACILITY_MAP.followerSpots, js/facilitymap.js) is a pad on the floor in its element's colour, with the follower on it as a grey egg and a label over it: its type (BRAWLER, MAGE, TECHNICIAN) and its element.
+// A spot (the map's `followerSpots`, js/facilitymap.js) is a pad on the floor in its element's colour, with the follower on it as a grey egg and a label over it: its type (BRAWLER, MAGE, TECHNICIAN) and its element.
 // Both are the spot's, never the player's: there is nothing to choose, and the follower that joins is exactly that.
 //   TAKE      walking up to the egg (FP_SPOT.take tiles) makes it a follower there and then (spawnFollowerAtCrystal with the spot's element and type, put on the spot, no walk home to the Crystal first)
 //   REFILL    FP_SPOT.refill frames later (a minute and a half) the spot has another egg of the same type and element, once the player is not standing near it and the squad is under FP_SPOT.cap
