@@ -510,6 +510,8 @@ function followPlayer(actor) {
         // The facility: leaning toward the group must not pick a spot behind a wall (inside the lab, say), so a lean only counts where you can see it from where you stand, and only once it is near you.
         if (typeof facilityPlay !== "undefined" && facilityPlay && (!facilityLosFrom(player.x, player.y, tx, ty) || Math.hypot(player.x - actor.x, player.y - actor.y) > 8)) { tx = player.x; ty = player.y; }   // (and a lean only counts when it is already close: a far group otherwise sits together and never comes to you)
     }
+    // The facility: a follower on another stretch of floor than you (you are in an interior) walks to the doorway that comes out beside you and goes through it (js/facilityportals.js)
+    if (typeof facilityPlay !== "undefined" && facilityPlay && actor._fpPortalGoal && typeof facilityPortalGoal === "function") { const g = facilityPortalGoal(actor); if (g) { tx = g.x; ty = g.y; stop = 0.04; } }
     // The facility: a wall between you and a follower means it is NOT near you however close it measures, so it keeps walking the route until it can see you.
     if (typeof facilityPlay !== "undefined" && facilityPlay) { const w = facilitySteer(actor, tx, ty), d0 = Math.hypot(tx - actor.x, ty - actor.y), seen = !actor._fpPath; if (!seen) { tx = w[0]; ty = w[1]; stop = 0.04; } else if (d0 > stop) { tx = w[0]; ty = w[1]; } }
     const dx = tx - actor.x, dy = ty - actor.y, dist = Math.hypot(dx, dy);
@@ -546,5 +548,5 @@ function updateNPC(actor) {
             if (_moved > 0.001) actor.walkCycle = (actor.walkCycle||0) + actor.moveSpeed * 40;
         }
     }
-    if (typeof facilityPlay !== "undefined" && facilityPlay) { const _ix = actor.x, _iy = actor.y; facilityReroute(actor, _fpx, _fpy); facilityCatchUp(actor, _fpx, _fpy); facilityConstrain(actor, _fpx, _fpy); _fpUnstick(actor, _fpx, _fpy, Math.hypot(_ix - _fpx, _iy - _fpy)); }   // route round the facility's walls (js/facilityplay.js)
+    if (typeof facilityPlay !== "undefined" && facilityPlay) { const _ix = actor.x, _iy = actor.y; facilityReroute(actor, _fpx, _fpy); facilityCatchUp(actor, _fpx, _fpy); facilityConstrain(actor, _fpx, _fpy); _fpUnstick(actor, _fpx, _fpy, Math.hypot(_ix - _fpx, _iy - _fpy)); if (actor._fpPortalGoal && typeof facilityPortalActorTick === "function") facilityPortalActorTick(actor); }   // route round the facility's walls (js/facilityplay.js); through a doorway it was walking to (js/facilityportals.js)
 }

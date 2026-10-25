@@ -93,6 +93,7 @@ function _fpExtraLight(x, y, keys) {
 function facilityTutorialTick() {
     facilityPickupTick();
     if (typeof facilityStationTick === "function") facilityStationTick();
+    if (typeof facilityPortalTick === "function") facilityPortalTick();
     if (typeof facilityRelayTick === "function") facilityRelayTick();
     if (typeof facilityDirectorTick === "function") facilityDirectorTick();
     if (typeof facilityGearTick === "function") facilityGearTick();
@@ -206,4 +207,5 @@ function facilityDrawOverlay() {
     if (typeof facilityDrawRelays === "function") facilityDrawRelays();
     if (typeof facilityDrawStationPrompt === "function") facilityDrawStationPrompt();
     if (typeof facilityDrawObjective === "function") facilityDrawObjective();
+    if (typeof facilityDrawPortals === "function") facilityDrawPortals();   // last: the name over a doorway, and the fade through one covers all
 }

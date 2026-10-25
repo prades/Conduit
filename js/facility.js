@@ -118,8 +118,11 @@ function _facilityBuild(ex) {
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there)
     const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, prop: r.prop, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));
     const stations = (M.stations || []).map(st => ({ id: st.id, room: st.room, prop: st.prop, kind: st.kind }));
+    // portals (js/facilityportals.js): the doorway's floor as a box of whole tiles, and where you stand when you come out of the other end (a tile's middle: snapped to the floor when it is used)
+    const portals = (M.portals || []).map(p => { const a = _facP([p.rect[0], p.rect[1]]), b = _facP([p.rect[2], p.rect[3]]); return { id: p.id, room: p.room, to: p.to, label: p.label || "", kind: p.kind || "stairs", rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])], arrive: rawP(p.arrive), note: p.note }; });
+    const interiors = (M.interiors || []).map(i => ({ id: i.id, under: i.under || null }));
     const outer = M.outer_path ? { id: M.outer_path.id, poly: _facPoly(M.outer_path.polygon), walkable: M.outer_path.walkable === true, navigation_link: M.outer_path.navigation_link === true } : null;
-    const conns = (M.connections || []).concat(ex.connections || []).filter(c => !c.opening || openings.some(o => o.id === c.opening)).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, confirmed: true }));
+    const conns = (M.connections || []).concat(ex.connections || []).filter(c => !c.opening || openings.some(o => o.id === c.opening)).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, portal: c.portal || null, confirmed: true }));
     const cands = ((M.candidates && M.candidates.connections) || []).map(c => ({ id: c.id, rooms: c.rooms, at: _facP(c.at), evidence: c.evidence, ramp: c.ramp_candidate || null, confirmed: false }));
     // heights: tiles above the ground floor, per level; a ramp's zone is where the floor slopes between the heights of the two levels it joins
     const levelH = new Map((M.levels || []).map(l => [l.id, l.height || 0]));
@@ -138,7 +141,7 @@ function _facilityBuild(ex) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, bridges, stations, relays, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -224,7 +227,7 @@ function facilityHeightAt(x, y, F) {
 function facilityRoomHeight(id, F) { F = F || facilityGet(); const r = F.byId.get(id); return r ? (F.levelH.get(r.level) || 0) : 0; }
 
 // the kinds of decor that hang on a wall (the rest lie on the floor)
-const FAC_WALL_DECOR = new Set(["poster", "vent", "pipe", "wall_light", "screen", "board", "whiteboard", "exit_sign", "clock", "graffiti", "panel", "banner", "mirror", "shelf", "sign", "hazard_sign", "cable_run", "window_blind", "crack", "vein", "beam", "chain", "claw", "ooze_drip", "lamp", "ladder", "scoreboard", "plate", "moss", "bulbs", "monitor_bank", "garage_door", "gun_rack"]);
+const FAC_WALL_DECOR = new Set(["poster", "vent", "pipe", "wall_light", "screen", "board", "whiteboard", "exit_sign", "clock", "graffiti", "panel", "banner", "mirror", "shelf", "sign", "hazard_sign", "cable_run", "window_blind", "crack", "vein", "beam", "chain", "claw", "ooze_drip", "lamp", "ladder", "scoreboard", "plate", "moss", "bulbs", "monitor_bank", "garage_door", "gun_rack", "portal_door"]);
 
 // The dressing (floors and decor): floors name a room, floor decor lies inside its room, wall decor is flat on a real solid wall, on the side of it that the camera sees, and (but for signs over a door) not across a doorway.
 function facilityValidateDressing(F) {
@@ -366,10 +369,29 @@ function facilityValidate(F) {
         if (!F.byId.has(c.rooms[0]) || !F.byId.has(c.rooms[1])) errors.push("connection " + c.id + " names a room that does not exist");
         if (c.opening && !F.openings.some(o => o.id === c.opening)) errors.push("connection " + c.id + " names an opening that does not exist");
         const A = F.byId.get(c.rooms[0]), B = F.byId.get(c.rooms[1]);
-        if (A && B && A.level !== B.level && !c.ramp) errors.push("connection " + c.id + " joins two levels with no ramp");
+        if (A && B && A.level !== B.level && !c.ramp && !c.portal) errors.push("connection " + c.id + " joins two levels with no ramp");
+        if (c.portal && !F.portals.some(p => p.id === c.portal)) errors.push("connection " + c.id + " names a portal that does not exist");
         if (c.ramp && !F.ramps.some(r => r.id === c.ramp)) errors.push("connection " + c.id + " names a ramp that does not exist");
     }
     for (const o of F.openings) if (!F.connections.some(c => c.opening === o.id)) warnings.push("opening " + o.id + " has no connection (it joins nothing for navigation)");
+    // portals come in pairs, each in its own room, on its floor, with a connection that joins the two rooms; an interior has no door onto any other room (it is reached through its portal only)
+    for (const p of F.portals) {
+        const room = F.byId.get(p.room), other = F.portals.find(q => q.id === p.to);
+        if (!room) { errors.push("portal " + p.id + " names a room that does not exist"); continue; }
+        if (!other || other.to !== p.id) errors.push("portal " + p.id + " has no partner that points back at it");
+        else if (other.room === p.room) errors.push("portal " + p.id + " joins a room to itself");
+        else if (!F.connections.some(c => c.portal === p.id || c.portal === other.id) ) errors.push("the pair " + p.id + " / " + other.id + " has no connection joining " + p.room + " and " + other.room);
+        const mx = (p.rect[0] + p.rect[2]) / 2, my = (p.rect[1] + p.rect[3]) / 2, at = facilityRoomAt(mx, my, F);
+        if (!at || at.id !== p.room) errors.push("portal " + p.id + "'s doorway is not on the floor of " + p.room); else if (!facilityWalkable(Math.round(mx), Math.round(my), F)) errors.push("portal " + p.id + "'s doorway has no floor to stand on");
+        const ar = facilityRoomAt(p.arrive[0], p.arrive[1], F); if (!ar || ar.id !== p.room) errors.push("portal " + p.id + ": the spot in front of it is not in " + p.room);
+        if (!F.decor.some(d => d.kind === "portal_door" && d.room === p.room && d.a && d.b && Math.abs(d.a[0] + d.b[0] - p.rect[0] - p.rect[2]) < 1.01 && Math.abs(d.a[1] + d.b[1] - p.rect[1] - p.rect[3]) < 1.01)) warnings.push("portal " + p.id + " has no door drawn at it");
+    }
+    for (const i of F.interiors) {
+        const room = F.byId.get(i.id); if (!room) { errors.push("interior " + i.id + " is not a room"); continue; }
+        if (F.openings.some(o => (o.rooms || []).includes(i.id))) errors.push("interior " + i.id + " has a door onto another room: it is reached through its portal only");
+        if (!F.portals.some(p => p.room === i.id)) errors.push("interior " + i.id + " has no portal");
+        if (i.under && !F.byId.has(i.under)) errors.push("interior " + i.id + " is under a room that does not exist");
+    }
     for (const r of F.ramps) if (!r.between_levels || r.between_levels[0] === r.between_levels[1]) errors.push("ramp " + r.id + " does not join two different levels");
     // every level a room stands on has a height; a ramp's slope runs between the heights of the two levels it joins, inside the two rooms it joins
     for (const room of F.rooms) if (!F.levelH.has(room.level)) errors.push(room.id + " is on level " + room.level + ", which has no height");

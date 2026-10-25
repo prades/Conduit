@@ -144,6 +144,7 @@ function _fpGoals(a) {
     if (a.job && a.job.target && Number.isFinite(a.job.target.x)) gs.push(a.job.target);
     if (a._nearestEnemy && !a._nearestEnemy.dead) gs.push(a._nearestEnemy);
     if (a.hackOrder && Number.isFinite(a.hackOrder.x)) gs.push(a.hackOrder);
+    if (a._fpPortalGoal && typeof facilityPortalGoal === "function") { const g = facilityPortalGoal(a); if (g) gs.push(g); }   // (the doorway it is on its way through: js/facilityportals.js)
     const foes = a.team === "green" ? actors : followers;   // the nearest of the other side, within a chase
     let nb = null, nd = 144; for (const o of foes) { if (!o || o.dead || o === a || (a.team === "green" ? o.team === "green" : false)) continue; const d = (o.x - a.x) ** 2 + (o.y - a.y) ** 2; if (d < nd) { nd = d; nb = o; } }
     if (nb) gs.push(nb);
@@ -192,7 +193,7 @@ function facilityConstrain(a, px, py) {
 
 // ── the player ──
 function facilityWalkTo(gx, gy) {
-    if (!_fp) return false;
+    if (!_fp || (typeof facilityPortalBusy === "function" && facilityPortalBusy())) return false;   // (nobody is told where to walk while the screen fades through a doorway)
     const c = _fpNearestCell(gx, gy); if (!c || Math.hypot(c[0] - gx, c[1] - gy) > 1.6) return false;
     const p = facilityPath(player.x, player.y, c[0], c[1]); if (!p) return false;
     player.fpPath = p; player.targetX = c[0]; player.targetY = c[1]; return true;
@@ -239,6 +240,7 @@ function facilityPlayStart() {
     else for (const el of ["electric", "core", "fire"]) { if (typeof spawnFollowerAtCrystal === "function") spawnFollowerAtCrystal(el); }
     for (const f of followers) { f.x = cx + 1 + Math.random(); f.y = cy + 2 + Math.random(); f.returningToCrystal = false; }
     _fpPlaceStatics(F);
+    if (typeof facilityPortalsStart === "function") facilityPortalsStart(F);   // the doorways into the interiors (js/facilityportals.js)
     if (typeof facilityTutorialStart === "function") facilityTutorialStart(F);   // the tutorial opens in a blackout (js/facilitytutorial.js)
     if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
     if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)

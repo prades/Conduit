@@ -294,4 +294,21 @@ Object.assign(FP_STYLE_WALL, {
         const lp = _fpWP(it, 0.07, 100); ctx.fillStyle = Math.floor(f / 30 + it.seed) % 5 ? "#43e0a8" : _FPW.amber; ctx.beginPath(); ctx.arc(lp[0], lp[1], 2.4, 0, 6.2832); ctx.fill();
     },
 });
-for (const k of ["monitor_bank", "garage_door", "gun_rack"]) FP_WALL_KINDS[k] = FP_STYLE_WALL[k];   // (these exist only in the style: every room is styled, and this makes them wall decor the dressing places)
+for (const k of ["monitor_bank", "garage_door", "gun_rack"]) FP_WALL_KINDS[k] = FP_STYLE_WALL[k];
+// a PORTAL DOOR (js/facilityportals.js): the end of an alcove, a heavy steel stairwell door standing ajar on a dark flight of steps going down (or up), a lit chevron over it pointing the way and a hazard stripe at its foot.
+// Stepping into the alcove goes through it. `colour` is the lit sign's.
+Object.assign(FP_STYLE_WALL, {
+    portal_door: (it, f) => {
+        const S = FP_STEEL_DOOR, H = 86, col = it.colour || _FPW.amber, pul = 0.65 + 0.35 * Math.sin(f * 0.07 + it.seed), up = it.up;
+        _fpWQuad(it, 0.02, 0.98, 0, H + 14, _FPW.tealDark, _FPW.ink, 4);   // the frame, with a header slab for the sign
+        _fpWQuad(it, 0.09, 0.91, 3, H, "#04070d", _FPW.ink, 2);            // the dark stairwell
+        for (let k = 0; k < 5; k++) { const z = 6 + k * 13, w = 0.2 - k * 0.012; _fpWQuad(it, 0.5 - w, 0.5 + w, z, z + 6, _fpRgba("#8fa0b4", 0.1 + 0.06 * k), null); _fpWQuad(it, 0.5 - w, 0.5 + w, z + 6, z + 10, "rgba(0,0,0,0.35)", null); }   // the steps going away
+        for (const [u0, u1, c] of [[0.09, 0.3, S.mid], [0.7, 0.91, S.lit]]) { _fpWQuad(it, u0, u1, 3, H, c, _FPW.ink, 2.5); for (let k = 0; k < 4; k++) _fpWLine(it, u0 + 0.012, 16 + k * 18, u1 - 0.012, 16 + k * 18, S.rib, 1.6); }   // the two leaves, standing open
+        for (let k = 0; k < 10; k++) _fpWQuad(it, 0.09 + k * 0.082, 0.09 + (k + 1) * 0.082, 3, 11, k & 1 ? _FPW.ink : _FPW.amber, null);   // the hazard stripe at the foot
+        const hz = H + 7, c0 = _fpWP(it, 0.5, hz + (up ? -3 : 3)), cl = _fpWP(it, 0.34, hz + (up ? 3 : -3)), cr = _fpWP(it, 0.66, hz + (up ? 3 : -3));   // the chevron: points down, or up
+        ctx.save(); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = _fpRgba(col, 0.55 + 0.45 * pul); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cl[0], cl[1]); ctx.lineTo(c0[0], c0[1]); ctx.lineTo(cr[0], cr[1]); ctx.stroke(); ctx.restore();
+        const g = _fpWP(it, 0.5, hz); _fpGlow(g[0], g[1], 30, col, 0.22 * pul);
+    },
+});
+FP_WALL_KINDS.portal_door = FP_STYLE_WALL.portal_door;
+   // (these exist only in the style: every room is styled, and this makes them wall decor the dressing places)

@@ -101,7 +101,7 @@ function _psCentre(id) {
 
 // ── which sheet a kind of prop is on, and which variant of it a given prop is ──
 // The sheets (design/props/models/<family>.js): office (the desks, consoles, server racks), lounge (the sofas, tables, vending machines...), lab (benches, the fume hood, test chambers, the generator...), tech (teleporters,
-// relays, the charger, the mech bay, lockers, cabinets, display cases, the telescope), cargo (crates, barrels, floodlights, barriers, the supply case), plant, sentry, truck, tank, bridge.
+// relays, the charger, the mech bay, lockers, cabinets, display cases, the telescope), cargo (crates, barrels, floodlights, barriers, the supply case), power (the arena's big generator), plant, sentry, truck, tank, bridge.
 // A variant is named  kind[.WxH|.rNN][.on|.off][.sN]  : the size of the prop in tiles (WxH along x and y; rNN a round prop's radius in hundredths), its state (a relay or the charger: online or not), and a look (s0, s1...:
 // a prop picks one by its id, so a row of crates is not a row of the same crate). The most specific variant that exists is used: a kind with one model for every size is just `kind`.
 const PS_FAMILY = {
@@ -110,7 +110,7 @@ const PS_FAMILY = {
     lab_bench: "lab", fume_hood: "lab", test_chamber: "lab", cart: "lab", generator: "lab", toolbox: "lab", speaker: "lab", spool: "lab",
     teleporter: "tech", charger: "tech", relay: "tech", mech_bay: "tech", locker: "tech", cabinet: "tech", display_case: "tech", telescope: "tech",
     crate: "cargo", crate_stack: "cargo", barrel: "cargo", floodlight: "cargo", barrier: "cargo",
-    plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
+    main_generator: "power", plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
 };
 const _psIndex = {};
 function _psNames(fam) {   // the variants of a sheet, parsed: { kind: [{ name, dims, state, style }] }

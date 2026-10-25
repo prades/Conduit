@@ -16,10 +16,12 @@
 
     // how far each room slides, in tiles: [x, y]. The hallway, the lab and the passage hold their ground (the hub); the others move away from them.
     const SHIFT = {
-        crystal_chamber: [-1, -1], teleport_room_1: [-1, 0], front_lobby: [-1, -1], security_room: [0, -1], show_room: [1, 0], armory: [-1, 2],
+        crystal_chamber: [-1, -1], teleport_room_1: [-1, 0], front_lobby: [-1, -1], security_room: [0, -1], show_room: [1, 0],
         teleport_stair_room: [0, 1], teleport_room_2: [1, 1], observation_deck: [0, 1], catwalks: [0, 1], arena: [0, 1], nest_area: [0, 1],
     };
-    const sh = (id) => SHIFT[id] || [0, 0];
+    // an INTERIOR (js/facilitymap.js `interiors`) is not slid but carried: to a part of the map of its own, `offset` sketch pixels from where the data draws it
+    const INTERIOR = {}; for (const i of (M.interiors || [])) INTERIOR[i.id] = [i.offset[0] / G, i.offset[1] / G];
+    const sh = (id) => INTERIOR[id] || SHIFT[id] || [0, 0];
     const mv = (p, t) => [p[0] + t[0] * G, p[1] + t[1] * G];
 
     // outlines that are re-drawn rather than slid (their shapes change): Teleport Room 1 loses the nub beside the lab; the passage is one tile shorter; the hallway gives up a row at its
@@ -51,6 +53,7 @@
     }
     for (const f of (M.fixtures || [])) { const t = sh(f.room); f.a = mv(f.a, t); f.b = mv(f.b, t); }
     for (const p of (M.pickups || [])) p.at = mv(p.at, sh(p.room));
+    for (const p of (M.portals || [])) { const t = sh(p.room); p.rect = [p.rect[0] + t[0] * G, p.rect[1] + t[1] * G, p.rect[2] + t[0] * G, p.rect[3] + t[1] * G]; p.arrive = mv(p.arrive, t); }
     for (const e of (M.external_exits || [])) e.at = mv(e.at, sh(e.room));
     for (const c of ((M.candidates && M.candidates.connections) || [])) c.at = mv(c.at, sh(c.rooms[0]));
     for (const c of ((M.candidates && M.candidates.ramps) || [])) c.at = mv(c.at, [0, 1]);
@@ -74,7 +77,6 @@
         door_arena_hallway: { a: [370, 760], b: [440, 760], via: "arena", s: [0, 1] },
         door_passage_teleport_1: { a: [310, 565], b: [310, 605], via: "teleport_room_1", s: [-1, 0] },
         door_lab_passage: { a: [430, 565], b: [430, 605], via: "lab_passage", s: [-1, 0] },
-        door_arena_armory: { a: [340, 1110], b: [340, 1150], via: "armory", s: [-1, 0] },
         door_crystal_hallway: { a: [370, 430], b: [370, 470], via: "crystal_chamber", s: [-1, 0] },
         open_stair_mouth: { a: [870, 630], b: [870, 760] },
         door_stair_teleport_2: { a: [965, 680], b: [965, 720], via: "teleport_stair_room", s: [-1, 0] },

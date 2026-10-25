@@ -225,3 +225,11 @@ ASKED: "remove the ability to change the crystal element modulation [...] it sho
 - **A follower is a type and an element from the start, and keeps them.** The type is its role: **BRAWLER** (aggressive or wild personality), **MAGE** (the code's "sniper": cautious or cunning) or **TECHNICIAN** (the code's "camper": stoic), `FOLLOWER_TYPES` in js/species.js (`personalityForType` picks a personality of the type, so its stats give exactly that role). A follower found in the world is a draw of every personality (js/world.js, as before); **+ RECRUIT** (30 shards, the roster) comes out at the Crystal as an even draw of the three types and an even draw of the elements online, and the toast says what it turned out to be ("MAGE · ICE RECRUITED!"). A follower that dies comes back as the same personality and element. You make a follower better by **evolving** it (level 10, js/evolution.js), not by changing what it is.
 - **RE-ROLL keeps the class.** A re-rolled follower (the ring's RE-ROLL, RE-ROLL ALL) is made again with new stats, traits and perk, but stays the same type and the same element (`wantType` and `keepElement`, js/mass.js startFollowerReroll, read by the arrival block in js/npc.js). Nothing lets the player change a follower's type or element.
 - The tutorial's RECRUIT step says all this in its hint. The boss "Crystal Modulator" drop (js/drops.js) was already inert (nothing activated it) and is left alone.
+
+## The Armory is an interior (revision)
+
+The Armory (the weapon locker, the terminal, the relay, its supply cases) is now under the Observation Deck, in a part of the map of its own (docs/FACILITY.md, "Interiors and portals"): the stairwell door in the alcove in the deck's west wall goes down to it, the one in its north wall goes back up. Nothing in it changed but its place (the crates moved out of the way of the stairs) and the way in: the supplies hint and the Gunslinger's gear objective say where it is, and the squad comes down with you.
+
+## The arena's generator (revision)
+
+A new sheet of the 3D props, **power** (`design/props/models/power.js`): the arena's large electrical generator (`main_generator.7x3`), standing against the arena's north service wall in a bay cut back from the rock (docs/FACILITY.md, "The generator bay"). It is a prop only for now: solid, lit by its own glow, not part of the power network.
