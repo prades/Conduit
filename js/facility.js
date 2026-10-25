@@ -149,15 +149,28 @@ function facilityGet() {
 
 // ── queries (all take an optional compiled map F, so tests can ask about a variant) ──
 function _facIn(x, y, bb, m) { m = m || 0; return x >= bb[0] - m && x <= bb[2] + m && y >= bb[1] - m && y <= bb[3] + m; }
+// A grid of 4 x 4 tile buckets over a compiled map: which rooms, solids and walls can touch each (a wall by its box grown by the body margin). The queries below look at the buckets a point or a short step
+// is in instead of every wall and solid in the building (every unit asks several times a frame, and a route is hundreds of questions); the items keep their order, so the answers are exactly the same.
+const FAC_BUCKET = 4, _FAC_NONE = [];
+function _facIndex(F) {
+    if (F._ix) return F._ix;
+    const ix = { rooms: new Map(), solids: new Map(), walls: new Map() }, B = FAC_BUCKET, key = (bx, by) => (bx + 4096) * 8192 + (by + 4096);
+    const put = (m, bb, g, item) => { for (let by = Math.floor((bb[1] - g) / B), y1 = Math.floor((bb[3] + g) / B); by <= y1; by++) for (let bx = Math.floor((bb[0] - g) / B), x1 = Math.floor((bb[2] + g) / B); bx <= x1; bx++) { const k = key(bx, by); let l = m.get(k); if (!l) m.set(k, l = []); l.push(item); } };
+    for (const r of F.rooms) put(ix.rooms, r.bb, 0, r);
+    for (const s of F.solids) put(ix.solids, s.bb, 0, s);
+    for (const w of F.walls) put(ix.walls, w.bb, F.margin, w);
+    ix.key = key; Object.defineProperty(F, "_ix", { value: ix, enumerable: false, writable: true }); return ix;
+}
+function _facNear(m, ix, x, y) { return m.get(ix.key(Math.floor(x / FAC_BUCKET), Math.floor(y / FAC_BUCKET))) || _FAC_NONE; }
 function facilityRoomAt(x, y, F) {
     F = F || facilityGet();
     if (F.outer && _facIn(x, y, F.outer.bb) && facilityPointInPoly(x, y, F.outer.poly)) return null;   // the outer path is never a room
-    for (const r of F.rooms) if (_facIn(x, y, r.bb) && facilityPointInPoly(x, y, r.poly)) return r;
+    const ix = _facIndex(F); for (const r of _facNear(ix.rooms, ix, x, y)) if (_facIn(x, y, r.bb) && facilityPointInPoly(x, y, r.poly)) return r;
     return null;
 }
 function facilitySolidAt(x, y, F) {
     F = F || facilityGet();
-    for (const s of F.solids) if (_facIn(x, y, s.bb) && (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly))) return s;
+    const ix = _facIndex(F); for (const s of _facNear(ix.solids, ix, x, y)) if (_facIn(x, y, s.bb) && (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly))) return s;
     return null;
 }
 // Walkable: inside a room, outside every solid, and not ON a wall (a body exactly on a wall line could slip along it into the next room).
@@ -165,7 +178,7 @@ const FAC_WALL_MARGIN = 0.02;
 function facilityWalkable(x, y, F) {
     F = F || facilityGet();
     if (!facilityRoomAt(x, y, F) || facilitySolidAt(x, y, F)) return false;
-    for (const w of F.walls) if (_facIn(x, y, w.bb, F.margin) && _facSegPointDist(w.a, w.b, x, y) < F.margin) return false;
+    const ix = _facIndex(F); for (const w of _facNear(ix.walls, ix, x, y)) if (_facIn(x, y, w.bb, F.margin) && _facSegPointDist(w.a, w.b, x, y) < F.margin) return false;
     return true;
 }
 // Can a body go in a straight line from (x0,y0) to (x1,y1)? No if it ends somewhere unwalkable, crosses any wall, or cuts through a solid.
@@ -174,8 +187,14 @@ function facilityCanStep(x0, y0, x1, y1, F) {
     if (!facilityWalkable(x1, y1, F)) return false;
     const a = [x0, y0], b = [x1, y1], sx0 = Math.min(x0, x1), sx1 = Math.max(x0, x1), sy0 = Math.min(y0, y1), sy1 = Math.max(y0, y1);
     const near = bb => !(sx1 < bb[0] || sx0 > bb[2] || sy1 < bb[1] || sy0 > bb[3]);
-    for (const w of F.walls) if (near(w.bb) && facilitySegmentsCross(a, b, w.a, w.b)) return false;
-    for (const s of F.solids) {
+    let walls = F.walls, solids = F.solids;
+    if (sx1 - sx0 < FAC_BUCKET && sy1 - sy0 < FAC_BUCKET) {   // a short step: only what is in the buckets its box touches (at most four, each item once)
+        const ix = _facIndex(F), B = FAC_BUCKET, bx0 = Math.floor(sx0 / B), bx1 = Math.floor(sx1 / B), by0 = Math.floor(sy0 / B), by1 = Math.floor(sy1 / B);
+        if (bx0 === bx1 && by0 === by1) { walls = _facNear(ix.walls, ix, sx0, sy0); solids = _facNear(ix.solids, ix, sx0, sy0); }
+        else { walls = new Set(); solids = new Set(); for (let by = by0; by <= by1; by++) for (let bx = bx0; bx <= bx1; bx++) { for (const w of ix.walls.get(ix.key(bx, by)) || _FAC_NONE) walls.add(w); for (const s of ix.solids.get(ix.key(bx, by)) || _FAC_NONE) solids.add(s); } }
+    }
+    for (const w of walls) if (near(w.bb) && facilitySegmentsCross(a, b, w.a, w.b)) return false;
+    for (const s of solids) {
         if (!near(s.bb)) continue;
         if (s.shape === "circle") { if (_facSegPointDist(a, b, s.at[0], s.at[1]) < s.r) return false; }
         else for (let i = 0; i < s.poly.length; i++) if (facilitySegmentsCross(a, b, s.poly[i], s.poly[(i + 1) % s.poly.length])) return false;

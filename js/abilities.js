@@ -554,7 +554,7 @@ function workerTick(pred) {
     if (pred.className !== 'worker' || pred.dead) return false;
 
     // Workers are support, not soldiers — a hurt one runs rather than trades.
-    if (pred.health < pred.maxHealth * 0.45) {
+    if (pred.health < pred.maxHealth * 0.45 && (typeof predatorMayRetreat !== 'function' || predatorMayRetreat(pred))) {
         pred.state = 'retreat';
         return false;
     }

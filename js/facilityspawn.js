@@ -76,7 +76,7 @@ function facilitySpawnTick() {
     if (facilityCreatures().length < FP_SPAWN.cap) facilitySpawnCreature();
 }
 
-// where a creature in the facility wanders to next: a spot of its home room in sight of it, 3 to 9 tiles off (the nearest floor of the room when it is not in it)
+// where a creature in the facility wanders to next: a spot of its home room in sight of it, 3 to 9 tiles off (or, shut in by props with none in sight, one it can walk to by the route; the nearest floor of the room when it is not in it)
 function facilityWanderTarget(a) {
     const home = a.homeRoom || FP_SPAWN.room, cells = _fp ? _fsArenaCells() : []; if (!cells.length || home !== FP_SPAWN.room) return { x: a.x, y: a.y };
     for (let i = 0; i < 24; i++) {
@@ -84,7 +84,10 @@ function facilityWanderTarget(a) {
         if (d < FP_SPAWN.wander[0] || d > FP_SPAWN.wander[1]) continue; if (typeof _fpLos === "function" && !_fpLos(a.x, a.y, c[0], c[1])) continue;
         return { x: c[0], y: c[1] };
     }
-    // none in the band in sight: the nearest spot it can see, else it stays where it is
+    // none in sight (a pocket between the props): a spot of the arena a little further off that it can walk to by the route (predator.js walks a wander target by facilitySteer)
+    { const cm = typeof _fpComps === "function" ? _fpComps() : null, here = _fpNearestCell(a.x, a.y), hk = here ? here[0] + "," + here[1] : null;
+      for (let i = 0; i < 200 && cm && hk; i++) { const c = cells[Math.floor(Math.random() * cells.length)], d = Math.hypot(c[0] - a.x, c[1] - a.y); if (d < FP_SPAWN.wander[0] || d > FP_SPAWN.wander[1] + 6) continue; if (cm.get(c[0] + "," + c[1]) !== cm.get(hk)) continue; return { x: c[0], y: c[1] }; } }
+    // none at all: the nearest spot it can see, else it stays where it is
     let best = null, bd = 1e9; for (const c of cells) { const d = Math.hypot(c[0] - a.x, c[1] - a.y); if (d > 1 && d < bd && (typeof _fpLos !== "function" || _fpLos(a.x, a.y, c[0], c[1]))) { bd = d; best = c; } }
     return best ? { x: best[0], y: best[1] } : { x: a.x, y: a.y };
 }

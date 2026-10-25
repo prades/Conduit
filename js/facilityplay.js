@@ -64,9 +64,21 @@ function _fpEdgeOk(ax, ay, bx, by) {
     if (v === undefined) { v = _fpLos(ax, ay, bx, by); _fp.edges.set(k, v); }   // sampled, so a diagonal cannot slip through a wall's corner
     return v;
 }
+// Which stretch of floor each cell is part of (the cells that can walk to one another): labelled once, the first time a route is asked for. A route between two stretches is refused at once instead of
+// by searching the whole of one for a way into the other (the nest area is one stretch, the catwalks another).
+function _fpComps() {
+    if (_fp.comp) return _fp.comp;
+    const comp = new Map(); let n = 0;
+    for (const [k, c] of _fp.cellsP) {
+        if (comp.has(k)) continue; n++; comp.set(k, n); const q = [c];
+        while (q.length) { const [x, y] = q.pop(); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nk = (x + dx) + "," + (y + dy); if (comp.has(nk) || !_fpEdgeOk(x, y, x + dx, y + dy)) continue; comp.set(nk, n); q.push([x + dx, y + dy]); } }
+    }
+    return (_fp.comp = comp);
+}
 // The cells from (x0,y0) to (x1,y1), or null if there is no way.
 function _fpCellPath(sx, sy, gx, gy) {
     const key = sx + "," + sy + ">" + gx + "," + gy; if (_fp.paths.has(key)) return _fp.paths.get(key);
+    { const cm = _fpComps(); if (cm.get(sx + "," + sy) !== cm.get(gx + "," + gy)) { if (_fp.paths.size > 600) _fp.paths.clear(); _fp.paths.set(key, null); return null; } }
     const heap = [[0, sx, sy]], g = new Map([[sx + "," + sy, 0]]), from = new Map(), done = new Set();
     const push = (n) => { heap.push(n); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
     const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { let l = 2 * i + 1, r = l + 1, m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
@@ -94,14 +106,31 @@ function facilityPath(x0, y0, x1, y1) {
     while (i < pts.length - 1) { let j = pts.length - 1; while (j > i + 1 && !_fpLos(pts[i][0], pts[i][1], pts[j][0], pts[j][1])) j--; out.push(pts[j]); i = j; }
     return out;
 }
-// Where should a mover head, to get to (tx,ty)? The target itself if it can see it, else the next waypoint round the wall. The route is replanned when the goal moves to another
-// cell, when it is 40 frames old, or when the next waypoint has dropped out of sight; waypoints are dropped as the mover reaches them.
+// Where should a mover head, to get to (tx,ty)? The target itself if it can see it, else the next waypoint round the wall.
+// A route is KEPT: it is replanned only when it no longer works (the next waypoint has dropped out of sight, the goal has moved FP_NAV.goalTol tiles (more when it is far off) from where it was planned, or it is FP_NAV.maxAge frames old),
+// never merely because the goal moved to the next cell (a squad following you replanned on every step you took: ten routes at once, many times a second) and never for a goal that stands still (two routes of
+// about the same length are a coin toss, and a unit that flips between them walks neither). A goal that moves a little is followed by turning the route's last leg to the new spot. Plans are also
+// rationed: at most FP_NAV.perFrame a frame, so a crowd that needs routes at once gets them over a few frames instead of one long one; the rest keep walking the old route, or straight on.
+const FP_NAV = { goalTol: 2.5, goalFar: 0.3, maxAge: 360, perFrame: 3, retry: 30 };   // (a goal may move 2.5 tiles, or a third of the way to it if that is more: the far ones need no exact route)
 function facilitySteer(a, tx, ty) {
     if (!_fp) return [tx, ty];
     if (_fpLos(a.x, a.y, tx, ty)) { a._fpPath = null; return [tx, ty]; }
-    const gk = Math.round(tx) + "," + Math.round(ty), f = typeof frame !== "undefined" ? frame : 0;
-    let p = a._fpPath;
-    if (!p || !p.length || a._fpGoal !== gk || f - (a._fpAt || 0) > 40 || !_fpLos(a.x, a.y, p[0][0], p[0][1])) { p = a._fpPath = facilityPath(a.x, a.y, tx, ty); a._fpGoal = gk; a._fpAt = f; }
+    const f = typeof frame !== "undefined" ? frame : 0; let p = a._fpPath;
+    let why = !p || !p.length ? 1 : 0;
+    if (!why) {
+        const g = a._fpGoalAt, moved = g ? Math.hypot(tx - g[0], ty - g[1]) : 1e9;
+        if (moved > Math.max(FP_NAV.goalTol, FP_NAV.goalFar * Math.hypot(tx - a.x, ty - a.y)) || f - (a._fpAt || 0) > FP_NAV.maxAge || !_fpLos(a.x, a.y, p[0][0], p[0][1])) why = 2;
+        else if (moved > 0.02) { const k = p.length - 1, from = k > 0 ? p[k - 1] : [a.x, a.y]; if (_fpLos(from[0], from[1], tx, ty)) p[k] = [tx, ty]; else why = 2; }   // (turn the last leg to where the goal is now)
+    }
+    if (why) {
+        if (_fp.planFrame !== f) { _fp.planFrame = f; _fp.planN = 0; }
+        if (why === 1 && a._fpFail && f - a._fpFail < FP_NAV.retry && a._fpFailGoal === Math.round(tx) + "," + Math.round(ty)) return [tx, ty];   // (no way there, found a moment ago: straight on, and not another search every frame)
+        if (_fp.planN < FP_NAV.perFrame) {
+            _fp.planN++; p = a._fpPath = facilityPath(a.x, a.y, tx, ty); a._fpGoalAt = [tx, ty]; a._fpAt = f;
+            if (!p) { a._fpFail = f; a._fpFailGoal = Math.round(tx) + "," + Math.round(ty); } else a._fpFail = 0;
+        } else if (why === 2 && p && p.length && _fpLos(a.x, a.y, p[0][0], p[0][1])) { /* rationed: on along the old route */ }
+        else return [tx, ty];   // (rationed and no route to go on with: straight on for a frame, and a plan the next)
+    }
     if (!p || !p.length) return [tx, ty];
     // a waypoint is passed only when the one after it is in sight (or the unit is on it): turning early cut the corner inside the planning margin and snagged on the wall
     while (p.length > 1) { const d = Math.hypot(p[0][0] - a.x, p[0][1] - a.y); if (d < 0.12 || (d < 0.6 && _fpLos(a.x, a.y, p[1][0], p[1][1]))) p.shift(); else break; }
@@ -122,11 +151,15 @@ function _fpGoals(a) {
 }
 function facilityReroute(a, px, py) {
     if (!_fp || !a || a.dead) return;
+    if (a.team !== "green" && typeof Predator !== "undefined" && a instanceof Predator && (a.state === "wander" || a.state === "hunt") && !a.nodeReconvertTarget && !a.pylonAggro) return;   // (a wandering or hunting creature walks the route by itself, js/predator.js: its goal is its own, not the player or the Crystal)
     const dx = a.x - px, dy = a.y - py, d = Math.hypot(dx, dy);
     if (d < 1e-4 || d > 1.5) return;
-    let best = null, bc = 0.88;
-    for (const g of _fpGoals(a)) { if (!g || !Number.isFinite(g.x)) continue; const gx = g.x - px, gy = g.y - py, gl = Math.hypot(gx, gy); if (gl < 0.6) continue; const c = (dx * gx + dy * gy) / (d * gl); if (c > bc) { bc = c; best = g; } }
-    if (!best || _fpLos(px, py, best.x, best.y)) return;
+    // The goal the step points at best. A step that points straight at a goal (within 28 degrees) with a wall in between is rerouted. A step that runs into a wall is a unit pushing at a goal it cannot walk
+    // straight to, and the AI's weave, lean or turning circle can have swung it far off the line (a hunter weaves up to 40 degrees each way): the goal it points nearest to (within 70) is the one it means.
+    let best = null, bc = 0, g0 = _fpGoals(a);
+    for (const g of g0) { if (!g || !Number.isFinite(g.x)) continue; const gx = g.x - px, gy = g.y - py, gl = Math.hypot(gx, gy); if (gl < 0.6) continue; const c = (dx * gx + dy * gy) / (d * gl); if (c > bc) { bc = c; best = g; } }
+    if (!best || bc < 0.34 || _fpLos(px, py, best.x, best.y)) return;
+    if (bc < 0.88 && (a._fpStuck || 0) < 3 && facilityCanStep(px, py, a.x, a.y, _fp.F)) return;   // (a free step that does not point at a goal is a flee, a lunge or a weave: left as the AI made it)
     const sx = a.x, sy = a.y; a.x = px; a.y = py; const w = facilitySteer(a, best.x, best.y); a.x = sx; a.y = sy;
     const wx = w[0] - px, wy = w[1] - py, wl = Math.hypot(wx, wy); if (wl < 1e-6) return;
     a.x = px + wx / wl * d; a.y = py + wy / wl * d;
@@ -142,7 +175,7 @@ function _fpUnstick(a, px, py, intended) {
     const moved = Math.hypot(a.x - px, a.y - py);
     if (intended > 0.004 && moved < intended * 0.25) {
         a._fpStuck = (a._fpStuck || 0) + 1;
-        if (a._fpStuck === 40) { a._fpPath = null; a._fpAt = 0; }
+        if (a._fpStuck === 40) { a._fpPath = null; a._fpAt = 0; a._fpGoalAt = null; }
         if (a._fpStuck >= 100) { const c = _fpNearestCell(a.x, a.y); if (c) { a.x = c[0]; a.y = c[1]; } a._fpStuck = 0; a._fpPath = null; }
     } else if (moved > intended * 0.6) a._fpStuck = 0;
 }

@@ -5,6 +5,12 @@
 // helpers.js) when it is loaded, every actor otherwise. Each predator scans
 // its neighbourhood a few times a step; over every actor, that was the
 // biggest cost of a crowded night.
+// May it fall back to heal? In the strip, always (the retreat state's own rules). The facility has no nests, so a wounded creature there has nowhere to go: it stays in the fight (or in its wandering),
+// where running from its attacker in a straight line only pinned it to the nearest wall, and a state that nothing ever ended left it standing in the open for good.
+function predatorMayRetreat(actor) {
+    return !(typeof facilityPlay !== "undefined" && facilityPlay) || (typeof findNearestHealingNest === "function" && !!findNearestHealingNest(actor));
+}
+
 function _predNear(x, r) { return typeof unitsNear === "function" ? unitsNear(x, r) : actors; }
 
 class Predator {
@@ -140,7 +146,8 @@ class Predator {
         const distCrystal=Math.hypot(dxC,dyC);
         const attackScore = this.currentTarget&&!this.currentTarget.dead
             ? 1-Math.min(1,Math.hypot(this.currentTarget.x-this.x,this.currentTarget.y-this.y)/2) : 0;
-        const retreatScore = (1-hr)*0.9;
+        // A wounded one runs to a nest to heal. The facility has none, so there it stands and fights (predatorMayRetreat, above).
+        const retreatScore = predatorMayRetreat(this) ? (1-hr)*0.9 : 0;
         const huntScore    = 0.4+(1-Math.min(1,distCrystal/6))*0.2;
         return { attack:attackScore, retreat:retreatScore, hunt:huntScore, wander:0.1 };
     }
@@ -166,7 +173,7 @@ class Predator {
             this.currentTarget = null; this.state = "wander";
             if (!this._blindDir || frame % 30 === 0) { const a = Math.random() * Math.PI * 2; this._blindDir = { x: Math.cos(a), y: Math.sin(a) }; }
             this.x += this._blindDir.x * this.moveSpeed * 0.5;
-            this.y = Math.max(0, Math.min(3, this.y + this._blindDir.y * this.moveSpeed * 0.5));
+            this.y = typeof facilityPlay !== "undefined" && facilityPlay ? this.y + this._blindDir.y * this.moveSpeed * 0.5 : Math.max(0, Math.min(3, this.y + this._blindDir.y * this.moveSpeed * 0.5));   // (the facility is not a strip)
             return;
         }
 
@@ -229,12 +236,17 @@ class Predator {
             // Wanderers (higher-zone predators unaffected by the current alarm) must never
             // be promoted to "hunt" by the utility AI — they should stay ambient.
             if (this.isWanderer && k==="hunt") continue;
+            // The facility's calm creatures (no alarm, not provoked) are not promoted either: the CALM rule below put them back to wandering in the same frame, after the wander had been skipped, so they stood
+            // exactly where they were spawned for good (the arena's creatures never moved).
+            if (k==="hunt" && typeof facilityPlay !== "undefined" && facilityPlay && !alertActive && !this.provoked && this.team !== "green") continue;
             if (utils[k]>bestScore+0.15) { bestState=k; bestScore=utils[k]; }
         }
         if (this.state!==bestState) {
             if (this.state==="attack") this.moveSpeed=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
             this.state=bestState;
         }
+        // (a worker's own rule, or an older state, can leave a creature retreating where there is no nest: it goes back to what it was doing)
+        if (this.state==="retreat" && !predatorMayRetreat(this)) { this.state = this.provoked || alertActive ? "hunt" : "wander"; this.isRetreating = false; }
 
         // ── NODE RECONVERT — high-priority: reclaim any player-captured node nearby ──
         if (this.nodeReconvertTarget && !this.nodeReconvertTarget.captured) {
@@ -329,7 +341,10 @@ class Predator {
                 this.wanderTarget={ x:this.x+Math.cos(angle)*radius, y:Math.max(0,Math.min(3,this.y+Math.sin(angle)*radius)) };
                 this.wanderTimer=90+Math.random()*120;
             }
-            const dx=this.wanderTarget.x-this.x, dy=this.wanderTarget.y-this.y;
+            let dx=this.wanderTarget.x-this.x, dy=this.wanderTarget.y-this.y;
+            const distT=Math.hypot(dx,dy);   // (to the spot itself)
+            // The facility: a spot the walls hide is walked to by the route (the next waypoint), not into the wall
+            if (distT>0.3 && typeof facilityPlay !== "undefined" && facilityPlay && typeof facilitySteer === "function") { const w=facilitySteer(this, this.wanderTarget.x, this.wanderTarget.y); dx=w[0]-this.x; dy=w[1]-this.y; }
             const dist=Math.hypot(dx,dy);
             if (dist>0.001) {
                 const tx=dx/dist, ty=dy/dist, ts=0.12;
@@ -337,7 +352,8 @@ class Predator {
                 const len=Math.hypot(this.dirX,this.dirY)||1;
                 this.dirX/=len; this.dirY/=len;
             }
-            if (dist>0.2) { const sp=this.moveSpeed*0.7; this.x+=(dx/dist)*sp; this.y+=(dy/dist)*sp; }
+            if (distT>0.2) { if (dist>0.001) { const sp=this.moveSpeed*0.7; this.x+=(dx/dist)*sp; this.y+=(dy/dist)*sp; } }
+            else if (typeof facilityPlay !== "undefined" && facilityPlay) { if (this.wanderTimer>60) this.wanderTimer=20+Math.random()*40; }   // (arrived: a pause of 20 to 60 frames ONCE, then the next spot; set every frame it never ran out, and the creature stood at the first spot it reached for good)
             else this.wanderTimer=20+Math.random()*40;
             this.wanderTimer--;
         }
@@ -405,11 +421,14 @@ class Predator {
             const dx=crystal.x-this.x, dy=crystal.y-this.y;
             const dist=Math.sqrt(dx*dx+dy*dy);
             if (dist>0.8) {
-                const crystalAngle = Math.atan2(dy, dx);
+                // The facility has walls: it heads for the next waypoint of the route to the Crystal (js/facilityplay.js facilitySteer) and weaves only where it can see the Crystal, and less (a weave
+                // swung it into the wall it was walking along, and the reroute could not tell where it was going).
+                const _fpW = typeof facilityPlay !== "undefined" && facilityPlay && typeof facilitySteer === "function" ? facilitySteer(this, crystal.x, crystal.y) : null;
+                const crystalAngle = _fpW ? Math.atan2(_fpW[1]-this.y, _fpW[0]-this.x) : Math.atan2(dy, dx);
                 // Wobble frequency varies per-predator via animationPhase and moveSpeed
                 // so scouts dart faster/wider than tanks
                 const wobbleFreq = 0.005 + this.moveSpeed * 0.25;
-                const wobbleAmt  = Math.sin(this.animationPhase + frame * wobbleFreq) * 0.7;
+                const wobbleAmt  = Math.sin(this.animationPhase + frame * wobbleFreq) * (_fpW ? (this._fpPath ? 0 : 0.3) : 0.7);
                 const wobbleFade = Math.min(1, dist / 4); // reduce wobble when nearly at crystal
                 const moveAngle  = crystalAngle + wobbleAmt * wobbleFade;
                 // Smooth steering — avoids snapping, feels like a creature making decisions
@@ -565,8 +584,10 @@ class Predator {
                 this.y += (sdy / sd) * push;
             }
         });
+        if (!(typeof facilityPlay !== "undefined" && facilityPlay)) {   // (the facility is not a strip: this clamp pinned every creature's y to its row, so it could only ever walk east and west)
         this.y = Math.max(0, Math.min(3, this.y));
         this.x = Math.max(0, this.x);
+        }
 
         // A FORCE WALL across the tunnel holds it on its own side (js/modules.js).
         if (typeof forceWallBlock === "function") forceWallBlock(this);
