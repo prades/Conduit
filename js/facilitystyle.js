@@ -79,7 +79,8 @@ function _fpDial(x, y, r, f, seed, col) {   // a big round gauge: bezel, face, t
     const a = 3.6 + 1.2 + Math.sin(f * 0.03 + seed) * 0.9; ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * r * 0.8, y + Math.sin(a) * r * 0.8); ctx.stroke(); ctx.lineCap = "butt";
     ctx.fillStyle = FP_PAL.ink; ctx.beginPath(); ctx.arc(x, y, 2, 0, 6.2832); ctx.fill();
 }
-function _fpGlow(x, y, r, col, a) { ctx.globalCompositeOperation = "lighter"; const g = ctx.createRadialGradient(x, y, 1, x, y, r); g.addColorStop(0, _fpRgba(col, a)); g.addColorStop(1, _fpRgba(col, 0)); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); ctx.globalCompositeOperation = "source-over"; }
+function _fpGlow(x, y, r, col, a) { if (typeof gfxLow !== "undefined" && gfxLow) return;   // (LOW graphics: no soft glows)
+    ctx.globalCompositeOperation = "lighter"; const g = ctx.createRadialGradient(x, y, 1, x, y, r); g.addColorStop(0, _fpRgba(col, a)); g.addColorStop(1, _fpRgba(col, 0)); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); ctx.globalCompositeOperation = "source-over"; }
 function _fpCrystal(x, y, h, w, col, f, seed) {   // a faceted crystal shard standing on (x, y): the accent that marks crystal energy
     const pul = 0.75 + 0.25 * Math.sin(f * 0.06 + seed);
     ctx.fillStyle = _fpShade(col, 0.62); ctx.beginPath(); ctx.moveTo(x, y - h); ctx.lineTo(x + w, y - h * 0.45); ctx.lineTo(x, y); ctx.closePath(); ctx.fill();

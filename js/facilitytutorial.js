@@ -98,6 +98,7 @@ function facilityTutorialTick() {
     if (typeof facilityGearTick === "function") facilityGearTick();
     if (typeof facilitySaveTick === "function") facilitySaveTick();
     if (typeof facilitySpawnTick === "function") facilitySpawnTick();
+    if (typeof facilityPerfTick === "function") facilityPerfTick();
     const T = _fp && _fp.tut; if (!T || T.said || !T.blackout || (typeof frame !== "undefined" ? frame : 0) < 60) return;
     T.said = true;
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {

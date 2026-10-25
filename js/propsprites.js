@@ -27,6 +27,14 @@ function _psSil(fam, img) {
     if (_psSils[fam]) return _psSils[fam];
     try { const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; const g = c.getContext("2d"); g.drawImage(img, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = PS.dark; g.fillRect(0, 0, c.width, c.height); return (_psSils[fam] = c); } catch (e) { return (_psSils[fam] = img); }
 }
+// A SLOW DEVICE: if the game keeps running under 28 frames a second (three readings in a row, a second and a half apart, once it has settled), the graphics go to LOW for the session (no contact shadows,
+// no soft glows: the settings window's GRAPHICS switch does the same by hand). It never goes back by itself, so it cannot flicker between the two.
+function facilityPerfTick() {
+    if (typeof gfxLow === "undefined" || gfxLow || typeof _perf === "undefined" || !_fp) return;
+    const f = typeof frame !== "undefined" ? frame : 0; if (f < 420 || f % 90 !== 0) return;
+    _fp.slow = (_fp.slow || 0) + (_perf.fps > 0 && _perf.fps < 28 ? 1 : -(_fp.slow || 0));
+    if (_fp.slow >= 3) { gfxLow = true; if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 150, text: "SLOW DEVICE \u2014 GRAPHICS SET TO LOW", color: "#ffb347", life: 240, vy: -0.04, size: 14 }); }
+}
 // start loading every sheet (the facility opens: so a prop is never seen in its flat drawing for a moment before its sprite arrives)
 function facilityPropsPreload() { if (typeof PROP_ATLAS !== "undefined") for (const fam of Object.keys(PROP_ATLAS)) _psImg(fam); }
 function _psCell(fam, name) { const A = typeof PROP_ATLAS !== "undefined" ? PROP_ATLAS[fam] : null; return A && A.cells[name] ? A.cells[name] : null; }
@@ -136,7 +144,7 @@ function _psShadowStamp() {
         g.save(); g.translate(0, 32); g.scale(1, 0.5); g.translate(0, -32); g.fillStyle = gr; g.fillRect(0, -32, 128, 128); g.restore(); _psShadowC = c; } catch (e) { _psShadowC = false; }
     return _psShadowC || null;
 }
-function _psShadow(it) { const st = _psShadowStamp(); if (!st) return; const p = _fpP(it.x, it.y, 0), a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * 0.9; ctx.drawImage(st, p[0] - 66, p[1] - 33, 132, 66); ctx.globalAlpha = a0; }
+function _psShadow(it) { if (typeof gfxLow !== "undefined" && gfxLow) return; /* (LOW graphics: no contact shadows) */ const st = _psShadowStamp(); if (!st) return; const p = _fpP(it.x, it.y, 0), a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * 0.9; ctx.drawImage(st, p[0] - 66, p[1] - 33, 132, 66); ctx.globalAlpha = a0; }
 
 // draw one cell of a prop from its sprite (the start of the prop drawing, js/facilityplay.js _fpDrawProp): true when it drew it (the floor under it first: a solid tile is not drawn by itself), false to let the flat drawing do it
 function facilitySpriteDraw(it) {
