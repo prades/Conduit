@@ -51,6 +51,7 @@ Every door is a cartoony steel access door (`_fpStyleDoor`): two chunky steel pa
 
 Lighting is PER ITEM (js/facilitystyle.js), in each item's own place in the depth order, so a wall or prop in front is never darkened by a room behind it (the earlier screen-wide dark layer bled into rooms in front):
 - an unlit room's walls, glass, doors, props, posts, fixtures and decor are drawn through a dimmed pen (`_fpDimCtx`): a stand-in for the canvas context, built once, that darkens every colour toward the night blue (82% dark), so each item keeps its exact shape;
+- a door is lit from both of its rooms (so it can be found from either side), but its HEADER, the wall over it, is drawn with the wall's light (`_fpWithLight`): the door's frame is bright and the wall above it is as dark as the wall beside it;
 - a wall takes the light of the room that shows its FACE (the room on its camera-facing side), not the room that owns the edge: the lobby's south wall is lit or dark with the hallway;
 - floor tiles are darkened by their own tile level.
 

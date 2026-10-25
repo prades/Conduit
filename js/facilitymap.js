@@ -718,7 +718,7 @@ const FACILITY_MAP = {
         { id: "deck_window_arena", a: [340, 760], b: [340, 950], rooms: ["observation_deck", "arena"] },   // the observation deck looks down into the arena through glass (solid to movement like every window)
         { id: "show_window_north", a: [930, 275], b: [1090, 275], rooms: ["show_room"] },
         { id: "show_window_east", a: [1090, 275], b: [1090, 600], rooms: ["show_room"] },
-        { id: "show_window_west", a: [930, 600], b: [930, 410], rooms: ["show_room"] },   // the hallway side only: its north part is the security room's wall
+        { id: "show_window_west", a: [930, 600], b: [930, 410], rooms: ["show_room", "lab_hallway"] },   // the hallway side only (its north part is the security room's wall). Glass for BOTH rooms' pieces, as the lab's windows are: the hallway's own piece of this edge was an opaque wall standing in front of the glass (and its thick top ran over the show room's floor)
         { id: "lab_window_west_lower", a: [430, 605], b: [430, 640], rooms: ["experiment_lab", "lab_hallway"] },
     ],
 

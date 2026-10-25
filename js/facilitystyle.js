@@ -241,12 +241,15 @@ function _fpStyleDoor(it) {
     edge(0, H + 4, 1, H + 4, FP_EDGE.light, 1.4); edge(0, H - 8, 1, H - 8, "rgba(10,30,40,0.5)", 1.6);
     { const on = o > 0.5, sc = on ? acc : A.amber; edge(0.06, H - 2, 0.94, H - 2, _fpRgba(sc, 0.25), 4.5); edge(0.06, H - 2, 0.94, H - 2, sc, 1.6); }   // the status strip: the room's colour when open, amber shut
     const lamp = P(0.5, H - 2), on = o > 0.5; ctx.fillStyle = on ? acc : A.amber; ctx.beginPath(); ctx.arc(lamp[0], lamp[1], 3.2, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.beginPath(); ctx.arc(lamp[0] - 0.9, lamp[1] - 1, 1.1, 0, 6.2832); ctx.fill();
-    // the HEADER: the wall continues above the door, from its lintel to the top of the wall (the same bands as the wall beside it)
-    { const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
-      const lit = nx > ny, zb = H + 4, zt = FP_WALL_H, capH = Math.min(8, zt - zb);
-      if (zt > zb) { _fpFlat([P(-0.02, zb), P(1.02, zb), P(1.02, zt - capH), P(-0.02, zt - capH)], lit ? A.wallLit : A.wallDark); _fpFlat([P(-0.02, zt - capH), P(1.02, zt - capH), P(1.02, zt), P(-0.02, zt)], A.cap);
-        _fpWallTop(it.a[0], it.a[1], it.b[0], it.b[1], nx, ny, zt, it.out);
-        edge(0, zt, 1, zt, FP_EDGE.light, 1.5); edge(0, zt - capH, 1, zt - capH, "rgba(8,26,34,0.3)", 1.3); } }
+    // the HEADER: the wall continues above the door, from its lintel to the top of the wall (the same bands as the wall beside it). It is the WALL's, so it takes the wall's light (the room that shows its face, and the pool an open door throws on it), not the door's:
+    // the door is lit from both sides so it can be found, but a bright header over a dark wall is not joined to the wall beside it. In a thin wall (glass) it has no thick top, as the glass beside it has a rail and nothing more.
+    _fpWithLight(_fpWallLightAt(it.lroom, it.x, it.y), () => {
+        const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+        const lit = nx > ny, zb = H + 4, zt = FP_WALL_H, capH = Math.min(8, zt - zb);
+        if (zt > zb) { _fpFlat([P(-0.02, zb), P(1.02, zb), P(1.02, zt - capH), P(-0.02, zt - capH)], lit ? A.wallLit : A.wallDark); _fpFlat([P(-0.02, zt - capH), P(1.02, zt - capH), P(1.02, zt), P(-0.02, zt)], A.cap);
+            if (!it.thin) _fpWallTop(it.a[0], it.a[1], it.b[0], it.b[1], nx, ny, zt, it.out);
+            edge(0, zt, 1, zt, FP_EDGE.light, 1.5); edge(0, zt - capH, 1, zt - capH, "rgba(8,26,34,0.3)", 1.3); }
+    });
     ctx.lineJoin = "miter"; ctx.lineCap = "butt";
 }
 
@@ -526,6 +529,20 @@ function _fpItemLight(it) {
     if (it.fp === "pickup" || it.fp === "station" || it.fp === "spot") return 0.8;   // (a supply case is lit by its own beacon: it can be found in the dark)
     const lv = _fpItemRoomLight(it); if (lv > 0.98 || it.fp === "rig" || it.fp === "rigpad" || it.fp === "fill") return lv;
     const k = _fpLightKey(it.lroom || it.room || (it.rooms && it.rooms[0])); return Math.max(lv, _fpPoolAt(it.x, it.y, k), _fpExtraLight(it.x, it.y, it.rooms ? it.rooms.map(_fpLightKey) : [k]));   // (near a stairway or an open door, things share its light; in a blackout the monitor lamp and the emergency lights add theirs)
+}
+// the light on the wall at (x, y) that shows the face of room `roomId` (what a wall piece gets from _fpItemLight: the room's level, or the pool of an open door near it)
+function _fpWallLightAt(roomId, x, y) {
+    if (!roomId || !_fp || !_fp.light) return undefined;
+    const lv = _fpRoomLight(roomId); if (lv > 0.98) return lv;
+    const k = _fpLightKey(roomId); return Math.max(lv, _fpPoolAt(x, y, k), _fpExtraLight(x, y, [k]));
+}
+// draw `fn` with the light of something other than the item being drawn: the pen darkens for light level `lv` exactly as drawFacilityItem's does for an item (js/facilityplay.js); an undefined level draws with the item's own
+function _fpWithLight(lv, fn) {
+    const cur = ctx, wrapped = !!_fpDimW && cur === _fpDimW, real = wrapped ? _fpDimFor : cur;
+    if (lv === undefined || typeof CanvasRenderingContext2D === "undefined" || !(real instanceof CanvasRenderingContext2D)) { fn(); return; }
+    const k0 = wrapped ? cur._k : 1;
+    ctx = lv < 0.98 ? _fpDimCtx(real, 1 - _fpDarkAmt() * (1 - lv)) : real;
+    try { fn(); } finally { ctx = cur; if (wrapped) cur._k = k0; }
 }
 function _fpItemRoomLight(it) {
     if (it.fp === "door") return Math.max(...(it.rooms || []).map(_fpRoomLight), 0);
