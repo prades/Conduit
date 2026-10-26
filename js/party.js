@@ -147,7 +147,7 @@ function partyBarClick(ev) {
     const hit = _partyTapped(ev); if (!hit) return;
     const f = hit.f;
     if (hit.info) { if (f && typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
-    if (!f) { if (typeof ccOpen === "function") ccOpen("roster"); return; }   // an open slot: the roster
+    if (!f) { if (typeof ccShowCandidates === "function") ccShowCandidates(); else if (typeof ccOpen === "function") ccOpen("roster"); return; }   // an open slot: the roster, showing the followers that could fill it
     if (typeof ccToggle === "function") ccToggle(f);
     partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
 }
@@ -178,9 +178,10 @@ function partyBarRender(force) {
     if (!on) return;
     partySlotsUpdate(partyBarBuild(root));
 }
-// THE SQUAD BOX (the Command Center's roster, the facility): a tap on a card selects that follower (the side panel then offers REMOVE FROM SQUAD); the i is its INFO; an open slot says how to fill it, and does nothing
+// THE SQUAD BOX (the Command Center's roster, the facility): a tap on a card selects that follower (the side panel then offers REMOVE FROM SQUAD); the i is its INFO; an open slot lists the followers that could fill it (the roster's NOT IN SQUAD)
 function partyBoxClick(ev) {
-    const hit = _partyTapped(ev); if (!hit || !hit.f) return;
+    const hit = _partyTapped(ev); if (!hit) return;
+    if (!hit.f) { if (typeof ccShowCandidates === "function") ccShowCandidates(); return; }   // an open slot: the roster shows the followers that could fill it
     if (hit.info) { if (typeof unitInfoOpen === "function") unitInfoOpen(hit.f); return; }
     if (typeof ccToggle === "function") ccToggle(hit.f);
     if (typeof ccRender === "function") ccRender();
@@ -197,16 +198,19 @@ function partyTick() { partySync(false); partyBarRender(false); }
 // ASKED: "when you click the creature on the roster, it should show on the side add to party or add to squad [...] And here you can disband them." A follower is in the squad or it holds a room: ADD calls the followers that hold a room back into the
 // squad while it has room, REMOVE posts them in the rooms they are in, SWAP does both at once (the card keeps its slot), DISBAND removes the whole squad. Each says what it did, and the bars follow at once.
 function _partyFollower(f) { return !!f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green"; }
+// The followers a button has dealt with LEAVE THE SELECTION (REPORTED: "whenever I try to add a different follower to the squad, it ends up adding the same follower that was previously on the squad back": the one just removed stayed selected, the next tap
+// was added to it, and ADD 1 TO SQUAD took the first of the two). The panel moves on to whoever is tapped next, and the orders in the world go to the squad again, not to a follower that has just been taken out of it.
+function _partyDone(list) { if (typeof selectedUnits !== "undefined") for (const f of list) selectedUnits.delete(f); }
 function partyAdd(units) {
     const list = (units || []).filter(f => _partyFollower(f) && !partyIsMember(f)); if (!list.length) return 0;
-    let n = 0, refused = 0; for (const f of list) { if (partyCall(f, true)) n++; else refused++; }
+    let n = 0, refused = 0; const joined = []; for (const f of list) { if (partyCall(f, true)) { n++; joined.push(f); } else refused++; } _partyDone(joined);
     if (n) _partySay("ADDED TO THE SQUAD · " + partyMembers().length + " OF " + PARTY.max, "#19e6c1");
     if (refused) _partySay("SQUAD FULL · " + PARTY.max + " OF " + PARTY.max, "#ff8a6a");
     partyBarRender(true); return n;
 }
 function partyRemove(units) {
-    const list = (units || []).filter(partyIsMember); let n = 0; const rooms = new Set();
-    for (const f of list) { const room = partyRoomOf(f); if (partyPost(f, room, true)) { n++; rooms.add(room); } }
+    const list = (units || []).filter(partyIsMember); let n = 0; const rooms = new Set(), done = [];
+    for (const f of list) { const room = partyRoomOf(f); if (partyPost(f, room, true)) { n++; rooms.add(room); done.push(f); } } _partyDone(done);
     if (n) _partySay("REMOVED FROM THE SQUAD · " + (rooms.size === 1 ? "HOLDING THE " + partyRoomName([...rooms][0]).toUpperCase() : n + " HOLD THEIR ROOMS"), "#8fe3ff");
     partyBarRender(true); return n;
 }
@@ -215,11 +219,11 @@ function partySwap(out, inn) {
     if (!partyIsMember(out) || !_partyFollower(inn) || partyIsMember(inn)) return false;
     if (!partyPost(out, partyRoomOf(out), true)) return false;
     if (!partyCall(inn, true)) { out.post = null; out.stance = "follow"; out._patrol = null; partySync(false); return false; }   // (cannot happen: a slot has just been freed)
-    _partySay("SWAPPED IN · " + (typeof unitTypeLabel === "function" ? unitTypeLabel(inn) : "FOLLOWER"), "#19e6c1"); partyBarRender(true); return true;
+    _partyDone([out, inn]); _partySay("SWAPPED IN · " + (typeof unitTypeLabel === "function" ? unitTypeLabel(inn) : "FOLLOWER"), "#19e6c1"); partyBarRender(true); return true;
 }
 function partyDisband() {
     const mem = partyMembers(); if (!mem.length) return 0;
-    let n = 0; const rooms = new Set(); for (const f of mem) { const room = partyRoomOf(f); if (partyPost(f, room, true)) { n++; rooms.add(room); } }
+    let n = 0; const rooms = new Set(); for (const f of mem) { const room = partyRoomOf(f); if (partyPost(f, room, true)) { n++; rooms.add(room); } } _partyDone(mem);
     _partySay("SQUAD DISBANDED · " + n + " HOLD " + (rooms.size === 1 ? "THE " + partyRoomName([...rooms][0]).toUpperCase() : rooms.size + " ROOMS"), "#ffe733");
     partyBarRender(true); return n;
 }

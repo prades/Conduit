@@ -49,7 +49,7 @@ function ccToggle(a) { if (!a) return false; if (selectedUnits.has(a)) { selecte
 function ccSetSelection(list) { selectedUnits = new Set((list || []).filter(Boolean)); }
 function ccClearSelection() { selectedUnits.clear(); }
 
-// Everyone on your side, as the roster shows them (followers, then clones). `filter` narrows: { element, role, duty, kind }.
+// Everyone on your side, as the roster shows them (followers, then clones). `filter` narrows: { element, role, duty, kind, squad } (squad: "in" or "out" of the squad of three, the facility's).
 function ccUnits(filter) {
     const f = filter || {};
     const fol = (typeof followers !== "undefined" ? followers : []).filter(a => a && !a.dead && !a.isClone && a.team === "green");
@@ -58,6 +58,7 @@ function ccUnits(filter) {
     if (f.element) list = list.filter(a => a.element === f.element);
     if (f.role) list = list.filter(a => !a.isClone && a.duty !== "worker" && a.role === f.role);
     if (f.duty) list = list.filter(a => (a.duty === "worker") === (f.duty === "worker"));
+    if (f.squad) list = list.filter(a => !a.isClone && (f.squad === "in") === (typeof partyIsMember === "function" && partyIsMember(a)));
     return list;
 }
 function ccRow(a) {
@@ -161,7 +162,7 @@ function drawSelectedUnitRings() {
 let _ccSideSig = "", _ccSqSigS = "";   // the side panel and the squad strip are redrawn only when what they show changes: a redraw every tick lost taps and sent the panel back to its top
 let _ccPageSig = "";   // the analytics page is redrawn only when what it shows changes (a click is never lost to a redraw)
 let ccSquadsOpen = false, _ccDD = null, _ccSqWinSig = "";   // the SQUADS window; the one settings drop-down that is open in the side panel
-let ccOpenTab = null, ccFilter = { element: null, role: null, duty: null, kind: null }, ccRerollArmed = false, _ccTimer = 0;
+let ccOpenTab = null, ccFilter = { element: null, role: null, duty: null, kind: null, squad: null }, ccRerollArmed = false, _ccTimer = 0;
 const _ccCards = new Map();   // unit → its card element (updated in place, so a click is never lost to a redraw)
 
 function _ccEl(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -180,6 +181,7 @@ function ccOpen(tab) {
 }
 function ccClose() {
     buildOrderPickerClose();
+    ccFilter.squad = null;   // (the list of who could fill an open slot is put away with the roster: the next ROSTER shows everyone)
     ccOpenTab = null; ccRerollArmed = false; ccSquadsOpen = false; _ccDD = null; clearInterval(_ccTimer); _ccTimer = 0;
     const root = document.getElementById("ccRoot"); if (root) root.classList.remove("open");
     if (document.body) document.body.classList.remove("ccOpen");
@@ -229,6 +231,11 @@ function ccBuildFrame() {
 
 // the facility: the squad is THE squad (js/party.js), there are no roster squads (A, B, C) and nobody works
 function _ccParty() { return typeof partyOn === "function" && partyOn(); }
+// An OPEN SLOT (in the roster's squad box, or on the bar over the dock) lists the followers that could fill it: the roster, filtered to NOT IN SQUAD, with nothing selected, so that the next tap picks exactly one.
+function ccShowCandidates() {
+    ccClearSelection(); ccFilter = { element: null, role: null, duty: null, kind: null, squad: "out" };
+    if (ccOpenTab !== "roster") ccOpen("roster"); else ccRender();
+}
 
 // A chip / button factory for the panels.
 function _ccBtn(label, col, on, fn, cls, sub) {
@@ -271,9 +278,10 @@ function _ccDrawFilters(box) {
     box.textContent = "";
     const unlocked = typeof unlockedElements !== "undefined" ? unlockedElements : new Set();
     const add = (label, col, on, fn) => box.appendChild(_ccBtn(label, col, on, fn, "small"));
-    add("ALL", "#19e6c1", !ccFilter.element && !ccFilter.role && !ccFilter.duty && !ccFilter.kind, () => { ccFilter = { element: null, role: null, duty: null, kind: null }; });
+    add("ALL", "#19e6c1", !ccFilter.element && !ccFilter.role && !ccFilter.duty && !ccFilter.kind && !ccFilter.squad, () => { ccFilter = { element: null, role: null, duty: null, kind: null, squad: null }; });
     (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).forEach(el => { if (unlocked.has(el.id)) add(el.label, el.color, ccFilter.element === el.id, () => { ccFilter.element = ccFilter.element === el.id ? null : el.id; }); });
     [["BRAWL", "brawler", "#ff4a1c"], ["MAGE", "sniper", "#a64dff"], ["TECH", "camper", "#8fe3ff"]].forEach(r => add(r[0], r[2], ccFilter.role === r[1], () => { ccFilter.role = ccFilter.role === r[1] ? null : r[1]; }));
+    if (_ccParty()) [["IN SQUAD", "in", "#19e6c1"], ["NOT IN SQUAD", "out", "#8fe3ff"]].forEach(r => add(r[0], r[2], ccFilter.squad === r[1], () => { ccFilter.squad = ccFilter.squad === r[1] ? null : r[1]; }));   // (the facility: who is in the squad, and who could be)
     if (!_ccParty()) [["WORKING", "worker", "#19e6c1"], ["FIGHTING", "fighter", "#ffe733"]].forEach(r => add(r[0], r[2], ccFilter.duty === r[1], () => { ccFilter.duty = ccFilter.duty === r[1] ? null : r[1]; }));   // (nobody works in the facility)
     add("CLONES", "#99ddff", ccFilter.kind === "clone", () => { ccFilter.kind = ccFilter.kind === "clone" ? null : "clone"; });
     const sp = _ccEl("span", "cc-spacer"); box.appendChild(sp);
@@ -356,7 +364,7 @@ function _ccDrawSide(side) {
     if (!S.count) {
         _ccDD = null;
         side.appendChild(_ccEl("div", "cc-sel-title", "NOTHING SELECTED"));
-        side.appendChild(_ccEl("div", "cc-sel-sub", "TAP A CARD TO SELECT IT \u00b7 " + ccUnits({}).length + " UNITS"));
+        side.appendChild(_ccEl("div", "cc-sel-sub", _ccParty() ? "TAP A FOLLOWER TO PUT IT IN THE SQUAD, TAKE IT OUT, OR SWAP IT \u00b7 " + ccUnits({}).length + " UNITS" : "TAP A CARD TO SELECT IT \u00b7 " + ccUnits({}).length + " UNITS"));
         return;
     }
     const one = sel.length === 1 ? sel[0] : null; let statIdx = null;
@@ -398,27 +406,35 @@ function _ccDrawSide(side) {
     if (statIdx) side.appendChild(statIdx);   // the stat index sits under the settings, so the choices are never pushed off the panel
 }
 // THE SQUAD'S BUTTONS in the side panel (the facility; ASKED: "when you click the creature on the roster, it should show on the side add to party or add to squad"): ADD TO SQUAD for a follower that holds a room, REMOVE FROM SQUAD for one that is
-// in the squad (it holds the room it is in); with the squad full, SWAP WITH one of the three. A selection of several is added as far as the squad has room, and removed all at once.
+// in the squad (it holds the room it is in); with the squad full, SWAP WITH one of the three. With more than one selected each button NAMES the follower it is for and acts on exactly that one (REPORTED: "it ends up adding the same follower that was
+// previously on the squad back"); when more are selected than the squad has room for, one ADD button per follower; with the squad full and one member and one follower holding a room selected, SWAP IN. A follower a button has dealt with leaves the selection
+// (js/party.js), so the next tap is the only one selected.
 function _ccDrawSquadButtons(side, sel) {
     const fol = sel.filter(a => a.isFollower === true && !a.isClone), mem = fol.filter(partyIsMember), out = fol.filter(a => !partyIsMember(a) && a.post), have = partyMembers().length, free = PARTY.max - have;
+    const nm = f => typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", many = sel.length > 1, slots = free + (free === 1 ? " SLOT FREE" : " SLOTS FREE");
     side.appendChild(_ccEl("div", "cc-sec", "SQUAD \u00b7 " + have + " OF " + PARTY.max));
     if (!fol.length) { side.appendChild(_ccEl("div", "cc-note", "ONLY FOLLOWERS JOIN THE SQUAD")); return; }
     const row = _ccEl("div", "cc-row wrap sqrow"); side.appendChild(row); const big = b => { b.classList.add("big", "full"); return b; };
-    if (out.length && free > 0) row.appendChild(big(_ccBtn(out.length > 1 ? "ADD " + Math.min(out.length, free) + " TO SQUAD" : "ADD TO SQUAD", "#19e6c1", false, () => partyAdd(out), "wide", free + (free === 1 ? " SLOT FREE" : " SLOTS FREE") + (out.length > free ? " \u00b7 THE REST KEEP HOLDING" : ""))));
-    else if (out.length === 1) partyOrdered().forEach(m => row.appendChild(big(_ccBtn("SWAP WITH " + (typeof unitTypeLabel === "function" ? unitTypeLabel(m) : "FOLLOWER"), _ccColour(m.element), false, () => partySwap(m, out[0]), "wide", "SQUAD FULL \u00b7 THAT ONE HOLDS ITS ROOM INSTEAD"))));
-    else if (out.length) { const b = big(_ccBtn("ADD TO SQUAD", "#19e6c1", false, () => {}, "wide", "SQUAD FULL \u00b7 REMOVE ONE FIRST")); b.disabled = true; row.appendChild(b); }
-    if (mem.length) row.appendChild(big(_ccBtn(mem.length > 1 ? "REMOVE " + mem.length + " FROM SQUAD" : "REMOVE FROM SQUAD", "#8fe3ff", false, () => partyRemove(mem), "wide", "HOLDS THE ROOM IT IS IN")));
+    if (free === 0 && mem.length === 1 && out.length === 1) {   // the one to take out and the one to put in are both selected
+        row.appendChild(big(_ccBtn("SWAP IN " + nm(out[0]), _ccColour(out[0].element), false, () => partySwap(mem[0], out[0]), "wide", "FOR " + nm(mem[0]) + " \u00b7 THAT ONE HOLDS ITS ROOM")));
+    } else {
+        if (out.length && free >= out.length) row.appendChild(big(_ccBtn(out.length > 1 ? "ADD " + out.length + " TO SQUAD" : many ? "ADD " + nm(out[0]) + " TO SQUAD" : "ADD TO SQUAD", "#19e6c1", false, () => partyAdd(out), "wide", slots)));
+        else if (out.length && free > 0) out.forEach(f => row.appendChild(big(_ccBtn("ADD " + nm(f), _ccColour(f.element), false, () => partyAdd([f]), "wide", "ROOM FOR " + free + " \u00b7 PICK ONE"))));
+        else if (out.length === 1 && !many) partyOrdered().forEach(m => row.appendChild(big(_ccBtn("SWAP WITH " + nm(m), _ccColour(m.element), false, () => partySwap(m, out[0]), "wide", "SQUAD FULL \u00b7 THAT ONE HOLDS ITS ROOM INSTEAD"))));
+        else if (out.length) { const b = big(_ccBtn("ADD TO SQUAD", "#19e6c1", false, () => {}, "wide", "SQUAD FULL \u00b7 SELECT ONE TO SWAP")); b.disabled = true; row.appendChild(b); }
+        if (mem.length) row.appendChild(big(_ccBtn(mem.length > 1 ? "REMOVE " + mem.length + " FROM SQUAD" : many ? "REMOVE " + nm(mem[0]) + " FROM SQUAD" : "REMOVE FROM SQUAD", "#8fe3ff", false, () => partyRemove(mem), "wide", mem.length > 1 ? "THEY HOLD THE ROOMS THEY ARE IN" : "HOLDS THE ROOM IT IS IN")));
+    }
     if (!out.length && !mem.length) side.appendChild(_ccEl("div", "cc-note", "NOT IN THE SQUAD, AND NOT HOLDING A ROOM: IT IS ON ITS WAY"));
 }
 // THE SQUADS WINDOW IN THE FACILITY (ASKED: "when you go at the top to squads, it should already show all three creatures in your squad [...] a little roster card of each of them. And here you can disband them"): the squad's three cards (an open slot is
 // dashed), a REMOVE on each, DISBAND SQUAD (they all hold the rooms they are in), and the squad's orders.
 function _ccDrawYourSquad(body) {
     const mem = partyOrdered(), n = mem.length;
-    body.appendChild(_ccEl("div", "cc-sq-hint", n ? "THE SQUAD FOLLOWS YOU, UP TO " + PARTY.max + ". A FOLLOWER TAKEN OUT OF IT HOLDS THE ROOM IT IS IN." : "NOBODY IS IN THE SQUAD. SELECT A FOLLOWER IN THE ROSTER AND TAP ADD TO SQUAD."));
+    body.appendChild(_ccEl("div", "cc-sq-hint", n ? "THE SQUAD FOLLOWS YOU, UP TO " + PARTY.max + ". A FOLLOWER TAKEN OUT OF IT HOLDS THE ROOM IT IS IN." : "NOBODY IS IN THE SQUAD. TAP AN OPEN SLOT TO SEE WHO COULD JOIN IT."));
     const row = _ccEl("div", "cc-yoursquad"); body.appendChild(row);
     for (let i = 0; i < PARTY.max; i++) {
         const f = mem.find(m => m.partySlot === i) || null;
-        if (!f) { const e = _ccEl("div", "cc-card cc-open"); e.appendChild(_ccEl("div", "cc-open-t", "+ OPEN SLOT")); e.appendChild(_ccEl("div", "cc-open-s", "SELECT A FOLLOWER IN THE ROSTER, THEN ADD TO SQUAD")); row.appendChild(e); continue; }
+        if (!f) { const e = _ccEl("div", "cc-card cc-open"); e.appendChild(_ccEl("div", "cc-open-t", "+ OPEN SLOT")); e.appendChild(_ccEl("div", "cc-open-s", "TAP TO SEE WHO COULD FILL IT")); _ccClick(e, () => { ccSquadsOpen = false; ccShowCandidates(); }); row.appendChild(e); continue; }
         const r = ccRow(f), card = _ccMakeCard(r); _ccUpdateCard(card, r);
         card.querySelector(".cc-mid").appendChild(_ccBtn("REMOVE", "#8fe3ff", false, () => partyRemove([f]), "small"));
         row.appendChild(card);
