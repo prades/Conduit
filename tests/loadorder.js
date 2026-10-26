@@ -1,5 +1,7 @@
 // Evaluates the real script files in the order game.html lists them, to prove
-// nothing throws at load time and that the render order is intact.
+// nothing throws at load time and that the render order is intact. The page
+// boots the facility (js/init.js) as the files load, so by the end of the
+// evaluation the facility is up in the sandbox too.
 const fs = require('fs');
 const vm = require('vm');
 const { ROOT, scriptOrder, makeBrowserSandbox } = require('./domstub.js');
@@ -49,11 +51,12 @@ check('settings panel rows fit inside the panel', () => {
 });
 
 // ── Render order ──
-// World geometry draws with the world; interface draws after it.
+// World geometry draws with the world; interface draws after it. (The strip game's
+// overlays, drawHoldLine and drawPowerChain, went with it: the facility has no
+// hold line and no power chain to draw.)
 const GAME = fs.readFileSync(ROOT + '/js/game.js', 'utf8');
-const WORLD_SPACE = ['drawElementEffects', 'drawHoldLine', 'drawPowerChain'];
-const INTERFACE   = ['drawRadialMenu', 'drawElementPicker',
-                     'drawSettingsPanel', 'drawInfoPanel', 'drawCampMenu'];
+const WORLD_SPACE = ['drawElementEffects'];
+const INTERFACE   = ['drawRadialMenu', 'drawSettingsPanel', 'drawInfoPanel'];
 
 console.log('\nrender order:');
 check('no post-FX hook survives in the render loop', () => {

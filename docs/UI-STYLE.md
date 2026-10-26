@@ -22,38 +22,29 @@ Saved from the roster poster (`docs/images/roster-poster.png`, regenerate with
 
 | Component | Size | Text |
 |---|---|---|
-| Primary button (SELECT / BUILD / AUTO) | 220×84, icon + label | italic 900, 30px |
-| Small button (HELP, tabs) | 160–240 × 58–64 | italic 900, 18–26px |
-| Side button (SETTINGS / SHOP / CLONES) | 180–250 × 92–100 | italic 900, 22–30px |
-| Bar (squad / ultimate) | 800×52 and 640×34, segmented | label inside, italic 900 |
-| Element chip (roster list) | 420×84 | name 34px, count 46px, a 17px mono sub-line |
-| Pick card (unlock a new element) | 390×130 | name 52px + "▸ UNLOCK" |
+| Primary button (ATTACK / ADD TO SQUAD / RECRUIT) | 220×84, icon + label | italic 900, 30px |
+| Small button (INFO, tabs) | 160–240 × 58–64 | italic 900, 18–26px |
+| Side button (SETTINGS / CLONES) | 180–250 × 92–100 | italic 900, 22–30px |
+| Bar (health / ultimate) | 800×52 and 640×34, segmented | label inside, italic 900 |
+| Element chip (the roster's filters) | 420×84 | name 34px, count 46px, a 17px mono sub-line |
 | Panel | slab with a 40px cut, 4px outline | title 84px, caption 24–26px mono |
 
 Minimum touch target is 56px high. Anything that was a tiny icon button becomes a slab with an icon and a word.
 
-## What changes, screen by screen (see the mock-ups)
+## What the kit covers, screen by screen
 
-1. **HUD**: the shard count, squad bar, ultimate bar, objective banner, the SELECT / BUILD / AUTO / HELP row,
-   the zone plate, CLONES, SETTINGS / SHOP, the ammo plate and the TUTORIAL button become slabs.
-2. **Element roster** (bottom-left list): one 84px chip per element with its colour bar, a big count, and the B/M/T split.
-3. **Crystal menu**: slab tabs, big element swatches for the mix, and the **UNLOCK EARNED** pick cards.
-4. **Build menu**, **recruit / clone panels**, **wave-clear and level-up banners**, **codex / index**: the same kit.
+1. **HUD**: the crystals, the health and ultimate bars, the objective plate, the room tag and the network panel, the ammunition pill and the round dial, and the dock (ROSTER, CLONES, SETTINGS, PACK, MAP, ?) are slabs.
+2. **The squad bar and the battle tool** (bottom left): the three squad cards, ALL / WHO, RETREAT, HOLD, COME and the enemy card.
+3. **The Command Center**: slab tabs, the carousel, the filter chips, the RECRUIT tile.
+4. **The canvas panels**: the Clone Bay, the pack, the Armory terminal, the class picker, SETTINGS and the INFO panel are drawn with the same kit.
 
-## How it would be built (not started)
+## How it is built
 
-The game draws its UI on a canvas (`js/ui.js`, `js/clone.js`, `js/buildmenu.js`, `js/hud.js`) with hit-test rectangles.
-The poster's drawing code is already the kit, so the plan is:
-
-1. A small `js/uikit.js`: `uiSlab`, `uiButton`, `uiBar`, `uiChip`, `uiCard`, `uiTitle`, plus the palette and fonts, with a
-   scale factor from the canvas size (phones get the big-button layout at a smaller scale, not smaller text).
-2. Port one screen at a time, keeping each screen's hit-test rects, in this order: HUD → element roster → Crystal menu → build menu → the rest.
-3. Update the tests that assert on UI source text (`tests/progression.js`, `tests/hud.js`, `tests/ux.js` and others read the draw code) as each screen moves.
-4. Fonts: DejaVu Sans is what the poster used; the game would ship one italic display face (a webfont) so every device matches.
+The HUD, the dock, the squad bar, the battle tool and the Command Center are page elements (the css in game.html). The Clone Bay, the pack, the Armory terminal, the class picker, Settings and the INFO panel are drawn on the canvas with `js/uikit.js`: `uiSlab`, `uiButton`, `uiPanel`, `uiBackdrop`, `uiText`, `uiTextFit`, `uiCaptionFit`, `uiWrap`, the palette (`UI_TEAL`, `UI_GOLD`, `UI_VIOLET`, `UI_ICE`, `UI_RED`, `UI_INK`) and the fonts (`uiFont`, `uiMono`). A slab is a parallelogram that stays inside its rectangle, so a panel's hit test is still the plain rectangle it always was; nothing in the game uses `shadowBlur` (the glow is a second, wider, fainter outline). Phones get the big-button layout at a smaller scale, not smaller text. Fonts: DejaVu Sans is what the poster used, and `UI_FONT` falls back through Segoe UI to the system sans; shipping one italic display face (a webfont) so every device matches is still to do.
 
 ## The HUD: one group to a corner (the facility, a tablet or a desktop)
 
-Ten layouts of the HUD were drawn on one set of parts (docs/images/hud-corners.jpg is the one picked: "the correct direction for this hud, all parts"): **me** (the crystals, health, ultimate) top left; **the place** (zone tag, network panel, objective) top right; **the squad and its orders** (three cards stacked over ALL / RETREAT / HOLD / COME, and a picked member's card beside them) bottom left; **the target** (the round dial, the ammunition, the enemy card with its ATTACK) bottom right; **the menu** (the dock) as it was, with its buttons unchanged. The rule: the parts that work together are one group, and a group has one corner. Every piece is a slab from the kit above (a skewed `::before` with a 2 px outline and a glow in the piece's colour, the text upright): the squad's cards in their element's colour, the tool's gold bar, ALL teal, RETREAT red, HOLD ice, COME teal, the enemy card red, a member's card in its element's colour with INDEX ice and DISMISS red. A phone is not part of it. The details and what each tap does are in docs/TUTORIAL.md ("The HUD: one group to a corner"); the css is the block "THE CORNERS" in game.html.
+Ten layouts of the HUD were drawn on one set of parts (docs/images/hud-corners.jpg is the one picked: "the correct direction for this hud, all parts"): **me** (the crystals, health, ultimate) top left; **the place** (room tag, network panel, objective) top right; **the squad and its orders** (three cards stacked over ALL / RETREAT / HOLD / COME, and a picked member's card beside them) bottom left; **the target** (the round dial, the ammunition, the enemy card with its ATTACK) bottom right; **the menu** (the dock) as it was, with its buttons unchanged. The rule: the parts that work together are one group, and a group has one corner. Every piece is a slab from the kit above (a skewed `::before` with a 2 px outline and a glow in the piece's colour, the text upright): the squad's cards in their element's colour, the tool's gold bar, ALL teal, RETREAT red, HOLD ice, COME teal, the enemy card red, a member's card in its element's colour with INDEX ice and DISMISS red. A phone is not part of it. The details and what each tap does are in docs/TUTORIAL.md ("The HUD: one group to a corner"); the css is the block "THE CORNERS" in game.html.
 
 ## The roster: a carousel (the facility's Command Center, a tablet or a desktop)
 
@@ -61,7 +52,7 @@ Five layouts of the roster and the squad viewer were drawn on the same parts (do
 
 ## The INFO panel (js/infodex.js)
 
-The long-press ring's INFO opens a slab panel: the **readout** of what was pressed (pylon, power cell, nest, follower/clone or enemy), a button to read about its kind,
-and an **index** of everything in six tabs (BUILD, POWER, ALLIES, ENEMIES, ELEMENTS, RULES), one entry per slab with a description and numbers read from the game's own constants.
+The long-press ring's INFO opens a slab panel: the **readout** of what was pressed (a follower, a clone or a creature: its live numbers), a button to read about its kind,
+and an **index** of everything in four tabs (ALLIES, ENEMIES, ELEMENTS, RULES), one entry per slab with a description and numbers read from the game's own constants.
 A page taller than the panel is split into pages (the middle button), never scrolled. Adding a thing to the game: add one `add(...)` line to `infoEntries()`.
-The ring itself only draws an option that does something (no catch-all SWITCH, no generator on/off).
+The ring itself (js/commands.js) only draws an option that does something: ROSTER CARD and RE-ROLL on a follower or a clone, ATTACK / STOW and INFO on a creature, POSITION and INFO on the ground.

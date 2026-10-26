@@ -1,8 +1,10 @@
 // BOOT — REPORTED (a phone): "CRASH — ReferenceError: Can't find variable:
-// PREDATOR_TYPES, initPreview@dev.js:306". js/species.js never ran, and the
-// first thing that needed it — the dev panel's preview — took the whole boot
-// down. The crash screen stacked one panel per error, so the cause was hidden
-// under the follow-on. These are source checks; tests/run.js cannot fetch.
+// PREDATOR_TYPES". js/species.js never ran, and the first thing that needed it
+// took the whole boot down. The crash screen stacked one panel per error, so
+// the cause was hidden under the follow-on. Now game.html's BOOT CHECK, between
+// the last game script and js/init.js, probes one declaration from each file it
+// loads, reloads by itself when one is missing, and otherwise says which file.
+// These are source checks; tests/run.js cannot fetch.
 const fs = require('fs');
 const path = require('path');
 const { ROOT, scriptOrder } = require('./domstub.js');
@@ -24,13 +26,17 @@ check('THE ASK: a script that failed to download is caught (it raises no error o
     ok(HTML.indexOf('window.__bootFailed = []') < HTML.indexOf('<script src="js/config.js'), 'it is installed after the scripts start loading');
 });
 check('THE ASK: before init.js runs, every file is checked — species.js among them', () => {
-    ok(bootAt > -1 && bootAt < HTML.indexOf('<script src="js/init.js') && bootAt > HTML.indexOf('<script src="js/dev.js'), 'the boot check is not between the files and init.js');
+    const order = scriptOrder(), last = order[order.length - 2];   // the last game script before init.js
+    ok(bootAt > -1 && bootAt < HTML.indexOf('<script src="js/init.js') && bootAt > HTML.indexOf('<script src="' + last), 'the boot check is not between the files and init.js');
     ok(/"js\/species\.js": "PREDATOR_TYPES"/.test(boot), 'it does not check species.js');
-    // Every name it checks is a real top-level declaration of that file.
-    for (const [f, name] of [...boot.matchAll(/"(js\/[\w.]+)": "(\w+)"/g)].map(m => [m[1], m[2]])) {
-        ok(scriptOrder().includes(f), f + ' is not loaded');
+    // Every name it checks is a real top-level declaration of a file the page loads: a probe for a file that is gone would fail every boot.
+    const probes = [...boot.matchAll(/"(js\/[\w.]+)": "(\w+)"/g)].map(m => [m[1], m[2]]);
+    ok(probes.length >= 20, 'only ' + probes.length + ' files are probed');
+    for (const [f, name] of probes) {
+        ok(order.includes(f), f + ' is not loaded');
         ok(new RegExp('^(const|let|var|function|class) ' + name + '\\b', 'm').test(rd(f)), name + ' is not declared in ' + f);
     }
+    for (const f of ['js/facilityplay.js', 'js/party.js', 'js/mixtool.js', 'js/game.js']) ok(probes.some(p => p[0] === f), f + ' is not probed');   // the facility's own files are checked too
 });
 check('it reloads by itself, at most twice, with the count in the URL too (no endless loop without storage)', () => {
     ok(/if \(tries < 2\)/.test(boot) && /location\.reload\(\)/.test(boot), 'no bounded retry');
@@ -45,8 +51,11 @@ check('the crash screen is one panel, first error on top, with RELOAD', () => {
     ok(/RELOAD/.test(s), 'no reload button');
     ok(!/window\.onerror\s*=/.test(rd('js/config.js')), 'config.js still replaces the page\'s error handler');
 });
-check('the dev panel can never stop the game starting', () => {
-    ok(/try \{ initPreview\(\); \} catch \(e\)/.test(rd('js/init.js')), 'initPreview is still unguarded');
+check('init.js starts the one game the page has, synchronously, and fetches nothing', () => {
+    // The strip game's loadConfig awaited two fetches, so its boot crash lived in an async continuation nobody saw (tests/globals.js).
+    const init = rd('js/init.js');
+    ok(/function loadConfig\(\)/.test(init) && !/async|await|fetch\(/.test(init), 'loadConfig is async again, or fetches');
+    ok(/facilityPlayStart\(\);/.test(init) && /gameLoop\(\);/.test(init) && /^loadConfig\(\);/m.test(init), 'init.js does not boot the facility and start the clock');
 });
 
 check('THE ASK: every file is fetched for this build — one ?v= on every script, matching the page and config.js', () => {
@@ -58,10 +67,5 @@ check('THE ASK: every file is fetched for this build — one ?v= on every script
     ok(page === tags[0] && cfg === tags[0], 'page ' + page + ', config ' + cfg + ', tags ' + tags[0]);
     ok(/BUILD_VERSION"\) !== window\.__PAGE_BUILD/.test(HTML), 'the boot check does not catch a stale config.js');
 });
-check('a picture is skipped, never a crash, when the board\'s ctx cannot be swapped', () => {
-    const A = rd('js/indexart.js');
-    ok(/if \(!_ixCanSwap\(\)\) return false;/.test(A) && /try \{ ctx = keepCtx; \} catch/.test(A), 'painting can still throw');
-});
-
 console.log(failures ? `\n${failures} FAILING` : '\nall passing');
 process.exit(failures ? 1 : 0);

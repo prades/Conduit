@@ -33,7 +33,7 @@ Saturated colour is for crystal energy and things you use; everything else is a 
 
 ## Rolled out to the whole facility
 
-Every room uses the style (`FP_STYLE_ROOMS`; per-room accent, wainscot and floor tiles in `FP_ROOM_STYLE`, furniture and decor in `js/facilitystyleall.js`): Crystal Chamber cyan; Teleport Rooms violet (lilac floors); lobby, stair room and observation deck blue; bathroom teal; show room violet; hallway and passage cyan; Experiment Lab mint; arena and catwalks amber. The ARENA (and the nest area) are the exception to the pale floor: a dark, matte, non-metallic earth floor (no neon seams, no sheen, dull pits and cracks) under dark brown rock, so it reads as the cave under the lab. Glass, doors, steps, the rock and the scaffold use the same outlines, shapes and palette.
+Every room uses the style (`FP_STYLE_ROOMS`; per-room accent, wainscot and floor tiles in `FP_ROOM_STYLE`, furniture and decor in `js/facilitystyleall.js`): Crystal Chamber cyan; Teleport Rooms violet (lilac floors); lobby, stair room and observation deck blue; bathroom teal; show room violet; hallway and passage cyan; Experiment Lab mint; arena and catwalks amber. The ARENA (and the Nest Area, the room beyond it) are the exception to the pale floor: a dark, matte, non-metallic earth floor (no neon seams, no sheen, dull pits and cracks) under dark brown rock, so it reads as the cave under the lab. Glass, doors, steps, the rock and the scaffold use the same outlines, shapes and palette.
 
 ## Status and how to extend
 
