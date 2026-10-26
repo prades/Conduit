@@ -39,9 +39,17 @@ function mixToolTabNow() { return mixToolFacility() ? "battle" : _mtTab; }
 // ── the field orders (the dial's old COMMAND module) ──
 const MIXTOOL_ORDERS = [
     { id: "hold",   label: "HOLD", sub: "STAND HERE",   col: "#8fe3ff", run: p => ccApplyStance(p, "hold") },
-    { id: "follow", label: "COME", sub: "FOLLOW ME",    col: "#19e6c1", run: p => ccApplyStance(p, "follow") },
+    { id: "follow", label: "COME", sub: "FOLLOW ME",    col: "#19e6c1", run: p => ccApplyStance(p, "follow"), pool: () => mixToolComePool() },
 ];
 function mixToolPool() { return typeof getCommandPool === "function" ? getCommandPool().filter(a => a && !a.dead) : []; }
+// COME is the way back from HOLD. Whoever is selected (they win, as for every order); else the squad AND the followers holding rooms that the WHO row reaches, the one held last first: the squad has room for as many as it has room for, the rest keep holding and it
+// says so (REPORTED: "I click hold with just one of my followers [...] But then whenever I have it selected and I click come, it doesn't come. It still holds": COME reached the squad only, and nothing said so).
+function mixToolComePool() {
+    const sel = typeof selectedUnits !== "undefined" && selectedUnits.size && typeof ccSelectionList === "function" && ccSelectionList().length;
+    if (sel || !(typeof partyOn === "function" && partyOn())) return mixToolPool();
+    const all = getCommandPool(true).filter(a => a && !a.dead);
+    return all.filter(a => !a.post).concat(all.filter(a => a.post).sort((a, b) => (b.postAt || 0) - (a.postAt || 0)));
+}
 // Who the orders go to, in words.
 function mixToolTarget(pool) {
     const n = (pool || mixToolPool()).length;
@@ -50,7 +58,7 @@ function mixToolTarget(pool) {
     return String(player.selectedElement || "").toUpperCase() + " " + n;
 }
 function mixToolOrder(id) {
-    const o = MIXTOOL_ORDERS.find(x => x.id === id), pool = mixToolPool();
+    const o = MIXTOOL_ORDERS.find(x => x.id === id), pool = o && o.pool ? o.pool() : mixToolPool();
     if (!o || !pool.length) { mixToolSay("NOBODY TO ORDER", "#8aa0c8"); return 0; }
     const n = o.run(pool); if (!(typeof partyOn === "function" && partyOn())) mixToolSay(o.label + " · " + n + " OF " + pool.length, o.col); return n;   // (in the facility HOLD and COME say what they did themselves: which room, or SQUAD FULL, js/party.js)
 }

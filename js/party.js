@@ -33,8 +33,10 @@ function partyRoomCells(id) {
 function partyIsMember(f) { return !!f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green" && !f.post && f.duty !== "worker" && !f.returningToCrystal; }
 function partyMembers() { return typeof followers === "undefined" ? [] : followers.filter(partyIsMember); }
 function partyPosted() { return typeof followers === "undefined" ? [] : followers.filter(f => f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green" && !!f.post); }
+// the followers holding a room, the one held last first (COME calls them back in that order)
+function partyHeld() { return partyPosted().sort((a, b) => (b.postAt || 0) - (a.postAt || 0)); }
 function partyFull(except) { return partyMembers().filter(m => m !== except).length >= PARTY.max; }
-function _partySay(text, col) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color: col || "#19e6c1", life: 100, vy: -0.25, size: 12 }); }
+function _partySay(text, col, big) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color: col || "#19e6c1", life: big ? 150 : 100, vy: -0.25, size: big ? 16 : 12 }); }   // (big: a refusal the player must not miss)
 
 // Every member has a slot (0 to max - 1) that it keeps while it is in the squad, so the three cards on the squad bar do not shuffle. A member that finds no free slot (the squad is full: it is new, or the squad was made over-full some other way)
 // is posted where it stands. `say`: tell the player about each one posted that way.
@@ -61,7 +63,7 @@ function partyAdmit(f) { if (partyOn() && f) partySync(true); }
 function partyPost(f, room, quiet) {
     if (!f || f.dead || f.isClone || !f.isFollower) return false;
     room = room || partyRoomOf(f); if (!room) return false;
-    f.post = room; f.stance = "hold"; f.job = null; f.attackOrder = null; f._patrol = null; f._nearestEnemy = null; f._enemyCacheFrame = 0; f.partySlot = undefined; f._fpPath = null;
+    f.post = room; f.postAt = typeof frame !== "undefined" ? frame : 0; f.stance = "hold"; f.job = null; f.attackOrder = null; f._patrol = null; f._nearestEnemy = null; f._enemyCacheFrame = 0; f.partySlot = undefined; f._fpPath = null;
     if (!quiet) _partySay("HOLDING · " + partyRoomName(room).toUpperCase(), "#8fe3ff");
     return true;
 }
@@ -73,18 +75,31 @@ function partyCall(f, quiet) {
     f.post = null; f.stance = "follow"; f.job = null; f._patrol = null; f._fpPath = null; f._nearestEnemy = null; f._enemyCacheFrame = 0; partySync(false);
     return true;
 }
-// HOLD and FOLLOW ME for the facility (js/commandcenter.js ccApplyStance): HOLD posts each follower in the room it is in, FOLLOW calls it back to the squad. A clone has no post: it holds where it stands, as ever. Returns how many it did it for.
+// HOLD and COME for the facility (js/commandcenter.js ccApplyStance; the battle tool's buttons, js/mixtool.js): HOLD posts each follower in the room it is in, COME calls it back to the squad. A clone has no post: it holds where it stands, as ever.
+// Returns how many it did it for.
+// REPORTED: "I click hold with just one of my followers, which is fine. He starts holding that position. But then [...] I click come, it doesn't come. It still holds." COME reached only the squad (the followers holding rooms were left out of
+// the pool unless they were selected), and nothing said so; now COME with nobody selected reaches them too (js/mixtool.js mixToolComePool), the one held last first, and it says who came back, or why one did not (SQUAD FULL). COME also ends an
+// attack order (the enemy card's), as it does in the classic game. The followers HOLD posts leave the selection (they have left the squad bar: a selection nobody can see steers the next orders; see _partyDone).
 function partyApplyStance(units, stance) {
-    let n = 0, refused = 0; const rooms = new Set(), clones = [];
+    let n = 0; const rooms = new Set(), clones = [], posted = [], called = [], kept = [], nm = f => typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER";
     for (const a of units) {
         if (!a || a.dead) continue;
         if (a.isClone || !a.isFollower) { clones.push(a); continue; }
-        if (stance === "hold") { if (a.duty === "worker") continue; const room = partyRoomOf(a); if (partyPost(a, room, true)) { n++; rooms.add(room); } }
-        else if (stance === "follow") { if (partyCall(a, true)) n++; else refused++; }
+        if (stance === "hold") { if (a.duty === "worker") continue; const room = partyRoomOf(a); if (partyPost(a, room, true)) { n++; rooms.add(room); posted.push(a); } }
+        else if (stance === "follow") {
+            a.attackOrder = null; if (a.job && a.job.type === "move") a.job = null;   // (COME ends an attack order)
+            const was = !!a.post;
+            if (partyCall(a, true)) { n++; if (was) called.push(a); } else kept.push(a);
+        }
     }
     if (clones.length) n += _ccApplyStanceUnits(clones, stance);
-    if (stance === "hold" && rooms.size) _partySay("HOLD · " + (n > 1 ? n + " · " : "") + (rooms.size === 1 ? partyRoomName([...rooms][0]).toUpperCase() : rooms.size + " ROOMS"), "#8fe3ff");
-    else if (stance === "follow") { if (refused) _partySay("SQUAD FULL · " + PARTY.max + " OF " + PARTY.max + (n ? " · " + n + " CALLED" : ""), "#ff8a6a"); else if (n) _partySay("COME · " + n + " IN THE SQUAD", "#19e6c1"); }
+    if (stance === "hold" && rooms.size) { _partyDone(posted); _partySay("HOLD · " + (n > 1 ? n + " · " : "") + (rooms.size === 1 ? partyRoomName([...rooms][0]).toUpperCase() : rooms.size + " ROOMS"), "#8fe3ff"); }
+    else if (stance === "follow") {
+        const who = list => list.length === 1 ? nm(list[0]) : list.length + " FOLLOWERS";
+        if (kept.length) _partySay("SQUAD FULL · " + PARTY.max + " OF " + PARTY.max + " · " + who(kept) + (kept.length === 1 ? " KEEPS" : " KEEP") + " HOLDING" + (called.length ? " · " + who(called) + " CAME" : ""), "#ff8a6a", true);
+        else if (called.length) _partySay("COME · " + who(called) + (called.length === 1 ? " IS" : " ARE") + " BACK IN THE SQUAD", "#19e6c1", true);
+        else if (n) _partySay("COME · " + n + " IN THE SQUAD", "#19e6c1");
+    }
     if (typeof partyBarRender === "function") partyBarRender(true);   // (the cards follow the order at once, not at the next tick)
     return n;
 }
@@ -141,24 +156,27 @@ function partyBarBuild(root) { if (!_sbEls || _sbEls.root !== root) _sbEls = par
 function _partyTapped(ev) {
     const t = ev.target && ev.target.closest ? ev.target : null; if (!t) return null;
     const slot = t.closest(".sb-slot"); if (!slot) return null;
-    return { f: slot._unit, info: !!t.closest(".sb-info") };
+    return { f: slot._unit, info: !!t.closest(".sb-info"), call: slot._call || null };
 }
 function partyBarClick(ev) {
     const hit = _partyTapped(ev); if (!hit) return;
     const f = hit.f;
     if (hit.info) { if (f && typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
-    if (!f) { if (typeof ccShowCandidates === "function") ccShowCandidates(); else if (typeof ccOpen === "function") ccOpen("roster"); return; }   // an open slot: the roster, showing the followers that could fill it
+    if (!f) { if (hit.call) { partyAdd([hit.call]); if (typeof mixToolRender === "function") mixToolRender(true); } else if (typeof ccShowCandidates === "function") ccShowCandidates(); else if (typeof ccOpen === "function") ccOpen("roster"); return; }   // an open slot: the one follower that holds a room comes back; else the roster, showing the followers that could fill it
     if (typeof ccToggle === "function") ccToggle(f);
     partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
 }
 function _sbSet(el, prop, v) { if (el[prop] !== v) el[prop] = v; }
 // each slot shows the follower in that card slot of the squad (partySlot), or is open
+// An OPEN slot says what a tap on it does: with exactly one follower holding a room it is "+ CALL <that one>" and a tap brings it back (REPORTED: after HOLD, "whenever I click on that follower [...] it doesn't come"); with none or several it is "+ OPEN SLOT" and a
+// tap lists the followers that could fill it (js/commandcenter.js ccShowCandidates): one must not be picked for you when there is a choice.
 function partySlotsUpdate(E) {
-    const mem = partyOrdered();
+    const mem = partyOrdered(), held = partyPosted(), one = held.length === 1 ? held[0] : null;
     for (let i = 0; i < PARTY.max; i++) {
         const el = E.slots[i], f = mem.find(m => m.partySlot === i) || null;
         if (el._unit !== f) { el._unit = f; el.classList.toggle("empty", !f); el._thumbKey = null; }
-        if (!f) continue;
+        if (!f) { el._call = one; el.classList.toggle("call", !!one); const op = el.querySelector(".sb-open"); if (op) _sbSet(op, "textContent", one ? "+ CALL " + (typeof unitTypeLabel === "function" ? unitTypeLabel(one) : "FOLLOWER") : "+ OPEN SLOT"); continue; }
+        el._call = null; el.classList.remove("call");
         const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;
         if (el._col !== col) { el._col = col; if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", col); }
         el.classList.toggle("sel", typeof selectedUnits !== "undefined" && selectedUnits.has(f));
@@ -181,7 +199,7 @@ function partyBarRender(force) {
 // THE SQUAD BOX (the Command Center's roster, the facility): a tap on a card selects that follower (the side panel then offers REMOVE FROM SQUAD); the i is its INFO; an open slot lists the followers that could fill it (the roster's NOT IN SQUAD)
 function partyBoxClick(ev) {
     const hit = _partyTapped(ev); if (!hit) return;
-    if (!hit.f) { if (typeof ccShowCandidates === "function") ccShowCandidates(); return; }   // an open slot: the roster shows the followers that could fill it
+    if (!hit.f) { if (hit.call) partyAdd([hit.call]); else if (typeof ccShowCandidates === "function") ccShowCandidates(); return; }   // an open slot: the one follower that holds a room comes back; else the roster shows the followers that could fill it
     if (hit.info) { if (typeof unitInfoOpen === "function") unitInfoOpen(hit.f); return; }
     if (typeof ccToggle === "function") ccToggle(hit.f);
     if (typeof ccRender === "function") ccRender();
